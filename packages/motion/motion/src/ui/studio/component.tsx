@@ -572,14 +572,15 @@ export function MotionCardEditor({
         ctx.gl.render(ctx.scene, ctx.camera)
         ctx.gl.domElement.toBlob((blob) => {
           if (!blob || blob.size < 100) return
-          const reader = new FileReader()
-          reader.onload = () => {
-            if (typeof reader.result === "string" && reader.result.length > 100) {
+          // Shared readAsDataURL — the ONE read path every slot-shaped
+          // attach uses (best-effort thumbnail: a read failure drops the
+          // tile back to the genre placeholder, same as before).
+          void readAsDataURL(blob).then((url) => {
+            if (url.length > 100) {
               thumbCapturedForUrl.current = npzUrl
-              setThumb(stage.id, reader.result)
+              setThumb(stage.id, url)
             }
-          }
-          reader.readAsDataURL(blob)
+          }).catch(() => { /* thumbnail is best-effort — keep the placeholder */ })
         }, "image/png")
       } catch {
         // WebGL context lost or canvas tainted — non-fatal; the tile

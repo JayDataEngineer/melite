@@ -3,9 +3,9 @@
 // "a closed set is a TYPE, not a str a wall validates").
 //
 // The py served sampler/scheduler options off the live engine pin
-// (object_info KSampler) with an ALPHABETIC serve order — the frozen
-// referee (discovery-catalog form_specs) pins both the SET and that
-// order. This module declares the closed set as a z.union of consts:
+// (object_info KSampler) with an ALPHABETIC serve order — the golden
+// referee (tests/walls/ts/fixtures/form-spec-referee.json) pins both
+// the SET and that order. This module declares the closed set as a z.union of consts:
 // ONE row gives the dropdown (meta.list = options, served in
 // DECLARED order — sorted, the referee's order) AND the membership
 // refusal (an off-set value fails the union at schema parse — the

@@ -22,22 +22,23 @@
  * client-side before any POST (the door only takes png/jpeg/webp —
  * video/audio upload doors are a recorded gap, not a silent pass).
  */
+import { readAsDataURL } from "@melite/ui"
 
 const IMAGE_TYPES = new Set(["image/png", "image/jpeg", "image/webp"])
 
-function readAsDataURL(file: File): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const fr = new FileReader()
-    fr.onload = () => resolve(String(fr.result))
-    fr.onerror = () => reject(new Error(
+// Shared readAsDataURL (@melite/ui SlotSquare — the ONE read path). The
+// picker-specific guidance survives as a catch mapping: the shared read
+// rejects bare, and only this rail knows what to tell the operator next.
+function readUploadFile(file: File): Promise<string> {
+  return readAsDataURL(file).catch(() => {
+    throw new Error(
       `The browser could not read "${file.name}" at its source ` +
       "(the drag handed over a file the browser can't open — this " +
       "happens when the file was moved/deleted, or the drag came " +
       "from a recent-files list or another app). " +
       "Drag it from its actual folder, or CLICK the square and browse — " +
       "the picker path reads through the OS dialog and works.",
-    ))
-    fr.readAsDataURL(file)
+    )
   })
 }
 
@@ -50,7 +51,7 @@ export async function uploadToEstate(file: File): Promise<string> {
       `${file.name}: only png / jpeg / webp upload (got ${file.type || "unknown type"})`,
     )
   }
-  const data = await readAsDataURL(file)
+  const data = await readUploadFile(file)
   let resp: Response
   try {
     resp = await fetch("/v1/uploads", {

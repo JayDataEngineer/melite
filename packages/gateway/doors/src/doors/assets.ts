@@ -1,6 +1,7 @@
 // assets.ts — the Phase-3 TS port of the 4 asset READ doors.
 //
-// Handlers (python/gateway.py names in parens; ROUTES mirror rows):
+// Handlers (deleted-python names in parens — python/gateway.py is
+// gone (frozen at git d4fbcab); ROUTES mirror rows):
 //   GET /v1/assets            (_h_assets_index) — JSON, dynamic
 //   GET /v1/ledger            (_h_ledger)       — JSON, dynamic
 //   GET /v1/assets/runs/*     (_h_asset)        — REAL byte serve

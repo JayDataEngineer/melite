@@ -141,22 +141,28 @@ function vendorPack(abs: string): string | null {
   return parts[0];
 }
 
+// Re-truthed 2026-09-10 (ledger row 37): the py tree is deleted — the
+// contract was permanently vacuous (topGroup "py" never matched). The
+// LIVE generic-core surface is packages/gateway/core: the verticals
+// (engines, models, web, web-kit, harness, genre dirs) may depend on
+// core, never the reverse.
+const VERTICAL_GROUPS: readonly string[] = ["engines", "models", "web",
+  "web-kit", "harness", "3d", "audio", "image", "motion", "video"];
+
+function underGatewayCore(abs: string): boolean {
+  const rel = relative(join(REPO, "packages", "gateway", "core"), abs);
+  return rel !== "" && !rel.startsWith("..");
+}
+
 function contractCoreIsGeneric(rows: ImportRow[]): ImportRow[] {
-  const selfImports = new Set(["packages"]);
   const out: ImportRow[] = [];
   for (const r of rows) {
-    if (topGroup(resolve(r.path)) !== "py") continue;
-    if (selfImports.has(r.mod)) continue;
-    if (r.mod.startsWith("plugins") || r.mod.startsWith("vendor") ||
-        r.mod.startsWith("references")) {
-      out.push({ path: r.path, line: r.line,
-        mod: "core is generic: " + JSON.stringify(r.mod) + " in python/" });
-    }
+    if (!underGatewayCore(resolve(r.path))) continue;
     if (r.mod.endsWith("/<relative>")) {
       const top = r.mod.split("/")[0];
-      if (top === "packages" || top === "vendor" || top === "references") {
+      if (top !== "gateway" && VERTICAL_GROUPS.includes(top)) {
         out.push({ path: r.path, line: r.line,
-          mod: "core is generic: relative import lands in " + top });
+          mod: "core is generic: relative import lands in packages/" + top });
       }
     }
   }
@@ -167,8 +173,13 @@ function contractPluginsAreIndependent(rows: ImportRow[]): ImportRow[] {
   const groupToId: Record<string, string> = { engines: "comfyui",
     harness: "dsh", web: "editor" };
   const out: ImportRow[] = [];
+  // Re-truthed 2026-09-10 (ledger row 37): gated on the dead "plugins"
+  // top-group (never true post-reorg — topGroup only answers
+  // py/packages/vendor/references). The law is unchanged: a package
+  // under packages/<group>/ imports another group by its public
+  // @melite/* name, never by relative crossing.
   for (const r of rows) {
-    if (topGroup(resolve(r.path)) !== "plugins") continue;
+    if (topGroup(resolve(r.path)) !== "packages") continue;
     if (r.mod.startsWith("@melite/")) continue;
     if (r.mod.endsWith("/<relative>")) {
       const other = r.mod.split("/")[0];

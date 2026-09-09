@@ -400,38 +400,31 @@ export function pyRepr(v: unknown): string {
  *  refusal for a caller-computed verdict... no: the check is one
  *  regex, owned here so envelope validation is whole. Callers pass
  *  the raw draft_id; the malformed/unknown split needs the
- *  existence probe too — see validateSubmitEnvelope.) */
-export function draftIdOk(draftId: string): boolean {
-  if (draftId === "" || draftId.length > 96) return false;
-  return /^[A-Za-z0-9_-]+$/.test(draftId);
-}
+ *  existence probe too — see validateSubmitEnvelope.)
+ *
+ * DEDUP (2026-09-10, ledger row 27): draftIdOk + the three vocab
+ * sets below had parallel copies in gateway-core params.ts and
+ * here — drift failed nowhere. The SSOT is core's params.ts
+ * ("One list now" — its header already claimed it); queue re-exports
+ * for barrel consumers. */
+export { draftIdOk } from "@melite/gateway-core";
 
 // ── the submit pre-registration chain (1179-1260) ────────────────
 
-/** RETIRED_RUNNER_KNOBS (gateway.py 227-234: SSOT — the strict-body
- *  wall imports py's set; this list is pinned against it leg by
- *  leg, never edited by hand-feel). */
-export const RETIRED_RUNNER_KNOBS: readonly string[] = [
-  "start_from",
-  "stop_after",
-  "reuse_run_id",
-  "partial_run",
-  "overrides",
-  "since",
-  "from_index",
-];
-
-/** RETIRED_CARRY_KEYS (236-245: the 2026-08-10 stowaway wire). */
-export const RETIRED_CARRY_KEYS: readonly string[] = ["pipe", "stage_id"];
-
-/** DOOR_KEYS (345: yaml/flow/flow_inline/model — door vocab, never
- *  mistaken for C-era internals). */
-export const DOOR_KEYS: readonly string[] = [
-  "yaml",
-  "flow",
-  "flow_inline",
-  "model",
-];
+// Vocab SSOT (ledger row 27, 2026-09-10): the retired-knob /
+// carry-key / door-key sets live ONCE in gateway-core params.ts;
+// these re-exports keep the @melite/gateway-queue barrel stable.
+export {
+  RETIRED_RUNNER_KNOBS,
+  RETIRED_CARRY_KEYS,
+  DOOR_KEYS,
+} from "@melite/gateway-core";
+import {
+  RETIRED_RUNNER_KNOBS,
+  RETIRED_CARRY_KEYS,
+  DOOR_KEYS,
+  draftIdOk,
+} from "@melite/gateway-core";
 
 /** The strict-body gate (_strict_body 248-276). */
 export function strictBodyCheck(
@@ -1110,10 +1103,26 @@ export function bootSweep(
     let current: unknown = null;
     try {
       current = JSON.parse(readFileSync(path, "utf8"));
-    } catch {
+    } catch (e) {
+      // ROW 28 (2026-09-10, census): an unreadable _flow.json must
+      // not vanish from the sweep silently — the QUEUE LANE LAW
+      // wants every boot disposition ledgered so the operator can
+      // reconcile (the old bare continue left an unaudited row).
+      appendLedger(
+        stateRoot,
+        "run.swept",
+        { run_id: name, state: "unreadable", error: `boot sweep: _flow.json parse failed: ${e instanceof Error ? e.message : String(e)}` },
+        nowS,
+      );
       continue;
     }
     if (typeof current !== "object" || current === null || Array.isArray(current)) {
+      appendLedger(
+        stateRoot,
+        "run.swept",
+        { run_id: name, state: "unreadable", error: "boot sweep: _flow.json is not an object" },
+        nowS,
+      );
       continue;
     }
     const res: SweepResult = sweepSidecar(
@@ -1494,9 +1503,15 @@ export function planResurrect(
     try {
       doc = JSON.parse(text);
     } catch {
+      // ROW 28 (census): an unparseable sidecar is a HALF-WRITTEN
+      // row — it belongs in orphans (the operator's reconcile
+      // road), never dropped from both order and orphans. The old
+      // bare continue made the run invisible to resurrection.
+      orphans.push(name);
       continue;
     }
     if (typeof doc !== "object" || doc === null || Array.isArray(doc)) {
+      orphans.push(name);
       continue;
     }
     const rec = doc as Record<string, unknown>;

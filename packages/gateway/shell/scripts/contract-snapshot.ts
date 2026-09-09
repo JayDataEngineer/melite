@@ -34,13 +34,22 @@ import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const HERE: string = dirname(fileURLToPath(import.meta.url));
-const REPO: string = resolve(HERE, "..", "..", "..");
+// Ledger row 35: four segments up (scripts → shell → gateway → packages
+// → repo) — the move into packages/gateway/shell/scripts left this at
+// three, so REPO resolved to packages/gateway and every census ran
+// against a flows/ dir that does not exist (always-empty, exit 1).
+const REPO: string = resolve(HERE, "..", "..", "..", "..");
 const CONTRACTS_PATH: string = join(REPO, "infra", "comfyui", "contracts",
   "object_info.json");
 const FLOWS_DIR: string = join(REPO, "flows");
 
 function collectClasses(): Map<string, Set<string>> {
-  // class_type -> {flow names} across every flow source.
+  // class_type -> {flow names} across every flow source. Ledger row 35
+  // (2026-09-10): the census used to regex flows/*/flow.py — dead since
+  // the py retirement (flows carry tool.json + workflow.json only, so
+  // the census was ALWAYS empty and exited 1, leaving object_info.json
+  // unrefreshable). The workflow.json graph is the live source: every
+  // node's class_type, walked structurally (no text regex over JSON).
   const classes = new Map<string, Set<string>>();
   let dirs: string[];
   try {
@@ -49,11 +58,21 @@ function collectClasses(): Map<string, Set<string>> {
     return classes;
   }
   for (const d of dirs) {
-    const f = join(FLOWS_DIR, d, "flow.py");
+    const f = join(FLOWS_DIR, d, "workflow.json");
     if (!existsSync(f)) continue;
-    const text = readFileSync(f, "utf8");
-    for (const m of text.matchAll(/["']class_type["']\s*:\s*["']([^"']+)["']/g)) {
-      const cls = m[1];
+    let graph: unknown;
+    try {
+      graph = JSON.parse(readFileSync(f, "utf8"));
+    } catch {
+      console.error("flow " + d + ": workflow.json does not parse — skipping");
+      continue;
+    }
+    // The graphs ship in API format: { "<node name>": { class_type,
+    // inputs } } — a flat record, not a nodes[] array.
+    if (graph === null || typeof graph !== "object" || Array.isArray(graph)) continue;
+    for (const node of Object.values(graph as Record<string, unknown>)) {
+      const cls = (node as { class_type?: unknown })?.class_type;
+      if (typeof cls !== "string" || cls === "") continue;
       if (!classes.has(cls)) classes.set(cls, new Set());
       (classes.get(cls) as Set<string>).add(d);
     }

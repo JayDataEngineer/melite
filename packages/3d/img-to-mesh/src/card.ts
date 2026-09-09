@@ -101,6 +101,15 @@ const schema = z.object({
 
 export const inject = ['comfyui']
 
+// THE IDENTITY RUNG (native 2026-09-10 — migrated from the frozen
+// identity ring; the card owns its label/description/genre/icon).
+export const identity = {
+  label: 'Image → 3D',
+  description: 'The 3D lane — lift one image into a textured mesh (.glb) on native TRELLIS.2 (DINOv3 conditioning) or native Pixal3D (pixel-aligned + MoGe camera FOV, hero tier), or copy a rig onto a target GLB (transfer_rig); one surface, one arm per family.',
+  genre: '3d',
+  icon: 'box',
+}
+
 export function apply(ctx: Context): void {
   ctx.effect(() => ctx.comfyui.registerCard({
     id: 'img-to-mesh',
@@ -108,6 +117,17 @@ export function apply(ctx: Context): void {
     skeleton: 'img-to-mesh',
     boarded: ['trellis2-native', 'pixal3d', 'transfer_rig'],
     tags: ['3d', 'image', 'generate'],
+    identity,
+    // THE DISCOVERY ROWS (migrated 2026-09-10 from the frozen
+    // discovery export — the card owns its sidebar, surface, and
+    // flow-stage declarations; the discovery arms derive from here).
+    sidebar: { key: '3d', order: 10 },
+    surface: { layout: 'studio' },
+    flowKinds: {
+      inputs: { input_image: 'image' },
+      outputs: { default: 'mesh' },
+      requiresModel: false,
+    },
     // Per-family truth (py requires_by_family verbatim — the door
     // gates the ACTIVE family's slice; the flat list carries the
     // UNION for flat consumers, see file header).

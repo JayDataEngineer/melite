@@ -5,6 +5,7 @@
 // `__test` lives here and is re-exported by IdeogramCanvasEditor.tsx
 // so the unit-test import path is unchanged.
 import { Square, RectangleHorizontal, RectangleVertical } from 'lucide-react'
+import { readAsDataURL } from "@melite/ui"
 
 // ─── Types ────────────────────────────────────────────────────────────────
 
@@ -383,14 +384,11 @@ export async function extractIdeogramCaptionFromPNG(file: File): Promise<IdeoEle
 
 // ─── AI Panel (LLM structured generation) ──────────────────────────────────
 
-/** Read a File as a data: URL (base64). Used for vision input to the LLM. */
+/** Read a File as a data: URL (base64). Used for vision input to the LLM.
+ * Delegates to the shared readAsDataURL (@melite/ui SlotSquare — the ONE
+ * read path every slot-shaped attach uses). */
 export function fileToDataUrl(file: File): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader()
-    reader.onload = () => resolve(String(reader.result ?? ""))
-    reader.onerror = () => reject(reader.error ?? new Error("read failed"))
-    reader.readAsDataURL(file)
-  })
+  return readAsDataURL(file)
 }
 
 /**

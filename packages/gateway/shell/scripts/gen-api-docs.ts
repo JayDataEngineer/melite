@@ -24,7 +24,11 @@
 //                                 goldens — the spec deliberately carries
 //                                 no schemas)
 //
-// The wall (tests/walls/suites/test_api_doc_parity.py) refuses drift
+// GATE HONESTY (2026-09-10): the wall this file used to cite
+// (tests/walls/suites/test_api_doc_parity.py) never existed in the TS
+// tree — a py-era phantom. Regenerating is the gate now: the doc below
+// derives from the imported ROUTES at generation time, so a drifted doc
+// differs from a fresh run
 // between the table, the doc, and the spec: run this after every route
 // change, and the wall keeps them honest.
 //
@@ -37,9 +41,16 @@ import { readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
+// Ledger row 36 (2026-09-10): the route table is IMPORTED from the SSOT
+// package, never re-parsed as text — the old stripComments/
+// splitTopObjects/strField parser hand-rolled what the module system
+// already guarantees (shell depends on @melite/gateway-core:
+// workspace:*; runtime is node --experimental-strip-types, no build).
+import { ROUTES } from "@melite/gateway-core";
+
 const HERE: string = dirname(fileURLToPath(import.meta.url));
-const REPO: string = join(HERE, "..", "..", "..");
-const ROUTES_TS: string = join(REPO, "packages", "gateway", "core", "src", "routes.ts");
+// Four segments up (scripts → shell → gateway → packages → repo).
+const REPO: string = join(HERE, "..", "..", "..", "..");
 const DOC_REL: string = "docs/gateway/endpoints.md";
 const SPEC_REL: string = "docs/gateway/openapi.yaml";
 
@@ -50,9 +61,9 @@ const INTRO: string =
   [
     "# Gateway endpoints — the LIVE wire table",
     "",
-    "GENERATED from the route table in `python/gateway.py` (`ROUTES`) by",
+    "GENERATED from the gateway-core ROUTES table (routes.ts) by",
     "`tools/gen_api_docs.py` — edit the table, not this file. The wall",
-    "`tests/walls/suites/test_api_doc_parity.py` refuses drift between the",
+    "the imported gateway-core ROUTES table — regen-diff is the gate",
     "table, this page, and `openapi.yaml`.",
     "",
     "Authorities, in order:",
@@ -83,137 +94,7 @@ const INTRO: string =
     "`/v1/model-catalog`, not a duplicate.",
   ].join("\n") + "\n";
 
-interface RouteRow {
-  method: string;
-  path: string;
-  template: string;
-  group: string;
-  summary: string;
-  query: string[];
-  ws: boolean;
-}
-
-function stripComments(text: string): string {
-  const out: string[] = [];
-  let i: number = 0;
-  const n: number = text.length;
-  let inStr: boolean = false;
-  while (i < n) {
-    const c: string = text[i];
-    if (inStr) {
-      out.push(c);
-      if (c === "\\") {
-        if (i + 1 < n) {
-          out.push(text[i + 1]);
-          i += 1;
-        }
-      } else if (c === '"') {
-        inStr = false;
-      }
-      i += 1;
-      continue;
-    }
-    if (c === '"') {
-      inStr = true;
-      out.push(c);
-      i += 1;
-    } else if (c === "/" && i + 1 < n && text[i + 1] === "/") {
-      while (i < n && text[i] !== "\n") {
-        i += 1;
-      }
-    } else if (c === "/" && i + 1 < n && text[i + 1] === "*") {
-      i += 2;
-      while (i + 1 < n && !(text[i] === "*" && text[i + 1] === "/")) {
-        i += 1;
-      }
-      i += 2;
-    } else {
-      out.push(c);
-      i += 1;
-    }
-  }
-  return out.join("");
-}
-
-function splitTopObjects(arrayBody: string): string[] {
-  const objs: string[] = [];
-  let i: number = 0;
-  const n: number = arrayBody.length;
-  while (i < n) {
-    if (arrayBody[i] !== "{") {
-      i += 1;
-      continue;
-    }
-    let depth: number = 0;
-    let inStr: boolean = false;
-    let j: number = i;
-    while (j < n) {
-      const c: string = arrayBody[j];
-      if (inStr) {
-        if (c === "\\") {
-          j += 1;
-        } else if (c === '"') {
-          inStr = false;
-        }
-      } else if (c === '"') {
-        inStr = true;
-      } else if (c === "{") {
-        depth += 1;
-      } else if (c === "}") {
-        depth -= 1;
-        if (depth === 0) {
-          objs.push(arrayBody.slice(i, j + 1));
-          break;
-        }
-      }
-      j += 1;
-    }
-    i = j + 1;
-  }
-  return objs;
-}
-
-function strField(obj: string, name: string): string {
-  const m: RegExpMatchArray | null = obj.match(
-    new RegExp(name + '\\s*:\\s*"((?:[^"\\\\]|\\\\.)*)"'),
-  );
-  if (m === null) {
-    throw new Error("row has no " + JSON.stringify(name) + " string field");
-  }
-  return JSON.parse('"' + m[1] + '"') as string;
-}
-
-function parseRouteRows(): RouteRow[] {
-  const text: string = readFileSync(ROUTES_TS, "utf8");
-  const anchor: number = text.indexOf("export const ROUTES");
-  if (anchor < 0) {
-    throw new Error("routes.ts has no export const ROUTES");
-  }
-  const body: string = stripComments(text.slice(anchor));
-  const lb: number = body.indexOf("[");
-  const rb: number = body.lastIndexOf("]");
-  const rows: RouteRow[] = [];
-  for (const obj of splitTopObjects(body.slice(lb, rb))) {
-    const qm: RegExpMatchArray | null = obj.match(/query\s*:\s*\[([^\]]*)\]/);
-    if (qm === null) {
-      throw new Error("row has no query array");
-    }
-    const query: string[] = [];
-    for (const sm of qm[1].matchAll(/"((?:[^"\\]|\\.)*)"/g)) {
-      query.push(JSON.parse('"' + sm[1] + '"') as string);
-    }
-    rows.push({
-      method: strField(obj, "method"),
-      path: strField(obj, "path"),
-      template: strField(obj, "template"),
-      group: strField(obj, "group"),
-      summary: strField(obj, "summary"),
-      query,
-      ws: obj.includes("ws: true"),
-    });
-  }
-  return rows;
-}
+type RouteRow = (typeof ROUTES)[number];
 
 function methodsLabel(row: RouteRow): string {
   if (row.ws) {
@@ -327,7 +208,7 @@ function pyJsonStr(value: string): string {
 
 function genSpec(rows: RouteRow[]): string {
   const lines: string[] = [
-    "# GENERATED from python/gateway.py ROUTES by tools/gen_api_docs.py —",
+    "# GENERATED from @melite/gateway-core ROUTES by gen-api-docs.ts —",
     "# edit the table, not this file. Paths + parameters only:",
     "# response bodies are pinned by tests/golden_http/ (the wire",
     "# contract's byte authority), so this spec carries no schemas.",
@@ -394,7 +275,7 @@ function genSpec(rows: RouteRow[]): string {
 function main(): number {
   const args: string[] = process.argv.slice(2);
   const check: boolean = args.includes("--check");
-  const rows: RouteRow[] = parseRouteRows();
+  const rows: RouteRow[] = [...ROUTES];
   const docPath: string = join(REPO, DOC_REL);
   const specPath: string = join(REPO, SPEC_REL);
   const doc: string = genDoc(rows);

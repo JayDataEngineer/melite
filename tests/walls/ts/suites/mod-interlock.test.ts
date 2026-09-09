@@ -39,9 +39,14 @@ const reads = { getModel, registryIds, registryModel };
 const names = (a: { fields: { dict?: Record<string, unknown> } }): string[] =>
   Object.keys(a.fields.dict ?? {});
 
-const frozen = JSON.parse(
-  readFileSync(new URL("../../../../packages/gateway/shell/data/discovery-catalog.json", import.meta.url), "utf8"),
-) as { form_specs: Record<string, { status: number; body: Record<string, unknown> }> };
+/** The golden referee (transcribed from the retired python's served
+ *  answers before the discovery-catalog.json export was deleted
+ *  2026-09-10 — byte parity with legacy python is NOT a goal, but
+ *  these rows still match live derivation verbatim and pin it). */
+const referee = JSON.parse(
+  readFileSync(new URL("../fixtures/form-spec-referee.json", import.meta.url), "utf8"),
+) as Record<string, { fields: unknown[]; schema_groups: unknown[]; features?: { modifiers?: Array<{ kind?: string; options?: Array<{ value: string; label: string; defaults?: { strength?: number } }> }> } }>;
+const frozen = { form_specs: referee };
 
 await loadCardDefs();
 const svc = theService();
@@ -63,8 +68,8 @@ test("mods registered through the service as plugins (PORT LAW: Schemastery cont
   assert.deepEqual(tts.flatMap(names).sort(), ["qvoice", "voice_pca_strengths"], "tts absorbs the qvoice pack");
 });
 
-test("absorption parity: image-edit/qwen-img-edit-2511 byte-exact vs the py referee", () => {
-  const ref = frozen.form_specs["qwen-img-edit-2511"].body;
+test("absorption parity: image-edit/qwen-img-edit-2511 byte-exact vs the golden referee", () => {
+  const ref = frozen.form_specs["qwen-img-edit-2511"];
   const live = svc.formSpec("image-edit", "qwen-img-edit-2511");
   assert.notEqual(live, null);
   const refFields = (ref.fields as Array<{ name: string }>).map((f) => f.name);
@@ -77,8 +82,8 @@ test("absorption parity: image-edit/qwen-img-edit-2511 byte-exact vs the py refe
   assert.deepEqual(liveGroups, refGroups, "group id/zone/count byte-exact");
 });
 
-test("absorption parity: image-gen/krea-2 byte-exact vs the py referee", () => {
-  const ref = frozen.form_specs["krea-2"].body;
+test("absorption parity: image-gen/krea-2 byte-exact vs the golden referee", () => {
+  const ref = frozen.form_specs["krea-2"];
   const live = svc.formSpec("image-gen", "krea-2");
   assert.notEqual(live, null);
   const refFields = (ref.fields as Array<{ name: string }>).map((f) => f.name);
@@ -100,13 +105,13 @@ test("family scoping: krea-2's loras never leak", () => {
   }
 });
 
-test("krea lora rows: byte-truth vs the frozen runtime catalog (the py referee)", () => {
+test("krea lora rows: byte-truth vs the golden referee", () => {
   const rows = svc.modRows("loras", "krea-2");
   assert.equal(rows.length, 12);
   assert.ok(rows.every((r) => r.source_url.startsWith("https://")), "no link, no row");
   // the frozen spec's modifier options are the capture of the py
   // rows — value/label/defaults must agree row-for-row
-  const ref = (frozen.form_specs["krea-2"].body as { features?: { modifiers?: Array<{ options?: Array<{ value: string; label: string; defaults?: { strength?: number } }> }> } })
+  const ref = (frozen.form_specs["krea-2"] as { features?: { modifiers?: Array<{ kind?: string; options?: Array<{ value: string; label: string; defaults?: { strength?: number } }> }> } })
     .features?.modifiers?.find((m) => m.kind === "lora")?.options ?? [];
   assert.equal(ref.length, 12, "frozen referee carries 12 options");
   for (const opt of ref) {
@@ -432,45 +437,42 @@ test("the verb mirror: every mounted verb is boarded by its families' DECLs", as
 
 test("THE DOOR GATE: _h_loras 404s every atom that boards no loras (z-image's last mile)", async () => {
   // the operator's catch (verbatim: z-image has no mods): the
-  // frozen loras map keys EVERY mid (mod-less atoms carry an empty
-  // list), and hasOwn alone 200d a mods offer onto them — z-image
-  // served 200-empty, the deleted txt2music/mask-studio 200d too.
-  // The endpoint satisfies ONLY for boarding atoms (live registry
-  // read, same 404 body as unknown — never a skip, never a 500).
+  // endpoint satisfies ONLY for keys whose backing family boards
+  // loras (the live DECL is the boarding truth; a variant key rides
+  // its family's offer — turbo renders krea-2's loras). Anything
+  // else 404s the same body as unknown — never a skip, never a 500.
   const doors = await import("../../../../packages/gateway/doors/src/doors/discovery.ts");
   const root = new URL("../../../..", import.meta.url).pathname;
   const hit = (mid: string) =>
     doors.dispatchDiscovery("_h_loras", "GET", "/v1/loras", `/v1/loras?model=${mid}`, root);
-  // boarders serve
-  for (const mid of ["krea-2", "qwen-img-edit-2511"]) {
-    assert.equal(hit(mid)?.status, 200, `${mid} boards loras — must serve`);
+  // boarders serve (turbo rides krea-2's offer)
+  for (const mid of ["krea-2", "turbo", "qwen-img-edit-2511"]) {
+    assert.equal((await hit(mid))?.status, 200, `${mid} boards loras — must serve`);
   }
   // mod-less atoms refuse (z-image first — the reported violation)
   for (const mid of ["z-image", "anima", "dwpose", "somax"]) {
-    const r = hit(mid);
+    const r = await hit(mid);
     assert.equal(r?.status, 404, `${mid} boards no loras — must 404, got ${r?.status}`);
   }
-  // deleted models refuse (thrown out of the live registry)
+  // deleted models refuse (thrown out of the live sources)
   for (const mid of ["txt2music", "mask-studio", "moss-tts"]) {
-    assert.equal(hit(mid)?.status, 404, `deleted '${mid}' must 404`);
+    assert.equal((await hit(mid))?.status, 404, `deleted '${mid}' must 404`);
   }
   // the old arms are untouched: unknown 404s, empty 400s
-  assert.equal(hit("no-such-model")?.status, 404);
+  assert.equal((await hit("no-such-model"))?.status, 404);
   assert.equal(
-    doors.dispatchDiscovery("_h_loras", "GET", "/v1/loras", "/v1/loras", root)?.status,
+    (await doors.dispatchDiscovery("_h_loras", "GET", "/v1/loras", "/v1/loras", root))?.status,
     400,
   );
 });
 
 test("THE DOOR OFFER: the catalog serves the live offer only (no hollow, no deleted)", async () => {
-  // the compliance stroke's second half: unoffering 13 hollow
-  // atoms moved the live catalog (67→53) but the door serves the
-  // FROZEN capture (55 keys — hollow + deleted). servedCatalog
-  // filters frozen bodies to the live serve law; _h_model_one
-  // 404s filtered mids even when the capture keys them.
+  // the compliance stroke's second half: the door serves the live
+  // emission (buildCatalog's 53 served models) — unoffered hollow
+  // atoms and deleted mids never offer; _h_model_one 404s them.
   const doors = await import("../../../../packages/gateway/doors/src/doors/discovery.ts");
   const root = new URL("../../../..", import.meta.url).pathname;
-  const cat = doors.dispatchDiscovery("_h_model_catalog", "GET", "/v1/model-catalog", "/v1/model-catalog", root);
+  const cat = await doors.dispatchDiscovery("_h_model_catalog", "GET", "/v1/model-catalog", "/v1/model-catalog", root);
   assert.equal(cat?.status, 200);
   const body = JSON.parse(String(cat?.body)) as { models: Record<string, unknown>; families: Record<string, unknown> };
   assert.equal(Object.keys(body.models).length, 53);
@@ -483,36 +485,34 @@ test("THE DOOR OFFER: the catalog serves the live offer only (no hollow, no dele
   }
   const one = (mid: string) =>
     doors.dispatchDiscovery("_h_model_one", "GET", `/v1/model-catalog/${mid}`, `/v1/model-catalog/${mid}`, root);
-  assert.equal(one("z-image")?.status, 200);
-  assert.equal(one("dwpose")?.status, 404);
-  assert.equal(one("txt2music")?.status, 404);
+  assert.equal((await one("z-image"))?.status, 200);
+  assert.equal((await one("dwpose"))?.status, 404);
+  assert.equal((await one("txt2music"))?.status, 404);
 });
 
-test("THE RAW FILE: the frozen loras map keys boarding atoms only (z-image never again)", async () => {
-  // the operator's order (verbatim: z-image has no mods): the
-  // capture keyed all 55 mids (54 empty-list ballast — z-image
-  // sitting inside the section called loras). Cut 2026-09-08 to
-  // the live boarding truth; this wall pins set equality so no
-  // future capture re-adds a non-boarder key.
-  const frozen = JSON.parse(
-    readFileSync(new URL("../../../../packages/gateway/shell/data/discovery-catalog.json", import.meta.url), "utf8"),
-  ) as { loras: Record<string, { loras: unknown[] }> };
+test("THE LIVE MAP: the loras endpoint serves boarding atoms only (z-image never again)", async () => {
+  // the operator's order (verbatim: z-image has no mods): the door
+  // satisfies exactly the loras boarders — no mod-less atom may
+  // appear, no boarder may go missing. Pinned against the live
+  // DECLs (the boarding truth), not a frozen capture.
+  const doors = await import("../../../../packages/gateway/doors/src/doors/discovery.ts");
+  const root = new URL("../../../..", import.meta.url).pathname;
   const { registryIds, registryModel } = await import("../../../../packages/engines/comfyui-cordis/src/models/models.ts");
   const boarders = new Set<string>();
   for (const rid of registryIds()) {
     const mods = (registryModel(rid).mods ?? []) as readonly string[];
     // OWNERS only: routes inherit the owner's rows through the
-    // card surface (cardModFields/modRows) — the legacy endpoint
-    // is py-parity (exact keys; a boarding route 404s here exactly
-    // as py 404d it — the union serves it elsewhere).
+    // card surface (cardModFields/modRows) — a boarding route 404s
+    // here exactly as py 404d it.
     if (mods.includes("loras")) boarders.add(rid);
   }
-  const keys = new Set(Object.keys(frozen.loras));
-  for (const k of keys) {
-    assert.ok(boarders.has(k), `frozen loras map keys non-boarder '${k}' — cut it (the map offers mods; only boarders may appear)`);
-  }
+  assert.ok(boarders.size > 0, "the estate boards loras somewhere");
   for (const b of boarders) {
-    assert.ok(keys.has(b), `loras boarder '${b}' missing from the frozen map — the door serves rows from it`);
+    const r = await doors.dispatchDiscovery("_h_loras", "GET", "/v1/loras", `/v1/loras?model=${b}`, root);
+    assert.equal(r?.status, 200, `loras boarder '${b}' must serve`);
   }
-  assert.ok(!("z-image" in frozen.loras), "z-image must never key the loras map");
+  for (const mid of ["z-image", "anima", "dwpose", "somax"]) {
+    const r = await doors.dispatchDiscovery("_h_loras", "GET", "/v1/loras", `/v1/loras?model=${mid}`, root);
+    assert.equal(r?.status, 404, `'${mid}' boards no loras — must 404, got ${r?.status}`);
+  }
 });

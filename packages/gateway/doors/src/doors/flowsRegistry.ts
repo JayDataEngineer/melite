@@ -110,10 +110,11 @@ export interface RegistryToolProperty {
   readonly enum: readonly string[] | null;
 }
 
-/** The headless surface (FlowTool: name + schema + required +
- *  overlays). Absent (null) on flows with no tool=. */
+/** The headless surface (FlowTool: name + version + schema +
+ *  required + overlays). Absent (null) on flows with no tool=. */
 export interface RegistryTool {
   readonly name: string;
+  readonly version: number;
   readonly description: string;
   readonly properties: Record<string, RegistryToolProperty>;
   readonly required: readonly string[];
@@ -400,6 +401,7 @@ const AUDIO_NATIVE_TTS: RegistryFlow = {
   initialValidators: {},
   tool: {
     name: "speak",
+    version: 1,
     description:
       "Qwen3-TTS 12Hz CustomVoice speech in one call — text in, wav out " +
       "(pure-ComfyUI audio lane).",
@@ -686,6 +688,7 @@ const IMAGE_UPSCALE: RegistryFlow = {
   initialValidators: {},
   tool: {
     name: "image_upscale",
+    version: 1,
     description:
       "Generate an image from a prompt and upscale it to 1080p in one call " +
       "(krea-2 or z-image generator, SeedVR2 upscale always on). One POST runs " +
@@ -809,6 +812,7 @@ const MUSIC_NATIVE: RegistryFlow = {
   initialValidators: {},
   tool: {
     name: "compose_music",
+    version: 1,
     description:
       "audio.cpp native music generation in one call (ACE-Step family) — " +
       "prompt in, audio out.",

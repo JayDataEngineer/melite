@@ -7,8 +7,11 @@
  * resume interrupted work, and audit its own skill usage without
  * asking the user or trusting memory.
  */
-import type { ToolDefinition } from '../types.ts'
+import { defineTool } from '@deepseek-ai/dsh-tools'
+import type { ToolCallView } from '@deepseek-ai/dsh-tools'
+import type { JsonValue, ToolDefinition } from '../types.ts'
 import { gatewayRequest } from '../gateway.ts'
+import { jsonClean } from '../json-clean.ts'
 
 const LEDGER_TIMEOUT_MS = 15_000
 
@@ -18,8 +21,40 @@ interface LedgerEntry {
   data?: Record<string, unknown>
 }
 
+/** Canonical result — the typed mirror of output.schema (the music
+ *  card's CardResult pattern: defineTool infers from the schema and
+ *  checks the execute return against it). */
+type LedgerTailResult = {
+  shown: number;
+  matched: number;
+  entries: Record<string, JsonValue>[];
+  error?: string;
+} & Record<string, JsonValue>;
+
 export function ledgerTail(gatewayUrl: string): ToolDefinition {
-  return {
+  // PRESENTATION ADAPTATION (tool-presentation wall + conversion
+  // invariance — presentCall output must not change): defineTool
+  // soft-gates presentCall behind arg validation (invalid → undefined),
+  // but the raw face always returned the tool's own generic card, and
+  // the wall pins that (junk/invalid args during streaming + replay
+  // still render the generic view, never throw). The presenter is
+  // shared: it rides the definition AND is re-attached over the gate
+  // below. execute validation (ToolArgsError/INVALID_ARGS) is
+  // unaffected.
+  const presentCall: (args: unknown) => ToolCallView = (args) => {
+    const a = (typeof args === "object" && args !== null ? args : {}) as { limit?: unknown; event?: unknown };
+    return {
+      card: 'generic',
+      title: 'Ledger tail',
+      kind: 'read',
+      rawInput: { limit: a.limit, event: a.event },
+    };
+  };
+  // Ledger row 8 (2026-09-10): defineTool wraps the literal — the
+  // registry gains schema compilation + input validation
+  // (ToolArgsError/INVALID_ARGS) + timeoutMs enforcement this face
+  // never had as a raw registration.
+  const def = defineTool({
     name: 'ledger_tail',
     description:
       'Tail the gateway file ledger (append-only journal of runs, provisions, skill reads, server '
@@ -28,42 +63,33 @@ export function ledgerTail(gatewayUrl: string): ToolDefinition {
       + 'tail; pair with skill_read "run-recovery" for the full recovery workflow. '
       + 'Args: limit (optional, default 50, max 500), event (optional prefix filter, e.g. "run." '
       + 'or "prov").',
+    // ParameterSchemaSpec grammar: the map IS the implicit object root
+    // (no type/properties wrapper) — both filters are optional.
     parameters: {
-      type: 'object',
-      properties: {
-        limit: {
-          type: 'number',
-          description: 'How many entries to return (default 50, max 500).',
-        },
-        event: {
-          type: 'string',
-          description: 'Optional event-name prefix filter, e.g. "run.", "prov", "skill".',
-        },
+      limit: {
+        type: 'number',
+        description: 'How many entries to return (default 50, max 500).',
       },
-      required: [],
+      event: {
+        type: 'string',
+        description: 'Optional event-name prefix filter, e.g. "run.", "prov", "skill".',
+      },
     },
-    presentCall(args) {
-      const a = (typeof args === "object" && args !== null ? args : {}) as { limit?: unknown; event?: unknown };
-      return {
-        card: 'generic',
-        title: 'Ledger tail',
-        kind: 'read',
-        rawInput: { limit: a.limit, event: a.event },
-      };
-    },
+    presentCall,
     output: {
       schema: {
         type: 'object',
         additionalProperties: true,
         properties: {
-          shown: { type: 'number', description: 'Entries returned.' },
-          matched: { type: 'number', description: 'Total entries matching the filter.' },
+          shown: { type: 'number', description: 'Entries returned.', required: true },
+          matched: { type: 'number', description: 'Total entries matching the filter.', required: true },
           entries: {
             type: 'array',
             description: 'Ledger rows: {ts, event, data}, oldest -> newest.',
+            required: true,
           },
+          error: { type: 'string', description: 'The refusal text — present exactly when the tool refused (render prints REFUSED).' },
         },
-        required: ['shown', 'matched', 'entries'],
       },
       render: (_args, value) => {
         const v = value as { shown?: number; matched?: number }
@@ -73,7 +99,7 @@ export function ledgerTail(gatewayUrl: string): ToolDefinition {
         }]
       },
     },
-    async execute(args, exec) {
+    async execute(args, exec): Promise<LedgerTailResult> {
       const a = (typeof args === "object" && args !== null ? args : {}) as { limit?: unknown; event?: unknown }
       const q: string[] = []
       if (typeof a.limit === 'number' && Number.isFinite(a.limit) && a.limit > 0) {
@@ -89,11 +115,15 @@ export function ledgerTail(gatewayUrl: string): ToolDefinition {
         gatewayUrl, 'GET', path, undefined, exec.signal, LEDGER_TIMEOUT_MS,
       ) as { entries?: LedgerEntry[]; shown?: unknown; matched?: unknown }
       const entries = Array.isArray(res.entries) ? res.entries : []
-      return {
+      return jsonClean({
         shown: typeof res.shown === 'number' ? res.shown : entries.length,
         matched: typeof res.matched === 'number' ? res.matched : entries.length,
         entries,
-      }
+      }) as LedgerTailResult
     },
-  }
+  });
+  // Re-attach the unconditional presenter over defineTool's
+  // soft-validation gate (see the adaptation above).
+  def.presentCall = presentCall;
+  return def;
 }

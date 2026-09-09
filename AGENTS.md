@@ -8,7 +8,7 @@ This creation kit features three distinct layers
 
 Cordis is the sole framework and architecture of layer A, any deviation from this is incorrect.
 
-* Cordis servers as the constructor for UI elements, and the agenic harness through Deepseek Harness integration.
+* Cordis servers as the constructor for UI elements, and the agenic harness through Deepseek Harness integration. The ideal goal of Layer A is to remain small code over DSH cordis; never an invented system.
 * Never assume how Cordis functions. There are two documents that define how you should interact with Cordis. DO NOT rely on memory, or assumptions. Always understand and apply the sources.
 	* The core document is this pdf file references/cordis-paper.txt, this describes how to use cordis to build apps
 	* Functional and up to date cordis usage can be found in
@@ -20,11 +20,10 @@ Cordis is the sole framework and architecture of layer A, any deviation from thi
   
 
 ## Layer B: The Engine: Comfyui, MCP servers
-	* Layer A exists to call Layer B. 
-	* The current phase of the project is currently focused on Comfyui.
-		* Layer A directly calls the ComfyUI Api as well as ComfyUI Manager API to infer and manage based on ComfyUI
-	* The next phase is adding in the MCP servers of Unity, Blender, and AutoRemesh.
-
+* Layer A exists to call Layer B. 
+* The current phase of the project is currently focused on Comfyui.
+  * Layer A directly calls the ComfyUI Api as well as ComfyUI Manager API to infer and manage based on ComfyUI
+* The next phase is adding in the MCP servers of Unity, Blender, and AutoRemesh.
 
 ## Layer C: Engine Extensions
 	* This layer features the VENDORED tooling that the engines use, that extend engine capabilites without touching engine source code.
@@ -50,3 +49,13 @@ For example, using 'unkwown' typing, writing legacy adapters instead of porting 
 
 The correct way to handle difficult work is to make a small change, make a quick test, and see if the new code works in isolatation, even if it does not yet match the entire codebase. This slow, sure method is more disirable then rushing to a 'complete' state where things run, but, are based on unprofessional code.
   - This method is employed to prevent the issue of: establishing a code pattern, finding that it breaks all tests, then adding in hacks so it has a brigde to pass the old tests in a cycle of degeneration.
+
+## LAW 3: DOCUMENTATION
+
+Another method employed used to prevent degenerate code is to maintain a ledger and living record for law conformance: docs/CONFORMANCE_LEDGER.md
+This document holds a record of the mechanics of the code repository for an up to date accountment of where the mechanic falls:
+  * What is in alignment with DSH Cordis though importing DSH Cordis packages with reasoning.
+  * What is in alignment based on DSH Cordis principals, but features handrolls with reasoning.
+  * What is non in alignment with DSH Cordis with reasoning.
+
+By keeping track of this document, it can be shown where to code needs to better conform to the ideals outlined in this document.

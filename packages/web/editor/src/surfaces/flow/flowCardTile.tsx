@@ -16,6 +16,7 @@ import {
   Save, SaveOff, Check, Square,
 } from "lucide-react"
 import { cn } from "@melite/ui"
+import { readAsDataURL } from "@melite/ui"
 import { Tip } from "@melite/ui/tip"
 import { subcardCount } from "@melite/contracts"
 import { CAPABILITY_DRAG_MIME } from "@melite/formats"
@@ -179,11 +180,11 @@ export function CardTile({
 }
     const file = e.dataTransfer.files?.[0]
     if (file) {
-      const reader = new FileReader()
-      reader.onload = () => {
-        if (typeof reader.result === "string") onAttachToSlot(dropSlot, reader.result)
-}
-      reader.readAsDataURL(file)
+      // Shared readAsDataURL — the ONE read path every slot-shaped
+      // attach uses (read failures surface on the console, never a
+      // half-written slot).
+      void readAsDataURL(file).then((url) => onAttachToSlot(dropSlot, url))
+        .catch((err: unknown) => console.error("[flowCardTile] drop read failed:", err))
 }
 }
   return (

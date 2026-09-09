@@ -7,7 +7,9 @@
   "main": "./src/index.ts",
   "exports": {
     ".": "./src/index.ts",
-    "./package.json": "./package.json"
+    "./card": "./src/card.ts",
+    "./package.json": "./package.json",
+    "./tool": "./src/tool.ts"
   },
   "scripts": {
     "test": "node --experimental-strip-types --test tests/",

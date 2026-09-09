@@ -25,6 +25,8 @@ export const BOARDED: string[] = ['music3']
 export const identity = {
   label: 'Music',
   description: 'Generate music — MiniMax Music 3, structured captions (Genre + Vocal Details + Arrangement) with tagged lyrics',
+  genre: 'audio',
+  icon: 'music',
 }
 
 export function registerCard(ctx: Context, comfy: ComfyUIService): void {
@@ -34,6 +36,16 @@ export function registerCard(ctx: Context, comfy: ComfyUIService): void {
     skeleton: 'music',
     boarded: ['music3'],
     tags: ['audio', 'music', 'generate'],
+    identity,
+    // THE DISCOVERY ROWS (migrated 2026-09-10 from the frozen
+    // discovery export — the card owns its sidebar, surface, and
+    // flow-stage declarations; the discovery arms derive from here).
+    sidebar: { key: 'audio', order: 5 },
+    flowKinds: {
+      inputs: { prompt: 'text', lyrics: 'text' },
+      outputs: { default: 'audio' },
+      requiresModel: false,
+    },
     // stock-only card: the MiniMax nodes ride upstream core
     // (comfy_extras.nodes_minimax_music); no requires to declare.
     schema: schema as unknown as (v: unknown) => Record<string, unknown>,

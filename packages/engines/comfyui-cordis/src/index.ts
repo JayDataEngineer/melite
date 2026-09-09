@@ -21,8 +21,14 @@ export type { CardDefinition } from "./service.ts";
 export { loadFacts } from "@melite/comfyui-card-kit/facts";
 export type { FactsFile, FactsReads, ModelFacts, LaneInputsFacts } from "@melite/comfyui-card-kit/facts";
 export { loadTextPair, decodeSave, stackLoras } from '@melite/comfyui-card-kit';
-export { emitParamsSchema, emitParamsSpec } from "./params-emit.ts";
+export { emitKnob, emitParamsSchema, emitParamsSpec } from "./params-emit.ts";
 export type { ParamsSchema, ParamsSpec, ParamSpecNode } from "./params-emit.ts";
-export { cardPackages, composeCards, loadCardDefs, theService } from "./cardDefs.ts";
+export { cardPackages, composeCards, loadCardDefs, provisionsByFamily, theService } from "./cardDefs.ts";
+// LIVE VOCABULARIES for serving surfaces (hand-owned, wall-pinned):
+// the card-kind table (the kinds arm), the flow edge-kind set (the
+// schema arm's kinds), and the slot vocabulary (the catalog arm's
+// input_vocabulary — the models-golden wall's SSOT, never the blob).
+export { CARD_KINDS, KindValues } from "./generated/vocab.ts";
+export { SLOT_VOCABULARY } from "./models/cardIdentity.generated.ts";
 
 export { cardWireName } from './service.ts'

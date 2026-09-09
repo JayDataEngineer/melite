@@ -11,31 +11,24 @@
  * anywhere on this path, so "no model configured" cannot happen in a host
  * that is conversing at all.
  *
- * Structural seam only: @deepseek-ai/dsh-llm is not a resolvable dependency
- * of this workspace (mirrors types.ts), so the runtime contract is captured
- * as the minimal shape we exercise — verified against the harness README:
- * stream() emits raw chunks (text-delta, finish{kind,failure}) and
- * listProviders/listModels expose registered routes.
+ * Structural seam only — now TYPED against the real package
+ * (2026-09-10 conformance stroke): @deepseek-ai/dsh-llm IS a
+ * declared dependency of this workspace (package.json rc.8), so
+ * the hand-mirrored interface below is dead — a mirror of a
+ * contract is drift by construction (the DSH cookbook law; the
+ * old header's "not a resolvable dependency" claim was stale).
+ * The seam stays a structural Pick of LlmRuntime so test fakes
+ * stay light, but every field now checks against the SSOT.
  */
+import type { GenerateOptions, LlmRuntime } from "@deepseek-ai/dsh-llm";
+import { createUserMessage } from "@deepseek-ai/dsh-llm";
 
-/** Minimal structural view of the LlmRuntime seam we exercise. */
-export interface LlmStreamSeam {
-  listProviders(): Array<{ id: string; name?: string }>
-  listModels(provider: string): Promise<Array<{ id: string }>>
-  stream(options: {
-    provider: string
-    model: string
-    messages: Array<unknown>
-    system?: string
-    temperature?: number
-    maxTokens?: number
-    signal?: AbortSignal
-  }): AsyncIterable<
-    | { type: 'text-delta'; text: string }
-    | { type: 'finish'; kind: string; failure?: { message: string; code?: string } }
-    | { type: string; [k: string]: unknown }
-  >
-}
+/** The runtime seat this core exercises — a structural Pick of the
+ *  REAL LlmRuntime contract (@deepseek-ai/dsh-llm). */
+export type LlmStreamSeam = Pick<
+  LlmRuntime,
+  "stream" | "listProviders" | "listModels"
+>;
 
 /** One enhancement request — a recipe system prompt + the user's words. */
 export interface EnhanceRequest {
@@ -131,14 +124,20 @@ export async function harnessCompleteOnRoute(
 ): Promise<string> {
   const timeout = AbortSignal.timeout(ENHANCE_DEADLINE_MS)
   const signal = req.signal ? AbortSignal.any([req.signal, timeout]) : timeout
-  const options = {
+  // The message rides createUserMessage (the DSH factory): a real
+  // Message.id + a kind:'user' source — the old hand-built literal
+  // had no id and a plugin source missing its ContextFormed
+  // companion, tolerated only because adapters read role/content
+  // (deep-audit harness finding #6, fixed 2026-09-10).
+  const options: GenerateOptions = {
     provider: route.provider,
     model: route.model,
-    messages: [{
-      role: 'user',
-      content: [{ type: 'text', text: req.prompt }],
-      source: { kind: 'plugin', plugin: '@melite-plugin/dsh-tools' },
-    }],
+    messages: [
+      createUserMessage({
+        content: [{ type: 'text', text: req.prompt }],
+        source: { kind: 'user' },
+      }),
+    ],
     system: req.system + OUTPUT_CONTRACT,
     ...(req.temperature !== undefined && Number.isFinite(req.temperature) ? { temperature: req.temperature } : {}),
     signal,

@@ -68,6 +68,17 @@ export const BOARDED: string[] = ['qwen-img-edit-2511']
 export const identity = {
   label: 'Image Edit',
   description: 'Instruction-driven image editing — the edit_image interface card boarding the Qwen-Image-Edit 2511 lane; the family carries the lightning / standard cascade (variant/quant always shown) plus the lanpaint flavor (required anchor image). The surface scopes itself.',
+  genre: 'image',
+  icon: 'edit',
+  principles: [
+    'image1 is required — the edit is anchored on it (the lanpaint flavor declares it; slots image1..image3, input_image is the retired alias)',
+    'Qwen-Image-Edit uses low CFG (flow-matching) — the Guidance Scale slider tops out at 10.0',
+    'A lanpaint_mask alongside input_image patches the model with the DiffSynth inpaint ControlNet',
+    'Region Mode controls how the mask is honored: auto / crop_stitch / full_frame',
+    'Mask prep (grow/feather/threshold/invert) uses the same host-side chain the Inpaint card uses',
+    'Iterate HERE, not in video — an edit costs seconds, a render minutes; name what changes, state the rest as unchanged',
+    'Previous card outputs ride as artifact URLs (/v1/assets/runs/<run>/<file>); the compose resolves them to data/runs/output/<run>/<file> and stages into the comfy input dir (phase 1 validates on the mounts BEFORE registration)',
+  ],
 }
 
 export function registerCard(ctx: Context, comfy: ComfyUIService): void {
@@ -82,6 +93,16 @@ export function registerCard(ctx: Context, comfy: ComfyUIService): void {
     // extension map over-claim core nodes. No requires to declare.
     boarded: ['qwen-img-edit-2511'],
     tags: ['image', 'edit'],
+    identity,
+    // THE DISCOVERY ROWS (migrated 2026-09-10 from the frozen
+    // discovery export — the card owns its sidebar, surface, and
+    // flow-stage declarations; the discovery arms derive from here).
+    sidebar: { key: 'image-edit', order: 2 },
+    flowKinds: {
+      inputs: { prompt: 'text', input_image: 'image' },
+      outputs: { default: 'image' },
+      requiresModel: false,
+    },
     schema: schema as unknown as (v: unknown) => Record<string, unknown>,
     compose(p, model, g, runId) {
       if (!p.prompt || !(p.prompt as string).trim()) {

@@ -145,3 +145,48 @@ describe('FlowsPanel — deck seam contract', () => {
     expect(await screen.findByText(/Cards studio unavailable/)).toBeTruthy()
   })
 })
+
+describe('MediaPanel — DSH primitive ports (2026-09-09, no handrolls)', () => {
+  const feed = (): void => {
+    vi.stubGlobal('fetch', (url: string) =>
+      url === '/infer-media/runs'
+        ? runsFeed([run({ prompt: 'a walking robot', draft_id: 'd9', artifacts: [{ url: '/v/walk.mp4', type: 'video' }] })])
+        : draftsFeed([{ draft_id: 'd9', name: 'card nine', model: 'qwen' }]))
+  }
+
+  it('Flows/Artifacts segmented Pills switch the archive face', async () => {
+    feed()
+    render(<MediaPanel />)
+    await waitFor(() => { expect(screen.getByText('Artifacts 1')).toBeTruthy() })
+    fireEvent.click(screen.getByText('Flows 1'))
+    expect(await screen.findByText('card nine')).toBeTruthy()
+    fireEvent.click(screen.getByText('Artifacts 1'))
+    expect(await screen.findByText(/walking robot/)).toBeTruthy()
+  })
+
+  it('wand carries the DSH Tooltip bubble on focus (native title gone)', async () => {
+    feed()
+    render(<MediaPanel />)
+    const wand = await waitFor(() => {
+      const el = screen.getByText('✦ CARDS')
+      expect(el.closest('button')).toBeTruthy() // the tile stays the button
+      return el as HTMLElement
+    })
+    expect(wand.getAttribute('title')).toBeNull()
+    expect(screen.queryByText(/this run’s card, setup and ready/)).toBeNull()
+    fireEvent.focus(wand)
+    expect(await screen.findByText(/this run’s card, setup and ready/)).toBeTruthy()
+  })
+
+  it('search filters through the DSH Input, refresh is a DSH Button', async () => {
+    feed()
+    render(<MediaPanel />)
+    await waitFor(() => { expect(screen.getByText(/1 runs · 1 artifacts/)).toBeTruthy() })
+    const box = screen.getByPlaceholderText(/search prompt/) as HTMLInputElement
+    expect(box.tagName).toBe('INPUT')
+    fireEvent.change(box, { target: { value: 'zzz-no-match' } })
+    expect(await screen.findByText('no artifacts match.')).toBeTruthy()
+    fireEvent.change(box, { target: { value: '' } })
+    expect(await screen.findByText(/walking robot/)).toBeTruthy()
+  })
+})

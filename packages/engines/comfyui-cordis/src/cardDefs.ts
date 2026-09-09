@@ -12,13 +12,13 @@
 // ['comfyui']` at module level — passing only { apply } drops the
 // inject declaration and the service dies with "cannot get property
 // comfyui without inject").
-import { existsSync, readdirSync } from 'node:fs'
-import { join, dirname } from 'node:path'
-import { pathToFileURL } from 'node:url'
+import { existsSync } from 'node:fs'
+import { join } from 'node:path'
 import { Context } from '@deepseek-ai/cordis'
 import type { Plugin } from '@deepseek-ai/cordis'
 import { ComfyUIService } from './service.ts'
 import type { CardDefinition } from './service.ts'
+import type { ProvisionRow } from './models/families/contract.ts'
 // COMPOSITION LIST (M2′ stroke 1, 2026-09-09, P48.1 — completed by
 // the card sweep, 2026-09-09): card PACKAGES compose explicitly —
 // the receipt is references/deepseek-harness packages/shell/tool-bash
@@ -104,42 +104,16 @@ export const loadCardDefs = async (): Promise<Map<string, CardDefinition>> => {
   if (typeof (packs as { apply?: unknown }).apply === 'function') {
     await ctx.plugin(packs)
   }
-  // THE FAMILY FLAVORS (the correction stroke 2026-09-08): every
-  // module under the FAMILIES' own mods/ dirs (the py
-  // models/<family>/mods/*.py layout, cross-package deep-import —
-  // the identity-ring seam precedent) registers through
-  // ctx.comfyui.registerFlavor/registerVerb — FAMILY-OWNED data:
-  // rows, runtime doors, bare boardings, SubActionMod verbs. The
-  // py truth: the mod's catalog data lives HERE, in the family's
-  // own mods package — never crammed into the family DECL, never
-  // centralized in the cards plane. The boot-loud flavor↔DECL.mods
-  // interlock runs on the models side (validateBootContracts).
-  const familiesRoot = join(
-    dirname(new URL(import.meta.url).pathname),
-    './models/families',
-  )
-  const flavorFiles: string[] = []
-  for (const genre of readdirSync(familiesRoot, { withFileTypes: true }).sort((a, b) => (a.name < b.name ? -1 : 1))) {
-    if (!genre.isDirectory()) continue // the barrel is a file
-    const genreDir = join(familiesRoot, genre.name)
-    for (const id of readdirSync(genreDir, { withFileTypes: true }).sort((a, b) => (a.name < b.name ? -1 : 1))) {
-      if (!id.isDirectory()) continue
-      const modsDirOf = join(genreDir, id.name, 'mods')
-      let entries: string[] = []
-      try {
-        entries = readdirSync(modsDirOf).filter((x) => x.endsWith('.ts'))
-      } catch {
-        continue // no mods dir — the family boards nothing
-      }
-      for (const f of entries.sort()) flavorFiles.push(join(modsDirOf, f))
-    }
-  }
-  for (const file of flavorFiles.sort()) {
-    const mod = (await import(pathToFileURL(file).href)) as unknown as Plugin
-    if (typeof (mod as { apply?: unknown }).apply === 'function') {
-      await ctx.plugin(mod)
-    }
-  }
+  // THE FAMILY FLAVORS — every flavor rides the EXPLICIT
+  // packagedFlavors table below (the DSH compose law: packages
+  // compose, never glob-discover — the tool-bash receipt). The
+  // dir-walk over src/models/families/<genre>/<id>/mods that used
+  // to live here was DEAD CODE (ledger row 24, 2026-09-10: the
+  // tree holds only files — contract.ts + index.ts — zero genre
+  // dirs, so `genre.isDirectory()` skipped everything while the
+  // sync readdir still ran every boot). Flavor↔DECL.mods
+  // interlock unchanged (models side, validateBootContracts).
+  //
   // THE PACKAGED FAMILIES' FLAVORS (the model-package stroke): a
   // family promoted to its model plugin package
   // (packages/models/<id>) CARRIES its mods — the flavor
@@ -162,44 +136,69 @@ export const loadCardDefs = async (): Promise<Map<string, CardDefinition>> => {
       throw new Error(`packaged flavor missing: ${label} (${specifier})`)
     }
   }
-  // THE IDENTITY RUNG (card DSL phase 2): attach the frozen ring
-  // (the py identity truth — engine-comfyui models/
-  // cardIdentity.generated.ts, byte-equal to the golden) onto every
-  // def that has not declared its own inline. ONE spelling from
-  // here down: consumers read def.identity.
-  const ring = (await import(
-    // deep-import past the package exports (frozen data module):
-    // the identity ring is engine-comfyui-owned, cross-package
-    new URL(
-      './models/cardIdentity.generated.ts',
-      import.meta.url,
-    ).href,
-    { with: { type: 'json' } } as never,
-  )) as unknown as {
-    CARD_IDENTITY: ReadonlyArray<{
-      id: string
-      label: string
-      description: string
-      genre: string
-      icon?: string
-    }>
-  }
-  const byId = new Map<string, { label: string; description: string; genre: string; icon?: string }>(
-    ring.CARD_IDENTITY.map((row) => [row.id, {
-      label: row.label, description: row.description, genre: row.genre,
-      ...(row.icon !== undefined && row.icon !== '' ? { icon: row.icon } : {}),
-    }]),
-  )
+  // THE IDENTITY RUNG (native since 2026-09-10): every card
+  //  declares its identity inline (label/description/genre — the
+  //  frozen ring is retired from this path; it survives only as the
+  //  models-golden wall's anchor for the registry emission). A card
+  //  with no identity refuses LOUD here (the m1 wall: no card
+  //  without it) — never a silent fallback, never generated prose.
   bootedService = service
   cache = new Map(service.cardIds().map((id) => {
     const def = service.getCardDef(id)!
-    if (def.identity === undefined) {
-      const row = byId.get(id)
-      if (row !== undefined) {
-        (def as { identity?: CardDefinition['identity'] }).identity = row
-      }
+    const ident = def.identity
+    if (
+      ident === undefined ||
+      typeof ident.label !== "string" ||
+      ident.label === "" ||
+      typeof ident.description !== "string" ||
+      typeof ident.genre !== "string" ||
+      ident.genre === ""
+    ) {
+      throw new Error(
+        `card '${id}' declares no identity (label/description/genre) — ` +
+          "the card owns its identity rung; the frozen ring no longer backfills it",
+      );
     }
     return [id, def]
   }))
   return cache
+}
+
+/** Every family's declaration provision rows (DECL provisions for
+ *  every model id, then card-owned provisions), keyed by family —
+ *  the download + serve surface (provision.ts downloads them; the
+ *  provision door serves them). ONE spelling — the door delegates
+ *  here, never a frozen capture.
+ *
+ *  The models reads are a LAZY import (models/models.ts carries the
+ *  boot top-level-await, and the models boot dynamically imports
+ *  THIS module — a static edge here deadlocks both boots). Call
+ *  only after boot (loadCardDefs / the door's liveSources). */
+export async function provisionsByFamily(
+  defs: Map<string, CardDefinition>,
+): Promise<Record<string, { engine: string; provisions: ProvisionRow[] }>> {
+  const { modelIds, getModel } = await import('./models/models.ts')
+  const out: Record<string, { engine: string; provisions: ProvisionRow[] }> = {}
+  for (const id of modelIds()) {
+    let decl
+    try {
+      decl = getModel(id)
+    } catch (e) {
+      // ROW 28 (census): a model whose DECL fails resolution is
+      // dropped from the provisions map — named in the warn, never
+      // vanished (the boot continues; the operator reconciles).
+      console.warn(
+        `[card-defs] model ${id} dropped from provisions map — DECL resolution failed:`,
+        e instanceof Error ? e.message : String(e),
+      )
+      continue
+    }
+    out[id] = { engine: decl.engine ?? '', provisions: decl.provisions ?? [] }
+  }
+  for (const [id, def] of defs) {
+    if (def.provisions !== undefined && def.provisions.length > 0) {
+      out[id] = { engine: 'comfyui', provisions: [...def.provisions] }
+    }
+  }
+  return out
 }

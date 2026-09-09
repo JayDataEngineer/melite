@@ -22,6 +22,15 @@ const schema = z.object({
 
 export const inject = ['comfyui']
 
+// THE IDENTITY RUNG (native 2026-09-10 — migrated from the frozen
+// identity ring; the card owns its label/description/genre/icon).
+export const identity = {
+  label: 'Anny',
+  description: 'Assemble a character — composite body/hair/outfit GLBs, render the 8-view turnaround, segment a source photo into part sprites.',
+  genre: '3d',
+  icon: 'person',
+}
+
 export function apply(ctx: Context): void {
   ctx.effect(() => ctx.comfyui.registerCard({
     id: 'anny',
@@ -29,6 +38,17 @@ export function apply(ctx: Context): void {
     skeleton: 'anny',
     boarded: ['anny'],
     tags: ['3d', 'character', 'generate'],
+    identity,
+    // THE DISCOVERY ROWS (migrated 2026-09-10 from the frozen
+    // discovery export — the card owns its sidebar, surface, and
+    // flow-stage declarations; the discovery arms derive from here).
+    sidebar: { key: '3d', order: 14 },
+    surface: { layout: 'studio' },
+    flowKinds: {
+      inputs: { source_image: 'image' },
+      outputs: { default: 'mesh' },
+      requiresModel: false,
+    },
     requires: ['melite-poser-nodes'],
     schema: schema as unknown as (v: unknown) => Record<string, unknown>,
     compose(p, _model, g, _runId) {

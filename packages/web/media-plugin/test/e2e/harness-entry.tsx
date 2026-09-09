@@ -15,6 +15,16 @@ import * as React from 'react'
 import * as ReactDom from 'react-dom'
 import * as ReactDomClient from 'react-dom/client'
 import * as JsxRuntime from 'react/jsx-runtime'
+// Platform modules, mirroring the prod transport: the shared client-bundle
+// preset keeps @deepseek-ai/* externals OUT of lib/client.js and the host
+// answers them from the frozen PLATFORM_MODULES table (web-platform.ts —
+// ui-primitives is a seed row). This miniature transport must answer the
+// same id, or the built bundle throws "unexpected require" at factory
+// execution and no tab mounts (every e2e red since the Modal import,
+// masked by nobody running it — caught 2026-09-09 rebuilding the test
+// host for the primitives port). NAMED imports only — the barrel carries
+// KaTeX/shiki (Markdown/Code blocks) that would bloat this harness.
+import { Button, Input, Modal, Pill, Tooltip } from '@deepseek-ai/dsh-client-ui-primitives'
 
 declare global {
   interface Window {
@@ -78,10 +88,12 @@ async function main(): Promise<void> {
     const d = (m as { default?: object }).default
     return d != null && typeof d === 'object' ? d : m
   }
+  const DSHPrimitives = { Button, Input, Modal, Pill, Tooltip }
   const require = (id: string): unknown => {
     if (id === 'react') return unwrap(React as object)
     if (id === 'react-dom') return unwrap(ReactDom as object)
     if (id === 'react/jsx-runtime') return unwrap(JsxRuntime as object)
+    if (id === '@deepseek-ai/dsh-client-ui-primitives') return DSHPrimitives
     throw new Error('e2e harness: unexpected require ' + id)
   }
   const exports = mod.factory(require) as { apply(ctx: unknown): void }

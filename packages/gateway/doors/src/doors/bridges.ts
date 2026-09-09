@@ -467,7 +467,16 @@ export async function handleManage(
   rawBody: Uint8Array,
   repoRoot: string = resolveRepoRoot(),
   models?: ModelsService | null,
+  /** The timer-service seat from the door's Cordis context
+   *  (cordis-plugin-timer) — REQUIRED: the manage plane's probes
+   *  ride ctx.timeout, never a bare setTimeout (2026-09-10). */
+  timeout?: (callback: () => void, delay: number) => () => void,
 ): Promise<BridgeResult> {
+  if (timeout === undefined) {
+    throw new Error(
+      "[gateway-ts] handleManage needs the timer seat (ctx.timeout) — a library caller cannot silently fall back to a bare setTimeout",
+    );
+  }
   // The .get crash leg first (see manageActionName): a truthy
   // non-dict never reaches the plane.
   const action: unknown = manageActionName(doc);
@@ -501,6 +510,7 @@ export async function handleManage(
       repoRoot,
       serverBin,
       models: needModels(models, "manage door"),
+      timeout,
     });
     return {
       status: code,
@@ -544,12 +554,13 @@ export async function dispatchBridges(
   doc: unknown,
   repoRoot: string = resolveRepoRoot(),
   models?: ModelsService | null,
+  timeout?: (callback: () => void, delay: number) => () => void,
 ): Promise<BridgeResult | null> {
   if (handler === "_h_poser_bridge") {
     return await handlePoserBridge(method, target, body, repoRoot);
   }
   if (handler === "_h_manage") {
-    return handleManage(doc, body, repoRoot, models);
+    return handleManage(doc, body, repoRoot, models, timeout);
   }
   return null;
 }
@@ -569,7 +580,10 @@ export async function dispatchBridges(
  *  Matches its own rows inside the listener — no central table. */
 export const bridgesDoors: Plugin = {
   name: "gateway-bridges",
-  inject: ["gatewayError", "models", "webServer"],
+  // "timer": the manage plane's endpoint probe rides ctx.timeout
+  // (cordis-plugin-timer seat — the conformance stroke 2026-09-10;
+  // the wall caught the missing inject LOUD, exactly as designed).
+  inject: ["gatewayError", "models", "webServer", "timer"],
   apply(ctx: Context): void {
     mountDoorRoutes(ctx, ctx.webServer, ["_h_manage", "_h_poser_bridge"], async (req: GatewayRequest): Promise<DispatchResult | undefined> => {
         const hit = doorMatch(req, ["_h_manage", "_h_poser_bridge"]);
@@ -600,6 +614,7 @@ export const bridgesDoors: Plugin = {
           parsed.doc,
           resolveRepoRoot(),
           ctx.models,
+          ctx.timeout,
         );
         if (bridged !== null) return bridged;
         return undefined;

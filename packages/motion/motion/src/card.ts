@@ -34,6 +34,8 @@ export const BOARDED: string[] = ['kimodo']
 export const identity = {
   label: 'Motion',
   description: 'Text → 3D human motion (SOMA-77 pose NPZ). Chain segments, constrain joints, skin onto a rigged character GLB.',
+  genre: 'motion',
+  icon: 'motion',
 }
 
 export function registerCard(ctx: Context, comfy: ComfyUIService): void {
@@ -43,6 +45,17 @@ export function registerCard(ctx: Context, comfy: ComfyUIService): void {
     skeleton: 'motion',
     boarded: ['kimodo'],
     tags: ['motion', 'animate', 'generate'],
+    identity,
+    // THE DISCOVERY ROWS (migrated 2026-09-10 from the frozen
+    // discovery export — the card owns its sidebar, surface, and
+    // flow-stage declarations; the discovery arms derive from here).
+    sidebar: { key: 'motion', order: 9 },
+    surface: { size: 'huge', layout: 'studio' },
+    flowKinds: {
+      inputs: { prompt: 'text' },
+      outputs: { default: 'video' },
+      requiresModel: false,
+    },
     requires: ['melite-kimodo-nodes', 'melite-poser-nodes'],
     schema: schema as unknown as (v: unknown) => Record<string, unknown>,
     compose(p, model, g) {

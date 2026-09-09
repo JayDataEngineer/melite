@@ -19,8 +19,8 @@ set -euo pipefail
 
 PORT="${1:-33081}"
 
-echo "==> gateway.py processes"
-ps -eo pid,ppid,lstart,cmd | grep -E "[g]ateway\.py" || true
+echo "==> gateway main.ts processes"
+ps -eo pid,ppid,lstart,cmd | grep -E "[g]ateway/src/main\.ts" || true
 
 echo
 echo "==> listeners on :$PORT"
@@ -40,24 +40,21 @@ echo
 echo "==> canonical check (pid=$PID)"
 echo "    cmd: $CMD"
 case "$CMD" in
-  *\.venv/bin/python*gateway.py*) echo "    OK: .venv/bin/python (canonical interpreter)";;
-  */usr/bin/python3*gateway.py*)
-    echo "    WARN: /usr/bin/python3 — canonical is .venv/bin/python"
-    echo "    (may work, but site-packages differ; the dsh task board"
-    echo "    or a stray nohup is respawning this. Kill + restart with"
-    echo "    .venv/bin/python to be sure.)"
-    exit 1
-    ;;
-  *) echo "    FAIL: unexpected interpreter in $CMD" >&2; exit 1;;
+  *node*apps/gateway/src/main.ts*)
+    echo "    OK: node apps/gateway/src/main.ts (canonical process)";;
+  *)
+    echo "    FAIL: unexpected listener on :$PORT — canonical is"
+    echo "    node <repo>/apps/gateway/src/main.ts (melite-gateway.service)." >&2
+    exit 1;;
 esac
 
 # Count distinct gateway.py PIDs (strays)
-COUNT=$(pgrep -f "gateway\.py" | wc -l)
+COUNT=$(pgrep -f "node .*gateway/src/main\.ts" | wc -l)
 echo
-echo "==> gateway.py process count: $COUNT"
+echo "==> gateway process count: $COUNT"
 if [ "$COUNT" -gt 1 ]; then
-  echo "WARN: $COUNT gateway.py processes — strays present. Kill:"
-  pgrep -f "gateway\.py" | while read -r p; do
+  echo "WARN: $COUNT gateway processes — strays present. Kill:"
+  pgrep -f "node .*gateway/src/main\.ts" | while read -r p; do
     echo "  kill -TERM $p  # $(ps -o cmd= -p "$p" 2>/dev/null)"
   done
   exit 1

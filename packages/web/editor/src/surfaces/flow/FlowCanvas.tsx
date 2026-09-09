@@ -22,18 +22,6 @@
 // another, or the wire dropdown in the detail card.
 import { useCallback, useState } from "react"
 
-function readAsDataURLCompat(file: File): Promise<string> {
- return new Promise((resolve, reject) => {
- const fr = new FileReader()
- fr.onload = () => resolve(String(fr.result))
- fr.onerror = () => reject(new Error(
-  `Could not read ${file.name} — the browser could not open the ` +
-  "file your drag handed over. Drag it from its folder in your " +
-  "file manager, or CLICK the square and browse (that path reads " +
-  "through the OS dialog)."))
- fr.readAsDataURL(file)
- })
-}
 import { Plus, Play, RotateCw, Loader2, X, Sparkles, Square } from "lucide-react"
 import { useFlowCards } from "./flowCards"
 import { useLibraryFlowStore } from "./flowStore"
@@ -46,7 +34,7 @@ import {
   parseCapabilityDrop,
 } from "@melite/formats"
 import { familyAccepts, uploadToEstate, type SourceMediaType } from "@melite/catalog"
-import { ASSET_DRAG_MIME } from "@melite/ui"
+import { ASSET_DRAG_MIME, readAsDataURL } from "@melite/ui"
 import { useToastStore } from "@melite/ui"
 import { cn } from "@melite/ui"
 import { Tip } from "@melite/ui/tip"
@@ -255,7 +243,7 @@ export function FlowCanvas() {
  })
  return
  }
- void readAsDataURLCompat(file)
+ void readAsDataURL(file)
  .then((url) =>
  addStage({
  kind: "input",

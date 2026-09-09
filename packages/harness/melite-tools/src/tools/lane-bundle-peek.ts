@@ -18,7 +18,9 @@
  * rows → lane_bundle_load(kind, name) → agent doc INJECTED inline +
  * the tools/skills index → work.
  */
-import type { ToolDefinition } from '../types.ts'
+import { defineTool } from '@deepseek-ai/dsh-tools'
+import type { ToolCallView } from '@deepseek-ai/dsh-tools'
+import type { JsonValue, ToolDefinition } from '../types.ts'
 import { gatewayRequest } from '../gateway.ts'
 import { jsonClean } from '../json-clean.ts'
 
@@ -35,8 +37,41 @@ interface PeekRow {
   skills?: unknown
 }
 
+/** Canonical result — the typed mirror of output.schema (the music
+ *  card's CardResult pattern: defineTool infers from the schema and
+ *  checks the execute return against it). count/lanes ride every
+ *  shape (the refusal carries the empty table); error is
+ *  refusal-only. */
+type PeekResult = {
+  count: number;
+  lanes: Record<string, JsonValue>[];
+  error?: string;
+} & Record<string, JsonValue>;
+
 export function laneBundlePeek(gatewayUrl: string): ToolDefinition {
-  return {
+  // PRESENTATION ADAPTATION (tool-presentation wall + conversion
+  // invariance — presentCall output must not change): defineTool
+  // soft-gates presentCall behind arg validation (invalid → undefined),
+  // but the raw face always returned the tool's own generic card, and
+  // the wall pins that (junk/invalid args during streaming + replay
+  // still render the generic view, never throw). The presenter is
+  // shared: it rides the definition AND is re-attached over the gate
+  // below. execute validation (ToolArgsError/INVALID_ARGS) is
+  // unaffected.
+  const presentCall: (args: unknown) => ToolCallView = (args) => {
+    const a = (typeof args === "object" && args !== null ? args : {}) as { kind?: unknown; genre?: unknown };
+    return {
+      card: 'generic',
+      title: `Peek ${String(a.kind ?? '?')} bundles`,
+      kind: 'read',
+      rawInput: String(a.genre ?? a.kind ?? '?'),
+    };
+  };
+  // Ledger row 8 (2026-09-10): defineTool wraps the literal — the
+  // registry gains schema compilation + input validation
+  // (ToolArgsError/INVALID_ARGS) + timeoutMs enforcement this face
+  // never had as a raw registration.
+  const def = defineTool({
     name: 'lane_bundle_peek',
     description:
       'PEEK the callable lanes (discovery scan): one cheap preview row per lane — kind '
@@ -49,42 +84,33 @@ export function laneBundlePeek(gatewayUrl: string): ToolDefinition {
       + 'arrives INLINE plus its tools and skill index. '
       + 'Examples: peek() = the whole table; peek(kind="template") = every multi-step flow '
       + '(creature-flow, humanoid-flow, sprite-sheet…); peek(genre="video") = every video lane.',
+    // ParameterSchemaSpec grammar: the map IS the implicit object root
+    // (no type/properties wrapper) — both filters are optional.
     parameters: {
-      type: 'object',
-      properties: {
-        kind: {
-          type: 'string',
-          enum: ['action_card', 'template'],
-          description: 'Optional class filter: action_card (card lanes — the ONLY inference surface), template (multi-step flow flows).',
-        },
-        genre: {
-          type: 'string',
-          description: 'Optional genre filter (video, image, audio, edit…) — applies to cards and models; templates are not genre-classified.',
-        },
+      kind: {
+        type: 'string',
+        enum: ['action_card', 'template'],
+        description: 'Optional class filter: action_card (card lanes — the ONLY inference surface), template (multi-step flow flows).',
       },
-      required: [],
+      genre: {
+        type: 'string',
+        description: 'Optional genre filter (video, image, audio, edit…) — applies to cards and models; templates are not genre-classified.',
+      },
     },
-    presentCall(args) {
-      const a = (typeof args === "object" && args !== null ? args : {}) as { kind?: unknown; genre?: unknown };
-      return {
-        card: 'generic',
-        title: `Peek ${String(a.kind ?? '?')} bundles`,
-        kind: 'read',
-        rawInput: String(a.genre ?? a.kind ?? '?'),
-      };
-    },
+    presentCall,
     output: {
       schema: {
         type: 'object',
         additionalProperties: true,
         properties: {
-          count: { type: 'number', description: 'Lanes matching the filters.' },
+          count: { type: 'number', description: 'Lanes matching the filters.', required: true },
           lanes: {
             type: 'array',
             description: 'Preview rows: {kind, lane, genre, title, description, params?, steps?, skills?}.',
+            required: true,
           },
+          error: { type: 'string', description: 'The refusal text — present exactly when the tool refused (render prints REFUSED).' },
         },
-        required: ['count', 'lanes'],
       },
       render: (_args, value) => {
         const v = value as { lanes?: PeekRow[] }
@@ -98,7 +124,7 @@ export function laneBundlePeek(gatewayUrl: string): ToolDefinition {
         }]
       },
     },
-    async execute(args, exec) {
+    async execute(args, exec): Promise<PeekResult> {
       const a = (typeof args === "object" && args !== null ? args : {}) as { kind?: unknown; genre?: unknown }
       let path = '/v1/lanes'
       const q: string[] = []
@@ -109,10 +135,14 @@ export function laneBundlePeek(gatewayUrl: string): ToolDefinition {
         gatewayUrl, 'GET', path, undefined, exec.signal, TIMEOUT_MS,
       ) as { count?: number; lanes?: PeekRow[]; error?: string }
       if (res && typeof res.error === 'string') {
-        return jsonClean({ count: 0, lanes: [], error: res.error })
+        return jsonClean<PeekResult>({ count: 0, lanes: [], error: res.error })
       }
       const lanes = Array.isArray(res.lanes) ? res.lanes : []
-      return jsonClean({ count: lanes.length, lanes })
+      return jsonClean({ count: lanes.length, lanes }) as PeekResult
     },
-  }
+  });
+  // Re-attach the unconditional presenter over defineTool's
+  // soft-validation gate (see the adaptation above).
+  def.presentCall = presentCall;
+  return def;
 }

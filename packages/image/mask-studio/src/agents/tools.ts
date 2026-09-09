@@ -8,31 +8,42 @@
 const GATEWAY = process.env.MELITE_GATEWAY_URL || "http://localhost:33081"
 const TIMEOUT_MS = 30_000
 
-async function getJson(path: string): Promise<Record<string, unknown>> {
-  const resp = await fetch(GATEWAY + path, { signal: AbortSignal.timeout(TIMEOUT_MS) })
+/** Ledger row 32 (2026-09-10, the studio leg): the deadline is
+ *  FUSED with the caller's cancellation — the consuming agent's
+ *  tool executor passes its exec signal; either leg aborts the
+ *  fetch. A bare caller signal (no fuse) would drop the timeout
+ *  cap; the old timeout-only shape ignored caller cancellation. */
+function fuseSignal(caller?: AbortSignal): AbortSignal {
+  return caller === undefined
+    ? AbortSignal.timeout(TIMEOUT_MS)
+    : AbortSignal.any([AbortSignal.timeout(TIMEOUT_MS), caller])
+}
+
+async function getJson(path: string, signal?: AbortSignal): Promise<Record<string, unknown>> {
+  const resp = await fetch(GATEWAY + path, { signal: fuseSignal(signal) })
   if (!resp.ok) throw new Error("GET " + path + " -> " + resp.status + " " + resp.statusText)
   return (await resp.json()) as Record<string, unknown>
 }
 
-async function postJson(path: string, body: Record<string, unknown>): Promise<Record<string, unknown>> {
+async function postJson(path: string, body: Record<string, unknown>, signal?: AbortSignal): Promise<Record<string, unknown>> {
   const resp = await fetch(GATEWAY + path, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
-    signal: AbortSignal.timeout(TIMEOUT_MS),
+    signal: fuseSignal(signal),
   })
   if (!resp.ok) throw new Error("POST " + path + " -> " + resp.status + " " + resp.statusText)
   return (await resp.json()) as Record<string, unknown>
 }
 
 /** Pre-flight: the form spec for a model route (fields + defaults). */
-export async function getFlowSpec(route: string = "mask-studio"): Promise<Record<string, unknown>> {
-  return getJson("/v1/form-spec?model=" + encodeURIComponent(route))
+export async function getFlowSpec(route: string = "mask-studio", signal?: AbortSignal): Promise<Record<string, unknown>> {
+  return getJson("/v1/form-spec?model=" + encodeURIComponent(route), signal)
 }
 
 /** Poll a running generation — brick progress + the output artifacts. */
-export async function getRunStatus(runId: string): Promise<Record<string, unknown>> {
-  return getJson("/v1/flows/status/" + encodeURIComponent(runId))
+export async function getRunStatus(runId: string, signal?: AbortSignal): Promise<Record<string, unknown>> {
+  return getJson("/v1/flows/status/" + encodeURIComponent(runId), signal)
 }
 
 export interface MaskRunArgs {
@@ -56,10 +67,10 @@ export interface MaskRunArgs {
  * consumed out of process (no @melite/catalog import — the tools
  * ship as the standalone agents carrier), so the compose-then-start
  * ritual lives here module-locally: same draft door, same law. */
-async function ensureDraftId(body: Record<string, unknown>): Promise<string> {
+async function ensureDraftId(body: Record<string, unknown>, signal?: AbortSignal): Promise<string> {
   const declared = body.draft_id
   if (typeof declared === "string" && declared !== "") return declared
-  const doc = await postJson("/v1/flows/drafts", body)
+  const doc = await postJson("/v1/flows/drafts", body, signal)
   const draftId = doc.draftId
   if (typeof draftId !== "string" || !draftId) {
     throw new Error("card compose returned no draftId — refusing to start cardless")
@@ -68,7 +79,7 @@ async function ensureDraftId(body: Record<string, unknown>): Promise<string> {
 }
 
 /** Submit a mask-studio run through the ONE run door (shape 2). */
-export async function submitMaskRun(args: MaskRunArgs): Promise<Record<string, unknown>> {
+export async function submitMaskRun(args: MaskRunArgs, signal?: AbortSignal): Promise<Record<string, unknown>> {
   const {
     route = "mask-studio", input_image, prompt,
     detect_mode = "body", detection_threshold = 0.35, sam_threshold = 0.93,
@@ -84,8 +95,8 @@ export async function submitMaskRun(args: MaskRunArgs): Promise<Record<string, u
   })
   if (outputs !== undefined) body.outputs = outputs
   Object.assign(body, params) // forwarded verbatim; the compile layer rejects loudly
-  body.draft_id = await ensureDraftId(body)
-  return postJson("/v1/flows/start", body)
+  body.draft_id = await ensureDraftId(body, signal)
+  return postJson("/v1/flows/start", body, signal)
 }
 
 export interface BundleToolSpec {

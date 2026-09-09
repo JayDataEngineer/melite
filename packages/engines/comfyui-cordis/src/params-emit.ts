@@ -51,7 +51,10 @@ export type ParamsSchema = {
   required?: string[]
 }
 
-const emitKnob = (s: Schema): Record<string, unknown> => {
+/** One knob's JSON-schema projection (shared: the tools door's
+ *  params_schema AND the discovery door's family param-schemas ride
+ *  this — one spelling, never a second projector). */
+export const emitKnob = (s: Schema): Record<string, unknown> => {
   const m = (s.meta ?? {}) as Record<string, any>
   const ex = (m.extra ?? {}) as Record<string, any>
 

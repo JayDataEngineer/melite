@@ -52,6 +52,23 @@ const schema = z.object({
 
 export const inject = ['comfyui']
 
+// THE IDENTITY RUNG (native 2026-09-10 — migrated from the frozen
+// identity ring; the card owns its label/description/genre/icon).
+export const identity = {
+  label: 'Tagger',
+  description: 'Image prompt inversion — booru keyword tags (WD14, JoyTag) and natural-language captions (Florence-2, JoyCaption) for recreating images in NovelAI / Pony / FLUX / Ideogram. Tags persist as a tags.txt run artifact.',
+  genre: 'image',
+  icon: 'tag',
+  principles: [
+    'input_image is required — the tag is anchored on it (absolute mount path or a prior-run artifact ref)',
+    'threshold is the general-tag confidence floor; character_threshold is the person-identity floor (higher — names are cheap to overclaim)',
+    'exclude_tags prunes what you already know is wrong — comma-separated, matched case-insensitively by the node',
+    'The lane outputs tags.txt (SaveText) — the queue trades in artifacts, not bare strings',
+    'First run downloads the WD14 weights (.onnx + .csv) — light ONNX lane, ~4 GB VRAM',
+    "JoyTag reads a pack-local checkpoint (no auto-download) and takes add/remove tag lists instead of WD14's character floor",
+  ],
+}
+
 export function apply(ctx: Context): void {
   ctx.effect(() => ctx.comfyui.registerCard({
     id: 'tagger',
@@ -62,6 +79,16 @@ export function apply(ctx: Context): void {
     // the four boarded families.
     boarded: ['wd14', 'joytag', 'florence2', 'joycaption'],
     tags: ['image', 'tag', 'analyze'],
+    identity,
+    // THE DISCOVERY ROWS (migrated 2026-09-10 from the frozen
+    // discovery export — the card owns its sidebar, surface, and
+    // flow-stage declarations; the discovery arms derive from here).
+    sidebar: { key: 'image', order: 19 },
+    flowKinds: {
+      inputs: { input_image: 'image' },
+      outputs: { default: 'text' },
+      requiresModel: false,
+    },
     // Per-family gates (py requires_by_family verbatim — each arm's
     // pack is checked only for its own family; a wd14 run never
     // demands the florence pack). The flat list carries the UNION

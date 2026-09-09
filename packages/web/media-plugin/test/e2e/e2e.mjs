@@ -24,10 +24,13 @@ function serve(port0) {
   const server = createServer((req, res) => {
     const url = (req.url ?? '/').split('?')[0]
     const asset = async (prefix) => {
+      // Prefer the .js chunk: prefix match alone grabs the .css twin
+      // first (readdir order) once a bundled CSS asset exists — serving
+      // CSS as the module script dies on strict MIME checking.
       const dir = join(e2eDir, 'dist', 'assets')
-      for (const f of await readdir(dir)) {
-        if (f.startsWith(prefix)) return join(dir, f)
-      }
+      const files = await readdir(dir)
+      const js = files.find((f) => f.startsWith(prefix) && f.endsWith('.js'))
+      if (js) return join(dir, js)
       throw new Error('no built asset ' + prefix)
     }
     const fileP = url === '/' ? Promise.resolve(join(e2eDir, 'index.html'))
@@ -79,7 +82,10 @@ async function main() {
     check(await page.getByText(/1 runs · 1 artifacts/).count() > 0, 'stat line lists the stubbed run')
     check(await page.getByText('3D 1').count() > 0, '3D chip derived from the SSOT kinds')
 
-    const tile = page.locator('.im-tile', { hasText: 'scene.glb' }).first()
+    // Structural locator (button wrapping the tile text — the `.im-tile`
+    // styling hook died with the primitives port; tests pin behavior,
+    // not class names).
+    const tile = page.locator('button', { hasText: 'scene.glb' }).first()
     await tile.waitFor({ timeout: 5_000 })
     await tile.click()
 

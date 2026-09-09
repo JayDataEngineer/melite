@@ -20,8 +20,10 @@ import { loadCardDefs } from './cardDefs.ts'
 const defs = await loadCardDefs()
 const cards: Record<string, unknown> = {}
 for (const [id, def] of [...defs].sort(([a], [b]) => a < b ? -1 : 1)) {
-  const carrier = (def as { schemaCarrier?: unknown }).schemaCarrier ?? def.schema
-  const dict = (carrier as { dict?: Record<string, any> }).dict ?? {}
+  const carrier: unknown = def.schemaCarrier ?? def.schema
+  const dict = (typeof carrier === "function" && "dict" in carrier
+    ? carrier.dict
+    : undefined) ?? {}
   const knobs = Object.entries(dict).map(([name, s]: [string, any]) => {
     // role rides the outer meta (nullable unions merge inner meta —
     // the params-emit.ts mirror, abridged: file slots are never

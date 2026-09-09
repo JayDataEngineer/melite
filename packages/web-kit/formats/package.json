@@ -6,6 +6,7 @@
   "dependencies": {
     "@melite/catalog": "workspace:*",
     "@melite/contracts": "workspace:*",
+    "@melite/ui": "workspace:*",
     "three": "*",
     "lucide-react": "*"
   },

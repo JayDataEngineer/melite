@@ -3,10 +3,12 @@
 // reads from it. The EXTENSION-LAW requires gate rides here: card
 // requires resolve against live object_info node sets BEFORE any
 // graph is emitted (never an assumed install).
+import Schema from '@deepseek-ai/schemastery'
 import { Context, Service } from '@deepseek-ai/cordis'
 import { GraphBuilder, deriveDefaults } from '@melite/comfyui-card-kit/graph'
 import type { PromptGraph, JsonValue } from '@melite/comfyui-card-kit/graph'
 import type { FactsFile, ModelFacts } from '@melite/comfyui-card-kit/facts'
+import type { ProvisionRow } from './models/families/contract.ts'
 
 /** Loud refusal — the estate's rc=-3 door shape, never a silent default. */
 export class ComposeRefusal extends Error {
@@ -80,8 +82,10 @@ export interface CardDefinition {
   /** When the registered schema is a hand-written normalizer, the
    *  underlying Schemastery object whose .dict the emitters walk
    *  (formSpec/params-emit). Cards with plain schemas leave this
-   *  unset — schema is the carrier. */
-  schemaCarrier?: unknown
+   *  unset — schema is the carrier. (Ledger row 23, 2026-09-10:
+   *  typed as Schema — the field's whole job is carrying .dict;
+   *  the old `unknown` forced cast-throughs at every walk site.) */
+  schemaCarrier?: Schema
   /** The card's recipe catalog (DATA ONLY — authored in the card
    *  package; this service resolves it at the one merge point
    *  below). Recipes are configs ON THE CARD: named override sets
@@ -95,19 +99,60 @@ export interface CardDefinition {
    *  (stripAutofill / stripEmptyAutofill). Cards whose python
    *  renderer strips must port the table here; parity pins it. */
   finalize?(graph: PromptGraph): PromptGraph
-  /** THE IDENTITY RUNG (card DSL phase 2, 2026-09-08): the py
-   *  card.py identity (label/description/genre/icon/ability) died
-   *  with the authoring plane. The frozen ring
-   *  (engine-comfyui models/cardIdentity.generated.ts — extracted
-   *  by the golden's own builder) attaches here at loadCardDefs
-   *  time: ONE spelling, carried by the def itself. New cards
-   *  declare identity inline; the ring thins as cards absorb
-   *  theirs natively. */
+  /** THE IDENTITY RUNG (card DSL phase 2, 2026-09-08 — NATIVE
+   *  since 2026-09-10): the py card.py identity (label/description/
+   *  genre/icon/ability) died with the authoring plane, and the
+   *  frozen ring (engine-comfyui models/cardIdentity.generated.ts)
+   *  thinned out as cards absorbed theirs: EVERY card declares its
+   *  identity inline now (loadCardDefs refuses a card without one).
+   *  icon is the capability-tile glyph; principles are the agent
+   *  guidance lines the catalog cards arm serves (empty/absent =
+   *  none — most cards carry none). */
   identity?: {
     label: string
     description: string
     genre: string
     icon?: string
+    principles?: readonly string[]
+  }
+  /** Card-owned download rows (the mask-studio precedent): a
+   *  card that is a tool, not weights (boarded: []), still needs
+   *  weight bytes through the provision door — it declares them
+   *  HERE (same row shape as the family DECL provisions). Family
+   *  weights stay on the DECL; card tools carry their own. */
+  provisions?: ProvisionRow[]
+  /** THE UNIVERSAL-SIDEBAR TRIO (the py card.py sidebar_order /
+   *  sidebar / sidebar_hidden half, 2026-09-10): the /v1/forms arm
+   *  derives its order/plugin/sidebar_key/hidden row from the CARD,
+   *  never a frozen export — one card, one row, REQUIRED (a card
+   *  with no sidebar declaration is a declaration bug, refused
+   *  loud by the discovery door). key is the sidebar section
+   *  (the closed SIDEBAR_SECTIONS vocabulary); order is the global
+   *  sidebar position (gaps are retired cards — never renumbered);
+   *  hidden keeps utility cards off the rail (they still serve). */
+  sidebar: {
+    key: string
+    order: number
+    hidden?: boolean
+  }
+  /** THE STUDIO SURFACE (the py card.py size/layout half): the
+   *  form-spec envelope's size/layout derive here — huge cards
+   *  render the wide body frame, studio cards the studio frame.
+   *  Absent = the plain panel (size null, layout null). */
+  surface?: {
+    size?: 'huge'
+    layout?: 'studio'
+  }
+  /** THE FLOW-STAGE I/O (the py card.py stage half): the /v1/schema
+   *  snapshot's per-card row derives here — the flow kinds the
+   *  card consumes/produces plus whether a flow stage running this
+   *  card routes a model (REQUIRED, even when false — the sfx
+   *  precedent: boarding a family and requiring a stage model are
+   *  different declarations). */
+  flowKinds: {
+    inputs: Record<string, string>
+    outputs: Record<string, string>
+    requiresModel: boolean
   }
 }
 
@@ -445,17 +490,25 @@ export class ComfyUIService extends Service {
    *  rows serves the UNION of every flavor's declared rows of the
    *  same pack; family rows always win over the union. */
   modRows(pack: string, family: string): readonly LoraRowDecl[] {
+    return this.modCatalog(pack, family).rows
+  }
+
+  /** The mod catalog rows plus their provenance (the discovery
+   *  door's modifier tooltip: union-served rows carry the shared
+   *  suffix, family rows do not). ONE spelling of the runtime
+   *  catalog law — modRows rides this. */
+  modCatalog(pack: string, family: string): { rows: readonly LoraRowDecl[]; shared: boolean } {
     const own = this.flavors.find(
       (m) => m.pack === pack && m.families.includes(family),
     )
-    if (own === undefined) return []
-    if ((own.rows ?? []).length > 0 || own.runtimeCatalog !== true) return own.rows ?? []
+    if (own === undefined) return { rows: [], shared: false }
+    if ((own.rows ?? []).length > 0 || own.runtimeCatalog !== true) return { rows: own.rows ?? [], shared: false }
     const union = new Map<string, LoraRowDecl>()
     for (const m of this.flavors) {
       if (m.pack !== pack) continue
       for (const row of m.rows ?? []) union.set(row.id, row)
     }
-    return [...union.values()]
+    return { rows: [...union.values()], shared: true }
   }
 
   /** The verbs mounted on a card (SubActionMods of its boarded

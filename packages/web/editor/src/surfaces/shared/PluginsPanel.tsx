@@ -10,7 +10,9 @@
 // the rail foot entry (activity.foot) is a registration in
 // shell/activityEntries.tsx — not a hardcoded icon in ActivityBar.
 import { useCallback, useEffect, useState } from "react"
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@melite/ui/dialog"
+import { Modal } from "@deepseek-ai/dsh-client-ui-primitives"
+import { X } from "lucide-react"
+import css from "./PluginsPanel.modal.module.css"
 import { Badge } from "@melite/ui/badge"
 import { Loader2, Palette, Puzzle, RefreshCw, Zap } from "lucide-react"
 import { editorClient } from "@/rpc/editorClient"
@@ -151,28 +153,49 @@ export function PluginsPanel({ open, onClose }: { open: boolean; onClose: () => 
   }, [open, load])
 
 
+  // S4f Modal stroke: the chrome rides the headless DSH Modal (mask +
+  // body portal + Esc + card + aria-label). Headless — not the text
+  // header — because this header is rich (icon + live enabled-count +
+  // refresh control); restructuring it into the string-only DSH title
+  // would shuffle controls for zero gain. The kit Dialog's built-in X
+  // disappears with its chrome, so the header owns an inline X (same
+  // row as refresh — no absolute overlap). Mask/Esc dismissals map to
+  // onClose exactly as the kit onOpenChange did.
   return (
-    <Dialog open={open} onOpenChange={(o) => (!o && onClose())}>
-      <DialogContent className="max-h-[70vh] max-w-lg overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2 text-sm">
-            <Puzzle className="h-4 w-4 text-brand/70" />
-            Plugins
-            {rows && (
-              <span className="text-[10px] font-normal text-muted-foreground">
-                {rows.filter((r) => r.enabled).length}/{rows.length} enabled
-              </span>
-            )}
-            <button
-              type="button"
-              aria-label="refresh plugins"
-              className="ml-auto"
-              onClick={() => void load()}
-            >
-              <RefreshCw className="h-3.5 w-3.5 text-muted-foreground hover:text-foreground" />
-            </button>
-          </DialogTitle>
-        </DialogHeader>
+    <Modal
+      open={open}
+      onClose={onClose}
+      title="Plugins"
+      closeLabel="Close plugins dialog"
+      headless
+      className={css.card}
+    >
+      <div className="flex flex-col gap-2">
+        <div className="flex items-center gap-2 text-sm font-semibold">
+          <Puzzle className="h-4 w-4 text-brand/70" />
+          Plugins
+          {rows && (
+            <span className="text-[10px] font-normal text-muted-foreground">
+              {rows.filter((r) => r.enabled).length}/{rows.length} enabled
+            </span>
+          )}
+          <button
+            type="button"
+            aria-label="refresh plugins"
+            className="ml-auto"
+            onClick={() => void load()}
+          >
+            <RefreshCw className="h-3.5 w-3.5 text-muted-foreground hover:text-foreground" />
+          </button>
+          <button
+            type="button"
+            aria-label="Close plugins dialog"
+            className="rounded p-0.5 text-muted-foreground/70 transition-colors hover:text-foreground"
+            onClick={onClose}
+          >
+            <X className="h-3.5 w-3.5" />
+          </button>
+        </div>
         {error && (
           <p className="rounded border border-destructive/40 bg-destructive/10 px-3 py-2 text-[11px] text-destructive">
             {error}
@@ -196,7 +219,7 @@ export function PluginsPanel({ open, onClose }: { open: boolean; onClose: () => 
           plugins in <span className="font-mono">packages/</span> or list
           out-of-tree dirs in <span className="font-mono">MELITE_PLUGIN_PATHS</span>.
         </p>
-      </DialogContent>
-    </Dialog>
+      </div>
+    </Modal>
   )
 }

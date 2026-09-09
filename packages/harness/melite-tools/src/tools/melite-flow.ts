@@ -18,7 +18,9 @@
 // machine-wide. L4 test flag rides every mode. The draft_id rides
 // the value AND the render's leading `card <draftId>` token — the
 // chat tile handle (FlowCards parseCardsBlock), never an agent arg.
-import type { ToolDefinition } from '../types.ts'
+import { defineTool } from '@deepseek-ai/dsh-tools'
+import type { ToolCallView } from '@deepseek-ai/dsh-tools'
+import type { JsonValue, ToolDefinition } from '../types.ts'
 import { gatewayRequest, RayGatewayError } from '../gateway.ts'
 import { jsonClean } from '../json-clean.ts'
 export interface MeliteConnectArg {
@@ -360,8 +362,44 @@ async function runAdHoc(
   return { mode: 'adhoc', target: flowId, draft_id: draftId, ...started }
 }
 
+/** Canonical result — the typed mirror of output.schema (the music
+ *  card's CardResult pattern: defineTool infers from the schema and
+ *  checks the execute return against it). mode/target ride every
+ *  composed shape (the row-11 echo); the two pre-dispatch guards
+ *  refuse bare (the `as` bridge below — a careful subset, never a
+ *  schema failure by construction). */
+type FlowResult = {
+  mode: string;
+  target: string;
+  run_id?: string;
+  draft_id?: string;
+  status?: string;
+  model?: string;
+  error?: string;
+} & Record<string, JsonValue>;
+
 export function meliteFlow(gatewayUrl: string): ToolDefinition {
-  return {
+  // PRESENTATION ADAPTATION (tool-presentation wall + conversion
+  // invariance — presentCall output must not change): defineTool
+  // soft-gates presentCall behind arg validation (invalid → undefined),
+  // but the raw face always returned the tool's own generic card, and
+  // the wall pins that (junk/invalid args during streaming + replay
+  // still render the generic view, never throw). The presenter is
+  // shared: it rides the definition AND is re-attached over the gate
+  // below. execute validation (ToolArgsError/INVALID_ARGS) is
+  // unaffected.
+  const presentCall: (args: unknown) => ToolCallView = (args) => {
+    const a = (args ?? {}) as { card?: unknown; flow?: unknown; stages?: unknown };
+    const target = typeof a.card === 'string' && a.card !== '' ? a.card
+      : typeof a.flow === 'string' && a.flow !== '' ? a.flow
+      : Array.isArray(a.stages) ? `adhoc (${a.stages.length} stages)` : '?';
+    return { card: 'generic', title: `Run ${target}`, kind: 'execute' };
+  };
+  // Ledger row 8 (2026-09-10): defineTool wraps the literal — the
+  // registry gains schema compilation + input validation
+  // (ToolArgsError/INVALID_ARGS) + timeoutMs enforcement this face
+  // never had as a raw registration.
+  const def = defineTool({
     name: 'melite_flow',
     description:
       'Execute through the serial GPU queue — the ONE execution verb (a card or a flow tool call; nothing else '
@@ -371,73 +409,72 @@ export function meliteFlow(gatewayUrl: string): ToolDefinition {
       + 'inside (CARD BIRTH LAW) — the minted draft_id rides the value as the chat tile handle (the card surface '
       + 'hydrates from it via ?meliteCards=), but the agent never passes it anywhere. Returns {run_id, draft_id}; '
       + 'poll with run_status. One active run machine-wide.',
+    // ParameterSchemaSpec grammar: the map IS the implicit object root
+    // (no type/properties wrapper) — every composition arm is
+    // optional (exactly-one is enforced in execute, never the schema).
     parameters: {
-      type: 'object',
-      properties: {
-        card: {
-          type: 'string',
-          description: 'SINGLE mode: the card id (discovered). Requires model alongside.',
-        },
-        model: {
-          type: 'string',
-          description: 'SINGLE mode: the family id, named explicitly (must own a card tool).',
-        },
-        flow: {
-          type: 'string',
-          description: 'TEMPLATE mode: the flow name exactly as loaded.',
-        },
-        stages: {
-          type: 'array',
-          items: { type: 'object', additionalProperties: true },
-          description: 'AD-HOC mode: [{id, engine, description?, params?, outputs?: {name: kind}}]. Exclusive with card/flow.',
-        },
-        connects: {
-          type: 'array',
-          items: { type: 'object', additionalProperties: true },
-          description: 'AD-HOC mode: [{from: "stage[.output]" | "initial.key", to: "stage.input", kind?}].',
-        },
-        prompt: {
-          type: 'string',
-          description: 'SINGLE mode: the generation prompt (wins over params.prompt).',
-        },
-        params: {
-          type: 'object',
-          additionalProperties: true,
-          description: 'Overrides merged over the mode defaults (seed, knobs).',
-        },
-        id: {
-          type: 'string',
-          description: 'AD-HOC mode: the pipeline name for the compiled flow.',
-        },
-        description: {
-          type: 'string',
-          description: 'AD-HOC mode: what the pipeline produces.',
-        },
-        test: {
-          type: 'boolean',
-          description: 'L4 barrier: true routes the run to test-output, hidden from production assets. Default false.',
-        },
+      card: {
+        type: 'string',
+        description: 'SINGLE mode: the card id (discovered). Requires model alongside.',
+      },
+      model: {
+        type: 'string',
+        description: 'SINGLE mode: the family id, named explicitly (must own a card tool).',
+      },
+      flow: {
+        type: 'string',
+        description: 'TEMPLATE mode: the flow name exactly as loaded.',
+      },
+      stages: {
+        type: 'array',
+        items: { type: 'object', additionalProperties: true },
+        description: 'AD-HOC mode: [{id, engine, description?, params?, outputs?: {name: kind}}]. Exclusive with card/flow.',
+      },
+      connects: {
+        type: 'array',
+        items: { type: 'object', additionalProperties: true },
+        description: 'AD-HOC mode: [{from: "stage[.output]" | "initial.key", to: "stage.input", kind?}].',
+      },
+      prompt: {
+        type: 'string',
+        description: 'SINGLE mode: the generation prompt (wins over params.prompt).',
+      },
+      params: {
+        type: 'object',
+        additionalProperties: true,
+        description: 'Overrides merged over the mode defaults (seed, knobs).',
+      },
+      id: {
+        type: 'string',
+        description: 'AD-HOC mode: the pipeline name for the compiled flow.',
+      },
+      description: {
+        type: 'string',
+        description: 'AD-HOC mode: what the pipeline produces.',
+      },
+      test: {
+        type: 'boolean',
+        description: 'L4 barrier: true routes the run to test-output, hidden from production assets. Default false.',
       },
     },
-    presentCall(args) {
-      const a = (args ?? {}) as { card?: unknown; flow?: unknown; stages?: unknown };
-      const target = typeof a.card === 'string' && a.card !== '' ? a.card
-        : typeof a.flow === 'string' && a.flow !== '' ? a.flow
-        : Array.isArray(a.stages) ? `adhoc (${a.stages.length} stages)` : '?';
-      return { card: 'generic', title: `Run ${target}`, kind: 'execute' };
-    },
+    presentCall,
     output: {
       schema: {
         type: 'object',
         additionalProperties: true,
         properties: {
-          run_id: { type: 'string', description: 'The queue run id — poll with run_status(run_id).' },
-          draft_id: { type: 'string', description: 'The minted card draft id — the chat tile handle (?meliteCards=).' },
-          status: { type: 'string', description: 'Registration status (queued/running).' },
-          mode: { type: 'string', description: 'Which composition ran: card | flow | adhoc.' },
-          target: { type: 'string', description: 'The card id, flow name, or ad-hoc pipeline name.' },
+          run_id: { type: 'string', description: 'The queue run id — poll with run_status(run_id). Absent on refusal.' },
+          draft_id: { type: 'string', description: 'The minted card draft id — the chat tile handle (?meliteCards=). Absent on refusal.' },
+          status: { type: 'string', description: 'Registration status (queued/running). Absent on refusal.' },
+          mode: { type: 'string', description: 'Which composition ran (or was attempted): card | flow | adhoc.', required: true },
+          target: { type: 'string', description: 'The card id, flow name, or ad-hoc pipeline name (echoed on refusal).', required: true },
+          error: { type: 'string', description: 'The refusal text — present exactly when the tool refused (render prints REFUSED).' },
         },
-        required: ['run_id', 'draft_id', 'mode', 'target'],
+        // Ledger row 11 (2026-09-10): required is the fields EVERY
+        // return shape carries — the refusal echoes mode/target
+        // (comfy-manage's ok/action pattern); run_id/draft_id/status
+        // are success-only and stay optional so the declared schema
+        // never calls a careful refusal a schema failure.
       },
       render: (_args, value) => {
         const v = value as { run_id?: string; draft_id?: string; mode?: string; target?: string; status?: string; error?: string }
@@ -470,7 +507,7 @@ export function meliteFlow(gatewayUrl: string): ToolDefinition {
         }
       },
     },
-    async execute(args, exec) {
+    async execute(args, exec): Promise<FlowResult> {
       const a = (args ?? {}) as {
         card?: unknown; model?: unknown; flow?: unknown; stages?: unknown; connects?: unknown;
         prompt?: unknown; params?: unknown; id?: unknown; description?: unknown; test?: unknown;
@@ -483,16 +520,16 @@ export function meliteFlow(gatewayUrl: string): ToolDefinition {
       const hasStages = a.stages !== undefined;
       const modes = [hasCard, hasFlow, hasStages].filter(Boolean).length;
       if (modes === 0) {
-        return jsonClean({ error: 'one composition is required: card (+model) | flow | stages (cards drafted on the fly)' });
+        return jsonClean({ error: 'one composition is required: card (+model) | flow | stages (cards drafted on the fly)' }) as FlowResult;
       }
       if (modes > 1) {
-        return jsonClean({ error: 'exactly one composition per call: card | flow | stages — never combined' });
+        return jsonClean({ error: 'exactly one composition per call: card | flow | stages — never combined' }) as FlowResult;
       }
       try {
         if (hasFlow) {
           return jsonClean(await runTemplate(gatewayUrl, {
             flow: a.flow as string, params: bag, test,
-          }, exec.signal));
+          }, exec.signal)) as FlowResult;
         }
         if (hasCard) {
           return jsonClean(await runSingle(gatewayUrl, {
@@ -500,7 +537,7 @@ export function meliteFlow(gatewayUrl: string): ToolDefinition {
             model: typeof a.model === 'string' ? a.model : '',
             prompt: typeof a.prompt === 'string' ? a.prompt : undefined,
             params: bag, test,
-          }, exec.signal));
+          }, exec.signal)) as FlowResult;
         }
         return jsonClean(await runAdHoc(gatewayUrl, {
           stages: a.stages,
@@ -508,17 +545,26 @@ export function meliteFlow(gatewayUrl: string): ToolDefinition {
           id: a.id,
           description: typeof a.description === 'string' ? a.description : undefined,
           test,
-        }, exec.signal));
+        }, exec.signal)) as FlowResult;
       } catch (e) {
         if (e instanceof RayGatewayError) {
           let named = ''
           try {
             named = String((JSON.parse(e.body) as { error?: unknown }).error ?? '')
           } catch { named = '' }
-          return jsonClean({ error: named || e.body || 'gateway refused' });
+          // Ledger row 11: the refusal echoes mode/target (the fields the
+          // schema requires of EVERY shape — comfy-manage's ok/action
+          // pattern) so a careful refusal never fails output validation.
+          const mode = hasFlow ? 'flow' : (hasCard ? 'card' : 'adhoc')
+          const target = hasFlow ? String(a.flow) : (hasCard ? String(a.card) : 'pipeline')
+          return jsonClean<FlowResult>({ error: named || e.body || 'gateway refused', mode, target });
         }
         throw e;
       }
     },
-  }
+  });
+  // Re-attach the unconditional presenter over defineTool's
+  // soft-validation gate (see the adaptation above).
+  def.presentCall = presentCall;
+  return def;
 }

@@ -15,6 +15,15 @@ const schema = z.object({
 
 export const inject = ['comfyui']
 
+// THE IDENTITY RUNG (native 2026-09-10 — migrated from the frozen
+// identity ring; the card owns its label/description/genre/icon).
+export const identity = {
+  label: 'Sound Effects',
+  description: 'Generate sound effects — MOSS-SFX v2, describe the SOUND not the scene',
+  genre: 'audio',
+  icon: 'bolt',
+}
+
 export function apply(ctx: Context): void {
   ctx.effect(() => ctx.comfyui.registerCard({
     id: 'sfx',
@@ -22,6 +31,16 @@ export function apply(ctx: Context): void {
     skeleton: 'sfx',
     boarded: ['moss-sfx'],
     tags: ['audio', 'sfx', 'generate'],
+    identity,
+    // THE DISCOVERY ROWS (migrated 2026-09-10 from the frozen
+    // discovery export — the card owns its sidebar, surface, and
+    // flow-stage declarations; the discovery arms derive from here).
+    sidebar: { key: 'audio', order: 7 },
+    flowKinds: {
+      inputs: { prompt: 'text' },
+      outputs: { default: 'audio' },
+      requiresModel: false,
+    },
     // renders through the authored Audiocore pack; SaveAudio is core.
     requires: ['melite-audio-nodes'],
     schema: schema as unknown as (v: unknown) => Record<string, unknown>,

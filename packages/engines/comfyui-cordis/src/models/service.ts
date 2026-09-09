@@ -37,16 +37,27 @@ import type { EngineJson } from "../comfyui.ts";
 import {
   ModelError,
   ModelRow,
+  ModelDecl as ModelDeclSchema,
   type CellRow,
   type ModelDecl,
   type VariantRow,
 } from "./families/contract.ts";
+import Schema from "@deepseek-ai/schemastery";
 import { buildCatalog } from "./catalogEmission.ts";
 
 export const MODELS_SERVICE = "models";
 
 /** One registration's validation — the py metaclass's gates,
- *  refusal-for-refusal (grammar @ 034e1f97). */
+ *  refusal-for-refusal (grammar @ 034e1f97).
+ *
+ *  SCHEMA LEG (ledger row 16, 2026-09-10): the DECL resolves through
+ *  the ModelDecl schema STRICTLY first. The strict resolve strips
+ *  unknown keys — the py `extra: forbid` law made honest: a stripped
+ *  key is DRIFT and refuses loud (the plain object resolver merges
+ *  unknown keys by default; the old handroll checked four fields and
+ *  let everything else ride). The semantic predicates below stay:
+ *  lowercase ids, the genre wire value, quant presence — laws a
+ *  shape schema cannot express. */
 function validateDecl(decl: ModelDecl): void {
   if (typeof decl.id !== "string" || decl.id === "") {
     throw new ModelError(`model row needs an id (got '${String(decl.id)}')`);
@@ -63,6 +74,12 @@ function validateDecl(decl: ModelDecl): void {
       `${decl.id}: genre '${genre}' is not a wire value (the enum-repr corruption refuses here, forever)`,
     );
   }
+  if (decl.lane_inputs !== undefined && (typeof decl.lane_inputs !== "object" || decl.lane_inputs === null || Array.isArray(decl.lane_inputs))) {
+    throw new ModelError(`${decl.id}: lane_inputs must be a plain object (the compose splice table)`);
+  }
+  if (!Array.isArray(decl.variants)) {
+    throw new ModelError(`${decl.id}: variants must be an array (got ${typeof decl.variants})`);
+  }
   for (const v of decl.variants) {
     if (typeof v.id !== "string" || v.id === "") {
       throw new ModelError(`${decl.id}: a variant needs an id`);
@@ -72,6 +89,24 @@ function validateDecl(decl: ModelDecl): void {
         throw new ModelError(`${decl.id}/${v.id}: a cell needs a quant`);
       }
     }
+  }
+  // SCHEMA LEG runs AFTER the py predicates (wall law: the py refusal
+  // TEXTS are the contract — a corrupt id/genre must keep refusing
+  // with the py words, not a schemastery ValidationError).
+  const [strict, resolveErr] = Schema.resolve(decl, ModelDeclSchema, {}, true) as [
+    Record<string, unknown>,
+    unknown,
+  ];
+  if (resolveErr !== undefined) {
+    throw new ModelError(`model row ${String(decl.id)}: schema refused — ${String(resolveErr)}`);
+  }
+  // Drift = a CARRIED key the strict resolve stripped (subset test —
+  // the schema legitimately admits keys this DECL simply doesn't set).
+  const stripped = Object.keys(decl).filter((k) => !(k in strict));
+  if (stripped.length > 0) {
+    throw new ModelError(
+      `model row ${String(decl.id)}: unknown key(s) refused (extra: forbid — py law): ${stripped.sort().join(", ")}`,
+    );
   }
 }
 
@@ -100,9 +135,6 @@ export class ModelsService extends Service {
    *  table (a dynamic re-port can retire a family mid-flight). */
   registerFamily(decl: ModelDecl): () => void {
     validateDecl(decl);
-    if (decl.lane_inputs !== undefined && (typeof decl.lane_inputs !== "object" || decl.lane_inputs === null || Array.isArray(decl.lane_inputs))) {
-      throw new ModelError(`${decl.id}: lane_inputs must be a plain object (the compose splice table)`);
-    }
     if (this.table.has(decl.id)) {
       throw new ModelError(
         `model '${decl.id}' registered twice — one owner per model id (the interlock)`,

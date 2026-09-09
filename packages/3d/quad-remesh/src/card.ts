@@ -56,6 +56,21 @@ const schema = z.object({
 
 export const inject = ['comfyui']
 
+// THE IDENTITY RUNG (native 2026-09-10 — migrated from the frozen
+// identity ring; the card owns its label/description/genre/icon).
+export const identity = {
+  label: 'Quad Remesh',
+  description: 'High-poly mesh → clean quad topology',
+  genre: '3d',
+  icon: 'mesh',
+  principles: [
+    'target_quads is the budget — lower is cleaner, higher keeps detail',
+    'sharp_edge below 90 preserves creases; above smooths them',
+    'adaptivity above 1 concentrates quads at curvature',
+    'Feed it a dense scan or TRELLIS output; it returns clean quads',
+  ],
+}
+
 export function apply(ctx: Context): void {
   ctx.effect(() => ctx.comfyui.registerCard({
     id: 'quad-remesh',
@@ -63,6 +78,16 @@ export function apply(ctx: Context): void {
     skeleton: 'quad-remesh',
     boarded: ['autoremesher'],
     tags: ['3d', 'remesh', 'optimize'],
+    identity,
+    // THE DISCOVERY ROWS (migrated 2026-09-10 from the frozen
+    // discovery export — the card owns its sidebar, surface, and
+    // flow-stage declarations; the discovery arms derive from here).
+    sidebar: { key: '3d', order: 13 },
+    flowKinds: {
+      inputs: { input: 'mesh' },
+      outputs: { default: 'mesh' },
+      requiresModel: false,
+    },
     requires: ['melite-autoremesher-nodes'],
     schema: schema as unknown as (v: unknown) => Record<string, unknown>,
     compose(p, _model, g, runId) {

@@ -44,6 +44,7 @@ import { buildTtsTool } from '@melite/audio-tts/tool'
 import { buildVoiceLockTool } from '@melite/audio-voice-lock/tool'
 import { buildImageEditTool } from '@melite/image-image-edit/tool'
 import { buildMotionTool } from '@melite/motion-motion/tool'
+import { buildCardTool as buildClothingPlacementTool } from '@melite/3d-clothing-placement/tool'
 import { buildH3TimelineTool } from '@melite/video-h3-timeline/tool'
 import { runStatus } from './tools/run-status.ts'
 import { meliteFlow } from './tools/melite-flow.ts'
@@ -211,11 +212,29 @@ export async function apply(ctx: Context, config: Config = {}): Promise<void> {
   // THE CARD PACKAGE TOOL FACES — direct composition, one builder per
   // card package (the same Config.gateway spelling every tool face
   // takes). No fetch, no allowlist: ownership is the import graph.
+  // Ledger row 31 (2026-09-10): DUAL-REGISTRATION resolved — the
+  // card packages keep their own guarded self-registration for
+  // compositions that mount them directly (gateway lane); this
+  // composition is the single owner in the harness lane. A
+  // mis-composition mounting both throws LOUD at the tools
+  // service's duplicate refusal — the designed guard, not a bug to
+  // paper over. clothing-placement joins the list — the "one tool
+  // per card manifest" promise now holds for every card package
+  // with a tool face.
+  //
+  // The `as unknown as ToolDefinition` casts stay, and the honest
+  // reason is VERSION SKEW (tsc proves it): this package resolves
+  // dsh-tools 0.1.1-rc.2 (the vendored-platform pin) while the card
+  // packages resolve 0.1.5-alpha.1 from the store — their
+  // ToolRunContext types are structurally incompatible across the
+  // two resolutions. Ledger row 33 tracks the skew; the casts die
+  // when the versions align.
   c.tools.register(buildMusicTool(gatewayUrl) as unknown as ToolDefinition)
   c.tools.register(buildTtsTool(gatewayUrl) as unknown as ToolDefinition)
   c.tools.register(buildVoiceLockTool(gatewayUrl) as unknown as ToolDefinition)
   c.tools.register(buildImageEditTool(gatewayUrl) as unknown as ToolDefinition)
   c.tools.register(buildMotionTool(gatewayUrl) as unknown as ToolDefinition)
   c.tools.register(buildH3TimelineTool(gatewayUrl) as unknown as ToolDefinition)
+  c.tools.register(buildClothingPlacementTool(gatewayUrl) as unknown as ToolDefinition)
 
 }

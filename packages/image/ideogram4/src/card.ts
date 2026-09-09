@@ -25,6 +25,21 @@ const schema = z.object({
 
 export const inject = ['comfyui']
 
+// THE IDENTITY RUNG (native 2026-09-10 — migrated from the frozen
+// identity ring; the card owns its label/description/genre/icon).
+export const identity = {
+  label: 'Ideogram',
+  description: 'Typography-aware text-to-image with clean, legible text rendering.',
+  genre: 'image',
+  icon: 'image',
+  principles: [
+    'prompt is required — an empty/whitespace prompt is rejected loud, never sampled with empty conditioning',
+    'The negative channel is the zeroed conditioning (ConditioningZeroOut) — the official family graph has no negative text input',
+    'mu/std ride the model defaults (merged at serve time); the universal form does not carry them as fields',
+    'Sampler option lists resolve from the ONE vocabulary — never hand-copied',
+  ],
+}
+
 export function apply(ctx: Context): void {
   ctx.effect(() => ctx.comfyui.registerCard({
     id: 'ideogram4',
@@ -33,6 +48,17 @@ export function apply(ctx: Context): void {
     // stock-only: the whole chain is core/custom-script nodes.
     boarded: ['ideogram'],
     tags: ['image', 'generate', 'text-to-image'],
+    identity,
+    // THE DISCOVERY ROWS (migrated 2026-09-10 from the frozen
+    // discovery export — the card owns its sidebar, surface, and
+    // flow-stage declarations; the discovery arms derive from here).
+    sidebar: { key: 'image', order: 17, hidden: true },
+    surface: { size: 'huge', layout: 'studio' },
+    flowKinds: {
+      inputs: { prompt: 'text' },
+      outputs: { default: 'image' },
+      requiresModel: false,
+    },
     schema: schema as unknown as (v: unknown) => Record<string, unknown>,
     compose(p, model, g, runId) {
       if (!p.prompt || !(p.prompt as string).trim()) {

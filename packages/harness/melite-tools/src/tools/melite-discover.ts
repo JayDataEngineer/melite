@@ -4,7 +4,9 @@
 // routes on). Thin door wrapper (gatewayRequest) — the SHAPE lives
 // in doors/disclose.ts; this file is the DSH ToolDefinition face
 // (input schema, presentCall, output schema/render, execute).
-import type { ToolDefinition } from '../types.ts'
+import { defineTool } from '@deepseek-ai/dsh-tools'
+import type { ToolCallView } from '@deepseek-ai/dsh-tools'
+import type { JsonValue, ToolDefinition } from '../types.ts'
 import { gatewayRequest } from '../gateway.ts'
 import { jsonClean } from '../json-clean.ts'
 
@@ -27,39 +29,62 @@ export interface DiscoverCardLine {
   tags: string[]
 }
 
+/** Canonical result — the typed mirror of output.schema (the music
+ *  card's CardResult pattern: defineTool infers from the schema and
+ *  checks the execute return against it). */
+type DiscoverResult = {
+  flows?: Record<string, JsonValue>[];
+  cards?: Record<string, JsonValue>[];
+  error?: string;
+} & Record<string, JsonValue>;
+
 export function meliteDiscover(gatewayUrl: string): ToolDefinition {
-  return {
+  // PRESENTATION ADAPTATION (tool-presentation wall + conversion
+  // invariance — presentCall output must not change): defineTool
+  // soft-gates presentCall behind arg validation (invalid → undefined),
+  // but the raw face always returned the tool's own generic card, and
+  // the wall pins that (junk/invalid args during streaming + replay
+  // still render the generic view, never throw). The presenter is
+  // shared: it rides the definition AND is re-attached over the gate
+  // below. execute validation (ToolArgsError/INVALID_ARGS) is
+  // unaffected.
+  const presentCall: (args: unknown) => ToolCallView = (args) => {
+    const a = (args ?? {}) as { lookup?: unknown; tags?: unknown; q?: unknown };
+    const bits: string[] = [];
+    if (typeof a.lookup === 'string' && a.lookup !== '') bits.push(a.lookup);
+    if (typeof a.tags === 'string' && a.tags !== '') bits.push(a.tags);
+    if (typeof a.q === 'string' && a.q !== '') bits.push(a.q);
+    return { card: 'generic', title: 'Discover' + (bits.length > 0 ? ': ' + bits.join(' · ') : ''), kind: 'search' };
+  };
+  // Ledger row 8 (2026-09-10): defineTool wraps the literal — the
+  // registry gains schema compilation + input validation
+  // (ToolArgsError/INVALID_ARGS) + timeoutMs enforcement this face
+  // never had as a raw registration.
+  const def = defineTool({
     name: 'melite_discover',
     description:
       'Progressive disclosure tier 1 over the estate (cards + flows): returns clamped summary LINES, never bodies. '
       + 'Args: lookup (all | cards | flows, default all) + tags (comma-separated card-declared tags, e.g. "image,upscale") '
       + '+ optional q (free-text filter). Prefer a FLOW when one fits the task — composition over single calls; '
       + 'fall back to cards. Open a line with melite_load (agents md + signature + skill lines).',
+    // ParameterSchemaSpec grammar: the map IS the implicit object root
+    // (no type/properties wrapper), per-property `required: true` when
+    // needed — all three filters are optional here.
     parameters: {
-      type: 'object',
-      properties: {
-        lookup: {
-          type: 'string',
-          description: 'Which plane to list: all (default) | cards | flows.',
-        },
-        tags: {
-          type: 'string',
-          description: 'Comma-separated card-declared tags (image,upscale,generate,enhance,...). Empty means unfiltered.',
-        },
-        q: {
-          type: 'string',
-          description: 'Optional free-text filter over names/titles/descriptions/ids.',
-        },
+      lookup: {
+        type: 'string',
+        description: 'Which plane to list: all (default) | cards | flows.',
+      },
+      tags: {
+        type: 'string',
+        description: 'Comma-separated card-declared tags (image,upscale,generate,enhance,...). Empty means unfiltered.',
+      },
+      q: {
+        type: 'string',
+        description: 'Optional free-text filter over names/titles/descriptions/ids.',
       },
     },
-    presentCall(args) {
-      const a = (args ?? {}) as { lookup?: unknown; tags?: unknown; q?: unknown };
-      const bits: string[] = [];
-      if (typeof a.lookup === 'string' && a.lookup !== '') bits.push(a.lookup);
-      if (typeof a.tags === 'string' && a.tags !== '') bits.push(a.tags);
-      if (typeof a.q === 'string' && a.q !== '') bits.push(a.q);
-      return { card: 'generic', title: 'Discover' + (bits.length > 0 ? ': ' + bits.join(' · ') : ''), kind: 'search' };
-    },
+    presentCall,
     output: {
       schema: {
         type: 'object',
@@ -75,6 +100,7 @@ export function meliteDiscover(gatewayUrl: string): ToolDefinition {
             items: { type: 'object', additionalProperties: true },
             description: 'Card lines (id/label/description/tags) — present unless lookup=flows.',
           },
+          error: { type: 'string', description: 'The refusal text — present exactly when the tool refused (render prints REFUSED).' },
         },
       },
       render: (_args, value) => {
@@ -97,11 +123,19 @@ export function meliteDiscover(gatewayUrl: string): ToolDefinition {
           gatewayUrl, 'GET', '/v1/discover?' + params.toString(),
           undefined, exec.signal, TIMEOUT_MS,
         );
-        return jsonClean(res);
+        // The gateway's /v1/discover answer IS the canonical result —
+        // the wire-shape assertion mirrors the music card's gwJson
+        // bridge (the tool trusts its own gateway contract; the
+        // refusal branch constructs the shape literally).
+        return jsonClean(res) as DiscoverResult;
       } catch (e) {
         const err = e as { body?: unknown; message?: string };
-        return jsonClean({ error: typeof err.body === 'string' && err.body !== '' ? err.body : (err.message ?? 'discover failed') });
+        return jsonClean<DiscoverResult>({ error: typeof err.body === 'string' && err.body !== '' ? err.body : (err.message ?? 'discover failed') });
       }
     },
-  }
+  });
+  // Re-attach the unconditional presenter over defineTool's
+  // soft-validation gate (see the adaptation above).
+  def.presentCall = presentCall;
+  return def;
 }

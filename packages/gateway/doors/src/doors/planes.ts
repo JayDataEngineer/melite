@@ -30,20 +30,17 @@
 //   GET /v1/metrics         _h_metrics 3241-3258 + _pipeline_of 2098 /
 //                            _recent_row 2109-2121.
 //
-// The flow splice (WHY A FROZEN READ): flow LANES are TS
-// declarations now (doors/flowsRegistry.ts — the flows/*/flow.py
-// authoring plane died 2026-09-08 under NO-ESTATE-PYTHON). The
-// disclosure rows still ride the authoring-time export
-// packages/gateway/shell/data/discovery-catalog.json ("flows" section,
-// frozen by tools/export_discovery_catalog.py collect_flows — the
-// discovery-lane data-SSOT pattern: the generator dies with py,
-// the data stands; the discovery wall's freshness leg diffs regen
-// vs the file). The frozen rows carry the DECLARATIONS only (ids,
-// stages, tool properties, skill_refs, has_skill_md); every GATE
-// (ToolManifestRow / SkillRow / FlowStepRow), the orientation
-// composer, and the envelope assembly run NATIVELY here. No cache:
-// the file reads per request (the discovery-door posture — the
-// scan cost is inherent to the read-your-own-tree design).
+// The flow splice (LIVE since 2026-09-10): flow LANES are TS
+// declarations (doors/flowsRegistry.ts — the flows/*/flow.py
+// authoring plane died 2026-09-08 under NO-ESTATE-PYTHON, and the
+// authoring-time export died with the discovery blob 2026-09-10).
+// flowDecls derives from the registry per request (ids, stages,
+// tool declarations, skillRefs; hasSkillMd reads the flows/<id>/
+// SKILL.md leaf live); every GATE (ToolManifestRow / SkillRow /
+// FlowStepRow), the orientation composer, and the envelope assembly
+// run NATIVELY here. No cache: the registry reads per request (the
+// discovery-door posture — the scan cost is inherent to the
+// read-your-own-tree design).
 //
 // The frozen file resolves under the DISCLOSURE root
 // (MELITE_REPO_ROOT else file-anchored): hermetic fixtures stage
@@ -99,7 +96,7 @@ import {
 import type {
   AssetRoots,
 } from "@melite/gateway-core";
-import { catalogPath } from "./discovery.ts";
+import { liveSources, catalogSection, schemaSection } from "./discoveryLive.ts";
 import { queueSnapshot } from "./flowsRun.ts";
 import type { RunsService } from "./flowsRun.ts";
 import { needCardRegistry } from "./flowsCard.ts";
@@ -107,6 +104,7 @@ import type { CardRegistryService } from "./flowsCard.ts";
 import {
   expandRegistryFlow,
   getRegistryFlow,
+  registryFlowNames,
   registrySkillBody,
 } from "./flowsRegistry.ts";
 import {
@@ -335,63 +333,37 @@ const BOOT_AT: number = Date.now() / 1000;
 const GATEWAY_VERSION = "0.1.0";
 
 // ---------------------------------------------------------------------------
-// the frozen flow declarations
+// the flow declarations (the flows registry — doors/flowsRegistry.ts)
 // ---------------------------------------------------------------------------
 
-/** The frozen export (tools/export_discovery_catalog.py shape — the
- *  discovery-lane data SSOT). Reads run per request over the
- *  DISCLOSURE root (never cached: py re-scanned every request, and
- *  the discovery doors read per request too). */
-function loadFrozenDoc(repo: string): Record<string, unknown> {
-  const path: string = catalogPath(repo);
-  let text: string;
-  try {
-    text = readFileSync(path, "utf8");
-  } catch (e) {
-    throw new ProbeError(
-      "discovery catalog unavailable: cannot read " +
-        path +
-        " (" +
-        (e instanceof Error ? e.message : String(e)) +
-        ") — regenerate: python3 tools/export_discovery_catalog.py",
-    );
+/** One registry headless-tool property, projected to the frozen
+ *  FlowToolDecl shape (always ptype + description; enum / default /
+ *  minimum / maximum ride only when the registry declares them —
+ *  nulls never serve). */
+function projectToolProperties(
+  properties: Record<string, {
+    ptype: string;
+    description: string;
+    default: unknown;
+    hasDefault: boolean;
+    minimum: number | null;
+    maximum: number | null;
+    enum: readonly string[] | null;
+  }>,
+): Record<string, Record<string, unknown>> {
+  const out: Record<string, Record<string, unknown>> = {};
+  for (const [name, p] of Object.entries(properties)) {
+    const cell: Record<string, unknown> = {
+      ptype: p.ptype,
+      description: p.description,
+    };
+    if (p.enum !== null) cell["enum"] = [...p.enum];
+    if (p.hasDefault) cell["default"] = p.default;
+    if (p.minimum !== null) cell["minimum"] = p.minimum;
+    if (p.maximum !== null) cell["maximum"] = p.maximum;
+    out[name] = cell;
   }
-  let doc: unknown;
-  try {
-    doc = parseJson(text);
-  } catch (e) {
-    throw new ProbeError(
-      "discovery catalog unavailable: cannot parse " +
-        path +
-        " (" +
-        (e instanceof Error ? e.message : String(e)) +
-        ") — regenerate: python3 tools/export_discovery_catalog.py",
-    );
-  }
-  if (typeof doc !== "object" || doc === null || Array.isArray(doc)) {
-    throw new ProbeError(
-      "discovery catalog unavailable: top-level JSON value is not " +
-        "an object (" +
-        path +
-        ") — regenerate: python3 tools/export_discovery_catalog.py",
-    );
-  }
-  return doc as Record<string, unknown>;
-}
-
-/** One frozen section (catalog / schema / flows): a missing section
- *  refuses LOUD (a stale or hand-edited export never serves partial
- *  truth — the door/section shapes the refusal). */
-function frozenSection(repo: string, key: string): unknown {
-  const doc: Record<string, unknown> = loadFrozenDoc(repo);
-  if (!Object.prototype.hasOwnProperty.call(doc, key)) {
-    throw new ProbeError(
-      "discovery catalog unavailable: section " +
-        JSON.stringify(key) +
-        " missing — regenerate: python3 tools/export_discovery_catalog.py",
-    );
-  }
-  return doc[key];
+  return out;
 }
 
 interface FlowToolDecl {
@@ -412,94 +384,44 @@ interface FlowDecl {
   readonly hasSkillMd: boolean;
 }
 
-/** Flow declarations in scan order (flow.scan_flow_ids sorted), with
- *  load failures marked (py _flow_rows 389-393 skips FlowError
- *  silently). Skips the freeze when flows/ is absent (py _flow_rows
- *  387-388: not-a-dir -> []). */
+/** Flow declarations in registry order (registryFlowNames sorted),
+ *  with load failures marked (py _flow_rows 389-393 skips FlowError
+ *  silently — the registry is code, so a declaration bug throws LOUD
+ *  out of expandRegistryFlow instead of marking a row). Skips the
+ *  registry when flows/ is absent (py _flow_rows 387-388: not-a-dir
+ *  -> []). The headless tool rides the registry declaration
+ *  verbatim (projected to the frozen row shape); hasSkillMd reads
+ *  the flows/<id>/SKILL.md leaf live. skillRefs ride the registry
+ *  declaration (empty today — the frozen refs pointed at the
+ *  retired flow.py rows and the retired enhance recipes, which
+ *  resolve nowhere and would only skip-loud). */
 function flowDecls(repo: string): FlowDecl[] {
   if (!isDir(join(repo, "flows"))) return [];
-  const raw: unknown = frozenSection(repo, "flows");
-  if (!Array.isArray(raw)) {
-    throw new ProbeError("frozen flows section is not a list");
-  }
   const out: FlowDecl[] = [];
-  for (const item of raw) {
-    if (item === null || typeof item !== "object" || Array.isArray(item)) {
-      throw new ProbeError("frozen flows section has a bad row");
-    }
-    const row = item as Record<string, unknown>;
-    if (typeof row["id"] !== "string") {
-      throw new ProbeError("frozen flows section has a bad row");
-    }
-    if (typeof row["load_error"] === "string") {
-      out.push({
-        id: row["id"],
-        loadError: row["load_error"],
-        description: "",
-        stages: [],
-        tool: null,
-        skillRefs: [],
-        hasSkillMd: false,
-      });
-      continue;
-    }
-    const stages: { readonly id: string; readonly engine: string }[] = [];
-    if (Array.isArray(row["stages"])) {
-      for (const s of row["stages"]) {
-        if (
-          s !== null &&
-          typeof s === "object" &&
-          typeof (s as Record<string, unknown>)["id"] === "string" &&
-          typeof (s as Record<string, unknown>)["engine"] === "string"
-        ) {
-          stages.push({
-            id: (s as Record<string, unknown>)["id"] as string,
-            engine: (s as Record<string, unknown>)["engine"] as string,
-          });
-        }
-      }
-    }
+  for (const name of registryFlowNames()) {
+    const flow = getRegistryFlow(name);
+    if (flow === undefined) continue;
+    const expanded = expandRegistryFlow(flow);
+    const stages: { readonly id: string; readonly engine: string }[] =
+      expanded.stages.map((s) => ({ id: s.id, engine: s.engine }));
     let tool: FlowToolDecl | null = null;
-    if (
-      row["tool"] !== null &&
-      row["tool"] !== undefined &&
-      typeof row["tool"] === "object"
-    ) {
-      const t = row["tool"] as Record<string, unknown>;
-      const rawVersion: unknown = t["version"];
-      const numVersion: number | null = pyNumber(rawVersion);
+    if (flow.tool !== null) {
       tool = {
-        name: typeof t["name"] === "string" ? t["name"] : "",
-        version:
-          numVersion !== null && Number.isInteger(numVersion)
-            ? numVersion
-            : 0,
-        description:
-          typeof t["description"] === "string" ? t["description"] : "",
-        properties:
-          t["properties"] !== null && typeof t["properties"] === "object"
-            ? (t["properties"] as Record<string, Record<string, unknown>>)
-            : {},
-        required: Array.isArray(t["required"])
-          ? (t["required"] as unknown[]).filter(
-              (r: unknown): r is string => typeof r === "string",
-            )
-          : [],
+        name: flow.tool.name,
+        version: flow.tool.version,
+        description: flow.tool.description,
+        properties: projectToolProperties(flow.tool.properties),
+        required: [...flow.tool.required],
       };
     }
     out.push({
-      id: row["id"],
+      id: flow.id,
       loadError: null,
-      description:
-        typeof row["description"] === "string" ? row["description"] : "",
+      description: flow.description,
       stages,
       tool,
-      skillRefs: Array.isArray(row["skill_refs"])
-        ? (row["skill_refs"] as unknown[]).filter(
-            (r: unknown): r is string => typeof r === "string",
-          )
-        : [],
-      hasSkillMd: row["has_skill_md"] === true,
+      skillRefs: [...flow.skillRefs],
+      hasSkillMd: isFile(join(repo, "flows", flow.id, "SKILL.md")),
     });
   }
   return out;
@@ -2109,15 +2031,30 @@ function section(fn: () => unknown): unknown {
   }
 }
 
+/** The async section (the boot's live catalog/schema overlays) —
+ *  same fault isolation, awaited (a rejection degrades the section,
+ *  never the boot). */
+async function sectionAsync(fn: () => Promise<unknown>): Promise<unknown> {
+  try {
+    return await fn();
+  } catch (e) {
+    const name: string = e instanceof Error ? e.constructor.name : "Error";
+    const msg: string = e instanceof Error ? e.message : String(e);
+    return { error: name + ": " + msg };
+  }
+}
+
 /** GET /v1/agent/boot (gateway._h_agent_boot 3269-3318): gateway
  *  truth + health + all discovery in ONE fault-isolated payload,
- *  then the agent.boot ledger row (routes + uptime_s). */
-export function hAgentBoot(
+ *  then the agent.boot ledger row (routes + uptime_s). Async — the
+ *  catalog/schema sections derive live (the card boot rides the
+ *  loadCardDefs cache after first call). */
+export async function hAgentBoot(
   repo: string,
   stateRoot: string,
   svc?: RunsService | null,
   cards?: CardRegistryService | null,
-): { status: number; payload: unknown } {
+): Promise<{ status: number; payload: unknown }> {
   const now: number = Date.now() / 1000;
   const snap: {
     queued: number;
@@ -2145,11 +2082,15 @@ export function hAgentBoot(
     lanes: section(() => buildPeek(repo, null, null, cards)),
     card_tools: section(() => buildCardTools(repo, null, cards)),
     skills: section(() => buildSkillIndex(repo)),
-    // The frozen sections already hold the PARSED payloads (py serves
-    // the json.loads of to_json / schema_snapshot — the same objects
-    // the exporter froze).
-    model_catalog: section(() => frozenSection(repo, "catalog")),
-    schema: section(() => frozenSection(repo, "schema")),
+    // The catalog/schema sections derive LIVE (the same builders
+    // the discovery doors serve — fault-isolated per section, so a
+    // declaration bug degrades one section, never the boot).
+    model_catalog: await sectionAsync(() =>
+      liveSources().then(({ defs }) => catalogSection(defs)),
+    ),
+    schema: await sectionAsync(() =>
+      liveSources().then(({ defs }) => schemaSection(defs)),
+    ),
   };
   appendLedger(stateRoot, "agent.boot", {
     routes: ROUTES.length,
@@ -2212,15 +2153,16 @@ function answer(status: number, payload: unknown): PlaneResult {
 }
 
 /** The 7-door dispatcher arm (ctx.ts calls this for the plane
- *  handlers; null = not ours). */
-export function dispatchPlanes(
+ *  handlers; null = not ours). Async — the agent-boot arm derives
+ *  live; the other six stay sync work under the async seam. */
+export async function dispatchPlanes(
   handler: string,
   m: RegExpExecArray | null,
   target: string,
   roots: AssetRoots,
   svc?: RunsService | null,
   cards?: CardRegistryService | null,
-): PlaneResult | null {
+): Promise<PlaneResult | null> {
   const repo: string = disclosureRoot();
   const qs: Record<string, string[]> = parseTargetQuery(target);
   switch (handler) {
@@ -2268,7 +2210,7 @@ export function dispatchPlanes(
       return answer(r.status, r.payload);
     }
     case "_h_agent_boot": {
-      const r: { status: number; payload: unknown } = hAgentBoot(
+      const r: { status: number; payload: unknown } = await hAgentBoot(
         repo,
         roots.stateRoot,
         svc,
@@ -2299,10 +2241,10 @@ export const planesDoors: Plugin = {
   name: "gateway-planes",
   inject: ["gatewayError", "runs", "cardRegistry", "webServer"],
   apply(ctx: Context): void {
-    mountDoorRoutes(ctx, ctx.webServer, ["_h_lanes", "_h_card_tools", "_h_lane_bundle", "_h_skills", "_h_skill_read", "_h_agent_boot", "_h_metrics"], (req: GatewayRequest): DispatchResult | undefined => {
+    mountDoorRoutes(ctx, ctx.webServer, ["_h_lanes", "_h_card_tools", "_h_lane_bundle", "_h_skills", "_h_skill_read", "_h_agent_boot", "_h_metrics"], async (req: GatewayRequest): Promise<DispatchResult | undefined> => {
         const hit = doorMatch(req, ["_h_lanes", "_h_card_tools", "_h_lane_bundle", "_h_skills", "_h_skill_read", "_h_agent_boot", "_h_metrics"]);
         if (hit === null) return undefined;
-        const planes: DispatchResult | null = dispatchPlanes(
+        const planes: DispatchResult | null = await dispatchPlanes(
           hit.row.handler,
           hit.m,
           req.target,

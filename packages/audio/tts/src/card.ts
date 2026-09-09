@@ -20,13 +20,26 @@ export const schema = z.object({
   seed: z.number().description("Seed").step(1).default(-1).extra('extra', { order: null }),
 })
 
-export const BOARDED: string[] = ['qwen3-tts']
+// THE BOARDED FAMILIES (restored 2026-09-10 — the frozen export
+// witnesses qwen3-tts-base here three ways: the tts forms covers,
+// the tts capability families, and the base form-spec's
+// self-attribution. The TS port dropped it; the card renders base
+// (its schema flavors already scope by family), so it boards.)
+export const BOARDED: string[] = ['qwen3-tts', 'qwen3-tts-base']
 
 /** The identity rung (label/description — the authored prose the
  *  emitted tool row carries; the ring's spelling, stated once). */
 export const identity = {
   label: 'TTS',
   description: 'Text-to-speech — Qwen3-TTS with CustomVoice personas and instruct-text emotion control',
+  genre: 'audio',
+  icon: 'microphone',
+  principles: [
+    'text is required — empty text fails',
+    'Use Voice Embedding (.qvoice) for consistent character voices',
+    'Style Instruction controls emotion and delivery',
+    'One line per call — serial execution for multi-line sequences',
+  ],
 }
 
 export function registerCard(ctx: Context, comfy: ComfyUIService): void {
@@ -36,8 +49,18 @@ export function registerCard(ctx: Context, comfy: ComfyUIService): void {
     skeleton: 'tts',
     // both Qwen3-TTS families board here (CustomVoice + Base); the
     // VoiceDesign lane belongs to voice-lock.
-    boarded: ['qwen3-tts'],
+    boarded: [...BOARDED],
     tags: ['audio', 'tts', 'voice', 'generate'],
+    identity,
+    // THE DISCOVERY ROWS (migrated 2026-09-10 from the frozen
+    // discovery export — the card owns its sidebar, surface, and
+    // flow-stage declarations; the discovery arms derive from here).
+    sidebar: { key: 'audio', order: 3 },
+    flowKinds: {
+      inputs: { prompt: 'text' },
+      outputs: { default: 'audio' },
+      requiresModel: true,
+    },
     // Load + TTS ride the authored Audiocore pack; SaveAudio is core.
     requires: ['melite-audio-nodes'],
     schema: schema as unknown as (v: unknown) => Record<string, unknown>,

@@ -49,6 +49,7 @@
 // compile. ─────────────────────────────────────────────────────────────────
 
 import type { GatewayDoorUrl } from "./generated/gatewayDoors"
+import { readAsDataURL } from "@melite/ui"
 
 /** A URL outside the gateway (another service). Constructible ONLY via
  * externalUrl() — never spell one inline at a fetch call site. */
@@ -271,10 +272,12 @@ export async function urlToDataUrl(
     )
   }
   const blob = await res.blob()
-  return new Promise<string>((resolve, reject) => {
-    const reader = new FileReader()
-    reader.onload = () => resolve(reader.result as string)
-    reader.onerror = () => reject(new Error(`Failed to read ${url.slice(0, 200)} as data URL`))
-    reader.readAsDataURL(blob)
-  })
+  // Shared readAsDataURL (@melite/ui SlotSquare — the ONE read path) —
+  // the URL context is re-attached here so a read failure still names
+  // the artifact that failed.
+  try {
+    return await readAsDataURL(blob)
+  } catch {
+    throw new Error(`Failed to read ${url.slice(0, 200)} as data URL`)
+  }
 }

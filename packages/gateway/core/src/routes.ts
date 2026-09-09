@@ -1,25 +1,25 @@
 // The gateway wire table SSOT — AUTHORED, not generated.
 //
 // packages/gateway/core/src/routes.ts is hand-edited: one rigid object
-// literal per row, first-match-wins order. The retired python serving
-// stack (python/gateway.py ROUTES) is the CHECKED MIRROR: it must
-// still match this table row-for-row
-// (tests/walls/suites/test_routes_mirror.py parses this file with a
-// stdlib-only string-aware scan and refuses drift).
+// literal per row, first-match-wins order. The TS table below is the
+// SSOT. The retired python serving stack (python/gateway.py ROUTES,
+// frozen at git d4fbcab — the file is deleted) is the FROZEN
+// REFERENCE, not a mirror: consult the git history when a comment
+// cites a py row, never edit the py side (there is no live py
+// surface left to keep in sync).
 // Row order is significant: the dispatcher serves first-match-wins,
 // so the stage-patch arm stays BEFORE the greedy draft :id arm.
-// To change the surface: edit a row here AND the py mirror row
-// together in the same stroke, then regen docs + doors from this
-// table.
+// To change the surface: edit a row here, then regen docs + doors
+// from this table.
 //
 // Erasable-syntax TS only (node --experimental-strip-types): no
 // enums, no namespaces — bodyKind is a string union, query is a
 // readonly array, every row is a plain object literal.
 
-/** Request-body discipline, mirroring Route.body in python/gateway.py. */
+/** Request-body discipline (named for Route.body in the retired python/gateway.py — deleted, git d4fbcab). */
 export type BodyKind = "none" | "strict" | "lenient" | "raw";
 
-/** One route row — the authored SSOT shape (python/gateway.py Route is the checked mirror). */
+/** One route row — the authored SSOT shape (the retired python/gateway.py Route row is the frozen reference — deleted, git d4fbcab; this table is the SSOT). */
 export interface GatewayRoute {
   /** "GET" | "POST" | "DELETE" | "PATCH" | "A|B" multi-arm | "*" any. */
   readonly method: string;

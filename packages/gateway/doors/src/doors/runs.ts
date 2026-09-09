@@ -1,7 +1,8 @@
 // runs.ts — the P4 TS port of the runs-registry READ doors + the
 // events stream door.
 //
-// Handlers (python/gateway.py names in parens; ROUTES mirror rows):
+// Handlers (deleted-python names in parens — python/gateway.py is
+// gone (frozen at git d4fbcab); ROUTES mirror rows):
 //   GET /v1/queue                 (_h_queue)        — JSON, stateless
 //   GET /v1/flows/status/{run_id} (_h_flows_status) — JSON from sidecar
 //   GET /v1/flows/runs            (_h_runs_list)    — JSON from disk scan
@@ -9,18 +10,26 @@
 //   GET /v1/flows/events*         (_h_ws_fallback)  — non-upgrade 404 shape
 //   WS  /v1/flows/events*         (_ws_starlette)   — the stream door
 //
-// STREAM-FRAMING DECISION (py cites — read fully, 2026-09-07):
-//   py has NO SSE, NO chunked stream, NO heartbeat, NO cursor/replay.
-//   The events arm is a NATIVE STARLETTE WEBSOCKET (gateway.py 2472:
-//   "Native starlette WebSocket for /v1/flows/events/<run_id>";
-//   main() 4514-4515 registers WSRoutes; the HTTP ROUTES rows 4082-4089
-//   carry ws=True and their handler is _h_ws_fallback, which 404s any
-//   non-Upgrade request 3005-3009). Frames are starlette
-//   WebSocket.send_json payloads — json.dumps(data, separators=(",",":"),
-//   ensure_ascii=False) (starlette 1.6.0 source): COMPACT, raw UTF-8,
-//   NOT indent-2. wsFrameBytes() below reproduces that rule
+// STREAM-FRAMING DECISION (retired-py cites — read fully, 2026-09-07):
+//   The deleted py arm (python/gateway.py, frozen at git d4fbcab)
+//   had NO SSE, NO chunked stream, NO heartbeat, NO cursor/replay:
+//   its events arm was a native starlette websocket (gateway.py
+//   2472: "Native starlette WebSocket for /v1/flows/events/<run_id>";
+//   main() 4514-4515 registered WSRoutes; the HTTP ROUTES rows
+//   4082-4089 carried ws=True and their handler was _h_ws_fallback,
+//   which 404d any non-Upgrade request 3005-3009). Its frames were
+//   starlette WebSocket.send_json payloads — json.dumps(data,
+//   separators=(",",":"), ensure_ascii=False) (starlette 1.6.0
+//   source): COMPACT, raw UTF-8, NOT indent-2. THIS module is the
+//   node TS port: RFC-6455 framing below (wsEncodeText /
+//   wsEncodeCloseEcho) served behind the framework's registerUpgrade
+//   mount (main.ts) — no starlette, no uvicorn, no python at
+//   runtime. wsFrameBytes() below reproduces that byte rule
 //   (JSON.stringify is already compact-separator + raw-UTF-8 for the
 //   JSON-representable domain; float-repr edge documented below).
+//   gateway.py line cites throughout this file are the frozen py
+//   reference (deleted; git d4fbcab) — traceability only; the TS
+//   here is the SSOT.
 //   Event names (the "type" field): "hello" (ALL_RUNS subscribe ack,
 //   2533), "run" (hydrate 2544 + terminal broadcast 1413-1414 +
 //   unknown-run 2542), "stage" (hydrate patches 2546-2553 — id +
@@ -1293,13 +1302,15 @@ export function dispatchRuns(
 }
 
 // ── the events stream door: WS frames + upgrade ───────────────────
-// python/gateway.py _ws_starlette 2472-2584. Frame bytes = starlette
-// send_json = json.dumps(data, separators=(",",":"), ensure_ascii=
-// False): compact + raw UTF-8. JSON.stringify already uses compact
-// separators and emits raw UTF-8 for the JSON-representable domain
-// (D3: non-integral floats may reformat — vectors use ints).
+// Retired py arm (python/gateway.py _ws_starlette 2472-2584,
+// deleted; git d4fbcab): frame bytes were starlette send_json =
+// json.dumps(data, separators=(",",":"), ensure_ascii=False):
+// compact + raw UTF-8. The node port below frames with
+// JSON.stringify, which already uses compact separators and emits
+// raw UTF-8 for the JSON-representable domain (D3: non-integral
+// floats may reformat — vectors use ints).
 
-/** The compact frame serializer (starlette send_json rule). */
+/** The compact frame serializer (the retired py send_json byte rule). */
 export function wsFrameBytes(frame: unknown): string {
   return JSON.stringify(frame);
 }
@@ -1404,9 +1415,10 @@ export function wsEncodeClose(code: number = 1000): Uint8Array {
   return new Uint8Array([0x88, 0x02, (code >> 8) & 0xff, code & 0xff]);
 }
 
-/** Verbatim close echo (the _monitor_client/hold-loop posture — py
- *  echoes the client close payload byte-for-byte via starlette, so
- *  an empty client close echoes as 8800, never a fixed 1000). */
+/** Verbatim close echo (the _monitor_client/hold-loop posture — the
+ *  retired py arm echoed the client close payload byte-for-byte via
+ *  starlette (deleted; git d4fbcab), so an empty client close echoes
+ *  as 8800, never a fixed 1000). */
 export function wsEncodeCloseEcho(payload: Uint8Array): Uint8Array {
   const n: number = payload.length;
   if (n < 126) {
@@ -1619,8 +1631,10 @@ export function handleWsUpgrade(opts: WsUpgradeOpts): void {
   // run-specific read here (kept on the interface for the seam).
   const key: string = headers["sec-websocket-key"] ?? "";
   if (!wsAuthOk(headers, target, authToken)) {
-    // uvicorn turns the pre-accept close into `403 Forbidden`,
-    // empty body (probed raw 2026-09-07).
+    // The retired py transport (uvicorn) turned the pre-accept
+    // close into `403 Forbidden`, empty body (probed raw 2026-09-07
+    // against the deleted py; git d4fbcab) — the node port answers
+    // the same bytes below.
     try {
       socket.write(
         "HTTP/1.1 403 Forbidden\r\nConnection: close\r\n" +
@@ -1656,7 +1670,8 @@ export function handleWsUpgrade(opts: WsUpgradeOpts): void {
   }
   // normalizePath twin: target.split("?")[0].rstrip("/") or "/".
   // The upgrade seam receives the raw target — decode %XX here
-  // (uvicorn decodes before _ws_starlette runs).
+  // (in the retired py arm, uvicorn decoded before _ws_starlette
+  // ran; py deleted, git d4fbcab).
   const bare: string = target.split("?")[0] ?? "";
   const normed: string = bare.replace(/\/+$/, "") || "/";
   let decodedPath: string = normed;
@@ -1978,7 +1993,15 @@ export const runsDoors: Plugin = {
           let registry: Domain<AssetsDomainSpec> | null = null;
           try {
             registry = await getAssetsDomain(ctx);
-          } catch {
+          } catch (e) {
+            // ROW 28 (census): the degrade is the contract (scan-
+            // serve, identical bytes, never 500) — but it must
+            // leave a TRACE, not vanish (cf. the gateway-unreach-
+            // able warn in infer-gallery).
+            ctx.logger("gateway").warn(
+              "runs list: assets domain unavailable — scan-serving degraded",
+              { error: e instanceof Error ? e.message : String(e) },
+            );
             registry = null;
           }
           return hRunsList(parseQuery(req.target), req.roots, (draftId: string): boolean =>

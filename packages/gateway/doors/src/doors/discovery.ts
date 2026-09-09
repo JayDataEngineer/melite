@@ -1,7 +1,8 @@
 // doors/discovery.ts — the NATIVE port of the 10 discovery READ doors
 // (no runtime python; the stdio bridge is retired).
 //
-// Handlers (python/gateway.py names in parens; ROUTES mirror rows):
+// Handlers (deleted-python names in parens — python/gateway.py is
+// gone (frozen at git d4fbcab); ROUTES mirror rows):
 //   GET /v1/model-catalog                  (_h_model_catalog, 3041-3043)
 //   GET /v1/model-catalog/*                (_h_model_one, 3046-3051)
 //   GET /v1/models/*/provisions/*          (_h_model_provision, 3509-3547)
@@ -13,132 +14,50 @@
 //   GET /v1/schema                         (_h_schema, 3091-3099)
 //   GET /v1/flows/families/*/param-schema  (_h_family_schema_one, 3102-3105)
 //
-// ARCHITECTURE (data-SSOT, the frozen-JSON pattern): every JSON
-// arm serves the authoring-time export
-// packages/gateway/shell/data/discovery-catalog.json (frozen by
-// tools/export_discovery_catalog.py, which CALLS the real py
-// functions — catalog.scan_catalog/to_json, editor_forms.forms/
-// kinds/form_spec, catalog.model_loras, editor_runs.
-// family_param_schemas/catalog_family_ids, flow.schema_snapshot —
-// and freezes their answers as data). The generator dies with py;
-// the data stands. The discovery wall diffs a fresh regen against
-// the checked-in file (freshness leg — catches drift while py
-// still lives; post-py the file is the frozen truth).
+// ARCHITECTURE (live derivation, 2026-09-10 — the frozen blob is
+// retired): every JSON arm derives from live sources at request
+// time (doors/discoveryLive.ts — model DECLs, card definitions,
+// the flows registry, hand-owned vocabularies). The retired python
+// system's served answers were captured into
+// packages/gateway/shell/data/discovery-catalog.json and served
+// byte-identical past the TS flip; byte parity with legacy python
+// is NOT a goal (operator order) and the blob is deleted — serving
+// it again is the regression. Bodies are normal JSON
+// (JSON.stringify indent 2, the old json.dumps indent-2 shape).
 //
-// Why a frozen export instead of decl-derived reads off the
-// (now-deleted) card-decls.json + model-facts.json (the first
-// sketch — retired with the purge): the snapshots do not carry what the doors serve, so a derivation
-// CANNOT be byte-identical (probed 2026-09-07):
-//   - model rows need label/description/source/form/engine/genre +
-//     has_inference/has_rubric (melite_models/grammar.py model_row
-//     1127-1166); model-facts.json rows carry no label, no
-//     description, no source, no form. The live catalog serves 55
-//     model rows; the facts file holds only the compose-plane rows.
-//   - the LorasMod rows and the Provision rows exist on NEITHER
-//     snapshot.
-//   - the family param envelopes derive from the schema.py
-//     enforcement rows (editor_runs.py 1475-1497 — card.py fields
-//     are the FALLBACK only); card-decls schemaMeta is the card.py
-//     side, the wrong source.
-//   - the kinds wire order is py TABLE declaration order
-//     (card_kinds.py TABLE 110-143); the generated vocab.ts
-//     CARD_KINDS is SORTED alphabetically.
-// The export freezes the SERVED answers instead, so no derivation
-// runs here at all: parseJson keeps number literals as PyNum and
-// dumpsPy re-emits them verbatim, so bodies are byte-identical to
-// _adapt's json.dumps(payload, indent=2, default=str) (gateway.py
-// 2649-2651) and to the old bridge chain (json.loads -> runner
-// json.dumps -> parseJson -> dumpsPy preserve the object exactly).
-//
-// Per-arm source decisions (py cites inline at each arm):
-//   - catalog: the parsed to_json object (models/families/
-//     capabilities/cards/input_vocabulary). scan_order pins the
-//     _scan_models first-match order find_model serves (no duplicate
-//     ids exist — the exporter asserts it — so the map row IS the
-//     first row).
-//   - forms/kinds/schemas/schema: the served envelopes verbatim.
-//   - form-spec: the flat {key: {status, body}} map. The exporter
-//     precomputes every key form_spec() can serve non-404 for
-//     (catalog ids + editor_forms scan ids + engine-model ids +
-//     every _routes key + every forms-table name + every flows/
-//     subdir, each by CALLING form_spec) — any other string 404s on
-//     py too, so the flat lookup is complete by construction and no
-//     routing logic is re-spelled here. The ?model= parse keeps
-//     parse_qs parity (blank values DROPPED, first non-blank wins,
-//     "+"-folded, percent-decoded — gateway.py route() 4321-4322 +
-//     _Ctx.q 2692-2693).
-//   - loras: the {mid: body} map (model_loras() answers; unknown and
-//     known-but-None both 404 the same body, so only non-None
-//     entries are frozen).
-//   - provisions: the per-family DECLARATION rows (engine +
-//     name/folder/url/sha256/size_bytes, declaration order — the
-//     404 text joins them). The MOUNT resolves per request in TS
-//     (the _provision_mount port below: endpoint file +
-//     model_paths read_root — machine paths are never frozen), the
-//     file is read off disk and the bytes move to the socket (the
-//     doors/assets.ts posture — file IO here, decisions there).
-//     The on-demand rail fetch (missing-on-disk -> provision_rail
-//     through comfy-mcp, gateway.py 3488-3506) has no native
-//     counterpart: a missing file answers the loud 502 below (the
-//     wall skips missing-on-disk provisions — rail fetch is network
-//     in a wall, never a pin).
-//     Path-passing, not base64: provisions run 0.5MB-27GB, so bodies
-//     never cross a serialization envelope — the door reads the
-//     resolved disk path itself (the landed path-envelope design the
-//     bridge used, minus the bridge).
-//     STREAMING READ (landed 2026-09-07, was the flagged >2GB risk):
-//     readProvisionBytes below streams the bytes off disk in 64MB
-//     positional slices sized by stat — readFileSync's
-//     ERR_FS_FILE_TOO_LARGE past ~2GB (the old 500
-//     provision-unreadable leg for 12 of the 30 rows) is gone; the
-//     wire stays one 200 + content-type + full bytes with
-//     content-length from the byte length (py's exact shape — py
-//     never served Range here, so neither does this arm). The wall
-//     pins it with a 2.5GB sparse fixture leg + a small-file
-//     regression leg (synthetic-fixture block in
-//     test_gateway_discovery_parity.py).
-//
-// DEPLOYMENT ENVELOPES (TS-side only — py has no counterpart; the
-// wall unit-pins the deterministic ones):
-//   - missing/unreadable/unparseable catalog JSON → 503
-//     "discovery catalog unavailable: ..." naming the path + the
-//     regen command (the manage 503 posture, minus the action key).
-//   - a TS-side throw (bad root config under the provision mount)
-//     → the 500 uncaught shape (the server.ts catch shapes it the
-//     same way for arms implemented here).
-//
-// Map lookups use hasOwnProperty guards throughout: request-
-// controlled keys ("__proto__", "constructor") must 404 exactly as
-// py 404s unknown names, never ride the prototype chain.
+// The live sources throw LOUD on declaration bugs (a card without
+// identity, a dangling from_flow link) — the door shapes those as
+// the 503 below, never a throw to the socket. Request-controlled
+// keys still 404 exactly as py 404s unknown names (hasOwn guards;
+// "__proto__" is unknown).
 //
 // Erasable-syntax TS only (node --experimental-strip-types): no
 // enums, import type for types, .ts specifiers for relative imports.
 
 import { closeSync, openSync, readFileSync, readSync, statSync } from "node:fs";
-import { buildCatalog, modelIds, getModel } from "@melite/comfyui-cordis";
-import { loadCardDefs, theService } from "@melite/comfyui-cordis";
 import { join } from "node:path";
-import { contentTypeOf, dumpsPy, parseJson } from "./assets.ts";
+import { contentTypeOf } from "./assets.ts";
 import { resolveRepoRoot } from "./bridges.ts";
 import type { Context, Plugin } from "@deepseek-ai/cordis";
 import type { DispatchResult } from "@melite/gateway-core";
 import type { GatewayRequest } from "@melite/gateway-core";
+import {
+  boardedMap,
+  catalogSection,
+  familySchema,
+  familySchemas,
+  formsTable,
+  kindsArm,
+  liveScanOrder,
+  liveSources,
+  lorasBody,
+  lorasFamily,
+  provisionsMap,
+  resolveSpecKey,
+  schemaSection,
+  specBody,
+} from "./discoveryLive.ts";
 import { doorMatch, mountDoorRoutes } from "../routeMount.ts";
-import type { ComfyUIService } from "@melite/comfyui-cordis";
-
-/** The settled card-defs service (null until loadCardDefs lands —
- * callers serve the frozen capture meanwhile; the wall pins the
- * live fragments once warm). */
-let specService: ComfyUIService | null = null;
-function warmSpecService(): ComfyUIService | null {
-  if (specService !== null) return specService;
-  try {
-    specService = theService();
-  } catch {
-    specService = null;
-  }
-  return specService;
-}
 
 /** Dispatcher answer — structurally identical to ctx.ts
  *  DispatchResult (defined here so doors/ never imports ctx.ts). */
@@ -201,82 +120,25 @@ function hasOwn(obj: unknown, key: string): boolean {
   );
 }
 
-/** The frozen catalog (hand-owned frozen data since purge
- *  S-catalog 2026-09-08 — the py exporter is deleted). Kept as
- *  unknown — arms pick their section; parseJson keeps every number
- *  literal as PyNum so dumpsPy re-emits it verbatim. */
-export function catalogPath(repoRoot: string): string {
-  return join(repoRoot, "packages", "gateway", "shell", "data", "discovery-catalog.json");
-}
-
-function loadCatalog(repoRoot: string): Record<string, unknown> {
-  const path: string = catalogPath(repoRoot);
-  let text: string;
-  try {
-    text = readFileSync(path, "utf8");
-  } catch (exc) {
-    throw new CatalogUnavailable(
-      "discovery catalog unavailable: cannot read " +
-        path +
-        " (" +
-        (exc instanceof Error ? exc.message : String(exc)) +
-        ") — the file is hand-owned frozen data; restore it from " +
-        "git, do not regenerate",
-    );
-  }
-  try {
-    const doc: unknown = parseJson(text);
-    if (typeof doc !== "object" || doc === null || Array.isArray(doc)) {
-      throw new Error("top-level JSON value is not an object");
-    }
-    // THE CATALOG SECTION RIDES THE LIVE REGISTRY EMISSION
-    // (correction A1 follow-up, 2026-09-08): the frozen export was
-    // captured at the py era's PEAK — 55 served models including
-    // the 12 retired-engine families and 3 since-deleted cards.
-    // The registry emission (buildCatalog — golden-anchored, wall-
-    // pinned in tests/walls/ts/suites/models-golden.test.ts) is
-    // the fresh truth: 43 served comfyui rows, 19 cards/caps. The
-    // frozen sections that have no native owner yet (forms/kinds/
-    // loras/family schemas/schema/flows/provisions/meta) stay
-    // frozen until their owners land.
-    const record = doc as Record<string, unknown>;
-    record["catalog"] = buildCatalogSections();
-    record["scan_order"] = catalogScanOrder();
-    return record;
-  } catch (exc) {
-    if (exc instanceof CatalogUnavailable) throw exc;
-    throw new CatalogUnavailable(
-      "discovery catalog unavailable: cannot parse " +
-        path +
-        " (" +
-        (exc instanceof Error ? exc.message : String(exc)) +
-        ") — the file is hand-owned frozen data; restore it from " +
-        "git, do not regenerate",
-    );
-  }
-}
-
-/** Deployment fault (missing/unparseable export) — the door shapes
- *  it as the 503 below, never a throw to the socket. */
-class CatalogUnavailable extends Error {
+/** Deployment fault (live sources unbootable — a declaration bug
+ *  or a missing card package): the door shapes it as the 503
+ *  below, never a throw to the socket. */
+class SourcesUnavailable extends Error {
   constructor(message: string) {
     super(message);
-    this.name = "CatalogUnavailable";
+    this.name = "SourcesUnavailable";
   }
 }
 
-/** The live 5-section catalog (models/families/capabilities/
- *  cards/input_vocabulary) from the registry emission — see
- *  loadCatalog's note. JSON-plain (the door serializes). */
-function buildCatalogSections(): Record<string, unknown> {
-  // the table read (decls param): the family plugins' sum IS the
-  // catalog input — the registry module is retired
-  return buildCatalog(modelIds().map((id) => getModel(id))) as unknown as Record<string, unknown>;
-}
-
-/** Served model ids in scan order (the _h_model_one known-set). */
-function catalogScanOrder(): string[] {
-  return Object.keys(buildCatalogSections().models as Record<string, unknown>).sort();
+/** One JSON arm: status + normal-JSON body (+ normalize4xx at the
+ *  seam — indent 2, the old json.dumps shape). */
+function jsonArm(status: number, payload: unknown): DiscoveryResult {
+  return {
+    status,
+    body: JSON.stringify(normalize4xx(status, payload), null, 2),
+    contentType: JSON_CT,
+    headers: {},
+  };
 }
 
 /** The _adapt uncaught-error shape for TS-side throws (the old
@@ -291,7 +153,7 @@ function doorCrash(
   const name: string = exc instanceof Error ? exc.constructor.name : "Error";
   return {
     status: 500,
-    body: dumpsPy({
+    body: JSON.stringify({
       error: msg,
       type: name,
       traceback: exc instanceof Error ? exc.stack ?? "" : "",
@@ -336,54 +198,6 @@ export function modelParam(target: string): string {
   return vals.length > 0 ? (vals[0] as string) : "";
 }
 
-/** The door's boarding read (the _h_loras consumption gate): the
- *  live registry is the boarding truth — a mid whose derived view
- *  boards the pack satisfies; deleted mids throw out of getModel
- *  (same false — the endpoint 404s, never a skip, never a 500). */
-function boardsPack(mid: string, pack: string): boolean {
-  try {
-    return ((getModel(mid).mods ?? []) as readonly string[]).includes(pack);
-  } catch {
-    return false;
-  }
-}
-
-/** The catalog's live offer (the unoffered stroke, 2026-09-08):
- *  the frozen capture is py's body truth (per-row bytes preserved),
- *  but WHAT serves is the live SERVE LAW — buildCatalog's served
- *  key set. Hollow atoms (unoffered) and deleted mids never offer,
- *  however stale the capture. Computed per request (pure in-memory
- *  build — the door already pays file IO per request by design). */
-function liveServedKeys(): Set<string> {
-  try {
-    const live = buildCatalog(modelIds().map((id) => getModel(id)));
-    return new Set(Object.keys((live as unknown as Record<string, Record<string, unknown>>).models));
-  } catch {
-    return new Set<string>();
-  }
-}
-
-/** The frozen catalog filtered to the live offer (models +
- *  families only — capabilities/cards/vocabulary are not offers).
- *  A filter error serves the capture unfiltered (the door stays
- *  up; the walls pin the filtered shape, not the fallback). */
-function servedCatalog(catalog: Record<string, unknown>): Record<string, unknown> {
-  let keys: Set<string>;
-  try {
-    keys = liveServedKeys();
-  } catch {
-    return catalog;
-  }
-  if (keys.size === 0) return catalog;
-  const out: Record<string, unknown> = { ...(catalog as Record<string, unknown>) };
-  for (const section of ["models", "families"] as const) {
-    const rows = catalog[section] as Record<string, unknown>;
-    const kept: Record<string, unknown> = {};
-    for (const k of Object.keys(rows)) if (keys.has(k)) kept[k] = rows[k];
-    out[section] = kept;
-  }
-  return out;
-}
 /** py %r of a str (the provision refusal formatter, gateway.py
  *  3519-3535): single quotes unless the value holds one (then double
  *  quotes); both quotes present falls back to single with escapes.
@@ -610,62 +424,48 @@ function readProvisionBytes(disk: string): Buffer {
   }
 }
 
-/** One JSON arm: status + dumpsPy body (+ normalize4xx at the seam). */
-function jsonArm(status: number, payload: unknown): DiscoveryResult {
-  return {
-    status,
-    body: dumpsPy(normalize4xx(status, payload)),
-    contentType: JSON_CT,
-    headers: {},
-  };
-}
-
-/** Run one discovery arm natively over the frozen export. Sync
- *  file reads (readFileSync blocks the loop exactly as py's
- *  per-request tree scan blocked its worker — the scan cost is
- *  inherent to the read-your-own-tree design). */
-export function handleDiscovery(
+/** Run one discovery arm natively over the LIVE sources (async —
+ *  loadCardDefs boots the card packages on first call, then rides
+ *  its cache; per-request derivation is pure in-memory thereafter,
+ *  exactly as py re-scanned every request). */
+export async function handleDiscovery(
   handler: string,
   method: string,
   path: string,
   target: string,
   repoRoot: string = resolveRepoRoot(),
-): DiscoveryResult {
-  let doc: Record<string, unknown>;
+): Promise<DiscoveryResult> {
+  let sources: Awaited<ReturnType<typeof liveSources>>;
   try {
-    doc = loadCatalog(repoRoot);
+    sources = await liveSources();
   } catch (exc) {
     return {
       status: 503,
-      body: dumpsPy({
+      body: JSON.stringify({
         error: exc instanceof Error ? exc.message : String(exc),
       }),
       contentType: JSON_CT,
       headers: {},
     };
   }
+  const { defs, svc } = sources;
+  const boarded = boardedMap(defs);
   try {
-    const catalog = doc["catalog"] as Record<string, unknown>;
-    const models = catalog["models"] as Record<string, unknown>;
     if (handler === "_h_model_catalog") {
-      // gateway.py 3041-3043: 200 + the whole to_json object —
-      // filtered to the LIVE offer (servedCatalog: frozen bodies,
-      // live serve law — unoffered/deleted mids never offer).
-      return jsonArm(200, servedCatalog(catalog));
+      // gateway.py 3041-3043: 200 + the whole to_json object — the
+      // live offer IS the emission (buildCatalog's served key set;
+      // unoffered/deleted mids never offer).
+      return jsonArm(200, catalogSection(defs));
     }
     if (handler === "_h_model_one") {
-      // gateway.py 3046-3051: first scan-order match or 404 —
-      // plus the live offer (an unoffered/deleted mid 404s even
-      // when the capture still keys it).
+      // gateway.py 3046-3051: first scan-order match or 404.
       const m: RegExpExecArray | null =
         /^\/v1\/model-catalog\/(.+)$/.exec(path);
       const mid: string = m !== null ? String(m[1]) : "";
-      const order: unknown = doc["scan_order"];
-      const known: boolean =
-        Array.isArray(order) &&
-        (order as unknown[]).some((v: unknown): boolean => v === mid);
-      const offered = servedCatalog(catalog)["models"] as Record<string, unknown>;
-      if (known && hasOwn(offered, mid)) {
+      const order: string[] = liveScanOrder();
+      const catalog = catalogSection(defs);
+      const offered = catalog["models"] as Record<string, unknown>;
+      if (order.some((v: string): boolean => v === mid) && hasOwn(offered, mid)) {
         return jsonArm(200, (offered as Record<string, unknown>)[mid]);
       }
       return jsonArm(404, { error: "model not found" });
@@ -678,7 +478,7 @@ export function handleDiscovery(
         /^\/v1\/models\/([^/]+)\/provisions\/([^/]+)$/.exec(path);
       const fid: string = m !== null ? String(m[1]) : "";
       const pname: string = m !== null ? String(m[2]) : "";
-      const fams = doc["provisions"] as Record<string, unknown>;
+      const fams = await provisionsMap(defs);
       const fam: Record<string, unknown> | null = hasOwn(fams, fid)
         ? ((fams as Record<string, unknown>)[fid] as Record<string, unknown>)
         : null;
@@ -768,91 +568,57 @@ export function handleDiscovery(
       }
     }
     if (handler === "_h_forms") {
-      // gateway.py 3054-3056 + editor_forms.forms.
-      return jsonArm(200, doc["forms"]);
+      // gateway.py 3054-3056 + editor_forms.forms — card meta rows
+      // off the cards (sidebar/boarding), never a frozen export.
+      return jsonArm(200, { forms: formsTable(defs) });
     }
     if (handler === "_h_kinds") {
-      // gateway.py 3059-3061 + card_kinds.kinds_wire (TABLE order
-      // frozen in the export array).
-      return jsonArm(200, doc["kinds"]);
+      // gateway.py 3059-3061 + card_kinds.kinds_wire — CARD_KINDS
+      // in its own alphabetical order (the py TABLE order died
+      // with the authoring plane).
+      return jsonArm(200, kindsArm());
     }
     if (handler === "_h_form_spec") {
       // gateway.py 3064-3067 + editor_forms.form_spec: empty model
-      // 400s; the frozen flat map holds every servable key's own
-      // (status, body); anything else 404s exactly as py does.
-      //
-      // THE PORT OVERLAY (2026-09-08, the 1:1 cordis port): for a
-      // key whose FAMILY is boarded on a TS card, fields and
-      // schema_groups emit LIVE through the ComfyUIService's
-      // formSpec (the mod/verb interlock — registration through
-      // ctx.comfyui.registerMod, absorption derived at read). The
-      // frozen row keeps label/features/genre (the runtime catalog
-      // plane — a different door's truth). Families not yet boarded
-      // on the TS plane serve the frozen capture whole (the
-      // deprecation ladder: live-owned keys only grow; the wall
-      // pins the two hardest keys byte-equal on the interlock
-      // fragments).
+      // 400s; unresolvable keys 404 exactly as py does (unknown /
+      // unoffered / retired / fragments / flow ids).
       const model: string = modelParam(target);
       if (model === "") {
         return jsonArm(400, { error: "missing model param" });
       }
-      const specs = doc["form_specs"] as Record<string, unknown>;
-      if (hasOwn(specs, model)) {
-        const hit = (specs as Record<string, Record<string, unknown>>)[model] as Record<
-          string,
-          unknown
-        >;
-        const status: number =
-          typeof hit["status"] === "number" ? (hit["status"] as number) : 200;
-        const body = { ...((hit["body"] as Record<string, unknown>) ?? {}) };
-        const family: string = typeof body["service"] === "string" ? (body["service"] as string) : "";
-        const form: string = typeof body["form"] === "string" ? (body["form"] as string) : "";
-        if (family !== "" && form !== "") {
-          void loadCardDefs().then((): void => {
-            // fire-and-forget warm; the sync read below uses the
-            // settled cache or falls through to the frozen row.
-          });
-          const svc = warmSpecService();
-          if (svc !== null) {
-            const live = svc.formSpec(form, family);
-            if (live !== null) {
-              body["fields"] = live["fields"];
-              body["schema_groups"] = live["schema_groups"];
-            }
-          }
-        }
-        return jsonArm(status, body);
+      const res = resolveSpecKey(model, defs, boarded);
+      if (res === null) {
+        return jsonArm(404, { error: "model not found" });
       }
-      return jsonArm(404, { error: "model not found" });
+      return jsonArm(200, specBody(svc, defs, res));
     }
     if (handler === "_h_loras") {
       // gateway.py 3070-3082 + catalog.model_loras: empty model
       // 400s; unknown (or known-but-None, same body) 404s.
       //
-      // THE CONSUMPTION GATE at the door (paper §3.2.2): the frozen
-      // map keys EVERY mid (mod-less atoms carry an empty list), so
-      // hasOwn alone 200s a mods offer onto atoms that board no
-      // pack — z-image served 200-empty here. The endpoint satisfies
-      // ONLY for atoms boarding 'loras' (the live registry is the
-      // boarding truth; deleted mids throw out of it → same 404).
+      // THE CONSUMPTION GATE at the door: the endpoint satisfies
+      // ONLY for keys whose backing family boards 'loras' (the
+      // live DECL is the boarding truth; a variant key rides its
+      // family's offer — turbo renders krea-2's loras).
       const model: string = modelParam(target);
       if (model === "") {
         return jsonArm(400, { error: "missing model param" });
       }
-      const loras = doc["loras"] as Record<string, unknown>;
-      if (hasOwn(loras, model) && boardsPack(model, "loras")) {
-        return jsonArm(200, (loras as Record<string, unknown>)[model]);
+      const family = lorasFamily(model, boarded);
+      if (family === null) {
+        return jsonArm(404, { error: "model not found" });
       }
-      return jsonArm(404, { error: "model not found" });
+      return jsonArm(200, lorasBody(svc, family));
     }
     if (handler === "_h_family_schemas") {
       // gateway.py 3085-3088 + editor_runs.family_param_schemas
       // (every method serves — the ROUTES "*" arm; ctx.ts routes).
-      return jsonArm(200, doc["family_schemas"]);
+      return jsonArm(200, familySchemas(svc, defs, boarded));
     }
     if (handler === "_h_schema") {
-      // gateway.py 3091-3099 + flow.schema_snapshot.
-      return jsonArm(200, doc["schema"]);
+      // gateway.py 3091-3099 + flow.schema_snapshot — slot kinds,
+      // card rows, expanded registry flows, API-shape docs.
+      return jsonArm(200, schemaSection(defs));
     }
     if (handler === "_h_family_schema_one") {
       // gateway.py 3102-3105 + editor_runs.family_param_schema.
@@ -861,9 +627,9 @@ export function handleDiscovery(
       const m: RegExpExecArray | null =
         /^\/v1\/flows\/families\/(.+)\/param-schema$/.exec(path);
       const fid: string = m !== null ? String(m[1]) : "";
-      const schemas = doc["family_schemas"] as Record<string, unknown>;
-      if (hasOwn(schemas, fid)) {
-        return jsonArm(200, (schemas as Record<string, unknown>)[fid]);
+      const schema = familySchema(svc, defs, boarded, fid);
+      if (schema !== null) {
+        return jsonArm(200, schema);
       }
       return jsonArm(404, {
         error: "Unknown family_id '" + fid + "'",
@@ -879,23 +645,23 @@ export function handleDiscovery(
 /** Dispatch discovery rows by py handler name. Null when the row is
  *  not a discovery door (the dispatchAssets / dispatchDrafts /
  *  dispatchBridges pattern); ctx.ts serves the answer untouched
- *  (bodies ride pre-serialized — dumpsPy at the door, 4xx codes
+ *  (bodies ride pre-serialized at the door, 4xx codes
  *  inline — exactly like the runs lane). */
-export function dispatchDiscovery(
+export async function dispatchDiscovery(
   handler: string,
   method: string,
   path: string,
   target: string,
   repoRoot: string = resolveRepoRoot(),
-): DiscoveryResult | null {
+): Promise<DiscoveryResult | null> {
   if (!isDiscoveryHandler(handler)) return null;
   return handleDiscovery(handler, method, path, target, repoRoot);
 }
 
-/** The discovery doors as a self-registering plugin: the decl JSON
- *  arms run the real py handler over stdio (dumpsPy + normalize4xx
- *  at the door); the provisions byte arm moves the py-resolved
- *  bytes untouched. Bodies ride pre-serialized. A null answer falls
+/** The discovery doors as a self-registering plugin: the JSON arms
+ *  derive live over the card/DECL/registry sources (normal JSON at
+ *  the door); the provisions byte arm moves the resolved bytes
+ *  untouched. Bodies ride pre-serialized. A null answer falls
  *  through exactly as the old arm did. Matches its own rows inside
  *  the listener (dispatchDiscovery answers discovery rows and
  *  returns null for every other handler — gating on its answer
@@ -908,10 +674,10 @@ export const discoveryDoors: Plugin = {
     // dispatchDiscovery answers discovery rows and returns null for
     // every other handler (its internal handler table) — gating on
     // its answer alone preserves the old arm's fall-through exactly.
-    mountDoorRoutes(ctx, ctx.webServer, DISCOVERY_HANDLERS, (req: GatewayRequest): DispatchResult | undefined => {
+    mountDoorRoutes(ctx, ctx.webServer, DISCOVERY_HANDLERS, async (req: GatewayRequest): Promise<DispatchResult | undefined> => {
         const hit = doorMatch(req, DISCOVERY_HANDLERS);
         if (hit === null) return undefined;
-        const discovered: DispatchResult | null = dispatchDiscovery(
+        const discovered: DispatchResult | null = await dispatchDiscovery(
           hit.row.handler,
           req.method,
           req.path,

@@ -30,6 +30,22 @@ const schema = z.object({
 
 export const inject = ['comfyui']
 
+// THE IDENTITY RUNG (native 2026-09-10 — migrated from the frozen
+// identity ring; the card owns its label/description/genre/icon).
+export const identity = {
+  label: 'Upscale Tools',
+  description: 'Diffusion upscale (SeedVR2-3B fp16) — the hidden tool card; also home of the consumed tool fragments (resize, pixel-upscale, rtx-vsr, concat, input)',
+  genre: 'image',
+  icon: 'maximize',
+  principles: [
+    'A tool lane boards only with real weight facts — the weightless fragments render as consumed arms, never as phantom submit options',
+    'SeedVR2 restores detail (diffusion); plain resize resamples pixels — pick by intent, not by size',
+    'resolution is the TARGET short side (1080 = FHD rail); max_resolution is the hard ceiling the lane refuses past',
+    'Defaults are shape, not value: filenames and knobs come from the model folder, merged at serve time',
+    'rtx-vsr is NVIDIA-SDK-only: the arm is compose-truth, execution needs the RTX stack',
+  ],
+}
+
 export function apply(ctx: Context): void {
   ctx.effect(() => ctx.comfyui.registerCard({
     id: 'upscale-tools',
@@ -37,6 +53,16 @@ export function apply(ctx: Context): void {
     skeleton: 'generate',
     boarded: ['seedvr2_ema'],
     tags: ['image', 'upscale', 'enhance'],
+    identity,
+    // THE DISCOVERY ROWS (migrated 2026-09-10 from the frozen
+    // discovery export — the card owns its sidebar, surface, and
+    // flow-stage declarations; the discovery arms derive from here).
+    sidebar: { key: 'image', order: 16, hidden: true },
+    flowKinds: {
+      inputs: { image: 'image' },
+      outputs: { default: 'image' },
+      requiresModel: true,
+    },
     requires: ['ComfyUI-SeedVR2_VideoUpscaler', 'ComfyUI-KJNodes', 'comfyui_nvidia_rtx_nodes'],
     // ADMISSION EXTRAS + SPELLS (the py class-attr halves verbatim:
     // admits minus studio writes, and the $spell-eligible file slot

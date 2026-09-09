@@ -33,6 +33,15 @@ const schema = z.object({
 
 export const inject = ['comfyui']
 
+// THE IDENTITY RUNG (native 2026-09-10 — migrated from the frozen
+// identity ring; the card owns its label/description/genre/icon).
+export const identity = {
+  label: 'Fit',
+  description: 'Seat a static prop onto a SOMAX body under the placement laws.',
+  genre: '3d',
+  icon: 'person',
+}
+
 export function apply(ctx: Context): void {
   ctx.effect(() => ctx.comfyui.registerCard({
     id: 'fit',
@@ -40,6 +49,16 @@ export function apply(ctx: Context): void {
     skeleton: 'fit',
     boarded: ['fit'],
     tags: ['3d', 'character', 'fit'],
+    identity,
+    // THE DISCOVERY ROWS (migrated 2026-09-10 from the frozen
+    // discovery export — the card owns its sidebar, surface, and
+    // flow-stage declarations; the discovery arms derive from here).
+    sidebar: { key: '3d', order: 20 },
+    flowKinds: {
+      inputs: { body: 'mesh', prop: 'mesh' },
+      outputs: { default: 'mesh' },
+      requiresModel: false,
+    },
     requires: ['melite-poser-nodes'],
     schema: schema as unknown as (v: unknown) => Record<string, unknown>,
     compose(p, _model, g, runId) {

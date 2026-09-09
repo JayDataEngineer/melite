@@ -98,15 +98,18 @@ export async function startServer(port: number = 0): Promise<{
   // belt) — is deleted; per-route mechanics live in the adapter.
   // The /v1 wire paths are unchanged (clients untouched); only the
   // serving mechanism is the framework's now.
-  // WS upgrade seam (runs lane): py serves /v1/flows/events* over
-  // starlette WebSockets and 404s anything else at upgrade. The bare
-  // door rides an exact route; the path form /v1/flows/events/<id>
-  // rides a prefix route (arbitrary run ids — the vendored-copy
-  // divergence). The plugin closes every unmatched upgrade (their
-  // law; py destroyed those sockets too). The raw target rides (the
-  // door splits + decodes it itself, exactly like _ws_starlette
-  // sees uvicorn's form); a carried head buffer is unshifted so no
-  // client byte is lost.
+  // WS upgrade seam (runs lane): the retired py arm served
+  // /v1/flows/events* over starlette WebSockets and refused anything
+  // else at upgrade (py deleted; git d4fbcab). The node TS seam is
+  // the registerUpgrade pair below + handleWsUpgrade (runs.ts): the
+  // bare door rides an exact route; the path form
+  // /v1/flows/events/<id> rides a prefix route (arbitrary run ids —
+  // the vendored-copy divergence). The plugin closes every unmatched
+  // upgrade (their law; the retired py destroyed those sockets too).
+  // The raw target rides (the door splits + decodes it itself,
+  // matching the byte form _ws_starlette saw after uvicorn's
+  // decode); a carried head buffer is unshifted so no client byte
+  // is lost.
   const upgradeBody = (
     req: IncomingMessage,
     socket: import("node:stream").Duplex,

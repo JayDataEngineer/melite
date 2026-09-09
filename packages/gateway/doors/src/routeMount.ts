@@ -68,17 +68,19 @@ function regexHead(row: GatewayRoute): string {
 }
 
 /** One authored row → one named registration. kind: exact for
- *  literal rows, prefix for regex rows (the door re-refines). */
+ *  literal rows, prefix for regex rows (the door re-refines).
+ *  Returns the webserver's route disposer (registrations are
+ *  reversible effects — cordis-primer law; the caller scopes it
+ *  under ctx.effect). */
 function registerRow(
   ws: WebServer,
   row: GatewayRoute,
   handler: (req: IncomingMessage, res: ServerResponse) => void,
-): void {
+): () => void {
   if (row.regex) {
-    ws.register({ kind: "prefix", path: regexHead(row), handler });
-    return;
+    return ws.register({ kind: "prefix", path: regexHead(row), handler });
   }
-  ws.register({ kind: "exact", path: row.path, handler });
+  return ws.register({ kind: "exact", path: row.path, handler });
 }
 
 /** Mount every row whose handler name is in `handlers` (the door's
@@ -101,7 +103,13 @@ export function mountDoorRoutes(
     const kind: string = row.regex ? "prefix:" + regexHead(row) : "exact:" + row.path;
     if (mounted.has(kind)) continue; // multi-method rows share one registration
     mounted.add(kind);
-    registerRow(ws, row, (req, res): void => {
+    // REVERSIBLE EFFECTS (cordis-primer law, 2026-09-10 conformance
+    // stroke): every route registration rides ctx.effect so plugin
+    // disposal unwinds the door's rows — the dropped disposers were
+    // leaked registrations (deep-audit finding #12; one seam, not
+    // twelve door edits).
+    ctx.effect(() =>
+      registerRow(ws, row, (req, res): void => {
       const method: string = req.method ?? "GET";
       const raw: string = req.url ?? "/";
       const qi: number = raw.indexOf("?");
@@ -177,7 +185,7 @@ export function mountDoorRoutes(
           send(out ?? ctx.gatewayError.notFound(method, pathname));
         }, send500);
       });
-    });
+    }));
   }
 }
 

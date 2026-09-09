@@ -18,6 +18,20 @@ const schema = z.object({
 
 export const inject = ['comfyui']
 
+// THE IDENTITY RUNG (native 2026-09-10 — migrated from the frozen
+// identity ring; the card owns its label/description/genre/icon).
+export const identity = {
+  label: 'Input Prep',
+  description: 'Source intake: attach an image or audio file (upload, asset drop, prior run) — staged, optionally transformed, emitted as a media artifact for downstream cards to wire.',
+  genre: 'image',
+  icon: 'upload',
+  principles: [
+    'A source is data, not inference: the graph loads, optionally transforms, and saves — no model ever loads.',
+    'Every source form the editor speaks validates at phase 1 (compile time): data: URLs, artifact URLs, input-dir names, absolute paths.',
+    'Transforms ride the declared applicability matrix (image: crop+scale) — anything else refuses loudly, never silently drops.',
+  ],
+}
+
 export function apply(ctx: Context): void {
   ctx.effect(() => ctx.comfyui.registerCard({
     id: 'input-prep',
@@ -28,6 +42,18 @@ export function apply(ctx: Context): void {
     // no requires to declare.
     boarded: ['input'],
     tags: ['image', 'input', 'prepare'],
+    identity,
+    // THE DISCOVERY ROWS (authored 2026-09-10 — the card postdates
+    // the frozen discovery export's forms table, so it never had a
+    // frozen forms row: sidebar order 12 fills the retired gap in
+    // the image cluster; hidden (a flow-staging utility, never a
+    // rail card); the flow stage stages one source file).
+    sidebar: { key: 'image', order: 12, hidden: true },
+    flowKinds: {
+      inputs: { source: 'text' },
+      outputs: { default: 'text' },
+      requiresModel: false,
+    },
     // ADMISSION EXTRAS (the py class-attr half verbatim: the
     // retired row's admits minus the boarded families' studio
     // writes, which the projection unions from the facts file).

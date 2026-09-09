@@ -15,9 +15,9 @@
 //   extensions     comfy-mcp install_node for registry declarations;
 //                  vendor packs symlinked from vendor/comfyui_extensions;
 //                  url+ref declarations via the cm_cli engine binary.
-//   models         comfy-mcp download_model per frozen-catalog provision
-//                  row (packages/gateway/shell/data/discovery-catalog.json),
-//                  polled to completion, sha256-verified after.
+//   models         comfy-mcp download_model per declaration provision
+//                  row (the engine's provisionsByFamily — DECL + card-owned
+//                  rows), polled to completion, sha256-verified after.
 //   all            extensions + models.
 //
 // Config is read TS-natively: inference.config.json at the repo root
@@ -44,6 +44,7 @@ import { copyFileSync, cpSync, existsSync, mkdirSync, readFileSync,
   unlinkSync, writeFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { loadCardDefs, provisionsByFamily } from "../src/cardDefs.ts";
 
 const HERE: string = dirname(fileURLToPath(import.meta.url));
 const REPO: string = resolve(HERE, "..", "..", "..", "..");
@@ -52,8 +53,6 @@ const DEFAULT_CONFIG: string = join(REPO, "packages", "engines", "comfyui",
 const ROOT_CONFIG: string = join(REPO, "inference.config.json");
 const RUNTIME: string = join(REPO, "data", "runtime", "comfyui");
 const COMFY_PROJECT: string = join(REPO, "infra", "comfyui");
-const CATALOG: string = join(REPO, "packages", "gateway", "shell", "data",
-  "discovery-catalog.json");
 
 let DRY = false;
 const FAILS: string[] = [];
@@ -1160,16 +1159,16 @@ interface ProvisionRow {
   sha256: string;
 }
 
-function catalogProvisions(): Array<{ family: string; row: ProvisionRow }> {
-  // The MODEL-side download places, TS-natively from the hand-owned
-  // frozen catalog (packages/gateway/shell/data/discovery-catalog.json —
-  // the model.py cell/provision walks died with the py plane; the
-  // frozen rows are the surviving declaration surface).
-  const doc = JSON.parse(readFileSync(CATALOG, "utf8")) as {
-    provisions?: Record<string, ProvisionRow[]> };
+async function catalogProvisions(): Promise<Array<{ family: string; row: ProvisionRow }>> {
+  // The MODEL-side download places, TS-natively from the declaration
+  // rows (the engine's provisionsByFamily — DECL provisions + card-
+  // owned provisions; the model.py cell/provision walks died with
+  // the py plane and the frozen catalog re-home died with the blob).
+  const defs = await loadCardDefs();
+  const byFamily = await provisionsByFamily(defs);
   const out: Array<{ family: string; row: ProvisionRow }> = [];
-  for (const fam of Object.keys(doc.provisions ?? {}).sort()) {
-    for (const row of doc.provisions?.[fam] ?? []) out.push({ family: fam, row });
+  for (const fam of Object.keys(byFamily).sort()) {
+    for (const row of byFamily[fam]?.provisions ?? []) out.push({ family: fam, row });
   }
   return out;
 }
@@ -1251,7 +1250,7 @@ async function stepModels(): Promise<boolean> {
     const bound = boundModelFolders(cfg);
     const storeRoot = bound.download_path;
     let ok = 0, bad = 0, skipped = 0;
-    for (const { family, row } of catalogProvisions()) {
+    for (const { family, row } of await catalogProvisions()) {
       const url = String(row.url ?? "");
       const name = String(row.name ?? "").trim();
       const sub = String(row.folder ?? "").trim()

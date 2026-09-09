@@ -15,10 +15,14 @@
 // first-match-wins over ROUTES (regex arms emulate re.match —
 // anchored at the start, prefix ok; row order is the contract: the
 // F3 stage-patch arm stays BEFORE the greedy draft :id arm exactly
-// as in the python table). The query parse stays hand-rolled: the
-// package tsconfig carries lib ES2022 only (no DOM), so
-// URLSearchParams is unavailable — and parse_qs semantics here need
-// only split/decode/accumulate.
+// as in the python table). The query parse rides the Node builtin
+// URLSearchParams (2026-09-10, ledger G-9: the old "lib ES2022 has
+// no DOM so URLSearchParams is unavailable" claim was FALSE — it is
+// a Node global under @types/node with types:["node"]; the
+// adversarial verifier proved identical results for every query
+// shape the doors serve — repeated keys, + decoding, empty/bare
+// values — diverging only on malformed % escapes, which no door
+// sends).
 //
 // Erasable-syntax TS only (node --experimental-strip-types): no
 // enums, import type for types, .ts specifiers for relative imports.
@@ -29,31 +33,12 @@ import type { GatewayRoute } from "./routes.ts";
 /** Query parse for the request record (chrome doors ignore it; kept
  *  so the shape stays faithful to route()'s parse_qs). */
 export function parseQuery(target: string): Record<string, string[]> {
-  const out: Record<string, string[]> = {};
   const qpos: number = target.indexOf("?");
-  if (qpos < 0) return out;
-  const query: string = target.slice(qpos + 1);
-  if (query === "") return out;
-  for (const pair of query.split("&")) {
-    if (pair === "") continue;
-    const eq: number = pair.indexOf("=");
-    const rawKey: string = eq < 0 ? pair : pair.slice(0, eq);
-    const rawVal: string = eq < 0 ? "" : pair.slice(eq + 1);
-    let key: string;
-    let value: string;
-    try {
-      key = decodeURIComponent(rawKey.replace(/\+/g, " "));
-    } catch {
-      key = rawKey;
-    }
-    try {
-      value = decodeURIComponent(rawVal.replace(/\+/g, " "));
-    } catch {
-      value = rawVal;
-    }
-    const cur: string[] | undefined = out[key];
-    if (cur === undefined) out[key] = [value];
-    else cur.push(value);
+  if (qpos < 0) return {};
+  const params: URLSearchParams = new URLSearchParams(target.slice(qpos + 1));
+  const out: Record<string, string[]> = {};
+  for (const key of params.keys()) {
+    out[key] = params.getAll(key);
   }
   return out;
 }

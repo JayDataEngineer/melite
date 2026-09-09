@@ -3,17 +3,21 @@
  * declared a "sibling styling family" by copy-paste — these are the
  * copies, promoted). Tokens live in ui.tokens.ts; every structural
  * element used twice lives here once.
+ *
+ * PRIMITIVE LAW (2026-09-09): anything DSH ships rides DSH — Input,
+ * Button, Pill, Modal come from `@deepseek-ai/dsh-client-ui-primitives`
+ * (this package already depends on it; the panels run inside the DSH
+ * host where the --dsw-* tokens live). What remains handrolled below
+ * has NO DSH counterpart (shell/stat/empty/error text chrome) — if
+ * DSH ships it later, the handroll dies the same day.
  */
 import type { JSX, ReactNode } from 'react'
+import { Button, Input } from '@deepseek-ai/dsh-client-ui-primitives'
 import {
   bgLayer1,
   bgLayer2,
   bgOverlay1,
-  borderL1,
-  borderL2,
-  fillSubtle1,
   labelPrimary1,
-  labelSecondary1,
   labelSecondary2,
   stateErrorPrimary1,
   stateWarnPrimary1,
@@ -47,27 +51,26 @@ export function SearchInput({ value, onChange, placeholder }: {
   onChange: (v: string) => void
   placeholder: string
 }): JSX.Element {
+  // DSH Input (passthrough value/onChange/placeholder/style onto the
+  // native input; the DSW module CSS owns the chrome — the handrolled
+  // bordered-input replica died here).
   return (
-    <input
+    <Input
       value={value}
       onChange={(e) => { onChange(e.target.value) }}
       placeholder={placeholder}
-      style={{
-        background: fillSubtle1, border: '1px solid ' + borderL2, color: labelPrimary1,
-        borderRadius: 8, padding: '5px 10px', fontSize: 12, width: 170, fontFamily: 'inherit',
-      }}
+      style={{ width: 170 }}
     />
   )
 }
 
 export function RefreshButton({ loading, onClick }: { loading: boolean; onClick: () => void }): JSX.Element {
+  // DSH Button outline/sm — the transparent-bordered small-button
+  // replica died here (disabled + children passthrough are native).
   return (
-    <button onClick={onClick} disabled={loading}
-      style={{
-        border: '1px solid ' + borderL2, background: 'transparent', color: labelSecondary1,
-        borderRadius: 8, padding: '5px 10px', fontSize: 12,
-        cursor: loading ? 'default' : 'pointer', fontFamily: 'inherit',
-      }}>{loading ? 'loading\u2026' : 'refresh'}</button>
+    <Button variant="outline" size="sm" onClick={onClick} disabled={loading}>
+      {loading ? 'loading\u2026' : 'refresh'}
+    </Button>
   )
 }
 
@@ -101,16 +104,3 @@ export function GatewayErrors({ errors }: { errors: GatewayError[] }): JSX.Eleme
   )
 }
 
-/** The gradient card rows (drafts, templates-when-they-return). */
-export function RowCard({ children, onClick }: { children: ReactNode; onClick?: () => void }): JSX.Element {
-  return (
-    <div
-      onClick={onClick}
-      style={{
-        display: 'flex', alignItems: 'center', gap: 8, textAlign: 'left',
-        border: '1px solid ' + borderL1, borderRadius: 10, padding: '8px 12px',
-        background: gradientStage, color: labelPrimary1, fontFamily: 'inherit',
-      }}
-    >{children}</div>
-  )
-}

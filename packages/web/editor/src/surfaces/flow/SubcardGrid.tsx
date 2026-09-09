@@ -29,9 +29,7 @@ import { CSS } from "@dnd-kit/utilities"
 import { Plus, Power, Zap, Settings2, SlidersHorizontal, GripVertical, Layers } from "lucide-react"
 
 import { cn } from "@melite/ui"
-import {
- Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription,
-} from "@melite/ui/dialog"
+import { Modal } from "@deepseek-ai/dsh-client-ui-primitives"
 import { Input } from "@melite/ui/input"
 import { Switch } from "@melite/ui/switch"
 import {
@@ -81,7 +79,16 @@ interface SubcardGridProps {
  *
  * Picking a kind hands off to the grid's setOpenState -> the SubcardModal
  * create flow. Stack limits are enforced downstream by that modal (it
- * toasts on overflow). */
+ * toasts on overflow).
+ *
+ * S4f Modal stroke: the chrome rides the DSH Modal (mask + body portal +
+ * Esc + text header + close, no handrolled overlay). The header icon the
+ * kit DialogTitle carried is dropped — DSH headers are text-only by
+ * design. Deliberate deltas vs the kit Dialog: no focus trap and no body
+ * scroll-lock (DSH Modal is Esc/mask-dismiss only); the portal + z-order
+ * guarantees above (body portal, z-1000 over the zoom overlay's z-80)
+ * hold unchanged. All data-hooks (data-mod-picker / data-mod-pick) stay
+ * byte-identical for the pinned walls. */
 function ModAddButton({ kinds, onPick }: {
  kinds: ModifierKindSpec[]
  onPick: (kind: string) => void
@@ -108,17 +115,13 @@ function ModAddButton({ kinds, onPick }: {
  <span className="text-[9px] font-medium">Mod</span>
  </button>
  </Tip>
- <Dialog open={open} onOpenChange={setOpen}>
- <DialogContent className="sm:max-w-sm">
- <DialogHeader>
- <DialogTitle className="flex items-center gap-2">
- <Plus className="h-4 w-4 text-brand/70" />
- Add a modifier
- </DialogTitle>
- <DialogDescription>
- Pick a kind to add to this card.
- </DialogDescription>
- </DialogHeader>
+ <Modal
+ open={open}
+ onClose={() => setOpen(false)}
+ title="Add a modifier"
+ description="Pick a kind to add to this card."
+ closeLabel="Close"
+ >
  <div data-mod-picker className="grid gap-1">
  {addable.map((k) => (
  <button
@@ -137,8 +140,7 @@ function ModAddButton({ kinds, onPick }: {
  </button>
  ))}
  </div>
- </DialogContent>
- </Dialog>
+ </Modal>
  </>
  )
 }

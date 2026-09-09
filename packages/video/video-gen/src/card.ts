@@ -46,6 +46,22 @@ const schema = z.object({
 
 export const inject = ['comfyui']
 
+// THE IDENTITY RUNG (native 2026-09-10 — migrated from the frozen
+// identity ring; the card owns its label/description/genre/icon).
+export const identity = {
+  label: 'Video',
+  description: "Text/reference-to-video — the generate_video interface card boarding wan-vace and scail2-animate; one surface, one arm per family",
+  genre: 'video',
+  icon: 'video',
+  principles: [
+    'prompt is required — an empty/whitespace prompt is rejected loud, never sampled with empty conditioning',
+    'The reference image anchors identity/scene — prompt the MOTION, not the subject',
+    'Wan frames are 4n+1 (49 ≈ 2s at 24fps); SCAIL-2 drives a character from a pose video',
+    'Defaults are shape, not value: resolution/steps/cfg come from the model folder, merged at serve time',
+    'A family boards only when it can feed truthfully — lane facts + the arm template, no phantom options',
+  ],
+}
+
 export function apply(ctx: Context): void {
   ctx.effect(() => ctx.comfyui.registerCard({
     id: 'video-gen',
@@ -53,6 +69,16 @@ export function apply(ctx: Context): void {
     skeleton: 'generate',
     boarded: ['wan-vace', 'scail2-animate'],
     tags: ['video', 'generate', 'text-to-video'],
+    identity,
+    // THE DISCOVERY ROWS (migrated 2026-09-10 from the frozen
+    // discovery export — the card owns its sidebar, surface, and
+    // flow-stage declarations; the discovery arms derive from here).
+    sidebar: { key: 'video', order: 15 },
+    flowKinds: {
+      inputs: { prompt: 'text', reference_image: 'image', pose_video: 'video' },
+      outputs: { default: 'video' },
+      requiresModel: false,
+    },
     // every render combines video through VideoHelperSuite
     // (VHS_LoadVideoPath + VHS_VideoCombine) — card-level, both
     // families ride the shared renderer.

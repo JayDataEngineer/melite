@@ -79,6 +79,7 @@ import { dirname, join, relative, resolve, sep } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { DOOR_KEYS, FLOW_ID_RE } from "@melite/gateway-core";
 import { pyReprStr, resolveRepoRoot } from "@melite/comfyui-cordis";
+import { liveScanOrder } from "./discoveryLive.ts";
 
 /** The card-envelope keys (gateway.py:360 CARD_ENVELOPE_KEYS =
  *  DOOR_KEYS + draft/test/service): select the graph, never ride it. */
@@ -379,30 +380,23 @@ export class CardRegistryService extends Service {
     }
   }
 
-  /** resolve_model's existence half — RE-HOMED 2026-09-08 on the
-   *  frozen discovery catalog (packages/gateway/shell/data/
-   *  discovery-catalog.json, .catalog.models keys; hand-owned since
-   *  purge S-catalog, wall-pinned). It replaces the
-   *  models/<genre>/<mid>/model.py fs scan (estate-python purge
-   *  deleted every model.py — the scan resolved the empty set and
-   *  every {model:} compose refused). Missing file throws LOUD via
-   *  readFileSync (same as modelFacts); a malformed shape resolves
-   *  empty (same as modelFacts). */
+  /** resolve_model's existence half — the LIVE offer (the same
+   *  served key set the catalog door answers: buildCatalog's served
+   *  models in scan order). It replaces the models/<genre>/<mid>/
+   *  model.py fs scan (estate-python purge deleted every model.py —
+   *  the scan resolved the empty set and every {model:} compose
+   *  refused) and the frozen-catalog re-home (2026-09-08 — the blob
+   *  is deleted 2026-09-10). A build throw resolves empty (the
+   *  validate door's degraded read, same as before). */
   modelMids(): Set<string> {
     if (this.mids !== null) return this.mids;
-    const path: string = join(
-      resolveRepoRoot(), "packages", "gateway", "shell", "data", "discovery-catalog.json",
-    );
-    const doc: unknown = JSON.parse(readFileSync(path, "utf8")) as unknown;
-    const models: unknown =
-      typeof doc === "object" && doc !== null
-        ? (doc as { catalog?: { models?: unknown } }).catalog?.models
-        : undefined;
-    this.mids = new Set(
-      typeof models === "object" && models !== null && !Array.isArray(models)
-        ? Object.keys(models as Record<string, unknown>)
-        : [],
-    );
+    let ids: string[];
+    try {
+      ids = liveScanOrder();
+    } catch {
+      ids = [];
+    }
+    this.mids = new Set(ids);
     return this.mids;
   }
 

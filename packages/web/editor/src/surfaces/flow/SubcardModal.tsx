@@ -44,18 +44,14 @@ import type { CardStage } from "@melite/contracts"
 import { Tip } from "@melite/ui/tip"
 
 /** Fetch a URL → convert to a base64 data URL (for sidebar-asset drags
- * and flow-link picks). Returns null on failure — the caller toasts. */
+ * and flow-link picks). Returns null on failure — the caller toasts.
+ * Reads through the shared readAsDataURL (the ONE read path). */
 async function fetchImageAsDataUrl(url: string): Promise<string | null> {
  try {
   const res = await fetch(url)
   if (!res.ok) return null
   const blob = await res.blob()
-  return new Promise((resolve) => {
-   const reader = new FileReader()
-   reader.onload = () => resolve(String(reader.result || ""))
-   reader.onerror = () => resolve(null)
-   reader.readAsDataURL(blob)
-  })
+  return await readAsDataURL(blob)
  } catch {
   return null
  }
@@ -259,20 +255,17 @@ export function SubcardModal({
  toast("error", "ControlNet image too large (max 20 MB).")
  return
  }
- const reader = new FileReader()
- reader.onload = () => {
- const dataUrl = String(reader.result || "")
+ // Shared readAsDataURL — the ONE read path every slot-shaped attach uses.
+ void readAsDataURL(file).then((dataUrl) => {
  patchDraft({ image_b64: dataUrl, source: "user" })
- }
- reader.onerror = () => toast("error", "Failed to read image file.")
- reader.readAsDataURL(file)
+ }).catch(() => toast("error", "Failed to read image file."))
  }
 
  // ── Drag from sidebar / OS file drop onto the CN image well ──────────
  // The same contract SlotSquare honors (ASSET_DRAG_MIME = sidebar asset
  // JSON with {url}; Files = OS file drop). The sidebar tile carries the
  // URL directly — fetch it → base64 → patchDraft. An OS file drop reuses
- // onUploadImage (same validation + FileReader path as the file picker).
+ // onUploadImage (same validation + shared read path as the file picker).
  const handleImageDrop = async (e: React.DragEvent) => {
  e.preventDefault()
  e.stopPropagation()

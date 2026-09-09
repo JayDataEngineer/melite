@@ -133,5 +133,13 @@ export default defineConfig({
     include: ['src/__tests__/**/*.test.{ts,tsx}'],
     css: false,
     pool: 'threads',
+    // S4f: DSH ui-primitives ships CSS-module imports inside its ESM.
+    // Inlined so vite transforms it (css:false then drops the styles);
+    // otherwise node externalizes the package and chokes on ".css".
+    server: {
+      deps: {
+        inline: [/@deepseek-ai\/dsh-client-ui-primitives/],
+      },
+    },
   },
 })

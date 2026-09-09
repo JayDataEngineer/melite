@@ -5,7 +5,7 @@
 // dsl.py: LorasMod, ControlNetMod, LanPaintMod, MaskMod, the
 // qvoice pack): the CATEGORY's field schema, inherited by every
 // boarding family. A flavor (the family's own mods/<pack>.ts under
-// engines/comfyui/src/models/families/<genre>/<id>/mods/) boards
+// the family's packaged mods (packages/models/<id>/mods/ — the packagedFlavors table in cardDefs.ts)) boards
 // the pack and carries ONLY data — rows, the runtime door, or a
 // bare boarding. Fields live HERE and nowhere else (py
 // subclassing: the flavor inherits, never re-declares).

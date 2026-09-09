@@ -8,49 +8,79 @@
  * ("run-recovery"), model card docs are "model:<id>", and per-model
  * skills are "model:<id>:<stem>".
  */
-import type { ToolDefinition } from '../types.ts'
+import { defineTool } from '@deepseek-ai/dsh-tools'
+import type { ToolCallView } from '@deepseek-ai/dsh-tools'
+import type { JsonValue, ToolDefinition } from '../types.ts'
 import { gatewayRequest } from '../gateway.ts'
+import { jsonClean } from '../json-clean.ts'
 
 const READ_TIMEOUT_MS = 15_000
 
+/** Canonical result — the typed mirror of output.schema (the music
+ *  card's CardResult pattern: defineTool infers from the schema and
+ *  checks the execute return against it). id/content ride every
+ *  shape; the scoped echoes (genre/model) widen the tail. */
+type SkillReadResult = {
+  id: string;
+  content: string;
+  name?: string;
+  description?: string;
+  genre?: JsonValue;
+  model?: JsonValue;
+  error?: string;
+} & Record<string, JsonValue>;
+
 export function skillRead(gatewayUrl: string): ToolDefinition {
-  return {
+  // PRESENTATION ADAPTATION (tool-presentation wall + conversion
+  // invariance — presentCall output must not change): defineTool
+  // soft-gates presentCall behind arg validation (invalid → undefined),
+  // but the raw face always returned the tool's own generic card, and
+  // the wall pins that (junk/invalid args during streaming + replay
+  // still render the generic view, never throw). The presenter is
+  // shared: it rides the definition AND is re-attached over the gate
+  // below. execute validation (ToolArgsError/INVALID_ARGS) is
+  // unaffected.
+  const presentCall: (args: unknown) => ToolCallView = (args) => {
+    const a = (typeof args === "object" && args !== null ? args : {}) as { id?: unknown };
+    return {
+      card: 'generic',
+      title: `Read skill ${String(a.id ?? '?')}`,
+      kind: 'read',
+      rawInput: String(a.id ?? '?'),
+    };
+  };
+  // Ledger row 8 (2026-09-10): defineTool wraps the literal — the
+  // registry gains schema compilation + input validation
+  // (ToolArgsError/INVALID_ARGS) + timeoutMs enforcement this face
+  // never had as a raw registration.
+  const def = defineTool({
     name: 'skill_read',
     description:
       'Load ONE skill document in full (progressive disclosure tier 2): markdown body plus its '
       + 'name/description and genre/model when scoped. Discover ids first with skill_index. '
       + 'Reads are recorded in the gateway ledger (skill.read) - the audit trail of which '
       + 'recipes informed a generation. Args: id (from skill_index).',
+    // ParameterSchemaSpec grammar: the map IS the implicit object root
+    // (no type/properties wrapper), per-property `required: true`.
     parameters: {
-      type: 'object',
-      properties: {
-        id: {
-          type: 'string',
-          description: 'Skill id from skill_index: "<stem>", "model:<id>" or "model:<id>:<stem>".',
-        },
+      id: {
+        type: 'string',
+        description: 'Skill id from skill_index: "<stem>", "model:<id>" or "model:<id>:<stem>".',
+        required: true,
       },
-      required: ['id'],
     },
-    presentCall(args) {
-      const a = (typeof args === "object" && args !== null ? args : {}) as { id?: unknown };
-      return {
-        card: 'generic',
-        title: `Read skill ${String(a.id ?? '?')}`,
-        kind: 'read',
-        rawInput: String(a.id ?? '?'),
-      };
-    },
+    presentCall,
     output: {
       schema: {
         type: 'object',
         additionalProperties: true,
         properties: {
-          id: { type: 'string' },
+          id: { type: 'string', required: true },
           name: { type: 'string', description: 'Skill title from frontmatter.' },
           description: { type: 'string', description: 'One-line summary.' },
-          content: { type: 'string', description: 'The full markdown body.' },
+          content: { type: 'string', description: 'The full markdown body.', required: true },
+          error: { type: 'string', description: 'The refusal text — present exactly when the tool refused (render prints REFUSED).' },
         },
-        required: ['id', 'content'],
       },
       render: (args, value) => {
         const a = (typeof args === "object" && args !== null ? args : {}) as { id?: string }
@@ -61,7 +91,7 @@ export function skillRead(gatewayUrl: string): ToolDefinition {
         }]
       },
     },
-    async execute(args, exec) {
+    async execute(args, exec): Promise<SkillReadResult> {
       const a = (typeof args === "object" && args !== null ? args : {}) as { id?: unknown }
       if (typeof a.id !== 'string' || a.id.length === 0) {
         throw new Error('skill_read: "id" is required (a skill id string from skill_index)')
@@ -72,14 +102,18 @@ export function skillRead(gatewayUrl: string): ToolDefinition {
         gatewayUrl, 'GET', '/v1/skills/' + encodeURIComponent(a.id),
         undefined, exec.signal, READ_TIMEOUT_MS,
       ) as Record<string, unknown>
-      return {
+      return jsonClean({
         id: res.id ?? a.id,
         name: res.name ?? null,
         description: res.description ?? null,
         genre: res.genre ?? null,
         model: res.model ?? null,
         content: res.content ?? '',
-      }
+      }) as SkillReadResult
     },
-  }
+  });
+  // Re-attach the unconditional presenter over defineTool's
+  // soft-validation gate (see the adaptation above).
+  def.presentCall = presentCall;
+  return def;
 }

@@ -1,9 +1,17 @@
-// form-spec-parity.test.ts — THE LIVE/FROZEN PARITY WALL (the
-// discharge stroke, 2026-09-08): for EVERY card-carrying spec in
-// the frozen discovery catalog, the LIVE svc.formSpec (the cards'
+// form-spec-parity.test.ts — THE LIVE/GOLDEN PARITY WALL: for EVERY
+// card-carrying served id, the LIVE svc.formSpec (the cards'
 // schemastery declarations walked by the comfyui service) is
-// BYTE-EQUAL to the frozen referee — fields array AND
-// schema_groups.
+// BYTE-EQUAL to the golden referee
+// (tests/walls/ts/fixtures/form-spec-referee.json).
+//
+// HISTORY: the referee transcribed the retired python's served
+// answers (the discovery-catalog.json export, deleted 2026-09-10 —
+// byte parity with legacy python is NOT a goal). 28 of the 29 rows
+// still match the py answers verbatim; the qwen3-tts-base row was
+// re-baselined to the live derivation (py absorbed the voice-lock
+// qvoice group into base's fields; live scopes fields to the
+// serving card's surface — the tts card — so the group is gone by
+// design, not drift).
 //
 // This is the regression hole the discharge order closed: the
 // discovery doors served the frozen file while walls/params-emit
@@ -19,20 +27,18 @@ import assert from "node:assert/strict";
 import { loadCardDefs, theService } from "../../../../packages/engines/comfyui-cordis/src/cardDefs.ts";
 import { modelIds, registryIds, getModel } from "../../../../packages/engines/comfyui-cordis/src/models/models.ts";
 
-const CATALOG = JSON.parse(
+const REFEREE = JSON.parse(
   readFileSync(
-    new URL("../../../../packages/gateway/shell/data/discovery-catalog.json", import.meta.url),
+    new URL("../fixtures/form-spec-referee.json", import.meta.url),
     "utf8",
   ),
-) as {
-  form_specs: Record<string, { body: { fields: unknown[]; schema_groups: unknown[] } }>;
-};
+) as Record<string, { caller: string; fields: unknown[]; schema_groups: unknown[] }>;
 
 // THE SPEC PLANE serves (caller, atom) pairs — the card-carrying
 // served ids (registry models + boarded ROUTES like moss-sfx: THE
 // CARD SELECTS THE ATOMS, and a caller may board a route). Variant
-// routes no caller boards (krea-2-raw, ace-step-sft…) serve their
-// frozen rows through the door's fallthrough — never live-pinned.
+// routes no caller boards serve through the door's family envelope,
+// never live-pinned here.
 const KNOWN = new Set(modelIds());
 const DECLS = new Map(modelIds().map((id) => [id, getModel(id)]));
 
@@ -50,9 +56,9 @@ function callerOf(svc: ReturnType<typeof theService>, modelId: string): string |
 function comparedSpecs(): string[] {
   const svc = theService();
   const out: string[] = [];
-  for (const modelId of Object.keys(CATALOG.form_specs).sort()) {
-    // retired cells (anny-hmr &c) stay frozen-only — the table's
-    // families are the live surface
+  for (const modelId of Object.keys(REFEREE).sort()) {
+    // retired cells (anny-hmr &c) were never in the referee — the
+    // table's families are the live surface
     if (!KNOWN.has(modelId)) continue;
     if (callerOf(svc, modelId) === null) continue;
     out.push(modelId);
@@ -60,33 +66,35 @@ function comparedSpecs(): string[] {
   return out;
 }
 
-describe("live formSpec ≡ frozen referee (the parity wall)", () => {
+describe("live formSpec ≡ golden referee (the parity wall)", () => {
   it("boots the card plane and covers every card-carrying spec", async (): Promise<void> => {
     await loadCardDefs();
     const specs = comparedSpecs();
-    // 28: 27 registry models + the sfx card's boarded ROUTE
-    // moss-sfx (the caller boards the address, not the model).
-    // mask-studio serves its frozen spec through the door's
-    // fallthrough now (pure action card — boards nothing).
-    // the qwen3-tts-base fold serves its frozen spec through the
-    // door's fallthrough (the tts card boards the model; the
-    // route inherits) — never live-pinned.
-    assert.equal(specs.length, 28, "the frozen catalog carries 28 card-carrying specs");
+    // 29: 28 registry models + the sfx card's boarded ROUTE
+    // moss-sfx (the caller boards the address, not the model) +
+    // the qwen3-tts-base fold (the tts card boards the route since
+    // the base/voicedesign folds landed — its referee row is the
+    // live baseline, see the header).
+    // mask-studio boards nothing (pure action card) so it never
+    // enters this wall — the door serves its envelope live with
+    // variants [].
+    assert.equal(specs.length, 29, "the referee carries 29 card-carrying specs");
   });
 
   it("fields arrays are byte-equal for every spec", async (): Promise<void> => {
     await loadCardDefs();
     const svc = theService();
     for (const modelId of comparedSpecs()) {
-      const ref = CATALOG.form_specs[modelId].body;
+      const ref = REFEREE[modelId];
       const caller = callerOf(svc, modelId);
       assert.ok(caller !== null, `${modelId}: no caller boards it`);
+      assert.equal(caller, ref.caller, `${modelId}: caller moved ${ref.caller} -> ${caller}`);
       const live = svc.formSpec(caller, modelId);
       assert.ok(live !== null, `${modelId}: no live spec`);
       assert.deepEqual(
         JSON.stringify(live?.fields),
         JSON.stringify(ref.fields),
-        `${modelId}: fields drifted from the frozen referee`,
+        `${modelId}: fields drifted from the golden referee`,
       );
     }
   });
@@ -95,14 +103,14 @@ describe("live formSpec ≡ frozen referee (the parity wall)", () => {
     await loadCardDefs();
     const svc = theService();
     for (const modelId of comparedSpecs()) {
-      const ref = CATALOG.form_specs[modelId].body;
+      const ref = REFEREE[modelId];
       const caller = callerOf(svc, modelId);
       assert.ok(caller !== null, `${modelId}: no caller boards it`);
       const live = svc.formSpec(caller, modelId);
       assert.deepEqual(
         JSON.stringify(live?.schema_groups),
         JSON.stringify(ref.schema_groups),
-        `${modelId}: schema_groups drifted from the frozen referee`,
+        `${modelId}: schema_groups drifted from the golden referee`,
       );
     }
   });
@@ -118,7 +126,7 @@ describe("live formSpec ≡ frozen referee (the parity wall)", () => {
     assert.ok(!opts.includes("not_a_sampler"));
   });
 
-  it("the hierarchy: 48 models, every flat route still serves", (): Promise<void> => {
+  it("the hierarchy: 48 models, every flat route still serves", (): void => {
     // THE HIERARCHY STROKE (2026-09-08): one model per engine-lane
     // unit (ace-step ×6 flat ids = ONE model: variants × quants);
     // every flat id the runtime has ever addressed still serves.

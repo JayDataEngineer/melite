@@ -30,6 +30,7 @@
     "@melite/audio-voice-lock": "workspace:*",
     "@melite/image-image-edit": "workspace:*",
     "@melite/motion-motion": "workspace:*",
+    "@melite/3d-clothing-placement": "workspace:*",
     "@melite/video-h3-timeline": "workspace:*",
     "unrun": "^0.3.1",
     "@melite/gateway-core": "workspace:*"

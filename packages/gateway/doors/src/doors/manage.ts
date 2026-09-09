@@ -78,6 +78,11 @@ export interface ManageCtx {
    *  optional: a door without its catalog is a miswire, and the
    *  type error at the construction site is the loudest refusal). */
   models: ModelsService;
+  /** The timer-service seat (ctx.timeout from the door's Cordis
+   *  context — cordis-plugin-timer): REQUIRED so a library caller
+   *  can never silently fall back to a bare setTimeout (the
+   *  conformance stroke 2026-09-10). */
+  timeout: (callback: () => void, delay: number) => () => void;
 }
 
 interface Req {
@@ -339,13 +344,19 @@ interface EndpointView {
   devices?: Array<{ name: string; vram_total: unknown; vram_free: unknown }>;
 }
 
-/** The endpoint config's OWN server, probed live (/system_stats). */
-async function probeEndpoint(repoRoot: string): Promise<EndpointView> {
+/** The endpoint config's OWN server, probed live (/system_stats).
+ *  The 5s abort rides the timer service seat (ManageCtx.timeout —
+ *  the cordis-plugin-timer seam, shell/cordis.yml row): the
+ *  returned disposer is both the early clear and the disposal
+ *  guarantee, no bare setTimeout (deep-audit finding #7,
+ *  2026-09-10). */
+async function probeEndpoint(mctx: ManageCtx): Promise<EndpointView> {
+  const repoRoot = mctx.repoRoot;
   const cfg = endpointConfig(repoRoot);
   const url = typeof cfg["url"] === "string" ? (cfg["url"] as string).replace(/\/+$/, "") : "";
   if (url === "") return { reachable: false, reason: "no url in endpoint config" };
   const ctrl = new AbortController();
-  const t = setTimeout(() => ctrl.abort(), 5000);
+  const t = mctx.timeout((): void => ctrl.abort(), 5000);
   try {
     const r = await fetch(url + "/system_stats", { signal: ctrl.signal });
     const stats = (await r.json()) as Record<string, unknown>;
@@ -359,7 +370,7 @@ async function probeEndpoint(repoRoot: string): Promise<EndpointView> {
   } catch (e) {
     return { reachable: false, url, reason: String(e).slice(0, 120) };
   } finally {
-    clearTimeout(t);
+    t();
   }
 }
 
@@ -432,7 +443,7 @@ async function hStatus(req: Req, ctx: ManageCtx): Promise<[number, ManageEnvelop
   const info = (await tool(ctx, req, "server_info", {})) as Record<string, unknown>;
   const sec = ensureManagerSecurity(ctx.repoRoot);
   const active = activeRuns(ctx.repoRoot);
-  const endpoint = await probeEndpoint(ctx.repoRoot);
+  const endpoint = await probeEndpoint(ctx);
   const routing = ensureRouting(ctx);
   const up = endpoint.reachable || (info ?? {})["running"];
   const data = { endpoint, server_info: info, manager_security: sec, active_runs: active, routing };
@@ -572,7 +583,7 @@ async function hRestart(req: Req, ctx: ManageCtx): Promise<[number, ManageEnvelo
   } catch (e) {
     // Honest split: a server this comfy-cli never launched cannot be
     // restarted by it — say WHERE the server is instead.
-    const endpoint = await probeEndpoint(ctx.repoRoot);
+    const endpoint = await probeEndpoint(ctx);
     if (endpoint.reachable) {
       throw new Refused(
         409,

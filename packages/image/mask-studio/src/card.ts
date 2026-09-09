@@ -18,6 +18,7 @@ import type { Context } from '@deepseek-ai/cordis'
 import z from '@deepseek-ai/schemastery'
 import { maskT1 } from '@melite/comfyui-card-kit'
 import type { ComfyUIService } from '@melite/comfyui-cordis/service'
+import type { ProvisionRow } from '@melite/comfyui-cordis/model-contract'
 import { vocabulary } from '@melite/comfyui-card-kit/vocab'
 
 const schema = z.object({
@@ -58,6 +59,27 @@ const PINS = {
   unet: 'rt_detr_v4-x-hgnet_fp32.safetensors',
 }
 
+// THE IDENTITY RUNG (native 2026-09-10 — migrated from the frozen
+// identity ring; the card owns its label/description/genre/icon).
+export const identity = {
+  label: 'Mask Studio',
+  description: 'Selection-only mask card: detect people/subjects, refine with SAM3, paint corrections → mask artifacts for inpaint flows.',
+  genre: 'image',
+  icon: 'mask',
+}
+
+// THE CARD-OWNED WEIGHTS (migrated 2026-09-10 from the frozen
+// discovery export's provisions row — mask-studio is a tool, not a
+// family, so its RT-DETR weights ride the card, never a DECL).
+export const provisions: ProvisionRow[] = [
+  {
+    name: 'rt_detr_v4-x-hgnet_fp32.safetensors',
+    folder: 'diffusion_models',
+    url: 'https://huggingface.co/Comfy-Org/SDPose/resolve/main/diffusion_models/rt_detr_v4-x-hgnet_fp32.safetensors',
+    sha256: '1ba4a7794c2f8b176327c887ba38fbe0f977049cbef149960288aa923d0239f3',
+  },
+]
+
 export function apply(ctx: Context): void {
   ctx.effect(() => ctx.comfyui.registerCard({
     id: 'mask-studio',
@@ -69,6 +91,18 @@ export function apply(ctx: Context): void {
     boarded: [],
     tags: ['image', 'mask', 'edit'],
     requiresModel: false,
+    identity,
+    provisions,
+    // THE DISCOVERY ROWS (migrated 2026-09-10 from the frozen
+    // discovery export — the card owns its sidebar, surface, and
+    // flow-stage declarations; the discovery arms derive from here).
+    sidebar: { key: 'image', order: 8 },
+    surface: { layout: 'studio' },
+    flowKinds: {
+      inputs: { image: 'image' },
+      outputs: { default: 'seg' },
+      requiresModel: false,
+    },
     // ADMISSION EXTRAS (the py class-attr half verbatim: the
     // retired row's admits minus the boarded families' studio
     // writes, which the projection unions from the facts file).

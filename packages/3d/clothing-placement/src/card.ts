@@ -47,6 +47,7 @@ export const identity = {
   description:
     'Place a garment mesh on a body mesh in a persistent Blender session (MCP) - snap, offset, rotate, scale, mirror; exports the placed scene GLB.',
   genre: '3d',
+  icon: 'box',
 } as const
 
 /** Estate-file contract shared by the compose gate: file-typed
@@ -79,6 +80,16 @@ export function registerCard(ctx: Context, comfy: ComfyUIService): void {
     boarded: [],
     tags: ['3d', 'character', 'place'],
     requiresModel: false,
+    // THE DISCOVERY ROWS (authored 2026-09-10 — the card postdates
+    // the frozen discovery export, so it never had a frozen row:
+    // sidebar order 22 fills the retired auto-rig slot in the 3d
+    // cluster; the flow stage wires body + garment meshes).
+    sidebar: { key: '3d', order: 22 },
+    flowKinds: {
+      inputs: { body: 'mesh', garment: 'mesh' },
+      outputs: { default: 'mesh' },
+      requiresModel: false,
+    },
     identity,
     requires: ['melite-blender-proxy-nodes'],
     schema: schema as unknown as (v: unknown) => Record<string, unknown>,

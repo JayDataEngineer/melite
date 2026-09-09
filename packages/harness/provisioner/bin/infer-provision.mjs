@@ -26,7 +26,7 @@
  */
 
 import { execSync } from 'node:child_process'
-import { existsSync, mkdirSync, readFileSync, writeFileSync, copyFileSync } from 'node:fs'
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import process from 'node:process'
@@ -82,7 +82,16 @@ function renderProfile(name) {
   }
   pkg.name = pkg.name || 'dsh-profile-' + name
   pkg.private = true
-  pkg.dependencies = { ...rowDeps, ...(pkg.dependencies || {}), '@infer/dsh-provisioner': link }
+  // Ledger row 34 follow-up (2026-09-10): dependencies are REGENERATED,
+  // never merged — the renderer owns this file wholesale (same law as
+  // the rows: "the bundle owns every row, no drift"). The old merge kept
+  // fossil link: rows from pre-reorg renders (plugins/harness/dsh/…),
+  // and pnpm warned "installing a dependency from a non-existent
+  // directory" on every install while the profile silently carried
+  // dead links. rowDeps are re-derived from THIS provisioner's manifest
+  // on every render; user-added registry deps belong in the bundle, not
+  // here.
+  pkg.dependencies = { ...rowDeps, '@infer/dsh-provisioner': link }
   pkg.dsh = { profile: { bundles: [
     ...new Set([...((pkg.dsh && pkg.dsh.profile && pkg.dsh.profile.bundles) || []), ...bundles]),
   ] } }
@@ -123,17 +132,6 @@ function installDeps(profileDir) {
   return true
 }
 
-// ── agent preset ────────────────────────────────────────────────────────
-function installPreset() {
-  const src = join(PROVISIONER, '../inference-studio')
-  if (!existsSync(join(src, 'preset.yml'))) die('preset source missing at ' + src)
-  const dst = join(DSH_HOME, '.agent-presets/inference-studio')
-  mkdirSync(dst, { recursive: true })
-  copyFileSync(join(src, 'preset.yml'), join(dst, 'preset.yml'))
-  copyFileSync(join(src, 'agent.cordis.yml'), join(dst, 'agent.cordis.yml'))
-  log('preset installed  :', dst)
-}
-
 // ── gateway health ──────────────────────────────────────────────────────
 async function check() {
   const url = GATEWAY.replace(/\/$/, '') + '/v1/model-catalog'
@@ -156,8 +154,12 @@ async function check() {
 // ── main ────────────────────────────────────────────────────────────────
 switch (cmd) {
   case 'all': {
+    // Ledger row 34 (2026-09-10): the installPreset() arm died with the
+    // inference-studio retirement (2026-09-09) — its source tree no
+    // longer exists, so `all` hard-failed at "preset source missing".
+    // Presets are operator-managed now (~/.dsh/.agent-presets); this
+    // command provisions profiles + checks the gateway, nothing else.
     for (const name of ['inference', 'headless']) installDeps(renderProfile(name))
-    installPreset()
     await check()
     log('boot with:')
     log('  dsh web --profile inference          # the studio GUI')

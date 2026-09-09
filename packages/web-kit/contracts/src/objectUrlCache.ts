@@ -61,7 +61,7 @@ export function revokeObjectUrlFor(sourceUrl: string): void {
 /** Revoke every cached object URL. Intended for tests and explicit teardown. */
 export function revokeAll(): void {
   for (const obj of cache.values()) {
-    try { URL.revokeObjectURL(obj) } catch { /* ignore */ }
+    try { URL.revokeObjectURL(obj) } catch { /* revoke is idempotent — failure = already-revoked/gone (row 28) */ }
   }
   cache.clear()
 }
@@ -89,7 +89,7 @@ function createObjectUrlFromDataUrl(dataUrl: string): string {
     let bin: string
     try {
       bin = atob(payload)
-    } catch {
+    } catch { /* revoke is idempotent — failure = already-revoked/gone (row 28) */
       return dataUrl  // malformed base64 — return original, browser <img>/<video> handles it
     }
     bytes = new Uint8Array(bin.length)

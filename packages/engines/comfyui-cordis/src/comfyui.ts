@@ -92,6 +92,7 @@ import {
 import { request as httpRequest } from "node:http";
 import { basename, dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import Schema from "@deepseek-ai/schemastery";
 import { Context, Service } from "@deepseek-ai/cordis";
 import type { Plugin } from "@deepseek-ai/cordis";
 
@@ -174,7 +175,12 @@ export function loadEndpointConfig(): Record<string, EngineJson> {
             resolveRepoRoot(),
             "packages",
             "engines",
-            "comfyui",
+            // The PLUGIN's own data dir (deep-audit engine finding
+            // #1, fixed 2026-09-10): the stale `comfyui` segment
+            // pointed at a tree with no data/ — the shipped
+            // estate-truth file was silently skipped
+            // (`if (!existsSync(cand)) continue` → {}).
+            "comfyui-cordis",
             "data",
             "comfyui_endpoint.json",
           ),
@@ -1361,10 +1367,13 @@ async function executeFlowInner(
 // CONFIG (each decision documented — the task's init/Config rule):
 //   - static provider Config {url?, host?, port?}: the DSH-faithful
 //     host/port/url triple (host+port compose to http://host:port
-//     when url is absent). Hand-rolled validator (parseComfyUIHostConfig
-//     below) — schemastery is NOT a dep of the engine leaf and the
-//     task bans new npm deps, so the validator IS the schema (LOUD
-//     on wrong shapes, never a silent coerce).
+//     when url is absent). Declared as the house schemastery Config
+//     shape (image-gen / tutorial-05 pattern — ledger row 17,
+//     2026-09-10; the old "schemastery is not a dep" justification
+//     was stale — @deepseek-ai/schemastery is declared). parseComfyUI
+//     HostConfig resolves through it; trim/slash-strip/empty-string
+//     refusals stay hand predicates (schemastery accepts ""), the
+//     non-integer port guard stays (no .int() in this version).
 //   - explicit Config url wins (operator pin > everything).
 //   - COMFYUI_URL env: stays — WALL-PINNED engine truth (the e2e
 //     walls boot COMFYUI_URL=stub_url; the card e2e pins :18466).
@@ -1391,38 +1400,35 @@ export interface ComfyUIHostConfig {
 
 /** The Config schema (hand-rolled — see the header note): unknown
  *  in, validated triple out. Wrong shapes throw LOUD. */
+/** The provider's Config surface — the house schemastery shape
+ *  (row 17): declared schema, resolved by the parser. */
+export const Config: Schema<ComfyUIHostConfig> = Schema.object({
+  url: Schema.string(),
+  host: Schema.string(),
+  port: Schema.number().min(1).max(65535),
+});
+
 export function parseComfyUIHostConfig(raw: unknown): ComfyUIHostConfig {
   if (raw === undefined || raw === null) return {};
-  if (typeof raw !== "object" || Array.isArray(raw)) {
-    throw new Error(
-      "[comfyui] host Config must be an object {url?, host?, port?} — got " +
-        (Array.isArray(raw) ? "array" : typeof raw),
-    );
-  }
-  const rec: Record<string, unknown> = raw as Record<string, unknown>;
+  const resolved: ComfyUIHostConfig = Config(raw);
   const out: { url?: string; host?: string; port?: number } = {};
-  if (rec["url"] !== undefined) {
-    if (typeof rec["url"] !== "string" || (rec["url"] as string).trim() === "") {
+  if (resolved.url !== undefined) {
+    if (resolved.url.trim() === "") {
       throw new Error("[comfyui] host Config url must be a non-empty string");
     }
-    out.url = (rec["url"] as string).trim().replace(/\/+$/, "");
+    out.url = resolved.url.trim().replace(/\/+$/, "");
   }
-  if (rec["host"] !== undefined) {
-    if (typeof rec["host"] !== "string" || (rec["host"] as string).trim() === "") {
+  if (resolved.host !== undefined) {
+    if (resolved.host.trim() === "") {
       throw new Error("[comfyui] host Config host must be a non-empty string");
     }
-    out.host = (rec["host"] as string).trim();
+    out.host = resolved.host.trim();
   }
-  if (rec["port"] !== undefined) {
-    if (
-      typeof rec["port"] !== "number" ||
-      !Number.isInteger(rec["port"]) ||
-      (rec["port"] as number) < 1 ||
-      (rec["port"] as number) > 65535
-    ) {
+  if (resolved.port !== undefined) {
+    if (!Number.isInteger(resolved.port)) {
       throw new Error("[comfyui] host Config port must be an integer 1..65535");
     }
-    out.port = rec["port"] as number;
+    out.port = resolved.port;
   }
   return out;
 }

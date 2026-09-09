@@ -184,7 +184,7 @@ export function createZoomPromotion(
     if (grid === null) return
     try {
       grid.style.maxWidth = ""
-    } catch { /* ignore */ }
+    } catch { /* a dead grid must never wedge the machine (row 28 — cf. L142/179/205) */ }
   }
 
   const fit = (): void => {

@@ -22,6 +22,8 @@ export const BOARDED: string[] = ['qwen3-tts-voicedesign']
 export const identity = {
   label: 'Voice Lock',
   description: 'Lock a voice persona — design, export, and reuse .qvoice embeddings for consistent character voices',
+  genre: 'audio',
+  icon: 'fingerprint',
 }
 
 export function registerCard(ctx: Context, comfy: ComfyUIService): void {
@@ -31,6 +33,16 @@ export function registerCard(ctx: Context, comfy: ComfyUIService): void {
     skeleton: 'voicelock',
     boarded: ['qwen3-tts-voicedesign'],
     tags: ['audio', 'voice', 'reference'],
+    identity,
+    // THE DISCOVERY ROWS (migrated 2026-09-10 from the frozen
+    // discovery export — the card owns its sidebar, surface, and
+    // flow-stage declarations; the discovery arms derive from here).
+    sidebar: { key: 'audio', order: 4 },
+    flowKinds: {
+      inputs: { text: 'text', voice_file: 'audio' },
+      outputs: { default: 'audio' },
+      requiresModel: false,
+    },
     // the voice studio node rides the authored Audiocore pack;
     // SaveAudio is core.
     requires: ['melite-audio-nodes'],

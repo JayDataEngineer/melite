@@ -52,6 +52,15 @@ export const identity = {
   label: 'Image',
   description: 'Text-to-image generation — the generate_image interface card boarding krea-2; the family declares its mods (loras) and the surface scopes itself',
   genre: 'image',
+  icon: 'image',
+  principles: [
+    'prompt is required — an empty/whitespace prompt is rejected loud, never sampled with empty conditioning',
+    'Defaults are shape, not value: resolution/steps/cfg come from the model folder (defaults:/presets), merged at serve time',
+    'Sampler and scheduler option lists resolve from the ONE vocabulary (media.comfyui.sampler_vocab) — never hand-copied',
+    'A preset fills untouched fields; values you have set win',
+    'Mods are model-level declarations: lanpaint rides the families that declare it (anima, z-image) — input_image + lanpaint_mask switch the builder to LanPaintKSampler; loras ride krea-2 (apply on Turbo, train on Raw)',
+    'Mask prep (grow/feather/threshold/invert) and outpaint pads are applied host-side before the run — no silent param drops',
+  ],
 }
 
 /** Register the card face into the engine registry. The service
@@ -63,6 +72,16 @@ export function registerCard(ctx: Context, comfy: ComfyUIService): void {
     skeleton: 'generate',
     boarded: [...BOARDED],
     tags: ['image', 'generate', 'text-to-image'],
+    identity,
+    // THE DISCOVERY ROWS (migrated 2026-09-10 from the frozen
+    // discovery export — the card owns its sidebar, surface, and
+    // flow-stage declarations; the discovery arms derive from here).
+    sidebar: { key: 'image', order: 1 },
+    flowKinds: {
+      inputs: { prompt: 'text', reference_image: 'image' },
+      outputs: { default: 'image' },
+      requiresModel: true,
+    },
     recipes: RECIPES,
     schema: schema as unknown as (v: unknown) => Record<string, unknown>,
     compose(p, model, g, runId) {

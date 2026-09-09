@@ -75,6 +75,15 @@ export function apply(c: CtxView, config: Config = {}): void {
     return undefined
   }
 
+  /** A signal that fires when the HTTP caller goes away (aborts or
+   *  closes) — the fuse leg for long LLM sweeps (row 13). */
+  const reqClosedSignal = (req: import('node:http').IncomingMessage): AbortSignal => {
+    const ctrl = new AbortController()
+    req.on('close', () => ctrl.abort())
+    req.on('aborted', () => ctrl.abort())
+    return ctrl.signal
+  }
+
   const readBody = (req: import('node:http').IncomingMessage): Promise<Buffer> =>
     new Promise((resolve, reject) => {
       const chunks: Buffer[] = []
@@ -117,24 +126,13 @@ export function apply(c: CtxView, config: Config = {}): void {
         res.end(JSON.stringify(payload))
       }
       readBody(req).then((buf) => {
-        // TEMPORARY 1:1 CAPTURE (2026-09-06, operator order: "I SEND IN
-        // DSH, THEN YOU DO IT LIVE" — the operator presses Enhance once
-        // and I replay the EXACT body). Append-only local file on the
-        // operator's own machine, used once to replay THEIR failure,
-        // DELETED after. Never committed, never in records.
-        try {
-          const fs = require('node:fs') as {
-            appendFileSync(p: string, s: string): void
-          }
-          fs.appendFileSync(
-            '/tmp/melite-enhance-capture.jsonl',
-            JSON.stringify({
-              time: new Date().toISOString(),
-              chars: buf.length,
-              body: buf.toString('utf8'),
-            }) + '\n',
-          )
-        } catch { /* capture must never break the door */ }
+        // The 2026-09-06 "1:1 capture" block (user prompts appended
+        // to /tmp/melite-enhance-capture.jsonl via a CJS require
+        // that throws under ESM and was swallowed) is DELETED
+        // (2026-09-10, deep-audit harness finding #9): a privacy
+        // liability AND dead code — the require('node:fs') call
+        // never resolved, so nothing was ever captured and the
+        // "DELETED after" promise was unenforceable.
         let body: {
           system_prompt?: unknown; prompt?: unknown; temperature?: unknown;
           model?: unknown; llm?: unknown
@@ -174,11 +172,21 @@ export function apply(c: CtxView, config: Config = {}): void {
         // (observed ~40s per field live) — the cap is generous, never
         // a mid-song cutoff.
         if (typeof body.model === 'string' && body.model.length > 0) {
+          // Ledger row 13 (2026-09-10): the sweep deadline is FUSED
+          // with the caller's connection — req.destroyed (client
+          // abort/close) aborts the LLM legs too. The old detached
+          // AbortSignal.timeout kept every field completion burning
+          // after the ✦ button's fetch gave up. AbortSignal.any
+          // composes both without either owning the other.
+          const sweepSignal = AbortSignal.any([
+            AbortSignal.timeout(600_000),
+            reqClosedSignal(req),
+          ])
           return agenticSweep(gatewayUrl, c.llm, {
             model: body.model,
             prompt: body.prompt,
             temperature,
-            signal: AbortSignal.timeout(600_000),
+            signal: sweepSignal,
             ...(llmWant !== undefined ? { llmWant } : {}),
             defaultLlm: readDefaultLlm(),
           })

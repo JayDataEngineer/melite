@@ -22,7 +22,9 @@
  * deep craft → melite_flow (stages drafted on the fly) / the dedicated
  * card tool.
  */
-import type { ToolDefinition } from '../types.ts'
+import { defineTool } from '@deepseek-ai/dsh-tools'
+import type { ToolCallView } from '@deepseek-ai/dsh-tools'
+import type { JsonValue, ToolDefinition } from '../types.ts'
 import { gatewayRequest } from '../gateway.ts'
 import { jsonClean } from '../json-clean.ts'
 
@@ -50,8 +52,49 @@ interface BundleFlow {
   step_count?: unknown
 }
 
+/** Canonical result — the typed mirror of output.schema (the music
+ *  card's CardResult pattern: defineTool infers from the schema and
+ *  checks the execute return against it). lane/kind/agent ride the
+ *  success shape; the refusal echoes lane/kind with the error (the
+ *  `as` bridge below — the refusal is a careful subset, never a
+ *  schema failure by construction). */
+type LoadBundleResult = {
+  lane: string;
+  kind: string;
+  agent: Record<string, JsonValue>;
+  tools?: Record<string, JsonValue>[];
+  flows?: Record<string, JsonValue>[];
+  skills?: Record<string, JsonValue>[];
+  read_first?: string[];
+  tool_count?: number;
+  skill_count?: number;
+  error?: string;
+} & Record<string, JsonValue>;
+
 export function laneBundleLoad(gatewayUrl: string): ToolDefinition {
-  return {
+  // PRESENTATION ADAPTATION (tool-presentation wall + conversion
+  // invariance — presentCall output must not change): defineTool
+  // soft-gates presentCall behind arg validation (invalid → undefined),
+  // but the raw face always returned the tool's own generic card, and
+  // the wall pins that (junk/invalid args during streaming + replay
+  // still render the generic view, never throw). The presenter is
+  // shared: it rides the definition AND is re-attached over the gate
+  // below. execute validation (ToolArgsError/INVALID_ARGS) is
+  // unaffected.
+  const presentCall: (args: unknown) => ToolCallView = (args) => {
+    const a = (typeof args === "object" && args !== null ? args : {}) as { kind?: unknown; name?: unknown };
+    return {
+      card: 'generic',
+      title: `Load ${String(a.kind ?? '?')} bundle: ${String(a.name ?? '?')}`,
+      kind: 'fetch',
+      rawInput: { kind: String(a.kind ?? '?'), name: String(a.name ?? '?') },
+    };
+  };
+  // Ledger row 8 (2026-09-10): defineTool wraps the literal — the
+  // registry gains schema compilation + input validation
+  // (ToolArgsError/INVALID_ARGS) + timeoutMs enforcement this face
+  // never had as a raw registration.
+  const def = defineTool({
     name: 'lane_bundle_load',
     description:
       'LOAD one lane (attach): the lane\'s primary AGENT DOC arrives INLINE (agent.content — '
@@ -64,47 +107,41 @@ export function laneBundleLoad(gatewayUrl: string): ToolDefinition {
       + '— flows/<name>/flow.py declarations, the live scan). '
       + 'MODELS ARE NOT LANES — only action cards do inference; a model id passed bare resolves '
       + 'to the card that boards it, and its craft docs ride that card\'s skills.',
+    // ParameterSchemaSpec grammar: the map IS the implicit object root
+    // (no type/properties wrapper), per-property `required: true`.
     parameters: {
-      type: 'object',
-      properties: {
-        kind: {
-          type: 'string',
-          enum: ['action_card', 'template'],
-          description: 'The lane class (from lane_bundle_peek rows): action_card | template.',
-        },
-        name: {
-          type: 'string',
-          description: 'The lane key from peek (card dir name or template name; a bare model id resolves to the card that boards it).',
-        },
+      kind: {
+        type: 'string',
+        enum: ['action_card', 'template'],
+        description: 'The lane class (from lane_bundle_peek rows): action_card | template.',
+        required: true,
       },
-      required: ['kind', 'name'],
+      name: {
+        type: 'string',
+        description: 'The lane key from peek (card dir name or template name; a bare model id resolves to the card that boards it).',
+        required: true,
+      },
     },
-    presentCall(args) {
-      const a = (typeof args === "object" && args !== null ? args : {}) as { kind?: unknown; name?: unknown };
-      return {
-        card: 'generic',
-        title: `Load ${String(a.kind ?? '?')} bundle: ${String(a.name ?? '?')}`,
-        kind: 'fetch',
-        rawInput: { kind: String(a.kind ?? '?'), name: String(a.name ?? '?') },
-      };
-    },
+    presentCall,
     output: {
       schema: {
         type: 'object',
         additionalProperties: true,
         properties: {
-          lane: { type: 'string', description: 'The resolved lane name.' },
-          kind: { type: 'string', description: 'The resolved lane class.' },
+          lane: { type: 'string', description: 'The resolved lane name.', required: true },
+          kind: { type: 'string', description: 'The resolved lane class.', required: true },
           agent: {
             type: 'object',
+            additionalProperties: true,
             description: 'The injected agent doc: {source, name, content} — content is the full markdown.',
+            required: true,
           },
           tools: { type: 'array', description: 'Card manifests with params_schema + constraints.' },
           flows: { type: 'array', description: 'Flow templates (steps ladder) for template lanes.' },
           skills: { type: 'array', description: 'Skill index rows across all levels.' },
           read_first: { type: 'array', description: 'Skill ids in read order (guide first).' },
+          error: { type: 'string', description: 'The refusal text — present exactly when the tool refused (render prints REFUSED).' },
         },
-        required: ['lane', 'kind', 'agent'],
       },
       render: (args, value) => {
         const a = (typeof args === "object" && args !== null ? args : {}) as { name?: string }
@@ -118,7 +155,7 @@ export function laneBundleLoad(gatewayUrl: string): ToolDefinition {
         }]
       },
     },
-    async execute(args, exec) {
+    async execute(args, exec): Promise<LoadBundleResult> {
       const a = (typeof args === "object" && args !== null ? args : {}) as { kind?: unknown; name?: unknown }
       const kind = typeof a.kind === 'string' ? a.kind : ''
       const name = typeof a.name === 'string' ? a.name : ''
@@ -138,7 +175,7 @@ export function laneBundleLoad(gatewayUrl: string): ToolDefinition {
         error?: string
       }
       if (res && typeof res.error === 'string') {
-        return jsonClean({ lane: name, kind, error: res.error })
+        return jsonClean({ lane: name, kind, error: res.error }) as LoadBundleResult
       }
       // WIRE CONTRACT GATE (2026-09-05 duck-typing audit): this tool
       // DECLARES required ['lane','kind','agent'] in its output
@@ -163,7 +200,7 @@ export function laneBundleLoad(gatewayUrl: string): ToolDefinition {
             + 'contract (missing ' + missing.join(', ') + ') — the gateway '
             + 'bundle door is the contract; a hollow bundle is a loud '
             + 'refusal, never a silently-empty attach',
-        })
+        }) as LoadBundleResult
       }
       // every TOOL row carries a string name — a nameless tool row
       // cannot be called and is malformed, not silently passed
@@ -176,7 +213,7 @@ export function laneBundleLoad(gatewayUrl: string): ToolDefinition {
             error: 'bundle for ' + JSON.stringify(name) + ' carries a tool '
               + 'row with no name — the manifest is malformed (a nameless '
               + 'tool cannot be called)',
-          })
+          }) as LoadBundleResult
         }
       }
       const tools = rawTools.map((t) => {
@@ -207,7 +244,11 @@ export function laneBundleLoad(gatewayUrl: string): ToolDefinition {
         read_first: Array.isArray(obj.read_first) ? obj.read_first : [],
         tool_count: tools.length,
         skill_count: skills.length,
-      })
+      }) as LoadBundleResult
     },
-  }
+  });
+  // Re-attach the unconditional presenter over defineTool's
+  // soft-validation gate (see the adaptation above).
+  def.presentCall = presentCall;
+  return def;
 }

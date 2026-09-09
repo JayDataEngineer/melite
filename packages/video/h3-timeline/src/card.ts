@@ -234,6 +234,16 @@ export const BOARDED: string[] = ['h3-timeline', 'h3', 'h3-keyframe']
 export const identity = {
   label: 'H3 Timeline',
   description: 'THE video interface — multi-window film with SLA sparse attention, joint video+audio per window, auto-stitched into one mp4. The calls document IS the timeline.',
+  genre: 'video',
+  icon: 'video',
+  principles: [
+    'Describe MOTION and SOUND together — H3 generates both in one pass',
+    'Draft at 768x448x56f (~2.3s); produce at 1344x768x124f (~5.2s)',
+    'Length snaps to the 17k+5 frame grid at 24fps',
+    'For timelines: repeat the ambient soundscape verbatim in every window; add one new layer where the story needs it',
+    "Same seed across a shot's re-rolls keeps the world texture",
+    'SLA at sparsity 0.90 gives ~1.75x speedup with no quality loss — use it by default',
+  ],
 }
 
 // ── the renderer body — node order IS the python's serialized id order ────
@@ -542,6 +552,17 @@ export function registerCard(ctx: Context, comfy: ComfyUIService): void {
     // video_h3_open-cascade composing model 'h3' through this card.
     boarded: [...BOARDED],
     tags: ['video', 'timeline', 'edit'],
+    identity,
+    // THE DISCOVERY ROWS (migrated 2026-09-10 from the frozen
+    // discovery export — the card owns its sidebar, surface, and
+    // flow-stage declarations; the discovery arms derive from here).
+    sidebar: { key: 'video', order: 6 },
+    surface: { size: 'huge', layout: 'studio' },
+    flowKinds: {
+      inputs: { image: 'image' },
+      outputs: { default: 'video' },
+      requiresModel: false,
+    },
     // ADMISSION EXTRAS (the py class-attr half verbatim: the
     // retired row's admits minus the boarded families' studio
     // writes, which the projection unions from the facts file —
@@ -554,7 +575,7 @@ export function registerCard(ctx: Context, comfy: ComfyUIService): void {
       'ComfyUI-Frame-Interpolation', 'ComfyUI-KJNodes',
       'ComfyUI-SeedVR2_VideoUpscaler', 'ComfyUI-LTXVideo',
     ],
-    schema: schema as unknown as (v: unknown) => Record<string, unknown>,
+    schema,
     // the emitter carrier (this card's schema is the hand-written
     // normalizer — params_schema walks the declared object's .dict)
     schemaCarrier: paramSchema,

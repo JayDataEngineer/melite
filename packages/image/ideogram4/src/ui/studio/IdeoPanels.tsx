@@ -10,7 +10,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Button } from '@melite/ui/button'
 import { Input } from '@melite/ui/input'
 import { Textarea } from '@melite/ui/textarea'
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@melite/ui/tooltip'
+import { Tooltip } from '@deepseek-ai/dsh-client-ui-primitives'
 import { useToastStore } from '@melite/ui'
 import { copyText } from "@melite/ui"
 import { Box, Type, Trash2, Copy, ChevronUp, ChevronDown, Plus, Palette as PaletteIcon, ClipboardCopy, Check, Image as ImageIcon, X } from 'lucide-react'
@@ -28,17 +28,16 @@ export function MicroLabel({ children, tooltip }: { children: React.ReactNode; t
     </span>
   )
   if (!tooltip) return content
+  // S4f: the ⓘ hint rides the DSH Tooltip (label/side/delay preserve the
+  // radix behavior: top placement, 700ms hover delay). The bubble max-width
+  // is the DSH default (half-viewport cap) — the old max-w-xs override
+  // dies with the radix compound.
   return (
     <div className="flex items-center gap-1">
       {content}
-      <TooltipProvider>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <span className="cursor-help text-muted-foreground/50 hover:text-muted-foreground">ⓘ</span>
-          </TooltipTrigger>
-          <TooltipContent className="max-w-xs text-xs">{tooltip}</TooltipContent>
-        </Tooltip>
-      </TooltipProvider>
+      <Tooltip label={tooltip} side="top" delayMs={700}>
+        <span className="cursor-help text-muted-foreground/50 hover:text-muted-foreground">ⓘ</span>
+      </Tooltip>
     </div>
   )
 }
@@ -222,46 +221,29 @@ export function ElementInspector({
           {element.type}
         </span>
         <div className="ml-auto flex items-center gap-1">
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button variant="ghost" size="icon-sm" onClick={onSendToBack} disabled={false}>
-                  <ChevronDown className="h-3.5 w-3.5" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent className="text-xs">Send to back</TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button variant="ghost" size="icon-sm" onClick={onBringToFront} disabled={false}>
-                  <ChevronUp className="h-3.5 w-3.5" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent className="text-xs">Bring to front</TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button variant="ghost" size="icon-sm" onClick={onDuplicate}>
-                  <Copy className="h-3.5 w-3.5" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent className="text-xs">Duplicate (⌘D)</TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button variant="ghost" size="icon-sm" onClick={onDelete} className="text-destructive hover:text-destructive">
-                  <Trash2 className="h-3.5 w-3.5" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent className="text-xs">Delete (⌫)</TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
+          {/* S4f: layer-action hints ride the DSH Tooltip (side="top" +
+              delayMs={700} preserve the radix compound's behavior; the
+              kit Button anchors stay — Button itself is a later stroke). */}
+          <Tooltip label="Send to back" side="top" delayMs={700}>
+            <Button variant="ghost" size="icon-sm" onClick={onSendToBack} disabled={false}>
+              <ChevronDown className="h-3.5 w-3.5" />
+            </Button>
+          </Tooltip>
+          <Tooltip label="Bring to front" side="top" delayMs={700}>
+            <Button variant="ghost" size="icon-sm" onClick={onBringToFront} disabled={false}>
+              <ChevronUp className="h-3.5 w-3.5" />
+            </Button>
+          </Tooltip>
+          <Tooltip label="Duplicate (⌘D)" side="top" delayMs={700}>
+            <Button variant="ghost" size="icon-sm" onClick={onDuplicate}>
+              <Copy className="h-3.5 w-3.5" />
+            </Button>
+          </Tooltip>
+          <Tooltip label="Delete (⌫)" side="top" delayMs={700}>
+            <Button variant="ghost" size="icon-sm" onClick={onDelete} className="text-destructive hover:text-destructive">
+              <Trash2 className="h-3.5 w-3.5" />
+            </Button>
+          </Tooltip>
         </div>
       </div>
 

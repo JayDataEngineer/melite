@@ -866,6 +866,9 @@ importers:
       '@deepseek-ai/dsh-tools':
         specifier: 0.1.1-rc.2
         version: 0.1.1-rc.2(c99a84f9f9b5ed24862430e477a90715)
+      '@melite/3d-clothing-placement':
+        specifier: workspace:*
+        version: link:../../3d/clothing-placement
       '@melite/audio-music':
         specifier: workspace:*
         version: link:../../audio/music
@@ -907,17 +910,17 @@ importers:
   packages/harness/provisioner:
     dependencies:
       '@infer-media/dsh-gallery':
-        specifier: link:../../../web/dsh/infer-gallery
-        version: link:../../../web/dsh/infer-gallery
+        specifier: link:../../web/infer-gallery
+        version: link:../../web/infer-gallery
       '@infer-media/dsh-media':
-        specifier: link:../../../web/dsh/media-plugin
-        version: link:../../../web/dsh/media-plugin
+        specifier: link:../../web/media-plugin
+        version: link:../../web/media-plugin
       '@melite-plugin/dsh-card-deck':
-        specifier: link:../../../web/dsh/melite-card-deck
-        version: link:../../../web/dsh/melite-card-deck
+        specifier: link:../../web/melite-card-deck
+        version: link:../../web/melite-card-deck
       '@melite-plugin/dsh-card-view':
-        specifier: link:../../../web/dsh/melite-card-view
-        version: link:../../../web/dsh/melite-card-view
+        specifier: link:../../web/melite-card-view
+        version: link:../../web/melite-card-view
       '@melite-plugin/dsh-tools':
         specifier: link:../melite-tools
         version: link:../melite-tools
@@ -927,6 +930,9 @@ importers:
       '@deepseek-ai/cordis':
         specifier: ^4.0.2
         version: 4.0.2(@deepseek-ai/cordis-plugin-include@1.0.6)(@deepseek-ai/cordis-plugin-loader@1.0.3)
+      '@deepseek-ai/dsh-client-ui-primitives':
+        specifier: ^0.1.0-rc.8
+        version: 0.1.0-rc.8(@deepseek-ai/cordis@4.0.2)(@deepseek-ai/dsh-invariants@0.1.0-rc.8(@deepseek-ai/cordis@4.0.2))
       '@deepseek-ai/schemastery':
         specifier: '*'
         version: 3.18.2
@@ -1864,6 +1870,9 @@ importers:
       '@melite/contracts':
         specifier: workspace:*
         version: link:../contracts
+      '@melite/ui':
+        specifier: workspace:*
+        version: link:../ui
       lucide-react:
         specifier: '*'
         version: 1.39.0(react@19.2.8)
@@ -1996,6 +2005,9 @@ importers:
       '@deepseek-ai/dsh-client-runtime':
         specifier: ^0.1.0-rc.8
         version: 0.1.0-rc.8(6428de2afe7da8154214523bdea42b7c)
+      '@deepseek-ai/dsh-client-ui-primitives':
+        specifier: ^0.1.0-rc.8
+        version: 0.1.0-rc.8(@deepseek-ai/cordis@4.0.2)(@deepseek-ai/dsh-invariants@0.1.0-rc.8(@deepseek-ai/cordis@4.0.2))
       '@deepseek-ai/dsh-client-ui-slots':
         specifier: ^0.1.0-rc.8
         version: 0.1.0-rc.8(@deepseek-ai/cordis@4.0.2)(@deepseek-ai/dsh-invariants@0.1.0-rc.8(@deepseek-ai/cordis@4.0.2))

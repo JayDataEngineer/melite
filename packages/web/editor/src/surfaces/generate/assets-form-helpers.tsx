@@ -3,6 +3,7 @@
 // deleted 2026-08-06; these helpers now serve the Library canvas.)
 import { useState, useEffect } from "react"
 import type { ReactNode } from "react"
+import { readAsDataURL } from "@melite/ui"
 import { Label } from "@melite/ui/label"
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
@@ -103,12 +104,9 @@ async function pickVoiceB64(a: MediaAsset): Promise<string> {
   if (a.url.startsWith("data:")) return a.url.split(",")[1] || a.url
   const res = await fetch(a.url)
   const blob = await res.blob()
-  return await new Promise<string>((resolve, reject) => {
-    const reader = new FileReader()
-    reader.onload = () => resolve(String(reader.result).split(",")[1] ?? "")
-    reader.onerror = () => reject(reader.error)
-    reader.readAsDataURL(blob)
-  })
+  // Shared readAsDataURL — the ONE read path every slot-shaped attach uses.
+  const dataUrl = await readAsDataURL(blob)
+  return dataUrl.split(",")[1] ?? ""
 }
 
 export function VoiceAssetPicker({

@@ -9,10 +9,10 @@
   },
   "dependencies": {
     "@melite-plugin/dsh-tools": "link:../melite-tools",
-    "@melite-plugin/dsh-card-view": "link:../../../web/dsh/melite-card-view",
-    "@melite-plugin/dsh-card-deck": "link:../../../web/dsh/melite-card-deck",
-    "@infer-media/dsh-media": "link:../../../web/dsh/media-plugin",
-    "@infer-media/dsh-gallery": "link:../../../web/dsh/infer-gallery"
+    "@melite-plugin/dsh-card-view": "link:../../web/melite-card-view",
+    "@melite-plugin/dsh-card-deck": "link:../../web/melite-card-deck",
+    "@infer-media/dsh-media": "link:../../web/media-plugin",
+    "@infer-media/dsh-gallery": "link:../../web/infer-gallery"
   },
   "dsh": {
     "bundle": {

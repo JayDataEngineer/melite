@@ -13,7 +13,9 @@
 // Shape laws carried over verbatim:
 // - rows are FROZEN DATA (PYTHON SHAPE LAW rung 1 → data-stays-data,
 //   P36): a cell is a record, not a type.
-// - `extra: forbid` → Schemastery strict schemas (unknown key refuses).
+// - `extra: forbid` → registerFamily resolves every DECL strictly and
+//   refuses stripped keys as drift (the plain object resolver MERGES
+//   unknown keys by default — corrected 2026-09-10, row 16).
 // - artifact all-or-nothing (rung 4): a Cell either downloads or not.
 // - sha256: 64 lowercase hex (regex validator).
 // - served ModelRow.form REQUIRED non-empty (2026-08-11 catalog
@@ -191,6 +193,61 @@ export interface ProvisionRow {
   sha256?: string;
   size_bytes?: number;
 }
+
+export const ProvisionRow: z<ProvisionRow> = z.object({
+  name: z.string(),
+  url: z.string(),
+  folder: z.string(),
+  sha256: z.string().pattern(SHA256_RE),
+  size_bytes: z.number().min(0),
+});
+
+/** ModelDecl, the SCHEMA (ledger row 16, 2026-09-10): the interface
+ *  above had NO runtime twin — validateDecl hand-rolled four field
+ *  checks while the py law's `extra: forbid` went entirely
+ *  unenforced (schemastery's default object resolver MERGES unknown
+ *  keys — vendor source, adversarially verified). registerFamily
+ *  now resolves every DECL through this schema STRICTLY; the strict
+ *  leg strips unknown keys, and the service refuses the strip as
+ *  drift (resolve result vs input key count) — forbid, honestly. */
+// Un-annotated on purpose: the z<T> annotation demands exact
+// inference alignment the interface's optional/readonly fields
+// (studio unions, ReadonlyArray presets) do not admit without a
+// cast — Law 2 forbids the cast, so the RUNTIME schema and the TS
+// interface stay separate truths (validateDecl checks both legs).
+export const ModelDecl = z.object({
+  id: z.string().pattern(SAFE_ID_RE),
+  genre: z.string(),
+  label: z.string(),
+  description: z.string().default(""),
+  engine: z.string().default(""),
+  unoffered: z.boolean(),
+  form: z.string(),
+  defaults: z.dict(z.any()).default({}),
+  source: z.union([SourceRow, z.const(null)]),
+  studio: z.union([z.object({
+    tenant: z.string(),
+    owns_params: z.boolean(),
+    writes: z.array(z.string()),
+    size: z.string(),
+    layout: z.string(),
+    kind: z.string(),
+  }), z.const(null)]),
+  mods: z.array(z.string()).default([]),
+  variants: z.array(VariantRow),
+  variant_groups: z.array(VariantGroupRow).default([]),
+  provisions: z.array(ProvisionRow).default([]),
+  prompt_guide: z.union([z.dict(z.any()), z.const(null)]),
+  base_body: z.string().default(""),
+  accepts: z.array(z.string()).default([]),
+  timeout_floor: z.number().min(0),
+  canvas_default: z.boolean(),
+  character_presets: z.array(z.dict(z.any())),
+  lane_inputs: z.dict(z.any()).default({}),
+  has_agent: z.boolean(),
+  has_inference: z.boolean(),
+  has_rubric: z.boolean(),
+});
 
 /** The family declaration — the model.py unit's data shape.
  *

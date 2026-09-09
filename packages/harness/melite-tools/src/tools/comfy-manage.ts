@@ -19,7 +19,9 @@
  * routing, active runs); install/download actions accept what the
  * status/cately discoveries return.
  */
-import type { ToolDefinition } from '../types.ts'
+import { defineTool } from '@deepseek-ai/dsh-tools'
+import type { ToolCallView } from '@deepseek-ai/dsh-tools'
+import type { JsonValue, ToolDefinition } from '../types.ts'
 import { gatewayRequest, RayGatewayError } from '../gateway.ts'
 import { jsonClean } from '../json-clean.ts'
 
@@ -34,8 +36,42 @@ const ACTIONS = [
   'snapshot_save', 'snapshot_restore',
 ] as const
 
+/** Canonical result — the typed mirror of output.schema (the music
+ *  card's CardResult pattern: defineTool infers from the schema and
+ *  checks the execute return against it). ok/action ride every shape
+ *  (the comfy-manage ok/action pattern); detail/data are payload. */
+type ManageResult = {
+  ok: boolean;
+  action: string;
+  detail?: string;
+  data?: JsonValue;
+  error?: string;
+} & Record<string, JsonValue>;
+
 export function comfyManage(gatewayUrl: string): ToolDefinition {
-  return {
+  // PRESENTATION ADAPTATION (tool-presentation wall + conversion
+  // invariance — presentCall output must not change): defineTool
+  // soft-gates presentCall behind arg validation (invalid → undefined),
+  // but the raw face always returned the tool's own generic card, and
+  // the wall pins that (junk/invalid args during streaming + replay
+  // still render the generic view, never throw). The presenter is
+  // shared: it rides the definition AND is re-attached over the gate
+  // below. execute validation (ToolArgsError/INVALID_ARGS) is
+  // unaffected.
+  const presentCall: (args: unknown) => ToolCallView = (args) => {
+    const a = (typeof args === "object" && args !== null ? args : {}) as { action?: unknown };
+    return {
+      card: 'generic',
+      title: `ComfyUI ${String(a.action ?? '?')}`,
+      kind: 'execute',
+      rawInput: String(a.action ?? '?'),
+    };
+  };
+  // Ledger row 8 (2026-09-10): defineTool wraps the literal — the
+  // registry gains schema compilation + input validation
+  // (ToolArgsError/INVALID_ARGS) + timeoutMs enforcement this face
+  // never had as a raw registration.
+  const def = defineTool({
     name: 'comfy_manage',
     description:
       'The ONE ComfyUI manager: wraps comfy-mcp + comfyui-manager (security=medium) '
@@ -49,72 +85,63 @@ export function comfyManage(gatewayUrl: string): ToolDefinition {
       + '(target comfy|cli|all), switch_version, free. INFRA UPKEEP only — it '
       + 'never runs inference, and lifecycle actions are refused while runs are '
       + 'active (stop them or pass force).',
+    // ParameterSchemaSpec grammar: the map IS the implicit object root
+    // (no type/properties wrapper), per-property `required: true`.
     parameters: {
-      type: 'object',
-      properties: {
-        action: {
-          type: 'string',
-          enum: ACTIONS as unknown as string[],
-          description: 'The management action to dispatch.',
-        },
-        nodes: {
-          type: 'array',
-          items: { type: 'string' },
-          description: 'install_extension: registry node-pack ids, e.g. ["ComfyUI-KJNodes"].',
-        },
-        url: {
-          type: 'string',
-          description: 'install_extension_url / download_model: the git URL or file URL.',
-        },
-        relative_path: {
-          type: 'string',
-          description: 'download_model: destination under the models root, e.g. "models/checkpoints".',
-        },
-        filename: { type: 'string', description: 'download_model: on-disk filename.' },
-        model: {
-          type: 'string',
-          description: 'provision_model: catalog id from model_catalog, e.g. "z-image".',
-        },
-        variant: { type: 'string', description: 'provision_model: optional variant id.' },
-        quant: { type: 'string', description: 'provision_model: optional quant cell id.' },
-        query: { type: 'string', description: 'search_models: search text.' },
-        tail: { type: 'integer', description: 'logs: line count (default 200).' },
-        version: { type: 'string', description: 'switch_version: target ComfyUI version.' },
-        target: {
-          type: 'string',
-          enum: ['comfy', 'cli', 'all'],
-          description: 'update: what to update (default "comfy").',
-        },
-        force: {
-          type: 'boolean',
-          description: 'Override the active-run guard on lifecycle actions.',
-        },
-        snapshot: {
-          type: 'string',
-          description: 'snapshot_restore: a snapshot filename from snapshot_list.',
-        },
+      action: {
+        type: 'string',
+        enum: ACTIONS as unknown as string[],
+        description: 'The management action to dispatch.',
+        required: true,
       },
-      required: ['action'],
+      nodes: {
+        type: 'array',
+        items: { type: 'string' },
+        description: 'install_extension: registry node-pack ids, e.g. ["ComfyUI-KJNodes"].',
+      },
+      url: {
+        type: 'string',
+        description: 'install_extension_url / download_model: the git URL or file URL.',
+      },
+      relative_path: {
+        type: 'string',
+        description: 'download_model: destination under the models root, e.g. "models/checkpoints".',
+      },
+      filename: { type: 'string', description: 'download_model: on-disk filename.' },
+      model: {
+        type: 'string',
+        description: 'provision_model: catalog id from model_catalog, e.g. "z-image".',
+      },
+      variant: { type: 'string', description: 'provision_model: optional variant id.' },
+      quant: { type: 'string', description: 'provision_model: optional quant cell id.' },
+      query: { type: 'string', description: 'search_models: search text.' },
+      tail: { type: 'integer', description: 'logs: line count (default 200).' },
+      version: { type: 'string', description: 'switch_version: target ComfyUI version.' },
+      target: {
+        type: 'string',
+        enum: ['comfy', 'cli', 'all'],
+        description: 'update: what to update (default "comfy").',
+      },
+      force: {
+        type: 'boolean',
+        description: 'Override the active-run guard on lifecycle actions.',
+      },
+      snapshot: {
+        type: 'string',
+        description: 'snapshot_restore: a snapshot filename from snapshot_list.',
+      },
     },
-    presentCall(args) {
-      const a = (typeof args === "object" && args !== null ? args : {}) as { action?: unknown };
-      return {
-        card: 'generic',
-        title: `ComfyUI ${String(a.action ?? '?')}`,
-        kind: 'execute',
-        rawInput: String(a.action ?? '?'),
-      };
-    },
+    presentCall,
     output: {
       schema: {
         type: 'object',
         additionalProperties: true,
         properties: {
-          ok: { type: 'boolean' },
-          action: { type: 'string' },
+          ok: { type: 'boolean', required: true },
+          action: { type: 'string', required: true },
           detail: { type: 'string', description: 'One-line human summary.' },
+          error: { type: 'string', description: 'The refusal text — present exactly when the tool refused (render prints REFUSED).' },
         },
-        required: ['ok', 'action'],
       },
       render: (_args, value) => {
         const v = value as { ok?: boolean; action?: string; detail?: string }
@@ -124,7 +151,7 @@ export function comfyManage(gatewayUrl: string): ToolDefinition {
         }]
       },
     },
-    async execute(args, exec) {
+    async execute(args, exec): Promise<ManageResult> {
       const a = (args ?? {}) as Record<string, unknown>
       // forward only declared fields — the SSOT envelope is extra=forbid
       const body: Record<string, unknown> = { action: a.action }
@@ -134,9 +161,17 @@ export function comfyManage(gatewayUrl: string): ToolDefinition {
         if (a[k] !== undefined && a[k] !== null && a[k] !== '') body[k] = a[k]
       }
       let res: Record<string, unknown>
+      // Ledger row 32 (2026-09-10): exec is contract-required — the
+      // old `?? new AbortController().signal` fallback detached the
+      // 300s manage call from caller cancellation (a host cancel
+      // kept the HTTP leg burning). A missing exec is a harness
+      // miswire and refuses loud, never silently degrades.
+      if (exec?.signal === undefined) {
+        return jsonClean<ManageResult>({ ok: false, action: String(a.action ?? '?'), detail: 'comfy_manage miswire: no execution context signal — the host runtime must pass exec' })
+      }
       try {
         res = await gatewayRequest(gatewayUrl, 'POST', '/v1/manage', body,
-          exec?.signal ?? new AbortController().signal,
+          exec.signal,
           MANAGE_TIMEOUT_MS) as Record<string, unknown>
       } catch (e) {
         // A refusal (4xx/5xx) IS the answer, not a crash: the SSOT's
@@ -149,7 +184,7 @@ export function comfyManage(gatewayUrl: string): ToolDefinition {
               return jsonClean({
                 ok: false, action: parsed.action, detail: parsed.detail,
                 data: parsed.data ?? null,
-              })
+              }) as ManageResult
             }
           } catch { /* fall through to rethrow */ }
         }
@@ -160,7 +195,11 @@ export function comfyManage(gatewayUrl: string): ToolDefinition {
         action: res.action,
         detail: res.detail,
         data: res.data ?? null,
-      })
+      }) as ManageResult
     },
-  }
+  });
+  // Re-attach the unconditional presenter over defineTool's
+  // soft-validation gate (see the adaptation above).
+  def.presentCall = presentCall;
+  return def;
 }

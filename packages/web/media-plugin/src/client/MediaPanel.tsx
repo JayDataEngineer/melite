@@ -12,7 +12,7 @@
  */
 import * as React from 'react'
 import { useMemo, useState } from 'react'
-import { Modal } from '@deepseek-ai/dsh-client-ui-primitives'
+import { Modal, Pill, Tooltip } from '@deepseek-ai/dsh-client-ui-primitives'
 import { getSidebarService, openWithDraft } from './apply-guard.ts'
 import { decodeRuns, decodeDrafts } from './decode.ts'
 import type { DraftRow, RunArtifact, RunRow } from './decode.ts'
@@ -21,7 +21,6 @@ import css from './overlay.module.css'
 import {
   Empty,
   ErrorBanner,
-  FONT,
   GatewayErrors,
   PanelShell,
   RefreshButton,
@@ -35,17 +34,14 @@ import {
   bgBase1,
   bgBase2,
   bgBase3,
-  bgOverlay2,
   borderL2,
   fillSubtle2,
   labelPrimary1,
   labelPrimary2,
   labelPrimary3,
   labelPrimary4,
-  labelSecondary1,
   labelSecondary2,
   stateBusinessPrimary,
-  stateBusinessPrimaryBg1,
   stateBusinessPrimaryBg2,
   stateWarnPrimary1,
   stateWarnPrimary2,
@@ -278,10 +274,11 @@ function TileBadge({ item }: { item: MediaItem }): React.JSX.Element | null {
 }
 
 /** Image tiles sit on the base surface (no letterbox); everything else on
- *  the gradient stage. */
+ *  the gradient stage — the shared token-backed gradient (ui.tsx), never
+ *  a restated literal (the single-site token law). */
 function tileBgFor(kind: Kind): string {
   if (kind === 'image') return bgBase2
-  return 'linear-gradient(160deg, #1e293b 0%, #0f172a 100%)'
+  return gradientStage
 }
 
 /**
@@ -463,19 +460,18 @@ export function MediaPanel(): React.JSX.Element {
     })
   }, [items, cat, search])
 
+  /* Category chips ride the DSH Pill 1:1 (active/onClick/children —
+   *  the handrolled bordered-button replica died here 2026-09-09: the
+   *  panel runs inside the DSH host, so the DSW pill chrome IS the
+   *  native look. The flows/artifacts segmented control stays custom —
+   *  DSH ships no segmented atom.) */
   const chip = (c: Cat, label: string): React.JSX.Element => {
-    const active = cat === c
     return (
-      <button
+      <Pill
         key={c}
+        active={cat === c}
         onClick={() => { setCat(c) }}
-        style={{
-          border: '1px solid ' + (active ? stateBusinessPrimary : borderL2),
-          background: active ? stateBusinessPrimaryBg1 : 'transparent',
-          color: active ? stateBusinessPrimary : labelSecondary1,
-          borderRadius: 999, padding: '3px 10px', fontSize: 12, cursor: 'pointer', fontFamily: 'inherit',
-        }}
-      >{label} {counts[c]}</button>
+      >{label} {counts[c]}</Pill>
     )
   }
 
@@ -485,7 +481,6 @@ export function MediaPanel(): React.JSX.Element {
           card loaded (sidecar → draft_id → the deck canvas' native card
           view: intent, shots, fps, seed, ▶ Run through the queue door).
           No editor SPA — that page renders blank on this origin. */}
-      <style>{'.im-tile{position:relative}.im-wand{position:absolute;right:6px;top:6px;z-index:3;opacity:0;transition:opacity .12s;display:flex;align-items:center;gap:4px;border:0;border-radius:6px;padding:4px 6px;background:var(--dsw-alias-fill-subtle,rgba(2,6,23,0.82));color:var(--dsw-alias-state-warn-primary,#fde68a);font-size:9px;font-weight:700;letter-spacing:.4px;cursor:pointer;font-family:inherit}.im-tile:hover .im-wand{opacity:1}.im-wand:hover{background:var(--dsw-alias-state-warn-primary);color:var(--dsw-alias-bg-base,#422006)}'}</style>
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', marginBottom: 10 }}>
         <span style={{ fontWeight: 700, fontSize: 14 }}>Infer Media</span>
         <Stat>
@@ -493,19 +488,17 @@ export function MediaPanel(): React.JSX.Element {
         </Stat>
         <span style={{ flex: 1 }} />
         {/* FLOWS ↔ ARTIFACTS: the two faces of the archive — composed
-            cards (drafts) vs rendered runs. Segmented like the cat chips. */}
-        <span style={{ display: 'flex', gap: 4, padding: 2, border: '1px solid ' + borderL2, borderRadius: 999 }}>
+            cards (drafts) vs rendered runs. Two Pills (DSH owns the
+            selected chrome); the bordered segmented wrapper died with
+            the handrolled chips — DSH ships no segmented atom and the
+            wrapper's only job was that look. */}
+        <span style={{ display: 'flex', gap: 4 }}>
           {(['flows', 'artifacts'] as const).map((t) => (
-            <button
+            <Pill
               key={t}
+              active={tab === t}
               onClick={() => { setTab(t) }}
-              style={{
-                border: 0, borderRadius: 999, padding: '3px 10px', fontSize: 12, cursor: 'pointer',
-                fontFamily: 'inherit',
-                background: tab === t ? stateBusinessPrimaryBg1 : 'transparent',
-                color: tab === t ? stateBusinessPrimary : labelSecondary1,
-              }}
-            >{t === 'flows' ? 'Flows ' + String(drafts.length) : 'Artifacts ' + String(items.length)}</button>
+            >{t === 'flows' ? 'Flows ' + String(drafts.length) : 'Artifacts ' + String(items.length)}</Pill>
           ))}
         </span>
         <SearchInput value={search} onChange={setSearch} placeholder="search prompt, file\u2026" />
@@ -560,7 +553,6 @@ export function MediaPanel(): React.JSX.Element {
                   {shown.map((it) => (
                     <button
                       key={it.id}
-                      className="im-tile"
                       onClick={() => { setPreview(it) }}
                       style={{
                         position: 'relative', aspectRatio: '16 / 9', borderRadius: 10, overflow: 'hidden',
@@ -585,25 +577,41 @@ export function MediaPanel(): React.JSX.Element {
                       <TileBadge item={it} />
                       {it.runId !== ''
                         ? (
-                            <span
-                              role="button"
-                              tabIndex={0}
-                              className="im-wand"
-                              title={it.draftId !== ''
+                            /* The wand stays a SPAN, not a DSH Button: the
+                             * tile itself is a <button> and button-in-button
+                             * is invalid DOM (the span+role predates this
+                             * port for exactly that reason). What DSH owns
+                             * here is the bubble — Tooltip replaces the
+                             * native `title` (same copy), aria-label names
+                             * the action. Positioning rides .wand/.wandDim
+                             * (overlay.module.css): the old hover-reveal
+                             * stylesheet rule was DEAD (the inline opacity
+                             * always won), so visibility is exactly what it
+                             * was — 1 linked, 0.35 unlinked. */
+                            <Tooltip
+                              label={it.draftId !== ''
                                 ? 'Open as cards — this run\u2019s card, setup and ready'
                                 : 'No action card linked to this run'}
-                              style={{ opacity: it.draftId !== '' ? 1 : 0.35 }}
-                              onClick={(e) => {
-                                e.stopPropagation()
-                                openCards(it.runId, it.draftId)
-                              }}
-                              onKeyDown={(e) => {
-                                if (e.key === 'Enter') {
+                            >
+                              <span
+                                role="button"
+                                tabIndex={0}
+                                className={it.draftId !== '' ? css.wand : css.wand + ' ' + css.wandDim}
+                                aria-label={it.draftId !== ''
+                                  ? 'Open as cards — this run\u2019s card'
+                                  : 'No action card linked to this run'}
+                                onClick={(e) => {
                                   e.stopPropagation()
                                   openCards(it.runId, it.draftId)
-                                }
-                              }}
-                            >✦ CARDS</span>
+                                }}
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Enter') {
+                                    e.stopPropagation()
+                                    openCards(it.runId, it.draftId)
+                                  }
+                                }}
+                              >✦ CARDS</span>
+                            </Tooltip>
                           )
                         : null}
                       {it.poster === ''

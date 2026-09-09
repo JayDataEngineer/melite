@@ -21,6 +21,7 @@
     "@ai-sdk/openai": "^3.0.67",
     "@deepseek-ai/dsh-client-modules": "^0.1.0-rc.8",
     "@deepseek-ai/dsh-client-runtime": "^0.1.0-rc.8",
+    "@deepseek-ai/dsh-client-ui-primitives": "^0.1.0-rc.8",
     "@deepseek-ai/dsh-client-ui-slots": "^0.1.0-rc.8",
     "@deepseek-ai/dsh-client-web": "^0.1.0-rc.8",
     "@assistant-ui/react": "^0.14.11",

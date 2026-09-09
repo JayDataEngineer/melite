@@ -165,7 +165,7 @@ export function parseCapabilityDrop(raw: string): CapabilityDropPayload | null {
       return p as CapabilityDropPayload
     }
     return null
-  } catch {
+  } catch { /* not our payload — the JSON probe answers absent (row 28) */
     return null
   }
 }

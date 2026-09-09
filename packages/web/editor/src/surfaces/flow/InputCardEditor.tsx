@@ -31,16 +31,9 @@
 import { useEffect, useState } from "react"
 import { Image as ImageIcon, Film, Music } from "lucide-react"
 
-function readAsDataURLCompat(file: File): Promise<string | null> {
- return new Promise((resolve) => {
-  const fr = new FileReader()
-  fr.onload = () => resolve(String(fr.result))
-  fr.onerror = () => resolve(null)
-  fr.readAsDataURL(file)
- })
-}
 import type { CardStage } from "@melite/contracts"
-import { SlotSquare } from "@melite/ui"
+import { SlotSquare, readAsDataURL } from "@melite/ui"
+import { Input } from "@melite/ui/input"
 import { familyTransformMatrix, uploadToEstate } from "@melite/catalog"
 import { useToastStore } from "@melite/ui"
 
@@ -146,7 +139,9 @@ export function InputCardEditor({
    }
    return
   }
-  const url = await readAsDataURLCompat(f)
+  // Shared readAsDataURL — the ONE read path (a video/audio read failure
+  // leaves the source untouched, as before — images already returned above).
+  const url = await readAsDataURL(f).catch((): string | null => null)
   if (url) applySource(url)
  }
 
@@ -228,7 +223,7 @@ export function InputCardEditor({
  <label className="mb-1 block text-[10px] font-semibold uppercase tracking-wide text-muted-foreground/70">
  Volume (linear gain · 1.0 = unity)
  </label>
- <input
+ <Input
  type="number"
  step="0.1"
  min="0"
@@ -369,7 +364,7 @@ function NumberField({
  return (
  <label className="flex flex-col">
  <span className="mb-1 text-[9px] font-medium uppercase tracking-wide text-muted-foreground/50">{label}</span>
- <input
+ <Input
  type="number"
  step={step}
  min={min}

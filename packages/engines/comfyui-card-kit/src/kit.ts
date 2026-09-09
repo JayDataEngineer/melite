@@ -57,6 +57,21 @@ import {
 // decode → save. Pin defaults ride AUTOFILL; each lane's strip table
 // is the python renderer's own calibration, moved here verbatim.
 
+/** GATE S (the seed-sentinel contract, estate law): -1 is RANDOM —
+ *  the dice mints HERE at render so every node sharing the seed
+ *  shares the MINTED value (below -1 or a non-int refuses loud).
+ *  Every seed-consuming lane mints through this one function — the
+ *  MiniMax music lane died live on a raw -1 (ComfyUI 400, seed min
+ *  0), and every KSampler-family node validates the same floor. */
+export function mintSeed(p: Record<string, unknown>): number {
+  const seed = p.seed
+  if (typeof seed !== 'number' || !Number.isInteger(seed) || seed < -1) {
+    throw new Error(`seed = ${String(p.seed)}: -1 (random) or a non-negative int is required`)
+  }
+  if (seed === -1) return Math.floor(Math.random() * 2147483647)
+  return seed
+}
+
 /** Pin autofills the image_t2i python lane strips post-walk for
  *  parity (moved verbatim from the image-gen card). */
 export const IMAGE_GEN_STRIP: StripTable = {
@@ -76,11 +91,7 @@ export function imageT2I(p: Record<string, unknown>, model: ModelFacts, g: Graph
   // the dice mints HERE in the lane (the skin lane's GATE S
   // precedent: mint at render so every node sharing the seed shares
   // the MINTED value); below -1 or a non-int refuses loud.
-  let seed = p.seed
-  if (typeof seed !== 'number' || !Number.isInteger(seed) || seed < -1) {
-    throw new Error(`seed = ${String(p.seed)}: -1 (random) or a non-negative int is required`)
-  }
-  if (seed === -1) seed = Math.floor(Math.random() * 2147483647)
+  const seed = mintSeed(p)
   let unet: OutputHandle = g.node('UNETLoader', { unet_name: li.unet, weight_dtype: 'default' }).out()
   if (li.sampling_shift) {
     unet = g.node('ModelSamplingAuraFlow', { model: unet, shift: li.sampling_shift }).out()
@@ -158,6 +169,7 @@ export function refuseImageEditFiring(p: Record<string, unknown>): void {
 /** The image_edit block — the anchored instruction-edit lane (moved
  *  verbatim from the image-edit card). */
 export function imageEdit(p: Record<string, unknown>, model: ModelFacts, g: GraphBuilder, runId: string): void {
+  const seed = mintSeed(p)
   const li = model.lane_inputs
   let unet: OutputHandle = g.node('UNETLoader', { unet_name: li.unet, weight_dtype: 'default' }).out()
   unet = stackLoras(g, unet, fireLoras(model, p))
@@ -186,7 +198,7 @@ export function imageEdit(p: Record<string, unknown>, model: ModelFacts, g: Grap
   const shifted = g.node('ModelSamplingAuraFlow', { model: unet, shift: 1.0 }).out()
   const encoded = g.node('VAEEncode', { pixels: image, vae }).out()
   const sampled = g.node('KSampler', {
-    seed: p.seed,
+    seed,
     steps: p.steps,
     cfg: p.cfg,
     // the road's _step_doc coercions (doc.sampler or "euler"):
@@ -218,6 +230,7 @@ export function finalizeIdeogram(graph: PromptGraph): PromptGraph {
  *  CFGOverride-trimmed unconditional) sampling (moved verbatim from
  *  the ideogram4 card; admission stays on the card). */
 export function ideogramLane(p: Record<string, unknown>, model: ModelFacts, g: GraphBuilder, runId: string): void {
+  const seed = mintSeed(p)
   const li = model.lane_inputs as Record<string, any>
   const clip = g.node('CLIPLoader', { clip_name: li.text_encoder, type: li.clip_type }).out()
   const pos = g.node('CLIPTextEncode', { clip, text: p.prompt }).out()
@@ -264,6 +277,7 @@ export function ideogramLane(p: Record<string, unknown>, model: ModelFacts, g: G
 /** The music_t1 block — the MiniMax Music 3 lane (moved verbatim
  *  from the music card; admission stays on the card). */
 export function musicT1(p: Record<string, unknown>, model: ModelFacts, g: GraphBuilder, runId: string): void {
+  const seed = mintSeed(p)
   const li = model.lane_inputs
   const unet = g.node('UNETLoader', { unet_name: laneStr(li.unet), weight_dtype: 'default' }).out()
   const clip = g.node('CLIPLoader', { clip_name: laneStr(li.text_encoder), model_options: 'default', type: laneStr(li.clip_type) }).out()
@@ -272,7 +286,7 @@ export function musicT1(p: Record<string, unknown>, model: ModelFacts, g: GraphB
     clip,
     caption: p.prompt,
     lyrics: p.lyrics ?? '',
-    seed: p.seed,
+    seed,
     max_duration: p.duration,
     cfg_scale: p.lm_cfg_scale,
     top_k: 50,
@@ -280,7 +294,7 @@ export function musicT1(p: Record<string, unknown>, model: ModelFacts, g: GraphB
   const zeroed = g.node('ConditioningZeroOut', { conditioning: cond.out(0) })
   const latent = g.node('EmptyMiniMaxMusic3LatentAudio', { batch_size: 1, seconds: p.duration })
   const sampled = g.node('KSampler', {
-    seed: p.seed,
+    seed,
     steps: p.n_diffusion_steps,
     cfg: p.guidance_scale,
     sampler_name: 'euler',
@@ -315,6 +329,7 @@ export const VIDEO_REQUIRED_PATHS: Record<string, readonly string[]> = {
 /** wan_vace_t1 — merged VACE checkpoint + Lightning LoRA, shift 8
  *  (moved verbatim from the video-gen card). */
 export function wanVace(p: Record<string, unknown>, negative: string, model: ModelFacts, g: GraphBuilder, runId: string): void {
+  const seed = mintSeed(p)
   const li = model.lane_inputs
   const clip = g.node('CLIPLoader', { clip_name: li.text_encoder as string, type: li.clip_type as string, device: 'default' }).out()
   const pos = g.node('CLIPTextEncode', { clip, text: p.prompt }).out()
@@ -344,7 +359,7 @@ export function wanVace(p: Record<string, unknown>, negative: string, model: Mod
     positive: vace.out(0),
     negative: vace.out(1),
     latent_image: vace.out(2),
-    seed: p.seed,
+    seed,
     steps: p.steps,
     cfg: p.cfg,
     sampler_name: p.sampler,
@@ -370,6 +385,7 @@ export function wanVace(p: Record<string, unknown>, negative: string, model: Mod
 /** scail2_t1 — character animation over reference + driving video,
  *  shift 5 (moved verbatim from the video-gen card). */
 export function scail2(p: Record<string, unknown>, negative: string, model: ModelFacts, g: GraphBuilder, runId: string): void {
+  const seed = mintSeed(p)
   const li = model.lane_inputs
   const clip = g.node('CLIPLoader', { clip_name: li.text_encoder as string, type: li.clip_type as string, device: 'default' }).out()
   const pos = g.node('CLIPTextEncode', { clip, text: p.prompt }).out()
@@ -412,7 +428,7 @@ export function scail2(p: Record<string, unknown>, negative: string, model: Mode
     positive: scail.out(0),
     negative: scail.out(1),
     latent_image: scail.out(2),
-    seed: p.seed,
+    seed,
     steps: p.steps,
     cfg: p.cfg,
     sampler_name: p.sampler,
@@ -440,6 +456,7 @@ export function scail2(p: Record<string, unknown>, negative: string, model: Mode
 /** The tts_t1 block — the shared speak-text lane (moved verbatim
  *  from the tts card; admission stays on the card). */
 export function ttsT1(p: Record<string, unknown>, model: ModelFacts, g: GraphBuilder, runId: string): void {
+  const seed = mintSeed(p)
   const loaded = loadAudiocore(g, model)
   const synth = g.node('AudiocoreTTS', {
     ...AUDIACORE_TTS_AUTOFILL,
@@ -453,7 +470,7 @@ export function ttsT1(p: Record<string, unknown>, model: ModelFacts, g: GraphBui
     // wires "" (the golden pins "").
     instruct: (p.style_instruction ?? '') as string,
     temperature: p.temperature,
-    seed: p.seed,
+    seed,
     voice_file: fireKnob(model, 'qvoice', 'qvoice', p.qvoice),
     voice_pca_strengths: fireKnob(model, 'qvoice', 'voice_pca_strengths', p.voice_pca_strengths),
     // NO top_p/speed (py: not knobs — the AUTOFILL spread above owns
@@ -465,6 +482,7 @@ export function ttsT1(p: Record<string, unknown>, model: ModelFacts, g: GraphBui
 /** The sfx_t1 block — the sound-effect lane (moved verbatim from the
  *  sfx card; admission stays on the card). */
 export function sfxT1(p: Record<string, unknown>, model: ModelFacts, g: GraphBuilder, runId: string): void {
+  const seed = mintSeed(p)
   const loaded = loadAudiocore(g, model)
   const synth = g.node('AudiocoreTTS', {
     ...AUDIACORE_TTS_AUTOFILL,
@@ -474,7 +492,7 @@ export function sfxT1(p: Record<string, unknown>, model: ModelFacts, g: GraphBui
     guidance_scale: p.guidance_scale,
     num_inference_steps: p.n_diffusion_steps,
     duration_seconds: p.duration,
-    seed: p.seed,
+    seed,
   })
   saveAudio(g, synth.out(), `${runId}/sfx`)
 }
@@ -482,6 +500,7 @@ export function sfxT1(p: Record<string, unknown>, model: ModelFacts, g: GraphBui
 /** The voicelock_t1 block — the persona export lane (moved verbatim
  *  from the voice-lock card; admission stays on the card). */
 export function voicelockT1(p: Record<string, unknown>, model: ModelFacts, g: GraphBuilder, runId: string): void {
+  const seed = mintSeed(p)
   const loaded = loadAudiocore(g, model)
   const studio = g.node('AudiocoreVoiceStudio', {
     ...AUDIACORE_STUDIO_AUTOFILL,
@@ -493,7 +512,7 @@ export function voicelockT1(p: Record<string, unknown>, model: ModelFacts, g: Gr
     top_p: p.top_p,
     speed: p.speed,
     repetition_penalty: p.repetition_penalty,
-    seed: p.seed,
+    seed,
   })
   saveAudio(g, studio.out(), `${runId}/voicelock`)
 }
@@ -692,11 +711,7 @@ export function skinLane(p: Record<string, unknown>, g: GraphBuilder, runId: str
   // GATE S (the seed-sentinel contract): -1 is RANDOM — the dice
   // mints HERE (python dice="phase2": the render door mints so
   // sidecar + SkinPack share it); below -1 or a non-int refuses.
-  let seed = p.seed
-  if (typeof seed !== 'number' || !Number.isInteger(seed) || seed < -1) {
-    throw new Error(`seed = ${String(p.seed)}: -1 (random) or a non-negative int is required`)
-  }
-  if (seed === -1) seed = Math.floor(Math.random() * 2147483647)
+  const seed = mintSeed(p)
   const prefix = `${runId}/out`
   const bodyPath = g.node('PrimitiveString', { value: body }).out()
   const sidecarText = g.node('PrimitiveString', { value: sidecarJson(String(p.kind ?? ''), size, seed as number) }).out()
@@ -884,6 +899,7 @@ export function finalizeMotion(graph: PromptGraph): PromptGraph {
  *  bake (moved verbatim from the motion card; the prompt admission
  *  stays on the card). */
 export function motionLane(p: Record<string, unknown>, model: ModelFacts, g: GraphBuilder): void {
+  const seed = mintSeed(p)
   const li = model.lane_inputs
   const loader = g.node('KimodoLoader', { model_name: li.model_path as string }).out()
 
@@ -899,7 +915,7 @@ export function motionLane(p: Record<string, unknown>, model: ModelFacts, g: Gra
   const npz = g.node('KimodoTextToPose', {
     model: loader,
     prompt: (p.prompt as string).trim(),
-    seed: p.seed,
+    seed,
     duration_sec: p.duration_sec,
     diffusion_steps: p.diffusion_steps,
     num_samples: p.num_samples,
@@ -948,6 +964,7 @@ export function quadRemeshLane(p: Record<string, unknown>, g: GraphBuilder, runI
  *  the card). The python lane does NOT strip pin autofills — no
  *  finalize pass. */
 export function upscaleLane(p: Record<string, unknown>, model: ModelFacts, g: GraphBuilder, runId: string): void {
+  const seed = mintSeed(p)
   const li = model.lane_inputs
   const img = g.node('LoadImage', { image: p.input_image }).out()
   const dit = g.node('SeedVR2LoadDiTModel', {
@@ -962,7 +979,7 @@ export function upscaleLane(p: Record<string, unknown>, model: ModelFacts, g: Gr
     image: img,
     dit,
     vae,
-    seed: p.seed,
+    seed,
     resolution: p.resolution,
     max_resolution: p.max_resolution,
     batch_size: p.batch_size,
@@ -1284,12 +1301,13 @@ function sharedLiftChain(
   neg: OutputHandle,
   prefix: string,
 ): void {
+  const seed = mintSeed(p)
   const { unet, rescaleShape, shifted, shapeVae, texVae } = heads
 
   // structure stage (the lift): card steps + cfg knobs
   const empty = g.node('EmptyTrellis2LatentStructure', { batch_size: 1 }).out()
   const struct = g.node('KSampler', {
-    seed: p.seed as number, steps: p.steps as number, cfg: p.cfg as number,
+    seed, steps: p.steps as number, cfg: p.cfg as number,
     sampler_name: p.struct_sampler as string,
     scheduler: p.struct_scheduler as string, denoise: 1.0,
     model: shifted, positive: pos, negative: neg, latent_image: empty,
@@ -1301,7 +1319,7 @@ function sharedLiftChain(
   // shape stage: 20 steps / cfg 7.5 on the 0.5 arm (official)
   const shapeStage = g.node('Trellis2ShapeStage', { positive: pos, negative: neg, voxel })
   const shapeLatent = g.node('KSampler', {
-    seed: p.seed as number, steps: p.shape_steps as number,
+    seed, steps: p.shape_steps as number,
     cfg: p.shape_cfg as number,
     sampler_name: p.shape_sampler as string,
     scheduler: p.shape_scheduler as string, denoise: 1.0,
@@ -1316,7 +1334,7 @@ function sharedLiftChain(
     target_resolution: Math.max(p.resolution as number, 1024),
   })
   const upLatent = g.node('KSampler', {
-    seed: p.seed as number, steps: p.tex1_steps as number,
+    seed, steps: p.tex1_steps as number,
     cfg: p.tex1_cfg as number,
     sampler_name: p.tex1_sampler as string,
     scheduler: p.tex1_scheduler as string, denoise: 1.0,
@@ -1347,7 +1365,7 @@ function sharedLiftChain(
     positive: up.out(0), negative: up.out(1), shape_latent: upLatent.out(),
   })
   const texLatent = g.node('KSampler', {
-    seed: p.seed as number, steps: p.tex2_steps as number,
+    seed, steps: p.tex2_steps as number,
     cfg: p.tex2_cfg as number,
     sampler_name: p.tex2_sampler as string,
     scheduler: p.tex2_scheduler as string, denoise: 1.0,
