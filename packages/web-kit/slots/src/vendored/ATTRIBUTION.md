@@ -119,3 +119,28 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
+
+## Retirement assessment (2026-09-09, stroke 5 of the 1:1 remediation)
+
+`@deepseek-ai/dsh-client-ui-slots` 0.1.0-rc.8 now ships the kernel
+publicly (`SlotCore` with register/children-table declarations,
+`entriesOfSlot`, `spec`, `isLive`, `subscribe`) — so the KERNEL half of
+this fork is upstream-replaceable today. The fork stays because its
+remaining organs are NOT in any upstream package:
+
+- `resolveChain(name, owner)` — the standalone chain-election walker
+  (upstream runs elections inside the installed renderer, which needs
+  the DSH host's session scopes + locale faces; the standalone editor
+  mounts no such host).
+- id/key-carrying entry views (`SlotEntryView`) — upstream
+  `entriesOfSlot` rows carry component/options/select/registrant only.
+- `versionOf`/`kindOf` faces + the public `declare()` organ (the
+  declaration-seam wall pins them).
+
+RETIREMENT CONDITION (sharpened): swap the kernel to the upstream
+package when upstream ships the standalone faces (an election walker
+or id-carrying views), OR when the editor mounts the full
+`@deepseek-ai/dsh-client-runtime` renderer — whichever lands first.
+Until then this file is a monitored divergence, not dead weight: the
+walls (slots-kernel, ui-slot-backing, s4-client-deps) pin its laws,
+and this ledger is re-assessed on every upstream release.
