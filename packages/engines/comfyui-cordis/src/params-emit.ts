@@ -144,6 +144,60 @@ const emitKnob = (s: Schema): Record<string, unknown> => {
   return out
 }
 
+/**
+ * The DSH tool-parameter projection (M2′ stroke 2c, 2026-09-09):
+ * the IMPLICIT PROPERTY MAP the dsh-tools defineTool contract
+ * consumes — { knob: { type, description?, enum?, required?,
+ * minimum?, maximum? } } — derived from the served params_schema
+ * projection (one walking family, two projections; never a second
+ * walk of the Schemastery carrier). The spec form carries no
+ * `default`: optionality is the per-property required flag, and the
+ * card's admission owns defaulting at execute time. The DSL carries
+ * no numeric bounds and no object/array internals: both stay owned
+ * by the card gate at execute time, and remain visible on the
+ * registry plane (/v1/tools serves the full JSON-schema form).
+ * `object`/`array` knobs project as the unconstrained lossless node
+ * (`json`).
+ */
+export interface ParamSpecNode {
+  type: "string" | "number" | "integer" | "boolean" | "json"
+  description?: string
+  enum?: string[]
+  required?: true
+}
+
+export type ParamsSpec = Record<string, ParamSpecNode>
+
+export const emitParamsSpec = (carrier: Schema, boarded: readonly string[]): ParamsSpec => {
+  const served = emitParamsSchema(carrier, boarded)
+  const spec: ParamsSpec = {}
+  const requiredSet = new Set(served.required ?? [])
+  for (const [k, node] of Object.entries(served.properties ?? {})) {
+    const t = String(node.type)
+    const out: ParamSpecNode = {
+      type:
+        t === "string" || t === "number" || t === "integer" || t === "boolean"
+          ? (t as ParamSpecNode["type"])
+          : "json",
+    }
+    let desc = typeof node.description === "string" ? node.description : ""
+    // The DSL whitelists no default/bounds keys: fold them into the
+    // description so the model still sees them (the receipt's
+    // converter discipline — never attach unsupported keys).
+    if (node.default !== undefined) desc += ` (default: ${JSON.stringify(node.default)})`
+    const bounds: string[] = []
+    if (typeof node.minimum === "number") bounds.push(`min: ${node.minimum}`)
+    if (typeof node.maximum === "number") bounds.push(`max: ${node.maximum}`)
+    if (bounds.length > 0) desc += ` (${bounds.join(", ")})`
+    desc = desc.trim()
+    if (desc) out.description = desc
+    if (Array.isArray(node.enum)) out.enum = node.enum.map((e) => String(e))
+    if (requiredSet.has(k)) out.required = true
+    spec[k] = out
+  }
+  return spec
+}
+
 /** Project a registered card's schema + boarded list to the served
  * params_schema dialect. `schemaFn` is the card's registered schema
  * (the callable); we walk its carrier via the .dict of the declared

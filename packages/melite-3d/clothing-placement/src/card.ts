@@ -3,6 +3,9 @@
 // (index.ts), the tool face (tool.ts), and the gateway projection all
 // derive from THIS module — never a second spelling.
 import z from '@deepseek-ai/schemastery'
+import type { Context } from '@deepseek-ai/cordis'
+import { existsSync, statSync } from 'node:fs'
+import { resolve } from 'node:path'
 
 export const schema = z.object({
   // THE ESTATE-FILE CONTRACT (the upscale-tools precedent): a
@@ -44,3 +47,72 @@ export const identity = {
     'Place a garment mesh on a body mesh in a persistent Blender session (MCP) - snap, offset, rotate, scale, mirror; exports the placed scene GLB.',
   genre: '3d',
 } as const
+
+/** Estate-file contract shared by the compose gate: file-typed
+ *  params must EXIST at compose time (absolute path expected); a
+ *  $spell names a wired stage input and rides verbatim. */
+function estateFile(param: string, ref: unknown): void {
+  if (!ref || !(ref as string).trim()) {
+    throw new Error(`required param '${param}' missing or empty on the clothing-placement card`)
+  }
+  const s = String(ref).trim()
+  if (s.startsWith('$')) return // wired stage input — rides verbatim
+  const abs = s.startsWith('/') ? s : resolve(s)
+  if (!(existsSync(abs) && statSync(abs).isFile())) {
+    throw new Error(`${param} '${s}' is not a file on this estate (absolute path expected)`)
+  }
+}
+
+/** Register the card face into the engine registry (ctx.comfyui).
+ *  Lives with the card's data; index.ts only wires. Verbatim from
+ *  the package's founding apply (M2′ stroke 1). */
+export function registerCard(ctx: Context): void {
+  ctx.effect(() => ctx.comfyui.registerCard({
+    id: 'clothing-placement',
+    skeleton: 'place',
+    // no model families — the first pure-tool card (requiresModel:
+    // false skips the {model:} demand in cardGate, compose, CLI).
+    boarded: [],
+    requiresModel: false,
+    identity,
+    requires: ['melite-blender-proxy-nodes'],
+    schema: schema as unknown as (v: unknown) => Record<string, unknown>,
+    compose(p, _model, g, runId) {
+      estateFile('body', p.body)
+      estateFile('garment', p.garment)
+      // out_path is a WRITE target (the macro creates it): the
+      // contract is non-empty + an existing parent dir, never a
+      // pre-existing file.
+      if (!p.out_path || !(p.out_path as string).trim()) {
+        throw new Error("required param 'out_path' missing or empty on the clothing-placement card")
+      }
+      const outAbs = resolve(String(p.out_path).trim())
+      const parent = resolve(outAbs, '..')
+      if (!(existsSync(parent) && statSync(parent).isDirectory())) {
+        throw new Error(`out_path parent '${parent}' is not a directory on this estate (stage it first)`)
+      }
+      const args = JSON.stringify({
+        body: String(p.body).trim(),
+        garment: String(p.garment).trim(),
+        out: String(p.out_path).trim(),
+        position: [p.position_x, p.position_y, p.position_z],
+        rotation: [p.rotation_x, p.rotation_y, p.rotation_z],
+        scale: p.scale,
+        snap_to: String(p.snap_to ?? ''),
+        mirror_x: Boolean(p.mirror_x),
+      })
+      const result = g.node('MeliteBlenderMCPCall', {
+        macro: 'place_garment',
+        args,
+        timeout: p.timeout,
+        mcp_addr: String(p.mcp_addr ?? ''),
+        autoboot: Boolean(p.autoboot),
+      }).out()
+      g.node('SaveText', {
+        text: result,
+        format: 'json',
+        filename_prefix: `${runId}/placement`,
+      })
+    },
+  }))
+}

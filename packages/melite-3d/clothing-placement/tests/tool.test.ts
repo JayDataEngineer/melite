@@ -20,13 +20,13 @@ import assert from "node:assert/strict";
 import { createServer, type Server } from "node:http";
 import { Context, Service } from "@deepseek-ai/cordis";
 import { ComfyUIService } from "@comfyui/cordis/service";
-import { emitParamsSchema } from "@comfyui/cordis/params-emit";
+import { emitParamsSpec } from "@comfyui/cordis/params-emit";
 import * as pkg from "../src/index.ts";
-import { buildCardTool, type CardToolShape } from "../src/tool.ts";
+import { buildCardTool, TOOL_NAME } from "../src/tool.ts";
+import { parameterSchemaSpecToJsonSchema } from "@deepseek-ai/dsh-tools";
+import type { ToolDefinition } from "@deepseek-ai/dsh-tools";
 import { identity, schema } from "../src/card.ts";
-import { cardWireName } from "@comfyui/cordis/service";
 
-const WIRE = cardWireName("clothing-placement");
 
 // ── stub gateway (the external service, mocked) ────────────────────
 let server: Server;
@@ -58,27 +58,50 @@ before(async () => {
 
 after(() => { server.close(); });
 
-const exec = { signal: new AbortController().signal };
+// Minimal ToolRunContext per the contract's required identity fields
+// (the registry materializes real ones; tests fill every required
+// field and the executor only consumes signal).
+const FULL_ARGS = { body: "/tmp/b.glb", garment: "/tmp/g.glb", out_path: "/tmp/out.glb" };
+
+const exec = {
+  callId: "test-call",
+  name: TOOL_NAME,
+  arguments: {},
+  signal: new AbortController().signal,
+  deferContext: () => {},
+  concludeTurn: () => {},
+  rootCallId: "test-call",
+  token: "test-token",
+} as unknown as Parameters<ToolDefinition["execute"]>[1];
 
 describe("single spelling (the emission derives from the card)", () => {
   const tool = buildCardTool("http://irrelevant");
 
-  it("name is the id law's wire name", () => {
-    assert.equal(tool.name, "clothing_placement_card");
-    assert.equal(tool.name, WIRE);
+  it("name is the TOOL-plane law: id, hyphens\u2192underscores, no suffix", () => {
+    // Two planes: the DSH tool is clothing_placement (cookbook's
+    // plain read_file convention); the REGISTRY ROW stays
+    // clothing_placement_card (cardWireName — pinned by the
+    // composition test).
+    assert.equal(tool.name, "clothing_placement");
+    assert.equal(TOOL_NAME, "clothing_placement");
   });
 
   it("description is the identity's prose", () => {
     assert.equal(tool.description, identity.description);
   });
 
-  it("parameters are the SAME projection the registry serves", () => {
-    const expected = emitParamsSchema(schema as never, []);
-    assert.deepEqual(JSON.parse(JSON.stringify(tool.parameters)), JSON.parse(JSON.stringify(expected)));
+  it("parameters are the SPEC projection of the same walk", () => {
+    // Two planes from one walk: the registry serves the JSON-schema
+    // form (/v1/tools); defineTool takes the implicit property map
+    // and compiles it — the definition carries the compiled form.
+    const spec = emitParamsSpec(schema as never, []);
+    const compiled = parameterSchemaSpecToJsonSchema(spec as never);
+    assert.deepEqual(tool.parameters, compiled);
   });
 
   it("presentCall claims a generic execute card", () => {
-    const card = tool.presentCall({ body: "/tmp/body.glb", garment: "/tmp/hat.glb" });
+    const card = tool.presentCall?.(FULL_ARGS);
+    assert.ok(card, "the tool declares presentCall");
     assert.equal(card.card, "generic");
     assert.equal(card.title, identity.label);
     assert.equal(card.kind, "execute");
@@ -91,9 +114,9 @@ describe("the executor path (two doors, flow law)", () => {
     calls.length = 0;
     draftsStatus = 200; draftsBody = { draftId: "d_77" };
     startBody = { run_id: "r_9", status: "queued" };
-    const value = await buildCardTool(baseUrl).execute(
-      { body: "/tmp/b.glb", garment: "/tmp/g.glb", out_path: "/tmp/out.glb" }, exec,
-    );
+    const value = (await buildCardTool(baseUrl).execute(
+      FULL_ARGS, exec,
+    )) as Record<string, string>;
     assert.equal(calls.length, 2, "exactly two doors");
     assert.equal(calls[0].path, "/v1/flows/drafts");
     assert.equal(calls[0].body.flow, "clothing-placement", "the card id is the flow name");
@@ -104,34 +127,43 @@ describe("the executor path (two doors, flow law)", () => {
   });
 
   it("a named refusal is a CANONICAL value, never a throw", async () => {
-    draftsStatus = 422; draftsBody = { error: "cardGate: garment missing" };
-    const value = await buildCardTool(baseUrl).execute({ body: "/tmp/b.glb" }, exec);
-    assert.equal(value.error, "cardGate: garment missing");
+    // Schema-complete args: defineTool auto-validates before execute,
+    // so the refusal under test is the GATEWAY's, not the schema's.
+    draftsStatus = 422; draftsBody = { error: "cardGate: garment not staged on this estate" };
+    const value = (await buildCardTool(baseUrl).execute(FULL_ARGS, exec)) as Record<string, string>;
+    assert.equal(value.error, "cardGate: garment not staged on this estate");
     draftsStatus = 200; draftsBody = { draftId: "d_1" };
   });
 
   it("a mint without draftId is a refusal value", async () => {
     draftsBody = { ok: true };
-    const value = await buildCardTool(baseUrl).execute({ body: "/tmp/b.glb" }, exec);
+    const value = (await buildCardTool(baseUrl).execute(FULL_ARGS, exec)) as Record<string, string>;
     assert.equal(value.error, "card compose returned no draftId");
+  });
+
+  it("schema-incomplete args are refused by the contract's own validation", async () => {
+    await assert.rejects(
+      buildCardTool(baseUrl).execute({ body: "/tmp/b.glb" }, exec),
+      /garment|out_path/,
+    );
   });
 
   it("the renderer explains refusals and run ids", () => {
     const tool = buildCardTool(baseUrl);
     const refused = tool.output.render({}, { error: "nope" });
-    assert.match(refused[0]!.text, /REFUSED: nope/);
+    assert.match(String((refused[0] as { text?: string }).text), /REFUSED: nope/);
     const ran = tool.output.render({}, { run_id: "r_9" });
-    assert.match(ran[0]!.text, /r_9/);
+    assert.match(String((ran[0] as { text?: string }).text), /r_9/);
   });
 });
 
 /** The tools-service surface, stubbed to its Consumer-owned shape. */
 class StubToolsService extends Service {
-  registered: CardToolShape[] = [];
+  registered: ToolDefinition[] = [];
   constructor(ctx: Context) {
     super(ctx, "tools");
   }
-  register(tool: CardToolShape): () => void {
+  register(tool: ToolDefinition): () => void {
     this.registered.push(tool);
     return () => {
       const i = this.registered.indexOf(tool);
@@ -151,7 +183,7 @@ describe("the optional tools service (the host contribution)", () => {
     let stub: StubToolsService | undefined;
     if (withTools) {
       await ctx.plugin(StubToolsService);
-      stub = ctx.get("tools") as StubToolsService;
+      stub = ctx.get("tools") as unknown as StubToolsService;
     }
     return { ctx, stub };
   };
@@ -160,7 +192,7 @@ describe("the optional tools service (the host contribution)", () => {
     const { ctx, stub } = await boot(true);
     const fiber = await ctx.plugin(pkg as unknown as Parameters<typeof ctx.plugin>[0], { gateway: baseUrl });
     assert.equal(stub!.registered.length, 1, "one tool contribution");
-    assert.equal(stub!.registered[0]!.name, WIRE);
+    assert.equal(stub!.registered[0]!.name, TOOL_NAME);
     await fiber.dispose();
     assert.equal(stub!.registered.length, 0, "fiber dispose retracts the tool");
     await ctx.fiber.dispose();
@@ -172,7 +204,7 @@ describe("the optional tools service (the host contribution)", () => {
     calls.length = 0;
     draftsStatus = 200; draftsBody = { draftId: "d_e2e" };
     startBody = { run_id: "r_e2e", status: "queued" };
-    const value = await stub!.registered[0]!.execute({ body: "/tmp/b.glb", garment: "/tmp/g.glb" }, exec);
+    const value = (await stub!.registered[0]!.execute(FULL_ARGS, exec)) as Record<string, string>;
     assert.equal(value.run_id, "r_e2e");
     assert.equal(calls[0]!.body.flow, "clothing-placement");
     await ctx.fiber.dispose();

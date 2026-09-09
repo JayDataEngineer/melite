@@ -21,8 +21,8 @@ export type { CardDefinition } from "./service.ts";
 export { loadFacts } from "@comfyui/card-kit/facts";
 export type { FactsFile, FactsReads, ModelFacts, LaneInputsFacts } from "@comfyui/card-kit/facts";
 export { loadTextPair, decodeSave, stackLoras } from '@comfyui/card-kit';
-export { emitParamsSchema } from "./params-emit.ts";
-export type { ParamsSchema } from "./params-emit.ts";
+export { emitParamsSchema, emitParamsSpec } from "./params-emit.ts";
+export type { ParamsSchema, ParamsSpec, ParamSpecNode } from "./params-emit.ts";
 export { loadCardDefs, theService } from "./cardDefs.ts";
 
 export { cardWireName } from './service.ts'

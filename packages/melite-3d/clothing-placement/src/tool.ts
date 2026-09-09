@@ -19,9 +19,20 @@
 // cardDefs — and cardDefs composes THIS package — a cycle that
 // deadlocks ESM evaluation (an in-progress module's dynamic import
 // waits for full evaluation). The card's data flows leaf-ward only.
-import { cardWireName } from "@comfyui/cordis/service";
-import { emitParamsSchema } from "@comfyui/cordis/params-emit";
+import { emitParamsSpec } from "@comfyui/cordis/params-emit";
 import { identity, schema } from "./card.ts";
+import type { Context } from "@deepseek-ai/cordis";
+import { defineTool } from "@deepseek-ai/dsh-tools";
+import type { ToolDefinition, ToolRuntime, ParameterSchemaSpec } from "@deepseek-ai/dsh-tools";
+
+/**
+ * The TOOL-plane name: the card id, hyphens→underscores, no
+ * suffix (the DSH tool-name convention — cookbook's read_file; the
+ * operator's receipt 2026-09-09). The REGISTRY-row plane keeps its
+ * own law (cardWireName: id + "_card") — two planes, two names,
+ * each stated once.
+ */
+export const TOOL_NAME = "clothing_placement";
 
 /** The Melite gateway base URL default (the loopback listen — the
  *  same value melite-tools' Config defaults to; a plugin Config owns
@@ -70,44 +81,33 @@ async function gwJson(
   }
 }
 
-/** The tool surface this package contributes to a host's tools
- *  service (the Consumer-owned structural shape — the capability
- *  seam law: the Consumer keeps its own declaration of what it
- *  contributes; never an `unknown`). */
-export interface CardToolShape {
-  readonly name: string;
-  readonly description: string;
-  readonly parameters: Record<string, unknown>;
-  presentCall(args: unknown): Record<string, unknown>;
-  readonly output: {
-    readonly schema: Record<string, unknown>;
-    render(args: unknown, value: unknown): Array<{ type: "text"; text: string }>;
-  };
-  execute(
-    args: Record<string, unknown>,
-    exec: { signal: AbortSignal },
-  ): Promise<Record<string, unknown>>;
-}
-
-/** The minimal tools-service surface this package consumes where the
- *  composing host provides one (optional contribution — ctx.get law). */
-export interface ToolsServiceLike {
-  register(tool: CardToolShape): () => void;
-}
-
 const FLOW = "clothing-placement";
+
+/** The canonical value: run ids on success, the named refusal as a
+ *  domain outcome. All fields optional bar the flow name — the
+ *  contract's JsonValue map. */
+type CardResult = {
+  flow: string
+  run_id?: string
+  draft_id?: string
+  status?: string
+  error?: string
+}
+
 const TIMEOUT_MS = 15e3;
 
 /** Build the card's DSH tool. Every emitted field derives from the
  *  package's own single spelling: name from the id law, prose from
  *  identity, parameters from the card's Schemastery schema via the
  *  engine's emitter (the same projection /v1/tools serves). */
-export function buildCardTool(gatewayUrl: string): CardToolShape {
-  return {
-    name: cardWireName(FLOW),
+export function buildCardTool(gatewayUrl: string): ToolDefinition {
+  return defineTool({
+    name: TOOL_NAME,
     description: identity.description,
-    parameters: emitParamsSchema(schema as never, []) as Record<string, unknown>,
-    presentCall(args) {
+    // The DSH spec projection, derived in the engine from the same
+    // walk that serves /v1/tools params (one family, two planes).
+    parameters: emitParamsSpec(schema as never, []) as ParameterSchemaSpec,
+    presentCall(args: unknown) {
       const a = (args ?? {}) as Record<string, unknown>;
       return {
         card: "generic",
@@ -117,28 +117,33 @@ export function buildCardTool(gatewayUrl: string): CardToolShape {
       };
     },
     output: {
+      // The DSL's explicit object form: per-property required,
+      // openness declared (the value map never acquires an
+      // accidental JSON-Schema default). render is the pure Native
+      // projection of one validated canonical value.
       schema: {
         type: "object",
         additionalProperties: true,
         properties: {
           run_id: { type: "string", description: "The queue run id — poll with run_status." },
           draft_id: { type: "string", description: "The minted card draft id." },
-          flow: { type: "string" },
+          flow: { type: "string", required: true },
+          status: { type: "string", description: "Registration status (queued/running)." },
+          error: { type: "string", description: "Named refusal reason, when the gateway refused." },
         },
-        required: ["run_id", "flow"],
       },
       render: (_args, value) => {
         const v = (value ?? {}) as Record<string, unknown>;
         if (typeof v.error === "string" && v.error) {
-          return [{ type: "text", text: `${cardWireName(FLOW)} REFUSED: ${v.error}` }];
+          return [{ type: "text", text: `${TOOL_NAME} REFUSED: ${v.error}` }];
         }
         return [{
           type: "text",
-          text: `${cardWireName(FLOW)} \u2192 ${String(v.run_id ?? "?")} \u2014 poll with run_status`,
+          text: `${TOOL_NAME} → ${String(v.run_id ?? "?")} — poll with run_status`,
         }];
       },
     },
-    async execute(args, exec) {
+    async execute(args, exec): Promise<CardResult> {
       try {
         const composed = await gwJson(gatewayUrl, "POST", "/v1/flows/drafts", { flow: FLOW, ...args }, exec.signal, TIMEOUT_MS);
         const draftId = (composed.draftId ?? composed.draft_id) as string | undefined;
@@ -167,5 +172,12 @@ export function buildCardTool(gatewayUrl: string): CardToolShape {
         throw e;
       }
     },
-  };
+  });
+}
+
+/** Register the tool face into a host's tools service (the probe
+ *  happens in index.ts per the tutorial's optional-dependency
+ *  receipt; this function assumes the service is present). */
+export function registerTool(ctx: Context, tools: ToolRuntime, gatewayUrl: string): void {
+  ctx.effect(() => tools.register(buildCardTool(gatewayUrl.replace(/\/+$/, ""))));
 }
