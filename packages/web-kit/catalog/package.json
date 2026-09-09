@@ -29,7 +29,8 @@
     "./serviceForms": "./src/serviceForms.ts",
     "./tagMap": "./src/tagMap.ts",
     "./text-to-pose": "./src/text-to-pose.ts",
-    "./waveform-peaks": "./src/waveform-peaks.ts"
+    "./waveform-peaks": "./src/waveform-peaks.ts",
+    "./WireStatus": "./src/WireStatus.ts"
   },
   "version": "0.1.0",
   "types": "./src/index.ts"
