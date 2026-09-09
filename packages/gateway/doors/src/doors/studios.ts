@@ -84,13 +84,8 @@
 //     live; the wall pins every REACHABLE base-body leg.
 
 import {
-  existsSync,
-  mkdirSync,
   readFileSync,
-  renameSync,
-  rmSync,
   statSync,
-  writeFileSync,
 } from "node:fs";
 import { randomBytes } from "node:crypto";
 import { dirname, join, resolve } from "node:path";
@@ -104,9 +99,13 @@ import {
 } from "./assets.ts";
 import {
   PyNum,
+  getPresetsDomain,
 } from "@melite/gateway-core";
 import type {
   AssetRoots,
+  Domain,
+  PresetRecord,
+  PresetsDomainSpec,
 } from "@melite/gateway-core";
 import { pyFloatRepr } from "./drafts.ts";
 import type { Context, Plugin } from "@deepseek-ai/cordis";
@@ -1370,72 +1369,50 @@ export function validateBakeParams(s: string): string | null {
 // Ledger IO (atomic tmp+rename — infra/python/melite_models/presets.py:358-429).
 // ---------------------------------------------------------------------------
 
-/** py _TENANT_RE (presets.py:57) — FULL match with the $ anchor
- *  (3d/img_to_mesh fails on the underscore; mirror exactly). */
-const TENANT_RE: RegExp = /^[a-z0-9]+\/[a-z0-9][a-z0-9\-]*$/;
-
 export class PresetLedgerError extends Error {}
-
-function tenantLedgerPath(dataRoot: string, tenant: string): string {
-  if (!TENANT_RE.test(tenant ?? "")) {
-    throw new PresetLedgerError(
-      "bad tenant " + pyReprString(tenant) + " (want <lane>/<name>)",
-    );
-  }
-  return join(dataRoot, "tenants", tenant, "presets.json");
-}
 
 function osMsg(exc: unknown): string {
   return exc instanceof Error ? exc.message : String(exc);
 }
 
-/** read_user_presets (unreadable/corrupt texts are host-shaped —
- *  the wall pins them by SHAPE; every stable byte is exact). */
+/** The domain key for one ledger row: the uniform b64u of the
+ *  composite `<tenant>\n<row-id>` (the seam's per-table codec —
+ *  tenants carry `/`, illegal as a path segment). */
+function presetKey(tenant: string, rowId: string): string {
+  return Buffer.from(tenant + "\n" + rowId, "utf8").toString("base64url");
+}
+
+/** read_user_presets on the domain (the ALL stroke, 2026-09-09):
+ *  the tenant's rows in append order (user-N ids are assigned
+ *  monotonically — numeric sort IS ledger order for the canonical
+ *  corpus; exotic ids sort stably by key after). Every row
+ *  re-validates through validCharacterPreset — the file era's
+ *  whole-ledger refusal becomes per-row quarantine (a row the gate
+ *  refuses is absent, never ledger-bricking; open-time poison is
+ *  backup-and-skipped by the facility first). */
 export function readUserPresets(
-  dataRoot: string,
+  presets: Domain<PresetsDomainSpec>,
   tenant: string,
 ): ValidRow[] {
-  const path: string = tenantLedgerPath(dataRoot, tenant);
-  let text: string;
-  try {
-    text = readFileSync(path, "utf-8");
-  } catch (exc) {
-    const code: string = (exc as { code?: string })?.code ?? "";
-    if (code === "ENOENT") return [];
-    throw new PresetLedgerError(
-      "preset ledger " + path + " unreadable (" + osMsg(exc) +
-        ") — user characters refuse rather than silently drop",
-    );
-  }
-  let doc: unknown;
-  try {
-    doc = parseJson(text);
-  } catch (exc) {
-    throw new PresetLedgerError(
-      "preset ledger " + path + " unreadable (" + osMsg(exc) +
-        ") — user characters refuse rather than silently drop",
-    );
-  }
-  const rows: unknown =
-    isPlainObject(doc) ? (doc["presets"] as unknown) : undefined;
-  if (!Array.isArray(rows)) {
-    throw new PresetLedgerError(
-      "preset ledger " + path + " has no presets list",
-    );
-  }
+  const rows = presets.table("rows");
   const out: ValidRow[] = [];
-  for (let i = 0; i < rows.length; i++) {
+  for (const [, rec] of rows.entries()) {
+    if (rec.tenant !== tenant) continue;
     const errs: VError[] = [];
-    const row: ValidRow | null = validCharacterPreset(rows[i], errs);
-    if (row === null) {
-      throw new PresetLedgerError(
-        "preset ledger " + path + " row " + i + " invalid (" +
-          renderErrors("CharacterPreset", errs) +
-          ")",
-      );
-    }
+    const row: ValidRow | null = validCharacterPreset(
+      rec.row as unknown,
+      errs,
+    );
+    if (row === null) continue;
     out.push(row);
   }
+  const ord = (id: string): number => {
+    const m: RegExpExecArray | null = /^user-(\d+)$/.exec(id);
+    return m !== null ? Number(m[1]) : Number.MAX_SAFE_INTEGER;
+  };
+  out.sort(
+    (a, b): number => ord(a.id) - ord(b.id) || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0),
+  );
   return out;
 }
 
@@ -1452,29 +1429,6 @@ function deepSort(v: unknown): unknown {
   return v;
 }
 
-/** The atomic ledger write both mutating doors share (same-dir
- *  tmp + rename, unlink-on-failure — py:358-429). */
-function writeLedgerFile(path: string, rows: readonly ValidRow[]): void {
-  const text: string =
-    dumpsPy(deepSort({ presets: rows.map(dumpRow) })) + "\n";
-  const dir: string = dirname(path);
-  const tmp: string =
-    join(dir, "presets-" + randomBytes(6).toString("hex") + ".tmp");
-  try {
-    writeFileSync(tmp, text, "utf-8");
-    renameSync(tmp, path);
-  } catch (exc) {
-    try {
-      rmSync(tmp, { force: true });
-    } catch {
-      /* unlink-best-effort (py: missing_ok) */
-    }
-    throw new PresetLedgerError(
-      "preset ledger " + path + " unwritable (" + osMsg(exc) + ")",
-    );
-  }
-}
-
 /** Next user-N (py: startswith("user-") + int(rest), unparseable
  *  ignored — the corpus uses canonical ids; exotic spellings are
  *  an untested boundary, see the header). */
@@ -1489,46 +1443,49 @@ function nextUserId(existing: readonly ValidRow[]): string {
   return "user-" + (n + 1);
 }
 
-function appendUserPreset(
-  dataRoot: string,
+async function appendUserPreset(
+  presets: Domain<PresetsDomainSpec>,
   tenant: string,
   row: ValidRow,
   estateIds: ReadonlySet<string>,
-): ValidRow {
+): Promise<ValidRow> {
   if (row.id !== "user-pending") {
     throw new PresetLedgerError(
       "append wants the user-pending sentinel id, got " + pyReprString(row.id),
     );
   }
-  const existing: ValidRow[] = readUserPresets(dataRoot, tenant);
+  const existing: ValidRow[] = readUserPresets(presets, tenant);
   for (const p of existing) {
     if (estateIds.has(p.id)) {
       throw new PresetLedgerError("user ledger shadows an estate preset id");
     }
   }
   const assigned: ValidRow = { ...row, id: nextUserId(existing) };
-  const path: string = tenantLedgerPath(dataRoot, tenant);
-  mkdirSync(dirname(path), { recursive: true });
-  writeLedgerFile(path, [...existing, assigned]);
+  // The dumped dict is the stored shape (the file era's JSON bytes,
+  // minus the file) — reads round-trip through validCharacterPreset
+  // exactly as before.
+  await presets.table("rows").put(presetKey(tenant, assigned.id), {
+    tenant,
+    row: dumpRow(assigned) as unknown as PresetRecord["row"],
+  });
   return assigned;
 }
 
-function deleteUserPreset(
-  dataRoot: string,
+async function deleteUserPreset(
+  presets: Domain<PresetsDomainSpec>,
   tenant: string,
   presetId: string,
   estateIds: ReadonlySet<string>,
-): boolean {
+): Promise<boolean> {
   if (estateIds.has(presetId)) {
     throw new PresetLedgerError(
       "preset " + pyReprString(presetId) +
         " is an estate row — immutable (edit the Model)",
     );
   }
-  const existing: ValidRow[] = readUserPresets(dataRoot, tenant);
-  const kept: ValidRow[] = existing.filter((p) => p.id !== presetId);
-  if (kept.length === existing.length) return false;
-  writeLedgerFile(tenantLedgerPath(dataRoot, tenant), kept);
+  const key: string = presetKey(tenant, presetId);
+  if (presets.table("rows").get(key) === undefined) return false;
+  await presets.table("rows").delete(key);
   return true;
 }
 
@@ -2065,13 +2022,13 @@ function unknownTenant(tenant: string): StudioResult {
 /** GET /v1/studios/{tenant}/presets. */
 export function hPresetsList(
   tenant: string,
-  dataRoot: string,
+  presets: Domain<PresetsDomainSpec>,
 ): StudioResult {
   if (!(tenant in ESTATE_TENANTS)) return unknownTenant(tenant);
   const { rows: estate, ids: estateIds } = estateRows(tenant);
   let user: ValidRow[];
   try {
-    user = readUserPresets(dataRoot, tenant);
+    user = readUserPresets(presets, tenant);
     for (const p of user) {
       if (estateIds.has(p.id)) {
         // Raised (not returned) so the handler prefixes it —
@@ -2116,12 +2073,12 @@ export function hPresetsList(
 }
 
 /** POST /v1/studios/{tenant}/presets (success: 201). */
-export function hPresetsSave(
+export async function hPresetsSave(
   tenant: string,
   rawBody: Uint8Array,
-  dataRoot: string,
+  presets: Domain<PresetsDomainSpec>,
   outRoot: string,
-): StudioResult {
+): Promise<StudioResult> {
   if (!(tenant in ESTATE_TENANTS)) return unknownTenant(tenant);
   let doc: unknown = {};
   if (rawBody.length > 0) {
@@ -2177,7 +2134,7 @@ export function hPresetsSave(
   const { ids: estateIds } = estateRows(tenant);
   let saved: ValidRow;
   try {
-    saved = appendUserPreset(dataRoot, tenant, row, estateIds);
+    saved = await appendUserPreset(presets, tenant, row, estateIds);
   } catch (exc) {
     if (exc instanceof PresetLedgerError) {
       return jsonAnswer(400, { error: "preset ledger: " + exc.message });
@@ -2190,16 +2147,16 @@ export function hPresetsSave(
 }
 
 /** DELETE /v1/studios/{tenant}/presets/{preset_id}. */
-export function hPresetsDelete(
+export async function hPresetsDelete(
   tenant: string,
   presetId: string,
-  dataRoot: string,
-): StudioResult {
+  presets: Domain<PresetsDomainSpec>,
+): Promise<StudioResult> {
   if (!(tenant in ESTATE_TENANTS)) return unknownTenant(tenant);
   const { ids: estateIds } = estateRows(tenant);
   let removed: boolean;
   try {
-    removed = deleteUserPreset(dataRoot, tenant, presetId, estateIds);
+    removed = await deleteUserPreset(presets, tenant, presetId, estateIds);
   } catch (exc) {
     if (exc instanceof PresetLedgerError) {
       return jsonAnswer(400, { error: "preset ledger: " + exc.message });
@@ -2268,21 +2225,27 @@ export function hBaseBody(
  *  (dumpsPy at the door, 4xx codes inline) — the ctx passes the
  *  raw POST bytes for the door's own strict parse, exactly like
  *  dispatchDrafts. */
-export function dispatchStudios(
+export async function dispatchStudios(
   handler: string,
   m: RegExpMatchArray | null,
   rawBody: Uint8Array,
   roots: AssetRoots,
-): StudioResult | null {
+  ctx: Context,
+): Promise<StudioResult | null> {
   const repoRoot: string = resolveRepoRoot();
-  const dataRoot: string = join(repoRoot, "data");
   switch (handler) {
     case "_h_presets_list":
-      return hPresetsList(m?.[1] ?? "", dataRoot);
     case "_h_presets_save":
-      return hPresetsSave(m?.[1] ?? "", rawBody, dataRoot, roots.runsRoot);
-    case "_h_presets_delete":
-      return hPresetsDelete(m?.[1] ?? "", m?.[2] ?? "", dataRoot);
+    case "_h_presets_delete": {
+      const presets: Domain<PresetsDomainSpec> = await getPresetsDomain(ctx);
+      if (handler === "_h_presets_list") {
+        return hPresetsList(m?.[1] ?? "", presets);
+      }
+      if (handler === "_h_presets_save") {
+        return hPresetsSave(m?.[1] ?? "", rawBody, presets, roots.runsRoot);
+      }
+      return hPresetsDelete(m?.[1] ?? "", m?.[2] ?? "", presets);
+    }
     case "_h_base_body":
       return hBaseBody(m?.[1] ?? "", repoRoot);
     default:
@@ -2301,19 +2264,21 @@ export function dispatchStudios(
  *  nothing through the context. */
 export const studiosDoors: Plugin = {
   name: "gateway-studios",
-  inject: ["gatewayError", "webServer"],
+  inject: ["gatewayError", "storageDomain", "webServer"],
   apply(ctx: Context): void {
-    mountDoorRoutes(ctx, ctx.webServer, ["_h_presets_list", "_h_presets_save", "_h_presets_delete", "_h_base_body"], (req: GatewayRequest): DispatchResult | undefined => {
+    mountDoorRoutes(ctx, ctx.webServer, ["_h_presets_list", "_h_presets_save", "_h_presets_delete", "_h_base_body"], (req: GatewayRequest): DispatchResult | undefined | Promise<DispatchResult | undefined> => {
         const hit = doorMatch(req, ["_h_presets_list", "_h_presets_save", "_h_presets_delete", "_h_base_body"]);
         if (hit === null) return undefined;
-        const studio: DispatchResult | null = dispatchStudios(
+        return dispatchStudios(
           hit.row.handler,
           hit.m,
           req.body,
           req.roots,
-        );
-        if (studio !== null) return studio;
-        return undefined;
+          ctx,
+        ).then((studio: DispatchResult | null): DispatchResult | undefined => {
+          if (studio !== null) return studio;
+          return undefined;
+        });
     });
   },
 };

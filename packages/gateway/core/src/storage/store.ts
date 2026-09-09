@@ -46,6 +46,7 @@ import { resolveInputDir, scanRun } from "./scan.ts";
 import {
   assetsDomainSpec,
   draftsDomainSpec,
+  presetsDomainSpec,
   uploadsDomainSpec,
 } from "./domains.ts";
 import type {
@@ -53,6 +54,8 @@ import type {
   AssetsDomainSpec,
   DraftRecord,
   DraftsDomainSpec,
+  PresetRecord,
+  PresetsDomainSpec,
   RunRow,
   UploadFile,
   UploadsDomainSpec,
@@ -81,6 +84,7 @@ export interface StorageHandles {
   readonly assets: Domain<AssetsDomainSpec>;
   readonly uploads: Domain<UploadsDomainSpec>;
   readonly drafts: Domain<DraftsDomainSpec>;
+  readonly presets: Domain<PresetsDomainSpec>;
 }
 
 interface CacheEntry {
@@ -269,6 +273,16 @@ async function getHandles(
         } catch {
           /* best-effort */
         }
+        try {
+          await handles.drafts.close();
+        } catch {
+          /* best-effort */
+        }
+        try {
+          await handles.presets.close();
+        } catch {
+          /* best-effort */
+        }
       },
       (): void => {
         /* a failed open holds nothing */
@@ -279,9 +293,11 @@ async function getHandles(
     const assets = await facility.open(assetsDomainSpec);
     const uploads = await facility.open(uploadsDomainSpec);
     const drafts = await facility.open(draftsDomainSpec);
+    const presets = await facility.open(presetsDomainSpec);
     await backfillUploadsIfEmpty(uploads);
     await importLegacyDrafts(drafts);
-    return { assets, uploads, drafts };
+    await importLegacyPresets(presets);
+    return { assets, uploads, drafts, presets };
   })();
   cached = { facility, root, ready };
   try {
@@ -390,4 +406,80 @@ export async function getDraftsDomain(
 ): Promise<Domain<DraftsDomainSpec>> {
   const handles: StorageHandles = await getHandles(ctx, resolveStorageRoot());
   return handles.drafts;
+}
+
+/** The one-time legacy-presets import (the repo data/tenants tree →
+ *  the presets domain). Same marker law as drafts: runs only while
+ *  the global serves the initial 0, then stamps the epoch. Poison
+ *  FILES skip whole (no domain row exists to quarantine — the file
+ *  era's whole-ledger refusal becomes per-row/per-file absence);
+ *  rows failing the seam schema skip individually (the door
+ *  re-validates depth per served row). Keys are the uniform b64u of
+ *  `<tenant>\n<row-id>`. */
+async function importLegacyPresets(
+  presets: Domain<PresetsDomainSpec>,
+): Promise<void> {
+  const marker = presets.global;
+  if (marker.get() !== 0) return;
+  const rows = presets.table("rows");
+  const tenantsDir = join(resolveRepoRoot(), "data", "tenants");
+  let lanes: string[];
+  try {
+    lanes = readdirSync(tenantsDir);
+  } catch {
+    lanes = [];
+  }
+  for (const lane of lanes.sort()) {
+    let names: string[];
+    try {
+      names = readdirSync(join(tenantsDir, lane));
+    } catch {
+      continue;
+    }
+    for (const name of names.sort()) {
+      const tenant = lane + "/" + name;
+      let doc: unknown;
+      try {
+        doc = JSON.parse(
+          readFileSync(join(tenantsDir, lane, name, "presets.json"), "utf8"),
+        );
+      } catch {
+        continue;
+      }
+      if (
+        typeof doc !== "object" ||
+        doc === null ||
+        Array.isArray(doc) ||
+        !Array.isArray((doc as Record<string, unknown>)["presets"])
+      ) {
+        continue;
+      }
+      for (const row of (doc as { presets: unknown[] })["presets"]) {
+        if (typeof row !== "object" || row === null || Array.isArray(row)) {
+          continue;
+        }
+        const rec = row as Record<string, unknown>;
+        if (typeof rec["id"] !== "string") continue;
+        const key = b64uKey(tenant + "\n" + (rec["id"] as string));
+        if (rows.get(key) !== undefined) continue;
+        try {
+          await rows.put(key, {
+            tenant,
+            row: rec as unknown as PresetRecord["row"],
+          });
+        } catch {
+          /* a seam-failing legacy row skips; the rest import */
+        }
+      }
+    }
+  }
+  await marker.set(Date.now());
+}
+
+/** The studios door's domain handle (opens through the shared cache). */
+export async function getPresetsDomain(
+  ctx: Context,
+): Promise<Domain<PresetsDomainSpec>> {
+  const handles: StorageHandles = await getHandles(ctx, resolveStorageRoot());
+  return handles.presets;
 }

@@ -163,7 +163,45 @@ export const draftsDomainSpec = defineDomain({
   },
 });
 
+/** One preset-ledger row at the seam: identity + tenant routing
+ *  are zod-checked here; DEPTH stays the door's (validCharacterPreset
+ *  re-validates every served row — per-row quarantine replaces the
+ *  file era's whole-ledger refusal). */
+const PresetRowSchema = z.looseObject({
+  id: z.string(),
+  label: z.string(),
+  description: z.string(),
+  origin: z.string(),
+});
+
+const PresetRecordSchema = z.object({
+  tenant: z.string(),
+  row: PresetRowSchema.passthrough(),
+});
+
+export type PresetRecord = z.infer<typeof PresetRecordSchema>;
+
+/** The presets domain (unit dir `presets/`, version 1) — the studios
+ *  user-preset ledgers (the ALL stroke, 2026-09-09). Table `rows`,
+ *  keyed by the composite `<tenant>\n<row-id>` under the uniform
+ *  b64u codec (tenants carry `/`, illegal as a path segment; the
+ *  newline separator is unambiguous — TENANT_RE + PRESET_ID_RE
+ *  admit no newline, and the per-table codec never branches). The
+ *  global slot is the one-time legacy-import marker (0 until the
+ *  repo data/tenants tree has been imported). */
+export const presetsDomainSpec = defineDomain({
+  name: "presets",
+  version: 1,
+  layout: "per-record",
+  invalidRecords: "backup-and-skip",
+  global: { schema: z.number().int(), initial: 0 },
+  tables: {
+    rows: domainTable<string, PresetRecord>(PresetRecordSchema),
+  },
+});
+
 /** Spec types for Domain<S> handles (store.ts owns the open cache). */
 export type AssetsDomainSpec = typeof assetsDomainSpec;
 export type UploadsDomainSpec = typeof uploadsDomainSpec;
 export type DraftsDomainSpec = typeof draftsDomainSpec;
+export type PresetsDomainSpec = typeof presetsDomainSpec;

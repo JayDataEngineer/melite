@@ -76,13 +76,17 @@ export async function bootSandbox(opts: {
    *  mint — the drafts wall seeds legacy fixtures before boot and
    *  reboots the same root for durability/marker proofs. */
   stateRoot?: string;
+  /** Pre-seeded repo root (caller-owned, must carry
+   *  inference.config.json): skips the fixture-repo mint — the
+   *  presets wall seeds a legacy data/tenants tree before boot. */
+  repoRoot?: string;
   /** KEPT FOR SIGNATURE COMPATIBILITY, now a no-op: the catalog is
    *  the compiled-in frozen registry (models/registry.generated.ts)
    *  — root-independent, no DATA file to seed (the provisions.json
    *  convergence, 2026-09-08). */
   seedCatalog?: boolean;
 }): Promise<Sandbox> {
-  const repoRoot: string = writeFixtureRepo();
+  const repoRoot: string = opts.repoRoot ?? writeFixtureRepo();
   // seedCatalog: retired no-op (compiled-in registry — see opts doc).
   const stateRoot: string =
     opts.stateRoot ?? mkdtempSync(join(tmpdir(), "wall-ts-state-"));
