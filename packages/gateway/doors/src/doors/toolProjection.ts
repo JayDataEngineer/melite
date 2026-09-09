@@ -16,6 +16,7 @@
 // Refusal law: a registered card without authored prose throws
 // LOUD — never a silent drop, never a generated title.
 import { emitParamsSchema } from "@comfyui/cordis";
+import { cardWireName } from "@comfyui/cordis";
 import type { CardDefinition } from "@comfyui/cordis";
 import type { ManifestRow } from "./planes.ts";
 
@@ -65,7 +66,7 @@ export function toolBaseRows(
       );
     }
     out.set(id, {
-      name: id.replace(/-/g, "_") + "_card",
+      name: cardWireName(id),
       version: 1,
       kind: "card-compose",
       card: id,

@@ -152,7 +152,15 @@ function validateCardArgs(m: CardManifest, args: Record<string, any>): { params:
 	return { params: out, calls, fps }
 }
 
-/** Fetch manifests + build one DSH tool per card. */
+/**
+ * Fetch manifests + build one DSH tool per card.
+ *
+ * OWNERSHIP TRANSFER (M2′, 2026-09-09): card packages now emit
+ * their own tools where the composing host provides a tools service
+ * (clothing-placement first). This registrar only serves MODEL
+ * cards (rows with model null are filtered below) and dies when the
+ * remaining 7 model-card packages land.
+ */
 export async function cardTools(gatewayUrl: string, signal?: AbortSignal, lane?: string): Promise<Tool[]> {
 	// lane mode: the gateway serves EXACTLY the lane's manifest. A lane
 	// session must never see another card's tool — impossibility by

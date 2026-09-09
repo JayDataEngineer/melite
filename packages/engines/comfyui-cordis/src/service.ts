@@ -17,6 +17,16 @@ export class ComposeRefusal extends Error {
   }
 }
 
+/**
+ * The wire tool name derived from a card id (hyphens→underscores +
+ * "_card"). ONE spelling of the law (M2′ stroke 2, 2026-09-09):
+ * the gateway projection (toolProjection) and every card package's
+ * in-package tool emission consume this — the derivation is never
+ * restated.
+ */
+export const cardWireName = (id: string): string =>
+  id.replace(/-/g, "_") + "_card";
+
 export interface CardDefinition {
   id: string
   /** Stage-row id the compose emits (retired compose.py skeleton=

@@ -36,7 +36,16 @@ the DSH profile when the web lane rides) — never glob-discovered.
   explicitly (named bridge, death date: the 20-card sweep — P48.1).
   When all cards are packages, the glob walk is deleted and the
   package list is the only composition.
-- The tool definition (`defineTool` in-package, execute calling
-  injected services) is the next stroke of card completion; today
-  the tool row projects from the registry and registration happens
-  host-side.
+- The tool face lives in-package (`src/tool.ts`): where the
+  composing host provides a `tools` service (`ctx.get`, the optional
+  service law), `apply` registers `clothing_placement_card` — the
+  same schema/prose the registry serves, one spelling — whose
+  execute rides the flow path (drafts mints, start queues; named
+  refusals resolve canonically). The fetch-registrar never carried
+  this card (`model: null` rows are filtered); the remaining 7
+  model-card tools still ride it until their packages land.
+- Live-host composition: the dev profile does not yet list this
+  package, so no booted dsh session has shown the registered tool;
+  the package tests prove registration + disposal against the
+  documented lifecycle. The profile listing lands with the
+  20-card sweep.

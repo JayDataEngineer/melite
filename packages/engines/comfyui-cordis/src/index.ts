@@ -24,3 +24,5 @@ export { loadTextPair, decodeSave, stackLoras } from '@comfyui/card-kit';
 export { emitParamsSchema } from "./params-emit.ts";
 export type { ParamsSchema } from "./params-emit.ts";
 export { loadCardDefs, theService } from "./cardDefs.ts";
+
+export { cardWireName } from './service.ts'

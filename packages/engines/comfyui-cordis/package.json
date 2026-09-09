@@ -9,6 +9,7 @@
     ".": "./src/index.ts",
     "./graph": "./src/graph.ts",
     "./service": "./src/service.ts",
+    "./params-emit": "./src/params-emit.ts",
     "./cli": "./src/cli.ts",
     "./catalog-registry": "./src/entries/catalog-registry.ts",
     "./comfyui-host": "./src/entries/comfyui-host.ts",
