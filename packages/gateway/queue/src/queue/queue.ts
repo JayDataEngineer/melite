@@ -284,33 +284,17 @@ export function asciiEscape(text: string): string {
   );
 }
 
-/** py json.dumps default separators (", ", ": ") over a
- *  JSON.stringify compact body: insert exactly one space after each
- *  structural comma/colon outside strings. The ledger data half
- *  uses these (json.dumps(data or {}, default=str)); the envelope
- *  half is compact (the %-format literals). */
-export function spacedSeparators(compact: string): string {
-  let out: string = "";
-  let inStr: boolean = false;
-  let esc: boolean = false;
-  for (const ch of compact) {
-    out += ch;
-    if (inStr) {
-      if (esc) esc = false;
-      else if (ch === "\\") esc = true;
-      else if (ch === '"') inStr = false;
-    } else if (ch === '"') {
-      inStr = true;
-    } else if (ch === "," || ch === ":") {
-      out += " ";
-    }
-  }
-  return out;
-}
-
-/** dumpsPy for journal data: spaced separators + ensure_ascii. */
+/** Journal data writer, ROW 29 STAGE 1 (2026-09-10, ledger): canonical
+ *  JSON separators + ensure_ascii. The py spaced separators
+ *  (json.dumps ", "/": ") are gone — py is dead, no reader needs
+ *  them (JSONL readers parse; operators grep whitespace-tolerant);
+ *  ensure_ascii STAYS (byte-safe journal for non-UTF-8-unaware
+ *  tailers). Contract: PLAIN data only — a PyNum instance would
+ *  object-ify ({"literal"}) here exactly as before (latent, no live
+ *  caller passes one; pinned out-of-contract in
+ *  py-canonical-diff.test.ts). */
 export function dumpsLedgerData(data: Record<string, unknown>): string {
-  return asciiEscape(spacedSeparators(JSON.stringify(data) ?? "{}"));
+  return asciiEscape(JSON.stringify(data) ?? "{}");
 }
 
 /** Append-only activity journal (ledger 2241-2250): one JSON object
