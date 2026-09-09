@@ -72,7 +72,7 @@
 
 import { Context, Service } from "@deepseek-ai/cordis";
 import type { Plugin } from "@deepseek-ai/cordis";
-import { bootModels, ComfyUIService, ComposeRefusal, getModel, loadCardDefs, loadFacts, registryIds, registryModel, theService } from "@melite/comfyui";
+import { bootModels, ComfyUIService, ComposeRefusal, composeCards, getModel, loadCardDefs, loadFacts, registryIds, registryModel, theService } from "@melite/comfyui";
 import type { CardDefinition, FactsFile, FactsReads } from "@melite/comfyui";
 import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
 import { dirname, join, relative, resolve, sep } from "node:path";
@@ -558,19 +558,12 @@ export class CardRegistryService extends Service {
         new ComfyUIService(c);
       },
     });
-    const cardsDir: string = join(cordisSrcDir(), "cards");
-    for (const f of readdirSync(cardsDir).filter((x) => x.endsWith(".ts"))) {
-      // the cli.ts:59-63 auto-load loop, in-process: the WHOLE module
-      // namespace rides (cards declare `export const inject =
-      // ['comfyui']` at module level — passing only { apply } drops
-      // the inject declaration and compose dies with "cannot get
-      // property comfyui without inject"). A card lands by dropping
-      // its file; no shared-file edit.
-      const mod = (await import(pathToFileURL(join(cardsDir, f)).href)) as unknown as Plugin;
-      if (typeof (mod as { apply?: unknown }).apply === "function") {
-        await ctx.plugin(mod);
-      }
-    }
+    // THE CARD PACKAGES (the card sweep, 2026-09-09): the compose
+    // boot rides the SAME composition table as loadCardDefs —
+    // composeCards (exported from @melite/comfyui; the engine
+    // src/cards readdir glob died with the sweep). A card lands by
+    // adding its package + one table row; no shared-file edit.
+    await composeCards(ctx);
     ctx.comfyui.setFacts(loadFacts(factsPath(), this.readsSync()));
     ctx.comfyui.setObjectInfo(oi);
     // THE NESTED STANZA UNWRAP (cli.ts:82-91): a `params` dict key in

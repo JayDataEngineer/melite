@@ -191,6 +191,12 @@ export interface RunRecord {
    *  flow_inline rows. The status body builder names explicit keys
    *  and never leaks it. */
   cardId?: string;
+  /** The settle persist (R3 mirror): registration stamps these so
+   *  settleRun can rewrite the sidecar + ledger row without
+   *  reconstructing them. createdAt is epoch seconds (py parity). */
+  createdAt: number;
+  pipeline: string;
+  graphRows: GraphRow[];
 }
 
 /** The P6 live-bus publisher seam (runs.ts owns the sockets): the
@@ -435,6 +441,9 @@ export function enqueueResurrected(
     stopFlag: false,
     params: [],
     outputNodes: [],
+    createdAt: Date.now() / 1000,
+    pipeline: "",
+    graphRows: [],
   };
   s.runs.set(rec.runId, run);
   if (!s.order.includes(rec.runId)) s.order.push(rec.runId);
@@ -911,6 +920,17 @@ function registerCompiled(
   const dir: string = join(resolveOutRoot(testFlag), runId);
   mkdirSync(dir, { recursive: true });
   const st: CompiledStage = compiled.stages[0] as CompiledStage;
+  const createdAt: number = Date.now() / 1000;
+  const graphRows: GraphRow[] = [
+    {
+      id: st.id,
+      type: "comfyui",
+      input_from: [],
+      input_names: {},
+      outputs: { ...st.outputs },
+      params: { ...st.params },
+    },
+  ];
   const run: RunRecord = {
     runId,
     status: "queued",
@@ -932,6 +952,9 @@ function registerCompiled(
     testFlag,
     stopFlag: false,
     params: [st.params],
+    createdAt,
+    pipeline: "flow_inline",
+    graphRows,
     outputNodes: [st.outputNodes],
   };
   (run as { inputNames?: Record<string, Record<string, string>> }).inputNames =
@@ -1029,6 +1052,9 @@ async function handleCardStart(
     params: [params],
     outputNodes: [{}],
     cardId: p1.card,
+    createdAt: 0,
+    pipeline: "",
+    graphRows: [],
   };
   (run as { inputNames?: Record<string, Record<string, string>> }).inputNames =
     { [skeleton]: {} };
@@ -1043,6 +1069,9 @@ async function handleCardStart(
       params: { workflow: graph },
     },
   ];
+  run.createdAt = createdAt;
+  run.pipeline = pipelineOf(body);
+  run.graphRows = graphRows;
   const s: RunsService | null = pick(svc);
   if (s === null) {
     throw new Error(
@@ -1113,6 +1142,52 @@ function runRel(run: RunRecord, art: string): string {
 function basenameSafe(p: string): string {
   const i: number = Math.max(p.lastIndexOf("/"), p.lastIndexOf("\\"));
   return i < 0 ? p : p.slice(i + 1);
+}
+
+/** The settle persist (the R3 durable-queue mirror of registration):
+ *  the terminal status rewrites the run's _flow.json sidecar (the
+ *  restart authority — without this a completed run restores as
+ *  queued forever with its artifacts already on disk) and appends
+ *  the terminal ledger row (run.completed | run.stopped |
+ *  run.failed). Registration writes are best-effort (never take the
+ *  run down); the settle writes carry the same law — a persist
+ *  failure never unmakes the run's truth in memory. */
+function settleRun(run: RunRecord): void {
+  try {
+    atomicWriteJson(
+      join(run.dir, "_flow.json"),
+      sidecarDoc({
+        runId: run.runId,
+        status: run.status,
+        error: run.error,
+        stages: run.stages.map((st) => ({
+          id: st.id,
+          name: st.name,
+          index: st.index,
+          status: st.status,
+          outputs: { ...(st.outputs as Record<string, unknown>) },
+          expected: { ...(st.expected as Record<string, unknown>) },
+        })),
+        skippedStages: [...run.skippedStages],
+        artifacts: [...run.artifacts],
+        createdAt: run.createdAt,
+        testFlag: run.testFlag,
+        draftId: run.draftId,
+        pipeline: run.pipeline,
+        graph: run.graphRows,
+      }),
+    );
+  } catch {
+    /* the sidecar must never take the settle down */
+  }
+  try {
+    appendLedger(resolveStateRoot(), "run." + run.status, {
+      run_id: run.runId,
+      error: run.error,
+    });
+  } catch {
+    /* nor the ledger row */
+  }
 }
 
 function errName(err: unknown): string {
@@ -1262,6 +1337,7 @@ async function runOne(
       });
     }
     run.status = run.stopFlag ? "stopped" : "completed";
+    settleRun(run);
     // P6 OUTPUT CONTRACT, run-level arm (the worker): a
     // completed run carrying card context must have delivered what
     // its card promises — the violation flips it to failed with the
@@ -1305,11 +1381,13 @@ async function runOne(
     }
     if (stopped) {
       run.status = "stopped";
+      settleRun(run);
       svc.publishBus(run.runId, terminalFrame("stopped"));
       return;
     }
     run.status = "failed";
     run.error = text;
+    settleRun(run);
     svc.publishBus(run.runId, terminalFrame("failed"));
   }
 }

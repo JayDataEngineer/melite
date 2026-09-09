@@ -163,7 +163,14 @@ export const buildH3TimelineTool = (gatewayUrl: string): ToolDefinition =>
         }, exec?.signal)
         const draftId = typeof draft.draftId === 'string' ? draft.draftId : ''
         if (draftId === '') return { flow: FLOW, model, error: 'gateway draft POST returned no draftId' }
+        // THE ENVELOPE LIFT (card_compose_body 363-372): the start
+        // body carries the card params BESIDE the envelope keys —
+        // the editor's own wire posts the SAME body (params + model)
+        // with draft_id added; the {model:} arm lifts body-minus-
+        // envelope as the ONE params stanza. A params-less body
+        // composes defaults only and refuses on required fields.
         const started = await gwJson(gatewayUrl, 'POST', '/v1/flows/start', {
+          ...params,
           model,
           draft_id: draftId,
         }, exec?.signal)

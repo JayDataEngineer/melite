@@ -41,19 +41,16 @@ export const theService = (): ComfyUIService => {
 
 /** Boot the card set once and return id → CardDefinition.
  * Deterministic across calls in one process. */
-export const loadCardDefs = async (): Promise<Map<string, CardDefinition>> => {
-  if (cache !== null) return cache
-  const ctx = new Context()
-  const service = new ComfyUIService(ctx)
-  // THE CARD PACKAGES (the card sweep, 2026-09-09 — the glob's named
-  // death date arrived): every card lives in its own package
-  // (packages/melite-<domain>/<id> — one card one package: card.ts +
-  // ui/ + agents/ in one unit), composed HERE by explicit import.
-  // This table is the ONLY card load order; a card lands by adding
-  // its package + one row. The engine src/cards tree is empty of
-  // host cards (only tenants remain: the fetch-registrar manifests,
-  // retired with their rows).
-  const cardPackages: string[] = [
+/** THE CARD PACKAGES (the card sweep, 2026-09-09 — the glob's named
+ *  death date arrived): every card lives in its own package
+ *  (packages/melite-<domain>/<id> — one card one package: card.ts +
+ *  ui/ + agents/ in one unit). This table is the ONLY card
+ *  composition (loadCardDefs' cache-boot AND the compose door's
+ *  fresh-Context boot both ride it); a card lands by adding its
+ *  package + one row. The engine src/cards tree is empty of host
+ *  cards (only tenants remain: the fetch-registrar manifests,
+ *  retired with their rows). */
+export const cardPackages: string[] = [
     '@melite/melite-3d-anny',
     '@melite/melite-3d-fit',
     '@melite/melite-3d-img-to-mesh',
@@ -73,8 +70,15 @@ export const loadCardDefs = async (): Promise<Map<string, CardDefinition>> => {
     '@melite/melite-motion-motion',
     '@melite/melite-video-h3-timeline',
     '@melite/melite-3d-clothing-placement',
-    '@melite/melite-image-image-gen',
-  ]
+  '@melite/melite-image-image-gen',
+]
+
+/** Compose the card set into a Context (the shared auto-load loop:
+ * the WHOLE module namespace rides — cards declare `export const
+ * inject = ['comfyui']` at module level; passing only { apply }
+ * drops the inject declaration and the service dies with "cannot
+ * get property comfyui without inject"). */
+export const composeCards = async (ctx: Context): Promise<void> => {
   for (const specifier of cardPackages) {
     const mod = (await import(specifier)) as unknown as Plugin
     if (typeof (mod as { apply?: unknown }).apply !== 'function') {
@@ -82,6 +86,13 @@ export const loadCardDefs = async (): Promise<Map<string, CardDefinition>> => {
     }
     await ctx.plugin(mod)
   }
+}
+
+export const loadCardDefs = async (): Promise<Map<string, CardDefinition>> => {
+  if (cache !== null) return cache
+  const ctx = new Context()
+  const service = new ComfyUIService(ctx)
+  await composeCards(ctx)
   // THE MOD PACKS (the distinct category taxonomy — the py Mod
   // parents): the pack contracts (loras, controlnet, lanpaint,
   // mask, qvoice) live in the compose kit now (P46 — the web

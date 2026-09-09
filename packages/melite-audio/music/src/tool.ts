@@ -168,7 +168,14 @@ export const buildMusicTool = (gatewayUrl: string): ToolDefinition =>
         if (draftId === '') return { flow: FLOW, model, error: 'gateway draft POST returned no draftId' }
         // DOOR TWO (start): draft_id + exactly one door key — the
         // {model:} arm resolves, composes, and queues the run.
+        // THE ENVELOPE LIFT (card_compose_body 363-372): the start
+        // body carries the card params BESIDE the envelope keys —
+        // the editor's own wire posts the SAME body (params + model)
+        // with draft_id added; the {model:} arm lifts body-minus-
+        // envelope as the ONE params stanza. A params-less body
+        // composes defaults only and refuses on required fields.
         const started = await gwJson(gatewayUrl, 'POST', '/v1/flows/start', {
+          ...params,
           model,
           draft_id: draftId,
         }, exec?.signal)

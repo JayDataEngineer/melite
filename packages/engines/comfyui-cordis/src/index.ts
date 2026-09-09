@@ -23,6 +23,6 @@ export type { FactsFile, FactsReads, ModelFacts, LaneInputsFacts } from "@melite
 export { loadTextPair, decodeSave, stackLoras } from '@melite/card-kit';
 export { emitParamsSchema, emitParamsSpec } from "./params-emit.ts";
 export type { ParamsSchema, ParamsSpec, ParamSpecNode } from "./params-emit.ts";
-export { loadCardDefs, theService } from "./cardDefs.ts";
+export { cardPackages, composeCards, loadCardDefs, theService } from "./cardDefs.ts";
 
 export { cardWireName } from './service.ts'
