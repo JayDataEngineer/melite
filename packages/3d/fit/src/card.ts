@@ -39,6 +39,7 @@ export function apply(ctx: Context): void {
     // stage-row id the compose emits (retired skeleton= verbatim; TS owns the truth post-flip).
     skeleton: 'fit',
     boarded: ['fit'],
+    tags: ['3d', 'character', 'fit'],
     requires: ['melite-poser-nodes'],
     schema: schema as unknown as (v: unknown) => Record<string, unknown>,
     compose(p, _model, g, runId) {

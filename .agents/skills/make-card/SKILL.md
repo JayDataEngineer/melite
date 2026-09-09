@@ -34,7 +34,12 @@ packages/<genre>/<card>/
   src/agents/                      # OPTIONAL agent docs
 ```
 
-`src/card.ts` — the shape (copy from `packages/image/ideogram4/src/card.ts`):
+`src/card.ts` — the shape (copy from `packages/image/ideogram4/src/card.ts`).
+Two host faces exist: the card.ts `apply` plugin (ideogram4 style,
+12 cards) or an `src/index.ts` plugin that calls an exported
+`registerCard(ctx, comfy)` (image-gen style, 8 cards — see
+`packages/image/image-gen/src/index.ts`). The registration object is
+identical either way:
 
 ```ts
 import type { Context } from '@deepseek-ai/cordis'
@@ -49,6 +54,9 @@ export function apply(ctx: Context): void {
     id: '<card>',            // the tenant id's second segment
     skeleton: 'generate',    // the stage-row id the compose emits
     boarded: [...],          // capability packs this card boards
+    tags: ['image', 'generate'],  // RETRIEVAL (card-catalog search):
+                                  // modality + operation words the card
+                                  // DECLARES — never derived
     schema,
     compose(p, model, g, runId) { /* throw on missing required; emit the graph */ },
   }))

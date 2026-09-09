@@ -52,6 +52,7 @@ export function apply(ctx: Context): void {
     // stage-row id the compose emits (retired skeleton= verbatim; TS owns the truth post-flip).
     skeleton: 'generate',
     boarded: ['wan-vace', 'scail2-animate'],
+    tags: ['video', 'generate', 'text-to-video'],
     // every render combines video through VideoHelperSuite
     // (VHS_LoadVideoPath + VHS_VideoCombine) — card-level, both
     // families ride the shared renderer.

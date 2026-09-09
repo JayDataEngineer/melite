@@ -37,6 +37,7 @@ export function registerCard(ctx: Context, comfy: ComfyUIService): void {
     // both Qwen3-TTS families board here (CustomVoice + Base); the
     // VoiceDesign lane belongs to voice-lock.
     boarded: ['qwen3-tts'],
+    tags: ['audio', 'tts', 'voice', 'generate'],
     // Load + TTS ride the authored Audiocore pack; SaveAudio is core.
     requires: ['melite-audio-nodes'],
     schema: schema as unknown as (v: unknown) => Record<string, unknown>,

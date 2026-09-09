@@ -77,6 +77,7 @@ export function registerCard(ctx: Context, comfy: ComfyUIService): void {
     // no model families — the first pure-tool card (requiresModel:
     // false skips the {model:} demand in cardGate, compose, CLI).
     boarded: [],
+    tags: ['3d', 'character', 'place'],
     requiresModel: false,
     identity,
     requires: ['melite-blender-proxy-nodes'],

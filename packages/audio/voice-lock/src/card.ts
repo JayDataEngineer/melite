@@ -30,6 +30,7 @@ export function registerCard(ctx: Context, comfy: ComfyUIService): void {
     // stage-row id the compose emits (retired skeleton= verbatim; TS owns the truth post-flip).
     skeleton: 'voicelock',
     boarded: ['qwen3-tts-voicedesign'],
+    tags: ['audio', 'voice', 'reference'],
     // the voice studio node rides the authored Audiocore pack;
     // SaveAudio is core.
     requires: ['melite-audio-nodes'],

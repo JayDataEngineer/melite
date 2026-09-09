@@ -62,6 +62,7 @@ export function registerCard(ctx: Context, comfy: ComfyUIService): void {
     id: 'image-gen',
     skeleton: 'generate',
     boarded: [...BOARDED],
+    tags: ['image', 'generate', 'text-to-image'],
     recipes: RECIPES,
     schema: schema as unknown as (v: unknown) => Record<string, unknown>,
     compose(p, model, g, runId) {

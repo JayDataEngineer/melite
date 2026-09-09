@@ -541,6 +541,7 @@ export function registerCard(ctx: Context, comfy: ComfyUIService): void {
     // all three families, so this triple boards green with the frozen golden
     // video_h3_open-cascade composing model 'h3' through this card.
     boarded: [...BOARDED],
+    tags: ['video', 'timeline', 'edit'],
     // ADMISSION EXTRAS (the py class-attr half verbatim: the
     // retired row's admits minus the boarded families' studio
     // writes, which the projection unions from the facts file —

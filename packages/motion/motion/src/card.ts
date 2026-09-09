@@ -42,6 +42,7 @@ export function registerCard(ctx: Context, comfy: ComfyUIService): void {
     // stage-row id the compose emits (retired skeleton= verbatim; TS owns the truth post-flip).
     skeleton: 'motion',
     boarded: ['kimodo'],
+    tags: ['motion', 'animate', 'generate'],
     requires: ['melite-kimodo-nodes', 'melite-poser-nodes'],
     schema: schema as unknown as (v: unknown) => Record<string, unknown>,
     compose(p, model, g) {

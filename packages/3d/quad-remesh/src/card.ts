@@ -62,6 +62,7 @@ export function apply(ctx: Context): void {
     // stage-row id the compose emits (retired skeleton= verbatim; TS owns the truth post-flip).
     skeleton: 'quad-remesh',
     boarded: ['autoremesher'],
+    tags: ['3d', 'remesh', 'optimize'],
     requires: ['melite-autoremesher-nodes'],
     schema: schema as unknown as (v: unknown) => Record<string, unknown>,
     compose(p, _model, g, runId) {

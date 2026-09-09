@@ -67,6 +67,7 @@ export function apply(ctx: Context): void {
     // ()): SAM3_Detect/RTDETR_detect ride comfy_extras core; no
     // extension pack to declare.
     boarded: [],
+    tags: ['image', 'mask', 'edit'],
     requiresModel: false,
     // ADMISSION EXTRAS (the py class-attr half verbatim: the
     // retired row's admits minus the boarded families' studio

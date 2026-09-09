@@ -36,6 +36,7 @@ export function apply(ctx: Context): void {
     // stage-row id the compose emits (retired skeleton= verbatim; TS owns the truth post-flip).
     skeleton: 'generate',
     boarded: ['seedvr2_ema'],
+    tags: ['image', 'upscale', 'enhance'],
     requires: ['ComfyUI-SeedVR2_VideoUpscaler', 'ComfyUI-KJNodes', 'comfyui_nvidia_rtx_nodes'],
     // ADMISSION EXTRAS + SPELLS (the py class-attr halves verbatim:
     // admits minus studio writes, and the $spell-eligible file slot

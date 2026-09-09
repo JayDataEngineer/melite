@@ -107,6 +107,7 @@ export function apply(ctx: Context): void {
     // stage-row id the compose emits (retired skeleton= verbatim; TS owns the truth post-flip).
     skeleton: 'img-to-mesh',
     boarded: ['trellis2-native', 'pixal3d', 'transfer_rig'],
+    tags: ['3d', 'image', 'generate'],
     // Per-family truth (py requires_by_family verbatim — the door
     // gates the ACTIVE family's slice; the flat list carries the
     // UNION for flat consumers, see file header).

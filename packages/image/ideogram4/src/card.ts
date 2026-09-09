@@ -32,6 +32,7 @@ export function apply(ctx: Context): void {
     skeleton: 'generate',
     // stock-only: the whole chain is core/custom-script nodes.
     boarded: ['ideogram'],
+    tags: ['image', 'generate', 'text-to-image'],
     schema: schema as unknown as (v: unknown) => Record<string, unknown>,
     compose(p, model, g, runId) {
       if (!p.prompt || !(p.prompt as string).trim()) {

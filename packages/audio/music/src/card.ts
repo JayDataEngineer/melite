@@ -33,6 +33,7 @@ export function registerCard(ctx: Context, comfy: ComfyUIService): void {
     // stage-row id the compose emits (retired skeleton= verbatim; TS owns the truth post-flip).
     skeleton: 'music',
     boarded: ['music3'],
+    tags: ['audio', 'music', 'generate'],
     // stock-only card: the MiniMax nodes ride upstream core
     // (comfy_extras.nodes_minimax_music); no requires to declare.
     schema: schema as unknown as (v: unknown) => Record<string, unknown>,

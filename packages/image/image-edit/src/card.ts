@@ -81,6 +81,7 @@ export function registerCard(ctx: Context, comfy: ComfyUIService): void {
     // — both core; the qweneditutils/vnccs_utils rows in the
     // extension map over-claim core nodes. No requires to declare.
     boarded: ['qwen-img-edit-2511'],
+    tags: ['image', 'edit'],
     schema: schema as unknown as (v: unknown) => Record<string, unknown>,
     compose(p, model, g, runId) {
       if (!p.prompt || !(p.prompt as string).trim()) {

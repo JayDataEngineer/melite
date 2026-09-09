@@ -21,6 +21,7 @@ export function apply(ctx: Context): void {
     // stage-row id the compose emits (retired skeleton= verbatim; TS owns the truth post-flip).
     skeleton: 'sfx',
     boarded: ['moss-sfx'],
+    tags: ['audio', 'sfx', 'generate'],
     // renders through the authored Audiocore pack; SaveAudio is core.
     requires: ['melite-audio-nodes'],
     schema: schema as unknown as (v: unknown) => Record<string, unknown>,

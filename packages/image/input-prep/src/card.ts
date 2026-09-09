@@ -27,6 +27,7 @@ export function apply(ctx: Context): void {
     // ImageScale/SaveImage + LoadAudio/SaveAudio are ComfyUI core —
     // no requires to declare.
     boarded: ['input'],
+    tags: ['image', 'input', 'prepare'],
     // ADMISSION EXTRAS (the py class-attr half verbatim: the
     // retired row's admits minus the boarded families' studio
     // writes, which the projection unions from the facts file).

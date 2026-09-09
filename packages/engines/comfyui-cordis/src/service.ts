@@ -49,6 +49,12 @@ export interface CardDefinition {
   skeleton: string
   /** Boarded model ids (the board gate; unboarded models refuse). */
   boarded: readonly string[]
+  /** Retrieval tags (the card-catalog search key, 2026-09-09): the
+   *  card DECLARES these — modality + operation words the agent
+   *  searches ({image, upscale}) — never derived, never the ring's.
+   *  Sibling of boarded, NOT identity prose: identity merges with
+   *  the frozen ring, tags are orthogonal and always card-owned. */
+  tags?: readonly string[]
   /** Pure-tool cards (boarded: [], no model families — the Blender
    *  card precedent): skip the {model:} demand everywhere (cardGate,
    *  compose, CLI). Default true — every existing card needs one. */

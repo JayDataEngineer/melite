@@ -61,6 +61,7 @@ export function apply(ctx: Context): void {
     skeleton: 'tagger',
     // the four boarded families.
     boarded: ['wd14', 'joytag', 'florence2', 'joycaption'],
+    tags: ['image', 'tag', 'analyze'],
     // Per-family gates (py requires_by_family verbatim — each arm's
     // pack is checked only for its own family; a wd14 run never
     // demands the florence pack). The flat list carries the UNION
