@@ -10,8 +10,8 @@
 // The JSON doors are DYNAMIC (derived from the on-disk tree at read
 // time), so unlike chrome.ts they cannot be static captures. They
 // keep the captured-verbatim DISCIPLINE instead: each door returns
-// pre-serialized exact bytes (dumpsPy below — py json.dumps(indent=2,
-// ensure_ascii) rules: 2-space layout, every non-ASCII UTF-16 unit as
+// pre-serialized exact bytes (dumpsJson below — canonical indent-2
+// JSON + ensure_ascii: 2-space layout, every non-ASCII UTF-16 unit as
 // lowercase \uXXXX, surrogate pairs as two escapes) and the
 // dispatcher serves them untouched (parse+reserialize would drift).
 //
@@ -79,7 +79,7 @@ import {
   ASSET_URL_PREFIX,
 } from "@melite/gateway-core";
 import type { AssetRoots } from "@melite/gateway-core";
-import { PyNum, pyStr, pyInt } from "@melite/gateway-core";
+import { asciiEscape, PyNum } from "@melite/gateway-core";
 
 /** The input-preview URL prefix (python/gateway.py _h_asset_input). */
 export const INPUT_URL_PREFIX: string = "/v1/assets/inputs";
@@ -125,8 +125,9 @@ export interface AssetResult {
 }
 
 // ---------------------------------------------------------------------------
-// py-exact JSON: dumpsPy (json.dumps indent=2, ensure_ascii) +
-// parseJson (ledger re-parse that keeps number literals verbatim).
+// Serve JSON: dumpsJson (canonical indent-2 + ensure_ascii) +
+// parseJson (ledger re-parse that keeps number literals verbatim in
+// memory; the serve boundary normalizes them to numbers).
 // ---------------------------------------------------------------------------
 
 /** Python repr() of a short string for the limit refusal
@@ -324,63 +325,18 @@ export function parseJson(text: string): unknown {
   return v;
 }
 
-/** Escape one string exactly as py json ensure_ascii does (every
- *  non-ASCII UTF-16 unit -> lowercase \uXXXX; the ASCII controls +
- *  quote/backslash ride JSON.stringify, which already matches py:
- *  \" \\ \b \f \n \r \t + \u00XX lowercase). */
-function quotePy(s: string): string {
-  const raw: string = JSON.stringify(s) ?? "null";
-  return raw.replace(
-    /[^\x00-\x7F]/g,
-    (ch: string): string =>
-      "\\u" + ch.charCodeAt(0).toString(16).padStart(4, "0"),
-  );
-}
-
-/** json.dumps(payload, indent=2, ensure_ascii, default=str): 2-space
- *  layout (JSON.stringify-identical separators) + ensure_ascii
- *  strings + PyNum literals verbatim + integer numbers exact. */
-export function dumpsPy(payload: unknown, indent: number = 2): string {
-  const pad = (n: number): string => " ".repeat(n);
-  const write = (v: unknown, depth: number): string => {
-    if (v === null) return "null";
-    if (v === true) return "true";
-    if (v === false) return "false";
-    if (typeof v === "string") return quotePy(v);
-    if (typeof v === "number") {
-      if (!Number.isFinite(v)) return "null";
-      if (Number.isInteger(v)) return String(v);
-      const t: string = String(v);
-      return t.includes(".") || t.includes("e") ? t : t + ".0";
-    }
-    if (v instanceof PyNum) return v.literal;
-    if (Array.isArray(v)) {
-      if (v.length === 0) return "[]";
-      const parts: string[] = v.map(
-        (e: unknown): string =>
-          pad((depth + 1) * indent) +
-          (e === undefined ? "null" : write(e, depth + 1)),
-      );
-      return "[\n" + parts.join(",\n") + "\n" + pad(depth * indent) + "]";
-    }
-    if (typeof v === "object") {
-      const keys: string[] = Object.keys(v as Record<string, unknown>).filter(
-        (k: string): boolean =>
-          (v as Record<string, unknown>)[k] !== undefined,
-      );
-      if (keys.length === 0) return "{}";
-      const parts: string[] = keys.map(
-        (k: string): string =>
-          pad((depth + 1) * indent) +
-          quotePy(k) +
-          ": " +
-          write((v as Record<string, unknown>)[k], depth + 1),
-      );
-      return "{\n" + parts.join(",\n") + "\n" + pad(depth * indent) + "}";
-    }
-    return quotePy(pyStr(v));
-  };
-  return write(payload, 0);
+/** Serve-body writer, ROW 29 STAGE 2 (2026-09-10, ledger): canonical
+ *  2-space JSON + ensure_ascii. Replaces dumpsJson (retired below):
+ *  separators are JSON.stringify-identical to the old layout, so the
+ *  ONLY wire deltas are PyNum literals -> numbers (value-truth;
+ *  PyNum.toJSON) — every live consumer parses. ensure_ascii STAYS
+ *  (same byte-safe rule as the journal + sidecars). Top-level
+ *  undefined serves "null" (valid JSON; no caller passes it — all
+ *  34 sites serve object literals). No default=str arm: payloads
+ *  are JSON-shaped (a bigint would throw LOUD instead of
+ *  str-quoting — no live payload carries one). */
+export function dumpsJson(payload: unknown): string {
+  return asciiEscape(JSON.stringify(payload, null, 2) ?? "null");
 }
 
 // ---------------------------------------------------------------------------
@@ -508,7 +464,7 @@ export function hAsset(
   if (got.code === 404) {
     return {
       status: 404,
-      body: dumpsPy(normalize4xx(404, { error: "not found" })),
+      body: dumpsJson(normalize4xx(404, { error: "not found" })),
       contentType: ERR_JSON,
       headers: {},
     };
@@ -518,7 +474,7 @@ export function hAsset(
   // adds no code — probed: `"b'{\"error\":\"bad path\"}'"`).
   return {
     status: 400,
-    body: dumpsPy(bytesRepr(got.data)),
+    body: dumpsJson(bytesRepr(got.data)),
     contentType: ERR_JSON,
     headers: {},
   };
@@ -558,7 +514,7 @@ export function hAssetInput(
   const name: string = unquotePy(path.slice((INPUT_URL_PREFIX + "/").length));
   const bad = (msg: string): AssetResult => ({
     status: 400,
-    body: dumpsPy(
+    body: dumpsJson(
       normalize4xx(400, { error: '{"error":"' + msg + '"}' }),
     ),
     contentType: ERR_JSON,
@@ -583,7 +539,7 @@ export function hAssetInput(
   } catch {
     return {
       status: 404,
-      body: dumpsPy(normalize4xx(404, { error: "input not found" })),
+      body: dumpsJson(normalize4xx(404, { error: "input not found" })),
       contentType: ERR_JSON,
       headers: {},
     };
@@ -594,7 +550,7 @@ export function hAssetInput(
     if (statSync(join(roots.inputsRoot, name)).isDirectory()) {
       return {
         status: 404,
-        body: dumpsPy(normalize4xx(404, { error: "input not found" })),
+        body: dumpsJson(normalize4xx(404, { error: "input not found" })),
         contentType: ERR_JSON,
         headers: {},
       };
@@ -672,7 +628,7 @@ export function hAssetsIndex(
   if (!/^\s*[+-]?\d+\s*$/.test(rawLimit)) {
     return {
       status: 400,
-      body: dumpsPy(
+      body: dumpsJson(
         normalize4xx(400, {
           error: "limit must be an integer (got " + pyReprString(rawLimit) + ")",
         }),
@@ -729,7 +685,7 @@ export function hAssetsIndex(
   }
   return {
     status: 200,
-    body: dumpsPy({ count: runs.length, artifacts: total, runs }),
+    body: dumpsJson({ count: runs.length, artifacts: total, runs }),
     contentType: ERR_JSON,
     headers: {},
   };
@@ -793,7 +749,7 @@ export function hLedger(
   }
   return {
     status: 200,
-    body: dumpsPy({ entries: out, shown: out.length, matched }),
+    body: dumpsJson({ entries: out, shown: out.length, matched }),
     contentType: ERR_JSON,
     headers: {},
   };

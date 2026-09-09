@@ -13,12 +13,37 @@ import { DOC_EXTS, MESH_EXTS } from "./assetTables.ts";
  *  "1.0" — but JS String() cannot reproduce repr() for all doubles
  *  (1e16, 1e-05 thresholds), so verbatim is the exact shape whenever
  *  the journal holds canonical literals, which ledger() always
- *  writes: ts ints + json.dumps(data) canonical floats). */
+ *  writes: ts ints + json.dumps(data) canonical floats).
+ *
+ *  ROW 29 STAGE 2 (2026-09-10, ledger): canonical JSON serializes a
+ *  PyNum as its NUMERIC value (toJSON below) — the serve path is
+ *  value-truth, not literal-truth (JSON.parse("1.00") === 1 in every
+ *  live consumer). Verbatim literals survive only in parseJson's
+ *  in-memory round-trip. Out-of-range literals (1e400) serialize
+ *  null — the same rule dumpsPy applied to non-finite numbers. */
 export class PyNum {
   readonly literal: string;
   constructor(literal: string) {
     this.literal = literal;
   }
+  toJSON(): number | null {
+    const n: number = Number(this.literal);
+    return Number.isFinite(n) ? n : null;
+  }
+}
+
+/** ensure_ascii (py json ensure_ascii: every non-ASCII unit rides
+ *  \uXXXX; astral chars become surrogate halves — charCodeAt gives
+ *  exactly that, same as the ctx serializePy rule). ROW 29 STAGE 2:
+ *  moved verbatim from queue.ts — the ONE shared address for the
+ *  journal, sidecar, and serve writers (all three keep byte-safe
+ *  ASCII output; only separators/literals went canonical). */
+export function asciiEscape(text: string): string {
+  return text.replace(
+    /[^\x00-\x7F]/g,
+    (ch: string): string =>
+      "\\u" + ch.charCodeAt(0).toString(16).padStart(4, "0"),
+  );
 }
 
 /** Python str() of a JSON scalar for sidecar coercions

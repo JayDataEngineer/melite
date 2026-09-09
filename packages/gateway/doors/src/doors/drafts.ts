@@ -85,9 +85,10 @@
 // REFUSALS: every 4xx object body leaves via the local normalize4xx
 // alias (R4.2 — same rule as ctx.ts; kept HERE so this door module
 // stays importable without the dispatcher, the assets.ts pattern).
-// 200/4xx JSON bytes ride dumpsPy (indent=2, ensure_ascii) —
-// byte-identical to _adapt's json.dumps(indent=2, default=str) for
-// this value domain (ints, PyNum literals, strings, bools, null).
+// 200/4xx JSON bytes ride dumpsJson (canonical indent-2,
+// ensure_ascii) — parse-identical to the retired py-shaped writer
+// for this value domain (ints, strings, bools, null; PyNum literals
+// normalize to numbers — value-truth, ROW 29 STAGE 2).
 //
 // Erasable-syntax TS only (node --experimental-strip-types): no
 // enums, import type for types, .ts specifiers for relative imports.
@@ -99,7 +100,7 @@ import type {
   DraftRecord,
 } from "@melite/gateway-core";
 import {
-  dumpsPy,
+  dumpsJson,
   parseJson,
   pyReprString,
 } from "./assets.ts";
@@ -149,7 +150,7 @@ function refused(
 ): DraftResult {
   return {
     status,
-    body: dumpsPy(normalize4xx(status, payload)),
+    body: dumpsJson(normalize4xx(status, payload)),
     contentType: JSON_CT,
     headers: {},
   };
@@ -158,7 +159,7 @@ function refused(
 function answered(status: number, payload: unknown): DraftResult {
   return {
     status,
-    body: dumpsPy(payload),
+    body: dumpsJson(payload),
     contentType: JSON_CT,
     headers: {},
   };
@@ -650,7 +651,7 @@ export async function hDraftsSave(
   if (!("doc" in parsed)) {
     return {
       status: parsed.status,
-      body: dumpsPy(parsed.payload),
+      body: dumpsJson(parsed.payload),
       contentType: JSON_CT,
       headers: {},
     };
@@ -689,7 +690,7 @@ export async function hDraftsSave(
   if (drift !== null) {
     return {
       status: 500,
-      body: dumpsPy({ error: "draft composer drift: " + drift }),
+      body: dumpsJson({ error: "draft composer drift: " + drift }),
       contentType: JSON_CT,
       headers: {},
     };
@@ -704,7 +705,7 @@ export async function hDraftsSave(
       (): DraftResult => answered(200, { draftId, stages: doc["stages"] }),
       (): DraftResult => ({
         status: 500,
-        body: dumpsPy({ error: "cannot persist draft" }),
+        body: dumpsJson({ error: "cannot persist draft" }),
         contentType: JSON_CT,
         headers: {},
       }),
@@ -779,7 +780,7 @@ export async function hDraftStagePatch(
   if (!("doc" in parsed)) {
     return {
       status: parsed.status,
-      body: dumpsPy(parsed.payload),
+      body: dumpsJson(parsed.payload),
       contentType: JSON_CT,
       headers: {},
     };
@@ -857,7 +858,7 @@ export async function hDraftStagePatch(
         }),
       (): DraftResult => ({
         status: 500,
-        body: dumpsPy({ error: "cannot persist draft" }),
+        body: dumpsJson({ error: "cannot persist draft" }),
         contentType: JSON_CT,
         headers: {},
       }),

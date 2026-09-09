@@ -83,9 +83,10 @@
 //     until the client closes or a live terminal frame lands (P6 bus
 //     below).
 //   D3 float literals: sidecar/stage numbers ride parseJson PyNum
-//     literals (verbatim); WS frames built from live dicts cannot
-//     preserve them (JSON number formatting) — same boundary class
-//     as dumpsPy, pinned by vectors using ints. strtol'd row fields
+//     literals (verbatim in memory); the SERVE boundary normalizes
+//     them to numbers (dumpsJson via PyNum.toJSON — value-truth,
+//     ROW 29 STAGE 2; same boundary class as WS frames, which never
+//     preserved literals either). strtol'd row fields
 //     (created_at/seed/durationSec) are JS numbers: exact below
 //     2^53, approximate past it — fixtures stay small.
 //   D4 NaN/Infinity sidecars/stages: py json.loads ACCEPTS them and
@@ -125,7 +126,7 @@ import {
   wsAuthOk,
 } from "@melite/gateway-core";
 import {
-  dumpsPy,
+  dumpsJson,
   parseJson,
   pyReprString,
 } from "./assets.ts";
@@ -159,7 +160,7 @@ export function hQueue(svc?: RunsService | null): AssetResult {
   const snap = queueSnapshot(svc ?? undefined);
   return {
     status: 200,
-    body: dumpsPy({
+    body: dumpsJson({
       queued: snap.queued,
       running: snap.running,
       active: snap.active,
@@ -656,7 +657,7 @@ export function firstQuery(
 }
 
 /** Deterministic JSON for drift-compare (sorted keys, recursive —
- *  the served bytes still ride dumpsPy; this only decides put/skip). */
+ *  the served bytes still ride dumpsJson; this only decides put/skip). */
 function canonRuns(v: unknown): string {
   if (Array.isArray(v)) return "[" + v.map(canonRuns).join(",") + "]";
   if (typeof v === "object" && v !== null) {
@@ -766,7 +767,7 @@ export async function hRunsList(
       status: 400,
       // The R4.2 code rides inline (asset-door precedent: dispatch
       // passes AssetResult bodies through unstamped).
-      body: dumpsPy({
+      body: dumpsJson({
         error: "limit must be an integer (got " + pyReprString(raw) + ")",
         code: "invalid_request",
       }),
@@ -863,7 +864,7 @@ export async function hRunsList(
       }
       return {
         status: 200,
-        body: dumpsPy({ count, runs: served }),
+        body: dumpsJson({ count, runs: served }),
         contentType: "application/json",
         headers: {},
       };
@@ -884,7 +885,7 @@ export async function hRunsList(
   }
   return {
     status: 200,
-    body: dumpsPy({ count, runs: rows }),
+    body: dumpsJson({ count, runs: rows }),
     contentType: "application/json",
     headers: {},
   };
@@ -901,7 +902,7 @@ export function hRunDetail(runId: string, roots: AssetRoots): AssetResult {
   } catch {
     return {
       status: 404,
-      body: dumpsPy({ error: "unknown run_id", code: "invalid_request" }),
+      body: dumpsJson({ error: "unknown run_id", code: "invalid_request" }),
       contentType: "application/json",
       headers: {},
     };
@@ -1028,7 +1029,7 @@ export function hRunDetail(runId: string, roots: AssetRoots): AssetResult {
   }
   return {
     status: 200,
-    body: dumpsPy({
+    body: dumpsJson({
       run_id: runId,
       status: st,
       state: st,
@@ -1234,14 +1235,14 @@ export function hFlowsStatus(
   if (rec === null) {
     return {
       status: 404,
-      body: dumpsPy({ error: "unknown run_id", code: "invalid_request" }),
+      body: dumpsJson({ error: "unknown run_id", code: "invalid_request" }),
       contentType: "application/json",
       headers: {},
     };
   }
   return {
     status: 200,
-    body: dumpsPy(rec),
+    body: dumpsJson(rec),
     contentType: "application/json",
     headers: {},
   };
@@ -1257,7 +1258,7 @@ export function hFlowsStatus(
 export function wsFallback404(method: string, path: string): AssetResult {
   return {
     status: 404,
-    body: dumpsPy({
+    body: dumpsJson({
       error: "no such route " + method + " " + path,
       code: "invalid_request",
     }),
@@ -1919,12 +1920,14 @@ export const flowsStatusDoors: Plugin = {
           includeLog,
         );
         if (stored !== null) {
-          // dumpsPy, NOT serializePy: the restored object carries
-          // parseJson PyNum literals (verbatim sidecar numbers) and
-          // only dumpsPy emits them (runs lane).
+          // dumpsJson, NOT serializePy: the restored object carries
+          // parseJson PyNum literals and only the value-writer
+          // normalizes them to numbers (value-truth, ROW 29
+          // STAGE 2 — serializePy has no PyNum arm and would
+          // object-ify the instances).
           return {
             status: 200,
-            body: dumpsPy(stored),
+            body: dumpsJson(stored),
             contentType: "application/json",
             headers: {},
           };
@@ -1942,7 +1945,7 @@ export const flowsStatusDoors: Plugin = {
 
 /** The runs-lane read doors (queue snapshot, run history, one run,
  *  and the non-upgrade WS fallback) as a self-registering plugin:
- *  AssetResult bodies ride pre-serialized (dumpsPy at the door, 4xx
+ *  AssetResult bodies ride pre-serialized (dumpsJson at the door, 4xx
  *  codes inline) — passed through untouched. The queue snapshot reads
  *  through ctx.runs; the live-bus deliver fn registers into the
  *  service (fiber-owned: unload unregisters). Matches its own rows

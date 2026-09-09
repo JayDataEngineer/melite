@@ -57,9 +57,13 @@
 //     design, the core boots where py cannot); _request.json needs
 //     only to parse (Run is a plain dataclass).
 //   - toPlainJson for live-serve registry records (PyNum ->
-//     number, recursive): files keep literals via dumpsPy; every
-//     live serve unwraps first (audited: no current path routes
-//     PyNum through serializePy).
+//     number, recursive): files keep literals in memory via
+//     parseJson; every live serve unwraps first (audited: no
+//     current path routes PyNum through serializePy). STAGE 2:
+//     PyNum.toJSON subsumes the unwrap for every JSON.stringify
+//     path (dumpsJson/dumpsLedgerData/serializePy all normalize
+//     now) — toPlainJson stays as the explicit pre-stringify
+//     guard, retirement is a later micro-stage.
 //   - the queue snapshot key order (queued/running/active/
 //     queued_ids, _h_queue 2893-2900) + queue_position (index or 0,
 //     _h_flows_status 2973-2975).
@@ -104,7 +108,7 @@ import {
 } from "node:fs";
 import { join } from "node:path";
 import { pyReprStr, pyReprStrList } from "@melite/comfyui-cordis";
-import { PyNum } from "@melite/gateway-core";
+import { asciiEscape, PyNum } from "@melite/gateway-core";
 
 // ── constants (py cites inline) ──────────────────────────────────
 
@@ -272,27 +276,16 @@ export function bootGate(
 }
 
 // ── journal + atomic write (2241-2250, 2472-2475) ────────────────
-
-/** ASCII-escape (py json ensure_ascii: every non-ASCII unit rides
- *  \uXXXX; astral chars become surrogate halves — charCodeAt gives
- *  exactly that, same as the ctx serializePy rule). */
-export function asciiEscape(text: string): string {
-  return text.replace(
-    /[^\x00-\x7F]/g,
-    (ch: string): string =>
-      "\\u" + ch.charCodeAt(0).toString(16).padStart(4, "0"),
-  );
-}
+// asciiEscape lives in @melite/gateway-core (ROW 29 STAGE 2: the one
+// shared address for journal/sidecar/serve writers).
 
 /** Journal data writer, ROW 29 STAGE 1 (2026-09-10, ledger): canonical
  *  JSON separators + ensure_ascii. The py spaced separators
  *  (json.dumps ", "/": ") are gone — py is dead, no reader needs
  *  them (JSONL readers parse; operators grep whitespace-tolerant);
  *  ensure_ascii STAYS (byte-safe journal for non-UTF-8-unaware
- *  tailers). Contract: PLAIN data only — a PyNum instance would
- *  object-ify ({"literal"}) here exactly as before (latent, no live
- *  caller passes one; pinned out-of-contract in
- *  py-canonical-diff.test.ts). */
+ *  tailers). STAGE 2: PyNum instances serialize NUMERIC here via
+ *  toJSON (the latent {"literal"} object-ify is gone with it). */
 export function dumpsLedgerData(data: Record<string, unknown>): string {
   return asciiEscape(JSON.stringify(data) ?? "{}");
 }
@@ -1372,12 +1365,12 @@ export function coerceCreatedAt(value: unknown): number {
 
 /** Plain-JSON view of a live-serve registry record: parseJson
  *  PyNum literals (doors/assets.ts) become real numbers,
- *  recursively — files keep literals via dumpsPy, but
- *  serializePy (JSON.stringify) would emit a PyNum instance as
- *  {"literal": ...}, so every live serve unwraps first. Audited
- *  2026-09-07: no current serve path routes PyNum through
- *  serializePy (sidecar/ledger/restore serve dumpsPy; live +
- *  refusal payloads are plain) — the helper guards the seam. */
+ *  recursively. STAGE 2: PyNum.toJSON now normalizes for every
+ *  JSON.stringify path (dumpsJson/dumpsLedgerData/serializePy),
+ *  so this helper is belt-and-braces — explicit pre-stringify
+ *  unwrap at the live-serve seam. Audited 2026-09-07: no serve
+ *  path routes RAW PyNum through serializePy (sidecar/ledger/
+ *  restore serve dumpsJson; live + refusal payloads are plain). */
 export function toPlainJson(value: unknown): unknown {
   if (value instanceof PyNum) return Number(value.literal);
   if (Array.isArray(value)) {

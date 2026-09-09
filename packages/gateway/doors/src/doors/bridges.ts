@@ -75,9 +75,10 @@
 //   - dispatch refusals (422 bad request / named-arg 422 / catalog
 //     404 / plane 503 / crash 500) are computed by ./manage.ts with
 //     byte-kept refusal texts.
-//   - response bytes ride dumpsPy over the parseJson value (the
-//     assets.ts number machinery: float 1.0 stays "1.0", big ints
-//     exact) with the local normalize4xx alias (R4.2 — manage 422/
+//   - response bytes ride dumpsJson over the parseJson value
+//     (canonical indent-2 + ensure_ascii; PyNum literals normalize
+//     to numbers — value-truth, ROW 29 STAGE 2; big ints exact)
+//     with the local normalize4xx alias (R4.2 — manage 422/
 //     404 payloads carry no code, so route() adds invalid_request;
 //     the 401 auth refusal never reaches this door).
 //   - auth (2587-2619) is dispatcher-level: both doors sit behind
@@ -93,7 +94,7 @@ import { request as httpsRequest } from "node:https";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import {
-  dumpsPy,
+  dumpsJson,
   parseJson,
 } from "./assets.ts";
 import { dispatchManage } from "./manage.ts";
@@ -108,7 +109,7 @@ import { doorMatch, mountDoorRoutes } from "../routeMount.ts";
 /** Dispatcher answer — structural twin of ctx.DispatchResult (kept
  *  local so this door module stays importable without the
  *  dispatcher, the drafts.ts/assets.ts pattern). Bodies are
- *  pre-serialized here (dumpsPy at the door, raw bytes on the poser
+ *  pre-serialized here (dumpsJson at the door, raw bytes on the poser
  *  forward) — dispatch passes them through untouched. */
 export interface BridgeResult {
   readonly status: number;
@@ -369,7 +370,7 @@ export async function handlePoserBridge(
   if ("refusal" in resolved) {
     return {
       status: 502,
-      body: dumpsPy(resolved.refusal),
+      body: dumpsJson(resolved.refusal),
       contentType: JSON_CT,
       headers: {},
     };
@@ -394,7 +395,7 @@ export async function handlePoserBridge(
       // prefix through "(").
       return {
         status: 502,
-        body: dumpsPy({
+        body: dumpsJson({
           error:
             "poser bridge: comfyui unreachable at " +
             base +
@@ -412,7 +413,7 @@ export async function handlePoserBridge(
     const msg: string = exc instanceof Error ? exc.message : String(exc);
     return {
       status: 502,
-      body: dumpsPy({ error: "poser bridge: " + name + ": " + msg }),
+      body: dumpsJson({ error: "poser bridge: " + name + ": " + msg }),
       contentType: JSON_CT,
       headers: {},
     };
@@ -484,7 +485,7 @@ export async function handleManage(
   if (!existsSync(serverBin)) {
     return {
       status: 503,
-      body: dumpsPy(
+      body: dumpsJson(
         normalize4xx(503, {
           action,
           ok: false,
@@ -514,7 +515,7 @@ export async function handleManage(
     });
     return {
       status: code,
-      body: dumpsPy(normalize4xx(code, rep)),
+      body: dumpsJson(normalize4xx(code, rep)),
       contentType: JSON_CT,
       headers: {},
     };
@@ -522,7 +523,7 @@ export async function handleManage(
     const msg: string = exc instanceof Error ? exc.message : String(exc);
     return {
       status: 502,
-      body: dumpsPy(
+      body: dumpsJson(
         normalize4xx(502, {
           action,
           ok: false,

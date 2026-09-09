@@ -76,8 +76,9 @@
 //      term is {} / [] / null / 0 on both sides.
 //
 // Number fidelity: frozen-file JSON passes through parseJson so
-// number LITERALS ride verbatim (1.0 stays 1.0 — the drafts-door
-// precedent); dumpsPy serializes (assets.ts). Refusal normalization
+// number VALUES survive exactly (literals normalize to numbers at
+// the serve boundary — value-truth, ROW 29 STAGE 2);
+// dumpsJson serializes (assets.ts). Refusal normalization
 // rides the local normalize4xx alias (R4.2; the drafts-door precedent
 // keeps the door importable without ctx).
 
@@ -85,7 +86,7 @@ import { readdirSync, readFileSync, statSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import {
-  dumpsPy,
+  dumpsJson,
   parseJson,
   pyReprString,
   unquotePy,
@@ -2146,7 +2147,7 @@ function answer(status: number, payload: unknown): PlaneResult {
   normalize4xx(status, payload);
   return {
     status,
-    body: dumpsPy(payload),
+    body: dumpsJson(payload),
     contentType: "application/json",
     headers: {},
   };
@@ -2230,7 +2231,7 @@ export async function dispatchPlanes(
 /** The lane-discovery + agent-plane doors as a self-registering
  *  plugin: lanes, card-tools, lane bundles, skills, skill bodies,
  *  agent boot, metrics — native decl/file-derived reads over the
- *  disclosure root, dumpsPy + normalize4xx at the door. The queue
+ *  disclosure root, dumpsJson + normalize4xx at the door. The queue
  *  terms (metrics, agent boot) read through ctx.runs; the card
  *  terms (lanes, card-tools, agent boot) read through
  *  ctx.cardRegistry. Matches its own

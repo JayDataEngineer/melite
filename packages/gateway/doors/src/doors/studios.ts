@@ -92,7 +92,7 @@ import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import {
   contentTypeOf,
-  dumpsPy,
+  dumpsJson,
   parseJson,
   pyReprString,
   unquotePy,
@@ -1217,7 +1217,7 @@ export function canonicalJson(row: ValidRow): string {
     const lc: string =
       "{" +
       row.params.local
-        .map((e) => dumpsPy(e.name) + ":" + pyFloatRepr(e.value))
+        .map((e) => dumpsJson(e.name) + ":" + pyFloatRepr(e.value))
         .join(",") +
       "}";
     return (
@@ -1879,7 +1879,7 @@ function provisionMountDisk(
 
 /** Dispatcher answer (the ctx DispatchResult shape — status + exact
  *  bytes + content type; bodies ride pre-serialized through
- *  dumpsPy, normalize4xx applied to every 4xx object body per
+ *  dumpsJson, normalize4xx applied to every 4xx object body per
  *  R4.2 — the same local-alias pattern as bridges.ts). */
 export interface StudioResult {
   readonly status: number;
@@ -1910,7 +1910,7 @@ function jsonAnswer(
 ): StudioResult {
   return {
     status,
-    body: dumpsPy(normalize4xx(status, obj)),
+    body: dumpsJson(normalize4xx(status, obj)),
     contentType: "application/json",
     headers: {},
   };
@@ -2222,7 +2222,7 @@ export function hBaseBody(
 
 /** Studios dispatch (called from ctx dispatch after the drafts
  *  doors; null = not a studios row). Bodies ride pre-serialized
- *  (dumpsPy at the door, 4xx codes inline) — the ctx passes the
+ *  (dumpsJson at the door, 4xx codes inline) — the ctx passes the
  *  raw POST bytes for the door's own strict parse, exactly like
  *  dispatchDrafts. */
 export async function dispatchStudios(
@@ -2254,7 +2254,7 @@ export async function dispatchStudios(
 }
 
 /** The studios doors as a self-registering plugin: the
- *  presets/base-body arms run the pure-TS port (dumpsPy +
+ *  presets/base-body arms run the pure-TS port (dumpsJson +
  *  normalize4xx at the door). The door does its own strict parse
  *  (PyNum-preserving) over the raw POST bytes, exactly like
  *  dispatchDrafts. Matches its own rows inside the listener

@@ -1,19 +1,16 @@
 // py-canonical-diff.test.ts — ROW 29 (pyValue cutover, ledger § THE
-// WIRE ADOPTION F3). The cutover contract, pinned BEFORE the first
-// cut so every stage proves the same fact:
+// WIRE ADOPTION F3). The cutover contract; RE-PINNED at STAGE 2
+// (dumpsPy retired -> dumpsJson; the verbatim-emission test became
+// the toJSON-normalization test — deliberate re-pin, ledgered):
 //
-//   WRITE side: py serializers and canonical JSON.stringify are
-//   JSON-SEMANTICALLY IDENTICAL (JSON.parse both sides, deep-equal).
-//   The only diffs are byte-level (spacing, \uXXXX escapes, `1.0`
-//   floats, PyNum verbatim literals) — no live consumer parses
-//   bytes: the whole wall battery parses-then-compares (verified
-//   2026-09-10: zero raw py-byte pins in suites/fixtures/data), and
-//   browser/python/ComfyUI JSON parsers accept both shapes.
-//   Contract scope: PLAIN data (the only live journal/serve input —
-//   every appendLedger caller passes scalars/strings). PyNum
-//   INSTANCES are out of contract on the journal leg (dumpsLedgerData
-//   object-ifies them today — latent, no live caller; the /v1 stage
-//   normalizes or rejects them, ledger-recorded).
+//   WRITE side: the serve/journal writers and canonical
+//   JSON.stringify are JSON-SEMANTICALLY IDENTICAL (JSON.parse both
+//   sides, deep-equal). The only diffs are byte-level (spacing,
+//   \uXXXX escapes, PyNum literal normalization) — no live consumer
+//   parses bytes: the whole wall battery parses-then-compares
+//   (verified 2026-09-10: zero raw py-byte pins in
+//   suites/fixtures/data), and browser/python/ComfyUI JSON parsers
+//   accept both shapes.
 //
 //   READ side: parseJson stays LENIENT forever — py-era files
 //   ("1.00" literals, \uXXXX escapes) keep parsing with literals
@@ -27,7 +24,7 @@
 // Run: node --experimental-strip-types --test tests/walls/ts/suites/py-canonical-diff.test.ts
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { dumpsPy, parseJson } from "../../../../packages/gateway/doors/src/doors/assets.ts";
+import { dumpsJson, parseJson } from "../../../../packages/gateway/doors/src/doors/assets.ts";
 import { PyNum } from "../../../../packages/gateway/core/src/core/pyValue.ts";
 import { dumpsLedgerData } from "../../../../packages/gateway/queue/src/queue/queue.ts";
 
@@ -39,32 +36,36 @@ const CASES: Array<[string, Record<string, unknown>]> = [
   ["nonfinite", { a: Infinity, b: -Infinity, c: NaN }],
 ];
 
-describe("py writers ≡ canonical under JSON.parse", () => {
+describe("serve/journal writers ≡ canonical under JSON.parse", () => {
   for (const [label, payload] of CASES) {
-    it(`dumpsPy(${label})`, () => {
-      assert.deepEqual(JSON.parse(dumpsPy(payload)), JSON.parse(JSON.stringify(payload)));
+    it(`dumpsJson(${label})`, () => {
+      assert.deepEqual(JSON.parse(dumpsJson(payload)), JSON.parse(JSON.stringify(payload)));
     });
     it(`dumpsLedgerData(${label})`, () => {
       assert.deepEqual(JSON.parse(dumpsLedgerData(payload)), JSON.parse(JSON.stringify(payload)));
     });
   }
 
-  it("dumpsPy emits PyNum literals verbatim (numeric under parse)", () => {
-    const raw: string = dumpsPy({ v: new PyNum("1.00"), w: new PyNum("2.50") });
-    assert.ok(raw.includes("1.00") && raw.includes("2.50"), "literals verbatim on the wire: " + raw);
+  it("PyNum normalizes to numbers at the serve boundary (value-truth)", () => {
+    const raw: string = dumpsJson({ v: new PyNum("1.00"), w: new PyNum("2.50") });
+    assert.ok(!raw.includes("1.00") && !raw.includes("2.50"), "no verbatim literals: " + raw);
     const parsed = JSON.parse(raw) as { v: number; w: number };
     assert.equal(parsed.v, 1);
     assert.equal(parsed.w, 2.5);
   });
 
+  it("out-of-range PyNum literals serve null (the non-finite rule)", () => {
+    const parsed = JSON.parse(dumpsJson({ v: new PyNum("1e400") })) as { v: null };
+    assert.equal(parsed.v, null);
+  });
+
   it("byte diffs are byte-level only (the cutover surface, recorded)", () => {
     // ensure_ascii is the ENTIRE delta for fresh data — a JS number
-    // 1.0 is integer-valued, so dumpsPy's integer arm emits "1"
-    // (the ".0" arm only fires for PyNum-wrapped literals, pinned
-    // above). Every byte change the later stages make lives here.
-    const py: string = dumpsPy({ s: "中", f: 1.0 });
-    assert.ok(py.includes("\\u4e2d"), "ensure_ascii escapes non-ASCII");
-    assert.ok(!py.includes("1.0"), "fresh floats emit canonical: " + py);
+    // 1.0 is integer-valued, so canonical emits "1". Every remaining
+    // byte change a later stage could make lives here.
+    const served: string = dumpsJson({ s: "中", f: 1.0 });
+    assert.ok(served.includes("\\u4e2d"), "ensure_ascii escapes non-ASCII");
+    assert.ok(!served.includes("1.0"), "fresh floats emit canonical: " + served);
   });
 });
 

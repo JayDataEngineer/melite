@@ -25,7 +25,7 @@ export { uploadsDoors } from "./doors/uploads.ts";
 
 export {
   defaultAssetRoots,
-  dumpsPy,
+  dumpsJson,
   parseJson,
   pyReprString,
   contentTypeOf,
