@@ -425,6 +425,11 @@ async function runTemplate(gatewayUrl, a, signal) {
 		test: a.test === true,
 		draft_id: draftId
 	}, signal);
+	if (typeof started["error"] === "string") return {
+		mode: "flow",
+		target: flow,
+		...started
+	};
 	return {
 		mode: "flow",
 		target: flow,
@@ -501,6 +506,11 @@ async function runAdHoc(gatewayUrl, a, signal) {
 		test: a.test === true,
 		draft_id: draftId
 	}, signal);
+	if (typeof started["error"] === "string") return {
+		mode: "adhoc",
+		target: flowId,
+		...started
+	};
 	return {
 		mode: "adhoc",
 		target: flowId,
@@ -617,6 +627,18 @@ function meliteFlow(gatewayUrl) {
 					type: "text",
 					text: "card " + String(v.draft_id ?? "?") + " · flow " + String(v.target ?? "?") + " → " + String(v.run_id ?? "?") + " [" + String(v.status ?? "queued") + "] — poll with run_status"
 				}];
+			},
+			presentationMeta: (_args, value) => {
+				const v = value ?? {};
+				return {
+					mode: String(v.mode ?? "?"),
+					target: String(v.target ?? "?"),
+					...typeof v.model === "string" && v.model !== "" ? { model: v.model } : {},
+					...typeof v.draft_id === "string" && v.draft_id !== "" ? { draft_id: v.draft_id } : {},
+					...typeof v.run_id === "string" && v.run_id !== "" ? { run_id: v.run_id } : {},
+					...typeof v.status === "string" && v.status !== "" ? { status: v.status } : {},
+					...typeof v.error === "string" && v.error !== "" ? { error: v.error } : {}
+				};
 			}
 		},
 		async execute(args, exec) {

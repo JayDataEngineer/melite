@@ -47,8 +47,13 @@ export interface FlowCardsProps {
   block: ToolCallBlockView
 }
 
-/** Parse the melite_flow call: the draft id (from the settled result's
- * rendered content) + the model (from the call args, header while loading). */
+/** Parse the melite_flow / card-tool call: the draft id + the model
+ *  header. NATIVE CHANNEL FIRST: a settled result carries the tool's
+ *  persisted presentationMeta (ToolResultNode.meta) with {draft_id} —
+ *  every card tool emits it; the handle is read from meta, never
+ *  parsed out of prose. The render-text token ('card <draftId>') is
+ *  the LEGACY fallback: sessions logged before a tool grew its
+ *  projector still hydrate through the parse rule. */
 export function parseCardsBlock(block: ToolCallBlockView): {
   draftId: string | null
   model: string | null
@@ -67,25 +72,28 @@ export function parseCardsBlock(block: ToolCallBlockView): {
     }
   }
   let draftId: string | null = null
-  if (settled && block.isError !== true && Array.isArray(block.content)) {
-    for (const part of block.content) {
-      if (part === null || typeof part !== 'object') continue
-      const text = (part as { text?: unknown }).text
-      if (typeof text !== 'string') continue
-      // render line (wire contract, melite_flow success): "card <draftId>
-      // · flow <target> → <run_id> [status] — …" — the token leads so
-      // the FIRST 'card ' hit is the handle. The gateway mints
-      // draft-<time>-<tid>-<seq> ids. Older renders said "card <draftId>
-      // (model) — N shots, 1 run" (build_flow) or "cards draft <p_id> —
-      // …" (ray-era). Accept ALL: the token after 'card ' or after
-      // 'draft ' is the draft id either way.
-      const atCard = text.indexOf('card ')
-      const atIdx = atCard >= 0 ? atCard : text.indexOf('draft ')
-      if (atIdx < 0) continue
-      const rest = text.slice(atIdx + (atCard >= 0 ? 5 : 6))
-      const end = rest.indexOf(' ')
-      const tok = end < 0 ? rest : rest.slice(0, end)
-      if ((tok.startsWith('draft-') || tok.startsWith('p_')) && tok.length > 2) { draftId = tok; break }
+  if (settled && block.isError !== true) {
+    // 1. NATIVE: the persisted presentationMeta payload.
+    const meta = block.meta
+    if (meta !== null && typeof meta === 'object' && !Array.isArray(meta)) {
+      const id = (meta as Record<string, unknown>)['draft_id']
+      if (typeof id === 'string' && id !== '') draftId = id
+    }
+    // 2. LEGACY: the render token (pre-projector logs; the rule this
+    //    view parsed for years — the token after 'card ' or 'draft ').
+    if (draftId === null && Array.isArray(block.content)) {
+      for (const part of block.content) {
+        if (part === null || typeof part !== 'object') continue
+        const text = (part as { text?: unknown }).text
+        if (typeof text !== 'string') continue
+        const atCard = text.indexOf('card ')
+        const atIdx = atCard >= 0 ? atCard : text.indexOf('draft ')
+        if (atIdx < 0) continue
+        const rest = text.slice(atIdx + (atCard >= 0 ? 5 : 6))
+        const end = rest.indexOf(' ')
+        const tok = end < 0 ? rest : rest.slice(0, end)
+        if ((tok.startsWith('draft-') || tok.startsWith('p_')) && tok.length > 2) { draftId = tok; break }
+      }
     }
   }
   return { draftId, model, settled, isError: block.isError === true }

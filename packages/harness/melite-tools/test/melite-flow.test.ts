@@ -248,6 +248,24 @@ describe('melite_flow L4 — the test flag rides every mode', () => {
     expect(body.flow).toBe('bar')
   })
 
+  test('a refused start carries the error and NO draft_id (no tile for a dead run)', async () => {
+    // compose succeeds, start refuses: the value names the refusal and
+    // omits the handle — a tile never mounts for a run that never
+    // registered (the estate card-tool law, now uniform).
+    mockFetch([
+      (u) => (u.endsWith('/v1/flows/drafts')
+        ? { status: 200, body: { draftId: 'draft-never-tiles' } } : undefined),
+      () => ({ status: 400, body: { error: 'queue full' } }),
+    ])
+    const tool = meliteFlow('http://g')
+    const out = await tool.execute({ flow: 'foo' }, { signal: AbortSignal.timeout(2000) }) as Record<string, unknown>
+    expect(out.error).toContain('queue full')
+    expect(out.draft_id).toBeUndefined()
+    const meta = tool.output.presentationMeta!({ flow: 'foo' }, out as never) as Record<string, unknown>
+    expect(meta.draft_id).toBeUndefined()
+    expect(String(meta.error)).toContain('queue full')
+  })
+
   test('template: a refused compose never reaches the start door', async () => {
     globalThis.fetch = (async (url: unknown) => {
       const u = String(url)
@@ -311,6 +329,29 @@ describe('melite_flow tile contract — the chat hydrates from the render', () =
     const parts = tool.output.render({ ...FLOW }, out as never) as Array<{ text?: string }>
     const text = parts.map((p) => p?.text ?? '').join('\n')
     expect(parseTileToken(text)).toBe('draft-tile-2')
+  })
+
+  test('presentationMeta carries the handle — the native channel, pure', async () => {
+    mockFetch([okDraftThenStart('draft-meta-7', 'r9')])
+    const tool = meliteFlow('http://g')
+    const out = await tool.execute({ flow: 'foo' }, { signal: AbortSignal.timeout(2000) }) as Record<string, unknown>
+    // the projector is the persisted payload (ToolResultNode.meta): the
+    // client card view narrows it — never parses prose. Pure: same value
+    // in, same payload out.
+    const meta = tool.output.presentationMeta!({ flow: 'foo' }, out as never) as Record<string, unknown>
+    expect(meta).toEqual({
+      mode: 'flow',
+      target: 'foo',
+      draft_id: 'draft-meta-7',
+      run_id: 'r9',
+      status: 'queued',
+    })
+    expect(tool.output.presentationMeta!({ flow: 'foo' }, out as never)).toEqual(meta)
+    // refusals project the error with NO handle
+    const refused = await tool.execute({}, { signal: AbortSignal.timeout(2000) }) as Record<string, unknown>
+    const rmeta = tool.output.presentationMeta!({}, refused as never) as Record<string, unknown>
+    expect(rmeta.draft_id).toBeUndefined()
+    expect(typeof rmeta.error).toBe('string')
   })
 
   test('refusals carry no token (nothing to hydrate — the legacy branch stays dark)', async () => {

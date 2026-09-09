@@ -24,6 +24,11 @@ export interface ToolCallBlockView {
   content?: readonly unknown[]
   /** Settled failure marker. */
   isError?: boolean
+  /** The tool's persisted presentationMeta (settled form; mirrors the
+   *  shipped ToolResultNode.meta) — the native channel client renderers
+   *  narrow. Absent when the tool declared no projector or the session
+   *  log predates the projector. */
+  meta?: unknown
 }
 
 /** Owner share the keyed `tool.call.toolview` seat passes every entry. */

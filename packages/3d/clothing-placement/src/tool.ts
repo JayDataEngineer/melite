@@ -150,6 +150,20 @@ export function buildCardTool(gatewayUrl: string): ToolDefinition {
           text: `${TOOL_NAME} → ${String(v.run_id ?? "?")} — poll with run_status`,
         }];
       },
+      // presentationMeta: the persisted tile channel — every card tool
+      // emits {draft_id, run_id, model?, status, error} verbatim; the
+      // client card view narrows it (never parses render prose). Pure:
+      // live streaming AND session-log replay.
+      presentationMeta: (_args, value) => {
+        const v = (value ?? {}) as Record<string, unknown>;
+        return {
+          flow: FLOW,
+          ...typeof v.run_id === "string" && v.run_id !== "" ? { run_id: v.run_id } : {},
+          ...typeof v.draft_id === "string" && v.draft_id !== "" ? { draft_id: v.draft_id } : {},
+          ...typeof v.status === "string" && v.status !== "" ? { status: v.status } : {},
+          ...typeof v.error === "string" && v.error !== "" ? { error: v.error } : {},
+        };
+      },
     },
     async execute(args, exec): Promise<CardResult> {
       try {
