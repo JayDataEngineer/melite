@@ -98,28 +98,28 @@ import {
   pyReprStrList,
   spliceWorkflow,
   stopForRunDir,
-} from "@melite/comfyui";
+} from "@melite/comfyui-cordis";
 import type {
   ComfyUIHostService,
   EngineJson,
   MergeRow,
-} from "@melite/comfyui";
+} from "@melite/comfyui-cordis";
 import { applyRunContract } from "@melite/gateway-core";
 import {
   appendLedger,
   atomicWriteJson,
   pipelineOf,
   sidecarDoc,
-} from "@melite/queue";
-import type { GraphRow } from "@melite/queue";
+} from "@melite/gateway-queue";
+import type { GraphRow } from "@melite/gateway-queue";
 import {
   CardArmError,
   needCardRegistry,
   pyStrMid,
 } from "./flowsCard.ts";
 import type { CardRegistryService, Phase1Card } from "./flowsCard.ts";
-import { terminalFrame } from "@melite/queue";
-import { registerRunStatusProbe } from "@melite/queue";
+import { terminalFrame } from "@melite/gateway-queue";
+import { registerRunStatusProbe } from "@melite/gateway-queue";
 import { Service } from "@deepseek-ai/cordis";
 import type { Context, Plugin } from "@deepseek-ai/cordis";
 import type { DispatchResult } from "@melite/gateway-core";

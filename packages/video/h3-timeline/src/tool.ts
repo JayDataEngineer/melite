@@ -14,7 +14,7 @@
 // h3_timeline_card (cardWireName) — two planes, two names.
 import { defineTool } from '@deepseek-ai/dsh-tools'
 import type { ToolDefinition, ParameterSchemaSpec } from '@deepseek-ai/dsh-tools'
-import { emitParamsSpec } from '@melite/comfyui/params-emit'
+import { emitParamsSpec } from '@melite/comfyui-cordis/params-emit'
 import { carrier, identity, BOARDED } from './card.ts'
 
 export const TOOL_NAME = 'h3_timeline'

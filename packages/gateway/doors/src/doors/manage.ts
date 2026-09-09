@@ -23,8 +23,8 @@ import { existsSync, readdirSync, readFileSync, writeFileSync, renameSync } from
 import { join } from "node:path";
 import { callMcpTool } from "./mcp.ts";
 import { PyNum } from "@melite/gateway-core";
-import { loadEndpointConfig } from "@melite/comfyui";
-import type { ModelsService } from "@melite/comfyui";
+import { loadEndpointConfig } from "@melite/comfyui-cordis";
+import type { ModelsService } from "@melite/comfyui-cordis";
 
 // ── SSOT vocabulary ─────────────────────────────────────────────────
 // Closed vocabulary — a typo is a 422, not a silent miss.

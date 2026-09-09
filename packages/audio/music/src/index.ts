@@ -11,7 +11,7 @@
 // tools but no comfyui; each composition takes the faces it can.
 import type { Context } from '@deepseek-ai/cordis'
 import Schema from '@deepseek-ai/schemastery'
-import { ComfyUIService } from '@melite/comfyui/service'
+import { ComfyUIService } from '@melite/comfyui-cordis/service'
 import { registerCard } from './card.ts'
 import { buildMusicTool } from './tool.ts'
 import type { ToolRuntime } from '@deepseek-ai/dsh-tools'

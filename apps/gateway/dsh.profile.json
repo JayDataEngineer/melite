@@ -1,5 +1,5 @@
 {
   "$comment": "STAGE 3 forward declaration (2026-09-08, dsh-web-app shape): the gateway app profile binds the @melite/gateway bundle and names the server startup. NOTHING in-tree reads this yet — the estate boots via core/context.ts (ordered pre-import driver over the bundle patch); the real dsh mount binds the profile in a later stroke. Keys mirror the surveyed profile surface only (bundles list + startup).",
-  "bundles": ["@melite/gateway"],
+  "bundles": ["@melite/gateway-shell"],
   "startup": "./src/main.ts"
 }

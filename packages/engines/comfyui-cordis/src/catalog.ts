@@ -400,6 +400,6 @@ export function findModelPresent(
 // registration/resolution/cascade system behind the PORT LAW).
 // The pure cores above stay here; the service, its provider, and
 // needModels live in the models module; the package index
-// re-exports both, so "@melite/comfyui" surface is
+// re-exports both, so "@melite/comfyui-cordis" surface is
 // unchanged.
 

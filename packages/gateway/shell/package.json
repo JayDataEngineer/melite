@@ -1,5 +1,5 @@
 {
-  "name": "@melite/gateway",
+  "name": "@melite/gateway-shell",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -13,10 +13,10 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@melite/comfyui": "workspace:*",
+    "@melite/comfyui-cordis": "workspace:*",
     "@melite/gateway-core": "workspace:*",
     "@melite/gateway-doors": "workspace:*",
-    "@melite/queue": "workspace:*",
+    "@melite/gateway-queue": "workspace:*",
     "@deepseek-ai/cordis-plugin-include": "workspace:*",
     "@deepseek-ai/cordis-plugin-group": "workspace:*",
     "@deepseek-ai/cordis-plugin-loader": "workspace:*",

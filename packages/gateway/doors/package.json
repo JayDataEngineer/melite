@@ -28,9 +28,9 @@
   "dependencies": {
     "@deepseek-ai/cordis": "^4.0.2",
     "@deepseek-ai/dsh-host-webserver": "workspace:*",
-    "@melite/comfyui": "workspace:*",
+    "@melite/comfyui-cordis": "workspace:*",
     "@melite/gateway-core": "workspace:*",
-    "@melite/queue": "workspace:*",
+    "@melite/gateway-queue": "workspace:*",
     "@modelcontextprotocol/sdk": "^1.30.0"
   },
   "devDependencies": {

@@ -24,7 +24,7 @@
 // face rides the same law through the gateway's flow doors.
 import type { Context } from '@deepseek-ai/cordis'
 import Schema from '@deepseek-ai/schemastery'
-import { ComfyUIService } from '@melite/comfyui/service'
+import { ComfyUIService } from '@melite/comfyui-cordis/service'
 import { registerCard } from './card.ts'
 import { buildCardTool } from './tool.ts'
 import type { ToolRuntime } from '@deepseek-ai/dsh-tools'

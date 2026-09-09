@@ -19,11 +19,11 @@
 // golden ritual, pinned by the wall.
 import type { Context } from '@deepseek-ai/cordis'
 import z from '@deepseek-ai/schemastery'
-import type { ModelFacts } from '@melite/card-kit/facts'
-import type { ComfyUIService } from '@melite/comfyui/service'
-import type { GraphBuilder } from '@melite/card-kit/graph'
-import { wanVace, scail2, VIDEO_NEGATIVE_FALLBACK, VIDEO_REQUIRED_PATHS } from '@melite/card-kit'
-import { SAMPLERS, SCHEDULERS } from '@melite/card-kit/vocab'
+import type { ModelFacts } from '@melite/comfyui-card-kit/facts'
+import type { ComfyUIService } from '@melite/comfyui-cordis/service'
+import type { GraphBuilder } from '@melite/comfyui-card-kit/graph'
+import { wanVace, scail2, VIDEO_NEGATIVE_FALLBACK, VIDEO_REQUIRED_PATHS } from '@melite/comfyui-card-kit'
+import { SAMPLERS, SCHEDULERS } from '@melite/comfyui-card-kit/vocab'
 
 const schema = z.object({
   prompt: z.string().description("Prompt").extra('extra', { order: 0, group: "prompt", columns: 2, width: 1, required: true, wtype: 'textarea', }),

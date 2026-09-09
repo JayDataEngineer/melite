@@ -98,8 +98,8 @@ import {
 } from "./assets.ts";
 import { dispatchManage } from "./manage.ts";
 import { isRecord, parseStrictJson } from "@melite/gateway-core";
-import { needModels } from "@melite/comfyui";
-import type { ModelsService } from "@melite/comfyui";
+import { needModels } from "@melite/comfyui-cordis";
+import type { ModelsService } from "@melite/comfyui-cordis";
 import type { Context, Plugin } from "@deepseek-ai/cordis";
 import type { DispatchResult } from "@melite/gateway-core";
 import type { GatewayRequest } from "@melite/gateway-core";
@@ -140,7 +140,7 @@ function normalize4xx(status: number, payload: unknown): unknown {
  *  override else source-relative 4-up — every home lands the same
  *  depth; the 9 hand-rolled copies died 2026-09-08, zero-compromise
  *  followup). Re-export keeps this module's wall-pinned address. */
-import { resolveRepoRoot } from "@melite/comfyui";
+import { resolveRepoRoot } from "@melite/comfyui-cordis";
 export { resolveRepoRoot };
 
 /** File-anchored repo root (no env): where the product manage source

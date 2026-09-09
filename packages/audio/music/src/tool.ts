@@ -18,7 +18,7 @@
 // this face stays thin.
 import { defineTool } from '@deepseek-ai/dsh-tools'
 import type { ToolDefinition, ParameterSchemaSpec } from '@deepseek-ai/dsh-tools'
-import { emitParamsSpec } from '@melite/comfyui/params-emit'
+import { emitParamsSpec } from '@melite/comfyui-cordis/params-emit'
 import { schema, identity, BOARDED } from './card.ts'
 
 export const TOOL_NAME = 'music'

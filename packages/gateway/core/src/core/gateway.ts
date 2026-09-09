@@ -26,14 +26,14 @@
 import type { Context, Plugin } from "@deepseek-ai/cordis";
 import type { StandardSchemaV1 } from "@standard-schema/spec";
 import z from "@deepseek-ai/schemastery";
-import type { QueueRoots, RebuiltRun } from "@melite/queue";
+import type { QueueRoots, RebuiltRun } from "@melite/gateway-queue";
 import {
   appendLedger,
   bootGate,
   bootQueue,
   refuseStartLine,
   releaseLock,
-} from "@melite/queue";
+} from "@melite/gateway-queue";
 import { enqueueResurrected } from "@melite/gateway-doors";
 
 /** The P5 boot engine tag for the server.boot ledger row (py writes

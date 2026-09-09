@@ -4,9 +4,9 @@
 // Decl + admission + one kit recipe call — the lane body lives in src/kit.ts.
 import type { Context } from '@deepseek-ai/cordis'
 import z from '@deepseek-ai/schemastery'
-import { annyLane, finalizeAnny } from '@melite/card-kit'
-import type { ComfyUIService } from '@melite/comfyui/service'
-import { vocabulary } from '@melite/card-kit/vocab'
+import { annyLane, finalizeAnny } from '@melite/comfyui-card-kit'
+import type { ComfyUIService } from '@melite/comfyui-cordis/service'
+import { vocabulary } from '@melite/comfyui-card-kit/vocab'
 
 const schema = z.object({
   body_glb: z.string().role('path').description("Body GLB").extra('extra', { order: 0, group: "parts", columns: 1, tooltip: "The base body — empty autoloads the Model-declared neutral body (anny-base-body.glb, provisioned); or attach a rigged/static character GLB. (Photo→body estimation is the pilot arc; clothing composite moves to its own card later.)", wtype: 'file' }),

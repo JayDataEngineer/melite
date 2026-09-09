@@ -1,5 +1,5 @@
 {
-  "name": "@melite/comfyui",
+  "name": "@melite/comfyui-cordis",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -27,7 +27,7 @@
     "@melite-plugin/3d": "workspace:*",
     "@melite-plugin/motion": "workspace:*",
     "@melite-plugin/timeline": "workspace:*",
-    "@melite/card-kit": "workspace:*",
+    "@melite/comfyui-card-kit": "workspace:*",
     "@melite/contracts": "workspace:*",
     "@melite/formats": "workspace:*",
     "@melite/3d-anny": "workspace:*",

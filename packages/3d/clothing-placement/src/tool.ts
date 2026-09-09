@@ -19,7 +19,7 @@
 // cardDefs — and cardDefs composes THIS package — a cycle that
 // deadlocks ESM evaluation (an in-progress module's dynamic import
 // waits for full evaluation). The card's data flows leaf-ward only.
-import { emitParamsSpec } from "@melite/comfyui/params-emit";
+import { emitParamsSpec } from "@melite/comfyui-cordis/params-emit";
 import { identity, schema } from "./card.ts";
 import { defineTool } from "@deepseek-ai/dsh-tools";
 import type { ToolDefinition, ParameterSchemaSpec } from "@deepseek-ai/dsh-tools";

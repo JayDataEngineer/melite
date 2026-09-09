@@ -25,7 +25,7 @@ importers:
 
   apps/gateway:
     dependencies:
-      '@melite/gateway':
+      '@melite/gateway-shell':
         specifier: workspace:*
         version: link:../../packages/gateway/shell
 
@@ -40,16 +40,16 @@ importers:
       '@melite-plugin/3d':
         specifier: workspace:*
         version: link:../../engines/comfyui/action_cards/3d/ui
-      '@melite/card-kit':
-        specifier: workspace:*
-        version: link:../../engines/comfyui-card-kit
       '@melite/cards':
         specifier: workspace:*
         version: link:../../engines/comfyui/action_cards
       '@melite/catalog':
         specifier: workspace:*
         version: link:../../web-kit/catalog
-      '@melite/comfyui':
+      '@melite/comfyui-card-kit':
+        specifier: workspace:*
+        version: link:../../engines/comfyui-card-kit
+      '@melite/comfyui-cordis':
         specifier: workspace:*
         version: link:../../engines/comfyui-cordis
       '@melite/contracts':
@@ -83,7 +83,7 @@ importers:
       '@deepseek-ai/schemastery':
         specifier: '*'
         version: 3.18.2
-      '@melite/comfyui':
+      '@melite/comfyui-cordis':
         specifier: workspace:*
         version: link:../../engines/comfyui-cordis
     devDependencies:
@@ -102,10 +102,10 @@ importers:
       '@deepseek-ai/schemastery':
         specifier: '*'
         version: 3.18.2
-      '@melite/card-kit':
+      '@melite/comfyui-card-kit':
         specifier: workspace:*
         version: link:../../engines/comfyui-card-kit
-      '@melite/comfyui':
+      '@melite/comfyui-cordis':
         specifier: workspace:*
         version: link:../../engines/comfyui-cordis
     devDependencies:
@@ -124,13 +124,13 @@ importers:
       '@melite-plugin/3d':
         specifier: workspace:*
         version: link:../../engines/comfyui/action_cards/3d/ui
-      '@melite/card-kit':
-        specifier: workspace:*
-        version: link:../../engines/comfyui-card-kit
       '@melite/catalog':
         specifier: workspace:*
         version: link:../../web-kit/catalog
-      '@melite/comfyui':
+      '@melite/comfyui-card-kit':
+        specifier: workspace:*
+        version: link:../../engines/comfyui-card-kit
+      '@melite/comfyui-cordis':
         specifier: workspace:*
         version: link:../../engines/comfyui-cordis
       '@melite/ui':
@@ -155,10 +155,10 @@ importers:
       '@deepseek-ai/schemastery':
         specifier: '*'
         version: 3.18.2
-      '@melite/card-kit':
+      '@melite/comfyui-card-kit':
         specifier: workspace:*
         version: link:../../engines/comfyui-card-kit
-      '@melite/comfyui':
+      '@melite/comfyui-cordis':
         specifier: workspace:*
         version: link:../../engines/comfyui-cordis
     devDependencies:
@@ -174,10 +174,10 @@ importers:
       '@deepseek-ai/schemastery':
         specifier: '*'
         version: 3.18.2
-      '@melite/card-kit':
+      '@melite/comfyui-card-kit':
         specifier: workspace:*
         version: link:../../engines/comfyui-card-kit
-      '@melite/comfyui':
+      '@melite/comfyui-cordis':
         specifier: workspace:*
         version: link:../../engines/comfyui-cordis
     devDependencies:
@@ -196,10 +196,10 @@ importers:
       '@deepseek-ai/schemastery':
         specifier: '*'
         version: 3.18.2
-      '@melite/card-kit':
+      '@melite/comfyui-card-kit':
         specifier: workspace:*
         version: link:../../engines/comfyui-card-kit
-      '@melite/comfyui':
+      '@melite/comfyui-cordis':
         specifier: workspace:*
         version: link:../../engines/comfyui-cordis
     devDependencies:
@@ -215,10 +215,10 @@ importers:
       '@deepseek-ai/schemastery':
         specifier: '*'
         version: 3.18.2
-      '@melite/card-kit':
+      '@melite/comfyui-card-kit':
         specifier: workspace:*
         version: link:../../engines/comfyui-card-kit
-      '@melite/comfyui':
+      '@melite/comfyui-cordis':
         specifier: workspace:*
         version: link:../../engines/comfyui-cordis
     devDependencies:
@@ -237,10 +237,10 @@ importers:
       '@deepseek-ai/schemastery':
         specifier: '*'
         version: 3.18.2
-      '@melite/card-kit':
+      '@melite/comfyui-card-kit':
         specifier: workspace:*
         version: link:../../engines/comfyui-card-kit
-      '@melite/comfyui':
+      '@melite/comfyui-cordis':
         specifier: workspace:*
         version: link:../../engines/comfyui-cordis
     devDependencies:
@@ -259,10 +259,10 @@ importers:
       '@deepseek-ai/schemastery':
         specifier: '*'
         version: 3.18.2
-      '@melite/card-kit':
+      '@melite/comfyui-card-kit':
         specifier: workspace:*
         version: link:../../engines/comfyui-card-kit
-      '@melite/comfyui':
+      '@melite/comfyui-cordis':
         specifier: workspace:*
         version: link:../../engines/comfyui-cordis
     devDependencies:
@@ -333,7 +333,7 @@ importers:
       '@melite/audio-voice-lock':
         specifier: workspace:*
         version: link:../../audio/voice-lock
-      '@melite/card-kit':
+      '@melite/comfyui-card-kit':
         specifier: workspace:*
         version: link:../comfyui-card-kit
       '@melite/contracts':
@@ -730,13 +730,13 @@ importers:
       '@deepseek-ai/schemastery':
         specifier: '*'
         version: 3.18.2
-      '@melite/comfyui':
+      '@melite/comfyui-cordis':
         specifier: workspace:*
         version: link:../../engines/comfyui-cordis
       '@melite/gateway-doors':
         specifier: workspace:*
         version: link:../doors
-      '@melite/queue':
+      '@melite/gateway-queue':
         specifier: workspace:*
         version: link:../queue
       '@standard-schema/spec':
@@ -767,13 +767,13 @@ importers:
       '@deepseek-ai/dsh-host-webserver':
         specifier: workspace:*
         version: link:../../../vendor/cordis_plugins/webserver
-      '@melite/comfyui':
+      '@melite/comfyui-cordis':
         specifier: workspace:*
         version: link:../../engines/comfyui-cordis
       '@melite/gateway-core':
         specifier: workspace:*
         version: link:../core
-      '@melite/queue':
+      '@melite/gateway-queue':
         specifier: workspace:*
         version: link:../queue
       '@modelcontextprotocol/sdk':
@@ -798,7 +798,7 @@ importers:
       '@deepseek-ai/dsh-host-webserver':
         specifier: workspace:*
         version: link:../../../vendor/cordis_plugins/webserver
-      '@melite/comfyui':
+      '@melite/comfyui-cordis':
         specifier: workspace:*
         version: link:../../engines/comfyui-cordis
       '@melite/gateway-core':
@@ -835,7 +835,7 @@ importers:
       '@deepseek-ai/dsh-host-webserver':
         specifier: workspace:*
         version: link:../../../vendor/cordis_plugins/webserver
-      '@melite/comfyui':
+      '@melite/comfyui-cordis':
         specifier: workspace:*
         version: link:../../engines/comfyui-cordis
       '@melite/gateway-core':
@@ -844,7 +844,7 @@ importers:
       '@melite/gateway-doors':
         specifier: workspace:*
         version: link:../doors
-      '@melite/queue':
+      '@melite/gateway-queue':
         specifier: workspace:*
         version: link:../queue
     devDependencies:
@@ -927,10 +927,10 @@ importers:
       '@deepseek-ai/schemastery':
         specifier: '*'
         version: 3.18.2
-      '@melite/card-kit':
+      '@melite/comfyui-card-kit':
         specifier: workspace:*
         version: link:../../engines/comfyui-card-kit
-      '@melite/comfyui':
+      '@melite/comfyui-cordis':
         specifier: workspace:*
         version: link:../../engines/comfyui-cordis
       '@melite/ui':
@@ -958,10 +958,10 @@ importers:
       '@deepseek-ai/schemastery':
         specifier: '*'
         version: 3.18.2
-      '@melite/card-kit':
+      '@melite/comfyui-card-kit':
         specifier: workspace:*
         version: link:../../engines/comfyui-card-kit
-      '@melite/comfyui':
+      '@melite/comfyui-cordis':
         specifier: workspace:*
         version: link:../../engines/comfyui-cordis
     devDependencies:
@@ -980,10 +980,10 @@ importers:
       '@deepseek-ai/schemastery':
         specifier: '*'
         version: 3.18.2
-      '@melite/card-kit':
+      '@melite/comfyui-card-kit':
         specifier: workspace:*
         version: link:../../engines/comfyui-card-kit
-      '@melite/comfyui':
+      '@melite/comfyui-cordis':
         specifier: workspace:*
         version: link:../../engines/comfyui-cordis
       '@melite/models-anima':
@@ -1008,10 +1008,10 @@ importers:
       '@deepseek-ai/schemastery':
         specifier: '*'
         version: 3.18.2
-      '@melite/card-kit':
+      '@melite/comfyui-card-kit':
         specifier: workspace:*
         version: link:../../engines/comfyui-card-kit
-      '@melite/comfyui':
+      '@melite/comfyui-cordis':
         specifier: workspace:*
         version: link:../../engines/comfyui-cordis
     devDependencies:
@@ -1027,10 +1027,10 @@ importers:
       '@deepseek-ai/schemastery':
         specifier: '*'
         version: 3.18.2
-      '@melite/card-kit':
+      '@melite/comfyui-card-kit':
         specifier: workspace:*
         version: link:../../engines/comfyui-card-kit
-      '@melite/comfyui':
+      '@melite/comfyui-cordis':
         specifier: workspace:*
         version: link:../../engines/comfyui-cordis
       '@melite/contracts':
@@ -1061,10 +1061,10 @@ importers:
       '@deepseek-ai/schemastery':
         specifier: '*'
         version: 3.18.2
-      '@melite/card-kit':
+      '@melite/comfyui-card-kit':
         specifier: workspace:*
         version: link:../../engines/comfyui-card-kit
-      '@melite/comfyui':
+      '@melite/comfyui-cordis':
         specifier: workspace:*
         version: link:../../engines/comfyui-cordis
     devDependencies:
@@ -1080,10 +1080,10 @@ importers:
       '@deepseek-ai/schemastery':
         specifier: '*'
         version: 3.18.2
-      '@melite/card-kit':
+      '@melite/comfyui-card-kit':
         specifier: workspace:*
         version: link:../../engines/comfyui-card-kit
-      '@melite/comfyui':
+      '@melite/comfyui-cordis':
         specifier: workspace:*
         version: link:../../engines/comfyui-cordis
     devDependencies:
@@ -1096,7 +1096,7 @@ importers:
       '@deepseek-ai/cordis':
         specifier: ^4.0.2
         version: 4.0.2(@deepseek-ai/cordis-plugin-include@1.0.6)(@deepseek-ai/cordis-plugin-loader@1.0.3)
-      '@melite/comfyui':
+      '@melite/comfyui-cordis':
         specifier: workspace:*
         version: link:../../engines/comfyui-cordis
     devDependencies:
@@ -1109,7 +1109,7 @@ importers:
       '@deepseek-ai/cordis':
         specifier: ^4.0.2
         version: 4.0.2(@deepseek-ai/cordis-plugin-include@1.0.6)(@deepseek-ai/cordis-plugin-loader@1.0.3)
-      '@melite/comfyui':
+      '@melite/comfyui-cordis':
         specifier: workspace:*
         version: link:../../engines/comfyui-cordis
     devDependencies:
@@ -1125,7 +1125,7 @@ importers:
       '@deepseek-ai/schemastery':
         specifier: '*'
         version: 3.18.2
-      '@melite/comfyui':
+      '@melite/comfyui-cordis':
         specifier: workspace:*
         version: link:../../engines/comfyui-cordis
     devDependencies:
@@ -1138,7 +1138,7 @@ importers:
       '@deepseek-ai/cordis':
         specifier: ^4.0.2
         version: 4.0.2(@deepseek-ai/cordis-plugin-include@1.0.6)(@deepseek-ai/cordis-plugin-loader@1.0.3)
-      '@melite/comfyui':
+      '@melite/comfyui-cordis':
         specifier: workspace:*
         version: link:../../engines/comfyui-cordis
     devDependencies:
@@ -1151,7 +1151,7 @@ importers:
       '@deepseek-ai/cordis':
         specifier: ^4.0.2
         version: 4.0.2(@deepseek-ai/cordis-plugin-include@1.0.6)(@deepseek-ai/cordis-plugin-loader@1.0.3)
-      '@melite/comfyui':
+      '@melite/comfyui-cordis':
         specifier: workspace:*
         version: link:../../engines/comfyui-cordis
     devDependencies:
@@ -1164,7 +1164,7 @@ importers:
       '@deepseek-ai/cordis':
         specifier: ^4.0.2
         version: 4.0.2(@deepseek-ai/cordis-plugin-include@1.0.6)(@deepseek-ai/cordis-plugin-loader@1.0.3)
-      '@melite/comfyui':
+      '@melite/comfyui-cordis':
         specifier: workspace:*
         version: link:../../engines/comfyui-cordis
     devDependencies:
@@ -1177,7 +1177,7 @@ importers:
       '@deepseek-ai/cordis':
         specifier: ^4.0.2
         version: 4.0.2(@deepseek-ai/cordis-plugin-include@1.0.6)(@deepseek-ai/cordis-plugin-loader@1.0.3)
-      '@melite/comfyui':
+      '@melite/comfyui-cordis':
         specifier: workspace:*
         version: link:../../engines/comfyui-cordis
     devDependencies:
@@ -1190,7 +1190,7 @@ importers:
       '@deepseek-ai/cordis':
         specifier: ^4.0.2
         version: 4.0.2(@deepseek-ai/cordis-plugin-include@1.0.6)(@deepseek-ai/cordis-plugin-loader@1.0.3)
-      '@melite/comfyui':
+      '@melite/comfyui-cordis':
         specifier: workspace:*
         version: link:../../engines/comfyui-cordis
     devDependencies:
@@ -1203,7 +1203,7 @@ importers:
       '@deepseek-ai/cordis':
         specifier: ^4.0.2
         version: 4.0.2(@deepseek-ai/cordis-plugin-include@1.0.6)(@deepseek-ai/cordis-plugin-loader@1.0.3)
-      '@melite/comfyui':
+      '@melite/comfyui-cordis':
         specifier: workspace:*
         version: link:../../engines/comfyui-cordis
     devDependencies:
@@ -1216,7 +1216,7 @@ importers:
       '@deepseek-ai/cordis':
         specifier: ^4.0.2
         version: 4.0.2(@deepseek-ai/cordis-plugin-include@1.0.6)(@deepseek-ai/cordis-plugin-loader@1.0.3)
-      '@melite/comfyui':
+      '@melite/comfyui-cordis':
         specifier: workspace:*
         version: link:../../engines/comfyui-cordis
     devDependencies:
@@ -1229,7 +1229,7 @@ importers:
       '@deepseek-ai/cordis':
         specifier: ^4.0.2
         version: 4.0.2(@deepseek-ai/cordis-plugin-include@1.0.6)(@deepseek-ai/cordis-plugin-loader@1.0.3)
-      '@melite/comfyui':
+      '@melite/comfyui-cordis':
         specifier: workspace:*
         version: link:../../engines/comfyui-cordis
     devDependencies:
@@ -1242,7 +1242,7 @@ importers:
       '@deepseek-ai/cordis':
         specifier: ^4.0.2
         version: 4.0.2(@deepseek-ai/cordis-plugin-include@1.0.6)(@deepseek-ai/cordis-plugin-loader@1.0.3)
-      '@melite/comfyui':
+      '@melite/comfyui-cordis':
         specifier: workspace:*
         version: link:../../engines/comfyui-cordis
     devDependencies:
@@ -1255,7 +1255,7 @@ importers:
       '@deepseek-ai/cordis':
         specifier: ^4.0.2
         version: 4.0.2(@deepseek-ai/cordis-plugin-include@1.0.6)(@deepseek-ai/cordis-plugin-loader@1.0.3)
-      '@melite/comfyui':
+      '@melite/comfyui-cordis':
         specifier: workspace:*
         version: link:../../engines/comfyui-cordis
     devDependencies:
@@ -1268,7 +1268,7 @@ importers:
       '@deepseek-ai/cordis':
         specifier: ^4.0.2
         version: 4.0.2(@deepseek-ai/cordis-plugin-include@1.0.6)(@deepseek-ai/cordis-plugin-loader@1.0.3)
-      '@melite/comfyui':
+      '@melite/comfyui-cordis':
         specifier: workspace:*
         version: link:../../engines/comfyui-cordis
     devDependencies:
@@ -1281,7 +1281,7 @@ importers:
       '@deepseek-ai/cordis':
         specifier: ^4.0.2
         version: 4.0.2(@deepseek-ai/cordis-plugin-include@1.0.6)(@deepseek-ai/cordis-plugin-loader@1.0.3)
-      '@melite/comfyui':
+      '@melite/comfyui-cordis':
         specifier: workspace:*
         version: link:../../engines/comfyui-cordis
     devDependencies:
@@ -1294,7 +1294,7 @@ importers:
       '@deepseek-ai/cordis':
         specifier: ^4.0.2
         version: 4.0.2(@deepseek-ai/cordis-plugin-include@1.0.6)(@deepseek-ai/cordis-plugin-loader@1.0.3)
-      '@melite/comfyui':
+      '@melite/comfyui-cordis':
         specifier: workspace:*
         version: link:../../engines/comfyui-cordis
     devDependencies:
@@ -1307,7 +1307,7 @@ importers:
       '@deepseek-ai/cordis':
         specifier: ^4.0.2
         version: 4.0.2(@deepseek-ai/cordis-plugin-include@1.0.6)(@deepseek-ai/cordis-plugin-loader@1.0.3)
-      '@melite/comfyui':
+      '@melite/comfyui-cordis':
         specifier: workspace:*
         version: link:../../engines/comfyui-cordis
     devDependencies:
@@ -1320,7 +1320,7 @@ importers:
       '@deepseek-ai/cordis':
         specifier: ^4.0.2
         version: 4.0.2(@deepseek-ai/cordis-plugin-include@1.0.6)(@deepseek-ai/cordis-plugin-loader@1.0.3)
-      '@melite/comfyui':
+      '@melite/comfyui-cordis':
         specifier: workspace:*
         version: link:../../engines/comfyui-cordis
     devDependencies:
@@ -1333,7 +1333,7 @@ importers:
       '@deepseek-ai/cordis':
         specifier: ^4.0.2
         version: 4.0.2(@deepseek-ai/cordis-plugin-include@1.0.6)(@deepseek-ai/cordis-plugin-loader@1.0.3)
-      '@melite/comfyui':
+      '@melite/comfyui-cordis':
         specifier: workspace:*
         version: link:../../engines/comfyui-cordis
     devDependencies:
@@ -1346,7 +1346,7 @@ importers:
       '@deepseek-ai/cordis':
         specifier: ^4.0.2
         version: 4.0.2(@deepseek-ai/cordis-plugin-include@1.0.6)(@deepseek-ai/cordis-plugin-loader@1.0.3)
-      '@melite/comfyui':
+      '@melite/comfyui-cordis':
         specifier: workspace:*
         version: link:../../engines/comfyui-cordis
     devDependencies:
@@ -1359,7 +1359,7 @@ importers:
       '@deepseek-ai/cordis':
         specifier: ^4.0.2
         version: 4.0.2(@deepseek-ai/cordis-plugin-include@1.0.6)(@deepseek-ai/cordis-plugin-loader@1.0.3)
-      '@melite/comfyui':
+      '@melite/comfyui-cordis':
         specifier: workspace:*
         version: link:../../engines/comfyui-cordis
     devDependencies:
@@ -1372,7 +1372,7 @@ importers:
       '@deepseek-ai/cordis':
         specifier: ^4.0.2
         version: 4.0.2(@deepseek-ai/cordis-plugin-include@1.0.6)(@deepseek-ai/cordis-plugin-loader@1.0.3)
-      '@melite/comfyui':
+      '@melite/comfyui-cordis':
         specifier: workspace:*
         version: link:../../engines/comfyui-cordis
     devDependencies:
@@ -1385,7 +1385,7 @@ importers:
       '@deepseek-ai/cordis':
         specifier: ^4.0.2
         version: 4.0.2(@deepseek-ai/cordis-plugin-include@1.0.6)(@deepseek-ai/cordis-plugin-loader@1.0.3)
-      '@melite/comfyui':
+      '@melite/comfyui-cordis':
         specifier: workspace:*
         version: link:../../engines/comfyui-cordis
     devDependencies:
@@ -1398,7 +1398,7 @@ importers:
       '@deepseek-ai/cordis':
         specifier: ^4.0.2
         version: 4.0.2(@deepseek-ai/cordis-plugin-include@1.0.6)(@deepseek-ai/cordis-plugin-loader@1.0.3)
-      '@melite/comfyui':
+      '@melite/comfyui-cordis':
         specifier: workspace:*
         version: link:../../engines/comfyui-cordis
     devDependencies:
@@ -1411,7 +1411,7 @@ importers:
       '@deepseek-ai/cordis':
         specifier: ^4.0.2
         version: 4.0.2(@deepseek-ai/cordis-plugin-include@1.0.6)(@deepseek-ai/cordis-plugin-loader@1.0.3)
-      '@melite/comfyui':
+      '@melite/comfyui-cordis':
         specifier: workspace:*
         version: link:../../engines/comfyui-cordis
     devDependencies:
@@ -1424,7 +1424,7 @@ importers:
       '@deepseek-ai/cordis':
         specifier: ^4.0.2
         version: 4.0.2(@deepseek-ai/cordis-plugin-include@1.0.6)(@deepseek-ai/cordis-plugin-loader@1.0.3)
-      '@melite/comfyui':
+      '@melite/comfyui-cordis':
         specifier: workspace:*
         version: link:../../engines/comfyui-cordis
     devDependencies:
@@ -1437,7 +1437,7 @@ importers:
       '@deepseek-ai/cordis':
         specifier: ^4.0.2
         version: 4.0.2(@deepseek-ai/cordis-plugin-include@1.0.6)(@deepseek-ai/cordis-plugin-loader@1.0.3)
-      '@melite/comfyui':
+      '@melite/comfyui-cordis':
         specifier: workspace:*
         version: link:../../engines/comfyui-cordis
     devDependencies:
@@ -1450,7 +1450,7 @@ importers:
       '@deepseek-ai/cordis':
         specifier: ^4.0.2
         version: 4.0.2(@deepseek-ai/cordis-plugin-include@1.0.6)(@deepseek-ai/cordis-plugin-loader@1.0.3)
-      '@melite/comfyui':
+      '@melite/comfyui-cordis':
         specifier: workspace:*
         version: link:../../engines/comfyui-cordis
     devDependencies:
@@ -1463,7 +1463,7 @@ importers:
       '@deepseek-ai/cordis':
         specifier: ^4.0.2
         version: 4.0.2(@deepseek-ai/cordis-plugin-include@1.0.6)(@deepseek-ai/cordis-plugin-loader@1.0.3)
-      '@melite/comfyui':
+      '@melite/comfyui-cordis':
         specifier: workspace:*
         version: link:../../engines/comfyui-cordis
     devDependencies:
@@ -1476,7 +1476,7 @@ importers:
       '@deepseek-ai/cordis':
         specifier: ^4.0.2
         version: 4.0.2(@deepseek-ai/cordis-plugin-include@1.0.6)(@deepseek-ai/cordis-plugin-loader@1.0.3)
-      '@melite/comfyui':
+      '@melite/comfyui-cordis':
         specifier: workspace:*
         version: link:../../engines/comfyui-cordis
     devDependencies:
@@ -1489,7 +1489,7 @@ importers:
       '@deepseek-ai/cordis':
         specifier: ^4.0.2
         version: 4.0.2(@deepseek-ai/cordis-plugin-include@1.0.6)(@deepseek-ai/cordis-plugin-loader@1.0.3)
-      '@melite/comfyui':
+      '@melite/comfyui-cordis':
         specifier: workspace:*
         version: link:../../engines/comfyui-cordis
     devDependencies:
@@ -1505,7 +1505,7 @@ importers:
       '@deepseek-ai/schemastery':
         specifier: '*'
         version: 3.18.2
-      '@melite/comfyui':
+      '@melite/comfyui-cordis':
         specifier: workspace:*
         version: link:../../engines/comfyui-cordis
     devDependencies:
@@ -1521,7 +1521,7 @@ importers:
       '@deepseek-ai/schemastery':
         specifier: '*'
         version: 3.18.2
-      '@melite/comfyui':
+      '@melite/comfyui-cordis':
         specifier: workspace:*
         version: link:../../engines/comfyui-cordis
     devDependencies:
@@ -1534,7 +1534,7 @@ importers:
       '@deepseek-ai/cordis':
         specifier: ^4.0.2
         version: 4.0.2(@deepseek-ai/cordis-plugin-include@1.0.6)(@deepseek-ai/cordis-plugin-loader@1.0.3)
-      '@melite/comfyui':
+      '@melite/comfyui-cordis':
         specifier: workspace:*
         version: link:../../engines/comfyui-cordis
     devDependencies:
@@ -1547,7 +1547,7 @@ importers:
       '@deepseek-ai/cordis':
         specifier: ^4.0.2
         version: 4.0.2(@deepseek-ai/cordis-plugin-include@1.0.6)(@deepseek-ai/cordis-plugin-loader@1.0.3)
-      '@melite/comfyui':
+      '@melite/comfyui-cordis':
         specifier: workspace:*
         version: link:../../engines/comfyui-cordis
     devDependencies:
@@ -1560,7 +1560,7 @@ importers:
       '@deepseek-ai/cordis':
         specifier: ^4.0.2
         version: 4.0.2(@deepseek-ai/cordis-plugin-include@1.0.6)(@deepseek-ai/cordis-plugin-loader@1.0.3)
-      '@melite/comfyui':
+      '@melite/comfyui-cordis':
         specifier: workspace:*
         version: link:../../engines/comfyui-cordis
     devDependencies:
@@ -1573,7 +1573,7 @@ importers:
       '@deepseek-ai/cordis':
         specifier: ^4.0.2
         version: 4.0.2(@deepseek-ai/cordis-plugin-include@1.0.6)(@deepseek-ai/cordis-plugin-loader@1.0.3)
-      '@melite/comfyui':
+      '@melite/comfyui-cordis':
         specifier: workspace:*
         version: link:../../engines/comfyui-cordis
     devDependencies:
@@ -1586,7 +1586,7 @@ importers:
       '@deepseek-ai/cordis':
         specifier: ^4.0.2
         version: 4.0.2(@deepseek-ai/cordis-plugin-include@1.0.6)(@deepseek-ai/cordis-plugin-loader@1.0.3)
-      '@melite/comfyui':
+      '@melite/comfyui-cordis':
         specifier: workspace:*
         version: link:../../engines/comfyui-cordis
     devDependencies:
@@ -1599,7 +1599,7 @@ importers:
       '@deepseek-ai/cordis':
         specifier: ^4.0.2
         version: 4.0.2(@deepseek-ai/cordis-plugin-include@1.0.6)(@deepseek-ai/cordis-plugin-loader@1.0.3)
-      '@melite/comfyui':
+      '@melite/comfyui-cordis':
         specifier: workspace:*
         version: link:../../engines/comfyui-cordis
     devDependencies:
@@ -1612,7 +1612,7 @@ importers:
       '@deepseek-ai/cordis':
         specifier: ^4.0.2
         version: 4.0.2(@deepseek-ai/cordis-plugin-include@1.0.6)(@deepseek-ai/cordis-plugin-loader@1.0.3)
-      '@melite/comfyui':
+      '@melite/comfyui-cordis':
         specifier: workspace:*
         version: link:../../engines/comfyui-cordis
     devDependencies:
@@ -1625,7 +1625,7 @@ importers:
       '@deepseek-ai/cordis':
         specifier: ^4.0.2
         version: 4.0.2(@deepseek-ai/cordis-plugin-include@1.0.6)(@deepseek-ai/cordis-plugin-loader@1.0.3)
-      '@melite/comfyui':
+      '@melite/comfyui-cordis':
         specifier: workspace:*
         version: link:../../engines/comfyui-cordis
     devDependencies:
@@ -1638,7 +1638,7 @@ importers:
       '@deepseek-ai/cordis':
         specifier: ^4.0.2
         version: 4.0.2(@deepseek-ai/cordis-plugin-include@1.0.6)(@deepseek-ai/cordis-plugin-loader@1.0.3)
-      '@melite/comfyui':
+      '@melite/comfyui-cordis':
         specifier: workspace:*
         version: link:../../engines/comfyui-cordis
     devDependencies:
@@ -1651,7 +1651,7 @@ importers:
       '@deepseek-ai/cordis':
         specifier: ^4.0.2
         version: 4.0.2(@deepseek-ai/cordis-plugin-include@1.0.6)(@deepseek-ai/cordis-plugin-loader@1.0.3)
-      '@melite/comfyui':
+      '@melite/comfyui-cordis':
         specifier: workspace:*
         version: link:../../engines/comfyui-cordis
     devDependencies:
@@ -1664,7 +1664,7 @@ importers:
       '@deepseek-ai/cordis':
         specifier: ^4.0.2
         version: 4.0.2(@deepseek-ai/cordis-plugin-include@1.0.6)(@deepseek-ai/cordis-plugin-loader@1.0.3)
-      '@melite/comfyui':
+      '@melite/comfyui-cordis':
         specifier: workspace:*
         version: link:../../engines/comfyui-cordis
     devDependencies:
@@ -1677,7 +1677,7 @@ importers:
       '@deepseek-ai/cordis':
         specifier: ^4.0.2
         version: 4.0.2(@deepseek-ai/cordis-plugin-include@1.0.6)(@deepseek-ai/cordis-plugin-loader@1.0.3)
-      '@melite/comfyui':
+      '@melite/comfyui-cordis':
         specifier: workspace:*
         version: link:../../engines/comfyui-cordis
     devDependencies:
@@ -1690,7 +1690,7 @@ importers:
       '@deepseek-ai/cordis':
         specifier: ^4.0.2
         version: 4.0.2(@deepseek-ai/cordis-plugin-include@1.0.6)(@deepseek-ai/cordis-plugin-loader@1.0.3)
-      '@melite/comfyui':
+      '@melite/comfyui-cordis':
         specifier: workspace:*
         version: link:../../engines/comfyui-cordis
     devDependencies:
@@ -1703,7 +1703,7 @@ importers:
       '@deepseek-ai/cordis':
         specifier: ^4.0.2
         version: 4.0.2(@deepseek-ai/cordis-plugin-include@1.0.6)(@deepseek-ai/cordis-plugin-loader@1.0.3)
-      '@melite/comfyui':
+      '@melite/comfyui-cordis':
         specifier: workspace:*
         version: link:../../engines/comfyui-cordis
     devDependencies:
@@ -1716,7 +1716,7 @@ importers:
       '@deepseek-ai/cordis':
         specifier: ^4.0.2
         version: 4.0.2(@deepseek-ai/cordis-plugin-include@1.0.6)(@deepseek-ai/cordis-plugin-loader@1.0.3)
-      '@melite/comfyui':
+      '@melite/comfyui-cordis':
         specifier: workspace:*
         version: link:../../engines/comfyui-cordis
     devDependencies:
@@ -1741,13 +1741,13 @@ importers:
       '@melite-plugin/timeline':
         specifier: workspace:*
         version: link:../../web-kit/timeline
-      '@melite/card-kit':
-        specifier: workspace:*
-        version: link:../../engines/comfyui-card-kit
       '@melite/catalog':
         specifier: workspace:*
         version: link:../../web-kit/catalog
-      '@melite/comfyui':
+      '@melite/comfyui-card-kit':
+        specifier: workspace:*
+        version: link:../../engines/comfyui-card-kit
+      '@melite/comfyui-cordis':
         specifier: workspace:*
         version: link:../../engines/comfyui-cordis
       '@melite/contracts':
@@ -1787,13 +1787,13 @@ importers:
       '@melite-plugin/timeline':
         specifier: workspace:*
         version: link:../../web-kit/timeline
-      '@melite/card-kit':
-        specifier: workspace:*
-        version: link:../../engines/comfyui-card-kit
       '@melite/catalog':
         specifier: workspace:*
         version: link:../../web-kit/catalog
-      '@melite/comfyui':
+      '@melite/comfyui-card-kit':
+        specifier: workspace:*
+        version: link:../../engines/comfyui-card-kit
+      '@melite/comfyui-cordis':
         specifier: workspace:*
         version: link:../../engines/comfyui-cordis
       '@melite/contracts':
@@ -1821,10 +1821,10 @@ importers:
       '@deepseek-ai/schemastery':
         specifier: '*'
         version: 3.18.2
-      '@melite/card-kit':
+      '@melite/comfyui-card-kit':
         specifier: workspace:*
         version: link:../../engines/comfyui-card-kit
-      '@melite/comfyui':
+      '@melite/comfyui-cordis':
         specifier: workspace:*
         version: link:../../engines/comfyui-cordis
     devDependencies:

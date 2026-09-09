@@ -16,7 +16,7 @@
 // OVERRIDE its view (the takeover arm of the keyed slot).
 import type { Context } from '@deepseek-ai/cordis'
 import Schema from '@deepseek-ai/schemastery'
-import { ComfyUIService } from '@melite/comfyui/service'
+import { ComfyUIService } from '@melite/comfyui-cordis/service'
 import { registerCard } from './card.ts'
 import { buildImageGenTool } from './tool.ts'
 import type { ToolRuntime } from '@deepseek-ai/dsh-tools'

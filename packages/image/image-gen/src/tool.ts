@@ -22,7 +22,7 @@
 // the card's compose consumes it at the one merge point.
 import { defineTool } from '@deepseek-ai/dsh-tools'
 import type { ToolDefinition, ParameterSchemaSpec } from '@deepseek-ai/dsh-tools'
-import { emitParamsSpec } from '@melite/comfyui/params-emit'
+import { emitParamsSpec } from '@melite/comfyui-cordis/params-emit'
 import { schema, identity, BOARDED } from './card.ts'
 import { TOOL_NAME } from './wire.ts'
 

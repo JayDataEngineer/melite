@@ -30,9 +30,9 @@
 // the serialized graph).
 import type { Context } from '@deepseek-ai/cordis'
 import z from '@deepseek-ai/schemastery'
-import { GraphBuilder, OutputHandle } from '@melite/card-kit/graph'
-import type { ComfyUIService } from '@melite/comfyui/service'
-import { finalizeH3 } from '@melite/card-kit'
+import { GraphBuilder, OutputHandle } from '@melite/comfyui-card-kit/graph'
+import type { ComfyUIService } from '@melite/comfyui-cordis/service'
+import { finalizeH3 } from '@melite/comfyui-card-kit'
 
 // inputs the t4 family templates OMIT whose pin defaults comfy-script
 // would auto-fill at serialization — the strip set lives in src/kit.ts
@@ -49,7 +49,7 @@ import { finalizeH3 } from '@melite/card-kit'
 // LORA_STACK_GOLD ← loras/h3/minimax_h3_fl2v_lightx2v_v0.1_dareties
 //_v4_step600_comfy_fro + loras/h3/
 // minimax_h3_fl2v_lightx2v_turbo_4to8step_v0.1-v1.0_768p_v4_step600_dareties.
-declare module '@melite/comfyui/service' {
+declare module '@melite/comfyui-cordis/service' {
   interface CardDefinition {
     /** Emitter carrier: when the registered schema is a hand-written
      * normalizer (this card), the underlying Schemastery object whose

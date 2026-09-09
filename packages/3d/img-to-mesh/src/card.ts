@@ -33,12 +33,12 @@
 // demand the autorig pack).
 import type { Context } from '@deepseek-ai/cordis'
 import z from '@deepseek-ai/schemastery'
-import { trellisArm, pixalArm, transferRigArm, admitMeshLift } from '@melite/card-kit'
-import type { ComfyUIService } from '@melite/comfyui/service'
-import type { ModelFacts } from '@melite/card-kit/facts'
-import { SAMPLERS, SCHEDULERS, vocabulary } from '@melite/card-kit/vocab'
+import { trellisArm, pixalArm, transferRigArm, admitMeshLift } from '@melite/comfyui-card-kit'
+import type { ComfyUIService } from '@melite/comfyui-cordis/service'
+import type { ModelFacts } from '@melite/comfyui-card-kit/facts'
+import { SAMPLERS, SCHEDULERS, vocabulary } from '@melite/comfyui-card-kit/vocab'
 
-declare module '@melite/comfyui/service' {
+declare module '@melite/comfyui-cordis/service' {
   interface CardDefinition {
     /** Per-family extension packs — the py requires_by_family mirror.
      *  The compose door gates the active family's slice, never the

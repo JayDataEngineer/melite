@@ -9,8 +9,8 @@
 import type { Plugin } from "@deepseek-ai/cordis";
 // the ctx.models augmentation rides the models service module
 // (same seam as ctx.comfyui through ./service):
-import type { ModelsService } from "@melite/comfyui/models-service";
-import type { ModelDecl } from "@melite/comfyui/model-contract";
+import type { ModelsService } from "@melite/comfyui-cordis/models-service";
+import type { ModelDecl } from "@melite/comfyui-cordis/model-contract";
 
 export const DECL: ModelDecl = {
   "id": "z-image",

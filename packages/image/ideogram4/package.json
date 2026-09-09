@@ -17,8 +17,8 @@
   "dependencies": {
     "@deepseek-ai/cordis": "^4.0.2",
     "@deepseek-ai/schemastery": "*",
-    "@melite/card-kit": "workspace:*",
-    "@melite/comfyui": "workspace:*",
+    "@melite/comfyui-card-kit": "workspace:*",
+    "@melite/comfyui-cordis": "workspace:*",
     "@melite/ui": "workspace:*",
     "lucide-react": "*",
     "react": "*"

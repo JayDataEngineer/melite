@@ -21,7 +21,7 @@ import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import { loadCardDefs } from "../../../../packages/engines/comfyui-cordis/src/cardDefs.ts";
 import { toolBaseRows } from "../../../../packages/gateway/doors/src/doors/toolProjection.ts";
-import type { CardDefinition } from "@melite/comfyui";
+import type { CardDefinition } from "@melite/comfyui-cordis";
 
 describe("m1 — the card emits the tool", () => {
   it("derives every registered card's tool row under the laws", async () => {

@@ -19,8 +19,8 @@
 // The three flat ids survive as cell routes (the
 // addressing-survival law — every runtime address unchanged).
 import type { Plugin } from "@deepseek-ai/cordis";
-import type { ModelsService } from "@melite/comfyui/models-service";
-import type { ModelDecl } from "@melite/comfyui/model-contract";
+import type { ModelsService } from "@melite/comfyui-cordis/models-service";
+import type { ModelDecl } from "@melite/comfyui-cordis/model-contract";
 
 export const DECL: ModelDecl = {
   "id": "moss",

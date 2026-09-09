@@ -4,9 +4,9 @@
 // requires resolve against live object_info node sets BEFORE any
 // graph is emitted (never an assumed install).
 import { Context, Service } from '@deepseek-ai/cordis'
-import { GraphBuilder, deriveDefaults } from '@melite/card-kit/graph'
-import type { PromptGraph, JsonValue } from '@melite/card-kit/graph'
-import type { FactsFile, ModelFacts } from '@melite/card-kit/facts'
+import { GraphBuilder, deriveDefaults } from '@melite/comfyui-card-kit/graph'
+import type { PromptGraph, JsonValue } from '@melite/comfyui-card-kit/graph'
+import type { FactsFile, ModelFacts } from '@melite/comfyui-card-kit/facts'
 
 /** Loud refusal — the estate's rc=-3 door shape, never a silent default. */
 export class ComposeRefusal extends Error {

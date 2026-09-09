@@ -41,7 +41,7 @@ import type { DispatchResult } from "@melite/gateway-core";
 import type { GatewayRequest } from "@melite/gateway-core";
 import { doorMatch, mountDoorRoutes } from "@melite/gateway-doors/route-mount";
 import { runStatus } from "./runStatus.ts";
-import { pyReprStr } from "@melite/comfyui";
+import { pyReprStr } from "@melite/comfyui-cordis";
 import { qRefusal } from "./refusals.ts";
 import type { QueueAnswer } from "./refusals.ts";
 

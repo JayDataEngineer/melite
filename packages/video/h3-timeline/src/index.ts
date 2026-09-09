@@ -8,7 +8,7 @@
 // to the gateway over HTTP); each composition takes its faces.
 import type { Context } from '@deepseek-ai/cordis'
 import Schema from '@deepseek-ai/schemastery'
-import { ComfyUIService } from '@melite/comfyui/service'
+import { ComfyUIService } from '@melite/comfyui-cordis/service'
 import { registerCard } from './card.ts'
 import { buildH3TimelineTool } from './tool.ts'
 import type { ToolRuntime } from '@deepseek-ai/dsh-tools'

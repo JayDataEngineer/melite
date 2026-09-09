@@ -68,7 +68,7 @@ export const UPLOAD_MAX_BYTES: number = 20 * 1024 * 1024;
  *  override else source-relative 4-up — every home lands the same
  *  depth; the 9 hand-rolled copies died 2026-09-08, zero-compromise
  *  followup). Re-export keeps this module's wall-pinned address. */
-import { resolveRepoRoot } from "@melite/comfyui";
+import { resolveRepoRoot } from "@melite/comfyui-cordis";
 export { resolveRepoRoot };
 
 /** The estate input stream dir — mirrors REPO / "data" / "input". */

@@ -5,11 +5,11 @@
 // comes from params.
 import type { Context } from '@deepseek-ai/cordis'
 import z from '@deepseek-ai/schemastery'
-import { taggerLane, finalizeTagger, TAGGER_CAPTION_TASKS, TAGGER_CAPTION_TYPES, TAGGER_CAPTION_LENGTHS, TAGGER_EXTRA_OPTIONS } from '@melite/card-kit'
-import type { ComfyUIService } from '@melite/comfyui/service'
-import { vocabulary } from '@melite/card-kit/vocab'
+import { taggerLane, finalizeTagger, TAGGER_CAPTION_TASKS, TAGGER_CAPTION_TYPES, TAGGER_CAPTION_LENGTHS, TAGGER_EXTRA_OPTIONS } from '@melite/comfyui-card-kit'
+import type { ComfyUIService } from '@melite/comfyui-cordis/service'
+import { vocabulary } from '@melite/comfyui-card-kit/vocab'
 
-declare module '@melite/comfyui/service' {
+declare module '@melite/comfyui-cordis/service' {
   interface CardDefinition {
     /** Per-family extension packs — the py requires_by_family mirror.
      *  The compose door gates the active family's slice, never the

@@ -27,8 +27,8 @@
 // (smooth_normal != 0.0).
 import type { Context } from '@deepseek-ai/cordis'
 import z from '@deepseek-ai/schemastery'
-import { quadRemeshLane } from '@melite/card-kit'
-import type { ComfyUIService } from '@melite/comfyui/service'
+import { quadRemeshLane } from '@melite/comfyui-card-kit'
+import type { ComfyUIService } from '@melite/comfyui-cordis/service'
 
 const schema = z.object({
   // Ride keys (no .default — the compose-door cascade overlays model

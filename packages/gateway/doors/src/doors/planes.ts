@@ -114,7 +114,7 @@ import {
   baseRowFor,
   projectCardRow,
 } from "./toolProjection.ts";
-import { appendLedger } from "@melite/queue";
+import { appendLedger } from "@melite/gateway-queue";
 import type { Context, Plugin } from "@deepseek-ai/cordis";
 import type { DispatchResult } from "@melite/gateway-core";
 import type { GatewayRequest } from "@melite/gateway-core";

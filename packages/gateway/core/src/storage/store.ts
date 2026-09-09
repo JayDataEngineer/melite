@@ -27,7 +27,7 @@
 // Erasable-syntax TS only (node --experimental-strip-types): no
 // enums, import type for types, .ts specifiers for relative imports.
 
-import { resolveRepoRoot } from "@melite/comfyui";
+import { resolveRepoRoot } from "@melite/comfyui-cordis";
 import { readdirSync, renameSync, statSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";

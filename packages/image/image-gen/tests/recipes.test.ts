@@ -16,8 +16,8 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { Context } from "@deepseek-ai/cordis";
 import z from "@deepseek-ai/schemastery";
-import { ComfyUIService } from "@melite/comfyui/service";
-import type { FactsFile } from "@melite/card-kit/facts";
+import { ComfyUIService } from "@melite/comfyui-cordis/service";
+import type { FactsFile } from "@melite/comfyui-card-kit/facts";
 import { registerCard } from "../src/card.ts";
 import { RECIPES, DEFAULT_RECIPE } from "../src/recipes.ts";
 

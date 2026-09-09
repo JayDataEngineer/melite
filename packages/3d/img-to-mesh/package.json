@@ -17,9 +17,9 @@
     "@deepseek-ai/cordis": "^4.0.2",
     "@deepseek-ai/schemastery": "*",
     "@melite-plugin/3d": "workspace:*",
-    "@melite/card-kit": "workspace:*",
+    "@melite/comfyui-card-kit": "workspace:*",
     "@melite/catalog": "workspace:*",
-    "@melite/comfyui": "workspace:*",
+    "@melite/comfyui-cordis": "workspace:*",
     "@melite/ui": "workspace:*",
     "lucide-react": "*",
     "react": "*"

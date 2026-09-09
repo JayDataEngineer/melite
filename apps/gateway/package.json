@@ -8,6 +8,6 @@
     "start": "node --experimental-strip-types src/main.ts"
   },
   "dependencies": {
-    "@melite/gateway": "workspace:*"
+    "@melite/gateway-shell": "workspace:*"
   }
 }

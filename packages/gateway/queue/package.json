@@ -1,5 +1,5 @@
 {
-  "name": "@melite/queue",
+  "name": "@melite/gateway-queue",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -15,7 +15,7 @@
     "@deepseek-ai/cordis": "^4.0.2",
     "@deepseek-ai/cordis-plugin-timer": "workspace:*",
     "@deepseek-ai/dsh-host-webserver": "workspace:*",
-    "@melite/comfyui": "workspace:*",
+    "@melite/comfyui-cordis": "workspace:*",
     "@melite/gateway-core": "workspace:*",
     "@melite/gateway-doors": "workspace:*"
   },

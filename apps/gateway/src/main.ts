@@ -42,14 +42,14 @@
 // enums, import type for types, .ts specifiers for relative imports.
 
 import type { IncomingMessage, ServerResponse } from "node:http";
-import { defaultAssetRoots } from "@melite/gateway";
-import { handleWsUpgrade } from "@melite/gateway";
-import { bootGatewayContext, refusalLine } from "@melite/gateway";
-import { createProcessShutdown } from "@melite/gateway";
-import { BOOT_ENGINE } from "@melite/gateway";
+import { defaultAssetRoots } from "@melite/gateway-shell";
+import { handleWsUpgrade } from "@melite/gateway-shell";
+import { bootGatewayContext, refusalLine } from "@melite/gateway-shell";
+import { createProcessShutdown } from "@melite/gateway-shell";
+import { BOOT_ENGINE } from "@melite/gateway-shell";
 
 import type { WebServer } from "@deepseek-ai/dsh-host-webserver";
-export { BOOT_ENGINE } from "@melite/gateway";
+export { BOOT_ENGINE } from "@melite/gateway-shell";
 
 /** Start the shell. Resolves with the actual port (ephemeral by
  *  default — pass 0 and read back the kernel pick). The queue boot

@@ -72,13 +72,13 @@
 
 import { Context, Service } from "@deepseek-ai/cordis";
 import type { Plugin } from "@deepseek-ai/cordis";
-import { bootModels, ComfyUIService, ComposeRefusal, composeCards, getModel, loadCardDefs, loadFacts, registryIds, registryModel, theService } from "@melite/comfyui";
-import type { CardDefinition, FactsFile, FactsReads } from "@melite/comfyui";
+import { bootModels, ComfyUIService, ComposeRefusal, composeCards, getModel, loadCardDefs, loadFacts, registryIds, registryModel, theService } from "@melite/comfyui-cordis";
+import type { CardDefinition, FactsFile, FactsReads } from "@melite/comfyui-cordis";
 import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
 import { dirname, join, relative, resolve, sep } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { DOOR_KEYS, FLOW_ID_RE } from "@melite/gateway-core";
-import { pyReprStr, resolveRepoRoot } from "@melite/comfyui";
+import { pyReprStr, resolveRepoRoot } from "@melite/comfyui-cordis";
 
 /** The card-envelope keys (gateway.py:360 CARD_ENVELOPE_KEYS =
  *  DOOR_KEYS + draft/test/service): select the graph, never ride it. */
@@ -1025,7 +1025,7 @@ export interface ComposedCard {
 }
 
 function cordisSrcDir(): string {
-  const entry: string = fileURLToPath(import.meta.resolve("@melite/comfyui"));
+  const entry: string = fileURLToPath(import.meta.resolve("@melite/comfyui-cordis"));
   return dirname(entry);
 }
 

@@ -10,7 +10,7 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import { Context } from "@deepseek-ai/cordis";
-import { ComfyUIService, loadCardDefs } from "@melite/comfyui";
+import { ComfyUIService, loadCardDefs } from "@melite/comfyui-cordis";
 import * as pkg from "../src/index.ts";
 import { toolBaseRows } from "../../../../packages/gateway/doors/src/doors/toolProjection.ts";
 
