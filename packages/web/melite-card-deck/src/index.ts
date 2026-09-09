@@ -91,13 +91,18 @@ export function apply(ctx: Context, config: Config = {}): void {
   // serves the editor's built dist and the chat toolviews embed it in
   // iframes (ONE card design, 1:1; see packages/web/README.md). The dist
   // path is FAMILY-RELATIVE and machine-independent: this file builds to
-  // <pkg>/lib/, the editor dist sits at packages/web/editor/dist — three
-  // levels up lands on packages/web, then 'editor/dist'. Validated by
-  // tests/test_web_family.py (a wrong depth fails the gate, not boot).
+  // <pkg>/lib/, the editor dist sits at packages/web/editor/dist — TWO
+  // levels up from lib lands on packages/web, then 'editor/dist'.
+  // (2026-09-10 depth fix: the default carried three '..' — one too many
+  // since the family split — resolving to packages/editor/dist, so /editor
+  // 404'd while the chat toolviews' iframes failed in the console. The
+  // python gate that once validated this depth was deleted in the TS flip;
+  // test/editor-dist.test.mjs now asserts the built default resolves to a
+  // real index.html.)
   // RAY_EDITOR_DIST overrides for out-of-repo layouts.
   const here = path.dirname(fileURLToPath(import.meta.url))
   const EDITOR_DIST = process.env.RAY_EDITOR_DIST
-    ?? path.resolve(here, '..', '..', '..', 'editor', 'dist')
+    ?? path.resolve(here, '..', '..', 'editor', 'dist')
   const MIME: Record<string, string> = {
     '.html': 'text/html; charset=utf-8',
     '.js': 'text/javascript; charset=utf-8',

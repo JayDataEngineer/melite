@@ -75,7 +75,7 @@ function apply(ctx, config = {}) {
 		}
 	}), "ray-card-deck: /v1/llm stub (DSH owns the LLM)");
 	const here = path.dirname(fileURLToPath(import.meta.url));
-	const EDITOR_DIST = process.env.RAY_EDITOR_DIST ?? path.resolve(here, "..", "..", "..", "editor", "dist");
+	const EDITOR_DIST = process.env.RAY_EDITOR_DIST ?? path.resolve(here, "..", "..", "editor", "dist");
 	const MIME = {
 		".html": "text/html; charset=utf-8",
 		".js": "text/javascript; charset=utf-8",
