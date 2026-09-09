@@ -220,7 +220,7 @@ export function handleUploads(doc: unknown): {
  *  plugin: strict-parses the JSON body exactly as route() does
  *  (body.decode() or "{}"; failure → the 400 bad-JSON shape) and
  *  runs the uploads door above. Matches its own row inside the
- *  listener (routeUtil.matchRoute) — no central table owns it.
+ *  named route (routeMount/doorMatch — no central table owns it).
  *
  *  THE PERSISTENCE SEAM (DSH storage pilot, src/storage/): after a
  *  200 stage, the listener writes the staged file through to the

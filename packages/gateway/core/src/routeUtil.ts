@@ -6,7 +6,7 @@
 // neither, so the framework pattern here is a util, not a service
 // (CORDIS CORE law, docs/patterns/cordis-core.md): every door plugin
 // matches its own rows inside its 'gateway/request' listener via
-// matchRoute, and ctx.ts normalizes via normalizePath. No fiber
+// matchRoute (the adapter's doorMatch). No fiber
 // owns them; no plugin injects them.
 //
 // Logic relocated VERBATIM from the deleted service (which itself
@@ -25,14 +25,6 @@
 
 import { ROUTES } from "./routes.ts";
 import type { GatewayRoute } from "./routes.ts";
-
-/** Path normalization — mirrors route(): target.split("?")[0]
- *  .rstrip("/") or "/". */
-export function normalizePath(target: string): string {
-  const bare: string = target.split("?")[0] ?? "";
-  const stripped: string = bare.replace(/\/+$/, "");
-  return stripped === "" ? "/" : stripped;
-}
 
 /** Query parse for the request record (chrome doors ignore it; kept
  *  so the shape stays faithful to route()'s parse_qs). */

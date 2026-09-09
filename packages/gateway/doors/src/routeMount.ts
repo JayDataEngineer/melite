@@ -50,12 +50,21 @@ export type DoorListener = (
 ) => DispatchResult | undefined | Promise<DispatchResult | undefined>;
 
 /** The static head of a regex row: everything before the first
- *  capture group, `^` stripped. `^/v1/flows/status/(.+)$` →
- *  `/v1/flows/status/`; `^/poser/` → `/poser/`. */
+ *  capture group, `^` stripped, one trailing `/` dropped — the
+ *  framework's prefix contract is `pathname === prefix ||
+ *  pathname.startsWith(prefix + "/")`, so a slash-terminated head
+ *  (`/v1/flows/status/`) would claim NOTHING (it would require a
+ *  doubled slash). `^/v1/flows/status/(.+)$` →
+ *  `/v1/flows/status`; `^/poser/` → `/poser`. The door's own
+ *  matchRoute re-refines inside the claim, so the coarser head is
+ *  safe (bare-prefix claims like `/poser` answer the adapter 404,
+ *  the py voice's fate). */
 function regexHead(row: GatewayRoute): string {
   const src: string = row.path.replace(/^\^/, "");
   const cut: number = src.indexOf("(");
-  return cut < 0 ? src : src.slice(0, cut);
+  let head: string = cut < 0 ? src : src.slice(0, cut);
+  if (head.length > 1 && head.endsWith("/")) head = head.slice(0, -1);
+  return head;
 }
 
 /** One authored row → one named registration. kind: exact for

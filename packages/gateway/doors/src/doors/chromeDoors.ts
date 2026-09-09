@@ -8,7 +8,7 @@
 // ensure_ascii \uXXXX vs JSON.stringify raw UTF-8, py float 1.0 vs
 // JS number 1). Anything else falls through to the asset arms,
 // exactly as the old arm did. Matches its own rows inside the
-// listener (routeUtil.matchRoute) — no central table owns it. The
+// named routes (routeMount/doorMatch — no central table owns it). The
 // door injects cardRegistry for the LIVE /v1/tools overlay only —
 // every other chrome row serves frozen bytes with no context read.
 //

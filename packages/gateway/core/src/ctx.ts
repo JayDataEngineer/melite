@@ -1,26 +1,18 @@
-// ctx.ts — the dispatcher: auth gate + one bus dispatch.
+// ctx.ts — the door-facing request shape + the wall-pinned unit
+// exports.
 //
 // The gateway IS a Cordis app (CORDIS CORE law,
-// docs/patterns/cordis-core.md): routing/dispatch rides ctx events
-// (ctx.serial 'gateway/request' — bail IS first-match-wins), doors
-// are registry plugins (each door module owns its plugin: inject +
-// its own route listeners), errors are the GatewayErrorService. This
-// module keeps the public dispatch() signature and the wall-pinned
-// unit exports (normalize4xx / serializePy — the chrome wall imports
-// THIS module and probes them directly).
-//
-// Dispatch mirrors py route()+_adapt for the ported scope: the 401
-// gate runs BEFORE dispatch (no code key — exactly as py); the bus
-// round serves the first door answer (every door matches its own
-// ROUTES rows INSIDE its listener via the routeUtil pure functions —
-// the deleted GatewayRouterService bought no load-gating for pure
-// request math, so matching is door-local, not a service); a serial
-// rejection (a throwing door — e.g. the manage non-dict .get crash)
-// lands in the same 500 envelope py _adapt shaping gives uncaught
-// route() errors (both the old sync throw and the async rejection
-// funneled here); anything unanswered — unknown paths AND
-// matched-but-unclaimed rows — answers the same 404 shape py
-// route() returns for unknown paths.
+// docs/patterns/cordis-core.md). ROUTING 1:1 (2026-09-09): the
+// retired dispatcher (auth gate + one ctx.serial 'gateway/request'
+// bus round + the 404 fallback) is DELETED — every door mounts its
+// authored ROUTES rows as NAMED webServer routes at apply time
+// (packages/gateway/doors/src/routeMount.ts: the vendored plugin's
+// contract; the adapter owns per-route mechanics — auth, body,
+// write, the 500 belt; handlers own their pathname semantics). This
+// module now carries GatewayRequest (the door-facing shape the
+// adapter fabricates) and the wall-pinned unit exports (normalize4xx
+// / serializePy — the chrome wall imports THIS module and probes
+// them directly).
 //
 // Erasable-syntax TS only (node --experimental-strip-types): no
 // enums, import type for types, .ts specifiers for relative imports.
@@ -29,7 +21,6 @@ import { defaultAssetRoots } from "@melite/gateway-doors";
 import type { AssetRoots } from "./storage/scan.ts";
 import { ensureDoorContext } from "./core/context.ts";
 import type { DispatchResult } from "./core/errors.ts";
-import { normalizePath } from "./routeUtil.ts";
 
 export type { DispatchResult } from "./core/errors.ts";
 export {
@@ -53,46 +44,3 @@ export interface GatewayRequest {
   readonly roots: AssetRoots;
 }
 
-declare module "@deepseek-ai/cordis" {
-  interface Events {
-    "gateway/request": (
-      req: GatewayRequest,
-    ) => DispatchResult | undefined | Promise<DispatchResult | undefined>;
-  }
-}
-
-/** Dispatch one request — auth gate, one bus round, 404 fallback. */
-export async function dispatch(
-  method: string,
-  target: string,
-  body: Uint8Array,
-  headers: Record<string, string>,
-  authToken: string = "",
-  roots: AssetRoots = defaultAssetRoots(),
-): Promise<DispatchResult> {
-  const ctx = await ensureDoorContext();
-  const path: string = normalizePath(target);
-  const refused: DispatchResult | null = ctx.gatewayError.authCheck(
-    path,
-    headers,
-    authToken,
-  );
-  if (refused !== null) return refused;
-  const req: GatewayRequest = {
-    method,
-    target,
-    path,
-    body,
-    headers,
-    authToken,
-    roots,
-  };
-  let answered: DispatchResult | undefined;
-  try {
-    answered = await ctx.serial("gateway/request", req);
-  } catch (exc) {
-    return ctx.gatewayError.internalError(method, target, exc);
-  }
-  if (answered !== undefined) return answered;
-  return ctx.gatewayError.notFound(method, path);
-}

@@ -8,7 +8,6 @@
 
 export { ROUTES, ROUTE_COUNT } from "@melite/gateway-core";
 export type { BodyKind, GatewayRoute } from "@melite/gateway-core";
-export { dispatch } from "@melite/gateway-core";
 export type { DispatchResult } from "@melite/gateway-core";
 export { defaultAssetRoots, unquotePy } from "@melite/gateway-doors";
 export { handleWsUpgrade } from "@melite/gateway-doors";

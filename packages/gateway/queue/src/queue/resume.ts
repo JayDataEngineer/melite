@@ -47,7 +47,7 @@ import { join } from "node:path";
 import type { Context, Plugin } from "@deepseek-ai/cordis";
 import type { DispatchResult } from "@melite/gateway-core";
 import type { GatewayRequest } from "@melite/gateway-core";
-import { matchRoute } from "@melite/gateway-core";
+import { doorMatch, mountDoorRoutes } from "@melite/gateway-doors/route-mount";
 import { runStatus } from "./runStatus.ts";
 import { pyReprStr } from "@melite/comfyui";
 import { qRefusal } from "./refusals.ts";
@@ -171,13 +171,11 @@ export function handleFlowsResume(
  *  table. */
 export const flowsResumeDoors: Plugin = {
   name: "gateway-flows-resume",
-  inject: ["gatewayError"],
+  inject: ["webServer", "gatewayError"],
   apply(ctx: Context): void {
-    ctx.on(
-      "gateway/request",
-      (req: GatewayRequest): DispatchResult | undefined => {
-        const hit = matchRoute(req.method, req.path);
-        if (hit === null || hit.row.handler !== "_h_flows_resume") {
+    mountDoorRoutes(ctx, ctx.webServer, ["_h_flows_resume"], (req: GatewayRequest): DispatchResult | undefined => {
+        const hit = doorMatch(req, ["_h_flows_resume"]);
+        if (hit === null) {
           return undefined;
         }
         const errors = ctx.gatewayError;
@@ -201,7 +199,6 @@ export const flowsResumeDoors: Plugin = {
           contentType: "application/json",
           headers: {},
         };
-      },
-    );
+    });
   },
 };

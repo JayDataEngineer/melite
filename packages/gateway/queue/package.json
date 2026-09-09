@@ -14,8 +14,10 @@
   "dependencies": {
     "@deepseek-ai/cordis": "^4.0.2",
     "@deepseek-ai/cordis-plugin-timer": "workspace:*",
+    "@deepseek-ai/dsh-host-webserver": "workspace:*",
     "@melite/comfyui": "workspace:*",
-    "@melite/gateway-core": "workspace:*"
+    "@melite/gateway-core": "workspace:*",
+    "@melite/gateway-doors": "workspace:*"
   },
   "devDependencies": {
     "@types/node": "^22.20.0",

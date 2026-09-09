@@ -4,26 +4,27 @@
 // docs/patterns/cordis-core.md): the boot is LOADER-DRIVEN —
 // bootGatewayContext (src/core/context.ts) owns the Loader service
 // and applies the checked-in bundle patch
-// (packages/gateway/shell/cordis.patch.yml: errors, the 15 door plugins,
-// timer, logger-console, the WEB SERVER entry, the gateway lifecycle
-// entry) — and dispatch() is the auth gate + one ctx.serial round
-// (each door module owns its plugin listeners and matches its own
-// rows inside; door BODIES are untouched).
+// (packages/gateway/shell/cordis.patch.yml: errors, the 15 door
+// plugins, timer, logger-console, the WEB SERVER entry, the gateway
+// lifecycle entry). Each door plugin mounts its authored ROUTES
+// rows as NAMED webServer routes at apply time (doors/routeMount);
+// this shell owns no request path.
 //
-// WEBSERVER STROKE (2026-09-08): the transport rim rides the
-// vendored harness plugin @deepseek-ai/dsh-host-webserver
-// (vendor/cordis_plugins/webserver — their web carrier, "knows no
-// harness concepts"): the plugin owns createServer/listen/close+
-// closeAllConnections/disposal; this module owns ONLY the request
-// BODY — the fallback seat (one owner, the composition law) carries
-// the whole dispatch loop: uvicorn-contract URL decode (golden-
-// pinned until the oracle death; contract origin after), header
-// copy, body concat, dispatch, content-length stamping, the 500
-// belt. Upgrades ride registerUpgrade: the runs events door serves
-// the bare form exactly and the path form /v1/flows/events/<run_id>
-// as a prefix route (the estate divergence on the vendored copy —
-// arbitrary run ids cannot ride an exact table). Unmatched upgrades
-// are closed by the plugin (their law).
+// WEBSERVER STROKE (2026-09-08) + ROUTING 1:1 (2026-09-09): the
+// transport rides the vendored harness plugin
+// @deepseek-ai/dsh-host-webserver (vendor/cordis_plugins/webserver
+// — their web carrier, "knows no harness concepts"): the plugin
+// owns createServer/listen/close+closeAllConnections/disposal, the
+// named-route table, matching order, and the no-owner 404 voice.
+// The retired uvicorn-contract rim (py URL decode, trailing-slash
+// normalize, one ctx.serial bus round, content-length stamping,
+// the 500 belt) is deleted — per-route mechanics live in the
+// adapter (doors/routeMount.ts). Upgrades ride registerUpgrade:
+// the runs events door serves the bare form exactly and the path
+// form /v1/flows/events/<run_id> as a prefix route (the estate
+// divergence on the vendored copy — arbitrary run ids cannot ride
+// an exact table). Unmatched upgrades are closed by the plugin
+// (their law).
 //
 // The queue boot (lock-first single-writer gate, resurrect queued
 // work, sweep stale sidecars, ledger server.boot — py main()
@@ -41,15 +42,12 @@
 // enums, import type for types, .ts specifiers for relative imports.
 
 import type { IncomingMessage, ServerResponse } from "node:http";
-import { dispatch } from "@melite/gateway";
-
-import { defaultAssetRoots, unquotePy } from "@melite/gateway";
+import { defaultAssetRoots } from "@melite/gateway";
 import { handleWsUpgrade } from "@melite/gateway";
 import { bootGatewayContext, refusalLine } from "@melite/gateway";
 import { createProcessShutdown } from "@melite/gateway";
 import { BOOT_ENGINE } from "@melite/gateway";
 
-import type { DispatchResult } from "@melite/gateway";
 import type { WebServer } from "@deepseek-ai/dsh-host-webserver";
 export { BOOT_ENGINE } from "@melite/gateway";
 
@@ -90,83 +88,16 @@ export async function startServer(port: number = 0): Promise<{
   }
   await cards.prime();
   const ws: WebServer = ctx.webServer;
-  // The fallback seat = the dispatch loop. No named HTTP routes:
-  // every path (health, chrome bytes, /v1 doors, the 404 voice)
-  // shapes through dispatch — the door rows own their own paths,
-  // the rim owns none.
-  ws.registerFallback(
-    (req: IncomingMessage, res: ServerResponse): void => {
-      const method: string = req.method ?? "GET";
-      // Uvicorn decodes request.url.path BEFORE _adapt runs (probed:
-      // %2e/%2F/%C3%A9 all arrive decoded, %zz stays literal, %ff
-      // becomes U+FFFD) — decode the path part here so dispatch,
-      // the rel slice, and the inputs unquote all see py's shape.
-      // CONTRACT ORIGIN (oracle death pending): golden-pinned wire
-      // behavior, not live-server mirroring.
-      // The query string stays raw (route() parses + decodes it).
-      const raw: string = req.url ?? "/";
-      const qi: number = raw.indexOf("?");
-      const target: string =
-        qi < 0
-          ? unquotePy(raw)
-          : unquotePy(raw.slice(0, qi)) + raw.slice(qi);
-      const headers: Record<string, string> = {};
-      for (const [k, v] of Object.entries(req.headers)) {
-        if (typeof v === "string") headers[k.toLowerCase()] = v;
-        else if (Array.isArray(v) && typeof v[0] === "string") {
-          headers[k.toLowerCase()] = v[0] as string;
-        }
-      }
-      const chunks: Uint8Array[] = [];
-      req.on("data", (c: Uint8Array): void => {
-        chunks.push(c);
-      });
-      req.on("end", (): void => {
-        const body: Uint8Array = Buffer.concat(chunks);
-        const authToken: string = process.env["DSH_GATEWAY_TOKEN"] ?? "";
-        // dispatch is async (bridge doors forward over the network /
-        // subprocess). Both the sync throw and the async rejection
-        // land in the same 500 envelope py _adapt shaping gives
-        // uncaught route() errors — dispatch() funnels both through
-        // the error service; this catch is the belt for transport-
-        // level failures (same envelope, same bytes).
-        const send500 = (exc: unknown): void => {
-          const answered: DispatchResult = ctx.gatewayError.internalError(
-            method,
-            target,
-            exc,
-          );
-          res.writeHead(answered.status, {
-            "content-type": answered.contentType,
-          });
-          res.end(answered.body);
-        };
-        const sendDispatch = (out: DispatchResult): void => {
-          const bytes: Buffer =
-            typeof out.body === "string"
-              ? Buffer.from(out.body, "utf8")
-              : Buffer.from(out.body);
-          const resHeaders: Record<string, string> = {
-            "content-type": out.contentType,
-            "content-length": String(bytes.length),
-          };
-          for (const [k, v] of Object.entries(out.headers)) {
-            resHeaders[k] = v;
-          }
-          res.writeHead(out.status, resHeaders);
-          res.end(bytes);
-        };
-        let out: DispatchResult | Promise<DispatchResult>;
-        try {
-          out = dispatch(method, target, body, headers, authToken);
-        } catch (exc) {
-          send500(exc);
-          return;
-        }
-        void Promise.resolve(out).then(sendDispatch, send500);
-      });
-    },
-  );
+  // ROUTING 1:1 (2026-09-09): every door mounts its authored
+  // ROUTES rows as NAMED routes at apply time (doors/routeMount —
+  // exact + prefix, the vendored webserver contract; duplicates
+  // throw; the framework owns matching order and the no-owner 404
+  // voice). The retired rim — one fallback seat running a
+  // uvicorn-contract dispatch loop (py URL decode, trailing-slash
+  // normalize, one ctx.serial bus round, the auth gate, the 500
+  // belt) — is deleted; per-route mechanics live in the adapter.
+  // The /v1 wire paths are unchanged (clients untouched); only the
+  // serving mechanism is the framework's now.
   // WS upgrade seam (runs lane): py serves /v1/flows/events* over
   // starlette WebSockets and 404s anything else at upgrade. The bare
   // door rides an exact route; the path form /v1/flows/events/<id>
