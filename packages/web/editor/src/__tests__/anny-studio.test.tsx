@@ -14,7 +14,7 @@ import {
 import AnnyStudioDefault, {
   AnnyStudio,
   shellDeclaration,
-} from "../../../../../packages/engines/comfyui/action_cards/3d/anny/ui/studio/component"
+} from "../../../../../packages/engines/comfyui-cordis/src/cards/3d/anny/ui/studio/component"
 
 describeShellTenant({
   declaration: shellDeclaration,

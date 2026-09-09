@@ -311,7 +311,7 @@ describe("MotionTimelineBar — the Music row as an NLE audio track (Layer A, 20
 })
 
 // ── stemToClip: the pure conversion function (exported from the studio) ──
-import { stemToClip } from "../../../../../packages/engines/comfyui/action_cards/video/h3-timeline/ui/studio/component"
+import { stemToClip } from "../../../../../packages/engines/comfyui-cordis/src/cards/video/h3-timeline/ui/studio/component"
 
 describe("stemToClip — legacy audio_stem → positioned clip conversion", () => {
   it("converts a bare artifact name to a clip at frame 0 with gain 1", () => {

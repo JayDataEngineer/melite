@@ -33,7 +33,7 @@ vi.mock("@melite/formats/somaSkin", () => ({
   deformFrame: () => {},
 }))
 
-import { MotionCardEditor } from "../../../../../packages/engines/comfyui/action_cards/motion/motion-studio/ui/studio/component"
+import { MotionCardEditor } from "../../../../../packages/engines/comfyui-cordis/src/cards/motion/motion/ui/studio/component"
 import { TooltipProvider } from "@melite/ui/tooltip"
 
 const W = 720

@@ -18,7 +18,7 @@ import {
   createZoomPromotion,
   PREVIEW_DIALOG_SELECTOR,
   ZOOM_OVERLAY_SELECTOR,
-} from '../../../dsh/melite-card-view/src/client/zoomPromotion.ts'
+} from '../../../melite-card-view/src/client/zoomPromotion.ts'
 
 const frame = document.getElementById('toolf') as HTMLIFrameElement
 const params = new URLSearchParams(window.location.search)

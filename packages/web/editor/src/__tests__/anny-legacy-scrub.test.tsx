@@ -12,7 +12,7 @@ import {
   LEGACY_BAG_KEYS,
   scrubLegacyBag,
   useAnnyShapeBridge,
-} from "../../../../../packages/engines/comfyui/action_cards/3d/anny/ui/studio/shape"
+} from "../../../../../packages/engines/comfyui-cordis/src/cards/3d/anny/ui/studio/shape"
 
 const BASE = { id: "anny-1", title: "Anny", kind: "anny", service: "anny" }
 
