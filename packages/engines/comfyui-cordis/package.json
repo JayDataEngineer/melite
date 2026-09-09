@@ -26,6 +26,7 @@
     "@melite/formats": "workspace:*",
     "@melite/ui": "workspace:*",
     "@melite-plugin/3d": "workspace:*",
+    "@melite-plugin/timeline": "workspace:*",
     "lucide-react": "*",
     "react": "*"
   },
