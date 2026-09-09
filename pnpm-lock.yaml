@@ -71,12 +71,57 @@ importers:
       '@melite/formats':
         specifier: workspace:*
         version: link:../../web-kit/formats
+      '@melite/melite-3d-anny':
+        specifier: workspace:*
+        version: link:../../melite-3d/anny
       '@melite/melite-3d-clothing-placement':
         specifier: workspace:*
         version: link:../../melite-3d/clothing-placement
+      '@melite/melite-3d-fit':
+        specifier: workspace:*
+        version: link:../../melite-3d/fit
+      '@melite/melite-3d-img-to-mesh':
+        specifier: workspace:*
+        version: link:../../melite-3d/img-to-mesh
+      '@melite/melite-3d-quad-remesh':
+        specifier: workspace:*
+        version: link:../../melite-3d/quad-remesh
+      '@melite/melite-3d-skin':
+        specifier: workspace:*
+        version: link:../../melite-3d/skin
+      '@melite/melite-audio-music':
+        specifier: workspace:*
+        version: link:../../melite-audio/music
+      '@melite/melite-audio-sfx':
+        specifier: workspace:*
+        version: link:../../melite-audio/sfx
+      '@melite/melite-audio-tts':
+        specifier: workspace:*
+        version: link:../../melite-audio/tts
+      '@melite/melite-audio-voice-lock':
+        specifier: workspace:*
+        version: link:../../melite-audio/voice-lock
+      '@melite/melite-image-ideogram4':
+        specifier: workspace:*
+        version: link:../../melite-image/ideogram4
+      '@melite/melite-image-image-edit':
+        specifier: workspace:*
+        version: link:../../melite-image/image-edit
       '@melite/melite-image-image-gen':
         specifier: workspace:*
         version: link:../../melite-image/image-gen
+      '@melite/melite-image-input-prep':
+        specifier: workspace:*
+        version: link:../../melite-image/input-prep
+      '@melite/melite-image-mask-studio':
+        specifier: workspace:*
+        version: link:../../melite-image/mask-studio
+      '@melite/melite-image-tagger':
+        specifier: workspace:*
+        version: link:../../melite-image/tagger
+      '@melite/melite-image-upscale-tools':
+        specifier: workspace:*
+        version: link:../../melite-image/upscale-tools
       '@melite/melite-models-ace-step':
         specifier: workspace:*
         version: link:../../melite-models/ace-step
@@ -221,6 +266,15 @@ importers:
       '@melite/melite-models-z-image':
         specifier: workspace:*
         version: link:../../melite-models/z-image
+      '@melite/melite-motion-motion':
+        specifier: workspace:*
+        version: link:../../melite-motion/motion
+      '@melite/melite-video-h3-timeline':
+        specifier: workspace:*
+        version: link:../../melite-video/h3-timeline
+      '@melite/melite-video-video-gen':
+        specifier: workspace:*
+        version: link:../../melite-video/video-gen
       '@melite/ui':
         specifier: workspace:*
         version: link:../../web-kit/ui
@@ -623,6 +677,49 @@ importers:
         specifier: ^4.1.11
         version: 4.1.11(@opentelemetry/api@1.9.1)(@types/node@24.13.3)(happy-dom@20.13.1)(jsdom@29.1.1)(vite@8.2.2(@types/node@24.13.3)(jiti@2.7.0)(yaml@2.9.0))
 
+  packages/melite-3d/anny:
+    dependencies:
+      '@deepseek-ai/cordis':
+        specifier: ^4.0.2
+        version: 4.0.2(@deepseek-ai/cordis-plugin-include@1.0.6)(@deepseek-ai/cordis-plugin-loader@1.0.3)
+      '@deepseek-ai/schemastery':
+        specifier: '*'
+        version: 3.18.2
+      '@melite-plugin/3d':
+        specifier: workspace:*
+        version: link:../../engines/comfyui/action_cards/3d/ui
+      '@melite/card-kit':
+        specifier: workspace:*
+        version: link:../../engines/comfyui-card-kit
+      '@melite/cards':
+        specifier: workspace:*
+        version: link:../../engines/comfyui/action_cards
+      '@melite/catalog':
+        specifier: workspace:*
+        version: link:../../web-kit/catalog
+      '@melite/comfyui':
+        specifier: workspace:*
+        version: link:../../engines/comfyui-cordis
+      '@melite/contracts':
+        specifier: workspace:*
+        version: link:../../web-kit/contracts
+      '@melite/formats':
+        specifier: workspace:*
+        version: link:../../web-kit/formats
+      '@melite/ui':
+        specifier: workspace:*
+        version: link:../../web-kit/ui
+      lucide-react:
+        specifier: '*'
+        version: 1.39.0(react@19.2.8)
+      react:
+        specifier: ^19.2.6
+        version: 19.2.8
+    devDependencies:
+      '@types/node':
+        specifier: '*'
+        version: 24.13.3
+
   packages/melite-3d/clothing-placement:
     dependencies:
       '@deepseek-ai/cordis':
@@ -644,6 +741,220 @@ importers:
       typescript:
         specifier: ^5
         version: 5.9.3
+
+  packages/melite-3d/fit:
+    dependencies:
+      '@deepseek-ai/cordis':
+        specifier: ^4.0.2
+        version: 4.0.2(@deepseek-ai/cordis-plugin-include@1.0.6)(@deepseek-ai/cordis-plugin-loader@1.0.3)
+      '@deepseek-ai/schemastery':
+        specifier: '*'
+        version: 3.18.2
+      '@melite/card-kit':
+        specifier: workspace:*
+        version: link:../../engines/comfyui-card-kit
+      '@melite/comfyui':
+        specifier: workspace:*
+        version: link:../../engines/comfyui-cordis
+    devDependencies:
+      '@types/node':
+        specifier: '*'
+        version: 24.13.3
+
+  packages/melite-3d/img-to-mesh:
+    dependencies:
+      '@deepseek-ai/cordis':
+        specifier: ^4.0.2
+        version: 4.0.2(@deepseek-ai/cordis-plugin-include@1.0.6)(@deepseek-ai/cordis-plugin-loader@1.0.3)
+      '@deepseek-ai/schemastery':
+        specifier: '*'
+        version: 3.18.2
+      '@melite-plugin/3d':
+        specifier: workspace:*
+        version: link:../../engines/comfyui/action_cards/3d/ui
+      '@melite/card-kit':
+        specifier: workspace:*
+        version: link:../../engines/comfyui-card-kit
+      '@melite/catalog':
+        specifier: workspace:*
+        version: link:../../web-kit/catalog
+      '@melite/comfyui':
+        specifier: workspace:*
+        version: link:../../engines/comfyui-cordis
+      '@melite/ui':
+        specifier: workspace:*
+        version: link:../../web-kit/ui
+      lucide-react:
+        specifier: '*'
+        version: 1.39.0(react@19.2.8)
+      react:
+        specifier: ^19.2.6
+        version: 19.2.8
+    devDependencies:
+      '@types/node':
+        specifier: '*'
+        version: 24.13.3
+
+  packages/melite-3d/quad-remesh:
+    dependencies:
+      '@deepseek-ai/cordis':
+        specifier: ^4.0.2
+        version: 4.0.2(@deepseek-ai/cordis-plugin-include@1.0.6)(@deepseek-ai/cordis-plugin-loader@1.0.3)
+      '@deepseek-ai/schemastery':
+        specifier: '*'
+        version: 3.18.2
+      '@melite/card-kit':
+        specifier: workspace:*
+        version: link:../../engines/comfyui-card-kit
+      '@melite/comfyui':
+        specifier: workspace:*
+        version: link:../../engines/comfyui-cordis
+    devDependencies:
+      '@types/node':
+        specifier: '*'
+        version: 24.13.3
+
+  packages/melite-3d/skin:
+    dependencies:
+      '@deepseek-ai/cordis':
+        specifier: ^4.0.2
+        version: 4.0.2(@deepseek-ai/cordis-plugin-include@1.0.6)(@deepseek-ai/cordis-plugin-loader@1.0.3)
+      '@deepseek-ai/schemastery':
+        specifier: '*'
+        version: 3.18.2
+      '@melite/card-kit':
+        specifier: workspace:*
+        version: link:../../engines/comfyui-card-kit
+      '@melite/comfyui':
+        specifier: workspace:*
+        version: link:../../engines/comfyui-cordis
+    devDependencies:
+      '@types/node':
+        specifier: '*'
+        version: 24.13.3
+
+  packages/melite-audio/music:
+    dependencies:
+      '@deepseek-ai/cordis':
+        specifier: ^4.0.2
+        version: 4.0.2(@deepseek-ai/cordis-plugin-include@1.0.6)(@deepseek-ai/cordis-plugin-loader@1.0.3)
+      '@deepseek-ai/schemastery':
+        specifier: '*'
+        version: 3.18.2
+      '@melite/card-kit':
+        specifier: workspace:*
+        version: link:../../engines/comfyui-card-kit
+      '@melite/comfyui':
+        specifier: workspace:*
+        version: link:../../engines/comfyui-cordis
+    devDependencies:
+      '@types/node':
+        specifier: '*'
+        version: 24.13.3
+
+  packages/melite-audio/sfx:
+    dependencies:
+      '@deepseek-ai/cordis':
+        specifier: ^4.0.2
+        version: 4.0.2(@deepseek-ai/cordis-plugin-include@1.0.6)(@deepseek-ai/cordis-plugin-loader@1.0.3)
+      '@deepseek-ai/schemastery':
+        specifier: '*'
+        version: 3.18.2
+      '@melite/card-kit':
+        specifier: workspace:*
+        version: link:../../engines/comfyui-card-kit
+      '@melite/comfyui':
+        specifier: workspace:*
+        version: link:../../engines/comfyui-cordis
+    devDependencies:
+      '@types/node':
+        specifier: '*'
+        version: 24.13.3
+
+  packages/melite-audio/tts:
+    dependencies:
+      '@deepseek-ai/cordis':
+        specifier: ^4.0.2
+        version: 4.0.2(@deepseek-ai/cordis-plugin-include@1.0.6)(@deepseek-ai/cordis-plugin-loader@1.0.3)
+      '@deepseek-ai/schemastery':
+        specifier: '*'
+        version: 3.18.2
+      '@melite/card-kit':
+        specifier: workspace:*
+        version: link:../../engines/comfyui-card-kit
+      '@melite/comfyui':
+        specifier: workspace:*
+        version: link:../../engines/comfyui-cordis
+    devDependencies:
+      '@types/node':
+        specifier: '*'
+        version: 24.13.3
+
+  packages/melite-audio/voice-lock:
+    dependencies:
+      '@deepseek-ai/cordis':
+        specifier: ^4.0.2
+        version: 4.0.2(@deepseek-ai/cordis-plugin-include@1.0.6)(@deepseek-ai/cordis-plugin-loader@1.0.3)
+      '@deepseek-ai/schemastery':
+        specifier: '*'
+        version: 3.18.2
+      '@melite/card-kit':
+        specifier: workspace:*
+        version: link:../../engines/comfyui-card-kit
+      '@melite/comfyui':
+        specifier: workspace:*
+        version: link:../../engines/comfyui-cordis
+    devDependencies:
+      '@types/node':
+        specifier: '*'
+        version: 24.13.3
+
+  packages/melite-image/ideogram4:
+    dependencies:
+      '@deepseek-ai/cordis':
+        specifier: ^4.0.2
+        version: 4.0.2(@deepseek-ai/cordis-plugin-include@1.0.6)(@deepseek-ai/cordis-plugin-loader@1.0.3)
+      '@deepseek-ai/schemastery':
+        specifier: '*'
+        version: 3.18.2
+      '@melite/card-kit':
+        specifier: workspace:*
+        version: link:../../engines/comfyui-card-kit
+      '@melite/comfyui':
+        specifier: workspace:*
+        version: link:../../engines/comfyui-cordis
+      '@melite/ui':
+        specifier: workspace:*
+        version: link:../../web-kit/ui
+      lucide-react:
+        specifier: '*'
+        version: 1.39.0(react@19.2.8)
+      react:
+        specifier: ^19.2.6
+        version: 19.2.8
+    devDependencies:
+      '@types/node':
+        specifier: '*'
+        version: 24.13.3
+
+  packages/melite-image/image-edit:
+    dependencies:
+      '@deepseek-ai/cordis':
+        specifier: ^4.0.2
+        version: 4.0.2(@deepseek-ai/cordis-plugin-include@1.0.6)(@deepseek-ai/cordis-plugin-loader@1.0.3)
+      '@deepseek-ai/schemastery':
+        specifier: '*'
+        version: 3.18.2
+      '@melite/card-kit':
+        specifier: workspace:*
+        version: link:../../engines/comfyui-card-kit
+      '@melite/comfyui':
+        specifier: workspace:*
+        version: link:../../engines/comfyui-cordis
+    devDependencies:
+      '@types/node':
+        specifier: '*'
+        version: 24.13.3
 
   packages/melite-image/image-gen:
     dependencies:
@@ -671,6 +982,97 @@ importers:
       '@melite/melite-models-z-image':
         specifier: workspace:*
         version: link:../../melite-models/z-image
+    devDependencies:
+      '@types/node':
+        specifier: '*'
+        version: 24.13.3
+
+  packages/melite-image/input-prep:
+    dependencies:
+      '@deepseek-ai/cordis':
+        specifier: ^4.0.2
+        version: 4.0.2(@deepseek-ai/cordis-plugin-include@1.0.6)(@deepseek-ai/cordis-plugin-loader@1.0.3)
+      '@deepseek-ai/schemastery':
+        specifier: '*'
+        version: 3.18.2
+      '@melite/card-kit':
+        specifier: workspace:*
+        version: link:../../engines/comfyui-card-kit
+      '@melite/comfyui':
+        specifier: workspace:*
+        version: link:../../engines/comfyui-cordis
+    devDependencies:
+      '@types/node':
+        specifier: '*'
+        version: 24.13.3
+
+  packages/melite-image/mask-studio:
+    dependencies:
+      '@deepseek-ai/cordis':
+        specifier: ^4.0.2
+        version: 4.0.2(@deepseek-ai/cordis-plugin-include@1.0.6)(@deepseek-ai/cordis-plugin-loader@1.0.3)
+      '@deepseek-ai/schemastery':
+        specifier: '*'
+        version: 3.18.2
+      '@melite/card-kit':
+        specifier: workspace:*
+        version: link:../../engines/comfyui-card-kit
+      '@melite/comfyui':
+        specifier: workspace:*
+        version: link:../../engines/comfyui-cordis
+      '@melite/contracts':
+        specifier: workspace:*
+        version: link:../../web-kit/contracts
+      '@melite/formats':
+        specifier: workspace:*
+        version: link:../../web-kit/formats
+      '@melite/ui':
+        specifier: workspace:*
+        version: link:../../web-kit/ui
+      lucide-react:
+        specifier: '*'
+        version: 1.39.0(react@19.2.8)
+      react:
+        specifier: ^19.2.6
+        version: 19.2.8
+    devDependencies:
+      '@types/node':
+        specifier: '*'
+        version: 24.13.3
+
+  packages/melite-image/tagger:
+    dependencies:
+      '@deepseek-ai/cordis':
+        specifier: ^4.0.2
+        version: 4.0.2(@deepseek-ai/cordis-plugin-include@1.0.6)(@deepseek-ai/cordis-plugin-loader@1.0.3)
+      '@deepseek-ai/schemastery':
+        specifier: '*'
+        version: 3.18.2
+      '@melite/card-kit':
+        specifier: workspace:*
+        version: link:../../engines/comfyui-card-kit
+      '@melite/comfyui':
+        specifier: workspace:*
+        version: link:../../engines/comfyui-cordis
+    devDependencies:
+      '@types/node':
+        specifier: '*'
+        version: 24.13.3
+
+  packages/melite-image/upscale-tools:
+    dependencies:
+      '@deepseek-ai/cordis':
+        specifier: ^4.0.2
+        version: 4.0.2(@deepseek-ai/cordis-plugin-include@1.0.6)(@deepseek-ai/cordis-plugin-loader@1.0.3)
+      '@deepseek-ai/schemastery':
+        specifier: '*'
+        version: 3.18.2
+      '@melite/card-kit':
+        specifier: workspace:*
+        version: link:../../engines/comfyui-card-kit
+      '@melite/comfyui':
+        specifier: workspace:*
+        version: link:../../engines/comfyui-cordis
     devDependencies:
       '@types/node':
         specifier: '*'
@@ -1309,6 +1711,108 @@ importers:
         specifier: '*'
         version: 24.13.3
 
+  packages/melite-motion/motion:
+    dependencies:
+      '@deepseek-ai/cordis':
+        specifier: ^4.0.2
+        version: 4.0.2(@deepseek-ai/cordis-plugin-include@1.0.6)(@deepseek-ai/cordis-plugin-loader@1.0.3)
+      '@deepseek-ai/schemastery':
+        specifier: '*'
+        version: 3.18.2
+      '@melite-plugin/motion':
+        specifier: workspace:*
+        version: link:../../engines/comfyui/action_cards/motion/ui
+      '@melite-plugin/timeline':
+        specifier: workspace:*
+        version: link:../../web-kit/timeline
+      '@melite/card-kit':
+        specifier: workspace:*
+        version: link:../../engines/comfyui-card-kit
+      '@melite/catalog':
+        specifier: workspace:*
+        version: link:../../web-kit/catalog
+      '@melite/comfyui':
+        specifier: workspace:*
+        version: link:../../engines/comfyui-cordis
+      '@melite/contracts':
+        specifier: workspace:*
+        version: link:../../web-kit/contracts
+      '@melite/formats':
+        specifier: workspace:*
+        version: link:../../web-kit/formats
+      '@melite/ui':
+        specifier: workspace:*
+        version: link:../../web-kit/ui
+      lucide-react:
+        specifier: '*'
+        version: 1.39.0(react@19.2.8)
+      react:
+        specifier: ^19.2.6
+        version: 19.2.8
+      three:
+        specifier: '*'
+        version: 0.184.0
+    devDependencies:
+      '@types/node':
+        specifier: '*'
+        version: 24.13.3
+
+  packages/melite-video/h3-timeline:
+    dependencies:
+      '@deepseek-ai/cordis':
+        specifier: ^4.0.2
+        version: 4.0.2(@deepseek-ai/cordis-plugin-include@1.0.6)(@deepseek-ai/cordis-plugin-loader@1.0.3)
+      '@deepseek-ai/schemastery':
+        specifier: '*'
+        version: 3.18.2
+      '@melite-plugin/timeline':
+        specifier: workspace:*
+        version: link:../../web-kit/timeline
+      '@melite/card-kit':
+        specifier: workspace:*
+        version: link:../../engines/comfyui-card-kit
+      '@melite/catalog':
+        specifier: workspace:*
+        version: link:../../web-kit/catalog
+      '@melite/comfyui':
+        specifier: workspace:*
+        version: link:../../engines/comfyui-cordis
+      '@melite/contracts':
+        specifier: workspace:*
+        version: link:../../web-kit/contracts
+      '@melite/ui':
+        specifier: workspace:*
+        version: link:../../web-kit/ui
+      lucide-react:
+        specifier: '*'
+        version: 1.39.0(react@19.2.8)
+      react:
+        specifier: ^19.2.6
+        version: 19.2.8
+    devDependencies:
+      '@types/node':
+        specifier: '*'
+        version: 24.13.3
+
+  packages/melite-video/video-gen:
+    dependencies:
+      '@deepseek-ai/cordis':
+        specifier: ^4.0.2
+        version: 4.0.2(@deepseek-ai/cordis-plugin-include@1.0.6)(@deepseek-ai/cordis-plugin-loader@1.0.3)
+      '@deepseek-ai/schemastery':
+        specifier: '*'
+        version: 3.18.2
+      '@melite/card-kit':
+        specifier: workspace:*
+        version: link:../../engines/comfyui-card-kit
+      '@melite/comfyui':
+        specifier: workspace:*
+        version: link:../../engines/comfyui-cordis
+    devDependencies:
+      '@types/node':
+        specifier: '*'
+        version: 24.13.3
+
   packages/web-kit/catalog:
     dependencies:
       '@melite/contracts':
@@ -1642,6 +2146,63 @@ importers:
       '@eslint/js':
         specifier: ^10.0.1
         version: 10.0.1(eslint@10.8.0(jiti@2.7.0))
+      '@melite/cards':
+        specifier: workspace:*
+        version: link:../../engines/comfyui/action_cards
+      '@melite/melite-3d-anny':
+        specifier: workspace:*
+        version: link:../../melite-3d/anny
+      '@melite/melite-3d-fit':
+        specifier: workspace:*
+        version: link:../../melite-3d/fit
+      '@melite/melite-3d-img-to-mesh':
+        specifier: workspace:*
+        version: link:../../melite-3d/img-to-mesh
+      '@melite/melite-3d-quad-remesh':
+        specifier: workspace:*
+        version: link:../../melite-3d/quad-remesh
+      '@melite/melite-3d-skin':
+        specifier: workspace:*
+        version: link:../../melite-3d/skin
+      '@melite/melite-audio-music':
+        specifier: workspace:*
+        version: link:../../melite-audio/music
+      '@melite/melite-audio-sfx':
+        specifier: workspace:*
+        version: link:../../melite-audio/sfx
+      '@melite/melite-audio-tts':
+        specifier: workspace:*
+        version: link:../../melite-audio/tts
+      '@melite/melite-audio-voice-lock':
+        specifier: workspace:*
+        version: link:../../melite-audio/voice-lock
+      '@melite/melite-image-ideogram4':
+        specifier: workspace:*
+        version: link:../../melite-image/ideogram4
+      '@melite/melite-image-image-edit':
+        specifier: workspace:*
+        version: link:../../melite-image/image-edit
+      '@melite/melite-image-input-prep':
+        specifier: workspace:*
+        version: link:../../melite-image/input-prep
+      '@melite/melite-image-mask-studio':
+        specifier: workspace:*
+        version: link:../../melite-image/mask-studio
+      '@melite/melite-image-tagger':
+        specifier: workspace:*
+        version: link:../../melite-image/tagger
+      '@melite/melite-image-upscale-tools':
+        specifier: workspace:*
+        version: link:../../melite-image/upscale-tools
+      '@melite/melite-motion-motion':
+        specifier: workspace:*
+        version: link:../../melite-motion/motion
+      '@melite/melite-video-h3-timeline':
+        specifier: workspace:*
+        version: link:../../melite-video/h3-timeline
+      '@melite/melite-video-video-gen':
+        specifier: workspace:*
+        version: link:../../melite-video/video-gen
       '@playwright/test':
         specifier: ^1.60.0
         version: 1.62.1

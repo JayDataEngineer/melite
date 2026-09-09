@@ -24,5 +24,10 @@
     "tailwind-merge": "*",
     "zustand": "*",
     "@melite-plugin/motion": "workspace:*"
+  },
+  "exports": {
+    ".": "./src/index.ts",
+    "./3d/*": "./3d/*",
+    "./package.json": "./package.json"
   }
 }

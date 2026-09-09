@@ -338,7 +338,7 @@ describe("plugin ui tenant boundary (§16 E-TENANTS)", () => {
    *  and its co-located studio modules) — same shape as pluginUiFiles.
    *  BOTH homes permanently (card-folder design record, 2026-09-08):
    *  the card units
-   *  engines/comfyui-cordis/src/cards/<genre>/<card>/ plus the
+   *  melite-<genre>/<card>/src/ card packages plus the
    *  action_cards tenant package (C++-lane tenants, no host card). */
   function studioTenants(): { id: string; src: string; pkgDir: string }[] {
     const out: { id: string; src: string; pkgDir: string }[] = []

@@ -10,7 +10,7 @@ import {
   draftFromParams,
   sculptNeedsWrite,
   serializeDraft,
-} from "../../../../../packages/engines/comfyui-cordis/src/cards/3d/anny/ui/studio/shape"
+} from "@melite/melite-3d-anny/ui/studio/shape"
 
 const COEFFS = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 0.5]
 const MORPHS = { "upperarm-fat-incr": 0.25, "thigh-scale-horiz-incr": -0.5 }

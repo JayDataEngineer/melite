@@ -8,7 +8,7 @@ import { it, expect } from "vitest"
 import {
   ESTIMATE_IGNORED_PARTS,
   seedFromEstimate,
-} from "../../../../../packages/engines/comfyui-cordis/src/cards/3d/anny/ui/studio/shape"
+} from "@melite/melite-3d-anny/ui/studio/shape"
 import fixture from "./estimate-identity.fixture.json"
 
 const SPACE = {

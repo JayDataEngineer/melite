@@ -12,7 +12,7 @@
 import { it, expect, vi, beforeEach, afterEach } from "vitest"
 import { fireEvent, waitFor } from "@testing-library/react"
 import { renderTenant } from "./assembly-tenant-shared"
-import { AnnyPhotoUpload } from "../../../../../packages/engines/comfyui-cordis/src/cards/3d/anny/ui/studio/component"
+import { AnnyPhotoUpload } from "@melite/melite-3d-anny/ui/studio/component"
 
 const UPLOAD_PATH = "data/input/shot-abc12345.png"
 

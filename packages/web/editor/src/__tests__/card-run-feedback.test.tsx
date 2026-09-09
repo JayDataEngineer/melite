@@ -65,7 +65,7 @@ primeCatalog({
   families: {
     kimodo: {
       label: "Kimodo Motion", genre: "motion",
-      studio: { tenant: "motion/motion-studio", owns_params: false, writes: [
+      studio: { tenant: "motion/motion", owns_params: false, writes: [
         "prompt", "duration_sec", "motion_prompts", "motion_constraints",
         "motion_bg_image", "prev_motion_artifact", "preview_glb",
       ] },

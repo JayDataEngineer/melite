@@ -19,16 +19,13 @@ import { Context } from '@deepseek-ai/cordis'
 import type { Plugin } from '@deepseek-ai/cordis'
 import { ComfyUIService } from './service.ts'
 import type { CardDefinition } from './service.ts'
-// COMPOSITION LIST (M2′ stroke 1, 2026-09-09, P48.1): card
-// PACKAGES compose explicitly — the receipt is
-// references/deepseek-harness packages/shell/tool-bash (a tool is
-// its own package; DSH composes packages, never discovers nested
-// plugins by glob). Each stroke moves a card out of src/cards into
-// packages/<genre>/<card>/ and adds its import here; when all 20
-// are packages, the readdir glob below is DELETED and this list is
-// the only composition.
-import * as melite3dClothingPlacement from '@melite/melite-3d-clothing-placement'
-import * as meliteImageImageGen from '@melite/melite-image-image-gen'
+// COMPOSITION LIST (M2′ stroke 1, 2026-09-09, P48.1 — completed by
+// the card sweep, 2026-09-09): card PACKAGES compose explicitly —
+// the receipt is references/deepseek-harness packages/shell/tool-bash
+// (a tool is its own package; DSH composes packages, never discovers
+// nested plugins by glob). Every card lives in its own package
+// (packages/melite-<domain>/<id>); the readdir glob is DELETED and
+// the table in loadCardDefs is the only composition.
 
 let cache: Map<string, CardDefinition> | null = null
 let bootedService: ComfyUIService | null = null
@@ -48,33 +45,42 @@ export const loadCardDefs = async (): Promise<Map<string, CardDefinition>> => {
   if (cache !== null) return cache
   const ctx = new Context()
   const service = new ComfyUIService(ctx)
-  // Card packages (the composition list above) compose FIRST —
-  // explicit, ordered, no discovery.
-  await ctx.plugin(melite3dClothingPlacement as unknown as Plugin)
-  await ctx.plugin(meliteImageImageGen as unknown as Plugin)
-  // TRANSITIONAL GLOB (named bridge, P48.1 — death date: the
-  // 20-card sweep): the remaining src/cards modules.
-  // the cli.ts:59-63 auto-load loop (in-process): every card module
-  // under src/cards. One layout — the doc-derived shape (card-folder
-  // design record, 2026-09-08): one card one folder,
-  // cards/<genre>/<card>/card.ts (+ ui/ + agents/ where owned).
-  const cardsDir = join(dirname(new URL(import.meta.url).pathname), 'cards')
-  const cardFiles: string[] = []
-  for (const genre of readdirSync(cardsDir, { withFileTypes: true }).sort((a, b) => (a.name < b.name ? -1 : 1))) {
-    if (!genre.isDirectory()) continue
-    const genreDir = join(cardsDir, genre.name)
-    for (const card of readdirSync(genreDir, { withFileTypes: true }).sort((a, b) => (a.name < b.name ? -1 : 1))) {
-      if (!card.isDirectory()) continue
-      const cardTs = join(genreDir, card.name, 'card.ts')
-      if (existsSync(cardTs)) cardFiles.push(cardTs)
+  // THE CARD PACKAGES (the card sweep, 2026-09-09 — the glob's named
+  // death date arrived): every card lives in its own package
+  // (packages/melite-<domain>/<id> — one card one package: card.ts +
+  // ui/ + agents/ in one unit), composed HERE by explicit import.
+  // This table is the ONLY card load order; a card lands by adding
+  // its package + one row. The engine src/cards tree is empty of
+  // host cards (only tenants remain: the fetch-registrar manifests,
+  // retired with their rows).
+  const cardPackages: string[] = [
+    '@melite/melite-3d-anny',
+    '@melite/melite-3d-fit',
+    '@melite/melite-3d-img-to-mesh',
+    '@melite/melite-3d-quad-remesh',
+    '@melite/melite-3d-skin',
+    '@melite/melite-audio-sfx',
+    '@melite/melite-image-ideogram4',
+    '@melite/melite-image-input-prep',
+    '@melite/melite-image-mask-studio',
+    '@melite/melite-image-tagger',
+    '@melite/melite-image-upscale-tools',
+    '@melite/melite-video-video-gen',
+    '@melite/melite-audio-music',
+    '@melite/melite-audio-tts',
+    '@melite/melite-audio-voice-lock',
+    '@melite/melite-image-image-edit',
+    '@melite/melite-motion-motion',
+    '@melite/melite-video-h3-timeline',
+    '@melite/melite-3d-clothing-placement',
+    '@melite/melite-image-image-gen',
+  ]
+  for (const specifier of cardPackages) {
+    const mod = (await import(specifier)) as unknown as Plugin
+    if (typeof (mod as { apply?: unknown }).apply !== 'function') {
+      throw new Error(`card package missing its host face: ${specifier}`)
     }
-  }
-  cardFiles.sort()
-  for (const f of cardFiles) {
-    const mod = (await import(pathToFileURL(f).href)) as unknown as Plugin
-    if (typeof (mod as { apply?: unknown }).apply === 'function') {
-      await ctx.plugin(mod)
-    }
+    await ctx.plugin(mod)
   }
   // THE MOD PACKS (the distinct category taxonomy — the py Mod
   // parents): the pack contracts (loras, controlnet, lanpaint,

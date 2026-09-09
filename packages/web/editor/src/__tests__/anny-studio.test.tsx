@@ -14,7 +14,7 @@ import {
 import AnnyStudioDefault, {
   AnnyStudio,
   shellDeclaration,
-} from "../../../../../packages/engines/comfyui-cordis/src/cards/3d/anny/ui/studio/component"
+} from "@melite/melite-3d-anny/ui/studio/component"
 
 describeShellTenant({
   declaration: shellDeclaration,

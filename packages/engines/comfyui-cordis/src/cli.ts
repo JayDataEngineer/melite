@@ -52,14 +52,8 @@ async function main(): Promise<void> {
   // service it provides would self-wait); cards inject it.
   await ctx.plugin({ apply(c: Context) { new ComfyUIService(c) } })
 
-  // auto-load every card plugin in src/cards/ — a card lands by
-  // dropping its file; no shared-file edit (parallel-port substrate).
-  const { readdirSync } = await import('node:fs')
-  const cardsDir = new URL('./cards/', import.meta.url)
-  for (const f of readdirSync(cardsDir).filter((f) => f.endsWith('.ts'))) {
-    const mod = await import(new URL(`./cards/${f}`, import.meta.url).href)
-    if (typeof mod.apply === 'function') await ctx.plugin(mod)
-  }
+  // cards compose through cardDefs' package table (the card sweep,
+  // 2026-09-09 — every card is a package; no dir walk anywhere).
   // the registry boots first: rows derive through its reads
   // (facts.ts renders through injected reads — no frozen rows).
   const { bootModels, getModel, registryIds, registryModel } = await import('./models/models.ts')

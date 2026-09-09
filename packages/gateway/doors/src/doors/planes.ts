@@ -1012,6 +1012,59 @@ interface CardWalk {
   readonly buckets: Map<string, { dir: string; rows: DocRow[] }>;
 }
 
+/** THE CARD PACKAGE DOMAINS (the card sweep, 2026-09-09): cards
+ *  live in their own packages — packages/melite-<domain>/<card>/
+ *  (src/card.ts + src/ui/ + src/agents/ in one unit). The engine
+ *  src/cards tree keeps only cards not yet swept. This walk yields
+ *  both, engine tree FIRST (deterministic order: remainder cards,
+ *  then domains sorted, cards sorted — one spelling with the
+ *  registry walk below). */
+function cardUnitDirs(engine: string, repo: string): { genre: string; cname: string; cdir: string }[] {
+  const out: { genre: string; cname: string; cdir: string }[] = [];
+  const push = (genre: string, cname: string, cdir: string): void => {
+    if (cname === "node_modules" || cname.startsWith(".")) return;
+    if (cname.includes("_") && DIR_ID_ALIASES[cname] === undefined) {
+      throw new LaneWireError(
+        fmt(
+          "[tool_projection] card dir %r has no registry mapping " +
+            "(underscore dirs bridge via DIR_ID_ALIASES in " +
+            "doors/toolProjection.ts — add the row or rename the dir)",
+          cdir,
+        ),
+      );
+    }
+    out.push({ genre, cname: DIR_ID_ALIASES[cname] ?? cname, cdir });
+  };
+  // the engine remainder tree: <engine>/src/cards/<genre>/<card>
+  const cardsRoot = join(engine, "src", "cards");
+  if (isDir(cardsRoot)) {
+    for (const genre of subdirs(cardsRoot)) {
+      if (genre.startsWith("_")) continue;
+      for (const c of subdirs(join(cardsRoot, genre))) {
+        push(genre, c, join(cardsRoot, genre, c));
+      }
+    }
+  }
+  // the card package domains: <repo>/packages/melite-<domain>/<card>
+  const domains: readonly [string, string][] = [
+    ["3d", "melite-3d"],
+    ["audio", "melite-audio"],
+    ["image", "melite-image"],
+    ["motion", "melite-motion"],
+    ["video", "melite-video"],
+  ];
+  for (const [genre, domain] of domains) {
+    const droot = join(repo, "packages", domain);
+    if (!isDir(droot)) continue;
+    for (const c of subdirs(droot)) {
+      // the card unit of a package lives at src/ (card.ts + ui + agents)
+      if (!isFile(join(droot, c, "src", "card.ts"))) continue;
+      push(genre, c, join(droot, c, "src"));
+    }
+  }
+  return out.sort((a, b) => (a.cname < b.cname ? -1 : a.cname > b.cname ? 1 : 0));
+}
+
 /** LEVEL 2 card docs (lane_disclosure._card_rows 178-257): AGENT.md
  *  + agents/skills/* per card dir, bucketed by DIR NAME ("_" genres
  *  skipped). ONE root — the card-folder migration is complete
@@ -1019,16 +1072,12 @@ interface CardWalk {
  *  as src/cards/<genre>/<card>/ (one card one folder — card.ts +
  *  ui/ + agents/ in one unit); action_cards keeps only the
  *  no-host-card tenants (3d/body) and the genre ui packages. */
-function cardRows(engine: string): CardWalk {
+function cardRows(engine: string, repo: string): CardWalk {
   const rows: DocRow[] = [];
   const buckets = new Map<string, { dir: string; rows: DocRow[] }>();
   {
-    const cardsRoot = join(engine, "src", "cards");
-    if (!isDir(cardsRoot)) return { rows, buckets };
-    for (const genre of subdirs(cardsRoot)) {
-      if (genre.startsWith("_")) continue;
-      for (const cname of subdirs(join(cardsRoot, genre))) {
-        const cdir: string = join(cardsRoot, genre, cname);
+    for (const { genre, cname, cdir } of cardUnitDirs(engine, repo)) {
+      {
         const got: DocRow[] = [];
         // Oracle fallback order (lane_disclosure card walk): the
         // top-level AGENT.md wins, agents/AGENT.md orients when the
@@ -1097,7 +1146,7 @@ interface ManifestEntry {
  *  no dir, no models, no docs) union in as root-independent
  *  globals under the registry-owner engine only (once, not once
  *  per engine). Keyed by DECLARED card id. */
-function manifests(engine: string, cards?: CardRegistryService | null): Map<string, ManifestEntry> {
+function manifests(engine: string, repo: string, cards?: CardRegistryService | null): Map<string, ManifestEntry> {
   const out = new Map<string, ManifestEntry>();
   const defs = needCardRegistry(cards, "manifests").defsSync();
   const resolved = new Set<string>();
@@ -1107,52 +1156,15 @@ function manifests(engine: string, cards?: CardRegistryService | null): Map<stri
   // DIR_ID_ALIASES bridge and the closed underscore refusal below
   // ride along for the history they document).
   {
-    const cardsRoot = join(engine, "src", "cards");
-    let genres: string[];
-    try {
-      genres = readdirSync(cardsRoot);
-    } catch {
-      genres = [];
-    }
-    for (const genre of genres) {
-      // Dependency + hidden dirs are never cards (a node_modules
-      // tree rides action_cards/ — its packages must neither serve
-      // nor trip the closed dir bridge below).
-      if (genre === "node_modules" || genre.startsWith(".")) continue;
-      const gdir: string = join(cardsRoot, genre);
-      if (!isDir(gdir)) continue;
-      let cards: string[];
-      try {
-        cards = readdirSync(gdir);
-      } catch {
-        continue;
-      }
-      for (const cname of cards) {
-        const cdir: string = join(gdir, cname);
-        if (!isDir(cdir)) continue;
-        // The dir->id bridge is CLOSED (DIR_ID_ALIASES): a new
-        // underscore dir is a rename waiting to happen — refuse LOUD,
-        // never silently undisclose a card.
-        if (cname.includes("_") && DIR_ID_ALIASES[cname] === undefined) {
-          throw new LaneWireError(
-            fmt(
-              "[tool_projection] card dir %r has no registry mapping " +
-                "(underscore dirs bridge via DIR_ID_ALIASES in " +
-                "doors/toolProjection.ts — add the row or rename the dir)",
-              cdir,
-            ),
-          );
-        }
-        const cid: string = DIR_ID_ALIASES[cname] ?? cname;
-        const def = defs.get(cid);
-        if (def === undefined) continue;
-        resolved.add(cid);
-        out.set(cid, {
-          genre,
-          dir: cdir,
-          rows: [projectCardRow(def, baseRowFor(defs, cid))],
-        });
-      }
+    for (const { genre, cname: cid, cdir } of cardUnitDirs(engine, repo)) {
+      const def = defs.get(cid);
+      if (def === undefined) continue;
+      resolved.add(cid);
+      out.set(cid, {
+        genre,
+        dir: cdir,
+        rows: [projectCardRow(def, baseRowFor(defs, cid))],
+      });
     }
   }
   for (const [cid, def] of defs) {
@@ -1464,8 +1476,8 @@ function buildPeek(
   const rows: PeekRow[] = [];
   try {
     for (const engine of engines) {
-      const mans: Map<string, ManifestEntry> = manifests(engine, cards);
-      const walk: CardWalk = cardRows(engine);
+      const mans: Map<string, ManifestEntry> = manifests(engine, repo, cards);
+      const walk: CardWalk = cardRows(engine, repo);
       for (const [cid, entry] of mans) {
         const gg: string | null =
           entry.genre !== "" ? entry.genre.toLowerCase() : null;
@@ -1604,7 +1616,7 @@ function buildCardTools(
   const out: Record<string, unknown>[] = [];
   if (l !== "") {
     for (const engine of engines) {
-      const mans: Map<string, ManifestEntry> = manifests(engine, cards);
+      const mans: Map<string, ManifestEntry> = manifests(engine, repo, cards);
       const cid: string | null = resolveCardDir(mans, l);
       if (cid !== null) {
         for (const m of (mans.get(cid) as ManifestEntry).rows) {
@@ -1648,7 +1660,7 @@ function buildCardTools(
     );
   }
   for (const engine of engines) {
-    for (const entry of manifests(engine, cards).values()) {
+    for (const entry of manifests(engine, repo, cards).values()) {
       for (const m of entry.rows) out.push(wireManifest(m));
     }
   }
@@ -1662,7 +1674,7 @@ function buildSkillIndex(repo: string): Record<string, unknown> {
   try {
     for (const engine of engines) {
       for (const r of modelRows(engine)) rows.push(wireSkill(r.row));
-      for (const r of cardRows(engine).rows) rows.push(wireSkill(r.row));
+      for (const r of cardRows(engine, repo).rows) rows.push(wireSkill(r.row));
     }
     for (const fr of flowRows(repo)) rows.push(wireSkill(fr.row));
   } catch (e) {
@@ -1714,7 +1726,7 @@ function buildLaneBundle(
   const engines: string[] = engineDirs(join(repo, "packages", "engines"));
   // Card branch (one engine owns the lane; lane=card=DECLARED id).
   for (const engine of engines) {
-    const mans: Map<string, ManifestEntry> = manifests(engine, cards);
+    const mans: Map<string, ManifestEntry> = manifests(engine, repo, cards);
     const cardKey: string | null = resolveCardDir(mans, l);
     if (cardKey === null) continue;
     if (k === "flow") continue;
@@ -1732,7 +1744,7 @@ function buildLaneBundle(
         families.push(m.model);
     }
     if (families.length === 0) families.push(cardKey);
-    const walk: CardWalk = cardRows(engine);
+    const walk: CardWalk = cardRows(engine, repo);
     const dname: string = entry.dir.split("/").pop() ?? "";
     const bucket: { dir: string; rows: DocRow[] } | undefined =
       walk.buckets.get(dname);
@@ -1826,7 +1838,7 @@ function buildLaneBundle(
         for (const r of modelRows(engine)) {
           if (!pool.has(r.row.id)) pool.set(r.row.id, r.row);
         }
-        for (const r of cardRows(engine).rows) {
+        for (const r of cardRows(engine, repo).rows) {
           if (!pool.has(r.row.id)) pool.set(r.row.id, r.row);
         }
       }
@@ -1886,7 +1898,7 @@ function findSkill(
     for (const r of modelRows(engine)) {
       if (r.row.id === sid) return { row: r.row, path: r.path, bodyText: null };
     }
-    for (const r of cardRows(engine).rows) {
+    for (const r of cardRows(engine, repo).rows) {
       if (r.row.id === sid) return { row: r.row, path: r.path, bodyText: null };
     }
   }

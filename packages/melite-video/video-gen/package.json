@@ -1,0 +1,25 @@
+{
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "the video-gen card (the video lane) \u2014 one card one package: card.ts host face + ui/ studio + agents/ context",
+  "main": "./src/card.ts",
+  "exports": {
+    ".": "./src/card.ts",
+    "./ui/*": "./src/ui/*",
+    "./package.json": "./package.json"
+  },
+  "scripts": {
+    "test": "node --experimental-strip-types --test tests/"
+  },
+  "dependencies": {
+    "@deepseek-ai/cordis": "^4.0.2",
+    "@deepseek-ai/schemastery": "*",
+    "@melite/card-kit": "workspace:*",
+    "@melite/comfyui": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "*"
+  },
+  "name": "@melite/melite-video-video-gen"
+}

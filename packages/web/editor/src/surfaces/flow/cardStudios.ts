@@ -94,6 +94,18 @@ const ACTION_CARD_BODY =
 const CARD_UNIT_BODY =
   /^\/src\/cards\/([^/]+)\/([^/]+)\/ui\/studio\/component\.tsx$/
 
+// THE CARD PACKAGES (the card sweep, 2026-09-09): every card lives
+// at packages/melite-<genre>/<card>/src/ui/studio/component.tsx —
+// the engine src/cards tree is gone; this glob is the cards' home
+// now. The tenant id keeps its genre/card spelling (the join key
+// the served body claims declare) — the domain prefix IS the genre.
+const CARD_PACKAGE_TENANT_LOADERS = import.meta.glob<{
+  default: ComponentType<StudioTenantProps>
+}>("../../../../../../packages/melite-*/*/src/ui/studio/component.tsx")
+
+const CARD_PACKAGE_BODY =
+  /^\/packages\/melite-([^/]+)\/([^/]+)\/src\/ui\/studio\/component\.tsx$/
+
 function pluginTenantId(path: string): string | null {
   const i = path.indexOf("/action_cards/")
   if (i >= 0) {
@@ -105,13 +117,21 @@ function pluginTenantId(path: string): string | null {
     const m = CARD_UNIT_BODY.exec(path.slice(j))
     return m ? `${m[1]}/${m[2]}` : null
   }
+  const k = path.indexOf("/packages/melite-")
+  if (k >= 0) {
+    const m = CARD_PACKAGE_BODY.exec(path.slice(k))
+    return m ? `${m[1]}/${m[2]}` : null
+  }
   return null
 }
 
 /** Every plugin tenant id the globs resolve (boundary test introspection). */
 export function pluginTenantIds(): string[] {
-  return [...Object.keys(PLUGIN_TENANT_LOADERS), ...Object.keys(CARD_UNIT_TENANT_LOADERS)]
-    .map(pluginTenantId)
+  return [
+    ...Object.keys(PLUGIN_TENANT_LOADERS),
+    ...Object.keys(CARD_UNIT_TENANT_LOADERS),
+    ...Object.keys(CARD_PACKAGE_TENANT_LOADERS),
+  ].map(pluginTenantId)
     .filter((x): x is string => x !== null)
     .sort()
 }
@@ -142,6 +162,10 @@ for (const path of Object.keys(PLUGIN_TENANT_LOADERS)) {
 for (const path of Object.keys(CARD_UNIT_TENANT_LOADERS)) {
   const id = pluginTenantId(path)
   if (id) PLUGIN_TENANTS[id] = lazyPluginTenant(CARD_UNIT_TENANT_LOADERS, path)
+}
+for (const path of Object.keys(CARD_PACKAGE_TENANT_LOADERS)) {
+  const id = pluginTenantId(path)
+  if (id) PLUGIN_TENANTS[id] = lazyPluginTenant(CARD_PACKAGE_TENANT_LOADERS, path)
 }
 
 /** Resolve a tenant id → component across BOTH surfaces (first-party

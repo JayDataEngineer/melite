@@ -1,0 +1,30 @@
+{
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "the img-to-mesh card (the 3d lane) \u2014 one card one package: card.ts host face + ui/ studio + agents/ context",
+  "main": "./src/card.ts",
+  "exports": {
+    ".": "./src/card.ts",
+    "./ui/*": "./src/ui/*",
+    "./package.json": "./package.json"
+  },
+  "scripts": {
+    "test": "node --experimental-strip-types --test tests/"
+  },
+  "dependencies": {
+    "@deepseek-ai/cordis": "^4.0.2",
+    "@deepseek-ai/schemastery": "*",
+    "@melite-plugin/3d": "workspace:*",
+    "@melite/card-kit": "workspace:*",
+    "@melite/catalog": "workspace:*",
+    "@melite/comfyui": "workspace:*",
+    "@melite/ui": "workspace:*",
+    "lucide-react": "*",
+    "react": "*"
+  },
+  "devDependencies": {
+    "@types/node": "*"
+  },
+  "name": "@melite/melite-3d-img-to-mesh"
+}

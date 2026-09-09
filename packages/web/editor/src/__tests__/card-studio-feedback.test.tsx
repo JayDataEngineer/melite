@@ -50,11 +50,11 @@ primeCatalog({
   families: {
     kimodo: {
       label: "Kimodo Motion", genre: "motion",
-      // The REAL tenant id: packages/engines/comfyui-cordis/src/cards/motion/motion/ui/studio/component.tsx
-      // → "motion/motion-studio" (the glob in cardStudios derives ids from
+      // The REAL tenant id: packages/melite-motion/motion/src/ui/studio/component.tsx
+      // → "motion/motion" (the glob in cardStudios derives ids from
       // the path). The stale "melite-core/motion" id resolved to no component,
       // so the body claim nulled and the studio never mounted.
-      studio: { tenant: "motion/motion-studio", owns_params: false, writes: [
+      studio: { tenant: "motion/motion", owns_params: false, writes: [
         "prompt", "duration_sec", "motion_prompts", "motion_constraints",
         "motion_bg_image", "prev_motion_artifact", "preview_glb",
       ] },

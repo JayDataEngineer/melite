@@ -18,7 +18,7 @@ import type { ReactElement } from "react"
 
 const renderWithTooltip = (el: ReactElement) =>
   render(<TooltipProvider>{el}</TooltipProvider>)
-import { IdeogramCanvasEditor } from "../../../../../packages/engines/comfyui-cordis/src/cards/image/ideogram4/ui/studio/component"
+import { IdeogramCanvasEditor } from "@melite/melite-image-ideogram4/ui/studio/component"
 
 // ─── Harness ──────────────────────────────────────────────────────────────
 // Wraps the editor in a real React state container so setValues triggers a
