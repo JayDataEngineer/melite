@@ -36,7 +36,7 @@ import {
   isValidElementsArray,
   parseElementsJSON,
   serializeElements,
-} from "../../../../../packages/engines/comfyui/action_cards/image/canvas-ideogram/ui/studio/ideoHelpers"
+} from "../../../../../packages/engines/comfyui-cordis/src/cards/image/ideogram4/ui/studio/ideoHelpers"
 
 // ─── Constants ─────────────────────────────────────────────────────────────
 

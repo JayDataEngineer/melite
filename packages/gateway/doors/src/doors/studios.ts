@@ -146,9 +146,9 @@ interface StudioFamily {
 const ESTATE_TENANTS: Record<string, StudioFamily> = {
   "3d/anny": { id: "anny", engine: "comfyui", baseBody: "anny-base-body.glb", baseBodyFolder: "anny" },
   "3d/body": { id: "somax", engine: "", baseBody: "", baseBodyFolder: "" },
-  "3d/img_to_mesh": { id: "pixal3d", engine: "comfyui", baseBody: "", baseBodyFolder: "" },
-  "image/canvas-ideogram": { id: "ideogram", engine: "comfyui", baseBody: "", baseBodyFolder: "" },
-  "image/mask_studio": { id: "mask-studio", engine: "comfyui", baseBody: "", baseBodyFolder: "" },
+  "3d/img-to-mesh": { id: "pixal3d", engine: "comfyui", baseBody: "", baseBodyFolder: "" },
+  "image/ideogram4": { id: "ideogram", engine: "comfyui", baseBody: "", baseBodyFolder: "" },
+  "image/mask-studio": { id: "mask-studio", engine: "comfyui", baseBody: "", baseBodyFolder: "" },
   "motion/motion-studio": { id: "kimodo", engine: "comfyui", baseBody: "", baseBodyFolder: "" },
   "video/h3-timeline": { id: "h3-timeline", engine: "comfyui", baseBody: "", baseBodyFolder: "" },
 };
@@ -165,11 +165,11 @@ const ESTATE_ROWS: Record<string, Record<string, unknown>[] > = {
   ],
   "3d/body": [
   ],
-  "3d/img_to_mesh": [
+  "3d/img-to-mesh": [
   ],
-  "image/canvas-ideogram": [
+  "image/ideogram4": [
   ],
-  "image/mask_studio": [
+  "image/mask-studio": [
   ],
   "motion/motion-studio": [
   ],

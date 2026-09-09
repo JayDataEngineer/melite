@@ -51,3 +51,13 @@ lands at cards/3d/img-to-mesh/ and the served studio claims
 spelling IS the claim spelling (the join key). 18 pins, one key
 per family/variant block; nothing else moved (golden-suite diff
 was exactly the tenant key). Walls 17/17 after.
+
+## 2026-09-08 — ideogram joins the card-id spelling; estate tenants realigned
+
+Card 14 (canvas-ideogram → cards/image/ideogram4): the ideogram
+claim flips to image/ideogram4 (1 pin here, 1 in
+families-golden). The estate door's ESTATE_TENANTS/ROWS keys
+realign with the folder spellings already landed — mask-studio
+(card 1) and img-to-mesh (card 13) keys flip here too; the
+discovery-catalog.json pin stays (frozen py artifact, generator
+deleted). Walls 17/17.

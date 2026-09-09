@@ -1597,7 +1597,7 @@
    "label": "Ideogram NF4",
    "genre": "image",
    "studio": {
-    "tenant": "image/canvas-ideogram",
+    "tenant": "image/ideogram4",
     "owns_params": false,
     "writes": [],
     "size": "normal",

@@ -6,8 +6,8 @@
  *  Locking those down is the highest-leverage thing to test here.
  */
 import { describe, expect, it } from "vitest"
-import { __test } from "../../../../../packages/engines/comfyui/action_cards/image/canvas-ideogram/ui/studio/ideoHelpers"
-import type { IdeoElement } from "../../../../../packages/engines/comfyui/action_cards/image/canvas-ideogram/ui/studio/ideoHelpers"
+import { __test } from "../../../../../packages/engines/comfyui-cordis/src/cards/image/ideogram4/ui/studio/ideoHelpers"
+import type { IdeoElement } from "../../../../../packages/engines/comfyui-cordis/src/cards/image/ideogram4/ui/studio/ideoHelpers"
 
 const {
   GRID_SIZE,

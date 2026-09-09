@@ -24,7 +24,7 @@ export const DECL: ModelDecl = {
     "cfg": 7
   },
   "studio": {
-    "tenant": "image/canvas-ideogram",
+    "tenant": "image/ideogram4",
     "owns_params": false,
     "writes": [],
     "kind": "custom",
