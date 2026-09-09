@@ -11,12 +11,13 @@
  * Runs with an empty prompt fall back to run name/flow.
  */
 import * as React from 'react'
-import { useEffect, useMemo, useState } from 'react'
-import { createPortal } from 'react-dom'
+import { useMemo, useState } from 'react'
+import { Modal } from '@deepseek-ai/dsh-client-ui-primitives'
 import { getSidebarService, openWithDraft } from './apply-guard.ts'
 import { decodeRuns, decodeDrafts } from './decode.ts'
 import type { DraftRow, RunArtifact, RunRow } from './decode.ts'
 import { useFeed } from './useFeed.ts'
+import css from './overlay.module.css'
 import {
   Empty,
   ErrorBanner,
@@ -258,7 +259,7 @@ function badgeFor(item: MediaItem): { text: string; warn: boolean } | null {
   return null
 }
 
-function TileBadge({ item }: { item: MediaItem }): JSX.Element | null {
+function TileBadge({ item }: { item: MediaItem }): React.JSX.Element | null {
   const badge = badgeFor(item)
   if (badge === null) return null
   return (
@@ -289,7 +290,7 @@ function tileBgFor(kind: Kind): string {
  * with the gateway asset URL. Falls back to a download link when no
  * viewer claims the file.
  */
-function ModelView({ item }: { item: MediaItem }): JSX.Element {
+function ModelView({ item }: { item: MediaItem }): React.JSX.Element {
   const bs = getSidebarService()
   const match = bs?.matchFileViewer?.(item.file) as
     | { component?: React.ComponentType<{ mediaUrl?: string; path?: string }> }
@@ -315,63 +316,65 @@ function ModelView({ item }: { item: MediaItem }): JSX.Element {
   )
 }
 
-function Overlay({ item, onClose }: { item: MediaItem; onClose: () => void }) {  useEffect(() => {
-    const onKey = (e: KeyboardEvent): void => { if (e.key === 'Escape') onClose() }
-    window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
-  }, [onClose])
-  return createPortal(
-    <div
-      onClick={onClose}
-      style={{
-        position: 'fixed', inset: 0, zIndex: 2147483000,
-        background: bgOverlay2, display: 'flex',
-        flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-        gap: 14, padding: 24, cursor: 'zoom-out',
-      }}
+/**
+ * The centered preview — DSH's Modal (headless), the FlowCards drilldown
+ * ride verbatim: body portal, mask, Escape, aria-modal, and focus
+ * handling are the primitive's, never ours. The 2026-09-10 operator
+ * audit caught this as a handrolled portal (own keydown listener, own
+ * fixed mask div, own z-index) — retired. Media sizing rides the
+ * `.lightbox` class (overlay.module.css); inner flex + captions stay
+ * as content styles.
+ */
+function Overlay({ item, onClose }: { item: MediaItem; onClose: () => void }) {
+  return (
+    <Modal
+      open
+      onClose={onClose}
+      title={item.file || 'media preview'}
+      closeLabel="Close preview"
+      headless
+      className={css.lightbox}
     >
-      {item.kind === 'video'
-        ? (
-            <video
-              src={item.url}
-              controls
-              autoPlay
-              playsInline
-              style={{ maxWidth: '94vw', maxHeight: '78vh', borderRadius: 8, background: bgBase1, cursor: 'default' }}
-              onClick={(e) => { e.stopPropagation() }}
-            />
-          )
-        : item.kind === 'audio'
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 14, padding: 24 }}>
+        {item.kind === 'video'
           ? (
-              <audio
+              <video
                 src={item.url}
                 controls
                 autoPlay
-                style={{ width: 'min(560px, 90vw)' }}
-                onClick={(e) => { e.stopPropagation() }}
+                playsInline
+                style={{ maxWidth: '94vw', maxHeight: '78vh', borderRadius: 8, background: bgBase1 }}
               />
             )
-          : item.kind === 'model'
-          ? (
-              <ModelView item={item} />
-            )
-          : item.kind === 'image'
-          ? (
-              <img
-                src={item.url}
-                alt={item.file}
-                style={{ maxWidth: '94vw', maxHeight: '78vh', borderRadius: 8, objectFit: 'contain', cursor: 'default' }}
-                onClick={(e) => { e.stopPropagation() }}
-              />
-            )
-          : null}
-      <div style={{ color: labelPrimary2, fontSize: 13, maxWidth: '80vw', textAlign: 'center', lineHeight: 1.5, cursor: 'default' }}>
-        <div style={{ fontWeight: 600 }}>{item.head}</div>
-        <div style={{ opacity: 0.7 }}>{[item.time, item.file].filter(Boolean).join(' · ')}</div>
+          : item.kind === 'audio'
+            ? (
+                <audio
+                  src={item.url}
+                  controls
+                  autoPlay
+                  style={{ width: 'min(560px, 90vw)' }}
+                />
+              )
+            : item.kind === 'model'
+            ? (
+                <ModelView item={item} />
+              )
+            : item.kind === 'image'
+            ? (
+                <img
+                  src={item.url}
+                  alt={item.file}
+                  style={{ maxWidth: '94vw', maxHeight: '78vh', borderRadius: 8, objectFit: 'contain' }}
+                />
+              )
+            : null}
+        <div style={{ color: labelPrimary2, fontSize: 13, maxWidth: '80vw', textAlign: 'center', lineHeight: 1.5 }}>
+          <div style={{ fontWeight: 600 }}>{item.head}</div>
+          <div style={{ opacity: 0.7 }}>{[item.time, item.file].filter(Boolean).join(' · ')}</div>
+        </div>
+        <div style={{ color: textTertiary3, fontSize: 12 }}>Esc or click the mask to close</div>
       </div>
-      <div style={{ color: textTertiary3, fontSize: 12 }}>click anywhere or press Esc to close</div>
-    </div>,
-    document.body,
+    </Modal>
   )
 }
 
@@ -386,7 +389,7 @@ export function MediaTabIcon({ size }: { size: number }) {
   )
 }
 
-export function MediaPanel(): JSX.Element {
+export function MediaPanel(): React.JSX.Element {
   /* TWO independent feeds (useFeed): runs and drafts each own their
    * fetch/decode/never-stale engine — one failing never blanks the other
    * (the drafts feed's error is deliberately not rendered; the runs view
@@ -460,7 +463,7 @@ export function MediaPanel(): JSX.Element {
     })
   }, [items, cat, search])
 
-  const chip = (c: Cat, label: string): JSX.Element => {
+  const chip = (c: Cat, label: string): React.JSX.Element => {
     const active = cat === c
     return (
       <button

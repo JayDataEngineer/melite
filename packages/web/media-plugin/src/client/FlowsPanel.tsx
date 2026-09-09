@@ -36,7 +36,7 @@ import {
 } from './ui.tokens.ts'
 
 /** Sidebar tab glyph — a flow arrow, exported for the client entry. */
-export function FlowsTabIcon({ size }: { size: number }): JSX.Element {
+export function FlowsTabIcon({ size }: { size: number }): React.JSX.Element {
   return (
     <svg width={size} height={size} viewBox="0 0 16 16" fill="none" aria-hidden="true">
       <path d="M2 4h5a3 3 0 0 1 3 3v2a3 3 0 0 0 3 3h1" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
@@ -46,7 +46,7 @@ export function FlowsTabIcon({ size }: { size: number }): JSX.Element {
   )
 }
 
-export function FlowsPanel(): JSX.Element {
+export function FlowsPanel(): React.JSX.Element {
   const feed = useFeed('/infer-media/drafts', decodeDrafts, { drafts: [], errors: [] })
   const [search, setSearch] = useState('')
   const [uiError, setUiError] = useState('')

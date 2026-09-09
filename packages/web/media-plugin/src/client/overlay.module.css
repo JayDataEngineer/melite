@@ -1,0 +1,9 @@
+/*
+ * The lightbox dialog sizing for DSH's Modal (headless ride). The
+ * primitive's own .dialog centers the card; this class only widens it
+ * for full-media preview — the FlowCards `.drill` pattern verbatim.
+ */
+.lightbox {
+  width: min(1200px, 96vw);
+  max-width: 96vw;
+}
