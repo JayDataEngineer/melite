@@ -1,0 +1,14 @@
+# dsh-media bundle patch: inserts the host plugin row into the web
+# profile roster. Applied as a profile bundle layer (the
+# `dsh.bundle.patch` manifest field); activate with
+# `dsh plugin --profile <name> add <path-to-media-plugin>`.
+#
+# CHANNEL LAW (2026-09-09, the unification): every web plugin owns
+# its existence row in ITS OWN package (this patch); the PROFILE
+# layer configures by id (a plain `- id:` row, no insert). The
+# node half (exports ".") serves the /infer-media/* host routes;
+# the `dsh.client` declaration in package.json makes the browser
+# half (exports "./client", the Media sidebar tab) load in the GUI.
+- insert:
+    - id: infer-media
+      name: '@infer-media/dsh-media'
