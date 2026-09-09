@@ -60,9 +60,15 @@ async function gwJson(
   signal: AbortSignal | undefined,
   timeoutMs: number,
 ): Promise<Record<string, unknown>> {
-  const ctl = new AbortController();
-  const t = setTimeout(() => ctl.abort(), timeoutMs);
-  if (signal) signal.addEventListener("abort", () => ctl.abort(), { once: true });
+  // Native cancellation composition (Node ≥ 20.3): AbortSignal.any
+  // propagates a pre-aborted caller signal (an already-aborted exec
+  // aborts the fetch immediately — a manual listener would never
+  // fire) and owns the timeout; no listener to detach, no timer to
+  // clear, no leak on early resolve.
+  const request = AbortSignal.any([
+    ...(signal !== undefined ? [signal] : []),
+    AbortSignal.timeout(timeoutMs),
+  ]);
   try {
     const headers: Record<string, string> = { "content-type": "application/json" };
     if (process.env.INF_AGENT_SESSION) headers["x-agent-session"] = process.env.INF_AGENT_SESSION;
@@ -70,13 +76,16 @@ async function gwJson(
       method,
       headers,
       body: body === undefined ? undefined : JSON.stringify(body),
-      signal: ctl.signal,
+      signal: request,
     });
     const text = await r.text();
     if (!r.ok) throw new GatewayError(r.status, path, text.slice(0, 400));
     return JSON.parse(text) as Record<string, unknown>;
-  } finally {
-    clearTimeout(t);
+  } catch (e) {
+    if (e instanceof Error && e.name === "TimeoutError") {
+      throw new Error(`gateway ${path}: timed out after ${timeoutMs}ms`);
+    }
+    throw e;
   }
 }
 

@@ -141,6 +141,16 @@ describe("the executor path (two doors, flow law)", () => {
     assert.equal(value.error, "card compose returned no draftId");
   });
 
+  it("a pre-aborted signal aborts immediately (never hangs, no fetch)", async () => {
+    calls.length = 0;
+    const ctl = new AbortController();
+    ctl.abort();
+    await assert.rejects(
+      buildCardTool(baseUrl).execute(FULL_ARGS, { ...exec, signal: ctl.signal }),
+    );
+    assert.equal(calls.length, 0, "no door was touched");
+  });
+
   it("schema-incomplete args are refused by the contract's own validation", async () => {
     await assert.rejects(
       buildCardTool(baseUrl).execute({ body: "/tmp/b.glb" }, exec),
