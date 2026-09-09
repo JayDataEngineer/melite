@@ -25,7 +25,7 @@ import { describe, it, expect, vi, beforeAll, afterAll, afterEach } from "vitest
 import { render as renderBase, screen, fireEvent, within, waitFor, act } from "@testing-library/react"
 import type { ReactElement } from "react"
 import { TooltipProvider } from "@melite/ui/tooltip"
-import { MaskStudioEditor, shellDeclaration } from "@melite/melite-image-mask-studio/ui/studio/component"
+import { MaskStudioEditor, shellDeclaration } from "@melite/image-mask-studio/ui/studio/component"
 import type { CardStage } from "@melite/contracts"
 // MaskStudioEditor mounts the Radix Tip (tooltip unification 2026-08-14) —
 // render under the app's TooltipProvider, the same one App.tsx uses.

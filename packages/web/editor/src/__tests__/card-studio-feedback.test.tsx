@@ -50,7 +50,7 @@ primeCatalog({
   families: {
     kimodo: {
       label: "Kimodo Motion", genre: "motion",
-      // The REAL tenant id: packages/melite-motion/motion/src/ui/studio/component.tsx
+      // The REAL tenant id: packages/motion/motion/src/ui/studio/component.tsx
       // → "motion/motion" (the glob in cardStudios derives ids from
       // the path). The stale "melite-core/motion" id resolved to no component,
       // so the body claim nulled and the studio never mounted.

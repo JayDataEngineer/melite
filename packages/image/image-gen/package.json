@@ -1,0 +1,26 @@
+{
+  "name": "@melite/image-image-gen",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./wire": "./src/wire.ts",
+    "./package.json": "./package.json"
+  },
+  "scripts": {
+    "test": "node --experimental-strip-types --test tests/"
+  },
+  "dependencies": {
+    "@melite/card-kit": "workspace:*",
+    "@melite/comfyui": "workspace:*",
+    "@deepseek-ai/cordis": "^4.0.2",
+    "@deepseek-ai/dsh-tools": "0.1.5-alpha.1",
+    "@deepseek-ai/schemastery": "*",
+    "@melite/models-anima": "workspace:*",
+    "@melite/models-krea-2": "workspace:*",
+    "@melite/models-z-image": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "*"
+  }
+}

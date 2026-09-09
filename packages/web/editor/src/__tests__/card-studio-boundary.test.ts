@@ -217,15 +217,18 @@ describe("plugin studio tenant boundary (§6 props gate)", () => {
         }
       }
     }
-    // THE CARD PACKAGES (the card sweep, 2026-09-09): every card lives
-    // at packages/melite-<genre>/<card>/ — one card one package. The
-    // tenant id keeps its genre/card spelling: the melite- prefix
-    // strips, the card dir is the second segment. pkgDir is the CARD
-    // package root (each card is its own workspace package — the D1
-    // declared-deps law reads its package.json).
+    // THE CARD PACKAGES (the card sweep, 2026-09-09; dirs de-doubled
+    // the same day): every card lives at packages/<genre>/<card>/ —
+    // one card one package, genre dirs as BARE words. The walk
+    // mirrors cardStudios' BROAD glob exactly (every
+    // packages/*/*/src/ui/studio/component.tsx — only card packages
+    // carry that path), so the set-equality gate below holds by
+    // construction and a new genre dir joins both sides at once.
+    // pkgDir is the CARD package root (the D1 declared-deps law
+    // reads its package.json).
     const meliteRoot = resolve(REPO_ROOT, "packages")
     for (const dom of readdirSync(meliteRoot, { withFileTypes: true })) {
-      if (!dom.isDirectory() || !dom.name.startsWith("melite-")) continue
+      if (!dom.isDirectory()) continue
       for (const card of readdirSync(resolve(meliteRoot, dom.name), { withFileTypes: true })) {
         if (!card.isDirectory()) continue
         const pkgDir = resolve(meliteRoot, dom.name, card.name)
@@ -236,7 +239,7 @@ describe("plugin studio tenant boundary (§6 props gate)", () => {
         } catch {
           continue // a card package without a studio body — schema-form card
         }
-        out.push({ id: `${dom.name.slice("melite-".length)}/${card.name}`, file, src, pkgDir })
+        out.push({ id: `${dom.name}/${card.name}`, file, src, pkgDir })
       }
     }
     return out

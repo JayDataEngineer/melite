@@ -40,12 +40,12 @@ import { DEFAULT_GATEWAY_URL } from './gateway.ts'
 // hosts compose packages, never fetch registries). The fetch
 // registrar (tools/card-tools.ts) died with its last row — every
 // card tool composes through its package now.
-import { buildMusicTool } from '@melite/melite-audio-music/tool'
-import { buildTtsTool } from '@melite/melite-audio-tts/tool'
-import { buildVoiceLockTool } from '@melite/melite-audio-voice-lock/tool'
-import { buildImageEditTool } from '@melite/melite-image-image-edit/tool'
-import { buildMotionTool } from '@melite/melite-motion-motion/tool'
-import { buildH3TimelineTool } from '@melite/melite-video-h3-timeline/tool'
+import { buildMusicTool } from '@melite/audio-music/tool'
+import { buildTtsTool } from '@melite/audio-tts/tool'
+import { buildVoiceLockTool } from '@melite/audio-voice-lock/tool'
+import { buildImageEditTool } from '@melite/image-image-edit/tool'
+import { buildMotionTool } from '@melite/motion-motion/tool'
+import { buildH3TimelineTool } from '@melite/video-h3-timeline/tool'
 import { cardRun } from './tools/card-run.ts'
 import { flowRun } from './tools/flow-run.ts'
 import { runStatus } from './tools/run-status.ts'

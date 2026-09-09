@@ -1016,7 +1016,7 @@ interface CardWalk {
 }
 
 /** THE CARD PACKAGE DOMAINS (the card sweep, 2026-09-09): cards
- *  live in their own packages — packages/melite-<domain>/<card>/
+ *  live in their own packages — packages/<domain>/<card>/
  *  (src/card.ts + src/ui/ + src/agents/ in one unit). The engine
  *  src/cards tree keeps only cards not yet swept. This walk yields
  *  both, engine tree FIRST (deterministic order: remainder cards,
@@ -1048,16 +1048,13 @@ function cardUnitDirs(engine: string, repo: string): { genre: string; cname: str
       }
     }
   }
-  // the card package domains: <repo>/packages/melite-<domain>/<card>
-  const domains: readonly [string, string][] = [
-    ["3d", "melite-3d"],
-    ["audio", "melite-audio"],
-    ["image", "melite-image"],
-    ["motion", "melite-motion"],
-    ["video", "melite-video"],
-  ];
-  for (const [genre, domain] of domains) {
-    const droot = join(repo, "packages", domain);
+  // the card package domains (de-doubled 2026-09-09: the genre dirs
+  // are BARE words — <repo>/packages/<genre>/<card>/; the mapping
+  // table died with the prefix, the dir IS the genre). models stays
+  // out of this walk by content: model packages carry index.ts, no
+  // card.ts — the isFile guard below is the discriminator.
+  for (const genre of ["3d", "audio", "image", "motion", "video"]) {
+    const droot = join(repo, "packages", genre);
     if (!isDir(droot)) continue;
     for (const c of subdirs(droot)) {
       // the card unit of a package lives at src/ (card.ts + ui + agents)

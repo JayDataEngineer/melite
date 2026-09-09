@@ -33,7 +33,7 @@ describe("video timeline tenant against the REAL served draft", () => {
     }
     expect(doc).toBe(film.totalFrames)
     // THE REAL MOUNT: the tenant that renders in the Cards view.
-    const mod = await import("@melite/melite-video-h3-timeline/ui/studio/component")
+    const mod = await import("@melite/video-h3-timeline/ui/studio/component")
     const Tenant = (mod.default ?? Object.values(mod)[0]) as React.ComponentType<Record<string, unknown>>
     // CardStage fields the adapter normally precomputes — the raw served
     // draft fixture carries neither; both are inert for the mount check.

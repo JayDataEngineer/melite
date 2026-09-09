@@ -1,0 +1,18 @@
+{
+  "name": "@melite/models-step1x_texture",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./package.json": "./package.json",
+    "./mods/loras": "./mods/loras.ts"
+  },
+  "dependencies": {
+    "@deepseek-ai/cordis": "^4.0.2",
+    "@melite/comfyui": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "*"
+  }
+}

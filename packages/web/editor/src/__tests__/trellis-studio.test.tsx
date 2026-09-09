@@ -13,7 +13,7 @@ import {
 import TrellisStudioDefault, {
   TrellisStudio,
   shellDeclaration,
-} from "@melite/melite-3d-img-to-mesh/ui/studio/component"
+} from "@melite/3d-img-to-mesh/ui/studio/component"
 
 describeShellTenant({
   declaration: shellDeclaration,

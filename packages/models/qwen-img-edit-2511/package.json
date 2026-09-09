@@ -1,0 +1,21 @@
+{
+  "name": "@melite/models-qwen-img-edit-2511",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./package.json": "./package.json",
+    "./mods/loras": "./mods/loras.ts",
+    "./mods/lanpaint": "./mods/lanpaint.ts",
+    "./mods/mask": "./mods/mask.ts"
+  },
+  "dependencies": {
+    "@deepseek-ai/cordis": "^4.0.2",
+    "@deepseek-ai/schemastery": "*",
+    "@melite/comfyui": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "*"
+  }
+}

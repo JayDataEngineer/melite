@@ -18,7 +18,7 @@
     }
   },
   "dependencies": {
-    "@melite/melite-image-image-gen": "workspace:*",
+    "@melite/image-image-gen": "workspace:*",
     "@melite/viewer-base": "workspace:*"
   },
   "peerDependencies": {

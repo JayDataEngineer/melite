@@ -24,7 +24,7 @@ import type { CardDefinition } from './service.ts'
 // the receipt is references/deepseek-harness packages/shell/tool-bash
 // (a tool is its own package; DSH composes packages, never discovers
 // nested plugins by glob). Every card lives in its own package
-// (packages/melite-<domain>/<id>); the readdir glob is DELETED and
+// (packages/<domain>/<id>); the readdir glob is DELETED and
 // the table in loadCardDefs is the only composition.
 
 let cache: Map<string, CardDefinition> | null = null
@@ -43,7 +43,7 @@ export const theService = (): ComfyUIService => {
  * Deterministic across calls in one process. */
 /** THE CARD PACKAGES (the card sweep, 2026-09-09 — the glob's named
  *  death date arrived): every card lives in its own package
- *  (packages/melite-<domain>/<id> — one card one package: card.ts +
+ *  (packages/<domain>/<id> — one card one package: card.ts +
  *  ui/ + agents/ in one unit). This table is the ONLY card
  *  composition (loadCardDefs' cache-boot AND the compose door's
  *  fresh-Context boot both ride it); a card lands by adding its
@@ -51,26 +51,26 @@ export const theService = (): ComfyUIService => {
  *  cards (only tenants remain: the fetch-registrar manifests,
  *  retired with their rows). */
 export const cardPackages: string[] = [
-    '@melite/melite-3d-anny',
-    '@melite/melite-3d-fit',
-    '@melite/melite-3d-img-to-mesh',
-    '@melite/melite-3d-quad-remesh',
-    '@melite/melite-3d-skin',
-    '@melite/melite-audio-sfx',
-    '@melite/melite-image-ideogram4',
-    '@melite/melite-image-input-prep',
-    '@melite/melite-image-mask-studio',
-    '@melite/melite-image-tagger',
-    '@melite/melite-image-upscale-tools',
-    '@melite/melite-video-video-gen',
-    '@melite/melite-audio-music',
-    '@melite/melite-audio-tts',
-    '@melite/melite-audio-voice-lock',
-    '@melite/melite-image-image-edit',
-    '@melite/melite-motion-motion',
-    '@melite/melite-video-h3-timeline',
-    '@melite/melite-3d-clothing-placement',
-  '@melite/melite-image-image-gen',
+    '@melite/3d-anny',
+    '@melite/3d-fit',
+    '@melite/3d-img-to-mesh',
+    '@melite/3d-quad-remesh',
+    '@melite/3d-skin',
+    '@melite/audio-sfx',
+    '@melite/image-ideogram4',
+    '@melite/image-input-prep',
+    '@melite/image-mask-studio',
+    '@melite/image-tagger',
+    '@melite/image-upscale-tools',
+    '@melite/video-video-gen',
+    '@melite/audio-music',
+    '@melite/audio-tts',
+    '@melite/audio-voice-lock',
+    '@melite/image-image-edit',
+    '@melite/motion-motion',
+    '@melite/video-h3-timeline',
+    '@melite/3d-clothing-placement',
+  '@melite/image-image-gen',
 ]
 
 /** Compose the card set into a Context (the shared auto-load loop:
@@ -142,17 +142,17 @@ export const loadCardDefs = async (): Promise<Map<string, CardDefinition>> => {
   }
   // THE PACKAGED FAMILIES' FLAVORS (the model-package stroke): a
   // family promoted to its model plugin package
-  // (packages/melite-models/<id>) CARRIES its mods — the flavor
+  // (packages/models/<id>) CARRIES its mods — the flavor
   // module ships inside the package and composes HERE, same phase
   // as the walk above (packs first, flavors after; the boot-loud
   // flavor↔DECL.mods interlock is unchanged on the models side).
   const packagedFlavors: [string, string][] = [
-    ['@melite/melite-models-krea-2/mods/loras', 'krea-2 loras'],
-    ['@melite/melite-models-anny/mods/verbs', 'anny verbs'],
-    ['@melite/melite-models-qwen3-tts/mods/qvoice', 'qwen3-tts qvoice'],
-    ['@melite/melite-models-qwen-img-edit-2511/mods/lanpaint', 'qwen-img-edit-2511 lanpaint'],
-    ['@melite/melite-models-qwen-img-edit-2511/mods/loras', 'qwen-img-edit-2511 loras'],
-    ['@melite/melite-models-qwen-img-edit-2511/mods/mask', 'qwen-img-edit-2511 mask'],
+    ['@melite/models-krea-2/mods/loras', 'krea-2 loras'],
+    ['@melite/models-anny/mods/verbs', 'anny verbs'],
+    ['@melite/models-qwen3-tts/mods/qvoice', 'qwen3-tts qvoice'],
+    ['@melite/models-qwen-img-edit-2511/mods/lanpaint', 'qwen-img-edit-2511 lanpaint'],
+    ['@melite/models-qwen-img-edit-2511/mods/loras', 'qwen-img-edit-2511 loras'],
+    ['@melite/models-qwen-img-edit-2511/mods/mask', 'qwen-img-edit-2511 mask'],
   ]
   for (const [specifier, label] of packagedFlavors) {
     const mod = (await import(specifier)) as unknown as Plugin

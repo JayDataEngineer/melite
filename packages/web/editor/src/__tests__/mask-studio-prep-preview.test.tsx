@@ -9,7 +9,7 @@ import { describe, it, expect, vi, beforeAll } from "vitest"
 import { render as renderBase, screen, fireEvent } from "@testing-library/react"
 import type { ReactElement } from "react"
 import { TooltipProvider } from "@melite/ui/tooltip"
-import { MaskStudioEditor } from "@melite/melite-image-mask-studio/ui/studio/component"
+import { MaskStudioEditor } from "@melite/image-mask-studio/ui/studio/component"
 import type { CardStage } from "@melite/contracts"
 function renderWithTooltip(ui: ReactElement) {
   return renderBase(<TooltipProvider>{ui}</TooltipProvider>)

@@ -94,22 +94,29 @@ const ACTION_CARD_BODY =
 const CARD_UNIT_BODY =
   /^\/src\/cards\/([^/]+)\/([^/]+)\/ui\/studio\/component\.tsx$/
 
-// THE CARD PACKAGES (the card sweep, 2026-09-09): every card lives
-// at packages/melite-<genre>/<card>/src/ui/studio/component.tsx —
-// the engine src/cards tree is gone; this glob is the cards' home
-// now. The tenant id keeps its genre/card spelling (the join key
-// the served body claims declare) — the domain prefix IS the genre.
+// THE CARD PACKAGES (the card sweep, 2026-09-09; dirs de-doubled the
+// same day — the scope already namespaces the names, the genre dirs
+// are BARE words: packages/<genre>/<card>/): every card lives at
+// packages/<genre>/<card>/src/ui/studio/component.tsx — the engine
+// src/cards tree is gone; this glob is the cards' home now. Only
+// card packages carry src/ui/studio/component.tsx (census-verified),
+// so the BROAD shape admits a new genre dir automatically — no list
+// to maintain, and the boundary gate keeps glob ≡ fs.
 const CARD_PACKAGE_TENANT_LOADERS = import.meta.glob<{
   default: ComponentType<StudioTenantProps>
-}>("../../../../../../packages/melite-*/*/src/ui/studio/component.tsx")
+}>("../../../../../../packages/*/*/src/ui/studio/component.tsx")
 
-// ANCHOR LAW (the same one the engines regexes follow): vite
-// normalizes glob keys — the leading ../.. runs collapse, so the
-// literal "packages/" prefix DISAPPEARS from every key (verified
-// 2026-09-09: keys arrive as ../../melite-motion/motion/src/...).
-// Anchor on the /melite-<genre>/ segment, which survives everywhere.
+// ANCHOR LAW: vite normalizes glob keys — the leading ../.. runs
+// collapse, the literal "packages/" prefix DISAPPEARS from every key
+// (keys arrive as ../../motion/motion/src/...). Anchor on a segment
+// that SURVIVES: /src/ui/studio/ — the engine card shapes never
+// carry it (their studios live under /cards/.../ui/studio). The two
+// segments before it are <genre>/<card>; tenant ids keep the
+// genre/card spelling (the join key the served body claims declare —
+// unchanged by the dir rename: the ids were already the stripped
+// form).
 const CARD_PACKAGE_BODY =
-  /\/melite-([^/]+)\/([^/]+)\/src\/ui\/studio\/component\.tsx$/
+  /\/([^/]+)\/([^/]+)\/src\/ui\/studio\/component\.tsx$/
 
 function pluginTenantId(path: string): string | null {
   const i = path.indexOf("/action_cards/")
@@ -122,9 +129,9 @@ function pluginTenantId(path: string): string | null {
     const m = CARD_UNIT_BODY.exec(path.slice(j))
     return m ? `${m[1]}/${m[2]}` : null
   }
-  const k = path.indexOf("/melite-")
+  const k = path.indexOf("/src/ui/studio/")
   if (k >= 0) {
-    const m = CARD_PACKAGE_BODY.exec(path.slice(k))
+    const m = CARD_PACKAGE_BODY.exec(path.slice(0, k) + "/src/ui/studio/component.tsx")
     return m ? `${m[1]}/${m[2]}` : null
   }
   return null

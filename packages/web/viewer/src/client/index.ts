@@ -12,7 +12,7 @@ import type { Context as ClientContext } from '@deepseek-ai/cordis'
 // Type-only: pulls the SlotRegistry service merge (ctx.slots).
 import type {} from '@deepseek-ai/dsh-client-ui-renderer/client'
 import { claimRunCardToolview } from '@melite/viewer-base/runCard'
-import { TOOL_NAME as IMAGE_GEN } from '@melite/melite-image-image-gen/wire'
+import { TOOL_NAME as IMAGE_GEN } from '@melite/image-image-gen/wire'
 
 /** The run cards this composition serves default views for. */
 const RUN_CARDS: ReadonlyArray<{ readonly name: string; readonly label: string }> = [

@@ -36,7 +36,7 @@ import {
   isValidElementsArray,
   parseElementsJSON,
   serializeElements,
-} from "@melite/melite-image-ideogram4/ui/studio/ideoHelpers"
+} from "@melite/image-ideogram4/ui/studio/ideoHelpers"
 
 // ─── Constants ─────────────────────────────────────────────────────────────
 

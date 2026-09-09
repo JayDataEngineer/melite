@@ -182,9 +182,9 @@ describe("declaration conformance (the z-image verdict, 2026-09-08)", () => {
   // no dead keys, tree-wide across all 48 families.
   const FAM_ROOT = join(REPO_ROOT, "packages", "engines", "comfyui-cordis", "src", "models", "families");
   // THE MODEL PLUGIN PACKAGES (the model-package stroke): families
-  // promoted to packages/melite-models/<id> carry their DECL there —
+  // promoted to packages/models/<id> carry their DECL there —
   // the annotation is the membership test, the domain is not.
-  const MODEL_PKG_ROOT = join(REPO_ROOT, "packages", "melite-models");
+  const MODEL_PKG_ROOT = join(REPO_ROOT, "packages", "models");
   const DEAD: RegExp[] = [
     /"mods": \[\]/,
     /"provisions": \[\]/,

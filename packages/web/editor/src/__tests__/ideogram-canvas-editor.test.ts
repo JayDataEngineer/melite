@@ -6,8 +6,8 @@
  *  Locking those down is the highest-leverage thing to test here.
  */
 import { describe, expect, it } from "vitest"
-import { __test } from "@melite/melite-image-ideogram4/ui/studio/ideoHelpers"
-import type { IdeoElement } from "@melite/melite-image-ideogram4/ui/studio/ideoHelpers"
+import { __test } from "@melite/image-ideogram4/ui/studio/ideoHelpers"
+import type { IdeoElement } from "@melite/image-ideogram4/ui/studio/ideoHelpers"
 
 const {
   GRID_SIZE,

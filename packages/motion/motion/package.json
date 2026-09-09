@@ -1,0 +1,38 @@
+{
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts",
+    "./card": "./src/card.ts",
+    "./package.json": "./package.json",
+    "./tool": "./src/tool.ts",
+    "./ui/*": "./src/ui/*",
+    "./ui/studio/component": "./src/ui/studio/component.tsx"
+  },
+  "scripts": {
+    "test": "node --experimental-strip-types --test tests/"
+  },
+  "dependencies": {
+    "@deepseek-ai/cordis": "^4.0.2",
+    "@deepseek-ai/dsh-tools": "0.1.5-alpha.1",
+    "@deepseek-ai/schemastery": "*",
+    "@melite-plugin/motion": "workspace:*",
+    "@melite-plugin/timeline": "workspace:*",
+    "@melite/card-kit": "workspace:*",
+    "@melite/catalog": "workspace:*",
+    "@melite/comfyui": "workspace:*",
+    "@melite/contracts": "workspace:*",
+    "@melite/formats": "workspace:*",
+    "@melite/ui": "workspace:*",
+    "lucide-react": "*",
+    "react": "*",
+    "three": "*"
+  },
+  "devDependencies": {
+    "@types/node": "*"
+  },
+  "name": "@melite/motion-motion",
+  "description": "the motion card (the motion lane) \u2014 one card one package: card.ts host face + ui/ studio + agents/ context"
+}
