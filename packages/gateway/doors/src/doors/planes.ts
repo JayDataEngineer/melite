@@ -1014,17 +1014,17 @@ interface CardWalk {
 
 /** LEVEL 2 card docs (lane_disclosure._card_rows 178-257): AGENT.md
  *  + agents/skills/* per card dir, bucketed by DIR NAME ("_" genres
- *  skipped). TWO roots while the card-folder migration empties
- *  action_cards (card-folder-shape design record, 2026-09-08): the
- *  legacy tenant package and the nested card units
- *  src/cards/<genre>/<card>/ (the doc-derived one-card-one-folder
- *  home — card.ts + ui/ + agents/ in one unit). */
+ *  skipped). ONE root — the card-folder migration is complete
+ *  (card-folder-shape design record, 2026-09-08): every card lives
+ *  as src/cards/<genre>/<card>/ (one card one folder — card.ts +
+ *  ui/ + agents/ in one unit); action_cards keeps only the
+ *  no-host-card tenants (3d/body) and the genre ui packages. */
 function cardRows(engine: string): CardWalk {
   const rows: DocRow[] = [];
   const buckets = new Map<string, { dir: string; rows: DocRow[] }>();
-  const cardsRoots: string[] = [join(engine, "action_cards"), join(engine, "src", "cards")];
-  for (const cardsRoot of cardsRoots) {
-    if (!isDir(cardsRoot)) continue;
+  {
+    const cardsRoot = join(engine, "src", "cards");
+    if (!isDir(cardsRoot)) return { rows, buckets };
     for (const genre of subdirs(cardsRoot)) {
       if (genre.startsWith("_")) continue;
       for (const cname of subdirs(join(cardsRoot, genre))) {
@@ -1100,18 +1100,18 @@ function manifests(engine: string, cards?: CardRegistryService | null): Map<stri
   const out = new Map<string, ManifestEntry>();
   const defs = needCardRegistry(cards, "manifests").defsSync();
   const resolved = new Set<string>();
-  // TWO roots while the card-folder migration empties action_cards
-  // (card-folder-shape design record, 2026-09-08): the legacy tenant
-  // package and the nested card units src/cards/<genre>/<card>/.
-  // Nested card dirs are dash-named registry ids already — the
-  // DIR_ID_ALIASES bridge stays an action_cards concern.
-  const cardsRoots: string[] = [join(engine, "action_cards"), join(engine, "src", "cards")];
-  for (const cardsRoot of cardsRoots) {
+  // ONE root — the card-folder migration is complete (card-folder
+  // design record, 2026-09-08): every card unit lives at
+  // src/cards/<genre>/<card>/ (dash-named registry ids — the
+  // DIR_ID_ALIASES bridge and the closed underscore refusal below
+  // ride along for the history they document).
+  {
+    const cardsRoot = join(engine, "src", "cards");
     let genres: string[];
     try {
       genres = readdirSync(cardsRoot);
     } catch {
-      continue;
+      genres = [];
     }
     for (const genre of genres) {
       // Dependency + hidden dirs are never cards (a node_modules

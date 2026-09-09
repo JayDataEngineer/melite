@@ -186,9 +186,9 @@ describe("plugin studio tenant boundary (§6 props gate)", () => {
   function pluginComponents(): { id: string; file: string; src: string; pkgDir: string }[] {
     const out: { id: string; file: string; src: string; pkgDir: string }[] = []
     for (const engine of readdirSync(ENGINES_DIR)) {
-      // BOTH homes while the card-folder migration empties action_cards
-      // (card-folder-shape design record, 2026-09-08): the legacy
-      // tenant package and the nested card units src/cards/.
+      // BOTH homes permanently (card-folder design record, 2026-09-08):
+      // the card units src/cards/ plus the action_cards tenant package
+      // (the C++-lane tenants that own no host card — 3d/body).
       const cardsRoots = [
         resolve(ENGINES_DIR, engine, "action_cards"),
         resolve(ENGINES_DIR, engine, "src", "cards"),
@@ -336,10 +336,10 @@ describe("plugin ui tenant boundary (§16 E-TENANTS)", () => {
 
   /** The BODY tenant files (cardStudios' glob: ui/studio/component.tsx
    *  and its co-located studio modules) — same shape as pluginUiFiles.
-   *  BOTH homes while the card-folder migration empties action_cards
-   *  (card-folder-shape design record, 2026-09-08): the legacy tenant
-   *  package and the nested card units
-   *  engines/comfyui-cordis/src/cards/<genre>/<card>/. */
+   *  BOTH homes permanently (card-folder design record, 2026-09-08):
+   *  the card units
+   *  engines/comfyui-cordis/src/cards/<genre>/<card>/ plus the
+   *  action_cards tenant package (C++-lane tenants, no host card). */
   function studioTenants(): { id: string; src: string; pkgDir: string }[] {
     const out: { id: string; src: string; pkgDir: string }[] = []
     const acRoots = [

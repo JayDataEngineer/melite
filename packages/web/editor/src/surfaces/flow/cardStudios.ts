@@ -66,24 +66,25 @@ const PLUGIN_TENANT_LOADERS = import.meta.glob<{
   default: ComponentType<StudioTenantProps>
 }>("../../../../../../packages/engines/*/action_cards/*/*/ui/studio/component.tsx")
 
-// The nested card units (card-folder-shape design record, 2026-09-08):
-// packages/engines/<engine>/src/cards/<genre>/<card>/ui/studio/component.tsx
-// — the doc-derived one-card-one-folder home (card.ts + ui/ + agents/
-// in one unit). Both globs live while the migration empties
-// action_cards; the action_cards glob dies with its last folder.
+// The card units (card-folder design record, 2026-09-08 — migration
+// complete): packages/engines/<engine>/src/cards/<genre>/<card>/ui/
+// studio/component.tsx — the doc-derived one-card-one-folder home
+// (card.ts + ui/ + agents/ in one unit). The action_cards glob above
+// stays for the C++-lane tenants that own no host card (3d/body) —
+// that package is their PERMANENT home, not a migration leftover.
 const CARD_UNIT_TENANT_LOADERS = import.meta.glob<{
   default: ComponentType<StudioTenantProps>
 }>("../../../../../../packages/engines/*/src/cards/*/*/ui/studio/component.tsx")
 
-// Card-body studios claim action_cards/<genre>/<card>/ui/studio/component.tsx
-// (THE ui/studio claim = the authoring-surface override). Other ui/<claim>/
-// dirs are SLOT claims owned by shell/pluginUi.ts — the two seams are
-// disjoint by claim name, exactly as the override order intends.
-// DERIVATION ANCHORS ON THE /action_cards/ SEGMENT: vite normalizes glob
-// keys (a leading ../../plugins collapses into ../../ — the literal
-// "packages/engines" prefix DISAPPEARS), so an absolute-prefix regex
-// silently yields zero tenants in the vitest module runner. The segment
-// after /action_cards/ is stable everywhere.
+// Card-body studios claim ui/studio/component.tsx (THE ui/studio
+// claim = the authoring-surface override). Other ui/<claim>/ dirs are
+// SLOT claims owned by shell/pluginUi.ts — the two seams are disjoint
+// by claim name, exactly as the override order intends.
+// DERIVATION ANCHORS ON THE /action_cards/ OR /src/cards/ SEGMENT: vite
+// normalizes glob keys (a leading ../../plugins collapses into ../../ —
+// the literal "packages/engines" prefix DISAPPEARS), so an
+// absolute-prefix regex silently yields zero tenants in the vitest
+// module runner. The segments after either anchor are stable everywhere.
 const ACTION_CARD_BODY =
   /^\/action_cards\/([^/]+)\/([^/]+)\/ui\/studio\/component\.tsx$/
 

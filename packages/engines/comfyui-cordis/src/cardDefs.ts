@@ -39,14 +39,11 @@ export const loadCardDefs = async (): Promise<Map<string, CardDefinition>> => {
   const ctx = new Context()
   const service = new ComfyUIService(ctx)
   // the cli.ts:59-63 auto-load loop (in-process): every card module
-  // under src/cards, full namespace, in readdirSync order. TWO
-  // layouts during the card-folder migration (card-folder-shape
-  // design record, 2026-09-08): the flat legacy files and the
-  // nested card units cards/<genre>/<card>/card.ts (the doc-derived
-  // shape — one card one folder: card.ts + ui/ + agents/). The flat
-  // leg dies when the last card has its folder.
+  // under src/cards. One layout — the doc-derived shape (card-folder
+  // design record, 2026-09-08): one card one folder,
+  // cards/<genre>/<card>/card.ts (+ ui/ + agents/ where owned).
   const cardsDir = join(dirname(new URL(import.meta.url).pathname), 'cards')
-  const cardFiles: string[] = readdirSync(cardsDir).filter((x) => x.endsWith('.ts')).map((x) => join(cardsDir, x)).sort()
+  const cardFiles: string[] = []
   for (const genre of readdirSync(cardsDir, { withFileTypes: true }).sort((a, b) => (a.name < b.name ? -1 : 1))) {
     if (!genre.isDirectory()) continue
     const genreDir = join(cardsDir, genre.name)
