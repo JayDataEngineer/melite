@@ -21,9 +21,8 @@
 // waits for full evaluation). The card's data flows leaf-ward only.
 import { emitParamsSpec } from "@comfyui/cordis/params-emit";
 import { identity, schema } from "./card.ts";
-import type { Context } from "@deepseek-ai/cordis";
 import { defineTool } from "@deepseek-ai/dsh-tools";
-import type { ToolDefinition, ToolRuntime, ParameterSchemaSpec } from "@deepseek-ai/dsh-tools";
+import type { ToolDefinition, ParameterSchemaSpec } from "@deepseek-ai/dsh-tools";
 
 /**
  * The TOOL-plane name: the card id, hyphens→underscores, no
@@ -173,11 +172,4 @@ export function buildCardTool(gatewayUrl: string): ToolDefinition {
       }
     },
   });
-}
-
-/** Register the tool face into a host's tools service (the probe
- *  happens in index.ts per the tutorial's optional-dependency
- *  receipt; this function assumes the service is present). */
-export function registerTool(ctx: Context, tools: ToolRuntime, gatewayUrl: string): void {
-  ctx.effect(() => tools.register(buildCardTool(gatewayUrl.replace(/\/+$/, ""))));
 }

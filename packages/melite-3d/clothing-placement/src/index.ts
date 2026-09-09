@@ -26,7 +26,7 @@ import type { Context } from '@deepseek-ai/cordis'
 import Schema from '@deepseek-ai/schemastery'
 import { ComfyUIService } from '@comfyui/cordis/service'
 import { registerCard } from './card.ts'
-import { registerTool } from './tool.ts'
+import { buildCardTool } from './tool.ts'
 import type { ToolRuntime } from '@deepseek-ai/dsh-tools'
 
 export const name = 'clothing-placement'
@@ -58,6 +58,9 @@ export function apply(ctx: Context, config: Config): void {
   if (comfy !== undefined) registerCard(ctx, comfy)
   const tools = ctx.get('tools') as ToolRuntime | undefined
   if (tools !== undefined) {
-    registerTool(ctx, tools, (config?.gateway ?? '').trim() || 'http://localhost:33081')
+    // BARE registration, the tool-bash shape: the entry owns the
+    // register call; tool.ts exports the definition builder. The
+    // service attaches its own disposer (tutorial ch.2).
+    tools.register(buildCardTool((config?.gateway ?? '').trim() || 'http://localhost:33081'))
   }
 }

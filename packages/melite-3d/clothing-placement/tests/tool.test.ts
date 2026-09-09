@@ -160,15 +160,22 @@ describe("the executor path (two doors, flow law)", () => {
 /** The tools-service surface, stubbed to its Consumer-owned shape. */
 class StubToolsService extends Service {
   registered: ToolDefinition[] = [];
+  /** The service-side disposer record: the REAL runtime attaches
+   *  these to the calling plugin (tutorial ch.2 — harness
+   *  registries attach their disposers themselves; proven upstream
+   *  in core/tools' own specs). The stub models the protocol. */
+  disposers: Array<() => void> = [];
   constructor(ctx: Context) {
     super(ctx, "tools");
   }
   register(tool: ToolDefinition): () => void {
     this.registered.push(tool);
-    return () => {
+    const disposer = () => {
       const i = this.registered.indexOf(tool);
       if (i >= 0) this.registered.splice(i, 1);
     };
+    this.disposers.push(disposer);
+    return disposer;
   }
 }
 
@@ -188,13 +195,19 @@ describe("the optional tools service (the host contribution)", () => {
     return { ctx, stub };
   };
 
-  it("registers its tool where the host provides tools; dispose retracts (HMR)", async () => {
+  it("registers bare; the registration participates in the service's disposal protocol", async () => {
+    // The tool-bash shape: the entry calls tools.register directly —
+    // no ctx.effect wrapper. The service attaches the returned
+    // disposer to the calling plugin itself (tutorial ch.2); our
+    // registration must hand it one that retracts.
     const { ctx, stub } = await boot(true);
     const fiber = await ctx.plugin(pkg as unknown as Parameters<typeof ctx.plugin>[0], { gateway: baseUrl });
     assert.equal(stub!.registered.length, 1, "one tool contribution");
     assert.equal(stub!.registered[0]!.name, TOOL_NAME);
+    assert.equal(stub!.disposers.length, 1, "the registration returned a disposer");
+    stub!.disposers[0]!();
+    assert.equal(stub!.registered.length, 0, "the service's disposer retracts the tool");
     await fiber.dispose();
-    assert.equal(stub!.registered.length, 0, "fiber dispose retracts the tool");
     await ctx.fiber.dispose();
   });
 
