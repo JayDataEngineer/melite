@@ -129,9 +129,21 @@ export const loadCardDefs = async (): Promise<Map<string, CardDefinition>> => {
   // module ships inside the package and composes HERE, same phase
   // as the walk above (packs first, flavors after; the boot-loud
   // flavor↔DECL.mods interlock is unchanged on the models side).
-  const kreaLoras = (await import('@melite/melite-models-krea-2/mods/loras')) as unknown as Plugin
-  if (typeof (kreaLoras as { apply?: unknown }).apply === 'function') {
-    await ctx.plugin(kreaLoras)
+  const packagedFlavors: [string, string][] = [
+    ['@melite/melite-models-krea-2/mods/loras', 'krea-2 loras'],
+    ['@melite/melite-models-anny/mods/verbs', 'anny verbs'],
+    ['@melite/melite-models-qwen3-tts/mods/qvoice', 'qwen3-tts qvoice'],
+    ['@melite/melite-models-qwen-img-edit-2511/mods/lanpaint', 'qwen-img-edit-2511 lanpaint'],
+    ['@melite/melite-models-qwen-img-edit-2511/mods/loras', 'qwen-img-edit-2511 loras'],
+    ['@melite/melite-models-qwen-img-edit-2511/mods/mask', 'qwen-img-edit-2511 mask'],
+  ]
+  for (const [specifier, label] of packagedFlavors) {
+    const mod = (await import(specifier)) as unknown as Plugin
+    if (typeof (mod as { apply?: unknown }).apply === 'function') {
+      await ctx.plugin(mod)
+    } else {
+      throw new Error(`packaged flavor missing: ${label} (${specifier})`)
+    }
   }
   // THE IDENTITY RUNG (card DSL phase 2): attach the frozen ring
   // (the py identity truth — engine-comfyui models/

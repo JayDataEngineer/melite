@@ -77,12 +77,147 @@ importers:
       '@melite/melite-image-image-gen':
         specifier: workspace:*
         version: link:../../melite-image/image-gen
+      '@melite/melite-models-ace-step':
+        specifier: workspace:*
+        version: link:../../melite-models/ace-step
       '@melite/melite-models-anima':
         specifier: workspace:*
         version: link:../../melite-models/anima
+      '@melite/melite-models-anny':
+        specifier: workspace:*
+        version: link:../../melite-models/anny
+      '@melite/melite-models-anycreature':
+        specifier: workspace:*
+        version: link:../../melite-models/anycreature
+      '@melite/melite-models-auto-detect':
+        specifier: workspace:*
+        version: link:../../melite-models/auto-detect
+      '@melite/melite-models-autoremesher':
+        specifier: workspace:*
+        version: link:../../melite-models/autoremesher
+      '@melite/melite-models-basic_resize':
+        specifier: workspace:*
+        version: link:../../melite-models/basic_resize
+      '@melite/melite-models-concat':
+        specifier: workspace:*
+        version: link:../../melite-models/concat
+      '@melite/melite-models-dwpose':
+        specifier: workspace:*
+        version: link:../../melite-models/dwpose
+      '@melite/melite-models-fit':
+        specifier: workspace:*
+        version: link:../../melite-models/fit
+      '@melite/melite-models-florence2':
+        specifier: workspace:*
+        version: link:../../melite-models/florence2
+      '@melite/melite-models-flux-fill-dev':
+        specifier: workspace:*
+        version: link:../../melite-models/flux-fill-dev
+      '@melite/melite-models-gem_soma':
+        specifier: workspace:*
+        version: link:../../melite-models/gem_soma
+      '@melite/melite-models-h3':
+        specifier: workspace:*
+        version: link:../../melite-models/h3
+      '@melite/melite-models-h3-keyframe':
+        specifier: workspace:*
+        version: link:../../melite-models/h3-keyframe
+      '@melite/melite-models-h3-timeline':
+        specifier: workspace:*
+        version: link:../../melite-models/h3-timeline
+      '@melite/melite-models-ideogram':
+        specifier: workspace:*
+        version: link:../../melite-models/ideogram
+      '@melite/melite-models-input':
+        specifier: workspace:*
+        version: link:../../melite-models/input
+      '@melite/melite-models-joycaption':
+        specifier: workspace:*
+        version: link:../../melite-models/joycaption
+      '@melite/melite-models-joytag':
+        specifier: workspace:*
+        version: link:../../melite-models/joytag
+      '@melite/melite-models-kimodo':
+        specifier: workspace:*
+        version: link:../../melite-models/kimodo
       '@melite/melite-models-krea-2':
         specifier: workspace:*
         version: link:../../melite-models/krea-2
+      '@melite/melite-models-latentsync':
+        specifier: workspace:*
+        version: link:../../melite-models/latentsync
+      '@melite/melite-models-ltx-2-3':
+        specifier: workspace:*
+        version: link:../../melite-models/ltx-2-3
+      '@melite/melite-models-ltx-director-distilled':
+        specifier: workspace:*
+        version: link:../../melite-models/ltx-director-distilled
+      '@melite/melite-models-mesh_refine':
+        specifier: workspace:*
+        version: link:../../melite-models/mesh_refine
+      '@melite/melite-models-moss':
+        specifier: workspace:*
+        version: link:../../melite-models/moss
+      '@melite/melite-models-moss-sfx':
+        specifier: workspace:*
+        version: link:../../melite-models/moss-sfx
+      '@melite/melite-models-music3':
+        specifier: workspace:*
+        version: link:../../melite-models/music3
+      '@melite/melite-models-pixal3d':
+        specifier: workspace:*
+        version: link:../../melite-models/pixal3d
+      '@melite/melite-models-pixel_upscale':
+        specifier: workspace:*
+        version: link:../../melite-models/pixel_upscale
+      '@melite/melite-models-qwen-img-edit-2511':
+        specifier: workspace:*
+        version: link:../../melite-models/qwen-img-edit-2511
+      '@melite/melite-models-qwen3-tts':
+        specifier: workspace:*
+        version: link:../../melite-models/qwen3-tts
+      '@melite/melite-models-rtx-vsr':
+        specifier: workspace:*
+        version: link:../../melite-models/rtx-vsr
+      '@melite/melite-models-scail2-animate':
+        specifier: workspace:*
+        version: link:../../melite-models/scail2-animate
+      '@melite/melite-models-see-through':
+        specifier: workspace:*
+        version: link:../../melite-models/see-through
+      '@melite/melite-models-seedvr2_ema':
+        specifier: workspace:*
+        version: link:../../melite-models/seedvr2_ema
+      '@melite/melite-models-skin':
+        specifier: workspace:*
+        version: link:../../melite-models/skin
+      '@melite/melite-models-skintokens':
+        specifier: workspace:*
+        version: link:../../melite-models/skintokens
+      '@melite/melite-models-somax':
+        specifier: workspace:*
+        version: link:../../melite-models/somax
+      '@melite/melite-models-step1x_texture':
+        specifier: workspace:*
+        version: link:../../melite-models/step1x_texture
+      '@melite/melite-models-stretchy-rig':
+        specifier: workspace:*
+        version: link:../../melite-models/stretchy-rig
+      '@melite/melite-models-transfer_rig':
+        specifier: workspace:*
+        version: link:../../melite-models/transfer_rig
+      '@melite/melite-models-trellis2-native':
+        specifier: workspace:*
+        version: link:../../melite-models/trellis2-native
+      '@melite/melite-models-trellis_native':
+        specifier: workspace:*
+        version: link:../../melite-models/trellis_native
+      '@melite/melite-models-wan-vace':
+        specifier: workspace:*
+        version: link:../../melite-models/wan-vace
+      '@melite/melite-models-wd14':
+        specifier: workspace:*
+        version: link:../../melite-models/wd14
       '@melite/melite-models-z-image':
         specifier: workspace:*
         version: link:../../melite-models/z-image
@@ -541,6 +676,19 @@ importers:
         specifier: '*'
         version: 24.13.3
 
+  packages/melite-models/ace-step:
+    dependencies:
+      '@deepseek-ai/cordis':
+        specifier: ^4.0.2
+        version: 4.0.2(@deepseek-ai/cordis-plugin-include@1.0.6)(@deepseek-ai/cordis-plugin-loader@1.0.3)
+      '@melite/comfyui':
+        specifier: workspace:*
+        version: link:../../engines/comfyui-cordis
+    devDependencies:
+      '@types/node':
+        specifier: '*'
+        version: 24.13.3
+
   packages/melite-models/anima:
     dependencies:
       '@deepseek-ai/cordis':
@@ -554,7 +702,588 @@ importers:
         specifier: '*'
         version: 24.13.3
 
+  packages/melite-models/anny:
+    dependencies:
+      '@deepseek-ai/cordis':
+        specifier: ^4.0.2
+        version: 4.0.2(@deepseek-ai/cordis-plugin-include@1.0.6)(@deepseek-ai/cordis-plugin-loader@1.0.3)
+      '@deepseek-ai/schemastery':
+        specifier: '*'
+        version: 3.18.2
+      '@melite/comfyui':
+        specifier: workspace:*
+        version: link:../../engines/comfyui-cordis
+    devDependencies:
+      '@types/node':
+        specifier: '*'
+        version: 24.13.3
+
+  packages/melite-models/anycreature:
+    dependencies:
+      '@deepseek-ai/cordis':
+        specifier: ^4.0.2
+        version: 4.0.2(@deepseek-ai/cordis-plugin-include@1.0.6)(@deepseek-ai/cordis-plugin-loader@1.0.3)
+      '@melite/comfyui':
+        specifier: workspace:*
+        version: link:../../engines/comfyui-cordis
+    devDependencies:
+      '@types/node':
+        specifier: '*'
+        version: 24.13.3
+
+  packages/melite-models/auto-detect:
+    dependencies:
+      '@deepseek-ai/cordis':
+        specifier: ^4.0.2
+        version: 4.0.2(@deepseek-ai/cordis-plugin-include@1.0.6)(@deepseek-ai/cordis-plugin-loader@1.0.3)
+      '@melite/comfyui':
+        specifier: workspace:*
+        version: link:../../engines/comfyui-cordis
+    devDependencies:
+      '@types/node':
+        specifier: '*'
+        version: 24.13.3
+
+  packages/melite-models/autoremesher:
+    dependencies:
+      '@deepseek-ai/cordis':
+        specifier: ^4.0.2
+        version: 4.0.2(@deepseek-ai/cordis-plugin-include@1.0.6)(@deepseek-ai/cordis-plugin-loader@1.0.3)
+      '@melite/comfyui':
+        specifier: workspace:*
+        version: link:../../engines/comfyui-cordis
+    devDependencies:
+      '@types/node':
+        specifier: '*'
+        version: 24.13.3
+
+  packages/melite-models/basic_resize:
+    dependencies:
+      '@deepseek-ai/cordis':
+        specifier: ^4.0.2
+        version: 4.0.2(@deepseek-ai/cordis-plugin-include@1.0.6)(@deepseek-ai/cordis-plugin-loader@1.0.3)
+      '@melite/comfyui':
+        specifier: workspace:*
+        version: link:../../engines/comfyui-cordis
+    devDependencies:
+      '@types/node':
+        specifier: '*'
+        version: 24.13.3
+
+  packages/melite-models/concat:
+    dependencies:
+      '@deepseek-ai/cordis':
+        specifier: ^4.0.2
+        version: 4.0.2(@deepseek-ai/cordis-plugin-include@1.0.6)(@deepseek-ai/cordis-plugin-loader@1.0.3)
+      '@melite/comfyui':
+        specifier: workspace:*
+        version: link:../../engines/comfyui-cordis
+    devDependencies:
+      '@types/node':
+        specifier: '*'
+        version: 24.13.3
+
+  packages/melite-models/dwpose:
+    dependencies:
+      '@deepseek-ai/cordis':
+        specifier: ^4.0.2
+        version: 4.0.2(@deepseek-ai/cordis-plugin-include@1.0.6)(@deepseek-ai/cordis-plugin-loader@1.0.3)
+      '@melite/comfyui':
+        specifier: workspace:*
+        version: link:../../engines/comfyui-cordis
+    devDependencies:
+      '@types/node':
+        specifier: '*'
+        version: 24.13.3
+
+  packages/melite-models/fit:
+    dependencies:
+      '@deepseek-ai/cordis':
+        specifier: ^4.0.2
+        version: 4.0.2(@deepseek-ai/cordis-plugin-include@1.0.6)(@deepseek-ai/cordis-plugin-loader@1.0.3)
+      '@melite/comfyui':
+        specifier: workspace:*
+        version: link:../../engines/comfyui-cordis
+    devDependencies:
+      '@types/node':
+        specifier: '*'
+        version: 24.13.3
+
+  packages/melite-models/florence2:
+    dependencies:
+      '@deepseek-ai/cordis':
+        specifier: ^4.0.2
+        version: 4.0.2(@deepseek-ai/cordis-plugin-include@1.0.6)(@deepseek-ai/cordis-plugin-loader@1.0.3)
+      '@melite/comfyui':
+        specifier: workspace:*
+        version: link:../../engines/comfyui-cordis
+    devDependencies:
+      '@types/node':
+        specifier: '*'
+        version: 24.13.3
+
+  packages/melite-models/flux-fill-dev:
+    dependencies:
+      '@deepseek-ai/cordis':
+        specifier: ^4.0.2
+        version: 4.0.2(@deepseek-ai/cordis-plugin-include@1.0.6)(@deepseek-ai/cordis-plugin-loader@1.0.3)
+      '@melite/comfyui':
+        specifier: workspace:*
+        version: link:../../engines/comfyui-cordis
+    devDependencies:
+      '@types/node':
+        specifier: '*'
+        version: 24.13.3
+
+  packages/melite-models/gem_soma:
+    dependencies:
+      '@deepseek-ai/cordis':
+        specifier: ^4.0.2
+        version: 4.0.2(@deepseek-ai/cordis-plugin-include@1.0.6)(@deepseek-ai/cordis-plugin-loader@1.0.3)
+      '@melite/comfyui':
+        specifier: workspace:*
+        version: link:../../engines/comfyui-cordis
+    devDependencies:
+      '@types/node':
+        specifier: '*'
+        version: 24.13.3
+
+  packages/melite-models/h3:
+    dependencies:
+      '@deepseek-ai/cordis':
+        specifier: ^4.0.2
+        version: 4.0.2(@deepseek-ai/cordis-plugin-include@1.0.6)(@deepseek-ai/cordis-plugin-loader@1.0.3)
+      '@melite/comfyui':
+        specifier: workspace:*
+        version: link:../../engines/comfyui-cordis
+    devDependencies:
+      '@types/node':
+        specifier: '*'
+        version: 24.13.3
+
+  packages/melite-models/h3-keyframe:
+    dependencies:
+      '@deepseek-ai/cordis':
+        specifier: ^4.0.2
+        version: 4.0.2(@deepseek-ai/cordis-plugin-include@1.0.6)(@deepseek-ai/cordis-plugin-loader@1.0.3)
+      '@melite/comfyui':
+        specifier: workspace:*
+        version: link:../../engines/comfyui-cordis
+    devDependencies:
+      '@types/node':
+        specifier: '*'
+        version: 24.13.3
+
+  packages/melite-models/h3-timeline:
+    dependencies:
+      '@deepseek-ai/cordis':
+        specifier: ^4.0.2
+        version: 4.0.2(@deepseek-ai/cordis-plugin-include@1.0.6)(@deepseek-ai/cordis-plugin-loader@1.0.3)
+      '@melite/comfyui':
+        specifier: workspace:*
+        version: link:../../engines/comfyui-cordis
+    devDependencies:
+      '@types/node':
+        specifier: '*'
+        version: 24.13.3
+
+  packages/melite-models/ideogram:
+    dependencies:
+      '@deepseek-ai/cordis':
+        specifier: ^4.0.2
+        version: 4.0.2(@deepseek-ai/cordis-plugin-include@1.0.6)(@deepseek-ai/cordis-plugin-loader@1.0.3)
+      '@melite/comfyui':
+        specifier: workspace:*
+        version: link:../../engines/comfyui-cordis
+    devDependencies:
+      '@types/node':
+        specifier: '*'
+        version: 24.13.3
+
+  packages/melite-models/input:
+    dependencies:
+      '@deepseek-ai/cordis':
+        specifier: ^4.0.2
+        version: 4.0.2(@deepseek-ai/cordis-plugin-include@1.0.6)(@deepseek-ai/cordis-plugin-loader@1.0.3)
+      '@melite/comfyui':
+        specifier: workspace:*
+        version: link:../../engines/comfyui-cordis
+    devDependencies:
+      '@types/node':
+        specifier: '*'
+        version: 24.13.3
+
+  packages/melite-models/joycaption:
+    dependencies:
+      '@deepseek-ai/cordis':
+        specifier: ^4.0.2
+        version: 4.0.2(@deepseek-ai/cordis-plugin-include@1.0.6)(@deepseek-ai/cordis-plugin-loader@1.0.3)
+      '@melite/comfyui':
+        specifier: workspace:*
+        version: link:../../engines/comfyui-cordis
+    devDependencies:
+      '@types/node':
+        specifier: '*'
+        version: 24.13.3
+
+  packages/melite-models/joytag:
+    dependencies:
+      '@deepseek-ai/cordis':
+        specifier: ^4.0.2
+        version: 4.0.2(@deepseek-ai/cordis-plugin-include@1.0.6)(@deepseek-ai/cordis-plugin-loader@1.0.3)
+      '@melite/comfyui':
+        specifier: workspace:*
+        version: link:../../engines/comfyui-cordis
+    devDependencies:
+      '@types/node':
+        specifier: '*'
+        version: 24.13.3
+
+  packages/melite-models/kimodo:
+    dependencies:
+      '@deepseek-ai/cordis':
+        specifier: ^4.0.2
+        version: 4.0.2(@deepseek-ai/cordis-plugin-include@1.0.6)(@deepseek-ai/cordis-plugin-loader@1.0.3)
+      '@melite/comfyui':
+        specifier: workspace:*
+        version: link:../../engines/comfyui-cordis
+    devDependencies:
+      '@types/node':
+        specifier: '*'
+        version: 24.13.3
+
   packages/melite-models/krea-2:
+    dependencies:
+      '@deepseek-ai/cordis':
+        specifier: ^4.0.2
+        version: 4.0.2(@deepseek-ai/cordis-plugin-include@1.0.6)(@deepseek-ai/cordis-plugin-loader@1.0.3)
+      '@melite/comfyui':
+        specifier: workspace:*
+        version: link:../../engines/comfyui-cordis
+    devDependencies:
+      '@types/node':
+        specifier: '*'
+        version: 24.13.3
+
+  packages/melite-models/latentsync:
+    dependencies:
+      '@deepseek-ai/cordis':
+        specifier: ^4.0.2
+        version: 4.0.2(@deepseek-ai/cordis-plugin-include@1.0.6)(@deepseek-ai/cordis-plugin-loader@1.0.3)
+      '@melite/comfyui':
+        specifier: workspace:*
+        version: link:../../engines/comfyui-cordis
+    devDependencies:
+      '@types/node':
+        specifier: '*'
+        version: 24.13.3
+
+  packages/melite-models/ltx-2-3:
+    dependencies:
+      '@deepseek-ai/cordis':
+        specifier: ^4.0.2
+        version: 4.0.2(@deepseek-ai/cordis-plugin-include@1.0.6)(@deepseek-ai/cordis-plugin-loader@1.0.3)
+      '@melite/comfyui':
+        specifier: workspace:*
+        version: link:../../engines/comfyui-cordis
+    devDependencies:
+      '@types/node':
+        specifier: '*'
+        version: 24.13.3
+
+  packages/melite-models/ltx-director-distilled:
+    dependencies:
+      '@deepseek-ai/cordis':
+        specifier: ^4.0.2
+        version: 4.0.2(@deepseek-ai/cordis-plugin-include@1.0.6)(@deepseek-ai/cordis-plugin-loader@1.0.3)
+      '@melite/comfyui':
+        specifier: workspace:*
+        version: link:../../engines/comfyui-cordis
+    devDependencies:
+      '@types/node':
+        specifier: '*'
+        version: 24.13.3
+
+  packages/melite-models/mesh_refine:
+    dependencies:
+      '@deepseek-ai/cordis':
+        specifier: ^4.0.2
+        version: 4.0.2(@deepseek-ai/cordis-plugin-include@1.0.6)(@deepseek-ai/cordis-plugin-loader@1.0.3)
+      '@melite/comfyui':
+        specifier: workspace:*
+        version: link:../../engines/comfyui-cordis
+    devDependencies:
+      '@types/node':
+        specifier: '*'
+        version: 24.13.3
+
+  packages/melite-models/moss:
+    dependencies:
+      '@deepseek-ai/cordis':
+        specifier: ^4.0.2
+        version: 4.0.2(@deepseek-ai/cordis-plugin-include@1.0.6)(@deepseek-ai/cordis-plugin-loader@1.0.3)
+      '@melite/comfyui':
+        specifier: workspace:*
+        version: link:../../engines/comfyui-cordis
+    devDependencies:
+      '@types/node':
+        specifier: '*'
+        version: 24.13.3
+
+  packages/melite-models/moss-sfx:
+    dependencies:
+      '@deepseek-ai/cordis':
+        specifier: ^4.0.2
+        version: 4.0.2(@deepseek-ai/cordis-plugin-include@1.0.6)(@deepseek-ai/cordis-plugin-loader@1.0.3)
+      '@melite/comfyui':
+        specifier: workspace:*
+        version: link:../../engines/comfyui-cordis
+    devDependencies:
+      '@types/node':
+        specifier: '*'
+        version: 24.13.3
+
+  packages/melite-models/music3:
+    dependencies:
+      '@deepseek-ai/cordis':
+        specifier: ^4.0.2
+        version: 4.0.2(@deepseek-ai/cordis-plugin-include@1.0.6)(@deepseek-ai/cordis-plugin-loader@1.0.3)
+      '@melite/comfyui':
+        specifier: workspace:*
+        version: link:../../engines/comfyui-cordis
+    devDependencies:
+      '@types/node':
+        specifier: '*'
+        version: 24.13.3
+
+  packages/melite-models/pixal3d:
+    dependencies:
+      '@deepseek-ai/cordis':
+        specifier: ^4.0.2
+        version: 4.0.2(@deepseek-ai/cordis-plugin-include@1.0.6)(@deepseek-ai/cordis-plugin-loader@1.0.3)
+      '@melite/comfyui':
+        specifier: workspace:*
+        version: link:../../engines/comfyui-cordis
+    devDependencies:
+      '@types/node':
+        specifier: '*'
+        version: 24.13.3
+
+  packages/melite-models/pixel_upscale:
+    dependencies:
+      '@deepseek-ai/cordis':
+        specifier: ^4.0.2
+        version: 4.0.2(@deepseek-ai/cordis-plugin-include@1.0.6)(@deepseek-ai/cordis-plugin-loader@1.0.3)
+      '@melite/comfyui':
+        specifier: workspace:*
+        version: link:../../engines/comfyui-cordis
+    devDependencies:
+      '@types/node':
+        specifier: '*'
+        version: 24.13.3
+
+  packages/melite-models/qwen-img-edit-2511:
+    dependencies:
+      '@deepseek-ai/cordis':
+        specifier: ^4.0.2
+        version: 4.0.2(@deepseek-ai/cordis-plugin-include@1.0.6)(@deepseek-ai/cordis-plugin-loader@1.0.3)
+      '@deepseek-ai/schemastery':
+        specifier: '*'
+        version: 3.18.2
+      '@melite/comfyui':
+        specifier: workspace:*
+        version: link:../../engines/comfyui-cordis
+    devDependencies:
+      '@types/node':
+        specifier: '*'
+        version: 24.13.3
+
+  packages/melite-models/qwen3-tts:
+    dependencies:
+      '@deepseek-ai/cordis':
+        specifier: ^4.0.2
+        version: 4.0.2(@deepseek-ai/cordis-plugin-include@1.0.6)(@deepseek-ai/cordis-plugin-loader@1.0.3)
+      '@deepseek-ai/schemastery':
+        specifier: '*'
+        version: 3.18.2
+      '@melite/comfyui':
+        specifier: workspace:*
+        version: link:../../engines/comfyui-cordis
+    devDependencies:
+      '@types/node':
+        specifier: '*'
+        version: 24.13.3
+
+  packages/melite-models/rtx-vsr:
+    dependencies:
+      '@deepseek-ai/cordis':
+        specifier: ^4.0.2
+        version: 4.0.2(@deepseek-ai/cordis-plugin-include@1.0.6)(@deepseek-ai/cordis-plugin-loader@1.0.3)
+      '@melite/comfyui':
+        specifier: workspace:*
+        version: link:../../engines/comfyui-cordis
+    devDependencies:
+      '@types/node':
+        specifier: '*'
+        version: 24.13.3
+
+  packages/melite-models/scail2-animate:
+    dependencies:
+      '@deepseek-ai/cordis':
+        specifier: ^4.0.2
+        version: 4.0.2(@deepseek-ai/cordis-plugin-include@1.0.6)(@deepseek-ai/cordis-plugin-loader@1.0.3)
+      '@melite/comfyui':
+        specifier: workspace:*
+        version: link:../../engines/comfyui-cordis
+    devDependencies:
+      '@types/node':
+        specifier: '*'
+        version: 24.13.3
+
+  packages/melite-models/see-through:
+    dependencies:
+      '@deepseek-ai/cordis':
+        specifier: ^4.0.2
+        version: 4.0.2(@deepseek-ai/cordis-plugin-include@1.0.6)(@deepseek-ai/cordis-plugin-loader@1.0.3)
+      '@melite/comfyui':
+        specifier: workspace:*
+        version: link:../../engines/comfyui-cordis
+    devDependencies:
+      '@types/node':
+        specifier: '*'
+        version: 24.13.3
+
+  packages/melite-models/seedvr2_ema:
+    dependencies:
+      '@deepseek-ai/cordis':
+        specifier: ^4.0.2
+        version: 4.0.2(@deepseek-ai/cordis-plugin-include@1.0.6)(@deepseek-ai/cordis-plugin-loader@1.0.3)
+      '@melite/comfyui':
+        specifier: workspace:*
+        version: link:../../engines/comfyui-cordis
+    devDependencies:
+      '@types/node':
+        specifier: '*'
+        version: 24.13.3
+
+  packages/melite-models/skin:
+    dependencies:
+      '@deepseek-ai/cordis':
+        specifier: ^4.0.2
+        version: 4.0.2(@deepseek-ai/cordis-plugin-include@1.0.6)(@deepseek-ai/cordis-plugin-loader@1.0.3)
+      '@melite/comfyui':
+        specifier: workspace:*
+        version: link:../../engines/comfyui-cordis
+    devDependencies:
+      '@types/node':
+        specifier: '*'
+        version: 24.13.3
+
+  packages/melite-models/skintokens:
+    dependencies:
+      '@deepseek-ai/cordis':
+        specifier: ^4.0.2
+        version: 4.0.2(@deepseek-ai/cordis-plugin-include@1.0.6)(@deepseek-ai/cordis-plugin-loader@1.0.3)
+      '@melite/comfyui':
+        specifier: workspace:*
+        version: link:../../engines/comfyui-cordis
+    devDependencies:
+      '@types/node':
+        specifier: '*'
+        version: 24.13.3
+
+  packages/melite-models/somax:
+    dependencies:
+      '@deepseek-ai/cordis':
+        specifier: ^4.0.2
+        version: 4.0.2(@deepseek-ai/cordis-plugin-include@1.0.6)(@deepseek-ai/cordis-plugin-loader@1.0.3)
+      '@melite/comfyui':
+        specifier: workspace:*
+        version: link:../../engines/comfyui-cordis
+    devDependencies:
+      '@types/node':
+        specifier: '*'
+        version: 24.13.3
+
+  packages/melite-models/step1x_texture:
+    dependencies:
+      '@deepseek-ai/cordis':
+        specifier: ^4.0.2
+        version: 4.0.2(@deepseek-ai/cordis-plugin-include@1.0.6)(@deepseek-ai/cordis-plugin-loader@1.0.3)
+      '@melite/comfyui':
+        specifier: workspace:*
+        version: link:../../engines/comfyui-cordis
+    devDependencies:
+      '@types/node':
+        specifier: '*'
+        version: 24.13.3
+
+  packages/melite-models/stretchy-rig:
+    dependencies:
+      '@deepseek-ai/cordis':
+        specifier: ^4.0.2
+        version: 4.0.2(@deepseek-ai/cordis-plugin-include@1.0.6)(@deepseek-ai/cordis-plugin-loader@1.0.3)
+      '@melite/comfyui':
+        specifier: workspace:*
+        version: link:../../engines/comfyui-cordis
+    devDependencies:
+      '@types/node':
+        specifier: '*'
+        version: 24.13.3
+
+  packages/melite-models/transfer_rig:
+    dependencies:
+      '@deepseek-ai/cordis':
+        specifier: ^4.0.2
+        version: 4.0.2(@deepseek-ai/cordis-plugin-include@1.0.6)(@deepseek-ai/cordis-plugin-loader@1.0.3)
+      '@melite/comfyui':
+        specifier: workspace:*
+        version: link:../../engines/comfyui-cordis
+    devDependencies:
+      '@types/node':
+        specifier: '*'
+        version: 24.13.3
+
+  packages/melite-models/trellis2-native:
+    dependencies:
+      '@deepseek-ai/cordis':
+        specifier: ^4.0.2
+        version: 4.0.2(@deepseek-ai/cordis-plugin-include@1.0.6)(@deepseek-ai/cordis-plugin-loader@1.0.3)
+      '@melite/comfyui':
+        specifier: workspace:*
+        version: link:../../engines/comfyui-cordis
+    devDependencies:
+      '@types/node':
+        specifier: '*'
+        version: 24.13.3
+
+  packages/melite-models/trellis_native:
+    dependencies:
+      '@deepseek-ai/cordis':
+        specifier: ^4.0.2
+        version: 4.0.2(@deepseek-ai/cordis-plugin-include@1.0.6)(@deepseek-ai/cordis-plugin-loader@1.0.3)
+      '@melite/comfyui':
+        specifier: workspace:*
+        version: link:../../engines/comfyui-cordis
+    devDependencies:
+      '@types/node':
+        specifier: '*'
+        version: 24.13.3
+
+  packages/melite-models/wan-vace:
+    dependencies:
+      '@deepseek-ai/cordis':
+        specifier: ^4.0.2
+        version: 4.0.2(@deepseek-ai/cordis-plugin-include@1.0.6)(@deepseek-ai/cordis-plugin-loader@1.0.3)
+      '@melite/comfyui':
+        specifier: workspace:*
+        version: link:../../engines/comfyui-cordis
+    devDependencies:
+      '@types/node':
+        specifier: '*'
+        version: 24.13.3
+
+  packages/melite-models/wd14:
     dependencies:
       '@deepseek-ai/cordis':
         specifier: ^4.0.2

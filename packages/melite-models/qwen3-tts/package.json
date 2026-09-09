@@ -1,0 +1,20 @@
+{
+  "name": "@melite/melite-models-qwen3-tts",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./package.json": "./package.json",
+    "./mods/loras": "./mods/loras.ts",
+    "./mods/qvoice": "./mods/qvoice.ts"
+  },
+  "dependencies": {
+    "@deepseek-ai/cordis": "^4.0.2",
+    "@deepseek-ai/schemastery": "*",
+    "@melite/comfyui": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "*"
+  }
+}
