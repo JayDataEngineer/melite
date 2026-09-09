@@ -28,6 +28,7 @@ import type { CardDefinition } from './service.ts'
 // are packages, the readdir glob below is DELETED and this list is
 // the only composition.
 import * as melite3dClothingPlacement from '@melite/melite-3d-clothing-placement'
+import * as meliteImageImageGen from '@melite/melite-image-image-gen'
 
 let cache: Map<string, CardDefinition> | null = null
 let bootedService: ComfyUIService | null = null
@@ -50,6 +51,7 @@ export const loadCardDefs = async (): Promise<Map<string, CardDefinition>> => {
   // Card packages (the composition list above) compose FIRST —
   // explicit, ordered, no discovery.
   await ctx.plugin(melite3dClothingPlacement as unknown as Plugin)
+  await ctx.plugin(meliteImageImageGen as unknown as Plugin)
   // TRANSITIONAL GLOB (named bridge, P48.1 — death date: the
   // 20-card sweep): the remaining src/cards modules.
   // the cli.ts:59-63 auto-load loop (in-process): every card module

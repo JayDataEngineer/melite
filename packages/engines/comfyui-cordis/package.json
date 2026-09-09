@@ -20,18 +20,19 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@comfyui/card-kit": "workspace:*",
     "@deepseek-ai/cordis": "^4.0.2",
     "@deepseek-ai/schemastery": "*",
-    "@comfyui/card-kit": "workspace:*",
+    "@melite-plugin/3d": "workspace:*",
+    "@melite-plugin/motion": "workspace:*",
+    "@melite-plugin/timeline": "workspace:*",
     "@melite/contracts": "workspace:*",
     "@melite/formats": "workspace:*",
+    "@melite/melite-3d-clothing-placement": "workspace:*",
+    "@melite/melite-image-image-gen": "workspace:*",
     "@melite/ui": "workspace:*",
-    "@melite-plugin/3d": "workspace:*",
-    "@melite-plugin/timeline": "workspace:*",
-    "@melite-plugin/motion": "workspace:*",
     "lucide-react": "*",
-    "react": "*",
-    "@melite/melite-3d-clothing-placement": "workspace:*"
+    "react": "*"
   },
   "devDependencies": {
     "@types/node": "^22.20.0",

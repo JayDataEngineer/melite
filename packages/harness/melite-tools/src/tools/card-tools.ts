@@ -183,7 +183,6 @@ export async function cardTools(gatewayUrl: string, signal?: AbortSignal, lane?:
 		'voice_lock_card',
 		'tts_card',
 		'music_card',
-		'image_card',
 		'image_edit_card',
 		'motion_card',
 	])

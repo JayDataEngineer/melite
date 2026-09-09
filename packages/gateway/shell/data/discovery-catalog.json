@@ -14332,6 +14332,29 @@
       "placeholder": "",
       "tooltip": "",
       "visible_when": null
+     },
+     {
+      "name": "recipe",
+      "type": "select",
+      "label": "Recipe",
+      "default": "standard",
+      "options": [
+       "standard",
+       "fast_draft",
+       "cinematic"
+      ],
+      "group": "sampling",
+      "zone": "",
+      "order": 5,
+      "required": null,
+      "columns": null,
+      "width": 1,
+      "min": null,
+      "max": null,
+      "step": null,
+      "placeholder": "",
+      "tooltip": "Named config overlay — params it carries ride between the schema defaults and your explicit values.",
+      "visible_when": null
      }
     ],
     "schema_groups": [
@@ -14495,6 +14518,20 @@
          "normal",
          "sgm_uniform",
          "simple"
+        ]
+       },
+       {
+        "name": "recipe",
+        "type": "select",
+        "label": "Recipe",
+        "order": 5,
+        "width": 1,
+        "default": "standard",
+        "tooltip": "Named config overlay — params it carries ride between the schema defaults and your explicit values.",
+        "options": [
+         "standard",
+         "fast_draft",
+         "cinematic"
         ]
        }
       ],
@@ -15836,6 +15873,29 @@
       "placeholder": "",
       "tooltip": "",
       "visible_when": null
+     },
+     {
+      "name": "recipe",
+      "type": "select",
+      "label": "Recipe",
+      "default": "standard",
+      "options": [
+       "standard",
+       "fast_draft",
+       "cinematic"
+      ],
+      "group": "sampling",
+      "zone": "",
+      "order": 5,
+      "required": null,
+      "columns": null,
+      "width": 1,
+      "min": null,
+      "max": null,
+      "step": null,
+      "placeholder": "",
+      "tooltip": "Named config overlay — params it carries ride between the schema defaults and your explicit values.",
+      "visible_when": null
      }
     ],
     "schema_groups": [
@@ -15999,6 +16059,20 @@
          "normal",
          "sgm_uniform",
          "simple"
+        ]
+       },
+       {
+        "name": "recipe",
+        "type": "select",
+        "label": "Recipe",
+        "order": 5,
+        "width": 1,
+        "default": "standard",
+        "tooltip": "Named config overlay — params it carries ride between the schema defaults and your explicit values.",
+        "options": [
+         "standard",
+         "fast_draft",
+         "cinematic"
         ]
        }
       ],
@@ -18169,6 +18243,29 @@
       "visible_when": null
      },
      {
+      "name": "recipe",
+      "type": "select",
+      "label": "Recipe",
+      "default": "standard",
+      "options": [
+       "standard",
+       "fast_draft",
+       "cinematic"
+      ],
+      "group": "sampling",
+      "zone": "",
+      "order": 5,
+      "required": null,
+      "columns": null,
+      "width": 1,
+      "min": null,
+      "max": null,
+      "step": null,
+      "placeholder": "",
+      "tooltip": "Named config overlay — params it carries ride between the schema defaults and your explicit values.",
+      "visible_when": null
+     },
+     {
       "name": "loras",
       "type": "loras",
       "label": "LoRAs",
@@ -18349,6 +18446,20 @@
          "normal",
          "sgm_uniform",
          "simple"
+        ]
+       },
+       {
+        "name": "recipe",
+        "type": "select",
+        "label": "Recipe",
+        "order": 5,
+        "width": 1,
+        "default": "standard",
+        "tooltip": "Named config overlay — params it carries ride between the schema defaults and your explicit values.",
+        "options": [
+         "standard",
+         "fast_draft",
+         "cinematic"
         ]
        }
       ],

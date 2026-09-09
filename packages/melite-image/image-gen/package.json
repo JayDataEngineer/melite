@@ -1,0 +1,21 @@
+{
+  "name": "@melite/melite-image-image-gen",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "test": "node --experimental-strip-types --test tests/"
+  },
+  "dependencies": {
+    "@deepseek-ai/cordis": "^4.0.2",
+    "@deepseek-ai/schemastery": "*",
+    "@deepseek-ai/dsh-tools": "0.1.5-alpha.1",
+    "@comfyui/cordis": "workspace:*",
+    "@comfyui/card-kit": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "*"
+  }
+}
