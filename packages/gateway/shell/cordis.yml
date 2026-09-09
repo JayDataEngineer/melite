@@ -59,6 +59,8 @@
     name: '@melite/gateway-doors/chrome'
   - id: gateway-catalogs
     name: '@melite/gateway-doors/catalogs'
+  - id: gateway-disclose
+    name: '@melite/gateway-doors/disclose'
   - id: gateway-assets
     name: '@melite/gateway-doors/assets'
   - id: gateway-drafts

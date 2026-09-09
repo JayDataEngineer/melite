@@ -796,7 +796,7 @@ interface StepRow {
   readonly plugin: string;
 }
 
-interface SkillRow {
+export interface SkillRow {
   readonly id: string;
   readonly name: string;
   readonly description: string;
@@ -859,7 +859,7 @@ function gateSkill(
 
 /** The served skill shape (SkillRow.wire 224-226): exclude_none in
  *  FIELD order. */
-function wireSkill(r: SkillRow): Record<string, unknown> {
+export function wireSkill(r: SkillRow): Record<string, unknown> {
   const out: Record<string, unknown> = {
     id: r.id,
     name: r.name,
@@ -886,7 +886,7 @@ function wireSkill(r: SkillRow): Record<string, unknown> {
 // walks (lane_disclosure 130-337)
 // ---------------------------------------------------------------------------
 
-interface DocRow {
+export interface DocRow {
   readonly row: SkillRow;
   readonly path: string;
 }
@@ -927,7 +927,7 @@ function readDoc(
  *  158-176 over plugins.iter_plugin_dirs_under: depth-2 + depth-3
  *  with package.json/plugin.yaml/engines/ marker, sorted —
  *  plugin.py retired 2026-09-08, package.json is the marker). */
-function engineDirs(enginesRoot: string): string[] {
+export function engineDirs(enginesRoot: string): string[] {
   const marker = (d: string): boolean =>
     isFile(join(d, "package.json")) ||
     isFile(join(d, "plugin.yaml")) ||
@@ -1012,7 +1012,7 @@ function modelRows(engine: string): DocRow[] {
   return rows;
 }
 
-interface CardWalk {
+export interface CardWalk {
   readonly rows: DocRow[];
   readonly buckets: Map<string, { dir: string; rows: DocRow[] }>;
 }
@@ -1074,7 +1074,7 @@ function cardUnitDirs(engine: string, repo: string): { genre: string; cname: str
  *  as src/cards/<genre>/<card>/ (one card one folder — card.ts +
  *  ui/ + agents/ in one unit); action_cards keeps only the
  *  no-host-card tenants (3d/body) and the genre ui packages. */
-function cardRows(engine: string, repo: string): CardWalk {
+export function cardRows(engine: string, repo: string): CardWalk {
   const rows: DocRow[] = [];
   const buckets = new Map<string, { dir: string; rows: DocRow[] }>();
   {
@@ -1256,7 +1256,7 @@ function normKind(kind: string | null): string | null {
 // flow splice (lane_disclosure 364-487 over frozen declarations)
 // ---------------------------------------------------------------------------
 
-interface FlowRow {
+export interface FlowRow {
   readonly row: SkillRow;
   readonly bodyPath: string;
   readonly bodyText: string | null;
@@ -1279,7 +1279,7 @@ function registryBody(flowId: string): string | null {
  *  registry render (doors/flowsRegistry.ts — the flow.py authoring
  *  plane died 2026-09-08; the deleted source is neither servable
  *  nor wanted, so the declaration renders instead). */
-function flowRows(repo: string): FlowRow[] {
+export function flowRows(repo: string): FlowRow[] {
   const out: FlowRow[] = [];
   for (const decl of flowDecls(repo)) {
     if (decl.loadError !== null) continue;
@@ -1892,7 +1892,7 @@ function buildLaneBundle(
 /** Skill lookup across flow + model + card rows
  *  (lane_disclosure.skill_read 844-863). Flow rows may carry the
  *  rendered registry text (bodyText) instead of a file path. */
-function findSkill(
+export function findSkill(
   repo: string,
   sid: string,
 ): { row: SkillRow; path: string; bodyText: string | null } | null {

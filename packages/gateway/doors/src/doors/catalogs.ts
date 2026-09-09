@@ -44,7 +44,7 @@ import { GENERIC_ENHANCE_RECIPE } from "@melite/gateway-core/prompt-guide";
  *  MELITE_REPO_ROOT override (disclosureRoot is the DATA root; the
  *  sandbox fixture has no packages tier — code and data diverge
  *  there, coincide in PROD). */
-function codeRoot(): string {
+export function codeRoot(): string {
   const here: string = dirname(fileURLToPath(import.meta.url));
   return resolve(here, "..", "..", "..", "..", "..");
 }
@@ -203,7 +203,7 @@ export function cardSkillDocs(pkgDir: string): Array<{ path: string; text: strin
 /** The bundle's (a): the card's tool signature — the /v1/tools row
  *  envelope (ROW_KEYS mirror toolsEmit — one projection, the
  *  emitter imported, the envelope shared by construction). */
-function toolRowFor(
+export function toolRowFor(
   id: string,
   def: { schemaCarrier?: unknown; schema: unknown; boarded: readonly string[] },
   rows: ReturnType<typeof toolBaseRows>,

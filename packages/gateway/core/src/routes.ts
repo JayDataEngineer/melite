@@ -766,34 +766,36 @@ export const ROUTES: readonly GatewayRoute[] = [
     attr: "models",
     handler: "_h_chrome",
   },
-  // ── Flow-first disclosure (the disclosure stroke, 2026-09-09) ──
+  // ── Melite discover + load (the rework, 2026-09-09): ONE
+  // disclosure system — discover grants the lines, load opens one
+  // card or flow (agents md + signature + skill lines) ──
   {
     method: "GET",
-    path: "/v1/flows/catalog",
+    path: "/v1/discover",
     template: "",
     group: "Disclosure",
-    summary: "Flow summaries (search tier; ?action=search ?q=) — the preferred composition",
-    query: ["action", "q"],
+    summary: "Progressive disclosure lines over both planes (?lookup=all|cards|flows ?q= ?tags=)",
+    query: ["lookup", "q", "tags"],
     body: "none",
     regex: false,
     ws: false,
     attr: "",
-    handler: "_h_catalogs",
+    handler: "_h_disclose",
   },
   {
     method: "GET",
-    path: "/v1/cards/catalog",
+    path: "/v1/load",
     template: "",
     group: "Disclosure",
-    summary: "Card summaries + skill bundles (?action=search ?q= ?tags= / ?action=load_skills ?ids=) — the fallback composition",
-    query: ["action", "q", "tags", "ids"],
+    summary: "Open one card or flow (?inference_type=card|flow ?name=): agents md + signature + skill lines",
+    query: ["inference_type", "name"],
     body: "none",
     regex: false,
     ws: false,
     attr: "",
-    handler: "_h_catalogs",
+    handler: "_h_disclose",
   },
 ];
 
-/** Row count pin — the table holds 56 rows (54 + the two disclosure rows). */
+/** Row count pin — the table holds 56 rows (54 + discover + load). */
 export const ROUTE_COUNT: number = ROUTES.length;
