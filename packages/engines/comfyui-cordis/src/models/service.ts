@@ -40,7 +40,7 @@ import {
   type CellRow,
   type ModelDecl,
   type VariantRow,
-} from "./contract.ts";
+} from "./families/contract.ts";
 import { buildCatalog } from "./catalogEmission.ts";
 
 export const MODELS_SERVICE = "models";

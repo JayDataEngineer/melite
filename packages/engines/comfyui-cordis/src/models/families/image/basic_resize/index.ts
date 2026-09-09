@@ -7,7 +7,7 @@
 // declaring itself through ctx.models.registerFamily inside
 // ctx.effect — fiber-owned, revertible, transactional at boot.
 import type { Plugin } from "@deepseek-ai/cordis";
-import type { ModelDecl } from "../../../contract.ts";
+import type { ModelDecl } from "../../contract.ts";
 
 export const DECL: ModelDecl = {
   "id": "basic_resize",

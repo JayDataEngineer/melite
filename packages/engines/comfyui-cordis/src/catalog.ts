@@ -61,7 +61,7 @@ import {
   loadEndpointConfig,
   resolveRepoRoot,
 } from "./comfyui.ts";
-import { type ModelDecl } from "./models/contract.ts";
+import { type ModelDecl } from "./models/families/contract.ts";
 
 /** One downloadable row — the manage door's download contract. */
 export interface CatalogArtifactRow {

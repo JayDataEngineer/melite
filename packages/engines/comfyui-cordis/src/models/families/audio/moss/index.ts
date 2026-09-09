@@ -19,7 +19,7 @@
 // The three flat ids survive as cell routes (the
 // addressing-survival law — every runtime address unchanged).
 import type { Plugin } from "@deepseek-ai/cordis";
-import type { ModelDecl } from "../../../contract.ts";
+import type { ModelDecl } from "../../contract.ts";
 
 export const DECL: ModelDecl = {
   "id": "moss",

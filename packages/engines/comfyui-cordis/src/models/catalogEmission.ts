@@ -17,7 +17,7 @@ import {
   ModelError,
   ModelRow,
   type ModelDecl,
-} from "./contract.ts";
+} from "./families/contract.ts";
 import {
   CARD_IDENTITY,
   CAPABILITIES,

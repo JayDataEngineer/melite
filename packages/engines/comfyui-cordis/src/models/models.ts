@@ -10,11 +10,11 @@
 // booted service. The top-level await settles the boot once per
 // process — imports after that are sync forever.
 
-import type { ModelRow } from "./contract.ts";
-import type { CellRow, ModelDecl, VariantRow } from "./contract.ts";
+import type { ModelRow } from "./families/contract.ts";
+import type { CellRow, ModelDecl, VariantRow } from "./families/contract.ts";
 import { bootModels, modelsService, resolveCascade } from "./service.ts";
 
-export * from "./contract.ts";
+export * from "./families/contract.ts";
 export { bootModels, modelsService, resolveCascade, MODELS_SERVICE, ModelsService, modelsProvider, needModels } from "./service.ts";
 
 export const cascadeInit: Promise<void> = bootModels().then((): void => undefined);
