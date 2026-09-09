@@ -123,6 +123,47 @@ export const uploadsDomainSpec = defineDomain({
   },
 });
 
+/** One draft doc — the composer's shape (composeDraftDoc): six
+ *  contract keys + caller extras verbatim (loose: extras ride).
+ *  Domain truth since the storage stroke; the legacy drafts dir
+ *  imports once (the global importedAt marker guards). */
+const DraftDocSchema = z.looseObject({
+  draft_id: z.string(),
+  status: z.string(),
+  createdAt: z.number(),
+  completedAt: z.union([z.number(), z.null()]),
+  intent: z.string(),
+  stages: z.array(z.looseObject({ id: z.string() }).passthrough()),
+});
+
+/** One drafts-domain record: the doc plus the recency column the
+ *  list arm orders by (the file-mtime equivalent; save and patch
+ *  stamp it — seconds, matching the py index's int(mtime)). */
+const DraftRecordSchema = z.object({
+  updated_at: z.number().int(),
+  doc: DraftDocSchema,
+});
+
+export type DraftRecord = z.infer<typeof DraftRecordSchema>;
+
+/** The drafts domain (unit dir `drafts/`, version 1). Keys are
+ *  draft ids — DRAFT_ID_RE ≡ the backend's SAFE_KEY_RE, so the
+ *  identity codec holds (no b64u here). The global slot is the
+ *  one-time legacy-import marker: 0 until the STATE_ROOT/drafts
+ *  tree has been imported, the import epoch (ms) after — a wiped
+ *  unit never re-imports frozen legacy ghosts. */
+export const draftsDomainSpec = defineDomain({
+  name: "drafts",
+  version: 1,
+  layout: "per-record",
+  invalidRecords: "backup-and-skip",
+  global: { schema: z.number().int(), initial: 0 },
+  tables: {
+    docs: domainTable<string, DraftRecord>(DraftRecordSchema),
+  },
+});
+
 /** Spec types for Domain<S> handles (store.ts owns the open cache). */
 export type AssetsDomainSpec = typeof assetsDomainSpec;
 export type UploadsDomainSpec = typeof uploadsDomainSpec;
+export type DraftsDomainSpec = typeof draftsDomainSpec;

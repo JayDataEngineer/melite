@@ -92,25 +92,19 @@
 // Erasable-syntax TS only (node --experimental-strip-types): no
 // enums, import type for types, .ts specifiers for relative imports.
 
-import {
-  mkdirSync,
-  readdirSync,
-  readFileSync,
-  renameSync,
-  statSync,
-  unlinkSync,
-  writeFileSync,
-} from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { PyNum, getDraftsDomain } from "@melite/gateway-core";
+import type {
+  Domain,
+  DraftsDomainSpec,
+  DraftRecord,
+} from "@melite/gateway-core";
 import {
   dumpsPy,
   parseJson,
   pyReprString,
 } from "./assets.ts";
-import {
-  PyNum,
-} from "@melite/gateway-core";
 import type { Context, Plugin } from "@deepseek-ai/cordis";
 import type { DispatchResult } from "@melite/gateway-core";
 import type { GatewayRequest } from "@melite/gateway-core";
@@ -332,34 +326,6 @@ function pyTypeName(v: unknown): string {
   if (v instanceof PyNum) return isIntLiteral(v.literal) ? "int" : "float";
   if (typeof v === "number") return Number.isInteger(v) ? "int" : "float";
   return "dict";
-}
-
-/** Compact JSON (separators=(",",":") — the on-disk draft bytes,
- *  ensure_ascii=False so non-ASCII rides raw UTF-8, exactly like
- *  py's persist writes). */
-function dumpsCompact(v: unknown): string {
-  if (v === null) return "null";
-  if (v === true) return "true";
-  if (v === false) return "false";
-  if (typeof v === "string") return JSON.stringify(v) ?? "null";
-  if (typeof v === "number") {
-    if (Number.isInteger(v)) return String(v);
-    return pyFloatRepr(v);
-  }
-  if (v instanceof PyNum) return v.literal;
-  if (Array.isArray(v)) {
-    return "[" + v.map(dumpsCompact).join(",") + "]";
-  }
-  if (typeof v === "object") {
-    const parts: string[] = [];
-    for (const k of Object.keys(v as Record<string, unknown>)) {
-      const e: unknown = (v as Record<string, unknown>)[k];
-      if (e === undefined) continue;
-      parts.push((JSON.stringify(k) ?? "null") + ":" + dumpsCompact(e));
-    }
-    return "{" + parts.join(",") + "}";
-  }
-  return JSON.stringify(String(v)) ?? "null";
 }
 
 // ---------------------------------------------------------------------------
@@ -596,97 +562,71 @@ function parseStrictBody(
 // GET /v1/flows/drafts — drafts_list.
 // ---------------------------------------------------------------------------
 
-/** BYTE-wise sidecar_str (editor_runs.py 124-160): first '"key":',
- *  skip spaces/tabs, expect a quoted string, decode \\n \\r \\t
- *  (any other backslash drops to the literal byte), stop at
- *  cap-1 BYTES written. "" when absent or non-string. NOTE: py
- *  round-trips invalid UTF-8 via surrogateescape (mid-char cuts
- *  become lone surrogates); this decodes lossy U+FFFD instead —
- *  identical for valid UTF-8 (every wall fixture), divergent only
- *  for corrupt-UTF8 docs. */
-function sidecarStrBytes(
-  raw: Uint8Array,
-  key: string,
-  cap: number,
-): string {
-  const pat = Buffer.from('"' + key + '":', "ascii");
-  const at: number = Buffer.from(raw).indexOf(pat);
-  if (at < 0) return "";
-  let p: number = at + pat.length;
-  const n: number = raw.length;
-  while (p < n && (raw[p] === 0x20 || raw[p] === 0x09)) p++;
-  if (p >= n || raw[p] !== 0x22) return "";
-  p++;
-  const out: number[] = [];
-  while (p < n && raw[p] !== 0x22 && out.length + 1 < cap) {
-    if (raw[p] === 0x5c && p + 1 < n) {
-      p++;
-      const e: number = raw[p] as number;
-      if (e === 0x6e) out.push(0x0a);
-      else if (e === 0x72) out.push(0x0d);
-      else if (e === 0x74) out.push(0x09);
-      else out.push(e);
-      p++;
-    } else {
-      out.push(raw[p] as number);
-      p++;
+/** One index row's display fields from the parsed record. The py
+ *  arm byte-sliced the file's first 8191 chars and scanned for the
+ *  LITERAL '"key":' anywhere — nested occurrences counted (a
+ *  stage's params.model was the served model). The parsed
+ *  equivalent: per key, the FIRST string value in document
+ *  (insertion) order, depth-first — same winner for every
+ *  well-formed doc. Caps: model/service 80, display 160, chars
+ *  (the byte-cap's purpose — bounded display strings — holds;
+ *  mid-UTF8 cut divergence died with the byte scan). Non-strings
+ *  read "" exactly as sidecar_str's quoted-string gate did. */
+function docIndexFields(doc: unknown): {
+  model: string;
+  name: string;
+} {
+  const first: Record<string, string> = {};
+  const walk = (v: unknown): void => {
+    if (typeof v === "string") return;
+    if (Array.isArray(v)) {
+      for (const e of v) walk(e);
+      return;
     }
-  }
-  return Buffer.from(out).toString("utf8");
-}
-
-/** One index row's display fields from the doc's first 8191 chars
- *  (drafts_list 851-864: model cap 80, name/intent/title 160,
- *  service backstop for model 80; OSError reads as "" fields). */
-function indexFields(full: string): { model: string; name: string } {
-  let raw: Uint8Array;
-  try {
-    raw = Buffer.from(full.slice(0, 8191), "utf8");
-  } catch {
-    return { model: "", name: "" };
-  }
-  let model: string = sidecarStrBytes(raw, "model", 80);
-  let disp: string = sidecarStrBytes(raw, "name", 160);
-  if (disp === "") disp = sidecarStrBytes(raw, "intent", 160);
-  if (disp === "") disp = sidecarStrBytes(raw, "title", 160);
-  if (model === "") model = sidecarStrBytes(raw, "service", 80);
+    if (typeof v !== "object" || v === null) return;
+    for (const [k, e] of Object.entries(v as Record<string, unknown>)) {
+      if (
+        first[k] === undefined &&
+        (k === "model" ||
+          k === "name" ||
+          k === "intent" ||
+          k === "title" ||
+          k === "service") &&
+        typeof e === "string"
+      ) {
+        first[k] = e;
+      }
+      walk(e);
+    }
+  };
+  walk(doc);
+  const cap = (s: string | undefined, n: number): string =>
+    s === undefined ? "" : s.length + 1 < n ? s : s.slice(0, n - 1);
+  let model = cap(first["model"], 80);
+  let disp = cap(first["name"], 160);
+  if (disp === "") disp = cap(first["intent"], 160);
+  if (disp === "") disp = cap(first["title"], 160);
+  if (model === "") model = cap(first["service"], 80);
   return { model, name: disp };
 }
 
-/** GET /v1/flows/drafts — mirrors _h_drafts_list + drafts_list
- *  (aux_root is never passed by the gateway: single-root index). */
-export function hDraftsList(draftsDir: string): DraftResult {
+/** GET /v1/flows/drafts — the domain index (recency DESC via the
+ *  updated_at column, cap 600, count = total pre-cap). */
+export function hDraftsList(
+  drafts: Domain<DraftsDomainSpec>,
+): DraftResult {
+  const docs = drafts.table("docs");
   const ents: { mt: number; row: Record<string, string> }[] = [];
-  let names: string[];
-  try {
-    names = readdirSync(draftsDir);
-  } catch {
-    names = [];
+  for (const [did, rec] of docs.entries()) {
+    ents.push({
+      mt: rec.updated_at,
+      row: {
+        draft_id: did,
+        ...docIndexFields(rec.doc),
+      },
+    });
   }
-  for (const name of names) {
-    const len: number = name.length;
-    if (len < 6 || len > 110 || !name.endsWith(".json")) continue;
-    const did: string = name.slice(0, -5);
-    if (!draftIdOk(did)) continue;
-    const full: string = join(draftsDir, name);
-    let mt: number;
-    try {
-      mt = Math.floor(statSync(full).mtimeMs / 1000);
-    } catch {
-      continue;
-    }
-    let model = "";
-    let disp = "";
-    try {
-      const fields = indexFields(readFileSync(full, "utf8"));
-      model = fields.model;
-      disp = fields.name;
-    } catch {
-      // OSError mid-read: row kept with "" fields (py: pass).
-    }
-    ents.push({ mt, row: { draft_id: did, model, name: disp } });
-  }
-  // std::sort by mtime DESC (py .sort is stable; so is this).
+  // std::sort by recency DESC (py .sort is stable; so is this).
   ents.sort((a, b): number => b.mt - a.mt);
   const rows: Record<string, string>[] = ents
     .slice(0, 600)
@@ -718,10 +658,10 @@ function pyTruthy(v: unknown): boolean {
 /** POST /v1/flows/drafts — mirrors _h_drafts_save + drafts_save.
  *  The persist is a PLAIN direct write (no tmp+rename — see header);
  *  success echoes {draftId, stages}. */
-export function hDraftsSave(
-  draftsDir: string,
+export async function hDraftsSave(
+  drafts: Domain<DraftsDomainSpec>,
   rawBody: Uint8Array,
-): DraftResult {
+): Promise<DraftResult> {
   const parsed = parseStrictBody(rawBody);
   if (!("doc" in parsed)) {
     return {
@@ -770,92 +710,41 @@ export function hDraftsSave(
       headers: {},
     };
   }
-  try {
-    mkdirSync(draftsDir, { recursive: true });
-    writeFileSync(join(draftsDir, draftId + ".json"), dumpsCompact(doc), "utf8");
-  } catch {
-    return {
-      status: 500,
-      body: dumpsPy({ error: "cannot persist draft" }),
-      contentType: JSON_CT,
-      headers: {},
-    };
-  }
-  return answered(200, { draftId, stages: doc["stages"] });
+  const persist = drafts
+    .table("docs")
+    .put(draftId, {
+      updated_at: Math.floor(Date.now() / 1000),
+      doc: doc as unknown as DraftRecord["doc"],
+    })
+    .then(
+      (): DraftResult => answered(200, { draftId, stages: doc["stages"] }),
+      (): DraftResult => ({
+        status: 500,
+        body: dumpsPy({ error: "cannot persist draft" }),
+        contentType: JSON_CT,
+        headers: {},
+      }),
+    );
+  return persist;
 }
 
 // ---------------------------------------------------------------------------
 // GET /v1/flows/drafts/:id — drafts_get (+ the _h verbatim wrapper).
 // ---------------------------------------------------------------------------
 
-/** Read the raw doc file for the get arm: py checks existence
- *  first and lets open() errors PROPAGATE (traceback-500 in
- *  _adapt) — so only ENOENT maps to 404 here; anything else
- *  rethrows for the server's 500 catch. (A raced-away file reads
- *  404 — the sane side of an untestable race.) */
-function readDraftFile(draftsDir: string, draftId: string): string {
-  try {
-    return readFileSync(join(draftsDir, draftId + ".json"), "utf8");
-  } catch (exc) {
-    if ((exc as { code?: string }).code === "ENOENT") {
-      throw { status: 404, payload: { error: "draft not found" } };
-    }
-    throw exc;
-  }
-}
-
-/** GET /v1/flows/drafts/:id — mirrors _h_drafts_get + drafts_get
- *  (heal=False: the durationSec/quarantine heal is the C click
- *  door's, never the reader's). */
-export function hDraftsGet(draftsDir: string, draftId: string): DraftResult {
+/** GET /v1/flows/drafts/:id — the domain read (the record IS the
+ *  doc; the corrupt-on-disk arms are domain-impossible — open
+ *  quarantines poison via backup-and-skip, records are zod-valid). */
+export function hDraftsGet(
+  drafts: Domain<DraftsDomainSpec>,
+  draftId: string,
+): DraftResult {
   if (!draftIdOk(draftId)) return refused(400, { error: "bad id" });
-  let text: string;
-  try {
-    text = readDraftFile(draftsDir, draftId);
-  } catch (exc) {
-    if (
-      typeof exc === "object" &&
-      exc !== null &&
-      "status" in (exc as Record<string, unknown>)
-    ) {
-      const e = exc as {
-        status: number;
-        payload: Record<string, unknown>;
-      };
-      return refused(e.status, e.payload);
-    }
-    throw exc;
+  const rec: DraftRecord | undefined = drafts.table("docs").get(draftId);
+  if (rec === undefined) {
+    return refused(404, { error: "draft not found" });
   }
-  // The _h wrapper (3123-3134): parse the verbatim bytes once (a
-  // str would double-encode on the wire); parser TEXT diverges per
-  // host language (assert prefix, never bytes), while the
-  // not-an-object refusal is a FIXED string (byte-identical).
-  try {
-    JSON.parse(text);
-  } catch (exc) {
-    const msg: string = exc instanceof Error ? exc.message : String(exc);
-    return {
-      status: 500,
-      body: dumpsPy({ error: "draft corrupt on disk: " + msg }),
-      contentType: JSON_CT,
-      headers: {},
-    };
-  }
-  let doc: unknown;
-  try {
-    doc = normalizeNumbers(parseJson(text));
-  } catch {
-    doc = JSON.parse(text) as unknown;
-  }
-  if (!isPlainObject(doc)) {
-    return {
-      status: 500,
-      body: dumpsPy({ error: "draft corrupt on disk: not an object" }),
-      contentType: JSON_CT,
-      headers: {},
-    };
-  }
-  return answered(200, doc);
+  return answered(200, rec.doc);
 }
 
 // ---------------------------------------------------------------------------
@@ -864,30 +753,18 @@ export function hDraftsGet(draftsDir: string, draftId: string): DraftResult {
 // STAGE_PATCH_KEYS owned by the admission gate (imported above —
 // the want-list voice below joins it in the same fixed order).
 
-/** _load_draft_doc (editor_runs.py 1115-1132): (doc, null) or
- *  (null, reason) with reason in bad_id / "draft not found" /
- *  "draft corrupt on disk". Unlike the get arm, EVERY read/parse
- *  failure here is a reason, never a raise. */
+/** _load_draft_doc (editor_runs.py 1115-1132) on the domain:
+ *  (doc, null) or (null, reason) with reason in bad_id / "draft not
+ *  found" (the corrupt-on-disk reason is domain-impossible — zod
+ *  guarantees the stage rows' presence and shape at open). */
 function loadDraftDoc(
-  draftsDir: string,
+  drafts: Domain<DraftsDomainSpec>,
   draftId: string,
 ): { doc: Record<string, unknown> } | { reason: string } {
   if (!draftIdOk(draftId)) return { reason: "bad_id" };
-  let doc: unknown;
-  try {
-    doc = normalizeNumbers(
-      parseJson(readFileSync(join(draftsDir, draftId + ".json"), "utf8")),
-    );
-  } catch (exc) {
-    if ((exc as { code?: string }).code === "ENOENT") {
-      return { reason: "draft not found" };
-    }
-    return { reason: "draft corrupt on disk" };
-  }
-  if (!isPlainObject(doc) || !Array.isArray(doc["stages"])) {
-    return { reason: "draft corrupt on disk" };
-  }
-  return { doc };
+  const rec: DraftRecord | undefined = drafts.table("docs").get(draftId);
+  if (rec === undefined) return { reason: "draft not found" };
+  return { doc: rec.doc as unknown as Record<string, unknown> };
 }
 
 /** _stage_row (1135-1141): "" / "/" / >128 refuses to match (a
@@ -906,32 +783,14 @@ function stageRow(
   return null;
 }
 
-/** _atomic_write_draft (1099-1112): tmp+rename (resilience law: no
- *  torn docs); failure unlinks the tmp and reports false. */
-function atomicWriteDraft(full: string, doc: Record<string, unknown>): boolean {
-  const tmp: string = full + ".tmp";
-  try {
-    writeFileSync(tmp, dumpsCompact(doc), "utf8");
-    renameSync(tmp, full);
-  } catch {
-    try {
-      unlinkSync(tmp);
-    } catch {
-      // The unlink is best-effort, exactly as py's.
-    }
-    return false;
-  }
-  return true;
-}
-
 /** PATCH /v1/flows/drafts/:id/stages/:sid — mirrors
  *  _h_draft_stage_patch + draft_stage_patch. */
-export function hDraftStagePatch(
-  draftsDir: string,
+export async function hDraftStagePatch(
+  drafts: Domain<DraftsDomainSpec>,
   draftId: string,
   stageId: string,
   rawBody: Uint8Array,
-): DraftResult {
+): Promise<DraftResult> {
   const parsed = parseStrictBody(rawBody);
   if (!("doc" in parsed)) {
     return {
@@ -961,17 +820,9 @@ export function hDraftStagePatch(
     return refused(400, { error: DRAFT_PATCH_VOICE[shape.kind] });
   }
   const patch: Record<string, unknown> = shape.patch;
-  const loaded = loadDraftDoc(draftsDir, draftId);
+  const loaded = loadDraftDoc(drafts, draftId);
   if (!("doc" in loaded)) {
     if (loaded.reason === "bad_id") return refused(400, { error: "bad id" });
-    if (loaded.reason === "draft corrupt on disk") {
-      return {
-        status: 500,
-        body: dumpsPy({ error: loaded.reason }),
-        contentType: JSON_CT,
-        headers: {},
-      };
-    }
     return answered(200, {
       draftId,
       stageId,
@@ -1003,30 +854,40 @@ export function hDraftStagePatch(
   for (const key of ["inputs", "inputOutputs"] as const) {
     if (key in patch) st[key] = patch[key];
   }
-  if (!atomicWriteDraft(join(draftsDir, draftId + ".json"), loaded.doc)) {
-    return {
-      status: 500,
-      body: dumpsPy({ error: "cannot persist draft" }),
-      contentType: JSON_CT,
-      headers: {},
-    };
-  }
-  return answered(200, {
-    draftId,
-    stageId,
-    delivered: true,
-    patched: Object.keys(patch).sort(),
-  });
+  // The domain write is atomic by the backend (published by atomic
+  // rewrite — the tmp+rename resilience law is the facility's now)
+  // and bumps the recency column (the mtime equivalent).
+  return drafts
+    .table("docs")
+    .put(draftId, {
+      updated_at: Math.floor(Date.now() / 1000),
+      doc: loaded.doc as unknown as DraftRecord["doc"],
+    })
+    .then(
+      (): DraftResult =>
+        answered(200, {
+          draftId,
+          stageId,
+          delivered: true,
+          patched: Object.keys(patch).sort(),
+        }),
+      (): DraftResult => ({
+        status: 500,
+        body: dumpsPy({ error: "cannot persist draft" }),
+        contentType: JSON_CT,
+        headers: {},
+      }),
+    );
 }
 
 /** GET /v1/flows/drafts/:id/stages/:sid/result — mirrors
  *  _h_draft_stage_result + draft_stage_result. */
 export function hDraftStageResult(
-  draftsDir: string,
+  drafts: Domain<DraftsDomainSpec>,
   draftId: string,
   stageId: string,
 ): DraftResult {
-  const loaded = loadDraftDoc(draftsDir, draftId);
+  const loaded = loadDraftDoc(drafts, draftId);
   if (!("doc" in loaded)) {
     if (loaded.reason === "bad_id") return refused(400, { error: "bad id" });
     return answered(200, { found: false });
@@ -1047,21 +908,21 @@ export function hDraftStageResult(
  *  to the 404 shape). POST/PATCH ride the caller's raw body (same
  *  strict contract as route()); regex arms ride the caller's match
  *  groups (m[1] = draft_id, m[2] = stage_id). */
-export function dispatchDrafts(
+export async function dispatchDrafts(
   handler: string,
   m: RegExpExecArray | null,
   rawBody: Uint8Array,
-  stateRoot: string,
-): DraftResult | null {
-  const dir: string = join(stateRoot, "drafts");
-  if (handler === "_h_drafts_list") return hDraftsList(dir);
-  if (handler === "_h_drafts_save") return hDraftsSave(dir, rawBody);
+  ctx: Context,
+): Promise<DraftResult | null> {
+  const drafts: Domain<DraftsDomainSpec> = await getDraftsDomain(ctx);
+  if (handler === "_h_drafts_list") return hDraftsList(drafts);
+  if (handler === "_h_drafts_save") return hDraftsSave(drafts, rawBody);
   if (handler === "_h_drafts_get") {
-    return hDraftsGet(dir, (m?.[1] as string) ?? "");
+    return hDraftsGet(drafts, (m?.[1] as string) ?? "");
   }
   if (handler === "_h_draft_stage_patch") {
     return hDraftStagePatch(
-      dir,
+      drafts,
       (m?.[1] as string) ?? "",
       (m?.[2] as string) ?? "",
       rawBody,
@@ -1069,7 +930,7 @@ export function dispatchDrafts(
   }
   if (handler === "_h_draft_stage_result") {
     return hDraftStageResult(
-      dir,
+      drafts,
       (m?.[1] as string) ?? "",
       (m?.[2] as string) ?? "",
     );
@@ -1087,19 +948,20 @@ export function dispatchDrafts(
  *  the context. */
 export const draftsDoors: Plugin = {
   name: "gateway-drafts",
-  inject: ["gatewayError", "webServer"],
+  inject: ["gatewayError", "webServer", "storageDomain"],
   apply(ctx: Context): void {
-    mountDoorRoutes(ctx, ctx.webServer, ["_h_drafts_list", "_h_drafts_save", "_h_drafts_get", "_h_draft_stage_patch", "_h_draft_stage_result"], (req: GatewayRequest): DispatchResult | undefined => {
+    mountDoorRoutes(ctx, ctx.webServer, ["_h_drafts_list", "_h_drafts_save", "_h_drafts_get", "_h_draft_stage_patch", "_h_draft_stage_result"], (req: GatewayRequest): DispatchResult | undefined | Promise<DispatchResult | undefined> => {
         const hit = doorMatch(req, ["_h_drafts_list", "_h_drafts_save", "_h_drafts_get", "_h_draft_stage_patch", "_h_draft_stage_result"]);
         if (hit === null) return undefined;
-        const draft: DispatchResult | null = dispatchDrafts(
+        return dispatchDrafts(
           hit.row.handler,
           hit.m,
           req.body,
-          req.roots.stateRoot,
-        );
-        if (draft !== null) return draft;
-        return undefined;
+          ctx,
+        ).then((draft: DraftResult | null): DispatchResult | undefined => {
+          if (draft !== null) return draft;
+          return undefined;
+        });
     });
   },
 };

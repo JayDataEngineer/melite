@@ -28,7 +28,7 @@
 // enums, import type for types, .ts specifiers for relative imports.
 
 import { resolveRepoRoot } from "@melite/comfyui-cordis";
-import { readdirSync, statSync } from "node:fs";
+import { readFileSync, readdirSync, statSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import type { Context } from "@deepseek-ai/cordis";
@@ -36,15 +36,23 @@ import type {
   Domain,
   DomainFacility,
 } from "@deepseek-ai/dsh-storage-domain";
+
+/** The domain handle types re-exported at the seam: doors reach
+ *  storage through this package, never by depending on the
+ *  facility package directly. */
+export type { Domain, DomainFacility } from "@deepseek-ai/dsh-storage-domain";
 import type { AssetRoots } from "./scan.ts";
 import { resolveInputDir, scanRun } from "./scan.ts";
 import {
   assetsDomainSpec,
+  draftsDomainSpec,
   uploadsDomainSpec,
 } from "./domains.ts";
 import type {
   ArtifactRow,
   AssetsDomainSpec,
+  DraftRecord,
+  DraftsDomainSpec,
   RunRow,
   UploadFile,
   UploadsDomainSpec,
@@ -72,6 +80,7 @@ export function resolveStorageRoot(): string {
 export interface StorageHandles {
   readonly assets: Domain<AssetsDomainSpec>;
   readonly uploads: Domain<UploadsDomainSpec>;
+  readonly drafts: Domain<DraftsDomainSpec>;
 }
 
 interface CacheEntry {
@@ -269,8 +278,10 @@ async function getHandles(
   const ready: Promise<StorageHandles> = (async (): Promise<StorageHandles> => {
     const assets = await facility.open(assetsDomainSpec);
     const uploads = await facility.open(uploadsDomainSpec);
+    const drafts = await facility.open(draftsDomainSpec);
     await backfillUploadsIfEmpty(uploads);
-    return { assets, uploads };
+    await importLegacyDrafts(drafts);
+    return { assets, uploads, drafts };
   })();
   cached = { facility, root, ready };
   try {
@@ -320,4 +331,63 @@ export async function noteUploadStaged(
   } catch {
     /* the staged file is the truth; the index catches up on backfill */
   }
+}
+
+/** The one-time legacy-drafts import (the py-era STATE_ROOT/drafts
+ *  tree → the drafts domain). Guarded by the domain's global slot:
+ *  runs only while it serves the initial 0, then stamps the epoch —
+ *  a later wiped/empty unit NEVER re-imports frozen legacy ghosts.
+ *  Unparseable/non-object legacy files skip (their drafts were
+ *  unreadable in the old door too — the corrupt-on-disk class);
+ *  keys collide-safe (draft ids are path-safe by DRAFT_ID_RE).
+ *  The legacy files stay untouched on disk — evidence, never truth. */
+async function importLegacyDrafts(drafts: Domain<DraftsDomainSpec>): Promise<void> {
+  const marker = drafts.global;
+  if (marker.get() !== 0) return;
+  const docs = drafts.table("docs");
+  const legacyDir = join(resolveStorageRoot(), "..", "drafts");
+  let names: string[];
+  try {
+    names = readdirSync(legacyDir);
+  } catch {
+    names = [];
+  }
+  for (const name of names) {
+    if (!name.endsWith(".json")) continue;
+    const did = name.slice(0, -5);
+    if (docs.get(did) !== undefined) continue;
+    let doc: unknown;
+    try {
+      doc = JSON.parse(readFileSync(join(legacyDir, name), "utf8"));
+    } catch {
+      continue;
+    }
+    if (typeof doc !== "object" || doc === null || Array.isArray(doc)) continue;
+    const rec = doc as Record<string, unknown>;
+    if (typeof rec["draft_id"] !== "string") rec["draft_id"] = did;
+    let updated = Math.floor(Date.now() / 1000);
+    try {
+      updated = Math.floor(statSync(join(legacyDir, name)).mtimeMs / 1000);
+    } catch {
+      /* unstatable imports as now — ordering stays total */
+    }
+    try {
+      await docs.put(did, {
+        updated_at: updated,
+        doc: rec as unknown as DraftRecord["doc"],
+      });
+    } catch {
+      /* a schema-failing legacy row skips; the rest import */
+    }
+  }
+  await marker.set(Date.now());
+}
+
+/** The drafts door's domain handle (opens through the shared cache;
+ *  callers own request-scope, never the handle's lifetime). */
+export async function getDraftsDomain(
+  ctx: Context,
+): Promise<Domain<DraftsDomainSpec>> {
+  const handles: StorageHandles = await getHandles(ctx, resolveStorageRoot());
+  return handles.drafts;
 }

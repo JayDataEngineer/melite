@@ -72,6 +72,10 @@ function readyPort(proc: ChildProcess, deadlineMs: number): Promise<number> {
 export async function bootSandbox(opts: {
   mcpBin: string;
   token: string;
+  /** Pre-seeded state root (caller-owned): skips the fresh-root
+   *  mint — the drafts wall seeds legacy fixtures before boot and
+   *  reboots the same root for durability/marker proofs. */
+  stateRoot?: string;
   /** KEPT FOR SIGNATURE COMPATIBILITY, now a no-op: the catalog is
    *  the compiled-in frozen registry (models/registry.generated.ts)
    *  — root-independent, no DATA file to seed (the provisions.json
@@ -80,7 +84,8 @@ export async function bootSandbox(opts: {
 }): Promise<Sandbox> {
   const repoRoot: string = writeFixtureRepo();
   // seedCatalog: retired no-op (compiled-in registry — see opts doc).
-  const stateRoot: string = mkdtempSync(join(tmpdir(), "wall-ts-state-"));
+  const stateRoot: string =
+    opts.stateRoot ?? mkdtempSync(join(tmpdir(), "wall-ts-state-"));
   const env: Record<string, string> = {};
   for (const [k, v] of Object.entries(process.env)) {
     if (v !== undefined) env[k] = v;
