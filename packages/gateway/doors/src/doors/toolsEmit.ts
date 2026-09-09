@@ -16,7 +16,7 @@
 // identical bytes). Serialization: JSON.stringify(doc, null, 2) —
 // the TS-canonical form (raw UTF-8 em-dashes, JS numbers); the py
 // ensure_ascii era is over.
-import { emitParamsSchema } from "@comfyui/cordis";
+import { emitParamsSchema } from "@melite/comfyui";
 import { needCardRegistry } from "./flowsCard.ts";
 import type { CardRegistryService } from "./flowsCard.ts";
 import { toolBaseRows } from "./toolProjection.ts";

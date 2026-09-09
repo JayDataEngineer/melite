@@ -122,7 +122,7 @@ import { matchRoute } from "@melite/gateway-core";
  *  override else source-relative 4-up; the 9 hand-rolled copies
  *  died 2026-09-08). Re-export keeps this module's wall-pinned
  *  address. */
-import { resolveRepoRoot } from "@comfyui/cordis";
+import { resolveRepoRoot } from "@melite/comfyui";
 export { resolveRepoRoot };
 
 /** Pydantic MAJOR.MINOR baked into refusal footers (probed

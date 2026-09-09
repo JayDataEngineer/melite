@@ -4,7 +4,7 @@
 // derive from THIS module — never a second spelling.
 import z from '@deepseek-ai/schemastery'
 import type { Context } from '@deepseek-ai/cordis'
-import type { ComfyUIService } from '@comfyui/cordis/service'
+import type { ComfyUIService } from '@melite/comfyui/service'
 import { existsSync, statSync } from 'node:fs'
 import { resolve } from 'node:path'
 

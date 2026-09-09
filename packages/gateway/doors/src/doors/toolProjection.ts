@@ -15,9 +15,9 @@
 //
 // Refusal law: a registered card without authored prose throws
 // LOUD — never a silent drop, never a generated title.
-import { emitParamsSchema } from "@comfyui/cordis";
-import { cardWireName } from "@comfyui/cordis";
-import type { CardDefinition } from "@comfyui/cordis";
+import { emitParamsSchema } from "@melite/comfyui";
+import { cardWireName } from "@melite/comfyui";
+import type { CardDefinition } from "@melite/comfyui";
 import type { ManifestRow } from "./planes.ts";
 
 /** Py-era card dir names (underscores) -> registry ids (hyphens).

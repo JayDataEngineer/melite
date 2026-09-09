@@ -4,7 +4,7 @@ import type { Context } from '@deepseek-ai/cordis'
 import { existsSync, statSync } from 'node:fs'
 import { resolve } from 'node:path'
 import z from '@deepseek-ai/schemastery'
-import { upscaleLane } from '@comfyui/card-kit'
+import { upscaleLane } from '@melite/card-kit'
 
 const schema = z.object({
   input_image: z.string().role('path').description("Input image").extra('extra', { order: 0, group: "input", width: 1, tooltip: "The frame to restore. Absolute mount path.", required: true, wtype: 'image', }),

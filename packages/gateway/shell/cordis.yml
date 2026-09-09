@@ -30,9 +30,9 @@
   - id: gateway-uploads
     name: '@melite/gateway-doors/uploads'
   - id: engine-model-catalog
-    name: '@comfyui/cordis/catalog-registry'
+    name: '@melite/comfyui/catalog-registry'
   - id: engine-comfyui
-    name: '@comfyui/cordis/comfyui-host'
+    name: '@melite/comfyui/comfyui-host'
   - id: gateway-card-registry
     name: '@melite/gateway-doors/card-registry'
   - id: gateway-validate

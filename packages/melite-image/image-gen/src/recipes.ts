@@ -19,7 +19,7 @@
 // CONCATs (recipe stack first, the caller's after — stacking
 // semantics). The engine's compose applies this at its one merge
 // point; THIS MODULE IS DATA ONLY.
-import type { CardRecipe } from '@comfyui/cordis/service'
+import type { CardRecipe } from '@melite/comfyui/service'
 
 /** The catalog. The schema's recipe enum derives from these keys —
  *  one spelling (a key the catalog does not carry cannot pass the

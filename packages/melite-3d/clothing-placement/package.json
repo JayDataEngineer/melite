@@ -14,7 +14,7 @@
     "typecheck": "tsc --noEmit -p ."
   },
   "dependencies": {
-    "@comfyui/cordis": "workspace:*",
+    "@melite/comfyui": "workspace:*",
     "@deepseek-ai/cordis": "^4.0.2",
     "@deepseek-ai/dsh-tools": "0.1.5-alpha.1",
     "@deepseek-ai/schemastery": "*"

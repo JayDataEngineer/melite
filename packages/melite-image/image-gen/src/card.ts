@@ -8,9 +8,9 @@
 // compose at its one merge point.
 import type { Context } from '@deepseek-ai/cordis'
 import z from '@deepseek-ai/schemastery'
-import { imageT2I, finalizeImageGen } from '@comfyui/card-kit'
-import { SAMPLERS, SCHEDULERS } from '@comfyui/card-kit/vocab'
-import type { ComfyUIService } from '@comfyui/cordis/service'
+import { imageT2I, finalizeImageGen } from '@melite/card-kit'
+import { SAMPLERS, SCHEDULERS } from '@melite/card-kit/vocab'
+import type { ComfyUIService } from '@melite/comfyui/service'
 import { DECL as krea2Decl } from '@melite/melite-models-krea-2'
 import { DECL as zImageDecl } from '@melite/melite-models-z-image'
 import { DECL as animaDecl } from '@melite/melite-models-anima'

@@ -10,7 +10,7 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import { Context } from "@deepseek-ai/cordis";
-import { ComfyUIService, loadCardDefs } from "@comfyui/cordis";
+import { ComfyUIService, loadCardDefs } from "@melite/comfyui";
 import * as pkg from "../src/index.ts";
 import { DECL as krea2Decl } from "@melite/melite-models-krea-2";
 import { DECL as zImageDecl } from "@melite/melite-models-z-image";

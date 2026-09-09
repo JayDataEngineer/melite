@@ -9,7 +9,7 @@
   },
   "dependencies": {
     "@deepseek-ai/cordis": "^4.0.2",
-    "@comfyui/cordis": "workspace:*"
+    "@melite/comfyui": "workspace:*"
   },
   "devDependencies": {
     "@types/node": "*"

@@ -8,8 +8,8 @@
 // card knobs (the Model's card_knobs rows).
 import type { Context } from '@deepseek-ai/cordis'
 import z from '@deepseek-ai/schemastery'
-import { skinLane, finalizeSkin } from '@comfyui/card-kit'
-import { vocabulary } from '@comfyui/card-kit/vocab'
+import { skinLane, finalizeSkin } from '@melite/card-kit'
+import { vocabulary } from '@melite/card-kit/vocab'
 
 const schema = z.object({
   body_glb: z.string().role('path').description("Body GLB").extra('extra', { order: 0, group: "parts", required: true, wtype: 'file', }),

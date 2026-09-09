@@ -6,7 +6,7 @@
 // submit's phase-2 arm (1273-1305) + the rim wrap (infra/python/plugins.py
 // card_hooks.compose 525-600), with the survey's verdict
 // (docs/design/card-lane-port-survey-2026-09-08.md §0 + §5): import
-// @comfyui/cordis IN-PROCESS — no template SSOT, no subprocess, no
+// @melite/comfyui IN-PROCESS — no template SSOT, no subprocess, no
 // class-tree port. The graph truth already lives in TS
 // (packages/engines/comfyui/src — 19 cards, golden-pinned);
 // this arm only changes the CALL PATH (subprocess shell -> import).
@@ -72,13 +72,13 @@
 
 import { Context, Service } from "@deepseek-ai/cordis";
 import type { Plugin } from "@deepseek-ai/cordis";
-import { bootModels, ComfyUIService, ComposeRefusal, getModel, loadCardDefs, loadFacts, registryIds, registryModel, theService } from "@comfyui/cordis";
-import type { CardDefinition, FactsFile, FactsReads } from "@comfyui/cordis";
+import { bootModels, ComfyUIService, ComposeRefusal, getModel, loadCardDefs, loadFacts, registryIds, registryModel, theService } from "@melite/comfyui";
+import type { CardDefinition, FactsFile, FactsReads } from "@melite/comfyui";
 import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
 import { dirname, join, relative, resolve, sep } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { DOOR_KEYS, FLOW_ID_RE } from "@melite/gateway-core";
-import { pyReprStr, resolveRepoRoot } from "@comfyui/cordis";
+import { pyReprStr, resolveRepoRoot } from "@melite/comfyui";
 
 /** The card-envelope keys (gateway.py:360 CARD_ENVELOPE_KEYS =
  *  DOOR_KEYS + draft/test/service): select the graph, never ride it. */
@@ -1008,7 +1008,7 @@ export interface ComposedCard {
 }
 
 function cordisSrcDir(): string {
-  const entry: string = fileURLToPath(import.meta.resolve("@comfyui/cordis"));
+  const entry: string = fileURLToPath(import.meta.resolve("@melite/comfyui"));
   return dirname(entry);
 }
 

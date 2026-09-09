@@ -79,7 +79,7 @@ export const loadCardDefs = async (): Promise<Map<string, CardDefinition>> => {
   // THE MOD PACKS (the distinct category taxonomy — the py Mod
   // parents): the pack contracts (loras, controlnet, lanpaint,
   // mask, qvoice) live in the compose kit now (P46 — the web
-  // promoted to @comfyui/card-kit; named import, no dir walk);
+  // promoted to @melite/card-kit; named import, no dir walk);
   // the service validates LOUD at registration. PACKS FIRST — a
   // flavor for an unregistered pack refuses (the category lands
   // before the boardings).

@@ -1,5 +1,5 @@
 {
-  "name": "@comfyui/cordis",
+  "name": "@melite/comfyui",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -22,7 +22,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@comfyui/card-kit": "workspace:*",
+    "@melite/card-kit": "workspace:*",
     "@deepseek-ai/cordis": "^4.0.2",
     "@deepseek-ai/schemastery": "*",
     "@melite-plugin/3d": "workspace:*",

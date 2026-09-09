@@ -2,7 +2,7 @@
 // Decl + admission + one kit recipe call — the lane body lives in src/kit.ts.
 import type { Context } from '@deepseek-ai/cordis'
 import z from '@deepseek-ai/schemastery'
-import { sfxT1 } from '@comfyui/card-kit'
+import { sfxT1 } from '@melite/card-kit'
 
 const schema = z.object({
   prompt: z.string().description("Sound Description").extra('extra', { order: null, tooltip: "Describe the SOUND itself, not the scene (e.g. 'sharp metallic clang with long decay')", required: true, wtype: 'textarea', }),

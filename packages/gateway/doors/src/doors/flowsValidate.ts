@@ -79,7 +79,7 @@
 //
 // Erasable-syntax TS only (estate convention): no enums, import
 // type for types, .ts specifiers for relative imports.
-import { resolveRepoRoot } from "@comfyui/cordis";
+import { resolveRepoRoot } from "@melite/comfyui";
 import { execFileSync } from "node:child_process";
 import {
   existsSync,
@@ -88,7 +88,7 @@ import {
 } from "node:fs";
 import { dirname, join, relative, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
-import type { CardDefinition } from "@comfyui/cordis";
+import type { CardDefinition } from "@melite/comfyui";
 import type { Context, Plugin } from "@deepseek-ai/cordis";
 import type { DispatchResult } from "@melite/gateway-core";
 import type { GatewayRequest } from "@melite/gateway-core";

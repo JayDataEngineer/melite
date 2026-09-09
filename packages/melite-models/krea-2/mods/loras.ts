@@ -16,7 +16,7 @@
 // originals. Files land in COMFYUI loras/<filename>.
 import type { Context } from '@deepseek-ai/cordis'
 // the ctx.comfyui augmentation rides the service module:
-import type { ComfyUIService } from '@comfyui/cordis/service'
+import type { ComfyUIService } from '@melite/comfyui/service'
 
 export const inject = ['comfyui']
 

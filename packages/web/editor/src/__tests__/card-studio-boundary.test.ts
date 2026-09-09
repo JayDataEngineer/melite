@@ -265,7 +265,7 @@ describe("plugin studio tenant boundary (§6 props gate)", () => {
     const VALUE_PREFIX_ALLOW = ["three/examples/"]
     const failures: string[] = []
     for (const comp of comps) {
-      // The card tree's manifest (@comfyui/cards package.json) governs its
+      // The card tree's manifest (@melite/cards package.json) governs its
       // deps — the same §18 law the ui tenants ride: a DECLARED dependency
       // is a legal VALUE import (zustand for bodyStudio's store, the
       // @melite-plugin/timeline edge, …). VALUE_ALLOW stays the shared

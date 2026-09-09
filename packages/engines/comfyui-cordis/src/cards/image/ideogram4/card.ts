@@ -4,8 +4,8 @@
 // Decl + admission + one kit recipe call — the lane body lives in src/kit.ts.
 import type { Context } from '@deepseek-ai/cordis'
 import z from '@deepseek-ai/schemastery'
-import { ideogramLane, finalizeIdeogram } from '@comfyui/card-kit'
-import { SAMPLERS } from '@comfyui/card-kit/vocab'
+import { ideogramLane, finalizeIdeogram } from '@melite/card-kit'
+import { SAMPLERS } from '@melite/card-kit/vocab'
 
 const schema = z.object({
   prompt: z.string().description("Prompt").extra('extra', { order: 0, group: "prompt", columns: 2, width: 1, required: true, wtype: 'textarea', }),

@@ -2,7 +2,7 @@
 // Decl + admission + one kit recipe call — the lane body lives in src/kit.ts.
 import type { Context } from '@deepseek-ai/cordis'
 import z from '@deepseek-ai/schemastery'
-import { voicelockT1 } from '@comfyui/card-kit'
+import { voicelockT1 } from '@melite/card-kit'
 
 const schema = z.object({
   voice_name: z.string().description("Voice Name").extra('extra', { order: 0, group: "voice", width: 1, tooltip: "Name for the locked persona — becomes the .qvoice filename stem. Reused across every future TTS render.", required: true }),
