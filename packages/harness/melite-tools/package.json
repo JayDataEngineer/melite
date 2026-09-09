@@ -3,10 +3,11 @@
   "version": "0.1.0",
   "type": "module",
   "exports": {
-    ".": "./lib/index.mjs"
+    ".": "./lib/index.mjs",
+    "./doors": "./lib/doors.mjs"
   },
   "scripts": {
-    "build": "tsdown src/index.ts --format esm --dts --outDir lib",
+    "build": "tsdown src/index.ts src/doors.ts --format esm --dts --outDir lib",
     "typecheck": "tsc --noEmit",
     "test:smoke": "node test/smoke.mjs"
   },

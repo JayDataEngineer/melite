@@ -50,6 +50,14 @@
       name: '@melite-plugin/dsh-tools'
       config:
         gatewayUrl: !!js process.env.MELITE_GATEWAY || 'http://localhost:33081'
+    # The host-route plane of the same package (split 2026-09-10): the
+    # ✦ doors need webServer+llm, which sdk/headless compositions do
+    # not have — infer-tools stays profile-agnostic, this row is
+    # web-profiles-only (the estate patch disables it).
+    - id: infer-tools-doors
+      name: '@melite-plugin/dsh-tools/doors'
+      config:
+        gatewayUrl: !!js process.env.MELITE_GATEWAY || 'http://localhost:33081'
 
     - id: infer-card-view-host
       name: '@melite-plugin/dsh-card-view'

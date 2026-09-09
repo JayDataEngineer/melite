@@ -56,12 +56,11 @@ import { skillIndex } from './tools/skill-index.ts'
 import { skillRead } from './tools/skill-read.ts'
 import { ledgerTail } from './tools/ledger-tail.ts'
 import type { ToolDefinition } from './types.ts'
-import { harnessEnhance, resolveHarnessRoutes, matchHarnessRoute, routeName, type LlmStreamSeam } from './llm-complete.ts'
+import { harnessEnhance, resolveHarnessRoutes, matchHarnessRoute, routeName } from './llm-complete.ts'
 
 // Re-exported for the route-preference unit test (drives the BUILT lib
 // with a fake seam — no host, no key, seconds-cheap).
 export { harnessEnhance, resolveHarnessRoutes, matchHarnessRoute, routeName }
-import { agenticSweep } from './enhance-agent.ts'
 
 export { DEFAULT_GATEWAY_URL, RayGatewayError, normalizeGatewayUrl } from './gateway.ts'
 
@@ -86,14 +85,13 @@ export const name = 'melite-tools'
  * rides ctx.llm). No webServer dependency — headless/SDK mounts boot
  * without one.
  */
-// webServer: the /melite-tools/* host routes (the editor ✦ button's
-// enhance door). RESTORED 2026-09-05 — the 2026-09-03 "ray-era fossil"
-// retirement killed them as "zero live callers", but the editor's
-// enhance.ts targets /melite-tools/enhance as its ONLY door (the
-// keystore fallback died 2026-09-05), so the ✦ button answered the
-// operator-quoted error inside the DeepSeek app. The route IS the link
-// to the DSH model (ctx.llm) — one core, two doors.
-export const inject = ['tools', 'webServer', 'llm']
+// inject law (split 2026-09-10): THIS plugin is the profile-agnostic
+// tool plane — it must activate in EVERY composition, including the
+// estate/sdk server (no webServer service, see src/doors.ts for why
+// the host routes live in their own loader entry). llm is NOT injected
+// here: the run doors ride the GATEWAY, and the enhance seams that do
+// need ctx.llm moved to src/doors.ts with the routes.
+export const inject = ['tools']
 
 /**
  * Plugin config — defaults filled in apply (zod-free, loader passes raw).
@@ -134,21 +132,14 @@ export const MELITE_TOOL_NAMES = [
   ...BASE_TOOL_NAMES, ...HEADLESS_TOOL_NAMES, ...ADHOC_TOOL_NAMES,
 ] as const
 
-/** Minimal structural view of the services apply touches. */
+/** Minimal structural view of the services apply touches (doors moved
+ * out — webServer and the llm seam live in src/doors.ts now). */
 interface CtxView {
   logger: { info(msg: string, ...args: unknown[]): void; warn(msg: string, ...args: unknown[]): void }
   effect(effect: () => void, label?: string): unknown
-  llm: LlmStreamSeam
   tools: {
     register(definition: ToolDefinition): () => void
     schemas(): Array<{ name: string; description?: string; parameters?: unknown }>
-  }
-  webServer: {
-    register(route: {
-      kind: 'exact' | 'prefix'
-      path: string
-      handler: (req: import('node:http').IncomingMessage, res: import('node:http').ServerResponse) => void
-    }, label?: string): () => void
   }
 }
 
@@ -227,141 +218,4 @@ export async function apply(ctx: Context, config: Config = {}): Promise<void> {
   c.tools.register(buildMotionTool(gatewayUrl) as unknown as ToolDefinition)
   c.tools.register(buildH3TimelineTool(gatewayUrl) as unknown as ToolDefinition)
 
-  
-
-  // ── HOST ROUTES (restored 2026-09-05) ─────────────────────────────
-  // The editor's ✦ Enhance door: POST /melite-tools/enhance on THIS
-  // host, same-origin from the chat embed. The LLM is the harness's
-  // OWN model (ctx.llm) — the registered adapter the host itself
-  // chats through. No keystore exists on this path, so the button can
-  // never answer "no model" inside a host that converses at all.
-  // ONE execution core, two doors (llm-complete.ts): this route and
-  // the enhance_prompt tool.
-  const readBody = (req: import('node:http').IncomingMessage): Promise<Buffer> =>
-    new Promise((resolve, reject) => {
-      const chunks: Buffer[] = []
-      req.on('data', (d?: Buffer) => { if (d) chunks.push(d) })
-      req.on('end', () => resolve(Buffer.concat(chunks)))
-      req.on('error', reject)
-    })
-
-  c.effect(() => c.webServer.register({
-    kind: 'exact',
-    path: '/melite-tools/catalog',
-    handler: (_req, res) => {
-      // llmRoutes is the LIVE route list (2026-09-06: the card's model
-      // picker is populated from here — never a restated copy). Best
-      // effort: a broken llm seam must not take the proof route down.
-      const respondCatalog = (llmRoutes: string[]): void => {
-        const body = JSON.stringify({
-          tools: c.tools.schemas().map((s) => ({ name: s.name, description: s.description ?? '' })),
-          llmRoutes,
-        })
-        res.writeHead(200, { 'content-type': 'application/json', 'content-length': String(Buffer.byteLength(body)) })
-        res.end(Buffer.from(body))
-      }
-      resolveHarnessRoutes(c.llm).then(
-        (routes) => respondCatalog(routes.map(routeName)),
-        () => respondCatalog([]),
-      )
-    },
-  }), 'melite-tools: catalog route')
-
-  c.effect(() => c.webServer.register({
-    kind: 'exact',
-    path: '/melite-tools/enhance',
-    handler: (req, res) => {
-      let ok = true
-      const respond = (status: number, payload: unknown): void => {
-        if (!ok) return
-        ok = false
-        res.writeHead(status, { 'content-type': 'application/json' })
-        res.end(JSON.stringify(payload))
-      }
-      readBody(req).then((buf) => {
-        // TEMPORARY 1:1 CAPTURE (2026-09-06, operator order: "I SEND IN
-        // DSH, THEN YOU DO IT LIVE" — the operator presses Enhance once
-        // and I replay the EXACT body). Append-only local file on the
-        // operator's own machine, used once to replay THEIR failure,
-        // DELETED after. Never committed, never in records.
-        try {
-          const fs = require('node:fs') as {
-            appendFileSync(p: string, s: string): void
-          }
-          fs.appendFileSync(
-            '/tmp/melite-enhance-capture.jsonl',
-            JSON.stringify({
-              time: new Date().toISOString(),
-              chars: buf.length,
-              body: buf.toString('utf8'),
-            }) + '\n',
-          )
-        } catch { /* capture must never break the door */ }
-        let body: {
-          system_prompt?: unknown; prompt?: unknown; temperature?: unknown;
-          model?: unknown; llm?: unknown
-        }
-        try {
-          body = JSON.parse(buf.toString('utf8')) as typeof body
-        } catch {
-          return respond(400, { error: 'body must be JSON: {system_prompt, prompt, temperature?, llm?} or {model, prompt, temperature?, llm?}' })
-        }
-        if (typeof body.prompt !== 'string' || body.prompt.length === 0) {
-          return respond(400, { error: 'prompt is a required string' })
-        }
-        const temperature = typeof body.temperature === 'number' ? body.temperature : undefined
-        // The caller's chosen harness route (2026-09-06: the card's
-        // model picker — "provider/model" or an unambiguous bare
-        // model). Absent = host default walk (previous behavior).
-        // Validated against the LIVE list here so an unknown name is
-        // a 400 naming the live routes, never a blind walk.
-        const llmWant = typeof body.llm === 'string' && body.llm.length > 0 ? body.llm : undefined
-
-        // NO WALK, NO FALLBACKS (queue lane law): one resolved route
-        // or a loud failure. Explicit llm wins, else the host default.
-        // Unknown explicit name → 400; stale default / dead route → 502.
-        const mapEnhanceError = (err: unknown): void => {
-          const msg = err instanceof Error ? err.message : String(err)
-          if (msg.startsWith('enhance: unknown llm route')) {
-            const namesDefault = llmWant !== undefined
-              && msg.includes('"' + llmWant + '"')
-            return respond(namesDefault ? 400 : 502, { error: msg })
-          }
-          return respond(502, { error: msg })
-        }
-
-        // AGENT SWEEP FORM: {model, prompt} → every declared field
-        // enhanced, results keyed by field name (the ✦ Agent Enhance
-        // button's wire). Multi-field models complete sequentially
-        // (observed ~40s per field live) — the cap is generous, never
-        // a mid-song cutoff.
-        if (typeof body.model === 'string' && body.model.length > 0) {
-          return agenticSweep(gatewayUrl, c.llm, {
-            model: body.model,
-            prompt: body.prompt,
-            temperature,
-            signal: AbortSignal.timeout(600_000),
-            ...(llmWant !== undefined ? { llmWant } : {}),
-            defaultLlm: readDefaultLlm(),
-          })
-            .then((result) => respond(200, result))
-            .catch(mapEnhanceError)
-        }
-
-        // ONE-SHOT FORM: the caller (the per-field ✦ button) supplies
-        // the recipe directly — it comes from the form-spec SSOT.
-        if (typeof body.system_prompt !== 'string' || body.system_prompt.length === 0) {
-          return respond(400, { error: 'either model (agent sweep) or system_prompt (one-shot) is required' })
-        }
-        harnessEnhance(c.llm, {
-          system: body.system_prompt,
-          prompt: body.prompt,
-          temperature,
-          ...(llmWant !== undefined ? { llm: llmWant } : {}),
-        }, readDefaultLlm())
-          .then((result) => respond(200, result))
-          .catch(mapEnhanceError)
-      }).catch((err: unknown) => respond(400, { error: `body read failed: ${err instanceof Error ? err.message : String(err)}` }))
-    },
-  }), 'melite-tools: enhance route')
 }
