@@ -24,11 +24,11 @@
  * model recipes SSOT in the gateway form-spec) — is the first: never
  * in a base toolset, only called ad hoc.
  *
- * BASE toolset (both interfaces): model_catalog, lane_bundle_peek,
- * lane_bundle_load, build_flow, refine_draft, comfy_manage,
- * skill_index, skill_read, ledger_tail. Card tools compose from
- * their card packages (named imports above — the fetch registrar
- * retired with its last row).
+ * BASE toolset (both interfaces): melite_discover, melite_load,
+ * lane_bundle_peek, lane_bundle_load, build_flow, refine_draft,
+ * comfy_manage, skill_index, skill_read, ledger_tail. Card tools
+ * compose from their card packages (named imports above — the fetch
+ * registrar retired with its last row).
  *
  * @module @melite-plugin/dsh-tools
  */
@@ -51,10 +51,10 @@ import { flowRun } from './tools/flow-run.ts'
 import { runStatus } from './tools/run-status.ts'
 import { buildFlow } from './tools/build-flow.ts'
 import { comfyManage } from './tools/comfy-manage.ts'
-import { flowCatalog } from './tools/flow-catalog.ts'
+import { meliteDiscover } from './tools/melite-discover.ts'
 import { laneBundlePeek } from './tools/lane-bundle-peek.ts'
 import { laneBundleLoad } from './tools/lane-bundle-load.ts'
-import { cardCatalog } from './tools/card-catalog.ts'
+import { meliteLoad } from './tools/melite-load.ts'
 import { refineDraft } from './tools/refine-draft.ts'
 import { skillIndex } from './tools/skill-index.ts'
 import { skillRead } from './tools/skill-read.ts'
@@ -76,11 +76,11 @@ export { flowRun } from './tools/flow-run.ts'
 export { runStatus } from './tools/run-status.ts'
 export { laneBundlePeek } from './tools/lane-bundle-peek.ts'
 export { laneBundleLoad } from './tools/lane-bundle-load.ts'
-export { flowCatalog } from './tools/flow-catalog.ts'
+export { meliteDiscover } from './tools/melite-discover.ts'
 export { buildFlow } from './tools/build-flow.ts'
 export { refineDraft } from './tools/refine-draft.ts'
 export { comfyManage } from './tools/comfy-manage.ts'
-export { cardCatalog } from './tools/card-catalog.ts'
+export { meliteLoad } from './tools/melite-load.ts'
 export { skillIndex } from './tools/skill-index.ts'
 export { skillRead } from './tools/skill-read.ts'
 export { ledgerTail } from './tools/ledger-tail.ts'
@@ -122,7 +122,7 @@ export interface Config {
 
 /** BASE tool names — both interfaces (discovery, compose, management, audit). */
 export const BASE_TOOL_NAMES = [
-  'flow_catalog', 'card_catalog', 'lane_bundle_peek', 'lane_bundle_load',
+  'melite_discover', 'melite_load', 'lane_bundle_peek', 'lane_bundle_load',
   'build_flow', 'refine_draft', 'comfy_manage',
   'skill_index', 'skill_read', 'ledger_tail',
 ] as const
@@ -189,8 +189,8 @@ export async function apply(ctx: Context, config: Config = {}): Promise<void> {
 
   // BASE (both interfaces): disclosure (flow preferred, card
   // fallback), discovery, compose, management, audit.
-  c.tools.register(flowCatalog(gatewayUrl))
-  c.tools.register(cardCatalog(gatewayUrl))
+  c.tools.register(meliteDiscover(gatewayUrl))
+  c.tools.register(meliteLoad(gatewayUrl))
   c.tools.register(laneBundlePeek(gatewayUrl))
   c.tools.register(laneBundleLoad(gatewayUrl))
   c.tools.register(buildFlow(gatewayUrl))

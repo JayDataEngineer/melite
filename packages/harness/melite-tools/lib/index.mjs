@@ -129,7 +129,7 @@ function clean(value, seen) {
 }
 //#endregion
 //#region src/tools/card-run.ts
-const TIMEOUT_MS$5 = 2e4;
+const TIMEOUT_MS$7 = 2e4;
 /** Pull the gateway's named {error} out of a non-2xx body (fallback:
 * the raw body — still loud, still named). */
 function _namedError(body, fallback) {
@@ -213,7 +213,7 @@ function cardRun(gatewayUrl) {
 			if (!draftId) return jsonClean({ error: "draftId is required" });
 			let docRes;
 			try {
-				docRes = await gatewayRequest(gatewayUrl, "GET", "/v1/flows/drafts/" + encodeURIComponent(draftId), void 0, exec.signal, TIMEOUT_MS$5);
+				docRes = await gatewayRequest(gatewayUrl, "GET", "/v1/flows/drafts/" + encodeURIComponent(draftId), void 0, exec.signal, TIMEOUT_MS$7);
 			} catch (e) {
 				if (e instanceof RayGatewayError) return jsonClean({
 					draft: draftId,
@@ -262,7 +262,7 @@ function cardRun(gatewayUrl) {
 			};
 			let res;
 			try {
-				res = await gatewayRequest(gatewayUrl, "POST", "/v1/flows/start", startBody, exec.signal, TIMEOUT_MS$5);
+				res = await gatewayRequest(gatewayUrl, "POST", "/v1/flows/start", startBody, exec.signal, TIMEOUT_MS$7);
 			} catch (e) {
 				if (e instanceof RayGatewayError) return jsonClean({
 					draft: draftId,
@@ -287,7 +287,7 @@ function cardRun(gatewayUrl) {
 }
 //#endregion
 //#region src/tools/flow-run.ts
-const TIMEOUT_MS$4 = 2e4;
+const TIMEOUT_MS$6 = 2e4;
 function flowRun(gatewayUrl) {
 	return {
 		name: "flow_run",
@@ -365,7 +365,7 @@ function flowRun(gatewayUrl) {
 			};
 			let draftId = "";
 			try {
-				const composed = await gatewayRequest(gatewayUrl, "POST", "/v1/flows/drafts", composeBody, exec.signal, TIMEOUT_MS$4);
+				const composed = await gatewayRequest(gatewayUrl, "POST", "/v1/flows/drafts", composeBody, exec.signal, TIMEOUT_MS$6);
 				if (composed && typeof composed.error === "string" && composed.error) return jsonClean({
 					template,
 					error: composed.error
@@ -399,7 +399,7 @@ function flowRun(gatewayUrl) {
 			};
 			let res;
 			try {
-				res = await gatewayRequest(gatewayUrl, "POST", "/v1/flows/start", startBody, exec.signal, TIMEOUT_MS$4);
+				res = await gatewayRequest(gatewayUrl, "POST", "/v1/flows/start", startBody, exec.signal, TIMEOUT_MS$6);
 			} catch (e) {
 				if (e instanceof RayGatewayError) {
 					let named = "";
@@ -429,7 +429,7 @@ function flowRun(gatewayUrl) {
 }
 //#endregion
 //#region src/tools/run-status.ts
-const TIMEOUT_MS$3 = 15e3;
+const TIMEOUT_MS$5 = 15e3;
 function runStatus(gatewayUrl) {
 	return {
 		name: "run_status",
@@ -498,7 +498,7 @@ function runStatus(gatewayUrl) {
 			if (!runId) return jsonClean({ error: "runId is required" });
 			let res;
 			try {
-				res = await gatewayRequest(gatewayUrl, "GET", "/v1/flows/status/" + encodeURIComponent(runId), void 0, exec.signal, TIMEOUT_MS$3);
+				res = await gatewayRequest(gatewayUrl, "GET", "/v1/flows/status/" + encodeURIComponent(runId), void 0, exec.signal, TIMEOUT_MS$5);
 			} catch (e) {
 				if (e instanceof RayGatewayError) {
 					let named = "";
@@ -531,7 +531,7 @@ function runStatus(gatewayUrl) {
 }
 //#endregion
 //#region src/tools/build-flow.ts
-const CATALOG_TIMEOUT_MS$2 = 15e3;
+const CATALOG_TIMEOUT_MS = 15e3;
 const DRAFT_TIMEOUT_MS = 15e3;
 const VALIDATE_TIMEOUT_MS = 15e3;
 /** Fold flat connects into per-stage typed edges. LOUD on shapes the
@@ -714,13 +714,13 @@ async function composeMulti(gatewayUrl, flowArg, signal) {
 async function composeSingle(gatewayUrl, a, signal) {
 	if (typeof a.model !== "string" || a.model.length === 0) throw new Error("build_flow: \"model\" is required (a catalog model id string)");
 	if (typeof a.prompt !== "string" || a.prompt.length === 0) throw new Error("build_flow: \"prompt\" is required (what to put on the card)");
-	const tools = await gatewayRequest(gatewayUrl, "GET", "/v1/card-tools", void 0, signal, CATALOG_TIMEOUT_MS$2);
+	const tools = await gatewayRequest(gatewayUrl, "GET", "/v1/card-tools", void 0, signal, CATALOG_TIMEOUT_MS);
 	const manifest = Array.isArray(tools) ? tools.find((t) => t.model === a.model) : void 0;
 	if (manifest === void 0) {
 		const allowed = (Array.isArray(tools) ? tools : []).map((t) => String(t.model)).filter((s) => s !== "").join(", ");
 		throw new Error("build_flow: model \"" + a.model + "\" has no card tool. Live card tools: " + allowed);
 	}
-	const cat = await gatewayRequest(gatewayUrl, "GET", "/v1/model-catalog", void 0, signal, CATALOG_TIMEOUT_MS$2);
+	const cat = await gatewayRequest(gatewayUrl, "GET", "/v1/model-catalog", void 0, signal, CATALOG_TIMEOUT_MS);
 	const entry = (cat.models ?? {})[a.model];
 	const familyId = entry !== void 0 && typeof entry.family === "string" ? entry.family : a.model;
 	const famLabel = cat.families?.[familyId]?.label;
@@ -932,25 +932,38 @@ function comfyManage(gatewayUrl) {
 	};
 }
 //#endregion
-//#region src/tools/flow-catalog.ts
-const CATALOG_TIMEOUT_MS$1 = 15e3;
-function flowCatalog(gatewayUrl) {
+//#region src/tools/melite-discover.ts
+const TIMEOUT_MS$4 = 15e3;
+function meliteDiscover(gatewayUrl) {
 	return {
-		name: "flow_catalog",
-		description: "Search the named multi-stage flows (the PREFERRED composition): name + title + one-line description per flow. ALWAYS search flows FIRST for a multi-step task (image and upscale, speak this with that voice); when a flow fits, drive it with flow_run. Only when NO flow fits, fall back to card_catalog and compose cards directly. Takes an optional search phrase (empty = list all).",
+		name: "melite_discover",
+		description: "Progressive disclosure tier 1 over the estate (cards + flows): returns clamped summary LINES, never bodies. Args: lookup (all | cards | flows, default all) + tags (comma-separated card-declared tags, e.g. \"image,upscale\") + optional q (free-text filter). Prefer a FLOW when one fits the task — composition over single calls; fall back to cards. Open a line with melite_load (agents md + signature + skill lines).",
 		parameters: {
 			type: "object",
-			properties: { q: {
-				type: "string",
-				description: "Search phrase over flow name/title/description (e.g. \"image upscale\"). Empty = list all."
-			} },
-			required: []
+			properties: {
+				lookup: {
+					type: "string",
+					description: "Which plane to list: all (default) | cards | flows."
+				},
+				tags: {
+					type: "string",
+					description: "Comma-separated card-declared tags (image,upscale,generate,enhance,...). Empty means unfiltered."
+				},
+				q: {
+					type: "string",
+					description: "Optional free-text filter over names/titles/descriptions/ids."
+				}
+			}
 		},
 		presentCall(args) {
-			const q = args?.q;
+			const a = args ?? {};
+			const bits = [];
+			if (typeof a.lookup === "string" && a.lookup !== "") bits.push(a.lookup);
+			if (typeof a.tags === "string" && a.tags !== "") bits.push(a.tags);
+			if (typeof a.q === "string" && a.q !== "") bits.push(a.q);
 			return {
 				card: "generic",
-				title: "Flow catalog" + (typeof q === "string" && q !== "" ? ": " + q : ""),
+				title: "Discover" + (bits.length > 0 ? ": " + bits.join(" · ") : ""),
 				kind: "search"
 			};
 		},
@@ -959,38 +972,55 @@ function flowCatalog(gatewayUrl) {
 				type: "object",
 				additionalProperties: true,
 				properties: {
-					count: {
-						type: "number",
-						description: "Flows found."
-					},
 					flows: {
 						type: "array",
-						description: "Flow summaries: name/title/description/stages/skillRefs."
+						items: {
+							type: "object",
+							additionalProperties: true
+						},
+						description: "Flow lines (name/title/description/stages/skillRefs) — present unless lookup=cards."
+					},
+					cards: {
+						type: "array",
+						items: {
+							type: "object",
+							additionalProperties: true
+						},
+						description: "Card lines (id/label/description/tags) — present unless lookup=flows."
 					}
-				},
-				required: ["count", "flows"]
+				}
 			},
 			render: (_args, value) => {
+				const v = value;
+				if (v && typeof v.error === "string") return [{
+					type: "text",
+					text: "melite_discover REFUSED: " + v.error
+				}];
 				return [{
 					type: "text",
-					text: "flow_catalog: " + String(value.count ?? 0) + " flows (drive one with flow_run, or fall back to card_catalog)"
+					text: `discover: ${Array.isArray(v?.flows) ? v.flows.length : 0} flows, ${Array.isArray(v?.cards) ? v.cards.length : 0} cards — open one with melite_load`
 				}];
 			}
 		},
 		async execute(args, exec) {
-			const q = typeof args.q === "string" ? args.q : "";
-			const res = await gatewayRequest(gatewayUrl, "GET", "/v1/flows/catalog?action=search&q=" + encodeURIComponent(q), void 0, exec.signal, CATALOG_TIMEOUT_MS$1);
-			const rows = Array.isArray(res.flows) ? res.flows : [];
-			return {
-				count: rows.length,
-				flows: rows
-			};
+			const a = args ?? {};
+			const params = new URLSearchParams();
+			const lookup = typeof a.lookup === "string" && a.lookup !== "" ? a.lookup : "all";
+			params.set("lookup", lookup);
+			if (typeof a.q === "string" && a.q !== "") params.set("q", a.q);
+			if (typeof a.tags === "string" && a.tags !== "") params.set("tags", a.tags);
+			try {
+				return jsonClean(await gatewayRequest(gatewayUrl, "GET", "/v1/discover?" + params.toString(), void 0, exec.signal, TIMEOUT_MS$4));
+			} catch (e) {
+				const err = e;
+				return jsonClean({ error: typeof err.body === "string" && err.body !== "" ? err.body : err.message ?? "discover failed" });
+			}
 		}
 	};
 }
 //#endregion
 //#region src/tools/lane-bundle-peek.ts
-const TIMEOUT_MS$2 = 15e3;
+const TIMEOUT_MS$3 = 15e3;
 function laneBundlePeek(gatewayUrl) {
 	return {
 		name: "lane_bundle_peek",
@@ -1051,7 +1081,7 @@ function laneBundlePeek(gatewayUrl) {
 			if (typeof a.kind === "string" && a.kind.length > 0) q.push("kind=" + encodeURIComponent(a.kind));
 			if (typeof a.genre === "string" && a.genre.length > 0) q.push("genre=" + encodeURIComponent(a.genre));
 			if (q.length > 0) path += "?" + q.join("&");
-			const res = await gatewayRequest(gatewayUrl, "GET", path, void 0, exec.signal, TIMEOUT_MS$2);
+			const res = await gatewayRequest(gatewayUrl, "GET", path, void 0, exec.signal, TIMEOUT_MS$3);
 			if (res && typeof res.error === "string") return jsonClean({
 				count: 0,
 				lanes: [],
@@ -1067,7 +1097,7 @@ function laneBundlePeek(gatewayUrl) {
 }
 //#endregion
 //#region src/tools/lane-bundle-load.ts
-const TIMEOUT_MS$1 = 15e3;
+const TIMEOUT_MS$2 = 15e3;
 function laneBundleLoad(gatewayUrl) {
 	return {
 		name: "lane_bundle_load",
@@ -1152,7 +1182,7 @@ function laneBundleLoad(gatewayUrl) {
 			const a = typeof args === "object" && args !== null ? args : {};
 			const kind = typeof a.kind === "string" ? a.kind : "";
 			const name = typeof a.name === "string" ? a.name : "";
-			const res = await gatewayRequest(gatewayUrl, "GET", "/v1/cards/" + encodeURIComponent(name) + "/bundle?kind=" + encodeURIComponent(kind), void 0, exec.signal, TIMEOUT_MS$1);
+			const res = await gatewayRequest(gatewayUrl, "GET", "/v1/cards/" + encodeURIComponent(name) + "/bundle?kind=" + encodeURIComponent(kind), void 0, exec.signal, TIMEOUT_MS$2);
 			if (res && typeof res.error === "string") return jsonClean({
 				lane: name,
 				kind,
@@ -1214,40 +1244,31 @@ function laneBundleLoad(gatewayUrl) {
 	};
 }
 //#endregion
-//#region src/tools/card-catalog.ts
-const CATALOG_TIMEOUT_MS = 15e3;
-function cardCatalog(gatewayUrl) {
+//#region src/tools/melite-load.ts
+const TIMEOUT_MS$1 = 2e4;
+function meliteLoad(gatewayUrl) {
 	return {
-		name: "card_catalog",
-		description: "Search cards by their declared tags + load the skill bundle (the FALLBACK composition - flow_catalog first, always; cards only when NO flow fits). search: phrase over id/label/description/tags plus an optional comma-separated tags filter - returns clamped summaries, never bodies. load_skills: exact card ids (comma-separated) - returns per card (a) the tool signature (params_schema), (b) the action card skills, (c) the model-level hints (prompt guidance rides here, ambient) plus a stable bundle digest. Quote the digests you hold and skip reload on a match (the bundle is content-stable). Models are data for the card - there is no model picker, only bundles.",
+		name: "melite_load",
+		description: "Open ONE card or flow (discover it first with melite_discover). Args: name (the card id or flow name) + inference_type (card | flow — a card or a flow tool call; nothing else executes). Returns the bundle: agents md, the tool-call signature (params_schema for cards; the prebuilt simplified signature for flows), tier-1 skill lines for the underlying skills (bodies load via skill_read), model hints on cards (prompt guidance rides here, ambient), and a stable bundle digest — quote it and skip reload on a match.",
 		parameters: {
 			type: "object",
 			properties: {
-				action: {
+				name: {
 					type: "string",
-					description: "search (summaries) or load_skills (the bundle for exact ids).",
-					enum: ["search", "load_skills"]
+					description: "The card id or flow name exactly as discovered."
 				},
-				q: {
+				inference_type: {
 					type: "string",
-					description: "search: phrase over id/label/description/tags (e.g. \"image upscale\")."
-				},
-				tags: {
-					type: "string",
-					description: "search: comma-separated tag filter - every tag must be declared by the card (e.g. \"image,upscale\")."
-				},
-				ids: {
-					type: "string",
-					description: "load_skills: comma-separated exact card ids (e.g. \"image-gen,upscale-tools\")."
+					description: "card | flow."
 				}
 			},
-			required: ["action"]
+			required: ["name", "inference_type"]
 		},
 		presentCall(args) {
 			const a = args ?? {};
 			return {
 				card: "generic",
-				title: "Card catalog" + (a.action === "load_skills" && typeof a.ids === "string" && a.ids !== "" ? ": " + a.ids : typeof a.q === "string" && a.q !== "" ? ": " + a.q : typeof a.tags === "string" && a.tags !== "" ? ": " + a.tags : ""),
+				title: `Load ${typeof a.name === "string" && a.name !== "" ? a.name : "?"}`,
 				kind: "search"
 			};
 		},
@@ -1255,48 +1276,43 @@ function cardCatalog(gatewayUrl) {
 			schema: {
 				type: "object",
 				additionalProperties: true,
-				properties: {
-					count: {
-						type: "number",
-						description: "Cards (search) or bundles (load_skills) found."
-					},
-					cards: {
-						type: "array",
-						description: "search: card summaries (id/label/description/genre/tags)."
-					},
-					bundles: {
-						type: "array",
-						description: "load_skills: per-card bundles (id/tool/skills/model_hints)."
-					}
-				},
-				required: ["count"]
+				properties: { bundle: {
+					type: "object",
+					additionalProperties: true,
+					description: "The opened bundle (name/kind/signature/agents/skills + stages/refs on flows, model_hints on cards, digest)."
+				} },
+				required: ["bundle"]
 			},
 			render: (_args, value) => {
+				const v = value;
+				if (v && typeof v.error === "string") return [{
+					type: "text",
+					text: "melite_load REFUSED: " + v.error
+				}];
+				const b = v?.bundle ?? {};
+				const n = Array.isArray(b.skills) ? b.skills.length : 0;
 				return [{
 					type: "text",
-					text: "card_catalog: " + String(value.count ?? 0) + " results (load_skills the exact ids you will drive)"
+					text: `loaded ${String(b.kind ?? "?")} ${String(b.name ?? "?")} — ${n} skill lines`
 				}];
 			}
 		},
 		async execute(args, exec) {
-			const a = args;
-			if (a.action === "load_skills") {
-				const ids = typeof a.ids === "string" ? a.ids : "";
-				const res = await gatewayRequest(gatewayUrl, "GET", "/v1/cards/catalog?action=load_skills&ids=" + encodeURIComponent(ids), void 0, exec.signal, CATALOG_TIMEOUT_MS);
-				const rows = Array.isArray(res.bundles) ? res.bundles : [];
-				return {
-					count: rows.length,
-					bundles: rows
-				};
+			const a = args ?? {};
+			const name = typeof a.name === "string" ? a.name : "";
+			const inferenceType = typeof a.inference_type === "string" ? a.inference_type : "";
+			if (!name) return jsonClean({ error: "name is required (discover it first)" });
+			if (inferenceType !== "card" && inferenceType !== "flow") return jsonClean({ error: "inference_type must be card|flow — a card or a flow tool call; nothing else executes" });
+			const params = new URLSearchParams({
+				name,
+				inference_type: inferenceType
+			});
+			try {
+				return jsonClean(await gatewayRequest(gatewayUrl, "GET", "/v1/load?" + params.toString(), void 0, exec.signal, TIMEOUT_MS$1));
+			} catch (e) {
+				const err = e;
+				return jsonClean({ error: typeof err.body === "string" && err.body !== "" ? err.body : err.message ?? "load failed" });
 			}
-			const q = typeof a.q === "string" ? a.q : "";
-			const tags = typeof a.tags === "string" ? a.tags : "";
-			const res = await gatewayRequest(gatewayUrl, "GET", "/v1/cards/catalog?action=search&q=" + encodeURIComponent(q) + "&tags=" + encodeURIComponent(tags), void 0, exec.signal, CATALOG_TIMEOUT_MS);
-			const rows = Array.isArray(res.cards) ? res.cards : [];
-			return {
-				count: rows.length,
-				cards: rows
-			};
 		}
 	};
 }
@@ -1864,8 +1880,8 @@ const inject = [
 ];
 /** BASE tool names — both interfaces (discovery, compose, management, audit). */
 const BASE_TOOL_NAMES = [
-	"flow_catalog",
-	"card_catalog",
+	"melite_discover",
+	"melite_load",
 	"lane_bundle_peek",
 	"lane_bundle_load",
 	"build_flow",
@@ -1900,8 +1916,8 @@ async function apply(ctx, config = {}) {
 	const adhocCfg = Array.isArray(config.adhocTools) ? config.adhocTools.map((s) => s.trim()).filter(Boolean) : typeof config.adhocTools === "string" ? config.adhocTools.split(",").map((s) => s.trim()).filter(Boolean) : [];
 	const adhoc = adhocEnv.length ? adhocEnv : adhocCfg;
 	c.logger.info("melite-tools: %s interface — %d base + %d headless run door(s) + %d ad hoc, gateway %s", headless ? "HEADLESS" : "BROWSER", BASE_TOOL_NAMES.length, headless ? HEADLESS_TOOL_NAMES.length : 0, adhoc.length, gatewayUrl);
-	c.tools.register(flowCatalog(gatewayUrl));
-	c.tools.register(cardCatalog(gatewayUrl));
+	c.tools.register(meliteDiscover(gatewayUrl));
+	c.tools.register(meliteLoad(gatewayUrl));
 	c.tools.register(laneBundlePeek(gatewayUrl));
 	c.tools.register(laneBundleLoad(gatewayUrl));
 	c.tools.register(buildFlow(gatewayUrl));
@@ -2012,4 +2028,4 @@ async function apply(ctx, config = {}) {
 	}), "melite-tools: enhance route");
 }
 //#endregion
-export { ADHOC_TOOL_NAMES, BASE_TOOL_NAMES, DEFAULT_GATEWAY_URL, HEADLESS_TOOL_NAMES, MELITE_TOOL_NAMES, RayGatewayError, apply, buildFlow, cardCatalog, cardRun, comfyManage, flowCatalog, flowRun, harnessEnhance, inject, laneBundleLoad, laneBundlePeek, ledgerTail, matchHarnessRoute, name, normalizeGatewayUrl, refineDraft, resolveHarnessRoutes, routeName, runStatus, skillIndex, skillRead };
+export { ADHOC_TOOL_NAMES, BASE_TOOL_NAMES, DEFAULT_GATEWAY_URL, HEADLESS_TOOL_NAMES, MELITE_TOOL_NAMES, RayGatewayError, apply, buildFlow, cardRun, comfyManage, flowRun, harnessEnhance, inject, laneBundleLoad, laneBundlePeek, ledgerTail, matchHarnessRoute, meliteDiscover, meliteLoad, name, normalizeGatewayUrl, refineDraft, resolveHarnessRoutes, routeName, runStatus, skillIndex, skillRead };

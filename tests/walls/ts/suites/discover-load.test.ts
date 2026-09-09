@@ -15,7 +15,7 @@ describe("discover lines (both planes, clamped)", () => {
       skillLinesForCard: (repo: string, id: string) => Array<Record<string, unknown>>;
     };
     void mod;
-    const cat = await import("../../../../packages/gateway/doors/src/doors/catalogs.ts") as {
+    const cat = await import("../../../../packages/gateway/doors/src/doors/disclose.ts") as {
       searchFlows: (rows: unknown[], q: string) => Array<Record<string, unknown>>;
       flowRows: (repo: string) => Array<Record<string, unknown>>;
       searchCards: (defs: unknown, q: string, tags: string) => Array<Record<string, unknown>>;
@@ -100,5 +100,40 @@ describe("load(card) — agents md + signature + lines + hints", () => {
     const lines = b["skills"] as Array<Record<string, unknown>>;
     assert.ok(lines.every((l): boolean => l["scope"] === "card-skill"));
     assert.throws(() => mod.loadCard(REPO, "/data", fakeCards, fakeModels, "nope"), /unknown card/);
+  });
+});
+
+describe("enhance recipes (the migrated toll, riding model_hints)", () => {
+  it("declared recipes surface verbatim; the rest fall back to the kernel generic", async () => {
+    const mod = await import("../../../../packages/gateway/doors/src/doors/disclose.ts") as {
+      enhanceMap: (dataRoot: string) => Map<string, Record<string, string>>;
+    };
+    const { mkdtempSync, mkdirSync, writeFileSync } = await import("node:fs");
+    const { tmpdir } = await import("node:os");
+    const root: string = mkdtempSync(join(tmpdir(), "disclose-enhance-"));
+    mkdirSync(join(root, "packages", "gateway", "shell", "data"), { recursive: true });
+    writeFileSync(join(root, "packages", "gateway", "shell", "data", "discovery-catalog.json"), JSON.stringify({
+      form_specs: {
+        "krea-2": { body: { enhance_prompts: { prompt: "krea recipe" } } },
+        "dead": { body: { enhance_prompt: "None", enhance_prompts: "None" } },
+      },
+    }));
+    const map: Map<string, Record<string, string>> = mod.enhanceMap(root);
+    assert.deepEqual(map.get("krea-2"), { prompt: "krea recipe" });
+    assert.equal(map.has("dead"), false);
+    assert.equal(map.has("undec"), false); // the door serves GENERIC for these — one spelling in promptGuide
+  });
+});
+
+describe("bundle digest (agent-side dedupe)", () => {
+  it("same bytes, same digest — stable across loads", async () => {
+    const mod = await import("../../../../packages/gateway/doors/src/doors/disclose.ts") as {
+      bundleDigest: (b: Record<string, unknown>) => string;
+    };
+    const a: Record<string, unknown> = { id: "x", tool: {}, skills: [], model_hints: [] };
+    const b: Record<string, unknown> = { id: "x", tool: {}, skills: [], model_hints: [] };
+    assert.equal(mod.bundleDigest(a), mod.bundleDigest(b));
+    assert.match(mod.bundleDigest(a), /^[0-9a-f]{16}$/);
+    assert.notEqual(mod.bundleDigest({ ...a, id: "y" }), mod.bundleDigest(a));
   });
 });

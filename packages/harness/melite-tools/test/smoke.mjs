@@ -49,9 +49,9 @@ const main = async () => {
 
   // --- the 9 melite tools, in registration order ---
   const tools = [
-    ['flow_catalog', lib.flowCatalog(GW), { q: 'image upscale' }, {}],
-    ['card_catalog(search)', lib.cardCatalog(GW), { action: 'search', tags: 'image,upscale' }, {}],
-    ['card_catalog(load_skills)', lib.cardCatalog(GW), { action: 'load_skills', ids: 'upscale-tools' }, {}],
+    ['melite_discover', lib.meliteDiscover(GW), { lookup: 'all', tags: 'image,upscale' }, {}],
+    ['melite_load(card)', lib.meliteLoad(GW), { name: 'upscale-tools', inference_type: 'card' }, {}],
+    ['melite_load(flow)', lib.meliteLoad(GW), { name: 'image-upscale', inference_type: 'flow' }, {}],
     ['lane_bundle_peek', lib.laneBundlePeek(GW), {}, {}],
     ['lane_bundle_peek(templates)', lib.laneBundlePeek(GW), { kind: 'template' }, {}],
     ['lane_bundle_load(action_card image-gen)', lib.laneBundleLoad(GW), { kind: 'action_card', name: 'image-gen' }, {}],
@@ -120,13 +120,15 @@ const main = async () => {
         continue
       }
       const r = await runTool(tool, args, label)
-      if (label === 'flow_catalog') {
-        note(label, (r.value?.flows?.length ?? 0) > 0, (r.value.flows.length) + ' flows')
-      } else if (label === 'card_catalog(search)') {
+      if (label === 'melite_discover') {
         note(label, (r.value?.cards?.length ?? 0) > 0 && r.value.cards.some((c) => c.id === 'upscale-tools'), 'upscale-tools retrieved by tags')
-      } else if (label === 'card_catalog(load_skills)') {
-        const b = r.value?.bundles?.[0] ?? {}
-        note(label, Object.keys(b).join() === 'id,tool,skills,model_hints,digest' && b.id === 'upscale-tools', 'the a/b/c bundle')
+      } else if (label === 'melite_load(card)') {
+        const b = r.value?.bundle ?? {}
+        note(label, Object.keys(b).join() === 'name,kind,signature,agents,skills,model_hints,digest' && b.name === 'upscale-tools', 'the card bundle')
+      } else if (label === 'melite_load(flow)') {
+        const b = r.value?.bundle ?? {}
+        const sig = b.signature ?? {}
+        note(label, b.name === 'image-upscale' && sig.name === 'image_upscale' && (b.stages?.length ?? 0) === 2, 'the prebuilt signature + stages')
       } else if (label === 'build_flow') {
         draftId = r.value?.draftId ?? ''
         // THE CHAT PARSER CONTRACT: token after the FIRST 'card ' must be

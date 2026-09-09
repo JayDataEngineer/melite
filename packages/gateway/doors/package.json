@@ -9,7 +9,6 @@
     ".": "./src/index.ts",
     "./assets": "./src/entries/assets.ts",
     "./bridges": "./src/entries/bridges.ts",
-    "./catalogs": "./src/entries/catalogs.ts",
     "./disclose": "./src/entries/disclose.ts",
     "./card-registry": "./src/entries/card-registry.ts",
     "./chrome": "./src/entries/chrome.ts",

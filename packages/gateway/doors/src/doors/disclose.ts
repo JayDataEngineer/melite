@@ -10,30 +10,276 @@
 // copies); tier-1 lines are planes.ts wireSkill rows over its
 // cardRows buckets / findSkill registry (the skill_index truth).
 
-import { readdirSync, readFileSync } from "node:fs";
-import { join } from "node:path";
+import { createHash } from "node:crypto";
+import { readdirSync, readFileSync, existsSync } from "node:fs";
+import { join, dirname, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 import type { Context, Plugin } from "@deepseek-ai/cordis";
 import type { DispatchResult } from "@melite/gateway-core";
 import type { GatewayRequest } from "@melite/gateway-core";
 import { GENERIC_ENHANCE_RECIPE } from "@melite/gateway-core/prompt-guide";
+import { emitParamsSchema, cardPackages } from "@melite/comfyui-cordis";
 import { needCardRegistry } from "./flowsCard.ts";
 import type { CardRegistryService } from "./flowsCard.ts";
 import { needModels, modelsService } from "@melite/comfyui-cordis/models-service";
 import type { ModelsService } from "@melite/comfyui-cordis/models-service";
-import { getRegistryFlow } from "./flowsRegistry.ts";
-import {
-  searchFlows, flowRows, searchCards,
-  cardSkillDocs, toolRowFor, resolveCardPackageDir, enhanceMap,
-  bundleDigest, codeRoot,
-} from "./catalogs.ts";
-import type {
-  FlowSummary, CardSummary, SearchableCard,
-} from "./catalogs.ts";
+import { registryFlowNames, getRegistryFlow } from "./flowsRegistry.ts";
 import { toolBaseRows } from "./toolProjection.ts";
+import { catalogPath } from "./discovery.ts";
 import {
   disclosureRoot, engineDirs, cardRows, findSkill, wireSkill,
 } from "./planes.ts";
 import { doorMatch, mountDoorRoutes } from "../routeMount.ts";
+
+// ── moved pures (catalogs.ts died in P3 — one disclosure file) ──
+
+/** Code root (the REPO TREE the doors read packages/ + flows/
+ *  from): file-anchored, 5 up from doors/src/doors/ — NEVER the
+ *  MELITE_REPO_ROOT override (disclosureRoot is the DATA root; the
+ *  sandbox fixture has no packages tier — code and data diverge
+ *  there, coincide in PROD). */
+export function codeRoot(): string {
+  const here: string = dirname(fileURLToPath(import.meta.url));
+  return resolve(here, "..", "..", "..", "..", "..");
+}
+
+/** One card summary (the routing layer — no bodies). */
+export interface CardSummary {
+  readonly id: string;
+  readonly label: string;
+  readonly description: string;
+  readonly genre: string;
+  readonly tags: readonly string[];
+}
+
+/** One flow summary (the routing layer). */
+export interface FlowSummary {
+  readonly name: string;
+  readonly title: string;
+  readonly description: string;
+  readonly stages: number;
+  readonly skillRefs: readonly string[];
+}
+
+/** The search surface a card def offers (the def itself satisfies
+ *  this — structural, no import of the engine service). */
+export interface SearchableCard {
+  readonly identity?: { readonly label?: string; readonly description?: string; readonly genre?: string };
+  readonly tags?: readonly string[];
+}
+
+/** Search the card defs (PURE — unit-tested without boot): q tokens
+ *  ALL match (id + label + description + tags, case-folded); the tags
+ *  param (comma list) ALL match def.tags. Empty q + tags = all. */
+export function searchCards(
+  defs: ReadonlyMap<string, SearchableCard>,
+  q: string,
+  tags: string,
+): CardSummary[] {
+  const toks: readonly string[] = q.toLowerCase().split(/\s+/).filter((t): boolean => t !== "");
+  const want: readonly string[] = tags.toLowerCase().split(",").map((t): string => t.trim()).filter((t): boolean => t !== "");
+  const out: CardSummary[] = [];
+  for (const [id, def] of defs) {
+    const dtags: readonly string[] = def.tags ?? [];
+    const low: readonly string[] = dtags.map((x): string => x.toLowerCase());
+    if (!want.every((t): boolean => low.includes(t))) continue;
+    const label: string = def.identity?.label ?? id;
+    const description: string = def.identity?.description ?? "";
+    const hay: string = (id + " " + label + " " + description + " " + dtags.join(" ")).toLowerCase();
+    if (!toks.every((t): boolean => hay.includes(t))) continue;
+    out.push({ id, label, description, genre: def.identity?.genre ?? "", tags: dtags });
+  }
+  out.sort((a, b): number => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
+  return out;
+}
+
+/** Search the flow rows (PURE over injected rows — the fs leaf merge
+ *  rides flowRows below). */
+export function searchFlows(
+  rows: ReadonlyArray<FlowSummary>,
+  q: string,
+): FlowSummary[] {
+  const toks: readonly string[] = q.toLowerCase().split(/\s+/).filter((t): boolean => t !== "");
+  const out: FlowSummary[] = rows.filter((r): boolean => {
+    const hay: string = (r.name + " " + r.title + " " + r.description).toLowerCase();
+    return toks.every((t): boolean => hay.includes(t));
+  });
+  out.sort((a, b): number => (a.name < b.name ? -1 : a.name > b.name ? 1 : 0));
+  return out;
+}
+
+/** The flow rows: REGISTRY (the compile truth) merged with the
+ *  flows/<name>/tool.json leaf (the agent face: stage_title). */
+export function flowRows(repo: string): FlowSummary[] {
+  const out: FlowSummary[] = [];
+  for (const name of registryFlowNames()) {
+    const flow = getRegistryFlow(name);
+    if (flow === undefined) continue;
+    let title: string = name;
+    try {
+      const leaf = JSON.parse(readFileSync(join(repo, "flows", name, "tool.json"), "utf8")) as { stage_title?: unknown };
+      if (typeof leaf.stage_title === "string" && leaf.stage_title !== "") title = leaf.stage_title;
+    } catch {
+      // no leaf — the registry row stands alone
+    }
+    out.push({ name, title, description: flow.description, stages: flow.stages.length, skillRefs: flow.skillRefs });
+  }
+  return out;
+}
+
+/** A card id → its package dir. The cardPackages rows are package
+ *  NAMES ('@melite/<genre>-<card>'); the id is the row's tail past
+ *  the genre prefix, which is NOT reparseable from the string alone
+ *  (ids carry dashes) — so match rows ending in '-' + id, split the
+ *  genre against the LIVE domain tier (readdir packages/), and keep
+ *  the ones whose dir carries src/card.ts (the cardUnitDirs guard).
+ *  Node resolution is the WRONG tool (pnpm links only dependents —
+ *  require.resolve starves); the repo tree is the truth.
+ *  Zero hits = unknown id; two = a data bug — both refuse LOUD at
+ *  the door, never a silent pick. */
+export function resolveCardPackageDir(repo: string, cardId: string): string {
+  let domains: string[] = [];
+  try {
+    domains = readdirSync(join(repo, "packages"), { withFileTypes: true })
+      .filter((e): boolean => e.isDirectory())
+      .map((e): string => e.name);
+  } catch {
+    throw new Error(`disclose: no packages tier under '${repo}'`);
+  }
+  const hits: string[] = [];
+  for (const row of cardPackages) {
+    const tail: string = row.startsWith("@melite/") ? row.slice("@melite/".length) : row;
+    if (!tail.endsWith("-" + cardId)) continue;
+    for (const dom of domains) {
+      if (!tail.startsWith(dom + "-")) continue;
+      const dir: string = join(repo, "packages", dom, tail.slice(dom.length + 1));
+      if (existsSync(join(dir, "src", "card.ts"))) hits.push(dir);
+    }
+  }
+  if (hits.length === 0) throw new Error(`disclose: unknown card '${cardId}'`);
+  if (hits.length > 1) throw new Error(`disclose: card '${cardId}' is ambiguous (${hits.length} packages)`);
+  return hits[0];
+}
+
+/** The card's agents md (src/agents/**, AGENT.md first, sorted,
+ *  capped — the cap is the contract: lines route, bodies stay
+ *  bounded). */
+export function cardSkillDocs(pkgDir: string): Array<{ path: string; text: string }> {
+  const MAX_FILES = 8;
+  const MAX_BYTES = 32768;
+  const agents: string = join(pkgDir, "src", "agents");
+  let files: string[] = [];
+  try {
+    files = readdirSync(agents).filter((f): boolean => f.endsWith(".md"));
+  } catch {
+    return [];
+  }
+  files.sort((a, b): number => {
+    const ra: number = a === "AGENT.md" ? 0 : 1;
+    const rb: number = b === "AGENT.md" ? 0 : 1;
+    return ra - rb || (a < b ? -1 : 1);
+  });
+  const out: Array<{ path: string; text: string }> = [];
+  let budget: number = MAX_BYTES;
+  for (const f of files.slice(0, MAX_FILES)) {
+    if (budget <= 0) break;
+    try {
+      const text: string = readFileSync(join(agents, f), "utf8").slice(0, budget);
+      budget -= text.length;
+      out.push({ path: "src/agents/" + f, text });
+    } catch {
+      // unreadable — skip, never refuse the bundle
+    }
+  }
+  return out;
+}
+
+/** The card's tool-call signature — the /v1/tools row
+ *  envelope (ROW_KEYS mirror toolsEmit — one projection, the
+ *  emitter imported, the envelope shared by construction). */
+export function toolRowFor(
+  id: string,
+  def: { schemaCarrier?: unknown; schema: unknown; boarded: readonly string[] },
+  rows: ReturnType<typeof toolBaseRows>,
+): Record<string, unknown> {
+  const base = rows.get(id);
+  if (base === undefined) throw new Error(`disclose: no tool row for card '${id}'`);
+  const paramsSchema = emitParamsSchema(
+    ((def as { schemaCarrier?: unknown }).schemaCarrier ?? def.schema) as Parameters<typeof emitParamsSchema>[0],
+    def.boarded,
+  );
+  return {
+    name: base.name,
+    version: base.version,
+    kind: base.kind,
+    card: base.card,
+    model: base.model,
+    stage_title: base.stageTitle,
+    description: base.description,
+    params_schema: {
+      type: paramsSchema.type,
+      properties: paramsSchema.properties as Record<string, unknown>,
+      ...(paramsSchema.required !== undefined ? { required: paramsSchema.required } : {}),
+    },
+  };
+}
+
+/** The effective enhance recipe per family (model_hints) —
+ *  the enhance_prompt toll, migrated to ambient knowledge (the
+ *  disclosure stroke, 2026-09-09). Declared recipes ride the frozen
+ *  form-spec capture (10/115 spec keys — enhance_prompt string or
+ *  enhance_prompts field map, verbatim, never parsed); anything else
+ *  falls back to the kernel's GENERIC_ENHANCE_RECIPE (one spelling —
+ *  the ✦ sweep door spends the LLM call on the same text, the agent
+ *  spends nothing and writes the prompt itself). The frozen file is
+ *  1.5MB of DATA-root capture: cached module-level (frozen =
+ *  truthful), best-effort (fixture roots lack it → all-generic,
+ *  never a refusal). */
+let enhanceCache: Map<string, Map<string, Record<string, string>>> = new Map();
+
+export function enhanceMap(dataRoot: string): Map<string, Record<string, string>> {
+  const hit: Map<string, Record<string, string>> | undefined = enhanceCache.get(dataRoot);
+  if (hit !== undefined) return hit;
+  const out = new Map<string, Record<string, string>>();
+  try {
+    const doc = JSON.parse(readFileSync(catalogPath(dataRoot), "utf8")) as {
+      form_specs?: Record<string, { body?: { enhance_prompt?: unknown; enhance_prompts?: unknown } }>;
+    };
+    for (const [key, spec] of Object.entries(doc.form_specs ?? {})) {
+      const body = spec.body ?? {};
+      const one: unknown = body.enhance_prompt;
+      if (typeof one === "string" && one !== "" && one !== "None") {
+        out.set(key, { prompt: one });
+        continue;
+      }
+      const many: unknown = body.enhance_prompts;
+      if (typeof many === "object" && many !== null && !Array.isArray(many)) {
+        const fields: Record<string, string> = {};
+        for (const [f, r] of Object.entries(many as Record<string, unknown>)) {
+          if (typeof r === "string" && r !== "") fields[f] = r;
+        }
+        if (Object.keys(fields).length > 0) out.set(key, fields);
+      }
+    }
+  } catch {
+    // no frozen capture (the sandbox fixture) — all-generic below
+  }
+  enhanceCache.set(dataRoot, out);
+  return out;
+}
+
+/** The bundle digest (the DSH session-catalog half we CAN own:
+ *  their catalog is digest-diffed "stable, never duplicated" — we
+ *  don't own the loop so we can't clear the agent's context, but a
+ *  stable content hash lets the agent dedupe its own reloads: quote
+ *  the digests you hold, skip reload on a match). sha16 of the
+ *  canonical bundle JSON (the asset pipeline's sha16 convention). */
+export function bundleDigest(bundle: Record<string, unknown>): string {
+  return createHash("sha256").update(JSON.stringify(bundle)).digest("hex").slice(0, 16);
+}
+
+// ── end moved pures ──
+
 
 /** Tier-1 skill LINES for one card id (the skill_index truth —
  *  wireSkill rows over the planes buckets, card-skill scope only;

@@ -4,9 +4,9 @@
 // salient rawInput) instead of the generic fallback (title = tool name,
 // raw args dump).
 //
-// Pinned: all 13 tools expose presentCall (the disclosure stroke kept
-// the count: model_catalog + enhance_prompt died, flow_catalog +
-// card_catalog joined); cards are 'generic' with a
+// Pinned: all 13 tools expose presentCall (the rework kept the
+// count: flow_catalog + card_catalog died, melite_discover +
+// melite_load joined); cards are 'generic' with a
 // non-empty title; kinds come from the ToolCallKind vocabulary; salient
 // ids ride the title/rawInput; junk args (null/undefined/garbage) never
 // throw (the registry may call presenters during streaming AND replay).
@@ -21,12 +21,12 @@ import type { ToolDefinition } from "../../../../packages/harness/melite-tools/s
 import { buildFlow } from "../../../../packages/harness/melite-tools/src/tools/build-flow.ts";
 import { cardRun } from "../../../../packages/harness/melite-tools/src/tools/card-run.ts";
 import { comfyManage } from "../../../../packages/harness/melite-tools/src/tools/comfy-manage.ts";
-import { flowCatalog } from "../../../../packages/harness/melite-tools/src/tools/flow-catalog.ts";
+import { meliteDiscover } from "../../../../packages/harness/melite-tools/src/tools/melite-discover.ts";
 import { flowRun } from "../../../../packages/harness/melite-tools/src/tools/flow-run.ts";
 import { laneBundleLoad } from "../../../../packages/harness/melite-tools/src/tools/lane-bundle-load.ts";
 import { laneBundlePeek } from "../../../../packages/harness/melite-tools/src/tools/lane-bundle-peek.ts";
 import { ledgerTail } from "../../../../packages/harness/melite-tools/src/tools/ledger-tail.ts";
-import { cardCatalog } from "../../../../packages/harness/melite-tools/src/tools/card-catalog.ts";
+import { meliteLoad } from "../../../../packages/harness/melite-tools/src/tools/melite-load.ts";
 import { refineDraft } from "../../../../packages/harness/melite-tools/src/tools/refine-draft.ts";
 import { runStatus } from "../../../../packages/harness/melite-tools/src/tools/run-status.ts";
 import { skillIndex } from "../../../../packages/harness/melite-tools/src/tools/skill-index.ts";
@@ -39,12 +39,12 @@ const ALL: Array<[string, ToolDefinition]> = [
   ["build_flow", buildFlow(GW)],
   ["card_run", cardRun(GW)],
   ["comfy_manage", comfyManage(GW)],
-  ["flow_catalog", flowCatalog(GW)],
+  ["melite_discover", meliteDiscover(GW)],
   ["flow_run", flowRun(GW)],
   ["lane_bundle_load", laneBundleLoad(GW)],
   ["lane_bundle_peek", laneBundlePeek(GW)],
   ["ledger_tail", ledgerTail(GW)],
-  ["card_catalog", cardCatalog(GW)],
+  ["melite_load", meliteLoad(GW)],
   ["refine_draft", refineDraft(GW)],
   ["run_status", runStatus(GW)],
   ["skill_index", skillIndex(GW)],
@@ -96,11 +96,11 @@ describe("presentCall disclosure composition", () => {
       /2 stages/,
     );
     assert.match(
-      byName.get("flow_catalog")!.presentCall!({ q: "image upscale" })!.title,
-      /image upscale/,
+      byName.get("melite_discover")!.presentCall!({ lookup: "cards", tags: "image,upscale" })!.title,
+      /image,upscale/,
     );
     assert.match(
-      byName.get("card_catalog")!.presentCall!({ action: "load_skills", ids: "upscale-tools" })!.title,
+      byName.get("melite_load")!.presentCall!({ name: "upscale-tools", inference_type: "card" })!.title,
       /upscale-tools/,
     );
   });
