@@ -4,8 +4,8 @@
 // Decl + admission + one kit recipe call — the lane body lives in src/kit.ts.
 import type { Context } from '@deepseek-ai/cordis'
 import z from '@deepseek-ai/schemastery'
-import { fitLane, finalizeFit } from '../kit.ts'
-import { vocabulary } from '../models/vocab.ts'
+import { fitLane, finalizeFit } from '@comfyui/card-kit'
+import { vocabulary } from '@comfyui/card-kit/vocab'
 
 const schema = z.object({
   body_glb: z.string().role('path').description("Body GLB").extra('extra', { order: 0, group: "parts", required: true, wtype: 'file', }),

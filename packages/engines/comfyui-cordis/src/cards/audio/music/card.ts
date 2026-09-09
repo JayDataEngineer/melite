@@ -5,7 +5,7 @@
 // no extension to declare (the retired card carried no requires).
 import type { Context } from '@deepseek-ai/cordis'
 import z from '@deepseek-ai/schemastery'
-import { musicT1 } from '../../../kit.ts'
+import { musicT1 } from '@comfyui/card-kit'
 
 const schema = z.object({
   prompt: z.string().description("Tags / Description").extra('extra', { order: 0, group: "prompt", columns: 1, tooltip: "Structured caption: Genre + Vocal Details + Arrangement. E.g. 'funk, pop, soul, guitar, 105 BPM'.", required: true, wtype: 'textarea', }),

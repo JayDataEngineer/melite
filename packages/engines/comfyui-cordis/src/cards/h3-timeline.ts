@@ -30,8 +30,8 @@
 // the serialized graph).
 import type { Context } from '@deepseek-ai/cordis'
 import z from '@deepseek-ai/schemastery'
-import { GraphBuilder, OutputHandle } from '../graph.ts'
-import { finalizeH3 } from '../kit.ts'
+import { GraphBuilder, OutputHandle } from '@comfyui/card-kit/graph'
+import { finalizeH3 } from '@comfyui/card-kit'
 
 // inputs the t4 family templates OMIT whose pin defaults comfy-script
 // would auto-fill at serialization — the strip set lives in src/kit.ts

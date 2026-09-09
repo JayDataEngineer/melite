@@ -4,7 +4,7 @@
 // Decl + admission + one kit recipe call — the lane body lives in src/kit.ts.
 import type { Context } from '@deepseek-ai/cordis'
 import z from '@deepseek-ai/schemastery'
-import { inputPrepLane } from '../kit.ts'
+import { inputPrepLane } from '@comfyui/card-kit'
 
 const schema = z.object({
   // the staged source filename (the arm stages uploads/artifacts into

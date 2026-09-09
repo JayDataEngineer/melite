@@ -488,7 +488,7 @@ async function validateBootContracts(svc: ModelsService): Promise<void> {
     cardSvc = cards.theService();
     // the pack fate table (the consumption gate's boot leg — gate
     // (d)): same dynamic seam as the card plane, same degrade.
-    const guard = await import("../mods/guard.ts");
+    const guard = await import("@comfyui/card-kit/guard");
     packFate = guard.PACK_FATE as Record<string, string>;
     const { fieldDomains } = await import("./validate.ts");
     // built as mutable Maps, read as the CardDomains readonly view
@@ -511,7 +511,7 @@ async function validateBootContracts(svc: ModelsService): Promise<void> {
     // static would cycle service→facts→models→service against
     // the top-level boot) — the boot reads the same contract
     // compose reads, never a second file spelling.
-    const { loadFacts } = await import("../facts.ts");
+    const { loadFacts } = await import("@comfyui/card-kit/facts");
     factsModels = loadFacts(resolveRepoRoot() + "/packages/engines/comfyui-cordis/data/model-facts.json", {
       getModel: (id: string) => svc.getModel(id),
       registryIds: () => svc.registryIds(),

@@ -33,9 +33,9 @@
 // demand the autorig pack).
 import type { Context } from '@deepseek-ai/cordis'
 import z from '@deepseek-ai/schemastery'
-import { trellisArm, pixalArm, transferRigArm, admitMeshLift } from '../kit.ts'
-import type { ModelFacts } from '../facts.ts'
-import { SAMPLERS, SCHEDULERS, vocabulary } from '../models/vocab.ts'
+import { trellisArm, pixalArm, transferRigArm, admitMeshLift } from '@comfyui/card-kit'
+import type { ModelFacts } from '@comfyui/card-kit/facts'
+import { SAMPLERS, SCHEDULERS, vocabulary } from '@comfyui/card-kit/vocab'
 
 declare module '../service.ts' {
   interface CardDefinition {

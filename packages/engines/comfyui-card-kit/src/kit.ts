@@ -31,6 +31,11 @@ import { GraphBuilder, OutputHandle, stripAutofill, stripEmptyAutofill } from '.
 import type { NodeInputs, NodeRef, PromptGraph, StripTable } from './graph.ts'
 import type { ModelFacts } from './facts.ts'
 import { loadTextPair, decodeSave, stackLoras } from './blocks/render-kit.ts'
+
+// The package face re-exports the render-kit trio (the reference's
+// subtree-top-index mechanism: consumers name the package, never a
+// path inside it — P46).
+export { loadTextPair, decodeSave, stackLoras }
 import { fireLoras, fireKnob } from './mods/guard.ts'
 import {
   AUDIACORE_TTS_AUTOFILL,

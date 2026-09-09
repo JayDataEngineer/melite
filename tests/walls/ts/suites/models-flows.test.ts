@@ -23,7 +23,7 @@ import assert from "node:assert/strict";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { getModel, modelIds, registryIds, registryModel, resolve } from "../../../../packages/engines/comfyui-cordis/src/models/models.ts";
-import { loadFacts } from "../../../../packages/engines/comfyui-cordis/src/facts.ts";
+import { loadFacts } from "../../../../packages/engines/comfyui-card-kit/src/facts.ts";
 import { loadCardDefs, theService } from "../../../../packages/engines/comfyui-cordis/src/cardDefs.ts";
 import { registryFlowNames } from "../../../../packages/gateway/doors/src/doors/flowsRegistry.ts";
 

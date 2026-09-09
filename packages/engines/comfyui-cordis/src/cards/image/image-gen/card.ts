@@ -13,8 +13,8 @@
 // this card's UI.
 import type { Context } from '@deepseek-ai/cordis'
 import z from '@deepseek-ai/schemastery'
-import { imageT2I, finalizeImageGen } from '../../../kit.ts'
-import { SAMPLERS, SCHEDULERS } from '../../../models/vocab.ts'
+import { imageT2I, finalizeImageGen } from '@comfyui/card-kit'
+import { SAMPLERS, SCHEDULERS } from '@comfyui/card-kit/vocab'
 
 const schema = z.object({
   // CARD-OWNED SURFACE (the 1:1 port, 2026-09-08): declaration

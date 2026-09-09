@@ -64,17 +64,15 @@ export const loadCardDefs = async (): Promise<Map<string, CardDefinition>> => {
     }
   }
   // THE MOD PACKS (the distinct category taxonomy — the py Mod
-  // parents): src/mods/packs.ts registers every pack contract
-  // (loras, controlnet, lanpaint, mask, qvoice); the service
-  // validates LOUD at registration. PACKS FIRST — a flavor for an
-  // unregistered pack refuses (the category lands before the
-  // boardings).
-  const modsDir = join(dirname(new URL(import.meta.url).pathname), 'mods')
-  for (const f of readdirSync(modsDir).filter((x) => x.endsWith('.ts')).sort()) {
-    const mod = (await import(pathToFileURL(join(modsDir, f)).href)) as unknown as Plugin
-    if (typeof (mod as { apply?: unknown }).apply === 'function') {
-      await ctx.plugin(mod)
-    }
+  // parents): the pack contracts (loras, controlnet, lanpaint,
+  // mask, qvoice) live in the compose kit now (P46 — the web
+  // promoted to @comfyui/card-kit; named import, no dir walk);
+  // the service validates LOUD at registration. PACKS FIRST — a
+  // flavor for an unregistered pack refuses (the category lands
+  // before the boardings).
+  const packs = (await import('./mods/packs.ts')) as unknown as Plugin
+  if (typeof (packs as { apply?: unknown }).apply === 'function') {
+    await ctx.plugin(packs)
   }
   // THE FAMILY FLAVORS (the correction stroke 2026-09-08): every
   // module under the FAMILIES' own mods/ dirs (the py

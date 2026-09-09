@@ -29,8 +29,27 @@ importers:
         specifier: workspace:*
         version: link:../../packages/gateway/shell
 
+  packages/engines/comfyui-card-kit:
+    dependencies:
+      '@deepseek-ai/cordis':
+        specifier: ^4.0.2
+        version: 4.0.2(@deepseek-ai/cordis-plugin-include@1.0.6)(@deepseek-ai/cordis-plugin-loader@1.0.3)
+      '@deepseek-ai/schemastery':
+        specifier: '*'
+        version: 3.18.2
+    devDependencies:
+      '@types/node':
+        specifier: ^22.20.0
+        version: 22.20.1
+      typescript:
+        specifier: ^5.9.3
+        version: 5.9.3
+
   packages/engines/comfyui-cordis:
     dependencies:
+      '@comfyui/card-kit':
+        specifier: workspace:*
+        version: link:../comfyui-card-kit
       '@deepseek-ai/cordis':
         specifier: ^4.0.2
         version: 4.0.2(@deepseek-ai/cordis-plugin-include@1.0.6)(@deepseek-ai/cordis-plugin-loader@1.0.3)

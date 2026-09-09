@@ -29,7 +29,7 @@ import { readFileSync } from "node:fs";
 import { test } from "node:test";
 import z from "../../../../packages/engines/comfyui-cordis/src/_z.ts"; // re-export of the pinned schemastery (walls cannot import node_modules TS)
 import { loadCardDefs, theService } from "../../../../packages/engines/comfyui-cordis/src/index.ts";
-import { loadFacts } from "../../../../packages/engines/comfyui-cordis/src/facts.ts";
+import { loadFacts } from "../../../../packages/engines/comfyui-card-kit/src/facts.ts";
 import { getModel, registryIds, registryModel } from "../../../../packages/engines/comfyui-cordis/src/models/models.ts";
 
 /** Registry reads for the derivation (facts.ts renders through injected reads). */
@@ -250,7 +250,7 @@ test("THE CONSUMPTION GATE (paper §3.2.2): a smuggled mutation on a non-boardin
   // WHATEVER atom resolved. The gate fires the mutation only
   // where the atom boarded the pack (ModelFacts.mods ≡ DECL.mods,
   // pinned by the flows wall).
-  const kit = await import("../../../../packages/engines/comfyui-cordis/src/kit.ts");
+  const kit = await import("../../../../packages/engines/comfyui-card-kit/src/kit.ts");
   const { GraphBuilder } = await import("../../../../packages/engines/comfyui-cordis/src/index.ts");
   const facts = loadFacts(
     new URL("../../../../packages/engines/comfyui-cordis/data/model-facts.json", import.meta.url).pathname,
@@ -280,7 +280,7 @@ test("THE CONSUMPTION GATE, qvoice leg: voice_file fires only on boarding atoms"
   // into AudiocoreTTS — the second z-image-class site (ungated
   // composition). Counterfactual shape: the qwen row with its
   // boarding retracted must refuse, naming atom + pack.
-  const kit = await import("../../../../packages/engines/comfyui-cordis/src/kit.ts");
+  const kit = await import("../../../../packages/engines/comfyui-card-kit/src/kit.ts");
   const { GraphBuilder } = await import("../../../../packages/engines/comfyui-cordis/src/index.ts");
   const facts = loadFacts(
     new URL("../../../../packages/engines/comfyui-cordis/data/model-facts.json", import.meta.url).pathname,
@@ -312,7 +312,7 @@ test("THE REFUSED FATE, lanpaint/mask legs: stated knobs refuse LOUD on the imag
   // every stated knob instead of silently plain-editing (the
   // retired MOD FIRING LAW, now wall-pinned: 'refused' is a fate,
   // not an accident).
-  const kit = await import("../../../../packages/engines/comfyui-cordis/src/kit.ts");
+  const kit = await import("../../../../packages/engines/comfyui-card-kit/src/kit.ts");
   // every lanpaint knob off its lane promise refuses field-named
   for (const [key, val] of [
     ["lanpaint_enabled", true],
@@ -389,7 +389,7 @@ test("gate (d), the pack fate: every boarded pack is fired or refused-loud", asy
   // boarding it refuses; the four landed packs pass. Live pin:
   // every DECL pack entry has a fate (the boot refuses otherwise,
   // so this wall and the boot read one table).
-  const guard = await import("../../../../packages/engines/comfyui-cordis/src/mods/guard.ts");
+  const guard = await import("../../../../packages/engines/comfyui-card-kit/src/mods/guard.ts");
   for (const p of ["loras", "qvoice", "lanpaint", "mask"]) guard.assertPackFate(p);
   assert.throws(() => guard.assertPackFate("controlnet"), /no fate in this plane/);
   const { registryIds, registryModel } = await import("../../../../packages/engines/comfyui-cordis/src/models/models.ts");

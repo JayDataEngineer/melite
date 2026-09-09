@@ -21,6 +21,7 @@
   "dependencies": {
     "@deepseek-ai/cordis": "^4.0.2",
     "@deepseek-ai/schemastery": "*",
+    "@comfyui/card-kit": "workspace:*",
     "@melite/contracts": "workspace:*",
     "@melite/formats": "workspace:*",
     "@melite/ui": "workspace:*",

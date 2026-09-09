@@ -5,8 +5,8 @@
 // comes from params.
 import type { Context } from '@deepseek-ai/cordis'
 import z from '@deepseek-ai/schemastery'
-import { taggerLane, finalizeTagger, TAGGER_CAPTION_TASKS, TAGGER_CAPTION_TYPES, TAGGER_CAPTION_LENGTHS, TAGGER_EXTRA_OPTIONS } from '../kit.ts'
-import { vocabulary } from '../models/vocab.ts'
+import { taggerLane, finalizeTagger, TAGGER_CAPTION_TASKS, TAGGER_CAPTION_TYPES, TAGGER_CAPTION_LENGTHS, TAGGER_EXTRA_OPTIONS } from '@comfyui/card-kit'
+import { vocabulary } from '@comfyui/card-kit/vocab'
 
 declare module '../service.ts' {
   interface CardDefinition {

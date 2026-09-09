@@ -16,8 +16,8 @@
 // lands. Per-class instance order still mirrors the python source.
 import type { Context } from '@deepseek-ai/cordis'
 import z from '@deepseek-ai/schemastery'
-import { maskT1 } from '../../../kit.ts'
-import { vocabulary } from '../../../models/vocab.ts'
+import { maskT1 } from '@comfyui/card-kit'
+import { vocabulary } from '@comfyui/card-kit/vocab'
 
 const schema = z.object({
   // the declared knob surface (17 keys — purge S-decls: the py card

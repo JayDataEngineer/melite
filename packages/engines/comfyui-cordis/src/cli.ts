@@ -4,7 +4,7 @@
 // signal (no partial output, ever).
 import { Context } from '@deepseek-ai/cordis'
 import { ComfyUIService } from './service.ts'
-import { loadFacts } from './facts.ts'
+import { loadFacts } from '@comfyui/card-kit/facts'
 
 function die(msg: string): never {
   process.stderr.write(`compose-door: ${msg}\n`)

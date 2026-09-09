@@ -30,8 +30,8 @@
 // admission is the surface, firing is compose's call).
 import type { Context } from '@deepseek-ai/cordis'
 import z from '@deepseek-ai/schemastery'
-import { imageEdit, refuseImageEditFiring, finalizeImageEdit } from '../../../kit.ts'
-import { SAMPLERS, SCHEDULERS } from '../../../models/vocab.ts'
+import { imageEdit, refuseImageEditFiring, finalizeImageEdit } from '@comfyui/card-kit'
+import { SAMPLERS, SCHEDULERS } from '@comfyui/card-kit/vocab'
 
 const schema = z.object({
   // CARD-OWNED SURFACE ONLY (2026-09-08, the 1:1 port): the py
