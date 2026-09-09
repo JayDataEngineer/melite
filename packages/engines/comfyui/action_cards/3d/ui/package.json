@@ -6,7 +6,9 @@
   "types": "./viewers/index.ts",
   "exports": {
     "./ui/viewers": "./viewers/index.ts",
-    "./package.json": "./package.json"
+    "./package.json": "./package.json",
+    "./ui/studios/assembly": "./studios/assembly.tsx",
+    "./ui/railTabs": "./railTabs.tsx"
   },
   "dependencies": {
     "@melite/catalog": "workspace:*",

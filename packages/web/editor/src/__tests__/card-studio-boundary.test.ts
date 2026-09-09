@@ -484,12 +484,21 @@ function walkTs(dir: string, out: string[] = []): string[] {
  *  component reads the engine cards package; a ui tenant its own dir —
  *  the manifest is the law, §18). */
 function declaredPluginDeps(pkgDir: string): Set<string> {
-  try {
-    const pj = JSON.parse(readFileSync(resolve(pkgDir, "package.json"), "utf8"))
-    return new Set(Object.keys(pj.dependencies ?? {}))
-  } catch {
-    return new Set()
+  // Walk UP to the owning package manifest — node resolution shape.
+  // Card units live under the ENGINE package now (card-folder
+  // migration): src/cards/ has no manifest of its own; the dep
+  // truth is the engine package.json (one package, two faces —
+  // the settings-card law).
+  let dir = pkgDir
+  for (let i = 0; i < 6; i++) {
+    try {
+      const pj = JSON.parse(readFileSync(resolve(dir, "package.json"), "utf8"))
+      return new Set(Object.keys(pj.dependencies ?? {}))
+    } catch {
+      dir = resolve(dir, "..")
+    }
   }
+  return new Set()
 }
 
 /** "@melite-plugin/motion/ui/viewer3d" is legal iff "@melite-plugin/motion" is declared. */
