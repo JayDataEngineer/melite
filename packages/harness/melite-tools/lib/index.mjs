@@ -1,4 +1,4 @@
-import { a as RayGatewayError, i as routeName, n as matchHarnessRoute, o as makeEstateRequest, r as resolveHarnessRoutes, t as harnessEnhance } from "./llm-complete-CQNzR6a6.mjs";
+import { a as makeEstateRequest, i as routeName, n as matchHarnessRoute, r as resolveHarnessRoutes, t as harnessEnhance } from "./llm-complete-DGUt3rkT.mjs";
 import { buildMusicTool } from "@melite/audio-music/tool";
 import { buildTtsTool } from "@melite/audio-tts/tool";
 import { buildVoiceLockTool } from "@melite/audio-voice-lock/tool";
@@ -135,18 +135,11 @@ function runStatus(request) {
 			try {
 				res = await request("GET", "/v1/flows/status/" + encodeURIComponent(runId), void 0, exec.signal, TIMEOUT_MS$3);
 			} catch (e) {
-				if (e instanceof RayGatewayError) {
-					let named = "";
-					try {
-						named = String(JSON.parse(e.body).error ?? "");
-					} catch {
-						named = "";
-					}
-					return jsonClean({
-						run_id: runId,
-						error: named || e.body || "status fetch failed"
-					});
-				}
+				const re = remoteErrorOf(e);
+				if (re !== null && re !== void 0) return jsonClean({
+					run_id: runId,
+					error: `${re.code}: ${re.message}`
+				});
 				throw e;
 			}
 			if (res && typeof res.error === "string") return jsonClean({
@@ -1143,15 +1136,16 @@ function comfyManage(request) {
 			try {
 				res = await request("POST", "/v1/manage", body, exec.signal, MANAGE_TIMEOUT_MS);
 			} catch (e) {
-				if (e instanceof RayGatewayError) try {
-					const parsed = JSON.parse(e.body);
-					if (typeof parsed.action === "string" && typeof parsed.detail === "string") return jsonClean({
+				const re = remoteErrorOf(e);
+				if (re !== null && re !== void 0 && re.code === "manage/refused") {
+					const d = re.details ?? {};
+					if (typeof d.action === "string") return jsonClean({
 						ok: false,
-						action: parsed.action,
-						detail: parsed.detail,
-						data: parsed.data ?? null
+						action: d.action,
+						detail: re.message,
+						data: d.data ?? null
 					});
-				} catch {}
+				}
 				throw e;
 			}
 			return jsonClean({
@@ -1691,4 +1685,4 @@ async function apply(ctx, config = {}) {
 	c.tools.register(buildCardTool(request));
 }
 //#endregion
-export { ADHOC_TOOL_NAMES, BASE_TOOL_NAMES, DEFAULT_BENCH, HEADLESS_TOOL_NAMES, MELITE_TOOL_NAMES, RayGatewayError, apply, comfyManage, harnessEnhance, inject, ledgerTail, makeEstateRequest, matchHarnessRoute, meliteConstruct, meliteDiscover, meliteFlow, meliteLoad, name, resolveHarnessRoutes, routeName, runStatus, skillIndex, skillRead };
+export { ADHOC_TOOL_NAMES, BASE_TOOL_NAMES, DEFAULT_BENCH, HEADLESS_TOOL_NAMES, MELITE_TOOL_NAMES, apply, comfyManage, harnessEnhance, inject, ledgerTail, makeEstateRequest, matchHarnessRoute, meliteConstruct, meliteDiscover, meliteFlow, meliteLoad, name, resolveHarnessRoutes, routeName, runStatus, skillIndex, skillRead };

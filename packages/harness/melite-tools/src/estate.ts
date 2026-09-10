@@ -28,19 +28,6 @@ import type {} from '@melite/estate-drafts'
  * it, and it is deleted with the last of those. Bench/drafts lanes
  * are already migrated (RemoteError codes).
  */
-export class RayGatewayError extends Error {
-  readonly status: number
-  readonly url: string
-  readonly body: string
-
-  constructor(status: number, url: string, body: string) {
-    super(`melite gateway ${status} ${url}: ${body}`)
-    this.name = 'RayGatewayError'
-    this.status = status
-    this.url = url
-    this.body = body
-  }
-}
 
 
 export type EstateMethod = 'GET' | 'POST' | 'PATCH'
@@ -87,6 +74,13 @@ interface Seats {
   disclose?: {
     discover(lookup: string, q: string, tags: string): unknown
   }
+
+  /** The management seat (REBUILD-15): the ComfyUI-Manager plane —
+   *  act() answers the envelope or throws manage/refused carrying
+   *  it (the tool surfaces WHY as the value). */
+  manage?: {
+    act(doc: unknown, signal: AbortSignal): Promise<unknown>
+  }
 }
 
 /** Route one KV/runs lane to its seat; undefined = no seat / no match. */
@@ -106,6 +100,7 @@ async function trySeats(
     get benchRemote() { return probe.get('benchRemote') as Seats['benchRemote'] },
     get runs() { return probe.get('runs') as Seats['runs'] },
     get disclose() { return probe.get('disclose') as Seats['disclose'] },
+    get manage() { return probe.get('manage') as Seats['manage'] },
   }
   signal.throwIfAborted()
 
@@ -203,6 +198,13 @@ async function trySeats(
       qs.get('q') ?? '',
       qs.get('tags') ?? '',
     )
+  }
+  // The manage lane (REBUILD-15): the management plane over the
+  // seat — the body IS the door's {action, ...} doc; a refused
+  // envelope throws manage/refused carrying it.
+  if (method === 'POST' && path === '/v1/manage') {
+    if (seats.manage === undefined) return undefined
+    return seats.manage.act(body, signal)
   }
   return undefined
 }

@@ -1149,12 +1149,6 @@ declare abstract class Service<out T = never> {
  * it, and it is deleted with the last of those. Bench/drafts lanes
  * are already migrated (RemoteError codes).
  */
-declare class RayGatewayError extends Error {
-  readonly status: number;
-  readonly url: string;
-  readonly body: string;
-  constructor(status: number, url: string, body: string);
-}
 type EstateMethod = 'GET' | 'POST' | 'PATCH';
 type EstateRequest$1 = (method: EstateMethod, path: string, body: unknown, execSignal: AbortSignal, timeoutMs: number) => Promise<unknown>;
 /** Build the tools' request: seats only, in-process. A lane with no
@@ -1228,4 +1222,4 @@ declare const MELITE_TOOL_NAMES: readonly ["melite_discover", "melite_construct"
 /** Register the Melite tools against the live estate gateway. */
 declare function apply(ctx: Context, config?: Config): Promise<void>;
 //#endregion
-export { ADHOC_TOOL_NAMES, BASE_TOOL_NAMES, Config, DEFAULT_BENCH, type EstateRequest$1 as EstateRequest, HEADLESS_TOOL_NAMES, MELITE_TOOL_NAMES, RayGatewayError, apply, comfyManage, harnessEnhance, inject, ledgerTail, makeEstateRequest, matchHarnessRoute, meliteConstruct, meliteDiscover, meliteFlow, meliteLoad, name, resolveHarnessRoutes, routeName, runStatus, skillIndex, skillRead };
+export { ADHOC_TOOL_NAMES, BASE_TOOL_NAMES, Config, DEFAULT_BENCH, type EstateRequest$1 as EstateRequest, HEADLESS_TOOL_NAMES, MELITE_TOOL_NAMES, apply, comfyManage, harnessEnhance, inject, ledgerTail, makeEstateRequest, matchHarnessRoute, meliteConstruct, meliteDiscover, meliteFlow, meliteLoad, name, resolveHarnessRoutes, routeName, runStatus, skillIndex, skillRead };

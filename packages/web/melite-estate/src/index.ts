@@ -31,6 +31,7 @@ import draftsPlugin from "@melite/estate-drafts";
 import queuePlugin, {
   cardRegistryProvider,
   discloseProvider,
+  manageProvider,
   runsRegistryPlugin,
 } from "@melite/estate-queue";
 import { runsRemotePlugin } from "@melite/estate-runs";
@@ -57,6 +58,9 @@ const rows: readonly Plugin[] = [
   // The disclosure seat (REBUILD-14): discover over both planes,
   // derived live — gates on the card registry seat (its inject).
   discloseProvider,
+  // The management seat (REBUILD-15): the ComfyUI-Manager plane —
+  // gates on the timer seat (the rail's timeouts).
+  manageProvider,
   runsRegistryPlugin,
   runsRemotePlugin,
 ];

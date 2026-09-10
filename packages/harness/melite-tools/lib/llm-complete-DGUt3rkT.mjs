@@ -1,23 +1,5 @@
 import { createUserMessage } from "@deepseek-ai/dsh-llm";
 //#region src/estate.ts
-/**
-* DYING SHIM (HTTP-era refusal carrier). The seats never throw it;
-* only lanes still awaiting their remotes keep instanceof arms for
-* it, and it is deleted with the last of those. Bench/drafts lanes
-* are already migrated (RemoteError codes).
-*/
-var RayGatewayError = class extends Error {
-	status;
-	url;
-	body;
-	constructor(status, url, body) {
-		super(`melite gateway ${status} ${url}: ${body}`);
-		this.name = "RayGatewayError";
-		this.status = status;
-		this.url = url;
-		this.body = body;
-	}
-};
 /** Route one KV/runs lane to its seat; undefined = no seat / no match. */
 async function trySeats(ctx, method, path, body, signal) {
 	const probe = ctx;
@@ -33,6 +15,9 @@ async function trySeats(ctx, method, path, body, signal) {
 		},
 		get disclose() {
 			return probe.get("disclose");
+		},
+		get manage() {
+			return probe.get("manage");
 		}
 	};
 	signal.throwIfAborted();
@@ -107,6 +92,10 @@ async function trySeats(ctx, method, path, body, signal) {
 		if (seats.disclose === void 0) return void 0;
 		const qs = new URLSearchParams(m[1] ?? "");
 		return seats.disclose.discover(qs.get("lookup") ?? "all", qs.get("q") ?? "", qs.get("tags") ?? "");
+	}
+	if (method === "POST" && path === "/v1/manage") {
+		if (seats.manage === void 0) return void 0;
+		return seats.manage.act(body, signal);
 	}
 }
 /** Build the tools' request: seats only, in-process. A lane with no
@@ -290,4 +279,4 @@ function parseEnhanceJson(text) {
 	throw new Error("enhance: the model reply was not the recipe JSON — head: " + text.slice(0, 160));
 }
 //#endregion
-export { RayGatewayError as a, routeName as i, matchHarnessRoute as n, makeEstateRequest as o, resolveHarnessRoutes as r, harnessEnhance as t };
+export { makeEstateRequest as a, routeName as i, matchHarnessRoute as n, resolveHarnessRoutes as r, harnessEnhance as t };

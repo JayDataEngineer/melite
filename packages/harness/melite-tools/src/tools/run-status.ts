@@ -15,7 +15,8 @@
 import { defineTool } from '@deepseek-ai/dsh-tools'
 import type { ToolCallView } from '@deepseek-ai/dsh-tools'
 import type { JsonValue, ToolDefinition } from '../types.ts'
-import { RayGatewayError, type EstateRequest } from '../estate.ts'
+import { remoteErrorOf } from '@deepseek-ai/dsh-typert-protocol'
+import type { EstateRequest } from '../estate.ts'
 import { jsonClean } from '../json-clean.ts'
 
 const TIMEOUT_MS = 15_000
@@ -121,12 +122,11 @@ export function runStatus(request: EstateRequest): ToolDefinition {
           undefined, exec.signal, TIMEOUT_MS,
         ) as Record<string, unknown>
       } catch (e) {
-        if (e instanceof RayGatewayError) {
-          let named = ''
-          try {
-            named = String((JSON.parse(e.body) as { error?: unknown }).error ?? '')
-          } catch { named = '' }
-          return jsonClean<RunStatusResult>({ run_id: runId, error: named || e.body || 'status fetch failed' })
+        // The seats era (REBUILD-15): status refusals arrive as
+        // RemoteErrors — the code+message IS the refusal voice.
+        const re = remoteErrorOf(e)
+        if (re !== null && re !== undefined) {
+          return jsonClean<RunStatusResult>({ run_id: runId, error: `${re.code}: ${re.message}` })
         }
         throw e
       }

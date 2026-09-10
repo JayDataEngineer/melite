@@ -42,6 +42,8 @@ export * from "./mediaKinds.ts";
 export * from "./runsTypes.ts";
 export * from "./runsStart.ts";
 export * from "./discloseRegistry.ts";
+export * from "./managePlane.ts";
+export * from "./manageRegistry.ts";
 export * from "./flowsData.ts";
 export * from "./runsValidate.ts";
 export * from "./cardsRegistry.ts";

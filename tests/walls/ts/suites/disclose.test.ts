@@ -99,3 +99,84 @@ test("the tools' lane grammar serves /v1/discover from the seat", async () => {
     /no remote serves GET \/v1\/discover/,
   );
 });
+
+test("the manage seat — the door's vocabulary + refusal envelope (REBUILD-15)", async () => {
+  const root = mkdtempSync(join(tmpdir(), "disclose-wall-"));
+  const ctx = new Context();
+  process.env["MELITE_STATE_ROOT"] = root;
+  await ctx.plugin(timerPlugin as never);
+  await ctx.plugin(queuePlugin as never);
+  await ctx.plugin(Storage as never);
+  await ctx.plugin({ name: jsonName, inject: jsonInject, apply: jsonApply, Config: JsonConfig } as never, { root });
+  await ctx.plugin({ name: domainName, inject: domainInject, apply: domainApply, Config: DomainConfig } as never, { backend: "json" });
+  await ctx.plugin(draftsPlugin as never);
+  await ctx.plugin(cardRegistryProvider as never);
+  await ctx.plugin(discloseProvider as never);
+  const { manageProvider } = await import("../../../../packages/harness/estate-queue/src/index.ts");
+  await ctx.plugin(manageProvider as never);
+  const sig = new AbortController().signal;
+  // 1. the closed vocabulary: a typo is a 422 envelope, not a miss.
+  const typo = await manageRefusal(ctx, { action: "nope" }, sig);
+  assert.equal(typo.code, "manage/refused");
+  assert.match(typo.message, /Input should be one of: status, logs/);
+  assert.equal(typo.action, "nope");
+  // 2. a bare doc refuses Field required.
+  const bare = await manageRefusal(ctx, {}, sig);
+  assert.match(bare.message, /Field required: action/);
+  // 3. status is a VIEW (never a throw): the envelope answers
+  //    ok:true with either voice — "server up" when the estate
+  //    engine is live (this machine's real ComfyUI), "server not
+  //    reachable" otherwise. The data carries the truth either way.
+  const manage = ctx.get("manage", false) as { act(doc: unknown, signal: AbortSignal): Promise<{ ok: boolean; detail: string; data?: { endpoint?: { reachable?: boolean } } }> };
+  const st = await manage.act({ action: "status" }, sig);
+  assert.equal(st.ok, true);
+  const reachable = st.data?.endpoint?.reachable === true;
+  if (reachable) assert.match(st.detail, /server up/);
+  else assert.match(st.detail, /server not reachable/);
+  // 4. the lifecycle guard, HERMETIC: INFERENCE_TEST_SANDBOX pins
+  //    the endpoint config to {} (the leak gate) so the restart arm
+  //    can never reach the live engine (provision≠managed → the BYO
+  //    estateOnly refusal fires before any rail call). Forge an
+  //    active sidecar in the repo data tree the scan reads.
+  const { resolveRepoRoot } = await import("../../../../packages/engines/comfyui-cordis/src/index.ts");
+  const { mkdirSync, writeFileSync, rmSync } = await import("node:fs");
+  const outDir = join(resolveRepoRoot(), "data", "runs", "output", "run-manage-guard-test");
+  mkdirSync(outDir, { recursive: true });
+  writeFileSync(join(outDir, "_flow.json"), '{"status": "running"}');
+  const hadSandbox = process.env["INFERENCE_TEST_SANDBOX"];
+  process.env["INFERENCE_TEST_SANDBOX"] = "1";
+  try {
+    const guard = await manageRefusal(ctx, { action: "restart" }, sig);
+    assert.match(guard.message, /active run\(s\).*force=true/);
+    // force=true bypasses the guard and reaches the BYO estateOnly
+    // refusal (the sandbox endpoint has no provision=managed).
+    const forced = await manageRefusal(ctx, { action: "restart", force: true }, sig);
+    assert.match(forced.message, /estate never touches a user-owned ComfyUI/);
+  } finally {
+    rmSync(outDir, { recursive: true, force: true });
+    if (hadSandbox === undefined) delete process.env["INFERENCE_TEST_SANDBOX"];
+    else process.env["INFERENCE_TEST_SANDBOX"] = hadSandbox;
+  }
+});
+
+/** Run act() expecting the manage/refused RemoteError; return its shape. */
+async function manageRefusal(
+  ctx: Context,
+  doc: unknown,
+  sig: AbortSignal,
+): Promise<{ code: string; message: string; action?: string }> {
+  const manage = ctx.get("manage", false) as {
+    act(doc: unknown, signal: AbortSignal): Promise<unknown>;
+  };
+  assert.ok(manage, "the manage seat is live");
+  try {
+    await manage.act(doc, sig);
+    throw new Error("expected manage/refused");
+  } catch (e) {
+    const re = (await import("../../../../packages/estate/drafts/node_modules/@deepseek-ai/dsh-typert-protocol/lib/index.js")).remoteErrorOf(e);
+    assert.ok(re, "a RemoteError");
+    assert.equal(re.code, "manage/refused");
+    const d = (re as unknown as { details?: { action?: string } }).details ?? {};
+    return { code: re.code, message: re.message, action: d.action };
+  }
+}

@@ -21,10 +21,10 @@
  * routing, active runs); install/download actions accept what the
  * status/cately discoveries return.
  */
+import { remoteErrorOf } from '@deepseek-ai/dsh-typert-protocol'
 import { defineTool } from '@deepseek-ai/dsh-tools'
 import type { ToolCallView } from '@deepseek-ai/dsh-tools'
 import type { JsonValue, ToolDefinition } from '../types.ts'
-import { RayGatewayError } from '../estate.ts'
 import { jsonClean } from '../json-clean.ts'
 
 const MANAGE_TIMEOUT_MS = 300_000   // installs/downloads can take minutes
@@ -174,19 +174,19 @@ export function comfyManage(request: EstateRequest): ToolDefinition {
           exec.signal,
           MANAGE_TIMEOUT_MS) as Record<string, unknown>
       } catch (e) {
-        // A refusal (4xx/5xx) IS the answer, not a crash: the SSOT's
-        // body carries {action, ok:false, detail} — surface it as the
-        // value so the model reads WHY (active runs, catalog miss…).
-        if (e instanceof RayGatewayError) {
-          try {
-            const parsed = JSON.parse(e.body) as Record<string, unknown>
-            if (typeof parsed.action === 'string' && typeof parsed.detail === 'string') {
-              return jsonClean({
-                ok: false, action: parsed.action, detail: parsed.detail,
-                data: parsed.data ?? null,
-              }) as ManageResult
-            }
-          } catch { /* fall through to rethrow */ }
+        // A refusal IS the answer, not a crash: the manage seat
+        // throws manage/refused CARRYING the envelope (action,
+        // detail, data — REBUILD-15) — surface it as the value so
+        // the model reads WHY (active runs, catalog miss…).
+        const re = remoteErrorOf(e)
+        if (re !== null && re !== undefined && re.code === 'manage/refused') {
+          const d = (re as { details?: { action?: string; data?: unknown } }).details ?? {}
+          if (typeof d.action === 'string') {
+            return jsonClean({
+              ok: false, action: d.action, detail: re.message,
+              data: d.data ?? null,
+            }) as ManageResult
+          }
         }
         throw e
       }

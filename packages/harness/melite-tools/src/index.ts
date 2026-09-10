@@ -62,7 +62,7 @@ import { harnessEnhance, resolveHarnessRoutes, matchHarnessRoute, routeName } fr
 // with a fake seam — no host, no key, seconds-cheap).
 export { harnessEnhance, resolveHarnessRoutes, matchHarnessRoute, routeName }
 
-export { RayGatewayError, makeEstateRequest } from './estate.ts'
+export { makeEstateRequest } from './estate.ts'
 export type { EstateRequest } from './estate.ts'
 
 // Tool factories — re-exported for the smoke harness (test/smoke.mjs)
