@@ -1,5 +1,6 @@
+import { a as routeName, i as resolveHarnessRoutes, n as harnessEnhance, r as matchHarnessRoute } from "./llm-complete-CXD7-zEN.mjs";
 import { ToolDefinition } from "@deepseek-ai/dsh-tools";
-import { LlmRuntime } from "@deepseek-ai/dsh-llm";
+import "@deepseek-ai/dsh-llm";
 import "@deepseek-ai/dsh-util-values";
 //#region ../../../node_modules/.pnpm/@deepseek-ai+cosmokit@1.8.3/node_modules/@deepseek-ai/cosmokit/lib/types/misc.d.ts
 /** String/symbol keyed dictionary type. */
@@ -1123,76 +1124,6 @@ declare abstract class Service<out T = never> {
   [symbols.resolveConfig](base?: T, head?: T): T;
   static [Symbol.hasInstance](instance: any): boolean;
 }
-//#endregion
-//#region src/llm-complete.d.ts
-/** The runtime seat this core exercises — a structural Pick of the
- *  REAL LlmRuntime contract (@deepseek-ai/dsh-llm). */
-type LlmStreamSeam = Pick<LlmRuntime, "stream" | "listProviders" | "listModels">;
-/** One enhancement request — a recipe system prompt + the user's words. */
-interface EnhanceRequest {
-  system: string;
-  prompt: string;
-  temperature?: number;
-  signal?: AbortSignal;
-  /**
-   * The caller's chosen harness route (2026-09-06, operator order:
-   * the ✦ button must serve the USER'S model, never silently
-   * DeepSeek): "provider/model" exact, or a bare "model" that must
-   * match exactly one advertised route. Honored FIRST; the walk
-   * below stays behind it (ordered preference, never a silent
-   * wrong-model answer — the response echoes `via`).
-   */
-  llm?: string;
-}
-/** One route on the harness model plane. */
-interface HarnessRoute {
-  provider: string;
-  model: string;
-}
-/** "provider/model" — the only spelling a route is ever named by. */
-declare function routeName(r: HarnessRoute): string;
-declare function resolveHarnessRoutes(llm: LlmStreamSeam): Promise<HarnessRoute[]>;
-/**
- * Match a caller-named route against the live list. Exact
- * "provider/model" wins; a bare "model" must be unambiguous (two
- * providers advertising it is a 400 naming both — guessing between
- * providers is how silent-DeepSeek happens). Unknown → throw with
- * the live list (the route turns it into a 400, never a walk).
- *
- * Version-tail tolerance (2026-09-06, live-caught): the settings
- * default names glm-5.3 while the provider advertises glm-4.7 —
- * a newer default than the live provider list carries. The named
- * model is RESOLVED, never walked: same provider, its NEWEST
- * advertised model below the named one in the family line. If the
- * provider itself is absent, or nothing matches, the failure stays
- * loud with the live list. This is resolution of the user's own
- * default, not a fallback to a DIFFERENT provider's model.
- */
-declare function matchHarnessRoute(routes: HarnessRoute[], want: string): HarnessRoute;
-/**
- * Recipe + prompt in, {positive, negative, via} out. THE one enhance
- * call. NO WALK, NO FALLBACKS (queue lane law, operator 2026-09-06:
- * "No fallbacks. Ever." — the first-breathing walk is what served
- * DeepSeek/minimax by luck of registration order and provider
- * health):
- *
- *   - explicit req.llm names the route, else defaultLlm (the
- *     agentDefaultModel service's live selection — the user's own
- *     default) names it. Explicit wins; NEITHER walks.
- *   - unresolvable name → throw naming the live routes (the route
- *     maps explicit→400, stale default→502).
- *   - the ONE route completes; its failure is the honest error
- *     (502 naming route + cause) — never a silent other model.
- *
- * `via` echoes the serving route. This is the keystore era's shape
- * (one configured model, loud otherwise) with the model resolved
- * from the host default instead of the retired keystore.
- */
-declare function harnessEnhance(llm: LlmStreamSeam, req: EnhanceRequest, defaultLlm?: string): Promise<{
-  positive: string;
-  negative: string;
-  via: string;
-}>;
 //#endregion
 //#region src/estate.d.ts
 declare class RayGatewayError extends Error {
