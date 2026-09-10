@@ -50,8 +50,7 @@ import { runStatus } from './tools/run-status.ts'
 import { meliteFlow } from './tools/melite-flow.ts'
 import { comfyManage } from './tools/comfy-manage.ts'
 import { meliteDiscover } from './tools/melite-discover.ts'
-import { laneBundlePeek } from './tools/lane-bundle-peek.ts'
-import { laneBundleLoad } from './tools/lane-bundle-load.ts'
+import { meliteConstruct } from './tools/melite-construct.ts'
 import { meliteLoad } from './tools/melite-load.ts'
 import { skillIndex } from './tools/skill-index.ts'
 import { skillRead } from './tools/skill-read.ts'
@@ -68,9 +67,8 @@ export { DEFAULT_GATEWAY_URL, RayGatewayError, normalizeGatewayUrl } from './gat
 // Tool factories — re-exported for the smoke harness (test/smoke.mjs)
 // and any embedder that mounts tools without the full plugin apply().
 export { runStatus } from './tools/run-status.ts'
-export { laneBundlePeek } from './tools/lane-bundle-peek.ts'
-export { laneBundleLoad } from './tools/lane-bundle-load.ts'
 export { meliteDiscover } from './tools/melite-discover.ts'
+export { meliteConstruct, DEFAULT_BENCH } from './tools/melite-construct.ts'
 export { meliteFlow } from './tools/melite-flow.ts'
 export { comfyManage } from './tools/comfy-manage.ts'
 export { meliteLoad } from './tools/melite-load.ts'
@@ -114,7 +112,7 @@ export interface Config {
 
 /** BASE tool names — both interfaces (discovery, compose, management, audit). */
 export const BASE_TOOL_NAMES = [
-  'melite_discover', 'melite_load', 'lane_bundle_peek', 'lane_bundle_load',
+  'melite_discover', 'melite_construct', 'melite_load',
   'comfy_manage', 'skill_index', 'skill_read', 'ledger_tail',
 ] as const
 
@@ -174,9 +172,8 @@ export async function apply(ctx: Context, config: Config = {}): Promise<void> {
   // BASE (both interfaces): disclosure (flow preferred, card
   // fallback), discovery, compose, management, audit.
   c.tools.register(meliteDiscover(gatewayUrl))
+  c.tools.register(meliteConstruct(gatewayUrl))
   c.tools.register(meliteLoad(gatewayUrl))
-  c.tools.register(laneBundlePeek(gatewayUrl))
-  c.tools.register(laneBundleLoad(gatewayUrl))
   c.tools.register(comfyManage(gatewayUrl))
   c.tools.register(skillIndex(gatewayUrl))
   c.tools.register(skillRead(gatewayUrl))

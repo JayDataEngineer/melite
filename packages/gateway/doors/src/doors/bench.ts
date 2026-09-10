@@ -325,6 +325,7 @@ function normalizeStages(
       const row: Record<string, unknown> = {};
       row["id"] = typeof src["id"] === "string" ? src["id"] : "s_" + idx;
       for (const k of Object.keys(src)) row[k] = src[k];
+      if (typeof row["engine"] !== "string" || row["engine"] === "") row["engine"] = "comfyui";
       if (!isRecord(row["inputs"])) row["inputs"] = {};
       if (!isRecord(row["params"])) row["params"] = {};
       if (!isRecord(row["outputs"])) row["outputs"] = { default: "image" };
@@ -441,7 +442,7 @@ async function hBenchPatch(
 // POST /v1/bench/:session/add_stage — append a card stage with
 // optional wiring. The row carries the runner's input convention.
 
-const ADD_KEYS = ["id", "card", "params", "inputs", "outputs", "expected", "expect_rev", "author"];
+const ADD_KEYS = ["id", "card", "engine", "params", "inputs", "outputs", "expected", "expect_rev", "author"];
 
 async function hBenchAddStage(
   drafts: Domain<DraftsDomainSpec>,
@@ -474,6 +475,9 @@ async function hBenchAddStage(
   const row: Record<string, unknown> = {
     id: stageId,
     card,
+    // The runner's engine id (flow_inline contract); comfyui is the
+    // only served engine today.
+    engine: typeof body["engine"] === "string" && body["engine"] !== "" ? body["engine"] : "comfyui",
     params: isRecord(body["params"]) ? body["params"] : {},
     inputs: isRecord(body["inputs"]) ? body["inputs"] : {},
     outputs: isRecord(body["outputs"]) ? body["outputs"] : { default: "image" },

@@ -4,7 +4,7 @@
 // salient rawInput) instead of the generic fallback (title = tool name,
 // raw args dump).
 //
-// Pinned: all 10 tools expose presentCall (the rework unified
+// Pinned: all 9 tools expose presentCall (the rework unified
 // card_run + flow_run + build_flow + refine_draft into melite_flow);
 // cards are 'generic' with a
 // non-empty title; kinds come from the ToolCallKind vocabulary; salient
@@ -23,8 +23,7 @@ import { meliteFlow } from "../../../../packages/harness/melite-tools/src/tools/
 import { comfyManage } from "../../../../packages/harness/melite-tools/src/tools/comfy-manage.ts";
 import { meliteDiscover } from "../../../../packages/harness/melite-tools/src/tools/melite-discover.ts";
 
-import { laneBundleLoad } from "../../../../packages/harness/melite-tools/src/tools/lane-bundle-load.ts";
-import { laneBundlePeek } from "../../../../packages/harness/melite-tools/src/tools/lane-bundle-peek.ts";
+import { meliteConstruct } from "../../../../packages/harness/melite-tools/src/tools/melite-construct.ts";
 import { ledgerTail } from "../../../../packages/harness/melite-tools/src/tools/ledger-tail.ts";
 import { meliteLoad } from "../../../../packages/harness/melite-tools/src/tools/melite-load.ts";
 
@@ -39,8 +38,7 @@ const ALL: Array<[string, ToolDefinition]> = [
   ["comfy_manage", comfyManage(GW)],
   ["melite_discover", meliteDiscover(GW)],
   ["melite_flow", meliteFlow(GW)],
-  ["lane_bundle_load", laneBundleLoad(GW)],
-  ["lane_bundle_peek", laneBundlePeek(GW)],
+  ["melite_construct", meliteConstruct(GW)],
   ["ledger_tail", ledgerTail(GW)],
   ["melite_load", meliteLoad(GW)],
   ["run_status", runStatus(GW)],
@@ -60,8 +58,8 @@ const KINDS = new Set([
 ]);
 
 describe("presentCall disclosure composition", () => {
-  it("all 10 tools declare presentCall; presentResult stays omitted", () => {
-    assert.equal(ALL.length, 10);
+  it("all 9 tools declare presentCall; presentResult stays omitted", () => {
+    assert.equal(ALL.length, 9);
     for (const [name, def] of ALL) {
       assert.equal(typeof def.presentCall, "function", `${name} needs presentCall`);
       assert.equal(def.presentResult, undefined, `${name} must not implement presentResult`);
@@ -88,8 +86,8 @@ describe("presentCall disclosure composition", () => {
     assert.match(byName.get("run_status")!.presentCall!({ runId: "r42" })!.title, /r42/);
     assert.match(byName.get("skill_read")!.presentCall!({ id: "s1" })!.title, /s1/);
     assert.match(
-      byName.get("lane_bundle_load")!.presentCall!({ kind: "card", name: "c1" })!.title,
-      /c1/,
+      byName.get("melite_construct")!.presentCall!({ verb: "add_stage", card: "image-gen" })!.title,
+      /add_stage · image-gen/,
     );
     assert.match(
       byName.get("melite_discover")!.presentCall!({ lookup: "cards", tags: "image,upscale" })!.title,

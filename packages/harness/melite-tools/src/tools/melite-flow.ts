@@ -23,6 +23,7 @@ import type { ToolCallView } from '@deepseek-ai/dsh-tools'
 import type { JsonValue, ToolDefinition } from '../types.ts'
 import { gatewayRequest, RayGatewayError } from '../gateway.ts'
 import { jsonClean } from '../json-clean.ts'
+import { DEFAULT_BENCH, projectStages } from './melite-construct.ts'
 export interface MeliteConnectArg {
   from?: unknown
   to?: unknown
@@ -194,19 +195,52 @@ async function startRun(
   }
 }
 
-/** Mint a draft doc (CARD BIRTH LAW — every start below rides one). */
-async function mintDraft(
+/** LOAD THE BENCH (the one-shared-state law — the bench rework,
+ *  2026-09-10): every mode's composition lands on THE shared bench
+ *  (draft doc bench-<key>) instead of minting a fresh draft per
+ *  run. The user's cards tab streams the same bench; runs snapshot
+ *  their composition in the run registry (CARD BIRTH LAW holds —
+ *  the start still rides a doc-backed draft_id, now the bench's). */
+async function loadBench(
   gatewayUrl: string,
   body: Record<string, unknown>,
   signal: AbortSignal,
 ): Promise<string> {
-  const draft = await gatewayRequest(
-    gatewayUrl, 'POST', '/v1/flows/drafts', body, signal, DRAFT_TIMEOUT_MS,
-  ) as { draftId?: unknown; error?: string }
-  if (draft && typeof draft.error === 'string' && draft.error) throw new Error(draft.error)
-  const id = draft && draft.draftId
-  if (typeof id !== 'string' || id === '') throw new Error('draft POST returned no draftId')
+  const b = await gatewayRequest(
+    gatewayUrl, 'POST', '/v1/bench/ensure', body, signal, DRAFT_TIMEOUT_MS,
+  ) as { draft_id?: unknown; error?: string }
+  if (b && typeof b.error === 'string' && b.error) throw new Error(b.error)
+  const id = b && b.draft_id
+  if (typeof id !== 'string' || id === '') throw new Error('bench ensure returned no draft_id')
   return id
+}
+
+/** BENCH (the bench rework's run verb): run THE shared bench as it
+ *  stands — no composition, no sugar. The stages are projected onto
+ *  the flow_inline wire contract (presentation extras strip), then
+ *  started under the bench's own draft_id. This is what the user's
+ *  Run press does and what {bench: true} does — one truth. */
+async function runBench(
+  gatewayUrl: string,
+  a: { test?: boolean },
+  signal: AbortSignal,
+): Promise<Record<string, unknown>> {
+  let b: Record<string, unknown>
+  try {
+    b = await gatewayRequest(gatewayUrl, 'GET', `/v1/bench/${DEFAULT_BENCH}`, undefined, signal, 15_000) as Record<string, unknown>
+  } catch (e) {
+    if (e instanceof RayGatewayError && e.status === 404) {
+      return { error: 'the bench is empty — construct stages first (melite_construct)' }
+    }
+    throw e
+  }
+  const stages = projectStages(b['stages'])
+  if (stages.length === 0) return { error: 'the bench is empty — construct stages first (melite_construct)' }
+  const draftId = typeof b['draft_id'] === 'string' ? b['draft_id'] as string : `bench-${DEFAULT_BENCH}`
+  const started = await startRun(gatewayUrl, {
+    flow_inline: { stages }, test: a.test === true, draft_id: draftId,
+  }, signal)
+  return { mode: 'bench', target: `bench-${DEFAULT_BENCH} @ rev ${String(b['rev'] ?? '?')}`, draft_id: draftId, ...started }
 }
 
 /** SINGLE (the old card_run path, composed inside): manifest gate
@@ -255,9 +289,15 @@ async function runSingle(
   const intent = intentSrc.length > 80 ? intentSrc.slice(0, 77) + '…' : intentSrc
   let draftId: string
   try {
-    draftId = await mintDraft(gatewayUrl, {
+    draftId = await loadBench(gatewayUrl, {
+      session: DEFAULT_BENCH,
       intent,
-      stages: [{ title: card !== '' ? card : model, kind: 'generation', service: model, params }],
+      stages: [{
+        id: 's_0',
+        ...(card !== '' ? { card } : {}),
+        engine: 'comfyui',
+        params,
+      }],
     }, signal)
   } catch (e) {
     return { error: e instanceof Error ? e.message : String(e) }
@@ -276,10 +316,16 @@ async function runTemplate(
   const flow = a.flow ?? ''
   if (!flow) return { error: 'flow is required (a discovered flow name)' }
   const overrides = a.params ?? {}
-  const composeBody = { ...overrides, flow }
   let draftId: string
   try {
-    draftId = await mintDraft(gatewayUrl, composeBody, signal)
+    // TEMPLATE load sugar: the bench carries the template REFERENCE
+    // (the {flow} start arm expands the graph server-side; the run
+    // registry snapshots it). One marker row keeps the doc honest.
+    draftId = await loadBench(gatewayUrl, {
+      session: DEFAULT_BENCH,
+      intent: flow,
+      stages: [{ id: 's_0', engine: 'comfyui', ref_flow: flow, params: {} }],
+    }, signal)
   } catch (e) {
     if (e instanceof RayGatewayError) {
       let named = ''
@@ -343,16 +389,10 @@ async function runAdHoc(
   }
   let draftId: string
   try {
-    draftId = await mintDraft(gatewayUrl, {
+    draftId = await loadBench(gatewayUrl, {
+      session: DEFAULT_BENCH,
       intent: flowId,
-      flow: flowBody,
-      stages: folded.map((s) => ({
-        id: s.id,
-        title: s.description !== '' ? s.description : s.id,
-        kind: 'generation',
-        service: s.engine,
-        params: s.params,
-      })),
+      stages: folded,
     }, signal)
   } catch (e) {
     return { mode: 'adhoc', target: flowId, error: e instanceof Error ? e.message : String(e) }
@@ -402,17 +442,21 @@ export function meliteFlow(gatewayUrl: string): ToolDefinition {
   const def = defineTool({
     name: 'melite_flow',
     description:
-      'Execute through the serial GPU queue — the ONE execution verb (a card or a flow tool call; nothing else '
-      + 'executes). Exactly one per call: card (a card id + model — single generation) | flow (a NAMED template '
-      + 'from melite_load) | stages (cards drafted on the fly: [{id, engine, params?, outputs?}] + optional '
-      + 'connects — compiled at validate BEFORE any GPU is spent, then run as one typed flow). Drafts are minted '
-      + 'inside (CARD BIRTH LAW) — the minted draft_id rides the value as the chat tile handle (the card surface '
-      + 'hydrates from it via ?meliteCards=), but the agent never passes it anywhere. Returns {run_id, draft_id}; '
-      + 'poll with run_status. One active run machine-wide.',
+      'Execute through the serial GPU queue — the ONE execution verb. Exactly one per call: bench (run THE shared '
+      + 'bench exactly as it stands — what the user\'s Run press runs) | card (a card id + model — single '
+      + 'generation) | flow (a NAMED template from melite_load) | stages (cards drafted on the fly: [{id, engine, '
+      + 'params?, outputs?}] + optional connects — compiled at validate BEFORE any GPU is spent). Compositions '
+      + 'LOAD the shared bench first (nothing mints fresh — one state, one log, one undo); every start rides the '
+      + 'bench\'s doc-backed draft_id (CARD BIRTH LAW) — it rides the value as the chat tile handle, never an '
+      + 'agent arg. Returns {run_id, draft_id}; poll with run_status. One active run machine-wide.',
     // ParameterSchemaSpec grammar: the map IS the implicit object root
     // (no type/properties wrapper) — every composition arm is
     // optional (exactly-one is enforced in execute, never the schema).
     parameters: {
+      bench: {
+        type: 'boolean',
+        description: 'BENCH mode: run THE shared bench exactly as it stands (what the user\'s Run press runs). Exclusive with card/flow/stages.',
+      },
       card: {
         type: 'string',
         description: 'SINGLE mode: the card id (discovered). Requires model alongside.',
@@ -509,23 +553,27 @@ export function meliteFlow(gatewayUrl: string): ToolDefinition {
     },
     async execute(args, exec): Promise<FlowResult> {
       const a = (args ?? {}) as {
-        card?: unknown; model?: unknown; flow?: unknown; stages?: unknown; connects?: unknown;
+        bench?: unknown; card?: unknown; model?: unknown; flow?: unknown; stages?: unknown; connects?: unknown;
         prompt?: unknown; params?: unknown; id?: unknown; description?: unknown; test?: unknown;
       }
       const bag = (a.params && typeof a.params === 'object' && !Array.isArray(a.params))
         ? a.params as Record<string, unknown> : {}
       const test = a.test === true
+      const hasBench = a.bench === true
       const hasCard = typeof a.card === 'string' && a.card !== '';
       const hasFlow = typeof a.flow === 'string' && a.flow !== '';
       const hasStages = a.stages !== undefined;
-      const modes = [hasCard, hasFlow, hasStages].filter(Boolean).length;
+      const modes = [hasBench, hasCard, hasFlow, hasStages].filter(Boolean).length;
       if (modes === 0) {
-        return jsonClean({ error: 'one composition is required: card (+model) | flow | stages (cards drafted on the fly)' }) as FlowResult;
+        return jsonClean({ error: 'one composition is required: bench (run what is there) | card (+model) | flow | stages (cards drafted on the fly)' }) as FlowResult;
       }
       if (modes > 1) {
-        return jsonClean({ error: 'exactly one composition per call: card | flow | stages — never combined' }) as FlowResult;
+        return jsonClean({ error: 'exactly one composition per call: bench | card | flow | stages — never combined' }) as FlowResult;
       }
       try {
+        if (hasBench) {
+          return jsonClean(await runBench(gatewayUrl, { test }, exec.signal)) as FlowResult;
+        }
         if (hasFlow) {
           return jsonClean(await runTemplate(gatewayUrl, {
             flow: a.flow as string, params: bag, test,

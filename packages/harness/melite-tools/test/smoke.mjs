@@ -46,14 +46,13 @@ async function runTool(tool, args, label) {
 const main = async () => {
   let skillId = ''
 
-  // --- the 9 melite tools, in registration order ---
+  // --- the melite tools, in registration order ---
   const tools = [
     ['melite_discover', lib.meliteDiscover(GW), { lookup: 'all', tags: 'image,upscale' }, {}],
     ['melite_load(card)', lib.meliteLoad(GW), { name: 'upscale-tools', inference_type: 'card' }, {}],
     ['melite_load(flow)', lib.meliteLoad(GW), { name: 'image-upscale', inference_type: 'flow' }, {}],
-    ['lane_bundle_peek', lib.laneBundlePeek(GW), {}, {}],
-    ['lane_bundle_peek(templates)', lib.laneBundlePeek(GW), { kind: 'template' }, {}],
-    ['lane_bundle_load(action_card image-gen)', lib.laneBundleLoad(GW), { kind: 'action_card', name: 'image-gen' }, {}],
+    ['melite_construct(read: births the bench)', lib.meliteConstruct(GW), { verb: 'read' }, {}],
+    ['melite_construct(bad verb refuses)', lib.meliteConstruct(GW), { verb: 'explode' }, {}],
     // melite_flow rows are refusal-surface proofs (no GPU burn): the
     // named 4xx / pre-HTTP refusal rides the value — never a throw.
     ['melite_flow(card loud-fail: no card tool)', lib.meliteFlow(GW),
@@ -122,18 +121,6 @@ const main = async () => {
         const b = r.value?.bundle ?? {}
         const sig = b.signature ?? {}
         note(label, b.name === 'image-upscale' && sig.name === 'image_upscale' && (b.stages?.length ?? 0) === 2, 'the prebuilt signature + stages')
-      } else if (label === 'lane_bundle_peek') {
-        note(label, (r.value?.lanes?.length ?? 0) > 0, (r.value?.lanes?.length ?? 0) + ' lanes')
-      } else if (label === 'lane_bundle_peek(templates)') {
-        const lanes = r.value?.lanes ?? []
-        note(label, lanes.length > 0 && lanes.every((l) => l.kind === 'template'),
-          lanes.length + ' templates: ' + lanes.map((l) => l.lane).slice(0, 4).join(', '))
-      } else if (label.startsWith('lane_bundle_load')) {
-        const t0 = r.value?.tools?.[0] ?? {}
-        const props = Object.keys(t0?.params_schema?.properties ?? {})
-        const agent = typeof r.value?.agent?.content === 'string' && r.value.agent.content.length > 0
-        note(label, agent && props.length > 0 && (r.value?.skills?.length ?? 0) > 0,
-          'agent "' + (r.value?.agent?.name ?? '?') + '" injected · card tool "' + t0.name + '" params: ' + props.slice(0, 5).join(',') + '… + ' + (r.value?.skills?.length ?? 0) + ' skills')
       } else if (label === 'skill_index') {
         const skills = r.value?.skills ?? []
         skillId = skills[0]?.id ?? ''

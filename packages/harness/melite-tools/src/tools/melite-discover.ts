@@ -12,6 +12,10 @@ import { jsonClean } from '../json-clean.ts'
 
 const TIMEOUT_MS = 15_000
 
+/** Counts-first clamp: over this many lines the default answer
+ * clamps (counts + vocabulary + the first rows ride instead). */
+const CLAMP = 12
+
 /** Flow summary line (the discover tier — routes, never bodies). */
 export interface DiscoverFlowLine {
   name: string
@@ -66,7 +70,8 @@ export function meliteDiscover(gatewayUrl: string): ToolDefinition {
       'Progressive disclosure tier 1 over the estate (cards + flows): returns clamped summary LINES, never bodies. '
       + 'Args: lookup (all | cards | flows, default all) + tags (comma-separated card-declared tags, e.g. "image,upscale") '
       + '+ optional q (free-text filter). Prefer a FLOW when one fits the task — composition over single calls; '
-      + 'fall back to cards. Open a line with melite_load (agents md + signature + skill lines).',
+      + 'fall back to cards. COUNTS-FIRST: a large estate clamps to counts + the tag vocabulary + the first '
+      + 'rows; detail=true for every line. Open a line with melite_load (agents md + signature + skill lines).',
     // ParameterSchemaSpec grammar: the map IS the implicit object root
     // (no type/properties wrapper), per-property `required: true` when
     // needed — all three filters are optional here.
@@ -82,6 +87,10 @@ export function meliteDiscover(gatewayUrl: string): ToolDefinition {
       q: {
         type: 'string',
         description: 'Optional free-text filter over names/titles/descriptions/ids.',
+      },
+      detail: {
+        type: 'boolean',
+        description: 'Counts-first: when the estate is large the answer clamps to the first rows + counts + the tag vocabulary. detail=true returns every line.',
       },
     },
     presentCall,
@@ -112,7 +121,7 @@ export function meliteDiscover(gatewayUrl: string): ToolDefinition {
       },
     },
     async execute(args, exec) {
-      const a = (args ?? {}) as { lookup?: unknown; tags?: unknown; q?: unknown }
+      const a = (args ?? {}) as { lookup?: unknown; tags?: unknown; q?: unknown; detail?: unknown }
       const params = new URLSearchParams();
       const lookup = typeof a.lookup === 'string' && a.lookup !== '' ? a.lookup : 'all';
       params.set('lookup', lookup);
@@ -127,6 +136,27 @@ export function meliteDiscover(gatewayUrl: string): ToolDefinition {
         // the wire-shape assertion mirrors the music card's gwJson
         // bridge (the tool trusts its own gateway contract; the
         // refusal branch constructs the shape literally).
+        // COUNTS-FIRST (the bench rework, 2026-09-10): a large
+        // estate clamps to the first CLAMP lines + counts + the tag
+        // vocabulary (the scan digest); detail=true returns every
+        // line. The default answer stays small enough to reason over.
+        const r = res as { flows?: Record<string, JsonValue>[]; cards?: Record<string, JsonValue>[] }
+        const flows = Array.isArray(r.flows) ? r.flows : []
+        const cards = Array.isArray(r.cards) ? r.cards : []
+        if (a.detail !== true && (flows.length > CLAMP || cards.length > CLAMP)) {
+          const vocab = new Set<string>()
+          for (const c of cards) {
+            const t = c['tags']
+            if (Array.isArray(t)) for (const x of t) if (typeof x === 'string' && x !== '') vocab.add(x)
+          }
+          return jsonClean<DiscoverResult>({
+            counts: { flows: flows.length, cards: cards.length },
+            tag_vocabulary: [...vocab].sort().slice(0, 40),
+            flows: flows.slice(0, CLAMP),
+            cards: cards.slice(0, CLAMP),
+            hint: 'clamped — narrow with tags/q, or detail=true for every line',
+          })
+        }
         return jsonClean(res) as DiscoverResult;
       } catch (e) {
         const err = e as { body?: unknown; message?: string };
