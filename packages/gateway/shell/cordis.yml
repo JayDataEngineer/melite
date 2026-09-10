@@ -88,6 +88,12 @@
     name: '@melite/gateway-doors/assets'
   - id: gateway-drafts
     name: '@melite/gateway-doors/drafts'
+  # THE BENCH (2026-09-10, docs/plans/bench-rework-2026-09-10.md):
+  # one shared working flow per session — revision log + CAS + undo
+  # over the same drafts domain. After drafts (same domain, no
+  # ordering interplay — distinct route rows).
+  - id: gateway-bench
+    name: '@melite/gateway-doors/bench'
   - id: gateway-studios
     name: '@melite/gateway-doors/studios'
   - id: gateway-planes
