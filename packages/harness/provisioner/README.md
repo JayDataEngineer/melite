@@ -9,16 +9,16 @@ profiles, and tools, one command each.
 
 | row | package | role |
 |---|---|---|
-| `infer-tools` | `@melite-plugin/dsh-tools` | tool registry: `model_catalog`, `build_flow`, `refine_draft`, `enhance_prompt`, `provision_model`, `ledger_tail` |
+| `infer-estate` | `@melite-plugin/melite-estate` | the estate row: card registry, runs registry + Typert remotes, disclose/manage/skills/load seats, serial queue |
+| `infer-tools` | `@melite-plugin/dsh-tools` | tool registry: `melite_discover`, `melite_load`, `melite_construct`, `comfy_manage`, `skill_index`, `skill_read`, `ledger_tail` (+ headless run doors `melite_flow`, `run_status`) |
 | `infer-card-view-host/client` | `@melite-plugin/dsh-card-view` | editable action cards in the conversation |
 | `infer-card-deck` | `@melite-plugin/dsh-card-deck` | sidebar deck: lanes, drafts, past cards |
-| `infer-media` | `@infer-media/dsh-media` | inline media previews |
 | `infer-gallery-host` | `@infer-media/dsh-gallery` | the runs gallery |
 
 All rows name PACKAGES (pnpm `link:` back into this repo) — no baked
-absolute paths, so the checkout can move without re-provisioning. The
-gateway endpoint comes from `MELITE_GATEWAY` (default
-`http://localhost:33081`, the repo's canonical port).
+absolute paths, so the checkout can move without re-provisioning.
+There is no gateway endpoint to configure (the kill, 2026-09-10):
+the tools answer in-process over the estate row's ctx seats.
 
 ## Install into an existing profile
 
@@ -45,14 +45,18 @@ bundle, so `dsh plugin add` and rendered profiles can never drift.
   dropdown (installed by `infer-provision preset`).
 - **headless** — the agent server: this bundle over the plain base. Boot:
   `dsh --profile headless "<task>"` — a one-shot agent with the full
-  card-tool surface against the gateway. For persistent serving wrap it
+  estate tool surface in-process. For persistent serving wrap it
   (systemd per task, or the task-board cron).
+- **estate** — the SDK job server: the estate row over the SDK app.
+  Boot: `dsh --profile estate` (driven over stdio JSON-RPC — the
+  estate-drive proof).
 
 ## Laws honored
 
 - **INFERENCE LAW**: DSH is only the harness — all inference rides the
-  gateway's serial GPU queue; cards in, stop door out.
-- **QUEUE LANE LAW**: no hardcoded endpoints; `MELITE_GATEWAY` overrides
-  the documented canonical default.
-- Cards/compose live in the gateway plugin (`packages/engines/comfyui`),
+  estate's serial GPU queue; cards in, stop door out.
+- **ENDPOINT LAW**: no second process, no hardcoded endpoints, no
+  `MELITE_GATEWAY` — the tools answer over ctx seats in-process.
+- Cards/compose live in the engine + estate packages
+  (`packages/engines/comfyui-cordis`, `packages/harness/estate-queue`),
   never in DSH-side code.

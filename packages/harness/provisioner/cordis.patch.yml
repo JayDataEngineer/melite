@@ -6,36 +6,40 @@
 #
 #   infer-tools          the tool registry, TWO interfaces (profile
 #                        config / MELITE_HEADLESS selects): BASE = discovery
-#                        (melite_discover, melite_load, lane_bundle_peek/load),
-#                        compose (ONE TOOL PER CARD MANIFEST), management
-#                        (comfy_manage), craft (skill_index, skill_read),
-#                        audit (ledger_tail); HEADLESS adds the run doors
+#                        (melite_discover, melite_load), the bench
+#                        (melite_construct), management (comfy_manage),
+#                        craft (skill_index, skill_read), audit
+#                        (ledger_tail); HEADLESS adds the run doors
 #                        melite_flow / run_status (queue-native).
 #                        enhance_prompt is AD HOC (MELITE_ADHOC), never base.
 #   infer-card-view-*    editable action cards rendered in the
 #                        conversation (host row serves the editor bundle
 #                        + hydrates drafts; client row renders tiles).
 #   infer-card-deck      the sidebar card deck (lanes, drafts, past cards).
-#   infer-media          inline media previews against the gateway.
-#   infer-gallery-host   the runs gallery.
+#   infer-media          DELETED (R3, the estate collapse) — DSH's own
+#                        file/attachment/resource faces are the media
+#                        system (the row below is the tombstone comment).
+#   infer-gallery-host   the runs gallery (in-tree seats, or the pinned
+#                        owning DSH cross-host).
 #
 # All rows resolve BY PACKAGE NAME through this bundle's own link:
 # dependencies (pnpm workspace links back into the repo) — never baked
 # absolute paths, so the repo can move without re-provisioning.
 #
-# ENDPOINT LAW (the estate collapse): DSH is the ONLY app — the SDK
-# lanes this provisioner mounts name the ONE DSH that owns the estate
-# state (:3088, the test host; an SDK spawn overrides via MELITE_GATEWAY
-# env). The retired :33081 second Loader is gone; the runs/drafts/bench
-# faces ride Typert remotes where the estate bundle is mounted.
+# ENDPOINT LAW (the estate collapse, gateway kill 2026-09-10): DSH
+# is the ONLY app — there is no second process, no :33081, no
+# MELITE_GATEWAY override. The tools answer in-process over the
+# estate row's ctx seats; cross-host reads pin the ONE DSH that
+# owns the estate state. The runs/drafts/bench faces ride Typert
+# remotes where the estate bundle is mounted.
 #
 # PROFILE-SHAPE PIN (progressive disclosure — docs/deployment/
 # dsh-profiles.md): the HOST `skill-filesystem` row is pinned OFF for
 # every profile this bundle mounts. That row auto-discovers workspace
 # skills and ships their descriptions into the agent context unbidden —
 # the pre-loaded-surface bug the disclosure ladder retires. Discovery
-# here is the gateway's own surface (lane_bundle_peek →
-# lane_bundle_load → skill_read), never a pre-loaded catalog. The pin
+# here is the estate's own surface (melite_discover →
+# melite_load → skill_read), never a pre-loaded catalog. The pin
 # silences the HOST layer only: a preset that genuinely wants local
 # skill discovery still mounts its OWN preset-layer row. Without this
 # pin the headless profile auto-injects (only dsh-web-app disables the

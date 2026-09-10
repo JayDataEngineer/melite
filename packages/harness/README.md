@@ -42,8 +42,8 @@ dsh plugin --profile <name> add <repo>/packages/harness/dsh/provisioner
 ./packages/harness/dsh/install-profile.sh
 ```
 
-Gateway endpoint is configuration, never code: `MELITE_GATEWAY` env
-(default `http://localhost:33081`, canonical-port law).
+There is no gateway endpoint to configure (the kill, 2026-09-10):
+the tools answer in-process over the estate row's ctx seats.
 
 ## The three mounts (one bundle)
 
