@@ -748,6 +748,29 @@ export class ComfyUIService extends Service {
     merged = { ...merged, ...Object.fromEntries(Object.entries(model.defaults).filter(([, v]) => v !== null && !Array.isArray(v))), ...((params ?? {}) as Record<string, unknown>) }
     merged = ComfyUIService.applyRecipe(def, merged, { ...((params ?? {}) as Record<string, unknown>) })
 
+    // LORA WIRE RESOLUTION (2026-09-10 — the id/name split): the UI
+    // boundary emits id-keyed rows ({id, strength} — LoRAEntry, the
+    // ONE wire shape since the 2026-09-06 flip); the kit consumes
+    // filenames ({name, strength}). The 09-06 flip moved the UI but
+    // never the engine consumer — fireLoras read .name off id-keyed
+    // rows (undefined) and every LoRA run silently stacked nothing.
+    // Resolved HERE — the service owns the flavors via modCatalog —
+    // filename-shaped rows (card-authored recipe payloads) pass
+    // through; unknown ids refuse LOUD, never a silent plain run.
+    if (Array.isArray(merged.loras)) {
+      const cat = this.modCatalog('loras', modelId)
+      merged.loras = (merged.loras as Array<Record<string, unknown>>).map((e) => {
+        const strength = typeof e?.strength === 'number' ? (e.strength as number) : 1.0
+        if (typeof e?.name === 'string' && (e.name as string) !== '') return { name: e.name as string, strength }
+        const id = typeof e?.id === 'string' ? (e.id as string) : ''
+        const row = cat.rows.find((r) => r.id === id)
+        if (row === undefined) {
+          throw new ComposeRefusal('unknown-lora', `card '${cardId}' names lora id '${id}' with no '${modelId}' flavor row (registered: ${cat.rows.map((r) => r.id).join(', ') || 'none'}) — pick from the served catalog, never hand-spell`)
+        }
+        return { name: row.filename, strength }
+      })
+    }
+
     // EXTENSION LAW gate: family slice wins when present (py
     // requires_by_family precedent); flat union otherwise.
     const packs = def.requiresByFamily?.[modelId] ?? def.requires

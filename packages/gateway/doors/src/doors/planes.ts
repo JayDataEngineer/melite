@@ -978,6 +978,17 @@ function cardUnitDirs(engine: string, repo: string): { genre: string; cname: str
   // table died with the prefix, the dir IS the genre). models stays
   // out of this walk by content: model packages carry index.ts, no
   // card.ts — the isFile guard below is the discriminator.
+  // UNION-ONCE (2026-09-10 — the picker-tripling fix): this walk is
+  // engine-INDEPENDENT (repo-wide packages tree — no engine remainder
+  // card trees exist anymore), but every caller merges per-engine
+  // (buildCardTools, peek, cardRows). Emitting here for every engine
+  // served each card once per engine dir (3× — the picker repeats).
+  // Emit under the registry's owner engine ONLY (the manifests()
+  // dir-less-cards precedent below) — never once per engine. The
+  // owner is comfyui-cordis (factsPath in flowsCard.ts hardcodes it;
+  // packages/engines/comfyui/ holds only action_cards tenants, it is
+  // never itself an engine entry).
+  if ((engine.split("/").pop() ?? "") !== "comfyui-cordis") return out.sort((a, b) => (a.cname < b.cname ? -1 : a.cname > b.cname ? 1 : 0));
   for (const genre of ["3d", "audio", "image", "motion", "video"]) {
     const droot = join(repo, "packages", genre);
     if (!isDir(droot)) continue;
@@ -1104,9 +1115,11 @@ function manifests(engine: string, repo: string, cards?: CardRegistryService | n
     // Dir-less pure-tool cards are engine-independent globals, but
     // the manifests() walk is per-engine (callers merge engines) —
     // union them under the registry's owner engine ONLY, never once
-    // per engine (the registry IS the comfyui card set; factsPath +
-    // cardDefs hardcode the same owner).
-    if ((engine.split("/").pop() ?? "") !== "comfyui") continue;
+    // per engine (the registry IS the comfyui-cordis card set;
+    // factsPath in flowsCard.ts hardcodes the same owner — the bare
+    // "comfyui" spelling died with the restructure, it never matches
+    // a real engine entry).
+    if ((engine.split("/").pop() ?? "") !== "comfyui-cordis") continue;
     out.set(cid, { genre: "", unit: cid, dir: "", rows: [projectCardRow(def, baseRowFor(defs, cid))] });
   }
   return out;

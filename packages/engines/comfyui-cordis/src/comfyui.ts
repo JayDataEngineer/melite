@@ -90,6 +90,7 @@ import {
   writeFileSync,
 } from "node:fs";
 import { request as httpRequest } from "node:http";
+import { tmpdir } from "node:os";
 import { basename, dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import Schema from "@deepseek-ai/schemastery";
@@ -528,11 +529,41 @@ export async function uploadReferenced(
       for (const x of v) out.push(await stageOne(x));
       return out;
     }
-    if (typeof v === "object" && v !== null) return v;
+    // OBJECT DESCENT (2026-09-10 — the walk never descended): node
+    // payloads nest under `inputs` ({image: <path>}), but objects
+    // returned verbatim — NEITHER local files NOR linked URLs inside
+    // inputs ever staged. Recurse (the VHS `video` exemption rides
+    // the outer branch, which matches first and stays untouched).
+    if (typeof v === "object" && v !== null) {
+      const next: Record<string, EngineJson> = {};
+      for (const [k, x] of Object.entries(v as Record<string, EngineJson>)) next[k] = await stageOne(x);
+      return next;
+    }
     if (typeof v !== "string") return v;
     const p: string = v.trim();
     const lower: string = p.toLowerCase();
     if (!UPLOAD_EXTS.some((e: string): boolean => lower.endsWith(e))) return v;
+    // LINKED-INPUT ARM (2026-09-10 — the chaining fix): a stage wired
+    // to an upstream card's output arrives as that output's asset URL
+    // (/v1/assets/runs/… — the editor injects it at compile). The old
+    // walk only staged local files, so the URL rode into LoadImage
+    // verbatim and the run died on the engine. Fetch it (the asset
+    // door is open GET), stage to tmp under a stable name, and upload
+    // exactly like a local file. A fetch/upload failure refuses LOUD
+    // — never a dangling URL in the graph.
+    if (lower.startsWith("http://") || lower.startsWith("https://")) {
+      if (!(p in seen)) {
+        const ext = UPLOAD_EXTS.find((e: string): boolean => lower.endsWith(e)) ?? ".bin";
+        const { status, body } = await httpCall("GET", p, null, "application/json", 120000);
+        if (status !== 200 || !Buffer.isBuffer(body)) {
+          throw new ComfyError("linked input fetch failed (" + p + " " + status + ") — the upstream output is unreachable; re-run the producer card");
+        }
+        const tmp = join(tmpdir(), "melite-link-" + randomBytes(8).toString("hex") + ext);
+        writeFileSync(tmp, body);
+        seen[p] = (await uploadFile(server, tmp)).name;
+      }
+      return seen[p] as string;
+    }
     const cand: string = p.startsWith("/") ? p : join(process.cwd(), p);
     if (!isFile(cand)) return v;
     if (!(cand in seen)) seen[cand] = (await uploadFile(server, cand)).name;

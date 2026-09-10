@@ -21,7 +21,7 @@ import type { FactsFile } from "@melite/comfyui-card-kit/facts";
 import { registerCard } from "../src/card.ts";
 import { RECIPES, DEFAULT_RECIPE } from "../src/recipes.ts";
 
-const boot = async () => {
+const boot = async (mods: string[] = []) => {
   const ctx = new Context();
   const svc = new ComfyUIService(ctx);
   registerCard(ctx, svc);
@@ -42,7 +42,7 @@ const boot = async () => {
         variants: [],
         variant_groups: [],
         outputs: [],
-        mods: [],
+        mods,
       },
     },
     extension_node_types: {},
@@ -214,6 +214,54 @@ describe("the model-folder layer (the phantom that lied, 2026-09-10)", () => {
     const a = graphText(svc.compose("image-gen", "krea-2", { prompt: "a cat" }, "m-4a"));
     const b = graphText(svc.compose("image-gen", "z-image", { prompt: "a cat" }, "m-4b"));
     assert.ok(a.includes('"steps":20') && b.includes('"steps":30'), "rail selection resolves the row's defaults");
+    await ctx.fiber.dispose();
+  });
+});
+
+describe("the lora wire resolution (the id/name split, 2026-09-10)", () => {
+  // The 2026-09-06 wire flip moved the UI boundary to id-keyed rows
+  // ({id, strength}) but never the engine consumer — fireLoras read
+  // .name off id-keyed rows (undefined) and every LoRA run silently
+  // stacked nothing. compose resolves ids through the boarded
+  // family's flavor rows; filenames (card-authored recipe payloads)
+  // pass through; unknown ids refuse LOUD.
+  const loraBoot = async () => {
+    const { svc, ctx } = await boot(["loras"]);
+    ctx.effect(() => (svc as unknown as {
+      registerPack: (c: unknown) => void;
+      registerFlavor: (f: unknown) => void;
+    }).registerPack({ pack: "loras", fields: z.object({}) }));
+    ctx.effect(() => (svc as unknown as {
+      registerPack: (c: unknown) => void;
+      registerFlavor: (f: unknown) => void;
+    }).registerFlavor({
+      pack: "loras",
+      families: ["krea-2"],
+      rows: [{ id: "realism", filename: "krea-2/realism.safetensors", source_url: "https://example.invalid/r.safetensors" }],
+    }));
+    return { ctx, svc };
+  };
+
+  it("id-keyed UI rows resolve to filenames in the graph", async () => {
+    const { svc, ctx } = await loraBoot();
+    const graph = svc.compose("image-gen", "krea-2", {
+      prompt: "a cat", loras: [{ id: "realism", strength: 0.7 }],
+    }, "l-1");
+    assert.ok(
+      graphText(graph).includes("krea-2/realism.safetensors"),
+      "the flavor filename lands in the LoraLoader",
+    );
+    await ctx.fiber.dispose();
+  });
+
+  it("unknown lora ids refuse loud (never a silent plain run)", async () => {
+    const { svc, ctx } = await loraBoot();
+    assert.throws(
+      () => svc.compose("image-gen", "krea-2", {
+        prompt: "a cat", loras: [{ id: "hand-spelled" }],
+      }, "l-2"),
+      /hand-spelled/,
+    );
     await ctx.fiber.dispose();
   });
 });
