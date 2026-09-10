@@ -42,6 +42,8 @@ export * from "./mediaKinds.ts";
 export * from "./runsTypes.ts";
 export * from "./runsStart.ts";
 export * from "./discloseRegistry.ts";
+export * from "./skillPlane.ts";
+export * from "./skillRegistry.ts";
 export * from "./managePlane.ts";
 export * from "./manageRegistry.ts";
 export * from "./flowsData.ts";

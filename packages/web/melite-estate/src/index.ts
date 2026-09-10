@@ -33,6 +33,7 @@ import queuePlugin, {
   discloseProvider,
   manageProvider,
   runsRegistryPlugin,
+  skillProvider,
 } from "@melite/estate-queue";
 import { runsRemotePlugin } from "@melite/estate-runs";
 
@@ -61,6 +62,9 @@ const rows: readonly Plugin[] = [
   // The management seat (REBUILD-15): the ComfyUI-Manager plane —
   // gates on the timer seat (the rail's timeouts).
   manageProvider,
+  // The skills seat (REBUILD-16): the index + read over the
+  // doc-tree walks — gates on the queue seat (the ledger seam).
+  skillProvider,
   runsRegistryPlugin,
   runsRemotePlugin,
 ];

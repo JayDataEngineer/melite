@@ -994,3 +994,61 @@ export function registryFlowToInline(flow: RegistryFlow): Record<string, unknown
     }),
   };
 }
+
+
+// ── the skill-body render (REBUILD-16; the tail beyond the
+// REBUILD-13 cut) ──
+
+function edgeText(edge: RegistryEdge, flow: RegistryFlow): string {
+  if ("initial" in edge) return "initial '" + edge.initial + "'";
+  const src: string = edge.stage + "." + edge.output;
+  let kind = "";
+  for (const st of flow.stages) {
+    const base: RegistryStage = st.fromFlow !== null
+      ? resolveLink(st) ?? st
+      : st;
+    if (base.id === edge.stage) {
+      kind = base.outputs[edge.output] ?? base.cardIo[edge.output] ?? "";
+    }
+  }
+  return "stage " + src + (kind !== "" ? " (" + kind + ")" : "");
+}
+
+function resolveLink(st: RegistryStage): RegistryStage | null {
+  if (st.fromFlow === null) return null;
+  const link: RegistryFromFlow = st.fromFlow;
+  const src: RegistryFlow | undefined = REGISTRY[link.flow];
+  if (src === undefined) return null;
+  return src.stages.find((s: RegistryStage): boolean => s.id === link.stage) ??
+    null;
+}
+
+/** Render one registry flow as its skill-body text. */
+export function registrySkillBody(flow: RegistryFlow): string {
+  const lines: string[] = ["# flow " + flow.id, "", flow.description, "", "## stages"];
+  for (const st of flow.stages) {
+    const base: RegistryStage = st.fromFlow !== null ? (resolveLink(st) ?? st) : st;
+    let head = "- " + st.id + " (";
+    head += st.fromFlow !== null
+      ? "from " + st.fromFlow.flow + "/" + st.fromFlow.stage
+      : base.engine + (base.card !== "" ? ", card " + base.card : "");
+    head += ")";
+    if (base.description !== "") head += ": " + base.description;
+    lines.push(head);
+    for (const [name, edge] of Object.entries(st.inputs)) {
+      lines.push("  input " + name + ": " + edgeText(edge, flow));
+    }
+    for (const [name, kind] of Object.entries(base.outputs)) {
+      lines.push("  output " + name + ": " + kind);
+    }
+    for (const [name, kind] of Object.entries(base.cardIo)) {
+      lines.push("  card_io " + name + ": " + kind);
+    }
+    if (st.skipWhen !== null) {
+      lines.push(
+        "  skip when initial '" + st.skipWhen.initial + "' is " + st.skipWhen.when,
+      );
+    }
+  }
+  return lines.join("\n") + "\n";
+}

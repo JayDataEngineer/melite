@@ -81,6 +81,12 @@ interface Seats {
   manage?: {
     act(doc: unknown, signal: AbortSignal): Promise<unknown>
   }
+
+  /** The skills seat (REBUILD-16): the index + the doc read. */
+  skills?: {
+    index(): unknown
+    read(id: string, signal: AbortSignal): unknown
+  }
 }
 
 /** Route one KV/runs lane to its seat; undefined = no seat / no match. */
@@ -101,6 +107,7 @@ async function trySeats(
     get runs() { return probe.get('runs') as Seats['runs'] },
     get disclose() { return probe.get('disclose') as Seats['disclose'] },
     get manage() { return probe.get('manage') as Seats['manage'] },
+    get skills() { return probe.get('skills') as Seats['skills'] },
   }
   signal.throwIfAborted()
 
@@ -205,6 +212,17 @@ async function trySeats(
   if (method === 'POST' && path === '/v1/manage') {
     if (seats.manage === undefined) return undefined
     return seats.manage.act(body, signal)
+  }
+  // The skills lanes (REBUILD-16): the index + the doc read over
+  // the skills seat.
+  if (method === 'GET' && path === '/v1/skills') {
+    if (seats.skills === undefined) return undefined
+    return seats.skills.index()
+  }
+  m = /^\/v1\/skills\/([^/?]+)$/.exec(path)
+  if (method === 'GET' && m !== null) {
+    if (seats.skills === undefined) return undefined
+    return seats.skills.read(decodeURIComponent(m[1]!), signal)
   }
   return undefined
 }

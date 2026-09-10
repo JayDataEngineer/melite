@@ -1,7 +1,7 @@
 // discloseRegistry.ts — the disclosure seat (REBUILD-14, 2026-09-10):
 // Melite discover re-homed from the dead gateway's disclose door
 // (doors/disclose.ts, killed with the gateway app). The pures port
-// VERBATIM (searchCards / searchFlows / flowRows — the routing
+// VERBATIM (searchCards / searchFlows / flowSummaryRows — the routing
 // layer, no bodies); the door's HTTP shell dies, the seat answers.
 //
 // Division of enhance (operator law, 2026-09-09, unchanged):
@@ -94,7 +94,7 @@ export function searchFlows(
 
 /** The flow rows: REGISTRY (the compile truth) merged with the
  *  flows/<name>/tool.json leaf (the agent face: stage_title). */
-export function flowRows(repo: string): FlowSummary[] {
+export function flowSummaryRows(repo: string): FlowSummary[] {
   const out: FlowSummary[] = [];
   for (const name of registryFlowNames()) {
     const flow = getRegistryFlow(name);
@@ -138,7 +138,7 @@ export class DiscloseService extends Service {
     }
     const body: { flows?: FlowSummary[]; cards?: CardSummary[] } = {};
     if (lookup === "all" || lookup === "flows") {
-      body.flows = searchFlows(flowRows(resolveRepoRoot()), q);
+      body.flows = searchFlows(flowSummaryRows(resolveRepoRoot()), q);
     }
     if (lookup === "all" || lookup === "cards") {
       // property read: the hard inject (above) is the fiber's

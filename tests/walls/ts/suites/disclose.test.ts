@@ -180,3 +180,45 @@ async function manageRefusal(
     return { code: re.code, message: re.message, action: d.action };
   }
 }
+
+test("the skills seat — index + read, the door's voices (REBUILD-16)", async () => {
+  const root = mkdtempSync(join(tmpdir(), "disclose-wall-"));
+  const ctx = new Context();
+  process.env["MELITE_STATE_ROOT"] = root;
+  await ctx.plugin(timerPlugin as never);
+  await ctx.plugin(queuePlugin as never);
+  await ctx.plugin(Storage as never);
+  await ctx.plugin({ name: jsonName, inject: jsonInject, apply: jsonApply, Config: JsonConfig } as never, { root });
+  await ctx.plugin({ name: domainName, inject: domainInject, apply: domainApply, Config: DomainConfig } as never, { backend: "json" });
+  await ctx.plugin(draftsPlugin as never);
+  await ctx.plugin(cardRegistryProvider as never);
+  const { skillProvider } = await import("../../../../packages/harness/estate-queue/src/index.ts");
+  await ctx.plugin(skillProvider as never);
+  const skills = ctx.get("skills", false) as { index(): { count?: number; skills?: Array<{ id: string }> }; read(id: string, signal: AbortSignal): { id: string; content?: string } };
+  assert.ok(skills, "the skills seat is live");
+  // 1. the index: count + wire rows over BOTH planes (flows +
+  //    models + cards from the real doc tree).
+  const idx = skills.index();
+  assert.ok(typeof idx.count === "number" && idx.count > 0, "non-empty index");
+  const ids = (idx.skills ?? []).map((r) => r.id);
+  assert.ok(ids.some((id) => id.startsWith("flow:")), "flow rows present");
+  assert.ok(ids.some((id) => id.startsWith("model:")), "model rows present");
+  // 2. a flow skill read answers the DOC (the registry render or
+  //    the SKILL.md leaf).
+  const sig = new AbortController().signal;
+  const doc = skills.read("flow:fit-seat", sig);
+  assert.equal(doc.id, "flow:fit-seat");
+  assert.ok(typeof doc.content === "string" && doc.content.includes("fit-seat"), "body renders");
+  // 3. unknown ids answer the door's voice.
+  assert.throws(
+    () => skills.read("flow:no-such-flow", sig),
+    /no such skill: 'flow:no-such-flow'/,
+  );
+  // 4. the lane grammar serves both lanes from the seat.
+  const { makeEstateRequest } = await import("../../../../packages/harness/melite-tools/src/estate.ts");
+  const request = makeEstateRequest(ctx);
+  const laneIdx = (await request("GET", "/v1/skills", undefined, sig)) as { count?: number };
+  assert.ok(typeof laneIdx.count === "number" && (laneIdx.count ?? 0) > 0, "lane serves the index");
+  const laneDoc = (await request("GET", "/v1/skills/flow%3Afit-seat", undefined, sig)) as { id?: string };
+  assert.equal(laneDoc.id, "flow:fit-seat", "lane serves the read");
+});
