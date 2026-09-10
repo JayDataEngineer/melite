@@ -36,10 +36,8 @@ flowDir?: string
 
 /** A gallery mounted far from its estate names the OWNING DSH in
  * its profile row (config.gatewayUrl, REQUIRED in that posture —
- * the refusal below is loud). The retired :33081 second Loader is
- * deleted; same-host galleries never fetch at all (the lanes answer
- * in-process). */
-const DEFAULT_GATEWAY_URL = ''
+ * the refusal below is loud). No code default exists at all; a
+ * same-host gallery never fetches (the lanes answer in-process). */
 const DEFAULT_TIMEOUT_MS = 15_000
 const RUNS_UPSTREAM = '/v1/flows/runs?limit=50'
 /** The only gateway tree the artifact proxy may touch
@@ -58,7 +56,7 @@ function proxyAssetUrl(path: unknown): string {
 }
 
 export function apply(ctx: Context, config: Config = {}): void {
-  const gatewayUrl = (config.gatewayUrl ?? DEFAULT_GATEWAY_URL).replace(/\/+$/, '')
+  const gatewayUrl = (config.gatewayUrl ?? '').replace(/\/+$/, '')
   const timeoutMs = config.timeoutMs ?? DEFAULT_TIMEOUT_MS
   const flowDir = config.flowDir ?? DEFAULT_FLOW_DIR
 

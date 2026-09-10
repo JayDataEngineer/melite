@@ -17,7 +17,7 @@
  * layer (tests/routes/control/test_manage_route.py).
  *
  * Run: pnpm exec playwright test --config=playwright.config.ts
- * (deck :3909 + gateway :33081 are estate infrastructure — already
+ * (deck :3909 + the estate lanes are in-process infrastructure — already
  * up, never booted here).
  */
 import { expect, test, type Page } from '@playwright/test'

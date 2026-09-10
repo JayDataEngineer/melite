@@ -12,6 +12,7 @@
 // faces): the host that serves the GUI has one; a headless
 // composition skips and the claims' gallery simply cannot fetch.
 import type { Context } from '@deepseek-ai/cordis'
+import { callEstateLane } from '@melite/gateway-doors'
 import type {} from '@deepseek-ai/dsh-host-webserver'
 import Schema from '@deepseek-ai/schemastery'
 import { ASSET_ROUTE_PREFIX, RUN_ROUTE_PREFIX } from '@melite/viewer-base/wire'
@@ -20,43 +21,46 @@ export const name = '@melite/viewer'
 
 export const inject: string[] = []
 
+/** R5: the viewer answers over the estate lanes (in-process) — no
+ *  gateway URL, no port; the ctx carries the mounted listeners. */
 export interface Config {
-  gateway: string
+  gateway?: string
 }
 
 export const Config: Schema<Config> = Schema.object({
   gateway: Schema.string()
-    .default(process.env.MELITE_GATEWAY_URL || 'http://localhost:33081')
-    .description('The Melite gateway base URL (the run doors the viewer proxies)'),
+    .description('RETIRING: unused — the lanes answer in-process'),
 })
 
 const JSON_HEADERS = { 'content-type': 'application/json', 'cache-control': 'no-store' }
 
-/** One proxied fetch of a gateway door, JSON or bytes (testable in isolation). */
+/** One estate lane read, JSON or bytes (testable in isolation). */
 export async function proxyDoor(
-  gateway: string,
+  ctx: Context,
   upstreamPath: string,
   json: boolean,
   respond: (status: number, headers: Record<string, string>, body: string | Buffer) => void,
 ): Promise<void> {
   try {
-    const response = await fetch(gateway + upstreamPath, {
-      signal: AbortSignal.timeout(15e3),
-      headers: json ? { accept: 'application/json' } : {},
-    })
-    if (json) {
-      respond(response.status, JSON_HEADERS, await response.text())
+    const out = await callEstateLane(ctx, 'GET', upstreamPath)
+    if (out === undefined) {
+      respond(404, JSON_HEADERS, JSON.stringify({ error: 'no_lane', path: upstreamPath }))
       return
     }
-    const buffer = Buffer.from(await response.arrayBuffer())
-    respond(response.status, {
-      'content-type': response.headers.get('content-type') ?? 'application/octet-stream',
+    const bodyText = typeof out.body === 'string' ? out.body : JSON.stringify(out.body)
+    if (json) {
+      respond(out.status, JSON_HEADERS, bodyText)
+      return
+    }
+    const buffer = Buffer.from(bodyText)
+    respond(out.status, {
+      'content-type': out.contentType,
       'cache-control': 'public, max-age=60',
       'content-length': String(buffer.byteLength),
     }, buffer)
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error)
-    respond(502, JSON_HEADERS, JSON.stringify({ error: 'gateway_unreachable', message }))
+    respond(502, JSON_HEADERS, JSON.stringify({ error: 'estate_lane_failed', message }))
   }
 }
 
@@ -83,7 +87,7 @@ export function apply(ctx: Context, config: Config): void {
         res.end(JSON.stringify({ error: 'missing_run_id' }))
         return
       }
-      await proxyDoor(gateway, `/v1/flows/runs/${encodeURIComponent(runId)}`, true,
+      await proxyDoor(ctx, `/v1/flows/runs/${encodeURIComponent(runId)}`, true,
         (status, headers, body) => { res.writeHead(status, headers); res.end(body) })
     },
   }) as () => void, '@melite/viewer: run proxy route')
@@ -99,7 +103,7 @@ export function apply(ctx: Context, config: Config): void {
         res.end(JSON.stringify({ error: 'missing_asset_path' }))
         return
       }
-      await proxyDoor(gateway, `/v1/assets/runs/${rest}`, false,
+      await proxyDoor(ctx, `/v1/assets/runs/${rest}`, false,
         (status, headers, body) => { res.writeHead(status, headers); res.end(body) })
     },
   }) as () => void, '@melite/viewer: asset proxy route')

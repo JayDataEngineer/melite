@@ -1386,7 +1386,7 @@ function cmdManage(argv: string[]): number {
   // usage: provision manage <action> [key=value ...] [positional…]
   // The manage SSOT lives lane-side (the /v1/manage door); this is
   // its manual CLI, speaking HTTP — never an in-process import.
-  // The gateway URL is deployment config (MELITE_GATEWAY_URL or
+  // The gateway URL is deployment config (MELITE_DSH_URL or
   // --gateway); it is NEVER defaulted (the live PROD gateway is
   // never touched by accident).
   if (argv.length === 0 || argv[0] === "--help") {
@@ -1395,18 +1395,18 @@ function cmdManage(argv: string[]): number {
     console.log("  provision manage install-extension ComfyUI-KJNodes");
     console.log("  provision manage provision-model z-image");
     console.log("  provision manage logs tail=80");
-    console.log("gateway: MELITE_GATEWAY_URL or --gateway <url> (required)");
+    console.log("gateway: MELITE_DSH_URL or --gateway <url> (required)");
     return 1;
   }
   const rest = [...argv];
-  let gw = (process.env.MELITE_GATEWAY_URL ?? "").trim();
+  let gw = (process.env.MELITE_DSH_URL ?? "").trim();
   const gi = rest.indexOf("--gateway");
   if (gi >= 0) {
     gw = (rest[gi + 1] ?? "").trim();
     rest.splice(gi, 2);
   }
   if (!gw) {
-    die("no gateway URL — set MELITE_GATEWAY_URL or pass " +
+    die("no gateway URL — set MELITE_DSH_URL or pass " +
       "--gateway <url> (never defaulted; the live PROD gateway is " +
       "never touched by accident)");
   }

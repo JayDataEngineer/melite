@@ -69,7 +69,7 @@ function loadDoors() {
 let runsP;
 let shellP;
 const RUNS_SPEC = "@melite/gateway-doors";
-const SHELL_SPEC = "@melite/gateway-shell";
+const SHELL_SPEC = "@melite/gateway-doors";
 export function loadRuns() {
     runsP ??= import(RUNS_SPEC);
     return runsP;

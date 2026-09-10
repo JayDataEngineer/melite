@@ -2,7 +2,7 @@
  * `@melite-plugin/dsh-card-view` — host half.
  *
  * Registers one prefix route on the `webServer` service that proxies the Melite
- * gateway (:33081) under the DSH origin, so the browser card can read run
+ * estate lanes in-process under the DSH origin, so the browser card can read run
  * status and stream artifact thumbnails same-origin (no browser CORS). The
  * proxy is pass-through only: paths, queries, statuses, and error bodies are
  * forwarded verbatim — a bad run id surfaces the gateway's own 404, a bad
@@ -19,6 +19,7 @@
  * works but is retired.
  */
 import type { Context } from '@deepseek-ai/cordis'
+import { callEstateLane } from '@melite/gateway-doors'
 // Type-only: pulls the webServer service declaration onto Context.
 import type {} from '@deepseek-ai/dsh-host-webserver'
 
@@ -29,7 +30,6 @@ export const inject = ['webServer']
 
 export interface Config {
   /** Base URL of the Melite gateway (no trailing slash needed). */
-  gatewayUrl?: string
   /** Origin path prefix this plugin claims. */
   prefix?: string
   /** True on the package-name companion row: contribute the browser bundle only, register nothing. */
@@ -51,7 +51,8 @@ export function apply(ctx: Context, config: Config = {}): void {
     return
   }
 
-  const gatewayUrl = (config.gatewayUrl ?? 'http://127.0.0.1:33081').replace(/\/+$/, '')
+  void config
+  void timeoutMs
   const prefix = config.prefix ?? '/melite-proxy'
   const timeoutMs = config.timeoutMs ?? 30_000
 
@@ -66,7 +67,6 @@ export function apply(ctx: Context, config: Config = {}): void {
       const subPath = url.pathname.startsWith(prefix + '/')
         ? url.pathname.slice(prefix.length)
         : '/'
-      const target = gatewayUrl + subPath + url.search
       const method = req.method ?? 'GET'
       const headers: Record<string, string> = {}
       const contentType = req.headers['content-type']
@@ -84,33 +84,40 @@ export function apply(ctx: Context, config: Config = {}): void {
       }
 
       try {
-        const upstream = await fetch(target, {
-          method,
-          headers,
-          body,
-          signal: AbortSignal.timeout(timeoutMs),
-        })
-        const payload = Buffer.from(await upstream.arrayBuffer())
+        // THE ESTATE LANES (R5): same host answers in-process — the
+        // browser card's reads never leave the ONE DSH. Body bytes
+        // ride JSON when present (the lane contract), else absent.
+        let laneBody: unknown
+        if (body !== undefined) {
+          const bytes = body instanceof Uint8Array ? body : new Uint8Array()
+          laneBody = JSON.parse(new TextDecoder().decode(bytes) || 'null')
+        }
+        const out = await callEstateLane(ctx, method === 'HEAD' ? 'GET' : method, subPath + url.search, laneBody)
+        if (out === undefined) {
+          res.writeHead(404, { 'content-type': 'application/json' })
+          res.end(JSON.stringify({ error: 'no estate lane claims ' + subPath }))
+          return
+        }
+        const payload = Buffer.from(typeof out.body === 'string' ? out.body : JSON.stringify(out.body))
         const outHeaders: Record<string, string> = { 'cache-control': 'no-cache' }
-        const upstreamType = upstream.headers.get('content-type')
-        outHeaders['content-type'] = upstreamType ?? 'application/octet-stream'
-        // decoded-length framing: undici decompresses gzip transparently, so
-        // the only safe content-length is the one we measured ourselves.
+        outHeaders['content-type'] = out.contentType
+        // decoded-length framing: the only safe content-length is the
+        // one we measured ourselves.
         outHeaders['content-length'] = String(payload.byteLength)
-        res.writeHead(upstream.status, outHeaders)
+        res.writeHead(out.status, outHeaders)
         res.end(payload)
       } catch (error) {
-        // Upstream unreachable/timed out: our own 502 — the one status this
-        // route invents; every gateway answer passes through untouched.
+        // Lane failure: our own 502 — the one status this route
+        // invents; every estate answer passes through untouched.
         res.writeHead(502, { 'content-type': 'application/json' })
         res.end(JSON.stringify({
-          error: 'melite gateway unreachable',
-          target,
+          error: 'estate lane failed',
+          path: subPath,
           detail: error instanceof Error ? error.message : String(error),
         }))
       }
     },
   }), 'melite-card-view: gateway proxy route')
 
-  ctx.logger.info('melite-card-view proxying %s/* -> %s', prefix, gatewayUrl)
+  ctx.logger.info('melite-card-view serving %s/* over the estate lanes (in-process)', prefix)
 }

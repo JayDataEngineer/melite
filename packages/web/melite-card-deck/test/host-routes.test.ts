@@ -125,7 +125,7 @@ describe('registration shape (the host registry relies on it)', () => {
 describe('FAILURE CONTRACT: dead gateway -> 502 gateway_unreachable, never a throw', () => {
   test('THE OPERATOR CASE: GET /v1/model-catalog -> 502 JSON with the TypeError named', async () => {
     globalThis.fetch = DEAD_GATEWAY
-    const { routes } = mount({ gatewayUrl: 'http://localhost:33081' })
+    const { routes } = mount({}) // R5: no gatewayUrl — the lanes answer in-process
     const saw = await hit(routes, '/v1/model-catalog')
     expect(saw.status).toBe(502)
     expect(saw.headers['content-type']).toContain('application/json')

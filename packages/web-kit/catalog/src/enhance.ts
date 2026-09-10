@@ -128,7 +128,7 @@ export function resolvePickerRoute(
  * host — same origin from the chat embed — completes the enhancement with the
  * harness's OWN model (ctx.llm). NO keystore key involved, so inside the GUI
  * the Enhance button can never answer "no model". Returns null when this
- * editor is NOT running under the DSH host (standalone :5173/:33081 — the
+ * editor is NOT running under the DSH host (standalone dev :5173 — the
  * route isn't there; Vite SPA-fallbacks answer HTML), letting the caller use
  * the keystore flow.
  */

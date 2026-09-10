@@ -5,45 +5,42 @@
 // All calls go through the ONE run door, the status poll, and the
 // form-spec pre-flight. ALWAYS call get_flow_spec BEFORE submitting.
 
-const GATEWAY = process.env.MELITE_GATEWAY_URL || "http://localhost:33081"
+// The estate answers in-process (callEstateLane) — no URL, no port.
+import { callEstateLane } from "@melite/gateway-doors"
+import type { Context } from "@deepseek-ai/cordis"
+
 const TIMEOUT_MS = 30_000
 
-/** Ledger row 32 (2026-09-10, the studio leg): the deadline is
- *  FUSED with the caller's cancellation — the consuming agent's
- *  tool executor passes its exec signal; either leg aborts the
- *  fetch. A bare caller signal (no fuse) would drop the timeout
- *  cap; the old timeout-only shape ignored caller cancellation. */
-function fuseSignal(caller?: AbortSignal): AbortSignal {
-  return caller === undefined
-    ? AbortSignal.timeout(TIMEOUT_MS)
-    : AbortSignal.any([AbortSignal.timeout(TIMEOUT_MS), caller])
+/** The estate ctx (set once by the manifest door that serves these
+ *  tools — the lanes answer through its mounted listeners). */
+let estateCtx: Context | undefined
+
+/** Wire the estate context (the serving door calls this at mount). */
+export function bindEstate(ctx: Context): void {
+  estateCtx = ctx
 }
 
-async function getJson(path: string, signal?: AbortSignal): Promise<Record<string, unknown>> {
-  const resp = await fetch(GATEWAY + path, { signal: fuseSignal(signal) })
-  if (!resp.ok) throw new Error("GET " + path + " -> " + resp.status + " " + resp.statusText)
-  return (await resp.json()) as Record<string, unknown>
-}
-
-async function postJson(path: string, body: Record<string, unknown>, signal?: AbortSignal): Promise<Record<string, unknown>> {
-  const resp = await fetch(GATEWAY + path, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(body),
-    signal: fuseSignal(signal),
-  })
-  if (!resp.ok) throw new Error("POST " + path + " -> " + resp.status + " " + resp.statusText)
-  return (await resp.json()) as Record<string, unknown>
+async function laneJson(method: "GET" | "POST", path: string, body?: Record<string, unknown>, signal?: AbortSignal): Promise<Record<string, unknown>> {
+  const timeout = AbortSignal.timeout(TIMEOUT_MS)
+  const fused = signal === undefined ? timeout : AbortSignal.any([timeout, signal])
+  fused.throwIfAborted()
+  if (estateCtx === undefined) throw new Error("mask-studio tools: no estate context bound (bindEstate)")
+  const out = await callEstateLane(estateCtx, method, path, body)
+  if (out === undefined) throw new Error("no estate lane claims " + method + " " + path)
+  if (out.status < 200 || out.status >= 300) {
+    throw new Error(method + " " + path + " -> " + String(out.status) + " " + String(out.body).slice(0, 120))
+  }
+  return (typeof out.body === "string" ? JSON.parse(out.body) : out.body) as Record<string, unknown>
 }
 
 /** Pre-flight: the form spec for a model route (fields + defaults). */
 export async function getFlowSpec(route: string = "mask-studio", signal?: AbortSignal): Promise<Record<string, unknown>> {
-  return getJson("/v1/form-spec?model=" + encodeURIComponent(route), signal)
+  return laneJson("GET", "/v1/form-spec?model=" + encodeURIComponent(route), signal)
 }
 
 /** Poll a running generation — brick progress + the output artifacts. */
 export async function getRunStatus(runId: string, signal?: AbortSignal): Promise<Record<string, unknown>> {
-  return getJson("/v1/flows/status/" + encodeURIComponent(runId), signal)
+  return laneJson("GET", "/v1/flows/status/" + encodeURIComponent(runId), signal)
 }
 
 export interface MaskRunArgs {
@@ -96,7 +93,7 @@ export async function submitMaskRun(args: MaskRunArgs, signal?: AbortSignal): Pr
   if (outputs !== undefined) body.outputs = outputs
   Object.assign(body, params) // forwarded verbatim; the compile layer rejects loudly
   body.draft_id = await ensureDraftId(body, signal)
-  return postJson("/v1/flows/start", body, signal)
+  return laneJson("POST", "/v1/flows/start", body, signal)
 }
 
 export interface BundleToolSpec {

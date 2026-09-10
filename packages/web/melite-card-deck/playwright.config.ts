@@ -8,8 +8,8 @@ import { defineConfig, devices } from '@playwright/test'
  * (tests/unit/estate/test_manage_handlers.py) and the live-door
  * layer (tests/routes/control/test_manage_route.py).
  *
- * The deck host (:3909) and the gateway (:33081) are estate
- * infrastructure — already up, never booted here.
+ * The deck host (:3909) is estate infrastructure (the lanes answer
+ * in-process) — already up, never booted here.
  */
 export default defineConfig({
   testDir: './e2e',

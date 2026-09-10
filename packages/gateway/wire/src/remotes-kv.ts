@@ -79,7 +79,7 @@ function loadDoors(): Promise<DoorsFace> {
 let runsP: Promise<RunsFace> | undefined;
 let shellP: Promise<ShellFace> | undefined;
 const RUNS_SPEC = "@melite/gateway-doors";
-const SHELL_SPEC = "@melite/gateway-shell";
+const SHELL_SPEC = "@melite/gateway-doors";
 
 export function loadRuns(): Promise<RunsFace> {
   runsP ??= import(RUNS_SPEC) as unknown as Promise<RunsFace>;

@@ -1173,6 +1173,9 @@ importers:
       '@melite/formats':
         specifier: workspace:*
         version: link:../../web-kit/formats
+      '@melite/gateway-doors':
+        specifier: workspace:*
+        version: link:../../gateway/doors
       '@melite/ui':
         specifier: workspace:*
         version: link:../../web-kit/ui
@@ -2547,6 +2550,10 @@ importers:
         version: 4.1.11(@opentelemetry/api@1.9.1)(@types/node@22.20.1)(happy-dom@20.13.1)(jsdom@29.1.1)(vite@8.2.2(@types/node@22.20.1)(jiti@2.7.0)(yaml@2.9.0))
 
   packages/web/melite-card-view:
+    dependencies:
+      '@melite/gateway-doors':
+        specifier: workspace:*
+        version: link:../../gateway/doors
     devDependencies:
       '@deepseek-ai/cordis':
         specifier: ^4.0.1
@@ -2629,6 +2636,9 @@ importers:
       '@deepseek-ai/cordis':
         specifier: ^4.0.2
         version: 4.0.2(@deepseek-ai/cordis-plugin-include@1.0.6)(@deepseek-ai/cordis-plugin-loader@1.0.3)
+      '@melite/gateway-doors':
+        specifier: workspace:*
+        version: link:../../gateway/doors
       '@melite/image-image-gen':
         specifier: workspace:*
         version: link:../../image/image-gen

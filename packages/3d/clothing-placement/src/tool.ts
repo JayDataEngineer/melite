@@ -37,8 +37,6 @@ export const TOOL_NAME = "clothing_placement";
 /** The Melite gateway base URL default (the loopback listen — the
  *  same value melite-tools' Config defaults to; a plugin Config owns
  *  its own default). */
-export const DEFAULT_GATEWAY_URL = "http://localhost:33081";
-
 /** Gateway answered non-2xx; body carried verbatim (the named
  *  refusal — RayGatewayError's counterpart, owned by this package:
  *  cross-package imports of host internals are not a seam). */
