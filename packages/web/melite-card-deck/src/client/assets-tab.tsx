@@ -31,6 +31,7 @@
  * since 20eb2c58 (own plugin, own host routes); Ray Flows retired with
  * the yaml spec library (35f2f830).
  */
+import * as React from 'react'
 import { useCallback, useEffect, useState } from 'react'
 import css from './assets.module.css'
 
@@ -57,18 +58,22 @@ interface StatusView {
   routing?: Record<string, unknown>
 }
 
-/** POST one manage action (same-origin: the deck host proxies /v1). */
-async function postManage(action: string, payload: Record<string, unknown>): Promise<ManageReply> {
-  const res = await fetch('/v1/manage', {
-    method: 'POST',
-    headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ action, ...payload }),
-  })
-  // The proxy answers non-2xx with JSON bodies of its own; parse either.
+/** The estate lane face the deck client rides (R4): the typert
+ * gateway's lane remote — the SAME door listener the /v1/manage
+ * route wrapped, called through DSH's own transport. Stated
+ * structurally; the client entry threads ctx.remote here. */
+export interface EstateLaneRemote {
+  lane(method: 'GET' | 'POST' | 'PATCH', path: string, body: unknown, signal?: AbortSignal): Promise<unknown>
+}
+
+/** POST one manage action over the estate lane. A refusal is a
+ * DOMAIN outcome — the ManageReply carries it, never a throw past
+ * the panel (the door contract, unchanged). */
+async function postManage(remote: EstateLaneRemote, action: string, payload: Record<string, unknown>): Promise<ManageReply> {
   try {
-    return await res.json() as ManageReply
-  } catch {
-    return { action, ok: false, detail: 'HTTP ' + String(res.status) }
+    return await remote.lane('POST', '/v1/manage', { action, ...payload }) as ManageReply
+  } catch (e) {
+    return { action, ok: false, detail: e instanceof Error ? e.message : String(e) }
   }
 }
 
@@ -151,7 +156,7 @@ const MUTATING: ReadonlySet<string> = new Set([
  * result pane; mutating actions confirm first with the exact dispatch
  * and silently refresh the status section afterwards.
  */
-export function ComfyManagerPanel(): React.ReactElement {
+export function ComfyManagerPanel({ remote }: { remote?: EstateLaneRemote }): React.ReactElement {
   const [status, setStatus] = useState<StatusView | null>(null)
   const [statusDetail, setStatusDetail] = useState('')
   const [busy, setBusy] = useState<string | null>(null)
@@ -183,7 +188,7 @@ export function ComfyManagerPanel(): React.ReactElement {
    * reply landing there used to wipe search/browse results. */
   const fetchStatus = useCallback(async (): Promise<void> => {
     try {
-      const reply = await postManage('status', {})
+      const reply = remote !== undefined ? await postManage(remote, 'status', {}) : { action: 'status', ok: false, detail: 'no estate lane remote — the deck client did not thread ctx.remote' }
       if (reply.ok === true) {
         setStatus(reply.data as StatusView | undefined ?? null)
       }
@@ -202,7 +207,7 @@ export function ComfyManagerPanel(): React.ReactElement {
   const run = useCallback(async (action: string, payload: Record<string, unknown> = {}): Promise<ManageReply | null> => {
     setBusy(action)
     try {
-      const reply = await postManage(action, payload)
+      const reply = remote !== undefined ? await postManage(remote, action, payload) : { action, ok: false, detail: 'no estate lane remote — the deck client did not thread ctx.remote' }
       setResult(reply)
       return reply
     } catch (e) {
@@ -489,6 +494,9 @@ function ComfyIcon({ size }: { size: number }) {
 
 interface TabCtx {
   effect(fn: () => void, name?: string): unknown
+  /** The typert gateway's client transport (threaded by the entry's
+   * inject; optional so a bare mount still renders a refusal). */
+  remote?: EstateLaneRemote
   /** The native right-sidebar tab registry (ui-sidebar-right — the
    *  better-sidebar registry retired with the plugin, 2026-09-10). */
   sidebarRightTabs: {
@@ -525,9 +533,12 @@ function register(ctx: TabCtx, id: string, kind: string, title: string, guideOrd
   }), 'ray-card-deck: ' + id + ' tab type')
   // Stage two — the body, dispatched under the type's id.
   ctx.slots.inject('sidebar.right.pane.tab', () => {
+    const wired = ctx.remote !== undefined
+      ? (() => { const C = component; return (props: Record<string, unknown>): React.JSX.Element => React.createElement(C, { ...props, remote: ctx.remote }) })()
+      : component
     const dispose = ctx.slots.register(
       { name: 'sidebar.right.pane.tab', key: id },
-      component,
+      wired,
     )
     return typeof dispose === 'function' ? dispose : () => {}
   })

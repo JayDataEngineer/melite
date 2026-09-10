@@ -106,6 +106,24 @@ export class RunsRemoteService extends TypertRemoteService {
    *  lane rides this remote; the /v1 door stays until R5 deletes
    *  it). Late-bound domain calls, same late-bind law as the KV
    *  remotes in remotes-kv.ts. */
+  /** lane — EVERY estate lane over one method (R4): the browser
+   *  faces (studios, deck tabs, gallery) call the same door
+   *  listeners the route rows wrap, in-process behind the gateway.
+   *  Named remotes may specialize later; this one retires the
+   *  same-origin /v1 fetches wholesale. */
+  @Remote("lane")
+  async lane(method: string, path: string, body: unknown, signal: AbortSignal): Promise<unknown> {
+    signal.throwIfAborted();
+    const DOORS = "@melite/gateway-doors";
+    const doors = await import(DOORS) as unknown as {
+      callEstateLane(ctx: unknown, method: string, path: string, body: unknown): Promise<{ status: number; body: unknown } | undefined>;
+    };
+    const out = await doors.callEstateLane(this.ctx, method, path, body);
+    if (out === undefined) throw new Error("no estate lane claims " + method + " " + path);
+    if (out.status >= 200 && out.status < 300) return out.body;
+    throw new Error("estate lane " + method + " " + path + " answered " + String(out.status));
+  }
+
   @Remote("list")
   async list(limit: number, signal: AbortSignal): Promise<unknown> {
     signal.throwIfAborted();

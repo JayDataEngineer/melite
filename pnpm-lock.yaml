@@ -2450,6 +2450,10 @@ importers:
   packages/web/editor-shell: {}
 
   packages/web/infer-gallery:
+    dependencies:
+      '@melite/gateway-doors':
+        specifier: workspace:*
+        version: link:../../gateway/doors
     devDependencies:
       '@deepseek-ai/cordis':
         specifier: ^4.0.1

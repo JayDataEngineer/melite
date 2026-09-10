@@ -16,6 +16,7 @@
  * response lifecycle; the proxy never throws.
  */
 import type { Context } from '@deepseek-ai/cordis'
+import { callEstateLane } from '@melite/gateway-doors'
 // Type-only: pulls the webServer service declaration onto Context.
 import type {} from '@deepseek-ai/dsh-host-webserver'
 
@@ -33,7 +34,12 @@ timeoutMs?: number
 flowDir?: string
 }
 
-const DEFAULT_GATEWAY_URL = 'http://localhost:33081'
+/** A gallery mounted far from its estate names the OWNING DSH in
+ * its profile row (config.gatewayUrl, REQUIRED in that posture —
+ * the refusal below is loud). The retired :33081 second Loader is
+ * deleted; same-host galleries never fetch at all (the lanes answer
+ * in-process). */
+const DEFAULT_GATEWAY_URL = ''
 const DEFAULT_TIMEOUT_MS = 15_000
 const RUNS_UPSTREAM = '/v1/flows/runs?limit=50'
 /** The only gateway tree the artifact proxy may touch
@@ -56,8 +62,26 @@ export function apply(ctx: Context, config: Config = {}): void {
   const timeoutMs = config.timeoutMs ?? DEFAULT_TIMEOUT_MS
   const flowDir = config.flowDir ?? DEFAULT_FLOW_DIR
 
-  const upstream = (path: string): Promise<Response> =>
-    fetch(`${gatewayUrl}${path}`, { signal: AbortSignal.timeout(timeoutMs) })
+  const inEstateHost = (ctx as { runsRemote?: unknown }).runsRemote !== undefined
+  const gatewayUrlResolved = gatewayUrl === '' && !inEstateHost
+    ? ''
+    : gatewayUrl
+  if (gatewayUrlResolved === '' && !inEstateHost) {
+    throw new Error('infer-gallery: this host does not mount the estate and no gatewayUrl is pinned — name the owning DSH (QUEUE LANE LAW)')
+  }
+  const upstream = async (path: string): Promise<Response> => {
+    // Same host: the estate's own lanes, in-process (no HTTP, no
+    // port). Cross-host: the pinned owning DSH over HTTP.
+    if (inEstateHost) {
+      const out = await callEstateLane(ctx, 'GET', path)
+      if (out === undefined) throw new Error('infer-gallery: no estate lane claims GET ' + path)
+      return new Response(typeof out.body === 'string' ? out.body : JSON.stringify(out.body), {
+        status: out.status,
+        headers: { 'content-type': out.contentType },
+      })
+    }
+    return fetch(`${gatewayUrlResolved}${path}`, { signal: AbortSignal.timeout(timeoutMs) })
+  }
 
   ctx.logger.info('infer-gallery proxying %s (gateway %s)', RUNS_UPSTREAM, gatewayUrl)
 

@@ -94,7 +94,15 @@ function registerRow(
  *  routes wrap, so the estate answers without HTTP ever entering
  *  the path; the route rows themselves are the browser's face
  *  until R5 retires them). */
-const laneListeners: WeakMap<Context, DoorListener[]> = new WeakMap();
+const laneListeners: WeakMap<object, DoorListener[]> = new WeakMap();
+
+/** cordis child contexts are distinct objects over ONE runtime —
+ *  key the registry on the runtime so any sibling (the wire
+ *  service's ctx, a tool's ctx) reaches the same listeners. */
+function laneKey(ctx: Context): object {
+  const rt: unknown = (ctx as unknown as { runtime?: object }).runtime;
+  return typeof rt === "object" && rt !== null ? rt : (ctx as unknown as object);
+}
 
 /** Call the estate in-process: method + pathname (+ optional JSON
  *  body) → the owning door's DispatchResult, or undefined when no
@@ -106,7 +114,7 @@ export async function callEstateLane(
   pathname: string,
   body?: unknown,
 ): Promise<import("@melite/gateway-core").DispatchResult | undefined> {
-  const listeners: DoorListener[] = laneListeners.get(ctx) ?? [];
+  const listeners: DoorListener[] = laneListeners.get(laneKey(ctx)) ?? [];
   const rawBody: Uint8Array = body === undefined
     ? new Uint8Array(0)
     : new TextEncoder().encode(JSON.stringify(body));
@@ -130,8 +138,8 @@ export function mountDoorRoutes(
   listen: DoorListener,
 ): void {
   const mine: readonly string[] = handlers;
-  const lane: DoorListener[] = laneListeners.get(ctx) ?? [];
-  laneListeners.set(ctx, lane);
+  const lane: DoorListener[] = laneListeners.get(laneKey(ctx)) ?? [];
+  laneListeners.set(laneKey(ctx), lane);
   lane.push(listen);
   const mounted: Set<string> = new Set();
   for (const row of ROUTES) {

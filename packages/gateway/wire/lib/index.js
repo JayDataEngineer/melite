@@ -91,13 +91,16 @@ let RunsRemoteService = (() => {
     let _classSuper = TypertRemoteService;
     let _instanceExtraInitializers = [];
     let _statusForClient_decorators;
+    let _lane_decorators;
     let _list_decorators;
     return class RunsRemoteService extends _classSuper {
         static {
             const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(_classSuper[Symbol.metadata] ?? null) : void 0;
             _statusForClient_decorators = [Remote("status")];
+            _lane_decorators = [Remote("lane")];
             _list_decorators = [Remote("list")];
             __esDecorate(this, null, _statusForClient_decorators, { kind: "method", name: "statusForClient", static: false, private: false, access: { has: obj => "statusForClient" in obj, get: obj => obj.statusForClient }, metadata: _metadata }, null, _instanceExtraInitializers);
+            __esDecorate(this, null, _lane_decorators, { kind: "method", name: "lane", static: false, private: false, access: { has: obj => "lane" in obj, get: obj => obj.lane }, metadata: _metadata }, null, _instanceExtraInitializers);
             __esDecorate(this, null, _list_decorators, { kind: "method", name: "list", static: false, private: false, access: { has: obj => "list" in obj, get: obj => obj.list }, metadata: _metadata }, null, _instanceExtraInitializers);
             if (_metadata) Object.defineProperty(this, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
         }
@@ -123,6 +126,22 @@ let RunsRemoteService = (() => {
          *  lane rides this remote; the /v1 door stays until R5 deletes
          *  it). Late-bound domain calls, same late-bind law as the KV
          *  remotes in remotes-kv.ts. */
+        /** lane — EVERY estate lane over one method (R4): the browser
+         *  faces (studios, deck tabs, gallery) call the same door
+         *  listeners the route rows wrap, in-process behind the gateway.
+         *  Named remotes may specialize later; this one retires the
+         *  same-origin /v1 fetches wholesale. */
+        async lane(method, path, body, signal) {
+            signal.throwIfAborted();
+            const DOORS = "@melite/gateway-doors";
+            const doors = await import(DOORS);
+            const out = await doors.callEstateLane(this.ctx, method, path, body);
+            if (out === undefined)
+                throw new Error("no estate lane claims " + method + " " + path);
+            if (out.status >= 200 && out.status < 300)
+                return out.body;
+            throw new Error("estate lane " + method + " " + path + " answered " + String(out.status));
+        }
         async list(limit, signal) {
             signal.throwIfAborted();
             const runs = await remotesKv.loadRuns();

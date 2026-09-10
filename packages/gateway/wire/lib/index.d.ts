@@ -25,6 +25,12 @@ export declare class RunsRemoteService extends TypertRemoteService {
      *  lane rides this remote; the /v1 door stays until R5 deletes
      *  it). Late-bound domain calls, same late-bind law as the KV
      *  remotes in remotes-kv.ts. */
+    /** lane — EVERY estate lane over one method (R4): the browser
+     *  faces (studios, deck tabs, gallery) call the same door
+     *  listeners the route rows wrap, in-process behind the gateway.
+     *  Named remotes may specialize later; this one retires the
+     *  same-origin /v1 fetches wholesale. */
+    lane(method: string, path: string, body: unknown, signal: AbortSignal): Promise<unknown>;
     list(limit: number, signal: AbortSignal): Promise<unknown>;
 }
 /** Provider plugin (manifest row `gateway-wire`): owns the Remote

@@ -24,7 +24,9 @@ import { registerRayAssetsTab } from './assets-tab.tsx'
 
 /** 'slots' (seat declarations) + the native right-sidebar tab registry
  * (ui-sidebar-right, the web profile's own subsystem) — hosts the tabs. */
-export const inject = ['slots', 'sidebarRightTabs']
+/** R4: the deck's lane faces (the ComfyUI manager tab) ride
+ * ctx.remote — the typert gateway's estate lane. */
+export const inject = ['slots', 'sidebarRightTabs', 'remote']
 
 export function apply(ctx: ClientContext): void {
   if (!claimDeckApply()) return
