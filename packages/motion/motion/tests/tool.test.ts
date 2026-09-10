@@ -6,7 +6,9 @@ import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import { buildMotionTool, TOOL_NAME } from "../src/tool.ts";
 
-const tool = buildMotionTool("http://127.0.0.1:1");
+const REFUSING_CALL = async (): Promise<never> => { throw new Error("face tests never call the seam") }
+
+const tool = buildMotionTool(REFUSING_CALL);
 
 describe("the motion tool face", () => {
   it("names itself on the tool plane (plain id, no _card suffix)", () => {

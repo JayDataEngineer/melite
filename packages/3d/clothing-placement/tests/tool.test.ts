@@ -17,7 +17,6 @@
 //     works end-to-end.
 import { describe, it, before, after } from "node:test";
 import assert from "node:assert/strict";
-import { createServer, type Server } from "node:http";
 import { Context, Service } from "@deepseek-ai/cordis";
 import { ComfyUIService } from "@melite/comfyui-cordis/service";
 import { emitParamsSpec } from "@melite/comfyui-cordis/params-emit";
@@ -27,36 +26,30 @@ import { parameterSchemaSpecToJsonSchema } from "@deepseek-ai/dsh-tools";
 import type { ToolDefinition } from "@deepseek-ai/dsh-tools";
 import { identity, schema } from "../src/card.ts";
 
+const REFUSING_CALL = async (): Promise<never> => { throw new Error("face tests never call the seam") }
 
-// ── stub gateway (the external service, mocked) ────────────────────
-let server: Server;
-let baseUrl = "";
+
+// ── the recording seam (EstateCall, the transport contract) ─────────
+// The same image-gen pattern: the fake IS the estate's far side;
+// no HTTP, no server, no port.
+import { GatewayError, type EstateCall } from "@melite/estate-call";
+
 const calls: Array<{ method: string; path: string; body: Record<string, unknown> }> = [];
 let draftsStatus = 200;
 let draftsBody: Record<string, unknown> = { draftId: "d_stub_1" };
 let startBody: Record<string, unknown> = { run_id: "r_stub_9", status: "queued" };
 
-before(async () => {
-  server = createServer((req, res) => {
-    const chunks: Buffer[] = [];
-    req.on("data", (d?: Buffer) => { if (d) chunks.push(d); });
-    req.on("end", () => {
-      const body = chunks.length ? JSON.parse(Buffer.concat(chunks).toString("utf8")) as Record<string, unknown> : {};
-      calls.push({ method: String(req.method), path: String(req.url), body });
-      const json = (status: number, payload: unknown) => {
-        res.writeHead(status, { "content-type": "application/json" });
-        res.end(JSON.stringify(payload));
-      };
-      if (req.url === "/v1/flows/drafts") return json(draftsStatus, draftsBody);
-      if (req.url === "/v1/flows/start") return json(200, startBody);
-      json(404, { error: "no such door" });
-    });
-  });
-  await new Promise<void>((r) => server.listen(0, "127.0.0.1", r));
-  baseUrl = `http://127.0.0.1:${(server.address() as { port: number }).port}`;
-});
-
-after(() => { server.close(); });
+const seam: EstateCall = async (method, path, body) => {
+  calls.push({ method, path, body: body as Record<string, unknown> });
+  const reply = path === "/v1/flows/drafts"
+    ? { status: draftsStatus, body: draftsBody }
+    : { status: 200, body: startBody };
+  if (reply.status < 200 || reply.status >= 300) {
+    const message = (reply.body as { error?: string }).error ?? "door refused";
+    throw new GatewayError(reply.status, JSON.stringify(reply.body), message);
+  }
+  return reply.body;
+};
 
 // Minimal ToolRunContext per the contract's required identity fields
 // (the registry materializes real ones; tests fill every required
@@ -75,7 +68,7 @@ const exec = {
 } as unknown as Parameters<ToolDefinition["execute"]>[1];
 
 describe("single spelling (the emission derives from the card)", () => {
-  const tool = buildCardTool("http://irrelevant");
+  const tool = buildCardTool(REFUSING_CALL);
 
   it("name is the TOOL-plane law: id, hyphens\u2192underscores, no suffix", () => {
     // Two planes: the DSH tool is clothing_placement (cookbook's
@@ -114,7 +107,7 @@ describe("the executor path (two doors, flow law)", () => {
     calls.length = 0;
     draftsStatus = 200; draftsBody = { draftId: "d_77" };
     startBody = { run_id: "r_9", status: "queued" };
-    const value = (await buildCardTool(baseUrl).execute(
+    const value = (await buildCardTool(seam).execute(
       FULL_ARGS, exec,
     )) as Record<string, string>;
     assert.equal(calls.length, 2, "exactly two doors");
@@ -130,14 +123,14 @@ describe("the executor path (two doors, flow law)", () => {
     // Schema-complete args: defineTool auto-validates before execute,
     // so the refusal under test is the GATEWAY's, not the schema's.
     draftsStatus = 422; draftsBody = { error: "cardGate: garment not staged on this estate" };
-    const value = (await buildCardTool(baseUrl).execute(FULL_ARGS, exec)) as Record<string, string>;
+    const value = (await buildCardTool(seam).execute(FULL_ARGS, exec)) as Record<string, string>;
     assert.equal(value.error, "cardGate: garment not staged on this estate");
     draftsStatus = 200; draftsBody = { draftId: "d_1" };
   });
 
   it("a mint without draftId is a refusal value", async () => {
     draftsBody = { ok: true };
-    const value = (await buildCardTool(baseUrl).execute(FULL_ARGS, exec)) as Record<string, string>;
+    const value = (await buildCardTool(seam).execute(FULL_ARGS, exec)) as Record<string, string>;
     assert.equal(value.error, "card compose returned no draftId");
   });
 
@@ -146,20 +139,20 @@ describe("the executor path (two doors, flow law)", () => {
     const ctl = new AbortController();
     ctl.abort();
     await assert.rejects(
-      buildCardTool(baseUrl).execute(FULL_ARGS, { ...exec, signal: ctl.signal }),
+      buildCardTool(seam).execute(FULL_ARGS, { ...exec, signal: ctl.signal }),
     );
     assert.equal(calls.length, 0, "no door was touched");
   });
 
   it("schema-incomplete args are refused by the contract's own validation", async () => {
     await assert.rejects(
-      buildCardTool(baseUrl).execute({ body: "/tmp/b.glb" }, exec),
+      buildCardTool(seam).execute({ body: "/tmp/b.glb" }, exec),
       /garment|out_path/,
     );
   });
 
   it("the renderer explains refusals and run ids", () => {
-    const tool = buildCardTool(baseUrl);
+    const tool = buildCardTool(seam);
     const refused = tool.output.render({}, { error: "nope" });
     assert.match(String((refused[0] as { text?: string }).text), /REFUSED: nope/);
     const ran = tool.output.render({}, { run_id: "r_9" });
@@ -211,7 +204,7 @@ describe("the optional tools service (the host contribution)", () => {
     // disposer to the calling plugin itself (tutorial ch.2); our
     // registration must hand it one that retracts.
     const { ctx, stub } = await boot(true);
-    const fiber = await ctx.plugin(pkg as unknown as Parameters<typeof ctx.plugin>[0], { gateway: baseUrl });
+    const fiber = await ctx.plugin(pkg as unknown as Parameters<typeof ctx.plugin>[0], { call: seam });
     assert.equal(stub!.registered.length, 1, "one tool contribution");
     assert.equal(stub!.registered[0]!.name, TOOL_NAME);
     assert.equal(stub!.disposers.length, 1, "the registration returned a disposer");
@@ -223,7 +216,7 @@ describe("the optional tools service (the host contribution)", () => {
 
   it("the registered tool works end-to-end through the stub door", async () => {
     const { ctx, stub } = await boot(true);
-    await ctx.plugin(pkg as unknown as Parameters<typeof ctx.plugin>[0], { gateway: baseUrl });
+    await ctx.plugin(pkg as unknown as Parameters<typeof ctx.plugin>[0], { call: seam });
     calls.length = 0;
     draftsStatus = 200; draftsBody = { draftId: "d_e2e" };
     startBody = { run_id: "r_e2e", status: "queued" };
@@ -235,7 +228,7 @@ describe("the optional tools service (the host contribution)", () => {
 
   it("no tools service (the gateway process): the card still registers, no tool", async () => {
     const { ctx } = await boot(false);
-    await ctx.plugin(pkg as unknown as Parameters<typeof ctx.plugin>[0], { gateway: baseUrl });
+    await ctx.plugin(pkg as unknown as Parameters<typeof ctx.plugin>[0], { call: seam });
     const comfy = ctx.get("comfyui") as { cardIds(): string[] };
     assert.ok(comfy.cardIds().includes("clothing-placement"), "card contribution stands");
     await ctx.fiber.dispose();
@@ -246,7 +239,7 @@ describe("the optional tools service (the host contribution)", () => {
     // the plugin PENDING forever in this host — no card, and CRITICALLY
     // no tool. Both faces optional: each composition takes what it can.
     const { ctx, stub } = await boot(true, false);
-    await ctx.plugin(pkg as unknown as Parameters<typeof ctx.plugin>[0], { gateway: baseUrl });
+    await ctx.plugin(pkg as unknown as Parameters<typeof ctx.plugin>[0], { call: seam });
     assert.ok(ctx.get("comfyui") === undefined, "no engine service in this host");
     assert.equal(stub!.registered.length, 1, "the tool face stands alone");
     assert.equal(stub!.registered[0]!.name, TOOL_NAME);

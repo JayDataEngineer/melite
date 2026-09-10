@@ -17,7 +17,6 @@
 //     comfyui — the standalone agent host).
 import { describe, it, before, after } from "node:test";
 import assert from "node:assert/strict";
-import { createServer, type Server } from "node:http";
 import { Context, Service } from "@deepseek-ai/cordis";
 import { ComfyUIService } from "@melite/comfyui-cordis/service";
 import { emitParamsSpec } from "@melite/comfyui-cordis/params-emit";
@@ -28,35 +27,31 @@ import { parameterSchemaSpecToJsonSchema } from "@deepseek-ai/dsh-tools";
 import type { ToolDefinition } from "@deepseek-ai/dsh-tools";
 import { identity, schema, BOARDED } from "../src/card.ts";
 
-// ── stub gateway (the external service, mocked) ────────────────────
-let server: Server;
-let baseUrl = "";
+const REFUSING_CALL = async (): Promise<never> => { throw new Error("face tests never call the seam") }
+
+// ── the recording seam (EstateCall, the transport contract) ─────────
+// The executor's doors are exercised through the SAME jsonLane(call)
+// seam production rides; the fake is the estate's far side: it
+// records every lane and answers from the fixtures below. No HTTP,
+// no server, no port — the aborted string-arg seam is gone.
+import { GatewayError, type EstateCall } from "@melite/estate-call";
+
 const calls: Array<{ method: string; path: string; body: Record<string, unknown> }> = [];
 let draftsStatus = 200;
 let draftsBody: Record<string, unknown> = { draftId: "d_stub_1" };
 let startBody: Record<string, unknown> = { run_id: "r_stub_9", status: "queued" };
 
-before(async () => {
-  server = createServer((req, res) => {
-    const chunks: Buffer[] = [];
-    req.on("data", (d?: Buffer) => { if (d) chunks.push(d); });
-    req.on("end", () => {
-      const body = chunks.length ? JSON.parse(Buffer.concat(chunks).toString("utf8")) as Record<string, unknown> : {};
-      calls.push({ method: String(req.method), path: String(req.url), body });
-      const json = (status: number, payload: unknown) => {
-        res.writeHead(status, { "content-type": "application/json" });
-        res.end(JSON.stringify(payload));
-      };
-      if (req.url === "/v1/flows/drafts") return json(draftsStatus, draftsBody);
-      if (req.url === "/v1/flows/start") return json(200, startBody);
-      json(404, { error: "no such door" });
-    });
-  });
-  await new Promise<void>((r) => server.listen(0, "127.0.0.1", r));
-  baseUrl = `http://127.0.0.1:${(server.address() as { port: number }).port}`;
-});
-
-after(() => { server.close(); });
+const seam: EstateCall = async (method, path, body) => {
+  calls.push({ method, path, body: body as Record<string, unknown> });
+  const reply = path === "/v1/flows/drafts"
+    ? { status: draftsStatus, body: draftsBody }
+    : { status: 200, body: startBody };
+  if (reply.status < 200 || reply.status >= 300) {
+    const message = (reply.body as { error?: string }).error ?? "door refused";
+    throw new GatewayError(reply.status, JSON.stringify(reply.body), message);
+  }
+  return reply.body;
+};
 
 // Minimal ToolRunContext per the contract's required identity fields
 // (the registry materializes real ones; tests fill every required
@@ -75,7 +70,7 @@ const exec = {
 } as unknown as Parameters<ToolDefinition["execute"]>[1];
 
 describe("single spelling (the emission derives from the card)", () => {
-  const tool = buildImageGenTool("http://irrelevant");
+  const tool = buildImageGenTool(REFUSING_CALL);
 
   it("name is the TOOL-plane law: id, hyphens→underscores, no suffix", () => {
     assert.equal(tool.name, "image_gen");
@@ -111,7 +106,7 @@ describe("single spelling (the emission derives from the card)", () => {
 });
 
 describe("the completed card (P0: presentationMeta + presentResult)", () => {
-  const tool = buildImageGenTool("http://irrelevant");
+  const tool = buildImageGenTool(REFUSING_CALL);
 
   it("presentationMeta projects the settled facts (run arm), omitting empty keys", () => {
     const meta = tool.output.presentationMeta?.(FULL_ARGS, {
@@ -166,7 +161,7 @@ describe("the executor path (two doors, the model-card law)", () => {
     calls.length = 0;
     draftsStatus = 200; draftsBody = { draftId: "d_77" };
     startBody = { run_id: "r_9", status: "queued" };
-    const value = (await buildImageGenTool(baseUrl).execute(
+    const value = (await buildImageGenTool(seam).execute(
       FULL_ARGS, exec,
     )) as Record<string, string>;
     assert.equal(calls.length, 2, "exactly two doors");
@@ -187,7 +182,7 @@ describe("the executor path (two doors, the model-card law)", () => {
   it("an unstated model resolves boarded[0] (the same law as the row)", async () => {
     calls.length = 0;
     draftsBody = { draftId: "d_1" };
-    const value = (await buildImageGenTool(baseUrl).execute({ prompt: "x" }, exec)) as Record<string, string>;
+    const value = (await buildImageGenTool(seam).execute({ prompt: "x" }, exec)) as Record<string, string>;
     assert.equal((calls[0].body.stages as Array<Record<string, unknown>>)[0]!.service, "krea-2");
     assert.equal(value.model, "krea-2");
   });
@@ -196,21 +191,21 @@ describe("the executor path (two doors, the model-card law)", () => {
     // The door's model-arm refusal (illegal model): admission owns
     // it server-side; the face resolves it as a domain outcome.
     startBody = { error: "model 'bogus' is not boarded on the image-gen card" };
-    const value = (await buildImageGenTool(baseUrl).execute(FULL_ARGS, exec)) as Record<string, string>;
+    const value = (await buildImageGenTool(seam).execute(FULL_ARGS, exec)) as Record<string, string>;
     assert.equal(value.error, "model 'bogus' is not boarded on the image-gen card");
     startBody = { run_id: "r_9", status: "queued" };
   });
 
   it("a drafts-door refusal is canonical too", async () => {
     draftsStatus = 422; draftsBody = { error: "drafts: stage service missing" };
-    const value = (await buildImageGenTool(baseUrl).execute(FULL_ARGS, exec)) as Record<string, string>;
+    const value = (await buildImageGenTool(seam).execute(FULL_ARGS, exec)) as Record<string, string>;
     assert.equal(value.error, "drafts: stage service missing");
     draftsStatus = 200; draftsBody = { draftId: "d_1" };
   });
 
   it("a mint without draftId is a refusal value", async () => {
     draftsBody = { ok: true };
-    const value = (await buildImageGenTool(baseUrl).execute(FULL_ARGS, exec)) as Record<string, string>;
+    const value = (await buildImageGenTool(seam).execute(FULL_ARGS, exec)) as Record<string, string>;
     assert.equal(value.error, "gateway draft POST returned no draftId");
   });
 
@@ -219,20 +214,20 @@ describe("the executor path (two doors, the model-card law)", () => {
     const ctl = new AbortController();
     ctl.abort();
     await assert.rejects(
-      buildImageGenTool(baseUrl).execute(FULL_ARGS, { ...exec, signal: ctl.signal }),
+      buildImageGenTool(seam).execute(FULL_ARGS, { ...exec, signal: ctl.signal }),
     );
     assert.equal(calls.length, 0, "no door was touched");
   });
 
   it("schema-incomplete args are refused by the contract's own validation", async () => {
     await assert.rejects(
-      buildImageGenTool(baseUrl).execute({ model: "krea-2" }, exec),
+      buildImageGenTool(seam).execute({ model: "krea-2" }, exec),
       /prompt/,
     );
   });
 
   it("the renderer explains refusals and run ids", () => {
-    const tool = buildImageGenTool(baseUrl);
+    const tool = buildImageGenTool(seam);
     const refused = tool.output.render({}, { error: "nope" });
     assert.match(String((refused[0] as { text?: string }).text), /REFUSED: nope/);
     const ran = tool.output.render({}, { model: "krea-2", run_id: "r_9" });
@@ -280,7 +275,7 @@ describe("the optional tools service (the host contribution)", () => {
 
   it("registers bare; the registration participates in the service's disposal protocol", async () => {
     const { ctx, stub } = await boot(true);
-    const fiber = await ctx.plugin(pkg as unknown as Parameters<typeof ctx.plugin>[0], { gateway: baseUrl });
+    const fiber = await ctx.plugin(pkg as unknown as Parameters<typeof ctx.plugin>[0], { call: seam });
     assert.equal(stub!.registered.length, 1, "one tool contribution");
     assert.equal(stub!.registered[0]!.name, TOOL_NAME);
     assert.equal(stub!.disposers.length, 1, "the registration returned a disposer");
@@ -292,7 +287,7 @@ describe("the optional tools service (the host contribution)", () => {
 
   it("no tools service (the gateway process): the card still registers, no tool", async () => {
     const { ctx } = await boot(false);
-    await ctx.plugin(pkg as unknown as Parameters<typeof ctx.plugin>[0], { gateway: baseUrl });
+    await ctx.plugin(pkg as unknown as Parameters<typeof ctx.plugin>[0], { call: seam });
     const comfy = ctx.get("comfyui") as { cardIds(): string[] };
     assert.ok(comfy.cardIds().includes("image-gen"), "card contribution stands");
     await ctx.fiber.dispose();
@@ -303,7 +298,7 @@ describe("the optional tools service (the host contribution)", () => {
     // the plugin PENDING forever in this host — no card, and CRITICALLY
     // no tool. Both faces optional: each composition takes what it can.
     const { ctx, stub } = await boot(true, false);
-    await ctx.plugin(pkg as unknown as Parameters<typeof ctx.plugin>[0], { gateway: baseUrl });
+    await ctx.plugin(pkg as unknown as Parameters<typeof ctx.plugin>[0], { call: seam });
     assert.ok(ctx.get("comfyui") === undefined, "no engine service in this host");
     assert.equal(stub!.registered.length, 1, "the tool face stands alone");
     assert.equal(stub!.registered[0]!.name, TOOL_NAME);

@@ -48,6 +48,9 @@ export function jsonLane(
   timeoutMs?: number,
 ) => Promise<Record<string, unknown>> {
   return async (method, path, body, signal, timeoutMs = 60_000) => {
+    // A pre-aborted call never dials the lane — cancellation is a
+    // transport law owned here, not by each consumer.
+    signal?.throwIfAborted()
     let raw: unknown
     try {
       raw = await call(method, path, body, signal, timeoutMs)

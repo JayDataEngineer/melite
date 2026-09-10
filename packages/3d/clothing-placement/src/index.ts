@@ -22,6 +22,7 @@
 // The card RUNS via the flow path (card stages → cardGate →
 // ctx.comfyui.compose), never the {model:}/draft path; the tool
 // face rides the same law through the gateway's flow doors.
+import type { EstateCall } from '@melite/estate-call'
 import type { Context } from '@deepseek-ai/cordis'
 import Schema from '@deepseek-ai/schemastery'
 import { ComfyUIService } from '@melite/comfyui-cordis/service'
@@ -35,13 +36,12 @@ export const name = 'clothing-placement'
  *  resolves INSIDE the schema default — a schema-side .default()
  *  would otherwise mask it at every use site. */
 export interface Config {
-  gateway: string
+  /** The lane seam (R2b law): threaded by the registrar, never configured. */
+  call: EstateCall
 }
 
 export const Config: Schema<Config> = Schema.object({
-  gateway: Schema.string()
-
-    .description('The Melite gateway base URL (the flow doors the tool face calls)'),
+  call: Schema.any(),
 })
 
 // BOTH faces are optional dependencies (tutorial ch.3: skip inject,

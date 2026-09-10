@@ -14,6 +14,7 @@
 // composition claims the image_gen toolview with the shared run-card
 // row (@melite/viewer-base). A card ships a client half only to
 // OVERRIDE its view (the takeover arm of the keyed slot).
+import type { EstateCall } from '@melite/estate-call'
 import type { Context } from '@deepseek-ai/cordis'
 import Schema from '@deepseek-ai/schemastery'
 import { ComfyUIService } from '@melite/comfyui-cordis/service'
@@ -30,13 +31,15 @@ export const inject: string[] = []
  *  var resolves INSIDE the schema default — a schema-side
  *  .default() would otherwise mask it at every use site. */
 export interface Config {
-  gateway: string
+  /** The lane seam (R2b law): the registrar (melite-tools) hands the
+   *  call shape; the card never owns transport. The schema keeps the
+   *  idiom for structure while the seam itself is threaded, not
+   *  configured — Schema.any() admits the injected function. */
+  call: EstateCall
 }
 
 export const Config: Schema<Config> = Schema.object({
-  gateway: Schema.string()
-
-    .description('The Melite gateway base URL (the flow doors the tool face calls)'),
+  call: Schema.any(),
 })
 
 export function apply(ctx: Context, config: Config): void {

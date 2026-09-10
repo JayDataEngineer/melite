@@ -5,8 +5,9 @@
 // All calls go through the ONE run door, the status poll, and the
 // form-spec pre-flight. ALWAYS call get_flow_spec BEFORE submitting.
 
-// The estate answers in-process (callEstateLane) — no URL, no port.
-import { callEstateLane } from "@melite/gateway-doors"
+// The estate answered in-process (callEstateLane) — no URL, no port.
+// THE GATEWAY KILL (2026-09-10): the lanes are dead. laneJson throws
+// LOUD until these tools ride named Typert remotes (rebuild era).
 import type { Context } from "@deepseek-ai/cordis"
 
 const TIMEOUT_MS = 30_000
@@ -25,12 +26,7 @@ async function laneJson(method: "GET" | "POST", path: string, body?: Record<stri
   const fused = signal === undefined ? timeout : AbortSignal.any([timeout, signal])
   fused.throwIfAborted()
   if (estateCtx === undefined) throw new Error("mask-studio tools: no estate context bound (bindEstate)")
-  const out = await callEstateLane(estateCtx, method, path, body)
-  if (out === undefined) throw new Error("no estate lane claims " + method + " " + path)
-  if (out.status < 200 || out.status >= 300) {
-    throw new Error(method + " " + path + " -> " + String(out.status) + " " + String(out.body).slice(0, 120))
-  }
-  return (typeof out.body === "string" ? JSON.parse(out.body) : out.body) as Record<string, unknown>
+  throw new Error("mask-studio tools: estate lane " + method + " " + path + " died with the gateway (2026-09-10) — migrate to a named Typert remote")
 }
 
 /** Pre-flight: the form spec for a model route (fields + defaults). */

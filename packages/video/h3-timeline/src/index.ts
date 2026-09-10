@@ -6,6 +6,7 @@
 // site): the gateway process provides comfyui but no tools; the
 // agent host provides tools but no comfyui (the tool face talks
 // to the gateway over HTTP); each composition takes its faces.
+import type { EstateCall } from '@melite/estate-call'
 import type { Context } from '@deepseek-ai/cordis'
 import Schema from '@deepseek-ai/schemastery'
 import { ComfyUIService } from '@melite/comfyui-cordis/service'
@@ -18,13 +19,12 @@ export const name = '@melite/video-h3-timeline'
 export const inject: string[] = []
 
 export interface Config {
-  gateway: string
+  /** The lane seam (R2b law): threaded by the registrar, never configured. */
+  call: EstateCall
 }
 
 export const Config: Schema<Config> = Schema.object({
-  gateway: Schema.string()
-
-    .description('The Melite gateway base URL (the flow doors the tool face calls)'),
+  call: Schema.any(),
 })
 
 export function apply(ctx: Context, config: Config): void {

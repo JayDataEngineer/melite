@@ -40,7 +40,11 @@ export const TOOL_NAME = "clothing_placement";
 /** Gateway answered non-2xx; body carried verbatim (the named
  *  refusal — RayGatewayError's counterpart, owned by this package:
  *  cross-package imports of host internals are not a seam). */
+const FLOW = "clothing-placement"
+const TIMEOUT_MS = 15e3
+
 export function buildCardTool(call: EstateCall): ToolDefinition {
+  const gw = jsonLane(call)
   return defineTool({
     name: TOOL_NAME,
     description: identity.description,

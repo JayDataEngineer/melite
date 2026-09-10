@@ -21,7 +21,6 @@
     "@melite/contracts": "workspace:*",
     "@melite/estate-call": "workspace:*",
     "@melite/formats": "workspace:*",
-    "@melite/gateway-doors": "workspace:*",
     "@melite/ui": "workspace:*",
     "lucide-react": "*",
     "react": "*"
