@@ -7,15 +7,29 @@
 // inline shim (registryFlowToInline) — validate and start resolve
 // stages LIVE through expandRegistryFlow, no snapshot drift.
 //
-// WHAT DEFERS (the gateway-era initial_validators — photo/glb
-// file-initial checks + bake_params via the studios door): they
-// belong to the named-flow VALIDATE face's compile-time gate; they
-// re-home with that face's stroke, not smuggled here dead.
+// THE COMPILE-TIME INITIAL GATE (REBUILD-21, the deferral closed):
+// registryInitialsError + checkFileInitial + InitialsRoots port
+// verbatim (photo/glb file-initial checks + bake_params via the
+// re-homed belt); the runs registry's {flow:} arms run it BEFORE
+// any run registers — start can never queue what validate refuses.
 //
 // QUEUE LANE LAW unchanged: no legacy (no flow.py read — existence
 // rides this registry), no fallbacks, no hardcodes.
 //
 // Erasable-syntax TS only (node --experimental-strip-types).
+import { statSync } from "node:fs";
+import { join, resolve } from "node:path";
+import { mediaVocab } from "./mediaKinds.ts";
+import { validateBakeParams } from "./bakeParams.ts";
+import { pyTypeName } from "./queue.ts";
+
+function isFile(p: string): boolean {
+  try {
+    return statSync(p).isFile();
+  } catch {
+    return false;
+  }
+}
 
 /** One initial edge: {"initial": key} (the operator-supplied wire). */
 export interface RegistryInitialEdge {
@@ -995,7 +1009,125 @@ export function registryFlowToInline(flow: RegistryFlow): Record<string, unknown
   };
 }
 
+// ── THE COMPILE-TIME INITIAL GATE (REBUILD-21; the
+// initial_validators deferral closed — photo/glb file checks +
+// bake_params via the belt) ──
 
+export interface InitialsRoots {
+  readonly repoRoot: string;
+  readonly stateRoot: string;
+}
+
+/** Check one photo/glb initial value. Null = passes. */
+function checkFileInitial(
+  key: string,
+  kind: RegistryInitialKind,
+  value: unknown,
+  roots: InitialsRoots,
+): string | null {
+  let ref: string;
+  if (typeof value === "string") ref = value;
+  else if (
+    typeof value === "object" && value !== null && !Array.isArray(value) &&
+    typeof (value as Record<string, unknown>)["path"] === "string"
+  ) {
+    ref = (value as Record<string, unknown>)["path"] as string;
+  } else {
+    return (
+      "initial " + JSON.stringify(key) + " must be a file path string or " +
+      "{path: ...} (got " + pyTypeName(value) + ")"
+    );
+  }
+  const raw: string = ref.trim();
+  if (raw.startsWith("data:") || raw.startsWith("blob:")) {
+    return (
+      "initial " + JSON.stringify(key) +
+      " is browser-local (nothing to stage) — upload the file first: " +
+      "POST /v1/uploads, then pass its staged path"
+    );
+  }
+  const dot: number = raw.split(/[?#]/)[0]?.lastIndexOf(".") ?? -1;
+  const ext: string = dot >= 0
+    ? (raw.split(/[?#]/)[0]?.slice(dot + 1).toLowerCase() ?? "")
+    : "";
+  // The vocab is TYPED DATA now (mediaKinds.ts, REBUILD-7) — no
+  // repo-anchored kindsPath read survives the re-home.
+  const kinds = mediaVocab();
+  const allowed: readonly string[] = kind === "photo" ? kinds.image : kinds.model;
+  if (!allowed.includes(ext)) {
+    return (
+      "initial " + JSON.stringify(key) + " is not a stageable " +
+      (kind === "photo" ? "image" : "mesh") + " (got extension " +
+      JSON.stringify(ext) + ")"
+    );
+  }
+  if (raw.includes("..")) {
+    return "initial " + JSON.stringify(key) + " refuses traversal";
+  }
+  const cands: string[] = [];
+  const ASSET_RUNS_PREFIX = "/v1/assets/runs/";
+  if (raw.startsWith(ASSET_RUNS_PREFIX)) {
+    const rel: string = raw.slice(ASSET_RUNS_PREFIX.length);
+    if (rel === "" || rel.endsWith("/") || !rel.includes("/")) {
+      return (
+        "initial " + JSON.stringify(key) +
+        " is a malformed artifact URL (want /v1/assets/runs/<run_id>/<file>)"
+      );
+    }
+    for (const root of [
+      join(roots.stateRoot, "output"),
+      join(roots.stateRoot, "test-output"),
+      join(roots.repoRoot, "data", "runs", "output"),
+      join(roots.repoRoot, "data", "runs", "test-output"),
+    ]) {
+      cands.push(join(root, rel));
+    }
+  } else if (raw.startsWith("/")) {
+    cands.push(raw);
+  } else {
+    cands.push(resolve(roots.repoRoot, raw));
+    cands.push(resolve(process.cwd(), raw));
+  }
+  for (const cand of cands) {
+    if (isFile(cand)) return null;
+  }
+  return "initial " + JSON.stringify(key) + " is not on disk (" + raw + ")";
+}
+
+/** The compile-time gate over a registry flow's initial_validators:
+ *  the first refusal text, or null when every PRESENT initial
+ *  passes (absent initials ride — the $channel/branch arms own
+ *  them). Runs BEFORE any run registers, on both doors. */
+export function registryInitialsError(
+  flow: RegistryFlow,
+  body: Record<string, unknown>,
+  roots: InitialsRoots,
+): string | null {
+  for (const [key, kind] of Object.entries(flow.initialValidators)) {
+    const value: unknown = body[key];
+    if (value === undefined || value === null) continue;
+    if (kind === "bake_params") {
+      const s: string | undefined = typeof value === "string"
+        ? value
+        : JSON.stringify(value);
+      if (s === undefined) {
+        return (
+          "initial " + JSON.stringify(key) +
+          " must be a params_json string or object (got " +
+          pyTypeName(value) + ")"
+        );
+      }
+      const err: string | null = validateBakeParams(s);
+      if (err !== null) {
+        return "initial " + JSON.stringify(key) + " refuses the preset dialect: " + err;
+      }
+      continue;
+    }
+    const err: string | null = checkFileInitial(key, kind, value, roots);
+    if (err !== null) return err;
+  }
+  return null;
+}
 // ── the skill-body render (REBUILD-16; the tail beyond the
 // REBUILD-13 cut) ──
 

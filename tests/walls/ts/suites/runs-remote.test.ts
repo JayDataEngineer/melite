@@ -732,3 +732,50 @@ test("runs {flow:} — the named-flow shim: live expansion, the door's voices (R
     },
   );
 });
+
+test("the compile-time initial gate — both {flow:} doors refuse before registration (REBUILD-21)", async () => {
+  const booted = await boot(true);
+  const runs = booted.runs as {
+    validate(doc: unknown, signal: AbortSignal): Promise<unknown>
+    start(doc: unknown, signal: AbortSignal): Promise<unknown>
+    list(limit: string, signal: AbortSignal): Promise<unknown>
+  };
+  const sig = new AbortController().signal;
+  // 1. a photo initial that is not on disk refuses at VALIDATE with
+  //    the door's text (before any compile).
+  const badPhoto = { flow: "character", test: true, draft_id: "d_ok", starter_image: "/no/such/file.png" };
+  await assert.rejects(
+    () => runs.validate(badPhoto, sig),
+    (e: Error & { code?: string }) => /is not on disk/.test(e.message) && e.code === "runs/invalid-request",
+  );
+  // 2. the same doc refuses at START with the same voice — start
+  //    can never queue what validate refuses.
+  await assert.rejects(
+    () => runs.start(badPhoto, sig),
+    (e: Error & { code?: string }) => /is not on disk/.test(e.message) && e.code === "runs/invalid-request",
+  );
+  // 3. no run registered (the gate fired before registration).
+  const list = (await runs.list("500", sig)) as { runs?: unknown[] };
+  assert.ok(!JSON.stringify(list).includes("no/such/file.png"), "nothing queued from the refusal");
+  // 4. an on-disk photo with a WRONG EXTENSION refuses the stageable
+  //    check (the typed media vocab gate).
+  const badExt = { flow: "character", test: true, draft_id: "d_ok", starter_image: "docs/CONFORMANCE_LEDGER.md" };
+  await assert.rejects(
+    () => runs.validate(badExt, sig),
+    (e: Error) => /is not a stageable image/.test(e.message),
+  );
+  // 5. a browser-local blob initial refuses with the upload voice.
+  const blob = { flow: "character", test: true, draft_id: "d_ok", starter_image: "blob:http://x/y" };
+  await assert.rejects(
+    () => runs.validate(blob, sig),
+    (e: Error) => /browser-local/.test(e.message),
+  );
+  // 6. absent initials ride PAST the initial gate (the $channel
+  //    arms own them) — fit-seat then refuses at the pin sweep (the
+  //    honest wall voice: 0 pinned classes, no engine seat), which
+  //    PROVES the gate did not fire on absent initials.
+  await assert.rejects(
+    () => runs.validate({ flow: "fit-seat", test: true, draft_id: "d_ok" }, sig),
+    (e: Error & { code?: string }) => e.code === "runs/workflow-pin" && /not in the pinned object_info/.test(e.message),
+  );
+});

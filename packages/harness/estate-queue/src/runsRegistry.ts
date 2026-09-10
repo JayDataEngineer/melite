@@ -20,7 +20,13 @@ import {
 } from "@melite/comfyui-cordis";
 import type { EngineJson, MergeRow } from "@melite/comfyui-cordis";
 import { pyReprStr } from "@melite/comfyui-cordis";
-import { expandRegistryFlow, getRegistryFlow, registryFlowToInline } from "./flowsData.ts";
+import {
+  expandRegistryFlow,
+  getRegistryFlow,
+  registryFlowToInline,
+  registryInitialsError,
+} from "./flowsData.ts";
+import { resolveRepoRoot } from "@melite/comfyui-cordis";
 import { newRunId, pipelineOf, pyStr, strictBodyCheck, draftIdOk } from "./queue.ts";
 import {
   CardArmError,
@@ -293,7 +299,21 @@ export class RunsRegistryService extends Service {
           { loc: "flow" },
         );
       }
-      const inlineDoc = registryFlowToInline(expandRegistryFlow(decl));
+      const expanded = expandRegistryFlow(decl);
+      // THE COMPILE-TIME INITIAL GATE (REBUILD-21; the dead door's
+      // law): present initials refuse BEFORE any run registers —
+      // validate runs the same gate, so start can never queue what
+      // validate refuses.
+      const badInitial: string | null = registryInitialsError(expanded, body, {
+        repoRoot: resolveRepoRoot(),
+        stateRoot,
+      });
+      if (badInitial !== null) {
+        throw new RemoteError("runs/invalid-request", badInitial, {
+          loc: "body",
+        });
+      }
+      const inlineDoc = registryFlowToInline(expanded);
       const rest: Record<string, unknown> = { ...body };
       delete rest["flow"];
       body = { ...rest, flow_inline: inlineDoc };
@@ -415,7 +435,18 @@ export class RunsRegistryService extends Service {
             { loc: "flow" },
           );
         }
-        const inlineDoc = registryFlowToInline(expandRegistryFlow(decl));
+        const expanded = expandRegistryFlow(decl);
+        // The same compile-time gate at validate (REBUILD-21).
+        const badInitial: string | null = registryInitialsError(expanded, body, {
+          repoRoot: resolveRepoRoot(),
+          stateRoot: this.ctx.queue.stateRoot,
+        });
+        if (badInitial !== null) {
+          throw new RemoteError("runs/invalid-request", badInitial, {
+            loc: "body",
+          });
+        }
+        const inlineDoc = registryFlowToInline(expanded);
         const rest: Record<string, unknown> = { ...body };
         delete rest["flow"];
         liveDoc = { ...rest, flow_inline: inlineDoc };
