@@ -2,70 +2,64 @@
 const name = "infer-gallery";
 /** Routes arrive with the webServer service. */
 const inject = ["webServer"];
-/** A gallery mounted far from its estate names the OWNING DSH in
-* its profile row (config.gatewayUrl, REQUIRED in that posture —
-* the refusal below is loud). No code default exists at all; a
-* same-host gallery never fetches (the lanes answer in-process). */
 const DEFAULT_TIMEOUT_MS = 15e3;
-const RUNS_UPSTREAM = "/v1/flows/runs?limit=50";
-/** The only gateway tree the artifact proxy may touch
-*  (Phase 2 consolidation, 2026-09-04: /v1/assets/runs → /v1/assets/runs). */
-const ASSET_PREFIX = "/v1/assets/runs/";
-/** Sidecar tree default: the estate runs stream (SERVER-STATE ROOT LAW —
-*  build/ was the C era's cwd and is gone). */
+const RUNS_LIMIT = "50";
+const DRAFTS_LIMIT = 200;
+/** Sidecar tree default: the estate runs stream (SERVER-STATE ROOT
+*  LAW — build/ was the C era's cwd and is gone). */
 const DEFAULT_FLOW_DIR = "/home/user/Documents/programs/active/inference.cpp/data/runs/output";
+/** A run-relative artifact name: run-<hex>-<word>/<file> — the
+*  confinement the artifact route enforces (no .., no leading /). */
+const RUN_RELATIVE = /^run-[0-9a-f]+-[A-Za-z0-9_-]+\/[A-Za-z0-9._-]+$/;
 const JSON_HEADERS = {
 	"content-type": "application/json; charset=utf-8",
 	"cache-control": "no-store"
 };
-/** Rewrite one gateway-relative asset path to a same-origin proxy URL (empty in, empty out). */
+/** Rewrite one run-relative artifact name to a same-origin route
+* URL (empty in, empty out). */
 function proxyAssetUrl(path) {
 	if (typeof path !== "string" || path === "") return "";
 	return `/infer-gallery/artifact?path=${encodeURIComponent(path)}`;
 }
+const fail = (res, status, code, payload) => {
+	const body = JSON.stringify({
+		error: code,
+		...payload
+	});
+	res.writeHead(status, {
+		...JSON_HEADERS,
+		"content-length": String(Buffer.byteLength(body))
+	});
+	res.end(body);
+};
 function apply(ctx, config = {}) {
 	const gatewayUrl = (config.gatewayUrl ?? "").replace(/\/+$/, "");
 	const timeoutMs = config.timeoutMs ?? DEFAULT_TIMEOUT_MS;
 	const flowDir = config.flowDir ?? DEFAULT_FLOW_DIR;
-	const upstream = async (path) => {
-		if (gatewayUrl === "") throw new Error("infer-gallery: estate lanes died with the gateway (2026-09-10) — pin gatewayUrl or migrate to a named Typert remote (GET " + path + ")");
-		return fetch(`${gatewayUrl}${path}`, { signal: AbortSignal.timeout(timeoutMs) });
+	/** One upstream JSON document. Cross-host fetches the owning DSH
+	*  verbatim; in-tree answers over the seat. An absent seat is a
+	*  LOUD 502 naming the fix — no fallback absorbs it. */
+	const upstream = async (lane, seat, call) => {
+		if (gatewayUrl !== "") {
+			const response = await fetch(`${gatewayUrl}${lane}`, { signal: AbortSignal.timeout(timeoutMs) });
+			const body = await response.text();
+			if (!response.ok) throw new GalleryUpstreamError(`upstream ${lane} answered ${response.status}`, body.slice(0, 2e3), response.status);
+			return JSON.parse(body);
+		}
+		if (seat === void 0) throw new GallerySeatError(`infer-gallery: no estate seat for ${lane} in this tree — mount @melite-plugin/melite-estate or pin gatewayUrl (the owning DSH)`);
+		return call();
 	};
-	ctx.logger.info("infer-gallery proxying %s (gateway %s)", RUNS_UPSTREAM, gatewayUrl);
-	const DRAFTS_UPSTREAM = "/v1/flows/drafts";
-	const DRAFTS_LIMIT = 200;
+	ctx.logger.info("infer-gallery serving (%s)", gatewayUrl === "" ? "in-tree estate seats" : `owning DSH ${gatewayUrl}`);
 	ctx.effect(() => ctx.webServer.register({
 		kind: "exact",
 		path: "/infer-gallery/drafts",
 		handler: async (_req, res) => {
 			try {
-				const response = await upstream(DRAFTS_UPSTREAM);
-				const body = await response.text();
-				if (!response.ok) {
-					res.writeHead(response.status, JSON_HEADERS);
-					res.end(JSON.stringify({
-						error: "gateway_error",
-						status: response.status,
-						upstream: `${gatewayUrl}${DRAFTS_UPSTREAM}`,
-						body: body.slice(0, 2e3)
-					}));
-					return;
-				}
-				let payload;
-				try {
-					payload = JSON.parse(body);
-				} catch {
-					res.writeHead(502, JSON_HEADERS);
-					res.end(JSON.stringify({
-						error: "gateway_bad_payload",
-						message: "upstream /v1/flows/drafts returned non-JSON body",
-						body: body.slice(0, 2e3)
-					}));
-					return;
-				}
+				const signal = new AbortController().signal;
+				const payload = await upstream("/v1/flows/drafts", ctx.get("draftsRemote", false), () => ctx.get("draftsRemote", false).list(signal));
 				const all = Array.isArray(payload?.drafts) ? payload.drafts : [];
 				const drafts = all.slice(0, DRAFTS_LIMIT);
-				const draftsBody = JSON.stringify({
+				const body = JSON.stringify({
 					gateway: gatewayUrl,
 					total: all.length,
 					truncated: all.length > drafts.length,
@@ -73,19 +67,24 @@ function apply(ctx, config = {}) {
 				});
 				res.writeHead(200, {
 					...JSON_HEADERS,
-					"content-length": String(Buffer.byteLength(draftsBody))
+					"content-length": String(Buffer.byteLength(body))
 				});
-				res.end(Buffer.from(draftsBody));
+				res.end(Buffer.from(body));
 			} catch (error) {
-				const message = error instanceof Error ? error.message : String(error);
-				ctx.logger.warn("infer-gallery: gateway unreachable: %s", message);
-				res.writeHead(502, JSON_HEADERS);
-				res.end(JSON.stringify({
-					error: "gateway_unreachable",
-					message,
+				ctx.logger.warn("infer-gallery: drafts failed: %s", error instanceof Error ? error.message : String(error));
+				if (error instanceof GalleryUpstreamError) fail(res, error.status, "gateway_error", {
+					upstream: `${gatewayUrl}/v1/flows/drafts`,
+					body: error.body
+				});
+				else if (error instanceof GallerySeatError) fail(res, 502, "no_estate_seat", {
+					message: error.message,
+					lane: "/v1/flows/drafts"
+				});
+				else fail(res, 502, "gateway_unreachable", {
+					message: error instanceof Error ? error.message : String(error),
 					gatewayUrl,
-					upstream: `${gatewayUrl}${DRAFTS_UPSTREAM}`
-				}));
+					upstream: `${gatewayUrl}/v1/flows/drafts`
+				});
 			}
 		}
 	}), "infer-gallery: /infer-gallery/drafts route");
@@ -94,19 +93,8 @@ function apply(ctx, config = {}) {
 		path: "/infer-gallery/flow",
 		handler: async (req, res) => {
 			const runId = new URL(req.url ?? "/", "http://infer-gallery.invalid").searchParams.get("run_id") ?? "";
-			const fail = (status, code, message) => {
-				const b = JSON.stringify({
-					error: code,
-					message
-				});
-				res.writeHead(status, {
-					...JSON_HEADERS,
-					"content-length": String(Buffer.byteLength(b))
-				});
-				res.end(Buffer.from(b));
-			};
 			if (!/^[A-Za-z0-9_-]+$/.test(runId)) {
-				fail(400, "bad_run_id", "run_id must be [A-Za-z0-9_-]+");
+				fail(res, 400, "bad_run_id", { message: "run_id must be [A-Za-z0-9_-]+" });
 				return;
 			}
 			try {
@@ -129,7 +117,7 @@ function apply(ctx, config = {}) {
 			} catch (error) {
 				const message = error instanceof Error ? error.message : String(error);
 				ctx.logger.warn("infer-gallery: flow doc read failed: %s", message);
-				fail(404, "no_sidecar", `no readable _flow.json for ${runId}`);
+				fail(res, 404, "no_sidecar", { message: `no readable _flow.json for ${runId}` });
 			}
 		}
 	}), "infer-gallery: /infer-gallery/flow route");
@@ -138,30 +126,8 @@ function apply(ctx, config = {}) {
 		path: "/infer-gallery/runs",
 		handler: async (_req, res) => {
 			try {
-				const response = await upstream(RUNS_UPSTREAM);
-				const body = await response.text();
-				if (!response.ok) {
-					res.writeHead(response.status, JSON_HEADERS);
-					res.end(JSON.stringify({
-						error: "gateway_error",
-						status: response.status,
-						upstream: `${gatewayUrl}${RUNS_UPSTREAM}`,
-						body: body.slice(0, 2e3)
-					}));
-					return;
-				}
-				let payload;
-				try {
-					payload = JSON.parse(body);
-				} catch {
-					res.writeHead(502, JSON_HEADERS);
-					res.end(JSON.stringify({
-						error: "gateway_bad_payload",
-						message: "upstream /v1/flows/runs returned non-JSON body",
-						body: body.slice(0, 2e3)
-					}));
-					return;
-				}
+				const signal = new AbortController().signal;
+				const payload = await upstream(`/v1/flows/runs?limit=${RUNS_LIMIT}`, ctx.get("runs", false), () => ctx.get("runs", false).list(RUNS_LIMIT, signal));
 				const runs = Array.isArray(payload?.runs) ? payload.runs : [];
 				for (const run of runs) {
 					run.thumbnail = proxyAssetUrl(run.thumbnail);
@@ -169,25 +135,30 @@ function apply(ctx, config = {}) {
 						for (const artifact of run.artifacts) if (artifact !== null && typeof artifact === "object") artifact.url = proxyAssetUrl(artifact.url);
 					}
 				}
-				const runsBody = JSON.stringify({
+				const body = JSON.stringify({
 					gateway: gatewayUrl,
 					runs
 				});
 				res.writeHead(200, {
 					...JSON_HEADERS,
-					"content-length": String(Buffer.byteLength(runsBody))
+					"content-length": String(Buffer.byteLength(body))
 				});
-				res.end(Buffer.from(runsBody));
+				res.end(Buffer.from(body));
 			} catch (error) {
-				const message = error instanceof Error ? error.message : String(error);
-				ctx.logger.warn("infer-gallery: gateway unreachable: %s", message);
-				res.writeHead(502, JSON_HEADERS);
-				res.end(JSON.stringify({
-					error: "gateway_unreachable",
-					message,
+				ctx.logger.warn("infer-gallery: runs failed: %s", error instanceof Error ? error.message : String(error));
+				if (error instanceof GalleryUpstreamError) fail(res, error.status, "gateway_error", {
+					upstream: `${gatewayUrl}/v1/flows/runs`,
+					body: error.body
+				});
+				else if (error instanceof GallerySeatError) fail(res, 502, "no_estate_seat", {
+					message: error.message,
+					lane: "/v1/flows/runs"
+				});
+				else fail(res, 502, "gateway_unreachable", {
+					message: error instanceof Error ? error.message : String(error),
 					gatewayUrl,
-					upstream: `${gatewayUrl}${RUNS_UPSTREAM}`
-				}));
+					upstream: `${gatewayUrl}/v1/flows/runs`
+				});
 			}
 		}
 	}), "infer-gallery: /infer-gallery/runs route");
@@ -196,44 +167,61 @@ function apply(ctx, config = {}) {
 		path: "/infer-gallery/artifact",
 		handler: async (req, res) => {
 			const target = new URL(req.url ?? "/", "http://infer-gallery.invalid").searchParams.get("path") ?? "";
-			if (!target.startsWith(ASSET_PREFIX)) {
-				res.writeHead(400, JSON_HEADERS);
-				res.end(JSON.stringify({
-					error: "forbidden_path",
-					message: `artifact proxy only serves paths under ${ASSET_PREFIX}`,
+			if (!RUN_RELATIVE.test(target)) {
+				fail(res, 400, "forbidden_path", {
+					message: "artifact route only serves run-relative names (run-<id>/<file>)",
 					path: target
-				}));
+				});
 				return;
 			}
 			try {
-				const response = await upstream(target);
-				if (!response.ok || response.body === null) {
-					res.writeHead(response.status, JSON_HEADERS);
-					res.end(JSON.stringify({
-						error: "gateway_error",
-						status: response.status,
-						upstream: `${gatewayUrl}${target}`
-					}));
+				if (gatewayUrl !== "") {
+					const response = await fetch(`${gatewayUrl}/v1/assets/runs/${target}`, { signal: AbortSignal.timeout(timeoutMs) });
+					if (!response.ok || response.body === null) {
+						fail(res, response.status, "gateway_error", { upstream: `${gatewayUrl}/v1/assets/runs/${target}` });
+						return;
+					}
+					const buffer = Buffer.from(await response.arrayBuffer());
+					res.writeHead(response.status, {
+						"content-type": response.headers.get("content-type") ?? "application/octet-stream",
+						"cache-control": "no-store",
+						"content-length": String(buffer.byteLength)
+					});
+					res.end(buffer);
 					return;
 				}
-				const buffer = Buffer.from(await response.arrayBuffer());
-				res.writeHead(response.status, {
-					"content-type": response.headers.get("content-type") ?? "application/octet-stream",
+				const file = await (await import("node:fs/promises")).readFile(`${flowDir}/${target}`);
+				const ext = target.slice(target.lastIndexOf(".") + 1).toLowerCase();
+				const type = ext === "png" ? "image/png" : ext === "jpg" || ext === "jpeg" ? "image/jpeg" : ext === "webp" ? "image/webp" : ext === "mp4" || ext === "webm" ? "video/webm" : "application/octet-stream";
+				res.writeHead(200, {
+					"content-type": type,
 					"cache-control": "no-store",
-					"content-length": String(buffer.byteLength)
+					"content-length": String(file.byteLength)
 				});
-				res.end(buffer);
+				res.end(file);
 			} catch (error) {
 				const message = error instanceof Error ? error.message : String(error);
-				res.writeHead(502, JSON_HEADERS);
-				res.end(JSON.stringify({
-					error: "gateway_unreachable",
+				ctx.logger.warn("infer-gallery: artifact failed: %s", message);
+				fail(res, 502, "artifact_unreadable", {
 					message,
 					path: target
-				}));
+				});
 			}
 		}
 	}), "infer-gallery: /infer-gallery/artifact route");
 }
+/** Cross-host upstream answered an error status (its body rides). */
+var GalleryUpstreamError = class extends Error {
+	body;
+	status;
+	constructor(message, body, status) {
+		super(message);
+		this.body = body;
+		this.status = status;
+	}
+};
+/** In-tree posture with the estate absent — the loud 502 (nothing
+*  absorbs a missing seat). */
+var GallerySeatError = class extends Error {};
 //#endregion
 export { apply, inject, name };

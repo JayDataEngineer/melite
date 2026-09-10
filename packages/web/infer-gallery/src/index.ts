@@ -1,19 +1,34 @@
 /**
  * `@infer-media/dsh-gallery` — host half.
  *
- * Registers two same-origin routes on the `webServer` service, proxying the
- * Melite gateway (:33081 by default, `gatewayUrl` config):
+ * Registers same-origin routes on the `webServer` service.
  *
- * - `GET /infer-gallery/runs` → `GET <gateway>/v1/flows/runs`, with every
- *   gateway-relative artifact/thumbnail URL rewritten to the artifact proxy
- *   below, so the browser stays same-origin.
- * - `GET /infer-gallery/artifact?path=…` → streams one gateway asset. Only
- *   paths under `/v1/assets/runs/` are accepted (the run-artifact tree).
+ * THE GATEWAY KILL (2026-09-10, REBUILD-18): the gateway app is
+ * dead. Two postures, resolved per request (no apply-time probe —
+ * boot races proven 2026-09-10; per-request seat reads are safe):
  *
- * Failure policy: reachable webServer but unreachable gateway answers `502`
- * with a JSON body carrying the upstream error — the client view renders
- * that body verbatim as its error state. Route handlers own their full
- * response lifecycle; the proxy never throws.
+ * - cross-host: `gatewayUrl` pinned names the OWNING DSH — every
+ *   route fetches it verbatim (the named-remote posture until
+ *   Typert remotes land).
+ * - in-tree: no `gatewayUrl` — the estate's own seats answer
+ *   in-process (`runs`, `draftsRemote` via optional per-request
+ *   probes; artifacts stream from the runs output tree itself —
+ *   the same sidecar tree /infer-gallery/flow reads). An absent
+ *   seat answers LOUD 502 naming the fix; nothing absorbs.
+ *
+ * - `GET /infer-gallery/runs` → the runs list (limit 50), with
+ *   run-relative artifact/thumbnail names rewritten to the
+ *   artifact route below, so the browser stays same-origin.
+ * - `GET /infer-gallery/drafts` → the drafts list (queue-native
+ *   flow instances), newest-first, capped.
+ * - `GET /infer-gallery/flow?run_id=…` → the run's _flow.json
+ *   sidecar (disk read — no seat at all).
+ * - `GET /infer-gallery/artifact?path=…` → streams one run
+ *   artifact. Only run-relative names (`run-<id>/<file>`) are
+ *   accepted (the run-artifact tree, confined).
+ *
+ * Failure policy: route handlers own their full response
+ * lifecycle; the routes never throw.
  */
 import type { Context } from '@deepseek-ai/cordis'
 // Type-only: pulls the webServer service declaration onto Context.
@@ -25,33 +40,49 @@ export const name = 'infer-gallery'
 export const inject = ['webServer']
 
 export interface Config {
-/** Base URL of the Melite gateway (no trailing slash needed). */
+/** Base URL of the OWNING DSH (no trailing slash needed) — the
+ *  cross-host posture. Empty (or unset) means in-tree: the
+ *  estate's seats answer in-process. */
 gatewayUrl?: string
-/** Upstream fetch timeout in milliseconds. */
+/** Upstream fetch timeout in milliseconds (cross-host only). */
 timeoutMs?: number
-/** Directory holding run-<id>/_flow.json sidecars (the gateway's output tree). */
+/** Directory holding run-<id>/_flow.json sidecars (the runs output
+ *  tree). Defaults to the estate's SERVER-STATE ROOT LAW tree. */
 flowDir?: string
 }
 
-/** A gallery mounted far from its estate names the OWNING DSH in
- * its profile row (config.gatewayUrl, REQUIRED in that posture —
- * the refusal below is loud). No code default exists at all; a
- * same-host gallery never fetches (the lanes answer in-process). */
 const DEFAULT_TIMEOUT_MS = 15_000
-const RUNS_UPSTREAM = '/v1/flows/runs?limit=50'
-/** The only gateway tree the artifact proxy may touch
- *  (Phase 2 consolidation, 2026-09-04: /v1/assets/runs → /v1/assets/runs). */
-const ASSET_PREFIX = '/v1/assets/runs/'
-/** Sidecar tree default: the estate runs stream (SERVER-STATE ROOT LAW —
- *  build/ was the C era's cwd and is gone). */
+const RUNS_LIMIT = '50'
+const DRAFTS_LIMIT = 200
+/** Sidecar tree default: the estate runs stream (SERVER-STATE ROOT
+ *  LAW — build/ was the C era's cwd and is gone). */
 const DEFAULT_FLOW_DIR = '/home/user/Documents/programs/active/inference.cpp/data/runs/output'
+/** A run-relative artifact name: run-<hex>-<word>/<file> — the
+ *  confinement the artifact route enforces (no .., no leading /). */
+const RUN_RELATIVE = /^run-[0-9a-f]+-[A-Za-z0-9_-]+\/[A-Za-z0-9._-]+$/
 
 const JSON_HEADERS = { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' }
 
-/** Rewrite one gateway-relative asset path to a same-origin proxy URL (empty in, empty out). */
+/** The in-process estate seats this host reads (optional probes at
+ *  the USE site — the cordis-tutorial optional-dependency law; the
+ *  fiber contract stays ['webServer'] so a gallery may mount
+ *  estate-free in the cross-host posture). */
+interface EstateSeats {
+  runs?: { list(limit: string, signal: AbortSignal): Promise<unknown> }
+  draftsRemote?: { list(signal: AbortSignal): Promise<unknown> }
+}
+
+/** Rewrite one run-relative artifact name to a same-origin route
+ * URL (empty in, empty out). */
 function proxyAssetUrl(path: unknown): string {
   if (typeof path !== 'string' || path === '') return ''
   return `/infer-gallery/artifact?path=${encodeURIComponent(path)}`
+}
+
+const fail = (res: { writeHead(s: number, h: Record<string, string>): void; end(b: string): void }, status: number, code: string, payload: Record<string, unknown>): void => {
+  const body = JSON.stringify({ error: code, ...payload })
+  res.writeHead(status, { ...JSON_HEADERS, 'content-length': String(Buffer.byteLength(body)) })
+  res.end(body)
 }
 
 export function apply(ctx: Context, config: Config = {}): void {
@@ -59,84 +90,57 @@ export function apply(ctx: Context, config: Config = {}): void {
   const timeoutMs = config.timeoutMs ?? DEFAULT_TIMEOUT_MS
   const flowDir = config.flowDir ?? DEFAULT_FLOW_DIR
 
-  // MODE (no apply-time estate probe — cordis initializes bundles
-  // concurrently and a ctx.runsRemote read here throws "without
-  // inject" whenever the estate lands later (boot race, proven
-  // 2026-09-10: identical tree booted clean, then crashed on
-  // restart). The mode is structural, resolved per request: a
-  // pinned gatewayUrl means cross-host; otherwise the estate's own
-  // lanes answer in-process, and an unclaimed lane is a loud 502
-  // naming the fix — misconfiguration stays loud, boot stays total.
-  // THE GATEWAY KILL (2026-09-10): the in-process lanes are dead.
-  // Same-host answers 502 LOUD until the gallery rides named Typert
-  // remotes; cross-host still fetches the pinned owning DSH.
-  const upstream = async (path: string): Promise<Response> => {
-    if (gatewayUrl === '') {
-      throw new Error('infer-gallery: estate lanes died with the gateway (2026-09-10) — pin gatewayUrl or migrate to a named Typert remote (GET ' + path + ')')
+  /** One upstream JSON document. Cross-host fetches the owning DSH
+   *  verbatim; in-tree answers over the seat. An absent seat is a
+   *  LOUD 502 naming the fix — no fallback absorbs it. */
+  const upstream = async (lane: string, seat: unknown, call: () => Promise<unknown>): Promise<unknown> => {
+    if (gatewayUrl !== '') {
+      const response = await fetch(`${gatewayUrl}${lane}`, { signal: AbortSignal.timeout(timeoutMs) })
+      const body = await response.text()
+      if (!response.ok) {
+        throw new GalleryUpstreamError(`upstream ${lane} answered ${response.status}`, body.slice(0, 2_000), response.status)
+      }
+      return JSON.parse(body)
     }
-    return fetch(`${gatewayUrl}${path}`, { signal: AbortSignal.timeout(timeoutMs) })
+    if (seat === undefined) {
+      throw new GallerySeatError(`infer-gallery: no estate seat for ${lane} in this tree — mount @melite-plugin/melite-estate or pin gatewayUrl (the owning DSH)`)
+    }
+    return call()
   }
 
-  ctx.logger.info('infer-gallery proxying %s (gateway %s)', RUNS_UPSTREAM, gatewayUrl)
+  ctx.logger.info('infer-gallery serving (%s)', gatewayUrl === '' ? 'in-tree estate seats' : `owning DSH ${gatewayUrl}`)
 
   /* The FLOWS door: the drafts list (the composed action cards, the
-   * queue-native flow instances). /v1/flows/drafts is newest-first;
-   * DRAFTS_LIMIT caps the payload — the sidebar is a browser, not an
-   * archive (the full index stays reachable at the gateway itself).
-   * Draft rows are params docs: no artifact URLs to rewrite, unlike runs. */
-  const DRAFTS_UPSTREAM = '/v1/flows/drafts'
-  const DRAFTS_LIMIT = 200
+   * queue-native flow instances). Newest-first; DRAFTS_LIMIT caps
+   * the payload — the sidebar is a browser, not an archive. Draft
+   * rows are params docs: no artifact names to rewrite, unlike
+   * runs. */
   ctx.effect(() => ctx.webServer.register({
     kind: 'exact',
     path: '/infer-gallery/drafts',
     handler: async (_req, res) => {
       try {
-        const response = await upstream(DRAFTS_UPSTREAM)
-        const body = await response.text()
-        if (!response.ok) {
-          res.writeHead(response.status, JSON_HEADERS)
-          res.end(JSON.stringify({
-            error: 'gateway_error',
-            status: response.status,
-            upstream: `${gatewayUrl}${DRAFTS_UPSTREAM}`,
-            body: body.slice(0, 2_000),
-          }))
-          return
-        }
-        let payload: unknown
-        try {
-          payload = JSON.parse(body)
-        } catch {
-          res.writeHead(502, JSON_HEADERS)
-          res.end(JSON.stringify({
-            error: 'gateway_bad_payload',
-            message: 'upstream /v1/flows/drafts returned non-JSON body',
-            body: body.slice(0, 2_000),
-          }))
-          return
-        }
-        const all = Array.isArray((payload as { drafts?: unknown })?.drafts)
-          ? (payload as { drafts: Record<string, unknown>[] }).drafts
-          : []
+        const signal = new AbortController().signal
+        const payload = (await upstream('/v1/flows/drafts', ctx.get('draftsRemote', false), () => (ctx.get('draftsRemote', false) as EstateSeats['draftsRemote'])!.list(signal))) as { drafts?: Record<string, unknown>[] }
+        const all = Array.isArray(payload?.drafts) ? payload.drafts : []
         const drafts = all.slice(0, DRAFTS_LIMIT)
-        const draftsBody = JSON.stringify({
+        const body = JSON.stringify({
           gateway: gatewayUrl,
           total: all.length,
           truncated: all.length > drafts.length,
           drafts,
         })
-        res.writeHead(200, { ...JSON_HEADERS, 'content-length': String(Buffer.byteLength(draftsBody)) })
-        res.end(Buffer.from(draftsBody))
+        res.writeHead(200, { ...JSON_HEADERS, 'content-length': String(Buffer.byteLength(body)) })
+        res.end(Buffer.from(body))
       } catch (error) {
-        const message = error instanceof Error ? error.message : String(error)
-        ctx.logger.warn('infer-gallery: gateway unreachable: %s', message)
-        res.writeHead(502, JSON_HEADERS)
-        res.end(JSON.stringify({
-          error: 'gateway_unreachable',
-          message,
-          gatewayUrl,
-          upstream: `${gatewayUrl}${DRAFTS_UPSTREAM}`,
-        }))
+        ctx.logger.warn('infer-gallery: drafts failed: %s', error instanceof Error ? error.message : String(error))
+        if (error instanceof GalleryUpstreamError) {
+          fail(res, error.status, 'gateway_error', { upstream: `${gatewayUrl}/v1/flows/drafts`, body: error.body })
+        } else if (error instanceof GallerySeatError) {
+          fail(res, 502, 'no_estate_seat', { message: error.message, lane: '/v1/flows/drafts' })
+        } else {
+          fail(res, 502, 'gateway_unreachable', { message: error instanceof Error ? error.message : String(error), gatewayUrl, upstream: `${gatewayUrl}/v1/flows/drafts` })
+        }
       }
     },
   }), 'infer-gallery: /infer-gallery/drafts route')
@@ -152,13 +156,8 @@ export function apply(ctx: Context, config: Config = {}): void {
     handler: async (req, res) => {
       const url = new URL(req.url ?? '/', 'http://infer-gallery.invalid')
       const runId = url.searchParams.get('run_id') ?? ''
-      const fail = (status: number, code: string, message: string): void => {
-        const b = JSON.stringify({ error: code, message })
-        res.writeHead(status, { ...JSON_HEADERS, 'content-length': String(Buffer.byteLength(b)) })
-        res.end(Buffer.from(b))
-      }
       if (!/^[A-Za-z0-9_-]+$/.test(runId)) {
-        fail(400, 'bad_run_id', 'run_id must be [A-Za-z0-9_-]+')
+        fail(res, 400, 'bad_run_id', { message: 'run_id must be [A-Za-z0-9_-]+' })
         return
       }
       try {
@@ -176,7 +175,7 @@ export function apply(ctx: Context, config: Config = {}): void {
       } catch (error) {
         const message = error instanceof Error ? error.message : String(error)
         ctx.logger.warn('infer-gallery: flow doc read failed: %s', message)
-        fail(404, 'no_sidecar', `no readable _flow.json for ${runId}`)
+        fail(res, 404, 'no_sidecar', { message: `no readable _flow.json for ${runId}` })
       }
     },
   }), 'infer-gallery: /infer-gallery/flow route')
@@ -186,34 +185,9 @@ export function apply(ctx: Context, config: Config = {}): void {
     path: '/infer-gallery/runs',
     handler: async (_req, res) => {
       try {
-        const response = await upstream(RUNS_UPSTREAM)
-        const body = await response.text()
-        if (!response.ok) {
-          // Upstream answered with an error status: pass it through verbatim.
-          res.writeHead(response.status, JSON_HEADERS)
-          res.end(JSON.stringify({
-            error: 'gateway_error',
-            status: response.status,
-            upstream: `${gatewayUrl}${RUNS_UPSTREAM}`,
-            body: body.slice(0, 2_000),
-          }))
-          return
-        }
-        let payload: unknown
-        try {
-          payload = JSON.parse(body)
-        } catch {
-          res.writeHead(502, JSON_HEADERS)
-          res.end(JSON.stringify({
-            error: 'gateway_bad_payload',
-            message: 'upstream /v1/flows/runs returned non-JSON body',
-            body: body.slice(0, 2_000),
-          }))
-          return
-        }
-        const runs = Array.isArray((payload as { runs?: unknown })?.runs)
-          ? (payload as { runs: Record<string, unknown>[] }).runs
-          : []
+        const signal = new AbortController().signal
+        const payload = (await upstream(`/v1/flows/runs?limit=${RUNS_LIMIT}`, ctx.get('runs', false), () => (ctx.get('runs', false) as EstateSeats['runs'])!.list(RUNS_LIMIT, signal))) as { runs?: Record<string, unknown>[] }
+        const runs = Array.isArray(payload?.runs) ? payload.runs : []
         for (const run of runs) {
           run.thumbnail = proxyAssetUrl(run.thumbnail)
           if (Array.isArray(run.artifacts)) {
@@ -224,19 +198,18 @@ export function apply(ctx: Context, config: Config = {}): void {
             }
           }
         }
-        const runsBody = JSON.stringify({ gateway: gatewayUrl, runs })
-        res.writeHead(200, { ...JSON_HEADERS, 'content-length': String(Buffer.byteLength(runsBody)) })
-        res.end(Buffer.from(runsBody))
+        const body = JSON.stringify({ gateway: gatewayUrl, runs })
+        res.writeHead(200, { ...JSON_HEADERS, 'content-length': String(Buffer.byteLength(body)) })
+        res.end(Buffer.from(body))
       } catch (error) {
-        const message = error instanceof Error ? error.message : String(error)
-        ctx.logger.warn('infer-gallery: gateway unreachable: %s', message)
-        res.writeHead(502, JSON_HEADERS)
-        res.end(JSON.stringify({
-          error: 'gateway_unreachable',
-          message,
-          gatewayUrl,
-          upstream: `${gatewayUrl}${RUNS_UPSTREAM}`,
-        }))
+        ctx.logger.warn('infer-gallery: runs failed: %s', error instanceof Error ? error.message : String(error))
+        if (error instanceof GalleryUpstreamError) {
+          fail(res, error.status, 'gateway_error', { upstream: `${gatewayUrl}/v1/flows/runs`, body: error.body })
+        } else if (error instanceof GallerySeatError) {
+          fail(res, 502, 'no_estate_seat', { message: error.message, lane: '/v1/flows/runs' })
+        } else {
+          fail(res, 502, 'gateway_unreachable', { message: error instanceof Error ? error.message : String(error), gatewayUrl, upstream: `${gatewayUrl}/v1/flows/runs` })
+        }
       }
     },
   }), 'infer-gallery: /infer-gallery/runs route')
@@ -247,40 +220,59 @@ export function apply(ctx: Context, config: Config = {}): void {
     handler: async (req, res) => {
       const url = new URL(req.url ?? '/', 'http://infer-gallery.invalid')
       const target = url.searchParams.get('path') ?? ''
-      if (!target.startsWith(ASSET_PREFIX)) {
-        res.writeHead(400, JSON_HEADERS)
-        res.end(JSON.stringify({
-          error: 'forbidden_path',
-          message: `artifact proxy only serves paths under ${ASSET_PREFIX}`,
-          path: target,
-        }))
+      if (!RUN_RELATIVE.test(target)) {
+        fail(res, 400, 'forbidden_path', { message: 'artifact route only serves run-relative names (run-<id>/<file>)', path: target })
         return
       }
       try {
-        const response = await upstream(target)
-        if (!response.ok || response.body === null) {
-          res.writeHead(response.status, JSON_HEADERS)
-          res.end(JSON.stringify({
-            error: 'gateway_error',
-            status: response.status,
-            upstream: `${gatewayUrl}${target}`,
-          }))
+        if (gatewayUrl !== '') {
+          // Cross-host: the owning DSH's asset tree (the /v1/assets
+          // prefix rides only in this posture — the in-tree rows are
+          // run-relative by the REBUILD-6 divergence law).
+          const response = await fetch(`${gatewayUrl}/v1/assets/runs/${target}`, { signal: AbortSignal.timeout(timeoutMs) })
+          if (!response.ok || response.body === null) {
+            fail(res, response.status, 'gateway_error', { upstream: `${gatewayUrl}/v1/assets/runs/${target}` })
+            return
+          }
+          const buffer = Buffer.from(await response.arrayBuffer())
+          res.writeHead(response.status, {
+            'content-type': response.headers.get('content-type') ?? 'application/octet-stream',
+            'cache-control': 'no-store',
+            // explicit length: remote proxies (tailscale serve) mishandle chunked
+            // framing on lossy links — a known length lets them buffer instead.
+            'content-length': String(buffer.byteLength),
+          })
+          res.end(buffer)
           return
         }
-        const buffer = Buffer.from(await response.arrayBuffer())
-        res.writeHead(response.status, {
-          'content-type': response.headers.get('content-type') ?? 'application/octet-stream',
-          'cache-control': 'no-store',
-          // explicit length: remote proxies (tailscale serve) mishandle chunked
-          // framing on lossy links — a known length lets them buffer instead.
-          'content-length': String(buffer.byteLength),
-        })
-        res.end(buffer)
+        // In-tree: the runs output tree itself (the same sidecar
+        // tree /infer-gallery/flow reads — one disk, no seat).
+        const fs = await import('node:fs/promises')
+        const file = await fs.readFile(`${flowDir}/${target}`)
+        const ext = target.slice(target.lastIndexOf('.') + 1).toLowerCase()
+        const type = ext === 'png' ? 'image/png' : ext === 'jpg' || ext === 'jpeg' ? 'image/jpeg' : ext === 'webp' ? 'image/webp' : ext === 'mp4' || ext === 'webm' ? 'video/webm' : 'application/octet-stream'
+        res.writeHead(200, { 'content-type': type, 'cache-control': 'no-store', 'content-length': String(file.byteLength) })
+        res.end(file)
       } catch (error) {
         const message = error instanceof Error ? error.message : String(error)
-        res.writeHead(502, JSON_HEADERS)
-        res.end(JSON.stringify({ error: 'gateway_unreachable', message, path: target }))
+        ctx.logger.warn('infer-gallery: artifact failed: %s', message)
+        fail(res, 502, 'artifact_unreadable', { message, path: target })
       }
     },
   }), 'infer-gallery: /infer-gallery/artifact route')
 }
+
+/** Cross-host upstream answered an error status (its body rides). */
+class GalleryUpstreamError extends Error {
+  readonly body: string
+  readonly status: number
+  constructor(message: string, body: string, status: number) {
+    super(message)
+    this.body = body
+    this.status = status
+  }
+}
+
+/** In-tree posture with the estate absent — the loud 502 (nothing
+ *  absorbs a missing seat). */
+class GallerySeatError extends Error {}
