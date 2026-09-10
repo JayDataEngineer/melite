@@ -1,4 +1,4 @@
-import { a as makeEstateRequest, i as routeName, r as resolveHarnessRoutes, t as harnessEnhance } from "./llm-complete-BlJA3g00.mjs";
+import { a as makeEstateRequest, i as routeName, r as resolveHarnessRoutes, t as harnessEnhance } from "./llm-complete-C3cUG4ye.mjs";
 //#region src/enhance-agent.ts
 /**
 * The AGENT-side enhance orchestration — shared by the chat tool and the

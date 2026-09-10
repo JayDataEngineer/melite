@@ -222,3 +222,46 @@ test("the skills seat — index + read, the door's voices (REBUILD-16)", async (
   const laneDoc = (await request("GET", "/v1/skills/flow%3Afit-seat", undefined, sig)) as { id?: string };
   assert.equal(laneDoc.id, "flow:fit-seat", "lane serves the read");
 });
+
+test("the load seat — card + flow bundles, the door's voices (REBUILD-17)", async () => {
+  const root = mkdtempSync(join(tmpdir(), "disclose-wall-"));
+  const ctx = new Context();
+  process.env["MELITE_STATE_ROOT"] = root;
+  await ctx.plugin(timerPlugin as never);
+  await ctx.plugin(queuePlugin as never);
+  await ctx.plugin(Storage as never);
+  await ctx.plugin({ name: jsonName, inject: jsonInject, apply: jsonApply, Config: JsonConfig } as never, { root });
+  await ctx.plugin({ name: domainName, inject: domainInject, apply: domainApply, Config: DomainConfig } as never, { backend: "json" });
+  await ctx.plugin(draftsPlugin as never);
+  await ctx.plugin(cardRegistryProvider as never);
+  const { loadProvider } = await import("../../../../packages/harness/estate-queue/src/index.ts");
+  await ctx.plugin(loadProvider as never);
+  const load = ctx.get("load", false) as { load(t: string, n: string): { bundle?: Record<string, unknown> } };
+  assert.ok(load, "the load seat is live");
+  // 1. the parameter law: inference_type must be card|flow, name
+  //    required — the door's voices.
+  assert.throws(() => load.load("model", "x"), /inference_type=card\|flow/);
+  assert.throws(() => load.load("card", ""), /name/);
+  // 2. a CARD bundle: signature + agents docs + skill lines.
+  const card = load.load("card", "image-gen");
+  const b = card.bundle as { kind?: string; name?: string; signature?: unknown; agents?: unknown[]; skills?: unknown[]; digest?: string };
+  assert.equal(b.kind, "card");
+  assert.equal(b.name, "image-gen");
+  assert.ok(b.signature, "signature present");
+  assert.ok(Array.isArray(b.agents), "agents docs present");
+  assert.ok(typeof b.digest === "string" && b.digest !== "", "digest present");
+  // 3. a FLOW bundle: slim stages + skill refs.
+  const flow = load.load("flow", "fit-seat");
+  const fb = flow.bundle as { kind?: string; name?: string; stages?: unknown[] };
+  assert.equal(fb.kind, "flow");
+  assert.ok(Array.isArray(fb.stages) && (fb.stages?.length ?? 0) > 0, "stages present");
+  // 4. unknowns answer the door's voice.
+  assert.throws(() => load.load("card", "no-such-card"), /unknown card 'no-such-card'/);
+  assert.throws(() => load.load("flow", "no-such-flow"), /unknown flow 'no-such-flow'/);
+  // 5. the lane grammar serves the bundle.
+  const { makeEstateRequest } = await import("../../../../packages/harness/melite-tools/src/estate.ts");
+  const request = makeEstateRequest(ctx);
+  const sig = new AbortController().signal;
+  const lane = (await request("GET", "/v1/load?inference_type=card&name=image-gen", undefined, sig)) as { bundle?: { name?: string } };
+  assert.equal(lane.bundle?.name, "image-gen", "lane serves the bundle");
+});

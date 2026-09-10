@@ -34,6 +34,7 @@ import queuePlugin, {
   manageProvider,
   runsRegistryPlugin,
   skillProvider,
+  loadProvider,
 } from "@melite/estate-queue";
 import { runsRemotePlugin } from "@melite/estate-runs";
 
@@ -65,6 +66,9 @@ const rows: readonly Plugin[] = [
   // The skills seat (REBUILD-16): the index + read over the
   // doc-tree walks — gates on the queue seat (the ledger seam).
   skillProvider,
+  // The load seat (REBUILD-17): Melite load opens ONE card or
+  // flow — the bundle (agents md + signature + skill lines).
+  loadProvider,
   runsRegistryPlugin,
   runsRemotePlugin,
 ];

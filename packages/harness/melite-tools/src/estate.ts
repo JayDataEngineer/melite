@@ -87,6 +87,12 @@ interface Seats {
     index(): unknown
     read(id: string, signal: AbortSignal): unknown
   }
+
+  /** The load seat (REBUILD-17): Melite load opens ONE card or
+   *  flow — the bundle (agents md + signature + tier-1 lines). */
+  load?: {
+    load(inferenceType: string, name: string): unknown
+  }
 }
 
 /** Route one KV/runs lane to its seat; undefined = no seat / no match. */
@@ -108,6 +114,7 @@ async function trySeats(
     get disclose() { return probe.get('disclose') as Seats['disclose'] },
     get manage() { return probe.get('manage') as Seats['manage'] },
     get skills() { return probe.get('skills') as Seats['skills'] },
+    get load() { return probe.get('load') as Seats['load'] },
   }
   signal.throwIfAborted()
 
@@ -223,6 +230,15 @@ async function trySeats(
   if (method === 'GET' && m !== null) {
     if (seats.skills === undefined) return undefined
     return seats.skills.read(decodeURIComponent(m[1]!), signal)
+  }
+  // The load lane (REBUILD-17): Melite load over the load seat —
+  // the query string rides the door's own params (inference_type /
+  // name).
+  m = /^\/v1\/load(?:\?([^/]*))?$/.exec(path)
+  if (method === 'GET' && m !== null) {
+    if (seats.load === undefined) return undefined
+    const qs = new URLSearchParams(m[1] ?? '')
+    return seats.load.load(qs.get('inference_type') ?? '', qs.get('name') ?? '')
   }
   return undefined
 }

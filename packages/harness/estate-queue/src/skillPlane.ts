@@ -773,7 +773,7 @@ export function engineDirs(enginesRoot: string): string[] {
 
 /** LEVEL 1+3 model docs (lane_disclosure._model_rows 259-312):
  *  GUIDE.md / agents/AGENT.md / agents/skills/* per model dir. */
-function modelRows(engine: string): DocRow[] {
+export function modelRows(engine: string): DocRow[] {
   const rows: DocRow[] = [];
   const modelsRoot: string = join(engine, "models");
   if (!isDir(modelsRoot)) return rows;
