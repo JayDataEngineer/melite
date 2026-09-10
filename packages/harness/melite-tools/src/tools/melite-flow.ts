@@ -20,8 +20,9 @@
 // chat tile handle (FlowCards parseCardsBlock), never an agent arg.
 import { defineTool } from '@deepseek-ai/dsh-tools'
 import type { ToolCallView } from '@deepseek-ai/dsh-tools'
+import { remoteErrorOf } from '@deepseek-ai/dsh-typert-protocol'
+import type { EstateRequest } from '../estate.ts'
 import type { JsonValue, ToolDefinition } from '../types.ts'
-import { RayGatewayError } from '../estate.ts'
 import { jsonClean } from '../json-clean.ts'
 import { DEFAULT_BENCH, projectStages } from './melite-construct.ts'
 export interface MeliteConnectArg {
@@ -179,12 +180,11 @@ async function startRun(
   try {
     res = await request( 'POST', '/v1/flows/start', body, signal, TIMEOUT_MS) as StartResult
   } catch (e) {
-    if (e instanceof RayGatewayError) {
-      let named = ''
-      try {
-        named = String((JSON.parse(e.body) as { error?: unknown }).error ?? '')
-      } catch { named = '' }
-      return { error: named || e.body || 'queue refused the start' }
+    // Remote refusals carry their named error on the protocol's one
+    // class (the RayGatewayError HTTP-era arm died with the seats).
+    const re = remoteErrorOf(e)
+    if (re !== null && re !== undefined) {
+      return { error: re.message || 'queue refused the start' }
     }
     throw e
   }
@@ -228,7 +228,9 @@ async function runBench(
   try {
     b = await request( 'GET', `/v1/bench/${DEFAULT_BENCH}`, undefined, signal, 15_000) as Record<string, unknown>
   } catch (e) {
-    if (e instanceof RayGatewayError && e.status === 404) {
+    // The bench remote classifies the empty bench as bench/not-found
+    // (the HTTP 404 died with the door).
+    if (remoteErrorOf(e)?.code === 'bench/not-found') {
       return { error: 'the bench is empty — construct stages first (melite_construct)' }
     }
     throw e
@@ -326,13 +328,8 @@ async function runTemplate(
       stages: [{ id: 's_0', engine: 'comfyui', ref_flow: flow, params: {} }],
     }, signal)
   } catch (e) {
-    if (e instanceof RayGatewayError) {
-      let named = ''
-      try {
-        named = String((JSON.parse(e.body) as { error?: unknown }).error ?? '')
-      } catch { named = '' }
-      return { mode: 'flow', target: flow, error: named || e.body || 'card compose refused the template' }
-    }
+    // The bench remote's refusal (RemoteError) — its message is the
+    // diagnostic ("bench moved: rev is N, caller held M").
     return { mode: 'flow', target: flow, error: e instanceof Error ? e.message : String(e) }
   }
   const started = await startRun(request, { ...overrides, flow, test: a.test === true, draft_id: draftId }, signal)
@@ -377,12 +374,9 @@ async function runAdHoc(
   try {
     await request( 'POST', '/v1/flows/validate', flowBody, signal, VALIDATE_TIMEOUT_MS)
   } catch (e) {
-    if (e instanceof RayGatewayError) {
-      let named = ''
-      try {
-        named = String((JSON.parse(e.body) as { error?: unknown }).error ?? '')
-      } catch { named = '' }
-      return { mode: 'adhoc', target: flowId, error: named || e.body || 'flow does not compile' }
+    const re = remoteErrorOf(e)
+    if (re !== null && re !== undefined) {
+      return { mode: 'adhoc', target: flowId, error: re.message || 'flow does not compile' }
     }
     throw e
   }
@@ -594,17 +588,14 @@ export function meliteFlow(request: EstateRequest): ToolDefinition {
           test,
         }, exec.signal)) as FlowResult;
       } catch (e) {
-        if (e instanceof RayGatewayError) {
-          let named = ''
-          try {
-            named = String((JSON.parse(e.body) as { error?: unknown }).error ?? '')
-          } catch { named = '' }
+        const re = remoteErrorOf(e)
+        if (re !== null && re !== undefined) {
           // Ledger row 11: the refusal echoes mode/target (the fields the
           // schema requires of EVERY shape — comfy-manage's ok/action
           // pattern) so a careful refusal never fails output validation.
           const mode = hasFlow ? 'flow' : (hasCard ? 'card' : 'adhoc')
           const target = hasFlow ? String(a.flow) : (hasCard ? String(a.card) : 'pipeline')
-          return jsonClean<FlowResult>({ error: named || e.body || 'gateway refused', mode, target });
+          return jsonClean<FlowResult>({ error: re.message || 'remote refused', mode, target });
         }
         throw e;
       }

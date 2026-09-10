@@ -75,15 +75,16 @@ export function enhanceOneField(
 export type LlmSeam = import('./llm-complete.ts').LlmStreamSeam
 
 /**
- * GENERIC FALLBACK RECIPE — MOVED to @melite/gateway-core
- * (schema/promptGuide.ts, the disclosure stroke): most models declare
- * no per-model enhance recipe; the kernel owns the one spelling, the
- * ✦ sweep door and the disclosure bundle both consume it. Re-exported
- * here so existing importers never chase the move.
+ * GENERIC FALLBACK RECIPE — BACK HOME (the gateway kill,
+ * 2026-09-10): the ONE spelling lives here, where it was born (the
+ * disclosure bundle that shared it died with the gateway).
  */
-import { GENERIC_ENHANCE_RECIPE } from '@melite/gateway-core/prompt-guide'
-
-export { GENERIC_ENHANCE_RECIPE }
+export const GENERIC_ENHANCE_RECIPE: string =
+  'You rewrite rough generation prompts into model-optimal ones. '
+  + 'Expand terse descriptions into concrete visual/audio language: subject, '
+  + 'action, setting, lighting, composition, style, medium, detail level. '
+  + 'Reply with ONLY a JSON object {"positive": "<the rewritten prompt>", '
+  + '"negative": "<what to avoid, or empty string>"} — no prose outside the JSON.';
 
 /**
  * THE SWEEP — every declared field, one press. The route's model-form uses

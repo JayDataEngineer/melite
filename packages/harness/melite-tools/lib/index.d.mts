@@ -1126,6 +1126,15 @@ declare abstract class Service<out T = never> {
 }
 //#endregion
 //#region src/estate.d.ts
+/**
+ * estate.ts — the tools' ONE transport: the ctx seats, in-process.
+ *
+ * NO HTTP, NO URL, NO PORT (the remotes migration, R2b). The KV/runs
+ * lanes ride the wire package's Typert seats (draftsRemote/
+ * benchRemote/runsRemote — plain method calls on ctx). The lane
+ * fallback died with the gateway (2026-09-10): any lane without a
+ * seat throws LOUD — no silent absorb, QUEUE LANE LAW.
+ */
 declare class RayGatewayError extends Error {
   readonly status: number;
   readonly url: string;
@@ -1134,8 +1143,9 @@ declare class RayGatewayError extends Error {
 }
 type EstateMethod = 'GET' | 'POST' | 'PATCH';
 type EstateRequest$1 = (method: EstateMethod, path: string, body: unknown, execSignal: AbortSignal, timeoutMs: number) => Promise<unknown>;
-/** Build the tools' request: seats first, then the door listeners —
- *  both in-process. There is no third path. */
+/** Build the tools' request: seats only, in-process. A lane with no
+ *  seat is a hard error (the gateway that used to absorb it is
+ *  dead) — the caller migrates to a named remote. */
 declare function makeEstateRequest(ctx: unknown): EstateRequest$1;
 //#endregion
 //#region src/tools/run-status.d.ts

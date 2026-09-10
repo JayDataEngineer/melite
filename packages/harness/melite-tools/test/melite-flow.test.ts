@@ -11,31 +11,54 @@
 //   5. CARD BIRTH LAW: compose-first in every mode — the start
 //      rides the minted draft_id; a refused compose never starts
 
-import { afterEach, describe, expect, test } from 'bun:test'
+import { describe, test } from 'node:test'
+import assert from 'node:assert/strict'
+import { RemoteError } from '@deepseek-ai/dsh-typert-protocol'
 import { meliteFlow } from '../src/tools/melite-flow.ts'
+import type { EstateRequest } from '../src/estate.ts'
 
-const origFetch = globalThis.fetch
-afterEach(() => { globalThis.fetch = origFetch })
-
+// The recording fake IS the estate's far side (EstateRequest, the
+// transport contract): no global fetch, no HTTP, no port — the same
+// seam makeEstateRequest builds in production.
 interface Seen {
-  calls: Array<{ url: string; init: RequestInit | undefined }>
+  calls: Array<{ url: string; init: { body?: unknown } | undefined }>
+  request: EstateRequest
 }
 
 function mockFetch(handlers: Array<(url: string, body: unknown) => { status: number; body: unknown } | undefined>): Seen {
-  const seen: Seen = { calls: [] }
-  globalThis.fetch = (async (url: unknown, init?: RequestInit) => {
-    const u = String(url)
-    const body = init !== undefined && typeof init.body === 'string'
-      ? JSON.parse(init.body) : undefined
-    seen.calls.push({ url: u, init })
+  const seen: Seen = {
+    calls: [],
+    request: undefined as never,
+  }
+  seen.request = (async (_method: 'POST', path: string, body: unknown): Promise<unknown> => {
+    const u = path
+    seen.calls.push({ url: u, init: { body } })
     for (const h of handlers) {
       const r = h(u, body)
       if (r !== undefined) {
-        return new Response(JSON.stringify(r.body), { status: r.status })
+        if (r.status < 200 || r.status >= 300) {
+          // Bench lanes speak the remote voice: the missing bench is
+          // the classified bench/not-found RemoteError (the seats'
+          // law; the HTTP 404 died with the door).
+          if (/\/v1\/bench(\/|$)/.test(u) && r.status === 404) {
+            const msg = typeof r.body === 'object' && r.body !== null && 'error' in r.body
+              ? String((r.body as { error: unknown }).error)
+              : 'no such bench'
+            throw new RemoteError('bench/not-found', msg, { session: 'main' })
+          }
+          // The seats' voice: a 4xx is a named RemoteError (the
+          // body's error text rides the message — what the seats
+          // deliver for compile/start refusals).
+          const msg = typeof r.body === 'object' && r.body !== null && 'error' in r.body
+            ? String((r.body as { error: unknown }).error)
+            : 'mock refusal'
+          throw new RemoteError('runs/flow-compile', msg, { loc: 'flow' })
+        }
+        return r.body
       }
     }
-    return new Response('unmocked', { status: 500 })
-  }) as typeof fetch
+    throw new RemoteError('runs/unknown-run', 'unmocked lane ' + u, { runId: '' })
+  }) as EstateRequest
   return seen
 }
 
@@ -52,6 +75,18 @@ const FLOW = {
   ],
 }
 
+/** The bench law: every run mode ensures THE shared bench first —
+ *  the fixtures answer it like the bench door would. */
+function okBenchWith(id: string): (url: string) => { status: number; body: unknown } | undefined {
+  return (url: string) => {
+    if (url.endsWith('/v1/bench/ensure') || url.startsWith('/v1/bench/')) {
+      return { status: 200, body: { bench: 'the-shared-bench', draft_id: id, ok: true } }
+    }
+    return undefined
+  }
+}
+const okBench = okBenchWith('d_bench')
+
 function okValidate(url: string, body: unknown) {
   if (url.endsWith('/v1/flows/validate')) {
     return { status: 200, body: { ok: true, flow: (body as { id: string }).id, stages: [] } }
@@ -61,7 +96,7 @@ function okValidate(url: string, body: unknown) {
 
 function okDraftThenStart(draftId: string, runId: string) {
   return (_u: string, body: unknown) => {
-    if (String(_u).endsWith('/v1/flows/drafts')) {
+    if (String(_u).endsWith('/v1/bench/ensure')) {
       return { status: 200, body: { draftId, stages: (body as { stages: unknown[] }).stages } }
     }
     if (String(_u).endsWith('/v1/flows/start')) {
@@ -71,85 +106,86 @@ function okDraftThenStart(draftId: string, runId: string) {
   }
 }
 
-function decodeJsonBody(init: RequestInit | undefined): Record<string, unknown> {
-  if (!init || !init.body) throw new Error('no body captured')
-  if (typeof init.body !== 'string') throw new Error('body is not a string')
-  return JSON.parse(init.body) as Record<string, unknown>
+function decodeJsonBody(init: { body?: unknown } | undefined): Record<string, unknown> {
+  if (!init || init.body === undefined) throw new Error('no body captured')
+  return init.body as Record<string, unknown>
 }
 
 describe('melite_flow adhoc — the AI feedback loop', () => {
   test('validate runs FIRST; draft + start follow; result carries no flow body', async () => {
-    const seen = mockFetch([okValidate, okDraftThenStart('d1', 'r1')])
-    const tool = meliteFlow('http://g')
+    const seen = mockFetch([okBenchWith('d1'), okValidate, okDraftThenStart('d1', 'r1')])
+    const tool = meliteFlow(seen.request)
     const out = await tool.execute({ ...FLOW }, { signal: AbortSignal.timeout(2000) }) as Record<string, unknown>
-    expect(out.error).toBeUndefined()
-    expect(out.mode).toBe('adhoc')
-    expect(out.target).toBe('still-to-motion')
-    expect(out.run_id).toBe('r1')
+    assert.equal(out.error, undefined)
+    assert.equal(out.mode, 'adhoc')
+    assert.equal(out.target, 'still-to-motion')
+    assert.equal(out.run_id, 'r1')
     // ONE carrier: the compiled body rides the DRAFT DOC (`flow`
     // member — the card surface hydrates from the draft), never the
     // tool result. A result-carried copy would be a second source of
     // truth to drift.
-    expect(out.flow_inline).toBeUndefined()
-    expect(out.flow).toBeUndefined()
-    // order: validate before drafts before start
+    assert.equal(out.flow_inline, undefined)
+    assert.equal(out.flow, undefined)
     const paths = seen.calls.map((c) => c.url)
-    expect(paths[0]).toContain('/v1/flows/validate')
-    expect(paths[1]).toContain('/v1/flows/drafts')
-    expect(paths[2]).toContain('/v1/flows/start')
+    // the CURRENT law: validate FIRST (no GPU on a bad wire), then the
+    // bench ensure (the doc-backed draft), then start. No drafts door.
+    assert.ok(paths[0].includes('/v1/flows/validate'), paths[0] + ' lacks ' + '/v1/flows/validate')
+    assert.ok(paths[1].includes('/v1/bench/ensure'), paths[1] + ' lacks ' + '/v1/bench/ensure')
+    assert.ok(paths[2].includes('/v1/flows/start'), paths[2] + ' lacks ' + '/v1/flows/start')
     const draftBody = decodeJsonBody(seen.calls[1].init)
     // the folded body: connect inference + explicit kind
-    const move = (draftBody.flow as { stages: Array<{ inputs: unknown; expected: unknown }> }).stages[1]
-    expect(move.inputs).toEqual({
+    const move = (draftBody.stages as Array<{ inputs: unknown; expected: unknown }>)[1]
+    assert.deepEqual(move.inputs, {
       frame: { stage: 'still', output: 'default' },
       prompt: { initial: 'prompt' },
     })
-    expect(move.expected).toEqual({ frame: 'image', prompt: 'text' })
+    assert.deepEqual(move.expected, { frame: 'image', prompt: 'text' })
     // the draft body: one tile per stage, ids SHARED with the flow
     // body (the editor's param overlay joins card ↔ flow stage by id —
     // mismatched ids would silently drop user edits at Run time)
-    const tiles = draftBody.stages as Array<{ id: string; service: string }>
-    expect(tiles).toHaveLength(2)
-    expect(tiles.map((s) => s.id)).toEqual(['still', 'move'])
-    expect(tiles[0].service).toBe('comfyui')
-    // the start rides the COMPILED body + the minted draft
+    const tiles = draftBody.stages as Array<{ id: string; engine: string }>
+    assert.equal(tiles.length, 2)
+    assert.deepEqual(tiles.map((s) => s.id), ['still', 'move'])
+    assert.equal(tiles[0].engine, 'comfyui')
+    // the start rides the COMPILED body + the bench's doc-backed draft
     const startBody = decodeJsonBody(seen.calls[2].init)
-    expect((startBody.flow_inline as { id: string }).id).toBe('still-to-motion')
-    expect(startBody.draft_id).toBe('d1')
-    expect(startBody.test).toBe(false)
+    assert.equal((startBody.flow_inline as { id: string }).id, 'still-to-motion')
+    assert.equal(startBody.draft_id, 'd1')
+    assert.equal(startBody.test, false)
   })
 
   test('a compile refusal rides the VALUE verbatim and no draft is posted', async () => {
     const refusal = "flow 'x' stage 'move' input 'frame': expected text, got image "
       + "from stage 'still' output 'default' — must be text"
-    const seen = mockFetch([
+    const seen = mockFetch([okBench, 
       () => ({ status: 400, body: { error: refusal } }),
     ])
-    const tool = meliteFlow('http://g')
+    const tool = meliteFlow(seen.request)
     const out = await tool.execute({ ...FLOW }, { signal: AbortSignal.timeout(2000) }) as Record<string, unknown>
-    expect(String(out.error)).toContain(refusal)   // verbatim compile text, valued
-    expect(seen.calls.some((c) => c.url.includes('/v1/flows/drafts'))).toBe(false)
+    assert.ok(String(out.error).includes(refusal), String(out.error) + ' lacks ' + refusal)   // verbatim compile text, valued
+    assert.equal(seen.calls.some((c) => c.url.includes('/v1/flows/drafts')), false)
   })
 
   test('initial wires without a kind refuse pre-HTTP (nothing to infer)', async () => {
-    const seen = mockFetch([okValidate])
-    const tool = meliteFlow('http://g')
+    const seen = mockFetch([okBench, okValidate])
+    const tool = meliteFlow(seen.request)
     const out = await tool.execute({
       stages: [{ id: 'a', engine: 'comfyui' }],
       connects: [{ from: 'initial.prompt', to: 'a.prompt' }],
     }, { signal: AbortSignal.timeout(2000) }) as Record<string, unknown>
-    expect(String(out.error)).toContain('initial wires ALWAYS need an explicit kind')
-    expect(seen.calls).toHaveLength(0)      // refused before any HTTP
+    assert.ok(String(out.error).includes('initial wires ALWAYS need an explicit kind'), String(out.error) + ' lacks ' + 'initial wires ALWAYS need an explicit kind')
+    assert.equal(seen.calls.length, 0)      // refused before any HTTP
   })
 
   test('connects naming unknown stages refuse with the known list', async () => {
-    const tool = meliteFlow('http://g')
+    const quiet = mockFetch([okBench, ])
+    const tool = meliteFlow(quiet.request)
     const out = await tool.execute({
       stages: [{ id: 'a', engine: 'comfyui' }],
       connects: [{ from: 'ghost', to: 'a.x' }],
     }, { signal: AbortSignal.timeout(2000) }) as Record<string, unknown>
-    expect(String(out.error)).toContain('unknown stage')
-    expect(String(out.error)).toContain('"ghost"')
+    assert.ok(String(out.error).includes('unknown stage'), String(out.error) + ' lacks ' + 'unknown stage')
+    assert.ok(String(out.error).includes('"ghost"'), String(out.error) + ' lacks ' + '"ghost"')
   })
 })
 
@@ -159,7 +195,7 @@ describe('melite_flow card — the live allowlist', () => {
     { model: 'new-model-1', stage_title: 'New', params_schema: null },
     { model: 'music3', stage_title: 'Music', params_schema: null },
   ]
-  const cardMocks = () => mockFetch([
+  const cardMocks = () => mockFetch([okBenchWith('d9'), 
     (u) => (u.endsWith('/v1/card-tools')
       ? { status: 200, body: TOOLS } : undefined),
     (u) => (u.endsWith('/v1/model-catalog')
@@ -171,127 +207,120 @@ describe('melite_flow card — the live allowlist', () => {
 
   test('a model in the LIVE card-tools list registers (no hardcoded six)', async () => {
     const seen = cardMocks()
-    const tool = meliteFlow('http://g')
+    const tool = meliteFlow(seen.request)
     const out = await tool.execute(
       { card: 'image-gen', model: 'new-model-1', prompt: 'hi' },
       { signal: AbortSignal.timeout(2000) },
     ) as Record<string, unknown>
-    expect(out.error).toBeUndefined()
-    expect(out.mode).toBe('card')
-    expect(out.target).toBe('image-gen')
-    expect(out.run_id).toBe('r9')
-    const draftBody = decodeJsonBody(seen.calls.find((c) => c.url.endsWith('/v1/flows/drafts'))!.init)
-    const tiles = draftBody.stages as Array<{ service: string; params: Record<string, unknown> }>
-    expect(tiles[0].service).toBe('new-model-1')
-    expect(tiles[0].params.prompt).toBe('hi')
+    assert.equal(out.error, undefined)
+    assert.equal(out.mode, 'card')
+    assert.equal(out.target, 'image-gen')
+    assert.equal(out.run_id, 'r9')
+    const draftBody = decodeJsonBody(seen.calls.find((c) => c.url.endsWith('/v1/bench/ensure'))!.init)
+    const tiles = draftBody.stages as Array<{ card?: string; params: Record<string, unknown> }>
+    assert.equal(tiles[0].card, 'image-gen')
+    assert.equal(tiles[0].params.prompt, 'hi')
     const startBody = decodeJsonBody(seen.calls.find((c) => c.url.endsWith('/v1/flows/start'))!.init)
-    expect(startBody.model).toBe('new-model-1')
-    expect(startBody.prompt).toBe('hi')
-    expect(startBody.draft_id).toBe('d9')
+    assert.equal(startBody.model, 'new-model-1')
+    assert.equal(startBody.prompt, 'hi')
+    assert.equal(startBody.draft_id, 'd9')
   })
 
   test('a model with no card tool refuses naming the LIVE list', async () => {
-    mockFetch([
+    const { request } = mockFetch([
       (u) => (u.endsWith('/v1/card-tools')
         ? { status: 200, body: TOOLS } : undefined),
-      (u) => (u.endsWith('/v1/model-catalog')
-        ? { status: 200, body: CATALOG } : undefined),
     ])
-    const tool = meliteFlow('http://g')
+    const tool = meliteFlow(request)
     const out = await tool.execute(
       { card: 'image-gen', model: 'not-a-card', prompt: 'hi' },
       { signal: AbortSignal.timeout(2000) },
     ) as Record<string, unknown>
-    expect(String(out.error)).toContain('has no card tool')
-    expect(String(out.error)).toContain('new-model-1')
-    expect(String(out.error)).toContain('music3')
+    assert.ok(String(out.error).includes('has no card tool'), String(out.error) + ' lacks ' + 'has no card tool')
+    assert.ok(String(out.error).includes('new-model-1'), String(out.error) + ' lacks ' + 'new-model-1')
+    assert.ok(String(out.error).includes('music3'), String(out.error) + ' lacks ' + 'music3')
   })
 })
 
 describe('melite_flow L4 — the test flag rides every mode', () => {
   test('template: test:false default, flow explicitly named, draft minted', async () => {
-    const seen = mockFetch([okDraftThenStart('draft-headless-1', 'r0')])
-    const tool = meliteFlow('http://g')
+    const seen = mockFetch([okBenchWith('draft-headless-1'), okDraftThenStart('draft-headless-1', 'r0')])
+    const tool = meliteFlow(seen.request)
     const out = await tool.execute({ flow: 'foo' }, { signal: AbortSignal.timeout(2000) }) as Record<string, unknown>
-    expect(out.error).toBeUndefined()
-    expect(out.mode).toBe('flow')
-    expect(out.run_id).toBe('r0')
-    // CARD BIRTH LAW: compose happened FIRST, carrying the template
-    expect(seen.calls).toHaveLength(2)
-    expect(seen.calls[0].url).toBe('http://g/v1/flows/drafts')
+    assert.equal(out.error, undefined)
+    assert.equal(out.mode, 'flow')
+    assert.equal(out.run_id, 'r0')
+    // CARD BIRTH LAW (bench form): the bench ensure carries the
+    // template reference; the start rides its doc-backed draft
+    assert.equal(seen.calls.length, 2)
+    assert.equal(seen.calls[0].url, '/v1/bench/ensure')
     const composed = decodeJsonBody(seen.calls[0].init)
-    expect(composed.flow).toBe('foo')
+    assert.equal(composed.intent, 'foo')
     const body = decodeJsonBody(seen.calls[1].init)
-    expect(body.test).toBe(false)
-    expect(body.flow).toBe('foo')
+    assert.equal(body.test, false)
+    assert.equal(body.flow, 'foo')
     // the dead {yaml:} key must not ride along (retired 2026-09-04
     // with the yaml text parser — resolve_request accepts flow/model)
-    expect(body.yaml).toBeUndefined()
-    expect(body.draft_id).toBe('draft-headless-1')
+    assert.equal(body.yaml, undefined)
+    assert.equal(body.draft_id, 'draft-headless-1')
   })
 
   test('template: test:true + params ride the start', async () => {
-    const seen = mockFetch([okDraftThenStart('draft-headless-1', 'r0')])
-    const tool = meliteFlow('http://g')
+    const seen = mockFetch([okBenchWith('draft-headless-1'), okDraftThenStart('draft-headless-1', 'r0')])
+    const tool = meliteFlow(seen.request)
     await tool.execute(
       { flow: 'bar', params: { seed: 42, steps: 8 }, test: true },
       { signal: AbortSignal.timeout(2000) },
     )
     const posts = seen.calls.filter((s) => s.url.endsWith('/v1/flows/start'))
-    expect(posts).toHaveLength(1)
+    assert.equal(posts.length, 1)
     const body = decodeJsonBody(posts[0].init)
-    expect(body.test).toBe(true)
-    expect(body.seed).toBe(42)
-    expect(body.steps).toBe(8)
+    assert.equal(body.test, true)
+    assert.equal(body.seed, 42)
+    assert.equal(body.steps, 8)
     // the flow is still EXPLICITLY named (QUEUE LANE LAW) — test is
     // a side flag, never a substitute for the named flow
-    expect(body.flow).toBe('bar')
+    assert.equal(body.flow, 'bar')
   })
 
   test('a refused start carries the error and NO draft_id (no tile for a dead run)', async () => {
     // compose succeeds, start refuses: the value names the refusal and
     // omits the handle — a tile never mounts for a run that never
     // registered (the estate card-tool law, now uniform).
-    mockFetch([
-      (u) => (u.endsWith('/v1/flows/drafts')
-        ? { status: 200, body: { draftId: 'draft-never-tiles' } } : undefined),
+    const seen = mockFetch([okBench, 
       () => ({ status: 400, body: { error: 'queue full' } }),
     ])
-    const tool = meliteFlow('http://g')
+    const tool = meliteFlow(seen.request)
     const out = await tool.execute({ flow: 'foo' }, { signal: AbortSignal.timeout(2000) }) as Record<string, unknown>
-    expect(out.error).toContain('queue full')
-    expect(out.draft_id).toBeUndefined()
+    assert.ok(out.error.includes('queue full'), out.error + ' lacks ' + 'queue full')
+    assert.equal(out.draft_id, undefined)
     const meta = tool.output.presentationMeta!({ flow: 'foo' }, out as never) as Record<string, unknown>
-    expect(meta.draft_id).toBeUndefined()
-    expect(String(meta.error)).toContain('queue full')
+    assert.equal(meta.draft_id, undefined)
+    assert.ok(String(meta.error).includes('queue full'), String(meta.error) + ' lacks ' + 'queue full')
   })
 
   test('template: a refused compose never reaches the start door', async () => {
-    globalThis.fetch = (async (url: unknown) => {
-      const u = String(url)
-      if (u.endsWith('/v1/flows/drafts')) {
-        return new Response(JSON.stringify({ error: 'unknown flow' }), { status: 400 })
-      }
-      throw new Error('start door must not be reached, got ' + u)
-    }) as typeof fetch
-    const tool = meliteFlow('http://g')
+    const seen = mockFetch([
+      () => ({ status: 400, body: { error: 'unknown flow' } }),
+    ])
+    const tool = meliteFlow(seen.request)
     const out = await tool.execute(
       { flow: 'no-such-flow' },
       { signal: AbortSignal.timeout(2000) },
     ) as { error?: string }
-    expect(out.error).toContain('unknown flow')
+    assert.ok(out.error.includes('unknown flow'), out.error + ' lacks ' + 'unknown flow')
   })
 
   test('adhoc: test:true rides the flow_inline start', async () => {
-    const seen = mockFetch([okValidate, okDraftThenStart('d2', 'r2')])
-    const tool = meliteFlow('http://g')
+    const seen = mockFetch([okBenchWith('d2'), okValidate, okDraftThenStart('d2', 'r2')])
+    const tool = meliteFlow(seen.request)
     await tool.execute({ ...FLOW, test: true }, { signal: AbortSignal.timeout(2000) })
     const posts = seen.calls.filter((s) => s.url.endsWith('/v1/flows/start'))
-    expect(posts).toHaveLength(1)
+    assert.equal(posts.length, 1)
     const body = decodeJsonBody(posts[0].init)
-    expect(body.test).toBe(true)
-    expect((body.flow_inline as { id: string }).id).toBe('still-to-motion')
-    expect(body.draft_id).toBe('d2')
+    assert.equal(body.test, true)
+    assert.equal((body.flow_inline as { id: string }).id, 'still-to-motion')
+    assert.equal(body.draft_id, 'd2')
   })
 })
 
@@ -312,55 +341,91 @@ describe('melite_flow tile contract — the chat hydrates from the render', () =
   }
 
   test('template success: value carries draft_id; render token parses to it', async () => {
-    mockFetch([okDraftThenStart('draft-tile-1', 'r7')])
-    const tool = meliteFlow('http://g')
+    const seen = mockFetch([okBenchWith('draft-tile-1'), okDraftThenStart('draft-tile-1', 'r7')])
+    const tool = meliteFlow(seen.request)
     const out = await tool.execute({ flow: 'foo' }, { signal: AbortSignal.timeout(2000) }) as Record<string, unknown>
-    expect(out.draft_id).toBe('draft-tile-1')
+    assert.equal(out.draft_id, 'draft-tile-1')
     const parts = tool.output.render({ flow: 'foo' }, out as never) as Array<{ text?: string }>
     const text = parts.map((p) => p?.text ?? '').join('\n')
-    expect(parseTileToken(text)).toBe('draft-tile-1')
+    assert.equal(parseTileToken(text), 'draft-tile-1')
   })
 
   test('adhoc success: render token parses to the minted draft', async () => {
-    mockFetch([okValidate, okDraftThenStart('draft-tile-2', 'r8')])
-    const tool = meliteFlow('http://g')
+    const seen = mockFetch([okBenchWith('draft-tile-2'), okValidate, okDraftThenStart('draft-tile-2', 'r8')])
+    const tool = meliteFlow(seen.request)
     const out = await tool.execute({ ...FLOW }, { signal: AbortSignal.timeout(2000) }) as Record<string, unknown>
-    expect(out.draft_id).toBe('draft-tile-2')
+    assert.equal(out.draft_id, 'draft-tile-2')
     const parts = tool.output.render({ ...FLOW }, out as never) as Array<{ text?: string }>
     const text = parts.map((p) => p?.text ?? '').join('\n')
-    expect(parseTileToken(text)).toBe('draft-tile-2')
+    assert.equal(parseTileToken(text), 'draft-tile-2')
   })
 
   test('presentationMeta carries the handle — the native channel, pure', async () => {
-    mockFetch([okDraftThenStart('draft-meta-7', 'r9')])
-    const tool = meliteFlow('http://g')
+    const seen = mockFetch([okBenchWith('draft-meta-7'), okDraftThenStart('draft-meta-7', 'r9')])
+    const tool = meliteFlow(seen.request)
     const out = await tool.execute({ flow: 'foo' }, { signal: AbortSignal.timeout(2000) }) as Record<string, unknown>
     // the projector is the persisted payload (ToolResultNode.meta): the
     // client card view narrows it — never parses prose. Pure: same value
     // in, same payload out.
     const meta = tool.output.presentationMeta!({ flow: 'foo' }, out as never) as Record<string, unknown>
-    expect(meta).toEqual({
+    assert.deepEqual(meta, {
       mode: 'flow',
       target: 'foo',
       draft_id: 'draft-meta-7',
       run_id: 'r9',
       status: 'queued',
     })
-    expect(tool.output.presentationMeta!({ flow: 'foo' }, out as never)).toEqual(meta)
+    assert.deepEqual(tool.output.presentationMeta!({ flow: 'foo' }, out as never), meta)
     // refusals project the error with NO handle
     const refused = await tool.execute({}, { signal: AbortSignal.timeout(2000) }) as Record<string, unknown>
     const rmeta = tool.output.presentationMeta!({}, refused as never) as Record<string, unknown>
-    expect(rmeta.draft_id).toBeUndefined()
-    expect(typeof rmeta.error).toBe('string')
+    assert.equal(rmeta.draft_id, undefined)
+    assert.equal(typeof rmeta.error, 'string')
   })
 
   test('refusals carry no token (nothing to hydrate — the legacy branch stays dark)', async () => {
-    const tool = meliteFlow('http://g')
+    const { request } = mockFetch([])
+    const tool = meliteFlow(request)
     const out = await tool.execute({}, { signal: AbortSignal.timeout(2000) }) as Record<string, unknown>
-    expect(typeof out.error).toBe('string')
+    assert.equal(typeof out.error, 'string')
     const parts = tool.output.render({}, out as never) as Array<{ text?: string }>
     const text = parts.map((p) => p?.text ?? '').join('\n')
-    expect(parseTileToken(text)).toBeNull()
-    expect(text).toContain('REFUSED')
+    assert.equal(parseTileToken(text), null)
+    assert.ok(text.includes('REFUSED'), text + ' lacks ' + 'REFUSED')
+  })
+})
+
+describe('melite_flow bench — the remote refusal voice', () => {
+  test('an empty bench refuses with the construct pointer (bench/not-found, not HTTP 404)', async () => {
+    // The bench remote classifies the missing bench; the tool turns
+    // it into the construct pointer — never a crash, never HTTP.
+    const seen = mockFetch([
+      (u) => {
+        if (/\/v1\/bench(\/|$)/.test(u)) return { status: 404, body: { error: 'no such bench' } }
+        return undefined
+      },
+    ])
+    const tool = meliteFlow(seen.request)
+    const out = await tool.execute({ bench: true }, { signal: AbortSignal.timeout(2000) }) as Record<string, unknown>
+    assert.equal(out.error, 'the bench is empty — construct stages first (melite_construct)')
+    assert.equal(out.draft_id, undefined)
+  })
+
+  test('a CAS-moved bench refuses with the remote message (no silent merge)', async () => {
+    const seen = mockFetch([
+      (u) => {
+        if (/\/v1\/bench(\/|$)/.test(u) && !u.endsWith('/v1/bench/ensure')) {
+          return { status: 200, body: { bench: 'main', draft_id: 'd_bench', rev: 2, stages: [{ id: 's_0' }] } }
+        }
+        if (u.endsWith('/v1/bench/ensure')) {
+          throw new RemoteError('bench/cas-conflict', 'bench moved: rev is 2, caller held 1', { current_rev: 2, expect_rev: 1 })
+        }
+        return undefined
+      },
+    ])
+    const tool = meliteFlow(seen.request)
+    const out = await tool.execute({ flow: 'still-to-motion' }, { signal: AbortSignal.timeout(2000) }) as Record<string, unknown>
+    assert.ok(String(out.error).includes('bench moved'), String(out.error) + ' lacks the CAS message')
+    assert.equal(out.draft_id, undefined)
   })
 })

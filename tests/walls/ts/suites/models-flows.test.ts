@@ -25,7 +25,6 @@ import { fileURLToPath } from "node:url";
 import { getModel, modelIds, registryIds, registryModel, resolve } from "../../../../packages/engines/comfyui-cordis/src/models/models.ts";
 import { loadFacts } from "../../../../packages/engines/comfyui-card-kit/src/facts.ts";
 import { loadCardDefs, theService } from "../../../../packages/engines/comfyui-cordis/src/cardDefs.ts";
-import { registryFlowNames } from "../../../../packages/gateway/doors/src/doors/flowsRegistry.ts";
 
 /** Facts keys no model serves are ACTION-CARD lanes (pure-tool
  *  cards boarding nothing — mask-studio: the card owns its pins,
@@ -120,14 +119,6 @@ describe("the models plane feeds the compose/flows plane (A2)", () => {
       if (actions.has(id)) continue;
       const r = resolve(id);
       assert.ok(typeof r.route === "string", `${id}: resolve gave no route`);
-    }
-  });
-
-  it("the flows registry loads with legal flow names", (): void => {
-    const names = registryFlowNames();
-    assert.ok(names.length > 0, "flows registry empty");
-    for (const n of names) {
-      assert.match(n, /^[a-z0-9][a-z0-9_.-]*$/, `flow name '${n}' not a legal id`);
     }
   });
 });

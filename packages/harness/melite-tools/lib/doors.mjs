@@ -1,5 +1,4 @@
-import { i as routeName, o as makeEstateRequest, r as resolveHarnessRoutes, t as harnessEnhance } from "./llm-complete-DKdMRekW.mjs";
-import { GENERIC_ENHANCE_RECIPE } from "@melite/gateway-core/prompt-guide";
+import { i as routeName, o as makeEstateRequest, r as resolveHarnessRoutes, t as harnessEnhance } from "./llm-complete-BfD-R0jQ.mjs";
 //#region src/enhance-agent.ts
 /**
 * The AGENT-side enhance orchestration — shared by the chat tool and the
@@ -9,13 +8,6 @@ import { GENERIC_ENHANCE_RECIPE } from "@melite/gateway-core/prompt-guide";
 * prompt-enhance* SKILL.md files surfaced as enhance_prompt | enhance_prompts).
 * Every field completion rides the harness model via llm-complete.ts —
 * no keystore, no "no model".
-*/
-/**
-* GENERIC FALLBACK RECIPE — MOVED to @melite/gateway-core
-* (schema/promptGuide.ts, the disclosure stroke): most models declare
-* no per-model enhance recipe; the kernel owns the one spelling, the
-* ✦ sweep door and the disclosure bundle both consume it. Re-exported
-* here so existing importers never chase the move.
 */
 const FORMSPEC_TIMEOUT_MS = 15e3;
 /** Read the model's declared recipes straight off the form-spec SSOT. */
@@ -40,6 +32,12 @@ function enhanceOneField(llm, recipe, prompt, temperature, signal, llmWant, defa
 		...llmWant !== void 0 && llmWant.length > 0 ? { llm: llmWant } : {}
 	}, defaultLlm);
 }
+/**
+* GENERIC FALLBACK RECIPE — BACK HOME (the gateway kill,
+* 2026-09-10): the ONE spelling lives here, where it was born (the
+* disclosure bundle that shared it died with the gateway).
+*/
+const GENERIC_ENHANCE_RECIPE = "You rewrite rough generation prompts into model-optimal ones. Expand terse descriptions into concrete visual/audio language: subject, action, setting, lighting, composition, style, medium, detail level. Reply with ONLY a JSON object {\"positive\": \"<the rewritten prompt>\", \"negative\": \"<what to avoid, or empty string>\"} — no prose outside the JSON.";
 /**
 * THE SWEEP — every declared field, one press. The route's model-form uses
 * this: the CALLER orchestrates (a button, not a conversational agent), so

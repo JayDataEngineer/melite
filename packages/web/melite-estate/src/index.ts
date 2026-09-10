@@ -1,88 +1,83 @@
-// index.ts — the estate bundle's host row (docs/plans/
-// estate-collapse-2026-09-10.md).
+// index.ts — the estate bundle's host row.
 //
-// DSH is the only web app. This row mounts the estate's wire plane INTO
-// the DSH host as child plugins — the loader's own composition
-// mechanism (ctx.plugin, the first-plugin tutorial's basis) — instead
-// of the retired second Loader boot (apps/gateway + its DSH-mirror
-// rows: webserver/typert/connection/storage) that ray-card-deck then
-// proxied /v1 into. The doors are unchanged cordis plugins that inject
-// [gatewayError, webServer, storageDomain, runs, cardRegistry, comfyui,
-// models, timer] and register their /v1 routes on the HOST's
-// webServer; the host's base rows already provide webServer, the
-// storage stack, and timer — this row supplies the estate's own
-// service tier (the error envelopes + the engine rows + the doors +
-// the wire Remote) and nothing else.
+// DSH is the only web app. This row mounts the estate's engine tier
+// INTO the DSH host as child plugins — the loader's own composition
+// mechanism (ctx.plugin).
 //
-// Erasable-syntax TS only (node 24 native stripping — same discipline
-// as every gateway package): no enums, `import type` for types, .ts
-// specifiers never needed here (bare package specifiers only).
+// THE GATEWAY KILL (2026-09-10): the gateway is dead (operator
+// order — the gateway package as an app made 1:1 DSH impossible).
+// Every gateway row this bundle used to mount (error service, all
+// doors, queue rows, the wire remotes, the lane root) is GONE with
+// it. What remains is the engine tier the rebuild rides on; the
+// domain remotes land here as they are rebuilt DSH-native.
 //
-// Config posture (unchanged from the estate process): the artifacts
-// tree rides MELITE_STATE_ROOT (data/runs default) and the engine
-// rides COMFYUI_URL — both env, resolved by the same code that always
-// resolved them. DSH_GATEWAY_TOKEN unset = open loopback (bearerOk's
-// empty-token arm) — the transitional posture; E5 moves auth onto the
-// host connection's trust fence.
+// REBUILD-1 lands here: the persistence tier (hub → json backend →
+// domain facility) plus the drafts Remote owner. The backend root is
+// env-derived at composition (never pinned).
+//
+// Erasable-syntax TS only: no enums, `import type` for types, bare
+// package specifiers only.
 
 import type { Context } from "@deepseek-ai/cordis";
 import type { Plugin } from "@deepseek-ai/cordis";
 
-import { gatewayErrors } from "@melite/gateway-core";
 import modelsProvider from "@melite/comfyui-cordis/catalog-registry";
 import comfyuiHost from "@melite/comfyui-cordis/comfyui-host";
-import uploadsDoors from "@melite/gateway-doors/uploads";
-import cardRegistry from "@melite/gateway-doors/card-registry";
-import validateDoors from "@melite/gateway-doors/validate";
-import runsRegistry from "@melite/gateway-doors/runs-registry";
-import flowsStart from "@melite/gateway-doors/flows-start";
-import flowsStatus from "@melite/gateway-doors/flows-status";
-import flowsStop from "@melite/gateway-doors/flows-stop";
-import flowsResume from "@melite/gateway-queue/flows-resume";
-import flowsReproduce from "@melite/gateway-queue/flows-reproduce";
-import bridgesDoors from "@melite/gateway-doors/bridges";
-import discoveryDoors from "@melite/gateway-doors/discovery";
-import runsDoors from "@melite/gateway-doors/runs";
-import chromeDoors from "@melite/gateway-doors/chrome";
-import discloseDoors from "@melite/gateway-doors/disclose";
-import assetsDoors from "@melite/gateway-doors/assets";
-import draftsDoors from "@melite/gateway-doors/drafts";
-import benchDoors from "@melite/gateway-doors/bench";
-import studiosDoors from "@melite/gateway-doors/studios";
-import planesDoors from "@melite/gateway-doors/planes";
-import gatewayWire from "@melite/gateway-wire";
+import draftsPlugin, {
+  resolveStorageRoot,
+  storageDomainFacility,
+  storageHub,
+  storageJsonBackend,
+} from "@melite/estate-drafts";
+import queuePlugin, {
+  cardRegistryProvider,
+  runsRegistryPlugin,
+} from "@melite/estate-queue";
+import { runsRemotePlugin } from "@melite/estate-runs";
 
-/** The estate composition, in dispatch order (advisory — inject
- *  resolution is the real ordering contract; the shell leaf's order,
- *  verbatim, minus everything the DSH host already provides). */
+/** The estate composition: the engine tier plus the rebuilt
+ *  persistence tier, the drafts remote, and the serial run queue
+ *  as the estate's own host service (REBUILD-5: lock-first, no
+ *  doors, no port; the runs remote exposes the lanes over its
+ *  seat. runs/flows/assets/manage/discovery land as named Typert
+ *  services in later rebuild strokes — never as a second app,
+ *  never as fetch routes). The queue takes no row config: its
+ *  state root is MELITE_STATE_ROOT else <cwd>/data/runs — the
+ *  same resolution the dead gateway shell used. */
 const rows: readonly Plugin[] = [
-  gatewayErrors,
   modelsProvider,
   comfyuiHost,
-  uploadsDoors,
-  cardRegistry,
-  validateDoors,
-  runsRegistry,
-  flowsStart,
-  flowsStatus,
-  flowsStop,
-  flowsResume,
-  flowsReproduce,
-  bridgesDoors,
-  discoveryDoors,
-  runsDoors,
-  chromeDoors,
-  discloseDoors,
-  assetsDoors,
-  draftsDoors,
-  benchDoors,
-  studiosDoors,
-  planesDoors,
-  gatewayWire,
+  storageHub,
+  storageJsonBackend,
+  storageDomainFacility,
+  draftsPlugin,
+  queuePlugin,
+  // The card registry (REBUILD-9: the primed defs + facts + the
+  // compose pipeline — the {model:} arms' engine) then the runs
+  // registry + its Typert remote: the estate process serves the
+  // runs lanes itself (start/status/stop/list/validate, both the
+  // inline and the card door). The registry gates on the queue +
+  // drafts + cards seats — mount order is load order here.
+  cardRegistryProvider,
+  runsRegistryPlugin,
+  runsRemotePlugin,
 ];
 
 export const name = "melite-estate";
 
 export function apply(ctx: Context): void {
-  for (const row of rows) ctx.plugin(row);
+  for (const row of rows) {
+    if (row === storageJsonBackend) {
+      ctx.plugin(row, { root: resolveStorageRoot() });
+      continue;
+    }
+    if (row === storageDomainFacility) {
+      ctx.plugin(row, { backend: "json" });
+      continue;
+    }
+    ctx.plugin(row);
+  }
 }
+
+/** The cordis row shape: a plugin object (name + apply). */
+export default { name, apply };

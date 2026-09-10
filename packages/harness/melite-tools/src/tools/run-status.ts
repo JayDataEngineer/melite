@@ -15,7 +15,7 @@
 import { defineTool } from '@deepseek-ai/dsh-tools'
 import type { ToolCallView } from '@deepseek-ai/dsh-tools'
 import type { JsonValue, ToolDefinition } from '../types.ts'
-import { RayGatewayError } from '../estate.ts'
+import { RayGatewayError, type EstateRequest } from '../estate.ts'
 import { jsonClean } from '../json-clean.ts'
 
 const TIMEOUT_MS = 15_000

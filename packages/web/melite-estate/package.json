@@ -15,9 +15,8 @@
   "dependencies": {
     "@deepseek-ai/cordis": "^4.0.2",
     "@melite/comfyui-cordis": "workspace:*",
-    "@melite/gateway-core": "workspace:*",
-    "@melite/gateway-doors": "workspace:*",
-    "@melite/gateway-queue": "workspace:*",
-    "@melite/gateway-wire": "workspace:*"
+    "@melite/estate-drafts": "workspace:*",
+    "@melite/estate-queue": "workspace:*",
+    "@melite/estate-runs": "workspace:*"
   }
 }

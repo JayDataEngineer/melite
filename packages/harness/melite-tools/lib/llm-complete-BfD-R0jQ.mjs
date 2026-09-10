@@ -1,4 +1,3 @@
-import { callEstateLane } from "@melite/gateway-doors";
 import { createUserMessage } from "@deepseek-ai/dsh-llm";
 //#region src/estate.ts
 /**
@@ -6,12 +5,9 @@ import { createUserMessage } from "@deepseek-ai/dsh-llm";
 *
 * NO HTTP, NO URL, NO PORT (the remotes migration, R2b). The KV/runs
 * lanes ride the wire package's Typert seats (draftsRemote/
-* benchRemote/runsRemote — plain method calls on ctx); every other
-* estate lane rides callEstateLane — the SAME door listeners the
-* webserver routes wrap, invoked directly (the doors' own dispatch,
-* never a fetch to self). When R5 retires the route rows the
-* listeners stay: they are the domain layer, and the remotes that
-* replace the rows call them too.
+* benchRemote/runsRemote — plain method calls on ctx). The lane
+* fallback died with the gateway (2026-09-10): any lane without a
+* seat throws LOUD — no silent absorb, QUEUE LANE LAW.
 */
 var RayGatewayError = class extends Error {
 	status;
@@ -54,16 +50,14 @@ async function trySeats(ctx, method, path, body, signal) {
 		return seats.runsRemote.list(lim !== null ? Number(lim[1]) : 200, signal);
 	}
 }
-/** Build the tools' request: seats first, then the door listeners —
-*  both in-process. There is no third path. */
+/** Build the tools' request: seats only, in-process. A lane with no
+*  seat is a hard error (the gateway that used to absorb it is
+*  dead) — the caller migrates to a named remote. */
 function makeEstateRequest(ctx) {
 	return async (method, path, body, execSignal) => {
 		const viaSeats = await trySeats(ctx, method, path, body, execSignal);
 		if (viaSeats !== void 0) return viaSeats;
-		const out = await callEstateLane(ctx, method, path, body);
-		if (out === void 0) throw new Error(`no estate lane claims ${method} ${path}`);
-		if (out.status >= 200 && out.status < 300) return out.body;
-		throw new RayGatewayError(out.status, `estate lane ${method} ${path}`, typeof out.body === "string" ? out.body.slice(0, 300) : JSON.stringify(out.body)?.slice(0, 300) ?? "");
+		throw new Error(`no remote serves ${method} ${path} (the gateway lane fallback died 2026-09-10 — migrate to a named Typert remote)`);
 	};
 }
 //#endregion

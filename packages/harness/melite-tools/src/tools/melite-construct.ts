@@ -30,8 +30,9 @@
 // wire projection strips (card, provenance, runStatus, result).
 import { defineTool } from '@deepseek-ai/dsh-tools'
 import type { ToolCallView } from '@deepseek-ai/dsh-tools'
+import { remoteErrorOf } from '@deepseek-ai/dsh-typert-protocol'
+import type { EstateRequest } from '../estate.ts'
 import type { JsonValue, ToolDefinition } from '../types.ts'
-import { RayGatewayError } from '../estate.ts'
 import { jsonClean } from '../json-clean.ts'
 
 /** The default bench — one shared state per gateway. */
@@ -51,34 +52,31 @@ function benchKeyOf(a: Record<string, unknown>): string {
   return typeof k === 'string' && /^[A-Za-z0-9_-]{1,64}$/.test(k) ? k : DEFAULT_BENCH
 }
 
-/** Refusal formatting shared by every verb (RayGatewayError body
- *  first — the door's JSON voice — then the raw text). */
+/** Refusal formatting shared by every verb (the remote's RemoteError
+ *  first — code + message, the CAS detail rides details.current_rev —
+ *  then any Error's message; lanes still awaiting their remote refuse
+ *  loudly as plain errors). */
 function refusalOf(e: unknown, verb: string, bench: string): ConstructResult {
-  let error = ''
-  let errorKind = 'gateway'
-  if (e instanceof RayGatewayError) {
-    error = e.body
-    errorKind = 'http-' + String(e.status)
-    try {
-      const parsed = JSON.parse(e.body) as { error?: unknown; current_rev?: unknown }
-      if (typeof parsed.error === 'string' && parsed.error !== '') error = parsed.error
-      if (typeof parsed.current_rev === 'number') {
-        return jsonClean<ConstructResult>({
-          verb, bench, error, error_kind: errorKind,
-          ok: false, current_rev: parsed.current_rev,
-        })
-      }
-    } catch { /* body not JSON — keep raw */ }
-  } else if (e instanceof Error) {
-    error = e.message
-  } else {
-    error = String(e)
+  const refusal = remoteErrorOf(e)
+  if (refusal !== undefined) {
+    const details = refusal.details as Record<string, unknown> | undefined
+    const currentRev = details !== undefined && typeof details['current_rev'] === 'number'
+      ? details['current_rev'] as number
+      : undefined
+    return jsonClean<ConstructResult>({
+      verb, bench,
+      error: refusal.message,
+      error_kind: refusal.code,
+      ok: false,
+      ...(currentRev !== undefined ? { current_rev: currentRev } : {}),
+    })
   }
-  return jsonClean<ConstructResult>({ verb, bench, error, error_kind: errorKind, ok: false })
+  const error = e instanceof Error ? e.message : String(e)
+  return jsonClean<ConstructResult>({ verb, bench, error, error_kind: 'remote', ok: false })
 }
 
-/** GET the bench; 404 → ensure (birth) → GET again. Reads are the
- *  freshness mechanism — always a door round trip. */
+/** GET the bench; not-found → ensure (birth) → GET again. Reads are
+ *  the freshness mechanism — always a remote round trip. */
 async function readBench(
   request: EstateRequest, bench: string, signal: AbortSignal,
 ): Promise<Record<string, unknown>> {
@@ -87,7 +85,9 @@ async function readBench(
   try {
     return (await get()) as Record<string, unknown>
   } catch (e) {
-    if (e instanceof RayGatewayError && e.status === 404) {
+    // The bench remote classifies the missing bench as
+    // bench/not-found (the HTTP 404 died with the door).
+    if (remoteErrorOf(e)?.code === 'bench/not-found') {
       await request( 'POST', '/v1/bench/ensure',
         { session: bench }, signal, 15000)
       return (await get()) as Record<string, unknown>

@@ -9,7 +9,8 @@
 //   5. dead named route throws LOUDLY (no step-past, ever)
 //   6. no name + no default throws (never a blind walk)
 //   7. ambiguous bare model throws naming both (never a guess)
-import { describe, expect, test } from 'bun:test'
+import { describe, test } from 'node:test'
+import assert from 'node:assert/strict'
 import {
   harnessEnhance,
   matchHarnessRoute,
@@ -77,43 +78,43 @@ describe('llm route preference', () => {
   test('explicit serves that route; healthy-first deepseek untouched', async () => {
     const llm = fakeSeam()
     const out = await harnessEnhance(llm, { ...REQ, llm: DEFAULT }, 'deepseek-official/deepseek-chat')
-    expect(out).toEqual({ positive: 'P', negative: 'N', via: DEFAULT })
-    expect(llm.seen).toEqual([{ provider: 'opencode-go', model: 'muse-spark' }])
+    assert.deepEqual(out, { positive: 'P', negative: 'N', via: DEFAULT })
+    assert.deepEqual(llm.seen, [{ provider: 'opencode-go', model: 'muse-spark' }])
   })
 
   test('unnamed serves the host default, never first-breathing', async () => {
     const llm = fakeSeam()
     const out = await harnessEnhance(llm, { ...REQ }, DEFAULT)
-    expect(out.via).toBe(DEFAULT)
-    expect(llm.seen).toEqual([{ provider: 'opencode-go', model: 'muse-spark' }])
+    assert.equal(out.via, DEFAULT)
+    assert.deepEqual(llm.seen, [{ provider: 'opencode-go', model: 'muse-spark' }])
   })
 
   test('unknown explicit name throws naming the live routes', async () => {
     const llm = fakeSeam()
     const msg = await throwsMsg(() => harnessEnhance(llm, { ...REQ, llm: 'nope/nothing' }, DEFAULT))
-    expect(msg).toContain('unknown llm route')
-    expect(msg).toContain('deepseek-official/deepseek-chat')
-    expect(msg).toContain('opencode-go/muse-spark')
+    assert.ok(msg.includes('unknown llm route'))
+    assert.ok(msg.includes('deepseek-official/deepseek-chat'))
+    assert.ok(msg.includes('opencode-go/muse-spark'))
   })
 
   test('stale default throws naming the live routes', async () => {
     const llm = fakeSeam()
     const msg = await throwsMsg(() => harnessEnhance(llm, { ...REQ }, 'gone/model'))
-    expect(msg).toContain('unknown llm route')
+    assert.ok(msg.includes('unknown llm route'))
   })
 
   test('dead named route throws LOUDLY — no step-past', async () => {
     const llm = fakeSeam({ dead: new Set([DEFAULT]) })
     const msg = await throwsMsg(() => harnessEnhance(llm, { ...REQ }, DEFAULT))
-    expect(msg).toContain('quota dead')
-    expect(llm.seen).toEqual([{ provider: 'opencode-go', model: 'muse-spark' }])
+    assert.ok(msg.includes('quota dead'))
+    assert.deepEqual(llm.seen, [{ provider: 'opencode-go', model: 'muse-spark' }])
   })
 
   test('no name + no default throws — never a blind walk', async () => {
     const llm = fakeSeam()
     const msg = await throwsMsg(() => harnessEnhance(llm, { ...REQ }))
-    expect(msg).toContain('no llm named and no host default')
-    expect(llm.seen).toEqual([])
+    assert.ok(msg.includes('no llm named and no host default'))
+    assert.deepEqual(llm.seen, [])
   })
 
   test('ambiguous bare model throws naming both (never a guess)', async () => {
@@ -125,7 +126,7 @@ describe('llm route preference', () => {
     } catch (e) {
       msg = e instanceof Error ? e.message : String(e)
     }
-    expect(msg).toContain('ambiguous llm')
+    assert.ok(msg.includes('ambiguous llm'))
   })
 
   test('output contract rides EVERY recipe, even one with no format word (live-caught 1:1)', async () => {
@@ -136,8 +137,8 @@ describe('llm route preference', () => {
       system: 'structure: [subject, action, environment]; rules:; - pair every bare noun with adjectives',
       prompt: 'Test',
     }, DEFAULT)
-    expect(llm.systems.length).toBe(1)
-    expect(llm.systems[0]).toContain('structure: [subject')
-    expect(llm.systems[0]).toContain('Output contract: reply with ONLY a JSON object')
+    assert.equal(llm.systems.length, 1)
+    assert.ok(llm.systems[0].includes('structure: [subject'))
+    assert.ok(llm.systems[0].includes('Output contract: reply with ONLY a JSON object'))
   })
 })
