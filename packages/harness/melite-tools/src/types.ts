@@ -6,8 +6,10 @@
  * died 2026-09-09: @deepseek-ai/dsh-tools 0.1.1-rc.2 now ships the
  * whole tool-registry surface this plugin mirrors (ToolDefinition,
  * ToolOutputDefinition, ToolResult, the presentation views, the
- * JSON-schema types, JsonValue) — import the package, mirror
- * nothing.
+ * JSON-schema types) — import the package, mirror
+ * nothing. (JsonValue moved out of the dsh-tools export surface
+ * in 0.1.5-alpha.2 — it rides @deepseek-ai/dsh-util-values now,
+ * the same source the SDK imports it from.)
  *
  * TWO estate-owned faces stay (declared adaptations, cause kept):
  *
@@ -25,12 +27,12 @@ export type {
   JsonSchemaNode,
   JsonSchemaScalar,
   JsonSchemaType,
-  JsonValue,
   ToolCallKind,
   ToolDefinition,
   ToolOutputDefinition,
   ToolResult,
 } from '@deepseek-ai/dsh-tools';
+export type { JsonValue } from '@deepseek-ai/dsh-util-values';
 export type { TextBlock, ToolSchema } from '@deepseek-ai/dsh-llm';
 
 /** The estate's execute-share: what every tool body below accepts

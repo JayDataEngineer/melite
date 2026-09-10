@@ -24,15 +24,16 @@
   },
   "dependencies": {
     "@deepseek-ai/dsh-llm": "0.1.0-rc.8",
-    "@deepseek-ai/dsh-tools": "0.1.1-rc.2",
+    "@deepseek-ai/dsh-tools": "0.1.5-alpha.2",
+    "@deepseek-ai/dsh-util-values": "0.1.5-alpha.2",
+    "@melite/3d-clothing-placement": "workspace:*",
     "@melite/audio-music": "workspace:*",
     "@melite/audio-tts": "workspace:*",
     "@melite/audio-voice-lock": "workspace:*",
+    "@melite/gateway-core": "workspace:*",
     "@melite/image-image-edit": "workspace:*",
     "@melite/motion-motion": "workspace:*",
-    "@melite/3d-clothing-placement": "workspace:*",
     "@melite/video-h3-timeline": "workspace:*",
-    "unrun": "^0.3.1",
-    "@melite/gateway-core": "workspace:*"
+    "unrun": "^0.3.1"
   }
 }

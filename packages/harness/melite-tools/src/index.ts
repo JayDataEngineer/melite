@@ -222,19 +222,17 @@ export async function apply(ctx: Context, config: Config = {}): Promise<void> {
   // per card manifest" promise now holds for every card package
   // with a tool face.
   //
-  // The `as unknown as ToolDefinition` casts stay, and the honest
-  // reason is VERSION SKEW (tsc proves it): this package resolves
-  // dsh-tools 0.1.1-rc.2 (the vendored-platform pin) while the card
-  // packages resolve 0.1.5-alpha.1 from the store — their
-  // ToolRunContext types are structurally incompatible across the
-  // two resolutions. Ledger row 33 tracks the skew; the casts die
-  // when the versions align.
-  c.tools.register(buildMusicTool(gatewayUrl) as unknown as ToolDefinition)
-  c.tools.register(buildTtsTool(gatewayUrl) as unknown as ToolDefinition)
-  c.tools.register(buildVoiceLockTool(gatewayUrl) as unknown as ToolDefinition)
-  c.tools.register(buildImageEditTool(gatewayUrl) as unknown as ToolDefinition)
-  c.tools.register(buildMotionTool(gatewayUrl) as unknown as ToolDefinition)
-  c.tools.register(buildH3TimelineTool(gatewayUrl) as unknown as ToolDefinition)
-  c.tools.register(buildClothingPlacementTool(gatewayUrl) as unknown as ToolDefinition)
+  // Ledger row 33 (2026-09-10): VERSION SKEW CURED — every
+  // dsh-tools consumer pins 0.1.5-alpha.2 (latest), so the
+  // ToolRunContext types resolve to one copy and the casts are
+  // gone. If a future pin drifts again, tsc fails HERE (not
+  // silently downstream) — re-pin, never re-cast.
+  c.tools.register(buildMusicTool(gatewayUrl))
+  c.tools.register(buildTtsTool(gatewayUrl))
+  c.tools.register(buildVoiceLockTool(gatewayUrl))
+  c.tools.register(buildImageEditTool(gatewayUrl))
+  c.tools.register(buildMotionTool(gatewayUrl))
+  c.tools.register(buildH3TimelineTool(gatewayUrl))
+  c.tools.register(buildClothingPlacementTool(gatewayUrl))
 
 }

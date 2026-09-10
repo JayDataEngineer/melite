@@ -16,12 +16,12 @@
   },
   "dependencies": {
     "@deepseek-ai/cordis": "^4.0.2",
-    "@deepseek-ai/dsh-tools": "0.1.5-alpha.1",
+    "@deepseek-ai/dsh-tools": "0.1.5-alpha.2",
     "@deepseek-ai/schemastery": "*",
     "@melite-plugin/motion": "workspace:*",
     "@melite-plugin/timeline": "workspace:*",
-    "@melite/comfyui-card-kit": "workspace:*",
     "@melite/catalog": "workspace:*",
+    "@melite/comfyui-card-kit": "workspace:*",
     "@melite/comfyui-cordis": "workspace:*",
     "@melite/contracts": "workspace:*",
     "@melite/formats": "workspace:*",
@@ -34,5 +34,5 @@
     "@types/node": "*"
   },
   "name": "@melite/motion-motion",
-  "description": "the motion card (the motion lane) \u2014 one card one package: card.ts host face + ui/ studio + agents/ context"
+  "description": "the motion card (the motion lane) — one card one package: card.ts host face + ui/ studio + agents/ context"
 }
