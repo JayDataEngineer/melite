@@ -5,6 +5,7 @@ import { existsSync, statSync } from 'node:fs'
 import { resolve } from 'node:path'
 import z from '@deepseek-ai/schemastery'
 import { upscaleLane } from '@melite/comfyui-card-kit'
+import { resolveLinkedInput } from '@melite/comfyui-cordis/linked'
 import type { ComfyUIService } from '@melite/comfyui-cordis/service'
 
 const schema = z.object({
@@ -83,8 +84,13 @@ export function apply(ctx: Context): void {
       // asset URL (/v1/assets/runs/… — the editor injects it at
       // compile) and rides too — the submit-time uploader fetches
       // and stages it (a dead URL refuses loud there, never here).
+      // A linked upstream output arrives as its asset URL in two
+      // spellings: absolute URLs ride verbatim (the submit-time
+      // uploader fetches them); root-relative URLs rewrite to the
+      // runs-root mount path (same estate, verified NOW).
       // Compile-time, never inference-time.
-      const ref = String(p.input_image).trim()
+      const ref = resolveLinkedInput(String(p.input_image).trim())
+      p.input_image = ref
       const lower = ref.toLowerCase()
       if (!ref.startsWith('$') && !lower.startsWith('http://') && !lower.startsWith('https://')) {
         const abs = ref.startsWith('/') ? ref : resolve(ref)

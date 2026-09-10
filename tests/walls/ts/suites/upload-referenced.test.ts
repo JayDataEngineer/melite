@@ -15,7 +15,9 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import { createServer } from "node:http";
+import { join } from "node:path";
 import { uploadReferenced } from "../../../../packages/engines/comfyui-cordis/src/comfyui.ts";
+import { resolveLinkedInput } from "../../../../packages/engines/comfyui-cordis/src/linked.ts";
 
 const PNG = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0x00]);
 
@@ -90,5 +92,32 @@ describe("uploadReferenced linked-input arm", () => {
     } finally {
       s.close();
     }
+  });
+});
+
+describe("resolveLinkedInput root-relative rewrite", () => {
+  // The editor injects upstream outputs root-relative
+  // (/v1/assets/runs/…) as well as absolute — the card gates
+  // misread the root-relative spelling as an estate path. The
+  // resolver rewrites it to the runs-root mount path (same estate,
+  // verified at compose); everything else rides verbatim.
+  it("a root-relative asset URL becomes the mount path", () => {
+    assert.equal(
+      resolveLinkedInput("/v1/assets/runs/r1/generate/out.png"),
+      join(process.cwd(), "data", "runs", "output", "r1", "generate", "out.png"),
+    );
+  });
+
+  it("absolute URLs, spells, and estate paths ride verbatim", () => {
+    assert.equal(resolveLinkedInput("http://h:1/v1/assets/runs/r1/o.png"), "http://h:1/v1/assets/runs/r1/o.png");
+    assert.equal(resolveLinkedInput("$image"), "$image");
+    assert.equal(resolveLinkedInput("/mnt/estate/in.png"), "/mnt/estate/in.png");
+  });
+
+  it("a rewritten path escaping the runs root refuses loud", () => {
+    assert.throws(
+      () => resolveLinkedInput("/v1/assets/runs/../../etc/passwd"),
+      /escapes the runs root/,
+    );
   });
 });

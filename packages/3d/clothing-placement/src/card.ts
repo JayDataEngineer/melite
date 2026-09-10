@@ -4,6 +4,7 @@
 // derive from THIS module — never a second spelling.
 import z from '@deepseek-ai/schemastery'
 import type { Context } from '@deepseek-ai/cordis'
+import { resolveLinkedInput } from '@melite/comfyui-cordis/linked'
 import type { ComfyUIService } from '@melite/comfyui-cordis/service'
 import { existsSync, statSync } from 'node:fs'
 import { resolve } from 'node:path'
@@ -53,22 +54,24 @@ export const identity = {
 /** Estate-file contract shared by the compose gate: file-typed
  *  params must EXIST at compose time (absolute path expected); a
  *  $spell names a wired stage input and rides verbatim. A linked
- *  upstream output arrives as its asset URL (/v1/assets/runs/… —
- *  the editor injects it at compile) and rides too — the
- *  submit-time uploader fetches and stages it (a dead URL refuses
- *  loud there, never here). */
-function estateFile(param: string, ref: unknown): void {
+ *  upstream output arrives as its asset URL in two spellings:
+ *  absolute URLs ride (the submit-time uploader fetches them);
+ *  root-relative URLs rewrite to the runs-root mount path (same
+ *  estate, verified NOW). Returns the composed value (callers write
+ *  it back — downstream sees the mount path, never the URL). */
+function estateFile(param: string, ref: unknown): string {
   if (!ref || !(ref as string).trim()) {
     throw new Error(`required param '${param}' missing or empty on the clothing-placement card`)
   }
-  const s = String(ref).trim()
-  if (s.startsWith('$')) return // wired stage input — rides verbatim
+  const s = resolveLinkedInput(String(ref).trim())
+  if (s.startsWith('$')) return s // wired stage input — rides verbatim
   const lower = s.toLowerCase()
-  if (lower.startsWith('http://') || lower.startsWith('https://')) return // linked output URL — the uploader stages it
+  if (lower.startsWith('http://') || lower.startsWith('https://')) return s // linked output URL — the uploader stages it
   const abs = s.startsWith('/') ? s : resolve(s)
   if (!(existsSync(abs) && statSync(abs).isFile())) {
     throw new Error(`${param} '${s}' is not a file on this estate (absolute path expected)`)
   }
+  return abs
 }
 
 /** Register the card face into the engine registry (ctx.comfyui).
@@ -100,8 +103,8 @@ export function registerCard(ctx: Context, comfy: ComfyUIService): void {
     requires: ['melite-blender-proxy-nodes'],
     schema: schema as unknown as (v: unknown) => Record<string, unknown>,
     compose(p, _model, g, runId) {
-      estateFile('body', p.body)
-      estateFile('garment', p.garment)
+      p.body = estateFile('body', p.body)
+      p.garment = estateFile('garment', p.garment)
       // out_path is a WRITE target (the macro creates it): the
       // contract is non-empty + an existing parent dir, never a
       // pre-existing file.

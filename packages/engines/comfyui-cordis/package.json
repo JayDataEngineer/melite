@@ -8,6 +8,7 @@
   "exports": {
     ".": "./src/index.ts",
     "./graph": "./src/graph.ts",
+    "./linked": "./src/linked.ts",
     "./service": "./src/service.ts",
     "./params-emit": "./src/params-emit.ts",
     "./cli": "./src/cli.ts",
