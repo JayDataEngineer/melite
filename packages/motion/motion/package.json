@@ -24,6 +24,7 @@
     "@melite/comfyui-card-kit": "workspace:*",
     "@melite/comfyui-cordis": "workspace:*",
     "@melite/contracts": "workspace:*",
+    "@melite/estate-call": "workspace:*",
     "@melite/formats": "workspace:*",
     "@melite/ui": "workspace:*",
     "lucide-react": "*",
@@ -34,5 +35,5 @@
     "@types/node": "*"
   },
   "name": "@melite/motion-motion",
-  "description": "the motion card (the motion lane) — one card one package: card.ts host face + ui/ studio + agents/ context"
+  "description": "the motion card (the motion lane) \u2014 one card one package: card.ts host face + ui/ studio + agents/ context"
 }

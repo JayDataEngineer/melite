@@ -7,7 +7,7 @@
 import { defineTool } from '@deepseek-ai/dsh-tools'
 import type { ToolCallView } from '@deepseek-ai/dsh-tools'
 import type { JsonValue, ToolDefinition } from '../types.ts'
-import { gatewayRequest } from '../gateway.ts'
+import type { EstateRequest } from '../estate.ts'
 import { jsonClean } from '../json-clean.ts'
 
 const TIMEOUT_MS = 15_000
@@ -42,7 +42,7 @@ type DiscoverResult = {
   error?: string;
 } & Record<string, JsonValue>;
 
-export function meliteDiscover(gatewayUrl: string): ToolDefinition {
+export function meliteDiscover(request: EstateRequest): ToolDefinition {
   // PRESENTATION ADAPTATION (tool-presentation wall + conversion
   // invariance — presentCall output must not change): defineTool
   // soft-gates presentCall behind arg validation (invalid → undefined),
@@ -128,8 +128,7 @@ export function meliteDiscover(gatewayUrl: string): ToolDefinition {
       if (typeof a.q === 'string' && a.q !== '') params.set('q', a.q);
       if (typeof a.tags === 'string' && a.tags !== '') params.set('tags', a.tags);
       try {
-        const res = await gatewayRequest(
-          gatewayUrl, 'GET', '/v1/discover?' + params.toString(),
+        const res = await request( 'GET', '/v1/discover?' + params.toString(),
           undefined, exec.signal, TIMEOUT_MS,
         );
         // The gateway's /v1/discover answer IS the canonical result —

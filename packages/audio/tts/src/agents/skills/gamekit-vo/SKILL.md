@@ -17,13 +17,13 @@ Drive lines THROUGH a cast voice via the voice-studio flow:
 `voice_file` (that slot wants raw float32 embeddings by design).
 
 ## Run (queue door — the only inference door)
-Gateway: `http://127.0.0.1:33081` (canonical; `:18201` for the manual port; discover live: `ss -ltnp | grep gateway.py`).
+Gateway: in-process estate lanes (DSH host; no port — the python gateway is retired).
 
 Cast voice:
-`curl -s -X POST http://127.0.0.1:33081/v1/flows/start -d '{"yaml":"qwen3-tts-voice-studio","voice_studio_mode":"generate","qvoice_path":"<char>_v1","text":"<line>"}'`
+Run via the estate tools (melite_flow) — same verb, in-process.
 
 Raw TTS (no cast):
-`curl -s -X POST http://127.0.0.1:33081/v1/flows/start -d '{"yaml":"qwen3-tts","prompt":"<line>"}'`
+Run via the estate tools (melite_flow) — same verb, in-process.
 
 Poll `GET /v1/flows/status/<run_id>`.
 

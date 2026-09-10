@@ -38,7 +38,6 @@ export interface Config {
    *  in-process; the estate collapse, docs/plans/
    *  estate-collapse-2026-09-10.md). Set only for an external estate
    *  lane (another machine's DSH host). */
-  gatewayUrl?: string
 }
 
 /** Minimal structural view of the services the doors touch. */
@@ -60,12 +59,8 @@ interface CtxView {
 }
 
 export function apply(c: CtxView, config: Config = {}): void {
-  // E3 (estate collapse): the tool plane's wire origin is THIS host's
-  // own webServer — the doors are mounted in the same process; the
-  // :33081 second-Loader seam is retired. The port is read LIVE so a
-  // port-0 (OS-assigned) host binds correctly too.
-  const ownOrigin = `http://127.0.0.1:${c.webServer.port}`
-  const gatewayUrl = config.gatewayUrl ?? ownOrigin
+  // R2b: the sweep rides the in-process seam (seats + door
+  // listeners) — no origin, no port.
 
   // The host default model, read LIVE (2026-09-06 — the door serves
   // the USER'S default, never first-breathing by registration order).
@@ -193,7 +188,7 @@ export function apply(c: CtxView, config: Config = {}): void {
             AbortSignal.timeout(600_000),
             reqClosedSignal(req),
           ])
-          return agenticSweep(gatewayUrl, c.llm, {
+          return agenticSweep(c, c.llm, {
             model: body.model,
             prompt: body.prompt,
             temperature,

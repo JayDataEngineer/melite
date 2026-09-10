@@ -23,7 +23,7 @@ export interface Config {
 
 export const Config: Schema<Config> = Schema.object({
   gateway: Schema.string()
-    .default(process.env.MELITE_GATEWAY_URL || 'http://localhost:33081')
+
     .description('The Melite gateway base URL (the flow doors the tool face calls)'),
 })
 
@@ -32,6 +32,6 @@ export function apply(ctx: Context, config: Config): void {
   if (comfy !== undefined) registerCard(ctx, comfy)
   const tools = ctx.get('tools') as ToolRuntime | undefined
   if (tools !== undefined) {
-    tools.register(buildH3TimelineTool((config?.gateway ?? '').trim() || 'http://localhost:33081'))
+    tools.register(buildH3TimelineTool(config.call))
   }
 }

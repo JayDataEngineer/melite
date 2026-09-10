@@ -15,7 +15,7 @@
 import { defineTool } from '@deepseek-ai/dsh-tools'
 import type { ToolCallView } from '@deepseek-ai/dsh-tools'
 import type { JsonValue, ToolDefinition } from '../types.ts'
-import { gatewayRequest, RayGatewayError } from '../gateway.ts'
+import { RayGatewayError } from '../estate.ts'
 import { jsonClean } from '../json-clean.ts'
 
 const TIMEOUT_MS = 15_000
@@ -35,7 +35,7 @@ type RunStatusResult = {
   queue_position?: number;
 } & Record<string, JsonValue>;
 
-export function runStatus(gatewayUrl: string): ToolDefinition {
+export function runStatus(request: EstateRequest): ToolDefinition {
   // PRESENTATION ADAPTATION (tool-presentation wall + conversion
   // invariance — presentCall output must not change): defineTool
   // soft-gates presentCall behind arg validation (invalid → undefined),
@@ -116,8 +116,7 @@ export function runStatus(gatewayUrl: string): ToolDefinition {
       if (!runId) return jsonClean({ error: 'runId is required' }) as RunStatusResult
       let res: Record<string, unknown>
       try {
-        res = await gatewayRequest(
-          gatewayUrl, 'GET',
+        res = await request( 'GET',
           '/v1/flows/status/' + encodeURIComponent(runId),
           undefined, exec.signal, TIMEOUT_MS,
         ) as Record<string, unknown>

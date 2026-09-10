@@ -9,7 +9,7 @@
 import { defineTool } from '@deepseek-ai/dsh-tools'
 import type { ToolCallView } from '@deepseek-ai/dsh-tools'
 import type { JsonValue, ToolDefinition } from '../types.ts'
-import { gatewayRequest } from '../gateway.ts'
+import type { EstateRequest } from '../estate.ts'
 import { jsonClean } from '../json-clean.ts'
 
 const TIMEOUT_MS = 20_000
@@ -26,7 +26,7 @@ type LoadResult = {
   error?: string;
 } & Record<string, JsonValue>;
 
-export function meliteLoad(gatewayUrl: string): ToolDefinition {
+export function meliteLoad(request: EstateRequest): ToolDefinition {
   // PRESENTATION ADAPTATION (tool-presentation wall + conversion
   // invariance — presentCall output must not change): defineTool
   // soft-gates presentCall behind arg validation (invalid → undefined),
@@ -105,8 +105,7 @@ export function meliteLoad(gatewayUrl: string): ToolDefinition {
       }
       const params = new URLSearchParams({ name, inference_type: inferenceType });
       try {
-        const res = await gatewayRequest(
-          gatewayUrl, 'GET', '/v1/load?' + params.toString(),
+        const res = await request( 'GET', '/v1/load?' + params.toString(),
           undefined, exec.signal, TIMEOUT_MS,
         );
         return jsonClean(res) as LoadResult;

@@ -1,4 +1,5 @@
 // The tool face of the clothing-placement card (M2′ stroke 2,
+import { GatewayError, jsonLane, type EstateCall } from '@melite/estate-call'
 // 2026-09-09): the card package emits its DSH tool ITSELF — the
 // tool-str-replace-editor receipt (one package, one tool, the
 // capability seam consumed in execute). This kills the
@@ -41,74 +42,7 @@ export const DEFAULT_GATEWAY_URL = "http://localhost:33081";
 /** Gateway answered non-2xx; body carried verbatim (the named
  *  refusal — RayGatewayError's counterpart, owned by this package:
  *  cross-package imports of host internals are not a seam). */
-export class GatewayError extends Error {
-  readonly status: number;
-  readonly body: string;
-  constructor(status: number, path: string, body: string) {
-    super(`gateway ${status} ${path}: ${body}`);
-    this.name = "GatewayError";
-    this.status = status;
-    this.body = body;
-  }
-}
-
-async function gwJson(
-  gatewayUrl: string,
-  method: string,
-  path: string,
-  body: unknown,
-  signal: AbortSignal | undefined,
-  timeoutMs: number,
-): Promise<Record<string, unknown>> {
-  // Native cancellation composition (Node ≥ 20.3): AbortSignal.any
-  // propagates a pre-aborted caller signal (an already-aborted exec
-  // aborts the fetch immediately — a manual listener would never
-  // fire) and owns the timeout; no listener to detach, no timer to
-  // clear, no leak on early resolve.
-  const request = AbortSignal.any([
-    ...(signal !== undefined ? [signal] : []),
-    AbortSignal.timeout(timeoutMs),
-  ]);
-  try {
-    const headers: Record<string, string> = { "content-type": "application/json" };
-    if (process.env.INF_AGENT_SESSION) headers["x-agent-session"] = process.env.INF_AGENT_SESSION;
-    const r = await fetch(gatewayUrl.replace(/\/$/, "") + path, {
-      method,
-      headers,
-      body: body === undefined ? undefined : JSON.stringify(body),
-      signal: request,
-    });
-    const text = await r.text();
-    if (!r.ok) throw new GatewayError(r.status, path, text.slice(0, 400));
-    return JSON.parse(text) as Record<string, unknown>;
-  } catch (e) {
-    if (e instanceof Error && e.name === "TimeoutError") {
-      throw new Error(`gateway ${path}: timed out after ${timeoutMs}ms`);
-    }
-    throw e;
-  }
-}
-
-const FLOW = "clothing-placement";
-
-/** The canonical value: run ids on success, the named refusal as a
- *  domain outcome. All fields optional bar the flow name — the
- *  contract's JsonValue map. */
-type CardResult = {
-  flow: string
-  run_id?: string
-  draft_id?: string
-  status?: string
-  error?: string
-}
-
-const TIMEOUT_MS = 15e3;
-
-/** Build the card's DSH tool. Every emitted field derives from the
- *  package's own single spelling: name from the id law, prose from
- *  identity, parameters from the card's Schemastery schema via the
- *  engine's emitter (the same projection /v1/tools serves). */
-export function buildCardTool(gatewayUrl: string): ToolDefinition {
+export function buildCardTool(call: EstateCall): ToolDefinition {
   return defineTool({
     name: TOOL_NAME,
     description: identity.description,
@@ -167,12 +101,12 @@ export function buildCardTool(gatewayUrl: string): ToolDefinition {
     },
     async execute(args, exec): Promise<CardResult> {
       try {
-        const composed = await gwJson(gatewayUrl, "POST", "/v1/flows/drafts", { flow: FLOW, ...args }, exec.signal, TIMEOUT_MS);
+        const composed = await gw( "POST", "/v1/flows/drafts", { flow: FLOW, ...args }, exec.signal, TIMEOUT_MS);
         const draftId = (composed.draftId ?? composed.draft_id) as string | undefined;
         if (typeof draftId !== "string" || draftId === "") {
           return { flow: FLOW, error: "card compose returned no draftId" };
         }
-        const started = await gwJson(gatewayUrl, "POST", "/v1/flows/start", { flow: FLOW, ...args, draft_id: draftId }, exec.signal, TIMEOUT_MS);
+        const started = await gw( "POST", "/v1/flows/start", { flow: FLOW, ...args, draft_id: draftId }, exec.signal, TIMEOUT_MS);
         if (typeof started.error === "string" && started.error) {
           return { flow: FLOW, error: started.error };
         }

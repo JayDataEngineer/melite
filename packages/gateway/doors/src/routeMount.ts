@@ -89,6 +89,40 @@ function registerRow(
  *  per DISTINCT path — multi-method rows (`GET|POST`) share it and
  *  the listener's matchRoute owns the method arm (py answered 404
  *  on method mismatch; that voice is the door's, not a 405). */
+/** The mounted door listeners, ctx-scoped (the in-process lane
+ *  face — R2b: the tools call the SAME listeners the webserver
+ *  routes wrap, so the estate answers without HTTP ever entering
+ *  the path; the route rows themselves are the browser's face
+ *  until R5 retires them). */
+const laneListeners: WeakMap<Context, DoorListener[]> = new WeakMap();
+
+/** Call the estate in-process: method + pathname (+ optional JSON
+ *  body) → the owning door's DispatchResult, or undefined when no
+ *  door claims it. Query rides the pathname (handlers own their
+ *  semantics — the webserver law, unchanged). */
+export async function callEstateLane(
+  ctx: Context,
+  method: string,
+  pathname: string,
+  body?: unknown,
+): Promise<import("@melite/gateway-core").DispatchResult | undefined> {
+  const listeners: DoorListener[] = laneListeners.get(ctx) ?? [];
+  const rawBody: Uint8Array = body === undefined
+    ? new Uint8Array(0)
+    : new TextEncoder().encode(JSON.stringify(body));
+  const req: import("@melite/gateway-core").GatewayRequest = {
+    method,
+    target: pathname,
+    headers: body === undefined ? {} : { 'content-type': 'application/json' },
+    body: () => Promise.resolve(rawBody),
+  } as unknown as import("@melite/gateway-core").GatewayRequest;
+  for (const listen of listeners) {
+    const out = await listen(req);
+    if (out !== undefined) return out;
+  }
+  return undefined;
+}
+
 export function mountDoorRoutes(
   ctx: Context,
   ws: WebServer,
@@ -96,6 +130,9 @@ export function mountDoorRoutes(
   listen: DoorListener,
 ): void {
   const mine: readonly string[] = handlers;
+  const lane: DoorListener[] = laneListeners.get(ctx) ?? [];
+  laneListeners.set(ctx, lane);
+  lane.push(listen);
   const mounted: Set<string> = new Set();
   for (const row of ROUTES) {
     if (!mine.includes(row.handler)) continue;

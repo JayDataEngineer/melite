@@ -19,6 +19,7 @@
     "@melite/comfyui-card-kit": "workspace:*",
     "@melite/comfyui-cordis": "workspace:*",
     "@melite/contracts": "workspace:*",
+    "@melite/estate-call": "workspace:*",
     "@melite/formats": "workspace:*",
     "@melite/ui": "workspace:*",
     "lucide-react": "*",

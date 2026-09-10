@@ -32,7 +32,6 @@
  * @module @melite-plugin/dsh-tools
  */
 import type { Context } from '@deepseek-ai/cordis'
-import { normalizeGatewayUrl } from './gateway.ts'
 // THE CARD PACKAGES' TOOL FACES (M2′ + the registrar retirement,
 // 2026-09-09): a card tool is IMPORTED from its package — the
 // DSH law (packages/shell/tool-bash: a tool is its own package;
@@ -46,6 +45,7 @@ import { buildImageEditTool } from '@melite/image-image-edit/tool'
 import { buildMotionTool } from '@melite/motion-motion/tool'
 import { buildCardTool as buildClothingPlacementTool } from '@melite/3d-clothing-placement/tool'
 import { buildH3TimelineTool } from '@melite/video-h3-timeline/tool'
+import { makeEstateRequest } from './estate.ts'
 import { runStatus } from './tools/run-status.ts'
 import { meliteFlow } from './tools/melite-flow.ts'
 import { comfyManage } from './tools/comfy-manage.ts'
@@ -62,7 +62,8 @@ import { harnessEnhance, resolveHarnessRoutes, matchHarnessRoute, routeName } fr
 // with a fake seam — no host, no key, seconds-cheap).
 export { harnessEnhance, resolveHarnessRoutes, matchHarnessRoute, routeName }
 
-export { RayGatewayError, normalizeGatewayUrl } from './gateway.ts'
+export { RayGatewayError, makeEstateRequest } from './estate.ts'
+export type { EstateRequest } from './estate.ts'
 
 // Tool factories — re-exported for the smoke harness (test/smoke.mjs)
 // and any embedder that mounts tools without the full plugin apply().
@@ -99,8 +100,6 @@ export const inject = ['tools']
  * force the same gates without touching a profile.
  */
 export interface Config {
-  /** Melite gateway base URL. Default http://localhost:33081. */
-  gatewayUrl?: string
   /** HEADLESS interface: register the run doors (melite_flow,
    *  run_status) — the delegated operator. Default false (browser law:
    *  the model composes, the USER presses Run). */
@@ -145,25 +144,12 @@ interface CtxView {
 /** Register the Melite tools against the live estate gateway. */
 export async function apply(ctx: Context, config: Config = {}): Promise<void> {
   const c = ctx as unknown as CtxView
-  // GATEWAY OVERRIDE (estate collapse E3): an embedding host (SDK
-  // spawn, remote mount) pins an EXTERNAL estate lane through the env —
-  // never silently falling through to whatever this profile's config
-  // pins. The default is THIS host's own webServer origin: the doors
-  // are mounted in the same process (melite-estate bundle).
-  const envGw = process.env.MELITE_GATEWAY_URL || ''
-  // Own-origin derivation is HOST-ONLY: a headless/sdk composition has
-  // no webServer service (the doors live in another DSH) — those lanes
-  // MUST pin MELITE_GATEWAY_URL (loud refusal below, QUEUE LANE LAW),
-  // never a silent default.
-  const ws = (ctx as unknown as { webServer?: { port: number } }).webServer
-  if ((envGw || config.gatewayUrl) === '' && ws === undefined) {
-    throw new Error('melite-tools: no webServer on this host and no MELITE_GATEWAY_URL pinned — an alien lane must name its estate origin (QUEUE LANE LAW)')
-  }
-  const gatewayUrl = normalizeGatewayUrl(
-    envGw
-    || config.gatewayUrl
-    || (ws !== undefined ? `http://127.0.0.1:${ws.port}` : ''),
-  )
+  // THE TRANSPORT (R2b, the remotes migration): the tools call the
+  // estate IN-PROCESS — the wire seats for the KV/runs lanes, the
+  // door listeners for the rest. No URL, no port, no env pin: this
+  // host either mounts the estate bundle or it does not (an alien
+  // lane names its own DSH in its own profile).
+  const request = makeEstateRequest(ctx)
 
   // config-first, env-override: a profile pins its interface; a
   // one-shot mount forces it without touching the profile.
@@ -180,25 +166,25 @@ export async function apply(ctx: Context, config: Config = {}): Promise<void> {
   c.logger.info(
     'melite-tools: %s interface — %d base + %d headless run door(s) + %d ad hoc, gateway %s',
     headless ? 'HEADLESS' : 'BROWSER', BASE_TOOL_NAMES.length,
-    headless ? HEADLESS_TOOL_NAMES.length : 0, adhoc.length, gatewayUrl,
+    headless ? HEADLESS_TOOL_NAMES.length : 0, adhoc.length, request,
   )
 
   // BASE (both interfaces): disclosure (flow preferred, card
   // fallback), discovery, compose, management, audit.
-  c.tools.register(meliteDiscover(gatewayUrl))
-  c.tools.register(meliteConstruct(gatewayUrl))
-  c.tools.register(meliteLoad(gatewayUrl))
-  c.tools.register(comfyManage(gatewayUrl))
-  c.tools.register(skillIndex(gatewayUrl))
-  c.tools.register(skillRead(gatewayUrl))
-  c.tools.register(ledgerTail(gatewayUrl))
+  c.tools.register(meliteDiscover(request))
+  c.tools.register(meliteConstruct(request))
+  c.tools.register(meliteLoad(request))
+  c.tools.register(comfyManage(request))
+  c.tools.register(skillIndex(request))
+  c.tools.register(skillRead(request))
+  c.tools.register(ledgerTail(request))
 
   // HEADLESS run doors — the delegated operator (QUEUE LANE LAW: the
   // queue's own registration door, models named explicitly, never a
   // hand-assembled graph).
   if (headless) {
-    c.tools.register(meliteFlow(gatewayUrl))
-    c.tools.register(runStatus(gatewayUrl))
+    c.tools.register(meliteFlow(request))
+    c.tools.register(runStatus(request))
   }
 
   // The host default model, read LIVE (2026-09-06 — the door serves
@@ -238,12 +224,12 @@ export async function apply(ctx: Context, config: Config = {}): Promise<void> {
   // ToolRunContext types resolve to one copy and the casts are
   // gone. If a future pin drifts again, tsc fails HERE (not
   // silently downstream) — re-pin, never re-cast.
-  c.tools.register(buildMusicTool(gatewayUrl))
-  c.tools.register(buildTtsTool(gatewayUrl))
-  c.tools.register(buildVoiceLockTool(gatewayUrl))
-  c.tools.register(buildImageEditTool(gatewayUrl))
-  c.tools.register(buildMotionTool(gatewayUrl))
-  c.tools.register(buildH3TimelineTool(gatewayUrl))
-  c.tools.register(buildClothingPlacementTool(gatewayUrl))
+  c.tools.register(buildMusicTool(request))
+  c.tools.register(buildTtsTool(request))
+  c.tools.register(buildVoiceLockTool(request))
+  c.tools.register(buildImageEditTool(request))
+  c.tools.register(buildMotionTool(request))
+  c.tools.register(buildH3TimelineTool(request))
+  c.tools.register(buildClothingPlacementTool(request))
 
 }

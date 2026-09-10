@@ -54,6 +54,9 @@ importers:
       '@melite/contracts':
         specifier: workspace:*
         version: link:../../web-kit/contracts
+      '@melite/estate-call':
+        specifier: workspace:*
+        version: link:../../harness/estate-call
       '@melite/formats':
         specifier: workspace:*
         version: link:../../web-kit/formats
@@ -85,6 +88,9 @@ importers:
       '@melite/comfyui-cordis':
         specifier: workspace:*
         version: link:../../engines/comfyui-cordis
+      '@melite/estate-call':
+        specifier: workspace:*
+        version: link:../../harness/estate-call
     devDependencies:
       '@types/node':
         specifier: '*'
@@ -107,6 +113,9 @@ importers:
       '@melite/comfyui-cordis':
         specifier: workspace:*
         version: link:../../engines/comfyui-cordis
+      '@melite/estate-call':
+        specifier: workspace:*
+        version: link:../../harness/estate-call
     devDependencies:
       '@types/node':
         specifier: '*'
@@ -132,6 +141,9 @@ importers:
       '@melite/comfyui-cordis':
         specifier: workspace:*
         version: link:../../engines/comfyui-cordis
+      '@melite/estate-call':
+        specifier: workspace:*
+        version: link:../../harness/estate-call
       '@melite/ui':
         specifier: workspace:*
         version: link:../../web-kit/ui
@@ -160,6 +172,9 @@ importers:
       '@melite/comfyui-cordis':
         specifier: workspace:*
         version: link:../../engines/comfyui-cordis
+      '@melite/estate-call':
+        specifier: workspace:*
+        version: link:../../harness/estate-call
     devDependencies:
       '@types/node':
         specifier: '*'
@@ -179,6 +194,9 @@ importers:
       '@melite/comfyui-cordis':
         specifier: workspace:*
         version: link:../../engines/comfyui-cordis
+      '@melite/estate-call':
+        specifier: workspace:*
+        version: link:../../harness/estate-call
     devDependencies:
       '@types/node':
         specifier: '*'
@@ -201,6 +219,9 @@ importers:
       '@melite/comfyui-cordis':
         specifier: workspace:*
         version: link:../../engines/comfyui-cordis
+      '@melite/estate-call':
+        specifier: workspace:*
+        version: link:../../harness/estate-call
     devDependencies:
       '@types/node':
         specifier: '*'
@@ -220,6 +241,9 @@ importers:
       '@melite/comfyui-cordis':
         specifier: workspace:*
         version: link:../../engines/comfyui-cordis
+      '@melite/estate-call':
+        specifier: workspace:*
+        version: link:../../harness/estate-call
     devDependencies:
       '@types/node':
         specifier: '*'
@@ -242,6 +266,9 @@ importers:
       '@melite/comfyui-cordis':
         specifier: workspace:*
         version: link:../../engines/comfyui-cordis
+      '@melite/estate-call':
+        specifier: workspace:*
+        version: link:../../harness/estate-call
     devDependencies:
       '@types/node':
         specifier: '*'
@@ -264,6 +291,9 @@ importers:
       '@melite/comfyui-cordis':
         specifier: workspace:*
         version: link:../../engines/comfyui-cordis
+      '@melite/estate-call':
+        specifier: workspace:*
+        version: link:../../harness/estate-call
     devDependencies:
       '@types/node':
         specifier: '*'
@@ -933,6 +963,8 @@ importers:
         specifier: 5.9.3
         version: 5.9.3
 
+  packages/harness/estate-call: {}
+
   packages/harness/melite-tools:
     dependencies:
       '@deepseek-ai/dsh-llm':
@@ -959,6 +991,9 @@ importers:
       '@melite/gateway-core':
         specifier: workspace:*
         version: link:../../gateway/core
+      '@melite/gateway-doors':
+        specifier: workspace:*
+        version: link:../../gateway/doors
       '@melite/image-image-edit':
         specifier: workspace:*
         version: link:../../image/image-edit
@@ -1017,6 +1052,9 @@ importers:
       '@melite/comfyui-cordis':
         specifier: workspace:*
         version: link:../../engines/comfyui-cordis
+      '@melite/estate-call':
+        specifier: workspace:*
+        version: link:../../harness/estate-call
       '@melite/ui':
         specifier: workspace:*
         version: link:../../web-kit/ui
@@ -1048,6 +1086,9 @@ importers:
       '@melite/comfyui-cordis':
         specifier: workspace:*
         version: link:../../engines/comfyui-cordis
+      '@melite/estate-call':
+        specifier: workspace:*
+        version: link:../../harness/estate-call
     devDependencies:
       '@types/node':
         specifier: '*'
@@ -1070,6 +1111,9 @@ importers:
       '@melite/comfyui-cordis':
         specifier: workspace:*
         version: link:../../engines/comfyui-cordis
+      '@melite/estate-call':
+        specifier: workspace:*
+        version: link:../../harness/estate-call
       '@melite/models-anima':
         specifier: workspace:*
         version: link:../../models/anima
@@ -1098,6 +1142,9 @@ importers:
       '@melite/comfyui-cordis':
         specifier: workspace:*
         version: link:../../engines/comfyui-cordis
+      '@melite/estate-call':
+        specifier: workspace:*
+        version: link:../../harness/estate-call
     devDependencies:
       '@types/node':
         specifier: '*'
@@ -1120,6 +1167,9 @@ importers:
       '@melite/contracts':
         specifier: workspace:*
         version: link:../../web-kit/contracts
+      '@melite/estate-call':
+        specifier: workspace:*
+        version: link:../../harness/estate-call
       '@melite/formats':
         specifier: workspace:*
         version: link:../../web-kit/formats
@@ -1151,6 +1201,9 @@ importers:
       '@melite/comfyui-cordis':
         specifier: workspace:*
         version: link:../../engines/comfyui-cordis
+      '@melite/estate-call':
+        specifier: workspace:*
+        version: link:../../harness/estate-call
     devDependencies:
       '@types/node':
         specifier: '*'
@@ -1170,6 +1223,9 @@ importers:
       '@melite/comfyui-cordis':
         specifier: workspace:*
         version: link:../../engines/comfyui-cordis
+      '@melite/estate-call':
+        specifier: workspace:*
+        version: link:../../harness/estate-call
     devDependencies:
       '@types/node':
         specifier: '*'
@@ -1837,6 +1893,9 @@ importers:
       '@melite/contracts':
         specifier: workspace:*
         version: link:../../web-kit/contracts
+      '@melite/estate-call':
+        specifier: workspace:*
+        version: link:../../harness/estate-call
       '@melite/formats':
         specifier: workspace:*
         version: link:../../web-kit/formats
@@ -1883,6 +1942,9 @@ importers:
       '@melite/contracts':
         specifier: workspace:*
         version: link:../../web-kit/contracts
+      '@melite/estate-call':
+        specifier: workspace:*
+        version: link:../../harness/estate-call
       '@melite/ui':
         specifier: workspace:*
         version: link:../../web-kit/ui
@@ -1911,6 +1973,9 @@ importers:
       '@melite/comfyui-cordis':
         specifier: workspace:*
         version: link:../../engines/comfyui-cordis
+      '@melite/estate-call':
+        specifier: workspace:*
+        version: link:../../harness/estate-call
     devDependencies:
       '@types/node':
         specifier: '*'

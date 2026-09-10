@@ -1,4 +1,3 @@
-import { a as DEFAULT_GATEWAY_URL, c as normalizeGatewayUrl, i as routeName, n as matchHarnessRoute, o as RayGatewayError, r as resolveHarnessRoutes, s as gatewayRequest, t as harnessEnhance } from "./llm-complete-DtPzVDBV.mjs";
 import { buildMusicTool } from "@melite/audio-music/tool";
 import { buildTtsTool } from "@melite/audio-tts/tool";
 import { buildVoiceLockTool } from "@melite/audio-voice-lock/tool";
@@ -6,7 +5,76 @@ import { buildImageEditTool } from "@melite/image-image-edit/tool";
 import { buildMotionTool } from "@melite/motion-motion/tool";
 import { buildCardTool } from "@melite/3d-clothing-placement/tool";
 import { buildH3TimelineTool } from "@melite/video-h3-timeline/tool";
+import { callEstateLane } from "@melite/gateway-doors";
 import { defineTool } from "@deepseek-ai/dsh-tools";
+import { createUserMessage } from "@deepseek-ai/dsh-llm";
+//#region src/estate.ts
+/**
+* estate.ts — the tools' ONE transport: the ctx seats, in-process.
+*
+* NO HTTP, NO URL, NO PORT (the remotes migration, R2b). The KV/runs
+* lanes ride the wire package's Typert seats (draftsRemote/
+* benchRemote/runsRemote — plain method calls on ctx); every other
+* estate lane rides callEstateLane — the SAME door listeners the
+* webserver routes wrap, invoked directly (the doors' own dispatch,
+* never a fetch to self). When R5 retires the route rows the
+* listeners stay: they are the domain layer, and the remotes that
+* replace the rows call them too.
+*/
+var RayGatewayError = class extends Error {
+	status;
+	url;
+	body;
+	constructor(status, url, body) {
+		super(`melite gateway ${status} ${url}: ${body}`);
+		this.name = "RayGatewayError";
+		this.status = status;
+		this.url = url;
+		this.body = body;
+	}
+};
+/** Route one KV/runs lane to its seat; undefined = no seat / no match. */
+async function trySeats(ctx, method, path, body, signal) {
+	const seats = ctx;
+	signal.throwIfAborted();
+	if (method === "GET" && path === "/v1/flows/drafts") {
+		if (seats.draftsRemote === void 0) return void 0;
+		return seats.draftsRemote.list(signal);
+	}
+	let m = /^\/v1\/flows\/drafts\/([^/?]+)$/.exec(path);
+	if (method === "GET" && m !== null) {
+		if (seats.draftsRemote === void 0) return void 0;
+		return seats.draftsRemote.get(decodeURIComponent(m[1]), signal);
+	}
+	if (method === "POST" && path === "/v1/bench/ensure") {
+		if (seats.benchRemote === void 0) return void 0;
+		if (body === void 0 || typeof body !== "object" || body === null) throw new Error("bench ensure needs a JSON body");
+		return seats.benchRemote.ensure(body, signal);
+	}
+	m = /^\/v1\/bench\/([^/?]+)$/.exec(path);
+	if (method === "GET" && m !== null) {
+		if (seats.benchRemote === void 0) return void 0;
+		return seats.benchRemote.get(decodeURIComponent(m[1]), signal);
+	}
+	if (method === "GET" && path.startsWith("/v1/flows/runs")) {
+		if (seats.runsRemote === void 0) return void 0;
+		const lim = /(?:^|[?&])limit=(\d+)/.exec(path);
+		return seats.runsRemote.list(lim !== null ? Number(lim[1]) : 200, signal);
+	}
+}
+/** Build the tools' request: seats first, then the door listeners —
+*  both in-process. There is no third path. */
+function makeEstateRequest(ctx) {
+	return async (method, path, body, execSignal) => {
+		const viaSeats = await trySeats(ctx, method, path, body, execSignal);
+		if (viaSeats !== void 0) return viaSeats;
+		const out = await callEstateLane(ctx, method, path, body);
+		if (out === void 0) throw new Error(`no estate lane claims ${method} ${path}`);
+		if (out.status >= 200 && out.status < 300) return out.body;
+		throw new RayGatewayError(out.status, `estate lane ${method} ${path}`, typeof out.body === "string" ? out.body.slice(0, 300) : JSON.stringify(out.body)?.slice(0, 300) ?? "");
+	};
+}
+//#endregion
 //#region src/json-clean.ts
 /**
 * Deep JSON-normalization for tool results.
@@ -64,7 +132,7 @@ function clean(value, seen) {
 * Registered ONLY in headless mounts (MELITE_HEADLESS=1).
 */
 const TIMEOUT_MS$3 = 15e3;
-function runStatus(gatewayUrl) {
+function runStatus(request) {
 	const presentCall = (args) => {
 		const a = typeof args === "object" && args !== null ? args : {};
 		return {
@@ -132,7 +200,7 @@ function runStatus(gatewayUrl) {
 			if (!runId) return jsonClean({ error: "runId is required" });
 			let res;
 			try {
-				res = await gatewayRequest(gatewayUrl, "GET", "/v1/flows/status/" + encodeURIComponent(runId), void 0, exec.signal, TIMEOUT_MS$3);
+				res = await request("GET", "/v1/flows/status/" + encodeURIComponent(runId), void 0, exec.signal, TIMEOUT_MS$3);
 			} catch (e) {
 				if (e instanceof RayGatewayError) {
 					let named = "";
@@ -205,13 +273,13 @@ function refusalOf(e, verb, bench) {
 }
 /** GET the bench; 404 → ensure (birth) → GET again. Reads are the
 *  freshness mechanism — always a door round trip. */
-async function readBench(gatewayUrl, bench, signal) {
-	const get = () => gatewayRequest(gatewayUrl, "GET", `/v1/bench/${bench}`, void 0, signal, 15e3);
+async function readBench(request, bench, signal) {
+	const get = () => request("GET", `/v1/bench/${bench}`, void 0, signal, 15e3);
 	try {
 		return await get();
 	} catch (e) {
 		if (e instanceof RayGatewayError && e.status === 404) {
-			await gatewayRequest(gatewayUrl, "POST", "/v1/bench/ensure", { session: bench }, signal, 15e3);
+			await request("POST", "/v1/bench/ensure", { session: bench }, signal, 15e3);
 			return await get();
 		}
 		throw e;
@@ -234,7 +302,7 @@ function projectStages(stages) {
 		return row;
 	});
 }
-function meliteConstruct(gatewayUrl) {
+function meliteConstruct(request) {
 	const presentCall = (args) => {
 		const a = args ?? {};
 		const verb = typeof a.verb === "string" ? a.verb : "?";
@@ -364,7 +432,7 @@ function meliteConstruct(gatewayUrl) {
 			});
 			try {
 				if (verb === "read" || verb === "") {
-					const b = await readBench(gatewayUrl, bench, signal);
+					const b = await readBench(request, bench, signal);
 					return out({
 						rev: b.rev,
 						intent: b.intent,
@@ -374,14 +442,14 @@ function meliteConstruct(gatewayUrl) {
 					});
 				}
 				if (verb === "validate") {
-					const b = await readBench(gatewayUrl, bench, signal);
+					const b = await readBench(request, bench, signal);
 					const stages = projectStages(b.stages);
 					if (stages.length === 0) return out({
 						rev: b.rev,
 						compiles: false,
 						note: "bench is empty"
 					});
-					const r = await gatewayRequest(gatewayUrl, "POST", "/v1/flows/validate", { flow_inline: { stages } }, signal, 2e4);
+					const r = await request("POST", "/v1/flows/validate", { flow_inline: { stages } }, signal, 2e4);
 					return out({
 						rev: b.rev,
 						compiles: r["ok"] === true || r["valid"] === true,
@@ -389,10 +457,9 @@ function meliteConstruct(gatewayUrl) {
 					});
 				}
 				if (verb === "load") {
-					const stages = Array.isArray(a.stages) ? a.stages : [];
-					const r = await gatewayRequest(gatewayUrl, "POST", "/v1/bench/ensure", {
+					const r = await request("POST", "/v1/bench/ensure", {
 						session: bench,
-						stages,
+						stages: Array.isArray(a.stages) ? a.stages : [],
 						...typeof a.intent === "string" && a.intent !== "" ? { intent: a.intent } : {},
 						expect_rev: a.expect_rev
 					}, signal, 15e3);
@@ -402,7 +469,7 @@ function meliteConstruct(gatewayUrl) {
 					});
 				}
 				if (verb === "patch") {
-					const r = await gatewayRequest(gatewayUrl, "POST", `/v1/bench/${bench}/patch`, {
+					const r = await request("POST", `/v1/bench/${bench}/patch`, {
 						stage: a.stage,
 						params: a.params,
 						expect_rev: a.expect_rev
@@ -414,7 +481,7 @@ function meliteConstruct(gatewayUrl) {
 					});
 				}
 				if (verb === "add_stage") {
-					const r = await gatewayRequest(gatewayUrl, "POST", `/v1/bench/${bench}/add_stage`, {
+					const r = await request("POST", `/v1/bench/${bench}/add_stage`, {
 						card: a.card,
 						...a.engine !== void 0 ? { engine: a.engine } : {},
 						...a.params !== void 0 ? { params: a.params } : {},
@@ -427,7 +494,7 @@ function meliteConstruct(gatewayUrl) {
 					});
 				}
 				if (verb === "remove_stage") {
-					const r = await gatewayRequest(gatewayUrl, "POST", `/v1/bench/${bench}/remove_stage`, {
+					const r = await request("POST", `/v1/bench/${bench}/remove_stage`, {
 						stage: a.stage,
 						expect_rev: a.expect_rev
 					}, signal, 15e3);
@@ -437,7 +504,7 @@ function meliteConstruct(gatewayUrl) {
 					});
 				}
 				if (verb === "rewire") {
-					const r = await gatewayRequest(gatewayUrl, "POST", `/v1/bench/${bench}/rewire`, {
+					const r = await request("POST", `/v1/bench/${bench}/rewire`, {
 						stage: a.stage,
 						input: a.input,
 						...a.from !== void 0 ? { from: a.from } : {},
@@ -450,7 +517,7 @@ function meliteConstruct(gatewayUrl) {
 					});
 				}
 				if (verb === "undo") {
-					const r = await gatewayRequest(gatewayUrl, "POST", `/v1/bench/${bench}/undo`, {
+					const r = await request("POST", `/v1/bench/${bench}/undo`, {
 						...a.n !== void 0 ? { n: a.n } : {},
 						...a.author !== void 0 ? { author: a.author } : {},
 						expect_rev: a.expect_rev
@@ -540,10 +607,10 @@ const VALIDATE_TIMEOUT_MS = 15e3;
 const CATALOG_TIMEOUT_MS = 15e3;
 /** POST /v1/flows/start — the verbatim-error pattern (the agent
 *  reads the gateway's refusal text, not a transport code). */
-async function startRun(gatewayUrl, body, signal) {
+async function startRun(request, body, signal) {
 	let res;
 	try {
-		res = await gatewayRequest(gatewayUrl, "POST", "/v1/flows/start", body, signal, TIMEOUT_MS$2);
+		res = await request("POST", "/v1/flows/start", body, signal, TIMEOUT_MS$2);
 	} catch (e) {
 		if (e instanceof RayGatewayError) {
 			let named = "";
@@ -568,8 +635,8 @@ async function startRun(gatewayUrl, body, signal) {
 *  run. The user's cards tab streams the same bench; runs snapshot
 *  their composition in the run registry (CARD BIRTH LAW holds —
 *  the start still rides a doc-backed draft_id, now the bench's). */
-async function loadBench(gatewayUrl, body, signal) {
-	const b = await gatewayRequest(gatewayUrl, "POST", "/v1/bench/ensure", body, signal, DRAFT_TIMEOUT_MS);
+async function loadBench(request, body, signal) {
+	const b = await request("POST", "/v1/bench/ensure", body, signal, DRAFT_TIMEOUT_MS);
 	if (b && typeof b.error === "string" && b.error) throw new Error(b.error);
 	const id = b && b.draft_id;
 	if (typeof id !== "string" || id === "") throw new Error("bench ensure returned no draft_id");
@@ -580,10 +647,10 @@ async function loadBench(gatewayUrl, body, signal) {
 *  the flow_inline wire contract (presentation extras strip), then
 *  started under the bench's own draft_id. This is what the user's
 *  Run press does and what {bench: true} does — one truth. */
-async function runBench(gatewayUrl, a, signal) {
+async function runBench(request, a, signal) {
 	let b;
 	try {
-		b = await gatewayRequest(gatewayUrl, "GET", `/v1/bench/${DEFAULT_BENCH}`, void 0, signal, 15e3);
+		b = await request("GET", `/v1/bench/${DEFAULT_BENCH}`, void 0, signal, 15e3);
 	} catch (e) {
 		if (e instanceof RayGatewayError && e.status === 404) return { error: "the bench is empty — construct stages first (melite_construct)" };
 		throw e;
@@ -591,7 +658,7 @@ async function runBench(gatewayUrl, a, signal) {
 	const stages = projectStages(b["stages"]);
 	if (stages.length === 0) return { error: "the bench is empty — construct stages first (melite_construct)" };
 	const draftId = typeof b["draft_id"] === "string" ? b["draft_id"] : `bench-${DEFAULT_BENCH}`;
-	const started = await startRun(gatewayUrl, {
+	const started = await startRun(request, {
 		flow_inline: { stages },
 		test: a.test === true,
 		draft_id: draftId
@@ -605,20 +672,20 @@ async function runBench(gatewayUrl, a, signal) {
 }
 /** SINGLE (the old card_run path, composed inside): manifest gate
 *  + runnability gate + defaults merge, then draft + {model}. */
-async function runSingle(gatewayUrl, a, signal) {
+async function runSingle(request, a, signal) {
 	const card = a.card ?? "";
 	const model = a.model ?? "";
 	if (!model) return { error: "model is required (name the family explicitly — QUEUE LANE LAW)" };
-	const tools = await gatewayRequest(gatewayUrl, "GET", "/v1/card-tools", void 0, signal, CATALOG_TIMEOUT_MS);
+	const tools = await request("GET", "/v1/card-tools", void 0, signal, CATALOG_TIMEOUT_MS);
 	const manifest = (Array.isArray(tools) ? tools : []).find((t) => t.model === model);
 	if (manifest === void 0) return { error: `model "${model}" has no card tool. Live card tools: ${(Array.isArray(tools) ? tools : []).map((t) => String(t.model)).filter((s) => s !== "").join(", ")}` };
 	try {
-		const v = await gatewayRequest(gatewayUrl, "GET", "/v1/card-tools/validate?model=" + encodeURIComponent(model), void 0, signal, 1e4);
+		const v = await request("GET", "/v1/card-tools/validate?model=" + encodeURIComponent(model), void 0, signal, 1e4);
 		if (v.runnable !== true) return { error: v.error || `model "${model}" cannot run` };
 	} catch (e) {
 		if (e instanceof Error && /cannot run/.test(e.message)) return { error: e.message };
 	}
-	const entry = ((await gatewayRequest(gatewayUrl, "GET", "/v1/model-catalog", void 0, signal, CATALOG_TIMEOUT_MS)).models ?? {})[model];
+	const entry = ((await request("GET", "/v1/model-catalog", void 0, signal, CATALOG_TIMEOUT_MS)).models ?? {})[model];
 	const defaults = entry !== void 0 && entry.defaults !== null && typeof entry.defaults === "object" && !Array.isArray(entry.defaults) ? entry.defaults : {};
 	const cardDefaults = {};
 	{
@@ -636,7 +703,7 @@ async function runSingle(gatewayUrl, a, signal) {
 	const intent = intentSrc.length > 80 ? intentSrc.slice(0, 77) + "…" : intentSrc;
 	let draftId;
 	try {
-		draftId = await loadBench(gatewayUrl, {
+		draftId = await loadBench(request, {
 			session: DEFAULT_BENCH,
 			intent,
 			stages: [{
@@ -649,7 +716,7 @@ async function runSingle(gatewayUrl, a, signal) {
 	} catch (e) {
 		return { error: e instanceof Error ? e.message : String(e) };
 	}
-	const started = await startRun(gatewayUrl, {
+	const started = await startRun(request, {
 		...params,
 		model,
 		test: a.test === true,
@@ -669,13 +736,13 @@ async function runSingle(gatewayUrl, a, signal) {
 	};
 }
 /** TEMPLATE (the old flow_run path): drafts {flow,...} + start. */
-async function runTemplate(gatewayUrl, a, signal) {
+async function runTemplate(request, a, signal) {
 	const flow = a.flow ?? "";
 	if (!flow) return { error: "flow is required (a discovered flow name)" };
 	const overrides = a.params ?? {};
 	let draftId;
 	try {
-		draftId = await loadBench(gatewayUrl, {
+		draftId = await loadBench(request, {
 			session: DEFAULT_BENCH,
 			intent: flow,
 			stages: [{
@@ -705,7 +772,7 @@ async function runTemplate(gatewayUrl, a, signal) {
 			error: e instanceof Error ? e.message : String(e)
 		};
 	}
-	const started = await startRun(gatewayUrl, {
+	const started = await startRun(request, {
 		...overrides,
 		flow,
 		test: a.test === true,
@@ -725,7 +792,7 @@ async function runTemplate(gatewayUrl, a, signal) {
 }
 /** AD-HOC (the old build_flow MULTI path): COMPILE FIRST at
 *  validate (no GPU on a bad wire), then draft + {flow_inline}. */
-async function runAdHoc(gatewayUrl, a, signal) {
+async function runAdHoc(request, a, signal) {
 	const rawStages = a.stages;
 	if (!Array.isArray(rawStages) || rawStages.length === 0) return { error: "stages must be a non-empty array of {id, engine, params?, outputs?} rows" };
 	const flowId = typeof a.id === "string" && a.id !== "" ? a.id : "adhoc";
@@ -750,7 +817,7 @@ async function runAdHoc(gatewayUrl, a, signal) {
 		}))
 	};
 	try {
-		await gatewayRequest(gatewayUrl, "POST", "/v1/flows/validate", flowBody, signal, VALIDATE_TIMEOUT_MS);
+		await request("POST", "/v1/flows/validate", flowBody, signal, VALIDATE_TIMEOUT_MS);
 	} catch (e) {
 		if (e instanceof RayGatewayError) {
 			let named = "";
@@ -769,7 +836,7 @@ async function runAdHoc(gatewayUrl, a, signal) {
 	}
 	let draftId;
 	try {
-		draftId = await loadBench(gatewayUrl, {
+		draftId = await loadBench(request, {
 			session: DEFAULT_BENCH,
 			intent: flowId,
 			stages: folded
@@ -781,7 +848,7 @@ async function runAdHoc(gatewayUrl, a, signal) {
 			error: e instanceof Error ? e.message : String(e)
 		};
 	}
-	const started = await startRun(gatewayUrl, {
+	const started = await startRun(request, {
 		flow_inline: flowBody,
 		test: a.test === true,
 		draft_id: draftId
@@ -798,7 +865,7 @@ async function runAdHoc(gatewayUrl, a, signal) {
 		...started
 	};
 }
-function meliteFlow(gatewayUrl) {
+function meliteFlow(request) {
 	const presentCall = (args) => {
 		const a = args ?? {};
 		return {
@@ -939,20 +1006,20 @@ function meliteFlow(gatewayUrl) {
 			if (modes === 0) return jsonClean({ error: "one composition is required: bench (run what is there) | card (+model) | flow | stages (cards drafted on the fly)" });
 			if (modes > 1) return jsonClean({ error: "exactly one composition per call: bench | card | flow | stages — never combined" });
 			try {
-				if (hasBench) return jsonClean(await runBench(gatewayUrl, { test }, exec.signal));
-				if (hasFlow) return jsonClean(await runTemplate(gatewayUrl, {
+				if (hasBench) return jsonClean(await runBench(request, { test }, exec.signal));
+				if (hasFlow) return jsonClean(await runTemplate(request, {
 					flow: a.flow,
 					params: bag,
 					test
 				}, exec.signal));
-				if (hasCard) return jsonClean(await runSingle(gatewayUrl, {
+				if (hasCard) return jsonClean(await runSingle(request, {
 					card: a.card,
 					model: typeof a.model === "string" ? a.model : "",
 					prompt: typeof a.prompt === "string" ? a.prompt : void 0,
 					params: bag,
 					test
 				}, exec.signal));
-				return jsonClean(await runAdHoc(gatewayUrl, {
+				return jsonClean(await runAdHoc(request, {
 					stages: a.stages,
 					connects: a.connects,
 					id: a.id,
@@ -1027,7 +1094,7 @@ const ACTIONS = [
 	"snapshot_save",
 	"snapshot_restore"
 ];
-function comfyManage(gatewayUrl) {
+function comfyManage(request) {
 	const presentCall = (args) => {
 		const a = typeof args === "object" && args !== null ? args : {};
 		return {
@@ -1159,7 +1226,7 @@ function comfyManage(gatewayUrl) {
 				detail: "comfy_manage miswire: no execution context signal — the host runtime must pass exec"
 			});
 			try {
-				res = await gatewayRequest(gatewayUrl, "POST", "/v1/manage", body, exec.signal, MANAGE_TIMEOUT_MS);
+				res = await request("POST", "/v1/manage", body, exec.signal, MANAGE_TIMEOUT_MS);
 			} catch (e) {
 				if (e instanceof RayGatewayError) try {
 					const parsed = JSON.parse(e.body);
@@ -1189,7 +1256,7 @@ const TIMEOUT_MS$1 = 15e3;
 /** Counts-first clamp: over this many lines the default answer
 * clamps (counts + vocabulary + the first rows ride instead). */
 const CLAMP = 12;
-function meliteDiscover(gatewayUrl) {
+function meliteDiscover(request) {
 	const presentCall = (args) => {
 		const a = args ?? {};
 		const bits = [];
@@ -1271,7 +1338,7 @@ function meliteDiscover(gatewayUrl) {
 			if (typeof a.q === "string" && a.q !== "") params.set("q", a.q);
 			if (typeof a.tags === "string" && a.tags !== "") params.set("tags", a.tags);
 			try {
-				const res = await gatewayRequest(gatewayUrl, "GET", "/v1/discover?" + params.toString(), void 0, exec.signal, TIMEOUT_MS$1);
+				const res = await request("GET", "/v1/discover?" + params.toString(), void 0, exec.signal, TIMEOUT_MS$1);
 				const r = res;
 				const flows = Array.isArray(r.flows) ? r.flows : [];
 				const cards = Array.isArray(r.cards) ? r.cards : [];
@@ -1307,7 +1374,7 @@ function meliteDiscover(gatewayUrl) {
 //#endregion
 //#region src/tools/melite-load.ts
 const TIMEOUT_MS = 2e4;
-function meliteLoad(gatewayUrl) {
+function meliteLoad(request) {
 	const presentCall = (args) => {
 		const a = args ?? {};
 		return {
@@ -1391,7 +1458,7 @@ function meliteLoad(gatewayUrl) {
 				inference_type: inferenceType
 			});
 			try {
-				return jsonClean(await gatewayRequest(gatewayUrl, "GET", "/v1/load?" + params.toString(), void 0, exec.signal, TIMEOUT_MS));
+				return jsonClean(await request("GET", "/v1/load?" + params.toString(), void 0, exec.signal, TIMEOUT_MS));
 			} catch (e) {
 				const err = e;
 				return jsonClean({
@@ -1418,7 +1485,7 @@ function meliteLoad(gatewayUrl) {
 * disclosure: the agent never pays for docs it does not open.
 */
 const INDEX_TIMEOUT_MS = 15e3;
-function skillIndex(gatewayUrl) {
+function skillIndex(request) {
 	const presentCall = () => {
 		return {
 			card: "generic",
@@ -1460,7 +1527,7 @@ function skillIndex(gatewayUrl) {
 			}
 		},
 		async execute(_args, exec) {
-			const res = await gatewayRequest(gatewayUrl, "GET", "/v1/skills", void 0, exec.signal, INDEX_TIMEOUT_MS);
+			const res = await request("GET", "/v1/skills", void 0, exec.signal, INDEX_TIMEOUT_MS);
 			const rows = Array.isArray(res.skills) ? res.skills : [];
 			return jsonClean({
 				count: rows.length,
@@ -1484,7 +1551,7 @@ function skillIndex(gatewayUrl) {
 * skills are "model:<id>:<stem>".
 */
 const READ_TIMEOUT_MS = 15e3;
-function skillRead(gatewayUrl) {
+function skillRead(request) {
 	const presentCall = (args) => {
 		const a = typeof args === "object" && args !== null ? args : {};
 		return {
@@ -1543,7 +1610,7 @@ function skillRead(gatewayUrl) {
 		async execute(args, exec) {
 			const a = typeof args === "object" && args !== null ? args : {};
 			if (typeof a.id !== "string" || a.id.length === 0) throw new Error("skill_read: \"id\" is required (a skill id string from skill_index)");
-			const res = await gatewayRequest(gatewayUrl, "GET", "/v1/skills/" + encodeURIComponent(a.id), void 0, exec.signal, READ_TIMEOUT_MS);
+			const res = await request("GET", "/v1/skills/" + encodeURIComponent(a.id), void 0, exec.signal, READ_TIMEOUT_MS);
 			return jsonClean({
 				id: res.id ?? a.id,
 				name: res.name ?? null,
@@ -1569,7 +1636,7 @@ function skillRead(gatewayUrl) {
 * asking the user or trusting memory.
 */
 const LEDGER_TIMEOUT_MS = 15e3;
-function ledgerTail(gatewayUrl) {
+function ledgerTail(request) {
 	const presentCall = (args) => {
 		const a = typeof args === "object" && args !== null ? args : {};
 		return {
@@ -1636,8 +1703,7 @@ function ledgerTail(gatewayUrl) {
 			if (typeof a.limit === "number" && Number.isFinite(a.limit) && a.limit > 0) q.push("limit=" + encodeURIComponent(String(Math.floor(a.limit))));
 			else if (typeof a.limit === "string" && a.limit.length > 0) q.push("limit=" + encodeURIComponent(a.limit));
 			if (typeof a.event === "string" && a.event.length > 0) q.push("event=" + encodeURIComponent(a.event));
-			const path = "/v1/ledger" + (q.length > 0 ? "?" + q.join("&") : "");
-			const res = await gatewayRequest(gatewayUrl, "GET", path, void 0, exec.signal, LEDGER_TIMEOUT_MS);
+			const res = await request("GET", "/v1/ledger" + (q.length > 0 ? "?" + q.join("&") : ""), void 0, exec.signal, LEDGER_TIMEOUT_MS);
 			const entries = Array.isArray(res.entries) ? res.entries : [];
 			return jsonClean({
 				shown: typeof res.shown === "number" ? res.shown : entries.length,
@@ -1648,6 +1714,176 @@ function ledgerTail(gatewayUrl) {
 	});
 	def.presentCall = presentCall;
 	return def;
+}
+//#endregion
+//#region src/llm-complete.ts
+/** "provider/model" — the only spelling a route is ever named by. */
+function routeName(r) {
+	return r.provider + "/" + r.model;
+}
+/** End-to-end deadline for one auxiliary completion (observed live: ~60s). */
+const ENHANCE_DEADLINE_MS = 18e4;
+/**
+* Resolve the harness model routes with ZERO configuration: every
+* registered provider route × its advertised models — INTERLEAVED
+* round-robin across providers (2026-09-05 fix: registration order
+* let ONE keyless provider with many advertised models eat the entire
+* attempt budget — observed live: six deepseek-official routes burned
+* before the credentialed xiaomi/zai/openrouter providers were ever
+* tried). The FIRST healthy route serves; a dead one (quota, auth) is
+* stepped past — "no model" cannot happen while any route breathes.
+* There is no explicit config knob to misconfigure.
+*/
+const MAX_ROUTE_ATTEMPTS = 12;
+async function resolveHarnessRoutes(llm) {
+	const providers = llm.listProviders();
+	if (providers.length === 0) throw new Error("enhance: no LLM adapter is registered in the harness host");
+	const perProvider = [];
+	for (const p of providers) try {
+		const models = await llm.listModels(p.id);
+		if (models.length > 0) perProvider.push(models.map((m) => ({
+			provider: p.id,
+			model: m.id
+		})));
+	} catch {}
+	const routes = [];
+	for (let i = 0; i < MAX_ROUTE_ATTEMPTS; i++) for (const list of perProvider) if (list[i]) routes.push(list[i]);
+	if (routes.length === 0) throw new Error("enhance: no registered harness provider advertises any model");
+	return routes.slice(0, MAX_ROUTE_ATTEMPTS);
+}
+/**
+* One streaming completion on ONE exact route, assembled to text. Terminal
+* finish reasons other than 'stop' become thrown errors carrying the
+* provider failure message + code — never swallowed.
+*/
+async function harnessCompleteOnRoute(llm, route, req) {
+	const timeout = AbortSignal.timeout(ENHANCE_DEADLINE_MS);
+	const signal = req.signal ? AbortSignal.any([req.signal, timeout]) : timeout;
+	const options = {
+		provider: route.provider,
+		model: route.model,
+		messages: [createUserMessage({
+			content: [{
+				type: "text",
+				text: req.prompt
+			}],
+			source: { kind: "user" }
+		})],
+		system: req.system + OUTPUT_CONTRACT,
+		...req.temperature !== void 0 && Number.isFinite(req.temperature) ? { temperature: req.temperature } : {},
+		signal
+	};
+	let text = "";
+	let finish = null;
+	for await (const chunk of llm.stream(options)) if (chunk.type === "text-delta" && typeof chunk.text === "string") text += chunk.text;
+	else if (chunk.type === "finish") {
+		const r = chunk.reason;
+		finish = {
+			kind: typeof r?.kind === "string" ? r.kind : JSON.stringify(r ?? null),
+			failure: r?.failure
+		};
+	}
+	if (finish === null) throw new Error("enhance: the harness model stream ended without a terminal finish");
+	if (finish.kind !== "stop") {
+		const detail = finish.failure ? finish.failure.message + " [" + (finish.failure.code ?? "?") + "]" : finish.kind;
+		throw new Error("enhance: " + routeName(route) + " failed — " + detail);
+	}
+	return text;
+}
+/**
+* The door's WIRE CONTRACT, appended to EVERY recipe (2026-09-06,
+* live-caught 1:1: the image model's form-spec recipe is pure
+* structure rules — no output-format word in it — so the model
+* answered "**Prompt:** …" prose and the JSON parse 502'd). The
+* {positive, negative} JSON shape is THIS door's requirement, so
+* THIS door guarantees it, whatever the per-model recipe says.
+*/
+const OUTPUT_CONTRACT = "\n\nOutput contract: reply with ONLY a JSON object {\"positive\": \"<the rewritten prompt>\", \"negative\": \"<what to avoid, or empty string>\"} — no prose, no markdown, nothing outside the JSON.";
+/**
+* Match a caller-named route against the live list. Exact
+* "provider/model" wins; a bare "model" must be unambiguous (two
+* providers advertising it is a 400 naming both — guessing between
+* providers is how silent-DeepSeek happens). Unknown → throw with
+* the live list (the route turns it into a 400, never a walk).
+*
+* Version-tail tolerance (2026-09-06, live-caught): the settings
+* default names glm-5.3 while the provider advertises glm-4.7 —
+* a newer default than the live provider list carries. The named
+* model is RESOLVED, never walked: same provider, its NEWEST
+* advertised model below the named one in the family line. If the
+* provider itself is absent, or nothing matches, the failure stays
+* loud with the live list. This is resolution of the user's own
+* default, not a fallback to a DIFFERENT provider's model.
+*/
+function matchHarnessRoute(routes, want) {
+	const exact = routes.find((r) => routeName(r) === want);
+	if (exact) return exact;
+	const bare = routes.filter((r) => r.model === want);
+	if (bare.length === 1) return bare[0];
+	if (bare.length > 1) throw new Error("enhance: ambiguous llm \"" + want + "\" — advertised by " + bare.map(routeName).join(", ") + "; name provider/model");
+	const provider = want.split("/")[0];
+	const stem = (want.split("/")[1] ?? "").replace(/[-.][0-9]+.*$/, "").toLowerCase();
+	if (stem !== "") {
+		const familyRoutes = routes.filter((r) => r.provider === provider).filter((r) => r.model.toLowerCase() === stem || r.model.toLowerCase().startsWith(stem + "-") || r.model.toLowerCase().startsWith(stem + "."));
+		if (familyRoutes.length > 0) {
+			const ver = (m) => {
+				const t = /[-.]v?([0-9]+(?:[._][0-9]+)*)/.exec(m);
+				return t ? Number.parseFloat(t[1].replace("_", ".")) : 0;
+			};
+			return familyRoutes.reduce((best, r) => ver(r.model) > ver(best.model) ? r : best);
+		}
+	}
+	const live = routes.map(routeName).join(", ");
+	throw new Error("enhance: unknown llm route \"" + want + "\" — live routes: " + live);
+}
+/**
+* Recipe + prompt in, {positive, negative, via} out. THE one enhance
+* call. NO WALK, NO FALLBACKS (queue lane law, operator 2026-09-06:
+* "No fallbacks. Ever." — the first-breathing walk is what served
+* DeepSeek/minimax by luck of registration order and provider
+* health):
+*
+*   - explicit req.llm names the route, else defaultLlm (the
+*     agentDefaultModel service's live selection — the user's own
+*     default) names it. Explicit wins; NEITHER walks.
+*   - unresolvable name → throw naming the live routes (the route
+*     maps explicit→400, stale default→502).
+*   - the ONE route completes; its failure is the honest error
+*     (502 naming route + cause) — never a silent other model.
+*
+* `via` echoes the serving route. This is the keystore era's shape
+* (one configured model, loud otherwise) with the model resolved
+* from the host default instead of the retired keystore.
+*/
+async function harnessEnhance(llm, req, defaultLlm) {
+	const routes = await resolveHarnessRoutes(llm);
+	const want = typeof req.llm === "string" && req.llm.length > 0 ? req.llm : typeof defaultLlm === "string" && defaultLlm.length > 0 ? defaultLlm : void 0;
+	if (want === void 0) throw new Error("enhance: no llm named and no host default configured — name llm (\"provider/model\") or set the host default model");
+	const route = matchHarnessRoute(routes, want);
+	return {
+		...parseEnhanceJson(await harnessCompleteOnRoute(llm, route, req)),
+		via: routeName(route)
+	};
+}
+/**
+* Parse the recipe's STRICT JSON reply ({positive, negative}) out of model
+* text: direct parse, then fenced, then first-brace slice. All fail → throw
+* with the raw head (honest failure, never a silent whole-text positive).
+*/
+function parseEnhanceJson(text) {
+	const attempts = [
+		text,
+		text.replace(/^```(?:json)?\s*|\s*```$/g, ""),
+		text.slice(text.indexOf("{"), text.lastIndexOf("}") + 1)
+	];
+	for (const attempt of attempts) try {
+		const obj = JSON.parse(attempt);
+		if (obj !== null && typeof obj === "object" && typeof obj.positive === "string") return {
+			positive: obj.positive,
+			negative: typeof obj.negative === "string" ? obj.negative : ""
+		};
+	} catch {}
+	throw new Error("enhance: the model reply was not the recipe JSON — head: " + text.slice(0, 160));
 }
 //#endregion
 //#region src/index.ts
@@ -1684,30 +1920,30 @@ const MELITE_TOOL_NAMES = [
 /** Register the Melite tools against the live estate gateway. */
 async function apply(ctx, config = {}) {
 	const c = ctx;
-	const gatewayUrl = (process.env.MELITE_GATEWAY_URL || config.gatewayUrl || "http://localhost:33081").replace(/\/+$/, "");
+	const request = makeEstateRequest(ctx);
 	const headless = process.env.MELITE_HEADLESS === "1" || config.headless === true;
 	const adhocEnv = (process.env.MELITE_ADHOC || "").split(",").map((s) => s.trim()).filter(Boolean);
 	const adhocCfg = Array.isArray(config.adhocTools) ? config.adhocTools.map((s) => s.trim()).filter(Boolean) : typeof config.adhocTools === "string" ? config.adhocTools.split(",").map((s) => s.trim()).filter(Boolean) : [];
 	const adhoc = adhocEnv.length ? adhocEnv : adhocCfg;
-	c.logger.info("melite-tools: %s interface — %d base + %d headless run door(s) + %d ad hoc, gateway %s", headless ? "HEADLESS" : "BROWSER", BASE_TOOL_NAMES.length, headless ? HEADLESS_TOOL_NAMES.length : 0, adhoc.length, gatewayUrl);
-	c.tools.register(meliteDiscover(gatewayUrl));
-	c.tools.register(meliteConstruct(gatewayUrl));
-	c.tools.register(meliteLoad(gatewayUrl));
-	c.tools.register(comfyManage(gatewayUrl));
-	c.tools.register(skillIndex(gatewayUrl));
-	c.tools.register(skillRead(gatewayUrl));
-	c.tools.register(ledgerTail(gatewayUrl));
+	c.logger.info("melite-tools: %s interface — %d base + %d headless run door(s) + %d ad hoc, gateway %s", headless ? "HEADLESS" : "BROWSER", BASE_TOOL_NAMES.length, headless ? HEADLESS_TOOL_NAMES.length : 0, adhoc.length, request);
+	c.tools.register(meliteDiscover(request));
+	c.tools.register(meliteConstruct(request));
+	c.tools.register(meliteLoad(request));
+	c.tools.register(comfyManage(request));
+	c.tools.register(skillIndex(request));
+	c.tools.register(skillRead(request));
+	c.tools.register(ledgerTail(request));
 	if (headless) {
-		c.tools.register(meliteFlow(gatewayUrl));
-		c.tools.register(runStatus(gatewayUrl));
+		c.tools.register(meliteFlow(request));
+		c.tools.register(runStatus(request));
 	}
-	c.tools.register(buildMusicTool(gatewayUrl));
-	c.tools.register(buildTtsTool(gatewayUrl));
-	c.tools.register(buildVoiceLockTool(gatewayUrl));
-	c.tools.register(buildImageEditTool(gatewayUrl));
-	c.tools.register(buildMotionTool(gatewayUrl));
-	c.tools.register(buildH3TimelineTool(gatewayUrl));
-	c.tools.register(buildCardTool(gatewayUrl));
+	c.tools.register(buildMusicTool(request));
+	c.tools.register(buildTtsTool(request));
+	c.tools.register(buildVoiceLockTool(request));
+	c.tools.register(buildImageEditTool(request));
+	c.tools.register(buildMotionTool(request));
+	c.tools.register(buildH3TimelineTool(request));
+	c.tools.register(buildCardTool(request));
 }
 //#endregion
-export { ADHOC_TOOL_NAMES, BASE_TOOL_NAMES, DEFAULT_BENCH, DEFAULT_GATEWAY_URL, HEADLESS_TOOL_NAMES, MELITE_TOOL_NAMES, RayGatewayError, apply, comfyManage, harnessEnhance, inject, ledgerTail, matchHarnessRoute, meliteConstruct, meliteDiscover, meliteFlow, meliteLoad, name, normalizeGatewayUrl, resolveHarnessRoutes, routeName, runStatus, skillIndex, skillRead };
+export { ADHOC_TOOL_NAMES, BASE_TOOL_NAMES, DEFAULT_BENCH, HEADLESS_TOOL_NAMES, MELITE_TOOL_NAMES, RayGatewayError, apply, comfyManage, harnessEnhance, inject, ledgerTail, makeEstateRequest, matchHarnessRoute, meliteConstruct, meliteDiscover, meliteFlow, meliteLoad, name, resolveHarnessRoutes, routeName, runStatus, skillIndex, skillRead };

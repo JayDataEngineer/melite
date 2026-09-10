@@ -13,6 +13,7 @@ export { draftsDoors } from "./doors/drafts.ts";
 export { hDraftsList, hDraftsGet } from "./doors/drafts.ts";
 export { hBenchGet, hBenchEnsure } from "./doors/bench.ts";
 export { hRunsList, hRunDetail } from "./doors/runs.ts";
+export { callEstateLane } from "./routeMount.ts";
 export {
   flowsStartDoors,
   flowsStopDoors,

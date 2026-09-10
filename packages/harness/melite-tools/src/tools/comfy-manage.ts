@@ -24,7 +24,7 @@
 import { defineTool } from '@deepseek-ai/dsh-tools'
 import type { ToolCallView } from '@deepseek-ai/dsh-tools'
 import type { JsonValue, ToolDefinition } from '../types.ts'
-import { gatewayRequest, RayGatewayError } from '../gateway.ts'
+import { RayGatewayError } from '../estate.ts'
 import { jsonClean } from '../json-clean.ts'
 
 const MANAGE_TIMEOUT_MS = 300_000   // installs/downloads can take minutes
@@ -50,7 +50,7 @@ type ManageResult = {
   error?: string;
 } & Record<string, JsonValue>;
 
-export function comfyManage(gatewayUrl: string): ToolDefinition {
+export function comfyManage(request: EstateRequest): ToolDefinition {
   // PRESENTATION ADAPTATION (tool-presentation wall + conversion
   // invariance — presentCall output must not change): defineTool
   // soft-gates presentCall behind arg validation (invalid → undefined),
@@ -170,7 +170,7 @@ export function comfyManage(gatewayUrl: string): ToolDefinition {
         return jsonClean<ManageResult>({ ok: false, action: String(a.action ?? '?'), detail: 'comfy_manage miswire: no execution context signal — the host runtime must pass exec' })
       }
       try {
-        res = await gatewayRequest(gatewayUrl, 'POST', '/v1/manage', body,
+        res = await request( 'POST', '/v1/manage', body,
           exec.signal,
           MANAGE_TIMEOUT_MS) as Record<string, unknown>
       } catch (e) {

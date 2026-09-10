@@ -31,7 +31,7 @@
 import { defineTool } from '@deepseek-ai/dsh-tools'
 import type { ToolCallView } from '@deepseek-ai/dsh-tools'
 import type { JsonValue, ToolDefinition } from '../types.ts'
-import { gatewayRequest, RayGatewayError } from '../gateway.ts'
+import { RayGatewayError } from '../estate.ts'
 import { jsonClean } from '../json-clean.ts'
 
 /** The default bench — one shared state per gateway. */
@@ -80,15 +80,15 @@ function refusalOf(e: unknown, verb: string, bench: string): ConstructResult {
 /** GET the bench; 404 → ensure (birth) → GET again. Reads are the
  *  freshness mechanism — always a door round trip. */
 async function readBench(
-  gatewayUrl: string, bench: string, signal: AbortSignal,
+  request: EstateRequest, bench: string, signal: AbortSignal,
 ): Promise<Record<string, unknown>> {
   const get = (): Promise<unknown> =>
-    gatewayRequest(gatewayUrl, 'GET', `/v1/bench/${bench}`, undefined, signal, 15000)
+    request( 'GET', `/v1/bench/${bench}`, undefined, signal, 15000)
   try {
     return (await get()) as Record<string, unknown>
   } catch (e) {
     if (e instanceof RayGatewayError && e.status === 404) {
-      await gatewayRequest(gatewayUrl, 'POST', '/v1/bench/ensure',
+      await request( 'POST', '/v1/bench/ensure',
         { session: bench }, signal, 15000)
       return (await get()) as Record<string, unknown>
     }
@@ -121,7 +121,7 @@ export function projectStages(stages: unknown): Record<string, unknown>[] {
     })
 }
 
-export function meliteConstruct(gatewayUrl: string): ToolDefinition {
+export function meliteConstruct(request: EstateRequest): ToolDefinition {
   const presentCall: (args: unknown) => ToolCallView = (args) => {
     const a = (args ?? {}) as { verb?: unknown; stage?: unknown; card?: unknown }
     const verb = typeof a.verb === 'string' ? a.verb : '?'
@@ -200,23 +200,23 @@ export function meliteConstruct(gatewayUrl: string): ToolDefinition {
         jsonClean<ConstructResult>({ verb, bench, ok: true, ...payload })
       try {
         if (verb === 'read' || verb === '') {
-          const b = await readBench(gatewayUrl, bench, signal)
+          const b = await readBench(request, bench, signal)
           return out({
             rev: b.rev, intent: b.intent, stages: b.stages, log: b.log,
             hint: 'mutate with expect_rev=' + String(b.rev),
           })
         }
         if (verb === 'validate') {
-          const b = await readBench(gatewayUrl, bench, signal)
+          const b = await readBench(request, bench, signal)
           const stages = projectStages(b.stages)
           if (stages.length === 0) return out({ rev: b.rev, compiles: false, note: 'bench is empty' })
-          const r = await gatewayRequest(gatewayUrl, 'POST', '/v1/flows/validate',
+          const r = await request( 'POST', '/v1/flows/validate',
             { flow_inline: { stages } }, signal, 20000) as Record<string, unknown>
           return out({ rev: b.rev, compiles: r['ok'] === true || r['valid'] === true, report: r })
         }
         if (verb === 'load') {
           const stages = Array.isArray(a.stages) ? a.stages : []
-          const r = await gatewayRequest(gatewayUrl, 'POST', '/v1/bench/ensure',
+          const r = await request( 'POST', '/v1/bench/ensure',
             {
               session: bench, stages,
               ...(typeof a.intent === 'string' && a.intent !== '' ? { intent: a.intent } : {}),
@@ -225,12 +225,12 @@ export function meliteConstruct(gatewayUrl: string): ToolDefinition {
           return out({ rev: r.rev, stages: r.stages })
         }
         if (verb === 'patch') {
-          const r = await gatewayRequest(gatewayUrl, 'POST', `/v1/bench/${bench}/patch`,
+          const r = await request( 'POST', `/v1/bench/${bench}/patch`,
             { stage: a.stage, params: a.params, expect_rev: a.expect_rev }, signal, 15000) as Record<string, unknown>
           return out({ rev: r.rev, stage: r.stage, patched: r.patched })
         }
         if (verb === 'add_stage') {
-          const r = await gatewayRequest(gatewayUrl, 'POST', `/v1/bench/${bench}/add_stage`,
+          const r = await request( 'POST', `/v1/bench/${bench}/add_stage`,
             {
               card: a.card,
               ...(a.engine !== undefined ? { engine: a.engine } : {}),
@@ -241,12 +241,12 @@ export function meliteConstruct(gatewayUrl: string): ToolDefinition {
           return out({ rev: r.rev, stage: r.stage })
         }
         if (verb === 'remove_stage') {
-          const r = await gatewayRequest(gatewayUrl, 'POST', `/v1/bench/${bench}/remove_stage`,
+          const r = await request( 'POST', `/v1/bench/${bench}/remove_stage`,
             { stage: a.stage, expect_rev: a.expect_rev }, signal, 15000) as Record<string, unknown>
           return out({ rev: r.rev, stage: r.stage })
         }
         if (verb === 'rewire') {
-          const r = await gatewayRequest(gatewayUrl, 'POST', `/v1/bench/${bench}/rewire`,
+          const r = await request( 'POST', `/v1/bench/${bench}/rewire`,
             {
               stage: a.stage, input: a.input,
               ...(a.from !== undefined ? { from: a.from } : {}),
@@ -255,7 +255,7 @@ export function meliteConstruct(gatewayUrl: string): ToolDefinition {
           return out({ rev: r.rev, stage: r.stage, input: r.input })
         }
         if (verb === 'undo') {
-          const r = await gatewayRequest(gatewayUrl, 'POST', `/v1/bench/${bench}/undo`,
+          const r = await request( 'POST', `/v1/bench/${bench}/undo`,
             {
               ...(a.n !== undefined ? { n: a.n } : {}),
               ...(a.author !== undefined ? { author: a.author } : {}),

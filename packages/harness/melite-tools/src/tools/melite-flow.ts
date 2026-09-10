@@ -21,7 +21,7 @@
 import { defineTool } from '@deepseek-ai/dsh-tools'
 import type { ToolCallView } from '@deepseek-ai/dsh-tools'
 import type { JsonValue, ToolDefinition } from '../types.ts'
-import { gatewayRequest, RayGatewayError } from '../gateway.ts'
+import { RayGatewayError } from '../estate.ts'
 import { jsonClean } from '../json-clean.ts'
 import { DEFAULT_BENCH, projectStages } from './melite-construct.ts'
 export interface MeliteConnectArg {
@@ -171,13 +171,13 @@ interface StartResult {
 /** POST /v1/flows/start — the verbatim-error pattern (the agent
  *  reads the gateway's refusal text, not a transport code). */
 async function startRun(
-  gatewayUrl: string,
+  request: EstateRequest,
   body: Record<string, unknown>,
   signal: AbortSignal,
 ): Promise<Record<string, unknown>> {
   let res: StartResult
   try {
-    res = await gatewayRequest(gatewayUrl, 'POST', '/v1/flows/start', body, signal, TIMEOUT_MS) as StartResult
+    res = await request( 'POST', '/v1/flows/start', body, signal, TIMEOUT_MS) as StartResult
   } catch (e) {
     if (e instanceof RayGatewayError) {
       let named = ''
@@ -202,12 +202,11 @@ async function startRun(
  *  their composition in the run registry (CARD BIRTH LAW holds —
  *  the start still rides a doc-backed draft_id, now the bench's). */
 async function loadBench(
-  gatewayUrl: string,
+  request: EstateRequest,
   body: Record<string, unknown>,
   signal: AbortSignal,
 ): Promise<string> {
-  const b = await gatewayRequest(
-    gatewayUrl, 'POST', '/v1/bench/ensure', body, signal, DRAFT_TIMEOUT_MS,
+  const b = await request( 'POST', '/v1/bench/ensure', body, signal, DRAFT_TIMEOUT_MS,
   ) as { draft_id?: unknown; error?: string }
   if (b && typeof b.error === 'string' && b.error) throw new Error(b.error)
   const id = b && b.draft_id
@@ -221,13 +220,13 @@ async function loadBench(
  *  started under the bench's own draft_id. This is what the user's
  *  Run press does and what {bench: true} does — one truth. */
 async function runBench(
-  gatewayUrl: string,
+  request: EstateRequest,
   a: { test?: boolean },
   signal: AbortSignal,
 ): Promise<Record<string, unknown>> {
   let b: Record<string, unknown>
   try {
-    b = await gatewayRequest(gatewayUrl, 'GET', `/v1/bench/${DEFAULT_BENCH}`, undefined, signal, 15_000) as Record<string, unknown>
+    b = await request( 'GET', `/v1/bench/${DEFAULT_BENCH}`, undefined, signal, 15_000) as Record<string, unknown>
   } catch (e) {
     if (e instanceof RayGatewayError && e.status === 404) {
       return { error: 'the bench is empty — construct stages first (melite_construct)' }
@@ -237,7 +236,7 @@ async function runBench(
   const stages = projectStages(b['stages'])
   if (stages.length === 0) return { error: 'the bench is empty — construct stages first (melite_construct)' }
   const draftId = typeof b['draft_id'] === 'string' ? b['draft_id'] as string : `bench-${DEFAULT_BENCH}`
-  const started = await startRun(gatewayUrl, {
+  const started = await startRun(request, {
     flow_inline: { stages }, test: a.test === true, draft_id: draftId,
   }, signal)
   return { mode: 'bench', target: `bench-${DEFAULT_BENCH} @ rev ${String(b['rev'] ?? '?')}`, draft_id: draftId, ...started }
@@ -246,28 +245,28 @@ async function runBench(
 /** SINGLE (the old card_run path, composed inside): manifest gate
  *  + runnability gate + defaults merge, then draft + {model}. */
 async function runSingle(
-  gatewayUrl: string,
+  request: EstateRequest,
   a: { card?: string; model?: string; prompt?: string; params?: Record<string, unknown>; test?: boolean },
   signal: AbortSignal,
 ): Promise<Record<string, unknown>> {
   const card = a.card ?? ''
   const model = a.model ?? ''
   if (!model) return { error: 'model is required (name the family explicitly — QUEUE LANE LAW)' }
-  const tools = await gatewayRequest(gatewayUrl, 'GET', '/v1/card-tools', undefined, signal, CATALOG_TIMEOUT_MS) as Array<Record<string, unknown>>
+  const tools = await request( 'GET', '/v1/card-tools', undefined, signal, CATALOG_TIMEOUT_MS) as Array<Record<string, unknown>>
   const manifest = (Array.isArray(tools) ? tools : []).find((t) => t.model === model)
   if (manifest === undefined) {
     const allowed = (Array.isArray(tools) ? tools : []).map((t) => String(t.model)).filter((s) => s !== '').join(', ')
     return { error: `model "${model}" has no card tool. Live card tools: ${allowed}` }
   }
   try {
-    const v = await gatewayRequest(gatewayUrl, 'GET',
+    const v = await request( 'GET',
       '/v1/card-tools/validate?model=' + encodeURIComponent(model),
       undefined, signal, 10_000) as { runnable?: boolean; error?: string }
     if (v.runnable !== true) return { error: v.error || `model "${model}" cannot run` }
   } catch (e: unknown) {
     if (e instanceof Error && /cannot run/.test(e.message)) return { error: e.message }
   }
-  const cat = await gatewayRequest(gatewayUrl, 'GET', '/v1/model-catalog', undefined, signal, CATALOG_TIMEOUT_MS) as {
+  const cat = await request( 'GET', '/v1/model-catalog', undefined, signal, CATALOG_TIMEOUT_MS) as {
     models?: Record<string, { defaults?: unknown }>
   }
   const entry = (cat.models ?? {})[model]
@@ -289,7 +288,7 @@ async function runSingle(
   const intent = intentSrc.length > 80 ? intentSrc.slice(0, 77) + '…' : intentSrc
   let draftId: string
   try {
-    draftId = await loadBench(gatewayUrl, {
+    draftId = await loadBench(request, {
       session: DEFAULT_BENCH,
       intent,
       stages: [{
@@ -302,14 +301,14 @@ async function runSingle(
   } catch (e) {
     return { error: e instanceof Error ? e.message : String(e) }
   }
-  const started = await startRun(gatewayUrl, { ...params, model, test: a.test === true, draft_id: draftId }, signal)
+  const started = await startRun(request, { ...params, model, test: a.test === true, draft_id: draftId }, signal)
   if (typeof started["error"] === 'string') return { mode: 'card', target: card !== '' ? card : model, ...started }
   return { mode: 'card', target: card !== '' ? card : model, model, draft_id: draftId, ...started }
 }
 
 /** TEMPLATE (the old flow_run path): drafts {flow,...} + start. */
 async function runTemplate(
-  gatewayUrl: string,
+  request: EstateRequest,
   a: { flow?: string; params?: Record<string, unknown>; test?: boolean },
   signal: AbortSignal,
 ): Promise<Record<string, unknown>> {
@@ -321,7 +320,7 @@ async function runTemplate(
     // TEMPLATE load sugar: the bench carries the template REFERENCE
     // (the {flow} start arm expands the graph server-side; the run
     // registry snapshots it). One marker row keeps the doc honest.
-    draftId = await loadBench(gatewayUrl, {
+    draftId = await loadBench(request, {
       session: DEFAULT_BENCH,
       intent: flow,
       stages: [{ id: 's_0', engine: 'comfyui', ref_flow: flow, params: {} }],
@@ -336,7 +335,7 @@ async function runTemplate(
     }
     return { mode: 'flow', target: flow, error: e instanceof Error ? e.message : String(e) }
   }
-  const started = await startRun(gatewayUrl, { ...overrides, flow, test: a.test === true, draft_id: draftId }, signal)
+  const started = await startRun(request, { ...overrides, flow, test: a.test === true, draft_id: draftId }, signal)
   // a refused start carries the error and NO draft_id — a tile never
   // mounts for a run that never registered (the estate card-tool law).
   if (typeof started["error"] === 'string') return { mode: 'flow', target: flow, ...started }
@@ -346,7 +345,7 @@ async function runTemplate(
 /** AD-HOC (the old build_flow MULTI path): COMPILE FIRST at
  *  validate (no GPU on a bad wire), then draft + {flow_inline}. */
 async function runAdHoc(
-  gatewayUrl: string,
+  request: EstateRequest,
   a: { stages?: unknown; connects?: unknown; id?: unknown; description?: unknown; test?: boolean },
   signal: AbortSignal,
 ): Promise<Record<string, unknown>> {
@@ -376,7 +375,7 @@ async function runAdHoc(
     })),
   }
   try {
-    await gatewayRequest(gatewayUrl, 'POST', '/v1/flows/validate', flowBody, signal, VALIDATE_TIMEOUT_MS)
+    await request( 'POST', '/v1/flows/validate', flowBody, signal, VALIDATE_TIMEOUT_MS)
   } catch (e) {
     if (e instanceof RayGatewayError) {
       let named = ''
@@ -389,7 +388,7 @@ async function runAdHoc(
   }
   let draftId: string
   try {
-    draftId = await loadBench(gatewayUrl, {
+    draftId = await loadBench(request, {
       session: DEFAULT_BENCH,
       intent: flowId,
       stages: folded,
@@ -397,7 +396,7 @@ async function runAdHoc(
   } catch (e) {
     return { mode: 'adhoc', target: flowId, error: e instanceof Error ? e.message : String(e) }
   }
-  const started = await startRun(gatewayUrl, { flow_inline: flowBody, test: a.test === true, draft_id: draftId }, signal)
+  const started = await startRun(request, { flow_inline: flowBody, test: a.test === true, draft_id: draftId }, signal)
   if (typeof started["error"] === 'string') return { mode: 'adhoc', target: flowId, ...started }
   return { mode: 'adhoc', target: flowId, draft_id: draftId, ...started }
 }
@@ -418,7 +417,7 @@ type FlowResult = {
   error?: string;
 } & Record<string, JsonValue>;
 
-export function meliteFlow(gatewayUrl: string): ToolDefinition {
+export function meliteFlow(request: EstateRequest): ToolDefinition {
   // PRESENTATION ADAPTATION (tool-presentation wall + conversion
   // invariance — presentCall output must not change): defineTool
   // soft-gates presentCall behind arg validation (invalid → undefined),
@@ -572,22 +571,22 @@ export function meliteFlow(gatewayUrl: string): ToolDefinition {
       }
       try {
         if (hasBench) {
-          return jsonClean(await runBench(gatewayUrl, { test }, exec.signal)) as FlowResult;
+          return jsonClean(await runBench(request, { test }, exec.signal)) as FlowResult;
         }
         if (hasFlow) {
-          return jsonClean(await runTemplate(gatewayUrl, {
+          return jsonClean(await runTemplate(request, {
             flow: a.flow as string, params: bag, test,
           }, exec.signal)) as FlowResult;
         }
         if (hasCard) {
-          return jsonClean(await runSingle(gatewayUrl, {
+          return jsonClean(await runSingle(request, {
             card: a.card as string,
             model: typeof a.model === 'string' ? a.model : '',
             prompt: typeof a.prompt === 'string' ? a.prompt : undefined,
             params: bag, test,
           }, exec.signal)) as FlowResult;
         }
-        return jsonClean(await runAdHoc(gatewayUrl, {
+        return jsonClean(await runAdHoc(request, {
           stages: a.stages,
           connects: a.connects,
           id: a.id,

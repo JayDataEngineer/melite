@@ -30,7 +30,7 @@ export interface Config {
 
 export const Config: Schema<Config> = Schema.object({
   gateway: Schema.string()
-    .default(process.env.MELITE_GATEWAY_URL || 'http://localhost:33081')
+
     .description('The Melite gateway base URL (the flow doors the tool face calls)'),
 })
 
@@ -42,6 +42,6 @@ export function apply(ctx: Context, config: Config): void {
     // BARE registration, the tool-bash shape: the entry owns the
     // register call; tool.ts exports the definition builder. The
     // service attaches its own disposer (tutorial ch.2).
-    tools.register(buildMusicTool((config?.gateway ?? '').trim() || 'http://localhost:33081'))
+    tools.register(buildMusicTool(config.call))
   }
 }

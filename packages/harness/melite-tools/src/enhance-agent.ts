@@ -7,7 +7,8 @@
  * Every field completion rides the harness model via llm-complete.ts —
  * no keystore, no "no model".
  */
-import { gatewayRequest } from './gateway.ts'
+import { makeEstateRequest } from './estate.ts'
+import type { EstateRequest } from './estate.ts'
 import { harnessEnhance } from './llm-complete.ts'
 
 const FORMSPEC_TIMEOUT_MS = 15_000
@@ -25,12 +26,11 @@ export interface DeclaredFields {
 
 /** Read the model's declared recipes straight off the form-spec SSOT. */
 export async function fetchDeclaredFields(
-  gatewayUrl: string,
+  request: EstateRequest,
   model: string,
   signal: AbortSignal,
 ): Promise<DeclaredFields> {
-  const spec = await gatewayRequest(
-    gatewayUrl, 'GET', '/v1/form-spec?model=' + encodeURIComponent(model),
+  const spec = await request('GET', '/v1/form-spec?model=' + encodeURIComponent(model),
     undefined, signal, FORMSPEC_TIMEOUT_MS,
   ) as FormSpecShape
 
@@ -93,11 +93,12 @@ export { GENERIC_ENHANCE_RECIPE }
  * fields sweeps ONE generic 'prompt' field (the shared fallback recipe).
  */
 export async function agenticSweep(
-  gatewayUrl: string,
+  ctx: unknown,
   llm: LlmSeam,
   opts: { model: string; prompt: string; temperature?: number; signal: AbortSignal; llmWant?: string; defaultLlm?: string },
 ): Promise<{ model: string; results: Record<string, FieldResult> }> {
-  const { fields } = await fetchDeclaredFields(gatewayUrl, opts.model, opts.signal)
+  const request = makeEstateRequest(ctx)
+  const { fields } = await fetchDeclaredFields(request, opts.model, opts.signal)
   let names = Object.keys(fields)
   if (names.length === 0) names = ['prompt']
   if (names.length === 1 && fields[names[0]] === undefined) {

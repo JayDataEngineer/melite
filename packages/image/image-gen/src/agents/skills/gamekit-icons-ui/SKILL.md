@@ -14,8 +14,8 @@ description: UI icon wave via z-image - four-icon set with identical style suffi
 4. Soft base? upscale via seedvr2_ema.
 
 ## Run (queue door — the only inference door)
-Gateway: `http://127.0.0.1:33081` (canonical; `:18201` for the manual port; discover live: `ss -ltnp | grep gateway.py`).
-`curl -s -X POST http://127.0.0.1:33081/v1/flows/start -d '{"yaml":"z-image","prompt":"icon set wave"}'`
+Gateway: in-process estate lanes (DSH host; no port — the python gateway is retired).
+Run via the estate tools (melite_flow) — same verb, in-process.
 Poll `GET /v1/flows/status/<run_id>`.
 
 ## Gate

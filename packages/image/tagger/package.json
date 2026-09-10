@@ -16,7 +16,8 @@
     "@deepseek-ai/cordis": "^4.0.2",
     "@deepseek-ai/schemastery": "*",
     "@melite/comfyui-card-kit": "workspace:*",
-    "@melite/comfyui-cordis": "workspace:*"
+    "@melite/comfyui-cordis": "workspace:*",
+    "@melite/estate-call": "workspace:*"
   },
   "devDependencies": {
     "@types/node": "*"

@@ -1,6 +1,5 @@
-import { a as routeName, i as resolveHarnessRoutes, n as harnessEnhance, r as matchHarnessRoute } from "./llm-complete-CXD7-zEN.mjs";
 import { ToolDefinition } from "@deepseek-ai/dsh-tools";
-import "@deepseek-ai/dsh-llm";
+import { LlmRuntime } from "@deepseek-ai/dsh-llm";
 import "@deepseek-ai/dsh-util-values";
 //#region ../../../node_modules/.pnpm/@deepseek-ai+cosmokit@1.8.3/node_modules/@deepseek-ai/cosmokit/lib/types/misc.d.ts
 /** String/symbol keyed dictionary type. */
@@ -1125,57 +1124,117 @@ declare abstract class Service<out T = never> {
   static [Symbol.hasInstance](instance: any): boolean;
 }
 //#endregion
-//#region src/gateway.d.ts
+//#region src/llm-complete.d.ts
+/** The runtime seat this core exercises — a structural Pick of the
+ *  REAL LlmRuntime contract (@deepseek-ai/dsh-llm). */
+type LlmStreamSeam = Pick<LlmRuntime, "stream" | "listProviders" | "listModels">;
+/** One enhancement request — a recipe system prompt + the user's words. */
+interface EnhanceRequest {
+  system: string;
+  prompt: string;
+  temperature?: number;
+  signal?: AbortSignal;
+  /**
+   * The caller's chosen harness route (2026-09-06, operator order:
+   * the ✦ button must serve the USER'S model, never silently
+   * DeepSeek): "provider/model" exact, or a bare "model" that must
+   * match exactly one advertised route. Honored FIRST; the walk
+   * below stays behind it (ordered preference, never a silent
+   * wrong-model answer — the response echoes `via`).
+   */
+  llm?: string;
+}
+/** One route on the harness model plane. */
+interface HarnessRoute {
+  provider: string;
+  model: string;
+}
+/** "provider/model" — the only spelling a route is ever named by. */
+declare function routeName(r: HarnessRoute): string;
+declare function resolveHarnessRoutes(llm: LlmStreamSeam): Promise<HarnessRoute[]>;
 /**
- * Thin HTTP seam to the Melite gateway (server-js, default :33081).
+ * Match a caller-named route against the live list. Exact
+ * "provider/model" wins; a bare "model" must be unambiguous (two
+ * providers advertising it is a 400 naming both — guessing between
+ * providers is how silent-DeepSeek happens). Unknown → throw with
+ * the live list (the route turns it into a 400, never a walk).
  *
- * The gateway STAYS AS-IS — this module is a pure client over the wire
- * contract in melite/docs/PROTOCOL.md. Error law: a non-2xx response surfaces
- * the gateway's body VERBATIM (`RayGatewayError` message = status + url +
- * raw body), because a thrown tool error is materialized by the DSH registry
- * as the model-facing error text. Network failures name the URL and the
- * underlying cause instead of being swallowed.
+ * Version-tail tolerance (2026-09-06, live-caught): the settings
+ * default names glm-5.3 while the provider advertises glm-4.7 —
+ * a newer default than the live provider list carries. The named
+ * model is RESOLVED, never walked: same provider, its NEWEST
+ * advertised model below the named one in the family line. If the
+ * provider itself is absent, or nothing matches, the failure stays
+ * loud with the live list. This is resolution of the user's own
+ * default, not a fallback to a DIFFERENT provider's model.
  */
-/** Gateway answered with a non-2xx status; body carried verbatim. */
+declare function matchHarnessRoute(routes: HarnessRoute[], want: string): HarnessRoute;
+/**
+ * Recipe + prompt in, {positive, negative, via} out. THE one enhance
+ * call. NO WALK, NO FALLBACKS (queue lane law, operator 2026-09-06:
+ * "No fallbacks. Ever." — the first-breathing walk is what served
+ * DeepSeek/minimax by luck of registration order and provider
+ * health):
+ *
+ *   - explicit req.llm names the route, else defaultLlm (the
+ *     agentDefaultModel service's live selection — the user's own
+ *     default) names it. Explicit wins; NEITHER walks.
+ *   - unresolvable name → throw naming the live routes (the route
+ *     maps explicit→400, stale default→502).
+ *   - the ONE route completes; its failure is the honest error
+ *     (502 naming route + cause) — never a silent other model.
+ *
+ * `via` echoes the serving route. This is the keystore era's shape
+ * (one configured model, loud otherwise) with the model resolved
+ * from the host default instead of the retired keystore.
+ */
+declare function harnessEnhance(llm: LlmStreamSeam, req: EnhanceRequest, defaultLlm?: string): Promise<{
+  positive: string;
+  negative: string;
+  via: string;
+}>;
+//#endregion
+//#region src/estate.d.ts
 declare class RayGatewayError extends Error {
   readonly status: number;
   readonly url: string;
   readonly body: string;
   constructor(status: number, url: string, body: string);
 }
-/** Default Melite gateway base URL (the Bun gateway's loopback listen). */
-declare const DEFAULT_GATEWAY_URL = "http://localhost:33081";
-/** Strip one trailing slash so path joins stay single-slash. */
-declare function normalizeGatewayUrl(gatewayUrl: string): string;
+type EstateMethod = 'GET' | 'POST' | 'PATCH';
+type EstateRequest$1 = (method: EstateMethod, path: string, body: unknown, execSignal: AbortSignal, timeoutMs: number) => Promise<unknown>;
+/** Build the tools' request: seats first, then the door listeners —
+ *  both in-process. There is no third path. */
+declare function makeEstateRequest(ctx: unknown): EstateRequest$1;
 //#endregion
 //#region src/tools/run-status.d.ts
-declare function runStatus(gatewayUrl: string): ToolDefinition;
+declare function runStatus(request: EstateRequest): ToolDefinition;
 //#endregion
 //#region src/tools/melite-discover.d.ts
-declare function meliteDiscover(gatewayUrl: string): ToolDefinition;
+declare function meliteDiscover(request: EstateRequest$1): ToolDefinition;
 //#endregion
 //#region src/tools/melite-construct.d.ts
 /** The default bench — one shared state per gateway. */
 declare const DEFAULT_BENCH = "main";
-declare function meliteConstruct(gatewayUrl: string): ToolDefinition;
+declare function meliteConstruct(request: EstateRequest): ToolDefinition;
 //#endregion
 //#region src/tools/melite-flow.d.ts
-declare function meliteFlow(gatewayUrl: string): ToolDefinition;
+declare function meliteFlow(request: EstateRequest): ToolDefinition;
 //#endregion
 //#region src/tools/comfy-manage.d.ts
-declare function comfyManage(gatewayUrl: string): ToolDefinition;
+declare function comfyManage(request: EstateRequest): ToolDefinition;
 //#endregion
 //#region src/tools/melite-load.d.ts
-declare function meliteLoad(gatewayUrl: string): ToolDefinition;
+declare function meliteLoad(request: EstateRequest$1): ToolDefinition;
 //#endregion
 //#region src/tools/skill-index.d.ts
-declare function skillIndex(gatewayUrl: string): ToolDefinition;
+declare function skillIndex(request: EstateRequest$1): ToolDefinition;
 //#endregion
 //#region src/tools/skill-read.d.ts
-declare function skillRead(gatewayUrl: string): ToolDefinition;
+declare function skillRead(request: EstateRequest$1): ToolDefinition;
 //#endregion
 //#region src/tools/ledger-tail.d.ts
-declare function ledgerTail(gatewayUrl: string): ToolDefinition;
+declare function ledgerTail(request: EstateRequest$1): ToolDefinition;
 //#endregion
 //#region src/index.d.ts
 /** Cordis plugin name used by loader diagnostics. */
@@ -1193,8 +1252,6 @@ declare const inject: string[];
  * force the same gates without touching a profile.
  */
 interface Config {
-  /** Melite gateway base URL. Default http://localhost:33081. */
-  gatewayUrl?: string;
   /** HEADLESS interface: register the run doors (melite_flow,
    *  run_status) — the delegated operator. Default false (browser law:
    *  the model composes, the USER presses Run). */
@@ -1216,4 +1273,4 @@ declare const MELITE_TOOL_NAMES: readonly ["melite_discover", "melite_construct"
 /** Register the Melite tools against the live estate gateway. */
 declare function apply(ctx: Context, config?: Config): Promise<void>;
 //#endregion
-export { ADHOC_TOOL_NAMES, BASE_TOOL_NAMES, Config, DEFAULT_BENCH, DEFAULT_GATEWAY_URL, HEADLESS_TOOL_NAMES, MELITE_TOOL_NAMES, RayGatewayError, apply, comfyManage, harnessEnhance, inject, ledgerTail, matchHarnessRoute, meliteConstruct, meliteDiscover, meliteFlow, meliteLoad, name, normalizeGatewayUrl, resolveHarnessRoutes, routeName, runStatus, skillIndex, skillRead };
+export { ADHOC_TOOL_NAMES, BASE_TOOL_NAMES, Config, DEFAULT_BENCH, type EstateRequest$1 as EstateRequest, HEADLESS_TOOL_NAMES, MELITE_TOOL_NAMES, RayGatewayError, apply, comfyManage, harnessEnhance, inject, ledgerTail, makeEstateRequest, matchHarnessRoute, meliteConstruct, meliteDiscover, meliteFlow, meliteLoad, name, resolveHarnessRoutes, routeName, runStatus, skillIndex, skillRead };

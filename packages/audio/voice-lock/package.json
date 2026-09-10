@@ -18,11 +18,12 @@
     "@deepseek-ai/dsh-tools": "0.1.5-rc.1",
     "@deepseek-ai/schemastery": "*",
     "@melite/comfyui-card-kit": "workspace:*",
-    "@melite/comfyui-cordis": "workspace:*"
+    "@melite/comfyui-cordis": "workspace:*",
+    "@melite/estate-call": "workspace:*"
   },
   "devDependencies": {
     "@types/node": "*"
   },
   "name": "@melite/audio-voice-lock",
-  "description": "the voice-lock card (the audio lane) — one card one package: card.ts host face + ui/ studio + agents/ context"
+  "description": "the voice-lock card (the audio lane) \u2014 one card one package: card.ts host face + ui/ studio + agents/ context"
 }

@@ -10,7 +10,7 @@
 import { defineTool } from '@deepseek-ai/dsh-tools'
 import type { ToolCallView } from '@deepseek-ai/dsh-tools'
 import type { JsonValue, ToolDefinition } from '../types.ts'
-import { gatewayRequest } from '../gateway.ts'
+import type { EstateRequest } from '../estate.ts'
 import { jsonClean } from '../json-clean.ts'
 
 const LEDGER_TIMEOUT_MS = 15_000
@@ -31,7 +31,7 @@ type LedgerTailResult = {
   error?: string;
 } & Record<string, JsonValue>;
 
-export function ledgerTail(gatewayUrl: string): ToolDefinition {
+export function ledgerTail(request: EstateRequest): ToolDefinition {
   // PRESENTATION ADAPTATION (tool-presentation wall + conversion
   // invariance — presentCall output must not change): defineTool
   // soft-gates presentCall behind arg validation (invalid → undefined),
@@ -111,8 +111,7 @@ export function ledgerTail(gatewayUrl: string): ToolDefinition {
         q.push('event=' + encodeURIComponent(a.event))
       }
       const path = '/v1/ledger' + (q.length > 0 ? '?' + q.join('&') : '')
-      const res = await gatewayRequest(
-        gatewayUrl, 'GET', path, undefined, exec.signal, LEDGER_TIMEOUT_MS,
+      const res = await request( 'GET', path, undefined, exec.signal, LEDGER_TIMEOUT_MS,
       ) as { entries?: LedgerEntry[]; shown?: unknown; matched?: unknown }
       const entries = Array.isArray(res.entries) ? res.entries : []
       return jsonClean({

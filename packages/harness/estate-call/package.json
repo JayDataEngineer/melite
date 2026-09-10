@@ -1,0 +1,11 @@
+{
+  "name": "@melite/estate-call",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "./src/estateCall.ts",
+  "exports": {
+    ".": "./src/estateCall.ts",
+    "./package.json": "./package.json"
+  }
+}

@@ -11,7 +11,7 @@
 import { defineTool } from '@deepseek-ai/dsh-tools'
 import type { ToolCallView } from '@deepseek-ai/dsh-tools'
 import type { JsonValue, ToolDefinition } from '../types.ts'
-import { gatewayRequest } from '../gateway.ts'
+import type { EstateRequest } from '../estate.ts'
 import { jsonClean } from '../json-clean.ts'
 
 const INDEX_TIMEOUT_MS = 15_000
@@ -33,7 +33,7 @@ type SkillIndexResult = {
   error?: string;
 } & Record<string, JsonValue>;
 
-export function skillIndex(gatewayUrl: string): ToolDefinition {
+export function skillIndex(request: EstateRequest): ToolDefinition {
   // PRESENTATION ADAPTATION (tool-presentation wall + conversion
   // invariance — presentCall output must not change): defineTool
   // soft-gates presentCall behind arg validation (invalid → undefined),
@@ -85,8 +85,7 @@ export function skillIndex(gatewayUrl: string): ToolDefinition {
       },
     },
     async execute(_args, exec): Promise<SkillIndexResult> {
-      const res = await gatewayRequest(
-        gatewayUrl, 'GET', '/v1/skills', undefined, exec.signal, INDEX_TIMEOUT_MS,
+      const res = await request( 'GET', '/v1/skills', undefined, exec.signal, INDEX_TIMEOUT_MS,
       ) as { skills?: SkillRow[] }
       const rows = Array.isArray(res.skills) ? res.skills : []
       return jsonClean({ count: rows.length, skills: rows }) as SkillIndexResult

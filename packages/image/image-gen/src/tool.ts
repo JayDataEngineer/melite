@@ -1,4 +1,5 @@
 // tool.ts — the image-gen agent tool face (the DSH plane).
+import { GatewayError, jsonLane, type EstateCall } from '@melite/estate-call'
 //
 // The engine face (card.ts) registers the card in the gateway
 // process; THIS face registers `image_gen` where a composing host
@@ -33,75 +34,9 @@ const FLOW = 'image-gen'
 const DEFAULT_MODEL: string = BOARDED[0]
 const TIMEOUT_MS = 15e3
 
-/** A gateway JSON error (non-2xx): status + the named body. */
-class GatewayError extends Error {
-  readonly status: number
-  readonly body: string
-  readonly named: string
-  constructor(status: number, body: string, named: string) {
-    super(`gateway ${status}: ${body}`)
-    this.status = status
-    this.body = body
-    this.named = named
-  }
-}
-
-/** One JSON call to a gateway door. Native cancellation
- *  composition (Node >= 20.3): AbortSignal.any propagates a
- *  pre-aborted caller signal and owns the timeout; nothing to
- *  detach, nothing to clear. */
-async function gwJson(
-  baseUrl: string,
-  method: string,
-  path: string,
-  body?: Record<string, unknown>,
-  signal?: AbortSignal,
-  timeoutMs = TIMEOUT_MS,
-): Promise<Record<string, unknown>> {
-  const request = AbortSignal.any([
-    ...(signal !== undefined ? [signal] : []),
-    AbortSignal.timeout(timeoutMs),
-  ])
-  const res = await fetch(baseUrl + path, {
-    method,
-    headers: { 'content-type': 'application/json' },
-    body: body === undefined ? undefined : JSON.stringify(body),
-    signal: request,
-  })
-  const text = await res.text()
-  if (!res.ok) {
-    let named = ''
-    try {
-      named = String((JSON.parse(text) as { error?: unknown }).error ?? '')
-    } catch { /* non-JSON body rides the raw text */ }
-    throw new GatewayError(res.status, text.slice(0, 500), named)
-  }
-  try {
-    return JSON.parse(text) as Record<string, unknown>
-  } catch (e) {
-    if (e instanceof Error && e.name === 'TimeoutError') {
-      throw new Error(`gateway ${path}: timed out after ${timeoutMs}ms`)
-    }
-    throw e
-  }
-}
-
-/** The canonical value: model + run ids on success, the named
- *  refusal as a domain outcome. All fields optional bar the flow
- *  and model — the contract's JsonValue map. */
-type CardResult = {
-  flow: string
-  model: string
-  run_id?: string
-  draft_id?: string
-  status?: string
-  error?: string
-}
-
-/** The tool the entry registers (bare — tools.register; the
- *  service attaches its own disposer). */
-export const buildImageGenTool = (gatewayUrl: string): ToolDefinition =>
-  defineTool({
+export const buildImageGenTool = (call: EstateCall): ToolDefinition => {
+  const gw = jsonLane(call)
+  return defineTool({
     name: TOOL_NAME,
     description: identity.description,
     parameters: emitParamsSpec(schema as never, BOARDED) as ParameterSchemaSpec,
@@ -185,7 +120,7 @@ export const buildImageGenTool = (gatewayUrl: string): ToolDefinition =>
         // DOOR ONE (compose — CARD BIRTH LAW): the stage doc names
         // the model as the stage's service; the params carry the
         // card's own surface (recipe included).
-        const draft = await gwJson(gatewayUrl, 'POST', '/v1/flows/drafts', {
+        const draft = await gw( 'POST', '/v1/flows/drafts', {
           intent: FLOW,
           stages: [{ title: identity.label, kind: 'generation', service: model, params }],
         }, exec?.signal)
@@ -200,7 +135,7 @@ export const buildImageGenTool = (gatewayUrl: string): ToolDefinition =>
         // with draft_id added; the {model:} arm lifts body-minus-
         // envelope as the ONE params stanza. A params-less body
         // composes defaults only and refuses on required fields.
-        const started = await gwJson(gatewayUrl, 'POST', '/v1/flows/start', {
+        const started = await gw( 'POST', '/v1/flows/start', {
           ...params,
           model,
           draft_id: draftId,
@@ -227,3 +162,4 @@ export const buildImageGenTool = (gatewayUrl: string): ToolDefinition =>
       }
     },
   })
+}

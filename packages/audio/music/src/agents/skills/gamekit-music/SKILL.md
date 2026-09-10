@@ -9,8 +9,8 @@ Genre (2-4 tags + era) / Vocal Details (or "instrumental, no vocals") /
 Arrangement (instrumentation timeline, bpm, key).
 
 ## Run (queue door — the only inference door)
-Gateway: `http://127.0.0.1:33081` (canonical; `:18201` for the manual port; discover live: `ss -ltnp | grep gateway.py`).
-`curl -s -X POST http://127.0.0.1:33081/v1/flows/start -d '{"yaml":"ace-step","prompt":"<caption>"}'`
+Gateway: in-process estate lanes (DSH host; no port — the python gateway is retired).
+Run via the estate tools (melite_flow) — same verb, in-process.
 Poll `GET /v1/flows/status/<run_id>`. Iterate ONLY on `preset: draft_short`;
 render `final_long` once the caption is locked. Variations = same caption, new seeds.
 
