@@ -16,7 +16,8 @@ grid-snap, 0.00ms drift), and `ffmpeg_concat` stitches the pre-trimmed
 windows with per-join loudness matching.
 
 Skills: `timeline-craft` (window planning, seams, audio continuity,
-budget). Run door: `POST /v1/flows/start {"model":"h3-timeline",
-"seed":N, "params":{"calls":[{"text":...},...]}}` on `:33081` (canonical).
+budget). Run door: `melite_flow` with `card="h3-timeline", model="h3-timeline",
+seed N, your `params.calls` (no curl — the `:33081` door died with
+the gateway; poll `run_status`).
 The lane runs N windows (any N, default templated 4) — fewer calls hold
 the last on tail windows (an airlock hold), so three calls is legal.

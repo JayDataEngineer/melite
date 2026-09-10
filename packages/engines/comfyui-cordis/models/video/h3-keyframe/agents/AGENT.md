@@ -15,5 +15,7 @@ lora) to build keyframe-first films: edit the still until it is right
 pre-flip `img-edit` family head is retired 2026-09-05; its assets
 merged into qwen-img-edit-2511.)
 
-Skill: `keyframe-flow`. Run door: `POST /v1/flows/start {"model":"h3-keyframe",
-"prompt":...,"image":"/abs/path.png","seed":...}` on `:33081` (canonical).
+Skill: `keyframe-flow`. Run door: `melite_flow` with
+`card="h3-timeline", model="h3-keyframe"`, your prompt/image/seed
+(no curl — the `:33081` door died with the gateway; poll
+`run_status`).

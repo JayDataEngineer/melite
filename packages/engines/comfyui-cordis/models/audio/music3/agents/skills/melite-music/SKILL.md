@@ -15,4 +15,6 @@ Tagged sections: [Intro] [Verse 1] [Chorus] [Verse 2] [Bridge] [Outro]. Match th
 Presets: draft_short (iteration), song (standard), final_long (delivery). Iterate on draft_short; only final render at song/final_long.
 
 ## Run door
-Lane YAML under `flows/` (root, NOT `data/flows/` — that dir was never created; the action card composer emits inline, the legacy YAML is the fallback), then the standard start door on `:33081` (canonical). One style per run; variations = new seeds/captions, not param salad.
+Start it with `melite_flow` (`card="music", model="music3"` + your
+caption/arrangement params — no curl, the `:33081` door died with
+the gateway); poll `run_status` for the receipt. One style per run; variations = new seeds/captions, not param salad.

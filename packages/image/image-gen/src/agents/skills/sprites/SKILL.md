@@ -14,23 +14,19 @@ transparent sprite sheet grid.
 
 ### 1. Generate Frames
 
-Each action/pose is generated as a separate z-image call:
+Each action/pose is generated as a separate z-image call — `melite_flow`
+with `card="image-gen", model="z-image"` (no curl — the `:33081` door
+died with the gateway):
 
-```bash
-curl -X POST http://127.0.0.1:33081/v1/flows/start \
-  -H 'content-type: application/json' \
-  -d '{
-    "model": "z-image",
-    "prompt": "pixel art style, a knight in silver armor, standing still, neutral pose, front view, transparent background, clean edges, game sprite",
-    "seed": 42,
-    "negative_prompt": "blurry, low quality, text, watermark, complex background"
-  }'
+```
+{
+  "prompt": "pixel art style, a knight in silver armor, standing still, neutral pose, front view, transparent background, clean edges, game sprite",
+  "seed": 42,
+  "negative_prompt": "blurry, low quality, text, watermark, complex background"
+}
 ```
 
-Poll status until done:
-```bash
-curl http://127.0.0.1:33081/v1/flows/status/<run_id>
-```
+Poll `run_status` until done:
 
 ### 2. Remove Backgrounds
 

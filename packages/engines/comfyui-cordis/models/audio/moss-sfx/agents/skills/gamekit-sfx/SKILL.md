@@ -6,8 +6,10 @@ description: Gameplay SFX wave via moss-sfx - five-event lane (combat, creature,
 Deploy: `./setup.sh extensions` (declared packs: registry via comfy-mcp `install_node`; vendor packs symlinked from `vendor/comfyui_extensions/`). No `sync.sh`, no `data/flows/` — the EXTENSION LAW (extensions DECLARED, never vendored) replaces the C-era `sync.sh` ritual.
 
 ## Run
-`curl -s -X POST localhost:33081/v1/flows/start -d '{"yaml":"audio_sfx_wave"}'`
-Poll `GET /v1/flows/status/<run_id>`. Five bricks run serially ON PURPOSE
+Call `melite_flow` with `card="sfx", model="moss-sfx"` + your composed
+params (no curl — the `:33081` door died with the gateway; the tool
+is the run door now). Poll `run_status` for the receipt. Five bricks
+run serially ON PURPOSE
 (concurrent audio model loads contend and fail).
 
 ## Prompting law

@@ -100,18 +100,19 @@ Each window renders its own audio. Sound must EVOLVE, not restart:
 
 ## Running it
 
+Call `melite_flow` with `card="h3-timeline", model="h3-timeline"` +
+your window plan (no curl — the `:33081` door died with the gateway;
+poll `run_status` for the receipt):
+
 ```
-curl -X POST :33081/v1/flows/start -H 'content-type: application/json' -d '{
-  "model": "h3-timeline",
+{
   "prompt": "film logline",
   "params": {"calls": [
     {"start_frame": 0,  "end_frame": 90,  "text": "w1 shot"},
     {"start_frame": 90, "end_frame": 214, "text": "w2 shot"}],
     "fps": 24, "seed": 42, "intent": "film", "continuity": "chain"}
-}'
+}
 ```
-
-(Canonical gateway port is `:33081`; manual/QA port is `:18201`. Discover live: `ss -ltnp | grep gateway.py`.)
 
 - Spans are FRAMES (start_frame/end_frame) on the 17k+5 grid — first
   call 90/107/124/141, later calls multiples of 17 — the strict gate

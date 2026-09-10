@@ -11,12 +11,14 @@ Genre (2-4 tags + era) / Vocal Details (or "instrumental, no vocals") /
 Arrangement (instrumentation timeline, bpm, key).
 
 ## Run
-`curl -s -X POST localhost:33081/v1/flows/start -d '{"yaml":"music_survival_theme.yaml"}'`
+Call `melite_flow` with `card="music", model="music3"` + your caption
+and `preset` (no curl — the `:33081` door died with the gateway);
+poll `run_status` for the receipt.
 Iterate ONLY on `preset: draft_short`; render `final_long` once the caption
 is locked. Variations = same caption, new seeds.
 
 ## Gotcha
-The status endpoint may list NO artifacts while the FLAC lands in the run dir -
+`run_status` may list NO artifacts while the FLAC lands in the run dir -
 trust disk (`ls data/runs/<run_id>/`).
 
 ## Deliver
