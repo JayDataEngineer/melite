@@ -95,6 +95,7 @@ import { fileURLToPath } from "node:url";
 import Schema from "@deepseek-ai/schemastery";
 import { Context, Service } from "@deepseek-ai/cordis";
 import type { Plugin } from "@deepseek-ai/cordis";
+import type {} from "@deepseek-ai/dsh-settings";
 import {
   EngineSupervisor,
   isTransportDownError,
@@ -1438,8 +1439,17 @@ export function parseComfyUIHostConfig(raw: unknown): ComfyUIHostConfig {
 }
 
 export class ComfyUIHostService extends Service {
-  /** Provider-configured base (operator pin — wins over env/file). */
-  private readonly configured: string | null;
+  /** Provider-configured base (operator pin — wins over env/file).
+   *  Mutable ONLY via repoint (settings onChange) — faces read the
+   *  resolved server, never this directly. */
+  private pin: string | null;
+  /** Live config source (cookbook setSource sink): the ctor config
+   *  until the settings section binds, then the resolved namespace
+   *  value (composition base + user layer). */
+  private source: () => ComfyUIHostConfig;
+  /** Ctor config (resetForTests re-arms the source — in-process
+   *  reuse must not hold a disposed settings scope). */
+  private readonly ctorConfig: ComfyUIHostConfig;
   /** Lazily resolved server (once per fiber — see resetForTests). */
   private resolved: string | null = null;
   /** Reachability supervisor (the MCP connection pattern, lazy with
@@ -1452,15 +1462,55 @@ export class ComfyUIHostService extends Service {
 
   constructor(ctx: Context, config: ComfyUIHostConfig = {}) {
     super(ctx, "comfyui");
-    if (config.url !== undefined) {
-      this.configured = config.url;
-    } else if (config.host !== undefined || config.port !== undefined) {
+    this.ctorConfig = config;
+    this.source = (): ComfyUIHostConfig => config;
+    this.pin = ComfyUIHostService.resolvePin(config);
+  }
+
+  /** The Config-triple pin (url wins; host/port compose; neither =
+   *  null — env/file fallback). Shared by the ctor and repoint so
+   *  the two can never disagree. */
+  static resolvePin(config: ComfyUIHostConfig): string | null {
+    if (config.url !== undefined) return config.url;
+    if (config.host !== undefined || config.port !== undefined) {
       const host: string = config.host ?? "127.0.0.1";
       const port: number = config.port ?? 8188;
-      this.configured = "http://" + host + ":" + String(port);
-    } else {
-      this.configured = null;
+      return "http://" + host + ":" + String(port);
     }
+    return null;
+  }
+
+  /** Cookbook setSource sink: the settings section takes over as
+   *  the live config source (no-op when the provider is absent). */
+  setSource(source: () => ComfyUIHostConfig): void {
+    this.source = source;
+  }
+
+  /** Cookbook onChange: re-resolve the pin against the live source.
+   *  Unresolved (never used) = swap the pin silently; resolved +
+   *  unchanged = no-op; resolved + changed = drop the supervisor so
+   *  the next face resolves + probes fresh. In-flight runs keep
+   *  their captured server string — a repoint never steers a live
+   *  run. Registration calls this once with the entry value (same
+   *  pin — the no-op arm). */
+  repoint(): void {
+    const next: string | null = ComfyUIHostService.resolvePin(this.source());
+    if (this.resolved === null) {
+      this.pin = next;
+      return;
+    }
+    if (next === this.resolved) return;
+    if (this.supervisor !== null) {
+      const sup: EngineSupervisor = this.supervisor;
+      this.supervisor = null;
+      void sup.dispose();
+    }
+    this.pin = next;
+    this.resolved = null;
+    this.ctx.logger("comfyui").info(
+      "%s",
+      "engine repointed to " + (next ?? "(env/file fallback)"),
+    );
   }
 
   /** Test seam: drop the resolved server + supervisor + all
@@ -1468,6 +1518,8 @@ export class ComfyUIHostService extends Service {
    *  braces for in-process reuse — the RunsService parity). */
   resetForTests(): void {
     this.resolved = null;
+    this.source = (): ComfyUIHostConfig => this.ctorConfig;
+    this.pin = ComfyUIHostService.resolvePin(this.ctorConfig);
     if (this.supervisor !== null) {
       const sup: EngineSupervisor = this.supervisor;
       this.supervisor = null;
@@ -1485,7 +1537,7 @@ export class ComfyUIHostService extends Service {
   baseUrl(): string {
     if (this.resolved !== null) return this.resolved;
     const server: string =
-      this.configured !== null ? this.configured : resolveEngineBaseUrl();
+      this.pin !== null ? this.pin : resolveEngineBaseUrl();
     this.resolved = server;
     this.startSupervisor(server);
     return server;
@@ -1625,7 +1677,24 @@ export class ComfyUIHostService extends Service {
 export const comfyuiHostProvider: Plugin = {
   name: "engine-comfyui",
   apply(ctx: Context, config?: unknown): void {
-    new ComfyUIHostService(ctx, parseComfyUIHostConfig(config));
+    const entry: ComfyUIHostConfig = parseComfyUIHostConfig(config);
+    const svc: ComfyUIHostService = new ComfyUIHostService(ctx, entry);
+    // The DSH settings cookbook (adding-a-settings-card): the entry
+    // config layers under the user document as namespace 'comfyui';
+    // writes re-resolve the pin live via repoint (no restart). The
+    // inject defers until the settings provider exists and never
+    // fires without one — providerless compositions behave exactly
+    // as before (ctor entry governs).
+    ctx.inject(["settings"], (settingsCtx): void => {
+      settingsCtx.settings.installSection(ctx, "comfyui", Config, entry, {
+        setSource: (current: () => ComfyUIHostConfig): void => {
+          svc.setSource(current);
+        },
+        onChange: (): void => {
+          svc.repoint();
+        },
+      });
+    });
   },
 };
 

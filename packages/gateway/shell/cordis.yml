@@ -42,6 +42,16 @@
   - id: storage-domain
     name: cordis:storage-domain
     config: !!js gatewayRuntime.storageDomain
+  # Settings provider (STANDBY 2026-09-10: the row boots and the
+  # engine installs section 'comfyui', but the composition breaks
+  # the connection entry — dsh-settings alpha vs rc.8 export
+  # collapse (settingsNamespace). Re-enable only with the
+  # resolution answer + TEST-lane proof. The cordis.patch.yml url
+  # pin still governs the engine.
+  # - id: settings
+  #   name: '@deepseek-ai/dsh-settings-file'
+  #   config:
+  #     path: data/gateway-settings.yaml
   - id: gateway-uploads
     name: '@melite/gateway-doors/uploads'
   - id: engine-model-catalog
