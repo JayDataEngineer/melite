@@ -72,8 +72,16 @@ export function apply(ctx: Context, config: Config = {}): void {
       const contentType = req.headers['content-type']
       if (typeof contentType === 'string') headers['content-type'] = contentType
 
-      let body: Buffer | undefined
-      if (method !== 'GET' && method !== 'HEAD') body = await readBody(req)
+      // rc.1's DOM BodyInit narrows to views over plain ArrayBuffer;
+      // Buffer (a pooled view over ArrayBufferLike) fails it, so the
+      // proxy copies request bytes into a fresh one.
+      let body: BodyInit | undefined
+      if (method !== 'GET' && method !== 'HEAD') {
+        const raw = await readBody(req)
+        const bytes = new Uint8Array(raw.byteLength)
+        bytes.set(raw)
+        body = bytes
+      }
 
       try {
         const upstream = await fetch(target, {

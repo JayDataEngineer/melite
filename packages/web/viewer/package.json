@@ -25,7 +25,7 @@
     "@deepseek-ai/cordis": "^4.0.2"
   },
   "devDependencies": {
-    "@deepseek-ai/dsh-host-webserver": "^0.1.0-rc.7",
+    "@deepseek-ai/dsh-host-webserver": "0.1.5-rc.1",
     "@deepseek-ai/schemastery": "*",
     "@types/node": "*",
     "@deepseek-ai/dsh-client-ui-renderer": "^0.1.0-rc.7"

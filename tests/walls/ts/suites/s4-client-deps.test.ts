@@ -29,12 +29,20 @@ const REAL_SET = [
 ] as const;
 
 describe("S4a — the real DSH client set is the editor's dependency", () => {
-  it("editor package.json declares the four real packages at the rc.8 lockstep", () => {
+  it("editor package.json declares the four real packages at the 0.1.5-rc.1 lockstep (runtime rides its own 0.1.1-rc.x line)", () => {
     const pkg = JSON.parse(readFileSync(join(repoRoot, "packages/web/editor/package.json"), "utf8"));
+    // dsh 0.1.5-rc.1 converged the client family on 0.1.5-rc.1;
+    // dsh-client-runtime publishes separately and tops out at 0.1.1-rc.x.
+    const LOCKSTEP: Record<string, string> = {
+      "@deepseek-ai/dsh-client-modules": "^0.1.5-rc.",
+      "@deepseek-ai/dsh-client-runtime": "0.1.1-rc.",
+      "@deepseek-ai/dsh-client-ui-slots": "0.1.5-rc.",
+      "@deepseek-ai/dsh-client-web": "^0.1.5-rc.",
+    };
     for (const name of REAL_SET) {
       assert.ok(
-        pkg.dependencies?.[name]?.startsWith("^0.1.0-rc."),
-        `editor must depend on ${name} at the ^0.1.0-rc.x lockstep line`,
+        pkg.dependencies?.[name]?.startsWith(LOCKSTEP[name]),
+        `editor must depend on ${name} at the ${LOCKSTEP[name]}x lockstep line`,
       );
     }
   });

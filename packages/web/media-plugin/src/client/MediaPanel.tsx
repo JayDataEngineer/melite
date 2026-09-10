@@ -328,7 +328,6 @@ function Overlay({ item, onClose }: { item: MediaItem; onClose: () => void }) {
       open
       onClose={onClose}
       title={item.file || 'media preview'}
-      closeLabel="Close preview"
       headless
       className={css.lightbox}
     >
