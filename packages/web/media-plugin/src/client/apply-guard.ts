@@ -20,25 +20,6 @@ export function releaseMediaApply(): void {
 }
 
 /**
- * Sidebar service captured at apply() time (the apply ctx carries the live
- * registry). Lets panel components reach matchFileViewer without depending
- * on the tab-component prop contract.
- */
-interface SidebarService {
-  matchFileViewer?(path: string, head?: unknown): unknown
-}
-
-let sidebarService: SidebarService | null = null
-
-export function setSidebarService(bs: SidebarService | null | undefined): void {
-  if (bs != null && typeof bs.matchFileViewer === 'function') sidebarService = bs
-}
-
-export function getSidebarService(): SidebarService | null {
-  return sidebarService
-}
-
-/**
  * Cards-studio seam (CARD REPLAY DOOR contract, provider:
  * melite-card-deck deck-sidebar-entry.tsx — sets
  * `window[DECK_OPEN_WITH_DRAFT] = (draftId: string) => boolean` at deck

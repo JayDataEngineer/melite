@@ -13,7 +13,40 @@
 import * as React from 'react'
 import { useMemo, useState } from 'react'
 import { Modal, Pill, Tooltip } from '@deepseek-ai/dsh-client-ui-primitives'
-import { getSidebarService, openWithDraft } from './apply-guard.ts'
+import { openWithDraft } from './apply-guard.ts'
+
+/** THE ESTATE-ARTIFACT ADDRESS (2026-09-10 regression fix): run artifacts
+ *  live on the estate gateway, outside the DSH workspace, so no document
+ *  owner can read them. The native seam for addressable non-workspace
+ *  content is a resource address claimed by a tab type — dsh-glb-viewer
+ *  claims `dsh-resource://estate-artifact/<b64url of the same-origin
+ *  artifact URL>` (its own tab renders the mesh). The URL this panel
+ *  embeds is its SAME-ORIGIN proxy path (fetchable from the body; the
+ *  gateway origin never leaks). The address FORMAT is the cross-plugin
+ *  contract (both sides carry the 4-line codec — client bundles cannot
+ *  import across plugins); dsh-glb-viewer/src/client.js is the other side.
+ */
+const ARTIFACT_PREFIX = 'dsh-resource://estate-artifact/'
+
+function b64uEncode(text: string): string {
+  const bytes = new TextEncoder().encode(text)
+  let bin = ''
+  for (const b of bytes) bin += String.fromCharCode(b)
+  return btoa(bin).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '')
+}
+
+function estateArtifactAddress(url: string): string {
+  return ARTIFACT_PREFIX + b64uEncode(url)
+}
+
+/** The standard tab hook the seat injects into every body (local spelling
+ *  of UseSidebarRightTabInfo — the actions a tab may take on itself). */
+interface TabInfo {
+  readonly tab: {
+    readonly navigation: { readonly address: string }
+    readonly actions: { openResource(address: string): void }
+  }
+}
 import { decodeRuns, decodeDrafts } from './decode.ts'
 import type { DraftRow, RunArtifact, RunRow } from './decode.ts'
 import { useFeed } from './useFeed.ts'
@@ -282,34 +315,30 @@ function tileBgFor(kind: Kind): string {
 }
 
 /**
- * 3D artifact view — resolves the file's viewer through the sidebar
- * registry (the glb viewer owns .glb/.gltf) and renders its component
- * with the gateway asset URL. Falls back to a download link when no
- * viewer claims the file.
+ * 3D artifact view — hands the artifact to the sidebar as a RESOURCE
+ * (estate-artifact address, claimed by dsh-glb-viewer's tab type; the
+ * mesh renders in the right panel, orbitable beside the run list).
+ * The download link stays: when the viewer plugin is absent no tab type
+ * claims the address and openResource is a no-op — the artifact must
+ * still be reachable.
  */
-function ModelView({ item }: { item: MediaItem }): React.JSX.Element {
-  const bs = getSidebarService()
-  const match = bs?.matchFileViewer?.(item.file) as
-    | { component?: React.ComponentType<{ mediaUrl?: string; path?: string }> }
-    | undefined
-  const Viewer = match?.component
-  if (Viewer != null) {
-    return (
-      <div
-        style={{ width: 'min(880px, 92vw)', height: 'min(620px, 72vh)', borderRadius: 8, overflow: 'hidden', background: bgBase2, cursor: 'default' }}
-        onClick={(e) => { e.stopPropagation() }}
-      >
-        <Viewer mediaUrl={item.url} path={item.file} />
-      </div>
-    )
-  }
+function ModelView({ item, openArtifact }: { item: MediaItem; openArtifact: (item: MediaItem) => void }): React.JSX.Element {
   return (
-    <a
-      href={item.url}
-      download={item.file}
-      style={{ color: stateBusinessPrimary, fontSize: 14, cursor: 'pointer' }}
-      onClick={(e) => { e.stopPropagation() }}
-    >download {item.file}</a>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 10, alignItems: 'center' }}>
+      <a
+        role="button"
+        tabIndex={0}
+        style={{ color: stateBusinessPrimary, fontSize: 14, cursor: 'pointer' }}
+        onClick={(e) => { e.stopPropagation(); openArtifact(item) }}
+        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.stopPropagation(); openArtifact(item) } }}
+      >open 3D view in sidebar</a>
+      <a
+        href={item.url}
+        download={item.file}
+        style={{ color: textTertiary3, fontSize: 13, cursor: 'pointer' }}
+        onClick={(e) => { e.stopPropagation() }}
+      >download {item.file}</a>
+    </div>
   )
 }
 
@@ -322,7 +351,7 @@ function ModelView({ item }: { item: MediaItem }): React.JSX.Element {
  * `.lightbox` class (overlay.module.css); inner flex + captions stay
  * as content styles.
  */
-function Overlay({ item, onClose }: { item: MediaItem; onClose: () => void }) {
+function Overlay({ item, onClose, openArtifact }: { item: MediaItem; onClose: () => void; openArtifact: (item: MediaItem) => void }) {
   return (
     <Modal
       open
@@ -353,7 +382,7 @@ function Overlay({ item, onClose }: { item: MediaItem; onClose: () => void }) {
               )
             : item.kind === 'model'
             ? (
-                <ModelView item={item} />
+                <ModelView item={item} openArtifact={openArtifact} />
               )
             : item.kind === 'image'
             ? (
@@ -385,7 +414,7 @@ export function MediaTabIcon({ size }: { size?: number }) {
   )
 }
 
-export function MediaPanel(): React.JSX.Element {
+export function MediaPanel({ useTabInfo }: { useTabInfo?: () => TabInfo }): React.JSX.Element {
   /* TWO independent feeds (useFeed): runs and drafts each own their
    * fetch/decode/never-stale engine — one failing never blanks the other
    * (the drafts feed's error is deliberately not rendered; the runs view
@@ -405,6 +434,19 @@ export function MediaPanel(): React.JSX.Element {
   const [search, setSearch] = useState('')
   const [preview, setPreview] = useState<MediaItem | null>(null)
   const [tab, setTab] = useState<'artifacts' | 'flows'>('artifacts')
+  /* The tab's own navigation face (the standard hook every tab body
+   * receives). Hook-count law: the prop is stable per mount, so the
+   * conditional call keeps one hook order for the panel's lifetime. */
+  const tabInfo = useTabInfo !== undefined ? useTabInfo() : undefined
+  /** Open one 3D artifact as the estate-artifact resource (ModelView). */
+  const openArtifact = (item: MediaItem): void => {
+    const open = tabInfo?.tab.actions.openResource
+    if (open === undefined) {
+      setUiError('3D view unavailable — the sidebar tab service is not loaded.')
+      return
+    }
+    open(estateArtifactAddress(item.url))
+  }
   const load = runsFeed.reload
 
   /** CARD REPLAY (final wiring, 2026-08-30): the wand opens THE CARDS
@@ -629,7 +671,7 @@ export function MediaPanel(): React.JSX.Element {
                 </div>
               ))}
 
-      {preview !== null ? <Overlay item={preview} onClose={() => { setPreview(null) }} /> : null}
+      {preview !== null ? <Overlay item={preview} onClose={() => { setPreview(null) }} openArtifact={openArtifact} /> : null}
     </PanelShell>
   )
 }

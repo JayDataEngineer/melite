@@ -49,10 +49,6 @@ window.__ModuleLoader__.load({
 			const w = globalThis;
 			delete w[CLAIM_KEY];
 		}
-		let sidebarService = null;
-		function getSidebarService() {
-			return sidebarService;
-		}
 		/**
 		* Cards-studio seam (CARD REPLAY DOOR contract, provider:
 		* melite-card-deck deck-sidebar-entry.tsx — sets
@@ -354,6 +350,27 @@ window.__ModuleLoader__.load({
 		*   "first 48 chars of the prompt…" — Aug 28, 05:01 AM · filename.mp4
 		* Runs with an empty prompt fall back to run name/flow.
 		*/
+		/** THE ESTATE-ARTIFACT ADDRESS (2026-09-10 regression fix): run artifacts
+		*  live on the estate gateway, outside the DSH workspace, so no document
+		*  owner can read them. The native seam for addressable non-workspace
+		*  content is a resource address claimed by a tab type — dsh-glb-viewer
+		*  claims `dsh-resource://estate-artifact/<b64url of the same-origin
+		*  artifact URL>` (its own tab renders the mesh). The URL this panel
+		*  embeds is its SAME-ORIGIN proxy path (fetchable from the body; the
+		*  gateway origin never leaks). The address FORMAT is the cross-plugin
+		*  contract (both sides carry the 4-line codec — client bundles cannot
+		*  import across plugins); dsh-glb-viewer/src/client.js is the other side.
+		*/
+		const ARTIFACT_PREFIX = "dsh-resource://estate-artifact/";
+		function b64uEncode(text) {
+			const bytes = new TextEncoder().encode(text);
+			let bin = "";
+			for (const b of bytes) bin += String.fromCharCode(b);
+			return btoa(bin).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+		}
+		function estateArtifactAddress(url) {
+			return ARTIFACT_PREFIX + b64uEncode(url);
+		}
 		/** JSON key order = classifier precedence (video beats image on a contradictory row). */
 		const KIND_ORDER = Object.keys(kinds);
 		const KIND_LABEL = Object.fromEntries(KIND_ORDER.map((k) => [k, kinds[k].label]));
@@ -588,42 +605,53 @@ window.__ModuleLoader__.load({
 			return gradientStage;
 		}
 		/**
-		* 3D artifact view — resolves the file's viewer through the sidebar
-		* registry (the glb viewer owns .glb/.gltf) and renders its component
-		* with the gateway asset URL. Falls back to a download link when no
-		* viewer claims the file.
+		* 3D artifact view — hands the artifact to the sidebar as a RESOURCE
+		* (estate-artifact address, claimed by dsh-glb-viewer's tab type; the
+		* mesh renders in the right panel, orbitable beside the run list).
+		* The download link stays: when the viewer plugin is absent no tab type
+		* claims the address and openResource is a no-op — the artifact must
+		* still be reachable.
 		*/
-		function ModelView({ item }) {
-			const Viewer = (getSidebarService()?.matchFileViewer?.(item.file))?.component;
-			if (Viewer != null) return /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
+		function ModelView({ item, openArtifact }) {
+			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
 				style: {
-					width: "min(880px, 92vw)",
-					height: "min(620px, 72vh)",
-					borderRadius: 8,
-					overflow: "hidden",
-					background: bgBase2,
-					cursor: "default"
+					display: "flex",
+					flexDirection: "column",
+					gap: 10,
+					alignItems: "center"
 				},
-				onClick: (e) => {
-					e.stopPropagation();
-				},
-				children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Viewer, {
-					mediaUrl: item.url,
-					path: item.file
-				})
-			});
-			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("a", {
-				href: item.url,
-				download: item.file,
-				style: {
-					color: stateBusinessPrimary,
-					fontSize: 14,
-					cursor: "pointer"
-				},
-				onClick: (e) => {
-					e.stopPropagation();
-				},
-				children: ["download ", item.file]
+				children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("a", {
+					role: "button",
+					tabIndex: 0,
+					style: {
+						color: stateBusinessPrimary,
+						fontSize: 14,
+						cursor: "pointer"
+					},
+					onClick: (e) => {
+						e.stopPropagation();
+						openArtifact(item);
+					},
+					onKeyDown: (e) => {
+						if (e.key === "Enter" || e.key === " ") {
+							e.stopPropagation();
+							openArtifact(item);
+						}
+					},
+					children: "open 3D view in sidebar"
+				}), /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("a", {
+					href: item.url,
+					download: item.file,
+					style: {
+						color: textTertiary3,
+						fontSize: 13,
+						cursor: "pointer"
+					},
+					onClick: (e) => {
+						e.stopPropagation();
+					},
+					children: ["download ", item.file]
+				})]
 			});
 		}
 		/**
@@ -635,7 +663,7 @@ window.__ModuleLoader__.load({
 		* `.lightbox` class (overlay.module.css); inner flex + captions stay
 		* as content styles.
 		*/
-		function Overlay({ item, onClose }) {
+		function Overlay({ item, onClose, openArtifact }) {
 			return /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Modal, {
 				open: true,
 				onClose,
@@ -668,7 +696,10 @@ window.__ModuleLoader__.load({
 							controls: true,
 							autoPlay: true,
 							style: { width: "min(560px, 90vw)" }
-						}) : item.kind === "model" ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)(ModelView, { item }) : item.kind === "image" ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("img", {
+						}) : item.kind === "model" ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)(ModelView, {
+							item,
+							openArtifact
+						}) : item.kind === "image" ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("img", {
 							src: item.url,
 							alt: item.file,
 							style: {
@@ -738,7 +769,7 @@ window.__ModuleLoader__.load({
 				]
 			});
 		}
-		function MediaPanel() {
+		function MediaPanel({ useTabInfo }) {
 			const runsFeed = useFeed("/infer-media/runs", decodeRuns, {
 				runs: [],
 				errors: []
@@ -758,6 +789,16 @@ window.__ModuleLoader__.load({
 			const [search, setSearch] = (0, react.useState)("");
 			const [preview, setPreview] = (0, react.useState)(null);
 			const [tab, setTab] = (0, react.useState)("artifacts");
+			const tabInfo = useTabInfo !== void 0 ? useTabInfo() : void 0;
+			/** Open one 3D artifact as the estate-artifact resource (ModelView). */
+			const openArtifact = (item) => {
+				const open = tabInfo?.tab.actions.openResource;
+				if (open === void 0) {
+					setUiError("3D view unavailable — the sidebar tab service is not loaded.");
+					return;
+				}
+				open(estateArtifactAddress(item.url));
+			};
 			runsFeed.reload;
 			/** CARD REPLAY (final wiring, 2026-08-30): the wand opens THE CARDS
 			*  STUDIO — the left-sidebar Cards tab itself — by clicking its row,
@@ -1064,7 +1105,8 @@ window.__ModuleLoader__.load({
 						item: preview,
 						onClose: () => {
 							setPreview(null);
-						}
+						},
+						openArtifact
 					}) : null
 				]
 			});

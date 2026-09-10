@@ -10,7 +10,6 @@ import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/re
 import * as React from 'react'
 import { callsTextOf, kindOf, MediaPanel } from '../MediaPanel.tsx'
 import { FlowsPanel } from '../FlowsPanel.tsx'
-import { setSidebarService } from '../apply-guard.ts'
 
 const runsFeed = (runs: unknown[], errors: unknown[] = []): Promise<Response> =>
   Promise.resolve(new Response(JSON.stringify({ runs, errors }), { status: 200 }))
@@ -19,7 +18,6 @@ const draftsFeed = (drafts: unknown[]): Promise<Response> =>
 
 const run = (over: Record<string, unknown>): unknown => ({ run_id: 'r1', created_at: 1, ...over })
 
-beforeEach(() => { setSidebarService(null) })
 afterEach(() => { cleanup(); vi.unstubAllGlobals() })
 
 describe('kindOf — SSOT-derived classifier', () => {
@@ -91,43 +89,56 @@ describe('MediaPanel — stubbed feed', () => {
     expect(video?.getAttribute('src')).toContain('/v/walk.mp4')
   })
 
-  it('model tile routes through the sidebar viewer registry, with a download fallback', async () => {
+  it('model tile opens the estate-artifact resource, with a download fallback', async () => {
+    // The tab's navigation face (the standard hook every tab body
+    // receives) stubbed: capture what the panel asks the sidebar to open.
+    const opened: string[] = []
+    const useTabInfo = () => ({
+      tab: { navigation: { address: 'dsh-resource://media' },
+        actions: { openResource: (a: string) => { opened.push(a) } } },
+    })
     vi.stubGlobal('fetch', (url: string) =>
       url === '/infer-media/runs'
         ? runsFeed([run({ artifacts: [{ url: '/v/scene.glb', type: 'model' }] })])
         : draftsFeed([]))
-    // No viewer claims .glb → download fallback first.
-    const { unmount } = render(<MediaPanel />)
-    let tile = await waitFor(() => {
+    render(<MediaPanel useTabInfo={useTabInfo} />)
+    const tile = await waitFor(() => {
       const el = screen.getByText(/scene\.glb/).closest('button')
       expect(el).toBeTruthy()
       return el as HTMLElement
     })
     fireEvent.click(tile)
+    // The affordance + the fallback both render in the overlay.
+    const open = screen.getByText(/open 3D view in sidebar/)
+    expect(open).toBeTruthy()
     expect(screen.getByText(/download scene\.glb/)).toBeTruthy()
-    fireEvent.click(document.body) // close overlay
-    unmount()
+    // The click routes through the tab action as an estate-artifact
+    // address carrying the b64url of the SAME-ORIGIN artifact URL.
+    fireEvent.click(open)
+    expect(opened).toHaveLength(1)
+    expect(opened[0].startsWith('dsh-resource://estate-artifact/')).toBeTruthy()
+    const b64 = opened[0].slice('dsh-resource://estate-artifact/'.length)
+    const pad = b64.length % 4 ? '='.repeat(4 - (b64.length % 4)) : ''
+    const decoded = new TextDecoder().decode(Uint8Array.from(atob(b64.replace(/-/g, '+').replace(/_/g, '/') + pad), c => c.charCodeAt(0)))
+    expect(decoded).toBe('/v/scene.glb')
+  })
 
-    // Registry seam returns a viewer component → it renders with the URL.
+  it('model tile without the tab hook surfaces an honest error, never a silent no-op', async () => {
     vi.stubGlobal('fetch', (url: string) =>
       url === '/infer-media/runs'
         ? runsFeed([run({ artifacts: [{ url: '/v/scene.glb', type: 'model' }] })])
         : draftsFeed([]))
-    setSidebarService({
-      matchFileViewer: (f: string) => f.endsWith('.glb')
-        ? { component: ({ mediaUrl }: { mediaUrl?: string }) => <div data-fake-glb={mediaUrl}>3D</div> }
-        : undefined,
-    } as never)
     render(<MediaPanel />)
-    tile = await waitFor(() => {
+    const tile = await waitFor(() => {
       const el = screen.getByText(/scene\.glb/).closest('button')
       expect(el).toBeTruthy()
       return el as HTMLElement
     })
     fireEvent.click(tile)
-    const viewer = document.querySelector('[data-fake-glb]') as HTMLElement | null
-    expect(viewer).toBeTruthy()
-    expect(viewer?.getAttribute('data-fake-glb')).toContain('/v/scene.glb')
+    fireEvent.click(screen.getByText(/open 3D view in sidebar/))
+    expect(await screen.findByText(/3D view unavailable/)).toBeTruthy()
+    // The download fallback still carries the artifact.
+    expect(screen.getByText(/download scene\.glb/)).toBeTruthy()
   })
 })
 
