@@ -1,9 +1,11 @@
 /**
- * Playwright driver for the media 3D click-chain e2e (audit gap 3).
+ * Playwright driver for the media e2e (audit gap 3; hunk 4 shape).
  * Offline: serves the built harness + the BUILT client bundle from a
- * local http server, drives real Chromium, asserts the chain the Sep-6
- * outage broke: panel mounts → 3D tile lists → click → overlay → glb
- * viewer component with the gateway URL. Run: node test/e2e/e2e.mjs
+ * local http server, drives real Chromium, asserts the two
+ * openResource chains that live ONLY in the built artifact: the 3D
+ * tile → estate-artifact address (b64url of the same-origin URL) and
+ * the ✦ CARDS wand → cards run address (hunk 4: the deck seam is
+ * gone; the wand is one native call). Run: node test/e2e/e2e.mjs
  * (exit 0 = pass). Chromium comes from the repo's playwright install.
  */
 import { createServer } from 'node:http'
@@ -89,13 +91,25 @@ async function main() {
     await tile.waitFor({ timeout: 5_000 })
     await tile.click()
 
-    const viewer = page.locator('[data-e2e-glb-viewer]')
-    await viewer.waitFor({ timeout: 5_000 })
-    const url = await viewer.getAttribute('data-e2e-glb-viewer')
-    check(url === '/artifact/scene.glb', '3D click chain: overlay → registry viewer with the gateway URL (got ' + String(url) + ')')
+    // The 3D affordance routes through the tab action as an
+    // estate-artifact address (hunk 3's regression fix, pinned here on
+    // the BUILT bundle).
+    const open3d = page.getByText(/open 3D view in sidebar/)
+    await open3d.waitFor({ timeout: 5_000 })
+    await open3d.click()
+    const opened3d = await page.evaluate(() => (window.__e2eOpened ?? []).at(-1))
+    const want3d = 'dsh-resource://estate-artifact/L2FydGlmYWN0L3NjZW5lLmdsYg'
+    check(opened3d === want3d, '3D click chain: openResource carries the estate-artifact b64url address (got ' + String(opened3d) + ')')
 
+    // Close the overlay (the wand lives on the tile, under it).
     await page.keyboard.press('Escape')
-    check((await page.locator('[data-e2e-glb-viewer]').count()) === 0, 'Esc closes the overlay')
+
+    // THE WAND (hunk 4): one native call — the cards run address.
+    const wand = page.locator('span', { hasText: '✦ CARDS' }).first()
+    await wand.waitFor({ timeout: 5_000 })
+    await wand.click()
+    const openedRun = await page.evaluate(() => (window.__e2eOpened ?? []).at(-1))
+    check(openedRun === 'dsh-resource://cards/run/e2e-run', 'wand: openResource carries the cards run address (got ' + String(openedRun) + ')')
 
     const harnessFail = await page.locator('#harness-failure').count()
     check(harnessFail === 0, 'harness itself error-free')

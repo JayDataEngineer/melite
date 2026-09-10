@@ -19,19 +19,3 @@ export function releaseMediaApply(): void {
   delete w[CLAIM_KEY]
 }
 
-/**
- * Cards-studio seam (CARD REPLAY DOOR contract, provider:
- * melite-card-deck deck-sidebar-entry.tsx — sets
- * `window[DECK_OPEN_WITH_DRAFT] = (draftId: string) => boolean` at deck
- * entry mount, deletes it on dispose). The ONLY definition site of the
- * seam name repo-wide: every consumer imports this const (never a
- * restated literal) and fails LOUDLY via setError when the seam is
- * absent (deck plugin not loaded). Pinned by test_media_sidebar.py.
- */
-export const DECK_OPEN_WITH_DRAFT = '__meliteDeckOpenWithDraft'
-
-export function openWithDraft(draftId: string): 'ok' | 'no-seam' | 'refused' {
-  const open = (window as unknown as Record<string, unknown>)[DECK_OPEN_WITH_DRAFT]
-  if (typeof open !== 'function') return 'no-seam'
-  return (open as (id: string) => boolean)(draftId) ? 'ok' : 'refused'
-}

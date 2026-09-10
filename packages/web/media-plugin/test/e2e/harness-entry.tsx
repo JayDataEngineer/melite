@@ -1,11 +1,14 @@
 /**
  * Browser e2e harness (media-sidebar audit gap 3): mounts the REAL
  * BUILT client bundle (lib/client.js — the artifact the Sep-6 3D outage
- * lived in) in a real Chromium page, drives it through the same tab
- * contract the DSH shell uses (betterSidebar.registerTab), and renders
- * the Media tab against a STUBBED feed. The glb viewer is injected via
- * the REAL registry seam (matchFileViewer) so the 3D click chain runs
- * end-to-end: tile → overlay → registry → viewer component + URL.
+ * lived in) in a real Chromium page against a STUBBED feed, through the
+ * NATIVE two-registration contract the DSH shell uses (hunk 3/4,
+ * 2026-09-10): ctx.sidebarRightTabs.register declares the tab types,
+ * ctx.slots carries the keyed `sidebar.right.pane.tab` seats. The
+ * harness renders the captured Media body with a stubbed useTabInfo
+ * whose openResource CAPTURES addresses — the two assertions that
+ * matter end-to-end on the built artifact are the estate-artifact
+ * address (3D tile) and the cards run address (the wand, hunk 4).
  *
  * React is bundled by vite from node_modules (same 18.3.1 the shell
  * hosts); the built bundle's `require` is shimmed onto those SAME
@@ -30,6 +33,7 @@ declare global {
   interface Window {
     __e2e?: { ready: Promise<void>; status: string }
     __ModuleLoader__?: { load(mod: { id: string; factory: (require: (id: string) => unknown) => unknown }): void }
+    __e2eOpened?: string[]
   }
 }
 
@@ -50,23 +54,9 @@ async function main(): Promise<void> {
     return Promise.resolve(new Response(JSON.stringify({ drafts: [], errors: [] }), { status: 200 }))
   }) as typeof fetch
 
-  // 3D viewer through the REAL registry seam.
-  const GlbViewer = ({ mediaUrl }: { mediaUrl?: string }): JSX.Element =>
-    <div data-e2e-glb-viewer={mediaUrl ?? ''}>fake 3d viewer</div>
-
-  const betterSidebar = {
-    registerTab(tab) {
-      const RDom = unwrap(ReactDomClient as object)
-      const host = document.getElementById('tab-' + tab.id)
-      if (host != null && tab.component != null) {
-        RDom.createRoot(host).render(React.createElement(tab.component))
-      }
-      return () => {}
-    },
-    matchFileViewer(path: string): { component: React.ComponentType<{ mediaUrl?: string }> } | undefined {
-      return path.endsWith('.glb') ? { component: GlbViewer } : undefined
-    },
-  }
+  // The addresses the panel asks the sidebar to open (the assertions).
+  const opened: string[] = []
+  window.__e2eOpened = opened
 
   // Load the BUILT bundle through its loader contract.
   const mod: { id: string; factory: (require: (id: string) => unknown) => unknown } = await new Promise((resolve, reject) => {
@@ -96,12 +86,44 @@ async function main(): Promise<void> {
     if (id === '@deepseek-ai/dsh-client-ui-primitives') return DSHPrimitives
     throw new Error('e2e harness: unexpected require ' + id)
   }
-  const exports = mod.factory(require) as { apply(ctx: unknown): void }
+
+  // The NATIVE two-registration contract, captured: the tab TYPES the
+  // bundle declares and the keyed seat BODIES it registers. The harness
+  // renders the Media body itself with a stubbed useTabInfo.
+  const typeIds: string[] = []
+  const bodies = new Map<string, React.ComponentType<Record<string, unknown>>>()
   const ctx = {
     effect(fn: () => unknown): () => void { fn(); return () => {} },
-    betterSidebar,
+    sidebarRightTabs: {
+      register(def: { id: string }) {
+        typeIds.push(def.id)
+        return () => {}
+      },
+    },
+    slots: {
+      inject(_name: string, fn: () => unknown): void { void fn() },
+      register(def: { key: string }, component: React.ComponentType<Record<string, unknown>>) {
+        bodies.set(def.key, component)
+        return () => {}
+      },
+    },
   }
+  const exports = mod.factory(require) as { apply(ctx: unknown): void }
   exports.apply(ctx)
+
+  const MediaBody = bodies.get('infer-media:media')
+  if (MediaBody === undefined) throw new Error('no media body registered; types=' + typeIds.join(','))
+  const host = document.getElementById('tab-infer-media:media')
+  if (host === null) throw new Error('no mount host')
+  const RDomClient = unwrap(ReactDomClient as object) as typeof ReactDomClient
+  RDomClient.createRoot(host).render(React.createElement(MediaBody, {
+    useTabInfo: () => ({
+      tab: {
+        navigation: { address: 'dsh-resource://media' },
+        actions: { openResource: (a: string): void => { opened.push(a) } },
+      },
+    }),
+  }))
   window.__e2e = { ready: Promise.resolve(), status: 'mounted' }
 }
 

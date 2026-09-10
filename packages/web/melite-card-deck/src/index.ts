@@ -1,22 +1,21 @@
 /**
  * `@melite-plugin/dsh-card-deck` — HOST ONLY.
  *
- * The DSH-side host for the editor's card surfaces. The /ray-deck/* API
- * stayed RETIRED (d157b6c; its client consumer was already an orphaned
- * fossil — the studio iframe rides the /v1 prefix proxies below). The
- * sidebar deck itself is RESTORED (2026-09-05, operator order) as the
- * center-column takeover — see src/client/. This host half serves:
+ * The DSH-side host for the card surfaces. The /ray-deck/* API stayed
+ * RETIRED (d157b6c); the client takeover is deleted too (hunk 4,
+ * 2026-09-10 — cards are the native tab in @melite-plugin/dsh-card-view,
+ * opened by resource address). What this host half serves:
  *
- * - /editor            → the editor's built dist (THE card surface)
+ * - /editor            → the editor's built dist (the standalone card
+ *                       studio; reachable directly, no DSH embed)
  * - /v1, /comfyui, /poser, /health
  *                     → buffered gateway proxies (run artifacts ride
  *                       /v1/assets/runs — Phase 2 consolidation 2026-09-04)
  * - /v1/llm/*          → stubs (the assistant lives in DSH)
  * - /v1/flows/events   → the events WS tunnel (raw TCP to gateway)
  *
- * The src/client/ tree carries the browser half (sidebar entry +
- * full-bleed + DeckCanvas + embed-bridge, the last also source-imported
- * by melite-card-view); the shared tsdown preset builds lib/client.js.
+ * The src/client/ tree carries the browser half (the Ray ComfyUI tab);
+ * the shared tsdown preset builds lib/client.js.
  *
  * Failure policy: reachable webServer + unreachable gateway = 502 JSON with
  * the verbatim upstream body; handlers never throw.

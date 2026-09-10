@@ -49,20 +49,66 @@ window.__ModuleLoader__.load({
 			const w = globalThis;
 			delete w[CLAIM_KEY];
 		}
+		//#endregion
+		//#region src/client/bench-load.ts
 		/**
-		* Cards-studio seam (CARD REPLAY DOOR contract, provider:
-		* melite-card-deck deck-sidebar-entry.tsx — sets
-		* `window[DECK_OPEN_WITH_DRAFT] = (draftId: string) => boolean` at deck
-		* entry mount, deletes it on dispose). The ONLY definition site of the
-		* seam name repo-wide: every consumer imports this const (never a
-		* restated literal) and fails LOUDLY via setError when the seam is
-		* absent (deck plugin not loaded). Pinned by test_media_sidebar.py.
+		* bench-load — the draft-row gesture of the media planes (MediaPanel's
+		* Flows face + the Flows tab), 2026-09-10 (the bench rework's hunk 4:
+		* the DECK_OPEN_WITH_DRAFT window seam retired with the deck takeover).
+		*
+		* The gesture realizes "one shared state": a draft row click LOADS that
+		* draft's stages onto THE BENCH (POST /v1/bench/ensure — the same load
+		* wire melite_flow's bench verb rides; stages replace, the append-only
+		* log records a load entry, undo restores) and then opens the cards
+		* tab. The user refines on the bench — the same state the agent edits.
+		*
+		* All wires are same-origin doors the host already serves; failures
+		* surface as honest caller-side errors, never thrown past React.
 		*/
-		const DECK_OPEN_WITH_DRAFT = "__meliteDeckOpenWithDraft";
-		function openWithDraft(draftId) {
-			const open = window[DECK_OPEN_WITH_DRAFT];
-			if (typeof open !== "function") return "no-seam";
-			return open(draftId) ? "ok" : "refused";
+		/** The bench session the cards tab serves (melite-tools' DEFAULT_BENCH). */
+		const BENCH_SESSION = "main";
+		/** The bench tab's address (cross-plugin contract, the estate-artifact
+		*  pattern: client bundles cannot import across plugins, so the prefix
+		*  is restated with its definition site named — cards-resource.ts). */
+		const CARDS_BENCH_ADDRESS = "dsh-resource://cards/bench";
+		/** The run tab's address (same contract; the wand's target). */
+		function cardsRunAddress(runId) {
+			return "dsh-resource://cards/run/" + encodeURIComponent(runId);
+		}
+		/** Load one draft onto the bench and open the cards tab.
+		*  @param draftId the drafts door's row id (never empty — callers gate).
+		*  @param deps the open action + the error surface. */
+		async function loadDraftOntoBench(draftId, deps) {
+			try {
+				const docRes = await fetch("/v1/flows/drafts/" + encodeURIComponent(draftId), { headers: { accept: "application/json" } });
+				const doc = await docRes.json().catch(() => null);
+				if (!docRes.ok || typeof doc !== "object" || doc === null) {
+					const err = doc?.["error"];
+					deps.onError("could not read that card (" + (typeof err === "string" && err !== "" ? err : "HTTP " + String(docRes.status)) + ")");
+					return;
+				}
+				const stages = doc["stages"];
+				const intent = doc["intent"];
+				const ensureRes = await fetch("/v1/bench/ensure", {
+					method: "POST",
+					headers: { "content-type": "application/json" },
+					body: JSON.stringify({
+						session: BENCH_SESSION,
+						author: "user",
+						stages: Array.isArray(stages) ? stages : [],
+						...typeof intent === "string" ? { intent } : {}
+					})
+				});
+				const answer = await ensureRes.json().catch(() => null);
+				if (!ensureRes.ok) {
+					const err = answer?.["error"];
+					deps.onError("the bench refused the load (" + (typeof err === "string" && err !== "" ? err : "HTTP " + String(ensureRes.status)) + ")");
+					return;
+				}
+				deps.openResource(CARDS_BENCH_ADDRESS);
+			} catch (e) {
+				deps.onError("bench load failed — " + (e instanceof Error ? e.message : String(e)));
+			}
 		}
 		//#endregion
 		//#region src/client/decode.ts
@@ -150,7 +196,7 @@ window.__ModuleLoader__.load({
 		}
 		//#endregion
 		//#region \0dsh-css:media-plugin/src/client/overlay.module.css.mjs
-		const css = "._3EyOHW_lightbox{width:min(1200px,96vw);max-width:96vw}._3EyOHW_wand{z-index:3;background:var(--dsw-alias-fill-subtle,#020617d1);color:var(--dsw-alias-state-warn-primary,#fde68a);letter-spacing:.4px;cursor:pointer;opacity:1;border-radius:6px;align-items:center;gap:4px;padding:4px 6px;font-family:inherit;font-size:9px;font-weight:700;display:flex;position:absolute;top:6px;right:6px}._3EyOHW_wandDim{opacity:.35}";
+		const css = "._3EyOHW_lightbox{width:min(1200px,96vw);max-width:96vw}._3EyOHW_wand{z-index:3;background:var(--dsw-alias-fill-subtle,#020617d1);color:var(--dsw-alias-state-warn-primary,#fde68a);letter-spacing:.4px;cursor:pointer;opacity:1;border-radius:6px;align-items:center;gap:4px;padding:4px 6px;font-family:inherit;font-size:9px;font-weight:700;display:flex;position:absolute;top:6px;right:6px}";
 		const tagId = "@infer-media/dsh-media/overlay.module.css";
 		if (typeof document !== "undefined" && document.querySelector("style[data-plugin-css=" + JSON.stringify(tagId) + "]") === null) {
 			const tag = document.createElement("style");
@@ -161,8 +207,7 @@ window.__ModuleLoader__.load({
 		}
 		var overlay_module_css_default = {
 			"lightbox": "_3EyOHW_lightbox",
-			"wand": "_3EyOHW_wand",
-			"wandDim": "_3EyOHW_wandDim"
+			"wand": "_3EyOHW_wand"
 		};
 		//#endregion
 		//#region src/client/ui.tokens.ts
@@ -800,33 +845,34 @@ window.__ModuleLoader__.load({
 				open(estateArtifactAddress(item.url));
 			};
 			runsFeed.reload;
-			/** CARD REPLAY (final wiring, 2026-08-30): the wand opens THE CARDS
-			*  STUDIO — the left-sidebar Cards tab itself — by clicking its row,
-			*  exactly as the operator does. The studio opens with its own embed
-			*  bridge and full card system, untouched. No iframe here, no editor
-			*  dependency in this panel; the row is the deck bundle's own entry
-			*  ([data-melite-cards-entry]). The run→card link is the draft_id the
-			*  gateway's runs list carries per row (same payload this panel already
-			*  loaded — no extra fetch, no gallery route). Missing link or missing
-			*  row = honest inline error. */
-			const openCards = (runId, draftId) => {
+			/** THE WAND (hunk 4, 2026-09-10): "recover the cards that made this
+			*  media" is now ONE native call — openResource on the cards tab's
+			*  run address (plan §5). The window-global → DOM-claim → iframe
+			*  relay it replaced (window.__meliteDeckOpenWithDraft) retired with
+			*  the deck takeover; a run is addressable on its own — the draft
+			*  link no longer gates the gesture. */
+			const openCards = (runId) => {
 				if (runId === "") return;
-				if (draftId === "") {
-					setError("run has no action card (no draft_id in its run row)");
+				const open = tabInfo?.tab.actions.openResource;
+				if (open === void 0) {
+					setError("Cards view unavailable — the sidebar tab service is not loaded.");
 					return;
 				}
-				const res = openWithDraft(draftId);
-				if (res === "no-seam") setError("Cards studio unavailable (deck plugin not loaded)");
-				else if (res === "refused") setError("Cards studio refused to open");
+				open(cardsRunAddress(runId));
 			};
-			/** FLOW OPEN: click a draft row → the Cards studio opens with THAT
-			*  card hydrated (same deck seam the run wand uses). The card is the
-			*  queue-native object: refine it there, press Run when ready. */
+			/** FLOW OPEN (hunk 4): a draft row loads onto THE BENCH (the shared
+			*  state both authors edit) and opens the cards tab — bench-load.ts. */
 			const openDraft = (draftId) => {
 				if (draftId === "") return;
-				const res = openWithDraft(draftId);
-				if (res === "no-seam") setError("Cards studio unavailable (deck plugin not loaded)");
-				else if (res === "refused") setError("Cards studio refused to open");
+				const open = tabInfo?.tab.actions.openResource;
+				if (open === void 0) {
+					setError("Cards view unavailable — the sidebar tab service is not loaded.");
+					return;
+				}
+				loadDraftOntoBench(draftId, {
+					openResource: open,
+					onError: setError
+				});
 			};
 			const items = (0, react.useMemo)(() => flatten(runs), [runs]);
 			const truncatedRuns = (0, react.useMemo)(() => runs.filter((r) => r.truncated !== void 0 && r.truncated.total > r.truncated.listed).length, [runs]);
@@ -1057,20 +1103,20 @@ window.__ModuleLoader__.load({
 								}) : null,
 								/* @__PURE__ */ (0, react_jsx_runtime.jsx)(TileBadge, { item: it }),
 								it.runId !== "" ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Tooltip, {
-									label: it.draftId !== "" ? "Open as cards — this run’s card, setup and ready" : "No action card linked to this run",
+									label: "Open as cards — this run, live in the cards tab",
 									children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
 										role: "button",
 										tabIndex: 0,
-										className: it.draftId !== "" ? overlay_module_css_default.wand : overlay_module_css_default.wand + " " + overlay_module_css_default.wandDim,
-										"aria-label": it.draftId !== "" ? "Open as cards — this run’s card" : "No action card linked to this run",
+										className: overlay_module_css_default.wand,
+										"aria-label": "Open as cards — this run",
 										onClick: (e) => {
 											e.stopPropagation();
-											openCards(it.runId, it.draftId);
+											openCards(it.runId);
 										},
 										onKeyDown: (e) => {
 											if (e.key === "Enter") {
 												e.stopPropagation();
-												openCards(it.runId, it.draftId);
+												openCards(it.runId);
 											}
 										},
 										children: "✦ CARDS"
@@ -1118,9 +1164,10 @@ window.__ModuleLoader__.load({
 		*
 		* Lists the composed action cards (drafts) from the host half's merged
 		* /infer-media/drafts door — every gateway's queue-native flow
-		* instances, newest first. Click a row: the Cards studio opens with THAT
-		* card hydrated (the deck's own DECK_OPEN_WITH_DRAFT seam — the same
-		* door the media panel's run wand uses), ready to refine and Run.
+		* instances, newest first. Click a row (hunk 4, 2026-09-10): the draft
+		* LOADS onto THE BENCH — the shared state both authors edit — and the
+		* cards tab opens (bench-load.ts; the deck's window seam retired with
+		* the takeover). Refine there, press Run when ready.
 		*
 		* Sibling to MediaPanel through the SHARED family (ui.ts primitives,
 		* ui.tokens.ts, useFeed) — one system, zero copy-paste.
@@ -1155,18 +1202,25 @@ window.__ModuleLoader__.load({
 				]
 			});
 		}
-		function FlowsPanel() {
+		function FlowsPanel({ useTabInfo }) {
 			const feed = useFeed("/infer-media/drafts", decodeDrafts, {
 				drafts: [],
 				errors: []
 			});
 			const [search, setSearch] = (0, react.useState)("");
 			const [uiError, setUiError] = (0, react.useState)("");
+			const tabInfo = useTabInfo !== void 0 ? useTabInfo() : void 0;
 			const openDraft = (draftId) => {
 				if (draftId === "") return;
-				const res = openWithDraft(draftId);
-				if (res === "no-seam") setUiError("Cards studio unavailable (deck plugin not loaded)");
-				else if (res === "refused") setUiError("Cards studio refused to open");
+				const open = tabInfo?.tab.actions.openResource;
+				if (open === void 0) {
+					setUiError("Cards view unavailable — the sidebar tab service is not loaded.");
+					return;
+				}
+				loadDraftOntoBench(draftId, {
+					openResource: open,
+					onError: setUiError
+				});
 			};
 			const q = search.trim().toLowerCase();
 			const shown = q === "" ? feed.data.drafts : feed.data.drafts.filter((d) => [

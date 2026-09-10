@@ -43,7 +43,6 @@ import { RightPanelHost } from "./RightPanelHost";
 import { useDrawerStore } from "./drawerStore";
 import { AssetPreviewDialog } from "../assets/AssetPreviewDialog";
 import { ComfyStatus } from "./GpuStatus";
-import { isDshEmbed } from "@/embedMode";
 import { PluginsPanel } from "./PluginsPanel";
 import { loadPluginShell, pluginRailIdToTab } from "@/shell/pluginShell";
 import { loadPluginKinds } from "@/surfaces/flow/pluginKinds";
@@ -308,20 +307,9 @@ export function WorkspaceLayout() {
  return (
  <AssetPreviewBusContext.Provider value={openAssetPreview}>
  <div className="flex h-screen w-full bg-background">
- {/* DSH EMBED: the rail is a dead lane here too — DSH's own sidebar is
- the navigator (the same operator law gating the toggle/GPU/key lanes
- below). It stays MOUNTED under display:none FROM FIRST PAINT: gating
- here (not via the parent embed-bridge's 1.2s DOM-walk poll) is what
- kills the "left app rail appears for a second" flash when cards view
- boots, and hidden buttons still take programmatic clicks — the
- bridge's lane-clicking contract keeps working. */}
- {isDshEmbed ? (
- <div style={{ display: "none" }}>
+ {/* The ActivityBar rail (hunk 4: the DSH-embed hide lane retired —
+ nothing iframes this app; the rail is always the navigator). */}
  <ActivityBar active={activityActive} onSelect={handleActivitySelect} />
- </div>
- ) : (
- <ActivityBar active={activityActive} onSelect={handleActivitySelect} />
- )}
  {/* ── Left drawer — the blueprint's "Library & Workspace Hub" ──────
  A single sliding drawer whose CONTENT changes per the ActivityBar
  icon: Media (asset gallery — also surfaces .npz motion clips under
@@ -399,12 +387,11 @@ export function WorkspaceLayout() {
  transition: "right 0.22s cubic-bezier(0.22, 0.61, 0.36, 1)",
  }}
  >
- {/* DSH EMBED (2026-08-22): when this editor is mounted inside DSH, the
- panel toggle + GPU status + LLM key button are dead lanes — DSH owns
- the LLM, the run door, and the right sidebar. Only the dialog hosts
- (PluginsPanel — invisible until opened) stay mounted. */}
- {!isDshEmbed && <RightPanelToggle tab={tab} />}
- {!isDshEmbed && <ComfyStatus />}
+ {/* Panel toggle + GPU status (hunk 4: the DSH-embed hide lanes
+ retired — standalone always owns the LLM, the run door, and the right
+ panel; only the dialog hosts stay mount-gated). */}
+ <RightPanelToggle tab={tab} />
+ <ComfyStatus />
  <PluginsPanel open={pluginsOpen} onClose={() => setPluginsOpen(false)} />
  </div>
  {/* ── Tab content ───────────────────────────────────────────────────
@@ -439,9 +426,8 @@ export function WorkspaceLayout() {
  const Surface = entry.component;
  return <Surface />;
  })()}
- {/* DSH EMBED: the right panel is DSH's right sidebar's job — the host
- (and its toggle) never mounts inside the iframe. */}
- {!isDshEmbed && <RightPanelHost tab={tab} />}
+ {/* The right panel host (hunk 4: the DSH-embed gate retired). */}
+ <RightPanelHost tab={tab} />
  </div>
  </div>
  <AssetPreviewDialog

@@ -13,7 +13,7 @@
 import * as React from 'react'
 import { useMemo, useState } from 'react'
 import { Modal, Pill, Tooltip } from '@deepseek-ai/dsh-client-ui-primitives'
-import { openWithDraft } from './apply-guard.ts'
+import { cardsRunAddress, loadDraftOntoBench } from './bench-load.ts'
 
 /** THE ESTATE-ARTIFACT ADDRESS (2026-09-10 regression fix): run artifacts
  *  live on the estate gateway, outside the DSH workspace, so no document
@@ -449,34 +449,32 @@ export function MediaPanel({ useTabInfo }: { useTabInfo?: () => TabInfo }): Reac
   }
   const load = runsFeed.reload
 
-  /** CARD REPLAY (final wiring, 2026-08-30): the wand opens THE CARDS
-   *  STUDIO — the left-sidebar Cards tab itself — by clicking its row,
-   *  exactly as the operator does. The studio opens with its own embed
-   *  bridge and full card system, untouched. No iframe here, no editor
-   *  dependency in this panel; the row is the deck bundle's own entry
-   *  ([data-melite-cards-entry]). The run→card link is the draft_id the
-   *  gateway's runs list carries per row (same payload this panel already
-   *  loaded — no extra fetch, no gallery route). Missing link or missing
-   *  row = honest inline error. */
-  const openCards = (runId: string, draftId: string): void => {
+  /** THE WAND (hunk 4, 2026-09-10): "recover the cards that made this
+   *  media" is now ONE native call — openResource on the cards tab's
+   *  run address (plan §5). The window-global → DOM-claim → iframe
+   *  relay it replaced (window.__meliteDeckOpenWithDraft) retired with
+   *  the deck takeover; a run is addressable on its own — the draft
+   *  link no longer gates the gesture. */
+  const openCards = (runId: string): void => {
     if (runId === '') return
-    if (draftId === '') {
-      setError('run has no action card (no draft_id in its run row)')
+    const open = tabInfo?.tab.actions.openResource
+    if (open === undefined) {
+      setError('Cards view unavailable — the sidebar tab service is not loaded.')
       return
     }
-    const res = openWithDraft(draftId)
-    if (res === 'no-seam') setError('Cards studio unavailable (deck plugin not loaded)')
-    else if (res === 'refused') setError('Cards studio refused to open')
+    open(cardsRunAddress(runId))
   }
 
-  /** FLOW OPEN: click a draft row → the Cards studio opens with THAT
-   *  card hydrated (same deck seam the run wand uses). The card is the
-   *  queue-native object: refine it there, press Run when ready. */
+  /** FLOW OPEN (hunk 4): a draft row loads onto THE BENCH (the shared
+   *  state both authors edit) and opens the cards tab — bench-load.ts. */
   const openDraft = (draftId: string): void => {
     if (draftId === '') return
-    const res = openWithDraft(draftId)
-    if (res === 'no-seam') setError('Cards studio unavailable (deck plugin not loaded)')
-    else if (res === 'refused') setError('Cards studio refused to open')
+    const open = tabInfo?.tab.actions.openResource
+    if (open === undefined) {
+      setError('Cards view unavailable — the sidebar tab service is not loaded.')
+      return
+    }
+    void loadDraftOntoBench(draftId, { openResource: open, onError: setError })
   }
 
   const items = useMemo(() => flatten(runs), [runs])
@@ -624,31 +622,24 @@ export function MediaPanel({ useTabInfo }: { useTabInfo?: () => TabInfo }): Reac
                              * port for exactly that reason). What DSH owns
                              * here is the bubble — Tooltip replaces the
                              * native `title` (same copy), aria-label names
-                             * the action. Positioning rides .wand/.wandDim
-                             * (overlay.module.css): the old hover-reveal
-                             * stylesheet rule was DEAD (the inline opacity
-                             * always won), so visibility is exactly what it
-                             * was — 1 linked, 0.35 unlinked. */
-                            <Tooltip
-                              label={it.draftId !== ''
-                                ? 'Open as cards — this run\u2019s card, setup and ready'
-                                : 'No action card linked to this run'}
-                            >
+                             * the action. Hunk 4: the run itself is the
+                             * addressable card view (draft link no longer
+                             * gates), so the wand is always live — the dim
+                             * twin (.wandDim) retired with the gate. */
+                            <Tooltip label="Open as cards — this run, live in the cards tab">
                               <span
                                 role="button"
                                 tabIndex={0}
-                                className={it.draftId !== '' ? css.wand : css.wand + ' ' + css.wandDim}
-                                aria-label={it.draftId !== ''
-                                  ? 'Open as cards — this run\u2019s card'
-                                  : 'No action card linked to this run'}
+                                className={css.wand}
+                                aria-label="Open as cards — this run"
                                 onClick={(e) => {
                                   e.stopPropagation()
-                                  openCards(it.runId, it.draftId)
+                                  openCards(it.runId)
                                 }}
                                 onKeyDown={(e) => {
                                   if (e.key === 'Enter') {
                                     e.stopPropagation()
-                                    openCards(it.runId, it.draftId)
+                                    openCards(it.runId)
                                   }
                                 }}
                               >✦ CARDS</span>

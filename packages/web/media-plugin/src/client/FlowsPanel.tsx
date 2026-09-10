@@ -3,15 +3,16 @@
  *
  * Lists the composed action cards (drafts) from the host half's merged
  * /infer-media/drafts door — every gateway's queue-native flow
- * instances, newest first. Click a row: the Cards studio opens with THAT
- * card hydrated (the deck's own DECK_OPEN_WITH_DRAFT seam — the same
- * door the media panel's run wand uses), ready to refine and Run.
+ * instances, newest first. Click a row (hunk 4, 2026-09-10): the draft
+ * LOADS onto THE BENCH — the shared state both authors edit — and the
+ * cards tab opens (bench-load.ts; the deck's window seam retired with
+ * the takeover). Refine there, press Run when ready.
  *
  * Sibling to MediaPanel through the SHARED family (ui.ts primitives,
  * ui.tokens.ts, useFeed) — one system, zero copy-paste.
  */
 import { useState } from 'react'
-import { openWithDraft } from './apply-guard.ts'
+import { loadDraftOntoBench } from './bench-load.ts'
 import { decodeDrafts } from './decode.ts'
 import type { DraftRow } from './decode.ts'
 import { useFeed } from './useFeed.ts'
@@ -35,6 +36,19 @@ import {
   textTertiary2,
 } from './ui.tokens.ts'
 
+/** The standard tab information hook's shape (the same local spelling
+ *  MediaPanel carries — the seat injects it into every tab body). */
+interface TabInfo {
+  readonly tab: {
+    readonly navigation: { readonly address: string }
+    readonly actions: { openResource(address: string): void }
+  }
+}
+
+export interface FlowsPanelProps {
+  useTabInfo?: () => TabInfo
+}
+
 /** Sidebar tab glyph — a flow arrow, exported for the client entry. */
 export function FlowsTabIcon({ size }: { size?: number }): React.JSX.Element {
   return (
@@ -46,16 +60,22 @@ export function FlowsTabIcon({ size }: { size?: number }): React.JSX.Element {
   )
 }
 
-export function FlowsPanel(): React.JSX.Element {
+export function FlowsPanel({ useTabInfo }: FlowsPanelProps): React.JSX.Element {
   const feed = useFeed('/infer-media/drafts', decodeDrafts, { drafts: [], errors: [] })
   const [search, setSearch] = useState('')
   const [uiError, setUiError] = useState('')
+  /* Hook-count law (MediaPanel's pattern): the prop is stable per mount,
+   * so the conditional call keeps one hook order for the panel's life. */
+  const tabInfo = useTabInfo !== undefined ? useTabInfo() : undefined
 
   const openDraft = (draftId: string): void => {
     if (draftId === '') return
-    const res = openWithDraft(draftId)
-    if (res === 'no-seam') setUiError('Cards studio unavailable (deck plugin not loaded)')
-    else if (res === 'refused') setUiError('Cards studio refused to open')
+    const open = tabInfo?.tab.actions.openResource
+    if (open === undefined) {
+      setUiError('Cards view unavailable — the sidebar tab service is not loaded.')
+      return
+    }
+    void loadDraftOntoBench(draftId, { openResource: open, onError: setUiError })
   }
 
   const q = search.trim().toLowerCase()

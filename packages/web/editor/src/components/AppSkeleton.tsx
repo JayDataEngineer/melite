@@ -6,14 +6,10 @@
 // content area) so the user sees immediate structural feedback instead
 // of a void: the page "is" the app, just dimmed.
 //
-// DSH EMBED: the rail + drawer are dead lanes inside DSH (isDshEmbed, the
-// same law WorkspaceLayout renders under). Mirroring them in the boot
-// skeleton painted chrome that the real layout never shows in embed —
-// the "left app rail flashes for a second" symptom when the cards deck
-// boots its /editor/ iframe. Embedded boots render the center skeleton
-// alone, exactly what the embedded layout will show.
+// STANDALONE ONLY (hunk 4, 2026-09-10): the DSH embed lanes are gone —
+// nothing iframes this app anymore (cards are the native tab), so the
+// skeleton is always the full standalone shape.
 //
-import { isDshEmbed } from "@/embedMode"
 // The shapes are deliberately coarse (no real icons, no real text) —
 // fine detail would flicker when the real layout lands. The pulse rate
 // (Tailwind's animate-pulse, 2s cubic-bezier) matches shadcn's Skeleton
@@ -65,19 +61,15 @@ function DrawerSkeleton() {
 function MainSkeleton() {
   return (
     <div className="flex flex-1 flex-col overflow-hidden bg-background">
-      {/* Header tab strip — standalone only: the embed layout has zero top
-          chrome (the floating status cluster is gated off there), so an
-          embedded skeleton must not promise one. */}
-      {!isDshEmbed && (
-        <div className="flex items-center gap-3 border-b border-border/60 px-4 h-11 shrink-0">
-          <Skeleton className="h-5 w-16" />
-          <Skeleton className="h-5 w-14" />
-          <Skeleton className="h-5 w-12" />
-          <div className="flex-1" />
-          <Skeleton className="h-6 w-6 rounded-md" />
-          <Skeleton className="h-6 w-6 rounded-md" />
-        </div>
-      )}
+      {/* Header tab strip. */}
+      <div className="flex items-center gap-3 border-b border-border/60 px-4 h-11 shrink-0">
+        <Skeleton className="h-5 w-16" />
+        <Skeleton className="h-5 w-14" />
+        <Skeleton className="h-5 w-12" />
+        <div className="flex-1" />
+        <Skeleton className="h-6 w-6 rounded-md" />
+        <Skeleton className="h-6 w-6 rounded-md" />
+      </div>
       {/* Content area — card grid */}
       <div className="flex flex-1 flex-col gap-3 overflow-hidden p-4">
         {/* Section label */}
@@ -105,29 +97,24 @@ function MainSkeleton() {
 export function AppSkeleton() {
   return (
     <div className="flex h-screen w-full bg-background">
-      {/* ActivityBar rail + left drawer — standalone only (dead lanes in
-          the DSH embed; painting them here is the boot flash). */}
-      {!isDshEmbed && (
-        <>
-          <div className="tn-seam relative z-30 flex w-12 shrink-0 flex-col items-center border-r border-sidebar-border/60 bg-sidebar py-2.5">
-            <div className="flex flex-col items-center gap-1">
-              <RailIconSlot />
-              <RailIconSlot />
-            </div>
-            <Skeleton className="mx-2 my-1.5 h-px w-7 rounded-full" />
-            <div className="flex flex-col items-center gap-1">
-              <RailIconSlot />
-              <RailIconSlot />
-            </div>
-            <div className="flex-1" />
-            <div className="flex flex-col items-center gap-1">
-              <RailIconSlot />
-            </div>
-          </div>
-          {/* Left drawer (mirrors the Media drawer — the default open drawer) */}
-          <DrawerSkeleton />
-        </>
-      )}
+      {/* ActivityBar rail + left drawer (mirrors the Media drawer — the
+          default open drawer). */}
+      <div className="tn-seam relative z-30 flex w-12 shrink-0 flex-col items-center border-r border-sidebar-border/60 bg-sidebar py-2.5">
+        <div className="flex flex-col items-center gap-1">
+          <RailIconSlot />
+          <RailIconSlot />
+        </div>
+        <Skeleton className="mx-2 my-1.5 h-px w-7 rounded-full" />
+        <div className="flex flex-col items-center gap-1">
+          <RailIconSlot />
+          <RailIconSlot />
+        </div>
+        <div className="flex-1" />
+        <div className="flex flex-col items-center gap-1">
+          <RailIconSlot />
+        </div>
+      </div>
+      <DrawerSkeleton />
       {/* Main content */}
       <MainSkeleton />
     </div>

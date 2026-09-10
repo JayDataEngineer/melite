@@ -142,9 +142,58 @@ describe('MediaPanel — stubbed feed', () => {
   })
 })
 
-describe('FlowsPanel — deck seam contract', () => {
-  it('no seam installed → honest error on draft click', async () => {
-    delete (window as unknown as Record<string, unknown>).__meliteDeckOpenWithDraft
+describe('FlowsPanel — bench-load gesture (hunk 4: the seam is gone, the bench is the target)', () => {
+  const draftDoc = { draft_id: 'd1', status: 'ok', stages: [{ id: 's_1', engine: 'comfyui' }] }
+
+  it('draft click loads onto the bench and opens the cards tab through the tab action', async () => {
+    const opened: string[] = []
+    const bodies: Array<{ url: string; body: unknown }> = []
+    vi.stubGlobal('fetch', (url: string, init?: RequestInit) => {
+      if (String(url).includes('/infer-media/drafts')) return draftsFeed([{ draft_id: 'd1', name: 'card one', model: 'qwen' }])
+      if (String(url) === '/v1/flows/drafts/d1') return Promise.resolve(new Response(JSON.stringify(draftDoc), { status: 200 }))
+      if (String(url) === '/v1/bench/ensure') {
+        bodies.push({ url: String(url), body: JSON.parse(String(init?.body)) })
+        return Promise.resolve(new Response(JSON.stringify({ draft_id: 'bench-main', rev: 3, stages: draftDoc.stages }), { status: 200 }))
+      }
+      return Promise.resolve(new Response('{}', { status: 200 }))
+    })
+    render(<FlowsPanel useTabInfo={() => ({
+      tab: { navigation: { address: 'dsh-resource://flows' },
+        actions: { openResource: (a: string) => { opened.push(a) } } },
+    })} />)
+    const row = await waitFor(() => {
+      const el = screen.getByText('card one').closest('button')
+      expect(el).toBeTruthy()
+      return el as HTMLElement
+    })
+    fireEvent.click(row)
+    await waitFor(() => { expect(opened).toEqual(['dsh-resource://cards/bench']) })
+    // The load rode the bench door's ensure arm: stages replace, the
+    // gesture is a USER author.
+    expect(bodies).toHaveLength(1)
+    expect(bodies[0].body).toEqual({ session: 'main', author: 'user', stages: draftDoc.stages })
+  })
+
+  it('a refusing bench door surfaces the door\'s own error text, never a throw', async () => {
+    vi.stubGlobal('fetch', (url: string) => {
+      if (String(url).includes('/infer-media/drafts')) return draftsFeed([{ draft_id: 'd1', name: 'card one', model: 'qwen' }])
+      if (String(url) === '/v1/flows/drafts/d1') return Promise.resolve(new Response(JSON.stringify(draftDoc), { status: 200 }))
+      return Promise.resolve(new Response(JSON.stringify({ error: 'stale expect_rev' }), { status: 409 }))
+    })
+    render(<FlowsPanel useTabInfo={() => ({
+      tab: { navigation: { address: 'dsh-resource://flows' },
+        actions: { openResource: () => {} } },
+    })} />)
+    const row = await waitFor(() => {
+      const el = screen.getByText('card one').closest('button')
+      expect(el).toBeTruthy()
+      return el as HTMLElement
+    })
+    fireEvent.click(row)
+    expect(await screen.findByText(/the bench refused the load \(stale expect_rev\)/)).toBeTruthy()
+  })
+
+  it('no tab hook → honest error on draft click, never a silent no-op', async () => {
     vi.stubGlobal('fetch', () => draftsFeed([{ draft_id: 'd1', name: 'card one', model: 'qwen' }]))
     render(<FlowsPanel />)
     const row = await waitFor(() => {
@@ -153,7 +202,43 @@ describe('FlowsPanel — deck seam contract', () => {
       return el as HTMLElement
     })
     fireEvent.click(row)
-    expect(await screen.findByText(/Cards studio unavailable/)).toBeTruthy()
+    expect(await screen.findByText(/Cards view unavailable/)).toBeTruthy()
+  })
+})
+
+describe('MediaPanel — the wand opens the cards run resource (hunk 4)', () => {
+  it('✦ CARDS routes through the tab action as a cards run address', async () => {
+    const opened: string[] = []
+    vi.stubGlobal('fetch', (url: string) =>
+      url === '/infer-media/runs'
+        ? runsFeed([run({ draft_id: 'd9', artifacts: [{ url: '/v/walk.mp4', type: 'video' }] })])
+        : draftsFeed([]))
+    render(<MediaPanel useTabInfo={() => ({
+      tab: { navigation: { address: 'dsh-resource://media' },
+        actions: { openResource: (a: string) => { opened.push(a) } } },
+    })} />)
+    const wand = await waitFor(() => {
+      const el = screen.getByText('✦ CARDS')
+      expect(el).toBeTruthy()
+      return el as HTMLElement
+    })
+    fireEvent.click(wand)
+    expect(opened).toEqual(['dsh-resource://cards/run/r1'])
+  })
+
+  it('wand without the tab hook surfaces an honest error', async () => {
+    vi.stubGlobal('fetch', (url: string) =>
+      url === '/infer-media/runs'
+        ? runsFeed([run({ artifacts: [{ url: '/v/walk.mp4', type: 'video' }] })])
+        : draftsFeed([]))
+    render(<MediaPanel />)
+    const wand = await waitFor(() => {
+      const el = screen.getByText('✦ CARDS')
+      expect(el).toBeTruthy()
+      return el as HTMLElement
+    })
+    fireEvent.click(wand)
+    expect(await screen.findByText(/Cards view unavailable/)).toBeTruthy()
   })
 })
 
@@ -184,9 +269,9 @@ describe('MediaPanel — DSH primitive ports (2026-09-09, no handrolls)', () => 
       return el as HTMLElement
     })
     expect(wand.getAttribute('title')).toBeNull()
-    expect(screen.queryByText(/this run’s card, setup and ready/)).toBeNull()
+    expect(screen.queryByText(/this run, live in the cards tab/)).toBeNull()
     fireEvent.focus(wand)
-    expect(await screen.findByText(/this run’s card, setup and ready/)).toBeTruthy()
+    expect(await screen.findByText(/this run, live in the cards tab/)).toBeTruthy()
   })
 
   it('search filters through the DSH Input, refresh is a DSH Button', async () => {
