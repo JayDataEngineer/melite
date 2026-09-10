@@ -14,10 +14,12 @@
  *   under this plugin's own placed attribute, and the deck REFUSES to
  *   mount rather than guess — the bleed cannot reach the right panel
  *   (deck-fullbleed.ts).
- * - the better-sidebar tab that is NOT cards: Ray ComfyUI — the NATIVE
- *   ComfyUI manager on POST /v1/manage (assets-tab.tsx; Ray Flows
- *   retired with the yaml spec library, Ray Media lives in
- *   @infer-media/dsh-media).
+ * - the native right-sidebar tab that is NOT cards: Ray ComfyUI — the
+ *   NATIVE ComfyUI manager on POST /v1/manage (assets-tab.tsx; Ray
+ *   Flows retired with the yaml spec library, Ray Media lives in
+ *   @infer-media/dsh-media). Migrated 2026-09-10 off the retired
+ *   dsh-better-sidebar registry onto ui-sidebar-right's two-stage
+ *   contract (type + keyed body).
  */
 import type { ClientContext } from '@deepseek-ai/dsh-client-runtime/client'
 import { claimDeckApply, releaseDeckApply } from './apply-guard.ts'
@@ -25,9 +27,9 @@ import { registerRayAssetsTab } from './assets-tab.tsx'
 import { mountCardsSidebarEntry } from './deck-sidebar-entry.tsx'
 import { mountDeckFullbleed } from './deck-fullbleed.ts'
 
-/** 'betterSidebar': the public right-sidebar registry (dsh-better-sidebar,
- * mounted by the web profile's web-ui-all aggregate) — hosts the tabs. */
-export const inject = ['slots', 'betterSidebar']
+/** 'slots' (seat declarations) + the native right-sidebar tab registry
+ * (ui-sidebar-right, the web profile's own subsystem) — hosts the tabs. */
+export const inject = ['slots', 'sidebarRightTabs']
 
 export function apply(ctx: ClientContext): void {
   if (!claimDeckApply()) return

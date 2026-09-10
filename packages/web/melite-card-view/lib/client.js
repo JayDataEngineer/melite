@@ -7,6 +7,7 @@ window.__ModuleLoader__.load({
 		let react = require("react");
 		let _deepseek_ai_dsh_client_ui_primitives = require("@deepseek-ai/dsh-client-ui-primitives");
 		let react_jsx_runtime = require("react/jsx-runtime");
+		require("@deepseek-ai/cordis");
 		//#region src/client/apply-guard.ts
 		/** Claims the plugin apply slot. Returns true when this call won the slot. */
 		function claimCardViewApply() {
@@ -655,6 +656,359 @@ window.__ModuleLoader__.load({
 			});
 		}
 		//#endregion
+		//#region src/client/CardsTab.tsx
+		/**
+		* The Cards tab body — the bench's user plane (plan §5: "the user
+		* browses visually in the tab").
+		*
+		* Bench view (`dsh-resource://cards/bench`): the stage rows with their
+		* presentation extras (title/card), the revision trail's head, and the
+		* Run gesture — which projects the stages onto the flow_inline wire
+		* and starts them under the bench's own draft_id, EXACTLY what
+		* melite_flow's bench verb does (one truth, two planes; the model's
+		* plane is per-call reads, never this component's frames).
+		*
+		* Run view (`dsh-resource://cards/run/<runId>`): live status + stage
+		* rows + artifacts, riding the resource provider's frames.
+		*
+		* The body is dispatched by the keyed `sidebar.right.pane.tab` seat
+		* under the type's id; the address arrives through the standard
+		* `useTabInfo` hook, the value through the standard `useResource`
+		* hook. Local prop typings (the package's local-spelling pattern —
+		* see index.ts) keep this package off sibling runtime imports.
+		*/
+		/** The flow_inline projection — the SAME wire shape melite_flow's bench
+		*  verb sends (runner-owned keys strip; ids/engines/params stay). */
+		function projectStage(s) {
+			const row = {
+				id: s.id,
+				engine: s.engine ?? "comfyui"
+			};
+			if (s.params !== void 0 && Object.keys(s.params).length > 0) row["params"] = s.params;
+			if (Array.isArray(s.inputs) && s.inputs.length > 0) row["inputs"] = s.inputs;
+			if (Array.isArray(s.outputs) && s.outputs.length > 0) row["outputs"] = s.outputs;
+			return row;
+		}
+		/** The Run gesture: start the bench as it stands. Errors surface inline
+		*  (the door's own refusal text — logged, never thrown past React). */
+		async function runTheBench(bench, onStarted) {
+			const stages = bench.stages.map(projectStage);
+			if (stages.length === 0) return;
+			try {
+				const res = await fetch("/v1/flows/start", {
+					method: "POST",
+					headers: { "content-type": "application/json" },
+					body: JSON.stringify({
+						flow_inline: { stages },
+						draft_id: bench.draftId
+					})
+				});
+				const doc = await res.json().catch(() => null);
+				const runId = doc?.["run_id"];
+				if (res.ok && typeof runId === "string" && runId !== "") onStarted(runId);
+				else {
+					const err = doc?.["error"];
+					console.error("[cards] run refused:", typeof err === "string" ? err : "HTTP " + res.status);
+				}
+			} catch (e) {
+				console.error("[cards] run request failed:", e);
+			}
+		}
+		function StageRowView({ stage }) {
+			const title = stage.title ?? stage.card ?? stage.id;
+			const engine = typeof stage.engine === "string" && stage.engine !== "" ? stage.engine : "comfyui";
+			return (0, react.createElement)("li", {
+				className: "cards-stage",
+				"data-stage-id": stage.id
+			}, (0, react.createElement)("span", { className: "cards-stage-title" }, String(title)), (0, react.createElement)("span", { className: "cards-stage-engine" }, engine));
+		}
+		function BenchView({ bench, onRun, running }) {
+			return (0, react.createElement)("section", {
+				className: "cards-bench",
+				"data-cards-bench": bench.rev
+			}, (0, react.createElement)("header", { className: "cards-bench-head" }, (0, react.createElement)("span", { className: "cards-bench-rev" }, "rev " + bench.rev), (0, react.createElement)("button", {
+				className: "cards-run",
+				type: "button",
+				disabled: running || bench.stages.length === 0,
+				onClick: onRun
+			}, "Run")), bench.stages.length === 0 ? (0, react.createElement)("p", { className: "cards-empty" }, "The bench is empty — construct stages (the agent adds them; they land here).") : (0, react.createElement)("ol", { className: "cards-stages" }, bench.stages.map((s) => (0, react.createElement)(StageRowView, {
+				key: s.id,
+				stage: s
+			}))), bench.log.length > 0 ? (0, react.createElement)("p", { className: "cards-log-head" }, bench.log.length + " log entr" + (bench.log.length === 1 ? "y" : "ies")) : null);
+		}
+		function RunView({ run }) {
+			return (0, react.createElement)("section", {
+				className: "cards-run-view",
+				"data-run-status": run.status
+			}, (0, react.createElement)("header", { className: "cards-run-head" }, (0, react.createElement)("span", { className: "cards-run-id" }, run.runId), (0, react.createElement)("span", { className: "cards-run-status" }, run.status)), run.stages.length === 0 ? (0, react.createElement)("p", { className: "cards-empty" }, "No stage rows yet.") : (0, react.createElement)("ol", { className: "cards-stages" }, run.stages.map((s) => (0, react.createElement)("li", {
+				key: s.id,
+				className: "cards-stage",
+				"data-stage-status": s.status
+			}, (0, react.createElement)("span", { className: "cards-stage-title" }, s.id), (0, react.createElement)("span", { className: "cards-stage-engine" }, s.status), s.url !== void 0 ? (0, react.createElement)("a", {
+				href: s.url,
+				target: "_blank",
+				rel: "noreferrer",
+				className: "cards-stage-artifact"
+			}, "artifact") : null))));
+		}
+		/** The tab body component. */
+		function CardsTab(props) {
+			const info = typeof props.useTabInfo === "function" ? props.useTabInfo() : void 0;
+			const address = info?.tab.navigation.address ?? info?.tab.contentId ?? "dsh-resource://cards/bench";
+			const openResource = info?.tab.actions.openResource;
+			const snapshot = typeof props.useResource === "function" ? props.useResource(address) : void 0;
+			const [running, setRunning] = (0, react.useState)(false);
+			const onStarted = (0, react.useCallback)((runId) => {
+				setRunning(false);
+				if (openResource !== void 0) openResource("dsh-resource://cards/run/" + encodeURIComponent(runId));
+			}, [openResource]);
+			const onRun = (0, react.useCallback)(() => {
+				if (snapshot?.value?.kind !== "bench") return;
+				setRunning(true);
+				runTheBench(snapshot.value, onStarted);
+			}, [snapshot, onStarted]);
+			if (snapshot === void 0) return (0, react.createElement)("p", { className: "cards-missing" }, "cards resource hook unavailable");
+			if (snapshot.status === "loading" || snapshot.status === "none") return (0, react.createElement)("p", { className: "cards-loading" }, "loading " + address + "…");
+			if (snapshot.status === "failed") return (0, react.createElement)("p", { className: "cards-failed" }, snapshot.failure?.message ?? "cards resource failed");
+			const value = snapshot.value;
+			if (value === void 0) return (0, react.createElement)("p", { className: "cards-failed" }, "cards resource gave no value");
+			return value.kind === "bench" ? (0, react.createElement)(BenchView, {
+				bench: value,
+				onRun,
+				running
+			}) : (0, react.createElement)(RunView, { run: value });
+		}
+		//#endregion
+		//#region ../../../node_modules/.pnpm/@deepseek-ai+dsh-typert-protocol@0.1.5-rc.1_@deepseek-ai+cordis@4.0.2/node_modules/@deepseek-ai/dsh-typert-protocol/lib/index.js
+		/** The one Remote failure class shared by owners, the Gateway, and consumers. */
+		/**
+		* One Remote call failure: a real Error carrying its stable code and typed
+		* details. Owners throw it at the failure point; the Host Gateway encodes it
+		* onto the wire unchanged; the Client face rebuilds an instance for the
+		* `RemoteResult` error branch, so `throw result.error` keeps throw semantics.
+		* Discrimination is always by `code`, never by instanceof.
+		*/
+		var RemoteError = class extends Error {
+			code;
+			details;
+			/** Structural marker: cross-realm/bundle identification never uses instanceof. */
+			isDSHRemoteError = true;
+			/**
+			* @param code - stable failure code declared in {@link RemoteErrorDetailsMap}.
+			* @param message - human diagnostic carried across the wire.
+			* @param details - structured payload typed by the code.
+			* @param options - standard Error options (`cause` survives in-process only).
+			*/
+			constructor(code, message, details, options) {
+				super(message, options);
+				this.code = code;
+				this.details = details;
+				this.name = "RemoteError";
+			}
+		};
+		//#endregion
+		//#region src/client/cards-resource.ts
+		/** The bench key the tab serves (melite-tools' DEFAULT_BENCH — 'main'). */
+		const CARDS_BENCH_ADDRESS = "dsh-resource://cards/bench";
+		/** The run address (the wand's target, plan §5). */
+		function cardsRunAddress(runId) {
+			return "dsh-resource://cards/run/" + encodeURIComponent(runId);
+		}
+		/** Parse a cards address; null when the path is not one of ours. */
+		function parseCardsAddress(address) {
+			if (!address.startsWith("dsh-resource://cards/")) return null;
+			const rest = address.slice(21);
+			if (rest === "bench") return { bench: true };
+			if (rest.startsWith("run/")) {
+				const runId = decodeURIComponent(rest.slice(4));
+				if (runId !== "") return { run: runId };
+			}
+			return null;
+		}
+		/** One failure frame (the contract's error branch — a real RemoteError
+		*  on the unclassified-Host code; the address prefixes the diagnostic). */
+		function failure(address, message) {
+			return {
+				ok: false,
+				error: new RemoteError("gateway/internal", address + ": " + message, {})
+			};
+		}
+		/** Defensive row readers — the door's wire is untyped at this seam. */
+		function readBench(doc) {
+			const stages = Array.isArray(doc["stages"]) ? doc["stages"].filter((s) => typeof s === "object" && s !== null && typeof s["id"] === "string") : [];
+			const log = Array.isArray(doc["log"]) ? doc["log"].filter((s) => typeof s === "object" && s !== null && typeof s["rev"] === "number") : [];
+			return {
+				kind: "bench",
+				draftId: typeof doc["draft_id"] === "string" ? doc["draft_id"] : "bench-main",
+				rev: typeof doc["rev"] === "number" ? doc["rev"] : 0,
+				stages,
+				log
+			};
+		}
+		function readRun(runId, doc) {
+			const stages = Array.isArray(doc["stages"]) ? doc["stages"].filter((s) => typeof s === "object" && s !== null && typeof s["id"] === "string") : [];
+			return {
+				kind: "run",
+				runId,
+				status: typeof doc["status"] === "string" ? doc["status"] : "unknown",
+				stages,
+				lastFrame: void 0
+			};
+		}
+		async function getJson(path) {
+			const res = await fetch(path, { headers: { accept: "application/json" } });
+			const text = await res.text();
+			let doc;
+			try {
+				doc = text === "" ? {} : JSON.parse(text);
+			} catch {
+				throw new Error("malformed JSON (HTTP " + res.status + ")");
+			}
+			if (!res.ok) {
+				const err = doc?.["error"];
+				throw new Error(typeof err === "string" && err !== "" ? err : "HTTP " + res.status);
+			}
+			if (typeof doc !== "object" || doc === null || Array.isArray(doc)) throw new Error("not a JSON object");
+			return doc;
+		}
+		/** Merge one events frame into a run value (stage rows upserted by id;
+		*  run-status frames replace the status; the frame is kept for the view). */
+		function mergeRunFrame(value, frame) {
+			const next = {
+				...value,
+				lastFrame: frame
+			};
+			const type = frame["type"];
+			if (type === "run" && typeof frame["status"] === "string") next.status = frame["status"];
+			if (type === "stage") {
+				const stageId = frame["stage"];
+				if (typeof stageId === "string") {
+					if (next.stages.find((s) => s.id === stageId) === void 0) next.stages = [...next.stages, {
+						id: stageId,
+						status: "running"
+					}];
+					else next.stages = next.stages.map((s) => s.id === stageId ? {
+						...s,
+						status: "running"
+					} : s);
+				}
+			}
+			return next;
+		}
+		/** The provider registration body: `ctx.resources.register({ protocol:
+		*  'cards', open })`. Same-origin wires (the deck host half's /v1 proxy
+		*  + events tunnel); abort ends the stream per the contract. */
+		function openCardsResource(address, ctx) {
+			const target = parseCardsAddress(address);
+			const bench = target !== null && "bench" in target;
+			const runId = target !== null && "run" in target ? target.run : "";
+			return (async function* () {
+				if (target === null) {
+					yield failure(address, "not a cards address");
+					return;
+				}
+				if (bench) {
+					let value;
+					try {
+						value = readBench(await getJson("/v1/bench/main"));
+					} catch (e) {
+						yield failure(address, e instanceof Error ? e.message : String(e));
+						return;
+					}
+					yield {
+						ok: true,
+						value
+					};
+					return;
+				}
+				let value;
+				try {
+					value = readRun(runId, await getJson("/v1/flows/status/" + encodeURIComponent(runId)));
+				} catch (e) {
+					yield failure(address, e instanceof Error ? e.message : String(e));
+					return;
+				}
+				yield {
+					ok: true,
+					value
+				};
+				if (ctx.signal.aborted) return;
+				yield* runFrames(address, runId, value, ctx.signal);
+			})();
+		}
+		/** The live tail: WS frames → values, ended on terminal status, socket
+		*  close, or abort. A dead socket is not a failure frame — the hydrated
+		*  value stays (the kit keeps the last ok frame's value). */
+		async function* runFrames(address, runId, hydrated, signal) {
+			const loc = typeof location === "object" && location !== null ? location : void 0;
+			if (loc === void 0) return;
+			const url = (loc.protocol === "https:" ? "wss:" : "ws:") + "//" + loc.host + "/v1/flows/events/" + encodeURIComponent(runId);
+			let ws;
+			try {
+				ws = new WebSocket(url);
+			} catch {
+				return;
+			}
+			const aborted = () => {
+				try {
+					ws.close();
+				} catch {}
+			};
+			signal.addEventListener("abort", aborted, { once: true });
+			try {
+				let value = hydrated;
+				for (;;) {
+					const message = await new Promise((resolve) => {
+						const onMessage = (ev) => {
+							cleanup();
+							resolve(ev);
+						};
+						const onClose = () => {
+							cleanup();
+							resolve("closed");
+						};
+						const onAbort = () => {
+							cleanup();
+							resolve("abort");
+						};
+						const cleanup = () => {
+							ws.removeEventListener("message", onMessage);
+							ws.removeEventListener("close", onClose);
+							signal.removeEventListener("abort", onAbort);
+						};
+						if (ws.readyState === WebSocket.CLOSED) {
+							resolve("closed");
+							return;
+						}
+						ws.addEventListener("message", onMessage);
+						ws.addEventListener("close", onClose);
+						signal.addEventListener("abort", onAbort);
+					});
+					if (message === "abort" || message === "closed") return;
+					let frame;
+					try {
+						frame = JSON.parse(String(message.data));
+					} catch {
+						continue;
+					}
+					if (typeof frame !== "object" || frame === null) continue;
+					value = mergeRunFrame(value, frame);
+					yield {
+						ok: true,
+						value
+					};
+					const type = frame["type"];
+					const status = frame["status"];
+					if (type === "run" && typeof status === "string" && (status === "completed" || status === "failed" || status === "cancelled" || status === "error")) return;
+				}
+			} finally {
+				signal.removeEventListener("abort", aborted);
+				try {
+					ws.close();
+				} catch {}
+			}
+		}
+		//#endregion
 		//#region src/client/index.ts
 		/** Every card tool that produces a draft — the card tile renders for ALL of them. */
 		const CARD_TOOLS = [
@@ -677,11 +1031,18 @@ window.__ModuleLoader__.load({
 		];
 		/** @deprecated use CARD_TOOLS — kept for back-compat imports */
 		const FLOW_START_TOOL = CARD_TOOLS[0];
-		/** Required services (fiber inject waiting — the slot registry must be up first). */
-		const inject = ["slots"];
+		/** The tab type's identity (the key its body registers under). */
+		const CARDS_TAB_ID = "@melite-plugin/dsh-card-view";
+		/** Required services (fiber inject waiting — the registries must be up
+		*  first: the native sidebar subsystem + the resource model). */
+		const inject = [
+			"slots",
+			"sidebarRightTabs",
+			"resources"
+		];
 		/**
-		* Register the flow card for EVERY card tool so drafts always render
-		* as interactive flows in the chat — regardless of which tool made them.
+		* Register both planes: the toolview keys for every card tool, and the
+		* cards tab (type + body + resource provider).
 		* @param ctx - client root context.
 		*/
 		function apply(ctx) {
@@ -695,13 +1056,49 @@ window.__ModuleLoader__.load({
 			} catch (error) {
 				console.error(`[melite-card-view] toolview registration failed for ${tool}:`, error);
 			}
+			try {
+				ctx.effect(() => ctx.sidebarRightTabs.register({
+					id: CARDS_TAB_ID,
+					kind: "cards",
+					patterns: ["dsh-resource://cards/**"],
+					title: (address) => address === "dsh-resource://cards/bench" ? "Cards" : address.replace(/^dsh-resource:\/\/cards\//, ""),
+					guide: [{
+						order: 50,
+						title: () => "Cards",
+						description: () => "The working flow — the shared bench and its runs."
+					}]
+				}), "melite-card-view: cards tab type");
+			} catch (error) {
+				console.error("[melite-card-view] cards tab type registration failed:", error);
+			}
+			try {
+				ctx.slots.inject("sidebar.right.pane.tab", () => ctx.slots.register({
+					name: "sidebar.right.pane.tab",
+					key: CARDS_TAB_ID
+				}, CardsTab));
+			} catch (error) {
+				console.error("[melite-card-view] cards tab body registration failed:", error);
+			}
+			try {
+				ctx.effect(() => ctx.resources.register({
+					protocol: "cards",
+					open: openCardsResource
+				}), "melite-card-view: cards resource provider");
+			} catch (error) {
+				console.error("[melite-card-view] cards resource provider registration failed:", error);
+			}
 		}
 		//#endregion
+		exports.CARDS_BENCH_ADDRESS = CARDS_BENCH_ADDRESS;
 		exports.CARD_TOOLS = CARD_TOOLS;
+		exports.CardsTab = CardsTab;
 		exports.FLOW_START_TOOL = FLOW_START_TOOL;
 		exports.FlowCards = FlowCards;
 		exports.apply = apply;
+		exports.cardsRunAddress = cardsRunAddress;
 		exports.inject = inject;
+		exports.mergeRunFrame = mergeRunFrame;
+		exports.parseCardsAddress = parseCardsAddress;
 		exports.parseCardsBlock = parseCardsBlock;
 		return module.exports;
 	}

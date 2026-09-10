@@ -489,37 +489,54 @@ function ComfyIcon({ size }: { size: number }) {
 
 interface TabCtx {
   effect(fn: () => void, name?: string): unknown
-  betterSidebar: {
-    registerTab(tab: {
+  /** The native right-sidebar tab registry (ui-sidebar-right — the
+   *  better-sidebar registry retired with the plugin, 2026-09-10). */
+  sidebarRightTabs: {
+    register(def: {
       id: string
+      kind: string
       title(): string
-      icon(size: number): React.ReactNode
-      order: number
-      single: boolean
-      component: React.ComponentType<Record<string, unknown>>
+      guide?: Array<{
+        order: number
+        title(): string
+        description?(): string
+        icon?: React.ComponentType<{ size?: number; className?: string }>
+      }>
     }): unknown
-    /** Dock controls (optional — older host builds may omit them). */
-    openTab?(seed: { type: string }): unknown
-    getSnapshot?(): { bottomOpen?: boolean; bottomOpenedOnce?: boolean } | undefined
+  }
+  slots: {
+    inject(name: 'sidebar.right.pane.tab', declare: () => unknown): unknown
+    register(options: { name: 'sidebar.right.pane.tab'; key: string }, component: React.ComponentType<Record<string, unknown>>): unknown
   }
 }
 
-function register(ctx: TabCtx, id: string, title: string, order: number, icon: (size: number) => React.ReactNode, component: React.ComponentType<Record<string, unknown>>): void {
-  ctx.effect(() => {
-    const dispose = ctx.betterSidebar.registerTab({
-      id,
+function register(ctx: TabCtx, id: string, kind: string, title: string, guideOrder: number, guideDescription: string, icon: React.ComponentType<{ size?: number }>, component: React.ComponentType<Record<string, unknown>>): void {
+  // Stage one — the tab type (page kind: no patterns, opened by kind).
+  ctx.effect(() => ctx.sidebarRightTabs.register({
+    id,
+    kind,
+    title: () => title,
+    guide: [{
+      order: guideOrder,
       title: () => title,
-      icon,
-      order,
-      single: true,
+      description: () => guideDescription,
+      icon: icon as unknown as React.ComponentType<{ size?: number; className?: string }>,
+    }],
+  }), 'ray-card-deck: ' + id + ' tab type')
+  // Stage two — the body, dispatched under the type's id.
+  ctx.slots.inject('sidebar.right.pane.tab', () => {
+    const dispose = ctx.slots.register(
+      { name: 'sidebar.right.pane.tab', key: id },
       component,
-    })
+    )
     return typeof dispose === 'function' ? dispose : () => {}
-  }, 'ray-card-deck: ' + id + ' tab')
+  })
 }
 
 /**
- * Register the non-card tab on the better-sidebar registry.
+ * Register the non-card tab on the native right-sidebar registry
+ * (ui-sidebar-right's two-registration contract, 2026-09-10 migration —
+ * the shipped documentpreview is the reference).
  *
  * NO CHROME-DRIVING SELF-HEAL. The 2026-08-26 auto-open tick machine that
  * used to live here (a 400ms interval that synthetic-clicked the shell's
@@ -527,9 +544,10 @@ function register(ctx: TabCtx, id: string, title: string, order: number, icon: (
  * item) is deleted (2026-09-05): it could never latch and instead
  * toggled the host's + menu open/closed every 400ms forever. A plugin
  * never drives host chrome on a timer; reachability belongs to the user
- * (the + menu lists this tab) or to the service API (bs.openTab), never
- * to synthetic clicks on the shell's buttons.
+ * (the guide page lists this tab) or to the service API
+ * (ctx.sidebarRight.openTab), never to synthetic clicks on the shell's
+ * buttons.
  */
 export function registerRayAssetsTab(ctx: TabCtx): void {
-  register(ctx, 'ray-card-deck:comfy', 'Ray ComfyUI', 61, (s) => <ComfyIcon size={s} />, ComfyManagerPanel as unknown as React.ComponentType<Record<string, unknown>>)
+  register(ctx, 'ray-card-deck:comfy', 'ray-comfy', 'Ray ComfyUI', 61, 'The estate\'s ComfyUI manager — packs, snapshots, status.', ComfyIcon as unknown as React.ComponentType<{ size?: number }>, ComfyManagerPanel as unknown as React.ComponentType<Record<string, unknown>>)
 }

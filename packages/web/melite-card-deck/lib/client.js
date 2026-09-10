@@ -836,21 +836,30 @@ window.__ModuleLoader__.load({
 				]
 			});
 		}
-		function register(ctx, id, title, order, icon, component) {
-			ctx.effect(() => {
-				const dispose = ctx.betterSidebar.registerTab({
-					id,
+		function register(ctx, id, kind, title, guideOrder, guideDescription, icon, component) {
+			ctx.effect(() => ctx.sidebarRightTabs.register({
+				id,
+				kind,
+				title: () => title,
+				guide: [{
+					order: guideOrder,
 					title: () => title,
-					icon,
-					order,
-					single: true,
-					component
-				});
+					description: () => guideDescription,
+					icon
+				}]
+			}), "ray-card-deck: " + id + " tab type");
+			ctx.slots.inject("sidebar.right.pane.tab", () => {
+				const dispose = ctx.slots.register({
+					name: "sidebar.right.pane.tab",
+					key: id
+				}, component);
 				return typeof dispose === "function" ? dispose : () => {};
-			}, "ray-card-deck: " + id + " tab");
+			});
 		}
 		/**
-		* Register the non-card tab on the better-sidebar registry.
+		* Register the non-card tab on the native right-sidebar registry
+		* (ui-sidebar-right's two-registration contract, 2026-09-10 migration —
+		* the shipped documentpreview is the reference).
 		*
 		* NO CHROME-DRIVING SELF-HEAL. The 2026-08-26 auto-open tick machine that
 		* used to live here (a 400ms interval that synthetic-clicked the shell's
@@ -858,11 +867,12 @@ window.__ModuleLoader__.load({
 		* item) is deleted (2026-09-05): it could never latch and instead
 		* toggled the host's + menu open/closed every 400ms forever. A plugin
 		* never drives host chrome on a timer; reachability belongs to the user
-		* (the + menu lists this tab) or to the service API (bs.openTab), never
-		* to synthetic clicks on the shell's buttons.
+		* (the guide page lists this tab) or to the service API
+		* (ctx.sidebarRight.openTab), never to synthetic clicks on the shell's
+		* buttons.
 		*/
 		function registerRayAssetsTab(ctx) {
-			register(ctx, "ray-card-deck:comfy", "Ray ComfyUI", 61, (s) => /* @__PURE__ */ (0, react_jsx_runtime.jsx)(ComfyIcon, { size: s }), ComfyManagerPanel);
+			register(ctx, "ray-card-deck:comfy", "ray-comfy", "Ray ComfyUI", 61, "The estate's ComfyUI manager — packs, snapshots, status.", ComfyIcon, ComfyManagerPanel);
 		}
 		//#endregion
 		//#region \0dsh-css:melite-card-deck/src/client/deck.module.css.mjs
@@ -1821,9 +1831,9 @@ window.__ModuleLoader__.load({
 		}
 		//#endregion
 		//#region src/client/index.ts
-		/** 'betterSidebar': the public right-sidebar registry (dsh-better-sidebar,
-		* mounted by the web profile's web-ui-all aggregate) — hosts the tabs. */
-		const inject = ["slots", "betterSidebar"];
+		/** 'slots' (seat declarations) + the native right-sidebar tab registry
+		* (ui-sidebar-right, the web profile's own subsystem) — hosts the tabs. */
+		const inject = ["slots", "sidebarRightTabs"];
 		function apply(ctx) {
 			if (!claimDeckApply()) return;
 			ctx.effect(() => releaseDeckApply, "ray-card-deck: apply claim");

@@ -375,7 +375,7 @@ function Overlay({ item, onClose }: { item: MediaItem; onClose: () => void }) {
 }
 
 /** Sidebar tab glyph — exported for the (JSX-free) client entry. */
-export function MediaTabIcon({ size }: { size: number }) {
+export function MediaTabIcon({ size }: { size?: number }) {
   return (
     <svg width={size} height={size} viewBox="0 0 16 16" fill="none" aria-hidden="true">
       <rect x="1.8" y="3" width="8.4" height="10" rx="1.4" stroke="currentColor" strokeWidth="1.3" />

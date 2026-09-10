@@ -1,27 +1,49 @@
 /**
  * `@melite-plugin/dsh-card-view` — browser half.
  *
- * One keyed slot contribution into the shipped composition (verified against
- * the installed CLI's dsh-client-ui-tool bundle): the `tool.call.toolview`
- * seat, keyed to the wire tool names in CARD_TOOLS — the Melite draft
- * producers registered by @melite-plugin/dsh-tools. Unclaimed keys fall
- * back to the generic tool row, so this registration is additive for our
- * own tools.
+ * Two planes over the estate's cards surface (the bench rework, plan
+ * §1 strokes 1/4):
  *
- * Registration waits for the seat declaration via ctx.slots.inject (the
- * declaration ledger's wait seam); unload cancels a pending wait and cascades
- * the registration.
+ * 1. The chat plane (unchanged): the `tool.call.toolview` keyed slot,
+ *    keyed to the wire tool names in CARD_TOOLS — the Melite draft
+ *    producers registered by @melite-plugin/dsh-tools. Unclaimed keys
+ *    fall back to the generic tool row, so this registration is
+ *    additive for our own tools.
  *
- * Failure policy: slot problems are logged, never thrown — the web shell fails
- * the whole boot when a plugin apply throws, and an external plugin must not
- * take the GUI down.
+ * 2. The sidebar plane (new, 2026-09-10): the `cards` tab TYPE on the
+ *    native right-sidebar registry (two registrations sharing one
+ *    kind, the ui-sidebar-right contract — the shipped
+ *    documentpreview is the reference) plus the `cards` resource
+ *    provider (ctx.resources) the body reads through `useResource`.
+ *    The tab claims `dsh-resource://cards/**`; `openTab('cards')`
+ *    opens the bench page. This replaces the dsh-better-sidebar
+ *    registry (retired with the plugin) — the native subsystem is
+ *    the one the web profile ships.
+ *
+ * Registration waits for seat declarations via ctx.slots.inject (the
+ * declaration ledger's wait seam); unload cancels a pending wait and
+ * cascades the registration.
+ *
+ * Failure policy: slot/registry problems are logged, never thrown —
+ * the web shell fails the whole boot when a plugin apply throws, and
+ * an external plugin must not take the GUI down.
  */
 import type { ClientContext } from '@deepseek-ai/dsh-client-runtime/client'
 // Type-only: pulls the slots service onto ClientContext (ctx.slots) and the
-// SlotMap/LocaleNamespaceMap merge tables.
+// SlotMap/LocaleNamespaceMap merge tables; the sidebar-right and resources
+// entries add ctx.sidebarRightTabs, ctx.resources, and the
+// 'sidebar.right.pane.tab' seat to those tables (their declaration
+// merging — the packages are devDeps for types only).
 import type {} from '@deepseek-ai/dsh-client-ui-slots'
+import type {} from '@deepseek-ai/dsh-client-ui-sidebar-right/client'
+import type {} from '@deepseek-ai/dsh-client-resources/client'
 import { claimCardViewApply, releaseCardViewApply } from './apply-guard.ts'
 import { FlowCards } from './FlowCards.tsx'
+import { CardsTab } from './CardsTab.tsx'
+import {
+  CARDS_BENCH_ADDRESS,
+  openCardsResource,
+} from './cards-resource.ts'
 import type { ToolCallBlockView, ToolCallOwnerProps } from './types.ts'
 
 // Type-only local spelling of the Tool-owned keyed view slot (the same shape
@@ -46,12 +68,16 @@ export const CARD_TOOLS = [
 /** @deprecated use CARD_TOOLS — kept for back-compat imports */
 export const FLOW_START_TOOL = CARD_TOOLS[0]
 
-/** Required services (fiber inject waiting — the slot registry must be up first). */
-export const inject = ['slots']
+/** The tab type's identity (the key its body registers under). */
+const CARDS_TAB_ID = '@melite-plugin/dsh-card-view'
+
+/** Required services (fiber inject waiting — the registries must be up
+ *  first: the native sidebar subsystem + the resource model). */
+export const inject = ['slots', 'sidebarRightTabs', 'resources']
 
 /**
- * Register the flow card for EVERY card tool so drafts always render
- * as interactive flows in the chat — regardless of which tool made them.
+ * Register both planes: the toolview keys for every card tool, and the
+ * cards tab (type + body + resource provider).
  * @param ctx - client root context.
  */
 export function apply(ctx: ClientContext): void {
@@ -70,9 +96,57 @@ export function apply(ctx: ClientContext): void {
       console.error(`[melite-card-view] toolview registration failed for ${tool}:`, error)
     }
   }
+
+  // Stage one — the tab type: claims every cards address; the bench
+  // page is opened by kind ('cards'). Extension band is the default a
+  // type from outside the product carries.
+  try {
+    ctx.effect(() => ctx.sidebarRightTabs.register({
+      id: CARDS_TAB_ID,
+      kind: 'cards',
+      patterns: ['dsh-resource://cards/**'],
+      title: (address: string): string =>
+        address === CARDS_BENCH_ADDRESS ? 'Cards' : address.replace(/^dsh-resource:\/\/cards\//, ''),
+      guide: [{
+        order: 50,
+        title: (): string => 'Cards',
+        description: (): string => 'The working flow — the shared bench and its runs.',
+      }],
+    }), 'melite-card-view: cards tab type')
+  } catch (error) {
+    console.error('[melite-card-view] cards tab type registration failed:', error)
+  }
+
+  // Stage two — the body, dispatched under the type's id.
+  try {
+    ctx.slots.inject('sidebar.right.pane.tab', () => ctx.slots.register(
+      { name: 'sidebar.right.pane.tab', key: CARDS_TAB_ID },
+      CardsTab,
+    ))
+  } catch (error) {
+    console.error('[melite-card-view] cards tab body registration failed:', error)
+  }
+
+  // The resource provider — the values the body reads (and the wand's
+  // openResource targets, plan §5).
+  try {
+    ctx.effect(() => ctx.resources.register({
+      protocol: 'cards',
+      open: openCardsResource,
+    }), 'melite-card-view: cards resource provider')
+  } catch (error) {
+    console.error('[melite-card-view] cards resource provider registration failed:', error)
+  }
 }
 
 // Re-exported for headless harnesses; the loader consumes only name/inject/apply.
 export { parseCardsBlock, FlowCards } from './FlowCards.tsx'
 export type { FlowCardsProps } from './FlowCards.tsx'
 export type { ToolCallBlockView } from './types.ts'
+export {
+  CARDS_BENCH_ADDRESS, cardsRunAddress, parseCardsAddress, mergeRunFrame,
+} from './cards-resource.ts'
+export type {
+  CardsValue, CardsBenchValue, CardsRunValue, BenchStageRow, BenchLogHead, RunStageStatus,
+} from './cards-resource.ts'
+export { CardsTab } from './CardsTab.tsx'

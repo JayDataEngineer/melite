@@ -50,9 +50,6 @@ window.__ModuleLoader__.load({
 			delete w[CLAIM_KEY];
 		}
 		let sidebarService = null;
-		function setSidebarService(bs) {
-			if (bs != null && typeof bs.matchFileViewer === "function") sidebarService = bs;
-		}
 		function getSidebarService() {
 			return sidebarService;
 		}
@@ -643,7 +640,6 @@ window.__ModuleLoader__.load({
 				open: true,
 				onClose,
 				title: item.file || "media preview",
-				closeLabel: "Close preview",
 				headless: true,
 				className: overlay_module_css_default.lightbox,
 				children: /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
@@ -1257,70 +1253,51 @@ window.__ModuleLoader__.load({
 		}
 		//#endregion
 		//#region src/client/index.ts
-		/**
-		* `@infer-media/dsh-media` — client half.
-		*
-		* Registers ONE native sidebar tab ("Media", order 55 — sits above the Melite
-		* Media tab at 60) backed by the host half's merged /infer-media/runs route.
-		* Tab contract mirrors the better-sidebar public registry (same shape the
-		* melite-card-deck registers with): { id, title(), icon(size), order, single,
-		* component }, disposed through the ctx.effect cleanup.
-		*
-		* This entry is deliberately JSX-free (the shared preset only discovers
-		* src/client/index.ts); React elements are built with createElement and the
-		* glyph lives in MediaPanel.tsx.
-		*/
-		const inject = ["slots", "betterSidebar"];
+		/** 'slots' (seat declarations) + the native tab registry (the body slot
+		*  is declared by the sidebar package itself; the registry must be up
+		*  first for the type registrations). */
+		const inject = ["slots", "sidebarRightTabs"];
 		function apply(ctx) {
 			if (!claimMediaApply()) return;
 			ctx.effect(() => releaseMediaApply, "infer-media: apply claim");
-			const bs = ctx.betterSidebar;
-			setSidebarService(bs);
-			if (bs == null || typeof bs.registerTab !== "function") {
-				console.warn("[infer-media] betterSidebar registry unavailable — tab not registered");
-				return;
-			}
-			const registerTab = bs.registerTab;
-			ctx.effect(() => {
-				const dispose = registerTab({
+			try {
+				ctx.effect(() => ctx.sidebarRightTabs.register({
 					id: "infer-media:media",
+					kind: "media",
 					title: () => "Media",
-					icon: (size) => react.createElement(MediaTabIcon, { size }),
-					order: 55,
-					single: true,
-					component: MediaPanel
-				});
-				let rounds = 0;
-				const timer = window.setInterval(() => {
-					rounds++;
-					if (document.querySelector("[data-infer-media-panel]") != null || rounds > 12) {
-						window.clearInterval(timer);
-						return;
-					}
-					try {
-						bs.openTab?.({ type: "infer-media:media" });
-					} catch {
-						window.clearInterval(timer);
-					}
-				}, 700);
-				return () => {
-					window.clearInterval(timer);
-					if (typeof dispose === "function") dispose();
-				};
-			}, "infer-media: media tab");
-			ctx.effect(() => {
-				const dispose = registerTab({
+					guide: [{
+						order: 51,
+						title: () => "Media",
+						description: () => "Every gateway's runs and artifacts, merged.",
+						icon: MediaTabIcon
+					}]
+				}), "infer-media: media tab type");
+				ctx.slots.inject("sidebar.right.pane.tab", () => ctx.slots.register({
+					name: "sidebar.right.pane.tab",
+					key: "infer-media:media"
+				}, MediaPanel));
+			} catch (error) {
+				console.error("[infer-media] media tab registration failed:", error);
+			}
+			try {
+				ctx.effect(() => ctx.sidebarRightTabs.register({
 					id: "infer-media:flows",
+					kind: "flows",
 					title: () => "Flows",
-					icon: (size) => react.createElement(FlowsTabIcon, { size }),
-					order: 56,
-					single: true,
-					component: FlowsPanel
-				});
-				return () => {
-					if (typeof dispose === "function") dispose();
-				};
-			}, "infer-media: flows tab");
+					guide: [{
+						order: 52,
+						title: () => "Flows",
+						description: () => "The composed action cards (drafts), every gateway.",
+						icon: FlowsTabIcon
+					}]
+				}), "infer-media: flows tab type");
+				ctx.slots.inject("sidebar.right.pane.tab", () => ctx.slots.register({
+					name: "sidebar.right.pane.tab",
+					key: "infer-media:flows"
+				}, FlowsPanel));
+			} catch (error) {
+				console.error("[infer-media] flows tab registration failed:", error);
+			}
 		}
 		//#endregion
 		exports.apply = apply;

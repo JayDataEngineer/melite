@@ -34,8 +34,14 @@ const CSS_VIRTUAL_SUFFIX = '.mjs'
  * with no runtime identity to share (no Symbol/instanceof/singleton state).
  * Everything else under @deepseek-ai/* is either a module-table entry
  * (external) or a leak the purity gate rejects.
+ *
+ * dsh-typert-protocol (2026-09-10, the cards tab): the RemoteError class
+ * is a per-bundle copy BY DESIGN — discrimination is by `code` plus the
+ * structural isDSHRemoteError marker, never instanceof (the class's own
+ * docstring). Five shipped DSH client bundles (documentpreview, the api-*
+ * faces, file-upload) inline it; our preset's list predated that.
  */
-const INLINE_SAFE = /^@deepseek-ai\/dsh-(host-apiproxy|session|llm|tools|brand)(\/|$)/
+const INLINE_SAFE = /^@deepseek-ai\/dsh-(host-apiproxy|session|llm|tools|brand|typert-protocol)(\/|$)/
 
 /** Generated descriptor/codec contribution with no shared runtime identity. */
 const GENERATED_REMOTE = /^@deepseek-ai\/dsh-[a-z0-9]+(?:-[a-z0-9]+)*\/remote$/

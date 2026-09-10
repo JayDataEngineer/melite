@@ -28,7 +28,12 @@ function apply(ctx, config = {}) {
 			const contentType = req.headers["content-type"];
 			if (typeof contentType === "string") headers["content-type"] = contentType;
 			let body;
-			if (method !== "GET" && method !== "HEAD") body = await readBody(req);
+			if (method !== "GET" && method !== "HEAD") {
+				const raw = await readBody(req);
+				const bytes = new Uint8Array(raw.byteLength);
+				bytes.set(raw);
+				body = bytes;
+			}
 			try {
 				const upstream = await fetch(target, {
 					method,
