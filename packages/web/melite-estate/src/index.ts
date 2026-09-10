@@ -30,6 +30,7 @@ import comfyuiHost from "@melite/comfyui-cordis/comfyui-host";
 import draftsPlugin from "@melite/estate-drafts";
 import queuePlugin, {
   cardRegistryProvider,
+  discloseProvider,
   runsRegistryPlugin,
 } from "@melite/estate-queue";
 import { runsRemotePlugin } from "@melite/estate-runs";
@@ -53,6 +54,9 @@ const rows: readonly Plugin[] = [
   // inline and the card door). The registry gates on the queue +
   // drafts + cards seats — mount order is load order here.
   cardRegistryProvider,
+  // The disclosure seat (REBUILD-14): discover over both planes,
+  // derived live — gates on the card registry seat (its inject).
+  discloseProvider,
   runsRegistryPlugin,
   runsRemotePlugin,
 ];

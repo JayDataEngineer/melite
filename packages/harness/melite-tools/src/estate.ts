@@ -81,6 +81,12 @@ interface Seats {
     list(rawLimit: string, signal: AbortSignal): Promise<unknown>
     validate(doc: unknown, signal: AbortSignal): Promise<unknown>
   }
+
+  /** The disclosure seat (REBUILD-14): discover over both planes,
+   *  derived live (the flows registry + the card registry). */
+  disclose?: {
+    discover(lookup: string, q: string, tags: string): unknown
+  }
 }
 
 /** Route one KV/runs lane to its seat; undefined = no seat / no match. */
@@ -99,6 +105,7 @@ async function trySeats(
     get draftsRemote() { return probe.get('draftsRemote') as Seats['draftsRemote'] },
     get benchRemote() { return probe.get('benchRemote') as Seats['benchRemote'] },
     get runs() { return probe.get('runs') as Seats['runs'] },
+    get disclose() { return probe.get('disclose') as Seats['disclose'] },
   }
   signal.throwIfAborted()
 
@@ -181,6 +188,20 @@ async function trySeats(
     return seats.runs.list(
       lim !== null ? decodeURIComponent(lim[1]!) : '200',
       signal,
+    )
+  }
+  // The disclose lane (REBUILD-14): Melite discover over both
+  // planes — the seat derives rows LIVE (the flows registry + the
+  // primed card registry). The query string rides the door's own
+  // params (lookup / q / tags).
+  m = /^\/v1\/discover(?:\?([^/]*))?$/.exec(path)
+  if (method === 'GET' && m !== null) {
+    if (seats.disclose === undefined) return undefined
+    const qs = new URLSearchParams(m[1] ?? '')
+    return seats.disclose.discover(
+      qs.get('lookup') ?? 'all',
+      qs.get('q') ?? '',
+      qs.get('tags') ?? '',
     )
   }
   return undefined

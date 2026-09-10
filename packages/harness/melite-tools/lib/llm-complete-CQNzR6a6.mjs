@@ -30,6 +30,9 @@ async function trySeats(ctx, method, path, body, signal) {
 		},
 		get runs() {
 			return probe.get("runs");
+		},
+		get disclose() {
+			return probe.get("disclose");
 		}
 	};
 	signal.throwIfAborted();
@@ -98,6 +101,12 @@ async function trySeats(ctx, method, path, body, signal) {
 		if (seats.runs === void 0) return void 0;
 		const lim = /(?:^|[?&])limit=([^&]*)/.exec(path);
 		return seats.runs.list(lim !== null ? decodeURIComponent(lim[1]) : "200", signal);
+	}
+	m = /^\/v1\/discover(?:\?([^/]*))?$/.exec(path);
+	if (method === "GET" && m !== null) {
+		if (seats.disclose === void 0) return void 0;
+		const qs = new URLSearchParams(m[1] ?? "");
+		return seats.disclose.discover(qs.get("lookup") ?? "all", qs.get("q") ?? "", qs.get("tags") ?? "");
 	}
 }
 /** Build the tools' request: seats only, in-process. A lane with no
