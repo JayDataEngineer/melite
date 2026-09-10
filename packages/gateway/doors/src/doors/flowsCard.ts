@@ -72,7 +72,7 @@
 
 import { Context, Service } from "@deepseek-ai/cordis";
 import type { Plugin } from "@deepseek-ai/cordis";
-import { bootModels, ComfyUIService, ComposeRefusal, composeCards, getModel, loadCardDefs, loadFacts, registryIds, registryModel, theService } from "@melite/comfyui-cordis";
+import { bootModels, ComfyUIService, ComposeRefusal, composeCards, composeModPlane, getModel, loadCardDefs, loadFacts, registryIds, registryModel, theService } from "@melite/comfyui-cordis";
 import type { CardDefinition, FactsFile, FactsReads } from "@melite/comfyui-cordis";
 import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
 import { dirname, join, relative, resolve, sep } from "node:path";
@@ -558,6 +558,11 @@ export class CardRegistryService extends Service {
     // src/cards readdir glob died with the sweep). A card lands by
     // adding its package + one table row; no shared-file edit.
     await composeCards(ctx);
+    // THE MOD PLANE (2026-09-10 — the flavorless compose): this fresh
+    // service composed cards ONLY, so flavor rows were absent and
+    // every mod id refused at compose. Same composeModPlane as
+    // loadCardDefs — one composition, two riders.
+    await composeModPlane(ctx);
     ctx.comfyui.setFacts(loadFacts(factsPath(), this.readsSync()));
     ctx.comfyui.setObjectInfo(oi);
     // THE NESTED STANZA UNWRAP (cli.ts:82-91): a `params` dict key in

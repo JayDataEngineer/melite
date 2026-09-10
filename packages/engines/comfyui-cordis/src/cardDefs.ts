@@ -88,11 +88,15 @@ export const composeCards = async (ctx: Context): Promise<void> => {
   }
 }
 
-export const loadCardDefs = async (): Promise<Map<string, CardDefinition>> => {
-  if (cache !== null) return cache
-  const ctx = new Context()
-  const service = new ComfyUIService(ctx)
-  await composeCards(ctx)
+/** Compose the mod plane into a Context (packs first, flavors
+ *  after — the flavor↔DECL.mods interlock is unchanged on the
+ *  models side). SHARED composition: loadCardDefs rides it for the
+ *  registry, and the gateway's per-request composeOnce rides it too
+ *  (2026-09-10 — composeOnce built a fresh service with cards only,
+ *  so flavor rows were absent at compose and every LoRA id refused).
+ *  The dir-walk over src/models/families/<genre>/<id>/mods that used
+ *  to live here was DEAD CODE (ledger row 24, 2026-09-10). */
+export const composeModPlane = async (ctx: Context): Promise<void> => {
   // THE MOD PACKS (the distinct category taxonomy — the py Mod
   // parents): the pack contracts (loras, controlnet, lanpaint,
   // mask, qvoice) live in the compose kit now (P46 — the web
@@ -104,22 +108,11 @@ export const loadCardDefs = async (): Promise<Map<string, CardDefinition>> => {
   if (typeof (packs as { apply?: unknown }).apply === 'function') {
     await ctx.plugin(packs)
   }
-  // THE FAMILY FLAVORS — every flavor rides the EXPLICIT
-  // packagedFlavors table below (the DSH compose law: packages
-  // compose, never glob-discover — the tool-bash receipt). The
-  // dir-walk over src/models/families/<genre>/<id>/mods that used
-  // to live here was DEAD CODE (ledger row 24, 2026-09-10: the
-  // tree holds only files — contract.ts + index.ts — zero genre
-  // dirs, so `genre.isDirectory()` skipped everything while the
-  // sync readdir still ran every boot). Flavor↔DECL.mods
-  // interlock unchanged (models side, validateBootContracts).
-  //
-  // THE PACKAGED FAMILIES' FLAVORS (the model-package stroke): a
-  // family promoted to its model plugin package
-  // (packages/models/<id>) CARRIES its mods — the flavor
-  // module ships inside the package and composes HERE, same phase
-  // as the walk above (packs first, flavors after; the boot-loud
-  // flavor↔DECL.mods interlock is unchanged on the models side).
+  // THE FAMILY FLAVORS — every flavor rides the EXPLICIT table
+  // (the DSH compose law: packages compose, never glob-discover).
+  // A family promoted to its model plugin package
+  // (packages/models/<id>) CARRIES its mods — the flavor module
+  // ships inside the package and composes here.
   const packagedFlavors: [string, string][] = [
     ['@melite/models-krea-2/mods/loras', 'krea-2 loras'],
     ['@melite/models-anny/mods/verbs', 'anny verbs'],
@@ -136,6 +129,14 @@ export const loadCardDefs = async (): Promise<Map<string, CardDefinition>> => {
       throw new Error(`packaged flavor missing: ${label} (${specifier})`)
     }
   }
+}
+
+export const loadCardDefs = async (): Promise<Map<string, CardDefinition>> => {
+  if (cache !== null) return cache
+  const ctx = new Context()
+  const service = new ComfyUIService(ctx)
+  await composeCards(ctx)
+  await composeModPlane(ctx)
   // THE IDENTITY RUNG (native since 2026-09-10): every card
   //  declares its identity inline (label/description/genre — the
   //  frozen ring is retired from this path; it survives only as the

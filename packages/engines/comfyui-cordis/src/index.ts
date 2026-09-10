@@ -23,7 +23,7 @@ export type { FactsFile, FactsReads, ModelFacts, LaneInputsFacts } from "@melite
 export { loadTextPair, decodeSave, stackLoras } from '@melite/comfyui-card-kit';
 export { emitKnob, emitParamsSchema, emitParamsSpec } from "./params-emit.ts";
 export type { ParamsSchema, ParamsSpec, ParamSpecNode } from "./params-emit.ts";
-export { cardPackages, composeCards, loadCardDefs, provisionsByFamily, theService } from "./cardDefs.ts";
+export { cardPackages, composeCards, composeModPlane, loadCardDefs, provisionsByFamily, theService } from "./cardDefs.ts";
 // LIVE VOCABULARIES for serving surfaces (hand-owned, wall-pinned):
 // the card-kind table (the kinds arm), the flow edge-kind set (the
 // schema arm's kinds), and the slot vocabulary (the catalog arm's

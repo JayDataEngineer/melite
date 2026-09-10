@@ -79,9 +79,14 @@ export function apply(ctx: Context): void {
       // absolute mount path expected. A $spell ("$image") names a
       // WIRED STAGE INPUT, never a file: rides verbatim, the runtime
       // rewrites it against the wired input (row 4, the two-card
-      // flow's handoff). Compile-time, never inference-time.
+      // flow's handoff). A linked upstream output arrives as its
+      // asset URL (/v1/assets/runs/… — the editor injects it at
+      // compile) and rides too — the submit-time uploader fetches
+      // and stages it (a dead URL refuses loud there, never here).
+      // Compile-time, never inference-time.
       const ref = String(p.input_image).trim()
-      if (!ref.startsWith('$')) {
+      const lower = ref.toLowerCase()
+      if (!ref.startsWith('$') && !lower.startsWith('http://') && !lower.startsWith('https://')) {
         const abs = ref.startsWith('/') ? ref : resolve(ref)
         if (!(existsSync(abs) && statSync(abs).isFile())) {
           throw new Error(`input_image '${ref}' is not a file on this estate (absolute mount path expected)`)

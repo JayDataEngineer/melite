@@ -52,13 +52,19 @@ export const identity = {
 
 /** Estate-file contract shared by the compose gate: file-typed
  *  params must EXIST at compose time (absolute path expected); a
- *  $spell names a wired stage input and rides verbatim. */
+ *  $spell names a wired stage input and rides verbatim. A linked
+ *  upstream output arrives as its asset URL (/v1/assets/runs/… —
+ *  the editor injects it at compile) and rides too — the
+ *  submit-time uploader fetches and stages it (a dead URL refuses
+ *  loud there, never here). */
 function estateFile(param: string, ref: unknown): void {
   if (!ref || !(ref as string).trim()) {
     throw new Error(`required param '${param}' missing or empty on the clothing-placement card`)
   }
   const s = String(ref).trim()
   if (s.startsWith('$')) return // wired stage input — rides verbatim
+  const lower = s.toLowerCase()
+  if (lower.startsWith('http://') || lower.startsWith('https://')) return // linked output URL — the uploader stages it
   const abs = s.startsWith('/') ? s : resolve(s)
   if (!(existsSync(abs) && statSync(abs).isFile())) {
     throw new Error(`${param} '${s}' is not a file on this estate (absolute path expected)`)
