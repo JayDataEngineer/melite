@@ -20,6 +20,7 @@ import {
 } from "@melite/comfyui-cordis";
 import type { EngineJson, MergeRow } from "@melite/comfyui-cordis";
 import { pyReprStr } from "@melite/comfyui-cordis";
+import { expandRegistryFlow, getRegistryFlow, registryFlowToInline } from "./flowsData.ts";
 import { newRunId, pipelineOf, pyStr, strictBodyCheck, draftIdOk } from "./queue.ts";
 import {
   CardArmError,
@@ -211,7 +212,7 @@ export class RunsRegistryService extends Service {
     // AWAITED seat hop — the py ORDER is preserved exactly.
     const checked = await this.walkEnvelope(doc, draftExists);
     if (checked.kind === "refusal") throw toRemoteError(checked.refusal);
-    const body: Record<string, unknown> = checked.body;
+    let body: Record<string, unknown> = checked.body;
     const strict = strictBodyCheck(body);
     if (strict !== null) throw toRemoteError(strict);
     const selected = selectSubmitDoor(body);
@@ -274,12 +275,28 @@ export class RunsRegistryService extends Service {
       };
     }
     if (selected.door === "flow") {
-      throw toRemoteError(
-        refusePreview(
-          "the {flow:} registry lane died with the gateway app — " +
-            "the flows remote stroke re-homes it; refused here, nothing registered",
-        ),
-      );
+      // THE NAMED-FLOW SHIM (REBUILD-13; the dead door's own law,
+      // flowsRun.ts:745): the registry flow expands (from_flow links
+      // resolved live) and lands as the flow_inline doc; every gate
+      // after this point — structural compile, single-stage policy,
+      // registration, the merged worker — runs untouched. Multi-stage
+      // and card= shapes refuse at those EXISTING gates with their
+      // preview_scope voices (never silent).
+      const name: string = typeof body["flow"] === "string" ? body["flow"] : "";
+      const decl = getRegistryFlow(name);
+      if (decl === undefined) {
+        // The door's unknown-name voice (rendered invalid_request —
+        // the start-door envelope norm for bad requests).
+        throw new RemoteError(
+          "runs/invalid-request",
+          "no flow at flows/" + name + "/flow.py",
+          { loc: "flow" },
+        );
+      }
+      const inlineDoc = registryFlowToInline(expandRegistryFlow(decl));
+      const rest: Record<string, unknown> = { ...body };
+      delete rest["flow"];
+      body = { ...rest, flow_inline: inlineDoc };
     }
     const inline: unknown = body["flow_inline"];
     const compiled:
@@ -358,8 +375,11 @@ export class RunsRegistryService extends Service {
     signal: AbortSignal,
   ): Promise<Record<string, unknown>> {
     signal.throwIfAborted();
+    // the {flow:} shim may REPLACE the body (flow → flow_inline):
+    // the inline arm compiles the LIVE body, not the original doc.
+    let liveDoc: unknown = doc;
     if (typeof doc === "object" && doc !== null && !Array.isArray(doc)) {
-      const body = doc as Record<string, unknown>;
+      let body = doc as Record<string, unknown>;
       if ("model" in body) {
         const answer: FlowsValidateAnswer = await this.modelValidateArm(body);
         if (answer.status === 200) return answer.payload;
@@ -382,14 +402,26 @@ export class RunsRegistryService extends Service {
         "flow" in body && !("flow_inline" in body) &&
         !("model" in body) && !("stages" in body)
       ) {
-        throw new RemoteError(
-          "runs/preview-scope",
-          "{flow:} validate is the flows registry stroke — POST body carries flow",
-          { loc: "body", expected: "flow_inline", got: "flow" },
-        );
+        // THE NAMED-FLOW SHIM at validate (REBUILD-13; the dead
+        // door's law): expand the registry flow live and compile it
+        // through the SAME inline arm — no second validator. Unknown
+        // names keep the door's own voice.
+        const name: string = typeof body["flow"] === "string" ? body["flow"] : "";
+        const decl = getRegistryFlow(name);
+        if (decl === undefined) {
+          throw new RemoteError(
+            "runs/invalid-request",
+            "no flow at flows/" + name + "/flow.py",
+            { loc: "flow" },
+          );
+        }
+        const inlineDoc = registryFlowToInline(expandRegistryFlow(decl));
+        const rest: Record<string, unknown> = { ...body };
+        delete rest["flow"];
+        liveDoc = { ...rest, flow_inline: inlineDoc };
       }
     }
-    const answer: FlowsValidateAnswer = inlineArm(doc, null);
+    const answer: FlowsValidateAnswer = inlineArm(liveDoc, null);
     if (answer.status === 200) return answer.payload;
     const p = answer.payload as {
       error: string;

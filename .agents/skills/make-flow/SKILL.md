@@ -7,17 +7,18 @@ description: Use when authoring a new multi-stage flow (a named pipeline of card
 
 A flow has TWO homes — the compile truth and the agent face:
 
-1. **The registry row** — `packages/gateway/doors/src/doors/flowsRegistry.ts`,
-   the `REGISTRY` table (line ~923; the TS flow-authoring plane; everything the
-   retired `flows/*/flow.py` owned). This is the SSOT: validate and
-   start resolve stages LIVE through `expandRegistryFlow` — no
-   snapshot drift.
+1. **The registry row** — `packages/harness/estate-queue/src/flowsData.ts`,
+   the `REGISTRY` table (the TS flow-authoring plane; everything the
+   retired `flows/*/flow.py` owned; re-homed from the dead gateway
+   package in REBUILD-13, 2026-09-10). This is the SSOT: the runs
+   registry's `{flow:}` arms resolve stages LIVE through
+   `expandRegistryFlow` — no snapshot drift.
 2. **The flows leaf** — `flows/<name>/` (agent-facing: `tool.json`,
    `AGENTS.md`, `agents/skills/*/SKILL.md`, stage `.md` files).
 
 ## 1. The registry row
 
-In `flowsRegistry.ts`, add to `REGISTRY` (line ~923; a hand-owned table — one
+In `flowsData.ts`, add to `REGISTRY` (a hand-owned table — one
 row per flow, sorted keys):
 
 ```ts
@@ -78,18 +79,19 @@ node tests/walls/ts/run.mjs
 #   form-spec-parity — every card-carrying spec ≡ the frozen referee
 #   models-flows     — every compose-plane family exists in the
 #                      registry; flow names legal
+#   runs-remote      — the {flow:} arms: live expansion, the door's
+#                      voices (REBUILD-13)
 node --experimental-strip-types --test tests/walls/ts/suites/form-spec-parity.test.ts
-cd packages/gateway/doors && npx tsc --noEmit -p .
+cd packages/harness/estate-queue && ./node_modules/.bin/tsc --noEmit
 ```
 
-## 4. Restart PROD, prove the flow
+## 4. Prove the flow (no second process — the estate row serves)
 
 ```sh
-systemctl --user restart melite-gateway.service
-curl -s -X POST http://127.0.0.1:33081/v1/flows/validate \
-  -H 'content-type: application/json' \
-  -d '{"flow":"<name>","params":{...}}'
+MELITE_STATE_ROOT=$(mktemp -d) node test/estate-drive.mjs   # the live lane
+node --experimental-strip-types --test tests/walls/ts/suites/runs-remote.test.ts
 ```
 
-A green validate with your stages expanded (and the honest refusal
-from start if multi-stage) is the flow's proof.
+A validate with your stages expanded (and the honest refusal from
+start if multi-stage) is the flow's proof — served in-process by the
+runs registry's `{flow:}` arms on the estate profile.

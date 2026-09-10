@@ -161,9 +161,16 @@ test("the refusal chain, byte-pinned and in py order", async () => {
     await msg({ test: true, draft_id: "d_ok", model: "card-1" }),
     /no model unit for model: card-1/,
   );
+  // {flow:} now rides the named-flow shim (REBUILD-13): unknown
+  // names answer the dead door's own voice (invalid_request — the
+  // start-door envelope norm), not the retired placeholder refusal.
   assert.equal(
     await code({ test: true, draft_id: "d_ok", flow: "f" }),
-    "runs/preview-scope",
+    "runs/invalid-request",
+  );
+  assert.match(
+    await msg({ test: true, draft_id: "d_ok", flow: "f" }),
+    /no flow at flows\/f\/flow\.py/,
   );
   // compile gates: unknown top key, no engine, non-comfyui
   const badTop = { test: true, draft_id: "d_ok", flow_inline: { id: "f", stages: [], extra: 1 } };
@@ -506,14 +513,15 @@ test("runs/validate — the pure compile pipeline, door-verbatim voices", async 
   }
 
   // 3. the {model:} arm composes for real now (the card stroke,
-  //    pinned by the card-arm test); the {flow:} arm still names
-  //    its stroke.
+  //    pinned by the card-arm test); the {flow:} arm rides the
+  //    named-flow shim (REBUILD-13) — unknown names answer the
+  //    door's voice.
   try {
     await runs.validate({ flow: "photo-glb" }, sig);
-    assert.fail("expected preview refusal");
+    assert.fail("expected the door refusal");
   } catch (e) {
-    assert.equal((e as { code?: string })["code"], "runs/preview-scope");
-    assert.match(String((e as Error).message), /flows registry stroke/);
+    assert.equal((e as { code?: string })["code"], "runs/invalid-request");
+    assert.match(String((e as Error).message), /no flow at flows\/photo-glb\/flow\.py/);
   }
 
   // 4. the pin-sweep gap (ledgered): cards=null → the sweep sees 0
@@ -645,4 +653,82 @@ test("runs {model:} — the card arm: real compose (phase-1/phase-2), voices, re
   assert.match(lane.run_id, /^run-/);
   void adapter;
   await fiber.dispose();
+});
+
+test("runs {flow:} — the named-flow shim: live expansion, the door's voices (REBUILD-13)", async () => {
+  const { ctx, runs, fiber, root } = await boot();
+  const sig = new AbortController().signal;
+  // 1. unknown names keep the dead door's voice (flowsRun.ts:756 —
+  //    the retired address, rendered invalid_request).
+  await assert.rejects(
+    runs.start({ test: true, draft_id: "d_ok", flow: "no-such-flow" }, sig),
+    (e: unknown) => {
+      const re = remoteErrorOf(e);
+      assert.ok(re, "a RemoteError");
+      assert.equal(re.code, "runs/invalid-request");
+      assert.equal(re.message, "no flow at flows/no-such-flow/flow.py");
+      return true;
+    },
+  );
+  await assert.rejects(
+    runs.validate({ flow: "no-such-flow" }, sig),
+    (e: unknown) => {
+      const re = remoteErrorOf(e);
+      assert.ok(re, "a RemoteError");
+      assert.equal(re.message, "no flow at flows/no-such-flow/flow.py");
+      return true;
+    },
+  );
+  // 2. a single-stage registry flow serves at BOTH arms (the
+  //    skill's wire law): validate compiles it through the SAME
+  //    inline arm — and in THIS wall (no engine seat, 0 pinned
+  //    classes — the wall's own law, never a silent accept) the
+  //    pin sweep refuses with the workflow-pin voice naming the
+  //    flow's own first class.
+  try {
+    await runs.validate({ flow: "fit-seat" }, sig);
+    assert.fail("expected the pin-sweep refusal");
+  } catch (e) {
+    const re = remoteErrorOf(e);
+    assert.ok(re, "a RemoteError");
+    assert.equal(re.code, "runs/workflow-pin");
+    assert.match(re.message, /FitRow.*not in the pinned object_info/);
+  }
+  // 3. start on a single-stage flow: expansion rides the inline
+  //    pipeline and the run REGISTERS (the pin sweep is the
+  //    validate gate; start's engine seam is the pump) — the run
+  //    exists, then settles FAILED loud on the missing engine seat
+  //    (this wall's own law).
+  const started = (await runs.start(
+    { flow: "fit-seat", test: true, draft_id: "d_ok" }, sig,
+  )) as Record<string, unknown>;
+  assert.match(String(started["run_id"]), /^run-/);
+  // 4. a MULTI-stage registry flow (character — 7 stages) serves at
+  //    validate; start refuses with the preview_scope voice at the
+  //    EXISTING single-stage gate (never widened quietly).
+  // character (7 stages incl. the z-image builder graph) rides the
+  // SAME pin-sweep law at validate: the wall answers the honest
+  // workflow-pin refusal naming ITS first class (multi-stage is
+  // structurally legal at validate — the compile reaches the pin).
+  try {
+    await runs.validate({ flow: "character" }, sig);
+    assert.fail("expected the pin-sweep refusal");
+  } catch (e) {
+    const re = remoteErrorOf(e);
+    assert.ok(re, "a RemoteError");
+    assert.equal(re.code, "runs/workflow-pin");
+    assert.match(re.message, /UNETLoader.*not in the pinned object_info/);
+  }
+  await assert.rejects(
+    runs.start({ flow: "character", test: true, draft_id: "d_ok" }, sig),
+    (e: unknown) => {
+      const re = remoteErrorOf(e);
+      assert.ok(re, "a RemoteError");
+      // the FIRST gate that names an unported shape refuses — for
+      // character that is its skip_when branches (the inline
+      // pipeline's own voice, never widened quietly).
+      assert.match(re.message, /skip_when is unported/);
+      return true;
+    },
+  );
 });
