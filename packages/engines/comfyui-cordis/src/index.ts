@@ -14,6 +14,12 @@ export * from "./models/models.ts";
 export * from "./models/validate.ts";
 export * from "./models/catalogEmission.ts";
 
+// The engine's OWN cordis copy (the registry-keyed instance its
+// services are built against), re-exported for cross-copy consumers:
+// the estate-queue compose rim mounts its throwaway Context on the
+// instance ComfyUIService was built for (the documented two-cordis
+// topology — structural seam, never instanceof across copies).
+export { Context as EngineContext } from "@deepseek-ai/cordis";
 export { GraphBuilder, OutputHandle } from "@melite/comfyui-card-kit/graph";
 export type { PromptGraph, NodeRef, NodeInputs, JsonValue } from "@melite/comfyui-card-kit/graph";
 export { ComfyUIService, ComposeRefusal } from "./service.ts";

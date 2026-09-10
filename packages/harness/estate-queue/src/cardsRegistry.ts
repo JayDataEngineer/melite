@@ -88,11 +88,11 @@ import type { Context } from "@deepseek-ai/cordis";
 // and the compose-rim Context CLASS come from the engine's own
 // copy (the deep path — the walls' established pattern), so the
 // engine's ComfyUIService mounts on the instance it was built for.
-/** The ENGINE copy's Context type, derived from the service's own
- *  constructor (ConstructorParameters — no cross-copy type import
- *  needed; the value import below is runtime-only). */
-type EngineContext = ConstructorParameters<typeof ComfyUIService>[0];
-import type { Plugin } from "@deepseek-ai/cordis";
+/** The engine's OWN cordis Context — re-exported by the engine
+ *  package (the registry-keyed instance ComfyUIService mounts on),
+ *  imported through the engine's public surface like every other
+ *  engine dep. No deep path, no runtime-only dodge. */
+import { EngineContext } from "@melite/comfyui-cordis";
 import { bootModels, buildCatalog, ComfyUIService, ComposeRefusal, composeCards, composeModPlane, getModel, loadCardDefs, loadFacts, modelIds, registryIds, registryModel, theService } from "@melite/comfyui-cordis";
 import type { CardDefinition, FactsFile, FactsReads } from "@melite/comfyui-cordis";
 import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
@@ -575,16 +575,7 @@ export class CardRegistryService extends Service {
           ") — refusing closed (EXTENSION LAW: never compose unauthenticated)",
       );
     }
-    // Runtime-only deep import of the ENGINE copy's cordis class
-    // (the string .replace keeps tsc from resolving the specifier —
-    // types ride EngineContext above; node resolves the real path).
-    const engineCordis = (await import(
-      "../../../engines/comfyui-cordis/node_modules/@deepseek-ai/cordis/lib/index.js".replace(
-        "^",
-        "",
-      )
-    )) as unknown as { Context: new () => EngineContext };
-    const ctx = new engineCordis.Context();
+    const ctx = new EngineContext();
     await ctx.plugin({
       apply(c: EngineContext): void {
         new ComfyUIService(c);
