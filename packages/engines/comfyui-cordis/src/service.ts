@@ -33,9 +33,12 @@ export const cardWireName = (id: string): string =>
  *  optional mod payloads (the lora stack), applied between the
  *  model defaults and the explicit args — the settings cascade
  *  order (settings.md: "schema defaults, then base, then the user
- *  layer"; the recipe is the base layer). Scalars layer (user
- *  wins); the lora list CONCATs (recipe stack first, user's after
- *  — stacking semantics, not replacement). */
+ *  layer"). The full estate order, enforced in compose below: schema
+ *  defaults < model-folder defaults (the family rail feeds through
+ *  here — rail selection resolves the model row) < card recipe <
+ *  explicit args. Scalars layer (user wins); the lora list CONCATs
+ *  (recipe stack first, user's after — stacking semantics, not
+ *  replacement). */
 export interface CardRecipe {
   readonly label: string
   readonly description: string
@@ -728,7 +731,14 @@ export class ComfyUIService extends Service {
     if (!model) throw new ComposeRefusal('no-model-facts', `model '${modelId}' has no facts row (rows assemble in facts.ts from the registry roster + card slices in packages/engines/comfyui/data/model-facts.json)`)
     if (model.card !== cardId) throw new ComposeRefusal('card-mismatch', `model '${modelId}' facts name card '${model.card}', not '${cardId}'`)
 
-    // params cascade: schema defaults ← model defaults ← explicit params
+    // THE ONE param cascade (image-gen row, 2026-09-10 — five layers,
+    // closest-to-explicit wins; the ORDER is the contract, wall-pinned
+    // in the card package's recipes suite): schema defaults ←
+    // model-folder defaults (the family rail feeds through HERE —
+    // rail selection resolves this model row; arrays never ride —
+    // lora stacks concat in applyRecipe, never replace) ← card
+    // recipe overlay ← explicit params. applyRecipe holds the last
+    // two legs ({...merged, ...recipe.params, ...stated}).
     let merged: Record<string, unknown>
     try {
       merged = def.schema(params)

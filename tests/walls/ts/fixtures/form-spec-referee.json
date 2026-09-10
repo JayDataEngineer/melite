@@ -249,7 +249,7 @@
         "max": null,
         "step": null,
         "placeholder": "",
-        "tooltip": "Named config overlay — params it carries ride between the schema defaults and your explicit values.",
+        "tooltip": "Named run config — overlays the schema + model-folder defaults and yields to your explicit values. The family rail above selects the MODEL (its recipe arrives as that model’s defaults, under this one).",
         "visible_when": null
       }
     ],
@@ -423,7 +423,7 @@
             "order": 5,
             "width": 1,
             "default": "standard",
-            "tooltip": "Named config overlay — params it carries ride between the schema defaults and your explicit values.",
+            "tooltip": "Named run config — overlays the schema + model-folder defaults and yields to your explicit values. The family rail above selects the MODEL (its recipe arrives as that model’s defaults, under this one).",
             "options": [
               "standard",
               "fast_draft",
@@ -5056,7 +5056,7 @@
         "max": null,
         "step": null,
         "placeholder": "",
-        "tooltip": "Named config overlay — params it carries ride between the schema defaults and your explicit values.",
+        "tooltip": "Named run config — overlays the schema + model-folder defaults and yields to your explicit values. The family rail above selects the MODEL (its recipe arrives as that model’s defaults, under this one).",
         "visible_when": null
       },
       {
@@ -5249,7 +5249,7 @@
             "order": 5,
             "width": 1,
             "default": "standard",
-            "tooltip": "Named config overlay — params it carries ride between the schema defaults and your explicit values.",
+            "tooltip": "Named run config — overlays the schema + model-folder defaults and yields to your explicit values. The family rail above selects the MODEL (its recipe arrives as that model’s defaults, under this one).",
             "options": [
               "standard",
               "fast_draft",
@@ -13120,7 +13120,7 @@
         "max": null,
         "step": null,
         "placeholder": "",
-        "tooltip": "Named config overlay — params it carries ride between the schema defaults and your explicit values.",
+        "tooltip": "Named run config — overlays the schema + model-folder defaults and yields to your explicit values. The family rail above selects the MODEL (its recipe arrives as that model’s defaults, under this one).",
         "visible_when": null
       }
     ],
@@ -13294,7 +13294,7 @@
             "order": 5,
             "width": 1,
             "default": "standard",
-            "tooltip": "Named config overlay — params it carries ride between the schema defaults and your explicit values.",
+            "tooltip": "Named run config — overlays the schema + model-folder defaults and yields to your explicit values. The family rail above selects the MODEL (its recipe arrives as that model’s defaults, under this one).",
             "options": [
               "standard",
               "fast_draft",

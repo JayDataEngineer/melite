@@ -115,6 +115,12 @@ describe("the recipe key is consumed; the lora stack concats", () => {
       skeleton: "probe",
       boarded: [],
       requiresModel: false,
+      sidebar: { key: "probe", order: 99 },
+      flowKinds: {
+        inputs: {},
+        outputs: { default: "image" },
+        requiresModel: false,
+      },
       recipes: {
         stacked: {
           label: "Stacked",
@@ -142,6 +148,72 @@ describe("the recipe key is consumed; the lora stack concats", () => {
     svc.compose("recipe-probe", null, { loras: [{ name: "mine.safetensors" }] }, "r2");
     const stack = seen()!.loras as Array<{ name: string }>;
     assert.deepEqual(stack.map((l) => l.name), ["probe.safetensors", "mine.safetensors"]);
+    await ctx.fiber.dispose();
+  });
+});
+
+describe("the model-folder layer (the phantom that lied, 2026-09-10)", () => {
+  // The cascade's second layer had NO pin and NO data (no boarded
+  // model carries a defaults row) while the card's own principle
+  // claimed it owned resolution/steps/cfg. These tests stub the
+  // layer and pin its position: schema < model-folder < card
+  // recipe < explicit. The family rail feeds through HERE — rail
+  // selection resolves the model row, so two rows with different
+  // defaults compose different values (last test).
+  const modelBoot = async (defaults: Record<string, unknown>, extraRows: Record<string, Record<string, unknown>> = {}) => {
+    const ctx = new Context();
+    const svc = new ComfyUIService(ctx);
+    registerCard(ctx, svc);
+    const frozen = JSON.parse(
+      readFileSync(new URL("../../../engines/comfyui-cordis/data/model-facts.json", import.meta.url), "utf8"),
+    ) as { rows: Record<string, { card: string; card_knobs?: unknown[] }> };
+    const row = (id: string, d: Record<string, unknown>) => ({
+      id,
+      card: frozen.rows["krea-2"]!.card,
+      defaults: d,
+      lane_inputs: {},
+      card_knobs: frozen.rows["krea-2"]!.card_knobs ?? [],
+      variants: [],
+      variant_groups: [],
+      outputs: [],
+      mods: [],
+    });
+    svc.setFacts({
+      models: {
+        "krea-2": row("krea-2", defaults),
+        ...Object.fromEntries(Object.entries(extraRows).map(([id, d]) => [id, row(id, d)])),
+      },
+      extension_node_types: {},
+    } as FactsFile);
+    return { ctx, svc };
+  };
+
+  it("model-folder defaults beat the schema defaults", async () => {
+    const { svc, ctx } = await modelBoot({ steps: 20 });
+    const graph = svc.compose("image-gen", "krea-2", { prompt: "a cat" }, "m-1");
+    assert.ok(graphText(graph).includes('"steps":20'), "folder steps 20 overlays schema 8");
+    await ctx.fiber.dispose();
+  });
+
+  it("the card recipe beats the model-folder defaults", async () => {
+    const { svc, ctx } = await modelBoot({ steps: 20 });
+    const graph = svc.compose("image-gen", "krea-2", { prompt: "a cat", recipe: "fast_draft" }, "m-2");
+    assert.ok(graphText(graph).includes('"steps":6'), "recipe steps 6 overlays folder 20");
+    await ctx.fiber.dispose();
+  });
+
+  it("explicit args beat the model-folder defaults", async () => {
+    const { svc, ctx } = await modelBoot({ steps: 20 });
+    const graph = svc.compose("image-gen", "krea-2", { prompt: "a cat", steps: 10 }, "m-3");
+    assert.ok(graphText(graph).includes('"steps":10'), "explicit steps 10 overlays folder 20");
+    await ctx.fiber.dispose();
+  });
+
+  it("the family rail feeds through the model row (different rows, different values)", async () => {
+    const { svc, ctx } = await modelBoot({ steps: 20 }, { "z-image": { steps: 30 } });
+    const a = graphText(svc.compose("image-gen", "krea-2", { prompt: "a cat" }, "m-4a"));
+    const b = graphText(svc.compose("image-gen", "z-image", { prompt: "a cat" }, "m-4b"));
+    assert.ok(a.includes('"steps":20') && b.includes('"steps":30'), "rail selection resolves the row's defaults");
     await ctx.fiber.dispose();
   });
 });

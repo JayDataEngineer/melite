@@ -45,7 +45,7 @@ export const schema = z.object({
   // derives from the catalog (one spelling); the engine consumes
   // the key at compose — it never reaches the kit recipe. Declared
   // LAST: the ported field order above stays frozen.
-  recipe: z.union(RECIPE_KEYS.map((k) => z.const(k))).description('Recipe').default(DEFAULT_RECIPE).extra('extra', { order: 5, group: 'sampling', width: 1, zone: 'params', wtype: 'select', tooltip: 'Named config overlay — params it carries ride between the schema defaults and your explicit values.' }),
+  recipe: z.union(RECIPE_KEYS.map((k) => z.const(k))).description('Recipe').default(DEFAULT_RECIPE).extra('extra', { order: 5, group: 'sampling', width: 1, zone: 'params', wtype: 'select', tooltip: 'Named run config — overlays the schema + model-folder defaults and yields to your explicit values. The family rail above selects the MODEL (its recipe arrives as that model\u2019s defaults, under this one).' }),
 })
 
 export const identity = {
@@ -55,7 +55,7 @@ export const identity = {
   icon: 'image',
   principles: [
     'prompt is required — an empty/whitespace prompt is rejected loud, never sampled with empty conditioning',
-    'Defaults are shape, not value: resolution/steps/cfg come from the model folder (defaults:/presets), merged at serve time',
+    'ONE param cascade, five layers (closest-to-explicit wins): schema defaults < model-folder defaults < family-rail recipe (arrives as the selected model facts row) < card recipe < your explicit values. The schema defaults are the form base; a model folder MAY carry per-model defaults (empty today — no boarded model does); scalars layer, lora stacks concat (recipe first, yours after)',
     'Sampler and scheduler option lists resolve from the ONE vocabulary (media.comfyui.sampler_vocab) — never hand-copied',
     'A preset fills untouched fields; values you have set win',
     'Mods are model-level declarations: lanpaint rides the families that declare it (anima, z-image) — input_image + lanpaint_mask switch the builder to LanPaintKSampler; loras ride krea-2 (apply on Turbo, train on Raw)',

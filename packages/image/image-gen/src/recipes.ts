@@ -11,11 +11,14 @@
 // config declares the selection; layered data resolves. The
 // cascade order is the settings subsystem's documented one
 // (settings.md: "schema defaults, then base, then the user layer")
-// — the recipe is the base layer:
+// with the estate's two middle layers named — the family rail
+// feeds through the selected model's facts row, the card recipe
+// is the run's own base layer:
 //
-//     schema defaults  <  recipe overlay  <  explicit args
+//     schema defaults < model-folder defaults < family recipe
+//       (as model defaults) < card recipe < explicit args
 //
-// Scalars layer (a stated arg beats the recipe); the lora stack
+// Scalars layer (a stated arg beats everything above it); the lora stack
 // CONCATs (recipe stack first, the caller's after — stacking
 // semantics). The engine's compose applies this at its one merge
 // point; THIS MODULE IS DATA ONLY.
