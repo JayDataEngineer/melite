@@ -1,14 +1,9 @@
 {
-	"dependencies": {
-		"lightningcss": "^1.33.0"
-	},
-	"devDependencies": {
-		"knip": "^6.34.0",
-		"lefthook": "^2.1.12"
-	},
-	"pnpm": {
-		"overrides": {
-			"@deepseek-ai/dsh-settings-file>@deepseek-ai/dsh-settings": "0.1.5-alpha.2"
-		}
-	}
+  "dependencies": {
+    "lightningcss": "^1.33.0"
+  },
+  "devDependencies": {
+    "knip": "^6.34.0",
+    "lefthook": "^2.1.12"
+  }
 }
