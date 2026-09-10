@@ -2,7 +2,7 @@
   "name": "@infer/dsh-provisioner",
   "version": "0.1.0",
   "private": true,
-  "description": "Vanilla-DSH provisioner for the inference.cpp media stack: one plugin add mounts the tool registry (card tools from the gateway), the editable card view, the card deck, media previews, and the runs gallery — and the infer-provision bin renders ready-to-boot profiles (inference / headless) plus the Inference Studio agent preset into any DSH_HOME.",
+  "description": "Vanilla-DSH provisioner for the inference.cpp media stack: one plugin add mounts the tool registry (card tools from the gateway), the editable card view, the card deck, media previews, and the runs gallery \u2014 and the infer-provision bin renders ready-to-boot profiles (inference / headless) plus the Inference Studio agent preset into any DSH_HOME.",
   "type": "module",
   "bin": {
     "infer-provision": "./bin/infer-provision.mjs"
@@ -11,7 +11,6 @@
     "@melite-plugin/dsh-tools": "link:../melite-tools",
     "@melite-plugin/dsh-card-view": "link:../../web/melite-card-view",
     "@melite-plugin/dsh-card-deck": "link:../../web/melite-card-deck",
-    "@infer-media/dsh-media": "link:../../web/media-plugin",
     "@infer-media/dsh-gallery": "link:../../web/infer-gallery"
   },
   "dsh": {

@@ -23,10 +23,11 @@
 # dependencies (pnpm workspace links back into the repo) — never baked
 # absolute paths, so the repo can move without re-provisioning.
 #
-# GATEWAY ENDPOINT LAW (QUEUE LANE LAW): the endpoint is configuration,
-# not code — MELITE_GATEWAY env overrides, canonical default documented
-# in the repo (infra: port 33081). The gateway owns the queue; DSH is
-# only the harness (cards in, stop door out).
+# ENDPOINT LAW (the estate collapse): DSH is the ONLY app — the SDK
+# lanes this provisioner mounts name the ONE DSH that owns the estate
+# state (:3088, the test host; an SDK spawn overrides via MELITE_GATEWAY
+# env). The retired :33081 second Loader is gone; the runs/drafts/bench
+# faces ride Typert remotes where the estate bundle is mounted.
 #
 # PROFILE-SHAPE PIN (progressive disclosure — docs/deployment/
 # dsh-profiles.md): the HOST `skill-filesystem` row is pinned OFF for
@@ -49,7 +50,7 @@
     - id: infer-tools
       name: '@melite-plugin/dsh-tools'
       config:
-        gatewayUrl: !!js process.env.MELITE_GATEWAY || 'http://localhost:33081'
+        gatewayUrl: !!js process.env.MELITE_GATEWAY || 'http://127.0.0.1:3088'
     # The host-route plane of the same package (split 2026-09-10): the
     # ✦ doors need webServer+llm, which sdk/headless compositions do
     # not have — infer-tools stays profile-agnostic, this row is
@@ -57,12 +58,12 @@
     - id: infer-tools-doors
       name: '@melite-plugin/dsh-tools/doors'
       config:
-        gatewayUrl: !!js process.env.MELITE_GATEWAY || 'http://localhost:33081'
+        gatewayUrl: !!js process.env.MELITE_GATEWAY || 'http://127.0.0.1:3088'
 
     - id: infer-card-view-host
       name: '@melite-plugin/dsh-card-view'
       config:
-        gatewayUrl: !!js process.env.MELITE_GATEWAY || 'http://localhost:33081'
+        gatewayUrl: !!js process.env.MELITE_GATEWAY || 'http://127.0.0.1:3088'
     - id: infer-card-view-client
       name: '@melite-plugin/dsh-card-view'
       config:
@@ -70,16 +71,10 @@
 
     - id: infer-card-deck
       name: '@melite-plugin/dsh-card-deck'
-      config:
-        gatewayUrl: !!js process.env.MELITE_GATEWAY || 'http://localhost:33081'
 
-    - id: infer-media
-      name: '@infer-media/dsh-media'
-      config:
-        gateways:
-          - !!js process.env.MELITE_GATEWAY || 'http://localhost:33081'
+    # THE ESTATE COLLAPSE (R3): @infer-media/dsh-media DELETED - DSH's
+    # own file/attachment/resource faces are the media system; the
+    # estate's runs/drafts ride Typert remotes (gateway-wire).
 
     - id: infer-gallery-host
       name: '@infer-media/dsh-gallery'
-      config:
-        gatewayUrl: !!js process.env.MELITE_GATEWAY || 'http://localhost:33081'

@@ -10,6 +10,9 @@ export { bridgesDoors } from "./doors/bridges.ts";
 export { chromeDoors } from "./doors/chromeDoors.ts";
 export { discoveryDoors } from "./doors/discovery.ts";
 export { draftsDoors } from "./doors/drafts.ts";
+export { hDraftsList, hDraftsGet } from "./doors/drafts.ts";
+export { hBenchGet, hBenchEnsure } from "./doors/bench.ts";
+export { hRunsList, hRunDetail } from "./doors/runs.ts";
 export {
   flowsStartDoors,
   flowsStopDoors,

@@ -232,7 +232,7 @@ function stagesOf(doc: Record<string, unknown>): Record<string, unknown>[] {
 
 const ENSURE_KEYS = ["session", "stages", "intent", "author", "expect_rev"];
 
-async function hBenchEnsure(
+export async function hBenchEnsure(
   drafts: Domain<DraftsDomainSpec>,
   rawBody: Uint8Array,
 ): Promise<BenchResult> {
@@ -339,7 +339,7 @@ function normalizeStages(
 // (rev/author/kind/stage/summary only — inverses never leave the
 // door; the wire stays lean for reads).
 
-function hBenchGet(
+export function hBenchGet(
   drafts: Domain<DraftsDomainSpec>,
   session: string,
 ): BenchResult {

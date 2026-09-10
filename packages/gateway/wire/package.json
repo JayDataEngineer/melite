@@ -24,7 +24,8 @@
     "@melite/gateway-doors": "workspace:*"
   },
   "devDependencies": {
-    "@types/node": "22.19.2"
+    "@types/node": "22.19.2",
+    "typescript": "5.9.3"
   },
   "scripts": {
     "build": "tsc -p tsconfig.json"

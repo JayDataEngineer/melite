@@ -66,6 +66,8 @@ var __esDecorate = (this && this.__esDecorate) || function (ctor, descriptorIn, 
 // with its own ledger row; the /v1 Fetch doors stay untouched.
 import {} from "@deepseek-ai/cordis";
 import { Remote, TypertRemoteService } from "@deepseek-ai/dsh-typert-protocol";
+import { BenchRemoteService, DraftsRemoteService } from "./remotes-kv.js";
+import * as remotesKv from "./remotes-kv.js";
 /** Guard: the registry face this method depends on (Map seat with
  * status-carrying rows). Guards the READ shape, not the full record. */
 function isRunsRegistry(value) {
@@ -89,11 +91,14 @@ let RunsRemoteService = (() => {
     let _classSuper = TypertRemoteService;
     let _instanceExtraInitializers = [];
     let _statusForClient_decorators;
+    let _list_decorators;
     return class RunsRemoteService extends _classSuper {
         static {
             const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(_classSuper[Symbol.metadata] ?? null) : void 0;
             _statusForClient_decorators = [Remote("status")];
+            _list_decorators = [Remote("list")];
             __esDecorate(this, null, _statusForClient_decorators, { kind: "method", name: "statusForClient", static: false, private: false, access: { has: obj => "statusForClient" in obj, get: obj => obj.statusForClient }, metadata: _metadata }, null, _instanceExtraInitializers);
+            __esDecorate(this, null, _list_decorators, { kind: "method", name: "list", static: false, private: false, access: { has: obj => "list" in obj, get: obj => obj.list }, metadata: _metadata }, null, _instanceExtraInitializers);
             if (_metadata) Object.defineProperty(this, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
         }
         constructor(ctx) {
@@ -114,6 +119,19 @@ let RunsRemoteService = (() => {
                 status: run?.status ?? null,
             };
         }
+        /** runs/list — the archive listing (R2: the media panel's runs
+         *  lane rides this remote; the /v1 door stays until R5 deletes
+         *  it). Late-bound domain calls, same late-bind law as the KV
+         *  remotes in remotes-kv.ts. */
+        async list(limit, signal) {
+            signal.throwIfAborted();
+            const runs = await remotesKv.loadRuns();
+            const shell = await remotesKv.loadShell();
+            const out = await runs.hRunsList({ limit: [String(limit)] }, shell.defaultAssetRoots(), () => false);
+            if (out.status >= 200 && out.status < 300)
+                return out.body;
+            throw new Error(JSON.stringify(out.body));
+        }
     };
 })();
 export { RunsRemoteService };
@@ -126,6 +144,8 @@ export const gatewayWire = {
     name: "gateway-wire",
     apply(ctx) {
         new RunsRemoteService(ctx);
+        new DraftsRemoteService(ctx);
+        new BenchRemoteService(ctx);
     },
 };
 export default gatewayWire;

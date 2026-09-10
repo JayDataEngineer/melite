@@ -32,6 +32,8 @@
 // with its own ledger row; the /v1 Fetch doors stay untouched.
 import { type Context, type Plugin } from "@deepseek-ai/cordis";
 import { Remote, TypertRemoteService } from "@deepseek-ai/dsh-typert-protocol";
+import { BenchRemoteService, DraftsRemoteService } from "./remotes-kv.js";
+import * as remotesKv from "./remotes-kv.js";
 
 /**
  * Structural read view of the runs registry service. The doors'
@@ -99,6 +101,24 @@ export class RunsRemoteService extends TypertRemoteService {
       status: run?.status ?? null,
     };
   }
+
+  /** runs/list — the archive listing (R2: the media panel's runs
+   *  lane rides this remote; the /v1 door stays until R5 deletes
+   *  it). Late-bound domain calls, same late-bind law as the KV
+   *  remotes in remotes-kv.ts. */
+  @Remote("list")
+  async list(limit: number, signal: AbortSignal): Promise<unknown> {
+    signal.throwIfAborted();
+    const runs = await remotesKv.loadRuns();
+    const shell = await remotesKv.loadShell();
+    const out = await runs.hRunsList(
+      { limit: [String(limit)] },
+      shell.defaultAssetRoots(),
+      (): boolean => false,
+    );
+    if (out.status >= 200 && out.status < 300) return out.body;
+    throw new Error(JSON.stringify(out.body));
+  }
 }
 
 /** Provider plugin (manifest row `gateway-wire`): owns the Remote
@@ -110,6 +130,8 @@ export const gatewayWire: Plugin = {
   name: "gateway-wire",
   apply(ctx: Context): void {
     new RunsRemoteService(ctx);
+    new DraftsRemoteService(ctx);
+    new BenchRemoteService(ctx);
   },
 };
 
