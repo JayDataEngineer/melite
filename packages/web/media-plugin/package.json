@@ -22,11 +22,9 @@
   "scripts": {
     "build": "pnpm exec tsdown -c tsdown.config.ts",
     "typecheck": "tsc --noEmit",
-    "test:runs": "node test/runs-window.mjs",
-    "test:door": "node --test test/host-door.test.mjs",
     "test:client": "vitest run",
     "test:e2e": "node test/e2e/build-harness.mjs && node test/e2e/e2e.mjs",
-    "test": "node --test test/host-door.test.mjs && node --test test/artifact-range.test.mjs && vitest run && node test/e2e/build-harness.mjs && node test/e2e/e2e.mjs"
+    "test": "vitest run && node test/e2e/build-harness.mjs && node test/e2e/e2e.mjs"
   },
   "devDependencies": {
     "@deepseek-ai/cordis": "^4.0.1",

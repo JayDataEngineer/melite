@@ -1,8 +1,8 @@
 /**
  * MediaPanel — the native media archive tab.
  *
- * One merged grid over GET /infer-media/runs (host half merges every
- * gateway). Everything renders with NATIVE elements: <video controls
+ * One grid over the runs door DIRECTLY (GET /v1/flows/runs?limit=500,
+ * same-origin — the estate collapse deleted the host-side merge). Everything renders with NATIVE elements: <video controls
  * autoPlay> in a fullscreen overlay, <img>, <audio controls>. No iframe, no
  * editor SPA dependency, no asset-type resolver to fall through.
  *
@@ -419,8 +419,14 @@ export function MediaPanel({ useTabInfo }: { useTabInfo?: () => TabInfo }): Reac
    * fetch/decode/never-stale engine — one failing never blanks the other
    * (the drafts feed's error is deliberately not rendered; the runs view
    * stays fully usable). */
-  const runsFeed = useFeed('/infer-media/runs', decodeRuns, { runs: [], errors: [] })
-  const draftsFeed = useFeed('/infer-media/drafts', decodeDrafts, { drafts: [], errors: [] })
+  /* THE ESTATE COLLAPSE (E4, 1:1): the feed rides the DOOR directly —
+   * same-origin /v1/flows/runs on this host's own webServer (the
+   * melite-estate bundle mounts it in-process). The handrolled
+   * host-side merge/proxy door is deleted. limit=500 is the runs-window
+   * law (the door's hard max — always pull it; a smaller window lets
+   * sidecar floods push artifact rows out of the listing). */
+  const runsFeed = useFeed('/v1/flows/runs?limit=500', decodeRuns, { runs: [], errors: [] })
+  const draftsFeed = useFeed('/v1/flows/drafts', decodeDrafts, { drafts: [], errors: [] })
   const runs = runsFeed.data.runs
   const gatewayErrors = runsFeed.data.errors
   const drafts = draftsFeed.data.drafts

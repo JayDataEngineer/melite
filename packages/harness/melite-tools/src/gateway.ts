@@ -1,12 +1,16 @@
 /**
- * Thin HTTP seam to the Melite gateway (server-js, default :33081).
+ * Thin wire client for the estate's /v1 doors.
  *
- * The gateway STAYS AS-IS — this module is a pure client over the wire
- * contract in melite/docs/PROTOCOL.md. Error law: a non-2xx response surfaces
- * the gateway's body VERBATIM (`RayGatewayError` message = status + url +
- * raw body), because a thrown tool error is materialized by the DSH registry
- * as the model-facing error text. Network failures name the URL and the
- * underlying cause instead of being swallowed.
+ * THE ESTATE COLLAPSE (docs/plans/estate-collapse-2026-09-10.md): the
+ * base URL is THIS DSH host's own origin (doors.ts derives it from
+ * ctx.webServer.port — the doors are mounted in the same process by
+ * the melite-estate bundle). The retired :33081 second-Loader seam is
+ * gone; this module stays a pure client over the SAME wire contract
+ * (melite/docs/PROTOCOL.md). Error law: a non-2xx response surfaces
+ * the door's body VERBATIM (`RayGatewayError` message = status + url +
+ * raw body), because a thrown tool error is materialized by the DSH
+ * registry as the model-facing error text. Network failures name the
+ * URL and the underlying cause instead of being swallowed.
  */
 
 /** Gateway answered with a non-2xx status; body carried verbatim. */
@@ -23,9 +27,6 @@ export class RayGatewayError extends Error {
     this.body = body
   }
 }
-
-/** Default Melite gateway base URL (the Bun gateway's loopback listen). */
-export const DEFAULT_GATEWAY_URL = 'http://localhost:33081'
 
 /** Strip one trailing slash so path joins stay single-slash. */
 export function normalizeGatewayUrl(gatewayUrl: string): string {

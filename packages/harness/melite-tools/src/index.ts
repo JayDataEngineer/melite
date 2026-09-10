@@ -32,7 +32,7 @@
  * @module @melite-plugin/dsh-tools
  */
 import type { Context } from '@deepseek-ai/cordis'
-import { DEFAULT_GATEWAY_URL } from './gateway.ts'
+import { normalizeGatewayUrl } from './gateway.ts'
 // THE CARD PACKAGES' TOOL FACES (M2′ + the registrar retirement,
 // 2026-09-09): a card tool is IMPORTED from its package — the
 // DSH law (packages/shell/tool-bash: a tool is its own package;
@@ -62,7 +62,7 @@ import { harnessEnhance, resolveHarnessRoutes, matchHarnessRoute, routeName } fr
 // with a fake seam — no host, no key, seconds-cheap).
 export { harnessEnhance, resolveHarnessRoutes, matchHarnessRoute, routeName }
 
-export { DEFAULT_GATEWAY_URL, RayGatewayError, normalizeGatewayUrl } from './gateway.ts'
+export { RayGatewayError, normalizeGatewayUrl } from './gateway.ts'
 
 // Tool factories — re-exported for the smoke harness (test/smoke.mjs)
 // and any embedder that mounts tools without the full plugin apply().
@@ -145,11 +145,25 @@ interface CtxView {
 /** Register the Melite tools against the live estate gateway. */
 export async function apply(ctx: Context, config: Config = {}): Promise<void> {
   const c = ctx as unknown as CtxView
-  // GATEWAY OVERRIDE: an embedding host (SDK spawn, remote mount) pins
-  // its own gateway through the env — never silently falling through to
-  // whatever this profile's config pins.
+  // GATEWAY OVERRIDE (estate collapse E3): an embedding host (SDK
+  // spawn, remote mount) pins an EXTERNAL estate lane through the env —
+  // never silently falling through to whatever this profile's config
+  // pins. The default is THIS host's own webServer origin: the doors
+  // are mounted in the same process (melite-estate bundle).
   const envGw = process.env.MELITE_GATEWAY_URL || ''
-  const gatewayUrl = (envGw || config.gatewayUrl || DEFAULT_GATEWAY_URL).replace(/\/+$/, '')
+  // Own-origin derivation is HOST-ONLY: a headless/sdk composition has
+  // no webServer service (the doors live in another DSH) — those lanes
+  // MUST pin MELITE_GATEWAY_URL (loud refusal below, QUEUE LANE LAW),
+  // never a silent default.
+  const ws = (ctx as unknown as { webServer?: { port: number } }).webServer
+  if ((envGw || config.gatewayUrl) === '' && ws === undefined) {
+    throw new Error('melite-tools: no webServer on this host and no MELITE_GATEWAY_URL pinned — an alien lane must name its estate origin (QUEUE LANE LAW)')
+  }
+  const gatewayUrl = normalizeGatewayUrl(
+    envGw
+    || config.gatewayUrl
+    || (ws !== undefined ? `http://127.0.0.1:${ws.port}` : ''),
+  )
 
   // config-first, env-override: a profile pins its interface; a
   // one-shot mount forces it without touching the profile.

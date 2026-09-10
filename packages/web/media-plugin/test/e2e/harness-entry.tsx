@@ -41,7 +41,7 @@ async function main(): Promise<void> {
   // Feed stub BEFORE anything renders.
   window.fetch = ((input: RequestInfo | URL) => {
     const url = String(input)
-    if (url.includes('/infer-media/runs')) {
+    if (url.includes('/v1/flows/runs')) {
       return Promise.resolve(new Response(JSON.stringify({
         runs: [{
           run_id: 'e2e-run', created_at: Date.now() / 1000,

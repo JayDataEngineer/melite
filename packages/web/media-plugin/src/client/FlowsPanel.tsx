@@ -2,7 +2,7 @@
  * FlowsPanel — the RIGHT-SIDEBAR Flows tab.
  *
  * Lists the composed action cards (drafts) from the host half's merged
- * /infer-media/drafts door — every gateway's queue-native flow
+ * /v1/flows/drafts door DIRECTLY (same-origin) — the queue-native flow
  * instances, newest first. Click a row (hunk 4, 2026-09-10): the draft
  * LOADS onto THE BENCH — the shared state both authors edit — and the
  * cards tab opens (bench-load.ts; the deck's window seam retired with
@@ -61,7 +61,7 @@ export function FlowsTabIcon({ size }: { size?: number }): React.JSX.Element {
 }
 
 export function FlowsPanel({ useTabInfo }: FlowsPanelProps): React.JSX.Element {
-  const feed = useFeed('/infer-media/drafts', decodeDrafts, { drafts: [], errors: [] })
+  const feed = useFeed('/v1/flows/drafts', decodeDrafts, { drafts: [], errors: [] })
   const [search, setSearch] = useState('')
   const [uiError, setUiError] = useState('')
   /* Hook-count law (MediaPanel's pattern): the prop is stable per mount,

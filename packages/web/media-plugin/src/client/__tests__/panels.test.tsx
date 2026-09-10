@@ -56,7 +56,7 @@ describe('callsTextOf — untrusted params door', () => {
 describe('MediaPanel — stubbed feed', () => {
   it('renders chips from the merged grid and surfaces capped runs', async () => {
     vi.stubGlobal('fetch', (url: string) =>
-      url === '/infer-media/runs'
+      url === '/v1/flows/runs?limit=500'
         ? runsFeed([
             run({ artifacts: [{ url: '/v/a.mp4', type: 'video' }, { url: '/v/a_last_frame.png', type: 'image' }] }),
             run({ run_id: 'r2', artifacts: [{ url: '/v/m.glb' }] }),
@@ -74,7 +74,7 @@ describe('MediaPanel — stubbed feed', () => {
 
   it('video tile click opens a native <video controls> overlay', async () => {
     vi.stubGlobal('fetch', (url: string) =>
-      url === '/infer-media/runs'
+      url === '/v1/flows/runs?limit=500'
         ? runsFeed([run({ prompt: 'a walking robot', artifacts: [{ url: '/v/walk.mp4', type: 'video' }] })])
         : draftsFeed([]))
     render(<MediaPanel />)
@@ -98,7 +98,7 @@ describe('MediaPanel — stubbed feed', () => {
         actions: { openResource: (a: string) => { opened.push(a) } } },
     })
     vi.stubGlobal('fetch', (url: string) =>
-      url === '/infer-media/runs'
+      url === '/v1/flows/runs?limit=500'
         ? runsFeed([run({ artifacts: [{ url: '/v/scene.glb', type: 'model' }] })])
         : draftsFeed([]))
     render(<MediaPanel useTabInfo={useTabInfo} />)
@@ -125,7 +125,7 @@ describe('MediaPanel — stubbed feed', () => {
 
   it('model tile without the tab hook surfaces an honest error, never a silent no-op', async () => {
     vi.stubGlobal('fetch', (url: string) =>
-      url === '/infer-media/runs'
+      url === '/v1/flows/runs?limit=500'
         ? runsFeed([run({ artifacts: [{ url: '/v/scene.glb', type: 'model' }] })])
         : draftsFeed([]))
     render(<MediaPanel />)
@@ -149,7 +149,7 @@ describe('FlowsPanel — bench-load gesture (hunk 4: the seam is gone, the bench
     const opened: string[] = []
     const bodies: Array<{ url: string; body: unknown }> = []
     vi.stubGlobal('fetch', (url: string, init?: RequestInit) => {
-      if (String(url).includes('/infer-media/drafts')) return draftsFeed([{ draft_id: 'd1', name: 'card one', model: 'qwen' }])
+      if (String(url) === '/v1/flows/drafts') return draftsFeed([{ draft_id: 'd1', name: 'card one', model: 'qwen' }])
       if (String(url) === '/v1/flows/drafts/d1') return Promise.resolve(new Response(JSON.stringify(draftDoc), { status: 200 }))
       if (String(url) === '/v1/bench/ensure') {
         bodies.push({ url: String(url), body: JSON.parse(String(init?.body)) })
@@ -176,7 +176,7 @@ describe('FlowsPanel — bench-load gesture (hunk 4: the seam is gone, the bench
 
   it('a refusing bench door surfaces the door\'s own error text, never a throw', async () => {
     vi.stubGlobal('fetch', (url: string) => {
-      if (String(url).includes('/infer-media/drafts')) return draftsFeed([{ draft_id: 'd1', name: 'card one', model: 'qwen' }])
+      if (String(url) === '/v1/flows/drafts') return draftsFeed([{ draft_id: 'd1', name: 'card one', model: 'qwen' }])
       if (String(url) === '/v1/flows/drafts/d1') return Promise.resolve(new Response(JSON.stringify(draftDoc), { status: 200 }))
       return Promise.resolve(new Response(JSON.stringify({ error: 'stale expect_rev' }), { status: 409 }))
     })
@@ -210,7 +210,7 @@ describe('MediaPanel — the wand opens the cards run resource (hunk 4)', () => 
   it('✦ CARDS routes through the tab action as a cards run address', async () => {
     const opened: string[] = []
     vi.stubGlobal('fetch', (url: string) =>
-      url === '/infer-media/runs'
+      url === '/v1/flows/runs?limit=500'
         ? runsFeed([run({ draft_id: 'd9', artifacts: [{ url: '/v/walk.mp4', type: 'video' }] })])
         : draftsFeed([]))
     render(<MediaPanel useTabInfo={() => ({
@@ -228,7 +228,7 @@ describe('MediaPanel — the wand opens the cards run resource (hunk 4)', () => 
 
   it('wand without the tab hook surfaces an honest error', async () => {
     vi.stubGlobal('fetch', (url: string) =>
-      url === '/infer-media/runs'
+      url === '/v1/flows/runs?limit=500'
         ? runsFeed([run({ artifacts: [{ url: '/v/walk.mp4', type: 'video' }] })])
         : draftsFeed([]))
     render(<MediaPanel />)
@@ -245,7 +245,7 @@ describe('MediaPanel — the wand opens the cards run resource (hunk 4)', () => 
 describe('MediaPanel — DSH primitive ports (2026-09-09, no handrolls)', () => {
   const feed = (): void => {
     vi.stubGlobal('fetch', (url: string) =>
-      url === '/infer-media/runs'
+      url === '/v1/flows/runs?limit=500'
         ? runsFeed([run({ prompt: 'a walking robot', draft_id: 'd9', artifacts: [{ url: '/v/walk.mp4', type: 'video' }] })])
         : draftsFeed([{ draft_id: 'd9', name: 'card nine', model: 'qwen' }]))
   }

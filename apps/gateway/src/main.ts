@@ -1,46 +1,14 @@
-// server.ts — the gateway HTTP shell on the Cordis substrate.
+// apps/gateway/src/main.ts — THE WALLS' TEST RIG, nothing else.
 //
-// The gateway IS a Cordis app (CORDIS CORE law,
-// docs/patterns/cordis-core.md): the boot is LOADER-DRIVEN —
-// bootGatewayContext (src/core/context.ts) owns the Loader service
-// and applies the checked-in bundle patch
-// (packages/gateway/shell/cordis.patch.yml: errors, the 15 door
-// plugins, timer, logger-console, the WEB SERVER entry, the gateway
-// lifecycle entry). Each door plugin mounts its authored ROUTES
-// rows as NAMED webServer routes at apply time (doors/routeMount);
-// this shell owns no request path.
-//
-// WEBSERVER STROKE (2026-09-08) + ROUTING 1:1 (2026-09-09): the
-// transport rides the vendored harness plugin
-// @deepseek-ai/dsh-host-webserver (vendor/cordis_plugins/webserver
-// — their web carrier, "knows no harness concepts"): the plugin
-// owns createServer/listen/close+closeAllConnections/disposal, the
-// named-route table, matching order, and the no-owner 404 voice.
-// The retired uvicorn-contract rim (py URL decode, trailing-slash
-// normalize, one ctx.serial bus round, content-length stamping,
-// the 500 belt) is deleted — per-route mechanics live in the
-// adapter (doors/routeMount.ts). Upgrades ride registerUpgrade:
-// the runs events door serves the bare form exactly and the path
-// form /v1/flows/events/<run_id> as a prefix route (the estate
-// divergence on the vendored copy — arbitrary run ids cannot ride
-// an exact table). Unmatched upgrades are closed by the plugin
-// (their law).
-//
-// The queue boot (lock-first single-writer gate, resurrect queued
-// work, sweep stale sidecars, ledger server.boot — py main()
-// 4474-4489) runs inside the gateway plugin's apply, BEFORE the
-// server accepts traffic.
-//
-// QUEUE LANE LAW: no fixed port — the webserver listens on an
-// EPHEMERAL port (port 0, kernel-assigned) unless GATEWAY_PORT pins
-// one (tests never pin). Direct run prints `READY <port>` on stdout
-// so the parity wall can discover the port:
-//
-//   node --experimental-strip-types apps/gateway/src/main.ts
-//
-// Erasable-syntax TS only (node --experimental-strip-types): no
-// enums, import type for types, .ts specifiers for relative imports.
-
+// THE ESTATE COLLAPSE (docs/plans/estate-collapse-2026-09-10.md): this
+// rim is RETIRED as a product. DSH is the only web app — the estate's
+// doors mount in the DSH host via the @melite-plugin/dsh-estate bundle
+// (melite-test/deck profiles), and melite-gateway.service is stopped.
+// What survives here is the isolated boot the WALLS drive
+// (tests/walls/ts/helpers/boot.ts spawns this file with scratch state
+// roots): a composition to exercise the doors over HTTP in tests,
+// never a serving deployment. Do not wire anything product-shaped to
+// this port again.
 import type { IncomingMessage, ServerResponse } from "node:http";
 import { defaultAssetRoots } from "@melite/gateway-shell";
 import { handleWsUpgrade } from "@melite/gateway-shell";

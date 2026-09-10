@@ -2,7 +2,8 @@
  * `@infer-media/dsh-media` — client half.
  *
  * Registers TWO native right-sidebar page tabs ("Media", "Flows") backed
- * by the host half's merged /infer-media/* routes. Migrated 2026-09-10
+ * DIRECTLY on the same-origin /v1/flows doors (the estate collapse
+ * deleted the host half's merge routes). Migrated 2026-09-10
  * from the retired dsh-better-sidebar registry (uninstalled with the
  * plugin) onto the web profile's native subsystem — the two-registration
  * contract per ui-sidebar-right (the shipped documentpreview is the

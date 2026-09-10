@@ -13,7 +13,6 @@
 // bun test from the package dir (zero deps; bun:test is built in).
 import { afterEach, describe, expect, test } from 'bun:test'
 import {
-  DEFAULT_GATEWAY_URL,
   RayGatewayError,
   gatewayRequest,
   normalizeGatewayUrl,
@@ -29,9 +28,6 @@ describe('normalizeGatewayUrl', () => {
     expect(normalizeGatewayUrl('http://localhost:33081///')).toBe('http://localhost:33081')
   })
 
-  test('DEFAULT_GATEWAY_URL is the loopback gateway', () => {
-    expect(DEFAULT_GATEWAY_URL).toBe('http://localhost:33081')
-  })
 })
 
 describe('RayGatewayError', () => {

@@ -33,7 +33,11 @@ export const inject = ['webServer', 'llm', 'tools']
 
 /** Door config — same spelling as the tool plane's. */
 export interface Config {
-  /** Melite gateway base URL. Default http://localhost:33081. */
+  /** Estate wire origin override. UNSET by default — the doors ride
+   *  THIS host's own webServer (the melite-estate bundle mounts them
+   *  in-process; the estate collapse, docs/plans/
+   *  estate-collapse-2026-09-10.md). Set only for an external estate
+   *  lane (another machine's DSH host). */
   gatewayUrl?: string
 }
 
@@ -45,6 +49,8 @@ interface CtxView {
     schemas(): Array<{ name: string; description?: string; parameters?: unknown }>
   }
   webServer: {
+    /** The host's bound port (the own-origin seam reads it live). */
+    port: number
     register(route: {
       kind: 'exact' | 'prefix'
       path: string
@@ -54,7 +60,12 @@ interface CtxView {
 }
 
 export function apply(c: CtxView, config: Config = {}): void {
-  const gatewayUrl = config.gatewayUrl ?? 'http://localhost:33081'
+  // E3 (estate collapse): the tool plane's wire origin is THIS host's
+  // own webServer — the doors are mounted in the same process; the
+  // :33081 second-Loader seam is retired. The port is read LIVE so a
+  // port-0 (OS-assigned) host binds correctly too.
+  const ownOrigin = `http://127.0.0.1:${c.webServer.port}`
+  const gatewayUrl = config.gatewayUrl ?? ownOrigin
 
   // The host default model, read LIVE (2026-09-06 — the door serves
   // the USER'S default, never first-breathing by registration order).

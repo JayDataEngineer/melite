@@ -115,9 +115,24 @@ window.__ModuleLoader__.load({
 		const row = (v) => Array.isArray(v) ? v : [];
 		function decodeRuns(json) {
 			const d = json ?? {};
+			const errors = row(d.errors);
+			const runs = [];
+			let dropped = 0;
+			for (const raw of row(d.runs)) {
+				const r = raw ?? {};
+				if (typeof r.run_id !== "string" || r.run_id === "") {
+					dropped += 1;
+					continue;
+				}
+				runs.push(r);
+			}
+			if (dropped > 0) errors.push({
+				gateway: "runs",
+				message: "dropped " + String(dropped) + " rows without run_id (unkeyable)"
+			});
 			return {
-				runs: row(d.runs),
-				errors: row(d.errors)
+				runs,
+				errors
 			};
 		}
 		function decodeDrafts(json) {
@@ -386,8 +401,8 @@ window.__ModuleLoader__.load({
 		/**
 		* MediaPanel — the native media archive tab.
 		*
-		* One merged grid over GET /infer-media/runs (host half merges every
-		* gateway). Everything renders with NATIVE elements: <video controls
+		* One grid over the runs door DIRECTLY (GET /v1/flows/runs?limit=500,
+		* same-origin — the estate collapse deleted the host-side merge). Everything renders with NATIVE elements: <video controls
 		* autoPlay> in a fullscreen overlay, <img>, <audio controls>. No iframe, no
 		* editor SPA dependency, no asset-type resolver to fall through.
 		*
@@ -815,11 +830,11 @@ window.__ModuleLoader__.load({
 			});
 		}
 		function MediaPanel({ useTabInfo }) {
-			const runsFeed = useFeed("/infer-media/runs", decodeRuns, {
+			const runsFeed = useFeed("/v1/flows/runs?limit=500", decodeRuns, {
 				runs: [],
 				errors: []
 			});
-			const draftsFeed = useFeed("/infer-media/drafts", decodeDrafts, {
+			const draftsFeed = useFeed("/v1/flows/drafts", decodeDrafts, {
 				drafts: [],
 				errors: []
 			});
@@ -1163,7 +1178,7 @@ window.__ModuleLoader__.load({
 		* FlowsPanel — the RIGHT-SIDEBAR Flows tab.
 		*
 		* Lists the composed action cards (drafts) from the host half's merged
-		* /infer-media/drafts door — every gateway's queue-native flow
+		* /v1/flows/drafts door DIRECTLY (same-origin) — the queue-native flow
 		* instances, newest first. Click a row (hunk 4, 2026-09-10): the draft
 		* LOADS onto THE BENCH — the shared state both authors edit — and the
 		* cards tab opens (bench-load.ts; the deck's window seam retired with
@@ -1203,7 +1218,7 @@ window.__ModuleLoader__.load({
 			});
 		}
 		function FlowsPanel({ useTabInfo }) {
-			const feed = useFeed("/infer-media/drafts", decodeDrafts, {
+			const feed = useFeed("/v1/flows/drafts", decodeDrafts, {
 				drafts: [],
 				errors: []
 			});

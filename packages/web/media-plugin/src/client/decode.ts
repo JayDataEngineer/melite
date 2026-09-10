@@ -1,5 +1,5 @@
 /**
- * Wire types + door decoders for the /infer-media feeds — ONE validation
+ * Wire types + door decoders for the /v1/flows feeds (same-origin doors) — ONE validation
  * site per feed (audit F2: both panels re-checked shapes at render with
  * Array.isArray sprinkles; now the hook's decode does it once and
  * malformed shapes fall back to empty HERE, loudly typed).
@@ -53,10 +53,24 @@ const row = <T,>(v: unknown): T[] => (Array.isArray(v) ? v as T[] : [])
 
 export function decodeRuns(json: unknown): RunsFeed {
   const d = (json ?? {}) as { runs?: unknown; errors?: unknown }
-  return {
-    runs: row<RunRow>(d.runs),
-    errors: row<GatewayError>(d.errors),
+  /* ONE validation site (the estate collapse moved the deleted host
+   * door's law here): a run without a string run_id is undedupeable
+   * and unkeyable — DROPPED and counted loudly into the errors array
+   * (the panel's existing error channel), never pushed as a partial,
+   * never vanished silently. The door serves clean rows; this guards
+   * the wire. */
+  const errors = row<GatewayError>(d.errors)
+  const runs: RunRow[] = []
+  let dropped = 0
+  for (const raw of row<unknown>(d.runs)) {
+    const r = (raw ?? {}) as RunRow
+    if (typeof r.run_id !== 'string' || r.run_id === '') { dropped += 1; continue }
+    runs.push(r)
   }
+  if (dropped > 0) {
+    errors.push({ gateway: 'runs', message: 'dropped ' + String(dropped) + ' rows without run_id (unkeyable)' })
+  }
+  return { runs, errors }
 }
 
 export interface DraftsFeed {
