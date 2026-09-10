@@ -62,28 +62,3 @@ export function jsonLane(
     return raw as Record<string, unknown>
   }
 }
-
-/** The browser face of the lane remote (R4): a fetch-shaped call
- *  over ctx.remote.runs.lane — drop-in for the same-origin /v1
- *  fetches the studios and deck tabs carried. `remote` is the
- *  dsh-api-gateway client transport (structural: one method). */
-export function browserLane(
-  remote: { lane(method: string, path: string, body: unknown, signal?: AbortSignal): Promise<unknown> },
-): (input: string, init?: { method?: string; body?: string; signal?: AbortSignal }) => Promise<Response> {
-  return async (input, init): Promise<Response> => {
-    const url = new URL(input, 'http://lane.local');
-    const method = (init?.method ?? 'GET').toUpperCase() as 'GET' | 'POST' | 'PATCH';
-    let body: unknown;
-    if (init?.body !== undefined) {
-      try { body = JSON.parse(init.body) } catch { body = init.body }
-    }
-    try {
-      const value = await remote.lane(method, url.pathname + url.search, body, init?.signal);
-      return new Response(JSON.stringify(value ?? null), { status: 200, headers: { 'content-type': 'application/json' } });
-    } catch (e) {
-      const message = e instanceof Error ? e.message : String(e);
-      return new Response(JSON.stringify({ error: message }), { status: 502, headers: { 'content-type': 'application/json' } });
-    }
-  };
-}
-
