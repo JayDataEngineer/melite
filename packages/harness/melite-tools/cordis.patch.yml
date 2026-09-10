@@ -15,9 +15,5 @@
 - insert:
     - id: melite-tools
       name: '@melite-plugin/dsh-tools'
-      config:
-        gatewayUrl: http://localhost:33081
     - id: melite-tools-doors
       name: '@melite-plugin/dsh-tools/doors'
-      config:
-        gatewayUrl: http://localhost:33081

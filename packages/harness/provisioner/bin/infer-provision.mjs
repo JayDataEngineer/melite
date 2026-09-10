@@ -10,13 +10,11 @@
  * family re-split or repo move changes nothing.
  *
  * Usage:
- *   infer-provision all                    # profiles + preset + check
+ *   infer-provision all                    # render + install every profile
  *   infer-provision profile <name>         # render one profile dir
  *   infer-provision preset                 # install the agent preset
- *   infer-provision check                  # gateway health
  * Flags:
  *   --dsh-home <dir>   default $DSH_HOME || ~/.dsh
- *   --gateway <url>    default $MELITE_GATEWAY || http://localhost:33081
  *
  * Rendered profiles mount the SAME rows the bundle patch mounts (the
  * profile's cordis.patch.yml user layer stays EMPTY by design — the
@@ -42,7 +40,6 @@ const flag = (name, dflt) => {
   return i >= 0 && argv[i + 1] ? argv[i + 1] : dflt
 }
 const DSH_HOME = flag('--dsh-home', process.env.DSH_HOME || join(process.env.HOME || '~', '.dsh'))
-const GATEWAY = flag('--gateway', process.env.MELITE_GATEWAY || 'http://localhost:33081')
 const PROFILE = argv[1] && !argv[1].startsWith('--') ? argv[1] : 'inference'
 
 const log = (...a) => console.log(...a)
@@ -140,25 +137,6 @@ function installDeps(profileDir) {
   return true
 }
 
-// ── gateway health ──────────────────────────────────────────────────────
-async function check() {
-  const url = GATEWAY.replace(/\/$/, '') + '/v1/model-catalog'
-  let body
-  try {
-    const res = await fetch(url, { signal: AbortSignal.timeout(5000) })
-    body = await res.json()
-  } catch (e) {
-    log('gateway           : DOWN (' + url + ') — ' + e.message)
-    log('  start it, or pass --gateway http://host:port')
-    return false
-  }
-  const lanes = Object.keys(body.lanes || body.families || {}).length
-  const models = body.model_count ?? Object.keys(body.models || {}).length
-  log('gateway           : UP  ' + url)
-  log('  lanes/models    : ' + lanes + ' / ' + models)
-  return true
-}
-
 // ── main ────────────────────────────────────────────────────────────────
 switch (cmd) {
   case 'all': {
@@ -166,12 +144,16 @@ switch (cmd) {
     // inference-studio retirement (2026-09-09) — its source tree no
     // longer exists, so `all` hard-failed at "preset source missing".
     // Presets are operator-managed now (~/.dsh/.agent-presets); this
-    // command provisions profiles + checks the gateway, nothing else.
-    for (const name of ['inference', 'headless']) installDeps(renderProfile(name))
-    await check()
+    // command renders + installs every profile (the gateway health
+    // check died with the gateway — there is no second process to
+    // probe anymore).
+    for (const name of ['inference', 'headless', 'estate']) {
+      installDeps(renderProfile(name))
+    }
     log('boot with:')
     log('  dsh web --profile inference          # the studio GUI')
     log('  dsh --profile headless "<task>"      # one-shot agent with card tools')
+    log('  dsh --profile estate                 # the SDK job server (estate row)')
     break
   }
   case 'profile': {
@@ -180,6 +162,5 @@ switch (cmd) {
     break
   }
   case 'preset': installPreset(); break
-  case 'check': { const ok = await check(); process.exit(ok ? 0 : 1) } break
-  default: die('unknown command ' + JSON.stringify(cmd) + ' — use all | profile <name> | preset | check')
+  default: die('unknown command ' + JSON.stringify(cmd) + ' — use all | profile <name> | preset')
 }

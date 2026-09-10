@@ -31,9 +31,9 @@ the layer stack automatically. Reboot the profile and the tools are live.
 
     pnpm --dir /path/to/inference.cpp/packages/harness/dsh/provisioner exec infer-provision all
     # or after a global link:
-    infer-provision all            # renders inference + headless, preset, gateway check
+    infer-provision all            # renders every profile (inference, headless, estate) + preset
     infer-provision profile headless --dsh-home /tmp/vanilla
-    infer-provision check --gateway http://elsewhere:33081
+    infer-provision profile estate --dsh-home /tmp/vanilla
 
 Rendered profiles keep an EMPTY user layer — every row lives in this
 bundle, so `dsh plugin add` and rendered profiles can never drift.
