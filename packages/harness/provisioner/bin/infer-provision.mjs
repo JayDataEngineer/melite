@@ -55,6 +55,14 @@ const PROFILE_BASES = {
   // spawns this profile; the estate row serves the runs lanes
   // in-process — no second app, no HTTP)
   estate: ['@deepseek-ai/dsh-base', '@deepseek-ai/dsh-sdk-app', '@infer/dsh-provisioner'],
+  // melite-test = THE TEST LANE, RE-COMPOSED (REBUILD-20, gateway
+  // kill 2026-09-10): the historical TEST bake (:3088, the
+  // melite-test profile mounting the estate API as a SECOND
+  // process on :33081) died with the gateway. Its replacement is
+  // the SAME row set as the studio — web app base + the estate
+  // rows in ONE process. Custom bakes serve from this name; the
+  // :33081 wire never existed here.
+  'melite-test': ['@deepseek-ai/dsh-base', '@deepseek-ai/dsh-web-app', '@infer/dsh-provisioner'],
 }
 
 function renderProfile(name) {
@@ -147,13 +155,14 @@ switch (cmd) {
     // command renders + installs every profile (the gateway health
     // check died with the gateway — there is no second process to
     // probe anymore).
-    for (const name of ['inference', 'headless', 'estate']) {
+    for (const name of ['inference', 'headless', 'estate', 'melite-test']) {
       installDeps(renderProfile(name))
     }
     log('boot with:')
     log('  dsh web --profile inference          # the studio GUI')
     log('  dsh --profile headless "<task>"      # one-shot agent with card tools')
     log('  dsh --profile estate                 # the SDK job server (estate row)')
+    log('  dsh web --profile melite-test        # the TEST lane (one process, no :33081)')
     break
   }
   case 'profile': {
