@@ -93,6 +93,12 @@ interface Seats {
   load?: {
     load(inferenceType: string, name: string): unknown
   }
+
+  /** The queue seat (REBUILD-19): the serial run queue — the
+   *  journal tail rides its own seat's arm. */
+  queue?: {
+    ledger(rawLimit: string, rawEvent: string): unknown
+  }
 }
 
 /** Route one KV/runs lane to its seat; undefined = no seat / no match. */
@@ -115,6 +121,7 @@ async function trySeats(
     get manage() { return probe.get('manage') as Seats['manage'] },
     get skills() { return probe.get('skills') as Seats['skills'] },
     get load() { return probe.get('load') as Seats['load'] },
+    get queue() { return probe.get('queue') as Seats['queue'] },
   }
   signal.throwIfAborted()
 
@@ -239,6 +246,15 @@ async function trySeats(
     if (seats.load === undefined) return undefined
     const qs = new URLSearchParams(m[1] ?? '')
     return seats.load.load(qs.get('inference_type') ?? '', qs.get('name') ?? '')
+  }
+  // The ledger lane (REBUILD-19): the journal tail over the queue
+  // seat — the door's parameter law rides (garbage limit -> 50,
+  // never a 400).
+  m = /^\/v1\/ledger(?:\?([^/]*))?$/.exec(path)
+  if (method === 'GET' && m !== null) {
+    if (seats.queue === undefined) return undefined
+    const qs = new URLSearchParams(m[1] ?? '')
+    return seats.queue.ledger(qs.get('limit') ?? '50', qs.get('event') ?? '')
   }
   return undefined
 }

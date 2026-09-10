@@ -47,6 +47,7 @@ export * from "./skillRegistry.ts";
 export * from "./loadPlane.ts";
 export * from "./loadRegistry.ts";
 export * from "./toolProjection.ts";
+export * from "./ledgerTail.ts";
 export * from "./managePlane.ts";
 export * from "./manageRegistry.ts";
 export * from "./flowsData.ts";

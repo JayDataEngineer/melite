@@ -22,6 +22,8 @@ import {
   releaseLock,
   resolveStateRoot,
 } from "./queue.ts";
+import { tailLedger } from "./ledgerTail.ts";
+import type { LedgerTailAnswer } from "./ledgerTail.ts";
 
 /** Provider config: where the estate's run state lives. */
 export interface QueueConfig {
@@ -73,6 +75,14 @@ export class QueueService extends Service {
    *  runs remote's list arm). */
   get ledgerPath(): string {
     return ledgerPathFor(this.stateRoot);
+  }
+
+  /** The journal tail (REBUILD-19; the dead GET /v1/ledger arm —
+   *  the doors/assets.ts _h_ledger law rides verbatim): limit
+   *  default 50 / clamp 1..500 / garbage -> 50, event prefix on
+   *  the raw line, oldest -> newest within the tail. */
+  ledger(rawLimit: string, rawEvent: string): LedgerTailAnswer {
+    return tailLedger(this.ledgerPath, rawLimit, rawEvent);
   }
 
   /** Whether dispose already released our lock (test probe). */
