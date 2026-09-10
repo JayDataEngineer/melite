@@ -47,6 +47,15 @@
   disabled: true
 
 - insert:
+    # THE ESTATE ROW (REBUILD-9): the runs plane as host services —
+    # card registry (primed defs + facts + in-process compose), the
+    # runs registry (start/status/stop/list/validate, both doors),
+    # and the Typert adapters. Mounts FIRST: the tools' seats
+    # (draftsRemote/runsRemote) resolve from here. State root =
+    # MELITE_STATE_ROOT else <cwd>/data/runs.
+    - id: infer-estate
+      name: '@melite-plugin/melite-estate'
+
     - id: infer-tools
       name: '@melite-plugin/dsh-tools'
       config:

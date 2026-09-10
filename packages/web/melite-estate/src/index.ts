@@ -11,9 +11,6 @@
 // it. What remains is the engine tier the rebuild rides on; the
 // domain remotes land here as they are rebuilt DSH-native.
 //
-// REBUILD-1 lands here: the persistence tier (hub → json backend →
-// domain facility) plus the drafts Remote owner. The backend root is
-// env-derived at composition (never pinned).
 //
 // Erasable-syntax TS only: no enums, `import type` for types, bare
 // package specifiers only.
@@ -23,33 +20,30 @@ import type { Plugin } from "@deepseek-ai/cordis";
 
 import modelsProvider from "@melite/comfyui-cordis/catalog-registry";
 import comfyuiHost from "@melite/comfyui-cordis/comfyui-host";
-import draftsPlugin, {
-  resolveStorageRoot,
-  storageDomainFacility,
-  storageHub,
-  storageJsonBackend,
-} from "@melite/estate-drafts";
+// The drafts service only — the storage PROVIDERS (hub, json
+// backend, domain form) belong to the composition site: dsh-base
+// mounts them in profiles (bundle/base/cordis.patch.yml's
+// storage/storage-json/storage-domain rows — "it belongs to the
+// shared base"), the boot rigs mount them in tests. A consumer
+// row never re-provides a base-owned seat
+// (storage-domain/README.md: consumers "never touch a backend").
+import draftsPlugin from "@melite/estate-drafts";
 import queuePlugin, {
   cardRegistryProvider,
   runsRegistryPlugin,
 } from "@melite/estate-queue";
 import { runsRemotePlugin } from "@melite/estate-runs";
 
-/** The estate composition: the engine tier plus the rebuilt
- *  persistence tier, the drafts remote, and the serial run queue
- *  as the estate's own host service (REBUILD-5: lock-first, no
- *  doors, no port; the runs remote exposes the lanes over its
- *  seat. runs/flows/assets/manage/discovery land as named Typert
- *  services in later rebuild strokes — never as a second app,
- *  never as fetch routes). The queue takes no row config: its
- *  state root is MELITE_STATE_ROOT else <cwd>/data/runs — the
- *  same resolution the dead gateway shell used. */
+/** The estate composition: the engine tier, the drafts service,
+ *  the serial run queue, and the runs plane (REBUILD-5/9). A
+ *  CONSUMER row, never a provider: the storage stack (hub +
+ *  backend + the domain form) belongs to the composition site —
+ *  dsh-base owns it in profiles (dshHomePath storages); wall and
+ *  probe boots mount it themselves. The queue takes no row
+ *  config: its state root is MELITE_STATE_ROOT else <cwd>/data/runs. */
 const rows: readonly Plugin[] = [
   modelsProvider,
   comfyuiHost,
-  storageHub,
-  storageJsonBackend,
-  storageDomainFacility,
   draftsPlugin,
   queuePlugin,
   // The card registry (REBUILD-9: the primed defs + facts + the
@@ -67,14 +61,6 @@ export const name = "melite-estate";
 
 export function apply(ctx: Context): void {
   for (const row of rows) {
-    if (row === storageJsonBackend) {
-      ctx.plugin(row, { root: resolveStorageRoot() });
-      continue;
-    }
-    if (row === storageDomainFacility) {
-      ctx.plugin(row, { backend: "json" });
-      continue;
-    }
     ctx.plugin(row);
   }
 }

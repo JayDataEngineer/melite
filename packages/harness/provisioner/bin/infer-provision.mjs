@@ -54,6 +54,10 @@ const PROFILE_BASES = {
   inference: ['@deepseek-ai/dsh-base', '@deepseek-ai/dsh-web-app', '@infer/dsh-provisioner'],
   // headless = the agent server: one-shot task runner + our tool rows
   headless: ['@deepseek-ai/dsh-base', '@deepseek-ai/dsh-headless', '@infer/dsh-provisioner'],
+  // estate = the job server: the SDK JSON-RPC base (estate-drive
+  // spawns this profile; the estate row serves the runs lanes
+  // in-process — no second app, no HTTP)
+  estate: ['@deepseek-ai/dsh-base', '@deepseek-ai/dsh-sdk-app', '@infer/dsh-provisioner'],
 }
 
 function renderProfile(name) {
@@ -102,7 +106,11 @@ function renderProfile(name) {
   // activate them. The bundle owns the rows; the renderer owns the
   // per-app mount shape.
   const webMount = bundles.includes('@deepseek-ai/dsh-web-app')
-  const webRows = ['infer-card-view-host', 'infer-card-view-client',
+  // infer-tools-doors is web-profiles-only by its own contract (the
+  // ✦ doors need webServer+llm — absent in sdk/headless mounts); the
+  // renderer disables it with the other web rows in non-web mounts.
+  const webRows = ['infer-tools-doors',
+                   'infer-card-view-host', 'infer-card-view-client',
                    'infer-card-deck', 'infer-media', 'infer-gallery-host']
   writeFileSync(join(dst, 'cordis.patch.yml'),
     webMount
