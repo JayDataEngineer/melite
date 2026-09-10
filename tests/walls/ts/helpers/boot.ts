@@ -19,6 +19,10 @@ export const REPO_ROOT: string = resolve(here, "..", "..", "..", "..");
 export interface Sandbox {
   readonly port: number;
   readonly proc: ChildProcess;
+  /** The manager stub process when opts.manager booted one (the
+   *  vendor ComfyUI-Manager HTTP contract — see fixtures/manager-stub.mjs);
+   *  the caller reaps it alongside the gateway. */
+  readonly managerProc?: ChildProcess;
   /** Fixture MELITE_REPO_ROOT (minimal config tree). */
   readonly repoRoot: string;
   /** Fresh MELITE_STATE_ROOT (dies with the OS tmp parent). */
@@ -68,9 +72,21 @@ function readyPort(proc: ChildProcess, deadlineMs: number): Promise<number> {
   });
 }
 
+/** Boot the vendor manager stub (fixtures/manager-stub.mjs) and
+ *  resolve its port via the READY handshake. */
+async function bootManagerStub(): Promise<{ proc: ChildProcess; port: number }> {
+  const proc = spawn(process.execPath, [join(here, "..", "fixtures", "manager-stub.mjs")], {
+    stdio: ["ignore", "pipe", "ignore"],
+  });
+  return { proc, port: await readyPort(proc, 10000) };
+}
+
 /** Boot one sandbox gateway; the caller owns reaping (try/finally). */
 export async function bootSandbox(opts: {
-  mcpBin: string;
+  /** Boot the vendor manager stub and pin the endpoint config at
+   *  it (the built-in ComfyUI-Manager HTTP rail). Absent = no
+   *  endpoint url: manager-plane actions answer the 503 template. */
+  manager?: boolean;
   token: string;
   /** Pre-seeded state root (caller-owned): skips the fresh-root
    *  mint — the drafts wall seeds legacy fixtures before boot and
@@ -96,15 +112,28 @@ export async function bootSandbox(opts: {
   }
   env["MELITE_STATE_ROOT"] = stateRoot;
   env["MELITE_REPO_ROOT"] = repoRoot;
-  env["MELITE_COMFY_MCP_BIN"] = opts.mcpBin;
   env["DSH_GATEWAY_TOKEN"] = opts.token;
   delete env["GATEWAY_PORT"];
+  let managerProc: ChildProcess | undefined;
+  if (opts.manager === true) {
+    const stub = await bootManagerStub();
+    managerProc = stub.proc;
+    const endpointFile = join(repoRoot, "endpoint.json");
+    writeFileSync(endpointFile, JSON.stringify({
+      url: "http://127.0.0.1:" + stub.port,
+      provision: "managed",
+    }));
+    env["COMFYUI_ENDPOINT_CONFIG"] = endpointFile;
+  }
   const proc: ChildProcess = spawn(
     process.execPath,
     ["--experimental-strip-types", join(REPO_ROOT, "apps", "gateway", "src", "main.ts")],
     { cwd: REPO_ROOT, env, stdio: ["ignore", "pipe", "ignore"], detached: true },
   );
   try {
+    if (managerProc !== undefined && managerProc.exitCode !== null) {
+      throw new Error("manager stub exited before the gateway boot");
+    }
     const port: number = await readyPort(proc, 30000);
     // Boot wait (any HTTP status proves the listener is up).
     const deadline: number = Date.now() + 15000;
@@ -117,9 +146,10 @@ export async function bootSandbox(opts: {
         await new Promise((r: (v: unknown) => void): ReturnType<typeof setTimeout> => setTimeout(r, 200));
       }
     }
-    return { port, proc, repoRoot, stateRoot, token: opts.token };
+    return { port, proc, managerProc, repoRoot, stateRoot, token: opts.token };
   } catch (e) {
     reap(proc);
+    if (managerProc !== undefined) reap(managerProc);
     throw e;
   }
 }

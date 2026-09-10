@@ -1,55 +1,8 @@
+import { LlmRuntime } from "@deepseek-ai/dsh-llm";
 //#region src/llm-complete.d.ts
-/**
- * One harness-model completion core — the ONLY execution path for prompt
- * enhancement. Both consumers share it:
- *
- *   - the enhance_prompt TOOL (model-facing, multi-field orchestration)
- *   - the POST /melite-tools/enhance HOST ROUTE (the editor's ✦ button inside
- *     the DSH GUI — same origin, no keystore, no key setup)
- *
- * The LLM is the DeepSeek harness's own model via ctx.llm (LlmRuntime):
- * the adapter the host itself chats through. There is no keystore lookup
- * anywhere on this path, so "no model configured" cannot happen in a host
- * that is conversing at all.
- *
- * Structural seam only: @deepseek-ai/dsh-llm is not a resolvable dependency
- * of this workspace (mirrors types.ts), so the runtime contract is captured
- * as the minimal shape we exercise — verified against the harness README:
- * stream() emits raw chunks (text-delta, finish{kind,failure}) and
- * listProviders/listModels expose registered routes.
- */
-/** Minimal structural view of the LlmRuntime seam we exercise. */
-interface LlmStreamSeam {
-  listProviders(): Array<{
-    id: string;
-    name?: string;
-  }>;
-  listModels(provider: string): Promise<Array<{
-    id: string;
-  }>>;
-  stream(options: {
-    provider: string;
-    model: string;
-    messages: Array<unknown>;
-    system?: string;
-    temperature?: number;
-    maxTokens?: number;
-    signal?: AbortSignal;
-  }): AsyncIterable<{
-    type: 'text-delta';
-    text: string;
-  } | {
-    type: 'finish';
-    kind: string;
-    failure?: {
-      message: string;
-      code?: string;
-    };
-  } | {
-    type: string;
-    [k: string]: unknown;
-  }>;
-}
+/** The runtime seat this core exercises — a structural Pick of the
+ *  REAL LlmRuntime contract (@deepseek-ai/dsh-llm). */
+type LlmStreamSeam = Pick<LlmRuntime, "stream" | "listProviders" | "listModels">;
 /** One enhancement request — a recipe system prompt + the user's words. */
 interface EnhanceRequest {
   system: string;

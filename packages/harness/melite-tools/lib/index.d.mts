@@ -1,6 +1,7 @@
-import { a as routeName, i as resolveHarnessRoutes, n as harnessEnhance, r as matchHarnessRoute } from "./llm-complete-CT_eM5jf.mjs";
+import { a as routeName, i as resolveHarnessRoutes, n as harnessEnhance, r as matchHarnessRoute } from "./llm-complete-CXD7-zEN.mjs";
 import { ToolDefinition } from "@deepseek-ai/dsh-tools";
 import "@deepseek-ai/dsh-llm";
+import "@deepseek-ai/dsh-util-values";
 //#region ../../../node_modules/.pnpm/@deepseek-ai+cosmokit@1.8.3/node_modules/@deepseek-ai/cosmokit/lib/types/misc.d.ts
 /** String/symbol keyed dictionary type. */
 type Dict<T = any, K extends string | symbol = string> = { [key in K]: T; };
@@ -1150,14 +1151,13 @@ declare function normalizeGatewayUrl(gatewayUrl: string): string;
 //#region src/tools/run-status.d.ts
 declare function runStatus(gatewayUrl: string): ToolDefinition;
 //#endregion
-//#region src/tools/lane-bundle-peek.d.ts
-declare function laneBundlePeek(gatewayUrl: string): ToolDefinition;
-//#endregion
-//#region src/tools/lane-bundle-load.d.ts
-declare function laneBundleLoad(gatewayUrl: string): ToolDefinition;
-//#endregion
 //#region src/tools/melite-discover.d.ts
 declare function meliteDiscover(gatewayUrl: string): ToolDefinition;
+//#endregion
+//#region src/tools/melite-construct.d.ts
+/** The default bench — one shared state per gateway. */
+declare const DEFAULT_BENCH = "main";
+declare function meliteConstruct(gatewayUrl: string): ToolDefinition;
 //#endregion
 //#region src/tools/melite-flow.d.ts
 declare function meliteFlow(gatewayUrl: string): ToolDefinition;
@@ -1204,7 +1204,7 @@ interface Config {
   adhocTools?: string | string[];
 }
 /** BASE tool names — both interfaces (discovery, compose, management, audit). */
-declare const BASE_TOOL_NAMES: readonly ["melite_discover", "melite_load", "lane_bundle_peek", "lane_bundle_load", "comfy_manage", "skill_index", "skill_read", "ledger_tail"];
+declare const BASE_TOOL_NAMES: readonly ["melite_discover", "melite_construct", "melite_load", "comfy_manage", "skill_index", "skill_read", "ledger_tail"];
 /** HEADLESS-only run doors (MELITE_HEADLESS=1) — the delegated operator. */
 declare const HEADLESS_TOOL_NAMES: readonly ["melite_flow", "run_status"];
 /** AD HOC names (MELITE_ADHOC) — never in a base toolset.
@@ -1212,8 +1212,8 @@ declare const HEADLESS_TOOL_NAMES: readonly ["melite_flow", "run_status"];
  *  the editor ✦ door below keeps the user surface via harnessEnhance.) */
 declare const ADHOC_TOOL_NAMES: readonly [];
 /** Every tool name this plugin can own (registration log + smoke filter). */
-declare const MELITE_TOOL_NAMES: readonly ["melite_discover", "melite_load", "lane_bundle_peek", "lane_bundle_load", "comfy_manage", "skill_index", "skill_read", "ledger_tail", "melite_flow", "run_status"];
+declare const MELITE_TOOL_NAMES: readonly ["melite_discover", "melite_construct", "melite_load", "comfy_manage", "skill_index", "skill_read", "ledger_tail", "melite_flow", "run_status"];
 /** Register the Melite tools against the live estate gateway. */
 declare function apply(ctx: Context, config?: Config): Promise<void>;
 //#endregion
-export { ADHOC_TOOL_NAMES, BASE_TOOL_NAMES, Config, DEFAULT_GATEWAY_URL, HEADLESS_TOOL_NAMES, MELITE_TOOL_NAMES, RayGatewayError, apply, comfyManage, harnessEnhance, inject, laneBundleLoad, laneBundlePeek, ledgerTail, matchHarnessRoute, meliteDiscover, meliteFlow, meliteLoad, name, normalizeGatewayUrl, resolveHarnessRoutes, routeName, runStatus, skillIndex, skillRead };
+export { ADHOC_TOOL_NAMES, BASE_TOOL_NAMES, Config, DEFAULT_BENCH, DEFAULT_GATEWAY_URL, HEADLESS_TOOL_NAMES, MELITE_TOOL_NAMES, RayGatewayError, apply, comfyManage, harnessEnhance, inject, ledgerTail, matchHarnessRoute, meliteConstruct, meliteDiscover, meliteFlow, meliteLoad, name, normalizeGatewayUrl, resolveHarnessRoutes, routeName, runStatus, skillIndex, skillRead };

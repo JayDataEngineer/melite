@@ -14,5 +14,5 @@
   },
   "model_base_path": "/mnt/data/models/image-gen/comfyui",
   "model_download_path": "/mnt/data/models/image-gen/comfyui",
-  "url": "http://127.0.0.1:18466"
+  "url": "http://127.0.0.1:8188"
 }

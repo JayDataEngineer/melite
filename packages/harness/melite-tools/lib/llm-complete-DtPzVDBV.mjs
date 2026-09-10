@@ -1,3 +1,4 @@
+import { createUserMessage } from "@deepseek-ai/dsh-llm";
 //#region src/gateway.ts
 /**
 * Thin HTTP seam to the Melite gateway (server-js, default :33081).
@@ -122,17 +123,13 @@ async function harnessCompleteOnRoute(llm, route, req) {
 	const options = {
 		provider: route.provider,
 		model: route.model,
-		messages: [{
-			role: "user",
+		messages: [createUserMessage({
 			content: [{
 				type: "text",
 				text: req.prompt
 			}],
-			source: {
-				kind: "plugin",
-				plugin: "@melite-plugin/dsh-tools"
-			}
-		}],
+			source: { kind: "user" }
+		})],
 		system: req.system + OUTPUT_CONTRACT,
 		...req.temperature !== void 0 && Number.isFinite(req.temperature) ? { temperature: req.temperature } : {},
 		signal

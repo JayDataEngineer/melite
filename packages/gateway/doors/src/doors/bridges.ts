@@ -99,7 +99,7 @@ import {
 } from "./assets.ts";
 import { dispatchManage } from "./manage.ts";
 import { isRecord, parseStrictJson } from "@melite/gateway-core";
-import { needModels } from "@melite/comfyui-cordis";
+import { needModels, loadEndpointConfig } from "@melite/comfyui-cordis";
 import type { ModelsService } from "@melite/comfyui-cordis";
 import type { Context, Plugin } from "@deepseek-ai/cordis";
 import type { DispatchResult } from "@melite/gateway-core";
@@ -420,19 +420,22 @@ export async function handlePoserBridge(
   }
 }
 
-// ── manage door ─────────────────────────────────────────────────────
-// Cordis-native dispatch (./manage.ts over the MCP rail ./mcp.ts).
-// The TS process never spawns estate Python; the only Python process
-// on this path is the VENDOR comfy-mcp server binary.
-
-/** Vendor server binary — MELITE_COMFY_MCP_BIN wins (env pin for
- *  deployments that move the base env), else the base env default
- *  <anchor>/infra/python/.venv/bin/comfy-mcp. No other hardcode. */
-export function resolveComfyMcpBin(): string {
-  const override: string = process.env["MELITE_COMFY_MCP_BIN"] ?? "";
-  if (override !== "") return override;
-  return join(anchoredRepoRoot(), "infra", "python", ".venv", "bin", "comfy-mcp");
+/** Endpoint config for the manage door, re-read per call (never
+ *  cached between calls — the rail rides the CURRENT url; a stale
+ *  pin after an endpoint switch would be a lie). */
+function loadEndpointConfigFresh(): Record<string, unknown> {
+  try {
+    return loadEndpointConfig() as Record<string, unknown>;
+  } catch {
+    return {};
+  }
 }
+
+// ── manage door ─────────────────────────────────────────────────────
+// Cordis-native dispatch (./manage.ts over the manager HTTP rail
+// ./manager-api.ts — the built-in ComfyUI-Manager custom node; the
+// comfy-mcp binary and MELITE_COMFY_MCP_BIN died with the
+// no-external-python stroke, 2026-09-10).
 
 /** Peek the action for the plane-unavailable envelopes. THROWS on
  *  truthy non-dict docs (the old .get-crash 500 leg — same keys via
@@ -479,26 +482,10 @@ export async function handleManage(
     );
   }
   // The .get crash leg first (see manageActionName): a truthy
-  // non-dict never reaches the plane.
+  // non-dict never reaches the plane. (The old bin-existence 503
+  // died with comfy-mcp; plane-unavailability is now answered by
+  // the rail itself per action — the status probe stays 200.)
   const action: unknown = manageActionName(doc);
-  const serverBin: string = resolveComfyMcpBin();
-  if (!existsSync(serverBin)) {
-    return {
-      status: 503,
-      body: dumpsJson(
-        normalize4xx(503, {
-          action,
-          ok: false,
-          detail:
-            "management plane unavailable: no vendor comfy-mcp at " +
-            serverBin +
-            " (provision sync)",
-        }),
-      ),
-      contentType: JSON_CT,
-      headers: {},
-    };
-  }
   let stdinDoc: unknown;
   try {
     stdinDoc =
@@ -509,7 +496,7 @@ export async function handleManage(
   try {
     const [code, rep] = await dispatchManage(stdinDoc, {
       repoRoot,
-      serverBin,
+      endpoint: loadEndpointConfigFresh,
       models: needModels(models, "manage door"),
       timeout,
     });
@@ -544,7 +531,7 @@ export async function handleManage(
 
 /** Dispatch bridge rows by handler name. Async: the poser arm
  *  forwards over the network; the manage arm dispatches Cordis-native
- *  over the MCP rail (./manage.ts). models is the injected
+ *  over the manager HTTP rail (./manage.ts). models is the injected
  *  ModelsService (null only for non-plugin callers — the listener
  *  always passes ctx.models). */
 export async function dispatchBridges(

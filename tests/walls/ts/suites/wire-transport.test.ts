@@ -35,7 +35,7 @@
 import { describe, it, before, after } from "node:test";
 import { request } from "node:http";
 import assert from "node:assert/strict";
-import { accessSync, constants, mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -43,7 +43,6 @@ import { bootSandbox, http, parsed, reap } from "../helpers/boot.ts";
 import type { HttpOut, Sandbox } from "../helpers/boot.ts";
 
 const TOKEN = "wall-ts-wire-2026-09-10";
-const STUB_BIN = resolve(dirname(fileURLToPath(import.meta.url)), "..", "fixtures", "mcp-stub.mjs");
 
 /** One Connection client-request frame (the transport's own wire
  * shape — the generated client is sugar over exactly this). */
@@ -68,12 +67,7 @@ describe("the wire transport (sandbox boot, P1 pilot)", () => {
   let sandbox: Sandbox | null = null;
 
   before(async (): Promise<void> => {
-    try {
-      accessSync(STUB_BIN, constants.X_OK);
-    } catch {
-      assert.fail("mcp stub is not executable: " + STUB_BIN + " (chmod +x fixtures/mcp-stub.mjs)");
-    }
-    sandbox = await bootSandbox({ mcpBin: STUB_BIN, token: TOKEN });
+    sandbox = await bootSandbox({ token: TOKEN });
   });
 
   after((): void => {
@@ -154,9 +148,8 @@ describe("the wire drift pin (resurrected run through the guard)", () => {
   let stateRoot = "";
 
   before(async (): Promise<void> => {
-    accessSync(STUB_BIN, constants.X_OK);
     stateRoot = mkdtempSync(join(tmpdir(), "wall-ts-wire-"));
-    first = await bootSandbox({ mcpBin: STUB_BIN, token: TOKEN, stateRoot });
+    first = await bootSandbox({ token: TOKEN, stateRoot });
     // A real draft in the domain: resurrect's usability gate demands
     // a draft_id that exists (cardless rows orphan, by design).
     const saved: HttpOut = await http(first.port, "POST", "/v1/flows/drafts", {
@@ -194,7 +187,7 @@ describe("the wire drift pin (resurrected run through the guard)", () => {
       }),
     );
     writeFileSync(join(dir, "_request.json"), JSON.stringify({ prompt: "wire wall" }));
-    second = await bootSandbox({ mcpBin: STUB_BIN, token: TOKEN, stateRoot });
+    second = await bootSandbox({ token: TOKEN, stateRoot });
   });
 
   after((): void => {

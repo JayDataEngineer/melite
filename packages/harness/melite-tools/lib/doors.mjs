@@ -1,9 +1,5 @@
-import { i as routeName, r as resolveHarnessRoutes, s as gatewayRequest, t as harnessEnhance } from "./llm-complete-EAKcxcoV.mjs";
-import { createRequire } from "node:module";
+import { i as routeName, r as resolveHarnessRoutes, s as gatewayRequest, t as harnessEnhance } from "./llm-complete-DtPzVDBV.mjs";
 import { GENERIC_ENHANCE_RECIPE } from "@melite/gateway-core/prompt-guide";
-//#region \0rolldown/runtime.js
-var __require = /* #__PURE__ */ (() => createRequire(import.meta.url))();
-//#endregion
 //#region src/enhance-agent.ts
 /**
 * The AGENT-side enhance orchestration — shared by the chat tool and the
@@ -78,6 +74,14 @@ function apply(c, config = {}) {
 			if (typeof sel?.provider === "string" && typeof sel?.model === "string") return sel.provider + "/" + sel.model;
 		} catch {}
 	};
+	/** A signal that fires when the HTTP caller goes away (aborts or
+	*  closes) — the fuse leg for long LLM sweeps (row 13). */
+	const reqClosedSignal = (req) => {
+		const ctrl = new AbortController();
+		req.on("close", () => ctrl.abort());
+		req.on("aborted", () => ctrl.abort());
+		return ctrl.signal;
+	};
 	const readBody = (req) => new Promise((resolve, reject) => {
 		const chunks = [];
 		req.on("data", (d) => {
@@ -119,13 +123,6 @@ function apply(c, config = {}) {
 				res.end(JSON.stringify(payload));
 			};
 			readBody(req).then((buf) => {
-				try {
-					__require("node:fs").appendFileSync("/tmp/melite-enhance-capture.jsonl", JSON.stringify({
-						time: (/* @__PURE__ */ new Date()).toISOString(),
-						chars: buf.length,
-						body: buf.toString("utf8")
-					}) + "\n");
-				} catch {}
 				let body;
 				try {
 					body = JSON.parse(buf.toString("utf8"));
@@ -143,14 +140,17 @@ function apply(c, config = {}) {
 					}
 					return respond(502, { error: msg });
 				};
-				if (typeof body.model === "string" && body.model.length > 0) return agenticSweep(gatewayUrl, c.llm, {
-					model: body.model,
-					prompt: body.prompt,
-					temperature,
-					signal: AbortSignal.timeout(6e5),
-					...llmWant !== void 0 ? { llmWant } : {},
-					defaultLlm: readDefaultLlm()
-				}).then((result) => respond(200, result)).catch(mapEnhanceError);
+				if (typeof body.model === "string" && body.model.length > 0) {
+					const sweepSignal = AbortSignal.any([AbortSignal.timeout(6e5), reqClosedSignal(req)]);
+					return agenticSweep(gatewayUrl, c.llm, {
+						model: body.model,
+						prompt: body.prompt,
+						temperature,
+						signal: sweepSignal,
+						...llmWant !== void 0 ? { llmWant } : {},
+						defaultLlm: readDefaultLlm()
+					}).then((result) => respond(200, result)).catch(mapEnhanceError);
+				}
 				if (typeof body.system_prompt !== "string" || body.system_prompt.length === 0) return respond(400, { error: "either model (agent sweep) or system_prompt (one-shot) is required" });
 				harnessEnhance(c.llm, {
 					system: body.system_prompt,

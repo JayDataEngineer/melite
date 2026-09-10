@@ -21,7 +21,7 @@
 // Run: node --experimental-strip-types --test tests/walls/ts/suites/runs-registry.test.ts
 import { describe, it, before, after } from "node:test";
 import assert from "node:assert/strict";
-import { accessSync, constants, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -29,7 +29,6 @@ import { bootSandbox, http, parsed, reap } from "../helpers/boot.ts";
 import type { HttpOut, Sandbox } from "../helpers/boot.ts";
 
 const TOKEN = "wall-ts-registry-2026-09-09";
-const STUB_BIN = resolve(dirname(fileURLToPath(import.meta.url)), "..", "fixtures", "mcp-stub.mjs");
 
 function sidecar(fields: Record<string, unknown>): string {
   return JSON.stringify({
@@ -83,14 +82,9 @@ describe("runs list rides the registry (sandbox boot)", () => {
   let stateRoot = "";
 
   before(async (): Promise<void> => {
-    try {
-      accessSync(STUB_BIN, constants.X_OK);
-    } catch {
-      assert.fail("mcp stub is not executable: " + STUB_BIN + " (chmod +x fixtures/mcp-stub.mjs)");
-    }
     stateRoot = mkdtempSync(join(tmpdir(), "wall-ts-registry-"));
     seedRuns(join(stateRoot, "output"));
-    sandbox = await bootSandbox({ mcpBin: STUB_BIN, token: TOKEN, stateRoot });
+    sandbox = await bootSandbox({ token: TOKEN, stateRoot });
   });
 
   after((): void => {
@@ -173,14 +167,14 @@ describe("registry durability + ghost-delete (reboot the same root)", () => {
   before(async (): Promise<void> => {
     stateRoot = mkdtempSync(join(tmpdir(), "wall-ts-registry-rb-"));
     seedRuns(join(stateRoot, "output"));
-    first = await bootSandbox({ mcpBin: STUB_BIN, token: TOKEN, stateRoot });
+    first = await bootSandbox({ token: TOKEN, stateRoot });
     const listed = await listRuns(first.port, "?limit=200");
     assert.equal(listed.status, 200);
     assert.equal(listed.doc["count"], 6, "boot-1 converges");
     rmSync(join(stateRoot, "output", "run-c"), { recursive: true, force: true });
     reap((first as Sandbox).proc);
     first = null;
-    second = await bootSandbox({ mcpBin: STUB_BIN, token: TOKEN, stateRoot });
+    second = await bootSandbox({ token: TOKEN, stateRoot });
   });
 
   after((): void => {

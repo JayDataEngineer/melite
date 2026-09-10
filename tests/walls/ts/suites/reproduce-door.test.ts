@@ -29,7 +29,6 @@ import type { Sandbox } from "../helpers/boot.ts";
 import { handleFlowsReproduce } from "../../../../packages/gateway/queue/src/queue/reproduce.ts";
 
 const TOKEN = "wall-ts-reproduce-2026-09-09";
-const STUB_BIN = resolve(dirname(fileURLToPath(import.meta.url)), "..", "fixtures", "mcp-stub.mjs");
 
 function seedRecord(
   runsRoot: string,
@@ -128,7 +127,7 @@ describe("reproduce door (sandbox boot, the exact-resubmit wire)", () => {
   let sandbox: Sandbox;
 
   before(async () => {
-    sandbox = await bootSandbox({ mcpBin: STUB_BIN, token: TOKEN });
+    sandbox = await bootSandbox({ token: TOKEN });
     const out = join(sandbox.stateRoot, "output");
     seedRecord(out, "run-http-cardless", { prompt: "p" }, null);
     seedRecord(out, "run-http-noreq", { draft_id: "d1" }, null);

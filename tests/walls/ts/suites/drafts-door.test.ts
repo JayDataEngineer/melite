@@ -26,7 +26,7 @@
 // Run: node --experimental-strip-types --test tests/walls/ts/suites/drafts-door.test.ts
 import { describe, it, before, after } from "node:test";
 import assert from "node:assert/strict";
-import { accessSync, constants, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -34,7 +34,6 @@ import { bootSandbox, http, parsed, reap } from "../helpers/boot.ts";
 import type { HttpOut, Sandbox } from "../helpers/boot.ts";
 
 const TOKEN = "wall-ts-drafts-2026-09-09";
-const STUB_BIN = resolve(dirname(fileURLToPath(import.meta.url)), "..", "fixtures", "mcp-stub.mjs");
 
 const GOOD_LEGACY = {
   draft_id: "d_legacygood0000000000000000000",
@@ -68,11 +67,6 @@ describe("drafts ride the storage domain (sandbox boot)", () => {
   let stateRoot = "";
 
   before(async (): Promise<void> => {
-    try {
-      accessSync(STUB_BIN, constants.X_OK);
-    } catch {
-      assert.fail("mcp stub is not executable: " + STUB_BIN + " (chmod +x fixtures/mcp-stub.mjs)");
-    }
     stateRoot = mkdtempSync(join(tmpdir(), "wall-ts-drafts-"));
     const legacyDir = join(stateRoot, "drafts");
     mkdirSync(legacyDir, { recursive: true });
@@ -94,7 +88,7 @@ describe("drafts ride the storage domain (sandbox boot)", () => {
         stages: [{ id: "s_0", inputs: [""], provenance: "agent", service: "deep-model", params: { model: "nested-model" } }],
       }),
     );
-    sandbox = await bootSandbox({ mcpBin: STUB_BIN, token: TOKEN, stateRoot });
+    sandbox = await bootSandbox({ token: TOKEN, stateRoot });
   });
 
   after((): void => {
@@ -247,7 +241,7 @@ describe("drafts durability + the import marker (reboot the same root)", () => {
       intent: "reboot legacy",
       stages: [],
     }));
-    first = await bootSandbox({ mcpBin: STUB_BIN, token: TOKEN, stateRoot });
+    first = await bootSandbox({ token: TOKEN, stateRoot });
     const saved = await http(first.port, "POST", "/v1/flows/drafts", {
       body: JSON.stringify({ intent: "survives reboot", stages: [{ id: "s_0", inputs: [""], provenance: "agent" }] }),
       token: TOKEN,
@@ -256,7 +250,7 @@ describe("drafts durability + the import marker (reboot the same root)", () => {
     assert.equal(saved.status, 200, "boot-1 save");
     reap((first as Sandbox).proc);
     first = null;
-    second = await bootSandbox({ mcpBin: STUB_BIN, token: TOKEN, stateRoot });
+    second = await bootSandbox({ token: TOKEN, stateRoot });
   });
 
   after((): void => {

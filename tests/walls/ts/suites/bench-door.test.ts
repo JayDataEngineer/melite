@@ -32,23 +32,16 @@ import { describe, it, before, after } from "node:test";
 import assert from "node:assert/strict";
 import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { dirname, join, resolve } from "node:path";
-import { fileURLToPath } from "node:url";
+import { join } from "node:path";
 import { bootSandbox, http, parsed, reap } from "../helpers/boot.ts";
 import type { Sandbox } from "../helpers/boot.ts";
 
 const TOKEN = "wall-ts-bench-2026-09-10";
-const STUB_BIN = resolve(
-  dirname(fileURLToPath(import.meta.url)),
-  "..",
-  "fixtures",
-  "mcp-stub.mjs",
-);
 
 let sb: Sandbox;
 
 before(async () => {
-  sb = await bootSandbox({ mcpBin: STUB_BIN, token: TOKEN });
+  sb = await bootSandbox({ token: TOKEN });
 });
 
 after(() => {
@@ -350,7 +343,7 @@ describe("bench door — durability", () => {
   it("a second boot on the same state root serves the bench + log intact", async () => {
     const root = mkdtempSync(join(tmpdir(), "wall-ts-bench-"));
     {
-      const sb2 = await bootSandbox({ mcpBin: STUB_BIN, token: TOKEN, stateRoot: root });
+      const sb2 = await bootSandbox({ token: TOKEN, stateRoot: root });
       try {
         const r = await http(sb2.port, "POST", "/v1/bench/ensure", {
           body: JSON.stringify({
@@ -373,7 +366,7 @@ describe("bench door — durability", () => {
       }
     }
     {
-      const sb3 = await bootSandbox({ mcpBin: STUB_BIN, token: TOKEN, stateRoot: root });
+      const sb3 = await bootSandbox({ token: TOKEN, stateRoot: root });
       try {
         const g = await http(sb3.port, "GET", "/v1/bench/persist", { token: TOKEN });
         assert.equal(g.status, 200);

@@ -1,10 +1,12 @@
-import { a as DEFAULT_GATEWAY_URL, c as normalizeGatewayUrl, i as routeName, n as matchHarnessRoute, o as RayGatewayError, r as resolveHarnessRoutes, s as gatewayRequest, t as harnessEnhance } from "./llm-complete-EAKcxcoV.mjs";
+import { a as DEFAULT_GATEWAY_URL, c as normalizeGatewayUrl, i as routeName, n as matchHarnessRoute, o as RayGatewayError, r as resolveHarnessRoutes, s as gatewayRequest, t as harnessEnhance } from "./llm-complete-DtPzVDBV.mjs";
 import { buildMusicTool } from "@melite/audio-music/tool";
 import { buildTtsTool } from "@melite/audio-tts/tool";
 import { buildVoiceLockTool } from "@melite/audio-voice-lock/tool";
 import { buildImageEditTool } from "@melite/image-image-edit/tool";
 import { buildMotionTool } from "@melite/motion-motion/tool";
+import { buildCardTool } from "@melite/3d-clothing-placement/tool";
 import { buildH3TimelineTool } from "@melite/video-h3-timeline/tool";
+import { defineTool } from "@deepseek-ai/dsh-tools";
 //#region src/json-clean.ts
 /**
 * Deep JSON-normalization for tool results.
@@ -47,34 +49,49 @@ function clean(value, seen) {
 }
 //#endregion
 //#region src/tools/run-status.ts
-const TIMEOUT_MS$5 = 15e3;
+/**
+* run_status — the run monitor (headless).
+*
+* Poll ONE run through its lifecycle: GET {gateway}/v1/flows/
+* status/<run_id> → status, per-stage stages[].status, artifacts (the
+* bytes that landed), error (the EXACT failure string — RESILIENCE
+* LAW: never a bare "failed") and queue_position while waiting.
+*
+* Terminal states: completed | error | stopped | failed. The stop door
+* (/v1/flows/stop/<id>) stays operator-ordered — this tool only
+* READS.
+*
+* Registered ONLY in headless mounts (MELITE_HEADLESS=1).
+*/
+const TIMEOUT_MS$3 = 15e3;
 function runStatus(gatewayUrl) {
-	return {
+	const presentCall = (args) => {
+		const a = typeof args === "object" && args !== null ? args : {};
+		return {
+			card: "generic",
+			title: `Run status: ${String(a.runId ?? "?")}`,
+			kind: "read",
+			rawInput: String(a.runId ?? "?")
+		};
+	};
+	const def = defineTool({
 		name: "run_status",
 		description: "Poll a queue run: status (queued|running|completed|error|stopped|failed), per-stage progress, artifacts (landed bytes with paths) and the EXACT error string on failure. Args: runId (from melite_flow). Includes queue_position while waiting on the serial GPU lane. Read-only — the stop door is operator-ordered.",
-		parameters: {
-			type: "object",
-			properties: { runId: {
-				type: "string",
-				description: "The run id returned by melite_flow."
-			} },
-			required: ["runId"]
-		},
-		presentCall(args) {
-			const a = typeof args === "object" && args !== null ? args : {};
-			return {
-				card: "generic",
-				title: `Run status: ${String(a.runId ?? "?")}`,
-				kind: "read",
-				rawInput: String(a.runId ?? "?")
-			};
-		},
+		parameters: { runId: {
+			type: "string",
+			description: "The run id returned by melite_flow.",
+			required: true
+		} },
+		presentCall,
 		output: {
 			schema: {
 				type: "object",
 				additionalProperties: true,
 				properties: {
-					run_id: { type: "string" },
+					run_id: {
+						type: "string",
+						required: true
+					},
 					status: { type: "string" },
 					stages: {
 						type: "array",
@@ -86,14 +103,13 @@ function runStatus(gatewayUrl) {
 					},
 					error: {
 						type: "string",
-						description: "The EXACT failure string when status is error/failed."
+						description: "The EXACT failure string when status is error/failed, or the refusal text when the fetch refused."
 					},
 					queue_position: {
 						type: "number",
 						description: "0 = active; >0 = waiting in the FIFO."
 					}
-				},
-				required: ["run_id", "status"]
+				}
 			},
 			render: (args, value) => {
 				const v = value;
@@ -116,7 +132,7 @@ function runStatus(gatewayUrl) {
 			if (!runId) return jsonClean({ error: "runId is required" });
 			let res;
 			try {
-				res = await gatewayRequest(gatewayUrl, "GET", "/v1/flows/status/" + encodeURIComponent(runId), void 0, exec.signal, TIMEOUT_MS$5);
+				res = await gatewayRequest(gatewayUrl, "GET", "/v1/flows/status/" + encodeURIComponent(runId), void 0, exec.signal, TIMEOUT_MS$3);
 			} catch (e) {
 				if (e instanceof RayGatewayError) {
 					let named = "";
@@ -145,7 +161,320 @@ function runStatus(gatewayUrl) {
 				queue_position: typeof res.queue_position === "number" ? res.queue_position : 0
 			});
 		}
+	});
+	def.presentCall = presentCall;
+	return def;
+}
+//#endregion
+//#region src/tools/melite-construct.ts
+/** The default bench — one shared state per gateway. */
+const DEFAULT_BENCH = "main";
+function benchKeyOf(a) {
+	const k = a["bench"];
+	return typeof k === "string" && /^[A-Za-z0-9_-]{1,64}$/.test(k) ? k : DEFAULT_BENCH;
+}
+/** Refusal formatting shared by every verb (RayGatewayError body
+*  first — the door's JSON voice — then the raw text). */
+function refusalOf(e, verb, bench) {
+	let error = "";
+	let errorKind = "gateway";
+	if (e instanceof RayGatewayError) {
+		error = e.body;
+		errorKind = "http-" + String(e.status);
+		try {
+			const parsed = JSON.parse(e.body);
+			if (typeof parsed.error === "string" && parsed.error !== "") error = parsed.error;
+			if (typeof parsed.current_rev === "number") return jsonClean({
+				verb,
+				bench,
+				error,
+				error_kind: errorKind,
+				ok: false,
+				current_rev: parsed.current_rev
+			});
+		} catch {}
+	} else if (e instanceof Error) error = e.message;
+	else error = String(e);
+	return jsonClean({
+		verb,
+		bench,
+		error,
+		error_kind: errorKind,
+		ok: false
+	});
+}
+/** GET the bench; 404 → ensure (birth) → GET again. Reads are the
+*  freshness mechanism — always a door round trip. */
+async function readBench(gatewayUrl, bench, signal) {
+	const get = () => gatewayRequest(gatewayUrl, "GET", `/v1/bench/${bench}`, void 0, signal, 15e3);
+	try {
+		return await get();
+	} catch (e) {
+		if (e instanceof RayGatewayError && e.status === 404) {
+			await gatewayRequest(gatewayUrl, "POST", "/v1/bench/ensure", { session: bench }, signal, 15e3);
+			return await get();
+		}
+		throw e;
+	}
+}
+/** Project bench stage rows onto the flow_inline wire contract
+*  (extra=forbid at the start/validate doors: card, provenance,
+*  runStatus, result, title strip; engine defaults comfyui). */
+function projectStages(stages) {
+	if (!Array.isArray(stages)) return [];
+	return stages.filter((s) => typeof s === "object" && s !== null && !Array.isArray(s)).map((s) => {
+		const row = {
+			id: String(s["id"] ?? ""),
+			engine: typeof s["engine"] === "string" && s["engine"] !== "" ? s["engine"] : "comfyui",
+			params: typeof s["params"] === "object" && s["params"] !== null && !Array.isArray(s["params"]) ? s["params"] : {},
+			inputs: typeof s["inputs"] === "object" && s["inputs"] !== null && !Array.isArray(s["inputs"]) ? s["inputs"] : {},
+			outputs: typeof s["outputs"] === "object" && s["outputs"] !== null && !Array.isArray(s["outputs"]) ? s["outputs"] : { default: "image" }
+		};
+		if (typeof s["expected"] === "object" && s["expected"] !== null && !Array.isArray(s["expected"])) row["expected"] = s["expected"];
+		return row;
+	});
+}
+function meliteConstruct(gatewayUrl) {
+	const presentCall = (args) => {
+		const a = args ?? {};
+		const verb = typeof a.verb === "string" ? a.verb : "?";
+		const on = typeof a.stage === "string" && a.stage !== "" ? a.stage : typeof a.card === "string" && a.card !== "" ? a.card : "";
+		return {
+			card: "generic",
+			title: `Bench ${verb}${on !== "" ? " · " + on : ""}`,
+			kind: "execute"
+		};
 	};
+	const def = defineTool({
+		name: "melite_construct",
+		description: "Author THE shared bench — one working flow the user sees live in the cards tab and edits alongside you. This never executes (melite_flow runs what is here; the user presses Run). Verbs: read (the state — always start here) | load (replace stages wholesale) | patch {stage, params} | add_stage {card, params?, inputs?} | remove_stage {stage} | rewire {stage, input, from?} | undo {n?, author?} | validate (compile check, no GPU). Mutations take expect_rev from your last read — a moved bench refuses 409 with current_rev; re-read, re-apply. No ids anywhere: the bench is the one shared state.",
+		parameters: {
+			verb: {
+				type: "string",
+				description: "read | load | patch | add_stage | remove_stage | rewire | undo | validate."
+			},
+			stage: {
+				type: "string",
+				description: "patch/remove_stage/rewire: the stage id."
+			},
+			card: {
+				type: "string",
+				description: "add_stage: the card id (display + provenance hint)."
+			},
+			engine: {
+				type: "string",
+				description: "add_stage: engine id (default comfyui)."
+			},
+			params: {
+				type: "object",
+				additionalProperties: true,
+				description: "patch (merge onto the stage) | add_stage | load single-stage shorthand."
+			},
+			inputs: {
+				type: "object",
+				additionalProperties: true,
+				description: "add_stage: {input: {stage, output} | {initial}} wiring."
+			},
+			input: {
+				type: "string",
+				description: "rewire: the input name to bind."
+			},
+			from: {
+				type: "object",
+				additionalProperties: true,
+				description: "rewire: {stage, output} | {initial}; absent clears the binding."
+			},
+			stages: {
+				type: "array",
+				items: {
+					type: "object",
+					additionalProperties: true
+				},
+				description: "load: the full replacement [{id?, engine?, card?, params?, inputs?, outputs?}]."
+			},
+			intent: {
+				type: "string",
+				description: "load: what this bench produces."
+			},
+			n: {
+				type: "number",
+				description: "undo: how many entries (default 1)."
+			},
+			author: {
+				type: "string",
+				description: "undo: \"agent\" (default) | \"user\" — whose entries to revert."
+			},
+			expect_rev: {
+				type: "number",
+				description: "CAS: the rev from your last read (required on mutations)."
+			}
+		},
+		presentCall,
+		output: {
+			schema: {
+				type: "object",
+				additionalProperties: true,
+				properties: {
+					verb: {
+						type: "string",
+						required: true,
+						description: "Echoed verb."
+					},
+					bench: {
+						type: "string",
+						required: true,
+						description: "The bench key (default \"main\")."
+					},
+					rev: {
+						type: "number",
+						description: "The bench revision AFTER the verb."
+					},
+					ok: {
+						type: "boolean",
+						description: "False exactly when the verb refused."
+					},
+					error: {
+						type: "string",
+						description: "Refusal text (ok: false)."
+					}
+				}
+			},
+			render: (_args, value) => {
+				const v = value;
+				if (v && typeof v.error === "string" && v.error !== "") return [{
+					type: "text",
+					text: "melite_construct REFUSED: " + v.error
+				}];
+				return [{
+					type: "text",
+					text: "bench " + String(v.verb ?? "?") + " → rev " + String(v.rev ?? "?")
+				}];
+			}
+		},
+		async execute(args, exec) {
+			const a = args ?? {};
+			const verb = typeof a.verb === "string" ? a.verb : "";
+			const bench = benchKeyOf(a);
+			const signal = exec.signal;
+			const out = (payload) => jsonClean({
+				verb,
+				bench,
+				ok: true,
+				...payload
+			});
+			try {
+				if (verb === "read" || verb === "") {
+					const b = await readBench(gatewayUrl, bench, signal);
+					return out({
+						rev: b.rev,
+						intent: b.intent,
+						stages: b.stages,
+						log: b.log,
+						hint: "mutate with expect_rev=" + String(b.rev)
+					});
+				}
+				if (verb === "validate") {
+					const b = await readBench(gatewayUrl, bench, signal);
+					const stages = projectStages(b.stages);
+					if (stages.length === 0) return out({
+						rev: b.rev,
+						compiles: false,
+						note: "bench is empty"
+					});
+					const r = await gatewayRequest(gatewayUrl, "POST", "/v1/flows/validate", { flow_inline: { stages } }, signal, 2e4);
+					return out({
+						rev: b.rev,
+						compiles: r["ok"] === true || r["valid"] === true,
+						report: r
+					});
+				}
+				if (verb === "load") {
+					const stages = Array.isArray(a.stages) ? a.stages : [];
+					const r = await gatewayRequest(gatewayUrl, "POST", "/v1/bench/ensure", {
+						session: bench,
+						stages,
+						...typeof a.intent === "string" && a.intent !== "" ? { intent: a.intent } : {},
+						expect_rev: a.expect_rev
+					}, signal, 15e3);
+					return out({
+						rev: r.rev,
+						stages: r.stages
+					});
+				}
+				if (verb === "patch") {
+					const r = await gatewayRequest(gatewayUrl, "POST", `/v1/bench/${bench}/patch`, {
+						stage: a.stage,
+						params: a.params,
+						expect_rev: a.expect_rev
+					}, signal, 15e3);
+					return out({
+						rev: r.rev,
+						stage: r.stage,
+						patched: r.patched
+					});
+				}
+				if (verb === "add_stage") {
+					const r = await gatewayRequest(gatewayUrl, "POST", `/v1/bench/${bench}/add_stage`, {
+						card: a.card,
+						...a.engine !== void 0 ? { engine: a.engine } : {},
+						...a.params !== void 0 ? { params: a.params } : {},
+						...a.inputs !== void 0 ? { inputs: a.inputs } : {},
+						expect_rev: a.expect_rev
+					}, signal, 15e3);
+					return out({
+						rev: r.rev,
+						stage: r.stage
+					});
+				}
+				if (verb === "remove_stage") {
+					const r = await gatewayRequest(gatewayUrl, "POST", `/v1/bench/${bench}/remove_stage`, {
+						stage: a.stage,
+						expect_rev: a.expect_rev
+					}, signal, 15e3);
+					return out({
+						rev: r.rev,
+						stage: r.stage
+					});
+				}
+				if (verb === "rewire") {
+					const r = await gatewayRequest(gatewayUrl, "POST", `/v1/bench/${bench}/rewire`, {
+						stage: a.stage,
+						input: a.input,
+						...a.from !== void 0 ? { from: a.from } : {},
+						expect_rev: a.expect_rev
+					}, signal, 15e3);
+					return out({
+						rev: r.rev,
+						stage: r.stage,
+						input: r.input
+					});
+				}
+				if (verb === "undo") {
+					const r = await gatewayRequest(gatewayUrl, "POST", `/v1/bench/${bench}/undo`, {
+						...a.n !== void 0 ? { n: a.n } : {},
+						...a.author !== void 0 ? { author: a.author } : {},
+						expect_rev: a.expect_rev
+					}, signal, 15e3);
+					return out({
+						rev: r.rev,
+						undone: r.undone,
+						stages: r.stages
+					});
+				}
+				return jsonClean({
+					verb,
+					bench,
+					ok: false,
+					error: "unknown verb — want read|load|patch|add_stage|remove_stage|rewire|undo|validate",
+					error_kind: "args"
+				});
+			} catch (e) {
+				return refusalOf(e, verb, bench);
+			}
+		}
+	});
+	def.presentCall = presentCall;
+	return def;
 }
 //#endregion
 //#region src/tools/melite-flow.ts
@@ -205,7 +534,7 @@ function foldConnects(flowId, stages, connects) {
 	}
 	return folded;
 }
-const TIMEOUT_MS$4 = 3e4;
+const TIMEOUT_MS$2 = 3e4;
 const DRAFT_TIMEOUT_MS = 15e3;
 const VALIDATE_TIMEOUT_MS = 15e3;
 const CATALOG_TIMEOUT_MS = 15e3;
@@ -214,7 +543,7 @@ const CATALOG_TIMEOUT_MS = 15e3;
 async function startRun(gatewayUrl, body, signal) {
 	let res;
 	try {
-		res = await gatewayRequest(gatewayUrl, "POST", "/v1/flows/start", body, signal, TIMEOUT_MS$4);
+		res = await gatewayRequest(gatewayUrl, "POST", "/v1/flows/start", body, signal, TIMEOUT_MS$2);
 	} catch (e) {
 		if (e instanceof RayGatewayError) {
 			let named = "";
@@ -233,13 +562,46 @@ async function startRun(gatewayUrl, body, signal) {
 		status: typeof res.status === "string" ? res.status : "queued"
 	};
 }
-/** Mint a draft doc (CARD BIRTH LAW — every start below rides one). */
-async function mintDraft(gatewayUrl, body, signal) {
-	const draft = await gatewayRequest(gatewayUrl, "POST", "/v1/flows/drafts", body, signal, DRAFT_TIMEOUT_MS);
-	if (draft && typeof draft.error === "string" && draft.error) throw new Error(draft.error);
-	const id = draft && draft.draftId;
-	if (typeof id !== "string" || id === "") throw new Error("draft POST returned no draftId");
+/** LOAD THE BENCH (the one-shared-state law — the bench rework,
+*  2026-09-10): every mode's composition lands on THE shared bench
+*  (draft doc bench-<key>) instead of minting a fresh draft per
+*  run. The user's cards tab streams the same bench; runs snapshot
+*  their composition in the run registry (CARD BIRTH LAW holds —
+*  the start still rides a doc-backed draft_id, now the bench's). */
+async function loadBench(gatewayUrl, body, signal) {
+	const b = await gatewayRequest(gatewayUrl, "POST", "/v1/bench/ensure", body, signal, DRAFT_TIMEOUT_MS);
+	if (b && typeof b.error === "string" && b.error) throw new Error(b.error);
+	const id = b && b.draft_id;
+	if (typeof id !== "string" || id === "") throw new Error("bench ensure returned no draft_id");
 	return id;
+}
+/** BENCH (the bench rework's run verb): run THE shared bench as it
+*  stands — no composition, no sugar. The stages are projected onto
+*  the flow_inline wire contract (presentation extras strip), then
+*  started under the bench's own draft_id. This is what the user's
+*  Run press does and what {bench: true} does — one truth. */
+async function runBench(gatewayUrl, a, signal) {
+	let b;
+	try {
+		b = await gatewayRequest(gatewayUrl, "GET", `/v1/bench/${DEFAULT_BENCH}`, void 0, signal, 15e3);
+	} catch (e) {
+		if (e instanceof RayGatewayError && e.status === 404) return { error: "the bench is empty — construct stages first (melite_construct)" };
+		throw e;
+	}
+	const stages = projectStages(b["stages"]);
+	if (stages.length === 0) return { error: "the bench is empty — construct stages first (melite_construct)" };
+	const draftId = typeof b["draft_id"] === "string" ? b["draft_id"] : `bench-${DEFAULT_BENCH}`;
+	const started = await startRun(gatewayUrl, {
+		flow_inline: { stages },
+		test: a.test === true,
+		draft_id: draftId
+	}, signal);
+	return {
+		mode: "bench",
+		target: `bench-${DEFAULT_BENCH} @ rev ${String(b["rev"] ?? "?")}`,
+		draft_id: draftId,
+		...started
+	};
 }
 /** SINGLE (the old card_run path, composed inside): manifest gate
 *  + runnability gate + defaults merge, then draft + {model}. */
@@ -274,12 +636,13 @@ async function runSingle(gatewayUrl, a, signal) {
 	const intent = intentSrc.length > 80 ? intentSrc.slice(0, 77) + "…" : intentSrc;
 	let draftId;
 	try {
-		draftId = await mintDraft(gatewayUrl, {
+		draftId = await loadBench(gatewayUrl, {
+			session: DEFAULT_BENCH,
 			intent,
 			stages: [{
-				title: card !== "" ? card : model,
-				kind: "generation",
-				service: model,
+				id: "s_0",
+				...card !== "" ? { card } : {},
+				engine: "comfyui",
 				params
 			}]
 		}, signal);
@@ -310,13 +673,18 @@ async function runTemplate(gatewayUrl, a, signal) {
 	const flow = a.flow ?? "";
 	if (!flow) return { error: "flow is required (a discovered flow name)" };
 	const overrides = a.params ?? {};
-	const composeBody = {
-		...overrides,
-		flow
-	};
 	let draftId;
 	try {
-		draftId = await mintDraft(gatewayUrl, composeBody, signal);
+		draftId = await loadBench(gatewayUrl, {
+			session: DEFAULT_BENCH,
+			intent: flow,
+			stages: [{
+				id: "s_0",
+				engine: "comfyui",
+				ref_flow: flow,
+				params: {}
+			}]
+		}, signal);
 	} catch (e) {
 		if (e instanceof RayGatewayError) {
 			let named = "";
@@ -401,16 +769,10 @@ async function runAdHoc(gatewayUrl, a, signal) {
 	}
 	let draftId;
 	try {
-		draftId = await mintDraft(gatewayUrl, {
+		draftId = await loadBench(gatewayUrl, {
+			session: DEFAULT_BENCH,
 			intent: flowId,
-			flow: flowBody,
-			stages: folded.map((s) => ({
-				id: s.id,
-				title: s.description !== "" ? s.description : s.id,
-				kind: "generation",
-				service: s.engine,
-				params: s.params
-			}))
+			stages: folded
 		}, signal);
 	} catch (e) {
 		return {
@@ -437,71 +799,73 @@ async function runAdHoc(gatewayUrl, a, signal) {
 	};
 }
 function meliteFlow(gatewayUrl) {
-	return {
+	const presentCall = (args) => {
+		const a = args ?? {};
+		return {
+			card: "generic",
+			title: `Run ${typeof a.card === "string" && a.card !== "" ? a.card : typeof a.flow === "string" && a.flow !== "" ? a.flow : Array.isArray(a.stages) ? `adhoc (${a.stages.length} stages)` : "?"}`,
+			kind: "execute"
+		};
+	};
+	const def = defineTool({
 		name: "melite_flow",
-		description: "Execute through the serial GPU queue — the ONE execution verb (a card or a flow tool call; nothing else executes). Exactly one per call: card (a card id + model — single generation) | flow (a NAMED template from melite_load) | stages (cards drafted on the fly: [{id, engine, params?, outputs?}] + optional connects — compiled at validate BEFORE any GPU is spent, then run as one typed flow). Drafts are minted inside (CARD BIRTH LAW) — the minted draft_id rides the value as the chat tile handle (the card surface hydrates from it via ?meliteCards=), but the agent never passes it anywhere. Returns {run_id, draft_id}; poll with run_status. One active run machine-wide.",
+		description: "Execute through the serial GPU queue — the ONE execution verb. Exactly one per call: bench (run THE shared bench exactly as it stands — what the user's Run press runs) | card (a card id + model — single generation) | flow (a NAMED template from melite_load) | stages (cards drafted on the fly: [{id, engine, params?, outputs?}] + optional connects — compiled at validate BEFORE any GPU is spent). Compositions LOAD the shared bench first (nothing mints fresh — one state, one log, one undo); every start rides the bench's doc-backed draft_id (CARD BIRTH LAW) — it rides the value as the chat tile handle, never an agent arg. Returns {run_id, draft_id}; poll with run_status. One active run machine-wide.",
 		parameters: {
-			type: "object",
-			properties: {
-				card: {
-					type: "string",
-					description: "SINGLE mode: the card id (discovered). Requires model alongside."
-				},
-				model: {
-					type: "string",
-					description: "SINGLE mode: the family id, named explicitly (must own a card tool)."
-				},
-				flow: {
-					type: "string",
-					description: "TEMPLATE mode: the flow name exactly as loaded."
-				},
-				stages: {
-					type: "array",
-					items: {
-						type: "object",
-						additionalProperties: true
-					},
-					description: "AD-HOC mode: [{id, engine, description?, params?, outputs?: {name: kind}}]. Exclusive with card/flow."
-				},
-				connects: {
-					type: "array",
-					items: {
-						type: "object",
-						additionalProperties: true
-					},
-					description: "AD-HOC mode: [{from: \"stage[.output]\" | \"initial.key\", to: \"stage.input\", kind?}]."
-				},
-				prompt: {
-					type: "string",
-					description: "SINGLE mode: the generation prompt (wins over params.prompt)."
-				},
-				params: {
+			bench: {
+				type: "boolean",
+				description: "BENCH mode: run THE shared bench exactly as it stands (what the user's Run press runs). Exclusive with card/flow/stages."
+			},
+			card: {
+				type: "string",
+				description: "SINGLE mode: the card id (discovered). Requires model alongside."
+			},
+			model: {
+				type: "string",
+				description: "SINGLE mode: the family id, named explicitly (must own a card tool)."
+			},
+			flow: {
+				type: "string",
+				description: "TEMPLATE mode: the flow name exactly as loaded."
+			},
+			stages: {
+				type: "array",
+				items: {
 					type: "object",
-					additionalProperties: true,
-					description: "Overrides merged over the mode defaults (seed, knobs)."
+					additionalProperties: true
 				},
-				id: {
-					type: "string",
-					description: "AD-HOC mode: the pipeline name for the compiled flow."
+				description: "AD-HOC mode: [{id, engine, description?, params?, outputs?: {name: kind}}]. Exclusive with card/flow."
+			},
+			connects: {
+				type: "array",
+				items: {
+					type: "object",
+					additionalProperties: true
 				},
-				description: {
-					type: "string",
-					description: "AD-HOC mode: what the pipeline produces."
-				},
-				test: {
-					type: "boolean",
-					description: "L4 barrier: true routes the run to test-output, hidden from production assets. Default false."
-				}
+				description: "AD-HOC mode: [{from: \"stage[.output]\" | \"initial.key\", to: \"stage.input\", kind?}]."
+			},
+			prompt: {
+				type: "string",
+				description: "SINGLE mode: the generation prompt (wins over params.prompt)."
+			},
+			params: {
+				type: "object",
+				additionalProperties: true,
+				description: "Overrides merged over the mode defaults (seed, knobs)."
+			},
+			id: {
+				type: "string",
+				description: "AD-HOC mode: the pipeline name for the compiled flow."
+			},
+			description: {
+				type: "string",
+				description: "AD-HOC mode: what the pipeline produces."
+			},
+			test: {
+				type: "boolean",
+				description: "L4 barrier: true routes the run to test-output, hidden from production assets. Default false."
 			}
 		},
-		presentCall(args) {
-			const a = args ?? {};
-			return {
-				card: "generic",
-				title: `Run ${typeof a.card === "string" && a.card !== "" ? a.card : typeof a.flow === "string" && a.flow !== "" ? a.flow : Array.isArray(a.stages) ? `adhoc (${a.stages.length} stages)` : "?"}`,
-				kind: "execute"
-			};
-		},
+		presentCall,
 		output: {
 			schema: {
 				type: "object",
@@ -509,31 +873,31 @@ function meliteFlow(gatewayUrl) {
 				properties: {
 					run_id: {
 						type: "string",
-						description: "The queue run id — poll with run_status(run_id)."
+						description: "The queue run id — poll with run_status(run_id). Absent on refusal."
 					},
 					draft_id: {
 						type: "string",
-						description: "The minted card draft id — the chat tile handle (?meliteCards=)."
+						description: "The minted card draft id — the chat tile handle (?meliteCards=). Absent on refusal."
 					},
 					status: {
 						type: "string",
-						description: "Registration status (queued/running)."
+						description: "Registration status (queued/running). Absent on refusal."
 					},
 					mode: {
 						type: "string",
-						description: "Which composition ran: card | flow | adhoc."
+						description: "Which composition ran (or was attempted): card | flow | adhoc.",
+						required: true
 					},
 					target: {
 						type: "string",
-						description: "The card id, flow name, or ad-hoc pipeline name."
+						description: "The card id, flow name, or ad-hoc pipeline name (echoed on refusal).",
+						required: true
+					},
+					error: {
+						type: "string",
+						description: "The refusal text — present exactly when the tool refused (render prints REFUSED)."
 					}
-				},
-				required: [
-					"run_id",
-					"draft_id",
-					"mode",
-					"target"
-				]
+				}
 			},
 			render: (_args, value) => {
 				const v = value;
@@ -563,16 +927,19 @@ function meliteFlow(gatewayUrl) {
 			const a = args ?? {};
 			const bag = a.params && typeof a.params === "object" && !Array.isArray(a.params) ? a.params : {};
 			const test = a.test === true;
+			const hasBench = a.bench === true;
 			const hasCard = typeof a.card === "string" && a.card !== "";
 			const hasFlow = typeof a.flow === "string" && a.flow !== "";
 			const modes = [
+				hasBench,
 				hasCard,
 				hasFlow,
 				a.stages !== void 0
 			].filter(Boolean).length;
-			if (modes === 0) return jsonClean({ error: "one composition is required: card (+model) | flow | stages (cards drafted on the fly)" });
-			if (modes > 1) return jsonClean({ error: "exactly one composition per call: card | flow | stages — never combined" });
+			if (modes === 0) return jsonClean({ error: "one composition is required: bench (run what is there) | card (+model) | flow | stages (cards drafted on the fly)" });
+			if (modes > 1) return jsonClean({ error: "exactly one composition per call: bench | card | flow | stages — never combined" });
 			try {
+				if (hasBench) return jsonClean(await runBench(gatewayUrl, { test }, exec.signal));
 				if (hasFlow) return jsonClean(await runTemplate(gatewayUrl, {
 					flow: a.flow,
 					params: bag,
@@ -600,15 +967,46 @@ function meliteFlow(gatewayUrl) {
 					} catch {
 						named = "";
 					}
-					return jsonClean({ error: named || e.body || "gateway refused" });
+					const mode = hasFlow ? "flow" : hasCard ? "card" : "adhoc";
+					const target = hasFlow ? String(a.flow) : hasCard ? String(a.card) : "pipeline";
+					return jsonClean({
+						error: named || e.body || "gateway refused",
+						mode,
+						target
+					});
 				}
 				throw e;
 			}
 		}
-	};
+	});
+	def.presentCall = presentCall;
+	return def;
 }
 //#endregion
 //#region src/tools/comfy-manage.ts
+/**
+* comfy_manage — the ONE ComfyUI manager tool (2026-09-03).
+*
+* Wraps the estate's management plane — the built-in ComfyUI-Manager
+* (vendored into the managed engine's custom_nodes, riding ComfyUI's
+* own HTTP port — no external Python anywhere, 2026-09-10) plus the
+* estate TS legs (model downloads, systemd, journal logs) — behind
+* ONE action-dispatch tool. The SSOT is
+* packages/gateway/doors/src/doors/manage.ts (ACTIONS + HANDLERS +
+* LIFECYCLE_GUARDED — python/manage.py is deleted); this tool is its
+* AI door (POST /v1/manage). The manual door is
+* `provision manage <action>` (packages/engines/comfyui-cordis/scripts/provision.ts,
+* via ./setup.sh manage …).
+*
+* INFRA UPKEEP, NOT EXECUTION (INFERENCE LAW): no action runs
+* inference. Lifecycle actions (restart/stop/switch_version/update)
+* are refused server-side while any run reads running/queued — the
+* guard lives in the SSOT, not the prompt.
+*
+* Progressive disclosure: status is the cheap index (server, security,
+* routing, active runs); install/download actions accept what the
+* status/cately discoveries return.
+*/
 const MANAGE_TIMEOUT_MS = 3e5;
 const ACTIONS = [
 	"status",
@@ -630,100 +1028,103 @@ const ACTIONS = [
 	"snapshot_restore"
 ];
 function comfyManage(gatewayUrl) {
-	return {
+	const presentCall = (args) => {
+		const a = typeof args === "object" && args !== null ? args : {};
+		return {
+			card: "generic",
+			title: `ComfyUI ${String(a.action ?? "?")}`,
+			kind: "execute",
+			rawInput: String(a.action ?? "?")
+		};
+	};
+	const def = defineTool({
 		name: "comfy_manage",
-		description: "The ONE ComfyUI manager: wraps comfy-mcp + comfyui-manager (security=medium) + comfy-cli. Actions: status (server/security/routing/active runs — start here), logs, search_models; list_extensions (installed packs — managed workspace only), snapshot_list / snapshot_save / snapshot_restore (environment snapshots; restore is refused while runs are active); install_extension (registry ids), install_extension_url (git url), download_model (url), provision_model (catalog id — the model_catalog id); restart, stop, launch, update (target comfy|cli|all), switch_version, free. INFRA UPKEEP only — it never runs inference, and lifecycle actions are refused while runs are active (stop them or pass force).",
+		description: "NaNsnapshot_restore (environment snapshots; restore is refused while runs are active); install_extension (registry ids), install_extension_url (git url), download_model (url), provision_model (catalog id — the model_catalog id); restart, stop, launch, update (target comfy|cli|all), switch_version, free. INFRA UPKEEP only — it never runs inference, and lifecycle actions are refused while runs are active (stop them or pass force).",
 		parameters: {
-			type: "object",
-			properties: {
-				action: {
-					type: "string",
-					enum: ACTIONS,
-					description: "The management action to dispatch."
-				},
-				nodes: {
-					type: "array",
-					items: { type: "string" },
-					description: "install_extension: registry node-pack ids, e.g. [\"ComfyUI-KJNodes\"]."
-				},
-				url: {
-					type: "string",
-					description: "install_extension_url / download_model: the git URL or file URL."
-				},
-				relative_path: {
-					type: "string",
-					description: "download_model: destination under the models root, e.g. \"models/checkpoints\"."
-				},
-				filename: {
-					type: "string",
-					description: "download_model: on-disk filename."
-				},
-				model: {
-					type: "string",
-					description: "provision_model: catalog id from model_catalog, e.g. \"z-image\"."
-				},
-				variant: {
-					type: "string",
-					description: "provision_model: optional variant id."
-				},
-				quant: {
-					type: "string",
-					description: "provision_model: optional quant cell id."
-				},
-				query: {
-					type: "string",
-					description: "search_models: search text."
-				},
-				tail: {
-					type: "integer",
-					description: "logs: line count (default 200)."
-				},
-				version: {
-					type: "string",
-					description: "switch_version: target ComfyUI version."
-				},
-				target: {
-					type: "string",
-					enum: [
-						"comfy",
-						"cli",
-						"all"
-					],
-					description: "update: what to update (default \"comfy\")."
-				},
-				force: {
-					type: "boolean",
-					description: "Override the active-run guard on lifecycle actions."
-				},
-				snapshot: {
-					type: "string",
-					description: "snapshot_restore: a snapshot filename from snapshot_list."
-				}
+			action: {
+				type: "string",
+				enum: ACTIONS,
+				description: "The management action to dispatch.",
+				required: true
 			},
-			required: ["action"]
+			nodes: {
+				type: "array",
+				items: { type: "string" },
+				description: "install_extension: registry node-pack ids, e.g. [\"ComfyUI-KJNodes\"]."
+			},
+			url: {
+				type: "string",
+				description: "install_extension_url / download_model: the git URL or file URL."
+			},
+			relative_path: {
+				type: "string",
+				description: "download_model: destination under the models root, e.g. \"models/checkpoints\"."
+			},
+			filename: {
+				type: "string",
+				description: "download_model: on-disk filename."
+			},
+			model: {
+				type: "string",
+				description: "provision_model: catalog id from model_catalog, e.g. \"z-image\"."
+			},
+			variant: {
+				type: "string",
+				description: "provision_model: optional variant id."
+			},
+			quant: {
+				type: "string",
+				description: "provision_model: optional quant cell id."
+			},
+			query: {
+				type: "string",
+				description: "search_models: search text."
+			},
+			tail: {
+				type: "integer",
+				description: "logs: line count (default 200)."
+			},
+			version: {
+				type: "string",
+				description: "switch_version: target ComfyUI version."
+			},
+			target: {
+				type: "string",
+				enum: ["comfy"],
+				description: "update: what to update (comfy only — comfy-cli is retired; the built-in manager updates ComfyUI itself)."
+			},
+			force: {
+				type: "boolean",
+				description: "Override the active-run guard on lifecycle actions."
+			},
+			snapshot: {
+				type: "string",
+				description: "snapshot_restore: a snapshot filename from snapshot_list."
+			}
 		},
-		presentCall(args) {
-			const a = typeof args === "object" && args !== null ? args : {};
-			return {
-				card: "generic",
-				title: `ComfyUI ${String(a.action ?? "?")}`,
-				kind: "execute",
-				rawInput: String(a.action ?? "?")
-			};
-		},
+		presentCall,
 		output: {
 			schema: {
 				type: "object",
 				additionalProperties: true,
 				properties: {
-					ok: { type: "boolean" },
-					action: { type: "string" },
+					ok: {
+						type: "boolean",
+						required: true
+					},
+					action: {
+						type: "string",
+						required: true
+					},
 					detail: {
 						type: "string",
 						description: "One-line human summary."
+					},
+					error: {
+						type: "string",
+						description: "The refusal text — present exactly when the tool refused (render prints REFUSED)."
 					}
-				},
-				required: ["ok", "action"]
+				}
 			},
 			render: (_args, value) => {
 				const v = value;
@@ -752,8 +1153,13 @@ function comfyManage(gatewayUrl) {
 				"snapshot"
 			]) if (a[k] !== void 0 && a[k] !== null && a[k] !== "") body[k] = a[k];
 			let res;
+			if (exec?.signal === void 0) return jsonClean({
+				ok: false,
+				action: String(a.action ?? "?"),
+				detail: "comfy_manage miswire: no execution context signal — the host runtime must pass exec"
+			});
 			try {
-				res = await gatewayRequest(gatewayUrl, "POST", "/v1/manage", body, exec?.signal ?? new AbortController().signal, MANAGE_TIMEOUT_MS);
+				res = await gatewayRequest(gatewayUrl, "POST", "/v1/manage", body, exec.signal, MANAGE_TIMEOUT_MS);
 			} catch (e) {
 				if (e instanceof RayGatewayError) try {
 					const parsed = JSON.parse(e.body);
@@ -773,44 +1179,51 @@ function comfyManage(gatewayUrl) {
 				data: res.data ?? null
 			});
 		}
-	};
+	});
+	def.presentCall = presentCall;
+	return def;
 }
 //#endregion
 //#region src/tools/melite-discover.ts
-const TIMEOUT_MS$3 = 15e3;
+const TIMEOUT_MS$1 = 15e3;
+/** Counts-first clamp: over this many lines the default answer
+* clamps (counts + vocabulary + the first rows ride instead). */
+const CLAMP = 12;
 function meliteDiscover(gatewayUrl) {
-	return {
+	const presentCall = (args) => {
+		const a = args ?? {};
+		const bits = [];
+		if (typeof a.lookup === "string" && a.lookup !== "") bits.push(a.lookup);
+		if (typeof a.tags === "string" && a.tags !== "") bits.push(a.tags);
+		if (typeof a.q === "string" && a.q !== "") bits.push(a.q);
+		return {
+			card: "generic",
+			title: "Discover" + (bits.length > 0 ? ": " + bits.join(" · ") : ""),
+			kind: "search"
+		};
+	};
+	const def = defineTool({
 		name: "melite_discover",
-		description: "Progressive disclosure tier 1 over the estate (cards + flows): returns clamped summary LINES, never bodies. Args: lookup (all | cards | flows, default all) + tags (comma-separated card-declared tags, e.g. \"image,upscale\") + optional q (free-text filter). Prefer a FLOW when one fits the task — composition over single calls; fall back to cards. Open a line with melite_load (agents md + signature + skill lines).",
+		description: "Progressive disclosure tier 1 over the estate (cards + flows): returns clamped summary LINES, never bodies. Args: lookup (all | cards | flows, default all) + tags (comma-separated card-declared tags, e.g. \"image,upscale\") + optional q (free-text filter). Prefer a FLOW when one fits the task — composition over single calls; fall back to cards. COUNTS-FIRST: a large estate clamps to counts + the tag vocabulary + the first rows; detail=true for every line. Open a line with melite_load (agents md + signature + skill lines).",
 		parameters: {
-			type: "object",
-			properties: {
-				lookup: {
-					type: "string",
-					description: "Which plane to list: all (default) | cards | flows."
-				},
-				tags: {
-					type: "string",
-					description: "Comma-separated card-declared tags (image,upscale,generate,enhance,...). Empty means unfiltered."
-				},
-				q: {
-					type: "string",
-					description: "Optional free-text filter over names/titles/descriptions/ids."
-				}
+			lookup: {
+				type: "string",
+				description: "Which plane to list: all (default) | cards | flows."
+			},
+			tags: {
+				type: "string",
+				description: "Comma-separated card-declared tags (image,upscale,generate,enhance,...). Empty means unfiltered."
+			},
+			q: {
+				type: "string",
+				description: "Optional free-text filter over names/titles/descriptions/ids."
+			},
+			detail: {
+				type: "boolean",
+				description: "Counts-first: when the estate is large the answer clamps to the first rows + counts + the tag vocabulary. detail=true returns every line."
 			}
 		},
-		presentCall(args) {
-			const a = args ?? {};
-			const bits = [];
-			if (typeof a.lookup === "string" && a.lookup !== "") bits.push(a.lookup);
-			if (typeof a.tags === "string" && a.tags !== "") bits.push(a.tags);
-			if (typeof a.q === "string" && a.q !== "") bits.push(a.q);
-			return {
-				card: "generic",
-				title: "Discover" + (bits.length > 0 ? ": " + bits.join(" · ") : ""),
-				kind: "search"
-			};
-		},
+		presentCall,
 		output: {
 			schema: {
 				type: "object",
@@ -831,6 +1244,10 @@ function meliteDiscover(gatewayUrl) {
 							additionalProperties: true
 						},
 						description: "Card lines (id/label/description/tags) — present unless lookup=flows."
+					},
+					error: {
+						type: "string",
+						description: "The refusal text — present exactly when the tool refused (render prints REFUSED)."
 					}
 				}
 			},
@@ -854,278 +1271,92 @@ function meliteDiscover(gatewayUrl) {
 			if (typeof a.q === "string" && a.q !== "") params.set("q", a.q);
 			if (typeof a.tags === "string" && a.tags !== "") params.set("tags", a.tags);
 			try {
-				return jsonClean(await gatewayRequest(gatewayUrl, "GET", "/v1/discover?" + params.toString(), void 0, exec.signal, TIMEOUT_MS$3));
+				const res = await gatewayRequest(gatewayUrl, "GET", "/v1/discover?" + params.toString(), void 0, exec.signal, TIMEOUT_MS$1);
+				const r = res;
+				const flows = Array.isArray(r.flows) ? r.flows : [];
+				const cards = Array.isArray(r.cards) ? r.cards : [];
+				if (a.detail !== true && (flows.length > CLAMP || cards.length > CLAMP)) {
+					const vocab = /* @__PURE__ */ new Set();
+					for (const c of cards) {
+						const t = c["tags"];
+						if (Array.isArray(t)) {
+							for (const x of t) if (typeof x === "string" && x !== "") vocab.add(x);
+						}
+					}
+					return jsonClean({
+						counts: {
+							flows: flows.length,
+							cards: cards.length
+						},
+						tag_vocabulary: [...vocab].sort().slice(0, 40),
+						flows: flows.slice(0, CLAMP),
+						cards: cards.slice(0, CLAMP),
+						hint: "clamped — narrow with tags/q, or detail=true for every line"
+					});
+				}
+				return jsonClean(res);
 			} catch (e) {
 				const err = e;
 				return jsonClean({ error: typeof err.body === "string" && err.body !== "" ? err.body : err.message ?? "discover failed" });
 			}
 		}
-	};
-}
-//#endregion
-//#region src/tools/lane-bundle-peek.ts
-const TIMEOUT_MS$2 = 15e3;
-function laneBundlePeek(gatewayUrl) {
-	return {
-		name: "lane_bundle_peek",
-		description: "PEEK the callable lanes (discovery scan): one cheap preview row per lane — kind (action_card | template), lane key, title, one-line description, shape counts (params for cards, steps for templates). Filter by kind and/or genre (video, image, audio, edit, 3d…). The table is the CALLABLE surface ONLY — cards and flow templates; MODELS ARE NOT LANES (they cannot run: only action cards do inference). Model parameter detail: model_catalog(query); model craft docs: skill_read. NO bodies — pick ONE lane, then lane_bundle_load(kind, name) to attach: the lane's agent doc arrives INLINE plus its tools and skill index. Examples: peek() = the whole table; peek(kind=\"template\") = every multi-step flow (creature-flow, humanoid-flow, sprite-sheet…); peek(genre=\"video\") = every video lane.",
-		parameters: {
-			type: "object",
-			properties: {
-				kind: {
-					type: "string",
-					enum: ["action_card", "template"],
-					description: "Optional class filter: action_card (card lanes — the ONLY inference surface), template (multi-step flow flows)."
-				},
-				genre: {
-					type: "string",
-					description: "Optional genre filter (video, image, audio, edit…) — applies to cards and models; templates are not genre-classified."
-				}
-			},
-			required: []
-		},
-		presentCall(args) {
-			const a = typeof args === "object" && args !== null ? args : {};
-			return {
-				card: "generic",
-				title: `Peek ${String(a.kind ?? "?")} bundles`,
-				kind: "read",
-				rawInput: String(a.genre ?? a.kind ?? "?")
-			};
-		},
-		output: {
-			schema: {
-				type: "object",
-				additionalProperties: true,
-				properties: {
-					count: {
-						type: "number",
-						description: "Lanes matching the filters."
-					},
-					lanes: {
-						type: "array",
-						description: "Preview rows: {kind, lane, genre, title, description, params?, steps?, skills?}."
-					}
-				},
-				required: ["count", "lanes"]
-			},
-			render: (_args, value) => {
-				const rows = value.lanes ?? [];
-				const by = (k) => rows.filter((r) => r.kind === k).length;
-				return [{
-					type: "text",
-					text: "lane_bundle_peek: " + rows.length + " callable lanes — cards: " + by("action_card") + ", templates: " + by("template") + " (load one with lane_bundle_load; models are not lanes)"
-				}];
-			}
-		},
-		async execute(args, exec) {
-			const a = typeof args === "object" && args !== null ? args : {};
-			let path = "/v1/lanes";
-			const q = [];
-			if (typeof a.kind === "string" && a.kind.length > 0) q.push("kind=" + encodeURIComponent(a.kind));
-			if (typeof a.genre === "string" && a.genre.length > 0) q.push("genre=" + encodeURIComponent(a.genre));
-			if (q.length > 0) path += "?" + q.join("&");
-			const res = await gatewayRequest(gatewayUrl, "GET", path, void 0, exec.signal, TIMEOUT_MS$2);
-			if (res && typeof res.error === "string") return jsonClean({
-				count: 0,
-				lanes: [],
-				error: res.error
-			});
-			const lanes = Array.isArray(res.lanes) ? res.lanes : [];
-			return jsonClean({
-				count: lanes.length,
-				lanes
-			});
-		}
-	};
-}
-//#endregion
-//#region src/tools/lane-bundle-load.ts
-const TIMEOUT_MS$1 = 15e3;
-function laneBundleLoad(gatewayUrl) {
-	return {
-		name: "lane_bundle_load",
-		description: "LOAD one lane (attach): the lane's primary AGENT DOC arrives INLINE (agent.content — orientation with zero extra calls) plus its tools (card manifests with params_schema — tools[0].name is the lane's DEDICATED CARD TOOL), flows (the multi-step template for flow lanes) and the skill index across every level (card, model, base-model chain, guide). Read agent.content + the read_first skills (skill_read loads each body), then call the card tool with params from its params_schema. kind must match what you peeked: action_card (image-gen, h3-timeline…) or template (kimodo-native, trellis2-gate… — flows/<name>/flow.py declarations, the live scan). MODELS ARE NOT LANES — only action cards do inference; a model id passed bare resolves to the card that boards it, and its craft docs ride that card's skills.",
-		parameters: {
-			type: "object",
-			properties: {
-				kind: {
-					type: "string",
-					enum: ["action_card", "template"],
-					description: "The lane class (from lane_bundle_peek rows): action_card | template."
-				},
-				name: {
-					type: "string",
-					description: "The lane key from peek (card dir name or template name; a bare model id resolves to the card that boards it)."
-				}
-			},
-			required: ["kind", "name"]
-		},
-		presentCall(args) {
-			const a = typeof args === "object" && args !== null ? args : {};
-			return {
-				card: "generic",
-				title: `Load ${String(a.kind ?? "?")} bundle: ${String(a.name ?? "?")}`,
-				kind: "fetch",
-				rawInput: {
-					kind: String(a.kind ?? "?"),
-					name: String(a.name ?? "?")
-				}
-			};
-		},
-		output: {
-			schema: {
-				type: "object",
-				additionalProperties: true,
-				properties: {
-					lane: {
-						type: "string",
-						description: "The resolved lane name."
-					},
-					kind: {
-						type: "string",
-						description: "The resolved lane class."
-					},
-					agent: {
-						type: "object",
-						description: "The injected agent doc: {source, name, content} — content is the full markdown."
-					},
-					tools: {
-						type: "array",
-						description: "Card manifests with params_schema + constraints."
-					},
-					flows: {
-						type: "array",
-						description: "Flow templates (steps ladder) for template lanes."
-					},
-					skills: {
-						type: "array",
-						description: "Skill index rows across all levels."
-					},
-					read_first: {
-						type: "array",
-						description: "Skill ids in read order (guide first)."
-					}
-				},
-				required: [
-					"lane",
-					"kind",
-					"agent"
-				]
-			},
-			render: (args, value) => {
-				const a = typeof args === "object" && args !== null ? args : {};
-				const v = value;
-				return [{
-					type: "text",
-					text: "lane_bundle_load " + String(a.name ?? v.kind ?? "?") + " (" + String(v.kind ?? "?") + "): agent \"" + String(v.agent?.name ?? "?") + "\" injected · " + (v.tools?.length ?? 0) + " tool(s) · " + (v.skills?.length ?? 0) + " skill(s) — read the skills, then call the card tool"
-				}];
-			}
-		},
-		async execute(args, exec) {
-			const a = typeof args === "object" && args !== null ? args : {};
-			const kind = typeof a.kind === "string" ? a.kind : "";
-			const name = typeof a.name === "string" ? a.name : "";
-			const res = await gatewayRequest(gatewayUrl, "GET", "/v1/cards/" + encodeURIComponent(name) + "/bundle?kind=" + encodeURIComponent(kind), void 0, exec.signal, TIMEOUT_MS$1);
-			if (res && typeof res.error === "string") return jsonClean({
-				lane: name,
-				kind,
-				error: res.error
-			});
-			const obj = res ?? {};
-			const missing = [];
-			for (const key of ["lane", "kind"]) if (typeof obj[key] !== "string" || obj[key] === "") missing.push(key);
-			const agent = obj.agent;
-			if (typeof agent?.content !== "string" || agent.content === "") missing.push("agent.content");
-			if (missing.length > 0) return jsonClean({
-				lane: name,
-				kind,
-				error: "bundle for " + JSON.stringify(name) + " violates the wire contract (missing " + missing.join(", ") + ") — the gateway bundle door is the contract; a hollow bundle is a loud refusal, never a silently-empty attach"
-			});
-			const rawTools = Array.isArray(obj.tools) ? obj.tools : [];
-			for (const t of rawTools) {
-				const nm = t?.name;
-				if (typeof nm !== "string" || nm === "") return jsonClean({
-					lane: name,
-					kind,
-					error: "bundle for " + JSON.stringify(name) + " carries a tool row with no name — the manifest is malformed (a nameless tool cannot be called)"
-				});
-			}
-			const tools = rawTools.map((t) => {
-				const row = t;
-				return {
-					name: row.name,
-					model: row.model,
-					description: row.description,
-					params_schema: row.params_schema,
-					constraints: row.constraints
-				};
-			});
-			const skills = Array.isArray(res.skills) ? res.skills.map((s) => ({
-				id: s.id,
-				name: s.name,
-				description: s.description
-			})) : [];
-			const flows = Array.isArray(res.flows) ? res.flows.map((p) => ({
-				id: p.id,
-				name: p.name,
-				description: p.description,
-				steps: p.steps,
-				step_count: p.step_count
-			})) : [];
-			return jsonClean({
-				lane: obj.lane,
-				kind: obj.kind,
-				agent,
-				tools,
-				flows,
-				skills,
-				read_first: Array.isArray(obj.read_first) ? obj.read_first : [],
-				tool_count: tools.length,
-				skill_count: skills.length
-			});
-		}
-	};
+	});
+	def.presentCall = presentCall;
+	return def;
 }
 //#endregion
 //#region src/tools/melite-load.ts
 const TIMEOUT_MS = 2e4;
 function meliteLoad(gatewayUrl) {
-	return {
+	const presentCall = (args) => {
+		const a = args ?? {};
+		return {
+			card: "generic",
+			title: `Load ${typeof a.name === "string" && a.name !== "" ? a.name : "?"}`,
+			kind: "search"
+		};
+	};
+	const def = defineTool({
 		name: "melite_load",
 		description: "Open ONE card or flow (discover it first with melite_discover). Args: name (the card id or flow name) + inference_type (card | flow — a card or a flow tool call; nothing else executes). Returns the bundle: agents md, the tool-call signature (params_schema for cards; the prebuilt simplified signature for flows), tier-1 skill lines for the underlying skills (bodies load via skill_read — write the prompts yourself from the craft you read), model hints on cards (the boarded families' DECL identity — id/label/description), and a stable bundle digest — quote it and skip reload on a match.",
 		parameters: {
-			type: "object",
-			properties: {
-				name: {
-					type: "string",
-					description: "The card id or flow name exactly as discovered."
-				},
-				inference_type: {
-					type: "string",
-					description: "card | flow."
-				}
+			name: {
+				type: "string",
+				description: "The card id or flow name exactly as discovered.",
+				required: true
 			},
-			required: ["name", "inference_type"]
+			inference_type: {
+				type: "string",
+				description: "card | flow.",
+				required: true
+			}
 		},
-		presentCall(args) {
-			const a = args ?? {};
-			return {
-				card: "generic",
-				title: `Load ${typeof a.name === "string" && a.name !== "" ? a.name : "?"}`,
-				kind: "search"
-			};
-		},
+		presentCall,
 		output: {
 			schema: {
 				type: "object",
 				additionalProperties: true,
-				properties: { bundle: {
-					type: "object",
-					additionalProperties: true,
-					description: "The opened bundle (name/kind/signature/agents/skills + stages/refs on flows, model_hints on cards, digest)."
-				} },
-				required: ["bundle"]
+				properties: {
+					bundle: {
+						type: "object",
+						additionalProperties: true,
+						description: "The opened bundle (name/kind/signature/agents/skills + stages/refs on flows, model_hints on cards, digest). Absent on refusal."
+					},
+					name: {
+						type: "string",
+						description: "Echo of the requested card id or flow name.",
+						required: true
+					},
+					inference_type: {
+						type: "string",
+						description: "Echo of the requested inference_type.",
+						required: true
+					},
+					error: {
+						type: "string",
+						description: "The refusal text — present exactly when the tool refused (render prints REFUSED)."
+					}
+				}
 			},
 			render: (_args, value) => {
 				const v = value;
@@ -1145,8 +1376,16 @@ function meliteLoad(gatewayUrl) {
 			const a = args ?? {};
 			const name = typeof a.name === "string" ? a.name : "";
 			const inferenceType = typeof a.inference_type === "string" ? a.inference_type : "";
-			if (!name) return jsonClean({ error: "name is required (discover it first)" });
-			if (inferenceType !== "card" && inferenceType !== "flow") return jsonClean({ error: "inference_type must be card|flow — a card or a flow tool call; nothing else executes" });
+			if (!name) return jsonClean({
+				error: "name is required (discover it first)",
+				name,
+				inference_type: inferenceType
+			});
+			if (inferenceType !== "card" && inferenceType !== "flow") return jsonClean({
+				error: "inference_type must be card|flow — a card or a flow tool call; nothing else executes",
+				name,
+				inference_type: inferenceType
+			});
 			const params = new URLSearchParams({
 				name,
 				inference_type: inferenceType
@@ -1155,30 +1394,43 @@ function meliteLoad(gatewayUrl) {
 				return jsonClean(await gatewayRequest(gatewayUrl, "GET", "/v1/load?" + params.toString(), void 0, exec.signal, TIMEOUT_MS));
 			} catch (e) {
 				const err = e;
-				return jsonClean({ error: typeof err.body === "string" && err.body !== "" ? err.body : err.message ?? "load failed" });
+				return jsonClean({
+					error: typeof err.body === "string" && err.body !== "" ? err.body : err.message ?? "load failed",
+					name,
+					inference_type: inferenceType
+				});
 			}
 		}
-	};
+	});
+	def.presentCall = presentCall;
+	return def;
 }
 //#endregion
 //#region src/tools/skill-index.ts
+/**
+* skill_index - progressive disclosure TIER 1: the cheap skill index.
+*
+* The gateway (GET /v1/skills) walks the catalog models' agents/ trees
+* (AGENT.md + agents/skills/*.md) plus the global skills/ lane docs and
+* returns one row per skill: id, name, one-line description, genre and
+* owning model when scoped. This is the SCAN; the BODY comes only via
+* skill_read on demand - that pairing is the whole point of progressive
+* disclosure: the agent never pays for docs it does not open.
+*/
 const INDEX_TIMEOUT_MS = 15e3;
 function skillIndex(gatewayUrl) {
-	return {
+	const presentCall = () => {
+		return {
+			card: "generic",
+			title: "Skill index",
+			kind: "search"
+		};
+	};
+	const def = defineTool({
 		name: "skill_index",
 		description: "List gateway skills (progressive disclosure tier 1): id + name + one-line description per skill, with genre/model when the skill is model-scoped. Cheap scan. Then load ONLY the skill you need with skill_read. Use before generating with an unfamiliar model, when the user asks what this stack can do, or to find the lane recipe for a genre (image/audio/video/3D/text). No arguments.",
-		parameters: {
-			type: "object",
-			properties: {},
-			required: []
-		},
-		presentCall() {
-			return {
-				card: "generic",
-				title: "Skill index",
-				kind: "search"
-			};
-		},
+		parameters: {},
+		presentCall,
 		output: {
 			schema: {
 				type: "object",
@@ -1186,14 +1438,19 @@ function skillIndex(gatewayUrl) {
 				properties: {
 					count: {
 						type: "number",
-						description: "Skills found."
+						description: "Skills found.",
+						required: true
 					},
 					skills: {
 						type: "array",
-						description: "Index rows: id/name/description (+genre/model when scoped)."
+						description: "Index rows: id/name/description (+genre/model when scoped).",
+						required: true
+					},
+					error: {
+						type: "string",
+						description: "The refusal text — present exactly when the tool refused (render prints REFUSED)."
 					}
-				},
-				required: ["count", "skills"]
+				}
 			},
 			render: (_args, value) => {
 				return [{
@@ -1205,43 +1462,56 @@ function skillIndex(gatewayUrl) {
 		async execute(_args, exec) {
 			const res = await gatewayRequest(gatewayUrl, "GET", "/v1/skills", void 0, exec.signal, INDEX_TIMEOUT_MS);
 			const rows = Array.isArray(res.skills) ? res.skills : [];
-			return {
+			return jsonClean({
 				count: rows.length,
 				skills: rows
-			};
+			});
 		}
-	};
+	});
+	def.presentCall = presentCall;
+	return def;
 }
 //#endregion
 //#region src/tools/skill-read.ts
+/**
+* skill_read - progressive disclosure TIER 2: one skill's full body,
+* loaded ONLY when needed (GET /v1/skills/<id>). Every read is ledgered
+* gateway-side (skill.read in _ledger.jsonl), so which recipes the
+* agent actually used is auditable after the fact.
+*
+* Ids come from skill_index: global lane docs are bare stems
+* ("run-recovery"), model card docs are "model:<id>", and per-model
+* skills are "model:<id>:<stem>".
+*/
 const READ_TIMEOUT_MS = 15e3;
 function skillRead(gatewayUrl) {
-	return {
+	const presentCall = (args) => {
+		const a = typeof args === "object" && args !== null ? args : {};
+		return {
+			card: "generic",
+			title: `Read skill ${String(a.id ?? "?")}`,
+			kind: "read",
+			rawInput: String(a.id ?? "?")
+		};
+	};
+	const def = defineTool({
 		name: "skill_read",
 		description: "Load ONE skill document in full (progressive disclosure tier 2): markdown body plus its name/description and genre/model when scoped. Discover ids first with skill_index. Reads are recorded in the gateway ledger (skill.read) - the audit trail of which recipes informed a generation. Args: id (from skill_index).",
-		parameters: {
-			type: "object",
-			properties: { id: {
-				type: "string",
-				description: "Skill id from skill_index: \"<stem>\", \"model:<id>\" or \"model:<id>:<stem>\"."
-			} },
-			required: ["id"]
-		},
-		presentCall(args) {
-			const a = typeof args === "object" && args !== null ? args : {};
-			return {
-				card: "generic",
-				title: `Read skill ${String(a.id ?? "?")}`,
-				kind: "read",
-				rawInput: String(a.id ?? "?")
-			};
-		},
+		parameters: { id: {
+			type: "string",
+			description: "Skill id from skill_index: \"<stem>\", \"model:<id>\" or \"model:<id>:<stem>\".",
+			required: true
+		} },
+		presentCall,
 		output: {
 			schema: {
 				type: "object",
 				additionalProperties: true,
 				properties: {
-					id: { type: "string" },
+					id: {
+						type: "string",
+						required: true
+					},
 					name: {
 						type: "string",
 						description: "Skill title from frontmatter."
@@ -1252,10 +1522,14 @@ function skillRead(gatewayUrl) {
 					},
 					content: {
 						type: "string",
-						description: "The full markdown body."
+						description: "The full markdown body.",
+						required: true
+					},
+					error: {
+						type: "string",
+						description: "The refusal text — present exactly when the tool refused (render prints REFUSED)."
 					}
-				},
-				required: ["id", "content"]
+				}
 			},
 			render: (args, value) => {
 				const a = typeof args === "object" && args !== null ? args : {};
@@ -1270,50 +1544,58 @@ function skillRead(gatewayUrl) {
 			const a = typeof args === "object" && args !== null ? args : {};
 			if (typeof a.id !== "string" || a.id.length === 0) throw new Error("skill_read: \"id\" is required (a skill id string from skill_index)");
 			const res = await gatewayRequest(gatewayUrl, "GET", "/v1/skills/" + encodeURIComponent(a.id), void 0, exec.signal, READ_TIMEOUT_MS);
-			return {
+			return jsonClean({
 				id: res.id ?? a.id,
 				name: res.name ?? null,
 				description: res.description ?? null,
 				genre: res.genre ?? null,
 				model: res.model ?? null,
 				content: res.content ?? ""
-			};
+			});
 		}
-	};
+	});
+	def.presentCall = presentCall;
+	return def;
 }
 //#endregion
 //#region src/tools/ledger-tail.ts
+/**
+* ledger_tail - work off the file ledger: the append-only activity
+* journal (output/_ledger.jsonl) the gateway maintains for EVERY
+* material event - server.boot, run.registered, run.state, prov.state,
+* skill.read. This tool tails it (GET /v1/ledger), oldest -> newest
+* within the tail, so the agent can answer "what happened here",
+* resume interrupted work, and audit its own skill usage without
+* asking the user or trusting memory.
+*/
 const LEDGER_TIMEOUT_MS = 15e3;
 function ledgerTail(gatewayUrl) {
-	return {
+	const presentCall = (args) => {
+		const a = typeof args === "object" && args !== null ? args : {};
+		return {
+			card: "generic",
+			title: "Ledger tail",
+			kind: "read",
+			rawInput: {
+				limit: a.limit,
+				event: a.event
+			}
+		};
+	};
+	const def = defineTool({
 		name: "ledger_tail",
 		description: "Tail the gateway file ledger (append-only journal of runs, provisions, skill reads, server boots). Use to answer \"what happened / what ran / what downloaded\", to resume interrupted work after a restart, or to audit activity. Entries come back oldest -> newest within the tail; pair with skill_read \"run-recovery\" for the full recovery workflow. Args: limit (optional, default 50, max 500), event (optional prefix filter, e.g. \"run.\" or \"prov\").",
 		parameters: {
-			type: "object",
-			properties: {
-				limit: {
-					type: "number",
-					description: "How many entries to return (default 50, max 500)."
-				},
-				event: {
-					type: "string",
-					description: "Optional event-name prefix filter, e.g. \"run.\", \"prov\", \"skill\"."
-				}
+			limit: {
+				type: "number",
+				description: "How many entries to return (default 50, max 500)."
 			},
-			required: []
+			event: {
+				type: "string",
+				description: "Optional event-name prefix filter, e.g. \"run.\", \"prov\", \"skill\"."
+			}
 		},
-		presentCall(args) {
-			const a = typeof args === "object" && args !== null ? args : {};
-			return {
-				card: "generic",
-				title: "Ledger tail",
-				kind: "read",
-				rawInput: {
-					limit: a.limit,
-					event: a.event
-				}
-			};
-		},
+		presentCall,
 		output: {
 			schema: {
 				type: "object",
@@ -1321,22 +1603,24 @@ function ledgerTail(gatewayUrl) {
 				properties: {
 					shown: {
 						type: "number",
-						description: "Entries returned."
+						description: "Entries returned.",
+						required: true
 					},
 					matched: {
 						type: "number",
-						description: "Total entries matching the filter."
+						description: "Total entries matching the filter.",
+						required: true
 					},
 					entries: {
 						type: "array",
-						description: "Ledger rows: {ts, event, data}, oldest -> newest."
+						description: "Ledger rows: {ts, event, data}, oldest -> newest.",
+						required: true
+					},
+					error: {
+						type: "string",
+						description: "The refusal text — present exactly when the tool refused (render prints REFUSED)."
 					}
-				},
-				required: [
-					"shown",
-					"matched",
-					"entries"
-				]
+				}
 			},
 			render: (_args, value) => {
 				const v = value;
@@ -1355,13 +1639,15 @@ function ledgerTail(gatewayUrl) {
 			const path = "/v1/ledger" + (q.length > 0 ? "?" + q.join("&") : "");
 			const res = await gatewayRequest(gatewayUrl, "GET", path, void 0, exec.signal, LEDGER_TIMEOUT_MS);
 			const entries = Array.isArray(res.entries) ? res.entries : [];
-			return {
+			return jsonClean({
 				shown: typeof res.shown === "number" ? res.shown : entries.length,
 				matched: typeof res.matched === "number" ? res.matched : entries.length,
 				entries
-			};
+			});
 		}
-	};
+	});
+	def.presentCall = presentCall;
+	return def;
 }
 //#endregion
 //#region src/index.ts
@@ -1376,9 +1662,8 @@ const inject = ["tools"];
 /** BASE tool names — both interfaces (discovery, compose, management, audit). */
 const BASE_TOOL_NAMES = [
 	"melite_discover",
+	"melite_construct",
 	"melite_load",
-	"lane_bundle_peek",
-	"lane_bundle_load",
 	"comfy_manage",
 	"skill_index",
 	"skill_read",
@@ -1406,9 +1691,8 @@ async function apply(ctx, config = {}) {
 	const adhoc = adhocEnv.length ? adhocEnv : adhocCfg;
 	c.logger.info("melite-tools: %s interface — %d base + %d headless run door(s) + %d ad hoc, gateway %s", headless ? "HEADLESS" : "BROWSER", BASE_TOOL_NAMES.length, headless ? HEADLESS_TOOL_NAMES.length : 0, adhoc.length, gatewayUrl);
 	c.tools.register(meliteDiscover(gatewayUrl));
+	c.tools.register(meliteConstruct(gatewayUrl));
 	c.tools.register(meliteLoad(gatewayUrl));
-	c.tools.register(laneBundlePeek(gatewayUrl));
-	c.tools.register(laneBundleLoad(gatewayUrl));
 	c.tools.register(comfyManage(gatewayUrl));
 	c.tools.register(skillIndex(gatewayUrl));
 	c.tools.register(skillRead(gatewayUrl));
@@ -1423,6 +1707,7 @@ async function apply(ctx, config = {}) {
 	c.tools.register(buildImageEditTool(gatewayUrl));
 	c.tools.register(buildMotionTool(gatewayUrl));
 	c.tools.register(buildH3TimelineTool(gatewayUrl));
+	c.tools.register(buildCardTool(gatewayUrl));
 }
 //#endregion
-export { ADHOC_TOOL_NAMES, BASE_TOOL_NAMES, DEFAULT_GATEWAY_URL, HEADLESS_TOOL_NAMES, MELITE_TOOL_NAMES, RayGatewayError, apply, comfyManage, harnessEnhance, inject, laneBundleLoad, laneBundlePeek, ledgerTail, matchHarnessRoute, meliteDiscover, meliteFlow, meliteLoad, name, normalizeGatewayUrl, resolveHarnessRoutes, routeName, runStatus, skillIndex, skillRead };
+export { ADHOC_TOOL_NAMES, BASE_TOOL_NAMES, DEFAULT_BENCH, DEFAULT_GATEWAY_URL, HEADLESS_TOOL_NAMES, MELITE_TOOL_NAMES, RayGatewayError, apply, comfyManage, harnessEnhance, inject, ledgerTail, matchHarnessRoute, meliteConstruct, meliteDiscover, meliteFlow, meliteLoad, name, normalizeGatewayUrl, resolveHarnessRoutes, routeName, runStatus, skillIndex, skillRead };

@@ -2,22 +2,26 @@
 // deleted at the NO-ESTATE-PYTHON cut, 2026-09-08).
 //
 // Operator orders: PROVISIONING LAW (2026-09-03) + NO-ESTATE-PYTHON
-// (2026-09-08). The management plane is reached exclusively through
-// APIs: ComfyUI HTTP (/system_stats, /object_info) and the comfy-mcp
-// MCP server over stdio (JSON-RPC, minimal client below — a
-// transport, never a reimplemented op). No estate Python is written,
-// imported, or executed by this tool.
+// (2026-09-08) + NO-EXTERNAL-PYTHON (2026-09-10): the ONE vendor is
+// ComfyUI-Manager, BUILT INTO the managed ComfyUI as a custom node
+// (vendored at the pinned ref by `provision sync` — the auto-build)
+// and served on ComfyUI's own port. Estate legs (git installs, model
+// downloads, core/manager checkouts) are plain TS. No estate Python
+// is written, imported, or executed by this tool; no external
+// manager binary, MCP server, or comfy-cli is spawned.
 //
 // Instance provisioning — one interface, two modes:
 //   byo (default)  the user's own ComfyUI, anywhere. VERIFIED, never installed.
-//   managed        a lockfile-pinned ComfyUI under data/runtime/comfyui/.
+//   managed        a lockfile-pinned ComfyUI under data/runtime/comfyui/
+//                  with the built-in manager vendored into custom_nodes/.
 // Declaration provisioning:
-//   extensions     comfy-mcp install_node for registry declarations;
-//                  vendor packs symlinked from vendor/comfyui_extensions;
-//                  url+ref declarations via the cm_cli engine binary.
-//   models         comfy-mcp download_model per declaration provision
-//                  row (the engine's provisionsByFamily — DECL + card-owned
-//                  rows), polled to completion, sha256-verified after.
+//   extensions     git clones (registry ids resolve through the
+//                  vendored manager's own custom-node-list.json cache;
+//                  url+ref clones directly); vendor packs symlinked
+//                  from vendor/comfyui_extensions.
+//   models         estate TS streaming downloads per declaration
+//                  provision row (the engine's provisionsByFamily —
+//                  DECL + card-owned rows), sha256-verified after.
 //   all            extensions + models.
 //
 // Config is read TS-natively: inference.config.json at the repo root
@@ -39,6 +43,9 @@
 
 import { spawn, spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
+import { createWriteStream } from "node:fs";
+import { Readable } from "node:stream";
+import { pipeline } from "node:stream/promises";
 import { copyFileSync, cpSync, existsSync, mkdirSync, readFileSync,
   realpathSync, readdirSync, renameSync, rmSync, statSync, symlinkSync,
   unlinkSync, writeFileSync } from "node:fs";
@@ -48,8 +55,11 @@ import { loadCardDefs, provisionsByFamily } from "../src/cardDefs.ts";
 
 const HERE: string = dirname(fileURLToPath(import.meta.url));
 const REPO: string = resolve(HERE, "..", "..", "..", "..");
-const DEFAULT_CONFIG: string = join(REPO, "packages", "engines", "comfyui",
-  "data", "comfyui_endpoint.json");
+// The engine package's own data/ (comfyui-cordis since the models-
+// plane reversal, 91532243 — the old engines/comfyui anchor was a
+// stale name that left every config-less CLI call fatal).
+const DEFAULT_CONFIG: string = join(REPO, "packages", "engines",
+  "comfyui-cordis", "data", "comfyui_endpoint.json");
 const ROOT_CONFIG: string = join(REPO, "inference.config.json");
 const RUNTIME: string = join(REPO, "data", "runtime", "comfyui");
 const COMFY_PROJECT: string = join(REPO, "infra", "comfyui");
@@ -195,114 +205,6 @@ function enginePort(cfg: EndpointConfig): number {
   return n;
 }
 
-// ── minimal MCP stdio client (transport to comfy-mcp, the manager) ──
-
-function resolveComfyMcpBin(): string {
-  const env = (process.env.COMFY_MCP_BIN ?? "").trim();
-  if (env && existsSync(env)) return env;
-  const managed = join(RUNTIME, ".venv", "bin", "comfy-mcp");
-  if (existsSync(managed)) return managed;
-  const which = spawnSync("which", ["comfy-mcp"], { encoding: "utf8" });
-  const found = (which.stdout ?? "").trim().split("\n")[0]?.trim() ?? "";
-  if (which.status === 0 && found) return found;
-  fail("comfy-mcp is not resolvable — the management plane carries it " +
-    "(managed: provision sync; COMFY_MCP_BIN override; or comfy-mcp on PATH)");
-}
-
-interface McpEnv {
-  bin: string;
-  env: Record<string, string>;
-}
-
-function mcpEnv(workspace: string, localUrl: string): McpEnv {
-  const env: Record<string, string> = {};
-  for (const [k, v] of Object.entries(process.env)) {
-    if (v !== undefined) env[k] = v;
-  }
-  const comfyBin = join(workspace, ".venv", "bin", "comfy");
-  if (existsSync(comfyBin)) env.COMFY_BIN = comfyBin;
-  env.COMFYUI_PATH = workspace;
-  env.COMFY_LOCAL_URL = localUrl;
-  return { bin: resolveComfyMcpBin(), env };
-}
-
-class McpClient {
-  private proc: ReturnType<typeof spawn>;
-  private stdin: NodeJS.WritableStream;
-  private nextId = 1;
-  private pending = new Map<number,
-    { ok: (v: unknown) => void; bad: (e: Error) => void }>();
-  private buf = "";
-
-  constructor(bin: string, env: Record<string, string>) {
-    this.proc = spawn(bin, [], { env, stdio: ["pipe", "pipe", "inherit"] });
-    if (!this.proc.stdout || !this.proc.stdin) {
-      throw new Error("cannot open stdio pipes to " + bin);
-    }
-    this.stdin = this.proc.stdin;
-    this.proc.stdout.on("data", (d: Buffer) => this.onData(d.toString("utf8")));
-  }
-
-  private onData(chunk: string): void {
-    this.buf += chunk;
-    let nl: number;
-    while ((nl = this.buf.indexOf("\n")) >= 0) {
-      const line = this.buf.slice(0, nl).trim();
-      this.buf = this.buf.slice(nl + 1);
-      if (!line) continue;
-      let msg: { id?: number; result?: unknown; error?: { message?: string } };
-      try {
-        msg = JSON.parse(line) as typeof msg;
-      } catch { continue; }
-      if (msg.id === undefined) continue;
-      const p = this.pending.get(msg.id);
-      if (!p) continue;
-      this.pending.delete(msg.id);
-      if (msg.error) p.bad(new Error(String(msg.error.message ?? "mcp error")));
-      else p.ok(msg.result);
-    }
-  }
-
-  call(method: string, params: unknown): Promise<unknown> {
-    const id = this.nextId++;
-    return new Promise((resolveP, rejectP) => {
-      this.pending.set(id, { ok: resolveP, bad: rejectP });
-      this.stdin.write(JSON.stringify({ jsonrpc: "2.0", id, method,
-        params }) + "\n");
-    });
-  }
-
-  notify(method: string, params: unknown): void {
-    this.stdin.write(JSON.stringify({ jsonrpc: "2.0", method,
-      params }) + "\n");
-  }
-
-  async open(): Promise<void> {
-    await this.call("initialize", { protocolVersion: "2024-11-05",
-      capabilities: {}, clientInfo: { name: "estate-provision", version: "1" } });
-    this.notify("notifications/initialized", {});
-  }
-
-  async tool(name: string, args: Record<string, unknown>): Promise<unknown> {
-    const res = await this.call("tools/call",
-      { name, arguments: args }) as {
-        content?: Array<{ text?: string }>; isError?: boolean };
-    if (res?.isError) {
-      throw new Error("tool " + name + " isError: " +
-        JSON.stringify(res.content ?? []).slice(0, 300));
-    }
-    const text = res?.content?.[0]?.text ?? "";
-    try {
-      return text ? JSON.parse(text) as unknown : {};
-    } catch {
-      return { text };
-    }
-  }
-
-  close(): void {
-    this.proc.kill();
-  }
-}
 
 // ── strict nodes.yaml reader (the extension_lane manifest, TS-native) ──
 //
@@ -695,24 +597,6 @@ function syncEndpointFromRoot(cfg: EndpointConfig): void {
   console.log("endpoint derived from root: " + changed.join(", "));
 }
 
-function managedRouting(): void {
-  // managed mode: comfy-mcp spawns hit THIS runtime's comfy-cli and
-  // workspace (COMFY_BIN + COMFYUI_PATH env routing).
-  if (loadConfig(DEFAULT_CONFIG).provision !== "managed") return;
-  const comfyBin = join(RUNTIME, ".venv", "bin", "comfy");
-  if (!existsSync(comfyBin)) {
-    fail("managed routing: " + comfyBin + " missing — run " +
-      "`provision sync` first (the runtime venv carries the " +
-      "instance's comfy-cli)");
-  }
-  process.env.COMFY_BIN = comfyBin;
-  process.env.COMFYUI_PATH = RUNTIME;
-  process.env.VIRTUAL_ENV = join(RUNTIME, ".venv");
-  spawnSync(comfyBin, ["set-default", RUNTIME], { timeout: 90000 });
-  info("managed routing: COMFY_BIN=" + comfyBin + " workspace=" +
-    RUNTIME + " (set-default)");
-}
-
 function cmdSync(cfg: EndpointConfig): void {
   if (cfg.provision !== "managed") {
     die("provision=" + JSON.stringify(cfg.provision) + " — BYO " +
@@ -747,6 +631,7 @@ function cmdSync(cfg: EndpointConfig): void {
       { encoding: "utf8" });
     if ((have.stdout ?? "").trim() === pin) {
       info("core already at pin " + pin.slice(0, 12));
+      vendorManager();
       return;
     }
   }
@@ -764,6 +649,97 @@ function cmdSync(cfg: EndpointConfig): void {
   git(["checkout", "--quiet", "FETCH_HEAD"]);
   info("core checked out at " + pin.slice(0, 12) + " (workspace root: " +
     RUNTIME + ")");
+  vendorManager();
+}
+
+// ── the built-in manager (auto-build; no external dependency) ──────
+
+const MANAGER_PIN_F: string = join(COMFY_PROJECT, "manager.pin");
+
+/** Pin text from infra/comfyui/manager.pin (comments stripped). */
+function managerPin(): string {
+  if (!existsSync(MANAGER_PIN_F)) {
+    die("no manager.pin in infra/comfyui — the built-in ComfyUI-Manager " +
+      "is vendored at a pinned ref (same law as core.pin)");
+  }
+  return readFileSync(MANAGER_PIN_F, "utf8").split("\n")
+    .map((l) => l.trim()).find((l) => l && !l.startsWith("#")) ?? "";
+}
+
+/** THE AUTO-BUILD (the no-external-python stroke, 2026-09-10): the
+ *  vendor ComfyUI-Manager rides ComfyUI's own port as a custom node
+ *  — cloned at the pinned ref into custom_nodes/, its requirements
+ *  installed into the serving venv, and its config pinned under
+ *  user/__manager/ (security_level=normal-, both allow flags) so
+ *  the loopback-listen engine admits installs. Users start the
+ *  engine; the manager is already in it (the estate never spawns a
+ *  separate manager process). */
+function vendorManager(): void {
+  const pin = managerPin();
+  const mgrDir = join(RUNTIME, "custom_nodes", "comfyui-manager");
+  const url = "https://github.com/Comfy-Org/ComfyUI-Manager.git";
+  const gitm = (args: string[]): number => {
+    const r = spawnSync("git", args, { cwd: RUNTIME, stdio: "inherit" });
+    return r.status ?? 1;
+  };
+  if (existsSync(join(mgrDir, "__init__.py"))) {
+    const have = spawnSync("git", ["-C", mgrDir, "rev-parse", "HEAD"],
+      { encoding: "utf8" });
+    if ((have.stdout ?? "").trim() === pin) {
+      info("manager already vendored at pin " + pin.slice(0, 12));
+    } else {
+      info("moving manager to pin " + pin.slice(0, 12) + " …");
+      gitm(["-C", mgrDir, "fetch", "--quiet", "--depth", "1", "origin", pin]);
+      gitm(["-C", mgrDir, "checkout", "--quiet", "FETCH_HEAD"]);
+    }
+  } else {
+    info("vendoring the built-in manager at pin " + pin.slice(0, 12) + " …");
+    mkdirSync(join(RUNTIME, "custom_nodes"), { recursive: true });
+    if (gitm(["clone", "--quiet", "--depth", "1", url, mgrDir]) !== 0) {
+      gitm(["clone", "--quiet", url, mgrDir]);
+    }
+    gitm(["-C", mgrDir, "fetch", "--quiet", "--depth", "1", "origin", pin]);
+    gitm(["-C", mgrDir, "checkout", "--quiet", "FETCH_HEAD"]);
+  }
+  const env: Record<string, string> = {};
+  for (const [k, v] of Object.entries(process.env)) {
+    if (v !== undefined) env[k] = v;
+  }
+  env.UV_PROJECT_ENVIRONMENT = join(RUNTIME, ".venv");
+  const r = spawnSync("uv",
+    ["pip", "install", "--python", join(RUNTIME, ".venv", "bin", "python"),
+      "-r", join(mgrDir, "requirements.txt")],
+    { cwd: REPO, env, stdio: "inherit" });
+  if (r.status !== 0) fail("manager requirements install failed");
+  pinManagerConfig();
+  info("built-in manager vendored (rides the engine port; config " +
+    "pinned at user/__manager/config.ini)");
+}
+
+/** Write/verify the manager config pins. The vendor reads this file
+ *  ONCE at ComfyUI startup — drift is warned, never silently
+ *  rewritten (a running engine would not see the write). */
+function pinManagerConfig(): void {
+  const f = join(RUNTIME, "user", "__manager", "config.ini");
+  const pins =
+    "security_level = normal-\nallow_git_url_install = true\n" +
+    "allow_pip_install = true\n";
+  if (!existsSync(f)) {
+    mkdirSync(dirname(f), { recursive: true });
+    writeFileSync(f, "[default]\n" + pins +
+      "channel_url = https://raw.githubusercontent.com/ltdrdata/ComfyUI-Manager/main\n");
+    info("manager config pinned (" + f + ")");
+    return;
+  }
+  const text = readFileSync(f, "utf8");
+  for (const key of ["security_level = normal-",
+    "allow_git_url_install = true", "allow_pip_install = true"]) {
+    if (!text.includes(key)) {
+      warn("manager config drift: '" + key +
+        "' missing in " + f + " — fix deliberately (the running engine " +
+        "read this file at startup)");
+    }
+  }
 }
 
 function cmdManifest(): void {
@@ -861,32 +837,32 @@ async function cmdVerify(cfg: EndpointConfig): Promise<void> {
   check("ffmpeg on PATH (project requirement for VHS / AudioConcat)",
     !!ffmpeg,
     ffmpeg || "install: apt install ffmpeg / brew install ffmpeg");
-  // management plane over MCP stdio. verify never mutates routing
-  // (no set-default here — that is the declarations path's job).
-  try {
-    const ws = url || engineUrl(cfg);
-    const me = mcpEnv(RUNTIME, ws);
-    check("comfy-mcp resolvable (management plane)", true);
-    const c = new McpClient(me.bin, me.env);
-    try {
-      await c.open();
-      const tools = await c.call("tools/list", {}) as
-        { tools?: Array<{ name?: string }> };
-      const names = (tools.tools ?? []).map((t) => t.name);
-      check("comfy-mcp answers (tools/list)",
-        names.includes("server_info"));
-      const rep = await c.tool("server_info", {}) as {
-        workspace?: { path?: string } | string; running?: unknown };
-      const wpath = typeof rep.workspace === "string"
-        ? rep.workspace : rep.workspace?.path;
-      check("comfy-cli routing answers (server_info)", true);
-      console.log("       workspace:", wpath, "| running:", rep.running);
-    } finally {
-      c.close();
+  // management plane: the BUILT-IN ComfyUI-Manager (vendored custom
+  // node riding the engine port — no external Python anywhere).
+  if (cfg.provision === "managed") {
+    const mgrDir = join(RUNTIME, "custom_nodes", "comfyui-manager");
+    const pin = managerPin();
+    const have = existsSync(join(mgrDir, "__init__.py"))
+      ? (spawnSync("git", ["-C", mgrDir, "rev-parse", "HEAD"],
+          { encoding: "utf8" }).stdout ?? "").trim()
+      : "";
+    check("built-in manager vendored (custom_nodes/comfyui-manager)",
+      have === pin,
+      have === "" ? "run provision sync (the auto-build)" :
+        "at " + have.slice(0, 12) + ", pin " + pin.slice(0, 12));
+    check("manager config pinned (user/__manager/config.ini)",
+      existsSync(join(RUNTIME, "user", "__manager", "config.ini")),
+      "run provision sync");
+    if (url) {
+      try {
+        const got = probe(url, "/manager/version");
+        check("built-in manager live (/manager/version)",
+          got.status === 200, got.text.slice(0, 60));
+      } catch (e) {
+        check("built-in manager live (/manager/version)", false,
+          String(e).slice(0, 100));
+      }
     }
-  } catch (e) {
-    check("comfy-mcp answers (management plane)", false,
-      String(e).slice(0, 100));
   }
   console.log();
   if (FAILS.length > 0) {
@@ -898,7 +874,7 @@ async function cmdVerify(cfg: EndpointConfig): Promise<void> {
     "extensions per the EXTENSION LAW — this probe does not duplicate it)");
 }
 
-// ── extensions via comfy-mcp (MCP stdio) + vendor symlinks ────────
+// ── extensions via git (registry cache + url clones) + vendor symlinks ──
 
 function linkInTree(name: string, workspace: string): string {
   const target = join(workspace, "custom_nodes", name);
@@ -923,19 +899,6 @@ function linkInTree(name: string, workspace: string): string {
     warn("  [" + name + "] symlink unavailable — COPIED");
     return "installed";
   }
-}
-
-async function workspaceFromServerInfo(c: McpClient): Promise<string> {
-  const rep = await c.tool("server_info", {}) as {
-    workspace?: { path?: string } | string };
-  const ws = rep.workspace;
-  const path = typeof ws === "string" ? ws : ws?.path;
-  if (!path) {
-    fail("comfy-cli reports no workspace — management routing is " +
-      "deployment config (COMFY_BIN / comfy set-default); " +
-      "provision cannot guess one");
-  }
-  return path;
 }
 
 function sameWorld(workspace: string, duty: string): boolean {
@@ -1004,40 +967,65 @@ function pipInstall(pkgs: string[], workspace: string): boolean {
   return false;
 }
 
-function cmCliInstall(url: string, workspace: string): {
-    installed?: boolean; restart_required?: boolean;
-    failed?: boolean; error?: string; result?: string } {
-  // cm_cli accepts git URLs (install_node wraps it but refuses
-  // them) — the same engine comfy-cli uses, driven directly.
-  const venv = process.env.VIRTUAL_ENV ?? "";
-  const py = venv && existsSync(join(venv, "bin", "python"))
-    ? join(venv, "bin", "python") : process.execPath;
-  const env: Record<string, string> = {};
-  for (const [k, v] of Object.entries(process.env)) {
-    if (v !== undefined) env[k] = v;
+/** The vendored manager's registry cache (custom-node-list.json,
+ *  shipped inside the vendored custom node) — cnr id → reference
+ *  git URL. This keeps registry declarations installable at
+ *  provision time (engine down, manager not answering) with zero
+ *  external Python: same map the manager itself consults. */
+function registryUrl(reg: string): string {
+  const f = join(RUNTIME, "custom_nodes", "comfyui-manager",
+    "custom-node-list.json");
+  if (!existsSync(f)) {
+    return "";
   }
-  env.COMFYUI_PATH = workspace;
-  const r = spawnSync(py, ["-m", "cm_cli", "install", url],
-    { encoding: "utf8", cwd: workspace, env, timeout: 300000 });
-  if (r.status === 0) {
-    return { installed: true, restart_required: true,
-      result: r.stdout ?? "" };
+  try {
+    const doc = JSON.parse(readFileSync(f, "utf8")) as {
+      custom_nodes?: Array<{ id?: string; reference?: string }> };
+    const w = reg.toLowerCase();
+    const row = (doc.custom_nodes ?? []).find(
+      (r) => String(r.id ?? "").toLowerCase() === w);
+    return row?.reference ?? "";
+  } catch {
+    return "";
   }
-  return { installed: false, failed: true,
-    error: ((r.stderr || r.stdout) ?? "").slice(0, 500) };
+}
+
+/** Install one pack from git — the same mechanism the built-in
+ *  manager uses for git installs, driven at provision time (engine
+ *  down). Returns ok or the failure text. */
+function gitCloneInstall(url: string, workspace: string,
+    ref: string): { ok: boolean; error?: string } {
+  const base = url.replace(/\/+$/, "").replace(/\.git$/, "")
+    .split("/").pop() ?? "";
+  if (!base) return { ok: false, error: "cannot derive a pack name from " + url };
+  const dest = join(workspace, "custom_nodes", base);
+  const git = (args: string[]): number =>
+    spawnSync("git", args, { cwd: workspace, stdio: "pipe" }).status ?? 1;
+  let r = git(["clone", "--quiet", "--depth", "1", url, dest]);
+  if (r !== 0) r = git(["clone", "--quiet", url, dest]);
+  if (r !== 0) return { ok: false, error: "git clone failed for " + url };
+  if (ref) {
+    git(["-C", dest, "fetch", "--quiet", "--depth", "1", "origin", ref]);
+    if (git(["-C", dest, "checkout", "--quiet", "FETCH_HEAD"]) !== 0) {
+      warn("  ref " + ref + " not fetchable — left on the default head");
+    }
+  }
+  return { ok: true };
 }
 
 async function stepExtensions(): Promise<boolean> {
   const exts = mergeManifest(REPO);
   info(exts.length + " extensions declared");
   const cfg = loadConfig(DEFAULT_CONFIG);
-  const me = mcpEnv(RUNTIME, engineUrl(cfg));
-  const c = new McpClient(me.bin, me.env);
+  if (cfg.provision !== "managed") {
+    die("provision=" + JSON.stringify(cfg.provision) + " — BYO " +
+      "deployments own their custom_nodes; the estate never " +
+      "installs into a user workspace");
+  }
+  const workspace = RUNTIME;
   const counts = { installed: 0, skipped: 0, failed: 0, blocked: 0 };
   let restart = false;
-  try {
-    await c.open();
-    const workspace = await workspaceFromServerInfo(c);
+  {
     const vendorWorld = sameWorld(workspace, "vendor symlinking");
     for (const e of exts) {
       const name = (e.name ?? "").trim();
@@ -1071,28 +1059,15 @@ async function stepExtensions(): Promise<boolean> {
           counts.installed += 1;
           continue;
         }
-        let rep;
-        try {
-          rep = cmCliInstall(url, workspace);
-        } catch (exc) {
-          warn("  [" + name + "] cm_cli install raised: " +
-            String(exc).slice(0, 160));
-          counts.failed += 1;
-          continue;
-        }
-        if (rep.failed) {
+        const rep = gitCloneInstall(url, workspace, e.ref);
+        if (!rep.ok) {
           warn("  [" + name + "] failed: " +
             (rep.error ?? "").slice(0, 160));
           counts.failed += 1;
           continue;
         }
         counts.installed += 1;
-        if (rep.restart_required) restart = true;
-        if (e.ref) {
-          info("  [" + name + "] installed from url (declared ref " +
-            e.ref + " — cm_cli may pull a different ref; audit the " +
-            "drift deliberately)");
-        }
+        restart = true;
         continue;
       }
       // registry form: bare id (install_node refuses @pins; the
@@ -1108,33 +1083,29 @@ async function stepExtensions(): Promise<boolean> {
         counts.installed += 1;
         continue;
       }
-      let rep: { failed?: unknown; unsupported?: unknown;
-        restart_required?: boolean; error?: string };
-      try {
-        rep = await c.tool("install_node",
-          { names: [reg], confirm_install: true }) as typeof rep;
-      } catch (exc) {
-        warn("  [" + name + "] install_node raised: " +
-          String(exc).slice(0, 160));
+      const gitUrl = registryUrl(reg);
+      if (!gitUrl) {
+        warn("  [" + name + "] registry id " + JSON.stringify(reg) +
+          " not in the vendored registry cache — declare a url or " +
+          "install at runtime (comfy_manage install_extension)");
         counts.failed += 1;
         continue;
       }
-      if (rep.unsupported || rep.failed) {
-        warn("  [" + name + "] install_node refused: " +
-          String(rep.error ?? rep.failed).slice(0, 160));
+      const rep = gitCloneInstall(gitUrl, workspace, e.ref);
+      if (!rep.ok) {
+        warn("  [" + name + "] failed: " +
+            (rep.error ?? "").slice(0, 160));
         counts.failed += 1;
         continue;
       }
       counts.installed += 1;
-      if (rep.restart_required) restart = true;
+      restart = true;
       if (e.version) {
         info("  [" + name + "] installed (declaration records version " +
-          e.version + " — install_node installs latest; audit the " +
-          "drift deliberately)");
+          e.version + " — the registry head moved; audit the drift " +
+          "deliberately)");
       }
     }
-  } finally {
-    c.close();
   }
   info("extensions: " + counts.installed + " installed, " +
     counts.skipped + " skipped, " + counts.failed + " failed, " +
@@ -1146,7 +1117,7 @@ async function stepExtensions(): Promise<boolean> {
   return counts.failed === 0 && counts.blocked === 0;
 }
 
-// ── models via comfy-mcp + the frozen catalog + sha256 gate ──────
+// ── models via the estate downloader + frozen catalog + sha256 gate ──
 
 function sha256Of(path: string): string {
   return createHash("sha256").update(readFileSync(path)).digest("hex");
@@ -1173,40 +1144,36 @@ async function catalogProvisions(): Promise<Array<{ family: string; row: Provisi
   return out;
 }
 
-async function fetchVerified(c: McpClient, workspace: string,
+async function fetchVerified(workspace: string,
     storeRoot: string, label: string, url: string, name: string,
     sub: string, want: string): Promise<string> {
-  // One artifact through the comfy-mcp download_model rail
-  // (relative_path models/<category>), polled to completion and
-  // sha256-verified after. Returns ok | skipped | bad.
+  // One artifact through the ESTATE downloader (plain TS streaming
+  // fetch into the workspace models tree — the comfy-mcp rail died
+  // with the no-external-python stroke, 2026-09-10), then
+  // sha256-verified. Returns ok | skipped | bad.
   const rel = sub ? "models/" + sub : "models";
   const dest = join(workspace, rel, name);
   const store = sub ? join(storeRoot, sub, name) : join(storeRoot, name);
   if (existsSync(store)) return "skipped";
   info("  [model] " + label + " -> " + rel + "/");
   if (DRY) {
-    console.log("[dry-run] download_model " + url + " -> " + rel + "/" +
+    console.log("[dry-run] download " + url + " -> " + rel + "/" +
       name);
     return "skipped";
   }
   try {
-    let rep = await c.tool("download_model",
-      { url, relative_path: rel, filename: name, wait: true,
-        timeout_seconds: 100.0 }) as {
-          status?: string; timed_out?: boolean; download_id?: string };
-    const deadline = Date.now() + 7200_000;
-    while (rep?.timed_out && rep?.download_id && Date.now() < deadline) {
-      rep = await c.tool("download",
-        { action: "wait", download_id: rep.download_id,
-          timeout_seconds: 3600.0 }) as typeof rep;
-    }
-    if (rep?.status !== "completed") {
-      warn("  [model] " + name + ": download did not complete: " +
-        JSON.stringify(rep).slice(0, 160));
+    mkdirSync(dirname(dest), { recursive: true });
+    const r = await fetch(url);
+    if (!(r.status >= 200 && r.status < 300) || r.body === null) {
+      warn("  [model] " + name + ": download refused: HTTP " + r.status);
       return "bad";
     }
+    const tmp = dest + ".part";
+    await pipeline(Readable.fromWeb(r.body as never),
+      createWriteStream(tmp));
+    renameSync(tmp, dest);
   } catch (exc) {
-    warn("  [model] " + name + ": download_model raised: " +
+    warn("  [model] " + name + ": download raised: " +
       String(exc).slice(0, 160));
     return "bad";
   }
@@ -1241,11 +1208,13 @@ async function fetchVerified(c: McpClient, workspace: string,
 
 async function stepModels(): Promise<boolean> {
   const cfg = loadConfig(DEFAULT_CONFIG);
-  const me = mcpEnv(RUNTIME, engineUrl(cfg));
-  const c = new McpClient(me.bin, me.env);
-  try {
-    await c.open();
-    const workspace = await workspaceFromServerInfo(c);
+  if (cfg.provision !== "managed") {
+    die("provision=" + JSON.stringify(cfg.provision) + " — BYO " +
+      "deployments own their model tree; the estate never " +
+      "downloads into a user workspace");
+  }
+  {
+    const workspace = RUNTIME;
     if (!sameWorld(workspace, "sha-verified model downloads")) return false;
     const bound = boundModelFolders(cfg);
     const storeRoot = bound.download_path;
@@ -1269,7 +1238,7 @@ async function stepModels(): Promise<boolean> {
         bad += 1;
         continue;
       }
-      const st = await fetchVerified(c, workspace, storeRoot,
+      const st = await fetchVerified(workspace, storeRoot,
         family + "/provision/" + name, url, name, sub, want);
       if (st === "ok") ok += 1;
       else if (st === "bad") bad += 1;
@@ -1282,8 +1251,6 @@ async function stepModels(): Promise<boolean> {
     info("models: " + ok + " downloaded+verified, " + skipped +
       " present, " + bad + " failed");
     return bad === 0;
-  } finally {
-    c.close();
   }
 }
 
@@ -1756,7 +1723,6 @@ async function main(): Promise<number> {
   }
   if (cmd === "extensions" || cmd === "models" || cmd === "all") {
     DRY = argv.includes("--dry-run");
-    managedRouting();
     let rc = 0;
     if (cmd === "all" || cmd === "extensions") {
       if (!await stepExtensions()) rc = 1;

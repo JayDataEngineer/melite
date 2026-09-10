@@ -8,14 +8,18 @@
 // never the real tree, never :33081, never :18466):
 //
 //   bad-JSON 400 shape, method-mismatch 404 literal, list-body 500
-//   keys, plane-unavailable 503 template (bogus MELITE_COMFY_MCP_BIN),
+//   keys, plane-unavailable 503 template (no endpoint url — the
+//   manager rail's answer when the built-in ComfyUI-Manager is not
+//   reachable; the comfy-mcp binary and MELITE_COMFY_MCP_BIN died
+//   with the no-external-python stroke 2026-09-10),
 //   dispatch 422s (unknown action / empty body / missing arg),
 //   catalog-miss 404 (the compiled-in frozen registry answers —
 //   root-independent, no fixture seeding since the 2026-09-08
 //   provisions.json convergence),
-//   live status 200 (stub vendor rail), trailing-slash normalization,
-//   auth 401 + the /v1/health exemption, and the resolveComfyMcpBin
-//   unit probe.
+//   live status 200 (manager-stub vendor rail: canned /system_stats
+//   + /manager routes), the live rail legs (list_extensions reads
+//   the stub's pack map; search filters its model DB), trailing-
+//   slash normalization, auth 401 + the /v1/health exemption.
 //
 // Hermetic discipline: NOTHING mutates — the legs use refusals
 // (503/422/400/500/404), the read-only status probe (stub rail answers
@@ -32,17 +36,12 @@
 // (or the whole plane: node tests/walls/ts/run.mjs)
 import { describe, it, before, after } from "node:test";
 import assert from "node:assert/strict";
-import { accessSync, constants } from "node:fs";
-import { spawnSync } from "node:child_process";
-import { dirname, join, resolve } from "node:path";
-import { fileURLToPath } from "node:url";
+
 import { bootSandbox, http, parsed, reap } from "../helpers/boot.ts";
 import type { HttpOut, Sandbox } from "../helpers/boot.ts";
 import { REPO_ROOT } from "../helpers/boot.ts";
 
 const TOKEN = "wall-ts-manage-2026-09-08";
-const STUB_BIN = resolve(dirname(fileURLToPath(import.meta.url)), "..", "fixtures", "mcp-stub.mjs");
-const BOGUS_BIN = "/nonexistent-xyz-ts-wall-comfy-mcp";
 
 function postManage(port: number, raw: string | Uint8Array): Promise<HttpOut> {
   return http(port, "POST", "/v1/manage", { body: raw, token: TOKEN, contentType: "application/json" });
@@ -59,12 +58,7 @@ describe("manage wire (sandbox boot, stub vendor rail)", () => {
   let sandbox: Sandbox | null = null;
 
   before(async (): Promise<void> => {
-    try {
-      accessSync(STUB_BIN, constants.X_OK);
-    } catch {
-      assert.fail("mcp stub is not executable: " + STUB_BIN + " (chmod +x fixtures/mcp-stub.mjs)");
-    }
-    sandbox = await bootSandbox({ mcpBin: STUB_BIN, token: TOKEN, seedCatalog: true });
+    sandbox = await bootSandbox({ token: TOKEN, seedCatalog: true });
   });
 
   after((): void => {
@@ -193,50 +187,77 @@ describe("manage wire (sandbox boot, stub vendor rail)", () => {
   });
 });
 
-describe("manage plane-unavailable template (sandbox boot, bogus bin)", () => {
+describe("manage plane-unavailable template (no endpoint url)", () => {
   let sandbox: Sandbox | null = null;
 
   before(async (): Promise<void> => {
-    sandbox = await bootSandbox({ mcpBin: BOGUS_BIN, token: TOKEN });
+    sandbox = await bootSandbox({ token: TOKEN });
   });
 
   after((): void => {
     if (sandbox !== null) reap(sandbox.proc);
   });
 
-  it("bogus MELITE_COMFY_MCP_BIN 503 template (5xx carries no code)", async (): Promise<void> => {
+  it("manager rail unreachable 503 template (5xx carries no code)", async (): Promise<void> => {
     assert.ok(sandbox !== null, "sandbox did not boot");
-    const r: HttpOut = await postManage((sandbox as Sandbox).port, JSON.stringify({ action: "status" }));
+    // `free` rides the rail with no estate-orchestration gate (the
+    // byo guard owns managed-workspace actions; the plane-unavailable
+    // template is the rail's own answer).
+    const r: HttpOut = await postManage((sandbox as Sandbox).port, JSON.stringify({ action: "free" }));
     assert.equal(r.status, 503);
-    assert.deepEqual(parsed(r.bytes), {
-      action: "status",
-      ok: false,
-      detail: "management plane unavailable: no vendor comfy-mcp at " + BOGUS_BIN + " (provision sync)",
-    });
+    const doc: Record<string, unknown> = envelope(r.bytes);
+    assert.equal(doc["action"], "free");
+    assert.equal(doc["ok"], false);
+    assert.match(
+      String(doc["detail"] ?? ""),
+      /^management plane unavailable: ComfyUI-Manager not reachable at <no endpoint url>/,
+      "detail: " + r.bytes.subarray(0, 200),
+    );
   });
 });
 
-describe("resolveComfyMcpBin unit probe (env pin + anchor default)", () => {
-  it("default is the anchored base-env bin; the env pin wins", (): void => {
-    const bridges: string = join(REPO_ROOT, "packages", "gateway", "doors", "src", "doors", "bridges.ts");
-    const wantDefault: string = join(REPO_ROOT, "infra", "python", ".venv", "bin", "comfy-mcp");
-    const probe: string =
-      "import(" + JSON.stringify("file://" + bridges) + ").then((m) => {" +
-      "delete process.env.MELITE_COMFY_MCP_BIN;" +
-      "const a = m.resolveComfyMcpBin();" +
-      "if (a !== " + JSON.stringify(wantDefault) + ") {" +
-      "console.error('unexpected default ' + a); process.exit(1); }" +
-      "process.env.MELITE_COMFY_MCP_BIN = '/pin/comfy-mcp';" +
-      "const b = m.resolveComfyMcpBin();" +
-      "if (b !== '/pin/comfy-mcp') { console.error('pin ' + b); process.exit(1); }" +
-      "console.log('RESOLVE-OK'); });";
-    const r = spawnSync(process.execPath, ["--no-warnings", "--experimental-strip-types", "--eval", probe], {
-      cwd: REPO_ROOT,
-      encoding: "utf-8",
-      timeout: 60000,
-      env: { ...process.env, MELITE_COMFY_MCP_BIN: "" },
-    });
-    assert.equal(r.status, 0, "probe failed: " + ((r.stderr as string) || (r.stdout as string)).slice(-400));
-    assert.ok((r.stdout as string).includes("RESOLVE-OK"), "probe output: " + (r.stdout as string).slice(-200));
+describe("manage live rail (manager stub boots as the endpoint)", () => {
+  let sandbox: Sandbox | null = null;
+
+  before(async (): Promise<void> => {
+    sandbox = await bootSandbox({ token: TOKEN, manager: true });
+  });
+
+  after((): void => {
+    if (sandbox !== null) {
+      reap(sandbox.proc);
+      if (sandbox.managerProc !== undefined) reap(sandbox.managerProc);
+    }
+  });
+
+  it("list_extensions 200 reads the vendor pack map", async (): Promise<void> => {
+    assert.ok(sandbox !== null, "sandbox did not boot");
+    const r: HttpOut = await postManage((sandbox as Sandbox).port, JSON.stringify({ action: "list_extensions" }));
+    assert.equal(r.status, 200, "body: " + r.bytes.subarray(0, 200));
+    const doc: Record<string, unknown> = envelope(r.bytes);
+    assert.equal(doc["ok"], true);
+    const rows = doc["data"] as Array<Record<string, unknown>>;
+    assert.ok(Array.isArray(rows) && rows.length >= 2, "stub pack map served");
+    assert.ok(rows.some((x) => String(x["name"]).includes("kjnodes")), "kjnodes row present");
+  });
+
+  it("search_models 200 filters the vendor model DB", async (): Promise<void> => {
+    assert.ok(sandbox !== null, "sandbox did not boot");
+    const r: HttpOut = await postManage((sandbox as Sandbox).port, JSON.stringify({ action: "search_models", query: "upscale" }));
+    assert.equal(r.status, 200, "body: " + r.bytes.subarray(0, 200));
+    const doc: Record<string, unknown> = envelope(r.bytes);
+    assert.equal(doc["ok"], true);
+    const hits = doc["data"] as Array<Record<string, unknown>>;
+    assert.ok(Array.isArray(hits) && hits.length === 1, "one upscale hit: " + r.bytes.subarray(0, 200));
+    assert.equal(hits[0]["name"], "4x upscale");
+  });
+
+  it("snapshot_list 200 serves the vendor items", async (): Promise<void> => {
+    assert.ok(sandbox !== null, "sandbox did not boot");
+    const r: HttpOut = await postManage((sandbox as Sandbox).port, JSON.stringify({ action: "snapshot_list" }));
+    assert.equal(r.status, 200);
+    const doc: Record<string, unknown> = envelope(r.bytes);
+    const items = doc["data"] as string[];
+    assert.ok(Array.isArray(items) && items.length === 1 && items[0].startsWith("snapshot-"), "one stub snapshot");
   });
 });

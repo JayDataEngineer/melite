@@ -21,7 +21,7 @@
 // Run: node --experimental-strip-types --test tests/walls/ts/suites/presets-door.test.ts
 import { describe, it, before, after } from "node:test";
 import assert from "node:assert/strict";
-import { accessSync, constants, existsSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -29,7 +29,6 @@ import { bootSandbox, http, parsed, reap } from "../helpers/boot.ts";
 import type { HttpOut, Sandbox } from "../helpers/boot.ts";
 
 const TOKEN = "wall-ts-presets-2026-09-09";
-const STUB_BIN = resolve(dirname(fileURLToPath(import.meta.url)), "..", "fixtures", "mcp-stub.mjs");
 const TENANT = "3d/anny";
 
 const NULL_PARTS = { hair: null, outfit: null };
@@ -98,14 +97,9 @@ describe("presets ride the storage domain (sandbox boot)", () => {
   let repoRoot = "";
 
   before(async (): Promise<void> => {
-    try {
-      accessSync(STUB_BIN, constants.X_OK);
-    } catch {
-      assert.fail("mcp stub is not executable: " + STUB_BIN + " (chmod +x fixtures/mcp-stub.mjs)");
-    }
     stateRoot = mkdtempSync(join(tmpdir(), "wall-ts-presets-"));
     repoRoot = seedRepo();
-    sandbox = await bootSandbox({ mcpBin: STUB_BIN, token: TOKEN, stateRoot, repoRoot });
+    sandbox = await bootSandbox({ token: TOKEN, stateRoot, repoRoot });
   });
 
   after((): void => {
@@ -192,7 +186,7 @@ describe("presets durability + the import marker (reboot the same roots)", () =>
   before(async (): Promise<void> => {
     stateRoot = mkdtempSync(join(tmpdir(), "wall-ts-presets-rb-"));
     repoRoot = seedRepo();
-    first = await bootSandbox({ mcpBin: STUB_BIN, token: TOKEN, stateRoot, repoRoot });
+    first = await bootSandbox({ token: TOKEN, stateRoot, repoRoot });
     const saved = await http(first.port, "POST", "/v1/studios/" + TENANT + "/presets", {
       body: JSON.stringify({ ...goodRow("user-pending", "Survives") }),
       token: TOKEN,
@@ -206,7 +200,7 @@ describe("presets durability + the import marker (reboot the same roots)", () =>
     writeFileSync(legacyPath, JSON.stringify({ presets: legacy.presets }));
     reap((first as Sandbox).proc);
     first = null;
-    second = await bootSandbox({ mcpBin: STUB_BIN, token: TOKEN, stateRoot, repoRoot });
+    second = await bootSandbox({ token: TOKEN, stateRoot, repoRoot });
   });
 
   after((): void => {

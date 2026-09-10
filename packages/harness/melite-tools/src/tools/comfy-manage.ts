@@ -1,8 +1,10 @@
 /**
  * comfy_manage — the ONE ComfyUI manager tool (2026-09-03).
  *
- * Wraps the estate's management plane — comfy-mcp (comfy-cli wrapper) +
- * comfyui-manager (security=medium, confirm-gated) + comfy-cli — behind
+ * Wraps the estate's management plane — the built-in ComfyUI-Manager
+ * (vendored into the managed engine's custom_nodes, riding ComfyUI's
+ * own HTTP port — no external Python anywhere, 2026-09-10) plus the
+ * estate TS legs (model downloads, systemd, journal logs) — behind
  * ONE action-dispatch tool. The SSOT is
  * packages/gateway/doors/src/doors/manage.ts (ACTIONS + HANDLERS +
  * LIFECYCLE_GUARDED — python/manage.py is deleted); this tool is its
@@ -74,9 +76,7 @@ export function comfyManage(gatewayUrl: string): ToolDefinition {
   const def = defineTool({
     name: 'comfy_manage',
     description:
-      'The ONE ComfyUI manager: wraps comfy-mcp + comfyui-manager (security=medium) '
-      + '+ comfy-cli. Actions: status (server/security/routing/active runs — start '
-      + 'here), logs, search_models; list_extensions (installed packs — '
+
       + 'managed workspace only), snapshot_list / snapshot_save / '
       + 'snapshot_restore (environment snapshots; restore is refused while '
       + 'runs are active); install_extension (registry ids), '
@@ -119,8 +119,8 @@ export function comfyManage(gatewayUrl: string): ToolDefinition {
       version: { type: 'string', description: 'switch_version: target ComfyUI version.' },
       target: {
         type: 'string',
-        enum: ['comfy', 'cli', 'all'],
-        description: 'update: what to update (default "comfy").',
+        enum: ['comfy'],
+        description: 'update: what to update (comfy only — comfy-cli is retired; the built-in manager updates ComfyUI itself).',
       },
       force: {
         type: 'boolean',

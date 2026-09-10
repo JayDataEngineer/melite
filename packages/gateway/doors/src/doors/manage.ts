@@ -1,29 +1,34 @@
-/** The manage door (POST /v1/manage) — Cordis-native, zero estate Python.
+/** The manage door (POST /v1/manage) — Cordis-native, zero external Python.
  *
- * NO-ESTATE-PYTHON LAW: this module is the SSOT vocabulary AND the
- * implementation. The old python/manage.py (Action enum + _HANDLERS +
- * LIFECYCLE_GUARDED) is dead; the vocabulary lives here in scannable
- * shape (ACTIONS array, HANDLERS rows, LIFECYCLE_GUARDED set — the
- * walls-plane successor of test_manage_parity scans these sources).
+ * NO EXTERNAL PYTHON (the requirements stroke, 2026-09-10): the ONE
+ * vendor is ComfyUI-Manager, built into the estate ComfyUI as a
+ * custom node (auto-vendored by provision sync) and served on
+ * ComfyUI's own port — the same HTTP contract its web UI speaks.
+ * The comfy-mcp binary, the cm_cli spawns, and the comfy-cli routing
+ * (COMFY_BIN/set-default) are DEAD. Estate-native legs (model
+ * downloads into the runtime tree, systemd stop/launch, journal
+ * logs, the status probe, the active-run guard) are plain TS.
  *
- * How it works: validated params → vendor APIs. MCP-tool actions ride
- * the MCP rail (./mcp.ts → the VENDOR comfy-mcp server binary over
- * stdio); browse/snapshot actions ride the vendor cm_cli module;
- * endpoint/active-runs/security/routing are TS-native (fetch, readdir,
- * config.ini). No estate Python is spawned, read, or imported.
+ * THE FLAG LAW: the manager's security predicates read ComfyUI's
+ * listen address at startup. The estate starts the engine with
+ * --listen 127.0.0.1 and pins user/__manager/config.ini
+ * (security_level=normal-, allow_git_url_install=true,
+ * allow_pip_install=true) at provision. Without the flag the vendor
+ * refuses installs with its own 403s; this door surfaces them
+ * verbatim and never works around a security answer.
  *
- * Wire contract (unchanged from the old door — the harness tool
- * comfy-manage.ts and the panel speak it): the envelope is always
- * {action, ok, detail, data}; refusal texts are byte-kept ("Field
- * required", "Input should be", "<action> requires: <fields>",
- * "not found in catalog", the 409 guard texts).
+ * This module stays the SSOT vocabulary (ACTIONS array, HANDLERS
+ * rows, LIFECYCLE_GUARDED set — the walls-plane successor of
+ * test_manage_parity scans these sources). Wire contract unchanged:
+ * the envelope is always {action, ok, detail, data}.
  */
 import { spawnSync } from "node:child_process";
-import { existsSync, readdirSync, readFileSync, writeFileSync, renameSync } from "node:fs";
+import { createWriteStream, existsSync, mkdirSync, readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
-import { callMcpTool } from "./mcp.ts";
-import { PyNum } from "@melite/gateway-core";
-import { loadEndpointConfig } from "@melite/comfyui-cordis";
+import { pipeline } from "node:stream/promises";
+import { Readable } from "node:stream";
+import { ManagerApiError, managerBase, managerGet, managerPost, planeUnavailable } from "./manager-api.ts";
+import { loadEndpointConfig, runtimeModelsRoot } from "@melite/comfyui-cordis";
 import type { ModelsService } from "@melite/comfyui-cordis";
 
 // ── SSOT vocabulary ─────────────────────────────────────────────────
@@ -71,10 +76,12 @@ export interface ManageEnvelope {
 export interface ManageCtx {
   /** File-anchored repo root (routing, catalog, runs scan anchor). */
   repoRoot: string;
-  /** Absolute vendor `comfy-mcp` server binary. */
-  serverBin: string;
+  /** The endpoint config, re-read per call (fresh — never cached
+   *  between calls): carries the engine url the manager rail rides.
+   *  The bridges door passes loadEndpointConfig itself. */
+  endpoint: () => Record<string, unknown>;
   /** The models catalog (stroke 4a: injected by the bridges door
-   *  from the engine-model-catalog provider — required, never
+   *  from the engine-model-catalog provider row — required, never
    *  optional: a door without its catalog is a miswire, and the
    *  type error at the construction site is the loudest refusal). */
   models: ModelsService;
@@ -121,167 +128,52 @@ const badRequest = (m: string): Refused => new Refused(422, m);
 const notFound = (m: string): Refused => new Refused(404, m);
 const unavailable = (m: string): Refused => new Refused(503, m);
 
-// ── request validation (extra=forbid, frozen) ───────────────────────
-const KNOWN_KEYS: ReadonlySet<string> = new Set([
-  "action", "nodes", "url", "relative_path", "filename", "wait",
-  "timeout_seconds", "model", "variant", "quant", "tail", "query",
-  "version", "target", "extra_args", "force", "snapshot",
-]);
-
-function asString(v: unknown, name: string): string {
-  if (v === undefined || v === null) return "";
-  if (typeof v === "string") return v;
-  throw badRequest("bad request: " + name + ": Input should be a string");
-}
-
 function parseReq(doc: unknown): Req {
-  if (doc === null || doc === undefined || typeof doc !== "object" || Array.isArray(doc)) {
-    throw badRequest("bad request: body must be an object");
+  if (doc === null || typeof doc !== "object" || Array.isArray(doc)) {
+    throw badRequest("Input should be a valid dictionary");
   }
-  const body = doc as Record<string, unknown>;
-  for (const k of Object.keys(body)) {
-    if (!KNOWN_KEYS.has(k)) throw badRequest("bad request: " + k + ": Extra inputs are not permitted");
+  const d = doc as Record<string, unknown>;
+  const action = String(d["action"] ?? "");
+  if (action === "") throw badRequest("Field required: action");
+  if (!(ACTIONS as readonly string[]).includes(action)) {
+    throw badRequest("Input should be one of: " + ACTIONS.join(", "));
   }
-  const rawAction = body["action"];
-  if (rawAction === undefined || rawAction === null || rawAction === "") {
-    throw badRequest("bad request: action: Field required");
-  }
-  if (typeof rawAction !== "string" || !(ACTIONS as readonly string[]).includes(rawAction)) {
-    throw badRequest(
-      "bad request: action: Input should be " +
-        ACTIONS.map((a) => "'" + a + "'").join(", "),
-    );
-  }
-  const nodes = body["nodes"] === undefined ? [] : body["nodes"];
-  if (!Array.isArray(nodes) || nodes.some((n) => typeof n !== "string")) {
-    throw badRequest("bad request: nodes: Input should be a list of strings");
-  }
-  const extraArgs = body["extra_args"] === undefined ? [] : body["extra_args"];
-  if (!Array.isArray(extraArgs) || extraArgs.some((n) => typeof n !== "string")) {
-    throw badRequest("bad request: extra_args: Input should be a list of strings");
-  }
-  const wait = body["wait"];
-  if (wait !== undefined && wait !== null && typeof wait !== "boolean") {
-    throw badRequest("bad request: wait: Input should be a boolean");
-  }
-  // The dispatcher strict-parses with parseJson: number literals
-  // arrive as PyNum (assets.ts machinery) — unwrap, never reject.
-  const num = (v: unknown, name: string): number => {
-    if (typeof v === "number") return v;
-    if (v instanceof PyNum) return Number((v as PyNum).literal);
-    throw badRequest("bad request: " + name + ": Input should be a number");
+  const str = (k: string): string => (typeof d[k] === "string" ? (d[k] as string) : "");
+  const num = (k: string, def: number): number => {
+    const v = d[k];
+    if (typeof v !== "number" || !Number.isFinite(v)) return def;
+    return v;
   };
-  const tail = body["tail"] === undefined ? 200 : num(body["tail"], "tail");
-  const timeoutSeconds = body["timeout_seconds"] === undefined
-    ? 1800.0
-    : num(body["timeout_seconds"], "timeout_seconds");
   return {
-    action: rawAction as ManageAction,
-    nodes: nodes as string[],
-    url: asString(body["url"], "url"),
-    relative_path: asString(body["relative_path"], "relative_path"),
-    filename: asString(body["filename"], "filename"),
-    wait: (wait ?? null) as boolean | null,
-    timeout_seconds: timeoutSeconds,
-    model: asString(body["model"], "model"),
-    variant: asString(body["variant"], "variant"),
-    quant: asString(body["quant"], "quant"),
-    tail,
-    query: asString(body["query"], "query"),
-    version: asString(body["version"], "version"),
-    target: body["target"] === undefined ? "comfy" : asString(body["target"], "target"),
-    extra_args: extraArgs as string[],
-    force: body["force"] === true,
-    snapshot: asString(body["snapshot"], "snapshot"),
+    action: action as ManageAction,
+    nodes: Array.isArray(d["nodes"]) ? (d["nodes"] as unknown[]).map(String).filter((s) => s !== "") : [],
+    url: str("url"),
+    relative_path: str("relative_path"),
+    filename: str("filename"),
+    wait: typeof d["wait"] === "boolean" ? (d["wait"] as boolean) : null,
+    timeout_seconds: num("timeout_seconds", 300),
+    model: str("model"),
+    variant: str("variant"),
+    quant: str("quant"),
+    tail: num("tail", 200),
+    query: str("query"),
+    version: str("version"),
+    target: str("target") || "comfy",
+    extra_args: Array.isArray(d["extra_args"]) ? (d["extra_args"] as unknown[]).map(String) : [],
+    force: d["force"] === true,
+    snapshot: str("snapshot"),
   };
 }
 
-function need(req: Req, ...fields: Array<"nodes" | "url" | "model" | "version" | "snapshot" | "query">): void {
-  const missing = fields.filter((f) => {
-    const v = req[f];
+function need(req: Req, ...fields: string[]): void {
+  const missing = fields.filter((f: string) => {
+    const v: unknown = (req as unknown as Record<string, unknown>)[f];
     return Array.isArray(v) ? v.length === 0 : v === "";
   });
   if (missing.length > 0) throw badRequest(req.action + " requires: " + missing.join(", "));
 }
 
-// ── routing / probe / runs / security (TS-native) ───────────────────
-interface Routing {
-  mode: "byo" | "managed";
-  routed: boolean;
-  workspace?: string;
-}
-
-/** The endpoint config view — the ENGINE owns this read (env path
- *  first, sandbox leak gate, LOUD on unparseable); the manage door
- *  consumes it, never re-implements path+parse (the duplicate
- *  hand-roll died 2026-09-08, zero-compromise followup). */
-function endpointConfig(repoRoot: string): Record<string, unknown> {
-  return loadEndpointConfig();
-}
-
-/** Managed mode: point the vendor rail at THIS runtime's comfy-cli and
- *  workspace (COMFY_BIN + COMFYUI_PATH + set-default); byo touches
- *  nothing. */
-function ensureRouting(ctx: ManageCtx): Routing {
-  const cfg = endpointConfig(ctx.repoRoot);
-  if (cfg["provision"] !== "managed") return { mode: "byo", routed: false };
-  const runtime = join(ctx.repoRoot, "data", "runtime", "comfyui");
-  const comfyBin = join(runtime, ".venv", "bin", "comfy");
-  if (!existsSync(comfyBin)) {
-    throw unavailable(
-      "managed routing: " + comfyBin + " missing — run provision sync first " +
-        "(the runtime venv carries the instance's comfy-cli)",
-    );
-  }
-  process.env["COMFY_BIN"] = comfyBin;
-  process.env["COMFYUI_PATH"] = runtime;
-  process.env["VIRTUAL_ENV"] = join(runtime, ".venv");
-  try {
-    spawnSync(comfyBin, ["set-default", runtime], { timeout: 90 * 1000 });
-  } catch {
-    // Routing is best-effort glue; the vendor calls fail loudly if it
-    // did not take.
-  }
-  return { mode: "managed", routed: true, workspace: runtime };
-}
-
-/** Rail env for one vendor spawn: the routing set above, plus the
- *  base bindir on PATH (the vendor shells to `comfy`). */
-function railEnv(ctx: ManageCtx): Record<string, string> {
-  const env: Record<string, string> = {};
-  for (const k of ["COMFY_BIN", "COMFYUI_PATH", "VIRTUAL_ENV"] as const) {
-    const v = process.env[k];
-    if (v) env[k] = v;
-  }
-  const baseBin = join(ctx.serverBin, "..");
-  env["PATH"] = baseBin + ":" + (process.env["PATH"] ?? "");
-  return env;
-}
-
-function mcpTimeoutMs(req: Req): number {
-  return Math.min(Math.max(req.timeout_seconds, 1), 850) * 1000;
-}
-
-async function tool(
-  ctx: ManageCtx,
-  req: Req,
-  name: string,
-  args: Record<string, unknown>,
-): Promise<unknown> {
-  try {
-    return await callMcpTool(name, args, {
-      serverBin: ctx.serverBin,
-      env: railEnv(ctx),
-      timeoutMs: mcpTimeoutMs(req),
-    });
-  } catch (e) {
-    if ((e as Record<string, unknown>)["mcpRail"] === true) {
-      throw new Refused(500, "vendor tool " + name + " failed: " + (e as Error).message.slice(0, 300));
-    }
-    throw e;
-  }
-}
-
+// ── runs / security / probe (TS-native) ────────────────────────────
 const STATUS_RE = /"status"\s*:\s*"([a-z]+)"/;
 
 /** Sidecar scan: run dirs whose _flow.json reads running|queued.
@@ -311,29 +203,29 @@ function activeRuns(repoRoot: string): string[] {
   return out.sort();
 }
 
-/** security=medium, the operator's pin. The package-form Manager IS
- *  the confirm gate (confirm_*=True on every install/update/switch
- *  call); the config face pins the level for the Manager's own UI. */
-function ensureManagerSecurity(repoRoot: string): string {
-  const ini = join(repoRoot, "data", "runtime", "comfyui", "custom_nodes", "ComfyUI-Manager", "config.ini");
-  if (!existsSync(ini)) return "medium (package-form, confirm-gated)";
-  let text: string;
-  try {
-    text = readFileSync(ini, "utf-8");
-  } catch {
-    return "unreadable";
+/** The manager's live security view (READ ONLY — the manager reads
+ *  config.ini once at ComfyUI startup, so a call-time write would be
+ *  a lie until restart; provision owns the pin). v3.38 layout:
+ *  user/__manager/config.ini (system-user-api ComfyUI), legacy
+ *  user/default/ComfyUI-Manager/config.ini otherwise. */
+function managerSecurity(repoRoot: string): string {
+  const runtime = join(repoRoot, "data", "runtime", "comfyui");
+  const cands = [
+    join(runtime, "user", "__manager", "config.ini"),
+    join(runtime, "user", "default", "ComfyUI-Manager", "config.ini"),
+  ];
+  for (const ini of cands) {
+    let text: string;
+    try {
+      text = readFileSync(ini, "utf-8");
+    } catch {
+      continue;
+    }
+    const level = /^\s*security_level\s*=\s*(\S+)/m.exec(text);
+    const gitUrl = /^\s*allow_git_url_install\s*=\s*true/m.test(text);
+    return "security_level=" + (level ? level[1] : "normal (default)") + (gitUrl ? " +git_url" : "") + " [" + ini + "]";
   }
-  if (/^\s*security_level\s*=\s*medium\s*$/m.test(text)) return "medium (config pinned)";
-  text = text.replace(/^(\s*security_level\s*=\s*)(\S+)(\s*)$/m, "$1medium$3");
-  if (!/^\s*security_level\s*=/m.test(text)) text += "\nsecurity_level = medium\n";
-  try {
-    const tmp = ini + ".tmp";
-    writeFileSync(tmp, text, "utf-8");
-    renameSync(tmp, ini);
-  } catch {
-    return "unreadable";
-  }
-  return "medium (config pinned)";
+  return "unpinned (no manager config on disk — provision sync)";
 }
 
 interface EndpointView {
@@ -346,13 +238,11 @@ interface EndpointView {
 
 /** The endpoint config's OWN server, probed live (/system_stats).
  *  The 5s abort rides the timer service seat (ManageCtx.timeout —
- *  the cordis-plugin-timer seam, shell/cordis.yml row): the
- *  returned disposer is both the early clear and the disposal
- *  guarantee, no bare setTimeout (deep-audit finding #7,
- *  2026-09-10). */
+ *  the cordis-plugin-timer seam): the returned disposer is both the
+ *  early clear and the disposal guarantee, no bare setTimeout
+ *  (deep-audit finding #7, 2026-09-10). */
 async function probeEndpoint(mctx: ManageCtx): Promise<EndpointView> {
-  const repoRoot = mctx.repoRoot;
-  const cfg = endpointConfig(repoRoot);
+  const cfg = mctx.endpoint();
   const url = typeof cfg["url"] === "string" ? (cfg["url"] as string).replace(/\/+$/, "") : "";
   if (url === "") return { reachable: false, reason: "no url in endpoint config" };
   const ctrl = new AbortController();
@@ -374,52 +264,115 @@ async function probeEndpoint(mctx: ManageCtx): Promise<EndpointView> {
   }
 }
 
-// ── vendor cm_cli (the manager's own CLI module — their API) ────────
-const PACK_ROW = /^[A-Za-z0-9_][A-Za-z0-9_ .-]*@[A-Za-z0-9_.-]+$/;
-const SNAP_ROW = /^[A-Za-z0-9_][A-Za-z0-9_.-]*\.json$/;
-
-interface CliResult {
-  code: number;
-  stdout: string;
-  stderr: string;
-  timedOut: boolean;
+// ── the manager rail (vendor HTTP — see manager-api.ts) ────────────
+function base(ctx: ManageCtx): string {
+  return managerBase(ctx);
 }
 
-/** Run ONE cm_cli command in the managed workspace. The interpreter
- *  is the runtime venv's python (managed routing has already pointed
- *  VIRTUAL_ENV at it) — the module executed is the VENDOR
- *  comfyui-manager's own CLI, never estate code. */
-function cmCli(workspace: string, args: string[], timeoutMs: number): CliResult {
-  const venv = process.env["VIRTUAL_ENV"] ?? "";
-  const py = venv !== "" ? join(venv, "bin", "python") : process.execPath;
-  const out = spawnSync(py, ["-m", "cm_cli", ...args], {
-    cwd: workspace,
-    env: { ...process.env, COMFYUI_PATH: workspace },
-    timeout: timeoutMs,
-    maxBuffer: 16 * 1024 * 1024,
-    encoding: "utf8",
-  });
-  if (out.error !== undefined && (out.error as NodeJS.ErrnoException).code === "ETIMEDOUT") {
-    return { code: -1, stdout: "", stderr: "", timedOut: true };
-  }
-  return {
-    code: out.status ?? 1,
-    stdout: typeof out.stdout === "string" ? out.stdout : "",
-    stderr: typeof out.stderr === "string" ? out.stderr : "",
-    timedOut: false,
-  };
-}
-
-function managedWorkspace(req: Req, ctx: ManageCtx): string {
-  const routing = ensureRouting(ctx);
-  if (routing.mode !== "managed") {
-    throw new Refused(
-      409,
-      "byo endpoint: " + req.action + " reads the managed workspace — the estate " +
-        "never touches a user-owned ComfyUI's packs/snapshots",
+/** Map a manager refusal to the estate envelope (the vendor's own
+ *  security texts ride verbatim — this door never reinterprets a
+ *  security answer). */
+function mapManagerRefused(e: ManagerApiError, action: string): Refused {
+  if (e.status === 503) return new Refused(503, e.text, undefined);
+  if (e.status === 403) {
+    return new Refused(
+      403,
+      "manager refused " + action + " (security_level or the loopback listen flag): " + e.text.slice(0, 200),
     );
   }
-  return routing.workspace ?? join(ctx.repoRoot, "data", "runtime", "comfyui");
+  if (e.status === 404) return new Refused(404, "manager has no such target: " + e.text.slice(0, 200));
+  return new Refused(502, "manager api error " + e.status + ": " + e.text.slice(0, 200));
+}
+
+function railMs(req: Req): number {
+  return Math.min(Math.max(req.timeout_seconds, 1), 850) * 1000;
+}
+
+/** Poll the vendor's task queue until drained (install arms: the
+ *  vendor returns 202-semantics — queue accepted — and processes
+ *  asynchronously; the poll bounds the AI door's wait). */
+async function awaitQueueDrained(ctx: ManageCtx, req: Req): Promise<Record<string, unknown>> {
+  const deadline = Date.now() + railMs(req);
+  for (;;) {
+    const st = (await managerGet(base(ctx), "/manager/queue/status", {
+      ctx, timeoutMs: 10_000,
+    })) as Record<string, unknown>;
+    const processing = st["is_processing"] === true;
+    const pending = Number(st["in_progress_count"] ?? 0) + Number(st["total_count"] ?? 0) - Number(st["done_count"] ?? 0);
+    if (!processing && pending <= 0) return st;
+    if (Date.now() >= deadline) return st;
+    await new Promise<void>((res) => {
+      const t = ctx.timeout((): void => res(), 1000);
+      void t;
+    });
+  }
+}
+
+/** BYO guard: estate-orchestration legs (systemd, workspace reads)
+ *  never touch a user-owned ComfyUI. */
+function estateOnly(req: Req, cfg: Record<string, unknown>): void {
+  if (cfg["provision"] === "managed") return;
+  throw new Refused(
+    409,
+    "byo endpoint: " + req.action + " orchestrates the estate engine — the estate never touches a user-owned ComfyUI",
+  );
+}
+
+// ── estate model downloads (TS-native — no vendor on this path) ────
+/** Download one model file into the runtime models tree. Direct
+ *  URLs are ESTATE truth (the catalog carries them); the vendor's
+ *  model plane is whitelist-only for registered models — a
+ *  mismatched dependency was the old comfy-mcp's job, not ours. */
+async function downloadIntoModelsTree(
+  ctx: ManageCtx,
+  row: { url: string; relative_path: string; filename: string },
+  timeoutMs: number,
+): Promise<string> {
+  if (row.url === "") throw badRequest("download requires: url");
+  const folder = row.relative_path.startsWith("models/")
+    ? row.relative_path.slice("models/".length)
+    : row.relative_path;
+  if (folder.includes("..") || folder.startsWith("/")) {
+    throw badRequest("relative_path must stay under the models root: " + row.relative_path);
+  }
+  const name = row.filename !== "" ? row.filename : row.url.split("/").pop() ?? "";
+  if (name === "" || name.includes("/") || name.includes("..")) {
+    throw badRequest("filename must be a bare name under the models root");
+  }
+  const dir = join(runtimeModelsRoot(ctx.repoRoot), folder);
+  mkdirSync(dir, { recursive: true });
+  const dest = join(dir, name);
+  const ctrl = new AbortController();
+  const t = ctx.timeout((): void => ctrl.abort(), timeoutMs);
+  try {
+    const r = await fetch(row.url, { signal: ctrl.signal });
+    if (!(r.status >= 200 && r.status < 300)) {
+      throw new Refused(502, "download refused: HTTP " + r.status + " for " + row.url);
+    }
+    if (r.body === null) throw new Refused(502, "download returned no body: " + row.url);
+    await pipeline(Readable.fromWeb(r.body as never), createWriteStream(dest));
+    return dest;
+  } catch (e) {
+    if (e instanceof Refused) throw e;
+    throw new Refused(502, "download failed: " + (e instanceof Error ? e.message : String(e)).slice(0, 200));
+  } finally {
+    t();
+  }
+}
+
+// ── systemd orchestration (estate deployment — TS-native) ──────────
+const COMFY_UNIT = process.env["MELITE_COMFYUI_UNIT"] ?? "melite-comfyui.service";
+
+function systemctl(req: Req, verb: "start" | "stop"): [number, ManageEnvelope] {
+  const out = spawnSync("systemctl", ["--user", verb, COMFY_UNIT], {
+    timeout: 30 * 1000,
+    encoding: "utf8",
+  });
+  if (out.error !== undefined || out.status !== 0) {
+    const why = String(out.stderr ?? out.error?.message ?? "").trim().slice(0, 200);
+    return [500, { action: req.action, ok: false, detail: "systemctl " + verb + " " + COMFY_UNIT + " failed: " + why }];
+  }
+  return [200, { action: req.action, ok: true, detail: verb + " issued for " + COMFY_UNIT }];
 }
 
 function guardLifecycle(req: Req, ctx: ManageCtx): void {
@@ -440,89 +393,167 @@ function ok(action: string, detail: string, data?: unknown): [number, ManageEnve
 
 // ── handlers ────────────────────────────────────────────────────────
 async function hStatus(req: Req, ctx: ManageCtx): Promise<[number, ManageEnvelope]> {
-  const info = (await tool(ctx, req, "server_info", {})) as Record<string, unknown>;
-  const sec = ensureManagerSecurity(ctx.repoRoot);
-  const active = activeRuns(ctx.repoRoot);
+  const cfg = ctx.endpoint();
   const endpoint = await probeEndpoint(ctx);
-  const routing = ensureRouting(ctx);
-  const up = endpoint.reachable || (info ?? {})["running"];
-  const data = { endpoint, server_info: info, manager_security: sec, active_runs: active, routing };
+  const active = activeRuns(ctx.repoRoot);
+  const routing = { mode: cfg["provision"] === "managed" ? "managed" : "byo" };
+  let manager: Record<string, unknown> = {};
+  if (endpoint.reachable) {
+    try {
+      const version = await managerGet(base(ctx), "/manager/version", { ctx, timeoutMs: 5000 });
+      const queue = await managerGet(base(ctx), "/manager/queue/status", { ctx, timeoutMs: 5000 });
+      manager = { version, queue };
+    } catch (e) {
+      manager = { reachable: false, reason: e instanceof Error ? e.message.slice(0, 160) : String(e) };
+    }
+  } else {
+    manager = { reachable: false, reason: "endpoint not reachable" };
+  }
+  const data = {
+    endpoint,
+    manager: { ...manager, security: managerSecurity(ctx.repoRoot), unit: COMFY_UNIT },
+    active_runs: active,
+    routing,
+  };
   if (endpoint.reachable) return ok(req.action, "server up", data);
-  if (up) return ok(req.action, "workspace up", data);
   return ok(req.action, "server not reachable", data);
 }
 
-async function hLogs(req: Req, ctx: ManageCtx): Promise<[number, ManageEnvelope]> {
-  const data = await tool(ctx, req, "get_logs", { tail: Math.max(1, Math.min(Math.trunc(req.tail), 2000)) });
-  const n = Array.isArray(data) ? data.length : 1;
-  return ok(req.action, n + " log line(s)", data);
+async function hLogs(req: Req, _ctx: ManageCtx): Promise<[number, ManageEnvelope]> {
+  const tail = Math.max(1, Math.min(Math.trunc(req.tail), 2000));
+  const out = spawnSync("journalctl", ["--user", "-u", COMFY_UNIT, "-n", String(tail), "--no-pager", "-o", "cat"], {
+    timeout: 15 * 1000,
+    encoding: "utf8",
+  });
+  if (out.error !== undefined) {
+    throw unavailable(
+      "logs need the estate deployment's journal (unit " + COMFY_UNIT + "): " +
+        String(out.error.message ?? "").slice(0, 120),
+    );
+  }
+  const text = typeof out.stdout === "string" ? out.stdout : "";
+  const lines = text.split("\n").filter((ln) => ln !== "");
+  return ok(req.action, lines.length + " log line(s) from " + COMFY_UNIT, lines);
 }
 
 async function hSearch(req: Req, ctx: ManageCtx): Promise<[number, ManageEnvelope]> {
   need(req, "query");
-  const data = (await tool(ctx, req, "search_models", { query: req.query })) as
-    | unknown[]
-    | { models?: unknown[] };
-  const rows = Array.isArray(data) ? data : (data ?? {}).models ?? [];
-  return ok(req.action, rows.length + " hit(s) for '" + req.query + "'", data);
+  const cfg = ctx.endpoint();
+  estateOnly(req, cfg);
+  let doc: unknown;
+  try {
+    doc = await managerGet(base(ctx), "/externalmodel/getlist?mode=cache", { ctx, timeoutMs: railMs(req) });
+  } catch (e) {
+    if (e instanceof ManagerApiError) throw mapManagerRefused(e, req.action);
+    throw e;
+  }
+  const models = (doc as { models?: unknown[] })["models"] ?? [];
+  const q = req.query.toLowerCase();
+  const hits = (models as Array<Record<string, unknown>>).filter((m) => {
+    const hay = [m["name"], m["type"], m["base"], m["filename"]].map((v) => String(v ?? "").toLowerCase()).join(" ");
+    return hay.includes(q);
+  }).slice(0, 50);
+  return ok(req.action, hits.length + " hit(s) for '" + req.query + "'", hits);
 }
 
 async function hInstallExtension(req: Req, ctx: ManageCtx): Promise<[number, ManageEnvelope]> {
   if (req.nodes.length === 0) throw badRequest("install_extension requires: nodes");
-  ensureRouting(ctx);
-  ensureManagerSecurity(ctx.repoRoot);
-  // confirm_install=True IS security=medium in-process: standard
-  // registry installs auto-approve (bare ids only — PIN LAW: @pins and
-  // URLs are refused by install_node).
-  const rep = await tool(ctx, req, "install_node", { names: [...req.nodes], confirm_install: true });
-  return ok(req.action, "install_node accepted: " + req.nodes.join(", "), rep);
+  const cfg = ctx.endpoint();
+  estateOnly(req, cfg);
+  // The vendor's own UI path: getlist (cache) rows matched by name,
+  // queued per-pack, then the worker starts.
+  let rows: Array<Record<string, unknown>>;
+  try {
+    const doc = (await managerGet(base(ctx), "/customnode/getlist?mode=cache", {
+      ctx, timeoutMs: 30_000,
+    })) as { custom_nodes?: Array<Record<string, unknown>> };
+    rows = Array.isArray(doc["custom_nodes"]) ? (doc["custom_nodes"] as Array<Record<string, unknown>>) : [];
+  } catch (e) {
+    if (e instanceof ManagerApiError) throw mapManagerRefused(e, req.action);
+    throw e;
+  }
+  const queued: string[] = [];
+  const misses: string[] = [];
+  for (const want of req.nodes) {
+    const w = want.toLowerCase();
+    const row = rows.find((r) => {
+      const title = String(r["title"] ?? "").toLowerCase();
+      const cnr = String(r["cnr_id"] ?? r["id"] ?? "").toLowerCase();
+      const ver = String(r["ver"] ?? "").toLowerCase();
+      return title === w || cnr === w || ver === w || title.startsWith(w);
+    });
+    if (row === undefined) {
+      misses.push(want);
+      continue;
+    }
+    try {
+      await managerPost(base(ctx), "/manager/queue/install", {
+        id: row["cnr_id"] ?? row["id"] ?? row["title"],
+        version: row["version"] ?? "cnr",
+        selected_version: "latest",
+        channel: "default",
+        mode: "cache",
+      }, { ctx, timeoutMs: 15_000 });
+    } catch (e) {
+      if (e instanceof ManagerApiError) throw mapManagerRefused(e, req.action);
+      throw e;
+    }
+    queued.push(String(row["title"] ?? want));
+  }
+  if (misses.length > 0 && queued.length === 0) {
+    throw notFound("not found in registry cache: " + misses.join(", "));
+  }
+  let queue: unknown = null;
+  try {
+    await managerPost(base(ctx), "/manager/queue/start", {}, { ctx, timeoutMs: 10_000 });
+    queue = await awaitQueueDrained(ctx, req);
+  } catch (e) {
+    if (e instanceof ManagerApiError) throw mapManagerRefused(e, req.action);
+    throw e;
+  }
+  const detail = "queued " + queued.length + " pack(s): " + queued.join(", ") +
+    (misses.length > 0 ? "; not in cache: " + misses.join(", ") : "") +
+    " — restart required to load new nodes";
+  return ok(req.action, detail, { queued, misses, queue, restart_required: true });
 }
 
 async function hInstallExtensionUrl(req: Req, ctx: ManageCtx): Promise<[number, ManageEnvelope]> {
   need(req, "url");
-  ensureRouting(ctx);
-  ensureManagerSecurity(ctx.repoRoot);
-  const workspace = process.env["COMFYUI_PATH"] ?? join(ctx.repoRoot, "data", "runtime", "comfyui");
-  const r = cmCli(workspace, ["install", req.url], 300 * 1000);
-  if (r.timedOut) throw new Refused(504, "cm_cli install timed out (300s)");
-  if (r.code === 0) {
-    return ok(req.action, "cm_cli installed " + req.url + " (restart required)", {
-      restart_required: true,
-      stdout: r.stdout.slice(-800),
-    });
+  const cfg = ctx.endpoint();
+  estateOnly(req, cfg);
+  try {
+    await managerPost(base(ctx), "/customnode/install/git_url", { url: req.url }, { ctx, timeoutMs: railMs(req) });
+  } catch (e) {
+    if (e instanceof ManagerApiError) throw mapManagerRefused(e, req.action);
+    throw e;
   }
-  throw new Refused(500, "cm_cli install failed", { error: (r.stderr || r.stdout).slice(0, 500) });
+  return ok(req.action, "git-url installed " + req.url + " (restart required)", {
+    restart_required: true,
+  });
 }
 
 async function hDownloadModel(req: Req, ctx: ManageCtx): Promise<[number, ManageEnvelope]> {
   need(req, "url");
-  ensureRouting(ctx);
-  const wait = req.wait ?? false; // AI door: queue
-  const rep = await tool(ctx, req, "download_model", {
+  const dest = await downloadIntoModelsTree(ctx, {
     url: req.url,
-    relative_path: req.relative_path === "" ? null : req.relative_path,
-    filename: req.filename === "" ? null : req.filename,
-    wait,
-    timeout_seconds: req.timeout_seconds,
-  });
-  return ok(req.action, (wait ? "downloaded " : "queued ") + (req.filename || req.url.split("/").pop()), rep);
+    relative_path: req.relative_path === "" ? "checkpoints" : req.relative_path,
+    filename: req.filename,
+  }, railMs(req));
+  return ok(req.action, "downloaded " + dest.split("/").pop() + " → " + dest, { path: dest });
 }
 
 interface CatalogRow {
   name: string;
   url: string;
   relative_path: string;
+  filename?: string;
 }
 
 /** The models-plane catalog (stroke 4a, DSH-AS-LANGUAGE LAW): the
  *  SEAM is ctx.models (ModelsService, injected by the bridges door
- *  from the engine-model-catalog provider row) — the old
- *  catalogModule() dynamic import with its NON-LITERAL specifier
- *  (the tsc dodge) and its 503 miss-leg are DELETED. A missing
- *  provider fails the door LOUD at inject (the framework's answer),
- *  never a 503 from inside the handler. The repoRoot rides the
- *  request ctx (fixture roots under MELITE_REPO_ROOT in walls) —
- *  the service keys its cache by it. */
+ *  from the engine-model-catalog provider row). Estate downloads
+ *  land through the same TS path as download_model — no vendor
+ *  dependency, no whitelist mismatch. */
 async function hProvisionModel(req: Req, ctx: ManageCtx): Promise<[number, ManageEnvelope]> {
   need(req, "model");
   let rows: CatalogRow[];
@@ -531,8 +562,6 @@ async function hProvisionModel(req: Req, ctx: ManageCtx): Promise<[number, Manag
   } catch (e) {
     throw notFound((e as Error).message);
   }
-  ensureRouting(ctx);
-  const wait = req.wait ?? false;
   const done: string[] = [];
   const present: string[] = [];
   const errs: Array<{ file: string; error: string }> = [];
@@ -542,13 +571,11 @@ async function hProvisionModel(req: Req, ctx: ManageCtx): Promise<[number, Manag
       continue;
     }
     try {
-      await tool(ctx, req, "download_model", {
+      await downloadIntoModelsTree(ctx, {
         url: row.url,
         relative_path: row.relative_path,
-        filename: row.name,
-        wait,
-        timeout_seconds: req.timeout_seconds,
-      });
+        filename: row.filename ?? row.name,
+      }, railMs(req));
       done.push(row.name);
     } catch (e) {
       errs.push({ file: row.name, error: String(e).slice(0, 200) });
@@ -573,116 +600,148 @@ async function hProvisionModel(req: Req, ctx: ManageCtx): Promise<[number, Manag
 
 async function hRestart(req: Req, ctx: ManageCtx): Promise<[number, ManageEnvelope]> {
   guardLifecycle(req, ctx);
-  ensureRouting(ctx);
+  const cfg = ctx.endpoint();
+  estateOnly(req, cfg);
   try {
-    const rep = await tool(ctx, req, "restart_comfyui", {
-      extra_args: req.extra_args.length > 0 ? [...req.extra_args] : null,
-      confirm_kill_untracked: true,
-    });
-    return ok(req.action, "restart issued", rep);
+    await managerPost(base(ctx), "/manager/reboot", {}, { ctx, timeoutMs: 10_000 });
+    return ok(req.action, "reboot issued (systemd re-spawns the engine)", null);
   } catch (e) {
-    // Honest split: a server this comfy-cli never launched cannot be
-    // restarted by it — say WHERE the server is instead.
-    const endpoint = await probeEndpoint(ctx);
-    if (endpoint.reachable) {
-      throw new Refused(
-        409,
-        "the endpoint server (" + (endpoint.url ?? "?") + ") is up but was not launched by " +
-          "comfy-cli — restart it with the deployment boot_cmd (provision boot-cmd) or launch it under comfy-cli",
-      );
+    if (e instanceof ManagerApiError && e.status === 503) {
+      // The vendor reboots by exiting: the connection can drop after
+      // the 200 is sent — same honest answer.
+      if (/fetch failed|aborted|ECONNRESET|socket/i.test(e.text)) {
+        return ok(req.action, "reboot issued (connection closed by restart)", null);
+      }
+      throw mapManagerRefused(e, req.action);
     }
+    if (e instanceof ManagerApiError) throw mapManagerRefused(e, req.action);
     throw e;
   }
 }
 
 async function hStop(req: Req, ctx: ManageCtx): Promise<[number, ManageEnvelope]> {
   guardLifecycle(req, ctx);
-  ensureRouting(ctx);
-  const rep = await tool(ctx, req, "stop_comfyui", {});
-  return ok(req.action, "stop issued", rep);
+  estateOnly(req, ctx.endpoint());
+  return systemctl(req, "stop");
 }
 
 async function hLaunch(req: Req, ctx: ManageCtx): Promise<[number, ManageEnvelope]> {
-  ensureRouting(ctx);
-  const rep = await tool(ctx, req, "launch_comfyui", {
-    extra_args: req.extra_args.length > 0 ? [...req.extra_args] : null,
-  });
-  return ok(req.action, "launch issued", rep);
+  estateOnly(req, ctx.endpoint());
+  return systemctl(req, "start");
 }
 
 async function hUpdate(req: Req, ctx: ManageCtx): Promise<[number, ManageEnvelope]> {
-  if (req.target !== "comfy" && req.target !== "cli" && req.target !== "all") {
-    throw badRequest("update target must be comfy|cli|all");
+  if (req.target !== "comfy") {
+    throw badRequest("update target must be comfy — comfy-cli is retired (the built-in manager updates ComfyUI)");
   }
   guardLifecycle(req, ctx);
-  ensureRouting(ctx);
-  ensureManagerSecurity(ctx.repoRoot);
-  const rep = await tool(ctx, req, "update_comfyui", { target: req.target, confirm_update_all: true });
-  return ok(req.action, "update(" + req.target + ") accepted", rep);
+  const cfg = ctx.endpoint();
+  estateOnly(req, cfg);
+  try {
+    await managerPost(base(ctx), "/manager/queue/update_comfyui", {}, { ctx, timeoutMs: 10_000 });
+    await managerPost(base(ctx), "/manager/queue/start", {}, { ctx, timeoutMs: 10_000 });
+    const queue = await awaitQueueDrained(ctx, req);
+  } catch (e) {
+    if (e instanceof ManagerApiError) throw mapManagerRefused(e, req.action);
+    throw e;
+  }
+  return ok(req.action, "update(comfy) queued through the manager", null);
 }
 
 async function hSwitchVersion(req: Req, ctx: ManageCtx): Promise<[number, ManageEnvelope]> {
   need(req, "version");
   guardLifecycle(req, ctx);
-  ensureRouting(ctx);
-  const rep = await tool(ctx, req, "switch_comfyui_version", { version: req.version, confirm_switch: true });
-  return ok(req.action, "switch to " + req.version + " accepted", rep);
+  const cfg = ctx.endpoint();
+  estateOnly(req, cfg);
+  try {
+    const doc = (await managerGet(base(ctx), "/comfyui_manager/comfyui_versions", {
+      ctx, timeoutMs: 30_000,
+    })) as { versions?: unknown[] };
+    const versions = (doc["versions"] ?? []).map((v) => String(v));
+    if (!versions.includes(req.version)) {
+      throw notFound("version " + req.version + " not available (have: " + versions.slice(0, 6).join(", ") + "…)");
+    }
+    await managerPost(base(ctx), "/comfyui_manager/comfyui_switch_version", { ver: req.version }, {
+      ctx, timeoutMs: railMs(req),
+    });
+  } catch (e) {
+    if (e instanceof ManagerApiError) throw mapManagerRefused(e, req.action);
+    throw e;
+  }
+  return ok(req.action, "switch to " + req.version + " issued (restart required)", { restart_required: true });
 }
 
 async function hFree(req: Req, ctx: ManageCtx): Promise<[number, ManageEnvelope]> {
-  const rep = await tool(ctx, req, "free_memory", { unload_models: true, free_memory: true });
-  return ok(req.action, "free issued (next worker iteration)", rep);
-}
-
-function cmRows(stdout: string, re: RegExp): string[] {
-  return stdout
-    .split("\n")
-    .map((ln) => ln.trim())
-    .filter((ln) => re.test(ln));
+  const b = base(ctx);
+  if (b === "") throw planeUnavailable(b, "no endpoint url");
+  try {
+    await managerPost(b, "/free", { unload_models: true, free_memory: true }, { ctx, timeoutMs: 30_000 });
+  } catch (e) {
+    if (e instanceof ManagerApiError) throw mapManagerRefused(e, req.action);
+    throw e;
+  }
+  return ok(req.action, "free issued (next worker iteration)", null);
 }
 
 async function hListExtensions(req: Req, ctx: ManageCtx): Promise<[number, ManageEnvelope]> {
-  const workspace = managedWorkspace(req, ctx);
-  const r = cmCli(workspace, ["simple-show", "installed"], 180 * 1000);
-  if (r.timedOut) throw new Refused(504, "cm_cli simple-show timed out (180s)");
-  if (r.code !== 0) throw new Refused(500, "cm_cli simple-show failed", { error: (r.stderr || r.stdout).slice(-500) });
-  const rows = cmRows(r.stdout, PACK_ROW);
+  const cfg = ctx.endpoint();
+  estateOnly(req, cfg);
+  let doc: unknown;
+  try {
+    doc = await managerGet(base(ctx), "/customnode/installed", { ctx, timeoutMs: 30_000 });
+  } catch (e) {
+    if (e instanceof ManagerApiError) throw mapManagerRefused(e, req.action);
+    throw e;
+  }
+  const packs = (doc ?? {}) as Record<string, unknown>;
+  const rows = Object.entries(packs).map(([name, v]) => ({
+    name,
+    version: (v as Record<string, unknown>)["version"] ?? (v as Record<string, unknown>)["ver"] ?? "?",
+  }));
   return ok(req.action, rows.length + " installed pack(s)", rows);
 }
 
 async function hSnapshotList(req: Req, ctx: ManageCtx): Promise<[number, ManageEnvelope]> {
-  const workspace = managedWorkspace(req, ctx);
-  const r = cmCli(workspace, ["show", "snapshot-list"], 180 * 1000);
-  if (r.timedOut) throw new Refused(504, "cm_cli snapshot-list timed out (180s)");
-  if (r.code !== 0) {
-    throw new Refused(500, "cm_cli snapshot-list failed", { error: (r.stderr || r.stdout).slice(-500) });
+  const cfg = ctx.endpoint();
+  estateOnly(req, cfg);
+  let doc: unknown;
+  try {
+    doc = await managerGet(base(ctx), "/snapshot/getlist", { ctx, timeoutMs: 30_000 });
+  } catch (e) {
+    if (e instanceof ManagerApiError) throw mapManagerRefused(e, req.action);
+    throw e;
   }
-  const rows = cmRows(r.stdout, SNAP_ROW);
-  return ok(req.action, rows.length + " snapshot(s)", rows);
+  const items = ((doc as { items?: unknown[] })["items"] ?? []).map(String);
+  return ok(req.action, items.length + " snapshot(s)", items);
 }
 
 async function hSnapshotSave(req: Req, ctx: ManageCtx): Promise<[number, ManageEnvelope]> {
-  const workspace = managedWorkspace(req, ctx);
-  const r = cmCli(workspace, ["save-snapshot"], 300 * 1000);
-  if (r.timedOut) throw new Refused(504, "cm_cli save-snapshot timed out (300s)");
-  if (r.code !== 0) throw new Refused(500, "cm_cli save-snapshot failed", { error: (r.stderr || r.stdout).slice(-500) });
-  const m = /saved as `([^`]+)`/.exec(r.stdout);
-  const name = m ? m[1] : "?";
-  return ok(req.action, "snapshot saved: " + name, { snapshot: name, stdout: r.stdout.slice(-400) });
+  const cfg = ctx.endpoint();
+  estateOnly(req, cfg);
+  try {
+    await managerPost(base(ctx), "/snapshot/save", {}, { ctx, timeoutMs: railMs(req) });
+    const doc = (await managerGet(base(ctx), "/snapshot/getlist", { ctx, timeoutMs: 15_000 })) as { items?: string[] };
+    const name = (doc["items"] ?? [])[0] ?? "?";
+    return ok(req.action, "snapshot saved: " + name, { snapshot: name });
+  } catch (e) {
+    if (e instanceof ManagerApiError) throw mapManagerRefused(e, req.action);
+    throw e;
+  }
 }
 
 async function hSnapshotRestore(req: Req, ctx: ManageCtx): Promise<[number, ManageEnvelope]> {
   need(req, "snapshot");
   guardLifecycle(req, ctx);
-  const workspace = managedWorkspace(req, ctx);
-  const r = cmCli(workspace, ["restore-snapshot", req.snapshot], 600 * 1000);
-  if (r.timedOut) throw new Refused(504, "cm_cli restore-snapshot timed out (600s)");
-  if (r.code !== 0) {
-    throw new Refused(500, "cm_cli restore-snapshot failed", { error: (r.stderr || r.stdout).slice(-500) });
+  const cfg = ctx.endpoint();
+  estateOnly(req, cfg);
+  try {
+    await managerPost(base(ctx), "/snapshot/restore", { target: req.snapshot }, { ctx, timeoutMs: 30_000 });
+  } catch (e) {
+    if (e instanceof ManagerApiError) throw mapManagerRefused(e, req.action);
+    throw e;
   }
-  return ok(req.action, "restore of " + req.snapshot + " issued (restart required)", {
+  return ok(req.action, "restore of " + req.snapshot + " scheduled (restart required)", {
     restart_required: true,
-    stdout: r.stdout.slice(-800),
   });
 }
 
@@ -728,6 +787,13 @@ export async function dispatchManage(doc: unknown, ctx: ManageCtx): Promise<[num
   } catch (e) {
     if (e instanceof Refused) {
       return [e.code, { action: req.action, ok: false, detail: e.message, data: e.data }];
+    }
+    // A rail error escaping its handler (e.g. the pre-try plane
+    // probe in hFree) softens through the same map — the envelope
+    // is always the answer, never a host traceback.
+    if (e instanceof ManagerApiError) {
+      const refused = mapManagerRefused(e, req.action);
+      return [refused.code, { action: req.action, ok: false, detail: refused.message }];
     }
     const msg = e instanceof Error ? e.constructor.name + ": " + e.message : String(e);
     return [500, { action: req.action, ok: false, detail: msg.slice(0, 300) }];
