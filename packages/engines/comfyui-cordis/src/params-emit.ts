@@ -150,22 +150,26 @@ export const emitKnob = (s: Schema): Record<string, unknown> => {
 /**
  * The DSH tool-parameter projection (M2′ stroke 2c, 2026-09-09):
  * the IMPLICIT PROPERTY MAP the dsh-tools defineTool contract
- * consumes — { knob: { type, description?, enum?, required?,
- * minimum?, maximum? } } — derived from the served params_schema
+ * consumes — { knob: { type, description?, enum?, default?,
+ * required? } } — derived from the served params_schema
  * projection (one walking family, two projections; never a second
- * walk of the Schemastery carrier). The spec form carries no
- * `default`: optionality is the per-property required flag, and the
- * card's admission owns defaulting at execute time. The DSL carries
- * no numeric bounds and no object/array internals: both stay owned
- * by the card gate at execute time, and remain visible on the
- * registry plane (/v1/tools serves the full JSON-schema form).
- * `object`/`array` knobs project as the unconstrained lossless node
- * (`json`).
+ * walk of the Schemastery carrier). The spec form carries the
+ * default NATIVELY (ValueSchemaAnnotations.default — projected to
+ * the model JSON and non-validating, verified against the packed
+ * dsh-tools runtime) and numeric enums NATIVELY (Number/Integer
+ * specs take number enums — no String() collapse). What the DSL
+ * has no keys for stays folded into the description (minimum/
+ * maximum — no bounds keys in the DSL) or stays served-form-only
+ * (format/bounds/x-* ride /v1/tools, which serves the full
+ * JSON-schema form). `object`/`array` knobs project as the
+ * unconstrained lossless node (`json`) — the carrier walk drops
+ * internals one layer down, identically for both projections.
  */
 export interface ParamSpecNode {
   type: "string" | "number" | "integer" | "boolean" | "json"
   description?: string
-  enum?: string[]
+  enum?: (string | number)[]
+  default?: unknown
   required?: true
 }
 
@@ -184,17 +188,27 @@ export const emitParamsSpec = (carrier: Schema, boarded: readonly string[]): Par
           : "json",
     }
     let desc = typeof node.description === "string" ? node.description : ""
-    // The DSL whitelists no default/bounds keys: fold them into the
+    // The DSL carries default NATIVELY (see the interface header) —
+    // the served default is already conditioned (stringified only
+    // for wire-coerced Selects, raw otherwise), so it rides through
+    // untouched. Bounds have no DSL keys: they fold into the
     // description so the model still sees them (the receipt's
     // converter discipline — never attach unsupported keys).
-    if (node.default !== undefined) desc += ` (default: ${JSON.stringify(node.default)})`
+    if (node.default !== undefined) out.default = node.default
     const bounds: string[] = []
     if (typeof node.minimum === "number") bounds.push(`min: ${node.minimum}`)
     if (typeof node.maximum === "number") bounds.push(`max: ${node.maximum}`)
     if (bounds.length > 0) desc += ` (${bounds.join(", ")})`
     desc = desc.trim()
     if (desc) out.description = desc
-    if (Array.isArray(node.enum)) out.enum = node.enum.map((e) => String(e))
+    // Enum fidelity: JSON scalars pass through untouched (numbers
+    // stay numbers for number/integer nodes — the DSL validates
+    // them natively); anything else stringifies (served options
+    // are already strings — idempotent; the bool-string pair is
+    // strings by construction).
+    if (Array.isArray(node.enum)) {
+      out.enum = node.enum.map((e) => (typeof e === "number" ? e : String(e)))
+    }
     if (requiredSet.has(k)) out.required = true
     spec[k] = out
   }
