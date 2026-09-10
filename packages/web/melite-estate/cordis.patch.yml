@@ -1,0 +1,14 @@
+# dsh-estate bundle patch: inserts the estate host row into the profile
+# roster. Applied as a profile bundle layer (the `dsh.bundle.patch`
+# manifest field) — the same shape as every other melite bundle row.
+#
+# ONE row. The row's plugin (src/index.ts) mounts the estate's real
+# composition as CHILD plugins via ctx.plugin — the loader's own
+# composition mechanism (the doors are already cordis plugins that
+# inject [gatewayError, webServer, storageDomain, runs, …] and register
+# their /v1 routes on the HOST's webServer; see
+# docs/plans/estate-collapse-2026-09-10.md — the second-Loader estate
+# process and its DSH→degenerate-copy proxy died with this row).
+- insert:
+    - id: melite-estate
+      name: '@melite-plugin/dsh-estate'
