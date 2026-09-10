@@ -27,7 +27,7 @@
  * DATA URLs with declared dimensions: decodable <img>s with exact
  * naturalWidth/Height, zero dependency on run artifacts on disk, GPU-free.
  *
- * Needs the live stack (vite :5173 proxying the gateway :33081) like every
+ * Needs the live stack (vite :5173 proxying the owning DSH) like every
  * other e2e — no webServer stanza in playwright.config.ts.
  */
 import { expect, test, type Page } from '@playwright/test'

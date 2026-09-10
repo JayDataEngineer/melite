@@ -25,7 +25,12 @@ import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 import path from 'node:path'
 
-const API = 'http://localhost:33081'
+// The owning DSH (the estate doors serve /v1 same-origin here).
+// Env override is the config channel; no port pins in code. The
+// session token rides the query (claims sit behind the trust fence).
+const DSH = process.env.DSH_URL || 'http://127.0.0.1:3088'
+const TOKEN = process.env.DSH_TOKEN || ''
+const url = (p: string): string => TOKEN === '' ? DSH + p : DSH + p + (p.includes('?') ? '&' : '?') + 'token=' + TOKEN
 
 // ── Helpers ──────────────────────────────────────────────────────────────
 
@@ -37,7 +42,7 @@ async function runKimodoFBX(
   params: Record<string, unknown>,
   timeoutMs = 600_000,
 ): Promise<string[]> {
-  const r = await request.post(`${API}/v1/flows/start`, {
+  const r = await request.post(url(`/v1/flows/start`), {
     data: { model: 'kimodo_export_fbx', ...params },
     timeout: timeoutMs,
   })
@@ -53,7 +58,7 @@ async function runKimodoFBX(
   }
   const deadline = Date.now() + timeoutMs
   while (Date.now() < deadline) {
-    const s = await request.get(`${API}/v1/flows/status/${runId}?include_log=false`)
+    const s = await request.get(url(`/v1/flows/status/${runId}?include_log=false`))
     const st = await s.json() as {
       status?: string
       error?: string
@@ -89,7 +94,7 @@ async function runKimodoFBXExpectError(
   params: Record<string, unknown>,
   timeoutMs = 120_000,
 ): Promise<{ status: string; error?: string }> {
-  const r = await request.post(`${API}/v1/flows/start`, {
+  const r = await request.post(url(`/v1/flows/start`), {
     data: { model: 'kimodo_export_fbx', ...params },
     timeout: timeoutMs,
   })
@@ -106,7 +111,7 @@ async function runKimodoFBXExpectError(
 
   const deadline = Date.now() + timeoutMs
   while (Date.now() < deadline) {
-    const s = await request.get(`${API}/v1/flows/status/${runId}?include_log=false`)
+    const s = await request.get(url(`/v1/flows/status/${runId}?include_log=false`))
     const st = await s.json() as { status?: string; error?: string }
     const status = String(st.status || '')
     if (status === 'error' || status === 'failed' || status === 'interrupted' || status === 'stopped') {
@@ -126,7 +131,7 @@ async function fetchArtifact(
   request: import('@playwright/test').APIRequestContext,
   url: string,
 ): Promise<Buffer> {
-  const art = await request.get(`${API}${url}`)
+  const art = await request.get(url(`${url}`))
   expect(art.ok(), `artifact fetch must succeed: ${url}`).toBeTruthy()
   return await art.body()
 }
@@ -266,7 +271,7 @@ test.describe('Kimodo FBX — error handling', () => {
   test('rejects empty rigged_path', async ({ request }) => {
     // Compile-time contract violation → the start POST itself hard-fails
     // (400 {error}), never a silent drop.
-    const r = await request.post(`${API}/v1/flows/start`, {
+    const r = await request.post(url(`/v1/flows/start`), {
       data: {
         model: 'kimodo_export_fbx',
         rigged_path: '',

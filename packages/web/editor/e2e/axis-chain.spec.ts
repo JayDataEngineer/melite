@@ -31,13 +31,13 @@
  * assumption was wrong for this tree — the house pattern is plain
  * e2e/*.spec.ts under playwright.local.config.ts. Run against the FRESH
  * bundle (vite preview :4173 proxies /v1 + /health to the gateway on
- * :33081 — preview.proxy is declared in vite.config.ts):
+ * — preview.proxy is declared in vite.config.ts):
  *
  *   npm run build && npx vite preview &   # fresh bundle on :4173
  *   BASE_URL=http://127.0.0.1:4173 npx playwright test \
  *     --config=playwright.local.config.ts e2e/axis-chain.spec.ts
  *
- * Requires: gateway on :33081 (task up:server) serving the CURRENT tree.
+ * Requires: the owning DSH (task dsh) serving the CURRENT tree.
  */
 import { test, expect, type Locator, type APIRequestContext } from '@playwright/test'
 import { gotoLibrary, openPicker, switchCardModel, waitCardDetail } from './helpers/r1Card'

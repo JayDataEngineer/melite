@@ -98,7 +98,7 @@ One-time profile link (makes the package-name client row resolvable):
 
 ### 3a. Real run id (picked from the live gateway) — PASS (verbatim pass-through)
 
-    $ curl -s localhost:33081/v1/flows/runs | python3 -c "import json,sys;print(json.load(sys.stdin)['runs'][0]['run_id'])"
+    $ curl -s 127.0.0.1:3088/v1/flows/runs | python3 -c "import json,sys;print(json.load(sys.stdin)['runs'][0]['run_id'])"
     pmt34om0b40qvjh
     $ curl -s -w "\nHTTP %{http_code}\n" "http://127.0.0.1:3083/melite-proxy/v1/flows/status/pmt34om0b40qvjh" | head -c 700
     {"run_id":"pmt34om0b40qvjh","flow":"YAML","yaml_filename":"(inline)","status":"failed","stages":[{"id":"generate_image_0","name":"generate_image","index":0,"family_id":"generate_image","service":"z-image","file":"","type":"json","status":"error","size":0,"url":null,...
@@ -148,7 +148,7 @@ registration did not throw.
 ## 6. STRETCH — real chat turn renders the card
 
 Instance: same rows + the melite-tools host row (melite-tools/lib/index.mjs,
-gatewayUrl http://localhost:33081), port 3087. The REAL registry readback:
+the in-process lanes (R5 — gatewayUrl retired), port 3087. The REAL registry readback:
 
     $ curl -s http://127.0.0.1:3087/melite-tools/catalog | head -c 400
     {

@@ -11,7 +11,7 @@ import path from 'node:path'
 // aliases like '/x' break there because vite treats them as fs-absolute).
 const R = (p: string) => path.resolve(__dirname, p)
 
-// Architecture: Browser → Vite (:5173) → py gateway (:33081)
+// Architecture: Browser → Vite (:5173) → the owning DSH (:3088)
 //
 // The python gateway (python/gateway.py — THE gateway since the C
 // retirement, 2026-09-03) hosts the workstation API surface
@@ -26,7 +26,10 @@ const R = (p: string) => path.resolve(__dirname, p)
 //                 the forward and the studio mesh reads 404'd after
 //                 its retirement)
 //   /comfyui/*  → gateway-forwarded where surfaces need it
-const SERVER = process.env.API_URL || 'http://localhost:33081'
+// R5: the estate doors live on the OWNING DSH's own webServer —
+// same-origin /v1 (plus the engine bridges). API_URL stays as the
+// dev override channel; no port pin in code.
+const SERVER = process.env.API_URL || 'http://127.0.0.1:3088'
 
 const proxyConfig: Record<string, { target: string; ws: boolean }> = {
   '/v1':                { target: SERVER, ws: false },
@@ -140,6 +143,13 @@ export default defineConfig({
       deps: {
         inline: [/@deepseek-ai\/dsh-client-ui-primitives/],
       },
+    },
+    // The primitives' lib also imports `anser` WITHOUT declaring it
+    // (upstream packaging gap, 0.1.5-rc.1) — strict pnpm isolation
+    // hides it from the store. One local alias closes the gap; the
+    // rows above stay untouched.
+    alias: {
+      anser: R('./node_modules/anser/index.js'),
     },
   },
 })

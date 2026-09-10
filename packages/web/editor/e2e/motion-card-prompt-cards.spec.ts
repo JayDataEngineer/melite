@@ -22,21 +22,26 @@
  *   5. MULTI-PROMPT PAYLOAD — ≥2 cards serialize into motion_prompts (the
  *      demo's primary authoring surface) in the POST payload.
  *
- * Prerequisites: server :33081, ComfyUI :18465, Vite :5173.
+ * Prerequisites: owning DSH :3088, ComfyUI :18465, Vite :5173.
  * Run:
  *   npx playwright test --config=playwright.local.config.ts e2e/motion-card-prompt-cards.spec.ts
  */
 import { test, expect, type Page, type Locator } from '@playwright/test'
 import { openPicker } from './helpers/r1Card'
 
-const API = 'http://localhost:33081'
+// The owning DSH (the estate doors serve /v1 same-origin here).
+// Env override is the config channel; no port pins in code. The
+// session token rides the query (claims sit behind the trust fence).
+const DSH = process.env.DSH_URL || 'http://127.0.0.1:3088'
+const TOKEN = process.env.DSH_TOKEN || ''
+const url = (p: string): string => TOKEN === '' ? DSH + p : DSH + p + (p.includes('?') ? '&' : '?') + 'token=' + TOKEN
 const PROMPT = 'a person walks forward then turns and waves'
 const MOTION_TILE = /^Motion /
 
 /** Health-gate: skip if the live GPU stack isn't up. */
 test.beforeAll(async ({ request }) => {
-  const health = await request.get(`${API}/health`).catch(() => null)
-  test.skip(!health || health.status() !== 200, 'gateway :33081 not up — run `task up:server`')
+  const health = await request.get(url(`/v1/health`)).catch(() => null)
+  test.skip(!health || health.status() !== 200, 'owning DSH not up — run the dsh service')
   const comfy = await request.get('http://localhost:18465/object_info/KimodoTextToPose').catch(() => null)
   test.skip(!comfy || comfy.status() !== 200, 'ComfyUI :18465 not up — run `docker start inference-comfyui`')
 })

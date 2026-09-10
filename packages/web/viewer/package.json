@@ -18,7 +18,6 @@
     }
   },
   "dependencies": {
-    "@melite/gateway-doors": "workspace:*",
     "@melite/image-image-gen": "workspace:*",
     "@melite/viewer-base": "workspace:*"
   },

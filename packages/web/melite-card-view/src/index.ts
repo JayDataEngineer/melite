@@ -19,7 +19,6 @@
  * works but is retired.
  */
 import type { Context } from '@deepseek-ai/cordis'
-import { callEstateLane } from '@melite/gateway-doors'
 // Type-only: pulls the webServer service declaration onto Context.
 import type {} from '@deepseek-ai/dsh-host-webserver'
 
@@ -34,8 +33,6 @@ export interface Config {
   prefix?: string
   /** True on the package-name companion row: contribute the browser bundle only, register nothing. */
   clientRowOnly?: boolean
-  /** Upstream fetch timeout in milliseconds. */
-  timeoutMs?: number
 }
 
 /** Read the full request body (proxy payloads are small JSON/forms; buffered). */
@@ -51,10 +48,7 @@ export function apply(ctx: Context, config: Config = {}): void {
     return
   }
 
-  void config
-  void timeoutMs
   const prefix = config.prefix ?? '/melite-proxy'
-  const timeoutMs = config.timeoutMs ?? 30_000
 
   ctx.effect(() => ctx.webServer.register({
     kind: 'prefix',
@@ -83,39 +77,11 @@ export function apply(ctx: Context, config: Config = {}): void {
         body = bytes
       }
 
-      try {
-        // THE ESTATE LANES (R5): same host answers in-process — the
-        // browser card's reads never leave the ONE DSH. Body bytes
-        // ride JSON when present (the lane contract), else absent.
-        let laneBody: unknown
-        if (body !== undefined) {
-          const bytes = body instanceof Uint8Array ? body : new Uint8Array()
-          laneBody = JSON.parse(new TextDecoder().decode(bytes) || 'null')
-        }
-        const out = await callEstateLane(ctx, method === 'HEAD' ? 'GET' : method, subPath + url.search, laneBody)
-        if (out === undefined) {
-          res.writeHead(404, { 'content-type': 'application/json' })
-          res.end(JSON.stringify({ error: 'no estate lane claims ' + subPath }))
-          return
-        }
-        const payload = Buffer.from(typeof out.body === 'string' ? out.body : JSON.stringify(out.body))
-        const outHeaders: Record<string, string> = { 'cache-control': 'no-cache' }
-        outHeaders['content-type'] = out.contentType
-        // decoded-length framing: the only safe content-length is the
-        // one we measured ourselves.
-        outHeaders['content-length'] = String(payload.byteLength)
-        res.writeHead(out.status, outHeaders)
-        res.end(payload)
-      } catch (error) {
-        // Lane failure: our own 502 — the one status this route
-        // invents; every estate answer passes through untouched.
-        res.writeHead(502, { 'content-type': 'application/json' })
-        res.end(JSON.stringify({
-          error: 'estate lane failed',
-          path: subPath,
-          detail: error instanceof Error ? error.message : String(error),
-        }))
-      }
+      // THE GATEWAY KILL (2026-09-10): the estate lanes are dead.
+      // The proxy answers 502 LOUD until it rides named Typert
+      // remotes — every estate answer used to pass through untouched.
+      res.writeHead(502, { 'content-type': 'application/json' })
+      res.end(JSON.stringify({ error: 'estate killed', path: subPath }))
     },
   }), 'melite-card-view: gateway proxy route')
 

@@ -32,7 +32,7 @@
     - id: ray-card-view-host
       name: /home/user/Documents/programs/ray/dsh/ray-card-view/lib/index.js
       config:
-        gatewayUrl: 'http://localhost:33081'
+        gatewayUrl: ''  # the lanes answer in-process (R5); cross-host names the owning DSH
     - id: ray-card-view-client
       name: '@ray-plugin/dsh-card-view'
       config:

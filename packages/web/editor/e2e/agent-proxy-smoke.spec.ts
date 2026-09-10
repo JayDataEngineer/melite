@@ -2,7 +2,7 @@
  * AGENT PROXY SMOKE — the 502 gate (2026-08-12).
  *
  * WHY THIS TEST EXISTS: the operator saw EVERY /v1/* endpoint return 502
- * (Bad Gateway) because the backend uvicorn on :33081 crashed on startup
+ * (Bad Gateway) because the retired backend uvicorn (the second Loader) crashed on startup
  * (a stale __pycache__ masked a _CARD_SLOTS change). All unit tests passed
  * (they mock the API), and the existing agent-tab-responds.spec.ts passed
  * (it requires a working backend, so it's skipped when the backend is down
@@ -43,7 +43,7 @@ test.describe("Proxy smoke — no 502 on any boot endpoint", () => {
         const body = await resp.text().catch(() => "<no body>")
         throw new Error(
           `${ep} returned 502 Bad Gateway — the Vite proxy can't reach ` +
-          `the backend on :33081. The backend uvicorn is down or crashed. ` +
+          `the estate door refused (the owning DSH lane). ` +
           `Response body: ${body.slice(0, 200)}`
         )
       }

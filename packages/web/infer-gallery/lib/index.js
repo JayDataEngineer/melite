@@ -2,7 +2,10 @@
 const name = "infer-gallery";
 /** Routes arrive with the webServer service. */
 const inject = ["webServer"];
-const DEFAULT_GATEWAY_URL = "http://localhost:33081";
+/** A gallery mounted far from its estate names the OWNING DSH in
+* its profile row (config.gatewayUrl, REQUIRED in that posture —
+* the refusal below is loud). No code default exists at all; a
+* same-host gallery never fetches (the lanes answer in-process). */
 const DEFAULT_TIMEOUT_MS = 15e3;
 const RUNS_UPSTREAM = "/v1/flows/runs?limit=50";
 /** The only gateway tree the artifact proxy may touch
@@ -21,10 +24,13 @@ function proxyAssetUrl(path) {
 	return `/infer-gallery/artifact?path=${encodeURIComponent(path)}`;
 }
 function apply(ctx, config = {}) {
-	const gatewayUrl = (config.gatewayUrl ?? DEFAULT_GATEWAY_URL).replace(/\/+$/, "");
+	const gatewayUrl = (config.gatewayUrl ?? "").replace(/\/+$/, "");
 	const timeoutMs = config.timeoutMs ?? DEFAULT_TIMEOUT_MS;
 	const flowDir = config.flowDir ?? DEFAULT_FLOW_DIR;
-	const upstream = (path) => fetch(`${gatewayUrl}${path}`, { signal: AbortSignal.timeout(timeoutMs) });
+	const upstream = async (path) => {
+		if (gatewayUrl === "") throw new Error("infer-gallery: estate lanes died with the gateway (2026-09-10) — pin gatewayUrl or migrate to a named Typert remote (GET " + path + ")");
+		return fetch(`${gatewayUrl}${path}`, { signal: AbortSignal.timeout(timeoutMs) });
+	};
 	ctx.logger.info("infer-gallery proxying %s (gateway %s)", RUNS_UPSTREAM, gatewayUrl);
 	const DRAFTS_UPSTREAM = "/v1/flows/drafts";
 	const DRAFTS_LIMIT = 200;

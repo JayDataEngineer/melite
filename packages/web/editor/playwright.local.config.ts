@@ -2,7 +2,7 @@
  * Playwright config for the NEW architecture (no Traefik, no gateway).
  *
  * The Vite dev server (localhost:5173) proxies /v1/* and /health to the
- * Python server (localhost:33081). This config targets that local Vite
+ * the owning DSH (127.0.0.1:3088). This config targets that local Vite
  * server — no Docker network, no forge.local DNS.
  *
  * Usage:

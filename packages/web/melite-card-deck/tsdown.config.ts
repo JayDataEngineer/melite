@@ -8,7 +8,9 @@ import { clientBundle } from '../shared/tsdown.client.ts'
 
 export default clientBundle('@melite-plugin/dsh-card-deck', ['src/index.ts'], {
   libExternal: [
+    '@deepseek-ai/dsh-client-connection',
     '@deepseek-ai/dsh-client-runtime',
+    '@deepseek-ai/dsh-host-frontend-static',
     '@deepseek-ai/dsh-host-webserver',
   ],
 })

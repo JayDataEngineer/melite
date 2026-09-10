@@ -16,7 +16,6 @@
  * response lifecycle; the proxy never throws.
  */
 import type { Context } from '@deepseek-ai/cordis'
-import { callEstateLane } from '@melite/gateway-doors'
 // Type-only: pulls the webServer service declaration onto Context.
 import type {} from '@deepseek-ai/dsh-host-webserver'
 
@@ -60,25 +59,22 @@ export function apply(ctx: Context, config: Config = {}): void {
   const timeoutMs = config.timeoutMs ?? DEFAULT_TIMEOUT_MS
   const flowDir = config.flowDir ?? DEFAULT_FLOW_DIR
 
-  const inEstateHost = (ctx as { runsRemote?: unknown }).runsRemote !== undefined
-  const gatewayUrlResolved = gatewayUrl === '' && !inEstateHost
-    ? ''
-    : gatewayUrl
-  if (gatewayUrlResolved === '' && !inEstateHost) {
-    throw new Error('infer-gallery: this host does not mount the estate and no gatewayUrl is pinned — name the owning DSH (QUEUE LANE LAW)')
-  }
+  // MODE (no apply-time estate probe — cordis initializes bundles
+  // concurrently and a ctx.runsRemote read here throws "without
+  // inject" whenever the estate lands later (boot race, proven
+  // 2026-09-10: identical tree booted clean, then crashed on
+  // restart). The mode is structural, resolved per request: a
+  // pinned gatewayUrl means cross-host; otherwise the estate's own
+  // lanes answer in-process, and an unclaimed lane is a loud 502
+  // naming the fix — misconfiguration stays loud, boot stays total.
+  // THE GATEWAY KILL (2026-09-10): the in-process lanes are dead.
+  // Same-host answers 502 LOUD until the gallery rides named Typert
+  // remotes; cross-host still fetches the pinned owning DSH.
   const upstream = async (path: string): Promise<Response> => {
-    // Same host: the estate's own lanes, in-process (no HTTP, no
-    // port). Cross-host: the pinned owning DSH over HTTP.
-    if (inEstateHost) {
-      const out = await callEstateLane(ctx, 'GET', path)
-      if (out === undefined) throw new Error('infer-gallery: no estate lane claims GET ' + path)
-      return new Response(typeof out.body === 'string' ? out.body : JSON.stringify(out.body), {
-        status: out.status,
-        headers: { 'content-type': out.contentType },
-      })
+    if (gatewayUrl === '') {
+      throw new Error('infer-gallery: estate lanes died with the gateway (2026-09-10) — pin gatewayUrl or migrate to a named Typert remote (GET ' + path + ')')
     }
-    return fetch(`${gatewayUrlResolved}${path}`, { signal: AbortSignal.timeout(timeoutMs) })
+    return fetch(`${gatewayUrl}${path}`, { signal: AbortSignal.timeout(timeoutMs) })
   }
 
   ctx.logger.info('infer-gallery proxying %s (gateway %s)', RUNS_UPSTREAM, gatewayUrl)

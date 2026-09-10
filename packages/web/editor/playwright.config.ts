@@ -10,7 +10,7 @@ const HERE = path.dirname(fileURLToPath(import.meta.url))
 
 // The old Traefik / "forge" deployment is dead — all inference runs through
 // the Bun+Hono gateway (server-js). Default to the Vite dev server, which
-// proxies /v1/* and /health to 127.0.0.1:33081. Override via BASE_URL.
+// proxies /v1/* to the owning DSH (127.0.0.1:3088). Override via BASE_URL.
 const FRONTEND_URL = process.env.BASE_URL || 'http://127.0.0.1:5173'
 
 // Resolved at runtime (the drift-check hook rejects /home/<user> literals).

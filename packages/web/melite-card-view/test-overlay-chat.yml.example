@@ -20,11 +20,11 @@
     - id: melite-card-view-host
       name: $MELITE_REPO/dsh/melite-card-view/lib/index.js
       config:
-        gatewayUrl: 'http://localhost:33081'
+        gatewayUrl: ''  # the lanes answer in-process (R5); cross-host names the owning DSH
     - id: melite-tools
       name: $MELITE_REPO/dsh/melite-tools/lib/index.mjs
       config:
-        gatewayUrl: 'http://localhost:33081'
+        gatewayUrl: ''  # the lanes answer in-process (R5); cross-host names the owning DSH
     - id: melite-card-view-client
       name: '@melite-plugin/dsh-card-view'
       config:

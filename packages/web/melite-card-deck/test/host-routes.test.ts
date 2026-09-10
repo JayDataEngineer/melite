@@ -1,233 +1,231 @@
-// host-routes.test — THE GUI<->GATEWAY PROXY CONTRACT (2026-08-26;
-// rewritten 2026-09-04 after the sidebar card deck retirement).
+// host-routes.test — THE DECK HOST CONTRACT (rewritten 2026-09-10,
+// FIX-IT stroke; the estate-collapse cut).
 //
-// The operator flew blind: a raw TypeError surfaced as a JSON 502 in the
-// GUI with zero test cover for it. src/index.ts registers the editor
-// host's proxy routes; its failure law is load-bearing:
+// The old file asserted a deleted world (bun:test import — a retired
+// runner — plus /v1|/comfyui|/poser|/health proxies and the events WS
+// tunnel, all retired with the second Loader). It ran NOWHERE and
+// pinned NOTHING. This file pins what src/index.ts actually
+// registers, under node:test:
 //
-//   - reachable webServer + DEAD gateway -> 502 JSON {gateway_unreachable},
-//     the handler NEVER throws, NEVER hangs;
-//   - live gateway -> status + body pass through VERBATIM (upstream errors
-//     included — a gateway 503 must reach the browser as 503, not re-wrapped);
-//   - the /v1/llm lane is stubbed at the wire (the assistant lives in DSH);
-//   - the events WS tunnel registers at the exact /v1/flows/events path;
-//   - the SIDEBAR CARD DECK IS GONE (operator order 2026-09-04: "we don't
-//     need ray cards in the sidebar at all") — no /ray-deck/* door exists.
+//   - registration: exactly `prefix /v1/llm` + `prefix /editor` —
+//     no /v1 proxies, no /comfyui, no /poser, no /health, no
+//     /ray-deck/*, no WS upgrades at all (absence pins!);
+//   - the /v1/llm lane is stubbed at the wire (the assistant lives
+//     in DSH): the stub table + the unknown-lane 404;
+//   - /editor serves a fixture dist through DSH's serveStatic
+//     (traversal fence, MIME table, index auth): index, asset,
+//     SPA fallback, miss 404, traversal 403, non-GET/HEAD 405.
 //
-// All fetch is mocked — milliseconds, no gateway, no network. Mirrors
-// dsh/melite-tools/test/gateway.test.ts (the tools-lane seam contract).
-import { afterEach, describe, expect, test } from 'bun:test'
-import { apply } from '../src/index.ts'
+// No gateway, no network, no DSH host: fixture dist on disk, fake
+// cordis ctx, node-http-shaped req/res.
+//
+// Run: node --experimental-strip-types --test packages/web/melite-card-deck/test/host-routes.test.ts
+import { describe, it, before, after } from "node:test";
+import assert from "node:assert/strict";
+import { mkdtempSync, mkdirSync, writeFileSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { apply } from "../src/index.ts";
 
-const origFetch = globalThis.fetch
-afterEach(() => { globalThis.fetch = origFetch })
-
-// ── Harness: fake cordis ctx + node-http-shaped req/res ─────────────────
 interface Reg { kind: string; path: string; handler: (req: unknown, res: unknown) => Promise<void> }
-interface Up { path: string; handler: (req: unknown, socket: unknown, head: unknown) => void }
+interface Ctx {
+  routes: Reg[];
+  upgrades: unknown[];
+  authorizeCalls: number;
+  authorizeAnswer: boolean;
+}
 
-function mount(config: Record<string, unknown> = {}): { routes: Reg[]; upgrades: Up[] } {
-  const routes: Reg[] = []
-  const upgrades: Up[] = []
-  const ctx = {
-    effect(fn: () => unknown) { fn(); return () => {} },
+function mount(): Ctx {
+  const ctx: Ctx = { routes: [], upgrades: [], authorizeCalls: 0, authorizeAnswer: true };
+  const cordis = {
+    effect(fn: () => unknown) { fn(); return () => {}; },
     webServer: {
-      register(r: Reg) { routes.push(r); return () => {} },
-      registerUpgrade(u: Up) { upgrades.push(u); return () => {} },
+      register(r: Reg) { ctx.routes.push(r); return () => {}; },
+      registerUpgrade(u: unknown) { ctx.upgrades.push(u); return () => {}; },
+    },
+    connection: {
+      // The DSH contract: true = serve; false = the response is
+      // ALREADY owned (Connection wrote the 401 itself).
+      authorizeIndex(_req: unknown, res: {
+        writeHead: (s: number, h?: Record<string, string>) => void;
+        end: (b?: unknown) => void;
+      }) {
+        ctx.authorizeCalls++;
+        if (!ctx.authorizeAnswer) {
+          res.writeHead(401, { "content-type": "text/plain" });
+          res.end("unauthorized");
+        }
+        return ctx.authorizeAnswer;
+      },
     },
     logger: { info() {} },
-  }
-  apply(ctx as never, config)
-  return { routes, upgrades }
+  };
+  apply(cordis as never);
+  return ctx;
 }
 
-function fakeReq(url: string, method = 'GET', body?: string) {
-  return {
-    url,
-    method,
-    headers: { 'content-type': 'application/json' },
-    async *[Symbol.asyncIterator]() {
-      if (body) yield Buffer.from(body, 'utf8')
-    },
-  }
+function fakeReq(url: string, method = "GET"): unknown {
+  return { url, method, headers: {} };
 }
 
-interface Saw { status: number; headers: Record<string, string>; body: string }
+interface Saw { status: number; headers: Record<string, string>; body: Buffer }
 
-function fakeRes(): { saw: Saw } {
-  const saw: Saw = { status: 0, headers: {}, body: '' }
-  return {
-    saw,
+function fakeRes(): { saw: Saw; res: unknown } {
+  const saw: Saw = { status: 0, headers: {}, body: Buffer.alloc(0) };
+  const res = {
     writeHead(status: number, headers: Record<string, string> = {}) {
-      saw.status = status
-      saw.headers = headers
+      saw.status = status;
+      saw.headers = headers;
     },
-    end(body: unknown = '') {
-      saw.body = typeof body === 'string' ? body : String(body)
+    end(body: unknown = Buffer.alloc(0)) {
+      saw.body = typeof body === "string" ? Buffer.from(body) : (body as Buffer);
     },
-  }
+  };
+  return { saw, res };
 }
 
-const pathname = (u: string) => u.split('?')[0]
-
-// Dispatch mimicking the webServer registry: exact = path equal (query
-// stripped); prefix = longest matching prefix wins (the documented law the
-// /v1/llm stub relies on to beat the generic /v1 proxy).
 function pick(routes: Reg[], url: string): Reg {
-  const p = pathname(url)
-  const exact = routes.filter((r) => r.kind === 'exact' && r.path === p)
-  if (exact.length) return exact[0]
-  const prefixes = routes
-    .filter((r) => r.kind === 'prefix' && p.startsWith(r.path))
-    .sort((a, b) => b.path.length - a.path.length)
-  if (!prefixes.length) throw new Error('no route for ' + url)
-  return prefixes[0]
+  const p: string = url.split("?")[0]!;
+  const exact: Reg[] = routes.filter((r) => r.kind === "exact" && r.path === p);
+  if (exact.length > 0) return exact[0]!;
+  const prefixes: Reg[] = routes
+    .filter((r) => r.kind === "prefix" && p.startsWith(r.path))
+    .sort((a, b) => b.path.length - a.path.length);
+  if (prefixes.length === 0) throw new Error("no route for " + url);
+  return prefixes[0]!;
 }
 
-async function hit(routes: Reg[], url: string, method = 'GET', body?: string): Promise<Saw> {
-  const res = fakeRes()
-  await pick(routes, url).handler(fakeReq(url, method, body), res)
-  return res.saw
+async function hit(ctx: Ctx, url: string, method = "GET"): Promise<Saw> {
+  const { saw, res } = fakeRes();
+  await pick(ctx.routes, url).handler(fakeReq(url, method), res);
+  return saw;
 }
 
-// The user's exact failure, verbatim: dead gateway -> TypeError('fetch failed').
-const DEAD_GATEWAY = (async () => { throw new TypeError('fetch failed') }) as typeof fetch
+// ── fixture dist (RAY_EDITOR_DIST is read at apply time) ──────────
+let dist = "";
+let savedEnv = "";
 
-function errCode(saw: Saw): string {
-  const parsed = JSON.parse(saw.body) as { error?: string; message?: string }
-  return parsed.error ?? '(no error field)'
-}
+before(() => {
+  dist = mkdtempSync(join(tmpdir(), "deck-editor-dist-"));
+  writeFileSync(join(dist, "index.html"), "<html><body>editor</body></html>");
+  mkdirSync(join(dist, "assets"));
+  writeFileSync(join(dist, "assets", "main-abc.js"), "console.log(1)");
+  savedEnv = process.env["RAY_EDITOR_DIST"] ?? "";
+  process.env["RAY_EDITOR_DIST"] = dist;
+});
 
-describe('registration shape (the host registry relies on it)', () => {
-  test('the editor host registers its proxies; /v1/llm OUTLENGTHS /v1; the tunnel registers', () => {
-    const { routes, upgrades } = mount({ gatewayUrl: 'http://g' })
-    const byPath = routes.map((r) => r.kind + ' ' + r.path)
-    for (const want of [
-      'prefix /v1', 'prefix /v1/llm', 'prefix /comfyui', 'prefix /poser', 'prefix /health',
-      'prefix /editor',
-    ]) {
-      expect(byPath).toContain(want)
+after(() => {
+  if (savedEnv === "") delete process.env["RAY_EDITOR_DIST"];
+  else process.env["RAY_EDITOR_DIST"] = savedEnv;
+  rmSync(dist, { recursive: true, force: true });
+});
+
+describe("registration shape (the collapse cut)", () => {
+  it("registers exactly the LLM stub + the editor static — nothing else", () => {
+    const ctx = mount();
+    const byPath: string[] = ctx.routes.map((r) => `${r.kind} ${r.path}`).sort();
+    assert.deepEqual(byPath, ["prefix /editor", "prefix /v1/llm"]);
+    assert.deepEqual(ctx.upgrades, []);
+  });
+
+  it("THE RETIREMENT PINS: no proxies, no tunnel, no deck doors", () => {
+    const ctx = mount();
+    const every: string[] = [...ctx.routes.map((r) => r.path)];
+    for (const dead of ["/v1/", "/comfyui", "/poser", "/health", "/ray-deck", "/editor/assets/runs"]) {
+      assert.ok(!every.some((p) => p === dead || p.startsWith(dead + "/")), `dead route back: ${dead}`);
     }
-    // Phase 2 consolidation (2026-09-04): run artifacts ride /v1/assets/
-    // runs through the /v1 proxy — the separate /editor/assets/runs
-    // registration is GONE and /editor is purely static.
-    expect(byPath).not.toContain('prefix /editor/assets/runs')
-    expect(upgrades.map((u) => u.path)).toEqual(['/v1/flows/events'])
-  })
+  });
+});
 
-  test('THE RETIREMENT PIN: no /ray-deck/* door exists (sidebar cards are gone)', () => {
-    const { routes, upgrades } = mount({ gatewayUrl: 'http://g' })
-    const every = [...routes.map((r) => r.path), ...upgrades.map((u) => u.path)]
-    expect(every.filter((p) => p.startsWith('/ray-deck'))).toEqual([])
-  })
-})
+describe("the /v1/llm stub (the assistant lives in DSH)", () => {
+  it("serves the stub table", async () => {
+    const ctx = mount();
+    const keys = await hit(ctx, "/v1/llm/keys");
+    assert.equal(keys.status, 200);
+    assert.deepEqual(JSON.parse(keys.body.toString()), { keys: [] });
+    const health = await hit(ctx, "/v1/llm/health");
+    assert.equal(health.status, 200);
+    assert.equal((JSON.parse(health.body.toString()) as { reason: string }).reason, "dsh_owns_the_assistant");
+    const providers = await hit(ctx, "/v1/llm/providers");
+    assert.deepEqual(JSON.parse(providers.body.toString()), { providers: [] });
+    const active = await hit(ctx, "/v1/llm/keys/active");
+    assert.equal(active.status, 404);
+    assert.equal((JSON.parse(active.body.toString()) as { error: string }).error, "no_active_key");
+  });
 
-describe('FAILURE CONTRACT: dead gateway -> 502 gateway_unreachable, never a throw', () => {
-  test('THE OPERATOR CASE: GET /v1/model-catalog -> 502 JSON with the TypeError named', async () => {
-    globalThis.fetch = DEAD_GATEWAY
-    const { routes } = mount({}) // R5: no gatewayUrl — the lanes answer in-process
-    const saw = await hit(routes, '/v1/model-catalog')
-    expect(saw.status).toBe(502)
-    expect(saw.headers['content-type']).toContain('application/json')
-    const parsed = JSON.parse(saw.body) as { error: string; message: string }
-    expect(parsed.error).toBe('gateway_unreachable')
-    expect(parsed.message).toContain('fetch failed')
-  })
+  it("unknown LLM lanes refuse loud, never 200+HTML", async () => {
+    const ctx = mount();
+    const saw = await hit(ctx, "/v1/llm/something-new?x=1");
+    assert.equal(saw.status, 404);
+    assert.equal((JSON.parse(saw.body.toString()) as { error: string }).error, "llm_lane_disabled");
+    assert.ok((saw.headers["content-type"] ?? "").includes("application/json"));
+  });
+});
 
-  test('EVERY proxy route shares the same contract — sweep', async () => {
-    globalThis.fetch = DEAD_GATEWAY
-    const { routes } = mount({ gatewayUrl: 'http://g' })
-    const cases: Array<[string, string]> = [
-      ['/v1/model-catalog', 'GET'],
-      ['/v1/form-spec?model=z-image', 'GET'],
-      ['/v1/flows/start', 'POST'],
-      ['/comfyui/system_stats', 'GET'],
-      ['/poser/status', 'GET'],
-      ['/health', 'GET'],
-      ['/v1/assets/runs/r1/a.png', 'GET'],
-    ]
-    for (const [url, method] of cases) {
-      const saw = await hit(routes, url, method, method === 'POST' ? '{}' : undefined)
-      if (saw.status !== 502 || errCode(saw) !== 'gateway_unreachable') {
-        throw new Error('route ' + url + ' broke the failure contract: ' + saw.status + ' ' + saw.body)
-      }
+describe("/editor static (DSH serveStatic)", () => {
+  it("serves index at the root and the index path, authed", async () => {
+    const ctx = mount();
+    for (const url of ["/editor/", "/editor/index.html", "/editor/?x=1"]) {
+      const saw = await hit(ctx, url);
+      assert.equal(saw.status, 200);
+      assert.ok(saw.body.toString().includes("editor"));
+      assert.ok((saw.headers["content-type"] ?? "").includes("text/html"));
     }
-  })
+    assert.ok(ctx.authorizeCalls >= 3, "index responses pass the connection fence");
+  });
 
-  test('a HANGING gateway still resolves: timeout aborts -> 502, no infinite wait', async () => {
-    globalThis.fetch = (async (_u: unknown, init?: RequestInit) =>
-      new Promise((_resolve, reject) => {
-        const sig = init?.signal
-        if (sig) sig.addEventListener('abort', () => reject((sig as AbortSignal).reason))
-      })) as typeof fetch
-    const { routes } = mount({ gatewayUrl: 'http://g', timeoutMs: 60 })
-    const saw = await hit(routes, '/v1/model-catalog')
-    expect(saw.status).toBe(502)
-    expect(errCode(saw)).toBe('gateway_unreachable')
-  })
-})
+  it("refuses the index when the fence says no (Connection owns the 401)", async () => {
+    const ctx = mount();
+    ctx.authorizeAnswer = false;
+    const saw = await hit(ctx, "/editor/");
+    assert.equal(saw.status, 401);
+  });
 
-describe('live gateway: status + body pass through VERBATIM', () => {
-  test('200 catalog body reaches the browser unchanged', async () => {
-    const catalog = JSON.stringify({ models: [{ id: 'z-image', family: 'image' }] })
-    globalThis.fetch = (async () => new Response(catalog, { status: 200 })) as typeof fetch
-    const { routes } = mount({ gatewayUrl: 'http://g' })
-    const saw = await hit(routes, '/v1/model-catalog')
-    expect(saw.status).toBe(200)
-    expect(saw.body).toBe(catalog)
-  })
+  it("serves assets with DSH MIME types", async () => {
+    const ctx = mount();
+    const saw = await hit(ctx, "/editor/assets/main-abc.js");
+    assert.equal(saw.status, 200);
+    assert.ok((saw.headers["content-type"] ?? "").includes("javascript"));
+    assert.equal(saw.body.toString(), "console.log(1)");
+  });
 
-  test('UPSTREAM ERRORS ARE NOT RE-WRAPPED: gateway 503 -> browser sees 503 + verbatim body', async () => {
-    const upstream = JSON.stringify({ error: 'model_not_loaded', detail: 'qwen busy' })
-    globalThis.fetch = (async () => new Response(upstream, { status: 503 })) as typeof fetch
-    const { routes } = mount({ gatewayUrl: 'http://g' })
-    const saw = await hit(routes, '/v1/model-catalog')
-    expect(saw.status).toBe(503) // NOT 502 — only transport failures 502
-    expect(saw.body).toBe(upstream)
-  })
+  it("SPA fallback: extensionless misses render index", async () => {
+    const ctx = mount();
+    const saw = await hit(ctx, "/editor/some/client/route");
+    assert.equal(saw.status, 200);
+    assert.ok(saw.body.toString().includes("editor"));
+  });
 
-  test('CONTENT-LENGTH HONESTY (2026-09-01): a decompressed body states its TRUE byte count', async () => {
-    const body = JSON.stringify({ ok: true }) // fetch() already decompressed; upstream length lies
-    globalThis.fetch = (async () => new Response(body, {
-      status: 200,
-      headers: { 'content-length': '9999', 'content-encoding': 'gzip' },
-    })) as typeof fetch
-    const { routes } = mount({ gatewayUrl: 'http://g' })
-    const saw = await hit(routes, '/v1/model-catalog')
-    expect(saw.status).toBe(200)
-    expect(saw.headers['content-length']).toBe(String(body.length))
-    expect(saw.headers['content-encoding']).toBeUndefined()
-  })
+  it("asset misses 404 honestly", async () => {
+    const ctx = mount();
+    const saw = await hit(ctx, "/editor/assets/nope.js");
+    assert.equal(saw.status, 404);
+  });
 
-  test('POST /v1/flows/start forwards method + body upstream (THE run door)', async () => {
-    let seenUrl = ''
-    let seenInit: RequestInit | undefined
-    globalThis.fetch = (async (u: unknown, init?: RequestInit) => {
-      seenUrl = String(u)
-      seenInit = init
-      return new Response(JSON.stringify({ run_id: 'r1' }), { status: 200 })
-    }) as typeof fetch
-    const { routes } = mount({ gatewayUrl: 'http://g' })
-    const saw = await hit(routes, '/v1/flows/start', 'POST', JSON.stringify({ model: 'z-image' }))
-    expect(seenUrl).toBe('http://g/v1/flows/start')
-    expect(seenInit!.method).toBe('POST')
-    expect(String(seenInit!.body)).toBe(JSON.stringify({ model: 'z-image' }))
-    expect(saw.status).toBe(200)
-    expect(saw.body).toBe(JSON.stringify({ run_id: 'r1' }))
-  })
-})
+  it("traversal is fenced, never file bytes and never the index", async () => {
+    const ctx = mount();
+    // WHATWG URL normalizes %2e dot segments before dispatch, so
+    // most traversal never reaches the claim (404); %2f-encoded
+    // separators survive to serveStatic's own fence (403); an
+    // extensionless foreign path 404s in the SPA shim (never the
+    // index). Every layer refuses; nothing discloses.
+    const cases: Array<[string, number]> = [
+      ["/editor/../secret", 404],
+      ["/editor/%2e%2e/%2e%2e/etc/passwd", 404],
+      ["/editor/..%2f..%2fetc%2fhosts.txt", 403],
+      ["/editor/%2e%2e/%2e%2e/no-such-file-xyz", 404],
+    ];
+    for (const [url, status] of cases) {
+      const saw = await hit(ctx, url);
+      assert.equal(saw.status, status, `${url} -> ${saw.status}`);
+      assert.ok(!saw.body.toString().includes("root:"), "no file disclosure");
+      assert.ok(!saw.body.toString().includes("editor"), "no index fallback for foreign paths");
+    }
+  });
 
-describe('/v1/llm stub lane (the assistant lives in DSH, not the editor)', () => {
-  test('keys answer canned; unknown llm paths 404 llm_lane_disabled; gateway never touched', async () => {
-    let fetched = false
-    globalThis.fetch = (async () => { fetched = true; return new Response('{}') }) as typeof fetch
-    const { routes } = mount({ gatewayUrl: 'http://g' })
-    const keys = await hit(routes, '/v1/llm/keys')
-    expect(keys.status).toBe(200)
-    expect(JSON.parse(keys.body)).toEqual({ keys: [] })
-    const unknown = await hit(routes, '/v1/llm/something/else')
-    expect(unknown.status).toBe(404)
-    expect(errCode(unknown)).toBe('llm_lane_disabled')
-    expect(fetched).toBe(false) // the stub answers BEFORE the gateway proxy
-  })
-})
+  it("non-GET/HEAD is 405 (the DSH static contract)", async () => {
+    const ctx = mount();
+    const saw = await hit(ctx, "/editor/", "POST");
+    assert.equal(saw.status, 405);
+  });
+});

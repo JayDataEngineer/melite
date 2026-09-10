@@ -1,27 +1,43 @@
-import { URL, fileURLToPath } from "node:url";
+import { fileURLToPath } from "node:url";
 import path from "node:path";
 import fs from "node:fs/promises";
+import { serveStatic } from "@deepseek-ai/dsh-host-frontend-static";
 //#region src/index.ts
 /**
 * `@melite-plugin/dsh-card-deck` — HOST ONLY.
 *
 * THE ESTATE COLLAPSE (docs/plans/estate-collapse-2026-09-10.md,
 * 2026-09-10): this host once proxied /v1|/comfyui|/poser|/health to
-* the second-Loader estate process (:33081) and tunneled the events
+* the second-Loader estate process (retired) and tunneled the events
 * WS — the seam that enshrined the degenerate copy of DSH. ALL of it
 * is deleted: the estate's doors are cordis plugins now, mounted in
 * THIS DSH host by the `melite-estate` bundle row, answering the same
 * same-origin /v1 paths directly. What remains here is what was never
 * a gateway concern:
 *
-* - /editor     → the editor's built dist (the standalone card
-*                 studio; a static file tree, no upstream)
+* - /editor     → the editor's built dist, served through DSH's own
+*                 SPA static mechanics (`serveStatic` from
+*                 `@deepseek-ai/dsh-host-frontend-static` — the same
+*                 traversal fence, MIME table, index-auth, and
+*                 403/404/405 contract as the shell). A named prefix
+*                 route (not the fallback seat: the shell owns that
+*                 seat, single-owner by the webserver contract) with
+*                 the editor's SPA fallback (extensionless misses
+*                 render index; asset misses 404) and NO boot
+*                 injection (the editor is a standalone vite SPA, not
+*                 a DSH boot page — raw index bytes, authed like the
+*                 shell's own index).
 * - /v1/llm/*   → stubs (the assistant lives in DSH; the editor's own
 *                 LLM lane is dead surface — longest-prefix match
-*                 beats the estate doors' exact rows on this lane)
+*                 beats the estate doors' exact rows on this lane).
+*                 The stub stays a stub (not a DSH primitive) for one
+*                 reason: without it the shell fallback would answer
+*                 these lanes with 200 + HTML and the studio would
+*                 misparse it as keystore JSON. A loud typed refusal
+*                 beats a lying 200.
 */
 const name = "ray-card-deck";
-const inject = ["webServer"];
+const inject = ["webServer", "connection"];
 const JSON_HEADERS = {
 	"content-type": "application/json; charset=utf-8",
 	"cache-control": "no-store"
@@ -55,59 +71,45 @@ function apply(ctx) {
 		}
 	}), "ray-card-deck: /v1/llm stub (DSH owns the LLM)");
 	const here = path.dirname(fileURLToPath(import.meta.url));
-	const EDITOR_DIST = process.env.RAY_EDITOR_DIST ?? path.resolve(here, "..", "..", "editor", "dist");
-	const MIME = {
-		".html": "text/html; charset=utf-8",
-		".js": "text/javascript; charset=utf-8",
-		".css": "text/css; charset=utf-8",
-		".json": "application/json; charset=utf-8",
-		".svg": "image/svg+xml",
-		".png": "image/png",
-		".jpg": "image/jpeg",
-		".webp": "image/webp",
-		".ico": "image/x-icon",
-		".glb": "model/gltf-binary",
-		".wasm": "application/wasm",
-		".woff2": "font/woff2"
-	};
-	const serveStatic = async (rel, res) => {
-		const root = path.resolve(EDITOR_DIST);
-		const target = path.resolve(root, "." + rel.replace(/^\/editor/, ""));
-		if (!target.startsWith(root)) {
-			res.writeHead(403);
-			res.end("forbidden");
-			return;
-		}
-		const st = await fs.stat(target).catch(() => null);
-		let file = target;
-		if (!st || st.isDirectory()) {
-			if (path.extname(rel) !== "") {
-				res.writeHead(404);
-				res.end("not found");
-				return;
-			}
-			file = path.join(root, "index.html");
-		}
-		try {
-			const data = await fs.readFile(file);
-			const ext = path.extname(file).toLowerCase();
-			res.writeHead(200, {
-				"content-type": MIME[ext] ?? "application/octet-stream",
-				"cache-control": "no-cache"
-			});
-			res.end(data);
-		} catch {
-			res.writeHead(404);
-			res.end("not found");
-		}
-	};
+	const distRoot = path.resolve(process.env.RAY_EDITOR_DIST ?? path.resolve(here, "..", "..", "editor", "dist"));
+	const distIndex = path.join(distRoot, "index.html");
 	ctx.effect(() => ctx.webServer.register({
 		kind: "prefix",
 		path: "/editor",
 		handler: async (req, res) => {
-			await serveStatic(new URL(req.url ?? "/editor/", "http://local").pathname, res);
+			if (req.method !== "GET" && req.method !== "HEAD") {
+				res.writeHead(405);
+				res.end();
+				return;
+			}
+			let under;
+			try {
+				under = decodeURIComponent(new URL(req.url ?? "/editor/", "http://local").pathname);
+			} catch {
+				res.writeHead(400);
+				res.end();
+				return;
+			}
+			if (!(under === "/editor" || under.startsWith("/editor/"))) {
+				res.writeHead(404);
+				res.end();
+				return;
+			}
+			let rel = under.slice(7);
+			if (rel === "") rel = "/";
+			if (path.extname(rel) === "") {
+				const target = path.resolve(path.join(distRoot, rel));
+				if (target !== distRoot && !target.startsWith(distRoot + path.sep)) {
+					res.writeHead(404);
+					res.end();
+					return;
+				}
+				const st = await fs.stat(target).catch(() => null);
+				if (!st || st.isDirectory()) rel = "/index.html";
+			}
+			await serveStatic(rel, res, distRoot, distIndex, () => ctx.connection.authorizeIndex(req, res), () => fs.readFile(distIndex, "utf8"));
 		}
-	}), "ray-card-deck: /editor static");
+	}), "ray-card-deck: /editor static (DSH serveStatic)");
 }
 //#endregion
 export { apply, inject, name };

@@ -18,7 +18,12 @@
  */
 import { test, expect, type Page } from '@playwright/test'
 
-const BACKEND = 'http://127.0.0.1:33081'
+// The owning DSH (the estate doors serve /v1 same-origin here).
+// Env override is the config channel; no port pins in code. The
+// session token rides the query (claims sit behind the trust fence).
+const DSH = process.env.DSH_URL || 'http://127.0.0.1:3088'
+const TOKEN = process.env.DSH_TOKEN || ''
+const url = (p: string): string => TOKEN === '' ? DSH + p : DSH + p + (p.includes('?') ? '&' : '?') + 'token=' + TOKEN
 
 async function gotoLibrary(page: Page): Promise<void> {
   await page.goto('/editor/', { waitUntil: 'domcontentloaded' })

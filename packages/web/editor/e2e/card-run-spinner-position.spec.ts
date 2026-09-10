@@ -9,7 +9,7 @@
  * renders as the LAST element before the Collapse (X) button — same flex
  * row, gap-2 apart, vertically centered with it.
  *
- * This spec drives the real editor (Vite dev :5173 → gateway :33081) the
+ * This spec drives the real editor (Vite dev :5173 → the owning DSH) the
  * way the user does: add a card, type a prompt, press Run IN THE DETAIL
  * HEADER. The run door (/v1/flows/start) and the status poll are
  * route-mocked to stay "running" forever — NO real ComfyUI job fires and
@@ -28,7 +28,7 @@
  *
  * Run:
  *   cd web/editor && npx playwright test e2e/card-run-spinner-position.spec.ts
- * (needs task up — Vite :5173 proxying /v1 to the gateway :33081)
+ * (needs task up — Vite :5173 proxying /v1 to the owning DSH)
  */
 import { test, expect, type Page } from '@playwright/test'
 

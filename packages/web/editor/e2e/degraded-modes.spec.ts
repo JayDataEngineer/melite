@@ -16,7 +16,7 @@
  * threw no uncaught page error — i.e. degraded, not broken.
  *
  * Deterministic: page.route() mocks only the failing endpoint; the rest of
- * the live stack (gateway :33081 + Vite :5173) serves normally.
+ * the live stack (owning DSH + Vite :5173) serves normally.
  *
  * Run:
  *   npx playwright test --config=playwright.local.config.ts e2e/degraded-modes.spec.ts

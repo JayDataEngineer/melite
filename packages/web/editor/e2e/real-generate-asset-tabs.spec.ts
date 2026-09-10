@@ -27,7 +27,7 @@
  * Each artifact is byte-verified (>10KB) by fetching its URL.
  *
  * Prerequisites:
- *   - Python server running on :33081  (task up:server)
+ *   - the owning DSH running (the dsh service)
  *   - ComfyUI running on :18465        (docker compose up -d inference-comfyui)
  *   - Vite dev server on :5173         (task up:frontend)
  *

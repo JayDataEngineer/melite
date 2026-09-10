@@ -4,7 +4,30 @@ window.__ModuleLoader__.load({
 		var module = { exports: {} };
 		var exports = module.exports;
 		Object.defineProperty(exports, Symbol.toStringTag, { value: "Module" });
+		//#region \0rolldown/runtime.js
+		var __create = Object.create;
+		var __defProp = Object.defineProperty;
+		var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
+		var __getOwnPropNames = Object.getOwnPropertyNames;
+		var __getProtoOf = Object.getPrototypeOf;
+		var __hasOwnProp = Object.prototype.hasOwnProperty;
+		var __copyProps = (to, from, except, desc) => {
+			if (from && typeof from === "object" || typeof from === "function") for (var keys = __getOwnPropNames(from), i = 0, n = keys.length, key; i < n; i++) {
+				key = keys[i];
+				if (!__hasOwnProp.call(to, key) && key !== except) __defProp(to, key, {
+					get: ((k) => from[k]).bind(null, key),
+					enumerable: !(desc = __getOwnPropDesc(from, key)) || desc.enumerable
+				});
+			}
+			return to;
+		};
+		var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__getProtoOf(mod)) : {}, __copyProps(isNodeMode || !mod || !mod.__esModule || !__hasOwnProp.call(mod, "default") ? __defProp(target, "default", {
+			value: mod,
+			enumerable: true
+		}) : target, mod));
+		//#endregion
 		let react = require("react");
+		react = __toESM(react, 1);
 		let react_jsx_runtime = require("react/jsx-runtime");
 		//#region src/client/apply-guard.ts
 		/**
@@ -107,23 +130,20 @@ window.__ModuleLoader__.load({
 		* since 20eb2c58 (own plugin, own host routes); Ray Flows retired with
 		* the yaml spec library (35f2f830).
 		*/
-		/** POST one manage action (same-origin: the deck host proxies /v1). */
-		async function postManage(action, payload) {
-			const res = await fetch("/v1/manage", {
-				method: "POST",
-				headers: { "content-type": "application/json" },
-				body: JSON.stringify({
+		/** POST one manage action over the estate lane. A refusal is a
+		* DOMAIN outcome — the ManageReply carries it, never a throw past
+		* the panel (the door contract, unchanged). */
+		async function postManage(remote, action, payload) {
+			try {
+				return await remote.lane("POST", "/v1/manage", {
 					action,
 					...payload
-				})
-			});
-			try {
-				return await res.json();
-			} catch {
+				});
+			} catch (e) {
 				return {
 					action,
 					ok: false,
-					detail: "HTTP " + String(res.status)
+					detail: e instanceof Error ? e.message : String(e)
 				};
 			}
 		}
@@ -196,7 +216,7 @@ window.__ModuleLoader__.load({
 		* result pane; mutating actions confirm first with the exact dispatch
 		* and silently refresh the status section afterwards.
 		*/
-		function ComfyManagerPanel() {
+		function ComfyManagerPanel({ remote }) {
 			const [status, setStatus] = (0, react.useState)(null);
 			const [statusDetail, setStatusDetail] = (0, react.useState)("");
 			const [busy, setBusy] = (0, react.useState)(null);
@@ -222,7 +242,11 @@ window.__ModuleLoader__.load({
 			* reply landing there used to wipe search/browse results. */
 			const fetchStatus = (0, react.useCallback)(async () => {
 				try {
-					const reply = await postManage("status", {});
+					const reply = remote !== void 0 ? await postManage(remote, "status", {}) : {
+						action: "status",
+						ok: false,
+						detail: "no estate lane remote — the deck client did not thread ctx.remote"
+					};
 					if (reply.ok === true) setStatus(reply.data ?? null);
 					setStatusDetail(reply.detail ?? "");
 				} catch (e) {
@@ -239,7 +263,11 @@ window.__ModuleLoader__.load({
 			const run = (0, react.useCallback)(async (action, payload = {}) => {
 				setBusy(action);
 				try {
-					const reply = await postManage(action, payload);
+					const reply = remote !== void 0 ? await postManage(remote, action, payload) : {
+						action,
+						ok: false,
+						detail: "no estate lane remote — the deck client did not thread ctx.remote"
+					};
 					setResult(reply);
 					return reply;
 				} catch (e) {
@@ -848,10 +876,17 @@ window.__ModuleLoader__.load({
 				}]
 			}), "ray-card-deck: " + id + " tab type");
 			ctx.slots.inject("sidebar.right.pane.tab", () => {
+				const wired = ctx.remote !== void 0 ? (() => {
+					const C = component;
+					return (props) => react.createElement(C, {
+						...props,
+						remote: ctx.remote
+					});
+				})() : component;
 				const dispose = ctx.slots.register({
 					name: "sidebar.right.pane.tab",
 					key: id
-				}, component);
+				}, wired);
 				return typeof dispose === "function" ? dispose : () => {};
 			});
 		}
@@ -877,7 +912,13 @@ window.__ModuleLoader__.load({
 		//#region src/client/index.ts
 		/** 'slots' (seat declarations) + the native right-sidebar tab registry
 		* (ui-sidebar-right, the web profile's own subsystem) — hosts the tabs. */
-		const inject = ["slots", "sidebarRightTabs"];
+		/** R4: the deck's lane faces (the ComfyUI manager tab) ride
+		* ctx.remote — the typert gateway's estate lane. */
+		const inject = [
+			"slots",
+			"sidebarRightTabs",
+			"remote"
+		];
 		function apply(ctx) {
 			if (!claimDeckApply()) return;
 			ctx.effect(() => releaseDeckApply, "ray-card-deck: apply claim");

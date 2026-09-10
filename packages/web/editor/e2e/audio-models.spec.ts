@@ -23,7 +23,7 @@
  *   2. GENERATION (live, GPU) — prompt → Run → the card completes with a
  *      real audio artifact rendered in the modal's <audio> preview.
  *
- * Run (backend on :33081, Vite on :5173):
+ * Run (owning DSH :3088, Vite on :5173):
  *   npx playwright test e2e/audio-models.spec.ts
  */
 import { test, expect } from '@playwright/test'

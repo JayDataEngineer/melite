@@ -21,12 +21,17 @@
  */
 import { test, expect } from '@playwright/test'
 
-const API = 'http://localhost:33081'
+// The owning DSH (the estate doors serve /v1 same-origin here).
+// Env override is the config channel; no port pins in code. The
+// session token rides the query (claims sit behind the trust fence).
+const DSH = process.env.DSH_URL || 'http://127.0.0.1:3088'
+const TOKEN = process.env.DSH_TOKEN || ''
+const url = (p: string): string => TOKEN === '' ? DSH + p : DSH + p + (p.includes('?') ? '&' : '?') + 'token=' + TOKEN
 
 test.describe('Catalog-driven UI — backend is the single source of truth', () => {
 
   test('/v1/model-catalog returns valid catalog with models and families', async () => {
-    const resp = await fetch(`${API}/v1/model-catalog`)
+    const resp = await fetch(url(`/v1/model-catalog`))
     expect(resp.status, '/v1/model-catalog must return 200').toBe(200)
     const catalog = await resp.json()
 
@@ -47,7 +52,7 @@ test.describe('Catalog-driven UI — backend is the single source of truth', () 
   })
 
   test('Catalog: families with lora_dir have the field accepted by schema validator', async () => {
-    const resp = await fetch(`${API}/v1/model-catalog`)
+    const resp = await fetch(url(`/v1/model-catalog`))
     const catalog = await resp.json()
 
     const familiesWithLoraDir: string[] = []
@@ -63,7 +68,7 @@ test.describe('Catalog-driven UI — backend is the single source of truth', () 
   })
 
   test('Every model with a form has a valid form-spec', async () => {
-    const catResp = await fetch(`${API}/v1/model-catalog`)
+    const catResp = await fetch(url(`/v1/model-catalog`))
     const catalog = await catResp.json()
 
     const formSpecs: { model: string; fields: number; groups: number }[] = []
@@ -75,7 +80,7 @@ test.describe('Catalog-driven UI — backend is the single source of truth', () 
       if (!form) continue
       checked++
 
-      const fsResp = await fetch(`${API}/v1/form-spec?model=${encodeURIComponent(modelKey)}`)
+      const fsResp = await fetch(url(`/v1/form-spec?model=${encodeURIComponent(modelKey)}`))
       if (!fsResp.ok) {
         console.log(`  ✗ form-spec for ${modelKey}: HTTP ${fsResp.status}`)
         errors++
@@ -99,7 +104,7 @@ test.describe('Catalog-driven UI — backend is the single source of truth', () 
   test('Video tab: dropdown shows all video families from catalog', async ({ page }) => {
     // Verify the Video tab's model dropdown is catalog-driven.
     // The form form_video_director should include LTX, Wan VACE, SCAIL2.
-    const catResp = await fetch(`${API}/v1/model-catalog`)
+    const catResp = await fetch(url(`/v1/model-catalog`))
     const catalog = await catResp.json()
 
     const videoFamilies = new Set<string>()
@@ -137,22 +142,22 @@ test.describe('Catalog-driven UI — backend is the single source of truth', () 
 
   test('/v1/loras requires model param and returns per-model results', async () => {
     // No model → empty list
-    const noModel = await fetch(`${API}/v1/loras`).then(r => r.json())
+    const noModel = await fetch(url(`/v1/loras`)).then(r => r.json())
     expect(noModel.loras, '/v1/loras without model should return empty list').toEqual([])
 
     // LTX model → ltx2 folder LoRA
-    const ltxResp = await fetch(`${API}/v1/loras?model=ltx-director-distilled`).then(r => r.json())
+    const ltxResp = await fetch(url(`/v1/loras?model=ltx-director-distilled`)).then(r => r.json())
     expect(ltxResp.loras.length, 'ltx-director-distilled should have ≥1 LoRA').toBeGreaterThanOrEqual(1)
     expect(ltxResp.loras[0], 'LoRA path should start with ltx2/').toContain('ltx2/')
 
     // Qwen model → qwen folder LoRAs (count is live-disk — assert ≥1, not
     // a pinned snapshot; the folder contract is the qwen/ prefix)
-    const qwenResp = await fetch(`${API}/v1/loras?model=qwen-img-edit-2511`).then(r => r.json())
+    const qwenResp = await fetch(url(`/v1/loras?model=qwen-img-edit-2511`)).then(r => r.json())
     expect(qwenResp.loras.length, 'qwen-img-edit-2511 should have ≥1 LoRA').toBeGreaterThan(0)
     expect(qwenResp.loras.every((l: string) => l.startsWith('qwen/')), 'all qwen LoRAs should be in qwen/ folder').toBeTruthy()
 
     // A model WITHOUT lora_dir → empty list (not a global fallback)
-    const noLoraResp = await fetch(`${API}/v1/loras?model=wan-vace`).then(r => r.json())
+    const noLoraResp = await fetch(url(`/v1/loras?model=wan-vace`)).then(r => r.json())
     expect(noLoraResp.loras, 'wan-vace (no lora_dir) should return empty').toEqual([])
 
     console.log('  ✓ /v1/loras is per-model: LTX→ltx2/, Qwen→qwen/, Wan VACE→[]')

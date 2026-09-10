@@ -54,24 +54,25 @@ const PACKS = [
 
 const SNAPS = ['2026-09-06_10-17-22_snapshot.json']
 
-/** action → canned reply; records every dispatched body. */
-function stubFetch(routes: Record<string, Canned>): {
+/** action → canned reply; records every dispatched body. The stub is
+ *  the ESTATE LANE REMOTE (R4): the panel rides prop threading, never
+ *  global fetch — the fake answers postManage's lane contract. */
+function stubLaneRemote(routes: Record<string, Canned>): {
   calls: Array<Record<string, unknown>>
+  remote: { lane: (_m: 'POST', _p: string, body: Record<string, unknown>) => Promise<unknown> }
 } {
   const calls: Array<Record<string, unknown>> = []
-  vi.stubGlobal('fetch', vi.fn(async (_url: unknown, init: unknown) => {
-    const body = JSON.parse(
-      (init as { body: string }).body as string,
-    ) as Record<string, unknown>
-    calls.push(body)
-    const reply = routes[body.action as string] ?? {
-      action: body.action,
-      ok: false,
-      detail: 'unstubbed action ' + String(body.action),
-    }
-    return { json: async () => reply }
-  }))
-  return { calls }
+  const remote = {
+    lane: async (_m: 'POST', _p: string, body: Record<string, unknown>): Promise<unknown> => {
+      calls.push(body)
+      return routes[body.action as string] ?? {
+        action: body.action,
+        ok: false,
+        detail: 'unstubbed action ' + String(body.action),
+      }
+    },
+  }
+  return { calls, remote }
 }
 
 function actionsOf(calls: Array<Record<string, unknown>>): string[] {
@@ -91,8 +92,8 @@ afterEach(() => {
 })
 
 test('mount shows the status section with the run-name chip', async () => {
-  stubFetch({ status: STATUS })
-  render(<ComfyManagerPanel />)
+  const { calls, remote } = stubLaneRemote({ status: STATUS })
+  render(<ComfyManagerPanel remote={remote} />)
 
   // the endpoint line proves the status reply rendered…
   await screen.findByText('http://127.0.0.1:18466')
@@ -105,9 +106,9 @@ test('mount shows the status section with the run-name chip', async () => {
 })
 
 test('status refresh never lands in the result pane', async () => {
-  const { calls } = stubFetch({ status: STATUS })
+  const { calls, remote } = stubLaneRemote({ status: STATUS })
   const user = userEvent.setup()
-  render(<ComfyManagerPanel />)
+  render(<ComfyManagerPanel remote={remote} />)
   await screen.findByText('http://127.0.0.1:18466')
 
   // one silent status on mount, no result pane anywhere.
@@ -125,7 +126,7 @@ test('status refresh never lands in the result pane', async () => {
 })
 
 test('installed packs render as rows and filter client-side', async () => {
-  stubFetch({
+  const { calls, remote } = stubLaneRemote({
     status: STATUS,
     list_extensions: {
       action: 'list_extensions',
@@ -135,7 +136,7 @@ test('installed packs render as rows and filter client-side', async () => {
     },
   })
   const user = userEvent.setup()
-  render(<ComfyManagerPanel />)
+  render(<ComfyManagerPanel remote={remote} />)
   await screen.findByText('http://127.0.0.1:18466')
 
   await user.click(screen.getByRole('button', { name: 'Installed packs' }))
@@ -161,7 +162,7 @@ test('installed packs render as rows and filter client-side', async () => {
 })
 
 test('snapshot list/save/restore dispatch with the right bodies', async () => {
-  const { calls } = stubFetch({
+  const { calls, remote } = stubLaneRemote({
     status: STATUS,
     snapshot_list: {
       action: 'snapshot_list',
@@ -183,7 +184,7 @@ test('snapshot list/save/restore dispatch with the right bodies', async () => {
     },
   })
   const user = userEvent.setup()
-  render(<ComfyManagerPanel />)
+  render(<ComfyManagerPanel remote={remote} />)
   await screen.findByText('http://127.0.0.1:18466')
 
   // list → rows with a per-row Restore.

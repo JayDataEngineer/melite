@@ -12,7 +12,6 @@
 // faces): the host that serves the GUI has one; a headless
 // composition skips and the claims' gallery simply cannot fetch.
 import type { Context } from '@deepseek-ai/cordis'
-import { callEstateLane } from '@melite/gateway-doors'
 import type {} from '@deepseek-ai/dsh-host-webserver'
 import Schema from '@deepseek-ai/schemastery'
 import { ASSET_ROUTE_PREFIX, RUN_ROUTE_PREFIX } from '@melite/viewer-base/wire'
@@ -34,34 +33,17 @@ export const Config: Schema<Config> = Schema.object({
 
 const JSON_HEADERS = { 'content-type': 'application/json', 'cache-control': 'no-store' }
 
-/** One estate lane read, JSON or bytes (testable in isolation). */
+/** One estate lane read, JSON or bytes (testable in isolation).
+ *  THE GATEWAY KILL (2026-09-10): the lanes are dead — every proxy
+ *  answers 502 LOUD until the viewer rides named remotes/DHS faces. */
 export async function proxyDoor(
   ctx: Context,
   upstreamPath: string,
   json: boolean,
   respond: (status: number, headers: Record<string, string>, body: string | Buffer) => void,
 ): Promise<void> {
-  try {
-    const out = await callEstateLane(ctx, 'GET', upstreamPath)
-    if (out === undefined) {
-      respond(404, JSON_HEADERS, JSON.stringify({ error: 'no_lane', path: upstreamPath }))
-      return
-    }
-    const bodyText = typeof out.body === 'string' ? out.body : JSON.stringify(out.body)
-    if (json) {
-      respond(out.status, JSON_HEADERS, bodyText)
-      return
-    }
-    const buffer = Buffer.from(bodyText)
-    respond(out.status, {
-      'content-type': out.contentType,
-      'cache-control': 'public, max-age=60',
-      'content-length': String(buffer.byteLength),
-    }, buffer)
-  } catch (error) {
-    const message = error instanceof Error ? error.message : String(error)
-    respond(502, JSON_HEADERS, JSON.stringify({ error: 'estate_lane_failed', message }))
-  }
+  void ctx; void json;
+  respond(502, JSON_HEADERS, JSON.stringify({ error: 'estate_killed', path: upstreamPath }));
 }
 
 export function apply(ctx: Context, config: Config): void {
