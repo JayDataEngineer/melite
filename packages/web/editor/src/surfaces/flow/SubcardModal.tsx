@@ -21,6 +21,7 @@ import {
 
 import { Button } from "@melite/ui/button"
 import { Badge } from "@melite/ui/badge"
+import { Input } from "@melite/ui/input"
 import {
  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription,
 } from "@melite/ui/dialog"
@@ -316,6 +317,8 @@ export function SubcardModal({
  return (
  <>
  {/* Hidden file input — clicked programmatically per image well. */}
+ {/* Stays native: file inputs are not text inputs (no kit
+     counterpart); the S4f input stroke covers the number cells. */}
  <input
  ref={fileRef}
  type="file"
@@ -641,7 +644,7 @@ export function SubcardModal({
  Step Range
  </span>
  <div className="flex items-center gap-2">
- <input
+ <Input
  type="number"
  aria-label="Start percent"
  value={Math.round((draftCn.start_percent ?? 0) * 100)}
@@ -656,7 +659,7 @@ export function SubcardModal({
  />
  <span className="text-[10px] text-muted-foreground">%</span>
  <span className="text-muted-foreground">–</span>
- <input
+ <Input
  type="number"
  aria-label="End percent"
  value={Math.round((draftCn.end_percent ?? 1) * 100)}
@@ -1008,7 +1011,7 @@ function StrengthSlider({ value, min, max, step, onChange }: {
  Strength
  </span>
  <div className="flex items-center gap-1.5">
- <input
+ <Input
  type="number"
  aria-label="Strength"
  value={value}
