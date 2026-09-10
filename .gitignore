@@ -96,8 +96,11 @@ plugins/web/editor/public/vendor/build/
 plugins/web/dsh/skins/**/preview/
 
 # === session scratch (kept on disk, out of git) ===
-agent-sessions/
-drafts/
+# Root-anchored: the bare `drafts/` rule accidentally ignored the
+# packages/estate/drafts PACKAGE (its src went unversioned through
+# the REBUILD commits — caught 2026-09-10).
+/agent-sessions/
+/drafts/
 
 # === Dead C++ era (post python-orchestrator migration) ===
 third_party/

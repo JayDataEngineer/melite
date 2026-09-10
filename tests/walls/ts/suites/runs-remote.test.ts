@@ -12,11 +12,19 @@ import assert from "node:assert/strict";
 import { Context } from "../../../../packages/estate/drafts/node_modules/@deepseek-ai/cordis/lib/index.js";
 import { remoteErrorOf } from "../../../../packages/estate/drafts/node_modules/@deepseek-ai/dsh-typert-protocol/lib/index.js";
 import timerPlugin from "../../../../packages/harness/estate-queue/node_modules/@deepseek-ai/cordis-plugin-timer/lib/index.js";
-import draftsPlugin, {
-  storageHub,
-  storageJsonBackend,
-  storageDomainFacility,
-} from "../../../../packages/estate/drafts/lib/index.js";
+// The storage stack composed AT THE COMPOSITION SITE, mirroring DSH's
+// own rig (session-projection-cache/tests/fixtures.spec.ts l.27-104):
+// pieces imported from the packages, rows assembled inline. No
+// re-exporting wrapper package (the estate never re-packages DSH
+// plugin pieces as its own surface).
+import draftsPlugin from "../../../../packages/estate/drafts/lib/index.js";
+import Storage from "../../../../packages/estate/drafts/node_modules/@deepseek-ai/dsh-storage/lib/index.js";
+import {
+  apply as jsonApply, Config as JsonConfig, inject as jsonInject, name as jsonName,
+} from "../../../../packages/estate/drafts/node_modules/@deepseek-ai/dsh-storage-json/lib/index.js";
+import {
+  apply as domainApply, Config as DomainConfig, inject as domainInject, name as domainName,
+} from "../../../../packages/estate/drafts/node_modules/@deepseek-ai/dsh-storage-domain/lib/index.js";
 import queuePlugin, {
   cardRegistryProvider,
   runsRegistryPlugin,
@@ -55,9 +63,15 @@ async function boot(withDraft = true): Promise<Booted> {
   await ctx.plugin(timerPlugin as never);
   const fiber = ctx.plugin(queuePlugin as never, { repoRoot: root });
   await fiber;
-  await ctx.plugin(storageHub as never);
-  await ctx.plugin(storageJsonBackend as never, { root: join(stateRoot, "storage") });
-  await ctx.plugin(storageDomainFacility as never, { backend: "json" });
+  await ctx.plugin(Storage as never);
+  await ctx.plugin(
+    { name: jsonName, inject: jsonInject, apply: jsonApply, Config: JsonConfig } as never,
+    { root: join(stateRoot, "storage") },
+  );
+  await ctx.plugin(
+    { name: domainName, inject: domainInject, apply: domainApply, Config: DomainConfig } as never,
+    { backend: "json" },
+  );
   await ctx.plugin(draftsPlugin as never);
   await ctx.plugin(cardRegistryProvider as never);
   await ctx.plugin(runsRegistryPlugin as never);

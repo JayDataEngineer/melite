@@ -1,0 +1,11 @@
+import type { Context, Plugin } from "@deepseek-ai/cordis";
+export { BenchRemoteService, DraftsRemoteService } from "./remote.js";
+export { resolveStorageRoot, openDraftsDomain, } from "./store.js";
+export { DRAFT_ID_RE, draftIdOk } from "./spec.js";
+export { storageDomainFacility, storageHub, storageJsonBackend, } from "./storage.js";
+export type { BenchEnsureRow, BenchGetRow, DraftListResult, DraftListRow, } from "./remote.js";
+export declare const name = "estate-drafts";
+export declare function apply(ctx: Context): void;
+declare const plugin: Plugin;
+export default plugin;
+//# sourceMappingURL=index.d.ts.map

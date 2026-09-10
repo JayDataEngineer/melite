@@ -18,11 +18,18 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { Context } from "../../../../packages/estate/drafts/node_modules/@deepseek-ai/cordis/lib/index.js";
 import { remoteErrorOf } from "../../../../packages/estate/drafts/node_modules/@deepseek-ai/dsh-typert-protocol/lib/index.js";
-import draftsPlugin, {
-  storageDomainFacility,
-  storageHub,
-  storageJsonBackend,
-} from "../../../../packages/estate/drafts/lib/index.js";
+// Storage composed AT THE COMPOSITION SITE — DSH's own rig shape
+// (session-projection-cache/tests/fixtures.spec.ts l.27-104): the
+// packages' pieces imported and the rows assembled inline. The
+// estate re-packages nothing.
+import draftsPlugin from "../../../../packages/estate/drafts/lib/index.js";
+import Storage from "../../../../packages/estate/drafts/node_modules/@deepseek-ai/dsh-storage/lib/index.js";
+import {
+  apply as jsonApply, Config as JsonConfig, inject as jsonInject, name as jsonName,
+} from "../../../../packages/estate/drafts/node_modules/@deepseek-ai/dsh-storage-json/lib/index.js";
+import {
+  apply as domainApply, Config as DomainConfig, inject as domainInject, name as domainName,
+} from "../../../../packages/estate/drafts/node_modules/@deepseek-ai/dsh-storage-domain/lib/index.js";
 
 const sig = new AbortController().signal;
 
@@ -57,11 +64,15 @@ async function boot(): Promise<Context> {
   process.env["MELITE_STORAGE_ROOT"] = "";
 
   const ctx = new Context();
-  await ctx.plugin(storageHub as never);
-  await ctx.plugin(storageJsonBackend as never, {
-    root: join(stateRoot, "storage"),
-  });
-  await ctx.plugin(storageDomainFacility as never, { backend: "json" });
+  await ctx.plugin(Storage as never);
+  await ctx.plugin(
+    { name: jsonName, inject: jsonInject, apply: jsonApply, Config: JsonConfig } as never,
+    { root: join(stateRoot, "storage") },
+  );
+  await ctx.plugin(
+    { name: domainName, inject: domainInject, apply: domainApply, Config: DomainConfig } as never,
+    { backend: "json" },
+  );
   await ctx.plugin(draftsPlugin as never);
   return ctx as unknown as Context;
 }
