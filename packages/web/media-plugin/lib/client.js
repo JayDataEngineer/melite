@@ -157,7 +157,7 @@ window.__ModuleLoader__.load({
 		}
 		//#endregion
 		//#region \0dsh-css:media-plugin/src/client/overlay.module.css.mjs
-		const css = "._3EyOHW_lightbox{width:min(1200px,96vw);max-width:96vw}";
+		const css = "._3EyOHW_lightbox{width:min(1200px,96vw);max-width:96vw}._3EyOHW_wand{z-index:3;background:var(--dsw-alias-fill-subtle,#020617d1);color:var(--dsw-alias-state-warn-primary,#fde68a);letter-spacing:.4px;cursor:pointer;opacity:1;border-radius:6px;align-items:center;gap:4px;padding:4px 6px;font-family:inherit;font-size:9px;font-weight:700;display:flex;position:absolute;top:6px;right:6px}._3EyOHW_wandDim{opacity:.35}";
 		const tagId = "@infer-media/dsh-media/overlay.module.css";
 		if (typeof document !== "undefined" && document.querySelector("style[data-plugin-css=" + JSON.stringify(tagId) + "]") === null) {
 			const tag = document.createElement("style");
@@ -166,7 +166,11 @@ window.__ModuleLoader__.load({
 			tag.textContent = css;
 			document.head.appendChild(tag);
 		}
-		var overlay_module_css_default = { "lightbox": "_3EyOHW_lightbox" };
+		var overlay_module_css_default = {
+			"lightbox": "_3EyOHW_lightbox",
+			"wand": "_3EyOHW_wand",
+			"wandDim": "_3EyOHW_wandDim"
+		};
 		//#endregion
 		//#region src/client/ui.tokens.ts
 		/**
@@ -182,13 +186,11 @@ window.__ModuleLoader__.load({
 		const bgLayer2 = "var(--dsw-alias-bg-layer-2, #0f172a)";
 		const bgOverlay1 = "var(--dsw-alias-bg-overlay, rgba(127,29,29,0.35))";
 		const borderL2 = "var(--dsw-alias-border-l2, rgba(148,163,184,0.25))";
-		const fillSubtle1 = "var(--dsw-alias-fill-subtle, rgba(15,23,42,0.9))";
 		const labelPrimary1 = "var(--dsw-alias-label-primary, rgb(226,232,240))";
 		const labelPrimary2 = "var(--dsw-alias-label-primary, rgba(226,232,240,0.85))";
 		const labelSecondary1 = "var(--dsw-alias-label-secondary, rgb(203,213,225))";
 		const labelSecondary2 = "var(--dsw-alias-label-secondary, rgba(148,163,184,0.9))";
 		const stateBusinessPrimary = "var(--dsw-alias-state-business-primary, rgb(147,197,253))";
-		const stateBusinessPrimaryBg1 = "var(--dsw-alias-state-business-primary-bg, rgba(59,130,246,0.18))";
 		const stateBusinessPrimaryBg2 = "var(--dsw-alias-state-business-primary-bg, rgba(59,130,246,0.28))";
 		const stateWarnPrimary1 = "var(--dsw-alias-state-warn-primary, rgba(250,204,21,0.9))";
 		const stateWarnPrimary2 = "var(--dsw-alias-state-warn-primary, rgba(250,204,21,0.92))";
@@ -224,38 +226,21 @@ window.__ModuleLoader__.load({
 			});
 		}
 		function SearchInput({ value, onChange, placeholder }) {
-			return /* @__PURE__ */ (0, react_jsx_runtime.jsx)("input", {
+			return /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Input, {
 				value,
 				onChange: (e) => {
 					onChange(e.target.value);
 				},
 				placeholder,
-				style: {
-					background: fillSubtle1,
-					border: "1px solid " + borderL2,
-					color: labelPrimary1,
-					borderRadius: 8,
-					padding: "5px 10px",
-					fontSize: 12,
-					width: 170,
-					fontFamily: "inherit"
-				}
+				style: { width: 170 }
 			});
 		}
 		function RefreshButton({ loading, onClick }) {
-			return /* @__PURE__ */ (0, react_jsx_runtime.jsx)("button", {
+			return /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+				variant: "outline",
+				size: "sm",
 				onClick,
 				disabled: loading,
-				style: {
-					border: "1px solid " + borderL2,
-					background: "transparent",
-					color: labelSecondary1,
-					borderRadius: 8,
-					padding: "5px 10px",
-					fontSize: 12,
-					cursor: loading ? "default" : "pointer",
-					fontFamily: "inherit"
-				},
 				children: loading ? "loading…" : "refresh"
 			});
 		}
@@ -599,10 +584,11 @@ window.__ModuleLoader__.load({
 			});
 		}
 		/** Image tiles sit on the base surface (no letterbox); everything else on
-		*  the gradient stage. */
+		*  the gradient stage — the shared token-backed gradient (ui.tsx), never
+		*  a restated literal (the single-site token law). */
 		function tileBgFor(kind) {
 			if (kind === "image") return bgBase2;
-			return "linear-gradient(160deg, #1e293b 0%, #0f172a 100%)";
+			return gradientStage;
 		}
 		/**
 		* 3D artifact view — resolves the file's viewer through the sidebar
@@ -828,20 +814,10 @@ window.__ModuleLoader__.load({
 				search
 			]);
 			const chip = (c, label) => {
-				const active = cat === c;
-				return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("button", {
+				return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(_deepseek_ai_dsh_client_ui_primitives.Pill, {
+					active: cat === c,
 					onClick: () => {
 						setCat(c);
-					},
-					style: {
-						border: "1px solid " + (active ? stateBusinessPrimary : borderL2),
-						background: active ? stateBusinessPrimaryBg1 : "transparent",
-						color: active ? stateBusinessPrimary : labelSecondary1,
-						borderRadius: 999,
-						padding: "3px 10px",
-						fontSize: 12,
-						cursor: "pointer",
-						fontFamily: "inherit"
 					},
 					children: [
 						label,
@@ -853,7 +829,6 @@ window.__ModuleLoader__.load({
 			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(PanelShell, {
 				dataAttr: "infer-media-panel",
 				children: [
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("style", { children: ".im-tile{position:relative}.im-wand{position:absolute;right:6px;top:6px;z-index:3;opacity:0;transition:opacity .12s;display:flex;align-items:center;gap:4px;border:0;border-radius:6px;padding:4px 6px;background:var(--dsw-alias-fill-subtle,rgba(2,6,23,0.82));color:var(--dsw-alias-state-warn-primary,#fde68a);font-size:9px;font-weight:700;letter-spacing:.4px;cursor:pointer;font-family:inherit}.im-tile:hover .im-wand{opacity:1}.im-wand:hover{background:var(--dsw-alias-state-warn-primary);color:var(--dsw-alias-bg-base,#422006)}" }),
 					/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
 						style: {
 							display: "flex",
@@ -882,24 +857,12 @@ window.__ModuleLoader__.load({
 							/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
 								style: {
 									display: "flex",
-									gap: 4,
-									padding: 2,
-									border: "1px solid " + borderL2,
-									borderRadius: 999
+									gap: 4
 								},
-								children: ["flows", "artifacts"].map((t) => /* @__PURE__ */ (0, react_jsx_runtime.jsx)("button", {
+								children: ["flows", "artifacts"].map((t) => /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Pill, {
+									active: tab === t,
 									onClick: () => {
 										setTab(t);
-									},
-									style: {
-										border: 0,
-										borderRadius: 999,
-										padding: "3px 10px",
-										fontSize: 12,
-										cursor: "pointer",
-										fontFamily: "inherit",
-										background: tab === t ? stateBusinessPrimaryBg1 : "transparent",
-										color: tab === t ? stateBusinessPrimary : labelSecondary1
 									},
 									children: t === "flows" ? "Flows " + String(drafts.length) : "Artifacts " + String(items.length)
 								}, t))
@@ -1007,7 +970,6 @@ window.__ModuleLoader__.load({
 							gap: 10
 						},
 						children: shown.map((it) => /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("button", {
-							className: "im-tile",
 							onClick: () => {
 								setPreview(it);
 							},
@@ -1057,23 +1019,25 @@ window.__ModuleLoader__.load({
 									})
 								}) : null,
 								/* @__PURE__ */ (0, react_jsx_runtime.jsx)(TileBadge, { item: it }),
-								it.runId !== "" ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-									role: "button",
-									tabIndex: 0,
-									className: "im-wand",
-									title: it.draftId !== "" ? "Open as cards — this run’s card, setup and ready" : "No action card linked to this run",
-									style: { opacity: it.draftId !== "" ? 1 : .35 },
-									onClick: (e) => {
-										e.stopPropagation();
-										openCards(it.runId, it.draftId);
-									},
-									onKeyDown: (e) => {
-										if (e.key === "Enter") {
+								it.runId !== "" ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Tooltip, {
+									label: it.draftId !== "" ? "Open as cards — this run’s card, setup and ready" : "No action card linked to this run",
+									children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+										role: "button",
+										tabIndex: 0,
+										className: it.draftId !== "" ? overlay_module_css_default.wand : overlay_module_css_default.wand + " " + overlay_module_css_default.wandDim,
+										"aria-label": it.draftId !== "" ? "Open as cards — this run’s card" : "No action card linked to this run",
+										onClick: (e) => {
 											e.stopPropagation();
 											openCards(it.runId, it.draftId);
-										}
-									},
-									children: "✦ CARDS"
+										},
+										onKeyDown: (e) => {
+											if (e.key === "Enter") {
+												e.stopPropagation();
+												openCards(it.runId, it.draftId);
+											}
+										},
+										children: "✦ CARDS"
+									})
 								}) : null,
 								it.poster === "" ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
 									style: { color: "var(--dsw-alias-text-tertiary, rgba(148,163,184,0.55))" },
