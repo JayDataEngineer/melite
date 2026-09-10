@@ -743,6 +743,10 @@ declare module "@deepseek-ai/cordis" {
  *  the app; this is what the estate composition mounts). */
 export const cardRegistryProvider = {
   name: "estate-card-registry",
+  // NO comfyui inject: the compose rim property-reads ctx.comfyui on
+  // its OWN throwaway EngineContext (which mounts ComfyUIService
+  // itself at the rim head) — never on the host fiber, so no read
+  // contract is owed to the composition.
   async apply(ctx: Context): Promise<void> {
     const svc = new CardRegistryService(ctx);
     await svc.prime();

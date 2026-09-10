@@ -1,13 +1,10 @@
 import { createUserMessage } from "@deepseek-ai/dsh-llm";
 //#region src/estate.ts
 /**
-* estate.ts — the tools' ONE transport: the ctx seats, in-process.
-*
-* NO HTTP, NO URL, NO PORT (the remotes migration, R2b). The KV/runs
-* lanes ride the wire package's Typert seats (draftsRemote/
-* benchRemote/runsRemote — plain method calls on ctx). The lane
-* fallback died with the gateway (2026-09-10): any lane without a
-* seat throws LOUD — no silent absorb, QUEUE LANE LAW.
+* DYING SHIM (HTTP-era refusal carrier). The seats never throw it;
+* only lanes still awaiting their remotes keep instanceof arms for
+* it, and it is deleted with the last of those. Bench/drafts lanes
+* are already migrated (RemoteError codes).
 */
 var RayGatewayError = class extends Error {
 	status;
@@ -23,7 +20,18 @@ var RayGatewayError = class extends Error {
 };
 /** Route one KV/runs lane to its seat; undefined = no seat / no match. */
 async function trySeats(ctx, method, path, body, signal) {
-	const seats = ctx;
+	const probe = ctx;
+	const seats = {
+		get draftsRemote() {
+			return probe.get("draftsRemote");
+		},
+		get benchRemote() {
+			return probe.get("benchRemote");
+		},
+		get runs() {
+			return probe.get("runs");
+		}
+	};
 	signal.throwIfAborted();
 	if (method === "GET" && path === "/v1/flows/drafts") {
 		if (seats.draftsRemote === void 0) return void 0;
@@ -44,10 +52,52 @@ async function trySeats(ctx, method, path, body, signal) {
 		if (seats.benchRemote === void 0) return void 0;
 		return seats.benchRemote.get(decodeURIComponent(m[1]), signal);
 	}
-	if (method === "GET" && path.startsWith("/v1/flows/runs")) {
-		if (seats.runsRemote === void 0) return void 0;
-		const lim = /(?:^|[?&])limit=(\d+)/.exec(path);
-		return seats.runsRemote.list(lim !== null ? Number(lim[1]) : 200, signal);
+	if (method === "POST") {
+		const arm = /^\/v1\/bench\/([^/?]+)\/(patch|add_stage|remove_stage|rewire|undo)$/.exec(path);
+		if (arm !== null) {
+			if (seats.benchRemote === void 0) return void 0;
+			if (body === void 0 || typeof body !== "object" || body === null) throw new Error(`bench ${arm[2]} needs a JSON body`);
+			const session = decodeURIComponent(arm[1]);
+			const doc = body;
+			switch (arm[2]) {
+				case "patch": return seats.benchRemote.patch(session, doc, signal);
+				case "add_stage": return seats.benchRemote.addStage(session, doc, signal);
+				case "remove_stage": return seats.benchRemote.removeStage(session, doc, signal);
+				case "rewire": return seats.benchRemote.rewire(session, doc, signal);
+				case "undo": return seats.benchRemote.undo(session, doc, signal);
+			}
+		}
+	}
+	if (method === "POST" && path === "/v1/flows/validate") {
+		if (seats.runs === void 0) return void 0;
+		return seats.runs.validate(body, signal);
+	}
+	if (method === "POST" && path === "/v1/flows/start") {
+		if (seats.runs === void 0) return void 0;
+		return seats.runs.start(body, signal);
+	}
+	m = /^\/v1\/flows\/status\/([^/?]+)(?:\?([^/]*))?$/.exec(path);
+	if (method === "GET" && m !== null) {
+		if (seats.runs === void 0) return void 0;
+		const first = m[2] === void 0 ? null : m[2].split("&")[0] ?? null;
+		const flagValue = first === null ? "" : first.split("=")[1] ?? "";
+		const includeLog = [
+			"1",
+			"true",
+			"yes"
+		].includes(decodeURIComponent(flagValue).toLowerCase());
+		return seats.runs.status(decodeURIComponent(m[1]), signal, includeLog);
+	}
+	m = /^\/v1\/flows\/stop\/([^/?]+)$/.exec(path);
+	if (method === "POST" && m !== null) {
+		if (seats.runs === void 0) return void 0;
+		return seats.runs.stop(decodeURIComponent(m[1]), signal);
+	}
+	m = /^\/v1\/flows\/runs(?:\/|$|\?)/.exec(path);
+	if (method === "GET" && m !== null && path !== "/v1/flows/runs/") {
+		if (seats.runs === void 0) return void 0;
+		const lim = /(?:^|[?&])limit=([^&]*)/.exec(path);
+		return seats.runs.list(lim !== null ? decodeURIComponent(lim[1]) : "200", signal);
 	}
 }
 /** Build the tools' request: seats only, in-process. A lane with no

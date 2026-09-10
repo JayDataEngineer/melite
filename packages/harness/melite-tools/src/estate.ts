@@ -7,6 +7,11 @@
  * fallback died with the gateway (2026-09-10): any lane without a
  * seat throws LOUD — no silent absorb, QUEUE LANE LAW.
  *
+ * Seat reads are OPTIONAL-dependency probes — ctx.get(name), the
+ * tutorial's documented pattern (cordis-tutorial/03-services.md:
+ * "skip inject and probe at the use site"; property reads demand
+ * inject and the tools plane must activate in EVERY composition).
+ *
  * Remote failures arrive as the protocol's RemoteError (code +
  * details) — discriminate with remoteErrorOf, never instanceof.
  */
@@ -64,9 +69,11 @@ interface Seats {
     undo(session: string, doc: Record<string, unknown>, signal?: AbortSignal): Promise<unknown>
   }
 
-  /** The live-run registry seat (REBUILD-6): the runs plane's
-   *  business arms. The start/status/stop lanes route here — the
-   *  runs/* RemoteError codes ride the protocol's one class. */
+  /** The live-run REGISTRY seat (REBUILD-6) — the seat is named
+   *  'runs' (RunsRegistryService: the business arms validate/start/
+   *  status/stop/list as plain methods). NOT runsRemote (the Typert
+   *  transport service whose wire methods are remoteExport*) — the
+   *  lanes call the registry in-process. */
   runs?: {
     start(doc: unknown, signal: AbortSignal): Promise<unknown>
     status(runId: string, signal: AbortSignal, includeLog?: boolean): Promise<unknown>
@@ -84,7 +91,15 @@ async function trySeats(
   body: unknown,
   signal: AbortSignal,
 ): Promise<unknown | undefined> {
-  const seats = ctx as Seats
+  // OPTIONAL-dependency probes: ctx.get returns undefined when no
+  // provider is loaded (the tutorial's pattern) — a seatless lane
+  // then falls to the LOUD no-remote throw below.
+  const probe = ctx as { get(name: string): unknown }
+  const seats: Seats = {
+    get draftsRemote() { return probe.get('draftsRemote') as Seats['draftsRemote'] },
+    get benchRemote() { return probe.get('benchRemote') as Seats['benchRemote'] },
+    get runs() { return probe.get('runs') as Seats['runs'] },
+  }
   signal.throwIfAborted()
 
   if (method === 'GET' && path === '/v1/flows/drafts') {

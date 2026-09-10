@@ -45,11 +45,14 @@ export * from "./runsValidate.ts";
 export * from "./cardsRegistry.ts";
 
 /** The runs registry row: mounts the live-run service (REBUILD-6).
- *  Inject gates on the queue + drafts seats; the estate-runs
- *  adapters (Typert) ride after this row. */
+ *  Inject gates on the queue + drafts + card-registry seats (the
+ *  fiber's read contract — loader-mounted fibers enforce the
+ *  tutorial's inject law on property reads; the service class's own
+ *  static inject lists the same three); the estate-runs adapters
+ *  (Typert) ride after this row. */
 export const runsRegistryPlugin = {
   name: "estate-runs-registry",
-  inject: ["queue", "draftsRemote"] as const,
+  inject: ["queue", "draftsRemote", "cardRegistry"] as const,
   apply(ctx: Context): void {
     new RunsRegistryService(ctx);
   },

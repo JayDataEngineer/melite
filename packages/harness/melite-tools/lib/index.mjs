@@ -1,4 +1,4 @@
-import { a as RayGatewayError, i as routeName, n as matchHarnessRoute, o as makeEstateRequest, r as resolveHarnessRoutes, t as harnessEnhance } from "./llm-complete-BfD-R0jQ.mjs";
+import { a as RayGatewayError, i as routeName, n as matchHarnessRoute, o as makeEstateRequest, r as resolveHarnessRoutes, t as harnessEnhance } from "./llm-complete-CeSWM5YP.mjs";
 import { buildMusicTool } from "@melite/audio-music/tool";
 import { buildTtsTool } from "@melite/audio-tts/tool";
 import { buildVoiceLockTool } from "@melite/audio-voice-lock/tool";
@@ -7,6 +7,7 @@ import { buildMotionTool } from "@melite/motion-motion/tool";
 import { buildCardTool } from "@melite/3d-clothing-placement/tool";
 import { buildH3TimelineTool } from "@melite/video-h3-timeline/tool";
 import { defineTool } from "@deepseek-ai/dsh-tools";
+import { remoteErrorOf } from "@deepseek-ai/dsh-typert-protocol";
 //#region src/json-clean.ts
 /**
 * Deep JSON-normalization for tool results.
@@ -173,44 +174,40 @@ function benchKeyOf(a) {
 	const k = a["bench"];
 	return typeof k === "string" && /^[A-Za-z0-9_-]{1,64}$/.test(k) ? k : DEFAULT_BENCH;
 }
-/** Refusal formatting shared by every verb (RayGatewayError body
-*  first — the door's JSON voice — then the raw text). */
+/** Refusal formatting shared by every verb (the remote's RemoteError
+*  first — code + message, the CAS detail rides details.current_rev —
+*  then any Error's message; lanes still awaiting their remote refuse
+*  loudly as plain errors). */
 function refusalOf(e, verb, bench) {
-	let error = "";
-	let errorKind = "gateway";
-	if (e instanceof RayGatewayError) {
-		error = e.body;
-		errorKind = "http-" + String(e.status);
-		try {
-			const parsed = JSON.parse(e.body);
-			if (typeof parsed.error === "string" && parsed.error !== "") error = parsed.error;
-			if (typeof parsed.current_rev === "number") return jsonClean({
-				verb,
-				bench,
-				error,
-				error_kind: errorKind,
-				ok: false,
-				current_rev: parsed.current_rev
-			});
-		} catch {}
-	} else if (e instanceof Error) error = e.message;
-	else error = String(e);
+	const refusal = remoteErrorOf(e);
+	if (refusal !== void 0) {
+		const details = refusal.details;
+		const currentRev = details !== void 0 && typeof details["current_rev"] === "number" ? details["current_rev"] : void 0;
+		return jsonClean({
+			verb,
+			bench,
+			error: refusal.message,
+			error_kind: refusal.code,
+			ok: false,
+			...currentRev !== void 0 ? { current_rev: currentRev } : {}
+		});
+	}
 	return jsonClean({
 		verb,
 		bench,
-		error,
-		error_kind: errorKind,
+		error: e instanceof Error ? e.message : String(e),
+		error_kind: "remote",
 		ok: false
 	});
 }
-/** GET the bench; 404 → ensure (birth) → GET again. Reads are the
-*  freshness mechanism — always a door round trip. */
+/** GET the bench; not-found → ensure (birth) → GET again. Reads are
+*  the freshness mechanism — always a remote round trip. */
 async function readBench(request, bench, signal) {
 	const get = () => request("GET", `/v1/bench/${bench}`, void 0, signal, 15e3);
 	try {
 		return await get();
 	} catch (e) {
-		if (e instanceof RayGatewayError && e.status === 404) {
+		if (remoteErrorOf(e)?.code === "bench/not-found") {
 			await request("POST", "/v1/bench/ensure", { session: bench }, signal, 15e3);
 			return await get();
 		}
@@ -536,7 +533,6 @@ function foldConnects(flowId, stages, connects) {
 const TIMEOUT_MS$2 = 3e4;
 const DRAFT_TIMEOUT_MS = 15e3;
 const VALIDATE_TIMEOUT_MS = 15e3;
-const CATALOG_TIMEOUT_MS = 15e3;
 /** POST /v1/flows/start — the verbatim-error pattern (the agent
 *  reads the gateway's refusal text, not a transport code). */
 async function startRun(request, body, signal) {
@@ -544,15 +540,8 @@ async function startRun(request, body, signal) {
 	try {
 		res = await request("POST", "/v1/flows/start", body, signal, TIMEOUT_MS$2);
 	} catch (e) {
-		if (e instanceof RayGatewayError) {
-			let named = "";
-			try {
-				named = String(JSON.parse(e.body).error ?? "");
-			} catch {
-				named = "";
-			}
-			return { error: named || e.body || "queue refused the start" };
-		}
+		const re = remoteErrorOf(e);
+		if (re !== null && re !== void 0) return { error: re.message || "queue refused the start" };
 		throw e;
 	}
 	if (res && typeof res.error === "string") return { error: res.error };
@@ -568,7 +557,19 @@ async function startRun(request, body, signal) {
 *  their composition in the run registry (CARD BIRTH LAW holds —
 *  the start still rides a doc-backed draft_id, now the bench's). */
 async function loadBench(request, body, signal) {
-	const b = await request("POST", "/v1/bench/ensure", body, signal, DRAFT_TIMEOUT_MS);
+	const session = typeof body["session"] === "string" ? body["session"] : "default";
+	let expectRev;
+	try {
+		const cur = await request("GET", `/v1/bench/${encodeURIComponent(session)}`, void 0, signal, DRAFT_TIMEOUT_MS);
+		if (cur !== null && typeof cur === "object" && typeof cur["rev"] === "number") expectRev = cur["rev"];
+	} catch (e) {
+		const re = remoteErrorOf(e);
+		if (re === null || re === void 0 || re.code !== "bench/not-found") throw e;
+	}
+	const b = await request("POST", "/v1/bench/ensure", {
+		...body,
+		...expectRev !== void 0 ? { expect_rev: expectRev } : {}
+	}, signal, DRAFT_TIMEOUT_MS);
 	if (b && typeof b.error === "string" && b.error) throw new Error(b.error);
 	const id = b && b.draft_id;
 	if (typeof id !== "string" || id === "") throw new Error("bench ensure returned no draft_id");
@@ -584,11 +585,19 @@ async function runBench(request, a, signal) {
 	try {
 		b = await request("GET", `/v1/bench/${DEFAULT_BENCH}`, void 0, signal, 15e3);
 	} catch (e) {
-		if (e instanceof RayGatewayError && e.status === 404) return { error: "the bench is empty — construct stages first (melite_construct)" };
+		if (remoteErrorOf(e)?.code === "bench/not-found") return {
+			mode: "bench",
+			target: DEFAULT_BENCH,
+			error: "the bench is empty — construct stages first (melite_construct)"
+		};
 		throw e;
 	}
 	const stages = projectStages(b["stages"]);
-	if (stages.length === 0) return { error: "the bench is empty — construct stages first (melite_construct)" };
+	if (stages.length === 0) return {
+		mode: "bench",
+		target: DEFAULT_BENCH,
+		error: "the bench is empty — construct stages first (melite_construct)"
+	};
 	const draftId = typeof b["draft_id"] === "string" ? b["draft_id"] : `bench-${DEFAULT_BENCH}`;
 	const started = await startRun(request, {
 		flow_inline: { stages },
@@ -607,31 +616,14 @@ async function runBench(request, a, signal) {
 async function runSingle(request, a, signal) {
 	const card = a.card ?? "";
 	const model = a.model ?? "";
-	if (!model) return { error: "model is required (name the family explicitly — QUEUE LANE LAW)" };
-	const tools = await request("GET", "/v1/card-tools", void 0, signal, CATALOG_TIMEOUT_MS);
-	const manifest = (Array.isArray(tools) ? tools : []).find((t) => t.model === model);
-	if (manifest === void 0) return { error: `model "${model}" has no card tool. Live card tools: ${(Array.isArray(tools) ? tools : []).map((t) => String(t.model)).filter((s) => s !== "").join(", ")}` };
-	try {
-		const v = await request("GET", "/v1/card-tools/validate?model=" + encodeURIComponent(model), void 0, signal, 1e4);
-		if (v.runnable !== true) return { error: v.error || `model "${model}" cannot run` };
-	} catch (e) {
-		if (e instanceof Error && /cannot run/.test(e.message)) return { error: e.message };
-	}
-	const entry = ((await request("GET", "/v1/model-catalog", void 0, signal, CATALOG_TIMEOUT_MS)).models ?? {})[model];
-	const defaults = entry !== void 0 && entry.defaults !== null && typeof entry.defaults === "object" && !Array.isArray(entry.defaults) ? entry.defaults : {};
-	const cardDefaults = {};
-	{
-		const props = (manifest.params_schema !== null && typeof manifest.params_schema === "object" && manifest.params_schema.properties) ?? {};
-		for (const [k, spec] of Object.entries(props)) if (spec.default !== void 0) cardDefaults[k] = spec.default;
-	}
-	const bag = a.params ?? {};
-	const params = {
-		...cardDefaults,
-		...defaults,
-		...bag
+	if (!model) return {
+		mode: "card",
+		target: card,
+		error: "model is required (name the family explicitly — QUEUE LANE LAW)"
 	};
-	if (typeof a.prompt === "string" && a.prompt !== "") params["prompt"] = a.prompt;
-	const intentSrc = typeof params["prompt"] === "string" ? params["prompt"] : card;
+	const bag = { ...a.params ?? {} };
+	if (typeof a.prompt === "string" && a.prompt !== "") bag["prompt"] = a.prompt;
+	const intentSrc = typeof bag["prompt"] === "string" ? bag["prompt"] : card;
 	const intent = intentSrc.length > 80 ? intentSrc.slice(0, 77) + "…" : intentSrc;
 	let draftId;
 	try {
@@ -642,14 +634,18 @@ async function runSingle(request, a, signal) {
 				id: "s_0",
 				...card !== "" ? { card } : {},
 				engine: "comfyui",
-				params
+				params: bag
 			}]
 		}, signal);
 	} catch (e) {
-		return { error: e instanceof Error ? e.message : String(e) };
+		return {
+			mode: "card",
+			target: card !== "" ? card : model,
+			error: e instanceof Error ? e.message : String(e)
+		};
 	}
 	const started = await startRun(request, {
-		...params,
+		...bag,
 		model,
 		test: a.test === true,
 		draft_id: draftId
@@ -670,7 +666,11 @@ async function runSingle(request, a, signal) {
 /** TEMPLATE (the old flow_run path): drafts {flow,...} + start. */
 async function runTemplate(request, a, signal) {
 	const flow = a.flow ?? "";
-	if (!flow) return { error: "flow is required (a discovered flow name)" };
+	if (!flow) return {
+		mode: "flow",
+		target: "",
+		error: "flow is required (a discovered flow name)"
+	};
 	const overrides = a.params ?? {};
 	let draftId;
 	try {
@@ -685,19 +685,6 @@ async function runTemplate(request, a, signal) {
 			}]
 		}, signal);
 	} catch (e) {
-		if (e instanceof RayGatewayError) {
-			let named = "";
-			try {
-				named = String(JSON.parse(e.body).error ?? "");
-			} catch {
-				named = "";
-			}
-			return {
-				mode: "flow",
-				target: flow,
-				error: named || e.body || "card compose refused the template"
-			};
-		}
 		return {
 			mode: "flow",
 			target: flow,
@@ -726,14 +713,22 @@ async function runTemplate(request, a, signal) {
 *  validate (no GPU on a bad wire), then draft + {flow_inline}. */
 async function runAdHoc(request, a, signal) {
 	const rawStages = a.stages;
-	if (!Array.isArray(rawStages) || rawStages.length === 0) return { error: "stages must be a non-empty array of {id, engine, params?, outputs?} rows" };
+	if (!Array.isArray(rawStages) || rawStages.length === 0) return {
+		mode: "adhoc",
+		target: "adhoc",
+		error: "stages must be a non-empty array of {id, engine, params?, outputs?} rows"
+	};
 	const flowId = typeof a.id === "string" && a.id !== "" ? a.id : "adhoc";
 	const connects = Array.isArray(a.connects) ? a.connects : [];
 	let folded;
 	try {
 		folded = foldConnects(flowId, rawStages, connects);
 	} catch (e) {
-		return { error: e instanceof Error ? e.message : String(e) };
+		return {
+			mode: "adhoc",
+			target: flowId,
+			error: e instanceof Error ? e.message : String(e)
+		};
 	}
 	const flowBody = {
 		id: flowId,
@@ -751,19 +746,12 @@ async function runAdHoc(request, a, signal) {
 	try {
 		await request("POST", "/v1/flows/validate", flowBody, signal, VALIDATE_TIMEOUT_MS);
 	} catch (e) {
-		if (e instanceof RayGatewayError) {
-			let named = "";
-			try {
-				named = String(JSON.parse(e.body).error ?? "");
-			} catch {
-				named = "";
-			}
-			return {
-				mode: "adhoc",
-				target: flowId,
-				error: named || e.body || "flow does not compile"
-			};
-		}
+		const re = remoteErrorOf(e);
+		if (re !== null && re !== void 0) return {
+			mode: "adhoc",
+			target: flowId,
+			error: re.message || "flow does not compile"
+		};
 		throw e;
 	}
 	let draftId;
@@ -959,17 +947,12 @@ function meliteFlow(request) {
 					test
 				}, exec.signal));
 			} catch (e) {
-				if (e instanceof RayGatewayError) {
-					let named = "";
-					try {
-						named = String(JSON.parse(e.body).error ?? "");
-					} catch {
-						named = "";
-					}
+				const re = remoteErrorOf(e);
+				if (re !== null && re !== void 0) {
 					const mode = hasFlow ? "flow" : hasCard ? "card" : "adhoc";
 					const target = hasFlow ? String(a.flow) : hasCard ? String(a.card) : "pipeline";
 					return jsonClean({
-						error: named || e.body || "gateway refused",
+						error: re.message || "remote refused",
 						mode,
 						target
 					});

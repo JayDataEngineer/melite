@@ -94,7 +94,11 @@ export async function openDraftsDomain(
   ctx: Context,
 ): Promise<Domain<DraftsDomainSpec>> {
   const root: string = resolveStorageRoot();
-  const facility = ctx.storageDomain as DomainFacility | undefined;
+  // OPTIONAL-dependency probe per the tutorial's documented pattern
+  // (cordis-tutorial/03-services.md: "skip inject and probe at the
+  // use site" — property reads demand inject on loader-mounted
+  // fibers; ctx.get returns the active provider or undefined).
+  const facility = ctx.get("storageDomain") as DomainFacility | undefined;
   if (facility === undefined || facility === null) {
     throw new Error(
       "[estate-drafts] storage domain facility not mounted (ctx.storageDomain)",

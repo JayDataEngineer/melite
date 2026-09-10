@@ -161,7 +161,6 @@ export function foldConnects(
 const TIMEOUT_MS = 30_000
 const DRAFT_TIMEOUT_MS = 15_000
 const VALIDATE_TIMEOUT_MS = 15_000
-const CATALOG_TIMEOUT_MS = 15_000
 
 interface StartResult {
   run_id?: unknown
@@ -206,7 +205,29 @@ async function loadBench(
   body: Record<string, unknown>,
   signal: AbortSignal,
 ): Promise<string> {
-  const b = await request( 'POST', '/v1/bench/ensure', body, signal, DRAFT_TIMEOUT_MS,
+  // THE CAS READ-MODIFY-WRITE (the door's own law): under the host's
+  // persistent storage the shared bench SURVIVES runs — a bare
+  // {stages} ensure on an existing bench refuses bench/cas-conflict.
+  // Read the row first; a live bench's rev rides as expect_rev, a
+  // missing bench births (no expect_rev — the birth arm).
+  const session: string = typeof body['session'] === 'string' ? body['session'] as string : 'default'
+  let expectRev: number | undefined
+  try {
+    const cur = await request( 'GET', `/v1/bench/${encodeURIComponent(session)}`, undefined, signal, DRAFT_TIMEOUT_MS,
+    ) as { rev?: unknown }
+    if (cur !== null && typeof cur === 'object' && typeof cur['rev'] === 'number') {
+      expectRev = cur['rev']
+    }
+  } catch (e) {
+    // bench/not-found = the birth arm (no expect_rev); anything else
+    // is a real refusal and propagates.
+    const re = remoteErrorOf(e)
+    if (re === null || re === undefined || re.code !== 'bench/not-found') throw e
+  }
+  const b = await request( 'POST', '/v1/bench/ensure', {
+    ...body,
+    ...(expectRev !== undefined ? { expect_rev: expectRev } : {}),
+  }, signal, DRAFT_TIMEOUT_MS,
   ) as { draft_id?: unknown; error?: string }
   if (b && typeof b.error === 'string' && b.error) throw new Error(b.error)
   const id = b && b.draft_id
@@ -231,12 +252,12 @@ async function runBench(
     // The bench remote classifies the empty bench as bench/not-found
     // (the HTTP 404 died with the door).
     if (remoteErrorOf(e)?.code === 'bench/not-found') {
-      return { error: 'the bench is empty — construct stages first (melite_construct)' }
+      return { mode: 'bench', target: DEFAULT_BENCH, error: 'the bench is empty — construct stages first (melite_construct)' }
     }
     throw e
   }
   const stages = projectStages(b['stages'])
-  if (stages.length === 0) return { error: 'the bench is empty — construct stages first (melite_construct)' }
+  if (stages.length === 0) return { mode: 'bench', target: DEFAULT_BENCH, error: 'the bench is empty — construct stages first (melite_construct)' }
   const draftId = typeof b['draft_id'] === 'string' ? b['draft_id'] as string : `bench-${DEFAULT_BENCH}`
   const started = await startRun(request, {
     flow_inline: { stages }, test: a.test === true, draft_id: draftId,
@@ -253,40 +274,17 @@ async function runSingle(
 ): Promise<Record<string, unknown>> {
   const card = a.card ?? ''
   const model = a.model ?? ''
-  if (!model) return { error: 'model is required (name the family explicitly — QUEUE LANE LAW)' }
-  const tools = await request( 'GET', '/v1/card-tools', undefined, signal, CATALOG_TIMEOUT_MS) as Array<Record<string, unknown>>
-  const manifest = (Array.isArray(tools) ? tools : []).find((t) => t.model === model)
-  if (manifest === undefined) {
-    const allowed = (Array.isArray(tools) ? tools : []).map((t) => String(t.model)).filter((s) => s !== '').join(', ')
-    return { error: `model "${model}" has no card tool. Live card tools: ${allowed}` }
-  }
-  try {
-    const v = await request( 'GET',
-      '/v1/card-tools/validate?model=' + encodeURIComponent(model),
-      undefined, signal, 10_000) as { runnable?: boolean; error?: string }
-    if (v.runnable !== true) return { error: v.error || `model "${model}" cannot run` }
-  } catch (e: unknown) {
-    if (e instanceof Error && /cannot run/.test(e.message)) return { error: e.message }
-  }
-  const cat = await request( 'GET', '/v1/model-catalog', undefined, signal, CATALOG_TIMEOUT_MS) as {
-    models?: Record<string, { defaults?: unknown }>
-  }
-  const entry = (cat.models ?? {})[model]
-  const defaults = (entry !== undefined && entry.defaults !== null
-    && typeof entry.defaults === 'object' && !Array.isArray(entry.defaults))
-    ? entry.defaults as Record<string, unknown> : {}
-  const cardDefaults: Record<string, unknown> = {}
-  {
-    const props = (manifest.params_schema !== null && typeof manifest.params_schema === 'object'
-      && (manifest.params_schema as { properties?: Record<string, { default?: unknown }> }).properties) ?? {}
-    for (const [k, spec] of Object.entries(props)) {
-      if (spec.default !== undefined) cardDefaults[k] = spec.default
-    }
-  }
-  const bag = a.params ?? {}
-  const params: Record<string, unknown> = { ...cardDefaults, ...defaults, ...bag }
-  if (typeof a.prompt === 'string' && a.prompt !== '') params["prompt"] = a.prompt
-  const intentSrc = typeof params["prompt"] === 'string' ? params["prompt"] as string : card
+  if (!model) return { mode: 'card', target: card, error: 'model is required (name the family explicitly — QUEUE LANE LAW)' }
+  // THE CARD ARM OWNS THE COMPOSE (REBUILD-9): the runs registry's
+  // start {model:} arm gates (manifest/runnability), overlays the
+  // route-lens stamp (family defaults + variant resolver_defaults),
+  // composes phase-1/phase-2 and registers — the tool passes the
+  // USER bag and surfaces the arm's refusal voices (RemoteError →
+  // {error}). The /v1/card-tools + /v1/model-catalog lanes died
+  // with the gateway (2026-09-10) — never re-derived client-side.
+  const bag: Record<string, unknown> = { ...(a.params ?? {}) }
+  if (typeof a.prompt === 'string' && a.prompt !== '') bag["prompt"] = a.prompt
+  const intentSrc = typeof bag["prompt"] === 'string' ? bag["prompt"] as string : card
   const intent = intentSrc.length > 80 ? intentSrc.slice(0, 77) + '…' : intentSrc
   let draftId: string
   try {
@@ -297,13 +295,13 @@ async function runSingle(
         id: 's_0',
         ...(card !== '' ? { card } : {}),
         engine: 'comfyui',
-        params,
+        params: bag,
       }],
     }, signal)
   } catch (e) {
-    return { error: e instanceof Error ? e.message : String(e) }
+    return { mode: 'card', target: card !== '' ? card : model, error: e instanceof Error ? e.message : String(e) }
   }
-  const started = await startRun(request, { ...params, model, test: a.test === true, draft_id: draftId }, signal)
+  const started = await startRun(request, { ...bag, model, test: a.test === true, draft_id: draftId }, signal)
   if (typeof started["error"] === 'string') return { mode: 'card', target: card !== '' ? card : model, ...started }
   return { mode: 'card', target: card !== '' ? card : model, model, draft_id: draftId, ...started }
 }
@@ -315,7 +313,7 @@ async function runTemplate(
   signal: AbortSignal,
 ): Promise<Record<string, unknown>> {
   const flow = a.flow ?? ''
-  if (!flow) return { error: 'flow is required (a discovered flow name)' }
+  if (!flow) return { mode: 'flow', target: '', error: 'flow is required (a discovered flow name)' }
   const overrides = a.params ?? {}
   let draftId: string
   try {
@@ -348,7 +346,7 @@ async function runAdHoc(
 ): Promise<Record<string, unknown>> {
   const rawStages = a.stages
   if (!Array.isArray(rawStages) || rawStages.length === 0) {
-    return { error: 'stages must be a non-empty array of {id, engine, params?, outputs?} rows' }
+    return { mode: 'adhoc', target: 'adhoc', error: 'stages must be a non-empty array of {id, engine, params?, outputs?} rows' }
   }
   const flowId = typeof a.id === 'string' && a.id !== '' ? a.id : 'adhoc'
   const connects = Array.isArray(a.connects) ? a.connects as Array<{ from?: unknown; to?: unknown; kind?: unknown }> : []
@@ -356,7 +354,7 @@ async function runAdHoc(
   try {
     folded = foldConnects(flowId, rawStages as Array<{ id?: unknown; engine?: unknown; description?: unknown; params?: unknown; outputs?: unknown }>, connects)
   } catch (e) {
-    return { error: e instanceof Error ? e.message : String(e) }
+    return { mode: 'adhoc', target: flowId, error: e instanceof Error ? e.message : String(e) }
   }
   const flowBody = {
     id: flowId,

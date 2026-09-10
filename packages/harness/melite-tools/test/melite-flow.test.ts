@@ -76,11 +76,17 @@ const FLOW = {
 }
 
 /** The bench law: every run mode ensures THE shared bench first —
- *  the fixtures answer it like the bench door would. */
+ *  the fixtures answer it like the bench door would. The CAS
+ *  read-modify-write (REBUILD-12): the client GETs the bench row
+ *  first (a live rev rides as expect_rev; not-found births) — the
+ *  fixtures answer the GET with a live bench row. */
 function okBenchWith(id: string): (url: string) => { status: number; body: unknown } | undefined {
   return (url: string) => {
-    if (url.endsWith('/v1/bench/ensure') || url.startsWith('/v1/bench/')) {
+    if (url.endsWith('/v1/bench/ensure')) {
       return { status: 200, body: { bench: 'the-shared-bench', draft_id: id, ok: true } }
+    }
+    if (/\/v1\/bench\/[^/?]+$/.test(url)) {
+      return { status: 200, body: { session: 'main', rev: 0, stages: [], log: [] } }
     }
     return undefined
   }
@@ -127,12 +133,15 @@ describe('melite_flow adhoc — the AI feedback loop', () => {
     assert.equal(out.flow_inline, undefined)
     assert.equal(out.flow, undefined)
     const paths = seen.calls.map((c) => c.url)
-    // the CURRENT law: validate FIRST (no GPU on a bad wire), then the
-    // bench ensure (the doc-backed draft), then start. No drafts door.
+    // the CURRENT law (REBUILD-12): validate FIRST (no GPU on a bad
+    // wire), then the CAS read (GET the bench row — a live rev rides
+    // as expect_rev), then the bench ensure (the doc-backed draft),
+    // then start. No drafts door.
     assert.ok(paths[0].includes('/v1/flows/validate'), paths[0] + ' lacks ' + '/v1/flows/validate')
-    assert.ok(paths[1].includes('/v1/bench/ensure'), paths[1] + ' lacks ' + '/v1/bench/ensure')
-    assert.ok(paths[2].includes('/v1/flows/start'), paths[2] + ' lacks ' + '/v1/flows/start')
-    const draftBody = decodeJsonBody(seen.calls[1].init)
+    assert.ok(/^\/v1\/bench\/[^/?]+$/.test(paths[1]), paths[1] + ' lacks the CAS bench read')
+    assert.ok(paths[2].includes('/v1/bench/ensure'), paths[2] + ' lacks ' + '/v1/bench/ensure')
+    assert.ok(paths[3].includes('/v1/flows/start'), paths[3] + ' lacks ' + '/v1/flows/start')
+    const draftBody = decodeJsonBody(seen.calls[2].init)
     // the folded body: connect inference + explicit kind
     const move = (draftBody.stages as Array<{ inputs: unknown; expected: unknown }>)[1]
     assert.deepEqual(move.inputs, {
@@ -148,7 +157,7 @@ describe('melite_flow adhoc — the AI feedback loop', () => {
     assert.deepEqual(tiles.map((s) => s.id), ['still', 'move'])
     assert.equal(tiles[0].engine, 'comfyui')
     // the start rides the COMPILED body + the bench's doc-backed draft
-    const startBody = decodeJsonBody(seen.calls[2].init)
+    const startBody = decodeJsonBody(seen.calls[3].init)
     assert.equal((startBody.flow_inline as { id: string }).id, 'still-to-motion')
     assert.equal(startBody.draft_id, 'd1')
     assert.equal(startBody.test, false)
@@ -226,19 +235,33 @@ describe('melite_flow card — the live allowlist', () => {
     assert.equal(startBody.draft_id, 'd9')
   })
 
-  test('a model with no card tool refuses naming the LIVE list', async () => {
+  test('a model the card arm refuses surfaces the DOOR voice (REBUILD-9)', async () => {
+    // The manifest/runnability gates moved INTO the runs registry's
+    // start {model:} arm (phase1Card) — the tool no longer re-derives
+    // card-tools client-side (those lanes died with the gateway).
+    // The refusal rides the protocol's RemoteError; the tool surfaces
+    // the arm's own text (door-verbatim), never a transport code.
+    const refusal = Object.assign(
+      new Error('no model unit for model: not-a-card (no .catalog.models row not-a-card in the frozen discovery catalog and no family declares route not-a-card in its variants\' cells — checked the class tree\'s _routes map)'),
+      // the protocol's structural marker (remoteErrorOf reads
+      // isDSHRemoteError + code — never instanceof, cross-copy law)
+      { name: 'RemoteError', isDSHRemoteError: true, code: 'runs/model-unresolvable' },
+    )
     const { request } = mockFetch([
-      (u) => (u.endsWith('/v1/card-tools')
-        ? { status: 200, body: TOOLS } : undefined),
+      okBenchWith('d9'),
+      (u) => {
+        if (u.endsWith('/v1/flows/start')) throw refusal
+        return undefined
+      },
     ])
     const tool = meliteFlow(request)
     const out = await tool.execute(
       { card: 'image-gen', model: 'not-a-card', prompt: 'hi' },
       { signal: AbortSignal.timeout(2000) },
     ) as Record<string, unknown>
-    assert.ok(String(out.error).includes('has no card tool'), String(out.error) + ' lacks ' + 'has no card tool')
-    assert.ok(String(out.error).includes('new-model-1'), String(out.error) + ' lacks ' + 'new-model-1')
-    assert.ok(String(out.error).includes('music3'), String(out.error) + ' lacks ' + 'music3')
+    assert.ok(typeof out.error === 'string' && out.error !== '', 'expected a refusal')
+    assert.ok(String(out.error).includes('no model unit for model: not-a-card'),
+      String(out.error) + ' lacks the arm voice')
   })
 })
 
@@ -252,11 +275,12 @@ describe('melite_flow L4 — the test flag rides every mode', () => {
     assert.equal(out.run_id, 'r0')
     // CARD BIRTH LAW (bench form): the bench ensure carries the
     // template reference; the start rides its doc-backed draft
-    assert.equal(seen.calls.length, 2)
-    assert.equal(seen.calls[0].url, '/v1/bench/ensure')
-    const composed = decodeJsonBody(seen.calls[0].init)
+    assert.equal(seen.calls.length, 3)
+    assert.ok(/^\/v1\/bench\/[^/?]+$/.test(seen.calls[0].url), 'CAS read first')
+    assert.equal(seen.calls[1].url, '/v1/bench/ensure')
+    const composed = decodeJsonBody(seen.calls[1].init)
     assert.equal(composed.intent, 'foo')
-    const body = decodeJsonBody(seen.calls[1].init)
+    const body = decodeJsonBody(seen.calls[2].init)
     assert.equal(body.test, false)
     assert.equal(body.flow, 'foo')
     // the dead {yaml:} key must not ride along (retired 2026-09-04

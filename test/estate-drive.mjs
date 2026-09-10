@@ -84,10 +84,13 @@ const SESSION = "estate-job-" + Date.now().toString(36);
 const events = [];
 let idle = false;
 
+// The operator's configured default agent model — settings.yaml's
+// agent-default-model (opencode-go / muse-spark-1.3-contributor, the
+// Muse Spark route over openai-responses). Never a guessed route.
 const initId = request("initialize", {
   cwd: process.cwd(),
-  provider: "deepseek-official",
-  model: "deepseek-chat",
+  provider: process.env["ESTATE_DRIVE_PROVIDER"] ?? "opencode-go",
+  model: process.env["ESTATE_DRIVE_MODEL"] ?? "muse-spark-1.3-contributor",
 });
 
 // await initialize
