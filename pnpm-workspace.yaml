@@ -5,7 +5,6 @@ onlyBuiltDependencies:
 ## @tanstack/react-virtual + virtual-core ship lockfile entries published
 ## the same day; pnpm's default minimumReleaseAge rejects them.
 minimumReleaseAge: 0
-
 ## THE PLUGIN WORKSPACE (2026-08-21 law: plugins are REAL packages; the
 ## package manager materializes every cross-package link per-OS. No
 ## hand-rolled node_modules links are ever committed; a fresh clone +
@@ -20,17 +19,21 @@ minimumReleaseAge: 0
 ## pathways — the editor and every engine plugin consume it; no consumer
 ## hosts shared infrastructure in its subtree.
 packages:
-  - 'apps/*'                                # PRODUCT ASSEMBLIES (DSH shape: apps/ = product, packages/ = capability — apps/gateway owns the process rim)
-  - 'packages/*/*'                         # STRUCTURE STAGE 2 (2026-09-08): uniform DSH two-tier — packages/<domain>/<pkg>; mid-tier dirs (harness/dsh, web/dsh) and 1-tier leaves died
-  - 'vendor/cordis_plugins/*'             # VENDORED platform tier (2026-09-08: harness-vendor discipline — loader/timer/logger-console as workspace members, consumed via workspace:*; pnpm materializes the links, no registry copy can exist)
+  - 'apps/*' # PRODUCT ASSEMBLIES (DSH shape: apps/ = product, packages/ = capability — apps/gateway owns the process rim)
+  - 'packages/*/*' # STRUCTURE STAGE 2 (2026-09-08): uniform DSH two-tier — packages/<domain>/<pkg>; mid-tier dirs (harness/dsh, web/dsh) and 1-tier leaves died
+  - 'vendor/cordis_plugins/*' # VENDORED platform tier (2026-09-08: harness-vendor discipline — loader/timer/logger-console as workspace members, consumed via workspace:*; pnpm materializes the links, no registry copy can exist)
   - 'packages/engines/*/action_cards/*/ui' # engine UI tenants (@melite-plugin/{video,3d,audio,motion})
-  - 'packages/engines/*/action_cards/*/*/ui' # genre-grouped card lanes
+  - 'packages/engines/*/action_cards/*/*/ui'
+    # genre-grouped card lanes
     # (ROW 5, 2026-09-07: @melite-plugin/timeline moved OUT of
     # video/h3-timeline/ui to packages/web-kit/timeline — PRIMITIVE HOME LAW, a
     # cross-genre primitive must not live inside one card's dir.
     # The glob stays for future genre-grouped lanes.)
-  - 'packages/engines/*/action_cards'      # card tenants (resolution scope; @melite/cards)
-  - 'packages/engines/*'                    # ENGINE DOMAIN (STAGE 1, 2026-09-08): engine leaves (@melite/engine-comfyui first; MCP-as-cards slots beside it — the package root, not action_cards/)
+  - 'packages/engines/*/action_cards' # card tenants (resolution scope; @melite/cards)
+  - 'packages/engines/*' # ENGINE DOMAIN (STAGE 1, 2026-09-08): engine leaves (@melite/engine-comfyui first; MCP-as-cards slots beside it — the package root, not action_cards/)
+
+allowBuilds:
+  lefthook: set this to true or false
 
 ## ONE REACT for the whole workspace (web-registry move, 2026-09-03):
 ## the @melite kit packages declare react:"*" (they render wherever a
@@ -38,6 +41,6 @@ packages:
 ## to a SECOND react (18.3.1 beside the editor's 19.2.8) and every
 ## radix-hook test died on dual-React useRef. The override makes the
 ## single-instance law explicit.
-overrides:
-  react: ^19.2.6
-  react-dom: ^19.2.6
+## NOTE (2026-09-10): the react single-instance override died here —
+## it never reached the lockfile (mixed 18.3.1/19.2.8 is the installed
+## truth). Re-adding it needs a full lockfile re-resolution, not a line.

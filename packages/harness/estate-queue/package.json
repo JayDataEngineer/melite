@@ -1,0 +1,23 @@
+{
+  "name": "@melite/estate-queue",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "The serial run queue as a host Cordis service (REBUILD-5 of the gateway kill): lock-first single-writer, sidecar/ledger I/O, reproduce/resume refusal arms, run-status probe slot. No doors, no routes, no port \u2014 the runs remote exposes the lanes over this seat.",
+  "main": "./src/index.ts",
+  "dependencies": {
+    "@deepseek-ai/cordis": "^4.0.2",
+    "@deepseek-ai/cordis-plugin-timer": "workspace:*",
+    "@melite/comfyui-cordis": "workspace:*",
+    "@melite/estate-drafts": "workspace:*",
+    "@deepseek-ai/dsh-typert-protocol": "0.1.5-rc.1",
+    "@deepseek-ai/schemastery": "^3.18.2"
+  },
+  "devDependencies": {
+    "@types/node": "^22.20.0",
+    "typescript": "^5.9.3"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  }
+}
