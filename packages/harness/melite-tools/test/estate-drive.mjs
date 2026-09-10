@@ -6,11 +6,13 @@
 // the SDK JSON-RPC wire (three requests: initialize → session/prompt
 // → shutdown; notifications stream back — packages/sdk/protocol).
 // The job orders an agent-driven card run: melite_flow must fire, the
-// job must LAND IN THE GATEWAY QUEUE (the lump), and the run must be
-// observable through the gateway's own doors.
+// job must LAND IN THE ESTATE QUEUE (the lump — the host cordis
+// service, in-process), and the run receipt must ride the
+// tool/result frame.
 //
-// Live drive (like smoke.mjs): needs the gateway up (:33081) and the
-// runtime home's provider credentials. Run:
+// Live drive: needs the estate profile's provider credentials (the
+// runtime home's env — a spawned `dsh --profile estate`, no second
+// process, no :33081). Run:
 //   node packages/harness/melite-tools/test/estate-drive.mjs
 import { spawn } from 'node:child_process'
 import { readFileSync } from 'node:fs'
@@ -24,7 +26,6 @@ const keyEnv = {}
 for (const m of readFileSync('/home/user/start-dsh.sh', 'utf8').matchAll(/^export ([A-Z0-9_]+)="([^"]*)"/gm)) {
   keyEnv[m[1]] = m[2]
 }
-const GATEWAY = 'http://127.0.0.1:33081'
 const SESSION = 'estate-job-' + Date.now().toString(36)
 const JOB_TEXT = [
   'Run one test image job now, exactly as specified:',
@@ -121,8 +122,10 @@ try {
   })
   log('job queued: messageId', receipt?.messageId)
 
-  // 3. await the agent turn: melite_flow fired AND a run observed via
-  //    the gateway's own queue surface (status door), max 180s.
+  // 3. await the agent turn: melite_flow fired AND a run receipt
+  //    observed in the tool/result frame (the queue lives in-process
+  //    now — no HTTP poll; the dead gateway fetch died 2026-09-10),
+  //    max 180s.
   const t0 = Date.now()
   let sawFlowCall = false
   while (Date.now() - t0 < 180_000) {
@@ -130,11 +133,8 @@ try {
     sawFlowCall = sawFlowCall || frames.some((m) => m.method === 'session.event'
       && m.params?.event?.type === 'tool/call' && m.params?.event?.data?.name === 'melite_flow')
     if (!sawFlowCall) continue
-    // the job landed: poll the gateway's recent runs for OUR draft
-    try {
-      const res = await fetch(GATEWAY + '/v1/flows/status/none', { method: 'GET' })
-      void res
-    } catch { /* door shape differs; the tool/result frame is the proof */ }
+    // the job landed: the tool/result frame carrying a run_id IS the
+    // queue receipt (in-process queue — no second surface to poll).
     const flowResult = frames.find((m) => m.method === 'session.event'
       && m.params?.event?.type === 'tool/result'
       && String(JSON.stringify(m.params?.event?.data ?? '')).includes('run-'))
