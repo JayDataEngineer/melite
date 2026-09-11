@@ -195,8 +195,10 @@ export function schema(v: unknown): Record<string, unknown> {
         throw new Error(`calls[${i}]: end_frame ${c.end_frame} <= start_frame ${c.start_frame} — a reversed or empty span is not a shot`)
       }
     }
+    // (the shot-law loop above guarantees every row is a shaped
+    // object with pinned int spans — no gap-arms needed here)
     const hasGuide = calls.some((c) => {
-      const cc = (c ?? {}) as Record<string, unknown>
+      const cc = c as Record<string, unknown>
       return Boolean(cc.ref_images) || Boolean(cc.ref_image) || Boolean(cc.image_name)
     })
     variant = hasGuide ? 't4r' : calls.length > 1 ? 't4_chain' : 't4_open'
@@ -434,7 +436,7 @@ function renderH3Window(p: Record<string, unknown>, g: GraphBuilder): void {
     // (k>=2, no literal path) links the load to the PRIOR window's
     // save output — a pre-namespaced foreign node id, wired as a raw
     // JSON link exactly where the python rewrites it post-serialization.
-    const path = ((p.ctx_load_latent_path ?? '') as string) ?? ''
+    const path = (p.ctx_load_latent_path ?? '') as string
     const latentPath: string | (string | number)[] = (k >= 2 && !path)
       ? [`window${k - 1}_MiniMaxH3MotionContextSaveLatent.0`, 0]
       : path

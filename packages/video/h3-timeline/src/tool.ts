@@ -41,7 +41,11 @@ export const buildH3TimelineTool = (call: EstateCall): ToolDefinition => {
       },
     } as ParameterSchemaSpec,
     presentCall(args: unknown) {
-      const a = (args ?? {}) as Record<string, unknown>
+      // Validated args (defineTool's wrapper) — always the object;
+      // calls may be the array OR its serialized JSON string (the
+      // annotation-only json param accepts both — the wrapper
+      // normalizes at the executor, the prose counts what arrived).
+      const a = args as Record<string, unknown>
       const calls = Array.isArray(a.calls) ? (a.calls as unknown[]).length : 0
       return {
         card: 'generic',
@@ -96,8 +100,12 @@ export const buildH3TimelineTool = (call: EstateCall): ToolDefinition => {
       return { card: 'generic', title: `${identity.label} [${model}] → ${runId}` }
     },
     async execute(args, exec): Promise<CardResult> {
-      const a = (args ?? {}) as Record<string, unknown>
-      const model = typeof a.model === 'string' && a.model !== '' ? a.model : DEFAULT_MODEL
+      // Validated args (the defineTool wrapper) — always the object.
+      const a = args as Record<string, unknown>
+      // emitParamsSpec synthesizes a CLOSED model enum from BOARDED —
+      // the wrapper rejects ''/unknown models at the seam, so a
+      // validated model is always a non-empty boarded id.
+      const model = typeof a.model === 'string' ? a.model : DEFAULT_MODEL
       const params: Record<string, unknown> = {}
       for (const [k, v] of Object.entries(a)) if (k !== 'model') params[k] = v
       try {
@@ -133,10 +141,12 @@ export const buildH3TimelineTool = (call: EstateCall): ToolDefinition => {
           status: typeof started.status === 'string' ? started.status : 'queued',
         }
       } catch (e) {
-        if (e instanceof GatewayError) {
-          return { flow: FLOW, model, error: e.named || e.body || `estate ${e.status}` }
-        }
-        throw e
+        // jsonLane's contract: EVERY seam failure arrives as a
+        // GatewayError (transport faults wrap with status 0 and the
+        // message as body). Refusals are DOMAIN OUTCOMES — one
+        // canonical arm, no instanceof split.
+        const g = e as GatewayError
+        return { flow: FLOW, model, error: g.named || g.body || `estate ${g.status}` }
       }
     },
   })

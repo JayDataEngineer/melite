@@ -257,7 +257,13 @@ export default defineConfig({
         // stays GUI-debt: DOM components, the dom project's
         // territory, same carve-out as the web tree.
         'packages/motion/**/src/ui/**/*.{ts,tsx}',
-        'packages/video/**/src/**/*.{ts,tsx}',
+        // video closed (2026-09-12, §TEST-13): h3-timeline (the four
+        // frozen goldens replay byte-level + schema gates + overlay
+        // arms) + video-gen (two-family admission) + the tool face's
+        // full battery at per-file 100x4. The studio (src/ui/** —
+        // 21 files, the timeline editor) stays GUI-debt: DOM, the
+        // dom project's territory, same carve-out as the web tree.
+        'packages/video/**/src/ui/**/*.{ts,tsx}',
         // Types-only files carry no executable code.
         'packages/*/*/src/types.ts',
         // The z-image family has no mods dir (absent ≡ empty) — its
