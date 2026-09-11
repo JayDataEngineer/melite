@@ -8,9 +8,27 @@ const DRAFTS_LIMIT = 200;
 /** Sidecar tree default: the estate runs stream (SERVER-STATE ROOT
 *  LAW — build/ was the C era's cwd and is gone). */
 const DEFAULT_FLOW_DIR = "/home/user/Documents/programs/active/inference.cpp/data/runs/output";
-/** A run-relative artifact name: run-<hex>-<word>/<file> — the
-*  confinement the artifact route enforces (no .., no leading /). */
-const RUN_RELATIVE = /^run-[0-9a-f]+-[A-Za-z0-9_-]+\/[A-Za-z0-9._-]+$/;
+/** A run dir name: run-<hex>-<word> (the runs grammar). */
+const RUN_DIR = /^run-[0-9a-f]+-[A-Za-z0-9_-]+$/;
+/** One path segment inside a run dir (traversal refuses at the
+*  grammar; realpath containment re-checks at the read). */
+const RUN_SEGMENT = /^[A-Za-z0-9._-]+$/;
+/** A run-relative artifact name: run-<hex>-<word>/<file...> — the
+*  confinement the artifact route enforces. The file part is one or
+*  more segments: real artifacts live in subdirs (generate/...,
+*  input_prep/...) and the runs-list rewrite emits exactly this
+*  shape — the single-segment grammar refusing its own output was
+*  the 400 the live probe caught (2026-09-11). Each segment must be
+*  a real name; `.`/`..` refuse here and realpath containment
+*  re-checks below. */
+function isRunRelative(target) {
+	const slash = target.indexOf("/");
+	if (slash <= 0) return false;
+	if (!RUN_DIR.test(target.slice(0, slash))) return false;
+	const rest = target.slice(slash + 1);
+	if (rest.length === 0) return false;
+	return rest.split("/").every((seg) => RUN_SEGMENT.test(seg) && seg !== "." && seg !== "..");
+}
 const JSON_HEADERS = {
 	"content-type": "application/json; charset=utf-8",
 	"cache-control": "no-store"
@@ -167,7 +185,7 @@ function apply(ctx, config = {}) {
 		path: "/infer-gallery/artifact",
 		handler: async (req, res) => {
 			const target = new URL(req.url ?? "/", "http://infer-gallery.invalid").searchParams.get("path") ?? "";
-			if (!RUN_RELATIVE.test(target)) {
+			if (!isRunRelative(target)) {
 				fail(res, 400, "forbidden_path", {
 					message: "artifact route only serves run-relative names (run-<id>/<file>)",
 					path: target
@@ -190,7 +208,18 @@ function apply(ctx, config = {}) {
 					res.end(buffer);
 					return;
 				}
-				const file = await (await import("node:fs/promises")).readFile(`${flowDir}/${target}`);
+				const fs = await import("node:fs/promises");
+				const path = await import("node:path");
+				const root = path.resolve(flowDir);
+				const full = path.resolve(root, target);
+				if (full !== root && !full.startsWith(root + path.sep)) {
+					fail(res, 400, "forbidden_path", {
+						message: "artifact escapes the runs tree",
+						path: target
+					});
+					return;
+				}
+				const file = await fs.readFile(full);
 				const ext = target.slice(target.lastIndexOf(".") + 1).toLowerCase();
 				const type = ext === "png" ? "image/png" : ext === "jpg" || ext === "jpeg" ? "image/jpeg" : ext === "webp" ? "image/webp" : ext === "mp4" || ext === "webm" ? "video/webm" : "application/octet-stream";
 				res.writeHead(200, {

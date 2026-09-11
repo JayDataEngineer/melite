@@ -28,6 +28,13 @@
 import type { LlmStreamSeam } from './llm-complete.ts'
 import { harnessEnhance, resolveHarnessRoutes, routeName } from './llm-complete.ts'
 import { agenticSweep } from './enhance-agent.ts'
+import {
+  formSpecArm,
+  formsArm,
+  kindsDoorArm,
+  modelCatalogArm,
+} from './discovery.ts'
+import { makeEstateRequest, type EstateMethod } from './estate.ts'
 
 export const inject = ['webServer', 'llm', 'tools']
 
@@ -216,4 +223,96 @@ export function apply(c: CtxView, config: Config = {}): void {
       }).catch((err: unknown) => respond(400, { error: `body read failed: ${err instanceof Error ? err.message : String(err)}` }))
     },
   }), 'melite-tools: enhance route')
+
+  // ── THE /v1 PREFIX DOOR (2026-09-11 — production restore) ────────
+  //
+  // The editor's whole HTTP face died with the gateway (40b57f94):
+  // /v1/form-spec, /v1/model-catalog, /v1/forms, /v1/kinds (the
+  // discovery arms — derived LIVE in discovery.ts, referee-pinned
+  // from the dead door) plus the seat lanes (flows/bench/runs/
+  // manage/skills/load/ledger — makeEstateRequest's seats law).
+  // ONE prefix mount serves both: discovery first, seats beneath,
+  // 404/502 JSON otherwise (same body shape the dead door served).
+  c.effect(() => c.webServer.register({
+    kind: 'prefix',
+    path: '/v1',
+    handler: (req, res) => {
+      const ok = (payload: unknown): void => {
+        const body = JSON.stringify(payload)
+        res.writeHead(200, { 'content-type': 'application/json', 'content-length': String(Buffer.byteLength(body)) })
+        res.end(Buffer.from(body))
+      }
+      const fail = (status: number, payload: Record<string, unknown>): void => {
+        const body = JSON.stringify(payload)
+        res.writeHead(status, { 'content-type': 'application/json', 'content-length': String(Buffer.byteLength(body)) })
+        res.end(Buffer.from(body))
+      }
+      // Discovery arms are GET; seat lanes carry both (bench patch
+      // is POST, drafts GET).
+      const url = new URL(req.url ?? '/', 'http://localhost')
+      const path = url.pathname
+      const method = (req.method ?? 'GET').toUpperCase() as EstateMethod
+      // CALLER-GONE LAW: bind to the RESPONSE's premature close
+      // (res 'close' before writableEnded), never req 'close' — a
+      // POST's message-complete fires req 'close' the moment the
+      // body stream is consumed, aborting the seat mid-call.
+      const callerGone = new AbortController()
+      res.on('close', () => {
+        if (!res.writableEnded) callerGone.abort()
+      })
+      const signal = callerGone.signal
+
+      // Discovery arms (live derivation — discovery.ts; async — the
+      // card defs boot is a promise).
+      const serve = (): void => {
+        try {
+          if (method === 'GET' && path === '/v1/model-catalog') {
+            return void modelCatalogArm().then(ok, (e: unknown) => fail(500, { error: `discovery door: ${e instanceof Error ? e.message : String(e)}` }))
+          }
+          if (method === 'GET' && path === '/v1/forms') {
+            return void formsArm().then(ok, (e: unknown) => fail(500, { error: `discovery door: ${e instanceof Error ? e.message : String(e)}` }))
+          }
+          if (method === 'GET' && path === '/v1/kinds') {
+            return void kindsDoorArm().then(ok, (e: unknown) => fail(500, { error: `discovery door: ${e instanceof Error ? e.message : String(e)}` }))
+          }
+          if (method === 'GET' && path === '/v1/form-spec') {
+            const model = url.searchParams.get('model') ?? ''
+            if (model.length === 0) {
+              return fail(400, { error: 'form-spec: the model query parameter is required' })
+            }
+            return void formSpecArm(model).then((spec) => {
+              if (spec === null) {
+                return fail(404, { error: `form-spec: '${model}' does not resolve (unknown, unoffered, or retired)` })
+              }
+              return ok(spec)
+            }, (e: unknown) => fail(500, { error: `discovery door: ${e instanceof Error ? e.message : String(e)}` }))
+          }
+        } catch (error: unknown) {
+          return fail(500, { error: `discovery door: ${error instanceof Error ? error.message : String(error)}` })
+        }
+
+        // Seat lanes — makeEstateRequest's law (a lane with no seat
+        // is a hard error naming the migration, never a silent empty).
+        const request = makeEstateRequest(c)
+        if (method === 'POST') {
+          readBody(req).then((buf) => {
+            let body: unknown
+            try {
+              body = buf.length > 0 ? JSON.parse(buf.toString('utf8')) : {}
+            } catch {
+              return fail(400, { error: 'body must be JSON' })
+            }
+            request(method, path, body, signal, 120_000)
+              .then((value) => ok(value))
+              .catch((error: unknown) => fail(502, { error: error instanceof Error ? error.message : String(error) }))
+          }).catch((error: unknown) => fail(400, { error: `body read failed: ${error instanceof Error ? error.message : String(error)}` }))
+          return
+        }
+        request(method, path, undefined, signal, 120_000)
+          .then((value) => ok(value))
+          .catch((error: unknown) => fail(502, { error: error instanceof Error ? error.message : String(error) }))
+      }
+      return serve()
+    },
+  }), 'melite-tools: /v1 prefix door')
 }

@@ -23,42 +23,6 @@ window.__ModuleLoader__.load({
 			claimed = false;
 		}
 		//#endregion
-		//#region src/client/store.ts
-		function createGalleryStore() {
-			let open = false;
-			const listeners = /* @__PURE__ */ new Set();
-			const emit = () => {
-				for (const listener of listeners) listener();
-			};
-			return {
-				subscribe(listener) {
-					listeners.add(listener);
-					return () => {
-						listeners.delete(listener);
-					};
-				},
-				isOpen: () => open,
-				toggle: () => {
-					open = !open;
-					emit();
-				},
-				open: () => {
-					if (!open) {
-						open = true;
-						emit();
-					}
-				},
-				close: () => {
-					if (open) {
-						open = false;
-						emit();
-					}
-				}
-			};
-		}
-		/** Singleton: both registered slot components import this one instance. */
-		const galleryStore = createGalleryStore();
-		//#endregion
 		//#region src/client/runs-data.ts
 		/**
 		* Fetch the runs list through the same-origin proxy.
@@ -316,17 +280,79 @@ window.__ModuleLoader__.load({
 			});
 		}
 		//#endregion
+		//#region src/client/store.ts
+		function createGalleryStore() {
+			let open = false;
+			const listeners = /* @__PURE__ */ new Set();
+			const emit = () => {
+				for (const listener of listeners) listener();
+			};
+			return {
+				subscribe(listener) {
+					listeners.add(listener);
+					return () => {
+						listeners.delete(listener);
+					};
+				},
+				isOpen: () => open,
+				toggle: () => {
+					open = !open;
+					emit();
+				},
+				open: () => {
+					if (!open) {
+						open = true;
+						emit();
+					}
+				},
+				close: () => {
+					if (open) {
+						open = false;
+						emit();
+					}
+				}
+			};
+		}
+		/** Singleton: both registered slot components import this one instance. */
+		const galleryStore = createGalleryStore();
+		//#endregion
 		//#region src/client/index.ts
-		/** Required services (fiber inject waiting — the slot registry must be up first). */
-		const inject = ["slots"];
+		/** The tab type's identity (the id its body registers under). */
+		const GALLERY_TAB_ID = "@infer-media/dsh-gallery";
+		/** Required services (fiber inject waiting — the tab registry must be
+		*  up first). */
+		const inject = ["slots", "sidebarRightTabs"];
 		/**
-		* Client apply: claims the single application slot and mounts nothing —
-		* presence in the client bundle keeps the host-half proxy routes alive.
+		* Client apply: claims the single application slot, then registers the
+		* gallery tab (type + body) exactly as the shipped tabs do.
 		* @param ctx - client root context.
 		*/
-		function apply(_ctx) {
+		function apply(ctx) {
 			if (!claimGalleryApply()) return;
-			_ctx.effect(() => releaseGalleryApply, "melite-gallery: apply claim");
+			ctx.effect(() => releaseGalleryApply, "melite-gallery: apply claim");
+			const tab = ctx;
+			try {
+				tab.effect(() => tab.sidebarRightTabs.register({
+					id: GALLERY_TAB_ID,
+					kind: "gallery",
+					title: () => "Gallery",
+					guide: [{
+						order: 55,
+						title: () => "Gallery",
+						description: () => "The runs media — every generation's artifacts."
+					}]
+				}), "melite-gallery: tab type");
+			} catch (error) {
+				console.error("[melite-gallery] tab type registration failed:", error);
+			}
+			try {
+				tab.slots.inject("sidebar.right.pane.tab", () => tab.slots.register({
+					name: "sidebar.right.pane.tab",
+					key: GALLERY_TAB_ID
+				}, GalleryView));
+			} catch (error) {
+				console.error("[melite-gallery] tab body registration failed:", error);
+			}
 		}
 		//#endregion
 		exports.GalleryView = GalleryView;

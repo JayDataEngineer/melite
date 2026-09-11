@@ -31,6 +31,7 @@
     "@melite/audio-music": "workspace:*",
     "@melite/audio-tts": "workspace:*",
     "@melite/audio-voice-lock": "workspace:*",
+    "@melite/comfyui-cordis": "workspace:*",
     "@melite/estate-drafts": "workspace:*",
     "@melite/image-image-edit": "workspace:*",
     "@melite/motion-motion": "workspace:*",
