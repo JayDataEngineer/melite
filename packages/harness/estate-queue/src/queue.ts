@@ -1022,9 +1022,9 @@ export function sweepSidecar(
 
 /** Boot-sweep notes (boot_sweep 2402-2409). */
 export const BOOT_SWEEP_WHY: string =
-  "gateway restarted (boot sweep): stale active sidecar from a dead process";
+  "host restarted (boot sweep): stale active sidecar from a dead process";
 export const BOOT_SWEEP_QUEUED_WHY: string =
-  "gateway restarted before the run started (never executed) — resubmit";
+  "host restarted before the run started (never executed) — resubmit";
 
 /** Read-time sweep notes + response errors (sidecar_status
  *  2428-2451): the ledger state is ALWAYS "failed" (even for a

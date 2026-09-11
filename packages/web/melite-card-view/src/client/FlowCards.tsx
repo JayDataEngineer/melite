@@ -39,7 +39,7 @@
  *         DisclosureRow is inline expansion — a different interaction;
  *         no shipped atom covers row→modal. Hand-rolled, layout-only.
  *   (a-2) RIDEN 1:1 — the run-status STREAM: @melite/catalog's
- *         streamFlowEvents (the gateway's /v1/flows/events WS door,
+ *         streamFlowEvents (the estate's /v1/flows/events WS door,
  *         query form — the proxy-exact path, live bug 2026-09-04) folds
  *         idempotent stage frames positionally by INDEX (the estate
  *         mapping law); the poll stays TERMINAL AUTHORITY and the
@@ -47,7 +47,7 @@
  *         verbatim. (Supersedes the poll-only c-2 entry: the operator
  *         flagged it 2026-09-10 — "they do webhooks for us.")
  *   (c-3) NO CLIENT: the draft/run door layer (draft.ts). No DSH
- *         package serves the melite gateway's flows doors; fetch-
+ *         package wraps the estate's flows doors as a client; fetch-
  *         injected thin client over the editor's own wire shapes.
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
@@ -60,7 +60,7 @@ import {
 } from './draft.ts'
 import type { CardRow, DraftDoc, EditMap, ParamField, RunStatusDoc } from './draft.ts'
 
-/** Run-status poll cadence (the editor's door, cheap gateway-local read). */
+/** Run-status poll cadence (the editor's door, cheap same-host read). */
 const POLL_MS = 1500
 
 export interface FlowCardsProps {
@@ -164,7 +164,7 @@ function useDraft(draftId: string | null): {
 
   // The poll — terminal authority, stops on a terminal status (stream
   // or poll, whichever sees it first), then refreshes the draft doc
-  // (the gateway stamps a fresh createdAt on write-back).
+  // (the runs seat stamps a fresh createdAt on write-back).
   useEffect(() => {
     if (runId === null) return
     let alive = true
@@ -176,7 +176,7 @@ function useDraft(draftId: string | null): {
           if (runFinished(s.status)) {
             if (pollRef.current !== null) window.clearInterval(pollRef.current)
             pollRef.current = null
-            // the gateway stamps a fresh createdAt on write-back; refetch
+            // the runs seat stamps a fresh createdAt on write-back; refetch
             setTick((t) => t + 1)
           }
         })

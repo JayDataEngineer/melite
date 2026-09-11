@@ -217,12 +217,9 @@ export function disclosureRoot(): string {
  *  the module loads at server boot — the same instant). */
 const BOOT_AT: number = Date.now() / 1000;
 
-/** Gateway version (gateway.py 1066-1102 VERSION = "0.1.0"; the
- *  chrome HEALTH_JSON pins the same literal). */
-const GATEWAY_VERSION = "0.1.0";
-
 // ---------------------------------------------------------------------------
-// the flow declarations (the flows registry — doors/flowsRegistry.ts)
+// the flow declarations (the flows registry — flowsData.ts, re-homed
+// REBUILD-13 from the dead gateway package)
 // ---------------------------------------------------------------------------
 
 /** One registry headless-tool property, projected to the frozen
@@ -972,9 +969,9 @@ function registryBody(flowId: string): string | null {
 /** LEVEL 4 flow rows (lane_disclosure._flow_rows 364-411): one gated
  *  SkillRow per loadable declaration (load_error -> silent skip);
  *  body = SKILL.md when present (mega-skill mode) else the TS
- *  registry render (doors/flowsRegistry.ts — the flow.py authoring
- *  plane died 2026-09-08; the deleted source is neither servable
- *  nor wanted, so the declaration renders instead). */
+ *  registry render (flowsData.ts — the flow.py authoring plane died
+ *  2026-09-08; the deleted source is neither servable nor wanted,
+ *  so the declaration renders instead). */
 export function flowRows(repo: string): FlowRow[] {
   const out: FlowRow[] = [];
   for (const decl of flowDecls(repo)) {

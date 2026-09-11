@@ -1380,14 +1380,14 @@ function cmdDsh(): void {
     "(server mount ready; GUI home untouched)");
 }
 
-// ── manage: the manual door over the gateway HTTP API ────────────
+// ── manage: the manual door over the owning DSH's HTTP API ────────────
 
 function cmdManage(argv: string[]): number {
   // usage: provision manage <action> [key=value ...] [positional…]
   // The manage SSOT lives lane-side (the /v1/manage door); this is
   // its manual CLI, speaking HTTP — never an in-process import.
-  // The gateway URL is deployment config (MELITE_DSH_URL or
-  // --gateway); it is NEVER defaulted (the live PROD gateway is
+  // The DSH host URL is deployment config (MELITE_DSH_URL or
+  // --dsh); it is NEVER defaulted (the live PROD host is
   // never touched by accident).
   if (argv.length === 0 || argv[0] === "--help") {
     console.log("usage: provision manage <action> [key=value ...]");
@@ -1395,19 +1395,19 @@ function cmdManage(argv: string[]): number {
     console.log("  provision manage install-extension ComfyUI-KJNodes");
     console.log("  provision manage provision-model z-image");
     console.log("  provision manage logs tail=80");
-    console.log("gateway: MELITE_DSH_URL or --gateway <url> (required)");
+    console.log("dsh host: MELITE_DSH_URL or --dsh <url> (required)");
     return 1;
   }
   const rest = [...argv];
   let gw = (process.env.MELITE_DSH_URL ?? "").trim();
-  const gi = rest.indexOf("--gateway");
+  const gi = rest.indexOf("--dsh");
   if (gi >= 0) {
     gw = (rest[gi + 1] ?? "").trim();
     rest.splice(gi, 2);
   }
   if (!gw) {
-    die("no gateway URL — set MELITE_DSH_URL or pass " +
-      "--gateway <url> (never defaulted; the live PROD gateway is " +
+    die("no DSH host URL — set MELITE_DSH_URL or pass " +
+      "--dsh <url> (never defaulted; the live PROD host is " +
       "never touched by accident)");
   }
   const action = rest[0].replace(/_/g, "-").replace(/-/g, "_");
