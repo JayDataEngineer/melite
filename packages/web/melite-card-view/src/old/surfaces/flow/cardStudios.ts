@@ -62,9 +62,22 @@ import { kindDef } from "@melite/slots"
 // The component sees ONLY the props contract: card-studio-boundary.test.ts
 // source-scans every globbed file and fails the gate on any import
 // outside react + the contract types.
+// PORT-DEPTH SEAM (DSH 1:1 port): this file lives one level deeper than
+// in the editor (src/old/surfaces/flow/ vs src/surfaces/flow/), so the
+// build-time globs below carry SEVEN ../ runs instead of the editor's
+// six — they must land on the repo root. The tenant-id derivation
+// anchors on surviving segments and is depth-agnostic (unchanged).
+// SHELL-UNIVERSE SEAM (DSH 1:1 port): the "!" entries evict the
+// SHELL_BLOCKED_TENANTS below from the bundle graph itself — an
+// unregistered-but-bundled studio would still drag fiber v9's dist into
+// the artifact (the bundler inlines every glob match; the registration
+// guard alone cannot evict bytes). Keep the two lists in sync.
 const PLUGIN_TENANT_LOADERS = import.meta.glob<{
   default: ComponentType<StudioTenantProps>
-}>("../../../../../../packages/engines/*/action_cards/*/*/ui/studio/component.tsx")
+}>([
+  "../../../../../../../packages/engines/*/action_cards/*/*/ui/studio/component.tsx",
+  "!../../../../../../../packages/engines/comfyui/action_cards/3d/body/ui/studio/component.tsx",
+])
 
 // The card units (card-folder design record, 2026-09-08 — migration
 // complete): packages/engines/<engine>/src/cards/<genre>/<card>/ui/
@@ -74,7 +87,7 @@ const PLUGIN_TENANT_LOADERS = import.meta.glob<{
 // that package is their PERMANENT home, not a migration leftover.
 const CARD_UNIT_TENANT_LOADERS = import.meta.glob<{
   default: ComponentType<StudioTenantProps>
-}>("../../../../../../packages/engines/*/src/cards/*/*/ui/studio/component.tsx")
+}>("../../../../../../../packages/engines/*/src/cards/*/*/ui/studio/component.tsx")
 
 // Card-body studios claim ui/studio/component.tsx (THE ui/studio
 // claim = the authoring-surface override). Other ui/<claim>/ dirs are
@@ -104,7 +117,14 @@ const CARD_UNIT_BODY =
 // to maintain, and the boundary gate keeps glob ≡ fs.
 const CARD_PACKAGE_TENANT_LOADERS = import.meta.glob<{
   default: ComponentType<StudioTenantProps>
-}>("../../../../../../packages/*/*/src/ui/studio/component.tsx")
+}>([
+  "../../../../../../../packages/*/*/src/ui/studio/component.tsx",
+  // SHELL-UNIVERSE SEAM (DSH 1:1 port): evict the fiber-v9 tenants from
+  // the bundle graph (see SHELL_BLOCKED_TENANTS — keep in sync).
+  "!../../../../../../../packages/3d/anny/src/ui/studio/component.tsx",
+  "!../../../../../../../packages/3d/img-to-mesh/src/ui/studio/component.tsx",
+  "!../../../../../../../packages/motion/motion/src/ui/studio/component.tsx",
+])
 
 // ANCHOR LAW: vite normalizes glob keys — the leading ../.. runs
 // collapse, the literal "packages/" prefix DISAPPEARS from every key
@@ -137,16 +157,43 @@ function pluginTenantId(path: string): string | null {
   return null
 }
 
-/** Every plugin tenant id the globs resolve (boundary test introspection). */
+/** Every plugin tenant id the globs resolve (boundary test introspection).
+ * MINUS the shell-blocked set below — the DSH host offers only what it
+ * can mount. */
 export function pluginTenantIds(): string[] {
   return [
     ...Object.keys(PLUGIN_TENANT_LOADERS),
     ...Object.keys(CARD_UNIT_TENANT_LOADERS),
     ...Object.keys(CARD_PACKAGE_TENANT_LOADERS),
   ].map(pluginTenantId)
-    .filter((x): x is string => x !== null)
+    .filter((x): x is string => x !== null && !SHELL_BLOCKED_TENANTS.has(x))
     .sort()
 }
+
+// ── SHELL-UNIVERSE SEAM (2026-09-11, DSH-port-only — the editor keeps
+// all seven): the DSH shell hosts React 18.3.1 (reference lockfile pins
+// react@18.3.1; the served shell bundle carries only the React-18
+// internals marker). These tenants' loader chains evaluate
+// @react-three/fiber v9, whose dist reads the React-19-only
+// __CLIENT_INTERNALS_... at module top level (M undefined → "Cannot read
+// properties of undefined (reading 'S')", killing the tab slot on mount —
+// the tile-add crash, sourcemap-proven to fiber's events dist). Static
+// import trace (transitive, export-map-aware) marks exactly these four;
+// the other three never touch fiber and stay claimed. Excluded tenants
+// fall through to the schema-form provider (precedence 50) — the
+// documented fail-safe, never a blank. Re-enable when the shell goes 19
+// or the studios go fiber-8.
+const SHELL_BLOCKED_TENANTS = new Set([
+  // → @melite-plugin/3d assembly → viewers barrel (Stage,
+  // AnimatedGLBViewer) + the 3d/body chain.
+  "3d/anny",
+  // → MeshPreviewCanvas (fiber/drei).
+  "3d/body",
+  // → assembly → viewers barrel.
+  "3d/img-to-mesh",
+  // → viewer3d (PoseViewer3D/PoseEditMode).
+  "motion/motion",
+])
 
 /** Lazy-mount a plugin tenant behind a Suspense boundary (code-split). */
 function lazyPluginTenant(
@@ -167,17 +214,28 @@ function lazyPluginTenant(
 }
 
 const PLUGIN_TENANTS: Record<string, ComponentType<StudioTenantProps>> = {}
-for (const path of Object.keys(PLUGIN_TENANT_LOADERS)) {
+const _shellBlocked: string[] = []
+function claimTenant(
+  loaders: Record<string, () => Promise<{ default: ComponentType<StudioTenantProps> }>>,
+  path: string,
+) {
   const id = pluginTenantId(path)
-  if (id) PLUGIN_TENANTS[id] = lazyPluginTenant(PLUGIN_TENANT_LOADERS, path)
+  if (!id) return
+  // SHELL-UNIVERSE SEAM: never register what the host cannot mount —
+  // the loader would evaluate fiber v9 under the shell's React 18.
+  if (SHELL_BLOCKED_TENANTS.has(id)) {
+    if (!_shellBlocked.includes(id)) _shellBlocked.push(id)
+    return
+  }
+  PLUGIN_TENANTS[id] = lazyPluginTenant(loaders, path)
 }
-for (const path of Object.keys(CARD_UNIT_TENANT_LOADERS)) {
-  const id = pluginTenantId(path)
-  if (id) PLUGIN_TENANTS[id] = lazyPluginTenant(CARD_UNIT_TENANT_LOADERS, path)
-}
-for (const path of Object.keys(CARD_PACKAGE_TENANT_LOADERS)) {
-  const id = pluginTenantId(path)
-  if (id) PLUGIN_TENANTS[id] = lazyPluginTenant(CARD_PACKAGE_TENANT_LOADERS, path)
+for (const path of Object.keys(PLUGIN_TENANT_LOADERS)) claimTenant(PLUGIN_TENANT_LOADERS, path)
+for (const path of Object.keys(CARD_UNIT_TENANT_LOADERS)) claimTenant(CARD_UNIT_TENANT_LOADERS, path)
+for (const path of Object.keys(CARD_PACKAGE_TENANT_LOADERS)) claimTenant(CARD_PACKAGE_TENANT_LOADERS, path)
+if (_shellBlocked.length > 0 && typeof console !== "undefined") {
+  console.warn(
+    `cardStudios: shell-blocked tenants fall back to the schema form (shell is React 18, tenants need fiber v9): ${_shellBlocked.sort().join(", ")}`,
+  )
 }
 
 /** Resolve a tenant id → component across BOTH surfaces (first-party
@@ -224,10 +282,18 @@ export function getCardStudio(stage: CardStage): CardBody | null {
   if (!injected) {
     if (typeof console !== "undefined" && !_unknownTenants.has(binding.tenant)) {
       _unknownTenants.add(binding.tenant)
-      console.error(
-        `cardStudios: catalog declares body tenant ${JSON.stringify(binding.tenant)} `
-          + `but no component is registered for it — publish packages/<id>/cards/<dir>/component.tsx or fix the card's body: claim`,
-      )
+      // SHELL-UNIVERSE SEAM: a blocked tenant is DELIBERATELY unclaimed —
+      // report the fallback, not a missing-component defect.
+      if (SHELL_BLOCKED_TENANTS.has(binding.tenant)) {
+        console.warn(
+          `cardStudios: body tenant ${JSON.stringify(binding.tenant)} is shell-blocked (React 18 host, fiber-v9 studio) — falling back to the schema form`,
+        )
+      } else {
+        console.error(
+          `cardStudios: catalog declares body tenant ${JSON.stringify(binding.tenant)} `
+            + `but no component is registered for it — publish packages/<id>/cards/<dir>/component.tsx or fix the card's body: claim`,
+        )
+      }
     }
     return null
   }

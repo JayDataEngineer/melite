@@ -44,13 +44,12 @@
       "three/examples/*": [
         "./node_modules/@types/three/examples/*",
         "./node_modules/three/examples/*"
-      ],
-      "@react-three/fiber": [
-        "./node_modules/@react-three/fiber/dist/react-three-fiber.cjs.d.ts"
-      ],
-      "@react-three/drei": [
-        "./node_modules/@react-three/drei"
       ]
+      // NOTE: no @react-three/* pins (a fiber .d.ts pin once pointed
+      // the BUNDLER at types — tsdown honors tsconfig paths — killing
+      // the build with UNRESOLVED_IMPORT once the studio glob pulled
+      // fiber into the graph; natural resolution serves both tsc and
+      // the bundler here)
     },
     "strictFunctionTypes": true
   },
