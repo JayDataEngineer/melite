@@ -138,3 +138,37 @@ test('cross-host posture: the pinned owning DSH serves every lane (config.gatewa
   assert.equal(payload.runs[0]?.thumbnail, '/infer-gallery/artifact?path=run-r1%2Ft.png')
   standIn.close()
 })
+
+test('the artifact grammar accepts subdir names and refuses traversal (the live-probe 400)', async () => {
+  const ctx = new Context()
+  new FakeWebServer(ctx)
+  const gallery: Plugin = (await import('../../../../packages/web/infer-gallery/src/index.ts')).default ?? (await import('../../../../packages/web/infer-gallery/src/index.ts'))
+  const flowDir = mkdtempSync(join(tmpdir(), 'gallery-wall-'))
+  // a real artifact in a SUBDIR (the shape every generate run emits)
+  mkdirSync(join(flowDir, 'run-abc123-word', 'generate'), { recursive: true })
+  writeFileSync(join(flowDir, 'run-abc123-word', 'generate', 'img.png'), Buffer.from([1, 2, 3, 4]))
+  await ctx.plugin(gallery as never, { flowDir })
+  const server = ctx.get('webServer', true) as FakeWebServer
+  const art = server.captured.find((c) => c.route.includes('/artifact'))!
+  const t = async (qs: string): Promise<FakeRes> => {
+    const r = new FakeRes()
+    await art.handler({ url: '/infer-gallery/artifact?' + qs }, r as never)
+    return r
+  }
+  // 1. the nested real name SERVES (was 400 before the fix — the
+  //    runs-list rewrite emits subdir names the grammar refused).
+  const ok = await t('path=' + encodeURIComponent('run-abc123-word/generate/img.png'))
+  assert.equal(ok.status, 200)
+  assert.equal(Buffer.byteLength(String(ok.body)), 4)
+  // 2. traversal refuses (grammar first, containment second).
+  for (const evil of [
+    'path=' + encodeURIComponent('run-abc123-word/../run-abc123-word/generate/img.png'),
+    'path=' + encodeURIComponent('run-abc123-word/generate/../../etc/passwd'),
+    'path=/etc/passwd',
+    'path=' + encodeURIComponent('../flowDir/run-abc123-word/generate/img.png'),
+  ]) {
+    const bad = await t(evil)
+    assert.equal(bad.status, 400, 'must refuse: ' + evil)
+    assert.match(String(bad.body), /forbidden_path/)
+  }
+})
