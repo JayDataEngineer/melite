@@ -17,7 +17,7 @@
 // Run: node --experimental-strip-types --test tests/walls/ts/suites/families-transaction.test.ts
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { Context, type Plugin } from "../../../../node_modules/.pnpm/@deepseek-ai+cordis@4.0.2_@deepseek-ai+cordis-plugin-include@1.0.6_@deepseek-ai+cordis-plugin-loader@1.0.3/node_modules/@deepseek-ai/cordis/lib/index.js";
+import { Context, type Plugin } from "../../../../packages/estate/drafts/node_modules/@deepseek-ai/cordis/lib/index.js";
 import {
   MODELS_SERVICE,
   ModelsService,

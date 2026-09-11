@@ -145,7 +145,15 @@ describe("CardRunFeedback (the wide-card drilldown block)", () => {
   it("(b) shows the include_log console while running, with Copy", async () => {
     mount(stage(), true)
     const panel = await screen.findByTestId("card-studio-panel", {}, { timeout: 3000 })
-    const con = panel.querySelector('[data-card-run-console="s0"]')
+    // The console rides the enrichment poll (async fetch mock) — it
+    // lands AFTER the panel paints. Querying synchronously flakes
+    // under full-suite load (2026-09-11: green in isolation, null in
+    // the 225-file run) — wait for the element, then assert content.
+    let con: Element | null = null
+    await waitFor(() => {
+      con = panel.querySelector('[data-card-run-console="s0"]')
+      expect(con).not.toBeNull()
+    })
     expect(con!.textContent).toContain("text-to-motion: running")
     // the poll rides the enrichment door — includeLog: true
     await waitFor(() => {

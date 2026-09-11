@@ -33,6 +33,9 @@ import {
 import queuePlugin, { manageProvider } from "../../../../packages/harness/estate-queue/src/index.ts";
 import { manageRemotePlugin } from "../../../../packages/estate/manage/lib/index.js";
 import type { ManageRemoteService } from "../../../../packages/estate/manage/lib/index.js";
+// The endpoint path resolution (the env override the wall boots
+// under) — imported from ENGINE SOURCE (strip-types), not a stub.
+import { endpointConfigPath } from "../../../../packages/engines/comfyui-cordis/src/comfyui.ts";
 
 interface Booted {
   ctx: Context;
@@ -158,6 +161,24 @@ test("an unknown action refuses loud at 422 (closed vocabulary, never a silent m
     },
   );
   await fiber.dispose();
+});
+
+test("endpointConfigPath honors COMFYUI_ENDPOINT_CONFIG (the wall's own override resolves)", () => {
+  // The wall boots with COMFYUI_ENDPOINT_CONFIG pointed at its tmp
+  // file — the resolver must return EXACTLY that path (an override
+  // that silently fell back to the packaged default would aim
+  // endpoint_set writes at the live config).
+  assert.equal(endpointConfigPath(), process.env["COMFYUI_ENDPOINT_CONFIG"]);
+  const saved = process.env["COMFYUI_ENDPOINT_CONFIG"];
+  delete process.env["COMFYUI_ENDPOINT_CONFIG"];
+  try {
+    assert.ok(
+      endpointConfigPath().endsWith("comfyui_endpoint.json"),
+      "without the env var the packaged default resolves",
+    );
+  } finally {
+    process.env["COMFYUI_ENDPOINT_CONFIG"] = saved;
+  }
 });
 
 test("endpoint_set refuses a non-url at 400 without probing or writing", async () => {

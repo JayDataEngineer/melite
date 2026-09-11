@@ -1,7 +1,3 @@
-## Supply-chain policy for the installed pnpm (10.x).
-## Without these, pnpm install exits 1 and the Vite startup chain dies.
-onlyBuiltDependencies:
-  - msw
 ## @tanstack/react-virtual + virtual-core ship lockfile entries published
 ## the same day; pnpm's default minimumReleaseAge rejects them.
 minimumReleaseAge: 0
@@ -21,6 +17,10 @@ minimumReleaseAge: 0
 packages:
   - 'apps/*' # PRODUCT ASSEMBLIES (DSH shape: apps/ = product, packages/ = capability — apps/gateway owns the process rim)
   - 'packages/*/*' # STRUCTURE STAGE 2 (2026-09-08): uniform DSH two-tier — packages/<domain>/<pkg>; mid-tier dirs (harness/dsh, web/dsh) and 1-tier leaves died
+  - 'packages/web-kit/*'
+    # WEB-KIT (2026-09-11): the @melite/* kit packages are REAL workspace members — the editor
+    # consumes them via workspace:* and pnpm owns their peer resolution (the fossil node_modules with react 18
+    # under @melite/ui mounted a SECOND React in the editor's vitest and killed every render test).
   - 'vendor/cordis_plugins/*' # VENDORED platform tier (2026-09-08: harness-vendor discipline — loader/timer/logger-console as workspace members, consumed via workspace:*; pnpm materializes the links, no registry copy can exist)
   - 'packages/engines/*/action_cards/*/ui' # engine UI tenants (@melite-plugin/{video,3d,audio,motion})
   - 'packages/engines/*/action_cards/*/*/ui'
@@ -33,7 +33,7 @@ packages:
   - 'packages/engines/*' # ENGINE DOMAIN (STAGE 1, 2026-09-08): engine leaves (@melite/engine-comfyui first; MCP-as-cards slots beside it — the package root, not action_cards/)
 
 allowBuilds:
-  lefthook: set this to true or false
+  lefthook: true
 
 ## ONE REACT for the whole workspace (web-registry move, 2026-09-03):
 ## the @melite kit packages declare react:"*" (they render wherever a
@@ -44,3 +44,10 @@ allowBuilds:
 ## NOTE (2026-09-10): the react single-instance override died here —
 ## it never reached the lockfile (mixed 18.3.1/19.2.8 is the installed
 ## truth). Re-adding it needs a full lockfile re-resolution, not a line.
+## DONE (2026-09-11, coverage stroke): the re-resolution happened —
+## packages/web-kit/* enrolled as members (fossil react-18
+## node_modules gone), react+react-dom pinned ^19.2.6 in the
+## editor-consumed UI pkgs (web-kit ui/slots/timeline,
+## action_cards/@melite/cards, six UI genre pkgs). Installed truth
+## is single-react-19 for the whole editor graph (hoisted zustand
+## default included); the 226-file editor suite is green.

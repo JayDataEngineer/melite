@@ -28,7 +28,7 @@
     "@melite/formats": "workspace:*",
     "@melite/ui": "workspace:*",
     "lucide-react": "*",
-    "react": "*",
+    "react": "^19.2.6",
     "three": "*"
   },
   "devDependencies": {

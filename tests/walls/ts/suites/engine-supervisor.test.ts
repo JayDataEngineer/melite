@@ -29,7 +29,7 @@ import {
   ComfyUIHostService,
   NO_ENDPOINT_MESSAGE,
 } from "../../../../packages/engines/comfyui-cordis/src/comfyui.ts";
-import { Context } from "../../../../node_modules/.pnpm/@deepseek-ai+cordis@4.0.2_@deepseek-ai+cordis-plugin-include@1.0.6_@deepseek-ai+cordis-plugin-loader@1.0.3/node_modules/@deepseek-ai/cordis/lib/index.js";
+import { Context } from "../../../../packages/estate/drafts/node_modules/@deepseek-ai/cordis/lib/index.js";
 
 interface ManualClock {
   timers: Array<{ delayMs: number; fire: () => void }>;

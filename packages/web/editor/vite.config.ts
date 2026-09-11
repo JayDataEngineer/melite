@@ -144,12 +144,23 @@ export default defineConfig({
         inline: [/@deepseek-ai\/dsh-client-ui-primitives/],
       },
     },
-    // The primitives' lib also imports `anser` WITHOUT declaring it
-    // (upstream packaging gap, 0.1.5-rc.1) — strict pnpm isolation
-    // hides it from the store. One local alias closes the gap; the
-    // rows above stay untouched.
+    // The primitives' lib also imports `anser` + `shiki` WITHOUT
+    // declaring them (upstream packaging gap, 0.1.5-rc.2 — the
+    // lockfile snapshot carries only cordis) — strict pnpm isolation
+    // hides them from the store copy's siblings. Local aliases close
+    // the gap (the editor declares both as devDeps and owns the
+    // copies); the rows above stay untouched.
     alias: {
-      anser: R('./node_modules/anser/index.js'),
+      // Order matters (first-hit wins): subpaths BEFORE the bare
+      // prefix, or `shiki` swallows `shiki/core` and the package
+      // exports map is never consulted.
+      'shiki/core': R('./node_modules/shiki/dist/core.mjs'),
+      'shiki/engine/javascript': R('./node_modules/shiki/dist/engine-javascript.mjs'),
+      '@shikijs/langs/typescript': R('./node_modules/@shikijs/langs/dist/typescript.mjs'),
+      '@shikijs/langs/shellscript': R('./node_modules/@shikijs/langs/dist/shellscript.mjs'),
+      '@shikijs/langs/json': R('./node_modules/@shikijs/langs/dist/json.mjs'),
+      anser: R('./node_modules/anser'),
+      shiki: R('./node_modules/shiki'),
     },
   },
 })

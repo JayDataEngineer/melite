@@ -22,7 +22,7 @@ import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 // The bare specifier resolves inside packages/* (per-package
 // node_modules); from tests/ the pnpm store path is direct:
-import { Context, Service, symbols } from "../../../../node_modules/.pnpm/@deepseek-ai+cordis@4.0.2_@deepseek-ai+cordis-plugin-include@1.0.6_@deepseek-ai+cordis-plugin-loader@1.0.3/node_modules/@deepseek-ai/cordis/lib/index.js";
+import { Context, Service, symbols } from "../../../../packages/estate/drafts/node_modules/@deepseek-ai/cordis/lib/index.js";
 import {
   MODELS_SERVICE,
   ModelsService,
