@@ -1,7 +1,7 @@
 // melite_discover — Melite discover (the rework, 2026-09-09):
 // ONE disclosure system over both planes. Grants the progressive
 // disclosure LINES (clamped summary rows — the tier the agent
-// routes on). Thin door wrapper (gatewayRequest) — the SHAPE lives
+// routes on). Thin door wrapper (estateRequest) — the SHAPE lives
 // in doors/disclose.ts; this file is the DSH ToolDefinition face
 // (input schema, presentCall, output schema/render, execute).
 import { defineTool } from '@deepseek-ai/dsh-tools'

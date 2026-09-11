@@ -25,6 +25,17 @@ import { RemoteError } from '@deepseek-ai/dsh-typert-protocol'
 import type { RemoteResult } from '@deepseek-ai/dsh-typert-protocol'
 import type { FlowEventFrame } from './draft.ts'
 
+/** The cards resource's Remote failure code, merged into the
+ *  protocol's one vocabulary (cookbook §2: declaration merging, next
+ *  to the throw — the gateway/internal bucket died with the app). */
+declare module '@deepseek-ai/dsh-typert-protocol' {
+  interface RemoteErrorDetailsMap {
+    /** The door's wire is untyped at this seam — the address prefixes
+     *  the diagnostic. */
+    'cards/unclassified': Record<string, never>;
+  }
+}
+
 /** One bench stage as the door serves it (presentation extras ride —
  *  this is the USER-facing view; the runner projection strips them). */
 export interface BenchStageRow {
@@ -106,9 +117,9 @@ export function parseCardsAddress(address: string): { bench: true } | { run: str
 }
 
 /** One failure frame (the contract's error branch — a real RemoteError
- *  on the unclassified-Host code; the address prefixes the diagnostic). */
+ *  on the unclassified cards code; the address prefixes the diagnostic). */
 function failure(address: string, message: string): RemoteResult<never> {
-  return { ok: false, error: new RemoteError('gateway/internal', address + ': ' + message, {}) }
+  return { ok: false, error: new RemoteError('cards/unclassified', address + ': ' + message, {}) }
 }
 
 /** Defensive row readers — the door's wire is untyped at this seam. */

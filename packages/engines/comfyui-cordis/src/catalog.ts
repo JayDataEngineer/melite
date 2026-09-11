@@ -375,7 +375,7 @@ export function findModelPresent(
 // ── the models catalog as a Cordis Service (stroke 4a,
 // DSH-AS-LANGUAGE LAW) ───────────────────────────────────────────
 // SERVICE NAME: 'models' (ctx.models) — the short camelCase service
-// key per the ctx.gatewayError precedent and the sibling strokes 2a
+// key per the sibling-stroke precedent and the sibling strokes 2a
 // ('cardRegistry') / 2b ('runs'). The long form 'modelCatalog' was
 // considered and declined: the short name matches the models-plane
 // lane. Documented here per the task.

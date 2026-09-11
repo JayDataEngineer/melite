@@ -38,26 +38,28 @@
 // as-is (never retried) — only transient failures (5xx + network) retry.
 //
 // ─── THE DOOR GATE (2026-09-05, the loras incident) ──────────────────────
-// apiFetch/apiJson accept ONLY FetchUrl = GatewayDoorUrl | ExternalUrl.
-// GatewayDoorUrl is GENERATED from the gateway's route table
-// (tools/gen_gateway_doors.py — the wire SSOT): a frontend fetch of a
-// door the gateway does not serve is a COMPILE ERROR, not a runtime
-// 404 rendering "nothing found" over live data (LoraPicker fetched
-// /v1/loras over 12 declared krea-2 rows for exactly that reason).
-// Non-gateway services go through externalUrl(...) — a named, greppable
-// escape. There is no `string` overload: an unlisted door must not
+// apiFetch/apiJson accept ONLY FetchUrl = EstateDoorUrl | ExternalUrl.
+// EstateDoorUrl is the HAND-MAINTAINED browser door table
+// (./generated/gatewayDoors.ts — the generator died with the gateway,
+// so the table is curated by hand against the served lanes): a frontend
+// fetch of a door the estate does not serve is a COMPILE ERROR, not a
+// runtime 404 rendering "nothing found" over live data (LoraPicker
+// fetched /v1/loras over 12 declared krea-2 rows for exactly that
+// reason). Non-door URLs go through externalUrl(...) — a named,
+// greppable escape. There is no `string` overload: an unlisted door must not
 // compile. ─────────────────────────────────────────────────────────────────
 
-import type { GatewayDoorUrl } from "./generated/gatewayDoors"
+import type { EstateDoorUrl } from "./generated/gatewayDoors"
 import { readAsDataURL } from "@melite/ui"
 
-/** A URL outside the gateway (another service). Constructible ONLY via
- * externalUrl() — never spell one inline at a fetch call site. */
+/** A URL outside the door table (another service or a same-host row
+ * door like /melite-tools/*). Constructible ONLY via externalUrl()
+ * — never spell one inline at a fetch call site. */
 declare const externalBrand: unique symbol
 export type ExternalUrl = string & { readonly [externalBrand]: true }
 
-/** The named escape for non-gateway services (e.g. the melite-tools
- * enhance server). Every use is deliberate and greppable. */
+/** The named escape for non-table URLs. Every use is deliberate and
+ * greppable. */
 export function externalUrl(
   u: `/${string}` | `http${string}` | `data:${string}`,
 ): ExternalUrl {
@@ -65,7 +67,7 @@ export function externalUrl(
 }
 
 /** Everything apiFetch/apiJson may fetch. */
-export type FetchUrl = GatewayDoorUrl | ExternalUrl
+export type FetchUrl = EstateDoorUrl | ExternalUrl
 
 const MAX_RETRIES = 4            // 5 attempts total (initial + 4 retries)
 const BASE_MS = 400              // first backoff

@@ -4,11 +4,11 @@
 #
 # ONE row. The row's plugin (src/index.ts) mounts the estate's real
 # composition as CHILD plugins via ctx.plugin — the loader's own
-# composition mechanism (the doors are already cordis plugins that
-# inject [gatewayError, webServer, storageDomain, runs, …] and register
-# their /v1 routes on the HOST's webServer; see
-# docs/plans/estate-collapse-2026-09-10.md — the second-Loader estate
-# process and its DSH→degenerate-copy proxy died with this row).
+# composition mechanism (the seats disclose/load/runs/skills/queue/
+# manage register in-process on the estate fiber; the browser HTTP
+# doors live in the doors rows of the same composition — see
+# docs/plans/estate-collapse-2026-09-10.md; the second-process estate
+# and its DSH→degenerate-copy proxy died with the gateway).
 - insert:
     - id: melite-estate
       name: '@melite-plugin/dsh-estate'

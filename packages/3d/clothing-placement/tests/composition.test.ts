@@ -2,7 +2,7 @@
 //
 // Harness-Packages law: product-visible plugins require a
 // REAL-composition proof — boot through the production loading
-// path (the composition root the gateway prime consumes), not a
+// path (the composition root the estate prime consumes), not a
 // hand-built fixture — and registry contributions prove disposal
 // (the HMR-safety test: dispose the fiber, observe removal).
 //
@@ -12,11 +12,11 @@ import assert from "node:assert/strict";
 import { Context } from "@deepseek-ai/cordis";
 import { ComfyUIService, loadCardDefs } from "@melite/comfyui-cordis";
 import * as pkg from "../src/index.ts";
-import { toolBaseRows } from "../../../../packages/gateway/doors/src/doors/toolProjection.ts";
+import { toolBaseRows } from "../../../harness/estate-queue/src/toolProjection.ts";
 
 describe("real composition (the production path)", () => {
   it("the composition root serves the card from the PACKAGE, not a glob hit", async () => {
-    // loadCardDefs is the engine's composition root (the gateway's
+    // loadCardDefs is the engine's composition root (the estate's
     // cardRegistry prime consumes it). With the folder moved out of
     // src/cards, serving proves the package list composed it.
     const defs = await loadCardDefs();

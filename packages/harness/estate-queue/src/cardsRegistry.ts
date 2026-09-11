@@ -262,7 +262,7 @@ function deriveDecls(
 // ── the CardRegistry as a Cordis Service (stroke 2a,
  // DSH-AS-LANGUAGE LAW) ────────────────────────────────────────────
  // SERVICE NAME: 'cardRegistry' (ctx.cardRegistry) — the short
- // camelCase service key per the ctx.gatewayError precedent and the
+ // camelCase service key per the sibling-stroke precedent and the
  // sibling stroke 2b ('runs'). Defined where the registry lives
  // (this file, the cards side) for the same cycle reason 2b records:
  // doors import this module; defining the service anywhere doorside
@@ -335,11 +335,11 @@ export class CardRegistryService extends Service {
   defsSync(): Map<string, CardDefinition> {
     if (this.defs === null) {
       throw new Error(
-        "[card_registry] unprimed: boot must await the gateway-card-registry " +
+        "[card_registry] unprimed: boot must await the estate-card-registry " +
           "provider (or ctx.cardRegistry.prime()) before the " +
-          "disclosure rim serves (the manifest's gateway-card-registry row " +
-          "primes; both main.ts boot sites re-prime; walls boot " +
-          "through startServer which primes)",
+          "disclosure rim serves (the estate composition's " +
+          "estate-card-registry row primes; boot rigs settle-poll " +
+          "for the seats)",
       );
     }
     return this.defs;
@@ -352,7 +352,7 @@ export class CardRegistryService extends Service {
   readsSync(): FactsReads {
     if (this.reads === null) {
       throw new Error(
-        "[card_registry] unprimed: boot must await the gateway-card-registry " +
+        "[card_registry] unprimed: boot must await the estate-card-registry " +
           "provider (or ctx.cardRegistry.prime()) before rows derive " +
           "(the models boot feeds facts.ts through these reads)",
       );
@@ -734,11 +734,10 @@ declare module "@deepseek-ai/cordis" {
 /** The provider plugin (fiber-owned): owns the CardRegistryService
  *  lifetime and primes it at load, so inject-gated consumers apply
  *  only after the registry is primed. Manifest row
- *  gateway-card-registry rides BEFORE every consumer (validate,
+ *  estate-card-registry rides BEFORE every consumer (validate,
  *  flows-start, chrome, planes — the stroke-2b row placement rule).
- *  Loadable entry: packages/gateway/doors/src/entries/
- *  card-registry.ts (the DSH leaf discipline — addressed code
- *  loads by address, never as a `cordis:` builtin). */
+ *  (The DSH leaf discipline — addressed code loads by address,
+ *  never as a `cordis:` builtin.) */
 /** The host row (estate naming — the gateway manifest died with
  *  the app; this is what the estate composition mounts). */
 export const cardRegistryProvider = {
@@ -767,7 +766,7 @@ export function needCardRegistry(
     throw new Error(
       "[card_registry] no CardRegistryService for " + where +
         " — doors inject 'cardRegistry' and pass ctx.cardRegistry " +
-        "(the manifest's gateway-card-registry row primes at boot)",
+        "(the manifest's estate-card-registry row primes at boot)",
     );
   }
   return cards;

@@ -15,11 +15,11 @@ import * as pkg from "../src/index.ts";
 import { DECL as krea2Decl } from "@melite/models-krea-2";
 import { DECL as zImageDecl } from "@melite/models-z-image";
 import { DECL as animaDecl } from "@melite/models-anima";
-import { toolBaseRows } from "../../../../packages/gateway/doors/src/doors/toolProjection.ts";
+import { toolBaseRows } from "../../../harness/estate-queue/src/toolProjection.ts";
 
 describe("real composition (the production path)", () => {
   it("the composition root serves the card from the PACKAGE, not a glob hit", async () => {
-    // loadCardDefs is the engine's composition root (the gateway's
+    // loadCardDefs is the engine's composition root (the estate's
     // cardRegistry prime consumes it). With the folder moved out of
     // src/cards, serving proves the package list composed it — and
     // exactly once (the deleted engine card would double-register).

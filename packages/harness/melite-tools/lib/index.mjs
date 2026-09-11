@@ -967,9 +967,11 @@ function meliteFlow(request) {
 * own HTTP port — no external Python anywhere, 2026-09-10) plus the
 * estate TS legs (model downloads, systemd, journal logs) — behind
 * ONE action-dispatch tool. The SSOT is
-* packages/gateway/doors/src/doors/manage.ts (ACTIONS + HANDLERS +
-* LIFECYCLE_GUARDED — python/manage.py is deleted); this tool is its
-* AI door (POST /v1/manage). The manual door is
+* packages/harness/estate-queue/src/managePlane.ts (ACTIONS +
+* HANDLERS + LIFECYCLE_GUARDED — the gateway doors row died with
+* the app; the manage seat serves the same vocabulary in-process);
+* this tool is its AI door (the manage seat, POST /v1/manage on
+* browser mounts). The manual door is
 * `provision manage <action>` (packages/engines/comfyui-cordis/scripts/provision.ts,
 * via ./setup.sh manage …).
 *

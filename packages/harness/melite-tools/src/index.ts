@@ -89,7 +89,7 @@ export const name = 'melite-tools'
 // tool plane — it must activate in EVERY composition, including the
 // estate/sdk server (no webServer service, see src/doors.ts for why
 // the host routes live in their own loader entry). llm is NOT injected
-// here: the run doors ride the GATEWAY, and the enhance seams that do
+// here: the run doors ride the estate seats, and the enhance seams that do
 // need ctx.llm moved to src/doors.ts with the routes.
 export const inject = ['tools']
 
