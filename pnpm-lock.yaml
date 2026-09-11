@@ -768,6 +768,25 @@ importers:
         specifier: ^5.9.3
         version: 5.9.3
 
+  packages/estate/media:
+    dependencies:
+      '@deepseek-ai/cordis':
+        specifier: ^4.0.1
+        version: 4.0.2(@deepseek-ai/cordis-plugin-loader@1.0.3)
+      '@deepseek-ai/dsh-host-webserver':
+        specifier: 0.1.5-rc.2
+        version: 0.1.5-rc.2(@deepseek-ai/cordis@4.0.2)(supports-color@9.4.0)
+      '@deepseek-ai/dsh-typert-protocol':
+        specifier: 0.1.5-rc.2
+        version: 0.1.5-rc.2(@deepseek-ai/cordis@4.0.2)
+    devDependencies:
+      '@types/node':
+        specifier: ^22.20.0
+        version: 22.20.1
+      typescript:
+        specifier: ~5.7.2
+        version: 5.7.3
+
   packages/estate/runs:
     dependencies:
       '@deepseek-ai/cordis':
@@ -2468,6 +2487,9 @@ importers:
       '@melite/estate-manage':
         specifier: workspace:*
         version: link:../../estate/manage
+      '@melite/estate-media':
+        specifier: workspace:*
+        version: link:../../estate/media
       '@melite/estate-queue':
         specifier: workspace:*
         version: link:../../harness/estate-queue
