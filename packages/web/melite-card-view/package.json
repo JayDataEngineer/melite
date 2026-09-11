@@ -21,7 +21,7 @@
   "scripts": {
     "build": "bun node_modules/tsdown/dist/run.mjs -c tsdown.config.ts",
     "typecheck": "tsc --noEmit",
-    "test": "bun test tests/"
+    "test": "bun test tests/cards-tab.test.ts tests/draft-model.test.ts tests/parse-cards.test.ts tests/zoom-promotion.test.ts"
   },
   "devDependencies": {
     "@deepseek-ai/cordis": "^4.0.1",

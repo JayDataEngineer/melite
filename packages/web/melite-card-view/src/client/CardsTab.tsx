@@ -159,22 +159,66 @@ const STAGE_DOT: Record<string, 'done' | 'ongoing' | 'error' | 'warning' | null>
   queued: 'warning', pending: 'warning', running: 'ongoing', done: 'done', failed: 'error', ready: null,
 }
 
-function StageRowView({ stage, onOpen }: { stage: BenchStageRow; onOpen: (stage: BenchStageRow) => void }): ReturnType<typeof h> {
-  const title = stage.title ?? stage.card ?? stage.id
-  const engine = typeof stage.engine === 'string' && stage.engine !== '' ? stage.engine : 'comfyui'
-  const rawStatus = typeof stage.runStatus === 'string' ? stage.runStatus : undefined
-  const dot = rawStatus !== undefined ? (STAGE_DOT[rawStatus] ?? null) : null
-  // THE CARD GRAMMAR (FlowCards' CardRowLine): kind Pill, bold title,
-  // engine Pill, live StateDot — a card row, never a bare text line
-  // (the 2026-09-11 "[REDACTED 2026-11-05] text" regression stays dead).
-  return h('li', { className: css.stage, 'data-stage-id': stage.id },
-    h('button', { className: css.row, type: 'button', 'data-stage-status': rawStatus ?? 'ready', onClick: () => onOpen(stage) },
-      h(Pill, null, String(stage.card ?? 'card')),
-      h('span', { className: css.rowTitle }, String(title)),
-      h(Pill, null, engine),
-      dot !== null ? h(StateDot, { state: dot }) : null,
+/** THE CARD ROW — the chat plane's CardRowLine grammar VERBATIM
+ *  (f3026845, the 9-10 card system): [artifact thumb | kind Pill],
+ *  bold title, service Pill, live StateDot, clipped prompt. ONE card
+ *  system, both planes — the tab renders the SAME row the chat
+ *  renders, from the same stylesheet (the .row/.thumb/.rowTitle/
+ *  .prompt classes below are the flow block's own). */
+function CardRowLineTab({ row, onOpen }: {
+  row: CardRowLineTabRow
+  onOpen: (row: CardRowLineTabRow) => void
+}): ReturnType<typeof h> {
+  return h('li', { className: css.stage, 'data-stage-id': row.id, 'data-stage-status': row.status },
+    h('button', { className: css.row, type: 'button', 'data-status': row.status, onClick: () => onOpen(row) },
+      row.thumbUrl !== null
+        ? h('img', { className: css.thumb, src: row.thumbUrl, alt: row.title, loading: 'lazy' })
+        : h(Pill, null, row.kind),
+      h('span', { className: css.rowTitle }, row.title),
+      row.service !== null ? h(Pill, null, row.service) : null,
+      row.dot !== null ? h(StateDot, { state: row.dot }) : null,
+      row.prompt !== null ? h('span', { className: css.prompt }, row.prompt) : null,
     ),
   )
+}
+
+/** The bench stage as a card row (the same distillation cardRows()
+ *  performs for the chat plane). */
+interface CardRowLineTabRow {
+  id: string
+  kind: string
+  title: string
+  service: string | null
+  status: string
+  dot: 'done' | 'ongoing' | 'error' | 'warning' | null
+  prompt: string | null
+  thumbUrl: string | null
+  stage: BenchStageRow
+}
+
+function benchRow(stage: BenchStageRow): CardRowLineTabRow {
+  const title = stage.title ?? stage.card ?? stage.id
+  const status = typeof stage.runStatus === 'string' && stage.runStatus !== '' ? stage.runStatus : 'ready'
+  const params = typeof stage.params === 'object' && stage.params !== null ? stage.params : {}
+  const promptRaw = typeof params['prompt'] === 'string' ? params['prompt'] : ''
+  const result = stage.result
+  const url = typeof result === 'object' && result !== null && typeof Reflect.get(result, 'url') === 'string'
+    ? Reflect.get(result, 'url') as string
+    : ''
+  return {
+    id: stage.id,
+    kind: String(stage.card ?? 'card'),
+    title: String(title),
+    service: typeof stage.engine === 'string' && stage.engine !== '' ? stage.engine : null,
+    status,
+    dot: STAGE_DOT[status] ?? null,
+    prompt: promptRaw !== '' ? promptRaw.slice(0, 96) : null,
+    // same-origin absolute or leading-/ artifact urls render; a bare
+    // run-relative filename cannot resolve without its run (the run
+    // view owns that face) — the kind Pill rides instead.
+    thumbUrl: /^(https?:\/\/|\/)/.test(url) ? url : null,
+    stage,
+  }
 }
 
 /** THE SHARED DRILLDOWN (card-drill.tsx): the bench stage's second
@@ -212,7 +256,6 @@ function BenchView({ bench, onRun, running }: {
   const [open, setOpen] = useState<BenchStageRow | null>(null)
   const onOpen = useCallback((stage: BenchStageRow): void => setOpen(stage), [])
   const onClose = useCallback((): void => setOpen(null), [])
-  const groups = groupStagesByCard(bench.stages)
   return h('section', { className: css.cardsBench, 'data-cards-bench': bench.rev },
     h('header', { className: css.benchHead },
       h('span', { className: css.revTag }, 'rev ' + bench.rev),
@@ -225,10 +268,10 @@ function BenchView({ bench, onRun, running }: {
     ),
     bench.stages.length === 0
       ? h('p', { className: css.empty }, 'The bench is empty — construct stages (the agent adds them; they land here).')
-      : groups.map((g) => h('section', { key: g.card, className: css.category, 'data-cards-category': g.card },
-          h('h3', { className: css.catTitle }, g.card + ' · ' + String(g.rows.length)),
-          h('ol', { className: css.stages }, g.rows.map((s) => h(StageRowView, { key: s.id, stage: s, onOpen }))),
-        )),
+      : h('ol', { className: css.stages }, bench.stages.map((s) => {
+          const row = benchRow(s)
+          return h(CardRowLineTab, { key: s.id, row, onOpen: (r) => onOpen(r.stage) })
+        })),
     bench.log.length > 0
       ? h('p', { className: css.logHead }, bench.log.length + ' log entr' + (bench.log.length === 1 ? 'y' : 'ies'))
       : null,
@@ -277,14 +320,25 @@ function RunView({ run, onBack, onRestored }: {
     note !== null ? h('p', { className: css.restoreNote }, note) : null,
     run.stages.length === 0
       ? h('p', { className: css.empty }, 'No stage rows yet.')
-      : h('ol', { className: css.stages }, run.stages.map((s) =>
-          h('li', { key: s.id, className: css.stage, 'data-stage-status': s.status },
-            h('span', { className: css.stageTitle }, s.id),
-            h('span', { className: css.stageEngine }, s.status),
-            s.url !== undefined
-              ? h('a', { href: mediaUrl(run.runId, s.url), target: '_blank', rel: 'noreferrer', className: css.stageArtifact }, 'artifact')
-              : null,
-          ))),
+      : h('ol', { className: css.stages }, run.stages.map((s) => {
+          const thumb = s.url !== undefined ? mediaUrl(run.runId, s.url) : null
+          const dot: 'done' | 'ongoing' | 'error' | 'warning' | null
+            = s.status === 'done' ? 'done'
+            : s.status === 'running' ? 'ongoing'
+            : s.status === 'failed' ? 'error'
+            : s.status === 'queued' || s.status === 'pending' ? 'warning' : null
+          return h('li', { key: s.id, className: css.stage, 'data-stage-status': s.status },
+            h('div', { className: css.row, 'data-status': s.status },
+              thumb !== null
+                ? h('a', { href: thumb, target: '_blank', rel: 'noreferrer' },
+                    h('img', { className: css.thumb, src: thumb, alt: s.id, loading: 'lazy' }))
+                : h(Pill, null, s.id),
+              h('span', { className: css.rowTitle }, s.id),
+              h(Pill, null, s.status),
+              dot !== null ? h(StateDot, { state: dot }) : null,
+            ),
+          )
+        })),
   )
 }
 

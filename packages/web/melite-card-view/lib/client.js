@@ -1021,20 +1021,47 @@ window.__ModuleLoader__.load({
 			failed: "error",
 			ready: null
 		};
-		function StageRowView({ stage, onOpen }) {
-			const title = stage.title ?? stage.card ?? stage.id;
-			const engine = typeof stage.engine === "string" && stage.engine !== "" ? stage.engine : "comfyui";
-			const rawStatus = typeof stage.runStatus === "string" ? stage.runStatus : void 0;
-			const dot = rawStatus !== void 0 ? STAGE_DOT[rawStatus] ?? null : null;
+		/** THE CARD ROW — the chat plane's CardRowLine grammar VERBATIM
+		*  (f3026845, the 9-10 card system): [artifact thumb | kind Pill],
+		*  bold title, service Pill, live StateDot, clipped prompt. ONE card
+		*  system, both planes — the tab renders the SAME row the chat
+		*  renders, from the same stylesheet (the .row/.thumb/.rowTitle/
+		*  .prompt classes below are the flow block's own). */
+		function CardRowLineTab({ row, onOpen }) {
 			return (0, react.createElement)("li", {
 				className: card_module_css_default.stage,
-				"data-stage-id": stage.id
+				"data-stage-id": row.id,
+				"data-stage-status": row.status
 			}, (0, react.createElement)("button", {
 				className: card_module_css_default.row,
 				type: "button",
-				"data-stage-status": rawStatus ?? "ready",
-				onClick: () => onOpen(stage)
-			}, (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Pill, null, String(stage.card ?? "card")), (0, react.createElement)("span", { className: card_module_css_default.rowTitle }, String(title)), (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Pill, null, engine), dot !== null ? (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.StateDot, { state: dot }) : null));
+				"data-status": row.status,
+				onClick: () => onOpen(row)
+			}, row.thumbUrl !== null ? (0, react.createElement)("img", {
+				className: card_module_css_default.thumb,
+				src: row.thumbUrl,
+				alt: row.title,
+				loading: "lazy"
+			}) : (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Pill, null, row.kind), (0, react.createElement)("span", { className: card_module_css_default.rowTitle }, row.title), row.service !== null ? (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Pill, null, row.service) : null, row.dot !== null ? (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.StateDot, { state: row.dot }) : null, row.prompt !== null ? (0, react.createElement)("span", { className: card_module_css_default.prompt }, row.prompt) : null));
+		}
+		function benchRow(stage) {
+			const title = stage.title ?? stage.card ?? stage.id;
+			const status = typeof stage.runStatus === "string" && stage.runStatus !== "" ? stage.runStatus : "ready";
+			const params = typeof stage.params === "object" && stage.params !== null ? stage.params : {};
+			const promptRaw = typeof params["prompt"] === "string" ? params["prompt"] : "";
+			const result = stage.result;
+			const url = typeof result === "object" && result !== null && typeof Reflect.get(result, "url") === "string" ? Reflect.get(result, "url") : "";
+			return {
+				id: stage.id,
+				kind: String(stage.card ?? "card"),
+				title: String(title),
+				service: typeof stage.engine === "string" && stage.engine !== "" ? stage.engine : null,
+				status,
+				dot: STAGE_DOT[status] ?? null,
+				prompt: promptRaw !== "" ? promptRaw.slice(0, 96) : null,
+				thumbUrl: /^(https?:\/\/|\/)/.test(url) ? url : null,
+				stage
+			};
 		}
 		/** THE SHARED DRILLDOWN (card-drill.tsx): the bench stage's second
 		*  state — editable params, Run on the card. THE SHARED-STATE LAW:
@@ -1060,7 +1087,6 @@ window.__ModuleLoader__.load({
 			const [open, setOpen] = (0, react.useState)(null);
 			const onOpen = (0, react.useCallback)((stage) => setOpen(stage), []);
 			const onClose = (0, react.useCallback)(() => setOpen(null), []);
-			const groups = groupStagesByCard(bench.stages);
 			return (0, react.createElement)("section", {
 				className: card_module_css_default.cardsBench,
 				"data-cards-bench": bench.rev
@@ -1069,15 +1095,14 @@ window.__ModuleLoader__.load({
 				type: "button",
 				disabled: running || bench.stages.length === 0,
 				onClick: onRun
-			}, "Run")), bench.stages.length === 0 ? (0, react.createElement)("p", { className: card_module_css_default.empty }, "The bench is empty — construct stages (the agent adds them; they land here).") : groups.map((g) => (0, react.createElement)("section", {
-				key: g.card,
-				className: card_module_css_default.category,
-				"data-cards-category": g.card
-			}, (0, react.createElement)("h3", { className: card_module_css_default.catTitle }, g.card + " · " + String(g.rows.length)), (0, react.createElement)("ol", { className: card_module_css_default.stages }, g.rows.map((s) => (0, react.createElement)(StageRowView, {
-				key: s.id,
-				stage: s,
-				onOpen
-			}))))), bench.log.length > 0 ? (0, react.createElement)("p", { className: card_module_css_default.logHead }, bench.log.length + " log entr" + (bench.log.length === 1 ? "y" : "ies")) : null, open !== null ? (0, react.createElement)(StageDrill, {
+			}, "Run")), bench.stages.length === 0 ? (0, react.createElement)("p", { className: card_module_css_default.empty }, "The bench is empty — construct stages (the agent adds them; they land here).") : (0, react.createElement)("ol", { className: card_module_css_default.stages }, bench.stages.map((s) => {
+				const row = benchRow(s);
+				return (0, react.createElement)(CardRowLineTab, {
+					key: s.id,
+					row,
+					onOpen: (r) => onOpen(r.stage)
+				});
+			})), bench.log.length > 0 ? (0, react.createElement)("p", { className: card_module_css_default.logHead }, bench.log.length + " log entr" + (bench.log.length === 1 ? "y" : "ies")) : null, open !== null ? (0, react.createElement)(StageDrill, {
 				stage: open,
 				bench,
 				running,
@@ -1115,16 +1140,27 @@ window.__ModuleLoader__.load({
 				disabled: restoring || run.draftId === null,
 				title: run.draftId === null ? "this run names no draft — nothing to restore" : "copy this run’s stages back onto the bench as your own",
 				onClick: onRestore
-			}, restoring ? "Restoring…" : "Restore to bench")), note !== null ? (0, react.createElement)("p", { className: card_module_css_default.restoreNote }, note) : null, run.stages.length === 0 ? (0, react.createElement)("p", { className: card_module_css_default.empty }, "No stage rows yet.") : (0, react.createElement)("ol", { className: card_module_css_default.stages }, run.stages.map((s) => (0, react.createElement)("li", {
-				key: s.id,
-				className: card_module_css_default.stage,
-				"data-stage-status": s.status
-			}, (0, react.createElement)("span", { className: card_module_css_default.stageTitle }, s.id), (0, react.createElement)("span", { className: card_module_css_default.stageEngine }, s.status), s.url !== void 0 ? (0, react.createElement)("a", {
-				href: mediaUrl(run.runId, s.url),
-				target: "_blank",
-				rel: "noreferrer",
-				className: card_module_css_default.stageArtifact
-			}, "artifact") : null))));
+			}, restoring ? "Restoring…" : "Restore to bench")), note !== null ? (0, react.createElement)("p", { className: card_module_css_default.restoreNote }, note) : null, run.stages.length === 0 ? (0, react.createElement)("p", { className: card_module_css_default.empty }, "No stage rows yet.") : (0, react.createElement)("ol", { className: card_module_css_default.stages }, run.stages.map((s) => {
+				const thumb = s.url !== void 0 ? mediaUrl(run.runId, s.url) : null;
+				const dot = s.status === "done" ? "done" : s.status === "running" ? "ongoing" : s.status === "failed" ? "error" : s.status === "queued" || s.status === "pending" ? "warning" : null;
+				return (0, react.createElement)("li", {
+					key: s.id,
+					className: card_module_css_default.stage,
+					"data-stage-status": s.status
+				}, (0, react.createElement)("div", {
+					className: card_module_css_default.row,
+					"data-status": s.status
+				}, thumb !== null ? (0, react.createElement)("a", {
+					href: thumb,
+					target: "_blank",
+					rel: "noreferrer"
+				}, (0, react.createElement)("img", {
+					className: card_module_css_default.thumb,
+					src: thumb,
+					alt: s.id,
+					loading: "lazy"
+				})) : (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Pill, null, s.id), (0, react.createElement)("span", { className: card_module_css_default.rowTitle }, s.id), (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Pill, null, s.status), dot !== null ? (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.StateDot, { state: dot }) : null));
+			})));
 		}
 		/** ADDRESS LAW (the `loading sidebar://cards…` hang, dead 2026-09-11):
 		*  the shell's navigation address is the SHELL's (guide clicks arrive
