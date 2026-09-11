@@ -6,12 +6,18 @@
 // adapters (signal always final). This package is BUILT (tsc, the
 // manage recipe) because decorators are not erasable syntax — the
 // BUSINESS (the lora pick catalog: family rows win over the union,
-// the RUNTIME CATALOG LAW) lives decorator-free on the ComfyUI
-// service (`ctx.comfyui.modCatalog`), and the adapter delegates to
-// that seat. The seat boundary is STRUCTURAL (declared below): this
-// package must not import the engine package's sources into its
-// build graph (they are bundler-resolved source-run files; the wall
-// pins the delegation end-to-end instead).
+// the RUNTIME CATALOG LAW) lives decorator-free on the card
+// registry seat (`ctx.cardRegistry.modCatalog`, which rides the
+// engine's ComfyUIService singleton — the mods tree declares the
+// rows as flavors at boot), and the adapter delegates to that seat.
+// The seat boundary is STRUCTURAL (declared below): this package
+// must not import the estate-queue/engine sources into its build
+// graph (they are bundler-resolved source-run files; the wall pins
+// the delegation end-to-end instead).
+//
+// SEAT NOTE (the first live probe taught this): `ctx.comfyui` is
+// the ENGINE HOST client (prompt supervisor), NOT the card/mod
+// registry — the catalog rides the card registry seat.
 //
 // THE /v1/loras DOOR DIED WITH THE GATEWAY APP (nothing serves /v1,
 // by design). The lora list is FAMILY-OWNED DATA living in the mods
@@ -66,10 +72,11 @@ declare module "@deepseek-ai/dsh-typert-protocol" {
   }
 }
 
-/** The comfyui seat's adapter-facing surface (structural — the
- *  implementation is ComfyUIService in @melite/comfyui-cordis; the
- *  wall pins the delegation). */
-interface ComfySeat {
+/** The card registry seat's adapter-facing surface (structural —
+ *  the implementation is CardRegistryService in @melite/estate-queue
+ *  riding the engine's ComfyUIService singleton; the wall pins the
+ *  delegation). */
+interface CardRegistrySeat {
   modCatalog(
     pack: string,
     family: string,
@@ -79,9 +86,9 @@ interface ComfySeat {
 declare module "@deepseek-ai/cordis" {
   interface Context {
     lorasRemote: LorasRemoteService;
-    /** The engine seat (@melite/comfyui-cordis's ComfyUIService —
-     *  structural here, per the header). */
-    comfyui: ComfySeat;
+    /** The card registry seat (@melite/estate-queue's
+     *  CardRegistryService — structural here, per the header). */
+    cardRegistry: CardRegistrySeat;
   }
 }
 
@@ -91,7 +98,7 @@ function stemOf(filename: string): string {
 
 /** The loras remote: one list over the seat's mod catalog. */
 export class LorasRemoteService extends TypertRemoteService {
-  static inject = ["comfyui"];
+  static inject = ["cardRegistry"];
 
   constructor(ctx: Context) {
     super(ctx, "lorasRemote", { namespace: "loras" });
@@ -114,7 +121,7 @@ export class LorasRemoteService extends TypertRemoteService {
         { loc: "args.model", got: model },
       );
     }
-    const { rows, shared } = this.ctx.comfyui.modCatalog("loras", model);
+    const { rows, shared } = this.ctx.cardRegistry.modCatalog("loras", model);
     const meta: Record<string, LoraMetaRow> = {};
     for (const row of rows) {
       const entry: {
@@ -145,7 +152,7 @@ export class LorasRemoteService extends TypertRemoteService {
 /** The loras remote row (the estate mounts it after the seat). */
 export const lorasRemotePlugin = {
   name: "estate-loras",
-  inject: ["comfyui"] as const,
+  inject: ["cardRegistry"] as const,
   apply(ctx: Context): void {
     new LorasRemoteService(ctx);
   },

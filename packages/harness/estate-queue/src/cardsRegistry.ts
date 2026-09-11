@@ -317,6 +317,23 @@ export class CardRegistryService extends Service {
     this.facts = null;
   }
 
+  /** The mod catalog rows for one family (lora picks): THE RUNTIME
+   *  CATALOG LAW rides the engine's ComfyUIService singleton (family
+   *  rows win over the union; a runtime-catalog family with no own
+   *  rows is served the union, shared-flagged). The loras remote
+   *  (Typert namespace `loras`) delegates here — the mods tree
+   *  declares the rows, this seat serves them. Throws LOUD when the
+   *  defs have not booted (prime() owns that ordering). */
+  modCatalog(
+    pack: string,
+    family: string,
+  ): { rows: readonly unknown[]; shared: boolean } {
+    return theService().modCatalog(pack, family) as {
+      rows: readonly unknown[];
+      shared: boolean;
+    };
+  }
+
   /** Test seam: drop all registry state (walls boot fresh processes;
    *  belt-and-braces for in-process reuse — the RunsService parity). */
   resetForTests(): void {

@@ -48,7 +48,7 @@ let LorasRemoteService = (() => {
             __esDecorate(this, null, _remoteExportList_decorators, { kind: "method", name: "remoteExportList", static: false, private: false, access: { has: obj => "remoteExportList" in obj, get: obj => obj.remoteExportList }, metadata: _metadata }, null, _instanceExtraInitializers);
             if (_metadata) Object.defineProperty(this, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
         }
-        static inject = ["comfyui"];
+        static inject = ["cardRegistry"];
         constructor(ctx) {
             super(ctx, "lorasRemote", { namespace: "loras" });
             __runInitializers(this, _instanceExtraInitializers);
@@ -62,7 +62,7 @@ let LorasRemoteService = (() => {
             if (typeof model !== "string" || model === "") {
                 throw new RemoteError("loras/invalid-request", "model must be a non-empty family id", { loc: "args.model", got: model });
             }
-            const { rows, shared } = this.ctx.comfyui.modCatalog("loras", model);
+            const { rows, shared } = this.ctx.cardRegistry.modCatalog("loras", model);
             const meta = {};
             for (const row of rows) {
                 const entry = {};
@@ -92,7 +92,7 @@ export { LorasRemoteService };
 /** The loras remote row (the estate mounts it after the seat). */
 export const lorasRemotePlugin = {
     name: "estate-loras",
-    inject: ["comfyui"],
+    inject: ["cardRegistry"],
     apply(ctx) {
         new LorasRemoteService(ctx);
     },

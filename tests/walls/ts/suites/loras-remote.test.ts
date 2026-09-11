@@ -23,10 +23,13 @@ interface LoraRow {
   readonly default_strength?: number
 }
 
-/** The comfyui seat stub: the modCatalog face the remote reads. */
-class FakeComfy extends Service {
+/** The card registry seat stub: the modCatalog face the remote reads
+ *  (the seat rides the engine's ComfyUIService singleton — the first
+ *  live probe taught that ctx.comfyui is the ENGINE HOST client,
+ *  not the registry; the catalog rides the card registry seat). */
+class FakeCardRegistry extends Service {
   constructor(ctx: Context) {
-    super(ctx, 'comfyui')
+    super(ctx, 'cardRegistry')
   }
   modCatalog(_pack: string, family: string): { rows: readonly LoraRow[]; shared: boolean } {
     if (family === 'krea-2') {
@@ -49,7 +52,7 @@ class FakeComfy extends Service {
 
 test('loras/list: family rows, the union, honest empties, and the refusal', async () => {
   const ctx = new Context()
-  new FakeComfy(ctx)
+  new FakeCardRegistry(ctx)
   const mod = await import('../../../../packages/estate/loras/lib/index.js')
   await ctx.plugin(mod.lorasRemotePlugin as never as Plugin)
   const remote = ctx.get('lorasRemote', true) as {

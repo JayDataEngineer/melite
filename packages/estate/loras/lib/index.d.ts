@@ -36,10 +36,11 @@ declare module "@deepseek-ai/dsh-typert-protocol" {
         };
     }
 }
-/** The comfyui seat's adapter-facing surface (structural — the
- *  implementation is ComfyUIService in @melite/comfyui-cordis; the
- *  wall pins the delegation). */
-interface ComfySeat {
+/** The card registry seat's adapter-facing surface (structural —
+ *  the implementation is CardRegistryService in @melite/estate-queue
+ *  riding the engine's ComfyUIService singleton; the wall pins the
+ *  delegation). */
+interface CardRegistrySeat {
     modCatalog(pack: string, family: string): {
         rows: readonly LoraRow[];
         shared: boolean;
@@ -48,9 +49,9 @@ interface ComfySeat {
 declare module "@deepseek-ai/cordis" {
     interface Context {
         lorasRemote: LorasRemoteService;
-        /** The engine seat (@melite/comfyui-cordis's ComfyUIService —
-         *  structural here, per the header). */
-        comfyui: ComfySeat;
+        /** The card registry seat (@melite/estate-queue's
+         *  CardRegistryService — structural here, per the header). */
+        cardRegistry: CardRegistrySeat;
     }
 }
 /** The loras remote: one list over the seat's mod catalog. */
@@ -66,7 +67,7 @@ export declare class LorasRemoteService extends TypertRemoteService {
 /** The loras remote row (the estate mounts it after the seat). */
 export declare const lorasRemotePlugin: {
     name: string;
-    inject: readonly ["comfyui"];
+    inject: readonly ["cardRegistry"];
     apply(ctx: Context): void;
 };
 export {};
