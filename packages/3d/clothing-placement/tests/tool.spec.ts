@@ -198,6 +198,10 @@ describe("the executor path (two doors, flow law)", () => {
     );
     // Mixed: some fields present, some absent.
     assert.deepEqual(meta({}, { draft_id: "d2", status: "queued" }), { flow: "clothing-placement", draft_id: "d2", status: "queued" });
+    // Nullish values ride the empty-object arm (replay seams may
+    // carry no value at all — re-green 2026-09-12).
+    assert.deepEqual(meta({}, undefined), { flow: "clothing-placement" });
+    assert.deepEqual(meta({}, null), { flow: "clothing-placement" });
   });
 
   it("the snake_case draft spelling mints too (the door's two spellings)", async () => {
@@ -206,6 +210,18 @@ describe("the executor path (two doors, flow law)", () => {
     const value = (await buildCardTool(seam).execute(FULL_ARGS, exec)) as Record<string, string>;
     assert.equal(value.draft_id, "d_snake");
     assert.equal(calls[1].body.draft_id, "d_snake");
+  });
+
+  it("a run_id-less start reply still voices the queued default", async () => {
+    draftsStatus = 200; draftsBody = { draftId: "d_bare" };
+    const prevStart = startBody;
+    startBody = {};
+    try {
+      const value = (await buildCardTool(seam).execute(FULL_ARGS, exec)) as Record<string, string>;
+      assert.deepEqual(value, { flow: "clothing-placement", draft_id: "d_bare", run_id: "", status: "queued" });
+    } finally {
+      startBody = prevStart;
+    }
   });
 
   it("a start-door named refusal resolves canonically (never throws)", async () => {

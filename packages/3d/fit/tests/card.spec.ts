@@ -38,6 +38,13 @@ describe("the fit compose gate", () => {
     );
   });
 
+  it("a missing bone refuses (the schema default never reaches hand-composed params)", () => {
+    assert.throws(
+      () => def.compose({ body_glb: "/m/b.glb", prop_glb: "/m/p.glb" } as never, DUMMY_MODEL, new GraphBuilder(), "r1"),
+      /bone is required on the fit lane/,
+    );
+  });
+
   it("an empty bone refuses (which bone carries the prop)", () => {
     assert.throws(
       () => def.compose(def.schema({ body_glb: "/m/b.glb", prop_glb: "/m/p.glb", bone: " " }), DUMMY_MODEL, new GraphBuilder(), "r1"),
