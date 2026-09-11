@@ -40,6 +40,8 @@ import css from './card.module.css'
 import type { CardsBenchValue, CardsRunValue, BenchStageRow } from './cards-resource.ts'
 import { CARDS_BENCH_ADDRESS, cardsRunAddress, fetchBench, openCardsResource, parseCardsAddress, restoreRunToBench } from './cards-resource.ts'
 import { addStageWire, removeStageWire } from './add-stage.ts'
+import { CardZoomOverlay, cardLayoutId, ZOOM_SPRING } from './zoom.tsx'
+import { motion } from 'framer-motion'
 import { mediaUrl } from './draft.ts'
 
 /** The injected tab information hook's shape (dsh-client-ui-sidebar-right's
@@ -180,26 +182,32 @@ const STAGE_DOT: Record<string, 'done' | 'ongoing' | 'error' | 'warning' | null>
  *  Image-anchored overlays (the status dot) live INSIDE the preview
  *  cell so their anchors ride the artifact's corner. Click = the
  *  drilldown (the second state, the shared CardDrill). */
-function StageTile({ row, onOpen }: {
+function StageTile({ row, entered, onOpen }: {
   row: CardRowLineTabRow
+  entered: boolean
   onOpen: (row: CardRowLineTabRow) => void
 }): ReturnType<typeof h> {
-  return h('li', { className: css.tile, 'data-stage-id': row.id, 'data-stage-status': row.status },
-    h('button', { className: css.tileInner, type: 'button', 'data-status': row.status, onClick: () => onOpen(row) },
-      h('span', { className: css.tilePreview },
-        row.thumbUrl !== null
-          ? h('img', { className: css.tileImg, src: row.thumbUrl, alt: row.title, loading: 'lazy' })
-          : h('span', { className: css.kindFace, 'data-kind': row.kind },
-              h('span', { className: css.kindInitial }, row.kind.slice(0, 1).toUpperCase()),
-              h('span', { className: css.kindName }, row.kind),
-            ),
-        row.dot !== null ? h('span', { className: css.tileDot }, h(StateDot, { state: row.dot })) : null,
-      ),
-      h('span', { className: css.tileCaption },
-        h('span', { className: css.tileTitle }, row.title),
-        h('span', { className: css.tileMeta },
-          row.service !== null ? row.service : null,
-          row.prompt !== null ? h('span', { className: css.tilePrompt }, row.prompt) : null,
+  // The shared-element box: the SAME layoutId the zoom card carries —
+  // the zoom morph grows out of THIS tile's real screen rect and the
+  // exit shrink re-legates back into it (framer measures both rects).
+  return h('li', { className: css.tile + (entered ? ' ' + css.tileEnter : ''), 'data-stage-id': row.id, 'data-stage-status': row.status },
+    h(motion.div, { layoutId: cardLayoutId(row.id), className: css.tileShared, transition: ZOOM_SPRING },
+      h('button', { className: css.tileInner, type: 'button', 'data-status': row.status, onClick: () => onOpen(row) },
+        h('span', { className: css.tilePreview },
+          row.thumbUrl !== null
+            ? h('img', { className: css.tileImg, src: row.thumbUrl, alt: row.title, loading: 'lazy' })
+            : h('span', { className: css.kindFace, 'data-kind': row.kind },
+                h('span', { className: css.kindInitial }, row.kind.slice(0, 1).toUpperCase()),
+                h('span', { className: css.kindName }, row.kind),
+              ),
+          row.dot !== null ? h('span', { className: css.tileDot }, h(StateDot, { state: row.dot })) : null,
+        ),
+        h('span', { className: css.tileCaption },
+          h('span', { className: css.tileTitle }, row.title),
+          h('span', { className: css.tileMeta },
+            row.service !== null ? row.service : null,
+            row.prompt !== null ? h('span', { className: css.tilePrompt }, row.prompt) : null,
+          ),
         ),
       ),
     ),
@@ -327,7 +335,10 @@ function StageDrill({ stage, bench, running, onRun, onClose, onRemoved }: {
       setRemoving(false)
     }
   }
-  return h(Modal, { open: true, onClose, title: 'Stage ' + title, closeLabel: 'Close stage', className: css.drill },
+  // THE ZOOM DETAIL (2026-09-11): no Modal — this renders INSIDE the
+  // shared-element zoom card (the tile's morph target). The params/
+  // Run split is the old drill content, container is the zoom card.
+  return h('div', { className: css.zoomDetail },
     h('div', { className: css.split },
       h('div', { className: css.params },
         !loaded ? h('div', { className: css.load }, 'form…')
@@ -481,6 +492,20 @@ function BenchView({ bench, onRun, running }: {
   // does not re-run the stream.
   const [live, setLive] = useState<CardsBenchValue>(bench)
   useEffect(() => { setLive(bench) }, [bench.draftId, bench.rev])
+  // TILE-POP (the old tree's animate-tile-pop): a tile whose id was not
+  // in the previous render's set lands with the soft pop — fresh adds,
+  // not reloads of the same bench.
+  const knownIds = useRef<Set<string>>(new Set(bench.stages.map((s) => s.id)))
+  const [entered, setEntered] = useState<Set<string>>(new Set())
+  useEffect(() => {
+    const fresh: string[] = []
+    for (const s of live.stages) {
+      if (!knownIds.current.has(s.id)) { knownIds.current.add(s.id); fresh.push(s.id) }
+    }
+    if (fresh.length > 0) {
+      setEntered((prev) => { const next = new Set(prev); for (const id of fresh) next.add(id); return next })
+    }
+  }, [live.stages])
   const [open, setOpen] = useState<BenchStageRow | null>(null)
   const [adding, setAdding] = useState(false)
   const [reloadError, setReloadError] = useState<string | null>(null)
@@ -514,7 +539,7 @@ function BenchView({ bench, onRun, running }: {
       : h('ol', { className: css.tileGrid },
           live.stages.map((s) => {
             const row = benchRow(s)
-            return h(StageTile, { key: s.id, row, onOpen: (r) => onOpen(r.stage) })
+            return h(StageTile, { key: s.id, row, entered: entered.has(s.id), onOpen: (r) => onOpen(r.stage) })
           }),
           h('li', { className: css.tile + ' ' + css.tileAdd },
             h('button', { type: 'button', className: css.tileInner, 'aria-label': 'Add a card', onClick: onAddCard },
@@ -528,7 +553,19 @@ function BenchView({ bench, onRun, running }: {
     live.log.length > 0
       ? h('p', { className: css.logHead }, live.log.length + ' log entr' + (live.log.length === 1 ? 'y' : 'ies'))
       : null,
-    open !== null ? h(StageDrill, { stage: open, bench: live, running, onRun, onClose, onRemoved: () => { setOpen(null); reload() } }) : null,
+    // THE ZOOM (2026-09-11): the drill is the shared-element morph —
+    // the tile GROWS into the zoom card (spring 300/30), the modal is
+    // dead (the old tree's own law: "the modal was a second surface;
+    // both are dead").
+    open !== null ? h(CardZoomOverlay, {
+      stage: open,
+      bench: live,
+      running,
+      onRun,
+      onClose,
+      onRemoved: () => { setOpen(null); reload() },
+      detail: StageDrill,
+    }) : null,
     adding ? h(AddCardDoor, { bench: live, onAdded, onClose: () => { setAdding(false) } }) : null,
   )
 }

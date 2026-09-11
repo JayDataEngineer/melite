@@ -508,3 +508,117 @@
   resize: vertical;
   width: 100%;
 }
+
+/* ══ THE SHARED-ELEMENT ZOOM (2026-09-11, the old tree's signature) ══ */
+
+/* The tile's shared box — the morph's origin/target rect carrier. */
+.tileShared { display: block; }
+
+/* The overlay: portal to body, FIXED inset-0 (the old tree's own DSH
+ * rule — no workspace root; absolute would cover only part of the
+ * auto-height embed). Solid backdrop: no fade, the grid hides. */
+.zoomOverlay {
+  background: var(--dsw-alias-bg-mask, rgba(9 12 18 / 0.72));
+  display: flex;
+  flex-direction: column;
+  inset: 0;
+  position: fixed;
+  z-index: 80;
+}
+
+/* The overlay is the scroll container; the inner flex centers a short
+ * card and flows a tall one. */
+.zoomScroll { flex: 1 1 0%; min-height: 0; overflow-y: auto; }
+.zoomInner {
+  align-items: center;
+  box-sizing: border-box;
+  display: flex;
+  justify-content: center;
+  margin: 0 auto;
+  max-width: 100%;
+  min-height: 100%;
+  padding: 24px;
+  width: 100%;
+}
+
+/* The zoom card — the shared-element box (layoutId twin of the tile).
+ * Bounded ≈square: min(760px, 88vh), never the whole surface. */
+.zoomCard {
+  background: var(--dsw-alias-bg-module-platform, #f5f6f7);
+  border: 1px solid var(--dsw-alias-label-dimmed, #e1e5ee);
+  border-radius: 14px;
+  box-shadow: 0 24px 64px rgba(9 12 18 / 0.35);
+  color: var(--dsw-alias-label-primary, #0f1115);
+  display: flex;
+  flex-direction: column;
+  max-height: 86vh;
+  min-height: 320px;
+  overflow: hidden;
+}
+
+.zoomBar {
+  align-items: center;
+  border-bottom: 1px solid var(--dsw-alias-label-dimmed, #e1e5ee);
+  display: flex;
+  flex: 0 0 auto;
+  gap: 8px;
+  justify-content: space-between;
+  padding: 10px 14px;
+}
+.zoomTitle { font-size: 13px; font-weight: 600; }
+.closeX {
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  color: inherit;
+  cursor: pointer;
+  font-size: 14px;
+  line-height: 1;
+  padding: 4px 8px;
+}
+.closeX:hover { background: var(--dsw-alias-interactive-bg-hover, #2631480f); }
+
+/* The detail payload sits inside the morphed card; it scrolls with the
+ * card's own bounds (max-height keeps the square law bounded). */
+.zoomDetail {
+  display: block;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 14px;
+}
+
+/* ── The morph skeleton (shimmer — the old tree's loading face) ── */
+.zoomSkeleton {
+  display: flex;
+  flex: 1 1 0%;
+  flex-direction: column;
+  gap: 10px;
+  min-height: 0;
+  padding: 16px;
+}
+.skLine {
+  animation: zoomShimmer 1s linear infinite both;
+  background: linear-gradient(90deg, transparent 40%, var(--dsw-alias-interactive-bg-hover, #2631480f) 50%, transparent 60%);
+  background-color: var(--dsw-alias-interactive-bg-hover, #2631480f);
+  background-size: 200% 100%;
+  border-radius: 6px;
+  height: 12px;
+}
+.skWide { width: 60%; }
+.skShort { flex: 1 1 0%; height: 28px; }
+.skBlock { border-radius: 10px; height: 120px; }
+.skRow { display: flex; gap: 10px; }
+
+@keyframes zoomShimmer {
+  from { background-position: 150% 0; }
+  to { background-position: -100% 0; }
+}
+
+/* ── tile-pop: a NEW tile lands with a soft pop (the old tree's
+ * animate-tile-pop) — applies to freshly added stage tiles. ── */
+@keyframes tilePop {
+  0% { opacity: 0; transform: scale(0.96) translateY(6px); }
+  60% { opacity: 1; transform: scale(1.015) translateY(0); }
+  100% { opacity: 1; transform: scale(1) translateY(0); }
+}
+.tileEnter { animation: tilePop 260ms cubic-bezier(0.2, 0.8, 0.3, 1) both; }
