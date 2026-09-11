@@ -23,7 +23,7 @@ import { Button, DisclosureRow, IconArchiveOutline20, Tag } from '@deepseek-ai/d
 import css from './card.module.css'
 import type { StageViewOwnerProps } from './types.ts'
 import { fetchFormSpec, SpecForm, specDefaults, useSquareProvider, type FormSpecDoc, type SpecField, type SpecValues } from './spec-form.tsx'
-import { fetchRunStageUrl, fetchRunTerminal } from './cards-resource.ts'
+import { pollRunStageUrl } from '@melite-plugin/melite-run-wire'
 import { GlbViewport } from './glb-viewport.tsx'
 
 /** The door's group truth (schema_groups, 2026-09-12 lane read):
@@ -50,28 +50,28 @@ export function ImgToMeshStudio(props: StageViewOwnerProps): ReturnType<typeof h
   const [values, setValues] = useState<SpecValues>(params)
   const [open, setOpen] = useState<Record<string, boolean>>({})
   const [running, setRunning] = useState(false)
-  // THE OUTPUT HALF (the old pollFlowRun law): the run is the SSOT —
-  //  poll runs/status until this stage's artifact URL lands.
-  const [meshUrl, setMeshUrl] = useState<string | null>(null)
+  // THE OUTPUT HALF — the ROW is the truth (runs are named by draft
+  //  only, so a tab-wide run id binds WRONG studios to other cards'
+  //  runs): this row's result carries its own run_id + artifact url
+  //  (the outcome observer writes both); the poll runs only while
+  //  this row's run is IN FLIGHT (runStatus 'running' with no url
+  //  yet — the run-wire package's ONE poll loop; its single-stage
+  //  fallback maps the card door's skeleton-named stage onto this
+  //  bench row's id).
+  const rowResult = typeof row['result'] === 'object' && row['result'] !== null
+    ? row['result'] as { run_id?: unknown; url?: unknown } : null
+  const ownRunId = typeof rowResult?.run_id === 'string' && rowResult.run_id !== ''
+    ? rowResult.run_id as string : null
+  const ownUrl = typeof rowResult?.url === 'string' && rowResult.url !== ''
+    ? rowResult.url as string : null
+  const [meshUrl, setMeshUrl] = useState<string | null>(ownUrl)
   useEffect(() => {
-    let alive = true
-    setMeshUrl(null)
-    if (props.runId === null) return
+    setMeshUrl(ownUrl)
+    if (ownUrl !== null || ownRunId === null) return
     const ctrl = new AbortController()
-    const tick = async (): Promise<void> => {
-      try {
-        const url = await fetchRunStageUrl(props.runId as string, props.stageId, ctrl.signal)
-        if (!alive) return
-        if (url !== null) { setMeshUrl(url); return }
-        const terminal = await fetchRunTerminal(props.runId as string, ctrl.signal)
-        if (!alive || terminal) return
-      } catch { /* the last ok value stays; the next poll may recover */ }
-      if (!alive) return
-      setTimeout(() => { if (alive) void tick() }, 1500)
-    }
-    void tick()
-    return () => { alive = false; ctrl.abort() }
-  }, [props.runId, props.stageId])
+    void pollRunStageUrl(ownRunId, props.stageId, { onUrl: setMeshUrl }, ctrl.signal)
+    return () => { ctrl.abort() }
+  }, [ownRunId, ownUrl, props.stageId])
   useEffect(() => {
     let alive = true
     fetchFormSpec('img-to-mesh')
@@ -91,11 +91,8 @@ export function ImgToMeshStudio(props: StageViewOwnerProps): ReturnType<typeof h
   }
   // the SAME shared square provider the generic drill rides — one
   // definition, every surface (the operator's DRY law)
-  const wired = props.upstream.find((u) => u.id === props.wiredFrom) ?? null
   const { square: squareFor, wireMenu } = useSquareProvider(onEdit, {
-    upstreamTitle: wired !== null ? wired.title : null,
-    candidates: props.upstream.map((u) => ({ id: u.id, label: u.title })),
-    onWire: props.onWire,
+    candidates: props.upstream.map((u) => ({ id: u.id, label: u.title, url: u.url })),
   })
   const run = (): void => {
     if (spec === null) return

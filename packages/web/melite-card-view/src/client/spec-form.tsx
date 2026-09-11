@@ -15,7 +15,7 @@
  * /v1 doors (the 2026-09-11 production restore: model-catalog,
  * form-spec) and the bench wire door.
  */
-import { createElement as h, useCallback, useState } from 'react'
+import { createElement as h, useCallback, useRef, useState } from 'react'
 import { Menu } from '@deepseek-ai/dsh-client-ui-primitives'
 import { InputSquare, isImageUrl, readAsDataUrl, type InputSquareVerbs } from './input-square.tsx'
 import { uploadInputFile } from './cards-resource.ts'
@@ -157,26 +157,29 @@ export interface SquareHost {
   display?: string | null
 }
 
-/** The wire half of the square provider (bench truth + host verb):
- *  candidates are the OTHER stages; onWire(null) clears. */
+/** The picker half of the square provider: candidates are the OTHER
+ *  stages' LATEST OUTPUTS (title + the media-route url the run wrote
+ *  onto their bench rows). Picking one WRITES THE PARAM — the input
+ *  slot is the wire, there is no separate wiring mechanic. */
 export interface SquareWire {
-  upstreamTitle: string | null
-  candidates: Array<{ id: string; label: string }>
-  onWire: (fromStageId: string | null) => void
+  candidates: Array<{ id: string; label: string; url: string }>
 }
 
 /** THE ONE square provider (the old SlotGrid law, DSH substrate):
- *  every image/file field of a stage gets the same three verbs —
- *  file upload (the /v1/uploads door + the data-URL mirror), media
- *  drop (the asset MIME → the param), and the wire picker (a DSH
- *  Menu anchored on the square). ONE definition; the generic drill
- *  and every registered studio ride it. */
+ *  every image/file field of a stage gets the same verbs — file
+ *  upload (the /v1/uploads door + the data-URL mirror), media drop
+ *  (the asset MIME → the param), and THE PICKER (a DSH Menu anchored
+ *  on the square listing the other stages' latest outputs; picking
+ *  one writes the PARAM — the slot is the wire, no separate wiring
+ *  mechanic exists). ONE definition; the generic drill and every
+ *  registered studio ride it. */
 export function useSquareProvider(onEdit: (name: string, v: unknown) => void, wire: SquareWire): {
   square: (f: SpecField) => SquareHost | undefined
   wireMenu: ReturnType<typeof h> | null
 } {
   const [mirror, setMirror] = useState<Record<string, string>>({})
-  const [pickAt, setPickAt] = useState<{ rect: DOMRect } | null>(null)
+  const [pickAt, setPickAt] = useState<{ rect: DOMRect; field: SpecField } | null>(null)
+  const fileRef = useRef<HTMLInputElement | null>(null)
   const onFile = useCallback(async (f: SpecField, file: File): Promise<void> => {
     try {
       const dataUrl = await readAsDataUrl(file)
@@ -192,10 +195,11 @@ export function useSquareProvider(onEdit: (name: string, v: unknown) => void, wi
     return {
       display: mirror[f.name] ?? null,
       verbs: {
-        upstreamTitle: wire.upstreamTitle,
-        onWire: (anchor?: unknown) => {
+        onPick: (anchor?: unknown) => {
           const el = anchor instanceof HTMLElement ? anchor : null
-          setPickAt(el !== null ? { rect: el.getBoundingClientRect() } : { rect: new DOMRect(8, 8, 1, 1) })
+          setPickAt(el !== null
+            ? { rect: el.getBoundingClientRect(), field: f }
+            : { rect: new DOMRect(8, 8, 1, 1), field: f })
         },
         onFile: (file: File) => { void onFile(f, file) },
         onAsset: (url: string) => { onEdit(f.name, url) },
@@ -213,15 +217,44 @@ export function useSquareProvider(onEdit: (name: string, v: unknown) => void, wi
     items: [
       ...wire.candidates.map((c) => ({ id: c.id, label: c.label })),
       { type: 'separator' as const, id: 'sep' },
-      { id: '__none__', label: '— clear wire —', danger: true },
+      { id: '__file__', label: 'Upload a file…' },
+      { id: '__none__', label: '— clear —', danger: true },
     ],
     onSelect: (id: string) => {
+      const f = pickAt.field
       setPickAt(null)
-      wire.onWire(id === '__none__' ? null : id)
+      if (id === '__file__') { fileRef.current?.click(); return }
+      if (id === '__none__') {
+        setMirror((m) => { const n = { ...m }; delete n[f.name]; return n })
+        onEdit(f.name, '')
+        return
+      }
+      const c = wire.candidates.find((x) => x.id === id)
+      // THE SLOT IS THE WIRE: the picked output's url rides into the
+      // param VERBATIM (media-route spelling — renders in the square
+      // and stages at the engine under its runs-root arm)
+      if (c !== undefined && c.url !== '') onEdit(f.name, c.url)
     },
     onClose: () => { setPickAt(null) },
     portal: true,
-  })
+  },
+    // the picker's upload entry (the menu renders portal-side, so its
+    // hidden file input rides WITH it)
+    h('input', {
+      ref: fileRef,
+      type: 'file',
+      accept: 'image/png,image/jpeg,image/webp',
+      'aria-hidden': true,
+      tabIndex: -1,
+      style: { display: 'none' },
+      onChange: (e: unknown) => {
+        const inp = e as { target: { files: FileList | null } }
+        const file = inp.target.files?.[0]
+        if (pickAt !== null && file !== undefined && file !== null) void onFile(pickAt.field, file)
+        if (fileRef.current !== null) fileRef.current.value = ''
+      },
+    }),
+  )
   return { square, wireMenu }
 }
 

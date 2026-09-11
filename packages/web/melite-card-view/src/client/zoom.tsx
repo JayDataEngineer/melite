@@ -70,7 +70,6 @@ export interface ZoomDetailProps {
   onRun: () => void
   onClose: () => void
   onRemoved: () => void
-  onRewired: () => void
   /** params patch verb (the surface slot's onPatch currency). */
   onPatchParams: (patch: Record<string, unknown>) => void
   /** the envelope lift channel: the DETAIL reports surface.size; the
@@ -167,7 +166,7 @@ function ZoomMount(props: ZoomDetailProps & { detail: (p: ZoomDetailProps) => Re
             }, '✕'),
           ),
           ready && isPresent
-            ? h(props.detail, { stage, bench: rest.bench, running: rest.running, onRun: rest.onRun, onClose, onRemoved: rest.onRemoved, onRewired: rest.onRewired, onPatchParams: rest.onPatchParams, renderStageView: rest.renderStageView, onSurface, runId: rest.runId })
+            ? h(props.detail, { stage, bench: rest.bench, running: rest.running, onRun: rest.onRun, onClose, onRemoved: rest.onRemoved, onPatchParams: rest.onPatchParams, renderStageView: rest.renderStageView, onSurface, runId: rest.runId })
             : h(ZoomSkeleton),
         ),
       ),

@@ -16,9 +16,10 @@
 // rendering (Modal drilldown, buttons) rides the live shell, not
 // jsdom — the pure laws above are what pinned the regressions.
 import { describe, expect, test, afterEach } from "vitest";
-import { resolveCardsAddress, groupStagesByCard } from "../src/client/CardsTab.tsx";
+import { resetCardFamiliesCache } from "@melite-plugin/melite-run-wire";
+import { resolveCardsAddress, groupStagesByCard, runCardStage, runTheBench } from "../src/client/CardsTab.tsx";
 import { readRun, restoreRunToBench } from "../src/client/cards-resource.ts";
-import type { BenchStageRow, CardsRunValue } from "../src/client/cards-resource.ts";
+import type { BenchStageRow, CardsBenchValue, CardsRunValue } from "../src/client/cards-resource.ts";
 
 function stage(over: Partial<BenchStageRow> & { id: string }): BenchStageRow {
   return { engine: "comfyui", ...over };
@@ -72,12 +73,24 @@ interface Call { method: string; args: Record<string, unknown> }
 let calls: Call[] = [];
 let routes: Record<string, (args: Record<string, unknown>, n: number) => { ok: boolean; value?: unknown; error?: string }> = {};
 let seen: Record<string, number> = {};
+let catalog: Record<string, unknown> = { cards: { "img-to-mesh": { families: ["trellis2-native"] } } };
 
 function stubWire(): void {
   calls = [];
   seen = {};
   routes = {};
-  (globalThis as Record<string, unknown>)["fetch"] = async (_url: unknown, init?: { body?: unknown }): Promise<unknown> => {
+  (globalThis as Record<string, unknown>)["fetch"] = async (url: unknown, init?: { body?: unknown }): Promise<unknown> => {
+    // the catalog arm (the family currency door — a GET, no frame)
+    if (String(url) === "/v1/model-catalog") {
+      return { ok: true, json: async () => catalog };
+    }
+    // the form-spec arm (the declared surface — GET /v1/form-spec?model=<card>)
+    if (String(url).startsWith("/v1/form-spec")) {
+      return { ok: true, json: async () => ({ form: "img-to-mesh", fields: [
+        { name: "input_image", label: "Source image", type: "image" },
+        { name: "resolution", label: "Resolution", type: "select", options: ["512", "1024", "1536"] },
+      ] }) };
+    }
     const frame = JSON.parse(String(init?.body)) as { rpcId: string; method: string; payload: { args: Record<string, unknown> } };
     calls.push({ method: frame.method, args: frame.payload.args });
     const n = (seen[frame.method] ?? 0) + 1;
@@ -182,5 +195,140 @@ describe("restoreRunToBench — the card back into a flow", () => {
       ? { ok: true, value: { rev: 2 } }
       : { ok: false, error: "bench/cas-conflict: stale rev" };
     await expect(restoreRunToBench(run())).rejects.toThrow("restore stopped after 1 stage(s): bench/cas-conflict: stale rev");
+  });
+});
+
+// ── the run doors (the 2026-09-12 fix: single-card Run rides the
+//    COMPOSING {model:} door — the flow_inline door cannot consume
+//    cards and its executor demanded a workflow nobody emitted) ──
+
+describe("runCardStage / runTheBench — the door contract", () => {
+  test("one card stage starts through the composing {model:} door", async () => {
+    stubWire();
+    resetCardFamiliesCache();
+    const realFetchRef = globalThis.fetch;
+    // the catalog arm (families currency) + the wire arm in one stub
+    (globalThis as Record<string, unknown>)["fetch"] = async (url: unknown, init?: { body?: unknown }): Promise<unknown> => {
+      if (String(url) === "/v1/model-catalog") {
+        return { ok: true, json: async () => ({ cards: { "img-to-mesh": { id: "img-to-mesh", families: ["trellis2-native", "pixal3d", "transfer_rig"] } } }) };
+      }
+      const frame = JSON.parse(String(init?.body)) as { rpcId: string; method: string; payload: { args: Record<string, unknown> } };
+      calls.push({ method: frame.method, args: frame.payload.args });
+      return { ok: true, json: async () => ({ type: "server-response", rpcId: frame.rpcId, result: { ok: true, value: { run_id: "run-9", status: "queued", queue_position: 0 } } }) };
+    };
+    const res = await runCardStage("bench-main", stage({
+      card: "img-to-mesh",
+      params: { input_image: "drop.png", resolution: "1024" },
+    }));
+    (globalThis as Record<string, unknown>)["fetch"] = realFetchRef;
+    resetCardFamiliesCache();
+    expect(res).toEqual({ runId: "run-9" });
+    // THE CONTRACT: model = the DEFAULT FAMILY (the runs door resolves
+    // neither card ids nor aliases), knobs TOP-LEVEL (the door's own
+    // convention), draft under the bench, test explicit false.
+    expect(calls[0]?.args).toEqual({ doc: {
+      input_image: "drop.png",
+      resolution: "1024",
+      model: "trellis2-native",
+      draft_id: "bench-main",
+      test: false,
+    } });
+  });
+
+  test("a stage naming no card refuses before the wire", async () => {
+    stubWire();
+    resetCardFamiliesCache();
+    const res = await runCardStage("bench-main", stage({ params: {} }));
+    expect(res).toEqual({ refused: "this stage names no card — nothing to compose" });
+    expect(calls).toEqual([]);
+    resetCardFamiliesCache();
+  });
+
+  test("a compose refusal rides the estate's own text, never a throw", async () => {
+    stubWire();
+    resetCardFamiliesCache();
+    const realFetchRef = globalThis.fetch;
+    (globalThis as Record<string, unknown>)["fetch"] = async (url: unknown, init?: { body?: unknown }): Promise<unknown> => {
+      if (String(url) === "/v1/model-catalog") {
+        return { ok: true, json: async () => ({ cards: { "img-to-mesh": { families: ["trellis2-native"] } } }) };
+      }
+      const frame = JSON.parse(String(init?.body)) as { rpcId: string; method: string; payload: { args: Record<string, unknown> } };
+      return { ok: true, json: async () => ({ type: "server-response", rpcId: frame.rpcId, result: { ok: false, error: { message: "required param 'input_image' missing on the trellis2-native card — the 3D lift is image-conditioned (no text prompt rides this lane)" } } }) };
+    };
+    const res = await runCardStage("bench-main", stage({ card: "img-to-mesh", params: {} }));
+    (globalThis as Record<string, unknown>)["fetch"] = realFetchRef;
+    resetCardFamiliesCache();
+    expect(res).toEqual({ refused: "required param 'input_image' missing on the trellis2-native card — the 3D lift is image-conditioned (no text prompt rides this lane)" });
+  });
+
+  test("Run ALL keeps the flow_inline projection (pre-composed stages only)", async () => {
+    stubWire();
+    routes["runs/start"] = () => ({ ok: true, value: { run_id: "run-10", status: "queued", queue_position: 0 } });
+    const bench: CardsBenchValue = { kind: "bench", draftId: "bench-main", rev: 5, log: [], stages: [
+      stage({ id: "s_1", card: "image-gen", params: { prompt: "x" }, outputs: ["default"] }),
+    ] };
+    const res = await runTheBench(bench);
+    expect(res).toEqual({ runId: "run-10" });
+    expect(calls[0]?.args).toEqual({ doc: {
+      flow_inline: { id: "bench-main", stages: [{ id: "s_1", engine: "comfyui", params: { prompt: "x" }, outputs: ["default"] }] },
+      draft_id: "bench-main",
+      test: false,
+    } });
+  });
+
+  test("an empty bench refuses before the wire", async () => {
+    stubWire();
+    const res = await runTheBench({ kind: "bench", draftId: "bench-main", rev: 1, log: [], stages: [] });
+    expect(res).toEqual({ refused: "nothing to run" });
+    expect(calls).toEqual([]);
+  });
+
+  // ── THE PARAM IS THE WIRE (2026-09-12, the two-month law
+  //  restored): the slot's picked value — an upload's estate path or
+  //  an upstream output's media-route url — rides the start doc
+  //  VERBATIM; no client-side edge resolution exists.
+  test("a picked upstream output rides the start doc verbatim", async () => {
+    stubWire();
+    resetCardFamiliesCache();
+    routes["runs/start"] = () => ({ ok: true, value: { run_id: "run-9", status: "queued", queue_position: 0 } });
+    const res = await runCardStage("bench-main", stage({
+      id: "s_1",
+      card: "img-to-mesh",
+      params: { input_image: "/melite-media/runs/run-8/img/gen_00001_.png", resolution: "1024" },
+    }));
+    expect(res).toEqual({ runId: "run-9" });
+    const doc = (calls.find((c) => c.method === "runs/start")?.args["doc"] ?? {}) as Record<string, unknown>;
+    expect(doc["input_image"]).toBe("/melite-media/runs/run-8/img/gen_00001_.png");
+    expect(doc["model"]).toBe("trellis2-native");
+    resetCardFamiliesCache();
+  });
+
+  test("a legacy numeric select value rides the spec's declared option spelling", async () => {
+    stubWire();
+    resetCardFamiliesCache();
+    routes["runs/start"] = () => ({ ok: true, value: { run_id: "run-9", status: "queued", queue_position: 0 } });
+    await runCardStage("bench-main", stage({
+      id: "s_1",
+      card: "img-to-mesh",
+      params: { input_image: "data/input/36039.jpg", resolution: 1024 },
+    }));
+    const doc = (calls.find((c) => c.method === "runs/start")?.args["doc"] ?? {}) as Record<string, unknown>;
+    expect(doc["resolution"]).toBe("1024");
+    resetCardFamiliesCache();
+  });
+
+  test("an upload's estate path rides verbatim too — no rewriting at the seam", async () => {
+    stubWire();
+    resetCardFamiliesCache();
+    routes["runs/start"] = () => ({ ok: true, value: { run_id: "run-9", status: "queued", queue_position: 0 } });
+    const res = await runCardStage("bench-main", stage({
+      id: "s_1",
+      card: "img-to-mesh",
+      params: { input_image: "data/input/36039.jpg" },
+    }));
+    expect(res).toEqual({ runId: "run-9" });
+    const doc = (calls.find((c) => c.method === "runs/start")?.args["doc"] ?? {}) as Record<string, unknown>;
+    expect(doc["input_image"]).toBe("data/input/36039.jpg");
+    resetCardFamiliesCache();
   });
 });

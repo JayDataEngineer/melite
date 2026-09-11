@@ -88,11 +88,9 @@ export interface StageViewOwnerProps {
   /** Host verb: report the envelope's size class (the zoom card
    *  frame listens — 'huge' grows the card; '' = the default). */
   onSurface: (size: string) => void
-  /** The bench's wire truth: this stage's upstream candidates and
-   *  its current source wire (the square's from-previous-card arm). */
-  upstream: Array<{ id: string; title: string }>
-  wiredFrom: string | null
-  onWire: (fromStageId: string | null) => void
+  /** The other stages' LATEST OUTPUTS (the picker's candidates —
+   *  the slot is the wire: picking one writes this row's param). */
+  upstream: Array<{ id: string; title: string; url: string }>
   /** The draft's last started run (client memory until the estate
    *  serves draft→run; the studio polls runs/status for artifacts). */
   runId: string | null

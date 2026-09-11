@@ -39,8 +39,9 @@ import type { CatalogCard, FormSpecDoc, SpecValues } from './spec-form.tsx'
 import { paramFields, patchStageParams } from './draft.ts'
 import css from './card.module.css'
 import type { CardsBenchValue, CardsRunValue, BenchStageRow } from './cards-resource.ts'
-import { CARDS_BENCH_ADDRESS, cardsRunAddress, fetchBench, fetchLatestRunForDraft, openCardsResource, parseCardsAddress, restoreRunToBench, uploadInputFile } from './cards-resource.ts'
-import { addStageWire, groupStagesWire, removeStageWire, reorderStageWire, rewireStageWire, ungroupStageWire } from './add-stage.ts'
+import { CARDS_BENCH_ADDRESS, cardsRunAddress, fetchBench, fetchLatestRunForDraft, observeRunOutcome, openCardsResource, parseCardsAddress, restoreRunToBench, uploadInputFile } from './cards-resource.ts'
+import { defaultFamilyForCard, startCardRun, startFlowInlineRun, stopRun } from '@melite-plugin/melite-run-wire'
+import { addStageWire, groupStagesWire, removeStageWire, reorderStageWire, ungroupStageWire } from './add-stage.ts'
 import { CardZoomOverlay, cardLayoutId, ZOOM_SPRING } from './zoom.tsx'
 import { motion } from 'framer-motion'
 import { DndContext, closestCenter, PointerSensor, useSensor, useSensors } from '@dnd-kit/core'
@@ -92,70 +93,53 @@ function projectStage(s: BenchStageRow): Record<string, unknown> {
   return row
 }
 
-/** Correlation id for one client-request frame (crypto.randomUUID is
- *  the browser standard). */
-function nextRpcId(): string {
-  const cryptoApi: Crypto | undefined = globalThis.crypto
-  if (cryptoApi?.randomUUID !== undefined) return cryptoApi.randomUUID()
-  return 'rpc-' + Math.random().toString(36).slice(2) + '-' + Date.now().toString(36)
-}
+/** Correlation id — the run-wire package's ONE definition (re-exported
+ *  by cards-resource for the tab's legacy importers). */
 
-/** The Run gesture: start the bench as it stands, over the runs
- *  remote's wire door (same-origin POST /api/runs/start carrying the
- *  client-request frame — api-gateway.md; the gateway-era /v1/flows
- *  start died with the app, nothing serves it). Errors surface inline
- *  (the RemoteError branch's own refusal text — logged, never thrown
- *  past React). */
-async function runStages(
+/** Run ONE card stage through the COMPOSING door (the run-wire
+ *  package's startCardRun — the {model:} arm). The flow_inline door
+ *  this gesture rode before cannot consume cards ("card= stages are
+ *  unported on this gateway") and its executor demanded a pre-composed
+ *  params.workflow nobody emitted — the Sep 11 bench runs' "node
+ *  carries no inline workflow". The {model:} door composes the card's
+ *  arms estate-side; `model` is the card's DEFAULT FAMILY from the
+ *  catalog (the runs door resolves neither card ids nor aliases —
+ *  defaultFamilyForCard carries the currency, session-cached).
+ *  THE PARAM IS THE WIRE (the two-month law): whatever the stage's
+ *  slot holds — an upload's estate path or a picked upstream output's
+ *  media-route url — rides the start doc VERBATIM; the engine stages
+ *  it under its runs-root arm. No client-side edge resolution exists.
+ *  Exported for the tab seam's door-contract spec. */
+export async function runCardStage(
   draftId: string,
-  rows: readonly BenchStageRow[],
+  row: BenchStageRow,
 ): Promise<{ runId: string } | { refused: string }> {
-  const stages = rows.map(projectStage)
-  if (stages.length === 0) return { refused: 'nothing to run' }
-  const rpcId = nextRpcId()
+  const params = typeof row.params === 'object' && row.params !== null && !Array.isArray(row.params)
+    ? row.params as Record<string, unknown>
+    : {}
+  const card = typeof row.card === 'string' && row.card !== '' ? row.card : ''
+  if (card === '') return { refused: 'this stage names no card — nothing to compose' }
+  const model = await defaultFamilyForCard(card)
+  // the declared surface spells SELECT options as strings; a legacy
+  // row may hold the matching number — normalize through the spec
+  // (only when the stringified value IS a declared option; anything
+  // else rides verbatim and the door refuses honestly)
+  let doc = params
   try {
-    const res = await fetch('/api/runs/start', {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({
-        type: 'client-request',
-        rpcId,
-        method: 'runs/start',
-        // test:false — a real run. The registry's envelope gate
-        // requires an explicit boolean (absent/null is refused), and
-        // the flow body needs its id (the bench runs under its own
-        // draft_id — the bench verb's one truth).
-        payload: { args: { doc: { flow_inline: { id: draftId, stages }, draft_id: draftId, test: false } } },
-      }),
-    })
-    if (!res.ok) {
-      return { refused: 'run refused: HTTP ' + String(res.status) }
-    }
-    const body: unknown = await res.json().catch(() => null)
-    if (typeof body !== 'object' || body === null
-        || Reflect.get(body, 'type') !== 'server-response'
-        || Reflect.get(body, 'rpcId') !== rpcId) {
-      return { refused: 'run refused: malformed response frame' }
-    }
-    const result: unknown = Reflect.get(body, 'result')
-    if (typeof result !== 'object' || result === null) {
-      return { refused: 'run refused: malformed result' }
-    }
-    if (Reflect.get(result, 'ok') === true) {
-      const runId = Reflect.get(Reflect.get(result, 'value') as object, 'run_id')
-      if (typeof runId === 'string' && runId !== '') {
-        return { runId }
+    const spec = await fetchFormSpec(card)
+    const selects = spec.fields.filter((f) => f.type === 'select' && Array.isArray(f.options))
+    if (selects.length > 0) {
+      doc = { ...params }
+      for (const f of selects) {
+        const v = doc[f.name]
+        if (typeof v === 'number') {
+          const opts = (f.options as Array<string | { value: string }>).map((o) => typeof o === 'string' ? o : o.value)
+          if (opts.includes(String(v))) doc[f.name] = String(v)
+        }
       }
-      return { refused: 'run refused: no run_id in the answer' }
     }
-    const error: unknown = Reflect.get(result, 'error')
-    const message = typeof error === 'object' && error !== null
-      && typeof Reflect.get(error, 'message') === 'string'
-      ? Reflect.get(error, 'message') : 'runs/start refused'
-    return { refused: String(message) }
-  } catch (e) {
-    return { refused: e instanceof Error ? e.message : 'run request failed' }
-  }
+  } catch { /* spec unavailable — params ride verbatim */ }
+  return await startCardRun({ model, params: doc, draftId })
 }
 
 /** THE CATEGORIES: bench stages grouped by card (first-appearance
@@ -172,41 +156,25 @@ export function groupStagesByCard(stages: BenchStageRow[]): Array<{ card: string
   return groups
 }
 
-/** Run ALL — the header gesture (multi-stage benches are refused by
- *  the single-stage runs gateway until the estate queues flows; the
- *  refusal surfaces inline, never a fake success). */
-async function runTheBench(bench: CardsBenchValue): Promise<{ runId: string } | { refused: string }> {
-  return await runStages(bench.draftId, bench.stages)
+/** Run ALL — the header gesture (the flow_inline door: multi-stage
+ *  benches are refused by the single-stage runs gateway until the
+ *  estate queues flows; the refusal surfaces inline, never a fake
+ *  success). Rides the run-wire package's startFlowInlineRun.
+ *  Exported for the tab seam's door-contract spec. */
+export async function runTheBench(bench: CardsBenchValue): Promise<{ runId: string } | { refused: string }> {
+  const stages = bench.stages.map(projectStage)
+  if (stages.length === 0) return { refused: 'nothing to run' }
+  return await startFlowInlineRun({ flowId: bench.draftId, stages, draftId: bench.draftId })
 }
 
-/** runs/stop — the cancel door (the registry seat's flag + interrupt).
- *  Same wire frame as every other verb. */
-async function stopRunWire(runId: string): Promise<void> {
-  const rpcId = nextRpcId()
-  const res = await fetch('/api/runs/stop', {
-    method: 'POST',
-    headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ type: 'client-request', rpcId, method: 'runs/stop', payload: { args: { runId } } }),
-  })
-  if (!res.ok) throw new Error('runs/stop: HTTP ' + String(res.status))
-  const body: unknown = await res.json().catch(() => null)
-  if (typeof body !== 'object' || body === null || Reflect.get(body, 'type') !== 'server-response'
-      || Reflect.get(body, 'rpcId') !== rpcId) {
-    throw new Error('runs/stop: malformed response frame')
-  }
-  const result: unknown = Reflect.get(body, 'result')
-  if (typeof result !== 'object' || result === null || Reflect.get(result, 'ok') !== true) {
-    const error: unknown = typeof result === 'object' && result !== null ? Reflect.get(result, 'error') : null
-    throw new Error(typeof error === 'object' && error !== null && typeof Reflect.get(error, 'message') === 'string'
-      ? Reflect.get(error, 'message') as string : 'runs/stop refused')
-  }
-}
+/** runs/stop — the cancel door (the registry seat's flag + interrupt);
+ *  the run-wire package's verb. */
 
 /** Bench row run-status → the installed StateDot union (FlowCards'
  *  CardRowLine law: done|warning|ongoing|error — a stage that never
  *  ran shows NO dot, never a fake state). */
 const STAGE_DOT: Record<string, 'done' | 'ongoing' | 'error' | 'warning' | null> = {
-  queued: 'warning', pending: 'warning', running: 'ongoing', done: 'done', failed: 'error', ready: null,
+  queued: 'warning', pending: 'warning', running: 'ongoing', done: 'done', failed: 'error', stopped: 'warning', ready: null,
 }
 
 /** THE CARD ROW — the chat plane's CardRowLine grammar VERBATIM
@@ -270,13 +238,10 @@ function statusTone(status: string): 'success' | 'danger' | 'info' | 'warning' |
   return 'neutral'
 }
 
-function SortableTile({ row, entered, onOpen, onWireDrop, onWireArm, wireSrc, grouping, selected, onToggleSelect, onAssetAttach }: {
+function SortableTile({ row, entered, onOpen, grouping, selected, onToggleSelect, onAssetAttach }: {
   row: CardRowLineTabRow
   entered: boolean
   onOpen: (row: CardRowLineTabRow) => void
-  onWireDrop: (target: string, source: string) => void
-  onWireArm: (id: string) => void
-  wireSrc: string | null
   grouping: boolean
   selected: boolean
   onToggleSelect: (id: string) => void
@@ -285,31 +250,25 @@ function SortableTile({ row, entered, onOpen, onWireDrop, onWireArm, wireSrc, gr
    *  source param — the estate's slot mechanism for direct assets.
    *  source = the asset URL or the raw File; the bench owns upload
    *  and error surfacing. */
-  onAssetAttach: (target: string, source: string | File) => void
+  onAssetAttach: (target: string, source: string | File, kind: 'image' | 'audio') => void
 }): ReturnType<typeof h> {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: row.id })
   // selection mode: pointer listeners OFF (reorder pauses), clicks
   // toggle selection — the old sub-view's law, verbatim.
   const dragProps = grouping ? {} : { ...attributes, ...listeners }
+  // THE SLOT IS THE WIRE: this mark shows only an agent-recorded
+  // edge (inputs.source on the row); the user-facing wiring IS the
+  // input slot's picker — there is no tile wire gesture.
   const wiredFrom = typeof row.stage.inputs === 'object' && row.stage.inputs !== null
     && 'source' in (row.stage.inputs as Record<string, unknown>)
-  // WIRE MODE (2026-09-11): the ⛓ button arms the tile as the wire
-  // SOURCE; the next tile CLICKED becomes the target (its `source`
-  // input wires from this stage's first declared output). Click the
-  // armed tile again to cancel. Unambiguous with the dnd-kit pointer
-  // drag (reorder) — the two gestures can never collide.
-  const wiring = wireSrc !== null
   return h('li', {
     ref: setNodeRef,
     className: css.tile
       + (entered ? ' ' + css.tileEnter : '')
-      + (isDragging ? ' ' + css.tileDragging : '')
-      + (wiring ? ' ' + css.wiring : '')
-      + (wireSrc === row.id ? ' ' + css.wiringSource : ''),
+      + (isDragging ? ' ' + css.tileDragging : ''),
     style: { transform: CSS.Translate.toString(transform), ...(transition !== null ? { transition } : {}) },
     'data-stage-id': row.id,
     'data-stage-status': row.status,
-    'data-wiring': wireSrc === row.id ? 'source' : wiring ? 'target' : null,
     'data-grouping': grouping ? 'on' : null,
     'data-selected': grouping && selected ? 'on' : null,
     onDragOver: (e: React.DragEvent) => {
@@ -326,7 +285,7 @@ function SortableTile({ row, entered, onOpen, onWireDrop, onWireArm, wireSrc, gr
         e.stopPropagation()
         const t = asset.type ?? ''
         if (!t.startsWith('image/') && !t.startsWith('audio/')) return
-        onAssetAttach(row.id, asset.url as string)
+        onAssetAttach(row.id, asset.url as string, (asset.type ?? '').startsWith('audio/') ? 'audio' : 'image')
         return
       }
       const file = e.dataTransfer.files[0]
@@ -334,7 +293,7 @@ function SortableTile({ row, entered, onOpen, onWireDrop, onWireArm, wireSrc, gr
       if (file.type !== 'image/png' && file.type !== 'image/jpeg' && file.type !== 'image/webp') return
       e.preventDefault()
       e.stopPropagation()
-      onAssetAttach(row.id, file)
+      onAssetAttach(row.id, file, 'image')
     },
     ...dragProps,
   },
@@ -343,9 +302,7 @@ function SortableTile({ row, entered, onOpen, onWireDrop, onWireArm, wireSrc, gr
         className: css.tileInner, type: 'button', 'data-status': row.status,
         onClick: () => {
           if (grouping) { onToggleSelect(row.id); return }
-          if (wireSrc === null) { onOpen(row); return }
-          if (wireSrc === row.id) { onWireArm(row.id); return } // self-click cancels
-          onWireDrop(row.id, wireSrc)
+          onOpen(row)
         },
       },
         grouping ? h('span', {
@@ -375,14 +332,6 @@ function SortableTile({ row, entered, onOpen, onWireDrop, onWireArm, wireSrc, gr
             ? h(Tag, { tone: statusTone(row.status) }, row.status)
             : null,
         ),
-        // the ⛓ arm button — a SIBLING of the open button (no nested
-        // buttons in HTML), riding the tile's top-right corner
-        h('button', {
-          className: css.wireBtn, type: 'button',
-          'aria-label': 'Wire from this stage',
-          title: 'Wire from this stage',
-          onClick: (e: React.MouseEvent) => { e.stopPropagation(); onWireArm(row.id) },
-        }, '⛓'),
       ),
     ),
   )
@@ -458,7 +407,8 @@ function benchRow(stage: BenchStageRow, bench?: CardsBenchValue): CardRowLineTab
       const upstreamRow = bench.stages.find((s) => s.id === from)
       return upstreamRow !== undefined ? String(upstreamRow.card ?? upstreamRow.id) : null
     })(),
-    sourceAttached: typeof params['source'] === 'string' && params['source'] !== '',
+    sourceAttached: Object.values(params).some((v) => typeof v === 'string'
+      && (v.startsWith('data/input/') || v.startsWith('/melite-media/') || v.startsWith('/v1/assets/'))),
     stage,
   }
 }
@@ -469,14 +419,13 @@ function benchRow(stage: BenchStageRow, bench?: CardsBenchValue): CardRowLineTab
  *  dump. Params left, Run right; the patch carries only CHANGED keys
  *  (coerced once, at patch time — the editPatch law); then the run
  *  gesture (patch lands in the domain BEFORE the run reads it). */
-function StageDrill({ stage, bench, running, onRun, onClose, onRemoved, onRewired, onPatchParams, renderStageView, onSurface, runId }: {
+function StageDrill({ stage, bench, running, onRun, onClose, onRemoved, onPatchParams, renderStageView, onSurface, runId }: {
   stage: BenchStageRow
   bench: CardsBenchValue
   running: boolean
   onRun: () => void
   onClose: () => void
   onRemoved: () => void
-  onRewired: () => void
   onPatchParams: (patch: Record<string, unknown>) => void
   renderStageView: (owner: StageViewOwnerProps, fallback: ReturnType<typeof h>) => ReturnType<typeof h>
   onSurface?: (size: string) => void
@@ -490,31 +439,17 @@ function StageDrill({ stage, bench, running, onRun, onClose, onRemoved, onRewire
   const [loaded, setLoaded] = useState(false)
   const reportSurface = onSurface ?? (() => {})
   const [removing, setRemoving] = useState(false)
-  // THE SHARED SQUARE PROVIDER (the old SlotGrid law): the drill's
-  //  image/file fields get the three verbs from ONE definition.
-  // THE WIRE DROPDOWN (the old system's second wire vector): this
-  // stage's `source` input ⟵ another stage's first declared output
-  // ('default' when none declared), or NONE to clear.
-  const inputs: Record<string, unknown> = typeof stage.inputs === 'object' && stage.inputs !== null
-    ? stage.inputs as Record<string, unknown> : {}
-  const sourceEdge = typeof inputs['source'] === 'object' && inputs['source'] !== null
-    ? inputs['source'] as Record<string, unknown> : null
-  const wiredStage = sourceEdge !== null && typeof sourceEdge['stage'] === 'string' ? sourceEdge['stage'] : ''
+  // THE SLOT IS THE WIRE (the two-month law, restored 2026-09-12):
+  //  no wiring mechanic exists. The square picker lists the OTHER
+  //  stages' LATEST OUTPUTS; picking one writes this stage's param
+  //  to that artifact's url (the run stages it engine-side).
   const others = bench.stages.filter((s) => s.id !== stage.id)
-  const setWire = async (fromId: string): Promise<void> => {
-    setError(null)
-    try {
-      const fromStage = bench.stages.find((s) => s.id === fromId)
-      const outputs = fromStage !== undefined && Array.isArray(fromStage.outputs)
-        ? fromStage.outputs : []
-      await rewireStageWire(fromId === ''
-        ? { stage: stage.id, input: 'source', expect_rev: bench.rev }
-        : { stage: stage.id, input: 'source', from: { stage: fromId, output: outputs[0] ?? 'default' }, expect_rev: bench.rev })
-      onRewired()
-    } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : 'wire failed')
-    }
-  }
+  const candidates = others.flatMap((s) => {
+    const res = typeof s.result === 'object' && s.result !== null ? s.result as Record<string, unknown> : null
+    const url = res !== null && typeof res['url'] === 'string' && (res['url'] as string) !== ''
+      ? res['url'] as string : ''
+    return url === '' ? [] : [{ id: s.id, label: String(s.title ?? s.card ?? s.id), url }]
+  })
   useEffect(() => {
     let alive = true
     const family = String(stage.card ?? '')
@@ -540,11 +475,7 @@ function StageDrill({ stage, bench, running, onRun, onClose, onRemoved, onRewire
   // THE SHARED SQUARE PROVIDER (the old SlotGrid law): this stage's
   //  image/file fields get the three verbs from ONE definition — the
   //  same hook every registered studio rides.
-  const { square: squareFor, wireMenu } = useSquareProvider(onEdit, {
-    upstreamTitle: wiredStage !== '' ? others.find((s) => s.id === wiredStage)?.card ?? others.find((s) => s.id === wiredStage)?.title ?? null : null,
-    candidates: others.map((s) => ({ id: s.id, label: String(s.title ?? s.card ?? s.id) })),
-    onWire: (fromId: string | null): void => { void setWire(fromId ?? '') },
-  })
+  const { square: squareFor, wireMenu } = useSquareProvider(onEdit, { candidates })
   const run = async (): Promise<void> => {
     setError(null)
     try {
@@ -611,19 +542,6 @@ function StageDrill({ stage, bench, running, onRun, onClose, onRemoved, onRewire
   // over the whole detail; unclaimed key renders this generic body.
   const genericDetail = (): ReturnType<typeof h> => h('div', { className: css.zoomDetail },
     wireMenu,
-    h('div', { className: css.wireRow },
-      h('span', { className: css.wireLabel }, 'source input ⟵'),
-      h('select', {
-        className: css.specSelect,
-        value: wiredStage,
-        'aria-label': 'Wire source input from stage',
-        onChange: (e: React.ChangeEvent<HTMLSelectElement>) => { void setWire(e.target.value) },
-      },
-        h('option', { key: '', value: '' }, wiredStage !== '' ? '— clear wire —' : '— none —'),
-        others.map((s) => h('option', { key: s.id, value: s.id },
-          String(s.title ?? s.card ?? s.id) + ' → ' + stage.id)),
-      ),
-    ),
     h('div', { className: css.split },
       h('div', { className: css.params },
         !loaded ? h('div', { className: css.load }, 'form…')
@@ -658,9 +576,7 @@ function StageDrill({ stage, bench, running, onRun, onClose, onRemoved, onRewire
     onStop: () => {},
     onRemove: () => { void remove() },
     onSurface: reportSurface,
-    upstream: others.map((s) => ({ id: s.id, title: String(s.title ?? s.card ?? s.id) })),
-    wiredFrom: wiredStage !== '' ? wiredStage : null,
-    onWire: (fromId: string | null): void => { void setWire(fromId ?? '') },
+    upstream: candidates.map((c) => ({ id: c.id, title: c.label, url: c.url })),
     runId: runId ?? null,
   }, genericDetail())
 }
@@ -782,7 +698,7 @@ function AddCardDoor({ bench, onAdded, onClose }: {
   )
 }
 
-function BenchView({ bench, onRun, onRunStage, running, onPatchParams, renderStageView, runId }: {
+function BenchView({ bench, onRun, onRunStage, running, onPatchParams, renderStageView, runId, refreshTick }: {
   bench: CardsBenchValue
   onRun: () => void
   onRunStage: (stage: BenchStageRow) => void
@@ -790,6 +706,9 @@ function BenchView({ bench, onRun, onRunStage, running, onPatchParams, renderSta
   onPatchParams: (stage: BenchStageRow, patch: Record<string, unknown>) => void
   renderStageView: (owner: StageViewOwnerProps, fallback: ReturnType<typeof h>) => ReturnType<typeof h>
   runId?: string | null
+  /** The outcome observer's touch — the rail re-reads so tile
+   *  runStatus/result stay live without ever leaving the bench. */
+  refreshTick?: number
 }): ReturnType<typeof h> {
   // The LIVE bench: the resource snapshot is the first frame only (the
   // provider's bench stream ends after one snapshot), so the view owns
@@ -820,6 +739,9 @@ function BenchView({ bench, onRun, onRunStage, running, onPatchParams, renderSta
   // keepOpen: the wire path — the drill STAYS OPEN and its stage row
   // swaps to the fresh one (the old system updated the wire in place;
   // only remove-stage closes the drill).
+  useEffect(() => {
+    if (refreshTick !== undefined && refreshTick > 0) reload({ keepOpen: true })
+  }, [refreshTick])
   const reload = useCallback((opts?: { keepOpen?: boolean }): void => {
     setReloadError(null)
     fetchBench()
@@ -863,23 +785,6 @@ function BenchView({ bench, onRun, onRunStage, running, onPatchParams, renderSta
       })
   }, [live, reload])
   // ── TILE-ON-TILE WIRE, click form (2026-09-11): the ⛓ button arms a
-  //    source tile; clicking another tile commits — target.source ⟵
-  //    source's first declared output ('default' when none declared).
-  //    The canvas-era drag gesture cannot survive dnd-kit's pointer
-  //    claim on the same mousedown; clicks are unambiguous.
-  const [wireSrc, setWireSrc] = useState<string | null>(null)
-  const onWireArm = useCallback((id: string): void => {
-    setWireSrc((cur) => (cur === id ? null : id))
-  }, [])
-  const onWireDrop = useCallback((target: string, source: string): void => {
-    setWireSrc(null)
-    const src = live.stages.find((s) => s.id === source)
-    const outputs = src !== undefined && Array.isArray(src.outputs)
-      ? src.outputs : []
-    void rewireStageWire({ stage: target, input: 'source', from: { stage: source, output: outputs[0] ?? 'default' }, expect_rev: live.rev })
-      .then(() => { reload() })
-      .catch((err: unknown) => { setReloadError(err instanceof Error ? err.message : 'wire failed') })
-  }, [live, reload])
   // ── CAPABILITY / ASSET / FILE DROP SURFACE (slice 3): the grid is
   //    the old onCardsDrop target reborn — capability tile lands a new
   //    stage; asset tile lands an input-prep card; OS image file rides
@@ -999,14 +904,24 @@ function BenchView({ bench, onRun, onRunStage, running, onPatchParams, renderSta
       .catch((err: unknown) => { setReloadError(err instanceof Error ? err.message : 'group refused') })
   }, [live, selectedIds, exitGrouping, reload])
   // ── DROP-ON-CARD ATTACHES TO SLOT: the asset URL (or the uploaded
-  //    file's input-dir name) patches the TARGET stage's source param
-  //    through drafts/patch — the estate's slot mechanism for direct
-  //    assets (the old SlotSquare's onDropAsset/onDropFile law).
-  const onAssetAttach = useCallback((target: string, source: string | File): void => {
-    void (typeof source === 'string'
-      ? Promise.resolve(source)
-      : uploadInputFile(source).then(({ name }) => name))
-      .then((src) => patchStageParams(live.draftId, target, { source: src }))
+  //    file's input-dir name) patches the TARGET stage's OWN image
+  //    field — the card's form-spec names it ('source' on input-prep,
+  //    'input_image' on img-to-mesh); a card without an image slot
+  //    refuses honestly. Never a foreign key: undeclared params refuse
+  //    at compose admission (the old SlotSquare's onDropAsset law).
+  const onAssetAttach = useCallback((target: string, source: string | File, kind: 'image' | 'audio'): void => {
+    const row = live.stages.find((s) => s.id === target)
+    if (row === undefined) return
+    void fetchFormSpec(String(row.card))
+      .then((spec) => {
+        const field = spec.fields.find((f) => f.type === kind)
+        if (field === undefined) throw new Error('the ' + String(row.card) + ' card has no ' + kind + ' slot')
+        return field.name
+      })
+      .then((field) => (typeof source === 'string'
+        ? Promise.resolve([field, source] as const)
+        : uploadInputFile(source).then(({ name }) => [field, name] as const)))
+      .then(([field, src]) => patchStageParams(live.draftId, target, { [field]: src }))
       .then(() => { reload({ keepOpen: true }) })
       .catch((err: unknown) => { setReloadError(err instanceof Error ? err.message : 'attach refused') })
   }, [live, reload])
@@ -1060,7 +975,6 @@ function BenchView({ bench, onRun, onRunStage, running, onPatchParams, renderSta
                 return h(SortableTile, {
                   key: s.id, row, entered: entered.has(s.id),
                   onOpen: (r) => onOpen(r.stage),
-                  onWireDrop, onWireArm, wireSrc,
                   grouping, selected: selectedIds.has(s.id), onToggleSelect, onAssetAttach,
                 })
               }),
@@ -1089,7 +1003,6 @@ function BenchView({ bench, onRun, onRunStage, running, onPatchParams, renderSta
       onRun: () => { onRunStage(open) },
       onClose,
       onRemoved: () => { setOpen(null); reload() },
-      onRewired: () => { reload({ keepOpen: true }) },
       onPatchParams: (patch: Record<string, unknown>) => { onPatchParams(open, patch) },
       renderStageView,
       runId,
@@ -1224,46 +1137,27 @@ export function CardsTab(props: CardsTabProps): ReturnType<typeof h> {
     }).catch(() => { /* no runs yet — the empty state is honest */ })
     return () => { alive = false }
   }, [lastRunId, snapshot?.value])
-  // In-tab run view: when the host offers no navigation (openResource
-  // undefined — e.g. a tab the shell mounted without actions), a started
-  // run streams HERE through the same provider the resource plane uses
-  // (hydrate + status poll to terminal), instead of stranding the user
-  // on the bench with no feedback.
-  const [localRun, setLocalRun] = useState<CardsRunValue | null>(null)
   const [localRunError, setLocalRunError] = useState<string | null>(null)
-  const runStreamAbort = useRef<AbortController | null>(null)
-  useEffect(() => () => { runStreamAbort.current?.abort() }, [])
+  // THE OUTCOME WATCH (the attribution half): one controller per tab
+  //  life — every stage run's observer rides it, unmount ends the
+  //  watches (a completed patch is idempotent; an interrupted one is
+  //  rewritten by the next run). THE BENCH IS NEVER TAKEN OVER (the
+  //  two-month law): a started run stays a TILE — the observer writes
+  //  'running' at start and the terminal status + result at settle,
+  //  each patch bumps the refresh tick so the rail re-reads; every
+  //  other card stays runnable while it goes.
+  const outcomeAbort = useRef<AbortController | null>(null)
+  const [benchTick, setBenchTick] = useState(0)
+  useEffect(() => () => { outcomeAbort.current?.abort() }, [])
+  const touchBench = useCallback((): void => { setBenchTick((t) => t + 1) }, [])
 
-  const onStarted = useCallback((runId: string): void => {
+  const onStarted = useCallback((runId: string, ran?: { draftId: string; stageId: string }): void => {
     setRunning(false)
     setLastRunId(runId)
-    if (openResource !== undefined) {
-      openResource(cardsRunAddress(runId))
-      return
-    }
-    runStreamAbort.current?.abort()
-    const ctrl = new AbortController()
-    runStreamAbort.current = ctrl
-    setLocalRunError(null)
-    void (async () => {
-      try {
-        for await (const frame of openCardsResource(cardsRunAddress(runId), { signal: ctrl.signal })) {
-          if (ctrl.signal.aborted) return
-          if (frame.ok) setLocalRun(frame.value as CardsRunValue)
-          else {
-            const err: unknown = typeof frame === 'object' && frame !== null && 'error' in frame
-              ? (frame as { error: unknown }).error
-              : null
-            setLocalRunError(err instanceof Error ? err.message : 'run stream failed')
-            return
-          }
-        }
-      } catch (e: unknown) {
-        if (!ctrl.signal.aborted) setLocalRunError(e instanceof Error ? e.message : 'run stream failed')
-      }
-    })()
-  }, [openResource])
-
+    if (ran === undefined) return
+    if (outcomeAbort.current === null) outcomeAbort.current = new AbortController()
+    void observeRunOutcome(ran.draftId, ran.stageId, runId, outcomeAbort.current.signal, touchBench)
+  }, [touchBench])
   const onRun = useCallback((): void => {
     if (snapshot?.value?.kind !== 'bench') return
     setRunning(true)
@@ -1276,16 +1170,16 @@ export function CardsTab(props: CardsTabProps): ReturnType<typeof h> {
       }
     })
   }, [snapshot, onStarted])
-  // RE-RUN ONE STAGE (the drill's Run, 2026-09-11): the single-stage
-  // runs gateway serves exactly this — the stage alone, its params
-  // patched into the bench BEFORE the run reads it (the drill does the
-  // patch, this does the start).
+  // RE-RUN ONE STAGE (the drill's Run): the COMPOSING door — the
+  // stage alone, its params patched into the bench BEFORE the run
+  // reads it (the drill does the patch, this does the start), then
+  // startCardRun over the run-wire package.
   const onRunStage = useCallback((stage: BenchStageRow): void => {
     if (snapshot?.value?.kind !== 'bench') return
     setRunning(true)
     setLocalRunError(null)
-    void runStages(snapshot.value.draftId, [stage]).then((res) => {
-      if ('runId' in res) onStarted(res.runId)
+    void runCardStage(snapshot.value.draftId, stage).then((res) => {
+      if ('runId' in res) onStarted(res.runId, { draftId: snapshot.value.draftId, stageId: stage.id })
       else {
         setRunning(false)
         setLocalRunError(res.refused)
@@ -1304,9 +1198,9 @@ export function CardsTab(props: CardsTabProps): ReturnType<typeof h> {
   }, [snapshot])
 
   // CANCEL — runs/stop on the run in view (both the resource stream
-  // face and the in-tab local run face).
+  // face and the in-tab local run face); the run-wire package's verb.
   const onStop = useCallback((runId: string): void => {
-    void stopRunWire(runId).catch((e: unknown) => {
+    void stopRun(runId).catch((e: unknown) => {
       setLocalRunError(e instanceof Error ? e.message : 'cancel failed')
     })
   }, [])
@@ -1314,15 +1208,6 @@ export function CardsTab(props: CardsTabProps): ReturnType<typeof h> {
   const onBack = useCallback((): void => {
     if (openResource !== undefined) openResource(CARDS_BENCH_ADDRESS)
   }, [openResource])
-  const onLocalBack = useCallback((): void => {
-    runStreamAbort.current?.abort()
-    setLocalRun(null)
-    setLocalRunError(null)
-  }, [])
-
-  if (localRun !== null) {
-    return h(RunView, { run: localRun, onBack: onLocalBack, onRestored: onLocalBack, onStop })
-  }
   if (snapshot === undefined) {
     return h('p', { className: css.missing }, 'cards resource hook unavailable')
   }
@@ -1350,6 +1235,7 @@ export function CardsTab(props: CardsTabProps): ReturnType<typeof h> {
           onPatchParams: onPatchParamsStage,
           renderStageView,
           runId: lastRunId,
+          refreshTick: benchTick,
         }),
       )
     : h(RunView, { run: value, onBack: openResource !== undefined ? onBack : undefined, onRestored: onBack, onStop })

@@ -7,7 +7,7 @@
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, expect, test, vi } from 'vitest'
-import { createElement } from 'react'
+import { createElement, useRef } from 'react'
 
 import { InputSquare, isImageUrl, readAsDataUrl } from '../src/client/input-square.tsx'
 import { SpecForm, useSquareProvider, type SpecField, type SpecValues } from '../src/client/spec-form.tsx'
@@ -46,22 +46,21 @@ test('empty square: paperclip glyph, label, click opens the FILE picker', async 
   expect(input).toBeTruthy()
 })
 
-test('set square: thumbnail + badge + detach; click carries the element (wire arm)', async () => {
-  const onWire = vi.fn()
+test('set square: thumbnail + detach; the click ALWAYS opens the picker', async () => {
+  const onPick = vi.fn()
   const onClear = vi.fn()
   const user = userEvent.setup()
   render(createElement(InputSquare, {
     label: 'input_image',
     value: 'data:image/png;base64,AAA',
-    upstreamTitle: 'image-gen',
-    onWire, onClear,
+    onPick, onClear,
   }))
   const img = screen.getByRole('img', { name: 'input_image' }) as HTMLImageElement
   expect(img.src.startsWith('data:image/png')).toBe(true)
-  expect(screen.getByText('image-gen')).toBeTruthy() // the badge
-  await user.click(screen.getByRole('button', { name: /input_image \(from image-gen\)/ }))
-  expect(onWire).toHaveBeenCalledTimes(1)
-  const anchor = onWire.mock.calls[0][0]
+  // the slot IS the wire: a set square still opens the picker on click
+  await user.click(screen.getByRole('button', { name: /input_image source/ }))
+  expect(onPick).toHaveBeenCalledTimes(1)
+  const anchor = onPick.mock.calls[0][0]
   expect(anchor instanceof HTMLElement).toBe(true) // the Menu anchors on the square
   await user.click(screen.getByRole('button', { name: 'Detach input_image' }))
   expect(onClear).toHaveBeenCalledTimes(1)
@@ -101,13 +100,20 @@ function stubUpload(path: string): void {
     new Response(JSON.stringify({ path }), { status: 200, headers: { 'content-type': 'application/json' } }))
 }
 
+let hostEdit: ReturnType<typeof vi.fn>
 function HostSquare(): ReturnType<typeof createElement> {
   const values: SpecValues = { input_image: 'mesh.png' }
-  const onEdit = vi.fn()
+  // ONE edit fn across renders (a fresh vi.fn() per render would
+  // leave the assertion holding a stale reference)
+  const editRef = useRef<ReturnType<typeof vi.fn> | null>(null)
+  if (editRef.current === null) editRef.current = vi.fn()
+  hostEdit = editRef.current
+  const onEdit = editRef.current
   const wire = {
-    upstreamTitle: 'image-gen',
-    candidates: [{ id: 's_img', label: 'image-gen' }, { id: 's_tag', label: 'tagger' }],
-    onWire: vi.fn(),
+    candidates: [
+      { id: 's_img', label: 'image-gen', url: '/melite-media/runs/r8/img/gen_00001_.png' },
+      { id: 's_tag', label: 'tagger', url: '/melite-media/runs/r7/tag/tag_00001_.png' },
+    ],
   }
   const { square, wireMenu } = useSquareProvider(onEdit, wire)
   return createElement('div', null,
@@ -121,20 +127,26 @@ function HostSquare(): ReturnType<typeof createElement> {
   )
 }
 
-test("the provider: a field's square renders + the wire Menu lists candidates and wires", async () => {
+test("the provider: THE SLOT IS THE WIRE — the picker writes the picked url into the param", async () => {
   const user = userEvent.setup()
   render(createElement(HostSquare))
-  const box = screen.getByRole('button', { name: /Input image \(from image-gen\)/ })
+  // the square click opens the picker (Menu) — even with a value set
+  const box = screen.getByRole('button', { name: /Input image source/ })
   await user.click(box)
-  // the Menu opened: candidates as menu rows + the clear row
+  // the Menu opened: candidates as menu rows + upload + clear
   const tagRow = await screen.findByText('tagger', {}, { timeout: 2000 })
   expect(tagRow).toBeTruthy()
-  // the badge ALSO says image-gen — pick the MENU's row (the one
-  // that is not the square's badge span)
-  const rows = screen.getAllByText('image-gen')
-  const menuRow = rows.find((el) => el.closest('[role="menuitem"], [role="option"], li') !== null) ?? rows[rows.length - 1]
-  await user.click(menuRow)
-  // (the wire verb fired — asserted via the Menu closing)
+  expect(screen.getByText('Upload a file…')).toBeTruthy()
+  const menuRow = screen.getAllByText('image-gen')
+    .find((el) => el.closest('[role="menuitem"], [role="option"], li') !== null)
+  expect(menuRow).toBeTruthy()
+  // a plain click (the Menu's outside-pointerdown guard would eat
+  // userEvent's pointer dance before the click lands)
+  fireEvent.click(menuRow as HTMLElement)
+  // THE LAW: picking writes the field's param to the output's url
+  await waitFor(() => {
+    expect(hostEdit).toHaveBeenCalledWith('input_image', '/melite-media/runs/r8/img/gen_00001_.png')
+  })
   await waitFor(() => { expect(screen.queryByText('tagger')).toBeNull() }, { timeout: 2000 })
 })
 

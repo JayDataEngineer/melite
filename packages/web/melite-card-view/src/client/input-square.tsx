@@ -50,16 +50,15 @@ export function readAsDataUrl(file: Blob): Promise<string> {
 }
 
 export interface InputSquareVerbs {
-  /** a) from previous card — open the wire picker; receives the
-   *  square's element so the picker anchors on it. */
-  onWire?: (anchor?: unknown) => void
-  /** The upstream card's title (the wired-state badge). */
-  upstreamTitle?: string | null
+  /** a) THE PICKER — the slot IS the wire: opens the menu of the
+   *  other stages' latest outputs (+ upload + clear); receives the
+   *  square's element so the menu anchors on it. */
+  onPick?: (anchor?: unknown) => void
   /** b) from file upload — the hidden picker AND OS drops. */
   onFile?: (file: File) => void
   /** c) from media bar — the asset-tray drop (URL payload). */
   onAsset?: (url: string) => void
-  /** The X (detach) — fired when a value/badge is set. */
+  /** The X (detach) — fired when a value is set. */
   onClear?: () => void
 }
 
@@ -84,17 +83,19 @@ function assetPayload(e: DragEvent): string | null {
 }
 
 export function InputSquare(props: InputSquareProps): ReturnType<typeof h> {
-  const { label, value, metric, upstreamTitle, disabled } = props
+  const { label, value, metric, disabled } = props
   const fileRef = useRef<HTMLInputElement | null>(null)
   const boxRef = useRef<HTMLDivElement | null>(null)
   const [over, setOver] = useState(false)
   const thumb = typeof value === 'string' && isImageUrl(value) ? value : null
-  const wired = upstreamTitle !== null && upstreamTitle !== undefined && upstreamTitle !== ''
-  const empty = thumb === null && !wired
+  const empty = thumb === null
   const pick = (): void => {
     if (disabled) return
-    if (empty && props.onFile !== undefined) fileRef.current?.click()
-    else if (props.onWire !== undefined) props.onWire(boxRef.current)
+    // THE SLOT IS THE WIRE: with a picker attached, the click ALWAYS
+    // opens it (the menu carries upload + clear too); a bare square
+    // falls to the file dialog
+    if (props.onPick !== undefined) props.onPick(boxRef.current)
+    else if (empty && props.onFile !== undefined) fileRef.current?.click()
   }
   return h('div', { className: css.squareWrap + (disabled ? ' ' + css.squareOff : '') },
     h('div', {
@@ -102,7 +103,7 @@ export function InputSquare(props: InputSquareProps): ReturnType<typeof h> {
       className: css.squareBox + (over ? ' ' + css.squareOver : ''),
       role: 'button',
       tabIndex: 0,
-      'aria-label': label + (wired ? ' (from ' + String(upstreamTitle) + ')' : ' source'),
+      'aria-label': label + ' source',
       onClick: pick,
       onKeyDown: (e: unknown) => { if ((e as KeyboardEvent).key === 'Enter') pick() },
       onDragOver: (e: DragEvent) => {
@@ -124,7 +125,6 @@ export function InputSquare(props: InputSquareProps): ReturnType<typeof h> {
       thumb !== null
         ? h('img', { className: css.squareThumb, src: thumb, alt: label })
         : h(IconPaperclipOutline16, { className: css.squareGlyph }),
-      wired ? h('span', { className: css.squareBadge }, String(upstreamTitle)) : null,
       !empty && props.onClear !== undefined
         ? h('button', {
             className: css.squareX,

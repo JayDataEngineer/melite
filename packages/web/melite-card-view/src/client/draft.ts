@@ -59,65 +59,25 @@ export interface RunStatusDoc {
 import type { FlowEventFrame } from '@melite/catalog/FlowEvents'
 export type { FlowEventFrame }
 
-/** Correlation id for one client-request frame (crypto.randomUUID is
- *  the browser standard). */
-function nextRpcId(): string {
-  const cryptoApi: Crypto | undefined = globalThis.crypto
-  if (cryptoApi?.randomUUID !== undefined) return cryptoApi.randomUUID()
-  return 'rpc-' + Math.random().toString(36).slice(2) + '-' + Date.now().toString(36)
-}
+import { toRunMediaUrl, wireCall as runWireCall } from '@melite-plugin/melite-run-wire'
 
 /** The remotes this layer rides (the wire method table). */
 type WireMethod = 'drafts/get' | 'drafts/patch' | 'runs/start' | 'runs/status'
 
-/** One wire call: POST /api/<method> with the client-request frame,
- *  answer narrowed to the value row. A refused result throws the
- *  RemoteError branch's message (the door's own name); a channel
- *  surprise throws honestly. */
+/** One wire call — the run-wire package's ONE frame definition (the
+ *  DRY law; this module's spelling died with it). The method rides
+ *  as the transport voice so diagnostics name their door. */
 async function wireCall(method: WireMethod, args: Record<string, unknown>): Promise<Record<string, unknown>> {
-  const rpcId = nextRpcId()
-  const res = await fetch('/api/' + method, {
-    method: 'POST',
-    headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ type: 'client-request', rpcId, method, payload: { args } }),
-  })
-  if (!res.ok) throw new Error(method + ': HTTP ' + String(res.status))
-  const body: unknown = await res.json().catch(() => null)
-  if (typeof body !== 'object' || body === null
-      || Reflect.get(body, 'type') !== 'server-response'
-      || Reflect.get(body, 'rpcId') !== rpcId) {
-    throw new Error(method + ': malformed response frame')
-  }
-  const result: unknown = Reflect.get(body, 'result')
-  if (typeof result !== 'object' || result === null) {
-    throw new Error(method + ': malformed result')
-  }
-  if (Reflect.get(result, 'ok') !== true) {
-    const error: unknown = Reflect.get(result, 'error')
-    const message = typeof error === 'object' && error !== null
-      && typeof Reflect.get(error, 'message') === 'string'
-      ? Reflect.get(error, 'message') : method + ': refused'
-    throw new Error(message)
-  }
-  const value: unknown = Reflect.get(result, 'value')
-  if (typeof value !== 'object' || value === null || Array.isArray(value)) {
-    throw new Error(method + ': not a JSON object')
-  }
-  return value as Record<string, unknown>
+  return await runWireCall(method, args, { voice: method })
 }
 
-/** The media URL seam — the twin of @melite/estate-media's mediaUrl
- *  (kept LOCAL: this is a browser module, the package main is a host
- *  plugin). Bare run-relative names ride the estate's media route;
- *  names that already carry a URL pass verbatim. */
-export function mediaUrl(runId: string, name: string): string {
-  if (name === '') return name
-  if (/^(https?:\/\/|\/)/.test(name)) return name
-  return '/melite-media/runs/' + encodeURIComponent(runId) + '/' + name
-    .split('/')
-    .map((seg) => encodeURIComponent(seg))
-    .join('/')
-}
+/** The media URL seam — the run-wire package's ONE rewrite
+ *  (toRunMediaUrl, the browser twin of @melite/estate-media's
+ *  mediaUrl): bare run-relative names ride the estate's media
+ *  route; urls that already carry a URL pass verbatim. Kept as a
+ *  named export for this module's consumers — the definition lives
+ *  in ONE package (the operator's DRY law). */
+export { toRunMediaUrl as mediaUrl }
 
 /** The draft doc; throws the door's own named refusal on failure. */
 export async function fetchDraft(draftId: string): Promise<DraftDoc> {
@@ -139,6 +99,25 @@ export async function patchStageParams(
   draftId: string, stageId: string, params: Record<string, unknown>,
 ): Promise<void> {
   const row = await wireCall('drafts/patch', { draftId, stageId, patch: { params } })
+  if (row['delivered'] !== true) {
+    const reason = typeof row['reason'] === 'string' ? row['reason'] : 'undelivered'
+    throw new Error('drafts/patch: ' + reason + ' (draft ' + draftId + ', stage ' + stageId + ')')
+  }
+}
+
+/** Report a stage's RUN OUTCOME onto the bench row — the same
+ *  shared-state door (runStatus + result keys of the fixed patch
+ *  set). This is the chain's attribution half: the estate names
+ *  runs by DRAFT only (every bench stage runs under the shared
+ *  bench draft), so the tab — the one that knows WHICH stage ran —
+ *  writes the outcome the wire edge later reads. result.url rides
+ *  the media-route currency (renders in tiles AND stages verbatim
+ *  as the next run's chained input). */
+export async function patchStageOutcome(
+  draftId: string, stageId: string,
+  outcome: { runStatus: string; result?: Record<string, unknown> },
+): Promise<void> {
+  const row = await wireCall('drafts/patch', { draftId, stageId, patch: outcome })
   if (row['delivered'] !== true) {
     const reason = typeof row['reason'] === 'string' ? row['reason'] : 'undelivered'
     throw new Error('drafts/patch: ' + reason + ' (draft ' + draftId + ', stage ' + stageId + ')')
@@ -211,7 +190,7 @@ export function cardRows(doc: DraftDoc, live?: RunStatusDoc | null): CardRow[] {
       prompt,
       status: rowStatus(runStage?.status, stage.status),
       thumbUrl: typeof runStage?.url === 'string' && runStage.url !== ''
-        ? mediaUrl(live?.run_id ?? '', runStage.url)
+        ? toRunMediaUrl(live?.run_id ?? '', runStage.url)
         : null,
     }
   })

@@ -28,7 +28,18 @@
 import type { ResourceProtocolMap } from '@deepseek-ai/dsh-client-ui-slots'
 import { RemoteError } from '@deepseek-ai/dsh-typert-protocol'
 import type { RemoteResult } from '@deepseek-ai/dsh-typert-protocol'
+import {
+  fetchLatestRunForDraft,
+  fetchRunStageUrl,
+  fetchRunStatus,
+  fetchRunTerminal,
+  isTerminalRun,
+  nextRpcId,
+  readRunStatus,
+  wireCall as runWireCall,
+} from '@melite-plugin/melite-run-wire'
 import type { FlowEventFrame } from './draft.ts'
+import { patchStageOutcome } from './draft.ts'
 
 /** The cards resource's Remote failure code, merged into the
  *  protocol's one vocabulary (cookbook §2: declaration merging, next
@@ -77,12 +88,11 @@ export interface CardsBenchValue {
   log: BenchLogHead[]
 }
 
-/** One run stage as the status door serves it. */
-export interface RunStageStatus {
-  id: string
-  status: string
-  url?: string
-}
+/** One run stage as the status door serves it — the run-wire
+ *  package's row (re-exported: this module's public face is stable
+ *  for the studio and the tests). */
+export type { RunStageStatus } from '@melite-plugin/melite-run-wire'
+import type { RunStageStatus } from '@melite-plugin/melite-run-wire'
 
 /** `dsh-resource://cards/run/<runId>` — the hydrated status merged with
  *  every later events frame (last frame kept for the view). draftId is
@@ -159,85 +169,94 @@ export async function fetchBench(signal?: AbortSignal): Promise<CardsBenchValue>
   return readBench(await wireCall('bench/get', { sessionKey: 'main' }, signal))
 }
 
-export function readRun(runId: string, doc: Record<string, unknown>): CardsRunValue {
-  const stages = Array.isArray(doc['stages'])
-    ? (doc['stages'] as unknown[]).filter((s): s is RunStageStatus =>
-        typeof s === 'object' && s !== null && typeof (s as RunStageStatus)['id'] === 'string')
-    : []
-  // Stage urls arrive run-RELATIVE (the /v1/assets prefix died with
-  // the gateway app); rewrite bare names onto the estate's media
-  // route (draft.ts's mediaUrl twin — same law, same seam).
-  for (const stage of stages) {
-    if (typeof stage.url === 'string' && stage.url !== ''
-        && !/^(https?:\/\/|\/)/.test(stage.url)) {
-      stage.url = '/melite-media/runs/' + encodeURIComponent(runId) + '/'
-        + stage.url.split('/').map((seg) => encodeURIComponent(seg)).join('/')
+/** THE OUTCOME OBSERVER (the attribution half): poll the run to
+ *  terminal on the run-wire cadence, then write runStatus + result
+ *  onto the bench row through the shared-state door. Both run paths
+ *  (in-tab stream and shell navigation) start this once per gesture;
+ *  the patch is bookkeeping — a refusal is swallowed (the next run
+ *  rewrites the row), an abort ends the watch. The result.url rides
+ *  the status door's already-rewritten media route. */
+export async function observeRunOutcome(
+  draftId: string,
+  stageId: string,
+  runId: string,
+  signal?: AbortSignal,
+  onTouched?: () => void,
+): Promise<void> {
+  // 'running' on the tile the moment the start answers, and the row
+  // BINDS to the new run (the stale artifact's url clears — the
+  // studio reads its own row's result, never a tab-wide run id)
+  try {
+    await patchStageOutcome(draftId, stageId, { runStatus: 'running', result: { run_id: runId } })
+    onTouched?.()
+  } catch { /* bookkeeping */ }
+  const sleep = (ms: number): Promise<void> =>
+    new Promise((resolve) => {
+      const t = setTimeout(resolve, ms)
+      signal?.addEventListener('abort', () => { clearTimeout(t); resolve() }, { once: true })
+    })
+  while (signal?.aborted !== true) {
+    let row: Awaited<ReturnType<typeof fetchRunStatus>>
+    try {
+      row = await fetchRunStatus(runId, signal)
+    } catch {
+      await sleep(1500) // transport — the next poll may recover
+      continue
     }
+    if (!isTerminalRun(row.status)) {
+      await sleep(1500)
+      continue
+    }
+    const stage = row.stages.find((s) => s.id === stageId)
+      ?? (row.stages.length === 1 ? row.stages[0] : undefined)
+    const url = stage !== undefined && typeof stage.url === 'string' && stage.url !== ''
+      ? stage.url : ''
+    const result: Record<string, unknown> = { run_id: runId }
+    if (url !== '') result['url'] = url
+    try {
+      await patchStageOutcome(draftId, stageId, {
+        runStatus: row.status === 'completed' ? 'done' : row.status,
+        result,
+      })
+      onTouched?.()
+    } catch {
+      /* bookkeeping — the bench may have moved; the next run rewrites the row */
+    }
+    return
   }
+}
+
+export function readRun(runId: string, doc: Record<string, unknown>): CardsRunValue {
+  // the normalization (stage distill + the ONE media-url rewrite)
+  // lives in the run-wire package; this wraps it into the protocol's
+  // run value (lastFrame is the events face — undefined at hydrate).
+  const row = readRunStatus(runId, doc)
   return {
     kind: 'run',
-    runId,
-    status: typeof doc['status'] === 'string' ? (doc['status'] as string) : 'unknown',
-    draftId: typeof doc['draft_id'] === 'string' && (doc['draft_id'] as string) !== ''
-      ? (doc['draft_id'] as string)
-      : null,
-    stages,
+    runId: row.runId,
+    status: row.status,
+    draftId: row.draftId,
+    stages: row.stages,
     lastFrame: undefined,
   }
 }
 
-/** Correlation id for one client-request frame (crypto.randomUUID is
- *  the browser standard). */
-export function nextRpcId(): string {
-  const cryptoApi: Crypto | undefined = globalThis.crypto
-  if (cryptoApi?.randomUUID !== undefined) return cryptoApi.randomUUID()
-  return 'rpc-' + Math.random().toString(36).slice(2) + '-' + Date.now().toString(36)
-}
+/** The bench/drafts verbs this module rides (the RUN verbs live in
+ *  the run-wire package — the DRY law; this union narrows the frame
+ *  call to the doors this file owns). */
+type BenchMethod = 'bench/get' | 'bench/add-stage' | 'drafts/get' | 'runs/status' | 'runs/list'
 
-/** Read a server-response envelope and narrow its result. A non-ok
- *  result throws the RemoteError branch's message (the caller frames
- *  the failure); a channel surprise throws honestly. */
+/** The frame is the run-wire package's ONE definition; this wrapper
+ *  narrows the method set for the cards protocol's own verbs. */
 async function wireCall(
-  nsMethod: 'bench/get' | 'bench/add-stage' | 'drafts/get' | 'runs/status' | 'runs/list',
+  nsMethod: BenchMethod,
   args: Record<string, unknown>,
   signal?: AbortSignal,
 ): Promise<Record<string, unknown>> {
-  const rpcId = nextRpcId()
-  const res = await fetch('/api/' + nsMethod, {
-    method: 'POST',
-    headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({
-      type: 'client-request',
-      rpcId,
-      method: nsMethod,
-      payload: { args },
-    }),
-    ...(signal === undefined ? {} : { signal }),
-  })
-  if (!res.ok) throw new Error('wire: HTTP ' + String(res.status))
-  const body: unknown = await res.json()
-  if (typeof body !== 'object' || body === null
-      || Reflect.get(body, 'type') !== 'server-response'
-      || Reflect.get(body, 'rpcId') !== rpcId) {
-    throw new Error('wire: malformed response frame')
-  }
-  const result: unknown = Reflect.get(body, 'result')
-  if (typeof result !== 'object' || result === null) {
-    throw new Error('wire: malformed result')
-  }
-  if (Reflect.get(result, 'ok') !== true) {
-    const error: unknown = Reflect.get(result, 'error')
-    const message = typeof error === 'object' && error !== null
-      && typeof Reflect.get(error, 'message') === 'string'
-      ? Reflect.get(error, 'message') : 'wire: refused'
-    throw new Error(message)
-  }
-  const value: unknown = Reflect.get(result, 'value')
-  if (typeof value !== 'object' || value === null || Array.isArray(value)) {
-    throw new Error('wire: not a JSON object')
-  }
-  return value as Record<string, unknown>
+  return await runWireCall(nsMethod, args, { signal })
 }
+
+export { nextRpcId }
 
 /** The card-back-into-flow report — counts, never throws for
  *  per-stage skips (a refusal STOPS the restore and throws: a half
@@ -447,7 +466,7 @@ async function* pollRunFrames(
  *  input-dir name input-prep's `source` field accepts. The door's own
  *  gates (type whitelist, one clean segment) are the law — the client
  *  only voices its refusals, never invents its own. */
-export async function uploadInputFile(file: File): Promise<{ name: string }> {
+export async function uploadInputFile(file: File): Promise<{ name: string; file: string }> {
   const isImage = file.type === 'image/png' || file.type === 'image/jpeg' || file.type === 'image/webp'
   const isAudio = file.type.startsWith('audio/')
   if (!isImage && !isAudio) {
@@ -472,47 +491,20 @@ export async function uploadInputFile(file: File): Promise<{ name: string }> {
   const path = typeof out === 'object' && out !== null && typeof Reflect.get(out, 'path') === 'string'
     ? Reflect.get(out, 'path') as string : ''
   if (path === '') throw new Error('upload answered without a path')
-  return { name: path.split('/').pop() ?? file.name }
+  // The PARAM currency is the ESTATE PATH ('data/input/x.png'), not
+  // the bare name: the composing door's uploadReferenced stages local
+  // paths into ComfyUI's input dir (a bare name is not a file the
+  // estate can read — the run dies on the engine with 'Invalid image
+  // file'). The display face is the data-URL mirror, never this.
+  return { name: path, file: path.split('/').pop() ?? file.name }
 }
 
 
-/** The stage's artifact URL from its run (the studio's output half —
- *  the old pollFlowRun law: the run is the SSOT, the view polls).
- *  null until the stage reports a url. */
-export async function fetchRunStageUrl(runId: string, stageId: string, signal?: AbortSignal): Promise<string | null> {
-  const value = readRun(runId, await wireCall('runs/status', { runId }, signal))
-  const row = value.stages.find((s) => s.id === stageId)
-  return row !== undefined && typeof row.url === 'string' && row.url !== '' ? row.url : null
-}
+/** The stage's artifact URL from its run (the studio's output half)
+ *  — the run-wire package's verb, re-exported (public face stable).
+ *  Carries the SINGLE-STAGE FALLBACK: a one-stage run's stage IS the
+ *  asked stage ({model:} runs name stages by the card's skeleton). */
+export { fetchRunStageUrl, fetchRunTerminal, fetchLatestRunForDraft }
 
-/** A run's terminal read (stops the studio's poll loop). */
-export async function fetchRunTerminal(runId: string, signal?: AbortSignal): Promise<boolean> {
-  const value = readRun(runId, await wireCall('runs/status', { runId }, signal))
-  return isTerminal(value.status)
-}
-
-/** The bench draft's newest run (runs/list — the estate's own run
- *  registry). The reload-proof bridge: the tab adopts this when its
- *  in-session memory is empty, so the studio's artifact poll survives
- *  page reloads (the estate is the SSOT, never the client). */
-export async function fetchLatestRunForDraft(
-  draftId: string,
-  signal?: AbortSignal,
-): Promise<string | null> {
-  // NOTE the list's C-parity ordering: media-bearing runs first, then
-  //  newest-first — bench runs carry no media row, so a shallow slice
-  //  misses them; scan the wide tail.
-  const row = await wireCall('runs/list', { rawLimit: '500' }, signal)
-  const runs = Array.isArray(row['runs']) ? (row['runs'] as unknown[]) : []
-  let newest: { rid: string; created: number } | null = null
-  for (const r of runs) {
-    if (typeof r !== 'object' || r === null) continue
-    const rid = (r as Record<string, unknown>)['run_id'] ?? (r as Record<string, unknown>)['id']
-    const did = (r as Record<string, unknown>)['draft_id']
-    if (typeof rid !== 'string' || rid === '' || did !== draftId) continue
-    const created = (r as Record<string, unknown>)['created_at']
-    const at = typeof created === 'number' ? created : 0
-    if (newest === null || at > newest.created) newest = { rid, created: at }
-  }
-  return newest !== null ? newest.rid : null
-}
+/** isTerminalRun re-export (the run-view stream's terminal law). */
+export { isTerminalRun as isTerminal }

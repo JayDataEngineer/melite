@@ -6,7 +6,7 @@
  * the patch-then-run law) and the registration itself (keyed under
  * 'img-to-mesh', the readToolview shape verbatim).
  */
-import { cleanup, render, screen, waitFor } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, expect, test, vi } from 'vitest'
 import { createElement, useEffect } from 'react'
@@ -38,8 +38,6 @@ const OWNER = {
   onRemove: vi.fn(),
   onSurface: () => {},
   upstream: [],
-  wiredFrom: null,
-  onWire: vi.fn(),
   runId: null,
 }
 
@@ -147,3 +145,29 @@ test('the envelope is parsed through the spec doc (surface rides)', async () => 
   expect(doc.layout).toBe('studio')
   expect(doc.size).toBe('huge')
 })
+
+test("THE SLOT IS THE WIRE: picking an upstream output writes the param", async () => {
+    stubWire()
+    const onPatch = vi.fn()
+    const onRun = vi.fn()
+    render(createElement(ImgToMeshStudio, { ...OWNER,
+      upstream: [{ id: 's_1', title: 'Boat gen', url: '/melite-media/runs/r9/gen/gen_00001_.png' }],
+      onPatch, onRun,
+    }))
+    // the input square (the image field) — click opens the picker
+    const square = await screen.findByRole('button', { name: /Input image source/i })
+    fireEvent.click(square)
+    // the picker menu (portal): the upstream output row
+    const item = await screen.findByRole('menuitem', { name: /Boat gen/ })
+    fireEvent.click(item)
+    // run: PATCH FIRST — the picked url rides the params VERBATIM
+    const runBtn = await screen.findByRole('button', { name: /^Run$/ })
+    fireEvent.click(runBtn)
+    await waitFor(() => {
+      expect(onPatch).toHaveBeenCalledWith(expect.objectContaining({
+        input_image: '/melite-media/runs/r9/gen/gen_00001_.png',
+      }))
+    })
+  })
+
+

@@ -149,10 +149,11 @@ test('Run in the drill patches the domain FIRST, then starts the run', async () 
   expect(patch?.args).toEqual({
     draftId: 'bench-s1', stageId: 's_0', patch: { params: { steps: 20 } },
   })
-  // the run navigates to the run view (the tab switches address)
-  await waitFor(() => {
-    expect(open).toHaveBeenCalledWith('dsh-resource://cards/run/run-1')
-  })
+  // THE BENCH IS NEVER TAKEN OVER (2026-09-12): the started run
+  // stays a TILE — no navigation, the bench surface stays; the
+  // observer writes running/terminal onto the row
+  expect(open).not.toHaveBeenCalled()
+  expect(document.querySelector('section[data-cards-bench]')).toBeTruthy()
 })
 
 test('a patch refusal names itself and the run never fires', async () => {
