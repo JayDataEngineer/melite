@@ -41,12 +41,15 @@ export const buildImageGenTool = (call: EstateCall): ToolDefinition => {
     description: identity.description,
     parameters: emitParamsSpec(schema as never, BOARDED) as ParameterSchemaSpec,
     presentCall(args: unknown) {
-      const a = (args ?? {}) as Record<string, unknown>
+      // Validated args (defineTool's wrapper): prompt is a required
+      // knob — always present; recipe and model are the optional
+      // defaults.
+      const a = args as Record<string, unknown>
       return {
         card: 'generic',
         title: identity.label,
         kind: 'execute',
-        rawInput: `model=${String(a.model ?? DEFAULT_MODEL)} recipe=${String(a.recipe ?? 'standard')} prompt=${String(a.prompt ?? '?').slice(0, 60)}`,
+        rawInput: `model=${String(a.model ?? DEFAULT_MODEL)} recipe=${String(a.recipe ?? 'standard')} prompt=${String(a.prompt).slice(0, 60)}`,
       };
     },
     output: {
@@ -112,8 +115,12 @@ export const buildImageGenTool = (call: EstateCall): ToolDefinition => {
       return { card: 'generic', title: `${identity.label} [${model}] \u2192 ${runId}` }
     },
     async execute(args, exec): Promise<CardResult> {
-      const a = (args ?? {}) as Record<string, unknown>
-      const model = typeof a.model === 'string' && a.model !== '' ? a.model : DEFAULT_MODEL
+      // Validated args (the defineTool wrapper) — always the object.
+      const a = args as Record<string, unknown>
+      // emitParamsSpec synthesizes a CLOSED model enum from BOARDED —
+      // the wrapper rejects ''/unknown models at the seam, so a
+      // validated model is always a non-empty boarded id.
+      const model = typeof a.model === 'string' ? a.model : DEFAULT_MODEL
       const params: Record<string, unknown> = {}
       for (const [k, v] of Object.entries(a)) if (k !== 'model') params[k] = v
       try {
@@ -153,12 +160,16 @@ export const buildImageGenTool = (call: EstateCall): ToolDefinition => {
           status: typeof started.status === 'string' ? started.status : 'queued',
         }
       } catch (e) {
+        // jsonLane's contract: transport faults arrive wrapped as
+        // GatewayError(0, message, ""); a PRE-ABORTED signal throws
+        // the DOMException BEFORE the lane — cancellation propagates,
+        // never becomes a refusal value.
         if (e instanceof GatewayError) {
           // Named refusals (4xx/5xx bodies carrying {error}) are
           // DOMAIN OUTCOMES — canonical values, not throws.
           return { flow: FLOW, model, error: e.named || e.body || `estate ${e.status}` }
         }
-        throw e // transport failures re-throw (infrastructure)
+        throw e
       }
     },
   })

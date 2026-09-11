@@ -18,8 +18,6 @@ declare module '@melite/comfyui-cordis/service' {
   }
 }
 
-const oneOf = (options: string[]) => z.union(options.map((o) => z.const(o)))
-
 // the wire param surface (py TaggerCard — the union vocab; each arm
 // wires its subset). Ride keys carry NO .default (py ABSENT: the
 // compose-door cascade overlays model defaults, then explicit

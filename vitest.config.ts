@@ -250,7 +250,18 @@ export default defineConfig({
         // 100x4 — the four card compose gates + the three tool faces
         // (executor batteries) + the index apply arms. No studios in
         // the tree: the exemption row is GONE, nothing replaces it.
-        'packages/image/**/src/**/*.{ts,tsx}',
+        // image closed (2026-09-12, §TEST-14): seven card compose
+        // gates (incl. image-edit's 19 firing refusals + the
+        // upscale estate-file contract), the image-gen and image-edit
+        // tool batteries, the dead-lane agents bundle. ONE file stays
+        // exempt, named: mask-studio's agents/tools.ts — the
+        // gateway-kill transitional carrier (every lane refuses loud
+        // until the Typert remote migration; the draft-mint body is
+        // dead-until-live by design, documented at the site).
+        'packages/image/mask-studio/src/agents/tools.ts',
+        // + the studios (src/ui/** — 28 files) stay GUI-debt: DOM,
+        // the dom project's territory, same carve-out as the web tree.
+        'packages/image/**/src/ui/**/*.{ts,tsx}',
         // motion closed (2026-09-12, §TEST-12): card compose gate +
         // the tool face's full battery at per-file 100x4. The studio
         // (src/ui/** — MotionExportDialog + the 2.1k-line component)

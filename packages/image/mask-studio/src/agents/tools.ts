@@ -63,7 +63,9 @@ export interface MaskRunArgs {
 async function ensureDraftId(body: Record<string, unknown>, signal?: AbortSignal): Promise<string> {
   const declared = body.draft_id
   if (typeof declared === "string" && declared !== "") return declared
-  const doc = await postJson("/v1/flows/drafts", body, signal)
+  // same dead lane, same loud voice (postJson never existed here —
+  // the ReferenceError bridge fixed 2026-09-12)
+  const doc = await laneJson("POST", "/v1/flows/drafts", body, signal)
   const draftId = doc.draftId
   if (typeof draftId !== "string" || !draftId) {
     throw new Error("card compose returned no draftId — refusing to start cardless")
