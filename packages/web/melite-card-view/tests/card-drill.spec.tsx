@@ -73,11 +73,25 @@ function stubWire(): { calls: Call[] } {
 
 const noop = (): void => {}
 
+/** The tile's OPEN button — the dnd-kit sortable wrapper (li) also
+ * carries role="button" with the same accessible name; scope to the
+ * tile's inner button by its class (module hash keeps tileInner). */
+function tileButton(): HTMLElement {
+  const el = document.querySelector('button[class*="tileInner"]')
+  if (el === null) throw new Error('tile button not found')
+  return el as HTMLElement
+}
+
 afterEach(() => {
   cleanup()
   vi.unstubAllGlobals()
 })
 
+// ZOOM CONTRACT (2026-09-12, TEST-3 debt paid): the drill rides the
+// shared-element zoom card — tile click morphs (skeleton until
+// settled, 500ms jsdom fallback), then StageDrill renders INSIDE the
+// zoomed card (portal to body). The drill is NOT role=dialog; scope
+// queries through the zoom detail host.
 test('the bench row is a card (Pill kind, bold title, engine Pill) and opens the shared drill', async () => {
   stubWire()
   const user = userEvent.setup()
@@ -91,15 +105,15 @@ test('the bench row is a card (Pill kind, bold title, engine Pill) and opens the
     }),
     useResource: () => ({ status: 'live', value: BENCH }),
   }))
-  const tile = screen.getByRole('button', { name: /hero frame/ })
+  const tile = tileButton()
   // THE TILE FACE: kind face in the preview cell, caption strip below
   expect(within(tile).getByText('image-gen')).toBeTruthy()
   expect(within(tile).getByText('comfyui')).toBeTruthy()
   expect(tile.querySelector('[data-kind="image-gen"]')).toBeTruthy()
   await user.click(tile)
-  // the drill opens with the stage's params as editable fields
+  // the zoom opens: bar title + (after the settle) the drill fields
   expect(screen.getByText('Stage hero frame')).toBeTruthy()
-  expect(screen.getByText('Prompt')).toBeTruthy()
+  expect(await screen.findByText('Prompt', {}, { timeout: 4000 })).toBeTruthy()
   expect(screen.getByText('Steps')).toBeTruthy()
 })
 
@@ -117,12 +131,15 @@ test('Run in the drill patches the domain FIRST, then starts the run', async () 
     }),
     useResource: () => ({ status: 'live', value: BENCH }),
   }))
-  await user.click(screen.getByRole('button', { name: /hero frame/ }))
+  await user.click(tileButton())
+  // the drill's fields arrive after the morph settles
+  await screen.findByText('Prompt', {}, { timeout: 4000 })
   // edit steps 8 → 20 (the drill's own Run — not the bench head's)
   const steps = screen.getByDisplayValue('8')
   await user.clear(steps)
   await user.type(steps, '20')
-  await user.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Run' }))
+  const detail = screen.getByText('Steps').closest('div[class*="zoomDetail"]') as HTMLElement
+  await user.click(within(detail).getByRole('button', { name: 'Run' }))
   await waitFor(() => {
     const methods = calls.map((c) => c.method)
     expect(methods.indexOf('drafts/patch')).toBeGreaterThanOrEqual(0)
@@ -166,11 +183,13 @@ test('a patch refusal names itself and the run never fires', async () => {
     }),
     useResource: () => ({ status: 'live', value: BENCH }),
   }))
-  await user.click(screen.getByRole('button', { name: /hero frame/ }))
+  await user.click(tileButton())
+  await screen.findByText('Prompt', {}, { timeout: 4000 })
   const steps = screen.getByDisplayValue('8')
   await user.clear(steps)
   await user.type(steps, '20')
-  await user.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Run' }))
+  const detail = screen.getByText('Steps').closest('div[class*="zoomDetail"]') as HTMLElement
+  await user.click(within(detail).getByRole('button', { name: 'Run' }))
   await waitFor(() => {
     expect(screen.getByText(/stage not found/)).toBeTruthy()
   })
