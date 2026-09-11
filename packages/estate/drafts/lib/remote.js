@@ -184,8 +184,8 @@ let BenchRemoteService = (() => {
             __runInitializers(this, _instanceExtraInitializers);
         }
         /** Endpoint `bench/get` — one session's bench block as the row. */
-        async remoteExportGet(session, signal) {
-            return await this.get(session, signal);
+        async remoteExportGet(sessionKey, signal) {
+            return await this.get(sessionKey, signal);
         }
         /** Endpoint `bench/ensure` — birth or load (the only creating arm). */
         async remoteExportEnsure(doc, signal) {
@@ -222,24 +222,24 @@ let BenchRemoteService = (() => {
         }
         /** Endpoint `bench/patch` — params merge (+result/runStatus) with
          *  CAS + log. */
-        async remoteExportPatch(session, doc, signal) {
-            return await this.patch(session, doc, signal);
+        async remoteExportPatch(sessionKey, doc, signal) {
+            return await this.patch(sessionKey, doc, signal);
         }
         /** Endpoint `bench/add-stage` — append a card stage. */
-        async remoteExportAddStage(session, doc, signal) {
-            return await this.addStage(session, doc, signal);
+        async remoteExportAddStage(sessionKey, doc, signal) {
+            return await this.addStage(sessionKey, doc, signal);
         }
         /** Endpoint `bench/remove-stage` — splice one stage out. */
-        async remoteExportRemoveStage(session, doc, signal) {
-            return await this.removeStage(session, doc, signal);
+        async remoteExportRemoveStage(sessionKey, doc, signal) {
+            return await this.removeStage(sessionKey, doc, signal);
         }
         /** Endpoint `bench/rewire` — set or clear one input binding. */
-        async remoteExportRewire(session, doc, signal) {
-            return await this.rewire(session, doc, signal);
+        async remoteExportRewire(sessionKey, doc, signal) {
+            return await this.rewire(sessionKey, doc, signal);
         }
         /** Endpoint `bench/undo` — walk the log tail, apply inverses. */
-        async remoteExportUndo(session, doc, signal) {
-            return await this.undo(session, doc, signal);
+        async remoteExportUndo(sessionKey, doc, signal) {
+            return await this.undo(sessionKey, doc, signal);
         }
         /** The in-process APIs the adapters above delegate to. The
          *  domain's classified failures pass through untouched; only the

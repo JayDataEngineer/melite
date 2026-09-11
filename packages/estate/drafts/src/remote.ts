@@ -203,10 +203,10 @@ export class BenchRemoteService extends TypertRemoteService {
   /** Endpoint `bench/get` — one session's bench block as the row. */
   @Remote("get")
   async remoteExportGet(
-    session: string,
+    sessionKey: string,
     signal: AbortSignal,
   ): Promise<BenchGetRow> {
-    return await this.get(session, signal);
+    return await this.get(sessionKey, signal);
   }
 
   /** Endpoint `bench/ensure` — birth or load (the only creating arm). */
@@ -264,51 +264,51 @@ export class BenchRemoteService extends TypertRemoteService {
    *  CAS + log. */
   @Remote("patch")
   async remoteExportPatch(
-    session: string,
+    sessionKey: string,
     doc: Record<string, unknown>,
     signal: AbortSignal,
   ): Promise<BenchPatchRow> {
-    return await this.patch(session, doc, signal);
+    return await this.patch(sessionKey, doc, signal);
   }
 
   /** Endpoint `bench/add-stage` — append a card stage. */
   @Remote("add-stage")
   async remoteExportAddStage(
-    session: string,
+    sessionKey: string,
     doc: Record<string, unknown>,
     signal: AbortSignal,
   ): Promise<BenchStageRow> {
-    return await this.addStage(session, doc, signal);
+    return await this.addStage(sessionKey, doc, signal);
   }
 
   /** Endpoint `bench/remove-stage` — splice one stage out. */
   @Remote("remove-stage")
   async remoteExportRemoveStage(
-    session: string,
+    sessionKey: string,
     doc: Record<string, unknown>,
     signal: AbortSignal,
   ): Promise<BenchStageRow> {
-    return await this.removeStage(session, doc, signal);
+    return await this.removeStage(sessionKey, doc, signal);
   }
 
   /** Endpoint `bench/rewire` — set or clear one input binding. */
   @Remote("rewire")
   async remoteExportRewire(
-    session: string,
+    sessionKey: string,
     doc: Record<string, unknown>,
     signal: AbortSignal,
   ): Promise<BenchRewireRow> {
-    return await this.rewire(session, doc, signal);
+    return await this.rewire(sessionKey, doc, signal);
   }
 
   /** Endpoint `bench/undo` — walk the log tail, apply inverses. */
   @Remote("undo")
   async remoteExportUndo(
-    session: string,
+    sessionKey: string,
     doc: Record<string, unknown>,
     signal: AbortSignal,
   ): Promise<BenchUndoRow> {
-    return await this.undo(session, doc, signal);
+    return await this.undo(sessionKey, doc, signal);
   }
 
   /** The in-process APIs the adapters above delegate to. The

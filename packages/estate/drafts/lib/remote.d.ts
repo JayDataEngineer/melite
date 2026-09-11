@@ -53,7 +53,7 @@ export declare class DraftsRemoteService extends TypertRemoteService {
 export declare class BenchRemoteService extends TypertRemoteService {
     constructor(ctx: Context);
     /** Endpoint `bench/get` — one session's bench block as the row. */
-    remoteExportGet(session: string, signal: AbortSignal): Promise<BenchGetRow>;
+    remoteExportGet(sessionKey: string, signal: AbortSignal): Promise<BenchGetRow>;
     /** Endpoint `bench/ensure` — birth or load (the only creating arm). */
     remoteExportEnsure(doc: Record<string, unknown>, signal: AbortSignal): Promise<BenchEnsureRow>;
     /** The in-process API the adapters above delegate to. Classified
@@ -64,15 +64,15 @@ export declare class BenchRemoteService extends TypertRemoteService {
     ensure(doc: Record<string, unknown>, signal: AbortSignal): Promise<BenchEnsureRow>;
     /** Endpoint `bench/patch` — params merge (+result/runStatus) with
      *  CAS + log. */
-    remoteExportPatch(session: string, doc: Record<string, unknown>, signal: AbortSignal): Promise<BenchPatchRow>;
+    remoteExportPatch(sessionKey: string, doc: Record<string, unknown>, signal: AbortSignal): Promise<BenchPatchRow>;
     /** Endpoint `bench/add-stage` — append a card stage. */
-    remoteExportAddStage(session: string, doc: Record<string, unknown>, signal: AbortSignal): Promise<BenchStageRow>;
+    remoteExportAddStage(sessionKey: string, doc: Record<string, unknown>, signal: AbortSignal): Promise<BenchStageRow>;
     /** Endpoint `bench/remove-stage` — splice one stage out. */
-    remoteExportRemoveStage(session: string, doc: Record<string, unknown>, signal: AbortSignal): Promise<BenchStageRow>;
+    remoteExportRemoveStage(sessionKey: string, doc: Record<string, unknown>, signal: AbortSignal): Promise<BenchStageRow>;
     /** Endpoint `bench/rewire` — set or clear one input binding. */
-    remoteExportRewire(session: string, doc: Record<string, unknown>, signal: AbortSignal): Promise<BenchRewireRow>;
+    remoteExportRewire(sessionKey: string, doc: Record<string, unknown>, signal: AbortSignal): Promise<BenchRewireRow>;
     /** Endpoint `bench/undo` — walk the log tail, apply inverses. */
-    remoteExportUndo(session: string, doc: Record<string, unknown>, signal: AbortSignal): Promise<BenchUndoRow>;
+    remoteExportUndo(sessionKey: string, doc: Record<string, unknown>, signal: AbortSignal): Promise<BenchUndoRow>;
     /** The in-process APIs the adapters above delegate to. The
      *  domain's classified failures pass through untouched; only the
      *  open itself wraps as bench/store-failed. */

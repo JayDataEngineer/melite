@@ -861,7 +861,7 @@ window.__ModuleLoader__.load({
 				if (bench) {
 					let value;
 					try {
-						value = readBench(await wireCall("bench/get", { session: "main" }));
+						value = readBench(await wireCall("bench/get", { sessionKey: "main" }));
 					} catch (e) {
 						yield failure(address, e instanceof Error ? e.message : String(e));
 						return;
