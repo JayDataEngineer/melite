@@ -93,4 +93,7 @@ export interface StageViewOwnerProps {
   upstream: Array<{ id: string; title: string }>
   wiredFrom: string | null
   onWire: (fromStageId: string | null) => void
+  /** The draft's last started run (client memory until the estate
+   *  serves draft→run; the studio polls runs/status for artifacts). */
+  runId: string | null
 }

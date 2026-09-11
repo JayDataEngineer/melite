@@ -198,7 +198,7 @@ export function nextRpcId(): string {
  *  result throws the RemoteError branch's message (the caller frames
  *  the failure); a channel surprise throws honestly. */
 async function wireCall(
-  nsMethod: 'bench/get' | 'bench/add-stage' | 'drafts/get' | 'runs/status',
+  nsMethod: 'bench/get' | 'bench/add-stage' | 'drafts/get' | 'runs/status' | 'runs/list',
   args: Record<string, unknown>,
   signal?: AbortSignal,
 ): Promise<Record<string, unknown>> {
@@ -473,4 +473,46 @@ export async function uploadInputFile(file: File): Promise<{ name: string }> {
     ? Reflect.get(out, 'path') as string : ''
   if (path === '') throw new Error('upload answered without a path')
   return { name: path.split('/').pop() ?? file.name }
+}
+
+
+/** The stage's artifact URL from its run (the studio's output half —
+ *  the old pollFlowRun law: the run is the SSOT, the view polls).
+ *  null until the stage reports a url. */
+export async function fetchRunStageUrl(runId: string, stageId: string, signal?: AbortSignal): Promise<string | null> {
+  const value = readRun(runId, await wireCall('runs/status', { runId }, signal))
+  const row = value.stages.find((s) => s.id === stageId)
+  return row !== undefined && typeof row.url === 'string' && row.url !== '' ? row.url : null
+}
+
+/** A run's terminal read (stops the studio's poll loop). */
+export async function fetchRunTerminal(runId: string, signal?: AbortSignal): Promise<boolean> {
+  const value = readRun(runId, await wireCall('runs/status', { runId }, signal))
+  return isTerminal(value.status)
+}
+
+/** The bench draft's newest run (runs/list — the estate's own run
+ *  registry). The reload-proof bridge: the tab adopts this when its
+ *  in-session memory is empty, so the studio's artifact poll survives
+ *  page reloads (the estate is the SSOT, never the client). */
+export async function fetchLatestRunForDraft(
+  draftId: string,
+  signal?: AbortSignal,
+): Promise<string | null> {
+  // NOTE the list's C-parity ordering: media-bearing runs first, then
+  //  newest-first — bench runs carry no media row, so a shallow slice
+  //  misses them; scan the wide tail.
+  const row = await wireCall('runs/list', { rawLimit: '500' }, signal)
+  const runs = Array.isArray(row['runs']) ? (row['runs'] as unknown[]) : []
+  let newest: { rid: string; created: number } | null = null
+  for (const r of runs) {
+    if (typeof r !== 'object' || r === null) continue
+    const rid = (r as Record<string, unknown>)['run_id'] ?? (r as Record<string, unknown>)['id']
+    const did = (r as Record<string, unknown>)['draft_id']
+    if (typeof rid !== 'string' || rid === '' || did !== draftId) continue
+    const created = (r as Record<string, unknown>)['created_at']
+    const at = typeof created === 'number' ? created : 0
+    if (newest === null || at > newest.created) newest = { rid, created: at }
+  }
+  return newest !== null ? newest.rid : null
 }

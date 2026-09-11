@@ -40,6 +40,7 @@ const OWNER = {
   upstream: [],
   wiredFrom: null,
   onWire: vi.fn(),
+  runId: null,
 }
 
 function stubWire(): void {

@@ -23,6 +23,8 @@ import { Button, DisclosureRow, IconArchiveOutline20, Tag } from '@deepseek-ai/d
 import css from './card.module.css'
 import type { StageViewOwnerProps } from './types.ts'
 import { fetchFormSpec, SpecForm, specDefaults, useSquareProvider, type FormSpecDoc, type SpecField, type SpecValues } from './spec-form.tsx'
+import { fetchRunStageUrl, fetchRunTerminal } from './cards-resource.ts'
+import { GlbViewport } from './glb-viewport.tsx'
 
 /** The door's group truth (schema_groups, 2026-09-12 lane read):
  *  input, generation — exposed; stage, mesh, bake, lab — folded. */
@@ -48,6 +50,28 @@ export function ImgToMeshStudio(props: StageViewOwnerProps): ReturnType<typeof h
   const [values, setValues] = useState<SpecValues>(params)
   const [open, setOpen] = useState<Record<string, boolean>>({})
   const [running, setRunning] = useState(false)
+  // THE OUTPUT HALF (the old pollFlowRun law): the run is the SSOT —
+  //  poll runs/status until this stage's artifact URL lands.
+  const [meshUrl, setMeshUrl] = useState<string | null>(null)
+  useEffect(() => {
+    let alive = true
+    setMeshUrl(null)
+    if (props.runId === null) return
+    const ctrl = new AbortController()
+    const tick = async (): Promise<void> => {
+      try {
+        const url = await fetchRunStageUrl(props.runId as string, props.stageId, ctrl.signal)
+        if (!alive) return
+        if (url !== null) { setMeshUrl(url); return }
+        const terminal = await fetchRunTerminal(props.runId as string, ctrl.signal)
+        if (!alive || terminal) return
+      } catch { /* the last ok value stays; the next poll may recover */ }
+      if (!alive) return
+      setTimeout(() => { if (alive) void tick() }, 1500)
+    }
+    void tick()
+    return () => { alive = false; ctrl.abort() }
+  }, [props.runId, props.stageId])
   useEffect(() => {
     let alive = true
     fetchFormSpec('img-to-mesh')
@@ -92,6 +116,10 @@ export function ImgToMeshStudio(props: StageViewOwnerProps): ReturnType<typeof h
     spec === null
       ? h('p', { className: css.groupNote }, 'loading the declared knob surface…')
       : h('div', { className: css.studioBody },
+        h('div', { className: css.studioSplit },
+          // THE 3D SPACE (the shared viewport — the old Stage law)
+          h(GlbViewport, { url: meshUrl, label: 'img-to-mesh' }),
+          h('div', { className: css.studioRail },
         // SpecForm renders each group's title itself — no duplicate.
         STUDIO_EXPOSED.map((g) => h('section', { key: g, className: css.studioGroup },
           h(StudioFields, { fields: fieldsOf(spec.fields, g), values, onEdit, square: squareFor }),
@@ -116,6 +144,8 @@ export function ImgToMeshStudio(props: StageViewOwnerProps): ReturnType<typeof h
           error !== null ? h('span', { className: css.runError }, error) : null,
           h(Button, { variant: 'primary', onClick: run }, running ? 'running…' : 'Run'),
           h(Button, { variant: 'ghost', onClick: onRemove }, 'Remove stage'),
+        ),
+        ),
         ),
       ),
   )

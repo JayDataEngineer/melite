@@ -798,3 +798,18 @@
 .squareMetric { color: var(--dsw-alias-label-tertiary, rgba(0, 0, 0, 0.45)); font-size: 10px; line-height: 17px; }
 .squareOff { opacity: 0.5; pointer-events: none; }
 .squareFileInput { display: none; }
+
+/* ── the shared GLB viewport (the old Stage law, lean cut) ── */
+.viewport {
+  background: var(--dsw-alias-bg-canvas, #fff); border: 0.5px solid var(--dsw-alias-border-l2, rgba(0, 0, 0, 0.14));
+  border-radius: 10px; display: flex; min-height: 320px; overflow: hidden; position: relative;
+}
+.viewportEmpty { align-self: center; color: var(--dsw-alias-label-tertiary, rgba(0, 0, 0, 0.45)); font-size: 12px; line-height: 20px; margin: auto; }
+.viewport canvas { display: block; }
+.viewportCanvas { height: 380px; width: 100%; }
+
+/* the studio split: the 3D space + the knob rail (the old rail↔Stage law) */
+.studioSplit { display: grid; gap: 12px; grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); }
+.studioRail { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+@media (max-width: 900px) { .studioSplit { grid-template-columns: 1fr; } }
+.viewport:only-child { min-height: 380px; }

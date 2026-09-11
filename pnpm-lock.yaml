@@ -2463,6 +2463,9 @@ importers:
       sonner:
         specifier: ^2.0.8
         version: 2.0.8(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
+      three:
+        specifier: ^0.184.0
+        version: 0.184.0
     devDependencies:
       '@deepseek-ai/cordis':
         specifier: ^4.0.1

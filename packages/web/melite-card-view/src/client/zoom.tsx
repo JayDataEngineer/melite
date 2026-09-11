@@ -77,6 +77,8 @@ export interface ZoomDetailProps {
    *  mount owns the growth (self-owned verb — nothing threads from
    *  above). Kept in the props type so the detail's face is stable. */
   onSurface?: (size: string) => void
+  /** the draft's last started run (the studio polls it for artifacts). */
+  runId?: string | null
   /** the cards.stage.view consult (unclaimed → the generic card). */
   renderStageView: (owner: StageViewOwnerProps, fallback: ReturnType<typeof h>) => ReturnType<typeof h>
 }
@@ -165,7 +167,7 @@ function ZoomMount(props: ZoomDetailProps & { detail: (p: ZoomDetailProps) => Re
             }, '✕'),
           ),
           ready && isPresent
-            ? h(props.detail, { stage, bench: rest.bench, running: rest.running, onRun: rest.onRun, onClose, onRemoved: rest.onRemoved, onRewired: rest.onRewired, onPatchParams: rest.onPatchParams, renderStageView: rest.renderStageView, onSurface })
+            ? h(props.detail, { stage, bench: rest.bench, running: rest.running, onRun: rest.onRun, onClose, onRemoved: rest.onRemoved, onRewired: rest.onRewired, onPatchParams: rest.onPatchParams, renderStageView: rest.renderStageView, onSurface, runId: rest.runId })
             : h(ZoomSkeleton),
         ),
       ),

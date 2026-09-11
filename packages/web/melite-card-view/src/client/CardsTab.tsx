@@ -39,7 +39,7 @@ import type { CatalogCard, FormSpecDoc, SpecValues } from './spec-form.tsx'
 import { paramFields, patchStageParams } from './draft.ts'
 import css from './card.module.css'
 import type { CardsBenchValue, CardsRunValue, BenchStageRow } from './cards-resource.ts'
-import { CARDS_BENCH_ADDRESS, cardsRunAddress, fetchBench, openCardsResource, parseCardsAddress, restoreRunToBench, uploadInputFile } from './cards-resource.ts'
+import { CARDS_BENCH_ADDRESS, cardsRunAddress, fetchBench, fetchLatestRunForDraft, openCardsResource, parseCardsAddress, restoreRunToBench, uploadInputFile } from './cards-resource.ts'
 import { addStageWire, groupStagesWire, removeStageWire, reorderStageWire, rewireStageWire, ungroupStageWire } from './add-stage.ts'
 import { CardZoomOverlay, cardLayoutId, ZOOM_SPRING } from './zoom.tsx'
 import { motion } from 'framer-motion'
@@ -469,7 +469,7 @@ function benchRow(stage: BenchStageRow, bench?: CardsBenchValue): CardRowLineTab
  *  dump. Params left, Run right; the patch carries only CHANGED keys
  *  (coerced once, at patch time — the editPatch law); then the run
  *  gesture (patch lands in the domain BEFORE the run reads it). */
-function StageDrill({ stage, bench, running, onRun, onClose, onRemoved, onRewired, onPatchParams, renderStageView, onSurface }: {
+function StageDrill({ stage, bench, running, onRun, onClose, onRemoved, onRewired, onPatchParams, renderStageView, onSurface, runId }: {
   stage: BenchStageRow
   bench: CardsBenchValue
   running: boolean
@@ -480,6 +480,7 @@ function StageDrill({ stage, bench, running, onRun, onClose, onRemoved, onRewire
   onPatchParams: (patch: Record<string, unknown>) => void
   renderStageView: (owner: StageViewOwnerProps, fallback: ReturnType<typeof h>) => ReturnType<typeof h>
   onSurface?: (size: string) => void
+  runId?: string | null
 }): ReturnType<typeof h> {
   const title = String(stage.title ?? stage.card ?? stage.id)
   const held: SpecValues = typeof stage.params === 'object' && stage.params !== null ? stage.params : {}
@@ -660,6 +661,7 @@ function StageDrill({ stage, bench, running, onRun, onClose, onRemoved, onRewire
     upstream: others.map((s) => ({ id: s.id, title: String(s.title ?? s.card ?? s.id) })),
     wiredFrom: wiredStage !== '' ? wiredStage : null,
     onWire: (fromId: string | null): void => { void setWire(fromId ?? '') },
+    runId: runId ?? null,
   }, genericDetail())
 }
 
@@ -780,13 +782,14 @@ function AddCardDoor({ bench, onAdded, onClose }: {
   )
 }
 
-function BenchView({ bench, onRun, onRunStage, running, onPatchParams, renderStageView }: {
+function BenchView({ bench, onRun, onRunStage, running, onPatchParams, renderStageView, runId }: {
   bench: CardsBenchValue
   onRun: () => void
   onRunStage: (stage: BenchStageRow) => void
   running: boolean
   onPatchParams: (stage: BenchStageRow, patch: Record<string, unknown>) => void
   renderStageView: (owner: StageViewOwnerProps, fallback: ReturnType<typeof h>) => ReturnType<typeof h>
+  runId?: string | null
 }): ReturnType<typeof h> {
   // The LIVE bench: the resource snapshot is the first frame only (the
   // provider's bench stream ends after one snapshot), so the view owns
@@ -1089,6 +1092,7 @@ function BenchView({ bench, onRun, onRunStage, running, onPatchParams, renderSta
       onRewired: () => { reload({ keepOpen: true }) },
       onPatchParams: (patch: Record<string, unknown>) => { onPatchParams(open, patch) },
       renderStageView,
+      runId,
       detail: StageDrill,
     }) : null,
     adding ? h(AddCardDoor, { bench: live, onAdded, onClose: () => { setAdding(false) } }) : null,
@@ -1205,6 +1209,21 @@ export function CardsTab(props: CardsTabProps): ReturnType<typeof h> {
   const openResource = info?.tab.actions.openResource
   const snapshot = typeof props.useResource === 'function' ? props.useResource(address) : undefined
   const [running, setRunning] = useState(false)
+  // The draft's last started run (in-session memory; on load the tab
+  //  ADOPTS the estate's newest run for this draft via runs/list —
+  //  the estate is the SSOT, the studio's poll survives reloads).
+  const [lastRunId, setLastRunId] = useState<string | null>(null)
+  useEffect(() => {
+    if (lastRunId !== null) return
+    if (snapshot?.value?.kind !== 'bench') return
+    const draftId = snapshot.value.draftId
+    if (draftId === '') return
+    let alive = true
+    void fetchLatestRunForDraft(draftId).then((rid) => {
+      if (alive && rid !== null) setLastRunId(rid)
+    }).catch(() => { /* no runs yet — the empty state is honest */ })
+    return () => { alive = false }
+  }, [lastRunId, snapshot?.value])
   // In-tab run view: when the host offers no navigation (openResource
   // undefined — e.g. a tab the shell mounted without actions), a started
   // run streams HERE through the same provider the resource plane uses
@@ -1217,6 +1236,7 @@ export function CardsTab(props: CardsTabProps): ReturnType<typeof h> {
 
   const onStarted = useCallback((runId: string): void => {
     setRunning(false)
+    setLastRunId(runId)
     if (openResource !== undefined) {
       openResource(cardsRunAddress(runId))
       return
@@ -1329,6 +1349,7 @@ export function CardsTab(props: CardsTabProps): ReturnType<typeof h> {
           running,
           onPatchParams: onPatchParamsStage,
           renderStageView,
+          runId: lastRunId,
         }),
       )
     : h(RunView, { run: value, onBack: openResource !== undefined ? onBack : undefined, onRestored: onBack, onStop })
