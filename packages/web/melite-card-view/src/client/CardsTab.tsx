@@ -31,7 +31,7 @@
  * see index.ts) keep this package off sibling runtime imports.
  */
 import { createElement as h, Fragment, useCallback, useEffect, useRef, useState } from 'react'
-import { Button, Input, Modal, Pill, StateDot } from '@deepseek-ai/dsh-client-ui-primitives'
+import { Button, Input, Modal, Pill, StateDot, Tag } from '@deepseek-ai/dsh-client-ui-primitives'
 import { CardDrill } from './card-drill.tsx'
 import { fetchCardCatalog, fetchFormSpec, specDefaults, specPatch, SpecForm } from './spec-form.tsx'
 import type { CatalogCard, FormSpecDoc, SpecValues } from './spec-form.tsx'
@@ -280,6 +280,16 @@ async function uploadInputFile(file: File): Promise<{ name: string }> {
  *  pattern: the li is the drag unit, transform/transition ride the
  *  wrapper, the shared-element layoutId stays INSIDE (the morph
  *  anchor is unbroken). */
+/** runStatus text → the installed Tag tone union (the primitives
+ *  catalog owns badge palettes; a copy is forbidden). */
+function statusTone(status: string): 'success' | 'danger' | 'info' | 'warning' | 'neutral' {
+  if (status === 'done' || status === 'succeeded') return 'success'
+  if (status === 'error' || status === 'failed') return 'danger'
+  if (status === 'running' || status === 'queued' || status === 'pending') return 'info'
+  if (status === 'cancelled' || status === 'timeout') return 'warning'
+  return 'neutral'
+}
+
 function SortableTile({ row, entered, onOpen, onWireDrop, onWireArm, wireSrc, grouping, selected, onToggleSelect, onAssetAttach }: {
   row: CardRowLineTabRow
   entered: boolean
@@ -378,11 +388,11 @@ function SortableTile({ row, entered, onOpen, onWireDrop, onWireArm, wireSrc, gr
           ),
           h('span', { className: css.tileMeta },
             row.service !== null ? row.service : null,
-            row.upstream !== null ? h('span', { className: css.upstreamBadge, title: 'source ⟵ ' + row.upstream }, '\u27f5 ' + row.upstream) : null,
+            row.upstream !== null ? h(Tag, { tone: 'quiet' }, '⟵ ' + row.upstream) : null,
             row.prompt !== null ? h('span', { className: css.tilePrompt }, row.prompt) : null,
           ),
           row.status !== '' && row.status !== 'ready'
-            ? h('span', { className: css.statusChip, 'data-status': row.status }, row.status)
+            ? h(Tag, { tone: statusTone(row.status) }, row.status)
             : null,
         ),
         // the ⛓ arm button — a SIBLING of the open button (no nested

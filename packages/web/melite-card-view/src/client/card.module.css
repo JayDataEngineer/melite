@@ -34,6 +34,7 @@
 
 .state {
   border-radius: 999px;
+  corner-shape: round;
   flex: none;
   margin-left: auto;
   padding: 1px 8px;
@@ -169,7 +170,7 @@
 
 .runBtn, .back, .restore {
   background: transparent;
-  border: 1px solid var(--dsw-alias-label-dimmed, #e1e5ee);
+  border: 0.5px solid var(--dsw-alias-border-l2, rgba(0, 0, 0, 0.1));
   border-radius: 6px;
   color: inherit;
   cursor: pointer;
@@ -199,7 +200,8 @@
 .stage { list-style: none; }
 
 .stageTitle { flex: none; font-weight: 600; max-width: 45%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.stageEngine { color: var(--dsw-alias-label-secondary, #61666b); flex: none; font-size: 11px; }
+.stageEngine { color: var(--dsw-alias-label-secondary, #61666b); flex: none; font-size: 11px; 
+  line-height: 17px;}
 .stageArtifact { color: var(--dsw-alias-state-business-primary, #4f7bd8); font-size: 12px; text-decoration: none; }
 .stageArtifact:hover { text-decoration: underline; }
 
@@ -214,8 +216,9 @@
 .runHead { align-items: baseline; display: flex; gap: 8px; }
 .runId { font-family: var(--dsw-alias-font-mono, ui-monospace, monospace); font-size: 12px; font-weight: 600; }
 .runStatus {
-  border: 1px solid var(--dsw-alias-label-dimmed, #e1e5ee);
+  border: 0.5px solid var(--dsw-alias-border-l2, rgba(0, 0, 0, 0.1));
   border-radius: 999px;
+  corner-shape: round;
   color: var(--dsw-alias-label-secondary, #61666b);
   font-size: 11px;
   padding: 0 8px;
@@ -262,13 +265,13 @@
 .tileInner {
   align-items: stretch;
   background: transparent;
-  border: 1px solid var(--dsw-alias-label-dimmed, #e1e5ee);
+  border: 0.5px solid var(--dsw-alias-border-l2, rgba(0, 0, 0, 0.1));
   border-radius: 10px;
   cursor: pointer;
   display: flex;
   /* the old motion cadence: colors ease, geometry never (layout is
      the morph's own — framer owns transforms) */
-  transition: border-color 160ms ease, background-color 160ms ease;
+  transition: border-color var(--ds-transition-duration, 0.2s) var(--ds-ease-in-out, cubic-bezier(0.4, 0, 0.2, 1)), background-color var(--ds-transition-duration, 0.2s) var(--ds-ease-in-out, cubic-bezier(0.4, 0, 0.2, 1));
   flex-direction: column;
   font: inherit;
   overflow: hidden;
@@ -337,7 +340,7 @@
 
 /* the CAPTION STRIP — shrink-0, natural height */
 .tileCaption {
-  border-top: 1px solid var(--dsw-alias-label-dimmed, #e1e5ee);
+  border-top: 0.5px solid var(--dsw-alias-border-l2, rgba(0, 0, 0, 0.1));
   display: flex;
   flex: 0 0 auto;
   flex-direction: column;
@@ -350,7 +353,8 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-}
+
+  line-height: 20px;}
 .tileMeta {
   align-items: center;
   color: var(--dsw-alias-label-secondary, #61666b);
@@ -359,7 +363,8 @@
   font-size: 10px;
   gap: 6px;
   overflow: hidden;
-}
+
+  line-height: 17px;}
 .tilePrompt {
   flex: 1 1 0%;
   overflow: hidden;
@@ -403,7 +408,7 @@
 .pickerCard {
   align-items: baseline;
   background: transparent;
-  border: 1px solid var(--dsw-alias-label-dimmed, #e1e5ee);
+  border: 0.5px solid var(--dsw-alias-border-l2, rgba(0, 0, 0, 0.1));
   border-radius: 8px;
   color: inherit;
   cursor: pointer;
@@ -475,7 +480,7 @@
 
 .specSelect {
   background: var(--dsw-alias-interactive-bg-hover, #2631480f);
-  border: 1px solid var(--dsw-alias-label-dimmed, #e1e5ee);
+  border: 0.5px solid var(--dsw-alias-border-l2, rgba(0, 0, 0, 0.1));
   border-radius: 6px;
   color: inherit;
   font: inherit;
@@ -502,7 +507,7 @@
 
 .specTextarea {
   background: var(--dsw-alias-interactive-bg-hover, #2631480f);
-  border: 1px solid var(--dsw-alias-label-dimmed, #e1e5ee);
+  border: 0.5px solid var(--dsw-alias-border-l2, rgba(0, 0, 0, 0.1));
   border-radius: 6px;
   color: inherit;
   font: inherit;
@@ -548,9 +553,9 @@
  * Bounded ≈square: min(760px, 88vh), never the whole surface. */
 .zoomCard {
   background: var(--dsw-alias-bg-module-platform, #f5f6f7);
-  border: 1px solid var(--dsw-alias-label-dimmed, #e1e5ee);
+  border: 0;
   border-radius: 14px;
-  box-shadow: 0 24px 64px rgba(9 12 18 / 0.35);
+  box-shadow: var(--dsw-elevation-panel, 0 0 0 0.5px rgba(0, 0, 0, 0.16), 0 3px 8px 0 rgba(0, 0, 0, 0.03), 0 0 16px 0 rgba(0, 0, 0, 0.02));
   color: var(--dsw-alias-label-primary, #0f1115);
   display: flex;
   flex-direction: column;
@@ -561,14 +566,15 @@
 
 .zoomBar {
   align-items: center;
-  border-bottom: 1px solid var(--dsw-alias-label-dimmed, #e1e5ee);
+  border-bottom: 0.5px solid var(--dsw-alias-border-l2, rgba(0, 0, 0, 0.1));
   display: flex;
   flex: 0 0 auto;
   gap: 8px;
   justify-content: space-between;
   padding: 10px 14px;
 }
-.zoomTitle { font-size: 13px; font-weight: 600; }
+.zoomTitle { font-size: 13px; font-weight: 600; 
+  line-height: 20px;}
 .closeX {
   background: transparent;
   border: none;
@@ -601,6 +607,7 @@
 }
 .skLine {
   animation: zoomShimmer 1s linear infinite both;
+  will-change: background-position;
   background: linear-gradient(90deg, transparent 40%, var(--dsw-alias-interactive-bg-hover, #2631480f) 50%, transparent 60%);
   background-color: var(--dsw-alias-interactive-bg-hover, #2631480f);
   background-size: 200% 100%;
@@ -680,40 +687,7 @@
   outline-offset: 4px;
 }
 
-/* ── run status chips + upstream badges (slice 5) ── */
-.statusChip {
-  align-self: flex-start;
-  border-radius: 999px;
-  color: #fff;
-  font-size: 10px;
-  letter-spacing: 0.02em;
-  line-height: 1;
-  margin-top: 6px;
-  padding: 3px 8px;
-  text-transform: uppercase;
-}
-.statusChip[data-status="queued"], .statusChip[data-status="pending"] {
-  background: #8a6d1a;
-}
-.statusChip[data-status="running"] {
-  animation: chipPulse 1.1s ease-in-out infinite;
-  background: var(--dsw-alias-state-business-primary, #4176e6);
-}
-.statusChip[data-status="done"] {
-  background: #1d7a3e;
-}
-.statusChip[data-status="failed"] {
-  background: #b3261e;
-}
-@keyframes chipPulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.55; }
-}
-.upstreamBadge {
-  color: var(--dsw-alias-state-business-primary, #4176e6);
-  font-size: 10px;
-  white-space: nowrap;
-}
+/* ── run cancel ── */
 .cancelBtn {
   background: transparent;
   border: 1px solid #b3261e;
@@ -735,6 +709,7 @@
   align-items: center;
   border: 1.5px solid var(--dsw-alias-label-secondary, #61666b);
   border-radius: 999px;
+  corner-shape: round;
   color: #fff;
   display: flex;
   font-size: 11px;
@@ -758,7 +733,8 @@
   color: var(--dsw-alias-label-secondary, #61666b);
   font-size: 12px;
   margin: 0 0 10px;
-}
+
+  line-height: 20px;}
 .memberList {
   list-style: none;
   margin: 0 0 12px;
@@ -778,4 +754,13 @@
 }
 .memberName {
   font-size: 13px;
+}
+
+/* prefers-reduced-motion (web-styling law): decorative loops stop;
+   state stays legible without movement. */
+@media (prefers-reduced-motion: reduce) {
+  .tileEnter, .skLine, .skBlock {
+    animation-duration: 0.01ms;
+    animation-iteration-count: 1;
+  }
 }
