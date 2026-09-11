@@ -266,6 +266,9 @@
   border-radius: 10px;
   cursor: pointer;
   display: flex;
+  /* the old motion cadence: colors ease, geometry never (layout is
+     the morph's own — framer owns transforms) */
+  transition: border-color 160ms ease, background-color 160ms ease;
   flex-direction: column;
   font: inherit;
   overflow: hidden;
