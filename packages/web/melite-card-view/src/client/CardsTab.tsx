@@ -30,7 +30,7 @@
  * hook. Local prop typings (the package's local-spelling pattern —
  * see index.ts) keep this package off sibling runtime imports.
  */
-import { createElement as h, useCallback, useEffect, useState } from 'react'
+import { createElement as h, Fragment, useCallback, useEffect, useRef, useState } from 'react'
 import { Button, Input, Modal, Pill, StateDot } from '@deepseek-ai/dsh-client-ui-primitives'
 import { CardDrill } from './card-drill.tsx'
 import { fetchCardCatalog, fetchFormSpec, specDefaults, specPatch, SpecForm } from './spec-form.tsx'
@@ -38,9 +38,8 @@ import type { CatalogCard, FormSpecDoc, SpecValues } from './spec-form.tsx'
 import { paramFields, patchStageParams } from './draft.ts'
 import css from './card.module.css'
 import type { CardsBenchValue, CardsRunValue, BenchStageRow } from './cards-resource.ts'
-import { CARDS_BENCH_ADDRESS, parseCardsAddress, restoreRunToBench } from './cards-resource.ts'
-import { addStageWire } from './add-stage.ts'
-import { OldFlowMount } from './OldFlowMount.tsx'
+import { CARDS_BENCH_ADDRESS, cardsRunAddress, fetchBench, openCardsResource, parseCardsAddress, restoreRunToBench } from './cards-resource.ts'
+import { addStageWire, removeStageWire } from './add-stage.ts'
 import { mediaUrl } from './draft.ts'
 
 /** The injected tab information hook's shape (dsh-client-ui-sidebar-right's
@@ -91,10 +90,9 @@ function nextRpcId(): string {
  *  past React). */
 async function runTheBench(
   bench: CardsBenchValue,
-  onStarted: (runId: string) => void,
-): Promise<void> {
+): Promise<{ runId: string } | { refused: string }> {
   const stages = bench.stages.map(projectStage)
-  if (stages.length === 0) return
+  if (stages.length === 0) return { refused: 'nothing to run' }
   const rpcId = nextRpcId()
   try {
     const res = await fetch('/api/runs/start', {
@@ -104,41 +102,40 @@ async function runTheBench(
         type: 'client-request',
         rpcId,
         method: 'runs/start',
-        payload: { args: { doc: { flow_inline: { stages }, draft_id: bench.draftId } } },
+        // test:false — a real run. The registry's envelope gate
+        // requires an explicit boolean (absent/null is refused), and
+        // the flow body needs its id (the bench runs under its own
+        // draft_id — the bench verb's one truth).
+        payload: { args: { doc: { flow_inline: { id: bench.draftId, stages }, draft_id: bench.draftId, test: false } } },
       }),
     })
     if (!res.ok) {
-      console.error('[cards] run refused: HTTP ' + String(res.status))
-      return
+      return { refused: 'run refused: HTTP ' + String(res.status) }
     }
     const body: unknown = await res.json().catch(() => null)
     if (typeof body !== 'object' || body === null
         || Reflect.get(body, 'type') !== 'server-response'
         || Reflect.get(body, 'rpcId') !== rpcId) {
-      console.error('[cards] run refused: malformed response frame')
-      return
+      return { refused: 'run refused: malformed response frame' }
     }
     const result: unknown = Reflect.get(body, 'result')
     if (typeof result !== 'object' || result === null) {
-      console.error('[cards] run refused: malformed result')
-      return
+      return { refused: 'run refused: malformed result' }
     }
     if (Reflect.get(result, 'ok') === true) {
       const runId = Reflect.get(Reflect.get(result, 'value') as object, 'run_id')
       if (typeof runId === 'string' && runId !== '') {
-        onStarted(runId)
-      } else {
-        console.error('[cards] run refused: no run_id in the answer')
+        return { runId }
       }
-      return
+      return { refused: 'run refused: no run_id in the answer' }
     }
     const error: unknown = Reflect.get(result, 'error')
     const message = typeof error === 'object' && error !== null
       && typeof Reflect.get(error, 'message') === 'string'
       ? Reflect.get(error, 'message') : 'runs/start refused'
-    console.error('[cards] run refused:', message)
+    return { refused: String(message) }
   } catch (e) {
-    console.error('[cards] run request failed:', e)
+    return { refused: e instanceof Error ? e.message : 'run request failed' }
   }
 }
 
@@ -271,12 +268,13 @@ function benchRow(stage: BenchStageRow): CardRowLineTabRow {
  *  dump. Params left, Run right; the patch carries only CHANGED keys
  *  (coerced once, at patch time — the editPatch law); then the run
  *  gesture (patch lands in the domain BEFORE the run reads it). */
-function StageDrill({ stage, bench, running, onRun, onClose }: {
+function StageDrill({ stage, bench, running, onRun, onClose, onRemoved }: {
   stage: BenchStageRow
   bench: CardsBenchValue
   running: boolean
   onRun: () => void
   onClose: () => void
+  onRemoved: () => void
 }): ReturnType<typeof h> {
   const title = String(stage.title ?? stage.card ?? stage.id)
   const held: SpecValues = typeof stage.params === 'object' && stage.params !== null ? stage.params : {}
@@ -284,6 +282,7 @@ function StageDrill({ stage, bench, running, onRun, onClose }: {
   const [values, setValues] = useState<SpecValues>({})
   const [error, setError] = useState<string | null>(null)
   const [loaded, setLoaded] = useState(false)
+  const [removing, setRemoving] = useState(false)
   useEffect(() => {
     let alive = true
     const family = String(stage.card ?? '')
@@ -317,6 +316,17 @@ function StageDrill({ stage, bench, running, onRun, onClose }: {
       setError(e instanceof Error ? e.message : 'run failed')
     }
   }
+  const remove = async (): Promise<void> => {
+    setError(null)
+    setRemoving(true)
+    try {
+      await removeStageWire({ stage: stage.id, expect_rev: bench.rev })
+      onRemoved()
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : 'remove failed')
+      setRemoving(false)
+    }
+  }
   return h(Modal, { open: true, onClose, title: 'Stage ' + title, closeLabel: 'Close stage', className: css.drill },
     h('div', { className: css.split },
       h('div', { className: css.params },
@@ -329,6 +339,14 @@ function StageDrill({ stage, bench, running, onRun, onClose }: {
           error !== null ? h('span', { className: css.runError }, error) : null,
           h(Button, { variant: 'primary', disabled: running, onClick: () => { void run() } },
             running ? 'running…' : 'Run'),
+        ),
+        h('div', { className: css.runRow },
+          h('button', {
+            className: css.back,
+            type: 'button',
+            disabled: running || removing,
+            onClick: () => { void remove() },
+          }, removing ? 'removing…' : 'Remove stage'),
         ),
       ),
     ),
@@ -452,35 +470,49 @@ function AddCardDoor({ bench, onAdded, onClose }: {
   )
 }
 
-function BenchView({ bench, onRun, onNavigate, running }: {
+function BenchView({ bench, onRun, running }: {
   bench: CardsBenchValue
   onRun: () => void
-  onNavigate: (address: string) => void
   running: boolean
 }): ReturnType<typeof h> {
+  // The LIVE bench: the resource snapshot is the first frame only (the
+  // provider's bench stream ends after one snapshot), so the view owns
+  // its copy and reloads after its own edits — same-address navigation
+  // does not re-run the stream.
+  const [live, setLive] = useState<CardsBenchValue>(bench)
+  useEffect(() => { setLive(bench) }, [bench.draftId, bench.rev])
   const [open, setOpen] = useState<BenchStageRow | null>(null)
   const [adding, setAdding] = useState(false)
+  const [reloadError, setReloadError] = useState<string | null>(null)
   const onOpen = useCallback((stage: BenchStageRow): void => setOpen(stage), [])
   const onClose = useCallback((): void => setOpen(null), [])
   const onAddCard = useCallback((): void => setAdding(true), [])
+  const reload = useCallback((): void => {
+    setReloadError(null)
+    fetchBench()
+      .then((next) => { setLive(next); setOpen(null) })
+      .catch((e: unknown) => { setReloadError(e instanceof Error ? e.message : 'bench reload failed') })
+  }, [])
   const onAdded = useCallback((): void => {
     setAdding(false)
-    onNavigate(CARDS_BENCH_ADDRESS)
-  }, [onNavigate])
-  return h('section', { className: css.cardsBench, 'data-cards-bench': bench.rev },
+    reload()
+  }, [reload])
+  const benchRev = live.rev
+  return h('section', { className: css.cardsBench, 'data-cards-bench': benchRev },
     h('header', { className: css.benchHead },
-      h('span', { className: css.revTag }, 'rev ' + bench.rev),
+      h('span', { className: css.revTag }, 'rev ' + benchRev),
       h('button', {
         className: css.runBtn,
         type: 'button',
-        disabled: running || bench.stages.length === 0,
+        disabled: running || live.stages.length === 0,
         onClick: onRun,
       }, 'Run'),
     ),
-    bench.stages.length === 0
+    reloadError !== null ? h('p', { className: css.runError }, reloadError) : null,
+    live.stages.length === 0
       ? h('p', { className: css.empty }, 'The bench is empty — construct stages (the agent adds them; they land here).')
       : h('ol', { className: css.tileGrid },
-          bench.stages.map((s) => {
+          live.stages.map((s) => {
             const row = benchRow(s)
             return h(StageTile, { key: s.id, row, onOpen: (r) => onOpen(r.stage) })
           }),
@@ -493,11 +525,11 @@ function BenchView({ bench, onRun, onNavigate, running }: {
             ),
           ),
         ),
-    bench.log.length > 0
-      ? h('p', { className: css.logHead }, bench.log.length + ' log entr' + (bench.log.length === 1 ? 'y' : 'ies'))
+    live.log.length > 0
+      ? h('p', { className: css.logHead }, live.log.length + ' log entr' + (live.log.length === 1 ? 'y' : 'ies'))
       : null,
-    open !== null ? h(StageDrill, { stage: open, bench, running, onRun, onClose }) : null,
-    adding ? h(AddCardDoor, { bench, onAdded, onClose: () => { setAdding(false) } }) : null,
+    open !== null ? h(StageDrill, { stage: open, bench: live, running, onRun, onClose, onRemoved: () => { setOpen(null); reload() } }) : null,
+    adding ? h(AddCardDoor, { bench: live, onAdded, onClose: () => { setAdding(false) } }) : null,
   )
 }
 
@@ -589,22 +621,70 @@ export function CardsTab(props: CardsTabProps): ReturnType<typeof h> {
   const openResource = info?.tab.actions.openResource
   const snapshot = typeof props.useResource === 'function' ? props.useResource(address) : undefined
   const [running, setRunning] = useState(false)
+  // In-tab run view: when the host offers no navigation (openResource
+  // undefined — e.g. a tab the shell mounted without actions), a started
+  // run streams HERE through the same provider the resource plane uses
+  // (hydrate + status poll to terminal), instead of stranding the user
+  // on the bench with no feedback.
+  const [localRun, setLocalRun] = useState<CardsRunValue | null>(null)
+  const [localRunError, setLocalRunError] = useState<string | null>(null)
+  const runStreamAbort = useRef<AbortController | null>(null)
+  useEffect(() => () => { runStreamAbort.current?.abort() }, [])
 
   const onStarted = useCallback((runId: string): void => {
     setRunning(false)
-    if (openResource !== undefined) openResource('dsh-resource://cards/run/' + encodeURIComponent(runId))
+    if (openResource !== undefined) {
+      openResource(cardsRunAddress(runId))
+      return
+    }
+    runStreamAbort.current?.abort()
+    const ctrl = new AbortController()
+    runStreamAbort.current = ctrl
+    setLocalRunError(null)
+    void (async () => {
+      try {
+        for await (const frame of openCardsResource(cardsRunAddress(runId), { signal: ctrl.signal })) {
+          if (ctrl.signal.aborted) return
+          if (frame.ok) setLocalRun(frame.value as CardsRunValue)
+          else {
+            const err: unknown = typeof frame === 'object' && frame !== null && 'error' in frame
+              ? (frame as { error: unknown }).error
+              : null
+            setLocalRunError(err instanceof Error ? err.message : 'run stream failed')
+            return
+          }
+        }
+      } catch (e: unknown) {
+        if (!ctrl.signal.aborted) setLocalRunError(e instanceof Error ? e.message : 'run stream failed')
+      }
+    })()
   }, [openResource])
 
   const onRun = useCallback((): void => {
     if (snapshot?.value?.kind !== 'bench') return
     setRunning(true)
-    void runTheBench(snapshot.value, onStarted)
+    setLocalRunError(null)
+    void runTheBench(snapshot.value).then((res) => {
+      if ('runId' in res) onStarted(res.runId)
+      else {
+        setRunning(false)
+        setLocalRunError(res.refused)
+      }
+    })
   }, [snapshot, onStarted])
 
   const onBack = useCallback((): void => {
     if (openResource !== undefined) openResource(CARDS_BENCH_ADDRESS)
   }, [openResource])
+  const onLocalBack = useCallback((): void => {
+    runStreamAbort.current?.abort()
+    setLocalRun(null)
+    setLocalRunError(null)
+  }, [])
 
+  if (localRun !== null) {
+    return h(RunView, { run: localRun, onBack: onLocalBack, onRestored: onLocalBack })
+  }
   if (snapshot === undefined) {
     return h('p', { className: css.missing }, 'cards resource hook unavailable')
   }
@@ -619,6 +699,16 @@ export function CardsTab(props: CardsTabProps): ReturnType<typeof h> {
     return h('p', { className: css.failed }, 'cards resource gave no value')
   }
   return value.kind === 'bench'
-    ? h(OldFlowMount, { bench: value })
+    // Pure-DSH tab (2026-09-11): the bench renders the native BenchView
+    // (tiles + drill + picker on the estate doors). The legacy 1:1
+    // FlowCanvas branch was retired in Phase 2 (src/old/ deleted).
+    ? h(Fragment, null,
+        localRunError !== null ? h('p', { className: css.runError }, localRunError) : null,
+        h(BenchView, {
+          bench: value,
+          onRun,
+          running,
+        }),
+      )
     : h(RunView, { run: value, onBack: openResource !== undefined ? onBack : undefined, onRestored: onBack })
 }

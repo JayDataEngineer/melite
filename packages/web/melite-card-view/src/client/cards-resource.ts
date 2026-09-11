@@ -149,6 +149,13 @@ export function readBench(doc: Record<string, unknown>): CardsBenchValue {
   }
 }
 
+/** Re-read the shared bench (session 'main') — the consumer's reload
+ *  after its own edits (the provider's bench stream is a single
+ *  snapshot; same-address navigation does not re-run it). */
+export async function fetchBench(signal?: AbortSignal): Promise<CardsBenchValue> {
+  return readBench(await wireCall('bench/get', { sessionKey: 'main' }, signal))
+}
+
 export function readRun(runId: string, doc: Record<string, unknown>): CardsRunValue {
   const stages = Array.isArray(doc['stages'])
     ? (doc['stages'] as unknown[]).filter((s): s is RunStageStatus =>

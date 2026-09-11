@@ -37,3 +37,39 @@ export async function addStageWire(doc: Record<string, unknown>, signal?: AbortS
   if (typeof value !== 'object' || value === null) throw new Error('bench/add-stage: not an object')
   return value as Record<string, unknown>
 }
+
+/** The bench remove-stage wire door caller (the drill's Remove path).
+ *  Same frame as the add (sessionKey, doc); the doc holds stage/
+ *  expect_rev (the CAS law: the caller chains the bench rev it
+ *  rendered, so a concurrent edit refuses instead of slicing wrong). */
+export async function removeStageWire(doc: Record<string, unknown>, signal?: AbortSignal): Promise<Record<string, unknown>> {
+  const rpcId = nextRpcId()
+  const res = await fetch('/api/bench/remove-stage', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({
+      type: 'client-request',
+      rpcId,
+      method: 'bench/remove-stage',
+      payload: { args: { sessionKey: 'main', doc } },
+    }),
+    ...(signal === undefined ? {} : { signal }),
+  })
+  if (!res.ok) throw new Error('bench/remove-stage: HTTP ' + String(res.status))
+  const body: unknown = await res.json()
+  if (typeof body !== 'object' || body === null
+      || Reflect.get(body, 'type') !== 'server-response'
+      || Reflect.get(body, 'rpcId') !== rpcId) {
+    throw new Error('bench/remove-stage: malformed response frame')
+  }
+  const result: unknown = Reflect.get(body, 'result')
+  if (typeof result !== 'object' || result === null) throw new Error('bench/remove-stage: malformed result')
+  if (Reflect.get(result, 'ok') !== true) {
+    const error: unknown = Reflect.get(result, 'error')
+    throw new Error(typeof error === 'object' && error !== null && typeof Reflect.get(error, 'message') === 'string'
+      ? Reflect.get(error, 'message') as string : 'bench/remove-stage refused')
+  }
+  const value: unknown = Reflect.get(result, 'value')
+  if (typeof value !== 'object' || value === null) throw new Error('bench/remove-stage: not an object')
+  return value as Record<string, unknown>
+}
