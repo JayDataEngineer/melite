@@ -30,8 +30,8 @@ window.__ModuleLoader__.load({
 		let react = require("react");
 		react = __toESM(react, 1);
 		let _deepseek_ai_dsh_client_ui_primitives = require("@deepseek-ai/dsh-client-ui-primitives");
-		let react_jsx_runtime = require("react/jsx-runtime");
 		require("@deepseek-ai/cordis");
+		let react_jsx_runtime = require("react/jsx-runtime");
 		let react_dom = require("react-dom");
 		//#region src/client/apply-guard.ts
 		/** Claims the plugin apply slot. Returns true when this call won the slot. */
@@ -46,7 +46,7 @@ window.__ModuleLoader__.load({
 		}
 		//#endregion
 		//#region \0dsh-css:melite-card-view/src/client/card.module.css.mjs
-		const css = ".vYZV7a_card{flex-direction:column;min-width:0;margin:4px 0;font-size:12px;line-height:1.45;display:flex}.vYZV7a_load{color:var(--dsw-alias-label-secondary,#9a9aa5);padding:2px 0}.vYZV7a_head{align-items:center;gap:8px;min-width:0;display:flex}.vYZV7a_model{text-overflow:ellipsis;white-space:nowrap;min-width:0;font-weight:600;overflow:hidden}.vYZV7a_state{corner-shape:round;border-radius:999px;flex:none;margin-left:auto;padding:1px 8px}.vYZV7a_state[data-state=completed]{color:var(--dsw-alias-state-success-primary,#3fb96f)}.vYZV7a_state[data-state=running],.vYZV7a_state[data-state=queued],.vYZV7a_state[data-state=pending],.vYZV7a_state[data-state=starting],.vYZV7a_state[data-state=draft]{color:var(--dsw-alias-state-warn-primary,#d9a53f)}.vYZV7a_state[data-state=failed],.vYZV7a_state[data-state=error],.vYZV7a_state[data-state=stopped],.vYZV7a_state[data-state=interrupted]{color:var(--dsw-alias-state-error-primary,#e05656)}.vYZV7a_prompt{color:var(--dsw-alias-text-secondary,#9a9aa5);-webkit-line-clamp:2;-webkit-box-orient:vertical;display:-webkit-box;overflow:hidden}.vYZV7a_link:hover{text-decoration:underline}.vYZV7a_row{color:inherit;cursor:pointer;font:inherit;text-align:left;background:0 0;border:none;border-radius:6px;align-items:center;gap:8px;width:100%;min-width:0;padding:4px 6px;display:flex}.vYZV7a_row:hover{background:var(--dsw-alias-interactive-bg-hover,#2631480f)}.vYZV7a_row:focus-visible{outline:1px solid var(--dsw-alias-state-business-primary,#4f7bd8);outline-offset:-1px}.vYZV7a_thumb{object-fit:cover;border-radius:4px;flex:none;width:34px;height:34px}.vYZV7a_rowTitle{text-overflow:ellipsis;white-space:nowrap;flex:none;max-width:40%;font-weight:600;overflow:hidden}.vYZV7a_drill{width:92vw;max-width:min(860px,92vw)}.vYZV7a_split{grid-template-columns:minmax(240px,1fr) minmax(0,1.2fr);gap:14px;min-width:0;display:grid}@media (width<=640px){.vYZV7a_split{grid-template-columns:1fr}}.vYZV7a_params{flex-direction:column;gap:8px;min-width:0;max-height:60vh;display:flex;overflow-y:auto}.vYZV7a_field{flex-direction:column;gap:3px;min-width:0;display:flex}.vYZV7a_fieldKey{color:var(--dsw-alias-label-secondary,#9a9aa5);font-size:11px}.vYZV7a_outputs{flex-direction:column;align-items:center;gap:10px;min-width:0;display:flex}.vYZV7a_outputImg{object-fit:contain;border-radius:8px;max-width:100%;max-height:46vh}.vYZV7a_runRow{justify-content:flex-end;align-items:center;gap:10px;width:100%;display:flex}.vYZV7a_runError{color:var(--dsw-alias-label-error,#e05656);overflow-wrap:anywhere;font-size:11px}.vYZV7a_state[data-state=legacy]{color:var(--dsw-alias-label-secondary,#9a9aa5)}.vYZV7a_cardsBench{flex-direction:column;gap:8px;display:flex}.vYZV7a_benchHead{justify-content:space-between;align-items:center;gap:8px;display:flex}.vYZV7a_revTag{color:var(--dsw-alias-label-secondary,#61666b);font-family:var(--dsw-alias-font-mono,ui-monospace, monospace);font-size:11px}.vYZV7a_runBtn,.vYZV7a_back,.vYZV7a_restore{border:.5px solid var(--dsw-alias-border-l2,#0000001a);color:inherit;cursor:pointer;font:inherit;background:0 0;border-radius:6px;padding:2px 10px;font-size:12px}.vYZV7a_runBtn:hover:not(:disabled),.vYZV7a_back:hover,.vYZV7a_restore:hover:not(:disabled){background:var(--dsw-alias-interactive-bg-hover,#2631480f);border-color:var(--dsw-alias-state-business-primary,#4f7bd8)}.vYZV7a_runBtn:disabled,.vYZV7a_restore:disabled{cursor:default;opacity:.45}.vYZV7a_category{flex-direction:column;gap:2px;display:flex}.vYZV7a_catTitle{color:var(--dsw-alias-label-secondary,#61666b);letter-spacing:.06em;text-transform:uppercase;margin:4px 0 2px;font-size:11px;font-weight:600}.vYZV7a_stages{flex-direction:column;gap:2px;margin:0;padding:0;list-style:none;display:flex}.vYZV7a_stage{list-style:none}.vYZV7a_stageTitle{text-overflow:ellipsis;white-space:nowrap;flex:none;max-width:45%;font-weight:600;overflow:hidden}.vYZV7a_stageEngine{color:var(--dsw-alias-label-secondary,#61666b);flex:none;font-size:11px;line-height:17px}.vYZV7a_stageArtifact{color:var(--dsw-alias-state-business-primary,#4f7bd8);font-size:12px;text-decoration:none}.vYZV7a_stageArtifact:hover{text-decoration:underline}.vYZV7a_empty,.vYZV7a_loading,.vYZV7a_failed,.vYZV7a_missing,.vYZV7a_logHead,.vYZV7a_restoreNote{color:var(--dsw-alias-label-secondary,#61666b);margin:0;font-size:12px;font-style:italic}.vYZV7a_runView{flex-direction:column;gap:8px;display:flex}.vYZV7a_runHead{align-items:baseline;gap:8px;display:flex}.vYZV7a_runId{font-family:var(--dsw-alias-font-mono,ui-monospace, monospace);font-size:12px;font-weight:600}.vYZV7a_runStatus{border:.5px solid var(--dsw-alias-border-l2,#0000001a);corner-shape:round;color:var(--dsw-alias-label-secondary,#61666b);border-radius:999px;padding:0 8px;font-size:11px}.vYZV7a_runActions{gap:8px;display:flex}.vYZV7a_stageDetail{grid-template-columns:auto 1fr;gap:2px 12px;margin:0;display:grid}.vYZV7a_stageDetail dt{color:var(--dsw-alias-label-secondary,#61666b);text-align:right;text-transform:uppercase;font-size:11px}.vYZV7a_stageDetail dd{min-width:0;margin:0}.vYZV7a_mono{font-family:var(--dsw-alias-font-mono,ui-monospace, monospace);font-size:12px;overflow-x:auto}.vYZV7a_tileGrid{grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px;margin:0;padding:0;list-style:none;display:grid}.vYZV7a_tile{margin:0;padding:0;display:block}.vYZV7a_tileInner{border:.5px solid var(--dsw-alias-border-l2,#0000001a);cursor:pointer;transition:border-color var(--ds-transition-duration,.2s) var(--ds-ease-in-out,cubic-bezier(.4, 0, .2, 1)), background-color var(--ds-transition-duration,.2s) var(--ds-ease-in-out,cubic-bezier(.4, 0, .2, 1));font:inherit;text-align:left;background:0 0;border-radius:10px;flex-direction:column;align-items:stretch;width:100%;padding:0;display:flex;overflow:hidden}.vYZV7a_tileInner:hover{border-color:var(--dsw-alias-state-business-primary,#4f7bd8);background:var(--dsw-alias-interactive-bg-hover,#2631480f)}.vYZV7a_tilePreview{aspect-ratio:1;flex:1;width:100%;min-height:0;margin:0;display:block;position:relative}.vYZV7a_tileImg,.vYZV7a_tileImgLink{width:100%;height:100%;display:block}.vYZV7a_tileImg{object-fit:cover}.vYZV7a_kindFace{background:var(--dsw-alias-interactive-bg-hover,#2631480f);color:var(--dsw-alias-label-secondary,#61666b);flex-direction:column;justify-content:center;align-items:center;gap:4px;width:100%;height:100%;display:flex}.vYZV7a_kindInitial{font-size:28px;font-weight:700;line-height:1}.vYZV7a_kindName{font-family:var(--dsw-alias-font-mono,ui-monospace, monospace);text-overflow:ellipsis;white-space:nowrap;padding:0 6px;font-size:10px;overflow:hidden}.vYZV7a_tileDot{position:absolute;bottom:6px;right:6px}.vYZV7a_tileCaption{border-top:.5px solid var(--dsw-alias-border-l2,#0000001a);flex-direction:column;flex:none;gap:2px;padding:6px 8px;display:flex}.vYZV7a_tileTitle{text-overflow:ellipsis;white-space:nowrap;font-size:12px;font-weight:600;line-height:20px;overflow:hidden}.vYZV7a_tileMeta{color:var(--dsw-alias-label-secondary,#61666b);font-family:var(--dsw-alias-font-mono,ui-monospace, monospace);align-items:center;gap:6px;font-size:10px;line-height:17px;display:flex;overflow:hidden}.vYZV7a_tilePrompt{text-overflow:ellipsis;white-space:nowrap;flex:1;overflow:hidden}.vYZV7a_tileAdd .vYZV7a_tileInner{border-style:dashed}.vYZV7a_addFace{color:var(--dsw-alias-label-secondary,#61666b);justify-content:center;align-items:center;font-size:34px;font-weight:300;display:flex}.vYZV7a_picker{flex-direction:column;gap:10px;max-height:60vh;display:flex;overflow-y:auto}.vYZV7a_pickerGenre{flex-direction:column;gap:4px;display:flex}.vYZV7a_pickerCard{border:.5px solid var(--dsw-alias-border-l2,#0000001a);color:inherit;cursor:pointer;font:inherit;text-align:left;background:0 0;border-radius:8px;align-items:baseline;gap:8px;width:100%;padding:8px 10px;display:flex}.vYZV7a_pickerCard:hover{background:var(--dsw-alias-interactive-bg-hover,#2631480f);border-color:var(--dsw-alias-state-business-primary,#4f7bd8)}.vYZV7a_pickerCardLabel{white-space:nowrap;font-size:13px;font-weight:600}.vYZV7a_pickerCardDesc{color:var(--dsw-alias-label-secondary,#61666b);text-overflow:ellipsis;white-space:nowrap;flex:1;font-size:12px;overflow:hidden}.vYZV7a_specForm{flex-direction:column;gap:12px;display:flex}.vYZV7a_specGroup{flex-direction:column;gap:8px;display:flex}.vYZV7a_specGroupTitle{color:var(--dsw-alias-label-secondary,#61666b);letter-spacing:.04em;text-transform:uppercase;margin:0 0 2px;font-size:11px;font-weight:600}.vYZV7a_specField{flex-direction:column;gap:3px;display:flex}.vYZV7a_specFieldKey{color:var(--dsw-alias-label-secondary,#61666b);font-size:12px}.vYZV7a_specRequired{color:var(--dsw-alias-state-critical,#e5484d)}.vYZV7a_specHint{color:var(--dsw-alias-label-secondary,#61666b);font-size:11px}.vYZV7a_specSelect{background:var(--dsw-alias-interactive-bg-hover,#2631480f);border:.5px solid var(--dsw-alias-border-l2,#0000001a);color:inherit;font:inherit;border-radius:6px;width:100%;padding:5px 8px;font-size:13px}.vYZV7a_specSliderRow{align-items:center;gap:8px;display:flex}.vYZV7a_specSlider{flex:1}.vYZV7a_specSliderValue{color:var(--dsw-alias-label-secondary,#61666b);font-family:var(--dsw-alias-font-mono,ui-monospace, monospace);text-align:right;min-width:4ch;font-size:12px}.vYZV7a_specTextarea{background:var(--dsw-alias-interactive-bg-hover,#2631480f);border:.5px solid var(--dsw-alias-border-l2,#0000001a);color:inherit;font:inherit;resize:vertical;border-radius:6px;width:100%;padding:6px 8px;font-size:13px}.vYZV7a_tileShared{display:block;position:relative}.vYZV7a_zoomOverlay{background:var(--dsw-alias-bg-mask,#090c12b8);z-index:80;flex-direction:column;display:flex;position:fixed;inset:0}.vYZV7a_zoomScroll{flex:1;min-height:0;overflow-y:auto}.vYZV7a_zoomInner{box-sizing:border-box;justify-content:center;align-items:center;width:100%;max-width:100%;min-height:100%;margin:0 auto;padding:24px;display:flex}.vYZV7a_zoomCard{background:var(--dsw-alias-bg-module-platform,#f5f6f7);box-shadow:var(--dsw-elevation-panel,0 0 0 .5px #00000029, 0 3px 8px 0 #00000008, 0 0 16px 0 #00000005);color:var(--dsw-alias-label-primary,#0f1115);border:0;border-radius:14px;flex-direction:column;min-height:320px;max-height:86vh;display:flex;overflow:hidden}.vYZV7a_zoomBar{border-bottom:.5px solid var(--dsw-alias-border-l2,#0000001a);flex:none;justify-content:space-between;align-items:center;gap:8px;padding:10px 14px;display:flex}.vYZV7a_zoomTitle{font-size:13px;font-weight:600;line-height:20px}.vYZV7a_closeX{color:inherit;cursor:pointer;background:0 0;border:none;border-radius:6px;padding:4px 8px;font-size:14px;line-height:1}.vYZV7a_closeX:hover{background:var(--dsw-alias-interactive-bg-hover,#2631480f)}.vYZV7a_zoomDetail{min-height:0;padding:14px;display:block;overflow-y:auto}.vYZV7a_zoomSkeleton{flex-direction:column;flex:1;gap:10px;min-height:0;padding:16px;display:flex}.vYZV7a_skLine{will-change:background-position;background:linear-gradient(90deg, transparent 40%, var(--dsw-alias-interactive-bg-hover,#2631480f) 50%, transparent 60%);background-color:var(--dsw-alias-interactive-bg-hover,#2631480f);background-size:200% 100%;border-radius:6px;height:12px;animation:1s linear infinite both vYZV7a_zoomShimmer}.vYZV7a_skWide{width:60%}.vYZV7a_skShort{flex:1;height:28px}.vYZV7a_skBlock{border-radius:10px;height:120px}.vYZV7a_skRow{gap:10px;display:flex}@keyframes vYZV7a_zoomShimmer{0%{background-position:150% 0}to{background-position:-100% 0}}@keyframes vYZV7a_tilePop{0%{opacity:0;transform:scale(.96)translateY(6px)}60%{opacity:1;transform:scale(1.015)translateY(0)}to{opacity:1;transform:scale(1)translateY(0)}}.vYZV7a_tileEnter{animation:.26s cubic-bezier(.2,.8,.3,1) both vYZV7a_tilePop}.vYZV7a_tileDragging{opacity:.55;z-index:2}.vYZV7a_wiredMark{color:var(--dsw-alias-state-business-primary,#4176e6);font-size:10px}.vYZV7a_wireRow{flex:none;align-items:center;gap:8px;margin:0 0 10px;display:flex}.vYZV7a_wireRow .vYZV7a_specSelect{flex:1;width:auto}.vYZV7a_wireLabel{color:var(--dsw-alias-label-secondary,#61666b);white-space:nowrap;font-size:11px}.vYZV7a_wireBtn{background:var(--dsw-alias-bg-module-platform,#f5f6f7);color:var(--dsw-alias-label-secondary,#61666b);cursor:pointer;z-index:2;border:0;border-radius:6px;padding:3px 5px;font-size:11px;line-height:1;position:absolute;top:5px;right:5px}.vYZV7a_wireBtn:hover{background:var(--dsw-alias-interactive-bg-hover,#2631480f);color:var(--dsw-alias-state-business-primary,#4176e6)}.vYZV7a_wiring{outline:1px dashed var(--dsw-alias-state-business-primary,#4176e6);outline-offset:2px}.vYZV7a_wiringSource{outline:2px solid var(--dsw-alias-state-business-primary,#4176e6);outline-offset:2px}.vYZV7a_capOver{background:var(--dsw-alias-interactive-bg-hover,#2631480f);outline:1px dashed var(--dsw-alias-state-business-primary,#4176e6);outline-offset:4px}.vYZV7a_cancelBtn{color:#b3261e;cursor:pointer;background:0 0;border:1px solid #b3261e;border-radius:8px;padding:5px 12px;font-size:12px}.vYZV7a_cancelBtn:disabled{cursor:default;opacity:.6}.vYZV7a_groupBar{align-items:center;gap:8px;display:flex}.vYZV7a_checkCircle{border:1.5px solid var(--dsw-alias-label-secondary,#61666b);corner-shape:round;color:#fff;z-index:3;border-radius:999px;justify-content:center;align-items:center;width:20px;height:20px;font-size:11px;display:flex;position:absolute;top:8px;left:8px}.vYZV7a_checkOn{background:var(--dsw-alias-state-business-primary,#4176e6);border-color:var(--dsw-alias-state-business-primary,#4176e6)}[data-selected=on]{outline:2px solid var(--dsw-alias-state-business-primary,#4176e6);outline-offset:2px}.vYZV7a_groupNote{color:var(--dsw-alias-label-secondary,#61666b);margin:0 0 10px;font-size:12px;line-height:20px}.vYZV7a_memberList{margin:0 0 12px;padding:0;list-style:none}.vYZV7a_memberRow{border-bottom:1px solid var(--dsw-alias-interactive-bg-hover,#2631480f);align-items:baseline;gap:8px;padding:6px 2px;display:flex}.vYZV7a_memberIdx{color:var(--dsw-alias-label-secondary,#61666b);font-family:var(--dsw-alias-font-mono,monospace);font-size:11px}.vYZV7a_memberName{font-size:13px}@media (prefers-reduced-motion:reduce){.vYZV7a_tileEnter,.vYZV7a_skLine,.vYZV7a_skBlock{animation-duration:.01ms;animation-iteration-count:1}}.vYZV7a_studioHead{align-items:center;gap:8px;line-height:20px;display:flex}.vYZV7a_studioBody{flex-direction:column;gap:12px;display:flex}.vYZV7a_studioGroup{flex-direction:column;gap:6px;display:flex}";
+		const css = ".vYZV7a_card{flex-direction:column;min-width:0;margin:4px 0;font-size:12px;line-height:1.45;display:flex}.vYZV7a_load{color:var(--dsw-alias-label-secondary,#9a9aa5);padding:2px 0}.vYZV7a_head{align-items:center;gap:8px;min-width:0;display:flex}.vYZV7a_model{text-overflow:ellipsis;white-space:nowrap;min-width:0;font-weight:600;overflow:hidden}.vYZV7a_state{corner-shape:round;border-radius:999px;flex:none;margin-left:auto;padding:1px 8px}.vYZV7a_state[data-state=completed]{color:var(--dsw-alias-state-success-primary,#3fb96f)}.vYZV7a_state[data-state=running],.vYZV7a_state[data-state=queued],.vYZV7a_state[data-state=pending],.vYZV7a_state[data-state=starting],.vYZV7a_state[data-state=draft]{color:var(--dsw-alias-state-warn-primary,#d9a53f)}.vYZV7a_state[data-state=failed],.vYZV7a_state[data-state=error],.vYZV7a_state[data-state=stopped],.vYZV7a_state[data-state=interrupted]{color:var(--dsw-alias-state-error-primary,#e05656)}.vYZV7a_prompt{color:var(--dsw-alias-text-secondary,#9a9aa5);-webkit-line-clamp:2;-webkit-box-orient:vertical;display:-webkit-box;overflow:hidden}.vYZV7a_link:hover{text-decoration:underline}.vYZV7a_row{color:inherit;cursor:pointer;font:inherit;text-align:left;background:0 0;border:none;border-radius:6px;align-items:center;gap:8px;width:100%;min-width:0;padding:4px 6px;display:flex}.vYZV7a_row:hover{background:var(--dsw-alias-interactive-bg-hover,#2631480f)}.vYZV7a_row:focus-visible{outline:1px solid var(--dsw-alias-state-business-primary,#4f7bd8);outline-offset:-1px}.vYZV7a_thumb{object-fit:cover;border-radius:4px;flex:none;width:34px;height:34px}.vYZV7a_rowTitle{text-overflow:ellipsis;white-space:nowrap;flex:none;max-width:40%;font-weight:600;overflow:hidden}.vYZV7a_drill{width:92vw;max-width:min(860px,92vw)}.vYZV7a_split{grid-template-columns:minmax(240px,1fr) minmax(0,1.2fr);gap:14px;min-width:0;display:grid}@media (width<=640px){.vYZV7a_split{grid-template-columns:1fr}}.vYZV7a_params{flex-direction:column;gap:8px;min-width:0;max-height:60vh;display:flex;overflow-y:auto}.vYZV7a_field{flex-direction:column;gap:3px;min-width:0;display:flex}.vYZV7a_fieldKey{color:var(--dsw-alias-label-secondary,#9a9aa5);font-size:11px}.vYZV7a_outputs{flex-direction:column;align-items:center;gap:10px;min-width:0;display:flex}.vYZV7a_outputImg{object-fit:contain;border-radius:8px;max-width:100%;max-height:46vh}.vYZV7a_runRow{justify-content:flex-end;align-items:center;gap:10px;width:100%;display:flex}.vYZV7a_runError{color:var(--dsw-alias-label-error,#e05656);overflow-wrap:anywhere;font-size:11px}.vYZV7a_state[data-state=legacy]{color:var(--dsw-alias-label-secondary,#9a9aa5)}.vYZV7a_cardsBench{flex-direction:column;gap:8px;display:flex}.vYZV7a_benchHead{justify-content:space-between;align-items:center;gap:8px;display:flex}.vYZV7a_revTag{color:var(--dsw-alias-label-secondary,#61666b);font-family:var(--dsw-alias-font-mono,ui-monospace, monospace);font-size:11px}.vYZV7a_runBtn,.vYZV7a_back,.vYZV7a_restore{border:.5px solid var(--dsw-alias-border-l2,#0000001a);color:inherit;cursor:pointer;font:inherit;background:0 0;border-radius:6px;padding:2px 10px;font-size:12px}.vYZV7a_runBtn:hover:not(:disabled),.vYZV7a_back:hover,.vYZV7a_restore:hover:not(:disabled){background:var(--dsw-alias-interactive-bg-hover,#2631480f);border-color:var(--dsw-alias-state-business-primary,#4f7bd8)}.vYZV7a_runBtn:disabled,.vYZV7a_restore:disabled{cursor:default;opacity:.45}.vYZV7a_category{flex-direction:column;gap:2px;display:flex}.vYZV7a_catTitle{color:var(--dsw-alias-label-secondary,#61666b);letter-spacing:.06em;text-transform:uppercase;margin:4px 0 2px;font-size:11px;font-weight:600}.vYZV7a_stages{flex-direction:column;gap:2px;margin:0;padding:0;list-style:none;display:flex}.vYZV7a_stage{list-style:none}.vYZV7a_stageTitle{text-overflow:ellipsis;white-space:nowrap;flex:none;max-width:45%;font-weight:600;overflow:hidden}.vYZV7a_stageEngine{color:var(--dsw-alias-label-secondary,#61666b);flex:none;font-size:11px;line-height:17px}.vYZV7a_stageArtifact{color:var(--dsw-alias-state-business-primary,#4f7bd8);font-size:12px;text-decoration:none}.vYZV7a_stageArtifact:hover{text-decoration:underline}.vYZV7a_empty,.vYZV7a_loading,.vYZV7a_failed,.vYZV7a_missing,.vYZV7a_logHead,.vYZV7a_restoreNote{color:var(--dsw-alias-label-secondary,#61666b);margin:0;font-size:12px;font-style:italic}.vYZV7a_runView{flex-direction:column;gap:8px;display:flex}.vYZV7a_runHead{align-items:baseline;gap:8px;display:flex}.vYZV7a_runId{font-family:var(--dsw-alias-font-mono,ui-monospace, monospace);font-size:12px;font-weight:600}.vYZV7a_runStatus{border:.5px solid var(--dsw-alias-border-l2,#0000001a);corner-shape:round;color:var(--dsw-alias-label-secondary,#61666b);border-radius:999px;padding:0 8px;font-size:11px}.vYZV7a_runActions{gap:8px;display:flex}.vYZV7a_stageDetail{grid-template-columns:auto 1fr;gap:2px 12px;margin:0;display:grid}.vYZV7a_stageDetail dt{color:var(--dsw-alias-label-secondary,#61666b);text-align:right;text-transform:uppercase;font-size:11px}.vYZV7a_stageDetail dd{min-width:0;margin:0}.vYZV7a_mono{font-family:var(--dsw-alias-font-mono,ui-monospace, monospace);font-size:12px;overflow-x:auto}.vYZV7a_tileGrid{grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px;margin:0;padding:0;list-style:none;display:grid}.vYZV7a_tile{margin:0;padding:0;display:block}.vYZV7a_tileInner{border:.5px solid var(--dsw-alias-border-l2,#0000001a);cursor:pointer;transition:border-color var(--ds-transition-duration,.2s) var(--ds-ease-in-out,cubic-bezier(.4, 0, .2, 1)), background-color var(--ds-transition-duration,.2s) var(--ds-ease-in-out,cubic-bezier(.4, 0, .2, 1));font:inherit;text-align:left;background:0 0;border-radius:10px;flex-direction:column;align-items:stretch;width:100%;padding:0;display:flex;overflow:hidden}.vYZV7a_tileInner:hover{border-color:var(--dsw-alias-state-business-primary,#4f7bd8);background:var(--dsw-alias-interactive-bg-hover,#2631480f)}.vYZV7a_tilePreview{aspect-ratio:1;flex:1;width:100%;min-height:0;margin:0;display:block;position:relative}.vYZV7a_tileImg,.vYZV7a_tileImgLink{width:100%;height:100%;display:block}.vYZV7a_tileImg{object-fit:cover}.vYZV7a_kindFace{background:var(--dsw-alias-interactive-bg-hover,#2631480f);color:var(--dsw-alias-label-secondary,#61666b);flex-direction:column;justify-content:center;align-items:center;gap:4px;width:100%;height:100%;display:flex}.vYZV7a_kindInitial{font-size:28px;font-weight:700;line-height:1}.vYZV7a_kindName{font-family:var(--dsw-alias-font-mono,ui-monospace, monospace);text-overflow:ellipsis;white-space:nowrap;padding:0 6px;font-size:10px;overflow:hidden}.vYZV7a_tileDot{position:absolute;bottom:6px;right:6px}.vYZV7a_tileCaption{border-top:.5px solid var(--dsw-alias-border-l2,#0000001a);flex-direction:column;flex:none;gap:2px;padding:6px 8px;display:flex}.vYZV7a_tileTitle{text-overflow:ellipsis;white-space:nowrap;font-size:12px;font-weight:600;line-height:20px;overflow:hidden}.vYZV7a_tileMeta{color:var(--dsw-alias-label-secondary,#61666b);font-family:var(--dsw-alias-font-mono,ui-monospace, monospace);align-items:center;gap:6px;font-size:10px;line-height:17px;display:flex;overflow:hidden}.vYZV7a_tilePrompt{text-overflow:ellipsis;white-space:nowrap;flex:1;overflow:hidden}.vYZV7a_tileAdd .vYZV7a_tileInner{border-style:dashed}.vYZV7a_addFace{color:var(--dsw-alias-label-secondary,#61666b);justify-content:center;align-items:center;font-size:34px;font-weight:300;display:flex}.vYZV7a_picker{flex-direction:column;gap:10px;max-height:60vh;display:flex;overflow-y:auto}.vYZV7a_pickerGenre{flex-direction:column;gap:4px;display:flex}.vYZV7a_pickerCard{border:.5px solid var(--dsw-alias-border-l2,#0000001a);color:inherit;cursor:pointer;font:inherit;text-align:left;background:0 0;border-radius:8px;align-items:baseline;gap:8px;width:100%;padding:8px 10px;display:flex}.vYZV7a_pickerCard:hover{background:var(--dsw-alias-interactive-bg-hover,#2631480f);border-color:var(--dsw-alias-state-business-primary,#4f7bd8)}.vYZV7a_pickerCardLabel{white-space:nowrap;font-size:13px;font-weight:600}.vYZV7a_pickerCardDesc{color:var(--dsw-alias-label-secondary,#61666b);text-overflow:ellipsis;white-space:nowrap;flex:1;font-size:12px;overflow:hidden}.vYZV7a_specForm{flex-direction:column;gap:12px;display:flex}.vYZV7a_specGroup{flex-direction:column;gap:8px;display:flex}.vYZV7a_specGroupTitle{color:var(--dsw-alias-label-secondary,#61666b);letter-spacing:.04em;text-transform:uppercase;margin:0 0 2px;font-size:11px;font-weight:600}.vYZV7a_specField{flex-direction:column;gap:3px;display:flex}.vYZV7a_specFieldKey{color:var(--dsw-alias-label-secondary,#61666b);font-size:12px}.vYZV7a_specRequired{color:var(--dsw-alias-state-critical,#e5484d)}.vYZV7a_specHint{color:var(--dsw-alias-label-secondary,#61666b);font-size:11px}.vYZV7a_specSelect{background:var(--dsw-alias-interactive-bg-hover,#2631480f);border:.5px solid var(--dsw-alias-border-l2,#0000001a);color:inherit;font:inherit;border-radius:6px;width:100%;padding:5px 8px;font-size:13px}.vYZV7a_specSliderRow{align-items:center;gap:8px;display:flex}.vYZV7a_specSlider{flex:1}.vYZV7a_specSliderValue{color:var(--dsw-alias-label-secondary,#61666b);font-family:var(--dsw-alias-font-mono,ui-monospace, monospace);text-align:right;min-width:4ch;font-size:12px}.vYZV7a_specTextarea{background:var(--dsw-alias-interactive-bg-hover,#2631480f);border:.5px solid var(--dsw-alias-border-l2,#0000001a);color:inherit;font:inherit;resize:vertical;border-radius:6px;width:100%;padding:6px 8px;font-size:13px}.vYZV7a_tileShared{display:block;position:relative}.vYZV7a_zoomOverlay{background:var(--dsw-alias-bg-mask,#090c12b8);z-index:80;flex-direction:column;display:flex;position:fixed;inset:0}.vYZV7a_zoomScroll{flex:1;min-height:0;overflow-y:auto}.vYZV7a_zoomInner{box-sizing:border-box;justify-content:center;align-items:center;width:100%;max-width:100%;min-height:100%;margin:0 auto;padding:24px;display:flex}.vYZV7a_zoomCard{background:var(--dsw-alias-bg-module-platform,#f5f6f7);box-shadow:var(--dsw-elevation-panel,0 0 0 .5px #00000029, 0 3px 8px 0 #00000008, 0 0 16px 0 #00000005);color:var(--dsw-alias-label-primary,#0f1115);border:0;border-radius:14px;flex-direction:column;min-height:320px;max-height:86vh;display:flex;overflow:hidden}.vYZV7a_zoomBar{border-bottom:.5px solid var(--dsw-alias-border-l2,#0000001a);flex:none;justify-content:space-between;align-items:center;gap:8px;padding:10px 14px;display:flex}.vYZV7a_zoomTitle{font-size:13px;font-weight:600;line-height:20px}.vYZV7a_closeX{color:inherit;cursor:pointer;background:0 0;border:none;border-radius:6px;padding:4px 8px;font-size:14px;line-height:1}.vYZV7a_closeX:hover{background:var(--dsw-alias-interactive-bg-hover,#2631480f)}.vYZV7a_zoomDetail{min-height:0;padding:14px;display:block;overflow-y:auto}.vYZV7a_zoomSkeleton{flex-direction:column;flex:1;gap:10px;min-height:0;padding:16px;display:flex}.vYZV7a_skLine{will-change:background-position;background:linear-gradient(90deg, transparent 40%, var(--dsw-alias-interactive-bg-hover,#2631480f) 50%, transparent 60%);background-color:var(--dsw-alias-interactive-bg-hover,#2631480f);background-size:200% 100%;border-radius:6px;height:12px;animation:1s linear infinite both vYZV7a_zoomShimmer}.vYZV7a_skWide{width:60%}.vYZV7a_skShort{flex:1;height:28px}.vYZV7a_skBlock{border-radius:10px;height:120px}.vYZV7a_skRow{gap:10px;display:flex}@keyframes vYZV7a_zoomShimmer{0%{background-position:150% 0}to{background-position:-100% 0}}@keyframes vYZV7a_tilePop{0%{opacity:0;transform:scale(.96)translateY(6px)}60%{opacity:1;transform:scale(1.015)translateY(0)}to{opacity:1;transform:scale(1)translateY(0)}}.vYZV7a_tileEnter{animation:.26s cubic-bezier(.2,.8,.3,1) both vYZV7a_tilePop}.vYZV7a_tileDragging{opacity:.55;z-index:2}.vYZV7a_wiredMark{color:var(--dsw-alias-state-business-primary,#4176e6);font-size:10px}.vYZV7a_wireRow{flex:none;align-items:center;gap:8px;margin:0 0 10px;display:flex}.vYZV7a_wireRow .vYZV7a_specSelect{flex:1;width:auto}.vYZV7a_wireLabel{color:var(--dsw-alias-label-secondary,#61666b);white-space:nowrap;font-size:11px}.vYZV7a_wireBtn{background:var(--dsw-alias-bg-module-platform,#f5f6f7);color:var(--dsw-alias-label-secondary,#61666b);cursor:pointer;z-index:2;border:0;border-radius:6px;padding:3px 5px;font-size:11px;line-height:1;position:absolute;top:5px;right:5px}.vYZV7a_wireBtn:hover{background:var(--dsw-alias-interactive-bg-hover,#2631480f);color:var(--dsw-alias-state-business-primary,#4176e6)}.vYZV7a_wiring{outline:1px dashed var(--dsw-alias-state-business-primary,#4176e6);outline-offset:2px}.vYZV7a_wiringSource{outline:2px solid var(--dsw-alias-state-business-primary,#4176e6);outline-offset:2px}.vYZV7a_capOver{background:var(--dsw-alias-interactive-bg-hover,#2631480f);outline:1px dashed var(--dsw-alias-state-business-primary,#4176e6);outline-offset:4px}.vYZV7a_cancelBtn{color:#b3261e;cursor:pointer;background:0 0;border:1px solid #b3261e;border-radius:8px;padding:5px 12px;font-size:12px}.vYZV7a_cancelBtn:disabled{cursor:default;opacity:.6}.vYZV7a_groupBar{align-items:center;gap:8px;display:flex}.vYZV7a_checkCircle{border:1.5px solid var(--dsw-alias-label-secondary,#61666b);corner-shape:round;color:#fff;z-index:3;border-radius:999px;justify-content:center;align-items:center;width:20px;height:20px;font-size:11px;display:flex;position:absolute;top:8px;left:8px}.vYZV7a_checkOn{background:var(--dsw-alias-state-business-primary,#4176e6);border-color:var(--dsw-alias-state-business-primary,#4176e6)}[data-selected=on]{outline:2px solid var(--dsw-alias-state-business-primary,#4176e6);outline-offset:2px}.vYZV7a_groupNote{color:var(--dsw-alias-label-secondary,#61666b);margin:0 0 10px;font-size:12px;line-height:20px}.vYZV7a_memberList{margin:0 0 12px;padding:0;list-style:none}.vYZV7a_memberRow{border-bottom:1px solid var(--dsw-alias-interactive-bg-hover,#2631480f);align-items:baseline;gap:8px;padding:6px 2px;display:flex}.vYZV7a_memberIdx{color:var(--dsw-alias-label-secondary,#61666b);font-family:var(--dsw-alias-font-mono,monospace);font-size:11px}.vYZV7a_memberName{font-size:13px}@media (prefers-reduced-motion:reduce){.vYZV7a_tileEnter,.vYZV7a_skLine,.vYZV7a_skBlock{animation-duration:.01ms;animation-iteration-count:1}}.vYZV7a_studioHead{align-items:center;gap:8px;line-height:20px;display:flex}.vYZV7a_studioBody{flex-direction:column;gap:12px;display:flex}.vYZV7a_studioGroup{flex-direction:column;gap:6px;display:flex}.vYZV7a_squareWrap{flex-direction:column;align-items:center;gap:4px;width:84px;display:flex}.vYZV7a_squareBox{border:.5px solid var(--dsw-alias-border-l2,#00000024);cursor:pointer;height:80px;transition:border-color var(--ds-transition-duration,.12s) var(--ds-ease-in-out,ease);border-radius:8px;justify-content:center;align-items:center;width:80px;display:flex;position:relative;overflow:hidden}.vYZV7a_squareBox:hover{border-color:var(--dsw-alias-border-l3,#00000047)}.vYZV7a_squareOver{border-color:var(--dsw-alias-border-l3,#00000047);box-shadow:0 0 0 2px var(--dsw-alias-border-l1,#00000014)}.vYZV7a_squareThumb{object-fit:cover;width:100%;height:100%}.vYZV7a_squareGlyph{color:var(--dsw-alias-label-tertiary,#00000073)}.vYZV7a_squareBadge{background:var(--dsw-alias-bg-module-platform,#0000008c);color:#fff;text-overflow:ellipsis;white-space:nowrap;border-radius:6px;max-width:72px;padding:0 6px;font-size:10px;line-height:17px;position:absolute;bottom:4px;overflow:hidden}.vYZV7a_squareX{background:var(--dsw-alias-bg-module,#fff);border:.5px solid var(--dsw-alias-border-l2,#00000024);cursor:pointer;border-radius:999px;align-items:center;padding:0 4px;font-size:10px;line-height:17px;display:flex;position:absolute;top:4px;right:4px}.vYZV7a_squareX:hover{border-color:var(--dsw-alias-border-l3,#00000047)}.vYZV7a_squareLabel{color:var(--dsw-alias-label-primary,#0f1115);text-overflow:ellipsis;white-space:nowrap;width:100%;font-size:11px;line-height:17px;overflow:hidden}.vYZV7a_squareMetric{color:var(--dsw-alias-label-tertiary,#00000073);font-size:10px;line-height:17px}.vYZV7a_squareOff{opacity:.5;pointer-events:none}.vYZV7a_squareFileInput{display:none}";
 		const tagId = "@melite-plugin/dsh-card-view/card.module.css";
 		if (typeof document !== "undefined" && document.querySelector("style[data-plugin-css=" + JSON.stringify(tagId) + "]") === null) {
 			const tag = document.createElement("style");
@@ -130,6 +130,17 @@ window.__ModuleLoader__.load({
 			"specSliderValue": "vYZV7a_specSliderValue",
 			"specTextarea": "vYZV7a_specTextarea",
 			"split": "vYZV7a_split",
+			"squareBadge": "vYZV7a_squareBadge",
+			"squareBox": "vYZV7a_squareBox",
+			"squareFileInput": "vYZV7a_squareFileInput",
+			"squareGlyph": "vYZV7a_squareGlyph",
+			"squareLabel": "vYZV7a_squareLabel",
+			"squareMetric": "vYZV7a_squareMetric",
+			"squareOff": "vYZV7a_squareOff",
+			"squareOver": "vYZV7a_squareOver",
+			"squareThumb": "vYZV7a_squareThumb",
+			"squareWrap": "vYZV7a_squareWrap",
+			"squareX": "vYZV7a_squareX",
 			"stage": "vYZV7a_stage",
 			"stageArtifact": "vYZV7a_stageArtifact",
 			"stageDetail": "vYZV7a_stageDetail",
@@ -173,6 +184,478 @@ window.__ModuleLoader__.load({
 			"zoomSkeleton": "vYZV7a_zoomSkeleton",
 			"zoomTitle": "vYZV7a_zoomTitle"
 		};
+		//#endregion
+		//#region src/client/input-square.tsx
+		/**
+		* InputSquare — the ONE square for any slot-shaped value, ported from
+		* the old system's SlotSquare law (packages/web-kit/ui/SlotSquare.tsx,
+		* 2026-08-08: "the look for it will be reused for the sub-card
+		* system") onto the DSH substrate: ui-primitives glyphs, our module
+		* CSS under the web-styling chrome laws (0.5px hairlines, paired
+		* line-heights, token transitions), no lucide/cn/tip.
+		*
+		* THE OLD LAW, KEPT VERBATIM — a square thumbnail with label + badge
+		* + the THREE source verbs (operator, 2026-09-12: "we rendered a
+		* square and gave the option to do 1 of 3 things"):
+		*   a) from previous card  → onClick (the host opens the wire picker;
+		*                            badge = the upstream card's title)
+		*   b) from file upload    → onPickFile/onDropFile (hidden input +
+		*                            OS drop — the ONE read path readAsDataURL)
+		*   c) from media bar      → onDropAsset (the ASSET_DRAG_MIME contract
+		*                            the drop surface already serves)
+		* plus the X (detach). The consumer owns the doors — this shell only
+		* voices them (ui-attachment's own law: presentation registers, the
+		* service seams stay with their owners).
+		*/
+		/** The media-bar drag contract (CardsTab serves the same MIME on its
+		*  drop surface — ONE spelling, imported from the tab's law). */
+		const ASSET_DRAG_MIME$1 = "application/tech-noir-asset";
+		/** THE "is this a thumbnail" rule (SlotSquare's, kept verbatim):
+		*  data: images, blob: fresh-upload mirrors, and http(s)/root-relative
+		*  artifact URLs. Every slot-shaped value renders the same way. */
+		function isImageUrl(value) {
+			return /^data:image\//i.test(value) || /^blob:/i.test(value) || /^(?:https?:)?\/[^"'<>]*\.(?:png|jpe?g|webp|gif|bmp|avif)(?:[?#]|$)/i.test(value);
+		}
+		/** Read a File/Blob and resolve its data: URL — the ONE read path for
+		*  every slot-shaped attach (the old law, single definition). */
+		function readAsDataUrl(file) {
+			return new Promise((resolve, reject) => {
+				const r = new FileReader();
+				r.onload = () => {
+					resolve(String(r.result));
+				};
+				r.onerror = () => {
+					reject(r.error ?? /* @__PURE__ */ new Error("read failed"));
+				};
+				r.readAsDataURL(file);
+			});
+		}
+		/** Parse the asset MIME off a drop event. null = absent or malformed. */
+		function assetPayload(e) {
+			const raw = e.dataTransfer.getData(ASSET_DRAG_MIME$1);
+			if (raw === "") return null;
+			try {
+				const p = JSON.parse(raw);
+				return typeof p["url"] === "string" ? p["url"] : null;
+			} catch {
+				return null;
+			}
+		}
+		function InputSquare(props) {
+			const { label, value, metric, upstreamTitle, disabled } = props;
+			const fileRef = (0, react.useRef)(null);
+			const boxRef = (0, react.useRef)(null);
+			const [over, setOver] = (0, react.useState)(false);
+			const thumb = typeof value === "string" && isImageUrl(value) ? value : null;
+			const wired = upstreamTitle !== null && upstreamTitle !== void 0 && upstreamTitle !== "";
+			const empty = thumb === null && !wired;
+			const pick = () => {
+				if (disabled) return;
+				if (empty && props.onFile !== void 0) fileRef.current?.click();
+				else if (props.onWire !== void 0) props.onWire(boxRef.current);
+			};
+			return (0, react.createElement)("div", { className: card_module_css_default.squareWrap + (disabled ? " " + card_module_css_default.squareOff : "") }, (0, react.createElement)("div", {
+				ref: boxRef,
+				className: card_module_css_default.squareBox + (over ? " " + card_module_css_default.squareOver : ""),
+				role: "button",
+				tabIndex: 0,
+				"aria-label": label + (wired ? " (from " + String(upstreamTitle) + ")" : " source"),
+				onClick: pick,
+				onKeyDown: (e) => {
+					if (e.key === "Enter") pick();
+				},
+				onDragOver: (e) => {
+					if (disabled) return;
+					e.preventDefault();
+					setOver(true);
+				},
+				onDragLeave: () => {
+					setOver(false);
+				},
+				onDrop: (e) => {
+					if (disabled) return;
+					e.preventDefault();
+					setOver(false);
+					const asset = assetPayload(e);
+					if (asset !== null && props.onAsset !== void 0) {
+						props.onAsset(asset);
+						return;
+					}
+					const f = e.dataTransfer.files[0];
+					if (f !== void 0 && props.onFile !== void 0) props.onFile(f);
+				}
+			}, thumb !== null ? (0, react.createElement)("img", {
+				className: card_module_css_default.squareThumb,
+				src: thumb,
+				alt: label
+			}) : (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.IconPaperclipOutline16, { className: card_module_css_default.squareGlyph }), wired ? (0, react.createElement)("span", { className: card_module_css_default.squareBadge }, String(upstreamTitle)) : null, !empty && props.onClear !== void 0 ? (0, react.createElement)("button", {
+				className: card_module_css_default.squareX,
+				type: "button",
+				title: "Detach",
+				"aria-label": "Detach " + label,
+				onClick: (e) => {
+					e.stopPropagation();
+					props.onClear?.();
+				}
+			}, "✕") : null), (0, react.createElement)("span", { className: card_module_css_default.squareLabel }, label), metric !== void 0 ? (0, react.createElement)("span", { className: card_module_css_default.squareMetric }, metric) : null, props.onFile !== void 0 && !disabled ? (0, react.createElement)("input", {
+				ref: fileRef,
+				type: "file",
+				accept: "image/png,image/jpeg,image/webp",
+				className: card_module_css_default.squareFileInput,
+				"aria-hidden": true,
+				tabIndex: -1,
+				onChange: (e) => {
+					const f = e.target.files?.[0];
+					if (f !== void 0 && f !== null) props.onFile?.(f);
+					if (fileRef.current !== null) fileRef.current.value = "";
+				}
+			}) : null);
+		}
+		//#endregion
+		//#region ../../../node_modules/.pnpm/@deepseek-ai+dsh-typert-protocol@0.1.5-rc.2_@deepseek-ai+cordis@4.0.2/node_modules/@deepseek-ai/dsh-typert-protocol/lib/index.js
+		/** The one Remote failure class shared by owners, the Gateway, and consumers. */
+		/**
+		* One Remote call failure: a real Error carrying its stable code and typed
+		* details. Owners throw it at the failure point; the Host Gateway encodes it
+		* onto the wire unchanged; the Client face rebuilds an instance for the
+		* `RemoteResult` error branch, so `throw result.error` keeps throw semantics.
+		* Discrimination is always by `code`, never by instanceof.
+		*/
+		var RemoteError = class extends Error {
+			code;
+			details;
+			/** Structural marker: cross-realm/bundle identification never uses instanceof. */
+			isDSHRemoteError = true;
+			/**
+			* @param code - stable failure code declared in {@link RemoteErrorDetailsMap}.
+			* @param message - human diagnostic carried across the wire.
+			* @param details - structured payload typed by the code.
+			* @param options - standard Error options (`cause` survives in-process only).
+			*/
+			constructor(code, message, details, options) {
+				super(message, options);
+				this.code = code;
+				this.details = details;
+				this.name = "RemoteError";
+			}
+		};
+		//#endregion
+		//#region src/client/cards-resource.ts
+		/** The bench key the tab serves (melite-tools' DEFAULT_BENCH — 'main'). */
+		const CARDS_BENCH_ADDRESS = "dsh-resource://cards/bench";
+		/** The run address (the wand's target, plan §5). */
+		function cardsRunAddress(runId) {
+			return "dsh-resource://cards/run/" + encodeURIComponent(runId);
+		}
+		/** Parse a cards address; null when the path is not one of ours. */
+		function parseCardsAddress(address) {
+			if (!address.startsWith("dsh-resource://cards/")) return null;
+			const rest = address.slice(21);
+			if (rest === "bench") return { bench: true };
+			if (rest.startsWith("run/")) {
+				const runId = decodeURIComponent(rest.slice(4));
+				if (runId !== "") return { run: runId };
+			}
+			return null;
+		}
+		/** One failure frame (the contract's error branch — a real RemoteError
+		*  on the unclassified cards code; the address prefixes the diagnostic). */
+		function failure(address, message) {
+			return {
+				ok: false,
+				error: new RemoteError("cards/unclassified", address + ": " + message, {})
+			};
+		}
+		/** Defensive row readers — the door's wire is untyped at this seam. */
+		function readBench(doc) {
+			const stages = Array.isArray(doc["stages"]) ? doc["stages"].filter((s) => typeof s === "object" && s !== null && typeof s["id"] === "string") : [];
+			const log = Array.isArray(doc["log"]) ? doc["log"].filter((s) => typeof s === "object" && s !== null && typeof s["rev"] === "number") : [];
+			return {
+				kind: "bench",
+				draftId: typeof doc["draft_id"] === "string" ? doc["draft_id"] : "bench-main",
+				rev: typeof doc["rev"] === "number" ? doc["rev"] : 0,
+				stages,
+				log
+			};
+		}
+		/** Re-read the shared bench (session 'main') — the consumer's reload
+		*  after its own edits (the provider's bench stream is a single
+		*  snapshot; same-address navigation does not re-run it). */
+		async function fetchBench(signal) {
+			return readBench(await wireCall$1("bench/get", { sessionKey: "main" }, signal));
+		}
+		function readRun(runId, doc) {
+			const stages = Array.isArray(doc["stages"]) ? doc["stages"].filter((s) => typeof s === "object" && s !== null && typeof s["id"] === "string") : [];
+			for (const stage of stages) if (typeof stage.url === "string" && stage.url !== "" && !/^(https?:\/\/|\/)/.test(stage.url)) stage.url = "/melite-media/runs/" + encodeURIComponent(runId) + "/" + stage.url.split("/").map((seg) => encodeURIComponent(seg)).join("/");
+			return {
+				kind: "run",
+				runId,
+				status: typeof doc["status"] === "string" ? doc["status"] : "unknown",
+				draftId: typeof doc["draft_id"] === "string" && doc["draft_id"] !== "" ? doc["draft_id"] : null,
+				stages,
+				lastFrame: void 0
+			};
+		}
+		/** Correlation id for one client-request frame (crypto.randomUUID is
+		*  the browser standard). */
+		function nextRpcId$2() {
+			const cryptoApi = globalThis.crypto;
+			if (cryptoApi?.randomUUID !== void 0) return cryptoApi.randomUUID();
+			return "rpc-" + Math.random().toString(36).slice(2) + "-" + Date.now().toString(36);
+		}
+		/** Read a server-response envelope and narrow its result. A non-ok
+		*  result throws the RemoteError branch's message (the caller frames
+		*  the failure); a channel surprise throws honestly. */
+		async function wireCall$1(nsMethod, args, signal) {
+			const rpcId = nextRpcId$2();
+			const res = await fetch("/api/" + nsMethod, {
+				method: "POST",
+				headers: { "content-type": "application/json" },
+				body: JSON.stringify({
+					type: "client-request",
+					rpcId,
+					method: nsMethod,
+					payload: { args }
+				}),
+				...signal === void 0 ? {} : { signal }
+			});
+			if (!res.ok) throw new Error("wire: HTTP " + String(res.status));
+			const body = await res.json();
+			if (typeof body !== "object" || body === null || Reflect.get(body, "type") !== "server-response" || Reflect.get(body, "rpcId") !== rpcId) throw new Error("wire: malformed response frame");
+			const result = Reflect.get(body, "result");
+			if (typeof result !== "object" || result === null) throw new Error("wire: malformed result");
+			if (Reflect.get(result, "ok") !== true) {
+				const error = Reflect.get(result, "error");
+				const message = typeof error === "object" && error !== null && typeof Reflect.get(error, "message") === "string" ? Reflect.get(error, "message") : "wire: refused";
+				throw new Error(message);
+			}
+			const value = Reflect.get(result, "value");
+			if (typeof value !== "object" || value === null || Array.isArray(value)) throw new Error("wire: not a JSON object");
+			return value;
+		}
+		/** Card-back-into-flow: restore a run's producing draft onto the
+		*  shared bench — drafts/get (the draft holds the full
+		*  card/engine/params stages) then per-stage bench/add-stage as the
+		*  USER (the CAS law: bench/get first, each add carries expect_rev,
+		*  chained from the previous answer's rev). A stage with no card is
+		*  SKIPPED and counted (add-stage requires one); an id collision
+		*  retries once without the id (the bench auto-ids s_<n>) and notes
+		*  it. Any other refusal throws with the door's own text — the bench
+		*  keeps whatever landed before it, and the report says so. */
+		async function restoreRunToBench(run, signal) {
+			if (run.draftId === null || run.draftId === "") throw new Error("this run names no draft — nothing to restore");
+			let draft;
+			try {
+				draft = await wireCall$1("drafts/get", { draftId: run.draftId }, signal);
+			} catch (e) {
+				throw new Error("the producing draft is unreadable: " + (e instanceof Error ? e.message : String(e)));
+			}
+			const raw = draft["stages"];
+			const stages = Array.isArray(raw) ? raw.filter((s) => typeof s === "object" && s !== null) : [];
+			if (stages.length === 0) throw new Error("the producing draft holds no stages — nothing to restore");
+			let bench;
+			try {
+				bench = await wireCall$1("bench/get", { sessionKey: "main" }, signal);
+			} catch (e) {
+				throw new Error("the bench is unreadable: " + (e instanceof Error ? e.message : String(e)));
+			}
+			let rev = typeof bench["rev"] === "number" ? bench["rev"] : 0;
+			const report = {
+				added: 0,
+				skipped: 0,
+				notes: []
+			};
+			for (const st of stages) {
+				const card = st["card"];
+				if (typeof card !== "string" || card === "") {
+					report.skipped += 1;
+					report.notes.push("skipped a stage with no card (add-stage requires one)");
+					continue;
+				}
+				const doc = {
+					card,
+					author: "user",
+					expect_rev: rev
+				};
+				if (typeof st["engine"] === "string" && st["engine"] !== "") doc["engine"] = st["engine"];
+				if (typeof st["params"] === "object" && st["params"] !== null && !Array.isArray(st["params"])) doc["params"] = st["params"];
+				const id = typeof st["id"] === "string" && st["id"] !== "" ? st["id"] : null;
+				if (id !== null) doc["id"] = id;
+				try {
+					const row = await wireCall$1("bench/add-stage", {
+						sessionKey: "main",
+						doc
+					}, signal);
+					if (typeof row["rev"] === "number") rev = row["rev"];
+					report.added += 1;
+				} catch (e) {
+					const message = e instanceof Error ? e.message : String(e);
+					if (id !== null && message.includes("already on the bench")) {
+						const retry = { ...doc };
+						delete retry["id"];
+						try {
+							const row = await wireCall$1("bench/add-stage", {
+								sessionKey: "main",
+								doc: retry
+							}, signal);
+							if (typeof row["rev"] === "number") rev = row["rev"];
+							report.added += 1;
+							report.notes.push(id + " was already on the bench — added under a fresh id");
+						} catch (e2) {
+							throw new Error("restore stopped after " + String(report.added) + " stage(s): " + (e2 instanceof Error ? e2.message : String(e2)));
+						}
+					} else throw new Error("restore stopped after " + String(report.added) + " stage(s): " + message);
+				}
+			}
+			return report;
+		}
+		/** Merge one events frame into a run value (stage rows upserted by id;
+		*  run-status frames replace the status; the frame is kept for the view). */
+		function mergeRunFrame(value, frame) {
+			const next = {
+				...value,
+				lastFrame: frame
+			};
+			const type = frame["type"];
+			if (type === "run" && typeof frame["status"] === "string") next.status = frame["status"];
+			if (type === "stage") {
+				const stageId = frame["stage"];
+				if (typeof stageId === "string") {
+					if (next.stages.find((s) => s.id === stageId) === void 0) next.stages = [...next.stages, {
+						id: stageId,
+						status: "running"
+					}];
+					else next.stages = next.stages.map((s) => s.id === stageId ? {
+						...s,
+						status: "running"
+					} : s);
+				}
+			}
+			return next;
+		}
+		/** The provider registration body: `ctx.resources.register({ protocol:
+		*  'cards', open })`. The estate remotes over the wire frame; abort
+		*  ends the stream per the contract. */
+		function openCardsResource(address, ctx) {
+			const target = parseCardsAddress(address);
+			const bench = target !== null && "bench" in target;
+			const runId = target !== null && "run" in target ? target.run : "";
+			return (async function* () {
+				if (target === null) {
+					yield failure(address, "not a cards address");
+					return;
+				}
+				if (bench) {
+					let value;
+					try {
+						value = readBench(await wireCall$1("bench/get", { sessionKey: "main" }));
+					} catch (e) {
+						yield failure(address, e instanceof Error ? e.message : String(e));
+						return;
+					}
+					yield {
+						ok: true,
+						value
+					};
+					return;
+				}
+				let value;
+				try {
+					value = readRun(runId, await wireCall$1("runs/status", { runId }));
+				} catch (e) {
+					yield failure(address, e instanceof Error ? e.message : String(e));
+					return;
+				}
+				yield {
+					ok: true,
+					value
+				};
+				if (ctx.signal.aborted) return;
+				if (isTerminal(value.status)) return;
+				yield* pollRunFrames(runId, value, ctx.signal);
+			})();
+		}
+		/** The terminal statuses — the runs seat's own vocabulary (runsRegistry:
+		*  stopFlag stamps 'stopped'; the settle path stamps 'completed' or
+		*  'failed'. A settled run ends the stream; the hydrated/polled value
+		*  stays as the last ok frame. */
+		function isTerminal(status) {
+			return status === "completed" || status === "failed" || status === "stopped";
+		}
+		/** The live tail (the honest degrade): poll `runs/status` and yield a
+		*  value ONLY when the row moved (no frame spam) until the run turns
+		*  terminal or the holder aborts. A poll error mid-run is not a
+		*  failure frame — the last ok value stays (the kit keeps it); the
+		*  next poll may recover. The cadence (1500ms) rides the run pump's
+		*  own observation granularity, not user perception of latency: stage
+		*  transitions inside the estate tick on the pump's settle path. */
+		async function* pollRunFrames(runId, hydrated, signal) {
+			let value = hydrated;
+			const sleep = (ms) => new Promise((resolve) => {
+				const t = setTimeout(() => {
+					signal.removeEventListener("abort", onAbort);
+					resolve("slept");
+				}, ms);
+				const onAbort = () => {
+					clearTimeout(t);
+					resolve("abort");
+				};
+				if (signal.aborted) {
+					onAbort();
+					return;
+				}
+				signal.addEventListener("abort", onAbort, { once: true });
+			});
+			while (!signal.aborted && !isTerminal(value.status)) {
+				if (await sleep(1500) === "abort" || signal.aborted) return;
+				let row;
+				try {
+					row = await wireCall$1("runs/status", { runId }, signal);
+				} catch {
+					continue;
+				}
+				const next = readRun(runId, row);
+				if (!(next.status !== value.status || JSON.stringify(next.stages) !== JSON.stringify(value.stages))) continue;
+				value = next;
+				yield {
+					ok: true,
+					value
+				};
+			}
+		}
+		/** OS-file drop → the /v1/uploads door (png/jpeg/webp data-URL) → the
+		*  input-dir name input-prep's `source` field accepts. The door's own
+		*  gates (type whitelist, one clean segment) are the law — the client
+		*  only voices its refusals, never invents its own. */
+		async function uploadInputFile(file) {
+			const isImage = file.type === "image/png" || file.type === "image/jpeg" || file.type === "image/webp";
+			const isAudio = file.type.startsWith("audio/");
+			if (!isImage && !isAudio) throw new Error("Input cards don’t accept " + (file.type !== "" ? file.type : "that file") + " — drop an image or audio file");
+			if (!isImage) throw new Error("audio uploads have no door yet — the uploads door boards png / jpeg / webp only");
+			const dataUrl = await new Promise((resolve, reject) => {
+				const r = new FileReader();
+				r.onload = () => {
+					resolve(String(r.result));
+				};
+				r.onerror = () => {
+					reject(/* @__PURE__ */ new Error("could not read the dropped file"));
+				};
+				r.readAsDataURL(file);
+			});
+			const res = await fetch("/v1/uploads", {
+				method: "POST",
+				headers: { "content-type": "application/json" },
+				body: JSON.stringify({
+					filename: file.name.replace(/[^A-Za-z0-9._-]/g, "_"),
+					data: dataUrl
+				})
+			});
+			if (!res.ok) throw new Error("upload refused: HTTP " + String(res.status));
+			const out = await res.json();
+			const path = typeof out === "object" && out !== null && typeof Reflect.get(out, "path") === "string" ? Reflect.get(out, "path") : "";
+			if (path === "") throw new Error("upload answered without a path");
+			return { name: path.split("/").pop() ?? file.name };
+		}
 		//#endregion
 		//#region src/client/spec-form.tsx
 		/**
@@ -263,18 +746,114 @@ window.__ModuleLoader__.load({
 			if (!Array.isArray(doc["fields"])) throw new Error("form-spec: no fields array");
 			return doc;
 		}
+		/** THE ONE square provider (the old SlotGrid law, DSH substrate):
+		*  every image/file field of a stage gets the same three verbs —
+		*  file upload (the /v1/uploads door + the data-URL mirror), media
+		*  drop (the asset MIME → the param), and the wire picker (a DSH
+		*  Menu anchored on the square). ONE definition; the generic drill
+		*  and every registered studio ride it. */
+		function useSquareProvider(onEdit, wire) {
+			const [mirror, setMirror] = (0, react.useState)({});
+			const [pickAt, setPickAt] = (0, react.useState)(null);
+			const onFile = (0, react.useCallback)(async (f, file) => {
+				try {
+					const dataUrl = await readAsDataUrl(file);
+					setMirror((m) => ({
+						...m,
+						[f.name]: dataUrl
+					}));
+					const { name } = await uploadInputFile(file);
+					onEdit(f.name, name);
+				} catch (e) {
+					onEdit(f.name, e instanceof Error ? e.message : "upload failed");
+				}
+			}, [onEdit]);
+			const square = (f) => {
+				if (f.type !== "image" && f.type !== "file") return void 0;
+				return {
+					display: mirror[f.name] ?? null,
+					verbs: {
+						upstreamTitle: wire.upstreamTitle,
+						onWire: (anchor) => {
+							const el = anchor instanceof HTMLElement ? anchor : null;
+							setPickAt(el !== null ? { rect: el.getBoundingClientRect() } : { rect: new DOMRect(8, 8, 1, 1) });
+						},
+						onFile: (file) => {
+							onFile(f, file);
+						},
+						onAsset: (url) => {
+							onEdit(f.name, url);
+						},
+						onClear: () => {
+							setMirror((m) => {
+								const n = { ...m };
+								delete n[f.name];
+								return n;
+							});
+							onEdit(f.name, "");
+						}
+					}
+				};
+			};
+			return {
+				square,
+				wireMenu: pickAt === null ? null : (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Menu, {
+					open: true,
+					anchor: null,
+					getAnchorRect: () => pickAt.rect,
+					items: [
+						...wire.candidates.map((c) => ({
+							id: c.id,
+							label: c.label
+						})),
+						{
+							type: "separator",
+							id: "sep"
+						},
+						{
+							id: "__none__",
+							label: "— clear wire —",
+							danger: true
+						}
+					],
+					onSelect: (id) => {
+						setPickAt(null);
+						wire.onWire(id === "__none__" ? null : id);
+					},
+					onClose: () => {
+						setPickAt(null);
+					},
+					portal: true
+				})
+			};
+		}
 		/** One spec atom — typed by the declaration, edited as a raw string
 		*  while typing (decimal dots survive; coercion happens once at patch). */
-		function SpecAtom({ f, value, onEdit }) {
+		function SpecAtom({ f, value, onEdit, square }) {
+			if ((f.type === "image" || f.type === "file") && square !== void 0) {
+				const shown = square.display !== void 0 && square.display !== null && square.display !== "" ? square.display : typeof value === "string" ? value : null;
+				return (0, react.createElement)(InputSquare, {
+					label: f.label !== "" ? f.label : f.name,
+					value: shown !== null && isImageUrl(shown) ? shown : null,
+					metric: typeof value === "string" && value !== "" && !isImageUrl(value) ? value : void 0,
+					...square.verbs
+				});
+			}
 			if (f.type === "select" && Array.isArray(f.options) && f.options.length > 0) return (0, react.createElement)("select", {
 				className: card_module_css_default.specSelect,
 				value: String(value ?? ""),
 				onChange: (e) => onEdit(f.name, e.target.value),
 				"aria-label": f.label
-			}, f.options.map((o) => (0, react.createElement)("option", {
-				key: o.value,
-				value: o.value
-			}, o.label)));
+			}, f.options.map((o) => {
+				const row = typeof o === "string" ? {
+					value: o,
+					label: o
+				} : o;
+				return (0, react.createElement)("option", {
+					key: row.value,
+					value: row.value
+				}, row.label);
+			}));
 			if (f.type === "slider") {
 				const num = typeof value === "number" ? value : Number(value);
 				return (0, react.createElement)("span", { className: card_module_css_default.specSliderRow }, (0, react.createElement)("input", {
@@ -315,7 +894,7 @@ window.__ModuleLoader__.load({
 		}
 		/** THE CARD FORM — the spec's fields, grouped, visible-when honored,
 		*  defaults seeded by the caller. Edits ride the caller's values map. */
-		function SpecForm({ fields, values, onEdit }) {
+		function SpecForm({ fields, values, onEdit, square }) {
 			const groups = groupFields(fields, values);
 			return (0, react.createElement)("div", { className: card_module_css_default.specForm }, groups.map((g) => (0, react.createElement)("section", {
 				key: g.group ?? "",
@@ -326,7 +905,8 @@ window.__ModuleLoader__.load({
 			}, (0, react.createElement)("span", { className: card_module_css_default.specFieldKey }, f.label, f.required === true ? (0, react.createElement)("span", { className: card_module_css_default.specRequired }, " *") : null), (0, react.createElement)(SpecAtom, {
 				f,
 				value: values[f.name],
-				onEdit
+				onEdit,
+				square: square?.(f)
 			}), f.tooltip !== void 0 && f.tooltip !== "" ? (0, react.createElement)("span", { className: card_module_css_default.specHint }, f.tooltip) : null)))));
 		}
 		/** Coerce the raw edit strings to the spec's declared types — ONCE, at
@@ -418,6 +998,15 @@ window.__ModuleLoader__.load({
 					[name]: v
 				}));
 			};
+			const wired = props.upstream.find((u) => u.id === props.wiredFrom) ?? null;
+			const { square: squareFor, wireMenu } = useSquareProvider(onEdit, {
+				upstreamTitle: wired !== null ? wired.title : null,
+				candidates: props.upstream.map((u) => ({
+					id: u.id,
+					label: u.title
+				})),
+				onWire: props.onWire
+			});
 			const run = () => {
 				if (spec === null) return;
 				setRunning(true);
@@ -425,13 +1014,14 @@ window.__ModuleLoader__.load({
 				onRun();
 				setRunning(false);
 			};
-			return (0, react.createElement)("div", { className: card_module_css_default.zoomDetail }, (0, react.createElement)("div", { className: card_module_css_default.studioHead }, (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Tag, { tone: "info" }, "studio"), runStatus !== "" ? (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Tag, { tone: runStatus === "done" ? "success" : runStatus === "error" ? "danger" : "neutral" }, runStatus) : null), error !== null ? (0, react.createElement)("p", { className: card_module_css_default.runError }, error) : null, spec === null ? (0, react.createElement)("p", { className: card_module_css_default.groupNote }, "loading the declared knob surface…") : (0, react.createElement)("div", { className: card_module_css_default.studioBody }, STUDIO_EXPOSED.map((g) => (0, react.createElement)("section", {
+			return (0, react.createElement)("div", { className: card_module_css_default.zoomDetail }, wireMenu, (0, react.createElement)("div", { className: card_module_css_default.studioHead }, (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Tag, { tone: "info" }, "studio"), runStatus !== "" ? (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Tag, { tone: runStatus === "done" ? "success" : runStatus === "error" ? "danger" : "neutral" }, runStatus) : null), error !== null ? (0, react.createElement)("p", { className: card_module_css_default.runError }, error) : null, spec === null ? (0, react.createElement)("p", { className: card_module_css_default.groupNote }, "loading the declared knob surface…") : (0, react.createElement)("div", { className: card_module_css_default.studioBody }, STUDIO_EXPOSED.map((g) => (0, react.createElement)("section", {
 				key: g,
 				className: card_module_css_default.studioGroup
 			}, (0, react.createElement)(StudioFields, {
 				fields: fieldsOf(spec.fields, g),
 				values,
-				onEdit
+				onEdit,
+				square: squareFor
 			}))), STUDIO_FOLDS.map((g) => {
 				const fs = fieldsOf(spec.fields, g);
 				if (fs.length === 0) return null;
@@ -452,7 +1042,8 @@ window.__ModuleLoader__.load({
 				}, (0, react.createElement)(StudioFields, {
 					fields: fs,
 					values,
-					onEdit
+					onEdit,
+					square: squareFor
 				}));
 			}), (0, react.createElement)("div", { className: card_module_css_default.runRow }, error !== null ? (0, react.createElement)("span", { className: card_module_css_default.runError }, error) : null, (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Button, {
 				variant: "primary",
@@ -464,12 +1055,13 @@ window.__ModuleLoader__.load({
 		}
 		/** The generic card's OWN atoms (SpecForm renders one group's fields —
 		*  the studio hands it the group's slice; zero atom copies). */
-		function StudioFields({ fields, values, onEdit }) {
+		function StudioFields({ fields, values, onEdit, square }) {
 			if (fields.length === 0) return (0, react.createElement)("p", { className: card_module_css_default.groupNote }, "no declared fields");
 			return (0, react.createElement)(SpecForm, {
 				fields,
 				values,
-				onEdit
+				onEdit,
+				square
 			});
 		}
 		/** The built-in registration (ui-tool's readToolview shape verbatim):
@@ -488,7 +1080,7 @@ window.__ModuleLoader__.load({
 		//#region src/client/draft.ts
 		/** Correlation id for one client-request frame (crypto.randomUUID is
 		*  the browser standard). */
-		function nextRpcId$2() {
+		function nextRpcId$1() {
 			const cryptoApi = globalThis.crypto;
 			if (cryptoApi?.randomUUID !== void 0) return cryptoApi.randomUUID();
 			return "rpc-" + Math.random().toString(36).slice(2) + "-" + Date.now().toString(36);
@@ -497,8 +1089,8 @@ window.__ModuleLoader__.load({
 		*  answer narrowed to the value row. A refused result throws the
 		*  RemoteError branch's message (the door's own name); a channel
 		*  surprise throws honestly. */
-		async function wireCall$1(method, args) {
-			const rpcId = nextRpcId$2();
+		async function wireCall(method, args) {
+			const rpcId = nextRpcId$1();
 			const res = await fetch("/api/" + method, {
 				method: "POST",
 				headers: { "content-type": "application/json" },
@@ -534,7 +1126,7 @@ window.__ModuleLoader__.load({
 		}
 		/** The draft doc; throws the door's own named refusal on failure. */
 		async function fetchDraft(draftId) {
-			const doc = await wireCall$1("drafts/get", { draftId });
+			const doc = await wireCall("drafts/get", { draftId });
 			if (typeof doc["draft_id"] !== "string" || !Array.isArray(doc["stages"])) throw new Error("drafts/get: not a draft doc");
 			return doc;
 		}
@@ -546,7 +1138,7 @@ window.__ModuleLoader__.load({
 		*  the door's named refusal; delivered:false lands as a named throw
 		*  (never a lying success). */
 		async function patchStageParams(draftId, stageId, params) {
-			const row = await wireCall$1("drafts/patch", {
+			const row = await wireCall("drafts/patch", {
 				draftId,
 				stageId,
 				patch: { params }
@@ -558,13 +1150,13 @@ window.__ModuleLoader__.load({
 		}
 		/** Start the run; returns the run_id or throws the door's named refusal. */
 		async function startDraft(draftId) {
-			const row = await wireCall$1("runs/start", { doc: { draft_id: draftId } });
+			const row = await wireCall("runs/start", { doc: { draft_id: draftId } });
 			if (typeof row["run_id"] !== "string") throw new Error("runs/start: no run_id in the answer");
 			return row["run_id"];
 		}
 		/** The run status (poll target). Throws on transport failure only. */
 		async function runStatus(runId) {
-			const doc = await wireCall$1("runs/status", { runId });
+			const doc = await wireCall("runs/status", { runId });
 			if (typeof doc["status"] !== "string") throw new Error("runs/status: not a status doc");
 			return doc;
 		}
@@ -998,318 +1590,6 @@ window.__ModuleLoader__.load({
 			});
 		}
 		//#endregion
-		//#region ../../../node_modules/.pnpm/@deepseek-ai+dsh-typert-protocol@0.1.5-rc.2_@deepseek-ai+cordis@4.0.2/node_modules/@deepseek-ai/dsh-typert-protocol/lib/index.js
-		/** The one Remote failure class shared by owners, the Gateway, and consumers. */
-		/**
-		* One Remote call failure: a real Error carrying its stable code and typed
-		* details. Owners throw it at the failure point; the Host Gateway encodes it
-		* onto the wire unchanged; the Client face rebuilds an instance for the
-		* `RemoteResult` error branch, so `throw result.error` keeps throw semantics.
-		* Discrimination is always by `code`, never by instanceof.
-		*/
-		var RemoteError = class extends Error {
-			code;
-			details;
-			/** Structural marker: cross-realm/bundle identification never uses instanceof. */
-			isDSHRemoteError = true;
-			/**
-			* @param code - stable failure code declared in {@link RemoteErrorDetailsMap}.
-			* @param message - human diagnostic carried across the wire.
-			* @param details - structured payload typed by the code.
-			* @param options - standard Error options (`cause` survives in-process only).
-			*/
-			constructor(code, message, details, options) {
-				super(message, options);
-				this.code = code;
-				this.details = details;
-				this.name = "RemoteError";
-			}
-		};
-		//#endregion
-		//#region src/client/cards-resource.ts
-		/** The bench key the tab serves (melite-tools' DEFAULT_BENCH — 'main'). */
-		const CARDS_BENCH_ADDRESS = "dsh-resource://cards/bench";
-		/** The run address (the wand's target, plan §5). */
-		function cardsRunAddress(runId) {
-			return "dsh-resource://cards/run/" + encodeURIComponent(runId);
-		}
-		/** Parse a cards address; null when the path is not one of ours. */
-		function parseCardsAddress(address) {
-			if (!address.startsWith("dsh-resource://cards/")) return null;
-			const rest = address.slice(21);
-			if (rest === "bench") return { bench: true };
-			if (rest.startsWith("run/")) {
-				const runId = decodeURIComponent(rest.slice(4));
-				if (runId !== "") return { run: runId };
-			}
-			return null;
-		}
-		/** One failure frame (the contract's error branch — a real RemoteError
-		*  on the unclassified cards code; the address prefixes the diagnostic). */
-		function failure(address, message) {
-			return {
-				ok: false,
-				error: new RemoteError("cards/unclassified", address + ": " + message, {})
-			};
-		}
-		/** Defensive row readers — the door's wire is untyped at this seam. */
-		function readBench(doc) {
-			const stages = Array.isArray(doc["stages"]) ? doc["stages"].filter((s) => typeof s === "object" && s !== null && typeof s["id"] === "string") : [];
-			const log = Array.isArray(doc["log"]) ? doc["log"].filter((s) => typeof s === "object" && s !== null && typeof s["rev"] === "number") : [];
-			return {
-				kind: "bench",
-				draftId: typeof doc["draft_id"] === "string" ? doc["draft_id"] : "bench-main",
-				rev: typeof doc["rev"] === "number" ? doc["rev"] : 0,
-				stages,
-				log
-			};
-		}
-		/** Re-read the shared bench (session 'main') — the consumer's reload
-		*  after its own edits (the provider's bench stream is a single
-		*  snapshot; same-address navigation does not re-run it). */
-		async function fetchBench(signal) {
-			return readBench(await wireCall("bench/get", { sessionKey: "main" }, signal));
-		}
-		function readRun(runId, doc) {
-			const stages = Array.isArray(doc["stages"]) ? doc["stages"].filter((s) => typeof s === "object" && s !== null && typeof s["id"] === "string") : [];
-			for (const stage of stages) if (typeof stage.url === "string" && stage.url !== "" && !/^(https?:\/\/|\/)/.test(stage.url)) stage.url = "/melite-media/runs/" + encodeURIComponent(runId) + "/" + stage.url.split("/").map((seg) => encodeURIComponent(seg)).join("/");
-			return {
-				kind: "run",
-				runId,
-				status: typeof doc["status"] === "string" ? doc["status"] : "unknown",
-				draftId: typeof doc["draft_id"] === "string" && doc["draft_id"] !== "" ? doc["draft_id"] : null,
-				stages,
-				lastFrame: void 0
-			};
-		}
-		/** Correlation id for one client-request frame (crypto.randomUUID is
-		*  the browser standard). */
-		function nextRpcId$1() {
-			const cryptoApi = globalThis.crypto;
-			if (cryptoApi?.randomUUID !== void 0) return cryptoApi.randomUUID();
-			return "rpc-" + Math.random().toString(36).slice(2) + "-" + Date.now().toString(36);
-		}
-		/** Read a server-response envelope and narrow its result. A non-ok
-		*  result throws the RemoteError branch's message (the caller frames
-		*  the failure); a channel surprise throws honestly. */
-		async function wireCall(nsMethod, args, signal) {
-			const rpcId = nextRpcId$1();
-			const res = await fetch("/api/" + nsMethod, {
-				method: "POST",
-				headers: { "content-type": "application/json" },
-				body: JSON.stringify({
-					type: "client-request",
-					rpcId,
-					method: nsMethod,
-					payload: { args }
-				}),
-				...signal === void 0 ? {} : { signal }
-			});
-			if (!res.ok) throw new Error("wire: HTTP " + String(res.status));
-			const body = await res.json();
-			if (typeof body !== "object" || body === null || Reflect.get(body, "type") !== "server-response" || Reflect.get(body, "rpcId") !== rpcId) throw new Error("wire: malformed response frame");
-			const result = Reflect.get(body, "result");
-			if (typeof result !== "object" || result === null) throw new Error("wire: malformed result");
-			if (Reflect.get(result, "ok") !== true) {
-				const error = Reflect.get(result, "error");
-				const message = typeof error === "object" && error !== null && typeof Reflect.get(error, "message") === "string" ? Reflect.get(error, "message") : "wire: refused";
-				throw new Error(message);
-			}
-			const value = Reflect.get(result, "value");
-			if (typeof value !== "object" || value === null || Array.isArray(value)) throw new Error("wire: not a JSON object");
-			return value;
-		}
-		/** Card-back-into-flow: restore a run's producing draft onto the
-		*  shared bench — drafts/get (the draft holds the full
-		*  card/engine/params stages) then per-stage bench/add-stage as the
-		*  USER (the CAS law: bench/get first, each add carries expect_rev,
-		*  chained from the previous answer's rev). A stage with no card is
-		*  SKIPPED and counted (add-stage requires one); an id collision
-		*  retries once without the id (the bench auto-ids s_<n>) and notes
-		*  it. Any other refusal throws with the door's own text — the bench
-		*  keeps whatever landed before it, and the report says so. */
-		async function restoreRunToBench(run, signal) {
-			if (run.draftId === null || run.draftId === "") throw new Error("this run names no draft — nothing to restore");
-			let draft;
-			try {
-				draft = await wireCall("drafts/get", { draftId: run.draftId }, signal);
-			} catch (e) {
-				throw new Error("the producing draft is unreadable: " + (e instanceof Error ? e.message : String(e)));
-			}
-			const raw = draft["stages"];
-			const stages = Array.isArray(raw) ? raw.filter((s) => typeof s === "object" && s !== null) : [];
-			if (stages.length === 0) throw new Error("the producing draft holds no stages — nothing to restore");
-			let bench;
-			try {
-				bench = await wireCall("bench/get", { sessionKey: "main" }, signal);
-			} catch (e) {
-				throw new Error("the bench is unreadable: " + (e instanceof Error ? e.message : String(e)));
-			}
-			let rev = typeof bench["rev"] === "number" ? bench["rev"] : 0;
-			const report = {
-				added: 0,
-				skipped: 0,
-				notes: []
-			};
-			for (const st of stages) {
-				const card = st["card"];
-				if (typeof card !== "string" || card === "") {
-					report.skipped += 1;
-					report.notes.push("skipped a stage with no card (add-stage requires one)");
-					continue;
-				}
-				const doc = {
-					card,
-					author: "user",
-					expect_rev: rev
-				};
-				if (typeof st["engine"] === "string" && st["engine"] !== "") doc["engine"] = st["engine"];
-				if (typeof st["params"] === "object" && st["params"] !== null && !Array.isArray(st["params"])) doc["params"] = st["params"];
-				const id = typeof st["id"] === "string" && st["id"] !== "" ? st["id"] : null;
-				if (id !== null) doc["id"] = id;
-				try {
-					const row = await wireCall("bench/add-stage", {
-						sessionKey: "main",
-						doc
-					}, signal);
-					if (typeof row["rev"] === "number") rev = row["rev"];
-					report.added += 1;
-				} catch (e) {
-					const message = e instanceof Error ? e.message : String(e);
-					if (id !== null && message.includes("already on the bench")) {
-						const retry = { ...doc };
-						delete retry["id"];
-						try {
-							const row = await wireCall("bench/add-stage", {
-								sessionKey: "main",
-								doc: retry
-							}, signal);
-							if (typeof row["rev"] === "number") rev = row["rev"];
-							report.added += 1;
-							report.notes.push(id + " was already on the bench — added under a fresh id");
-						} catch (e2) {
-							throw new Error("restore stopped after " + String(report.added) + " stage(s): " + (e2 instanceof Error ? e2.message : String(e2)));
-						}
-					} else throw new Error("restore stopped after " + String(report.added) + " stage(s): " + message);
-				}
-			}
-			return report;
-		}
-		/** Merge one events frame into a run value (stage rows upserted by id;
-		*  run-status frames replace the status; the frame is kept for the view). */
-		function mergeRunFrame(value, frame) {
-			const next = {
-				...value,
-				lastFrame: frame
-			};
-			const type = frame["type"];
-			if (type === "run" && typeof frame["status"] === "string") next.status = frame["status"];
-			if (type === "stage") {
-				const stageId = frame["stage"];
-				if (typeof stageId === "string") {
-					if (next.stages.find((s) => s.id === stageId) === void 0) next.stages = [...next.stages, {
-						id: stageId,
-						status: "running"
-					}];
-					else next.stages = next.stages.map((s) => s.id === stageId ? {
-						...s,
-						status: "running"
-					} : s);
-				}
-			}
-			return next;
-		}
-		/** The provider registration body: `ctx.resources.register({ protocol:
-		*  'cards', open })`. The estate remotes over the wire frame; abort
-		*  ends the stream per the contract. */
-		function openCardsResource(address, ctx) {
-			const target = parseCardsAddress(address);
-			const bench = target !== null && "bench" in target;
-			const runId = target !== null && "run" in target ? target.run : "";
-			return (async function* () {
-				if (target === null) {
-					yield failure(address, "not a cards address");
-					return;
-				}
-				if (bench) {
-					let value;
-					try {
-						value = readBench(await wireCall("bench/get", { sessionKey: "main" }));
-					} catch (e) {
-						yield failure(address, e instanceof Error ? e.message : String(e));
-						return;
-					}
-					yield {
-						ok: true,
-						value
-					};
-					return;
-				}
-				let value;
-				try {
-					value = readRun(runId, await wireCall("runs/status", { runId }));
-				} catch (e) {
-					yield failure(address, e instanceof Error ? e.message : String(e));
-					return;
-				}
-				yield {
-					ok: true,
-					value
-				};
-				if (ctx.signal.aborted) return;
-				if (isTerminal(value.status)) return;
-				yield* pollRunFrames(runId, value, ctx.signal);
-			})();
-		}
-		/** The terminal statuses — the runs seat's own vocabulary (runsRegistry:
-		*  stopFlag stamps 'stopped'; the settle path stamps 'completed' or
-		*  'failed'. A settled run ends the stream; the hydrated/polled value
-		*  stays as the last ok frame. */
-		function isTerminal(status) {
-			return status === "completed" || status === "failed" || status === "stopped";
-		}
-		/** The live tail (the honest degrade): poll `runs/status` and yield a
-		*  value ONLY when the row moved (no frame spam) until the run turns
-		*  terminal or the holder aborts. A poll error mid-run is not a
-		*  failure frame — the last ok value stays (the kit keeps it); the
-		*  next poll may recover. The cadence (1500ms) rides the run pump's
-		*  own observation granularity, not user perception of latency: stage
-		*  transitions inside the estate tick on the pump's settle path. */
-		async function* pollRunFrames(runId, hydrated, signal) {
-			let value = hydrated;
-			const sleep = (ms) => new Promise((resolve) => {
-				const t = setTimeout(() => {
-					signal.removeEventListener("abort", onAbort);
-					resolve("slept");
-				}, ms);
-				const onAbort = () => {
-					clearTimeout(t);
-					resolve("abort");
-				};
-				if (signal.aborted) {
-					onAbort();
-					return;
-				}
-				signal.addEventListener("abort", onAbort, { once: true });
-			});
-			while (!signal.aborted && !isTerminal(value.status)) {
-				if (await sleep(1500) === "abort" || signal.aborted) return;
-				let row;
-				try {
-					row = await wireCall("runs/status", { runId }, signal);
-				} catch {
-					continue;
-				}
-				const next = readRun(runId, row);
-				if (!(next.status !== value.status || JSON.stringify(next.stages) !== JSON.stringify(value.stages))) continue;
-				value = next;
-				yield {
-					ok: true,
-					value
-				};
-			}
-		}
-		//#endregion
 		//#region src/client/add-stage.ts
 		/**
 		* add-stage.ts — the bench add-stage wire door caller (the tab's
@@ -1318,7 +1598,7 @@ window.__ModuleLoader__.load({
 		* params/expect_rev (the CAS law: the caller reads bench/get first
 		* and chains the rev). */
 		async function addStageWire(doc, signal) {
-			const rpcId = nextRpcId$1();
+			const rpcId = nextRpcId$2();
 			const res = await fetch("/api/bench/add-stage", {
 				method: "POST",
 				headers: { "content-type": "application/json" },
@@ -1351,7 +1631,7 @@ window.__ModuleLoader__.load({
 		*  expect_rev (the CAS law: the caller chains the bench rev it
 		*  rendered, so a concurrent edit refuses instead of slicing wrong). */
 		async function removeStageWire(doc, signal) {
-			const rpcId = nextRpcId$1();
+			const rpcId = nextRpcId$2();
 			const res = await fetch("/api/bench/remove-stage", {
 				method: "POST",
 				headers: { "content-type": "application/json" },
@@ -1382,7 +1662,7 @@ window.__ModuleLoader__.load({
 		/** The bench reorder wire door caller (the drag-reorder path). Doc:
 		*  stage/to/expect_rev — `to` is the post-splice target index. */
 		async function reorderStageWire(doc, signal) {
-			const rpcId = nextRpcId$1();
+			const rpcId = nextRpcId$2();
 			const res = await fetch("/api/bench/reorder", {
 				method: "POST",
 				headers: { "content-type": "application/json" },
@@ -1414,7 +1694,7 @@ window.__ModuleLoader__.load({
 		*  stage/input/from/expect_rev — from is {stage, output} | {initial}
 		*  | ABSENT to clear. */
 		async function rewireStageWire(doc, signal) {
-			const rpcId = nextRpcId$1();
+			const rpcId = nextRpcId$2();
 			const res = await fetch("/api/bench/rewire", {
 				method: "POST",
 				headers: { "content-type": "application/json" },
@@ -1445,7 +1725,7 @@ window.__ModuleLoader__.load({
 		/** The bench group wire door caller (the Group Cards sub-view):
 		*  stages = 2+ ids (bench order applied server-side). */
 		async function groupStagesWire(doc, signal) {
-			const rpcId = nextRpcId$1();
+			const rpcId = nextRpcId$2();
 			const res = await fetch("/api/bench/group", {
 				method: "POST",
 				headers: { "content-type": "application/json" },
@@ -1475,7 +1755,7 @@ window.__ModuleLoader__.load({
 		}
 		/** The bench ungroup wire door caller: spill a compound's children. */
 		async function ungroupStageWire(doc, signal) {
-			const rpcId = nextRpcId$1();
+			const rpcId = nextRpcId$2();
 			const res = await fetch("/api/bench/ungroup", {
 				method: "POST",
 				headers: { "content-type": "application/json" },
@@ -14089,39 +14369,6 @@ get: (_target, key) => {
 				return {};
 			}
 		}
-		/** OS-file drop → the /v1/uploads door (png/jpeg/webp data-URL) → the
-		*  input-dir name input-prep's `source` field accepts. The door's own
-		*  gates (type whitelist, one clean segment) are the law — the client
-		*  only voices its refusals, never invents its own. */
-		async function uploadInputFile(file) {
-			const isImage = file.type === "image/png" || file.type === "image/jpeg" || file.type === "image/webp";
-			const isAudio = file.type.startsWith("audio/");
-			if (!isImage && !isAudio) throw new Error("Input cards don’t accept " + (file.type !== "" ? file.type : "that file") + " — drop an image or audio file");
-			if (!isImage) throw new Error("audio uploads have no door yet — the uploads door boards png / jpeg / webp only");
-			const dataUrl = await new Promise((resolve, reject) => {
-				const r = new FileReader();
-				r.onload = () => {
-					resolve(String(r.result));
-				};
-				r.onerror = () => {
-					reject(/* @__PURE__ */ new Error("could not read the dropped file"));
-				};
-				r.readAsDataURL(file);
-			});
-			const res = await fetch("/v1/uploads", {
-				method: "POST",
-				headers: { "content-type": "application/json" },
-				body: JSON.stringify({
-					filename: file.name.replace(/[^A-Za-z0-9._-]/g, "_"),
-					data: dataUrl
-				})
-			});
-			if (!res.ok) throw new Error("upload refused: HTTP " + String(res.status));
-			const out = await res.json();
-			const path = typeof out === "object" && out !== null && typeof Reflect.get(out, "path") === "string" ? Reflect.get(out, "path") : "";
-			if (path === "") throw new Error("upload answered without a path");
-			return { name: path.split("/").pop() ?? file.name };
-		}
 		/** The sortable tile wrapper — the old grid's SortableCardWrap
 		*  pattern: the li is the drag unit, transform/transition ride the
 		*  wrapper, the shared-element layoutId stays INSIDE (the morph
@@ -14334,6 +14581,16 @@ get: (_target, key) => {
 					[name]: v
 				}));
 			}, []);
+			const { square: squareFor, wireMenu } = useSquareProvider(onEdit, {
+				upstreamTitle: wiredStage !== "" ? others.find((s) => s.id === wiredStage)?.card ?? others.find((s) => s.id === wiredStage)?.title ?? null : null,
+				candidates: others.map((s) => ({
+					id: s.id,
+					label: String(s.title ?? s.card ?? s.id)
+				})),
+				onWire: (fromId) => {
+					setWire(fromId ?? "");
+				}
+			});
 			const run = async () => {
 				setError(null);
 				try {
@@ -14386,7 +14643,7 @@ get: (_target, key) => {
 					}
 				}, removing ? "ungrouping…" : "Ungroup")));
 			}
-			const genericDetail = () => (0, react.createElement)("div", { className: card_module_css_default.zoomDetail }, (0, react.createElement)("div", { className: card_module_css_default.wireRow }, (0, react.createElement)("span", { className: card_module_css_default.wireLabel }, "source input ⟵"), (0, react.createElement)("select", {
+			const genericDetail = () => (0, react.createElement)("div", { className: card_module_css_default.zoomDetail }, wireMenu, (0, react.createElement)("div", { className: card_module_css_default.wireRow }, (0, react.createElement)("span", { className: card_module_css_default.wireLabel }, "source input ⟵"), (0, react.createElement)("select", {
 				className: card_module_css_default.specSelect,
 				value: wiredStage,
 				"aria-label": "Wire source input from stage",
@@ -14402,7 +14659,8 @@ get: (_target, key) => {
 			}, String(s.title ?? s.card ?? s.id) + " → " + stage.id)))), (0, react.createElement)("div", { className: card_module_css_default.split }, (0, react.createElement)("div", { className: card_module_css_default.params }, !loaded ? (0, react.createElement)("div", { className: card_module_css_default.load }, "form…") : spec !== null ? (0, react.createElement)(SpecForm, {
 				fields: spec.fields,
 				values,
-				onEdit
+				onEdit,
+				square: squareFor
 			}) : (0, react.createElement)("pre", { className: card_module_css_default.mono }, JSON.stringify(held, null, 2))), (0, react.createElement)("div", { className: card_module_css_default.outputs }, (0, react.createElement)("div", { className: card_module_css_default.runRow }, error !== null ? (0, react.createElement)("span", { className: card_module_css_default.runError }, error) : null, (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Button, {
 				variant: "primary",
 				disabled: running,
@@ -14428,7 +14686,15 @@ get: (_target, key) => {
 				onRemove: () => {
 					remove();
 				},
-				onSurface: reportSurface
+				onSurface: reportSurface,
+				upstream: others.map((s) => ({
+					id: s.id,
+					title: String(s.title ?? s.card ?? s.id)
+				})),
+				wiredFrom: wiredStage !== "" ? wiredStage : null,
+				onWire: (fromId) => {
+					setWire(fromId ?? "");
+				}
 			}, genericDetail());
 		}
 		/** THE ADD-CARD DOOR (the old system's power, DSH-native): the trailing

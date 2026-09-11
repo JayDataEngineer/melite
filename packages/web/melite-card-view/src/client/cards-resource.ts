@@ -442,3 +442,35 @@ async function* pollRunFrames(
   }
 }
 
+
+/** OS-file drop → the /v1/uploads door (png/jpeg/webp data-URL) → the
+ *  input-dir name input-prep's `source` field accepts. The door's own
+ *  gates (type whitelist, one clean segment) are the law — the client
+ *  only voices its refusals, never invents its own. */
+export async function uploadInputFile(file: File): Promise<{ name: string }> {
+  const isImage = file.type === 'image/png' || file.type === 'image/jpeg' || file.type === 'image/webp'
+  const isAudio = file.type.startsWith('audio/')
+  if (!isImage && !isAudio) {
+    throw new Error('Input cards don\u2019t accept ' + (file.type !== '' ? file.type : 'that file') + ' \u2014 drop an image or audio file')
+  }
+  if (!isImage) {
+    throw new Error('audio uploads have no door yet \u2014 the uploads door boards png / jpeg / webp only')
+  }
+  const dataUrl: string = await new Promise((resolve, reject) => {
+    const r = new FileReader()
+    r.onload = () => { resolve(String(r.result)) }
+    r.onerror = () => { reject(new Error('could not read the dropped file')) }
+    r.readAsDataURL(file)
+  })
+  const res = await fetch('/v1/uploads', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ filename: file.name.replace(/[^A-Za-z0-9._-]/g, '_'), data: dataUrl }),
+  })
+  if (!res.ok) throw new Error('upload refused: HTTP ' + String(res.status))
+  const out: unknown = await res.json()
+  const path = typeof out === 'object' && out !== null && typeof Reflect.get(out, 'path') === 'string'
+    ? Reflect.get(out, 'path') as string : ''
+  if (path === '') throw new Error('upload answered without a path')
+  return { name: path.split('/').pop() ?? file.name }
+}

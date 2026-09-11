@@ -36,6 +36,10 @@ const OWNER = {
   onRun: vi.fn(),
   onStop: () => {},
   onRemove: vi.fn(),
+  onSurface: () => {},
+  upstream: [],
+  wiredFrom: null,
+  onWire: vi.fn(),
 }
 
 function stubWire(): void {

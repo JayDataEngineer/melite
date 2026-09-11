@@ -34,12 +34,12 @@ import { createElement as h, Fragment, useCallback, useEffect, useRef, useState 
 import { Button, Input, Modal, Pill, StateDot, Tag } from '@deepseek-ai/dsh-client-ui-primitives'
 import { CardDrill } from './card-drill.tsx'
 import type { StageViewOwnerProps } from './types.ts'
-import { fetchCardCatalog, fetchFormSpec, specDefaults, specPatch, SpecForm } from './spec-form.tsx'
+import { fetchCardCatalog, fetchFormSpec, specDefaults, specPatch, SpecForm, useSquareProvider } from './spec-form.tsx'
 import type { CatalogCard, FormSpecDoc, SpecValues } from './spec-form.tsx'
 import { paramFields, patchStageParams } from './draft.ts'
 import css from './card.module.css'
 import type { CardsBenchValue, CardsRunValue, BenchStageRow } from './cards-resource.ts'
-import { CARDS_BENCH_ADDRESS, cardsRunAddress, fetchBench, openCardsResource, parseCardsAddress, restoreRunToBench } from './cards-resource.ts'
+import { CARDS_BENCH_ADDRESS, cardsRunAddress, fetchBench, openCardsResource, parseCardsAddress, restoreRunToBench, uploadInputFile } from './cards-resource.ts'
 import { addStageWire, groupStagesWire, removeStageWire, reorderStageWire, rewireStageWire, ungroupStageWire } from './add-stage.ts'
 import { CardZoomOverlay, cardLayoutId, ZOOM_SPRING } from './zoom.tsx'
 import { motion } from 'framer-motion'
@@ -254,38 +254,6 @@ interface AssetDropPayload { url?: string; type?: string }
 function parseAssetDrop(raw: string): AssetDropPayload {
   if (raw === '') return {}
   try { return JSON.parse(raw) as AssetDropPayload } catch { return {} }
-}
-
-/** OS-file drop → the /v1/uploads door (png/jpeg/webp data-URL) → the
- *  input-dir name input-prep's `source` field accepts. The door's own
- *  gates (type whitelist, one clean segment) are the law — the client
- *  only voices its refusals, never invents its own. */
-async function uploadInputFile(file: File): Promise<{ name: string }> {
-  const isImage = file.type === 'image/png' || file.type === 'image/jpeg' || file.type === 'image/webp'
-  const isAudio = file.type.startsWith('audio/')
-  if (!isImage && !isAudio) {
-    throw new Error('Input cards don\u2019t accept ' + (file.type !== '' ? file.type : 'that file') + ' \u2014 drop an image or audio file')
-  }
-  if (!isImage) {
-    throw new Error('audio uploads have no door yet \u2014 the uploads door boards png / jpeg / webp only')
-  }
-  const dataUrl: string = await new Promise((resolve, reject) => {
-    const r = new FileReader()
-    r.onload = () => { resolve(String(r.result)) }
-    r.onerror = () => { reject(new Error('could not read the dropped file')) }
-    r.readAsDataURL(file)
-  })
-  const res = await fetch('/v1/uploads', {
-    method: 'POST',
-    headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ filename: file.name.replace(/[^A-Za-z0-9._-]/g, '_'), data: dataUrl }),
-  })
-  if (!res.ok) throw new Error('upload refused: HTTP ' + String(res.status))
-  const out: unknown = await res.json()
-  const path = typeof out === 'object' && out !== null && typeof Reflect.get(out, 'path') === 'string'
-    ? Reflect.get(out, 'path') as string : ''
-  if (path === '') throw new Error('upload answered without a path')
-  return { name: path.split('/').pop() ?? file.name }
 }
 
 /** The sortable tile wrapper — the old grid's SortableCardWrap
@@ -521,6 +489,8 @@ function StageDrill({ stage, bench, running, onRun, onClose, onRemoved, onRewire
   const [loaded, setLoaded] = useState(false)
   const reportSurface = onSurface ?? (() => {})
   const [removing, setRemoving] = useState(false)
+  // THE SHARED SQUARE PROVIDER (the old SlotGrid law): the drill's
+  //  image/file fields get the three verbs from ONE definition.
   // THE WIRE DROPDOWN (the old system's second wire vector): this
   // stage's `source` input ⟵ another stage's first declared output
   // ('default' when none declared), or NONE to clear.
@@ -566,6 +536,14 @@ function StageDrill({ stage, bench, running, onRun, onClose, onRemoved, onRewire
   const onEdit = useCallback((name: string, v: unknown): void => {
     setValues((m) => ({ ...m, [name]: v }))
   }, [])
+  // THE SHARED SQUARE PROVIDER (the old SlotGrid law): this stage's
+  //  image/file fields get the three verbs from ONE definition — the
+  //  same hook every registered studio rides.
+  const { square: squareFor, wireMenu } = useSquareProvider(onEdit, {
+    upstreamTitle: wiredStage !== '' ? others.find((s) => s.id === wiredStage)?.card ?? others.find((s) => s.id === wiredStage)?.title ?? null : null,
+    candidates: others.map((s) => ({ id: s.id, label: String(s.title ?? s.card ?? s.id) })),
+    onWire: (fromId: string | null): void => { void setWire(fromId ?? '') },
+  })
   const run = async (): Promise<void> => {
     setError(null)
     try {
@@ -631,6 +609,7 @@ function StageDrill({ stage, bench, running, onRun, onClose, onRemoved, onRewire
   // THE SURFACE SLOT (the ui-tool law): a registered card view takes
   // over the whole detail; unclaimed key renders this generic body.
   const genericDetail = (): ReturnType<typeof h> => h('div', { className: css.zoomDetail },
+    wireMenu,
     h('div', { className: css.wireRow },
       h('span', { className: css.wireLabel }, 'source input ⟵'),
       h('select', {
@@ -647,7 +626,7 @@ function StageDrill({ stage, bench, running, onRun, onClose, onRemoved, onRewire
     h('div', { className: css.split },
       h('div', { className: css.params },
         !loaded ? h('div', { className: css.load }, 'form…')
-        : spec !== null ? h(SpecForm, { fields: spec.fields, values, onEdit })
+        : spec !== null ? h(SpecForm, { fields: spec.fields, values, onEdit, square: squareFor })
         : h('pre', { className: css.mono }, JSON.stringify(held, null, 2)),
       ),
       h('div', { className: css.outputs },
@@ -678,6 +657,9 @@ function StageDrill({ stage, bench, running, onRun, onClose, onRemoved, onRewire
     onStop: () => {},
     onRemove: () => { void remove() },
     onSurface: reportSurface,
+    upstream: others.map((s) => ({ id: s.id, title: String(s.title ?? s.card ?? s.id) })),
+    wiredFrom: wiredStage !== '' ? wiredStage : null,
+    onWire: (fromId: string | null): void => { void setWire(fromId ?? '') },
   }, genericDetail())
 }
 

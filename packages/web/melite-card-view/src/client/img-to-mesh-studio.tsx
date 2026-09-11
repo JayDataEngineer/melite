@@ -22,7 +22,7 @@ import type { Context } from '@deepseek-ai/cordis'
 import { Button, DisclosureRow, IconArchiveOutline20, Tag } from '@deepseek-ai/dsh-client-ui-primitives'
 import css from './card.module.css'
 import type { StageViewOwnerProps } from './types.ts'
-import { fetchFormSpec, SpecForm, specDefaults, type FormSpecDoc, type SpecField, type SpecValues } from './spec-form.tsx'
+import { fetchFormSpec, SpecForm, specDefaults, useSquareProvider, type FormSpecDoc, type SpecField, type SpecValues } from './spec-form.tsx'
 
 /** The door's group truth (schema_groups, 2026-09-12 lane read):
  *  input, generation — exposed; stage, mesh, bake, lab — folded. */
@@ -65,6 +65,14 @@ export function ImgToMeshStudio(props: StageViewOwnerProps): ReturnType<typeof h
   const onEdit = (name: string, v: unknown): void => {
     setValues((prev) => ({ ...prev, [name]: v }))
   }
+  // the SAME shared square provider the generic drill rides — one
+  // definition, every surface (the operator's DRY law)
+  const wired = props.upstream.find((u) => u.id === props.wiredFrom) ?? null
+  const { square: squareFor, wireMenu } = useSquareProvider(onEdit, {
+    upstreamTitle: wired !== null ? wired.title : null,
+    candidates: props.upstream.map((u) => ({ id: u.id, label: u.title })),
+    onWire: props.onWire,
+  })
   const run = (): void => {
     if (spec === null) return
     setRunning(true)
@@ -75,6 +83,7 @@ export function ImgToMeshStudio(props: StageViewOwnerProps): ReturnType<typeof h
     setRunning(false)
   }
   return h('div', { className: css.zoomDetail },
+    wireMenu,
     h('div', { className: css.studioHead },
       h(Tag, { tone: 'info' }, 'studio'),
       runStatus !== '' ? h(Tag, { tone: runStatus === 'done' ? 'success' : runStatus === 'error' ? 'danger' : 'neutral' }, runStatus) : null,
@@ -85,7 +94,7 @@ export function ImgToMeshStudio(props: StageViewOwnerProps): ReturnType<typeof h
       : h('div', { className: css.studioBody },
         // SpecForm renders each group's title itself — no duplicate.
         STUDIO_EXPOSED.map((g) => h('section', { key: g, className: css.studioGroup },
-          h(StudioFields, { fields: fieldsOf(spec.fields, g), values, onEdit }),
+          h(StudioFields, { fields: fieldsOf(spec.fields, g), values, onEdit, square: squareFor }),
         )),
         STUDIO_FOLDS.map((g) => {
           const fs = fieldsOf(spec.fields, g)
@@ -101,7 +110,7 @@ export function ImgToMeshStudio(props: StageViewOwnerProps): ReturnType<typeof h
             // all pass it): the whole title row is the toggle target.
             expandOnRowClick: true,
             onToggle: () => { setOpen((prev) => ({ ...prev, [g]: !prev[g] })) },
-          }, h(StudioFields, { fields: fs, values, onEdit }))
+          }, h(StudioFields, { fields: fs, values, onEdit, square: squareFor }))
         }),
         h('div', { className: css.runRow },
           error !== null ? h('span', { className: css.runError }, error) : null,
@@ -114,13 +123,14 @@ export function ImgToMeshStudio(props: StageViewOwnerProps): ReturnType<typeof h
 
 /** The generic card's OWN atoms (SpecForm renders one group's fields —
  *  the studio hands it the group's slice; zero atom copies). */
-function StudioFields({ fields, values, onEdit }: {
+function StudioFields({ fields, values, onEdit, square }: {
   fields: SpecField[]
   values: SpecValues
   onEdit(name: string, v: unknown): void
+  square?: (f: SpecField) => { verbs: import('./input-square.tsx').InputSquareVerbs; display?: string | null } | undefined
 }): ReturnType<typeof h> {
   if (fields.length === 0) return h('p', { className: css.groupNote }, 'no declared fields')
-  return h(SpecForm, { fields, values, onEdit })
+  return h(SpecForm, { fields, values, onEdit, square })
 }
 
 /** The built-in registration (ui-tool's readToolview shape verbatim):

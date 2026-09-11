@@ -88,4 +88,9 @@ export interface StageViewOwnerProps {
   /** Host verb: report the envelope's size class (the zoom card
    *  frame listens — 'huge' grows the card; '' = the default). */
   onSurface: (size: string) => void
+  /** The bench's wire truth: this stage's upstream candidates and
+   *  its current source wire (the square's from-previous-card arm). */
+  upstream: Array<{ id: string; title: string }>
+  wiredFrom: string | null
+  onWire: (fromStageId: string | null) => void
 }
