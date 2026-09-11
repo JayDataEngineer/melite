@@ -512,7 +512,7 @@
 /* ══ THE SHARED-ELEMENT ZOOM (2026-09-11, the old tree's signature) ══ */
 
 /* The tile's shared box — the morph's origin/target rect carrier. */
-.tileShared { display: block; }
+.tileShared { display: block; position: relative; }
 
 /* The overlay: portal to body, FIXED inset-0 (the old tree's own DSH
  * rule — no workspace root; absolute would cover only part of the
@@ -622,3 +622,52 @@
   100% { opacity: 1; transform: scale(1) translateY(0); }
 }
 .tileEnter { animation: tilePop 260ms cubic-bezier(0.2, 0.8, 0.3, 1) both; }
+
+/* ── drag-reorder + wiring (slice 2) ── */
+.tileDragging {
+  opacity: 0.55;
+  z-index: 2;
+}
+.wiredMark {
+  color: var(--dsw-alias-state-business-primary, #4176e6);
+  font-size: 10px;
+}
+.wireRow {
+  align-items: center;
+  display: flex;
+  flex: 0 0 auto;
+  gap: 8px;
+  margin: 0 0 10px;
+}
+.wireRow .specSelect { flex: 1 1 0%; width: auto; }
+.wireLabel {
+  color: var(--dsw-alias-label-secondary, #61666b);
+  font-size: 11px;
+  white-space: nowrap;
+}
+.wireBtn {
+  background: var(--dsw-alias-bg-module-platform, #f5f6f7);
+  border: 0;
+  border-radius: 6px;
+  color: var(--dsw-alias-label-secondary, #61666b);
+  cursor: pointer;
+  font-size: 11px;
+  line-height: 1;
+  padding: 3px 5px;
+  position: absolute;
+  right: 5px;
+  top: 5px;
+  z-index: 2;
+}
+.wireBtn:hover {
+  background: var(--dsw-alias-interactive-bg-hover, #2631480f);
+  color: var(--dsw-alias-state-business-primary, #4176e6);
+}
+.wiring {
+  outline: 1px dashed var(--dsw-alias-state-business-primary, #4176e6);
+  outline-offset: 2px;
+}
+.wiringSource {
+  outline: 2px solid var(--dsw-alias-state-business-primary, #4176e6);
+  outline-offset: 2px;
+}

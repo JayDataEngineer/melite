@@ -1,7 +1,7 @@
 import type { Context } from "@deepseek-ai/cordis";
 import { TypertRemoteService } from "@deepseek-ai/dsh-typert-protocol";
-import type { BenchEnsureRow, BenchGetRow, BenchPatchRow, BenchRewireRow, BenchStageRow, BenchUndoRow } from "./bench.js";
-export type { BenchEnsureRow, BenchGetRow, BenchPatchRow, BenchRewireRow, BenchStageRow, BenchUndoRow, } from "./bench.js";
+import type { BenchEnsureRow, BenchGetRow, BenchPatchRow, BenchReorderRow, BenchRewireRow, BenchStageRow, BenchUndoRow } from "./bench.js";
+export type { BenchEnsureRow, BenchGetRow, BenchPatchRow, BenchReorderRow, BenchRewireRow, BenchStageRow, BenchUndoRow, } from "./bench.js";
 /** The stage-patch door's fixed key set (the old door's
  *  STAGE_PATCH_KEYS, order verbatim — the unknown-keys voice lists
  *  them in this order). */
@@ -114,6 +114,9 @@ export declare class BenchRemoteService extends TypertRemoteService {
     remoteExportRemoveStage(sessionKey: string, doc: Record<string, unknown>, signal: AbortSignal): Promise<BenchStageRow>;
     /** Endpoint `bench/rewire` — set or clear one input binding. */
     remoteExportRewire(sessionKey: string, doc: Record<string, unknown>, signal: AbortSignal): Promise<BenchRewireRow>;
+    /** Endpoint `bench/reorder` — move one stage to a new index (the
+     *  drag-reorder door, 2026-09-11). */
+    remoteExportReorder(sessionKey: string, doc: Record<string, unknown>, signal: AbortSignal): Promise<BenchReorderRow>;
     /** Endpoint `bench/undo` — walk the log tail, apply inverses. */
     remoteExportUndo(sessionKey: string, doc: Record<string, unknown>, signal: AbortSignal): Promise<BenchUndoRow>;
     /** The in-process APIs the adapters above delegate to. The

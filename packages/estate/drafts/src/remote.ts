@@ -22,6 +22,7 @@ import {
   getBench,
   patchBench,
   removeStageBench,
+  reorderBench,
   rewireBench,
   undoBench,
 } from "./bench.js";
@@ -29,6 +30,7 @@ import type {
   BenchEnsureRow,
   BenchGetRow,
   BenchPatchRow,
+  BenchReorderRow,
   BenchRewireRow,
   BenchStageRow,
   BenchUndoRow,
@@ -38,6 +40,7 @@ export type {
   BenchEnsureRow,
   BenchGetRow,
   BenchPatchRow,
+  BenchReorderRow,
   BenchRewireRow,
   BenchStageRow,
   BenchUndoRow,
@@ -445,6 +448,19 @@ export class BenchRemoteService extends TypertRemoteService {
     signal: AbortSignal,
   ): Promise<BenchRewireRow> {
     return await this.rewire(sessionKey, doc, signal);
+  }
+
+  /** Endpoint `bench/reorder` — move one stage to a new index (the
+   *  drag-reorder door, 2026-09-11). */
+  @Remote("reorder")
+  async remoteExportReorder(
+    sessionKey: string,
+    doc: Record<string, unknown>,
+    signal: AbortSignal,
+  ): Promise<BenchReorderRow> {
+    signal.throwIfAborted();
+    const drafts: Domain<DraftsDomainSpec> = await this.open(signal);
+    return await reorderBench(drafts, sessionKey, doc);
   }
 
   /** Endpoint `bench/undo` — walk the log tail, apply inverses. */

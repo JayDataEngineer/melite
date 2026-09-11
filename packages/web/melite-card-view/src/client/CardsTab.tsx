@@ -39,9 +39,13 @@ import { paramFields, patchStageParams } from './draft.ts'
 import css from './card.module.css'
 import type { CardsBenchValue, CardsRunValue, BenchStageRow } from './cards-resource.ts'
 import { CARDS_BENCH_ADDRESS, cardsRunAddress, fetchBench, openCardsResource, parseCardsAddress, restoreRunToBench } from './cards-resource.ts'
-import { addStageWire, removeStageWire } from './add-stage.ts'
+import { addStageWire, removeStageWire, reorderStageWire, rewireStageWire } from './add-stage.ts'
 import { CardZoomOverlay, cardLayoutId, ZOOM_SPRING } from './zoom.tsx'
 import { motion } from 'framer-motion'
+import { DndContext, closestCenter, PointerSensor, useSensor, useSensors } from '@dnd-kit/core'
+import type { DragEndEvent } from '@dnd-kit/core'
+import { SortableContext, useSortable, rectSortingStrategy } from '@dnd-kit/sortable'
+import { CSS } from '@dnd-kit/utilities'
 import { mediaUrl } from './draft.ts'
 
 /** The injected tab information hook's shape (dsh-client-ui-sidebar-right's
@@ -182,17 +186,57 @@ const STAGE_DOT: Record<string, 'done' | 'ongoing' | 'error' | 'warning' | null>
  *  Image-anchored overlays (the status dot) live INSIDE the preview
  *  cell so their anchors ride the artifact's corner. Click = the
  *  drilldown (the second state, the shared CardDrill). */
-function StageTile({ row, entered, onOpen }: {
+/** The HTML5 drag MIME for tile-to-tile WIRING (the canvas-era
+ *  gesture reborn: grab a tile's caption strip, drop it on another
+ *  tile → the target's `source` input wires from the dragged stage's
+ *  first declared output, 'default' when none declared). Pointer
+ *  drags (dnd-kit) stay the REORDER gesture — the two systems never
+ *  collide: HTML5 dragstart seizes the gesture once it fires. */
+const STAGE_DRAG_MIME = 'application/x-melite-stage'
+
+/** The sortable tile wrapper — the old grid's SortableCardWrap
+ *  pattern: the li is the drag unit, transform/transition ride the
+ *  wrapper, the shared-element layoutId stays INSIDE (the morph
+ *  anchor is unbroken). */
+function SortableTile({ row, entered, onOpen, onWireDrop, onWireArm, wireSrc }: {
   row: CardRowLineTabRow
   entered: boolean
   onOpen: (row: CardRowLineTabRow) => void
+  onWireDrop: (target: string, source: string) => void
+  onWireArm: (id: string) => void
+  wireSrc: string | null
 }): ReturnType<typeof h> {
-  // The shared-element box: the SAME layoutId the zoom card carries —
-  // the zoom morph grows out of THIS tile's real screen rect and the
-  // exit shrink re-legates back into it (framer measures both rects).
-  return h('li', { className: css.tile + (entered ? ' ' + css.tileEnter : ''), 'data-stage-id': row.id, 'data-stage-status': row.status },
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: row.id })
+  const wiredFrom = typeof row.stage.inputs === 'object' && row.stage.inputs !== null
+    && 'source' in (row.stage.inputs as Record<string, unknown>)
+  // WIRE MODE (2026-09-11): the ⛓ button arms the tile as the wire
+  // SOURCE; the next tile CLICKED becomes the target (its `source`
+  // input wires from this stage's first declared output). Click the
+  // armed tile again to cancel. Unambiguous with the dnd-kit pointer
+  // drag (reorder) — the two gestures can never collide.
+  const wiring = wireSrc !== null
+  return h('li', {
+    ref: setNodeRef,
+    className: css.tile
+      + (entered ? ' ' + css.tileEnter : '')
+      + (isDragging ? ' ' + css.tileDragging : '')
+      + (wiring ? ' ' + css.wiring : '')
+      + (wireSrc === row.id ? ' ' + css.wiringSource : ''),
+    style: { transform: CSS.Translate.toString(transform), ...(transition !== null ? { transition } : {}) },
+    'data-stage-id': row.id,
+    'data-stage-status': row.status,
+    'data-wiring': wireSrc === row.id ? 'source' : wiring ? 'target' : null,
+    ...attributes, ...listeners,
+  },
     h(motion.div, { layoutId: cardLayoutId(row.id), className: css.tileShared, transition: ZOOM_SPRING },
-      h('button', { className: css.tileInner, type: 'button', 'data-status': row.status, onClick: () => onOpen(row) },
+      h('button', {
+        className: css.tileInner, type: 'button', 'data-status': row.status,
+        onClick: () => {
+          if (wireSrc === null) { onOpen(row); return }
+          if (wireSrc === row.id) { onWireArm(row.id); return } // self-click cancels
+          onWireDrop(row.id, wireSrc)
+        },
+      },
         h('span', { className: css.tilePreview },
           row.thumbUrl !== null
             ? h('img', { className: css.tileImg, src: row.thumbUrl, alt: row.title, loading: 'lazy' })
@@ -203,12 +247,22 @@ function StageTile({ row, entered, onOpen }: {
           row.dot !== null ? h('span', { className: css.tileDot }, h(StateDot, { state: row.dot })) : null,
         ),
         h('span', { className: css.tileCaption },
-          h('span', { className: css.tileTitle }, row.title),
+          h('span', { className: css.tileTitle }, row.title,
+            wiredFrom ? h('span', { className: css.wiredMark, title: 'source wired' }, ' ⛓') : null,
+          ),
           h('span', { className: css.tileMeta },
             row.service !== null ? row.service : null,
             row.prompt !== null ? h('span', { className: css.tilePrompt }, row.prompt) : null,
           ),
         ),
+        // the ⛓ arm button — a SIBLING of the open button (no nested
+        // buttons in HTML), riding the tile's top-right corner
+        h('button', {
+          className: css.wireBtn, type: 'button',
+          'aria-label': 'Wire from this stage',
+          title: 'Wire from this stage',
+          onClick: (e: React.MouseEvent) => { e.stopPropagation(); onWireArm(row.id) },
+        }, '⛓'),
       ),
     ),
   )
@@ -276,13 +330,14 @@ function benchRow(stage: BenchStageRow): CardRowLineTabRow {
  *  dump. Params left, Run right; the patch carries only CHANGED keys
  *  (coerced once, at patch time — the editPatch law); then the run
  *  gesture (patch lands in the domain BEFORE the run reads it). */
-function StageDrill({ stage, bench, running, onRun, onClose, onRemoved }: {
+function StageDrill({ stage, bench, running, onRun, onClose, onRemoved, onRewired }: {
   stage: BenchStageRow
   bench: CardsBenchValue
   running: boolean
   onRun: () => void
   onClose: () => void
   onRemoved: () => void
+  onRewired: () => void
 }): ReturnType<typeof h> {
   const title = String(stage.title ?? stage.card ?? stage.id)
   const held: SpecValues = typeof stage.params === 'object' && stage.params !== null ? stage.params : {}
@@ -291,6 +346,29 @@ function StageDrill({ stage, bench, running, onRun, onClose, onRemoved }: {
   const [error, setError] = useState<string | null>(null)
   const [loaded, setLoaded] = useState(false)
   const [removing, setRemoving] = useState(false)
+  // THE WIRE DROPDOWN (the old system's second wire vector): this
+  // stage's `source` input ⟵ another stage's first declared output
+  // ('default' when none declared), or NONE to clear.
+  const inputs: Record<string, unknown> = typeof stage.inputs === 'object' && stage.inputs !== null
+    ? stage.inputs as Record<string, unknown> : {}
+  const sourceEdge = typeof inputs['source'] === 'object' && inputs['source'] !== null
+    ? inputs['source'] as Record<string, unknown> : null
+  const wiredStage = sourceEdge !== null && typeof sourceEdge['stage'] === 'string' ? sourceEdge['stage'] : ''
+  const others = bench.stages.filter((s) => s.id !== stage.id)
+  const setWire = async (fromId: string): Promise<void> => {
+    setError(null)
+    try {
+      const fromStage = bench.stages.find((s) => s.id === fromId)
+      const outputs = fromStage !== undefined && Array.isArray(fromStage.outputs)
+        ? fromStage.outputs : []
+      await rewireStageWire(fromId === ''
+        ? { stage: stage.id, input: 'source', expect_rev: bench.rev }
+        : { stage: stage.id, input: 'source', from: { stage: fromId, output: outputs[0] ?? 'default' }, expect_rev: bench.rev })
+      onRewired()
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : 'wire failed')
+    }
+  }
   useEffect(() => {
     let alive = true
     const family = String(stage.card ?? '')
@@ -339,6 +417,19 @@ function StageDrill({ stage, bench, running, onRun, onClose, onRemoved }: {
   // shared-element zoom card (the tile's morph target). The params/
   // Run split is the old drill content, container is the zoom card.
   return h('div', { className: css.zoomDetail },
+    h('div', { className: css.wireRow },
+      h('span', { className: css.wireLabel }, 'source input ⟵'),
+      h('select', {
+        className: css.specSelect,
+        value: wiredStage,
+        'aria-label': 'Wire source input from stage',
+        onChange: (e: React.ChangeEvent<HTMLSelectElement>) => { void setWire(e.target.value) },
+      },
+        h('option', { key: '', value: '' }, wiredStage !== '' ? '— clear wire —' : '— none —'),
+        others.map((s) => h('option', { key: s.id, value: s.id },
+          String(s.title ?? s.card ?? s.id) + ' → ' + stage.id)),
+      ),
+    ),
     h('div', { className: css.split },
       h('div', { className: css.params },
         !loaded ? h('div', { className: css.load }, 'form…')
@@ -512,16 +603,69 @@ function BenchView({ bench, onRun, running }: {
   const onOpen = useCallback((stage: BenchStageRow): void => setOpen(stage), [])
   const onClose = useCallback((): void => setOpen(null), [])
   const onAddCard = useCallback((): void => setAdding(true), [])
-  const reload = useCallback((): void => {
+  // keepOpen: the wire path — the drill STAYS OPEN and its stage row
+  // swaps to the fresh one (the old system updated the wire in place;
+  // only remove-stage closes the drill).
+  const reload = useCallback((opts?: { keepOpen?: boolean }): void => {
     setReloadError(null)
     fetchBench()
-      .then((next) => { setLive(next); setOpen(null) })
+      .then((next) => {
+        setLive(next)
+        if (opts?.keepOpen === true) {
+          setOpen((cur) => cur === null ? null : (next.stages.find((s) => s.id === cur.id) ?? null))
+        } else {
+          setOpen(null)
+        }
+      })
       .catch((e: unknown) => { setReloadError(e instanceof Error ? e.message : 'bench reload failed') })
   }, [])
   const onAdded = useCallback((): void => {
     setAdding(false)
     reload()
   }, [reload])
+  // ── DRAG REORDER (dnd-kit, the old grid's SortableCardWrap pattern):
+  //    optimistic splice, then the door; a refusal reloads the truth.
+  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }))
+  const onDragEnd = useCallback((e: DragEndEvent): void => {
+    const active = String(e.active.id)
+    const over = e.over !== null ? String(e.over.id) : null
+    if (over === null || over === active || over === 'add') return
+    const from = live.stages.findIndex((s) => s.id === active)
+    const to = live.stages.findIndex((s) => s.id === over)
+    if (from < 0 || to < 0) return
+    const next = live.stages.slice()
+    const [moved] = next.splice(from, 1)
+    next.splice(to, 0, moved)
+    const beforeRev = live.rev
+    setLive((cur) => ({ ...cur, stages: next }))
+    void reorderStageWire({ stage: active, to, expect_rev: beforeRev })
+      .then((row) => {
+        const rev = typeof row['rev'] === 'number' ? row['rev'] as number : beforeRev + 1
+        setLive((cur) => ({ ...cur, rev }))
+      })
+      .catch((err: unknown) => {
+        setReloadError(err instanceof Error ? err.message : 'reorder failed')
+        reload()
+      })
+  }, [live, reload])
+  // ── TILE-ON-TILE WIRE, click form (2026-09-11): the ⛓ button arms a
+  //    source tile; clicking another tile commits — target.source ⟵
+  //    source's first declared output ('default' when none declared).
+  //    The canvas-era drag gesture cannot survive dnd-kit's pointer
+  //    claim on the same mousedown; clicks are unambiguous.
+  const [wireSrc, setWireSrc] = useState<string | null>(null)
+  const onWireArm = useCallback((id: string): void => {
+    setWireSrc((cur) => (cur === id ? null : id))
+  }, [])
+  const onWireDrop = useCallback((target: string, source: string): void => {
+    setWireSrc(null)
+    const src = live.stages.find((s) => s.id === source)
+    const outputs = src !== undefined && Array.isArray(src.outputs)
+      ? src.outputs : []
+    void rewireStageWire({ stage: target, input: 'source', from: { stage: source, output: outputs[0] ?? 'default' }, expect_rev: live.rev })
+      .then(() => { reload() })
+      .catch((err: unknown) => { setReloadError(err instanceof Error ? err.message : 'wire failed') })
+  }, [live, reload])
   const benchRev = live.rev
   return h('section', { className: css.cardsBench, 'data-cards-bench': benchRev },
     h('header', { className: css.benchHead },
@@ -536,19 +680,29 @@ function BenchView({ bench, onRun, running }: {
     reloadError !== null ? h('p', { className: css.runError }, reloadError) : null,
     live.stages.length === 0
       ? h('p', { className: css.empty }, 'The bench is empty — construct stages (the agent adds them; they land here).')
-      : h('ol', { className: css.tileGrid },
-          live.stages.map((s) => {
-            const row = benchRow(s)
-            return h(StageTile, { key: s.id, row, entered: entered.has(s.id), onOpen: (r) => onOpen(r.stage) })
-          }),
-          h('li', { className: css.tile + ' ' + css.tileAdd },
-            h('button', { type: 'button', className: css.tileInner, 'aria-label': 'Add a card', onClick: onAddCard },
-              h('span', { className: css.tilePreview + ' ' + css.addFace }, '+'),
-              h('span', { className: css.tileCaption },
-                h('span', { className: css.tileTitle }, 'Add a card'),
+      : h(DndContext, { sensors, collisionDetection: closestCenter, onDragEnd },
+          h(SortableContext, {
+            items: live.stages.map((s) => s.id),
+            strategy: rectSortingStrategy,
+            children: h('ol', { className: css.tileGrid },
+              live.stages.map((s) => {
+                const row = benchRow(s)
+                return h(SortableTile, {
+                  key: s.id, row, entered: entered.has(s.id),
+                  onOpen: (r) => onOpen(r.stage),
+                  onWireDrop, onWireArm, wireSrc,
+                })
+              }),
+              h('li', { className: css.tile + ' ' + css.tileAdd },
+                h('button', { type: 'button', className: css.tileInner, 'aria-label': 'Add a card', onClick: onAddCard },
+                  h('span', { className: css.tilePreview + ' ' + css.addFace }, '+'),
+                  h('span', { className: css.tileCaption },
+                    h('span', { className: css.tileTitle }, 'Add a card'),
+                  ),
+                ),
               ),
             ),
-          ),
+          }),
         ),
     live.log.length > 0
       ? h('p', { className: css.logHead }, live.log.length + ' log entr' + (live.log.length === 1 ? 'y' : 'ies'))
@@ -564,6 +718,7 @@ function BenchView({ bench, onRun, running }: {
       onRun,
       onClose,
       onRemoved: () => { setOpen(null); reload() },
+      onRewired: () => { reload({ keepOpen: true }) },
       detail: StageDrill,
     }) : null,
     adding ? h(AddCardDoor, { bench: live, onAdded, onClose: () => { setAdding(false) } }) : null,

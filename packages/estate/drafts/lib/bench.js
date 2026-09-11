@@ -365,6 +365,47 @@ export async function addStageBench(drafts, session, body) {
     return { draft_id: loaded.draftId, session, rev: newRev, stage: stageId };
 }
 const REMOVE_KEYS = ["stage", "expect_rev", "author"];
+const REORDER_KEYS = ["stage", "to", "expect_rev", "author"];
+/** reorder — move ONE stage to a new index in the bench's stage order
+ *  (the drag-reorder door, 2026-09-11: the old system's reorderRange
+ *  gesture; the reborn bench is SSOT so the door exists before the UX
+ *  does). The inverse carries the ORIGINAL index for undo. `to` is
+ *  clamped into [0, stages.length-1] AFTER the splice-out, so a move
+ *  past either end parks at the end — the drag gesture's own
+ *  semantics, not an error. */
+export async function reorderBench(drafts, session, body) {
+    refuseUnknown(body, REORDER_KEYS);
+    const loaded = loadBench(drafts, session);
+    casCheck(loaded.block, body["expect_rev"], session);
+    const stageId = body["stage"];
+    if (typeof stageId !== "string") {
+        throw new RemoteError("bench/bad-body", "stage is required", {});
+    }
+    const toRaw = body["to"];
+    if (typeof toRaw !== "number" || !Number.isInteger(toRaw) || toRaw < 0) {
+        throw new RemoteError("bench/bad-body", "to must be a non-negative integer index", {});
+    }
+    const author = authorOk(body["author"])
+        ? body["author"]
+        : "agent";
+    const stages = stagesOf(loaded.doc);
+    const from = stages.findIndex((s) => s["id"] === stageId);
+    if (from < 0) {
+        throw new RemoteError("bench/stage-not-found", "stage not found: " + stageId, { session, stage: stageId });
+    }
+    const [row] = stages.splice(from, 1);
+    const to = Math.min(toRaw, stages.length);
+    stages.splice(to, 0, row);
+    loaded.doc["stages"] = stages;
+    const newRev = await appendAndSave(drafts, loaded, {
+        author,
+        kind: "reorder",
+        stage: stageId,
+        summary: "reorder " + String(row["card"] ?? stageId),
+        inverse: { stage: stageId, from, to },
+    });
+    return { draft_id: loaded.draftId, session, rev: newRev, stage: stageId, from, to };
+}
 /** remove_stage — splice one stage out (the inverse carries row +
  *  index for undo). */
 export async function removeStageBench(drafts, session, body) {
@@ -553,6 +594,20 @@ function applyInverse(doc, e) {
         if (isRecord(row))
             stages.splice(Math.min(idx, stages.length), 0, row);
         doc["stages"] = stages;
+        return;
+    }
+    if (e.kind === "reorder") {
+        // the inverse of a move is the move back: splice out at the CURRENT
+        // (post-move) position, reinsert at the ORIGINAL index (clamped).
+        const idx = stages.findIndex((s) => s["id"] === inv["stage"]);
+        if (idx >= 0) {
+            const [row] = stages.splice(idx, 1);
+            const back = typeof inv["from"] === "number"
+                ? Math.min(inv["from"], stages.length)
+                : stages.length;
+            stages.splice(back, 0, row);
+            doc["stages"] = stages;
+        }
         return;
     }
     if (e.kind === "rewire") {

@@ -35,7 +35,7 @@ var __esDecorate = (this && this.__esDecorate) || function (ctor, descriptorIn, 
 import { Remote, RemoteError, TypertRemoteService, } from "@deepseek-ai/dsh-typert-protocol";
 import { openDraftsDomain } from "./store.js";
 import { DRAFT_ID_RE } from "./spec.js";
-import { addStageBench, ensureBench, getBench, patchBench, removeStageBench, rewireBench, undoBench, } from "./bench.js";
+import { addStageBench, ensureBench, getBench, patchBench, removeStageBench, reorderBench, rewireBench, undoBench, } from "./bench.js";
 /** The stage-patch door's fixed key set (the old door's
  *  STAGE_PATCH_KEYS, order verbatim — the unknown-keys voice lists
  *  them in this order). */
@@ -259,6 +259,7 @@ let BenchRemoteService = (() => {
     let _remoteExportAddStage_decorators;
     let _remoteExportRemoveStage_decorators;
     let _remoteExportRewire_decorators;
+    let _remoteExportReorder_decorators;
     let _remoteExportUndo_decorators;
     return class BenchRemoteService extends _classSuper {
         static {
@@ -269,6 +270,7 @@ let BenchRemoteService = (() => {
             _remoteExportAddStage_decorators = [Remote("add-stage")];
             _remoteExportRemoveStage_decorators = [Remote("remove-stage")];
             _remoteExportRewire_decorators = [Remote("rewire")];
+            _remoteExportReorder_decorators = [Remote("reorder")];
             _remoteExportUndo_decorators = [Remote("undo")];
             __esDecorate(this, null, _remoteExportGet_decorators, { kind: "method", name: "remoteExportGet", static: false, private: false, access: { has: obj => "remoteExportGet" in obj, get: obj => obj.remoteExportGet }, metadata: _metadata }, null, _instanceExtraInitializers);
             __esDecorate(this, null, _remoteExportEnsure_decorators, { kind: "method", name: "remoteExportEnsure", static: false, private: false, access: { has: obj => "remoteExportEnsure" in obj, get: obj => obj.remoteExportEnsure }, metadata: _metadata }, null, _instanceExtraInitializers);
@@ -276,6 +278,7 @@ let BenchRemoteService = (() => {
             __esDecorate(this, null, _remoteExportAddStage_decorators, { kind: "method", name: "remoteExportAddStage", static: false, private: false, access: { has: obj => "remoteExportAddStage" in obj, get: obj => obj.remoteExportAddStage }, metadata: _metadata }, null, _instanceExtraInitializers);
             __esDecorate(this, null, _remoteExportRemoveStage_decorators, { kind: "method", name: "remoteExportRemoveStage", static: false, private: false, access: { has: obj => "remoteExportRemoveStage" in obj, get: obj => obj.remoteExportRemoveStage }, metadata: _metadata }, null, _instanceExtraInitializers);
             __esDecorate(this, null, _remoteExportRewire_decorators, { kind: "method", name: "remoteExportRewire", static: false, private: false, access: { has: obj => "remoteExportRewire" in obj, get: obj => obj.remoteExportRewire }, metadata: _metadata }, null, _instanceExtraInitializers);
+            __esDecorate(this, null, _remoteExportReorder_decorators, { kind: "method", name: "remoteExportReorder", static: false, private: false, access: { has: obj => "remoteExportReorder" in obj, get: obj => obj.remoteExportReorder }, metadata: _metadata }, null, _instanceExtraInitializers);
             __esDecorate(this, null, _remoteExportUndo_decorators, { kind: "method", name: "remoteExportUndo", static: false, private: false, access: { has: obj => "remoteExportUndo" in obj, get: obj => obj.remoteExportUndo }, metadata: _metadata }, null, _instanceExtraInitializers);
             if (_metadata) Object.defineProperty(this, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
         }
@@ -336,6 +339,13 @@ let BenchRemoteService = (() => {
         /** Endpoint `bench/rewire` — set or clear one input binding. */
         async remoteExportRewire(sessionKey, doc, signal) {
             return await this.rewire(sessionKey, doc, signal);
+        }
+        /** Endpoint `bench/reorder` — move one stage to a new index (the
+         *  drag-reorder door, 2026-09-11). */
+        async remoteExportReorder(sessionKey, doc, signal) {
+            signal.throwIfAborted();
+            const drafts = await this.open(signal);
+            return await reorderBench(drafts, sessionKey, doc);
         }
         /** Endpoint `bench/undo` — walk the log tail, apply inverses. */
         async remoteExportUndo(sessionKey, doc, signal) {

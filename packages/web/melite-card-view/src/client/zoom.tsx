@@ -60,6 +60,7 @@ export interface ZoomDetailProps {
   onRun: () => void
   onClose: () => void
   onRemoved: () => void
+  onRewired: () => void
 }
 
 /** The morph skeleton — an all-skeleton layout with no real content
@@ -142,7 +143,7 @@ function ZoomMount(props: ZoomDetailProps & { detail: (p: ZoomDetailProps) => Re
             }, '✕'),
           ),
           ready && isPresent
-            ? h(props.detail, { stage, bench: rest.bench, running: rest.running, onRun: rest.onRun, onClose, onRemoved: rest.onRemoved })
+            ? h(props.detail, { stage, bench: rest.bench, running: rest.running, onRun: rest.onRun, onClose, onRemoved: rest.onRemoved, onRewired: rest.onRewired })
             : h(ZoomSkeleton),
         ),
       ),

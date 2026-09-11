@@ -81,6 +81,24 @@ export interface BenchStageRow {
 /** add_stage — append a card stage with optional wiring (the
  *  runner's input convention rides the row). */
 export declare function addStageBench(drafts: Domain<DraftsDomainSpec>, session: string, body: Record<string, unknown>): Promise<BenchStageRow>;
+/** reorder — move ONE stage to a new index in the bench's stage order
+ *  (the drag-reorder door, 2026-09-11: the old system's reorderRange
+ *  gesture; the reborn bench is SSOT so the door exists before the UX
+ *  does). The inverse carries the ORIGINAL index for undo. `to` is
+ *  clamped into [0, stages.length-1] AFTER the splice-out, so a move
+ *  past either end parks at the end — the drag gesture's own
+ *  semantics, not an error. */
+export declare function reorderBench(drafts: Domain<DraftsDomainSpec>, session: string, body: Record<string, unknown>): Promise<BenchReorderRow>;
+/** The reorder row: the move's coordinates for the caller's optimistic
+ *  update (from → to, both POST-splice-clamp). */
+export interface BenchReorderRow {
+    readonly draft_id: string;
+    readonly session: string;
+    readonly rev: number;
+    readonly stage: string;
+    readonly from: number;
+    readonly to: number;
+}
 /** remove_stage — splice one stage out (the inverse carries row +
  *  index for undo). */
 export declare function removeStageBench(drafts: Domain<DraftsDomainSpec>, session: string, body: Record<string, unknown>): Promise<BenchStageRow>;

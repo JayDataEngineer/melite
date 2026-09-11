@@ -49,7 +49,10 @@ export interface BenchStageRow {
   card?: string
   title?: string
   params?: Record<string, unknown>
-  inputs?: string[]
+  /** Named input bindings (the rewire door's truth):
+   *  {source: {stage, output} | {initial}} — string[] was the dead
+   *  flow-era shape. */
+  inputs?: Record<string, unknown>
   outputs?: string[]
   provenance?: string
   runStatus?: string
