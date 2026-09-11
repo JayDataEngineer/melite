@@ -404,6 +404,7 @@ window.__ModuleLoader__.load({
 						...specDefaults(doc.fields),
 						...params
 					});
+					if (alive) props.onSurface(doc.size === "huge" ? "huge" : "");
 				}).catch((e) => {
 					if (alive) setError(e instanceof Error ? e.message : "form-spec failed");
 				});
@@ -11218,6 +11219,15 @@ get: (_target, key) => {
 		/** The zoomed card's bounded size — width caps at 760px, vh-bounded so
 		* the ≈square card fits without page scroll (the old tree's number). */
 		const ZOOM_DETAIL_MAX_PX = 760;
+		/** The envelope's huge class (surface.size='huge'): the studio wants
+		*  room — the card grows (the DECLARATION is estate truth). */
+		const ZOOM_HUGE_MAX_PX = 1160;
+		/** The card's width law, pure (the envelope lift's decision): the
+		*  estate's surface.size='huge' grows the card for studio room. */
+		function zoomWidthFor(surfaceSize) {
+			const huge = surfaceSize === "huge";
+			return `min(${huge ? ZOOM_HUGE_MAX_PX : ZOOM_DETAIL_MAX_PX}px, ${huge ? "94vw" : "88vh"})`;
+		}
 		/** The morph skeleton — an all-skeleton layout with no real content
 		* (the shimmer sweep is the old tree's loading face). */
 		function ZoomSkeleton() {
@@ -11231,6 +11241,10 @@ get: (_target, key) => {
 			const [isPresent, safeToRemove] = usePresence();
 			const [ready, setReady] = (0, react.useState)(false);
 			const removed = (0, react.useRef)(false);
+			const [surfaceSize, setSurfaceSize] = (0, react.useState)(null);
+			const onSurface = (size) => {
+				setSurfaceSize(size === "" ? null : size);
+			};
 			(0, react.useEffect)(() => {
 				const t = window.setTimeout(() => {
 					setReady(true);
@@ -11279,7 +11293,7 @@ get: (_target, key) => {
 				onLayoutAnimationComplete: onSettled,
 				className: card_module_css_default.zoomCard,
 				style: {
-					width: `min(${ZOOM_DETAIL_MAX_PX}px, 88vh)`,
+					width: zoomWidthFor(surfaceSize),
 					maxWidth: "100%"
 				}
 			}, (0, react.createElement)("div", { className: card_module_css_default.zoomBar }, (0, react.createElement)("span", { className: card_module_css_default.zoomTitle }, "Stage " + String(stage.title ?? stage.card ?? stage.id)), (0, react.createElement)("button", {
@@ -11296,7 +11310,8 @@ get: (_target, key) => {
 				onRemoved: rest.onRemoved,
 				onRewired: rest.onRewired,
 				onPatchParams: rest.onPatchParams,
-				renderStageView: rest.renderStageView
+				renderStageView: rest.renderStageView,
+				onSurface
 			}) : (0, react.createElement)(ZoomSkeleton)))));
 		}
 		/** CardZoomOverlay — portal to document.body, FIXED inset-0 (the old
@@ -14252,13 +14267,14 @@ get: (_target, key) => {
 		*  dump. Params left, Run right; the patch carries only CHANGED keys
 		*  (coerced once, at patch time — the editPatch law); then the run
 		*  gesture (patch lands in the domain BEFORE the run reads it). */
-		function StageDrill({ stage, bench, running, onRun, onClose, onRemoved, onRewired, onPatchParams, renderStageView }) {
+		function StageDrill({ stage, bench, running, onRun, onClose, onRemoved, onRewired, onPatchParams, renderStageView, onSurface }) {
 			String(stage.title ?? stage.card ?? stage.id);
 			const held = typeof stage.params === "object" && stage.params !== null ? stage.params : {};
 			const [spec, setSpec] = (0, react.useState)(null);
 			const [values, setValues] = (0, react.useState)({});
 			const [error, setError] = (0, react.useState)(null);
 			const [loaded, setLoaded] = (0, react.useState)(false);
+			const reportSurface = onSurface ?? (() => {});
 			const [removing, setRemoving] = (0, react.useState)(false);
 			const inputs = typeof stage.inputs === "object" && stage.inputs !== null ? stage.inputs : {};
 			const sourceEdge = typeof inputs["source"] === "object" && inputs["source"] !== null ? inputs["source"] : null;
@@ -14302,6 +14318,7 @@ get: (_target, key) => {
 						...held
 					});
 					setLoaded(true);
+					reportSurface(doc.size === "huge" ? "huge" : "");
 				}).catch((e) => {
 					if (!alive) return;
 					setError(e instanceof Error ? e.message : "form-spec unavailable");
@@ -14410,7 +14427,8 @@ get: (_target, key) => {
 				onStop: () => {},
 				onRemove: () => {
 					remove();
-				}
+				},
+				onSurface: reportSurface
 			}, genericDetail());
 		}
 		/** THE ADD-CARD DOOR (the old system's power, DSH-native): the trailing

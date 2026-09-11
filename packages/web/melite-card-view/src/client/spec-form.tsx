@@ -46,6 +46,13 @@ export interface FormSpecDoc {
   genre?: string
   engine?: string
   fields: SpecField[]
+  /** The estate's surface envelope (served TOP-LEVEL by the door —
+   *  2026-09-12 lane read): layout='studio' means a registered view
+   *  exists (the client's business is the keyed slot, not this flag);
+   *  size='huge' is the estate's only size class — the zoom card's
+   *  width law consumes it. */
+  layout?: string | null
+  size?: string | null
 }
 
 /** One catalog card (/v1/model-catalog's cards section). */

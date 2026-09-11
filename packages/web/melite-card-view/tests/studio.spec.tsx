@@ -9,12 +9,14 @@
 import { cleanup, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, expect, test, vi } from 'vitest'
-import { createElement } from 'react'
+import { createElement, useEffect } from 'react'
 
 import { ImgToMeshStudio, imgToMeshStudio } from '../src/client/img-to-mesh-studio.tsx'
 
 const SPEC = {
   form: 'img-to-mesh',
+  layout: 'studio',
+  size: 'huge',
   fields: [
     { name: 'input_image', label: 'Input image', type: 'image', group: 'input' },
     { name: 'seed', label: 'Seed', type: 'seed', group: 'input' },
@@ -106,4 +108,37 @@ test('the registration is keyed under img-to-mesh (the readToolview shape)', () 
   }
   imgToMeshStudio.apply(ctx as never)
   expect(registered).toEqual([{ name: 'cards.stage.view', key: 'img-to-mesh' }])
+})
+
+test('the envelope lift: the detail reports, the card law answers', async () => {
+  stubWire()
+  const { CardZoomOverlay, zoomWidthFor } = await import('../src/client/zoom.tsx')
+  const { BenchStageRow, CardsBenchValue } = await import('../src/client/cards-resource.ts')
+  const stage = { id: 's_h', card: 'img-to-mesh', engine: 'comfyui', params: {} } as BenchStageRow
+  const bench = { kind: 'bench', draftId: 'd', rev: 1, stages: [stage], log: [] } as unknown as CardsBenchValue
+  const reported: string[] = []
+  const Detail = (p: { onSurface?: (s: string) => void }): ReturnType<typeof createElement> => {
+    useEffect(() => { p.onSurface?.('huge'); reported.push('mounted') }, [])
+    return createElement('div', null, 'DETAIL')
+  }
+  render(createElement(CardZoomOverlay, {
+    stage, bench, running: false, onRun: () => {}, onClose: () => {}, onRemoved: () => {}, onRewired: () => {},
+    onPatchParams: () => {}, renderStageView: (_o, fb) => fb,
+    detail: Detail as never,
+  }))
+  // the detail mounted through the skeleton gate and its report rode
+  await screen.findByText('DETAIL', {}, { timeout: 4000 })
+  expect(reported).toEqual(['mounted'])
+  // the width law (framer strips inline width headless; the lane
+  // proves the paint — this proves the decision)
+  expect(zoomWidthFor(null)).toBe('min(760px, 88vh)')
+  expect(zoomWidthFor('huge')).toBe('min(1160px, 94vw)')
+})
+
+test('the envelope is parsed through the spec doc (surface rides)', async () => {
+  stubWire()
+  const { fetchFormSpec } = await import('../src/client/spec-form.tsx')
+  const doc = await fetchFormSpec('img-to-mesh')
+  expect(doc.layout).toBe('studio')
+  expect(doc.size).toBe('huge')
 })

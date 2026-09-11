@@ -501,7 +501,7 @@ function benchRow(stage: BenchStageRow, bench?: CardsBenchValue): CardRowLineTab
  *  dump. Params left, Run right; the patch carries only CHANGED keys
  *  (coerced once, at patch time — the editPatch law); then the run
  *  gesture (patch lands in the domain BEFORE the run reads it). */
-function StageDrill({ stage, bench, running, onRun, onClose, onRemoved, onRewired, onPatchParams, renderStageView }: {
+function StageDrill({ stage, bench, running, onRun, onClose, onRemoved, onRewired, onPatchParams, renderStageView, onSurface }: {
   stage: BenchStageRow
   bench: CardsBenchValue
   running: boolean
@@ -511,6 +511,7 @@ function StageDrill({ stage, bench, running, onRun, onClose, onRemoved, onRewire
   onRewired: () => void
   onPatchParams: (patch: Record<string, unknown>) => void
   renderStageView: (owner: StageViewOwnerProps, fallback: ReturnType<typeof h>) => ReturnType<typeof h>
+  onSurface?: (size: string) => void
 }): ReturnType<typeof h> {
   const title = String(stage.title ?? stage.card ?? stage.id)
   const held: SpecValues = typeof stage.params === 'object' && stage.params !== null ? stage.params : {}
@@ -518,6 +519,7 @@ function StageDrill({ stage, bench, running, onRun, onClose, onRemoved, onRewire
   const [values, setValues] = useState<SpecValues>({})
   const [error, setError] = useState<string | null>(null)
   const [loaded, setLoaded] = useState(false)
+  const reportSurface = onSurface ?? (() => {})
   const [removing, setRemoving] = useState(false)
   // THE WIRE DROPDOWN (the old system's second wire vector): this
   // stage's `source` input ⟵ another stage's first declared output
@@ -552,6 +554,7 @@ function StageDrill({ stage, bench, running, onRun, onClose, onRemoved, onRewire
         setSpec(doc)
         setValues({ ...specDefaults(doc.fields), ...held })
         setLoaded(true)
+        reportSurface(doc.size === 'huge' ? 'huge' : '')
       })
       .catch((e: unknown) => {
         if (!alive) return
@@ -674,6 +677,7 @@ function StageDrill({ stage, bench, running, onRun, onClose, onRemoved, onRewire
     onRun,
     onStop: () => {},
     onRemove: () => { void remove() },
+    onSurface: reportSurface,
   }, genericDetail())
 }
 

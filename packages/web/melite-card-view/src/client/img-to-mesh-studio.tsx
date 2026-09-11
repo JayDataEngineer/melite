@@ -56,6 +56,8 @@ export function ImgToMeshStudio(props: StageViewOwnerProps): ReturnType<typeof h
         setSpec(doc)
         // seed: the spec's defaults UNDER the frozen bench params
         setValues({ ...specDefaults(doc.fields), ...params })
+        // the envelope lift: report the estate's declared size class
+        if (alive) props.onSurface(doc.size === 'huge' ? 'huge' : '')
       })
       .catch((e: unknown) => { if (alive) setError(e instanceof Error ? e.message : 'form-spec failed') })
     return () => { alive = false }

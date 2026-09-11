@@ -50,6 +50,15 @@ const ZOOM_CLOSE_UNMOUNT_MS = 500
 /** The zoomed card's bounded size — width caps at 760px, vh-bounded so
  * the ≈square card fits without page scroll (the old tree's number). */
 const ZOOM_DETAIL_MAX_PX = 760
+/** The envelope's huge class (surface.size='huge'): the studio wants
+ *  room — the card grows (the DECLARATION is estate truth). */
+const ZOOM_HUGE_MAX_PX = 1160
+/** The card's width law, pure (the envelope lift's decision): the
+ *  estate's surface.size='huge' grows the card for studio room. */
+export function zoomWidthFor(surfaceSize: string | null): string {
+  const huge = surfaceSize === 'huge'
+  return `min(${huge ? ZOOM_HUGE_MAX_PX : ZOOM_DETAIL_MAX_PX}px, ${huge ? '94vw' : '88vh'})`
+}
 
 /** The zoomed card's DETAIL content — supplied by the bench tab (the
  * spec-form params + Run row + outputs), rendered only once the morph
@@ -64,6 +73,10 @@ export interface ZoomDetailProps {
   onRewired: () => void
   /** params patch verb (the surface slot's onPatch currency). */
   onPatchParams: (patch: Record<string, unknown>) => void
+  /** the envelope lift channel: the DETAIL reports surface.size; the
+   *  mount owns the growth (self-owned verb — nothing threads from
+   *  above). Kept in the props type so the detail's face is stable. */
+  onSurface?: (size: string) => void
   /** the cards.stage.view consult (unclaimed → the generic card). */
   renderStageView: (owner: StageViewOwnerProps, fallback: ReturnType<typeof h>) => ReturnType<typeof h>
 }
@@ -92,6 +105,10 @@ function ZoomMount(props: ZoomDetailProps & { detail: (p: ZoomDetailProps) => Re
   const [isPresent, safeToRemove] = usePresence()
   const [ready, setReady] = useState(false)
   const removed = useRef(false)
+  // THE ENVELOPE LIFT: the detail reports the estate's surface.size;
+  // the frame grows for 'huge' (the card listens, the view talks).
+  const [surfaceSize, setSurfaceSize] = useState<string | null>(null)
+  const onSurface = (size: string): void => { setSurfaceSize(size === '' ? null : size) }
 
   // The morph-settled gate: layout-complete in a real browser, the
   // timer fallback everywhere else.
@@ -136,7 +153,7 @@ function ZoomMount(props: ZoomDetailProps & { detail: (p: ZoomDetailProps) => Re
           transition: ZOOM_SPRING,
           onLayoutAnimationComplete: onSettled,
           className: css.zoomCard,
-          style: { width: `min(${ZOOM_DETAIL_MAX_PX}px, 88vh)`, maxWidth: '100%' },
+          style: { width: zoomWidthFor(surfaceSize), maxWidth: '100%' },
         },
           h('div', { className: css.zoomBar },
             h('span', { className: css.zoomTitle }, 'Stage ' + String(stage.title ?? stage.card ?? stage.id)),
@@ -148,7 +165,7 @@ function ZoomMount(props: ZoomDetailProps & { detail: (p: ZoomDetailProps) => Re
             }, '✕'),
           ),
           ready && isPresent
-            ? h(props.detail, { stage, bench: rest.bench, running: rest.running, onRun: rest.onRun, onClose, onRemoved: rest.onRemoved, onRewired: rest.onRewired, onPatchParams: rest.onPatchParams, renderStageView: rest.renderStageView })
+            ? h(props.detail, { stage, bench: rest.bench, running: rest.running, onRun: rest.onRun, onClose, onRemoved: rest.onRemoved, onRewired: rest.onRewired, onPatchParams: rest.onPatchParams, renderStageView: rest.renderStageView, onSurface })
             : h(ZoomSkeleton),
         ),
       ),

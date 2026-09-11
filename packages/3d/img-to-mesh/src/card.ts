@@ -122,7 +122,10 @@ export function apply(ctx: Context): void {
     // discovery export — the card owns its sidebar, surface, and
     // flow-stage declarations; the discovery arms derive from here).
     sidebar: { key: '3d', order: 10 },
-    surface: { layout: 'studio' },
+    // size:'huge' (2026-09-12): the cards.stage.view studio surface
+    // wants room — the estate's only size class, served top-level by
+    // the door, consumed by the zoom card's width law.
+    surface: { layout: 'studio', size: 'huge' },
     flowKinds: {
       inputs: { input_image: 'image' },
       outputs: { default: 'mesh' },

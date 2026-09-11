@@ -85,4 +85,7 @@ export interface StageViewOwnerProps {
   onStop: () => void
   /** Remove the stage from the bench. */
   onRemove: () => void
+  /** Host verb: report the envelope's size class (the zoom card
+   *  frame listens — 'huge' grows the card; '' = the default). */
+  onSurface: (size: string) => void
 }
