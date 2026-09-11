@@ -16,9 +16,10 @@
  *   the same sidecar tree /infer-gallery/flow reads). An absent
  *   seat answers LOUD 502 naming the fix; nothing absorbs.
  *
- * - `GET /infer-gallery/runs` → the runs list (limit 50), with
- *   run-relative artifact/thumbnail names rewritten to the
- *   artifact route below, so the browser stays same-origin.
+ * - `GET /infer-gallery/runs` → the runs list (the 500-run window,
+ *   the runs-window law), with run-relative artifact/thumbnail
+ *   names rewritten to the artifact route below, so the browser
+ *   stays same-origin.
  * - `GET /infer-gallery/drafts` → the drafts list (queue-native
  *   flow instances), newest-first, capped.
  * - `GET /infer-gallery/flow?run_id=…` → the run's _flow.json
@@ -52,7 +53,12 @@ flowDir?: string
 }
 
 const DEFAULT_TIMEOUT_MS = 15_000
-const RUNS_LIMIT = '50'
+/** THE RUNS-WINDOW LAW (restored with the media full port, 2026-09-11):
+ *  always pull the door's hard max — a smaller window lets sidecar
+ *  floods push artifact rows out of the listing. 500 is the runs
+ *  seat's hard max (the deleted dsh-media panel rode the same law on
+ *  /v1/flows/runs?limit=500). */
+const RUNS_LIMIT = '500'
 const DRAFTS_LIMIT = 200
 /** Sidecar tree default: the estate runs stream (SERVER-STATE ROOT
  *  LAW — build/ was the C era's cwd and is gone). */

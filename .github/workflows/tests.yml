@@ -10,21 +10,64 @@ permissions:
   contents: read
 
 jobs:
-  fast-suite:
-    # The README's documented runner — the TS walls are the whole
-    # fast suite (node tests/walls/ts/run.mjs). The py battery
-    # tests/walls/suites/*.py and the estate pytest planes
-    # (tests/unit, tests/routes) are deleted per NO-ESTATE-PYTHON
-    # LAW, never revived. Live GPU inference stays opt-in locally —
-    # it needs the standing gateway + ComfyUI and is never CI's
-    # to spend.
-    name: walls (no GPU)
+  unit:
+    name: unit (vitest)
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v4
         with:
           node-version: "22"
-      - name: Run the fast suite
-        run: node tests/walls/ts/run.mjs
+          cache: pnpm
+      - name: Install
+        run: pnpm install --frozen-lockfile
+      - name: Unit
+        run: pnpm run test
+
+  coverage:
+    name: coverage gate (per-file 100%)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: pnpm
+      - name: Install
+        run: pnpm install --frozen-lockfile
+      - name: Coverage gate
+        run: pnpm run test:coverage
+
+  tiers:
+    name: tiers (e2e self-skip + expected + bench + snapshot + web replay)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: pnpm
+      - name: Install
+        run: pnpm install --frozen-lockfile
+      - name: Real-API e2e (keyless self-skip)
+        run: pnpm run test:e2e
+      - name: Build (expected tier's built arms run against real output)
+        run: pnpm --filter @melite-plugin/dsh-card-deck run build && pnpm --filter @melite/editor run build
+      - name: Owner-local expected output
+        run: pnpm run test:expected
+      - name: Benchmarks
+        run: pnpm run test:bench
+      - name: Snapshot replay (read-only)
+        run: DSH_SNAPSHOT=replay pnpm run test:snapshot
+      - name: Web snapshot replay (read-only)
+        run: DSH_SNAPSHOT=replay pnpm run test:web
+
+  # No walls job: the wall suites run inside `unit` (root vitest
+  # node project). Live GPU inference stays opt-in locally — it needs
+  # the standing gateway + ComfyUI and is never CI's to spend.

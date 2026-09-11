@@ -10,7 +10,6 @@
   "scripts": {
     "build": "pnpm exec tsdown -c tsdown.config.ts",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run && node --experimental-strip-types --test test/host-routes.test.ts && node --test test/editor-dist.test.mjs",
     "test:e2e": "playwright test"
   },
   "devDependencies": {

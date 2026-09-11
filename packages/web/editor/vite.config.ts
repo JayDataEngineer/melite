@@ -128,39 +128,5 @@ export default defineConfig({
     host: '0.0.0.0',
     port: 4173,
     proxy: proxyConfig,
-  },
-  test: {
-    environment: 'happy-dom',
-    globals: true,
-    setupFiles: ['./tests/setup.ts'],
-    include: ['src/__tests__/**/*.test.{ts,tsx}'],
-    css: false,
-    pool: 'threads',
-    // S4f: DSH ui-primitives ships CSS-module imports inside its ESM.
-    // Inlined so vite transforms it (css:false then drops the styles);
-    // otherwise node externalizes the package and chokes on ".css".
-    server: {
-      deps: {
-        inline: [/@deepseek-ai\/dsh-client-ui-primitives/],
-      },
-    },
-    // The primitives' lib also imports `anser` + `shiki` WITHOUT
-    // declaring them (upstream packaging gap, 0.1.5-rc.2 — the
-    // lockfile snapshot carries only cordis) — strict pnpm isolation
-    // hides them from the store copy's siblings. Local aliases close
-    // the gap (the editor declares both as devDeps and owns the
-    // copies); the rows above stay untouched.
-    alias: {
-      // Order matters (first-hit wins): subpaths BEFORE the bare
-      // prefix, or `shiki` swallows `shiki/core` and the package
-      // exports map is never consulted.
-      'shiki/core': R('./node_modules/shiki/dist/core.mjs'),
-      'shiki/engine/javascript': R('./node_modules/shiki/dist/engine-javascript.mjs'),
-      '@shikijs/langs/typescript': R('./node_modules/@shikijs/langs/dist/typescript.mjs'),
-      '@shikijs/langs/shellscript': R('./node_modules/@shikijs/langs/dist/shellscript.mjs'),
-      '@shikijs/langs/json': R('./node_modules/@shikijs/langs/dist/json.mjs'),
-      anser: R('./node_modules/anser'),
-      shiki: R('./node_modules/shiki'),
-    },
-  },
+  }
 })

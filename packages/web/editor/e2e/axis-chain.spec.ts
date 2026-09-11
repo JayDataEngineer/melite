@@ -130,7 +130,7 @@ test('qwen edit card: Quant picks NEVER shift the Variant row — the folder set
   const servedQuants = await servedAxisRows(request, 'qwen-img-edit-2511', 'Quant')
   // The head route's active variant is standard — the owner chain: the
   // served defaults resolve the INT8 cell, whose owner IS standard (the
-  // same pin quant-model-independence.test.tsx asserts: the head renders
+  // same pin quant-model-independence.spec.tsx asserts: the head renders
   // standard because int8's owner IS standard).
   const owned = ownedQuants(servedQuants, 'standard')
   const expectedQuants = owned.map((q) => q.label)

@@ -8,7 +8,7 @@
 // proven engine-side (the walls' 48-registry count, the
 // flavor↔DECL.mods interlock, the absorption-parity golden).
 //
-// Run: node --experimental-strip-types --test tests/
+// Run: npx vitest run --project node
 import { describe, it } from "vitest";
 import assert from "node:assert/strict";
 import { DECL, family } from "../src/index.ts";

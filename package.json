@@ -1,4 +1,5 @@
 {
+  "type": "module",
   "dependencies": {
     "lightningcss": "^1.33.0"
   },
@@ -13,6 +14,16 @@
   "scripts": {
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
-    "test:e2e": "pnpm --filter @melite/editor exec playwright test && pnpm --filter @melite-plugin/dsh-card-deck exec playwright test"
+    "test:e2e": "vitest run --config vitest.e2e.config.ts",
+    "test:expected": "vitest run --config vitest.expected.config.ts",
+    "test:expected:refresh": "DSH_SNAPSHOT=refresh vitest run --config vitest.expected.config.ts",
+    "test:bench": "vitest run --config vitest.bench.config.ts",
+    "test:snapshot": "vitest run --config vitest.snapshot.config.ts",
+    "test:snapshot:record": "DSH_SNAPSHOT=record vitest run --config vitest.snapshot.config.ts --update",
+    "test:snapshot:refresh": "DSH_SNAPSHOT=refresh vitest run --config vitest.snapshot.config.ts",
+    "test:web": "vitest run --config vitest.web.config.ts",
+    "test:web:refresh": "DSH_SNAPSHOT=refresh vitest run --config vitest.web.config.ts",
+    "test:web:browser": "pnpm --filter @melite/editor exec playwright test && pnpm --filter @melite-plugin/dsh-card-deck exec playwright test",
+    "lint": "node tools/arch-lint.ts"
   }
 }

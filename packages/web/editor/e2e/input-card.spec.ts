@@ -14,8 +14,8 @@
  * dropped on the background lands a kind:"input" Ops card; see
  * FlowCanvas onCanvasDrop). The InputCardEditor's behavior (source
  * gating, media-type field groups, detected-type indicator) is pinned at
- * unit level: src/__tests__/input-card-editor.test.tsx,
- * inputCardContract.test.ts, card-detail-input-slots.test.tsx.
+ * unit level: src/__tests__/input-card-editor.spec.tsx,
+ * inputCardContract.spec.ts, card-detail-input-slots.spec.tsx.
  *
  * Run:
  *   npx playwright test --config=playwright.local.config.ts e2e/input-card.spec.ts

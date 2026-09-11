@@ -25,7 +25,7 @@
  *        only the LoRA row. Schema-driven, not hardcoded.
  *
  * The LoRA/CN capability gating (rule 3: form-spec features gate render)
- * has a vitest layer (modifier-subcards.test.tsx). This is the live wire.
+ * has a vitest layer (modifier-subcards.spec.tsx). This is the live wire.
  *
  * Run:
  *   npx playwright test --config=playwright.local.config.ts e2e/modifiers-schema-driven.spec.ts

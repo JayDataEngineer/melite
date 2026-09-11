@@ -3,7 +3,12 @@ const name = "infer-gallery";
 /** Routes arrive with the webServer service. */
 const inject = ["webServer"];
 const DEFAULT_TIMEOUT_MS = 15e3;
-const RUNS_LIMIT = "50";
+/** THE RUNS-WINDOW LAW (restored with the media full port, 2026-09-11):
+*  always pull the door's hard max — a smaller window lets sidecar
+*  floods push artifact rows out of the listing. 500 is the runs
+*  seat's hard max (the deleted dsh-media panel rode the same law on
+*  /v1/flows/runs?limit=500). */
+const RUNS_LIMIT = "500";
 const DRAFTS_LIMIT = 200;
 /** Sidecar tree default: the estate runs stream (SERVER-STATE ROOT
 *  LAW — build/ was the C era's cwd and is gone). */

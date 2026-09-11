@@ -4,7 +4,31 @@ window.__ModuleLoader__.load({
 		var module = { exports: {} };
 		var exports = module.exports;
 		Object.defineProperty(exports, Symbol.toStringTag, { value: "Module" });
+		//#region \0rolldown/runtime.js
+		var __create = Object.create;
+		var __defProp = Object.defineProperty;
+		var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
+		var __getOwnPropNames = Object.getOwnPropertyNames;
+		var __getProtoOf = Object.getPrototypeOf;
+		var __hasOwnProp = Object.prototype.hasOwnProperty;
+		var __copyProps = (to, from, except, desc) => {
+			if (from && typeof from === "object" || typeof from === "function") for (var keys = __getOwnPropNames(from), i = 0, n = keys.length, key; i < n; i++) {
+				key = keys[i];
+				if (!__hasOwnProp.call(to, key) && key !== except) __defProp(to, key, {
+					get: ((k) => from[k]).bind(null, key),
+					enumerable: !(desc = __getOwnPropDesc(from, key)) || desc.enumerable
+				});
+			}
+			return to;
+		};
+		var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__getProtoOf(mod)) : {}, __copyProps(isNodeMode || !mod || !mod.__esModule || !__hasOwnProp.call(mod, "default") ? __defProp(target, "default", {
+			value: mod,
+			enumerable: true
+		}) : target, mod));
+		//#endregion
 		let react = require("react");
+		react = __toESM(react, 1);
+		let _deepseek_ai_dsh_client_ui_primitives = require("@deepseek-ai/dsh-client-ui-primitives");
 		let react_jsx_runtime = require("react/jsx-runtime");
 		//#region src/client/apply-guard.ts
 		/**
@@ -23,46 +47,223 @@ window.__ModuleLoader__.load({
 			claimed = false;
 		}
 		//#endregion
-		//#region src/client/runs-data.ts
+		//#region src/client/bench-load.ts
 		/**
-		* Fetch the runs list through the same-origin proxy.
-		* @param fetchImpl - injectable fetch (tests pass a pointed impl; production uses global).
+		* bench-load — the restore gestures of the media plane (MediaPanel's
+		* wand + its Flows face), 2026-09-10 (the bench rework's hunk 4: the
+		* DECK_OPEN_WITH_DRAFT window seam retired with the deck takeover);
+		* FULL PORT 2026-09-11 onto the gallery's routes + the CAS law.
+		*
+		* The gesture realizes "one shared state": a draft row click LOADS that
+		* draft's stages onto THE BENCH (POST /v1/bench/ensure — the same load
+		* wire melite_flow's bench verb rides; stages replace, the append-only
+		* log records a load entry, undo restores) and then opens the cards
+		* tab. The user refines on the bench — the same state the agent edits.
+		*
+		* THE CAS READ-MODIFY-WRITE (the door's own law, upgraded since the
+		* original port): under persistent storage the shared bench SURVIVES
+		* runs — a bare {stages} ensure on an existing bench refuses
+		* bench/cas-conflict. Read the row first (GET /v1/bench/<session>); a
+		* live bench's rev rides as expect_rev, a missing bench births (no
+		* expect_rev — the only arm that may create).
+		*
+		* All wires are same-origin doors the host already serves; failures
+		* surface as honest caller-side errors, never thrown past React.
 		*/
-		async function fetchRuns(fetchImpl = fetch) {
-			let response;
+		/** The bench session the cards tab serves (melite-tools' DEFAULT_BENCH). */
+		const BENCH_SESSION = "main";
+		/** The bench tab's address (cross-plugin contract, the estate-artifact
+		* pattern: client bundles cannot import across plugins, so the prefix
+		* is restated with its definition site named — cards-resource.ts). */
+		const CARDS_BENCH_ADDRESS = "dsh-resource://cards/bench";
+		/** The run tab's address (same contract; live runs open in the cards
+		*  tab's run view — the wand restores through the bench address
+		*  instead, so this twin stays for address-compat, pinned by the
+		*  wall + the codec test). */
+		function cardsRunAddress(runId) {
+			return "dsh-resource://cards/run/" + encodeURIComponent(runId);
+		}
+		/** The error message an !ok JSON response carries, else HTTP n. */
+		async function refusalOf(res, answer) {
+			const err = answer?.["error"];
+			return typeof err === "string" && err !== "" ? err : "HTTP " + String(res.status);
+		}
+		/** Load one draft onto the bench and open the cards tab.
+		*  @param draftId the drafts door's row id (never empty — callers gate).
+		*  @param deps the open action + the error surface. */
+		async function loadDraftOntoBench(draftId, deps) {
 			try {
-				response = await fetchImpl("/infer-gallery/runs");
-			} catch (error) {
-				return {
-					phase: "error",
-					status: 0,
-					body: String(error instanceof Error ? error.message : error)
-				};
+				const docRes = await fetch("/v1/flows/drafts/" + encodeURIComponent(draftId), { headers: { accept: "application/json" } });
+				const doc = await docRes.json().catch(() => null);
+				if (!docRes.ok || typeof doc !== "object" || doc === null) {
+					deps.onError("could not read that card (" + await refusalOf(docRes, doc) + ")");
+					return;
+				}
+				const stages = doc["stages"];
+				const intent = doc["intent"];
+				let expectRev;
+				const getRes = await fetch("/v1/bench/" + encodeURIComponent(BENCH_SESSION), { headers: { accept: "application/json" } });
+				if (getRes.ok) {
+					const rev = (await getRes.json().catch(() => null))?.["rev"];
+					if (typeof rev === "number") expectRev = rev;
+				}
+				const ensureRes = await fetch("/v1/bench/ensure", {
+					method: "POST",
+					headers: { "content-type": "application/json" },
+					body: JSON.stringify({
+						session: BENCH_SESSION,
+						author: "user",
+						stages: Array.isArray(stages) ? stages : [],
+						...typeof intent === "string" ? { intent } : {},
+						...expectRev !== void 0 ? { expect_rev: expectRev } : {}
+					})
+				});
+				const answer = await ensureRes.json().catch(() => null);
+				if (!ensureRes.ok) {
+					deps.onError("the bench refused the load (" + await refusalOf(ensureRes, answer) + ")");
+					return;
+				}
+				deps.openResource(CARDS_BENCH_ADDRESS);
+			} catch (e) {
+				deps.onError("bench load failed — " + (e instanceof Error ? e.message : String(e)));
 			}
-			const body = await response.text();
-			if (!response.ok) return {
-				phase: "error",
-				status: response.status,
-				body
-			};
+		}
+		/** Load one RUN's card onto the bench and open the cards tab.
+		*  WHY THE SIDECAR (2026-09-11, the wand proof): the cards tab's run
+		*  view hydrates from `runs/status`, which reads the registry's LIVE
+		*  runs only — every settled run answers `runs/unknown-run`, so a
+		*  wand that merely opens `cards/run/<id>` lands on a failure frame
+		*  for the whole archive. The gallery host's sidecar route names the
+		*  producing draft for settled runs too, so the wand resolves the
+		*  draft itself and rides the same bench-load every other gesture
+		*  uses — the workflow is back on the bench before the cards tab
+		*  opens, for live and settled runs alike.
+		*  @param runId the runs door's row id (never empty — callers gate).
+		*  @param deps the open action + the error surface. */
+		async function loadRunOntoBench(runId, deps) {
 			try {
-				const payload = JSON.parse(body);
-				return {
-					phase: "ready",
-					runs: Array.isArray(payload.runs) ? payload.runs : []
-				};
-			} catch {
-				return {
-					phase: "error",
-					status: response.status,
-					body
-				};
+				const sideRes = await fetch("/infer-gallery/flow?run_id=" + encodeURIComponent(runId), { headers: { accept: "application/json" } });
+				const side = await sideRes.json().catch(() => null);
+				if (!sideRes.ok || typeof side !== "object" || side === null) {
+					deps.onError("that run keeps no readable sidecar (" + await refusalOf(sideRes, side) + ")");
+					return;
+				}
+				const flow = side["flow"];
+				const flowDraft = typeof flow === "object" && flow !== null ? flow["draft_id"] : void 0;
+				const topDraft = side["draft_id"];
+				const draftId = typeof flowDraft === "string" && flowDraft !== "" ? flowDraft : typeof topDraft === "string" && topDraft !== "" ? topDraft : "";
+				if (draftId === "") {
+					deps.onError("this run names no draft — nothing to restore");
+					return;
+				}
+				await loadDraftOntoBench(draftId, deps);
+			} catch (e) {
+				deps.onError("bench load failed — " + (e instanceof Error ? e.message : String(e)));
 			}
 		}
 		//#endregion
-		//#region \0dsh-css:infer-gallery/src/client/gallery.module.css.mjs
-		const css = ".iQ568W_entry{border:1px solid color-mix(in srgb, currentColor 20%, transparent);height:26px;color:inherit;opacity:.78;font:inherit;cursor:pointer;background:0 0;border-radius:7px;align-items:center;gap:6px;margin-right:6px;padding:0 10px;font-size:12px;display:inline-flex}.iQ568W_entry:hover{opacity:1}.iQ568W_entry[data-active]{opacity:1;border-color:color-mix(in srgb, currentColor 45%, transparent);background:color-mix(in srgb, currentColor 10%, transparent)}.iQ568W_entry:not([data-wide]){padding:0 7px}.iQ568W_entryIcon{flex:none;width:14px;height:14px;display:inline-flex}.iQ568W_entryIcon svg{width:100%;height:100%}.iQ568W_entryLabel{white-space:nowrap;line-height:1}.iQ568W_overlay{z-index:60;background:var(--dsw-alias-bg-overlay,#00000073);pointer-events:auto;justify-content:center;align-items:center;display:flex;position:fixed;inset:0}.iQ568W_panel{border:1px solid var(--dsw-alias-border-l2,color-mix(in srgb, currentColor 18%, transparent));background:var(--dsw-alias-bg-layer-2);width:min(940px,92vw);max-height:84vh;color:var(--dsw-alias-label-primary);box-shadow:0 18px 50px var(--dsw-alias-bg-overlay,#00000059);border-radius:12px;flex-direction:column;display:flex;overflow:hidden}.iQ568W_panelHead{border-bottom:1px solid var(--dsw-alias-border-l1,color-mix(in srgb, currentColor 12%, transparent));justify-content:space-between;align-items:center;gap:12px;padding:10px 16px;display:flex}.iQ568W_title{margin:0;font-size:14px;font-weight:600}.iQ568W_closeBtn{color:inherit;cursor:pointer;background:0 0;border:none;border-radius:6px;padding:2px 6px;font-size:18px;line-height:1}.iQ568W_closeBtn:hover{background:var(--dsw-alias-interactive-bg-hover,color-mix(in srgb, currentColor 10%, transparent))}.iQ568W_view{flex-direction:column;min-height:0;display:flex}.iQ568W_toolbar{opacity:.75;justify-content:space-between;align-items:center;padding:8px 16px;font-size:12px;display:flex}.iQ568W_refresh{border:1px solid color-mix(in srgb, currentColor 20%, transparent);color:inherit;font:inherit;cursor:pointer;background:0 0;border-radius:6px;padding:2px 10px;font-size:12px}.iQ568W_grid{grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:10px;padding:4px 16px 16px;display:grid;overflow-y:auto}.iQ568W_card{border:1px solid var(--dsw-alias-border-l2,color-mix(in srgb, currentColor 14%, transparent));background:var(--dsw-alias-bg-layer-1,var(--dsw-alias-bg-base));color:inherit;font:inherit;text-align:left;border-radius:10px;flex-direction:column;gap:0;padding:0;display:flex;overflow:hidden}button.iQ568W_card{cursor:pointer}button.iQ568W_card:hover{border-color:var(--dsw-alias-border-l3,color-mix(in srgb, currentColor 38%, transparent))}.iQ568W_thumb{aspect-ratio:16/10;background:var(--dsw-alias-bg-skeleton,color-mix(in srgb, currentColor 8%, transparent));width:100%;display:block;overflow:hidden}.iQ568W_thumbImg{object-fit:cover;width:100%;height:100%;display:block}.iQ568W_thumbPlaceholder{opacity:.55;justify-content:center;align-items:center;width:100%;height:100%;font-size:11px;display:flex}.iQ568W_cardBody{flex-direction:column;gap:6px;padding:8px 10px 10px;display:flex}.iQ568W_cardTop{align-items:center;gap:8px;min-width:0;display:flex}.iQ568W_status{text-transform:uppercase;letter-spacing:.04em;border:1px solid color-mix(in srgb, currentColor 25%, transparent);opacity:.85;border-radius:999px;flex:none;padding:2px 6px;font-size:10px}.iQ568W_status[data-status=completed]{color:var(--dsw-alias-state-success-primary);border-color:var(--dsw-alias-state-success-primary);opacity:1}.iQ568W_status[data-status=failed]{color:var(--dsw-alias-state-error-primary);border-color:var(--dsw-alias-state-error-primary);opacity:1}.iQ568W_status[data-status=running],.iQ568W_status[data-status=queued]{color:var(--dsw-alias-state-warn-primary);border-color:var(--dsw-alias-state-warn-primary);opacity:1}.iQ568W_model{white-space:nowrap;text-overflow:ellipsis;min-width:0;font-size:12px;font-weight:600;overflow:hidden}.iQ568W_prompt{opacity:.8;-webkit-line-clamp:2;-webkit-box-orient:vertical;min-height:2.9em;font-size:11px;line-height:1.45;display:-webkit-box;overflow:hidden}.iQ568W_cardMeta{opacity:.6;justify-content:space-between;align-items:center;gap:8px;font-size:10px;display:flex}.iQ568W_runId{white-space:nowrap;text-overflow:ellipsis;font-family:ui-monospace,monospace;overflow:hidden}.iQ568W_loading,.iQ568W_empty{opacity:.7;padding:24px 16px 32px;font-size:13px}.iQ568W_errorBox{border:1px solid var(--dsw-alias-state-error-primary,#d05656);border-radius:10px;margin:4px 16px 16px;padding:12px 14px;font-size:12px}.iQ568W_errorBody{background:var(--dsw-alias-bg-skeleton,color-mix(in srgb, currentColor 8%, transparent));white-space:pre-wrap;word-break:break-word;border-radius:6px;max-height:180px;margin:8px 0 0;padding:8px 10px;font-family:ui-monospace,monospace;font-size:11px;overflow:auto}";
-		const tagId = "@infer-media/dsh-gallery/gallery.module.css";
+		//#region src/client/decode.ts
+		const row = (v) => Array.isArray(v) ? v : [];
+		function decodeRuns(json) {
+			const d = json ?? {};
+			const errors = row(d.errors);
+			const runs = [];
+			let dropped = 0;
+			for (const raw of row(d.runs)) {
+				const r = raw ?? {};
+				if (typeof r.run_id !== "string" || r.run_id === "") {
+					dropped += 1;
+					continue;
+				}
+				runs.push(r);
+			}
+			if (dropped > 0) errors.push({
+				gateway: "runs",
+				message: "dropped " + String(dropped) + " rows without run_id (unkeyable)"
+			});
+			return {
+				runs,
+				errors
+			};
+		}
+		function decodeDrafts(json) {
+			const d = json ?? {};
+			return {
+				drafts: row(d.drafts),
+				errors: row(d.errors)
+			};
+		}
+		//#endregion
+		//#region src/client/useFeed.ts
+		/**
+		* useFeed — the ONE fetch/load/never-stale engine for sidebar feeds
+		* (audit F6: the runs and drafts feeds each carried a hand-copied
+		* load + 15s-throttled visibility/focus refetch + error trio).
+		*
+		* decode validates at the door: it receives unknown JSON and returns the
+		* typed feed; malformed shapes fall back to empty lists THERE, in one
+		* place per feed, instead of Array.isArray sprinkles at render sites.
+		*/
+		/** Refetch when the page becomes visible / regains focus, throttled.
+		* A new chat session does NOT reload the SPA — without this the panel
+		* sits on hour-old data while fresh runs exist. */
+		function useRefreshOnVisible(reload, throttleMs) {
+			const ref = (0, react.useRef)(reload);
+			ref.current = reload;
+			(0, react.useEffect)(() => {
+				let last = Date.now();
+				const refresh = () => {
+					if (Date.now() - last < throttleMs) return;
+					last = Date.now();
+					ref.current();
+				};
+				const onVis = () => {
+					if (document.visibilityState === "visible") refresh();
+				};
+				document.addEventListener("visibilitychange", onVis);
+				window.addEventListener("focus", refresh);
+				return () => {
+					document.removeEventListener("visibilitychange", onVis);
+					window.removeEventListener("focus", refresh);
+				};
+			}, [throttleMs]);
+		}
+		function useFeed(url, decode, initial) {
+			const [data, setData] = (0, react.useState)(initial);
+			const [loading, setLoading] = (0, react.useState)(true);
+			const [error, setError] = (0, react.useState)("");
+			const load = (0, react.useCallback)(() => {
+				setLoading(true);
+				setError("");
+				fetch(url).then(async (r) => {
+					const json = await r.json();
+					if (!r.ok) {
+						const msg = json.error;
+						throw new Error(typeof msg === "string" && msg !== "" ? msg : "HTTP " + String(r.status));
+					}
+					setData(decode(json));
+				}).catch((e) => {
+					setError(e instanceof Error ? e.message : String(e));
+				}).finally(() => {
+					setLoading(false);
+				});
+			}, [url, decode]);
+			(0, react.useEffect)(() => {
+				load();
+			}, [load]);
+			useRefreshOnVisible(load, 15e3);
+			return {
+				data,
+				loading,
+				error,
+				reload: load,
+				setData
+			};
+		}
+		//#endregion
+		//#region \0dsh-css:infer-gallery/src/client/overlay.module.css.mjs
+		const css = "._2saHFG_lightbox{width:min(1200px,96vw);max-width:96vw}._2saHFG_wand{z-index:3;background:var(--dsw-alias-fill-subtle,#020617d1);color:var(--dsw-alias-state-warn-primary,#fde68a);letter-spacing:.4px;cursor:pointer;opacity:1;border-radius:6px;align-items:center;gap:4px;padding:4px 6px;font-family:inherit;font-size:9px;font-weight:700;display:flex;position:absolute;top:6px;right:6px}";
+		const tagId = "@infer-media/dsh-gallery/overlay.module.css";
 		if (typeof document !== "undefined" && document.querySelector("style[data-plugin-css=" + JSON.stringify(tagId) + "]") === null) {
 			const tag = document.createElement("style");
 			tag.dataset.plugin = "@infer-media/dsh-gallery";
@@ -70,261 +271,1000 @@ window.__ModuleLoader__.load({
 			tag.textContent = css;
 			document.head.appendChild(tag);
 		}
-		var gallery_module_css_default = {
-			"card": "iQ568W_card",
-			"cardBody": "iQ568W_cardBody",
-			"cardMeta": "iQ568W_cardMeta",
-			"cardTop": "iQ568W_cardTop",
-			"closeBtn": "iQ568W_closeBtn",
-			"empty": "iQ568W_empty",
-			"entry": "iQ568W_entry",
-			"entryIcon": "iQ568W_entryIcon",
-			"entryLabel": "iQ568W_entryLabel",
-			"errorBody": "iQ568W_errorBody",
-			"errorBox": "iQ568W_errorBox",
-			"grid": "iQ568W_grid",
-			"loading": "iQ568W_loading",
-			"model": "iQ568W_model",
-			"overlay": "iQ568W_overlay",
-			"panel": "iQ568W_panel",
-			"panelHead": "iQ568W_panelHead",
-			"prompt": "iQ568W_prompt",
-			"refresh": "iQ568W_refresh",
-			"runId": "iQ568W_runId",
-			"status": "iQ568W_status",
-			"thumb": "iQ568W_thumb",
-			"thumbImg": "iQ568W_thumbImg",
-			"thumbPlaceholder": "iQ568W_thumbPlaceholder",
-			"title": "iQ568W_title",
-			"toolbar": "iQ568W_toolbar",
-			"view": "iQ568W_view"
+		var overlay_module_css_default = {
+			"lightbox": "_2saHFG_lightbox",
+			"wand": "_2saHFG_wand"
 		};
 		//#endregion
-		//#region src/client/RunCard.tsx
+		//#region src/client/ui.tokens.ts
 		/**
-		* One generation run as a card: artifact thumbnail (proxied same-origin),
-		* status pill, model/family line, prompt excerpt, and relative time. Cards
-		* with an openable artifact are buttons that open it in a new tab; cards
-		* without one render as plain tiles (nothing to open).
+		* Design tokens — every var(--dsw-alias-…) string in the media family
+		* declared ONCE (audit F6). Numbered suffixes = same alias, different
+		* fallback (opacity variants). Pinned by the parity wall
+		* (tests/walls/ts/suites/media-sidebar.test.ts — tokens single site).
 		*/
-		/** The URL a card click opens: first image artifact, else the thumbnail. */
-		function runOpenUrl(run) {
-			const image = (run.artifacts ?? []).find((a) => a?.type === "image" && typeof a.url === "string" && a.url !== "");
-			if (image?.url !== void 0) return image.url;
-			if (typeof run.thumbnail === "string" && run.thumbnail !== "") return run.thumbnail;
+		const bgBase1 = "var(--dsw-alias-bg-base, #000)";
+		const bgBase2 = "var(--dsw-alias-bg-base, #0b0e14)";
+		const bgBase3 = "var(--dsw-alias-bg-base, #422006)";
+		const bgLayer1 = "var(--dsw-alias-bg-layer-1, #1e293b)";
+		const bgLayer2 = "var(--dsw-alias-bg-layer-2, #0f172a)";
+		const bgOverlay1 = "var(--dsw-alias-bg-overlay, rgba(127,29,29,0.35))";
+		const borderL2 = "var(--dsw-alias-border-l2, rgba(148,163,184,0.25))";
+		/** Caption-scrim weight of the same fill token (the full port's
+		*  single-site fix: the old package restated this raw spelling inline
+		*  in ui.tsx — one token, one site, three weights). */
+		const fillSubtleCaption = "var(--dsw-alias-fill-subtle, rgba(2,6,23,0.92))";
+		const labelPrimary1 = "var(--dsw-alias-label-primary, rgb(226,232,240))";
+		const labelPrimary2 = "var(--dsw-alias-label-primary, rgba(226,232,240,0.85))";
+		const labelSecondary2 = "var(--dsw-alias-label-secondary, rgba(148,163,184,0.9))";
+		const stateBusinessPrimary = "var(--dsw-alias-state-business-primary, rgb(147,197,253))";
+		const stateBusinessPrimaryBg2 = "var(--dsw-alias-state-business-primary-bg, rgba(59,130,246,0.28))";
+		const stateWarnPrimary1 = "var(--dsw-alias-state-warn-primary, rgba(250,204,21,0.9))";
+		const stateWarnPrimary2 = "var(--dsw-alias-state-warn-primary, rgba(250,204,21,0.92))";
+		const textTertiary2 = "var(--dsw-alias-text-tertiary, rgba(148,163,184,0.75))";
+		const textTertiary3 = "var(--dsw-alias-text-tertiary, rgba(148,163,184,0.8))";
+		//#endregion
+		//#region src/client/ui.tsx
+		const FONT = "system-ui, -apple-system, Segoe UI, Roboto, sans-serif";
+		/** The stage every non-image tile/card sits on. */
+		const gradientStage = `linear-gradient(160deg, ${bgLayer1} 0%, ${bgLayer2} 100%)`;
+		/** Caption scrim over posters. */
+		const gradientCaption = `linear-gradient(to top, ${fillSubtleCaption}, transparent)`;
+		function PanelShell({ dataAttr, children }) {
+			return /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
+				["data-" + dataAttr]: "1",
+				style: {
+					padding: 14,
+					fontFamily: FONT,
+					color: labelPrimary1,
+					height: "100%",
+					overflowY: "auto",
+					boxSizing: "border-box"
+				},
+				children
+			});
 		}
-		/** Model/family label: params.model, else the families list, else the flow kind. */
-		function runModel(run) {
-			const model = run.params?.["model"];
-			if (typeof model === "string" && model !== "") return model;
-			const families = (run.families ?? []).filter((f) => typeof f === "string" && f !== "");
-			if (families.length > 0) return families.join(", ");
-			return run.flow ?? "unknown";
+		function Stat({ children }) {
+			return /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+				style: {
+					fontSize: 11,
+					color: labelSecondary2
+				},
+				children
+			});
 		}
-		/** Compact relative/absolute time label from a unix-seconds created_at. */
-		function formatRunTime(seconds) {
-			if (typeof seconds !== "number" || !Number.isFinite(seconds)) return "";
-			const ms = seconds * 1e3;
-			const minutes = Math.floor((Date.now() - ms) / 6e4);
-			if (minutes < 1) return "just now";
-			if (minutes < 60) return minutes + "m ago";
-			const hours = Math.floor(minutes / 60);
-			if (hours < 24) return hours + "h ago";
-			const d = new Date(ms);
-			const pad = (n) => String(n).padStart(2, "0");
-			return d.getFullYear() + "-" + pad(d.getMonth() + 1) + "-" + pad(d.getDate()) + " " + pad(d.getHours()) + ":" + pad(d.getMinutes());
+		function SearchInput({ value, onChange, placeholder }) {
+			return /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Input, {
+				value,
+				onChange: (e) => {
+					onChange(e.target.value);
+				},
+				placeholder,
+				style: { width: 170 }
+			});
 		}
-		function RunCardInner({ run }) {
-			const url = runOpenUrl(run);
-			const status = typeof run.status === "string" && run.status !== "" ? run.status : "unknown";
-			const body = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(react_jsx_runtime.Fragment, { children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-				className: gallery_module_css_default.thumb,
-				"data-empty": url === void 0 || void 0,
-				children: url !== void 0 ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("img", {
-					className: gallery_module_css_default.thumbImg,
-					src: url,
-					alt: "",
-					loading: "lazy"
-				}) : /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-					className: gallery_module_css_default.thumbPlaceholder,
-					"aria-hidden": "true",
-					children: "no artifact"
-				})
-			}), /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", {
-				className: gallery_module_css_default.cardBody,
+		function RefreshButton({ loading, onClick }) {
+			return /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+				variant: "outline",
+				size: "sm",
+				onClick,
+				disabled: loading,
+				children: loading ? "loading…" : "refresh"
+			});
+		}
+		function Empty({ children }) {
+			return /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
+				style: {
+					color: labelSecondary2,
+					fontSize: 13,
+					padding: 20
+				},
+				children
+			});
+		}
+		function ErrorBanner({ children }) {
+			return /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
+				style: {
+					padding: 14,
+					borderRadius: 8,
+					background: bgOverlay1,
+					border: "1px solid var(--dsw-alias-state-error-primary, rgba(248,113,113,0.4))",
+					fontSize: 13
+				},
+				children
+			});
+		}
+		/** Per-gateway notes: transport failures, door drops and dedupe overlap
+		* all ride the same errors channel — the message says which. */
+		function GatewayErrors({ errors }) {
+			if (errors.length === 0) return null;
+			return /* @__PURE__ */ (0, react_jsx_runtime.jsx)(react_jsx_runtime.Fragment, { children: errors.map((e) => /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+				style: {
+					fontSize: 11,
+					color: stateWarnPrimary1,
+					marginBottom: 4
+				},
 				children: [
-					/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", {
-						className: gallery_module_css_default.cardTop,
-						children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-							className: gallery_module_css_default.status,
-							"data-status": status,
-							children: status
-						}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-							className: gallery_module_css_default.model,
-							children: runModel(run)
-						})]
+					"gateway ",
+					e.gateway,
+					": ",
+					e.message
+				]
+			}, e.gateway + e.message)) });
+		}
+		//#endregion
+		//#region src/client/media-kinds.ts
+		/** The client classifier's vocabulary (typed DATA — see header). */
+		const MEDIA_KINDS = {
+			kinds: {
+				video: {
+					label: "Video",
+					exts: [
+						"mp4",
+						"webm",
+						"mkv",
+						"mov"
+					],
+					gallery: [
+						"mp4",
+						"webm",
+						"mov"
+					]
+				},
+				image: {
+					label: "Images",
+					exts: [
+						"png",
+						"jpg",
+						"jpeg",
+						"webp",
+						"gif",
+						"svg",
+						"bmp"
+					],
+					gallery: [
+						"png",
+						"jpg",
+						"jpeg",
+						"webp",
+						"gif"
+					]
+				},
+				audio: {
+					label: "Audio",
+					exts: [
+						"wav",
+						"flac",
+						"mp3",
+						"ogg",
+						"m4a",
+						"aac"
+					],
+					gallery: [
+						"wav",
+						"flac",
+						"ogg",
+						"mp3"
+					]
+				},
+				model: {
+					label: "3D",
+					exts: ["glb", "gltf"],
+					gallery: ["glb", "gltf"]
+				}
+			},
+			policy: { maxListedImages: 3 }
+		};
+		//#endregion
+		//#region src/client/MediaPanel.tsx
+		/**
+		* MediaPanel — the native media archive tab (THE FULL PORT, 2026-09-11:
+		* the deleted dsh-media package's panel, ported onto the gallery's own
+		* host routes — every feature the migrations lost is here again).
+		*
+		* One grid over the gallery's runs route DIRECTLY (GET
+		* /infer-gallery/runs, same-origin — the host rewrites run-relative
+		* artifact names to its same-origin artifact route and serves the
+		* 500-run window, the runs-window law). Everything renders with
+		* NATIVE elements: <video controls autoPlay> in a fullscreen overlay,
+		* <img>, <audio controls>. No iframe, no editor SPA dependency, no
+		* asset-type resolver to fall through.
+		*
+		* Label law (operator-specified format):
+		*   "first 48 chars of the prompt…" — Aug 28, 05:01 AM · filename.mp4
+		* Runs with an empty prompt fall back to run name/flow.
+		*/
+		/** THE ESTATE-ARTIFACT ADDRESS (2026-09-10 regression fix): run artifacts
+		*  live outside the DSH workspace, so no document owner can read them.
+		*  The native seam for addressable non-workspace content is a resource
+		*  address claimed by a tab type — the viewer tab claims
+		*  `dsh-resource://estate-artifact/<b64url of the same-origin artifact
+		*  URL>` (its own tab renders the mesh). The URL this panel embeds is
+		*  its SAME-ORIGIN route path (fetchable from the body; no foreign
+		*  origin ever leaks). The address FORMAT is the cross-plugin contract
+		*  (both sides carry the 4-line codec — client bundles cannot import
+		*  across plugins). When no viewer tab is loaded, openResource on the
+		*  address is a no-op and the download link stays — the artifact must
+		*  remain reachable either way. */
+		const ARTIFACT_PREFIX = "dsh-resource://estate-artifact/";
+		function b64uEncode(text) {
+			const bytes = new TextEncoder().encode(text);
+			let bin = "";
+			for (const b of bytes) bin += String.fromCharCode(b);
+			return btoa(bin).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+		}
+		function estateArtifactAddress(url) {
+			return ARTIFACT_PREFIX + b64uEncode(url);
+		}
+		/** JSON key order = classifier precedence (video beats image on a contradictory row). */
+		const KIND_ORDER = Object.keys(MEDIA_KINDS.kinds);
+		const KIND_LABEL = Object.fromEntries(KIND_ORDER.map((k) => [k, MEDIA_KINDS.kinds[k].label]));
+		const extRe = (exts) => new RegExp("\\.(" + exts.join("|") + ")(\\?|$)", "i");
+		const KIND_RE = Object.fromEntries(KIND_ORDER.map((kind) => [kind, extRe(MEDIA_KINDS.kinds[kind].exts)]));
+		/** Numbered frame dumps (per-frame PNG exports) — noise in a run with 100+ frames. */
+		const FRAME_DUMP = /(^|_)\d{3,}_?\.png$/i;
+		/** Concatenated film = video WITHOUT a per-window suffix; window films
+		*  carry it (video lanes emit `<stem>_w<idx>_<hash>.mp4`). */
+		const WINDOW_FILM = /_w\d+_[0-9a-f]+\.mp4$/;
+		/** Poster siblings rendered beside a film, keyed by artifact stem. */
+		const POSTER_STEMS = [/^(.+)_last_frame\.png$/i, /^(.+)_poster\.png$/i];
+		/** Classifier — kind ORDER comes from the SSOT's key order; the
+		*  type field beats the URL, mime prefixes are the last resort. */
+		function kindOf(a) {
+			const t = a.type ?? "";
+			const u = a.url ?? "";
+			for (const kind of KIND_ORDER) if (t === kind) return kind;
+			for (const kind of KIND_ORDER) if (KIND_RE[kind].test(u)) return kind;
+			if (t.startsWith("video/")) return "video";
+			if (t.startsWith("audio/") || t === "audio") return "audio";
+			if (t.startsWith("image/")) return "image";
+			return null;
+		}
+		/** params is UNTRUSTED wire data — only a structurally-validated
+		* calls[0].text feeds tile labels (audit F8: the old raw cast trusted
+		* any object shape). */
+		function callsTextOf(params) {
+			if (params == null || typeof params !== "object") return "";
+			const calls = params.calls;
+			if (!Array.isArray(calls) || calls.length === 0) return "";
+			const text = calls[0]?.text;
+			return typeof text === "string" ? text.replace(/\s+/g, " ").trim() : "";
+		}
+		function baseName(u) {
+			const clean = u.split("?")[0] ?? u;
+			const parts = clean.split("/");
+			return parts[parts.length - 1] ?? clean;
+		}
+		function timeLabel(sec) {
+			if (typeof sec !== "number" || !Number.isFinite(sec) || sec <= 0) return "";
+			try {
+				return (/* @__PURE__ */ new Date(sec * 1e3)).toLocaleString(void 0, {
+					month: "short",
+					day: "numeric",
+					hour: "2-digit",
+					minute: "2-digit",
+					hour12: false
+				});
+			} catch {
+				return "";
+			}
+		}
+		/** Flatten the runs feed into media tiles (poster map, frame-flood
+		*  guard, dedup by url, label law, FINAL FILM detection, newest sort). */
+		function flatten(runs) {
+			const items = [];
+			const seen = /* @__PURE__ */ new Set();
+			for (const run of runs) {
+				const arts = Array.isArray(run.artifacts) ? run.artifacts : [];
+				const posters = /* @__PURE__ */ new Map();
+				for (const a of arts) {
+					const n = a.name ?? baseName(a.url ?? "");
+					const m = POSTER_STEMS.map((re) => n.match(re)).find((x) => x !== null);
+					if (m !== void 0 && a.url) posters.set(m[1] ?? "", a.url);
+				}
+				const dropFrames = arts.reduce((n, a) => kindOf(a) === "image" ? n + 1 : n, 0) > 20;
+				let lastWindowPoster = "";
+				for (const a of arts) {
+					const kind = kindOf(a);
+					const url = a.url ?? "";
+					if (kind === null || url === "" || seen.has(url)) continue;
+					seen.add(url);
+					const file = a.name ?? baseName(url);
+					if (dropFrames && kind === "image" && FRAME_DUMP.test(file)) continue;
+					const stem = file.replace(/\.[^.]+$/, "");
+					const prompt = String(run.prompt ?? "").replace(/\s+/g, " ").trim();
+					const callsText = callsTextOf(run.params);
+					const labelSrc = prompt !== "" ? prompt : (run.name ?? "") !== "" ? String(run.name) : callsText;
+					const head = labelSrc !== "" ? "\"" + labelSrc.slice(0, 48) + (labelSrc.length > 48 ? "…" : "") + "\"" : String(run.flow ?? run.run_id ?? "");
+					const isFinal = kind === "video" && !WINDOW_FILM.test(file);
+					let poster = "";
+					if (kind === "video") {
+						poster = posters.get(stem) ?? (isFinal ? url : "");
+						if (poster === "" && isFinal) poster = lastWindowPoster;
+						if (WINDOW_FILM.test(file)) {
+							const wf = posters.get(stem);
+							if (wf !== void 0 && wf !== "") lastWindowPoster = wf;
+						}
+						if (poster === "") poster = run.thumbnail ?? "";
+					} else if (kind === "image") poster = url;
+					items.push({
+						id: url,
+						kind,
+						url,
+						poster,
+						head,
+						final: isFinal,
+						runId: String(run.run_id ?? ""),
+						draftId: typeof run.draft_id === "string" ? run.draft_id : "",
+						time: timeLabel(run.created_at),
+						file,
+						created: typeof run.created_at === "number" ? run.created_at : 0
+					});
+				}
+			}
+			items.sort((a, b) => b.created - a.created || Number(b.final) - Number(a.final));
+			return items;
+		}
+		function Glyph({ kind, size = 26 }) {
+			if (kind === "video") return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("svg", {
+				width: size,
+				height: size,
+				viewBox: "0 0 24 24",
+				fill: "none",
+				"aria-hidden": "true",
+				children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("rect", {
+					x: "2.5",
+					y: "5",
+					width: "13",
+					height: "14",
+					rx: "2.2",
+					stroke: "currentColor",
+					strokeWidth: "1.6"
+				}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", {
+					d: "M15.5 10.5 21 7.6v8.8l-5.5-2.9",
+					stroke: "currentColor",
+					strokeWidth: "1.6",
+					strokeLinejoin: "round"
+				})]
+			});
+			if (kind === "audio") return /* @__PURE__ */ (0, react_jsx_runtime.jsx)("svg", {
+				width: size,
+				height: size,
+				viewBox: "0 0 24 24",
+				fill: "none",
+				"aria-hidden": "true",
+				children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", {
+					d: "M4 10v4M8 6.5v11M12 3.5v17M16 7.5v9M20 10v4",
+					stroke: "currentColor",
+					strokeWidth: "1.6",
+					strokeLinecap: "round"
+				})
+			});
+			if (kind === "model") return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("svg", {
+				width: size,
+				height: size,
+				viewBox: "0 0 24 24",
+				fill: "none",
+				"aria-hidden": "true",
+				children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", {
+					d: "M12 2.8 20 7.4v9.2l-8 4.6-8-4.6V7.4",
+					stroke: "currentColor",
+					strokeWidth: "1.6",
+					strokeLinejoin: "round"
+				}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", {
+					d: "M12 12 20 7.4M12 12 4 7.4M12 12v9.2",
+					stroke: "currentColor",
+					strokeWidth: "1.6",
+					strokeLinejoin: "round"
+				})]
+			});
+			if (kind === "image") return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("svg", {
+				width: size,
+				height: size,
+				viewBox: "0 0 24 24",
+				fill: "none",
+				"aria-hidden": "true",
+				children: [
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("rect", {
+						x: "3.5",
+						y: "4.5",
+						width: "17",
+						height: "15",
+						rx: "2",
+						stroke: "currentColor",
+						strokeWidth: "1.6"
 					}),
-					run.prompt !== void 0 && run.prompt !== "" ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-						className: gallery_module_css_default.prompt,
-						title: run.prompt,
-						children: run.prompt
-					}) : null,
-					/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", {
-						className: gallery_module_css_default.cardMeta,
-						children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-							className: gallery_module_css_default.time,
-							children: formatRunTime(run.created_at)
-						}), run.run_id !== void 0 ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-							className: gallery_module_css_default.runId,
-							title: run.run_id,
-							children: run.run_id
-						}) : null]
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", {
+						d: "m6 16 4.5-5.5 3 3.5L16 11l2.5 3",
+						stroke: "currentColor",
+						strokeWidth: "1.6",
+						strokeLinejoin: "round"
+					}),
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("circle", {
+						cx: "9",
+						cy: "8.5",
+						r: "1.3",
+						fill: "currentColor"
 					})
 				]
-			})] });
-			if (url === void 0) return /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
-				className: gallery_module_css_default.card,
-				"data-openable": "false",
-				"data-dsh-part": "run-card",
-				children: body
 			});
-			return /* @__PURE__ */ (0, react_jsx_runtime.jsx)("button", {
-				type: "button",
-				className: gallery_module_css_default.card,
-				"data-openable": "true",
-				"data-dsh-part": "run-card",
-				title: "Open artifact in a new tab",
-				onClick: () => {
-					window.open(url, "_blank", "noopener");
+			return kind;
+		}
+		/** Tile badge rule — ONE place: a model tile always badges 3D, a final
+		*  film badges FINAL FILM, everything else badges nothing. */
+		function badgeFor(item) {
+			if (item.kind === "model") return {
+				text: "3D",
+				warn: false
+			};
+			if (item.final) return {
+				text: "FINAL FILM",
+				warn: true
+			};
+			return null;
+		}
+		function TileBadge({ item }) {
+			const badge = badgeFor(item);
+			if (badge === null) return null;
+			return /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+				style: {
+					position: "absolute",
+					left: 6,
+					top: 6,
+					background: badge.warn ? stateWarnPrimary2 : stateBusinessPrimaryBg2,
+					color: badge.warn ? bgBase3 : stateBusinessPrimary,
+					borderRadius: 5,
+					padding: "2px 6px",
+					fontSize: 9,
+					fontWeight: 700,
+					letterSpacing: .4
 				},
-				children: body
+				children: badge.text
 			});
 		}
-		/** Memoized: a card re-renders only when its own run record changes. */
-		const RunCard = (0, react.memo)(RunCardInner);
-		//#endregion
-		//#region src/client/RunsView.tsx
+		/** Image tiles sit on the base surface (no letterbox); everything else on
+		*  the gradient stage — the shared token-backed gradient (ui.tsx), never
+		*  a restated literal (the single-site token law). */
+		function tileBgFor(kind) {
+			if (kind === "image") return bgBase2;
+			return gradientStage;
+		}
 		/**
-		* Presentational runs view: grid of RunCards over a RunsState. Loading,
-		* error (the proxy's actual error body, verbatim), and empty states render
-		* inline — the view never throws.
+		* 3D artifact view — hands the artifact to the sidebar as a RESOURCE
+		* (estate-artifact address, claimed by a viewer tab type; the mesh
+		* renders in the right panel, orbitable beside the run list).
+		* The download link stays: when the viewer plugin is absent no tab type
+		* claims the address and openResource is a no-op — the artifact must
+		* still be reachable.
 		*/
-		function RunsView({ state, onRefresh }) {
-			const countLabel = state.phase === "ready" ? state.runs.length + " runs" : state.phase === "loading" ? "loading…" : "unavailable";
+		function ModelView({ item, openArtifact }) {
 			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-				className: gallery_module_css_default.view,
-				"data-dsh-part": "runs-view",
+				style: {
+					display: "flex",
+					flexDirection: "column",
+					gap: 10,
+					alignItems: "center"
+				},
+				children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("a", {
+					role: "button",
+					tabIndex: 0,
+					style: {
+						color: stateBusinessPrimary,
+						fontSize: 14,
+						cursor: "pointer"
+					},
+					onClick: (e) => {
+						e.stopPropagation();
+						openArtifact(item);
+					},
+					onKeyDown: (e) => {
+						if (e.key === "Enter" || e.key === " ") {
+							e.stopPropagation();
+							openArtifact(item);
+						}
+					},
+					children: "open 3D view in sidebar"
+				}), /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("a", {
+					href: item.url,
+					download: item.file,
+					style: {
+						color: textTertiary3,
+						fontSize: 13,
+						cursor: "pointer"
+					},
+					onClick: (e) => {
+						e.stopPropagation();
+					},
+					children: ["download ", item.file]
+				})]
+			});
+		}
+		/**
+		* The centered preview — DSH's Modal (headless), the FlowCards drilldown
+		* ride verbatim: body portal, mask, Escape, aria-modal, and focus
+		* handling are the primitive's, never ours. The 2026-09-10 operator
+		* audit caught this as a handrolled portal (own keydown listener, own
+		* fixed mask div, own z-index) — retired. Media sizing rides the
+		* `.lightbox` class (overlay.module.css); inner flex + captions stay
+		* as content styles. (THE LOST MODAL, restored with the full port —
+		* the bare gallery opened a new browser tab instead.)
+		*/
+		function Overlay({ item, onClose, openArtifact }) {
+			return /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Modal, {
+				open: true,
+				onClose,
+				title: item.file || "media preview",
+				headless: true,
+				className: overlay_module_css_default.lightbox,
+				children: /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+					style: {
+						display: "flex",
+						flexDirection: "column",
+						alignItems: "center",
+						justifyContent: "center",
+						gap: 14,
+						padding: 24
+					},
+					children: [
+						item.kind === "video" ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("video", {
+							src: item.url,
+							controls: true,
+							autoPlay: true,
+							playsInline: true,
+							style: {
+								maxWidth: "94vw",
+								maxHeight: "78vh",
+								borderRadius: 8,
+								background: bgBase1
+							}
+						}) : item.kind === "audio" ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("audio", {
+							src: item.url,
+							controls: true,
+							autoPlay: true,
+							style: { width: "min(560px, 90vw)" }
+						}) : item.kind === "model" ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)(ModelView, {
+							item,
+							openArtifact
+						}) : item.kind === "image" ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("img", {
+							src: item.url,
+							alt: item.file,
+							style: {
+								maxWidth: "94vw",
+								maxHeight: "78vh",
+								borderRadius: 8,
+								objectFit: "contain"
+							}
+						}) : null,
+						/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+							style: {
+								color: labelPrimary2,
+								fontSize: 13,
+								maxWidth: "80vw",
+								textAlign: "center",
+								lineHeight: 1.5
+							},
+							children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
+								style: { fontWeight: 600 },
+								children: item.head
+							}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
+								style: { opacity: .7 },
+								children: [item.time, item.file].filter(Boolean).join(" · ")
+							})]
+						}),
+						/* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
+							style: {
+								color: textTertiary3,
+								fontSize: 12
+							},
+							children: "Esc or click the mask to close"
+						})
+					]
+				})
+			});
+		}
+		/** Sidebar tab glyph — exported for the (JSX-free) client entry. */
+		function MediaTabIcon({ size }) {
+			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("svg", {
+				width: size,
+				height: size,
+				viewBox: "0 0 16 16",
+				fill: "none",
+				"aria-hidden": "true",
+				children: [
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("rect", {
+						x: "1.8",
+						y: "3",
+						width: "8.4",
+						height: "10",
+						rx: "1.4",
+						stroke: "currentColor",
+						strokeWidth: "1.3"
+					}),
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", {
+						d: "M10.2 6.4 14 4.6v6.8l-3.8-1.8",
+						stroke: "currentColor",
+						strokeWidth: "1.3",
+						strokeLinejoin: "round"
+					}),
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", {
+						d: "M3.6 5.4h1.6M3.6 8h1.6M3.6 10.6h1.6",
+						stroke: "currentColor",
+						strokeWidth: "1.1",
+						strokeLinecap: "round"
+					})
+				]
+			});
+		}
+		function MediaPanel({ useTabInfo }) {
+			const runsFeed = useFeed("/infer-gallery/runs", decodeRuns, {
+				runs: [],
+				errors: []
+			});
+			const draftsFeed = useFeed("/infer-gallery/drafts", decodeDrafts, {
+				drafts: [],
+				errors: []
+			});
+			const runs = runsFeed.data.runs;
+			const gatewayErrors = runsFeed.data.errors;
+			const drafts = draftsFeed.data.drafts;
+			const loading = runsFeed.loading;
+			const [uiError, setUiError] = (0, react.useState)("");
+			const error = runsFeed.error !== "" ? runsFeed.error : uiError;
+			const setError = setUiError;
+			const [cat, setCat] = (0, react.useState)("all");
+			const [search, setSearch] = (0, react.useState)("");
+			const [preview, setPreview] = (0, react.useState)(null);
+			const [tab, setTab] = (0, react.useState)("artifacts");
+			const tabInfo = useTabInfo !== void 0 ? useTabInfo() : void 0;
+			/** Open one 3D artifact as the estate-artifact resource (ModelView). */
+			const openArtifact = (item) => {
+				const open = tabInfo?.tab.actions.openResource;
+				if (open === void 0) {
+					setUiError("3D view unavailable — the sidebar tab service is not loaded.");
+					return;
+				}
+				open(estateArtifactAddress(item.url));
+			};
+			const load = runsFeed.reload;
+			/** THE WAND (hunk 4, 2026-09-10; restore arm 2026-09-11): "recover
+			*  the cards that made this media" restores the run's workflow onto
+			*  THE BENCH and opens the cards tab on it. NOT a bare run-address
+			*  open: the run view hydrates from the registry's LIVE runs only,
+			*  so settled runs land on `runs/unknown-run` — the wand resolves
+			*  the producing draft itself (row fast path, else the sidecar)
+			*  and rides the bench CAS load. The window-global → DOM-claim →
+			*  iframe relay it replaced (window.__meliteDeckOpenWithDraft)
+			*  retired with the deck takeover. */
+			const openCards = (item) => {
+				const open = tabInfo?.tab.actions.openResource;
+				if (open === void 0) {
+					setError("Cards view unavailable — the sidebar tab service is not loaded.");
+					return;
+				}
+				const deps = {
+					openResource: open,
+					onError: setError
+				};
+				if (item.draftId !== "") {
+					loadDraftOntoBench(item.draftId, deps);
+					return;
+				}
+				if (item.runId === "") return;
+				loadRunOntoBench(item.runId, deps);
+			};
+			/** FLOW OPEN (hunk 4): a draft row loads onto THE BENCH (the shared
+			*  state both authors edit) and opens the cards tab — bench-load.ts. */
+			const openDraft = (draftId) => {
+				if (draftId === "") return;
+				const open = tabInfo?.tab.actions.openResource;
+				if (open === void 0) {
+					setError("Cards view unavailable — the sidebar tab service is not loaded.");
+					return;
+				}
+				loadDraftOntoBench(draftId, {
+					openResource: open,
+					onError: setError
+				});
+			};
+			const items = (0, react.useMemo)(() => flatten(runs), [runs]);
+			const truncatedRuns = (0, react.useMemo)(() => runs.filter((r) => r.truncated !== void 0 && r.truncated.total > r.truncated.listed).length, [runs]);
+			const counts = (0, react.useMemo)(() => {
+				const c = {
+					all: items.length,
+					...Object.fromEntries(KIND_ORDER.map((k) => [k, 0]))
+				};
+				for (const it of items) c[it.kind] += 1;
+				return c;
+			}, [items]);
+			const shown = (0, react.useMemo)(() => {
+				const q = search.trim().toLowerCase();
+				return items.filter((it) => {
+					if (cat !== "all" && it.kind !== cat) return false;
+					if (q === "") return true;
+					return (it.head + " " + it.file + " " + it.time).toLowerCase().includes(q);
+				});
+			}, [
+				items,
+				cat,
+				search
+			]);
+			const chip = (c, label) => {
+				return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(_deepseek_ai_dsh_client_ui_primitives.Pill, {
+					active: cat === c,
+					onClick: () => {
+						setCat(c);
+					},
+					children: [
+						label,
+						" ",
+						counts[c]
+					]
+				}, c);
+			};
+			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(PanelShell, {
+				dataAttr: "infer-media-panel",
 				children: [
 					/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-						className: gallery_module_css_default.toolbar,
-						children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-							className: gallery_module_css_default.count,
-							children: countLabel
-						}), onRefresh !== void 0 ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("button", {
-							type: "button",
-							className: gallery_module_css_default.refresh,
-							onClick: onRefresh,
-							children: "refresh"
-						}) : null]
+						style: {
+							display: "flex",
+							alignItems: "center",
+							gap: 10,
+							flexWrap: "wrap",
+							marginBottom: 10
+						},
+						children: [
+							/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+								style: {
+									fontWeight: 700,
+									fontSize: 14
+								},
+								children: "Infer Media"
+							}),
+							/* @__PURE__ */ (0, react_jsx_runtime.jsxs)(Stat, { children: [
+								runs.length,
+								" runs · ",
+								items.length,
+								" artifacts",
+								gatewayErrors.length > 0 ? " · " + gatewayErrors.length + " gateway note" + (gatewayErrors.length > 1 ? "s" : "") : "",
+								truncatedRuns > 0 ? " · " + truncatedRuns + " capped" : ""
+							] }),
+							/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", { style: { flex: 1 } }),
+							/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+								style: {
+									display: "flex",
+									gap: 4
+								},
+								children: ["flows", "artifacts"].map((t) => /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Pill, {
+									active: tab === t,
+									onClick: () => {
+										setTab(t);
+									},
+									children: t === "flows" ? "Flows " + String(drafts.length) : "Artifacts " + String(items.length)
+								}, t))
+							}),
+							/* @__PURE__ */ (0, react_jsx_runtime.jsx)(SearchInput, {
+								value: search,
+								onChange: setSearch,
+								placeholder: "search prompt, file…"
+							}),
+							/* @__PURE__ */ (0, react_jsx_runtime.jsx)(RefreshButton, {
+								loading,
+								onClick: load
+							})
+						]
 					}),
-					state.phase === "loading" ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
-						className: gallery_module_css_default.loading,
-						children: "Loading runs…"
-					}) : null,
-					state.phase === "error" ? /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-						className: gallery_module_css_default.errorBox,
-						"data-dsh-part": "runs-error",
-						children: [/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("strong", { children: [
-							"Gallery data unavailable (HTTP ",
-							state.status,
-							")"
-						] }), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("pre", {
-							className: gallery_module_css_default.errorBody,
-							children: state.body
-						})]
-					}) : null,
-					state.phase === "ready" && state.runs.length === 0 ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
-						className: gallery_module_css_default.empty,
-						children: "No runs yet — generate something in Melite first."
-					}) : null,
-					state.phase === "ready" && state.runs.length > 0 ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
-						className: gallery_module_css_default.grid,
-						children: state.runs.map((run, i) => /* @__PURE__ */ (0, react_jsx_runtime.jsx)(RunCard, { run }, run.run_id ?? String(i)))
+					/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+						style: {
+							display: "flex",
+							gap: 6,
+							marginBottom: 12,
+							flexWrap: "wrap"
+						},
+						children: [chip("all", "All"), KIND_ORDER.map((k) => chip(k, KIND_LABEL[k]))]
+					}),
+					tab === "flows" ? drafts.length === 0 ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Empty, { children: "no composed cards yet — build one in a chat." }) : /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
+						"data-infer-media-drafts": "1",
+						style: {
+							display: "flex",
+							flexDirection: "column",
+							gap: 6
+						},
+						children: drafts.map((d) => /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("button", {
+							onClick: () => {
+								openDraft(d.draft_id ?? "");
+							},
+							"data-draft": d.draft_id,
+							style: {
+								display: "flex",
+								alignItems: "center",
+								gap: 10,
+								textAlign: "left",
+								border: "1px solid " + borderL2,
+								borderRadius: 10,
+								padding: "8px 12px",
+								background: gradientStage,
+								cursor: "pointer",
+								color: labelPrimary1,
+								fontFamily: "inherit"
+							},
+							children: [
+								/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+									style: {
+										fontSize: 15,
+										lineHeight: 0,
+										color: stateWarnPrimary1
+									},
+									children: "▸"
+								}),
+								/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", {
+									style: {
+										flex: 1,
+										minWidth: 0,
+										display: "flex",
+										flexDirection: "column",
+										gap: 2
+									},
+									children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+										style: {
+											fontSize: 13,
+											fontWeight: 600,
+											overflow: "hidden",
+											textOverflow: "ellipsis",
+											whiteSpace: "nowrap"
+										},
+										children: d.name || d.draft_id
+									}), /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", {
+										style: {
+											fontSize: 10,
+											fontFamily: "ui-monospace, monospace",
+											color: labelSecondary2,
+											overflow: "hidden",
+											textOverflow: "ellipsis",
+											whiteSpace: "nowrap"
+										},
+										children: [
+											d.model || "card",
+											" · ",
+											d.draft_id
+										]
+									})]
+								}),
+								typeof d.source === "string" && d.source !== "" ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+									style: {
+										fontSize: 9,
+										color: textTertiary2,
+										border: "1px solid " + borderL2,
+										borderRadius: 6,
+										padding: "2px 6px"
+									},
+									children: d.source.replace(/^https?:\/\//, "")
+								}) : null
+							]
+						}, d.draft_id ?? Math.random()))
+					}) : /* @__PURE__ */ (0, react_jsx_runtime.jsx)(GatewayErrors, { errors: gatewayErrors }),
+					tab === "artifacts" && (error !== "" ? /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(ErrorBanner, { children: ["failed to load runs: ", error] }) : loading && items.length === 0 ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Empty, { children: "loading runs…" }) : shown.length === 0 ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Empty, { children: "no artifacts match." }) : /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
+						style: {
+							display: "grid",
+							gridTemplateColumns: "repeat(auto-fill, minmax(148px, 1fr))",
+							gap: 10
+						},
+						children: shown.map((it) => /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("button", {
+							onClick: () => {
+								setPreview(it);
+							},
+							style: {
+								position: "relative",
+								aspectRatio: "16 / 9",
+								borderRadius: 10,
+								overflow: "hidden",
+								border: "1px solid var(--dsw-alias-border-l2, rgba(148,163,184,0.25))",
+								cursor: "pointer",
+								padding: 0,
+								background: tileBgFor(it.kind),
+								display: "flex",
+								alignItems: "center",
+								justifyContent: "center",
+								color: "var(--dsw-alias-text-tertiary, rgba(148,163,184,0.75))",
+								textAlign: "left",
+								fontFamily: "inherit"
+							},
+							children: [
+								it.poster !== "" ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("img", {
+									src: it.poster,
+									alt: "",
+									loading: "lazy",
+									style: {
+										position: "absolute",
+										inset: 0,
+										width: "100%",
+										height: "100%",
+										objectFit: "cover"
+									}
+								}) : null,
+								it.kind === "video" ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+									style: {
+										position: "absolute",
+										right: 6,
+										bottom: 6,
+										background: "var(--dsw-alias-fill-subtle, rgba(2,6,23,0.72))",
+										borderRadius: 6,
+										padding: 3,
+										lineHeight: 0,
+										color: "var(--dsw-alias-label-primary, #e2e8f0)"
+									},
+									children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Glyph, {
+										kind: "video",
+										size: 14
+									})
+								}) : null,
+								/* @__PURE__ */ (0, react_jsx_runtime.jsx)(TileBadge, { item: it }),
+								it.runId !== "" ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Tooltip, {
+									label: "Open as cards — this run, live in the cards tab",
+									children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+										role: "button",
+										tabIndex: 0,
+										className: overlay_module_css_default.wand,
+										"aria-label": "Open as cards — this run",
+										onClick: (e) => {
+											e.stopPropagation();
+											openCards(it);
+										},
+										onKeyDown: (e) => {
+											if (e.key === "Enter") {
+												e.stopPropagation();
+												openCards(it);
+											}
+										},
+										children: "✦ CARDS"
+									})
+								}) : null,
+								it.poster === "" ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+									style: { color: "var(--dsw-alias-text-tertiary, rgba(148,163,184,0.55))" },
+									children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Glyph, { kind: it.kind })
+								}) : null,
+								/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", {
+									style: {
+										position: "absolute",
+										left: 0,
+										right: 0,
+										bottom: 0,
+										padding: "16px 6px 4px",
+										background: gradientCaption,
+										fontSize: 10,
+										lineHeight: 1.35,
+										color: "var(--dsw-alias-label-primary, rgba(226,232,240,0.92))",
+										display: "-webkit-box",
+										WebkitLineClamp: 2,
+										WebkitBoxOrient: "vertical",
+										overflow: "hidden"
+									},
+									children: [it.head !== "" ? it.head + " — " : "", [it.time, it.file].filter(Boolean).join(" · ")]
+								})
+							]
+						}, it.id))
+					})),
+					preview !== null ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Overlay, {
+						item: preview,
+						onClose: () => {
+							setPreview(null);
+						},
+						openArtifact
 					}) : null
 				]
 			});
 		}
 		//#endregion
-		//#region src/client/GalleryView.tsx
-		/**
-		* Gallery view: drives fetchRuns into RunsState and renders RunsView. The
-		* refresh button re-runs the effect; unmount cancels late responses.
-		*/
-		function GalleryView() {
-			const [state, setState] = (0, react.useState)({ phase: "loading" });
-			const [tick, setTick] = (0, react.useState)(0);
-			(0, react.useEffect)(() => {
-				let cancelled = false;
-				setState({ phase: "loading" });
-				fetchRuns().then((next) => {
-					if (!cancelled) setState(next);
-				});
-				return () => {
-					cancelled = true;
-				};
-			}, [tick]);
-			const refresh = (0, react.useCallback)(() => setTick((t) => t + 1), []);
-			return /* @__PURE__ */ (0, react_jsx_runtime.jsx)(RunsView, {
-				state,
-				onRefresh: refresh
-			});
-		}
-		//#endregion
-		//#region src/client/store.ts
-		function createGalleryStore() {
-			let open = false;
-			const listeners = /* @__PURE__ */ new Set();
-			const emit = () => {
-				for (const listener of listeners) listener();
-			};
-			return {
-				subscribe(listener) {
-					listeners.add(listener);
-					return () => {
-						listeners.delete(listener);
-					};
-				},
-				isOpen: () => open,
-				toggle: () => {
-					open = !open;
-					emit();
-				},
-				open: () => {
-					if (!open) {
-						open = true;
-						emit();
-					}
-				},
-				close: () => {
-					if (open) {
-						open = false;
-						emit();
-					}
-				}
-			};
-		}
-		/** Singleton: both registered slot components import this one instance. */
-		const galleryStore = createGalleryStore();
-		//#endregion
 		//#region src/client/index.ts
-		/** The tab type's identity (the id its body registers under). */
-		const GALLERY_TAB_ID = "@infer-media/dsh-gallery";
+		/** The tab type's identity (the id its body registers under — the
+		*  deleted package's contract spelling, restored). */
+		const MEDIA_TAB_ID = "infer-media:media";
 		/** Required services (fiber inject waiting — the tab registry must be
 		*  up first). */
 		const inject = ["slots", "sidebarRightTabs"];
 		/**
-		* Client apply: claims the single application slot, then registers the
-		* gallery tab (type + body) exactly as the shipped tabs do.
+		* Client apply: claims the single application slot, then registers
+		* the Media tab (type + body) exactly as the deleted client and the
+		* shipped tabs do.
 		* @param ctx - client root context.
 		*/
 		function apply(ctx) {
@@ -333,38 +1273,43 @@ window.__ModuleLoader__.load({
 			const tab = ctx;
 			try {
 				tab.effect(() => tab.sidebarRightTabs.register({
-					id: GALLERY_TAB_ID,
-					kind: "gallery",
-					title: () => "Gallery",
+					id: MEDIA_TAB_ID,
+					kind: "media",
+					title: () => "Media",
 					guide: [{
-						order: 55,
-						title: () => "Gallery",
-						description: () => "The runs media — every generation's artifacts."
+						order: 51,
+						title: () => "Media",
+						description: () => "Every run's artifacts — the archive, with the lightbox, chips, search and the cards wand.",
+						icon: MediaTabIcon
 					}]
-				}), "melite-gallery: tab type");
+				}), "melite-gallery: media tab type");
 			} catch (error) {
-				console.error("[melite-gallery] tab type registration failed:", error);
+				console.error("[melite-gallery] media tab type registration failed:", error);
 			}
 			try {
 				tab.slots.inject("sidebar.right.pane.tab", () => tab.slots.register({
 					name: "sidebar.right.pane.tab",
-					key: GALLERY_TAB_ID
-				}, GalleryView));
+					key: MEDIA_TAB_ID
+				}, MediaPanel));
 			} catch (error) {
-				console.error("[melite-gallery] tab body registration failed:", error);
+				console.error("[melite-gallery] media tab body registration failed:", error);
 			}
 		}
 		//#endregion
-		exports.GalleryView = GalleryView;
-		exports.RunCard = RunCard;
-		exports.RunsView = RunsView;
+		exports.CARDS_BENCH_ADDRESS = CARDS_BENCH_ADDRESS;
+		exports.MEDIA_KINDS = MEDIA_KINDS;
+		exports.MediaPanel = MediaPanel;
+		exports.MediaTabIcon = MediaTabIcon;
 		exports.apply = apply;
-		exports.fetchRuns = fetchRuns;
-		exports.formatRunTime = formatRunTime;
-		exports.galleryStore = galleryStore;
+		exports.callsTextOf = callsTextOf;
+		exports.cardsRunAddress = cardsRunAddress;
+		exports.decodeDrafts = decodeDrafts;
+		exports.decodeRuns = decodeRuns;
+		exports.flatten = flatten;
 		exports.inject = inject;
-		exports.runModel = runModel;
-		exports.runOpenUrl = runOpenUrl;
+		exports.kindOf = kindOf;
+		exports.loadDraftOntoBench = loadDraftOntoBench;
+		exports.useFeed = useFeed;
 		return module.exports;
 	}
 });

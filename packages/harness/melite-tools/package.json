@@ -9,8 +9,7 @@
   "scripts": {
     "build": "tsdown src/index.ts src/doors.ts --format esm --dts --outDir lib",
     "typecheck": "tsc --noEmit",
-    "test:smoke": "node test/smoke.mjs",
-    "test": "bun test test/melite-flow.test.ts test/llm-route-preference.test.ts"
+    "test:smoke": "node test/smoke.mjs"
   },
   "dsh": {
     "bundle": {

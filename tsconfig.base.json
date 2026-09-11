@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json.schemastore.org/tsconfig",
+  "compilerOptions": {
+    "target": "ES2024",
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "strict": true,
+    "skipLibCheck": true,
+    "allowImportingTsExtensions": true,
+    "noEmit": true,
+    "types": ["node"],
+    "paths": {
+      // Runtime source-plane resolution for the estate remotes
+      // (@melite/estate-drafts/manage/media/runs) lives in the vitest
+      // alias facade (vitest.shared.ts SOURCE_PLANE_ALIAS): the
+      // standard-decorator plugin lowers their `@Remote` decorators, so
+      // every vitest lane loads src (ledger TEST-7). No tsconfig paths
+      // rows for them yet — adding rows would re-typecheck every
+      // importer against src before the tsc battery proves that green;
+      // types check against src via each package's own tsconfig today.
+      // Migration to vite-tsconfig-paths rides the pnpm store unlock.
+      "@melite-plugin/dsh-tools": ["./packages/harness/melite-tools/src/index.ts"]
+    }
+  }
+}

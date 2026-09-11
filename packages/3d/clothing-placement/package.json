@@ -12,7 +12,6 @@
     "./tool": "./src/tool.ts"
   },
   "scripts": {
-    "test": "node --experimental-strip-types --test tests/",
     "typecheck": "tsc --noEmit -p ."
   },
   "dependencies": {

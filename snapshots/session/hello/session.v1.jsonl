@@ -1,0 +1,5 @@
+{"type":"header","format":"v0","sessionId":"hello-1","profile":"melite-test"}
+{"type":"user","text":"hello"}
+{"type":"assistant","text":"hello back"}
+{"type":"user","text":"one more turn"}
+{"type":"assistant","text":"successor generation reply"}

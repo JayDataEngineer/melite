@@ -21,7 +21,8 @@ pre-commit:
 
 pre-push:
   jobs:
-    # The full local battery on push: tsc per package (the CI
-    # matrix's local mirror) + walls again (cheap).
-    - name: tsc x5 + walls (full)
+    # The full local battery on push: tsc per typecheck package
+    # (CI runs unit/coverage/tiers only — types are the battery's
+    # to own) + the walls via the root vitest node project.
+    - name: tsc + walls (full)
       run: node tools/hook-full-battery.mjs

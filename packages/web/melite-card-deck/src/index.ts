@@ -76,8 +76,9 @@ export function apply(ctx: Context): void {
   // <pkg>/lib/, the editor dist sits at packages/web/editor/dist — TWO
   // levels up from lib lands on packages/web, then 'editor/dist'.
   // (2026-09-10 depth fix history kept: the default once carried three
-  // '..' — one too many since the family split; test/editor-dist.test.mjs
-  // asserts the built default resolves to a real index.html.)
+  // '..' — one too many since the family split;
+  // tests/expected/editor-dist.expected.e2e.ts asserts the built
+  // default resolves to a real index.html.)
   // MELITE_EDITOR_DIST overrides for out-of-repo layouts.
   const here = path.dirname(fileURLToPath(import.meta.url))
   const distRoot = path.resolve(process.env.MELITE_EDITOR_DIST

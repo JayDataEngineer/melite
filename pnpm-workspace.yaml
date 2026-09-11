@@ -15,7 +15,8 @@ minimumReleaseAge: 0
 ## pathways — the editor and every engine plugin consume it; no consumer
 ## hosts shared infrastructure in its subtree.
 packages:
-  - 'apps/*' # PRODUCT ASSEMBLIES (DSH shape: apps/ = product, packages/ = capability — apps/gateway owns the process rim)
+  # (2026-09-11: the apps/* product-assembly glob died with the gateway
+  # kill — apps/ no longer exists; the estate serves in-process.)
   - 'packages/*/*' # STRUCTURE STAGE 2 (2026-09-08): uniform DSH two-tier — packages/<domain>/<pkg>; mid-tier dirs (harness/dsh, web/dsh) and 1-tier leaves died
   - 'packages/web-kit/*'
     # WEB-KIT (2026-09-11): the @melite/* kit packages are REAL workspace members — the editor
@@ -33,6 +34,7 @@ packages:
   - 'packages/engines/*' # ENGINE DOMAIN (STAGE 1, 2026-09-08): engine leaves (@melite/engine-comfyui first; MCP-as-cards slots beside it — the package root, not action_cards/)
 
 allowBuilds:
+  '@parcel/watcher': set this to true or false
   lefthook: true
 
 ## ONE REACT for the whole workspace (web-registry move, 2026-09-03):

@@ -1,0 +1,18 @@
+# snapshot.yml — keyless recorded-session scenario (DSH tier 6).
+# Parent filenames are session[.vN].jsonl; v0 omits .v0; replay, record,
+# and refresh select the numerically highest committed generation —
+# session.v1.jsonl is the authored successor of session.jsonl and is the
+# selected parent (its v0 predecessor stays committed, never rewritten).
+# snapshot.yml declares the profile, composition/header class, recording
+# policy, and workspace facts. A mutating scenario independently
+# compares the complete workspace.expected/ tree, which record and
+# refresh never rewrite.
+profile: melite-test
+composition: engine-tier
+headerClass: v0
+recordingPolicy: replay
+workspace:
+  facts:
+    - fresh sandbox state root per run
+    - no network (model replay from the selected session generation)
+    - no PROD :3080 contact

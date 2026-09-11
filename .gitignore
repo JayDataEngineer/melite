@@ -2,6 +2,9 @@
 compile_commands.json
 .cache/
 
+# === Test coverage report (vitest --coverage html/text) ===
+coverage/
+
 # === Compiled objects ===
 *.o
 *.so

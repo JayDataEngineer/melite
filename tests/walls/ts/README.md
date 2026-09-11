@@ -1,25 +1,21 @@
-# The TS walls plane — the estate's proof plane (2026-09-10: the
-# gateway kill retired the Python walls with the gateway itself).
+# The TS walls — the estate's proof suites (2026-09-11: vitest-native;
+# the node:test runner `run.mjs` is deleted, the suites run under root
+# `pnpm run test`, node project, pool forks — the file isolation the
+# orchestrator's per-suite subprocesses used to provide).
 
-Wall suites as erasable-syntax TypeScript run under the SAME runtime
-as the serving estate (`node --experimental-strip-types`), mounting
-the real seats in-process (timer, queue, storage, drafts, card
-registry, disclose/manage/skills/load, runs) and asserting live
-behavior — no HTTP rig, no second process.
+Wall suites as erasable-syntax TypeScript mount the real seats
+in-process (timer, queue, storage, drafts, card registry,
+disclose/manage/skills/load, runs) and assert live behavior — no HTTP
+rig, no second process.
 
 ## Runner convention
 
-- suites: `node --experimental-strip-types --test <suite>` (`node:test`,
-  stdlib — no framework, no build, no new deps);
-- full plane: `node tests/walls/ts/run.mjs` (this directory's
-  orchestrator: per-suite subprocesses, sandbox guards, summary);
+- everything: `pnpm run test` (root vitest; this tree's
+  `suites/*.spec.ts` ride the node project);
+- one suite: `npx vitest run tests/walls/ts/suites/<name>.spec.ts`;
 - types: `tsc --noEmit -p tests/walls/ts/tsconfig.json`.
 
-The editor/card-deck lanes keep their own `"test": "vitest run"` scripts;
-this plane does not compete with them — it walls the estate-seat
-contracts the tools and the GUI ride.
-
-## Sandbox discipline (HARD BOUNDARIES, enforced by `run.mjs` + helpers)
+## Sandbox discipline (HARD BOUNDARIES, enforced by the suites)
 
 - never the real state root: every boot gets a fresh `mkdtemp` state
   root (`MELITE_STATE_ROOT`) plus a fixture `MELITE_REPO_ROOT` carrying
@@ -32,20 +28,20 @@ contracts the tools and the GUI ride.
 
 ## Suites
 
-- `suites/disclose.test.ts` — the disclose seat + its lanes (discover
+- `suites/disclose.spec.ts` — the disclose seat + its lanes (discover
   over both planes, manage, skills, load).
-- `suites/runs-remote.test.ts` — the runs registry seat ({flow:} +
+- `suites/runs-remote.spec.ts` — the runs registry seat ({flow:} +
   {model:} arms, pin-sweep honest refusals, the initial_validators
   compile-time gate).
-- `suites/gallery-host.test.ts` — the gallery host row (in-tree seats,
+- `suites/gallery-host.spec.ts` — the gallery host row (in-tree seats,
   cross-host pin, artifact confinement, sidecar law).
-- `suites/ledger-tail.test.ts` — the queue journal tail (matched/shown,
+- `suites/ledger-tail.spec.ts` — the queue journal tail (matched/shown,
   clamp, prefix, lane).
-- `suites/drafts-remote.test.ts`, `suites/queue-service.test.ts` — the
+- `suites/drafts-remote.spec.ts`, `suites/queue-service.spec.ts` — the
   drafts remote (CAS law) and the serial queue service.
-- `suites/models-*.test.ts`, `suites/families-*.test.ts` — the model
+- `suites/models-*.spec.ts`, `suites/families-*.spec.ts` — the model
   DECLs, catalog, cascade, and golden pins.
-- `suites/card-kinds-chain.test.ts`, `suites/form-spec-parity.test.ts`,
-  `suites/params-spec-fidelity.test.ts`, `suites/mod-interlock.test.ts`,
-  `suites/engine-supervisor.test.ts`, `suites/s4-client-deps.test.ts` —
+- `suites/card-kinds-chain.spec.ts`, `suites/form-spec-parity.spec.ts`,
+  `suites/params-spec-fidelity.spec.ts`, `suites/mod-interlock.spec.ts`,
+  `suites/engine-supervisor.spec.ts`, `suites/s4-client-deps.spec.ts` —
   the card/model/engine contract walls.

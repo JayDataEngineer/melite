@@ -1,6 +1,0 @@
-# bun's runner owns test/ (host routes + WS tunnel) — the vitest
-# component suite (src/client/__tests__) and the playwright tour
-# (e2e/) are THEIR runners' files; an unscoped `bun test` must not
-# eat them (it tried: 5 fail + 1 error, 2026-09-06).
-[test]
-root = "test"

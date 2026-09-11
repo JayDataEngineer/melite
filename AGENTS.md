@@ -31,6 +31,24 @@ Cordis is the sole framework and architecture of layer A, any deviation from thi
 		* Most are taken from upstream, but a few must live coded here.
 
 
+# Commands
+
+```sh
+pnpm install            # pnpm workspaces
+pnpm run test           # unit (vitest, all projects)
+pnpm run test:coverage  # CI coverage gate: per-file 100% on gated src (models DECL; ledger TEST-2 owns the exempt debt)
+pnpm run test:e2e       # real-API e2e; self-skips without DEEPSEEK_API_KEY
+pnpm run test:expected  # owner-local process expectations
+pnpm run test:bench     # performance benchmarks
+pnpm run test:snapshot  # keyless recorded-session replay
+pnpm run test:web       # web browser snapshot (replay); test:web:browser owns playwright
+```
+
+Testing policy — `references/deepseek-harness/docs/testing.md`. Every
+non-trivial model- or product-user-visible change updates a keyless
+recorded-session snapshot in the same PR. `test:coverage`, not `test`,
+is the CI coverage gate.
+
 # Hard Rules
 
 ## LAW 1: ARCHITECTURAL INTEGRITY

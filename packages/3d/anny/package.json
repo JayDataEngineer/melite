@@ -12,7 +12,6 @@
     "./ui/studio/shape": "./src/ui/studio/shape.tsx"
   },
   "scripts": {
-    "test": "node --experimental-strip-types --test tests/"
   },
   "dependencies": {
     "@deepseek-ai/cordis": "^4.0.2",

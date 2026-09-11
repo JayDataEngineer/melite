@@ -1,0 +1,97 @@
+// discovery-doors.spec.ts — THE DISCOVERY DOOR WALL: the /v1 arms
+// (discovery.ts — the port of the dead gateway door) derive LIVE
+// from the engine truth, and the LoRA options ride the family-owned
+// catalog composed server-side (LORA LAW: no loras remote — the
+// options ARE the modCatalog rows).
+//
+// Pins:
+//   1. formSpecArm('<served family>') — the envelope shape + the
+//      lora modifier whose option VALUES are exactly the family's
+//      modCatalog('loras') row ids (strengths ride defaults).
+//   2. modelCatalogArm — models/families/cards/capabilities/input_
+//      vocabulary all live-non-empty.
+//   3. formsArm — card rows with the sidebar shape.
+//   4. kindsDoorArm — the CARD_KINDS projection.
+//   5. resolveSpecKey law — an unknown/unoffered key resolves null
+//      (the door 404s, never an invented envelope).
+//
+// Run: npx vitest run tests/walls/ts/suites/discovery-doors.spec.ts
+import { describe, it } from "vitest";
+import assert from "node:assert/strict";
+import {
+  formSpecArm,
+  formsArm,
+  kindsDoorArm,
+  modelCatalogArm,
+  resolveSpecKey,
+} from "../../../../packages/harness/melite-tools/src/discovery.ts";
+import { loadCardDefs, theService } from "../../../../packages/engines/comfyui-cordis/src/cardDefs.ts";
+
+describe("the discovery door arms (live /v1 derivation)", () => {
+  it("serves the krea-2 envelope with the family-owned lora options (LORA LAW)", async () => {
+    const spec = await formSpecArm("krea-2");
+    assert.notEqual(spec, null, "krea-2 must resolve");
+    // The envelope shape (the frozen key set, alphabetical).
+    for (const key of [
+      "defaults", "engine", "features", "fields", "form", "genre",
+      "label", "model", "schema_groups", "service", "variants",
+    ]) {
+      assert.ok(key in (spec as object), `envelope key '${key}'`);
+    }
+    assert.equal((spec as { model: string }).model, "krea-2");
+    assert.equal((spec as { engine: string }).engine, "comfyui");
+    // THE LORA LAW: features.modifiers carries the lora pack whose
+    // options are EXACTLY modCatalog('loras','krea-2') — the family
+    // rows in packages/models/krea-2/mods/loras.ts, composed here.
+    const modifiers = ((spec as { features: { modifiers: Record<string, unknown>[] } })
+      .features.modifiers);
+    const lora = modifiers.find((m) => m.kind === "lora");
+    assert.notEqual(lora, undefined, "the lora modifier pack rides the spec");
+    const cat = theService().modCatalog("loras", "krea-2");
+    const want = cat.rows.map((r) => r.id).sort();
+    const got = [...(lora!.options as Array<{ value: string }>)]
+      .map((o) => o.value).sort();
+    assert.deepEqual(got, want, "lora option values == the family's modCatalog row ids");
+    // A declared default_strength rides the option defaults.
+    const withStrength = cat.rows.find((r) => r.default_strength !== undefined);
+    if (withStrength !== undefined) {
+      const opt = (lora!.options as Array<{ value: string; defaults: { strength?: number } }>)
+        .find((o) => o.value === withStrength.id);
+      assert.equal(opt?.defaults.strength, withStrength.default_strength);
+    }
+  });
+
+  it("serves the live catalog section (models/families/cards/vocabulary)", async () => {
+    const cat = await modelCatalogArm();
+    const models = cat.models as Record<string, unknown>;
+    const families = cat.families as Record<string, unknown>;
+    const cards = cat.cards as Record<string, unknown>;
+    assert.ok(Object.keys(models).length > 0, "models non-empty");
+    assert.ok(Object.keys(families).length > 0, "families non-empty");
+    assert.ok(Object.keys(cards).length > 0, "cards non-empty");
+    assert.ok("krea-2" in families, "krea-2 family present");
+    assert.ok("input_vocabulary" in cat, "the slot SSOT rides the catalog");
+  });
+
+  it("serves the forms table with the sidebar shape", async () => {
+    const forms = await formsArm();
+    assert.ok(Object.keys(forms as Record<string, unknown>).length > 0);
+    for (const row of Object.values(forms as Record<string, Record<string, unknown>>)) {
+      for (const key of ["label", "genre", "order", "plugin", "sidebar_key", "default_service", "hidden", "covers"]) {
+        assert.ok(key in row, `forms row key '${key}'`);
+      }
+    }
+  });
+
+  it("serves the kinds arm (the CARD_KINDS projection)", async () => {
+    const kinds = await kindsDoorArm();
+    const rows = (kinds as { kinds: unknown[] }).kinds;
+    assert.ok(rows.length > 0, "kinds non-empty");
+  });
+
+  it("refuses unknown keys (null — the door 404s, never an invented envelope)", async () => {
+    assert.equal(await formSpecArm("not-a-model"), null);
+    const defs = await loadCardDefs();
+    assert.equal(resolveSpecKey("not-a-model", defs, new Map()), null);
+  });
+});
