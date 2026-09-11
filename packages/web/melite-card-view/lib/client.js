@@ -335,7 +335,7 @@ window.__ModuleLoader__.load({
 		*         DisclosureRow is inline expansion — a different interaction;
 		*         no shipped atom covers row→modal. Hand-rolled, layout-only.
 		*   (a-2) RIDEN 1:1 — the run-status STREAM: @melite/catalog's
-		*         streamFlowEvents (the gateway's /v1/flows/events WS door,
+		*         streamFlowEvents (the estate's /v1/flows/events WS door,
 		*         query form — the proxy-exact path, live bug 2026-09-04) folds
 		*         idempotent stage frames positionally by INDEX (the estate
 		*         mapping law); the poll stays TERMINAL AUTHORITY and the
@@ -343,10 +343,10 @@ window.__ModuleLoader__.load({
 		*         verbatim. (Supersedes the poll-only c-2 entry: the operator
 		*         flagged it 2026-09-10 — "they do webhooks for us.")
 		*   (c-3) NO CLIENT: the draft/run door layer (draft.ts). No DSH
-		*         package serves the melite gateway's flows doors; fetch-
+		*         package wraps the estate's flows doors as a client; fetch-
 		*         injected thin client over the editor's own wire shapes.
 		*/
-		/** Run-status poll cadence (the editor's door, cheap gateway-local read). */
+		/** Run-status poll cadence (the editor's door, cheap same-host read). */
 		const POLL_MS = 1500;
 		/** Parse the melite_flow / card-tool call: the draft id + the model
 		*  header. NATIVE CHANNEL FIRST: a settled result carries the tool's
@@ -779,7 +779,7 @@ window.__ModuleLoader__.load({
 			}) : (0, react.createElement)(RunView, { run: value });
 		}
 		//#endregion
-		//#region ../../../node_modules/.pnpm/@deepseek-ai+dsh-typert-protocol@0.1.5-rc.1_@deepseek-ai+cordis@4.0.2/node_modules/@deepseek-ai/dsh-typert-protocol/lib/index.js
+		//#region ../../../node_modules/.pnpm/@deepseek-ai+dsh-typert-protocol@0.1.5-rc.2_@deepseek-ai+cordis@4.0.2/node_modules/@deepseek-ai/dsh-typert-protocol/lib/index.js
 		/** The one Remote failure class shared by owners, the Gateway, and consumers. */
 		/**
 		* One Remote call failure: a real Error carrying its stable code and typed
@@ -826,11 +826,11 @@ window.__ModuleLoader__.load({
 			return null;
 		}
 		/** One failure frame (the contract's error branch — a real RemoteError
-		*  on the unclassified-Host code; the address prefixes the diagnostic). */
+		*  on the unclassified cards code; the address prefixes the diagnostic). */
 		function failure(address, message) {
 			return {
 				ok: false,
-				error: new RemoteError("gateway/internal", address + ": " + message, {})
+				error: new RemoteError("cards/unclassified", address + ": " + message, {})
 			};
 		}
 		/** Defensive row readers — the door's wire is untyped at this seam. */

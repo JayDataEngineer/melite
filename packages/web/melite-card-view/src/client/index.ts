@@ -28,13 +28,13 @@
  * the web shell fails the whole boot when a plugin apply throws, and
  * an external plugin must not take the GUI down.
  */
-import type { ClientContext } from '@deepseek-ai/dsh-client-runtime/client'
-// Type-only: pulls the slots service onto ClientContext (ctx.slots) and the
-// SlotMap/LocaleNamespaceMap merge tables; the sidebar-right and resources
-// entries add ctx.sidebarRightTabs, ctx.resources, and the
-// 'sidebar.right.pane.tab' seat to those tables (their declaration
-// merging — the packages are devDeps for types only).
-import type {} from '@deepseek-ai/dsh-client-ui-slots'
+import type { Context as ClientContext } from '@deepseek-ai/cordis'
+// Type-only: the service seats this entry touches ride cordis Context
+// declaration-merging from each owning package's ./client entry — the
+// renderer owns ctx.slots, sidebar-right owns ctx.sidebarRightTabs,
+// resources owns ctx.resources. The SlotMap key below merges onto
+// ui-slots' root table (the lexical declare-merge point).
+import type {} from '@deepseek-ai/dsh-client-ui-renderer/client'
 import type {} from '@deepseek-ai/dsh-client-ui-sidebar-right/client'
 import type {} from '@deepseek-ai/dsh-client-resources/client'
 import { claimCardViewApply, releaseCardViewApply } from './apply-guard.ts'

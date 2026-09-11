@@ -18,7 +18,7 @@
  * 2026-09-10 off the retired dsh-better-sidebar registry onto
  * ui-sidebar-right's two-stage contract (type + keyed body).
  */
-import type { ClientContext } from '@deepseek-ai/dsh-client-runtime/client'
+import type { Context as ClientContext } from '@deepseek-ai/cordis'
 import { claimDeckApply, releaseDeckApply } from './apply-guard.ts'
 import { registerRayAssetsTab } from './assets-tab.tsx'
 

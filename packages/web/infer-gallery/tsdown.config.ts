@@ -11,7 +11,6 @@ import { clientBundle } from '../shared/tsdown.client.ts'
 
 export default clientBundle('@infer-media/dsh-gallery', ['src/index.ts'], {
   libExternal: [
-    '@deepseek-ai/dsh-client-runtime',
     '@deepseek-ai/dsh-host-webserver',
   ],
 })

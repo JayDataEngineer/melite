@@ -16,7 +16,7 @@
   },
   "dependencies": {
     "@deepseek-ai/cordis": "^4.0.2",
-    "@deepseek-ai/dsh-tools": "0.1.5-rc.1",
+    "@deepseek-ai/dsh-tools": "0.1.5-rc.2",
     "@deepseek-ai/schemastery": "*",
     "@melite-plugin/motion": "workspace:*",
     "@melite-plugin/timeline": "workspace:*",

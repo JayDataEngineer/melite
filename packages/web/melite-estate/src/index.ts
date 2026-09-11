@@ -36,6 +36,7 @@ import queuePlugin, {
   skillProvider,
   loadProvider,
 } from "@melite/estate-queue";
+import { manageRemotePlugin } from "@melite/estate-manage";
 import { runsRemotePlugin } from "@melite/estate-runs";
 
 /** The estate composition: the engine tier, the drafts service,
@@ -63,6 +64,9 @@ const rows: readonly Plugin[] = [
   // The management seat (REBUILD-15): the ComfyUI-Manager plane —
   // gates on the timer seat (the rail's timeouts).
   manageProvider,
+  // The manage remote (the browser tab's plane): the Typert
+  // namespace `manage` over the seat above.
+  manageRemotePlugin,
   // The skills seat (REBUILD-16): the index + read over the
   // doc-tree walks — gates on the queue seat (the ledger seam).
   skillProvider,

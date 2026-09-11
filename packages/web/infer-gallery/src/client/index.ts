@@ -8,7 +8,7 @@
  * lanes and the chat's rich cards — never as parallel melite-owned chrome.
  * The store + view exports below remain for headless harnesses.
  */
-import type { ClientContext } from '@deepseek-ai/dsh-client-runtime/client'
+import type { Context as ClientContext } from '@deepseek-ai/cordis'
 import { claimGalleryApply, releaseGalleryApply } from './apply-guard.ts'
 
 /** Required services (fiber inject waiting — the slot registry must be up first). */

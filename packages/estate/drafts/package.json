@@ -14,10 +14,10 @@
   },
   "dependencies": {
     "@deepseek-ai/cordis": "^4.0.2",
-    "@deepseek-ai/dsh-storage": "0.1.5-alpha.2",
-    "@deepseek-ai/dsh-storage-domain": "0.1.5-alpha.2",
-    "@deepseek-ai/dsh-storage-json": "0.1.5-alpha.2",
-    "@deepseek-ai/dsh-typert-protocol": "0.1.5-rc.1",
+    "@deepseek-ai/dsh-storage": "0.1.5-rc.2",
+    "@deepseek-ai/dsh-storage-domain": "0.1.5-rc.2",
+    "@deepseek-ai/dsh-storage-json": "0.1.5-rc.2",
+    "@deepseek-ai/dsh-typert-protocol": "0.1.5-rc.2",
     "@deepseek-ai/schemastery": "*",
     "zod": "4.5.4"
   },
