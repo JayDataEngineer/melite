@@ -83,7 +83,7 @@ export function comfyManage(request: EstateRequest): ToolDefinition {
       + 'snapshot_restore (environment snapshots; restore is refused while '
       + 'runs are active); install_extension (registry ids), '
       + 'install_extension_url (git url), download_model (url), provision_model '
-      + '(catalog id — the model_catalog id); restart, stop, launch, update '
+      + '(catalog id — a boarded model id from melite_load, or search_models); restart, stop, launch, update '
       + '(target comfy|cli|all), switch_version, free. INFRA UPKEEP only — it '
       + 'never runs inference, and lifecycle actions are refused while runs are '
       + 'active (stop them or pass force).',
@@ -112,7 +112,7 @@ export function comfyManage(request: EstateRequest): ToolDefinition {
       filename: { type: 'string', description: 'download_model: on-disk filename.' },
       model: {
         type: 'string',
-        description: 'provision_model: catalog id from model_catalog, e.g. "z-image".',
+        description: 'provision_model: boarded model id from melite_load (e.g. "z-image") or search_models.',
       },
       variant: { type: 'string', description: 'provision_model: optional variant id.' },
       quant: { type: 'string', description: 'provision_model: optional quant cell id.' },

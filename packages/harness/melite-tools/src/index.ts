@@ -4,11 +4,11 @@
  * TWO INTERFACES, ONE PLUGIN (the interface law):
  *
  *   BROWSER (default — no env): compose-only. The agent discovers,
- *   loads lanes, reads skills, composes cards (dedicated card
- *   tools) and NEVER executes — the run door is the
- *   USER's Run press (editor -> /melite-proxy/v1/flows/start).
- *   This keeps the old contract (agent/prompts/BASE_PROMPT.md): "It
- *   composes; it never executes."
+ *   loads lanes, reads skills, authors cards on the bench
+ *   (melite_construct) and NEVER executes — the run door is the
+ *   USER's Run press on the card. This keeps the old contract
+ *   (agent/prompts/BASE_PROMPT.md): "It composes; it never
+ *   executes."
  *
  *   HEADLESS (MELITE_HEADLESS=1 — the one-shot/agent mounts): the
  *   DELEGATED OPERATOR. Same queue, same doors, plus the ONE
@@ -17,15 +17,14 @@
  *   monitor. Both ride the queue's registration door — never a
  *   bypass, never a hand-assembled graph (QUEUE LANE LAW).
  *
- * AD HOC TOOLS (MELITE_ADHOC="enhance_prompt,..."): registered ONLY
- * when a session names them. enhance_prompt — the langchain-era
- * prompt enhancement riding ctx.llm (the harness's own model, per-
- * model recipes SSOT in the gateway form-spec) — is the first: never
- * in a base toolset, only called ad hoc.
+ * AD HOC TOOLS (MELITE_ADHOC="..."): registered ONLY when a session
+ * names them. (Empty since the disclosure stroke: enhance_prompt
+ * died as a tool — the editor ✦ door below keeps the user surface
+ * via harnessEnhance.)
  *
- * BASE toolset (both interfaces): melite_discover, melite_load,
- * lane_bundle_peek, lane_bundle_load, comfy_manage, skill_index,
- * skill_read, ledger_tail (+ melite_flow + run_status headless).
+ * BASE toolset (both interfaces): melite_discover, melite_construct,
+ * melite_load, comfy_manage, skill_index, skill_read, ledger_tail
+ * (+ melite_flow + run_status headless).
  * Card tools compose from their card packages (named imports above
  * — the fetch registrar retired with its last row).
  *

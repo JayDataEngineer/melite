@@ -2,7 +2,7 @@
 # setup.sh — thin POSIX wrapper around the ONE provisioning orchestrator.
 #
 # One path, one truth, every platform: all logic lives in
-# packages/engines/comfyui/scripts/provision.ts, run on node
+# packages/engines/comfyui-cordis/scripts/provision.ts, run on node
 # --experimental-strip-types (NO-ESTATE-PYTHON cut, 2026-09-08: the
 # management plane is reached through APIs — ComfyUI HTTP + the
 # comfy-mcp MCP server over stdio — never through in-process
@@ -17,4 +17,4 @@ command -v node >/dev/null 2>&1 || {
 }
 
 exec node --experimental-strip-types --no-warnings \
-  "$HERE/packages/engines/comfyui/scripts/provision.ts" "$@"
+  "$HERE/packages/engines/comfyui-cordis/scripts/provision.ts" "$@"

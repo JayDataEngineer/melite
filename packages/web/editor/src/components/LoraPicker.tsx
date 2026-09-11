@@ -80,11 +80,12 @@ export function LoraPicker({ model, value, onChange, onError, variant = "dark", 
   }, [model, onError])
 
   const metaFor = (filename: string): LoraMeta => meta[stemOf(filename)] ?? {}
-  // Label resolution: catalog meta → bare stem. No filename regex guessing
+  // Label resolution: /v1/loras meta → bare stem. No filename regex guessing
   // (the old fallbackLabel had hardcoded strips for ltx-2/22b-/19b-/id-lora-/
   // celebvhq- that were model-specific label cosmetics). A LoRA without a
-  // catalog label shows its stem — honest, no surprises. To label a LoRA
-  // nicely, declare it in model_catalog.yaml under loras.<stem>.label.
+  // meta label shows its stem — honest, no surprises. To label a LoRA
+  // nicely, declare it on the family's mods/loras.ts row
+  // (label/default_strength — family-owned data, served via /v1/loras).
   const labelFor = (filename: string): string => metaFor(filename).label ?? stemOf(filename)
   const defaultStrengthFor = (filename: string): number => metaFor(filename).default_strength ?? 1.0
 
