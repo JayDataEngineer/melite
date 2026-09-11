@@ -3,11 +3,11 @@
  * infer-provision — profile provisioner for vanilla DSH installs.
  *
  * The bundle patch (cordis.patch.yml) covers the ROWS; this bin covers
- * the PROFILES: renders ready-to-boot profile dirs (inference / headless
- * / any name), installs the Inference Studio agent preset, and health-
- * checks the gateway. Self-locating — every path derives from this
- * file's own location (the provisioner package and its siblings), so a
- * family re-split or repo move changes nothing.
+ * the PROFILES: renders ready-to-boot profile dirs (inference /
+ * headless / estate / melite-test) and installs their link deps.
+ * Self-locating — every path derives from this file's own location
+ * (the provisioner package and its siblings), so a family re-split
+ * or repo move changes nothing.
  *
  * Usage:
  *   infer-provision all                    # render + install every profile
@@ -101,8 +101,26 @@ function renderProfile(name) {
   // on every render; user-added registry deps belong in the bundle, not
   // here.
   pkg.dependencies = { ...rowDeps, '@infer/dsh-provisioner': link }
+  // SUPERSEDE (2026-09-10): the provisioner bundle owns every estate
+  // row now (infer-estate/tools/doors/card-view/deck/gallery) — a
+  // pre-reorg render that mounted the same packages as DIRECT bundles
+  // would apply their rows TWICE (the tools plane throws LOUD on the
+  // duplicate: tool "melite_discover" is already registered). The
+  // renderer drops the superseded direct bundles when the provisioner
+  // joins (same wholesale law as dependencies above — dsh-* in-box
+  // bases and third-party UI bundles are never touched).
+  const SUPERSEDED_BY_PROVISIONER = new Set([
+    '@melite-plugin/dsh-tools',
+    '@melite-plugin/melite-estate',
+    '@melite-plugin/dsh-estate',
+    '@melite-plugin/dsh-card-view',
+    '@melite-plugin/dsh-card-deck',
+    '@infer-media/dsh-gallery',
+  ])
+  const merged = [...((pkg.dsh && pkg.dsh.profile && pkg.dsh.profile.bundles) || []), ...bundles]
+  const withProvisioner = merged.includes('@infer/dsh-provisioner')
   pkg.dsh = { profile: { bundles: [
-    ...new Set([...((pkg.dsh && pkg.dsh.profile && pkg.dsh.profile.bundles) || []), ...bundles]),
+    ...new Set(withProvisioner ? merged.filter((b) => !SUPERSEDED_BY_PROVISIONER.has(b)) : merged),
   ] } }
   writeFileSync(join(dst, 'package.json'), JSON.stringify(pkg, null, 2) + String.fromCharCode(10))
   // user layer stays EMPTY in web mounts — the bundle patch owns every
@@ -123,7 +141,17 @@ function renderProfile(name) {
       : '# rendered by infer-provision - rows live in the bundle.\n'
         + '# No webServer service in this mount: the five web-surface rows\n'
         + '# are disabled so activation cannot pend forever.\n'
-        + webRows.map(id => '- id: ' + id + '\n  disabled: true\n').join(''))
+        + webRows.map(id => '- id: ' + id + '\n  disabled: true\n').join('')
+        // ESTATE JOB SERVER (name === 'estate'): this mount IS the
+        // delegated operator — the tools row selects the HEADLESS
+        // interface (the melite_flow + run_status run doors). Pinned
+        // in the render (not ambient env) because the interface is
+        // profile state: browser mounts compose, the job server
+        // executes. Every other mount keeps the browser default.
+        + (name === 'estate'
+          ? '# HEADLESS interface: the delegated operator runs jobs here.\n'
+            + '- id: infer-tools\n  config:\n    headless: true\n'
+          : ''))
   writeFileSync(join(dst, 'cordis.yml'), '# rendered by infer-provision' + '\n' + '[]' + '\n')
   const ws = join(dst, 'pnpm-workspace.yaml')
   if (!existsSync(ws)) writeFileSync(ws, 'packages:' + '\n' + '  - node_modules/*' + '\n')
