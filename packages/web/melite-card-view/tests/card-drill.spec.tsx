@@ -40,7 +40,24 @@ interface Call { method: string; args: Record<string, unknown> }
 
 function stubWire(): { calls: Call[] } {
   const calls: Call[] = []
-  const impl = async (_url: unknown, init?: RequestInit): Promise<Response> => {
+  const impl = async (url: unknown, init?: RequestInit): Promise<Response> => {
+    // the /v1 discovery doors (same-origin): the card form spec + catalog
+    const path = String(url)
+    if (path.includes('/v1/form-spec')) {
+      const doc = {
+        form: 'image-gen', genre: 'image', engine: 'comfyui',
+        fields: [
+          { name: 'prompt', label: 'Prompt', type: 'textarea' },
+          { name: 'steps', label: 'Steps', type: 'number', default: 8, min: 1, max: 150 },
+          { name: 'turbo', label: 'Turbo', type: 'switch', default: false },
+        ],
+      }
+      return new Response(JSON.stringify(doc), { status: 200, headers: { 'content-type': 'application/json' } })
+    }
+    if (path.includes('/v1/model-catalog')) {
+      const doc = { cards: { 'image-gen': { label: 'Image Gen', description: 'generate an image', genre: 'image', families: ['image-gen'] } } }
+      return new Response(JSON.stringify(doc), { status: 200, headers: { 'content-type': 'application/json' } })
+    }
     const frame = JSON.parse(String(init?.body)) as {
       rpcId: string; method: string; payload: { args: Record<string, unknown> }
     }
@@ -82,8 +99,8 @@ test('the bench row is a card (Pill kind, bold title, engine Pill) and opens the
   await user.click(tile)
   // the drill opens with the stage's params as editable fields
   expect(screen.getByText('Stage hero frame')).toBeTruthy()
-  expect(screen.getByText('prompt')).toBeTruthy()
-  expect(screen.getByText('steps')).toBeTruthy()
+  expect(screen.getByText('Prompt')).toBeTruthy()
+  expect(screen.getByText('Steps')).toBeTruthy()
 })
 
 test('Run in the drill patches the domain FIRST, then starts the run', async () => {
@@ -123,7 +140,14 @@ test('Run in the drill patches the domain FIRST, then starts the run', async () 
 
 test('a patch refusal names itself and the run never fires', async () => {
   const { calls } = stubWire()
-  vi.stubGlobal('fetch', async (_u: unknown, init?: RequestInit): Promise<Response> => {
+  vi.stubGlobal('fetch', async (u: unknown, init?: RequestInit): Promise<Response> => {
+    if (String(u).includes('/v1/form-spec')) {
+      const doc = { form: 'image-gen', fields: [
+        { name: 'prompt', label: 'Prompt', type: 'textarea' },
+        { name: 'steps', label: 'Steps', type: 'number', default: 8, min: 1, max: 150 },
+      ] }
+      return new Response(JSON.stringify(doc), { status: 200, headers: { 'content-type': 'application/json' } })
+    }
     const frame = JSON.parse(String(init?.body)) as { rpcId: string; method: string }
     calls.push({ method: frame.method, args: {} })
     const value = frame.method === 'drafts/patch'

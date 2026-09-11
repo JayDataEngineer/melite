@@ -120,9 +120,11 @@ describe("restoreRunToBench — the card back into a flow", () => {
     expect(calls[1]?.args).toEqual({ sessionKey: "main" });
     // first add carries the bench rev + user authorship; the second
     // chains the first answer's rev (the CAS law).
-    expect(calls[2]?.args).toMatchObject({ card: "image-gen", engine: "comfyui", author: "user", expect_rev: 21, id: "s_0" });
-    expect((calls[2]?.args["params"] as Record<string, unknown>)["prompt"]).toBe("a sailboat");
-    expect(calls[3]?.args).toMatchObject({ card: "tts", author: "user", expect_rev: 22, id: "s_1" });
+    // add-stage args carry the remote's FULL signature — {sessionKey,
+    // doc} (the gateway arg-law; the bare-doc shape was a latent 422).
+    expect(calls[2]?.args).toMatchObject({ sessionKey: "main", doc: { card: "image-gen", engine: "comfyui", author: "user", expect_rev: 21, id: "s_0" } });
+    expect(((calls[2]?.args["doc"] as Record<string, unknown>)["params"] as Record<string, unknown>)["prompt"]).toBe("a sailboat");
+    expect(calls[3]?.args).toMatchObject({ sessionKey: "main", doc: { card: "tts", author: "user", expect_rev: 22, id: "s_1" } });
   });
 
   test("a run naming no draft throws before any fetch", async () => {
@@ -153,16 +155,20 @@ describe("restoreRunToBench — the card back into a flow", () => {
     stubWire();
     routes["drafts/get"] = () => ({ ok: true, value: { stages: [{ id: "s_0", card: "image-gen" }] } });
     routes["bench/get"] = () => ({ ok: true, value: { rev: 7 } });
-    routes["bench/add-stage"] = (args) => args["id"] === undefined
-      ? { ok: true, value: { rev: 8 } }
-      : { ok: false, error: "stage id already on the bench: s_0" };
+    routes["bench/add-stage"] = (args) => {
+      const doc = (args["doc"] ?? {}) as Record<string, unknown>;
+      return doc["id"] === undefined
+        ? { ok: true, value: { rev: 8 } }
+        : { ok: false, error: "stage id already on the bench: s_0" };
+    };
     const report = await restoreRunToBench(run());
     expect(report.added).toBe(1);
     expect(report.notes).toEqual(["s_0 was already on the bench — added under a fresh id"]);
     const adds = calls.filter((c) => c.method === "bench/add-stage");
     expect(adds).toHaveLength(2);
-    expect(adds[1]?.args["id"]).toBeUndefined();
-    expect(adds[1]?.args["expect_rev"]).toBe(7);
+    const retryDoc = (adds[1]?.args["doc"] ?? {}) as Record<string, unknown>;
+    expect(retryDoc["id"]).toBeUndefined();
+    expect(retryDoc["expect_rev"]).toBe(7);
   });
 
   test("a real refusal stops the restore and names what landed", async () => {

@@ -30,13 +30,16 @@
  * hook. Local prop typings (the package's local-spelling pattern —
  * see index.ts) keep this package off sibling runtime imports.
  */
-import { createElement as h, useCallback, useState } from 'react'
-import { Pill, StateDot } from '@deepseek-ai/dsh-client-ui-primitives'
+import { createElement as h, useCallback, useEffect, useState } from 'react'
+import { Button, Input, Modal, Pill, StateDot } from '@deepseek-ai/dsh-client-ui-primitives'
 import { CardDrill } from './card-drill.tsx'
+import { fetchCardCatalog, fetchFormSpec, specDefaults, specPatch, SpecForm } from './spec-form.tsx'
+import type { CatalogCard, FormSpecDoc, SpecValues } from './spec-form.tsx'
 import { paramFields, patchStageParams } from './draft.ts'
 import css from './card.module.css'
 import type { CardsBenchValue, CardsRunValue, BenchStageRow } from './cards-resource.ts'
 import { CARDS_BENCH_ADDRESS, parseCardsAddress, restoreRunToBench } from './cards-resource.ts'
+import { addStageWire } from './add-stage.ts'
 import { mediaUrl } from './draft.ts'
 
 /** The injected tab information hook's shape (dsh-client-ui-sidebar-right's
@@ -261,12 +264,12 @@ function benchRow(stage: BenchStageRow): CardRowLineTabRow {
   }
 }
 
-/** THE SHARED DRILLDOWN (card-drill.tsx): the bench stage's second
- *  state — editable params, Run on the card. THE SHARED-STATE LAW:
- *  the patch lands in the drafts domain (the bench IS a draft doc —
- *  the same records the agent authors through the bench verbs)
- *  BEFORE the run reads it; the run gesture is the user's, never the
- *  model's. */
+/** THE SHARED DRILLDOWN — spec-formatted (the old system's law): the
+ *  stage's card carries a DECLARED form (/v1/form-spec — typed atoms,
+ *  groups, defaults); the drill renders THAT, never a raw key/value
+ *  dump. Params left, Run right; the patch carries only CHANGED keys
+ *  (coerced once, at patch time — the editPatch law); then the run
+ *  gesture (patch lands in the domain BEFORE the run reads it). */
 function StageDrill({ stage, bench, running, onRun, onClose }: {
   stage: BenchStageRow
   bench: CardsBenchValue
@@ -275,27 +278,194 @@ function StageDrill({ stage, bench, running, onRun, onClose }: {
   onClose: () => void
 }): ReturnType<typeof h> {
   const title = String(stage.title ?? stage.card ?? stage.id)
-  return h(CardDrill, {
-    title: 'Stage ' + title,
-    fields: paramFields(typeof stage.params === 'object' && stage.params !== null ? stage.params : {}),
-    thumbUrl: null,
-    running,
-    onRun: async (patch: Record<string, unknown> | null): Promise<void> => {
-      if (patch !== null) await patchStageParams(bench.draftId, stage.id, patch)
+  const held: SpecValues = typeof stage.params === 'object' && stage.params !== null ? stage.params : {}
+  const [spec, setSpec] = useState<FormSpecDoc | null>(null)
+  const [values, setValues] = useState<SpecValues>({})
+  const [error, setError] = useState<string | null>(null)
+  const [loaded, setLoaded] = useState(false)
+  useEffect(() => {
+    let alive = true
+    const family = String(stage.card ?? '')
+    if (family === '') { setLoaded(true); return }
+    fetchFormSpec(family)
+      .then((doc) => {
+        if (!alive) return
+        setSpec(doc)
+        setValues({ ...specDefaults(doc.fields), ...held })
+        setLoaded(true)
+      })
+      .catch((e: unknown) => {
+        if (!alive) return
+        setError(e instanceof Error ? e.message : 'form-spec unavailable')
+        setLoaded(true)
+      })
+    return () => { alive = false }
+  }, [stage.id])
+  const onEdit = useCallback((name: string, v: unknown): void => {
+    setValues((m) => ({ ...m, [name]: v }))
+  }, [])
+  const run = async (): Promise<void> => {
+    setError(null)
+    try {
+      const patch = spec !== null ? specPatch(spec.fields, values, held) : {}
+      if (Object.keys(patch).length > 0) {
+        await patchStageParams(bench.draftId, stage.id, patch)
+      }
       onRun()
-    },
-    onClose,
-  })
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : 'run failed')
+    }
+  }
+  return h(Modal, { open: true, onClose, title: 'Stage ' + title, closeLabel: 'Close stage', className: css.drill },
+    h('div', { className: css.split },
+      h('div', { className: css.params },
+        !loaded ? h('div', { className: css.load }, 'form…')
+        : spec !== null ? h(SpecForm, { fields: spec.fields, values, onEdit })
+        : h('pre', { className: css.mono }, JSON.stringify(held, null, 2)),
+      ),
+      h('div', { className: css.outputs },
+        h('div', { className: css.runRow },
+          error !== null ? h('span', { className: css.runError }, error) : null,
+          h(Button, { variant: 'primary', disabled: running, onClick: () => { void run() } },
+            running ? 'running…' : 'Run'),
+        ),
+      ),
+    ),
+  )
 }
 
-function BenchView({ bench, onRun, running }: {
+/** THE ADD-CARD DOOR (the old system's power, DSH-native): the trailing
+ *  + tile → the picker (the catalog's action cards, search + genre
+ *  groups) → the card's DECLARED form (defaults seeded) → bench/add-stage
+ *  as the user (CAS-chained). ONE surface: action cards; models are not
+ *  entries (the model select lives ON the card's form). */
+function AddCardDoor({ bench, onAdded, onClose }: {
+  bench: CardsBenchValue
+  onAdded: () => void
+  onClose: () => void
+}): ReturnType<typeof h> {
+  const [cards, setCards] = useState<CatalogCard[] | null>(null)
+  const [catalogError, setCatalogError] = useState<string | null>(null)
+  const [query, setQuery] = useState('')
+  const [picked, setPicked] = useState<CatalogCard | null>(null)
+  const [spec, setSpec] = useState<FormSpecDoc | null>(null)
+  const [values, setValues] = useState<SpecValues>({})
+  const [formError, setFormError] = useState<string | null>(null)
+  const [adding, setAdding] = useState(false)
+  useEffect(() => {
+    let alive = true
+    fetchCardCatalog()
+      .then((list) => { if (alive) setCards(list) })
+      .catch((e: unknown) => { if (alive) setCatalogError(e instanceof Error ? e.message : 'catalog unavailable') })
+    return () => { alive = false }
+  }, [])
+  const pick = (card: CatalogCard): void => {
+    setPicked(card)
+    setSpec(null)
+    setFormError(null)
+    const family = card.families[0] ?? card.id
+    fetchFormSpec(family)
+      .then((doc) => { setSpec(doc); setValues(specDefaults(doc.fields)) })
+      .catch((e: unknown) => setFormError(e instanceof Error ? e.message : 'form-spec unavailable'))
+  }
+  const onEdit = useCallback((name: string, v: unknown): void => {
+    setValues((m) => ({ ...m, [name]: v }))
+  }, [])
+  const add = async (): Promise<void> => {
+    if (picked === null) return
+    setAdding(true)
+    setFormError(null)
+    try {
+      const doc: Record<string, unknown> = {
+        card: picked.id,
+        author: 'user',
+        engine: spec?.engine ?? 'comfyui',
+        expect_rev: bench.rev,
+      }
+      const params = spec !== null ? specPatch(spec.fields, values, specDefaults(spec.fields)) : {}
+      if (Object.keys(params).length > 0) {
+        // defaults the user never touched ride too — a new card is born
+        // with its declared shape, not an empty bag
+        doc['params'] = { ...specDefaults(spec?.fields ?? []), ...values }
+      }
+      await addStageWire(doc)
+      setAdding(false)
+      onAdded()
+    } catch (e: unknown) {
+      setFormError(e instanceof Error ? e.message : 'add refused')
+      setAdding(false)
+    }
+  }
+  const filtered = (cards ?? []).filter((c) => {
+    if (query === '') return true
+    const q = query.toLowerCase()
+    return c.label.toLowerCase().includes(q) || c.id.toLowerCase().includes(q) || c.genre.toLowerCase().includes(q)
+  })
+  const genres: Array<[string, CatalogCard[]]> = []
+  for (const c of filtered) {
+    const g = c.genre !== '' ? c.genre : 'other'
+    const known = genres.find((x) => x[0] === g)
+    if (known === undefined) genres.push([g, [c]])
+    else known[1].push(c)
+  }
+  return h(Modal, { open: true, onClose, title: 'Add a card', closeLabel: 'Close picker', className: css.drill },
+    picked === null
+      ? h('div', { className: css.picker },
+          h(Input, {
+            value: query,
+            placeholder: 'search cards…',
+            onChange: (e: unknown) => setQuery((e as { target: { value: string } }).target.value),
+            'aria-label': 'Search cards',
+          }),
+          catalogError !== null ? h('p', { className: css.runError }, catalogError) : null,
+          cards === null && catalogError === null ? h('div', { className: css.load }, 'cards…') : null,
+          genres.map(([g, list]) => h('section', { key: g, className: css.pickerGenre },
+            h('h4', { className: css.specGroupTitle }, g),
+            list.map((c) => h('button', {
+              key: c.id,
+              type: 'button',
+              className: css.pickerCard,
+              onClick: () => pick(c),
+            },
+              h('span', { className: css.pickerCardLabel }, c.label),
+              c.description !== '' ? h('span', { className: css.pickerCardDesc }, c.description) : null,
+              h(Pill, null, c.families[0] ?? c.id),
+            )),
+          )),
+        )
+      : h('div', { className: css.split },
+          h('div', { className: css.params },
+            h('button', { type: 'button', className: css.back, onClick: () => { setPicked(null); setSpec(null) } }, '← ' + (cards?.length ?? 0) + ' cards'),
+            spec === null && formError === null ? h('div', { className: css.load }, 'form…') : null,
+            formError !== null ? h('p', { className: css.runError }, formError) : null,
+            spec !== null ? h(SpecForm, { fields: spec.fields, values, onEdit }) : null,
+          ),
+          h('div', { className: css.outputs },
+            h('div', { className: css.runRow },
+              formError !== null ? h('span', { className: css.runError }, formError) : null,
+              h(Button, { variant: 'primary', disabled: adding || spec === null, onClick: () => { void add() } },
+                adding ? 'adding…' : 'Add card'),
+            ),
+          ),
+        ),
+  )
+}
+
+function BenchView({ bench, onRun, onNavigate, running }: {
   bench: CardsBenchValue
   onRun: () => void
+  onNavigate: (address: string) => void
   running: boolean
 }): ReturnType<typeof h> {
   const [open, setOpen] = useState<BenchStageRow | null>(null)
+  const [adding, setAdding] = useState(false)
   const onOpen = useCallback((stage: BenchStageRow): void => setOpen(stage), [])
   const onClose = useCallback((): void => setOpen(null), [])
+  const onAddCard = useCallback((): void => setAdding(true), [])
+  const onAdded = useCallback((): void => {
+    setAdding(false)
+    onNavigate(CARDS_BENCH_ADDRESS)
+  }, [onNavigate])
   return h('section', { className: css.cardsBench, 'data-cards-bench': bench.rev },
     h('header', { className: css.benchHead },
       h('span', { className: css.revTag }, 'rev ' + bench.rev),
@@ -308,14 +478,25 @@ function BenchView({ bench, onRun, running }: {
     ),
     bench.stages.length === 0
       ? h('p', { className: css.empty }, 'The bench is empty — construct stages (the agent adds them; they land here).')
-      : h('ol', { className: css.tileGrid }, bench.stages.map((s) => {
-          const row = benchRow(s)
-          return h(StageTile, { key: s.id, row, onOpen: (r) => onOpen(r.stage) })
-        })),
+      : h('ol', { className: css.tileGrid },
+          bench.stages.map((s) => {
+            const row = benchRow(s)
+            return h(StageTile, { key: s.id, row, onOpen: (r) => onOpen(r.stage) })
+          }),
+          h('li', { className: css.tile + ' ' + css.tileAdd },
+            h('button', { type: 'button', className: css.tileInner, 'aria-label': 'Add a card', onClick: onAddCard },
+              h('span', { className: css.tilePreview + ' ' + css.addFace }, '+'),
+              h('span', { className: css.tileCaption },
+                h('span', { className: css.tileTitle }, 'Add a card'),
+              ),
+            ),
+          ),
+        ),
     bench.log.length > 0
       ? h('p', { className: css.logHead }, bench.log.length + ' log entr' + (bench.log.length === 1 ? 'y' : 'ies'))
       : null,
     open !== null ? h(StageDrill, { stage: open, bench, running, onRun, onClose }) : null,
+    adding ? h(AddCardDoor, { bench, onAdded, onClose: () => { setAdding(false) } }) : null,
   )
 }
 
@@ -437,6 +618,6 @@ export function CardsTab(props: CardsTabProps): ReturnType<typeof h> {
     return h('p', { className: css.failed }, 'cards resource gave no value')
   }
   return value.kind === 'bench'
-    ? h(BenchView, { bench: value, onRun, running })
+    ? h(BenchView, { bench: value, onRun, onNavigate: (a: string) => { if (openResource !== undefined) openResource(a) }, running })
     : h(RunView, { run: value, onBack: openResource !== undefined ? onBack : undefined, onRestored: onBack })
 }

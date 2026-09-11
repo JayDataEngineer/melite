@@ -21,7 +21,7 @@ window.__ModuleLoader__.load({
 		}
 		//#endregion
 		//#region \0dsh-css:melite-card-view/src/client/card.module.css.mjs
-		const css = ".vYZV7a_card{flex-direction:column;min-width:0;margin:4px 0;font-size:12px;line-height:1.45;display:flex}.vYZV7a_load{color:var(--dsw-alias-label-secondary,#9a9aa5);padding:2px 0}.vYZV7a_head{align-items:center;gap:8px;min-width:0;display:flex}.vYZV7a_model{text-overflow:ellipsis;white-space:nowrap;min-width:0;font-weight:600;overflow:hidden}.vYZV7a_state{border-radius:999px;flex:none;margin-left:auto;padding:1px 8px}.vYZV7a_state[data-state=completed]{color:var(--dsw-alias-state-success-primary,#3fb96f)}.vYZV7a_state[data-state=running],.vYZV7a_state[data-state=queued],.vYZV7a_state[data-state=pending],.vYZV7a_state[data-state=starting],.vYZV7a_state[data-state=draft]{color:var(--dsw-alias-state-warn-primary,#d9a53f)}.vYZV7a_state[data-state=failed],.vYZV7a_state[data-state=error],.vYZV7a_state[data-state=stopped],.vYZV7a_state[data-state=interrupted]{color:var(--dsw-alias-state-error-primary,#e05656)}.vYZV7a_prompt{color:var(--dsw-alias-text-secondary,#9a9aa5);-webkit-line-clamp:2;-webkit-box-orient:vertical;display:-webkit-box;overflow:hidden}.vYZV7a_link:hover{text-decoration:underline}.vYZV7a_row{color:inherit;cursor:pointer;font:inherit;text-align:left;background:0 0;border:none;border-radius:6px;align-items:center;gap:8px;width:100%;min-width:0;padding:4px 6px;display:flex}.vYZV7a_row:hover{background:var(--dsw-alias-interactive-bg-hover-subtle,#ffffff0d)}.vYZV7a_row:focus-visible{outline:1px solid var(--dsw-alias-state-business-primary,#4f7bd8);outline-offset:-1px}.vYZV7a_thumb{object-fit:cover;border-radius:4px;flex:none;width:34px;height:34px}.vYZV7a_rowTitle{text-overflow:ellipsis;white-space:nowrap;flex:none;max-width:40%;font-weight:600;overflow:hidden}.vYZV7a_drill{width:92vw;max-width:min(860px,92vw)}.vYZV7a_split{grid-template-columns:minmax(240px,1fr) minmax(0,1.2fr);gap:14px;min-width:0;display:grid}@media (width<=640px){.vYZV7a_split{grid-template-columns:1fr}}.vYZV7a_params{flex-direction:column;gap:8px;min-width:0;max-height:60vh;display:flex;overflow-y:auto}.vYZV7a_field{flex-direction:column;gap:3px;min-width:0;display:flex}.vYZV7a_fieldKey{color:var(--dsw-alias-label-secondary,#9a9aa5);font-size:11px}.vYZV7a_outputs{flex-direction:column;align-items:center;gap:10px;min-width:0;display:flex}.vYZV7a_outputImg{object-fit:contain;border-radius:8px;max-width:100%;max-height:46vh}.vYZV7a_runRow{justify-content:flex-end;align-items:center;gap:10px;width:100%;display:flex}.vYZV7a_runError{color:var(--dsw-alias-label-error,#e05656);overflow-wrap:anywhere;font-size:11px}.vYZV7a_state[data-state=legacy]{color:var(--dsw-alias-label-secondary,#9a9aa5)}.vYZV7a_cardsBench{flex-direction:column;gap:8px;display:flex}.vYZV7a_benchHead{justify-content:space-between;align-items:center;gap:8px;display:flex}.vYZV7a_revTag{color:var(--dsw-alias-fg-muted,#ffffff8c);font-family:var(--dsw-alias-font-mono,ui-monospace, monospace);font-size:11px}.vYZV7a_runBtn,.vYZV7a_back,.vYZV7a_restore{border:1px solid var(--dsw-alias-border-subtle,#ffffff26);color:inherit;cursor:pointer;font:inherit;background:0 0;border-radius:6px;padding:2px 10px;font-size:12px}.vYZV7a_runBtn:hover:not(:disabled),.vYZV7a_back:hover,.vYZV7a_restore:hover:not(:disabled){background:var(--dsh-alias-interactive-bg-hover-subtle,#ffffff0d);border-color:var(--dsw-alias-state-business-primary,#4f7bd8)}.vYZV7a_runBtn:disabled,.vYZV7a_restore:disabled{cursor:default;opacity:.45}.vYZV7a_category{flex-direction:column;gap:2px;display:flex}.vYZV7a_catTitle{color:var(--dsw-alias-fg-muted,#ffffff8c);letter-spacing:.06em;text-transform:uppercase;margin:4px 0 2px;font-size:11px;font-weight:600}.vYZV7a_stages{flex-direction:column;gap:2px;margin:0;padding:0;list-style:none;display:flex}.vYZV7a_stage{list-style:none}.vYZV7a_stageTitle{text-overflow:ellipsis;white-space:nowrap;flex:none;max-width:45%;font-weight:600;overflow:hidden}.vYZV7a_stageEngine{color:var(--dsw-alias-fg-muted,#ffffff8c);flex:none;font-size:11px}.vYZV7a_stageArtifact{color:var(--dsw-alias-state-business-primary,#4f7bd8);font-size:12px;text-decoration:none}.vYZV7a_stageArtifact:hover{text-decoration:underline}.vYZV7a_empty,.vYZV7a_loading,.vYZV7a_failed,.vYZV7a_missing,.vYZV7a_logHead,.vYZV7a_restoreNote{color:var(--dsw-alias-fg-muted,#ffffff8c);margin:0;font-size:12px;font-style:italic}.vYZV7a_runView{flex-direction:column;gap:8px;display:flex}.vYZV7a_runHead{align-items:baseline;gap:8px;display:flex}.vYZV7a_runId{font-family:var(--dsw-alias-font-mono,ui-monospace, monospace);font-size:12px;font-weight:600}.vYZV7a_runStatus{border:1px solid var(--dsw-alias-border-subtle,#ffffff26);color:var(--dsw-alias-fg-muted,#ffffff8c);border-radius:999px;padding:0 8px;font-size:11px}.vYZV7a_runActions{gap:8px;display:flex}.vYZV7a_stageDetail{grid-template-columns:auto 1fr;gap:2px 12px;margin:0;display:grid}.vYZV7a_stageDetail dt{color:var(--dsw-alias-fg-muted,#ffffff8c);text-align:right;text-transform:uppercase;font-size:11px}.vYZV7a_stageDetail dd{min-width:0;margin:0}.vYZV7a_mono{font-family:var(--dsw-alias-font-mono,ui-monospace, monospace);font-size:12px;overflow-x:auto}.vYZV7a_tileGrid{grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px;margin:0;padding:0;list-style:none;display:grid}.vYZV7a_tile{margin:0;padding:0;display:block}.vYZV7a_tileInner{border:1px solid var(--dsw-alias-border-subtle,#ffffff1f);cursor:pointer;font:inherit;text-align:left;background:0 0;border-radius:10px;flex-direction:column;align-items:stretch;width:100%;padding:0;display:flex;overflow:hidden}.vYZV7a_tileInner:hover{border-color:var(--dsw-alias-state-business-primary,#4f7bd8);background:var(--dsh-alias-interactive-bg-hover-subtle,#ffffff0a)}.vYZV7a_tilePreview{aspect-ratio:1;flex:1;width:100%;min-height:0;margin:0;display:block;position:relative}.vYZV7a_tileImg,.vYZV7a_tileImgLink{width:100%;height:100%;display:block}.vYZV7a_tileImg{object-fit:cover}.vYZV7a_kindFace{background:var(--dsh-alias-interactive-bg-hover-subtle,#ffffff0d);color:var(--dsw-alias-fg-muted,#ffffff8c);flex-direction:column;justify-content:center;align-items:center;gap:4px;width:100%;height:100%;display:flex}.vYZV7a_kindInitial{font-size:28px;font-weight:700;line-height:1}.vYZV7a_kindName{font-family:var(--dsw-alias-font-mono,ui-monospace, monospace);text-overflow:ellipsis;white-space:nowrap;padding:0 6px;font-size:10px;overflow:hidden}.vYZV7a_tileDot{position:absolute;bottom:6px;right:6px}.vYZV7a_tileCaption{border-top:1px solid var(--dsw-alias-border-subtle,#ffffff1a);flex-direction:column;flex:none;gap:2px;padding:6px 8px;display:flex}.vYZV7a_tileTitle{text-overflow:ellipsis;white-space:nowrap;font-size:12px;font-weight:600;overflow:hidden}.vYZV7a_tileMeta{color:var(--dsw-alias-fg-muted,#ffffff8c);font-family:var(--dsw-alias-font-mono,ui-monospace, monospace);align-items:center;gap:6px;font-size:10px;display:flex;overflow:hidden}.vYZV7a_tilePrompt{text-overflow:ellipsis;white-space:nowrap;flex:1;overflow:hidden}";
+		const css = ".vYZV7a_card{flex-direction:column;min-width:0;margin:4px 0;font-size:12px;line-height:1.45;display:flex}.vYZV7a_load{color:var(--dsw-alias-label-secondary,#9a9aa5);padding:2px 0}.vYZV7a_head{align-items:center;gap:8px;min-width:0;display:flex}.vYZV7a_model{text-overflow:ellipsis;white-space:nowrap;min-width:0;font-weight:600;overflow:hidden}.vYZV7a_state{border-radius:999px;flex:none;margin-left:auto;padding:1px 8px}.vYZV7a_state[data-state=completed]{color:var(--dsw-alias-state-success-primary,#3fb96f)}.vYZV7a_state[data-state=running],.vYZV7a_state[data-state=queued],.vYZV7a_state[data-state=pending],.vYZV7a_state[data-state=starting],.vYZV7a_state[data-state=draft]{color:var(--dsw-alias-state-warn-primary,#d9a53f)}.vYZV7a_state[data-state=failed],.vYZV7a_state[data-state=error],.vYZV7a_state[data-state=stopped],.vYZV7a_state[data-state=interrupted]{color:var(--dsw-alias-state-error-primary,#e05656)}.vYZV7a_prompt{color:var(--dsw-alias-text-secondary,#9a9aa5);-webkit-line-clamp:2;-webkit-box-orient:vertical;display:-webkit-box;overflow:hidden}.vYZV7a_link:hover{text-decoration:underline}.vYZV7a_row{color:inherit;cursor:pointer;font:inherit;text-align:left;background:0 0;border:none;border-radius:6px;align-items:center;gap:8px;width:100%;min-width:0;padding:4px 6px;display:flex}.vYZV7a_row:hover{background:var(--dsw-alias-interactive-bg-hover-subtle,#ffffff0d)}.vYZV7a_row:focus-visible{outline:1px solid var(--dsw-alias-state-business-primary,#4f7bd8);outline-offset:-1px}.vYZV7a_thumb{object-fit:cover;border-radius:4px;flex:none;width:34px;height:34px}.vYZV7a_rowTitle{text-overflow:ellipsis;white-space:nowrap;flex:none;max-width:40%;font-weight:600;overflow:hidden}.vYZV7a_drill{width:92vw;max-width:min(860px,92vw)}.vYZV7a_split{grid-template-columns:minmax(240px,1fr) minmax(0,1.2fr);gap:14px;min-width:0;display:grid}@media (width<=640px){.vYZV7a_split{grid-template-columns:1fr}}.vYZV7a_params{flex-direction:column;gap:8px;min-width:0;max-height:60vh;display:flex;overflow-y:auto}.vYZV7a_field{flex-direction:column;gap:3px;min-width:0;display:flex}.vYZV7a_fieldKey{color:var(--dsw-alias-label-secondary,#9a9aa5);font-size:11px}.vYZV7a_outputs{flex-direction:column;align-items:center;gap:10px;min-width:0;display:flex}.vYZV7a_outputImg{object-fit:contain;border-radius:8px;max-width:100%;max-height:46vh}.vYZV7a_runRow{justify-content:flex-end;align-items:center;gap:10px;width:100%;display:flex}.vYZV7a_runError{color:var(--dsw-alias-label-error,#e05656);overflow-wrap:anywhere;font-size:11px}.vYZV7a_state[data-state=legacy]{color:var(--dsw-alias-label-secondary,#9a9aa5)}.vYZV7a_cardsBench{flex-direction:column;gap:8px;display:flex}.vYZV7a_benchHead{justify-content:space-between;align-items:center;gap:8px;display:flex}.vYZV7a_revTag{color:var(--dsw-alias-fg-muted,#ffffff8c);font-family:var(--dsw-alias-font-mono,ui-monospace, monospace);font-size:11px}.vYZV7a_runBtn,.vYZV7a_back,.vYZV7a_restore{border:1px solid var(--dsw-alias-border-subtle,#ffffff26);color:inherit;cursor:pointer;font:inherit;background:0 0;border-radius:6px;padding:2px 10px;font-size:12px}.vYZV7a_runBtn:hover:not(:disabled),.vYZV7a_back:hover,.vYZV7a_restore:hover:not(:disabled){background:var(--dsh-alias-interactive-bg-hover-subtle,#ffffff0d);border-color:var(--dsw-alias-state-business-primary,#4f7bd8)}.vYZV7a_runBtn:disabled,.vYZV7a_restore:disabled{cursor:default;opacity:.45}.vYZV7a_category{flex-direction:column;gap:2px;display:flex}.vYZV7a_catTitle{color:var(--dsw-alias-fg-muted,#ffffff8c);letter-spacing:.06em;text-transform:uppercase;margin:4px 0 2px;font-size:11px;font-weight:600}.vYZV7a_stages{flex-direction:column;gap:2px;margin:0;padding:0;list-style:none;display:flex}.vYZV7a_stage{list-style:none}.vYZV7a_stageTitle{text-overflow:ellipsis;white-space:nowrap;flex:none;max-width:45%;font-weight:600;overflow:hidden}.vYZV7a_stageEngine{color:var(--dsw-alias-fg-muted,#ffffff8c);flex:none;font-size:11px}.vYZV7a_stageArtifact{color:var(--dsw-alias-state-business-primary,#4f7bd8);font-size:12px;text-decoration:none}.vYZV7a_stageArtifact:hover{text-decoration:underline}.vYZV7a_empty,.vYZV7a_loading,.vYZV7a_failed,.vYZV7a_missing,.vYZV7a_logHead,.vYZV7a_restoreNote{color:var(--dsw-alias-fg-muted,#ffffff8c);margin:0;font-size:12px;font-style:italic}.vYZV7a_runView{flex-direction:column;gap:8px;display:flex}.vYZV7a_runHead{align-items:baseline;gap:8px;display:flex}.vYZV7a_runId{font-family:var(--dsw-alias-font-mono,ui-monospace, monospace);font-size:12px;font-weight:600}.vYZV7a_runStatus{border:1px solid var(--dsw-alias-border-subtle,#ffffff26);color:var(--dsw-alias-fg-muted,#ffffff8c);border-radius:999px;padding:0 8px;font-size:11px}.vYZV7a_runActions{gap:8px;display:flex}.vYZV7a_stageDetail{grid-template-columns:auto 1fr;gap:2px 12px;margin:0;display:grid}.vYZV7a_stageDetail dt{color:var(--dsw-alias-fg-muted,#ffffff8c);text-align:right;text-transform:uppercase;font-size:11px}.vYZV7a_stageDetail dd{min-width:0;margin:0}.vYZV7a_mono{font-family:var(--dsw-alias-font-mono,ui-monospace, monospace);font-size:12px;overflow-x:auto}.vYZV7a_tileGrid{grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px;margin:0;padding:0;list-style:none;display:grid}.vYZV7a_tile{margin:0;padding:0;display:block}.vYZV7a_tileInner{border:1px solid var(--dsw-alias-border-subtle,#ffffff1f);cursor:pointer;font:inherit;text-align:left;background:0 0;border-radius:10px;flex-direction:column;align-items:stretch;width:100%;padding:0;display:flex;overflow:hidden}.vYZV7a_tileInner:hover{border-color:var(--dsw-alias-state-business-primary,#4f7bd8);background:var(--dsh-alias-interactive-bg-hover-subtle,#ffffff0a)}.vYZV7a_tilePreview{aspect-ratio:1;flex:1;width:100%;min-height:0;margin:0;display:block;position:relative}.vYZV7a_tileImg,.vYZV7a_tileImgLink{width:100%;height:100%;display:block}.vYZV7a_tileImg{object-fit:cover}.vYZV7a_kindFace{background:var(--dsh-alias-interactive-bg-hover-subtle,#ffffff0d);color:var(--dsw-alias-fg-muted,#ffffff8c);flex-direction:column;justify-content:center;align-items:center;gap:4px;width:100%;height:100%;display:flex}.vYZV7a_kindInitial{font-size:28px;font-weight:700;line-height:1}.vYZV7a_kindName{font-family:var(--dsw-alias-font-mono,ui-monospace, monospace);text-overflow:ellipsis;white-space:nowrap;padding:0 6px;font-size:10px;overflow:hidden}.vYZV7a_tileDot{position:absolute;bottom:6px;right:6px}.vYZV7a_tileCaption{border-top:1px solid var(--dsw-alias-border-subtle,#ffffff1a);flex-direction:column;flex:none;gap:2px;padding:6px 8px;display:flex}.vYZV7a_tileTitle{text-overflow:ellipsis;white-space:nowrap;font-size:12px;font-weight:600;overflow:hidden}.vYZV7a_tileMeta{color:var(--dsw-alias-fg-muted,#ffffff8c);font-family:var(--dsw-alias-font-mono,ui-monospace, monospace);align-items:center;gap:6px;font-size:10px;display:flex;overflow:hidden}.vYZV7a_tilePrompt{text-overflow:ellipsis;white-space:nowrap;flex:1;overflow:hidden}.vYZV7a_tileAdd .vYZV7a_tileInner{border-style:dashed}.vYZV7a_addFace{color:var(--dsw-alias-fg-muted,#ffffff73);justify-content:center;align-items:center;font-size:34px;font-weight:300;display:flex}.vYZV7a_picker{flex-direction:column;gap:10px;max-height:60vh;display:flex;overflow-y:auto}.vYZV7a_pickerGenre{flex-direction:column;gap:4px;display:flex}.vYZV7a_pickerCard{border:1px solid var(--dsw-alias-border-subtle,#ffffff1f);color:inherit;cursor:pointer;font:inherit;text-align:left;background:0 0;border-radius:8px;align-items:baseline;gap:8px;width:100%;padding:8px 10px;display:flex}.vYZV7a_pickerCard:hover{background:var(--dsh-alias-interactive-bg-hover-subtle,#ffffff0d);border-color:var(--dsw-alias-state-business-primary,#4f7bd8)}.vYZV7a_pickerCardLabel{white-space:nowrap;font-size:13px;font-weight:600}.vYZV7a_pickerCardDesc{color:var(--dsw-alias-fg-muted,#ffffff8c);text-overflow:ellipsis;white-space:nowrap;flex:1;font-size:12px;overflow:hidden}.vYZV7a_specForm{flex-direction:column;gap:12px;display:flex}.vYZV7a_specGroup{flex-direction:column;gap:8px;display:flex}.vYZV7a_specGroupTitle{color:var(--dsw-alias-fg-muted,#ffffff8c);letter-spacing:.04em;text-transform:uppercase;margin:0 0 2px;font-size:11px;font-weight:600}.vYZV7a_specField{flex-direction:column;gap:3px;display:flex}.vYZV7a_specFieldKey{color:var(--dsw-alias-fg-muted,#ffffffb3);font-size:12px}.vYZV7a_specRequired{color:var(--dsw-alias-state-critical,#e5484d)}.vYZV7a_specHint{color:var(--dsw-alias-fg-muted,#fff6);font-size:11px}.vYZV7a_specSelect{background:var(--dsh-alias-interactive-bg-subtle,#ffffff0d);border:1px solid var(--dsw-alias-border-subtle,#ffffff26);color:inherit;font:inherit;border-radius:6px;width:100%;padding:5px 8px;font-size:13px}.vYZV7a_specSliderRow{align-items:center;gap:8px;display:flex}.vYZV7a_specSlider{flex:1}.vYZV7a_specSliderValue{color:var(--dsw-alias-fg-muted,#ffffffb3);font-family:var(--dsw-alias-font-mono,ui-monospace, monospace);text-align:right;min-width:4ch;font-size:12px}.vYZV7a_specTextarea{background:var(--dsh-alias-interactive-bg-subtle,#ffffff0d);border:1px solid var(--dsw-alias-border-subtle,#ffffff26);color:inherit;font:inherit;resize:vertical;border-radius:6px;width:100%;padding:6px 8px;font-size:13px}";
 		const tagId = "@melite-plugin/dsh-card-view/card.module.css";
 		if (typeof document !== "undefined" && document.querySelector("style[data-plugin-css=" + JSON.stringify(tagId) + "]") === null) {
 			const tag = document.createElement("style");
@@ -31,6 +31,7 @@ window.__ModuleLoader__.load({
 			document.head.appendChild(tag);
 		}
 		var card_module_css_default = {
+			"addFace": "vYZV7a_addFace",
 			"back": "vYZV7a_back",
 			"benchHead": "vYZV7a_benchHead",
 			"card": "vYZV7a_card",
@@ -56,6 +57,11 @@ window.__ModuleLoader__.load({
 			"outputImg": "vYZV7a_outputImg",
 			"outputs": "vYZV7a_outputs",
 			"params": "vYZV7a_params",
+			"picker": "vYZV7a_picker",
+			"pickerCard": "vYZV7a_pickerCard",
+			"pickerCardDesc": "vYZV7a_pickerCardDesc",
+			"pickerCardLabel": "vYZV7a_pickerCardLabel",
+			"pickerGenre": "vYZV7a_pickerGenre",
 			"prompt": "vYZV7a_prompt",
 			"restore": "vYZV7a_restore",
 			"restoreNote": "vYZV7a_restoreNote",
@@ -70,6 +76,18 @@ window.__ModuleLoader__.load({
 			"runRow": "vYZV7a_runRow",
 			"runStatus": "vYZV7a_runStatus",
 			"runView": "vYZV7a_runView",
+			"specField": "vYZV7a_specField",
+			"specFieldKey": "vYZV7a_specFieldKey",
+			"specForm": "vYZV7a_specForm",
+			"specGroup": "vYZV7a_specGroup",
+			"specGroupTitle": "vYZV7a_specGroupTitle",
+			"specHint": "vYZV7a_specHint",
+			"specRequired": "vYZV7a_specRequired",
+			"specSelect": "vYZV7a_specSelect",
+			"specSlider": "vYZV7a_specSlider",
+			"specSliderRow": "vYZV7a_specSliderRow",
+			"specSliderValue": "vYZV7a_specSliderValue",
+			"specTextarea": "vYZV7a_specTextarea",
 			"split": "vYZV7a_split",
 			"stage": "vYZV7a_stage",
 			"stageArtifact": "vYZV7a_stageArtifact",
@@ -80,6 +98,7 @@ window.__ModuleLoader__.load({
 			"state": "vYZV7a_state",
 			"thumb": "vYZV7a_thumb",
 			"tile": "vYZV7a_tile",
+			"tileAdd": "vYZV7a_tileAdd",
 			"tileCaption": "vYZV7a_tileCaption",
 			"tileDot": "vYZV7a_tileDot",
 			"tileGrid": "vYZV7a_tileGrid",
@@ -605,6 +624,177 @@ window.__ModuleLoader__.load({
 			});
 		}
 		//#endregion
+		//#region src/client/spec-form.tsx
+		/**
+		* spec-form.tsx — THE CARD FORM, spec-driven (2026-09-11 rebirth).
+		*
+		* THE OLD SYSTEM'S LAW (the editor's flowParamEditor + the /v1/form-spec
+		* SSOT): a card's knob surface is DECLARED, not guessed — the Schemastery
+		* schema projects to the served form spec (typed atoms: textarea, number,
+		* slider, select, seed, switch; defaults seeded; groups; visible-when).
+		* The picker and the drilldown both render THIS — the nice formatting is
+		* the spec's own shape, never a raw key/value dump.
+		*
+		* DSH NATIVE: Input from the installed ui-primitives where it fits;
+		* the atoms the primitives set lacks (select, slider, textarea) are
+		* layout-only module CSS over native elements, every color an
+		* inherited --dsw-alias-* token. No second app, no iframe — same-origin
+		* /v1 doors (the 2026-09-11 production restore: model-catalog,
+		* form-spec) and the bench wire door.
+		*/
+		/** Seed the editable values from the spec's declared defaults (the old
+		*  picker's law: pick → defaults seeded → the user edits from there). */
+		function specDefaults(fields) {
+			const out = {};
+			for (const f of fields) if (f.default !== void 0 && f.default !== null) out[f.name] = f.default;
+			return out;
+		}
+		/** evalVisibleWhen's serving shape: "key=value" (a field shows when its
+		*  guard key holds the value). A field with no visible_when always
+		*  shows. Unknown guard keys: show (never hide on a typo). */
+		function fieldVisible(f, values) {
+			const rule = f.visible_when;
+			if (typeof rule !== "string" || rule === "") return true;
+			const eq = rule.indexOf("=");
+			if (eq < 0) return true;
+			const key = rule.slice(0, eq);
+			const want = rule.slice(eq + 1);
+			const held = values[key];
+			return String(held ?? "") === want;
+		}
+		/** Group the visible fields (the spec's own group key, first-appearance
+		*  order — ungrouped first under no heading). */
+		function groupFields(fields, values) {
+			const out = [];
+			for (const f of fields) {
+				if (!fieldVisible(f, values)) continue;
+				const g = typeof f.group === "string" && f.group !== "" ? f.group : null;
+				const known = out.find((x) => x.group === g);
+				if (known === void 0) out.push({
+					group: g,
+					fields: [f]
+				});
+				else known.fields.push(f);
+			}
+			return out;
+		}
+		/** Read a same-origin /v1 JSON door. Non-200 → named throw (the door's
+		*  own error text when present). */
+		async function v1Get(path, signal) {
+			const res = await fetch(path, { ...signal === void 0 ? {} : { signal } });
+			const body = await res.json().catch(() => null);
+			if (!res.ok) {
+				const err = typeof body === "object" && body !== null ? Reflect.get(body, "error") : void 0;
+				throw new Error(typeof err === "string" ? err : path + ": HTTP " + String(res.status));
+			}
+			return body;
+		}
+		/** /v1/model-catalog → the cards section (the picker's ONE surface —
+		*  action cards, one tile per card package; models are NOT entries). */
+		async function fetchCardCatalog(signal) {
+			const raw = (await v1Get("/v1/model-catalog", signal))["cards"] ?? {};
+			const out = [];
+			for (const [id, row] of Object.entries(raw)) {
+				if (typeof row !== "object" || row === null) continue;
+				const famsRaw = row["families"];
+				out.push({
+					id,
+					label: typeof row["label"] === "string" ? row["label"] : id,
+					description: typeof row["description"] === "string" ? row["description"] : "",
+					genre: typeof row["genre"] === "string" ? row["genre"] : "",
+					families: Array.isArray(famsRaw) ? famsRaw.filter((x) => typeof x === "string") : [id]
+				});
+			}
+			return out.sort((a, b) => a.label.localeCompare(b.label));
+		}
+		/** /v1/form-spec?model=<family> — the card family's declared knob set. */
+		async function fetchFormSpec(model, signal) {
+			const doc = await v1Get("/v1/form-spec?model=" + encodeURIComponent(model), signal);
+			if (!Array.isArray(doc["fields"])) throw new Error("form-spec: no fields array");
+			return doc;
+		}
+		/** One spec atom — typed by the declaration, edited as a raw string
+		*  while typing (decimal dots survive; coercion happens once at patch). */
+		function SpecAtom({ f, value, onEdit }) {
+			if (f.type === "select" && Array.isArray(f.options) && f.options.length > 0) return (0, react.createElement)("select", {
+				className: card_module_css_default.specSelect,
+				value: String(value ?? ""),
+				onChange: (e) => onEdit(f.name, e.target.value),
+				"aria-label": f.label
+			}, f.options.map((o) => (0, react.createElement)("option", {
+				key: o.value,
+				value: o.value
+			}, o.label)));
+			if (f.type === "slider") {
+				const num = typeof value === "number" ? value : Number(value);
+				return (0, react.createElement)("span", { className: card_module_css_default.specSliderRow }, (0, react.createElement)("input", {
+					className: card_module_css_default.specSlider,
+					type: "range",
+					min: f.min ?? 0,
+					max: f.max ?? 10,
+					step: f.step ?? .1,
+					value: Number.isFinite(num) ? num : f.default ?? 0,
+					onInput: (e) => onEdit(f.name, e.target.value),
+					"aria-label": f.label
+				}), (0, react.createElement)("span", { className: card_module_css_default.specSliderValue }, String(value ?? f.default ?? "")));
+			}
+			if (f.type === "switch" || f.type === "boolean") {
+				const on = value === true || value === "true";
+				return (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Pill, {
+					active: on,
+					onClick: () => onEdit(f.name, !on)
+				}, on ? "on" : "off");
+			}
+			if (f.type === "textarea") return (0, react.createElement)("textarea", {
+				className: card_module_css_default.specTextarea,
+				rows: 3,
+				value: String(value ?? ""),
+				placeholder: f.placeholder ?? "",
+				onChange: (e) => onEdit(f.name, e.target.value),
+				"aria-label": f.label
+			});
+			return (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Input, {
+				value: String(value ?? ""),
+				placeholder: f.placeholder ?? "",
+				onChange: (e) => onEdit(f.name, e.target.value),
+				"aria-label": f.label
+			});
+		}
+		/** THE CARD FORM — the spec's fields, grouped, visible-when honored,
+		*  defaults seeded by the caller. Edits ride the caller's values map. */
+		function SpecForm({ fields, values, onEdit }) {
+			const groups = groupFields(fields, values);
+			return (0, react.createElement)("div", { className: card_module_css_default.specForm }, groups.map((g) => (0, react.createElement)("section", {
+				key: g.group ?? "",
+				className: card_module_css_default.specGroup
+			}, g.group !== null ? (0, react.createElement)("h4", { className: card_module_css_default.specGroupTitle }, g.group) : null, g.fields.map((f) => (0, react.createElement)("label", {
+				key: f.name,
+				className: card_module_css_default.specField
+			}, (0, react.createElement)("span", { className: card_module_css_default.specFieldKey }, f.label, f.required === true ? (0, react.createElement)("span", { className: card_module_css_default.specRequired }, " *") : null), (0, react.createElement)(SpecAtom, {
+				f,
+				value: values[f.name],
+				onEdit
+			}), f.tooltip !== void 0 && f.tooltip !== "" ? (0, react.createElement)("span", { className: card_module_css_default.specHint }, f.tooltip) : null)))));
+		}
+		/** Coerce the raw edit strings to the spec's declared types — ONCE, at
+		*  patch time (the editPatch law). Only keys that CHANGED from the
+		*  stage's held params ride the patch. */
+		function specPatch(fields, values, held) {
+			const out = {};
+			for (const f of fields) {
+				const v = values[f.name];
+				if (v === void 0) continue;
+				const before = held[f.name] ?? f.default;
+				if (String(v) === String(before ?? "")) continue;
+				if (f.type === "number" || f.type === "seed" || f.type === "slider") {
+					const n = Number(v);
+					out[f.name] = Number.isFinite(n) ? n : v;
+				} else if (f.type === "switch" || f.type === "boolean") out[f.name] = v === true || v === "true";
+				else out[f.name] = v;
+			}
+			return out;
+		}
+		//#endregion
 		//#region ../../../node_modules/.pnpm/@deepseek-ai+dsh-typert-protocol@0.1.5-rc.2_@deepseek-ai+cordis@4.0.2/node_modules/@deepseek-ai/dsh-typert-protocol/lib/index.js
 		/** The one Remote failure class shared by owners, the Gateway, and consumers. */
 		/**
@@ -769,7 +959,10 @@ window.__ModuleLoader__.load({
 				const id = typeof st["id"] === "string" && st["id"] !== "" ? st["id"] : null;
 				if (id !== null) doc["id"] = id;
 				try {
-					const row = await wireCall("bench/add-stage", doc, signal);
+					const row = await wireCall("bench/add-stage", {
+						sessionKey: "main",
+						doc
+					}, signal);
 					if (typeof row["rev"] === "number") rev = row["rev"];
 					report.added += 1;
 				} catch (e) {
@@ -778,7 +971,10 @@ window.__ModuleLoader__.load({
 						const retry = { ...doc };
 						delete retry["id"];
 						try {
-							const row = await wireCall("bench/add-stage", retry, signal);
+							const row = await wireCall("bench/add-stage", {
+								sessionKey: "main",
+								doc: retry
+							}, signal);
 							if (typeof row["rev"] === "number") rev = row["rev"];
 							report.added += 1;
 							report.notes.push(id + " was already on the bench — added under a fresh id");
@@ -903,6 +1099,43 @@ window.__ModuleLoader__.load({
 					value
 				};
 			}
+		}
+		//#endregion
+		//#region src/client/add-stage.ts
+		/**
+		* add-stage.ts — the bench add-stage wire door caller (the tab's
+		* add-card path). The remote's signature is (sessionKey, doc) — the
+		* args frame carries BOTH named; the doc holds card/author/engine/
+		* params/expect_rev (the CAS law: the caller reads bench/get first
+		* and chains the rev). */
+		async function addStageWire(doc, signal) {
+			const rpcId = nextRpcId$1();
+			const res = await fetch("/api/bench/add-stage", {
+				method: "POST",
+				headers: { "content-type": "application/json" },
+				body: JSON.stringify({
+					type: "client-request",
+					rpcId,
+					method: "bench/add-stage",
+					payload: { args: {
+						sessionKey: "main",
+						doc
+					} }
+				}),
+				...signal === void 0 ? {} : { signal }
+			});
+			if (!res.ok) throw new Error("bench/add-stage: HTTP " + String(res.status));
+			const body = await res.json();
+			if (typeof body !== "object" || body === null || Reflect.get(body, "type") !== "server-response" || Reflect.get(body, "rpcId") !== rpcId) throw new Error("bench/add-stage: malformed response frame");
+			const result = Reflect.get(body, "result");
+			if (typeof result !== "object" || result === null) throw new Error("bench/add-stage: malformed result");
+			if (Reflect.get(result, "ok") !== true) {
+				const error = Reflect.get(result, "error");
+				throw new Error(typeof error === "object" && error !== null && typeof Reflect.get(error, "message") === "string" ? Reflect.get(error, "message") : "bench/add-stage refused");
+			}
+			const value = Reflect.get(result, "value");
+			if (typeof value !== "object" || value === null) throw new Error("bench/add-stage: not an object");
+			return value;
 		}
 		//#endregion
 		//#region src/client/CardsTab.tsx
@@ -1094,30 +1327,201 @@ window.__ModuleLoader__.load({
 				stage
 			};
 		}
-		/** THE SHARED DRILLDOWN (card-drill.tsx): the bench stage's second
-		*  state — editable params, Run on the card. THE SHARED-STATE LAW:
-		*  the patch lands in the drafts domain (the bench IS a draft doc —
-		*  the same records the agent authors through the bench verbs)
-		*  BEFORE the run reads it; the run gesture is the user's, never the
-		*  model's. */
+		/** THE SHARED DRILLDOWN — spec-formatted (the old system's law): the
+		*  stage's card carries a DECLARED form (/v1/form-spec — typed atoms,
+		*  groups, defaults); the drill renders THAT, never a raw key/value
+		*  dump. Params left, Run right; the patch carries only CHANGED keys
+		*  (coerced once, at patch time — the editPatch law); then the run
+		*  gesture (patch lands in the domain BEFORE the run reads it). */
 		function StageDrill({ stage, bench, running, onRun, onClose }) {
 			const title = String(stage.title ?? stage.card ?? stage.id);
-			return (0, react.createElement)(CardDrill, {
-				title: "Stage " + title,
-				fields: paramFields(typeof stage.params === "object" && stage.params !== null ? stage.params : {}),
-				thumbUrl: null,
-				running,
-				onRun: async (patch) => {
-					if (patch !== null) await patchStageParams(bench.draftId, stage.id, patch);
+			const held = typeof stage.params === "object" && stage.params !== null ? stage.params : {};
+			const [spec, setSpec] = (0, react.useState)(null);
+			const [values, setValues] = (0, react.useState)({});
+			const [error, setError] = (0, react.useState)(null);
+			const [loaded, setLoaded] = (0, react.useState)(false);
+			(0, react.useEffect)(() => {
+				let alive = true;
+				const family = String(stage.card ?? "");
+				if (family === "") {
+					setLoaded(true);
+					return;
+				}
+				fetchFormSpec(family).then((doc) => {
+					if (!alive) return;
+					setSpec(doc);
+					setValues({
+						...specDefaults(doc.fields),
+						...held
+					});
+					setLoaded(true);
+				}).catch((e) => {
+					if (!alive) return;
+					setError(e instanceof Error ? e.message : "form-spec unavailable");
+					setLoaded(true);
+				});
+				return () => {
+					alive = false;
+				};
+			}, [stage.id]);
+			const onEdit = (0, react.useCallback)((name, v) => {
+				setValues((m) => ({
+					...m,
+					[name]: v
+				}));
+			}, []);
+			const run = async () => {
+				setError(null);
+				try {
+					const patch = spec !== null ? specPatch(spec.fields, values, held) : {};
+					if (Object.keys(patch).length > 0) await patchStageParams(bench.draftId, stage.id, patch);
 					onRun();
-				},
-				onClose
-			});
+				} catch (e) {
+					setError(e instanceof Error ? e.message : "run failed");
+				}
+			};
+			return (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Modal, {
+				open: true,
+				onClose,
+				title: "Stage " + title,
+				closeLabel: "Close stage",
+				className: card_module_css_default.drill
+			}, (0, react.createElement)("div", { className: card_module_css_default.split }, (0, react.createElement)("div", { className: card_module_css_default.params }, !loaded ? (0, react.createElement)("div", { className: card_module_css_default.load }, "form…") : spec !== null ? (0, react.createElement)(SpecForm, {
+				fields: spec.fields,
+				values,
+				onEdit
+			}) : (0, react.createElement)("pre", { className: card_module_css_default.mono }, JSON.stringify(held, null, 2))), (0, react.createElement)("div", { className: card_module_css_default.outputs }, (0, react.createElement)("div", { className: card_module_css_default.runRow }, error !== null ? (0, react.createElement)("span", { className: card_module_css_default.runError }, error) : null, (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+				variant: "primary",
+				disabled: running,
+				onClick: () => {
+					run();
+				}
+			}, running ? "running…" : "Run")))));
 		}
-		function BenchView({ bench, onRun, running }) {
+		/** THE ADD-CARD DOOR (the old system's power, DSH-native): the trailing
+		*  + tile → the picker (the catalog's action cards, search + genre
+		*  groups) → the card's DECLARED form (defaults seeded) → bench/add-stage
+		*  as the user (CAS-chained). ONE surface: action cards; models are not
+		*  entries (the model select lives ON the card's form). */
+		function AddCardDoor({ bench, onAdded, onClose }) {
+			const [cards, setCards] = (0, react.useState)(null);
+			const [catalogError, setCatalogError] = (0, react.useState)(null);
+			const [query, setQuery] = (0, react.useState)("");
+			const [picked, setPicked] = (0, react.useState)(null);
+			const [spec, setSpec] = (0, react.useState)(null);
+			const [values, setValues] = (0, react.useState)({});
+			const [formError, setFormError] = (0, react.useState)(null);
+			const [adding, setAdding] = (0, react.useState)(false);
+			(0, react.useEffect)(() => {
+				let alive = true;
+				fetchCardCatalog().then((list) => {
+					if (alive) setCards(list);
+				}).catch((e) => {
+					if (alive) setCatalogError(e instanceof Error ? e.message : "catalog unavailable");
+				});
+				return () => {
+					alive = false;
+				};
+			}, []);
+			const pick = (card) => {
+				setPicked(card);
+				setSpec(null);
+				setFormError(null);
+				fetchFormSpec(card.families[0] ?? card.id).then((doc) => {
+					setSpec(doc);
+					setValues(specDefaults(doc.fields));
+				}).catch((e) => setFormError(e instanceof Error ? e.message : "form-spec unavailable"));
+			};
+			const onEdit = (0, react.useCallback)((name, v) => {
+				setValues((m) => ({
+					...m,
+					[name]: v
+				}));
+			}, []);
+			const add = async () => {
+				if (picked === null) return;
+				setAdding(true);
+				setFormError(null);
+				try {
+					const doc = {
+						card: picked.id,
+						author: "user",
+						engine: spec?.engine ?? "comfyui",
+						expect_rev: bench.rev
+					};
+					const params = spec !== null ? specPatch(spec.fields, values, specDefaults(spec.fields)) : {};
+					if (Object.keys(params).length > 0) doc["params"] = {
+						...specDefaults(spec?.fields ?? []),
+						...values
+					};
+					await addStageWire(doc);
+					setAdding(false);
+					onAdded();
+				} catch (e) {
+					setFormError(e instanceof Error ? e.message : "add refused");
+					setAdding(false);
+				}
+			};
+			const filtered = (cards ?? []).filter((c) => {
+				if (query === "") return true;
+				const q = query.toLowerCase();
+				return c.label.toLowerCase().includes(q) || c.id.toLowerCase().includes(q) || c.genre.toLowerCase().includes(q);
+			});
+			const genres = [];
+			for (const c of filtered) {
+				const g = c.genre !== "" ? c.genre : "other";
+				const known = genres.find((x) => x[0] === g);
+				if (known === void 0) genres.push([g, [c]]);
+				else known[1].push(c);
+			}
+			return (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Modal, {
+				open: true,
+				onClose,
+				title: "Add a card",
+				closeLabel: "Close picker",
+				className: card_module_css_default.drill
+			}, picked === null ? (0, react.createElement)("div", { className: card_module_css_default.picker }, (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Input, {
+				value: query,
+				placeholder: "search cards…",
+				onChange: (e) => setQuery(e.target.value),
+				"aria-label": "Search cards"
+			}), catalogError !== null ? (0, react.createElement)("p", { className: card_module_css_default.runError }, catalogError) : null, cards === null && catalogError === null ? (0, react.createElement)("div", { className: card_module_css_default.load }, "cards…") : null, genres.map(([g, list]) => (0, react.createElement)("section", {
+				key: g,
+				className: card_module_css_default.pickerGenre
+			}, (0, react.createElement)("h4", { className: card_module_css_default.specGroupTitle }, g), list.map((c) => (0, react.createElement)("button", {
+				key: c.id,
+				type: "button",
+				className: card_module_css_default.pickerCard,
+				onClick: () => pick(c)
+			}, (0, react.createElement)("span", { className: card_module_css_default.pickerCardLabel }, c.label), c.description !== "" ? (0, react.createElement)("span", { className: card_module_css_default.pickerCardDesc }, c.description) : null, (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Pill, null, c.families[0] ?? c.id)))))) : (0, react.createElement)("div", { className: card_module_css_default.split }, (0, react.createElement)("div", { className: card_module_css_default.params }, (0, react.createElement)("button", {
+				type: "button",
+				className: card_module_css_default.back,
+				onClick: () => {
+					setPicked(null);
+					setSpec(null);
+				}
+			}, "← " + (cards?.length ?? 0) + " cards"), spec === null && formError === null ? (0, react.createElement)("div", { className: card_module_css_default.load }, "form…") : null, formError !== null ? (0, react.createElement)("p", { className: card_module_css_default.runError }, formError) : null, spec !== null ? (0, react.createElement)(SpecForm, {
+				fields: spec.fields,
+				values,
+				onEdit
+			}) : null), (0, react.createElement)("div", { className: card_module_css_default.outputs }, (0, react.createElement)("div", { className: card_module_css_default.runRow }, formError !== null ? (0, react.createElement)("span", { className: card_module_css_default.runError }, formError) : null, (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+				variant: "primary",
+				disabled: adding || spec === null,
+				onClick: () => {
+					add();
+				}
+			}, adding ? "adding…" : "Add card")))));
+		}
+		function BenchView({ bench, onRun, onNavigate, running }) {
 			const [open, setOpen] = (0, react.useState)(null);
+			const [adding, setAdding] = (0, react.useState)(false);
 			const onOpen = (0, react.useCallback)((stage) => setOpen(stage), []);
 			const onClose = (0, react.useCallback)(() => setOpen(null), []);
+			const onAddCard = (0, react.useCallback)(() => setAdding(true), []);
+			const onAdded = (0, react.useCallback)(() => {
+				setAdding(false);
+				onNavigate(CARDS_BENCH_ADDRESS);
+			}, [onNavigate]);
 			return (0, react.createElement)("section", {
 				className: card_module_css_default.cardsBench,
 				"data-cards-bench": bench.rev
@@ -1133,12 +1537,23 @@ window.__ModuleLoader__.load({
 					row,
 					onOpen: (r) => onOpen(r.stage)
 				});
-			})), bench.log.length > 0 ? (0, react.createElement)("p", { className: card_module_css_default.logHead }, bench.log.length + " log entr" + (bench.log.length === 1 ? "y" : "ies")) : null, open !== null ? (0, react.createElement)(StageDrill, {
+			}), (0, react.createElement)("li", { className: card_module_css_default.tile + " " + card_module_css_default.tileAdd }, (0, react.createElement)("button", {
+				type: "button",
+				className: card_module_css_default.tileInner,
+				"aria-label": "Add a card",
+				onClick: onAddCard
+			}, (0, react.createElement)("span", { className: card_module_css_default.tilePreview + " " + card_module_css_default.addFace }, "+"), (0, react.createElement)("span", { className: card_module_css_default.tileCaption }, (0, react.createElement)("span", { className: card_module_css_default.tileTitle }, "Add a card"))))), bench.log.length > 0 ? (0, react.createElement)("p", { className: card_module_css_default.logHead }, bench.log.length + " log entr" + (bench.log.length === 1 ? "y" : "ies")) : null, open !== null ? (0, react.createElement)(StageDrill, {
 				stage: open,
 				bench,
 				running,
 				onRun,
 				onClose
+			}) : null, adding ? (0, react.createElement)(AddCardDoor, {
+				bench,
+				onAdded,
+				onClose: () => {
+					setAdding(false);
+				}
 			}) : null);
 		}
 		function RunView({ run, onBack, onRestored }) {
@@ -1233,6 +1648,9 @@ window.__ModuleLoader__.load({
 			return value.kind === "bench" ? (0, react.createElement)(BenchView, {
 				bench: value,
 				onRun,
+				onNavigate: (a) => {
+					if (openResource !== void 0) openResource(a);
+				},
 				running
 			}) : (0, react.createElement)(RunView, {
 				run: value,

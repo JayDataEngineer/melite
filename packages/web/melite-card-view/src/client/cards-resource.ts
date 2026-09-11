@@ -178,7 +178,7 @@ export function readRun(runId: string, doc: Record<string, unknown>): CardsRunVa
 
 /** Correlation id for one client-request frame (crypto.randomUUID is
  *  the browser standard). */
-function nextRpcId(): string {
+export function nextRpcId(): string {
   const cryptoApi: Crypto | undefined = globalThis.crypto
   if (cryptoApi?.randomUUID !== undefined) return cryptoApi.randomUUID()
   return 'rpc-' + Math.random().toString(36).slice(2) + '-' + Date.now().toString(36)
@@ -290,7 +290,7 @@ export async function restoreRunToBench(
     const id = typeof st['id'] === 'string' && (st['id'] as string) !== '' ? (st['id'] as string) : null
     if (id !== null) doc['id'] = id
     try {
-      const row = await wireCall('bench/add-stage', doc, signal)
+      const row = await wireCall('bench/add-stage', { sessionKey: 'main', doc }, signal)
       if (typeof row['rev'] === 'number') rev = row['rev'] as number
       report.added += 1
     } catch (e) {
@@ -301,7 +301,7 @@ export async function restoreRunToBench(
         const retry: Record<string, unknown> = { ...doc }
         delete retry['id']
         try {
-          const row = await wireCall('bench/add-stage', retry, signal)
+          const row = await wireCall('bench/add-stage', { sessionKey: 'main', doc: retry }, signal)
           if (typeof row['rev'] === 'number') rev = row['rev'] as number
           report.added += 1
           report.notes.push(id + ' was already on the bench — added under a fresh id')
