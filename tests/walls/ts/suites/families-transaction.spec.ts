@@ -17,7 +17,7 @@
 // Run: npx vitest run tests/walls/ts/suites/families-transaction.spec.ts
 import { describe, it } from "vitest";
 import assert from "node:assert/strict";
-import { Context, type Plugin } from "../../../../packages/estate/drafts/node_modules/@deepseek-ai/cordis/lib/index.js";
+import { Context, type Plugin } from '@deepseek-ai/cordis';
 import {
   MODELS_SERVICE,
   ModelsService,

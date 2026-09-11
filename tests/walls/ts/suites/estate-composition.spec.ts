@@ -19,16 +19,16 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {describe, it, beforeAll} from "vitest";
 import assert from "node:assert/strict";
-import { Context } from "../../../../packages/estate/drafts/node_modules/@deepseek-ai/cordis/lib/index.js";
-import timerPlugin from "../../../../packages/harness/estate-queue/node_modules/@deepseek-ai/cordis-plugin-timer/lib/index.js";
-import draftsPlugin from "../../../../packages/estate/drafts/lib/index.js";
-import Storage from "../../../../packages/estate/drafts/node_modules/@deepseek-ai/dsh-storage/lib/index.js";
+import { Context } from '@deepseek-ai/cordis';
+import timerPlugin from '@deepseek-ai/cordis-plugin-timer';
+import draftsPlugin from '@melite/estate-drafts';
+import Storage from '@deepseek-ai/dsh-storage';
 import {
   apply as jsonApply, Config as JsonConfig, inject as jsonInject, name as jsonName,
-} from "../../../../packages/estate/drafts/node_modules/@deepseek-ai/dsh-storage-json/lib/index.js";
+} from '@deepseek-ai/dsh-storage-json';
 import {
   apply as domainApply, Config as DomainConfig, inject as domainInject, name as domainName,
-} from "../../../../packages/estate/drafts/node_modules/@deepseek-ai/dsh-storage-domain/lib/index.js";
+} from '@deepseek-ai/dsh-storage-domain';
 import estateBundle from "../../../../packages/web/melite-estate/src/index.ts";
 import type { DiscloseService } from "../../../../packages/harness/estate-queue/src/index.ts";
 import type { ManageService } from "../../../../packages/harness/estate-queue/src/manageRegistry.ts";

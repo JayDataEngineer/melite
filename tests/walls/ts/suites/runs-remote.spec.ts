@@ -9,28 +9,28 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { test } from "vitest";
 import assert from "node:assert/strict";
-import { Context } from "../../../../packages/estate/drafts/node_modules/@deepseek-ai/cordis/lib/index.js";
-import { remoteErrorOf } from "../../../../packages/estate/drafts/node_modules/@deepseek-ai/dsh-typert-protocol/lib/index.js";
-import timerPlugin from "../../../../packages/harness/estate-queue/node_modules/@deepseek-ai/cordis-plugin-timer/lib/index.js";
+import { Context } from '@deepseek-ai/cordis';
+import { remoteErrorOf } from '@deepseek-ai/dsh-typert-protocol';
+import timerPlugin from '@deepseek-ai/cordis-plugin-timer';
 // The storage stack composed AT THE COMPOSITION SITE, mirroring DSH's
 // own rig (session-projection-cache/tests/fixtures.spec.ts l.27-104):
 // pieces imported from the packages, rows assembled inline. No
 // re-exporting wrapper package (the estate never re-packages DSH
 // plugin pieces as its own surface).
-import draftsPlugin from "../../../../packages/estate/drafts/lib/index.js";
-import Storage from "../../../../packages/estate/drafts/node_modules/@deepseek-ai/dsh-storage/lib/index.js";
+import draftsPlugin from '@melite/estate-drafts';
+import Storage from '@deepseek-ai/dsh-storage';
 import {
   apply as jsonApply, Config as JsonConfig, inject as jsonInject, name as jsonName,
-} from "../../../../packages/estate/drafts/node_modules/@deepseek-ai/dsh-storage-json/lib/index.js";
+} from '@deepseek-ai/dsh-storage-json';
 import {
   apply as domainApply, Config as DomainConfig, inject as domainInject, name as domainName,
-} from "../../../../packages/estate/drafts/node_modules/@deepseek-ai/dsh-storage-domain/lib/index.js";
+} from '@deepseek-ai/dsh-storage-domain';
 import queuePlugin, {
   cardRegistryProvider,
   runsRegistryPlugin,
 } from "../../../../packages/harness/estate-queue/src/index.ts";
-import { runsRemotePlugin } from "../../../../packages/estate/runs/lib/index.js";
-import type { RunsRemoteService } from "../../../../packages/estate/runs/lib/index.js";
+import { runsRemotePlugin } from '@melite/estate-runs';
+import type { RunsRemoteService } from '@melite/estate-runs';
 
 interface Booted {
   ctx: Context;
@@ -329,7 +329,7 @@ test("the tools' runs lane grammar rides the seat end-to-end (the un-kill)", asy
   // 5. QUEUE LANE LAW: a ctx WITHOUT the seat still refuses LOUD
   //    (no fallback absorbs the lane).
   const { Context: BareCtx } = await import(
-    "../../../../packages/estate/drafts/node_modules/@deepseek-ai/cordis/lib/index.js"
+    '@deepseek-ai/cordis'
   );
   const bare = makeEstateRequest(new BareCtx());
   await assert.rejects(
@@ -781,4 +781,41 @@ test("the compile-time initial gate — both {flow:} doors refuse before registr
     () => runs.validate({ flow: "fit-seat", test: true, draft_id: "d_ok" }, sig),
     (e: Error & { code?: string }) => e.code === "runs/workflow-pin" && /not in the pinned object_info/.test(e.message),
   );
+});
+
+test("the remote adapter speaks every registry arm (start/status/list/stop/validate)", async () => {
+  const { adapter, fiber } = await boot();
+  const sig = new AbortController().signal;
+  // start: the same inline body the seat test queues.
+  const receipt = await adapter.remoteExportStart(inlineBody("d_ok"), sig);
+  assert.match(receipt.run_id, /^run-[0-9a-f]{12}-[0-9a-f]{8}$/);
+  // status: the live row, adapter-verbatim.
+  const row = await adapter.remoteExportStatus(receipt.run_id, sig);
+  assert.ok(["queued", "running", "failed"].includes(String(row["status"])));
+  // list: the raw-limit envelope rides the adapter (py int()
+  // semantics). The queued run carries test: true — the door's skip
+  // law hides it, so the envelope serves 0.
+  const env = await adapter.remoteExportList("10", sig);
+  assert.equal(env.count, 0);
+  assert.equal(env.runs.length, 0);
+  // stop: resolves (coverage of the arm) with the door's terminal
+  // refusal — the run already settled FAILED, never "stopping".
+  const stopped = await adapter.remoteExportStop(receipt.run_id, sig);
+  assert.deepEqual(stopped, { error: "cannot stop run in state failed" });
+  // validate: the happy compile (200 row), adapter-verbatim.
+  const ok = (await adapter.remoteExportValidate(
+    {
+      flow_inline: {
+        id: "gen_chain",
+        description: "",
+        stages: [
+          { id: "s0", engine: "comfyui", params: { workflow: "w" }, outputs: { default: "image" } },
+          { id: "s1", engine: "comfyui", params: {}, inputs: { default: { stage: "s0", output: "default" } }, expected: { default: "image" } },
+        ],
+      },
+    },
+    sig,
+  )) as Record<string, unknown>;
+  assert.equal(ok["ok"], true);
+  await fiber.dispose();
 });

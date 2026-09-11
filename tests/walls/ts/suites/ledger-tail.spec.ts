@@ -3,8 +3,8 @@ import assert from 'node:assert/strict'
 import { mkdtempSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { Context } from '../../../../packages/harness/estate-queue/node_modules/@deepseek-ai/cordis/lib/index.js'
-import timerPlugin from '../../../../packages/harness/estate-queue/node_modules/@deepseek-ai/cordis-plugin-timer/lib/index.js'
+import { Context } from '@deepseek-ai/cordis'
+import timerPlugin from '@deepseek-ai/cordis-plugin-timer'
 import queuePlugin, { appendLedger } from '../../../../packages/harness/estate-queue/src/index.ts'
 
 /** THE LEDGER-TAIL WALL (REBUILD-19, the gateway kill): the dead

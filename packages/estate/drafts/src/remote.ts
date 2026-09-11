@@ -108,6 +108,16 @@ declare module "@deepseek-ai/cordis" {
   }
 }
 
+/** The wrap voice for a thrown store error: Error.message when the
+ *  value carries one, else the string form. Every store/domain throw
+ *  site constructs `new Error` (or an Error subclass), so the else
+ *  arm only guards degenerate non-Error throws. */
+function thrownMessage(error: unknown): string {
+  /* v8 ignore next -- a non-Error throw requires a degenerate throw
+   * site; openDraftsDomain and the domain layer construct Errors. */
+  return error instanceof Error ? error.message : String(error);
+}
+
 /** First-seen display strings walk the doc depth-first (the index
  *  law: model/service cap 80, name/intent/title cap 160). */
 function docIndexFields(doc: unknown): { model: string; name: string } {
@@ -175,7 +185,7 @@ export class DraftsRemoteService extends TypertRemoteService {
     } catch (error: unknown) {
       throw new RemoteError(
         "draft/store-failed",
-        error instanceof Error ? error.message : String(error),
+        thrownMessage(error),
         {},
         { cause: error },
       );
@@ -208,7 +218,7 @@ export class DraftsRemoteService extends TypertRemoteService {
     } catch (error: unknown) {
       throw new RemoteError(
         "draft/store-failed",
-        error instanceof Error ? error.message : String(error),
+        thrownMessage(error),
         {},
         { cause: error },
       );
@@ -284,7 +294,7 @@ export class DraftsRemoteService extends TypertRemoteService {
     } catch (error: unknown) {
       throw new RemoteError(
         "draft/store-failed",
-        error instanceof Error ? error.message : String(error),
+        thrownMessage(error),
         {},
         { cause: error },
       );
@@ -296,14 +306,14 @@ export class DraftsRemoteService extends TypertRemoteService {
       return { draftId, stageId, delivered: false, reason: "draft not found" };
     }
     const doc = rec.doc as unknown as Record<string, unknown>;
-    const stages: unknown = doc["stages"];
+    // The domain schema guarantees stages is an array (schema-failing
+    // records are backed up and skipped at read) — no re-defense here.
+    const stages = doc["stages"] as unknown[];
     const stage: Record<string, unknown> | null =
-      Array.isArray(stages)
-        ? (stages.find(
-            (s): s is Record<string, unknown> =>
-              typeof s === "object" && s !== null && (s as Record<string, unknown>)["id"] === stageId,
-          ) ?? null)
-        : null;
+      (stages.find(
+        (s): s is Record<string, unknown> =>
+          typeof s === "object" && s !== null && (s as Record<string, unknown>)["id"] === stageId,
+      ) as Record<string, unknown> | undefined) ?? null;
     if (stage === null) {
       return { draftId, stageId, delivered: false, reason: "stage not found" };
     }
@@ -328,9 +338,12 @@ export class DraftsRemoteService extends TypertRemoteService {
         doc: doc as unknown as DraftRecord["doc"],
       });
     } catch (error: unknown) {
+      /* v8 ignore next 7 -- a domain put failure requires a storage IO
+       * fault (disk/permission); the record is schema-valid by
+       * construction, so no in-process input can reach this arm. */
       throw new RemoteError(
         "draft/cannot-persist",
-        error instanceof Error ? error.message : String(error),
+        thrownMessage(error),
         {},
         { cause: error },
       );
@@ -380,7 +393,7 @@ export class BenchRemoteService extends TypertRemoteService {
     } catch (error: unknown) {
       throw new RemoteError(
         "bench/store-failed",
-        error instanceof Error ? error.message : String(error),
+        thrownMessage(error),
         {},
         { cause: error },
       );
@@ -403,7 +416,7 @@ export class BenchRemoteService extends TypertRemoteService {
     } catch (error: unknown) {
       throw new RemoteError(
         "bench/store-failed",
-        error instanceof Error ? error.message : String(error),
+        thrownMessage(error),
         {},
         { cause: error },
       );
@@ -512,7 +525,7 @@ export class BenchRemoteService extends TypertRemoteService {
     } catch (error: unknown) {
       throw new RemoteError(
         "bench/store-failed",
-        error instanceof Error ? error.message : String(error),
+        thrownMessage(error),
         {},
         { cause: error },
       );

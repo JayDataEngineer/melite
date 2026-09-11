@@ -10,16 +10,16 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { test } from "vitest";
 import assert from "node:assert/strict";
-import { Context } from "../../../../packages/estate/drafts/node_modules/@deepseek-ai/cordis/lib/index.js";
-import timerPlugin from "../../../../packages/harness/estate-queue/node_modules/@deepseek-ai/cordis-plugin-timer/lib/index.js";
-import draftsPlugin from "../../../../packages/estate/drafts/lib/index.js";
-import Storage from "../../../../packages/estate/drafts/node_modules/@deepseek-ai/dsh-storage/lib/index.js";
+import { Context } from '@deepseek-ai/cordis';
+import timerPlugin from '@deepseek-ai/cordis-plugin-timer';
+import draftsPlugin from '@melite/estate-drafts';
+import Storage from '@deepseek-ai/dsh-storage';
 import {
   apply as jsonApply, Config as JsonConfig, inject as jsonInject, name as jsonName,
-} from "../../../../packages/estate/drafts/node_modules/@deepseek-ai/dsh-storage-json/lib/index.js";
+} from '@deepseek-ai/dsh-storage-json';
 import {
   apply as domainApply, Config as DomainConfig, inject as domainInject, name as domainName,
-} from "../../../../packages/estate/drafts/node_modules/@deepseek-ai/dsh-storage-domain/lib/index.js";
+} from '@deepseek-ai/dsh-storage-domain';
 import queuePlugin, {
   cardRegistryProvider,
   discloseProvider,
@@ -173,7 +173,7 @@ async function manageRefusal(
     await manage.act(doc, sig);
     throw new Error("expected manage/refused");
   } catch (e) {
-    const re = (await import("../../../../packages/estate/drafts/node_modules/@deepseek-ai/dsh-typert-protocol/lib/index.js")).remoteErrorOf(e);
+    const re = (await import('@deepseek-ai/dsh-typert-protocol')).remoteErrorOf(e);
     assert.ok(re, "a RemoteError");
     assert.equal(re.code, "manage/refused");
     const d = (re as unknown as { details?: { action?: string } }).details ?? {};

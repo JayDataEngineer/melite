@@ -3,7 +3,7 @@ import { fileURLToPath } from 'node:url'
 import { defineConfig } from 'vitest/config'
 import {
   PROXY_SETUP,
-  SOURCE_PLANE_ALIAS,
+  resolutionFacade,
   rootPath,
   standardDecoratorPlugin,
   vitestExecArgv,
@@ -98,7 +98,7 @@ export default defineConfig({
       {
         plugins: [standardDecoratorPlugin()],
         resolve: {
-          alias: { ...SOURCE_PLANE_ALIAS },
+          alias: { ...resolutionFacade() },
         },
         test: {
           name: 'node',
@@ -128,7 +128,7 @@ export default defineConfig({
         plugins: [standardDecoratorPlugin()],
         resolve: {
           alias: {
-            ...SOURCE_PLANE_ALIAS,
+            ...resolutionFacade(),
             '@': path.join(EDITOR, 'src'),
             react: path.join(EDITOR, 'node_modules/react'),
             'react-dom': path.join(EDITOR, 'node_modules/react-dom'),
@@ -173,7 +173,7 @@ export default defineConfig({
         plugins: [standardDecoratorPlugin()],
         resolve: {
           alias: {
-            ...SOURCE_PLANE_ALIAS,
+            ...resolutionFacade(),
             react: path.join(GALLERY, 'node_modules/react'),
             'react-dom': path.join(GALLERY, 'node_modules/react-dom'),
             'react/jsx-runtime': path.join(GALLERY, 'node_modules/react/jsx-runtime'),
@@ -199,7 +199,7 @@ export default defineConfig({
         plugins: [standardDecoratorPlugin()],
         resolve: {
           alias: {
-            ...SOURCE_PLANE_ALIAS,
+            ...resolutionFacade(),
             react: path.join(DECK, 'node_modules/react'),
             'react-dom': path.join(DECK, 'node_modules/react-dom'),
             'react/jsx-runtime': path.join(DECK, 'node_modules/react/jsx-runtime'),
@@ -235,7 +235,13 @@ export default defineConfig({
         'packages/web-kit/**/src/**/*.{ts,tsx}',
         'packages/engines/**/src/**/*.{ts,tsx}',
         'packages/harness/**/src/**/*.{ts,tsx}',
-        'packages/estate/**/src/**/*.{ts,tsx}',
+        // The estate gate grew (2026-09-11, §TEST-8): manage, media,
+        // runs, and drafts' index/spec/store/remote are at per-file
+        // 100 (walls + unit drive them through the source-plane
+        // facade) — gated. The one file-exempt left: drafts' bench
+        // engine (1083 lines, 57% branches — the undo-inverse table
+        // and the ops' refusal arms await their own stroke).
+        'packages/estate/drafts/src/bench.ts',
         'packages/3d/**/src/**/*.{ts,tsx}',
         'packages/audio/**/src/**/*.{ts,tsx}',
         'packages/image/**/src/**/*.{ts,tsx}',

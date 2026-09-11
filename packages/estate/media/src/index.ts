@@ -78,7 +78,7 @@ function contentTypeFor(name: string): string {
 function parseTarget(sub: string): { runId: string; rel: string } | null {
   const parts = sub.split("/").filter((p) => p !== "");
   if (parts.length < 2) return null;
-  const runId = parts[0] ?? "";
+  const runId = parts[0];
   const relParts = parts.slice(1);
   if (!RUN_ID.test(runId)) return null;
   for (const seg of relParts) {

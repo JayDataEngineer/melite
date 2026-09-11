@@ -92,11 +92,44 @@ export const SOURCE_PLANE_ALIAS: Record<string, string> = {
   '@melite/estate-manage': path.join(import.meta.dirname, 'packages/estate/manage/src/index.ts'),
   '@melite/estate-media': path.join(import.meta.dirname, 'packages/estate/media/src/index.ts'),
   '@melite/estate-runs': path.join(import.meta.dirname, 'packages/estate/runs/src/index.ts'),
+  '@infer-media/dsh-gallery': path.join(import.meta.dirname, 'packages/web/infer-gallery/src/index.ts'),
 }
 
 /** Resolve a repository-relative path from the root, for config-local alias groups. */
 export function rootPath(p: string): string {
   return path.join(import.meta.dirname, p)
+}
+
+/**
+ * Runtime-library anchors for the DSH npm packages the walls suites
+ * exercise beside the estate remotes. These are external lib packages
+ * (no src plane in this repository — DSH's own source-plane law covers
+ * their workspace packages, not ours), so the anchor pins each name to
+ * the exact copy the estate packages resolve: the drafts-anchored
+ * cordis/storage/typert-protocol builds and the estate-queue-anchored
+ * timer, keeping the suites' Cordis context on the same module instance
+ * the remotes use. Specs then import bare names instead of reaching
+ * through packages' private node_modules.
+ */
+const DRAFTS_DEPS = path.join(import.meta.dirname, 'packages/estate/drafts/node_modules/@deepseek-ai')
+const QUEUE_DEPS = path.join(import.meta.dirname, 'packages/harness/estate-queue/node_modules/@deepseek-ai')
+
+export const RUNTIME_LIB_ALIAS: Record<string, string> = {
+  '@deepseek-ai/cordis': path.join(DRAFTS_DEPS, 'cordis/lib/index.js'),
+  '@deepseek-ai/dsh-storage': path.join(DRAFTS_DEPS, 'dsh-storage/lib/index.js'),
+  '@deepseek-ai/dsh-storage-json': path.join(DRAFTS_DEPS, 'dsh-storage-json/lib/index.js'),
+  '@deepseek-ai/dsh-storage-domain': path.join(DRAFTS_DEPS, 'dsh-storage-domain/lib/index.js'),
+  '@deepseek-ai/dsh-typert-protocol': path.join(DRAFTS_DEPS, 'dsh-typert-protocol/lib/index.js'),
+  '@deepseek-ai/cordis-plugin-timer': path.join(QUEUE_DEPS, 'cordis-plugin-timer/lib/index.js'),
+}
+
+/**
+ * The complete resolution facade every vitest config spreads: workspace
+ * packages ride src (SOURCE_PLANE_ALIAS); external DSH runtime libraries
+ * ride their estate-anchored copies (RUNTIME_LIB_ALIAS).
+ */
+export function resolutionFacade(): Record<string, string> {
+  return { ...SOURCE_PLANE_ALIAS, ...RUNTIME_LIB_ALIAS }
 }
 
 /**

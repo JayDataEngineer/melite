@@ -7,8 +7,8 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { test } from "vitest";
 import assert from "node:assert/strict";
-import { Context } from "../../../../packages/harness/estate-queue/node_modules/@deepseek-ai/cordis/lib/index.js";
-import timerPlugin from "../../../../packages/harness/estate-queue/node_modules/@deepseek-ai/cordis-plugin-timer/lib/index.js";
+import { Context } from '@deepseek-ai/cordis';
+import timerPlugin from '@deepseek-ai/cordis-plugin-timer';
 import queuePlugin from "../../../../packages/harness/estate-queue/src/index.ts";
 import * as queueMod from "../../../../packages/harness/estate-queue/src/index.ts";
 import {

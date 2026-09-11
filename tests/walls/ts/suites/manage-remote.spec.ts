@@ -17,22 +17,22 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { test } from "vitest";
 import assert from "node:assert/strict";
-import { Context } from "../../../../packages/estate/drafts/node_modules/@deepseek-ai/cordis/lib/index.js";
-import { remoteErrorOf } from "../../../../packages/estate/drafts/node_modules/@deepseek-ai/dsh-typert-protocol/lib/index.js";
-import timerPlugin from "../../../../packages/harness/estate-queue/node_modules/@deepseek-ai/cordis-plugin-timer/lib/index.js";
+import { Context } from '@deepseek-ai/cordis';
+import { remoteErrorOf } from '@deepseek-ai/dsh-typert-protocol';
+import timerPlugin from '@deepseek-ai/cordis-plugin-timer';
 // The storage stack composed AT THE COMPOSITION SITE (the runs-remote
 // recipe — no re-exporting wrapper package).
-import draftsPlugin from "../../../../packages/estate/drafts/lib/index.js";
-import Storage from "../../../../packages/estate/drafts/node_modules/@deepseek-ai/dsh-storage/lib/index.js";
+import draftsPlugin from '@melite/estate-drafts';
+import Storage from '@deepseek-ai/dsh-storage';
 import {
   apply as jsonApply, Config as JsonConfig, inject as jsonInject, name as jsonName,
-} from "../../../../packages/estate/drafts/node_modules/@deepseek-ai/dsh-storage-json/lib/index.js";
+} from '@deepseek-ai/dsh-storage-json';
 import {
   apply as domainApply, Config as DomainConfig, inject as domainInject, name as domainName,
-} from "../../../../packages/estate/drafts/node_modules/@deepseek-ai/dsh-storage-domain/lib/index.js";
+} from '@deepseek-ai/dsh-storage-domain';
 import queuePlugin, { manageProvider } from "../../../../packages/harness/estate-queue/src/index.ts";
-import { manageRemotePlugin } from "../../../../packages/estate/manage/lib/index.js";
-import type { ManageRemoteService } from "../../../../packages/estate/manage/lib/index.js";
+import { manageRemotePlugin } from '@melite/estate-manage';
+import type { ManageRemoteService } from '@melite/estate-manage';
 // The endpoint path resolution (the env override the wall boots
 // under) — imported from ENGINE SOURCE (strip-types), not a stub.
 import { endpointConfigPath } from "../../../../packages/engines/comfyui-cordis/src/comfyui.ts";

@@ -1,7 +1,7 @@
 import { defineConfig } from 'vitest/config'
 import {
   PROXY_SETUP,
-  SOURCE_PLANE_ALIAS,
+  resolutionFacade,
   positiveIntFromEnv,
   standardDecoratorPlugin,
   tryLoadEnvFile,
@@ -19,7 +19,7 @@ const e2eMaxWorkers = positiveIntFromEnv('DSH_E2E_MAX_WORKERS', DEFAULT_E2E_MAX_
 export default defineConfig({
   plugins: [standardDecoratorPlugin()],
   resolve: {
-    alias: { ...SOURCE_PLANE_ALIAS },
+    alias: { ...resolutionFacade() },
   },
   test: {
     environment: 'node',

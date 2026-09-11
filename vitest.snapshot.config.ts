@@ -2,7 +2,7 @@ import { availableParallelism } from 'node:os'
 import { defineConfig } from 'vitest/config'
 import {
   PROXY_SETUP,
-  SOURCE_PLANE_ALIAS,
+  resolutionFacade,
   positiveIntFromEnv,
   standardDecoratorPlugin,
   vitestExecArgv,
@@ -32,7 +32,7 @@ if (process.env.DSH_SNAPSHOT === 'record') {
 export default defineConfig({
   plugins: [standardDecoratorPlugin()],
   resolve: {
-    alias: { ...SOURCE_PLANE_ALIAS },
+    alias: { ...resolutionFacade() },
   },
   test: {
     environment: 'node',

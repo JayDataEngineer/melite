@@ -2,7 +2,7 @@ import { availableParallelism } from 'node:os'
 import { defineConfig } from 'vitest/config'
 import {
   PROXY_SETUP,
-  SOURCE_PLANE_ALIAS,
+  resolutionFacade,
   standardDecoratorPlugin,
   vitestExecArgv,
 } from './vitest.shared.ts'
@@ -11,7 +11,7 @@ import {
 export default defineConfig({
   plugins: [standardDecoratorPlugin()],
   resolve: {
-    alias: { ...SOURCE_PLANE_ALIAS },
+    alias: { ...resolutionFacade() },
   },
   test: {
     environment: 'node',

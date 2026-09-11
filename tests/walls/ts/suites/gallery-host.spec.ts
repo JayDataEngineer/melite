@@ -3,8 +3,8 @@ import assert from 'node:assert/strict'
 import { mkdtempSync, mkdirSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { Context, Service } from '../../../../packages/engines/comfyui-cordis/node_modules/@deepseek-ai/cordis/lib/index.js'
-import type { Plugin } from '../../../../packages/engines/comfyui-cordis/node_modules/@deepseek-ai/cordis/lib/index.js'
+import { Context, Service } from '@deepseek-ai/cordis'
+import type { Plugin } from '@deepseek-ai/cordis'
 
 /** THE GALLERY WALL (REBUILD-18, the gateway kill): the host half
  *  answers in-tree over the estate seats (per-request optional
@@ -51,7 +51,7 @@ class FakeWebServer extends Service {
 test('the gallery host answers in-tree over seats; missing seats are LOUD (REBUILD-18)', async () => {
   const ctx = new Context()
   new FakeWebServer(ctx)
-  const gallery: Plugin = (await import('../../../../packages/web/infer-gallery/lib/index.js')).default ?? (await import('../../../../packages/web/infer-gallery/lib/index.js'))
+  const gallery: Plugin = (await import('@infer-media/dsh-gallery')).default ?? (await import('@infer-media/dsh-gallery'))
   const flowDir = mkdtempSync(join(tmpdir(), 'gallery-wall-'))
   await ctx.plugin(gallery as never, { flowDir })
   const server = ctx.get('webServer', true) as FakeWebServer
@@ -118,7 +118,7 @@ test('the gallery host answers in-tree over seats; missing seats are LOUD (REBUI
 test('cross-host posture: the pinned owning DSH serves every lane (config.gatewayUrl)', async () => {
   const ctx = new Context()
   new FakeWebServer(ctx)
-  const galleryMod = await import('../../../../packages/web/infer-gallery/lib/index.js')
+  const galleryMod = await import('@infer-media/dsh-gallery')
   const gallery: Plugin = galleryMod.default ?? galleryMod
   // A local owning-DSH stand-in: fetch hits it verbatim.
   let hit = ''
@@ -148,7 +148,7 @@ test('cross-host posture: the pinned owning DSH serves every lane (config.gatewa
 test('the artifact grammar accepts subdir names and refuses traversal (the live-probe 400)', async () => {
   const ctx = new Context()
   new FakeWebServer(ctx)
-  const gallery: Plugin = (await import('../../../../packages/web/infer-gallery/lib/index.js')).default ?? (await import('../../../../packages/web/infer-gallery/lib/index.js'))
+  const gallery: Plugin = (await import('@infer-media/dsh-gallery')).default ?? (await import('@infer-media/dsh-gallery'))
   const flowDir = mkdtempSync(join(tmpdir(), 'gallery-wall-'))
   // a real artifact in a SUBDIR (the shape every generate run emits)
   mkdirSync(join(flowDir, 'run-abc123-word', 'generate'), { recursive: true })

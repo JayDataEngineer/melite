@@ -119,7 +119,9 @@ export async function openDraftsDomain(
   try {
     return await ready;
   } catch (error: unknown) {
-    if (cached.get(facility)?.ready === ready) cached.delete(facility);
+    // Unconditional: one slot per facility exists at a time (a
+    // foreign root refuses above), so this rejection owns the slot.
+    cached.delete(facility);
     throw error;
   }
 }

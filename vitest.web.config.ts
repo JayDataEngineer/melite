@@ -2,7 +2,7 @@ import path from 'node:path'
 import { defineConfig } from 'vitest/config'
 import {
   PROXY_SETUP,
-  SOURCE_PLANE_ALIAS,
+  resolutionFacade,
   rootPath,
   standardDecoratorPlugin,
   tryLoadEnvFile,
@@ -25,7 +25,7 @@ export default defineConfig({
   plugins: [standardDecoratorPlugin()],
   resolve: {
     alias: {
-      ...SOURCE_PLANE_ALIAS,
+      ...resolutionFacade(),
       '@': path.join(EDITOR, 'src'),
       react: path.join(EDITOR, 'node_modules/react'),
       'react-dom': path.join(EDITOR, 'node_modules/react-dom'),

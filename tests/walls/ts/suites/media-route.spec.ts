@@ -1,10 +1,10 @@
 import { test } from 'vitest'
 import assert from 'node:assert/strict'
-import { mkdtempSync, mkdirSync, writeFileSync } from 'node:fs'
+import { mkdtempSync, mkdirSync, writeFileSync, symlinkSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { Context, Service } from '../../../../packages/engines/comfyui-cordis/node_modules/@deepseek-ai/cordis/lib/index.js'
-import type { Plugin } from '../../../../packages/engines/comfyui-cordis/node_modules/@deepseek-ai/cordis/lib/index.js'
+import { Context, Service } from '@deepseek-ai/cordis'
+import type { Plugin } from '@deepseek-ai/cordis'
 
 /** THE MEDIA WALL (the /v1/assets face's DSH-native replacement):
  *  run artifacts served same-origin from the queue seat's own runs
@@ -64,7 +64,7 @@ class FakeQueue extends Service {
   }
 }
 
-async function boot(withQueue: boolean): Promise<{ handler: (req: { url?: string; method?: string }, res: FakeRes) => Promise<void> | void; mediaUrl: (runId: string, name: string) => string }> {
+async function boot(withQueue: boolean): Promise<{ handler: (req: { url?: string; method?: string }, res: FakeRes) => Promise<void> | void; mediaUrl: (runId: string, name: string) => string; root: string }> {
   const ctx = new Context()
   new FakeWebServer(ctx)
   const root = mkdtempSync(join(tmpdir(), 'media-wall-'))
@@ -78,7 +78,7 @@ async function boot(withQueue: boolean): Promise<{ handler: (req: { url?: string
   // second arg, not the route name) — the prefix path is the key.
   const row = server.captured.find((c) => c.route === '/melite-media/runs')!
   assert.ok(row, 'media route registered')
-  return { handler: row.handler, mediaUrl: mod.mediaUrl }
+  return { handler: row.handler, mediaUrl: mod.mediaUrl, root }
 }
 
 test('happy path: bytes + content-type from the runs output tree', async () => {
@@ -116,6 +116,75 @@ test('HEAD answers headers only; the absent queue seat is a LOUD 502', async () 
   assert.equal(res.status, 502)
   assert.ok(res.body().toString().includes('no-queue-seat'))
   assert.ok(res.body().toString().includes('melite-estate'))
+})
+
+test('HEAD on a present artifact: same headers as GET, no body bytes', async () => {
+  const { handler } = await boot(true)
+  const res = new FakeRes()
+  await handler({ url: '/melite-media/runs/run-00ff-abc/img.png', method: 'HEAD' }, res)
+  assert.equal(res.status, 200)
+  assert.equal(res.headers['content-type'], 'image/png')
+  assert.equal(res.headers['content-length'], '4')
+  assert.equal(res.body().length, 0)
+})
+
+test('realpath containment: symlink escapes refuse 404 (the second lock)', async () => {
+  const { handler, root } = await boot(true)
+  // An OUTSIDE file the regex grammar cannot see: the URL is a plain
+  // name (first lock passes), but realpath resolves outside the run
+  // dir (second lock refuses).
+  writeFileSync(join(root, 'secret-outside.txt'), 'x')
+  symlinkSync(join(root, 'secret-outside.txt'), join(root, 'output', 'run-00ff-abc', 'escape.png'))
+  const res = new FakeRes()
+  await handler({ url: '/melite-media/runs/run-00ff-abc/escape.png', method: 'GET' }, res)
+  assert.equal(res.status, 404)
+  assert.ok(res.body().toString().includes('media/not-found'))
+})
+
+test('realpath containment: a symlink to the run dir itself resolves to relFromRoot ""', async () => {
+  const { handler, root } = await boot(true)
+  symlinkSync(join(root, 'output', 'run-00ff-abc'), join(root, 'output', 'run-00ff-abc', 'selfdir'))
+  const res = new FakeRes()
+  await handler({ url: '/melite-media/runs/run-00ff-abc/selfdir', method: 'GET' }, res)
+  assert.equal(res.status, 404)
+  assert.ok(res.body().toString().includes('media/not-found'))
+})
+
+test('a directory target passes containment but refuses on stat: 404, never a stream', async () => {
+  const { handler, root } = await boot(true)
+  mkdirSync(join(root, 'output', 'run-00ff-abc', 'generate'))
+  const res = new FakeRes()
+  await handler({ url: '/melite-media/runs/run-00ff-abc/generate', method: 'GET' }, res)
+  assert.equal(res.status, 404)
+  assert.ok(res.body().toString().includes('media/not-found'))
+})
+
+test('content-type + grammar arms: dotless names, off-grammar segments, absent url', async () => {
+  const { handler, root } = await boot(true)
+  // A dotless name: ext "" misses the table — octet-stream, bytes
+  // still served (the table is a courtesy, never a gate).
+  writeFileSync(join(root, 'output', 'run-00ff-abc', 'README'), 'plain')
+  const res = new FakeRes()
+  await handler({ url: '/melite-media/runs/run-00ff-abc/README', method: 'GET' }, res)
+  assert.equal(res.status, 200)
+  assert.equal(res.headers['content-type'], 'application/octet-stream')
+  assert.equal(res.body().toString(), 'plain')
+  // A segment outside the grammar (asterisk) refuses at the FIRST
+  // lock — the regex, before any filesystem word.
+  const bad = new FakeRes()
+  await handler({ url: '/melite-media/runs/run-00ff-abc/im*g.png', method: 'GET' }, bad)
+  assert.equal(bad.status, 404)
+  assert.ok(bad.body().toString().includes('media/not-found'))
+  // An absent url (node never sends one) parses to the root — 404.
+  const noUrl = new FakeRes()
+  await handler({ method: 'GET' }, noUrl)
+  assert.equal(noUrl.status, 404)
+  assert.ok(noUrl.body().toString().includes('media/not-found'))
+})
+
+test('mediaUrl: the empty name passes verbatim (the null artifact row)', async () => {
+  const { mediaUrl } = await boot(true)
+  assert.equal(mediaUrl('run-00ff-abc', ''), '')
 })
 
 test('mediaUrl: bare run-relative names ride the route; URLs pass verbatim', async () => {
