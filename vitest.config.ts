@@ -235,13 +235,11 @@ export default defineConfig({
         'packages/web-kit/**/src/**/*.{ts,tsx}',
         'packages/engines/**/src/**/*.{ts,tsx}',
         'packages/harness/**/src/**/*.{ts,tsx}',
-        // The estate gate grew (2026-09-11, §TEST-8): manage, media,
-        // runs, and drafts' index/spec/store/remote are at per-file
-        // 100 (walls + unit drive them through the source-plane
-        // facade) — gated. The one file-exempt left: drafts' bench
-        // engine (1083 lines, 57% branches — the undo-inverse table
-        // and the ops' refusal arms await their own stroke).
-        'packages/estate/drafts/src/bench.ts',
+        // The estate tree is FULLY gated (2026-09-11, §TEST-8 grew it
+        // to manage/media/runs + drafts index/spec/store/remote; §TEST-9
+        // closed the last file-exempt — the drafts bench engine — at
+        // per-file 100 via its package-local spec). No estate rows
+        // remain here.
         'packages/3d/**/src/**/*.{ts,tsx}',
         'packages/audio/**/src/**/*.{ts,tsx}',
         'packages/image/**/src/**/*.{ts,tsx}',

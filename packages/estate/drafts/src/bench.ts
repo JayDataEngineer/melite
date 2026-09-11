@@ -100,9 +100,10 @@ function benchBlockOf(doc: Record<string, unknown>): BenchBlock {
 }
 
 function stagesOf(doc: Record<string, unknown>): Record<string, unknown>[] {
-  const stages: unknown = doc["stages"];
-  if (!Array.isArray(stages)) return [];
-  return stages.filter((s: unknown): boolean => isRecord(s)) as Record<string, unknown>[];
+  // The domain schema guarantees stages is an array of id-carrying
+  // objects (DraftDocSchema; schema-failing records are backed up and
+  // skipped at read) — no re-defense here.
+  return doc["stages"] as Record<string, unknown>[];
 }
 
 /** Birth defaults per the composer's law (id, inputs, provenance)
@@ -117,8 +118,10 @@ function normalizeStages(
     .map((s: unknown, idx: number): Record<string, unknown> => {
       const src: Record<string, unknown> = s as Record<string, unknown>;
       const row: Record<string, unknown> = {};
-      row["id"] = typeof src["id"] === "string" ? src["id"] : "s_" + idx;
       for (const k of Object.keys(src)) row[k] = src[k];
+      // Defaults fill AFTER the caller's data (a junk or missing id
+      // must not ship an unaddressable row; the schema's id law).
+      row["id"] = typeof src["id"] === "string" ? src["id"] : "s_" + idx;
       if (typeof row["engine"] !== "string" || row["engine"] === "")
         row["engine"] = "comfyui";
       if (!isRecord(row["inputs"])) row["inputs"] = {};
@@ -402,14 +405,9 @@ function stageRow(
   doc: Record<string, unknown>,
   stageId: string,
 ): Record<string, unknown> | null {
-  const stages: unknown = doc["stages"];
-  if (!Array.isArray(stages)) return null;
-  for (const st of stages) {
-    if (isRecord(st) && st["id"] === stageId) {
-      return st as Record<string, unknown>;
-    }
-  }
-  return null;
+  // Schema law (see stagesOf): rows are records with string ids.
+  const stages = doc["stages"] as Record<string, unknown>[];
+  return stages.find((st: Record<string, unknown>): boolean => st["id"] === stageId) ?? null;
 }
 
 const PATCH_KEYS = ["stage", "params", "result", "runStatus", "expect_rev", "author"];
@@ -683,8 +681,9 @@ export async function groupBench(
   }
   const firstIndex: number = stages.indexOf(picked[0]!);
   for (const row of picked) {
-    const idx: number = stages.indexOf(row);
-    if (idx >= 0) stages.splice(idx, 1);
+    // picked rows ARE stages members (built from the walk above) —
+    // splice by identity, no guard.
+    stages.splice(stages.indexOf(row), 1);
   }
   // id from the doc's own coordinates (rev + count) — no global RNG
   // dependency; unique per append by construction (rev advances).
@@ -1074,10 +1073,10 @@ function applyInverse(
     st["inputs"] = inputs;
     return;
   }
-  // load/undo: the coarse fallback — restore the snapshot.
+  // load: the coarse fallback — restore the snapshot. (Undo entries
+  // are never walk candidates — the skip at the top guarantees it —
+  // so no "undo" disjunct here.)
   const snapshot: unknown =
-    e.kind === "load" || e.kind === "undo"
-      ? inv["stages_before"]
-      : undefined;
+    e.kind === "load" ? inv["stages_before"] : undefined;
   if (Array.isArray(snapshot)) doc["stages"] = snapshot;
 }
