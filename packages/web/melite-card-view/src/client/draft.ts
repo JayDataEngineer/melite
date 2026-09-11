@@ -106,6 +106,19 @@ async function wireCall(method: WireMethod, args: Record<string, unknown>): Prom
   return value as Record<string, unknown>
 }
 
+/** The media URL seam — the twin of @melite/estate-media's mediaUrl
+ *  (kept LOCAL: this is a browser module, the package main is a host
+ *  plugin). Bare run-relative names ride the estate's media route;
+ *  names that already carry a URL pass verbatim. */
+export function mediaUrl(runId: string, name: string): string {
+  if (name === '') return name
+  if (/^(https?:\/\/|\/)/.test(name)) return name
+  return '/melite-media/runs/' + encodeURIComponent(runId) + '/' + name
+    .split('/')
+    .map((seg) => encodeURIComponent(seg))
+    .join('/')
+}
+
 /** The draft doc; throws the door's own named refusal on failure. */
 export async function fetchDraft(draftId: string): Promise<DraftDoc> {
   const doc = await wireCall('drafts/get', { draftId })
@@ -190,7 +203,9 @@ export function cardRows(doc: DraftDoc, live?: RunStatusDoc | null): CardRow[] {
       service: typeof stage.service === 'string' && stage.service !== '' ? stage.service : null,
       prompt,
       status: rowStatus(runStage?.status, stage.status),
-      thumbUrl: typeof runStage?.url === 'string' && runStage.url !== '' ? runStage.url : null,
+      thumbUrl: typeof runStage?.url === 'string' && runStage.url !== ''
+        ? mediaUrl(live?.run_id ?? '', runStage.url)
+        : null,
     }
   })
 }

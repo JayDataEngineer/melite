@@ -20,6 +20,7 @@
  */
 import { createElement as h, useCallback, useState } from 'react'
 import type { CardsBenchValue, CardsRunValue, BenchStageRow } from './cards-resource.ts'
+import { mediaUrl } from './draft.ts'
 
 /** The injected tab information hook's shape (dsh-client-ui-sidebar-right's
  *  UseSidebarRightTabInfo, spelled locally). */
@@ -162,7 +163,7 @@ function RunView({ run }: { run: CardsRunValue }): ReturnType<typeof h> {
             h('span', { className: 'cards-stage-title' }, s.id),
             h('span', { className: 'cards-stage-engine' }, s.status),
             s.url !== undefined
-              ? h('a', { href: s.url, target: '_blank', rel: 'noreferrer', className: 'cards-stage-artifact' }, 'artifact')
+              ? h('a', { href: mediaUrl(run.runId, s.url), target: '_blank', rel: 'noreferrer', className: 'cards-stage-artifact' }, 'artifact')
               : null,
           ))),
   )

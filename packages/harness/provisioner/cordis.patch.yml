@@ -69,12 +69,12 @@
     - id: infer-tools-doors
       name: '@melite-plugin/dsh-tools/doors'
 
-    - id: infer-card-view-host
+    # ONE row now (the two-row host/client split with clientRowOnly
+    # is retired — the bundle's own dsh.client declaration loads the
+    # browser half; the host half is the bundle-row marker, the
+    # gateway-era proxy route died with the kill).
+    - id: infer-card-view
       name: '@melite-plugin/dsh-card-view'
-    - id: infer-card-view-client
-      name: '@melite-plugin/dsh-card-view'
-      config:
-        clientRowOnly: true
 
     - id: infer-card-deck
       name: '@melite-plugin/dsh-card-deck'

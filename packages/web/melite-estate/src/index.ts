@@ -38,6 +38,10 @@ import queuePlugin, {
 } from "@melite/estate-queue";
 import { manageRemotePlugin } from "@melite/estate-manage";
 import { runsRemotePlugin } from "@melite/estate-runs";
+// The runs media route (the /v1/assets face's DSH-native
+// replacement): run artifacts served same-origin from the queue
+// seat's own runs tree.
+import mediaPlugin from "@melite/estate-media";
 
 /** The estate composition: the engine tier, the drafts service,
  *  the serial run queue, and the runs plane (REBUILD-5/9). A
@@ -75,6 +79,10 @@ const rows: readonly Plugin[] = [
   loadProvider,
   runsRegistryPlugin,
   runsRemotePlugin,
+  // The media route last: it probes the queue seat at the use site
+  // (optional-dependency law), so order carries no meaning — it just
+  // reads well after the estate rows it serves.
+  mediaPlugin,
 ];
 
 export const name = "melite-estate";

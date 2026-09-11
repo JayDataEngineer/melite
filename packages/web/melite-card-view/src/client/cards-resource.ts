@@ -151,6 +151,16 @@ function readRun(runId: string, doc: Record<string, unknown>): CardsRunValue {
     ? (doc['stages'] as unknown[]).filter((s): s is RunStageStatus =>
         typeof s === 'object' && s !== null && typeof (s as RunStageStatus)['id'] === 'string')
     : []
+  // Stage urls arrive run-RELATIVE (the /v1/assets prefix died with
+  // the gateway app); rewrite bare names onto the estate's media
+  // route (draft.ts's mediaUrl twin — same law, same seam).
+  for (const stage of stages) {
+    if (typeof stage.url === 'string' && stage.url !== ''
+        && !/^(https?:\/\/|\/)/.test(stage.url)) {
+      stage.url = '/melite-media/runs/' + encodeURIComponent(runId) + '/'
+        + stage.url.split('/').map((seg) => encodeURIComponent(seg)).join('/')
+    }
+  }
   return {
     kind: 'run',
     runId,

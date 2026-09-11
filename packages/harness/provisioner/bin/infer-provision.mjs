@@ -133,8 +133,7 @@ function renderProfile(name) {
   // ✦ doors need webServer+llm — absent in sdk/headless mounts); the
   // renderer disables it with the other web rows in non-web mounts.
   const webRows = ['infer-tools-doors',
-                   'infer-card-view-host', 'infer-card-view-client',
-                   'infer-card-deck', 'infer-media', 'infer-gallery-host']
+                   'infer-card-view', 'infer-card-deck', 'infer-gallery-host']
   writeFileSync(join(dst, 'cordis.patch.yml'),
     webMount
       ? '# rendered by infer-provision - rows live in the bundle' + '\n' + '[]' + '\n'

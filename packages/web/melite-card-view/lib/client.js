@@ -90,6 +90,15 @@ window.__ModuleLoader__.load({
 			if (typeof value !== "object" || value === null || Array.isArray(value)) throw new Error(method + ": not a JSON object");
 			return value;
 		}
+		/** The media URL seam — the twin of @melite/estate-media's mediaUrl
+		*  (kept LOCAL: this is a browser module, the package main is a host
+		*  plugin). Bare run-relative names ride the estate's media route;
+		*  names that already carry a URL pass verbatim. */
+		function mediaUrl(runId, name) {
+			if (name === "") return name;
+			if (/^(https?:\/\/|\/)/.test(name)) return name;
+			return "/melite-media/runs/" + encodeURIComponent(runId) + "/" + name.split("/").map((seg) => encodeURIComponent(seg)).join("/");
+		}
 		/** The draft doc; throws the door's own named refusal on failure. */
 		async function fetchDraft(draftId) {
 			const doc = await wireCall$1("drafts/get", { draftId });
@@ -142,7 +151,7 @@ window.__ModuleLoader__.load({
 					service: typeof stage.service === "string" && stage.service !== "" ? stage.service : null,
 					prompt,
 					status: rowStatus(runStage?.status, stage.status),
-					thumbUrl: typeof runStage?.url === "string" && runStage.url !== "" ? runStage.url : null
+					thumbUrl: typeof runStage?.url === "string" && runStage.url !== "" ? mediaUrl(live?.run_id ?? "", runStage.url) : null
 				};
 			});
 		}
@@ -665,7 +674,7 @@ window.__ModuleLoader__.load({
 				className: "cards-stage",
 				"data-stage-status": s.status
 			}, (0, react.createElement)("span", { className: "cards-stage-title" }, s.id), (0, react.createElement)("span", { className: "cards-stage-engine" }, s.status), s.url !== void 0 ? (0, react.createElement)("a", {
-				href: s.url,
+				href: mediaUrl(run.runId, s.url),
 				target: "_blank",
 				rel: "noreferrer",
 				className: "cards-stage-artifact"
@@ -767,6 +776,7 @@ window.__ModuleLoader__.load({
 		}
 		function readRun(runId, doc) {
 			const stages = Array.isArray(doc["stages"]) ? doc["stages"].filter((s) => typeof s === "object" && s !== null && typeof s["id"] === "string") : [];
+			for (const stage of stages) if (typeof stage.url === "string" && stage.url !== "" && !/^(https?:\/\/|\/)/.test(stage.url)) stage.url = "/melite-media/runs/" + encodeURIComponent(runId) + "/" + stage.url.split("/").map((seg) => encodeURIComponent(seg)).join("/");
 			return {
 				kind: "run",
 				runId,
