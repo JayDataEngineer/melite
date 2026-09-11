@@ -251,7 +251,12 @@ export default defineConfig({
         // (executor batteries) + the index apply arms. No studios in
         // the tree: the exemption row is GONE, nothing replaces it.
         'packages/image/**/src/**/*.{ts,tsx}',
-        'packages/motion/**/src/**/*.{ts,tsx}',
+        // motion closed (2026-09-12, §TEST-12): card compose gate +
+        // the tool face's full battery at per-file 100x4. The studio
+        // (src/ui/** — MotionExportDialog + the 2.1k-line component)
+        // stays GUI-debt: DOM components, the dom project's
+        // territory, same carve-out as the web tree.
+        'packages/motion/**/src/ui/**/*.{ts,tsx}',
         'packages/video/**/src/**/*.{ts,tsx}',
         // Types-only files carry no executable code.
         'packages/*/*/src/types.ts',
