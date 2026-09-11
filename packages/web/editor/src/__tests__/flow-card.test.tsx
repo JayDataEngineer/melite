@@ -44,7 +44,7 @@ import { CardDetailInline } from "../surfaces/flow/CardDetailModal"
 // (cardElements lane parity, 2026-08-21) — seed the lane exactly as the
 // app's boot does, or the cells render null.
 import "@/shell/pluginUi"
-import { formSpecStub, type FormSpecSeed } from "./fixtures/formSpecStub"
+import { formSpecStub, type FormSpecSeed } from "../../tests/fixtures/formSpecStub"
 beforeAll(async () => { /* chrome static via pluginUi import */ })
 import type { CardStage, CardStatus } from "@melite/contracts"
 import { useMotionThumbStore } from "@melite/ui"

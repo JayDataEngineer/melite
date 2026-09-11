@@ -224,11 +224,39 @@ window.__ModuleLoader__.load({
 		function gb(bytes) {
 			return typeof bytes === "number" && bytes > 0 ? (bytes / 2 ** 30).toFixed(1) : "?";
 		}
-		/** The result pane's data body: arrays render as lines (logs), else JSON. */
+		/**
+		* The result pane's row formatter — ONE law (the packs regression,
+		* 2026-09-11, generalized): every array row renders as a READABLE
+		* line, never `String(obj)`'s "[object Object]".
+		*   - strings pass through (logs)
+		*   - {name, version}  → "name — version"        (installed packs)
+		*   - other objects    → "name (type, base) — filename …" over the
+		*                        fields present (search_models model rows,
+		*                        extension rows), never a cast
+		*   - anything else    → compact JSON (honest, always defined)
+		*/
+		function rowLine(row) {
+			if (typeof row === "string") return row;
+			if (typeof row === "object" && row !== null) {
+				const r = row;
+				const name = typeof r["name"] === "string" ? r["name"] : void 0;
+				const version = typeof r["version"] === "string" ? r["version"] : void 0;
+				if (name !== void 0 && version !== void 0) return name + " — " + version;
+				if (name !== void 0) {
+					const traits = [r["type"], r["base"]].filter((v) => typeof v === "string" && v !== "");
+					const file = typeof r["filename"] === "string" ? r["filename"] : void 0;
+					const head = traits.length > 0 ? name + " (" + traits.join(", ") + ")" : name;
+					return file !== void 0 ? head + " — " + file : head;
+				}
+			}
+			return JSON.stringify(row);
+		}
+		/** The result pane's data body: arrays render as lines (logs, packs,
+		*  model hits — rowLine), else pretty JSON (the status view). */
 		function DataBody({ data }) {
 			if (Array.isArray(data)) return /* @__PURE__ */ (0, react_jsx_runtime.jsx)("pre", {
 				className: assets_module_css_default.pre,
-				children: data.map((line) => String(line)).join("\n")
+				children: data.map((line) => rowLine(line)).join("\n")
 			});
 			return /* @__PURE__ */ (0, react_jsx_runtime.jsx)("pre", {
 				className: assets_module_css_default.pre,

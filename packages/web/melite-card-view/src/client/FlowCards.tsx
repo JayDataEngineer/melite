@@ -52,12 +52,13 @@
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import css from './card.module.css'
-import { Button, Input, Modal, Pill, StateDot } from '@deepseek-ai/dsh-client-ui-primitives'
+import { Pill, StateDot } from '@deepseek-ai/dsh-client-ui-primitives'
+import { CardDrill } from './card-drill.tsx'
 import type { ToolCallBlockView } from './types.ts'
 import {
-  cardRows, coerceEdit, editPatch, fetchDraft, paramFields, patchStageParams, runFinished, runStatus, startDraft,
+  cardRows, fetchDraft, paramFields, patchStageParams, runFinished, runStatus, startDraft,
 } from './draft.ts'
-import type { CardRow, DraftDoc, EditMap, ParamField, RunStatusDoc } from './draft.ts'
+import type { CardRow, DraftDoc, RunStatusDoc } from './draft.ts'
 
 /** Run-status poll cadence (the editor's door, cheap same-host read). */
 const POLL_MS = 1500
@@ -204,81 +205,6 @@ function CardRowLine({ row, onOpen }: { row: CardRow; onOpen: () => void }) {
   )
 }
 
-/** The drilldown — DSH's Modal, split: params (left) / outputs + Run (right). */
-function CardDrilldown({ draftId, row, stage, onClose }: {
-  draftId: string
-  row: CardRow
-  stage: ParamField[]
-  onClose: () => void
-}) {
-  const [edits, setEdits] = useState<EditMap>(new Map())
-  const [running, setRunning] = useState(false)
-  const [runError, setRunError] = useState<string | null>(null)
-  // The row's own live thumb (the parent polls; the modal reads it fresh).
-  const patch = useMemo(() => editPatch(stage, edits), [stage, edits])
-
-  const run = useCallback(async () => {
-    setRunning(true)
-    setRunError(null)
-    try {
-      // Param edits first (the editor's door), then the run — the card
-      // runs what the user SEES. A patch failure names itself and stops
-      // the run from firing on stale params.
-      if (patch !== null) await patchStageParams(draftId, row.stageId, patch)
-      await startDraft(draftId)
-      onClose()
-    } catch (e) {
-      setRunError(e instanceof Error ? e.message : 'run failed')
-      setRunning(false)
-    }
-  }, [draftId, patch, row, onClose])
-
-  return (
-    <Modal open onClose={onClose} title={'Card ' + row.title} closeLabel="Close card" className={css.drill}>
-      <div className={css.split}>
-        <div className={css.params}>
-          {stage.map((f) => (
-            <label key={f.key} className={css.field}>
-              <span className={css.fieldKey}>{f.key}</span>
-              {f.atom === 'switch'
-                ? (
-                  <Pill
-                    active={typeof f.value === 'boolean' ? ((edits.get(f.key) ?? f.value) as boolean) : false}
-                    onClick={() => {
-                      const current = typeof f.value === 'boolean' ? ((edits.get(f.key) ?? f.value) as boolean) : false
-                      setEdits((m) => new Map(m).set(f.key, !current))
-                    }}
-                  >
-                    {typeof f.value === 'boolean' ? ((edits.get(f.key) ?? f.value) as boolean) ? 'on' : 'off' : '?'}
-                  </Pill>
-                )
-                : (
-                  <Input
-                    value={String(edits.get(f.key) ?? f.value)}
-                    onChange={(e) => {
-                      // RAW string while typing (decimal dots survive);
-                      // editPatch coerces once, at patch time.
-                      setEdits((m) => new Map(m).set(f.key, (e.target as HTMLInputElement).value))
-                    }}
-                  />
-                )}
-            </label>
-          ))}
-        </div>
-        <div className={css.outputs}>
-          {row.thumbUrl !== null && <img className={css.outputImg} src={row.thumbUrl} alt={row.title} />}
-          <div className={css.runRow}>
-            {runError !== null && <span className={css.runError}>{runError}</span>}
-            <Button variant="primary" disabled={running} onClick={() => { void run() }}>
-              {running ? 'running…' : 'Run'}
-            </Button>
-          </div>
-        </div>
-      </div>
-    </Modal>
-  )
-}
-
 /** One melite_flow call as the REAL action cards (native React, in-tree). */
 export function FlowCards({ block }: FlowCardsProps) {
   const parsed = useMemo(() => parseCardsBlock(block), [block])
@@ -326,10 +252,22 @@ export function FlowCards({ block }: FlowCardsProps) {
         <CardRowLine key={row.stageId} row={row} onOpen={() => { setOpenStage(row.stageId) }} />
       ))}
       {openRow !== null && (
-        <CardDrilldown
-          draftId={parsed.draftId}
-          row={openRow}
-          stage={paramFields(openParams)}
+        <CardDrill
+          title={'Card ' + openRow.title}
+          fields={paramFields(openParams)}
+          thumbUrl={openRow.thumbUrl ?? null}
+          running={false}
+          onRun={async (patch) => {
+            // The shared-state law: the patch lands in the domain
+            // BEFORE the run reads it — the card runs what the user
+            // SEES. A patch failure names itself and stops the run.
+            const draftId = parsed.draftId
+            if (draftId === null) throw new Error('draft id gone')
+            if (patch !== null) await patchStageParams(draftId, openRow.stageId, patch)
+            await startDraft(draftId)
+            setOpenStage(null)
+            refresh()
+          }}
           onClose={() => { setOpenStage(null); refresh() }}
         />
       )}

@@ -389,3 +389,83 @@ test("the tools' lane grammar rides the seats end-to-end (glue)", async () => {
   );
   assert.match(loud!, /no remote serves POST \/v1\/flows\/start/);
 });
+
+// ── drafts/patch — the stage patch door (2026-09-11 rebirth) ──────
+// The shared-state arm: per-key params merge, the old door's fixed
+// key admission + voice, the delivered envelope, domain persistence.
+
+test("drafts/patch merges params per-key and persists through the domain", async () => {
+  const ctx = await boot();
+  await ctx.draftsRemote.patch(
+    "d_new",
+    "s_0",
+    { params: { steps: 12, prompt: "a red cube" } },
+    sig,
+  );
+  // The get arm reads the SAME domain — the merge is observable.
+  const doc = (await ctx.draftsRemote.get("d_new", sig)) as {
+    stages: Array<{ id: string; params?: Record<string, unknown> }>;
+  };
+  const stage = doc.stages.find((s) => s.id === "s_0")!;
+  assert.equal(stage.params?.["steps"], 12);
+  assert.equal(stage.params?.["prompt"], "a red cube");
+  // A second patch merges INTO the first (per-key, never replace).
+  await ctx.draftsRemote.patch("d_new", "s_0", { params: { steps: 20 } }, sig);
+  const again = (await ctx.draftsRemote.get("d_new", sig)) as {
+    stages: Array<{ id: string; params?: Record<string, unknown> }>;
+  };
+  const stage2 = again.stages.find((s) => s.id === "s_0")!;
+  assert.equal(stage2.params?.["steps"], 20);
+  assert.equal(stage2.params?.["prompt"], "a red cube");
+});
+
+test("drafts/patch answers the delivered envelope for missing doc/stage", async () => {
+  const ctx = await boot();
+  const noDraft = await ctx.draftsRemote.patch(
+    "d_missing", "s_0", { params: { steps: 1 } }, sig,
+  );
+  assert.equal(noDraft.delivered, false);
+  assert.equal(noDraft.reason, "draft not found");
+  const noStage = await ctx.draftsRemote.patch(
+    "d_new", "s_absent", { params: { steps: 1 } }, sig,
+  );
+  assert.equal(noStage.delivered, false);
+  assert.equal(noStage.reason, "stage not found");
+});
+
+test("drafts/patch refuses unknown keys with the door's old voice", async () => {
+  const ctx = await boot();
+  const failure = await failureOf(
+    ctx.draftsRemote.patch("d_new", "s_0", { params: { steps: 1 }, bogus: 1 }, sig),
+  );
+  assert.equal(failure?.["code"], "draft/patch-unknown-keys");
+  assert.match(
+    String(failure?.["message"] ?? ""),
+    /unknown stage patch key\(s\): bogus \(want params, result, runStatus, inputs, inputOutputs\)/,
+  );
+});
+
+test("drafts/patch refuses bad ids and bad bodies as named codes", async () => {
+  const ctx = await boot();
+  const badId = await failureOf(
+    ctx.draftsRemote.patch("bad id!", "s_0", { params: {} }, sig),
+  );
+  assert.equal(badId?.code, "draft/bad-id");
+  const badPatch = await failureOf(
+    ctx.draftsRemote.patch("d_new", "s_0", "params" as never, sig),
+  );
+  assert.equal(badPatch?.code, "draft/bad-patch");
+});
+
+test("drafts/patch lands the runStatus/result arms (the old door's other keys)", async () => {
+  const ctx = await boot();
+  await ctx.draftsRemote.patch(
+    "d_new", "s_0", { runStatus: "done", result: { url: "x.png" } }, sig,
+  );
+  const doc = (await ctx.draftsRemote.get("d_new", sig)) as {
+    stages: Array<{ id: string; runStatus?: string; result?: unknown }>;
+  };
+  const stage = doc.stages.find((s) => s.id === "s_0")!;
+  assert.equal(stage.runStatus, "done");
+  assert.deepEqual(stage.result, { url: "x.png" });
+});

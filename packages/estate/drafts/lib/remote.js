@@ -36,6 +36,10 @@ import { Remote, RemoteError, TypertRemoteService, } from "@deepseek-ai/dsh-type
 import { openDraftsDomain } from "./store.js";
 import { DRAFT_ID_RE } from "./spec.js";
 import { addStageBench, ensureBench, getBench, patchBench, removeStageBench, rewireBench, undoBench, } from "./bench.js";
+/** The stage-patch door's fixed key set (the old door's
+ *  STAGE_PATCH_KEYS, order verbatim — the unknown-keys voice lists
+ *  them in this order). */
+export const STAGE_PATCH_KEYS = ["params", "result", "runStatus", "inputs", "inputOutputs"];
 /** First-seen display strings walk the doc depth-first (the index
  *  law: model/service cap 80, name/intent/title cap 160). */
 function docIndexFields(doc) {
@@ -81,13 +85,16 @@ let DraftsRemoteService = (() => {
     let _instanceExtraInitializers = [];
     let _remoteExportList_decorators;
     let _remoteExportGet_decorators;
+    let _remoteExportPatch_decorators;
     return class DraftsRemoteService extends _classSuper {
         static {
             const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(_classSuper[Symbol.metadata] ?? null) : void 0;
             _remoteExportList_decorators = [Remote("list")];
             _remoteExportGet_decorators = [Remote("get")];
+            _remoteExportPatch_decorators = [Remote("patch")];
             __esDecorate(this, null, _remoteExportList_decorators, { kind: "method", name: "remoteExportList", static: false, private: false, access: { has: obj => "remoteExportList" in obj, get: obj => obj.remoteExportList }, metadata: _metadata }, null, _instanceExtraInitializers);
             __esDecorate(this, null, _remoteExportGet_decorators, { kind: "method", name: "remoteExportGet", static: false, private: false, access: { has: obj => "remoteExportGet" in obj, get: obj => obj.remoteExportGet }, metadata: _metadata }, null, _instanceExtraInitializers);
+            __esDecorate(this, null, _remoteExportPatch_decorators, { kind: "method", name: "remoteExportPatch", static: false, private: false, access: { has: obj => "remoteExportPatch" in obj, get: obj => obj.remoteExportPatch }, metadata: _metadata }, null, _instanceExtraInitializers);
             if (_metadata) Object.defineProperty(this, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
         }
         constructor(ctx) {
@@ -144,6 +151,99 @@ let DraftsRemoteService = (() => {
                 });
             }
             return rec.doc;
+        }
+        /** Endpoint `drafts/patch` — the stage patch door, REBORN on the
+         *  domain (2026-09-11; the gateway-era PATCH /v1/flows/drafts/:id/
+         *  stages/:sid died with the app and stroke L left the client door
+         *  a throwing stub). Semantics VERBATIM from the old door
+         *  (hDraftStagePatch, packages/gateway/doors drafts.ts, probed
+         *  editor_runs.py 818-1204): admission on the fixed key set
+         *  (params | result | runStatus | inputs | inputOutputs — unknown
+         *  keys refuse with the door's voice), params merge PER-KEY into
+         *  the stage's existing params (never replace), the domain write
+         *  bumps the recency column, and the answer is the delivered
+         *  envelope. THE SHARED STATE DOOR: the agent (bench verbs) and
+         *  the user (the card drilldowns) author the SAME domain records
+         *  through it — one truth, two authors. */
+        async remoteExportPatch(draftId, stageId, patch, signal) {
+            return await this.patch(draftId, stageId, patch, signal);
+        }
+        /** The patch arm the adapter above delegates to. */
+        async patch(draftId, stageId, patch, signal) {
+            signal.throwIfAborted();
+            if (!DRAFT_ID_RE.test(draftId)) {
+                throw new RemoteError("draft/bad-id", `bad draft id ${JSON.stringify(draftId)}`, {
+                    draftId,
+                });
+            }
+            if (typeof stageId !== "string" || stageId === "") {
+                throw new RemoteError("draft/bad-stage-id", `bad stage id ${JSON.stringify(stageId)}`, {
+                    stageId,
+                });
+            }
+            if (patch === null || typeof patch !== "object" || Array.isArray(patch)) {
+                throw new RemoteError("draft/bad-patch", "patch must be a plain object", {});
+            }
+            // Admission: the door's fixed key set, unknown keys refused with
+            // the old voice (STAGE_PATCH_KEYS order).
+            const unknown = Object.keys(patch).filter((k) => !STAGE_PATCH_KEYS.includes(k));
+            if (unknown.length > 0) {
+                throw new RemoteError("draft/patch-unknown-keys", `unknown stage patch key(s): ${unknown.join(", ")} (want ${STAGE_PATCH_KEYS.join(", ")})`, { unknown });
+            }
+            let drafts;
+            try {
+                drafts = await openDraftsDomain(this.ctx);
+            }
+            catch (error) {
+                throw new RemoteError("draft/store-failed", error instanceof Error ? error.message : String(error), {}, { cause: error });
+            }
+            const rec = drafts.table("docs").get(draftId);
+            if (rec === undefined) {
+                // The old door's delivered:false envelope — a missing doc is a
+                // DOMAIN outcome, not an error.
+                return { draftId, stageId, delivered: false, reason: "draft not found" };
+            }
+            const doc = rec.doc;
+            const stages = doc["stages"];
+            const stage = Array.isArray(stages)
+                ? (stages.find((s) => typeof s === "object" && s !== null && s["id"] === stageId) ?? null)
+                : null;
+            if (stage === null) {
+                return { draftId, stageId, delivered: false, reason: "stage not found" };
+            }
+            if ("result" in patch)
+                stage["result"] = patch["result"];
+            if ("runStatus" in patch)
+                stage["runStatus"] = patch["runStatus"];
+            if ("params" in patch && patch["params"] !== null && typeof patch["params"] === "object" && !Array.isArray(patch["params"])) {
+                // PER-KEY merge (never replace) — the old door's law.
+                const merged = stage["params"] !== null && typeof stage["params"] === "object" && !Array.isArray(stage["params"])
+                    ? { ...stage["params"] }
+                    : {};
+                const incoming = patch["params"];
+                for (const k of Object.keys(incoming))
+                    merged[k] = incoming[k];
+                stage["params"] = merged;
+            }
+            for (const key of ["inputs", "inputOutputs"]) {
+                if (key in patch)
+                    stage[key] = patch[key];
+            }
+            try {
+                await drafts.table("docs").put(draftId, {
+                    updated_at: Math.floor(Date.now() / 1000),
+                    doc: doc,
+                });
+            }
+            catch (error) {
+                throw new RemoteError("draft/cannot-persist", error instanceof Error ? error.message : String(error), {}, { cause: error });
+            }
+            return {
+                draftId,
+                stageId,
+                delivered: true,
+                patched: Object.keys(patch).sort(),
+            };
         }
     };
 })();

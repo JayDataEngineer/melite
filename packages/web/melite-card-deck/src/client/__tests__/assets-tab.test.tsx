@@ -271,3 +271,38 @@ test('the server-url field seeds from status and Set dispatches endpoint_set', a
   expect(set?.url).toBe('http://127.0.0.1:8188')
   expect(field.value).toBe('http://127.0.0.1:8188')
 })
+
+/** The rail's REAL search_models shape (live-probed 2026-09-11:
+ *  model objects {name, type, base, filename, …} — the operator saw
+ *  "[object Object]" rows; DataBody's String(line) cast is dead). */
+const MODEL_HITS = [
+  { name: 'TAEF1 Decoder', type: 'TAESD', base: 'FLUX.1', filename: 'taef1_decoder.pth', installed: 'False' },
+  { name: 'WanVideo VACE LoRA', type: 'lora', base: 'WanVideo', filename: 'wanvace_lora.safetensors', installed: 'True' },
+]
+
+test('search_models hits render as readable rows, never [object Object]', async () => {
+  const { calls } = stubManageWire({
+    status: STATUS,
+    search_models: {
+      action: 'search_models',
+      ok: true,
+      detail: '2 hit(s) for \'wan\'',
+      data: MODEL_HITS,
+    },
+  })
+  const user = userEvent.setup()
+  render(<ComfyManagerPanel />)
+  await screen.findByText('http://127.0.0.1:18466')
+
+  // type the query, dispatch — the explicit action lands in the pane.
+  await user.type(screen.getByPlaceholderText('sdxl, wan…'), 'wan')
+  await user.click(screen.getByRole('button', { name: 'Search' }))
+  await waitFor(() => {
+    expect(actionsOf(calls)).toContain('search_models')
+  })
+  const pane = await screen.findByTestId('manage-result')
+  expect(within(pane).getByText(/TAEF1 Decoder \(TAESD, FLUX\.1\) — taef1_decoder\.pth/)).toBeTruthy()
+  expect(within(pane).getByText(/WanVideo VACE LoRA \(lora, WanVideo\) — wanvace_lora\.safetensors/)).toBeTruthy()
+  // the regression stays dead — the pane never shows a bare cast.
+  expect(within(pane).queryByText(/\[object Object\]/)).toBeNull()
+})

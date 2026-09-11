@@ -20,7 +20,7 @@ import {
 // (the setup file does the same for the whole suite).
 import { syncPluginKinds } from "@/surfaces/flow/pluginKinds"
 import type { KindEntry } from "@/rpc/editorApi"
-import { MELITE_CORE_KINDS } from "./fixtures/meliteCoreKinds"
+import { MELITE_CORE_KINDS } from "../../tests/fixtures/meliteCoreKinds"
 
 syncPluginKinds(MELITE_CORE_KINDS as KindEntry[])
 import {

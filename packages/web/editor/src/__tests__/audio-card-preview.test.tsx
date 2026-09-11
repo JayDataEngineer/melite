@@ -24,7 +24,7 @@ import type { ReactElement } from "react"
 const renderWithTooltip = (el: ReactElement) =>
   render(<TooltipProvider>{el}</TooltipProvider>)
 import { CardTile } from "../surfaces/flow/FlowCard"
-import { formSpecStub } from "./fixtures/formSpecStub"
+import { formSpecStub } from "../../tests/fixtures/formSpecStub"
 // The tile's preview cell + run affordance ride the ui-claim WIRE now
 // (cardElements lane parity, 2026-08-21) — seed the lane exactly as the
 // app's boot does, or the cells render null (this spec's own blank-tile

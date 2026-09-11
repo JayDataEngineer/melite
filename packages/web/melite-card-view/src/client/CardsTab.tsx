@@ -31,7 +31,10 @@
  * see index.ts) keep this package off sibling runtime imports.
  */
 import { createElement as h, useCallback, useState } from 'react'
-import { Modal } from '@deepseek-ai/dsh-client-ui-primitives'
+import { Pill, StateDot } from '@deepseek-ai/dsh-client-ui-primitives'
+import { CardDrill } from './card-drill.tsx'
+import { paramFields, patchStageParams } from './draft.ts'
+import css from './card.module.css'
 import type { CardsBenchValue, CardsRunValue, BenchStageRow } from './cards-resource.ts'
 import { CARDS_BENCH_ADDRESS, parseCardsAddress, restoreRunToBench } from './cards-resource.ts'
 import { mediaUrl } from './draft.ts'
@@ -149,38 +152,56 @@ export function groupStagesByCard(stages: BenchStageRow[]): Array<{ card: string
   return groups
 }
 
+/** Bench row run-status → the installed StateDot union (FlowCards'
+ *  CardRowLine law: done|warning|ongoing|error — a stage that never
+ *  ran shows NO dot, never a fake state). */
+const STAGE_DOT: Record<string, 'done' | 'ongoing' | 'error' | 'warning' | null> = {
+  queued: 'warning', pending: 'warning', running: 'ongoing', done: 'done', failed: 'error', ready: null,
+}
+
 function StageRowView({ stage, onOpen }: { stage: BenchStageRow; onOpen: (stage: BenchStageRow) => void }): ReturnType<typeof h> {
   const title = stage.title ?? stage.card ?? stage.id
   const engine = typeof stage.engine === 'string' && stage.engine !== '' ? stage.engine : 'comfyui'
-  return h('li', { className: 'cards-stage', 'data-stage-id': stage.id },
-    h('button', { className: 'cards-stage-open', type: 'button', onClick: () => onOpen(stage) },
-      h('span', { className: 'cards-stage-title' }, String(title)),
-      h('span', { className: 'cards-stage-engine' }, engine),
+  const rawStatus = typeof stage.runStatus === 'string' ? stage.runStatus : undefined
+  const dot = rawStatus !== undefined ? (STAGE_DOT[rawStatus] ?? null) : null
+  // THE CARD GRAMMAR (FlowCards' CardRowLine): kind Pill, bold title,
+  // engine Pill, live StateDot — a card row, never a bare text line
+  // (the 2026-09-11 "[REDACTED 2026-11-05] text" regression stays dead).
+  return h('li', { className: css.stage, 'data-stage-id': stage.id },
+    h('button', { className: css.row, type: 'button', 'data-stage-status': rawStatus ?? 'ready', onClick: () => onOpen(stage) },
+      h(Pill, null, String(stage.card ?? 'card')),
+      h('span', { className: css.rowTitle }, String(title)),
+      h(Pill, null, engine),
+      dot !== null ? h(StateDot, { state: dot }) : null,
     ),
   )
 }
 
-/** THE DSH MODAL: the stage drilldown — DSH's own overlay machinery
- *  (primitives Modal: body portal, Escape/mask close), the chat
- *  tile's drilldown pattern. Read-only params (the agent owns edits;
- *  the user reviews here and restores/reruns from the views). */
-function StageDetailModal({ stage, onClose }: { stage: BenchStageRow; onClose: () => void }): ReturnType<typeof h> {
+/** THE SHARED DRILLDOWN (card-drill.tsx): the bench stage's second
+ *  state — editable params, Run on the card. THE SHARED-STATE LAW:
+ *  the patch lands in the drafts domain (the bench IS a draft doc —
+ *  the same records the agent authors through the bench verbs)
+ *  BEFORE the run reads it; the run gesture is the user's, never the
+ *  model's. */
+function StageDrill({ stage, bench, running, onRun, onClose }: {
+  stage: BenchStageRow
+  bench: CardsBenchValue
+  running: boolean
+  onRun: () => void
+  onClose: () => void
+}): ReturnType<typeof h> {
   const title = String(stage.title ?? stage.card ?? stage.id)
-  const params = typeof stage.params === 'object' && stage.params !== null ? stage.params : {}
-  return h(Modal, { open: true, onClose, title: 'Stage ' + title, closeLabel: 'Close stage' },
-    h('dl', { className: 'cards-stage-detail' },
-      h('dt', null, 'id'), h('dd', { className: 'cards-mono' }, stage.id),
-      stage.card !== undefined ? h('dt', null, 'card') : null,
-      stage.card !== undefined ? h('dd', { className: 'cards-mono' }, String(stage.card)) : null,
-      h('dt', null, 'engine'),
-      h('dd', { className: 'cards-mono' },
-        typeof stage.engine === 'string' && stage.engine !== '' ? stage.engine : 'comfyui'),
-      stage.provenance !== undefined ? h('dt', null, 'provenance') : null,
-      stage.provenance !== undefined ? h('dd', null, String(stage.provenance)) : null,
-      h('dt', null, 'params'),
-      h('dd', null, h('pre', { className: 'cards-mono' }, JSON.stringify(params, null, 2))),
-    ),
-  )
+  return h(CardDrill, {
+    title: 'Stage ' + title,
+    fields: paramFields(typeof stage.params === 'object' && stage.params !== null ? stage.params : {}),
+    thumbUrl: null,
+    running,
+    onRun: async (patch: Record<string, unknown> | null): Promise<void> => {
+      if (patch !== null) await patchStageParams(bench.draftId, stage.id, patch)
+      onRun()
+    },
+    onClose,
+  })
 }
 
 function BenchView({ bench, onRun, running }: {
@@ -192,26 +213,26 @@ function BenchView({ bench, onRun, running }: {
   const onOpen = useCallback((stage: BenchStageRow): void => setOpen(stage), [])
   const onClose = useCallback((): void => setOpen(null), [])
   const groups = groupStagesByCard(bench.stages)
-  return h('section', { className: 'cards-bench', 'data-cards-bench': bench.rev },
-    h('header', { className: 'cards-bench-head' },
-      h('span', { className: 'cards-bench-rev' }, 'rev ' + bench.rev),
+  return h('section', { className: css.cardsBench, 'data-cards-bench': bench.rev },
+    h('header', { className: css.benchHead },
+      h('span', { className: css.revTag }, 'rev ' + bench.rev),
       h('button', {
-        className: 'cards-run',
+        className: css.runBtn,
         type: 'button',
         disabled: running || bench.stages.length === 0,
         onClick: onRun,
       }, 'Run'),
     ),
     bench.stages.length === 0
-      ? h('p', { className: 'cards-empty' }, 'The bench is empty — construct stages (the agent adds them; they land here).')
-      : groups.map((g) => h('section', { key: g.card, className: 'cards-category', 'data-cards-category': g.card },
-          h('h3', { className: 'cards-category-title' }, g.card + ' · ' + String(g.rows.length)),
-          h('ol', { className: 'cards-stages' }, g.rows.map((s) => h(StageRowView, { key: s.id, stage: s, onOpen }))),
+      ? h('p', { className: css.empty }, 'The bench is empty — construct stages (the agent adds them; they land here).')
+      : groups.map((g) => h('section', { key: g.card, className: css.category, 'data-cards-category': g.card },
+          h('h3', { className: css.catTitle }, g.card + ' · ' + String(g.rows.length)),
+          h('ol', { className: css.stages }, g.rows.map((s) => h(StageRowView, { key: s.id, stage: s, onOpen }))),
         )),
     bench.log.length > 0
-      ? h('p', { className: 'cards-log-head' }, bench.log.length + ' log entr' + (bench.log.length === 1 ? 'y' : 'ies'))
+      ? h('p', { className: css.logHead }, bench.log.length + ' log entr' + (bench.log.length === 1 ? 'y' : 'ies'))
       : null,
-    open !== null ? h(StageDetailModal, { stage: open, onClose }) : null,
+    open !== null ? h(StageDrill, { stage: open, bench, running, onRun, onClose }) : null,
   )
 }
 
@@ -236,32 +257,32 @@ function RunView({ run, onBack, onRestored }: {
       setRestoring(false)
     })
   }, [run, onRestored])
-  return h('section', { className: 'cards-run-view', 'data-run-status': run.status },
-    h('header', { className: 'cards-run-head' },
-      h('span', { className: 'cards-run-id' }, run.runId),
-      h('span', { className: 'cards-run-status' }, run.status),
+  return h('section', { className: css.runView, 'data-run-status': run.status },
+    h('header', { className: css.runHead },
+      h('span', { className: css.runId }, run.runId),
+      h('span', { className: css.runStatus }, run.status),
     ),
-    h('div', { className: 'cards-run-actions' },
+    h('div', { className: css.runActions },
       onBack !== undefined
-        ? h('button', { className: 'cards-back', type: 'button', onClick: onBack }, 'Back to bench')
+        ? h('button', { className: css.back, type: 'button', onClick: onBack }, 'Back to bench')
         : null,
       h('button', {
-        className: 'cards-restore',
+        className: css.restore,
         type: 'button',
         disabled: restoring || run.draftId === null,
         title: run.draftId === null ? 'this run names no draft — nothing to restore' : 'copy this run\u2019s stages back onto the bench as your own',
         onClick: onRestore,
       }, restoring ? 'Restoring…' : 'Restore to bench'),
     ),
-    note !== null ? h('p', { className: 'cards-restore-note' }, note) : null,
+    note !== null ? h('p', { className: css.restoreNote }, note) : null,
     run.stages.length === 0
-      ? h('p', { className: 'cards-empty' }, 'No stage rows yet.')
-      : h('ol', { className: 'cards-stages' }, run.stages.map((s) =>
-          h('li', { key: s.id, className: 'cards-stage', 'data-stage-status': s.status },
-            h('span', { className: 'cards-stage-title' }, s.id),
-            h('span', { className: 'cards-stage-engine' }, s.status),
+      ? h('p', { className: css.empty }, 'No stage rows yet.')
+      : h('ol', { className: css.stages }, run.stages.map((s) =>
+          h('li', { key: s.id, className: css.stage, 'data-stage-status': s.status },
+            h('span', { className: css.stageTitle }, s.id),
+            h('span', { className: css.stageEngine }, s.status),
             s.url !== undefined
-              ? h('a', { href: mediaUrl(run.runId, s.url), target: '_blank', rel: 'noreferrer', className: 'cards-stage-artifact' }, 'artifact')
+              ? h('a', { href: mediaUrl(run.runId, s.url), target: '_blank', rel: 'noreferrer', className: css.stageArtifact }, 'artifact')
               : null,
           ))),
   )
@@ -301,17 +322,17 @@ export function CardsTab(props: CardsTabProps): ReturnType<typeof h> {
   }, [openResource])
 
   if (snapshot === undefined) {
-    return h('p', { className: 'cards-missing' }, 'cards resource hook unavailable')
+    return h('p', { className: css.missing }, 'cards resource hook unavailable')
   }
   if (snapshot.status === 'loading' || snapshot.status === 'none') {
-    return h('p', { className: 'cards-loading' }, 'loading ' + address + '…')
+    return h('p', { className: css.loading }, 'loading ' + address + '…')
   }
   if (snapshot.status === 'failed') {
-    return h('p', { className: 'cards-failed' }, snapshot.failure?.message ?? 'cards resource failed')
+    return h('p', { className: css.failed }, snapshot.failure?.message ?? 'cards resource failed')
   }
   const value = snapshot.value
   if (value === undefined) {
-    return h('p', { className: 'cards-failed' }, 'cards resource gave no value')
+    return h('p', { className: css.failed }, 'cards resource gave no value')
   }
   return value.kind === 'bench'
     ? h(BenchView, { bench: value, onRun, running })

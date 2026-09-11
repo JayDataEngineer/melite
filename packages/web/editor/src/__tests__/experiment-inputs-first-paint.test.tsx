@@ -6,7 +6,7 @@ import { primeCatalog } from "@melite/catalog"
 import { useSpecContractStore } from "../surfaces/shared/specContractStore"
 import { CardDetailInline } from "../surfaces/flow/CardDetailModal"
 import type { CardStage } from "@melite/contracts"
-import { formSpecStub } from "./fixtures/formSpecStub"
+import { formSpecStub } from "../../tests/fixtures/formSpecStub"
 
 vi.mock("../rpc/editorClient", () => ({
   editorClient: { getFormSpec: vi.fn(async () => ({ features: {} })) },

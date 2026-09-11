@@ -2,6 +2,21 @@ import type { Context } from "@deepseek-ai/cordis";
 import { TypertRemoteService } from "@deepseek-ai/dsh-typert-protocol";
 import type { BenchEnsureRow, BenchGetRow, BenchPatchRow, BenchRewireRow, BenchStageRow, BenchUndoRow } from "./bench.js";
 export type { BenchEnsureRow, BenchGetRow, BenchPatchRow, BenchRewireRow, BenchStageRow, BenchUndoRow, } from "./bench.js";
+/** The stage-patch door's fixed key set (the old door's
+ *  STAGE_PATCH_KEYS, order verbatim — the unknown-keys voice lists
+ *  them in this order). */
+export declare const STAGE_PATCH_KEYS: readonly ["params", "result", "runStatus", "inputs", "inputOutputs"];
+export type StagePatchKey = (typeof STAGE_PATCH_KEYS)[number];
+/** Endpoint `drafts/patch` answer — the old door's delivered envelope:
+ *  a missing doc/stage is delivered:false + reason (a DOMAIN outcome,
+ *  never an error); a landing patch reports the patched key set. */
+export interface DraftPatchRow {
+    draftId: string;
+    stageId: string;
+    delivered: boolean;
+    reason?: string;
+    patched?: string[];
+}
 /** draft_id_ok: 1..96 chars of [A-Za-z0-9_-] (the composer mint). */
 /** One listed draft — the index row (recency-ordered by the caller). */
 export interface DraftListRow {
@@ -28,6 +43,18 @@ declare module "@deepseek-ai/dsh-typert-protocol" {
         };
         /** The storage open refused an otherwise valid call. */
         "draft/store-failed": Record<string, never>;
+        /** The stage id is empty/non-string (the patch door). */
+        "draft/bad-stage-id": {
+            readonly stageId: string;
+        };
+        /** The patch body is not a plain object (the patch door). */
+        "draft/bad-patch": Record<string, never>;
+        /** Keys outside the door's fixed set (the old voice names them). */
+        "draft/patch-unknown-keys": {
+            readonly unknown: readonly string[];
+        };
+        /** The domain write refused (put failed at the medium). */
+        "draft/cannot-persist": Record<string, never>;
     }
 }
 declare module "@deepseek-ai/cordis" {
@@ -47,6 +74,22 @@ export declare class DraftsRemoteService extends TypertRemoteService {
     list(signal: AbortSignal): Promise<DraftListResult>;
     /** The in-process API the adapter above delegates to. */
     get(draftId: string, signal: AbortSignal): Promise<Record<string, unknown>>;
+    /** Endpoint `drafts/patch` — the stage patch door, REBORN on the
+     *  domain (2026-09-11; the gateway-era PATCH /v1/flows/drafts/:id/
+     *  stages/:sid died with the app and stroke L left the client door
+     *  a throwing stub). Semantics VERBATIM from the old door
+     *  (hDraftStagePatch, packages/gateway/doors drafts.ts, probed
+     *  editor_runs.py 818-1204): admission on the fixed key set
+     *  (params | result | runStatus | inputs | inputOutputs — unknown
+     *  keys refuse with the door's voice), params merge PER-KEY into
+     *  the stage's existing params (never replace), the domain write
+     *  bumps the recency column, and the answer is the delivered
+     *  envelope. THE SHARED STATE DOOR: the agent (bench verbs) and
+     *  the user (the card drilldowns) author the SAME domain records
+     *  through it — one truth, two authors. */
+    remoteExportPatch(draftId: string, stageId: string, patch: Record<string, unknown>, signal: AbortSignal): Promise<DraftPatchRow>;
+    /** The patch arm the adapter above delegates to. */
+    patch(draftId: string, stageId: string, patch: Record<string, unknown>, signal: AbortSignal): Promise<DraftPatchRow>;
 }
 /** The bench Remote owner: ensure/get over the same drafts domain
  *  (the bench doc IS a draft doc, id "bench-<session>"). */

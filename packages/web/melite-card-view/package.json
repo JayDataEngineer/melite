@@ -1,1 +1,53 @@
-{"name":"@melite-plugin/dsh-card-view","version":"0.1.0","type":"module","exports":{".":"./lib/index.js","./client":"./lib/client.js","./package.json":"./package.json"},"dsh":{"bundle":{"patch":"./cordis.patch.yml"},"client":{"inject":["@deepseek-ai/dsh-client-connection"],"platform":"web"}},"scripts":{"build":"bun node_modules/tsdown/dist/run.mjs -c tsdown.config.ts","typecheck":"tsc --noEmit","test":"bun test tests/"},"devDependencies":{"@deepseek-ai/cordis":"^4.0.1","@deepseek-ai/dsh-client-connection":"0.1.5-rc.2","@deepseek-ai/dsh-client-resources":"0.1.5-rc.2","@deepseek-ai/dsh-client-ui-primitives":"0.1.5-rc.2","@deepseek-ai/dsh-client-ui-sidebar-right":"0.1.5-rc.2","@deepseek-ai/dsh-client-ui-slots":"0.1.5-rc.2","@deepseek-ai/dsh-host-webserver":"0.1.5-rc.2","@deepseek-ai/dsh-typert-protocol":"0.1.5-rc.2","@melite/catalog":"workspace:*","@types/node":"^22.20.0","@types/react":"^19.2.14","@types/react-dom":"^19.2.2","lightningcss":"^1.30.0","react":"^19.2.6","react-dom":"^19.2.6","tsdown":"^0.22.14","typescript":"~5.7.2","@deepseek-ai/dsh-client-ui-renderer":"0.1.5-rc.2"},"peerDependencies":{"react":"^18.2.0"},"dependencies":{}}
+{
+  "name": "@melite-plugin/dsh-card-view",
+  "version": "0.1.0",
+  "type": "module",
+  "exports": {
+    ".": "./lib/index.js",
+    "./client": "./lib/client.js",
+    "./package.json": "./package.json"
+  },
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
+    "client": {
+      "inject": [
+        "@deepseek-ai/dsh-client-connection"
+      ],
+      "platform": "web"
+    }
+  },
+  "scripts": {
+    "build": "bun node_modules/tsdown/dist/run.mjs -c tsdown.config.ts",
+    "typecheck": "tsc --noEmit",
+    "test": "bun test tests/"
+  },
+  "devDependencies": {
+    "@deepseek-ai/cordis": "^4.0.1",
+    "@deepseek-ai/dsh-client-connection": "0.1.5-rc.2",
+    "@deepseek-ai/dsh-client-resources": "0.1.5-rc.2",
+    "@deepseek-ai/dsh-client-ui-primitives": "0.1.5-rc.2",
+    "@deepseek-ai/dsh-client-ui-renderer": "0.1.5-rc.2",
+    "@deepseek-ai/dsh-client-ui-sidebar-right": "0.1.5-rc.2",
+    "@deepseek-ai/dsh-client-ui-slots": "0.1.5-rc.2",
+    "@deepseek-ai/dsh-host-webserver": "0.1.5-rc.2",
+    "@deepseek-ai/dsh-typert-protocol": "0.1.5-rc.2",
+    "@melite/catalog": "workspace:*",
+    "@testing-library/react": "^16.3.2",
+    "@testing-library/user-event": "^14.6.1",
+    "@types/node": "^22.20.0",
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.2",
+    "happy-dom": "^20.10.2",
+    "lightningcss": "^1.30.0",
+    "react": "^19.2.6",
+    "react-dom": "^19.2.6",
+    "tsdown": "^0.22.14",
+    "typescript": "~5.7.2"
+  },
+  "peerDependencies": {
+    "react": "^18.2.0"
+  },
+  "dependencies": {}
+}

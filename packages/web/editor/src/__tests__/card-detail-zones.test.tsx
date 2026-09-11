@@ -173,7 +173,7 @@ vi.mock("../lib/formSpec", () => ({
 import { CardDetailInline } from "../surfaces/flow/CardDetailModal"
 import { useSpecContractStore, type SpecContractRecord } from "../surfaces/shared/specContractStore"
 import type { FormSpec } from "@melite/contracts"
-import { formSpecStub } from "./fixtures/formSpecStub"
+import { formSpecStub } from "../../tests/fixtures/formSpecStub"
 import { familiesForForm } from "@melite/catalog"
 import type { CardStage } from "@melite/contracts"
 function makeStage(over: Partial<CardStage> = {}): CardStage {

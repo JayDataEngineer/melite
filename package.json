@@ -3,7 +3,16 @@
     "lightningcss": "^1.33.0"
   },
   "devDependencies": {
+    "@vitest/coverage-v8": "^4.1.8",
+    "happy-dom": "^20.10.2",
+    "jsdom": "^29.1.1",
     "knip": "^6.34.0",
-    "lefthook": "^2.1.12"
+    "lefthook": "^2.1.12",
+    "vitest": "^4.1.8"
+  },
+  "scripts": {
+    "test": "vitest run",
+    "test:coverage": "vitest run --coverage",
+    "test:e2e": "pnpm --filter @melite/editor exec playwright test && pnpm --filter @melite-plugin/dsh-card-deck exec playwright test"
   }
 }

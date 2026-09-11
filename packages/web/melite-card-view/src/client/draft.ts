@@ -68,7 +68,7 @@ function nextRpcId(): string {
 }
 
 /** The remotes this layer rides (the wire method table). */
-type WireMethod = 'drafts/get' | 'runs/start' | 'runs/status'
+type WireMethod = 'drafts/get' | 'drafts/patch' | 'runs/start' | 'runs/status'
 
 /** One wire call: POST /api/<method> with the client-request frame,
  *  answer narrowed to the value row. A refused result throws the
@@ -128,14 +128,21 @@ export async function fetchDraft(draftId: string): Promise<DraftDoc> {
   return doc as unknown as DraftDoc
 }
 
-/** Edit one stage's params. NO SERVING PLANE EXISTS (the drafts
- *  remote is read-only; the gateway-era PATCH door died with the app
- *  and nothing replaced it yet) — this refuses LOUD at the seam.
- *  When a drafts write remote is born, this ports onto it. */
+/** Edit one stage's params — the REAL door, reborn 2026-09-11: the
+ *  drafts remote's `drafts/patch` write arm over the drafts domain
+ *  (the gateway-era PATCH /v1/flows/drafts/:id/stages/:sid died with
+ *  the app; stroke L stubbed this to a loud throw — the shared-state
+ *  door is back, same per-key merge semantics server-side). Throws
+ *  the door's named refusal; delivered:false lands as a named throw
+ *  (never a lying success). */
 export async function patchStageParams(
-  _draftId: string, _stageId: string, _params: Record<string, unknown>,
+  draftId: string, stageId: string, params: Record<string, unknown>,
 ): Promise<void> {
-  throw new Error('stage param edits: no serving plane (the drafts remote is read-only; the edit door died with the gateway app)')
+  const row = await wireCall('drafts/patch', { draftId, stageId, patch: { params } })
+  if (row['delivered'] !== true) {
+    const reason = typeof row['reason'] === 'string' ? row['reason'] : 'undelivered'
+    throw new Error('drafts/patch: ' + reason + ' (draft ' + draftId + ', stage ' + stageId + ')')
+  }
 }
 
 /** Start the run; returns the run_id or throws the door's named refusal. */

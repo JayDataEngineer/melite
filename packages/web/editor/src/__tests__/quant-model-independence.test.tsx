@@ -48,7 +48,7 @@ import { resolve } from "node:path"
 // both at top level and inside the hoisted vi.mock factory (import.meta
 // .url is mangled there).
 const readFixture = (f: string) =>
-  JSON.parse(readFileSync(resolve(process.cwd(), "src/__tests__/fixtures", f), "utf8"))
+  JSON.parse(readFileSync(resolve(process.cwd(), "tests/fixtures", f), "utf8"))
 
 const REAL_CATALOG = readFixture("real-catalog.json")
 
@@ -59,7 +59,7 @@ vi.mock("../surfaces/shared/specContractStore", () => {
   const readFixture = (f: string) =>
     JSON.parse(
       require("node:fs").readFileSync(
-        resolve(process.cwd(), "src/__tests__/fixtures", f),
+        resolve(process.cwd(), "tests/fixtures", f),
         "utf8",
       ),
     )

@@ -15,7 +15,7 @@ import {
 import type { Domain } from "@deepseek-ai/dsh-storage-domain";
 import { openDraftsDomain } from "./store.js";
 import { DRAFT_ID_RE } from "./spec.js";
-import type { DraftsDomainSpec } from "./spec.js";
+import type { DraftRecord, DraftsDomainSpec } from "./spec.js";
 import {
   addStageBench,
   ensureBench,
@@ -43,6 +43,23 @@ export type {
   BenchUndoRow,
 } from "./bench.js";
 
+/** The stage-patch door's fixed key set (the old door's
+ *  STAGE_PATCH_KEYS, order verbatim — the unknown-keys voice lists
+ *  them in this order). */
+export const STAGE_PATCH_KEYS = ["params", "result", "runStatus", "inputs", "inputOutputs"] as const;
+export type StagePatchKey = (typeof STAGE_PATCH_KEYS)[number];
+
+/** Endpoint `drafts/patch` answer — the old door's delivered envelope:
+ *  a missing doc/stage is delivered:false + reason (a DOMAIN outcome,
+ *  never an error); a landing patch reports the patched key set. */
+export interface DraftPatchRow {
+  draftId: string;
+  stageId: string;
+  delivered: boolean;
+  reason?: string;
+  patched?: string[];
+}
+
 /** draft_id_ok: 1..96 chars of [A-Za-z0-9_-] (the composer mint). */
 
 /** One listed draft — the index row (recency-ordered by the caller). */
@@ -68,6 +85,14 @@ declare module "@deepseek-ai/dsh-typert-protocol" {
     "draft/not-found": { readonly draftId: string };
     /** The storage open refused an otherwise valid call. */
     "draft/store-failed": Record<string, never>;
+    /** The stage id is empty/non-string (the patch door). */
+    "draft/bad-stage-id": { readonly stageId: string };
+    /** The patch body is not a plain object (the patch door). */
+    "draft/bad-patch": Record<string, never>;
+    /** Keys outside the door's fixed set (the old voice names them). */
+    "draft/patch-unknown-keys": { readonly unknown: readonly string[] };
+    /** The domain write refused (put failed at the medium). */
+    "draft/cannot-persist": Record<string, never>;
   }
 }
 
@@ -190,6 +215,127 @@ export class DraftsRemoteService extends TypertRemoteService {
       });
     }
     return rec.doc as unknown as Record<string, unknown>;
+  }
+
+  /** Endpoint `drafts/patch` — the stage patch door, REBORN on the
+   *  domain (2026-09-11; the gateway-era PATCH /v1/flows/drafts/:id/
+   *  stages/:sid died with the app and stroke L left the client door
+   *  a throwing stub). Semantics VERBATIM from the old door
+   *  (hDraftStagePatch, packages/gateway/doors drafts.ts, probed
+   *  editor_runs.py 818-1204): admission on the fixed key set
+   *  (params | result | runStatus | inputs | inputOutputs — unknown
+   *  keys refuse with the door's voice), params merge PER-KEY into
+   *  the stage's existing params (never replace), the domain write
+   *  bumps the recency column, and the answer is the delivered
+   *  envelope. THE SHARED STATE DOOR: the agent (bench verbs) and
+   *  the user (the card drilldowns) author the SAME domain records
+   *  through it — one truth, two authors. */
+  @Remote("patch")
+  async remoteExportPatch(
+    draftId: string,
+    stageId: string,
+    patch: Record<string, unknown>,
+    signal: AbortSignal,
+  ): Promise<DraftPatchRow> {
+    return await this.patch(draftId, stageId, patch, signal);
+  }
+
+  /** The patch arm the adapter above delegates to. */
+  async patch(
+    draftId: string,
+    stageId: string,
+    patch: Record<string, unknown>,
+    signal: AbortSignal,
+  ): Promise<DraftPatchRow> {
+    signal.throwIfAborted();
+    if (!DRAFT_ID_RE.test(draftId)) {
+      throw new RemoteError("draft/bad-id", `bad draft id ${JSON.stringify(draftId)}`, {
+        draftId,
+      });
+    }
+    if (typeof stageId !== "string" || stageId === "") {
+      throw new RemoteError("draft/bad-stage-id", `bad stage id ${JSON.stringify(stageId)}`, {
+        stageId,
+      });
+    }
+    if (patch === null || typeof patch !== "object" || Array.isArray(patch)) {
+      throw new RemoteError("draft/bad-patch", "patch must be a plain object", {});
+    }
+    // Admission: the door's fixed key set, unknown keys refused with
+    // the old voice (STAGE_PATCH_KEYS order).
+    const unknown: string[] = Object.keys(patch).filter(
+      (k) => !STAGE_PATCH_KEYS.includes(k as StagePatchKey),
+    );
+    if (unknown.length > 0) {
+      throw new RemoteError(
+        "draft/patch-unknown-keys",
+        `unknown stage patch key(s): ${unknown.join(", ")} (want ${STAGE_PATCH_KEYS.join(", ")})`,
+        { unknown },
+      );
+    }
+    let drafts: Domain<DraftsDomainSpec>;
+    try {
+      drafts = await openDraftsDomain(this.ctx);
+    } catch (error: unknown) {
+      throw new RemoteError(
+        "draft/store-failed",
+        error instanceof Error ? error.message : String(error),
+        {},
+        { cause: error },
+      );
+    }
+    const rec = drafts.table("docs").get(draftId);
+    if (rec === undefined) {
+      // The old door's delivered:false envelope — a missing doc is a
+      // DOMAIN outcome, not an error.
+      return { draftId, stageId, delivered: false, reason: "draft not found" };
+    }
+    const doc = rec.doc as unknown as Record<string, unknown>;
+    const stages: unknown = doc["stages"];
+    const stage: Record<string, unknown> | null =
+      Array.isArray(stages)
+        ? (stages.find(
+            (s): s is Record<string, unknown> =>
+              typeof s === "object" && s !== null && (s as Record<string, unknown>)["id"] === stageId,
+          ) ?? null)
+        : null;
+    if (stage === null) {
+      return { draftId, stageId, delivered: false, reason: "stage not found" };
+    }
+    if ("result" in patch) stage["result"] = patch["result"];
+    if ("runStatus" in patch) stage["runStatus"] = patch["runStatus"];
+    if ("params" in patch && patch["params"] !== null && typeof patch["params"] === "object" && !Array.isArray(patch["params"])) {
+      // PER-KEY merge (never replace) — the old door's law.
+      const merged: Record<string, unknown> =
+        stage["params"] !== null && typeof stage["params"] === "object" && !Array.isArray(stage["params"])
+          ? { ...(stage["params"] as Record<string, unknown>) }
+          : {};
+      const incoming: Record<string, unknown> = patch["params"] as Record<string, unknown>;
+      for (const k of Object.keys(incoming)) merged[k] = incoming[k];
+      stage["params"] = merged;
+    }
+    for (const key of ["inputs", "inputOutputs"] as const) {
+      if (key in patch) stage[key] = patch[key];
+    }
+    try {
+      await drafts.table("docs").put(draftId, {
+        updated_at: Math.floor(Date.now() / 1000),
+        doc: doc as unknown as DraftRecord["doc"],
+      });
+    } catch (error: unknown) {
+      throw new RemoteError(
+        "draft/cannot-persist",
+        error instanceof Error ? error.message : String(error),
+        {},
+        { cause: error },
+      );
+    }
+    return {
+      draftId,
+      stageId,
+      delivered: true,
+      patched: Object.keys(patch).sort(),
+    };
   }
 }
 

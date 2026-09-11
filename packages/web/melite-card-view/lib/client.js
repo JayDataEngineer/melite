@@ -21,7 +21,7 @@ window.__ModuleLoader__.load({
 		}
 		//#endregion
 		//#region \0dsh-css:melite-card-view/src/client/card.module.css.mjs
-		const css = ".vYZV7a_card{flex-direction:column;min-width:0;margin:4px 0;font-size:12px;line-height:1.45;display:flex}.vYZV7a_load{color:var(--dsw-alias-label-secondary,#9a9aa5);padding:2px 0}.vYZV7a_head{align-items:center;gap:8px;min-width:0;display:flex}.vYZV7a_model{text-overflow:ellipsis;white-space:nowrap;min-width:0;font-weight:600;overflow:hidden}.vYZV7a_state{border-radius:999px;flex:none;margin-left:auto;padding:1px 8px}.vYZV7a_state[data-state=completed]{color:var(--dsw-alias-state-success-primary,#3fb96f)}.vYZV7a_state[data-state=running],.vYZV7a_state[data-state=queued],.vYZV7a_state[data-state=pending],.vYZV7a_state[data-state=starting],.vYZV7a_state[data-state=draft]{color:var(--dsw-alias-state-warn-primary,#d9a53f)}.vYZV7a_state[data-state=failed],.vYZV7a_state[data-state=error],.vYZV7a_state[data-state=stopped],.vYZV7a_state[data-state=interrupted]{color:var(--dsw-alias-state-error-primary,#e05656)}.vYZV7a_prompt{color:var(--dsw-alias-text-secondary,#9a9aa5);-webkit-line-clamp:2;-webkit-box-orient:vertical;display:-webkit-box;overflow:hidden}.vYZV7a_link:hover{text-decoration:underline}.vYZV7a_row{color:inherit;cursor:pointer;font:inherit;text-align:left;background:0 0;border:none;border-radius:6px;align-items:center;gap:8px;width:100%;min-width:0;padding:4px 6px;display:flex}.vYZV7a_row:hover{background:var(--dsw-alias-interactive-bg-hover-subtle,#ffffff0d)}.vYZV7a_row:focus-visible{outline:1px solid var(--dsw-alias-state-business-primary,#4f7bd8);outline-offset:-1px}.vYZV7a_thumb{object-fit:cover;border-radius:4px;flex:none;width:34px;height:34px}.vYZV7a_rowTitle{text-overflow:ellipsis;white-space:nowrap;flex:none;max-width:40%;font-weight:600;overflow:hidden}.vYZV7a_drill{width:92vw;max-width:min(860px,92vw)}.vYZV7a_split{grid-template-columns:minmax(240px,1fr) minmax(0,1.2fr);gap:14px;min-width:0;display:grid}@media (width<=640px){.vYZV7a_split{grid-template-columns:1fr}}.vYZV7a_params{flex-direction:column;gap:8px;min-width:0;max-height:60vh;display:flex;overflow-y:auto}.vYZV7a_field{flex-direction:column;gap:3px;min-width:0;display:flex}.vYZV7a_fieldKey{color:var(--dsw-alias-label-secondary,#9a9aa5);font-size:11px}.vYZV7a_outputs{flex-direction:column;align-items:center;gap:10px;min-width:0;display:flex}.vYZV7a_outputImg{object-fit:contain;border-radius:8px;max-width:100%;max-height:46vh}.vYZV7a_runRow{justify-content:flex-end;align-items:center;gap:10px;width:100%;display:flex}.vYZV7a_runError{color:var(--dsw-alias-label-error,#e05656);overflow-wrap:anywhere;font-size:11px}.vYZV7a_state[data-state=legacy]{color:var(--dsw-alias-label-secondary,#9a9aa5)}";
+		const css = ".vYZV7a_card{flex-direction:column;min-width:0;margin:4px 0;font-size:12px;line-height:1.45;display:flex}.vYZV7a_load{color:var(--dsw-alias-label-secondary,#9a9aa5);padding:2px 0}.vYZV7a_head{align-items:center;gap:8px;min-width:0;display:flex}.vYZV7a_model{text-overflow:ellipsis;white-space:nowrap;min-width:0;font-weight:600;overflow:hidden}.vYZV7a_state{border-radius:999px;flex:none;margin-left:auto;padding:1px 8px}.vYZV7a_state[data-state=completed]{color:var(--dsw-alias-state-success-primary,#3fb96f)}.vYZV7a_state[data-state=running],.vYZV7a_state[data-state=queued],.vYZV7a_state[data-state=pending],.vYZV7a_state[data-state=starting],.vYZV7a_state[data-state=draft]{color:var(--dsw-alias-state-warn-primary,#d9a53f)}.vYZV7a_state[data-state=failed],.vYZV7a_state[data-state=error],.vYZV7a_state[data-state=stopped],.vYZV7a_state[data-state=interrupted]{color:var(--dsw-alias-state-error-primary,#e05656)}.vYZV7a_prompt{color:var(--dsw-alias-text-secondary,#9a9aa5);-webkit-line-clamp:2;-webkit-box-orient:vertical;display:-webkit-box;overflow:hidden}.vYZV7a_link:hover{text-decoration:underline}.vYZV7a_row{color:inherit;cursor:pointer;font:inherit;text-align:left;background:0 0;border:none;border-radius:6px;align-items:center;gap:8px;width:100%;min-width:0;padding:4px 6px;display:flex}.vYZV7a_row:hover{background:var(--dsw-alias-interactive-bg-hover-subtle,#ffffff0d)}.vYZV7a_row:focus-visible{outline:1px solid var(--dsw-alias-state-business-primary,#4f7bd8);outline-offset:-1px}.vYZV7a_thumb{object-fit:cover;border-radius:4px;flex:none;width:34px;height:34px}.vYZV7a_rowTitle{text-overflow:ellipsis;white-space:nowrap;flex:none;max-width:40%;font-weight:600;overflow:hidden}.vYZV7a_drill{width:92vw;max-width:min(860px,92vw)}.vYZV7a_split{grid-template-columns:minmax(240px,1fr) minmax(0,1.2fr);gap:14px;min-width:0;display:grid}@media (width<=640px){.vYZV7a_split{grid-template-columns:1fr}}.vYZV7a_params{flex-direction:column;gap:8px;min-width:0;max-height:60vh;display:flex;overflow-y:auto}.vYZV7a_field{flex-direction:column;gap:3px;min-width:0;display:flex}.vYZV7a_fieldKey{color:var(--dsw-alias-label-secondary,#9a9aa5);font-size:11px}.vYZV7a_outputs{flex-direction:column;align-items:center;gap:10px;min-width:0;display:flex}.vYZV7a_outputImg{object-fit:contain;border-radius:8px;max-width:100%;max-height:46vh}.vYZV7a_runRow{justify-content:flex-end;align-items:center;gap:10px;width:100%;display:flex}.vYZV7a_runError{color:var(--dsw-alias-label-error,#e05656);overflow-wrap:anywhere;font-size:11px}.vYZV7a_state[data-state=legacy]{color:var(--dsw-alias-label-secondary,#9a9aa5)}.vYZV7a_cardsBench{flex-direction:column;gap:8px;display:flex}.vYZV7a_benchHead{justify-content:space-between;align-items:center;gap:8px;display:flex}.vYZV7a_revTag{color:var(--dsw-alias-fg-muted,#ffffff8c);font-family:var(--dsw-alias-font-mono,ui-monospace, monospace);font-size:11px}.vYZV7a_runBtn,.vYZV7a_back,.vYZV7a_restore{border:1px solid var(--dsw-alias-border-subtle,#ffffff26);color:inherit;cursor:pointer;font:inherit;background:0 0;border-radius:6px;padding:2px 10px;font-size:12px}.vYZV7a_runBtn:hover:not(:disabled),.vYZV7a_back:hover,.vYZV7a_restore:hover:not(:disabled){background:var(--dsh-alias-interactive-bg-hover-subtle,#ffffff0d);border-color:var(--dsw-alias-state-business-primary,#4f7bd8)}.vYZV7a_runBtn:disabled,.vYZV7a_restore:disabled{cursor:default;opacity:.45}.vYZV7a_category{flex-direction:column;gap:2px;display:flex}.vYZV7a_catTitle{color:var(--dsw-alias-fg-muted,#ffffff8c);letter-spacing:.06em;text-transform:uppercase;margin:4px 0 2px;font-size:11px;font-weight:600}.vYZV7a_stages{flex-direction:column;gap:2px;margin:0;padding:0;list-style:none;display:flex}.vYZV7a_stage{list-style:none}.vYZV7a_stageTitle{text-overflow:ellipsis;white-space:nowrap;flex:none;max-width:45%;font-weight:600;overflow:hidden}.vYZV7a_stageEngine{color:var(--dsw-alias-fg-muted,#ffffff8c);flex:none;font-size:11px}.vYZV7a_stageArtifact{color:var(--dsw-alias-state-business-primary,#4f7bd8);font-size:12px;text-decoration:none}.vYZV7a_stageArtifact:hover{text-decoration:underline}.vYZV7a_empty,.vYZV7a_loading,.vYZV7a_failed,.vYZV7a_missing,.vYZV7a_logHead,.vYZV7a_restoreNote{color:var(--dsw-alias-fg-muted,#ffffff8c);margin:0;font-size:12px;font-style:italic}.vYZV7a_runView{flex-direction:column;gap:8px;display:flex}.vYZV7a_runHead{align-items:baseline;gap:8px;display:flex}.vYZV7a_runId{font-family:var(--dsw-alias-font-mono,ui-monospace, monospace);font-size:12px;font-weight:600}.vYZV7a_runStatus{border:1px solid var(--dsw-alias-border-subtle,#ffffff26);color:var(--dsw-alias-fg-muted,#ffffff8c);border-radius:999px;padding:0 8px;font-size:11px}.vYZV7a_runActions{gap:8px;display:flex}.vYZV7a_stageDetail{grid-template-columns:auto 1fr;gap:2px 12px;margin:0;display:grid}.vYZV7a_stageDetail dt{color:var(--dsw-alias-fg-muted,#ffffff8c);text-align:right;text-transform:uppercase;font-size:11px}.vYZV7a_stageDetail dd{min-width:0;margin:0}.vYZV7a_mono{font-family:var(--dsw-alias-font-mono,ui-monospace, monospace);font-size:12px;overflow-x:auto}";
 		const tagId = "@melite-plugin/dsh-card-view/card.module.css";
 		if (typeof document !== "undefined" && document.querySelector("style[data-plugin-css=" + JSON.stringify(tagId) + "]") === null) {
 			const tag = document.createElement("style");
@@ -31,23 +31,49 @@ window.__ModuleLoader__.load({
 			document.head.appendChild(tag);
 		}
 		var card_module_css_default = {
+			"back": "vYZV7a_back",
+			"benchHead": "vYZV7a_benchHead",
 			"card": "vYZV7a_card",
+			"cardsBench": "vYZV7a_cardsBench",
+			"catTitle": "vYZV7a_catTitle",
+			"category": "vYZV7a_category",
 			"drill": "vYZV7a_drill",
+			"empty": "vYZV7a_empty",
+			"failed": "vYZV7a_failed",
 			"field": "vYZV7a_field",
 			"fieldKey": "vYZV7a_fieldKey",
 			"head": "vYZV7a_head",
 			"link": "vYZV7a_link",
 			"load": "vYZV7a_load",
+			"loading": "vYZV7a_loading",
+			"logHead": "vYZV7a_logHead",
+			"missing": "vYZV7a_missing",
 			"model": "vYZV7a_model",
+			"mono": "vYZV7a_mono",
 			"outputImg": "vYZV7a_outputImg",
 			"outputs": "vYZV7a_outputs",
 			"params": "vYZV7a_params",
 			"prompt": "vYZV7a_prompt",
+			"restore": "vYZV7a_restore",
+			"restoreNote": "vYZV7a_restoreNote",
+			"revTag": "vYZV7a_revTag",
 			"row": "vYZV7a_row",
 			"rowTitle": "vYZV7a_rowTitle",
+			"runActions": "vYZV7a_runActions",
+			"runBtn": "vYZV7a_runBtn",
 			"runError": "vYZV7a_runError",
+			"runHead": "vYZV7a_runHead",
+			"runId": "vYZV7a_runId",
 			"runRow": "vYZV7a_runRow",
+			"runStatus": "vYZV7a_runStatus",
+			"runView": "vYZV7a_runView",
 			"split": "vYZV7a_split",
+			"stage": "vYZV7a_stage",
+			"stageArtifact": "vYZV7a_stageArtifact",
+			"stageDetail": "vYZV7a_stageDetail",
+			"stageEngine": "vYZV7a_stageEngine",
+			"stageTitle": "vYZV7a_stageTitle",
+			"stages": "vYZV7a_stages",
 			"state": "vYZV7a_state",
 			"thumb": "vYZV7a_thumb"
 		};
@@ -105,12 +131,23 @@ window.__ModuleLoader__.load({
 			if (typeof doc["draft_id"] !== "string" || !Array.isArray(doc["stages"])) throw new Error("drafts/get: not a draft doc");
 			return doc;
 		}
-		/** Edit one stage's params. NO SERVING PLANE EXISTS (the drafts
-		*  remote is read-only; the gateway-era PATCH door died with the app
-		*  and nothing replaced it yet) — this refuses LOUD at the seam.
-		*  When a drafts write remote is born, this ports onto it. */
-		async function patchStageParams(_draftId, _stageId, _params) {
-			throw new Error("stage param edits: no serving plane (the drafts remote is read-only; the edit door died with the gateway app)");
+		/** Edit one stage's params — the REAL door, reborn 2026-09-11: the
+		*  drafts remote's `drafts/patch` write arm over the drafts domain
+		*  (the gateway-era PATCH /v1/flows/drafts/:id/stages/:sid died with
+		*  the app; stroke L stubbed this to a loud throw — the shared-state
+		*  door is back, same per-key merge semantics server-side). Throws
+		*  the door's named refusal; delivered:false lands as a named throw
+		*  (never a lying success). */
+		async function patchStageParams(draftId, stageId, params) {
+			const row = await wireCall$1("drafts/patch", {
+				draftId,
+				stageId,
+				patch: { params }
+			});
+			if (row["delivered"] !== true) {
+				const reason = typeof row["reason"] === "string" ? row["reason"] : "undelivered";
+				throw new Error("drafts/patch: " + reason + " (draft " + draftId + ", stage " + stageId + ")");
+			}
 		}
 		/** Start the run; returns the run_id or throws the door's named refusal. */
 		async function startDraft(draftId) {
@@ -198,6 +235,75 @@ window.__ModuleLoader__.load({
 				changed = true;
 			}
 			return changed ? patch : null;
+		}
+		//#endregion
+		//#region src/client/card-drill.tsx
+		/**
+		* card-drill.tsx — THE CARD DRILLDOWN: the second state of the card
+		* system, ONE component every card surface drills through (the chat
+		* toolview FlowCards and the sidebar Cards tab — the 2026-09-10 UX
+		* reborn 2026-09-11 as shared state + shared tool between the agent
+		* and the user).
+		*
+		* DSH Modal (body portal, Escape/mask close — the operator's split
+		* directive 2026-09-10): params LEFT (editable — switch fields ride
+		* the Pill toggle, everything else a raw-string Input; editPatch
+		* coerces ONCE at patch time so decimal dots survive typing), outputs
+		* + Run RIGHT. Run ON THE CARD is a USER GESTURE, and it runs what
+		* the user SEES: the caller receives the coerced patch and owns the
+		* write-then-run order (the shared-state law — the patch lands in the
+		* domain BEFORE the run reads it).
+		*/
+		function CardDrill({ title, fields, thumbUrl, running, onRun, onClose }) {
+			const [edits, setEdits] = (0, react.useState)(/* @__PURE__ */ new Map());
+			const [runError, setRunError] = (0, react.useState)(null);
+			const patch = editPatch(fields, edits);
+			const run = async () => {
+				setRunError(null);
+				try {
+					await onRun(patch);
+				} catch (e) {
+					setRunError(e instanceof Error ? e.message : "run failed");
+				}
+			};
+			const fieldNode = (f) => {
+				if (f.atom === "switch") {
+					const current = typeof f.value === "boolean" ? edits.get(f.key) ?? f.value : false;
+					return (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Pill, {
+						active: current,
+						onClick: () => {
+							setEdits((m) => new Map(m).set(f.key, !current));
+						}
+					}, typeof f.value === "boolean" ? current ? "on" : "off" : "?");
+				}
+				return (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Input, {
+					value: String(edits.get(f.key) ?? f.value),
+					onChange: (e) => {
+						const target = e;
+						setEdits((m) => new Map(m).set(f.key, target.target.value));
+					}
+				});
+			};
+			return (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Modal, {
+				open: true,
+				onClose,
+				title,
+				closeLabel: "Close card",
+				className: card_module_css_default.drill
+			}, (0, react.createElement)("div", { className: card_module_css_default.split }, (0, react.createElement)("div", { className: card_module_css_default.params }, fields.map((f) => (0, react.createElement)("label", {
+				key: f.key,
+				className: card_module_css_default.field
+			}, (0, react.createElement)("span", { className: card_module_css_default.fieldKey }, f.key), fieldNode(f)))), (0, react.createElement)("div", { className: card_module_css_default.outputs }, thumbUrl !== null ? (0, react.createElement)("img", {
+				className: card_module_css_default.outputImg,
+				src: thumbUrl,
+				alt: title
+			}) : null, (0, react.createElement)("div", { className: card_module_css_default.runRow }, runError !== null ? (0, react.createElement)("span", { className: card_module_css_default.runError }, runError) : null, (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+				variant: "primary",
+				disabled: running,
+				onClick: () => {
+					run();
+				}
+			}, running ? "running…" : "Run")))));
 		}
 		//#endregion
 		//#region src/client/FlowCards.tsx
@@ -390,82 +496,6 @@ window.__ModuleLoader__.load({
 				]
 			});
 		}
-		/** The drilldown — DSH's Modal, split: params (left) / outputs + Run (right). */
-		function CardDrilldown({ draftId, row, stage, onClose }) {
-			const [edits, setEdits] = (0, react.useState)(/* @__PURE__ */ new Map());
-			const [running, setRunning] = (0, react.useState)(false);
-			const [runError, setRunError] = (0, react.useState)(null);
-			const patch = (0, react.useMemo)(() => editPatch(stage, edits), [stage, edits]);
-			const run = (0, react.useCallback)(async () => {
-				setRunning(true);
-				setRunError(null);
-				try {
-					if (patch !== null) await patchStageParams(draftId, row.stageId, patch);
-					await startDraft(draftId);
-					onClose();
-				} catch (e) {
-					setRunError(e instanceof Error ? e.message : "run failed");
-					setRunning(false);
-				}
-			}, [
-				draftId,
-				patch,
-				row,
-				onClose
-			]);
-			return /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Modal, {
-				open: true,
-				onClose,
-				title: "Card " + row.title,
-				closeLabel: "Close card",
-				className: card_module_css_default.drill,
-				children: /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-					className: card_module_css_default.split,
-					children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
-						className: card_module_css_default.params,
-						children: stage.map((f) => /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("label", {
-							className: card_module_css_default.field,
-							children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-								className: card_module_css_default.fieldKey,
-								children: f.key
-							}), f.atom === "switch" ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Pill, {
-								active: typeof f.value === "boolean" ? edits.get(f.key) ?? f.value : false,
-								onClick: () => {
-									const current = typeof f.value === "boolean" ? edits.get(f.key) ?? f.value : false;
-									setEdits((m) => new Map(m).set(f.key, !current));
-								},
-								children: typeof f.value === "boolean" ? edits.get(f.key) ?? f.value ? "on" : "off" : "?"
-							}) : /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Input, {
-								value: String(edits.get(f.key) ?? f.value),
-								onChange: (e) => {
-									setEdits((m) => new Map(m).set(f.key, e.target.value));
-								}
-							})]
-						}, f.key))
-					}), /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-						className: card_module_css_default.outputs,
-						children: [row.thumbUrl !== null && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("img", {
-							className: card_module_css_default.outputImg,
-							src: row.thumbUrl,
-							alt: row.title
-						}), /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-							className: card_module_css_default.runRow,
-							children: [runError !== null && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-								className: card_module_css_default.runError,
-								children: runError
-							}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
-								variant: "primary",
-								disabled: running,
-								onClick: () => {
-									run();
-								},
-								children: running ? "running…" : "Run"
-							})]
-						})]
-					})]
-				})
-			});
-		}
 		/** One melite_flow call as the REAL action cards (native React, in-tree). */
 		function FlowCards({ block }) {
 			const parsed = (0, react.useMemo)(() => parseCardsBlock(block), [block]);
@@ -539,10 +569,19 @@ window.__ModuleLoader__.load({
 							setOpenStage(row.stageId);
 						}
 					}, row.stageId)),
-					openRow !== null && /* @__PURE__ */ (0, react_jsx_runtime.jsx)(CardDrilldown, {
-						draftId: parsed.draftId,
-						row: openRow,
-						stage: paramFields(openParams),
+					openRow !== null && /* @__PURE__ */ (0, react_jsx_runtime.jsx)(CardDrill, {
+						title: "Card " + openRow.title,
+						fields: paramFields(openParams),
+						thumbUrl: openRow.thumbUrl ?? null,
+						running: false,
+						onRun: async (patch) => {
+							const draftId = parsed.draftId;
+							if (draftId === null) throw new Error("draft id gone");
+							if (patch !== null) await patchStageParams(draftId, openRow.stageId, patch);
+							await startDraft(draftId);
+							setOpenStage(null);
+							refresh();
+						},
 						onClose: () => {
 							setOpenStage(null);
 							refresh();
@@ -971,31 +1010,51 @@ window.__ModuleLoader__.load({
 			}
 			return groups;
 		}
+		/** Bench row run-status → the installed StateDot union (FlowCards'
+		*  CardRowLine law: done|warning|ongoing|error — a stage that never
+		*  ran shows NO dot, never a fake state). */
+		const STAGE_DOT = {
+			queued: "warning",
+			pending: "warning",
+			running: "ongoing",
+			done: "done",
+			failed: "error",
+			ready: null
+		};
 		function StageRowView({ stage, onOpen }) {
 			const title = stage.title ?? stage.card ?? stage.id;
 			const engine = typeof stage.engine === "string" && stage.engine !== "" ? stage.engine : "comfyui";
+			const rawStatus = typeof stage.runStatus === "string" ? stage.runStatus : void 0;
+			const dot = rawStatus !== void 0 ? STAGE_DOT[rawStatus] ?? null : null;
 			return (0, react.createElement)("li", {
-				className: "cards-stage",
+				className: card_module_css_default.stage,
 				"data-stage-id": stage.id
 			}, (0, react.createElement)("button", {
-				className: "cards-stage-open",
+				className: card_module_css_default.row,
 				type: "button",
+				"data-stage-status": rawStatus ?? "ready",
 				onClick: () => onOpen(stage)
-			}, (0, react.createElement)("span", { className: "cards-stage-title" }, String(title)), (0, react.createElement)("span", { className: "cards-stage-engine" }, engine)));
+			}, (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Pill, null, String(stage.card ?? "card")), (0, react.createElement)("span", { className: card_module_css_default.rowTitle }, String(title)), (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Pill, null, engine), dot !== null ? (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.StateDot, { state: dot }) : null));
 		}
-		/** THE DSH MODAL: the stage drilldown — DSH's own overlay machinery
-		*  (primitives Modal: body portal, Escape/mask close), the chat
-		*  tile's drilldown pattern. Read-only params (the agent owns edits;
-		*  the user reviews here and restores/reruns from the views). */
-		function StageDetailModal({ stage, onClose }) {
+		/** THE SHARED DRILLDOWN (card-drill.tsx): the bench stage's second
+		*  state — editable params, Run on the card. THE SHARED-STATE LAW:
+		*  the patch lands in the drafts domain (the bench IS a draft doc —
+		*  the same records the agent authors through the bench verbs)
+		*  BEFORE the run reads it; the run gesture is the user's, never the
+		*  model's. */
+		function StageDrill({ stage, bench, running, onRun, onClose }) {
 			const title = String(stage.title ?? stage.card ?? stage.id);
-			const params = typeof stage.params === "object" && stage.params !== null ? stage.params : {};
-			return (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Modal, {
-				open: true,
-				onClose,
+			return (0, react.createElement)(CardDrill, {
 				title: "Stage " + title,
-				closeLabel: "Close stage"
-			}, (0, react.createElement)("dl", { className: "cards-stage-detail" }, (0, react.createElement)("dt", null, "id"), (0, react.createElement)("dd", { className: "cards-mono" }, stage.id), stage.card !== void 0 ? (0, react.createElement)("dt", null, "card") : null, stage.card !== void 0 ? (0, react.createElement)("dd", { className: "cards-mono" }, String(stage.card)) : null, (0, react.createElement)("dt", null, "engine"), (0, react.createElement)("dd", { className: "cards-mono" }, typeof stage.engine === "string" && stage.engine !== "" ? stage.engine : "comfyui"), stage.provenance !== void 0 ? (0, react.createElement)("dt", null, "provenance") : null, stage.provenance !== void 0 ? (0, react.createElement)("dd", null, String(stage.provenance)) : null, (0, react.createElement)("dt", null, "params"), (0, react.createElement)("dd", null, (0, react.createElement)("pre", { className: "cards-mono" }, JSON.stringify(params, null, 2)))));
+				fields: paramFields(typeof stage.params === "object" && stage.params !== null ? stage.params : {}),
+				thumbUrl: null,
+				running,
+				onRun: async (patch) => {
+					if (patch !== null) await patchStageParams(bench.draftId, stage.id, patch);
+					onRun();
+				},
+				onClose
+			});
 		}
 		function BenchView({ bench, onRun, running }) {
 			const [open, setOpen] = (0, react.useState)(null);
@@ -1003,23 +1062,26 @@ window.__ModuleLoader__.load({
 			const onClose = (0, react.useCallback)(() => setOpen(null), []);
 			const groups = groupStagesByCard(bench.stages);
 			return (0, react.createElement)("section", {
-				className: "cards-bench",
+				className: card_module_css_default.cardsBench,
 				"data-cards-bench": bench.rev
-			}, (0, react.createElement)("header", { className: "cards-bench-head" }, (0, react.createElement)("span", { className: "cards-bench-rev" }, "rev " + bench.rev), (0, react.createElement)("button", {
-				className: "cards-run",
+			}, (0, react.createElement)("header", { className: card_module_css_default.benchHead }, (0, react.createElement)("span", { className: card_module_css_default.revTag }, "rev " + bench.rev), (0, react.createElement)("button", {
+				className: card_module_css_default.runBtn,
 				type: "button",
 				disabled: running || bench.stages.length === 0,
 				onClick: onRun
-			}, "Run")), bench.stages.length === 0 ? (0, react.createElement)("p", { className: "cards-empty" }, "The bench is empty — construct stages (the agent adds them; they land here).") : groups.map((g) => (0, react.createElement)("section", {
+			}, "Run")), bench.stages.length === 0 ? (0, react.createElement)("p", { className: card_module_css_default.empty }, "The bench is empty — construct stages (the agent adds them; they land here).") : groups.map((g) => (0, react.createElement)("section", {
 				key: g.card,
-				className: "cards-category",
+				className: card_module_css_default.category,
 				"data-cards-category": g.card
-			}, (0, react.createElement)("h3", { className: "cards-category-title" }, g.card + " · " + String(g.rows.length)), (0, react.createElement)("ol", { className: "cards-stages" }, g.rows.map((s) => (0, react.createElement)(StageRowView, {
+			}, (0, react.createElement)("h3", { className: card_module_css_default.catTitle }, g.card + " · " + String(g.rows.length)), (0, react.createElement)("ol", { className: card_module_css_default.stages }, g.rows.map((s) => (0, react.createElement)(StageRowView, {
 				key: s.id,
 				stage: s,
 				onOpen
-			}))))), bench.log.length > 0 ? (0, react.createElement)("p", { className: "cards-log-head" }, bench.log.length + " log entr" + (bench.log.length === 1 ? "y" : "ies")) : null, open !== null ? (0, react.createElement)(StageDetailModal, {
+			}))))), bench.log.length > 0 ? (0, react.createElement)("p", { className: card_module_css_default.logHead }, bench.log.length + " log entr" + (bench.log.length === 1 ? "y" : "ies")) : null, open !== null ? (0, react.createElement)(StageDrill, {
 				stage: open,
+				bench,
+				running,
+				onRun,
 				onClose
 			}) : null);
 		}
@@ -1041,27 +1103,27 @@ window.__ModuleLoader__.load({
 				});
 			}, [run, onRestored]);
 			return (0, react.createElement)("section", {
-				className: "cards-run-view",
+				className: card_module_css_default.runView,
 				"data-run-status": run.status
-			}, (0, react.createElement)("header", { className: "cards-run-head" }, (0, react.createElement)("span", { className: "cards-run-id" }, run.runId), (0, react.createElement)("span", { className: "cards-run-status" }, run.status)), (0, react.createElement)("div", { className: "cards-run-actions" }, onBack !== void 0 ? (0, react.createElement)("button", {
-				className: "cards-back",
+			}, (0, react.createElement)("header", { className: card_module_css_default.runHead }, (0, react.createElement)("span", { className: card_module_css_default.runId }, run.runId), (0, react.createElement)("span", { className: card_module_css_default.runStatus }, run.status)), (0, react.createElement)("div", { className: card_module_css_default.runActions }, onBack !== void 0 ? (0, react.createElement)("button", {
+				className: card_module_css_default.back,
 				type: "button",
 				onClick: onBack
 			}, "Back to bench") : null, (0, react.createElement)("button", {
-				className: "cards-restore",
+				className: card_module_css_default.restore,
 				type: "button",
 				disabled: restoring || run.draftId === null,
 				title: run.draftId === null ? "this run names no draft — nothing to restore" : "copy this run’s stages back onto the bench as your own",
 				onClick: onRestore
-			}, restoring ? "Restoring…" : "Restore to bench")), note !== null ? (0, react.createElement)("p", { className: "cards-restore-note" }, note) : null, run.stages.length === 0 ? (0, react.createElement)("p", { className: "cards-empty" }, "No stage rows yet.") : (0, react.createElement)("ol", { className: "cards-stages" }, run.stages.map((s) => (0, react.createElement)("li", {
+			}, restoring ? "Restoring…" : "Restore to bench")), note !== null ? (0, react.createElement)("p", { className: card_module_css_default.restoreNote }, note) : null, run.stages.length === 0 ? (0, react.createElement)("p", { className: card_module_css_default.empty }, "No stage rows yet.") : (0, react.createElement)("ol", { className: card_module_css_default.stages }, run.stages.map((s) => (0, react.createElement)("li", {
 				key: s.id,
-				className: "cards-stage",
+				className: card_module_css_default.stage,
 				"data-stage-status": s.status
-			}, (0, react.createElement)("span", { className: "cards-stage-title" }, s.id), (0, react.createElement)("span", { className: "cards-stage-engine" }, s.status), s.url !== void 0 ? (0, react.createElement)("a", {
+			}, (0, react.createElement)("span", { className: card_module_css_default.stageTitle }, s.id), (0, react.createElement)("span", { className: card_module_css_default.stageEngine }, s.status), s.url !== void 0 ? (0, react.createElement)("a", {
 				href: mediaUrl(run.runId, s.url),
 				target: "_blank",
 				rel: "noreferrer",
-				className: "cards-stage-artifact"
+				className: card_module_css_default.stageArtifact
 			}, "artifact") : null))));
 		}
 		/** ADDRESS LAW (the `loading sidebar://cards…` hang, dead 2026-09-11):
@@ -1091,11 +1153,11 @@ window.__ModuleLoader__.load({
 			const onBack = (0, react.useCallback)(() => {
 				if (openResource !== void 0) openResource(CARDS_BENCH_ADDRESS);
 			}, [openResource]);
-			if (snapshot === void 0) return (0, react.createElement)("p", { className: "cards-missing" }, "cards resource hook unavailable");
-			if (snapshot.status === "loading" || snapshot.status === "none") return (0, react.createElement)("p", { className: "cards-loading" }, "loading " + address + "…");
-			if (snapshot.status === "failed") return (0, react.createElement)("p", { className: "cards-failed" }, snapshot.failure?.message ?? "cards resource failed");
+			if (snapshot === void 0) return (0, react.createElement)("p", { className: card_module_css_default.missing }, "cards resource hook unavailable");
+			if (snapshot.status === "loading" || snapshot.status === "none") return (0, react.createElement)("p", { className: card_module_css_default.loading }, "loading " + address + "…");
+			if (snapshot.status === "failed") return (0, react.createElement)("p", { className: card_module_css_default.failed }, snapshot.failure?.message ?? "cards resource failed");
 			const value = snapshot.value;
-			if (value === void 0) return (0, react.createElement)("p", { className: "cards-failed" }, "cards resource gave no value");
+			if (value === void 0) return (0, react.createElement)("p", { className: card_module_css_default.failed }, "cards resource gave no value");
 			return value.kind === "bench" ? (0, react.createElement)(BenchView, {
 				bench: value,
 				onRun,
