@@ -42,7 +42,7 @@ import { FlowCards } from './FlowCards.tsx'
 import { CardsTab } from './CardsTab.tsx'
 import { CARDS_BENCH_ADDRESS, openCardsResource } from './cards-resource.ts'
 import { resolveCardsAddress } from './CardsTab.tsx'
-import type { ToolCallBlockView, ToolCallOwnerProps } from './types.ts'
+import type { StageViewOwnerProps, ToolCallBlockView, ToolCallOwnerProps } from './types.ts'
 
 // Type-only local spelling of the Tool-owned keyed view slot (the same shape
 // dsh-client-ui-tool declares) so this package registers without depending on
@@ -51,6 +51,19 @@ import type { ToolCallBlockView, ToolCallOwnerProps } from './types.ts'
 declare module '@deepseek-ai/dsh-client-ui-slots' {
   interface SlotMap {
     'tool.call.toolview': { kind: 'keyed'; scope: 'session'; owner: ToolCallOwnerProps }
+    /**
+     * Keyed stage surface, dispatched by card name (the ui-tool
+     * 'tool.call.toolview' law, mirrored). Register with
+     * `key: '<card name>'` to own how one card's stage renders inside
+     * the zoom card — the key domain is open (any card name), so a
+     * typo simply never renders. An unclaimed key falls back to the
+     * generic form-spec card; registering is additive for your own
+     * card and a takeover for a shipped one. The owner passes the
+     * stage's identity, its frozen bench row, and the drill's own
+     * verbs, so the view stays a pure function of what the bench
+     * already knows.
+     */
+    'cards.stage.view': { kind: 'keyed'; scope: 'session'; owner: StageViewOwnerProps }
   }
 }
 
@@ -126,7 +139,16 @@ export function apply(ctx: ClientContext): void {
   // Stage two — the body, dispatched under the type's id.
   try {
     ctx.slots.inject('sidebar.right.pane.tab', () => ctx.slots.register(
-      { name: 'sidebar.right.pane.tab', key: CARDS_TAB_ID },
+      {
+        name: 'sidebar.right.pane.tab',
+        key: CARDS_TAB_ID,
+        // The tab HOSTS card surfaces: declaring the child puts
+        // renderSlot('cards.stage.view') into CardsTab's composed
+        // props (the ui-tool children law).
+        children: {
+          'cards.stage.view': { kind: 'keyed', scope: 'session' },
+        },
+      },
       CardsTab,
     ))
   } catch (error) {

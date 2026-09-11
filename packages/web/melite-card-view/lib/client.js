@@ -11155,7 +11155,9 @@ get: (_target, key) => {
 				onRun: rest.onRun,
 				onClose,
 				onRemoved: rest.onRemoved,
-				onRewired: rest.onRewired
+				onRewired: rest.onRewired,
+				onPatchParams: rest.onPatchParams,
+				renderStageView: rest.renderStageView
 			}) : (0, react.createElement)(ZoomSkeleton)))));
 		}
 		/** CardZoomOverlay — portal to document.body, FIXED inset-0 (the old
@@ -14111,7 +14113,7 @@ get: (_target, key) => {
 		*  dump. Params left, Run right; the patch carries only CHANGED keys
 		*  (coerced once, at patch time — the editPatch law); then the run
 		*  gesture (patch lands in the domain BEFORE the run reads it). */
-		function StageDrill({ stage, bench, running, onRun, onClose, onRemoved, onRewired }) {
+		function StageDrill({ stage, bench, running, onRun, onClose, onRemoved, onRewired, onPatchParams, renderStageView }) {
 			String(stage.title ?? stage.card ?? stage.id);
 			const held = typeof stage.params === "object" && stage.params !== null ? stage.params : {};
 			const [spec, setSpec] = (0, react.useState)(null);
@@ -14228,7 +14230,7 @@ get: (_target, key) => {
 					}
 				}, removing ? "ungrouping…" : "Ungroup")));
 			}
-			return (0, react.createElement)("div", { className: card_module_css_default.zoomDetail }, (0, react.createElement)("div", { className: card_module_css_default.wireRow }, (0, react.createElement)("span", { className: card_module_css_default.wireLabel }, "source input ⟵"), (0, react.createElement)("select", {
+			const genericDetail = () => (0, react.createElement)("div", { className: card_module_css_default.zoomDetail }, (0, react.createElement)("div", { className: card_module_css_default.wireRow }, (0, react.createElement)("span", { className: card_module_css_default.wireLabel }, "source input ⟵"), (0, react.createElement)("select", {
 				className: card_module_css_default.specSelect,
 				value: wiredStage,
 				"aria-label": "Wire source input from stage",
@@ -14259,6 +14261,18 @@ get: (_target, key) => {
 					remove();
 				}
 			}, removing ? "removing…" : "Remove stage")))));
+			return renderStageView({
+				stageId: stage.id,
+				cardName: String(stage.card ?? ""),
+				row: stage,
+				runStatus: typeof stage.runStatus === "string" ? stage.runStatus : "",
+				onPatch: onPatchParams,
+				onRun,
+				onStop: () => {},
+				onRemove: () => {
+					remove();
+				}
+			}, genericDetail());
 		}
 		/** THE ADD-CARD DOOR (the old system's power, DSH-native): the trailing
 		*  + tile → the picker (the catalog's action cards, search + genre
@@ -14374,7 +14388,7 @@ get: (_target, key) => {
 				}
 			}, adding ? "adding…" : "Add card")))));
 		}
-		function BenchView({ bench, onRun, onRunStage, running }) {
+		function BenchView({ bench, onRun, onRunStage, running, onPatchParams, renderStageView }) {
 			const [live, setLive] = (0, react.useState)(bench);
 			(0, react.useEffect)(() => {
 				setLive(bench);
@@ -14666,6 +14680,10 @@ get: (_target, key) => {
 				onRewired: () => {
 					reload({ keepOpen: true });
 				},
+				onPatchParams: (patch) => {
+					onPatchParams(open, patch);
+				},
+				renderStageView,
 				detail: StageDrill
 			}) : null, adding ? (0, react.createElement)(AddCardDoor, {
 				bench: live,
@@ -14754,6 +14772,13 @@ get: (_target, key) => {
 		}
 		/** The tab body component. */
 		function CardsTab(props) {
+			const renderStageView = (owner, fallback) => {
+				if (props.renderSlot === void 0) return fallback;
+				return props.renderSlot("cards.stage.view", owner, {
+					entryKey: owner.cardName,
+					fallback
+				}) ?? fallback;
+			};
 			const info = typeof props.useTabInfo === "function" ? props.useTabInfo() : void 0;
 			const address = resolveCardsAddress(info?.tab.navigation.address ?? info?.tab.contentId ?? "dsh-resource://cards/bench");
 			const openResource = info?.tab.actions.openResource;
@@ -14815,6 +14840,14 @@ get: (_target, key) => {
 					}
 				});
 			}, [snapshot, onStarted]);
+			const onPatchParamsStage = (0, react.useCallback)((stage, patch) => {
+				if (snapshot?.value?.kind !== "bench") return;
+				patchStageParams(snapshot.value.draftId, stage.id, patch).then(() => {
+					setLocalRunError(null);
+				}).catch((e) => {
+					setLocalRunError(e instanceof Error ? e.message : "patch failed");
+				});
+			}, [snapshot]);
 			const onStop = (0, react.useCallback)((runId) => {
 				stopRunWire(runId).catch((e) => {
 					setLocalRunError(e instanceof Error ? e.message : "cancel failed");
@@ -14843,7 +14876,9 @@ get: (_target, key) => {
 				bench: value,
 				onRun,
 				onRunStage,
-				running
+				running,
+				onPatchParams: onPatchParamsStage,
+				renderStageView
 			})) : (0, react.createElement)(RunView, {
 				run: value,
 				onBack: openResource !== void 0 ? onBack : void 0,
@@ -14920,7 +14955,11 @@ get: (_target, key) => {
 			try {
 				ctx.slots.inject("sidebar.right.pane.tab", () => ctx.slots.register({
 					name: "sidebar.right.pane.tab",
-					key: CARDS_TAB_ID
+					key: CARDS_TAB_ID,
+					children: { "cards.stage.view": {
+						kind: "keyed",
+						scope: "session"
+					} }
 				}, CardsTab));
 			} catch (error) {
 				console.error("[melite-card-view] cards tab body registration failed:", error);

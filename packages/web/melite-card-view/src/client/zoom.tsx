@@ -30,6 +30,7 @@ import { AnimatePresence, motion, usePresence } from 'framer-motion'
 import type { Transition } from 'framer-motion'
 import css from './card.module.css'
 import { BenchStageRow, CardsBenchValue } from './cards-resource.ts'
+import type { StageViewOwnerProps } from './types.ts'
 
 /** The morph spring — "a sponge filling with water": fast start, soft
  * settle. Same spring both directions (open grows, exit shrinks). */
@@ -61,6 +62,10 @@ export interface ZoomDetailProps {
   onClose: () => void
   onRemoved: () => void
   onRewired: () => void
+  /** params patch verb (the surface slot's onPatch currency). */
+  onPatchParams: (patch: Record<string, unknown>) => void
+  /** the cards.stage.view consult (unclaimed → the generic card). */
+  renderStageView: (owner: StageViewOwnerProps, fallback: ReturnType<typeof h>) => ReturnType<typeof h>
 }
 
 /** The morph skeleton — an all-skeleton layout with no real content
@@ -143,7 +148,7 @@ function ZoomMount(props: ZoomDetailProps & { detail: (p: ZoomDetailProps) => Re
             }, '✕'),
           ),
           ready && isPresent
-            ? h(props.detail, { stage, bench: rest.bench, running: rest.running, onRun: rest.onRun, onClose, onRemoved: rest.onRemoved, onRewired: rest.onRewired })
+            ? h(props.detail, { stage, bench: rest.bench, running: rest.running, onRun: rest.onRun, onClose, onRemoved: rest.onRemoved, onRewired: rest.onRewired, onPatchParams: rest.onPatchParams, renderStageView: rest.renderStageView })
             : h(ZoomSkeleton),
         ),
       ),

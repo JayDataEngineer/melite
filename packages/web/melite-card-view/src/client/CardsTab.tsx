@@ -33,6 +33,7 @@
 import { createElement as h, Fragment, useCallback, useEffect, useRef, useState } from 'react'
 import { Button, Input, Modal, Pill, StateDot, Tag } from '@deepseek-ai/dsh-client-ui-primitives'
 import { CardDrill } from './card-drill.tsx'
+import type { StageViewOwnerProps } from './types.ts'
 import { fetchCardCatalog, fetchFormSpec, specDefaults, specPatch, SpecForm } from './spec-form.tsx'
 import type { CatalogCard, FormSpecDoc, SpecValues } from './spec-form.tsx'
 import { paramFields, patchStageParams } from './draft.ts'
@@ -68,7 +69,18 @@ interface ResourceHook {
 export interface CardsTabProps {
   useTabInfo?: () => TabInfo
   useResource?: ResourceHook
+  /** Injected by the slot system because the seat registration
+   *  declares 'cards.stage.view' as a child (PropsRenderSlots shape;
+   *  optional so test doubles and legacy mounts render the generic
+   *  card). */
+  renderSlot?: StageViewRenderSlot
 }
+
+/** The typed dispatch fn the slot system injects for the declared
+ *  child ('cards.stage.view') — RenderSlotFn spelled locally so the
+ *  component file stays free of the slot package's runtime graph. */
+export type StageViewRenderSlot = (key: 'cards.stage.view', owner: StageViewOwnerProps, opts?: { entryKey?: string; fallback?: import('react').ReactNode }) => import('react').ReactNode
+
 
 /** The flow_inline projection — the SAME wire shape melite_flow's bench
  *  verb sends (runner-owned keys strip; ids/engines/params stay). */
@@ -489,7 +501,7 @@ function benchRow(stage: BenchStageRow, bench?: CardsBenchValue): CardRowLineTab
  *  dump. Params left, Run right; the patch carries only CHANGED keys
  *  (coerced once, at patch time — the editPatch law); then the run
  *  gesture (patch lands in the domain BEFORE the run reads it). */
-function StageDrill({ stage, bench, running, onRun, onClose, onRemoved, onRewired }: {
+function StageDrill({ stage, bench, running, onRun, onClose, onRemoved, onRewired, onPatchParams, renderStageView }: {
   stage: BenchStageRow
   bench: CardsBenchValue
   running: boolean
@@ -497,6 +509,8 @@ function StageDrill({ stage, bench, running, onRun, onClose, onRemoved, onRewire
   onClose: () => void
   onRemoved: () => void
   onRewired: () => void
+  onPatchParams: (patch: Record<string, unknown>) => void
+  renderStageView: (owner: StageViewOwnerProps, fallback: ReturnType<typeof h>) => ReturnType<typeof h>
 }): ReturnType<typeof h> {
   const title = String(stage.title ?? stage.card ?? stage.id)
   const held: SpecValues = typeof stage.params === 'object' && stage.params !== null ? stage.params : {}
@@ -611,7 +625,9 @@ function StageDrill({ stage, bench, running, onRun, onClose, onRemoved, onRewire
   // THE ZOOM DETAIL (2026-09-11): no Modal — this renders INSIDE the
   // shared-element zoom card (the tile's morph target). The params/
   // Run split is the old drill content, container is the zoom card.
-  return h('div', { className: css.zoomDetail },
+  // THE SURFACE SLOT (the ui-tool law): a registered card view takes
+  // over the whole detail; unclaimed key renders this generic body.
+  const genericDetail = (): ReturnType<typeof h> => h('div', { className: css.zoomDetail },
     h('div', { className: css.wireRow },
       h('span', { className: css.wireLabel }, 'source input ⟵'),
       h('select', {
@@ -648,6 +664,17 @@ function StageDrill({ stage, bench, running, onRun, onClose, onRemoved, onRewire
       ),
     ),
   )
+  // the consult (ToolCallTree's call verbatim): entryKey = card name
+  return renderStageView({
+    stageId: stage.id,
+    cardName: String(stage.card ?? ''),
+    row: stage as unknown as Record<string, unknown>,
+    runStatus: typeof stage.runStatus === 'string' ? stage.runStatus : '',
+    onPatch: onPatchParams,
+    onRun,
+    onStop: () => {},
+    onRemove: () => { void remove() },
+  }, genericDetail())
 }
 
 /** THE ADD-CARD DOOR (the old system's power, DSH-native): the trailing
@@ -767,11 +794,13 @@ function AddCardDoor({ bench, onAdded, onClose }: {
   )
 }
 
-function BenchView({ bench, onRun, onRunStage, running }: {
+function BenchView({ bench, onRun, onRunStage, running, onPatchParams, renderStageView }: {
   bench: CardsBenchValue
   onRun: () => void
   onRunStage: (stage: BenchStageRow) => void
   running: boolean
+  onPatchParams: (stage: BenchStageRow, patch: Record<string, unknown>) => void
+  renderStageView: (owner: StageViewOwnerProps, fallback: ReturnType<typeof h>) => ReturnType<typeof h>
 }): ReturnType<typeof h> {
   // The LIVE bench: the resource snapshot is the first frame only (the
   // provider's bench stream ends after one snapshot), so the view owns
@@ -1072,6 +1101,8 @@ function BenchView({ bench, onRun, onRunStage, running }: {
       onClose,
       onRemoved: () => { setOpen(null); reload() },
       onRewired: () => { reload({ keepOpen: true }) },
+      onPatchParams: (patch: Record<string, unknown>) => { onPatchParams(open, patch) },
+      renderStageView,
       detail: StageDrill,
     }) : null,
     adding ? h(AddCardDoor, { bench: live, onAdded, onClose: () => { setAdding(false) } }) : null,
@@ -1176,6 +1207,12 @@ export function resolveCardsAddress(rawAddress: string): string {
 
 /** The tab body component. */
 export function CardsTab(props: CardsTabProps): ReturnType<typeof h> {
+  // cards.stage.view dispatch (the ui-tool ToolCallTree call verbatim):
+  // keyed by card name; unclaimed key renders the drill's own body.
+  const renderStageView = (owner: StageViewOwnerProps, fallback: ReturnType<typeof h>): ReturnType<typeof h> => {
+    if (props.renderSlot === undefined) return fallback
+    return (props.renderSlot('cards.stage.view', owner, { entryKey: owner.cardName, fallback }) ?? fallback) as ReturnType<typeof h>
+  }
   const info = typeof props.useTabInfo === 'function' ? props.useTabInfo() : undefined
   const rawAddress = info?.tab.navigation.address ?? info?.tab.contentId ?? CARDS_BENCH_ADDRESS
   const address = resolveCardsAddress(rawAddress)
@@ -1249,6 +1286,17 @@ export function CardsTab(props: CardsTabProps): ReturnType<typeof h> {
       }
     })
   }, [snapshot, onStarted])
+  // PARAMS PATCH for surface views (the slot's onPatch currency):
+  // the same drafts/patch door the drill's own editor rides.
+  const onPatchParamsStage = useCallback((stage: BenchStageRow, patch: Record<string, unknown>): void => {
+    if (snapshot?.value?.kind !== 'bench') return
+    void patchStageParams(snapshot.value.draftId, stage.id, patch)
+      .then(() => { setLocalRunError(null) })
+      .catch((e: unknown) => {
+        setLocalRunError(e instanceof Error ? e.message : 'patch failed')
+      })
+  }, [snapshot])
+
   // CANCEL — runs/stop on the run in view (both the resource stream
   // face and the in-tab local run face).
   const onStop = useCallback((runId: string): void => {
@@ -1293,6 +1341,8 @@ export function CardsTab(props: CardsTabProps): ReturnType<typeof h> {
           onRun,
           onRunStage,
           running,
+          onPatchParams: onPatchParamsStage,
+          renderStageView,
         }),
       )
     : h(RunView, { run: value, onBack: openResource !== undefined ? onBack : undefined, onRestored: onBack, onStop })
