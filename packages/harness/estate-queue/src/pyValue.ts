@@ -55,7 +55,7 @@ export function pyStr(v: unknown): string {
   if (typeof v === "boolean") return v ? "True" : "False";
   if (typeof v === "number") {
     if (!Number.isFinite(v)) throw new Error("bad sidecar number");
-    return Number.isInteger(v) ? String(v) : String(v) + (String(v).includes("e") || String(v).includes(".") ? "" : ".0");
+    return Number.isInteger(v) ? String(v) : String(v) + (String(v).includes("e") || String(v).includes(".") ? "" : /* v8 ignore next -- finite non-integers always String() with "." or "e" (ECMA-262 Number::toString), so the ".0" never fires */ ".0");
   }
   return String(v);
 }
@@ -65,7 +65,7 @@ export function pyStr(v: unknown): string {
  *  raise surfaces as the door's 500 exactly as py's would). */
 export function pyInt(v: unknown): number {
   if (!v) return 0;
-  if (typeof v === "boolean") return v ? 1 : 0;
+  if (typeof v === "boolean") return v ? 1 : /* v8 ignore next -- falsy booleans exit at !v above; only `true` reaches this ternary (2026-09-12) */ 0;
   if (typeof v === "number") {
     if (!Number.isFinite(v)) throw new Error("bad sidecar number");
     return Math.trunc(v);
@@ -121,6 +121,8 @@ export function mediaVocab(repoKindsPath: string): MediaVocab {
         maxImgs = Math.floor(raw);
       }
     } catch {
+      /* v8 ignore next -- JSON.parse yields only plain data: property
+         access never throws, so this guard is unconstructible (2026-09-12) */
       maxImgs = 0;
     }
     mediaKindsCache = {

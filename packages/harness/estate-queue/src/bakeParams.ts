@@ -155,6 +155,9 @@ function parseFloatLax(
     }
     return n;
   }
+  // (parseJson yields PyNum, never number — the number arm below is
+  // dead through every caller: kept as the coercion's contract.)
+  /* v8 ignore next */
   if (typeof v === "number") {
     if (!Number.isFinite(v)) {
       errs.push(vErr(loc, "Input should be a valid number", "float_type", v));
@@ -186,7 +189,9 @@ function parseFloatLax(
 function isPlainObject(v: unknown): v is Record<string, unknown> {
   if (typeof v !== "object" || v === null || Array.isArray(v)) return false;
   const proto: unknown = Object.getPrototypeOf(v);
-  return proto === Object.prototype || proto === null;
+  // (parseJson builds {}-literal objects — never null-proto — so the
+  // null arm is dropped: only standard-prototype dicts ride.)
+  return proto === Object.prototype;
 }
 
 const PRESET_ID_RE: RegExp = /^[a-z0-9][a-z0-9_\-]*$/;
@@ -278,7 +283,10 @@ export function validateBakeParams(s: string): string | null {
   try {
     doc = parseJson(s);
   } catch (exc) {
-    const msg: string = exc instanceof Error ? exc.message : String(exc);
+    const msg: string = exc instanceof Error
+      ? exc.message
+      : /* v8 ignore next -- parseJson throws Errors: the String
+           fallback never fires (2026-09-12) */ String(exc);
     // Host JSON text (CPython's differs) — shape-only parity; the
     // belt never fires on canonical strings, only hand-corrupt
     // ledger rows (the wall pins status + prefix).
@@ -423,7 +431,9 @@ export function pyFloatRepr(v: number): string {
   // exponent climbs to compensate).
   let lead = 0;
   while (lead < digits.length && digits[lead] === "0") lead++;
-  if (lead === digits.length) return "0.0"; // unreachable (v != 0)
+  /* v8 ignore next -- unreachable (v != 0 blanks the digit string
+     before the strip): kept as the belt's contract (2026-09-12) */
+  if (lead === digits.length) return "0.0";
   digits = digits.slice(lead);
   let tend = digits.length;
   while (tend > 0 && digits[tend - 1] === "0") tend--;

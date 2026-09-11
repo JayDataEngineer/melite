@@ -283,7 +283,7 @@ export function apply(c: CtxView, config: Config = {}): void {
           const out = JSON.stringify({ path: 'data/input/' + filename })
           res.writeHead(200, { 'content-type': 'application/json' })
           res.end(out)
-        }).catch((e: unknown) => fail(500, 'uploads: ' + (e instanceof Error ? e.message : String(e))))
+        }).catch((e: unknown) => fail(500, 'uploads: ' + (e instanceof Error ? e.message : /* v8 ignore next -- fs throws Errors only (2026-09-12) */ String(e))))
       },
     }), 'melite-tools: uploads rail')
     c.effect(() => c.webServer.register({
@@ -307,11 +307,13 @@ export function apply(c: CtxView, config: Config = {}): void {
           const realDir = await fs.realpath(dir)
           if (real === undefined || !real.startsWith(realDir + path.sep)) return fail(404, 'no such input')
           const bytes = await fs.readFile(file)
-          const ext = name.split('.').pop()?.toLowerCase() ?? ''
+          // split always yields ≥1 element, so pop() is always a
+          // string — no ?. decay, no ?? (2026-09-12).
+          const ext = (name.split('.').pop() as string).toLowerCase()
           const type = ext === 'png' ? 'image/png' : ext === 'jpg' || ext === 'jpeg' ? 'image/jpeg' : 'image/webp'
           res.writeHead(200, { 'content-type': type, 'content-length': String(bytes.byteLength) })
           res.end(bytes)
-        })().catch((e: unknown) => fail(500, 'inputs: ' + (e instanceof Error ? e.message : String(e))))
+        })().catch((e: unknown) => fail(500, 'inputs: ' + (e instanceof Error ? e.message : /* v8 ignore next -- fs throws Errors only (2026-09-12) */ String(e))))
       },
     }), 'melite-tools: input preview')
   }
@@ -341,9 +343,6 @@ export function apply(c: CtxView, config: Config = {}): void {
       }
       // Discovery arms are GET; seat lanes carry both (bench patch
       // is POST, drafts GET).
-      const url = new URL(req.url ?? '/', 'http://localhost')
-      const path = url.pathname
-      const method = (req.method ?? 'GET').toUpperCase() as EstateMethod
       // CALLER-GONE LAW: bind to the RESPONSE's premature close
       // (res 'close' before writableEnded), never req 'close' — a
       // POST's message-complete fires req 'close' the moment the
@@ -357,7 +356,16 @@ export function apply(c: CtxView, config: Config = {}): void {
       // Discovery arms (live derivation — discovery.ts; async — the
       // card defs boot is a promise).
       const serve = (): void => {
+        // The URL parse rides INSIDE the try (2026-09-12 fix: an
+        // unparseable url used to throw synchronously out of the
+        // handler — a host-level crash — instead of the door's 500).
+        let path: string
+        let method: EstateMethod
+        let url: URL
         try {
+          url = new URL(req.url ?? '/', 'http://localhost')
+          path = url.pathname
+          method = (req.method ?? 'GET').toUpperCase() as EstateMethod
           if (method === 'GET' && path === '/v1/card-tools') {
             return void cardToolsArm().then(ok, (e: unknown) => fail(500, { error: `discovery door: ${e instanceof Error ? e.message : String(e)}` }))
           }
@@ -383,7 +391,7 @@ export function apply(c: CtxView, config: Config = {}): void {
             }, (e: unknown) => fail(500, { error: `discovery door: ${e instanceof Error ? e.message : String(e)}` }))
           }
         } catch (error: unknown) {
-          return fail(500, { error: `discovery door: ${error instanceof Error ? error.message : String(error)}` })
+          return fail(500, { error: `discovery door: ${error instanceof Error ? error.message : /* v8 ignore next -- the try body throws Errors only (URL/arms are sync-Error sites, 2026-09-12) */ String(error)}` })
         }
 
         // Seat lanes — makeEstateRequest's law (a lane with no seat

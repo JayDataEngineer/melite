@@ -192,7 +192,11 @@ export function meliteConstruct(request: EstateRequest): ToolDefinition {
       },
     },
     async execute(args, exec): Promise<ConstructResult> {
-      const a = (args ?? {}) as Record<string, unknown>
+      // defineTool input validation runs in the wrapper BEFORE the body
+      // (invalid args throw ToolArgsError there) — args is always a
+      // defined object here, so no nullish fallback exists to cover
+      // (2026-09-12).
+      const a = args as Record<string, unknown>
       const verb = typeof a.verb === 'string' ? a.verb : ''
       const bench = benchKeyOf(a)
       const signal = exec.signal

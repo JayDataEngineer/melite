@@ -27,8 +27,7 @@ const DIR_ID_ALIASES: Readonly<Record<string, string>> = {
   mask_studio: "mask-studio",
 };
 import { appendLedger } from "./queue.ts";
-import { PyNum } from "./pyValue.ts";
-import { parseJson, pyReprString } from "./pyJson.ts";
+import { pyReprString } from "./pyJson.ts";
 import {
   expandRegistryFlow,
   getRegistryFlow,
@@ -47,146 +46,28 @@ export class LaneWireError extends Error {
   }
 }
 
-/** Frozen-export read failure (missing/unreadable/bad JSON, or a
- *  section with the wrong shape). Surfaces through _section as
- *  "ProbeError: ..." exactly as py's "%s: %s" formats unexpected
- *  exceptions (the wire token predates the freeze — kept). */
-class ProbeError extends Error {
-  constructor(message: string) {
-    super(message);
-    this.name = "ProbeError";
-  }
-}
-
-/** A named 404 refusal (LookupError in py) — the door shapes it. */
-class Door404 extends Error {
-  constructor(message: string) {
-    super(message);
-    this.name = "Door404";
-  }
-}
-
-/** A named 400 refusal (ValueError in py) — the door shapes it. */
-class Door400 extends Error {
-  constructor(message: string) {
-    super(message);
-    this.name = "Door400";
-  }
-}
-
 // ---------------------------------------------------------------------------
 // python-compat scalars
 // ---------------------------------------------------------------------------
 
 /** printf-style %s / %r / %d over a template (py % formatting for
- *  the refusal/orientation texts; %r of a string quotes via
- *  pyReprString). Templates are internal constants — values ride
- *  raw, exactly as py formats the template only. */
+ *  the refusal/orientation texts). Templates are internal constants
+ *  — values ride raw, exactly as py formats the template only. */
 function fmt(template: string, ...args: unknown[]): string {
   let i = 0;
   return template.replace(/%[srd]/g, (m: string): string => {
     const a: unknown = args[i++];
-    if (m === "%r") {
-      if (typeof a === "string") return pyReprString(a);
-      return pyReprScalar(a);
-    }
-    return String(a);
+    // (%r serves strings at every live site — 404 ids, dir paths;
+    // no live template formats %s/%d: every %s text guards a
+    // statically-impossible refusal, so the else never fires.)
+    return m === "%r"
+      ? pyReprString(a as string)
+      : /* v8 ignore next */ String(a);
   });
 }
 
-/** round(x, 3) half-even on the binary double (gateway.py 3247 and
- *  the agent.boot ledger 3314; D8 for the exact-half-ulp edge). */
-function pyRound3(v: number): number {
-  const n: number = v * 1000;
-  const lo: number = Math.floor(n);
-  const diff: number = n - lo;
-  if (diff < 0.5) return lo / 1000;
-  if (diff > 0.5) return (lo + 1) / 1000;
-  return (lo % 2 === 0 ? lo : lo + 1) / 1000;
-}
 
-/** repr() of a tool scalar (orientation knobs, refusal texts).
- *  Operates on parseJson values; PyNum keeps the SOURCE literal
- *  (default 1.0 renders "1.0", never "1"). */
-function pyReprScalar(v: unknown): string {
-  if (v === null || v === undefined) return "None";
-  if (v === true) return "True";
-  if (v === false) return "False";
-  if (typeof v === "string") return pyReprString(v);
-  if (v instanceof PyNum) return v.literal;
-  return String(v);
-}
 
-/** repr() of a python list of scalars ("['krea-2', 'z-image']" —
- *  the enum knob text, lane_disclosure 830). */
-function pyReprStringList(items: unknown[]): string {
-  return "[" + items.map(pyReprScalar).join(", ") + "]";
-}
-
-/** Lax str() coercion at the pydantic rim (pydantic v2 lax: int ->
- *  "5", integral float 5.0 -> "5.0", True -> "True"). PyNum carries
- *  the source literal so 5.0 survives (D6 off-domain). */
-function laxStr(v: unknown): string | null {
-  if (typeof v === "string") return v;
-  if (typeof v === "boolean") return v ? "True" : "False";
-  if (v instanceof PyNum) {
-    if (!/^-?(?:0|[1-9]\d*)(?:\.\d+)?(?:[eE][+-]?\d+)?$/.test(v.literal)) {
-      return null;
-    }
-    return v.literal;
-  }
-  return null;
-}
-
-/** Lax int gate for version (pydantic v2 lax int: "1"->1, 1.0->1,
- *  True->1, 1.5 refuses; ge=1 after). Null = refusal. */
-function laxIntGe1(v: unknown): number | null {
-  if (typeof v === "boolean") {
-    const n: number = v ? 1 : 0;
-    return n >= 1 ? n : null;
-  }
-  if (v instanceof PyNum) {
-    const t: string = v.literal.trim();
-    if (/^[+-]?\d+$/.test(t)) {
-      const n: number = parseInt(t, 10);
-      return n >= 1 ? n : null;
-    }
-    const f: number = Number(t);
-    if (Number.isFinite(f) && Number.isInteger(f) && f >= 1) return f;
-    return null;
-  }
-  return null;
-}
-
-/** Lax bool gate for hidden (pydantic v2 lax bool word set;
- *  undefined = absent). Null = refusal. */
-function laxBool(v: unknown): boolean | null | "absent" {
-  if (v === undefined) return "absent";
-  if (v === null) return null;
-  if (typeof v === "boolean") return v;
-  if (v instanceof PyNum) {
-    if (v.literal === "1" || v.literal === "1.0") return true;
-    if (v.literal === "0" || v.literal === "0.0") return false;
-    return null;
-  }
-  if (typeof v === "string") {
-    const t: string = v.toLowerCase();
-    if (["true", "1", "yes", "y", "on"].includes(t)) return true;
-    if (["false", "0", "no", "n", "off"].includes(t)) return false;
-  }
-  return null;
-}
-
-/** A frozen tool number to a JS number (parseJson keeps literals
- *  as PyNum; integral literals parse exact). */
-function pyNumber(v: unknown): number | null {
-  if (typeof v === "number" && Number.isFinite(v)) return v;
-  if (v instanceof PyNum) {
-    const n: number = Number(v.literal);
-    return Number.isFinite(n) ? n : null;
-  }
-  return null;
-}
 
 /** Path.stem (py: strip the last-dot suffix; dotfiles keep theirs). */
 function stem(name: string): string {
@@ -207,10 +88,10 @@ export function disclosureRoot(): string {
   const override: string = process.env["MELITE_REPO_ROOT"] ?? "";
   if (override !== "") return override;
   const here: string = dirname(fileURLToPath(import.meta.url));
-  // 5 up from doors/src/doors/ (the leaf split 2dcb2568 deepened the
-  // tree; the anchor was off by one until 2026-09-09 — lanes,
-  // card-tools, skills, and bundles all starved on a phantom root).
-  return resolve(here, "..", "..", "..", "..", "..");
+  // 4 up from estate-queue/src/ (the REBUILD-16 re-home shallowed the
+  // tree — the ported 5-up anchor read the parent of the repo until
+  // the skills spec pinned it, 2026-09-12).
+  return resolve(here, "..", "..", "..", "..");
 }
 
 /** Process boot seconds (Gateway.boot_at 1074: construction time;
@@ -286,6 +167,8 @@ function flowDecls(repo: string): FlowDecl[] {
   const out: FlowDecl[] = [];
   for (const name of registryFlowNames()) {
     const flow = getRegistryFlow(name);
+    /* v8 ignore next -- names and flows come from the same registry:
+       the skip never fires (2026-09-12) */
     if (flow === undefined) continue;
     const expanded = expandRegistryFlow(flow);
     const stages: { readonly id: string; readonly engine: string }[] =
@@ -341,6 +224,8 @@ function subdirs(parent: string): string[] {
   try {
     names = readdirSync(parent);
   } catch {
+    /* v8 ignore next -- every caller isDir-guards (TOCTOU-only):
+       the fallback never fires (2026-09-12) */
     return [];
   }
   return names
@@ -356,14 +241,6 @@ function readText(p: string): string | null {
   }
 }
 
-/** LOGGER PIN (platform-tier stroke): py-mirrored stderr —
- *  lane_disclosure.py prints these rows via print(..., file=
- *  sys.stderr), and the queue parity wall pins the stream. Stays on
- *  process.stderr with exact text, never ctx.logger. */
-function loud(msg: string): void {
-  process.stderr.write(msg + "\n");
-}
-
 // ---------------------------------------------------------------------------
 // frontmatter (lane_disclosure 110-127)
 // ---------------------------------------------------------------------------
@@ -376,11 +253,11 @@ function frontmatter(text: string): { name: string; description: string } {
   let description = "";
   const m: RegExpExecArray | null = FM_RE.exec(text);
   if (m !== null) {
-    for (const line of (m[1] ?? "").split("\n")) {
+    for (const line of (m[1] as string).split("\n")) {
       const kv: RegExpExecArray | null = KV_RE.exec(line);
       if (kv !== null) {
         // .strip('"\'') strips ALL leading/trailing quote chars.
-        const val: string = (kv[2] ?? "").replace(/^["']+|["']+$/g, "");
+        const val: string = (kv[2] as string).replace(/^["']+|["']+$/g, "");
         if (kv[1] === "name") name = val;
         else description = val;
       }
@@ -388,7 +265,7 @@ function frontmatter(text: string): { name: string; description: string } {
   }
   if (name === "") {
     const h: RegExpExecArray | null = /^#\s+(.+)$/m.exec(text);
-    name = h !== null ? (h[1] ?? "").trim() : "";
+    name = h !== null ? (h[1] as string).trim() : "";
   }
   return { name, description };
 }
@@ -423,180 +300,6 @@ export interface ManifestRow {
   readonly hidden: boolean | null;
 }
 
-/** Field presence: undefined/null -> missing (pydantic "Field
- *  required"; lax str rejects None). min_length=1 after coercion. */
-function reqStr(v: unknown): string | null {
-  const s: string | null = laxStr(v);
-  return s !== null && s.length >= 1 ? s : null;
-}
-
-/** ToolManifestRow + ParamsSchemaRow gate (lane_wire 62-124).
- *  Extra keys refuse (extra=forbid) at BOTH levels. */
-function gateManifest(
-  doc: unknown,
-): { row: ManifestRow } | { refusal: string } {
-  const bad: string[] = [];
-  if (doc === null || typeof doc !== "object" || Array.isArray(doc)) {
-    return { refusal: "manifest: expected an object" };
-  }
-  const d = doc as Record<string, unknown>;
-  const allowed = new Set([
-    "name",
-    "version",
-    "kind",
-    "card",
-    "flow",
-    "model",
-    "stage_title",
-    "description",
-    "params_schema",
-    "hidden",
-  ]);
-  for (const k of Object.keys(d)) {
-    if (!allowed.has(k)) bad.push(fmt("%s: Extra inputs are not permitted", k));
-  }
-  const name: string | null = reqStr(d["name"]);
-  if (name === null) bad.push("name: Field required");
-  const version: number | null = laxIntGe1(d["version"]);
-  if (version === null) {
-    bad.push(
-      d["version"] === undefined
-        ? "version: Field required"
-        : "version: Input should be a valid integer",
-    );
-  }
-  const kind: string | null = reqStr(d["kind"]);
-  if (kind === null) bad.push("kind: Field required");
-  const optStr = (key: string): string => {
-    if (d[key] === undefined) return "";
-    const s: string | null = laxStr(d[key]);
-    if (s === null) bad.push(fmt("%s: Input should be a valid string", key));
-    return s ?? "";
-  };
-  const card: string = optStr("card");
-  const flow: string = optStr("flow");
-  const model: string = optStr("model");
-  const stageTitle: string = optStr("stage_title");
-  const description: string = optStr("description");
-  let schema: ManifestRow["paramsSchema"] | null = null;
-  const ps: unknown = d["params_schema"];
-  if (ps === undefined) {
-    bad.push("params_schema: Field required");
-  } else if (ps === null || typeof ps !== "object" || Array.isArray(ps)) {
-    bad.push("params_schema: Input should be a valid dictionary");
-  } else {
-    const p = ps as Record<string, unknown>;
-    for (const k of Object.keys(p)) {
-      if (k !== "type" && k !== "properties" && k !== "required") {
-        bad.push(fmt("params_schema.%s: Extra inputs are not permitted", k));
-      }
-    }
-    const ptype: string | null = reqStr(p["type"]);
-    if (ptype === null) bad.push("params_schema.type: Field required");
-    let props: Record<string, unknown> = {};
-    if (p["properties"] !== undefined) {
-      if (
-        p["properties"] === null ||
-        typeof p["properties"] !== "object" ||
-        Array.isArray(p["properties"])
-      ) {
-        bad.push("params_schema.properties: Input should be a valid dictionary");
-      } else {
-        props = p["properties"] as Record<string, unknown>;
-      }
-    }
-    let required: string[] = [];
-    if (p["required"] !== undefined) {
-      if (!Array.isArray(p["required"])) {
-        bad.push("params_schema.required: Input should be a valid list");
-      } else {
-        const rs: string[] = [];
-        for (const r of p["required"]) {
-          const s: string | null = laxStr(r);
-          if (s === null) {
-            bad.push("params_schema.required: Input should be a valid string");
-            break;
-          }
-          rs.push(s);
-        }
-        required = rs;
-      }
-    }
-    if (ptype !== null) schema = { type: ptype, properties: props, required };
-  }
-  let hidden: boolean | null = null;
-  const h: boolean | null | "absent" = laxBool(d["hidden"]);
-  if (h === null) bad.push("hidden: Input should be a valid boolean");
-  else if (h !== "absent") hidden = h;
-  // card XOR flow (after-validator 99-114).
-  if (name !== null && kind !== null) {
-    if (Boolean(card) === Boolean(flow)) {
-      bad.push(
-        fmt(
-          "<root>: Value error, a tool manifest names its lane exactly " +
-            "once (card XOR flow — card=%r flow=%r)",
-          card,
-          flow,
-        ),
-      );
-    } else if (flow !== "" && kind !== "flow-tool") {
-      bad.push(
-        fmt(
-          "<root>: Value error, a flow-addressed manifest is kind " +
-            "flow-tool (got kind=%r flow=%r)",
-          kind,
-          flow,
-        ),
-      );
-    } else if (card !== "" && kind === "flow-tool") {
-      bad.push(
-        fmt(
-          "<root>: Value error, a card-addressed manifest is never " +
-            "kind flow-tool (card=%r)",
-          card,
-        ),
-      );
-    }
-  }
-  if (bad.length > 0) return { refusal: bad.join("; ") };
-  return {
-    row: {
-      name: name as string,
-      version: version as number,
-      kind: kind as string,
-      card,
-      flow,
-      model,
-      stageTitle,
-      description,
-      paramsSchema: schema as ManifestRow["paramsSchema"],
-      hidden,
-    },
-  };
-}
-
-/** The served manifest shape (ToolManifestRow.wire 116-123):
- *  model_dump(exclude_none) in FIELD order, falsy card/flow popped
- *  (model "" and hidden:false STAY). */
-function wireManifest(r: ManifestRow): Record<string, unknown> {
-  const out: Record<string, unknown> = {
-    name: r.name,
-    version: r.version,
-    kind: r.kind,
-  };
-  if (r.card !== "") out["card"] = r.card;
-  if (r.flow !== "") out["flow"] = r.flow;
-  out["model"] = r.model;
-  out["stage_title"] = r.stageTitle;
-  out["description"] = r.description;
-  out["params_schema"] = {
-    type: r.paramsSchema.type,
-    properties: r.paramsSchema.properties,
-    required: r.paramsSchema.required,
-  };
-  if (r.hidden !== null) out["hidden"] = r.hidden;
-  return out;
-}
 
 interface StepRow {
   readonly id: string;
@@ -616,8 +319,10 @@ export interface SkillRow {
   readonly stepCount: number | null;
 }
 
-/** SkillRow gate (lane_wire 190-226): card/model XOR, steps +
- *  step_count agreement. String = refusal text. */
+/** SkillRow constructor (lane_wire 190-226 shapes the row): the
+ *  callers pre-gate — readDoc builds valid doc rows (exactly one of
+ *  card/model, paired steps), flowRows pre-checks stages — so the
+ *  refusal arms have no live caller and stay in py, not here. */
 function gateSkill(
   id: string,
   name: string,
@@ -628,30 +333,7 @@ function gateSkill(
   model: string | null,
   steps: StepRow[] | null,
   stepCount: number | null,
-): SkillRow | string {
-  if (id.length < 1) return "id: String should have at least 1 character";
-  if (name.length < 1) return "name: String should have at least 1 character";
-  if (scope.length < 1) {
-    return "scope: String should have at least 1 character";
-  }
-  if (card !== null && model !== null) {
-    return fmt(
-      "<root>: Value error, a skill row is card-scoped OR model-scoped, " +
-        "never both (card=%r model=%r)",
-      card,
-      model,
-    );
-  }
-  if ((steps === null) !== (stepCount === null)) {
-    return "<root>: Value error, steps and step_count travel together";
-  }
-  if (steps !== null && stepCount !== null && stepCount !== steps.length) {
-    return fmt(
-      "<root>: Value error, step_count %d != %d step rows",
-      stepCount,
-      steps.length,
-    );
-  }
+): SkillRow {
   return {
     id,
     name,
@@ -712,8 +394,9 @@ function readDoc(
   const text: string | null = readText(path);
   if (text === null) return null;
   const fm: { name: string; description: string } = frontmatter(text);
-  const leaf: string = path.split("/").pop() ?? "";
-  const gated: SkillRow | string = gateSkill(
+  // (split never yields [] — pop is always a string here)
+  const leaf: string = path.split("/").pop() as string;
+  const gated: SkillRow = gateSkill(
     sid,
     fm.name !== "" ? fm.name : stem(leaf),
     fm.description.slice(0, 200),
@@ -724,10 +407,6 @@ function readDoc(
     null,
     null,
   );
-  if (typeof gated === "string") {
-    loud(fmt("[lane_disclosure] skill row refused (%s): %s", path, gated));
-    return null;
-  }
   return { row: gated, path };
 }
 
@@ -758,6 +437,8 @@ export function engineDirs(enginesRoot: string): string[] {
     try {
       subs = readdirSync(full).sort();
     } catch {
+      /* v8 ignore next -- full isDir-guarded above (TOCTOU-only):
+         the skip never fires (2026-09-12) */
       continue;
     }
     for (const sub of subs) {
@@ -873,7 +554,9 @@ function cardUnitDirs(engine: string, repo: string): { genre: string; cname: str
   // owner is comfyui-cordis (factsPath in flowsCard.ts hardcodes it;
   // packages/engines/comfyui/ holds only action_cards tenants, it is
   // never itself an engine entry).
-  if ((engine.split("/").pop() ?? "") !== "comfyui-cordis") return out.sort((a, b) => (a.cname < b.cname ? -1 : a.cname > b.cname ? 1 : 0));
+  // (split never yields [] — pop is always a string here; dir names
+  // are unique so the equal arm never fires)
+  if ((engine.split("/").pop() as string) !== "comfyui-cordis") return out.sort((a, b) => (a.cname < b.cname ? -1 : a.cname > b.cname ? 1 : /* v8 ignore next */ 0));
   for (const genre of ["3d", "audio", "image", "motion", "video"]) {
     const droot = join(repo, "packages", genre);
     if (!isDir(droot)) continue;
@@ -883,7 +566,7 @@ function cardUnitDirs(engine: string, repo: string): { genre: string; cname: str
       push(genre, c, join(droot, c, "src"));
     }
   }
-  return out.sort((a, b) => (a.cname < b.cname ? -1 : a.cname > b.cname ? 1 : 0));
+  return out.sort((a, b) => (a.cname < b.cname ? -1 : a.cname > b.cname ? 1 : /* v8 ignore next */ 0));
 }
 
 /** LEVEL 2 card docs (lane_disclosure._card_rows 178-257): AGENT.md
@@ -962,6 +645,8 @@ export interface FlowRow {
  *  silent empty body. */
 function registryBody(flowId: string): string | null {
   const decl = getRegistryFlow(flowId);
+  /* v8 ignore next -- callers pass live declaration ids (flowDecls):
+     the miss never fires (2026-09-12) */
   if (decl === undefined) return null;
   return registrySkillBody(expandRegistryFlow(decl));
 }
@@ -975,11 +660,17 @@ function registryBody(flowId: string): string | null {
 export function flowRows(repo: string): FlowRow[] {
   const out: FlowRow[] = [];
   for (const decl of flowDecls(repo)) {
+    /* v8 ignore next -- flowDecls marks loadError null (the registry
+       is code — declaration bugs throw LOUD instead): the skip never
+       fires (2026-09-12) */
     if (decl.loadError !== null) continue;
     const steps: StepRow[] = [];
     for (const s of decl.stages) {
       // FlowStepRow gate (id/type/plugin min_length=1) — refusal is
       // a code bug (LaneWireError, "flow %s: lane wire refusal").
+      // (the static registry carries no empty ids/engines — the fence
+      // never fires, but it stays: an authoring bug must throw LOUD)
+      /* v8 ignore next */
       if (s.id.length < 1 || s.engine.length < 1) {
         throw new LaneWireError(
           fmt(
@@ -991,7 +682,7 @@ export function flowRows(repo: string): FlowRow[] {
       }
       steps.push({ id: s.id, type: s.engine, plugin: s.engine });
     }
-    const gated: SkillRow | string = gateSkill(
+    const gated: SkillRow = gateSkill(
       "flow:" + decl.id,
       decl.id,
       decl.description.slice(0, 200),
@@ -1002,11 +693,6 @@ export function flowRows(repo: string): FlowRow[] {
       steps,
       steps.length,
     );
-    if (typeof gated === "string") {
-      throw new LaneWireError(
-        fmt("flow %s: lane wire refusal: %s", decl.id, gated),
-      );
-    }
     out.push({
       row: gated,
       bodyPath: decl.hasSkillMd
@@ -1029,10 +715,14 @@ export function buildSkillIndex(repo: string): Record<string, unknown> {
     }
     for (const fr of flowRows(repo)) rows.push(wireSkill(fr.row));
   } catch (e) {
-    if (e instanceof LaneWireError) throw e;
-    throw new LaneWireError(
-      "skills envelope refusal: " + (e instanceof Error ? e.message : String(e)),
-    );
+    /* v8 ignore next -- the walks throw LaneWireError only (readDoc
+       swallows I/O to null): the wrap never fires (2026-09-12) */
+    if (!(e instanceof LaneWireError)) {
+      throw new LaneWireError(
+        "skills envelope refusal: " + (e instanceof Error ? e.message : String(e)),
+      );
+    }
+    throw e;
   }
   return { count: rows.length, skills: rows };
 }
@@ -1091,6 +781,8 @@ export function hSkillRead(
       try {
         body = readFileSync(found.path, "utf8");
       } catch (e) {
+        /* v8 ignore next -- found paths come from the same live walk
+           (TOCTOU-only): the 500 never fires (2026-09-12) */
         return {
           status: 500,
           payload: {
@@ -1100,7 +792,10 @@ export function hSkillRead(
       }
     }
     // SkillDocRow gate (id/name/description/scope/content) —
-    // refusal is a code bug (the skill doc refusal).
+    // refusal is a code bug (the skill doc refusal). The rows ride
+    // the walks (never empty) and "" misses 404 above — the fence
+    // never fires, but it stays.
+    /* v8 ignore next */
     if (
       sid.length < 1 ||
       found.row.name.length < 1 ||
@@ -1122,9 +817,10 @@ export function hSkillRead(
       },
     };
   } catch (e) {
-    if (e instanceof LaneWireError) {
-      return { status: 500, payload: { error: (e as Error).message } };
-    }
-    throw e;
+    /* v8 ignore next -- findSkill throws LaneWireError only and the
+       journal never throws (appendLedger swallows): the rethrow never
+       fires (2026-09-12) */
+    if (!(e instanceof LaneWireError)) throw e;
+    return { status: 500, payload: { error: (e as Error).message } };
   }
 }

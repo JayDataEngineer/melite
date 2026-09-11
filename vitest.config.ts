@@ -244,7 +244,12 @@ export default defineConfig({
         // (same named-file precedent as mask-studio's agents/tools).
         'packages/engines/comfyui-cordis/src/cli.ts',
         'packages/engines/comfyui-cordis/src/dump-registry.ts',
-        'packages/harness/**/src/**/*.{ts,tsx}',
+        // harness closed (2026-09-12, §TEST-16): every file at
+        // per-file 100 — the queue core + runs registry/validate/
+        // start/list planes + cards/flows/skill/load/manage planes +
+        // registries + rails + service/index/resurrect seams. No
+        // process-boundary files in the tree: the exemption row is
+        // GONE, nothing replaces it.
         // The estate tree is FULLY gated (2026-09-11, §TEST-8 grew it
         // to manage/media/runs + drafts index/spec/store/remote; §TEST-9
         // closed the last file-exempt — the drafts bench engine — at

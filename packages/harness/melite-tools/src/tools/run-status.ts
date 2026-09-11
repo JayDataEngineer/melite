@@ -99,21 +99,29 @@ export function runStatus(request: EstateRequest): ToolDefinition {
         if (v && v.error) {
           return [{ type: 'text', text: 'run ' + String(v.run_id ?? '?') + ' ' + String(v.status ?? '?') + ' — ' + v.error }]
         }
-        const done = (v.stages ?? []).filter(s => s && s.status === 'completed').length
-        const total = (v.stages ?? []).length
+        const stages = v.stages ?? []
+        const artifacts = v.artifacts ?? []
+        const done = stages.filter(s => s && s.status === 'completed').length
+        const total = stages.length
         const pos = typeof v.queue_position === 'number' && v.queue_position > 0
           ? ' (queue #' + v.queue_position + ')' : ''
         return [{
           type: 'text',
           text: 'run ' + String(v.run_id ?? '?') + ' ' + String(v.status ?? '?') + pos
             + ' — ' + done + '/' + total + ' stage(s)'
-            + ((v.artifacts ?? []).length ? ' · ' + (v.artifacts ?? []).length + ' artifact(s)' : ''),
+            // hoisted above: the consequent's second ?? could never see
+            // nullish (length-truthy implies defined) — same text (2026-09-12).
+            + (artifacts.length ? ' · ' + artifacts.length + ' artifact(s)' : ''),
         }]
       },
     },
     async execute(args, exec): Promise<RunStatusResult> {
-      const a = (typeof args === "object" && args !== null ? args : {}) as { runId?: unknown }
-      const runId = typeof a.runId === 'string' ? a.runId : ''
+      // defineTool input validation runs in the wrapper BEFORE the body
+      // (invalid args throw ToolArgsError there) — args is always a
+      // defined object and runId a required string here, so honest casts
+      // ride instead of gate-dead typeof fallbacks (2026-09-12).
+      const a = args as { runId?: unknown }
+      const runId = a.runId as string
       if (!runId) return jsonClean({ error: 'runId is required' }) as RunStatusResult
       let res: Record<string, unknown>
       try {
@@ -138,7 +146,9 @@ export function runStatus(request: EstateRequest): ToolDefinition {
         status: typeof res.status === 'string' ? res.status : 'unknown',
         stages: Array.isArray(res.stages) ? res.stages : [],
         artifacts: Array.isArray(res.artifacts) ? res.artifacts : [],
-        error: typeof res.error === 'string' ? res.error : undefined,
+        // The res.error string returns at the refusal above — error rides
+        // undefined on success by construction, never a second copy (2026-09-12).
+        error: undefined,
         queue_position: typeof res.queue_position === 'number' ? res.queue_position : 0,
       }) as RunStatusResult
     },

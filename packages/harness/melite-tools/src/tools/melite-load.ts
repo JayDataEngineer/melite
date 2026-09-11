@@ -96,9 +96,15 @@ export function meliteLoad(request: EstateRequest): ToolDefinition {
       },
     },
     async execute(args, exec): Promise<LoadResult> {
-      const a = (args ?? {}) as { name?: unknown; inference_type?: unknown }
-      const name = typeof a.name === 'string' ? a.name : '';
-      const inferenceType = typeof a.inference_type === 'string' ? a.inference_type : '';
+      // defineTool input validation runs in the wrapper BEFORE the body
+      // (invalid args throw ToolArgsError there) — args is always a
+      // defined object here, so no nullish fallback exists to cover;
+      // name/inference_type are required strings in parameters, so the
+      // wrapper gate guarantees strings at the body and honest casts
+      // ride instead of gate-dead typeof fallbacks (2026-09-12).
+      const a = args as { name?: unknown; inference_type?: unknown }
+      const name = a.name as string;
+      const inferenceType = a.inference_type as string;
       if (!name) return jsonClean<LoadResult>({ error: 'name is required (discover it first)', name, inference_type: inferenceType });
       if (inferenceType !== 'card' && inferenceType !== 'flow') {
         return jsonClean<LoadResult>({ error: 'inference_type must be card|flow — a card or a flow tool call; nothing else executes', name, inference_type: inferenceType });

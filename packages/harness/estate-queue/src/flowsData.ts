@@ -1046,9 +1046,10 @@ function checkFileInitial(
       "POST /v1/uploads, then pass its staged path"
     );
   }
-  const dot: number = raw.split(/[?#]/)[0]?.lastIndexOf(".") ?? -1;
+  // (split never yields [] — [0] is always a string here)
+  const dot: number = (raw.split(/[?#]/)[0] as string).lastIndexOf(".");
   const ext: string = dot >= 0
-    ? (raw.split(/[?#]/)[0]?.slice(dot + 1).toLowerCase() ?? "")
+    ? (raw.split(/[?#]/)[0] as string).slice(dot + 1).toLowerCase()
     : "";
   // The vocab is TYPED DATA now (mediaKinds.ts, REBUILD-7) — no
   // repo-anchored kindsPath read survives the re-home.
@@ -1147,6 +1148,8 @@ function edgeText(edge: RegistryEdge, flow: RegistryFlow): string {
 }
 
 function resolveLink(st: RegistryStage): RegistryStage | null {
+  /* v8 ignore next -- both callers guard st.fromFlow !== null before
+     the call: the fence never fires (2026-09-12) */
   if (st.fromFlow === null) return null;
   const link: RegistryFromFlow = st.fromFlow;
   const src: RegistryFlow | undefined = REGISTRY[link.flow];

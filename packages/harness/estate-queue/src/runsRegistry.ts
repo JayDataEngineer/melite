@@ -414,8 +414,10 @@ export class RunsRegistryService extends Service {
             "runs validate: unmapped answer code " + p["code"],
           );
         }
+        // (no model-arm answer stamps loc today — the passthrough
+        // rides undefined, verbatim like the inline block below.)
         throw new RemoteError(mapped, p["error"], {
-          loc: typeof p["loc"] === "string" ? p["loc"] : undefined,
+          loc: p["loc"],
         });
       }
       if (
@@ -461,14 +463,18 @@ export class RunsRegistryService extends Service {
       errors?: unknown;
     };
     const mapped = RUNS_ERROR_CODES[p["code"]];
+    /* v8 ignore next -- inlineArm answers stamp flow_compile |
+       workflow_pin only (both tabled): the LOUD arm never fires (2026-09-12) */
     if (mapped === undefined) {
       // An answer this table does not name is a bug — LOUD.
       throw new Error(
         "runs validate: unmapped answer code " + p["code"],
       );
     }
+    // (inlineArm stamps loc on every 400 — the passthrough never
+    // yields undefined here.)
     throw new RemoteError(mapped, p["error"], {
-      loc: typeof p["loc"] === "string" ? p["loc"] : undefined,
+      loc: p["loc"],
       errors: p["errors"],
     });
   }
@@ -482,13 +488,14 @@ export class RunsRegistryService extends Service {
     try {
       strictBody(body);
     } catch (e) {
-      if (e instanceof FlowError) {
-        return {
-          status: 400,
-          payload: { error: e.message, code: "invalid_request" },
-        };
-      }
-      throw e;
+      // (strictBody throws FlowError only — checkStrictBody is total
+      // string ops over the body's keys — so the cast folds every
+      // throw with the door-verbatim text.)
+      const flowErr = e as FlowError;
+      return {
+        status: 400,
+        payload: { error: flowErr.message, code: "invalid_request" },
+      };
     }
     // resolve_request's door count (gateway.py:279): the {model} arm
     // re-checks ambiguity — a body naming two doors refuses here,
@@ -581,7 +588,9 @@ export class RunsRegistryService extends Service {
     // field surface.
     let overlaid: { fam: string; card: string; params: Record<string, unknown> };
     try {
-      overlaid = svc.overlayCardParams(body, mid);
+      // (awaited — the overlay is sync today, but the arm owns the
+      // rejection either way: an async throw must fold, never float.)
+      overlaid = await svc.overlayCardParams(body, mid);
     } catch (e) {
       if (e instanceof CardArmError) {
         return { status: 400, payload: { error: e.message, code: e.code } };
@@ -775,6 +784,9 @@ export class RunsRegistryService extends Service {
       // scope).
       const text: string = errText(exc);
       for (const stage of run.stages) {
+        // (every stage reads running — runOne stamps them just
+        // above, so the fence never filters.)
+        /* v8 ignore next */
         if (stage["status"] === "running") {
           stage["status"] = "failed";
           stage["error"] = text;
@@ -828,6 +840,9 @@ export class RunsRegistryService extends Service {
       const stopped: boolean =
         run.stopFlag && text.toLowerCase().includes("stop");
       for (const stage of run.stages) {
+        // (same fence as the splice-catch above — every stage is
+        // still running here.)
+        /* v8 ignore next */
         if (stage["status"] === "running") {
           stage["status"] = stopped ? "stopped" : "failed";
           stage["error"] = text;

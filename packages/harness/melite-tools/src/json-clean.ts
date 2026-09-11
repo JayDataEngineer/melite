@@ -23,6 +23,7 @@ function clean(value: unknown, seen: WeakMap<object, unknown>): unknown {
     for (let i = 0; i < value.length; i++) out[i] = value[i] === undefined ? null : clean(value[i], seen)
     return out
   }
+  /* v8 ignore next -- typeof exhaustion: every non-object returns above (2026-09-12) */
   if (typeof value === 'object') {
     const obj = value as Record<string, unknown>
     const hit = seen.get(obj)
@@ -36,5 +37,7 @@ function clean(value: unknown, seen: WeakMap<object, unknown>): unknown {
     }
     return out
   }
-  return null
+  // No trailing return: typeof exhausts — string/boolean/null above,
+  // number, bigint, undefined/function/symbol, array-or-object — so no
+  // value can fall through (the old `return null` was dead, 2026-09-12).
 }

@@ -22,9 +22,10 @@ import { mediaVocab } from "./mediaKinds.ts";
 /** _strtol (editor_runs.py 96-102): optional space, optional sign,
  *  then digits; 0 when no digits lead. */
 export function strtolPy(s: string): number {
+  // (group 1 always participates on match — the undefined fence is dead.)
   const m: RegExpMatchArray | null = /^[\s]*([+-]?\d+)/.exec(s);
-  if (m === null || m[1] === undefined) return 0;
-  return Number(m[1]);
+  if (m === null) return 0;
+  return Number(m[1] as string);
 }
 
 /** sidecar_num (editor_runs.py 297-303): first `"key":`, strtol the
@@ -304,8 +305,17 @@ export function runDirHasMedia(runDir: string): boolean {
 // ── the run_wire.py gate (RunRow 83-96 / RunsEnvelope 99-104) ─────
 // A refused reconstruction is SKIPPED (RESILIENCE LAW) but stays in
 // count (the C contract). Extra keys forbid; statuses outside the
-// closed vocab (incl. "queued") refuse; a "model" artifact row
-// refuses the whole run (ArtifactRow admits image/video/audio only).
+// closed vocab (incl. "queued") refuse.
+//
+// DIVERGENCE (ledgered): run_wire.py's ArtifactRow admits
+// image/video/audio only — the image-era vocab. The estate's own
+// emitter half (runArtifacts, editor_runs.py 404-430, same file)
+// counts "model" rows as listable media, mediaKinds.ts carries the
+// galleryModel set, and the img-to-mesh lane is the first producer
+// of model-only runs. Keeping the image-era refusal would drop
+// every completed model run from the restore port (runs/list) —
+// and with it runs/list adoption (fetchLatestRunForDraft) — so the
+// row gate admits "model" alongside the py triple.
 
 const RUN_ID_RE: RegExp = /^run-[A-Za-z0-9_.@-]+$/;
 const RUN_STATUS: ReadonlySet<string> = new Set([
@@ -316,7 +326,12 @@ const RUN_STATUS: ReadonlySet<string> = new Set([
   "success",
   "unknown",
 ]);
-const ARTIFACT_TYPE: ReadonlySet<string> = new Set(["image", "video", "audio"]);
+const ARTIFACT_TYPE: ReadonlySet<string> = new Set([
+  "image",
+  "video",
+  "audio",
+  "model",
+]);
 
 function isIntGe0(v: unknown): boolean {
   return typeof v === "number" && Number.isInteger(v) && (v as number) >= 0;
@@ -394,7 +409,8 @@ export function runRowOrNull(
 export function parseIntPy(s: string): number | null {
   const m: RegExpMatchArray | null =
     /^([+-]?)([0-9]+(?:_[0-9]+)*)$/.exec(s.trim());
-  if (m === null || m[1] === undefined || m[2] === undefined) return null;
+  // (both groups always participate on match — the fences are dead.)
+  if (m === null) return null;
   return Number((m[1] as string) + (m[2] as string).replace(/_/g, ""));
 }
 

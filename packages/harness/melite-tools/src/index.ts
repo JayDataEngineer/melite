@@ -186,24 +186,9 @@ export async function apply(ctx: Context, config: Config = {}): Promise<void> {
     c.tools.register(runStatus(request))
   }
 
-  // The host default model, read LIVE (2026-09-06 — the door serves
-  // the USER'S default, never first-breathing by registration order).
-  // agentDefaultModel is the host's own service (settings → Models);
-  // absent on an alien host → undefined → the core refuses loudly
-  // (no llm named, no default) instead of walking. Never throws.
-  const readDefaultLlm = (): string | undefined => {
-    try {
-      const svc = (c as unknown as { get(name: string): unknown }).get('agentDefaultModel') as
-        | { currentSelection?: () => { provider?: unknown; model?: unknown } }
-        | null
-        | undefined
-      const sel = svc?.currentSelection?.()
-      if (typeof sel?.provider === 'string' && typeof sel?.model === 'string') {
-        return sel.provider + '/' + sel.model
-      }
-    } catch { /* no default service — loud refusal downstream, never a walk */ }
-    return undefined
-  }
+  // (2026-09-12: the readDefaultLlm copy that lived here is deleted —
+  // zero callers since the enhance seams needing ctx.llm moved to
+  // src/doors.ts with the routes; doors.ts carries the live copy.)
 
   // THE CARD PACKAGE TOOL FACES — direct composition, one builder per
   // card package (the same Config.gateway spelling every tool face

@@ -170,7 +170,11 @@ export function comfyManage(request: EstateRequest): ToolDefinition {
       },
     },
     async execute(args, exec): Promise<ManageResult> {
-      const a = (args ?? {}) as Record<string, unknown>
+      // defineTool input validation runs in the wrapper BEFORE the body
+      // (invalid args throw ToolArgsError there) — args is always a
+      // defined object here, so no nullish fallback exists to cover
+      // (2026-09-12).
+      const a = args as Record<string, unknown>
       // forward only declared fields — the SSOT envelope is extra=forbid
       const body: Record<string, unknown> = { action: a.action }
       for (const k of ['nodes', 'url', 'relative_path', 'filename', 'model',
@@ -185,7 +189,9 @@ export function comfyManage(request: EstateRequest): ToolDefinition {
       // kept the HTTP leg burning). A missing exec is a harness
       // miswire and refuses loud, never silently degrades.
       if (exec?.signal === undefined) {
-        return jsonClean<ManageResult>({ ok: false, action: String(a.action ?? '?'), detail: 'comfy_manage miswire: no execution context signal — the host runtime must pass exec' })
+        // action is a required enum string — the wrapper gate guarantees
+        // a string at the body, so no nullish fallback rides (2026-09-12).
+        return jsonClean<ManageResult>({ ok: false, action: String(a.action), detail: 'comfy_manage miswire: no execution context signal — the host runtime must pass exec' })
       }
       try {
         res = await request( 'POST', '/v1/manage', body,

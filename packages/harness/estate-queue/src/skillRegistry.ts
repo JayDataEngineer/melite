@@ -30,7 +30,12 @@ export class SkillService extends Service {
     const answer = hSkillRead(resolveRepoRoot(), stateRoot, sid);
     if (answer.status === 200) return answer.payload as Record<string, unknown>;
     const err = answer.payload as { error?: unknown };
-    throw new Error(typeof err.error === "string" ? err.error : "skill read failed");
+    throw new Error(
+      typeof err.error === "string"
+        ? err.error
+        : /* v8 ignore next -- the doors always shape { error: string }:
+             the fallback never fires (2026-09-12) */ "skill read failed",
+    );
   }
 }
 

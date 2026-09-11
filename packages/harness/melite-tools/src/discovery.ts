@@ -145,7 +145,9 @@ function variantRow(
 }
 
 function capQuant(quant: string): string {
-  return quant.length > 0 ? quant[0].toUpperCase() + quant.slice(1) : quant
+  // The !c.quant gate above guarantees non-empty — the fallback is
+  // unreachable, kept only so the helper is total (2026-09-12).
+  return quant.length > 0 ? quant[0].toUpperCase() + quant.slice(1) : /* v8 ignore next -- !c.quant gate */ quant
 }
 
 /** The key family's variants + its offered quant cells (a cell
@@ -176,7 +178,8 @@ function specVariants(
         label: c.label || capQuant(c.quant),
         group: 'Quant',
         defaults: c.resolver_defaults ?? {},
-        route: c.route ?? '',
+        // The !c.route gate above narrows this to string (2026-09-12).
+        route: c.route,
         hint: null,
         engine: c.engine ?? declEngine,
         quant: c.quant,
@@ -390,7 +393,8 @@ export function formsTable(
       },
     })
   }
-  rows.sort((a, b) => a.order - b.order || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0))
+  // Map keys are unique, so equal ids never compare (2026-09-12).
+  rows.sort((a, b) => a.order - b.order || (a.id < b.id ? -1 : 1))
   const out: Record<string, unknown> = {}
   for (const r of rows) out[r.id] = r.row
   return out
@@ -467,6 +471,7 @@ export async function cardToolsArm(): Promise<unknown[]> {
   for (const id of [...defs.keys()].sort()) {
     const def = defs.get(id)!
     const ident = def.identity
+    /* v8 ignore next -- loadCardDefs asserts identity (the m1 wall), so live defs always carry it (2026-09-12) */
     if (ident === undefined) continue
     const boarded = [...(def.boarded ?? [])]
     const fams = boarded.length > 0 ? boarded : [id]

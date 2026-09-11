@@ -92,17 +92,22 @@ export function skillRead(request: EstateRequest): ToolDefinition {
       },
     },
     async execute(args, exec): Promise<SkillReadResult> {
-      const a = (typeof args === "object" && args !== null ? args : {}) as { id?: unknown }
-      if (typeof a.id !== 'string' || a.id.length === 0) {
+      // defineTool input validation runs in the wrapper BEFORE the body
+      // (invalid args throw ToolArgsError there) — args is always a
+      // defined object and id a required string here, so honest casts
+      // ride instead of gate-dead typeof fallbacks (2026-09-12).
+      const a = args as { id?: unknown }
+      const id = a.id as string
+      if (id.length === 0) {
         throw new Error('skill_read: "id" is required (a skill id string from skill_index)')
       }
       // Unknown ids arrive as RayGatewayError with the gateway's 404 body
       // VERBATIM - let it propagate; that IS the honest answer.
-      const res = await request( 'GET', '/v1/skills/' + encodeURIComponent(a.id),
+      const res = await request( 'GET', '/v1/skills/' + encodeURIComponent(id),
         undefined, exec.signal, READ_TIMEOUT_MS,
       ) as Record<string, unknown>
       return jsonClean({
-        id: res.id ?? a.id,
+        id: res.id ?? id,
         name: res.name ?? null,
         description: res.description ?? null,
         genre: res.genre ?? null,

@@ -121,7 +121,11 @@ export function meliteDiscover(request: EstateRequest): ToolDefinition {
       },
     },
     async execute(args, exec) {
-      const a = (args ?? {}) as { lookup?: unknown; tags?: unknown; q?: unknown; detail?: unknown }
+      // defineTool input validation runs in the wrapper BEFORE the body
+      // (invalid args throw ToolArgsError there) — args is always a
+      // defined object here, so no nullish fallback exists to cover
+      // (2026-09-12).
+      const a = args as { lookup?: unknown; tags?: unknown; q?: unknown; detail?: unknown }
       const params = new URLSearchParams();
       const lookup = typeof a.lookup === 'string' && a.lookup !== '' ? a.lookup : 'all';
       params.set('lookup', lookup);

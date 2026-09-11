@@ -7,8 +7,8 @@
  * Every field completion rides the harness model via llm-complete.ts —
  * no keystore, no "no model".
  */
-import { makeEstateRequest } from './estate.ts'
 import type { EstateRequest } from './estate.ts'
+import { formSpecArm } from './discovery.ts'
 import { harnessEnhance } from './llm-complete.ts'
 
 const FORMSPEC_TIMEOUT_MS = 15_000
@@ -24,6 +24,20 @@ export interface DeclaredFields {
   names: string[]
 }
 
+/** Map a form-spec envelope onto its declared recipes (the ONE
+ *  spelling — the request lane and the in-process sweep share it). */
+export function declaredFieldsFromSpec(spec: FormSpecShape): DeclaredFields {
+  let fields: Record<string, string> = {}
+  if (spec.enhance_prompts !== null && typeof spec.enhance_prompts === 'object' && !Array.isArray(spec.enhance_prompts)) {
+    for (const [k, v] of Object.entries(spec.enhance_prompts as Record<string, unknown>)) {
+      if (typeof v === 'string' && v.length > 0) fields[k] = v
+    }
+  } else if (typeof spec.enhance_prompt === 'string' && spec.enhance_prompt.length > 0) {
+    fields = { prompt: spec.enhance_prompt }
+  }
+  return { fields, names: Object.keys(fields) }
+}
+
 /** Read the model's declared recipes straight off the form-spec SSOT. */
 export async function fetchDeclaredFields(
   request: EstateRequest,
@@ -34,15 +48,7 @@ export async function fetchDeclaredFields(
     undefined, signal, FORMSPEC_TIMEOUT_MS,
   ) as FormSpecShape
 
-  let fields: Record<string, string> = {}
-  if (spec.enhance_prompts !== null && typeof spec.enhance_prompts === 'object' && !Array.isArray(spec.enhance_prompts)) {
-    for (const [k, v] of Object.entries(spec.enhance_prompts as Record<string, unknown>)) {
-      if (typeof v === 'string' && v.length > 0) fields[k] = v
-    }
-  } else if (typeof spec.enhance_prompt === 'string' && spec.enhance_prompt.length > 0) {
-    fields = { prompt: spec.enhance_prompt }
-  }
-  return { fields, names: Object.keys(fields) }
+  return declaredFieldsFromSpec(spec)
 }
 
 export interface FieldResult {
@@ -98,8 +104,18 @@ export async function agenticSweep(
   llm: LlmSeam,
   opts: { model: string; prompt: string; temperature?: number; signal: AbortSignal; llmWant?: string; defaultLlm?: string },
 ): Promise<{ model: string; results: Record<string, FieldResult> }> {
-  const request = makeEstateRequest(ctx)
-  const { fields } = await fetchDeclaredFields(request, opts.model, opts.signal)
+  // The sweep reads the form-spec SSOT IN-PROCESS (2026-09-12 fix:
+  // the old makeEstateRequest lane served no GET /v1/form-spec seat,
+  // so EVERY sweep 502'd "no remote serves" — the seat plane carries
+  // flows/bench/runs/manage/skills/load/ledger, never discovery).
+  // Unknown keys refuse loud, same body as the HTTP door.
+  // ctx stays in the call shape (the doors sweep passes its host
+  // context, as before) but no seat lane is consulted.
+  const spec = await formSpecArm(opts.model)
+  if (spec === null) {
+    throw new Error(`enhance: '${opts.model}' does not resolve (unknown, unoffered, or retired)`)
+  }
+  const { fields } = declaredFieldsFromSpec(spec)
   let names = Object.keys(fields)
   if (names.length === 0) names = ['prompt']
   if (names.length === 1 && fields[names[0]] === undefined) {

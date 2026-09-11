@@ -106,7 +106,9 @@ export function compileFlowInline(
       );
     }
     const st: Record<string, unknown> = checked.st;
-    const sid: string = String(st["id"] ?? "");
+    // (the bad-id gate above refuses id-less stages — the id is a
+    // string here.)
+    const sid: string = st["id"] as string;
     const engine: string = String(st["engine"] ?? "");
     if (engine === "") {
       return refusal(
@@ -136,7 +138,8 @@ export function compileFlowInline(
         "preview_scope",
       );
     }
-    if (st["card"] !== undefined && String(st["card"] ?? "") !== "") {
+    // (the undefined guard above fired — the ?? below is dead.)
+    if (st["card"] !== undefined && String(st["card"]) !== "") {
       return refusal(
         400,
         "flow_inline stage " +

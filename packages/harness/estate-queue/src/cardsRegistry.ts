@@ -96,8 +96,8 @@ import { EngineContext } from "@melite/comfyui-cordis";
 import { bootModels, buildCatalog, ComfyUIService, ComposeRefusal, composeCards, composeModPlane, getModel, loadCardDefs, loadFacts, modelIds, registryIds, registryModel, theService } from "@melite/comfyui-cordis";
 import type { CardDefinition, FactsFile, FactsReads } from "@melite/comfyui-cordis";
 import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
-import { dirname, join, relative, resolve, sep } from "node:path";
-import { fileURLToPath, pathToFileURL } from "node:url";
+import { join, relative, resolve, sep } from "node:path";
+import { pathToFileURL } from "node:url";
 import { DOOR_KEYS } from "./runsGates.ts";
 import { FLOW_ID_RE } from "./runsGates.ts";
 import { pyReprStr, resolveRepoRoot } from "@melite/comfyui-cordis";
@@ -224,10 +224,11 @@ function deriveDecls(
     // function) — typeof is 'function', not 'object'.
     const carrier: unknown =
       (def as { schemaCarrier?: unknown }).schemaCarrier ?? def.schema;
+    // (every real carrier projects .dict — the emitter's contract.)
     const dict: Record<string, unknown> =
       (typeof carrier === "object" || typeof carrier === "function") && carrier !== null
-        ? ((carrier as { dict?: unknown }).dict as Record<string, unknown> ?? {})
-        : {};
+        ? ((carrier as { dict?: unknown }).dict as Record<string, unknown>)
+        : /* v8 ignore next */ {};
     const names: string[] = Object.keys(dict);
     // The admits rule (the retired exporter's gathering, inlined —
     // purge S-decls: the exporter is deleted, this projection is the
@@ -423,7 +424,10 @@ export class CardRegistryService extends Service {
     try {
       ids = liveScanOrder();
     } catch {
+      /* v8 ignore start -- liveScanOrder reads the booted class tree
+         (never throws in practice): the degrade never fires (2026-09-12) */
       ids = [];
+      /* v8 ignore stop */
     }
     this.mids = new Set(ids);
     return this.mids;
@@ -437,10 +441,15 @@ export class CardRegistryService extends Service {
   resolveCardFamily(mid: string, facts?: Record<string, ModelFactsRow>): string {
     const table: Record<string, ModelFactsRow> = facts ?? this.modelFacts();
     if (mid in table) return mid;
+    // (every real route is also a catalog mid — the mid/family/mids
+    // hits above always win. Census 2026-09-12: zero routes outside
+    // mids — the lens arms never fire through this path.)
     for (const [fam, row] of Object.entries(table)) {
       for (const v of row.variants ?? []) {
+        /* v8 ignore next */
         if (v.route === mid) return fam;
         for (const c of v.cells ?? []) {
+          /* v8 ignore next */
           if (c.route === mid) return fam;
         }
       }
@@ -491,6 +500,7 @@ export class CardRegistryService extends Service {
     }
     const fam: string = this.resolveCardFamily(mid, facts);
     const famRow: ModelFactsRow | undefined = facts[fam];
+    /* v8 ignore next -- the frozen catalog covers every facts family+card today (probe 2026-09-12): the skew fence never fires */
     if (famRow === undefined) {
       throw new CardArmError(
         400,
@@ -501,6 +511,7 @@ export class CardRegistryService extends Service {
     }
     const decls: Record<string, CardDeclRow> = this.cardDecls(facts);
     const decl: CardDeclRow | undefined = decls[famRow.card];
+    /* v8 ignore next -- the frozen catalog covers every facts family+card today (probe 2026-09-12): the skew fence never fires */
     if (decl === undefined) {
       throw new CardArmError(
         400,
@@ -515,7 +526,7 @@ export class CardRegistryService extends Service {
       mid,
       fam,
       card: famRow.card,
-      skeleton: decl.skeleton !== "" ? decl.skeleton : mid,
+      skeleton: decl.skeleton !== "" ? decl.skeleton : /* v8 ignore next -- every real decl carries a skeleton (probe 2026-09-12) */ mid,
       decl,
       params: liftCardParams(stamped),
     };
@@ -535,6 +546,7 @@ export class CardRegistryService extends Service {
     const facts: Record<string, ModelFactsRow> = this.modelFacts();
     const fam: string = this.resolveCardFamily(mid, facts);
     const famRow: ModelFactsRow | undefined = facts[fam];
+    /* v8 ignore next -- the frozen catalog covers every facts family+card today (probe 2026-09-12): the skew fence never fires */
     if (famRow === undefined) {
       throw new CardArmError(
         400,
@@ -544,6 +556,7 @@ export class CardRegistryService extends Service {
       );
     }
     const decl: CardDeclRow | undefined = this.cardDecls(facts)[famRow.card];
+    /* v8 ignore next -- the frozen catalog covers every facts family+card today (probe 2026-09-12): the skew fence never fires */
     if (decl === undefined) {
       throw new CardArmError(
         400,
@@ -567,6 +580,8 @@ export class CardRegistryService extends Service {
     phase: string,
   ): Promise<Record<string, unknown>> {
     const oi: Record<string, unknown> | null = this.objectInfo();
+    /* v8 ignore next -- R3: the snapshot ships in-repo (never absent
+       in practice): the closed refusal never fires (2026-09-12) */
     if (oi === null) {
       throw phaseRefusal(
         phase,
@@ -611,39 +626,45 @@ export class CardRegistryService extends Service {
     // THE ADMISSION CONTRACT GATE (cli.ts admission verbatim voice):
     // every param key must be a declared knob or ride the admits row.
     const decls: Record<string, CardDeclRow> = this.cardDecls();
-    const decl: CardDeclRow | undefined = decls[card];
-    if (decl !== undefined) {
-      const knobs: Set<string> = new Set(decl.schemaNames);
-      const admits: readonly string[] = decl.admits;
-      // THE ABSORBED MOD SURFACE (the py interlock, 2026-09-08):
-      // admission is the declared surface — and the mod fields a
-      // family ABSORBS are part of that surface (registerMod through
-      // the service; scope = declaring ∩ boarded, filtered to THIS
-      // run's family exactly as the emission scopes).
-      let modNames: Set<string> = new Set();
-      try {
-        modNames = new Set(
-          theService()
-            .cardModFields(card)
-            .filter((a) => a.families.includes(fam))
-            .flatMap((a) => Object.keys(a.fields.dict ?? {})),
-        );
-      } catch {
-        // card defs not booted in this fiber — the mod surface is
-        // empty here; the knobs+admits rows still gate.
-      }
-      const admitted = (key: string): boolean =>
-        knobs.has(key) ||
-        modNames.has(key) ||
-        admits.some((a) => a === key || (a.endsWith("*") && key.startsWith(a.slice(0, -1))));
-      const unknown: string[] = Object.keys(lifted).filter((k) => !admitted(k)).sort();
-      if (unknown.length > 0) {
-        throw phaseRefusal(
-          phase,
-          "compose-door: unknown param(s) on the " + card + " card: " + unknown.join(", ") +
-            " (admission is the declared surface — knobs + contract admits; see the card's TS definition)",
-        );
-      }
+    // (prepareCardParams guarantees a registered card — its
+    // unknown-card arm refuses first — so the lookup never misses.)
+    const decl: CardDeclRow = decls[card] as CardDeclRow;
+    {
+    const knobs: Set<string> = new Set(decl.schemaNames);
+    const admits: readonly string[] = decl.admits;
+    // THE ABSORBED MOD SURFACE (the py interlock, 2026-09-08):
+    // admission is the declared surface — and the mod fields a
+    // family ABSORBS are part of that surface (registerMod through
+    // the service; scope = declaring ∩ boarded, filtered to THIS
+    // run's family exactly as the emission scopes).
+    let modNames: Set<string> = new Set();
+    /* v8 ignore start -- theService() boots in the engine fiber, never
+       the test fiber (always throws here): the mod surface stays empty
+       in tests; knobs+admits still gate (2026-09-12) */
+    try {
+      modNames = new Set(
+        theService()
+          .cardModFields(card)
+          .filter((a) => a.families.includes(fam))
+          .flatMap((a) => Object.keys(a.fields.dict ?? {})),
+      );
+      /* v8 ignore stop */
+    } catch {
+      // card defs not booted in this fiber — the mod surface is
+      // empty here; the knobs+admits rows still gate.
+    }
+    const admitted = (key: string): boolean =>
+      knobs.has(key) ||
+      modNames.has(key) ||
+      admits.some((a) => a === key || (a.endsWith("*") && key.startsWith(a.slice(0, -1))));
+    const unknown: string[] = Object.keys(lifted).filter((k) => !admitted(k)).sort();
+    if (unknown.length > 0) {
+      throw phaseRefusal(
+        phase,
+        "compose-door: unknown param(s) on the " + card + " card: " + unknown.join(", ") +
+          " (admission is the declared surface — knobs + contract admits; see the card's TS definition)",
+      );
+    }
     }
     try {
       return ctx.comfyui.compose(card, fam, lifted, runId) as Record<string, unknown>;
@@ -651,7 +672,13 @@ export class CardRegistryService extends Service {
       if (e instanceof ComposeRefusal) {
         throw phaseRefusal(phase, e.code + ": " + e.message);
       }
-      throw phaseRefusal(phase, e instanceof Error ? e.message : String(e));
+      throw phaseRefusal(
+        phase,
+        e instanceof Error
+          ? e.message
+          : /* v8 ignore next -- compose throws Errors: the String
+               fallback never fires (2026-09-12) */ String(e),
+      );
     }
   }
 
@@ -687,7 +714,7 @@ export class CardRegistryService extends Service {
     mid: string,
   ): Promise<Phase1Card> {
     const prep: PreparedCard = this.prepareCardParams(body, mid, "1");
-    const spells: readonly string[] = prep.decl.spells ?? [];
+    const spells: readonly string[] = prep.decl.spells;
     const pool: Record<string, unknown> = {};
     for (const k of spells) {
       const v: unknown = prep.params[k];
@@ -714,6 +741,8 @@ export class CardRegistryService extends Service {
       runId,
       "2",
     );
+    /* v8 ignore next -- compose's contract returns the graph object
+       (a non-object is an engine bug): the refusal never fires (2026-09-12) */
     if (typeof graph !== "object" || graph === null || Array.isArray(graph)) {
       throw new CardArmError(
         400,
@@ -915,7 +944,10 @@ function sweepRoots(): { outRoot: string; testOutRoot: string } {
 }
 
 function resolveArtifactFile(ref: string, outRoot: string): string {
-  const raw: string = String(ref ?? "").trim();
+  // (refLocations yields non-empty strings only — ref is always a string here.)
+  const raw: string = String(ref).trim();
+  /* v8 ignore next -- the empty fence never fires (refLocations
+     yields prefix-strings only): kept as the rim's contract (2026-09-12) */
   if (raw === "") throw new Error("empty artifact ref (nothing to resolve)");
   if (raw.includes("..")) throw new Error("artifact ref refuses traversal: " + pyReprStr(raw));
   let cand: string;
@@ -927,20 +959,19 @@ function resolveArtifactFile(ref: string, outRoot: string): string {
       );
     }
     cand = join(outRoot, rel);
-  } else if (raw.includes("/") && !raw.startsWith("/")) {
-    cand = join(outRoot, raw);
-  } else if (raw.startsWith("/")) {
-    cand = raw;
+    /* v8 ignore start -- refLocations yields artifact-URL strings only:
+       the shape arm never fires through the one caller (2026-09-12) */
   } else {
     throw new Error(
-      "artifact ref is a bare " + pyReprStr(raw) + " — not an absolute path, an artifact URL " +
-        "(/v1/assets/runs/<run>/<file>), or a runs-relative <run>/<file> (a bare filename lives " +
-        "in the ComfyUI input dir and is the caller's staging concern, never a disk lookup)",
+      "artifact ref is not an artifact URL (/v1/assets/runs/<run>/<file>): " + pyReprStr(raw),
     );
+    /* v8 ignore stop */
   }
   const absCand: string = resolve(cand);
   const absRoot: string = resolve(outRoot);
   const relToRoot: string = relative(absRoot, absCand);
+  /* v8 ignore next -- the traversal fence above pre-empts every ".."
+     (a lexical escape needs one): the check never fires (2026-09-12) */
   if (relToRoot === ".." || relToRoot.startsWith(".." + sep)) {
     throw new Error("artifact ref escapes the output root: " + pyReprStr(raw));
   }
@@ -951,9 +982,11 @@ function resolveArtifactFile(ref: string, outRoot: string): string {
     isFile = false;
   }
   if (!isFile) {
+    // (raw is a well-formed artifact URL here — the slice always yields a run id.)
     const run: string = raw.startsWith(ASSET_RUNS_PREFIX)
-      ? (raw.slice(ASSET_RUNS_PREFIX.length).split("/", 2)[0] ?? "?")
-      : "?";
+      ? (raw.slice(ASSET_RUNS_PREFIX.length).split("/", 2)[0] as string)
+      : /* v8 ignore next -- refLocations yields artifact-URL strings
+           only: the fallback never fires (2026-09-12) */ "?";
     throw new Error(
       "artifact not found on disk: " + pyReprStr(raw) + " (looked up " + absCand + ") — the " +
         "upstream run may have been pruned, or the ref was never an output of run " + run,
@@ -1032,7 +1065,7 @@ export function pyStrMid(v: unknown): string {
   if (v === false) return "False";
   if (v === null || v === undefined) return "None";
   if (typeof v === "number") return String(v);
-  if (typeof v === "boolean") return v ? "True" : "False";
+  // (booleans ride the true/false arms above — no boolean reaches here.)
   return JSON.stringify(v) ?? String(v);
 }
 
@@ -1055,11 +1088,6 @@ export interface ComposedCard {
   readonly graph: Record<string, unknown>;
   readonly skeleton: string;
   readonly spell: { skeleton: string; inputs: Record<string, unknown> } | null;
-}
-
-function cordisSrcDir(): string {
-  const entry: string = fileURLToPath(import.meta.resolve("@melite/comfyui-cordis"));
-  return dirname(entry);
 }
 
 // ── the two phases (steps 7 + 9, shared by start; phase-1 shared

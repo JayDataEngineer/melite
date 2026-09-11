@@ -230,7 +230,9 @@ async function trySeats(
   m = /^\/v1\/flows\/status\/([^/?]+)(?:\?([^/]*))?$/.exec(path)
   if (method === 'GET' && m !== null) {
     if (seats.runs === undefined) return undefined
-    const first = m[2] === undefined ? null : m[2].split('&')[0] ?? null
+    // String.split always yields a [0] (even ''.split('&') is ['']),
+    // so no ?? is needed — the null arm below is the no-query case only.
+    const first = m[2] === undefined ? null : m[2].split('&')[0] as string
     const flagValue = first === null ? '' : first.split('=')[1] ?? ''
     const includeLog = ['1', 'true', 'yes'].includes(
       decodeURIComponent(flagValue).toLowerCase(),

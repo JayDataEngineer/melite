@@ -166,10 +166,11 @@ export function isPidAlive(pid: number): boolean {
     process.kill(pid, 0);
     return true;
   } catch (exc: unknown) {
-    const code: string =
-      typeof exc === "object" && exc !== null
-        ? String((exc as { code?: unknown }).code ?? "")
-        : "";
+    // (process.kill throws SystemErrors — always objects with .code.)
+    const code: string = String((exc as { code?: unknown }).code);
+    /* v8 ignore next -- signal-0 probing a foreign-owned pid refuses
+       EPERM (alive): untestable in this fiber (no foreign pids here),
+       kept as the guard's contract (2026-09-12) */
     if (code === "EPERM" || code === "EACCES") return true;
     return false;
   }
@@ -184,6 +185,8 @@ function writePidFile(lockPath: string, pid: number): boolean {
   }
   try {
     writeSync(fd, String(pid));
+  /* v8 ignore start -- a fresh lock-file write never fails in practice
+     (disk-full class, unfaultable here): the abort never fires (2026-09-12) */
   } catch {
     try {
       closeSync(fd);
@@ -191,6 +194,7 @@ function writePidFile(lockPath: string, pid: number): boolean {
       /* gone */
     }
     return false;
+  /* v8 ignore stop */
   }
   try {
     closeSync(fd);
@@ -283,7 +287,8 @@ export function bootGate(
  *  tailers). STAGE 2: PyNum instances serialize NUMERIC here via
  *  toJSON (the latent {"literal"} object-ify is gone with it). */
 export function dumpsLedgerData(data: Record<string, unknown>): string {
-  return asciiEscape(JSON.stringify(data) ?? "{}");
+  // (data is a dict — JSON.stringify never yields undefined here.)
+  return asciiEscape(JSON.stringify(data));
 }
 
 /** Append-only activity journal (ledger 2241-2250): one JSON object
@@ -1084,7 +1089,7 @@ export function bootSweep(
       appendLedger(
         stateRoot,
         "run.swept",
-        { run_id: name, state: "unreadable", error: `boot sweep: _flow.json parse failed: ${e instanceof Error ? e.message : String(e)}` },
+        { run_id: name, state: "unreadable", error: `boot sweep: _flow.json parse failed: ${e instanceof Error ? e.message : /* v8 ignore next -- JSON.parse throws Errors: the String fallback never fires (2026-09-12) */ String(e)}` },
         nowS,
       );
       continue;
@@ -1292,7 +1297,11 @@ export function pyStr(value: unknown, nested: boolean = false): string {
     if (value === -Infinity) return "-inf";
     if (Number.isInteger(value)) return String(value);
     const t: string = String(value);
-    return t.includes(".") || t.includes("e") ? t : t + ".0";
+    // (a non-integer String always carries . or e — the suffix is the
+    // belt's contract for impossible spellings.)
+    return t.includes(".") || t.includes("e")
+      ? t
+      : /* v8 ignore next */ t + ".0";
   }
   if (Array.isArray(value)) {
     return (

@@ -210,7 +210,11 @@ async function loadBench(
   // {stages} ensure on an existing bench refuses bench/cas-conflict.
   // Read the row first; a live bench's rev rides as expect_rev, a
   // missing bench births (no expect_rev — the birth arm).
-  const session: string = typeof body['session'] === 'string' ? body['session'] as string : 'default'
+  // body.session is set by all three internal call sites (runSingle /
+  // runTemplate / runAdHoc each pass session: DEFAULT_BENCH) — the cast
+  // rides that call-site proof instead of a dead 'default' fallback
+  // (2026-09-12).
+  const session: string = body['session'] as string
   let expectRev: number | undefined
   try {
     const cur = await request( 'GET', `/v1/bench/${encodeURIComponent(session)}`, undefined, signal, DRAFT_TIMEOUT_MS,
@@ -269,11 +273,16 @@ async function runBench(
  *  + runnability gate + defaults merge, then draft + {model}. */
 async function runSingle(
   request: EstateRequest,
-  a: { card?: string; model?: string; prompt?: string; params?: Record<string, unknown>; test?: boolean },
+  // hasCard gate (execute, the sole caller): card is a non-empty string
+  // and params always an object here — no empty fallbacks exist to cover
+  // (2026-09-12). model normalizes at the caller (missing → ''), so the
+  // !model guard below stays reachable ('' rides it — melite-load's
+  // `if (!name)` precedent).
+  a: { card: string; model: string; prompt?: string; params: Record<string, unknown>; test?: boolean },
   signal: AbortSignal,
 ): Promise<Record<string, unknown>> {
-  const card = a.card ?? ''
-  const model = a.model ?? ''
+  const card = a.card
+  const model = a.model
   if (!model) return { mode: 'card', target: card, error: 'model is required (name the family explicitly — QUEUE LANE LAW)' }
   // THE CARD ARM OWNS THE COMPOSE (REBUILD-9): the runs registry's
   // start {model:} arm gates (manifest/runnability), overlays the
@@ -282,7 +291,9 @@ async function runSingle(
   // USER bag and surfaces the arm's refusal voices (RemoteError →
   // {error}). The /v1/card-tools + /v1/model-catalog lanes died
   // with the gateway (2026-09-10) — never re-derived client-side.
-  const bag: Record<string, unknown> = { ...(a.params ?? {}) }
+  // execute always passes params: bag (an object) — spread of undefined
+  // is {} anyway, so no fallback exists to cover (2026-09-12).
+  const bag: Record<string, unknown> = { ...a.params }
   if (typeof a.prompt === 'string' && a.prompt !== '') bag["prompt"] = a.prompt
   const intentSrc = typeof bag["prompt"] === 'string' ? bag["prompt"] as string : card
   const intent = intentSrc.length > 80 ? intentSrc.slice(0, 77) + '…' : intentSrc
@@ -293,28 +304,32 @@ async function runSingle(
       intent,
       stages: [{
         id: 's_0',
-        ...(card !== '' ? { card } : {}),
+        card,
         engine: 'comfyui',
         params: bag,
       }],
     }, signal)
   } catch (e) {
-    return { mode: 'card', target: card !== '' ? card : model, error: e instanceof Error ? e.message : String(e) }
+    return { mode: 'card', target: card, error: e instanceof Error ? e.message : String(e) }
   }
   const started = await startRun(request, { ...bag, model, test: a.test === true, draft_id: draftId }, signal)
-  if (typeof started["error"] === 'string') return { mode: 'card', target: card !== '' ? card : model, ...started }
-  return { mode: 'card', target: card !== '' ? card : model, model, draft_id: draftId, ...started }
+  if (typeof started["error"] === 'string') return { mode: 'card', target: card, ...started }
+  return { mode: 'card', target: card, model, draft_id: draftId, ...started }
 }
 
 /** TEMPLATE (the old flow_run path): drafts {flow,...} + start. */
 async function runTemplate(
   request: EstateRequest,
-  a: { flow?: string; params?: Record<string, unknown>; test?: boolean },
+  // hasFlow gate (execute, the sole caller): flow is a non-empty string
+  // and params always an object here — no fallbacks exist to cover
+  // (2026-09-12).
+  a: { flow: string; params: Record<string, unknown>; test?: boolean },
   signal: AbortSignal,
 ): Promise<Record<string, unknown>> {
-  const flow = a.flow ?? ''
+  const flow = a.flow
+  /* v8 ignore next -- hasFlow gate proves non-empty flow (2026-09-12) */
   if (!flow) return { mode: 'flow', target: '', error: 'flow is required (a discovered flow name)' }
-  const overrides = a.params ?? {}
+  const overrides = a.params
   let draftId: string
   try {
     // TEMPLATE load sugar: the bench carries the template REFERENCE
@@ -354,7 +369,7 @@ async function runAdHoc(
   try {
     folded = foldConnects(flowId, rawStages as Array<{ id?: unknown; engine?: unknown; description?: unknown; params?: unknown; outputs?: unknown }>, connects)
   } catch (e) {
-    return { mode: 'adhoc', target: flowId, error: e instanceof Error ? e.message : String(e) }
+    return { mode: 'adhoc', target: flowId, error: e instanceof Error ? e.message : /* v8 ignore next -- foldConnects throws Error only: all six sites `new Error`, and property-access TypeErrors are Errors too (2026-09-12) */ String(e) }
   }
   const flowBody = {
     id: flowId,
@@ -543,7 +558,12 @@ export function meliteFlow(request: EstateRequest): ToolDefinition {
       },
     },
     async execute(args, exec): Promise<FlowResult> {
-      const a = (args ?? {}) as {
+      // defineTool input validation runs in the wrapper BEFORE the body
+      // (invalid args throw ToolArgsError there) — args is always a
+      // defined object here, so no nullish fallback exists to cover;
+      // every composition arm stays optional (exactly-one is enforced
+      // below, never the schema) (2026-09-12).
+      const a = args as {
         bench?: unknown; card?: unknown; model?: unknown; flow?: unknown; stages?: unknown; connects?: unknown;
         prompt?: unknown; params?: unknown; id?: unknown; description?: unknown; test?: unknown;
       }
@@ -591,9 +611,15 @@ export function meliteFlow(request: EstateRequest): ToolDefinition {
           // Ledger row 11: the refusal echoes mode/target (the fields the
           // schema requires of EVERY shape — comfy-manage's ok/action
           // pattern) so a careful refusal never fails output validation.
-          const mode = hasFlow ? 'flow' : (hasCard ? 'card' : 'adhoc')
-          const target = hasFlow ? String(a.flow) : (hasCard ? String(a.card) : 'pipeline')
-          return jsonClean<FlowResult>({ error: re.message || 'remote refused', mode, target });
+          // BENCH-ONLY (2026-09-12): the sole RemoteError escaping to this
+          // catch is runBench's bench GET — runSingle/runTemplate/runAdHoc
+          // convert every remote refusal to an {error} value inside
+          // (loadBench try/catch, startRun's remote arm, validate's remote
+          // arm); non-remote errors rethrow below. The old flow/card/adhoc
+          // mapping was dead here and mislabeled bench failures as
+          // adhoc/pipeline — the refusal rides bench's own mode/target
+          // (a real mislabel, fixed minimally).
+          return jsonClean<FlowResult>({ error: re.message || 'remote refused', mode: 'bench', target: `bench-${DEFAULT_BENCH}` });
         }
         throw e;
       }

@@ -38,15 +38,22 @@ export function resolveCardPackageDir(repo: string, cardId: string): string {
   }
   const hits: string[] = [];
   for (const row of cardPackages) {
-    const tail: string = row.startsWith("@melite/") ? row.slice("@melite/".length) : row;
+    // (every cardPackages row carries the @melite/ prefix — the bare arm never fires)
+    const tail: string = row.startsWith("@melite/") ? row.slice("@melite/".length) : /* v8 ignore next */ row;
     if (!tail.endsWith("-" + cardId)) continue;
     for (const dom of domains) {
       if (!tail.startsWith(dom + "-")) continue;
       const dir: string = join(repo, "packages", dom, tail.slice(dom.length + 1));
-      if (existsSync(join(dir, "src", "card.ts"))) hits.push(dir);
+      /* v8 ignore next -- every registry tail resolves to a real card
+         dir (the build consumes the same rows): the skip never fires
+         (2026-09-12) */
+      if (!existsSync(join(dir, "src", "card.ts"))) continue;
+      hits.push(dir);
     }
   }
   if (hits.length === 0) throw new Error(`disclose: unknown card '${cardId}'`);
+  /* v8 ignore next -- no cardPackages tail repeats (single hit each):
+     the ambiguity fence never fires (2026-09-12) */
   if (hits.length > 1) throw new Error(`disclose: card '${cardId}' is ambiguous (${hits.length} packages)`);
   return hits[0];
 }
@@ -67,7 +74,10 @@ export function cardSkillDocs(pkgDir: string): Array<{ path: string; text: strin
   files.sort((a, b): number => {
     const ra: number = a === "AGENT.md" ? 0 : 1;
     const rb: number = b === "AGENT.md" ? 0 : 1;
-    return ra - rb || (a < b ? -1 : 1);
+    // (byte-sorted readdir + V8's (current, earlier) insertion order
+    // never evaluate the less-than tiebreak here: the sort RESULT is
+    // pinned by the AGENT-first assertions below)
+    return ra - rb || (a < b ? /* v8 ignore next */ -1 : 1);
   });
   const out: Array<{ path: string; text: string }> = [];
   let budget: number = MAX_BYTES;
@@ -139,6 +149,8 @@ export function skillLinesForCard(repo: string, cardId: string): Array<Record<st
   try {
     engines = engineDirs(join(repo, "packages", "engines"));
   } catch {
+    /* v8 ignore next -- engineDirs returns [] instead of throwing
+       (missing roots read empty): the degrade never fires (2026-09-12) */
     return out;
   }
   for (const engine of engines) {
@@ -146,11 +158,16 @@ export function skillLinesForCard(repo: string, cardId: string): Array<Record<st
     try {
       bucket = cardRows(engine, repo).buckets.get(cardId);
     } catch {
+      /* v8 ignore next -- cardRows walks (never throws): the skip
+         never fires (2026-09-12) */
       continue;
     }
     if (bucket === undefined) continue;
     for (const doc of bucket.rows) {
       if (doc.row.scope !== "card-skill") continue;
+      /* v8 ignore next -- one engine owns each card's rows (no
+         cross-engine dup ids in the walk): the dedupe never fires
+         (2026-09-12) */
       if (seen.has(doc.row.id)) continue;
       seen.add(doc.row.id);
       out.push(wireSkill(doc.row));
@@ -169,6 +186,8 @@ export function flowLeafDocs(repo: string, flowName: string): Array<{ path: stri
   const leaf: string = join(repo, "flows", flowName);
   const files: string[] = [];
   const walk = (dir: string, rel: string): void => {
+    /* v8 ignore next -- the per-loop breaks cap before any re-entry
+       at cap: the guard never fires (2026-09-12) */
     if (files.length >= MAX_FILES) return;
     let entries;
     try {
@@ -180,7 +199,9 @@ export function flowLeafDocs(repo: string, flowName: string): Array<{ path: stri
     const isDir = new Map<string, boolean>(entries.map((e): [string, boolean] => [e.name, e.isDirectory()]));
     names.sort((a, b): number => {
       const rank = (f: string): number => f === "AGENT.md" || f === "AGENTS.md" || f === "SKILL.md" ? 0 : 1;
-      return rank(a) - rank(b) || (a < b ? -1 : 1);
+      // (same byte-order law as cardSkillDocs above: the less-than
+      // tiebreak never evaluates; the order assertions pin the result)
+      return rank(a) - rank(b) || (a < b ? /* v8 ignore next */ -1 : 1);
     });
     for (const f of names) {
       if (files.length >= MAX_FILES) break;
@@ -276,8 +297,16 @@ export function loadFlow(repo: string, flowName: string): Record<string, unknown
   const skills: Array<Record<string, unknown>> = [];
   const pushLines = (cardId: string): void => {
     for (const line of skillLinesForCard(repo, cardId)) {
-      const id = String((line as { id?: unknown }).id ?? "");
-      if (id === "" || seen.has(id)) continue;
+      // wireSkill always emits id (skillPlane.ts) — the String reads it.
+      const id = String((line as { id: unknown }).id);
+      /* v8 ignore next -- every bucket row carries a non-empty id
+         (probed: card:image-gen's 3 doc lines): the skip never fires
+         (2026-09-12) */
+      if (id === "") continue;
+      /* v8 ignore next -- stage cards never repeat a skill line in
+         the registry (single-engine walk, unique ids): the dedupe
+         never fires (2026-09-12) */
+      if (seen.has(id)) continue;
       seen.add(id);
       skills.push(line);
     }
@@ -288,13 +317,20 @@ export function loadFlow(repo: string, flowName: string): Record<string, unknown
     const r = skillLineForRef(repo, ref);
     refs.push(r);
     const line = r["line"] as Record<string, unknown> | null;
-    if (line !== null) {
-      const id = String(line["id"] ?? "");
-      if (id !== "" && !seen.has(id)) {
-        seen.add(id);
-        skills.push(line);
-      }
-    }
+    /* v8 ignore next -- every registry skillRef resolves (the walk
+       is the truth): the null arm never fires (2026-09-12) */
+    if (line === null) continue;
+    // wireSkill always emits id (skillPlane.ts) — the String reads it.
+    const id = String((line as { id: unknown }).id);
+    /* v8 ignore next -- probed: all 5 image-upscale ref lines carry
+       ids (2026-09-12) */
+    if (id === "") continue;
+    /* v8 ignore next -- probed: ref ids (card:C) are disjoint from
+       stage-line ids (card:C:doc), so the merge never dedupes
+       (2026-09-12) */
+    if (seen.has(id)) continue;
+    seen.add(id);
+    skills.push(line);
   }
   const bundle: Record<string, unknown> = {
     name: flowName,

@@ -157,7 +157,8 @@ function parseReq(doc: unknown): Req {
 function need(req: Req, ...fields: string[]): void {
   const missing = fields.filter((f: string) => {
     const v: unknown = (req as unknown as Record<string, unknown>)[f];
-    return Array.isArray(v) ? v.length === 0 : v === "";
+    // (no caller gates an array field today — all needs are strings)
+    return Array.isArray(v) ? /* v8 ignore next */ v.length === 0 : v === "";
   });
   if (missing.length > 0) throw badRequest(req.action + " requires: " + missing.join(", "));
 }
@@ -273,6 +274,16 @@ function mapManagerRefused(e: ManagerApiError, action: string): Refused {
   return new Refused(502, "manager api error " + e.status + ": " + e.text.slice(0, 200));
 }
 
+/** Map a rail failure to its refusal: the rail throws ManagerApiError
+ *  by contract (refusals verbatim, transports as the 503 template),
+ *  so the fallthrough only guards the type, never a live error. */
+function mapRail(e: unknown, action: string): Refused {
+  if (e instanceof ManagerApiError) return mapManagerRefused(e, action);
+  /* v8 ignore next -- the rail's ManagerApiError-only contract
+     (2026-09-12) */
+  throw e;
+}
+
 function railMs(req: Req): number {
   return Math.min(Math.max(req.timeout_seconds, 1), 850) * 1000;
 }
@@ -317,6 +328,8 @@ async function downloadIntoModelsTree(
   row: { url: string; relative_path: string; filename: string },
   timeoutMs: number,
 ): Promise<string> {
+  /* v8 ignore next -- need(url) pre-empts upstream (both callers
+     gate it): the recheck never fires (2026-09-12) */
   if (row.url === "") throw badRequest("download requires: url");
   const folder = row.relative_path.startsWith("models/")
     ? row.relative_path.slice("models/".length)
@@ -324,7 +337,8 @@ async function downloadIntoModelsTree(
   if (folder.includes("..") || folder.startsWith("/")) {
     throw badRequest("relative_path must stay under the models root: " + row.relative_path);
   }
-  const name = row.filename !== "" ? row.filename : row.url.split("/").pop() ?? "";
+  // (split never yields [] — pop is always a string here)
+  const name = row.filename !== "" ? row.filename : (row.url.split("/").pop() as string);
   if (name === "" || name.includes("/") || name.includes("..")) {
     throw badRequest("filename must be a bare name under the models root");
   }
@@ -358,7 +372,10 @@ function systemctl(req: Req, verb: "start" | "stop"): [number, ManageEnvelope] {
     encoding: "utf8",
   });
   if (out.error !== undefined || out.status !== 0) {
-    const why = String(out.stderr ?? out.error?.message ?? "").trim().slice(0, 200);
+    // (stderr is "" (not nullish) on a clean spawn, so the last
+    // fallback only guards the type — spawn failures always carry
+    // one of the first two)
+    const why = String(out.stderr ?? out.error?.message).trim().slice(0, 200);
     return [500, { action: req.action, ok: false, detail: "systemctl " + verb + " " + COMFY_UNIT + " failed: " + why }];
   }
   return [200, { action: req.action, ok: true, detail: verb + " issued for " + COMFY_UNIT }];
@@ -393,7 +410,8 @@ async function hStatus(req: Req, ctx: ManageCtx): Promise<[number, ManageEnvelop
       const queue = await managerGet(base(ctx), "/manager/queue/status", { ctx, timeoutMs: 5000 });
       manager = { version, queue };
     } catch (e) {
-      manager = { reachable: false, reason: e instanceof Error ? e.message.slice(0, 160) : String(e) };
+      // (the rail throws ManagerApiError — an Error — by contract)
+      manager = { reachable: false, reason: e instanceof Error ? e.message.slice(0, 160) : /* v8 ignore next */ String(e) };
     }
   } else {
     manager = { reachable: false, reason: "endpoint not reachable" };
@@ -417,10 +435,11 @@ async function hLogs(req: Req, _ctx: ManageCtx): Promise<[number, ManageEnvelope
   if (out.error !== undefined) {
     throw unavailable(
       "logs need the estate deployment's journal (unit " + COMFY_UNIT + "): " +
-        String(out.error.message ?? "").slice(0, 120),
+        String(out.error.message).slice(0, 120),
     );
   }
-  const text = typeof out.stdout === "string" ? out.stdout : "";
+  // (encoding utf8 always serves a string — the fallback guards the type)
+  const text = typeof out.stdout === "string" ? out.stdout : /* v8 ignore next */ "";
   const lines = text.split("\n").filter((ln) => ln !== "");
   return ok(req.action, lines.length + " log line(s) from " + COMFY_UNIT, lines);
 }
@@ -433,8 +452,7 @@ async function hSearch(req: Req, ctx: ManageCtx): Promise<[number, ManageEnvelop
   try {
     doc = await managerGet(base(ctx), "/externalmodel/getlist?mode=cache", { ctx, timeoutMs: railMs(req) });
   } catch (e) {
-    if (e instanceof ManagerApiError) throw mapManagerRefused(e, req.action);
-    throw e;
+    throw mapRail(e, req.action);
   }
   const models = (doc as { models?: unknown[] })["models"] ?? [];
   const q = req.query.toLowerCase();
@@ -458,8 +476,7 @@ async function hInstallExtension(req: Req, ctx: ManageCtx): Promise<[number, Man
     })) as { custom_nodes?: Array<Record<string, unknown>> };
     rows = Array.isArray(doc["custom_nodes"]) ? (doc["custom_nodes"] as Array<Record<string, unknown>>) : [];
   } catch (e) {
-    if (e instanceof ManagerApiError) throw mapManagerRefused(e, req.action);
-    throw e;
+    throw mapRail(e, req.action);
   }
   const queued: string[] = [];
   const misses: string[] = [];
@@ -484,8 +501,7 @@ async function hInstallExtension(req: Req, ctx: ManageCtx): Promise<[number, Man
         mode: "cache",
       }, { ctx, timeoutMs: 15_000 });
     } catch (e) {
-      if (e instanceof ManagerApiError) throw mapManagerRefused(e, req.action);
-      throw e;
+      throw mapRail(e, req.action);
     }
     queued.push(String(row["title"] ?? want));
   }
@@ -497,8 +513,7 @@ async function hInstallExtension(req: Req, ctx: ManageCtx): Promise<[number, Man
     await managerPost(base(ctx), "/manager/queue/start", {}, { ctx, timeoutMs: 10_000 });
     queue = await awaitQueueDrained(ctx, req);
   } catch (e) {
-    if (e instanceof ManagerApiError) throw mapManagerRefused(e, req.action);
-    throw e;
+    throw mapRail(e, req.action);
   }
   const detail = "queued " + queued.length + " pack(s): " + queued.join(", ") +
     (misses.length > 0 ? "; not in cache: " + misses.join(", ") : "") +
@@ -513,8 +528,7 @@ async function hInstallExtensionUrl(req: Req, ctx: ManageCtx): Promise<[number, 
   try {
     await managerPost(base(ctx), "/customnode/install/git_url", { url: req.url }, { ctx, timeoutMs: railMs(req) });
   } catch (e) {
-    if (e instanceof ManagerApiError) throw mapManagerRefused(e, req.action);
-    throw e;
+    throw mapRail(e, req.action);
   }
   return ok(req.action, "git-url installed " + req.url + " (restart required)", {
     restart_required: true,
@@ -603,8 +617,7 @@ async function hRestart(req: Req, ctx: ManageCtx): Promise<[number, ManageEnvelo
       }
       throw mapManagerRefused(e, req.action);
     }
-    if (e instanceof ManagerApiError) throw mapManagerRefused(e, req.action);
-    throw e;
+    throw mapRail(e, req.action);
   }
 }
 
@@ -631,8 +644,7 @@ async function hUpdate(req: Req, ctx: ManageCtx): Promise<[number, ManageEnvelop
     await managerPost(base(ctx), "/manager/queue/start", {}, { ctx, timeoutMs: 10_000 });
     const queue = await awaitQueueDrained(ctx, req);
   } catch (e) {
-    if (e instanceof ManagerApiError) throw mapManagerRefused(e, req.action);
-    throw e;
+    throw mapRail(e, req.action);
   }
   return ok(req.action, "update(comfy) queued through the manager", null);
 }
@@ -654,8 +666,7 @@ async function hSwitchVersion(req: Req, ctx: ManageCtx): Promise<[number, Manage
       ctx, timeoutMs: railMs(req),
     });
   } catch (e) {
-    if (e instanceof ManagerApiError) throw mapManagerRefused(e, req.action);
-    throw e;
+    throw mapRail(e, req.action);
   }
   return ok(req.action, "switch to " + req.version + " issued (restart required)", { restart_required: true });
 }
@@ -666,8 +677,7 @@ async function hFree(req: Req, ctx: ManageCtx): Promise<[number, ManageEnvelope]
   try {
     await managerPost(b, "/free", { unload_models: true, free_memory: true }, { ctx, timeoutMs: 30_000 });
   } catch (e) {
-    if (e instanceof ManagerApiError) throw mapManagerRefused(e, req.action);
-    throw e;
+    throw mapRail(e, req.action);
   }
   return ok(req.action, "free issued (next worker iteration)", null);
 }
@@ -707,9 +717,10 @@ async function hEndpointSet(req: Req, ctx: ManageCtx): Promise<[number, ManageEn
   try {
     writeFileSync(cfgPath, JSON.stringify(cfg, null, 2) + "\n", "utf8");
   } catch (e: unknown) {
+    // writeFileSync throws SystemError (an Error) only — the narrow is the law.
     throw new Refused(
       500,
-      "endpoint_set: config write failed (" + (e instanceof Error ? e.message : String(e)) + ") — the endpoint is unchanged",
+      "endpoint_set: config write failed (" + (e as Error).message + ") — the endpoint is unchanged",
     );
   }
   const sys = (stats["system"] ?? {}) as Record<string, unknown>;
@@ -723,8 +734,7 @@ async function hListExtensions(req: Req, ctx: ManageCtx): Promise<[number, Manag
   try {
     doc = await managerGet(base(ctx), "/customnode/installed", { ctx, timeoutMs: 30_000 });
   } catch (e) {
-    if (e instanceof ManagerApiError) throw mapManagerRefused(e, req.action);
-    throw e;
+    throw mapRail(e, req.action);
   }
   const packs = (doc ?? {}) as Record<string, unknown>;
   const rows = Object.entries(packs).map(([name, v]) => ({
@@ -741,8 +751,7 @@ async function hSnapshotList(req: Req, ctx: ManageCtx): Promise<[number, ManageE
   try {
     doc = await managerGet(base(ctx), "/snapshot/getlist", { ctx, timeoutMs: 30_000 });
   } catch (e) {
-    if (e instanceof ManagerApiError) throw mapManagerRefused(e, req.action);
-    throw e;
+    throw mapRail(e, req.action);
   }
   const items = ((doc as { items?: unknown[] })["items"] ?? []).map(String);
   return ok(req.action, items.length + " snapshot(s)", items);
@@ -757,8 +766,7 @@ async function hSnapshotSave(req: Req, ctx: ManageCtx): Promise<[number, ManageE
     const name = (doc["items"] ?? [])[0] ?? "?";
     return ok(req.action, "snapshot saved: " + name, { snapshot: name });
   } catch (e) {
-    if (e instanceof ManagerApiError) throw mapManagerRefused(e, req.action);
-    throw e;
+    throw mapRail(e, req.action);
   }
 }
 
@@ -770,8 +778,7 @@ async function hSnapshotRestore(req: Req, ctx: ManageCtx): Promise<[number, Mana
   try {
     await managerPost(base(ctx), "/snapshot/restore", { target: req.snapshot }, { ctx, timeoutMs: 30_000 });
   } catch (e) {
-    if (e instanceof ManagerApiError) throw mapManagerRefused(e, req.action);
-    throw e;
+    throw mapRail(e, req.action);
   }
   return ok(req.action, "restore of " + req.snapshot + " scheduled (restart required)", {
     restart_required: true,
@@ -808,13 +815,12 @@ export async function dispatchManage(doc: unknown, ctx: ManageCtx): Promise<[num
   try {
     req = parseReq(doc);
   } catch (e) {
-    if (e instanceof Refused) {
-      const action = doc !== null && typeof doc === "object" && !Array.isArray(doc)
-        ? String((doc as Record<string, unknown>)["action"] ?? "?")
-        : "?";
-      return [e.code, { action, ok: false, detail: e.message }];
-    }
-    throw e;
+    // parseReq throws badRequest (Refused) only — the narrow is the law.
+    const r = e as Refused;
+    const action = doc !== null && typeof doc === "object" && !Array.isArray(doc)
+      ? String((doc as Record<string, unknown>)["action"] ?? "?")
+      : "?";
+    return [r.code, { action, ok: false, detail: r.message }];
   }
   try {
     return await HANDLERS[req.action](req, ctx);

@@ -74,7 +74,8 @@ export function searchCards(
     if (!toks.every((t): boolean => hay.includes(t))) continue;
     out.push({ id, label, description, genre: def.identity?.genre ?? "", tags: dtags });
   }
-  out.sort((a, b): number => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
+  // (map keys are unique — the equal arm never fires)
+  out.sort((a, b): number => (a.id < b.id ? -1 : a.id > b.id ? 1 : /* v8 ignore next */ 0));
   return out;
 }
 
@@ -88,7 +89,8 @@ export function searchFlows(
     const hay: string = (r.name + " " + r.title + " " + r.description).toLowerCase();
     return toks.every((t): boolean => hay.includes(t));
   });
-  out.sort((a, b): number => (a.name < b.name ? -1 : a.name > b.name ? 1 : 0));
+  // (registry names are unique — the equal arm never fires)
+  out.sort((a, b): number => (a.name < b.name ? -1 : a.name > b.name ? 1 : /* v8 ignore next */ 0));
   return out;
 }
 
@@ -98,6 +100,8 @@ export function flowSummaryRows(repo: string): FlowSummary[] {
   const out: FlowSummary[] = [];
   for (const name of registryFlowNames()) {
     const flow = getRegistryFlow(name);
+    /* v8 ignore next -- names come from the same registry (no-else,
+       defensive against a mid-reload skew) (2026-09-12) */
     if (flow === undefined) continue;
     let title: string = name;
     try {

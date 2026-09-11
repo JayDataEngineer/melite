@@ -100,12 +100,16 @@ export function ledgerTail(request: EstateRequest): ToolDefinition {
       },
     },
     async execute(args, exec): Promise<LedgerTailResult> {
-      const a = (typeof args === "object" && args !== null ? args : {}) as { limit?: unknown; event?: unknown }
+      // defineTool input validation runs in the wrapper BEFORE the body
+      // (invalid args throw ToolArgsError there) — args is always a
+      // defined object here (2026-09-12).
+      const a = args as { limit?: unknown; event?: unknown }
       const q: string[] = []
+      // limit is schema-typed number: the wrapper gate rejects strings
+      // before the body (a string limit throws ToolArgsError there), so
+      // no string arm rides — the old one was gate-dead (2026-09-12).
       if (typeof a.limit === 'number' && Number.isFinite(a.limit) && a.limit > 0) {
         q.push('limit=' + encodeURIComponent(String(Math.floor(a.limit))))
-      } else if (typeof a.limit === 'string' && a.limit.length > 0) {
-        q.push('limit=' + encodeURIComponent(a.limit))
       }
       if (typeof a.event === 'string' && a.event.length > 0) {
         q.push('event=' + encodeURIComponent(a.event))

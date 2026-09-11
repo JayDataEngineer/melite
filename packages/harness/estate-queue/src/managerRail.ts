@@ -51,7 +51,9 @@ export function planeUnavailable(base: string, cause: string): ManagerApiError {
 }
 
 export interface CallOpts {
-  method?: "GET" | "POST";
+  // REQUIRED: both wrappers always set it (managerGet GET,
+  // managerPost POST) — call never defaults.
+  method: "GET" | "POST";
   body?: unknown;
   timeoutMs: number;
   ctx: ManageCtx;
@@ -66,7 +68,7 @@ async function call(base: string, path: string, opts: CallOpts): Promise<unknown
   const t = opts.ctx.timeout((): void => ctrl.abort(), opts.timeoutMs);
   try {
     const r = await fetch(base + path, {
-      method: opts.method ?? "GET",
+      method: opts.method,
       headers: opts.body !== undefined ? { "content-type": "application/json" } : undefined,
       body: opts.body !== undefined ? JSON.stringify(opts.body) : undefined,
       signal: ctrl.signal,

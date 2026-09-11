@@ -112,7 +112,7 @@ export function decodeStrictBody(body: Uint8Array): StrictWire {
   try {
     JSON.parse(src);
   } catch (exc) {
-    const msg: string = exc instanceof Error ? exc.message : String(exc);
+    const msg: string = exc instanceof Error ? exc.message : /* v8 ignore next -- JSON.parse throws SyntaxError only (an Error); the String arm has no honest trigger (2026-09-12) */ String(exc);
     return {
       status: 400,
       payload: { error: "bad JSON: " + msg, code: "bad_json" },

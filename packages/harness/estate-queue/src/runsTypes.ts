@@ -134,6 +134,9 @@ export function settlePersist(
       run_id: run.runId,
       error: run.error,
     });
+    /* v8 ignore next -- unreachable: appendLedger self-swallows I/O
+       faults by law, and settle's payload is two strings (the dumps
+       never throws), so this catch has no honest trigger (2026-09-12) */
   } catch {
     /* nor the ledger row */
   }
@@ -194,7 +197,7 @@ export function runLogTail(obj: {
           ? ((a as Record<string, unknown>)["url"] ??
             (a as Record<string, unknown>)["name"])
           : a;
-      const s: string = String(v ?? "").split("/").pop() ?? "";
+      const s: string = String(v ?? "").split("/").pop() as string;
       if (s !== "") names.push(s);
     }
     if (names.length > 0) lines.push("artifacts: " + names.join(", "));

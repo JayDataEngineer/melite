@@ -90,6 +90,27 @@ describe("jsonLane — the JSON-record contract", () => {
     });
   });
 
+  it("a non-Error transport throw still becomes GatewayError(0) (String voice)", async () => {
+    const call = (async (): Promise<unknown> => {
+      throw "socket hangup";
+    }) as EstateCall;
+    await assert.rejects(jsonLane(call)("POST", "/v1/x"), (e: unknown) => {
+      assert.ok(e instanceof GatewayError);
+      assert.equal((e as GatewayError).status, 0);
+      assert.equal((e as GatewayError).body, "socket hangup");
+      return true;
+    });
+  });
+
+  it("a GatewayError resolved (not thrown) by the lane still refuses", async () => {
+    const refusal = new GatewayError(503, "plain busy", "comfy/busy");
+    const call = (async (): Promise<unknown> => refusal) as EstateCall;
+    await assert.rejects(jsonLane(call)("GET", "/v1/x"), (e: unknown) => {
+      assert.equal(e, refusal);
+      return true;
+    });
+  });
+
   it("a pre-aborted signal never dials the lane", async () => {
     const t = scripted({ ok: true });
     const ctl = new AbortController();
