@@ -166,7 +166,6 @@ export function PluginsPanel({ open, onClose }: { open: boolean; onClose: () => 
       open={open}
       onClose={onClose}
       title="Plugins"
-      closeLabel="Close plugins dialog"
       headless
       className={css.card}
     >

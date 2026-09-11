@@ -26,7 +26,7 @@ vi.mock('@deepseek-ai/dsh-client-web', () => ({
   }),
 }))
 vi.mock('react-dom/client', () => ({ createRoot: mocks.createRoot }))
-vi.mock('../App', () => ({ App: () => null }))
+vi.mock('../App', () => ({ App: (): null => null }))
 vi.mock('../shell/pluginCapabilities', () => ({}))
 vi.mock('../surfaces/flow/storePersistence', () => ({}))
 vi.mock('@melite/contracts', () => ({ initBrowserStorage: mocks.initBrowserStorage }))

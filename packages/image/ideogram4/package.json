@@ -9,7 +9,8 @@
     "./ui/*": "./src/ui/*",
     "./package.json": "./package.json",
     "./ui/studio/component": "./src/ui/studio/component.tsx",
-    "./ui/studio/ideoHelpers": "./src/ui/studio/ideoHelpers.ts"
+    "./ui/studio/ideoHelpers": "./src/ui/studio/ideoHelpers.ts",
+    "./ui/studio/IdeoPanels": "./src/ui/studio/IdeoPanels.tsx"
   },
   "scripts": {
     "test": "node --experimental-strip-types --test tests/"

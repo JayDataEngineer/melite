@@ -40,7 +40,7 @@ export interface DshHostGlobals {
  * @param host - global scope to probe (defaults to globalThis; injectable for tests).
  * @returns whether the DSH-hosted branch applies.
  */
-export function isDshHosted(host: DshHostGlobals = globalThis): boolean {
+export function isDshHosted(host: DshHostGlobals = globalThis as DshHostGlobals): boolean {
   return host.__DSH_BOOT__ !== undefined && host.__ModuleLoader__ !== undefined
 }
 

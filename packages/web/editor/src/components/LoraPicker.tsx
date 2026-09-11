@@ -2,8 +2,8 @@ import { useState, useEffect } from "react"
 import { Label } from "@melite/ui/label"
 import { Tip } from "@melite/ui/tip"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@melite/ui/select"
-import { apiJson } from "@melite/catalog"
 import type { LoRAEntry } from "@melite/contracts"
+import { lorasList } from "../lib/loras-wire.ts"
 
 interface LoraPickerProps {
   model: string
@@ -27,13 +27,6 @@ interface LoraMeta {
   prompt_hint?: string
 }
 
-interface LoraListResponse {
-  model: string
-  loras: string[]
-  note?: string | null
-  meta?: Record<string, LoraMeta>
-}
-
 function stemOf(filename: string): string {
   return filename.replace(/\.(safetensors|pt|bin)$/, "")
 }
@@ -50,15 +43,16 @@ export function LoraPicker({ model, value, onChange, onError, variant = "dark", 
 
   useEffect(() => {
     setLoading(true)
-    // Route through apiJson (not raw fetch) so we get:
-    //   • retry/backoff on transient 5xx and network errors (the most
-    //     common cause of the old "Unexpected end of JSON input" — a 5xx
-    //     with empty body, which raw fetch's r.json() then choked on)
-    //   • GET dedup (kills the React.StrictMode double-fire)
-    //   • a real error message with the HTTP status, instead of the
-    //     cryptic "Failed to execute 'json' on 'Response'" SyntaxError
-    //     that hid the actual status code from the user.
-    apiJson<LoraListResponse>(`/v1/loras?model=${encodeURIComponent(model)}`)
+    // THE WIRE REMOTE (the /v1/loras door died with the gateway app —
+    // nothing serves /v1, by design): same-origin POST /api/loras/list
+    // carrying the client-request frame (api-gateway.md, the sanctioned
+    // caller for plugins outside the DSH web kernel; the wire field is
+    // the adapter parameter name, `model`). The lora list is
+    // FAMILY-OWNED DATA — the mods tree declares the rows
+    // (packages/models/<family>/mods/loras.ts), the comfyui seat owns
+    // the runtime catalog law (family rows win over the union), and
+    // the loras remote serves one family's catalog over the wire.
+    lorasList(model)
       .then((data) => {
         setAvailable(data.loras || [])
         setNote(data.note ?? null)
@@ -66,11 +60,11 @@ export function LoraPicker({ model, value, onChange, onError, variant = "dark", 
       })
       .catch((e: unknown) => {
         // NO SILENT SWALLOW: LoRAs vanishing from the picker is a real
-        // failure (broken /v1/loras endpoint, model typo, backend down).
-        // Surface via the optional onError toast if the parent wired one
-        // through; always log so dev tools see it. The empty state is
-        // honest — the user sees "No LoRAs installed" with a diagnostic,
-        // not a silently blank picker.
+        // failure (wire down, family typo, remote refused). Surface via
+        // the optional onError toast if the parent wired one through;
+        // always log so dev tools see it. The empty state is honest —
+        // the user sees "No LoRAs installed" with a diagnostic, not a
+        // silently blank picker.
         const msg = e instanceof Error ? e.message : String(e)
         console.error("[LoraPicker] failed to load LoRA list:", msg)
         onError?.(`LoRA list failed to load: ${msg}`)
@@ -80,12 +74,13 @@ export function LoraPicker({ model, value, onChange, onError, variant = "dark", 
   }, [model, onError])
 
   const metaFor = (filename: string): LoraMeta => meta[stemOf(filename)] ?? {}
-  // Label resolution: /v1/loras meta → bare stem. No filename regex guessing
+  // Label resolution: the loras/list meta → bare stem. No filename regex guessing
   // (the old fallbackLabel had hardcoded strips for ltx-2/22b-/19b-/id-lora-/
   // celebvhq- that were model-specific label cosmetics). A LoRA without a
   // meta label shows its stem — honest, no surprises. To label a LoRA
   // nicely, declare it on the family's mods/loras.ts row
-  // (label/default_strength — family-owned data, served via /v1/loras).
+  // (label/default_strength — family-owned data in the mods tree, served
+  // over the loras wire remote).
   const labelFor = (filename: string): string => metaFor(filename).label ?? stemOf(filename)
   const defaultStrengthFor = (filename: string): number => metaFor(filename).default_strength ?? 1.0
 

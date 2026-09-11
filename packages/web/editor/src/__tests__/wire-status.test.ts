@@ -22,7 +22,7 @@ describe("probeRunStatus (Connection transport seam)", () => {
     const fetchMock = vi.fn(async (input: URL | RequestInfo, init?: RequestInit) => {
       expect(String(input)).toContain("/api/runs/status");
       expect(init?.method).toBe("POST");
-      const frame = JSON.parse(String(init?.body)) as { type: string; method: string; payload: { args: { runId: string } } };
+      const frame = JSON.parse(String(init?.body)) as { type: string; rpcId: string; method: string; payload: { args: { runId: string } } };
       expect(frame.type).toBe("client-request");
       expect(frame.method).toBe("runs/status");
       expect(frame.payload.args.runId).toBe("run-1");

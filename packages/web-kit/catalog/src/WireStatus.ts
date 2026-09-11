@@ -60,7 +60,7 @@ function readWireRow(body: unknown, sentRpcId: string): WireRunStatus | null {
   const status: unknown = Reflect.get(value, "status");
   if (typeof known !== "boolean") return null;
   if (status !== null && typeof status !== "string") return null;
-  return { known, status };
+  return { known, status: status as string | null };
 }
 
 /** Phantom-reconciliation verdict for one probed run.

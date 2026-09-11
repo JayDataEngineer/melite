@@ -19,6 +19,7 @@
     "@melite/estate-queue": "workspace:*",
     "@melite/estate-manage": "workspace:*",
     "@melite/estate-runs": "workspace:*",
-    "@melite/estate-media": "workspace:*"
+    "@melite/estate-media": "workspace:*",
+    "@melite/estate-loras": "workspace:*"
   }
 }

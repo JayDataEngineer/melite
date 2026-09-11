@@ -37,6 +37,10 @@ import queuePlugin, {
   loadProvider,
 } from "@melite/estate-queue";
 import { manageRemotePlugin } from "@melite/estate-manage";
+// The lora catalog remote (the /v1/loras door's DSH-native
+// replacement): one family's pick catalog over the comfyui seat's
+// mod catalog — family-owned data, the mods tree's runtime law.
+import { lorasRemotePlugin } from "@melite/estate-loras";
 import { runsRemotePlugin } from "@melite/estate-runs";
 // The runs media route (the /v1/assets face's DSH-native
 // replacement): run artifacts served same-origin from the queue
@@ -79,6 +83,9 @@ const rows: readonly Plugin[] = [
   loadProvider,
   runsRegistryPlugin,
   runsRemotePlugin,
+  // The loras remote after the engine rows (it gates on the
+  // comfyui seat — the flavors land with the model families).
+  lorasRemotePlugin,
   // The media route last: it probes the queue seat at the use site
   // (optional-dependency law), so order carries no meaning — it just
   // reads well after the estate rows it serves.
