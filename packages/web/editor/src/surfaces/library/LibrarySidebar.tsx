@@ -30,7 +30,7 @@
 //   Flows (Phase 4) — the flow TEMPLATES (the former FlowNodes
 //   drawer, merged per plan D2). One search (this rail's input) filters
 //   capabilities + AI Generated tiles + flow rows; the flow rows
-//   keep their rename/delete hover actions (see FlowsSection).
+//   keep their rename/delete hover actions.
 //
 // GROUPED + SORTED (2026-08-08): capabilities are grouped by their media
 // GENRE (the family's ``genre:`` field — image / video / audio / 3d), in a

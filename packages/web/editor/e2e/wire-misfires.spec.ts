@@ -4,8 +4,9 @@
  *
  * The misfire class (operator report, 2026-10-02): "you press the generate
  * button, or go to the media sidebar, and it says 502 or 404 — I see these
- * a lot." Static half: tests/test_wire_surface.py pins the frontend wire
- * ⊆ gateway arms. This is the live half, on the card-harness page:
+ * a lot." Static half: the wire-surface census (helpers/wire.ts
+ * KNOWN_ABSENT prefixes) pins the frontend wire ⊆ the estate doors'
+ * arms. This is the live half, on the card-harness page:
  *
  *   1. boot + picker walk — the wire must be clean of NEW drift (the
  *      KNOWN_ABSENT census from the 2026-10-02 audit is counted, printed,
@@ -14,8 +15,8 @@
  *      service cannot resolve. INFERENCE LAW honored: the button is the
  *      user-owned door, and the absent service dies at CLIENT-side
  *      compose (a resolvable service would register a real GPU run —
- *      a test must never trigger that; the gateway's own admission door
- *      is pinned server-side by tests/test_http_parity). Assert: zero
+ *      a test must never trigger that; the estate's own admission door
+ *      is pinned server-side by the runs-remote wall). Assert: zero
  *      start posts, zero misfires, and the card SURFACES the exact
  *      error (RESILIENCE LAW's UI face) instead of swallowing it.
  */
@@ -56,8 +57,8 @@ test.describe('wire misfires — card harness', () => {
     // A service that is not in the catalog dies at CLIENT-side compose —
     // before any wire call. (A catalog-resolvable service would register a
     // REAL GPU run, which a test must never trigger — INFERENCE LAW — so
-    // the absent-service shape is the only GPU-safe probe. The gateway's
-    // own admission door is pinned server-side by tests/test_http_parity.)
+    // the absent-service shape is the only GPU-safe probe. The estate's
+    // own admission door is pinned server-side by the runs-remote wall.)
     // The contract here: the failure is SURFACED on the card with the
     // exact reason (RESILIENCE LAW's UI face) and the wire stays clean —
     // no 404 drift, no 5xx, no half-fired start.

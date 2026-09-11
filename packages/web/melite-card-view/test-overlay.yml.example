@@ -9,7 +9,8 @@
 # - host row  — `name:` = ABSOLUTE path of the built node half. The loader
 #               resolves relative entry paths against the PROFILE dir, not this
 #               file (W0 failure #1), so the path must be absolute. This fiber
-#               registers the /melite-proxy gateway pass-through route.
+#               serves the editor bundle + hydrates drafts from the estate
+#               seats (R5 — gatewayUrl retired: no gateway to point at).
 # - client row — `name:` = the package name itself. dsh-client-modules resolves
 #               '<name>/package.json' from the profile tree, reads the
 #               dsh.client declaration, and serves exports['./client'] at
@@ -36,8 +37,6 @@
 - insert:
     - id: melite-card-view-host
       name: $MELITE_REPO/dsh/melite-card-view/lib/index.js
-      config:
-        gatewayUrl: 'http://localhost:33081'
     - id: melite-card-view-client
       name: '@melite-plugin/dsh-card-view'
       config:

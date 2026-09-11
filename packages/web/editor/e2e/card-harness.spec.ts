@@ -5,7 +5,7 @@
  * app and the DSH embed render (InlineFlowCards → FlowTileGrid →
  * CardTile) over a DETERMINISTIC store fixture: makeDraft (the wire stand-in
  * for POST /v1/flows/drafts) with the done stage stamped the way the
- * gateway's queue write-back does. No app shell, no Library tab, no boot
+ * estate queue's write-back does. No app shell, no Library tab, no boot
  * waits — and NO inference door is ever touched (INFERENCE LAW): the only
  * wire call the add-flow can make is the READ-ONLY model catalog, and the
  * artifact rides an SVG data URL with EXACT natural dimensions.

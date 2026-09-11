@@ -7,7 +7,7 @@
  *
  *   1. The served form-specs declare the chain
  *      (features.variant_groups[*].filters_on — a field ONLY the current
- *      backend emits; its presence proves the gateway serves the current
+ *      backend emits; its presence proves the owning DSH serves the current
  *      tree, not a stale process).
  *   2. The qwen edit card: the Variant row = the model's variant FOLDER
  *      set, byte-identical before and after switching Quant (the
@@ -30,7 +30,7 @@
  * NOTE (2026-08-17): the plan's "playwright.check.config.ts + e2e/check/"
  * assumption was wrong for this tree — the house pattern is plain
  * e2e/*.spec.ts under playwright.local.config.ts. Run against the FRESH
- * bundle (vite preview :4173 proxies /v1 + /health to the gateway on
+ * bundle (vite preview :4173 proxies /v1 + /health to the owning DSH
  * — preview.proxy is declared in vite.config.ts):
  *
  *   npm run build && npx vite preview &   # fresh bundle on :4173
@@ -104,7 +104,7 @@ async function logAxisLists(tag: string, detail: Locator): Promise<void> {
 
 test('served form-specs declare the chain (backend currency, fresh-origin proof)', async ({ request }) => {
   const health = await request.get('/health')
-  expect(health.status(), "the fresh bundle's proxy must reach the gateway").toBe(200)
+  expect(health.status(), "the fresh bundle's proxy must reach the owning DSH").toBe(200)
 
   for (const model of ['qwen-img-edit-2511', 'ace-step']) {
     const resp = await request.get(`/v1/form-spec?model=${model}`)

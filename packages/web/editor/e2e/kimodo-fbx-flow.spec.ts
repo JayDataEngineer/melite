@@ -126,7 +126,7 @@ async function runKimodoFBXExpectError(
   throw new Error(`kimodo_export_fbx run ${runId} not terminal within ${timeoutMs}ms`)
 }
 
-/** Download a run artifact (relative URL served on the gateway) as bytes. */
+/** Download a run artifact (relative URL served on the owning DSH) as bytes. */
 async function fetchArtifact(
   request: import('@playwright/test').APIRequestContext,
   url: string,

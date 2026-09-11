@@ -1,8 +1,8 @@
 /**
  * E2E: Motion Card — the full authoring + playback + export loop, PROVEN.
  *
- * Covers the three deliverables against the REAL stack (frontend → gateway →
- * ComfyUI → GPU), no mocks:
+ * Covers the three deliverables against the REAL stack (frontend →
+ * estate doors → ComfyUI → GPU), no mocks:
  *
  *   1. SCROLLBAR — the timeline's horizontal pan. Zoom buttons (always
  *      visible) zoom in → the thumb shrinks → drag the thumb → the view pans

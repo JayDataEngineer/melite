@@ -1,5 +1,11 @@
 # W3 VERIFICATION — @melite-plugin/dsh-card-view
 
+> KILL-ERA NOTE (2026-09-10): this record predates the gateway kill —
+> §3's `/melite-proxy` gateway pass-through and §6's `:33081` readbacks
+> are dead (the proxy + gatewayUrl retired, R5). The row-shape proof
+> (§2 boot, §4 browser smoke, §5 package fixes) still stands; the live
+> proof plane is `tests/walls/ts/` + the gallery-host wall.
+
 > NOTE (2026-09-03): the `/melite-tools/catalog` route referenced below
 > was a ray-era fossil with zero callers and is retired; that verification
 > step is historical. The tool surface itself is alive (bundle row

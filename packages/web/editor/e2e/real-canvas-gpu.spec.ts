@@ -14,8 +14,9 @@
  *   GET  /comfyui/vnccs/unicanvas/checkpoints   → model list (unchanged)
  *   GET  /comfyui/vnccs/unicanvas/presets       → generation presets (unchanged)
  *
- * The Vite dev server proxies:
- *   /v1/*       → melite gateway (:7860)
+ * The Vite dev server proxies (vite.config.ts — Browser → Vite
+ * :5173 → the owning DSH :3088):
+ *   /v1/*       → owning DSH (the estate doors, same-origin)
  *   /comfyui/*  → ComfyUI (:18465), stripping the /comfyui prefix
  *
  * This test exercises the FULL GPU flow:
@@ -121,7 +122,7 @@ function createCircleMaskPng(w: number, h: number, radius: number): string {
 }
 
 const COMFYUI = '/comfyui' // Vite-proxied → :18465
-const RUN_START = '/v1/flows/start' // Vite-proxied → melite gateway (ONE door)
+const RUN_START = '/v1/flows/start' // Vite-proxied → the estate start door
 
 // ── Tests ──────────────────────────────────────────────────────────────────
 

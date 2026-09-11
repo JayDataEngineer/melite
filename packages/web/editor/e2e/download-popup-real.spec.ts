@@ -2,10 +2,10 @@
 // download-popup-real.spec.ts - THE AUTO-DOWNLOAD PROMPT, END TO END
 // (2026-08-26; gate:4 lane). Unlike the start-door-intercepted
 // dialog-only specs, THIS spec lets the download go through the
-// REAL gateway SSE wire:
+// REAL estate SSE wire:
 //
 //   card Run -> start door short-circuits download_required (intercepted,
-//   exact gateway shape) -> user clicks "Download" IN THE POPUP -> the REAL
+//   exact door shape) -> user clicks "Download" IN THE POPUP -> the REAL
 //   POST /v1/download-model/stream streams a local Range-capable upstream
 //   into the sanctioned model volume -> the runner AUTO-RETRIES the same
 //   body -> this time it resolves a COMPLETED run -> dialog closes, card is
@@ -155,7 +155,7 @@ test.describe("The popup prompt auto-downloads models end to end (gate:4)", () =
     page,
     request,
   }) => {
-    // The tiny upstream the gateway will pull from (Range-capable).
+    // The tiny upstream the estate will pull from (Range-capable).
     upstreamUrl = await startUpstream()
 
     // A REAL backend draft, hydrated by the embed exactly like chat cards.
@@ -175,7 +175,7 @@ test.describe("The popup prompt auto-downloads models end to end (gate:4)", () =
     draftId = createdBody.draftId ?? ""
     expect(draftId.startsWith("p_")).toBe(true)
 
-    // Call 1 short-circuits with the gateway's live payload shape; the retry
+    // Call 1 short-circuits with the door's live payload shape; the retry
     // after the popup completes resolves a COMPLETED run (no GPU work).
     startCalls = 0
     await page.route("**/v1/flows/start*", async (route) => {
@@ -215,7 +215,7 @@ test.describe("The popup prompt auto-downloads models end to end (gate:4)", () =
     // 2. THE USER SAYS YES - one click, then everything is automatic.
     await page.getByRole("button", { name: "Download 1 files" }).click()
 
-    // 3. AUTO-DOWNLOAD through the REAL gateway SSE wire...
+    // 3. AUTO-DOWNLOAD through the REAL estate SSE wire...
     try {
       await expect.poll(
         async () => (existsSync(join(DEST_DIR, FILE_NAME)) ? readFileSync(join(DEST_DIR, FILE_NAME)).equals(FULL) : false),

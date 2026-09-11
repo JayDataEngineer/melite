@@ -1,10 +1,12 @@
-# W3 STRETCH overlay (disposable): same two ray-card-view rows as
-# test-overlay.yml PLUS the ray-tools host row, so a real chat turn can call
-# the flow_start wire tool and the keyed card can render against it.
+# Estate chat overlay (disposable): the same two melite-card-view rows as
+# test-overlay.yml PLUS the estate row + tools doors, so a real chat turn
+# can call melite_flow and the card can render against it — all in-process
+# (the gateway kill 2026-09-10: no :33081, no gatewayUrl; the card-view
+# host row takes no endpoint config).
 # Port 3087; never touches the live :3080 or the verified :3083 instance.
 #
-#   DSH_HOME=/tmp/ray-dsh-home dsh --profile web \
-#     --patch /home/user/Documents/programs/ray/dsh/ray-card-view/test-overlay-chat.yml --port 3087
+#   DSH_HOME=/tmp/melite-dsh-home dsh --profile web \
+#     --patch $MELITE_REPO/packages/web/melite-card-view/test-overlay-chat.yml --port 3087
 
 - id: webserver
   config:
@@ -12,15 +14,13 @@
     port: 3087
 
 - insert:
-    - id: ray-card-view-host
-      name: /home/user/Documents/programs/ray/dsh/ray-card-view/lib/index.js
-      config:
-        gatewayUrl: 'http://localhost:33081'
-    - id: ray-tools
-      name: /home/user/Documents/programs/ray/dsh/ray-tools/lib/index.mjs
-      config:
-        gatewayUrl: 'http://localhost:33081'
-    - id: ray-card-view-client
-      name: '@ray-plugin/dsh-card-view'
+    - id: infer-estate
+      name: '@melite-plugin/melite-estate'
+    - id: infer-tools-doors
+      name: '@melite-plugin/dsh-tools/doors'
+    - id: melite-card-view-host
+      name: $MELITE_REPO/packages/web/melite-card-view/lib/index.js
+    - id: melite-card-view-client
+      name: '@melite-plugin/dsh-card-view'
       config:
         clientRowOnly: true

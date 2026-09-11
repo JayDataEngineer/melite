@@ -23,7 +23,7 @@
  *
  * These tests drive the REAL chat surface (/editor/?meliteCards=<draftId> —
  * the same FlowTileGrid the Library canvas renders), seeded through
- * the gateway drafts API via helpers/draftCards.ts. Artifacts ride SVG
+ * the estate drafts door via helpers/draftCards.ts. Artifacts ride SVG
  * DATA URLs with declared dimensions: decodable <img>s with exact
  * naturalWidth/Height, zero dependency on run artifacts on disk, GPU-free.
  *

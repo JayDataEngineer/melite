@@ -16,10 +16,9 @@
  *     genre groups (Create/Edit/Inpaint/Mask/Upscale/…), provenance
  *     badges, studio tiles dragging the capability MIME (drop → an
  *     action card).
- *   ?meliteAssets=flows → FlowsPane (2026-08-25) — the FLOW
- *     TEMPLATES: the REAL FlowsSection (click = load its steps as
- *     action cards, hover rename/delete, drag the tech-noir-flow
- *     MIME onto the canvas/chat) under its own search, as a fourth tab.
+ *   (The ?meliteAssets=flows fourth tab died with the flow-YAML
+ *   surface 2026-09-05 — AssetsSection is media|cards only; flows
+ *   compose through the card-harness + melite_flow now.)
  *
  * No page paint of its own; DSH theming flows through the card-deck
  * embed-bridge each tab runs on its iframe.

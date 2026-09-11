@@ -1,5 +1,12 @@
 # melite-tools — enhance on THE HARNESS MODEL (2026-08-22, rev 3)
 
+> KILL-ERA NOTE (2026-09-10): this record predates the gateway kill.
+> The door it proves lives on as an IN-PROCESS row
+> (`src/doors.ts` `/melite-tools/enhance`, served by the owning DSH —
+> no :33081, no second process). The `.py` wall and the
+> `~/.dsh/profiles/web` bundle cites below are dead; the live proof
+> plane is `tests/walls/ts/` + the melite-flow/smoke suites.
+
 > DOOR RESTORED (2026-09-05): the 2026-09-03 retirement above was WRONG
 > — it called these routes "zero live callers" while the editor's
 > enhance.ts targets /melite-tools/enhance as its ONLY door (the
@@ -82,6 +89,11 @@ Registration proof:
     [5] enhance: every registered harness route failed — a/a-m: … [PROVIDER_DOWN] | b/b-m: … [PROVIDER_DOWN]
 
 ## Editor ✦ button ("just like before", now key-free under DSH)
+
+> KILL-ERA (2026-09-10): the caller below (`web/editor/packages/catalog/src/enhance.ts`)
+> is deleted — the editor no longer carries an enhance client. The door
+> (`/melite-tools/enhance`, harness model, key-free) stands; its live
+> callers are agent turns via `melite_discover` → tools, not editor code.
 
 - web/editor/packages/catalog/src/enhance.ts: enhancePrompt tries the
   /melite-tools/enhance door FIRST (harness model); only outside the DSH host

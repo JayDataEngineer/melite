@@ -5,7 +5,7 @@
  * Two operator-reported failure modes, both first-class now that Melite runs
  * from a git clone with ComfyUI as a pluggable URL (docker decoupled):
  *
- *   1. "Can't reach comfyui"   — gateway UP, ComfyUI DOWN. /health returns
+ *   1. "Can't reach comfyui"   — DSH UP, ComfyUI DOWN. /health returns
  *      200 {comfyui:"down"}. The header ComfyStatus badge must flip red
  *      ("ComfyUI backend: unreachable") and NOT show a false green dot.
  *   2. "Catalog unavailable …" — /v1/model-catalog returns 5xx. The Library
@@ -34,10 +34,10 @@ function trackPageErrors(page: Page): string[] {
 
 test.describe('Degraded backend modes — graceful, loud, actionable', () => {
 
-  test('ComfyUI unreachable (gateway up) → red badge, no false green, app usable', async ({ page }) => {
+  test('ComfyUI unreachable (DSH up) → red badge, no false green, app usable', async ({ page }) => {
     const errors = trackPageErrors(page)
 
-    // Gateway UP, ComfyUI DOWN — the exact state `task up` now allows
+    // DSH UP, ComfyUI DOWN — the exact state `task up` now allows
     // (docker decoupled). /health is 200 with comfyui:"down".
     await page.route('**/health', async (route) => {
       await route.fulfill({
