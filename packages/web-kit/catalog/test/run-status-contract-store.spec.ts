@@ -1,0 +1,105 @@
+// run-status-contract-store.spec.ts — the status-channel verdict store:
+// violation/error reports, the toast Retry repoll (success clears,
+// failure is swallowed), and clear. Toasts are captured by swapping
+// the ui store's addToast (no sonner at spec runtime).
+import { describe, it, afterEach } from "vitest";
+import assert from "node:assert/strict";
+import { useRunStatusContractStore } from "../src/runStatusContractStore.ts";
+import { useToastStore } from "@melite/ui";
+import type { RunStatusViolation } from "../src/runStatusContract.ts";
+
+const realFetch = globalThis.fetch;
+const realAddToast = useToastStore.getState().addToast;
+
+type Captured = { type: string; message: string; action?: { label: string; onClick: () => void } };
+let captured: Captured[] = [];
+
+afterEach(() => {
+  globalThis.fetch = realFetch;
+  useToastStore.setState({ addToast: realAddToast });
+  useRunStatusContractStore.getState().clear();
+  captured = [];
+});
+
+const captureToasts = (): void => {
+  captured = [];
+  useToastStore.setState({
+    addToast: ((type: string, message: string, action?: Captured["action"]) => {
+      captured.push({ type, message, action });
+    }) as typeof realAddToast,
+  });
+};
+
+const violation = (message: string): RunStatusViolation[] =>
+  [{ field: "status", kind: "invalid", message }] as RunStatusViolation[];
+
+const sleep = (ms: number): Promise<void> => new Promise((r) => setTimeout(r, ms));
+
+const completed = (runId: string): Response =>
+  new Response(
+    JSON.stringify({
+      run_id: runId,
+      status: "completed",
+      stages: [{ id: "s", name: "n", index: 0, status: "done" }],
+    }),
+    { status: 200 },
+  );
+
+describe("reportVerdicts", () => {
+  it("records violations and errors with Retry toasts", () => {
+    captureToasts();
+    const store = useRunStatusContractStore.getState();
+    store.reportViolation("r1", violation("bad status"));
+    assert.deepEqual(useRunStatusContractStore.getState().verdict, {
+      kind: "violation",
+      runId: "r1",
+      violations: violation("bad status"),
+    });
+    assert.equal(captured.length, 1);
+    assert.equal(captured[0].type, "error");
+    assert.match(captured[0].message, /r1/);
+    assert.equal(captured[0].action?.label, "Retry");
+
+    store.reportError("r2", "gone");
+    assert.deepEqual(useRunStatusContractStore.getState().verdict, {
+      kind: "error",
+      runId: "r2",
+      message: "gone",
+    });
+    assert.equal(captured.length, 2);
+    assert.match(captured[1].message, /r2.*gone/);
+  });
+
+  it("falls back when a violation carries no message", () => {
+    captureToasts();
+    useRunStatusContractStore.getState().reportViolation("r9", []);
+    assert.match(captured[0].message, /did not match the expected shape/);
+  });
+});
+
+describe("repoll (toast Retry)", () => {
+  it("clears the verdict when the re-poll succeeds", async () => {
+    captureToasts();
+    globalThis.fetch = (async () => completed("r1")) as typeof fetch;
+    useRunStatusContractStore.getState().reportViolation("r1", violation("stale"));
+    assert.ok(useRunStatusContractStore.getState().verdict !== null);
+    captured[0].action?.onClick();
+    for (let i = 0; i < 200 && useRunStatusContractStore.getState().verdict !== null; i++) {
+      await sleep(10);
+    }
+    assert.equal(useRunStatusContractStore.getState().verdict, null);
+  });
+
+  it("swallows a still-bad re-poll (the card shows the truth)", async () => {
+    captureToasts();
+    globalThis.fetch = (async () => new Response("gone", { status: 404 })) as typeof fetch;
+    useRunStatusContractStore.getState().reportError("r2", "gone");
+    captured[0].action?.onClick();
+    await sleep(300);
+    assert.deepEqual(useRunStatusContractStore.getState().verdict, {
+      kind: "error",
+      runId: "r2",
+      message: "gone",
+    });
+  });
+});

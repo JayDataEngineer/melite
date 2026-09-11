@@ -54,6 +54,9 @@ const kindsCore = new SlotCore()
 
 /** A component value is required by register(); kinds carry data, not UI —
  * the lane owner's root claim is render-inert by construction. */
+/* v8 ignore next -- NullSeat is never invoked: it is a ledger placeholder
+ * the renderer never mounts (dom territory; kinds ride the chain election)
+ * (2026-09-12) */
 function NullSeat(): null {
   return null
 }

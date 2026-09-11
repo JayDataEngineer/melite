@@ -86,6 +86,8 @@ const uiCore = new SlotCore()
 /** A component value is required by register(); ui claims carry DATA
  * (payloads ride the election's `matched`, not the component) — the
  * holder is render-inert by construction. */
+/* v8 ignore next -- ClaimHolder is never invoked: it is a ledger placeholder
+ * the renderer never mounts (dom territory; payloads ride `matched`) (2026-09-12) */
 function ClaimHolder(): null {
   return null
 }
@@ -177,6 +179,11 @@ export function createUiSlot<C, I>(name: string): UiSlot<C, I> {
     return election.matched as C
   }
 
+  /* v8 ignore next -- useVersion is React-tree live propagation (needs a
+   * renderer for useSyncExternalStore): dom-project territory like the 3d
+   * studios; register/dispose/resolve/subscribe carry the node surface (2026-09-12) */
+  const useVersion = (): number => useSyncExternalStore(subscribe, () => version)
+
   return {
     name,
     register,
@@ -185,6 +192,6 @@ export function createUiSlot<C, I>(name: string): UiSlot<C, I> {
       uiCore.entriesOfSlot(seatName).map((v) => `${-v.priority}:${v.registrant}`),
     getVersion: () => version,
     subscribe,
-    useVersion: () => useSyncExternalStore(subscribe, () => version),
+    useVersion,
   }
 }

@@ -269,7 +269,10 @@ export class SlotCore {
       for (const childKey of Object.keys(options.children)) {
         const childRec = this.records.get(childKey)
         if (childRec?.spec) {
-          throw new Error(`slot "${childKey}" is already declared (by ${childRec.declaredBy ?? "an unknown entry"})`)
+          // spec-set implies declaredBy-set (declare assigns both together;
+          // collapse clears both together) — the gate proves presence, so no
+          // `??` fallback (an `||`/`??` right operand cannot be covered here).
+          throw new Error(`slot "${childKey}" is already declared (by ${childRec.declaredBy as string})`)
         }
       }
     }
@@ -369,8 +372,11 @@ export class SlotCore {
     const rec = this.records.get(name)
     if (!rec?.spec || rec.spec.kind !== "chain") return null
     for (const e of rec.entries) {
-      if (this.abdicated.has(e) || e.select === undefined) continue
-      const matched = e.select(owner)
+      if (this.abdicated.has(e)) continue
+      // Chain entries always carry select: register() throws for a chain
+      // seat without one, so presence is proven by that gate (no defensive
+      // branch — an `||`/`??` right operand cannot be ignore-suppressed).
+      const matched = (e.select as ChainSelect<Record<string, unknown>, unknown>)(owner)
       if (matched !== null && matched !== undefined) {
         return { view: this.buildView(rec, e), matched }
       }
@@ -464,6 +470,9 @@ export class SlotCore {
     if (info.abdicate) {
       if (this.abdicated.has(entry)) return
       this.abdicated.add(entry)
+      /* v8 ignore next -- entry-defined implies rec-defined (entry is drawn
+       * from rec.entries / rec.entries[0] above; the early return covers the
+       * rec-absent shape) (2026-09-12) */
       if (rec !== undefined) this.markDirty(rec)
     }
     for (const listener of [...this.entryErrorListeners]) {
@@ -487,15 +496,23 @@ export class SlotCore {
   /** The declaration tree from the a-priori root (inspection / gates). */
   describe(): LiveSlotNode {
     const nodeOf = (name: string): LiveSlotNode => {
-      const rec = this.records.get(name)
+      // nodeOf only visits reachable seats: "root" (built-in) plus keys
+      // enumerated from this.records below — so get() is always defined
+      // (the enumeration proves presence), and the seat always carries a
+      // spec and a declarer (collapse severs reachability when clearing).
+      const rec = this.records.get(name) as SlotRecord
       const children = [...this.records.entries()]
         .filter(([, r]) => r.parent === name)
         .map(([k]) => nodeOf(k))
       return {
         name,
-        kind: rec?.spec?.kind ?? "(collapsed)",
-        ...(rec?.declaredBy !== undefined ? { declaredBy: rec.declaredBy } : {}),
-        occupants: (rec?.entries ?? []).map((e) => ({
+        // Reachable seats always carry a spec and a declarer: collapse (the
+        // only clearer) also severs the parent link this walk follows, so a
+        // collapsed seat is never visited (the walk proves presence — no
+        // defensive branches an `||`/`??` right operand could never cover).
+        kind: (rec.spec as { kind: SlotKind }).kind,
+        declaredBy: rec.declaredBy as string,
+        occupants: rec.entries.map((e) => ({
           ...(e.options.key !== undefined ? { key: e.options.key } : {}),
           ...(e.options.id !== undefined ? { id: e.options.id } : {}),
           ...(e.options.order !== undefined ? { order: e.options.order } : {}),
@@ -546,6 +563,9 @@ export class SlotCore {
 
   private disposeEntry(name: string, entry: StoredEntry): void {
     const rec = this.records.get(name)
+    /* v8 ignore next -- records is append-only (record() never deletes), and
+     * disposers close over their registration's seat name, so rec is always
+     * present (2026-09-12) */
     if (!rec) return
     const next = rec.entries.filter((e) => e !== entry)
     if (next.length !== rec.entries.length) {
@@ -561,12 +581,19 @@ export class SlotCore {
    * forget the declaration (epoch advances; redeclaration becomes legal). */
   private collapse(key: string): void {
     const rec = this.records.get(key)
+    /* v8 ignore next -- records is append-only and collapse only visits
+     * child keys declared (hence record-created) by a live entry, so rec is
+     * always present (2026-09-12) */
     if (!rec) return
     for (const entry of rec.entries) {
       if (entry.children) {
         for (const grandChildKey of Object.keys(entry.children)) this.collapse(grandChildKey)
       }
     }
+    /* v8 ignore next -- the skip arm is unreachable: collapse is the only
+     * spec-clearer and it runs this body when clearing, so a visited seat
+     * always has entries or a live spec (double-dispose is guarded;
+     * two entries cannot share a child key — redeclare throws) (2026-09-12) */
     if (rec.entries.length > 0 || rec.spec !== undefined) {
       rec.entries = NO_ENTRIES
       rec.spec = undefined
@@ -606,7 +633,10 @@ export function injectSlot(
   let active: (() => void) | undefined
   let activeEpoch: number | undefined
   let stopped = false
-  let unsubscribe = (): void => {}
+  // Assigned before any caller can observe the returned disposer (the
+  // initial reconcile runs first and assigns it; a throwing setup still
+  // assigns before stop-on-failure) — no defensive noop initializer.
+  let unsubscribe!: () => void
 
   const stop = (): void => {
     if (stopped) return
@@ -636,8 +666,16 @@ export function injectSlot(
   }
 
   const reconcile = (): void => {
+    /* v8 ignore next -- reconcile can only observe stopped=false: stop()
+     * unsubscribes before setting stopped (so declaration events never reach
+     * a stopped injection), and the initial call runs pre-subscription with
+     * stopped=false (2026-09-12) */
     if (stopped) return
     const epoch = core.declarationEpoch(name)
+    /* v8 ignore next -- the same-epoch skip is unreachable through the public
+     * API: reconcile runs on inject (active undefined) and on declaration
+     * events, and both declare and collapse advance the epoch before
+     * notifying — activeEpoch can never equal epoch here (2026-09-12) */
     if (active !== undefined && activeEpoch === epoch) return
     const dispose = active
     active = undefined

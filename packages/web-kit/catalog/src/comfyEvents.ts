@@ -66,6 +66,7 @@ export function connectComfyEvents(
   }
 
   function open() {
+    /* v8 ignore next -- defensive: close() always clears the pending retry timer, so open() can never run after close (2026-09-12) */
     if (closed) return
     try {
       ws = new WebSocket(url)

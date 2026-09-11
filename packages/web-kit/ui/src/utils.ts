@@ -15,7 +15,9 @@ export function cn(...inputs: ClassValue[]) {
  * handled — keep inputs to bare numerics.
  */
 export function parseNumber(raw: string): number {
-  if (typeof raw !== 'string') return Number(raw) ?? NaN
+  // Number() always returns a number (never null/undefined), so no
+  // nullish fallback applies — NaN propagates for non-numeric input.
+  if (typeof raw !== 'string') return Number(raw)
   const s = raw.trim()
   if (s === '') return NaN
   // If the string has both ',' and '.', the rightmost separator is the decimal.

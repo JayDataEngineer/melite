@@ -174,8 +174,8 @@ export function parsePngText(dataUrl: string): Record<string, string> {
       if (nul > 0) {
         const key = latin1.decode(payload.subarray(0, nul))
         const flag = payload[nul + 1]
-        // Skip compression method byte, language tag, translated keyword
-        let p = nul + 2
+        // Skip compression flag + method bytes, language tag, translated keyword
+        let p = nul + 3
         const nul2 = payload.indexOf(0, p)
         const nul3 = nul2 >= 0 ? payload.indexOf(0, nul2 + 1) : -1
         if (nul3 >= 0 && flag === 0) {

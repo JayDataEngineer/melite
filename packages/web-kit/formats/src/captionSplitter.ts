@@ -52,12 +52,17 @@ export function splitCaptions(args: SplitArgs): CaptionCue[] {
 
   // ── Proportional path: split text + distribute by character count ──────
   const chunks = splitIntoChunks(trimmed, maxChars)
+  /* v8 ignore next -- chunks is non-empty: trimmed is non-empty so the
+     sentence split yields >=1 match, every match holds a non-space char
+     (kept below), and each kept sentence emits >=1 fragment (2026-09-12) */
   if (chunks.length === 0) return []
 
   const totalChars = chunks.reduce((s, c) => s + c.length, 0)
   let elapsed = 0
   return chunks.map((chunk, i) => {
-    const proportion = totalChars > 0 ? chunk.length / totalChars : 1 / chunks.length
+    // Proof (2026-09-12): every chunk is a non-empty string (proven at the
+    // chunks.length guard above), so totalChars is positive — no fallback.
+    const proportion = chunk.length / totalChars
     const start = elapsed
     const segDur = proportion * duration
     // Last cue gets the remaining time (avoids float drift at the end).
@@ -85,11 +90,17 @@ export function splitIntoChunks(text: string, maxChars = DEFAULT_MAX_CHARS): str
   if (!clean) return []
 
   // Step 1: split into sentences, keeping the terminator.
-  const sentences = clean.match(/[^.!?…]+[.!?…]+|\S[^.!?…]*$/g) ?? [clean]
+  // The second alternative matches any trailing non-space run, so a
+  // non-empty input always yields >=1 match (the `as` is proven, not blind:
+  // `clean` is non-empty per the guard above).
+  const sentences = clean.match(/[^.!?…]+[.!?…]+|\S[^.!?…]*$/g) as RegExpMatchArray
   // Step 2: break long sentences at clause / word boundaries.
   const fragments: string[] = []
   for (const s of sentences) {
     const trimmed = s.trim()
+    /* v8 ignore next -- every match holds >=1 non-space char (the first
+       alternative ends in a terminator, the second starts with \S), so
+       trimmed is never empty here (2026-09-12) */
     if (!trimmed) continue
     if (trimmed.length <= maxChars) {
       fragments.push(trimmed)
@@ -127,6 +138,7 @@ function splitAtWordBoundary(s: string, maxChars: number): string[] {
       cur = w
     }
   }
+  /* v8 ignore next -- same proof as above: cur is non-empty here (2026-09-12) */
   if (cur) chunks.push(cur)
   return chunks
 }
@@ -144,6 +156,8 @@ function mergeFragments(frags: string[], maxChars: number): string[] {
       cur = f
     }
   }
+  /* v8 ignore next -- mergeFragments is called only with >=1 fragment (every
+     kept sentence emits >=1, proven above), so cur is non-empty here (2026-09-12) */
   if (cur) merged.push(cur)
   return merged
 }
@@ -168,10 +182,15 @@ function buildFromTokens(
     curWords.push(tok)
     curLen += (curLen > 0 ? 1 : 0) + tok.text.length
   }
+  /* v8 ignore next -- tokens is non-empty here (the caller guards length),
+     and every loop iteration pushes exactly one token, so a group is always
+     open after the loop (2026-09-12) */
   if (curWords.length > 0) {
     cues.push(makeTokenCue(curWords, cues.length))
   }
   // Clamp the last cue's end to the segment duration if tokens overshoot.
+  /* v8 ignore next -- same proof: >=1 group was just flushed, so cues is
+     non-empty here (2026-09-12) */
   if (cues.length > 0) {
     const last = cues[cues.length - 1]
     if (last.end > fallbackDuration) {

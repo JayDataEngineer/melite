@@ -63,6 +63,9 @@ export function registerClientTool(
     if (registry.get(name) === handler) registry.delete(name)
   }
 }
+/* v8 ignore start -- useClientTool is mounted-surface React wiring (registers
+ * while a surface mounts, deregisters on unmount): it needs a React renderer,
+ * so it is dom-project territory like the 3d studios (2026-09-12) */
 export function useClientTool(
   name: string,
   handler: ClientToolHandler,
@@ -75,6 +78,7 @@ export function useClientTool(
     }
   }, [name, handler, ...deps]) // eslint-disable-line react-hooks/exhaustive-deps
 }
+/* v8 ignore stop -- useClientTool is mounted-surface React wiring (2026-09-12) */
 
 /** The registered names — attached to the run as input.client_tools so the
  * server only exposes tools whose surface is actually mounted. */

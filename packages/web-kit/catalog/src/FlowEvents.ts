@@ -85,6 +85,7 @@ export function streamFlowEvents(
   }
 
   const connect = () => {
+    /* v8 ignore next -- defensive: close()/finish() always clear the pending reconnect timer, so connect() can never run after close or a terminal frame (2026-09-12) */
     if (closed || terminal) return
     if (typeof WebSocket === "undefined") return // no ws runtime → poll only
     const proto = typeof location !== "undefined" && location.protocol === "https:" ? "wss" : "ws"

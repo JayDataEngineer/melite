@@ -141,6 +141,8 @@ function diskMorph(
   const hw = diskRowHalfWidths(r);
   for (let dy = -r; dy <= r; dy++) {
     const k = hw[dy + r]!;
+    /* v8 ignore next -- k = floor(sqrt(r^2 - dy^2)) >= 0 by construction
+       (diskRowHalfWidths), so this never fires; kept as armor (2026-09-12) */
     if (k < 0) continue;
     const row = horizDilateBool(src, w, h, k);
     if (dy === 0) {

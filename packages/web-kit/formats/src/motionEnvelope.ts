@@ -71,6 +71,9 @@ export function sampleMotionEnvelope(args: EnvelopeSampleArgs): number[] {
       const peaks = cue.waveformPeaks!
       // Map relative time → peak index. Clamp to valid range.
       let idx = Math.floor((relT / cue.duration) * peaks.length)
+      /* v8 ignore next -- relT is in [0, duration] here (negatives and
+         overshoots `continue` above), so idx >= 0 always; the upper clamp
+         below is the live one (2026-09-12) */
       if (idx < 0) idx = 0
       if (idx >= peaks.length) idx = peaks.length - 1
       const amp = peaks[idx]

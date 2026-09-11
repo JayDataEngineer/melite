@@ -52,6 +52,8 @@ function flatten(json: typeof tagsJson): PromptTag[] {
   const out: PromptTag[] = []
   for (const cat of TAG_CATEGORY_ORDER) {
     const arr = json[cat]
+    // Runtime armor for hand-edits that bypass tsc; pinned by
+    // promptTagsArmor.spec.ts (mocked malformed database).
     if (!Array.isArray(arr)) continue
     for (const value of arr) {
       if (typeof value === 'string' && value.length > 0) {

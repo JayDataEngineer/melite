@@ -173,7 +173,9 @@ export async function loadSomaSkin(): Promise<SomaSkin> {
     const faces = Uint32Array.from(faceSrc)
     const lbsIndices = li.data instanceof Uint32Array
       ? (li.data as Uint32Array)
-      : Uint32Array.from(li.data as ArrayLike<number>)
+      : li.data instanceof BigInt64Array
+        ? Uint32Array.from(li.data, (x) => Number(x))
+        : Uint32Array.from(li.data as ArrayLike<number>)
     const lbsWeights = asFloat32(lw.data)
 
     return {
@@ -192,9 +194,12 @@ export async function loadSomaSkin(): Promise<SomaSkin> {
   })()
   try {
     return await _skinPromise
-  } finally {
-    // Allow re-fetch on the NEXT call after a failure; keep the success cached
-    // by restoring the promise only if it resolved.
+  } catch (e) {
+    // A failed load must not poison the session cache: the next call
+    // re-fetches (a transient gateway blip during the first preview must
+    // not brick every later motion preview). Successes stay cached.
+    _skinPromise = null
+    throw e
   }
 }
 

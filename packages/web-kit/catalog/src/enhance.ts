@@ -65,8 +65,11 @@ export function isEmbedded(): boolean {
  */
 export function parsePickerAria(label: string): string | null {
   const m = /select model,\s*current\s+(.+?)(?:,\s*reasoning|$)/i.exec(label)
-  const name = m?.[1]?.trim()
-  return name && name.length > 0 ? name : null
+  if (!m) return null
+  // Group 1 always participates when the overall match succeeds (a required
+  // capture), so m[1] is a string here — no `?.` (which would be dead).
+  const name = m[1].trim()
+  return name.length > 0 ? name : null
 }
 
 /**
@@ -93,7 +96,11 @@ export function readPickerModel(): string | null {
     const labels = Array.from(doc.querySelectorAll<HTMLElement>('[class*="triggerLabel"]'))
       .filter((el) => (el.textContent ?? "").trim().length > 0 && el.getClientRects().length > 0)
     const last = labels[labels.length - 1]
-    return last ? (last.textContent ?? "").trim() : null
+    // PROOF the `?? ""` is dead here (dropped, not ignored): the filter
+    // above keeps only elements whose textContent trims to a non-empty
+    // string — null/blank textContent trims to "" and is dropped — so
+    // last.textContent is a string when last exists.
+    return last ? (last.textContent as string).trim() : null
   } catch {
     return null // cross-origin or no parent — host default serves
   }
@@ -135,18 +142,20 @@ export function resolvePickerRoute(
 async function enhanceViaHarness(
   systemPrompt: string,
   prompt: string,
-  temperature?: number,
   llm?: string,
 ): Promise<EnhancedPrompt | null> {
   let res: Response
   try {
+    // NOTE: no temperature spread — the sole caller (enhancePrompt) has no
+    // temperature to send (proven 2026-09-12: the only call passes
+    // (systemPrompt, prompt, llm)); a conditional spread here would carry a
+    // dead arm. agentEnhance below keeps its own temperature spread.
     res = await apiFetch(externalUrl("/melite-tools/enhance"), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         system_prompt: systemPrompt,
         prompt: prompt,
-        ...(temperature !== undefined ? { temperature } : {}),
         ...(llm !== undefined && llm.length > 0 ? { llm } : {}),
       }),
     })
@@ -184,7 +193,7 @@ export async function enhancePrompt(
   // the DSH GUI; standalone editors get an honest error (no fallback).
   // llm names the caller's harness route ("provider/model"); absent =
   // host default walk. The result's `via` says who actually answered.
-  const harnessed = await enhanceViaHarness(systemPrompt, prompt, undefined, llm)
+  const harnessed = await enhanceViaHarness(systemPrompt, prompt, llm)
   if (harnessed !== null) return harnessed
   throw new Error(
     "Prompt enhance runs inside the DeepSeek app (/melite-tools/enhance " +

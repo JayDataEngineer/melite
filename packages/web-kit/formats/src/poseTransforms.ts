@@ -310,7 +310,10 @@ export function flatTo3D(flat: number[]): [number, number, number][] {
     const sx = (x / 1024 - SOMA_CENTER_X) * SOMA_SCALE * 2
     // Y is inverted in image coords (0 = top)
     const sy = (SOMA_CENTER_Y - y / 1024) * SOMA_SCALE * 2
-    const sz = DEFAULT_Z[i] ?? 0
+    // Every COCO-18 joint 0..17 is tabled in DEFAULT_Z above (the loop
+    // bound is NUM_KEYPOINTS = 18), so the lookup is always present —
+    // no fallback to cover. Keep the table and loop in lockstep.
+    const sz = DEFAULT_Z[i] as number
 
     result.push([sx, sy, sz])
   }

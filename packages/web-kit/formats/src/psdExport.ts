@@ -130,7 +130,13 @@ function blendKey(mode: BlendMode): string {
   return map[mode] ?? 'norm'
 }
 
-/** Pad a byte count up to an even number (PSD sections must be even-length). */
+/** Pad a byte count up to an even number (PSD sections must be even-length).
+ *  Armor: every record component is a multiple of 2 bytes by construction
+ *  (u16/i16 ×2, i32/u32/ascii-4 ×4, opacity/clip/flags/filler ×4, extra =
+ *  8 + 4k via the mod-4 name pad, channel blocks = 4×(2+P)), so both call
+ *  sites always pass even lengths and the +1 arm never fires — the padding
+ *  stays as defense-in-depth for future layout edits (proven 2026-09-12). */
+/* v8 ignore next -- even() odd arm: inputs always even (see proof above) (2026-09-12) */
 function even(n: number): number { return n % 2 === 0 ? n : n + 1 }
 
 /**
@@ -259,6 +265,8 @@ export async function buildPsd(
   const layerSection = new ByteWriter()
   layerSection.u32(layerInfoPadded)
   layerSection.bytes(layerInfoBytes)
+  /* v8 ignore next -- layer-info pad bytes: layerInfoBytes.length is always
+     even (2 + per-layer evens — see even() proof), so the body never runs (2026-09-12) */
   if (layerInfoPadded > layerInfoBytes.length) {
     layerSection.bytes(new Uint8Array(layerInfoPadded - layerInfoBytes.length))
   }
@@ -300,6 +308,8 @@ export async function buildPsd(
   // Layer and mask information
   out.u32(layerMaskPadded)
   out.bytes(layerMaskBytes)
+  /* v8 ignore next -- layer-mask pad bytes: 4 + even is always even (see
+     even() proof), so the body never runs (2026-09-12) */
   if (layerMaskPadded > layerMaskBytes.length) {
     out.bytes(new Uint8Array(layerMaskPadded - layerMaskBytes.length))
   }

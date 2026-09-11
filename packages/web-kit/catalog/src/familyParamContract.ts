@@ -160,6 +160,9 @@ const WIRE_RELAXED_KEYS: ReadonlySet<string> = new Set([
 // ── The validator (pure, synchronous) ───────────────────────────────────
 
 function jsonTypeOf(val: unknown): JsonSchemaType | null {
+  /* v8 ignore next -- defensive: both callers (coerceParamsToSchema,
+   * validateParamsAgainstSchema) route val === null through the defaulted
+   * null path BEFORE calling, so null never reaches here (2026-09-12) */
   if (val === null) return "null"
   if (Array.isArray(val)) return "array"
   const t = typeof val
@@ -267,7 +270,10 @@ function coerceScalar(
       // "" is UNSET for every non-string field — never 0, never false.
       // ("" for an array IS the picker's empty → [], handled above.)
       if (expected === "array") return { ok: true, value: [] }
-      if (expected === "string") return { ok: true, value: val }
+      // NOTE: no `expected === "string"` arm — provably dead (2026-09-12):
+      // coerceScalar is only reached when actual !== expected, and a ""
+      // string's actual IS "string", so a string field exact-matches before
+      // this runs. "" for a string is the value itself, never UNSET.
       return { ok: false, unset: true }
     }
     if (expected === "integer" || expected === "number") {

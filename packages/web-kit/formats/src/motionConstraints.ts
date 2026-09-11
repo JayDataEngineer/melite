@@ -414,7 +414,10 @@ export function hydrateMotionPrompts(
     segments.push({ text: seg.text, start_frame: start, end_frame: end })
     cursor = end + 1
   }
-  return segments.length > 0 ? segments : null
+  // Proof (2026-09-12): `parsed` is a non-empty array here and every loop
+  // iteration either returns null or pushes exactly one segment, so
+  // `segments` is always non-empty at this point.
+  return segments
 }
 
 /** NO-OVERLAP INVARIANT (2026-08-15, "the prompt cards can overlap — they

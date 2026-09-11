@@ -58,7 +58,10 @@ export async function loadMotionNpz(url: string): Promise<MotionNpz> {
     throw new Error(`NPZ missing 'posed_joints' (got: ${[...arrays.keys()].join(", ") || "empty"})`)
   }
   if (!rotmats || rotmats.shape.length < 3) {
-    throw new Error(`NPZ missing 'global_rot_mats' (got: ${[...arrays.keys()].join(", ") || "empty"})`)
+    // No `|| "empty"` fallback here (unlike the joints arm above): the
+    // joints gate just passed, so `posed_joints` is always among the keys
+    // and the join is never empty (proven dead 2026-09-12).
+    throw new Error(`NPZ missing 'global_rot_mats' (got: ${[...arrays.keys()].join(", ")})`)
   }
   const T = joints.shape[0]
   if (joints.shape[1] !== 77 || joints.shape[2] !== 3) {

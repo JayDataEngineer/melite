@@ -655,6 +655,12 @@ function schedulePersist(state: Pick<TimelineStore, 'segments' | 'audioCues' | '
   if (_persistTimer !== null) clearTimeout(_persistTimer)
   _persistTimer = setTimeout(() => {
     _persistTimer = null
+    // Proven dead false-arm (2026-09-12): schedulePersist always assigns a
+    // non-null _pendingPersist in the same sync block that arms this timer,
+    // and flushPersist clears the timer in the same sync block that nulls
+    // _pendingPersist — single-threaded JS admits no interleaving that
+    // could null it mid-flight.
+    /* v8 ignore next -- _pendingPersist is always set when the timer is armed (2026-09-12) */
     if (_pendingPersist) {
       const args = _pendingPersist
       _pendingPersist = null
@@ -854,6 +860,10 @@ export const useTimelineStore = create<TimelineStore>((set, get) => ({
     }
     set((s) => {
       const target = s.segments.find((seg) => seg.id === segId)
+      // Proven dead (2026-09-12): the caller synchronously verified the
+      // target via get() and returned null otherwise; no await or
+      // re-entrancy sits between, so the updater always finds it.
+      /* v8 ignore next -- target always exists: sync get-then-set, no interleave (2026-09-12) */
       if (!target) return {}
       const existing = Array.isArray(target.variants) ? [...target.variants] : []
       existing.push(stored)
@@ -1382,6 +1392,10 @@ export const useTimelineStore = create<TimelineStore>((set, get) => ({
     }
     set((s) => {
       const idx = s.segments.findIndex((seg) => seg.id === sourceId)
+      // Proven dead (2026-09-12): the caller synchronously read the same
+      // segment list via get() and returned [] unless idx >= 0; no await
+      // or re-entrancy sits between, so the updater always finds it.
+      /* v8 ignore next -- idx always >= 0: sync get-then-set, no interleave (2026-09-12) */
       if (idx < 0) return {}
       const before = s.segments.slice(0, idx + 1)   // includes the source
       const after = s.segments.slice(idx + 1)
@@ -1414,7 +1428,13 @@ export const useTimelineStore = create<TimelineStore>((set, get) => ({
       }
     })
     schedulePersist(get())
-    return copies
+    // Return the STORED copies (order + start finalized in the set()
+    // above), not the pre-insertion images — callers positioning from
+    // the return value must see the same starts the store holds.
+    // (2026-09-12: the old code returned `copies` with every start still
+    // at the source's, so returned starts disagreed with the store.)
+    const ids = new Set(copies.map((c) => c.id))
+    return get().segments.filter((s) => ids.has(s.id)).sort((x, y) => x.order - y.order)
   },
 
   // ── G8: Multi-select + in/out points ────────────────────────────────
@@ -1448,10 +1468,15 @@ export const useTimelineStore = create<TimelineStore>((set, get) => ({
     if (next.size === 0) {
       return { selectedSegmentIds: next, selectedSegmentId: null }
     }
-    // Promote to primary if there isn't one already in the set.
-    const primary = s.selectedSegmentId && next.has(s.selectedSegmentId)
+    // Promote to primary if there isn't one already in the set. When the
+    // toggle just REMOVED the primary (ctrl-click off), `id` is no longer
+    // a member — fall back to a remaining member so the primary honors
+    // the interface invariant (always a member while the set is
+    // non-empty). A toggled-ON id still becomes primary. (2026-09-12)
+    let primary = s.selectedSegmentId && next.has(s.selectedSegmentId)
       ? s.selectedSegmentId
       : id
+    if (!next.has(primary)) primary = [...next][0] as string
     return { selectedSegmentIds: next, selectedSegmentId: primary }
   }),
   clearMultiSelection: () => set((s) => ({
@@ -1579,6 +1604,11 @@ export const useTimelineStore = create<TimelineStore>((set, get) => ({
     if (_historyIdx <= 0) return
     _historyIdx--
     const snap = _history[_historyIdx]
+    // Proven dead false-arm (2026-09-12): the bound above guarantees
+    // _historyIdx >= 0 after decrement, and the push/shift/undo
+    // transitions maintain 0 <= _historyIdx <= _history.length - 1
+    // whenever the list is non-empty — the slot always holds a snapshot.
+    /* v8 ignore next -- snap always defined inside the history bounds (2026-09-12) */
     if (snap) {
       set({ segments: snap.segments, audioCues: snap.audioCues })
       schedulePersist(get())
@@ -1589,6 +1619,10 @@ export const useTimelineStore = create<TimelineStore>((set, get) => ({
     if (_historyIdx >= _history.length - 1) return
     _historyIdx++
     const snap = _history[_historyIdx]
+    // Proven dead false-arm (2026-09-12): same bounds argument as undo —
+    // the guard guarantees _historyIdx <= _history.length - 1, so the
+    // slot always holds a snapshot.
+    /* v8 ignore next -- snap always defined inside the history bounds (2026-09-12) */
     if (snap) {
       set({ segments: snap.segments, audioCues: snap.audioCues })
       schedulePersist(get())

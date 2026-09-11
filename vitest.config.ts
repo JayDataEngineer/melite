@@ -232,7 +232,32 @@ export default defineConfig({
         // they stay exempt while the gate expands incrementally. The
         // gated set (models DECL index.ts) stays under the gate below.
         'packages/web/**/src/**/*.{ts,tsx}',
-        'packages/web-kit/**/src/**/*.{ts,tsx}',
+        // web-kit closed (2026-09-12, §TEST-17): every gateable file
+        // at per-file 100 — catalog/contracts/formats/slots/timeline
+        // planes + the five node-safe ui helpers. GUI-debt stays
+        // named (the dom project's territory, same carve-out as the
+        // 3d/image/motion/video studios): the 44 ui .tsx components,
+        // 8 DOM/store/hook ui modules + the ui barrel, the slots
+        // rail + react shim, 4 timeline React/canvas modules, the
+        // WebGL snapshot renderer — plus the 2 generated carriers
+        // (exempt-by-kind).
+        'packages/web-kit/ui/src/*.tsx',
+        'packages/web-kit/ui/src/clipboard.ts',
+        'packages/web-kit/ui/src/listFilter.ts',
+        'packages/web-kit/ui/src/motionThumbStore.ts',
+        'packages/web-kit/ui/src/posterStore.ts',
+        'packages/web-kit/ui/src/toast.ts',
+        'packages/web-kit/ui/src/use-hover-scrub.ts',
+        'packages/web-kit/ui/src/use-mobile.ts',
+        'packages/web-kit/ui/src/index.ts',
+        'packages/web-kit/**/src/generated/*',
+        'packages/web-kit/slots/src/studioRail.tsx',
+        'packages/web-kit/slots/src/vendored/react.tsx',
+        'packages/web-kit/timeline/playback/useAudioPlayback.ts',
+        'packages/web-kit/timeline/timeline/MotionTimelineBar.tsx',
+        'packages/web-kit/timeline/timeline/viser-timeline/Timeline.tsx',
+        'packages/web-kit/timeline/timeline/viser-timeline/viewerContext.ts',
+        'packages/web-kit/formats/src/renderSnapshot.ts',
         // engines closed (2026-09-12, §TEST-15): every file at
         // per-file 100 — the card/pack/flavor/verb plane, the models
         // DECL service (interlock/facts/addresses/cascade), the

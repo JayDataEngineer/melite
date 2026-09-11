@@ -220,7 +220,11 @@ export function subcardsFromParams(params: Record<string, unknown>): ModifierSub
 
 /** Human label for a LoRA entry (file base name, extension stripped). */
 export function loraLabel(name: string): string {
- return name.split("/").pop()?.replace(/\.(safetensors|pt|ckpt)$/, "") ?? name
+ // String.split() always yields ≥1 element, so pop() is always a string
+ // here — the `?? name` fallback this replaces could never fire (proven
+ // dead 2026-09-12; behavior identical for every input).
+ const base = name.split("/").pop() as string
+ return base.replace(/\.(safetensors|pt|ckpt)$/, "")
 }
 
 /** Total subcard count on a card — the collapsed-tile "+N" hint. */
@@ -281,7 +285,10 @@ export function applySubcardDrop(
  const spec = kindForId(params, activeId, kinds)
  if (!spec) return params
  if (kindForId(params, overId, kinds)?.kind !== spec.kind) return params
- const arr = (params[spec.param_key] as unknown[] | undefined) ?? []
+ // kindForId matched activeId inside this very array, so the key is
+ // present — the `?? []` fallback this replaces could never fire (proven
+ // dead 2026-09-12; behavior identical for every input).
+ const arr = params[spec.param_key] as unknown[]
  const from = arr.findIndex((e) => subcardId(spec.kind, e as { id?: string; name?: string }) === activeId)
  const to = arr.findIndex((e) => subcardId(spec.kind, e as { id?: string; name?: string }) === overId)
  const next = moveItem(arr, from, to)

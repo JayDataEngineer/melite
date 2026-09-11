@@ -313,6 +313,9 @@ export function primeCatalog(data: Catalog): void {
 // transform into src modules (import.meta.vitest is only injected into test
 // files themselves; env.VITEST is not injected at all). A normal browser build
 // runs MODE "production"/"development", so production + HMR are unchanged.
+/* v8 ignore next -- module warm-load runs only in browser builds, where
+ * MODE is "production"/"development"; under vitest MODE is always "test",
+ * so the taken arm is unreachable here (2026-09-12). */
 if ((import.meta as { env?: { MODE?: string } }).env?.MODE !== "test") ensureCatalog()
 
 // ── Selectors (mirror media/editor_catalog.py) ──────────────────────────
@@ -323,7 +326,11 @@ if ((import.meta as { env?: { MODE?: string } }).env?.MODE !== "test") ensureCat
  * parent model that owns the route via its ``variants:`` block.
  */
 function parentModelForRoute(routeKey: string, cat: Catalog): string | undefined {
- if (!cat?.models) return undefined
+ // MODELS PRESENCE (2026-09-12): every caller guarantees models —
+ // familyOf/formOf pre-check `!cat?.models`, and variantsForRoute reads
+ // cat.models[routeKey] first (which throws on absent models before we
+ // are reached). No guard here (its taken arm is unreachable; v8 counts
+ // an untaken if-arm as an uncovered branch).
  for (const [key, spec] of Object.entries(cat.models)) {
  if ((spec.variants ?? []).some((v) => v.route === routeKey)) return key
  }
@@ -335,7 +342,11 @@ export function familyOf(routeKey: string, cat: Catalog = _cache ?? { families: 
  const own = cat.models[routeKey]?.family
  if (own) return own
  const parent = parentModelForRoute(routeKey, cat)
- return parent ? cat.models[parent]?.family : undefined
+ // PARENT PRESENCE (2026-09-12): parentModelForRoute returns a key from
+ // this same cat.models, synchronously — so models[parent] is defined
+ // here. Direct access, no `?.` (its short-circuit arm is unreachable,
+ // and v8 counts an untaken optional-chain arm as an uncovered branch).
+ return parent ? cat.models[parent].family : undefined
 }
 
 /**
@@ -376,7 +387,9 @@ export function formOf(
  const own = cat.models[routeKey]?.form
  if (own) return own
  const parent = parentModelForRoute(routeKey, cat)
- return parent ? cat.models[parent]?.form : undefined
+ // PARENT PRESENCE (2026-09-12): see familyOf — models[parent] is defined
+ // here. Direct access, no `?.`.
+ return parent ? cat.models[parent].form : undefined
 }
 
 export function familyLabel(routeKey: string, cat: Catalog = _cache ?? { families: {}, models: {}, capabilities: null, engine_order: null, quant_order: null, input_vocabulary: null }): string {
@@ -568,7 +581,12 @@ export function familyPrimaryRoute(
  const members = Object.entries(cat.models)
  .filter(([, s]) => s.family === fam)
  .map(([k]) => k)
- return members.find((k) => k === fam) ?? members[0] ?? routeKey
+ // MEMBERS NONEMPTY (2026-09-12): `fam` resolved from a model that
+ // carries it (the route's own entry, or the parent owning it through
+ // variants:), so that model is itself a member — members[0] is always
+ // defined. No `?? routeKey` fallback: its right operand is unreachable,
+ // and v8 counts an unevaluated `??` operand as an uncovered branch.
+ return members.find((k) => k === fam) ?? members[0]
 }
 
 export function modelLabel(routeKey: string, cat: Catalog = _cache ?? { families: {}, models: {}, capabilities: null, engine_order: null, quant_order: null, input_vocabulary: null }): string {
@@ -646,7 +664,12 @@ export function variantsForRoute(
  const own = cat.models[routeKey]?.variants
  if (own) return own
  const parent = parentModelForRoute(routeKey, cat)
- return parent ? (cat.models[parent]?.variants ?? []) : []
+ // PARENT VARIANTS PRESENCE (2026-09-12): parentModelForRoute returns a
+ // key only when that entry's variants list contains routeKey, so the
+ // parent's variants are a non-empty array here — no `?.`/`?? []`
+ // fallback (both right operands are unreachable, and v8 counts
+ // unevaluated operands as uncovered branches).
+ return parent ? (cat.models[parent].variants as VariantEntry[]) : []
 }
 
 /**
@@ -666,7 +689,9 @@ export function presetsForRoute(
  routeKey: string,
  cat: Catalog = _cache ?? { families: {}, models: {}, capabilities: null, engine_order: null, quant_order: null, input_vocabulary: null },
 ): Record<string, PresetEntry> | undefined {
- const own = cat.models?.[routeKey]?.presets
+ // MODELS PRESENCE (2026-09-12): see routeCoordinates — models is always
+ // present here. Direct access, no `?.` on models.
+ const own = cat.models[routeKey]?.presets
  return own && typeof own === "object" && Object.keys(own).length > 0
   ? own
   : undefined
@@ -721,7 +746,11 @@ export function routeCoordinates(
  routeKey: string,
  cat: Catalog = _cache ?? { families: {}, models: {}, capabilities: null, engine_order: null, quant_order: null, input_vocabulary: null },
 ): { variant: string | undefined; quant: string | undefined } {
- const m = cat.models?.[routeKey]
+ // MODELS PRESENCE (2026-09-12): every Catalog reaching here carries
+ // models — the default parameter literal declares it, _ingest only runs
+ // after validation (which refuses a models-less catalog), and
+ // primeCatalog callers pass full catalogs. Direct access, no `?.`.
+ const m = cat.models[routeKey]
  return {
  variant: m?.variant,
  quant: m?.quant ?? activeVariantForRoute(routeKey, cat)?.quant,
@@ -775,7 +804,12 @@ function matrixCell(
  quant: string | undefined,
  cat: Catalog,
 ): string | undefined {
- for (const [key, spec] of Object.entries(cat.models ?? {})) {
+ // MODELS PRESENCE (2026-09-12): both callers return early unless
+ // familyOf resolved, and familyOf returns undefined when cat.models is
+ // absent — so models is present here. No `?? {}` fallback: its right
+ // operand is unreachable, and v8 counts an unevaluated `??` operand
+ // as an uncovered branch.
+ for (const [key, spec] of Object.entries(cat.models)) {
  if ((spec.family ?? key) !== fam) continue
  const rc = routeCoordinates(key, cat)
  if (rc.variant === variant && rc.quant === quant) return key

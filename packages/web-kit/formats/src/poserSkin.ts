@@ -119,14 +119,18 @@ export async function fetchBindMesh(
     : null
   const lcEntries = localChanges && Object.keys(localChanges).length > 0
     ? Object.entries(localChanges)
-        .sort(([a], [b]) => a < b ? -1 : a > b ? 1 : 0)
+        // Object keys are unique, so the equal-key arm is unreachable:
+        // a two-arm comparator sorts identically here (proof: distinct
+        // strings are always ordered one way or the other).
+        .sort(([a], [b]) => (a < b ? -1 : 1))
         .map(([k, v]) => `${k}=${v.toFixed(2)}`).join(",")
     : null
   // Custom .target blendshape weights (e.g. {"anime_stylized_enhanced": 0.5}).
   // Rounded to 2 decimals - same convention as localChanges.
   const ctEntries = customTargets && Object.keys(customTargets).length > 0
     ? Object.entries(customTargets)
-        .sort(([a], [b]) => a < b ? -1 : a > b ? 1 : 0)
+        // Same unique-keys proof as lcEntries above: two arms suffice.
+        .sort(([a], [b]) => (a < b ? -1 : 1))
         .map(([k, v]) => `${k}=${v.toFixed(2)}`).join(",")
     : null
   const poseSig = previewPose && previewPose !== "tpose" ? previewPose : null

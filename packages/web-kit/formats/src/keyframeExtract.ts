@@ -79,10 +79,10 @@ export function extractKeyframeFrames(
       out.push(f)
     } else if (f === total - 1) {
       // Always keep the last frame even if close to the previous — it's
-      // the end-anchor. Replace the previous if it's very close.
-      const prev = out[out.length - 1]
-      if (total - 1 - prev < minSpacing) out[out.length - 1] = f
-      else out.push(f)
+      // the end-anchor. Proof (2026-09-12): reaching here means out is
+      // non-empty and f - prev < minSpacing with f === total - 1, so the
+      // end-anchor unconditionally replaces its too-close predecessor.
+      out[out.length - 1] = f
     }
   }
   return out

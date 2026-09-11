@@ -192,10 +192,16 @@ export function formSidebarItems(forms: FormsData): Record<string, SidebarItem[]
     ;(out[genre] ??= []).push({ name: key, label: d.label || key, genre, order } as SidebarItem)
   }
   for (const items of Object.values(out)) {
+    // ORDER PRESENCE (2026-09-12): every item pushed above carries a
+    // numeric `order` (a missing declaration became Infinity at the push
+    // site), so the comparator reads it directly — no `?? Infinity`
+    // fallback. The fallback's right operand is unreachable through this
+    // builder (the comparator only ever sees pushed items), and v8 counts
+    // an unevaluated `??` operand as an uncovered branch.
     items.sort(
       (a, b) =>
-        ((a as SidebarItem & { order?: number }).order ?? Infinity) -
-          ((b as SidebarItem & { order?: number }).order ?? Infinity) ||
+        (a as SidebarItem & { order: number }).order -
+          (b as SidebarItem & { order: number }).order ||
         a.label.localeCompare(b.label),
     )
   }

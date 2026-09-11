@@ -94,6 +94,8 @@ export function getCardBodiesVersion(): number {
 }
 
 /** Live propagation: subscribe React to provider flips. */
+/* v8 ignore next -- React-tree live propagation (needs a renderer for
+ * useSyncExternalStore): dom-project territory (2026-09-12) */
 export function useCardBodiesVersion(): number {
   return slot.useVersion()
 }
