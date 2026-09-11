@@ -6,7 +6,7 @@
 // (named refusal propagation, malformed-doc refusal).
 import { describe, expect, test } from "bun:test";
 import {
-  cardRows, coerceEdit, editPatch, fetchDraft, foldFrame, paramFields, runFinished,
+  cardRows, coerceEdit, editPatch, fetchDraft, foldFrame, paramFields, patchStageParams, runFinished,
 } from "../src/client/draft.ts";
 import type { DraftDoc, RunStatusDoc } from "../src/client/draft.ts";
 
@@ -94,15 +94,33 @@ describe("foldFrame — the events-bus idempotent patch", () => {
   });
 });
 
+// The wire stub: fetch is replaced whole; the canned RemoteResult
+// answers inside the server-response frame the wire caller expects
+// (fetchDraft self-fetches — the gateway-era fetch injection died
+// with the app; tests stub globalThis.fetch per call).
+function stubWire(result: { ok: true; value: unknown } | { ok: false; error: { message: string } }): void {
+  (globalThis as { fetch: unknown }).fetch = async (_input: unknown, init?: RequestInit): Promise<Response> => {
+    const frame = JSON.parse(String(init?.body)) as { rpcId?: string; method?: string };
+    return new Response(JSON.stringify({
+      type: "server-response", rpcId: frame.rpcId, result,
+    }), { status: 200, headers: { "content-type": "application/json" } });
+  };
+}
+
 describe("door narrowing — named refusals, malformed docs", () => {
-  test("fetchDraft propagates the door's named error", async () => {
-    const stub = async () => res(400, { error: "no_such_draft" });
-    expect((await fetchDraft(stub, "d").catch((e: Error) => e.message))).toBe("no_such_draft");
+  test("fetchDraft propagates the remote's named error", async () => {
+    stubWire({ ok: false, error: { message: "no_such_draft" } });
+    expect((await fetchDraft("d").catch((e: Error) => e.message))).toBe("no_such_draft");
   });
 
   test("fetchDraft refuses a non-doc payload with its own name", async () => {
-    const stub = async () => res(200, { hello: "world" });
-    expect((await fetchDraft(stub, "d").catch((e: Error) => e.message))).toBe("draft GET: not a draft doc");
+    stubWire({ ok: true, value: { hello: "world" } });
+    expect((await fetchDraft("d").catch((e: Error) => e.message))).toBe("drafts/get: not a draft doc");
+  });
+
+  test("patchStageParams refuses LOUD (no serving plane — never a lying success)", async () => {
+    const message = await patchStageParams("d", "s_0", {}).catch((e: Error) => e.message);
+    expect(message).toContain("no serving plane");
   });
 
   test("runFinished pins the estate TERMINAL set (FlowEvents, verbatim)", () => {

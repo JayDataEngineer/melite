@@ -21,7 +21,7 @@
  * The wire is the editor's wire, same-origin via the card-deck host's
  * /v1 proxy (draft.ts owns every fetch). The user reviews the rows,
  * edits params in the drilldown, and presses Run ON THE CARD — the run
- * door (POST /v1/flows/start) is a user gesture, never the model's.
+ * door (runs/start over the wire frame) is a user gesture, never the model's.
  *
  * WATERFALL LEDGER (operator law 2026-09-10: ride DSH 1:1 → minimize
  * our code → DOCUMENT what can't be ridden; each entry is for review):
@@ -38,25 +38,24 @@
  *   (c-1) NO ATOM: the card ROW (a list row that opens a Modal).
  *         DisclosureRow is inline expansion — a different interaction;
  *         no shipped atom covers row→modal. Hand-rolled, layout-only.
- *   (a-2) RIDEN 1:1 — the run-status STREAM: @melite/catalog's
- *         streamFlowEvents (the estate's /v1/flows/events WS door,
- *         query form — the proxy-exact path, live bug 2026-09-04) folds
- *         idempotent stage frames positionally by INDEX (the estate
- *         mapping law); the poll stays TERMINAL AUTHORITY and the
- *         stream silently degrades to it — the FlowEvents contract,
- *         verbatim. (Supersedes the poll-only c-2 entry: the operator
- *         flagged it 2026-09-10 — "they do webhooks for us.")
- *   (c-3) NO CLIENT: the draft/run door layer (draft.ts). No DSH
- *         package wraps the estate's flows doors as a client; fetch-
- *         injected thin client over the editor's own wire shapes.
+ *   (a-2) THE LIVE RUN, post-kill: the gateway-era events WS died
+ *         with the gateway app (nothing serves it, by design); the
+ *         poll over the runs/status remote IS the live channel until
+ *         the collapse plan's stream remote exists (@Remote
+ *         ({mode:'stream'}) over the mux). The fold mapping
+ *         (idempotent stage frames by INDEX — the estate mapping law)
+ *         stays in draft.ts for that day.
+ *   (c-3) NO CLIENT: the draft/run remote layer (draft.ts). No DSH
+ *         package wraps the estate's remotes as a browser client; the
+ *         thin wire caller (client-request frame, api-gateway.md) is
+ *         the sanctioned shape for plugins outside the web kernel.
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import css from './card.module.css'
 import { Button, Input, Modal, Pill, StateDot } from '@deepseek-ai/dsh-client-ui-primitives'
 import type { ToolCallBlockView } from './types.ts'
-import { streamFlowEvents } from '@melite/catalog/FlowEvents'
 import {
-  cardRows, coerceEdit, editPatch, fetchDraft, foldFrame, paramFields, patchStageParams, runFinished, runStatus, startDraft,
+  cardRows, coerceEdit, editPatch, fetchDraft, paramFields, patchStageParams, runFinished, runStatus, startDraft,
 } from './draft.ts'
 import type { CardRow, DraftDoc, EditMap, ParamField, RunStatusDoc } from './draft.ts'
 
@@ -141,35 +140,26 @@ function useDraft(draftId: string | null): {
     setDoc(null)
     setLive(null)
     setError(null)
-    fetchDraft(fetch, draftId)
+    fetchDraft(draftId)
       .then((d) => { if (alive) setDoc(d) })
       .catch((e: unknown) => { if (alive) setError(e instanceof Error ? e.message : 'draft hydration failed') })
     return () => { alive = false }
   }, [draftId, tick])
 
-  // THE LIVE RUN — the estate contract (@melite/catalog FlowEvents.ts
-  // 2026-09-02): the WS door carries intra-tick frames the moment they
-  // happen; the poll below stays the TERMINAL AUTHORITY (a dropped
-  // socket never loses a run — the stream silently degrades, exactly
-  // as the editor's fold does).
+  // THE LIVE RUN — the gateway-era events WS died with the gateway
+  // app (nothing serves it, by design); until the collapse plan's
+  // stream remote exists (@Remote({mode:'stream'}) over the mux),
+  // the poll below IS the live channel — the runs/status remote over
+  // the wire frame, terminal authority by construction.
   const runId = live?.run_id ?? null
-  useEffect(() => {
-    if (runId === null) return
-    const ac = new AbortController()
-    const handle = streamFlowEvents(runId, (frame) => {
-      setLive((prev) => foldFrame(prev, runId, frame))
-    }, { signal: ac.signal })
-    return () => { handle.close(); ac.abort() }
-  }, [runId])
 
-  // The poll — terminal authority, stops on a terminal status (stream
-  // or poll, whichever sees it first), then refreshes the draft doc
-  // (the runs seat stamps a fresh createdAt on write-back).
+  // The poll — stops on a terminal status, then refreshes the draft
+  // doc (the runs seat stamps a fresh createdAt on write-back).
   useEffect(() => {
     if (runId === null) return
     let alive = true
     const step = (): void => {
-      runStatus(fetch, runId)
+      runStatus(runId)
         .then((s) => {
           if (!alive) return
           setLive(s)
@@ -234,8 +224,8 @@ function CardDrilldown({ draftId, row, stage, onClose }: {
       // Param edits first (the editor's door), then the run — the card
       // runs what the user SEES. A patch failure names itself and stops
       // the run from firing on stale params.
-      if (patch !== null) await patchStageParams(fetch, draftId, row.stageId, patch)
-      await startDraft(fetch, draftId)
+      if (patch !== null) await patchStageParams(draftId, row.stageId, patch)
+      await startDraft(draftId)
       onClose()
     } catch (e) {
       setRunError(e instanceof Error ? e.message : 'run failed')

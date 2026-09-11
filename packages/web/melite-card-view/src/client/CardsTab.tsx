@@ -53,28 +53,68 @@ function projectStage(s: BenchStageRow): Record<string, unknown> {
   return row
 }
 
-/** The Run gesture: start the bench as it stands. Errors surface inline
- *  (the door's own refusal text — logged, never thrown past React). */
+/** Correlation id for one client-request frame (crypto.randomUUID is
+ *  the browser standard). */
+function nextRpcId(): string {
+  const cryptoApi: Crypto | undefined = globalThis.crypto
+  if (cryptoApi?.randomUUID !== undefined) return cryptoApi.randomUUID()
+  return 'rpc-' + Math.random().toString(36).slice(2) + '-' + Date.now().toString(36)
+}
+
+/** The Run gesture: start the bench as it stands, over the runs
+ *  remote's wire door (same-origin POST /api/runs/start carrying the
+ *  client-request frame — api-gateway.md; the gateway-era /v1/flows
+ *  start died with the app, nothing serves it). Errors surface inline
+ *  (the RemoteError branch's own refusal text — logged, never thrown
+ *  past React). */
 async function runTheBench(
   bench: CardsBenchValue,
   onStarted: (runId: string) => void,
 ): Promise<void> {
   const stages = bench.stages.map(projectStage)
   if (stages.length === 0) return
+  const rpcId = nextRpcId()
   try {
-    const res = await fetch('/v1/flows/start', {
+    const res = await fetch('/api/runs/start', {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ flow_inline: { stages }, draft_id: bench.draftId }),
+      body: JSON.stringify({
+        type: 'client-request',
+        rpcId,
+        method: 'runs/start',
+        payload: { args: { doc: { flow_inline: { stages }, draft_id: bench.draftId } } },
+      }),
     })
-    const doc: unknown = await res.json().catch(() => null)
-    const runId = (doc as Record<string, unknown> | null)?.['run_id']
-    if (res.ok && typeof runId === 'string' && runId !== '') {
-      onStarted(runId)
-    } else {
-      const err = (doc as Record<string, unknown> | null)?.['error']
-      console.error('[cards] run refused:', typeof err === 'string' ? err : 'HTTP ' + res.status)
+    if (!res.ok) {
+      console.error('[cards] run refused: HTTP ' + String(res.status))
+      return
     }
+    const body: unknown = await res.json().catch(() => null)
+    if (typeof body !== 'object' || body === null
+        || Reflect.get(body, 'type') !== 'server-response'
+        || Reflect.get(body, 'rpcId') !== rpcId) {
+      console.error('[cards] run refused: malformed response frame')
+      return
+    }
+    const result: unknown = Reflect.get(body, 'result')
+    if (typeof result !== 'object' || result === null) {
+      console.error('[cards] run refused: malformed result')
+      return
+    }
+    if (Reflect.get(result, 'ok') === true) {
+      const runId = Reflect.get(Reflect.get(result, 'value') as object, 'run_id')
+      if (typeof runId === 'string' && runId !== '') {
+        onStarted(runId)
+      } else {
+        console.error('[cards] run refused: no run_id in the answer')
+      }
+      return
+    }
+    const error: unknown = Reflect.get(result, 'error')
+    const message = typeof error === 'object' && error !== null
+      && typeof Reflect.get(error, 'message') === 'string'
+      ? Reflect.get(error, 'message') : 'runs/start refused'
+    console.error('[cards] run refused:', message)
   } catch (e) {
     console.error('[cards] run request failed:', e)
   }

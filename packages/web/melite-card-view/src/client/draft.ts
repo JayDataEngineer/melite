@@ -1,16 +1,21 @@
 /**
- * draft.ts — the native card surface's data layer, PURE and
- * fetch-injected (tests pass stubs; the component passes window.fetch).
+ * draft.ts — the native card surface's data layer. The model half is
+ * PURE (tests import it directly); the fetch half rides the estate's
+ * Typert remotes over the wire frame — same-origin POST
+ * /api/<ns>/<method> carrying the client-request frame (api-gateway.md,
+ * the sanctioned caller for plugins outside the DSH web kernel; the
+ * parameter names ARE the wire fields):
+ *   drafts/get {draftId}   → the draft doc (createdAt IS the version —
+ *                            bumped on every server-side rewrite)
+ *   runs/start {doc}       → {run_id} | RemoteError (doc carries the
+ *                            draft_id the caller wants started)
+ *   runs/status {runId}    → per-stage status + artifact urls
  *
- * The wire is the SAME one the editor rides, same-origin through the
- * card-deck host's /v1 proxy (packages/web/melite-card-deck/src/index.ts):
- *   GET   /v1/flows/drafts/<id>            → the draft doc (createdAt IS
- *                                            the version — bumped on every
- *                                            server-side rewrite)
- *   PATCH /v1/flows/drafts/<d>/stages/<s>  → stage param edits
- *   POST  /v1/flows/start {draft_id}       → {run_id} | {error}
- *   GET   /v1/flows/status/<run_id>        → per-stage status + artifact
- *                                            urls (/v1/assets/runs/…)
+ * The gateway-era /v1 paths this layer once fetched died with the
+ * gateway app (nothing serves them — by design). The draft
+ * stage-PARAM EDIT has no serving plane yet (the drafts remote is
+ * read-only: list/get; the bench patch owns bench sessions only) —
+ * patchStageParams refuses LOUD at the seam, never lies a success.
  *
  * Every function narrows untrusted JSON defensively — a malformed doc
  * throws with its own name at the call site, never in the render tree.
@@ -54,63 +59,86 @@ export interface RunStatusDoc {
 import type { FlowEventFrame } from '@melite/catalog/FlowEvents'
 export type { FlowEventFrame }
 
-/** The fetch shape the component injects (window.fetch compatible). */
-export type DraftFetch = (path: string, init?: RequestInit) => Promise<Response>
-
-function jsonBody(res: Response, what: string): Promise<unknown> {
-  return res.json().catch(() => {
-    throw new Error(`${what}: malformed JSON (HTTP ${res.status})`)
-  })
+/** Correlation id for one client-request frame (crypto.randomUUID is
+ *  the browser standard). */
+function nextRpcId(): string {
+  const cryptoApi: Crypto | undefined = globalThis.crypto
+  if (cryptoApi?.randomUUID !== undefined) return cryptoApi.randomUUID()
+  return 'rpc-' + Math.random().toString(36).slice(2) + '-' + Date.now().toString(36)
 }
 
-/** GET the draft doc; throws with the door's own name on failure. */
-export async function fetchDraft(fetchImpl: DraftFetch, draftId: string): Promise<DraftDoc> {
-  const res = await fetchImpl('/v1/flows/drafts/' + encodeURIComponent(draftId))
-  const doc = await jsonBody(res, 'draft GET') as Record<string, unknown>
-  if (!res.ok) {
-    const err = (doc as { error?: unknown }).error
-    throw new Error(typeof err === 'string' && err !== '' ? err : `draft GET failed: HTTP ${res.status}`)
+/** The remotes this layer rides (the wire method table). */
+type WireMethod = 'drafts/get' | 'runs/start' | 'runs/status'
+
+/** One wire call: POST /api/<method> with the client-request frame,
+ *  answer narrowed to the value row. A refused result throws the
+ *  RemoteError branch's message (the door's own name); a channel
+ *  surprise throws honestly. */
+async function wireCall(method: WireMethod, args: Record<string, unknown>): Promise<Record<string, unknown>> {
+  const rpcId = nextRpcId()
+  const res = await fetch('/api/' + method, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ type: 'client-request', rpcId, method, payload: { args } }),
+  })
+  if (!res.ok) throw new Error(method + ': HTTP ' + String(res.status))
+  const body: unknown = await res.json().catch(() => null)
+  if (typeof body !== 'object' || body === null
+      || Reflect.get(body, 'type') !== 'server-response'
+      || Reflect.get(body, 'rpcId') !== rpcId) {
+    throw new Error(method + ': malformed response frame')
   }
+  const result: unknown = Reflect.get(body, 'result')
+  if (typeof result !== 'object' || result === null) {
+    throw new Error(method + ': malformed result')
+  }
+  if (Reflect.get(result, 'ok') !== true) {
+    const error: unknown = Reflect.get(result, 'error')
+    const message = typeof error === 'object' && error !== null
+      && typeof Reflect.get(error, 'message') === 'string'
+      ? Reflect.get(error, 'message') : method + ': refused'
+    throw new Error(message)
+  }
+  const value: unknown = Reflect.get(result, 'value')
+  if (typeof value !== 'object' || value === null || Array.isArray(value)) {
+    throw new Error(method + ': not a JSON object')
+  }
+  return value as Record<string, unknown>
+}
+
+/** The draft doc; throws the door's own named refusal on failure. */
+export async function fetchDraft(draftId: string): Promise<DraftDoc> {
+  const doc = await wireCall('drafts/get', { draftId })
   if (typeof doc['draft_id'] !== 'string' || !Array.isArray(doc['stages'])) {
-    throw new Error('draft GET: not a draft doc')
+    throw new Error('drafts/get: not a draft doc')
   }
   return doc as unknown as DraftDoc
 }
 
-/** PATCH one stage's params (the editor's resultOutbox door, param edits only). */
+/** Edit one stage's params. NO SERVING PLANE EXISTS (the drafts
+ *  remote is read-only; the gateway-era PATCH door died with the app
+ *  and nothing replaced it yet) — this refuses LOUD at the seam.
+ *  When a drafts write remote is born, this ports onto it. */
 export async function patchStageParams(
-  fetchImpl: DraftFetch, draftId: string, stageId: string, params: Record<string, unknown>,
+  _draftId: string, _stageId: string, _params: Record<string, unknown>,
 ): Promise<void> {
-  const res = await fetchImpl(
-    '/v1/flows/drafts/' + encodeURIComponent(draftId) + '/stages/' + encodeURIComponent(stageId),
-    { method: 'PATCH', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ params }) },
-  )
-  if (!res.ok) {
-    const doc = await jsonBody(res, 'stage PATCH').catch(() => null) as Record<string, unknown> | null
-    const err = doc?.['error']
-    throw new Error(typeof err === 'string' && err !== '' ? err : `stage PATCH failed: HTTP ${res.status}`)
-  }
+  throw new Error('stage param edits: no serving plane (the drafts remote is read-only; the edit door died with the gateway app)')
 }
 
-/** POST the run; returns {run_id} or throws the door's named refusal. */
-export async function startDraft(fetchImpl: DraftFetch, draftId: string): Promise<string> {
-  const res = await fetchImpl('/v1/flows/start', {
-    method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ draft_id: draftId }),
-  })
-  const doc = await jsonBody(res, 'flows/start') as Record<string, unknown>
-  if (!res.ok || typeof doc['run_id'] !== 'string') {
-    const err = doc['error']
-    throw new Error(typeof err === 'string' && err !== '' ? err : `flows/start failed: HTTP ${res.status}`)
+/** Start the run; returns the run_id or throws the door's named refusal. */
+export async function startDraft(draftId: string): Promise<string> {
+  const row = await wireCall('runs/start', { doc: { draft_id: draftId } })
+  if (typeof row['run_id'] !== 'string') {
+    throw new Error('runs/start: no run_id in the answer')
   }
-  return doc['run_id']
+  return row['run_id']
 }
 
-/** GET the run status (poll target). Throws on transport failure only. */
-export async function runStatus(fetchImpl: DraftFetch, runId: string): Promise<RunStatusDoc> {
-  const res = await fetchImpl('/v1/flows/status/' + encodeURIComponent(runId))
-  const doc = await jsonBody(res, 'run status') as Record<string, unknown>
-  if (!res.ok || typeof doc['status'] !== 'string') {
-    throw new Error(`run status failed: HTTP ${res.status}`)
+/** The run status (poll target). Throws on transport failure only. */
+export async function runStatus(runId: string): Promise<RunStatusDoc> {
+  const doc = await wireCall('runs/status', { runId })
+  if (typeof doc['status'] !== 'string') {
+    throw new Error('runs/status: not a status doc')
   }
   return doc as unknown as RunStatusDoc
 }

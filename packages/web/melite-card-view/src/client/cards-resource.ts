@@ -7,14 +7,19 @@
  *   dsh-resource://cards/bench        THE working flow (the shared bench)
  *   dsh-resource://cards/run/<runId>  one run, live
  *
- * The provider wraps the estate's own wires, same-origin (the deck host
- * half proxies /v1 and tunnels the events WS): the bench hydrates from
- * GET /v1/bench/main — a snapshot today, no revision channel exists on
+ * The provider wraps the estate's Typert remotes over the wire frame
+ * (same-origin POST /api/<ns>/<method> carrying the client-request
+ * frame — api-gateway.md, the sanctioned caller for plugins outside
+ * the DSH web kernel): the bench hydrates from `bench/get`
+ * (session 'main') — a snapshot today, no revision channel exists on
  * the wire, so the stream ends after the first frame and consumers
- * reload after their own edits; the run hydrates from
- * GET /v1/flows/status/<runId> then rides the /v1/flows/events/<runId>
- * WS for stage/terminal frames until the run settles or the last
- * holder releases.
+ * reload after their own edits; the run hydrates from `runs/status`
+ * then POLLS it for live stage/terminal movement until the run
+ * settles or the last holder releases. (The gateway-era events WS
+ * died with the gateway app; the collapse plan's stream remote —
+ * @Remote({mode:'stream'}) over the mux — replaces polling when the
+ * plane exists. Until then the poll is the honest degrade: no
+ * invented sockets, no phantom channels.)
  *
  * Frame law (dsh-client-resources contract): the first frame is the
  * current content; failures are frames, never throws — a thrown stream
@@ -155,23 +160,57 @@ function readRun(runId: string, doc: Record<string, unknown>): CardsRunValue {
   }
 }
 
-async function getJson(path: string): Promise<Record<string, unknown>> {
-  const res = await fetch(path, { headers: { accept: 'application/json' } })
-  const text = await res.text()
-  let doc: unknown
-  try {
-    doc = text === '' ? {} : JSON.parse(text)
-  } catch {
-    throw new Error('malformed JSON (HTTP ' + res.status + ')')
+/** Correlation id for one client-request frame (crypto.randomUUID is
+ *  the browser standard). */
+function nextRpcId(): string {
+  const cryptoApi: Crypto | undefined = globalThis.crypto
+  if (cryptoApi?.randomUUID !== undefined) return cryptoApi.randomUUID()
+  return 'rpc-' + Math.random().toString(36).slice(2) + '-' + Date.now().toString(36)
+}
+
+/** Read a server-response envelope and narrow its result. A non-ok
+ *  result throws the RemoteError branch's message (the caller frames
+ *  the failure); a channel surprise throws honestly. */
+async function wireCall(
+  nsMethod: 'bench/get' | 'runs/status',
+  args: Record<string, unknown>,
+  signal?: AbortSignal,
+): Promise<Record<string, unknown>> {
+  const rpcId = nextRpcId()
+  const res = await fetch('/api/' + nsMethod, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({
+      type: 'client-request',
+      rpcId,
+      method: nsMethod,
+      payload: { args },
+    }),
+    ...(signal === undefined ? {} : { signal }),
+  })
+  if (!res.ok) throw new Error('wire: HTTP ' + String(res.status))
+  const body: unknown = await res.json()
+  if (typeof body !== 'object' || body === null
+      || Reflect.get(body, 'type') !== 'server-response'
+      || Reflect.get(body, 'rpcId') !== rpcId) {
+    throw new Error('wire: malformed response frame')
   }
-  if (!res.ok) {
-    const err = (doc as Record<string, unknown> | null)?.['error']
-    throw new Error(typeof err === 'string' && err !== '' ? err : 'HTTP ' + res.status)
+  const result: unknown = Reflect.get(body, 'result')
+  if (typeof result !== 'object' || result === null) {
+    throw new Error('wire: malformed result')
   }
-  if (typeof doc !== 'object' || doc === null || Array.isArray(doc)) {
-    throw new Error('not a JSON object')
+  if (Reflect.get(result, 'ok') !== true) {
+    const error: unknown = Reflect.get(result, 'error')
+    const message = typeof error === 'object' && error !== null
+      && typeof Reflect.get(error, 'message') === 'string'
+      ? Reflect.get(error, 'message') : 'wire: refused'
+    throw new Error(message)
   }
-  return doc as Record<string, unknown>
+  const value: unknown = Reflect.get(result, 'value')
+  if (typeof value !== 'object' || value === null || Array.isArray(value)) {
+    throw new Error('wire: not a JSON object')
+  }
+  return value as Record<string, unknown>
 }
 
 /** Merge one events frame into a run value (stage rows upserted by id;
@@ -197,8 +236,8 @@ export function mergeRunFrame(value: CardsRunValue, frame: FlowEventFrame): Card
 }
 
 /** The provider registration body: `ctx.resources.register({ protocol:
- *  'cards', open })`. Same-origin wires (the deck host half's /v1 proxy
- *  + events tunnel); abort ends the stream per the contract. */
+ *  'cards', open })`. The estate remotes over the wire frame; abort
+ *  ends the stream per the contract. */
 export function openCardsResource(
   address: string,
   ctx: { signal: AbortSignal },
@@ -214,7 +253,7 @@ export function openCardsResource(
     if (bench) {
       let value: CardsBenchValue
       try {
-        value = readBench(await getJson('/v1/bench/main'))
+        value = readBench(await wireCall('bench/get', { session: 'main' }))
       } catch (e) {
         yield failure(address, e instanceof Error ? e.message : String(e))
         return
@@ -226,91 +265,66 @@ export function openCardsResource(
       // PATCH answers authoritative).
       return
     }
-    // run view: hydrate, then ride the events WS until terminal or abort.
+    // run view: hydrate, then poll the status remote until terminal or
+    // abort (the events WS died with the gateway; the stream remote
+    // replaces the poll when the plane exists).
     let value: CardsRunValue
     try {
-      value = readRun(runId, await getJson('/v1/flows/status/' + encodeURIComponent(runId)))
+      value = readRun(runId, await wireCall('runs/status', { runId }))
     } catch (e) {
       yield failure(address, e instanceof Error ? e.message : String(e))
       return
     }
     yield { ok: true, value }
     if (ctx.signal.aborted) return
-    yield* runFrames(address, runId, value, ctx.signal)
+    if (isTerminal(value.status)) return
+    yield* pollRunFrames(runId, value, ctx.signal)
   })()
 }
 
-/** The live tail: WS frames → values, ended on terminal status, socket
- *  close, or abort. A dead socket is not a failure frame — the hydrated
- *  value stays (the kit keeps the last ok frame's value). */
-async function* runFrames(
-  address: string,
+/** The terminal statuses — the runs seat's own vocabulary (runsRegistry:
+ *  stopFlag stamps 'stopped'; the settle path stamps 'completed' or
+ *  'failed'. A settled run ends the stream; the hydrated/polled value
+ *  stays as the last ok frame. */
+function isTerminal(status: string): boolean {
+  return status === 'completed' || status === 'failed' || status === 'stopped'
+}
+
+/** The live tail (the honest degrade): poll `runs/status` and yield a
+ *  value ONLY when the row moved (no frame spam) until the run turns
+ *  terminal or the holder aborts. A poll error mid-run is not a
+ *  failure frame — the last ok value stays (the kit keeps it); the
+ *  next poll may recover. The cadence (1500ms) rides the run pump's
+ *  own observation granularity, not user perception of latency: stage
+ *  transitions inside the estate tick on the pump's settle path. */
+async function* pollRunFrames(
   runId: string,
   hydrated: CardsRunValue,
   signal: AbortSignal,
 ): AsyncGenerator<RemoteResult<CardsRunValue>> {
-  const loc = typeof location === 'object' && location !== null ? location : undefined
-  if (loc === undefined) return
-  const proto = loc.protocol === 'https:' ? 'wss:' : 'ws:'
-  const url = proto + '//' + loc.host + '/v1/flows/events/' + encodeURIComponent(runId)
-  let ws: WebSocket
-  try {
-    ws = new WebSocket(url)
-  } catch {
-    return
-  }
-  const aborted = (): void => {
+  let value = hydrated
+  const sleep = (ms: number): Promise<'slept' | 'abort'> =>
+    new Promise((resolve) => {
+      const t = setTimeout(() => { signal.removeEventListener('abort', onAbort); resolve('slept') }, ms)
+      const onAbort = (): void => { clearTimeout(t); resolve('abort') }
+      if (signal.aborted) { onAbort(); return }
+      signal.addEventListener('abort', onAbort, { once: true })
+    })
+  while (!signal.aborted && !isTerminal(value.status)) {
+    const woke = await sleep(1500)
+    if (woke === 'abort' || signal.aborted) return
+    let row: Record<string, unknown>
     try {
-      ws.close()
+      row = await wireCall('runs/status', { runId }, signal)
     } catch {
-      // already closed
+      continue // the last ok value stays; the next poll may recover
     }
+    const next = readRun(runId, row)
+    const moved = next.status !== value.status
+      || JSON.stringify(next.stages) !== JSON.stringify(value.stages)
+    if (!moved) continue
+    value = next
+    yield { ok: true, value }
   }
-  signal.addEventListener('abort', aborted, { once: true })
-  try {
-    let value = hydrated
-    for (;;) {
-      const message = await new Promise<MessageEvent | 'closed' | 'abort'>((resolve) => {
-        const onMessage = (ev: MessageEvent): void => { cleanup(); resolve(ev) }
-        const onClose = (): void => { cleanup(); resolve('closed') }
-        const onAbort = (): void => { cleanup(); resolve('abort') }
-        const cleanup = (): void => {
-          ws.removeEventListener('message', onMessage)
-          ws.removeEventListener('close', onClose)
-          signal.removeEventListener('abort', onAbort)
-        }
-        if (ws.readyState === WebSocket.CLOSED) {
-          resolve('closed')
-          return
-        }
-        ws.addEventListener('message', onMessage)
-        ws.addEventListener('close', onClose)
-        signal.addEventListener('abort', onAbort)
-      })
-      if (message === 'abort' || message === 'closed') return
-      let frame: unknown
-      try {
-        frame = JSON.parse(String(message.data))
-      } catch {
-        continue
-      }
-      if (typeof frame !== 'object' || frame === null) continue
-      value = mergeRunFrame(value, frame as FlowEventFrame)
-      yield { ok: true, value }
-      const type = (frame as Record<string, unknown>)['type']
-      const status = (frame as Record<string, unknown>)['status']
-      if (type === 'run' && typeof status === 'string' &&
-          (status === 'completed' || status === 'failed' || status === 'cancelled' || status === 'error')) {
-        return
-      }
-    }
-  } finally {
-    signal.removeEventListener('abort', aborted)
-    try {
-      ws.close()
-    } catch {
-      // already closed
-    }
-  }
-  void address
 }
+

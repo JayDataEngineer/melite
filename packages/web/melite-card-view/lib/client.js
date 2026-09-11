@@ -52,135 +52,67 @@ window.__ModuleLoader__.load({
 			"thumb": "vYZV7a_thumb"
 		};
 		//#endregion
-		//#region ../../web-kit/catalog/src/FlowEvents.ts
-		const TERMINAL = /* @__PURE__ */ new Set([
-			"completed",
-			"failed",
-			"stopped",
-			"unknown"
-		]);
-		const BACKOFF_BASE_MS = 500;
-		const BACKOFF_CAP_MS = 5e3;
-		/**
-		* Open the events stream for one run. Returns immediately; frames land
-		* in `onEvent`. Auto-reconnects with capped backoff until a terminal
-		* `run` frame, an explicit close, or `signal` aborts.
-		*/
-		function streamFlowEvents(runId, onEvent, opts = {}) {
-			let ws = null;
-			let terminal = false;
-			let closed = false;
-			let attempt = 0;
-			let timer = null;
-			const cleanup = () => {
-				if (timer) clearTimeout(timer);
-				timer = null;
-				if (ws) {
-					ws.onmessage = null;
-					ws.onclose = null;
-					ws.onerror = null;
-					try {
-						ws.close();
-					} catch {}
-					ws = null;
-				}
-			};
-			const finish = () => {
-				terminal = true;
-				cleanup();
-			};
-			const connect = () => {
-				if (closed || terminal) return;
-				if (typeof WebSocket === "undefined") return;
-				const proto = typeof location !== "undefined" && location.protocol === "https:" ? "wss" : "ws";
-				const host = typeof location !== "undefined" ? location.host : "";
-				try {
-					ws = new WebSocket(`${proto}://${host}/v1/flows/events?run_id=${encodeURIComponent(runId)}`);
-				} catch {
-					return;
-				}
-				ws.onmessage = (ev) => {
-					if (closed || terminal) return;
-					attempt = 0;
-					let frame = null;
-					try {
-						frame = JSON.parse(String(ev.data));
-					} catch {
-						return;
-					}
-					if (!frame || typeof frame !== "object" || typeof frame.type !== "string") return;
-					onEvent(frame);
-					if (frame.type === "run" && TERMINAL.has(String(frame.status))) finish();
-				};
-				ws.onclose = () => {
-					if (closed || terminal) return;
-					const wait = Math.min(BACKOFF_CAP_MS, BACKOFF_BASE_MS * 2 ** attempt++);
-					timer = setTimeout(connect, wait);
-				};
-				ws.onerror = () => {};
-			};
-			connect();
-			if (opts.signal) opts.signal.addEventListener("abort", () => {
-				closed = true;
-				cleanup();
-			}, { once: true });
-			return {
-				close: () => {
-					closed = true;
-					cleanup();
-				},
-				done: () => terminal
-			};
-		}
-		//#endregion
 		//#region src/client/draft.ts
-		function jsonBody(res, what) {
-			return res.json().catch(() => {
-				throw new Error(`${what}: malformed JSON (HTTP ${res.status})`);
-			});
+		/** Correlation id for one client-request frame (crypto.randomUUID is
+		*  the browser standard). */
+		function nextRpcId$2() {
+			const cryptoApi = globalThis.crypto;
+			if (cryptoApi?.randomUUID !== void 0) return cryptoApi.randomUUID();
+			return "rpc-" + Math.random().toString(36).slice(2) + "-" + Date.now().toString(36);
 		}
-		/** GET the draft doc; throws with the door's own name on failure. */
-		async function fetchDraft(fetchImpl, draftId) {
-			const res = await fetchImpl("/v1/flows/drafts/" + encodeURIComponent(draftId));
-			const doc = await jsonBody(res, "draft GET");
-			if (!res.ok) {
-				const err = doc.error;
-				throw new Error(typeof err === "string" && err !== "" ? err : `draft GET failed: HTTP ${res.status}`);
-			}
-			if (typeof doc["draft_id"] !== "string" || !Array.isArray(doc["stages"])) throw new Error("draft GET: not a draft doc");
-			return doc;
-		}
-		/** PATCH one stage's params (the editor's resultOutbox door, param edits only). */
-		async function patchStageParams(fetchImpl, draftId, stageId, params) {
-			const res = await fetchImpl("/v1/flows/drafts/" + encodeURIComponent(draftId) + "/stages/" + encodeURIComponent(stageId), {
-				method: "PATCH",
-				headers: { "content-type": "application/json" },
-				body: JSON.stringify({ params })
-			});
-			if (!res.ok) {
-				const err = (await jsonBody(res, "stage PATCH").catch(() => null))?.["error"];
-				throw new Error(typeof err === "string" && err !== "" ? err : `stage PATCH failed: HTTP ${res.status}`);
-			}
-		}
-		/** POST the run; returns {run_id} or throws the door's named refusal. */
-		async function startDraft(fetchImpl, draftId) {
-			const res = await fetchImpl("/v1/flows/start", {
+		/** One wire call: POST /api/<method> with the client-request frame,
+		*  answer narrowed to the value row. A refused result throws the
+		*  RemoteError branch's message (the door's own name); a channel
+		*  surprise throws honestly. */
+		async function wireCall$1(method, args) {
+			const rpcId = nextRpcId$2();
+			const res = await fetch("/api/" + method, {
 				method: "POST",
 				headers: { "content-type": "application/json" },
-				body: JSON.stringify({ draft_id: draftId })
+				body: JSON.stringify({
+					type: "client-request",
+					rpcId,
+					method,
+					payload: { args }
+				})
 			});
-			const doc = await jsonBody(res, "flows/start");
-			if (!res.ok || typeof doc["run_id"] !== "string") {
-				const err = doc["error"];
-				throw new Error(typeof err === "string" && err !== "" ? err : `flows/start failed: HTTP ${res.status}`);
+			if (!res.ok) throw new Error(method + ": HTTP " + String(res.status));
+			const body = await res.json().catch(() => null);
+			if (typeof body !== "object" || body === null || Reflect.get(body, "type") !== "server-response" || Reflect.get(body, "rpcId") !== rpcId) throw new Error(method + ": malformed response frame");
+			const result = Reflect.get(body, "result");
+			if (typeof result !== "object" || result === null) throw new Error(method + ": malformed result");
+			if (Reflect.get(result, "ok") !== true) {
+				const error = Reflect.get(result, "error");
+				const message = typeof error === "object" && error !== null && typeof Reflect.get(error, "message") === "string" ? Reflect.get(error, "message") : method + ": refused";
+				throw new Error(message);
 			}
-			return doc["run_id"];
+			const value = Reflect.get(result, "value");
+			if (typeof value !== "object" || value === null || Array.isArray(value)) throw new Error(method + ": not a JSON object");
+			return value;
 		}
-		/** GET the run status (poll target). Throws on transport failure only. */
-		async function runStatus(fetchImpl, runId) {
-			const res = await fetchImpl("/v1/flows/status/" + encodeURIComponent(runId));
-			const doc = await jsonBody(res, "run status");
-			if (!res.ok || typeof doc["status"] !== "string") throw new Error(`run status failed: HTTP ${res.status}`);
+		/** The draft doc; throws the door's own named refusal on failure. */
+		async function fetchDraft(draftId) {
+			const doc = await wireCall$1("drafts/get", { draftId });
+			if (typeof doc["draft_id"] !== "string" || !Array.isArray(doc["stages"])) throw new Error("drafts/get: not a draft doc");
+			return doc;
+		}
+		/** Edit one stage's params. NO SERVING PLANE EXISTS (the drafts
+		*  remote is read-only; the gateway-era PATCH door died with the app
+		*  and nothing replaced it yet) — this refuses LOUD at the seam.
+		*  When a drafts write remote is born, this ports onto it. */
+		async function patchStageParams(_draftId, _stageId, _params) {
+			throw new Error("stage param edits: no serving plane (the drafts remote is read-only; the edit door died with the gateway app)");
+		}
+		/** Start the run; returns the run_id or throws the door's named refusal. */
+		async function startDraft(draftId) {
+			const row = await wireCall$1("runs/start", { doc: { draft_id: draftId } });
+			if (typeof row["run_id"] !== "string") throw new Error("runs/start: no run_id in the answer");
+			return row["run_id"];
+		}
+		/** The run status (poll target). Throws on transport failure only. */
+		async function runStatus(runId) {
+			const doc = await wireCall$1("runs/status", { runId });
+			if (typeof doc["status"] !== "string") throw new Error("runs/status: not a status doc");
 			return doc;
 		}
 		/** The terminal set — @melite/catalog FlowEvents' TERMINAL, verbatim
@@ -213,40 +145,6 @@ window.__ModuleLoader__.load({
 					thumbUrl: typeof runStage?.url === "string" && runStage.url !== "" ? runStage.url : null
 				};
 			});
-		}
-		/** Fold one events-bus frame onto the live status doc — the idempotent
-		*  patch (FlowEvents.ts contract: "every frame is an idempotent patch
-		*  onto the same store the poll writes"). Stage frames patch
-		*  positionally by index; terminal run frames set the run status. */
-		function foldFrame(prev, runId, frame) {
-			if (frame.type === "stage") {
-				const i = typeof frame.index === "number" ? frame.index : -1;
-				if (i < 0) return prev ?? {
-					run_id: runId,
-					status: "running",
-					stages: []
-				};
-				const stages = [...prev?.stages ?? []];
-				const cur = stages[i] ?? {
-					id: String(i),
-					status: "running"
-				};
-				stages[i] = {
-					id: cur.id,
-					status: typeof frame.status === "string" && frame.status !== "" ? frame.status : cur.status,
-					url: cur.url
-				};
-				return {
-					run_id: runId,
-					status: prev?.status ?? "running",
-					stages
-				};
-			}
-			return {
-				run_id: runId,
-				status: String(frame.status),
-				stages: prev?.stages ?? []
-			};
 		}
 		/** Project a stage's params into editable fields (in key order). */
 		function paramFields(params) {
@@ -317,7 +215,7 @@ window.__ModuleLoader__.load({
 		* The wire is the editor's wire, same-origin via the card-deck host's
 		* /v1 proxy (draft.ts owns every fetch). The user reviews the rows,
 		* edits params in the drilldown, and presses Run ON THE CARD — the run
-		* door (POST /v1/flows/start) is a user gesture, never the model's.
+		* door (runs/start over the wire frame) is a user gesture, never the model's.
 		*
 		* WATERFALL LEDGER (operator law 2026-09-10: ride DSH 1:1 → minimize
 		* our code → DOCUMENT what can't be ridden; each entry is for review):
@@ -334,17 +232,17 @@ window.__ModuleLoader__.load({
 		*   (c-1) NO ATOM: the card ROW (a list row that opens a Modal).
 		*         DisclosureRow is inline expansion — a different interaction;
 		*         no shipped atom covers row→modal. Hand-rolled, layout-only.
-		*   (a-2) RIDEN 1:1 — the run-status STREAM: @melite/catalog's
-		*         streamFlowEvents (the estate's /v1/flows/events WS door,
-		*         query form — the proxy-exact path, live bug 2026-09-04) folds
-		*         idempotent stage frames positionally by INDEX (the estate
-		*         mapping law); the poll stays TERMINAL AUTHORITY and the
-		*         stream silently degrades to it — the FlowEvents contract,
-		*         verbatim. (Supersedes the poll-only c-2 entry: the operator
-		*         flagged it 2026-09-10 — "they do webhooks for us.")
-		*   (c-3) NO CLIENT: the draft/run door layer (draft.ts). No DSH
-		*         package wraps the estate's flows doors as a client; fetch-
-		*         injected thin client over the editor's own wire shapes.
+		*   (a-2) THE LIVE RUN, post-kill: the gateway-era events WS died
+		*         with the gateway app (nothing serves it, by design); the
+		*         poll over the runs/status remote IS the live channel until
+		*         the collapse plan's stream remote exists (@Remote
+		*         ({mode:'stream'}) over the mux). The fold mapping
+		*         (idempotent stage frames by INDEX — the estate mapping law)
+		*         stays in draft.ts for that day.
+		*   (c-3) NO CLIENT: the draft/run remote layer (draft.ts). No DSH
+		*         package wraps the estate's remotes as a browser client; the
+		*         thin wire caller (client-request frame, api-gateway.md) is
+		*         the sanctioned shape for plugins outside the web kernel.
 		*/
 		/** Run-status poll cadence (the editor's door, cheap same-host read). */
 		const POLL_MS = 1500;
@@ -409,7 +307,7 @@ window.__ModuleLoader__.load({
 				setDoc(null);
 				setLive(null);
 				setError(null);
-				fetchDraft(fetch, draftId).then((d) => {
+				fetchDraft(draftId).then((d) => {
 					if (alive) setDoc(d);
 				}).catch((e) => {
 					if (alive) setError(e instanceof Error ? e.message : "draft hydration failed");
@@ -421,20 +319,9 @@ window.__ModuleLoader__.load({
 			const runId = live?.run_id ?? null;
 			(0, react.useEffect)(() => {
 				if (runId === null) return;
-				const ac = new AbortController();
-				const handle = streamFlowEvents(runId, (frame) => {
-					setLive((prev) => foldFrame(prev, runId, frame));
-				}, { signal: ac.signal });
-				return () => {
-					handle.close();
-					ac.abort();
-				};
-			}, [runId]);
-			(0, react.useEffect)(() => {
-				if (runId === null) return;
 				let alive = true;
 				const step = () => {
-					runStatus(fetch, runId).then((s) => {
+					runStatus(runId).then((s) => {
 						if (!alive) return;
 						setLive(s);
 						if (runFinished(s.status)) {
@@ -504,8 +391,8 @@ window.__ModuleLoader__.load({
 				setRunning(true);
 				setRunError(null);
 				try {
-					if (patch !== null) await patchStageParams(fetch, draftId, row.stageId, patch);
-					await startDraft(fetch, draftId);
+					if (patch !== null) await patchStageParams(draftId, row.stageId, patch);
+					await startDraft(draftId);
 					onClose();
 				} catch (e) {
 					setRunError(e instanceof Error ? e.message : "run failed");
@@ -689,27 +576,60 @@ window.__ModuleLoader__.load({
 			if (Array.isArray(s.outputs) && s.outputs.length > 0) row["outputs"] = s.outputs;
 			return row;
 		}
-		/** The Run gesture: start the bench as it stands. Errors surface inline
-		*  (the door's own refusal text — logged, never thrown past React). */
+		/** Correlation id for one client-request frame (crypto.randomUUID is
+		*  the browser standard). */
+		function nextRpcId$1() {
+			const cryptoApi = globalThis.crypto;
+			if (cryptoApi?.randomUUID !== void 0) return cryptoApi.randomUUID();
+			return "rpc-" + Math.random().toString(36).slice(2) + "-" + Date.now().toString(36);
+		}
+		/** The Run gesture: start the bench as it stands, over the runs
+		*  remote's wire door (same-origin POST /api/runs/start carrying the
+		*  client-request frame — api-gateway.md; the gateway-era /v1/flows
+		*  start died with the app, nothing serves it). Errors surface inline
+		*  (the RemoteError branch's own refusal text — logged, never thrown
+		*  past React). */
 		async function runTheBench(bench, onStarted) {
 			const stages = bench.stages.map(projectStage);
 			if (stages.length === 0) return;
+			const rpcId = nextRpcId$1();
 			try {
-				const res = await fetch("/v1/flows/start", {
+				const res = await fetch("/api/runs/start", {
 					method: "POST",
 					headers: { "content-type": "application/json" },
 					body: JSON.stringify({
-						flow_inline: { stages },
-						draft_id: bench.draftId
+						type: "client-request",
+						rpcId,
+						method: "runs/start",
+						payload: { args: { doc: {
+							flow_inline: { stages },
+							draft_id: bench.draftId
+						} } }
 					})
 				});
-				const doc = await res.json().catch(() => null);
-				const runId = doc?.["run_id"];
-				if (res.ok && typeof runId === "string" && runId !== "") onStarted(runId);
-				else {
-					const err = doc?.["error"];
-					console.error("[cards] run refused:", typeof err === "string" ? err : "HTTP " + res.status);
+				if (!res.ok) {
+					console.error("[cards] run refused: HTTP " + String(res.status));
+					return;
 				}
+				const body = await res.json().catch(() => null);
+				if (typeof body !== "object" || body === null || Reflect.get(body, "type") !== "server-response" || Reflect.get(body, "rpcId") !== rpcId) {
+					console.error("[cards] run refused: malformed response frame");
+					return;
+				}
+				const result = Reflect.get(body, "result");
+				if (typeof result !== "object" || result === null) {
+					console.error("[cards] run refused: malformed result");
+					return;
+				}
+				if (Reflect.get(result, "ok") === true) {
+					const runId = Reflect.get(Reflect.get(result, "value"), "run_id");
+					if (typeof runId === "string" && runId !== "") onStarted(runId);
+					else console.error("[cards] run refused: no run_id in the answer");
+					return;
+				}
+				const error = Reflect.get(result, "error");
+				const message = typeof error === "object" && error !== null && typeof Reflect.get(error, "message") === "string" ? Reflect.get(error, "message") : "runs/start refused";
+				console.error("[cards] run refused:", message);
 			} catch (e) {
 				console.error("[cards] run request failed:", e);
 			}
@@ -855,21 +775,42 @@ window.__ModuleLoader__.load({
 				lastFrame: void 0
 			};
 		}
-		async function getJson(path) {
-			const res = await fetch(path, { headers: { accept: "application/json" } });
-			const text = await res.text();
-			let doc;
-			try {
-				doc = text === "" ? {} : JSON.parse(text);
-			} catch {
-				throw new Error("malformed JSON (HTTP " + res.status + ")");
+		/** Correlation id for one client-request frame (crypto.randomUUID is
+		*  the browser standard). */
+		function nextRpcId() {
+			const cryptoApi = globalThis.crypto;
+			if (cryptoApi?.randomUUID !== void 0) return cryptoApi.randomUUID();
+			return "rpc-" + Math.random().toString(36).slice(2) + "-" + Date.now().toString(36);
+		}
+		/** Read a server-response envelope and narrow its result. A non-ok
+		*  result throws the RemoteError branch's message (the caller frames
+		*  the failure); a channel surprise throws honestly. */
+		async function wireCall(nsMethod, args, signal) {
+			const rpcId = nextRpcId();
+			const res = await fetch("/api/" + nsMethod, {
+				method: "POST",
+				headers: { "content-type": "application/json" },
+				body: JSON.stringify({
+					type: "client-request",
+					rpcId,
+					method: nsMethod,
+					payload: { args }
+				}),
+				...signal === void 0 ? {} : { signal }
+			});
+			if (!res.ok) throw new Error("wire: HTTP " + String(res.status));
+			const body = await res.json();
+			if (typeof body !== "object" || body === null || Reflect.get(body, "type") !== "server-response" || Reflect.get(body, "rpcId") !== rpcId) throw new Error("wire: malformed response frame");
+			const result = Reflect.get(body, "result");
+			if (typeof result !== "object" || result === null) throw new Error("wire: malformed result");
+			if (Reflect.get(result, "ok") !== true) {
+				const error = Reflect.get(result, "error");
+				const message = typeof error === "object" && error !== null && typeof Reflect.get(error, "message") === "string" ? Reflect.get(error, "message") : "wire: refused";
+				throw new Error(message);
 			}
-			if (!res.ok) {
-				const err = doc?.["error"];
-				throw new Error(typeof err === "string" && err !== "" ? err : "HTTP " + res.status);
-			}
-			if (typeof doc !== "object" || doc === null || Array.isArray(doc)) throw new Error("not a JSON object");
-			return doc;
+			const value = Reflect.get(result, "value");
+			if (typeof value !== "object" || value === null || Array.isArray(value)) throw new Error("wire: not a JSON object");
+			return value;
 		}
 		/** Merge one events frame into a run value (stage rows upserted by id;
 		*  run-status frames replace the status; the frame is kept for the view). */
@@ -896,8 +837,8 @@ window.__ModuleLoader__.load({
 			return next;
 		}
 		/** The provider registration body: `ctx.resources.register({ protocol:
-		*  'cards', open })`. Same-origin wires (the deck host half's /v1 proxy
-		*  + events tunnel); abort ends the stream per the contract. */
+		*  'cards', open })`. The estate remotes over the wire frame; abort
+		*  ends the stream per the contract. */
 		function openCardsResource(address, ctx) {
 			const target = parseCardsAddress(address);
 			const bench = target !== null && "bench" in target;
@@ -910,7 +851,7 @@ window.__ModuleLoader__.load({
 				if (bench) {
 					let value;
 					try {
-						value = readBench(await getJson("/v1/bench/main"));
+						value = readBench(await wireCall("bench/get", { session: "main" }));
 					} catch (e) {
 						yield failure(address, e instanceof Error ? e.message : String(e));
 						return;
@@ -923,7 +864,7 @@ window.__ModuleLoader__.load({
 				}
 				let value;
 				try {
-					value = readRun(runId, await getJson("/v1/flows/status/" + encodeURIComponent(runId)));
+					value = readRun(runId, await wireCall("runs/status", { runId }));
 				} catch (e) {
 					yield failure(address, e instanceof Error ? e.message : String(e));
 					return;
@@ -933,79 +874,56 @@ window.__ModuleLoader__.load({
 					value
 				};
 				if (ctx.signal.aborted) return;
-				yield* runFrames(address, runId, value, ctx.signal);
+				if (isTerminal(value.status)) return;
+				yield* pollRunFrames(runId, value, ctx.signal);
 			})();
 		}
-		/** The live tail: WS frames → values, ended on terminal status, socket
-		*  close, or abort. A dead socket is not a failure frame — the hydrated
-		*  value stays (the kit keeps the last ok frame's value). */
-		async function* runFrames(address, runId, hydrated, signal) {
-			const loc = typeof location === "object" && location !== null ? location : void 0;
-			if (loc === void 0) return;
-			const url = (loc.protocol === "https:" ? "wss:" : "ws:") + "//" + loc.host + "/v1/flows/events/" + encodeURIComponent(runId);
-			let ws;
-			try {
-				ws = new WebSocket(url);
-			} catch {
-				return;
-			}
-			const aborted = () => {
-				try {
-					ws.close();
-				} catch {}
-			};
-			signal.addEventListener("abort", aborted, { once: true });
-			try {
-				let value = hydrated;
-				for (;;) {
-					const message = await new Promise((resolve) => {
-						const onMessage = (ev) => {
-							cleanup();
-							resolve(ev);
-						};
-						const onClose = () => {
-							cleanup();
-							resolve("closed");
-						};
-						const onAbort = () => {
-							cleanup();
-							resolve("abort");
-						};
-						const cleanup = () => {
-							ws.removeEventListener("message", onMessage);
-							ws.removeEventListener("close", onClose);
-							signal.removeEventListener("abort", onAbort);
-						};
-						if (ws.readyState === WebSocket.CLOSED) {
-							resolve("closed");
-							return;
-						}
-						ws.addEventListener("message", onMessage);
-						ws.addEventListener("close", onClose);
-						signal.addEventListener("abort", onAbort);
-					});
-					if (message === "abort" || message === "closed") return;
-					let frame;
-					try {
-						frame = JSON.parse(String(message.data));
-					} catch {
-						continue;
-					}
-					if (typeof frame !== "object" || frame === null) continue;
-					value = mergeRunFrame(value, frame);
-					yield {
-						ok: true,
-						value
-					};
-					const type = frame["type"];
-					const status = frame["status"];
-					if (type === "run" && typeof status === "string" && (status === "completed" || status === "failed" || status === "cancelled" || status === "error")) return;
+		/** The terminal statuses — the runs seat's own vocabulary (runsRegistry:
+		*  stopFlag stamps 'stopped'; the settle path stamps 'completed' or
+		*  'failed'. A settled run ends the stream; the hydrated/polled value
+		*  stays as the last ok frame. */
+		function isTerminal(status) {
+			return status === "completed" || status === "failed" || status === "stopped";
+		}
+		/** The live tail (the honest degrade): poll `runs/status` and yield a
+		*  value ONLY when the row moved (no frame spam) until the run turns
+		*  terminal or the holder aborts. A poll error mid-run is not a
+		*  failure frame — the last ok value stays (the kit keeps it); the
+		*  next poll may recover. The cadence (1500ms) rides the run pump's
+		*  own observation granularity, not user perception of latency: stage
+		*  transitions inside the estate tick on the pump's settle path. */
+		async function* pollRunFrames(runId, hydrated, signal) {
+			let value = hydrated;
+			const sleep = (ms) => new Promise((resolve) => {
+				const t = setTimeout(() => {
+					signal.removeEventListener("abort", onAbort);
+					resolve("slept");
+				}, ms);
+				const onAbort = () => {
+					clearTimeout(t);
+					resolve("abort");
+				};
+				if (signal.aborted) {
+					onAbort();
+					return;
 				}
-			} finally {
-				signal.removeEventListener("abort", aborted);
+				signal.addEventListener("abort", onAbort, { once: true });
+			});
+			while (!signal.aborted && !isTerminal(value.status)) {
+				if (await sleep(1500) === "abort" || signal.aborted) return;
+				let row;
 				try {
-					ws.close();
-				} catch {}
+					row = await wireCall("runs/status", { runId }, signal);
+				} catch {
+					continue;
+				}
+				const next = readRun(runId, row);
+				if (!(next.status !== value.status || JSON.stringify(next.stages) !== JSON.stringify(value.stages))) continue;
+				value = next;
+				yield {
+					ok: true,
+					value
+				};
 			}
 		}
 		//#endregion

@@ -6,10 +6,11 @@
 # CHANNEL LAW (2026-09-09, the unification): every web plugin owns
 # its existence row in ITS OWN package (this patch); the PROFILE
 # layer configures by id (a plain `- id:` row, no insert). The
-# node half (exports ".") serves the card editor bundle + draft
-# hydration routes; the `dsh.client` declaration in package.json
-# makes the browser half (exports "./client", the chat card tiles)
-# load in the web GUI.
+# node half (exports ".") is the bundle-row marker only — the
+# gateway-era proxy route died with the kill; the browser half
+# (exports "./client", the chat card tiles) rides the estate
+# remotes over /api and loads via the `dsh.client` declaration in
+# package.json.
 #
 # This retires the provisioner's two-row mount (infer-card-view-host
 # + infer-card-view-client with clientRowOnly) — the dsh.client
