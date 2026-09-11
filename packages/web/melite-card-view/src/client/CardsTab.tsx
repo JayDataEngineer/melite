@@ -186,13 +186,64 @@ const STAGE_DOT: Record<string, 'done' | 'ongoing' | 'error' | 'warning' | null>
  *  Image-anchored overlays (the status dot) live INSIDE the preview
  *  cell so their anchors ride the artifact's corner. Click = the
  *  drilldown (the second state, the shared CardDrill). */
-/** The HTML5 drag MIME for tile-to-tile WIRING (the canvas-era
- *  gesture reborn: grab a tile's caption strip, drop it on another
- *  tile → the target's `source` input wires from the dragged stage's
- *  first declared output, 'default' when none declared). Pointer
- *  drags (dnd-kit) stay the REORDER gesture — the two systems never
- *  collide: HTML5 dragstart seizes the gesture once it fires. */
-const STAGE_DRAG_MIME = 'application/x-melite-stage'
+/** The OLD system's drag contract, VERBATIM (2026-08-08/08-22 era,
+ *  recovered from d13560be^ packages/web-kit): capability tiles carry
+ *  a fully-resolved card; asset tiles carry {url, type}. One drop
+ *  target, two contracts, no ambiguity — the MIME pair is the law. */
+const CAPABILITY_DRAG_MIME = 'application/tech-noir-capability'
+const ASSET_DRAG_MIME = 'application/tech-noir-asset'
+
+interface CapabilityDropPayload { service: string; title: string; params?: Record<string, unknown>; kind?: string }
+
+/** Parse the capability MIME off a drop event. null = absent or
+ *  malformed (falls through to the asset/file path) — old law. */
+function parseCapabilityDrop(raw: string): CapabilityDropPayload | null {
+  if (raw === '') return null
+  try {
+    const p = JSON.parse(raw) as Partial<CapabilityDropPayload>
+    if (typeof p.service === 'string' && typeof p.title === 'string') return p as CapabilityDropPayload
+    return null
+  } catch { return null }
+}
+
+interface AssetDropPayload { url?: string; type?: string }
+
+function parseAssetDrop(raw: string): AssetDropPayload {
+  if (raw === '') return {}
+  try { return JSON.parse(raw) as AssetDropPayload } catch { return {} }
+}
+
+/** OS-file drop → the /v1/uploads door (png/jpeg/webp data-URL) → the
+ *  input-dir name input-prep's `source` field accepts. The door's own
+ *  gates (type whitelist, one clean segment) are the law — the client
+ *  only voices its refusals, never invents its own. */
+async function uploadInputFile(file: File): Promise<{ name: string }> {
+  const isImage = file.type === 'image/png' || file.type === 'image/jpeg' || file.type === 'image/webp'
+  const isAudio = file.type.startsWith('audio/')
+  if (!isImage && !isAudio) {
+    throw new Error('Input cards don\u2019t accept ' + (file.type !== '' ? file.type : 'that file') + ' \u2014 drop an image or audio file')
+  }
+  if (!isImage) {
+    throw new Error('audio uploads have no door yet \u2014 the uploads door boards png / jpeg / webp only')
+  }
+  const dataUrl: string = await new Promise((resolve, reject) => {
+    const r = new FileReader()
+    r.onload = () => { resolve(String(r.result)) }
+    r.onerror = () => { reject(new Error('could not read the dropped file')) }
+    r.readAsDataURL(file)
+  })
+  const res = await fetch('/v1/uploads', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ filename: file.name.replace(/[^A-Za-z0-9._-]/g, '_'), data: dataUrl }),
+  })
+  if (!res.ok) throw new Error('upload refused: HTTP ' + String(res.status))
+  const out: unknown = await res.json()
+  const path = typeof out === 'object' && out !== null && typeof Reflect.get(out, 'path') === 'string'
+    ? Reflect.get(out, 'path') as string : ''
+  if (path === '') throw new Error('upload answered without a path')
+  return { name: path.split('/').pop() ?? file.name }
+}
 
 /** The sortable tile wrapper — the old grid's SortableCardWrap
  *  pattern: the li is the drag unit, transform/transition ride the
@@ -666,6 +717,74 @@ function BenchView({ bench, onRun, running }: {
       .then(() => { reload() })
       .catch((err: unknown) => { setReloadError(err instanceof Error ? err.message : 'wire failed') })
   }, [live, reload])
+  // ── CAPABILITY / ASSET / FILE DROP SURFACE (slice 3): the grid is
+  //    the old onCardsDrop target reborn — capability tile lands a new
+  //    stage; asset tile lands an input-prep card; OS image file rides
+  //    the /v1/uploads door then lands the same way.
+  const [capOver, setCapOver] = useState(false)
+  const dropInterested = (e: React.DragEvent): boolean =>
+    e.dataTransfer.types.includes(CAPABILITY_DRAG_MIME)
+    || e.dataTransfer.types.includes(ASSET_DRAG_MIME)
+    || e.dataTransfer.types.includes('Files')
+  const onGridDragOver = useCallback((e: React.DragEvent): void => {
+    if (!dropInterested(e)) return
+    e.preventDefault()
+    e.dataTransfer.dropEffect = 'copy'
+    setCapOver(true)
+  }, [])
+  const onGridDragLeave = useCallback((e: React.DragEvent): void => {
+    if (e.relatedTarget === null) setCapOver(false)
+  }, [])
+  const onGridDrop = useCallback((e: React.DragEvent): void => {
+    if (!dropInterested(e)) return
+    e.preventDefault()
+    setCapOver(false)
+    if (e.dataTransfer.types.includes(CAPABILITY_DRAG_MIME)) {
+      const cap = parseCapabilityDrop(e.dataTransfer.getData(CAPABILITY_DRAG_MIME))
+      if (cap === null) return
+      // the door's ADD_KEYS carry no `title` — stages are named by
+      // their card (benchRow: title ?? card ?? id); the payload's
+      // title is diagnostics, not a stage field.
+      void addStageWire({
+        card: cap.service,
+        ...(cap.params !== undefined && Object.keys(cap.params).length > 0 ? { params: cap.params } : {}),
+        expect_rev: live.rev,
+      })
+        .then(() => { reload() })
+        .catch((err: unknown) => { setReloadError(err instanceof Error ? err.message : 'add refused') })
+      return
+    }
+    if (e.dataTransfer.types.includes(ASSET_DRAG_MIME)) {
+      const payload = parseAssetDrop(e.dataTransfer.getData(ASSET_DRAG_MIME))
+      if ((payload.url ?? '') === '') return
+      const t = payload.type ?? ''
+      const ok = t.startsWith('image/') || t.startsWith('audio/')
+      if (!ok) {
+        setReloadError(t !== '' ? 'Input cards don\u2019t accept ' + t + ' assets' : 'That asset isn\u2019t supported \u2014 drop an image or audio asset')
+        return
+      }
+      void addStageWire({
+        card: 'input-prep',
+        params: { source: payload.url },
+        expect_rev: live.rev,
+      })
+        .then(() => { reload() })
+        .catch((err: unknown) => { setReloadError(err instanceof Error ? err.message : 'add refused') })
+      return
+    }
+    if (e.dataTransfer.files.length > 0) {
+      const file = e.dataTransfer.files[0]
+      if (file === undefined) return
+      void uploadInputFile(file)
+        .then(({ name }) => addStageWire({
+          card: 'input-prep',
+          params: { source: name },
+          expect_rev: live.rev,
+        }))
+        .then(() => { reload() })
+        .catch((err: unknown) => { setReloadError(err instanceof Error ? err.message : 'drop refused') })
+    }
+  }, [live, reload])
   const benchRev = live.rev
   return h('section', { className: css.cardsBench, 'data-cards-bench': benchRev },
     h('header', { className: css.benchHead },
@@ -684,7 +803,13 @@ function BenchView({ bench, onRun, running }: {
           h(SortableContext, {
             items: live.stages.map((s) => s.id),
             strategy: rectSortingStrategy,
-            children: h('ol', { className: css.tileGrid },
+            children: h('ol', {
+              className: css.tileGrid + (capOver ? ' ' + css.capOver : ''),
+              onDragOver: onGridDragOver,
+              onDragLeave: onGridDragLeave,
+              onDrop: onGridDrop,
+              'data-drop-surface': 'cards',
+            },
               live.stages.map((s) => {
                 const row = benchRow(s)
                 return h(SortableTile, {

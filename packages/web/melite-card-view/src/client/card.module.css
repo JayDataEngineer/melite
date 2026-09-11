@@ -671,3 +671,8 @@
   outline: 2px solid var(--dsw-alias-state-business-primary, #4176e6);
   outline-offset: 2px;
 }
+.capOver {
+  background: var(--dsw-alias-interactive-bg-hover, #2631480f);
+  outline: 1px dashed var(--dsw-alias-state-business-primary, #4176e6);
+  outline-offset: 4px;
+}
