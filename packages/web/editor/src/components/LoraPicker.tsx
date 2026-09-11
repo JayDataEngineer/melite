@@ -1,17 +1,19 @@
-import { useState, useEffect } from "react"
+import { useEffect } from "react"
 import { Label } from "@melite/ui/label"
 import { Tip } from "@melite/ui/tip"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@melite/ui/select"
-import type { LoRAEntry } from "@melite/contracts"
-import { lorasList } from "../lib/loras-wire.ts"
+import type { LoRAEntry, LoRAAdapter } from "@melite/contracts"
+import { kindSpecOf, loraAdaptersOf } from "@melite/contracts"
+import { useSpecContractStore } from "../surfaces/shared/specContractStore"
 
 interface LoraPickerProps {
   model: string
   /** Selected LoRAs — the canonical primitive (see lib/loraTypes.ts). */
   value: LoRAEntry[]
   onChange: (v: LoRAEntry[]) => void
-  /** Optional toast function — when provided, fetch failures surface as a
-   *  toast instead of degrading silently. Pass through from parent. */
+  /** Optional toast function — reserved for callers that surface store
+   *  errors beyond the store's own toast (the spec store toasts fetch
+   *  failures itself; the picker does not double-toast). */
   onError?: (msg: string) => void
   /** Render variant: "dark" for video editor, "light" for assets tab */
   variant?: "dark" | "light"
@@ -19,70 +21,41 @@ interface LoraPickerProps {
   showHeader?: boolean
 }
 
-/** Catalog-declared per-LoRA metadata (keyed by filename stem). */
-interface LoraMeta {
-  label?: string
-  category?: string
-  default_strength?: number
-  prompt_hint?: string
-}
+/** ALL BUILT IN (operator order, 2026-09-10): there is NO loras remote.
+ *  The lora list rides the SAME path every card surface rides — the
+ *  served form spec's ``modifiers`` block (kind "lora"), whose options
+ *  ARE the catalog (family-owned rows declared in the family package's
+ *  mods/loras.ts, composed into the spec server-side). The spec
+ *  contract store loads + validates it once per model; the picker
+ *  derives its list through the ONE projection (loraAdaptersOf) —
+ *  no private fetch, no parallel catalog, no second spelling. */
+export function LoraPicker({ model, value, onChange, variant = "dark", showHeader = true }: LoraPickerProps) {
+  const record = useSpecContractStore((s) => s.records[model])
+  const loadFormSpec = useSpecContractStore((s) => s.loadFormSpec)
 
-function stemOf(filename: string): string {
-  return filename.replace(/\.(safetensors|pt|bin)$/, "")
-}
+  // Passive mount → the store's loadFormSpec (deduped, validated,
+  // toasted on failure by the store — the one error surface).
+  useEffect(() => {
+    void loadFormSpec(model)
+  }, [model, loadFormSpec])
 
-export function LoraPicker({ model, value, onChange, onError, variant = "dark", showHeader = true }: LoraPickerProps) {
-  const [available, setAvailable] = useState<string[]>([])
-  const [note, setNote] = useState<string | null>(null)
-  const [meta, setMeta] = useState<Record<string, LoraMeta>>({})
-  const [loading, setLoading] = useState(true)
+  const spec = record?.state === "loaded" ? record.spec : null
+  const adapters: LoRAAdapter[] = loraAdaptersOf(kindSpecOf(spec, "lora"))
+  const loading = record?.state !== "loaded"
+  const byName = new Map(adapters.map((a) => [a.name, a]))
 
   // PRIMITIVE: `value` is already the wire format (LoRAEntry[]). No parsing.
   const entries = value
   const selectedNames = new Set(entries.map(e => e.id))
 
-  useEffect(() => {
-    setLoading(true)
-    // THE WIRE REMOTE (the /v1/loras door died with the gateway app —
-    // nothing serves /v1, by design): same-origin POST /api/loras/list
-    // carrying the client-request frame (api-gateway.md, the sanctioned
-    // caller for plugins outside the DSH web kernel; the wire field is
-    // the adapter parameter name, `model`). The lora list is
-    // FAMILY-OWNED DATA — the mods tree declares the rows
-    // (packages/models/<family>/mods/loras.ts), the comfyui seat owns
-    // the runtime catalog law (family rows win over the union), and
-    // the loras remote serves one family's catalog over the wire.
-    lorasList(model)
-      .then((data) => {
-        setAvailable(data.loras || [])
-        setNote(data.note ?? null)
-        setMeta(data.meta ?? {})
-      })
-      .catch((e: unknown) => {
-        // NO SILENT SWALLOW: LoRAs vanishing from the picker is a real
-        // failure (wire down, family typo, remote refused). Surface via
-        // the optional onError toast if the parent wired one through;
-        // always log so dev tools see it. The empty state is honest —
-        // the user sees "No LoRAs installed" with a diagnostic, not a
-        // silently blank picker.
-        const msg = e instanceof Error ? e.message : String(e)
-        console.error("[LoraPicker] failed to load LoRA list:", msg)
-        onError?.(`LoRA list failed to load: ${msg}`)
-        setAvailable([]); setNote(null); setMeta({})
-      })
-      .finally(() => setLoading(false))
-  }, [model, onError])
-
-  const metaFor = (filename: string): LoraMeta => meta[stemOf(filename)] ?? {}
-  // Label resolution: the loras/list meta → bare stem. No filename regex guessing
-  // (the old fallbackLabel had hardcoded strips for ltx-2/22b-/19b-/id-lora-/
-  // celebvhq- that were model-specific label cosmetics). A LoRA without a
-  // meta label shows its stem — honest, no surprises. To label a LoRA
-  // nicely, declare it on the family's mods/loras.ts row
-  // (label/default_strength — family-owned data in the mods tree, served
-  // over the loras wire remote).
-  const labelFor = (filename: string): string => metaFor(filename).label ?? stemOf(filename)
-  const defaultStrengthFor = (filename: string): number => metaFor(filename).default_strength ?? 1.0
+  // Label resolution: the adapter's declared label → its bare name. No
+  // filename regex guessing (the old fallbackLabel had hardcoded strips
+  // that were model-specific label cosmetics). A LoRA without a label
+  // shows its name — honest, no surprises. To label a LoRA nicely,
+  // declare it on the family's mods/loras.ts row (family-owned data,
+  // composed into the served spec).
+  const labelFor = (name: string): string => byName.get(name)?.label ?? name
+  const defaultStrengthFor = (name: string): number => byName.get(name)?.default_strength ?? 1.0
 
   const addLora = (name: string) => {
     if (!name || selectedNames.has(name)) return
@@ -99,7 +72,7 @@ export function LoraPicker({ model, value, onChange, onError, variant = "dark", 
     ))
   }
 
-  const unselected = available.filter(n => !selectedNames.has(n))
+  const unselected = adapters.map((a) => a.name).filter(n => !selectedNames.has(n))
 
   const isDark = variant === "dark"
   const textMuted = isDark ? "text-foreground/25" : "text-muted-foreground/50"
@@ -127,7 +100,7 @@ export function LoraPicker({ model, value, onChange, onError, variant = "dark", 
 
       {loading ? (
         <div className={`text-[10px] ${textMuted} py-1`}>Loading…</div>
-      ) : available.length === 0 ? (
+      ) : adapters.length === 0 ? (
         <div className={`text-[10px] ${textMuted} py-1`}>No LoRAs installed for this model.</div>
       ) : (
         <Select value="" onValueChange={addLora} disabled={unselected.length === 0}>
@@ -178,8 +151,10 @@ export function LoraPicker({ model, value, onChange, onError, variant = "dark", 
               </Tip>
             </div>
           ))}
-          {note && (
-            <div className={`text-[9px] italic ${textMuted} pt-0.5`}>{note}</div>
+          {record?.state === "error" && (
+            <div className={`text-[9px] italic ${textMuted} pt-0.5`}>
+              LoRA list failed to load: {record.error}
+            </div>
           )}
         </div>
       )}

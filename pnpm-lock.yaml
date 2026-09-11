@@ -749,22 +749,6 @@ importers:
         specifier: 5.9.3
         version: 5.9.3
 
-  packages/estate/loras:
-    dependencies:
-      '@deepseek-ai/cordis':
-        specifier: ^4.0.1
-        version: 4.0.2(@deepseek-ai/cordis-plugin-loader@1.0.3)
-      '@deepseek-ai/dsh-typert-protocol':
-        specifier: 0.1.5-rc.2
-        version: 0.1.5-rc.2(@deepseek-ai/cordis@4.0.2)
-    devDependencies:
-      '@types/node':
-        specifier: ^22.20.0
-        version: 22.20.1
-      typescript:
-        specifier: ~5.7.2
-        version: 5.7.3
-
   packages/estate/manage:
     dependencies:
       '@deepseek-ai/cordis':
@@ -2500,9 +2484,6 @@ importers:
       '@melite/estate-drafts':
         specifier: workspace:*
         version: link:../../estate/drafts
-      '@melite/estate-loras':
-        specifier: workspace:*
-        version: link:../../estate/loras
       '@melite/estate-manage':
         specifier: workspace:*
         version: link:../../estate/manage

@@ -1,43 +1,110 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
-import { TooltipProvider } from '@melite/ui/tooltip'
-import type { ReactElement } from 'react'
-
-const renderWithTooltip = (el: ReactElement) =>
-  render(<TooltipProvider>{el}</TooltipProvider>)
 import { LoraPicker } from '../components/LoraPicker'
 import type { LoRAEntry } from "@melite/contracts"
 
-// Mock apiJson so we control the /v1/loras response. LoraPicker must
-// tolerate: missing meta, missing note, malformed filenames, and HTTP
-// errors (surfaced via onError).
-vi.mock('@melite/catalog/api', () => ({
-  apiJson: vi.fn(),
+// UI-kit seams mocked to their lightest faithful shape: the base-ui
+// Select drags a second React into the test env (the known dual-react
+// disease — field-grammar fails the same way rendering it); a native
+// <select> exercises the picker's OWN logic (add/strength/clamp/
+// clear/remove) identically. The kit's rendering is covered by the
+// kit's own tests.
+vi.mock('@melite/ui/select', () => ({
+  Select: ({ children, onValueChange, disabled }: {
+    children: React.ReactNode
+    onValueChange: (v: string) => void
+    disabled?: boolean
+  }) => (
+    <select
+      data-testid="lora-add"
+      disabled={disabled}
+      value=""
+      onChange={(e) => onValueChange(e.target.value)}
+    >
+      {children}
+    </select>
+  ),
+  SelectTrigger: ({ children }: { children?: React.ReactNode }) => <>{children}</>,
+  SelectValue: (): null => null,
+  SelectContent: ({ children }: { children?: React.ReactNode }) => <>{children}</>,
+  SelectItem: ({ value, children }: { value: string; children?: React.ReactNode }) => (
+    <option value={value}>{children}</option>
+  ),
 }))
-import { apiJson } from '@melite/catalog'
-const mockedApiJson = vi.mocked(apiJson)
+vi.mock('@melite/ui/tip', () => ({
+  Tip: ({ children }: { children?: React.ReactNode }) => <>{children}</>,
+}))
+vi.mock('@melite/ui/label', () => ({
+  Label: ({ children }: { children?: React.ReactNode }) => <label>{children}</label>,
+}))
 
-function resp(loras: string[], meta: Record<string, any> = {}, note: string | null = null) {
-  return Promise.resolve({ model: 'z-image', loras, meta, note })
+const renderPicker = (el: React.ReactElement) => render(el)
+
+// ALL BUILT IN (operator order, 2026-09-10): the picker rides the
+// SPEC CONTRACT STORE — the same path every card surface rides. There
+// is no /v1/loras fetch and no loras remote to mock: the stub IS the
+// store's record (a loaded spec whose modifiers block carries the
+// lora kind's options — the family-owned catalog, composed into the
+// served spec server-side).
+const { storeState, mockedLoadFormSpec } = vi.hoisted(() => {
+  const storeState = {
+    records: {} as Record<string, Record<string, unknown>>,
+  }
+  return {
+    storeState,
+    mockedLoadFormSpec: vi.fn().mockResolvedValue(undefined),
+  }
+})
+
+vi.mock('../surfaces/shared/specContractStore', () => ({
+  useSpecContractStore: (sel: (s: unknown) => unknown) =>
+    sel({ records: storeState.records, loadFormSpec: mockedLoadFormSpec }),
+}))
+
+/** One lora kind's options as the served spec carries them — the
+ *  ModifierOptionSpec wire shape (value = the catalog id, label,
+ *  defaults.strength). */
+function specOf(options: Array<Record<string, unknown>>): Record<string, unknown> {
+  return {
+    fields: [],
+    schema_groups: [],
+    features: { modifiers: [{ kind: 'lora', fields: [], options }] },
+  }
 }
 
-// The base-ui Select renders options lazily — option labels only appear
-// after the trigger is clicked. This helper opens the dropdown so tests
-// can assert on option text/labels.
-async function openList() {
-  fireEvent.click(screen.getByRole('combobox'))
+type Rec = { spec: Record<string, unknown> | null; state: string; violations: unknown[]; error: string | null }
+
+function loaded(options: Array<Record<string, unknown>>): Rec {
+  return { spec: specOf(options), state: 'loaded', violations: [], error: null }
 }
+
+function setRecord(rec: Rec): void {
+  storeState.records = { 'z-image': rec as unknown as Record<string, unknown> }
+}
+
+// The mocked select renders options eagerly — no click-to-open dance.
+async function openList(): Promise<void> {}
 
 describe('LoraPicker', () => {
   beforeEach(() => {
-    mockedApiJson.mockReset()
+    mockedLoadFormSpec.mockClear()
+    setRecord(loaded([]))
   })
 
-  it('shows a loading state then exposes available LoRAs in the dropdown', async () => {
-    mockedApiJson.mockReturnValue(resp(['Lightning.safetensors', 'Detailer.safetensors']))
-    renderWithTooltip(<LoraPicker model="z-image" value={[]} onChange={() => {}} />)
+  it('loads the spec through the store and shows the loading state', async () => {
+    setRecord({ spec: null, state: 'loading', violations: [], error: null })
+    renderPicker(<LoraPicker model="z-image" value={[]} onChange={() => {}} />)
+    // The mount drives the store's loadFormSpec (the ONE ingest gate).
+    expect(mockedLoadFormSpec).toHaveBeenCalledWith('z-image')
     expect(screen.getByText(/Loading/)).toBeTruthy()
-    // Once loaded, opening the dropdown shows both LoRAs.
+  })
+
+  it('renders the adapter options once the spec is loaded', async () => {
+    setRecord(loaded([
+      { value: 'lightning', label: 'Lightning' },
+      { value: 'detailer', label: 'Detailer' },
+    ]))
+    renderPicker(<LoraPicker model="z-image" value={[]} onChange={() => {}} />)
     await waitFor(async () => {
       await openList()
       expect(await screen.findByRole('option', { name: 'Lightning' })).toBeTruthy()
@@ -45,112 +112,107 @@ describe('LoraPicker', () => {
     })
   })
 
-  it('renders an honest empty state when the catalog returns no LoRAs', async () => {
-    mockedApiJson.mockReturnValue(resp([]))
-    renderWithTooltip(<LoraPicker model="z-image" value={[]} onChange={() => {}} />)
+  it('renders an honest empty state when the family declares no loras', async () => {
+    setRecord(loaded([]))
+    renderPicker(<LoraPicker model="z-image" value={[]} onChange={() => {}} />)
     await waitFor(() => {
       expect(screen.getByText(/No LoRAs installed/)).toBeTruthy()
     })
   })
 
-  it('surfaces fetch failures via onError and falls back to empty state', async () => {
-    mockedApiJson.mockRejectedValue(new Error('HTTP 503'))
-    const onError = vi.fn()
-    renderWithTooltip(<LoraPicker model="z-image" value={[]} onChange={() => {}} onError={onError} />)
+  it('surfaces the store error inline (no double-toast — the store toasts)', async () => {
+    setRecord({ spec: null, state: 'error', violations: [], error: 'HTTP 503' })
+    const value: LoRAEntry[] = [{ id: 'lightning', strength: 1 }]
+    renderPicker(<LoraPicker model="z-image" value={value} onChange={() => {}} />)
     await waitFor(() => {
-      expect(onError).toHaveBeenCalledWith(expect.stringMatching(/HTTP 503/))
-      expect(screen.getByText(/No LoRAs installed/)).toBeTruthy()
+      expect(screen.getByText(/HTTP 503/)).toBeTruthy()
     })
   })
 
-  it('uses catalog metadata labels when available', async () => {
-    mockedApiJson.mockReturnValue(resp(
-      ['Lightning-4steps.safetensors'],
-      { 'Lightning-4steps': { label: '⚡ Lightning 4-step', default_strength: 0.7 } },
-    ))
-    renderWithTooltip(<LoraPicker model="z-image" value={[]} onChange={() => {}} />)
+  it('uses the declared label when the option carries one', async () => {
+    setRecord(loaded([
+      { value: 'lightning-4steps', label: '⚡ Lightning 4-step' },
+    ]))
+    renderPicker(<LoraPicker model="z-image" value={[]} onChange={() => {}} />)
     await waitFor(async () => {
       await openList()
       expect(await screen.findByRole('option', { name: '⚡ Lightning 4-step' })).toBeTruthy()
     })
   })
 
-  it('falls back to the bare stem when no catalog label is set', async () => {
-    mockedApiJson.mockReturnValue(resp(['Some-Custom.safetensors']))
-    renderWithTooltip(<LoraPicker model="z-image" value={[]} onChange={() => {}} />)
+  it('falls back to the bare catalog id when no label is set', async () => {
+    setRecord(loaded([{ value: 'some-custom' }]))
+    renderPicker(<LoraPicker model="z-image" value={[]} onChange={() => {}} />)
     await waitFor(async () => {
       await openList()
-      // No meta — display the stem (filename minus .safetensors)
-      expect(await screen.findByRole('option', { name: 'Some-Custom' })).toBeTruthy()
+      expect(await screen.findByRole('option', { name: 'some-custom' })).toBeTruthy()
     })
   })
 
-  it('uses default_strength from metadata when adding a LoRA', async () => {
-    mockedApiJson.mockReturnValue(resp(
-      ['Lightning.safetensors'],
-      { 'Lightning': { default_strength: 0.5 } },
-    ))
+  it('seeds added entries with the option default_strength', async () => {
+    setRecord(loaded([
+      { value: 'lightning', label: 'Lightning', defaults: { strength: 0.5 } },
+    ]))
     const onChange = vi.fn()
-    renderWithTooltip(<LoraPicker model="z-image" value={[]} onChange={onChange} />)
-    await waitFor(async () => {
-      await openList()
-      const opt = await screen.findByRole('option', { name: 'Lightning' })
-      fireEvent.click(opt)
+    renderPicker(<LoraPicker model="z-image" value={[]} onChange={onChange} />)
+    await waitFor(() => {
+      const sel = screen.getByTestId('lora-add') as HTMLSelectElement
+      expect(sel.options.length).toBe(1)
     })
+    fireEvent.change(screen.getByTestId('lora-add'), { target: { value: 'lightning' } })
     expect(onChange).toHaveBeenCalledWith([
-      { id: 'Lightning.safetensors', strength: 0.5 },
+      { id: 'lightning', strength: 0.5 },
     ])
   })
 
   it('clamps manual strength edits to [0, 5]', async () => {
-    mockedApiJson.mockReturnValue(resp(['Lightning.safetensors']))
-    // value contains the LoRA → it renders in a row with label + number input
-    const value: LoRAEntry[] = [{ id: 'Lightning.safetensors', strength: 1.0 }]
+    setRecord(loaded([{ value: 'lightning', label: 'Lightning' }]))
+    const value: LoRAEntry[] = [{ id: 'lightning', strength: 1.0 }]
     const onChange = vi.fn()
-    renderWithTooltip(<LoraPicker model="z-image" value={value} onChange={onChange} />)
+    renderPicker(<LoraPicker model="z-image" value={value} onChange={onChange} />)
     await waitFor(() => expect(screen.getByText('Lightning')).toBeTruthy())
 
     const num = document.querySelector('input[type="number"]') as HTMLInputElement
     expect(num).toBeTruthy()
     fireEvent.change(num, { target: { value: '99' } })
     expect(onChange).toHaveBeenCalledWith([
-      { id: 'Lightning.safetensors', strength: 5 },  // clamped down
+      { id: 'lightning', strength: 5 },
     ])
   })
 
   it('clamps manual strength edits to a minimum of 0', async () => {
-    mockedApiJson.mockReturnValue(resp(['Lightning.safetensors']))
-    const value: LoRAEntry[] = [{ id: 'Lightning.safetensors', strength: 1.0 }]
+    setRecord(loaded([{ value: 'lightning', label: 'Lightning' }]))
+    const value: LoRAEntry[] = [{ id: 'lightning', strength: 1.0 }]
     const onChange = vi.fn()
-    renderWithTooltip(<LoraPicker model="z-image" value={value} onChange={onChange} />)
+    renderPicker(<LoraPicker model="z-image" value={value} onChange={onChange} />)
     await waitFor(() => expect(screen.getByText('Lightning')).toBeTruthy())
 
     const num = document.querySelector('input[type="number"]') as HTMLInputElement
     fireEvent.change(num, { target: { value: '-10' } })
     expect(onChange).toHaveBeenCalledWith([
-      { id: 'Lightning.safetensors', strength: 0 },
+      { id: 'lightning', strength: 0 },
     ])
   })
 
   it('rounds strength to two decimal places', async () => {
-    mockedApiJson.mockReturnValue(resp(['Lightning.safetensors']))
-    const value: LoRAEntry[] = [{ id: 'Lightning.safetensors', strength: 1.0 }]
+    setRecord(loaded([{ value: 'lightning', label: 'Lightning' }]))
+    const value: LoRAEntry[] = [{ id: 'lightning', strength: 1.0 }]
     const onChange = vi.fn()
-    renderWithTooltip(<LoraPicker model="z-image" value={value} onChange={onChange} />)
+    renderPicker(<LoraPicker model="z-image" value={value} onChange={onChange} />)
     await waitFor(() => expect(screen.getByText('Lightning')).toBeTruthy())
 
     const num = document.querySelector('input[type="number"]') as HTMLInputElement
     fireEvent.change(num, { target: { value: '0.123456' } })
     expect(onChange).toHaveBeenCalledWith([
-      { id: 'Lightning.safetensors', strength: 0.12 },
+      { id: 'lightning', strength: 0.12 },
     ])
   })
 
   it('clears all selected LoRAs when the clear button is clicked', async () => {
-    mockedApiJson.mockReturnValue(resp(['Lightning.safetensors']))
-    const value: LoRAEntry[] = [{ id: 'Lightning.safetensors', strength: 1.0 }]
+    setRecord(loaded([{ value: 'lightning', label: 'Lightning' }]))
+    const value: LoRAEntry[] = [{ id: 'lightning', strength: 1.0 }]
     const onChange = vi.fn()
-    renderWithTooltip(<LoraPicker model="z-image" value={value} onChange={onChange} />)
+    renderPicker(<LoraPicker model="z-image" value={value} onChange={onChange} />)
     await waitFor(() => expect(screen.getByText('Lightning')).toBeTruthy())
 
     fireEvent.click(screen.getByText('clear'))
@@ -158,20 +220,23 @@ describe('LoraPicker', () => {
   })
 
   it('removes a single LoRA when its ✕ button is clicked', async () => {
-    mockedApiJson.mockReturnValue(resp(['A.safetensors', 'B.safetensors']))
+    setRecord(loaded([
+      { value: 'a', label: 'A' },
+      { value: 'b', label: 'B' },
+    ]))
     const value: LoRAEntry[] = [
-      { id: 'A.safetensors', strength: 1 },
-      { id: 'B.safetensors', strength: 1 },
+      { id: 'a', strength: 1 },
+      { id: 'b', strength: 1 },
     ]
     const onChange = vi.fn()
-    const { container } = renderWithTooltip(<LoraPicker model="z-image" value={value} onChange={onChange} />)
+    const { container } = renderPicker(<LoraPicker model="z-image" value={value} onChange={onChange} />)
     await waitFor(() => expect(screen.getByText('A')).toBeTruthy())
 
     const removeBtns = container.querySelectorAll('button[aria-label^="Remove"]')
     expect(removeBtns.length).toBe(2)
     fireEvent.click(removeBtns[0])
     expect(onChange).toHaveBeenCalledWith([
-      { id: 'B.safetensors', strength: 1 },
+      { id: 'b', strength: 1 },
     ])
   })
 })
