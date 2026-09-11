@@ -406,6 +406,99 @@ export async function reorderBench(drafts, session, body) {
     });
     return { draft_id: loaded.draftId, session, rev: newRev, stage: stageId, from, to };
 }
+const GROUP_KEYS = ["stages", "expect_rev", "author"];
+/** group — the Group Cards sub-view's door (2026-09-11): 2+ stage ids
+ *  collapse into ONE compound row at the FIRST member's bench position;
+ *  the member rows ride INSIDE the compound (children, bench order) so
+ *  the bench's stage list stays the projection-free truth — the grid
+ *  renders the compound as a single tile and ungroup restores the
+ *  members at the compound's index. The inverse carries both halves. */
+export async function groupBench(drafts, session, body) {
+    refuseUnknown(body, GROUP_KEYS);
+    const loaded = loadBench(drafts, session);
+    casCheck(loaded.block, body["expect_rev"], session);
+    const idsRaw = body["stages"];
+    if (!Array.isArray(idsRaw) || idsRaw.length < 2
+        || !idsRaw.every((x) => typeof x === "string")) {
+        throw new RemoteError("bench/bad-body", "stages must be an array of 2+ stage ids", {});
+    }
+    const author = authorOk(body["author"])
+        ? body["author"]
+        : "agent";
+    const stages = stagesOf(loaded.doc);
+    // bench order (the ids arrive selection-order; the compound is the
+    // bench's own order — the old law: "the compound parent lands at the
+    // FIRST member's position, childIds in array order")
+    const ids = idsRaw;
+    const picked = [];
+    for (const st of stages) {
+        if (ids.includes(String(st["id"])))
+            picked.push(st);
+    }
+    if (picked.length !== ids.length) {
+        throw new RemoteError("bench/stage-not-found", "group: unknown stage id(s) — have " + String(picked.length) + " of " + String(ids.length), { session, stage: ids.join(",") });
+    }
+    const firstIndex = stages.indexOf(picked[0]);
+    for (const row of picked) {
+        const idx = stages.indexOf(row);
+        if (idx >= 0)
+            stages.splice(idx, 1);
+    }
+    // id from the doc's own coordinates (rev + count) — no global RNG
+    // dependency; unique per append by construction (rev advances).
+    const gid = "g_r" + String(loaded.block.rev) + "c" + String(picked.length) + "_" + String(stages.length);
+    const compound = {
+        id: gid,
+        card: "group",
+        children: picked,
+    };
+    stages.splice(Math.min(firstIndex, stages.length), 0, compound);
+    loaded.doc["stages"] = stages;
+    const newRev = await appendAndSave(drafts, loaded, {
+        author,
+        kind: "group",
+        stage: gid,
+        summary: "group " + String(ids.length) + " stages",
+        inverse: { stage: gid, index: firstIndex, children: picked },
+    });
+    return { draft_id: loaded.draftId, session, rev: newRev, stage: gid };
+}
+const UNGROUP_KEYS = ["stage", "expect_rev", "author"];
+/** ungroup — the compound's door: spill the children back at the
+ *  compound's index, in their stored order. */
+export async function ungroupBench(drafts, session, body) {
+    refuseUnknown(body, UNGROUP_KEYS);
+    const loaded = loadBench(drafts, session);
+    casCheck(loaded.block, body["expect_rev"], session);
+    const stageId = body["stage"];
+    if (typeof stageId !== "string") {
+        throw new RemoteError("bench/bad-body", "stage is required", {});
+    }
+    const author = authorOk(body["author"])
+        ? body["author"]
+        : "agent";
+    const stages = stagesOf(loaded.doc);
+    const idx = stages.findIndex((s) => s["id"] === stageId);
+    if (idx < 0 || stages[idx]["card"] !== "group") {
+        throw new RemoteError("bench/stage-not-found", "ungroup: no group stage " + stageId, { session, stage: stageId });
+    }
+    const compound = stages[idx];
+    const children = compound["children"];
+    const rows = Array.isArray(children)
+        ? children
+        : [];
+    stages.splice(idx, 1);
+    stages.splice(Math.min(idx, stages.length), 0, ...rows);
+    loaded.doc["stages"] = stages;
+    const newRev = await appendAndSave(drafts, loaded, {
+        author,
+        kind: "ungroup",
+        stage: stageId,
+        summary: "ungroup " + String(rows.length) + " stages",
+        inverse: { row: compound, index: idx },
+    });
+    return { draft_id: loaded.draftId, session, rev: newRev, stage: stageId };
+}
 /** remove_stage — splice one stage out (the inverse carries row +
  *  index for undo). */
 export async function removeStageBench(drafts, session, body) {
@@ -593,6 +686,42 @@ function applyInverse(doc, e) {
         const idx = typeof inv["index"] === "number" ? inv["index"] : stages.length;
         if (isRecord(row))
             stages.splice(Math.min(idx, stages.length), 0, row);
+        doc["stages"] = stages;
+        return;
+    }
+    if (e.kind === "group") {
+        // undo(group) = ungroup: drop the compound row, spill children at
+        // its index (bench order preserved inside the row).
+        const idx = stages.findIndex((s) => s["id"] === inv["stage"]);
+        const children = inv["children"];
+        const rows = Array.isArray(children)
+            ? children
+            : [];
+        if (idx >= 0) {
+            stages.splice(idx, 1);
+            stages.splice(Math.min(idx, stages.length), 0, ...rows);
+            doc["stages"] = stages;
+        }
+        return;
+    }
+    if (e.kind === "ungroup") {
+        // undo(ungroup) = re-group: splice the children back out, insert
+        // the compound row at the recorded index.
+        const row = inv["row"];
+        if (!isRecord(row))
+            return;
+        const children = row["children"];
+        if (Array.isArray(children)) {
+            for (const child of children) {
+                const idx = stages.findIndex((s) => s["id"] === child["id"]);
+                if (idx >= 0)
+                    stages.splice(idx, 1);
+            }
+        }
+        const back = typeof inv["index"] === "number"
+            ? Math.min(inv["index"], stages.length)
+            : stages.length;
+        stages.splice(back, 0, row);
         doc["stages"] = stages;
         return;
     }

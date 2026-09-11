@@ -142,3 +142,70 @@ export async function rewireStageWire(doc: Record<string, unknown>, signal?: Abo
   if (typeof value !== 'object' || value === null) throw new Error('bench/rewire: not an object')
   return value as Record<string, unknown>
 }
+
+/** The bench group wire door caller (the Group Cards sub-view):
+ *  stages = 2+ ids (bench order applied server-side). */
+export async function groupStagesWire(doc: Record<string, unknown>, signal?: AbortSignal): Promise<Record<string, unknown>> {
+  const rpcId = nextRpcId()
+  const res = await fetch('/api/bench/group', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({
+      type: 'client-request',
+      rpcId,
+      method: 'bench/group',
+      payload: { args: { sessionKey: 'main', doc } },
+    }),
+    ...(signal === undefined ? {} : { signal }),
+  })
+  if (!res.ok) throw new Error('bench/group: HTTP ' + String(res.status))
+  const body: unknown = await res.json()
+  if (typeof body !== 'object' || body === null
+      || Reflect.get(body, 'type') !== 'server-response'
+      || Reflect.get(body, 'rpcId') !== rpcId) {
+    throw new Error('bench/group: malformed response frame')
+  }
+  const result: unknown = Reflect.get(body, 'result')
+  if (typeof result !== 'object' || result === null) throw new Error('bench/group: malformed result')
+  if (Reflect.get(result, 'ok') !== true) {
+    const error: unknown = Reflect.get(result, 'error')
+    throw new Error(typeof error === 'object' && error !== null && typeof Reflect.get(error, 'message') === 'string'
+      ? Reflect.get(error, 'message') as string : 'bench/group refused')
+  }
+  const value: unknown = Reflect.get(result, 'value')
+  if (typeof value !== 'object' || value === null) throw new Error('bench/group: not an object')
+  return value as Record<string, unknown>
+}
+
+/** The bench ungroup wire door caller: spill a compound's children. */
+export async function ungroupStageWire(doc: Record<string, unknown>, signal?: AbortSignal): Promise<Record<string, unknown>> {
+  const rpcId = nextRpcId()
+  const res = await fetch('/api/bench/ungroup', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({
+      type: 'client-request',
+      rpcId,
+      method: 'bench/ungroup',
+      payload: { args: { sessionKey: 'main', doc } },
+    }),
+    ...(signal === undefined ? {} : { signal }),
+  })
+  if (!res.ok) throw new Error('bench/ungroup: HTTP ' + String(res.status))
+  const body: unknown = await res.json()
+  if (typeof body !== 'object' || body === null
+      || Reflect.get(body, 'type') !== 'server-response'
+      || Reflect.get(body, 'rpcId') !== rpcId) {
+    throw new Error('bench/ungroup: malformed response frame')
+  }
+  const result: unknown = Reflect.get(body, 'result')
+  if (typeof result !== 'object' || result === null) throw new Error('bench/ungroup: malformed result')
+  if (Reflect.get(result, 'ok') !== true) {
+    const error: unknown = Reflect.get(result, 'error')
+    throw new Error(typeof error === 'object' && error !== null && typeof Reflect.get(error, 'message') === 'string'
+      ? Reflect.get(error, 'message') as string : 'bench/ungroup refused')
+  }
+  const value: unknown = Reflect.get(result, 'value')
+  if (typeof value !== 'object' || value === null) throw new Error('bench/ungroup: not an object')
+  return value as Record<string, unknown>
+}

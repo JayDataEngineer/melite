@@ -73,7 +73,7 @@ interface BenchEntry {
   rev: number;
   at: number;
   author: Author;
-  kind: "patch" | "add_stage" | "remove_stage" | "rewire" | "reorder" | "load" | "undo";
+  kind: "patch" | "add_stage" | "remove_stage" | "rewire" | "reorder" | "group" | "ungroup" | "load" | "undo";
   stage?: string;
   summary?: string;
   /** Kind-specific inverse payload (undo applies it). */
@@ -637,6 +637,124 @@ export interface BenchReorderRow {
   readonly to: number;
 }
 
+const GROUP_KEYS = ["stages", "expect_rev", "author"];
+
+/** group — the Group Cards sub-view's door (2026-09-11): 2+ stage ids
+ *  collapse into ONE compound row at the FIRST member's bench position;
+ *  the member rows ride INSIDE the compound (children, bench order) so
+ *  the bench's stage list stays the projection-free truth — the grid
+ *  renders the compound as a single tile and ungroup restores the
+ *  members at the compound's index. The inverse carries both halves. */
+export async function groupBench(
+  drafts: Domain<DraftsDomainSpec>,
+  session: string,
+  body: Record<string, unknown>,
+): Promise<BenchStageRow> {
+  refuseUnknown(body, GROUP_KEYS);
+  const loaded: LoadedBench = loadBench(drafts, session);
+  casCheck(loaded.block, body["expect_rev"], session);
+  const idsRaw: unknown = body["stages"];
+  if (!Array.isArray(idsRaw) || idsRaw.length < 2
+      || !idsRaw.every((x: unknown): boolean => typeof x === "string")) {
+    throw new RemoteError(
+      "bench/bad-body",
+      "stages must be an array of 2+ stage ids",
+      {},
+    );
+  }
+  const author: Author = authorOk(body["author"])
+    ? (body["author"] as Author)
+    : "agent";
+  const stages: Record<string, unknown>[] = stagesOf(loaded.doc);
+  // bench order (the ids arrive selection-order; the compound is the
+  // bench's own order — the old law: "the compound parent lands at the
+  // FIRST member's position, childIds in array order")
+  const ids: string[] = idsRaw as string[];
+  const picked: Array<Record<string, unknown>> = [];
+  for (const st of stages) {
+    if (ids.includes(String(st["id"]))) picked.push(st);
+  }
+  if (picked.length !== ids.length) {
+    throw new RemoteError(
+      "bench/stage-not-found",
+      "group: unknown stage id(s) — have " + String(picked.length) + " of " + String(ids.length),
+      { session, stage: ids.join(",") },
+    );
+  }
+  const firstIndex: number = stages.indexOf(picked[0]!);
+  for (const row of picked) {
+    const idx: number = stages.indexOf(row);
+    if (idx >= 0) stages.splice(idx, 1);
+  }
+  // id from the doc's own coordinates (rev + count) — no global RNG
+  // dependency; unique per append by construction (rev advances).
+  const gid: string =
+    "g_r" + String(loaded.block.rev) + "c" + String(picked.length) + "_" + String(stages.length);
+  const compound: Record<string, unknown> = {
+    id: gid,
+    card: "group",
+    children: picked,
+  };
+  stages.splice(Math.min(firstIndex, stages.length), 0, compound);
+  loaded.doc["stages"] = stages;
+  const newRev: number = await appendAndSave(drafts, loaded, {
+    author,
+    kind: "group",
+    stage: gid,
+    summary: "group " + String(ids.length) + " stages",
+    inverse: { stage: gid, index: firstIndex, children: picked },
+  });
+  return { draft_id: loaded.draftId, session, rev: newRev, stage: gid };
+}
+
+const UNGROUP_KEYS = ["stage", "expect_rev", "author"];
+
+/** ungroup — the compound's door: spill the children back at the
+ *  compound's index, in their stored order. */
+export async function ungroupBench(
+  drafts: Domain<DraftsDomainSpec>,
+  session: string,
+  body: Record<string, unknown>,
+): Promise<BenchStageRow> {
+  refuseUnknown(body, UNGROUP_KEYS);
+  const loaded: LoadedBench = loadBench(drafts, session);
+  casCheck(loaded.block, body["expect_rev"], session);
+  const stageId: unknown = body["stage"];
+  if (typeof stageId !== "string") {
+    throw new RemoteError("bench/bad-body", "stage is required", {});
+  }
+  const author: Author = authorOk(body["author"])
+    ? (body["author"] as Author)
+    : "agent";
+  const stages: Record<string, unknown>[] = stagesOf(loaded.doc);
+  const idx: number = stages.findIndex(
+    (s: Record<string, unknown>): boolean => s["id"] === stageId,
+  );
+  if (idx < 0 || stages[idx]!["card"] !== "group") {
+    throw new RemoteError(
+      "bench/stage-not-found",
+      "ungroup: no group stage " + stageId,
+      { session, stage: stageId },
+    );
+  }
+  const compound = stages[idx]!;
+  const children: unknown = compound["children"];
+  const rows: Record<string, unknown>[] = Array.isArray(children)
+    ? (children as Record<string, unknown>[])
+    : [];
+  stages.splice(idx, 1);
+  stages.splice(Math.min(idx, stages.length), 0, ...rows);
+  loaded.doc["stages"] = stages;
+  const newRev: number = await appendAndSave(drafts, loaded, {
+    author,
+    kind: "ungroup",
+    stage: stageId,
+    summary: "ungroup " + String(rows.length) + " stages",
+    inverse: { row: compound, index: idx },
+  });
+  return { draft_id: loaded.draftId, session, rev: newRev, stage: stageId };
+}
+
 /** remove_stage — splice one stage out (the inverse carries row +
  *  index for undo). */
 export async function removeStageBench(
@@ -882,6 +1000,45 @@ function applyInverse(
     const idx: number =
       typeof inv["index"] === "number" ? inv["index"] : stages.length;
     if (isRecord(row)) stages.splice(Math.min(idx, stages.length), 0, row);
+    doc["stages"] = stages;
+    return;
+  }
+  if (e.kind === "group") {
+    // undo(group) = ungroup: drop the compound row, spill children at
+    // its index (bench order preserved inside the row).
+    const idx: number = stages.findIndex(
+      (s: Record<string, unknown>): boolean => s["id"] === inv["stage"],
+    );
+    const children: unknown = inv["children"];
+    const rows: Record<string, unknown>[] = Array.isArray(children)
+      ? (children as Record<string, unknown>[])
+      : [];
+    if (idx >= 0) {
+      stages.splice(idx, 1);
+      stages.splice(Math.min(idx, stages.length), 0, ...rows);
+      doc["stages"] = stages;
+    }
+    return;
+  }
+  if (e.kind === "ungroup") {
+    // undo(ungroup) = re-group: splice the children back out, insert
+    // the compound row at the recorded index.
+    const row: unknown = inv["row"];
+    if (!isRecord(row)) return;
+    const children: unknown = row["children"];
+    if (Array.isArray(children)) {
+      for (const child of children as Record<string, unknown>[]) {
+        const idx: number = stages.findIndex(
+          (s: Record<string, unknown>): boolean => s["id"] === child["id"],
+        );
+        if (idx >= 0) stages.splice(idx, 1);
+      }
+    }
+    const back: number =
+      typeof inv["index"] === "number"
+        ? Math.min(inv["index"], stages.length)
+        : stages.length;
+    stages.splice(back, 0, row);
     doc["stages"] = stages;
     return;
   }

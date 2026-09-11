@@ -39,7 +39,7 @@ import { paramFields, patchStageParams } from './draft.ts'
 import css from './card.module.css'
 import type { CardsBenchValue, CardsRunValue, BenchStageRow } from './cards-resource.ts'
 import { CARDS_BENCH_ADDRESS, cardsRunAddress, fetchBench, openCardsResource, parseCardsAddress, restoreRunToBench } from './cards-resource.ts'
-import { addStageWire, removeStageWire, reorderStageWire, rewireStageWire } from './add-stage.ts'
+import { addStageWire, groupStagesWire, removeStageWire, reorderStageWire, rewireStageWire, ungroupStageWire } from './add-stage.ts'
 import { CardZoomOverlay, cardLayoutId, ZOOM_SPRING } from './zoom.tsx'
 import { motion } from 'framer-motion'
 import { DndContext, closestCenter, PointerSensor, useSensor, useSensors } from '@dnd-kit/core'
@@ -280,15 +280,21 @@ async function uploadInputFile(file: File): Promise<{ name: string }> {
  *  pattern: the li is the drag unit, transform/transition ride the
  *  wrapper, the shared-element layoutId stays INSIDE (the morph
  *  anchor is unbroken). */
-function SortableTile({ row, entered, onOpen, onWireDrop, onWireArm, wireSrc }: {
+function SortableTile({ row, entered, onOpen, onWireDrop, onWireArm, wireSrc, grouping, selected, onToggleSelect }: {
   row: CardRowLineTabRow
   entered: boolean
   onOpen: (row: CardRowLineTabRow) => void
   onWireDrop: (target: string, source: string) => void
   onWireArm: (id: string) => void
   wireSrc: string | null
+  grouping: boolean
+  selected: boolean
+  onToggleSelect: (id: string) => void
 }): ReturnType<typeof h> {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: row.id })
+  // selection mode: pointer listeners OFF (reorder pauses), clicks
+  // toggle selection — the old sub-view's law, verbatim.
+  const dragProps = grouping ? {} : { ...attributes, ...listeners }
   const wiredFrom = typeof row.stage.inputs === 'object' && row.stage.inputs !== null
     && 'source' in (row.stage.inputs as Record<string, unknown>)
   // WIRE MODE (2026-09-11): the ⛓ button arms the tile as the wire
@@ -308,17 +314,24 @@ function SortableTile({ row, entered, onOpen, onWireDrop, onWireArm, wireSrc }: 
     'data-stage-id': row.id,
     'data-stage-status': row.status,
     'data-wiring': wireSrc === row.id ? 'source' : wiring ? 'target' : null,
-    ...attributes, ...listeners,
+    'data-grouping': grouping ? 'on' : null,
+    'data-selected': grouping && selected ? 'on' : null,
+    ...dragProps,
   },
     h(motion.div, { layoutId: cardLayoutId(row.id), className: css.tileShared, transition: ZOOM_SPRING },
       h('button', {
         className: css.tileInner, type: 'button', 'data-status': row.status,
         onClick: () => {
+          if (grouping) { onToggleSelect(row.id); return }
           if (wireSrc === null) { onOpen(row); return }
           if (wireSrc === row.id) { onWireArm(row.id); return } // self-click cancels
           onWireDrop(row.id, wireSrc)
         },
       },
+        grouping ? h('span', {
+          className: css.checkCircle + (selected ? ' ' + css.checkOn : ''),
+          'aria-hidden': 'true',
+        }, selected ? '\u2713' : '') : null,
         h('span', { className: css.tilePreview },
           row.thumbUrl !== null
             ? h('img', { className: css.tileImg, src: row.thumbUrl, alt: row.title, loading: 'lazy' })
@@ -387,7 +400,11 @@ interface CardRowLineTabRow {
 }
 
 function benchRow(stage: BenchStageRow, bench?: CardsBenchValue): CardRowLineTabRow {
-  const title = stage.title ?? stage.card ?? stage.id
+  const isGroup = stage.card === 'group'
+  const children = isGroup && Array.isArray(stage.children) ? stage.children.length : 0
+  const title = isGroup
+    ? 'Group (' + String(children) + ')'
+    : (stage.title ?? stage.card ?? stage.id)
   const status = typeof stage.runStatus === 'string' && stage.runStatus !== '' ? stage.runStatus : 'ready'
   const params = typeof stage.params === 'object' && stage.params !== null ? stage.params : {}
   const promptRaw = typeof params['prompt'] === 'string' ? params['prompt'] : ''
@@ -397,7 +414,7 @@ function benchRow(stage: BenchStageRow, bench?: CardsBenchValue): CardRowLineTab
     : ''
   return {
     id: stage.id,
-    kind: String(stage.card ?? 'card'),
+    kind: isGroup ? 'group' : String(stage.card ?? 'card'),
     title: String(title),
     service: typeof stage.engine === 'string' && stage.engine !== '' ? stage.engine : null,
     status,
@@ -511,6 +528,42 @@ function StageDrill({ stage, bench, running, onRun, onClose, onRemoved, onRewire
       setError(e instanceof Error ? e.message : 'remove failed')
       setRemoving(false)
     }
+  }
+  // THE GROUP FACE: a compound's drill is its member list + Ungroup
+  // (no params, no Run — compounds organize; chain-running rides the
+  // multi-stage estate debt, surfaced not hidden).
+  if (stage.card === 'group') {
+    const members: BenchStageRow[] = Array.isArray(stage.children)
+      ? stage.children.filter((c): c is BenchStageRow =>
+          typeof c === 'object' && c !== null && typeof Reflect.get(c, 'id') === 'string') : []
+    const ungroup = async (): Promise<void> => {
+      setError(null)
+      setRemoving(true)
+      try {
+        await ungroupStageWire({ stage: stage.id, expect_rev: bench.rev })
+        onRemoved()
+      } catch (e: unknown) {
+        setError(e instanceof Error ? e.message : 'ungroup failed')
+        setRemoving(false)
+      }
+    }
+    return h('div', { className: css.zoomDetail },
+      h('p', { className: css.groupNote },
+        'A compound of ' + String(members.length) + ' stages. Ungroup restores them at this position.'),
+      h('ol', { className: css.memberList },
+        members.map((m, i) => h('li', { key: m.id, className: css.memberRow },
+          h('span', { className: css.memberIdx }, String(i + 1) + '.'),
+          h('span', { className: css.memberName }, String(m.title ?? m.card ?? m.id)),
+        ))),
+      h('div', { className: css.runRow },
+        error !== null ? h('span', { className: css.runError }, error) : null,
+        h('button', {
+          className: css.back, type: 'button',
+          disabled: removing,
+          onClick: () => { void ungroup() },
+        }, removing ? 'ungrouping…' : 'Ungroup'),
+      ),
+    )
   }
   // THE ZOOM DETAIL (2026-09-11): no Modal — this renders INSIDE the
   // shared-element zoom card (the tile's morph target). The params/
@@ -834,16 +887,86 @@ function BenchView({ bench, onRun, onRunStage, running }: {
         .catch((err: unknown) => { setReloadError(err instanceof Error ? err.message : 'drop refused') })
     }
   }, [live, reload])
+  // ── GROUP CARDS SUB-VIEW (2026-09-11, the old 2026-08-12 law):
+  //    the header's Group action flips the grid into selection mode —
+  //    check circles on tiles, clicks toggle selection (no zoom, no
+  //    reorder), the floating bar carries Group N cards / Cancel, Esc
+  //    clears. Group → bench/group with the bench-ordered ids.
+  const [grouping, setGrouping] = useState(false)
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(() => new Set())
+  const onToggleSelect = useCallback((id: string): void => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }, [])
+  const exitGrouping = useCallback((): void => {
+    setGrouping(false)
+    setSelectedIds(new Set())
+  }, [])
+  useEffect(() => {
+    if (!grouping) return
+    const onKey = (e: KeyboardEvent): void => {
+      if (e.key !== 'Escape') return
+      const t = e.target as HTMLElement | null
+      if (t !== null && typeof t.closest === 'function'
+          && t.closest('input, textarea, select, [contenteditable]') !== null) return
+      exitGrouping()
+    }
+    window.addEventListener('keydown', onKey)
+    return () => { window.removeEventListener('keydown', onKey) }
+  }, [grouping, exitGrouping])
+  // drop selections whose stages vanished (grouped away / removed)
+  useEffect(() => {
+    if (selectedIds.size === 0) return
+    const present = new Set(live.stages.map((s) => s.id))
+    const stale = [...selectedIds].filter((id) => !present.has(id))
+    if (stale.length === 0) return
+    setSelectedIds((prev) => {
+      const next = new Set(prev)
+      for (const id of stale) next.delete(id)
+      return next
+    })
+  }, [live.stages, selectedIds])
+  const onGroup = useCallback((): void => {
+    const ordered = live.stages.map((s) => s.id).filter((id) => selectedIds.has(id))
+    if (ordered.length < 2) return
+    void groupStagesWire({ stages: ordered, expect_rev: live.rev })
+      .then(() => { exitGrouping(); reload() })
+      .catch((err: unknown) => { setReloadError(err instanceof Error ? err.message : 'group refused') })
+  }, [live, selectedIds, exitGrouping, reload])
   const benchRev = live.rev
   return h('section', { className: css.cardsBench, 'data-cards-bench': benchRev },
     h('header', { className: css.benchHead },
       h('span', { className: css.revTag }, 'rev ' + benchRev),
-      h('button', {
-        className: css.runBtn,
-        type: 'button',
-        disabled: running || live.stages.length === 0,
-        onClick: onRun,
-      }, 'Run'),
+      grouping
+        ? h('span', { className: css.groupBar },
+            h('button', {
+              className: css.runBtn,
+              type: 'button',
+              disabled: selectedIds.size < 2,
+              title: selectedIds.size < 2 ? 'select 2+ tiles to group' : 'collapse the selected stages into one compound',
+              onClick: onGroup,
+            }, 'Group ' + String(selectedIds.size) + ' cards'),
+            h('button', { className: css.back, type: 'button', onClick: exitGrouping }, 'Cancel'),
+          )
+        : h('span', { className: css.groupBar },
+            h('button', {
+              className: css.back,
+              type: 'button',
+              disabled: live.stages.length < 2,
+              title: live.stages.length < 2 ? 'grouping needs 2+ stages' : 'enter the selection sub-view',
+              onClick: () => { setGrouping(true) },
+            }, 'Group Cards'),
+            h('button', {
+              className: css.runBtn,
+              type: 'button',
+              disabled: running || live.stages.length === 0,
+              onClick: onRun,
+            }, 'Run'),
+          ),
     ),
     reloadError !== null ? h('p', { className: css.runError }, reloadError) : null,
     live.stages.length === 0
@@ -865,6 +988,7 @@ function BenchView({ bench, onRun, onRunStage, running }: {
                   key: s.id, row, entered: entered.has(s.id),
                   onOpen: (r) => onOpen(r.stage),
                   onWireDrop, onWireArm, wireSrc,
+                  grouping, selected: selectedIds.has(s.id), onToggleSelect,
                 })
               }),
               h('li', { className: css.tile + ' ' + css.tileAdd },

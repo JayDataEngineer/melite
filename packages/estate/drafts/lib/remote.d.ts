@@ -117,6 +117,11 @@ export declare class BenchRemoteService extends TypertRemoteService {
     /** Endpoint `bench/reorder` — move one stage to a new index (the
      *  drag-reorder door, 2026-09-11). */
     remoteExportReorder(sessionKey: string, doc: Record<string, unknown>, signal: AbortSignal): Promise<BenchReorderRow>;
+    /** Endpoint `bench/group` — collapse 2+ stages into a compound row
+     *  (the Group Cards sub-view's door, 2026-09-11). */
+    remoteExportGroup(sessionKey: string, doc: Record<string, unknown>, signal: AbortSignal): Promise<BenchStageRow>;
+    /** Endpoint `bench/ungroup` — spill a compound's children back. */
+    remoteExportUngroup(sessionKey: string, doc: Record<string, unknown>, signal: AbortSignal): Promise<BenchStageRow>;
     /** Endpoint `bench/undo` — walk the log tail, apply inverses. */
     remoteExportUndo(sessionKey: string, doc: Record<string, unknown>, signal: AbortSignal): Promise<BenchUndoRow>;
     /** The in-process APIs the adapters above delegate to. The

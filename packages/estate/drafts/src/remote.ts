@@ -20,11 +20,13 @@ import {
   addStageBench,
   ensureBench,
   getBench,
+  groupBench,
   patchBench,
   removeStageBench,
   reorderBench,
   rewireBench,
   undoBench,
+  ungroupBench,
 } from "./bench.js";
 import type {
   BenchEnsureRow,
@@ -461,6 +463,31 @@ export class BenchRemoteService extends TypertRemoteService {
     signal.throwIfAborted();
     const drafts: Domain<DraftsDomainSpec> = await this.open(signal);
     return await reorderBench(drafts, sessionKey, doc);
+  }
+
+  /** Endpoint `bench/group` — collapse 2+ stages into a compound row
+   *  (the Group Cards sub-view's door, 2026-09-11). */
+  @Remote("group")
+  async remoteExportGroup(
+    sessionKey: string,
+    doc: Record<string, unknown>,
+    signal: AbortSignal,
+  ): Promise<BenchStageRow> {
+    signal.throwIfAborted();
+    const drafts: Domain<DraftsDomainSpec> = await this.open(signal);
+    return await groupBench(drafts, sessionKey, doc);
+  }
+
+  /** Endpoint `bench/ungroup` — spill a compound's children back. */
+  @Remote("ungroup")
+  async remoteExportUngroup(
+    sessionKey: string,
+    doc: Record<string, unknown>,
+    signal: AbortSignal,
+  ): Promise<BenchStageRow> {
+    signal.throwIfAborted();
+    const drafts: Domain<DraftsDomainSpec> = await this.open(signal);
+    return await ungroupBench(drafts, sessionKey, doc);
   }
 
   /** Endpoint `bench/undo` — walk the log tail, apply inverses. */

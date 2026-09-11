@@ -35,7 +35,7 @@ var __esDecorate = (this && this.__esDecorate) || function (ctor, descriptorIn, 
 import { Remote, RemoteError, TypertRemoteService, } from "@deepseek-ai/dsh-typert-protocol";
 import { openDraftsDomain } from "./store.js";
 import { DRAFT_ID_RE } from "./spec.js";
-import { addStageBench, ensureBench, getBench, patchBench, removeStageBench, reorderBench, rewireBench, undoBench, } from "./bench.js";
+import { addStageBench, ensureBench, getBench, groupBench, patchBench, removeStageBench, reorderBench, rewireBench, undoBench, ungroupBench, } from "./bench.js";
 /** The stage-patch door's fixed key set (the old door's
  *  STAGE_PATCH_KEYS, order verbatim — the unknown-keys voice lists
  *  them in this order). */
@@ -260,6 +260,8 @@ let BenchRemoteService = (() => {
     let _remoteExportRemoveStage_decorators;
     let _remoteExportRewire_decorators;
     let _remoteExportReorder_decorators;
+    let _remoteExportGroup_decorators;
+    let _remoteExportUngroup_decorators;
     let _remoteExportUndo_decorators;
     return class BenchRemoteService extends _classSuper {
         static {
@@ -271,6 +273,8 @@ let BenchRemoteService = (() => {
             _remoteExportRemoveStage_decorators = [Remote("remove-stage")];
             _remoteExportRewire_decorators = [Remote("rewire")];
             _remoteExportReorder_decorators = [Remote("reorder")];
+            _remoteExportGroup_decorators = [Remote("group")];
+            _remoteExportUngroup_decorators = [Remote("ungroup")];
             _remoteExportUndo_decorators = [Remote("undo")];
             __esDecorate(this, null, _remoteExportGet_decorators, { kind: "method", name: "remoteExportGet", static: false, private: false, access: { has: obj => "remoteExportGet" in obj, get: obj => obj.remoteExportGet }, metadata: _metadata }, null, _instanceExtraInitializers);
             __esDecorate(this, null, _remoteExportEnsure_decorators, { kind: "method", name: "remoteExportEnsure", static: false, private: false, access: { has: obj => "remoteExportEnsure" in obj, get: obj => obj.remoteExportEnsure }, metadata: _metadata }, null, _instanceExtraInitializers);
@@ -279,6 +283,8 @@ let BenchRemoteService = (() => {
             __esDecorate(this, null, _remoteExportRemoveStage_decorators, { kind: "method", name: "remoteExportRemoveStage", static: false, private: false, access: { has: obj => "remoteExportRemoveStage" in obj, get: obj => obj.remoteExportRemoveStage }, metadata: _metadata }, null, _instanceExtraInitializers);
             __esDecorate(this, null, _remoteExportRewire_decorators, { kind: "method", name: "remoteExportRewire", static: false, private: false, access: { has: obj => "remoteExportRewire" in obj, get: obj => obj.remoteExportRewire }, metadata: _metadata }, null, _instanceExtraInitializers);
             __esDecorate(this, null, _remoteExportReorder_decorators, { kind: "method", name: "remoteExportReorder", static: false, private: false, access: { has: obj => "remoteExportReorder" in obj, get: obj => obj.remoteExportReorder }, metadata: _metadata }, null, _instanceExtraInitializers);
+            __esDecorate(this, null, _remoteExportGroup_decorators, { kind: "method", name: "remoteExportGroup", static: false, private: false, access: { has: obj => "remoteExportGroup" in obj, get: obj => obj.remoteExportGroup }, metadata: _metadata }, null, _instanceExtraInitializers);
+            __esDecorate(this, null, _remoteExportUngroup_decorators, { kind: "method", name: "remoteExportUngroup", static: false, private: false, access: { has: obj => "remoteExportUngroup" in obj, get: obj => obj.remoteExportUngroup }, metadata: _metadata }, null, _instanceExtraInitializers);
             __esDecorate(this, null, _remoteExportUndo_decorators, { kind: "method", name: "remoteExportUndo", static: false, private: false, access: { has: obj => "remoteExportUndo" in obj, get: obj => obj.remoteExportUndo }, metadata: _metadata }, null, _instanceExtraInitializers);
             if (_metadata) Object.defineProperty(this, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
         }
@@ -346,6 +352,19 @@ let BenchRemoteService = (() => {
             signal.throwIfAborted();
             const drafts = await this.open(signal);
             return await reorderBench(drafts, sessionKey, doc);
+        }
+        /** Endpoint `bench/group` — collapse 2+ stages into a compound row
+         *  (the Group Cards sub-view's door, 2026-09-11). */
+        async remoteExportGroup(sessionKey, doc, signal) {
+            signal.throwIfAborted();
+            const drafts = await this.open(signal);
+            return await groupBench(drafts, sessionKey, doc);
+        }
+        /** Endpoint `bench/ungroup` — spill a compound's children back. */
+        async remoteExportUngroup(sessionKey, doc, signal) {
+            signal.throwIfAborted();
+            const drafts = await this.open(signal);
+            return await ungroupBench(drafts, sessionKey, doc);
         }
         /** Endpoint `bench/undo` — walk the log tail, apply inverses. */
         async remoteExportUndo(sessionKey, doc, signal) {

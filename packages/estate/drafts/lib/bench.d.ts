@@ -99,6 +99,16 @@ export interface BenchReorderRow {
     readonly from: number;
     readonly to: number;
 }
+/** group — the Group Cards sub-view's door (2026-09-11): 2+ stage ids
+ *  collapse into ONE compound row at the FIRST member's bench position;
+ *  the member rows ride INSIDE the compound (children, bench order) so
+ *  the bench's stage list stays the projection-free truth — the grid
+ *  renders the compound as a single tile and ungroup restores the
+ *  members at the compound's index. The inverse carries both halves. */
+export declare function groupBench(drafts: Domain<DraftsDomainSpec>, session: string, body: Record<string, unknown>): Promise<BenchStageRow>;
+/** ungroup — the compound's door: spill the children back at the
+ *  compound's index, in their stored order. */
+export declare function ungroupBench(drafts: Domain<DraftsDomainSpec>, session: string, body: Record<string, unknown>): Promise<BenchStageRow>;
 /** remove_stage — splice one stage out (the inverse carries row +
  *  index for undo). */
 export declare function removeStageBench(drafts: Domain<DraftsDomainSpec>, session: string, body: Record<string, unknown>): Promise<BenchStageRow>;

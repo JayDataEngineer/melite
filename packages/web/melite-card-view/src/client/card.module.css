@@ -721,3 +721,58 @@
   padding: 5px 12px;
 }
 .cancelBtn:disabled { cursor: default; opacity: 0.6; }
+
+/* ── Group Cards sub-view (slice 4) ── */
+.groupBar {
+  align-items: center;
+  display: flex;
+  gap: 8px;
+}
+.checkCircle {
+  align-items: center;
+  border: 1.5px solid var(--dsw-alias-label-secondary, #61666b);
+  border-radius: 999px;
+  color: #fff;
+  display: flex;
+  font-size: 11px;
+  height: 20px;
+  justify-content: center;
+  left: 8px;
+  position: absolute;
+  top: 8px;
+  width: 20px;
+  z-index: 3;
+}
+.checkOn {
+  background: var(--dsw-alias-state-business-primary, #4176e6);
+  border-color: var(--dsw-alias-state-business-primary, #4176e6);
+}
+[data-selected="on"] {
+  outline: 2px solid var(--dsw-alias-state-business-primary, #4176e6);
+  outline-offset: 2px;
+}
+.groupNote {
+  color: var(--dsw-alias-label-secondary, #61666b);
+  font-size: 12px;
+  margin: 0 0 10px;
+}
+.memberList {
+  list-style: none;
+  margin: 0 0 12px;
+  padding: 0;
+}
+.memberRow {
+  align-items: baseline;
+  border-bottom: 1px solid var(--dsw-alias-interactive-bg-hover, #2631480f);
+  display: flex;
+  gap: 8px;
+  padding: 6px 2px;
+}
+.memberIdx {
+  color: var(--dsw-alias-label-secondary, #61666b);
+  font-family: var(--dsw-alias-font-mono, monospace);
+  font-size: 11px;
+}
+.memberName {
+  font-size: 13px;
+}
