@@ -676,3 +676,48 @@
   outline: 1px dashed var(--dsw-alias-state-business-primary, #4176e6);
   outline-offset: 4px;
 }
+
+/* ── run status chips + upstream badges (slice 5) ── */
+.statusChip {
+  align-self: flex-start;
+  border-radius: 999px;
+  color: #fff;
+  font-size: 10px;
+  letter-spacing: 0.02em;
+  line-height: 1;
+  margin-top: 6px;
+  padding: 3px 8px;
+  text-transform: uppercase;
+}
+.statusChip[data-status="queued"], .statusChip[data-status="pending"] {
+  background: #8a6d1a;
+}
+.statusChip[data-status="running"] {
+  animation: chipPulse 1.1s ease-in-out infinite;
+  background: var(--dsw-alias-state-business-primary, #4176e6);
+}
+.statusChip[data-status="done"] {
+  background: #1d7a3e;
+}
+.statusChip[data-status="failed"] {
+  background: #b3261e;
+}
+@keyframes chipPulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.55; }
+}
+.upstreamBadge {
+  color: var(--dsw-alias-state-business-primary, #4176e6);
+  font-size: 10px;
+  white-space: nowrap;
+}
+.cancelBtn {
+  background: transparent;
+  border: 1px solid #b3261e;
+  border-radius: 8px;
+  color: #b3261e;
+  cursor: pointer;
+  font-size: 12px;
+  padding: 5px 12px;
+}
+.cancelBtn:disabled { cursor: default; opacity: 0.6; }

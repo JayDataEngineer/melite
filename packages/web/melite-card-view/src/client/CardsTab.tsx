@@ -94,10 +94,11 @@ function nextRpcId(): string {
  *  start died with the app, nothing serves it). Errors surface inline
  *  (the RemoteError branch's own refusal text — logged, never thrown
  *  past React). */
-async function runTheBench(
-  bench: CardsBenchValue,
+async function runStages(
+  draftId: string,
+  rows: readonly BenchStageRow[],
 ): Promise<{ runId: string } | { refused: string }> {
-  const stages = bench.stages.map(projectStage)
+  const stages = rows.map(projectStage)
   if (stages.length === 0) return { refused: 'nothing to run' }
   const rpcId = nextRpcId()
   try {
@@ -112,7 +113,7 @@ async function runTheBench(
         // requires an explicit boolean (absent/null is refused), and
         // the flow body needs its id (the bench runs under its own
         // draft_id — the bench verb's one truth).
-        payload: { args: { doc: { flow_inline: { id: bench.draftId, stages }, draft_id: bench.draftId, test: false } } },
+        payload: { args: { doc: { flow_inline: { id: draftId, stages }, draft_id: draftId, test: false } } },
       }),
     })
     if (!res.ok) {
@@ -157,6 +158,36 @@ export function groupStagesByCard(stages: BenchStageRow[]): Array<{ card: string
     else known.rows.push(s)
   }
   return groups
+}
+
+/** Run ALL — the header gesture (multi-stage benches are refused by
+ *  the single-stage runs gateway until the estate queues flows; the
+ *  refusal surfaces inline, never a fake success). */
+async function runTheBench(bench: CardsBenchValue): Promise<{ runId: string } | { refused: string }> {
+  return await runStages(bench.draftId, bench.stages)
+}
+
+/** runs/stop — the cancel door (the registry seat's flag + interrupt).
+ *  Same wire frame as every other verb. */
+async function stopRunWire(runId: string): Promise<void> {
+  const rpcId = nextRpcId()
+  const res = await fetch('/api/runs/stop', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ type: 'client-request', rpcId, method: 'runs/stop', payload: { args: { runId } } }),
+  })
+  if (!res.ok) throw new Error('runs/stop: HTTP ' + String(res.status))
+  const body: unknown = await res.json().catch(() => null)
+  if (typeof body !== 'object' || body === null || Reflect.get(body, 'type') !== 'server-response'
+      || Reflect.get(body, 'rpcId') !== rpcId) {
+    throw new Error('runs/stop: malformed response frame')
+  }
+  const result: unknown = Reflect.get(body, 'result')
+  if (typeof result !== 'object' || result === null || Reflect.get(result, 'ok') !== true) {
+    const error: unknown = typeof result === 'object' && result !== null ? Reflect.get(result, 'error') : null
+    throw new Error(typeof error === 'object' && error !== null && typeof Reflect.get(error, 'message') === 'string'
+      ? Reflect.get(error, 'message') as string : 'runs/stop refused')
+  }
 }
 
 /** Bench row run-status → the installed StateDot union (FlowCards'
@@ -303,8 +334,12 @@ function SortableTile({ row, entered, onOpen, onWireDrop, onWireArm, wireSrc }: 
           ),
           h('span', { className: css.tileMeta },
             row.service !== null ? row.service : null,
+            row.upstream !== null ? h('span', { className: css.upstreamBadge, title: 'source ⟵ ' + row.upstream }, '\u27f5 ' + row.upstream) : null,
             row.prompt !== null ? h('span', { className: css.tilePrompt }, row.prompt) : null,
           ),
+          row.status !== '' && row.status !== 'ready'
+            ? h('span', { className: css.statusChip, 'data-status': row.status }, row.status)
+            : null,
         ),
         // the ⛓ arm button — a SIBLING of the open button (no nested
         // buttons in HTML), riding the tile's top-right corner
@@ -347,10 +382,11 @@ interface CardRowLineTabRow {
   dot: 'done' | 'ongoing' | 'error' | 'warning' | null
   prompt: string | null
   thumbUrl: string | null
+  upstream: string | null
   stage: BenchStageRow
 }
 
-function benchRow(stage: BenchStageRow): CardRowLineTabRow {
+function benchRow(stage: BenchStageRow, bench?: CardsBenchValue): CardRowLineTabRow {
   const title = stage.title ?? stage.card ?? stage.id
   const status = typeof stage.runStatus === 'string' && stage.runStatus !== '' ? stage.runStatus : 'ready'
   const params = typeof stage.params === 'object' && stage.params !== null ? stage.params : {}
@@ -371,6 +407,18 @@ function benchRow(stage: BenchStageRow): CardRowLineTabRow {
     // run-relative filename cannot resolve without its run (the run
     // view owns that face) — the kind Pill rides instead.
     thumbUrl: /^(https?:\/\/|\/)/.test(url) ? url : null,
+    // THE UPSTREAM BADGE's text: the source stage's own card name (the
+    // old UpstreamBadge resolved indices; the named-input era resolves
+    // the id through the bench).
+    upstream: (() => {
+      const inputs = typeof stage.inputs === 'object' && stage.inputs !== null ? stage.inputs as Record<string, unknown> : null
+      const edge = inputs !== null && typeof inputs['source'] === 'object' && inputs['source'] !== null
+        ? inputs['source'] as Record<string, unknown> : null
+      const from = edge !== null && typeof edge['stage'] === 'string' ? edge['stage'] : ''
+      if (from === '' || bench === undefined) return null
+      const upstreamRow = bench.stages.find((s) => s.id === from)
+      return upstreamRow !== undefined ? String(upstreamRow.card ?? upstreamRow.id) : null
+    })(),
     stage,
   }
 }
@@ -623,9 +671,10 @@ function AddCardDoor({ bench, onAdded, onClose }: {
   )
 }
 
-function BenchView({ bench, onRun, running }: {
+function BenchView({ bench, onRun, onRunStage, running }: {
   bench: CardsBenchValue
   onRun: () => void
+  onRunStage: (stage: BenchStageRow) => void
   running: boolean
 }): ReturnType<typeof h> {
   // The LIVE bench: the resource snapshot is the first frame only (the
@@ -811,7 +860,7 @@ function BenchView({ bench, onRun, running }: {
               'data-drop-surface': 'cards',
             },
               live.stages.map((s) => {
-                const row = benchRow(s)
+                const row = benchRow(s, live)
                 return h(SortableTile, {
                   key: s.id, row, entered: entered.has(s.id),
                   onOpen: (r) => onOpen(r.stage),
@@ -840,7 +889,7 @@ function BenchView({ bench, onRun, running }: {
       stage: open,
       bench: live,
       running,
-      onRun,
+      onRun: () => { onRunStage(open) },
       onClose,
       onRemoved: () => { setOpen(null); reload() },
       onRewired: () => { reload({ keepOpen: true }) },
@@ -850,13 +899,21 @@ function BenchView({ bench, onRun, running }: {
   )
 }
 
-function RunView({ run, onBack, onRestored }: {
+function RunView({ run, onBack, onRestored, onStop }: {
   run: CardsRunValue
   onBack: (() => void) | undefined
   onRestored: () => void
+  onStop: ((runId: string) => void) | undefined
 }): ReturnType<typeof h> {
   const [restoring, setRestoring] = useState(false)
   const [note, setNote] = useState<string | null>(null)
+  const [stopping, setStopping] = useState(false)
+  const live = run.status === 'queued' || run.status === 'pending' || run.status === 'running'
+  const onCancel = (): void => {
+    if (onStop === undefined) return
+    setStopping(true)
+    onStop(run.runId)
+  }
   const onRestore = useCallback((): void => {
     setRestoring(true)
     setNote(null)
@@ -879,6 +936,14 @@ function RunView({ run, onBack, onRestored }: {
     h('div', { className: css.runActions },
       onBack !== undefined
         ? h('button', { className: css.back, type: 'button', onClick: onBack }, 'Back to bench')
+        : null,
+      live && onStop !== undefined
+        ? h('button', {
+            className: css.cancelBtn,
+            type: 'button',
+            disabled: stopping,
+            onClick: onCancel,
+          }, stopping ? 'cancelling…' : 'Cancel run')
         : null,
       h('button', {
         className: css.restore,
@@ -989,6 +1054,29 @@ export function CardsTab(props: CardsTabProps): ReturnType<typeof h> {
       }
     })
   }, [snapshot, onStarted])
+  // RE-RUN ONE STAGE (the drill's Run, 2026-09-11): the single-stage
+  // runs gateway serves exactly this — the stage alone, its params
+  // patched into the bench BEFORE the run reads it (the drill does the
+  // patch, this does the start).
+  const onRunStage = useCallback((stage: BenchStageRow): void => {
+    if (snapshot?.value?.kind !== 'bench') return
+    setRunning(true)
+    setLocalRunError(null)
+    void runStages(snapshot.value.draftId, [stage]).then((res) => {
+      if ('runId' in res) onStarted(res.runId)
+      else {
+        setRunning(false)
+        setLocalRunError(res.refused)
+      }
+    })
+  }, [snapshot, onStarted])
+  // CANCEL — runs/stop on the run in view (both the resource stream
+  // face and the in-tab local run face).
+  const onStop = useCallback((runId: string): void => {
+    void stopRunWire(runId).catch((e: unknown) => {
+      setLocalRunError(e instanceof Error ? e.message : 'cancel failed')
+    })
+  }, [])
 
   const onBack = useCallback((): void => {
     if (openResource !== undefined) openResource(CARDS_BENCH_ADDRESS)
@@ -1000,7 +1088,7 @@ export function CardsTab(props: CardsTabProps): ReturnType<typeof h> {
   }, [])
 
   if (localRun !== null) {
-    return h(RunView, { run: localRun, onBack: onLocalBack, onRestored: onLocalBack })
+    return h(RunView, { run: localRun, onBack: onLocalBack, onRestored: onLocalBack, onStop })
   }
   if (snapshot === undefined) {
     return h('p', { className: css.missing }, 'cards resource hook unavailable')
@@ -1024,8 +1112,9 @@ export function CardsTab(props: CardsTabProps): ReturnType<typeof h> {
         h(BenchView, {
           bench: value,
           onRun,
+          onRunStage,
           running,
         }),
       )
-    : h(RunView, { run: value, onBack: openResource !== undefined ? onBack : undefined, onRestored: onBack })
+    : h(RunView, { run: value, onBack: openResource !== undefined ? onBack : undefined, onRestored: onBack, onStop })
 }
