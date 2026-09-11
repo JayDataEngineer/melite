@@ -13970,7 +13970,7 @@ get: (_target, key) => {
 		*  pattern: the li is the drag unit, transform/transition ride the
 		*  wrapper, the shared-element layoutId stays INSIDE (the morph
 		*  anchor is unbroken). */
-		function SortableTile({ row, entered, onOpen, onWireDrop, onWireArm, wireSrc, grouping, selected, onToggleSelect }) {
+		function SortableTile({ row, entered, onOpen, onWireDrop, onWireArm, wireSrc, grouping, selected, onToggleSelect, onAssetAttach }) {
 			const { attributes, listeners, setNodeRef, transform, transition, isDragging } = (0, import_dist$1.useSortable)({ id: row.id });
 			const dragProps = grouping ? {} : {
 				...attributes,
@@ -13990,6 +13990,30 @@ get: (_target, key) => {
 				"data-wiring": wireSrc === row.id ? "source" : wiring ? "target" : null,
 				"data-grouping": grouping ? "on" : null,
 				"data-selected": grouping && selected ? "on" : null,
+				onDragOver: (e) => {
+					if (e.dataTransfer.types.includes(ASSET_DRAG_MIME) || e.dataTransfer.types.includes("Files")) {
+						e.preventDefault();
+						e.stopPropagation();
+						e.dataTransfer.dropEffect = "copy";
+					}
+				},
+				onDrop: (e) => {
+					const asset = parseAssetDrop(e.dataTransfer.types.includes(ASSET_DRAG_MIME) ? e.dataTransfer.getData(ASSET_DRAG_MIME) : "");
+					if ((asset.url ?? "") !== "") {
+						e.preventDefault();
+						e.stopPropagation();
+						const t = asset.type ?? "";
+						if (!t.startsWith("image/") && !t.startsWith("audio/")) return;
+						onAssetAttach(row.id, asset.url);
+						return;
+					}
+					const file = e.dataTransfer.files[0];
+					if (file === void 0) return;
+					if (file.type !== "image/png" && file.type !== "image/jpeg" && file.type !== "image/webp") return;
+					e.preventDefault();
+					e.stopPropagation();
+					onAssetAttach(row.id, file);
+				},
 				...dragProps
 			}, (0, react.createElement)(motion.div, {
 				layoutId: cardLayoutId(row.id),
@@ -14028,7 +14052,10 @@ get: (_target, key) => {
 			}, (0, react.createElement)("span", { className: card_module_css_default.kindInitial }, row.kind.slice(0, 1).toUpperCase()), (0, react.createElement)("span", { className: card_module_css_default.kindName }, row.kind)), row.dot !== null ? (0, react.createElement)("span", { className: card_module_css_default.tileDot }, (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.StateDot, { state: row.dot })) : null), (0, react.createElement)("span", { className: card_module_css_default.tileCaption }, (0, react.createElement)("span", { className: card_module_css_default.tileTitle }, row.title, wiredFrom ? (0, react.createElement)("span", {
 				className: card_module_css_default.wiredMark,
 				title: "source wired"
-			}, " ⛓") : null), (0, react.createElement)("span", { className: card_module_css_default.tileMeta }, row.service !== null ? row.service : null, row.upstream !== null ? (0, react.createElement)("span", {
+			}, " ⛓") : null, row.sourceAttached ? (0, react.createElement)("span", {
+				className: card_module_css_default.wiredMark,
+				title: "source attached"
+			}, " 📎") : null), (0, react.createElement)("span", { className: card_module_css_default.tileMeta }, row.service !== null ? row.service : null, row.upstream !== null ? (0, react.createElement)("span", {
 				className: card_module_css_default.upstreamBadge,
 				title: "source ⟵ " + row.upstream
 			}, "⟵ " + row.upstream) : null, row.prompt !== null ? (0, react.createElement)("span", { className: card_module_css_default.tilePrompt }, row.prompt) : null), row.status !== "" && row.status !== "ready" ? (0, react.createElement)("span", {
@@ -14071,6 +14098,7 @@ get: (_target, key) => {
 					const upstreamRow = bench.stages.find((s) => s.id === from);
 					return upstreamRow !== void 0 ? String(upstreamRow.card ?? upstreamRow.id) : null;
 				})(),
+				sourceAttached: typeof params["source"] === "string" && params["source"] !== "",
 				stage
 			};
 		}
@@ -14552,6 +14580,13 @@ get: (_target, key) => {
 				exitGrouping,
 				reload
 			]);
+			const onAssetAttach = (0, react.useCallback)((target, source) => {
+				(typeof source === "string" ? Promise.resolve(source) : uploadInputFile(source).then(({ name }) => name)).then((src) => patchStageParams(live.draftId, target, { source: src })).then(() => {
+					reload({ keepOpen: true });
+				}).catch((err) => {
+					setReloadError(err instanceof Error ? err.message : "attach refused");
+				});
+			}, [live, reload]);
 			const benchRev = live.rev;
 			return (0, react.createElement)("section", {
 				className: card_module_css_default.cardsBench,
@@ -14604,7 +14639,8 @@ get: (_target, key) => {
 						wireSrc,
 						grouping,
 						selected: selectedIds.has(s.id),
-						onToggleSelect
+						onToggleSelect,
+						onAssetAttach
 					});
 				}), (0, react.createElement)("li", { className: card_module_css_default.tile + " " + card_module_css_default.tileAdd }, (0, react.createElement)("button", {
 					type: "button",

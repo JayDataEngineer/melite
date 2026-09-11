@@ -280,7 +280,7 @@ async function uploadInputFile(file: File): Promise<{ name: string }> {
  *  pattern: the li is the drag unit, transform/transition ride the
  *  wrapper, the shared-element layoutId stays INSIDE (the morph
  *  anchor is unbroken). */
-function SortableTile({ row, entered, onOpen, onWireDrop, onWireArm, wireSrc, grouping, selected, onToggleSelect }: {
+function SortableTile({ row, entered, onOpen, onWireDrop, onWireArm, wireSrc, grouping, selected, onToggleSelect, onAssetAttach }: {
   row: CardRowLineTabRow
   entered: boolean
   onOpen: (row: CardRowLineTabRow) => void
@@ -290,6 +290,12 @@ function SortableTile({ row, entered, onOpen, onWireDrop, onWireArm, wireSrc, gr
   grouping: boolean
   selected: boolean
   onToggleSelect: (id: string) => void
+  /** DROP-ON-CARD ATTACHES TO SLOT (the old SlotSquare law): an asset
+   *  tile or OS image file dropped ON this tile patches the stage's
+   *  source param — the estate's slot mechanism for direct assets.
+   *  source = the asset URL or the raw File; the bench owns upload
+   *  and error surfacing. */
+  onAssetAttach: (target: string, source: string | File) => void
 }): ReturnType<typeof h> {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: row.id })
   // selection mode: pointer listeners OFF (reorder pauses), clicks
@@ -316,6 +322,30 @@ function SortableTile({ row, entered, onOpen, onWireDrop, onWireArm, wireSrc, gr
     'data-wiring': wireSrc === row.id ? 'source' : wiring ? 'target' : null,
     'data-grouping': grouping ? 'on' : null,
     'data-selected': grouping && selected ? 'on' : null,
+    onDragOver: (e: React.DragEvent) => {
+      if (e.dataTransfer.types.includes(ASSET_DRAG_MIME) || e.dataTransfer.types.includes('Files')) {
+        e.preventDefault()
+        e.stopPropagation()
+        e.dataTransfer.dropEffect = 'copy'
+      }
+    },
+    onDrop: (e: React.DragEvent) => {
+      const asset = parseAssetDrop(e.dataTransfer.types.includes(ASSET_DRAG_MIME) ? e.dataTransfer.getData(ASSET_DRAG_MIME) : '')
+      if ((asset.url ?? '') !== '') {
+        e.preventDefault()
+        e.stopPropagation()
+        const t = asset.type ?? ''
+        if (!t.startsWith('image/') && !t.startsWith('audio/')) return
+        onAssetAttach(row.id, asset.url as string)
+        return
+      }
+      const file = e.dataTransfer.files[0]
+      if (file === undefined) return
+      if (file.type !== 'image/png' && file.type !== 'image/jpeg' && file.type !== 'image/webp') return
+      e.preventDefault()
+      e.stopPropagation()
+      onAssetAttach(row.id, file)
+    },
     ...dragProps,
   },
     h(motion.div, { layoutId: cardLayoutId(row.id), className: css.tileShared, transition: ZOOM_SPRING },
@@ -344,6 +374,7 @@ function SortableTile({ row, entered, onOpen, onWireDrop, onWireArm, wireSrc, gr
         h('span', { className: css.tileCaption },
           h('span', { className: css.tileTitle }, row.title,
             wiredFrom ? h('span', { className: css.wiredMark, title: 'source wired' }, ' ⛓') : null,
+            row.sourceAttached ? h('span', { className: css.wiredMark, title: 'source attached' }, ' 📎') : null,
           ),
           h('span', { className: css.tileMeta },
             row.service !== null ? row.service : null,
@@ -396,6 +427,7 @@ interface CardRowLineTabRow {
   prompt: string | null
   thumbUrl: string | null
   upstream: string | null
+  sourceAttached: boolean
   stage: BenchStageRow
 }
 
@@ -423,7 +455,7 @@ function benchRow(stage: BenchStageRow, bench?: CardsBenchValue): CardRowLineTab
     // same-origin absolute or leading-/ artifact urls render; a bare
     // run-relative filename cannot resolve without its run (the run
     // view owns that face) — the kind Pill rides instead.
-    thumbUrl: /^(https?:\/\/|\/)/.test(url) ? url : null,
+      thumbUrl: /^(https?:\/\/|\/)/.test(url) ? url : null,
     // THE UPSTREAM BADGE's text: the source stage's own card name (the
     // old UpstreamBadge resolved indices; the named-input era resolves
     // the id through the bench).
@@ -436,6 +468,7 @@ function benchRow(stage: BenchStageRow, bench?: CardsBenchValue): CardRowLineTab
       const upstreamRow = bench.stages.find((s) => s.id === from)
       return upstreamRow !== undefined ? String(upstreamRow.card ?? upstreamRow.id) : null
     })(),
+    sourceAttached: typeof params['source'] === 'string' && params['source'] !== '',
     stage,
   }
 }
@@ -937,6 +970,18 @@ function BenchView({ bench, onRun, onRunStage, running }: {
       .then(() => { exitGrouping(); reload() })
       .catch((err: unknown) => { setReloadError(err instanceof Error ? err.message : 'group refused') })
   }, [live, selectedIds, exitGrouping, reload])
+  // ── DROP-ON-CARD ATTACHES TO SLOT: the asset URL (or the uploaded
+  //    file's input-dir name) patches the TARGET stage's source param
+  //    through drafts/patch — the estate's slot mechanism for direct
+  //    assets (the old SlotSquare's onDropAsset/onDropFile law).
+  const onAssetAttach = useCallback((target: string, source: string | File): void => {
+    void (typeof source === 'string'
+      ? Promise.resolve(source)
+      : uploadInputFile(source).then(({ name }) => name))
+      .then((src) => patchStageParams(live.draftId, target, { source: src }))
+      .then(() => { reload({ keepOpen: true }) })
+      .catch((err: unknown) => { setReloadError(err instanceof Error ? err.message : 'attach refused') })
+  }, [live, reload])
   const benchRev = live.rev
   return h('section', { className: css.cardsBench, 'data-cards-bench': benchRev },
     h('header', { className: css.benchHead },
@@ -988,7 +1033,7 @@ function BenchView({ bench, onRun, onRunStage, running }: {
                   key: s.id, row, entered: entered.has(s.id),
                   onOpen: (r) => onOpen(r.stage),
                   onWireDrop, onWireArm, wireSrc,
-                  grouping, selected: selectedIds.has(s.id), onToggleSelect,
+                  grouping, selected: selectedIds.has(s.id), onToggleSelect, onAssetAttach,
                 })
               }),
               h('li', { className: css.tile + ' ' + css.tileAdd },
