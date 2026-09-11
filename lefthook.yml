@@ -4,11 +4,17 @@
 
 pre-commit:
   jobs:
-    # THE WALLS ARE THE GATE: any staged change that can move a wall
-    # (estate TS or the walls themselves) re-runs the TS wall battery.
+    # THE UNIT PLANE IS THE GATE (walls' successor, 2026-09-11 — the
+    # run.mjs orchestrator died with the vitest migration): any staged
+    # change that can move a wall (estate TS or the suites themselves)
+    # re-runs the node project that owns tests/walls/ts/suites.
     - name: walls (staged TS/walls)
       glob: '*.{ts,tsx,mjs}'
-      run: node tests/walls/ts/run.mjs
+      # Direct node invocation (2026-09-11): pnpm exec re-verifies
+      # deps before every run and the tree's unapproved
+      # @parcel/watcher build script fails that check; the root
+      # vitest binary runs the same gate.
+      run: node node_modules/vitest/vitest.mjs run --project node
 
     - name: final-newline (staged text)
       run: node tools/hook-final-newline.mjs {staged_files}
