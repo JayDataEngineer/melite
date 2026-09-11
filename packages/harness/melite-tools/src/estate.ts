@@ -45,6 +45,7 @@ interface Seats {
   draftsRemote?: {
     list(signal?: AbortSignal): Promise<{ count: number; drafts: unknown[] }>
     get(draftId: string, signal?: AbortSignal): Promise<unknown>
+    patch(draftId: string, stageId: string, patch: Record<string, unknown>, signal?: AbortSignal): Promise<unknown>
   }
   benchRemote?: {
     get(session: string, signal?: AbortSignal): Promise<unknown>
@@ -133,6 +134,52 @@ async function trySeats(
   if (method === 'GET' && m !== null) {
     if (seats.draftsRemote === undefined) return undefined
     return seats.draftsRemote.get(decodeURIComponent(m[1]!), signal)
+  }
+  // ── THE 1:1 FLOW PORT LANES (2026-09-11: the old editor's card
+  // system rides the DSH plugin; these arms are its HTTP face) ──
+  // The card COMPOSE (cardBirth.ts): the start body verbatim → a
+  // bench-backed draft (the CARD BIRTH LAW: the start rides a
+  // doc-backed draft_id). CAS law = the queue lane's own: read the
+  // bench first, expect_rev rides, a fresh bench births.
+  if (method === 'POST' && path === '/v1/flows/drafts') {
+    if (seats.benchRemote === undefined) return undefined
+    if (body === undefined || typeof body !== 'object' || body === null) {
+      throw new Error('card compose needs a JSON body')
+    }
+    const bag = body as Record<string, unknown>
+    const intentSrc = typeof bag['prompt'] === 'string' && bag['prompt'] !== ''
+      ? bag['prompt'] as string
+      : typeof bag['intent'] === 'string' ? bag['intent'] as string : 'card'
+    const intent = intentSrc.length > 80 ? intentSrc.slice(0, 77) + '…' : intentSrc
+    const params: Record<string, unknown> = { ...(bag['params'] as Record<string, unknown> ?? {}) }
+    if (typeof bag['prompt'] === 'string' && bag['prompt'] !== '') params['prompt'] = bag['prompt']
+    const ensure: Record<string, unknown> = {
+      session: 'default',
+      intent,
+      stages: [{ id: 's_0', engine: 'comfyui', params }],
+    }
+    const cur = await seats.benchRemote.get('default', signal) as { rev?: unknown } | undefined
+    if (cur !== undefined && typeof cur['rev'] === 'number') ensure['expect_rev'] = cur['rev']
+    const row = await seats.benchRemote.ensure(ensure, signal) as { draft_id?: unknown }
+    if (row === undefined || typeof row['draft_id'] !== 'string') {
+      throw new Error('card compose returned no draft_id — refusing to start cardless')
+    }
+    return { draftId: row['draft_id'] }
+  }
+  // The STAGE wire PATCH (params edits + result persistence — the
+  // 2022-08-22 wire PATCH + resultOutbox's result rows).
+  m = /^\/v1\/flows\/drafts\/([^/?]+)\/stages\/([^/?]+)(?:\/result)?$/.exec(path)
+  if (method === 'PATCH' && m !== null) {
+    if (seats.draftsRemote === undefined) return undefined
+    if (body === undefined || typeof body !== 'object' || body === null) {
+      throw new Error('draft stage patch needs a JSON body')
+    }
+    return seats.draftsRemote.patch(
+      decodeURIComponent(m[1]!),
+      decodeURIComponent(m[2]!),
+      body as Record<string, unknown>,
+      signal,
+    )
   }
   if (method === 'POST' && path === '/v1/bench/ensure') {
     if (seats.benchRemote === undefined) return undefined

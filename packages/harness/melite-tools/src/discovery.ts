@@ -17,6 +17,7 @@
 import {
   buildCatalog,
   CARD_KINDS,
+  emitParamsSchema,
   getModel,
   isServedFamily,
   loadCardDefs,
@@ -453,6 +454,37 @@ export function cardSections(
     }
   }
   return { cards, capabilities }
+}
+
+/** /v1/card-tools — the 1:1 flow port's picker manifests: one row
+ * per card package, the manifest shape the old ServicePicker renders
+ * (name/model/stage_title/description/params_schema with declared
+ * defaults). Projected from the live card defs via emitParamsSchema
+ * — the same SSOT the form-spec door rides, never a re-derivation. */
+export async function cardToolsArm(): Promise<unknown[]> {
+  const defs = await loadCardDefs()
+  const out: Record<string, unknown>[] = []
+  for (const id of [...defs.keys()].sort()) {
+    const def = defs.get(id)!
+    const ident = def.identity
+    if (ident === undefined) continue
+    const boarded = [...(def.boarded ?? [])]
+    const fams = boarded.length > 0 ? boarded : [id]
+    const carrier = (def as { schemaCarrier?: unknown }).schemaCarrier ?? def.schema
+    const schema = emitParamsSchema(carrier as never, fams) as Record<string, unknown>
+    out.push({
+      name: id,
+      version: 1,
+      kind: 'generation',
+      model: fams[0],
+      stage_title: ident.label,
+      description: ident.description,
+      genre: ident.genre,
+      families: fams,
+      params_schema: schema,
+    })
+  }
+  return out
 }
 
 /** The full live catalog section (models/families ride the registry

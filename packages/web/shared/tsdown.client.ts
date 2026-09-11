@@ -213,6 +213,14 @@ function clientConfig(id: string, entry: string): UserConfig {
     outDir: 'lib',
     format: 'cjs',
     platform: 'browser',
+    // SINGLE-FILE LAW (2026-09-11, the 1:1 flow port): the loader
+    // materializes ONE client artifact (lib/client.js) against the
+    // frozen module table — secondary chunks (rolldown splits on
+    // dynamic imports, e.g. @melite/catalog's lazy FlowProtocol
+    // probes) are unfetchable by the platform loader and the plugin
+    // dies at boot ("missed the module table"). Inline every dynamic
+    // import into the one bundle.
+
     // Types ship from lib/types (tsc); dts here would wrap the banner/footer into .d.cts and break parsing.
     dts: false,
     // Plugin code is fetched outside Vite's module graph, so its own bundle
@@ -242,6 +250,14 @@ function clientConfig(id: string, entry: string): UserConfig {
     // opinion for table entries (external above wins), bundle everything else.
     noExternal: (id: string) => (CLIENT_EXTERNALS.includes(id) ? undefined : true),
     plugins: [{
+      // SINGLE-FILE LAW (the rolldown-native hook — the tsdown
+      // config key proved unreliable to pass through): no secondary
+      // chunks, ever; every dynamic import inlines into client.js.
+      name: 'dsh-client-single-file',
+      outputOptions(options) {
+        return { ...options, codeSplitting: false }
+      },
+    }, {
       // Bundle purity gate (build-time mirror of the module-edge rules):
       // platform seed entries stay external, inline-safe wire layers inline,
       // and every other @deepseek-ai value import is a build error — a

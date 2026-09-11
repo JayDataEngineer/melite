@@ -33,6 +33,7 @@ import {
   formsArm,
   kindsDoorArm,
   modelCatalogArm,
+  cardToolsArm,
 } from './discovery.ts'
 import { makeEstateRequest, type EstateMethod } from './estate.ts'
 
@@ -127,10 +128,7 @@ export function apply(c: CtxView, config: Config = {}): void {
     },
   }), 'melite-tools: catalog route')
 
-  c.effect(() => c.webServer.register({
-    kind: 'exact',
-    path: '/melite-tools/enhance',
-    handler: (req, res) => {
+  const enhanceHandler = (req: unknown, res: unknown): void => {
       let ok = true
       const respond = (status: number, payload: unknown): void => {
         if (!ok) return
@@ -221,8 +219,102 @@ export function apply(c: CtxView, config: Config = {}): void {
           .then((result) => respond(200, result))
           .catch(mapEnhanceError)
       }).catch((err: unknown) => respond(400, { error: `body read failed: ${err instanceof Error ? err.message : String(err)}` }))
-    },
+  };
+  c.effect(() => c.webServer.register({
+    kind: 'exact',
+    path: '/melite-tools/enhance',
+    handler: enhanceHandler,
   }), 'melite-tools: enhance route')
+  // THE 1:1 FLOW PORT'S PATH (2026-09-11): the editor card system's
+  // per-field ✦ enhancer posted to /v1/llm/enhance — same handler,
+  // second mount (the port's sources ride the old paths verbatim).
+  c.effect(() => c.webServer.register({
+    kind: 'exact',
+    path: '/v1/llm/enhance',
+    handler: enhanceHandler,
+  }), 'melite-tools: enhance alias')
+
+  // ── THE UPLOADS RAIL + INPUT PREVIEW (2026-09-11, the 1:1 flow
+  // port's media plane): the editor card system's uploadToEstate
+  // contract — POST /v1/uploads {filename, data} writes the estate's
+  // data/input tree and answers {path: "data/input/<name>"}; GET
+  // /v1/assets/inputs/<name> serves those bytes for the img tags.
+  // Containment law = the media route's own: one clean segment, no
+  // dots-only, realpath inside the input dir, image types only.
+  {
+    const INPUT_TYPES = new Set(['image/png', 'image/jpeg', 'image/webp'])
+    const inputDir = async (): Promise<string> => {
+      const path = await import('node:path')
+      const { resolveRepoRoot } = await import('@melite/comfyui-cordis')
+      const dir = path.join(resolveRepoRoot(), 'data', 'input')
+      const fs = await import('node:fs/promises')
+      await fs.mkdir(dir, { recursive: true })
+      return dir
+    }
+    const SEG = /^(?!\.{1,2}$)[A-Za-z0-9._-]+$/
+    c.effect(() => c.webServer.register({
+      kind: 'exact',
+      path: '/v1/uploads',
+      handler: (req: any, res: any) => {
+        const fail = (code: number, err: string): void => {
+          const body = JSON.stringify({ error: err })
+          res.writeHead(code, { 'content-type': 'application/json' })
+          res.end(body)
+        }
+        readBody(req).then(async (buf) => {
+          let body: any
+          try { body = JSON.parse(buf.toString('utf8')) } catch { return fail(400, 'body must be JSON') }
+          const filename = typeof body?.filename === 'string' ? body.filename : ''
+          const data = typeof body?.data === 'string' ? body.data : ''
+          if (filename === '' || data === '') return fail(400, 'uploads: filename + data are required')
+          if (!SEG.test(filename)) return fail(400, 'uploads: bad filename')
+          const b64 = /^data:(image\/(?:png|jpeg|webp));base64,(.+)$/.exec(data)
+          if (b64 === null) return fail(400, 'uploads: only png / jpeg / webp upload')
+          const bytes = Buffer.from(b64[2]!, 'base64')
+          const dir = await inputDir()
+          const fs = await import('node:fs/promises')
+          const path = await import('node:path')
+          const file = path.join(dir, filename)
+          const [realFile, realDir] = await Promise.all([fs.realpath(file), fs.realpath(dir)].map(async (x) => x.catch(() => undefined)) as Promise<undefined | string>[])
+          if (realFile !== undefined && realDir !== undefined && !realFile.startsWith(realDir + path.sep)) {
+            return fail(400, 'uploads: path escapes the input dir')
+          }
+          await fs.writeFile(file, bytes)
+          const out = JSON.stringify({ path: 'data/input/' + filename })
+          res.writeHead(200, { 'content-type': 'application/json' })
+          res.end(out)
+        }).catch((e: unknown) => fail(500, 'uploads: ' + (e instanceof Error ? e.message : String(e))))
+      },
+    }), 'melite-tools: uploads rail')
+    c.effect(() => c.webServer.register({
+      kind: 'prefix',
+      path: '/v1/assets/inputs',
+      handler: (req: any, res: any) => {
+        const fail = (code: number, err: string): void => {
+          const body = JSON.stringify({ error: err })
+          res.writeHead(code, { 'content-type': 'application/json' })
+          res.end(body)
+        }
+        void (async () => {
+          const url = new URL(req.url ?? '/', 'http://melite.invalid')
+          const name = url.pathname.slice('/v1/assets/inputs/'.length)
+          if (!SEG.test(name)) return fail(400, 'bad input name')
+          const dir = await inputDir()
+          const path = await import('node:path')
+          const fs = await import('node:fs/promises')
+          const file = path.join(dir, name)
+          const real = await fs.realpath(file).catch(() => undefined)
+          const realDir = await fs.realpath(dir)
+          if (real === undefined || !real.startsWith(realDir + path.sep)) return fail(404, 'no such input')
+          const bytes = await fs.readFile(file)
+          const ext = name.split('.').pop()?.toLowerCase() ?? ''
+          const type = ext === 'png' ? 'image/png' : ext === 'jpg' || ext === 'jpeg' ? 'image/jpeg' : 'image/webp'
+          res.writeHead(200, { 'content-type': type, 'content-length': String(bytes.byteLength) })
+          res.end(bytes)
+        })().catch((e: unknown) => fail(500, 'inputs: ' + (e instanceof Error ? e.message : String(e))))
+      },
+    }), 'melite-tools: input preview')
+  }
 
   // ── THE /v1 PREFIX DOOR (2026-09-11 — production restore) ────────
   //
@@ -266,6 +358,9 @@ export function apply(c: CtxView, config: Config = {}): void {
       // card defs boot is a promise).
       const serve = (): void => {
         try {
+          if (method === 'GET' && path === '/v1/card-tools') {
+            return void cardToolsArm().then(ok, (e: unknown) => fail(500, { error: `discovery door: ${e instanceof Error ? e.message : String(e)}` }))
+          }
           if (method === 'GET' && path === '/v1/model-catalog') {
             return void modelCatalogArm().then(ok, (e: unknown) => fail(500, { error: `discovery door: ${e instanceof Error ? e.message : String(e)}` }))
           }

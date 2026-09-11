@@ -1,5 +1,5 @@
-import { a as makeEstateRequest, i as routeName, r as resolveHarnessRoutes, t as harnessEnhance } from "./llm-complete-B3iLioEQ.mjs";
-import { CARD_KINDS, SLOT_VOCABULARY, buildCatalog, getModel, isServedFamily, loadCardDefs, modelIds, theService } from "@melite/comfyui-cordis";
+import { a as makeEstateRequest, i as routeName, r as resolveHarnessRoutes, t as harnessEnhance } from "./llm-complete-U6o1lmWT.mjs";
+import { CARD_KINDS, SLOT_VOCABULARY, buildCatalog, emitParamsSchema, getModel, isServedFamily, loadCardDefs, modelIds, theService } from "@melite/comfyui-cordis";
 //#region src/enhance-agent.ts
 /**
 * The AGENT-side enhance orchestration — shared by the chat tool and the
@@ -411,6 +411,36 @@ function cardSections(defs) {
 		capabilities
 	};
 }
+/** /v1/card-tools — the 1:1 flow port's picker manifests: one row
+* per card package, the manifest shape the old ServicePicker renders
+* (name/model/stage_title/description/params_schema with declared
+* defaults). Projected from the live card defs via emitParamsSchema
+* — the same SSOT the form-spec door rides, never a re-derivation. */
+async function cardToolsArm() {
+	const defs = await loadCardDefs();
+	const out = [];
+	for (const id of [...defs.keys()].sort()) {
+		const def = defs.get(id);
+		const ident = def.identity;
+		if (ident === void 0) continue;
+		const boarded = [...def.boarded ?? []];
+		const fams = boarded.length > 0 ? boarded : [id];
+		const carrier = def.schemaCarrier ?? def.schema;
+		const schema = emitParamsSchema(carrier, fams);
+		out.push({
+			name: id,
+			version: 1,
+			kind: "generation",
+			model: fams[0],
+			stage_title: ident.label,
+			description: ident.description,
+			genre: ident.genre,
+			families: fams,
+			params_schema: schema
+		});
+	}
+	return out;
+}
 /** The full live catalog section (models/families ride the registry
 *  emission; cards/capabilities ride the cards; the vocabulary rides
 *  the slot SSOT). */
@@ -496,56 +526,138 @@ function apply(c, config = {}) {
 			resolveHarnessRoutes(c.llm).then((routes) => respondCatalog(routes.map(routeName)), () => respondCatalog([]));
 		}
 	}), "melite-tools: catalog route");
+	const enhanceHandler = (req, res) => {
+		let ok = true;
+		const respond = (status, payload) => {
+			if (!ok) return;
+			ok = false;
+			res.writeHead(status, { "content-type": "application/json" });
+			res.end(JSON.stringify(payload));
+		};
+		readBody(req).then((buf) => {
+			let body;
+			try {
+				body = JSON.parse(buf.toString("utf8"));
+			} catch {
+				return respond(400, { error: "body must be JSON: {system_prompt, prompt, temperature?, llm?} or {model, prompt, temperature?, llm?}" });
+			}
+			if (typeof body.prompt !== "string" || body.prompt.length === 0) return respond(400, { error: "prompt is a required string" });
+			const temperature = typeof body.temperature === "number" ? body.temperature : void 0;
+			const llmWant = typeof body.llm === "string" && body.llm.length > 0 ? body.llm : void 0;
+			const mapEnhanceError = (err) => {
+				const msg = err instanceof Error ? err.message : String(err);
+				if (msg.startsWith("enhance: unknown llm route")) {
+					const namesDefault = llmWant !== void 0 && msg.includes("\"" + llmWant + "\"");
+					return respond(namesDefault ? 400 : 502, { error: msg });
+				}
+				return respond(502, { error: msg });
+			};
+			if (typeof body.model === "string" && body.model.length > 0) {
+				const sweepSignal = AbortSignal.any([AbortSignal.timeout(6e5), reqClosedSignal(req)]);
+				return agenticSweep(c, c.llm, {
+					model: body.model,
+					prompt: body.prompt,
+					temperature,
+					signal: sweepSignal,
+					...llmWant !== void 0 ? { llmWant } : {},
+					defaultLlm: readDefaultLlm()
+				}).then((result) => respond(200, result)).catch(mapEnhanceError);
+			}
+			if (typeof body.system_prompt !== "string" || body.system_prompt.length === 0) return respond(400, { error: "either model (agent sweep) or system_prompt (one-shot) is required" });
+			harnessEnhance(c.llm, {
+				system: body.system_prompt,
+				prompt: body.prompt,
+				temperature,
+				...llmWant !== void 0 ? { llm: llmWant } : {}
+			}, readDefaultLlm()).then((result) => respond(200, result)).catch(mapEnhanceError);
+		}).catch((err) => respond(400, { error: `body read failed: ${err instanceof Error ? err.message : String(err)}` }));
+	};
 	c.effect(() => c.webServer.register({
 		kind: "exact",
 		path: "/melite-tools/enhance",
-		handler: (req, res) => {
-			let ok = true;
-			const respond = (status, payload) => {
-				if (!ok) return;
-				ok = false;
-				res.writeHead(status, { "content-type": "application/json" });
-				res.end(JSON.stringify(payload));
-			};
-			readBody(req).then((buf) => {
-				let body;
-				try {
-					body = JSON.parse(buf.toString("utf8"));
-				} catch {
-					return respond(400, { error: "body must be JSON: {system_prompt, prompt, temperature?, llm?} or {model, prompt, temperature?, llm?}" });
-				}
-				if (typeof body.prompt !== "string" || body.prompt.length === 0) return respond(400, { error: "prompt is a required string" });
-				const temperature = typeof body.temperature === "number" ? body.temperature : void 0;
-				const llmWant = typeof body.llm === "string" && body.llm.length > 0 ? body.llm : void 0;
-				const mapEnhanceError = (err) => {
-					const msg = err instanceof Error ? err.message : String(err);
-					if (msg.startsWith("enhance: unknown llm route")) {
-						const namesDefault = llmWant !== void 0 && msg.includes("\"" + llmWant + "\"");
-						return respond(namesDefault ? 400 : 502, { error: msg });
-					}
-					return respond(502, { error: msg });
-				};
-				if (typeof body.model === "string" && body.model.length > 0) {
-					const sweepSignal = AbortSignal.any([AbortSignal.timeout(6e5), reqClosedSignal(req)]);
-					return agenticSweep(c, c.llm, {
-						model: body.model,
-						prompt: body.prompt,
-						temperature,
-						signal: sweepSignal,
-						...llmWant !== void 0 ? { llmWant } : {},
-						defaultLlm: readDefaultLlm()
-					}).then((result) => respond(200, result)).catch(mapEnhanceError);
-				}
-				if (typeof body.system_prompt !== "string" || body.system_prompt.length === 0) return respond(400, { error: "either model (agent sweep) or system_prompt (one-shot) is required" });
-				harnessEnhance(c.llm, {
-					system: body.system_prompt,
-					prompt: body.prompt,
-					temperature,
-					...llmWant !== void 0 ? { llm: llmWant } : {}
-				}, readDefaultLlm()).then((result) => respond(200, result)).catch(mapEnhanceError);
-			}).catch((err) => respond(400, { error: `body read failed: ${err instanceof Error ? err.message : String(err)}` }));
-		}
+		handler: enhanceHandler
 	}), "melite-tools: enhance route");
+	c.effect(() => c.webServer.register({
+		kind: "exact",
+		path: "/v1/llm/enhance",
+		handler: enhanceHandler
+	}), "melite-tools: enhance alias");
+	{
+		const inputDir = async () => {
+			const path = await import("node:path");
+			const { resolveRepoRoot } = await import("@melite/comfyui-cordis");
+			const dir = path.join(resolveRepoRoot(), "data", "input");
+			await (await import("node:fs/promises")).mkdir(dir, { recursive: true });
+			return dir;
+		};
+		const SEG = /^(?!\.{1,2}$)[A-Za-z0-9._-]+$/;
+		c.effect(() => c.webServer.register({
+			kind: "exact",
+			path: "/v1/uploads",
+			handler: (req, res) => {
+				const fail = (code, err) => {
+					const body = JSON.stringify({ error: err });
+					res.writeHead(code, { "content-type": "application/json" });
+					res.end(body);
+				};
+				readBody(req).then(async (buf) => {
+					let body;
+					try {
+						body = JSON.parse(buf.toString("utf8"));
+					} catch {
+						return fail(400, "body must be JSON");
+					}
+					const filename = typeof body?.filename === "string" ? body.filename : "";
+					const data = typeof body?.data === "string" ? body.data : "";
+					if (filename === "" || data === "") return fail(400, "uploads: filename + data are required");
+					if (!SEG.test(filename)) return fail(400, "uploads: bad filename");
+					const b64 = /^data:(image\/(?:png|jpeg|webp));base64,(.+)$/.exec(data);
+					if (b64 === null) return fail(400, "uploads: only png / jpeg / webp upload");
+					const bytes = Buffer.from(b64[2], "base64");
+					const dir = await inputDir();
+					const fs = await import("node:fs/promises");
+					const path = await import("node:path");
+					const file = path.join(dir, filename);
+					const [realFile, realDir] = await Promise.all([fs.realpath(file), fs.realpath(dir)].map(async (x) => x.catch(() => void 0)));
+					if (realFile !== void 0 && realDir !== void 0 && !realFile.startsWith(realDir + path.sep)) return fail(400, "uploads: path escapes the input dir");
+					await fs.writeFile(file, bytes);
+					const out = JSON.stringify({ path: "data/input/" + filename });
+					res.writeHead(200, { "content-type": "application/json" });
+					res.end(out);
+				}).catch((e) => fail(500, "uploads: " + (e instanceof Error ? e.message : String(e))));
+			}
+		}), "melite-tools: uploads rail");
+		c.effect(() => c.webServer.register({
+			kind: "prefix",
+			path: "/v1/assets/inputs",
+			handler: (req, res) => {
+				const fail = (code, err) => {
+					const body = JSON.stringify({ error: err });
+					res.writeHead(code, { "content-type": "application/json" });
+					res.end(body);
+				};
+				(async () => {
+					const name = new URL(req.url ?? "/", "http://melite.invalid").pathname.slice(18);
+					if (!SEG.test(name)) return fail(400, "bad input name");
+					const dir = await inputDir();
+					const path = await import("node:path");
+					const fs = await import("node:fs/promises");
+					const file = path.join(dir, name);
+					const real = await fs.realpath(file).catch(() => void 0);
+					const realDir = await fs.realpath(dir);
+					if (real === void 0 || !real.startsWith(realDir + path.sep)) return fail(404, "no such input");
+					const bytes = await fs.readFile(file);
+					const ext = name.split(".").pop()?.toLowerCase() ?? "";
+					const type = ext === "png" ? "image/png" : ext === "jpg" || ext === "jpeg" ? "image/jpeg" : "image/webp";
+					res.writeHead(200, {
+						"content-type": type,
+						"content-length": String(bytes.byteLength)
+					});
+					res.end(bytes);
+				})().catch((e) => fail(500, "inputs: " + (e instanceof Error ? e.message : String(e))));
+			}
+		}), "melite-tools: input preview");
+	}
 	c.effect(() => c.webServer.register({
 		kind: "prefix",
 		path: "/v1",
@@ -576,6 +688,10 @@ function apply(c, config = {}) {
 			const signal = callerGone.signal;
 			const serve = () => {
 				try {
+					if (method === "GET" && path === "/v1/card-tools") {
+						cardToolsArm().then(ok, (e) => fail(500, { error: `discovery door: ${e instanceof Error ? e.message : String(e)}` }));
+						return;
+					}
 					if (method === "GET" && path === "/v1/model-catalog") {
 						modelCatalogArm().then(ok, (e) => fail(500, { error: `discovery door: ${e instanceof Error ? e.message : String(e)}` }));
 						return;

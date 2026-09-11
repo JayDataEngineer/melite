@@ -39,6 +39,35 @@ async function trySeats(ctx, method, path, body, signal) {
 		if (seats.draftsRemote === void 0) return void 0;
 		return seats.draftsRemote.get(decodeURIComponent(m[1]), signal);
 	}
+	if (method === "POST" && path === "/v1/flows/drafts") {
+		if (seats.benchRemote === void 0) return void 0;
+		if (body === void 0 || typeof body !== "object" || body === null) throw new Error("card compose needs a JSON body");
+		const bag = body;
+		const intentSrc = typeof bag["prompt"] === "string" && bag["prompt"] !== "" ? bag["prompt"] : typeof bag["intent"] === "string" ? bag["intent"] : "card";
+		const intent = intentSrc.length > 80 ? intentSrc.slice(0, 77) + "…" : intentSrc;
+		const params = { ...bag["params"] ?? {} };
+		if (typeof bag["prompt"] === "string" && bag["prompt"] !== "") params["prompt"] = bag["prompt"];
+		const ensure = {
+			session: "default",
+			intent,
+			stages: [{
+				id: "s_0",
+				engine: "comfyui",
+				params
+			}]
+		};
+		const cur = await seats.benchRemote.get("default", signal);
+		if (cur !== void 0 && typeof cur["rev"] === "number") ensure["expect_rev"] = cur["rev"];
+		const row = await seats.benchRemote.ensure(ensure, signal);
+		if (row === void 0 || typeof row["draft_id"] !== "string") throw new Error("card compose returned no draft_id — refusing to start cardless");
+		return { draftId: row["draft_id"] };
+	}
+	m = /^\/v1\/flows\/drafts\/([^/?]+)\/stages\/([^/?]+)(?:\/result)?$/.exec(path);
+	if (method === "PATCH" && m !== null) {
+		if (seats.draftsRemote === void 0) return void 0;
+		if (body === void 0 || typeof body !== "object" || body === null) throw new Error("draft stage patch needs a JSON body");
+		return seats.draftsRemote.patch(decodeURIComponent(m[1]), decodeURIComponent(m[2]), body, signal);
+	}
 	if (method === "POST" && path === "/v1/bench/ensure") {
 		if (seats.benchRemote === void 0) return void 0;
 		if (body === void 0 || typeof body !== "object" || body === null) throw new Error("bench ensure needs a JSON body");

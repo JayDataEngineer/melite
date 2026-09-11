@@ -42,6 +42,7 @@ import { FlowCards } from './FlowCards.tsx'
 import { CardsTab } from './CardsTab.tsx'
 import { CARDS_BENCH_ADDRESS, openCardsResource } from './cards-resource.ts'
 import { resolveCardsAddress } from './CardsTab.tsx'
+import './seats.ts'
 import type { ToolCallBlockView, ToolCallOwnerProps } from './types.ts'
 
 // Type-only local spelling of the Tool-owned keyed view slot (the same shape

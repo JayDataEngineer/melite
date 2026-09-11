@@ -40,6 +40,7 @@ import css from './card.module.css'
 import type { CardsBenchValue, CardsRunValue, BenchStageRow } from './cards-resource.ts'
 import { CARDS_BENCH_ADDRESS, parseCardsAddress, restoreRunToBench } from './cards-resource.ts'
 import { addStageWire } from './add-stage.ts'
+import { OldFlowMount } from './OldFlowMount.tsx'
 import { mediaUrl } from './draft.ts'
 
 /** The injected tab information hook's shape (dsh-client-ui-sidebar-right's
@@ -618,6 +619,6 @@ export function CardsTab(props: CardsTabProps): ReturnType<typeof h> {
     return h('p', { className: css.failed }, 'cards resource gave no value')
   }
   return value.kind === 'bench'
-    ? h(BenchView, { bench: value, onRun, onNavigate: (a: string) => { if (openResource !== undefined) openResource(a) }, running })
+    ? h(OldFlowMount, { bench: value })
     : h(RunView, { run: value, onBack: openResource !== undefined ? onBack : undefined, onRestored: onBack })
 }
