@@ -240,7 +240,12 @@ export default defineConfig({
         // closed the last file-exempt — the drafts bench engine — at
         // per-file 100 via its package-local spec). No estate rows
         // remain here.
-        'packages/3d/**/src/**/*.{ts,tsx}',
+        // 3d closed (2026-09-12, §TEST-10): every TS logic file at
+        // per-file 100 (card compose gates + the clothing-placement
+        // tool face). The STUDIOS (src/ui/**/*.tsx — anny's two,
+        // img-to-mesh's one) stay GUI-debt: DOM components, the dom
+        // project's territory, same carve-out as the web tree.
+        'packages/3d/**/src/ui/**/*.{ts,tsx}',
         'packages/audio/**/src/**/*.{ts,tsx}',
         'packages/image/**/src/**/*.{ts,tsx}',
         'packages/motion/**/src/**/*.{ts,tsx}',

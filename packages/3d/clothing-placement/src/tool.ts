@@ -46,12 +46,16 @@ export function buildCardTool(call: EstateCall): ToolDefinition {
     // walk that serves /v1/tools params (one family, two planes).
     parameters: emitParamsSpec(schema as never, []) as ParameterSchemaSpec,
     presentCall(args: unknown) {
-      const a = (args ?? {}) as Record<string, unknown>;
+      // defineTool's wrapper validates args BEFORE this body runs
+      // (dsh-tools: invalid args → presentCall returns undefined at
+      // the seam) — body/garment are required knobs, always present
+      // here, and args itself is always the validated object.
+      const a = args as Record<string, unknown>;
       return {
         card: "generic",
         title: identity.label,
         kind: "execute",
-        rawInput: `body=${String(a.body ?? "?")} garment=${String(a.garment ?? "?")}`,
+        rawInput: `body=${String(a.body)} garment=${String(a.garment)}`,
       };
     },
     output: {

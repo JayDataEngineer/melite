@@ -158,6 +158,88 @@ describe("the executor path (two doors, flow law)", () => {
     const ran = tool.output.render({}, { run_id: "r_9" });
     assert.match(String((ran[0] as { text?: string }).text), /r_9/);
   });
+
+  it("the renderer's empty arms: no error, no run id", () => {
+    const tool = buildCardTool(seam);
+    // error present-but-empty falls through to the run-id voice.
+    const quiet = tool.output.render({}, { error: "" });
+    assert.match(String((quiet[0] as { text?: string }).text), /clothing_placement → \?/);
+    // no value at all: the ? placeholder names the gap.
+    const bare = tool.output.render({}, undefined);
+    assert.match(String((bare[0] as { text?: string }).text), /clothing_placement → \?/);
+  });
+
+  it("presentCall refuses to present UNVALIDATED args (the DSH wrapper law)", () => {
+    // defineTool wraps presentCall: args failing the compiled
+    // parameter schema return undefined at the seam, never reaching
+    // the card body (dsh-tools index.js — pinned here because the
+    // card's own prose relies on it: body/garment are always
+    // present when the body runs).
+    assert.equal(buildCardTool(seam).presentCall?.({}), undefined);
+    // Validated args present the execute card with both files named.
+    const card = buildCardTool(seam).presentCall?.(FULL_ARGS);
+    assert.ok(card);
+    assert.match(String(card.rawInput), /body=\/tmp\/b.glb garment=\/tmp\/g.glb/);
+  });
+
+  it("presentationMeta carries ONLY the truth it has", () => {
+    const meta = buildCardTool(seam).output.presentationMeta;
+    assert.ok(meta, "the tile channel is declared");
+    // Nothing but the flow: every optional spread folds away.
+    assert.deepEqual(meta({}, {}), { flow: "clothing-placement" });
+    // Empty strings are NOT truth.
+    assert.deepEqual(meta({}, { run_id: "", draft_id: "" }), { flow: "clothing-placement" });
+    // Non-strings are NOT truth either (the channel is typed).
+    assert.deepEqual(meta({}, { run_id: 5, draft_id: 7, status: 1 }), { flow: "clothing-placement" });
+    // The full canonical value rides verbatim.
+    assert.deepEqual(
+      meta({}, { run_id: "r1", draft_id: "d1", status: "running", error: "late" }),
+      { flow: "clothing-placement", run_id: "r1", draft_id: "d1", status: "running", error: "late" },
+    );
+    // Mixed: some fields present, some absent.
+    assert.deepEqual(meta({}, { draft_id: "d2", status: "queued" }), { flow: "clothing-placement", draft_id: "d2", status: "queued" });
+  });
+
+  it("the snake_case draft spelling mints too (the door's two spellings)", async () => {
+    draftsStatus = 200; draftsBody = { draft_id: "d_snake" };
+    startBody = { run_id: "r_1", status: "queued" };
+    const value = (await buildCardTool(seam).execute(FULL_ARGS, exec)) as Record<string, string>;
+    assert.equal(value.draft_id, "d_snake");
+    assert.equal(calls[1].body.draft_id, "d_snake");
+  });
+
+  it("a start-door named refusal resolves canonically (never throws)", async () => {
+    draftsStatus = 200; draftsBody = { draftId: "d_ok" };
+    const prevStart = startBody;
+    startBody = { error: "queue is draining" };
+    try {
+      const value = (await buildCardTool(seam).execute(FULL_ARGS, exec)) as Record<string, string>;
+      assert.equal(value.error, "queue is draining");
+    } finally {
+      startBody = prevStart;
+    }
+  });
+
+  it("GatewayError fallbacks: unparseable body, then the status voice", async () => {
+    // Body is not JSON → named folds to the raw body.
+    const seamRaw: EstateCall = async () => {
+      throw new GatewayError(500, "upstream exploded", "InternalError");
+    };
+    const v1 = (await buildCardTool(seamRaw).execute(FULL_ARGS, exec)) as Record<string, string>;
+    assert.equal(v1.error, "upstream exploded");
+    // Body parses but carries no error → the raw body still wins.
+    const seamJson: EstateCall = async () => {
+      throw new GatewayError(422, JSON.stringify({ note: "no error field" }), "Unprocessable");
+    };
+    const v2 = (await buildCardTool(seamJson).execute(FULL_ARGS, exec)) as Record<string, string>;
+    assert.equal(v2.error, JSON.stringify({ note: "no error field" }));
+    // Empty body AND empty named → the status voice.
+    const seamEmpty: EstateCall = async () => {
+      throw new GatewayError(503, "", "Unavailable");
+    };
+    const v3 = (await buildCardTool(seamEmpty).execute(FULL_ARGS, exec)) as Record<string, string>;
+    assert.equal(v3.error, "estate 503");
+  });
 });
 
 /** The tools-service surface, stubbed to its Consumer-owned shape. */
