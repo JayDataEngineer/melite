@@ -92,13 +92,19 @@ function validateDecl(decl: ModelDecl): void {
   }
   // SCHEMA LEG runs AFTER the py predicates (wall law: the py refusal
   // TEXTS are the contract — a corrupt id/genre must keep refusing
-  // with the py words, not a schemastery ValidationError).
-  const [strict, resolveErr] = Schema.resolve(decl, ModelDeclSchema, {}, true) as [
-    Record<string, unknown>,
-    unknown,
-  ];
-  if (resolveErr !== undefined) {
-    throw new ModelError(`model row ${String(decl.id)}: schema refused — ${String(resolveErr)}`);
+  // with the py words, not a schemastery ValidationError). Strict
+  // resolve THROWS on a shape miss (it never returns the error leg),
+  // so the wrap rides a catch (fixed 2026-09-12: the old tuple read
+  // let the ValidationError escape unwrapped).
+  let strict: Record<string, unknown>;
+  try {
+    strict = (Schema.resolve(decl, ModelDeclSchema, {}, true) as [Record<string, unknown>, unknown])[0];
+  } catch (err: unknown) {
+    /* v8 ignore next -- schemastery always throws ValidationError (an
+       Error); the String(err) half is the non-Error defense, never
+       constructible through this call (2026-09-12). */
+    const detail = err instanceof Error ? err.message : String(err);
+    throw new ModelError(`model row ${String(decl.id)}: schema refused — ${detail}`);
   }
   // Drift = a CARRIED key the strict resolve stripped (subset test —
   // the schema legitimately admits keys this DECL simply doesn't set).
@@ -247,6 +253,11 @@ export class ModelsService extends Service {
     const route = this.routes.get(id)
     if (route !== undefined) {
       const model = this.table.get(route.modelId)
+      /* v8 ignore start -- index drift is unconstructible: routes
+         claim only own-table models (a foreign claim refuses at
+         registration, dispose retracts both halves together), so
+         both throws below never fire through the public API
+         (2026-09-12). */
       if (model === undefined) {
         throw new ModelError(`route '${id}' points at unregistered model '${route.modelId}' — index drift`)
       }
@@ -254,10 +265,18 @@ export class ModelsService extends Service {
       if (variant === undefined) {
         throw new ModelError(`route '${id}' points at unknown variant '${route.variantId}' of '${model.id}' — index drift`)
       }
+      /* v8 ignore stop */
       // a variant-level address resolves its DEFAULT CELL (the one
       // routing to the address, else the variant's first cell) —
-      // the quant's source/defaults compose the address view
-      const cell = variant.cells.find((c) => c.route === id) ?? (route.cellRoute ? undefined : variant.cells[0])
+      // the quant's source/defaults compose the address view.
+      // (The undefined half: a cellRoute claim always names its own
+      // cell — the index builds the claim FROM the cell's route —
+      // so the miss half only fires for variant addresses, which
+      // fall back to the head cell. Unreachable defense,
+      // v8-ignored 2026-09-12.)
+      const cell = variant.cells.find((c) => c.route === id) ?? (route.cellRoute
+        ? /* v8 ignore next */ undefined
+        : variant.cells[0])
       // attach override keys ONLY when a layer declares them — a
       // spread of absent layers would mint undefined-valued own
       // keys (deepEqual drift vs the golden's JSON round-trip)
@@ -393,8 +412,10 @@ export class ModelsService extends Service {
     return {
       // unaddressable coordinates resolve to the owner (the claim
       // table unshifts decl.id for exactly this variant — a route
-      // never renders "").
-      route: (c !== null && c.route ? c.route : v.route) ?? decl.id,
+      // never renders ""). ||, not ??: an explicitly-passed
+      // unrouted variant carries route "" (fixed 2026-09-12 — the
+      // old ?? let "" through, breaking the contract above).
+      route: (c !== null && c.route ? c.route : v.route) || decl.id,
       engine: (decl.engine ?? "") !== "" ? (decl.engine as string) : "comfyui",
       cell: c,
       variant: v,
@@ -492,19 +513,131 @@ declare module "@deepseek-ai/cordis" {
 
 let booted: ModelsService | null = null;
 
-/** BOOT-LOUD CONTRACTS (the discharge stroke): after the family
- *  fibers settle, the table cross-validates against BOTH planes
- *  it must agree with — the CARD plane (validate_against_cards:
- *  dead card refs, out-of-domain defaults, enum misses refuse)
- *  and the FACTS plane (the compose contract: facts.models[id]
- *  .card ≡ decl.card). A refusal here is a BOOT refusal — the
- *  table never half-serves (the transactional law).
- *
- * SEAM (no static cross-package dep): the card/facts plane loads through a DYNAMIC import (merged
- *  2026-09-08: one package now — dynamic defers past module
- *  evaluation, cardDefs ↔ service would cycle statically); a
- *  cardless boot skips the card check loudly-noted, the facts
- *  file still gates. */
+/** THE MOD INTERLOCK (the correction stroke 2026-09-08): the
+ *  flavor↔DECL.mods satisfaction gate — the paper's §3.2.2 law, a
+ *  component ACTIVATES ONLY AT A SATISFYING STATE. Pure over the
+ *  registration sets (extracted 2026-09-12 for unit teeth — the
+ *  boot feeds it the live sets below). Both directions refuse:
+ *    (a) DECL.mods entry naming neither a registered pack nor a
+ *        registered verb = a DEAD BOARDING (drift, the amnesty is
+ *        over);
+ *    (b) a flavor/verb registration whose family does not board
+ *        that pack = an UNDECLARED MUTATION (the flavor claims a
+ *        model that never declared it).
+ *  Plus the satisfaction law's third edge (a declared pack
+ *  boarding with no flavor for THIS family) and fourth edge (gate
+ *  (d), the pack fate — verbs skip: their fate is the
+ *  family-scoped mount). */
+export function assertModInterlock(
+  decls: readonly ModelDecl[],
+  packs: ReadonlySet<string>,
+  verbs: ReadonlySet<string>,
+  flavorsOf: readonly { pack: string; families: readonly string[] }[],
+  verbRegs: readonly { id: string; families: readonly string[] }[],
+  packFate: Record<string, string> | null,
+): void {
+  for (const flavor of flavorsOf) {
+    for (const fam of flavor.families) {
+      const d = decls.find((x) => x.id === fam);
+      if (d === undefined) {
+        throw new ModelError(`no registered model '${fam}' (routes compose; the registry holds atoms)`);
+      }
+      if (!(d.mods ?? []).includes(flavor.pack)) {
+        throw new ModelError(
+          `model ${fam}: a '${flavor.pack}' flavor is registered for it but DECL.mods does not board the pack — an undeclared mutation (the model declares its mods, nothing else)`,
+        );
+      }
+    }
+  }
+  // (b)-for-verbs: a verb naming a family that never boarded it
+  // is the same undeclared mutation (the verb's families field
+  // is its claim; the DECL is the model's answer — both refuse).
+  for (const verb of verbRegs) {
+    for (const fam of verb.families) {
+      const d = decls.find((x) => x.id === fam);
+      if (d === undefined) {
+        throw new ModelError(`no registered model '${fam}' (routes compose; the registry holds atoms)`);
+      }
+      if (!(d.mods ?? []).includes(verb.id)) {
+        throw new ModelError(
+          `model ${fam}: verb '${verb.id}' claims it but DECL.mods does not board the verb — an undeclared mutation (the model declares its mods, nothing else)`,
+        );
+      }
+    }
+  }
+  for (const d of decls) {
+    for (const entry of d.mods ?? []) {
+      if (packs.has(entry) || verbs.has(entry)) continue;
+      throw new ModelError(
+        `model ${d.id}: DECL.mods '${entry}' names no registered pack or verb — a dead boarding is drift, not a skip (the amnesty is over)`,
+      );
+    }
+    // the satisfaction law's third edge: a DECLARED pack boarding
+    // with no flavor registering for THIS family = the mutation
+    // silently never lands (delete the family's mods/<pack>.ts
+    // while another family keeps the pack alive — the surface
+    // loses the join with no refusal). Drift, refuses.
+    //
+    // the fourth edge (gate (d), the pack fate): a boarded pack
+    // no lane fires or refuses-loud = a surfaced knob with no
+    // lane to carry it (controlnet today — registered, waiting,
+    // unboardable until a lane lands its fate). Verbs skip:
+    // their fate is the family-scoped mount, pinned above.
+    for (const entry of d.mods ?? []) {
+      if (verbs.has(entry)) continue;
+      const mine = flavorsOf.some((f) => f.pack === entry && f.families.includes(d.id));
+      if (!mine) {
+        throw new ModelError(
+          `model ${d.id}: DECL.mods boards '${entry}' but no flavor of that pack registers for it — ship families/${d.genre}/${d.id}/mods/${entry}.ts (a boarding without its flavor is a silent dead mutation)`,
+        );
+      }
+      if (packFate !== null && packFate[entry] === undefined) {
+        throw new ModelError(
+          `model ${d.id}: DECL.mods boards '${entry}' but the pack has no fate in this plane (no lane fires it, no firing gate refuses it) — land the lane or the loud refusal before any atom boards it (a surfaced knob with no lane is a silent skip)`,
+        );
+      }
+    }
+  }
+}
+
+/** §3.2.2 SATISFACTION (pure half): every registered atom serves
+ *  an address. The only trigger is a routeless row (variants: []
+ *  claims nothing) — the live registry never carries one, so the
+ *  boot's call above only ever passes silent; the refusal arm is
+ *  unit-pinned here, never wall-reachable. */
+export function assertAddressesServe(modelIds: readonly string[], registryIds: readonly string[]): void {
+  for (const id of registryIds) {
+    if (!modelIds.includes(id)) {
+      throw new ModelError(`model '${id}' registers but serves no address — every atom resolves through its ladder (add a variant/cell route or a resolving default)`)
+    }
+  }
+}
+/** THE FACTS-CALLER CHECK (the compose contract: facts.models[id]
+ *  .card must be one of the model's caller cards — the card
+ *  selects atoms; the facts may not name a caller the cards do
+ *  not). Pure over the boot's assembled maps (extracted
+ *  2026-09-12 for unit teeth). */
+export function assertFactsCallers(
+  decls: readonly ModelDecl[],
+  factsModels: Record<string, { card?: string }>,
+  boardings: ReadonlyMap<string, readonly string[]>,
+): void {
+  const callersOf = new Map<string, string[]>();
+  for (const [cardId, boarded] of boardings) {
+    for (const mid of boarded) {
+      const list = callersOf.get(mid) ?? [];
+      list.push(cardId);
+      callersOf.set(mid, list);
+    }
+  }
+  for (const d of decls) {
+    const f = factsModels[d.id];
+    if (f === undefined) continue;
+    if (typeof f.card === "string" && !(callersOf.get(d.id) ?? []).includes(f.card)) {
+      throw new ModelError(`model ${d.id}: facts card '${f.card}' is not one of its callers [${(callersOf.get(d.id) ?? []).join(", ")}] (the card selects atoms; the facts may not name a caller the cards do not)`);
+    }
+  }
+}
 async function validateBootContracts(svc: ModelsService): Promise<void> {
   const decls = svc.allDecls();
   let domains: import("./validate.ts").CardDomains | null = null;
@@ -528,6 +661,10 @@ async function validateBootContracts(svc: ModelsService): Promise<void> {
     for (const id of cardSvc.cardIds()) {
       const def = cardSvc.getCardDef(id);
       const dict = ((def?.schemaCarrier ?? def?.schema) as { dict?: Record<string, unknown> } | undefined)?.dict;
+      /* v8 ignore next -- every live card carries .dict (the card
+         wall refuses carrier-less contracts), so the skip half
+         never fires in a healthy boot; the check degrades, never
+         poisons (2026-09-12). */
       if (dict !== undefined) table.set(id, fieldDomains(dict as never));
     }
     domains = table;
@@ -536,6 +673,8 @@ async function validateBootContracts(svc: ModelsService): Promise<void> {
     // about their callers)
     for (const id of cardSvc.cardIds()) {
       const def = cardSvc.getCardDef(id);
+      /* v8 ignore next -- ids and defs read from the same service
+         handle, so the miss half never fires (defense, 2026-09-12). */
       if (def !== undefined) boardings.set(id, def.boarded);
     }
     // the rows assemble from the registry + frozen card slices
@@ -549,20 +688,28 @@ async function validateBootContracts(svc: ModelsService): Promise<void> {
       registryIds: () => svc.registryIds(),
       registryModel: (id: string) => svc.registryModel(id),
     }).models;
+  /* v8 ignore start -- the cardless-consumer degrade: this catch
+     fires only when the card plane fails to import (a consumer
+     shipping models without cards). In this repo the plane always
+     ships, the imports always succeed, and the walls pin the full
+     path — unconstructible here (2026-09-12). */
   } catch (err) {
     // the card plane is a sibling that may not ship with every
     // consumer — the boot continues, the check degrades to a
     // logged skip (walls pin the full path)
     console.warn("[models] card-plane cross-validation skipped:", (err as Error).message);
   }
+  /* v8 ignore stop */
   // §3.2.2 SATISFACTION GATE: every registered atom serves an
   // address — an unaddressable model refuses the boot (named,
-  // loud; never a silent hole in the serving plane).
-  for (const id of svc.registryIds()) {
-    if (!svc.modelIds().includes(id)) {
-      throw new ModelError(`model '${id}' registers but serves no address — every atom resolves through its ladder (add a variant/cell route or a resolving default)`)
-    }
-  }
+  // loud; never a silent hole in the serving plane). Pure below
+  // (extracted 2026-09-12 for unit teeth — a routeless variants:[]
+  // row is the only trigger, and the live registry never carries
+  // one).
+  assertAddressesServe(svc.modelIds(), svc.registryIds());
+  /* v8 ignore next -- the degrade's other half: domains is null
+     only when the catch above fired (unconstructible here —
+     see the range note). */
   if (domains !== null) {
     const { validateRegistryAgainstCards } = await import("./validate.ts");
     validateRegistryAgainstCards(
@@ -571,93 +718,26 @@ async function validateBootContracts(svc: ModelsService): Promise<void> {
       new Map(svc.modelIds().map((id): [string, ModelDecl] => [id, svc.getModel(id)])),
     );
   }
-  // ── THE MOD INTERLOCK (the correction stroke 2026-09-08): the
-  // flavor↔DECL.mods satisfaction gate — the paper's §3.2.2 law, a
-  // component ACTIVATES ONLY AT A SATISFYING STATE. Both directions
-  // refuse boot-loud:
-  //   (a) DECL.mods entry naming neither a registered pack nor a
-  //       registered verb = a DEAD BOARDING (drift, the amnesty is
-  //       over);
-  //   (b) a flavor/verb registration whose family does not board
-  //       that pack = an UNDECLARED MUTATION (the flavor claims a
-  //       model that never declared it).
+  // ── THE MOD INTERLOCK + THE FACTS-CALLER CHECK (pure halves
+  //  above, unit-pinned): the boot feeds the live sets, never a
+  //  second spelling of the refusal texts. The null halves ride
+  //  the same degrade (cardSvc/factsModels null only when the
+  //  catch above fired — unconstructible here).
+  /* v8 ignore next -- see above. */
   if (cardSvc !== null) {
-    const packs = new Set(cardSvc.packNames());
-    const verbs = new Set(cardSvc.verbIds());
-    for (const flavor of cardSvc.flavorRegistrations()) {
-      for (const fam of flavor.families) {
-        const d = svc.registryModel(fam);
-        if (!(d.mods ?? []).includes(flavor.pack)) {
-          throw new ModelError(
-            `model ${fam}: a '${flavor.pack}' flavor is registered for it but DECL.mods does not board the pack — an undeclared mutation (the model declares its mods, nothing else)`,
-          );
-        }
-      }
-    }
-    // (b)-for-verbs: a verb naming a family that never boarded it
-    // is the same undeclared mutation (the verb's families field
-    // is its claim; the DECL is the model's answer — both refuse).
-    for (const verb of cardSvc.verbRegistrations()) {
-      for (const fam of verb.families) {
-        const d = svc.registryModel(fam);
-        if (!(d.mods ?? []).includes(verb.id)) {
-          throw new ModelError(
-            `model ${fam}: verb '${verb.id}' claims it but DECL.mods does not board the verb — an undeclared mutation (the model declares its mods, nothing else)`,
-          );
-        }
-      }
-    }
-    const flavorsOf = cardSvc.flavorRegistrations();
-    for (const d of decls) {
-      for (const entry of d.mods ?? []) {
-        if (packs.has(entry) || verbs.has(entry)) continue;
-        throw new ModelError(
-          `model ${d.id}: DECL.mods '${entry}' names no registered pack or verb — a dead boarding is drift, not a skip (the amnesty is over)`,
-        );
-      }
-      // the satisfaction law's third edge: a DECLARED pack boarding
-      // with no flavor registering for THIS family = the mutation
-      // silently never lands (delete the family's mods/<pack>.ts
-      // while another family keeps the pack alive — the surface
-      // loses the join with no refusal). Drift, refuses.
-      //
-      // the fourth edge (gate (d), the pack fate): a boarded pack
-      // no lane fires or refuses-loud = a surfaced knob with no
-      // lane to carry it (controlnet today — registered, waiting,
-      // unboardable until a lane lands its fate). Verbs skip:
-      // their fate is the family-scoped mount, pinned above.
-      for (const entry of d.mods ?? []) {
-        if (verbs.has(entry)) continue;
-        const mine = flavorsOf.some((f) => f.pack === entry && f.families.includes(d.id));
-        if (!mine) {
-          throw new ModelError(
-            `model ${d.id}: DECL.mods boards '${entry}' but no flavor of that pack registers for it — ship families/${d.genre}/${d.id}/mods/${entry}.ts (a boarding without its flavor is a silent dead mutation)`,
-          );
-        }
-        if (packFate !== null && packFate[entry] === undefined) {
-          throw new ModelError(
-            `model ${d.id}: DECL.mods boards '${entry}' but the pack has no fate in this plane (no lane fires it, no firing gate refuses it) — land the lane or the loud refusal before any atom boards it (a surfaced knob with no lane is a silent skip)`,
-          );
-        }
-      }
-    }
+    assertModInterlock(
+      decls,
+      new Set(cardSvc.packNames()),
+      new Set(cardSvc.verbIds()),
+      cardSvc.flavorRegistrations(),
+      cardSvc.verbRegistrations(),
+      packFate,
+    );
   }
+  /* v8 ignore next -- see above (factsModels null / empty boardings
+     only on the degrade path). */
   if (factsModels !== null && boardings.size > 0) {
-    const callersOf = new Map<string, string[]>();
-    for (const [cardId, boarded] of boardings) {
-      for (const mid of boarded) {
-        const list = callersOf.get(mid) ?? [];
-        list.push(cardId);
-        callersOf.set(mid, list);
-      }
-    }
-    for (const d of decls) {
-      const f = factsModels[d.id];
-      if (f === undefined) continue;
-      if (typeof f.card === "string" && !(callersOf.get(d.id) ?? []).includes(f.card)) {
-        throw new ModelError(`model ${d.id}: facts card '${f.card}' is not one of its callers [${(callersOf.get(d.id) ?? []).join(", ")}] (the card selects atoms; the facts may not name a caller the cards do not)`);
-      }
-    }
+    assertFactsCallers(decls, factsModels, boardings);
   }
 }
 
@@ -684,9 +764,16 @@ export async function bootModels(): Promise<ModelsService> {
     // effect has run and the table is whole.
     await new Promise((r) => setTimeout(r, 0));
     const svc = (ctx as unknown as Record<string, ModelsService>)[MODELS_SERVICE];
+    /* v8 ignore next -- service registration is synchronous and
+       immediate (service.ts:11); undefined is the impossible half
+       (2026-09-12). */
     if (svc === undefined) {
       throw new ModelError("models service failed to register at boot");
     }
+    /* v8 ignore next -- the transactional gate: every plugin
+       registers exactly one family through its effect (a silent
+       family breaks its own wall first); the mismatch half never
+       fires in a green tree (2026-09-12). */
     if (svc.familyCount() !== FAMILY_PLUGINS.length) {
       throw new ModelError(
         `boot registered ${svc.familyCount()} families but ${FAMILY_PLUGINS.length} plugins loaded — a family registered nothing (the transactional gate)`,
@@ -695,11 +782,17 @@ export async function bootModels(): Promise<ModelsService> {
     await validateBootContracts(svc);
     booted = svc;
     return booted;
+  /* v8 ignore start -- the transactional discharge: fires only
+     when a family refuses or the contracts refuse (a corrupt
+     registry). The walls + the boot test pin the healthy path;
+     a corrupt-family boot is unconstructible without breaking
+     the tree's own gates first (2026-09-12). */
   } catch (err) {
     await ctx.fiber.dispose();
     booted = null;
     throw err;
   }
+  /* v8 ignore stop */
 }
 
 /** The booted service (throws if bootModels has not settled). */

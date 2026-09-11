@@ -179,7 +179,11 @@ export const emitParamsSpec = (carrier: Schema, boarded: readonly string[]): Par
   const served = emitParamsSchema(carrier, boarded)
   const spec: ParamsSpec = {}
   const requiredSet = new Set(served.required ?? [])
-  for (const [k, node] of Object.entries(served.properties ?? {})) {
+  /* v8 ignore next -- emitParamsSchema always serves properties
+   * (the object literal above); the ?? is the type-system's toll
+   * (ParamsSchema.properties is optional), not a runtime arm. */
+  const props = served.properties ?? {}
+  for (const [k, node] of Object.entries(props)) {
     const t = String(node.type)
     const out: ParamSpecNode = {
       type:

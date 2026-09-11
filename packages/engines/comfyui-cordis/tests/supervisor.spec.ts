@@ -1,0 +1,321 @@
+// @melite/comfyui-cordis — the engine supervisor's state machine
+// (TEST-2 breadth, 2026-09-12). The supervisor is fully
+// injectable (probe + timers + clock + log) — the battery drives
+// every transition with a manual timer harness: no sleeps, no
+// real sockets, deterministic backoff.
+import { describe, it } from "vitest";
+import assert from "node:assert/strict";
+import {
+  EngineSupervisor, isTransportDownError, resolveSupervisorPolicy,
+} from "../src/supervisor.ts";
+
+const down = (msg = "connect ECONNREFUSED 127.0.0.1:8188"): Error => {
+  const e = new Error(msg) as Error & { code?: string };
+  return e;
+};
+
+/** A manual clock + timer harness (captures, never fires alone). */
+const harness = () => {
+  let now = 1000;
+  const pending: Array<() => void> = [];
+  const logs: string[] = [];
+  return {
+    now: () => now,
+    advance: (ms: number): void => { now += ms; },
+    setTimer: ((fn: () => void): unknown => { pending.push(fn); return pending.length; }) as unknown as typeof setTimeout,
+    clearTimer: ((_t: unknown): void => { pending.length = 0; }) as unknown as typeof clearTimeout,
+    fire: (): void => { pending.splice(0).forEach((fn) => fn()); },
+    pending: (): number => pending.length,
+    log: {
+      info: (m: string): void => { logs.push("info:" + m); },
+      warn: (m: string): void => { logs.push("warn:" + m); },
+      error: (m: string): void => { logs.push("error:" + m); },
+    },
+    logs,
+  };
+};
+
+describe("isTransportDownError (the transport vocabulary)", () => {
+  it("non-objects and null are never transport-down", () => {
+    assert.equal(isTransportDownError("ECONNREFUSED"), false);
+    assert.equal(isTransportDownError(null), false);
+    assert.equal(isTransportDownError(undefined), false);
+    assert.equal(isTransportDownError(42), false);
+  });
+  it("dead codes hit, live codes miss", () => {
+    assert.equal(isTransportDownError({ code: "ECONNREFUSED" }), true);
+    assert.equal(isTransportDownError({ code: "ENOENT" }), false);
+    assert.equal(isTransportDownError({ code: 42, message: "x ECONNRESET y" }), true);
+  });
+  it("the message vocabulary hits (every code, once)", () => {
+    for (const code of ["ECONNREFUSED", "ECONNRESET", "ENOTFOUND", "EHOSTUNREACH"]) {
+      assert.equal(isTransportDownError(new Error("dial " + code + " fail")), true, code);
+    }
+    assert.equal(isTransportDownError(new Error("dial ETIMEDOUT fail")), false, "a timeout proves the engine alive");
+    assert.equal(isTransportDownError(new Error("http 500 boom")), false);
+    assert.equal(isTransportDownError({ message: 42 }), false, "a non-string message is not transport-down");
+    assert.equal(isTransportDownError({}), false);
+  });
+});
+
+describe("resolveSupervisorPolicy (misconfiguration fails LOUD)", () => {
+  it("unknown keys refuse", () => {
+    assert.throws(
+      () => resolveSupervisorPolicy({ bogus: 1 } as never, "supervisor"),
+      /supervisor\.bogus is not a supervisor option/,
+    );
+  });
+  it("every bound refuses with its voice", () => {
+    assert.throws(() => resolveSupervisorPolicy({ initialDelayMs: 0 }, "s"), /s\.initialDelayMs must be a positive finite number/);
+    assert.throws(() => resolveSupervisorPolicy({ initialDelayMs: NaN }, "s"), /s\.initialDelayMs must be a positive finite number/);
+    assert.throws(() => resolveSupervisorPolicy({ initialDelayMs: 3e9 }, "s"), /s\.initialDelayMs must be a positive finite number/);
+    assert.throws(() => resolveSupervisorPolicy({ maxDelayMs: -1 }, "s"), /s\.maxDelayMs must be a positive finite number/);
+    assert.throws(
+      () => resolveSupervisorPolicy({ initialDelayMs: 5000, maxDelayMs: 1000 }, "s"),
+      /s\.initialDelayMs must be less than or equal to maxDelayMs/,
+    );
+    assert.throws(() => resolveSupervisorPolicy({ maxAttempts: 0 }, "s"), /s\.maxAttempts must be a positive integer/);
+    assert.throws(() => resolveSupervisorPolicy({ maxAttempts: 1.5 }, "s"), /s\.maxAttempts must be a positive integer/);
+  });
+  it("undefined rides the defaults; custom rides verbatim", () => {
+    assert.deepEqual(resolveSupervisorPolicy(undefined, "s"), {
+      enabled: true, initialDelayMs: 500, maxDelayMs: 30000, maxAttempts: 10,
+    });
+    assert.deepEqual(
+      resolveSupervisorPolicy({ enabled: false, initialDelayMs: 100, maxDelayMs: 200, maxAttempts: 2 }, "s").enabled,
+      false,
+    );
+  });
+});
+
+describe("EngineSupervisor (the state machine)", () => {
+  it("start is idempotent; a first success settles ready + up", async () => {
+    const h = harness();
+    const sup = new EngineSupervisor({ probe: () => Promise.resolve(), ...h });
+    sup.start();
+    sup.start();
+    const outcome = await sup.ready;
+    assert.deepEqual(outcome, { ok: true });
+    assert.equal(sup.current, "up");
+    assert.equal(sup.failure, undefined);
+    await sup.ensureUp();
+    await sup.dispose();
+  });
+
+  it("a first failure settles ready + down; the gate throws the RECORDED error fast", async () => {
+    const h = harness();
+    const sup = new EngineSupervisor({ probe: () => Promise.reject(down()), label: "comfy", ...h });
+    sup.start();
+    const outcome = await sup.ready;
+    assert.equal(outcome.ok, false);
+    assert.equal(sup.current, "down");
+    assert.match((sup.failure as Error).message, /ECONNREFUSED/);
+    await assert.rejects(sup.ensureUp(), /comfy is unreachable \(connect ECONNREFUSED/);
+    assert.equal(h.pending(), 1, "backoff arms");
+    await sup.dispose();
+  });
+
+  it("a non-Error failure stringifies into the fast error", async () => {
+    const h = harness();
+    const sup = new EngineSupervisor({ probe: () => Promise.reject("string-fail"), ...h });
+    sup.start();
+    await sup.ready;
+    await assert.rejects(sup.ensureUp(), /is unreachable \(string-fail\)/);
+    await sup.dispose();
+  });
+
+  it("traffic proves liveness (noteSuccess) and clears the timer", async () => {
+    const h = harness();
+    let fail = true;
+    const sup = new EngineSupervisor({ probe: () => (fail ? Promise.reject(down()) : Promise.resolve()), ...h });
+    sup.start();
+    await sup.ready;
+    assert.equal(h.pending(), 1);
+    sup.noteSuccess();
+    assert.equal(sup.current, "up");
+    assert.equal(h.pending(), 0, "the timer clears on traffic");
+    fail = false;
+    await sup.ensureUp();
+    await sup.dispose();
+  });
+
+  it("a stale probe never contradicts traffic (the hasClosed race rule)", async () => {
+    const h = harness();
+    let release!: () => void;
+    const gate = new Promise<void>((r) => { release = r; });
+    const sup = new EngineSupervisor({ probe: () => gate.then(() => { throw down("late"); }), ...h });
+    sup.start();
+    sup.noteSuccess(); // traffic proves reachability AFTER the probe started
+    release();
+    await sup.ready;
+    assert.equal(sup.current, "up", "the stale failure does not move state");
+    await sup.dispose();
+  });
+
+  it("concurrent probes join the in-flight flight (the identity cell)", async () => {
+    const h = harness();
+    let calls = 0;
+    let release!: () => void;
+    const gate = new Promise<void>((r) => { release = r; });
+    const sup = new EngineSupervisor({
+      probe: () => { calls += 1; return gate; },
+      ...h,
+    });
+    sup.start();
+    await sup.ensureUp().catch(() => {});
+    release();
+    await sup.ready;
+    assert.equal(calls, 1, "one probe body for overlapping callers");
+    await sup.dispose();
+  });
+
+  it("uptime past the ceiling resets the outage budget (the stability window)", async () => {
+    const h = harness();
+    let fail = false;
+    const downs: unknown[] = [];
+    const sup = new EngineSupervisor({
+      probe: () => (fail ? Promise.reject(down()) : Promise.resolve()),
+      onDown: (e) => { downs.push(e); },
+      policy: { maxAttempts: 2 },
+      now: h.now,
+      setTimer: h.setTimer,
+      clearTimer: h.clearTimer,
+      log: h.log,
+    });
+    sup.start();
+    await sup.ready;
+    fail = true;
+    sup.noteFailure(down("outage-1")); // attempts=1, down
+    assert.equal(sup.current, "down");
+    sup.noteSuccess();
+    sup.noteSuccess(); // second traffic proof while up (the was===up arm)
+    h.advance(60000); // past the 30s ceiling
+    sup.noteFailure(down("outage-2")); // budget resets: attempts=1 again, NOT exhausted
+    assert.equal(sup.current, "down", "a fresh outage, not exhaustion");
+    assert.equal(downs.length, 2, "onDown fires on every up->down edge");
+    await sup.dispose();
+  });
+
+  it("exhaustion: maxAttempts failures give up, onExhausted fires, re-arm probes", async () => {
+    const h = harness();
+    let exhausted = 0;
+    let ups = 0;
+    const sup = new EngineSupervisor({
+      probe: () => Promise.reject(down()),
+      policy: { maxAttempts: 1 },
+      onExhausted: (n) => { exhausted = n; },
+      onUp: () => { ups += 1; },
+      ...h,
+    });
+    sup.start();
+    await sup.ready;
+    h.fire(); // second failure > maxAttempts -> exhausted
+    await new Promise((r) => setImmediate(r));
+    assert.equal(sup.current, "exhausted");
+    assert.equal(exhausted, 1);
+    assert.equal(h.pending(), 0, "no timer past exhaustion");
+    await assert.rejects(sup.ensureUp(), /is unreachable/, "exhausted re-arms with one probe, still down");
+    await sup.dispose();
+  });
+
+  it("a re-arm while a timer pends clears the old timer first", async () => {
+    const h = harness();
+    let cleared = 0;
+    const sup = new EngineSupervisor({
+      probe: () => Promise.reject(down()),
+      setTimer: h.setTimer,
+      clearTimer: ((t: unknown): void => { cleared += 1; }) as unknown as typeof clearTimeout,
+      now: h.now,
+      log: h.log,
+    });
+    sup.noteFailure(down("outage-1"));
+    sup.noteFailure(down("outage-2"));
+    assert.equal(cleared, 1, "the second arm clears the pending timer");
+    // (the harness pending list is append-only here — the clear
+    // count above is the pin: one clear for the re-arm)
+    await sup.dispose();
+  });
+
+  it("overlapping probes on an exhausted supervisor join the flight", async () => {
+    const h = harness();
+    let calls = 0;
+    let release!: (e?: unknown) => void;
+    const gate = new Promise<void>((_r, rej) => { release = (e?: unknown): void => rej(e ?? down("late")); });
+    const sup = new EngineSupervisor({
+      probe: () => { calls += 1; return gate; },
+      policy: { maxAttempts: 1 },
+      ...h,
+    });
+    sup.noteFailure(down("first")); // down, attempts=1
+    sup.noteFailure(down("second")); // attempts=2 > 1 -> exhausted
+    assert.equal(sup.current, "exhausted");
+    const joined = sup.ensureUp(); // joins the re-arm probe (one body)
+    const joined2 = sup.ensureUp(); // joins too
+    await new Promise((r) => setImmediate(r));
+    assert.equal(calls, 1, "one re-arm body for overlapping callers");
+    release();
+    await assert.rejects(joined, /is unreachable/);
+    await assert.rejects(joined2, /is unreachable/);
+    await sup.dispose();
+  });
+
+  it("a disposed-exhausted supervisor's probe returns without firing", async () => {
+    const h = harness();
+    let calls = 0;
+    const sup = new EngineSupervisor({
+      probe: () => { calls += 1; return Promise.reject(down()); },
+      policy: { maxAttempts: 1 },
+      ...h,
+    });
+    sup.noteFailure(down("first"));
+    sup.noteFailure(down("second"));
+    assert.equal(sup.current, "exhausted");
+    await sup.dispose();
+    await assert.rejects(sup.ensureUp(), /is unreachable/, "the disposed probe returns, the gate still refuses");
+    assert.equal(calls, 0, "no probe body fires after dispose");
+  });
+
+  it("a disabled policy never re-probes (submits fail fast until reload)", async () => {
+    const h = harness();
+    const sup = new EngineSupervisor({
+      probe: () => Promise.reject(down()),
+      policy: { enabled: false },
+      ...h,
+    });
+    sup.start();
+    await sup.ready;
+    assert.equal(h.pending(), 0, "no backoff when disabled");
+    assert.ok(h.logs.some((l) => l.includes("re-probe disabled")));
+    await sup.dispose();
+  });
+
+  it("onUp fires on the down->up edge (not on unknown->up)", async () => {
+    const h = harness();
+    let ups = 0;
+    let fail = true;
+    const sup = new EngineSupervisor({
+      probe: () => (fail ? Promise.reject(down()) : Promise.resolve()),
+      onUp: () => { ups += 1; },
+      ...h,
+    });
+    sup.start();
+    await sup.ready;
+    assert.equal(ups, 0, "unknown->up does not fire onUp");
+    fail = false;
+    h.fire();
+    await new Promise((r) => setImmediate(r));
+    assert.equal(ups, 1, "down->up fires onUp");
+    await sup.dispose();
+  });
+
+  it("dispose quiesces: start-after-dispose is a no-op, notes are drops", async () => {
+    const h = harness();
+    const sup = new EngineSupervisor({ probe: () => Promise.resolve(), ...h });
+    await sup.dispose();
+    sup.start();
+    sup.noteSuccess();
+    sup.noteFailure(down());
+    assert.equal(sup.current, "unknown", "a disposed supervisor never moves");
+    assert.equal(h.pending(), 0);
+  });
+});

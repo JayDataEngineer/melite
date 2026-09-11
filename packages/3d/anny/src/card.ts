@@ -34,6 +34,10 @@ export const identity = {
 export function apply(ctx: Context): void {
   ctx.effect(() => ctx.comfyui.registerCard({
     id: 'anny',
+    // no model families — a pure-tool card (requiresModel: false
+    // skips the {model:} demand in cardGate, compose, CLI — the
+    // flowKinds row below repeats it for discovery).
+    requiresModel: false,
     // stage-row id the compose emits (retired skeleton= verbatim; TS owns the truth post-flip).
     skeleton: 'anny',
     boarded: ['anny'],

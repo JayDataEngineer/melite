@@ -351,6 +351,12 @@ export class EngineSupervisor {
     try {
       await attempt;
     } finally {
+      /* v8 ignore next -- the IIFE's clearFlight strictly precedes
+       * the settle (single-threaded: the flight cell is assigned
+       * before any continuation runs), so the flight is always
+       * cleared already here. The guard stays as the backstop for
+       * a future edit that breaks the IIFE clear — a leak would
+       * pin every later probe to a settled flight. */
       if (this.inFlight === attempt) this.inFlight = undefined;
     }
   }
@@ -416,6 +422,11 @@ export class EngineSupervisor {
   }
 
   private clearFlight(flight: Promise<void> | undefined): void {
+    /* v8 ignore next -- the flight cell is only ever READ after its
+     * synchronous assignment (single-threaded), and joiners never
+     * replace the flight, so both bail arms are unreachable: the
+     * guard always clears. The guard stays so a future edit that
+     * touches the flight protocol fails safe instead of leaking. */
     if (flight !== undefined && this.inFlight === flight) {
       this.inFlight = undefined;
     }

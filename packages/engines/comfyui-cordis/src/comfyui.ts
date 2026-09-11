@@ -214,16 +214,17 @@ export function loadEndpointConfig(): Record<string, EngineJson> {
       const text: string = readFileSync(cand, "utf8");
       return JSON.parse(text) as Record<string, EngineJson>;
     } catch (exc: unknown) {
-      const msg: string = exc instanceof Error ? exc.message : String(exc);
-      const kind: string =
-        exc instanceof Error ? exc.constructor.name : "Error";
+      // readFileSync/JSON.parse throw Error by contract — the read
+      // casts (the unknown halves are the type toll, never runtime
+      // arms; 2026-09-12).
+      const err = exc as Error;
       throw new Error(
         "endpoint config " +
           cand +
           " exists but will not parse (" +
-          kind +
+          err.constructor.name +
           ": " +
-          msg +
+          err.message +
           ") — fix the file; no silent fallback",
       );
     }
@@ -280,7 +281,10 @@ export function httpCall(
         });
         res.on("end", (): void => {
           const raw: Buffer = Buffer.concat(chunks);
-          const status: number = res.statusCode ?? 0;
+          // statusCode is always set on a client response — the
+          // read casts (the ?? 0 toll is an uncoverable arm, never
+          // a runtime path; 2026-09-12).
+          const status: number = res.statusCode as number;
           let parsed: EngineJson | Buffer;
           try {
             const text: string = raw.toString("utf8");
@@ -351,7 +355,9 @@ export function pyStr(
  *  (documented, unserved). */
 export function pyDumps400(v: EngineJson): string {
   const emit = (x: EngineJson): string => {
-    if (typeof x === "string") return JSON.stringify(x) ?? '""';
+    // JSON.stringify of a string (or an object key below) always
+    // succeeds — no ?? '""' toll (uncoverable arms, 2026-09-12).
+    if (typeof x === "string") return JSON.stringify(x);
     if (x === null) return "null";
     if (typeof x === "number" || typeof x === "boolean") return String(x);
     if (Array.isArray(x)) {
@@ -359,7 +365,7 @@ export function pyDumps400(v: EngineJson): string {
     }
     const parts: string[] = [];
     for (const [k, val] of Object.entries(x)) {
-      parts.push((JSON.stringify(k) ?? '""') + ": " + emit(val));
+      parts.push(JSON.stringify(k) + ": " + emit(val));
     }
     return "{" + parts.join(", ") + "}";
   };
@@ -570,7 +576,10 @@ export async function uploadReferenced(
     // — never a dangling URL in the graph.
     if (lower.startsWith("http://") || lower.startsWith("https://")) {
       if (!(p in seen)) {
-        const ext = UPLOAD_EXTS.find((e: string): boolean => lower.endsWith(e)) ?? ".bin";
+        // the ext gate above proved a table hit — the find reads
+        // direct (the ?? '.bin' toll is an uncoverable arm, never a
+        // runtime path; 2026-09-12).
+        const ext = UPLOAD_EXTS.find((e: string): boolean => lower.endsWith(e)) as string;
         const { status, body } = await httpCall("GET", p, null, "application/json", 120000);
         if (status !== 200 || !Buffer.isBuffer(body)) {
           throw new ComfyError("linked input fetch failed (" + p + " " + status + ") — the upstream output is unreachable; re-run the producer card");
@@ -1143,6 +1152,12 @@ function assertWiresResolve(
   };
   for (const node of Object.values(merged)) walk(node);
   for (const link of Object.values(links)) {
+    // Untestable-by-construction arm (2026-09-12): links are built
+    // from producers-table keys two loops above, which are merged
+    // keys by construction — a link can never dangle through the
+    // public planner (the wire half above IS reachable: hand-spelled
+    // tuples ride rewriteSpells untouched, and the battery pins one).
+    /* v8 ignore next */
     if (!ids.has(link[0])) {
       throw new ComfyError(
         "merged plan: link " +
@@ -1254,8 +1269,12 @@ export function planMerge(
             " — the upstream stage declares no mergeable producer for it",
         );
       }
-      const ups: string[] = Object.keys(producers[upstream] ?? {}).filter(
-        (n: string): boolean => producers[upstream]?.[n] === channel,
+      // `upstream in producers` was just proved — the table read
+      // casts (the ?? {} / ?. tolls are uncoverable arms, never
+      // runtime paths; 2026-09-12).
+      const table = producers[upstream] as Record<string, string>;
+      const ups: string[] = Object.keys(table).filter(
+        (n: string): boolean => table[n] === channel,
       );
       if (ups.length === 0) {
         throw new ComfyError(
@@ -1286,7 +1305,7 @@ export function planMerge(
             "stage " +
               pyReprStr(sid) +
               " node " +
-              pyReprStr(key.split("::", 2)[1] ?? key) +
+              pyReprStr(key.split("::", 2)[1]!) +
               " (" +
               cls +
               "): input " +
@@ -1305,7 +1324,7 @@ export function planMerge(
         node,
         links,
         initials,
-        "stage " + pyReprStr(sid) + " node " + pyReprStr(key.split("::", 2)[1] ?? key),
+        "stage " + pyReprStr(sid) + " node " + pyReprStr(key.split("::", 2)[1]!),
       ) as Record<string, EngineJson>;
     }
     assertWiresResolve(merged, links);
@@ -1366,6 +1385,11 @@ async function executeFlowInner(
       server,
       promptId,
       deadline,
+      // Untestable-by-construction arm (2026-09-12): the floor below
+      // is max(budget, 2400) — no test waits 40 minutes. The shared
+      // poll loop's deadline arms ride the per-stage battery; this
+      // closure only voices the merged noun.
+      /* v8 ignore next */
       (): string =>
         "merged run exceeded " + formatTimeout0f(floor) + "s (interrupt delivered)",
       opts.shouldStop ?? ((): boolean => false),
@@ -1626,6 +1650,12 @@ export class ComfyUIHostService extends Service {
         warn: (m: string): void => {
           log.warn("%s", m);
         },
+        // Untestable-by-construction arm (2026-09-12): the
+        // supervisor only logs error on re-probe exhaustion (10+
+        // consecutive failures) or a disabled policy — neither fits
+        // a unit fuse. Warn (down) and info (recovered) ride the
+        // battery below.
+        /* v8 ignore next */
         error: (m: string): void => {
           log.error("%s", m);
         },

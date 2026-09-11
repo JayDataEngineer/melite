@@ -292,6 +292,9 @@ export function resolveArtifactRows(
     );
   }
   const sourceUrl: string = cell.artifact.source_url;
+  /* v8 ignore next -- split() always yields >= 1 part, so pop() is
+   * never undefined here; the ?? is the type-system's toll
+   * (noUncheckedIndexedAccess), not a runtime arm. */
   const name: string = sourceUrl.split("/").pop() ?? "";
   const destSub: string = stripSlashes(cell.artifact.dest_sub);
   return [

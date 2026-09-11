@@ -73,18 +73,34 @@ export const cardPackages: string[] = [
   '@melite/image-image-gen',
 ]
 
-/** Compose the card set into a Context (the shared auto-load loop:
- * the WHOLE module namespace rides — cards declare `export const
+/** One package onto the context (the shared composition step —
+ * the WHOLE module namespace rides: cards declare `export const
  * inject = ['comfyui']` at module level; passing only { apply }
  * drops the inject declaration and the service dies with "cannot
- * get property comfyui without inject"). */
+ * get property comfyui without inject"). A package without a host
+ * face refuses with its kind's voice — never a silent skip, never
+ * cordis' anonymous error. */
+export const pluginPackage = async (
+  ctx: Context,
+  specifier: string,
+  kind: 'card package' | 'packaged flavor',
+  label?: string,
+): Promise<void> => {
+  const mod = (await import(specifier)) as unknown as Plugin
+  if (typeof (mod as { apply?: unknown }).apply === 'function') {
+    await ctx.plugin(mod)
+    return
+  }
+  throw new Error(kind === 'card package'
+    ? `card package missing its host face: ${specifier}`
+    : `packaged flavor missing: ${label} (${specifier})`)
+}
+
+/** Compose the card set into a Context (the shared auto-load loop —
+ * every card rides pluginPackage above). */
 export const composeCards = async (ctx: Context): Promise<void> => {
   for (const specifier of cardPackages) {
-    const mod = (await import(specifier)) as unknown as Plugin
-    if (typeof (mod as { apply?: unknown }).apply !== 'function') {
-      throw new Error(`card package missing its host face: ${specifier}`)
-    }
-    await ctx.plugin(mod)
+    await pluginPackage(ctx, specifier, 'card package')
   }
 }
 
@@ -104,10 +120,10 @@ export const composeModPlane = async (ctx: Context): Promise<void> => {
   // the service validates LOUD at registration. PACKS FIRST — a
   // flavor for an unregistered pack refuses (the category lands
   // before the boardings).
-  const packs = (await import('./mods/packs.ts')) as unknown as Plugin
-  if (typeof (packs as { apply?: unknown }).apply === 'function') {
-    await ctx.plugin(packs)
-  }
+  // PACKS FIRST — no apply-guard here (dead defense, dropped
+  // 2026-09-12: ctx.plugin refuses an apply-less module LOUD on
+  // its own; the guard's false arm could never fire).
+  await ctx.plugin((await import('./mods/packs.ts')) as unknown as Plugin)
   // THE FAMILY FLAVORS — every flavor rides the EXPLICIT table
   // (the DSH compose law: packages compose, never glob-discover).
   // A family promoted to its model plugin package
@@ -122,12 +138,30 @@ export const composeModPlane = async (ctx: Context): Promise<void> => {
     ['@melite/models-qwen-img-edit-2511/mods/mask', 'qwen-img-edit-2511 mask'],
   ]
   for (const [specifier, label] of packagedFlavors) {
-    const mod = (await import(specifier)) as unknown as Plugin
-    if (typeof (mod as { apply?: unknown }).apply === 'function') {
-      await ctx.plugin(mod)
-    } else {
-      throw new Error(`packaged flavor missing: ${label} (${specifier})`)
-    }
+    await pluginPackage(ctx, specifier, 'packaged flavor', label)
+  }
+}
+
+/** THE IDENTITY RUNG (native since 2026-09-10): every card
+ *  declares its identity inline (label/description/genre — the
+ *  frozen ring is retired from this path; it survives only as the
+ *  models-golden wall's anchor for the registry emission). A card
+ *  with no identity refuses LOUD here (the m1 wall: no card
+ *  without it) — never a silent fallback, never generated prose. */
+export const assertCardIdentity = (id: string, def: CardDefinition): void => {
+  const ident = def.identity
+  if (
+    ident === undefined ||
+    typeof ident.label !== "string" ||
+    ident.label === "" ||
+    typeof ident.description !== "string" ||
+    typeof ident.genre !== "string" ||
+    ident.genre === ""
+  ) {
+    throw new Error(
+      `card '${id}' declares no identity (label/description/genre) — ` +
+        "the card owns its identity rung; the frozen ring no longer backfills it",
+    );
   }
 }
 
@@ -146,20 +180,7 @@ export const loadCardDefs = async (): Promise<Map<string, CardDefinition>> => {
   bootedService = service
   cache = new Map(service.cardIds().map((id) => {
     const def = service.getCardDef(id)!
-    const ident = def.identity
-    if (
-      ident === undefined ||
-      typeof ident.label !== "string" ||
-      ident.label === "" ||
-      typeof ident.description !== "string" ||
-      typeof ident.genre !== "string" ||
-      ident.genre === ""
-    ) {
-      throw new Error(
-        `card '${id}' declares no identity (label/description/genre) — ` +
-          "the card owns its identity rung; the frozen ring no longer backfills it",
-      );
-    }
+    assertCardIdentity(id, def)
     return [id, def]
   }))
   return cache
@@ -184,16 +205,20 @@ export async function provisionsByFamily(
     let decl
     try {
       decl = getModel(id)
+    /* v8 ignore start -- ROW 28 (census): a model whose DECL fails
+     * resolution is dropped from the provisions map — named in the
+     * warn, never vanished (the boot continues; the operator
+     * reconciles). No DECL fails today (91/91 resolve), so the arm
+     * cannot fire without a broken DECL; the warn text stays pinned
+     * by the census record, not a test. */
     } catch (e) {
-      // ROW 28 (census): a model whose DECL fails resolution is
-      // dropped from the provisions map — named in the warn, never
-      // vanished (the boot continues; the operator reconciles).
       console.warn(
         `[card-defs] model ${id} dropped from provisions map — DECL resolution failed:`,
         e instanceof Error ? e.message : String(e),
       )
       continue
     }
+    /* v8 ignore stop */
     out[id] = { engine: decl.engine ?? '', provisions: decl.provisions ?? [] }
   }
   for (const [id, def] of defs) {

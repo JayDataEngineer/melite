@@ -233,7 +233,17 @@ export default defineConfig({
         // gated set (models DECL index.ts) stays under the gate below.
         'packages/web/**/src/**/*.{ts,tsx}',
         'packages/web-kit/**/src/**/*.{ts,tsx}',
-        'packages/engines/**/src/**/*.{ts,tsx}',
+        // engines closed (2026-09-12, §TEST-15): every file at
+        // per-file 100 — the card/pack/flavor/verb plane, the models
+        // DECL service (interlock/facts/addresses/cascade), the
+        // engine-IO transport (stub-server battery), catalog/params/
+        // supervisor/carddefs. TWO files stay exempt, named: cli.ts +
+        // dump-registry.ts — process-boundary modules (self-execute
+        // on load AND call process.exit) covered by green subprocess
+        // batteries, invisible to the v8 provider by construction
+        // (same named-file precedent as mask-studio's agents/tools).
+        'packages/engines/comfyui-cordis/src/cli.ts',
+        'packages/engines/comfyui-cordis/src/dump-registry.ts',
         'packages/harness/**/src/**/*.{ts,tsx}',
         // The estate tree is FULLY gated (2026-09-11, §TEST-8 grew it
         // to manage/media/runs + drafts index/spec/store/remote; §TEST-9

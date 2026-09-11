@@ -15,7 +15,7 @@ import type { CellRow, ModelDecl, VariantRow } from "./families/contract.ts";
 import { bootModels, modelsService, resolveCascade } from "./service.ts";
 
 export * from "./families/contract.ts";
-export { bootModels, modelsService, resolveCascade, MODELS_SERVICE, ModelsService, modelsProvider, needModels } from "./service.ts";
+export { assertAddressesServe, assertFactsCallers, assertModInterlock, bootModels, modelsService, resolveCascade, MODELS_SERVICE, ModelsService, modelsProvider, needModels } from "./service.ts";
 
 export const cascadeInit: Promise<void> = bootModels().then((): void => undefined);
 await cascadeInit;

@@ -4,6 +4,7 @@
 // signal (no partial output, ever).
 import { Context } from '@deepseek-ai/cordis'
 import { ComfyUIService } from './service.ts'
+import { composeCards, composeModPlane } from './cardDefs.ts'
 import { loadFacts } from '@melite/comfyui-card-kit/facts'
 
 function die(msg: string): never {
@@ -51,6 +52,10 @@ async function main(): Promise<void> {
   // the host plugin PROVIDES comfyui (no inject — injecting the
   // service it provides would self-wait); cards inject it.
   await ctx.plugin({ apply(c: Context) { new ComfyUIService(c) } })
+  // the card sweep (loadCardDefs' own boot, mirrored): every card
+  // is a package — the registry fills before the model probe below.
+  await composeCards(ctx)
+  await composeModPlane(ctx)
 
   // cards compose through cardDefs' package table (the card sweep,
   // 2026-09-09 — every card is a package; no dir walk anywhere).

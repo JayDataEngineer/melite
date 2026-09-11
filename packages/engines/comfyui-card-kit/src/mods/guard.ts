@@ -66,7 +66,8 @@ export function fireLoras(model: ModBoarding, p: Record<string, unknown>): LoraP
 export function fireKnob(model: ModBoarding, pack: string, key: string, raw: unknown): string {
   const v = (raw ?? "") as string;
   if (typeof v === "string" && v.trim() === "") return "";
-  if (v === "") return "";
+  // (a dead second `v === ""` arm dropped 2026-09-12 — only strings
+  // can equal "", and the string case is the line above)
   assertModUse(model, pack);
   return v as string;
 }

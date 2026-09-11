@@ -5837,7 +5837,7 @@
         "name": "resolution",
         "type": "select",
         "label": "Resolution",
-        "default": 1024,
+        "default": "1024",
         "options": [
           "512",
           "1024",
@@ -6118,7 +6118,7 @@
         "name": "atlas_size",
         "type": "select",
         "label": "Atlas size",
-        "default": 4096,
+        "default": "4096",
         "options": [
           "2048",
           "4096"
@@ -6140,7 +6140,7 @@
         "name": "ao_size",
         "type": "select",
         "label": "AO bake size",
-        "default": 1024,
+        "default": "1024",
         "options": [
           "512",
           "1024"
@@ -6162,7 +6162,7 @@
         "name": "normal_size",
         "type": "select",
         "label": "Normal bake size",
-        "default": 2048,
+        "default": "2048",
         "options": [
           "1024",
           "2048"
@@ -6689,7 +6689,7 @@
             "label": "Resolution",
             "order": 0,
             "width": 1,
-            "default": 1024,
+            "default": "1024",
             "tooltip": "Upsample target (official pins 1536). All tiers run the full official chain — upsample + both texture passes + remesh tail.",
             "options": [
               "512",
@@ -6890,7 +6890,7 @@
             "label": "Atlas size",
             "order": 0,
             "width": 1,
-            "default": 4096,
+            "default": "4096",
             "tooltip": "Unwrap + baked color atlas resolution. 4096 is the official calibration (VRAM-heavy); 2048 is the lighter fallback.",
             "options": [
               "2048",
@@ -6903,7 +6903,7 @@
             "label": "AO bake size",
             "order": 1,
             "width": 1,
-            "default": 1024,
+            "default": "1024",
             "tooltip": "Ambient-occlusion bake resolution. 1024 is the official calibration.",
             "options": [
               "512",
@@ -6916,7 +6916,7 @@
             "label": "Normal bake size",
             "order": 2,
             "width": 1,
-            "default": 2048,
+            "default": "2048",
             "tooltip": "Normal-map bake resolution. 2048 is the official calibration.",
             "options": [
               "1024",
@@ -10241,7 +10241,7 @@
         "name": "resolution",
         "type": "select",
         "label": "Resolution",
-        "default": 1024,
+        "default": "1024",
         "options": [
           "512",
           "1024",
@@ -10366,7 +10366,7 @@
             "label": "Resolution",
             "order": 0,
             "width": 1,
-            "default": 1024,
+            "default": "1024",
             "tooltip": "Upsample target (official pins 1536). All tiers run the full official chain — upsample + both texture passes + remesh tail.",
             "options": [
               "512",
@@ -10463,7 +10463,7 @@
         "name": "resolution",
         "type": "select",
         "label": "Resolution",
-        "default": 1024,
+        "default": "1024",
         "options": [
           "512",
           "1024",
@@ -10718,7 +10718,7 @@
         "name": "atlas_size",
         "type": "select",
         "label": "Atlas size",
-        "default": 4096,
+        "default": "4096",
         "options": [
           "2048",
           "4096"
@@ -10740,7 +10740,7 @@
         "name": "ao_size",
         "type": "select",
         "label": "AO bake size",
-        "default": 1024,
+        "default": "1024",
         "options": [
           "512",
           "1024"
@@ -10762,7 +10762,7 @@
         "name": "normal_size",
         "type": "select",
         "label": "Normal bake size",
-        "default": 2048,
+        "default": "2048",
         "options": [
           "1024",
           "2048"
@@ -11289,7 +11289,7 @@
             "label": "Resolution",
             "order": 0,
             "width": 1,
-            "default": 1024,
+            "default": "1024",
             "tooltip": "Upsample target (official pins 1536). All tiers run the full official chain — upsample + both texture passes + remesh tail.",
             "options": [
               "512",
@@ -11473,7 +11473,7 @@
             "label": "Atlas size",
             "order": 0,
             "width": 1,
-            "default": 4096,
+            "default": "4096",
             "tooltip": "Unwrap + baked color atlas resolution. 4096 is the official calibration (VRAM-heavy); 2048 is the lighter fallback.",
             "options": [
               "2048",
@@ -11486,7 +11486,7 @@
             "label": "AO bake size",
             "order": 1,
             "width": 1,
-            "default": 1024,
+            "default": "1024",
             "tooltip": "Ambient-occlusion bake resolution. 1024 is the official calibration.",
             "options": [
               "512",
@@ -11499,7 +11499,7 @@
             "label": "Normal bake size",
             "order": 2,
             "width": 1,
-            "default": 2048,
+            "default": "2048",
             "tooltip": "Normal-map bake resolution. 2048 is the official calibration.",
             "options": [
               "1024",

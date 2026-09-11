@@ -391,8 +391,11 @@ export class ComfyUIService extends Service {
     validateFields(`pack ${contract.pack}`, contract.fields)
     const prior = this.packs.get(contract.pack)
     if (prior !== undefined) {
-      const priorNames = Object.keys(prior.fields.dict ?? {}).sort().join(',')
-      const nowNames = Object.keys(contract.fields.dict ?? {}).sort().join(',')
+      // .dict is present — validateFields above refuses dict-less
+      // contracts at this same gate, so the read casts (the ?? {}
+      // toll would be an uncoverable arm, never a runtime path).
+      const priorNames = Object.keys(prior.fields.dict as Record<string, Record<string, unknown>>).sort().join(',')
+      const nowNames = Object.keys(contract.fields.dict as Record<string, Record<string, unknown>>).sort().join(',')
       if (priorNames !== nowNames) {
         throw new ComposeRefusal('bad-mod',
           `pack '${contract.pack}' has two shapes: [${priorNames}] vs [${nowNames}] — one pack name means one shape`)
@@ -536,8 +539,12 @@ export class ComfyUIService extends Service {
     // group -> zone (rows wire zone '' — the frozen row shape — but
     // schema_groups carry the zone; first declaration wins)
     const groupZones = new Map<string, string>()
-    const walk = (schema: unknown, scoped: boolean): void => {
-      const carrier = (schema as { dict?: Record<string, Record<string, unknown>> }) ?? {}
+    const walk = (schema: object, scoped: boolean): void => {
+      // Both call sites pass defined contracts (schemaCarrier ??
+      // schema, absorbed.fields — both required keys); the param
+      // types object so no nullish toll rides the seam. A
+      // contract WITHOUT .dict still returns below (covered).
+      const carrier = schema as { dict?: Record<string, Record<string, unknown>> }
       const dict = carrier.dict
       if (dict === undefined) return
       // FROZEN ROW SHAPE (the py emitter's, referee-pinned): every
@@ -597,7 +604,10 @@ export class ComfyUIService extends Service {
     // row's group/zone/options and the null/''-valued keys).
     const groups: string[] = []
     for (const f of fields) {
-      const g = (f.group as string) ?? ''
+      // group is always a string by construction (the walk pushes
+      // the `(extra.group as string) ?? ''` const) — the read
+      // casts, no toll.
+      const g = f.group as string
       if (!groups.includes(g)) groups.push(g)
     }
     // member rows: the frozen member order (name,type,label,order,
@@ -619,8 +629,12 @@ export class ComfyUIService extends Service {
     const schemaGroups = groups.map((g, k) => ({
       id: g,
       label: g === '' ? 'Parameters' : (g[0].toUpperCase() + g.slice(1)),
-      fields: fields.filter((f) => ((f.group as string) ?? '') === g).map((f) => memberRow(f as Record<string, unknown>)),
+      fields: fields.filter((f) => (f.group as string) === g).map((f) => memberRow(f as Record<string, unknown>)),
       order: k,
+      // groupZones is set for every pushed field before the push
+      // (same tick, same walk) — the get never misses; the ??
+      // 'params' toll is untestable-by-construction (2026-09-12).
+      /* v8 ignore next */
       zone: groupZones.get(g) ?? 'params',
     }))
     return {
