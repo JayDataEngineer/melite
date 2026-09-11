@@ -9,9 +9,11 @@
  *   snapshots   — list/save/restore dispatch with the right bodies
  *   ownership   — an explicit dispatch DOES land in the result pane
  *
- * fetch is stubbed per action — no gateway, no workspace. The live
- * door is pinned by tests/routes/control/test_manage_route.py; the
- * real tab in the real shell by e2e/ray-comfy-manager.spec.ts.
+ * fetch is stubbed per action — the stub answers the CLIENT-REQUEST
+ * wire frame (the manage remote's door, /api/manage/act) with the
+ * canned server-response envelope. The server half is pinned by the
+ * manage-remote wall; the real tab in the real shell by
+ * e2e/comfy-manager.spec.ts.
  */
 import { cleanup, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
@@ -54,25 +56,40 @@ const PACKS = [
 
 const SNAPS = ['2026-09-06_10-17-22_snapshot.json']
 
-/** action → canned reply; records every dispatched body. The stub is
- *  the ESTATE LANE REMOTE (R4): the panel rides prop threading, never
- *  global fetch — the fake answers postManage's lane contract. */
-function stubLaneRemote(routes: Record<string, Canned>): {
+/** action → canned envelope; records every dispatched doc. The stub
+ *  IS the wire: fetch is replaced whole, the client-request frame is
+ *  parsed, args.doc rides out to `calls`, and the canned envelope
+ *  answers inside the server-response frame postManage expects. */
+function stubManageWire(routes: Record<string, Canned>): {
   calls: Array<Record<string, unknown>>
-  remote: { lane: (_m: 'POST', _p: string, body: Record<string, unknown>) => Promise<unknown> }
 } {
   const calls: Array<Record<string, unknown>> = []
-  const remote = {
-    lane: async (_m: 'POST', _p: string, body: Record<string, unknown>): Promise<unknown> => {
-      calls.push(body)
-      return routes[body.action as string] ?? {
-        action: body.action,
-        ok: false,
-        detail: 'unstubbed action ' + String(body.action),
-      }
-    },
+  const fetchImpl = async (_input: unknown, init?: RequestInit): Promise<Response> => {
+    const frame = JSON.parse(String(init?.body)) as {
+      type?: string
+      rpcId?: string
+      method?: string
+      payload?: { args?: { doc?: Record<string, unknown> } }
+    }
+    if (frame.type !== 'client-request' || frame.method !== 'manage/act') {
+      throw new Error('stub: not a manage wire frame')
+    }
+    const doc = frame.payload?.args?.doc ?? {}
+    calls.push(doc)
+    const envelope = routes[doc.action as string] ?? {
+      action: doc.action,
+      ok: false,
+      detail: 'unstubbed action ' + String(doc.action),
+    }
+    const body = JSON.stringify({
+      type: 'server-response',
+      rpcId: frame.rpcId,
+      result: { ok: true, value: envelope },
+    })
+    return new Response(body, { status: 200, headers: { 'content-type': 'application/json' } })
   }
-  return { calls, remote }
+  vi.stubGlobal('fetch', vi.fn(fetchImpl))
+  return { calls }
 }
 
 function actionsOf(calls: Array<Record<string, unknown>>): string[] {
@@ -92,8 +109,8 @@ afterEach(() => {
 })
 
 test('mount shows the status section with the run-name chip', async () => {
-  const { calls, remote } = stubLaneRemote({ status: STATUS })
-  render(<ComfyManagerPanel remote={remote} />)
+  const { calls } = stubManageWire({ status: STATUS })
+  render(<ComfyManagerPanel />)
 
   // the endpoint line proves the status reply rendered…
   await screen.findByText('http://127.0.0.1:18466')
@@ -103,12 +120,13 @@ test('mount shows the status section with the run-name chip', async () => {
     selector: 'span',
   })
   expect(chip.textContent).toBe('active runs: 2 (run-a, run-b)')
+  expect(calls.length).toBeGreaterThan(0)
 })
 
 test('status refresh never lands in the result pane', async () => {
-  const { calls, remote } = stubLaneRemote({ status: STATUS })
+  const { calls } = stubManageWire({ status: STATUS })
   const user = userEvent.setup()
-  render(<ComfyManagerPanel remote={remote} />)
+  render(<ComfyManagerPanel />)
   await screen.findByText('http://127.0.0.1:18466')
 
   // one silent status on mount, no result pane anywhere.
@@ -126,7 +144,7 @@ test('status refresh never lands in the result pane', async () => {
 })
 
 test('installed packs render as rows and filter client-side', async () => {
-  const { calls, remote } = stubLaneRemote({
+  const { calls } = stubManageWire({
     status: STATUS,
     list_extensions: {
       action: 'list_extensions',
@@ -136,7 +154,7 @@ test('installed packs render as rows and filter client-side', async () => {
     },
   })
   const user = userEvent.setup()
-  render(<ComfyManagerPanel remote={remote} />)
+  render(<ComfyManagerPanel />)
   await screen.findByText('http://127.0.0.1:18466')
 
   await user.click(screen.getByRole('button', { name: 'Installed packs' }))
@@ -162,7 +180,7 @@ test('installed packs render as rows and filter client-side', async () => {
 })
 
 test('snapshot list/save/restore dispatch with the right bodies', async () => {
-  const { calls, remote } = stubLaneRemote({
+  const { calls } = stubManageWire({
     status: STATUS,
     snapshot_list: {
       action: 'snapshot_list',
@@ -184,7 +202,7 @@ test('snapshot list/save/restore dispatch with the right bodies', async () => {
     },
   })
   const user = userEvent.setup()
-  render(<ComfyManagerPanel remote={remote} />)
+  render(<ComfyManagerPanel />)
   await screen.findByText('http://127.0.0.1:18466')
 
   // list → rows with a per-row Restore.

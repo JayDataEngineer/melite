@@ -8,18 +8,25 @@
 // only executes inside the hosted runtime's module system (row 4's
 // dual-boot boundary). A standalone page cannot import it as ESM. The
 // wire frame protocol itself is small, documented (api-gateway.md),
-// and pinned from BOTH sides in this repo: the server half by
-// tests/walls/ts/suites/wire-transport.test.ts, the client half by
-// packages/web/editor/src/__tests__/wire-status.test.ts. This is the
-// ledger's clause-(b) shape (DSH principle, handrolled seam, drift
-// double-pinned). The hosted boot can later swap in the kernel's own
-// caller at this seam without touching consumers.
+// and pinned from BOTH sides in this repo: the server half by the
+// runs-remote wall (tests/walls/ts/suites/runs-remote.test.ts — the
+// adapter whose parameter name IS the wire field), the client half
+// by packages/web/editor/src/__tests__/wire-status.test.ts. This is
+// the ledger's clause-(b) shape (DSH principle, handrolled seam,
+// drift double-pinned). The hosted boot can later swap in the
+// kernel's own caller at this seam without touching consumers.
 //
 // FALLBACK LAW: the transport is an ADDITION, never a hard dep. A
-// gateway predating the wire (or a dev mock without /api) answers
-// 404/refused — probeRunStatus resolves null and every consumer keeps
-// its fetch-era behavior. The Connection path only WINS when the
-// channel actually answers.
+// host without the runs remote (or a dev mock without /api) answers
+// 404/refused — probeRunStatus resolves null and the consumer says
+// nothing, changes nothing. The wire only WINS when the channel
+// actually answers.
+//
+// WIRE FIELD TRUTH (2026-09-10 fix): the wire argument is the
+// adapter's PARAMETER NAME, verbatim — runs/status names it `runId`.
+// This probe once sent `run_id` (fetch-era snake_case muscle memory)
+// and NEVER won: every probe fell back to null, silently. The wall's
+// parameter-name pin is the contract; the arg key below matches it.
 
 /** Wire probe result: the wire row shape, or null when the channel is
  * absent (consumers fall back to fetch-era semantics). */
@@ -95,7 +102,7 @@ export async function probeRunStatus(
         type: "client-request",
         rpcId,
         method: "runs/status",
-        payload: { args: { run_id: runId } },
+        payload: { args: { runId } },
       }),
       ...(signal === undefined ? {} : { signal }),
     });

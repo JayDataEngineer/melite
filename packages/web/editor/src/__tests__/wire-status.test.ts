@@ -1,6 +1,6 @@
 // WireStatus.test.ts — THE WIRE ADOPTION P3 client seam gates: the
 // browser caller's envelope round-trip against the wire contract
-// (wall-pinned server-side by tests/walls/ts/suites/wire-transport
+// (wall-pinned server-side by tests/walls/ts/suites/runs-remote
 // .test.ts), plus the fallback law (transport absent → null, never a
 // throw). Runs under happy-dom (the DSH client caller reads
 // window.location at call time for the same-origin base).
@@ -22,10 +22,10 @@ describe("probeRunStatus (Connection transport seam)", () => {
     const fetchMock = vi.fn(async (input: URL | RequestInfo, init?: RequestInit) => {
       expect(String(input)).toContain("/api/runs/status");
       expect(init?.method).toBe("POST");
-      const frame = JSON.parse(String(init?.body)) as { type: string; method: string; payload: { args: { run_id: string } } };
+      const frame = JSON.parse(String(init?.body)) as { type: string; method: string; payload: { args: { runId: string } } };
       expect(frame.type).toBe("client-request");
       expect(frame.method).toBe("runs/status");
-      expect(frame.payload.args.run_id).toBe("run-1");
+      expect(frame.payload.args.runId).toBe("run-1");
       return okResponse({
         type: "server-response",
         rpcId: frame.rpcId,

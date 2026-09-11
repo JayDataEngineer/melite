@@ -101,7 +101,7 @@ async function hit(ctx: Ctx, url: string, method = "GET"): Promise<Saw> {
   return saw;
 }
 
-// ── fixture dist (RAY_EDITOR_DIST is read at apply time) ──────────
+// ── fixture dist (MELITE_EDITOR_DIST is read at apply time) ──────────
 let dist = "";
 let savedEnv = "";
 
@@ -110,13 +110,13 @@ before(() => {
   writeFileSync(join(dist, "index.html"), "<html><body>editor</body></html>");
   mkdirSync(join(dist, "assets"));
   writeFileSync(join(dist, "assets", "main-abc.js"), "console.log(1)");
-  savedEnv = process.env["RAY_EDITOR_DIST"] ?? "";
-  process.env["RAY_EDITOR_DIST"] = dist;
+  savedEnv = process.env["MELITE_EDITOR_DIST"] ?? "";
+  process.env["MELITE_EDITOR_DIST"] = dist;
 });
 
 after(() => {
-  if (savedEnv === "") delete process.env["RAY_EDITOR_DIST"];
-  else process.env["RAY_EDITOR_DIST"] = savedEnv;
+  if (savedEnv === "") delete process.env["MELITE_EDITOR_DIST"];
+  else process.env["MELITE_EDITOR_DIST"] = savedEnv;
   rmSync(dist, { recursive: true, force: true });
 });
 

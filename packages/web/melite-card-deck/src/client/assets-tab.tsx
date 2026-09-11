@@ -1,14 +1,16 @@
 /**
  * assets-tab — the ONE DSH right-sidebar tab that is NOT cards:
  *
- *   Ray ComfyUI — the ComfyUI MANAGER, NATIVE (2026-09-06): a direct GUI
- *     on the estate's management plane. Every button is ONE action of
- *     the python/manage.py SSOT (comfy-mcp + comfyui-manager + comfy-cli
- *     behind POST /v1/manage — PROVISIONING LAW's "management is python
- *     packages"), reached same-origin through THIS plugin's own /v1
- *     gateway proxy. The vocabulary mirrors the comfy_manage agent tool
- *     1:1 — enforced BOTH directions by the parity wall
- *     (tests/walls/suites/test_manage_parity.py). Progressive
+ *   ComfyUI Manager — a direct GUI on the estate's management plane.
+ *     Every button is ONE action of the manage-plane SSOT
+ *     (@melite/estate-queue's managePlane.ts — comfy-mcp +
+ *     comfyui-manager + comfy-cli), reached over the `manage` Typert
+ *     remote: a same-origin POST /api/manage/act carrying the
+ *     client-request wire frame (the documented frame pair,
+ *     api-gateway.md — the sanctioned caller shape for plugins outside
+ *     the DSH web kernel; the host mounts the remote in the estate
+ *     composition). The vocabulary mirrors the comfy_manage agent tool
+ *     1:1 — enforced BOTH directions by the parity wall. Progressive
  *     disclosure: status is the cheap index and refreshes SILENTLY
  *     after every mutating action (never through the result pane —
  *     that pane belongs to the user's last explicit dispatch);
@@ -18,24 +20,21 @@
  *     while any run reads running/queued (the guard lives in the SSOT,
  *     never in this panel).
  *
- * WHY NATIVE (operator complaint 2026-09-06: "it is a card view in the
- * right panel — it was supposed to be a comfyui manager"): the
- * 2026-08-25 tab iframed /editor/?rayAssets=comfy to mount the
- * pre-plugin editor's ComfyManagerRailPanel. That surface died with the
- * editor consolidation — the editor's embed params are
- * ?meliteAssets=media|cards, there is no comfy section — so the iframe
- * fell through to the editor's DEFAULT card studio. The manager now
- * renders here, no iframe, no editor dependency.
+ * Transport history (kill ledger): the tab's calls died with the
+ * gateway app (this plugin's /v1/manage proxy, then a ctx.remote.lane
+ * shape that never mounted client-side — "remote.lane is not a
+ * function", 2026-09-10). The wire frame below is the DSH-native
+ * replacement: no proxy, no gateway vocabulary, one fetch.
  *
- * Siblings' fate (NO LEGACY): Ray Media lives in @infer-media/dsh-media
- * since 20eb2c58 (own plugin, own host routes); Ray Flows retired with
- * the yaml spec library (35f2f830).
+ * Siblings' fate (NO LEGACY): Ray Media deleted with the media plugin
+ * (5cbb5bcc — DSH's own media system owns that surface); Ray Flows
+ * retired with the yaml spec library (35f2f830).
  */
 import * as React from 'react'
 import { useCallback, useEffect, useState } from 'react'
 import css from './assets.module.css'
 
-/** One /v1/manage reply — the SSOT envelope {action, ok, detail, data}. */
+/** One manage action's reply — the SSOT envelope {action, ok, detail, data}. */
 interface ManageReply {
   action?: string
   ok?: boolean
@@ -43,7 +42,7 @@ interface ManageReply {
   data?: unknown
 }
 
-/** The status action's data member — python/manage.py `_h_status`. */
+/** The status action's data member — managePlane.ts hStatus. */
 interface StatusView {
   endpoint?: {
     reachable?: boolean
@@ -58,21 +57,80 @@ interface StatusView {
   routing?: Record<string, unknown>
 }
 
-/** The estate lane face the deck client rides (R4): the typert
- * gateway's lane remote — the SAME door listener the /v1/manage
- * route wrapped, called through DSH's own transport. Stated
- * structurally; the client entry threads ctx.remote here. */
-export interface EstateLaneRemote {
-  lane(method: 'GET' | 'POST' | 'PATCH', path: string, body: unknown, signal?: AbortSignal): Promise<unknown>
+/** Correlation id for one client-request frame (the reference caller
+ * uses a random uuid per call; crypto.randomUUID is the browser
+ * standard). */
+function nextRpcId(): string {
+  const cryptoApi: Crypto | undefined = globalThis.crypto
+  if (cryptoApi?.randomUUID !== undefined) return cryptoApi.randomUUID()
+  return 'rpc-' + Math.random().toString(36).slice(2) + '-' + Date.now().toString(36)
 }
 
-/** POST one manage action over the estate lane. A refusal is a
- * DOMAIN outcome — the ManageReply carries it, never a throw past
- * the panel (the door contract, unchanged). */
-async function postManage(remote: EstateLaneRemote, action: string, payload: Record<string, unknown>): Promise<ManageReply> {
+/** POST one manage action over the `manage` remote's wire door —
+ * same-origin /api/manage/act carrying the documented client-request
+ * frame (api-gateway.md; the manage-remote wall pins the server
+ * half). The single argument is `doc` (the adapter's parameter name
+ * — the wire field rides it verbatim).
+ *
+ * A refusal is a DOMAIN outcome: the envelope carries it (ok:false +
+ * detail), and a manage/refused RemoteError maps back onto the same
+ * shape (its details ride the refused envelope's action/status/data).
+ * A channel surprise (no /api route, malformed frame) is an honest
+ * REFUSAL reply — never a silent success, never a throw past the
+ * panel (an AbortError rethrows — cancellation is the caller's). */
+export async function postManage(action: string, payload: Record<string, unknown>, signal?: AbortSignal): Promise<ManageReply> {
+  const rpcId = nextRpcId()
   try {
-    return await remote.lane('POST', '/v1/manage', { action, ...payload }) as ManageReply
+    const response = await fetch('/api/manage/act', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({
+        type: 'client-request',
+        rpcId,
+        method: 'manage/act',
+        payload: { args: { doc: { action, ...payload } } },
+      }),
+      ...(signal === undefined ? {} : { signal }),
+    })
+    if (!response.ok) {
+      return { action, ok: false, detail: 'manage wire: HTTP ' + String(response.status) }
+    }
+    const body: unknown = await response.json()
+    if (typeof body !== 'object' || body === null || Reflect.get(body, 'type') !== 'server-response' || Reflect.get(body, 'rpcId') !== rpcId) {
+      return { action, ok: false, detail: 'manage wire: malformed response frame' }
+    }
+    const result: unknown = Reflect.get(body, 'result')
+    if (typeof result !== 'object' || result === null) {
+      return { action, ok: false, detail: 'manage wire: malformed result' }
+    }
+    if (Reflect.get(result, 'ok') === true) {
+      const value: unknown = Reflect.get(result, 'value')
+      if (typeof value !== 'object' || value === null) {
+        return { action, ok: false, detail: 'manage wire: malformed envelope' }
+      }
+      return {
+        action: typeof Reflect.get(value, 'action') === 'string' ? Reflect.get(value, 'action') as string : action,
+        ok: Reflect.get(value, 'ok') === true,
+        detail: typeof Reflect.get(value, 'detail') === 'string' ? Reflect.get(value, 'detail') as string : '',
+        data: Reflect.get(value, 'data'),
+      }
+    }
+    // The RemoteError branch: code/message/details (a manage/refused
+    // refusal carries the envelope's action/status/data in details).
+    const error: unknown = Reflect.get(result, 'error')
+    if (typeof error !== 'object' || error === null) {
+      return { action, ok: false, detail: 'manage wire: refused without an error frame' }
+    }
+    const details: unknown = Reflect.get(error, 'details')
+    const d = typeof details === 'object' && details !== null ? details as Record<string, unknown> : {}
+    return {
+      action: typeof d['action'] === 'string' ? d['action'] : action,
+      ok: false,
+      detail: typeof Reflect.get(error, 'message') === 'string' ? Reflect.get(error, 'message') as string : 'manage wire: refused',
+      data: d['data'],
+    }
   } catch (e) {
+    if (e instanceof Error && e.name === 'AbortError') throw e
     return { action, ok: false, detail: e instanceof Error ? e.message : String(e) }
   }
 }
@@ -151,12 +209,12 @@ const MUTATING: ReadonlySet<string> = new Set([
 /**
  * ComfyManagerPanel — the tab body. Exported for the vitest suite
  * (src/client/__tests__/assets-tab.test.tsx); the shell mounts it
- * through registerRayAssetsTab below. Hook-based: status auto-loads on
+ * through registerAssetsTab below. Hook-based: status auto-loads on
  * mount, every action posts through postManage and lands in the shared
  * result pane; mutating actions confirm first with the exact dispatch
  * and silently refresh the status section afterwards.
  */
-export function ComfyManagerPanel({ remote }: { remote?: EstateLaneRemote }): React.ReactElement {
+export function ComfyManagerPanel(): React.ReactElement {
   const [status, setStatus] = useState<StatusView | null>(null)
   const [statusDetail, setStatusDetail] = useState('')
   const [busy, setBusy] = useState<string | null>(null)
@@ -188,7 +246,7 @@ export function ComfyManagerPanel({ remote }: { remote?: EstateLaneRemote }): Re
    * reply landing there used to wipe search/browse results. */
   const fetchStatus = useCallback(async (): Promise<void> => {
     try {
-      const reply = remote !== undefined ? await postManage(remote, 'status', {}) : { action: 'status', ok: false, detail: 'no estate lane remote — the deck client did not thread ctx.remote' }
+      const reply = await postManage('status', {})
       if (reply.ok === true) {
         setStatus(reply.data as StatusView | undefined ?? null)
       }
@@ -207,7 +265,7 @@ export function ComfyManagerPanel({ remote }: { remote?: EstateLaneRemote }): Re
   const run = useCallback(async (action: string, payload: Record<string, unknown> = {}): Promise<ManageReply | null> => {
     setBusy(action)
     try {
-      const reply = remote !== undefined ? await postManage(remote, action, payload) : { action, ok: false, detail: 'no estate lane remote — the deck client did not thread ctx.remote' }
+      const reply = await postManage(action, payload)
       setResult(reply)
       return reply
     } catch (e) {
@@ -247,7 +305,7 @@ export function ComfyManagerPanel({ remote }: { remote?: EstateLaneRemote }): Re
   const workspaceUp = status?.server_info?.running === true
   const activeRuns = status?.active_runs ?? []
   return (
-    <div className={css.root} data-ray-comfy-manager="">
+    <div className={css.root} data-comfy-manager="">
       <div className={css.head}>
         <h2 className={css.title}>ComfyUI Manager</h2>
         <span className={css.sub}>{statusDetail}</span>
@@ -494,9 +552,6 @@ function ComfyIcon({ size }: { size: number }) {
 
 interface TabCtx {
   effect(fn: () => void, name?: string): unknown
-  /** The typert gateway's client transport (threaded by the entry's
-   * inject; optional so a bare mount still renders a refusal). */
-  remote?: EstateLaneRemote
   /** The native right-sidebar tab registry (ui-sidebar-right — the
    *  better-sidebar registry retired with the plugin, 2026-09-10). */
   sidebarRightTabs: {
@@ -530,15 +585,13 @@ function register(ctx: TabCtx, id: string, kind: string, title: string, guideOrd
       description: () => guideDescription,
       icon: icon as unknown as React.ComponentType<{ size?: number; className?: string }>,
     }],
-  }), 'ray-card-deck: ' + id + ' tab type')
-  // Stage two — the body, dispatched under the type's id.
+  }), 'melite-card-deck: ' + id + ' tab type')
+  // Stage two — the body, dispatched under the type's id. The panel
+  // carries its own wire caller (postManage) — no transport threading.
   ctx.slots.inject('sidebar.right.pane.tab', () => {
-    const wired = ctx.remote !== undefined
-      ? (() => { const C = component; return (props: Record<string, unknown>): React.JSX.Element => React.createElement(C, { ...props, remote: ctx.remote }) })()
-      : component
     const dispose = ctx.slots.register(
       { name: 'sidebar.right.pane.tab', key: id },
-      wired,
+      component,
     )
     return typeof dispose === 'function' ? dispose : () => {}
   })
@@ -559,6 +612,6 @@ function register(ctx: TabCtx, id: string, kind: string, title: string, guideOrd
  * (ctx.sidebarRight.openTab), never to synthetic clicks on the shell's
  * buttons.
  */
-export function registerRayAssetsTab(ctx: TabCtx): void {
-  register(ctx, 'ray-card-deck:comfy', 'ray-comfy', 'Ray ComfyUI', 61, 'The estate\'s ComfyUI manager — packs, snapshots, status.', ComfyIcon as unknown as React.ComponentType<{ size?: number }>, ComfyManagerPanel as unknown as React.ComponentType<Record<string, unknown>>)
+export function registerAssetsTab(ctx: TabCtx): void {
+  register(ctx, 'melite-card-deck:comfy', 'comfy-manager', 'ComfyUI Manager', 61, 'The estate\'s ComfyUI manager — packs, snapshots, status.', ComfyIcon as unknown as React.ComponentType<{ size?: number }>, ComfyManagerPanel as unknown as React.ComponentType<Record<string, unknown>>)
 }

@@ -5,9 +5,9 @@
  * 2026-09-10): this host once proxied /v1|/comfyui|/poser|/health to
  * the second-Loader estate process (retired) and tunneled the events
  * WS — the seam that enshrined the degenerate copy of DSH. ALL of it
- * is deleted: the estate's doors are cordis plugins now, mounted in
- * THIS DSH host by the `melite-estate` bundle row, answering the same
- * same-origin /v1 paths directly. What remains here is what was never
+ * is deleted: the estate's plane is Typert remotes now (drafts/bench/
+ * runs/manage over /api/<ns>/<method>), mounted in THIS DSH host by
+ * the `melite-estate` bundle row. What remains here is what was never
  * a gateway concern:
  *
  * - /editor     → the editor's built dist, served through DSH's own
@@ -39,7 +39,7 @@ import { serveStatic } from '@deepseek-ai/dsh-host-frontend-static'
 import type {} from '@deepseek-ai/dsh-client-connection'
 import type {} from '@deepseek-ai/dsh-host-webserver'
 
-export const name = 'ray-card-deck'
+export const name = 'melite-card-deck'
 
 export const inject = ['webServer', 'connection']
 
@@ -67,7 +67,7 @@ export function apply(ctx: Context): void {
       res.writeHead(status, JSON_HEADERS)
       res.end(JSON.stringify(body))
     },
-  }), 'ray-card-deck: /v1/llm stub (DSH owns the LLM)')
+  }), 'melite-card-deck: /v1/llm stub (DSH owns the LLM)')
 
   // THE WEB FAMILY (2026-09-02 split): packages/web/dsh (this package,
   // the DSH panels) and packages/web/editor are ONE card surface — this
@@ -78,9 +78,9 @@ export function apply(ctx: Context): void {
   // (2026-09-10 depth fix history kept: the default once carried three
   // '..' — one too many since the family split; test/editor-dist.test.mjs
   // asserts the built default resolves to a real index.html.)
-  // RAY_EDITOR_DIST overrides for out-of-repo layouts.
+  // MELITE_EDITOR_DIST overrides for out-of-repo layouts.
   const here = path.dirname(fileURLToPath(import.meta.url))
-  const distRoot = path.resolve(process.env.RAY_EDITOR_DIST
+  const distRoot = path.resolve(process.env.MELITE_EDITOR_DIST
     ?? path.resolve(here, '..', '..', 'editor', 'dist'))
   const distIndex = path.join(distRoot, 'index.html')
 
@@ -138,5 +138,5 @@ export function apply(ctx: Context): void {
         () => fs.readFile(distIndex, 'utf8'),
       )
     },
-  }), 'ray-card-deck: /editor static (DSH serveStatic)')
+  }), 'melite-card-deck: /editor static (DSH serveStatic)')
 }

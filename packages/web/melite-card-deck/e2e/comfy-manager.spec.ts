@@ -1,8 +1,8 @@
 /**
- * E2E: the Ray ComfyUI tab in the live deck shell.
+ * E2E: the ComfyUI Manager tab in the live deck shell.
  *
  * The tour (read-only — this spec never mutates the estate):
- *   1. Sidebar → New tab → Ray ComfyUI mounts the NATIVE manager
+ *   1. Sidebar → New tab → ComfyUI Manager mounts the NATIVE manager
  *      (the stroke-1 regression was an iframe falling through to the
  *      card studio — the manager root must contain zero iframes).
  *   2. Status renders against the live gateway (endpoint + version).
@@ -35,23 +35,23 @@ async function openManager(page: Page): Promise<void> {
     .click({ timeout: 30_000 })
   await page.waitForTimeout(2_000)
   await page.getByRole('button', { name: 'New tab' }).click()
-  // the shell keeps a SECOND, off-viewport Ray ComfyUI node (a
+  // the shell keeps a SECOND, off-viewport ComfyUI Manager node (a
   // collapsed overflow entry) — .first() grabs the WRONG one.
   // Filter VISIBLE: the surviving node is either the open picker's
   // item (opens the tab) or the strip tab itself (selects it) —
   // both land the manager.
   const entry = page
-    .getByText('Ray ComfyUI')
+    .getByText('ComfyUI Manager')
     .filter({ visible: true })
     .first()
   await entry.waitFor({ state: 'visible', timeout: 15_000 })
   await entry.dispatchEvent('click')
   await page
-    .locator('[data-ray-comfy-manager]')
+    .locator('[data-comfy-manager]')
     .waitFor({ state: 'visible', timeout: 30_000 })
 }
 
-test('ray comfyui tab tours the live manager without errors', async ({
+test('comfy manager tab tours the live manager without errors', async ({
   page,
 }) => {
   const consoleErrors: string[] = []
@@ -69,7 +69,7 @@ test('ray comfyui tab tours the live manager without errors', async ({
   await settleHost(page)
   const baseline = new Set([...consoleErrors, ...pageErrors])
   await openManager(page)
-  const manager = page.locator('[data-ray-comfy-manager]')
+  const manager = page.locator('[data-comfy-manager]')
   await expect(manager).toBeVisible()
   await expect(manager.locator('iframe')).toHaveCount(0)
 
