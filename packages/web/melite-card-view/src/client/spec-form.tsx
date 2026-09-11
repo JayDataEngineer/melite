@@ -16,7 +16,7 @@
  * form-spec) and the bench wire door.
  */
 import { createElement as h } from 'react'
-import { Input, Pill } from '@deepseek-ai/dsh-client-ui-primitives'
+import { Input, Pill, Switch } from '@deepseek-ai/dsh-client-ui-primitives'
 import css from './card.module.css'
 
 /** One served form-spec field (/v1/form-spec — the params_emit contract:
@@ -168,11 +168,14 @@ function SpecAtom({ f, value, onEdit }: {
     )
   }
   if (f.type === 'switch' || f.type === 'boolean') {
+    // the primitives catalog owns the two-state toggle — Switch, with
+    // its required label (the control cannot ship unnamed)
     const on = value === true || value === 'true'
-    return h(Pill, {
-      active: on,
-      onClick: () => onEdit(f.name, !on),
-    }, on ? 'on' : 'off')
+    return h(Switch, {
+      label: f.label,
+      checked: on,
+      onChange: (next: boolean) => { onEdit(f.name, next) },
+    })
   }
   if (f.type === 'textarea') {
     return h('textarea', {

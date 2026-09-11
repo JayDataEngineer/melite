@@ -800,10 +800,13 @@ window.__ModuleLoader__.load({
 			}
 			if (f.type === "switch" || f.type === "boolean") {
 				const on = value === true || value === "true";
-				return (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Pill, {
-					active: on,
-					onClick: () => onEdit(f.name, !on)
-				}, on ? "on" : "off");
+				return (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Switch, {
+					label: f.label,
+					checked: on,
+					onChange: (next) => {
+						onEdit(f.name, next);
+					}
+				});
 			}
 			if (f.type === "textarea") return (0, react.createElement)("textarea", {
 				className: card_module_css_default.specTextarea,
