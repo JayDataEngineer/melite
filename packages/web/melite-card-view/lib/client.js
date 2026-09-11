@@ -46,7 +46,7 @@ window.__ModuleLoader__.load({
 		}
 		//#endregion
 		//#region \0dsh-css:melite-card-view/src/client/card.module.css.mjs
-		const css = ".vYZV7a_card{flex-direction:column;min-width:0;margin:4px 0;font-size:12px;line-height:1.45;display:flex}.vYZV7a_load{color:var(--dsw-alias-label-secondary,#9a9aa5);padding:2px 0}.vYZV7a_head{align-items:center;gap:8px;min-width:0;display:flex}.vYZV7a_model{text-overflow:ellipsis;white-space:nowrap;min-width:0;font-weight:600;overflow:hidden}.vYZV7a_state{corner-shape:round;border-radius:999px;flex:none;margin-left:auto;padding:1px 8px}.vYZV7a_state[data-state=completed]{color:var(--dsw-alias-state-success-primary,#3fb96f)}.vYZV7a_state[data-state=running],.vYZV7a_state[data-state=queued],.vYZV7a_state[data-state=pending],.vYZV7a_state[data-state=starting],.vYZV7a_state[data-state=draft]{color:var(--dsw-alias-state-warn-primary,#d9a53f)}.vYZV7a_state[data-state=failed],.vYZV7a_state[data-state=error],.vYZV7a_state[data-state=stopped],.vYZV7a_state[data-state=interrupted]{color:var(--dsw-alias-state-error-primary,#e05656)}.vYZV7a_prompt{color:var(--dsw-alias-text-secondary,#9a9aa5);-webkit-line-clamp:2;-webkit-box-orient:vertical;display:-webkit-box;overflow:hidden}.vYZV7a_link:hover{text-decoration:underline}.vYZV7a_row{color:inherit;cursor:pointer;font:inherit;text-align:left;background:0 0;border:none;border-radius:6px;align-items:center;gap:8px;width:100%;min-width:0;padding:4px 6px;display:flex}.vYZV7a_row:hover{background:var(--dsw-alias-interactive-bg-hover,#2631480f)}.vYZV7a_row:focus-visible{outline:1px solid var(--dsw-alias-state-business-primary,#4f7bd8);outline-offset:-1px}.vYZV7a_thumb{object-fit:cover;border-radius:4px;flex:none;width:34px;height:34px}.vYZV7a_rowTitle{text-overflow:ellipsis;white-space:nowrap;flex:none;max-width:40%;font-weight:600;overflow:hidden}.vYZV7a_drill{width:92vw;max-width:min(860px,92vw)}.vYZV7a_split{grid-template-columns:minmax(240px,1fr) minmax(0,1.2fr);gap:14px;min-width:0;display:grid}@media (width<=640px){.vYZV7a_split{grid-template-columns:1fr}}.vYZV7a_params{flex-direction:column;gap:8px;min-width:0;max-height:60vh;display:flex;overflow-y:auto}.vYZV7a_field{flex-direction:column;gap:3px;min-width:0;display:flex}.vYZV7a_fieldKey{color:var(--dsw-alias-label-secondary,#9a9aa5);font-size:11px}.vYZV7a_outputs{flex-direction:column;align-items:center;gap:10px;min-width:0;display:flex}.vYZV7a_outputImg{object-fit:contain;border-radius:8px;max-width:100%;max-height:46vh}.vYZV7a_runRow{justify-content:flex-end;align-items:center;gap:10px;width:100%;display:flex}.vYZV7a_runError{color:var(--dsw-alias-label-error,#e05656);overflow-wrap:anywhere;font-size:11px}.vYZV7a_state[data-state=legacy]{color:var(--dsw-alias-label-secondary,#9a9aa5)}.vYZV7a_cardsBench{flex-direction:column;gap:8px;display:flex}.vYZV7a_benchHead{justify-content:space-between;align-items:center;gap:8px;display:flex}.vYZV7a_revTag{color:var(--dsw-alias-label-secondary,#61666b);font-family:var(--dsw-alias-font-mono,ui-monospace, monospace);font-size:11px}.vYZV7a_runBtn,.vYZV7a_back,.vYZV7a_restore{border:.5px solid var(--dsw-alias-border-l2,#0000001a);color:inherit;cursor:pointer;font:inherit;background:0 0;border-radius:6px;padding:2px 10px;font-size:12px}.vYZV7a_runBtn:hover:not(:disabled),.vYZV7a_back:hover,.vYZV7a_restore:hover:not(:disabled){background:var(--dsw-alias-interactive-bg-hover,#2631480f);border-color:var(--dsw-alias-state-business-primary,#4f7bd8)}.vYZV7a_runBtn:disabled,.vYZV7a_restore:disabled{cursor:default;opacity:.45}.vYZV7a_category{flex-direction:column;gap:2px;display:flex}.vYZV7a_catTitle{color:var(--dsw-alias-label-secondary,#61666b);letter-spacing:.06em;text-transform:uppercase;margin:4px 0 2px;font-size:11px;font-weight:600}.vYZV7a_stages{flex-direction:column;gap:2px;margin:0;padding:0;list-style:none;display:flex}.vYZV7a_stage{list-style:none}.vYZV7a_stageTitle{text-overflow:ellipsis;white-space:nowrap;flex:none;max-width:45%;font-weight:600;overflow:hidden}.vYZV7a_stageEngine{color:var(--dsw-alias-label-secondary,#61666b);flex:none;font-size:11px;line-height:17px}.vYZV7a_stageArtifact{color:var(--dsw-alias-state-business-primary,#4f7bd8);font-size:12px;text-decoration:none}.vYZV7a_stageArtifact:hover{text-decoration:underline}.vYZV7a_empty,.vYZV7a_loading,.vYZV7a_failed,.vYZV7a_missing,.vYZV7a_logHead,.vYZV7a_restoreNote{color:var(--dsw-alias-label-secondary,#61666b);margin:0;font-size:12px;font-style:italic}.vYZV7a_runView{flex-direction:column;gap:8px;display:flex}.vYZV7a_runHead{align-items:baseline;gap:8px;display:flex}.vYZV7a_runId{font-family:var(--dsw-alias-font-mono,ui-monospace, monospace);font-size:12px;font-weight:600}.vYZV7a_runStatus{border:.5px solid var(--dsw-alias-border-l2,#0000001a);corner-shape:round;color:var(--dsw-alias-label-secondary,#61666b);border-radius:999px;padding:0 8px;font-size:11px}.vYZV7a_runActions{gap:8px;display:flex}.vYZV7a_stageDetail{grid-template-columns:auto 1fr;gap:2px 12px;margin:0;display:grid}.vYZV7a_stageDetail dt{color:var(--dsw-alias-label-secondary,#61666b);text-align:right;text-transform:uppercase;font-size:11px}.vYZV7a_stageDetail dd{min-width:0;margin:0}.vYZV7a_mono{font-family:var(--dsw-alias-font-mono,ui-monospace, monospace);font-size:12px;overflow-x:auto}.vYZV7a_tileGrid{grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px;margin:0;padding:0;list-style:none;display:grid}.vYZV7a_tile{margin:0;padding:0;display:block}.vYZV7a_tileInner{border:.5px solid var(--dsw-alias-border-l2,#0000001a);cursor:pointer;transition:border-color var(--ds-transition-duration,.2s) var(--ds-ease-in-out,cubic-bezier(.4, 0, .2, 1)), background-color var(--ds-transition-duration,.2s) var(--ds-ease-in-out,cubic-bezier(.4, 0, .2, 1));font:inherit;text-align:left;background:0 0;border-radius:10px;flex-direction:column;align-items:stretch;width:100%;padding:0;display:flex;overflow:hidden}.vYZV7a_tileInner:hover{border-color:var(--dsw-alias-state-business-primary,#4f7bd8);background:var(--dsw-alias-interactive-bg-hover,#2631480f)}.vYZV7a_tilePreview{aspect-ratio:1;flex:1;width:100%;min-height:0;margin:0;display:block;position:relative}.vYZV7a_tileImg,.vYZV7a_tileImgLink{width:100%;height:100%;display:block}.vYZV7a_tileImg{object-fit:cover}.vYZV7a_kindFace{background:var(--dsw-alias-interactive-bg-hover,#2631480f);color:var(--dsw-alias-label-secondary,#61666b);flex-direction:column;justify-content:center;align-items:center;gap:4px;width:100%;height:100%;display:flex}.vYZV7a_kindInitial{font-size:28px;font-weight:700;line-height:1}.vYZV7a_kindName{font-family:var(--dsw-alias-font-mono,ui-monospace, monospace);text-overflow:ellipsis;white-space:nowrap;padding:0 6px;font-size:10px;overflow:hidden}.vYZV7a_tileDot{position:absolute;bottom:6px;right:6px}.vYZV7a_tileCaption{border-top:.5px solid var(--dsw-alias-border-l2,#0000001a);flex-direction:column;flex:none;gap:2px;padding:6px 8px;display:flex}.vYZV7a_tileTitle{text-overflow:ellipsis;white-space:nowrap;font-size:12px;font-weight:600;line-height:20px;overflow:hidden}.vYZV7a_tileMeta{color:var(--dsw-alias-label-secondary,#61666b);font-family:var(--dsw-alias-font-mono,ui-monospace, monospace);align-items:center;gap:6px;font-size:10px;line-height:17px;display:flex;overflow:hidden}.vYZV7a_tilePrompt{text-overflow:ellipsis;white-space:nowrap;flex:1;overflow:hidden}.vYZV7a_tileAdd .vYZV7a_tileInner{border-style:dashed}.vYZV7a_addFace{color:var(--dsw-alias-label-secondary,#61666b);justify-content:center;align-items:center;font-size:34px;font-weight:300;display:flex}.vYZV7a_picker{flex-direction:column;gap:10px;max-height:60vh;display:flex;overflow-y:auto}.vYZV7a_pickerGenre{flex-direction:column;gap:4px;display:flex}.vYZV7a_pickerCard{border:.5px solid var(--dsw-alias-border-l2,#0000001a);color:inherit;cursor:pointer;font:inherit;text-align:left;background:0 0;border-radius:8px;align-items:baseline;gap:8px;width:100%;padding:8px 10px;display:flex}.vYZV7a_pickerCard:hover{background:var(--dsw-alias-interactive-bg-hover,#2631480f);border-color:var(--dsw-alias-state-business-primary,#4f7bd8)}.vYZV7a_pickerCardLabel{white-space:nowrap;font-size:13px;font-weight:600}.vYZV7a_pickerCardDesc{color:var(--dsw-alias-label-secondary,#61666b);text-overflow:ellipsis;white-space:nowrap;flex:1;font-size:12px;overflow:hidden}.vYZV7a_specForm{flex-direction:column;gap:12px;display:flex}.vYZV7a_specGroup{flex-direction:column;gap:8px;display:flex}.vYZV7a_specGroupTitle{color:var(--dsw-alias-label-secondary,#61666b);letter-spacing:.04em;text-transform:uppercase;margin:0 0 2px;font-size:11px;font-weight:600}.vYZV7a_specField{flex-direction:column;gap:3px;display:flex}.vYZV7a_specFieldKey{color:var(--dsw-alias-label-secondary,#61666b);font-size:12px}.vYZV7a_specRequired{color:var(--dsw-alias-state-critical,#e5484d)}.vYZV7a_specHint{color:var(--dsw-alias-label-secondary,#61666b);font-size:11px}.vYZV7a_specSelect{background:var(--dsw-alias-interactive-bg-hover,#2631480f);border:.5px solid var(--dsw-alias-border-l2,#0000001a);color:inherit;font:inherit;border-radius:6px;width:100%;padding:5px 8px;font-size:13px}.vYZV7a_specSliderRow{align-items:center;gap:8px;display:flex}.vYZV7a_specSlider{flex:1}.vYZV7a_specSliderValue{color:var(--dsw-alias-label-secondary,#61666b);font-family:var(--dsw-alias-font-mono,ui-monospace, monospace);text-align:right;min-width:4ch;font-size:12px}.vYZV7a_specTextarea{background:var(--dsw-alias-interactive-bg-hover,#2631480f);border:.5px solid var(--dsw-alias-border-l2,#0000001a);color:inherit;font:inherit;resize:vertical;border-radius:6px;width:100%;padding:6px 8px;font-size:13px}.vYZV7a_tileShared{display:block;position:relative}.vYZV7a_zoomOverlay{background:var(--dsw-alias-bg-mask,#090c12b8);z-index:80;flex-direction:column;display:flex;position:fixed;inset:0}.vYZV7a_zoomScroll{flex:1;min-height:0;overflow-y:auto}.vYZV7a_zoomInner{box-sizing:border-box;justify-content:center;align-items:center;width:100%;max-width:100%;min-height:100%;margin:0 auto;padding:24px;display:flex}.vYZV7a_zoomCard{background:var(--dsw-alias-bg-module-platform,#f5f6f7);box-shadow:var(--dsw-elevation-panel,0 0 0 .5px #00000029, 0 3px 8px 0 #00000008, 0 0 16px 0 #00000005);color:var(--dsw-alias-label-primary,#0f1115);border:0;border-radius:14px;flex-direction:column;min-height:320px;max-height:86vh;display:flex;overflow:hidden}.vYZV7a_zoomBar{border-bottom:.5px solid var(--dsw-alias-border-l2,#0000001a);flex:none;justify-content:space-between;align-items:center;gap:8px;padding:10px 14px;display:flex}.vYZV7a_zoomTitle{font-size:13px;font-weight:600;line-height:20px}.vYZV7a_closeX{color:inherit;cursor:pointer;background:0 0;border:none;border-radius:6px;padding:4px 8px;font-size:14px;line-height:1}.vYZV7a_closeX:hover{background:var(--dsw-alias-interactive-bg-hover,#2631480f)}.vYZV7a_zoomDetail{min-height:0;padding:14px;display:block;overflow-y:auto}.vYZV7a_zoomSkeleton{flex-direction:column;flex:1;gap:10px;min-height:0;padding:16px;display:flex}.vYZV7a_skLine{will-change:background-position;background:linear-gradient(90deg, transparent 40%, var(--dsw-alias-interactive-bg-hover,#2631480f) 50%, transparent 60%);background-color:var(--dsw-alias-interactive-bg-hover,#2631480f);background-size:200% 100%;border-radius:6px;height:12px;animation:1s linear infinite both vYZV7a_zoomShimmer}.vYZV7a_skWide{width:60%}.vYZV7a_skShort{flex:1;height:28px}.vYZV7a_skBlock{border-radius:10px;height:120px}.vYZV7a_skRow{gap:10px;display:flex}@keyframes vYZV7a_zoomShimmer{0%{background-position:150% 0}to{background-position:-100% 0}}@keyframes vYZV7a_tilePop{0%{opacity:0;transform:scale(.96)translateY(6px)}60%{opacity:1;transform:scale(1.015)translateY(0)}to{opacity:1;transform:scale(1)translateY(0)}}.vYZV7a_tileEnter{animation:.26s cubic-bezier(.2,.8,.3,1) both vYZV7a_tilePop}.vYZV7a_tileDragging{opacity:.55;z-index:2}.vYZV7a_wiredMark{color:var(--dsw-alias-state-business-primary,#4176e6);font-size:10px}.vYZV7a_wireRow{flex:none;align-items:center;gap:8px;margin:0 0 10px;display:flex}.vYZV7a_wireRow .vYZV7a_specSelect{flex:1;width:auto}.vYZV7a_wireLabel{color:var(--dsw-alias-label-secondary,#61666b);white-space:nowrap;font-size:11px}.vYZV7a_wireBtn{background:var(--dsw-alias-bg-module-platform,#f5f6f7);color:var(--dsw-alias-label-secondary,#61666b);cursor:pointer;z-index:2;border:0;border-radius:6px;padding:3px 5px;font-size:11px;line-height:1;position:absolute;top:5px;right:5px}.vYZV7a_wireBtn:hover{background:var(--dsw-alias-interactive-bg-hover,#2631480f);color:var(--dsw-alias-state-business-primary,#4176e6)}.vYZV7a_wiring{outline:1px dashed var(--dsw-alias-state-business-primary,#4176e6);outline-offset:2px}.vYZV7a_wiringSource{outline:2px solid var(--dsw-alias-state-business-primary,#4176e6);outline-offset:2px}.vYZV7a_capOver{background:var(--dsw-alias-interactive-bg-hover,#2631480f);outline:1px dashed var(--dsw-alias-state-business-primary,#4176e6);outline-offset:4px}.vYZV7a_cancelBtn{color:#b3261e;cursor:pointer;background:0 0;border:1px solid #b3261e;border-radius:8px;padding:5px 12px;font-size:12px}.vYZV7a_cancelBtn:disabled{cursor:default;opacity:.6}.vYZV7a_groupBar{align-items:center;gap:8px;display:flex}.vYZV7a_checkCircle{border:1.5px solid var(--dsw-alias-label-secondary,#61666b);corner-shape:round;color:#fff;z-index:3;border-radius:999px;justify-content:center;align-items:center;width:20px;height:20px;font-size:11px;display:flex;position:absolute;top:8px;left:8px}.vYZV7a_checkOn{background:var(--dsw-alias-state-business-primary,#4176e6);border-color:var(--dsw-alias-state-business-primary,#4176e6)}[data-selected=on]{outline:2px solid var(--dsw-alias-state-business-primary,#4176e6);outline-offset:2px}.vYZV7a_groupNote{color:var(--dsw-alias-label-secondary,#61666b);margin:0 0 10px;font-size:12px;line-height:20px}.vYZV7a_memberList{margin:0 0 12px;padding:0;list-style:none}.vYZV7a_memberRow{border-bottom:1px solid var(--dsw-alias-interactive-bg-hover,#2631480f);align-items:baseline;gap:8px;padding:6px 2px;display:flex}.vYZV7a_memberIdx{color:var(--dsw-alias-label-secondary,#61666b);font-family:var(--dsw-alias-font-mono,monospace);font-size:11px}.vYZV7a_memberName{font-size:13px}@media (prefers-reduced-motion:reduce){.vYZV7a_tileEnter,.vYZV7a_skLine,.vYZV7a_skBlock{animation-duration:.01ms;animation-iteration-count:1}}";
+		const css = ".vYZV7a_card{flex-direction:column;min-width:0;margin:4px 0;font-size:12px;line-height:1.45;display:flex}.vYZV7a_load{color:var(--dsw-alias-label-secondary,#9a9aa5);padding:2px 0}.vYZV7a_head{align-items:center;gap:8px;min-width:0;display:flex}.vYZV7a_model{text-overflow:ellipsis;white-space:nowrap;min-width:0;font-weight:600;overflow:hidden}.vYZV7a_state{corner-shape:round;border-radius:999px;flex:none;margin-left:auto;padding:1px 8px}.vYZV7a_state[data-state=completed]{color:var(--dsw-alias-state-success-primary,#3fb96f)}.vYZV7a_state[data-state=running],.vYZV7a_state[data-state=queued],.vYZV7a_state[data-state=pending],.vYZV7a_state[data-state=starting],.vYZV7a_state[data-state=draft]{color:var(--dsw-alias-state-warn-primary,#d9a53f)}.vYZV7a_state[data-state=failed],.vYZV7a_state[data-state=error],.vYZV7a_state[data-state=stopped],.vYZV7a_state[data-state=interrupted]{color:var(--dsw-alias-state-error-primary,#e05656)}.vYZV7a_prompt{color:var(--dsw-alias-text-secondary,#9a9aa5);-webkit-line-clamp:2;-webkit-box-orient:vertical;display:-webkit-box;overflow:hidden}.vYZV7a_link:hover{text-decoration:underline}.vYZV7a_row{color:inherit;cursor:pointer;font:inherit;text-align:left;background:0 0;border:none;border-radius:6px;align-items:center;gap:8px;width:100%;min-width:0;padding:4px 6px;display:flex}.vYZV7a_row:hover{background:var(--dsw-alias-interactive-bg-hover,#2631480f)}.vYZV7a_row:focus-visible{outline:1px solid var(--dsw-alias-state-business-primary,#4f7bd8);outline-offset:-1px}.vYZV7a_thumb{object-fit:cover;border-radius:4px;flex:none;width:34px;height:34px}.vYZV7a_rowTitle{text-overflow:ellipsis;white-space:nowrap;flex:none;max-width:40%;font-weight:600;overflow:hidden}.vYZV7a_drill{width:92vw;max-width:min(860px,92vw)}.vYZV7a_split{grid-template-columns:minmax(240px,1fr) minmax(0,1.2fr);gap:14px;min-width:0;display:grid}@media (width<=640px){.vYZV7a_split{grid-template-columns:1fr}}.vYZV7a_params{flex-direction:column;gap:8px;min-width:0;max-height:60vh;display:flex;overflow-y:auto}.vYZV7a_field{flex-direction:column;gap:3px;min-width:0;display:flex}.vYZV7a_fieldKey{color:var(--dsw-alias-label-secondary,#9a9aa5);font-size:11px}.vYZV7a_outputs{flex-direction:column;align-items:center;gap:10px;min-width:0;display:flex}.vYZV7a_outputImg{object-fit:contain;border-radius:8px;max-width:100%;max-height:46vh}.vYZV7a_runRow{justify-content:flex-end;align-items:center;gap:10px;width:100%;display:flex}.vYZV7a_runError{color:var(--dsw-alias-label-error,#e05656);overflow-wrap:anywhere;font-size:11px}.vYZV7a_state[data-state=legacy]{color:var(--dsw-alias-label-secondary,#9a9aa5)}.vYZV7a_cardsBench{flex-direction:column;gap:8px;display:flex}.vYZV7a_benchHead{justify-content:space-between;align-items:center;gap:8px;display:flex}.vYZV7a_revTag{color:var(--dsw-alias-label-secondary,#61666b);font-family:var(--dsw-alias-font-mono,ui-monospace, monospace);font-size:11px}.vYZV7a_runBtn,.vYZV7a_back,.vYZV7a_restore{border:.5px solid var(--dsw-alias-border-l2,#0000001a);color:inherit;cursor:pointer;font:inherit;background:0 0;border-radius:6px;padding:2px 10px;font-size:12px}.vYZV7a_runBtn:hover:not(:disabled),.vYZV7a_back:hover,.vYZV7a_restore:hover:not(:disabled){background:var(--dsw-alias-interactive-bg-hover,#2631480f);border-color:var(--dsw-alias-state-business-primary,#4f7bd8)}.vYZV7a_runBtn:disabled,.vYZV7a_restore:disabled{cursor:default;opacity:.45}.vYZV7a_category{flex-direction:column;gap:2px;display:flex}.vYZV7a_catTitle{color:var(--dsw-alias-label-secondary,#61666b);letter-spacing:.06em;text-transform:uppercase;margin:4px 0 2px;font-size:11px;font-weight:600}.vYZV7a_stages{flex-direction:column;gap:2px;margin:0;padding:0;list-style:none;display:flex}.vYZV7a_stage{list-style:none}.vYZV7a_stageTitle{text-overflow:ellipsis;white-space:nowrap;flex:none;max-width:45%;font-weight:600;overflow:hidden}.vYZV7a_stageEngine{color:var(--dsw-alias-label-secondary,#61666b);flex:none;font-size:11px;line-height:17px}.vYZV7a_stageArtifact{color:var(--dsw-alias-state-business-primary,#4f7bd8);font-size:12px;text-decoration:none}.vYZV7a_stageArtifact:hover{text-decoration:underline}.vYZV7a_empty,.vYZV7a_loading,.vYZV7a_failed,.vYZV7a_missing,.vYZV7a_logHead,.vYZV7a_restoreNote{color:var(--dsw-alias-label-secondary,#61666b);margin:0;font-size:12px;font-style:italic}.vYZV7a_runView{flex-direction:column;gap:8px;display:flex}.vYZV7a_runHead{align-items:baseline;gap:8px;display:flex}.vYZV7a_runId{font-family:var(--dsw-alias-font-mono,ui-monospace, monospace);font-size:12px;font-weight:600}.vYZV7a_runStatus{border:.5px solid var(--dsw-alias-border-l2,#0000001a);corner-shape:round;color:var(--dsw-alias-label-secondary,#61666b);border-radius:999px;padding:0 8px;font-size:11px}.vYZV7a_runActions{gap:8px;display:flex}.vYZV7a_stageDetail{grid-template-columns:auto 1fr;gap:2px 12px;margin:0;display:grid}.vYZV7a_stageDetail dt{color:var(--dsw-alias-label-secondary,#61666b);text-align:right;text-transform:uppercase;font-size:11px}.vYZV7a_stageDetail dd{min-width:0;margin:0}.vYZV7a_mono{font-family:var(--dsw-alias-font-mono,ui-monospace, monospace);font-size:12px;overflow-x:auto}.vYZV7a_tileGrid{grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px;margin:0;padding:0;list-style:none;display:grid}.vYZV7a_tile{margin:0;padding:0;display:block}.vYZV7a_tileInner{border:.5px solid var(--dsw-alias-border-l2,#0000001a);cursor:pointer;transition:border-color var(--ds-transition-duration,.2s) var(--ds-ease-in-out,cubic-bezier(.4, 0, .2, 1)), background-color var(--ds-transition-duration,.2s) var(--ds-ease-in-out,cubic-bezier(.4, 0, .2, 1));font:inherit;text-align:left;background:0 0;border-radius:10px;flex-direction:column;align-items:stretch;width:100%;padding:0;display:flex;overflow:hidden}.vYZV7a_tileInner:hover{border-color:var(--dsw-alias-state-business-primary,#4f7bd8);background:var(--dsw-alias-interactive-bg-hover,#2631480f)}.vYZV7a_tilePreview{aspect-ratio:1;flex:1;width:100%;min-height:0;margin:0;display:block;position:relative}.vYZV7a_tileImg,.vYZV7a_tileImgLink{width:100%;height:100%;display:block}.vYZV7a_tileImg{object-fit:cover}.vYZV7a_kindFace{background:var(--dsw-alias-interactive-bg-hover,#2631480f);color:var(--dsw-alias-label-secondary,#61666b);flex-direction:column;justify-content:center;align-items:center;gap:4px;width:100%;height:100%;display:flex}.vYZV7a_kindInitial{font-size:28px;font-weight:700;line-height:1}.vYZV7a_kindName{font-family:var(--dsw-alias-font-mono,ui-monospace, monospace);text-overflow:ellipsis;white-space:nowrap;padding:0 6px;font-size:10px;overflow:hidden}.vYZV7a_tileDot{position:absolute;bottom:6px;right:6px}.vYZV7a_tileCaption{border-top:.5px solid var(--dsw-alias-border-l2,#0000001a);flex-direction:column;flex:none;gap:2px;padding:6px 8px;display:flex}.vYZV7a_tileTitle{text-overflow:ellipsis;white-space:nowrap;font-size:12px;font-weight:600;line-height:20px;overflow:hidden}.vYZV7a_tileMeta{color:var(--dsw-alias-label-secondary,#61666b);font-family:var(--dsw-alias-font-mono,ui-monospace, monospace);align-items:center;gap:6px;font-size:10px;line-height:17px;display:flex;overflow:hidden}.vYZV7a_tilePrompt{text-overflow:ellipsis;white-space:nowrap;flex:1;overflow:hidden}.vYZV7a_tileAdd .vYZV7a_tileInner{border-style:dashed}.vYZV7a_addFace{color:var(--dsw-alias-label-secondary,#61666b);justify-content:center;align-items:center;font-size:34px;font-weight:300;display:flex}.vYZV7a_picker{flex-direction:column;gap:10px;max-height:60vh;display:flex;overflow-y:auto}.vYZV7a_pickerGenre{flex-direction:column;gap:4px;display:flex}.vYZV7a_pickerCard{border:.5px solid var(--dsw-alias-border-l2,#0000001a);color:inherit;cursor:pointer;font:inherit;text-align:left;background:0 0;border-radius:8px;align-items:baseline;gap:8px;width:100%;padding:8px 10px;display:flex}.vYZV7a_pickerCard:hover{background:var(--dsw-alias-interactive-bg-hover,#2631480f);border-color:var(--dsw-alias-state-business-primary,#4f7bd8)}.vYZV7a_pickerCardLabel{white-space:nowrap;font-size:13px;font-weight:600}.vYZV7a_pickerCardDesc{color:var(--dsw-alias-label-secondary,#61666b);text-overflow:ellipsis;white-space:nowrap;flex:1;font-size:12px;overflow:hidden}.vYZV7a_specForm{flex-direction:column;gap:12px;display:flex}.vYZV7a_specGroup{flex-direction:column;gap:8px;display:flex}.vYZV7a_specGroupTitle{color:var(--dsw-alias-label-secondary,#61666b);letter-spacing:.04em;text-transform:uppercase;margin:0 0 2px;font-size:11px;font-weight:600}.vYZV7a_specField{flex-direction:column;gap:3px;display:flex}.vYZV7a_specFieldKey{color:var(--dsw-alias-label-secondary,#61666b);font-size:12px}.vYZV7a_specRequired{color:var(--dsw-alias-state-critical,#e5484d)}.vYZV7a_specHint{color:var(--dsw-alias-label-secondary,#61666b);font-size:11px}.vYZV7a_specSelect{background:var(--dsw-alias-interactive-bg-hover,#2631480f);border:.5px solid var(--dsw-alias-border-l2,#0000001a);color:inherit;font:inherit;border-radius:6px;width:100%;padding:5px 8px;font-size:13px}.vYZV7a_specSliderRow{align-items:center;gap:8px;display:flex}.vYZV7a_specSlider{flex:1}.vYZV7a_specSliderValue{color:var(--dsw-alias-label-secondary,#61666b);font-family:var(--dsw-alias-font-mono,ui-monospace, monospace);text-align:right;min-width:4ch;font-size:12px}.vYZV7a_specTextarea{background:var(--dsw-alias-interactive-bg-hover,#2631480f);border:.5px solid var(--dsw-alias-border-l2,#0000001a);color:inherit;font:inherit;resize:vertical;border-radius:6px;width:100%;padding:6px 8px;font-size:13px}.vYZV7a_tileShared{display:block;position:relative}.vYZV7a_zoomOverlay{background:var(--dsw-alias-bg-mask,#090c12b8);z-index:80;flex-direction:column;display:flex;position:fixed;inset:0}.vYZV7a_zoomScroll{flex:1;min-height:0;overflow-y:auto}.vYZV7a_zoomInner{box-sizing:border-box;justify-content:center;align-items:center;width:100%;max-width:100%;min-height:100%;margin:0 auto;padding:24px;display:flex}.vYZV7a_zoomCard{background:var(--dsw-alias-bg-module-platform,#f5f6f7);box-shadow:var(--dsw-elevation-panel,0 0 0 .5px #00000029, 0 3px 8px 0 #00000008, 0 0 16px 0 #00000005);color:var(--dsw-alias-label-primary,#0f1115);border:0;border-radius:14px;flex-direction:column;min-height:320px;max-height:86vh;display:flex;overflow:hidden}.vYZV7a_zoomBar{border-bottom:.5px solid var(--dsw-alias-border-l2,#0000001a);flex:none;justify-content:space-between;align-items:center;gap:8px;padding:10px 14px;display:flex}.vYZV7a_zoomTitle{font-size:13px;font-weight:600;line-height:20px}.vYZV7a_closeX{color:inherit;cursor:pointer;background:0 0;border:none;border-radius:6px;padding:4px 8px;font-size:14px;line-height:1}.vYZV7a_closeX:hover{background:var(--dsw-alias-interactive-bg-hover,#2631480f)}.vYZV7a_zoomDetail{min-height:0;padding:14px;display:block;overflow-y:auto}.vYZV7a_zoomSkeleton{flex-direction:column;flex:1;gap:10px;min-height:0;padding:16px;display:flex}.vYZV7a_skLine{will-change:background-position;background:linear-gradient(90deg, transparent 40%, var(--dsw-alias-interactive-bg-hover,#2631480f) 50%, transparent 60%);background-color:var(--dsw-alias-interactive-bg-hover,#2631480f);background-size:200% 100%;border-radius:6px;height:12px;animation:1s linear infinite both vYZV7a_zoomShimmer}.vYZV7a_skWide{width:60%}.vYZV7a_skShort{flex:1;height:28px}.vYZV7a_skBlock{border-radius:10px;height:120px}.vYZV7a_skRow{gap:10px;display:flex}@keyframes vYZV7a_zoomShimmer{0%{background-position:150% 0}to{background-position:-100% 0}}@keyframes vYZV7a_tilePop{0%{opacity:0;transform:scale(.96)translateY(6px)}60%{opacity:1;transform:scale(1.015)translateY(0)}to{opacity:1;transform:scale(1)translateY(0)}}.vYZV7a_tileEnter{animation:.26s cubic-bezier(.2,.8,.3,1) both vYZV7a_tilePop}.vYZV7a_tileDragging{opacity:.55;z-index:2}.vYZV7a_wiredMark{color:var(--dsw-alias-state-business-primary,#4176e6);font-size:10px}.vYZV7a_wireRow{flex:none;align-items:center;gap:8px;margin:0 0 10px;display:flex}.vYZV7a_wireRow .vYZV7a_specSelect{flex:1;width:auto}.vYZV7a_wireLabel{color:var(--dsw-alias-label-secondary,#61666b);white-space:nowrap;font-size:11px}.vYZV7a_wireBtn{background:var(--dsw-alias-bg-module-platform,#f5f6f7);color:var(--dsw-alias-label-secondary,#61666b);cursor:pointer;z-index:2;border:0;border-radius:6px;padding:3px 5px;font-size:11px;line-height:1;position:absolute;top:5px;right:5px}.vYZV7a_wireBtn:hover{background:var(--dsw-alias-interactive-bg-hover,#2631480f);color:var(--dsw-alias-state-business-primary,#4176e6)}.vYZV7a_wiring{outline:1px dashed var(--dsw-alias-state-business-primary,#4176e6);outline-offset:2px}.vYZV7a_wiringSource{outline:2px solid var(--dsw-alias-state-business-primary,#4176e6);outline-offset:2px}.vYZV7a_capOver{background:var(--dsw-alias-interactive-bg-hover,#2631480f);outline:1px dashed var(--dsw-alias-state-business-primary,#4176e6);outline-offset:4px}.vYZV7a_cancelBtn{color:#b3261e;cursor:pointer;background:0 0;border:1px solid #b3261e;border-radius:8px;padding:5px 12px;font-size:12px}.vYZV7a_cancelBtn:disabled{cursor:default;opacity:.6}.vYZV7a_groupBar{align-items:center;gap:8px;display:flex}.vYZV7a_checkCircle{border:1.5px solid var(--dsw-alias-label-secondary,#61666b);corner-shape:round;color:#fff;z-index:3;border-radius:999px;justify-content:center;align-items:center;width:20px;height:20px;font-size:11px;display:flex;position:absolute;top:8px;left:8px}.vYZV7a_checkOn{background:var(--dsw-alias-state-business-primary,#4176e6);border-color:var(--dsw-alias-state-business-primary,#4176e6)}[data-selected=on]{outline:2px solid var(--dsw-alias-state-business-primary,#4176e6);outline-offset:2px}.vYZV7a_groupNote{color:var(--dsw-alias-label-secondary,#61666b);margin:0 0 10px;font-size:12px;line-height:20px}.vYZV7a_memberList{margin:0 0 12px;padding:0;list-style:none}.vYZV7a_memberRow{border-bottom:1px solid var(--dsw-alias-interactive-bg-hover,#2631480f);align-items:baseline;gap:8px;padding:6px 2px;display:flex}.vYZV7a_memberIdx{color:var(--dsw-alias-label-secondary,#61666b);font-family:var(--dsw-alias-font-mono,monospace);font-size:11px}.vYZV7a_memberName{font-size:13px}@media (prefers-reduced-motion:reduce){.vYZV7a_tileEnter,.vYZV7a_skLine,.vYZV7a_skBlock{animation-duration:.01ms;animation-iteration-count:1}}.vYZV7a_studioHead{align-items:center;gap:8px;line-height:20px;display:flex}.vYZV7a_studioBody{flex-direction:column;gap:12px;display:flex}.vYZV7a_studioGroup{flex-direction:column;gap:6px;display:flex}";
 		const tagId = "@melite-plugin/dsh-card-view/card.module.css";
 		if (typeof document !== "undefined" && document.querySelector("style[data-plugin-css=" + JSON.stringify(tagId) + "]") === null) {
 			const tag = document.createElement("style");
@@ -137,6 +137,9 @@ window.__ModuleLoader__.load({
 			"stageTitle": "vYZV7a_stageTitle",
 			"stages": "vYZV7a_stages",
 			"state": "vYZV7a_state",
+			"studioBody": "vYZV7a_studioBody",
+			"studioGroup": "vYZV7a_studioGroup",
+			"studioHead": "vYZV7a_studioHead",
 			"thumb": "vYZV7a_thumb",
 			"tile": "vYZV7a_tile",
 			"tileAdd": "vYZV7a_tileAdd",
@@ -169,6 +172,316 @@ window.__ModuleLoader__.load({
 			"zoomShimmer": "vYZV7a_zoomShimmer",
 			"zoomSkeleton": "vYZV7a_zoomSkeleton",
 			"zoomTitle": "vYZV7a_zoomTitle"
+		};
+		//#endregion
+		//#region src/client/spec-form.tsx
+		/**
+		* spec-form.tsx — THE CARD FORM, spec-driven (2026-09-11 rebirth).
+		*
+		* THE OLD SYSTEM'S LAW (the editor's flowParamEditor + the /v1/form-spec
+		* SSOT): a card's knob surface is DECLARED, not guessed — the Schemastery
+		* schema projects to the served form spec (typed atoms: textarea, number,
+		* slider, select, seed, switch; defaults seeded; groups; visible-when).
+		* The picker and the drilldown both render THIS — the nice formatting is
+		* the spec's own shape, never a raw key/value dump.
+		*
+		* DSH NATIVE: Input from the installed ui-primitives where it fits;
+		* the atoms the primitives set lacks (select, slider, textarea) are
+		* layout-only module CSS over native elements, every color an
+		* inherited --dsw-alias-* token. No second app, no iframe — same-origin
+		* /v1 doors (the 2026-09-11 production restore: model-catalog,
+		* form-spec) and the bench wire door.
+		*/
+		/** Seed the editable values from the spec's declared defaults (the old
+		*  picker's law: pick → defaults seeded → the user edits from there). */
+		function specDefaults(fields) {
+			const out = {};
+			for (const f of fields) if (f.default !== void 0 && f.default !== null) out[f.name] = f.default;
+			return out;
+		}
+		/** evalVisibleWhen's serving shape: "key=value" (a field shows when its
+		*  guard key holds the value). A field with no visible_when always
+		*  shows. Unknown guard keys: show (never hide on a typo). */
+		function fieldVisible(f, values) {
+			const rule = f.visible_when;
+			if (typeof rule !== "string" || rule === "") return true;
+			const eq = rule.indexOf("=");
+			if (eq < 0) return true;
+			const key = rule.slice(0, eq);
+			const want = rule.slice(eq + 1);
+			const held = values[key];
+			return String(held ?? "") === want;
+		}
+		/** Group the visible fields (the spec's own group key, first-appearance
+		*  order — ungrouped first under no heading). */
+		function groupFields(fields, values) {
+			const out = [];
+			for (const f of fields) {
+				if (!fieldVisible(f, values)) continue;
+				const g = typeof f.group === "string" && f.group !== "" ? f.group : null;
+				const known = out.find((x) => x.group === g);
+				if (known === void 0) out.push({
+					group: g,
+					fields: [f]
+				});
+				else known.fields.push(f);
+			}
+			return out;
+		}
+		/** Read a same-origin /v1 JSON door. Non-200 → named throw (the door's
+		*  own error text when present). */
+		async function v1Get(path, signal) {
+			const res = await fetch(path, { ...signal === void 0 ? {} : { signal } });
+			const body = await res.json().catch(() => null);
+			if (!res.ok) {
+				const err = typeof body === "object" && body !== null ? Reflect.get(body, "error") : void 0;
+				throw new Error(typeof err === "string" ? err : path + ": HTTP " + String(res.status));
+			}
+			return body;
+		}
+		/** /v1/model-catalog → the cards section (the picker's ONE surface —
+		*  action cards, one tile per card package; models are NOT entries). */
+		async function fetchCardCatalog(signal) {
+			const raw = (await v1Get("/v1/model-catalog", signal))["cards"] ?? {};
+			const out = [];
+			for (const [id, row] of Object.entries(raw)) {
+				if (typeof row !== "object" || row === null) continue;
+				const famsRaw = row["families"];
+				out.push({
+					id,
+					label: typeof row["label"] === "string" ? row["label"] : id,
+					description: typeof row["description"] === "string" ? row["description"] : "",
+					genre: typeof row["genre"] === "string" ? row["genre"] : "",
+					families: Array.isArray(famsRaw) ? famsRaw.filter((x) => typeof x === "string") : [id]
+				});
+			}
+			return out.sort((a, b) => a.label.localeCompare(b.label));
+		}
+		/** /v1/form-spec?model=<family> — the card family's declared knob set. */
+		async function fetchFormSpec(model, signal) {
+			const doc = await v1Get("/v1/form-spec?model=" + encodeURIComponent(model), signal);
+			if (!Array.isArray(doc["fields"])) throw new Error("form-spec: no fields array");
+			return doc;
+		}
+		/** One spec atom — typed by the declaration, edited as a raw string
+		*  while typing (decimal dots survive; coercion happens once at patch). */
+		function SpecAtom({ f, value, onEdit }) {
+			if (f.type === "select" && Array.isArray(f.options) && f.options.length > 0) return (0, react.createElement)("select", {
+				className: card_module_css_default.specSelect,
+				value: String(value ?? ""),
+				onChange: (e) => onEdit(f.name, e.target.value),
+				"aria-label": f.label
+			}, f.options.map((o) => (0, react.createElement)("option", {
+				key: o.value,
+				value: o.value
+			}, o.label)));
+			if (f.type === "slider") {
+				const num = typeof value === "number" ? value : Number(value);
+				return (0, react.createElement)("span", { className: card_module_css_default.specSliderRow }, (0, react.createElement)("input", {
+					className: card_module_css_default.specSlider,
+					type: "range",
+					min: f.min ?? 0,
+					max: f.max ?? 10,
+					step: f.step ?? .1,
+					value: Number.isFinite(num) ? num : f.default ?? 0,
+					onInput: (e) => onEdit(f.name, e.target.value),
+					"aria-label": f.label
+				}), (0, react.createElement)("span", { className: card_module_css_default.specSliderValue }, String(value ?? f.default ?? "")));
+			}
+			if (f.type === "switch" || f.type === "boolean") {
+				const on = value === true || value === "true";
+				return (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Switch, {
+					label: f.label,
+					checked: on,
+					onChange: (next) => {
+						onEdit(f.name, next);
+					}
+				});
+			}
+			if (f.type === "textarea") return (0, react.createElement)("textarea", {
+				className: card_module_css_default.specTextarea,
+				rows: 3,
+				value: String(value ?? ""),
+				placeholder: f.placeholder ?? "",
+				onChange: (e) => onEdit(f.name, e.target.value),
+				"aria-label": f.label
+			});
+			return (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Input, {
+				value: String(value ?? ""),
+				placeholder: f.placeholder ?? "",
+				onChange: (e) => onEdit(f.name, e.target.value),
+				"aria-label": f.label
+			});
+		}
+		/** THE CARD FORM — the spec's fields, grouped, visible-when honored,
+		*  defaults seeded by the caller. Edits ride the caller's values map. */
+		function SpecForm({ fields, values, onEdit }) {
+			const groups = groupFields(fields, values);
+			return (0, react.createElement)("div", { className: card_module_css_default.specForm }, groups.map((g) => (0, react.createElement)("section", {
+				key: g.group ?? "",
+				className: card_module_css_default.specGroup
+			}, g.group !== null ? (0, react.createElement)("h4", { className: card_module_css_default.specGroupTitle }, g.group) : null, g.fields.map((f) => (0, react.createElement)("label", {
+				key: f.name,
+				className: card_module_css_default.specField
+			}, (0, react.createElement)("span", { className: card_module_css_default.specFieldKey }, f.label, f.required === true ? (0, react.createElement)("span", { className: card_module_css_default.specRequired }, " *") : null), (0, react.createElement)(SpecAtom, {
+				f,
+				value: values[f.name],
+				onEdit
+			}), f.tooltip !== void 0 && f.tooltip !== "" ? (0, react.createElement)("span", { className: card_module_css_default.specHint }, f.tooltip) : null)))));
+		}
+		/** Coerce the raw edit strings to the spec's declared types — ONCE, at
+		*  patch time (the editPatch law). Only keys that CHANGED from the
+		*  stage's held params ride the patch. */
+		function specPatch(fields, values, held) {
+			const out = {};
+			for (const f of fields) {
+				const v = values[f.name];
+				if (v === void 0) continue;
+				const before = held[f.name] ?? f.default;
+				if (String(v) === String(before ?? "")) continue;
+				if (f.type === "number" || f.type === "seed" || f.type === "slider") {
+					const n = Number(v);
+					out[f.name] = Number.isFinite(n) ? n : v;
+				} else if (f.type === "switch" || f.type === "boolean") out[f.name] = v === true || v === "true";
+				else out[f.name] = v;
+			}
+			return out;
+		}
+		//#endregion
+		//#region src/client/img-to-mesh-studio.tsx
+		/**
+		* img-to-mesh-studio — the FIRST-PARTY cards.stage.view surface
+		* (2026-09-12, the ui-tool built-in law: the host package ships the
+		* shipped cards' views; third-party cards register additively).
+		*
+		* The door serves `layout: "studio"` for img-to-mesh — this view is
+		* what that declaration MEANS on the client: the card's knob surface
+		* composed in the card's own terms (the old LAW A), from the SAME
+		* form-spec SSOT the generic card renders. Not a copy of the generic
+		* form's layout: the everyday groups (input, generation) sit exposed;
+		* the deep groups (stage, mesh, bake, lab) fold behind ui-primitives
+		* DisclosureRow. Every ATOM is the generic card's own SpecForm render
+		* — the studio owns ORGANIZATION, the SSOT owns the knobs.
+		*
+		* The currency is StageViewOwnerProps (pure function of the bench):
+		* values seed from the frozen row + spec defaults; Run patches the
+		* domain FIRST (drafts/patch via onPatch), then starts the run — the
+		* generic drill's own law, kept verbatim.
+		*/
+		/** The door's group truth (schema_groups, 2026-09-12 lane read):
+		*  input, generation — exposed; stage, mesh, bake, lab — folded. */
+		const STUDIO_EXPOSED = ["input", "generation"];
+		const STUDIO_FOLDS = [
+			"stage",
+			"mesh",
+			"bake",
+			"lab"
+		];
+		const STUDIO_TITLE = {
+			stage: "Stage passes",
+			mesh: "Mesh",
+			bake: "Bake maps",
+			lab: "Lab (samplers & overrides)"
+		};
+		function fieldsOf(fields, group) {
+			return fields.filter((f) => f.group === group);
+		}
+		/** The studio surface component — registered under key 'img-to-mesh'. */
+		function ImgToMeshStudio(props) {
+			const { row, runStatus, onPatch, onRun, onRemove } = props;
+			const params = typeof row["params"] === "object" && row["params"] !== null ? row["params"] : {};
+			const [spec, setSpec] = (0, react.useState)(null);
+			const [error, setError] = (0, react.useState)(null);
+			const [values, setValues] = (0, react.useState)(params);
+			const [open, setOpen] = (0, react.useState)({});
+			const [running, setRunning] = (0, react.useState)(false);
+			(0, react.useEffect)(() => {
+				let alive = true;
+				fetchFormSpec("img-to-mesh").then((doc) => {
+					if (!alive) return;
+					setSpec(doc);
+					setValues({
+						...specDefaults(doc.fields),
+						...params
+					});
+				}).catch((e) => {
+					if (alive) setError(e instanceof Error ? e.message : "form-spec failed");
+				});
+				return () => {
+					alive = false;
+				};
+			}, []);
+			const onEdit = (name, v) => {
+				setValues((prev) => ({
+					...prev,
+					[name]: v
+				}));
+			};
+			const run = () => {
+				if (spec === null) return;
+				setRunning(true);
+				onPatch({ ...values });
+				onRun();
+				setRunning(false);
+			};
+			return (0, react.createElement)("div", { className: card_module_css_default.zoomDetail }, (0, react.createElement)("div", { className: card_module_css_default.studioHead }, (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Tag, { tone: "info" }, "studio"), runStatus !== "" ? (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Tag, { tone: runStatus === "done" ? "success" : runStatus === "error" ? "danger" : "neutral" }, runStatus) : null), error !== null ? (0, react.createElement)("p", { className: card_module_css_default.runError }, error) : null, spec === null ? (0, react.createElement)("p", { className: card_module_css_default.groupNote }, "loading the declared knob surface…") : (0, react.createElement)("div", { className: card_module_css_default.studioBody }, STUDIO_EXPOSED.map((g) => (0, react.createElement)("section", {
+				key: g,
+				className: card_module_css_default.studioGroup
+			}, (0, react.createElement)(StudioFields, {
+				fields: fieldsOf(spec.fields, g),
+				values,
+				onEdit
+			}))), STUDIO_FOLDS.map((g) => {
+				const fs = fieldsOf(spec.fields, g);
+				if (fs.length === 0) return null;
+				const isOpen = open[g] === true;
+				return (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.DisclosureRow, {
+					key: g,
+					icon: (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.IconArchiveOutline20),
+					title: STUDIO_TITLE[g] ?? g,
+					open: isOpen,
+					expandable: true,
+					expandOnRowClick: true,
+					onToggle: () => {
+						setOpen((prev) => ({
+							...prev,
+							[g]: !prev[g]
+						}));
+					}
+				}, (0, react.createElement)(StudioFields, {
+					fields: fs,
+					values,
+					onEdit
+				}));
+			}), (0, react.createElement)("div", { className: card_module_css_default.runRow }, error !== null ? (0, react.createElement)("span", { className: card_module_css_default.runError }, error) : null, (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+				variant: "primary",
+				onClick: run
+			}, running ? "running…" : "Run"), (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+				variant: "ghost",
+				onClick: onRemove
+			}, "Remove stage"))));
+		}
+		/** The generic card's OWN atoms (SpecForm renders one group's fields —
+		*  the studio hands it the group's slice; zero atom copies). */
+		function StudioFields({ fields, values, onEdit }) {
+			if (fields.length === 0) return (0, react.createElement)("p", { className: card_module_css_default.groupNote }, "no declared fields");
+			return (0, react.createElement)(SpecForm, {
+				fields,
+				values,
+				onEdit
+			});
+		}
+		/** The built-in registration (ui-tool's readToolview shape verbatim):
+		*  the host package registers its own shipped card's view. */
+		const imgToMeshStudio = {
+			name: "img-to-mesh-studio",
+			inject: ["slots"],
+			apply(ctx) {
+				ctx.slots.inject("cards.stage.view", () => ctx.slots.register({
+					name: "cards.stage.view",
+					key: "img-to-mesh"
+				}, ImgToMeshStudio));
+			}
 		};
 		//#endregion
 		//#region src/client/draft.ts
@@ -682,180 +995,6 @@ window.__ModuleLoader__.load({
 					})
 				]
 			});
-		}
-		//#endregion
-		//#region src/client/spec-form.tsx
-		/**
-		* spec-form.tsx — THE CARD FORM, spec-driven (2026-09-11 rebirth).
-		*
-		* THE OLD SYSTEM'S LAW (the editor's flowParamEditor + the /v1/form-spec
-		* SSOT): a card's knob surface is DECLARED, not guessed — the Schemastery
-		* schema projects to the served form spec (typed atoms: textarea, number,
-		* slider, select, seed, switch; defaults seeded; groups; visible-when).
-		* The picker and the drilldown both render THIS — the nice formatting is
-		* the spec's own shape, never a raw key/value dump.
-		*
-		* DSH NATIVE: Input from the installed ui-primitives where it fits;
-		* the atoms the primitives set lacks (select, slider, textarea) are
-		* layout-only module CSS over native elements, every color an
-		* inherited --dsw-alias-* token. No second app, no iframe — same-origin
-		* /v1 doors (the 2026-09-11 production restore: model-catalog,
-		* form-spec) and the bench wire door.
-		*/
-		/** Seed the editable values from the spec's declared defaults (the old
-		*  picker's law: pick → defaults seeded → the user edits from there). */
-		function specDefaults(fields) {
-			const out = {};
-			for (const f of fields) if (f.default !== void 0 && f.default !== null) out[f.name] = f.default;
-			return out;
-		}
-		/** evalVisibleWhen's serving shape: "key=value" (a field shows when its
-		*  guard key holds the value). A field with no visible_when always
-		*  shows. Unknown guard keys: show (never hide on a typo). */
-		function fieldVisible(f, values) {
-			const rule = f.visible_when;
-			if (typeof rule !== "string" || rule === "") return true;
-			const eq = rule.indexOf("=");
-			if (eq < 0) return true;
-			const key = rule.slice(0, eq);
-			const want = rule.slice(eq + 1);
-			const held = values[key];
-			return String(held ?? "") === want;
-		}
-		/** Group the visible fields (the spec's own group key, first-appearance
-		*  order — ungrouped first under no heading). */
-		function groupFields(fields, values) {
-			const out = [];
-			for (const f of fields) {
-				if (!fieldVisible(f, values)) continue;
-				const g = typeof f.group === "string" && f.group !== "" ? f.group : null;
-				const known = out.find((x) => x.group === g);
-				if (known === void 0) out.push({
-					group: g,
-					fields: [f]
-				});
-				else known.fields.push(f);
-			}
-			return out;
-		}
-		/** Read a same-origin /v1 JSON door. Non-200 → named throw (the door's
-		*  own error text when present). */
-		async function v1Get(path, signal) {
-			const res = await fetch(path, { ...signal === void 0 ? {} : { signal } });
-			const body = await res.json().catch(() => null);
-			if (!res.ok) {
-				const err = typeof body === "object" && body !== null ? Reflect.get(body, "error") : void 0;
-				throw new Error(typeof err === "string" ? err : path + ": HTTP " + String(res.status));
-			}
-			return body;
-		}
-		/** /v1/model-catalog → the cards section (the picker's ONE surface —
-		*  action cards, one tile per card package; models are NOT entries). */
-		async function fetchCardCatalog(signal) {
-			const raw = (await v1Get("/v1/model-catalog", signal))["cards"] ?? {};
-			const out = [];
-			for (const [id, row] of Object.entries(raw)) {
-				if (typeof row !== "object" || row === null) continue;
-				const famsRaw = row["families"];
-				out.push({
-					id,
-					label: typeof row["label"] === "string" ? row["label"] : id,
-					description: typeof row["description"] === "string" ? row["description"] : "",
-					genre: typeof row["genre"] === "string" ? row["genre"] : "",
-					families: Array.isArray(famsRaw) ? famsRaw.filter((x) => typeof x === "string") : [id]
-				});
-			}
-			return out.sort((a, b) => a.label.localeCompare(b.label));
-		}
-		/** /v1/form-spec?model=<family> — the card family's declared knob set. */
-		async function fetchFormSpec(model, signal) {
-			const doc = await v1Get("/v1/form-spec?model=" + encodeURIComponent(model), signal);
-			if (!Array.isArray(doc["fields"])) throw new Error("form-spec: no fields array");
-			return doc;
-		}
-		/** One spec atom — typed by the declaration, edited as a raw string
-		*  while typing (decimal dots survive; coercion happens once at patch). */
-		function SpecAtom({ f, value, onEdit }) {
-			if (f.type === "select" && Array.isArray(f.options) && f.options.length > 0) return (0, react.createElement)("select", {
-				className: card_module_css_default.specSelect,
-				value: String(value ?? ""),
-				onChange: (e) => onEdit(f.name, e.target.value),
-				"aria-label": f.label
-			}, f.options.map((o) => (0, react.createElement)("option", {
-				key: o.value,
-				value: o.value
-			}, o.label)));
-			if (f.type === "slider") {
-				const num = typeof value === "number" ? value : Number(value);
-				return (0, react.createElement)("span", { className: card_module_css_default.specSliderRow }, (0, react.createElement)("input", {
-					className: card_module_css_default.specSlider,
-					type: "range",
-					min: f.min ?? 0,
-					max: f.max ?? 10,
-					step: f.step ?? .1,
-					value: Number.isFinite(num) ? num : f.default ?? 0,
-					onInput: (e) => onEdit(f.name, e.target.value),
-					"aria-label": f.label
-				}), (0, react.createElement)("span", { className: card_module_css_default.specSliderValue }, String(value ?? f.default ?? "")));
-			}
-			if (f.type === "switch" || f.type === "boolean") {
-				const on = value === true || value === "true";
-				return (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Switch, {
-					label: f.label,
-					checked: on,
-					onChange: (next) => {
-						onEdit(f.name, next);
-					}
-				});
-			}
-			if (f.type === "textarea") return (0, react.createElement)("textarea", {
-				className: card_module_css_default.specTextarea,
-				rows: 3,
-				value: String(value ?? ""),
-				placeholder: f.placeholder ?? "",
-				onChange: (e) => onEdit(f.name, e.target.value),
-				"aria-label": f.label
-			});
-			return (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Input, {
-				value: String(value ?? ""),
-				placeholder: f.placeholder ?? "",
-				onChange: (e) => onEdit(f.name, e.target.value),
-				"aria-label": f.label
-			});
-		}
-		/** THE CARD FORM — the spec's fields, grouped, visible-when honored,
-		*  defaults seeded by the caller. Edits ride the caller's values map. */
-		function SpecForm({ fields, values, onEdit }) {
-			const groups = groupFields(fields, values);
-			return (0, react.createElement)("div", { className: card_module_css_default.specForm }, groups.map((g) => (0, react.createElement)("section", {
-				key: g.group ?? "",
-				className: card_module_css_default.specGroup
-			}, g.group !== null ? (0, react.createElement)("h4", { className: card_module_css_default.specGroupTitle }, g.group) : null, g.fields.map((f) => (0, react.createElement)("label", {
-				key: f.name,
-				className: card_module_css_default.specField
-			}, (0, react.createElement)("span", { className: card_module_css_default.specFieldKey }, f.label, f.required === true ? (0, react.createElement)("span", { className: card_module_css_default.specRequired }, " *") : null), (0, react.createElement)(SpecAtom, {
-				f,
-				value: values[f.name],
-				onEdit
-			}), f.tooltip !== void 0 && f.tooltip !== "" ? (0, react.createElement)("span", { className: card_module_css_default.specHint }, f.tooltip) : null)))));
-		}
-		/** Coerce the raw edit strings to the spec's declared types — ONCE, at
-		*  patch time (the editPatch law). Only keys that CHANGED from the
-		*  stage's held params ride the patch. */
-		function specPatch(fields, values, held) {
-			const out = {};
-			for (const f of fields) {
-				const v = values[f.name];
-				if (v === void 0) continue;
-				const before = held[f.name] ?? f.default;
-				if (String(v) === String(before ?? "")) continue;
-				if (f.type === "number" || f.type === "seed" || f.type === "slider") {
-					const n = Number(v);
-					out[f.name] = Number.isFinite(n) ? n : v;
-				} else if (f.type === "switch" || f.type === "boolean") out[f.name] = v === true || v === "true";
-				else out[f.name] = v;
-			}
-			return out;
 		}
 		//#endregion
 		//#region ../../../node_modules/.pnpm/@deepseek-ai+dsh-typert-protocol@0.1.5-rc.2_@deepseek-ai+cordis@4.0.2/node_modules/@deepseek-ai/dsh-typert-protocol/lib/index.js
@@ -14934,6 +15073,7 @@ get: (_target, key) => {
 			} catch (error) {
 				console.error(`[melite-card-view] toolview registration failed for ${tool}:`, error);
 			}
+			ctx.plugin(imgToMeshStudio);
 			try {
 				ctx.effect(() => ctx.sidebarRightTabs.register({
 					id: CARDS_TAB_ID,

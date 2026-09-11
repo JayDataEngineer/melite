@@ -764,3 +764,8 @@
     animation-iteration-count: 1;
   }
 }
+
+/* ── the studio surface (cards.stage.view, img-to-mesh first party) ── */
+.studioHead { align-items: center; display: flex; gap: 8px; line-height: 20px; }
+.studioBody { display: flex; flex-direction: column; gap: 12px; }
+.studioGroup { display: flex; flex-direction: column; gap: 6px; }
