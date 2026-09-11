@@ -74,10 +74,12 @@ test('the bench row is a card (Pill kind, bold title, engine Pill) and opens the
     }),
     useResource: () => ({ status: 'live', value: BENCH }),
   }))
-  const row = screen.getByRole('button', { name: /hero frame/ })
-  expect(within(row).getByText('image-gen')).toBeTruthy()
-  expect(within(row).getByText('comfyui')).toBeTruthy()
-  await user.click(row)
+  const tile = screen.getByRole('button', { name: /hero frame/ })
+  // THE TILE FACE: kind face in the preview cell, caption strip below
+  expect(within(tile).getByText('image-gen')).toBeTruthy()
+  expect(within(tile).getByText('comfyui')).toBeTruthy()
+  expect(tile.querySelector('[data-kind="image-gen"]')).toBeTruthy()
+  await user.click(tile)
   // the drill opens with the stage's params as editable fields
   expect(screen.getByText('Stage hero frame')).toBeTruthy()
   expect(screen.getByText('prompt')).toBeTruthy()

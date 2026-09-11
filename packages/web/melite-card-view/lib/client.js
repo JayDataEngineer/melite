@@ -21,7 +21,7 @@ window.__ModuleLoader__.load({
 		}
 		//#endregion
 		//#region \0dsh-css:melite-card-view/src/client/card.module.css.mjs
-		const css = ".vYZV7a_card{flex-direction:column;min-width:0;margin:4px 0;font-size:12px;line-height:1.45;display:flex}.vYZV7a_load{color:var(--dsw-alias-label-secondary,#9a9aa5);padding:2px 0}.vYZV7a_head{align-items:center;gap:8px;min-width:0;display:flex}.vYZV7a_model{text-overflow:ellipsis;white-space:nowrap;min-width:0;font-weight:600;overflow:hidden}.vYZV7a_state{border-radius:999px;flex:none;margin-left:auto;padding:1px 8px}.vYZV7a_state[data-state=completed]{color:var(--dsw-alias-state-success-primary,#3fb96f)}.vYZV7a_state[data-state=running],.vYZV7a_state[data-state=queued],.vYZV7a_state[data-state=pending],.vYZV7a_state[data-state=starting],.vYZV7a_state[data-state=draft]{color:var(--dsw-alias-state-warn-primary,#d9a53f)}.vYZV7a_state[data-state=failed],.vYZV7a_state[data-state=error],.vYZV7a_state[data-state=stopped],.vYZV7a_state[data-state=interrupted]{color:var(--dsw-alias-state-error-primary,#e05656)}.vYZV7a_prompt{color:var(--dsw-alias-text-secondary,#9a9aa5);-webkit-line-clamp:2;-webkit-box-orient:vertical;display:-webkit-box;overflow:hidden}.vYZV7a_link:hover{text-decoration:underline}.vYZV7a_row{color:inherit;cursor:pointer;font:inherit;text-align:left;background:0 0;border:none;border-radius:6px;align-items:center;gap:8px;width:100%;min-width:0;padding:4px 6px;display:flex}.vYZV7a_row:hover{background:var(--dsw-alias-interactive-bg-hover-subtle,#ffffff0d)}.vYZV7a_row:focus-visible{outline:1px solid var(--dsw-alias-state-business-primary,#4f7bd8);outline-offset:-1px}.vYZV7a_thumb{object-fit:cover;border-radius:4px;flex:none;width:34px;height:34px}.vYZV7a_rowTitle{text-overflow:ellipsis;white-space:nowrap;flex:none;max-width:40%;font-weight:600;overflow:hidden}.vYZV7a_drill{width:92vw;max-width:min(860px,92vw)}.vYZV7a_split{grid-template-columns:minmax(240px,1fr) minmax(0,1.2fr);gap:14px;min-width:0;display:grid}@media (width<=640px){.vYZV7a_split{grid-template-columns:1fr}}.vYZV7a_params{flex-direction:column;gap:8px;min-width:0;max-height:60vh;display:flex;overflow-y:auto}.vYZV7a_field{flex-direction:column;gap:3px;min-width:0;display:flex}.vYZV7a_fieldKey{color:var(--dsw-alias-label-secondary,#9a9aa5);font-size:11px}.vYZV7a_outputs{flex-direction:column;align-items:center;gap:10px;min-width:0;display:flex}.vYZV7a_outputImg{object-fit:contain;border-radius:8px;max-width:100%;max-height:46vh}.vYZV7a_runRow{justify-content:flex-end;align-items:center;gap:10px;width:100%;display:flex}.vYZV7a_runError{color:var(--dsw-alias-label-error,#e05656);overflow-wrap:anywhere;font-size:11px}.vYZV7a_state[data-state=legacy]{color:var(--dsw-alias-label-secondary,#9a9aa5)}.vYZV7a_cardsBench{flex-direction:column;gap:8px;display:flex}.vYZV7a_benchHead{justify-content:space-between;align-items:center;gap:8px;display:flex}.vYZV7a_revTag{color:var(--dsw-alias-fg-muted,#ffffff8c);font-family:var(--dsw-alias-font-mono,ui-monospace, monospace);font-size:11px}.vYZV7a_runBtn,.vYZV7a_back,.vYZV7a_restore{border:1px solid var(--dsw-alias-border-subtle,#ffffff26);color:inherit;cursor:pointer;font:inherit;background:0 0;border-radius:6px;padding:2px 10px;font-size:12px}.vYZV7a_runBtn:hover:not(:disabled),.vYZV7a_back:hover,.vYZV7a_restore:hover:not(:disabled){background:var(--dsh-alias-interactive-bg-hover-subtle,#ffffff0d);border-color:var(--dsw-alias-state-business-primary,#4f7bd8)}.vYZV7a_runBtn:disabled,.vYZV7a_restore:disabled{cursor:default;opacity:.45}.vYZV7a_category{flex-direction:column;gap:2px;display:flex}.vYZV7a_catTitle{color:var(--dsw-alias-fg-muted,#ffffff8c);letter-spacing:.06em;text-transform:uppercase;margin:4px 0 2px;font-size:11px;font-weight:600}.vYZV7a_stages{flex-direction:column;gap:2px;margin:0;padding:0;list-style:none;display:flex}.vYZV7a_stage{list-style:none}.vYZV7a_stageTitle{text-overflow:ellipsis;white-space:nowrap;flex:none;max-width:45%;font-weight:600;overflow:hidden}.vYZV7a_stageEngine{color:var(--dsw-alias-fg-muted,#ffffff8c);flex:none;font-size:11px}.vYZV7a_stageArtifact{color:var(--dsw-alias-state-business-primary,#4f7bd8);font-size:12px;text-decoration:none}.vYZV7a_stageArtifact:hover{text-decoration:underline}.vYZV7a_empty,.vYZV7a_loading,.vYZV7a_failed,.vYZV7a_missing,.vYZV7a_logHead,.vYZV7a_restoreNote{color:var(--dsw-alias-fg-muted,#ffffff8c);margin:0;font-size:12px;font-style:italic}.vYZV7a_runView{flex-direction:column;gap:8px;display:flex}.vYZV7a_runHead{align-items:baseline;gap:8px;display:flex}.vYZV7a_runId{font-family:var(--dsw-alias-font-mono,ui-monospace, monospace);font-size:12px;font-weight:600}.vYZV7a_runStatus{border:1px solid var(--dsw-alias-border-subtle,#ffffff26);color:var(--dsw-alias-fg-muted,#ffffff8c);border-radius:999px;padding:0 8px;font-size:11px}.vYZV7a_runActions{gap:8px;display:flex}.vYZV7a_stageDetail{grid-template-columns:auto 1fr;gap:2px 12px;margin:0;display:grid}.vYZV7a_stageDetail dt{color:var(--dsw-alias-fg-muted,#ffffff8c);text-align:right;text-transform:uppercase;font-size:11px}.vYZV7a_stageDetail dd{min-width:0;margin:0}.vYZV7a_mono{font-family:var(--dsw-alias-font-mono,ui-monospace, monospace);font-size:12px;overflow-x:auto}";
+		const css = ".vYZV7a_card{flex-direction:column;min-width:0;margin:4px 0;font-size:12px;line-height:1.45;display:flex}.vYZV7a_load{color:var(--dsw-alias-label-secondary,#9a9aa5);padding:2px 0}.vYZV7a_head{align-items:center;gap:8px;min-width:0;display:flex}.vYZV7a_model{text-overflow:ellipsis;white-space:nowrap;min-width:0;font-weight:600;overflow:hidden}.vYZV7a_state{border-radius:999px;flex:none;margin-left:auto;padding:1px 8px}.vYZV7a_state[data-state=completed]{color:var(--dsw-alias-state-success-primary,#3fb96f)}.vYZV7a_state[data-state=running],.vYZV7a_state[data-state=queued],.vYZV7a_state[data-state=pending],.vYZV7a_state[data-state=starting],.vYZV7a_state[data-state=draft]{color:var(--dsw-alias-state-warn-primary,#d9a53f)}.vYZV7a_state[data-state=failed],.vYZV7a_state[data-state=error],.vYZV7a_state[data-state=stopped],.vYZV7a_state[data-state=interrupted]{color:var(--dsw-alias-state-error-primary,#e05656)}.vYZV7a_prompt{color:var(--dsw-alias-text-secondary,#9a9aa5);-webkit-line-clamp:2;-webkit-box-orient:vertical;display:-webkit-box;overflow:hidden}.vYZV7a_link:hover{text-decoration:underline}.vYZV7a_row{color:inherit;cursor:pointer;font:inherit;text-align:left;background:0 0;border:none;border-radius:6px;align-items:center;gap:8px;width:100%;min-width:0;padding:4px 6px;display:flex}.vYZV7a_row:hover{background:var(--dsw-alias-interactive-bg-hover-subtle,#ffffff0d)}.vYZV7a_row:focus-visible{outline:1px solid var(--dsw-alias-state-business-primary,#4f7bd8);outline-offset:-1px}.vYZV7a_thumb{object-fit:cover;border-radius:4px;flex:none;width:34px;height:34px}.vYZV7a_rowTitle{text-overflow:ellipsis;white-space:nowrap;flex:none;max-width:40%;font-weight:600;overflow:hidden}.vYZV7a_drill{width:92vw;max-width:min(860px,92vw)}.vYZV7a_split{grid-template-columns:minmax(240px,1fr) minmax(0,1.2fr);gap:14px;min-width:0;display:grid}@media (width<=640px){.vYZV7a_split{grid-template-columns:1fr}}.vYZV7a_params{flex-direction:column;gap:8px;min-width:0;max-height:60vh;display:flex;overflow-y:auto}.vYZV7a_field{flex-direction:column;gap:3px;min-width:0;display:flex}.vYZV7a_fieldKey{color:var(--dsw-alias-label-secondary,#9a9aa5);font-size:11px}.vYZV7a_outputs{flex-direction:column;align-items:center;gap:10px;min-width:0;display:flex}.vYZV7a_outputImg{object-fit:contain;border-radius:8px;max-width:100%;max-height:46vh}.vYZV7a_runRow{justify-content:flex-end;align-items:center;gap:10px;width:100%;display:flex}.vYZV7a_runError{color:var(--dsw-alias-label-error,#e05656);overflow-wrap:anywhere;font-size:11px}.vYZV7a_state[data-state=legacy]{color:var(--dsw-alias-label-secondary,#9a9aa5)}.vYZV7a_cardsBench{flex-direction:column;gap:8px;display:flex}.vYZV7a_benchHead{justify-content:space-between;align-items:center;gap:8px;display:flex}.vYZV7a_revTag{color:var(--dsw-alias-fg-muted,#ffffff8c);font-family:var(--dsw-alias-font-mono,ui-monospace, monospace);font-size:11px}.vYZV7a_runBtn,.vYZV7a_back,.vYZV7a_restore{border:1px solid var(--dsw-alias-border-subtle,#ffffff26);color:inherit;cursor:pointer;font:inherit;background:0 0;border-radius:6px;padding:2px 10px;font-size:12px}.vYZV7a_runBtn:hover:not(:disabled),.vYZV7a_back:hover,.vYZV7a_restore:hover:not(:disabled){background:var(--dsh-alias-interactive-bg-hover-subtle,#ffffff0d);border-color:var(--dsw-alias-state-business-primary,#4f7bd8)}.vYZV7a_runBtn:disabled,.vYZV7a_restore:disabled{cursor:default;opacity:.45}.vYZV7a_category{flex-direction:column;gap:2px;display:flex}.vYZV7a_catTitle{color:var(--dsw-alias-fg-muted,#ffffff8c);letter-spacing:.06em;text-transform:uppercase;margin:4px 0 2px;font-size:11px;font-weight:600}.vYZV7a_stages{flex-direction:column;gap:2px;margin:0;padding:0;list-style:none;display:flex}.vYZV7a_stage{list-style:none}.vYZV7a_stageTitle{text-overflow:ellipsis;white-space:nowrap;flex:none;max-width:45%;font-weight:600;overflow:hidden}.vYZV7a_stageEngine{color:var(--dsw-alias-fg-muted,#ffffff8c);flex:none;font-size:11px}.vYZV7a_stageArtifact{color:var(--dsw-alias-state-business-primary,#4f7bd8);font-size:12px;text-decoration:none}.vYZV7a_stageArtifact:hover{text-decoration:underline}.vYZV7a_empty,.vYZV7a_loading,.vYZV7a_failed,.vYZV7a_missing,.vYZV7a_logHead,.vYZV7a_restoreNote{color:var(--dsw-alias-fg-muted,#ffffff8c);margin:0;font-size:12px;font-style:italic}.vYZV7a_runView{flex-direction:column;gap:8px;display:flex}.vYZV7a_runHead{align-items:baseline;gap:8px;display:flex}.vYZV7a_runId{font-family:var(--dsw-alias-font-mono,ui-monospace, monospace);font-size:12px;font-weight:600}.vYZV7a_runStatus{border:1px solid var(--dsw-alias-border-subtle,#ffffff26);color:var(--dsw-alias-fg-muted,#ffffff8c);border-radius:999px;padding:0 8px;font-size:11px}.vYZV7a_runActions{gap:8px;display:flex}.vYZV7a_stageDetail{grid-template-columns:auto 1fr;gap:2px 12px;margin:0;display:grid}.vYZV7a_stageDetail dt{color:var(--dsw-alias-fg-muted,#ffffff8c);text-align:right;text-transform:uppercase;font-size:11px}.vYZV7a_stageDetail dd{min-width:0;margin:0}.vYZV7a_mono{font-family:var(--dsw-alias-font-mono,ui-monospace, monospace);font-size:12px;overflow-x:auto}.vYZV7a_tileGrid{grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px;margin:0;padding:0;list-style:none;display:grid}.vYZV7a_tile{margin:0;padding:0;display:block}.vYZV7a_tileInner{border:1px solid var(--dsw-alias-border-subtle,#ffffff1f);cursor:pointer;font:inherit;text-align:left;background:0 0;border-radius:10px;flex-direction:column;align-items:stretch;width:100%;padding:0;display:flex;overflow:hidden}.vYZV7a_tileInner:hover{border-color:var(--dsw-alias-state-business-primary,#4f7bd8);background:var(--dsh-alias-interactive-bg-hover-subtle,#ffffff0a)}.vYZV7a_tilePreview{aspect-ratio:1;flex:1;width:100%;min-height:0;margin:0;display:block;position:relative}.vYZV7a_tileImg,.vYZV7a_tileImgLink{width:100%;height:100%;display:block}.vYZV7a_tileImg{object-fit:cover}.vYZV7a_kindFace{background:var(--dsh-alias-interactive-bg-hover-subtle,#ffffff0d);color:var(--dsw-alias-fg-muted,#ffffff8c);flex-direction:column;justify-content:center;align-items:center;gap:4px;width:100%;height:100%;display:flex}.vYZV7a_kindInitial{font-size:28px;font-weight:700;line-height:1}.vYZV7a_kindName{font-family:var(--dsw-alias-font-mono,ui-monospace, monospace);text-overflow:ellipsis;white-space:nowrap;padding:0 6px;font-size:10px;overflow:hidden}.vYZV7a_tileDot{position:absolute;bottom:6px;right:6px}.vYZV7a_tileCaption{border-top:1px solid var(--dsw-alias-border-subtle,#ffffff1a);flex-direction:column;flex:none;gap:2px;padding:6px 8px;display:flex}.vYZV7a_tileTitle{text-overflow:ellipsis;white-space:nowrap;font-size:12px;font-weight:600;overflow:hidden}.vYZV7a_tileMeta{color:var(--dsw-alias-fg-muted,#ffffff8c);font-family:var(--dsw-alias-font-mono,ui-monospace, monospace);align-items:center;gap:6px;font-size:10px;display:flex;overflow:hidden}.vYZV7a_tilePrompt{text-overflow:ellipsis;white-space:nowrap;flex:1;overflow:hidden}";
 		const tagId = "@melite-plugin/dsh-card-view/card.module.css";
 		if (typeof document !== "undefined" && document.querySelector("style[data-plugin-css=" + JSON.stringify(tagId) + "]") === null) {
 			const tag = document.createElement("style");
@@ -43,6 +43,9 @@ window.__ModuleLoader__.load({
 			"field": "vYZV7a_field",
 			"fieldKey": "vYZV7a_fieldKey",
 			"head": "vYZV7a_head",
+			"kindFace": "vYZV7a_kindFace",
+			"kindInitial": "vYZV7a_kindInitial",
+			"kindName": "vYZV7a_kindName",
 			"link": "vYZV7a_link",
 			"load": "vYZV7a_load",
 			"loading": "vYZV7a_loading",
@@ -75,7 +78,18 @@ window.__ModuleLoader__.load({
 			"stageTitle": "vYZV7a_stageTitle",
 			"stages": "vYZV7a_stages",
 			"state": "vYZV7a_state",
-			"thumb": "vYZV7a_thumb"
+			"thumb": "vYZV7a_thumb",
+			"tile": "vYZV7a_tile",
+			"tileCaption": "vYZV7a_tileCaption",
+			"tileDot": "vYZV7a_tileDot",
+			"tileGrid": "vYZV7a_tileGrid",
+			"tileImg": "vYZV7a_tileImg",
+			"tileImgLink": "vYZV7a_tileImgLink",
+			"tileInner": "vYZV7a_tileInner",
+			"tileMeta": "vYZV7a_tileMeta",
+			"tilePreview": "vYZV7a_tilePreview",
+			"tilePrompt": "vYZV7a_tilePrompt",
+			"tileTitle": "vYZV7a_tileTitle"
 		};
 		//#endregion
 		//#region src/client/draft.ts
@@ -1027,22 +1041,39 @@ window.__ModuleLoader__.load({
 		*  system, both planes — the tab renders the SAME row the chat
 		*  renders, from the same stylesheet (the .row/.thumb/.rowTitle/
 		*  .prompt classes below are the flow block's own). */
-		function CardRowLineTab({ row, onOpen }) {
+		/** THE CARD TILE — the operator's CardTile law (flowCardTile.tsx)
+		*  ported to the tab, DSH native: the visual card (INNER) is ONE flex
+		*  column with exactly two flow children —
+		*    1. the PREVIEW CELL — flex-1 min-h-0, aspect-square: it owns
+		*       every pixel the caption strip doesn't need. Media fills it
+		*       edge to edge (object-cover); no artifact yet → the KIND FACE
+		*       (the kind initial, the glyph chain's face without the editor
+		*       runtime). A portrait artifact can NOT drive the row height
+		*       (SQUARE LAW, 2026-08-23).
+		*    2. the CAPTION STRIP — shrink-0, natural height: the declared
+		*       summary line (title · engine) + the live status dot.
+		*  Image-anchored overlays (the status dot) live INSIDE the preview
+		*  cell so their anchors ride the artifact's corner. Click = the
+		*  drilldown (the second state, the shared CardDrill). */
+		function StageTile({ row, onOpen }) {
 			return (0, react.createElement)("li", {
-				className: card_module_css_default.stage,
+				className: card_module_css_default.tile,
 				"data-stage-id": row.id,
 				"data-stage-status": row.status
 			}, (0, react.createElement)("button", {
-				className: card_module_css_default.row,
+				className: card_module_css_default.tileInner,
 				type: "button",
 				"data-status": row.status,
 				onClick: () => onOpen(row)
-			}, row.thumbUrl !== null ? (0, react.createElement)("img", {
-				className: card_module_css_default.thumb,
+			}, (0, react.createElement)("span", { className: card_module_css_default.tilePreview }, row.thumbUrl !== null ? (0, react.createElement)("img", {
+				className: card_module_css_default.tileImg,
 				src: row.thumbUrl,
 				alt: row.title,
 				loading: "lazy"
-			}) : (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Pill, null, row.kind), (0, react.createElement)("span", { className: card_module_css_default.rowTitle }, row.title), row.service !== null ? (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Pill, null, row.service) : null, row.dot !== null ? (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.StateDot, { state: row.dot }) : null, row.prompt !== null ? (0, react.createElement)("span", { className: card_module_css_default.prompt }, row.prompt) : null));
+			}) : (0, react.createElement)("span", {
+				className: card_module_css_default.kindFace,
+				"data-kind": row.kind
+			}, (0, react.createElement)("span", { className: card_module_css_default.kindInitial }, row.kind.slice(0, 1).toUpperCase()), (0, react.createElement)("span", { className: card_module_css_default.kindName }, row.kind)), row.dot !== null ? (0, react.createElement)("span", { className: card_module_css_default.tileDot }, (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.StateDot, { state: row.dot })) : null), (0, react.createElement)("span", { className: card_module_css_default.tileCaption }, (0, react.createElement)("span", { className: card_module_css_default.tileTitle }, row.title), (0, react.createElement)("span", { className: card_module_css_default.tileMeta }, row.service !== null ? row.service : null, row.prompt !== null ? (0, react.createElement)("span", { className: card_module_css_default.tilePrompt }, row.prompt) : null))));
 		}
 		function benchRow(stage) {
 			const title = stage.title ?? stage.card ?? stage.id;
@@ -1095,9 +1126,9 @@ window.__ModuleLoader__.load({
 				type: "button",
 				disabled: running || bench.stages.length === 0,
 				onClick: onRun
-			}, "Run")), bench.stages.length === 0 ? (0, react.createElement)("p", { className: card_module_css_default.empty }, "The bench is empty — construct stages (the agent adds them; they land here).") : (0, react.createElement)("ol", { className: card_module_css_default.stages }, bench.stages.map((s) => {
+			}, "Run")), bench.stages.length === 0 ? (0, react.createElement)("p", { className: card_module_css_default.empty }, "The bench is empty — construct stages (the agent adds them; they land here).") : (0, react.createElement)("ol", { className: card_module_css_default.tileGrid }, bench.stages.map((s) => {
 				const row = benchRow(s);
-				return (0, react.createElement)(CardRowLineTab, {
+				return (0, react.createElement)(StageTile, {
 					key: s.id,
 					row,
 					onOpen: (r) => onOpen(r.stage)
@@ -1140,26 +1171,31 @@ window.__ModuleLoader__.load({
 				disabled: restoring || run.draftId === null,
 				title: run.draftId === null ? "this run names no draft — nothing to restore" : "copy this run’s stages back onto the bench as your own",
 				onClick: onRestore
-			}, restoring ? "Restoring…" : "Restore to bench")), note !== null ? (0, react.createElement)("p", { className: card_module_css_default.restoreNote }, note) : null, run.stages.length === 0 ? (0, react.createElement)("p", { className: card_module_css_default.empty }, "No stage rows yet.") : (0, react.createElement)("ol", { className: card_module_css_default.stages }, run.stages.map((s) => {
+			}, restoring ? "Restoring…" : "Restore to bench")), note !== null ? (0, react.createElement)("p", { className: card_module_css_default.restoreNote }, note) : null, run.stages.length === 0 ? (0, react.createElement)("p", { className: card_module_css_default.empty }, "No stage rows yet.") : (0, react.createElement)("ol", { className: card_module_css_default.tileGrid }, run.stages.map((s) => {
 				const thumb = s.url !== void 0 ? mediaUrl(run.runId, s.url) : null;
 				const dot = s.status === "done" ? "done" : s.status === "running" ? "ongoing" : s.status === "failed" ? "error" : s.status === "queued" || s.status === "pending" ? "warning" : null;
-				return (0, react.createElement)("li", {
-					key: s.id,
-					className: card_module_css_default.stage,
-					"data-stage-status": s.status
-				}, (0, react.createElement)("div", {
-					className: card_module_css_default.row,
-					"data-status": s.status
-				}, thumb !== null ? (0, react.createElement)("a", {
+				const face = thumb !== null ? (0, react.createElement)("a", {
 					href: thumb,
 					target: "_blank",
-					rel: "noreferrer"
+					rel: "noreferrer",
+					className: card_module_css_default.tileImgLink
 				}, (0, react.createElement)("img", {
-					className: card_module_css_default.thumb,
+					className: card_module_css_default.tileImg,
 					src: thumb,
 					alt: s.id,
 					loading: "lazy"
-				})) : (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Pill, null, s.id), (0, react.createElement)("span", { className: card_module_css_default.rowTitle }, s.id), (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Pill, null, s.status), dot !== null ? (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.StateDot, { state: dot }) : null));
+				})) : (0, react.createElement)("span", {
+					className: card_module_css_default.kindFace,
+					"data-kind": s.id
+				}, (0, react.createElement)("span", { className: card_module_css_default.kindInitial }, s.id.slice(0, 1).toUpperCase()), (0, react.createElement)("span", { className: card_module_css_default.kindName }, s.id));
+				return (0, react.createElement)("li", {
+					key: s.id,
+					className: card_module_css_default.tile,
+					"data-stage-status": s.status
+				}, (0, react.createElement)("div", {
+					className: card_module_css_default.tileInner,
+					"data-status": s.status
+				}, (0, react.createElement)("span", { className: card_module_css_default.tilePreview }, face, dot !== null ? (0, react.createElement)("span", { className: card_module_css_default.tileDot }, (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.StateDot, { state: dot })) : null), (0, react.createElement)("span", { className: card_module_css_default.tileCaption }, (0, react.createElement)("span", { className: card_module_css_default.tileTitle }, s.id), (0, react.createElement)("span", { className: card_module_css_default.tileMeta }, s.status))));
 			})));
 		}
 		/** ADDRESS LAW (the `loading sidebar://cards…` hang, dead 2026-09-11):
@@ -1257,7 +1293,10 @@ window.__ModuleLoader__.load({
 					id: CARDS_TAB_ID,
 					kind: "cards",
 					patterns: ["dsh-resource://cards/**"],
-					title: (address) => address === "dsh-resource://cards/bench" ? "Cards" : address.replace(/^dsh-resource:\/\/cards\//, ""),
+					title: (address) => {
+						const resolved = resolveCardsAddress(address);
+						return resolved === "dsh-resource://cards/bench" ? "Cards" : resolved.replace(/^dsh-resource:\/\/cards\//, "");
+					},
 					guide: [{
 						order: 50,
 						title: () => "Cards",

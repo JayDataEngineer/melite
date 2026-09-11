@@ -165,11 +165,51 @@ const STAGE_DOT: Record<string, 'done' | 'ongoing' | 'error' | 'warning' | null>
  *  system, both planes — the tab renders the SAME row the chat
  *  renders, from the same stylesheet (the .row/.thumb/.rowTitle/
  *  .prompt classes below are the flow block's own). */
-function CardRowLineTab({ row, onOpen }: {
+/** THE CARD TILE — the operator's CardTile law (flowCardTile.tsx)
+ *  ported to the tab, DSH native: the visual card (INNER) is ONE flex
+ *  column with exactly two flow children —
+ *    1. the PREVIEW CELL — flex-1 min-h-0, aspect-square: it owns
+ *       every pixel the caption strip doesn't need. Media fills it
+ *       edge to edge (object-cover); no artifact yet → the KIND FACE
+ *       (the kind initial, the glyph chain's face without the editor
+ *       runtime). A portrait artifact can NOT drive the row height
+ *       (SQUARE LAW, 2026-08-23).
+ *    2. the CAPTION STRIP — shrink-0, natural height: the declared
+ *       summary line (title · engine) + the live status dot.
+ *  Image-anchored overlays (the status dot) live INSIDE the preview
+ *  cell so their anchors ride the artifact's corner. Click = the
+ *  drilldown (the second state, the shared CardDrill). */
+function StageTile({ row, onOpen }: {
   row: CardRowLineTabRow
   onOpen: (row: CardRowLineTabRow) => void
 }): ReturnType<typeof h> {
-  return h('li', { className: css.stage, 'data-stage-id': row.id, 'data-stage-status': row.status },
+  return h('li', { className: css.tile, 'data-stage-id': row.id, 'data-stage-status': row.status },
+    h('button', { className: css.tileInner, type: 'button', 'data-status': row.status, onClick: () => onOpen(row) },
+      h('span', { className: css.tilePreview },
+        row.thumbUrl !== null
+          ? h('img', { className: css.tileImg, src: row.thumbUrl, alt: row.title, loading: 'lazy' })
+          : h('span', { className: css.kindFace, 'data-kind': row.kind },
+              h('span', { className: css.kindInitial }, row.kind.slice(0, 1).toUpperCase()),
+              h('span', { className: css.kindName }, row.kind),
+            ),
+        row.dot !== null ? h('span', { className: css.tileDot }, h(StateDot, { state: row.dot })) : null,
+      ),
+      h('span', { className: css.tileCaption },
+        h('span', { className: css.tileTitle }, row.title),
+        h('span', { className: css.tileMeta },
+          row.service !== null ? row.service : null,
+          row.prompt !== null ? h('span', { className: css.tilePrompt }, row.prompt) : null,
+        ),
+      ),
+    ),
+  )
+}
+
+function UnusedCardRowLineTab({ row, onOpen }: {
+  row: CardRowLineTabRow
+  onOpen: (row: CardRowLineTabRow) => void
+}): ReturnType<typeof h> {
+  return h('li', { className: css.tile, 'data-stage-id': row.id, 'data-stage-status': row.status },
     h('button', { className: css.row, type: 'button', 'data-status': row.status, onClick: () => onOpen(row) },
       row.thumbUrl !== null
         ? h('img', { className: css.thumb, src: row.thumbUrl, alt: row.title, loading: 'lazy' })
@@ -268,9 +308,9 @@ function BenchView({ bench, onRun, running }: {
     ),
     bench.stages.length === 0
       ? h('p', { className: css.empty }, 'The bench is empty — construct stages (the agent adds them; they land here).')
-      : h('ol', { className: css.stages }, bench.stages.map((s) => {
+      : h('ol', { className: css.tileGrid }, bench.stages.map((s) => {
           const row = benchRow(s)
-          return h(CardRowLineTab, { key: s.id, row, onOpen: (r) => onOpen(r.stage) })
+          return h(StageTile, { key: s.id, row, onOpen: (r) => onOpen(r.stage) })
         })),
     bench.log.length > 0
       ? h('p', { className: css.logHead }, bench.log.length + ' log entr' + (bench.log.length === 1 ? 'y' : 'ies'))
@@ -320,22 +360,30 @@ function RunView({ run, onBack, onRestored }: {
     note !== null ? h('p', { className: css.restoreNote }, note) : null,
     run.stages.length === 0
       ? h('p', { className: css.empty }, 'No stage rows yet.')
-      : h('ol', { className: css.stages }, run.stages.map((s) => {
+      : h('ol', { className: css.tileGrid }, run.stages.map((s) => {
           const thumb = s.url !== undefined ? mediaUrl(run.runId, s.url) : null
           const dot: 'done' | 'ongoing' | 'error' | 'warning' | null
             = s.status === 'done' ? 'done'
             : s.status === 'running' ? 'ongoing'
             : s.status === 'failed' ? 'error'
             : s.status === 'queued' || s.status === 'pending' ? 'warning' : null
-          return h('li', { key: s.id, className: css.stage, 'data-stage-status': s.status },
-            h('div', { className: css.row, 'data-status': s.status },
-              thumb !== null
-                ? h('a', { href: thumb, target: '_blank', rel: 'noreferrer' },
-                    h('img', { className: css.thumb, src: thumb, alt: s.id, loading: 'lazy' }))
-                : h(Pill, null, s.id),
-              h('span', { className: css.rowTitle }, s.id),
-              h(Pill, null, s.status),
-              dot !== null ? h(StateDot, { state: dot }) : null,
+          const face = thumb !== null
+            ? h('a', { href: thumb, target: '_blank', rel: 'noreferrer', className: css.tileImgLink },
+                h('img', { className: css.tileImg, src: thumb, alt: s.id, loading: 'lazy' }))
+            : h('span', { className: css.kindFace, 'data-kind': s.id },
+                h('span', { className: css.kindInitial }, s.id.slice(0, 1).toUpperCase()),
+                h('span', { className: css.kindName }, s.id),
+              )
+          return h('li', { key: s.id, className: css.tile, 'data-stage-status': s.status },
+            h('div', { className: css.tileInner, 'data-status': s.status },
+              h('span', { className: css.tilePreview },
+                face,
+                dot !== null ? h('span', { className: css.tileDot }, h(StateDot, { state: dot })) : null,
+              ),
+              h('span', { className: css.tileCaption },
+                h('span', { className: css.tileTitle }, s.id),
+                h('span', { className: css.tileMeta }, s.status),
+              ),
             ),
           )
         })),

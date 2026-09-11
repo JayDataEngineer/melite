@@ -227,3 +227,139 @@
 .stageDetail dd { margin: 0; min-width: 0; }
 
 .mono { font-family: var(--dsw-alias-font-mono, ui-monospace, monospace); font-size: 12px; overflow-x: auto; }
+
+/* ── THE CARD TILES (2026-09-11): the operator's CardTile law
+ *    (flowCardTile.tsx) ported to the tab, DSH native — the card
+ *    system's resting face is the SQUARE TILE, never a text row.
+ *
+ *    LAYOUT LAW ("the entire card IS the preview — no blank square
+ *    below it"): the visual card (INNER) is ONE flex column with
+ *    exactly two flow children — the PREVIEW CELL (flex-1 min-h-0,
+ *    owns every pixel the caption strip doesn't need; media fills it
+ *    edge to edge) and the CAPTION STRIP (shrink-0, natural height).
+ *    Do not reintroduce a flex-1 sibling of a h-full card.
+ *
+ *    SQUARE LAW ("Action Cards need a more square shape"): the
+ *    PREVIEW CELL carries aspect-square — a portrait artifact can
+ *    not drive the row height; the resting face lands ≈square,
+ *    object-cover crops whatever the native ratio is. ─────────── */
+
+.tileGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 8px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.tile {
+  display: block;
+  margin: 0;
+  padding: 0;
+}
+
+.tileInner {
+  align-items: stretch;
+  background: transparent;
+  border: 1px solid var(--dsw-alias-border-subtle, rgba(255 255 255 / 12%));
+  border-radius: 10px;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  font: inherit;
+  overflow: hidden;
+  padding: 0;
+  text-align: left;
+  width: 100%;
+}
+.tileInner:hover {
+  border-color: var(--dsw-alias-state-business-primary, #4f7bd8);
+  background: var(--dsh-alias-interactive-bg-hover-subtle, rgba(255 255 255 / 4%));
+}
+
+/* the PREVIEW CELL — flex-1 min-h-0, aspect-square (SQUARE LAW) */
+.tilePreview {
+  aspect-ratio: 1 / 1;
+  display: block;
+  flex: 1 1 0%;
+  margin: 0;
+  min-height: 0;
+  position: relative;
+  width: 100%;
+}
+
+.tileImg, .tileImgLink {
+  display: block;
+  height: 100%;
+  width: 100%;
+}
+.tileImg {
+  object-fit: cover;
+}
+
+/* the KIND FACE — the preview when no artifact exists yet */
+.kindFace {
+  align-items: center;
+  background: var(--dsh-alias-interactive-bg-hover-subtle, rgba(255 255 255 / 5%));
+  color: var(--dsw-alias-fg-muted, rgba(255 255 255 / 55%));
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  height: 100%;
+  justify-content: center;
+  width: 100%;
+}
+.kindInitial {
+  font-size: 28px;
+  font-weight: 700;
+  line-height: 1;
+}
+.kindName {
+  font-family: var(--dsw-alias-font-mono, ui-monospace, monospace);
+  font-size: 10px;
+  overflow: hidden;
+  padding: 0 6px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* image-anchored overlay: INSIDE the preview cell, bottom-right
+ * rides the artifact's corner (the documented contract) */
+.tileDot {
+  bottom: 6px;
+  position: absolute;
+  right: 6px;
+}
+
+/* the CAPTION STRIP — shrink-0, natural height */
+.tileCaption {
+  border-top: 1px solid var(--dsw-alias-border-subtle, rgba(255 255 255 / 10%));
+  display: flex;
+  flex: 0 0 auto;
+  flex-direction: column;
+  gap: 2px;
+  padding: 6px 8px;
+}
+.tileTitle {
+  font-size: 12px;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.tileMeta {
+  align-items: center;
+  color: var(--dsw-alias-fg-muted, rgba(255 255 255 / 55%));
+  display: flex;
+  font-family: var(--dsw-alias-font-mono, ui-monospace, monospace);
+  font-size: 10px;
+  gap: 6px;
+  overflow: hidden;
+}
+.tilePrompt {
+  flex: 1 1 0%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

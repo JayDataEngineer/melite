@@ -40,10 +40,8 @@ import type {} from '@deepseek-ai/dsh-client-resources/client'
 import { claimCardViewApply, releaseCardViewApply } from './apply-guard.ts'
 import { FlowCards } from './FlowCards.tsx'
 import { CardsTab } from './CardsTab.tsx'
-import {
-  CARDS_BENCH_ADDRESS,
-  openCardsResource,
-} from './cards-resource.ts'
+import { CARDS_BENCH_ADDRESS, openCardsResource } from './cards-resource.ts'
+import { resolveCardsAddress } from './CardsTab.tsx'
 import type { ToolCallBlockView, ToolCallOwnerProps } from './types.ts'
 
 // Type-only local spelling of the Tool-owned keyed view slot (the same shape
@@ -105,8 +103,16 @@ export function apply(ctx: ClientContext): void {
       id: CARDS_TAB_ID,
       kind: 'cards',
       patterns: ['dsh-resource://cards/**'],
-      title: (address: string): string =>
-        address === CARDS_BENCH_ADDRESS ? 'Cards' : address.replace(/^dsh-resource:\/\/cards\//, ''),
+      title: (address: string): string => {
+        // THE ADDRESS LAW (the 'sidebar://cards' title bug, 2026-09-11:
+        // the operator's own DOM paste): any address the shell opens
+        // resolves through the SAME law the body rides — the bench page
+        // is titled 'Cards' no matter which address form reached it
+        // (guide clicks arrive as sidebar://cards, openTab as the
+        // dsh-resource form).
+        const resolved = resolveCardsAddress(address)
+        return resolved === CARDS_BENCH_ADDRESS ? 'Cards' : resolved.replace(/^dsh-resource:\/\/cards\//, '')
+      },
       guide: [{
         order: 50,
         title: (): string => 'Cards',
