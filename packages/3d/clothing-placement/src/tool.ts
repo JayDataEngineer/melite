@@ -11,7 +11,7 @@ import { GatewayError, jsonLane, type EstateCall } from '@melite/estate-call'
 // the flow path, never the {model:}/draft path"): the two-door
 // birth+queue sequence the flow_run tool rides — POST
 // /v1/flows/drafts {flow: card id, ...params} mints the draft (the
-// gateway's cardGate validates admission), then POST
+// estate's cardGate validates admission), then POST
 // /v1/flows/start rides draft_id into the queue. Refusals are
 // CANONICAL VALUES (a domain outcome the renderer explains), never
 // thrown; infrastructure failures throw (the DSH tool contract).
@@ -34,12 +34,6 @@ import type { ToolDefinition, ParameterSchemaSpec } from "@deepseek-ai/dsh-tools
  */
 export const TOOL_NAME = "clothing_placement";
 
-/** The Melite gateway base URL default (the loopback listen — the
- *  same value melite-tools' Config defaults to; a plugin Config owns
- *  its own default). */
-/** Gateway answered non-2xx; body carried verbatim (the named
- *  refusal — RayGatewayError's counterpart, owned by this package:
- *  cross-package imports of host internals are not a seam). */
 const FLOW = "clothing-placement"
 const TIMEOUT_MS = 15e3
 
@@ -73,7 +67,7 @@ export function buildCardTool(call: EstateCall): ToolDefinition {
           draft_id: { type: "string", description: "The minted card draft id." },
           flow: { type: "string", required: true },
           status: { type: "string", description: "Registration status (queued/running)." },
-          error: { type: "string", description: "Named refusal reason, when the gateway refused." },
+          error: { type: "string", description: "Named refusal reason, when the estate refused." },
         },
       },
       render: (_args, value) => {
@@ -125,7 +119,7 @@ export function buildCardTool(call: EstateCall): ToolDefinition {
           try {
             named = String((JSON.parse(e.body) as { error?: unknown }).error ?? "");
           } catch { named = ""; }
-          return { flow: FLOW, error: named || e.body || `gateway ${e.status}` };
+          return { flow: FLOW, error: named || e.body || `estate ${e.status}` };
         }
         throw e;
       }

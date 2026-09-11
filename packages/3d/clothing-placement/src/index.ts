@@ -21,7 +21,7 @@
 //
 // The card RUNS via the flow path (card stages → cardGate →
 // ctx.comfyui.compose), never the {model:}/draft path; the tool
-// face rides the same law through the gateway's flow doors.
+// face rides the same law through the estate's flow doors.
 import type { EstateCall } from '@melite/estate-call'
 import type { Context } from '@deepseek-ai/cordis'
 import Schema from '@deepseek-ai/schemastery'
@@ -47,9 +47,9 @@ export const Config: Schema<Config> = Schema.object({
 // BOTH faces are optional dependencies (tutorial ch.3: skip inject,
 // probe at the use site). inject = ['comfyui'] would be a hard gate:
 // in a standalone dsh agent host — no ComfyUI service in-process,
-// the tool face talks to the gateway over HTTP — apply would sit
-// PENDING forever and the tool would never register. The gateway
-// process provides comfyui but no tools; the agent host provides
+// the tool face's EstateCall rides the estate's ctx seats — apply would sit
+// PENDING forever and the tool would never register. The estate
+// composition provides comfyui but no tools; the agent host provides
 // tools but no comfyui; each composition takes the faces it can.
 export const inject: string[] = []
 

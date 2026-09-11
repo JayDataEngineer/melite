@@ -5,9 +5,9 @@
 // BOTH services are optional dependencies (tutorial ch.3: skip
 // inject, probe at the use site). A hard comfyui gate would hold
 // the plugin PENDING in a standalone dsh agent host — no
-// in-process ComfyUI service, the tool face talks to the gateway
-// over HTTP — so the tool would never register. The gateway
-// process provides comfyui but no tools; the agent host provides
+// in-process ComfyUI service, the tool face's EstateCall rides
+// the estate's ctx seats — so the tool would never register. The estate
+// composition provides comfyui but no tools; the agent host provides
 // tools but no comfyui; each composition takes the faces it can.
 //
 // THE VIEW IS NOT HERE: this card is all defaults — @melite/viewer's

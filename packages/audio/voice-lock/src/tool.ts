@@ -1,10 +1,10 @@
 // tool.ts — the voice-lock agent tool face (the DSH plane).
 import { GatewayError, jsonLane, type EstateCall } from '@melite/estate-call'
 //
-// The engine face (card.ts) registers the card in the gateway
-// process; THIS face registers `voice_lock` where a composing host
+// The engine face (card.ts) registers the card in the estate
+// composition; THIS face registers `voice_lock` where a composing host
 // provides a tools service — the dsh agent host, which has no
-// in-process ComfyUI and talks to the gateway over HTTP.
+// in-process ComfyUI and rides the estate's ctx seats (EstateCall).
 //
 // Tool-plane name: voice_lock (the DSH plain-name convention — the
 // card id, hyphens→underscores, no suffix). Registry-row plane:
@@ -52,7 +52,7 @@ export const buildVoiceLockTool = (call: EstateCall): ToolDefinition => {
           run_id: { type: 'string', description: 'The queue run id — poll with run_status.' },
           draft_id: { type: 'string', description: 'The minted card draft id.' },
           status: { type: 'string', description: 'Registration status (queued/running).' },
-          error: { type: 'string', description: 'Named refusal reason, when the gateway refused.' },
+          error: { type: 'string', description: 'Named refusal reason, when the estate refused.' },
         },
       },
       render: (_args, value) => {
@@ -138,7 +138,7 @@ export const buildVoiceLockTool = (call: EstateCall): ToolDefinition => {
         if (e instanceof GatewayError) {
           // Named refusals (4xx/5xx bodies carrying {error}) are
           // DOMAIN OUTCOMES — canonical values, not throws.
-          return { flow: FLOW, model, error: e.named || e.body || `gateway ${e.status}` }
+          return { flow: FLOW, model, error: e.named || e.body || `estate ${e.status}` }
         }
         throw e // transport failures re-throw (infrastructure)
       }

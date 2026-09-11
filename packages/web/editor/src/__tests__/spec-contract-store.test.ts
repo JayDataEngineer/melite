@@ -1,7 +1,7 @@
 // spec-contract-store.test.ts — the verdict store's transient-failure
 // self-heal (2026-08-11).
 //
-// WHAT IS PROVEN: a form-spec fetch that fails mid-gateway-restart must not
+// WHAT IS PROVEN: a form-spec fetch that fails mid-host-restart must not
 // strand the app at "no modifiers, no error". loadFormSpec re-probes ONCE
 // after a short pause before recording "error" — the close-the-card-and-
 // reopen-it the user had to do manually ("I open the create image, no mod
@@ -28,10 +28,10 @@ afterEach(() => {
 })
 
 describe("specContractStore.loadFormSpec — transient-failure re-probe", () => {
- it("a failed fetch re-probes once and lands LOADED when the gateway recovers", async () => {
+ it("a failed fetch re-probes once and lands LOADED when the host recovers", async () => {
   vi.useFakeTimers()
   // First attempt lands in the restart window; the re-probe hits the
-  // recovered gateway (contract-valid spec — modifiers: null = honest
+  // recovered host (contract-valid spec — modifiers: null = honest
   // no-capability, same as the live wire).
   vi.mocked(apiFetch)
    .mockRejectedValueOnce(new TypeError("fetch failed"))
@@ -253,7 +253,7 @@ describe("specContractStore.loadFormSpec — fresh revalidation replaces session
 
 describe("specContractStore.loadFormSpec — terminal unknown-service (2026-09-05)", () => {
  // The img-edit fossil: a stored stage kept requesting the retired family
- // head. The gateway 404s {"error": "model not found"} (correct — the
+ // head. The door 404s {"error": "model not found"} (correct — the
  // id is unknown); the store must NOT reprobe a corpse or loop Retry on
  // it, and must substitute when the caller supplies a fallback.
  const DEAD_404 = { ok: false, status: 404, json: async () => ({ error: "model not found" }) }

@@ -1,13 +1,13 @@
 // tool.ts — the h3_timeline agent tool face (the DSH plane).
 import { GatewayError, jsonLane, type EstateCall } from '@melite/estate-call'
 //
-// The engine face (card.ts) registers the card in the gateway
-// process; THIS face registers `h3_timeline` where a composing host
+// The engine face (card.ts) registers the card in the estate
+// composition; THIS face registers `h3_timeline` where a composing host
 // provides a tools service. The timeline tool lives where the
 // timeline is defined: the calls[] shot laws are the CARD GATE's
 // (card.ts schema() — every composer's gate), this face only ships
 // the doc (one stage, calls as the array; the py-era JSON-string
-// unwrap still fires gateway-side for old senders — the array rides
+// unwrap still fires estate-side for old senders — the array rides
 // composeDraftDoc verbatim).
 //
 // Tool-plane name: h3_timeline (the DSH plain-name convention — the
@@ -60,7 +60,7 @@ export const buildH3TimelineTool = (call: EstateCall): ToolDefinition => {
           run_id: { type: 'string', description: 'The queue run id — poll with run_status.' },
           draft_id: { type: 'string', description: 'The minted card draft id.' },
           status: { type: 'string', description: 'Registration status (queued/running).' },
-          error: { type: 'string', description: 'Named refusal reason, when the gateway refused.' },
+          error: { type: 'string', description: 'Named refusal reason, when the estate refused.' },
         },
       },
       render: (_args, value) => {
@@ -134,7 +134,7 @@ export const buildH3TimelineTool = (call: EstateCall): ToolDefinition => {
         }
       } catch (e) {
         if (e instanceof GatewayError) {
-          return { flow: FLOW, model, error: e.named || e.body || `gateway ${e.status}` }
+          return { flow: FLOW, model, error: e.named || e.body || `estate ${e.status}` }
         }
         throw e
       }

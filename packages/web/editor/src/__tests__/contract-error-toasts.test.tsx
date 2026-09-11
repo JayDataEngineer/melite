@@ -76,7 +76,7 @@ describe("2026-08-14 rule: contract errors fire TOASTS, never a persistent line"
  })
 
  it("catalog fetch error → error toast with Retry", () => {
-  useCatalogContractStore.getState().reportError("gateway 502")
+  useCatalogContractStore.getState().reportError("host 502")
   expect(toastCalls.length).toBe(1)
   expect(toastCalls[0].type).toBe("error")
   expect(toastCalls[0].message).toContain("Catalog unavailable")

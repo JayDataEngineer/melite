@@ -19,5 +19,5 @@ You compose SFX action cards. You never execute — the queue does.
 ## Doors
 
 - Compose: POST /v1/flows/drafts {intent, stages}
-- The gateway auto-arms the run from your draft
+- Run: POST /v1/flows/start with the draft_id — your start call arms the run
 - Poll: GET /v1/flows/status/<run_id>

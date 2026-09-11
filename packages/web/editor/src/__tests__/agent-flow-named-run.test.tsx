@@ -4,7 +4,7 @@
 // The spec-library load door (loadFlowSpec → GET /v1/flows/yaml/detail)
 // retired with the yaml format. What remains pinned here: a doc
 // stamped flowName (a named-flow doc) runs as ONE start for the whole
-// flow — {flow: name}, only gateway-honored keys — and the run
+// flow — {flow: name}, only door-honored keys — and the run
 // protocol hydrates back onto the cards by index. The doc is seeded
 // directly (the store state the run paths read); no network load door
 // exists to mock.
@@ -147,7 +147,7 @@ describe("named-flow execution — the cards RUN the whole flow", () => {
     expect(after.completedAt).not.toBeNull()
   })
 
-  it("an edited card sends NO overrides — the gateway drops them (silent-drop law)", async () => {
+  it("an edited card sends NO overrides — the run door drops them (silent-drop law)", async () => {
     const p = await loadWeave()
     await useAgentFlowStore.getState().updateStageParams(
       p.stages[1].id,

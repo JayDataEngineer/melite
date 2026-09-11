@@ -6,7 +6,7 @@
  * dir, exactly what the editor's component glob derives). The
  * FIRST-PARTY CHROME no longer rides this wire: it registers STATICALLY
  * at pluginUi import (chrome/* ids, precedence 10) — the melite-core
- * pseudo-plugin is dead. In TESTS there is no gateway: seed the wire
+ * pseudo-plugin is dead. In TESTS there is no DSH host: seed the wire
  * through syncPluginUi with PLUGIN-shaped claims, or region-resolving
  * surfaces render the static chrome (never null).
  */
