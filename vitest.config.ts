@@ -246,7 +246,10 @@ export default defineConfig({
         // img-to-mesh's one) stay GUI-debt: DOM components, the dom
         // project's territory, same carve-out as the web tree.
         'packages/3d/**/src/ui/**/*.{ts,tsx}',
-        'packages/audio/**/src/**/*.{ts,tsx}',
+        // audio closed (2026-09-12, §TEST-11): every file at per-file
+        // 100x4 — the four card compose gates + the three tool faces
+        // (executor batteries) + the index apply arms. No studios in
+        // the tree: the exemption row is GONE, nothing replaces it.
         'packages/image/**/src/**/*.{ts,tsx}',
         'packages/motion/**/src/**/*.{ts,tsx}',
         'packages/video/**/src/**/*.{ts,tsx}',

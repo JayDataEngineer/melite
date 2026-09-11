@@ -1,5 +1,5 @@
 // tool.ts — the voice-lock agent tool face (the DSH plane).
-import { GatewayError, jsonLane, type EstateCall } from '@melite/estate-call'
+import { type GatewayError, jsonLane, type EstateCall } from '@melite/estate-call'
 //
 // The engine face (card.ts) registers the card in the estate
 // composition; THIS face registers `voice_lock` where a composing host
@@ -34,12 +34,16 @@ export const buildVoiceLockTool = (call: EstateCall): ToolDefinition => {
     description: identity.description,
     parameters: emitParamsSpec(schema as never, BOARDED) as ParameterSchemaSpec,
     presentCall(args: unknown) {
-      const a = (args ?? {}) as Record<string, unknown>
+      // Validated args (defineTool's wrapper): voice_name is a required
+      // knob — always present. (The template's a.prompt was a music-card
+      // copy this schema never carried — the prose always read '?'; fixed
+      // to the card's own driving field 2026-09-12.)
+      const a = args as Record<string, unknown>
       return {
         card: 'generic',
         title: identity.label,
         kind: 'execute',
-        rawInput: `model=${String(a.model ?? DEFAULT_MODEL)} prompt=${String(a.prompt ?? '?').slice(0, 60)}`,
+        rawInput: `model=${String(a.model ?? DEFAULT_MODEL)} voice=${String(a.voice_name).slice(0, 60)}`,
       };
     },
     output: {
@@ -95,8 +99,12 @@ export const buildVoiceLockTool = (call: EstateCall): ToolDefinition => {
       return { card: 'generic', title: `${identity.label} [${model}] → ${runId}` }
     },
     async execute(args, exec): Promise<CardResult> {
-      const a = (args ?? {}) as Record<string, unknown>
-      const model = typeof a.model === 'string' && a.model !== '' ? a.model : DEFAULT_MODEL
+      // Validated args (the defineTool wrapper) — always the object.
+      const a = args as Record<string, unknown>
+      // emitParamsSpec synthesizes a CLOSED model enum from BOARDED —
+      // the wrapper rejects ''/unknown models at the seam, so a
+      // validated model is always a non-empty boarded id.
+      const model = typeof a.model === 'string' ? a.model : DEFAULT_MODEL
       const params: Record<string, unknown> = {}
       for (const [k, v] of Object.entries(a)) if (k !== 'model') params[k] = v
       try {
@@ -135,12 +143,12 @@ export const buildVoiceLockTool = (call: EstateCall): ToolDefinition => {
           status: typeof started.status === 'string' ? started.status : 'queued',
         }
       } catch (e) {
-        if (e instanceof GatewayError) {
-          // Named refusals (4xx/5xx bodies carrying {error}) are
-          // DOMAIN OUTCOMES — canonical values, not throws.
-          return { flow: FLOW, model, error: e.named || e.body || `estate ${e.status}` }
-        }
-        throw e // transport failures re-throw (infrastructure)
+        // jsonLane's contract: EVERY seam failure arrives as a
+        // GatewayError (transport faults wrap with status 0 and the
+        // message as body). Refusals are DOMAIN OUTCOMES — one
+        // canonical arm, no instanceof split.
+        const g = e as GatewayError
+        return { flow: FLOW, model, error: g.named || g.body || `estate ${g.status}` }
       }
     },
   })
