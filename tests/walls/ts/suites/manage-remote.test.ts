@@ -12,7 +12,7 @@
 //      details.status 422, never a silent miss.
 // NO comfyui seat on purpose — the wall proves the plane's behavior
 // with the engine ABSENT (the honest degrade), mirroring runs-remote.
-import { mkdtempSync, mkdirSync, writeFileSync } from "node:fs";
+import { mkdtempSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { test } from "node:test";
@@ -158,4 +158,78 @@ test("an unknown action refuses loud at 422 (closed vocabulary, never a silent m
     },
   );
   await fiber.dispose();
+});
+
+test("endpoint_set refuses a non-url at 400 without probing or writing", async () => {
+  const { adapter, fiber, root } = await boot();
+  const sig = new AbortController().signal;
+  // The validate-first law: a malformed url refuses BEFORE any
+  // probe — the config file keeps the boot's dead-port url.
+  await assert.rejects(
+    adapter.remoteExportAct({ action: "endpoint_set", url: "not a url" }, sig),
+    (e: unknown) => {
+      const err = remoteErrorOf(e);
+      assert.ok(err, "the refusal must be a RemoteError");
+      assert.equal(err.code, "manage/refused");
+      assert.equal(err.details.status, 400);
+      return true;
+    },
+  );
+  const kept = JSON.parse(readFileSync(join(root, "dead_endpoint.json"), "utf8")) as { url: string };
+  assert.equal(kept.url, "http://127.0.0.1:9");
+  await fiber.dispose();
+});
+
+test("endpoint_set refuses an unreachable url at 502 and leaves the config", async () => {
+  const { adapter, fiber, root } = await boot();
+  const sig = new AbortController().signal;
+  // The probe runs first: nothing answers on port 9, so the dead
+  // url is refused and the endpoint file is byte-unchanged.
+  await assert.rejects(
+    adapter.remoteExportAct({ action: "endpoint_set", url: "http://127.0.0.1:9" }, sig),
+    (e: unknown) => {
+      const err = remoteErrorOf(e);
+      assert.ok(err, "the refusal must be a RemoteError");
+      assert.equal(err.code, "manage/refused");
+      assert.equal(err.details.status, 502);
+      assert.ok(err.message.includes("endpoint is unchanged"), err.message);
+      return true;
+    },
+  );
+  const kept = JSON.parse(readFileSync(join(root, "dead_endpoint.json"), "utf8")) as { url: string };
+  assert.equal(kept.url, "http://127.0.0.1:9");
+  await fiber.dispose();
+});
+
+test("endpoint_set probes, writes only url, and answers the probe (the operator's server change)", async () => {
+  const { createServer } = await import("node:http");
+  const { adapter, fiber, root } = await boot();
+  const sig = new AbortController().signal;
+  // The stub engine: answers /system_stats like a real ComfyUI.
+  const server = createServer((req, res) => {
+    if (req.url === "/system_stats") {
+      res.writeHead(200, { "content-type": "application/json" });
+      res.end(JSON.stringify({ system: { comfyui_version: "9.9.9-test" } }));
+    } else {
+      res.writeHead(404);
+      res.end();
+    }
+  });
+  await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve));
+  const port = (server.address() as { port: number }).port;
+  try {
+    const envelope = await adapter.remoteExportAct(
+      { action: "endpoint_set", url: "http://127.0.0.1:" + String(port) },
+      sig,
+    );
+    assert.equal(envelope.ok, true);
+    assert.ok(envelope.detail.includes("9.9.9-test"), envelope.detail);
+    // EXTERNAL WORLD, not self-reporting: the endpoint FILE carries
+    // the new url (and only the url changed — provision survives).
+    const written = JSON.parse(readFileSync(join(root, "dead_endpoint.json"), "utf8")) as Record<string, unknown>;
+    assert.equal(written["url"], "http://127.0.0.1:" + String(port));
+  } finally {
+    await new Promise<void>((resolve) => server.close(() => resolve()));
+    await fiber.dispose();
+  }
 });

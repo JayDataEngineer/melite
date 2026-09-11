@@ -82,11 +82,14 @@ export interface RunStageStatus {
 }
 
 /** `dsh-resource://cards/run/<runId>` — the hydrated status merged with
- *  every later events frame (last frame kept for the view). */
+ *  every later events frame (last frame kept for the view). draftId is
+ *  the card-back-into-flow key: the draft that produced the run
+ *  (status serves it; null for runs that name none). */
 export interface CardsRunValue {
   kind: 'run'
   runId: string
   status: string
+  draftId: string | null
   stages: RunStageStatus[]
   lastFrame: FlowEventFrame | undefined
 }
@@ -128,7 +131,7 @@ function failure(address: string, message: string): RemoteResult<never> {
 }
 
 /** Defensive row readers — the door's wire is untyped at this seam. */
-function readBench(doc: Record<string, unknown>): CardsBenchValue {
+export function readBench(doc: Record<string, unknown>): CardsBenchValue {
   const stages = Array.isArray(doc['stages'])
     ? (doc['stages'] as unknown[]).filter((s): s is BenchStageRow =>
         typeof s === 'object' && s !== null && typeof (s as BenchStageRow)['id'] === 'string')
@@ -146,7 +149,7 @@ function readBench(doc: Record<string, unknown>): CardsBenchValue {
   }
 }
 
-function readRun(runId: string, doc: Record<string, unknown>): CardsRunValue {
+export function readRun(runId: string, doc: Record<string, unknown>): CardsRunValue {
   const stages = Array.isArray(doc['stages'])
     ? (doc['stages'] as unknown[]).filter((s): s is RunStageStatus =>
         typeof s === 'object' && s !== null && typeof (s as RunStageStatus)['id'] === 'string')
@@ -165,6 +168,9 @@ function readRun(runId: string, doc: Record<string, unknown>): CardsRunValue {
     kind: 'run',
     runId,
     status: typeof doc['status'] === 'string' ? (doc['status'] as string) : 'unknown',
+    draftId: typeof doc['draft_id'] === 'string' && (doc['draft_id'] as string) !== ''
+      ? (doc['draft_id'] as string)
+      : null,
     stages,
     lastFrame: undefined,
   }
@@ -182,7 +188,7 @@ function nextRpcId(): string {
  *  result throws the RemoteError branch's message (the caller frames
  *  the failure); a channel surprise throws honestly. */
 async function wireCall(
-  nsMethod: 'bench/get' | 'runs/status',
+  nsMethod: 'bench/get' | 'bench/add-stage' | 'drafts/get' | 'runs/status',
   args: Record<string, unknown>,
   signal?: AbortSignal,
 ): Promise<Record<string, unknown>> {
@@ -221,6 +227,94 @@ async function wireCall(
     throw new Error('wire: not a JSON object')
   }
   return value as Record<string, unknown>
+}
+
+/** The card-back-into-flow report — counts, never throws for
+ *  per-stage skips (a refusal STOPS the restore and throws: a half
+ *  flow with a silent hole would be the lie). */
+export interface RestoreReport {
+  added: number
+  skipped: number
+  notes: string[]
+}
+
+/** Card-back-into-flow: restore a run's producing draft onto the
+ *  shared bench — drafts/get (the draft holds the full
+ *  card/engine/params stages) then per-stage bench/add-stage as the
+ *  USER (the CAS law: bench/get first, each add carries expect_rev,
+ *  chained from the previous answer's rev). A stage with no card is
+ *  SKIPPED and counted (add-stage requires one); an id collision
+ *  retries once without the id (the bench auto-ids s_<n>) and notes
+ *  it. Any other refusal throws with the door's own text — the bench
+ *  keeps whatever landed before it, and the report says so. */
+export async function restoreRunToBench(
+  run: CardsRunValue,
+  signal?: AbortSignal,
+): Promise<RestoreReport> {
+  if (run.draftId === null || run.draftId === '') {
+    throw new Error('this run names no draft — nothing to restore')
+  }
+  let draft: Record<string, unknown>
+  try {
+    draft = await wireCall('drafts/get', { draftId: run.draftId }, signal)
+  } catch (e) {
+    throw new Error('the producing draft is unreadable: ' + (e instanceof Error ? e.message : String(e)))
+  }
+  const raw = draft['stages']
+  const stages: Record<string, unknown>[] = Array.isArray(raw)
+    ? raw.filter((s): s is Record<string, unknown> => typeof s === 'object' && s !== null)
+    : []
+  if (stages.length === 0) {
+    throw new Error('the producing draft holds no stages — nothing to restore')
+  }
+  let bench: Record<string, unknown>
+  try {
+    bench = await wireCall('bench/get', { sessionKey: 'main' }, signal)
+  } catch (e) {
+    throw new Error('the bench is unreadable: ' + (e instanceof Error ? e.message : String(e)))
+  }
+  let rev = typeof bench['rev'] === 'number' ? (bench['rev'] as number) : 0
+  const report: RestoreReport = { added: 0, skipped: 0, notes: [] }
+  for (const st of stages) {
+    const card = st['card']
+    if (typeof card !== 'string' || card === '') {
+      report.skipped += 1
+      report.notes.push('skipped a stage with no card (add-stage requires one)')
+      continue
+    }
+    const doc: Record<string, unknown> = { card, author: 'user', expect_rev: rev }
+    if (typeof st['engine'] === 'string' && (st['engine'] as string) !== '') doc['engine'] = st['engine']
+    if (typeof st['params'] === 'object' && st['params'] !== null && !Array.isArray(st['params'])) {
+      doc['params'] = st['params']
+    }
+    const id = typeof st['id'] === 'string' && (st['id'] as string) !== '' ? (st['id'] as string) : null
+    if (id !== null) doc['id'] = id
+    try {
+      const row = await wireCall('bench/add-stage', doc, signal)
+      if (typeof row['rev'] === 'number') rev = row['rev'] as number
+      report.added += 1
+    } catch (e) {
+      const message = e instanceof Error ? e.message : String(e)
+      if (id !== null && message.includes('already on the bench')) {
+        // The id is taken (restoring twice, or the bench kept it) —
+        // retry once without the id; the bench auto-ids s_<n>.
+        const retry: Record<string, unknown> = { ...doc }
+        delete retry['id']
+        try {
+          const row = await wireCall('bench/add-stage', retry, signal)
+          if (typeof row['rev'] === 'number') rev = row['rev'] as number
+          report.added += 1
+          report.notes.push(id + ' was already on the bench — added under a fresh id')
+        } catch (e2) {
+          throw new Error('restore stopped after ' + String(report.added) + ' stage(s): '
+            + (e2 instanceof Error ? e2.message : String(e2)))
+        }
+      } else {
+        throw new Error('restore stopped after ' + String(report.added) + ' stage(s): ' + message)
+      }
+    }
+  }
+  return report
 }
 
 /** Merge one events frame into a run value (stage rows upserted by id;

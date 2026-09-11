@@ -1150,40 +1150,53 @@ declare abstract class Service<out T = never> {
  * are already migrated (RemoteError codes).
  */
 type EstateMethod = 'GET' | 'POST' | 'PATCH';
-type EstateRequest$1 = (method: EstateMethod, path: string, body: unknown, execSignal: AbortSignal, timeoutMs: number) => Promise<unknown>;
+type EstateRequest = (method: EstateMethod, path: string, body: unknown, execSignal: AbortSignal, timeoutMs: number) => Promise<unknown>;
 /** Build the tools' request: seats only, in-process. A lane with no
  *  seat is a hard error (the gateway that used to absorb it is
  *  dead) — the caller migrates to a named remote. */
-declare function makeEstateRequest(ctx: unknown): EstateRequest$1;
+declare function makeEstateRequest(ctx: unknown): EstateRequest;
 //#endregion
 //#region src/tools/run-status.d.ts
-declare function runStatus(request: EstateRequest$1): ToolDefinition;
+declare function runStatus(request: EstateRequest): ToolDefinition;
 //#endregion
 //#region src/tools/melite-discover.d.ts
-declare function meliteDiscover(request: EstateRequest$1): ToolDefinition;
+declare function meliteDiscover(request: EstateRequest): ToolDefinition;
 //#endregion
 //#region src/tools/melite-construct.d.ts
 /** The default bench — one shared state per gateway. */
 declare const DEFAULT_BENCH = "main";
-declare function meliteConstruct(request: EstateRequest$1): ToolDefinition;
+declare function meliteConstruct(request: EstateRequest): ToolDefinition;
 //#endregion
 //#region src/tools/melite-flow.d.ts
-declare function meliteFlow(request: EstateRequest$1): ToolDefinition;
+declare function meliteFlow(request: EstateRequest): ToolDefinition;
 //#endregion
 //#region src/tools/comfy-manage.d.ts
+/** The manage seat's refusal code (the envelope rides the details —
+ *  the same declaration manageRegistry makes at the seat; repeated
+ *  here because this tool compiles without the seat's module graph —
+ *  the cards-resource 'cards/unclassified' pattern). */
+declare module '@deepseek-ai/dsh-typert-protocol' {
+  interface RemoteErrorDetailsMap {
+    'manage/refused': {
+      readonly action?: string;
+      readonly status?: number;
+      readonly data?: unknown;
+    };
+  }
+}
 declare function comfyManage(request: EstateRequest): ToolDefinition;
 //#endregion
 //#region src/tools/melite-load.d.ts
-declare function meliteLoad(request: EstateRequest$1): ToolDefinition;
+declare function meliteLoad(request: EstateRequest): ToolDefinition;
 //#endregion
 //#region src/tools/skill-index.d.ts
-declare function skillIndex(request: EstateRequest$1): ToolDefinition;
+declare function skillIndex(request: EstateRequest): ToolDefinition;
 //#endregion
 //#region src/tools/skill-read.d.ts
-declare function skillRead(request: EstateRequest$1): ToolDefinition;
+declare function skillRead(request: EstateRequest): ToolDefinition;
 //#endregion
 //#region src/tools/ledger-tail.d.ts
-declare function ledgerTail(request: EstateRequest$1): ToolDefinition;
+declare function ledgerTail(request: EstateRequest): ToolDefinition;
 //#endregion
 //#region src/index.d.ts
 /** Cordis plugin name used by loader diagnostics. */
@@ -1222,4 +1235,4 @@ declare const MELITE_TOOL_NAMES: readonly ["melite_discover", "melite_construct"
 /** Register the Melite tools against the live estate gateway. */
 declare function apply(ctx: Context, config?: Config): Promise<void>;
 //#endregion
-export { ADHOC_TOOL_NAMES, BASE_TOOL_NAMES, Config, DEFAULT_BENCH, type EstateRequest$1 as EstateRequest, HEADLESS_TOOL_NAMES, MELITE_TOOL_NAMES, apply, comfyManage, harnessEnhance, inject, ledgerTail, makeEstateRequest, matchHarnessRoute, meliteConstruct, meliteDiscover, meliteFlow, meliteLoad, name, resolveHarnessRoutes, routeName, runStatus, skillIndex, skillRead };
+export { ADHOC_TOOL_NAMES, BASE_TOOL_NAMES, Config, DEFAULT_BENCH, type EstateRequest, HEADLESS_TOOL_NAMES, MELITE_TOOL_NAMES, apply, comfyManage, harnessEnhance, inject, ledgerTail, makeEstateRequest, matchHarnessRoute, meliteConstruct, meliteDiscover, meliteFlow, meliteLoad, name, resolveHarnessRoutes, routeName, runStatus, skillIndex, skillRead };

@@ -11,11 +11,11 @@
 //
 // Erasable-syntax TS only (node --experimental-strip-types).
 import { spawnSync } from "node:child_process";
-import { createWriteStream, mkdirSync, readdirSync, readFileSync } from "node:fs";
+import { createWriteStream, mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { pipeline } from "node:stream/promises";
 import { Readable } from "node:stream";
-import { loadEndpointConfig, runtimeModelsRoot } from "@melite/comfyui-cordis";
+import { endpointConfigPath, loadEndpointConfig, runtimeModelsRoot } from "@melite/comfyui-cordis";
 import type { ModelsService } from "@melite/comfyui-cordis";
 import { ManagerApiError, managerBase, managerGet, managerPost, planeUnavailable } from "./managerRail.ts";
 
@@ -23,6 +23,7 @@ import { ManagerApiError, managerBase, managerGet, managerPost, planeUnavailable
 // Closed vocabulary — a typo is a 422, not a silent miss.
 export const ACTIONS = [
   "status",
+  "endpoint_set",
   "logs",
   "search_models",
   "list_extensions",
@@ -671,6 +672,50 @@ async function hFree(req: Req, ctx: ManageCtx): Promise<[number, ManageEnvelope]
   return ok(req.action, "free issued (next worker iteration)", null);
 }
 
+// ── endpoint_set: the operator's server URL change ────────────────
+// Validates FIRST (a live /system_stats probe — an unreachable URL
+// is refused, never written), then rewrites ONLY `url` in the
+// endpoint config, preserving every other field. Works in managed
+// AND byo modes (pointing elsewhere is not provisioning).
+async function hEndpointSet(req: Req, ctx: ManageCtx): Promise<[number, ManageEnvelope]> {
+  need(req, "url");
+  const url = req.url.trim().replace(/\/+$/, "");
+  if (!/^https?:\/\/[A-Za-z0-9.\-]+(:\d+)?(\/.*)?$/.test(url)) {
+    throw new Refused(400, "endpoint_set: url must be http(s)://host[:port] — got '" + url + "'");
+  }
+  // Probe the candidate BEFORE writing (no unreachable URL ever
+  // lands in the config; the old URL keeps serving on refusal).
+  const ctrl = new AbortController();
+  const clear = ctx.timeout((): void => ctrl.abort(), 5000);
+  let stats: Record<string, unknown>;
+  try {
+    const r = await fetch(url + "/system_stats", { signal: ctrl.signal });
+    if (!r.ok) throw new Error("HTTP " + String(r.status));
+    stats = (await r.json()) as Record<string, unknown>;
+  } catch (e: unknown) {
+    throw new Refused(
+      502,
+      "endpoint_set: '" + url + "' did not answer /system_stats (" +
+        (e instanceof Error ? e.message : String(e)) + ") — the endpoint is unchanged",
+    );
+  } finally {
+    clear();
+  }
+  const cfgPath = endpointConfigPath();
+  const cfg = { ...loadEndpointConfig() } as Record<string, unknown>;
+  cfg["url"] = url;
+  try {
+    writeFileSync(cfgPath, JSON.stringify(cfg, null, 2) + "\n", "utf8");
+  } catch (e: unknown) {
+    throw new Refused(
+      500,
+      "endpoint_set: config write failed (" + (e instanceof Error ? e.message : String(e)) + ") — the endpoint is unchanged",
+    );
+  }
+  const sys = (stats["system"] ?? {}) as Record<string, unknown>;
+  return ok(req.action, "endpoint set to " + url + " (ComfyUI " + String(sys["comfyui_version"] ?? "?") + " answered)", { url, comfyui_version: sys["comfyui_version"] ?? null });
+}
+
 async function hListExtensions(req: Req, ctx: ManageCtx): Promise<[number, ManageEnvelope]> {
   const cfg = ctx.endpoint();
   estateOnly(req, cfg);
@@ -738,6 +783,7 @@ const HANDLERS: Record<ManageAction, Handler> = {
   status: hStatus,
   logs: hLogs,
   search_models: hSearch,
+  endpoint_set: hEndpointSet,
   list_extensions: hListExtensions,
   snapshot_list: hSnapshotList,
   install_extension: hInstallExtension,

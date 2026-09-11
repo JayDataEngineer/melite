@@ -290,6 +290,7 @@ window.__ModuleLoader__.load({
 		* and silently refresh the status section afterwards.
 		*/
 		function ComfyManagerPanel() {
+			const [epUrl, setEpUrl] = (0, react.useState)("");
 			const [status, setStatus] = (0, react.useState)(null);
 			const [statusDetail, setStatusDetail] = (0, react.useState)("");
 			const [busy, setBusy] = (0, react.useState)(null);
@@ -316,7 +317,12 @@ window.__ModuleLoader__.load({
 			const fetchStatus = (0, react.useCallback)(async () => {
 				try {
 					const reply = await postManage("status", {});
-					if (reply.ok === true) setStatus(reply.data ?? null);
+					if (reply.ok === true) {
+						const view = reply.data ?? null;
+						setStatus(view);
+						const live = view?.endpoint?.url;
+						if (typeof live === "string" && live !== "") setEpUrl((prev) => prev === "" ? live : prev);
+					}
 					setStatusDetail(reply.detail ?? "");
 				} catch (e) {
 					setStatusDetail("request failed: " + String(e));
@@ -347,10 +353,21 @@ window.__ModuleLoader__.load({
 					if (MUTATING.has(action)) fetchStatus();
 				}
 			}, [fetchStatus]);
-			/** Browse rows: installed packs (cm_cli simple-show via the SSOT). */
+			/** Browse rows: installed packs — the manage rail's rows are
+			*  {name, version} objects; render "name — version" (never
+			*  [object Object] — the operator-caught regression). */
 			const loadExtensions = (0, react.useCallback)(async () => {
 				const reply = await run("list_extensions");
-				if (reply !== null && reply.ok === true && Array.isArray(reply.data)) setExtRows(reply.data.map(String));
+				if (reply !== null && reply.ok === true && Array.isArray(reply.data)) setExtRows(reply.data.map((row) => {
+					if (typeof row === "string") return row;
+					if (typeof row === "object" && row !== null) {
+						const r = row;
+						const name = typeof r.name === "string" ? r.name : "?";
+						const ver = typeof r.version === "string" ? r.version : typeof r.ver === "string" ? r.ver : "?";
+						return name + " — " + ver;
+					}
+					return String(row);
+				}));
 			}, [run]);
 			/** Browse rows: saved snapshots. */
 			const loadSnapshots = (0, react.useCallback)(async () => {
@@ -423,6 +440,23 @@ window.__ModuleLoader__.load({
 								}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
 									className: assets_module_css_default.mono,
 									children: String(ep.comfyui_version)
+								})]
+							}),
+							/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+								className: assets_module_css_default.row,
+								children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(Field, {
+									label: "server url",
+									value: epUrl,
+									placeholder: "http://127.0.0.1:8188",
+									mono: true,
+									onChange: setEpUrl
+								}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Btn, {
+									busy: busy === "endpoint_set",
+									disabled: epUrl.trim() === "",
+									onClick: () => {
+										run("endpoint_set", { url: epUrl.trim() });
+									},
+									children: "Set"
 								})]
 							}),
 							(ep?.devices ?? []).map((d, i) => {

@@ -630,6 +630,11 @@ export class RunsRegistryService extends Service {
     const payload: Record<string, unknown> = {
       run_id: run.runId,
       status: run.status,
+      // The card-back-into-flow key (2026-09-11): the draft that
+      // produced this run — the tab restores via drafts/get (the
+      // draft holds the full card/engine/params stages) + per-stage
+      // bench/add-stage. Additive: older consumers ignore it.
+      draft_id: run.draftId,
       stages: run.stages,
       skipped_stages: [...run.skippedStages],
       artifacts: [...run.artifacts],

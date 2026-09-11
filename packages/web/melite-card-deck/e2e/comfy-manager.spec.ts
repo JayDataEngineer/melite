@@ -6,7 +6,8 @@
  *      (the stroke-1 regression was an iframe falling through to the
  *      card studio — the manager root must contain zero iframes).
  *   2. Status renders against the live gateway (endpoint + version).
- *   3. Installed packs renders REAL rows off the cm_cli rail.
+ *   3. Installed packs renders REAL rows off the manager rail
+ *      ({name, version} objects as "name \u2014 sha" rows).
  *   4. List snapshots renders REAL rows.
  *   5. Refresh is silent — the result pane keeps the last EXPLICIT
  *      dispatch (no status reply overwrites it).
@@ -80,14 +81,17 @@ test('comfy manager tab tours the live manager without errors', async ({
   ).toBeVisible({ timeout: 60_000 })
   await expect(manager.getByText(/active runs: \d+/)).toBeVisible()
 
-  // 3. installed packs: real rows off the cm_cli rail.
+  // 3. installed packs: real rows off the manager rail — the rail's
+  // rows are {name, version: commit-sha} objects rendered
+  // "name — sha" (the [object Object] regression stays dead).
   await manager.getByRole('button', { name: 'Installed packs' }).click()
   const extList = manager.getByTestId('ext-list')
   await extList.waitFor({ state: 'visible', timeout: 60_000 })
   const extRows = extList.locator('li')
   expect(await extRows.count()).toBeGreaterThan(0)
   const firstExt = (await extRows.first().innerText()).trim()
-  expect(firstExt).toMatch(/.+@.+/)
+  expect(firstExt).toMatch(/.+ \u2014 [0-9a-f]{7,}/)
+  expect(firstExt).not.toContain('[object Object]')
   // the explicit dispatch owns the result pane.
   const result = manager.getByTestId('manage-result')
   await expect(result).toBeVisible()

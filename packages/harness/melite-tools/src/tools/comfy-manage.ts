@@ -27,12 +27,27 @@ import { remoteErrorOf } from '@deepseek-ai/dsh-typert-protocol'
 import { defineTool } from '@deepseek-ai/dsh-tools'
 import type { ToolCallView } from '@deepseek-ai/dsh-tools'
 import type { JsonValue, ToolDefinition } from '../types.ts'
+import type { EstateRequest } from '../estate.ts'
 import { jsonClean } from '../json-clean.ts'
+
+/** The manage seat's refusal code (the envelope rides the details —
+ *  the same declaration manageRegistry makes at the seat; repeated
+ *  here because this tool compiles without the seat's module graph —
+ *  the cards-resource 'cards/unclassified' pattern). */
+declare module '@deepseek-ai/dsh-typert-protocol' {
+  interface RemoteErrorDetailsMap {
+    'manage/refused': {
+      readonly action?: string;
+      readonly status?: number;
+      readonly data?: unknown;
+    };
+  }
+}
 
 const MANAGE_TIMEOUT_MS = 300_000   // installs/downloads can take minutes
 
 const ACTIONS = [
-  'status', 'logs', 'search_models',
+  'status', 'endpoint_set', 'logs', 'search_models',
   'list_extensions', 'snapshot_list',
   'install_extension', 'install_extension_url',
   'download_model', 'provision_model',
@@ -81,7 +96,8 @@ export function comfyManage(request: EstateRequest): ToolDefinition {
 
       + 'managed workspace only), snapshot_list / snapshot_save / '
       + 'snapshot_restore (environment snapshots; restore is refused while '
-      + 'runs are active); install_extension (registry ids), '
+      + 'runs are active); endpoint_set (point at a different ComfyUI server '
+      + 'url — validate-first: an unreachable url is refused, never written); install_extension (registry ids), '
       + 'install_extension_url (git url), download_model (url), provision_model '
       + '(catalog id — a boarded model id from melite_load, or search_models); restart, stop, launch, update '
       + '(target comfy|cli|all), switch_version, free. INFRA UPKEEP only — it '
@@ -103,7 +119,7 @@ export function comfyManage(request: EstateRequest): ToolDefinition {
       },
       url: {
         type: 'string',
-        description: 'install_extension_url / download_model: the git URL or file URL.',
+        description: 'install_extension_url / download_model / endpoint_set: the git URL, file URL, or ComfyUI server URL.',
       },
       relative_path: {
         type: 'string',

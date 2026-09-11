@@ -118,7 +118,7 @@ test("the manage seat — the door's vocabulary + refusal envelope (REBUILD-15)"
   // 1. the closed vocabulary: a typo is a 422 envelope, not a miss.
   const typo = await manageRefusal(ctx, { action: "nope" }, sig);
   assert.equal(typo.code, "manage/refused");
-  assert.match(typo.message, /Input should be one of: status, logs/);
+  assert.match(typo.message, /Input should be one of: status, endpoint_set, logs/);
   assert.equal(typo.action, "nope");
   // 2. a bare doc refuses Field required.
   const bare = await manageRefusal(ctx, {}, sig);

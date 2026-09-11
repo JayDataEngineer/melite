@@ -987,6 +987,7 @@ function meliteFlow(request) {
 const MANAGE_TIMEOUT_MS = 3e5;
 const ACTIONS = [
 	"status",
+	"endpoint_set",
 	"logs",
 	"search_models",
 	"list_extensions",
@@ -1016,7 +1017,7 @@ function comfyManage(request) {
 	};
 	const def = defineTool({
 		name: "comfy_manage",
-		description: "NaNsnapshot_restore (environment snapshots; restore is refused while runs are active); install_extension (registry ids), install_extension_url (git url), download_model (url), provision_model (catalog id — a boarded model id from melite_load, or search_models); restart, stop, launch, update (target comfy|cli|all), switch_version, free. INFRA UPKEEP only — it never runs inference, and lifecycle actions are refused while runs are active (stop them or pass force).",
+		description: "NaNsnapshot_restore (environment snapshots; restore is refused while runs are active); endpoint_set (point at a different ComfyUI server url — validate-first: an unreachable url is refused, never written); install_extension (registry ids), install_extension_url (git url), download_model (url), provision_model (catalog id — a boarded model id from melite_load, or search_models); restart, stop, launch, update (target comfy|cli|all), switch_version, free. INFRA UPKEEP only — it never runs inference, and lifecycle actions are refused while runs are active (stop them or pass force).",
 		parameters: {
 			action: {
 				type: "string",
@@ -1031,7 +1032,7 @@ function comfyManage(request) {
 			},
 			url: {
 				type: "string",
-				description: "install_extension_url / download_model: the git URL or file URL."
+				description: "install_extension_url / download_model / endpoint_set: the git URL, file URL, or ComfyUI server URL."
 			},
 			relative_path: {
 				type: "string",

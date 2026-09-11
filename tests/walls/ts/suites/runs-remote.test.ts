@@ -204,6 +204,9 @@ test("a valid start queues, the pump settles FAILED loud (no engine seat), the p
   const stages = status["stages"] as { status: string; error?: string }[];
   assert.equal(stages[0]?.status, "failed");
   assert.match(String(stages[0]?.error), /no ComfyUIHostService/);
+  // The card-back-into-flow key (2026-09-11): the status names the
+  // producing draft — the tab restores through it.
+  assert.equal(status["draft_id"], "d_ok");
   // The settle persist: _flow.json sidecar + terminal ledger row.
   const dir = join(root, "test-output", receipt.run_id);
   assert.equal(existsSync(join(dir, "_flow.json")), true, "sidecar written");

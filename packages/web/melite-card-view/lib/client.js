@@ -552,162 +552,6 @@ window.__ModuleLoader__.load({
 			});
 		}
 		//#endregion
-		//#region src/client/CardsTab.tsx
-		/**
-		* The Cards tab body — the bench's user plane (plan §5: "the user
-		* browses visually in the tab").
-		*
-		* Bench view (`dsh-resource://cards/bench`): the stage rows with their
-		* presentation extras (title/card), the revision trail's head, and the
-		* Run gesture — which projects the stages onto the flow_inline wire
-		* and starts them under the bench's own draft_id, EXACTLY what
-		* melite_flow's bench verb does (one truth, two planes; the model's
-		* plane is per-call reads, never this component's frames).
-		*
-		* Run view (`dsh-resource://cards/run/<runId>`): live status + stage
-		* rows + artifacts, riding the resource provider's frames.
-		*
-		* The body is dispatched by the keyed `sidebar.right.pane.tab` seat
-		* under the type's id; the address arrives through the standard
-		* `useTabInfo` hook, the value through the standard `useResource`
-		* hook. Local prop typings (the package's local-spelling pattern —
-		* see index.ts) keep this package off sibling runtime imports.
-		*/
-		/** The flow_inline projection — the SAME wire shape melite_flow's bench
-		*  verb sends (runner-owned keys strip; ids/engines/params stay). */
-		function projectStage(s) {
-			const row = {
-				id: s.id,
-				engine: s.engine ?? "comfyui"
-			};
-			if (s.params !== void 0 && Object.keys(s.params).length > 0) row["params"] = s.params;
-			if (Array.isArray(s.inputs) && s.inputs.length > 0) row["inputs"] = s.inputs;
-			if (Array.isArray(s.outputs) && s.outputs.length > 0) row["outputs"] = s.outputs;
-			return row;
-		}
-		/** Correlation id for one client-request frame (crypto.randomUUID is
-		*  the browser standard). */
-		function nextRpcId$1() {
-			const cryptoApi = globalThis.crypto;
-			if (cryptoApi?.randomUUID !== void 0) return cryptoApi.randomUUID();
-			return "rpc-" + Math.random().toString(36).slice(2) + "-" + Date.now().toString(36);
-		}
-		/** The Run gesture: start the bench as it stands, over the runs
-		*  remote's wire door (same-origin POST /api/runs/start carrying the
-		*  client-request frame — api-gateway.md; the gateway-era /v1/flows
-		*  start died with the app, nothing serves it). Errors surface inline
-		*  (the RemoteError branch's own refusal text — logged, never thrown
-		*  past React). */
-		async function runTheBench(bench, onStarted) {
-			const stages = bench.stages.map(projectStage);
-			if (stages.length === 0) return;
-			const rpcId = nextRpcId$1();
-			try {
-				const res = await fetch("/api/runs/start", {
-					method: "POST",
-					headers: { "content-type": "application/json" },
-					body: JSON.stringify({
-						type: "client-request",
-						rpcId,
-						method: "runs/start",
-						payload: { args: { doc: {
-							flow_inline: { stages },
-							draft_id: bench.draftId
-						} } }
-					})
-				});
-				if (!res.ok) {
-					console.error("[cards] run refused: HTTP " + String(res.status));
-					return;
-				}
-				const body = await res.json().catch(() => null);
-				if (typeof body !== "object" || body === null || Reflect.get(body, "type") !== "server-response" || Reflect.get(body, "rpcId") !== rpcId) {
-					console.error("[cards] run refused: malformed response frame");
-					return;
-				}
-				const result = Reflect.get(body, "result");
-				if (typeof result !== "object" || result === null) {
-					console.error("[cards] run refused: malformed result");
-					return;
-				}
-				if (Reflect.get(result, "ok") === true) {
-					const runId = Reflect.get(Reflect.get(result, "value"), "run_id");
-					if (typeof runId === "string" && runId !== "") onStarted(runId);
-					else console.error("[cards] run refused: no run_id in the answer");
-					return;
-				}
-				const error = Reflect.get(result, "error");
-				const message = typeof error === "object" && error !== null && typeof Reflect.get(error, "message") === "string" ? Reflect.get(error, "message") : "runs/start refused";
-				console.error("[cards] run refused:", message);
-			} catch (e) {
-				console.error("[cards] run request failed:", e);
-			}
-		}
-		function StageRowView({ stage }) {
-			const title = stage.title ?? stage.card ?? stage.id;
-			const engine = typeof stage.engine === "string" && stage.engine !== "" ? stage.engine : "comfyui";
-			return (0, react.createElement)("li", {
-				className: "cards-stage",
-				"data-stage-id": stage.id
-			}, (0, react.createElement)("span", { className: "cards-stage-title" }, String(title)), (0, react.createElement)("span", { className: "cards-stage-engine" }, engine));
-		}
-		function BenchView({ bench, onRun, running }) {
-			return (0, react.createElement)("section", {
-				className: "cards-bench",
-				"data-cards-bench": bench.rev
-			}, (0, react.createElement)("header", { className: "cards-bench-head" }, (0, react.createElement)("span", { className: "cards-bench-rev" }, "rev " + bench.rev), (0, react.createElement)("button", {
-				className: "cards-run",
-				type: "button",
-				disabled: running || bench.stages.length === 0,
-				onClick: onRun
-			}, "Run")), bench.stages.length === 0 ? (0, react.createElement)("p", { className: "cards-empty" }, "The bench is empty — construct stages (the agent adds them; they land here).") : (0, react.createElement)("ol", { className: "cards-stages" }, bench.stages.map((s) => (0, react.createElement)(StageRowView, {
-				key: s.id,
-				stage: s
-			}))), bench.log.length > 0 ? (0, react.createElement)("p", { className: "cards-log-head" }, bench.log.length + " log entr" + (bench.log.length === 1 ? "y" : "ies")) : null);
-		}
-		function RunView({ run }) {
-			return (0, react.createElement)("section", {
-				className: "cards-run-view",
-				"data-run-status": run.status
-			}, (0, react.createElement)("header", { className: "cards-run-head" }, (0, react.createElement)("span", { className: "cards-run-id" }, run.runId), (0, react.createElement)("span", { className: "cards-run-status" }, run.status)), run.stages.length === 0 ? (0, react.createElement)("p", { className: "cards-empty" }, "No stage rows yet.") : (0, react.createElement)("ol", { className: "cards-stages" }, run.stages.map((s) => (0, react.createElement)("li", {
-				key: s.id,
-				className: "cards-stage",
-				"data-stage-status": s.status
-			}, (0, react.createElement)("span", { className: "cards-stage-title" }, s.id), (0, react.createElement)("span", { className: "cards-stage-engine" }, s.status), s.url !== void 0 ? (0, react.createElement)("a", {
-				href: mediaUrl(run.runId, s.url),
-				target: "_blank",
-				rel: "noreferrer",
-				className: "cards-stage-artifact"
-			}, "artifact") : null))));
-		}
-		/** The tab body component. */
-		function CardsTab(props) {
-			const info = typeof props.useTabInfo === "function" ? props.useTabInfo() : void 0;
-			const address = info?.tab.navigation.address ?? info?.tab.contentId ?? "dsh-resource://cards/bench";
-			const openResource = info?.tab.actions.openResource;
-			const snapshot = typeof props.useResource === "function" ? props.useResource(address) : void 0;
-			const [running, setRunning] = (0, react.useState)(false);
-			const onStarted = (0, react.useCallback)((runId) => {
-				setRunning(false);
-				if (openResource !== void 0) openResource("dsh-resource://cards/run/" + encodeURIComponent(runId));
-			}, [openResource]);
-			const onRun = (0, react.useCallback)(() => {
-				if (snapshot?.value?.kind !== "bench") return;
-				setRunning(true);
-				runTheBench(snapshot.value, onStarted);
-			}, [snapshot, onStarted]);
-			if (snapshot === void 0) return (0, react.createElement)("p", { className: "cards-missing" }, "cards resource hook unavailable");
-			if (snapshot.status === "loading" || snapshot.status === "none") return (0, react.createElement)("p", { className: "cards-loading" }, "loading " + address + "…");
-			if (snapshot.status === "failed") return (0, react.createElement)("p", { className: "cards-failed" }, snapshot.failure?.message ?? "cards resource failed");
-			const value = snapshot.value;
-			if (value === void 0) return (0, react.createElement)("p", { className: "cards-failed" }, "cards resource gave no value");
-			return value.kind === "bench" ? (0, react.createElement)(BenchView, {
-				bench: value,
-				onRun,
-				running
-			}) : (0, react.createElement)(RunView, { run: value });
-		}
-		//#endregion
 		//#region ../../../node_modules/.pnpm/@deepseek-ai+dsh-typert-protocol@0.1.5-rc.2_@deepseek-ai+cordis@4.0.2/node_modules/@deepseek-ai/dsh-typert-protocol/lib/index.js
 		/** The one Remote failure class shared by owners, the Gateway, and consumers. */
 		/**
@@ -781,13 +625,14 @@ window.__ModuleLoader__.load({
 				kind: "run",
 				runId,
 				status: typeof doc["status"] === "string" ? doc["status"] : "unknown",
+				draftId: typeof doc["draft_id"] === "string" && doc["draft_id"] !== "" ? doc["draft_id"] : null,
 				stages,
 				lastFrame: void 0
 			};
 		}
 		/** Correlation id for one client-request frame (crypto.randomUUID is
 		*  the browser standard). */
-		function nextRpcId() {
+		function nextRpcId$1() {
 			const cryptoApi = globalThis.crypto;
 			if (cryptoApi?.randomUUID !== void 0) return cryptoApi.randomUUID();
 			return "rpc-" + Math.random().toString(36).slice(2) + "-" + Date.now().toString(36);
@@ -796,7 +641,7 @@ window.__ModuleLoader__.load({
 		*  result throws the RemoteError branch's message (the caller frames
 		*  the failure); a channel surprise throws honestly. */
 		async function wireCall(nsMethod, args, signal) {
-			const rpcId = nextRpcId();
+			const rpcId = nextRpcId$1();
 			const res = await fetch("/api/" + nsMethod, {
 				method: "POST",
 				headers: { "content-type": "application/json" },
@@ -821,6 +666,76 @@ window.__ModuleLoader__.load({
 			const value = Reflect.get(result, "value");
 			if (typeof value !== "object" || value === null || Array.isArray(value)) throw new Error("wire: not a JSON object");
 			return value;
+		}
+		/** Card-back-into-flow: restore a run's producing draft onto the
+		*  shared bench — drafts/get (the draft holds the full
+		*  card/engine/params stages) then per-stage bench/add-stage as the
+		*  USER (the CAS law: bench/get first, each add carries expect_rev,
+		*  chained from the previous answer's rev). A stage with no card is
+		*  SKIPPED and counted (add-stage requires one); an id collision
+		*  retries once without the id (the bench auto-ids s_<n>) and notes
+		*  it. Any other refusal throws with the door's own text — the bench
+		*  keeps whatever landed before it, and the report says so. */
+		async function restoreRunToBench(run, signal) {
+			if (run.draftId === null || run.draftId === "") throw new Error("this run names no draft — nothing to restore");
+			let draft;
+			try {
+				draft = await wireCall("drafts/get", { draftId: run.draftId }, signal);
+			} catch (e) {
+				throw new Error("the producing draft is unreadable: " + (e instanceof Error ? e.message : String(e)));
+			}
+			const raw = draft["stages"];
+			const stages = Array.isArray(raw) ? raw.filter((s) => typeof s === "object" && s !== null) : [];
+			if (stages.length === 0) throw new Error("the producing draft holds no stages — nothing to restore");
+			let bench;
+			try {
+				bench = await wireCall("bench/get", { sessionKey: "main" }, signal);
+			} catch (e) {
+				throw new Error("the bench is unreadable: " + (e instanceof Error ? e.message : String(e)));
+			}
+			let rev = typeof bench["rev"] === "number" ? bench["rev"] : 0;
+			const report = {
+				added: 0,
+				skipped: 0,
+				notes: []
+			};
+			for (const st of stages) {
+				const card = st["card"];
+				if (typeof card !== "string" || card === "") {
+					report.skipped += 1;
+					report.notes.push("skipped a stage with no card (add-stage requires one)");
+					continue;
+				}
+				const doc = {
+					card,
+					author: "user",
+					expect_rev: rev
+				};
+				if (typeof st["engine"] === "string" && st["engine"] !== "") doc["engine"] = st["engine"];
+				if (typeof st["params"] === "object" && st["params"] !== null && !Array.isArray(st["params"])) doc["params"] = st["params"];
+				const id = typeof st["id"] === "string" && st["id"] !== "" ? st["id"] : null;
+				if (id !== null) doc["id"] = id;
+				try {
+					const row = await wireCall("bench/add-stage", doc, signal);
+					if (typeof row["rev"] === "number") rev = row["rev"];
+					report.added += 1;
+				} catch (e) {
+					const message = e instanceof Error ? e.message : String(e);
+					if (id !== null && message.includes("already on the bench")) {
+						const retry = { ...doc };
+						delete retry["id"];
+						try {
+							const row = await wireCall("bench/add-stage", retry, signal);
+							if (typeof row["rev"] === "number") rev = row["rev"];
+							report.added += 1;
+							report.notes.push(id + " was already on the bench — added under a fresh id");
+						} catch (e2) {
+							throw new Error("restore stopped after " + String(report.added) + " stage(s): " + (e2 instanceof Error ? e2.message : String(e2)));
+						}
+					} else throw new Error("restore stopped after " + String(report.added) + " stage(s): " + message);
+				}
+			}
+			return report;
 		}
 		/** Merge one events frame into a run value (stage rows upserted by id;
 		*  run-status frames replace the status; the frame is kept for the view). */
@@ -937,6 +852,261 @@ window.__ModuleLoader__.load({
 			}
 		}
 		//#endregion
+		//#region src/client/CardsTab.tsx
+		/**
+		* The Cards tab body — the bench's user plane (plan §5: "the user
+		* browses visually in the tab").
+		*
+		* Bench view (`dsh-resource://cards/bench`): the stage rows GROUPED BY
+		* CARD (the categories — each card's stages under its own header with
+		* a count), each row opening a DSH Modal drilldown (id/card/engine/
+		* params — the chat tile's drilldown pattern, primitives Modal), the
+		* revision trail's head, and the Run gesture — which projects the
+		* stages onto the flow_inline wire and starts them under the bench's
+		* own draft_id, EXACTLY what melite_flow's bench verb does (one
+		* truth, two planes; the model's plane is per-call reads, never this
+		* component's frames).
+		*
+		* Run view (`dsh-resource://cards/run/<runId>`): live status + stage
+		* rows + artifacts, riding the resource provider's frames — plus the
+		* way back: "Back to bench" navigates home, and "Restore to bench"
+		* turns the card BACK INTO A FLOW (drafts/get on the run's draft_id
+		* + per-stage bench/add-stage as the user, CAS-chained).
+		*
+		* ADDRESS LAW (the `loading sidebar://cards…` hang, dead 2026-09-11):
+		* the shell's navigation address is the SHELL's (guide clicks arrive
+		* as the tab id's own address, not a cards address). An address that
+		* does not parse as a cards address serves the BENCH — the tab never
+		* sits on a resource no provider claims.
+		*
+		* The body is dispatched by the keyed `sidebar.right.pane.tab` seat
+		* under the type's id; the address arrives through the standard
+		* `useTabInfo` hook, the value through the standard `useResource`
+		* hook. Local prop typings (the package's local-spelling pattern —
+		* see index.ts) keep this package off sibling runtime imports.
+		*/
+		/** The flow_inline projection — the SAME wire shape melite_flow's bench
+		*  verb sends (runner-owned keys strip; ids/engines/params stay). */
+		function projectStage(s) {
+			const row = {
+				id: s.id,
+				engine: s.engine ?? "comfyui"
+			};
+			if (s.params !== void 0 && Object.keys(s.params).length > 0) row["params"] = s.params;
+			if (Array.isArray(s.inputs) && s.inputs.length > 0) row["inputs"] = s.inputs;
+			if (Array.isArray(s.outputs) && s.outputs.length > 0) row["outputs"] = s.outputs;
+			return row;
+		}
+		/** Correlation id for one client-request frame (crypto.randomUUID is
+		*  the browser standard). */
+		function nextRpcId() {
+			const cryptoApi = globalThis.crypto;
+			if (cryptoApi?.randomUUID !== void 0) return cryptoApi.randomUUID();
+			return "rpc-" + Math.random().toString(36).slice(2) + "-" + Date.now().toString(36);
+		}
+		/** The Run gesture: start the bench as it stands, over the runs
+		*  remote's wire door (same-origin POST /api/runs/start carrying the
+		*  client-request frame — api-gateway.md; the gateway-era /v1/flows
+		*  start died with the app, nothing serves it). Errors surface inline
+		*  (the RemoteError branch's own refusal text — logged, never thrown
+		*  past React). */
+		async function runTheBench(bench, onStarted) {
+			const stages = bench.stages.map(projectStage);
+			if (stages.length === 0) return;
+			const rpcId = nextRpcId();
+			try {
+				const res = await fetch("/api/runs/start", {
+					method: "POST",
+					headers: { "content-type": "application/json" },
+					body: JSON.stringify({
+						type: "client-request",
+						rpcId,
+						method: "runs/start",
+						payload: { args: { doc: {
+							flow_inline: { stages },
+							draft_id: bench.draftId
+						} } }
+					})
+				});
+				if (!res.ok) {
+					console.error("[cards] run refused: HTTP " + String(res.status));
+					return;
+				}
+				const body = await res.json().catch(() => null);
+				if (typeof body !== "object" || body === null || Reflect.get(body, "type") !== "server-response" || Reflect.get(body, "rpcId") !== rpcId) {
+					console.error("[cards] run refused: malformed response frame");
+					return;
+				}
+				const result = Reflect.get(body, "result");
+				if (typeof result !== "object" || result === null) {
+					console.error("[cards] run refused: malformed result");
+					return;
+				}
+				if (Reflect.get(result, "ok") === true) {
+					const runId = Reflect.get(Reflect.get(result, "value"), "run_id");
+					if (typeof runId === "string" && runId !== "") onStarted(runId);
+					else console.error("[cards] run refused: no run_id in the answer");
+					return;
+				}
+				const error = Reflect.get(result, "error");
+				const message = typeof error === "object" && error !== null && typeof Reflect.get(error, "message") === "string" ? Reflect.get(error, "message") : "runs/start refused";
+				console.error("[cards] run refused:", message);
+			} catch (e) {
+				console.error("[cards] run request failed:", e);
+			}
+		}
+		/** THE CATEGORIES: bench stages grouped by card (first-appearance
+		*  order — the agent's construction order survives; stages with no
+		*  card gather under 'uncategorized', never dropped). */
+		function groupStagesByCard(stages) {
+			const groups = [];
+			for (const s of stages) {
+				const card = typeof s.card === "string" && s.card !== "" ? s.card : "uncategorized";
+				const known = groups.find((g) => g.card === card);
+				if (known === void 0) groups.push({
+					card,
+					rows: [s]
+				});
+				else known.rows.push(s);
+			}
+			return groups;
+		}
+		function StageRowView({ stage, onOpen }) {
+			const title = stage.title ?? stage.card ?? stage.id;
+			const engine = typeof stage.engine === "string" && stage.engine !== "" ? stage.engine : "comfyui";
+			return (0, react.createElement)("li", {
+				className: "cards-stage",
+				"data-stage-id": stage.id
+			}, (0, react.createElement)("button", {
+				className: "cards-stage-open",
+				type: "button",
+				onClick: () => onOpen(stage)
+			}, (0, react.createElement)("span", { className: "cards-stage-title" }, String(title)), (0, react.createElement)("span", { className: "cards-stage-engine" }, engine)));
+		}
+		/** THE DSH MODAL: the stage drilldown — DSH's own overlay machinery
+		*  (primitives Modal: body portal, Escape/mask close), the chat
+		*  tile's drilldown pattern. Read-only params (the agent owns edits;
+		*  the user reviews here and restores/reruns from the views). */
+		function StageDetailModal({ stage, onClose }) {
+			const title = String(stage.title ?? stage.card ?? stage.id);
+			const params = typeof stage.params === "object" && stage.params !== null ? stage.params : {};
+			return (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Modal, {
+				open: true,
+				onClose,
+				title: "Stage " + title,
+				closeLabel: "Close stage"
+			}, (0, react.createElement)("dl", { className: "cards-stage-detail" }, (0, react.createElement)("dt", null, "id"), (0, react.createElement)("dd", { className: "cards-mono" }, stage.id), stage.card !== void 0 ? (0, react.createElement)("dt", null, "card") : null, stage.card !== void 0 ? (0, react.createElement)("dd", { className: "cards-mono" }, String(stage.card)) : null, (0, react.createElement)("dt", null, "engine"), (0, react.createElement)("dd", { className: "cards-mono" }, typeof stage.engine === "string" && stage.engine !== "" ? stage.engine : "comfyui"), stage.provenance !== void 0 ? (0, react.createElement)("dt", null, "provenance") : null, stage.provenance !== void 0 ? (0, react.createElement)("dd", null, String(stage.provenance)) : null, (0, react.createElement)("dt", null, "params"), (0, react.createElement)("dd", null, (0, react.createElement)("pre", { className: "cards-mono" }, JSON.stringify(params, null, 2)))));
+		}
+		function BenchView({ bench, onRun, running }) {
+			const [open, setOpen] = (0, react.useState)(null);
+			const onOpen = (0, react.useCallback)((stage) => setOpen(stage), []);
+			const onClose = (0, react.useCallback)(() => setOpen(null), []);
+			const groups = groupStagesByCard(bench.stages);
+			return (0, react.createElement)("section", {
+				className: "cards-bench",
+				"data-cards-bench": bench.rev
+			}, (0, react.createElement)("header", { className: "cards-bench-head" }, (0, react.createElement)("span", { className: "cards-bench-rev" }, "rev " + bench.rev), (0, react.createElement)("button", {
+				className: "cards-run",
+				type: "button",
+				disabled: running || bench.stages.length === 0,
+				onClick: onRun
+			}, "Run")), bench.stages.length === 0 ? (0, react.createElement)("p", { className: "cards-empty" }, "The bench is empty — construct stages (the agent adds them; they land here).") : groups.map((g) => (0, react.createElement)("section", {
+				key: g.card,
+				className: "cards-category",
+				"data-cards-category": g.card
+			}, (0, react.createElement)("h3", { className: "cards-category-title" }, g.card + " · " + String(g.rows.length)), (0, react.createElement)("ol", { className: "cards-stages" }, g.rows.map((s) => (0, react.createElement)(StageRowView, {
+				key: s.id,
+				stage: s,
+				onOpen
+			}))))), bench.log.length > 0 ? (0, react.createElement)("p", { className: "cards-log-head" }, bench.log.length + " log entr" + (bench.log.length === 1 ? "y" : "ies")) : null, open !== null ? (0, react.createElement)(StageDetailModal, {
+				stage: open,
+				onClose
+			}) : null);
+		}
+		function RunView({ run, onBack, onRestored }) {
+			const [restoring, setRestoring] = (0, react.useState)(false);
+			const [note, setNote] = (0, react.useState)(null);
+			const onRestore = (0, react.useCallback)(() => {
+				setRestoring(true);
+				setNote(null);
+				restoreRunToBench(run).then((report) => {
+					const extra = report.notes.length > 0 ? " (" + report.notes.join("; ") + ")" : "";
+					const skipped = report.skipped > 0 ? ", " + String(report.skipped) + " skipped" : "";
+					setNote("restored " + String(report.added) + " stage(s) to the bench" + skipped + extra);
+					setRestoring(false);
+					onRestored();
+				}).catch((e) => {
+					setNote(e instanceof Error ? e.message : String(e));
+					setRestoring(false);
+				});
+			}, [run, onRestored]);
+			return (0, react.createElement)("section", {
+				className: "cards-run-view",
+				"data-run-status": run.status
+			}, (0, react.createElement)("header", { className: "cards-run-head" }, (0, react.createElement)("span", { className: "cards-run-id" }, run.runId), (0, react.createElement)("span", { className: "cards-run-status" }, run.status)), (0, react.createElement)("div", { className: "cards-run-actions" }, onBack !== void 0 ? (0, react.createElement)("button", {
+				className: "cards-back",
+				type: "button",
+				onClick: onBack
+			}, "Back to bench") : null, (0, react.createElement)("button", {
+				className: "cards-restore",
+				type: "button",
+				disabled: restoring || run.draftId === null,
+				title: run.draftId === null ? "this run names no draft — nothing to restore" : "copy this run’s stages back onto the bench as your own",
+				onClick: onRestore
+			}, restoring ? "Restoring…" : "Restore to bench")), note !== null ? (0, react.createElement)("p", { className: "cards-restore-note" }, note) : null, run.stages.length === 0 ? (0, react.createElement)("p", { className: "cards-empty" }, "No stage rows yet.") : (0, react.createElement)("ol", { className: "cards-stages" }, run.stages.map((s) => (0, react.createElement)("li", {
+				key: s.id,
+				className: "cards-stage",
+				"data-stage-status": s.status
+			}, (0, react.createElement)("span", { className: "cards-stage-title" }, s.id), (0, react.createElement)("span", { className: "cards-stage-engine" }, s.status), s.url !== void 0 ? (0, react.createElement)("a", {
+				href: mediaUrl(run.runId, s.url),
+				target: "_blank",
+				rel: "noreferrer",
+				className: "cards-stage-artifact"
+			}, "artifact") : null))));
+		}
+		/** ADDRESS LAW (the `loading sidebar://cards…` hang, dead 2026-09-11):
+		*  the shell's navigation address is the SHELL's (guide clicks arrive
+		*  as the tab id's own address, not a cards address). An address that
+		*  does not parse as a cards address serves the BENCH — the tab never
+		*  sits on a resource no provider claims. */
+		function resolveCardsAddress(rawAddress) {
+			return parseCardsAddress(rawAddress) !== null ? rawAddress : CARDS_BENCH_ADDRESS;
+		}
+		/** The tab body component. */
+		function CardsTab(props) {
+			const info = typeof props.useTabInfo === "function" ? props.useTabInfo() : void 0;
+			const address = resolveCardsAddress(info?.tab.navigation.address ?? info?.tab.contentId ?? "dsh-resource://cards/bench");
+			const openResource = info?.tab.actions.openResource;
+			const snapshot = typeof props.useResource === "function" ? props.useResource(address) : void 0;
+			const [running, setRunning] = (0, react.useState)(false);
+			const onStarted = (0, react.useCallback)((runId) => {
+				setRunning(false);
+				if (openResource !== void 0) openResource("dsh-resource://cards/run/" + encodeURIComponent(runId));
+			}, [openResource]);
+			const onRun = (0, react.useCallback)(() => {
+				if (snapshot?.value?.kind !== "bench") return;
+				setRunning(true);
+				runTheBench(snapshot.value, onStarted);
+			}, [snapshot, onStarted]);
+			const onBack = (0, react.useCallback)(() => {
+				if (openResource !== void 0) openResource(CARDS_BENCH_ADDRESS);
+			}, [openResource]);
+			if (snapshot === void 0) return (0, react.createElement)("p", { className: "cards-missing" }, "cards resource hook unavailable");
+			if (snapshot.status === "loading" || snapshot.status === "none") return (0, react.createElement)("p", { className: "cards-loading" }, "loading " + address + "…");
+			if (snapshot.status === "failed") return (0, react.createElement)("p", { className: "cards-failed" }, snapshot.failure?.message ?? "cards resource failed");
+			const value = snapshot.value;
+			if (value === void 0) return (0, react.createElement)("p", { className: "cards-failed" }, "cards resource gave no value");
+			return value.kind === "bench" ? (0, react.createElement)(BenchView, {
+				bench: value,
+				onRun,
+				running
+			}) : (0, react.createElement)(RunView, {
+				run: value,
+				onBack: openResource !== void 0 ? onBack : void 0,
+				onRestored: onBack
+			});
+		}
+		//#endregion
 		//#region src/client/index.ts
 		/** Every card tool that produces a draft — the card tile renders for ALL of them. */
 		const CARD_TOOLS = [
@@ -1024,10 +1194,12 @@ window.__ModuleLoader__.load({
 		exports.FlowCards = FlowCards;
 		exports.apply = apply;
 		exports.cardsRunAddress = cardsRunAddress;
+		exports.groupStagesByCard = groupStagesByCard;
 		exports.inject = inject;
 		exports.mergeRunFrame = mergeRunFrame;
 		exports.parseCardsAddress = parseCardsAddress;
 		exports.parseCardsBlock = parseCardsBlock;
+		exports.restoreRunToBench = restoreRunToBench;
 		return module.exports;
 	}
 });

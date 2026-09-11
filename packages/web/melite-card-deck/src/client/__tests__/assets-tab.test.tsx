@@ -6,6 +6,10 @@
  *                 bug stays dead)
  *   silent      — status refresh never lands in the result pane
  *   browse      — installed packs render as rows + filter client-side
+ *                 (the rail's REAL shape: {name, version: commit-sha}
+ *                 objects — the [object Object] regression stays dead)
+ *   endpoint    — the server-url field seeds from status and Set
+ *                 dispatches endpoint_set with the url
  *   snapshots   — list/save/restore dispatch with the right bodies
  *   ownership   — an explicit dispatch DOES land in the result pane
  *
@@ -48,10 +52,13 @@ const STATUS: Canned = {
   },
 }
 
+/** The rail's REAL list_extensions shape (live-probed 2026-09-11:
+ *  {name, version: 40-hex commit sha} — objects, never the dead
+ *  cm_cli-era "name@version" strings). */
 const PACKS = [
-  'ComfyUI-KJNodes@nightly',
-  'ComfyUI-MoGe@nightly',
-  'H3 Motion Context@nightly',
+  { name: 'comfyui-kjnodes', version: 'e8e88f7c88e3f6205b122f5de87e69a09fbce5ac' },
+  { name: 'comfyui-moge', version: '8276bab55f293a5bf000fef6a0dbedd3110efb29' },
+  { name: 'comfyui-h3-motion-context', version: '429e952ae5c09b54f44cb6e3bef7331d998f0656' },
 ]
 
 const SNAPS = ['2026-09-06_10-17-22_snapshot.json']
@@ -159,8 +166,10 @@ test('installed packs render as rows and filter client-side', async () => {
 
   await user.click(screen.getByRole('button', { name: 'Installed packs' }))
   const list = await screen.findByTestId('ext-list')
-  expect(within(list).getByText('ComfyUI-KJNodes@nightly')).toBeTruthy()
-  expect(within(list).getByText('H3 Motion Context@nightly')).toBeTruthy()
+  // "name — version", never [object Object].
+  expect(within(list).getByText(/comfyui-kjnodes — e8e88f7/)).toBeTruthy()
+  expect(within(list).getByText(/comfyui-h3-motion-context — 429e952/)).toBeTruthy()
+  expect(within(list).queryByText(/\[object Object\]/)).toBeNull()
 
   // the explicit dispatch owns the result pane…
   expect(screen.getByText('list_extensions')).toBeTruthy()
@@ -172,10 +181,10 @@ test('installed packs render as rows and filter client-side', async () => {
     'moge',
   )
   expect(
-    within(list).queryByText('ComfyUI-KJNodes@nightly'),
+    within(list).queryByText(/comfyui-kjnodes/),
   ).toBeNull()
   expect(
-    within(list).getByText('ComfyUI-MoGe@nightly'),
+    within(list).getByText(/comfyui-moge — 8276bab/),
   ).toBeTruthy()
 })
 
@@ -230,4 +239,35 @@ test('snapshot list/save/restore dispatch with the right bodies', async () => {
   })
   const restore = calls.find((c) => c.action === 'snapshot_restore')
   expect(restore?.snapshot).toBe('2026-09-06_10-17-22_snapshot.json')
+})
+
+test('the server-url field seeds from status and Set dispatches endpoint_set', async () => {
+  const { calls } = stubManageWire({
+    status: STATUS,
+    endpoint_set: {
+      action: 'endpoint_set',
+      ok: true,
+      detail: 'endpoint set to http://127.0.0.1:18466 (ComfyUI 0.34.0 answered)',
+      data: { url: 'http://127.0.0.1:18466', comfyui_version: '0.34.0' },
+    },
+  })
+  const user = userEvent.setup()
+  render(<ComfyManagerPanel />)
+  await screen.findByText('http://127.0.0.1:18466')
+
+  // the field seeds from the live status url…
+  const field = screen.getByPlaceholderText('http://127.0.0.1:8188') as HTMLInputElement
+  expect(field.value).toBe('http://127.0.0.1:18466')
+
+  // …an edit + Set dispatches endpoint_set with the url (the field
+  // keeps the operator's edit — status refreshes never clobber it).
+  await user.clear(field)
+  await user.type(field, 'http://127.0.0.1:8188')
+  await user.click(screen.getByRole('button', { name: 'Set' }))
+  await waitFor(() => {
+    expect(actionsOf(calls)).toContain('endpoint_set')
+  })
+  const set = calls.find((c) => c.action === 'endpoint_set')
+  expect(set?.url).toBe('http://127.0.0.1:8188')
+  expect(field.value).toBe('http://127.0.0.1:8188')
 })

@@ -169,6 +169,23 @@ export function resolveRepoRoot(): string {
  *  data/comfyui_endpoint.json; INFERENCE_TEST_SANDBOX without the
  *  env path resolves to {} (the test-sandbox leak gate); a
  *  present-but-unparseable file raises LOUD (never silent {}). */
+/** The endpoint config's write target: the first EXISTING candidate,
+ *  else the plugin's own data path (a fresh write). The same
+ *  resolution loadEndpointConfig reads — one spelling for read and
+ *  write (the endpoint_set manage action rewrites only `url`). */
+export function endpointConfigPath(): string {
+  const envPath: string = process.env["COMFYUI_ENDPOINT_CONFIG"] ?? "";
+  if (envPath !== "") return envPath;
+  return join(
+    resolveRepoRoot(),
+    "packages",
+    "engines",
+    "comfyui-cordis",
+    "data",
+    "comfyui_endpoint.json",
+  );
+}
+
 export function loadEndpointConfig(): Record<string, EngineJson> {
   const envPath: string = process.env["COMFYUI_ENDPOINT_CONFIG"] ?? "";
   const sandbox: string = process.env["INFERENCE_TEST_SANDBOX"] ?? "";

@@ -215,6 +215,7 @@ const MUTATING: ReadonlySet<string> = new Set([
  * and silently refresh the status section afterwards.
  */
 export function ComfyManagerPanel(): React.ReactElement {
+  const [epUrl, setEpUrl] = useState('')
   const [status, setStatus] = useState<StatusView | null>(null)
   const [statusDetail, setStatusDetail] = useState('')
   const [busy, setBusy] = useState<string | null>(null)
@@ -248,7 +249,16 @@ export function ComfyManagerPanel(): React.ReactElement {
     try {
       const reply = await postManage('status', {})
       if (reply.ok === true) {
-        setStatus(reply.data as StatusView | undefined ?? null)
+        const view = reply.data as StatusView | undefined ?? null
+        setStatus(view)
+        // Seed the server-url field from the live status ONLY while
+        // the operator has not typed (functional update — no epUrl
+        // dep, so typing/clearing never refetches and a refresh never
+        // clobbers an in-progress edit).
+        const live = (view as { endpoint?: { url?: unknown } } | null)?.endpoint?.url
+        if (typeof live === 'string' && live !== '') {
+          setEpUrl((prev) => (prev === '' ? live : prev))
+        }
       }
       setStatusDetail(reply.detail ?? '')
     } catch (e) {
@@ -277,11 +287,23 @@ export function ComfyManagerPanel(): React.ReactElement {
     }
   }, [fetchStatus])
 
-  /** Browse rows: installed packs (cm_cli simple-show via the SSOT). */
+  /** Browse rows: installed packs — the manage rail's rows are
+   *  {name, version} objects; render "name — version" (never
+   *  [object Object] — the operator-caught regression). */
   const loadExtensions = useCallback(async (): Promise<void> => {
     const reply = await run('list_extensions')
     if (reply !== null && reply.ok === true && Array.isArray(reply.data)) {
-      setExtRows(reply.data.map(String))
+      setExtRows(reply.data.map((row): string => {
+        if (typeof row === 'string') return row
+        if (typeof row === 'object' && row !== null) {
+          const r = row as { name?: unknown; version?: unknown; ver?: unknown }
+          const name = typeof r.name === 'string' ? r.name : '?'
+          const ver = typeof r.version === 'string' ? r.version
+            : typeof r.ver === 'string' ? r.ver : '?'
+          return name + ' — ' + ver
+        }
+        return String(row)
+      }))
     }
   }, [run])
 
@@ -323,6 +345,17 @@ export function ComfyManagerPanel(): React.ReactElement {
         {ep?.comfyui_version !== undefined && ep.comfyui_version !== null && (
           <div className={css.kvRow}><span className={css.kvKey}>version</span><span className={css.mono}>{String(ep.comfyui_version)}</span></div>
         )}
+        {/* THE OPERATOR'S URL CHANGE (endpoint_set): validate-first —
+            an unreachable URL is refused server-side and never
+            written; the field seeds from the live status. */}
+        <div className={css.row}>
+          <Field label="server url" value={epUrl} placeholder="http://127.0.0.1:8188" mono onChange={setEpUrl} />
+          <Btn
+            busy={busy === 'endpoint_set'}
+            disabled={epUrl.trim() === ''}
+            onClick={() => { void run('endpoint_set', { url: epUrl.trim() }) }}
+          >Set</Btn>
+        </div>
         {(ep?.devices ?? []).map((d, i) => {
           const total = typeof d.vram_total === 'number' ? d.vram_total : 0
           const free = typeof d.vram_free === 'number' ? d.vram_free : 0

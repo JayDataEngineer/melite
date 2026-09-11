@@ -145,8 +145,10 @@ export type { FlowCardsProps } from './FlowCards.tsx'
 export type { ToolCallBlockView } from './types.ts'
 export {
   CARDS_BENCH_ADDRESS, cardsRunAddress, parseCardsAddress, mergeRunFrame,
+  restoreRunToBench,
 } from './cards-resource.ts'
 export type {
   CardsValue, CardsBenchValue, CardsRunValue, BenchStageRow, BenchLogHead, RunStageStatus,
+  RestoreReport,
 } from './cards-resource.ts'
-export { CardsTab } from './CardsTab.tsx'
+export { CardsTab, groupStagesByCard } from './CardsTab.tsx'
