@@ -10,11 +10,15 @@
     "./form": "./src/form.tsx",
     "./square": "./src/square.tsx",
     "./wire": "./src/wire.ts",
-    "./package.json": "./package.json"
+    "./package.json": "./package.json",
+    "./mods": "./src/mods.tsx"
   },
   "peerDependencies": {
     "@deepseek-ai/dsh-client-ui-slots": "0.1.5-rc.2",
-    "react": "^18.2.0"
+    "react": "^18.2.0",
+    "@dnd-kit/core": "^6.3.1",
+    "@dnd-kit/sortable": "^10.0.0",
+    "@dnd-kit/utilities": "^3.2.2"
   },
   "peerDependenciesMeta": {
     "@deepseek-ai/dsh-client-ui-slots": {
@@ -25,8 +29,10 @@
     "@deepseek-ai/dsh-client-ui-primitives": "0.1.5-rc.2",
     "@deepseek-ai/dsh-client-ui-slots": "0.1.5-rc.2",
     "@types/node": "*",
-    "@types/react": "~18.3.1"
+    "@types/react": "~18.3.1",
+    "@dnd-kit/core": "^6.3.1",
+    "@dnd-kit/sortable": "^10.0.0",
+    "@dnd-kit/utilities": "^3.2.2"
   },
-  "scripts": {
-  }
+  "scripts": {}
 }

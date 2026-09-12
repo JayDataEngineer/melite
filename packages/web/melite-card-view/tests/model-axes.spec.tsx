@@ -196,3 +196,119 @@ test('runCardStage composes the HELD model; the default family is only the resti
     ;(globalThis as Record<string, unknown>)['fetch'] = realFetch
   }
 })
+
+// ── the multi-axis law (operator lane proof 2026-09-12: the hardcoded
+//    Quant-only list dropped seedvr2's Recipe axis and qwen's — the
+//    axes are the SERVED GROUPS, ALL of them, chained by owner). ──────
+
+/** The seedvr2 wire shape (lane read 2026-09-12): Variant rows only +
+ *  patch-only Recipe rows (owner '' — compose with everything). */
+const SEEDVR: FormSpecDoc = {
+  form: 'upscale-tools',
+  fields: [
+    { name: 'image', label: 'Input image', type: 'image', required: true, group: 'input' },
+    { name: 'target', label: 'Target short side', type: 'number', default: 1080, group: 'resolution' },
+  ],
+  model: 'seedvr2_ema',
+  features: {
+    variant_groups: {
+      Variant: { label: 'Variant' },
+      Recipe: { label: 'Recipe', tooltip: 'One-click recipes — patch-only rows that stamp picks onto the draft.', default: 'default' },
+    },
+  },
+  variants: [
+    { id: '3b', label: '3B FP16', group: 'Variant', defaults: { model: 'seedvr2_ema' }, route: 'seedvr2_ema', hint: '3B EMA fp16 — fast, ~7 GB VRAM (DEFAULT)' },
+    { id: '7b', label: '7B', group: 'Variant', defaults: { model: 'seedvr2_ema_7b' }, route: 'seedvr2_ema_7b', hint: '7B EMA fp8_e4m3fn' },
+    { id: 'default', label: 'Default', group: 'Recipe', defaults: {}, route: '', hint: 'The family default — no extra stamps' },
+  ],
+}
+
+/** The qwen wire shape (lane read 2026-09-12): Variant + Quant +
+ *  Recipe — three axes, Quant owned by Variant. */
+const QWEN: FormSpecDoc = {
+  form: 'image-edit',
+  fields: [
+    { name: 'image', label: 'Input image', type: 'image', required: true, group: 'input' },
+  ],
+  model: 'qwen-img-edit-2511',
+  features: {
+    variant_groups: {
+      Variant: { label: 'Variant' },
+      Quant: { label: 'Quant' },
+      Recipe: { label: 'Recipe', default: 'default' },
+    },
+  },
+  variants: [
+    { id: 'lightning', label: 'Lightning', group: 'Variant', defaults: { model: 'qwen-img-edit-2511-lightning4' }, route: 'qwen-img-edit-2511-lightning4', hint: '4-step distilled checkpoint' },
+    { id: 'lightning4', label: 'FP8 Lightning', group: 'Quant', defaults: {}, route: 'qwen-img-edit-2511-lightning4', owner: 'lightning' },
+    { id: 'standard', label: 'Standard', group: 'Variant', defaults: { model: 'qwen-img-edit-2511' }, route: 'qwen-img-edit-2511', hint: '20 steps, cfg 2.5' },
+    { id: 'int8', label: 'INT8 ConvRot', group: 'Quant', defaults: {}, route: 'qwen-img-edit-2511-int8', owner: 'standard' },
+    { id: 'default', label: 'Default', group: 'Recipe', defaults: {}, route: '', hint: 'no extra stamps' },
+  ],
+}
+
+test('axisGroups: every served group is an axis — no hardcoded Quant-only list', async () => {
+  const { axisGroups } = await import('../src/client/spec-form.tsx')
+  // seedvr2's second axis is RECIPE, not Quant — the hardcoded list
+  // dropped it on the lane (the operator's catch)
+  expect(axisGroups(SEEDVR)).toEqual(['Variant', 'Recipe'])
+  expect(axisGroups(QWEN)).toEqual(['Variant', 'Quant', 'Recipe'])
+  // no groups contract → first-seen row order (KREA has no features)
+  expect(axisGroups(KREA)).toEqual(['Variant', 'Quant'])
+})
+
+test('the seedvr2 drill renders Model + Variant + Recipe axes — the Recipe axis the hardcoded list dropped', async () => {
+  const state = { values: seedAxisValues(SEEDVR, {}) as SpecValues }
+  const onEdit = (name: string, v: unknown): void => { state.values = { ...state.values, [name]: v } }
+  render(createElement(SpecForm, {
+    spec: SEEDVR,
+    fields: SEEDVR.fields,
+    values: state.values,
+    onEdit,
+  }))
+  const model = screen.getByLabelText('Model')
+  expect(model.value).toBe('seedvr2_ema')
+  const variant = screen.getByLabelText('Variant')
+  expect(variant.value).toBe('3b')
+  // THE DROPPED AXIS — renders now
+  const recipe = screen.getByLabelText('Recipe')
+  expect(recipe.value).toBe('default')
+  // picking 7B re-points the model
+  fireEvent.change(screen.getByLabelText('Variant'), { target: { value: '7b' } })
+  await waitFor(() => { expect(state.values['model']).toBe('seedvr2_ema_7b') })
+})
+
+test('the qwen drill chains Quant by owner and keeps Recipe composing with both variants', async () => {
+  const state = { values: seedAxisValues(QWEN, {}) as SpecValues }
+  const onEdit = (name: string, v: unknown): void => { state.values = { ...state.values, [name]: v } }
+  render(createElement(SpecForm, {
+    spec: QWEN,
+    fields: QWEN.fields,
+    values: state.values,
+    onEdit,
+  }))
+  expect(screen.getByLabelText('Variant').value).toBe('lightning')
+  expect(screen.getByLabelText('Quant').value).toBe('lightning4')
+  expect(screen.getByLabelText('Recipe').value).toBe('default')
+  // switch to Standard: the Quant axis re-seeds to int8 (the standard
+  // chain), the Recipe axis is untouched (owner '' composes always)
+  fireEvent.change(screen.getByLabelText('Variant'), { target: { value: 'standard' } })
+  await waitFor(() => { expect(state.values['model']).toBe('qwen-img-edit-2511') })
+  expect(state.values['quant']).toBe('int8')
+  expect(state.values['recipe']).toBe('default')
+})
+
+test('a Recipe pick stamps its overlay WITHOUT re-pointing the model (patch-only law)', async () => {
+  const { axisPickPatch } = await import('../src/client/spec-form.tsx')
+  const patch = axisPickPatch(SEEDVR, SEEDVR.variants![2]!)
+  expect(patch['recipe']).toBe('default')
+  expect(patch['model']).toBeUndefined()
+})
+
+test('seedAxisValues seeds EVERY axis key (variant/quant/recipe — the group ids lowercased)', async () => {
+  const seedQ = seedAxisValues(QWEN, {})
+  expect(seedQ['variant']).toBe('lightning')
+  expect(seedQ['quant']).toBe('lightning4')
+  expect(seedQ['recipe']).toBe('default')
+  expect(seedQ['model']).toBe('qwen-img-edit-2511-lightning4')
+})

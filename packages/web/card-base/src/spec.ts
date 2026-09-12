@@ -58,15 +58,43 @@ export interface InputEdge {
  *  ModifierKindSpec, the OPEN kind vocabulary: lora/controlnet are
  *  the first instances, never the whole set). The mod surface (the
  *  subcard grid in the drill) renders from THIS; the flat card
- *  fields never carry a mod's param_key (the SubcardGrid law). */
+ *  fields never carry a mod's param_key (the SubcardGrid law).
+ *
+ *  TWO KIND SHAPES (the wire, lane-read 2026-09-12 — operator: "the
+ *  mod system is core, never hardcoded"):
+ *   - OPTION kinds (lora): a served options catalog + strength; the
+ *     entry is { id, strength }.
+ *   - FIELD kinds (mask): the kind's OWN fields (full spec fields —
+ *     image squares, selects, sliders); the entry IS the params
+ *     object. The leaf editor renders kind.fields through the same
+ *     constructor atoms — the fields NEVER ride the card form flat. */
 export interface ModifierKind {
   kind: string
   label: string
   param_key: string
   cardinality: string
   max_stack?: number
-  fields?: Array<{ name: string; label?: string; type?: string; options?: unknown[] }>
+  fields?: SpecField[]
   options?: Array<{ value: string; label: string; tooltip?: string; defaults?: { strength?: number } }>
+}
+
+/** THE MOD-OWNED NAMES (the SubcardGrid law, enforced): every name a
+ *  served modifier kind owns — its fields' names plus its param_key
+ *  (the bag storage). CardForm EXCLUDES these from the flat param
+ *  groups: mod params render ONLY inside the mod system. PURE. */
+export function modOwnedFields(spec: FormSpecDoc): Set<string> {
+  const owned = new Set<string>()
+  for (const k of spec.features?.modifiers ?? []) {
+    owned.add(k.param_key)
+    for (const f of k.fields ?? []) owned.add(f.name)
+  }
+  return owned
+}
+
+/** Is this kind an OPTION kind (lora-shaped: served catalog rows) —
+ *  as opposed to a FIELD kind (mask-shaped: its own param fields)? */
+export function isOptionKind(k: ModifierKind): boolean {
+  return (k.options ?? []).length > 0
 }
 
 /** One variant-matrix row (the spec ROOT's `variants` — the flattened
@@ -111,8 +139,14 @@ export interface FormSpecDoc {
    *  what a completed run of this card delivers, keyed by slot. */
   outputs?: Record<string, string>
   /** The mod system's kind vocabulary — the dynamic mods offer
-   *  (served when the family boards mod packs). */
-  features?: { modifiers?: ModifierKind[] }
+   *  (served when the family boards mod packs). Also carries the
+   *  variant-axis GROUPS contract (variant_groups, the old wire law:
+   *  label/tooltip/filters_on per group) when the family declares
+   *  axis groups. */
+  features?: {
+    modifiers?: ModifierKind[]
+    variant_groups?: Record<string, { label?: string, tooltip?: string, filters_on?: string | null, default?: string }>
+  }
   /** The estate's surface envelope (served TOP-LEVEL by the door —
    *  2026-09-12 lane read): layout='studio' means a registered view
    *  exists (the client's business is the keyed slot, not this flag);
@@ -206,21 +240,67 @@ export function specPatch(fields: SpecField[], values: SpecValues, held: SpecVal
 //    package is supposed to pass along the model, variant, and quant
 //    fields") — the old flowCardAxes/flowAxisRows law, translated to
 //    the SERVED shape alone: the flattened rows carry the whole chain
-//    (a Quant cell's `owner` IS the Variant filter — no catalog matrix
-//    needed client-side). PURE projections only; the selects render in
-//    form.tsx's ModelAxes. ─────────────────────────────────────────────
+//    (a cell's `owner` IS its filter — one direction). The axes are
+//    the SERVED GROUPS, ALL of them (Variant, Quant, Recipe, Precision,
+//    … — the declaration's vocabulary, never a hardcoded list; the
+//    operator's lane proof 2026-09-12 caught the hardcoded Quant-only
+//    list dropping seedvr2's and qwen's Recipe/Precision axes). PURE
+//    projections only; the selects render in form.tsx's ModelAxes. ───
+
+/** The axis groups in declaration order: features.variant_groups'
+ *  key order when the door serves it, else the rows' distinct groups
+ *  in first-seen order. Empty group names never ride. */
+export function axisGroups(spec: FormSpecDoc): string[] {
+  const rows = spec.variants ?? []
+  const groups: string[] = []
+  const declared = variantGroupsContract(spec)
+  if (declared.length > 0) {
+    for (const g of declared) if (g !== '' && !groups.includes(g)) groups.push(g)
+  }
+  for (const v of rows) {
+    if (v.group !== '' && !groups.includes(v.group)) groups.push(v.group)
+  }
+  return groups
+}
+
+/** The variant_groups contract's keys, in served order (the door
+ *  serves it under features when the family declares axis groups). */
+export function variantGroupsContract(spec: FormSpecDoc): string[] {
+  const feats = spec.features as Record<string, unknown> | undefined
+  const vg = feats?.['variant_groups']
+  if (vg === null || typeof vg !== 'object' || Array.isArray(vg)) return []
+  return Object.keys(vg as Record<string, unknown>)
+}
+
+/** One axis' rows (served order). */
+export function rowsFor(spec: FormSpecDoc, group: string): VariantRow[] {
+  return (spec.variants ?? []).filter((v) => v.group === group)
+}
+
+/** THE CHAIN (one direction: an axis filters the axes BELOW it): a
+ *  row composes with the current selection when its `owner` is empty
+ *  (composes with everything — patch-only rows) or names the ACTIVE
+ *  row of another axis. */
+export function composingRows(spec: FormSpecDoc, group: string, active: Record<string, string | undefined>): VariantRow[] {
+  return rowsFor(spec, group).filter((v) => {
+    if (v.owner === undefined || v.owner === '') return true
+    for (const g of axisGroups(spec)) {
+      if (g === group) continue
+      const row = rowsFor(spec, g).find((x) => x.id === v.owner)
+      if (row !== undefined) return active[g] === v.owner
+    }
+    return true
+  })
+}
 
 /** The Variant axis' rows (group 'Variant', served order). */
 export function variantRows(spec: FormSpecDoc): VariantRow[] {
-  return (spec.variants ?? []).filter((v) => v.group === 'Variant')
+  return rowsFor(spec, 'Variant')
 }
 
-/** The Quant cells composing with a variant — THE CHAIN (one
- *  direction: variant filters quant). Cells with no `owner` compose
- *  with every variant (an unowned cell is family-wide). */
+/** The Quant cells composing with a variant (THE CHAIN). */
 export function quantRowsFor(spec: FormSpecDoc, variantId: string | null): VariantRow[] {
-  return (spec.variants ?? []).filter((v) =>
-    v.group === 'Quant' && (v.owner === undefined || v.owner === '' || v.owner === variantId))
+  return composingRows(spec, 'Quant', { Variant: variantId ?? undefined })
 }
 
 /** The Model select's options — the distinct model ROUTES the matrix
@@ -237,64 +317,110 @@ export function modelChoices(spec: FormSpecDoc): string[] {
   return out
 }
 
-/** THE ACTIVE-ENTRY LAW (activeVariantId, simplified to the served
+/** THE ACTIVE-ENTRY LAW (activeVariantId, generalized to the served
  *  shape): a row is active when its re-pointed model (defaults.model
- *  ?? route) matches the held `model` value. Quant rows additionally
- *  chain — active only under the active variant. Nothing matches →
- *  undefined (the caller falls to the first row — the catalog's
- *  first-declared law). */
+ *  ?? route) matches the held `model` value AND its owner chain
+ *  holds. Nothing matches → undefined (the caller falls to the first
+ *  composing row — the catalog's first-declared law). */
 export function activeVariantId(spec: FormSpecDoc, values: SpecValues, group: 'Variant' | 'Quant'): string | undefined {
   const held = typeof values['model'] === 'string' ? values['model'] as string : undefined
   if (held === undefined) return undefined
-  const rows = (spec.variants ?? []).filter((v) => v.group === group)
-  for (const v of rows) {
+  const active: Record<string, string | undefined> = {}
+  for (const g of axisGroups(spec)) {
+    active[g] = activeRowId(spec, values, g, active)
+  }
+  return active[group] ?? undefined
+}
+
+/** One group's active row under the owner chain (inner recursion of
+ *  activeVariantId — Variant resolves first, chained groups after). */
+export function activeRowId(spec: FormSpecDoc, values: SpecValues, group: string, active: Record<string, string | undefined>): string | undefined {
+  const held = typeof values['model'] === 'string' ? values['model'] as string : undefined
+  if (held === undefined) return undefined
+  for (const v of rowsFor(spec, group)) {
     const rePoint = typeof v.defaults['model'] === 'string' ? v.defaults['model'] as string : v.route
-    if (rePoint !== held) continue
-    if (group === 'Quant') {
-      const ownerActive = activeVariantId(spec, values, 'Variant')
-      if (v.owner !== undefined && v.owner !== '' && v.owner !== ownerActive) continue
+    if (rePoint === '' || rePoint !== held) continue
+    if (v.owner !== undefined && v.owner !== '') {
+      let chainHolds = false
+      for (const g of axisGroups(spec)) {
+        if (g === group) continue
+        if (rowsFor(spec, g).find((x) => x.id === v.owner) !== undefined) {
+          chainHolds = active[g] === v.owner
+          break
+        }
+      }
+      if (!chainHolds) continue
     }
     return v.id
   }
   return undefined
 }
 
+/** The durable param key an axis rides (the group's id, lowercased —
+ *  'variant', 'quant', 'recipe', 'precision'). */
+export function axisKey(group: string): string {
+  return group.toLowerCase()
+}
+
 /** A pick's full value patch — the old onPick law: the row's
  *  `defaults` overlay rides (model re-point + every resolver default),
- *  plus the durable axis keys themselves (`variant`, `quant`) so a
- *  reopened stage restores its selects. A Quant pick chains: the
- *  cell's own defaults overlay the active variant's resting state. */
+ *  plus the durable axis keys themselves so a reopened stage restores
+ *  its selects. Picking a row also re-seeds the axes BELOW it (their
+ *  first composing row). */
 export function axisPickPatch(spec: FormSpecDoc, row: VariantRow): SpecValues {
   const patch: SpecValues = { ...row.defaults }
-  if (row.group === 'Variant') {
-    patch['variant'] = row.id
-    const quants = quantRowsFor(spec, row.id)
-    if (quants.length > 0) patch['quant'] = quants[0].id
-    else patch['quant'] = ''
-  } else if (row.group === 'Quant') {
-    patch['quant'] = row.id
+  const groups = axisGroups(spec)
+  const at = groups.indexOf(row.group)
+  const active: Record<string, string | undefined> = {}
+  for (const g of groups) {
+    if (g === row.group) active[g] = row.id
+    else if (typeof row.defaults['model'] === 'string') active[g] = undefined
+  }
+  patch[axisKey(row.group)] = row.id
+  // ONLY the axes BELOW the picked one re-seed (the chain runs one
+  // direction); the axes above stay exactly as the user set them.
+  for (const g of groups.slice(at + 1)) {
+    const composing = composingRows(spec, g, active)
+    if (composing.length > 0) patch[axisKey(g)] = composing[0].id
+    else patch[axisKey(g)] = ''
   }
   return patch
 }
 
 /** Seed the axis keys for a fresh stage (the catalog's first-declared
- *  law: variant defaults to the FIRST declared variant, quant to its
- *  FIRST cell). Held values win (a reopened stage never re-seeds). */
+ *  law: each axis defaults to its FIRST composing row). Held values
+ *  win (a reopened stage never re-seeds). */
 export function seedAxisValues(spec: FormSpecDoc, held: SpecValues): SpecValues {
   const out: SpecValues = {}
-  const variants = variantRows(spec)
-  if (variants.length === 0) return out
-  const heldVariant = typeof held['variant'] === 'string' ? held['variant'] as string : ''
-  const v = variants.find((x) => x.id === heldVariant) ?? variants[0]
-  out['variant'] = v.id
-  const heldQuant = typeof held['quant'] === 'string' ? held['quant'] as string : ''
-  const cells = quantRowsFor(spec, v.id)
-  const q = cells.find((c) => c.id === heldQuant) ?? (cells.length > 0 ? cells[0] : undefined)
-  out['quant'] = q !== undefined ? q.id : ''
-  if (typeof held['model'] !== 'string' || held['model'] === '') {
-    out['model'] = typeof v.defaults['model'] === 'string' && v.defaults['model'] !== ''
-      ? v.defaults['model'] as string
-      : (typeof spec.model === 'string' && spec.model !== '' ? spec.model : v.route)
+  const groups = axisGroups(spec)
+  if (groups.length === 0) return out
+  const active: Record<string, string | undefined> = {}
+  for (const g of groups) {
+    const heldKey = typeof held[axisKey(g)] === 'string' ? held[axisKey(g)] as string : ''
+    const rows = rowsFor(spec, g)
+    const heldRow = rows.find((x) => x.id === heldKey)
+    if (heldRow !== undefined) {
+      active[g] = heldRow.id
+    } else {
+      // first COMPOSING row (the chain law); when nothing composes the
+      // axis rests empty — never a non-composing row
+      const composing = composingRows(spec, g, active)
+      active[g] = composing.length > 0 ? composing[0].id : ''
+    }
+    out[axisKey(g)] = active[g]
+  }
+  const heldModel = held['model']
+  if (typeof heldModel !== 'string' || heldModel === '') {
+    // the model rests on the spec family unless a seeded row re-points
+    let model = typeof spec.model === 'string' && spec.model !== '' ? spec.model : ''
+    for (const g of groups) {
+      const row = rowsFor(spec, g).find((x) => x.id === active[g])
+      if (row !== undefined && typeof row.defaults['model'] === 'string' && row.defaults['model'] !== '') {
+        model = row.defaults['model'] as string
+        break
+      }
+    }
+    if (model !== '') out['model'] = model
   }
   return out
 }

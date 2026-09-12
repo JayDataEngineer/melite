@@ -24,9 +24,11 @@
 import { createElement as h, useCallback, useEffect, useRef, useState } from 'react'
 import { Menu, Input, Switch } from '@deepseek-ai/dsh-client-ui-primitives'
 import { InputSquare, isImageUrl, readAsDataUrl, type InputSquareVerbs } from './square.tsx'
+import { ModifiersSection } from './mods.tsx'
 import { uploadInputFile } from './wire.ts'
 import {
-  activeVariantId, axisPickPatch, groupFields, modelChoices, quantRowsFor, seedAxisValues, variantRows,
+  activeRowId, activeVariantId, axisGroups, axisKey, axisPickPatch, composingRows, groupFields, modelChoices,
+  modOwnedFields, rowsFor, seedAxisValues, variantRows, quantRowsFor,
   type FormSpecDoc, type SpecField, type SpecValues, type VariantRow,
 } from './spec.ts'
 import css from './card.module.css'
@@ -241,29 +243,41 @@ export function SpecAtom({ f, value, onEdit, square }: {
   })
 }
 
-/** THE MODEL AXES (the pass-along law, 2026-09-12): Model, Variant,
- *  and Quant selects ABOVE the parameters — the old flowAxisRows law.
- *  Model options = the matrix's distinct routes (modelChoices); the
- *  Variant select = the served Variant rows; the Quant select = the
- *  cells composing with the active variant (THE CHAIN, one direction).
+/** THE MODEL AXES (the pass-along law, 2026-09-12): the Model select
+ *  plus ONE SELECT PER SERVED AXIS GROUP — Variant, Quant, Recipe,
+ *  Precision, … the declaration's whole vocabulary, NEVER a hardcoded
+ *  list (the operator's lane proof caught the hardcoded Quant-only
+ *  list dropping seedvr2's and qwen's other axes). Order: the door's
+ *  variant_groups contract, else first-seen. Chain: an axis' options
+ *  are the rows composing with the axes above (the row's `owner`).
  *  Each pick applies the row's defaults overlay through onEdit — the
- *  values (model/variant/quant + overlay keys) ride the caller's map
- *  and pass along at Run. Renders nothing when the spec declares no
- *  matrix. */
+ *  values (model + every axis key + overlay keys) ride the caller's
+ *  map and pass along at Run. Renders nothing when the spec declares
+ *  no matrix. */
 export function ModelAxes({ spec, values, onEdit }: {
   spec: FormSpecDoc
   values: SpecValues
   onEdit(name: string, v: unknown): void
 }): ReturnType<typeof h> | null {
-  const variants = variantRows(spec)
-  if (variants.length === 0) return null
+  const groups = axisGroups(spec)
+  if (groups.length === 0) return null
   const models = modelChoices(spec)
-  const activeVariant = activeVariantId(spec, values, 'Variant') ?? variants[0].id
-  const cells = quantRowsFor(spec, activeVariant)
-  const activeQuant = activeVariantId(spec, values, 'Quant') ?? (cells.length > 0 ? cells[0].id : '')
+  const contract = spec.features?.variant_groups ?? {}
   const pick = (row: VariantRow): void => {
     const patch = axisPickPatch(spec, row)
     for (const [k, v] of Object.entries(patch)) onEdit(k, v)
+  }
+  // resolve actives down the chain (Variant first, then chained groups)
+  const active: Record<string, string | undefined> = {}
+  for (const g of groups) {
+    const held = values[axisKey(g)]
+    const rows = composingRows(spec, g, active)
+    if (typeof held === 'string' && held !== '' && rows.some((r) => r.id === held)) {
+      active[g] = held
+    } else {
+      const byRoute = activeRowId(spec, values, g, active)
+      active[g] = byRoute ?? (rows.length > 0 ? rows[0].id : '')
+    }
   }
   return h('section', { className: `${css.specGroup} ${css.modelAxes}`, 'data-model-axes': '1' },
     h('h4', { className: css.specGroupTitle }, 'Model'),
@@ -276,31 +290,25 @@ export function ModelAxes({ spec, values, onEdit }: {
           : (typeof spec.model === 'string' && spec.model !== '' ? spec.model : models[0] ?? ''),
         onChange: (e: unknown) => { onEdit('model', (e as { target: { value: string } }).target.value) },
       }, models.map((m) => h('option', { key: m, value: m }, m)))),
-    h('label', { className: css.specField },
-      h('span', { className: css.specFieldKey }, 'Variant'),
-      h('select', {
-        className: css.specSelect,
-        'aria-label': 'Variant',
-        value: activeVariant,
-        onChange: (e: unknown) => {
-          const id = (e as { target: { value: string } }).target.value
-          const row = variants.find((v) => v.id === id)
-          if (row !== undefined) pick(row)
-        },
-      }, variants.map((v) => h('option', { key: v.id, value: v.id },
-        v.label + (typeof v.hint === 'string' && v.hint !== '' ? ` — ${v.hint}` : ''))))),
-    cells.length > 0 ? h('label', { className: css.specField },
-      h('span', { className: css.specFieldKey }, 'Quant'),
-      h('select', {
-        className: css.specSelect,
-        'aria-label': 'Quant',
-        value: activeQuant,
-        onChange: (e: unknown) => {
-          const id = (e as { target: { value: string } }).target.value
-          const row = cells.find((v) => v.id === id)
-          if (row !== undefined) pick(row)
-        },
-      }, cells.map((c) => h('option', { key: c.id, value: c.id }, c.label)))) : null,
+    groups.map((g) => {
+      const rows = composingRows(spec, g, active)
+      if (rows.length === 0) return null
+      const label = contract[g]?.label ?? g
+      return h('label', { key: g, className: css.specField },
+        h('span', { className: css.specFieldKey }, label),
+        h('select', {
+          className: css.specSelect,
+          'aria-label': label,
+          'data-axis': g,
+          value: active[g] ?? '',
+          onChange: (e: unknown) => {
+            const id = (e as { target: { value: string } }).target.value
+            const row = rows.find((v) => v.id === id)
+            if (row !== undefined) pick(row)
+          },
+        }, rows.map((v) => h('option', { key: v.id, value: v.id },
+          v.label + (typeof v.hint === 'string' && v.hint !== '' ? ` — ${v.hint}` : '')))))
+    }),
   )
 }
 
@@ -309,24 +317,48 @@ export function ModelAxes({ spec, values, onEdit }: {
  *  caller (specDefaults — propagated from the emission). Edits ride
  *  the caller's values map. Each field renders through the claimed
  *  atom for its emitted type when the caller passes one; the base's
- *  built-in atom is the default. When the caller passes the whole
- *  `spec`, the Model/Variant/Quant axes render ABOVE the fields (the
- *  pass-along law) and the axis keys seed once via seedAxisValues. */
-export function CardForm({ spec, fields, values, onEdit, square, atoms }: {
+ *  built-in atom is the default.
+ *
+ *  THE CONSTRUCTION LAW IS NOT OPTIONAL (operator, 2026-09-12: "the
+ *  img-to-mesh input component — you are not using it around — you
+ *  are hardcoding"): an emitted image/file input constructs THE ONE
+ *  SQUARE AUTOMATICALLY, in EVERY surface. The constructor OWNS the
+ *  square provider — no call site wires it, no call site can forget
+ *  it. The caller hands only the WIRE (picker candidates), never the
+ *  component; a caller that passes its own `square` fn overrides (the
+ *  host-claim seam), but the default is the constructor's own. */
+export function CardForm({ spec, fields, values, onEdit, wire, square, atoms, onPatch }: {
   /** the WHOLE emission (fields + model/variants) — present whenever
    *  the host fetched the doc; the axes render from THIS. */
   spec?: FormSpecDoc
   fields: SpecField[]
   values: SpecValues
   onEdit(name: string, v: unknown): void
-  /** the host's slot-shaped-field provider (the three verbs). */
+  /** the picker wire (the other stages' latest outputs) — data, never
+   *  components. The constructor builds the provider from THIS. */
+  wire?: SquareWire
+  /** the host's square override (the claim seam). Rare. */
   square?: (f: SpecField) => SquareHost | undefined
   /** the field-atom seam's claims, keyed by emitted wire type —
    *  a card's takeover of its own atoms (undefined = built-ins). */
   atoms?: Record<string, FieldAtomClaim>
+  /** immediate persistence for mod commits (the onSaveParams law).
+   *  Absent (the add drill): commits ride the values map. */
+  onPatch?: (patch: Record<string, unknown>) => void
 }): ReturnType<typeof h> {
-  const groups = groupFields(fields, values)
+  // THE MOD SYSTEM IS CORE (operator, 2026-09-12: "MOD SYSTEM IS
+  // CORE. NEVER HARDCODED"): mod-owned names NEVER render as flat
+  // card fields — the section owns them. The exclusion is derived
+  // from the served kinds alone, in EVERY surface, automatically.
+  const modKinds = spec?.features?.modifiers ?? []
+  const owned = modOwnedFields(spec ?? { form: '', fields: [], variants: [] })
+  const flatFields = owned.size > 0 ? fields.filter((f) => !owned.has(f.name)) : fields
+  const groups = groupFields(flatFields, values)
   const atomOf = (f: SpecField): FieldAtomClaim | undefined => atoms?.[f.type]
+  // THE CONSTRUCTOR'S OWN PROVIDER — always built (hook law), used
+  // unless the host claimed the square seam itself.
+  const own = useSquareProvider(onEdit, wire ?? { candidates: [] })
+  const squareFor = square ?? own.square
   // ONE-TIME axis seeding (a reopened stage holds its keys; a fresh
   // stage gets the first-declared law) — an effect, never render-time.
   const seeded = useRef(false)
@@ -350,12 +382,18 @@ export function CardForm({ spec, fields, values, onEdit, square, atoms }: {
         ),
         (() => {
           const claim = atomOf(f)
-          const sq = square?.(f)
+          const sq = squareFor(f)
           if (claim !== undefined) return claim({ f, value: values[f.name], onEdit, square: sq })
           return h(SpecAtom, { f, value: values[f.name], onEdit, square: sq })
         })(),
         f.tooltip !== undefined && f.tooltip !== '' ? h('span', { className: css.specHint }, f.tooltip) : null,
       )),
     )),
+    // THE MOD SYSTEM — rendered by the constructor itself: every
+    // surface (stage drill, add drill, studios) obeys, none wires it.
+    modKinds.length > 0
+      ? h(ModifiersSection, { kinds: modKinds, values, onEdit, ...(onPatch !== undefined ? { onPatch } : {}) })
+      : null,
+    own.wireMenu,
   )
 }

@@ -17,6 +17,7 @@
  * (the card-view tab) imports from here.
  */
 export * from './spec.ts'
+export * from './mods.tsx'
 export * from './owners.ts'
 export * from './slots.ts'
 export * from './wire.ts'

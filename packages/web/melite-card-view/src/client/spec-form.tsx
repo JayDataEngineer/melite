@@ -23,10 +23,16 @@ export {
   specPatch,
   variantRows,
   quantRowsFor,
+  rowsFor,
+  composingRows,
   modelChoices,
   activeVariantId,
+  activeRowId,
+  axisGroups,
+  axisKey,
   axisPickPatch,
   seedAxisValues,
+  variantGroupsContract,
 } from '@melite/card-base'
 export { fetchCardCatalog, fetchFormSpec } from '@melite/card-base/wire'
 export {
@@ -38,3 +44,9 @@ export {
   ModelAxes,
   CardForm as SpecForm,
 } from '@melite/card-base/form'
+
+// THE MOD SYSTEM — core (the base package owns it; every surface
+// renders it through the constructor, none wires it)
+export { ModifiersSection } from '@melite/card-base/mods'
+export type { ModifiersSectionProps } from '@melite/card-base/mods'
+export { modOwnedFields, isOptionKind } from '@melite/card-base'
