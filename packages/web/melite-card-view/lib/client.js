@@ -54293,7 +54293,7 @@ get: (_target, key) => {
 				type: "button",
 				disabled: running || live.stages.length === 0,
 				onClick: onRun
-			}, "Run"))), reloadError !== null ? (0, react.createElement)("p", { className: card_module_css_default$1.runError }, reloadError) : null, live.stages.length === 0 ? (0, react.createElement)("p", { className: card_module_css_default$1.empty }, "The bench is empty — construct stages (the agent adds them; they land here).") : (0, react.createElement)(import_dist.DndContext, {
+			}, "Run"))), reloadError !== null ? (0, react.createElement)("p", { className: card_module_css_default$1.runError }, reloadError) : null, (0, react.createElement)(import_dist.DndContext, {
 				sensors,
 				collisionDetection: import_dist.closestCenter,
 				onDragEnd
@@ -54392,7 +54392,7 @@ get: (_target, key) => {
 				disabled: restoring || run.draftId === null,
 				title: run.draftId === null ? "this run names no draft — nothing to restore" : "copy this run’s stages back onto the bench as your own",
 				onClick: onRestore
-			}, restoring ? "Restoring…" : "Restore to bench")), note !== null ? (0, react.createElement)("p", { className: card_module_css_default$1.restoreNote }, note) : null, run.stages.length === 0 ? (0, react.createElement)("p", { className: card_module_css_default$1.empty }, "No stage rows yet.") : (0, react.createElement)("ol", { className: card_module_css_default$1.tileGrid }, run.stages.map((s) => {
+			}, restoring ? "Restoring…" : "Restore to bench")), note !== null ? (0, react.createElement)("p", { className: card_module_css_default$1.restoreNote }, note) : null, (0, react.createElement)("ol", { className: card_module_css_default$1.tileGrid }, run.stages.map((s) => {
 				const thumb = s.url !== void 0 ? toRunMediaUrl(run.runId, s.url) : null;
 				const dot = s.status === "done" ? "done" : s.status === "running" ? "ongoing" : s.status === "failed" ? "error" : s.status === "queued" || s.status === "pending" ? "warning" : null;
 				const face = thumb !== null ? (0, react.createElement)("a", {

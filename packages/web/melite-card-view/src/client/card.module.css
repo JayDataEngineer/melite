@@ -790,3 +790,4 @@
 .modLeaf { display: flex; flex-direction: column; gap: 10px; min-width: 260px; }
 .modField { display: flex; flex-direction: column; gap: 4px; font-size: 11px; opacity: .85; }
 .modSelect { padding: 6px 8px; border: 1px solid var(--border, rgba(128,128,128,.3)); border-radius: 6px; background: var(--bg-elevated, rgba(128,128,128,.08)); color: inherit; font-size: 12px; }
+

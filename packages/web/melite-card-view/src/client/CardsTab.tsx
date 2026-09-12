@@ -1295,9 +1295,13 @@ function BenchView({ bench, onRun, onRunStage, running, onPatchParams, renderSta
           ),
     ),
     reloadError !== null ? h('p', { className: css.runError }, reloadError) : null,
-    live.stages.length === 0
-      ? h('p', { className: css.empty }, 'The bench is empty — construct stages (the agent adds them; they land here).')
-      : h(DndContext, { sensors, collisionDetection: closestCenter, onDragEnd },
+    // ONE SURFACE, NO STATES (operator, 2026-09-12: "Why is there an
+    // empty state? Why does the sidebar have multiple states? That is
+    // insane."): the tile grid is THE bench at every stage count —
+    // zero stages shows exactly one thing, the standing Add tile (the
+    // entry), because the grid ALWAYS carries it. No empty branch, no
+    // special-cased render, no dead-end paragraph exists.
+    h(DndContext, { sensors, collisionDetection: closestCenter, onDragEnd },
           h(SortableContext, {
             items: live.stages.map((s) => s.id),
             strategy: rectSortingStrategy,
@@ -1405,9 +1409,9 @@ function RunView({ run, onBack, onRestored, onStop }: {
       }, restoring ? 'Restoring…' : 'Restore to bench'),
     ),
     note !== null ? h('p', { className: css.restoreNote }, note) : null,
-    run.stages.length === 0
-      ? h('p', { className: css.empty }, 'No stage rows yet.')
-      : h('ol', { className: css.tileGrid }, run.stages.map((s) => {
+    // ONE SURFACE (no states): the run's stage list renders at every
+    // count — zero rows is an empty list, never a special paragraph.
+    h('ol', { className: css.tileGrid }, run.stages.map((s) => {
           const thumb = s.url !== undefined ? mediaUrl(run.runId, s.url) : null
           const dot: 'done' | 'ongoing' | 'error' | 'warning' | null
             = s.status === 'done' ? 'done'
