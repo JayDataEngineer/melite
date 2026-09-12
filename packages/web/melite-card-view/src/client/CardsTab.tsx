@@ -34,7 +34,7 @@ import { createElement as h, Fragment, useCallback, useEffect, useRef, useState 
 import { Button, Input, Menu, Modal, Pill, StateDot, Tag } from '@deepseek-ai/dsh-client-ui-primitives'
 import { CardDrill } from './card-drill.tsx'
 import type { StageViewOwnerProps } from './types.ts'
-import { fetchCardCatalog, fetchFormSpec, specDefaults, specPatch, SpecForm, useSquareProvider } from './spec-form.tsx'
+import { fetchCardCatalog, fetchFormSpec, seedAxisValues, specDefaults, specPatch, SpecForm, useSquareProvider } from './spec-form.tsx'
 import { fetchFormsTable } from '@melite/card-base/wire'
 
 /** The /v1/forms edge-meta cache (card id → declared input/output
@@ -137,7 +137,15 @@ export async function runCardStage(
     : {}
   const card = typeof row.card === 'string' && row.card !== '' ? row.card : ''
   if (card === '') return { refused: 'this stage names no card — nothing to compose' }
-  const model = await defaultFamilyForCard(card)
+  // THE MODEL PASS-ALONG (2026-09-12: "the card-ui package is supposed
+  //  to pass along the model, variant, and quant fields"): the stage's
+  //  held `model` param — what the Model/Variant/Quant axes wrote (the
+  //  variant defaults overlay re-points it: raw → krea-2-raw) — rides
+  //  the {model:} door VERBATIM. The card's default family is only the
+  //  RESTING value for stages that never touched the axes.
+  const heldModel = params['model']
+  const model = typeof heldModel === 'string' && heldModel !== '' ? heldModel
+    : await defaultFamilyForCard(card)
   // the declared surface spells SELECT options as strings; a legacy
   // row may hold the matching number — normalize through the spec
   // (only when the stringified value IS a declared option; anything
@@ -764,7 +772,11 @@ function StageDrill({ stage, bench, running, onRun, onClose, onRemoved, onPatchP
       .then((doc) => {
         if (!alive) return
         setSpec(doc)
-        setValues({ ...specDefaults(doc.fields), ...held })
+        // THE AXIS SEED (the pass-along law): a reopened stage holds
+        // its keys (held wins); a fresh stage gets the first-declared
+        // law (variant = first row, quant = its first cell, model =
+        // the row's re-point ?? the spec family).
+        setValues({ ...specDefaults(doc.fields), ...seedAxisValues(doc, held), ...held })
         setLoaded(true)
         reportSurface(doc.size === 'huge' ? 'huge' : '')
       })
@@ -807,6 +819,15 @@ function StageDrill({ stage, bench, running, onRun, onClose, onRemoved, onPatchP
     setError(null)
     try {
       const patch = spec !== null ? specPatch(spec.fields, values, held) : {}
+      // THE AXIS PASS-ALONG: model/variant/quant are not SpecFields —
+      // specPatch never sees them — so the changed axis keys ride the
+      // patch HERE (the run reads them: runCardStage composes the
+      // held model as the {model:} door's family).
+      for (const k of ['model', 'variant', 'quant']) {
+        if (values[k] !== undefined && String(values[k] ?? '') !== String(held[k] ?? '')) {
+          patch[k] = values[k]
+        }
+      }
       if (Object.keys(patch).length > 0) {
         await patchStageParams(bench.draftId, stage.id, patch)
       }
@@ -874,7 +895,7 @@ function StageDrill({ stage, bench, running, onRun, onClose, onRemoved, onPatchP
         !loaded ? h('div', { className: css.load }, 'form…')
         : spec !== null
           ? h(Fragment, null,
-              h(SpecForm, { fields: spec.fields, values, onEdit, square: squareFor }),
+              h(SpecForm, { spec, fields: spec.fields, values, onEdit, square: squareFor }),
               // THE MOD SYSTEM (SubcardGrid port): the mod bags live
               // under the form, NEVER as fields on it.
               h(ModifiersSection, {
@@ -950,7 +971,12 @@ function AddCardDoor({ bench, onAdded, onClose }: {
     setFormError(null)
     const family = card.families[0] ?? card.id
     fetchFormSpec(family)
-      .then((doc) => { setSpec(doc); setValues(specDefaults(doc.fields)) })
+      .then((doc) => {
+        setSpec(doc)
+        // THE AXIS SEED rides the add too: a new card is born with its
+        // declared variant/quant/model (the first-declared law).
+        setValues({ ...specDefaults(doc.fields), ...seedAxisValues(doc, {}) })
+      })
       .catch((e: unknown) => setFormError(e instanceof Error ? e.message : 'form-spec unavailable'))
   }
   const onEdit = useCallback((name: string, v: unknown): void => {
@@ -1023,7 +1049,7 @@ function AddCardDoor({ bench, onAdded, onClose }: {
             h('button', { type: 'button', className: css.back, onClick: () => { setPicked(null); setSpec(null) } }, '← ' + (cards?.length ?? 0) + ' cards'),
             spec === null && formError === null ? h('div', { className: css.load }, 'form…') : null,
             formError !== null ? h('p', { className: css.runError }, formError) : null,
-            spec !== null ? h(SpecForm, { fields: spec.fields, values, onEdit }) : null,
+            spec !== null ? h(SpecForm, { spec, fields: spec.fields, values, onEdit }) : null,
           ),
           h('div', { className: css.outputs },
             h('div', { className: css.runRow },

@@ -69,6 +69,26 @@ export interface ModifierKind {
   options?: Array<{ value: string; label: string; tooltip?: string; defaults?: { strength?: number } }>
 }
 
+/** One variant-matrix row (the spec ROOT's `variants` — the flattened
+ *  variant×quant matrix the door serves; wire shape pinned by the old
+ *  card-detail-variant-axes test, 2026-08-18): a `group: 'Variant'`
+ *  row is an axis entry; a `group: 'Quant'` row is a matrix CELL whose
+ *  `owner` names the Variant row it composes with (THE CHAIN: variant
+ *  filters quant, one direction). `defaults` is the resolver overlay
+ *  applied on pick (raw → {model: krea-2-raw, steps: 52, cfg: 3.5}). */
+export interface VariantRow {
+  id: string
+  label: string
+  group: string
+  defaults: Record<string, unknown>
+  route: string
+  hint?: string | null
+  engine?: string | null
+  quant?: string | null
+  vram_peak_gb?: number | null
+  owner?: string
+}
+
 /** The served form-spec document — the card package's emission as the
  *  base consumes it. */
 export interface FormSpecDoc {
@@ -76,6 +96,14 @@ export interface FormSpecDoc {
   genre?: string
   engine?: string
   fields: SpecField[]
+  /** THE FAMILY the spec serves (?model=<key> resolution) — the Model
+   *  axis' resting value and the run's family when no variant re-point
+   *  has ridden (the pass-along law, 2026-09-12). */
+  model?: string | null
+  /** THE VARIANT MATRIX rows (spec ROOT — the old wire law f8d5ea7):
+   *  Variant rows + Quant cells, flattened. Empty when the family
+   *  declares no matrix. */
+  variants?: VariantRow[]
   /** THE INPUT EDGES — declared on every card (flowKinds.inputs),
    *  each joined with the schema's required fact. */
   inputs?: InputEdge[]
@@ -173,3 +201,101 @@ export function specPatch(fields: SpecField[], values: SpecValues, held: SpecVal
   }
   return out
 }
+
+// ── the variant axes (the pass-along law, 2026-09-12: "the card-ui
+//    package is supposed to pass along the model, variant, and quant
+//    fields") — the old flowCardAxes/flowAxisRows law, translated to
+//    the SERVED shape alone: the flattened rows carry the whole chain
+//    (a Quant cell's `owner` IS the Variant filter — no catalog matrix
+//    needed client-side). PURE projections only; the selects render in
+//    form.tsx's ModelAxes. ─────────────────────────────────────────────
+
+/** The Variant axis' rows (group 'Variant', served order). */
+export function variantRows(spec: FormSpecDoc): VariantRow[] {
+  return (spec.variants ?? []).filter((v) => v.group === 'Variant')
+}
+
+/** The Quant cells composing with a variant — THE CHAIN (one
+ *  direction: variant filters quant). Cells with no `owner` compose
+ *  with every variant (an unowned cell is family-wide). */
+export function quantRowsFor(spec: FormSpecDoc, variantId: string | null): VariantRow[] {
+  return (spec.variants ?? []).filter((v) =>
+    v.group === 'Quant' && (v.owner === undefined || v.owner === '' || v.owner === variantId))
+}
+
+/** The Model select's options — the distinct model ROUTES the matrix
+ *  can land on: the spec root's family + every row's defaults.model
+ *  (dedup, first-seen order; the family leads). */
+export function modelChoices(spec: FormSpecDoc): string[] {
+  const out: string[] = []
+  const push = (m: unknown): void => {
+    if (typeof m !== 'string' || m === '') return
+    if (!out.includes(m)) out.push(m)
+  }
+  push(spec.model)
+  for (const v of spec.variants ?? []) push(v.defaults['model'])
+  return out
+}
+
+/** THE ACTIVE-ENTRY LAW (activeVariantId, simplified to the served
+ *  shape): a row is active when its re-pointed model (defaults.model
+ *  ?? route) matches the held `model` value. Quant rows additionally
+ *  chain — active only under the active variant. Nothing matches →
+ *  undefined (the caller falls to the first row — the catalog's
+ *  first-declared law). */
+export function activeVariantId(spec: FormSpecDoc, values: SpecValues, group: 'Variant' | 'Quant'): string | undefined {
+  const held = typeof values['model'] === 'string' ? values['model'] as string : undefined
+  if (held === undefined) return undefined
+  const rows = (spec.variants ?? []).filter((v) => v.group === group)
+  for (const v of rows) {
+    const rePoint = typeof v.defaults['model'] === 'string' ? v.defaults['model'] as string : v.route
+    if (rePoint !== held) continue
+    if (group === 'Quant') {
+      const ownerActive = activeVariantId(spec, values, 'Variant')
+      if (v.owner !== undefined && v.owner !== '' && v.owner !== ownerActive) continue
+    }
+    return v.id
+  }
+  return undefined
+}
+
+/** A pick's full value patch — the old onPick law: the row's
+ *  `defaults` overlay rides (model re-point + every resolver default),
+ *  plus the durable axis keys themselves (`variant`, `quant`) so a
+ *  reopened stage restores its selects. A Quant pick chains: the
+ *  cell's own defaults overlay the active variant's resting state. */
+export function axisPickPatch(spec: FormSpecDoc, row: VariantRow): SpecValues {
+  const patch: SpecValues = { ...row.defaults }
+  if (row.group === 'Variant') {
+    patch['variant'] = row.id
+    const quants = quantRowsFor(spec, row.id)
+    if (quants.length > 0) patch['quant'] = quants[0].id
+    else patch['quant'] = ''
+  } else if (row.group === 'Quant') {
+    patch['quant'] = row.id
+  }
+  return patch
+}
+
+/** Seed the axis keys for a fresh stage (the catalog's first-declared
+ *  law: variant defaults to the FIRST declared variant, quant to its
+ *  FIRST cell). Held values win (a reopened stage never re-seeds). */
+export function seedAxisValues(spec: FormSpecDoc, held: SpecValues): SpecValues {
+  const out: SpecValues = {}
+  const variants = variantRows(spec)
+  if (variants.length === 0) return out
+  const heldVariant = typeof held['variant'] === 'string' ? held['variant'] as string : ''
+  const v = variants.find((x) => x.id === heldVariant) ?? variants[0]
+  out['variant'] = v.id
+  const heldQuant = typeof held['quant'] === 'string' ? held['quant'] as string : ''
+  const cells = quantRowsFor(spec, v.id)
+  const q = cells.find((c) => c.id === heldQuant) ?? (cells.length > 0 ? cells[0] : undefined)
+  out['quant'] = q !== undefined ? q.id : ''
+  if (typeof held['model'] !== 'string' || held['model'] === '') {
+    out['model'] = typeof v.defaults['model'] === 'string' && v.defaults['model'] !== ''
+      ? v.defaults['model'] as string
+      : (typeof spec.model === 'string' && spec.model !== '' ? spec.model : v.route)
+  }
+  return out
+}
+

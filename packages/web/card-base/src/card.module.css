@@ -15,6 +15,13 @@
   flex-direction: column;
   gap: 8px;
 }
+/* THE MODEL AXES (the pass-along law): Model/Variant/Quant ride one
+ * row ABOVE the parameter groups — three selects side by side. */
+.modelAxes {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 10px;
+}
 .specGroupTitle {
   color: var(--dsw-alias-label-secondary, #61666b);
   font-size: 11px;

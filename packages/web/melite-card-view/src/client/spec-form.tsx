@@ -15,11 +15,18 @@ export {
   type FormSpecDoc,
   type CatalogCard,
   type SpecValues,
+  type VariantRow,
   specDefaults,
   fieldVisible,
   groupFields,
   inputEdgeOf,
   specPatch,
+  variantRows,
+  quantRowsFor,
+  modelChoices,
+  activeVariantId,
+  axisPickPatch,
+  seedAxisValues,
 } from '@melite/card-base'
 export { fetchCardCatalog, fetchFormSpec } from '@melite/card-base/wire'
 export {
@@ -28,5 +35,6 @@ export {
   useSquareProvider,
   type FieldAtomClaim,
   SpecAtom,
+  ModelAxes,
   CardForm as SpecForm,
 } from '@melite/card-base/form'

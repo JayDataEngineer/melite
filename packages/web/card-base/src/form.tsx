@@ -21,11 +21,14 @@
  * layout-only module CSS over native elements, every color an
  * inherited --dsw-alias-* token (the package's documented pattern).
  */
-import { createElement as h, useCallback, useRef, useState } from 'react'
+import { createElement as h, useCallback, useEffect, useRef, useState } from 'react'
 import { Menu, Input, Switch } from '@deepseek-ai/dsh-client-ui-primitives'
 import { InputSquare, isImageUrl, readAsDataUrl, type InputSquareVerbs } from './square.tsx'
 import { uploadInputFile } from './wire.ts'
-import { groupFields, type SpecField, type SpecValues } from './spec.ts'
+import {
+  activeVariantId, axisPickPatch, groupFields, modelChoices, quantRowsFor, seedAxisValues, variantRows,
+  type FormSpecDoc, type SpecField, type SpecValues, type VariantRow,
+} from './spec.ts'
 import css from './card.module.css'
 
 /** What a host hands the constructor for slot-shaped fields: the
@@ -238,13 +241,81 @@ export function SpecAtom({ f, value, onEdit, square }: {
   })
 }
 
+/** THE MODEL AXES (the pass-along law, 2026-09-12): Model, Variant,
+ *  and Quant selects ABOVE the parameters — the old flowAxisRows law.
+ *  Model options = the matrix's distinct routes (modelChoices); the
+ *  Variant select = the served Variant rows; the Quant select = the
+ *  cells composing with the active variant (THE CHAIN, one direction).
+ *  Each pick applies the row's defaults overlay through onEdit — the
+ *  values (model/variant/quant + overlay keys) ride the caller's map
+ *  and pass along at Run. Renders nothing when the spec declares no
+ *  matrix. */
+export function ModelAxes({ spec, values, onEdit }: {
+  spec: FormSpecDoc
+  values: SpecValues
+  onEdit(name: string, v: unknown): void
+}): ReturnType<typeof h> | null {
+  const variants = variantRows(spec)
+  if (variants.length === 0) return null
+  const models = modelChoices(spec)
+  const activeVariant = activeVariantId(spec, values, 'Variant') ?? variants[0].id
+  const cells = quantRowsFor(spec, activeVariant)
+  const activeQuant = activeVariantId(spec, values, 'Quant') ?? (cells.length > 0 ? cells[0].id : '')
+  const pick = (row: VariantRow): void => {
+    const patch = axisPickPatch(spec, row)
+    for (const [k, v] of Object.entries(patch)) onEdit(k, v)
+  }
+  return h('section', { className: `${css.specGroup} ${css.modelAxes}`, 'data-model-axes': '1' },
+    h('h4', { className: css.specGroupTitle }, 'Model'),
+    h('label', { className: css.specField },
+      h('span', { className: css.specFieldKey }, 'Model'),
+      h('select', {
+        className: css.specSelect,
+        'aria-label': 'Model',
+        value: typeof values['model'] === 'string' && values['model'] !== '' ? values['model'] as string
+          : (typeof spec.model === 'string' && spec.model !== '' ? spec.model : models[0] ?? ''),
+        onChange: (e: unknown) => { onEdit('model', (e as { target: { value: string } }).target.value) },
+      }, models.map((m) => h('option', { key: m, value: m }, m)))),
+    h('label', { className: css.specField },
+      h('span', { className: css.specFieldKey }, 'Variant'),
+      h('select', {
+        className: css.specSelect,
+        'aria-label': 'Variant',
+        value: activeVariant,
+        onChange: (e: unknown) => {
+          const id = (e as { target: { value: string } }).target.value
+          const row = variants.find((v) => v.id === id)
+          if (row !== undefined) pick(row)
+        },
+      }, variants.map((v) => h('option', { key: v.id, value: v.id },
+        v.label + (typeof v.hint === 'string' && v.hint !== '' ? ` — ${v.hint}` : ''))))),
+    cells.length > 0 ? h('label', { className: css.specField },
+      h('span', { className: css.specFieldKey }, 'Quant'),
+      h('select', {
+        className: css.specSelect,
+        'aria-label': 'Quant',
+        value: activeQuant,
+        onChange: (e: unknown) => {
+          const id = (e as { target: { value: string } }).target.value
+          const row = cells.find((v) => v.id === id)
+          if (row !== undefined) pick(row)
+        },
+      }, cells.map((c) => h('option', { key: c.id, value: c.id }, c.label)))) : null,
+  )
+}
+
 /** THE CARD FORM (the constructor's surface half) — the spec's
  *  fields, grouped, visible-when honored, defaults seeded by the
  *  caller (specDefaults — propagated from the emission). Edits ride
  *  the caller's values map. Each field renders through the claimed
  *  atom for its emitted type when the caller passes one; the base's
- *  built-in atom is the default. */
-export function CardForm({ fields, values, onEdit, square, atoms }: {
+ *  built-in atom is the default. When the caller passes the whole
+ *  `spec`, the Model/Variant/Quant axes render ABOVE the fields (the
+ *  pass-along law) and the axis keys seed once via seedAxisValues. */
+export function CardForm({ spec, fields, values, onEdit, square, atoms }: {
+  /** the WHOLE emission (fields + model/variants) — present whenever
+   *  the host fetched the doc; the axes render from THIS. */
+  spec?: FormSpecDoc
   fields: SpecField[]
   values: SpecValues
   onEdit(name: string, v: unknown): void
@@ -256,7 +327,20 @@ export function CardForm({ fields, values, onEdit, square, atoms }: {
 }): ReturnType<typeof h> {
   const groups = groupFields(fields, values)
   const atomOf = (f: SpecField): FieldAtomClaim | undefined => atoms?.[f.type]
+  // ONE-TIME axis seeding (a reopened stage holds its keys; a fresh
+  // stage gets the first-declared law) — an effect, never render-time.
+  const seeded = useRef(false)
+  const valuesRef = useRef(values)
+  valuesRef.current = values
+  useEffect(() => {
+    if (spec === undefined || seeded.current) return
+    seeded.current = true
+    const seed = seedAxisValues(spec, valuesRef.current)
+    for (const [k, v] of Object.entries(seed)) onEdit(k, v)
+    // one-shot by the ref guard; spec identity is the trigger
+  }, [spec, onEdit])
   return h('div', { className: css.specForm },
+    spec !== undefined ? h(ModelAxes, { spec, values, onEdit }) : null,
     groups.map((g) => h('section', { key: g.group ?? '', className: css.specGroup },
       g.group !== null ? h('h4', { className: css.specGroupTitle }, g.group) : null,
       g.fields.map((f) => h('label', { key: f.name, className: css.specField },
