@@ -10,7 +10,8 @@ import type { Context } from "@deepseek-ai/cordis";
 import { modelsService, resolveRepoRoot } from "@melite/comfyui-cordis";
 import { loadCard, loadFlow } from "./loadPlane.ts";
 
-export class LoadService extends Service {
+// ROLE (cookbook adding-a-package role table): Resolver: computes/locates one named answer (the bundle) without owning it. Key "load" unchanged.
+export class LoadResolverService extends Service {
   static inject = ["cardRegistry"];
 
   constructor(ctx: Context) {
@@ -42,6 +43,12 @@ export const loadProvider = {
   name: "estate-load",
   inject: ["cardRegistry"] as const,
   apply(ctx: Context): void {
-    new LoadService(ctx);
+    new LoadResolverService(ctx);
   },
 };
+
+declare module "@deepseek-ai/cordis" {
+  interface Context {
+    load: LoadResolverService;
+  }
+}

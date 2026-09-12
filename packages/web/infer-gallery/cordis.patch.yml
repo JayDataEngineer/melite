@@ -14,4 +14,4 @@
 # 2026-09-10: everything 1:1 dsh, upstream primitives only).
 - insert:
     - id: infer-gallery
-      name: '@infer-media/dsh-gallery'
+      name: '@melite-plugin/dsh-gallery'

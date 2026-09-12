@@ -1,5 +1,5 @@
 /**
- * `@melite-plugin/dsh-tools` — the estate's DSH tool surface.
+ * `@melite/harness-tools` — the estate's DSH tool surface.
  *
  * TWO INTERFACES, ONE PLUGIN (the interface law):
  *
@@ -28,7 +28,7 @@
  * Card tools compose from their card packages (named imports above
  * — the fetch registrar retired with its last row).
  *
- * @module @melite-plugin/dsh-tools
+ * @module @melite/harness-tools
  */
 import type { Context } from '@deepseek-ai/cordis'
 // THE CARD PACKAGES' TOOL FACES (M2′ + the registrar retirement,

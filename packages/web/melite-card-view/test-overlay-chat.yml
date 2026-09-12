@@ -17,7 +17,7 @@
     - id: infer-estate
       name: '@melite-plugin/melite-estate'
     - id: infer-tools-doors
-      name: '@melite-plugin/dsh-tools/doors'
+      name: '@melite/harness-tools/doors'
     - id: melite-card-view-host
       name: $MELITE_REPO/packages/web/melite-card-view/lib/index.js
     - id: melite-card-view-client

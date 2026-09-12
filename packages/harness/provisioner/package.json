@@ -1,5 +1,5 @@
 {
-  "name": "@infer/dsh-provisioner",
+  "name": "@melite/harness-provisioner",
   "version": "0.1.0",
   "private": true,
   "description": "Vanilla-DSH provisioner for the inference.cpp media stack: one bundle mounts the estate row (in-process seats, no second process), the tool surface, the card view/deck, media previews, and the runs gallery — and the infer-provision bin renders ready-to-boot profiles (inference / headless / estate / melite-test) into any DSH_HOME.",
@@ -8,10 +8,10 @@
     "infer-provision": "./bin/infer-provision.mjs"
   },
   "dependencies": {
-    "@infer-media/dsh-gallery": "link:../../web/infer-gallery",
+    "@melite-plugin/dsh-gallery": "link:../../web/infer-gallery",
     "@melite-plugin/dsh-card-deck": "link:../../web/melite-card-deck",
     "@melite-plugin/dsh-card-view": "link:../../web/melite-card-view",
-    "@melite-plugin/dsh-tools": "link:../melite-tools",
+    "@melite/harness-tools": "link:../melite-tools",
     "@melite-plugin/melite-estate": "link:../../web/melite-estate",
     "@melite/3d-img-to-mesh": "link:../../3d/img-to-mesh",
     "@melite/image-ideogram4": "link:../../image/ideogram4",

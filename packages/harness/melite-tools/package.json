@@ -1,5 +1,5 @@
 {
-  "name": "@melite-plugin/dsh-tools",
+  "name": "@melite/harness-tools",
   "version": "0.1.0",
   "type": "module",
   "exports": {

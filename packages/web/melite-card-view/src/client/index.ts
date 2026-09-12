@@ -6,7 +6,7 @@
  *
  * 1. The chat plane (unchanged): the `tool.call.toolview` keyed slot,
  *    keyed to the wire tool names in CARD_TOOLS — the Melite draft
- *    producers registered by @melite-plugin/dsh-tools. Unclaimed keys
+ *    producers registered by @melite/harness-tools. Unclaimed keys
  *    fall back to the generic tool row, so this registration is
  *    additive for our own tools.
  *
@@ -37,8 +37,6 @@ import type { Context as ClientContext } from '@deepseek-ai/cordis'
 import type {} from '@deepseek-ai/dsh-client-ui-renderer/client'
 import type {} from '@deepseek-ai/dsh-client-ui-sidebar-right/client'
 import type {} from '@deepseek-ai/dsh-client-resources/client'
-import { claimCardViewApply, releaseCardViewApply } from './apply-guard.ts'
-import { setOpenCardsSurface } from './surface.ts'
 import { FlowCards } from './FlowCards.tsx'
 import { CardsTab } from './CardsTab.tsx'
 import { CARDS_BENCH_ADDRESS, openCardsResource } from './cards-resource.ts'
@@ -103,25 +101,27 @@ export const inject = ['slots', 'sidebarRightTabs', 'resources', 'sidebarRight']
  * @param ctx - client root context.
  */
 export function apply(ctx: ClientContext): void {
-  // A duplicated client injection (factory executed twice per page lifetime)
-  // would register a second keyed entry. First application wins.
-  if (!claimCardViewApply()) return
-  ctx.effect(() => releaseCardViewApply, 'melite-card-view: apply claim')
-
-  // THE SURFACE FACE (2026-09-12): the conversation card's way into
-  // the Cards tab — ctx.sidebarRight.openResource claims the address,
-  // places it, and reveals the column in one step (ISidebarRight).
-  // Captured for the React tree through the surface seam (the
-  // toolview owner currency carries no navigation; see surface.ts).
-  ctx.effect(() => {
-    setOpenCardsSurface((address: string) => { ctx.sidebarRight.openResource(address) })
-    return () => { setOpenCardsSurface(null) }
-  }, 'melite-card-view: cards surface face')
+  // DOUBLE-APPLY LAW (client contract): registration conflicts fail at
+  // load — "do not work around it; the conflict is the design
+  // speaking." A stale-bundle second apply throws per registration;
+  // the per-site catch logs it and the FIRST registration keeps the
+  // seat. No cross-instance guard, no module/global flag.
 
   for (const tool of CARD_TOOLS) {
     try {
+      // THE SURFACE FACE: the conversation card's way into the Cards
+      // tab rides the register call's inject share (plain callback from
+      // the apply closure — the contract's own cross-surface channel):
+      // ctx.sidebarRight.openResource claims the address, places it,
+      // and reveals the column in one step (ISidebarRight).
       ctx.slots.inject('tool.call.toolview', () => ctx.slots.register(
-        { name: 'tool.call.toolview', key: tool },
+        {
+          name: 'tool.call.toolview',
+          key: tool,
+          inject: (): { openSurface: (address: string) => boolean } => ({
+            openSurface: (address: string): boolean => { ctx.sidebarRight.openResource(address); return true },
+          }),
+        },
         FlowCards,
       ))
     } catch (error) {
@@ -193,16 +193,10 @@ export function apply(ctx: ClientContext): void {
   }
 }
 
-// Re-exported for headless harnesses; the loader consumes only name/inject/apply.
-export { parseCardsBlock, FlowCards } from './FlowCards.tsx'
-export type { FlowCardsProps } from './FlowCards.tsx'
-export type { ToolCallBlockView } from './types.ts'
-export {
-  CARDS_BENCH_ADDRESS, cardsRunAddress, parseCardsAddress, mergeRunFrame,
-  restoreRunToBench,
-} from './cards-resource.ts'
-export type {
-  CardsValue, CardsBenchValue, CardsRunValue, BenchStageRow, BenchLogHead, RunStageStatus,
-  RestoreReport,
-} from './cards-resource.ts'
-export { CardsTab, groupStagesByCard } from './CardsTab.tsx'
+// EXPORT DISCIPLINE (client contract, packages/client/AGENTS.md): the
+// /client entry exports only what cordis loading needs — apply +
+// inject below. Components, helpers, and constants stay internal;
+// same-package tests import relatively (../src/client/...), which is
+// the sanctioned zero-machinery path. (CARD_TOOLS stays internal to
+// the apply loop; no consumer — melite-tools' wall test owns its own
+// list.)

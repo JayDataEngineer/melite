@@ -2,6 +2,8 @@
   "name": "@melite-plugin/dsh-card-view",
   "version": "0.1.0",
   "type": "module",
+  "private": true,
+  "main": "./lib/index.js",
   "exports": {
     ".": "./lib/index.js",
     "./client": "./lib/client.js",

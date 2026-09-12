@@ -14,7 +14,7 @@ import { Context } from "@deepseek-ai/cordis";
 import { RemoteError } from "@deepseek-ai/dsh-typert-protocol";
 import { ComfyUIHostService } from "@melite/comfyui-cordis";
 import type { FlowResult, MergeRow, EngineJson } from "@melite/comfyui-cordis";
-import { RunsRegistryService } from "../src/runsRegistry.ts";
+import { RunsRuntimeService } from "../src/runsRegistry.ts";
 import { QueueCore } from "../src/queue.ts";
 import { CardArmError } from "../src/cardsRegistry.ts";
 import type { RunRecord } from "../src/runsTypes.ts";
@@ -39,7 +39,7 @@ const dead = (): AbortSignal => {
 };
 
 interface Seat {
-  svc: RunsRegistryService;
+  svc: RunsRuntimeService;
   core: QueueCore;
   state: string;
   cards: Record<string, (...args: never[]) => unknown>;
@@ -76,7 +76,7 @@ const seat = (cardOver: Record<string, (...args: never[]) => unknown> = {}): Sea
     ...cardOver,
   };
   (ctx as unknown as { cardRegistry: unknown }).cardRegistry = cards;
-  const svc = new RunsRegistryService(ctx as unknown as Context);
+  const svc = new RunsRuntimeService(ctx as unknown as Context);
   return { svc, core, state, cards };
 };
 

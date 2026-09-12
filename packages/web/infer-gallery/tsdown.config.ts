@@ -9,7 +9,7 @@
  */
 import { clientBundle } from '../shared/tsdown.client.ts'
 
-export default clientBundle('@infer-media/dsh-gallery', ['src/index.ts'], {
+export default clientBundle('@melite-plugin/dsh-gallery', ['src/index.ts'], {
   libExternal: [
     '@deepseek-ai/dsh-host-webserver',
   ],

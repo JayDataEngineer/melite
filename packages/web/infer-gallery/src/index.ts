@@ -1,5 +1,5 @@
 /**
- * `@infer-media/dsh-gallery` — host half.
+ * `@melite-plugin/dsh-gallery` — host half.
  *
  * Registers same-origin routes on the `webServer` service.
  *

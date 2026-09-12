@@ -10,7 +10,8 @@ import type { Context } from "@deepseek-ai/cordis";
 import { resolveRepoRoot } from "@melite/comfyui-cordis";
 import { buildSkillIndex, hSkillRead } from "./skillPlane.ts";
 
-export class SkillService extends Service {
+// ROLE (cookbook adding-a-package role table): Directory: index/read over skill docs. Key "skills" unchanged.
+export class SkillDirectoryService extends Service {
   static inject = ["queue"];
 
   constructor(ctx: Context) {
@@ -44,6 +45,12 @@ export const skillProvider = {
   name: "estate-skills",
   inject: ["queue"] as const,
   apply(ctx: Context): void {
-    new SkillService(ctx);
+    new SkillDirectoryService(ctx);
   },
 };
+
+declare module "@deepseek-ai/cordis" {
+  interface Context {
+    skills: SkillDirectoryService;
+  }
+}

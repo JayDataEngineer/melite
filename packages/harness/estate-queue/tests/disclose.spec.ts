@@ -8,7 +8,7 @@ import { join } from "node:path";
 import { Context } from "@deepseek-ai/cordis";
 import { resolveRepoRoot } from "@melite/comfyui-cordis";
 import {
-  DiscloseService,
+  DiscloseDirectoryService,
   discloseProvider,
   flowSummaryRows,
   searchCards,
@@ -109,10 +109,10 @@ describe("flowSummaryRows", () => {
   });
 });
 
-describe("DiscloseService", () => {
-  const seat = (): DiscloseService => {
+describe("DiscloseDirectoryService", () => {
+  const seat = (): DiscloseDirectoryService => {
     const ctx = new Context();
-    const svc = new DiscloseService(ctx);
+    const svc = new DiscloseDirectoryService(ctx);
     (ctx as unknown as { cardRegistry: unknown }).cardRegistry = {
       defsSync: () =>
         new Map([["c1", CARD({ identity: { label: "One", description: "first", genre: "g" } })]]),
@@ -138,6 +138,6 @@ describe("DiscloseService", () => {
   it("the provider mounts the seat", () => {
     const ctx = new Context();
     discloseProvider.apply(ctx);
-    assert.ok((ctx as unknown as { disclose: unknown }).disclose instanceof DiscloseService);
+    assert.ok((ctx as unknown as { disclose: unknown }).disclose instanceof DiscloseDirectoryService);
   });
 });

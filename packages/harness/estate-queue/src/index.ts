@@ -12,7 +12,7 @@
 import type { Context, Plugin } from "@deepseek-ai/cordis";
 import { QueueService } from "./service.ts";
 import type { QueueConfig } from "./service.ts";
-import { RunsRegistryService } from "./runsRegistry.ts";
+import { RunsRuntimeService } from "./runsRegistry.ts";
 
 export { QueueService } from "./service.ts";
 export type { QueueConfig } from "./service.ts";
@@ -64,6 +64,6 @@ export const runsRegistryPlugin = {
   name: "estate-runs-registry",
   inject: ["queue", "draftsRemote", "cardRegistry"] as const,
   apply(ctx: Context): void {
-    new RunsRegistryService(ctx);
+    new RunsRuntimeService(ctx);
   },
 };

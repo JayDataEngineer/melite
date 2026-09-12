@@ -1,5 +1,5 @@
 /**
- * @melite-plugin/dsh-tools/doors — the HOST ROUTE plane of the melite
+ * @melite/harness-tools/doors — the HOST ROUTE plane of the melite
  * tool package (split 2026-09-10: "Fix the gap, I need this to
  * function like a server that accepts jobs and lumps them in the
  * queue").

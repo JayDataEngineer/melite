@@ -5,26 +5,26 @@ import { describe, it, afterEach } from "vitest";
 import assert from "node:assert/strict";
 import { Context } from "@deepseek-ai/cordis";
 import { RemoteError } from "@deepseek-ai/dsh-typert-protocol";
-import { ManageService, manageProvider } from "../src/manageRegistry.ts";
+import { ManageGatewayService, manageProvider } from "../src/manageRegistry.ts";
 
 const realFetch = globalThis.fetch;
 afterEach(() => {
   globalThis.fetch = realFetch;
 });
 
-const seat = (): { ctx: Context; svc: ManageService } => {
+const seat = (): { ctx: Context; svc: ManageGatewayService } => {
   const ctx = new Context();
   (ctx as unknown as { timeout: unknown }).timeout = (cb: () => void, _ms: number): (() => void) => {
     cb();
     return () => {};
   };
   manageProvider.apply(ctx);
-  const svc = (ctx as unknown as { manage: ManageService }).manage;
-  assert.ok(svc instanceof ManageService);
+  const svc = (ctx as unknown as { manage: ManageGatewayService }).manage;
+  assert.ok(svc instanceof ManageGatewayService);
   return { ctx, svc };
 };
 
-describe("ManageService", () => {
+describe("ManageGatewayService", () => {
   it("aborted signals throw before the plane", async () => {
     const { svc } = seat();
     const ctrl = new AbortController();

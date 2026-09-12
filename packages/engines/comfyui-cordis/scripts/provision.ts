@@ -1258,7 +1258,7 @@ async function stepModels(): Promise<boolean> {
 
 const DSH_PROVISIONER: string = join(REPO, "packages", "harness",
   "provisioner");
-const DSH_PROVISIONER_NAME = "@infer/dsh-provisioner";
+const DSH_PROVISIONER_NAME = "@melite/harness-provisioner";
 const DSH_HARNESS_HOME: string = join(REPO, "data", "runtime",
   "dsh-harness-home");
 const DSH_PROFILE = "estate";

@@ -112,7 +112,7 @@ declare module "@deepseek-ai/dsh-typert-protocol" {
 
 declare module "@deepseek-ai/cordis" {
   interface Context {
-    runs: RunsRegistryService;
+    runs: RunsRuntimeService;
   }
 }
 
@@ -177,7 +177,8 @@ function toRemoteError(r: QueueRefusal): RemoteError {
 /** The runs registry seat: `ctx.runs`. The estate-runs adapters
  *  (Typert) delegate here; the door's registry/pump semantics ride
  *  this service verbatim. */
-export class RunsRegistryService extends Service {
+// ROLE (cookbook adding-a-package role table): Runtime: its contract is dispatch/execution/cancellation (the cookbook role table; a Registry owns membership, which this is not). Key "runs" unchanged (wire-stable).
+export class RunsRuntimeService extends Service {
   static inject = ["queue", "draftsRemote", "cardRegistry"];
 
   /** The pump reentrancy guard (door-verbatim — a public field:

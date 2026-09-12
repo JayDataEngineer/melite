@@ -35,7 +35,8 @@ declare module "@deepseek-ai/dsh-typert-protocol" {
   }
 }
 
-export class ManageService extends Service {
+// ROLE (cookbook adding-a-package role table): Gateway: adapts the external comfy-manager API to the local manage lane. Key "manage" unchanged.
+export class ManageGatewayService extends Service {
   static inject = ["timer"];
 
   constructor(ctx: Context) {
@@ -76,6 +77,12 @@ export const manageProvider = {
   name: "estate-manage",
   inject: ["timer"] as const,
   apply(ctx: Context): void {
-    new ManageService(ctx);
+    new ManageGatewayService(ctx);
   },
 };
+
+declare module "@deepseek-ai/cordis" {
+  interface Context {
+    manage: ManageGatewayService;
+  }
+}

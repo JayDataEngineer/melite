@@ -75,7 +75,7 @@ interface Seats {
   }
 
   /** The live-run REGISTRY seat (REBUILD-6) — the seat is named
-   *  'runs' (RunsRegistryService: the business arms validate/start/
+   *  'runs' (RunsRuntimeService: the business arms validate/start/
    *  status/stop/list as plain methods). NOT runsRemote (the Typert
    *  transport service whose wire methods are remoteExport*) — the
    *  lanes call the registry in-process. */

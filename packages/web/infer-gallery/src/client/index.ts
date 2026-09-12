@@ -1,5 +1,5 @@
 /**
- * `@infer-media/dsh-gallery` — browser half.
+ * `@melite-plugin/dsh-gallery` — browser half.
  *
  * THE FULL PORT (2026-09-11, operator order: the media sidebar lost
  * its features to the migrations — "there isn't even a modal anymore").

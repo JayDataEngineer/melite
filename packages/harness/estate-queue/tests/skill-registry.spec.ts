@@ -6,7 +6,7 @@ import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { Context } from "@deepseek-ai/cordis";
-import { SkillService, skillProvider } from "../src/skillRegistry.ts";
+import { SkillDirectoryService, skillProvider } from "../src/skillRegistry.ts";
 
 let state = "";
 afterEach(() => {
@@ -16,17 +16,17 @@ afterEach(() => {
   }
 });
 
-const seat = (): SkillService => {
+const seat = (): SkillDirectoryService => {
   state = mkdtempSync(join(tmpdir(), "skills-seat-"));
   const ctx = new Context();
   (ctx as unknown as { queue: unknown }).queue = { stateRoot: state };
   skillProvider.apply(ctx);
-  const svc = (ctx as unknown as { skills: SkillService }).skills;
-  assert.ok(svc instanceof SkillService);
+  const svc = (ctx as unknown as { skills: SkillDirectoryService }).skills;
+  assert.ok(svc instanceof SkillDirectoryService);
   return svc;
 };
 
-describe("SkillService", () => {
+describe("SkillDirectoryService", () => {
   it("indexes the repo", () => {
     const idx = seat().index() as { count: number; skills: Array<{ id: string }> };
     assert.equal(idx.count, idx.skills.length);

@@ -1,23 +1,23 @@
 /**
- * surface.spec.ts — the conversation card's way into the Cards tab.
+ * row-law.spec.tsx — the conversation card's way into the Cards tab.
  *
- * Pins the seam law (surface.ts): set/clear symmetry, the degraded
- * no-shell answer, and THE ROW LAW — FlowCards' card row opens the
- * draft-stage address through the shell face when installed, and
- * falls back to the in-card drill when it is not (the old embed's
- * law: the chat card opens the authoring surface, never a form).
+ * Pins the inject-share law (client contract): FlowCards receives the
+ * shell's navigation face as the register site's `inject` callback
+ * (`openSurface`), and THE ROW LAW — a card row opens the draft-stage
+ * address through that face when present, and falls back to the
+ * in-card drill when it is not (the old embed's law: the chat card
+ * opens the authoring surface, never a form). No module-level seam:
+ * the face is a prop, absent in headless harnesses.
  */
 import { afterEach, describe, expect, test, vi } from "vitest"
 import { cleanup, render, screen } from "@testing-library/react"
 import { createElement as h } from "react"
 import { cardsDraftStageAddress, parseCardsAddress } from "../src/client/cards-resource.ts"
-import { cardsSurfaceFace, openCardsSurface, setOpenCardsSurface } from "../src/client/surface.ts"
 import { FlowCards } from "../src/client/FlowCards.tsx"
 import type { ToolCallBlockView } from "../src/client/types.ts"
 
 afterEach(() => {
   cleanup()
-  setOpenCardsSurface(null)
   vi.unstubAllGlobals()
 })
 
@@ -41,26 +41,6 @@ describe("the draft-stage address grammar", () => {
   test("keeps the bench and run arms", () => {
     expect(parseCardsAddress("dsh-resource://cards/bench")).toEqual({ bench: true })
     expect(parseCardsAddress("dsh-resource://cards/run/run-1")).toEqual({ run: "run-1" })
-  })
-})
-
-describe("the surface seam", () => {
-  test("absent face answers false, never throws", () => {
-    expect(cardsSurfaceFace()).toBeNull()
-    expect(openCardsSurface("dsh-resource://cards/bench")).toBe(false)
-  })
-
-  test("an installed face receives the address and answers true", () => {
-    const seen: string[] = []
-    setOpenCardsSurface((address) => { seen.push(address) })
-    expect(openCardsSurface(cardsDraftStageAddress("draft-1", "s_0"))).toBe(true)
-    expect(seen).toEqual(["dsh-resource://cards/draft/draft-1/s_0"])
-  })
-
-  test("clear restores the degraded answer", () => {
-    setOpenCardsSurface(() => {})
-    setOpenCardsSurface(null)
-    expect(cardsSurfaceFace()).toBeNull()
   })
 })
 
@@ -97,12 +77,14 @@ function stubDraftDoc(draftId: string): void {
   }))
 }
 
-describe("the row law (FlowCards)", () => {
-  test("a row click with the shell face opens the draft-stage address", async () => {
+describe("the row law (FlowCards × the inject share)", () => {
+  test("a row click with the injected face opens the draft-stage address", async () => {
     stubDraftDoc("draft-1")
     const seen: string[] = []
-    setOpenCardsSurface((address) => { seen.push(address) })
-    render(h(FlowCards, { block: flowBlock("draft-1") }))
+    render(h(FlowCards, {
+      block: flowBlock("draft-1"),
+      openSurface: (address) => { seen.push(address); return true },
+    }))
     // the row title is the stage id (cardRows: title ?? id)
     const row = await screen.findByText("s_0", {}, { timeout: 4000 })
     row.click()
@@ -111,7 +93,18 @@ describe("the row law (FlowCards)", () => {
     expect(screen.queryByText(/params/i)).toBeNull()
   })
 
-  test("without the shell face the row falls back to the in-card drill", async () => {
+  test("a face that answers false falls back to the in-card drill", async () => {
+    stubDraftDoc("draft-1")
+    render(h(FlowCards, {
+      block: flowBlock("draft-1"),
+      openSurface: () => false,
+    }))
+    const row = await screen.findByText("s_0", {}, { timeout: 4000 })
+    row.click()
+    expect(await screen.findByText(/Run/i, {}, { timeout: 4000 })).toBeTruthy()
+  })
+
+  test("without the face the row falls back to the in-card drill", async () => {
     stubDraftDoc("draft-1")
     render(h(FlowCards, { block: flowBlock("draft-1") }))
     const row = await screen.findByText("s_0", {}, { timeout: 4000 })

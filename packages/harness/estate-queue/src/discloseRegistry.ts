@@ -120,7 +120,8 @@ export function flowSummaryRows(repo: string): FlowSummary[] {
 /** The disclosure service: ONE disclosure system over both planes.
  *  discover(lookup, q, tags) answers {flows?, cards?} — the door's
  *  combined body, live-derived. */
-export class DiscloseService extends Service {
+// ROLE (cookbook adding-a-package role table): Directory: exposes entries + metadata for discovery/selection. Key "disclose" unchanged.
+export class DiscloseDirectoryService extends Service {
   static inject = ["cardRegistry"];
 
   constructor(ctx: Context) {
@@ -164,6 +165,12 @@ export const discloseProvider = {
   name: "estate-disclose",
   inject: ["cardRegistry"] as const,
   apply(ctx: Context): void {
-    new DiscloseService(ctx);
+    new DiscloseDirectoryService(ctx);
   },
 };
+
+declare module "@deepseek-ai/cordis" {
+  interface Context {
+    disclose: DiscloseDirectoryService;
+  }
+}

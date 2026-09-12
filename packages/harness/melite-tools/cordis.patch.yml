@@ -14,6 +14,6 @@
 # the row by id, the way the estate patch does).
 - insert:
     - id: melite-tools
-      name: '@melite-plugin/dsh-tools'
+      name: '@melite/harness-tools'
     - id: melite-tools-doors
-      name: '@melite-plugin/dsh-tools/doors'
+      name: '@melite/harness-tools/doors'

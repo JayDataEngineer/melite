@@ -48,13 +48,13 @@ const die = (msg) => { console.error('infer-provision: ' + msg); process.exit(1)
 // ── profile rendering ───────────────────────────────────────────────────
 const PROFILE_BASES = {
   // inference = the studio: web app base + our rows (the GUI experience)
-  inference: ['@deepseek-ai/dsh-base', '@deepseek-ai/dsh-web-app', '@infer/dsh-provisioner'],
+  inference: ['@deepseek-ai/dsh-base', '@deepseek-ai/dsh-web-app', '@melite/harness-provisioner'],
   // headless = the agent server: one-shot task runner + our tool rows
-  headless: ['@deepseek-ai/dsh-base', '@deepseek-ai/dsh-headless', '@infer/dsh-provisioner'],
+  headless: ['@deepseek-ai/dsh-base', '@deepseek-ai/dsh-headless', '@melite/harness-provisioner'],
   // estate = the job server: the SDK JSON-RPC base (estate-drive
   // spawns this profile; the estate row serves the runs lanes
   // in-process — no second app, no HTTP)
-  estate: ['@deepseek-ai/dsh-base', '@deepseek-ai/dsh-sdk-app', '@infer/dsh-provisioner'],
+  estate: ['@deepseek-ai/dsh-base', '@deepseek-ai/dsh-sdk-app', '@melite/harness-provisioner'],
   // melite-test = THE TEST LANE, RE-COMPOSED (REBUILD-20, gateway
   // kill 2026-09-10): the historical TEST bake (:3088, the
   // melite-test profile mounting the estate API as a SECOND
@@ -62,7 +62,7 @@ const PROFILE_BASES = {
   // the SAME row set as the studio — web app base + the estate
   // rows in ONE process. Custom bakes serve from this name; the
   // :33081 wire never existed here.
-  'melite-test': ['@deepseek-ai/dsh-base', '@deepseek-ai/dsh-web-app', '@infer/dsh-provisioner'],
+  'melite-test': ['@deepseek-ai/dsh-base', '@deepseek-ai/dsh-web-app', '@melite/harness-provisioner'],
 }
 
 function renderProfile(name) {
@@ -100,7 +100,7 @@ function renderProfile(name) {
   // dead links. rowDeps are re-derived from THIS provisioner's manifest
   // on every render; user-added registry deps belong in the bundle, not
   // here.
-  pkg.dependencies = { ...rowDeps, '@infer/dsh-provisioner': link }
+  pkg.dependencies = { ...rowDeps, '@melite/harness-provisioner': link }
   // SUPERSEDE (2026-09-10): the provisioner bundle owns every estate
   // row now (infer-estate/tools/doors/card-view/deck/gallery) — a
   // pre-reorg render that mounted the same packages as DIRECT bundles
@@ -110,15 +110,15 @@ function renderProfile(name) {
   // joins (same wholesale law as dependencies above — dsh-* in-box
   // bases and third-party UI bundles are never touched).
   const SUPERSEDED_BY_PROVISIONER = new Set([
-    '@melite-plugin/dsh-tools',
+    '@melite/harness-tools',
     '@melite-plugin/melite-estate',
     '@melite-plugin/dsh-estate',
     '@melite-plugin/dsh-card-view',
     '@melite-plugin/dsh-card-deck',
-    '@infer-media/dsh-gallery',
+    '@melite-plugin/dsh-gallery',
   ])
   const merged = [...((pkg.dsh && pkg.dsh.profile && pkg.dsh.profile.bundles) || []), ...bundles]
-  const withProvisioner = merged.includes('@infer/dsh-provisioner')
+  const withProvisioner = merged.includes('@melite/harness-provisioner')
   pkg.dsh = { profile: { bundles: [
     ...new Set(withProvisioner ? merged.filter((b) => !SUPERSEDED_BY_PROVISIONER.has(b)) : merged),
   ] } }

@@ -5,7 +5,7 @@ import { describe, it } from "vitest";
 import assert from "node:assert/strict";
 import { Context } from "@deepseek-ai/cordis";
 import { modelsService } from "@melite/comfyui-cordis";
-import { LoadService, loadProvider } from "../src/loadRegistry.ts";
+import { LoadResolverService, loadProvider } from "../src/loadRegistry.ts";
 import type { CardDefinition } from "@melite/comfyui-cordis";
 
 const DEF = {
@@ -14,16 +14,16 @@ const DEF = {
   schema: { dict: {} },
 } as unknown as CardDefinition;
 
-const seat = (): LoadService => {
+const seat = (): LoadResolverService => {
   const ctx = new Context();
-  const svc = new LoadService(ctx);
+  const svc = new LoadResolverService(ctx);
   (ctx as unknown as { cardRegistry: unknown }).cardRegistry = {
     defsSync: () => new Map([["anny", DEF]]),
   };
   return svc;
 };
 
-describe("LoadService", () => {
+describe("LoadResolverService", () => {
   it("the parameter law rides verbatim", () => {
     assert.throws(
       () => seat().load("bogus", "x"),
@@ -56,6 +56,6 @@ describe("loadProvider", () => {
   it("mounts the seat", () => {
     const ctx = new Context();
     loadProvider.apply(ctx);
-    assert.ok((ctx as unknown as { load: unknown }).load instanceof LoadService);
+    assert.ok((ctx as unknown as { load: unknown }).load instanceof LoadResolverService);
   });
 });

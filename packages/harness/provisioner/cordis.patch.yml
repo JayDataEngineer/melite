@@ -1,4 +1,4 @@
-# @infer/dsh-provisioner — the vanilla-DSH mount surface for the
+# @melite/harness-provisioner — the vanilla-DSH mount surface for the
 # inference.cpp media stack.
 #
 # Installing this bundle into ANY profile (dsh plugin --profile <name>
@@ -61,13 +61,13 @@
       name: '@melite-plugin/melite-estate'
 
     - id: infer-tools
-      name: '@melite-plugin/dsh-tools'
+      name: '@melite/harness-tools'
     # The host-route plane of the same package (split 2026-09-10): the
     # ✦ doors need webServer+llm, which sdk/headless compositions do
     # not have — infer-tools stays profile-agnostic, this row is
     # web-profiles-only (the estate patch disables it).
     - id: infer-tools-doors
-      name: '@melite-plugin/dsh-tools/doors'
+      name: '@melite/harness-tools/doors'
 
     # ONE row now (the two-row host/client split with clientRowOnly
     # is retired — the bundle's own dsh.client declaration loads the
@@ -108,4 +108,4 @@
     # estate's runs/drafts ride Typert remotes (gateway-wire).
 
     - id: infer-gallery-host
-      name: '@infer-media/dsh-gallery'
+      name: '@melite-plugin/dsh-gallery'

@@ -55,7 +55,6 @@ import css from './card.module.css'
 import { Pill, StateDot } from '@deepseek-ai/dsh-client-ui-primitives'
 import { CardDrill } from './card-drill.tsx'
 import { cardsDraftStageAddress } from './cards-resource.ts'
-import { openCardsSurface } from './surface.ts'
 import type { ToolCallBlockView } from './types.ts'
 import {
   cardRows, fetchDraft, paramFields, patchStageParams, runFinished, runStatus, startDraft,
@@ -67,6 +66,12 @@ const POLL_MS = 1500
 
 export interface FlowCardsProps {
   block: ToolCallBlockView
+  /** The shell's navigation face — the register site's inject share
+   *  (the client contract's own channel for cross-surface callbacks;
+   *  the entry captures ctx.sidebarRight.openResource there). Absent
+   *  in headless harnesses/tests: the row degrades to the in-card
+   *  drill, never throws. Returns false when the shell refused. */
+  openSurface?: (address: string) => boolean
 }
 
 /** Parse the melite_flow / card-tool call: the draft id + the model
@@ -212,7 +217,7 @@ function CardRowLine({ row, onOpen }: { row: CardRow; onOpen: () => void }) {
 }
 
 /** One melite_flow call as the REAL action cards (native React, in-tree). */
-export function FlowCards({ block }: FlowCardsProps) {
+export function FlowCards({ block, openSurface }: FlowCardsProps) {
   const parsed = useMemo(() => parseCardsBlock(block), [block])
   const { doc, live, error, refresh } = useDraft(parsed.draftId)
   const [openStage, setOpenStage] = useState<string | null>(null)
@@ -261,7 +266,8 @@ export function FlowCards({ block }: FlowCardsProps) {
           // cards) in the shell's Cards tab, addressed to THIS stage.
           // No shell face → the in-card drill (the degraded path,
           // never a throw).
-          if (parsed.draftId === null || !openCardsSurface(cardsDraftStageAddress(parsed.draftId, row.stageId))) {
+          const address = parsed.draftId === null ? null : cardsDraftStageAddress(parsed.draftId, row.stageId)
+          if (address === null || openSurface?.(address) !== true) {
             setOpenStage(row.stageId)
           }
         }} />

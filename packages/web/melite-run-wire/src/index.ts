@@ -9,10 +9,22 @@
  * cards) import them instead of copying the frame.
  *
  * THE SUBSTRATE: same-origin POST /api/<method> carrying the
- * client-request frame (api-gateway.md — the sanctioned caller for
- * plugins outside the DSH web kernel). Arg names are CAMELCASE on
- * this wire (runs/list's rawLimit — snake_case is refused with
- * "args fields do not match the descriptor").
+ * client-request frame. Arg names are CAMELCASE on this wire
+ * (runs/list's rawLimit — snake_case is refused with "args fields
+ * do not match the descriptor").
+ *
+ * ⚠ DOCUMENTED DEVIATION (2026-09-13 audit, finding H1): this module
+ * MINTS ITS OWN rpcIds and hand-writes client-request envelopes,
+ * which the api-gateway law reserves to the Connection ("The
+ * Connection owns transport, RPC ids, response envelopes, and request
+ * cancellation"). The sanctioned path exists and is verified
+ * published: the typert pipeline (generator emits a remote-client
+ * contribution for the estate's TypertRemoteService owners; a client
+ * plugin mounts it through ctx.remote.$mount; callers then use
+ * ctx.remote.<namespace>, where Connection owns the ids). Migrating
+ * this module's consumers onto that seam is the H1 program recorded
+ * in docs/CONFORMANCE_LEDGER.md — until it lands, this header stands
+ * as the honest deviation record, NOT as sanction.
  *
  * THE START-DOOR LAW (why startCardRun exists): the runs gateway
  * serves three doors, and only one of them composes cards —
