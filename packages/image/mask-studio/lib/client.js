@@ -4592,7 +4592,7 @@ window.__ModuleLoader__.load({
 		}) {
 			const fam = familyOf(routeKey, cat);
 			if (!fam) return void 0;
-			return cat.families?.[fam]?.video?.conditioning;
+			return cat.families?.[fam]?.video?.conditioning ?? void 0;
 		}
 		/**
 		* The family's declared optional outputs (Option A — the optional-outputs
@@ -4719,7 +4719,7 @@ window.__ModuleLoader__.load({
 		}) {
 			const fam = familyOf(routeKey, cat);
 			if (!fam) return void 0;
-			return cat.families?.[fam]?.description;
+			return cat.families?.[fam]?.description ?? void 0;
 		}
 		function promptGuide(routeKey, cat = _cache$2 ?? {
 			families: {},
@@ -4731,7 +4731,7 @@ window.__ModuleLoader__.load({
 		}) {
 			const fam = familyOf(routeKey, cat);
 			if (!fam) return void 0;
-			return cat.families[fam]?.prompt_guide;
+			return cat.families[fam]?.prompt_guide ?? void 0;
 		}
 		function dropdownModels(formTag, cat = _cache$2 ?? {
 			families: {},
@@ -4864,8 +4864,8 @@ window.__ModuleLoader__.load({
 		}) {
 			const m = cat.models[routeKey];
 			return {
-				variant: m?.variant,
-				quant: m?.quant ?? activeVariantForRoute(routeKey, cat)?.quant
+				variant: m?.variant ?? void 0,
+				quant: m?.quant ?? activeVariantForRoute(routeKey, cat)?.quant ?? void 0
 			};
 		}
 		/**
@@ -10084,6 +10084,7 @@ window.__ModuleLoader__.load({
 				params: {},
 				inputs: [],
 				inputIndices: [],
+				status: "done",
 				result: {
 					artifacts: { [u.title]: u.url },
 					assetUrls: [u.url],

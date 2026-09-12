@@ -310956,7 +310956,7 @@ void main() {
 		}) {
 			const fam = familyOf(routeKey, cat);
 			if (!fam) return void 0;
-			return cat.families?.[fam]?.video?.conditioning;
+			return cat.families?.[fam]?.video?.conditioning ?? void 0;
 		}
 		/**
 		* The family's declared optional outputs (Option A — the optional-outputs
@@ -311083,7 +311083,7 @@ void main() {
 		}) {
 			const fam = familyOf(routeKey, cat);
 			if (!fam) return void 0;
-			return cat.families?.[fam]?.description;
+			return cat.families?.[fam]?.description ?? void 0;
 		}
 		function promptGuide(routeKey, cat = _cache$2 ?? {
 			families: {},
@@ -311095,7 +311095,7 @@ void main() {
 		}) {
 			const fam = familyOf(routeKey, cat);
 			if (!fam) return void 0;
-			return cat.families[fam]?.prompt_guide;
+			return cat.families[fam]?.prompt_guide ?? void 0;
 		}
 		function dropdownModels(formTag, cat = _cache$2 ?? {
 			families: {},
@@ -311228,8 +311228,8 @@ void main() {
 		}) {
 			const m = cat.models[routeKey];
 			return {
-				variant: m?.variant,
-				quant: m?.quant ?? activeVariantForRoute(routeKey, cat)?.quant
+				variant: m?.variant ?? void 0,
+				quant: m?.quant ?? activeVariantForRoute(routeKey, cat)?.quant ?? void 0
 			};
 		}
 		/**
@@ -320585,7 +320585,7 @@ void main() {
 					animate: refFrameCount > 1 && animate
 				}), editRefMode && editableJoints && onJointMove && /* @__PURE__ */ (0, react_jsx_runtime.jsx)(JointManipulator, {
 					jointsFlat: editableJoints,
-					selectedJoint,
+					selectedJoint: selectedJoint ?? null,
 					selectedChain,
 					onSelectJoint: onSelectJoint ?? (() => {}),
 					onSelectChain,
@@ -326349,6 +326349,7 @@ void main() {
 				params: {},
 				inputs: [],
 				inputIndices: [],
+				status: "done",
 				result: {
 					artifacts: { [u.title]: u.url },
 					assetUrls: [u.url],
