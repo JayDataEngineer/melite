@@ -39,6 +39,16 @@ export function zoomWidthFor(surfaceSize: string | null): string {
   return `min(${huge ? ZOOM_HUGE_MAX_PX : ZOOM_DETAIL_MAX_PX}px, 94vw)`
 }
 
+/** THE FULL-PAGE LAW (2026-09-13, the operator's hour-7: "the modal
+ *  is not taking up the full page like before"). A studio surface
+ *  ('huge') IS the old system's full-page card: width AND height take
+ *  the page (94vw/94vh — the pane keeps its edge, the shell breathes).
+ *  Ordinary cards keep the bounded ≈square law verbatim. */
+export function zoomSizeFor(surfaceSize: string | null): Record<string, string> {
+  if (surfaceSize !== 'huge') return { width: zoomWidthFor(surfaceSize), maxWidth: '100%' }
+  return { width: 'min(94vw, 1720px)', maxWidth: '100%', height: '94vh', maxHeight: '94vh' }
+}
+
 /** The zoomed card's DETAIL content — supplied by the bench tab (the
  * spec-form params + Run row + outputs), rendered only once the
  * settle has passed. */
@@ -109,7 +119,7 @@ function ZoomMount(props: ZoomDetailProps & { detail: (p: ZoomDetailProps) => Re
       h('div', { className: css.zoomInner },
         h('div', {
           className: css.zoomCard,
-          style: { width: zoomWidthFor(surfaceSize), maxWidth: '100%' },
+          style: zoomSizeFor(surfaceSize),
         },
           h('div', { className: css.zoomBar },
             h('span', { className: css.zoomTitle }, 'Stage ' + String(stage.title ?? stage.card ?? stage.id)),
@@ -120,9 +130,18 @@ function ZoomMount(props: ZoomDetailProps & { detail: (p: ZoomDetailProps) => Re
               onClick: onClose,
             }, '✕'),
           ),
-          ready
-            ? h(props.detail, { stage, bench: rest.bench, running: rest.running, onRun: rest.onRun, onClose, onRemoved: rest.onRemoved, onPatchParams: rest.onPatchParams, renderStageView: rest.renderStageView, onSurface, runId: rest.runId })
-            : h(ZoomSkeleton),
+          // THE BODY SEAT (the hour-7 height war): the detail sits in
+          // a FLEXED, MIN-ZERO body — the studio's own height:100%
+          // chain (studioRoot → .shell grid) needs a parent that GIVES
+          // height; under a bare auto-height flex child the grid
+          // collapsed to the rail's content height and the preview
+          // + timeline sank below the fold. Ordinary cards are
+          // unaffected: their zoomDetail scrolls inside.
+          h('div', { className: css.zoomBody },
+            ready
+              ? h(props.detail, { stage, bench: rest.bench, running: rest.running, onRun: rest.onRun, onClose, onRemoved: rest.onRemoved, onPatchParams: rest.onPatchParams, renderStageView: rest.renderStageView, onSurface, runId: rest.runId })
+              : h(ZoomSkeleton),
+          ),
         ),
       ),
     ),

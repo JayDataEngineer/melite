@@ -5,7 +5,7 @@
  * hairlines, cyan brand accents. DSW tokens first with dark fallbacks so
  * the bar renders identically inside and outside a DSH shell:
  *   text/surfaces → var(--dsw-alias-*, dark fallback)
- *   brand accent  → var(--dsw-alias-accent, #00E9EC) (the bar's cyan)
+ *   brand accent  → var(--dsw-alias-brand-primary) (the bar's cyan)
  * Literal media colors (cyan-300/violet/emerald/red badges) stay verbatim.
  */
 
@@ -48,7 +48,7 @@
 }
 .zoomBtn:hover {
   background: rgba(255, 255, 255, 0.08);
-  color: var(--dsw-alias-accent, #00e9ec);
+  color: var(--dsw-alias-brand-primary);
 }
 .zoomBtn svg {
   width: 14px;
@@ -71,7 +71,7 @@
   cursor: pointer;
 }
 .zoomPct:hover {
-  color: var(--dsw-alias-accent, #00e9ec);
+  color: var(--dsw-alias-brand-primary);
 }
 
 .laneHead {
@@ -95,7 +95,7 @@
   flex: none;
   width: 14px;
   height: 14px;
-  color: var(--dsw-alias-accent, #00e9ec);
+  color: var(--dsw-alias-brand-primary);
 }
 .laneHeadBeats > svg {
   color: rgba(103, 232, 249, 0.8);
@@ -246,7 +246,7 @@
   font-size: 10px;
   line-height: 1;
   font-variant-numeric: tabular-nums;
-  color: var(--dsw-alias-accent, #00e9ec);
+  color: var(--dsw-alias-brand-primary);
 }
 
 /* ── Prompts lane ──────────────────────────────────────────────────── */
@@ -285,21 +285,21 @@
 }
 .clipSelected {
   z-index: 30;
-  border-color: var(--dsw-alias-accent, #00e9ec);
+  border-color: var(--dsw-alias-brand-primary);
   border-width: 0;
-  box-shadow: 0 0 0 2px color-mix(in srgb, var(--dsw-alias-accent, #00e9ec) 60%, transparent);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--dsw-alias-brand-primary) 60%, transparent);
 }
 .clipSelected:hover {
-  border-color: var(--dsw-alias-accent, #00e9ec);
+  border-color: var(--dsw-alias-brand-primary);
 }
 .clipMoving {
   z-index: 30;
   cursor: grabbing;
-  border: 1px solid var(--dsw-alias-accent, #00e9ec);
+  border: 1px solid var(--dsw-alias-brand-primary);
   box-shadow:
     0 20px 25px -5px rgba(0, 0, 0, 0.5),
     0 8px 10px -6px rgba(0, 0, 0, 0.5),
-    0 0 0 2px color-mix(in srgb, var(--dsw-alias-accent, #00e9ec) 70%, transparent);
+    0 0 0 2px color-mix(in srgb, var(--dsw-alias-brand-primary) 70%, transparent);
 }
 
 /* Edge grips. */
@@ -397,7 +397,7 @@
   border: none;
   border-radius: 4px;
   background: rgba(0, 0, 0, 0.6);
-  box-shadow: 0 0 0 1px color-mix(in srgb, var(--dsw-alias-accent, #00e9ec) 50%, transparent);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--dsw-alias-brand-primary) 50%, transparent);
   pointer-events: auto;
 }
 .clipEditor input {
@@ -411,7 +411,7 @@
   padding: 0;
   font-size: 11px;
   line-height: 1.5;
-  color: var(--dsw-alias-label-primary, #e8eaed);
+  color: var(--dsw-alias-label-primary);
 }
 .clipEditor input::placeholder {
   color: rgba(255, 255, 255, 0.35);
@@ -549,7 +549,7 @@
 .promptDelete svg {
   width: 8px;
   height: 8px;
-  color: var(--dsw-alias-label-primary, #f1f3f4);
+  color: var(--dsw-alias-label-primary);
 }
 
 /* ── Beats lane ────────────────────────────────────────────────────── */
@@ -819,7 +819,7 @@
 .kfDelete svg {
   width: 8px;
   height: 8px;
-  color: var(--dsw-alias-label-primary, #f1f3f4);
+  color: var(--dsw-alias-label-primary);
 }
 
 /* ── Playhead ──────────────────────────────────────────────────────── */
@@ -850,16 +850,16 @@
   height: 20px;
   padding: 0;
   flex: none;
-  border: 1px solid color-mix(in srgb, var(--dsw-alias-accent, #00e9ec) 60%, transparent);
+  border: 1px solid color-mix(in srgb, var(--dsw-alias-brand-primary) 60%, transparent);
   border-radius: 6px;
-  background: color-mix(in srgb, var(--dsw-alias-accent, #00e9ec) 15%, transparent);
-  color: var(--dsw-alias-accent, #00e9ec);
+  background: color-mix(in srgb, var(--dsw-alias-brand-primary) 15%, transparent);
+  color: var(--dsw-alias-brand-primary);
   font-size: 13px;
   line-height: 1;
   cursor: pointer;
 }
 .miniBtn:hover {
-  background: color-mix(in srgb, var(--dsw-alias-accent, #00e9ec) 25%, transparent);
+  background: color-mix(in srgb, var(--dsw-alias-brand-primary) 25%, transparent);
 }
 .miniFitBtn {
   display: inline-flex;
@@ -868,14 +868,14 @@
   height: 20px;
   padding: 0 6px;
   flex: none;
-  border: 1px solid color-mix(in srgb, var(--dsw-alias-accent, #00e9ec) 60%, transparent);
+  border: 1px solid color-mix(in srgb, var(--dsw-alias-brand-primary) 60%, transparent);
   border-radius: 6px;
-  background: color-mix(in srgb, var(--dsw-alias-accent, #00e9ec) 15%, transparent);
-  color: var(--dsw-alias-accent, #00e9ec);
+  background: color-mix(in srgb, var(--dsw-alias-brand-primary) 15%, transparent);
+  color: var(--dsw-alias-brand-primary);
   font-size: 10px;
   font-weight: 600;
   cursor: pointer;
 }
 .miniFitBtn:hover {
-  background: color-mix(in srgb, var(--dsw-alias-accent, #00e9ec) 25%, transparent);
+  background: color-mix(in srgb, var(--dsw-alias-brand-primary) 25%, transparent);
 }

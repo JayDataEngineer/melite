@@ -169,17 +169,50 @@ export function VideoTimelineStudio({
           </div>
           </div>
 
-          {/* ── LAYER A — the Run panel, IN THE RAIL (the left sidebar IS
-              the parameter surface; the viewport belongs to the video).
-              Global values every model call inherits: Recipe (preset/fps/
-              audio/continuity/seed) + Engine (shift/sampler/scheduler/
-              steps/accel) + the master audio stem (MIX).
+          {/* ── LAYER A — the Run panel, IN THE RAIL, AT THE BOTTOM
+              (the operator's hour-7 order, 2026-09-13: "run paramteres
+              is suppoesd to be an optional to unfold at the bottom of
+              the input parmaeters"). The INPUT parameters — the call
+              cards — own the top of the rail; the Run fold is the
+              OPTIONAL global layer beneath them, closed by default.
+              Content unchanged: Recipe (preset/fps/audio/continuity/
+              seed) + Engine (shift/sampler/scheduler/steps/accel) +
+              the master audio stem (MIX).
               GLOBAL MODE ONLY (the mode-switching rail, 2026-08-16: the
               sidebar shows the global params until a call/beat clip is
               selected in the bar — then it swaps to THAT item's editor;
               a click on the empty timeline swaps back). */}
           {selected == null && (
-          <details open data-testid="tl-run-panel" className={s.runFold}>
+          <CallCardsPanel
+            calls={calls}
+            selected={selected}
+            setSelected={view.setSelected}
+            fps={fps}
+            sourceOptions={derived.sourceOptions}
+            keyframes={keyframes}
+            handleKeyframeMove={beat.handleKeyframeMove}
+            handleKeyframeDelete={beat.handleKeyframeDelete}
+            setKeyframeSource={beat.setKeyframeSource}
+            deps={{
+              selected, fps,
+              callCardRefs: view.callCardRefs, beatRowRefs: view.beatRowRefs,
+              artifactIndex: audio.artifactIndex, linkGroups: derived.linkGroups,
+              isRef2va: doc.isRef2va, refArtifacts: audio.refArtifacts,
+              handlePromptDelete: pr.handlePromptDelete,
+              handlePromptUpdate: pr.handlePromptUpdate,
+              setBeatSegment: beat.setBeatSegment, addBeatSegment: beat.addBeatSegment,
+              deleteBeatSegment: beat.deleteBeatSegment,
+              enhanceOne: enh.enhanceOne, undoEnhance: enh.undoEnhance,
+              enhancing: enh.enhancing, enhanceErr: enh.enhanceErr,
+              enhanceUndo: enh.enhanceUndo,
+              setCallSpan: mut.setCallSpan, setCallGuide: mut.setCallGuide,
+              setCallPrevSec: mut.setCallPrevSec, setCallTransition: mut.setCallTransition,
+              setCallRefs: mut.setCallRefs, setCallKnob: mut.setCallKnob,
+            }}
+          />
+          )}
+          {selected == null && (
+          <details data-testid="tl-run-panel" className={s.runFold}>
             <summary className={s.runSummary}>
               <ChevronDown className={cn(s.sz12, s.chev)} aria-hidden />
               Run parameters
@@ -206,33 +239,35 @@ export function VideoTimelineStudio({
             </div>
           </details>
           )}
-        <CallCardsPanel
-          calls={calls}
-          selected={selected}
-          setSelected={view.setSelected}
-          fps={fps}
-          sourceOptions={derived.sourceOptions}
-          keyframes={keyframes}
-          handleKeyframeMove={beat.handleKeyframeMove}
-          handleKeyframeDelete={beat.handleKeyframeDelete}
-          setKeyframeSource={beat.setKeyframeSource}
-          deps={{
-            selected, fps,
-            callCardRefs: view.callCardRefs, beatRowRefs: view.beatRowRefs,
-            artifactIndex: audio.artifactIndex, linkGroups: derived.linkGroups,
-            isRef2va: doc.isRef2va, refArtifacts: audio.refArtifacts,
-            handlePromptDelete: pr.handlePromptDelete,
-            handlePromptUpdate: pr.handlePromptUpdate,
-            setBeatSegment: beat.setBeatSegment, addBeatSegment: beat.addBeatSegment,
-            deleteBeatSegment: beat.deleteBeatSegment,
-            enhanceOne: enh.enhanceOne, undoEnhance: enh.undoEnhance,
-            enhancing: enh.enhancing, enhanceErr: enh.enhanceErr,
-            enhanceUndo: enh.enhanceUndo,
-            setCallSpan: mut.setCallSpan, setCallGuide: mut.setCallGuide,
-            setCallPrevSec: mut.setCallPrevSec, setCallTransition: mut.setCallTransition,
-            setCallRefs: mut.setCallRefs, setCallKnob: mut.setCallKnob,
-          }}
-        />
+          {selected != null && (
+          <CallCardsPanel
+            calls={calls}
+            selected={selected}
+            setSelected={view.setSelected}
+            fps={fps}
+            sourceOptions={derived.sourceOptions}
+            keyframes={keyframes}
+            handleKeyframeMove={beat.handleKeyframeMove}
+            handleKeyframeDelete={beat.handleKeyframeDelete}
+            setKeyframeSource={beat.setKeyframeSource}
+            deps={{
+              selected, fps,
+              callCardRefs: view.callCardRefs, beatRowRefs: view.beatRowRefs,
+              artifactIndex: audio.artifactIndex, linkGroups: derived.linkGroups,
+              isRef2va: doc.isRef2va, refArtifacts: audio.refArtifacts,
+              handlePromptDelete: pr.handlePromptDelete,
+              handlePromptUpdate: pr.handlePromptUpdate,
+              setBeatSegment: beat.setBeatSegment, addBeatSegment: beat.addBeatSegment,
+              deleteBeatSegment: beat.deleteBeatSegment,
+              enhanceOne: enh.enhanceOne, undoEnhance: enh.undoEnhance,
+              enhancing: enh.enhancing, enhanceErr: enh.enhanceErr,
+              enhanceUndo: enh.enhanceUndo,
+              setCallSpan: mut.setCallSpan, setCallGuide: mut.setCallGuide,
+              setCallPrevSec: mut.setCallPrevSec, setCallTransition: mut.setCallTransition,
+              setCallRefs: mut.setCallRefs, setCallKnob: mut.setCallKnob,
+            }}
+          />
+          )}
         </div>
       }
       center={

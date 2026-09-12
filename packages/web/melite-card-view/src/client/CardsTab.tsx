@@ -30,7 +30,7 @@
  * hook. Local prop typings (the package's local-spelling pattern —
  * see index.ts) keep this package off sibling runtime imports.
  */
-import { createElement as h, Fragment, useCallback, useEffect, useRef, useState } from 'react'
+import { createElement as h, Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Button, Input, Menu, Modal, Pill, StateDot, Tag } from '@deepseek-ai/dsh-client-ui-primitives'
 import { CardDrill } from './card-drill.tsx'
 import type { StageViewOwnerProps } from './types.ts'
@@ -707,9 +707,19 @@ function StageDrill({ stage, bench, running, onRun, onClose, onRemoved, onPatchP
  *  groups) → the card's DECLARED form (defaults seeded) → bench/add-stage
  *  as the user (CAS-chained). ONE surface: action cards; models are not
  *  entries (the model select lives ON the card's form). */
-function AddCardDoor({ bench, onAdded, onClose }: {
+function AddCardDoor({ bench, onAdded, onClose, renderStageView, onAddedRow }: {
   bench: CardsBenchValue
   onAdded: () => void
+  /** THE REAL-CARD LAW (the operator's hour-7: "It shows me a
+   *  [REDACTED 2026-11-05] form card and not the real card"): when the picked
+   *  card's stage view is CLAIMED (a studio), the picked preview IS
+   *  the studio — the card, live, its own rail the param surface
+   *  (E1: a studio is a param editor) — never the spec form. */
+  renderStageView?: (owner: StageViewOwnerProps, fallback: ReturnType<typeof h>) => ReturnType<typeof h>
+  /** The add's fresh row, when the bench diff found it — the parent
+   *  opens the REAL card right after the add (the old system's
+   *  open-on-add). */
+  onAddedRow?: (row: BenchStageRow) => void
   onClose: () => void
 }): ReturnType<typeof h> {
   const [cards, setCards] = useState<CatalogCard[] | null>(null)
@@ -755,6 +765,27 @@ function AddCardDoor({ bench, onAdded, onClose }: {
       return url === '' ? [] : [{ id: s.id, label: String(s.title ?? s.card ?? s.id), url }]
     }),
   }
+  // THE REAL-CARD PROBE (the operator's hour-7): consult the keyed
+  // slot with a SENTINEL fallback — identity return means unclaimed
+  // (no studio: the spec form stays, honestly). A claimed card
+  // previews as THE CARD itself, live; its onPatch merges doc params
+  // into the values that ride the add door verbatim.
+  const studioView = useMemo(() => {
+    if (picked === null || renderStageView === undefined) return null
+    const sentinel = h('div', { key: '__unclaimed__' })
+    const probe: StageViewOwnerProps = {
+      stageId: '__add__',
+      cardName: picked.id,
+      row: { id: '__add__', card: picked.id, params: { ...specDefaults(spec?.fields ?? []), ...values } },
+      runStatus: '',
+      onPatch: (patch: Record<string, unknown>) => { setValues((m) => ({ ...m, ...patch })) },
+      onRun: () => {}, onStop: () => {}, onRemove: () => {}, onSurface: () => {},
+      upstream: [],
+      runId: null,
+    }
+    const node = renderStageView(probe, sentinel)
+    return node === sentinel ? null : node
+  }, [picked, spec, values, renderStageView])
   const add = async (): Promise<void> => {
     if (picked === null) return
     setAdding(true)
@@ -774,7 +805,22 @@ function AddCardDoor({ bench, onAdded, onClose }: {
       }
       await addStageWire(doc)
       setAdding(false)
-      onAdded()
+      // THE OPEN-ON-ADD LAW (the operator's hour-7): after the door
+      // lands, the bench is re-read and the ONE fresh id (the card
+      // just added — the flow is one card at a time) is handed up;
+      // the parent opens the REAL card (the zoom consult). The door
+      // response shape never enters this — the bench diff is the
+      // truth. A diff that finds nothing falls back to plain onAdded
+      // (the row still lands; only the auto-open is skipped).
+      try {
+        const before = new Set(bench.stages.map((r) => r.id))
+        const next = await fetchBench()
+        const fresh = next.stages.find((r) => !before.has(r.id)) ?? null
+        if (fresh !== null && onAddedRow !== undefined) onAddedRow(fresh)
+        else onAdded()
+      } catch {
+        onAdded()
+      }
     } catch (e: unknown) {
       setFormError(e instanceof Error ? e.message : 'add refused')
       setAdding(false)
@@ -820,9 +866,16 @@ function AddCardDoor({ bench, onAdded, onClose }: {
       : h('div', { className: css.split },
           h('div', { className: css.params },
             h('button', { type: 'button', className: css.back, onClick: () => { setPicked(null); setSpec(null) } }, '← ' + (cards?.length ?? 0) + ' cards'),
-            spec === null && formError === null ? h('div', { className: css.load }, 'form…') : null,
             formError !== null ? h('p', { className: css.runError }, formError) : null,
-            spec !== null ? h(SpecForm, { spec, fields: spec.fields, values, onEdit, wire }) : null,
+            // THE REAL CARD (claimed): the studio IS the param surface
+            // — its own rail. The spec form is the UNCLAIMED card's
+            // honest fallback, never a studio's stand-in.
+            studioView !== null
+              ? h('div', { className: css.addStageView, 'data-testid': 'add-stage-view' }, studioView)
+              : h(Fragment, null,
+                  spec === null && formError === null ? h('div', { className: css.load }, 'form…') : null,
+                  spec !== null ? h(SpecForm, { spec, fields: spec.fields, values, onEdit, wire }) : null,
+                ),
           ),
           h('div', { className: css.outputs },
             h('div', { className: css.runRow },
@@ -1152,7 +1205,13 @@ function BenchView({ bench, onRun, onRunStage, running, onPatchParams, renderSta
       runId,
       detail: StageDrill,
     }) : null,
-    adding ? h(AddCardDoor, { bench: live, onAdded, onClose: () => { setAdding(false) } }) : null,
+    adding ? h(AddCardDoor, {
+      bench: live, onAdded, onClose: () => { setAdding(false) },
+      renderStageView,
+      // THE OPEN-ON-ADD: the fresh row's zoom opens the REAL card
+      // (the consult) the moment the door lands it.
+      onAddedRow: (row: BenchStageRow) => { setAdding(false); setOpen(row) },
+    }) : null,
   )
 }
 
