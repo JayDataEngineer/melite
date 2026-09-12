@@ -105,7 +105,7 @@ async function trySeats(ctx, method, path, body, signal) {
 	m = /^\/v1\/flows\/status\/([^/?]+)(?:\?([^/]*))?$/.exec(path);
 	if (method === "GET" && m !== null) {
 		if (seats.runs === void 0) return void 0;
-		const first = m[2] === void 0 ? null : m[2].split("&")[0] ?? null;
+		const first = m[2] === void 0 ? null : m[2].split("&")[0];
 		const flagValue = first === null ? "" : first.split("=")[1] ?? "";
 		const includeLog = [
 			"1",

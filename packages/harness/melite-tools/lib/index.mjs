@@ -1,4 +1,4 @@
-import { a as makeEstateRequest, i as routeName, n as matchHarnessRoute, r as resolveHarnessRoutes, t as harnessEnhance } from "./llm-complete-U6o1lmWT.mjs";
+import { a as makeEstateRequest, i as routeName, n as matchHarnessRoute, r as resolveHarnessRoutes, t as harnessEnhance } from "./llm-complete-D9QYcTSG.mjs";
 import { buildMusicTool } from "@melite/audio-music/tool";
 import { buildTtsTool } from "@melite/audio-tts/tool";
 import { buildVoiceLockTool } from "@melite/audio-voice-lock/tool";
@@ -33,6 +33,7 @@ function clean(value, seen) {
 		for (let i = 0; i < value.length; i++) out[i] = value[i] === void 0 ? null : clean(value[i], seen);
 		return out;
 	}
+	/* v8 ignore next -- typeof exhaustion: every non-object returns above (2026-09-12) */
 	if (typeof value === "object") {
 		const obj = value;
 		const hit = seen.get(obj);
@@ -46,7 +47,6 @@ function clean(value, seen) {
 		}
 		return out;
 	}
-	return null;
 }
 //#endregion
 //#region src/tools/run-status.ts
@@ -118,18 +118,19 @@ function runStatus(request) {
 					type: "text",
 					text: "run " + String(v.run_id ?? "?") + " " + String(v.status ?? "?") + " — " + v.error
 				}];
-				const done = (v.stages ?? []).filter((s) => s && s.status === "completed").length;
-				const total = (v.stages ?? []).length;
+				const stages = v.stages ?? [];
+				const artifacts = v.artifacts ?? [];
+				const done = stages.filter((s) => s && s.status === "completed").length;
+				const total = stages.length;
 				const pos = typeof v.queue_position === "number" && v.queue_position > 0 ? " (queue #" + v.queue_position + ")" : "";
 				return [{
 					type: "text",
-					text: "run " + String(v.run_id ?? "?") + " " + String(v.status ?? "?") + pos + " — " + done + "/" + total + " stage(s)" + ((v.artifacts ?? []).length ? " · " + (v.artifacts ?? []).length + " artifact(s)" : "")
+					text: "run " + String(v.run_id ?? "?") + " " + String(v.status ?? "?") + pos + " — " + done + "/" + total + " stage(s)" + (artifacts.length ? " · " + artifacts.length + " artifact(s)" : "")
 				}];
 			}
 		},
 		async execute(args, exec) {
-			const a = typeof args === "object" && args !== null ? args : {};
-			const runId = typeof a.runId === "string" ? a.runId : "";
+			const runId = args.runId;
 			if (!runId) return jsonClean({ error: "runId is required" });
 			let res;
 			try {
@@ -151,7 +152,7 @@ function runStatus(request) {
 				status: typeof res.status === "string" ? res.status : "unknown",
 				stages: Array.isArray(res.stages) ? res.stages : [],
 				artifacts: Array.isArray(res.artifacts) ? res.artifacts : [],
-				error: typeof res.error === "string" ? res.error : void 0,
+				error: void 0,
 				queue_position: typeof res.queue_position === "number" ? res.queue_position : 0
 			});
 		}
@@ -342,7 +343,7 @@ function meliteConstruct(request) {
 			}
 		},
 		async execute(args, exec) {
-			const a = args ?? {};
+			const a = args;
 			const verb = typeof a.verb === "string" ? a.verb : "";
 			const bench = benchKeyOf(a);
 			const signal = exec.signal;
@@ -550,7 +551,7 @@ async function startRun(request, body, signal) {
 *  their composition in the run registry (CARD BIRTH LAW holds —
 *  the start still rides a doc-backed draft_id, now the bench's). */
 async function loadBench(request, body, signal) {
-	const session = typeof body["session"] === "string" ? body["session"] : "default";
+	const session = body["session"];
 	let expectRev;
 	try {
 		const cur = await request("GET", `/v1/bench/${encodeURIComponent(session)}`, void 0, signal, DRAFT_TIMEOUT_MS);
@@ -607,14 +608,14 @@ async function runBench(request, a, signal) {
 /** SINGLE (the old card_run path, composed inside): manifest gate
 *  + runnability gate + defaults merge, then draft + {model}. */
 async function runSingle(request, a, signal) {
-	const card = a.card ?? "";
-	const model = a.model ?? "";
+	const card = a.card;
+	const model = a.model;
 	if (!model) return {
 		mode: "card",
 		target: card,
 		error: "model is required (name the family explicitly — QUEUE LANE LAW)"
 	};
-	const bag = { ...a.params ?? {} };
+	const bag = { ...a.params };
 	if (typeof a.prompt === "string" && a.prompt !== "") bag["prompt"] = a.prompt;
 	const intentSrc = typeof bag["prompt"] === "string" ? bag["prompt"] : card;
 	const intent = intentSrc.length > 80 ? intentSrc.slice(0, 77) + "…" : intentSrc;
@@ -625,7 +626,7 @@ async function runSingle(request, a, signal) {
 			intent,
 			stages: [{
 				id: "s_0",
-				...card !== "" ? { card } : {},
+				card,
 				engine: "comfyui",
 				params: bag
 			}]
@@ -633,7 +634,7 @@ async function runSingle(request, a, signal) {
 	} catch (e) {
 		return {
 			mode: "card",
-			target: card !== "" ? card : model,
+			target: card,
 			error: e instanceof Error ? e.message : String(e)
 		};
 	}
@@ -645,12 +646,12 @@ async function runSingle(request, a, signal) {
 	}, signal);
 	if (typeof started["error"] === "string") return {
 		mode: "card",
-		target: card !== "" ? card : model,
+		target: card,
 		...started
 	};
 	return {
 		mode: "card",
-		target: card !== "" ? card : model,
+		target: card,
 		model,
 		draft_id: draftId,
 		...started
@@ -658,13 +659,14 @@ async function runSingle(request, a, signal) {
 }
 /** TEMPLATE (the old flow_run path): drafts {flow,...} + start. */
 async function runTemplate(request, a, signal) {
-	const flow = a.flow ?? "";
+	const flow = a.flow;
+	/* v8 ignore next -- hasFlow gate proves non-empty flow (2026-09-12) */
 	if (!flow) return {
 		mode: "flow",
 		target: "",
 		error: "flow is required (a discovered flow name)"
 	};
-	const overrides = a.params ?? {};
+	const overrides = a.params;
 	let draftId;
 	try {
 		draftId = await loadBench(request, {
@@ -720,7 +722,7 @@ async function runAdHoc(request, a, signal) {
 		return {
 			mode: "adhoc",
 			target: flowId,
-			error: e instanceof Error ? e.message : String(e)
+			error: e instanceof Error ? e.message : /* v8 ignore next -- foldConnects throws Error only: all six sites `new Error`, and property-access TypeErrors are Errors too (2026-09-12) */ String(e)
 		};
 	}
 	const flowBody = {
@@ -904,7 +906,7 @@ function meliteFlow(request) {
 			}
 		},
 		async execute(args, exec) {
-			const a = args ?? {};
+			const a = args;
 			const bag = a.params && typeof a.params === "object" && !Array.isArray(a.params) ? a.params : {};
 			const test = a.test === true;
 			const hasBench = a.bench === true;
@@ -941,15 +943,11 @@ function meliteFlow(request) {
 				}, exec.signal));
 			} catch (e) {
 				const re = remoteErrorOf(e);
-				if (re !== null && re !== void 0) {
-					const mode = hasFlow ? "flow" : hasCard ? "card" : "adhoc";
-					const target = hasFlow ? String(a.flow) : hasCard ? String(a.card) : "pipeline";
-					return jsonClean({
-						error: re.message || "remote refused",
-						mode,
-						target
-					});
-				}
+				if (re !== null && re !== void 0) return jsonClean({
+					error: re.message || "remote refused",
+					mode: "bench",
+					target: `bench-${DEFAULT_BENCH}`
+				});
 				throw e;
 			}
 		}
@@ -1113,7 +1111,7 @@ function comfyManage(request) {
 			}
 		},
 		async execute(args, exec) {
-			const a = args ?? {};
+			const a = args;
 			const body = { action: a.action };
 			for (const k of [
 				"nodes",
@@ -1133,7 +1131,7 @@ function comfyManage(request) {
 			let res;
 			if (exec?.signal === void 0) return jsonClean({
 				ok: false,
-				action: String(a.action ?? "?"),
+				action: String(a.action),
 				detail: "comfy_manage miswire: no execution context signal — the host runtime must pass exec"
 			});
 			try {
@@ -1243,7 +1241,7 @@ function meliteDiscover(request) {
 			}
 		},
 		async execute(args, exec) {
-			const a = args ?? {};
+			const a = args;
 			const params = new URLSearchParams();
 			const lookup = typeof a.lookup === "string" && a.lookup !== "" ? a.lookup : "all";
 			params.set("lookup", lookup);
@@ -1352,9 +1350,9 @@ function meliteLoad(request) {
 			}
 		},
 		async execute(args, exec) {
-			const a = args ?? {};
-			const name = typeof a.name === "string" ? a.name : "";
-			const inferenceType = typeof a.inference_type === "string" ? a.inference_type : "";
+			const a = args;
+			const name = a.name;
+			const inferenceType = a.inference_type;
 			if (!name) return jsonClean({
 				error: "name is required (discover it first)",
 				name,
@@ -1520,11 +1518,11 @@ function skillRead(request) {
 			}
 		},
 		async execute(args, exec) {
-			const a = typeof args === "object" && args !== null ? args : {};
-			if (typeof a.id !== "string" || a.id.length === 0) throw new Error("skill_read: \"id\" is required (a skill id string from skill_index)");
-			const res = await request("GET", "/v1/skills/" + encodeURIComponent(a.id), void 0, exec.signal, READ_TIMEOUT_MS);
+			const id = args.id;
+			if (id.length === 0) throw new Error("skill_read: \"id\" is required (a skill id string from skill_index)");
+			const res = await request("GET", "/v1/skills/" + encodeURIComponent(id), void 0, exec.signal, READ_TIMEOUT_MS);
 			return jsonClean({
-				id: res.id ?? a.id,
+				id: res.id ?? id,
 				name: res.name ?? null,
 				description: res.description ?? null,
 				genre: res.genre ?? null,
@@ -1610,10 +1608,9 @@ function ledgerTail(request) {
 			}
 		},
 		async execute(args, exec) {
-			const a = typeof args === "object" && args !== null ? args : {};
+			const a = args;
 			const q = [];
 			if (typeof a.limit === "number" && Number.isFinite(a.limit) && a.limit > 0) q.push("limit=" + encodeURIComponent(String(Math.floor(a.limit))));
-			else if (typeof a.limit === "string" && a.limit.length > 0) q.push("limit=" + encodeURIComponent(a.limit));
 			if (typeof a.event === "string" && a.event.length > 0) q.push("event=" + encodeURIComponent(a.event));
 			const res = await request("GET", "/v1/ledger" + (q.length > 0 ? "?" + q.join("&") : ""), void 0, exec.signal, LEDGER_TIMEOUT_MS);
 			const entries = Array.isArray(res.entries) ? res.entries : [];

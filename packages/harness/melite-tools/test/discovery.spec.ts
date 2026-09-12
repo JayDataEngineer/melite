@@ -22,7 +22,13 @@ import {
 } from '../src/discovery.ts'
 
 function card(partial: Record<string, unknown>): CardDefinition {
-  return partial as unknown as CardDefinition
+  // THE EVERY-CARD-DECLARES LAW: real cards all carry flowKinds (the
+  // loadCardDefs wall); fixtures mimic real cards — the edge emission
+  // reads the declaration strictly, so fixtures declare edges too.
+  return {
+    flowKinds: { inputs: {}, outputs: {}, requiresModel: false },
+    ...partial,
+  } as unknown as CardDefinition
 }
 
 describe('resolveSpecKey', () => {
@@ -80,6 +86,7 @@ describe('formsTable', () => {
         boarded: ['fam'],
         identity: { label: 'A', description: 'a', genre: 'audio' },
         sidebar: { key: 'audio', order: 5, hidden: true },
+        flowKinds: { inputs: { prompt: 'text', input_image: 'image' }, outputs: { default: 'image' }, requiresModel: true },
       })],
       ['c-card', card({})],
       ['d-card', card({
@@ -99,7 +106,14 @@ describe('formsTable', () => {
       default_service: 'c-card',
       hidden: false,
       covers: ['c-card'],
+      // THE EDGE EMISSION on the meta table (2026-09-12): the
+      // declared edges are card meta — {} for an edgeless fixture.
+      inputs: {},
+      outputs: {},
     })
+    // a declared card's edges serve verbatim (the kind-matching half)
+    const aInputs = table['a-card']!['inputs']
+    assert.deepEqual(aInputs, { prompt: 'text', input_image: 'image' })
     assert.equal(table['d-card']!['order'], 'high')
     assert.deepEqual(table['d-card']!['covers'], ['f1', 'f2'])
     assert.equal(table['d-card']!['default_service'], 'f1')
@@ -217,10 +231,12 @@ describe('live door arms', () => {
       'form',
       'genre',
       'guide',
+      'inputs',
       'label',
       'layout',
       'loader_info',
       'model',
+      'outputs',
       'schema_groups',
       'service',
       'size',

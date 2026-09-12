@@ -338,9 +338,48 @@ export function specBody(
   if (fs === null) {
     throw new Error(`form-spec: card '${res.card}' unknown`)
   }
+  // THE MOD SYSTEM OWNS MODS (the old SubcardGrid law, 2026-08-09:
+  // "LoRA is a MOD, never a standalone addition — the free-text
+  // grid must not render the mod bags as raw JSON rows; the
+  // SubcardGrid owns them"). The flat fields and the schema groups
+  // EXCLUDE every mod kind's param_key — mods ride features.
+  // modifiers (the kind vocabulary + the flavor catalog options)
+  // and land ONLY through the mod surface. ControlNet proves the
+  // law by absence: the pack waits unboarded and no field, no
+  // group, no endpoint ever names it.
+  const modifiers = specModifiers(svc, res.card, key, decl, fs.schema_groups)
+  const modKeys = new Set(
+    modifiers.map((m) => String(m['param_key'])).filter((k) => k !== ''),
+  )
+  const fieldOf = (f: unknown): string =>
+    typeof (f as { name?: unknown })?.name === 'string'
+      ? (f as { name: string }).name : ''
+  const fields = fs.fields.filter((f) => !modKeys.has(fieldOf(f)))
+  const schema_groups = fs.schema_groups
+    .map((g) => ({ ...g, fields: g.fields.filter((f) => !modKeys.has(fieldOf(f))) }))
+    .filter((g) => g.fields.length > 0)
   const surface = def.surface ?? {}
   const boarded = def.boarded ?? []
   const primary = (boarded.length > 0 ? boarded[0] : res.card) === key
+  // THE EDGE EMISSION (operator order, 2026-09-12: "whenever a card
+  // emits via the package system, it needs to have 'input'
+  // 'required=True', or 'output', so the edges are defined"). The
+  // declaration lives on every card (flowKinds — the py card.py
+  // stage half); the emission serves it so the card-UI BASE
+  // constructs input components and wires pickers from DECLARED
+  // edges, never from result-URL sniffing. Each input row joins the
+  // schema field's required fact — the py law verbatim (dsl.py
+  // Field.emit: `required: True emits, False omits`).
+  const reqOf = new Map<string, boolean>()
+  for (const f of fs.fields) {
+    const name = fieldOf(f)
+    if (name !== '') reqOf.set(name, (f as { required?: unknown }).required === true)
+  }
+  const inputs = Object.entries(def.flowKinds.inputs).map(([name, kind]) => ({
+    name,
+    kind,
+    ...(reqOf.get(name) === true ? { required: true } : {}),
+  }))
   return {
     contract: null,
     defaults: decl?.defaults ?? schemaDefaults(def),
@@ -348,18 +387,20 @@ export function specBody(
     enhance_prompt: null,
     enhance_prompts: { prompt: null, lyrics: '' },
     features: {
-      modifiers: specModifiers(svc, res.card, key, decl, fs.schema_groups),
+      modifiers,
       variant_groups: groupContract(decl),
     },
-    fields: fs.fields,
+    fields,
     form: res.card,
     genre: ident.genre,
     guide: null,
+    inputs,
     label: ident.label,
     layout: surface.layout === 'studio' ? 'studio' : null,
     loader_info: null,
     model: res.model,
-    schema_groups: fs.schema_groups,
+    outputs: def.flowKinds.outputs,
+    schema_groups,
     service: res.service,
     size: surface.size === 'huge' ? 'huge' : null,
     variants: decl ? specVariants(decl, key, res.service, primary) : [],
@@ -390,6 +431,14 @@ export function formsTable(
         default_service: boarded.length > 0 ? boarded[0] : id,
         hidden: sidebar.hidden === true,
         covers: boarded.length > 0 ? boarded : [id],
+        // THE EDGE EMISSION on the meta table too (the same
+        // operator order): a card's declared input/output edges are
+        // CARD META — surfaces kind-match candidates from THIS
+        // without fetching per-card form-specs. Strict (no ?.):
+        // an undeclared card is a wall violation and refuses LOUD
+        // at serve time, never a silent {}.
+        inputs: def.flowKinds.inputs,
+        outputs: def.flowKinds.outputs,
       },
     })
   }

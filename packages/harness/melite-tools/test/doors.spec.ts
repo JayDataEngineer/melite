@@ -733,6 +733,57 @@ describe('/v1 prefix discovery arms', () => {
     assert.ok(String((unknown.body as { error: string }).error).includes("'nope' does not resolve"))
   })
 
+  // THE MOD SYSTEM OWNS MODS (the SubcardGrid law, ported 2026-09-12):
+  // a mod kind's param_key NEVER rides the flat fields or the schema
+  // groups — mods ride features.modifiers only. ControlNet proves the
+  // law by absence (the pack waits unboarded; no field names it).
+  test('form-spec keeps mod param_keys off the card fields (the mod system owns mods)', async () => {
+    const h = boot({})
+    const r = await call(h.routes, '/v1', { method: 'GET', url: 'http://localhost/v1/form-spec?model=image-gen' })
+    assert.equal(r.status, 200)
+    const body = r.body as {
+      fields: Array<{ name: string; group?: string }>
+      schema_groups: Array<{ id: string; fields: unknown[] }>
+      features: { modifiers: Array<{ kind: string; param_key: string; options?: Array<{ value: string }> }> }
+    }
+    // no mod field on the form — loras is the mod bag, not a knob
+    assert.ok(!body.fields.some((f) => f.name === 'loras'), 'fields must not carry the loras mod bag')
+    // no emptied mod group survives in schema_groups
+    assert.ok(!body.schema_groups.some((g) => g.id === 'loras_controlnet' && g.fields.length === 0), 'an emptied mod group must drop')
+    // the kind vocabulary still serves — the mod surface's own offer
+    const lora = body.features.modifiers.find((m) => m.kind === 'lora')
+    assert.ok(lora !== undefined, 'the lora kind serves in features.modifiers')
+    assert.equal(lora.param_key, 'loras')
+    assert.ok((lora.options ?? []).some((o) => o.value === 'krea2_realism_lora'), 'krea-2 flavor rows serve as options')
+    // controlnet: unboarded — no kind, no field, nothing
+    assert.ok(!body.features.modifiers.some((m) => m.kind === 'controlnet'))
+    assert.ok(!body.fields.some((f) => f.name === 'controlnet'))
+  })
+
+  test('form-spec emits the declared edges — inputs join the required fact, outputs serve verbatim', async () => {
+    const h = boot({})
+    const r = await call(h.routes, '/v1', { method: 'GET', url: 'http://localhost/v1/form-spec?model=upscale-tools' })
+    assert.equal(r.status, 200)
+    const body = r.body as {
+      inputs: Array<{ name: string; kind: string; required?: boolean }>
+      outputs: Record<string, string>
+    }
+    // THE EDGE EMISSION (operator order, 2026-09-12): a card emits
+    // 'input' (required=True where the edge must exist) or 'output'
+    // so the edges are defined — the base constructs from THIS,
+    // never from result sniffing.
+    assert.deepEqual(body.inputs, [
+      { name: 'input_image', kind: 'image', required: true },
+    ], 'the input edge names the schema param, joins the required fact (True emits, False omits)')
+    assert.deepEqual(body.outputs, { default: 'image' }, 'outputs serve as declared (flowKinds)')
+    // a card whose input is not required omits the flag
+    const g = await call(h.routes, '/v1', { method: 'GET', url: 'http://localhost/v1/form-spec?model=image-gen' })
+    assert.equal(g.status, 200)
+    const gb = g.body as { inputs: Array<{ name: string; kind: string; required?: boolean }> }
+    const ref = gb.inputs.find((x) => x.name === 'reference_image')
+    assert.ok(ref !== undefined && ref.required !== true, 'non-required inputs omit the flag (reference_image)')
+  })
+
   test('an unparseable url is a 500, never a crash', async () => {
     const h = boot({})
     const r = await call(h.routes, '/v1', { method: 'GET', url: 'http://[' })

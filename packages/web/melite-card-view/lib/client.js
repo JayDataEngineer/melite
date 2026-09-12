@@ -30,8 +30,8 @@ window.__ModuleLoader__.load({
 		let react = require("react");
 		react = __toESM(react, 1);
 		let _deepseek_ai_dsh_client_ui_primitives = require("@deepseek-ai/dsh-client-ui-primitives");
-		require("@deepseek-ai/cordis");
 		let react_jsx_runtime = require("react/jsx-runtime");
+		require("@deepseek-ai/cordis");
 		let react_dom = require("react-dom");
 		//#region src/client/apply-guard.ts
 		/** Claims the plugin apply slot. Returns true when this call won the slot. */
@@ -46,16 +46,16 @@ window.__ModuleLoader__.load({
 		}
 		//#endregion
 		//#region \0dsh-css:melite-card-view/src/client/card.module.css.mjs
-		const css = ".vYZV7a_card{flex-direction:column;min-width:0;margin:4px 0;font-size:12px;line-height:1.45;display:flex}.vYZV7a_load{color:var(--dsw-alias-label-secondary,#9a9aa5);padding:2px 0}.vYZV7a_head{align-items:center;gap:8px;min-width:0;display:flex}.vYZV7a_model{text-overflow:ellipsis;white-space:nowrap;min-width:0;font-weight:600;overflow:hidden}.vYZV7a_state{corner-shape:round;border-radius:999px;flex:none;margin-left:auto;padding:1px 8px}.vYZV7a_state[data-state=completed]{color:var(--dsw-alias-state-success-primary,#3fb96f)}.vYZV7a_state[data-state=running],.vYZV7a_state[data-state=queued],.vYZV7a_state[data-state=pending],.vYZV7a_state[data-state=starting],.vYZV7a_state[data-state=draft]{color:var(--dsw-alias-state-warn-primary,#d9a53f)}.vYZV7a_state[data-state=failed],.vYZV7a_state[data-state=error],.vYZV7a_state[data-state=stopped],.vYZV7a_state[data-state=interrupted]{color:var(--dsw-alias-state-error-primary,#e05656)}.vYZV7a_prompt{color:var(--dsw-alias-text-secondary,#9a9aa5);-webkit-line-clamp:2;-webkit-box-orient:vertical;display:-webkit-box;overflow:hidden}.vYZV7a_link:hover{text-decoration:underline}.vYZV7a_row{color:inherit;cursor:pointer;font:inherit;text-align:left;background:0 0;border:none;border-radius:6px;align-items:center;gap:8px;width:100%;min-width:0;padding:4px 6px;display:flex}.vYZV7a_row:hover{background:var(--dsw-alias-interactive-bg-hover,#2631480f)}.vYZV7a_row:focus-visible{outline:1px solid var(--dsw-alias-state-business-primary,#4f7bd8);outline-offset:-1px}.vYZV7a_thumb{object-fit:cover;border-radius:4px;flex:none;width:34px;height:34px}.vYZV7a_rowTitle{text-overflow:ellipsis;white-space:nowrap;flex:none;max-width:40%;font-weight:600;overflow:hidden}.vYZV7a_drill{width:92vw;max-width:min(860px,92vw)}.vYZV7a_split{grid-template-columns:minmax(240px,1fr) minmax(0,1.2fr);gap:14px;min-width:0;display:grid}@media (width<=640px){.vYZV7a_split{grid-template-columns:1fr}}.vYZV7a_params{flex-direction:column;gap:8px;min-width:0;max-height:60vh;display:flex;overflow-y:auto}.vYZV7a_field{flex-direction:column;gap:3px;min-width:0;display:flex}.vYZV7a_fieldKey{color:var(--dsw-alias-label-secondary,#9a9aa5);font-size:11px}.vYZV7a_outputs{flex-direction:column;align-items:center;gap:10px;min-width:0;display:flex}.vYZV7a_outputImg{object-fit:contain;border-radius:8px;max-width:100%;max-height:46vh}.vYZV7a_runRow{justify-content:flex-end;align-items:center;gap:10px;width:100%;display:flex}.vYZV7a_runError{color:var(--dsw-alias-label-error,#e05656);overflow-wrap:anywhere;font-size:11px}.vYZV7a_state[data-state=legacy]{color:var(--dsw-alias-label-secondary,#9a9aa5)}.vYZV7a_cardsBench{flex-direction:column;gap:8px;display:flex}.vYZV7a_benchHead{justify-content:space-between;align-items:center;gap:8px;display:flex}.vYZV7a_revTag{color:var(--dsw-alias-label-secondary,#61666b);font-family:var(--dsw-alias-font-mono,ui-monospace, monospace);font-size:11px}.vYZV7a_runBtn,.vYZV7a_back,.vYZV7a_restore{border:.5px solid var(--dsw-alias-border-l2,#0000001a);color:inherit;cursor:pointer;font:inherit;background:0 0;border-radius:6px;padding:2px 10px;font-size:12px}.vYZV7a_runBtn:hover:not(:disabled),.vYZV7a_back:hover,.vYZV7a_restore:hover:not(:disabled){background:var(--dsw-alias-interactive-bg-hover,#2631480f);border-color:var(--dsw-alias-state-business-primary,#4f7bd8)}.vYZV7a_runBtn:disabled,.vYZV7a_restore:disabled{cursor:default;opacity:.45}.vYZV7a_category{flex-direction:column;gap:2px;display:flex}.vYZV7a_catTitle{color:var(--dsw-alias-label-secondary,#61666b);letter-spacing:.06em;text-transform:uppercase;margin:4px 0 2px;font-size:11px;font-weight:600}.vYZV7a_stages{flex-direction:column;gap:2px;margin:0;padding:0;list-style:none;display:flex}.vYZV7a_stage{list-style:none}.vYZV7a_stageTitle{text-overflow:ellipsis;white-space:nowrap;flex:none;max-width:45%;font-weight:600;overflow:hidden}.vYZV7a_stageEngine{color:var(--dsw-alias-label-secondary,#61666b);flex:none;font-size:11px;line-height:17px}.vYZV7a_stageArtifact{color:var(--dsw-alias-state-business-primary,#4f7bd8);font-size:12px;text-decoration:none}.vYZV7a_stageArtifact:hover{text-decoration:underline}.vYZV7a_empty,.vYZV7a_loading,.vYZV7a_failed,.vYZV7a_missing,.vYZV7a_logHead,.vYZV7a_restoreNote{color:var(--dsw-alias-label-secondary,#61666b);margin:0;font-size:12px;font-style:italic}.vYZV7a_runView{flex-direction:column;gap:8px;display:flex}.vYZV7a_runHead{align-items:baseline;gap:8px;display:flex}.vYZV7a_runId{font-family:var(--dsw-alias-font-mono,ui-monospace, monospace);font-size:12px;font-weight:600}.vYZV7a_runStatus{border:.5px solid var(--dsw-alias-border-l2,#0000001a);corner-shape:round;color:var(--dsw-alias-label-secondary,#61666b);border-radius:999px;padding:0 8px;font-size:11px}.vYZV7a_runActions{gap:8px;display:flex}.vYZV7a_stageDetail{grid-template-columns:auto 1fr;gap:2px 12px;margin:0;display:grid}.vYZV7a_stageDetail dt{color:var(--dsw-alias-label-secondary,#61666b);text-align:right;text-transform:uppercase;font-size:11px}.vYZV7a_stageDetail dd{min-width:0;margin:0}.vYZV7a_mono{font-family:var(--dsw-alias-font-mono,ui-monospace, monospace);font-size:12px;overflow-x:auto}.vYZV7a_tileGrid{grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px;margin:0;padding:0;list-style:none;display:grid}.vYZV7a_tile{margin:0;padding:0;display:block}.vYZV7a_tileInner{border:.5px solid var(--dsw-alias-border-l2,#0000001a);cursor:pointer;transition:border-color var(--ds-transition-duration,.2s) var(--ds-ease-in-out,cubic-bezier(.4, 0, .2, 1)), background-color var(--ds-transition-duration,.2s) var(--ds-ease-in-out,cubic-bezier(.4, 0, .2, 1));font:inherit;text-align:left;background:0 0;border-radius:10px;flex-direction:column;align-items:stretch;width:100%;padding:0;display:flex;overflow:hidden}.vYZV7a_tileInner:hover{border-color:var(--dsw-alias-state-business-primary,#4f7bd8);background:var(--dsw-alias-interactive-bg-hover,#2631480f)}.vYZV7a_tilePreview{aspect-ratio:1;flex:1;width:100%;min-height:0;margin:0;display:block;position:relative}.vYZV7a_tileImg,.vYZV7a_tileImgLink{width:100%;height:100%;display:block}.vYZV7a_tileImg{object-fit:cover}.vYZV7a_kindFace{background:var(--dsw-alias-interactive-bg-hover,#2631480f);color:var(--dsw-alias-label-secondary,#61666b);flex-direction:column;justify-content:center;align-items:center;gap:4px;width:100%;height:100%;display:flex}.vYZV7a_kindInitial{font-size:28px;font-weight:700;line-height:1}.vYZV7a_kindName{font-family:var(--dsw-alias-font-mono,ui-monospace, monospace);text-overflow:ellipsis;white-space:nowrap;padding:0 6px;font-size:10px;overflow:hidden}.vYZV7a_tileDot{position:absolute;bottom:6px;right:6px}.vYZV7a_tileCaption{border-top:.5px solid var(--dsw-alias-border-l2,#0000001a);flex-direction:column;flex:none;gap:2px;padding:6px 8px;display:flex}.vYZV7a_tileTitle{text-overflow:ellipsis;white-space:nowrap;font-size:12px;font-weight:600;line-height:20px;overflow:hidden}.vYZV7a_tileMeta{color:var(--dsw-alias-label-secondary,#61666b);font-family:var(--dsw-alias-font-mono,ui-monospace, monospace);align-items:center;gap:6px;font-size:10px;line-height:17px;display:flex;overflow:hidden}.vYZV7a_tilePrompt{text-overflow:ellipsis;white-space:nowrap;flex:1;overflow:hidden}.vYZV7a_tileAdd .vYZV7a_tileInner{border-style:dashed}.vYZV7a_addFace{color:var(--dsw-alias-label-secondary,#61666b);justify-content:center;align-items:center;font-size:34px;font-weight:300;display:flex}.vYZV7a_picker{flex-direction:column;gap:10px;max-height:60vh;display:flex;overflow-y:auto}.vYZV7a_pickerGenre{flex-direction:column;gap:4px;display:flex}.vYZV7a_pickerCard{border:.5px solid var(--dsw-alias-border-l2,#0000001a);color:inherit;cursor:pointer;font:inherit;text-align:left;background:0 0;border-radius:8px;align-items:baseline;gap:8px;width:100%;padding:8px 10px;display:flex}.vYZV7a_pickerCard:hover{background:var(--dsw-alias-interactive-bg-hover,#2631480f);border-color:var(--dsw-alias-state-business-primary,#4f7bd8)}.vYZV7a_pickerCardLabel{white-space:nowrap;font-size:13px;font-weight:600}.vYZV7a_pickerCardDesc{color:var(--dsw-alias-label-secondary,#61666b);text-overflow:ellipsis;white-space:nowrap;flex:1;font-size:12px;overflow:hidden}.vYZV7a_specForm{flex-direction:column;gap:12px;display:flex}.vYZV7a_specGroup{flex-direction:column;gap:8px;display:flex}.vYZV7a_specGroupTitle{color:var(--dsw-alias-label-secondary,#61666b);letter-spacing:.04em;text-transform:uppercase;margin:0 0 2px;font-size:11px;font-weight:600}.vYZV7a_specField{flex-direction:column;gap:3px;display:flex}.vYZV7a_specFieldKey{color:var(--dsw-alias-label-secondary,#61666b);font-size:12px}.vYZV7a_specRequired{color:var(--dsw-alias-state-critical,#e5484d)}.vYZV7a_specHint{color:var(--dsw-alias-label-secondary,#61666b);font-size:11px}.vYZV7a_specSelect{background:var(--dsw-alias-interactive-bg-hover,#2631480f);border:.5px solid var(--dsw-alias-border-l2,#0000001a);color:inherit;font:inherit;border-radius:6px;width:100%;padding:5px 8px;font-size:13px}.vYZV7a_specSliderRow{align-items:center;gap:8px;display:flex}.vYZV7a_specSlider{flex:1}.vYZV7a_specSliderValue{color:var(--dsw-alias-label-secondary,#61666b);font-family:var(--dsw-alias-font-mono,ui-monospace, monospace);text-align:right;min-width:4ch;font-size:12px}.vYZV7a_specTextarea{background:var(--dsw-alias-interactive-bg-hover,#2631480f);border:.5px solid var(--dsw-alias-border-l2,#0000001a);color:inherit;font:inherit;resize:vertical;border-radius:6px;width:100%;padding:6px 8px;font-size:13px}.vYZV7a_tileShared{display:block;position:relative}.vYZV7a_zoomOverlay{background:var(--dsw-alias-bg-mask,#090c12b8);z-index:80;flex-direction:column;display:flex;position:fixed;inset:0}.vYZV7a_zoomScroll{flex:1;min-height:0;overflow-y:auto}.vYZV7a_zoomInner{box-sizing:border-box;justify-content:center;align-items:center;width:100%;max-width:100%;min-height:100%;margin:0 auto;padding:24px;display:flex}.vYZV7a_zoomCard{background:var(--dsw-alias-bg-module-platform,#f5f6f7);box-shadow:var(--dsw-elevation-panel,0 0 0 .5px #00000029, 0 3px 8px 0 #00000008, 0 0 16px 0 #00000005);color:var(--dsw-alias-label-primary,#0f1115);border:0;border-radius:14px;flex-direction:column;min-height:320px;max-height:86vh;display:flex;overflow:hidden}.vYZV7a_zoomBar{border-bottom:.5px solid var(--dsw-alias-border-l2,#0000001a);flex:none;justify-content:space-between;align-items:center;gap:8px;padding:10px 14px;display:flex}.vYZV7a_zoomTitle{font-size:13px;font-weight:600;line-height:20px}.vYZV7a_closeX{color:inherit;cursor:pointer;background:0 0;border:none;border-radius:6px;padding:4px 8px;font-size:14px;line-height:1}.vYZV7a_closeX:hover{background:var(--dsw-alias-interactive-bg-hover,#2631480f)}.vYZV7a_zoomDetail{min-height:0;padding:14px;display:block;overflow-y:auto}.vYZV7a_zoomSkeleton{flex-direction:column;flex:1;gap:10px;min-height:0;padding:16px;display:flex}.vYZV7a_skLine{will-change:background-position;background:linear-gradient(90deg, transparent 40%, var(--dsw-alias-interactive-bg-hover,#2631480f) 50%, transparent 60%);background-color:var(--dsw-alias-interactive-bg-hover,#2631480f);background-size:200% 100%;border-radius:6px;height:12px;animation:1s linear infinite both vYZV7a_zoomShimmer}.vYZV7a_skWide{width:60%}.vYZV7a_skShort{flex:1;height:28px}.vYZV7a_skBlock{border-radius:10px;height:120px}.vYZV7a_skRow{gap:10px;display:flex}@keyframes vYZV7a_zoomShimmer{0%{background-position:150% 0}to{background-position:-100% 0}}@keyframes vYZV7a_tilePop{0%{opacity:0;transform:scale(.96)translateY(6px)}60%{opacity:1;transform:scale(1.015)translateY(0)}to{opacity:1;transform:scale(1)translateY(0)}}.vYZV7a_tileEnter{animation:.26s cubic-bezier(.2,.8,.3,1) both vYZV7a_tilePop}.vYZV7a_tileDragging{opacity:.55;z-index:2}.vYZV7a_wiredMark{color:var(--dsw-alias-state-business-primary,#4176e6);font-size:10px}.vYZV7a_wireRow{flex:none;align-items:center;gap:8px;margin:0 0 10px;display:flex}.vYZV7a_wireRow .vYZV7a_specSelect{flex:1;width:auto}.vYZV7a_wireLabel{color:var(--dsw-alias-label-secondary,#61666b);white-space:nowrap;font-size:11px}.vYZV7a_wireBtn{background:var(--dsw-alias-bg-module-platform,#f5f6f7);color:var(--dsw-alias-label-secondary,#61666b);cursor:pointer;z-index:2;border:0;border-radius:6px;padding:3px 5px;font-size:11px;line-height:1;position:absolute;top:5px;right:5px}.vYZV7a_wireBtn:hover{background:var(--dsw-alias-interactive-bg-hover,#2631480f);color:var(--dsw-alias-state-business-primary,#4176e6)}.vYZV7a_wiring{outline:1px dashed var(--dsw-alias-state-business-primary,#4176e6);outline-offset:2px}.vYZV7a_wiringSource{outline:2px solid var(--dsw-alias-state-business-primary,#4176e6);outline-offset:2px}.vYZV7a_capOver{background:var(--dsw-alias-interactive-bg-hover,#2631480f);outline:1px dashed var(--dsw-alias-state-business-primary,#4176e6);outline-offset:4px}.vYZV7a_cancelBtn{color:#b3261e;cursor:pointer;background:0 0;border:1px solid #b3261e;border-radius:8px;padding:5px 12px;font-size:12px}.vYZV7a_cancelBtn:disabled{cursor:default;opacity:.6}.vYZV7a_groupBar{align-items:center;gap:8px;display:flex}.vYZV7a_checkCircle{border:1.5px solid var(--dsw-alias-label-secondary,#61666b);corner-shape:round;color:#fff;z-index:3;border-radius:999px;justify-content:center;align-items:center;width:20px;height:20px;font-size:11px;display:flex;position:absolute;top:8px;left:8px}.vYZV7a_checkOn{background:var(--dsw-alias-state-business-primary,#4176e6);border-color:var(--dsw-alias-state-business-primary,#4176e6)}[data-selected=on]{outline:2px solid var(--dsw-alias-state-business-primary,#4176e6);outline-offset:2px}.vYZV7a_groupNote{color:var(--dsw-alias-label-secondary,#61666b);margin:0 0 10px;font-size:12px;line-height:20px}.vYZV7a_memberList{margin:0 0 12px;padding:0;list-style:none}.vYZV7a_memberRow{border-bottom:1px solid var(--dsw-alias-interactive-bg-hover,#2631480f);align-items:baseline;gap:8px;padding:6px 2px;display:flex}.vYZV7a_memberIdx{color:var(--dsw-alias-label-secondary,#61666b);font-family:var(--dsw-alias-font-mono,monospace);font-size:11px}.vYZV7a_memberName{font-size:13px}@media (prefers-reduced-motion:reduce){.vYZV7a_tileEnter,.vYZV7a_skLine,.vYZV7a_skBlock{animation-duration:.01ms;animation-iteration-count:1}}.vYZV7a_studioHead{align-items:center;gap:8px;line-height:20px;display:flex}.vYZV7a_studioBody{flex-direction:column;gap:12px;display:flex}.vYZV7a_studioGroup{flex-direction:column;gap:6px;display:flex}.vYZV7a_squareWrap{flex-direction:column;align-items:center;gap:4px;width:84px;display:flex}.vYZV7a_squareBox{border:.5px solid var(--dsw-alias-border-l2,#00000024);cursor:pointer;height:80px;transition:border-color var(--ds-transition-duration,.12s) var(--ds-ease-in-out,ease);border-radius:8px;justify-content:center;align-items:center;width:80px;display:flex;position:relative;overflow:hidden}.vYZV7a_squareBox:hover{border-color:var(--dsw-alias-border-l3,#00000047)}.vYZV7a_squareOver{border-color:var(--dsw-alias-border-l3,#00000047);box-shadow:0 0 0 2px var(--dsw-alias-border-l1,#00000014)}.vYZV7a_squareThumb{object-fit:cover;width:100%;height:100%}.vYZV7a_squareGlyph{color:var(--dsw-alias-label-tertiary,#00000073)}.vYZV7a_squareBadge{background:var(--dsw-alias-bg-module-platform,#0000008c);color:#fff;text-overflow:ellipsis;white-space:nowrap;border-radius:6px;max-width:72px;padding:0 6px;font-size:10px;line-height:17px;position:absolute;bottom:4px;overflow:hidden}.vYZV7a_squareX{background:var(--dsw-alias-bg-module,#fff);border:.5px solid var(--dsw-alias-border-l2,#00000024);cursor:pointer;border-radius:999px;align-items:center;padding:0 4px;font-size:10px;line-height:17px;display:flex;position:absolute;top:4px;right:4px}.vYZV7a_squareX:hover{border-color:var(--dsw-alias-border-l3,#00000047)}.vYZV7a_squareLabel{color:var(--dsw-alias-label-primary,#0f1115);text-overflow:ellipsis;white-space:nowrap;width:100%;font-size:11px;line-height:17px;overflow:hidden}.vYZV7a_squareMetric{color:var(--dsw-alias-label-tertiary,#00000073);font-size:10px;line-height:17px}.vYZV7a_squareOff{opacity:.5;pointer-events:none}.vYZV7a_squareFileInput{display:none}.vYZV7a_viewport{background:var(--dsw-alias-bg-canvas,#fff);border:.5px solid var(--dsw-alias-border-l2,#00000024);border-radius:10px;min-height:320px;display:flex;position:relative;overflow:hidden}.vYZV7a_viewportEmpty{color:var(--dsw-alias-label-tertiary,#00000073);align-self:center;margin:auto;font-size:12px;line-height:20px}.vYZV7a_viewport canvas{display:block}.vYZV7a_viewportCanvas{width:100%;height:380px}.vYZV7a_studioSplit{grid-template-columns:minmax(0,7fr) minmax(0,5fr);gap:12px;display:grid}.vYZV7a_studioRail{flex-direction:column;gap:10px;min-width:0;display:flex}@media (width<=900px){.vYZV7a_studioSplit{grid-template-columns:1fr}}.vYZV7a_viewport:only-child{min-height:380px}";
-		const tagId = "@melite-plugin/dsh-card-view/card.module.css";
-		if (typeof document !== "undefined" && document.querySelector("style[data-plugin-css=" + JSON.stringify(tagId) + "]") === null) {
+		const css$1 = ".vYZV7a_card{flex-direction:column;min-width:0;margin:4px 0;font-size:12px;line-height:1.45;display:flex}.vYZV7a_load{color:var(--dsw-alias-label-secondary,#9a9aa5);padding:2px 0}.vYZV7a_head{align-items:center;gap:8px;min-width:0;display:flex}.vYZV7a_model{text-overflow:ellipsis;white-space:nowrap;min-width:0;font-weight:600;overflow:hidden}.vYZV7a_state{corner-shape:round;border-radius:999px;flex:none;margin-left:auto;padding:1px 8px}.vYZV7a_state[data-state=completed]{color:var(--dsw-alias-state-success-primary,#3fb96f)}.vYZV7a_state[data-state=running],.vYZV7a_state[data-state=queued],.vYZV7a_state[data-state=pending],.vYZV7a_state[data-state=starting],.vYZV7a_state[data-state=draft]{color:var(--dsw-alias-state-warn-primary,#d9a53f)}.vYZV7a_state[data-state=failed],.vYZV7a_state[data-state=error],.vYZV7a_state[data-state=stopped],.vYZV7a_state[data-state=interrupted]{color:var(--dsw-alias-state-error-primary,#e05656)}.vYZV7a_prompt{color:var(--dsw-alias-text-secondary,#9a9aa5);-webkit-line-clamp:2;-webkit-box-orient:vertical;display:-webkit-box;overflow:hidden}.vYZV7a_link:hover{text-decoration:underline}.vYZV7a_row{color:inherit;cursor:pointer;font:inherit;text-align:left;background:0 0;border:none;border-radius:6px;align-items:center;gap:8px;width:100%;min-width:0;padding:4px 6px;display:flex}.vYZV7a_row:hover{background:var(--dsw-alias-interactive-bg-hover,#2631480f)}.vYZV7a_row:focus-visible{outline:1px solid var(--dsw-alias-state-business-primary,#4f7bd8);outline-offset:-1px}.vYZV7a_thumb{object-fit:cover;border-radius:4px;flex:none;width:34px;height:34px}.vYZV7a_rowTitle{text-overflow:ellipsis;white-space:nowrap;flex:none;max-width:40%;font-weight:600;overflow:hidden}.vYZV7a_drill{width:92vw;max-width:min(860px,92vw)}.vYZV7a_split{grid-template-columns:minmax(240px,1fr) minmax(0,1.2fr);gap:14px;min-width:0;display:grid}@media (width<=640px){.vYZV7a_split{grid-template-columns:1fr}}.vYZV7a_params{flex-direction:column;gap:8px;min-width:0;max-height:60vh;display:flex;overflow-y:auto}.vYZV7a_field{flex-direction:column;gap:3px;min-width:0;display:flex}.vYZV7a_fieldKey{color:var(--dsw-alias-label-secondary,#9a9aa5);font-size:11px}.vYZV7a_outputs{flex-direction:column;align-items:center;gap:10px;min-width:0;display:flex}.vYZV7a_outputImg{object-fit:contain;border-radius:8px;max-width:100%;max-height:46vh}.vYZV7a_runRow{justify-content:flex-end;align-items:center;gap:10px;width:100%;display:flex}.vYZV7a_runError{color:var(--dsw-alias-label-error,#e05656);overflow-wrap:anywhere;font-size:11px}.vYZV7a_state[data-state=legacy]{color:var(--dsw-alias-label-secondary,#9a9aa5)}.vYZV7a_cardsBench{flex-direction:column;gap:8px;display:flex}.vYZV7a_benchHead{justify-content:space-between;align-items:center;gap:8px;display:flex}.vYZV7a_revTag{color:var(--dsw-alias-label-secondary,#61666b);font-family:var(--dsw-alias-font-mono,ui-monospace, monospace);font-size:11px}.vYZV7a_runBtn,.vYZV7a_back,.vYZV7a_restore{border:.5px solid var(--dsw-alias-border-l2,#0000001a);color:inherit;cursor:pointer;font:inherit;background:0 0;border-radius:6px;padding:2px 10px;font-size:12px}.vYZV7a_runBtn:hover:not(:disabled),.vYZV7a_back:hover,.vYZV7a_restore:hover:not(:disabled){background:var(--dsw-alias-interactive-bg-hover,#2631480f);border-color:var(--dsw-alias-state-business-primary,#4f7bd8)}.vYZV7a_runBtn:disabled,.vYZV7a_restore:disabled{cursor:default;opacity:.45}.vYZV7a_category{flex-direction:column;gap:2px;display:flex}.vYZV7a_catTitle{color:var(--dsw-alias-label-secondary,#61666b);letter-spacing:.06em;text-transform:uppercase;margin:4px 0 2px;font-size:11px;font-weight:600}.vYZV7a_stages{flex-direction:column;gap:2px;margin:0;padding:0;list-style:none;display:flex}.vYZV7a_stage{list-style:none}.vYZV7a_stageTitle{text-overflow:ellipsis;white-space:nowrap;flex:none;max-width:45%;font-weight:600;overflow:hidden}.vYZV7a_stageEngine{color:var(--dsw-alias-label-secondary,#61666b);flex:none;font-size:11px;line-height:17px}.vYZV7a_stageArtifact{color:var(--dsw-alias-state-business-primary,#4f7bd8);font-size:12px;text-decoration:none}.vYZV7a_stageArtifact:hover{text-decoration:underline}.vYZV7a_empty,.vYZV7a_loading,.vYZV7a_failed,.vYZV7a_missing,.vYZV7a_logHead,.vYZV7a_restoreNote{color:var(--dsw-alias-label-secondary,#61666b);margin:0;font-size:12px;font-style:italic}.vYZV7a_runView{flex-direction:column;gap:8px;display:flex}.vYZV7a_runHead{align-items:baseline;gap:8px;display:flex}.vYZV7a_runId{font-family:var(--dsw-alias-font-mono,ui-monospace, monospace);font-size:12px;font-weight:600}.vYZV7a_runStatus{border:.5px solid var(--dsw-alias-border-l2,#0000001a);corner-shape:round;color:var(--dsw-alias-label-secondary,#61666b);border-radius:999px;padding:0 8px;font-size:11px}.vYZV7a_runActions{gap:8px;display:flex}.vYZV7a_stageDetail{grid-template-columns:auto 1fr;gap:2px 12px;margin:0;display:grid}.vYZV7a_stageDetail dt{color:var(--dsw-alias-label-secondary,#61666b);text-align:right;text-transform:uppercase;font-size:11px}.vYZV7a_stageDetail dd{min-width:0;margin:0}.vYZV7a_mono{font-family:var(--dsw-alias-font-mono,ui-monospace, monospace);font-size:12px;overflow-x:auto}.vYZV7a_tileGrid{grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px;margin:0;padding:0;list-style:none;display:grid}.vYZV7a_tile{margin:0;padding:0;display:block}.vYZV7a_tileInner{border:.5px solid var(--dsw-alias-border-l2,#0000001a);cursor:pointer;transition:border-color var(--ds-transition-duration,.2s) var(--ds-ease-in-out,cubic-bezier(.4, 0, .2, 1)), background-color var(--ds-transition-duration,.2s) var(--ds-ease-in-out,cubic-bezier(.4, 0, .2, 1));font:inherit;text-align:left;background:0 0;border-radius:10px;flex-direction:column;align-items:stretch;width:100%;padding:0;display:flex;overflow:hidden}.vYZV7a_tileInner:hover{border-color:var(--dsw-alias-state-business-primary,#4f7bd8);background:var(--dsw-alias-interactive-bg-hover,#2631480f)}.vYZV7a_tilePreview{aspect-ratio:1;flex:1;width:100%;min-height:0;margin:0;display:block;position:relative}.vYZV7a_tileImg,.vYZV7a_tileImgLink{width:100%;height:100%;display:block}.vYZV7a_tileImg{object-fit:cover}.vYZV7a_kindFace{background:var(--dsw-alias-interactive-bg-hover,#2631480f);color:var(--dsw-alias-label-secondary,#61666b);flex-direction:column;justify-content:center;align-items:center;gap:4px;width:100%;height:100%;display:flex}.vYZV7a_kindInitial{font-size:28px;font-weight:700;line-height:1}.vYZV7a_kindName{font-family:var(--dsw-alias-font-mono,ui-monospace, monospace);text-overflow:ellipsis;white-space:nowrap;padding:0 6px;font-size:10px;overflow:hidden}.vYZV7a_tileDot{position:absolute;bottom:6px;right:6px}.vYZV7a_tileCaption{border-top:.5px solid var(--dsw-alias-border-l2,#0000001a);flex-direction:column;flex:none;gap:2px;padding:6px 8px;display:flex}.vYZV7a_tileTitle{text-overflow:ellipsis;white-space:nowrap;font-size:12px;font-weight:600;line-height:20px;overflow:hidden}.vYZV7a_tileMeta{color:var(--dsw-alias-label-secondary,#61666b);font-family:var(--dsw-alias-font-mono,ui-monospace, monospace);align-items:center;gap:6px;font-size:10px;line-height:17px;display:flex;overflow:hidden}.vYZV7a_tilePrompt{text-overflow:ellipsis;white-space:nowrap;flex:1;overflow:hidden}.vYZV7a_tileAdd .vYZV7a_tileInner{border-style:dashed}.vYZV7a_addFace{color:var(--dsw-alias-label-secondary,#61666b);justify-content:center;align-items:center;font-size:34px;font-weight:300;display:flex}.vYZV7a_picker{flex-direction:column;gap:10px;max-height:60vh;display:flex;overflow-y:auto}.vYZV7a_pickerGenre{flex-direction:column;gap:4px;display:flex}.vYZV7a_pickerCard{border:.5px solid var(--dsw-alias-border-l2,#0000001a);color:inherit;cursor:pointer;font:inherit;text-align:left;background:0 0;border-radius:8px;align-items:baseline;gap:8px;width:100%;padding:8px 10px;display:flex}.vYZV7a_pickerCard:hover{background:var(--dsw-alias-interactive-bg-hover,#2631480f);border-color:var(--dsw-alias-state-business-primary,#4f7bd8)}.vYZV7a_pickerCardLabel{white-space:nowrap;font-size:13px;font-weight:600}.vYZV7a_pickerCardDesc{color:var(--dsw-alias-label-secondary,#61666b);text-overflow:ellipsis;white-space:nowrap;flex:1;font-size:12px;overflow:hidden}.vYZV7a_specForm{flex-direction:column;gap:12px;display:flex}.vYZV7a_specGroup{flex-direction:column;gap:8px;display:flex}.vYZV7a_specGroupTitle{color:var(--dsw-alias-label-secondary,#61666b);letter-spacing:.04em;text-transform:uppercase;margin:0 0 2px;font-size:11px;font-weight:600}.vYZV7a_specField{flex-direction:column;gap:3px;display:flex}.vYZV7a_specFieldKey{color:var(--dsw-alias-label-secondary,#61666b);font-size:12px}.vYZV7a_specRequired{color:var(--dsw-alias-state-critical,#e5484d)}.vYZV7a_specHint{color:var(--dsw-alias-label-secondary,#61666b);font-size:11px}.vYZV7a_specSelect{background:var(--dsw-alias-interactive-bg-hover,#2631480f);border:.5px solid var(--dsw-alias-border-l2,#0000001a);color:inherit;font:inherit;border-radius:6px;width:100%;padding:5px 8px;font-size:13px}.vYZV7a_specSliderRow{align-items:center;gap:8px;display:flex}.vYZV7a_specSlider{flex:1}.vYZV7a_specSliderValue{color:var(--dsw-alias-label-secondary,#61666b);font-family:var(--dsw-alias-font-mono,ui-monospace, monospace);text-align:right;min-width:4ch;font-size:12px}.vYZV7a_specTextarea{background:var(--dsw-alias-interactive-bg-hover,#2631480f);border:.5px solid var(--dsw-alias-border-l2,#0000001a);color:inherit;font:inherit;resize:vertical;border-radius:6px;width:100%;padding:6px 8px;font-size:13px}.vYZV7a_tileShared{display:block;position:relative}.vYZV7a_zoomOverlay{background:var(--dsw-alias-bg-mask,#090c12b8);z-index:80;flex-direction:column;display:flex;position:fixed;inset:0}.vYZV7a_zoomScroll{flex:1;min-height:0;overflow-y:auto}.vYZV7a_zoomInner{box-sizing:border-box;justify-content:center;align-items:center;width:100%;max-width:100%;min-height:100%;margin:0 auto;padding:24px;display:flex}.vYZV7a_zoomCard{background:var(--dsw-alias-bg-module-platform,#f5f6f7);box-shadow:var(--dsw-elevation-panel,0 0 0 .5px #00000029, 0 3px 8px 0 #00000008, 0 0 16px 0 #00000005);color:var(--dsw-alias-label-primary,#0f1115);border:0;border-radius:14px;flex-direction:column;min-height:320px;max-height:86vh;display:flex;overflow:hidden}.vYZV7a_zoomBar{border-bottom:.5px solid var(--dsw-alias-border-l2,#0000001a);flex:none;justify-content:space-between;align-items:center;gap:8px;padding:10px 14px;display:flex}.vYZV7a_zoomTitle{font-size:13px;font-weight:600;line-height:20px}.vYZV7a_closeX{color:inherit;cursor:pointer;background:0 0;border:none;border-radius:6px;padding:4px 8px;font-size:14px;line-height:1}.vYZV7a_closeX:hover{background:var(--dsw-alias-interactive-bg-hover,#2631480f)}.vYZV7a_zoomDetail{min-height:0;padding:14px;display:block;overflow-y:auto}.vYZV7a_zoomSkeleton{flex-direction:column;flex:1;gap:10px;min-height:0;padding:16px;display:flex}.vYZV7a_skLine{will-change:background-position;background:linear-gradient(90deg, transparent 40%, var(--dsw-alias-interactive-bg-hover,#2631480f) 50%, transparent 60%);background-color:var(--dsw-alias-interactive-bg-hover,#2631480f);background-size:200% 100%;border-radius:6px;height:12px;animation:1s linear infinite both vYZV7a_zoomShimmer}.vYZV7a_skWide{width:60%}.vYZV7a_skShort{flex:1;height:28px}.vYZV7a_skBlock{border-radius:10px;height:120px}.vYZV7a_skRow{gap:10px;display:flex}@keyframes vYZV7a_zoomShimmer{0%{background-position:150% 0}to{background-position:-100% 0}}@keyframes vYZV7a_tilePop{0%{opacity:0;transform:scale(.96)translateY(6px)}60%{opacity:1;transform:scale(1.015)translateY(0)}to{opacity:1;transform:scale(1)translateY(0)}}.vYZV7a_tileEnter{animation:.26s cubic-bezier(.2,.8,.3,1) both vYZV7a_tilePop}.vYZV7a_tileDragging{opacity:.55;z-index:2}.vYZV7a_wiredMark{color:var(--dsw-alias-state-business-primary,#4176e6);font-size:10px}.vYZV7a_capOver{background:var(--dsw-alias-interactive-bg-hover,#2631480f);outline:1px dashed var(--dsw-alias-state-business-primary,#4176e6);outline-offset:4px}.vYZV7a_cancelBtn{color:#b3261e;cursor:pointer;background:0 0;border:1px solid #b3261e;border-radius:8px;padding:5px 12px;font-size:12px}.vYZV7a_cancelBtn:disabled{cursor:default;opacity:.6}.vYZV7a_groupBar{align-items:center;gap:8px;display:flex}.vYZV7a_checkCircle{border:1.5px solid var(--dsw-alias-label-secondary,#61666b);corner-shape:round;color:#fff;z-index:3;border-radius:999px;justify-content:center;align-items:center;width:20px;height:20px;font-size:11px;display:flex;position:absolute;top:8px;left:8px}.vYZV7a_checkOn{background:var(--dsw-alias-state-business-primary,#4176e6);border-color:var(--dsw-alias-state-business-primary,#4176e6)}[data-selected=on]{outline:2px solid var(--dsw-alias-state-business-primary,#4176e6);outline-offset:2px}.vYZV7a_groupNote{color:var(--dsw-alias-label-secondary,#61666b);margin:0 0 10px;font-size:12px;line-height:20px}.vYZV7a_memberList{margin:0 0 12px;padding:0;list-style:none}.vYZV7a_memberRow{border-bottom:1px solid var(--dsw-alias-interactive-bg-hover,#2631480f);align-items:baseline;gap:8px;padding:6px 2px;display:flex}.vYZV7a_memberIdx{color:var(--dsw-alias-label-secondary,#61666b);font-family:var(--dsw-alias-font-mono,monospace);font-size:11px}.vYZV7a_memberName{font-size:13px}@media (prefers-reduced-motion:reduce){.vYZV7a_tileEnter,.vYZV7a_skLine,.vYZV7a_skBlock{animation-duration:.01ms;animation-iteration-count:1}}.vYZV7a_studioHead{align-items:center;gap:8px;line-height:20px;display:flex}.vYZV7a_studioBody{flex-direction:column;gap:12px;display:flex}.vYZV7a_studioGroup{flex-direction:column;gap:6px;display:flex}.vYZV7a_squareWrap{flex-direction:column;align-items:center;gap:4px;width:84px;display:flex}.vYZV7a_squareBox{border:.5px solid var(--dsw-alias-border-l2,#00000024);cursor:pointer;height:80px;transition:border-color var(--ds-transition-duration,.12s) var(--ds-ease-in-out,ease);border-radius:8px;justify-content:center;align-items:center;width:80px;display:flex;position:relative;overflow:hidden}.vYZV7a_squareBox:hover{border-color:var(--dsw-alias-border-l3,#00000047)}.vYZV7a_squareOver{border-color:var(--dsw-alias-border-l3,#00000047);box-shadow:0 0 0 2px var(--dsw-alias-border-l1,#00000014)}.vYZV7a_squareThumb{object-fit:cover;width:100%;height:100%}.vYZV7a_squareGlyph{color:var(--dsw-alias-label-tertiary,#00000073)}.vYZV7a_squareX{background:var(--dsw-alias-bg-module,#fff);border:.5px solid var(--dsw-alias-border-l2,#00000024);cursor:pointer;border-radius:999px;align-items:center;padding:0 4px;font-size:10px;line-height:17px;display:flex;position:absolute;top:4px;right:4px}.vYZV7a_squareX:hover{border-color:var(--dsw-alias-border-l3,#00000047)}.vYZV7a_squareLabel{color:var(--dsw-alias-label-primary,#0f1115);text-overflow:ellipsis;white-space:nowrap;width:100%;font-size:11px;line-height:17px;overflow:hidden}.vYZV7a_squareMetric{color:var(--dsw-alias-label-tertiary,#00000073);font-size:10px;line-height:17px}.vYZV7a_squareOff{opacity:.5;pointer-events:none}.vYZV7a_squareFileInput{display:none}.vYZV7a_viewport{background:var(--dsw-alias-bg-canvas,#fff);border:.5px solid var(--dsw-alias-border-l2,#00000024);border-radius:10px;min-height:320px;display:flex;position:relative;overflow:hidden}.vYZV7a_viewportEmpty{color:var(--dsw-alias-label-tertiary,#00000073);align-self:center;margin:auto;font-size:12px;line-height:20px}.vYZV7a_viewport canvas{display:block}.vYZV7a_viewportCanvas{width:100%;height:380px}.vYZV7a_studioSplit{grid-template-columns:minmax(0,7fr) minmax(0,5fr);gap:12px;display:grid}.vYZV7a_studioRail{flex-direction:column;gap:10px;min-width:0;display:flex}@media (width<=900px){.vYZV7a_studioSplit{grid-template-columns:1fr}}.vYZV7a_viewport:only-child{min-height:380px}.vYZV7a_modSection{border-top:1px dashed var(--border,#80808040);flex-direction:column;gap:6px;margin-top:10px;padding-top:8px;display:flex}.vYZV7a_modHead{align-items:baseline;gap:8px;display:flex}.vYZV7a_modTitle{letter-spacing:.06em;text-transform:uppercase;opacity:.7;font-size:10px;font-weight:600}.vYZV7a_modHint{opacity:.45;font-size:9px}.vYZV7a_modRow{flex-wrap:wrap;align-items:stretch;gap:6px;margin:0;padding:0;list-style:none;display:flex}.vYZV7a_modTile{border:1px solid var(--border,#8080804d);background:var(--bg-elevated,#80808014);cursor:grab;touch-action:none;border-radius:8px;flex-direction:column;justify-content:center;gap:2px;min-width:84px;max-width:132px;padding:6px 8px;display:flex}.vYZV7a_modTile:active{cursor:grabbing}.vYZV7a_modTileLabel{text-overflow:ellipsis;white-space:nowrap;font-size:11px;line-height:1.2;overflow:hidden}.vYZV7a_modTileStrength{opacity:.55;font-size:9px}.vYZV7a_modAdd{border:1px dashed var(--border,#80808059);min-width:64px;color:inherit;cursor:pointer;opacity:.6;background:0 0;border-radius:8px;justify-content:center;align-items:center;padding:6px 10px;font-size:11px;display:flex}.vYZV7a_modAdd:hover{opacity:1}.vYZV7a_modPickList{gap:2px;display:grid}.vYZV7a_modPickRow{width:100%;color:inherit;text-align:left;cursor:pointer;background:0 0;border:0;border-radius:6px;align-items:center;gap:8px;padding:6px 8px;font-size:12px;display:flex}.vYZV7a_modPickRow:hover{background:#8080801f}.vYZV7a_modLeaf{flex-direction:column;gap:10px;min-width:260px;display:flex}.vYZV7a_modField{opacity:.85;flex-direction:column;gap:4px;font-size:11px;display:flex}.vYZV7a_modSelect{border:1px solid var(--border,#8080804d);background:var(--bg-elevated,#80808014);color:inherit;border-radius:6px;padding:6px 8px;font-size:12px}";
+		const tagId$1 = "@melite-plugin/dsh-card-view/card.module.css";
+		if (typeof document !== "undefined" && document.querySelector("style[data-plugin-css=" + JSON.stringify(tagId$1) + "]") === null) {
 			const tag = document.createElement("style");
 			tag.dataset.plugin = "@melite-plugin/dsh-card-view";
-			tag.dataset.pluginCss = tagId;
-			tag.textContent = css;
+			tag.dataset.pluginCss = tagId$1;
+			tag.textContent = css$1;
 			document.head.appendChild(tag);
 		}
-		var card_module_css_default = {
+		var card_module_css_default$1 = {
 			"addFace": "vYZV7a_addFace",
 			"back": "vYZV7a_back",
 			"benchHead": "vYZV7a_benchHead",
@@ -88,6 +88,20 @@ window.__ModuleLoader__.load({
 			"memberName": "vYZV7a_memberName",
 			"memberRow": "vYZV7a_memberRow",
 			"missing": "vYZV7a_missing",
+			"modAdd": "vYZV7a_modAdd",
+			"modField": "vYZV7a_modField",
+			"modHead": "vYZV7a_modHead",
+			"modHint": "vYZV7a_modHint",
+			"modLeaf": "vYZV7a_modLeaf",
+			"modPickList": "vYZV7a_modPickList",
+			"modPickRow": "vYZV7a_modPickRow",
+			"modRow": "vYZV7a_modRow",
+			"modSection": "vYZV7a_modSection",
+			"modSelect": "vYZV7a_modSelect",
+			"modTile": "vYZV7a_modTile",
+			"modTileLabel": "vYZV7a_modTileLabel",
+			"modTileStrength": "vYZV7a_modTileStrength",
+			"modTitle": "vYZV7a_modTitle",
 			"model": "vYZV7a_model",
 			"mono": "vYZV7a_mono",
 			"outputImg": "vYZV7a_outputImg",
@@ -130,7 +144,6 @@ window.__ModuleLoader__.load({
 			"specSliderValue": "vYZV7a_specSliderValue",
 			"specTextarea": "vYZV7a_specTextarea",
 			"split": "vYZV7a_split",
-			"squareBadge": "vYZV7a_squareBadge",
 			"squareBox": "vYZV7a_squareBox",
 			"squareFileInput": "vYZV7a_squareFileInput",
 			"squareGlyph": "vYZV7a_squareGlyph",
@@ -173,12 +186,7 @@ window.__ModuleLoader__.load({
 			"viewport": "vYZV7a_viewport",
 			"viewportCanvas": "vYZV7a_viewportCanvas",
 			"viewportEmpty": "vYZV7a_viewportEmpty",
-			"wireBtn": "vYZV7a_wireBtn",
-			"wireLabel": "vYZV7a_wireLabel",
-			"wireRow": "vYZV7a_wireRow",
 			"wiredMark": "vYZV7a_wiredMark",
-			"wiring": "vYZV7a_wiring",
-			"wiringSource": "vYZV7a_wiringSource",
 			"zoomBar": "vYZV7a_zoomBar",
 			"zoomCard": "vYZV7a_zoomCard",
 			"zoomDetail": "vYZV7a_zoomDetail",
@@ -190,531 +198,10 @@ window.__ModuleLoader__.load({
 			"zoomTitle": "vYZV7a_zoomTitle"
 		};
 		//#endregion
-		//#region src/client/input-square.tsx
-		/**
-		* InputSquare — the ONE square for any slot-shaped value, ported from
-		* the old system's SlotSquare law (packages/web-kit/ui/SlotSquare.tsx,
-		* 2026-08-08: "the look for it will be reused for the sub-card
-		* system") onto the DSH substrate: ui-primitives glyphs, our module
-		* CSS under the web-styling chrome laws (0.5px hairlines, paired
-		* line-heights, token transitions), no lucide/cn/tip.
-		*
-		* THE OLD LAW, KEPT VERBATIM — a square thumbnail with label + badge
-		* + the THREE source verbs (operator, 2026-09-12: "we rendered a
-		* square and gave the option to do 1 of 3 things"):
-		*   a) from previous card  → onClick (the host opens the wire picker;
-		*                            badge = the upstream card's title)
-		*   b) from file upload    → onPickFile/onDropFile (hidden input +
-		*                            OS drop — the ONE read path readAsDataURL)
-		*   c) from media bar      → onDropAsset (the ASSET_DRAG_MIME contract
-		*                            the drop surface already serves)
-		* plus the X (detach). The consumer owns the doors — this shell only
-		* voices them (ui-attachment's own law: presentation registers, the
-		* service seams stay with their owners).
-		*/
-		/** The media-bar drag contract (CardsTab serves the same MIME on its
-		*  drop surface — ONE spelling, imported from the tab's law). */
-		const ASSET_DRAG_MIME$1 = "application/tech-noir-asset";
-		/** THE "is this a thumbnail" rule (SlotSquare's, kept verbatim):
-		*  data: images, blob: fresh-upload mirrors, and http(s)/root-relative
-		*  artifact URLs. Every slot-shaped value renders the same way. */
-		function isImageUrl(value) {
-			return /^data:image\//i.test(value) || /^blob:/i.test(value) || /^(?:https?:)?\/[^"'<>]*\.(?:png|jpe?g|webp|gif|bmp|avif)(?:[?#]|$)/i.test(value);
-		}
-		/** Read a File/Blob and resolve its data: URL — the ONE read path for
-		*  every slot-shaped attach (the old law, single definition). */
-		function readAsDataUrl(file) {
-			return new Promise((resolve, reject) => {
-				const r = new FileReader();
-				r.onload = () => {
-					resolve(String(r.result));
-				};
-				r.onerror = () => {
-					reject(r.error ?? /* @__PURE__ */ new Error("read failed"));
-				};
-				r.readAsDataURL(file);
-			});
-		}
-		/** Parse the asset MIME off a drop event. null = absent or malformed. */
-		function assetPayload(e) {
-			const raw = e.dataTransfer.getData(ASSET_DRAG_MIME$1);
-			if (raw === "") return null;
-			try {
-				const p = JSON.parse(raw);
-				return typeof p["url"] === "string" ? p["url"] : null;
-			} catch {
-				return null;
-			}
-		}
-		function InputSquare(props) {
-			const { label, value, metric, upstreamTitle, disabled } = props;
-			const fileRef = (0, react.useRef)(null);
-			const boxRef = (0, react.useRef)(null);
-			const [over, setOver] = (0, react.useState)(false);
-			const thumb = typeof value === "string" && isImageUrl(value) ? value : null;
-			const wired = upstreamTitle !== null && upstreamTitle !== void 0 && upstreamTitle !== "";
-			const empty = thumb === null && !wired;
-			const pick = () => {
-				if (disabled) return;
-				if (empty && props.onFile !== void 0) fileRef.current?.click();
-				else if (props.onWire !== void 0) props.onWire(boxRef.current);
-			};
-			return (0, react.createElement)("div", { className: card_module_css_default.squareWrap + (disabled ? " " + card_module_css_default.squareOff : "") }, (0, react.createElement)("div", {
-				ref: boxRef,
-				className: card_module_css_default.squareBox + (over ? " " + card_module_css_default.squareOver : ""),
-				role: "button",
-				tabIndex: 0,
-				"aria-label": label + (wired ? " (from " + String(upstreamTitle) + ")" : " source"),
-				onClick: pick,
-				onKeyDown: (e) => {
-					if (e.key === "Enter") pick();
-				},
-				onDragOver: (e) => {
-					if (disabled) return;
-					e.preventDefault();
-					setOver(true);
-				},
-				onDragLeave: () => {
-					setOver(false);
-				},
-				onDrop: (e) => {
-					if (disabled) return;
-					e.preventDefault();
-					setOver(false);
-					const asset = assetPayload(e);
-					if (asset !== null && props.onAsset !== void 0) {
-						props.onAsset(asset);
-						return;
-					}
-					const f = e.dataTransfer.files[0];
-					if (f !== void 0 && props.onFile !== void 0) props.onFile(f);
-				}
-			}, thumb !== null ? (0, react.createElement)("img", {
-				className: card_module_css_default.squareThumb,
-				src: thumb,
-				alt: label
-			}) : (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.IconPaperclipOutline16, { className: card_module_css_default.squareGlyph }), wired ? (0, react.createElement)("span", { className: card_module_css_default.squareBadge }, String(upstreamTitle)) : null, !empty && props.onClear !== void 0 ? (0, react.createElement)("button", {
-				className: card_module_css_default.squareX,
-				type: "button",
-				title: "Detach",
-				"aria-label": "Detach " + label,
-				onClick: (e) => {
-					e.stopPropagation();
-					props.onClear?.();
-				}
-			}, "✕") : null), (0, react.createElement)("span", { className: card_module_css_default.squareLabel }, label), metric !== void 0 ? (0, react.createElement)("span", { className: card_module_css_default.squareMetric }, metric) : null, props.onFile !== void 0 && !disabled ? (0, react.createElement)("input", {
-				ref: fileRef,
-				type: "file",
-				accept: "image/png,image/jpeg,image/webp",
-				className: card_module_css_default.squareFileInput,
-				"aria-hidden": true,
-				tabIndex: -1,
-				onChange: (e) => {
-					const f = e.target.files?.[0];
-					if (f !== void 0 && f !== null) props.onFile?.(f);
-					if (fileRef.current !== null) fileRef.current.value = "";
-				}
-			}) : null);
-		}
-		//#endregion
-		//#region ../../../node_modules/.pnpm/@deepseek-ai+dsh-typert-protocol@0.1.5-rc.2_@deepseek-ai+cordis@4.0.2/node_modules/@deepseek-ai/dsh-typert-protocol/lib/index.js
-		/** The one Remote failure class shared by owners, the Gateway, and consumers. */
-		/**
-		* One Remote call failure: a real Error carrying its stable code and typed
-		* details. Owners throw it at the failure point; the Host Gateway encodes it
-		* onto the wire unchanged; the Client face rebuilds an instance for the
-		* `RemoteResult` error branch, so `throw result.error` keeps throw semantics.
-		* Discrimination is always by `code`, never by instanceof.
-		*/
-		var RemoteError = class extends Error {
-			code;
-			details;
-			/** Structural marker: cross-realm/bundle identification never uses instanceof. */
-			isDSHRemoteError = true;
-			/**
-			* @param code - stable failure code declared in {@link RemoteErrorDetailsMap}.
-			* @param message - human diagnostic carried across the wire.
-			* @param details - structured payload typed by the code.
-			* @param options - standard Error options (`cause` survives in-process only).
-			*/
-			constructor(code, message, details, options) {
-				super(message, options);
-				this.code = code;
-				this.details = details;
-				this.name = "RemoteError";
-			}
-		};
-		//#endregion
-		//#region src/client/cards-resource.ts
-		/** The bench key the tab serves (melite-tools' DEFAULT_BENCH — 'main'). */
-		const CARDS_BENCH_ADDRESS = "dsh-resource://cards/bench";
-		/** The run address (the wand's target, plan §5). */
-		function cardsRunAddress(runId) {
-			return "dsh-resource://cards/run/" + encodeURIComponent(runId);
-		}
-		/** Parse a cards address; null when the path is not one of ours. */
-		function parseCardsAddress(address) {
-			if (!address.startsWith("dsh-resource://cards/")) return null;
-			const rest = address.slice(21);
-			if (rest === "bench") return { bench: true };
-			if (rest.startsWith("run/")) {
-				const runId = decodeURIComponent(rest.slice(4));
-				if (runId !== "") return { run: runId };
-			}
-			return null;
-		}
-		/** One failure frame (the contract's error branch — a real RemoteError
-		*  on the unclassified cards code; the address prefixes the diagnostic). */
-		function failure(address, message) {
-			return {
-				ok: false,
-				error: new RemoteError("cards/unclassified", address + ": " + message, {})
-			};
-		}
-		/** Defensive row readers — the door's wire is untyped at this seam. */
-		function readBench(doc) {
-			const stages = Array.isArray(doc["stages"]) ? doc["stages"].filter((s) => typeof s === "object" && s !== null && typeof s["id"] === "string") : [];
-			const log = Array.isArray(doc["log"]) ? doc["log"].filter((s) => typeof s === "object" && s !== null && typeof s["rev"] === "number") : [];
-			return {
-				kind: "bench",
-				draftId: typeof doc["draft_id"] === "string" ? doc["draft_id"] : "bench-main",
-				rev: typeof doc["rev"] === "number" ? doc["rev"] : 0,
-				stages,
-				log
-			};
-		}
-		/** Re-read the shared bench (session 'main') — the consumer's reload
-		*  after its own edits (the provider's bench stream is a single
-		*  snapshot; same-address navigation does not re-run it). */
-		async function fetchBench(signal) {
-			return readBench(await wireCall$1("bench/get", { sessionKey: "main" }, signal));
-		}
-		function readRun(runId, doc) {
-			const stages = Array.isArray(doc["stages"]) ? doc["stages"].filter((s) => typeof s === "object" && s !== null && typeof s["id"] === "string") : [];
-			for (const stage of stages) if (typeof stage.url === "string" && stage.url !== "" && !/^(https?:\/\/|\/)/.test(stage.url)) stage.url = "/melite-media/runs/" + encodeURIComponent(runId) + "/" + stage.url.split("/").map((seg) => encodeURIComponent(seg)).join("/");
-			return {
-				kind: "run",
-				runId,
-				status: typeof doc["status"] === "string" ? doc["status"] : "unknown",
-				draftId: typeof doc["draft_id"] === "string" && doc["draft_id"] !== "" ? doc["draft_id"] : null,
-				stages,
-				lastFrame: void 0
-			};
-		}
-		/** Correlation id for one client-request frame (crypto.randomUUID is
-		*  the browser standard). */
-		function nextRpcId$2() {
-			const cryptoApi = globalThis.crypto;
-			if (cryptoApi?.randomUUID !== void 0) return cryptoApi.randomUUID();
-			return "rpc-" + Math.random().toString(36).slice(2) + "-" + Date.now().toString(36);
-		}
-		/** Read a server-response envelope and narrow its result. A non-ok
-		*  result throws the RemoteError branch's message (the caller frames
-		*  the failure); a channel surprise throws honestly. */
-		async function wireCall$1(nsMethod, args, signal) {
-			const rpcId = nextRpcId$2();
-			const res = await fetch("/api/" + nsMethod, {
-				method: "POST",
-				headers: { "content-type": "application/json" },
-				body: JSON.stringify({
-					type: "client-request",
-					rpcId,
-					method: nsMethod,
-					payload: { args }
-				}),
-				...signal === void 0 ? {} : { signal }
-			});
-			if (!res.ok) throw new Error("wire: HTTP " + String(res.status));
-			const body = await res.json();
-			if (typeof body !== "object" || body === null || Reflect.get(body, "type") !== "server-response" || Reflect.get(body, "rpcId") !== rpcId) throw new Error("wire: malformed response frame");
-			const result = Reflect.get(body, "result");
-			if (typeof result !== "object" || result === null) throw new Error("wire: malformed result");
-			if (Reflect.get(result, "ok") !== true) {
-				const error = Reflect.get(result, "error");
-				const message = typeof error === "object" && error !== null && typeof Reflect.get(error, "message") === "string" ? Reflect.get(error, "message") : "wire: refused";
-				throw new Error(message);
-			}
-			const value = Reflect.get(result, "value");
-			if (typeof value !== "object" || value === null || Array.isArray(value)) throw new Error("wire: not a JSON object");
-			return value;
-		}
-		/** Card-back-into-flow: restore a run's producing draft onto the
-		*  shared bench — drafts/get (the draft holds the full
-		*  card/engine/params stages) then per-stage bench/add-stage as the
-		*  USER (the CAS law: bench/get first, each add carries expect_rev,
-		*  chained from the previous answer's rev). A stage with no card is
-		*  SKIPPED and counted (add-stage requires one); an id collision
-		*  retries once without the id (the bench auto-ids s_<n>) and notes
-		*  it. Any other refusal throws with the door's own text — the bench
-		*  keeps whatever landed before it, and the report says so. */
-		async function restoreRunToBench(run, signal) {
-			if (run.draftId === null || run.draftId === "") throw new Error("this run names no draft — nothing to restore");
-			let draft;
-			try {
-				draft = await wireCall$1("drafts/get", { draftId: run.draftId }, signal);
-			} catch (e) {
-				throw new Error("the producing draft is unreadable: " + (e instanceof Error ? e.message : String(e)));
-			}
-			const raw = draft["stages"];
-			const stages = Array.isArray(raw) ? raw.filter((s) => typeof s === "object" && s !== null) : [];
-			if (stages.length === 0) throw new Error("the producing draft holds no stages — nothing to restore");
-			let bench;
-			try {
-				bench = await wireCall$1("bench/get", { sessionKey: "main" }, signal);
-			} catch (e) {
-				throw new Error("the bench is unreadable: " + (e instanceof Error ? e.message : String(e)));
-			}
-			let rev = typeof bench["rev"] === "number" ? bench["rev"] : 0;
-			const report = {
-				added: 0,
-				skipped: 0,
-				notes: []
-			};
-			for (const st of stages) {
-				const card = st["card"];
-				if (typeof card !== "string" || card === "") {
-					report.skipped += 1;
-					report.notes.push("skipped a stage with no card (add-stage requires one)");
-					continue;
-				}
-				const doc = {
-					card,
-					author: "user",
-					expect_rev: rev
-				};
-				if (typeof st["engine"] === "string" && st["engine"] !== "") doc["engine"] = st["engine"];
-				if (typeof st["params"] === "object" && st["params"] !== null && !Array.isArray(st["params"])) doc["params"] = st["params"];
-				const id = typeof st["id"] === "string" && st["id"] !== "" ? st["id"] : null;
-				if (id !== null) doc["id"] = id;
-				try {
-					const row = await wireCall$1("bench/add-stage", {
-						sessionKey: "main",
-						doc
-					}, signal);
-					if (typeof row["rev"] === "number") rev = row["rev"];
-					report.added += 1;
-				} catch (e) {
-					const message = e instanceof Error ? e.message : String(e);
-					if (id !== null && message.includes("already on the bench")) {
-						const retry = { ...doc };
-						delete retry["id"];
-						try {
-							const row = await wireCall$1("bench/add-stage", {
-								sessionKey: "main",
-								doc: retry
-							}, signal);
-							if (typeof row["rev"] === "number") rev = row["rev"];
-							report.added += 1;
-							report.notes.push(id + " was already on the bench — added under a fresh id");
-						} catch (e2) {
-							throw new Error("restore stopped after " + String(report.added) + " stage(s): " + (e2 instanceof Error ? e2.message : String(e2)));
-						}
-					} else throw new Error("restore stopped after " + String(report.added) + " stage(s): " + message);
-				}
-			}
-			return report;
-		}
-		/** Merge one events frame into a run value (stage rows upserted by id;
-		*  run-status frames replace the status; the frame is kept for the view). */
-		function mergeRunFrame(value, frame) {
-			const next = {
-				...value,
-				lastFrame: frame
-			};
-			const type = frame["type"];
-			if (type === "run" && typeof frame["status"] === "string") next.status = frame["status"];
-			if (type === "stage") {
-				const stageId = frame["stage"];
-				if (typeof stageId === "string") {
-					if (next.stages.find((s) => s.id === stageId) === void 0) next.stages = [...next.stages, {
-						id: stageId,
-						status: "running"
-					}];
-					else next.stages = next.stages.map((s) => s.id === stageId ? {
-						...s,
-						status: "running"
-					} : s);
-				}
-			}
-			return next;
-		}
-		/** The provider registration body: `ctx.resources.register({ protocol:
-		*  'cards', open })`. The estate remotes over the wire frame; abort
-		*  ends the stream per the contract. */
-		function openCardsResource(address, ctx) {
-			const target = parseCardsAddress(address);
-			const bench = target !== null && "bench" in target;
-			const runId = target !== null && "run" in target ? target.run : "";
-			return (async function* () {
-				if (target === null) {
-					yield failure(address, "not a cards address");
-					return;
-				}
-				if (bench) {
-					let value;
-					try {
-						value = readBench(await wireCall$1("bench/get", { sessionKey: "main" }));
-					} catch (e) {
-						yield failure(address, e instanceof Error ? e.message : String(e));
-						return;
-					}
-					yield {
-						ok: true,
-						value
-					};
-					return;
-				}
-				let value;
-				try {
-					value = readRun(runId, await wireCall$1("runs/status", { runId }));
-				} catch (e) {
-					yield failure(address, e instanceof Error ? e.message : String(e));
-					return;
-				}
-				yield {
-					ok: true,
-					value
-				};
-				if (ctx.signal.aborted) return;
-				if (isTerminal(value.status)) return;
-				yield* pollRunFrames(runId, value, ctx.signal);
-			})();
-		}
-		/** The terminal statuses — the runs seat's own vocabulary (runsRegistry:
-		*  stopFlag stamps 'stopped'; the settle path stamps 'completed' or
-		*  'failed'. A settled run ends the stream; the hydrated/polled value
-		*  stays as the last ok frame. */
-		function isTerminal(status) {
-			return status === "completed" || status === "failed" || status === "stopped";
-		}
-		/** The live tail (the honest degrade): poll `runs/status` and yield a
-		*  value ONLY when the row moved (no frame spam) until the run turns
-		*  terminal or the holder aborts. A poll error mid-run is not a
-		*  failure frame — the last ok value stays (the kit keeps it); the
-		*  next poll may recover. The cadence (1500ms) rides the run pump's
-		*  own observation granularity, not user perception of latency: stage
-		*  transitions inside the estate tick on the pump's settle path. */
-		async function* pollRunFrames(runId, hydrated, signal) {
-			let value = hydrated;
-			const sleep = (ms) => new Promise((resolve) => {
-				const t = setTimeout(() => {
-					signal.removeEventListener("abort", onAbort);
-					resolve("slept");
-				}, ms);
-				const onAbort = () => {
-					clearTimeout(t);
-					resolve("abort");
-				};
-				if (signal.aborted) {
-					onAbort();
-					return;
-				}
-				signal.addEventListener("abort", onAbort, { once: true });
-			});
-			while (!signal.aborted && !isTerminal(value.status)) {
-				if (await sleep(1500) === "abort" || signal.aborted) return;
-				let row;
-				try {
-					row = await wireCall$1("runs/status", { runId }, signal);
-				} catch {
-					continue;
-				}
-				const next = readRun(runId, row);
-				if (!(next.status !== value.status || JSON.stringify(next.stages) !== JSON.stringify(value.stages))) continue;
-				value = next;
-				yield {
-					ok: true,
-					value
-				};
-			}
-		}
-		/** OS-file drop → the /v1/uploads door (png/jpeg/webp data-URL) → the
-		*  input-dir name input-prep's `source` field accepts. The door's own
-		*  gates (type whitelist, one clean segment) are the law — the client
-		*  only voices its refusals, never invents its own. */
-		async function uploadInputFile(file) {
-			const isImage = file.type === "image/png" || file.type === "image/jpeg" || file.type === "image/webp";
-			const isAudio = file.type.startsWith("audio/");
-			if (!isImage && !isAudio) throw new Error("Input cards don’t accept " + (file.type !== "" ? file.type : "that file") + " — drop an image or audio file");
-			if (!isImage) throw new Error("audio uploads have no door yet — the uploads door boards png / jpeg / webp only");
-			const dataUrl = await new Promise((resolve, reject) => {
-				const r = new FileReader();
-				r.onload = () => {
-					resolve(String(r.result));
-				};
-				r.onerror = () => {
-					reject(/* @__PURE__ */ new Error("could not read the dropped file"));
-				};
-				r.readAsDataURL(file);
-			});
-			const res = await fetch("/v1/uploads", {
-				method: "POST",
-				headers: { "content-type": "application/json" },
-				body: JSON.stringify({
-					filename: file.name.replace(/[^A-Za-z0-9._-]/g, "_"),
-					data: dataUrl
-				})
-			});
-			if (!res.ok) throw new Error("upload refused: HTTP " + String(res.status));
-			const out = await res.json();
-			const path = typeof out === "object" && out !== null && typeof Reflect.get(out, "path") === "string" ? Reflect.get(out, "path") : "";
-			if (path === "") throw new Error("upload answered without a path");
-			return { name: path.split("/").pop() ?? file.name };
-		}
-		/** The stage's artifact URL from its run (the studio's output half —
-		*  the old pollFlowRun law: the run is the SSOT, the view polls).
-		*  null until the stage reports a url. */
-		async function fetchRunStageUrl(runId, stageId, signal) {
-			const row = readRun(runId, await wireCall$1("runs/status", { runId }, signal)).stages.find((s) => s.id === stageId);
-			return row !== void 0 && typeof row.url === "string" && row.url !== "" ? row.url : null;
-		}
-		/** A run's terminal read (stops the studio's poll loop). */
-		async function fetchRunTerminal(runId, signal) {
-			return isTerminal(readRun(runId, await wireCall$1("runs/status", { runId }, signal)).status);
-		}
-		/** The bench draft's newest run (runs/list — the estate's own run
-		*  registry). The reload-proof bridge: the tab adopts this when its
-		*  in-session memory is empty, so the studio's artifact poll survives
-		*  page reloads (the estate is the SSOT, never the client). */
-		async function fetchLatestRunForDraft(draftId, signal) {
-			const row = await wireCall$1("runs/list", { rawLimit: "500" }, signal);
-			const runs = Array.isArray(row["runs"]) ? row["runs"] : [];
-			let newest = null;
-			for (const r of runs) {
-				if (typeof r !== "object" || r === null) continue;
-				const rid = r["run_id"] ?? r["id"];
-				const did = r["draft_id"];
-				if (typeof rid !== "string" || rid === "" || did !== draftId) continue;
-				const created = r["created_at"];
-				const at = typeof created === "number" ? created : 0;
-				if (newest === null || at > newest.created) newest = {
-					rid,
-					created: at
-				};
-			}
-			return newest !== null ? newest.rid : null;
-		}
-		//#endregion
-		//#region src/client/spec-form.tsx
-		/**
-		* spec-form.tsx — THE CARD FORM, spec-driven (2026-09-11 rebirth).
-		*
-		* THE OLD SYSTEM'S LAW (the editor's flowParamEditor + the /v1/form-spec
-		* SSOT): a card's knob surface is DECLARED, not guessed — the Schemastery
-		* schema projects to the served form spec (typed atoms: textarea, number,
-		* slider, select, seed, switch; defaults seeded; groups; visible-when).
-		* The picker and the drilldown both render THIS — the nice formatting is
-		* the spec's own shape, never a raw key/value dump.
-		*
-		* DSH NATIVE: Input from the installed ui-primitives where it fits;
-		* the atoms the primitives set lacks (select, slider, textarea) are
-		* layout-only module CSS over native elements, every color an
-		* inherited --dsw-alias-* token. No second app, no iframe — same-origin
-		* /v1 doors (the 2026-09-11 production restore: model-catalog,
-		* form-spec) and the bench wire door.
-		*/
+		//#region ../card-base/src/spec.ts
 		/** Seed the editable values from the spec's declared defaults (the old
-		*  picker's law: pick → defaults seeded → the user edits from there). */
+		*  picker's law: pick → defaults seeded → the user edits from there).
+		*  DEFAULTS PROPAGATE FROM THE EMISSION — the base never invents one. */
 		function specDefaults(fields) {
 			const out = {};
 			for (const f of fields) if (f.default !== void 0 && f.default !== null) out[f.name] = f.default;
@@ -749,6 +236,26 @@ window.__ModuleLoader__.load({
 			}
 			return out;
 		}
+		/** Coerce the raw edit strings to the spec's declared types — ONCE, at
+		*  patch time (the editPatch law). Only keys that CHANGED from the
+		*  stage's held params ride the patch. */
+		function specPatch(fields, values, held) {
+			const out = {};
+			for (const f of fields) {
+				const v = values[f.name];
+				if (v === void 0) continue;
+				const before = held[f.name] ?? f.default;
+				if (String(v) === String(before ?? "")) continue;
+				if (f.type === "number" || f.type === "seed" || f.type === "slider") {
+					const n = Number(v);
+					out[f.name] = Number.isFinite(n) ? n : v;
+				} else if (f.type === "switch" || f.type === "boolean") out[f.name] = v === true || v === "true";
+				else out[f.name] = v;
+			}
+			return out;
+		}
+		//#endregion
+		//#region ../card-base/src/wire.ts
 		/** Read a same-origin /v1 JSON door. Non-200 → named throw (the door's
 		*  own error text when present). */
 		async function v1Get(path, signal) {
@@ -778,21 +285,256 @@ window.__ModuleLoader__.load({
 			}
 			return out.sort((a, b) => a.label.localeCompare(b.label));
 		}
-		/** /v1/form-spec?model=<family> — the card family's declared knob set. */
+		/** /v1/form-spec?model=<family> — the card family's emission (fields
+		*  + the declared edges + the mod kinds). */
 		async function fetchFormSpec(model, signal) {
 			const doc = await v1Get("/v1/form-spec?model=" + encodeURIComponent(model), signal);
 			if (!Array.isArray(doc["fields"])) throw new Error("form-spec: no fields array");
 			return doc;
 		}
+		/** /v1/forms — every card's meta row (the edge emission included). */
+		async function fetchFormsTable(signal) {
+			return v1Get("/v1/forms", signal);
+		}
+		/** OS-file drop → the /v1/uploads door (png/jpeg/webp data-URL) → the
+		*  input-dir path the param accepts. The door's own gates (type
+		*  whitelist, one clean segment) are the law — the client only
+		*  voices its refusals, never invents its own. */
+		async function uploadInputFile(file) {
+			const isImage = file.type === "image/png" || file.type === "image/jpeg" || file.type === "image/webp";
+			const isAudio = file.type.startsWith("audio/");
+			if (!isImage && !isAudio) throw new Error("Input cards don’t accept " + (file.type !== "" ? file.type : "that file") + " — drop an image or audio file");
+			if (isAudio) throw new Error("audio uploads have no door yet — the uploads door boards png / jpeg / webp only");
+			const dataUrl = await new Promise((resolve, reject) => {
+				const r = new FileReader();
+				r.onload = () => {
+					resolve(String(r.result));
+				};
+				r.onerror = () => {
+					reject(/* @__PURE__ */ new Error("could not read the dropped file"));
+				};
+				r.readAsDataURL(file);
+			});
+			const res = await fetch("/v1/uploads", {
+				method: "POST",
+				headers: { "content-type": "application/json" },
+				body: JSON.stringify({
+					filename: file.name.replace(/[^A-Za-z0-9._-]/g, "_"),
+					data: dataUrl
+				})
+			});
+			if (!res.ok) throw new Error("upload refused: HTTP " + String(res.status));
+			const out = await res.json();
+			const path = typeof out === "object" && out !== null && typeof Reflect.get(out, "path") === "string" ? Reflect.get(out, "path") : "";
+			if (path === "") throw new Error("upload answered without a path");
+			return {
+				name: path,
+				file: path.split("/").pop() ?? file.name
+			};
+		}
+		//#endregion
+		//#region \0dsh-css:card-base/src/card.module.css.mjs
+		const css = ".FRpSCG_specForm{flex-direction:column;gap:12px;display:flex}.FRpSCG_specGroup{flex-direction:column;gap:8px;display:flex}.FRpSCG_specGroupTitle{color:var(--dsw-alias-label-secondary,#61666b);letter-spacing:.04em;text-transform:uppercase;margin:0 0 2px;font-size:11px;font-weight:600}.FRpSCG_specField{flex-direction:column;gap:3px;display:flex}.FRpSCG_specFieldKey{color:var(--dsw-alias-label-secondary,#61666b);font-size:12px}.FRpSCG_specRequired{color:var(--dsw-alias-state-critical,#e5484d)}.FRpSCG_specHint{color:var(--dsw-alias-label-secondary,#61666b);font-size:11px}.FRpSCG_specSelect{background:var(--dsw-alias-interactive-bg-hover,#2631480f);border:.5px solid var(--dsw-alias-border-l2,#0000001a);color:inherit;font:inherit;border-radius:6px;width:100%;padding:5px 8px;font-size:13px}.FRpSCG_specSliderRow{align-items:center;gap:8px;display:flex}.FRpSCG_specSlider{flex:1}.FRpSCG_specSliderValue{color:var(--dsw-alias-label-secondary,#61666b);font-family:var(--dsw-alias-font-mono,ui-monospace, monospace);text-align:right;min-width:4ch;font-size:12px}.FRpSCG_specTextarea{background:var(--dsw-alias-interactive-bg-hover,#2631480f);border:.5px solid var(--dsw-alias-border-l2,#0000001a);color:inherit;font:inherit;resize:vertical;border-radius:6px;width:100%;padding:6px 8px;font-size:13px}.FRpSCG_squareWrap{flex-direction:column;align-items:center;gap:4px;width:84px;display:flex}.FRpSCG_squareOff{opacity:.5;pointer-events:none}.FRpSCG_squareBox{border:.5px solid var(--dsw-alias-border-l2,#00000024);cursor:pointer;height:80px;transition:border-color var(--ds-transition-duration,.12s) var(--ds-ease-in-out,ease);border-radius:8px;justify-content:center;align-items:center;width:80px;display:flex;position:relative;overflow:hidden}.FRpSCG_squareOver{border-color:var(--dsw-alias-border-l3,#00000047);box-shadow:0 0 0 2px var(--dsw-alias-border-l1,#00000014)}.FRpSCG_squareThumb{object-fit:cover;width:100%;height:100%}.FRpSCG_squareGlyph{color:var(--dsw-alias-label-tertiary,#00000073)}.FRpSCG_squareX{background:var(--dsw-alias-bg-module,#fff);border:.5px solid var(--dsw-alias-border-l2,#00000024);cursor:pointer;border-radius:999px;align-items:center;padding:0 4px;font-size:10px;line-height:17px;display:flex;position:absolute;top:4px;right:4px}.FRpSCG_squareLabel{color:var(--dsw-alias-label-primary,#0f1115);text-overflow:ellipsis;white-space:nowrap;width:100%;font-size:11px;line-height:17px;overflow:hidden}.FRpSCG_squareMetric{color:var(--dsw-alias-label-tertiary,#00000073);font-size:10px;line-height:17px}.FRpSCG_squareFileInput{display:none}";
+		const tagId = "@melite-plugin/dsh-card-view/card.module.css";
+		if (typeof document !== "undefined" && document.querySelector("style[data-plugin-css=" + JSON.stringify(tagId) + "]") === null) {
+			const tag = document.createElement("style");
+			tag.dataset.plugin = "@melite-plugin/dsh-card-view";
+			tag.dataset.pluginCss = tagId;
+			tag.textContent = css;
+			document.head.appendChild(tag);
+		}
+		var card_module_css_default = {
+			"specField": "FRpSCG_specField",
+			"specFieldKey": "FRpSCG_specFieldKey",
+			"specForm": "FRpSCG_specForm",
+			"specGroup": "FRpSCG_specGroup",
+			"specGroupTitle": "FRpSCG_specGroupTitle",
+			"specHint": "FRpSCG_specHint",
+			"specRequired": "FRpSCG_specRequired",
+			"specSelect": "FRpSCG_specSelect",
+			"specSlider": "FRpSCG_specSlider",
+			"specSliderRow": "FRpSCG_specSliderRow",
+			"specSliderValue": "FRpSCG_specSliderValue",
+			"specTextarea": "FRpSCG_specTextarea",
+			"squareBox": "FRpSCG_squareBox",
+			"squareFileInput": "FRpSCG_squareFileInput",
+			"squareGlyph": "FRpSCG_squareGlyph",
+			"squareLabel": "FRpSCG_squareLabel",
+			"squareMetric": "FRpSCG_squareMetric",
+			"squareOff": "FRpSCG_squareOff",
+			"squareOver": "FRpSCG_squareOver",
+			"squareThumb": "FRpSCG_squareThumb",
+			"squareWrap": "FRpSCG_squareWrap",
+			"squareX": "FRpSCG_squareX"
+		};
+		//#endregion
+		//#region ../card-base/src/square.tsx
+		/**
+		* square.tsx — InputSquare, THE ONE square for any slot-shaped value
+		* — the base's default input component. Ported from the old system's
+		* SlotSquare law (packages/web-kit/ui/SlotSquare.tsx, 2026-08-08:
+		* "the look for it will be reused for the sub-card system") onto the
+		* DSH substrate: ui-primitives glyphs, module CSS under the
+		* web-styling chrome laws, no lucide/cn/tip.
+		*
+		* THE OLD LAW, KEPT VERBATIM — a square thumbnail with label + badge
+		* + the THREE source verbs (operator, 2026-09-12: "we rendered a
+		* square and gave the option to do 1 of 3 things"):
+		*   a) from previous card  → onClick (the host opens the wire picker;
+		*                            badge = the upstream card's title)
+		*   b) from file upload    → onPickFile/onDropFile (hidden input +
+		*                            OS drop — the ONE read path readAsDataURL)
+		*   c) from media bar      → onDropAsset (the ASSET_DRAG_MIME contract
+		*                            the drop surface already serves)
+		* plus the X (detach). The consumer owns the doors — this shell only
+		* voices them (ui-attachment's own law: presentation registers, the
+		* service seams stay with their owners).
+		*
+		* THE CONSTRUCTION LAW (2026-09-12, the card-base founding): a card
+		* package EMITS an image input → the base constructs THIS square
+		* automatically. One input component; no card hand-rolls its own
+		* file field ever again.
+		*/
+		/** The media-bar drag contract (the tab's drop surface serves the
+		* same MIME — ONE spelling, imported from the base's law). */
+		const ASSET_DRAG_MIME$1 = "application/tech-noir-asset";
+		/** THE "is this a thumbnail" rule (SlotSquare's, kept verbatim):
+		*  data: images, blob: fresh-upload mirrors, and http(s)/root-relative
+		*  artifact URLs. Every slot-shaped value renders the same way. */
+		function isImageUrl(value) {
+			return /^data:image\//i.test(value) || /^blob:/i.test(value) || /^(?:https?:)?\/[^"'<>]*\.(?:png|jpe?g|webp|gif|bmp|avif)(?:[?#]|$)/i.test(value);
+		}
+		/** Read a File/Blob and resolve its data: URL — the ONE read path for
+		*  every slot-shaped attach (the old law, single definition). */
+		function readAsDataUrl(file) {
+			return new Promise((resolve, reject) => {
+				const r = new FileReader();
+				r.onload = () => {
+					resolve(String(r.result));
+				};
+				r.onerror = () => {
+					reject(r.error ?? /* @__PURE__ */ new Error("read failed"));
+				};
+				r.readAsDataURL(file);
+			});
+		}
+		/** Parse the asset MIME off a drop event. null = absent or malformed. */
+		function assetPayload(e) {
+			const raw = e.dataTransfer.getData(ASSET_DRAG_MIME$1);
+			if (raw === "") return null;
+			try {
+				const p = JSON.parse(raw);
+				return typeof p["url"] === "string" ? p["url"] : null;
+			} catch {
+				return null;
+			}
+		}
+		function InputSquare(props) {
+			const { label, value, metric, disabled } = props;
+			const fileRef = (0, react.useRef)(null);
+			const boxRef = (0, react.useRef)(null);
+			const [over, setOver] = (0, react.useState)(false);
+			const thumb = typeof value === "string" && isImageUrl(value) ? value : null;
+			const empty = thumb === null;
+			const pick = () => {
+				if (disabled) return;
+				if (props.onPick !== void 0) props.onPick(boxRef.current);
+				else if (empty && props.onFile !== void 0) fileRef.current?.click();
+			};
+			return (0, react.createElement)("div", { className: card_module_css_default.squareWrap + (disabled ? " " + card_module_css_default.squareOff : "") }, (0, react.createElement)("div", {
+				ref: boxRef,
+				className: card_module_css_default.squareBox + (over ? " " + card_module_css_default.squareOver : ""),
+				role: "button",
+				tabIndex: 0,
+				"aria-label": label + " source",
+				onClick: pick,
+				onKeyDown: (e) => {
+					if (e.key === "Enter") pick();
+				},
+				onDragOver: (e) => {
+					if (disabled) return;
+					e.preventDefault();
+					setOver(true);
+				},
+				onDragLeave: () => {
+					setOver(false);
+				},
+				onDrop: (e) => {
+					if (disabled) return;
+					e.preventDefault();
+					setOver(false);
+					const asset = assetPayload(e);
+					if (asset !== null && props.onAsset !== void 0) {
+						props.onAsset(asset);
+						return;
+					}
+					const f = e.dataTransfer.files[0];
+					if (f !== void 0 && props.onFile !== void 0) props.onFile(f);
+				}
+			}, thumb !== null ? (0, react.createElement)("img", {
+				className: card_module_css_default.squareThumb,
+				src: thumb,
+				alt: label
+			}) : (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.IconPaperclipOutline16, { className: card_module_css_default.squareGlyph }), !empty && props.onClear !== void 0 ? (0, react.createElement)("button", {
+				className: card_module_css_default.squareX,
+				type: "button",
+				title: "Detach",
+				"aria-label": "Detach " + label,
+				onClick: (e) => {
+					e.stopPropagation();
+					props.onClear?.();
+				}
+			}, "✕") : null), (0, react.createElement)("span", { className: card_module_css_default.squareLabel }, label), metric !== void 0 ? (0, react.createElement)("span", { className: card_module_css_default.squareMetric }, metric) : null, props.onFile !== void 0 && !disabled ? (0, react.createElement)("input", {
+				ref: fileRef,
+				type: "file",
+				accept: "image/png,image/jpeg,image/webp",
+				className: card_module_css_default.squareFileInput,
+				"aria-hidden": true,
+				tabIndex: -1,
+				onChange: (e) => {
+					const f = e.target.files?.[0];
+					if (f !== void 0 && f !== null) props.onFile?.(f);
+					if (fileRef.current !== null) fileRef.current.value = "";
+				}
+			}) : null);
+		}
+		//#endregion
+		//#region ../card-base/src/form.tsx
+		/**
+		* form.tsx — @melite/card-base: THE CONSTRUCTOR.
+		*
+		* THE CONSTRUCTION LAW (operator order, 2026-09-12: "The package to
+		* construct the card ui should see that the card package emits an
+		* image input, then constructs the input component automatically"):
+		* the base reads the card package's EMISSION — the served form-spec
+		* (fields, declared input/output edges, mod kinds) — and constructs
+		* the surface. Defaults propagate from the emission (specDefaults);
+		* every image/file field gets THE ONE square (square.tsx) with the
+		* three source verbs; no card ever hand-rolls an input component.
+		*
+		* THE SEAM (slots.ts): each field renders through the field-atom seam
+		* keyed by its emitted wire type — the caller may pass claimed atoms
+		* (the composition consults the slot machinery and hands them in);
+		* the base's built-in atom is the default (the ui-tool built-ins
+		* pattern). A whole-form takeover replaces CardForm itself.
+		*
+		* DSH NATIVE: Menu/Input/Switch from the installed ui-primitives; the
+		* atoms the primitives set lacks (select, slider, textarea) are
+		* layout-only module CSS over native elements, every color an
+		* inherited --dsw-alias-* token (the package's documented pattern).
+		*/
 		/** THE ONE square provider (the old SlotGrid law, DSH substrate):
-		*  every image/file field of a stage gets the same three verbs —
-		*  file upload (the /v1/uploads door + the data-URL mirror), media
-		*  drop (the asset MIME → the param), and the wire picker (a DSH
-		*  Menu anchored on the square). ONE definition; the generic drill
-		*  and every registered studio ride it. */
+		*  every slot-shaped field of a stage gets the same verbs — file
+		*  upload (the /v1/uploads door + the data-URL mirror), media drop
+		*  (the asset MIME → the param), and THE PICKER (a DSH Menu anchored
+		*  on the square listing the other stages' latest outputs; picking
+		*  one writes the PARAM — the slot is the wire, no separate wiring
+		*  mechanic exists). ONE definition; the constructor and every
+		*  claimed atom ride it. */
 		function useSquareProvider(onEdit, wire) {
 			const [mirror, setMirror] = (0, react.useState)({});
 			const [pickAt, setPickAt] = (0, react.useState)(null);
+			const fileRef = (0, react.useRef)(null);
 			const onFile = (0, react.useCallback)(async (f, file) => {
 				try {
 					const dataUrl = await readAsDataUrl(file);
@@ -811,10 +553,15 @@ window.__ModuleLoader__.load({
 				return {
 					display: mirror[f.name] ?? null,
 					verbs: {
-						upstreamTitle: wire.upstreamTitle,
-						onWire: (anchor) => {
+						onPick: (anchor) => {
 							const el = anchor instanceof HTMLElement ? anchor : null;
-							setPickAt(el !== null ? { rect: el.getBoundingClientRect() } : { rect: new DOMRect(8, 8, 1, 1) });
+							setPickAt(el !== null ? {
+								rect: el.getBoundingClientRect(),
+								field: f
+							} : {
+								rect: new DOMRect(8, 8, 1, 1),
+								field: f
+							});
 						},
 						onFile: (file) => {
 							onFile(f, file);
@@ -840,7 +587,7 @@ window.__ModuleLoader__.load({
 					anchor: null,
 					getAnchorRect: () => pickAt.rect,
 					items: [
-						...wire.candidates.map((c) => ({
+						...(wire.candidatesFor !== void 0 ? wire.candidatesFor(pickAt.field) : wire.candidates).map((c) => ({
 							id: c.id,
 							label: c.label
 						})),
@@ -849,20 +596,51 @@ window.__ModuleLoader__.load({
 							id: "sep"
 						},
 						{
+							id: "__file__",
+							label: "Upload a file…"
+						},
+						{
 							id: "__none__",
-							label: "— clear wire —",
+							label: "— clear —",
 							danger: true
 						}
 					],
 					onSelect: (id) => {
+						const f = pickAt.field;
 						setPickAt(null);
-						wire.onWire(id === "__none__" ? null : id);
+						if (id === "__file__") {
+							fileRef.current?.click();
+							return;
+						}
+						if (id === "__none__") {
+							setMirror((m) => {
+								const n = { ...m };
+								delete n[f.name];
+								return n;
+							});
+							onEdit(f.name, "");
+							return;
+						}
+						const c = (wire.candidatesFor !== void 0 ? wire.candidatesFor(f) : wire.candidates).find((x) => x.id === id);
+						if (c !== void 0 && c.url !== "") onEdit(f.name, c.url);
 					},
 					onClose: () => {
 						setPickAt(null);
 					},
 					portal: true
-				})
+				}, (0, react.createElement)("input", {
+					ref: fileRef,
+					type: "file",
+					accept: "image/png,image/jpeg,image/webp",
+					"aria-hidden": true,
+					tabIndex: -1,
+					style: { display: "none" },
+					onChange: (e) => {
+						const file = e.target.files?.[0];
+						if (pickAt !== null && file !== void 0 && file !== null) onFile(pickAt.field, file);
+						if (fileRef.current !== null) fileRef.current.value = "";
+					}
+				}))
 			};
 		}
 		/** One spec atom — typed by the declaration, edited as a raw string
@@ -930,40 +708,307 @@ window.__ModuleLoader__.load({
 				"aria-label": f.label
 			});
 		}
-		/** THE CARD FORM — the spec's fields, grouped, visible-when honored,
-		*  defaults seeded by the caller. Edits ride the caller's values map. */
-		function SpecForm({ fields, values, onEdit, square }) {
+		/** THE CARD FORM (the constructor's surface half) — the spec's
+		*  fields, grouped, visible-when honored, defaults seeded by the
+		*  caller (specDefaults — propagated from the emission). Edits ride
+		*  the caller's values map. Each field renders through the claimed
+		*  atom for its emitted type when the caller passes one; the base's
+		*  built-in atom is the default. */
+		function CardForm({ fields, values, onEdit, square, atoms }) {
 			const groups = groupFields(fields, values);
+			const atomOf = (f) => atoms?.[f.type];
 			return (0, react.createElement)("div", { className: card_module_css_default.specForm }, groups.map((g) => (0, react.createElement)("section", {
 				key: g.group ?? "",
 				className: card_module_css_default.specGroup
 			}, g.group !== null ? (0, react.createElement)("h4", { className: card_module_css_default.specGroupTitle }, g.group) : null, g.fields.map((f) => (0, react.createElement)("label", {
 				key: f.name,
 				className: card_module_css_default.specField
-			}, (0, react.createElement)("span", { className: card_module_css_default.specFieldKey }, f.label, f.required === true ? (0, react.createElement)("span", { className: card_module_css_default.specRequired }, " *") : null), (0, react.createElement)(SpecAtom, {
-				f,
-				value: values[f.name],
-				onEdit,
-				square: square?.(f)
-			}), f.tooltip !== void 0 && f.tooltip !== "" ? (0, react.createElement)("span", { className: card_module_css_default.specHint }, f.tooltip) : null)))));
+			}, (0, react.createElement)("span", { className: card_module_css_default.specFieldKey }, f.label, f.required === true ? (0, react.createElement)("span", { className: card_module_css_default.specRequired }, " *") : null), (() => {
+				const claim = atomOf(f);
+				const sq = square?.(f);
+				if (claim !== void 0) return claim({
+					f,
+					value: values[f.name],
+					onEdit,
+					square: sq
+				});
+				return (0, react.createElement)(SpecAtom, {
+					f,
+					value: values[f.name],
+					onEdit,
+					square: sq
+				});
+			})(), f.tooltip !== void 0 && f.tooltip !== "" ? (0, react.createElement)("span", { className: card_module_css_default.specHint }, f.tooltip) : null)))));
 		}
-		/** Coerce the raw edit strings to the spec's declared types — ONCE, at
-		*  patch time (the editPatch law). Only keys that CHANGED from the
-		*  stage's held params ride the patch. */
-		function specPatch(fields, values, held) {
-			const out = {};
-			for (const f of fields) {
-				const v = values[f.name];
-				if (v === void 0) continue;
-				const before = held[f.name] ?? f.default;
-				if (String(v) === String(before ?? "")) continue;
-				if (f.type === "number" || f.type === "seed" || f.type === "slider") {
-					const n = Number(v);
-					out[f.name] = Number.isFinite(n) ? n : v;
-				} else if (f.type === "switch" || f.type === "boolean") out[f.name] = v === true || v === "true";
-				else out[f.name] = v;
+		//#endregion
+		//#region ../melite-run-wire/src/index.ts
+		/** Correlation id for one client-request frame (crypto.randomUUID is
+		*  the browser standard; the hand-rolled arm covers non-secure
+		*  contexts where the standard is absent). */
+		function nextRpcId() {
+			const cryptoApi = globalThis.crypto;
+			if (cryptoApi?.randomUUID !== void 0) return cryptoApi.randomUUID();
+			return "rpc-" + Math.random().toString(36).slice(2) + "-" + Date.now().toString(36);
+		}
+		/** The estate's domain refusal (result.ok !== true): the message
+		*  rides verbatim (the door's own law — the client never
+		*  paraphrases); the class separates DOMAIN verdicts from transport
+		*  failures, which carry the caller's voice prefix instead. */
+		var WireRefusedError = class extends Error {
+			constructor(message) {
+				super(message);
+				this.name = "WireRefusedError";
 			}
+		};
+		/** One client-request round trip: POST /api/<method> with the frame,
+		*  narrow the server-response envelope. Non-ok results throw the
+		*  estate's message; channel surprises throw honestly. */
+		async function wireCall$2(method, args, opts) {
+			const voice = opts?.voice ?? "wire";
+			const rpcId = nextRpcId();
+			const res = await fetch("/api/" + method, {
+				method: "POST",
+				headers: { "content-type": "application/json" },
+				body: JSON.stringify({
+					type: "client-request",
+					rpcId,
+					method,
+					payload: { args }
+				}),
+				...opts?.signal === void 0 ? {} : { signal: opts.signal }
+			});
+			if (!res.ok) throw new Error(voice + ": HTTP " + String(res.status));
+			const body = await res.json();
+			if (typeof body !== "object" || body === null || Reflect.get(body, "type") !== "server-response" || Reflect.get(body, "rpcId") !== rpcId) throw new Error(voice + ": malformed response frame");
+			const result = Reflect.get(body, "result");
+			if (typeof result !== "object" || result === null) throw new Error(voice + ": malformed result");
+			if (Reflect.get(result, "ok") !== true) {
+				const error = Reflect.get(result, "error");
+				throw new WireRefusedError(typeof error === "object" && error !== null && typeof Reflect.get(error, "message") === "string" ? Reflect.get(error, "message") : voice + ": refused");
+			}
+			const value = Reflect.get(result, "value");
+			if (typeof value !== "object" || value === null || Array.isArray(value)) throw new Error(voice + ": not a JSON object");
+			return value;
+		}
+		/** The terminal statuses — the runs seat's own vocabulary (the settle
+		*  path stamps 'completed' or 'failed'; runs/stop stamps 'stopped'). */
+		function isTerminalRun(status) {
+			return status === "completed" || status === "failed" || status === "stopped";
+		}
+		/** The ONE media-url rewrite (readRunStatus + the file-era list
+		*  fallback share it): bare run-relative names ride the estate's
+		*  media route (/melite-media/runs/<runId>/<rel>); urls that already
+		*  carry a scheme or lead with / pass verbatim (never double-encoded). */
+		function toRunMediaUrl(runId, url) {
+			if (url === "") return "";
+			if (!/^(https?:\/\/|\/)/.test(url)) return "/melite-media/runs/" + encodeURIComponent(runId) + "/" + url.split("/").map((seg) => encodeURIComponent(seg)).join("/");
+			return url;
+		}
+		/** Normalize a runs/status doc: stage rows distilled, bare run-
+		*  relative urls rewritten onto the estate's media route (absolute
+		*  and leading-/ urls pass verbatim — the one rewrite, never two). */
+		function readRunStatus(runId, doc) {
+			const stages = Array.isArray(doc["stages"]) ? doc["stages"].filter((s) => typeof s === "object" && s !== null && typeof s["id"] === "string") : [];
+			for (const stage of stages) if (typeof stage.url === "string" && stage.url !== "") stage.url = toRunMediaUrl(runId, stage.url);
+			return {
+				runId,
+				status: typeof doc["status"] === "string" ? doc["status"] : "unknown",
+				draftId: typeof doc["draft_id"] === "string" && doc["draft_id"] !== "" ? doc["draft_id"] : null,
+				stages
+			};
+		}
+		/** One runs/status read. */
+		async function fetchRunStatus(runId, signal) {
+			return readRunStatus(runId, await wireCall$2("runs/status", { runId }, { signal }));
+		}
+		/** The runs/list rows as loose records (the restore port's own
+		*  shape — run_id, draft_id, created_at, status, artifacts). */
+		async function listRunRows(signal) {
+			const row = await wireCall$2("runs/list", { rawLimit: "500" }, { signal });
+			return (Array.isArray(row["runs"]) ? row["runs"] : []).filter((r) => typeof r === "object" && r !== null);
+		}
+		/** One runs/list row by run_id (the file-era face — runs/status only
+		*  knows live runs; the list is the completed runs' SSOT). */
+		async function fetchListRow(runId, signal) {
+			for (const r of await listRunRows(signal)) {
+				const rid = r["run_id"] ?? r["id"];
+				if (typeof rid === "string" && rid !== "" && rid === runId) return r;
+			}
+			return null;
+		}
+		/** The list row's served artifact url onto the media route. The
+		*  list's currency DIFFERS from the status door's: runArtifacts
+		*  serves urls already prefixed with the run dir
+		*  (`<runId>/<rel>` — `url: runBase + "/" + cand.rel`), while live
+		*  stage urls are bare rels (runRel strips the dir). So the list
+		*  url rides under the route root directly — prepending the run id
+		*  again would double it. Absolute and rooted urls pass verbatim. */
+		function listArtifactMediaUrl(url) {
+			if (url === "") return null;
+			if (/^(https?:\/\/|\/)/.test(url)) return url;
+			return "/melite-media/runs/" + url.split("/").map((seg) => encodeURIComponent(seg)).join("/");
+		}
+		/** The list row's first media artifact url, rewritten onto the media
+		*  route (the row's own currency is run-prefixed, like the
+		*  thumbnail). Truncated markers carry no url and are skipped. */
+		function listRowMediaUrl(row) {
+			const arts = Array.isArray(row["artifacts"]) ? row["artifacts"] : [];
+			for (const a of arts) {
+				if (typeof a !== "object" || a === null) continue;
+				const url = a["url"];
+				if (typeof url === "string") {
+					const media = listArtifactMediaUrl(url);
+					if (media !== null) return media;
+				}
+			}
+			return null;
+		}
+		/** The draft's newest run (runs/list adoption — the reload-proof
+		*  bridge: the estate is the SSOT, never the client's memory).
+		*  NOTE the list's C-parity ordering: media-bearing runs first, then
+		*  newest-first — scan the wide tail, newest by created_at. (An older
+		*  note blamed the hasDraft filter for dropping bench-draft runs;
+		*  the actual nulling gate was the row gate refusing "model"
+		*  artifact rows — fixed estate-side, pinned by runs-list.spec.ts.) */
+		async function fetchLatestRunForDraft(draftId, signal) {
+			let newest = null;
+			for (const r of await listRunRows(signal)) {
+				const rid = r["run_id"] ?? r["id"];
+				const did = r["draft_id"];
+				if (typeof rid !== "string" || rid === "" || did !== draftId) continue;
+				const created = r["created_at"];
+				const at = typeof created === "number" ? created : 0;
+				if (newest === null || at > newest.created) newest = {
+					rid,
+					created: at
+				};
+			}
+			return newest !== null ? newest.rid : null;
+		}
+		/** runs/stop — the cancel door (the registry seat's flag + interrupt).
+		*  Refusals throw the estate's text. */
+		async function stopRun(runId, signal) {
+			await wireCall$2("runs/stop", { runId }, {
+				signal,
+				voice: "runs/stop"
+			});
+		}
+		/** The shared start core — ONE envelope walk for both doors (the
+		*  registry demands draft_id + an explicit test boolean; the flow
+		*  body needs its id — the bench runs under its own draft_id). */
+		async function startRun(doc, signal) {
+			try {
+				const runId = (await wireCall$2("runs/start", { doc }, {
+					signal,
+					voice: "run refused"
+				}))["run_id"];
+				if (typeof runId === "string" && runId !== "") return { runId };
+				return { refused: "run refused: no run_id in the answer" };
+			} catch (e) {
+				return { refused: e instanceof Error ? e.message : "run request failed" };
+			}
+		}
+		/** Start ONE card through the composing door (the bench drill's Run,
+		*  a studio's Run — every single-card gesture rides this). */
+		async function startCardRun(input, signal) {
+			return await startRun({
+				...input.params,
+				model: input.model,
+				draft_id: input.draftId,
+				test: input.test ?? false
+			}, signal);
+		}
+		/** The catalog's cards section (GET /v1/model-catalog — the
+		*  discovery door, same-origin, bearer-free from the page): card id
+		*  → its boarded families, first = the DEFAULT family (form-spec's
+		*  card-id alias law parity: boarded[0]). The runs door resolves
+		*  NEITHER card ids nor aliases — callers hand startCardRun the
+		*  family from HERE. Cached per session (the catalog is static per
+		*  boot; one door round trip, every consumer shares it). */
+		async function fetchCardFamilies(signal) {
+			if (cardFamiliesCache !== null) return cardFamiliesCache;
+			const body = await (await fetch("/v1/model-catalog", { ...signal === void 0 ? {} : { signal } })).json().catch(() => null);
+			const cards = typeof body === "object" && body !== null ? body["cards"] : void 0;
+			const out = {};
+			if (typeof cards === "object" && cards !== null) for (const [id, row] of Object.entries(cards)) {
+				if (typeof row !== "object" || row === null) continue;
+				const fams = row["families"];
+				out[id] = Array.isArray(fams) ? fams.filter((x) => typeof x === "string") : [id];
+			}
+			cardFamiliesCache = out;
 			return out;
+		}
+		let cardFamiliesCache = null;
+		/** Resolve a card's DEFAULT family (boarded[0]); the card id itself
+		*  when the catalog names none (mask-studio-style self-services). */
+		async function defaultFamilyForCard(cardId, signal) {
+			return (await fetchCardFamilies(signal))[cardId]?.[0] ?? cardId;
+		}
+		/** THE ARTIFACT POLL (the old pollFlowRun law): the run is the SSOT —
+		*  check the stage's url immediately, then on the cadence until it
+		*  lands (onUrl once, resolve), the run settles without one (resolve
+		*  silent — the caller's empty state is honest), or signal aborts.
+		*
+		*  THE TWO ERROR CLASSES settle differently:
+		*  - TRANSPORT failures (HTTP / malformed frames — the caller's
+		*    voice prefix) are swallowed: the next poll may recover.
+		*  - REFUSALS (WireRefusedError — the estate answered) on
+		*    runs/status prove the run is NOT in the live map: nothing is
+		*    executing for it (the registry writes the map at enqueue and
+		*    keeps it for the process life; a disavowed id is a restart
+		*    survivor or never existed). The file-era arm then consults the
+		*    runs/list row ONCE and settles from it — its artifact url when
+		*    it carries one, silent otherwise (file-era rows never update,
+		*    so waiting would be the lie); no row at all settles silent the
+		*    same way. This holds for "failed" rows too: a live run answers
+		*    200 at the status door, so a refused status + failed list row
+		*    is a dead run, not a blip. A transport-failed list read keeps
+		*    the poll alive (the answer may land next cadence). */
+		async function pollRunStageUrl(runId, stageId, opts, signal) {
+			const interval = opts.intervalMs ?? 1500;
+			const sleep = (ms) => new Promise((resolve) => {
+				const t = setTimeout(() => {
+					signal?.removeEventListener("abort", onAbort);
+					resolve("slept");
+				}, ms);
+				const onAbort = () => {
+					clearTimeout(t);
+					resolve("abort");
+				};
+				if (signal?.aborted === true) {
+					onAbort();
+					return;
+				}
+				signal?.addEventListener("abort", onAbort, { once: true });
+			});
+			while (signal?.aborted !== true) {
+				let row;
+				try {
+					row = await fetchRunStatus(runId, signal);
+				} catch (e) {
+					if (e instanceof WireRefusedError) try {
+						const listed = await fetchListRow(runId, signal);
+						const url = listed !== null ? listRowMediaUrl(listed) : null;
+						if (url !== null) opts.onUrl(url);
+						return;
+					} catch (listErr) {
+						if (listErr instanceof WireRefusedError) return;
+					}
+					row = {
+						runId,
+						status: "unknown",
+						draftId: null,
+						stages: []
+					};
+				}
+				const stage = row.stages.find((s) => s.id === stageId) ?? (row.stages.length === 1 ? row.stages[0] : void 0);
+				if (stage !== void 0 && typeof stage.url === "string" && stage.url !== "") {
+					opts.onUrl(stage.url);
+					return;
+				}
+				if (isTerminalRun(row.status)) return;
+				if (await sleep(interval) === "abort") return;
+			}
 		}
 		/**
 		* @license
@@ -39697,11 +39742,11 @@ void main() {
 				gltf
 			]);
 			return (0, react.createElement)("div", {
-				className: card_module_css_default.viewport,
+				className: card_module_css_default$1.viewport,
 				"data-viewport": label ?? "glb"
-			}, url === null ? (0, react.createElement)("p", { className: card_module_css_default.viewportEmpty }, "Run the card to see the mesh") : error !== null ? (0, react.createElement)("p", { className: card_module_css_default.runError }, "mesh failed to load: " + error) : !loaded ? (0, react.createElement)("p", { className: card_module_css_default.viewportEmpty }, "loading mesh…") : (0, react.createElement)("canvas", {
+			}, url === null ? (0, react.createElement)("p", { className: card_module_css_default$1.viewportEmpty }, "Run the card to see the mesh") : error !== null ? (0, react.createElement)("p", { className: card_module_css_default$1.runError }, "mesh failed to load: " + error) : !loaded ? (0, react.createElement)("p", { className: card_module_css_default$1.viewportEmpty }, "loading mesh…") : (0, react.createElement)("canvas", {
 				ref: canvasRef,
-				className: card_module_css_default.viewportCanvas
+				className: card_module_css_default$1.viewportCanvas
 			}));
 		}
 		//#endregion
@@ -39752,34 +39797,23 @@ void main() {
 			const [values, setValues] = (0, react.useState)(params);
 			const [open, setOpen] = (0, react.useState)({});
 			const [running, setRunning] = (0, react.useState)(false);
-			const [meshUrl, setMeshUrl] = (0, react.useState)(null);
+			const rowResult = typeof row["result"] === "object" && row["result"] !== null ? row["result"] : null;
+			const ownRunId = typeof rowResult?.run_id === "string" && rowResult.run_id !== "" ? rowResult.run_id : null;
+			const ownUrl = typeof rowResult?.url === "string" && rowResult.url !== "" ? rowResult.url : null;
+			const [meshUrl, setMeshUrl] = (0, react.useState)(ownUrl);
 			(0, react.useEffect)(() => {
-				let alive = true;
-				setMeshUrl(null);
-				if (props.runId === null) return;
+				setMeshUrl(ownUrl);
+				if (ownUrl !== null || ownRunId === null) return;
 				const ctrl = new AbortController();
-				const tick = async () => {
-					try {
-						const url = await fetchRunStageUrl(props.runId, props.stageId, ctrl.signal);
-						if (!alive) return;
-						if (url !== null) {
-							setMeshUrl(url);
-							return;
-						}
-						const terminal = await fetchRunTerminal(props.runId, ctrl.signal);
-						if (!alive || terminal) return;
-					} catch {}
-					if (!alive) return;
-					setTimeout(() => {
-						if (alive) tick();
-					}, 1500);
-				};
-				tick();
+				pollRunStageUrl(ownRunId, props.stageId, { onUrl: setMeshUrl }, ctrl.signal);
 				return () => {
-					alive = false;
 					ctrl.abort();
 				};
-			}, [props.runId, props.stageId]);
+			}, [
+				ownRunId,
+				ownUrl,
+				props.stageId
+			]);
 			(0, react.useEffect)(() => {
 				let alive = true;
 				fetchFormSpec("img-to-mesh").then((doc) => {
@@ -39803,15 +39837,11 @@ void main() {
 					[name]: v
 				}));
 			};
-			const wired = props.upstream.find((u) => u.id === props.wiredFrom) ?? null;
-			const { square: squareFor, wireMenu } = useSquareProvider(onEdit, {
-				upstreamTitle: wired !== null ? wired.title : null,
-				candidates: props.upstream.map((u) => ({
-					id: u.id,
-					label: u.title
-				})),
-				onWire: props.onWire
-			});
+			const { square: squareFor, wireMenu } = useSquareProvider(onEdit, { candidates: props.upstream.map((u) => ({
+				id: u.id,
+				label: u.title,
+				url: u.url
+			})) });
 			const run = () => {
 				if (spec === null) return;
 				setRunning(true);
@@ -39819,12 +39849,12 @@ void main() {
 				onRun();
 				setRunning(false);
 			};
-			return (0, react.createElement)("div", { className: card_module_css_default.zoomDetail }, wireMenu, (0, react.createElement)("div", { className: card_module_css_default.studioHead }, (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Tag, { tone: "info" }, "studio"), runStatus !== "" ? (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Tag, { tone: runStatus === "done" ? "success" : runStatus === "error" ? "danger" : "neutral" }, runStatus) : null), error !== null ? (0, react.createElement)("p", { className: card_module_css_default.runError }, error) : null, spec === null ? (0, react.createElement)("p", { className: card_module_css_default.groupNote }, "loading the declared knob surface…") : (0, react.createElement)("div", { className: card_module_css_default.studioBody }, (0, react.createElement)("div", { className: card_module_css_default.studioSplit }, (0, react.createElement)(GlbViewport, {
+			return (0, react.createElement)("div", { className: card_module_css_default$1.zoomDetail }, wireMenu, (0, react.createElement)("div", { className: card_module_css_default$1.studioHead }, (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Tag, { tone: "info" }, "studio"), runStatus !== "" ? (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Tag, { tone: runStatus === "done" ? "success" : runStatus === "error" ? "danger" : "neutral" }, runStatus) : null), error !== null ? (0, react.createElement)("p", { className: card_module_css_default$1.runError }, error) : null, spec === null ? (0, react.createElement)("p", { className: card_module_css_default$1.groupNote }, "loading the declared knob surface…") : (0, react.createElement)("div", { className: card_module_css_default$1.studioBody }, (0, react.createElement)("div", { className: card_module_css_default$1.studioSplit }, (0, react.createElement)(GlbViewport, {
 				url: meshUrl,
 				label: "img-to-mesh"
-			}), (0, react.createElement)("div", { className: card_module_css_default.studioRail }, STUDIO_EXPOSED.map((g) => (0, react.createElement)("section", {
+			}), (0, react.createElement)("div", { className: card_module_css_default$1.studioRail }, STUDIO_EXPOSED.map((g) => (0, react.createElement)("section", {
 				key: g,
-				className: card_module_css_default.studioGroup
+				className: card_module_css_default$1.studioGroup
 			}, (0, react.createElement)(StudioFields, {
 				fields: fieldsOf(spec.fields, g),
 				values,
@@ -39853,7 +39883,7 @@ void main() {
 					onEdit,
 					square: squareFor
 				}));
-			}), (0, react.createElement)("div", { className: card_module_css_default.runRow }, error !== null ? (0, react.createElement)("span", { className: card_module_css_default.runError }, error) : null, (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+			}), (0, react.createElement)("div", { className: card_module_css_default$1.runRow }, error !== null ? (0, react.createElement)("span", { className: card_module_css_default$1.runError }, error) : null, (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Button, {
 				variant: "primary",
 				onClick: run
 			}, running ? "running…" : "Run"), (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Button, {
@@ -39864,8 +39894,8 @@ void main() {
 		/** The generic card's OWN atoms (SpecForm renders one group's fields —
 		*  the studio hands it the group's slice; zero atom copies). */
 		function StudioFields({ fields, values, onEdit, square }) {
-			if (fields.length === 0) return (0, react.createElement)("p", { className: card_module_css_default.groupNote }, "no declared fields");
-			return (0, react.createElement)(SpecForm, {
+			if (fields.length === 0) return (0, react.createElement)("p", { className: card_module_css_default$1.groupNote }, "no declared fields");
+			return (0, react.createElement)(CardForm, {
 				fields,
 				values,
 				onEdit,
@@ -39886,55 +39916,15 @@ void main() {
 		};
 		//#endregion
 		//#region src/client/draft.ts
-		/** Correlation id for one client-request frame (crypto.randomUUID is
-		*  the browser standard). */
-		function nextRpcId$1() {
-			const cryptoApi = globalThis.crypto;
-			if (cryptoApi?.randomUUID !== void 0) return cryptoApi.randomUUID();
-			return "rpc-" + Math.random().toString(36).slice(2) + "-" + Date.now().toString(36);
-		}
-		/** One wire call: POST /api/<method> with the client-request frame,
-		*  answer narrowed to the value row. A refused result throws the
-		*  RemoteError branch's message (the door's own name); a channel
-		*  surprise throws honestly. */
-		async function wireCall(method, args) {
-			const rpcId = nextRpcId$1();
-			const res = await fetch("/api/" + method, {
-				method: "POST",
-				headers: { "content-type": "application/json" },
-				body: JSON.stringify({
-					type: "client-request",
-					rpcId,
-					method,
-					payload: { args }
-				})
-			});
-			if (!res.ok) throw new Error(method + ": HTTP " + String(res.status));
-			const body = await res.json().catch(() => null);
-			if (typeof body !== "object" || body === null || Reflect.get(body, "type") !== "server-response" || Reflect.get(body, "rpcId") !== rpcId) throw new Error(method + ": malformed response frame");
-			const result = Reflect.get(body, "result");
-			if (typeof result !== "object" || result === null) throw new Error(method + ": malformed result");
-			if (Reflect.get(result, "ok") !== true) {
-				const error = Reflect.get(result, "error");
-				const message = typeof error === "object" && error !== null && typeof Reflect.get(error, "message") === "string" ? Reflect.get(error, "message") : method + ": refused";
-				throw new Error(message);
-			}
-			const value = Reflect.get(result, "value");
-			if (typeof value !== "object" || value === null || Array.isArray(value)) throw new Error(method + ": not a JSON object");
-			return value;
-		}
-		/** The media URL seam — the twin of @melite/estate-media's mediaUrl
-		*  (kept LOCAL: this is a browser module, the package main is a host
-		*  plugin). Bare run-relative names ride the estate's media route;
-		*  names that already carry a URL pass verbatim. */
-		function mediaUrl(runId, name) {
-			if (name === "") return name;
-			if (/^(https?:\/\/|\/)/.test(name)) return name;
-			return "/melite-media/runs/" + encodeURIComponent(runId) + "/" + name.split("/").map((seg) => encodeURIComponent(seg)).join("/");
+		/** One wire call — the run-wire package's ONE frame definition (the
+		*  DRY law; this module's spelling died with it). The method rides
+		*  as the transport voice so diagnostics name their door. */
+		async function wireCall$1(method, args) {
+			return await wireCall$2(method, args, { voice: method });
 		}
 		/** The draft doc; throws the door's own named refusal on failure. */
 		async function fetchDraft(draftId) {
-			const doc = await wireCall("drafts/get", { draftId });
+			const doc = await wireCall$1("drafts/get", { draftId });
 			if (typeof doc["draft_id"] !== "string" || !Array.isArray(doc["stages"])) throw new Error("drafts/get: not a draft doc");
 			return doc;
 		}
@@ -39946,7 +39936,7 @@ void main() {
 		*  the door's named refusal; delivered:false lands as a named throw
 		*  (never a lying success). */
 		async function patchStageParams(draftId, stageId, params) {
-			const row = await wireCall("drafts/patch", {
+			const row = await wireCall$1("drafts/patch", {
 				draftId,
 				stageId,
 				patch: { params }
@@ -39956,15 +39946,34 @@ void main() {
 				throw new Error("drafts/patch: " + reason + " (draft " + draftId + ", stage " + stageId + ")");
 			}
 		}
+		/** Report a stage's RUN OUTCOME onto the bench row — the same
+		*  shared-state door (runStatus + result keys of the fixed patch
+		*  set). This is the chain's attribution half: the estate names
+		*  runs by DRAFT only (every bench stage runs under the shared
+		*  bench draft), so the tab — the one that knows WHICH stage ran —
+		*  writes the outcome the wire edge later reads. result.url rides
+		*  the media-route currency (renders in tiles AND stages verbatim
+		*  as the next run's chained input). */
+		async function patchStageOutcome(draftId, stageId, outcome) {
+			const row = await wireCall$1("drafts/patch", {
+				draftId,
+				stageId,
+				patch: outcome
+			});
+			if (row["delivered"] !== true) {
+				const reason = typeof row["reason"] === "string" ? row["reason"] : "undelivered";
+				throw new Error("drafts/patch: " + reason + " (draft " + draftId + ", stage " + stageId + ")");
+			}
+		}
 		/** Start the run; returns the run_id or throws the door's named refusal. */
 		async function startDraft(draftId) {
-			const row = await wireCall("runs/start", { doc: { draft_id: draftId } });
+			const row = await wireCall$1("runs/start", { doc: { draft_id: draftId } });
 			if (typeof row["run_id"] !== "string") throw new Error("runs/start: no run_id in the answer");
 			return row["run_id"];
 		}
 		/** The run status (poll target). Throws on transport failure only. */
 		async function runStatus(runId) {
-			const doc = await wireCall("runs/status", { runId });
+			const doc = await wireCall$1("runs/status", { runId });
 			if (typeof doc["status"] !== "string") throw new Error("runs/status: not a status doc");
 			return doc;
 		}
@@ -39995,7 +40004,7 @@ void main() {
 					service: typeof stage.service === "string" && stage.service !== "" ? stage.service : null,
 					prompt,
 					status: rowStatus(runStage?.status, stage.status),
-					thumbUrl: typeof runStage?.url === "string" && runStage.url !== "" ? mediaUrl(live?.run_id ?? "", runStage.url) : null
+					thumbUrl: typeof runStage?.url === "string" && runStage.url !== "" ? toRunMediaUrl(live?.run_id ?? "", runStage.url) : null
 				};
 			});
 		}
@@ -40096,15 +40105,15 @@ void main() {
 				onClose,
 				title,
 				closeLabel: "Close card",
-				className: card_module_css_default.drill
-			}, (0, react.createElement)("div", { className: card_module_css_default.split }, (0, react.createElement)("div", { className: card_module_css_default.params }, fields.map((f) => (0, react.createElement)("label", {
+				className: card_module_css_default$1.drill
+			}, (0, react.createElement)("div", { className: card_module_css_default$1.split }, (0, react.createElement)("div", { className: card_module_css_default$1.params }, fields.map((f) => (0, react.createElement)("label", {
 				key: f.key,
-				className: card_module_css_default.field
-			}, (0, react.createElement)("span", { className: card_module_css_default.fieldKey }, f.key), fieldNode(f)))), (0, react.createElement)("div", { className: card_module_css_default.outputs }, thumbUrl !== null ? (0, react.createElement)("img", {
-				className: card_module_css_default.outputImg,
+				className: card_module_css_default$1.field
+			}, (0, react.createElement)("span", { className: card_module_css_default$1.fieldKey }, f.key), fieldNode(f)))), (0, react.createElement)("div", { className: card_module_css_default$1.outputs }, thumbUrl !== null ? (0, react.createElement)("img", {
+				className: card_module_css_default$1.outputImg,
 				src: thumbUrl,
 				alt: title
-			}) : null, (0, react.createElement)("div", { className: card_module_css_default.runRow }, runError !== null ? (0, react.createElement)("span", { className: card_module_css_default.runError }, runError) : null, (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+			}) : null, (0, react.createElement)("div", { className: card_module_css_default$1.runRow }, runError !== null ? (0, react.createElement)("span", { className: card_module_css_default$1.runError }, runError) : null, (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Button, {
 				variant: "primary",
 				disabled: running,
 				onClick: () => {
@@ -40279,25 +40288,25 @@ void main() {
 			};
 			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("button", {
 				type: "button",
-				className: card_module_css_default.row,
+				className: card_module_css_default$1.row,
 				onClick: onOpen,
 				"data-stage": row.stageId,
 				"data-status": row.status,
 				children: [
 					row.thumbUrl !== null ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("img", {
-						className: card_module_css_default.thumb,
+						className: card_module_css_default$1.thumb,
 						src: row.thumbUrl,
 						alt: row.title,
 						loading: "lazy"
 					}) : /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Pill, { children: row.kind }),
 					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-						className: card_module_css_default.rowTitle,
+						className: card_module_css_default$1.rowTitle,
 						children: row.title
 					}),
 					row.service !== null && /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Pill, { children: row.service }),
 					dot[row.status] !== null && /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.StateDot, { state: dot[row.status] }),
 					row.prompt !== null && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-						className: card_module_css_default.prompt,
+						className: card_module_css_default$1.prompt,
 						children: row.prompt
 					})
 				]
@@ -40309,19 +40318,19 @@ void main() {
 			const { doc, live, error, refresh } = useDraft(parsed.draftId);
 			const [openStage, setOpenStage] = (0, react.useState)(null);
 			if (parsed.settled && !parsed.isError && parsed.draftId === null) return /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
-				className: card_module_css_default.card,
+				className: card_module_css_default$1.card,
 				"data-dsh-part": "melite-flow-card",
 				"data-legacy": "1",
 				children: /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-					className: card_module_css_default.head,
+					className: card_module_css_default$1.head,
 					children: [
 						/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Pill, { children: "melite" }),
 						/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-							className: card_module_css_default.model,
+							className: card_module_css_default$1.model,
 							children: parsed.model ?? "flow"
 						}),
 						/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-							className: card_module_css_default.state,
+							className: card_module_css_default$1.state,
 							"data-state": "legacy",
 							children: "cards · earlier draft"
 						})
@@ -40329,10 +40338,10 @@ void main() {
 				})
 			});
 			if (parsed.draftId === null) return /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
-				className: card_module_css_default.card,
+				className: card_module_css_default$1.card,
 				"data-dsh-part": "melite-flow-card",
 				children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
-					className: card_module_css_default.load,
+					className: card_module_css_default$1.load,
 					children: parsed.isError ? "draft failed" : "composing…"
 				})
 			});
@@ -40340,23 +40349,23 @@ void main() {
 			const openRow = rows.find((r) => r.stageId === openStage) ?? null;
 			const openParams = doc?.stages.find((s) => s.id === openStage)?.params ?? {};
 			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-				className: card_module_css_default.card,
+				className: card_module_css_default$1.card,
 				"data-dsh-part": "melite-flow-card",
 				"data-draft-id": parsed.draftId,
 				children: [
 					/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-						className: card_module_css_default.head,
+						className: card_module_css_default$1.head,
 						children: [
 							/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-								className: card_module_css_default.badge,
+								className: card_module_css_default$1.badge,
 								children: "melite"
 							}),
 							/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-								className: card_module_css_default.model,
+								className: card_module_css_default$1.model,
 								children: doc?.intent ?? parsed.model ?? "flow"
 							}),
 							error !== null && /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", {
-								className: card_module_css_default.state,
+								className: card_module_css_default$1.state,
 								"data-state": "error",
 								role: "button",
 								tabIndex: 0,
@@ -40367,7 +40376,7 @@ void main() {
 						]
 					}),
 					doc === null && error === null && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
-						className: card_module_css_default.load,
+						className: card_module_css_default$1.load,
 						children: "cards…"
 					}),
 					rows.map((row) => /* @__PURE__ */ (0, react_jsx_runtime.jsx)(CardRowLine, {
@@ -40398,198 +40407,410 @@ void main() {
 			});
 		}
 		//#endregion
+		//#region ../../../node_modules/.pnpm/@deepseek-ai+dsh-typert-protocol@0.1.5-rc.2_@deepseek-ai+cordis@4.0.2/node_modules/@deepseek-ai/dsh-typert-protocol/lib/index.js
+		/** The one Remote failure class shared by owners, the Gateway, and consumers. */
+		/**
+		* One Remote call failure: a real Error carrying its stable code and typed
+		* details. Owners throw it at the failure point; the Host Gateway encodes it
+		* onto the wire unchanged; the Client face rebuilds an instance for the
+		* `RemoteResult` error branch, so `throw result.error` keeps throw semantics.
+		* Discrimination is always by `code`, never by instanceof.
+		*/
+		var RemoteError = class extends Error {
+			code;
+			details;
+			/** Structural marker: cross-realm/bundle identification never uses instanceof. */
+			isDSHRemoteError = true;
+			/**
+			* @param code - stable failure code declared in {@link RemoteErrorDetailsMap}.
+			* @param message - human diagnostic carried across the wire.
+			* @param details - structured payload typed by the code.
+			* @param options - standard Error options (`cause` survives in-process only).
+			*/
+			constructor(code, message, details, options) {
+				super(message, options);
+				this.code = code;
+				this.details = details;
+				this.name = "RemoteError";
+			}
+		};
+		//#endregion
+		//#region src/client/cards-resource.ts
+		/** The bench key the tab serves (melite-tools' DEFAULT_BENCH — 'main'). */
+		const CARDS_BENCH_ADDRESS = "dsh-resource://cards/bench";
+		/** The run address (the wand's target, plan §5). */
+		function cardsRunAddress(runId) {
+			return "dsh-resource://cards/run/" + encodeURIComponent(runId);
+		}
+		/** Parse a cards address; null when the path is not one of ours. */
+		function parseCardsAddress(address) {
+			if (!address.startsWith("dsh-resource://cards/")) return null;
+			const rest = address.slice(21);
+			if (rest === "bench") return { bench: true };
+			if (rest.startsWith("run/")) {
+				const runId = decodeURIComponent(rest.slice(4));
+				if (runId !== "") return { run: runId };
+			}
+			return null;
+		}
+		/** One failure frame (the contract's error branch — a real RemoteError
+		*  on the unclassified cards code; the address prefixes the diagnostic). */
+		function failure(address, message) {
+			return {
+				ok: false,
+				error: new RemoteError("cards/unclassified", address + ": " + message, {})
+			};
+		}
+		/** Defensive row readers — the door's wire is untyped at this seam. */
+		function readBench(doc) {
+			const stages = Array.isArray(doc["stages"]) ? doc["stages"].filter((s) => typeof s === "object" && s !== null && typeof s["id"] === "string") : [];
+			const log = Array.isArray(doc["log"]) ? doc["log"].filter((s) => typeof s === "object" && s !== null && typeof s["rev"] === "number") : [];
+			return {
+				kind: "bench",
+				draftId: typeof doc["draft_id"] === "string" ? doc["draft_id"] : "bench-main",
+				rev: typeof doc["rev"] === "number" ? doc["rev"] : 0,
+				stages,
+				log
+			};
+		}
+		/** Re-read the shared bench (session 'main') — the consumer's reload
+		*  after its own edits (the provider's bench stream is a single
+		*  snapshot; same-address navigation does not re-run it). */
+		async function fetchBench(signal) {
+			return readBench(await wireCall("bench/get", { sessionKey: "main" }, signal));
+		}
+		/** THE OUTCOME OBSERVER (the attribution half): poll the run to
+		*  terminal on the run-wire cadence, then write runStatus + result
+		*  onto the bench row through the shared-state door. Both run paths
+		*  (in-tab stream and shell navigation) start this once per gesture;
+		*  the patch is bookkeeping — a refusal is swallowed (the next run
+		*  rewrites the row), an abort ends the watch. The result.url rides
+		*  the status door's already-rewritten media route. */
+		async function observeRunOutcome(draftId, stageId, runId, signal, onTouched) {
+			try {
+				const startStatus = await fetchRunStatus(runId, signal).then((r) => r.status).catch(() => "running");
+				await patchStageOutcome(draftId, stageId, {
+					runStatus: startStatus === "queued" || startStatus === "pending" ? "queued" : "running",
+					result: { run_id: runId }
+				});
+				onTouched?.();
+			} catch {}
+			const sleep = (ms) => new Promise((resolve) => {
+				const t = setTimeout(resolve, ms);
+				signal?.addEventListener("abort", () => {
+					clearTimeout(t);
+					resolve();
+				}, { once: true });
+			});
+			let lastLive = "running";
+			while (signal?.aborted !== true) {
+				let row;
+				try {
+					row = await fetchRunStatus(runId, signal);
+				} catch {
+					await sleep(1500);
+					continue;
+				}
+				if (!isTerminalRun(row.status)) {
+					const live = row.status === "queued" || row.status === "pending" ? "queued" : "running";
+					if (live !== lastLive) {
+						lastLive = live;
+						try {
+							await patchStageOutcome(draftId, stageId, { runStatus: live });
+							onTouched?.();
+						} catch {}
+					}
+					await sleep(1500);
+					continue;
+				}
+				const stage = row.stages.find((s) => s.id === stageId) ?? (row.stages.length === 1 ? row.stages[0] : void 0);
+				const url = stage !== void 0 && typeof stage.url === "string" && stage.url !== "" ? stage.url : "";
+				const result = { run_id: runId };
+				if (url !== "") result["url"] = url;
+				const terminal = row.status === "completed" ? "done" : row.status;
+				try {
+					await patchStageOutcome(draftId, stageId, {
+						runStatus: terminal,
+						result
+					});
+					onTouched?.();
+				} catch {}
+				if (terminal === "done" || terminal === "failed" || terminal === "stopped") return terminal;
+				return null;
+			}
+			return null;
+		}
+		function readRun(runId, doc) {
+			const row = readRunStatus(runId, doc);
+			return {
+				kind: "run",
+				runId: row.runId,
+				status: row.status,
+				draftId: row.draftId,
+				stages: row.stages,
+				lastFrame: void 0
+			};
+		}
+		/** The frame is the run-wire package's ONE definition; this wrapper
+		*  narrows the method set for the cards protocol's own verbs. */
+		async function wireCall(nsMethod, args, signal) {
+			return await wireCall$2(nsMethod, args, { signal });
+		}
+		/** Card-back-into-flow: restore a run's producing draft onto the
+		*  shared bench — drafts/get (the draft holds the full
+		*  card/engine/params stages) then per-stage bench/add-stage as the
+		*  USER (the CAS law: bench/get first, each add carries expect_rev,
+		*  chained from the previous answer's rev). A stage with no card is
+		*  SKIPPED and counted (add-stage requires one); an id collision
+		*  retries once without the id (the bench auto-ids s_<n>) and notes
+		*  it. Any other refusal throws with the door's own text — the bench
+		*  keeps whatever landed before it, and the report says so. */
+		async function restoreRunToBench(run, signal) {
+			if (run.draftId === null || run.draftId === "") throw new Error("this run names no draft — nothing to restore");
+			let draft;
+			try {
+				draft = await wireCall("drafts/get", { draftId: run.draftId }, signal);
+			} catch (e) {
+				throw new Error("the producing draft is unreadable: " + (e instanceof Error ? e.message : String(e)));
+			}
+			const raw = draft["stages"];
+			const stages = Array.isArray(raw) ? raw.filter((s) => typeof s === "object" && s !== null) : [];
+			if (stages.length === 0) throw new Error("the producing draft holds no stages — nothing to restore");
+			let bench;
+			try {
+				bench = await wireCall("bench/get", { sessionKey: "main" }, signal);
+			} catch (e) {
+				throw new Error("the bench is unreadable: " + (e instanceof Error ? e.message : String(e)));
+			}
+			let rev = typeof bench["rev"] === "number" ? bench["rev"] : 0;
+			const report = {
+				added: 0,
+				skipped: 0,
+				notes: []
+			};
+			for (const st of stages) {
+				const card = st["card"];
+				if (typeof card !== "string" || card === "") {
+					report.skipped += 1;
+					report.notes.push("skipped a stage with no card (add-stage requires one)");
+					continue;
+				}
+				const doc = {
+					card,
+					author: "user",
+					expect_rev: rev
+				};
+				if (typeof st["engine"] === "string" && st["engine"] !== "") doc["engine"] = st["engine"];
+				if (typeof st["params"] === "object" && st["params"] !== null && !Array.isArray(st["params"])) doc["params"] = st["params"];
+				const id = typeof st["id"] === "string" && st["id"] !== "" ? st["id"] : null;
+				if (id !== null) doc["id"] = id;
+				try {
+					const row = await wireCall("bench/add-stage", {
+						sessionKey: "main",
+						doc
+					}, signal);
+					if (typeof row["rev"] === "number") rev = row["rev"];
+					report.added += 1;
+				} catch (e) {
+					const message = e instanceof Error ? e.message : String(e);
+					if (id !== null && message.includes("already on the bench")) {
+						const retry = { ...doc };
+						delete retry["id"];
+						try {
+							const row = await wireCall("bench/add-stage", {
+								sessionKey: "main",
+								doc: retry
+							}, signal);
+							if (typeof row["rev"] === "number") rev = row["rev"];
+							report.added += 1;
+							report.notes.push(id + " was already on the bench — added under a fresh id");
+						} catch (e2) {
+							throw new Error("restore stopped after " + String(report.added) + " stage(s): " + (e2 instanceof Error ? e2.message : String(e2)));
+						}
+					} else throw new Error("restore stopped after " + String(report.added) + " stage(s): " + message);
+				}
+			}
+			return report;
+		}
+		/** Merge one events frame into a run value (stage rows upserted by id;
+		*  run-status frames replace the status; the frame is kept for the view). */
+		function mergeRunFrame(value, frame) {
+			const next = {
+				...value,
+				lastFrame: frame
+			};
+			const type = frame["type"];
+			if (type === "run" && typeof frame["status"] === "string") next.status = frame["status"];
+			if (type === "stage") {
+				const stageId = frame["stage"];
+				if (typeof stageId === "string") {
+					if (next.stages.find((s) => s.id === stageId) === void 0) next.stages = [...next.stages, {
+						id: stageId,
+						status: "running"
+					}];
+					else next.stages = next.stages.map((s) => s.id === stageId ? {
+						...s,
+						status: "running"
+					} : s);
+				}
+			}
+			return next;
+		}
+		/** The provider registration body: `ctx.resources.register({ protocol:
+		*  'cards', open })`. The estate remotes over the wire frame; abort
+		*  ends the stream per the contract. */
+		function openCardsResource(address, ctx) {
+			const target = parseCardsAddress(address);
+			const bench = target !== null && "bench" in target;
+			const runId = target !== null && "run" in target ? target.run : "";
+			return (async function* () {
+				if (target === null) {
+					yield failure(address, "not a cards address");
+					return;
+				}
+				if (bench) {
+					let value;
+					try {
+						value = readBench(await wireCall("bench/get", { sessionKey: "main" }));
+					} catch (e) {
+						yield failure(address, e instanceof Error ? e.message : String(e));
+						return;
+					}
+					yield {
+						ok: true,
+						value
+					};
+					return;
+				}
+				let value;
+				try {
+					value = readRun(runId, await wireCall("runs/status", { runId }));
+				} catch (e) {
+					yield failure(address, e instanceof Error ? e.message : String(e));
+					return;
+				}
+				yield {
+					ok: true,
+					value
+				};
+				if (ctx.signal.aborted) return;
+				if (isTerminal(value.status)) return;
+				yield* pollRunFrames(runId, value, ctx.signal);
+			})();
+		}
+		/** The terminal statuses — the runs seat's own vocabulary (runsRegistry:
+		*  stopFlag stamps 'stopped'; the settle path stamps 'completed' or
+		*  'failed'. A settled run ends the stream; the hydrated/polled value
+		*  stays as the last ok frame. */
+		function isTerminal(status) {
+			return status === "completed" || status === "failed" || status === "stopped";
+		}
+		/** The live tail (the honest degrade): poll `runs/status` and yield a
+		*  value ONLY when the row moved (no frame spam) until the run turns
+		*  terminal or the holder aborts. A poll error mid-run is not a
+		*  failure frame — the last ok value stays (the kit keeps it); the
+		*  next poll may recover. The cadence (1500ms) rides the run pump's
+		*  own observation granularity, not user perception of latency: stage
+		*  transitions inside the estate tick on the pump's settle path. */
+		async function* pollRunFrames(runId, hydrated, signal) {
+			let value = hydrated;
+			const sleep = (ms) => new Promise((resolve) => {
+				const t = setTimeout(() => {
+					signal.removeEventListener("abort", onAbort);
+					resolve("slept");
+				}, ms);
+				const onAbort = () => {
+					clearTimeout(t);
+					resolve("abort");
+				};
+				if (signal.aborted) {
+					onAbort();
+					return;
+				}
+				signal.addEventListener("abort", onAbort, { once: true });
+			});
+			while (!signal.aborted && !isTerminal(value.status)) {
+				if (await sleep(1500) === "abort" || signal.aborted) return;
+				let row;
+				try {
+					row = await wireCall("runs/status", { runId }, signal);
+				} catch {
+					continue;
+				}
+				const next = readRun(runId, row);
+				if (!(next.status !== value.status || JSON.stringify(next.stages) !== JSON.stringify(value.stages))) continue;
+				value = next;
+				yield {
+					ok: true,
+					value
+				};
+			}
+		}
+		//#endregion
 		//#region src/client/add-stage.ts
 		/**
-		* add-stage.ts — the bench add-stage wire door caller (the tab's
-		* add-card path). The remote's signature is (sessionKey, doc) — the
-		* args frame carries BOTH named; the doc holds card/author/engine/
-		* params/expect_rev (the CAS law: the caller reads bench/get first
-		* and chains the rev). */
+		* add-stage.ts — the bench's mutation wire door callers (the tab's
+		* add/remove/reorder/rewire/group/ungroup paths). Every verb is ONE
+		* wireCall over the run-wire package's frame (the DRY law — the frame
+		* lived here six times before the package existed); the remote's
+		* signature is (sessionKey, doc) — the args frame carries BOTH named,
+		* the doc carries the verb's own keys, and every doc rides expect_rev
+		* (the CAS law: the caller chains the bench rev it rendered, so a
+		* concurrent edit refuses instead of slicing wrong).
+		*/
+		/** The bench add-stage wire door caller (the tab's add-card path).
+		*  The doc holds card/author/engine/params/expect_rev. */
 		async function addStageWire(doc, signal) {
-			const rpcId = nextRpcId$2();
-			const res = await fetch("/api/bench/add-stage", {
-				method: "POST",
-				headers: { "content-type": "application/json" },
-				body: JSON.stringify({
-					type: "client-request",
-					rpcId,
-					method: "bench/add-stage",
-					payload: { args: {
-						sessionKey: "main",
-						doc
-					} }
-				}),
-				...signal === void 0 ? {} : { signal }
+			return await wireCall$2("bench/add-stage", {
+				sessionKey: "main",
+				doc
+			}, {
+				signal,
+				voice: "bench/add-stage"
 			});
-			if (!res.ok) throw new Error("bench/add-stage: HTTP " + String(res.status));
-			const body = await res.json();
-			if (typeof body !== "object" || body === null || Reflect.get(body, "type") !== "server-response" || Reflect.get(body, "rpcId") !== rpcId) throw new Error("bench/add-stage: malformed response frame");
-			const result = Reflect.get(body, "result");
-			if (typeof result !== "object" || result === null) throw new Error("bench/add-stage: malformed result");
-			if (Reflect.get(result, "ok") !== true) {
-				const error = Reflect.get(result, "error");
-				throw new Error(typeof error === "object" && error !== null && typeof Reflect.get(error, "message") === "string" ? Reflect.get(error, "message") : "bench/add-stage refused");
-			}
-			const value = Reflect.get(result, "value");
-			if (typeof value !== "object" || value === null) throw new Error("bench/add-stage: not an object");
-			return value;
 		}
 		/** The bench remove-stage wire door caller (the drill's Remove path).
-		*  Same frame as the add (sessionKey, doc); the doc holds stage/
-		*  expect_rev (the CAS law: the caller chains the bench rev it
-		*  rendered, so a concurrent edit refuses instead of slicing wrong). */
+		*  The doc holds stage/expect_rev. */
 		async function removeStageWire(doc, signal) {
-			const rpcId = nextRpcId$2();
-			const res = await fetch("/api/bench/remove-stage", {
-				method: "POST",
-				headers: { "content-type": "application/json" },
-				body: JSON.stringify({
-					type: "client-request",
-					rpcId,
-					method: "bench/remove-stage",
-					payload: { args: {
-						sessionKey: "main",
-						doc
-					} }
-				}),
-				...signal === void 0 ? {} : { signal }
+			return await wireCall$2("bench/remove-stage", {
+				sessionKey: "main",
+				doc
+			}, {
+				signal,
+				voice: "bench/remove-stage"
 			});
-			if (!res.ok) throw new Error("bench/remove-stage: HTTP " + String(res.status));
-			const body = await res.json();
-			if (typeof body !== "object" || body === null || Reflect.get(body, "type") !== "server-response" || Reflect.get(body, "rpcId") !== rpcId) throw new Error("bench/remove-stage: malformed response frame");
-			const result = Reflect.get(body, "result");
-			if (typeof result !== "object" || result === null) throw new Error("bench/remove-stage: malformed result");
-			if (Reflect.get(result, "ok") !== true) {
-				const error = Reflect.get(result, "error");
-				throw new Error(typeof error === "object" && error !== null && typeof Reflect.get(error, "message") === "string" ? Reflect.get(error, "message") : "bench/remove-stage refused");
-			}
-			const value = Reflect.get(result, "value");
-			if (typeof value !== "object" || value === null) throw new Error("bench/remove-stage: not an object");
-			return value;
 		}
 		/** The bench reorder wire door caller (the drag-reorder path). Doc:
 		*  stage/to/expect_rev — `to` is the post-splice target index. */
 		async function reorderStageWire(doc, signal) {
-			const rpcId = nextRpcId$2();
-			const res = await fetch("/api/bench/reorder", {
-				method: "POST",
-				headers: { "content-type": "application/json" },
-				body: JSON.stringify({
-					type: "client-request",
-					rpcId,
-					method: "bench/reorder",
-					payload: { args: {
-						sessionKey: "main",
-						doc
-					} }
-				}),
-				...signal === void 0 ? {} : { signal }
+			return await wireCall$2("bench/reorder", {
+				sessionKey: "main",
+				doc
+			}, {
+				signal,
+				voice: "bench/reorder"
 			});
-			if (!res.ok) throw new Error("bench/reorder: HTTP " + String(res.status));
-			const body = await res.json();
-			if (typeof body !== "object" || body === null || Reflect.get(body, "type") !== "server-response" || Reflect.get(body, "rpcId") !== rpcId) throw new Error("bench/reorder: malformed response frame");
-			const result = Reflect.get(body, "result");
-			if (typeof result !== "object" || result === null) throw new Error("bench/reorder: malformed result");
-			if (Reflect.get(result, "ok") !== true) {
-				const error = Reflect.get(result, "error");
-				throw new Error(typeof error === "object" && error !== null && typeof Reflect.get(error, "message") === "string" ? Reflect.get(error, "message") : "bench/reorder refused");
-			}
-			const value = Reflect.get(result, "value");
-			if (typeof value !== "object" || value === null) throw new Error("bench/reorder: not an object");
-			return value;
-		}
-		/** The bench rewire wire door caller (the wire gesture). Doc:
-		*  stage/input/from/expect_rev — from is {stage, output} | {initial}
-		*  | ABSENT to clear. */
-		async function rewireStageWire(doc, signal) {
-			const rpcId = nextRpcId$2();
-			const res = await fetch("/api/bench/rewire", {
-				method: "POST",
-				headers: { "content-type": "application/json" },
-				body: JSON.stringify({
-					type: "client-request",
-					rpcId,
-					method: "bench/rewire",
-					payload: { args: {
-						sessionKey: "main",
-						doc
-					} }
-				}),
-				...signal === void 0 ? {} : { signal }
-			});
-			if (!res.ok) throw new Error("bench/rewire: HTTP " + String(res.status));
-			const body = await res.json();
-			if (typeof body !== "object" || body === null || Reflect.get(body, "type") !== "server-response" || Reflect.get(body, "rpcId") !== rpcId) throw new Error("bench/rewire: malformed response frame");
-			const result = Reflect.get(body, "result");
-			if (typeof result !== "object" || result === null) throw new Error("bench/rewire: malformed result");
-			if (Reflect.get(result, "ok") !== true) {
-				const error = Reflect.get(result, "error");
-				throw new Error(typeof error === "object" && error !== null && typeof Reflect.get(error, "message") === "string" ? Reflect.get(error, "message") : "bench/rewire refused");
-			}
-			const value = Reflect.get(result, "value");
-			if (typeof value !== "object" || value === null) throw new Error("bench/rewire: not an object");
-			return value;
 		}
 		/** The bench group wire door caller (the Group Cards sub-view):
 		*  stages = 2+ ids (bench order applied server-side). */
 		async function groupStagesWire(doc, signal) {
-			const rpcId = nextRpcId$2();
-			const res = await fetch("/api/bench/group", {
-				method: "POST",
-				headers: { "content-type": "application/json" },
-				body: JSON.stringify({
-					type: "client-request",
-					rpcId,
-					method: "bench/group",
-					payload: { args: {
-						sessionKey: "main",
-						doc
-					} }
-				}),
-				...signal === void 0 ? {} : { signal }
+			return await wireCall$2("bench/group", {
+				sessionKey: "main",
+				doc
+			}, {
+				signal,
+				voice: "bench/group"
 			});
-			if (!res.ok) throw new Error("bench/group: HTTP " + String(res.status));
-			const body = await res.json();
-			if (typeof body !== "object" || body === null || Reflect.get(body, "type") !== "server-response" || Reflect.get(body, "rpcId") !== rpcId) throw new Error("bench/group: malformed response frame");
-			const result = Reflect.get(body, "result");
-			if (typeof result !== "object" || result === null) throw new Error("bench/group: malformed result");
-			if (Reflect.get(result, "ok") !== true) {
-				const error = Reflect.get(result, "error");
-				throw new Error(typeof error === "object" && error !== null && typeof Reflect.get(error, "message") === "string" ? Reflect.get(error, "message") : "bench/group refused");
-			}
-			const value = Reflect.get(result, "value");
-			if (typeof value !== "object" || value === null) throw new Error("bench/group: not an object");
-			return value;
 		}
 		/** The bench ungroup wire door caller: spill a compound's children. */
 		async function ungroupStageWire(doc, signal) {
-			const rpcId = nextRpcId$2();
-			const res = await fetch("/api/bench/ungroup", {
-				method: "POST",
-				headers: { "content-type": "application/json" },
-				body: JSON.stringify({
-					type: "client-request",
-					rpcId,
-					method: "bench/ungroup",
-					payload: { args: {
-						sessionKey: "main",
-						doc
-					} }
-				}),
-				...signal === void 0 ? {} : { signal }
+			return await wireCall$2("bench/ungroup", {
+				sessionKey: "main",
+				doc
+			}, {
+				signal,
+				voice: "bench/ungroup"
 			});
-			if (!res.ok) throw new Error("bench/ungroup: HTTP " + String(res.status));
-			const body = await res.json();
-			if (typeof body !== "object" || body === null || Reflect.get(body, "type") !== "server-response" || Reflect.get(body, "rpcId") !== rpcId) throw new Error("bench/ungroup: malformed response frame");
-			const result = Reflect.get(body, "result");
-			if (typeof result !== "object" || result === null) throw new Error("bench/ungroup: malformed result");
-			if (Reflect.get(result, "ok") !== true) {
-				const error = Reflect.get(result, "error");
-				throw new Error(typeof error === "object" && error !== null && typeof Reflect.get(error, "message") === "string" ? Reflect.get(error, "message") : "bench/ungroup refused");
-			}
-			const value = Reflect.get(result, "value");
-			if (typeof value !== "object" || value === null) throw new Error("bench/ungroup: not an object");
-			return value;
 		}
 		//#endregion
 		//#region ../../../node_modules/.pnpm/framer-motion@12.43.0_react-dom@19.2.8_react@19.2.8__react@19.2.8/node_modules/framer-motion/dist/es/context/LayoutGroupContext.mjs
@@ -50319,7 +50540,7 @@ get: (_target, key) => {
 		/** The morph skeleton — an all-skeleton layout with no real content
 		* (the shimmer sweep is the old tree's loading face). */
 		function ZoomSkeleton() {
-			return (0, react.createElement)("div", { className: card_module_css_default.zoomSkeleton }, (0, react.createElement)("div", { className: card_module_css_default.skLine + " " + card_module_css_default.skWide }), (0, react.createElement)("div", { className: card_module_css_default.skLine }), (0, react.createElement)("div", { className: card_module_css_default.skLine }), (0, react.createElement)("div", { className: card_module_css_default.skBlock }), (0, react.createElement)("div", { className: card_module_css_default.skLine }), (0, react.createElement)("div", { className: card_module_css_default.skRow }, (0, react.createElement)("div", { className: card_module_css_default.skLine + " " + card_module_css_default.skShort }), (0, react.createElement)("div", { className: card_module_css_default.skLine + " " + card_module_css_default.skShort })));
+			return (0, react.createElement)("div", { className: card_module_css_default$1.zoomSkeleton }, (0, react.createElement)("div", { className: card_module_css_default$1.skLine + " " + card_module_css_default$1.skWide }), (0, react.createElement)("div", { className: card_module_css_default$1.skLine }), (0, react.createElement)("div", { className: card_module_css_default$1.skLine }), (0, react.createElement)("div", { className: card_module_css_default$1.skBlock }), (0, react.createElement)("div", { className: card_module_css_default$1.skLine }), (0, react.createElement)("div", { className: card_module_css_default$1.skRow }, (0, react.createElement)("div", { className: card_module_css_default$1.skLine + " " + card_module_css_default$1.skShort }), (0, react.createElement)("div", { className: card_module_css_default$1.skLine + " " + card_module_css_default$1.skShort })));
 		}
 		/** One overlay mount (keyed per stage — framer fixes shared-element
 		* stack membership at mount, so every focus joins the CURRENT card's
@@ -50371,21 +50592,21 @@ get: (_target, key) => {
 				};
 			}, [onClose]);
 			return (0, react.createElement)("div", {
-				className: card_module_css_default.zoomOverlay,
+				className: card_module_css_default$1.zoomOverlay,
 				onClick: (e) => {
 					if (e.target === e.currentTarget) onClose();
 				}
-			}, (0, react.createElement)("div", { className: card_module_css_default.zoomScroll }, (0, react.createElement)("div", { className: card_module_css_default.zoomInner }, (0, react.createElement)(motion.div, {
+			}, (0, react.createElement)("div", { className: card_module_css_default$1.zoomScroll }, (0, react.createElement)("div", { className: card_module_css_default$1.zoomInner }, (0, react.createElement)(motion.div, {
 				layoutId: cardLayoutId(stage.id),
 				transition: ZOOM_SPRING,
 				onLayoutAnimationComplete: onSettled,
-				className: card_module_css_default.zoomCard,
+				className: card_module_css_default$1.zoomCard,
 				style: {
 					width: zoomWidthFor(surfaceSize),
 					maxWidth: "100%"
 				}
-			}, (0, react.createElement)("div", { className: card_module_css_default.zoomBar }, (0, react.createElement)("span", { className: card_module_css_default.zoomTitle }, "Stage " + String(stage.title ?? stage.card ?? stage.id)), (0, react.createElement)("button", {
-				className: card_module_css_default.closeX,
+			}, (0, react.createElement)("div", { className: card_module_css_default$1.zoomBar }, (0, react.createElement)("span", { className: card_module_css_default$1.zoomTitle }, "Stage " + String(stage.title ?? stage.card ?? stage.id)), (0, react.createElement)("button", {
+				className: card_module_css_default$1.closeX,
 				type: "button",
 				"aria-label": "Collapse card",
 				onClick: onClose
@@ -50396,7 +50617,6 @@ get: (_target, key) => {
 				onRun: rest.onRun,
 				onClose,
 				onRemoved: rest.onRemoved,
-				onRewired: rest.onRewired,
 				onPatchParams: rest.onPatchParams,
 				renderStageView: rest.renderStageView,
 				onSurface,
@@ -53012,69 +53232,64 @@ get: (_target, key) => {
 		var import_dist = require_dist$1();
 		var import_dist$1 = require_dist();
 		var import_dist$2 = require_dist$3();
-		/** The flow_inline projection — the SAME wire shape melite_flow's bench
-		*  verb sends (runner-owned keys strip; ids/engines/params stay). */
-		function projectStage(s) {
-			const row = {
-				id: s.id,
-				engine: s.engine ?? "comfyui"
-			};
-			if (s.params !== void 0 && Object.keys(s.params).length > 0) row["params"] = s.params;
-			if (Array.isArray(s.inputs) && s.inputs.length > 0) row["inputs"] = s.inputs;
-			if (Array.isArray(s.outputs) && s.outputs.length > 0) row["outputs"] = s.outputs;
-			return row;
+		/** The /v1/forms edge-meta cache (card id → declared input/output
+		*  kinds) — ONE fetch per browser session; the picker's kind
+		*  matching (THE EDGE LAW) reads it. A failed fetch leaves null and
+		*  the picker falls to the unfiltered list (never blocks a pick). */
+		let formsEdgeMetaPromise = null;
+		function loadFormsEdgeMeta() {
+			formsEdgeMetaPromise ??= fetchFormsTable().then((rows) => {
+				const out = {};
+				for (const [id, row] of Object.entries(rows)) out[id] = {
+					inputs: row.inputs,
+					outputs: row.outputs
+				};
+				return out;
+			}).catch((e) => {
+				formsEdgeMetaPromise = null;
+				throw e;
+			});
+			return formsEdgeMetaPromise;
 		}
-		/** Correlation id for one client-request frame (crypto.randomUUID is
-		*  the browser standard). */
-		function nextRpcId() {
-			const cryptoApi = globalThis.crypto;
-			if (cryptoApi?.randomUUID !== void 0) return cryptoApi.randomUUID();
-			return "rpc-" + Math.random().toString(36).slice(2) + "-" + Date.now().toString(36);
-		}
-		/** The Run gesture: start the bench as it stands, over the runs
-		*  remote's wire door (same-origin POST /api/runs/start carrying the
-		*  client-request frame — api-gateway.md; the gateway-era /v1/flows
-		*  start died with the app, nothing serves it). Errors surface inline
-		*  (the RemoteError branch's own refusal text — logged, never thrown
-		*  past React). */
-		async function runStages(draftId, rows) {
-			const stages = rows.map(projectStage);
-			if (stages.length === 0) return { refused: "nothing to run" };
-			const rpcId = nextRpcId();
+		/** Correlation id — the run-wire package's ONE definition (re-exported
+		*  by cards-resource for the tab's legacy importers). */
+		/** Run ONE card stage through the COMPOSING door (the run-wire
+		*  package's startCardRun — the {model:} arm). The flow_inline door
+		*  this gesture rode before cannot consume cards ("card= stages are
+		*  unported on this gateway") and its executor demanded a pre-composed
+		*  params.workflow nobody emitted — the Sep 11 bench runs' "node
+		*  carries no inline workflow". The {model:} door composes the card's
+		*  arms estate-side; `model` is the card's DEFAULT FAMILY from the
+		*  catalog (the runs door resolves neither card ids nor aliases —
+		*  defaultFamilyForCard carries the currency, session-cached).
+		*  THE PARAM IS THE WIRE (the two-month law): whatever the stage's
+		*  slot holds — an upload's estate path or a picked upstream output's
+		*  media-route url — rides the start doc VERBATIM; the engine stages
+		*  it under its runs-root arm. No client-side edge resolution exists.
+		*  Exported for the tab seam's door-contract spec. */
+		async function runCardStage(draftId, row) {
+			const params = typeof row.params === "object" && row.params !== null && !Array.isArray(row.params) ? row.params : {};
+			const card = typeof row.card === "string" && row.card !== "" ? row.card : "";
+			if (card === "") return { refused: "this stage names no card — nothing to compose" };
+			const model = await defaultFamilyForCard(card);
+			let doc = params;
 			try {
-				const res = await fetch("/api/runs/start", {
-					method: "POST",
-					headers: { "content-type": "application/json" },
-					body: JSON.stringify({
-						type: "client-request",
-						rpcId,
-						method: "runs/start",
-						payload: { args: { doc: {
-							flow_inline: {
-								id: draftId,
-								stages
-							},
-							draft_id: draftId,
-							test: false
-						} } }
-					})
-				});
-				if (!res.ok) return { refused: "run refused: HTTP " + String(res.status) };
-				const body = await res.json().catch(() => null);
-				if (typeof body !== "object" || body === null || Reflect.get(body, "type") !== "server-response" || Reflect.get(body, "rpcId") !== rpcId) return { refused: "run refused: malformed response frame" };
-				const result = Reflect.get(body, "result");
-				if (typeof result !== "object" || result === null) return { refused: "run refused: malformed result" };
-				if (Reflect.get(result, "ok") === true) {
-					const runId = Reflect.get(Reflect.get(result, "value"), "run_id");
-					if (typeof runId === "string" && runId !== "") return { runId };
-					return { refused: "run refused: no run_id in the answer" };
+				const selects = (await fetchFormSpec(card)).fields.filter((f) => f.type === "select" && Array.isArray(f.options));
+				if (selects.length > 0) {
+					doc = { ...params };
+					for (const f of selects) {
+						const v = doc[f.name];
+						if (typeof v === "number") {
+							if (f.options.map((o) => typeof o === "string" ? o : o.value).includes(String(v))) doc[f.name] = String(v);
+						}
+					}
 				}
-				const error = Reflect.get(result, "error");
-				const message = typeof error === "object" && error !== null && typeof Reflect.get(error, "message") === "string" ? Reflect.get(error, "message") : "runs/start refused";
-				return { refused: String(message) };
-			} catch (e) {
-				return { refused: e instanceof Error ? e.message : "run request failed" };
-			}
+			} catch {}
+			return await startCardRun({
+				model,
+				params: doc,
+				draftId
+			});
 		}
 		/** THE CATEGORIES: bench stages grouped by card (first-appearance
 		*  order — the agent's construction order survives; stages with no
@@ -53092,35 +53307,51 @@ get: (_target, key) => {
 			}
 			return groups;
 		}
-		/** Run ALL — the header gesture (multi-stage benches are refused by
-		*  the single-stage runs gateway until the estate queues flows; the
-		*  refusal surfaces inline, never a fake success). */
-		async function runTheBench(bench) {
-			return await runStages(bench.draftId, bench.stages);
-		}
-		/** runs/stop — the cancel door (the registry seat's flag + interrupt).
-		*  Same wire frame as every other verb. */
-		async function stopRunWire(runId) {
-			const rpcId = nextRpcId();
-			const res = await fetch("/api/runs/stop", {
-				method: "POST",
-				headers: { "content-type": "application/json" },
-				body: JSON.stringify({
-					type: "client-request",
-					rpcId,
-					method: "runs/stop",
-					payload: { args: { runId } }
-				})
-			});
-			if (!res.ok) throw new Error("runs/stop: HTTP " + String(res.status));
-			const body = await res.json().catch(() => null);
-			if (typeof body !== "object" || body === null || Reflect.get(body, "type") !== "server-response" || Reflect.get(body, "rpcId") !== rpcId) throw new Error("runs/stop: malformed response frame");
-			const result = Reflect.get(body, "result");
-			if (typeof result !== "object" || result === null || Reflect.get(result, "ok") !== true) {
-				const error = typeof result === "object" && result !== null ? Reflect.get(result, "error") : null;
-				throw new Error(typeof error === "object" && error !== null && typeof Reflect.get(error, "message") === "string" ? Reflect.get(error, "message") : "runs/stop refused");
+		/** THE SEQUENTIAL PASS — Run ALL, the old system's composer law
+		*  verbatim (flowExecuteSlice runAll, 2026-08-11): execute the
+		*  stages IN ORDER, one run per card (the SAME single-stage door the
+		*  drill's Run uses — a typed composer bench is never one graph
+		*  run; the flow_inline door serves the chain/graph surface, not
+		*  this one). Skip stages already done (the cache-hit skip). A
+		*  failed or refused stage STOPS the pass — fail loud, never a
+		*  doomed downstream run. The per-card observer patches each row as
+		*  it goes (running → terminal), so the tiles flip one by one and
+		*  the bench is never taken over. Exported for the door-contract
+		*  spec. */
+		async function runBenchSequential(bench, hooks = {}) {
+			const ran = [];
+			for (const stage of bench.stages) {
+				if (hooks.signal?.aborted === true) return {
+					ran,
+					stoppedAt: null,
+					refused: null
+				};
+				if (stage.runStatus === "done") continue;
+				const res = await runCardStage(bench.draftId, stage);
+				if ("refused" in res) return {
+					ran,
+					stoppedAt: stage.id,
+					refused: res.refused
+				};
+				hooks.onCardStarted?.(res.runId, {
+					draftId: bench.draftId,
+					stageId: stage.id
+				});
+				if (await observeRunOutcome(bench.draftId, stage.id, res.runId, hooks.signal, hooks.onTouched) !== "done") return {
+					ran: [...ran, stage.id],
+					stoppedAt: stage.id,
+					refused: null
+				};
+				ran.push(stage.id);
 			}
+			return {
+				ran,
+				stoppedAt: null,
+				refused: null
+			};
 		}
+		/** runs/stop — the cancel door (the registry seat's flag + interrupt);
+		*  the run-wire package's verb. */
 		/** Bench row run-status → the installed StateDot union (FlowCards'
 		*  CardRowLine law: done|warning|ongoing|error — a stage that never
 		*  ran shows NO dot, never a fake state). */
@@ -53130,6 +53361,7 @@ get: (_target, key) => {
 			running: "ongoing",
 			done: "done",
 			failed: "error",
+			stopped: "warning",
 			ready: null
 		};
 		/** THE CARD ROW — the chat plane's CardRowLine grammar VERBATIM
@@ -53191,24 +53423,22 @@ get: (_target, key) => {
 			if (status === "cancelled" || status === "timeout") return "warning";
 			return "neutral";
 		}
-		function SortableTile({ row, entered, onOpen, onWireDrop, onWireArm, wireSrc, grouping, selected, onToggleSelect, onAssetAttach }) {
+		function SortableTile({ row, entered, onOpen, grouping, selected, onToggleSelect, onAssetAttach }) {
 			const { attributes, listeners, setNodeRef, transform, transition, isDragging } = (0, import_dist$1.useSortable)({ id: row.id });
 			const dragProps = grouping ? {} : {
 				...attributes,
 				...listeners
 			};
 			const wiredFrom = typeof row.stage.inputs === "object" && row.stage.inputs !== null && "source" in row.stage.inputs;
-			const wiring = wireSrc !== null;
 			return (0, react.createElement)("li", {
 				ref: setNodeRef,
-				className: card_module_css_default.tile + (entered ? " " + card_module_css_default.tileEnter : "") + (isDragging ? " " + card_module_css_default.tileDragging : "") + (wiring ? " " + card_module_css_default.wiring : "") + (wireSrc === row.id ? " " + card_module_css_default.wiringSource : ""),
+				className: card_module_css_default$1.tile + (entered ? " " + card_module_css_default$1.tileEnter : "") + (isDragging ? " " + card_module_css_default$1.tileDragging : ""),
 				style: {
 					transform: import_dist$2.CSS.Translate.toString(transform),
 					...transition !== null ? { transition } : {}
 				},
 				"data-stage-id": row.id,
 				"data-stage-status": row.status,
-				"data-wiring": wireSrc === row.id ? "source" : wiring ? "target" : null,
 				"data-grouping": grouping ? "on" : null,
 				"data-selected": grouping && selected ? "on" : null,
 				onDragOver: (e) => {
@@ -53225,7 +53455,7 @@ get: (_target, key) => {
 						e.stopPropagation();
 						const t = asset.type ?? "";
 						if (!t.startsWith("image/") && !t.startsWith("audio/")) return;
-						onAssetAttach(row.id, asset.url);
+						onAssetAttach(row.id, asset.url, (asset.type ?? "").startsWith("audio/") ? "audio" : "image");
 						return;
 					}
 					const file = e.dataTransfer.files[0];
@@ -53233,15 +53463,15 @@ get: (_target, key) => {
 					if (file.type !== "image/png" && file.type !== "image/jpeg" && file.type !== "image/webp") return;
 					e.preventDefault();
 					e.stopPropagation();
-					onAssetAttach(row.id, file);
+					onAssetAttach(row.id, file, "image");
 				},
 				...dragProps
 			}, (0, react.createElement)(motion.div, {
 				layoutId: cardLayoutId(row.id),
-				className: card_module_css_default.tileShared,
+				className: card_module_css_default$1.tileShared,
 				transition: ZOOM_SPRING
 			}, (0, react.createElement)("button", {
-				className: card_module_css_default.tileInner,
+				className: card_module_css_default$1.tileInner,
 				type: "button",
 				"data-status": row.status,
 				onClick: () => {
@@ -53249,43 +53479,26 @@ get: (_target, key) => {
 						onToggleSelect(row.id);
 						return;
 					}
-					if (wireSrc === null) {
-						onOpen(row);
-						return;
-					}
-					if (wireSrc === row.id) {
-						onWireArm(row.id);
-						return;
-					}
-					onWireDrop(row.id, wireSrc);
+					onOpen(row);
 				}
 			}, grouping ? (0, react.createElement)("span", {
-				className: card_module_css_default.checkCircle + (selected ? " " + card_module_css_default.checkOn : ""),
+				className: card_module_css_default$1.checkCircle + (selected ? " " + card_module_css_default$1.checkOn : ""),
 				"aria-hidden": "true"
-			}, selected ? "✓" : "") : null, (0, react.createElement)("span", { className: card_module_css_default.tilePreview }, row.thumbUrl !== null ? (0, react.createElement)("img", {
-				className: card_module_css_default.tileImg,
+			}, selected ? "✓" : "") : null, (0, react.createElement)("span", { className: card_module_css_default$1.tilePreview }, row.thumbUrl !== null ? (0, react.createElement)("img", {
+				className: card_module_css_default$1.tileImg,
 				src: row.thumbUrl,
 				alt: row.title,
 				loading: "lazy"
 			}) : (0, react.createElement)("span", {
-				className: card_module_css_default.kindFace,
+				className: card_module_css_default$1.kindFace,
 				"data-kind": row.kind
-			}, (0, react.createElement)("span", { className: card_module_css_default.kindInitial }, row.kind.slice(0, 1).toUpperCase()), (0, react.createElement)("span", { className: card_module_css_default.kindName }, row.kind)), row.dot !== null ? (0, react.createElement)("span", { className: card_module_css_default.tileDot }, (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.StateDot, { state: row.dot })) : null), (0, react.createElement)("span", { className: card_module_css_default.tileCaption }, (0, react.createElement)("span", { className: card_module_css_default.tileTitle }, row.title, wiredFrom ? (0, react.createElement)("span", {
-				className: card_module_css_default.wiredMark,
+			}, (0, react.createElement)("span", { className: card_module_css_default$1.kindInitial }, row.kind.slice(0, 1).toUpperCase()), (0, react.createElement)("span", { className: card_module_css_default$1.kindName }, row.kind)), row.dot !== null ? (0, react.createElement)("span", { className: card_module_css_default$1.tileDot }, (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.StateDot, { state: row.dot })) : null), (0, react.createElement)("span", { className: card_module_css_default$1.tileCaption }, (0, react.createElement)("span", { className: card_module_css_default$1.tileTitle }, row.title, wiredFrom ? (0, react.createElement)("span", {
+				className: card_module_css_default$1.wiredMark,
 				title: "source wired"
 			}, " ⛓") : null, row.sourceAttached ? (0, react.createElement)("span", {
-				className: card_module_css_default.wiredMark,
+				className: card_module_css_default$1.wiredMark,
 				title: "source attached"
-			}, " 📎") : null), (0, react.createElement)("span", { className: card_module_css_default.tileMeta }, row.service !== null ? row.service : null, row.upstream !== null ? (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Tag, { tone: "quiet" }, "⟵ " + row.upstream) : null, row.prompt !== null ? (0, react.createElement)("span", { className: card_module_css_default.tilePrompt }, row.prompt) : null), row.status !== "" && row.status !== "ready" ? (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Tag, { tone: statusTone(row.status) }, row.status) : null), (0, react.createElement)("button", {
-				className: card_module_css_default.wireBtn,
-				type: "button",
-				"aria-label": "Wire from this stage",
-				title: "Wire from this stage",
-				onClick: (e) => {
-					e.stopPropagation();
-					onWireArm(row.id);
-				}
-			}, "⛓"))));
+			}, " 📎") : null), (0, react.createElement)("span", { className: card_module_css_default$1.tileMeta }, row.service !== null ? row.service : null, row.upstream !== null ? (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Tag, { tone: "quiet" }, "⟵ " + row.upstream) : null, row.prompt !== null ? (0, react.createElement)("span", { className: card_module_css_default$1.tilePrompt }, row.prompt) : null), row.status !== "" && row.status !== "ready" ? (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Tag, { tone: statusTone(row.status) }, row.status) : null))));
 		}
 		function benchRow(stage, bench) {
 			const isGroup = stage.card === "group";
@@ -53313,9 +53526,244 @@ get: (_target, key) => {
 					const upstreamRow = bench.stages.find((s) => s.id === from);
 					return upstreamRow !== void 0 ? String(upstreamRow.card ?? upstreamRow.id) : null;
 				})(),
-				sourceAttached: typeof params["source"] === "string" && params["source"] !== "",
+				sourceAttached: Object.values(params).some((v) => typeof v === "string" && (v.startsWith("data/input/") || v.startsWith("/melite-media/") || v.startsWith("/v1/assets/"))),
 				stage
 			};
+		}
+		/** One mod tile (the old LoraTile law: the whole tile drags —
+		*  PointerSensor's activation constraint separates click from drag;
+		*  click opens the leaf editor). The strength shown is EFFECTIVE:
+		*  the wire entry's own, else the option's default_strength, else
+		*  1.0 — a landed recipe row carries {id} only and the tile must
+		*  never render undefined. */
+		function ModTile(props) {
+			const { attributes, listeners, setNodeRef, transform, transition, isDragging } = (0, import_dist$1.useSortable)({ id: props.tileId });
+			return (0, react.createElement)("li", {
+				ref: setNodeRef,
+				className: card_module_css_default$1.modTile + (isDragging ? " " + card_module_css_default$1.tileDragging : ""),
+				style: {
+					transform: import_dist$2.CSS.Translate.toString(transform),
+					...transition !== null ? { transition } : {}
+				},
+				"data-mod-tile": props.tileId,
+				title: "Drag to reorder · click to edit",
+				...attributes,
+				...listeners,
+				onClick: props.onOpen
+			}, (0, react.createElement)("span", { className: card_module_css_default$1.modTileLabel }, props.label), props.strength !== void 0 ? (0, react.createElement)("span", { className: card_module_css_default$1.modTileStrength }, props.strength.toFixed(2)) : null);
+		}
+		/** THE MOD SYSTEM (the old SubcardGrid, ported 1:1 — the two-month
+		*  law the flattening violated): mods NEVER ride the card's param
+		*  form. The estate serves the OPEN kind vocabulary
+		*  (features.modifiers — lora is the first instance, never the
+		*  whole set); this section owns the mod bags: one flowing tile row
+		*  (apply order = array order, drag rewrites it), ONE "+ Mod"
+		*  affordance opening the kind-picker modal, and the leaf modal for
+		*  create/edit. THE WIRE IS THE STORAGE (params[param_key] — the
+		*  same bag runs and the agent read/write); commits persist
+		*  immediately (the old onSaveParams law — never deferred to Run).
+		*  lanpaint/qvoice ride the form inline by design and have no kind
+		*  row here; controlnet waits unboarded — its absence is the law
+		*  working, not a gap. */
+		/** THE MOD SYSTEM (the old SubcardGrid, ported 1:1 — the two-month
+		*  law the flattening violated): mods NEVER ride the card's param
+		*  form. The estate serves the OPEN kind vocabulary
+		*  (features.modifiers — lora is the first instance, never the
+		*  whole set); this section owns the mod bags: one flowing tile row
+		*  (apply order = array order, drag rewrites it), ONE "+ Mod"
+		*  affordance opening the DSH Menu kind picker, and the DSH Modal
+		*  leaf editor for create/edit. THE WIRE IS THE STORAGE
+		*  (params[param_key] — the same bag runs and the agent read/
+		*  write); commits persist immediately (the old onSaveParams law —
+		*  never deferred to Run). lanpaint/qvoice ride the form inline by
+		*  design and have no kind row here; controlnet waits unboarded —
+		*  its absence is the law working, not a gap. */
+		function ModifiersSection(props) {
+			const { kinds, values, onEdit, onPatch } = props;
+			const sensors = (0, import_dist.useSensors)((0, import_dist.useSensor)(import_dist.PointerSensor, { activationConstraint: { distance: 4 } }));
+			const [pickAt, setPickAt] = (0, react.useState)(null);
+			const [leaf, setLeaf] = (0, react.useState)(null);
+			const [leafError, setLeafError] = (0, react.useState)(null);
+			const [draftOption, setDraftOption] = (0, react.useState)("");
+			const [draftStrength, setDraftStrength] = (0, react.useState)("");
+			const entriesOf = (k) => {
+				const v = values[k.param_key];
+				return Array.isArray(v) ? v.filter((e) => typeof e === "object" && e !== null) : [];
+			};
+			const optionOf = (k, value) => (k.options ?? []).find((o) => o.value === value) ?? null;
+			const commit = (k, next) => {
+				onEdit(k.param_key, next);
+				onPatch({ [k.param_key]: next });
+			};
+			const addable = kinds.filter((k) => k.cardinality !== "scalar");
+			if (kinds.length === 0) return null;
+			const openCreate = (k) => {
+				const entries = entriesOf(k);
+				if (k.max_stack !== void 0 && entries.length >= k.max_stack) {
+					setLeafError(k.label + " stack limit reached (" + String(k.max_stack) + ") — remove one to add another.");
+					return;
+				}
+				setDraftOption("");
+				setDraftStrength("");
+				setLeafError(null);
+				setLeaf({
+					mode: "create",
+					kind: k,
+					index: -1
+				});
+			};
+			const saveLeaf = () => {
+				if (leaf === null) return;
+				const k = leaf.kind;
+				const entries = entriesOf(k);
+				if (leaf.mode === "create") {
+					if (draftOption === "") {
+						setLeafError("Pick one from the served rows.");
+						return;
+					}
+					const option = optionOf(k, draftOption);
+					const seed = option !== null && option.defaults?.strength !== void 0 ? option.defaults.strength : 1;
+					const strength = draftStrength.trim() === "" ? seed : Number(draftStrength);
+					if (!Number.isFinite(strength)) {
+						setLeafError("Strength must be a number.");
+						return;
+					}
+					commit(k, [...entries, {
+						id: draftOption,
+						strength
+					}]);
+				} else {
+					const entry = entries[leaf.index];
+					if (entry === void 0) {
+						setLeaf(null);
+						return;
+					}
+					const strength = Number(draftStrength);
+					if (!Number.isFinite(strength)) {
+						setLeafError("Strength must be a number.");
+						return;
+					}
+					const next = [...entries];
+					next[leaf.index] = {
+						...entry,
+						strength
+					};
+					commit(k, next);
+				}
+				setLeaf(null);
+			};
+			const deleteLeaf = () => {
+				if (leaf === null || leaf.mode !== "edit") return;
+				commit(leaf.kind, entriesOf(leaf.kind).filter((_, i) => i !== leaf.index));
+				setLeaf(null);
+			};
+			const onDragEnd = (k, event) => {
+				const { active, over } = event;
+				if (over === null || active.id === over.id) return;
+				const entries = entriesOf(k);
+				const from = entries.findIndex((_, i) => String(k.param_key + "-" + i) === String(active.id));
+				const to = entries.findIndex((_, i) => String(k.param_key + "-" + i) === String(over.id));
+				if (from < 0 || to < 0) return;
+				const next = [...entries];
+				const [moved] = next.splice(from, 1);
+				next.splice(to, 0, moved);
+				commit(k, next);
+			};
+			return (0, react.createElement)("section", {
+				className: card_module_css_default$1.modSection,
+				"data-subcard-grid": "on"
+			}, (0, react.createElement)("div", { className: card_module_css_default$1.modHead }, (0, react.createElement)("span", { className: card_module_css_default$1.modTitle }, "Modifiers"), (0, react.createElement)("span", { className: card_module_css_default$1.modHint }, "drag to set apply order")), leafError !== null && leaf === null ? (0, react.createElement)("p", { className: card_module_css_default$1.runError }, leafError) : null, (0, react.createElement)("div", {
+				className: card_module_css_default$1.modRow,
+				"data-subcard-row": "flow"
+			}, kinds.map((k) => {
+				const entries = entriesOf(k);
+				if (entries.length === 0) return null;
+				return (0, react.createElement)(import_dist.DndContext, {
+					key: k.kind,
+					sensors,
+					collisionDetection: import_dist.closestCenter,
+					onDragEnd: (event) => {
+						onDragEnd(k, event);
+					}
+				}, (0, react.createElement)(import_dist$1.SortableContext, {
+					items: entries.map((_, i) => k.param_key + "-" + i),
+					strategy: import_dist$1.horizontalListSortingStrategy,
+					children: entries.map((entry, i) => {
+						const id = typeof entry["id"] === "string" ? entry["id"] : "";
+						const option = optionOf(k, id);
+						const strength = typeof entry["strength"] === "number" ? entry["strength"] : option !== null && option.defaults !== void 0 ? option.defaults.strength : void 0;
+						return (0, react.createElement)(ModTile, {
+							key: k.param_key + "-" + i,
+							tileId: k.param_key + "-" + i,
+							label: option !== null ? option.label : id !== "" ? id : k.label + " " + String(i + 1),
+							...strength !== void 0 ? { strength } : {},
+							onOpen: () => {
+								setDraftStrength(strength !== void 0 ? String(strength) : "");
+								setLeafError(null);
+								setLeaf({
+									mode: "edit",
+									kind: k,
+									index: i
+								});
+							}
+						});
+					})
+				}));
+			}), addable.length > 0 ? (0, react.createElement)("button", {
+				type: "button",
+				className: card_module_css_default$1.modAdd,
+				"data-subcard-add": "mod",
+				onClick: (e) => {
+					setPickAt({ rect: e.currentTarget.getBoundingClientRect() });
+				}
+			}, "+ Mod") : null), pickAt !== null ? (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Menu, {
+				open: true,
+				anchor: null,
+				getAnchorRect: () => pickAt.rect,
+				items: addable.map((k) => ({
+					id: k.kind,
+					label: k.label
+				})),
+				onSelect: (id) => {
+					setPickAt(null);
+					const k = addable.find((x) => x.kind === id);
+					if (k !== void 0) openCreate(k);
+				},
+				onClose: () => {
+					setPickAt(null);
+				},
+				portal: true
+			}) : null, leaf !== null ? (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Modal, {
+				open: true,
+				onClose: () => {
+					setLeaf(null);
+				},
+				title: (leaf.mode === "create" ? "Add " : "Edit ") + leaf.kind.label,
+				closeLabel: "Close"
+			}, (0, react.createElement)("div", { className: card_module_css_default$1.modLeaf }, leafError !== null ? (0, react.createElement)("p", { className: card_module_css_default$1.runError }, leafError) : null, leaf.mode === "create" ? (0, react.createElement)("label", { className: card_module_css_default$1.modField }, leaf.kind.label, (0, react.createElement)("select", {
+				className: card_module_css_default$1.modSelect,
+				value: draftOption,
+				onChange: (e) => {
+					setDraftOption(e.target.value);
+				}
+			}, (0, react.createElement)("option", { value: "" }, "— pick —"), (leaf.kind.options ?? []).map((o) => (0, react.createElement)("option", {
+				key: o.value,
+				value: o.value
+			}, o.label)))) : null, (0, react.createElement)("label", { className: card_module_css_default$1.modField }, "Strength", (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Input, {
+				type: "number",
+				step: "0.05",
+				value: draftStrength,
+				placeholder: "the row default",
+				onChange: (e) => {
+					setDraftStrength(e.target.value);
+				}
+			})), (0, react.createElement)("div", { className: card_module_css_default$1.runRow }, (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+				variant: "primary",
+				onClick: saveLeaf
+			}, leaf.mode === "create" ? "Add" : "Save"), leaf.mode === "edit" ? (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+				variant: "ghost",
+				onClick: deleteLeaf
+			}, "Remove") : null))) : null);
 		}
 		/** THE SHARED DRILLDOWN — spec-formatted (the old system's law): the
 		*  stage's card carries a DECLARED form (/v1/form-spec — typed atoms,
@@ -53323,7 +53771,7 @@ get: (_target, key) => {
 		*  dump. Params left, Run right; the patch carries only CHANGED keys
 		*  (coerced once, at patch time — the editPatch law); then the run
 		*  gesture (patch lands in the domain BEFORE the run reads it). */
-		function StageDrill({ stage, bench, running, onRun, onClose, onRemoved, onRewired, onPatchParams, renderStageView, onSurface, runId }) {
+		function StageDrill({ stage, bench, running, onRun, onClose, onRemoved, onPatchParams, renderStageView, onSurface, runId }) {
 			String(stage.title ?? stage.card ?? stage.id);
 			const held = typeof stage.params === "object" && stage.params !== null ? stage.params : {};
 			const [spec, setSpec] = (0, react.useState)(null);
@@ -53332,33 +53780,16 @@ get: (_target, key) => {
 			const [loaded, setLoaded] = (0, react.useState)(false);
 			const reportSurface = onSurface ?? (() => {});
 			const [removing, setRemoving] = (0, react.useState)(false);
-			const inputs = typeof stage.inputs === "object" && stage.inputs !== null ? stage.inputs : {};
-			const sourceEdge = typeof inputs["source"] === "object" && inputs["source"] !== null ? inputs["source"] : null;
-			const wiredStage = sourceEdge !== null && typeof sourceEdge["stage"] === "string" ? sourceEdge["stage"] : "";
 			const others = bench.stages.filter((s) => s.id !== stage.id);
-			const setWire = async (fromId) => {
-				setError(null);
-				try {
-					const fromStage = bench.stages.find((s) => s.id === fromId);
-					const outputs = fromStage !== void 0 && Array.isArray(fromStage.outputs) ? fromStage.outputs : [];
-					await rewireStageWire(fromId === "" ? {
-						stage: stage.id,
-						input: "source",
-						expect_rev: bench.rev
-					} : {
-						stage: stage.id,
-						input: "source",
-						from: {
-							stage: fromId,
-							output: outputs[0] ?? "default"
-						},
-						expect_rev: bench.rev
-					});
-					onRewired();
-				} catch (e) {
-					setError(e instanceof Error ? e.message : "wire failed");
-				}
-			};
+			const candidates = others.flatMap((s) => {
+				const res = typeof s.result === "object" && s.result !== null ? s.result : null;
+				const url = res !== null && typeof res["url"] === "string" && res["url"] !== "" ? res["url"] : "";
+				return url === "" ? [] : [{
+					id: s.id,
+					label: String(s.title ?? s.card ?? s.id),
+					url
+				}];
+			});
 			(0, react.useEffect)(() => {
 				let alive = true;
 				const family = String(stage.card ?? "");
@@ -53384,6 +53815,33 @@ get: (_target, key) => {
 					alive = false;
 				};
 			}, [stage.id]);
+			const [edgeMeta, setEdgeMeta] = (0, react.useState)(null);
+			(0, react.useEffect)(() => {
+				let alive = true;
+				loadFormsEdgeMeta().then((m) => {
+					if (alive) setEdgeMeta(m);
+				}).catch(() => {});
+				return () => {
+					alive = false;
+				};
+			}, []);
+			const candidatesFor = (0, react.useCallback)((f) => {
+				if (spec === null || edgeMeta === null) return candidates;
+				const edge = (spec.inputs ?? []).find((e) => e.name === f.name);
+				if (edge === void 0) return candidates;
+				const kind = edge.kind;
+				return candidates.filter((c) => {
+					const row = others.find((s) => s.id === c.id);
+					const cardId = String(row?.card ?? "");
+					const outs = edgeMeta[cardId]?.outputs;
+					return outs !== void 0 && Object.values(outs).includes(kind);
+				});
+			}, [
+				spec,
+				edgeMeta,
+				candidates,
+				others
+			]);
 			const onEdit = (0, react.useCallback)((name, v) => {
 				setValues((m) => ({
 					...m,
@@ -53391,14 +53849,8 @@ get: (_target, key) => {
 				}));
 			}, []);
 			const { square: squareFor, wireMenu } = useSquareProvider(onEdit, {
-				upstreamTitle: wiredStage !== "" ? others.find((s) => s.id === wiredStage)?.card ?? others.find((s) => s.id === wiredStage)?.title ?? null : null,
-				candidates: others.map((s) => ({
-					id: s.id,
-					label: String(s.title ?? s.card ?? s.id)
-				})),
-				onWire: (fromId) => {
-					setWire(fromId ?? "");
-				}
+				candidates,
+				candidatesFor
 			});
 			const run = async () => {
 				setError(null);
@@ -53440,11 +53892,11 @@ get: (_target, key) => {
 						setRemoving(false);
 					}
 				};
-				return (0, react.createElement)("div", { className: card_module_css_default.zoomDetail }, (0, react.createElement)("p", { className: card_module_css_default.groupNote }, "A compound of " + String(members.length) + " stages. Ungroup restores them at this position."), (0, react.createElement)("ol", { className: card_module_css_default.memberList }, members.map((m, i) => (0, react.createElement)("li", {
+				return (0, react.createElement)("div", { className: card_module_css_default$1.zoomDetail }, (0, react.createElement)("p", { className: card_module_css_default$1.groupNote }, "A compound of " + String(members.length) + " stages. Ungroup restores them at this position."), (0, react.createElement)("ol", { className: card_module_css_default$1.memberList }, members.map((m, i) => (0, react.createElement)("li", {
 					key: m.id,
-					className: card_module_css_default.memberRow
-				}, (0, react.createElement)("span", { className: card_module_css_default.memberIdx }, String(i + 1) + "."), (0, react.createElement)("span", { className: card_module_css_default.memberName }, String(m.title ?? m.card ?? m.id))))), (0, react.createElement)("div", { className: card_module_css_default.runRow }, error !== null ? (0, react.createElement)("span", { className: card_module_css_default.runError }, error) : null, (0, react.createElement)("button", {
-					className: card_module_css_default.back,
+					className: card_module_css_default$1.memberRow
+				}, (0, react.createElement)("span", { className: card_module_css_default$1.memberIdx }, String(i + 1) + "."), (0, react.createElement)("span", { className: card_module_css_default$1.memberName }, String(m.title ?? m.card ?? m.id))))), (0, react.createElement)("div", { className: card_module_css_default$1.runRow }, error !== null ? (0, react.createElement)("span", { className: card_module_css_default$1.runError }, error) : null, (0, react.createElement)("button", {
+					className: card_module_css_default$1.back,
 					type: "button",
 					disabled: removing,
 					onClick: () => {
@@ -53452,32 +53904,24 @@ get: (_target, key) => {
 					}
 				}, removing ? "ungrouping…" : "Ungroup")));
 			}
-			const genericDetail = () => (0, react.createElement)("div", { className: card_module_css_default.zoomDetail }, wireMenu, (0, react.createElement)("div", { className: card_module_css_default.wireRow }, (0, react.createElement)("span", { className: card_module_css_default.wireLabel }, "source input ⟵"), (0, react.createElement)("select", {
-				className: card_module_css_default.specSelect,
-				value: wiredStage,
-				"aria-label": "Wire source input from stage",
-				onChange: (e) => {
-					setWire(e.target.value);
-				}
-			}, (0, react.createElement)("option", {
-				key: "",
-				value: ""
-			}, wiredStage !== "" ? "— clear wire —" : "— none —"), others.map((s) => (0, react.createElement)("option", {
-				key: s.id,
-				value: s.id
-			}, String(s.title ?? s.card ?? s.id) + " → " + stage.id)))), (0, react.createElement)("div", { className: card_module_css_default.split }, (0, react.createElement)("div", { className: card_module_css_default.params }, !loaded ? (0, react.createElement)("div", { className: card_module_css_default.load }, "form…") : spec !== null ? (0, react.createElement)(SpecForm, {
+			const genericDetail = () => (0, react.createElement)("div", { className: card_module_css_default$1.zoomDetail }, wireMenu, (0, react.createElement)("div", { className: card_module_css_default$1.split }, (0, react.createElement)("div", { className: card_module_css_default$1.params }, !loaded ? (0, react.createElement)("div", { className: card_module_css_default$1.load }, "form…") : spec !== null ? (0, react.createElement)(react.Fragment, null, (0, react.createElement)(CardForm, {
 				fields: spec.fields,
 				values,
 				onEdit,
 				square: squareFor
-			}) : (0, react.createElement)("pre", { className: card_module_css_default.mono }, JSON.stringify(held, null, 2))), (0, react.createElement)("div", { className: card_module_css_default.outputs }, (0, react.createElement)("div", { className: card_module_css_default.runRow }, error !== null ? (0, react.createElement)("span", { className: card_module_css_default.runError }, error) : null, (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+			}), (0, react.createElement)(ModifiersSection, {
+				kinds: spec.features?.modifiers ?? [],
+				values,
+				onEdit,
+				onPatch: onPatchParams
+			})) : (0, react.createElement)("pre", { className: card_module_css_default$1.mono }, JSON.stringify(held, null, 2))), (0, react.createElement)("div", { className: card_module_css_default$1.outputs }, (0, react.createElement)("div", { className: card_module_css_default$1.runRow }, error !== null ? (0, react.createElement)("span", { className: card_module_css_default$1.runError }, error) : null, (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Button, {
 				variant: "primary",
 				disabled: running,
 				onClick: () => {
 					run();
 				}
-			}, running ? "running…" : "Run")), (0, react.createElement)("div", { className: card_module_css_default.runRow }, (0, react.createElement)("button", {
-				className: card_module_css_default.back,
+			}, running ? "running…" : "Run")), (0, react.createElement)("div", { className: card_module_css_default$1.runRow }, (0, react.createElement)("button", {
+				className: card_module_css_default$1.back,
 				type: "button",
 				disabled: running || removing,
 				onClick: () => {
@@ -53496,14 +53940,11 @@ get: (_target, key) => {
 					remove();
 				},
 				onSurface: reportSurface,
-				upstream: others.map((s) => ({
-					id: s.id,
-					title: String(s.title ?? s.card ?? s.id)
+				upstream: candidates.map((c) => ({
+					id: c.id,
+					title: c.label,
+					url: c.url
 				})),
-				wiredFrom: wiredStage !== "" ? wiredStage : null,
-				onWire: (fromId) => {
-					setWire(fromId ?? "");
-				},
 				runId: runId ?? null
 			}, genericDetail());
 		}
@@ -53588,32 +54029,32 @@ get: (_target, key) => {
 				onClose,
 				title: "Add a card",
 				closeLabel: "Close picker",
-				className: card_module_css_default.drill
-			}, picked === null ? (0, react.createElement)("div", { className: card_module_css_default.picker }, (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Input, {
+				className: card_module_css_default$1.drill
+			}, picked === null ? (0, react.createElement)("div", { className: card_module_css_default$1.picker }, (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Input, {
 				value: query,
 				placeholder: "search cards…",
 				onChange: (e) => setQuery(e.target.value),
 				"aria-label": "Search cards"
-			}), catalogError !== null ? (0, react.createElement)("p", { className: card_module_css_default.runError }, catalogError) : null, cards === null && catalogError === null ? (0, react.createElement)("div", { className: card_module_css_default.load }, "cards…") : null, genres.map(([g, list]) => (0, react.createElement)("section", {
+			}), catalogError !== null ? (0, react.createElement)("p", { className: card_module_css_default$1.runError }, catalogError) : null, cards === null && catalogError === null ? (0, react.createElement)("div", { className: card_module_css_default$1.load }, "cards…") : null, genres.map(([g, list]) => (0, react.createElement)("section", {
 				key: g,
-				className: card_module_css_default.pickerGenre
-			}, (0, react.createElement)("h4", { className: card_module_css_default.specGroupTitle }, g), list.map((c) => (0, react.createElement)("button", {
+				className: card_module_css_default$1.pickerGenre
+			}, (0, react.createElement)("h4", { className: card_module_css_default$1.specGroupTitle }, g), list.map((c) => (0, react.createElement)("button", {
 				key: c.id,
 				type: "button",
-				className: card_module_css_default.pickerCard,
+				className: card_module_css_default$1.pickerCard,
 				onClick: () => pick(c)
-			}, (0, react.createElement)("span", { className: card_module_css_default.pickerCardLabel }, c.label), c.description !== "" ? (0, react.createElement)("span", { className: card_module_css_default.pickerCardDesc }, c.description) : null, (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Pill, null, c.families[0] ?? c.id)))))) : (0, react.createElement)("div", { className: card_module_css_default.split }, (0, react.createElement)("div", { className: card_module_css_default.params }, (0, react.createElement)("button", {
+			}, (0, react.createElement)("span", { className: card_module_css_default$1.pickerCardLabel }, c.label), c.description !== "" ? (0, react.createElement)("span", { className: card_module_css_default$1.pickerCardDesc }, c.description) : null, (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Pill, null, c.families[0] ?? c.id)))))) : (0, react.createElement)("div", { className: card_module_css_default$1.split }, (0, react.createElement)("div", { className: card_module_css_default$1.params }, (0, react.createElement)("button", {
 				type: "button",
-				className: card_module_css_default.back,
+				className: card_module_css_default$1.back,
 				onClick: () => {
 					setPicked(null);
 					setSpec(null);
 				}
-			}, "← " + (cards?.length ?? 0) + " cards"), spec === null && formError === null ? (0, react.createElement)("div", { className: card_module_css_default.load }, "form…") : null, formError !== null ? (0, react.createElement)("p", { className: card_module_css_default.runError }, formError) : null, spec !== null ? (0, react.createElement)(SpecForm, {
+			}, "← " + (cards?.length ?? 0) + " cards"), spec === null && formError === null ? (0, react.createElement)("div", { className: card_module_css_default$1.load }, "form…") : null, formError !== null ? (0, react.createElement)("p", { className: card_module_css_default$1.runError }, formError) : null, spec !== null ? (0, react.createElement)(CardForm, {
 				fields: spec.fields,
 				values,
 				onEdit
-			}) : null), (0, react.createElement)("div", { className: card_module_css_default.outputs }, (0, react.createElement)("div", { className: card_module_css_default.runRow }, formError !== null ? (0, react.createElement)("span", { className: card_module_css_default.runError }, formError) : null, (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+			}) : null), (0, react.createElement)("div", { className: card_module_css_default$1.outputs }, (0, react.createElement)("div", { className: card_module_css_default$1.runRow }, formError !== null ? (0, react.createElement)("span", { className: card_module_css_default$1.runError }, formError) : null, (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Button, {
 				variant: "primary",
 				disabled: adding || spec === null,
 				onClick: () => {
@@ -53621,7 +54062,7 @@ get: (_target, key) => {
 				}
 			}, adding ? "adding…" : "Add card")))));
 		}
-		function BenchView({ bench, onRun, onRunStage, running, onPatchParams, renderStageView, runId }) {
+		function BenchView({ bench, onRun, onRunStage, running, onPatchParams, renderStageView, runId, refreshTick }) {
 			const [live, setLive] = (0, react.useState)(bench);
 			(0, react.useEffect)(() => {
 				setLive(bench);
@@ -53646,6 +54087,9 @@ get: (_target, key) => {
 			const onOpen = (0, react.useCallback)((stage) => setOpen(stage), []);
 			const onClose = (0, react.useCallback)(() => setOpen(null), []);
 			const onAddCard = (0, react.useCallback)(() => setAdding(true), []);
+			(0, react.useEffect)(() => {
+				if (refreshTick !== void 0 && refreshTick > 0) reload({ keepOpen: true });
+			}, [refreshTick]);
 			const reload = (0, react.useCallback)((opts) => {
 				setReloadError(null);
 				fetchBench().then((next) => {
@@ -53689,27 +54133,6 @@ get: (_target, key) => {
 				}).catch((err) => {
 					setReloadError(err instanceof Error ? err.message : "reorder failed");
 					reload();
-				});
-			}, [live, reload]);
-			const [wireSrc, setWireSrc] = (0, react.useState)(null);
-			const onWireArm = (0, react.useCallback)((id) => {
-				setWireSrc((cur) => cur === id ? null : id);
-			}, []);
-			const onWireDrop = (0, react.useCallback)((target, source) => {
-				setWireSrc(null);
-				const src = live.stages.find((s) => s.id === source);
-				rewireStageWire({
-					stage: target,
-					input: "source",
-					from: {
-						stage: source,
-						output: (src !== void 0 && Array.isArray(src.outputs) ? src.outputs : [])[0] ?? "default"
-					},
-					expect_rev: live.rev
-				}).then(() => {
-					reload();
-				}).catch((err) => {
-					setReloadError(err instanceof Error ? err.message : "wire failed");
 				});
 			}, [live, reload]);
 			const [capOver, setCapOver] = (0, react.useState)(false);
@@ -53830,8 +54253,14 @@ get: (_target, key) => {
 				exitGrouping,
 				reload
 			]);
-			const onAssetAttach = (0, react.useCallback)((target, source) => {
-				(typeof source === "string" ? Promise.resolve(source) : uploadInputFile(source).then(({ name }) => name)).then((src) => patchStageParams(live.draftId, target, { source: src })).then(() => {
+			const onAssetAttach = (0, react.useCallback)((target, source, kind) => {
+				const row = live.stages.find((s) => s.id === target);
+				if (row === void 0) return;
+				fetchFormSpec(String(row.card)).then((spec) => {
+					const field = spec.fields.find((f) => f.type === kind);
+					if (field === void 0) throw new Error("the " + String(row.card) + " card has no " + kind + " slot");
+					return field.name;
+				}).then((field) => typeof source === "string" ? Promise.resolve([field, source]) : uploadInputFile(source).then(({ name }) => [field, name])).then(([field, src]) => patchStageParams(live.draftId, target, { [field]: src })).then(() => {
 					reload({ keepOpen: true });
 				}).catch((err) => {
 					setReloadError(err instanceof Error ? err.message : "attach refused");
@@ -53839,20 +54268,20 @@ get: (_target, key) => {
 			}, [live, reload]);
 			const benchRev = live.rev;
 			return (0, react.createElement)("section", {
-				className: card_module_css_default.cardsBench,
+				className: card_module_css_default$1.cardsBench,
 				"data-cards-bench": benchRev
-			}, (0, react.createElement)("header", { className: card_module_css_default.benchHead }, (0, react.createElement)("span", { className: card_module_css_default.revTag }, "rev " + benchRev), grouping ? (0, react.createElement)("span", { className: card_module_css_default.groupBar }, (0, react.createElement)("button", {
-				className: card_module_css_default.runBtn,
+			}, (0, react.createElement)("header", { className: card_module_css_default$1.benchHead }, (0, react.createElement)("span", { className: card_module_css_default$1.revTag }, "rev " + benchRev), grouping ? (0, react.createElement)("span", { className: card_module_css_default$1.groupBar }, (0, react.createElement)("button", {
+				className: card_module_css_default$1.runBtn,
 				type: "button",
 				disabled: selectedIds.size < 2,
 				title: selectedIds.size < 2 ? "select 2+ tiles to group" : "collapse the selected stages into one compound",
 				onClick: onGroup
 			}, "Group " + String(selectedIds.size) + " cards"), (0, react.createElement)("button", {
-				className: card_module_css_default.back,
+				className: card_module_css_default$1.back,
 				type: "button",
 				onClick: exitGrouping
-			}, "Cancel")) : (0, react.createElement)("span", { className: card_module_css_default.groupBar }, (0, react.createElement)("button", {
-				className: card_module_css_default.back,
+			}, "Cancel")) : (0, react.createElement)("span", { className: card_module_css_default$1.groupBar }, (0, react.createElement)("button", {
+				className: card_module_css_default$1.back,
 				type: "button",
 				disabled: live.stages.length < 2,
 				title: live.stages.length < 2 ? "grouping needs 2+ stages" : "enter the selection sub-view",
@@ -53860,11 +54289,11 @@ get: (_target, key) => {
 					setGrouping(true);
 				}
 			}, "Group Cards"), (0, react.createElement)("button", {
-				className: card_module_css_default.runBtn,
+				className: card_module_css_default$1.runBtn,
 				type: "button",
 				disabled: running || live.stages.length === 0,
 				onClick: onRun
-			}, "Run"))), reloadError !== null ? (0, react.createElement)("p", { className: card_module_css_default.runError }, reloadError) : null, live.stages.length === 0 ? (0, react.createElement)("p", { className: card_module_css_default.empty }, "The bench is empty — construct stages (the agent adds them; they land here).") : (0, react.createElement)(import_dist.DndContext, {
+			}, "Run"))), reloadError !== null ? (0, react.createElement)("p", { className: card_module_css_default$1.runError }, reloadError) : null, live.stages.length === 0 ? (0, react.createElement)("p", { className: card_module_css_default$1.empty }, "The bench is empty — construct stages (the agent adds them; they land here).") : (0, react.createElement)(import_dist.DndContext, {
 				sensors,
 				collisionDetection: import_dist.closestCenter,
 				onDragEnd
@@ -53872,7 +54301,7 @@ get: (_target, key) => {
 				items: live.stages.map((s) => s.id),
 				strategy: import_dist$1.rectSortingStrategy,
 				children: (0, react.createElement)("ol", {
-					className: card_module_css_default.tileGrid + (capOver ? " " + card_module_css_default.capOver : ""),
+					className: card_module_css_default$1.tileGrid + (capOver ? " " + card_module_css_default$1.capOver : ""),
 					onDragOver: onGridDragOver,
 					onDragLeave: onGridDragLeave,
 					onDrop: onGridDrop,
@@ -53884,21 +54313,18 @@ get: (_target, key) => {
 						row,
 						entered: entered.has(s.id),
 						onOpen: (r) => onOpen(r.stage),
-						onWireDrop,
-						onWireArm,
-						wireSrc,
 						grouping,
 						selected: selectedIds.has(s.id),
 						onToggleSelect,
 						onAssetAttach
 					});
-				}), (0, react.createElement)("li", { className: card_module_css_default.tile + " " + card_module_css_default.tileAdd }, (0, react.createElement)("button", {
+				}), (0, react.createElement)("li", { className: card_module_css_default$1.tile + " " + card_module_css_default$1.tileAdd }, (0, react.createElement)("button", {
 					type: "button",
-					className: card_module_css_default.tileInner,
+					className: card_module_css_default$1.tileInner,
 					"aria-label": "Add a card",
 					onClick: onAddCard
-				}, (0, react.createElement)("span", { className: card_module_css_default.tilePreview + " " + card_module_css_default.addFace }, "+"), (0, react.createElement)("span", { className: card_module_css_default.tileCaption }, (0, react.createElement)("span", { className: card_module_css_default.tileTitle }, "Add a card")))))
-			})), live.log.length > 0 ? (0, react.createElement)("p", { className: card_module_css_default.logHead }, live.log.length + " log entr" + (live.log.length === 1 ? "y" : "ies")) : null, open !== null ? (0, react.createElement)(CardZoomOverlay, {
+				}, (0, react.createElement)("span", { className: card_module_css_default$1.tilePreview + " " + card_module_css_default$1.addFace }, "+"), (0, react.createElement)("span", { className: card_module_css_default$1.tileCaption }, (0, react.createElement)("span", { className: card_module_css_default$1.tileTitle }, "Add a card")))))
+			})), live.log.length > 0 ? (0, react.createElement)("p", { className: card_module_css_default$1.logHead }, live.log.length + " log entr" + (live.log.length === 1 ? "y" : "ies")) : null, open !== null ? (0, react.createElement)(CardZoomOverlay, {
 				stage: open,
 				bench: live,
 				running,
@@ -53909,9 +54335,6 @@ get: (_target, key) => {
 				onRemoved: () => {
 					setOpen(null);
 					reload();
-				},
-				onRewired: () => {
-					reload({ keepOpen: true });
 				},
 				onPatchParams: (patch) => {
 					onPatchParams(open, patch);
@@ -53952,48 +54375,48 @@ get: (_target, key) => {
 				});
 			}, [run, onRestored]);
 			return (0, react.createElement)("section", {
-				className: card_module_css_default.runView,
+				className: card_module_css_default$1.runView,
 				"data-run-status": run.status
-			}, (0, react.createElement)("header", { className: card_module_css_default.runHead }, (0, react.createElement)("span", { className: card_module_css_default.runId }, run.runId), (0, react.createElement)("span", { className: card_module_css_default.runStatus }, run.status)), (0, react.createElement)("div", { className: card_module_css_default.runActions }, onBack !== void 0 ? (0, react.createElement)("button", {
-				className: card_module_css_default.back,
+			}, (0, react.createElement)("header", { className: card_module_css_default$1.runHead }, (0, react.createElement)("span", { className: card_module_css_default$1.runId }, run.runId), (0, react.createElement)("span", { className: card_module_css_default$1.runStatus }, run.status)), (0, react.createElement)("div", { className: card_module_css_default$1.runActions }, onBack !== void 0 ? (0, react.createElement)("button", {
+				className: card_module_css_default$1.back,
 				type: "button",
 				onClick: onBack
 			}, "Back to bench") : null, live && onStop !== void 0 ? (0, react.createElement)("button", {
-				className: card_module_css_default.cancelBtn,
+				className: card_module_css_default$1.cancelBtn,
 				type: "button",
 				disabled: stopping,
 				onClick: onCancel
 			}, stopping ? "cancelling…" : "Cancel run") : null, (0, react.createElement)("button", {
-				className: card_module_css_default.restore,
+				className: card_module_css_default$1.restore,
 				type: "button",
 				disabled: restoring || run.draftId === null,
 				title: run.draftId === null ? "this run names no draft — nothing to restore" : "copy this run’s stages back onto the bench as your own",
 				onClick: onRestore
-			}, restoring ? "Restoring…" : "Restore to bench")), note !== null ? (0, react.createElement)("p", { className: card_module_css_default.restoreNote }, note) : null, run.stages.length === 0 ? (0, react.createElement)("p", { className: card_module_css_default.empty }, "No stage rows yet.") : (0, react.createElement)("ol", { className: card_module_css_default.tileGrid }, run.stages.map((s) => {
-				const thumb = s.url !== void 0 ? mediaUrl(run.runId, s.url) : null;
+			}, restoring ? "Restoring…" : "Restore to bench")), note !== null ? (0, react.createElement)("p", { className: card_module_css_default$1.restoreNote }, note) : null, run.stages.length === 0 ? (0, react.createElement)("p", { className: card_module_css_default$1.empty }, "No stage rows yet.") : (0, react.createElement)("ol", { className: card_module_css_default$1.tileGrid }, run.stages.map((s) => {
+				const thumb = s.url !== void 0 ? toRunMediaUrl(run.runId, s.url) : null;
 				const dot = s.status === "done" ? "done" : s.status === "running" ? "ongoing" : s.status === "failed" ? "error" : s.status === "queued" || s.status === "pending" ? "warning" : null;
 				const face = thumb !== null ? (0, react.createElement)("a", {
 					href: thumb,
 					target: "_blank",
 					rel: "noreferrer",
-					className: card_module_css_default.tileImgLink
+					className: card_module_css_default$1.tileImgLink
 				}, (0, react.createElement)("img", {
-					className: card_module_css_default.tileImg,
+					className: card_module_css_default$1.tileImg,
 					src: thumb,
 					alt: s.id,
 					loading: "lazy"
 				})) : (0, react.createElement)("span", {
-					className: card_module_css_default.kindFace,
+					className: card_module_css_default$1.kindFace,
 					"data-kind": s.id
-				}, (0, react.createElement)("span", { className: card_module_css_default.kindInitial }, s.id.slice(0, 1).toUpperCase()), (0, react.createElement)("span", { className: card_module_css_default.kindName }, s.id));
+				}, (0, react.createElement)("span", { className: card_module_css_default$1.kindInitial }, s.id.slice(0, 1).toUpperCase()), (0, react.createElement)("span", { className: card_module_css_default$1.kindName }, s.id));
 				return (0, react.createElement)("li", {
 					key: s.id,
-					className: card_module_css_default.tile,
+					className: card_module_css_default$1.tile,
 					"data-stage-status": s.status
 				}, (0, react.createElement)("div", {
-					className: card_module_css_default.tileInner,
+					className: card_module_css_default$1.tileInner,
 					"data-status": s.status
-				}, (0, react.createElement)("span", { className: card_module_css_default.tilePreview }, face, dot !== null ? (0, react.createElement)("span", { className: card_module_css_default.tileDot }, (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.StateDot, { state: dot })) : null), (0, react.createElement)("span", { className: card_module_css_default.tileCaption }, (0, react.createElement)("span", { className: card_module_css_default.tileTitle }, s.id), (0, react.createElement)("span", { className: card_module_css_default.tileMeta }, s.status))));
+				}, (0, react.createElement)("span", { className: card_module_css_default$1.tilePreview }, face, dot !== null ? (0, react.createElement)("span", { className: card_module_css_default$1.tileDot }, (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.StateDot, { state: dot })) : null), (0, react.createElement)("span", { className: card_module_css_default$1.tileCaption }, (0, react.createElement)("span", { className: card_module_css_default$1.tileTitle }, s.id), (0, react.createElement)("span", { className: card_module_css_default$1.tileMeta }, s.status))));
 			})));
 		}
 		/** ADDRESS LAW (the `loading sidebar://cards…` hang, dead 2026-09-11):
@@ -54032,57 +54455,50 @@ get: (_target, key) => {
 					alive = false;
 				};
 			}, [lastRunId, snapshot?.value]);
-			const [localRun, setLocalRun] = (0, react.useState)(null);
 			const [localRunError, setLocalRunError] = (0, react.useState)(null);
-			const runStreamAbort = (0, react.useRef)(null);
+			const outcomeAbort = (0, react.useRef)(null);
+			const [benchTick, setBenchTick] = (0, react.useState)(0);
 			(0, react.useEffect)(() => () => {
-				runStreamAbort.current?.abort();
+				outcomeAbort.current?.abort();
 			}, []);
-			const onStarted = (0, react.useCallback)((runId) => {
+			const touchBench = (0, react.useCallback)(() => {
+				setBenchTick((t) => t + 1);
+			}, []);
+			const onStarted = (0, react.useCallback)((runId, ran) => {
 				setRunning(false);
 				setLastRunId(runId);
-				if (openResource !== void 0) {
-					openResource(cardsRunAddress(runId));
-					return;
-				}
-				runStreamAbort.current?.abort();
-				const ctrl = new AbortController();
-				runStreamAbort.current = ctrl;
-				setLocalRunError(null);
-				(async () => {
-					try {
-						for await (const frame of openCardsResource(cardsRunAddress(runId), { signal: ctrl.signal })) {
-							if (ctrl.signal.aborted) return;
-							if (frame.ok) setLocalRun(frame.value);
-							else {
-								const err = typeof frame === "object" && frame !== null && "error" in frame ? frame.error : null;
-								setLocalRunError(err instanceof Error ? err.message : "run stream failed");
-								return;
-							}
-						}
-					} catch (e) {
-						if (!ctrl.signal.aborted) setLocalRunError(e instanceof Error ? e.message : "run stream failed");
-					}
-				})();
-			}, [openResource]);
+				if (ran === void 0) return;
+				if (outcomeAbort.current === null) outcomeAbort.current = new AbortController();
+				observeRunOutcome(ran.draftId, ran.stageId, runId, outcomeAbort.current.signal, touchBench);
+			}, [touchBench]);
+			const runAllAbort = (0, react.useRef)(null);
 			const onRun = (0, react.useCallback)(() => {
 				if (snapshot?.value?.kind !== "bench") return;
 				setRunning(true);
 				setLocalRunError(null);
-				runTheBench(snapshot.value).then((res) => {
-					if ("runId" in res) onStarted(res.runId);
-					else {
-						setRunning(false);
-						setLocalRunError(res.refused);
-					}
+				runAllAbort.current?.abort();
+				const ctrl = new AbortController();
+				runAllAbort.current = ctrl;
+				runBenchSequential(snapshot.value, {
+					signal: ctrl.signal,
+					onCardStarted: (runId) => {
+						setLastRunId(runId);
+					},
+					onTouched: touchBench
+				}).then((res) => {
+					setRunning(false);
+					if (res.refused !== null) setLocalRunError(res.refused);
 				});
-			}, [snapshot, onStarted]);
+			}, [snapshot, touchBench]);
 			const onRunStage = (0, react.useCallback)((stage) => {
 				if (snapshot?.value?.kind !== "bench") return;
 				setRunning(true);
 				setLocalRunError(null);
-				runStages(snapshot.value.draftId, [stage]).then((res) => {
-					if ("runId" in res) onStarted(res.runId);
+				runCardStage(snapshot.value.draftId, stage).then((res) => {
+					if ("runId" in res) onStarted(res.runId, {
+						draftId: snapshot.value.draftId,
+						stageId: stage.id
+					});
 					else {
 						setRunning(false);
 						setLocalRunError(res.refused);
@@ -54098,37 +54514,27 @@ get: (_target, key) => {
 				});
 			}, [snapshot]);
 			const onStop = (0, react.useCallback)((runId) => {
-				stopRunWire(runId).catch((e) => {
+				stopRun(runId).catch((e) => {
 					setLocalRunError(e instanceof Error ? e.message : "cancel failed");
 				});
 			}, []);
 			const onBack = (0, react.useCallback)(() => {
 				if (openResource !== void 0) openResource(CARDS_BENCH_ADDRESS);
 			}, [openResource]);
-			const onLocalBack = (0, react.useCallback)(() => {
-				runStreamAbort.current?.abort();
-				setLocalRun(null);
-				setLocalRunError(null);
-			}, []);
-			if (localRun !== null) return (0, react.createElement)(RunView, {
-				run: localRun,
-				onBack: onLocalBack,
-				onRestored: onLocalBack,
-				onStop
-			});
-			if (snapshot === void 0) return (0, react.createElement)("p", { className: card_module_css_default.missing }, "cards resource hook unavailable");
-			if (snapshot.status === "loading" || snapshot.status === "none") return (0, react.createElement)("p", { className: card_module_css_default.loading }, "loading " + address + "…");
-			if (snapshot.status === "failed") return (0, react.createElement)("p", { className: card_module_css_default.failed }, snapshot.failure?.message ?? "cards resource failed");
+			if (snapshot === void 0) return (0, react.createElement)("p", { className: card_module_css_default$1.missing }, "cards resource hook unavailable");
+			if (snapshot.status === "loading" || snapshot.status === "none") return (0, react.createElement)("p", { className: card_module_css_default$1.loading }, "loading " + address + "…");
+			if (snapshot.status === "failed") return (0, react.createElement)("p", { className: card_module_css_default$1.failed }, snapshot.failure?.message ?? "cards resource failed");
 			const value = snapshot.value;
-			if (value === void 0) return (0, react.createElement)("p", { className: card_module_css_default.failed }, "cards resource gave no value");
-			return value.kind === "bench" ? (0, react.createElement)(react.Fragment, null, localRunError !== null ? (0, react.createElement)("p", { className: card_module_css_default.runError }, localRunError) : null, (0, react.createElement)(BenchView, {
+			if (value === void 0) return (0, react.createElement)("p", { className: card_module_css_default$1.failed }, "cards resource gave no value");
+			return value.kind === "bench" ? (0, react.createElement)(react.Fragment, null, localRunError !== null ? (0, react.createElement)("p", { className: card_module_css_default$1.runError }, localRunError) : null, (0, react.createElement)(BenchView, {
 				bench: value,
 				onRun,
 				onRunStage,
 				running,
 				onPatchParams: onPatchParamsStage,
 				renderStageView,
-				runId: lastRunId
+				runId: lastRunId,
+				refreshTick: benchTick
 			})) : (0, react.createElement)(RunView, {
 				run: value,
 				onBack: openResource !== void 0 ? onBack : void 0,

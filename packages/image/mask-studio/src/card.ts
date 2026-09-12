@@ -99,7 +99,7 @@ export function apply(ctx: Context): void {
     sidebar: { key: 'image', order: 8 },
     surface: { layout: 'studio' },
     flowKinds: {
-      inputs: { image: 'image' },
+      inputs: { input_image: 'image' },
       outputs: { default: 'seg' },
       requiresModel: false,
     },

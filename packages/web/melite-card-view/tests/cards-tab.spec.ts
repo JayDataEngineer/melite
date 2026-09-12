@@ -17,7 +17,7 @@
 // jsdom — the pure laws above are what pinned the regressions.
 import { describe, expect, test, afterEach } from "vitest";
 import { resetCardFamiliesCache } from "@melite-plugin/melite-run-wire";
-import { resolveCardsAddress, groupStagesByCard, runCardStage, runTheBench } from "../src/client/CardsTab.tsx";
+import { resolveCardsAddress, groupStagesByCard, runCardStage, runBenchSequential } from "../src/client/CardsTab.tsx";
 import { readRun, restoreRunToBench } from "../src/client/cards-resource.ts";
 import type { BenchStageRow, CardsBenchValue, CardsRunValue } from "../src/client/cards-resource.ts";
 
@@ -202,7 +202,7 @@ describe("restoreRunToBench — the card back into a flow", () => {
 //    COMPOSING {model:} door — the flow_inline door cannot consume
 //    cards and its executor demanded a workflow nobody emitted) ──
 
-describe("runCardStage / runTheBench — the door contract", () => {
+describe("runCardStage / runBenchSequential — the door contract", () => {
   test("one card stage starts through the composing {model:} door", async () => {
     stubWire();
     resetCardFamiliesCache();
@@ -261,26 +261,68 @@ describe("runCardStage / runTheBench — the door contract", () => {
     expect(res).toEqual({ refused: "required param 'input_image' missing on the trellis2-native card — the 3D lift is image-conditioned (no text prompt rides this lane)" });
   });
 
-  test("Run ALL keeps the flow_inline projection (pre-composed stages only)", async () => {
+  // ── THE SEQUENTIAL PASS (the old runAll law, 2026-08-11): one run
+  //  per card IN ORDER, skip done, stop on failure — never one flow
+  //  run (the flow_inline door serves the chain/graph surface).
+  test("Run ALL runs each card in order, one runs/start per card", async () => {
     stubWire();
-    routes["runs/start"] = () => ({ ok: true, value: { run_id: "run-10", status: "queued", queue_position: 0 } });
+    resetCardFamiliesCache();
+    let n = 0;
+    routes["runs/start"] = () => { n += 1; return { ok: true, value: { run_id: "run-" + n, status: "queued", queue_position: 0 } }; };
+    routes["runs/status"] = (a: Record<string, unknown>) => {
+      const rid = String(a["run_id"] ?? "");
+      return { ok: true, value: { run_id: rid, status: "completed", stages: [{ id: "default", url: "/melite-media/runs/" + rid + "/out.png" }] } };
+    };
+    routes["drafts/patch"] = (a: Record<string, unknown>) => ({ ok: true, value: { draftId: a["draftId"], stageId: a["stageId"], delivered: true, patched: ["runStatus"] } });
     const bench: CardsBenchValue = { kind: "bench", draftId: "bench-main", rev: 5, log: [], stages: [
-      stage({ id: "s_1", card: "image-gen", params: { prompt: "x" }, outputs: ["default"] }),
+      stage({ id: "s_1", card: "image-gen", params: { prompt: "x" } }),
+      stage({ id: "s_2", card: "img-to-mesh", params: { input_image: "/melite-media/runs/run-1/out.png" } }),
     ] };
-    const res = await runTheBench(bench);
-    expect(res).toEqual({ runId: "run-10" });
-    expect(calls[0]?.args).toEqual({ doc: {
-      flow_inline: { id: "bench-main", stages: [{ id: "s_1", engine: "comfyui", params: { prompt: "x" }, outputs: ["default"] }] },
-      draft_id: "bench-main",
-      test: false,
-    } });
+    const res = await runBenchSequential(bench);
+    expect(res).toEqual({ ran: ["s_1", "s_2"], stoppedAt: null, refused: null });
+    // ONE run per card, in bench order
+    const starts = calls.filter((c) => c.method === "runs/start");
+    expect(starts.map((c) => c.args["doc"]["input_image"] ?? c.args["doc"]["prompt"])).toEqual(["x", "/melite-media/runs/run-1/out.png"]);
+    resetCardFamiliesCache();
   });
 
-  test("an empty bench refuses before the wire", async () => {
+  test("Run ALL skips done cards (the cache-hit skip) and stops at a failure", async () => {
     stubWire();
-    const res = await runTheBench({ kind: "bench", draftId: "bench-main", rev: 1, log: [], stages: [] });
-    expect(res).toEqual({ refused: "nothing to run" });
-    expect(calls).toEqual([]);
+    resetCardFamiliesCache();
+    let n = 0;
+    routes["runs/start"] = () => { n += 1; return { ok: true, value: { run_id: "run-" + n, status: "queued", queue_position: 0 } }; };
+    routes["runs/status"] = (a: Record<string, unknown>) => {
+      const rid = String(a["runId"] ?? "");
+      const failed = rid === "run-2";
+      return { ok: true, value: { run_id: rid, status: failed ? "failed" : "completed", stages: failed ? [] : [{ id: "default", url: "/melite-media/runs/" + rid + "/out.png" }] } };
+    };
+    routes["drafts/patch"] = (a: Record<string, unknown>) => ({ ok: true, value: { draftId: a["draftId"], stageId: a["stageId"], delivered: true, patched: ["runStatus"] } });
+    const bench: CardsBenchValue = { kind: "bench", draftId: "bench-main", rev: 5, log: [], stages: [
+      stage({ id: "s_0", card: "image-gen", params: { prompt: "done already" }, runStatus: "done" }),
+      stage({ id: "s_1", card: "image-gen", params: { prompt: "fails" } }),
+      stage({ id: "s_2", card: "img-to-mesh", params: { input_image: "/melite-media/runs/run-2/out.png" } }),
+    ] };
+    const res = await runBenchSequential(bench);
+    // s_0 skipped (cache-hit); s_1 ran + done; s_2 ran + FAILED → the
+    // pass stops there (a stopped card still RAN — it's in the list)
+    expect(res).toEqual({ ran: ["s_1", "s_2"], stoppedAt: "s_2", refused: null });
+    expect(calls.filter((c) => c.method === "runs/start").length).toBe(2); // s_0 never started
+    resetCardFamiliesCache();
+  });
+
+  test("Run ALL surfaces a typed refusal and stops the pass there", async () => {
+    stubWire();
+    resetCardFamiliesCache();
+    routes["runs/start"] = () => ({ ok: false, error: "required param 'input_image' missing on the trellis2-native card — the 3D lift is image-conditioned" });
+    const bench: CardsBenchValue = { kind: "bench", draftId: "bench-main", rev: 5, log: [], stages: [
+      stage({ id: "s_1", card: "img-to-mesh", params: {} }),
+      stage({ id: "s_2", card: "image-gen", params: { prompt: "never reached" } }),
+    ] };
+    const res = await runBenchSequential(bench);
+    expect(res.stoppedAt).toBe("s_1");
+    expect(String(res.refused)).toContain("input_image");
+    expect(calls.filter((c) => c.method === "runs/start").length).toBe(1);
+    resetCardFamiliesCache();
   });
 
   // ── THE PARAM IS THE WIRE (2026-09-12, the two-month law

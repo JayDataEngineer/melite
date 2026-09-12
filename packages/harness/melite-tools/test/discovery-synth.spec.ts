@@ -29,7 +29,13 @@ import type { CardDefinition, ComfyUIService } from '@melite/comfyui-cordis'
 import { cardToolsArm, formSpecArm, resolveSpecKey, specBody } from '../src/discovery.ts'
 
 function card(partial: Record<string, unknown>): CardDefinition {
-  return partial as unknown as CardDefinition
+  // THE EVERY-CARD-DECLARES LAW: real cards all carry flowKinds (the
+  // loadCardDefs wall); synth fixtures mimic real cards — the edge
+  // emission reads the declaration, so fixtures declare edges too.
+  return {
+    flowKinds: { inputs: {}, outputs: {}, requiresModel: false },
+    ...partial,
+  } as unknown as CardDefinition
 }
 
 function svc(partial: Record<string, unknown>): ComfyUIService {

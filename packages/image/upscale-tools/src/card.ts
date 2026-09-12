@@ -60,7 +60,7 @@ export function apply(ctx: Context): void {
     // flow-stage declarations; the discovery arms derive from here).
     sidebar: { key: 'image', order: 16, hidden: true },
     flowKinds: {
-      inputs: { image: 'image' },
+      inputs: { input_image: 'image' },
       outputs: { default: 'image' },
       requiresModel: true,
     },

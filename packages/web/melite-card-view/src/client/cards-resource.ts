@@ -1,3 +1,8 @@
+// cards-resource.ts — the uploads door's client verb now lives in
+// the base (@melite/card-base/wire — the construction law's upload
+// half); re-exported here for the view's import paths.
+export { uploadInputFile } from '@melite/card-base/wire'
+
 /**
  * The `cards` resource protocol — the cards tab's live values.
  *
@@ -182,12 +187,17 @@ export async function observeRunOutcome(
   runId: string,
   signal?: AbortSignal,
   onTouched?: () => void,
-): Promise<void> {
-  // 'running' on the tile the moment the start answers, and the row
-  // BINDS to the new run (the stale artifact's url clears — the
-  // studio reads its own row's result, never a tab-wide run id)
+): Promise<'done' | 'failed' | 'stopped' | null> {
+  // 'running'/'queued' on the tile the moment the start answers, and
+  // the row BINDS to the new run (the stale artifact's url clears —
+  // the studio reads its own row's result, never a tab-wide run id).
+  // The start response's own status rides first (a QUEUED start
+  // shows 'queued' — the old Queue-feedback law — never a lie about
+  // running while the GPU is busy with another card).
   try {
-    await patchStageOutcome(draftId, stageId, { runStatus: 'running', result: { run_id: runId } })
+    const startStatus = await fetchRunStatus(runId, signal).then((r) => r.status).catch(() => 'running')
+    const first = startStatus === 'queued' || startStatus === 'pending' ? 'queued' : 'running'
+    await patchStageOutcome(draftId, stageId, { runStatus: first, result: { run_id: runId } })
     onTouched?.()
   } catch { /* bookkeeping */ }
   const sleep = (ms: number): Promise<void> =>
@@ -195,6 +205,7 @@ export async function observeRunOutcome(
       const t = setTimeout(resolve, ms)
       signal?.addEventListener('abort', () => { clearTimeout(t); resolve() }, { once: true })
     })
+  let lastLive = 'running'
   while (signal?.aborted !== true) {
     let row: Awaited<ReturnType<typeof fetchRunStatus>>
     try {
@@ -204,6 +215,16 @@ export async function observeRunOutcome(
       continue
     }
     if (!isTerminalRun(row.status)) {
+      // the LIVE flip (queued → running): patch the tile the moment
+      // the estate picks the run up — never a stuck 'queued' face
+      const live = row.status === 'queued' || row.status === 'pending' ? 'queued' : 'running'
+      if (live !== lastLive) {
+        lastLive = live
+        try {
+          await patchStageOutcome(draftId, stageId, { runStatus: live })
+          onTouched?.()
+        } catch { /* bookkeeping */ }
+      }
       await sleep(1500)
       continue
     }
@@ -213,17 +234,17 @@ export async function observeRunOutcome(
       ? stage.url : ''
     const result: Record<string, unknown> = { run_id: runId }
     if (url !== '') result['url'] = url
+    const terminal = row.status === 'completed' ? 'done' : row.status
     try {
-      await patchStageOutcome(draftId, stageId, {
-        runStatus: row.status === 'completed' ? 'done' : row.status,
-        result,
-      })
+      await patchStageOutcome(draftId, stageId, { runStatus: terminal, result })
       onTouched?.()
     } catch {
       /* bookkeeping — the bench may have moved; the next run rewrites the row */
     }
-    return
+    if (terminal === 'done' || terminal === 'failed' || terminal === 'stopped') return terminal
+    return null
   }
+  return null
 }
 
 export function readRun(runId: string, doc: Record<string, unknown>): CardsRunValue {
@@ -459,44 +480,6 @@ async function* pollRunFrames(
     value = next
     yield { ok: true, value }
   }
-}
-
-
-/** OS-file drop → the /v1/uploads door (png/jpeg/webp data-URL) → the
- *  input-dir name input-prep's `source` field accepts. The door's own
- *  gates (type whitelist, one clean segment) are the law — the client
- *  only voices its refusals, never invents its own. */
-export async function uploadInputFile(file: File): Promise<{ name: string; file: string }> {
-  const isImage = file.type === 'image/png' || file.type === 'image/jpeg' || file.type === 'image/webp'
-  const isAudio = file.type.startsWith('audio/')
-  if (!isImage && !isAudio) {
-    throw new Error('Input cards don\u2019t accept ' + (file.type !== '' ? file.type : 'that file') + ' \u2014 drop an image or audio file')
-  }
-  if (!isImage) {
-    throw new Error('audio uploads have no door yet \u2014 the uploads door boards png / jpeg / webp only')
-  }
-  const dataUrl: string = await new Promise((resolve, reject) => {
-    const r = new FileReader()
-    r.onload = () => { resolve(String(r.result)) }
-    r.onerror = () => { reject(new Error('could not read the dropped file')) }
-    r.readAsDataURL(file)
-  })
-  const res = await fetch('/v1/uploads', {
-    method: 'POST',
-    headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ filename: file.name.replace(/[^A-Za-z0-9._-]/g, '_'), data: dataUrl }),
-  })
-  if (!res.ok) throw new Error('upload refused: HTTP ' + String(res.status))
-  const out: unknown = await res.json()
-  const path = typeof out === 'object' && out !== null && typeof Reflect.get(out, 'path') === 'string'
-    ? Reflect.get(out, 'path') as string : ''
-  if (path === '') throw new Error('upload answered without a path')
-  // The PARAM currency is the ESTATE PATH ('data/input/x.png'), not
-  // the bare name: the composing door's uploadReferenced stages local
-  // paths into ComfyUI's input dir (a bare name is not a file the
-  // estate can read — the run dies on the engine with 'Invalid image
-  // file'). The display face is the data-URL mirror, never this.
-  return { name: path, file: path.split('/').pop() ?? file.name }
 }
 
 

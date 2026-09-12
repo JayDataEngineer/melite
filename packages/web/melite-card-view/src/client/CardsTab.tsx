@@ -31,22 +31,40 @@
  * see index.ts) keep this package off sibling runtime imports.
  */
 import { createElement as h, Fragment, useCallback, useEffect, useRef, useState } from 'react'
-import { Button, Input, Modal, Pill, StateDot, Tag } from '@deepseek-ai/dsh-client-ui-primitives'
+import { Button, Input, Menu, Modal, Pill, StateDot, Tag } from '@deepseek-ai/dsh-client-ui-primitives'
 import { CardDrill } from './card-drill.tsx'
 import type { StageViewOwnerProps } from './types.ts'
 import { fetchCardCatalog, fetchFormSpec, specDefaults, specPatch, SpecForm, useSquareProvider } from './spec-form.tsx'
-import type { CatalogCard, FormSpecDoc, SpecValues } from './spec-form.tsx'
+import { fetchFormsTable } from '@melite/card-base/wire'
+
+/** The /v1/forms edge-meta cache (card id → declared input/output
+ *  kinds) — ONE fetch per browser session; the picker's kind
+ *  matching (THE EDGE LAW) reads it. A failed fetch leaves null and
+ *  the picker falls to the unfiltered list (never blocks a pick). */
+let formsEdgeMetaPromise: Promise<Record<string, { inputs?: Record<string, string>; outputs?: Record<string, string> }>> | null = null
+function loadFormsEdgeMeta(): Promise<Record<string, { inputs?: Record<string, string>; outputs?: Record<string, string> }>> {
+  formsEdgeMetaPromise ??= fetchFormsTable().then((rows) => {
+    const out: Record<string, { inputs?: Record<string, string>; outputs?: Record<string, string> }> = {}
+    for (const [id, row] of Object.entries(rows)) out[id] = { inputs: row.inputs, outputs: row.outputs }
+    return out
+  }).catch((e: unknown) => {
+    formsEdgeMetaPromise = null // retry on the next mount
+    throw e
+  })
+  return formsEdgeMetaPromise
+}
+import type { CatalogCard, FormSpecDoc, ModifierKind, SpecValues } from './spec-form.tsx'
 import { paramFields, patchStageParams } from './draft.ts'
 import css from './card.module.css'
 import type { CardsBenchValue, CardsRunValue, BenchStageRow } from './cards-resource.ts'
 import { CARDS_BENCH_ADDRESS, cardsRunAddress, fetchBench, fetchLatestRunForDraft, observeRunOutcome, openCardsResource, parseCardsAddress, restoreRunToBench, uploadInputFile } from './cards-resource.ts'
-import { defaultFamilyForCard, startCardRun, startFlowInlineRun, stopRun } from '@melite-plugin/melite-run-wire'
+import { defaultFamilyForCard, startCardRun, stopRun } from '@melite-plugin/melite-run-wire'
 import { addStageWire, groupStagesWire, removeStageWire, reorderStageWire, ungroupStageWire } from './add-stage.ts'
 import { CardZoomOverlay, cardLayoutId, ZOOM_SPRING } from './zoom.tsx'
 import { motion } from 'framer-motion'
 import { DndContext, closestCenter, PointerSensor, useSensor, useSensors } from '@dnd-kit/core'
 import type { DragEndEvent } from '@dnd-kit/core'
-import { SortableContext, useSortable, rectSortingStrategy } from '@dnd-kit/sortable'
+import { SortableContext, useSortable, rectSortingStrategy, horizontalListSortingStrategy } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import { mediaUrl } from './draft.ts'
 
@@ -156,15 +174,40 @@ export function groupStagesByCard(stages: BenchStageRow[]): Array<{ card: string
   return groups
 }
 
-/** Run ALL — the header gesture (the flow_inline door: multi-stage
- *  benches are refused by the single-stage runs gateway until the
- *  estate queues flows; the refusal surfaces inline, never a fake
- *  success). Rides the run-wire package's startFlowInlineRun.
- *  Exported for the tab seam's door-contract spec. */
-export async function runTheBench(bench: CardsBenchValue): Promise<{ runId: string } | { refused: string }> {
-  const stages = bench.stages.map(projectStage)
-  if (stages.length === 0) return { refused: 'nothing to run' }
-  return await startFlowInlineRun({ flowId: bench.draftId, stages, draftId: bench.draftId })
+/** THE SEQUENTIAL PASS — Run ALL, the old system's composer law
+ *  verbatim (flowExecuteSlice runAll, 2026-08-11): execute the
+ *  stages IN ORDER, one run per card (the SAME single-stage door the
+ *  drill's Run uses — a typed composer bench is never one graph
+ *  run; the flow_inline door serves the chain/graph surface, not
+ *  this one). Skip stages already done (the cache-hit skip). A
+ *  failed or refused stage STOPS the pass — fail loud, never a
+ *  doomed downstream run. The per-card observer patches each row as
+ *  it goes (running → terminal), so the tiles flip one by one and
+ *  the bench is never taken over. Exported for the door-contract
+ *  spec. */
+export async function runBenchSequential(
+  bench: CardsBenchValue,
+  hooks: {
+    onCardStarted?: (runId: string, ran: { draftId: string; stageId: string }) => void
+    onTouched?: () => void
+    signal?: AbortSignal
+  } = {},
+): Promise<{ ran: string[]; stoppedAt: string | null; refused: string | null }> {
+  const ran: string[] = []
+  for (const stage of bench.stages) {
+    if (hooks.signal?.aborted === true) return { ran, stoppedAt: null, refused: null }
+    if (stage.runStatus === 'done') continue // the cache-hit skip
+    const res = await runCardStage(bench.draftId, stage)
+    if ('refused' in res) return { ran, stoppedAt: stage.id, refused: res.refused }
+    hooks.onCardStarted?.(res.runId, { draftId: bench.draftId, stageId: stage.id })
+    const terminal = await observeRunOutcome(bench.draftId, stage.id, res.runId, hooks.signal, hooks.onTouched)
+    if (terminal !== 'done') {
+      // failed / stopped / unknown — the pass stops at this card
+      return { ran: [...ran, stage.id], stoppedAt: stage.id, refused: null }
+    }
+    ran.push(stage.id)
+  }
+  return { ran, stoppedAt: null, refused: null }
 }
 
 /** runs/stop — the cancel door (the registry seat's flag + interrupt);
@@ -413,6 +456,265 @@ function benchRow(stage: BenchStageRow, bench?: CardsBenchValue): CardRowLineTab
   }
 }
 
+/** One mod tile (the old LoraTile law: the whole tile drags —
+ *  PointerSensor's activation constraint separates click from drag;
+ *  click opens the leaf editor). The strength shown is EFFECTIVE:
+ *  the wire entry's own, else the option's default_strength, else
+ *  1.0 — a landed recipe row carries {id} only and the tile must
+ *  never render undefined. */
+function ModTile(props: {
+  tileId: string
+  label: string
+  strength?: number
+  onOpen: () => void
+}): ReturnType<typeof h> {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: props.tileId })
+  return h('li', {
+    ref: setNodeRef,
+    className: css.modTile + (isDragging ? ' ' + css.tileDragging : ''),
+    style: { transform: CSS.Translate.toString(transform), ...(transition !== null ? { transition } : {}) },
+    'data-mod-tile': props.tileId,
+    title: 'Drag to reorder · click to edit',
+    ...attributes, ...listeners,
+    onClick: props.onOpen,
+  },
+    h('span', { className: css.modTileLabel }, props.label),
+    props.strength !== undefined
+      ? h('span', { className: css.modTileStrength }, props.strength.toFixed(2))
+      : null,
+  )
+}
+
+/** THE MOD SYSTEM (the old SubcardGrid, ported 1:1 — the two-month
+ *  law the flattening violated): mods NEVER ride the card's param
+ *  form. The estate serves the OPEN kind vocabulary
+ *  (features.modifiers — lora is the first instance, never the
+ *  whole set); this section owns the mod bags: one flowing tile row
+ *  (apply order = array order, drag rewrites it), ONE "+ Mod"
+ *  affordance opening the kind-picker modal, and the leaf modal for
+ *  create/edit. THE WIRE IS THE STORAGE (params[param_key] — the
+ *  same bag runs and the agent read/write); commits persist
+ *  immediately (the old onSaveParams law — never deferred to Run).
+ *  lanpaint/qvoice ride the form inline by design and have no kind
+ *  row here; controlnet waits unboarded — its absence is the law
+ *  working, not a gap. */
+/** THE MOD SYSTEM (the old SubcardGrid, ported 1:1 — the two-month
+ *  law the flattening violated): mods NEVER ride the card's param
+ *  form. The estate serves the OPEN kind vocabulary
+ *  (features.modifiers — lora is the first instance, never the
+ *  whole set); this section owns the mod bags: one flowing tile row
+ *  (apply order = array order, drag rewrites it), ONE "+ Mod"
+ *  affordance opening the DSH Menu kind picker, and the DSH Modal
+ *  leaf editor for create/edit. THE WIRE IS THE STORAGE
+ *  (params[param_key] — the same bag runs and the agent read/
+ *  write); commits persist immediately (the old onSaveParams law —
+ *  never deferred to Run). lanpaint/qvoice ride the form inline by
+ *  design and have no kind row here; controlnet waits unboarded —
+ *  its absence is the law working, not a gap. */
+export function ModifiersSection(props: {
+  kinds: ModifierKind[]
+  values: SpecValues
+  onEdit: (name: string, v: unknown) => void
+  onPatch: (patch: Record<string, unknown>) => void
+}): ReturnType<typeof h> {
+  const { kinds, values, onEdit, onPatch } = props
+  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 4 } }))
+  // THE KIND PICKER (DSH Menu — the package's own anchored-picker
+  // pattern, portal: true escapes the zoom card's clipping, the old
+  // system's Modal-for-clipping concern solved by the portal).
+  const [pickAt, setPickAt] = useState<{ rect: DOMRect } | null>(null)
+  // the leaf editor (DSH Modal): which kind, create or edit, the
+  // entry's array index (re-derived from the live bag each render).
+  const [leaf, setLeaf] = useState<{ mode: 'create' | 'edit'; kind: ModifierKind; index: number } | null>(null)
+  const [leafError, setLeafError] = useState<string | null>(null)
+  const [draftOption, setDraftOption] = useState('')
+  const [draftStrength, setDraftStrength] = useState('')
+
+  const entriesOf = (k: ModifierKind): Array<Record<string, unknown>> => {
+    const v = values[k.param_key]
+    return Array.isArray(v) ? v.filter((e): e is Record<string, unknown> => typeof e === 'object' && e !== null) : []
+  }
+  const optionOf = (k: ModifierKind, value: string): { value: string; label: string; tooltip?: string; defaults?: { strength?: number } } | null =>
+    (k.options ?? []).find((o) => o.value === value) ?? null
+  const commit = (k: ModifierKind, next: Array<Record<string, unknown>>): void => {
+    onEdit(k.param_key, next)
+    onPatch({ [k.param_key]: next })
+  }
+  const addable = kinds.filter((k) => k.cardinality !== 'scalar')
+
+  if (kinds.length === 0) return null
+
+  const openCreate = (k: ModifierKind): void => {
+    const entries = entriesOf(k)
+    if (k.max_stack !== undefined && entries.length >= k.max_stack) {
+      setLeafError(k.label + ' stack limit reached (' + String(k.max_stack) + ') — remove one to add another.')
+      return
+    }
+    setDraftOption('')
+    setDraftStrength('')
+    setLeafError(null)
+    setLeaf({ mode: 'create', kind: k, index: -1 })
+  }
+  const saveLeaf = (): void => {
+    if (leaf === null) return
+    const k = leaf.kind
+    const entries = entriesOf(k)
+    if (leaf.mode === 'create') {
+      if (draftOption === '') { setLeafError('Pick one from the served rows.'); return }
+      const option = optionOf(k, draftOption)
+      const seed = option !== null && option.defaults?.strength !== undefined ? option.defaults.strength : 1.0
+      const strength = draftStrength.trim() === '' ? seed : Number(draftStrength)
+      if (!Number.isFinite(strength)) { setLeafError('Strength must be a number.'); return }
+      commit(k, [...entries, { id: draftOption, strength }])
+    } else {
+      const entry = entries[leaf.index]
+      if (entry === undefined) { setLeaf(null); return }
+      const strength = Number(draftStrength)
+      if (!Number.isFinite(strength)) { setLeafError('Strength must be a number.'); return }
+      const next = [...entries]
+      next[leaf.index] = { ...entry, strength }
+      commit(k, next)
+    }
+    setLeaf(null)
+  }
+  const deleteLeaf = (): void => {
+    if (leaf === null || leaf.mode !== 'edit') return
+    commit(leaf.kind, entriesOf(leaf.kind).filter((_, i) => i !== leaf.index))
+    setLeaf(null)
+  }
+  // apply order = array order: the drop rewrites the bag; the
+  // composed graph follows (the old rule-2 parity).
+  const onDragEnd = (k: ModifierKind, event: DragEndEvent): void => {
+    const { active, over } = event
+    if (over === null || active.id === over.id) return
+    const entries = entriesOf(k)
+    const from = entries.findIndex((_, i) => String(k.param_key + '-' + i) === String(active.id))
+    const to = entries.findIndex((_, i) => String(k.param_key + '-' + i) === String(over.id))
+    if (from < 0 || to < 0) return
+    const next = [...entries]
+    const [moved] = next.splice(from, 1)
+    next.splice(to, 0, moved)
+    commit(k, next)
+  }
+
+  return h('section', { className: css.modSection, 'data-subcard-grid': 'on' },
+    h('div', { className: css.modHead },
+      h('span', { className: css.modTitle }, 'Modifiers'),
+      h('span', { className: css.modHint }, 'drag to set apply order'),
+    ),
+    leafError !== null && leaf === null
+      ? h('p', { className: css.runError }, leafError)
+      : null,
+    // ONE flowing row (the old law: the + tile rides right after
+    // the last tile, never on its own vertical row); per-kind
+    // DndContexts are renderless — layout stays one flex-wrap line.
+    h('div', { className: css.modRow, 'data-subcard-row': 'flow' },
+      kinds.map((k) => {
+        const entries = entriesOf(k)
+        if (entries.length === 0) return null
+        return h(DndContext, {
+          key: k.kind,
+          sensors,
+          collisionDetection: closestCenter,
+          onDragEnd: (event: DragEndEvent) => { onDragEnd(k, event) },
+        },
+          h(SortableContext, {
+            items: entries.map((_, i) => k.param_key + '-' + i),
+            strategy: horizontalListSortingStrategy,
+            children: entries.map((entry, i) => {
+              const id = typeof entry['id'] === 'string' ? entry['id'] as string : ''
+              const option = optionOf(k, id)
+              const strength = typeof entry['strength'] === 'number'
+                ? entry['strength'] as number
+                : option !== null && option.defaults !== undefined ? option.defaults.strength : undefined
+              return h(ModTile, {
+                key: k.param_key + '-' + i,
+                tileId: k.param_key + '-' + i,
+                label: option !== null ? option.label : (id !== '' ? id : k.label + ' ' + String(i + 1)),
+                ...(strength !== undefined ? { strength } : {}),
+                onOpen: () => {
+                  setDraftStrength(strength !== undefined ? String(strength) : '')
+                  setLeafError(null)
+                  setLeaf({ mode: 'edit', kind: k, index: i })
+                },
+              })
+            }),
+          }),
+        )
+      }),
+      addable.length > 0
+        ? h('button', {
+            type: 'button',
+            className: css.modAdd,
+            'data-subcard-add': 'mod',
+            onClick: (e: React.MouseEvent<HTMLButtonElement>) => {
+              setPickAt({ rect: e.currentTarget.getBoundingClientRect() })
+            },
+          }, '+ Mod')
+        : null,
+    ),
+    // THE KIND PICKER — the DSH Menu (every declared kind is
+    // renderable by construction; hiding one would be a second
+    // procedural path around the declarative contract).
+    pickAt !== null ? h(Menu, {
+      open: true,
+      anchor: null,
+      getAnchorRect: () => pickAt.rect,
+      items: addable.map((k) => ({ id: k.kind, label: k.label })),
+      onSelect: (id: string) => {
+        setPickAt(null)
+        const k = addable.find((x) => x.kind === id)
+        if (k !== undefined) openCreate(k)
+      },
+      onClose: () => { setPickAt(null) },
+      portal: true,
+    }) : null,
+    // THE LEAF MODAL (DSH) — the ONLY subcard editor: create picks
+    // from the served catalog rows (strength seeded from the row's
+    // own default); edit changes strength / removes.
+    leaf !== null ? h(Modal, {
+      open: true,
+      onClose: () => { setLeaf(null) },
+      title: (leaf.mode === 'create' ? 'Add ' : 'Edit ') + leaf.kind.label,
+      closeLabel: 'Close',
+    },
+      h('div', { className: css.modLeaf },
+        leafError !== null ? h('p', { className: css.runError }, leafError) : null,
+        leaf.mode === 'create'
+          ? h('label', { className: css.modField },
+              leaf.kind.label,
+              h('select', {
+                className: css.modSelect,
+                value: draftOption,
+                onChange: (e: React.ChangeEvent<HTMLSelectElement>) => { setDraftOption(e.target.value) },
+              },
+                h('option', { value: '' }, '— pick —'),
+                (leaf.kind.options ?? []).map((o) =>
+                  h('option', { key: o.value, value: o.value }, o.label)),
+              ),
+            )
+          : null,
+        h('label', { className: css.modField },
+          'Strength',
+          h(Input, {
+            type: 'number',
+            step: '0.05',
+            value: draftStrength,
+            placeholder: 'the row default',
+            onChange: (e: { target: { value: string } }) => { setDraftStrength(e.target.value) },
+          }),
+        ),
+        h('div', { className: css.runRow },
+          h(Button, { variant: 'primary', onClick: saveLeaf }, leaf.mode === 'create' ? 'Add' : 'Save'),
+          leaf.mode === 'edit'
+            ? h(Button, { variant: 'ghost', onClick: deleteLeaf }, 'Remove')
+            : null,
+        ),
+      ),
+    ) : null,
+  )
+}
+
 /** THE SHARED DRILLDOWN — spec-formatted (the old system's law): the
  *  stage's card carries a DECLARED form (/v1/form-spec — typed atoms,
  *  groups, defaults); the drill renders THAT, never a raw key/value
@@ -443,6 +745,10 @@ function StageDrill({ stage, bench, running, onRun, onClose, onRemoved, onPatchP
   //  no wiring mechanic exists. The square picker lists the OTHER
   //  stages' LATEST OUTPUTS; picking one writes this stage's param
   //  to that artifact's url (the run stages it engine-side).
+  //  THE EDGE LAW: the per-field narrowing keeps only rows whose
+  //  card DECLARES an output of the picked field's input-edge kind
+  //  (spec.inputs) — the edges are defined by the emission, never
+  //  guessed from url shapes.
   const others = bench.stages.filter((s) => s.id !== stage.id)
   const candidates = others.flatMap((s) => {
     const res = typeof s.result === 'object' && s.result !== null ? s.result as Record<string, unknown> : null
@@ -469,13 +775,34 @@ function StageDrill({ stage, bench, running, onRun, onClose, onRemoved, onPatchP
       })
     return () => { alive = false }
   }, [stage.id])
+  // the forms-table cache (card meta with the DECLARED edges) — one
+  // fetch per session; the picker's kind matching reads it
+  const [edgeMeta, setEdgeMeta] = useState<Record<string, { inputs?: Record<string, string>; outputs?: Record<string, string> }> | null>(null)
+  useEffect(() => {
+    let alive = true
+    loadFormsEdgeMeta().then((m) => { if (alive) setEdgeMeta(m) }).catch(() => {})
+    return () => { alive = false }
+  }, [])
+  const candidatesFor = useCallback((f: { name: string }): Array<{ id: string; label: string; url: string }> => {
+    if (spec === null || edgeMeta === null) return candidates
+    const edge = (spec.inputs ?? []).find((e) => e.name === f.name)
+    if (edge === undefined) return candidates
+    const kind = edge.kind
+    return candidates.filter((c) => {
+      const row = others.find((s) => s.id === c.id)
+      const cardId = String(row?.card ?? '')
+      const outs = edgeMeta[cardId]?.outputs
+      return outs !== undefined && Object.values(outs).includes(kind)
+    })
+  }, [spec, edgeMeta, candidates, others])
   const onEdit = useCallback((name: string, v: unknown): void => {
     setValues((m) => ({ ...m, [name]: v }))
   }, [])
   // THE SHARED SQUARE PROVIDER (the old SlotGrid law): this stage's
   //  image/file fields get the three verbs from ONE definition — the
-  //  same hook every registered studio rides.
-  const { square: squareFor, wireMenu } = useSquareProvider(onEdit, { candidates })
+  //  same hook every registered studio rides. candidatesFor narrows
+  //  the picker per the DECLARED input-edge kind (THE EDGE LAW).
+  const { square: squareFor, wireMenu } = useSquareProvider(onEdit, { candidates, candidatesFor })
   const run = async (): Promise<void> => {
     setError(null)
     try {
@@ -545,7 +872,18 @@ function StageDrill({ stage, bench, running, onRun, onClose, onRemoved, onPatchP
     h('div', { className: css.split },
       h('div', { className: css.params },
         !loaded ? h('div', { className: css.load }, 'form…')
-        : spec !== null ? h(SpecForm, { fields: spec.fields, values, onEdit, square: squareFor })
+        : spec !== null
+          ? h(Fragment, null,
+              h(SpecForm, { fields: spec.fields, values, onEdit, square: squareFor }),
+              // THE MOD SYSTEM (SubcardGrid port): the mod bags live
+              // under the form, NEVER as fields on it.
+              h(ModifiersSection, {
+                kinds: spec.features?.modifiers ?? [],
+                values,
+                onEdit,
+                onPatch: onPatchParams,
+              }),
+            )
         : h('pre', { className: css.mono }, JSON.stringify(held, null, 2)),
       ),
       h('div', { className: css.outputs },
@@ -1158,18 +1496,27 @@ export function CardsTab(props: CardsTabProps): ReturnType<typeof h> {
     if (outcomeAbort.current === null) outcomeAbort.current = new AbortController()
     void observeRunOutcome(ran.draftId, ran.stageId, runId, outcomeAbort.current.signal, touchBench)
   }, [touchBench])
+  // RUN ALL — the sequential pass (the old runAll law): one run per
+  //  card in bench order, stop on failure; every tile flips through
+  //  the SAME observer the drill's Run uses. Cancel stops the pass
+  //  after the in-flight card's observer settles.
+  const runAllAbort = useRef<AbortController | null>(null)
   const onRun = useCallback((): void => {
     if (snapshot?.value?.kind !== 'bench') return
     setRunning(true)
     setLocalRunError(null)
-    void runTheBench(snapshot.value).then((res) => {
-      if ('runId' in res) onStarted(res.runId)
-      else {
-        setRunning(false)
-        setLocalRunError(res.refused)
-      }
+    runAllAbort.current?.abort()
+    const ctrl = new AbortController()
+    runAllAbort.current = ctrl
+    void runBenchSequential(snapshot.value, {
+      signal: ctrl.signal,
+      onCardStarted: (runId) => { setLastRunId(runId) },
+      onTouched: touchBench,
+    }).then((res) => {
+      setRunning(false)
+      if (res.refused !== null) setLocalRunError(res.refused)
     })
-  }, [snapshot, onStarted])
+  }, [snapshot, touchBench])
   // RE-RUN ONE STAGE (the drill's Run): the COMPOSING door — the
   // stage alone, its params patched into the bench BEFORE the run
   // reads it (the drill does the patch, this does the start), then

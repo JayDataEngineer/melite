@@ -1,64 +1,5 @@
-import { a as makeEstateRequest, i as routeName, r as resolveHarnessRoutes, t as harnessEnhance } from "./llm-complete-U6o1lmWT.mjs";
+import { a as makeEstateRequest, i as routeName, r as resolveHarnessRoutes, t as harnessEnhance } from "./llm-complete-D9QYcTSG.mjs";
 import { CARD_KINDS, SLOT_VOCABULARY, buildCatalog, emitParamsSchema, getModel, isServedFamily, loadCardDefs, modelIds, theService } from "@melite/comfyui-cordis";
-//#region src/enhance-agent.ts
-/**
-* The AGENT-side enhance orchestration — shared by the chat tool and the
-* /melite-tools/enhance route's sweep mode. ONE implementation, two doors.
-*
-* The recipes are SSOT in the gateway form-spec (per-model
-* prompt-enhance* SKILL.md files surfaced as enhance_prompt | enhance_prompts).
-* Every field completion rides the harness model via llm-complete.ts —
-* no keystore, no "no model".
-*/
-const FORMSPEC_TIMEOUT_MS = 15e3;
-/** Read the model's declared recipes straight off the form-spec SSOT. */
-async function fetchDeclaredFields(request, model, signal) {
-	const spec = await request("GET", "/v1/form-spec?model=" + encodeURIComponent(model), void 0, signal, FORMSPEC_TIMEOUT_MS);
-	let fields = {};
-	if (spec.enhance_prompts !== null && typeof spec.enhance_prompts === "object" && !Array.isArray(spec.enhance_prompts)) {
-		for (const [k, v] of Object.entries(spec.enhance_prompts)) if (typeof v === "string" && v.length > 0) fields[k] = v;
-	} else if (typeof spec.enhance_prompt === "string" && spec.enhance_prompt.length > 0) fields = { prompt: spec.enhance_prompt };
-	return {
-		fields,
-		names: Object.keys(fields)
-	};
-}
-/** One field's enhancement through the harness model. */
-function enhanceOneField(llm, recipe, prompt, temperature, signal, llmWant, defaultLlm) {
-	return harnessEnhance(llm, {
-		system: recipe,
-		prompt,
-		temperature,
-		signal,
-		...llmWant !== void 0 && llmWant.length > 0 ? { llm: llmWant } : {}
-	}, defaultLlm);
-}
-/**
-* GENERIC FALLBACK RECIPE — BACK HOME (the gateway kill,
-* 2026-09-10): the ONE spelling lives here, where it was born (the
-* disclosure bundle that shared it died with the gateway).
-*/
-const GENERIC_ENHANCE_RECIPE = "You rewrite rough generation prompts into model-optimal ones. Expand terse descriptions into concrete visual/audio language: subject, action, setting, lighting, composition, style, medium, detail level. Reply with ONLY a JSON object {\"positive\": \"<the rewritten prompt>\", \"negative\": \"<what to avoid, or empty string>\"} — no prose outside the JSON.";
-/**
-* THE SWEEP — every declared field, one press. The route's model-form uses
-* this: the CALLER orchestrates (a button, not a conversational agent), so
-* unlike the chat tool there is no listing round-trip — all declared fields
-* are enhanced sequentially and returned together. A model with NO declared
-* fields sweeps ONE generic 'prompt' field (the shared fallback recipe).
-*/
-async function agenticSweep(ctx, llm, opts) {
-	const { fields } = await fetchDeclaredFields(makeEstateRequest(ctx), opts.model, opts.signal);
-	let names = Object.keys(fields);
-	if (names.length === 0) names = ["prompt"];
-	if (names.length === 1 && fields[names[0]] === void 0) fields[names[0]] = GENERIC_ENHANCE_RECIPE;
-	const results = {};
-	for (const name of names) results[name] = await enhanceOneField(llm, fields[name], opts.prompt, opts.temperature, opts.signal, opts.llmWant, opts.defaultLlm);
-	return {
-		model: opts.model,
-		results
-	};
-}
-//#endregion
 //#region src/discovery.ts
 /** The boarded map (family -> the card that boards it, first-seen). */
 function boardedMap(defs) {
@@ -142,7 +83,7 @@ function variantRow(v, declEngine) {
 	};
 }
 function capQuant(quant) {
-	return quant.length > 0 ? quant[0].toUpperCase() + quant.slice(1) : quant;
+	return quant.length > 0 ? quant[0].toUpperCase() + quant.slice(1) : /* v8 ignore next -- !c.quant gate */ quant;
 }
 /** The key family's variants + its offered quant cells (a cell
 *  serves the envelope iff its route is the key, the service owner,
@@ -167,7 +108,7 @@ function specVariants(decl, key, service, primary) {
 				label: c.label || capQuant(c.quant),
 				group: "Quant",
 				defaults: c.resolver_defaults ?? {},
-				route: c.route ?? "",
+				route: c.route,
 				hint: null,
 				engine: c.engine ?? declEngine,
 				quant: c.quant,
@@ -294,9 +235,27 @@ function specBody(svc, defs, res) {
 	}
 	const fs = svc.formSpec(res.card, key);
 	if (fs === null) throw new Error(`form-spec: card '${res.card}' unknown`);
+	const modifiers = specModifiers(svc, res.card, key, decl, fs.schema_groups);
+	const modKeys = new Set(modifiers.map((m) => String(m["param_key"])).filter((k) => k !== ""));
+	const fieldOf = (f) => typeof f?.name === "string" ? f.name : "";
+	const fields = fs.fields.filter((f) => !modKeys.has(fieldOf(f)));
+	const schema_groups = fs.schema_groups.map((g) => ({
+		...g,
+		fields: g.fields.filter((f) => !modKeys.has(fieldOf(f)))
+	})).filter((g) => g.fields.length > 0);
 	const surface = def.surface ?? {};
 	const boarded = def.boarded ?? [];
 	const primary = (boarded.length > 0 ? boarded[0] : res.card) === key;
+	const reqOf = /* @__PURE__ */ new Map();
+	for (const f of fs.fields) {
+		const name = fieldOf(f);
+		if (name !== "") reqOf.set(name, f.required === true);
+	}
+	const inputs = Object.entries(def.flowKinds.inputs).map(([name, kind]) => ({
+		name,
+		kind,
+		...reqOf.get(name) === true ? { required: true } : {}
+	}));
 	return {
 		contract: null,
 		defaults: decl?.defaults ?? schemaDefaults(def),
@@ -307,18 +266,20 @@ function specBody(svc, defs, res) {
 			lyrics: ""
 		},
 		features: {
-			modifiers: specModifiers(svc, res.card, key, decl, fs.schema_groups),
+			modifiers,
 			variant_groups: groupContract(decl)
 		},
-		fields: fs.fields,
+		fields,
 		form: res.card,
 		genre: ident.genre,
 		guide: null,
+		inputs,
 		label: ident.label,
 		layout: surface.layout === "studio" ? "studio" : null,
 		loader_info: null,
 		model: res.model,
-		schema_groups: fs.schema_groups,
+		outputs: def.flowKinds.outputs,
+		schema_groups,
 		service: res.service,
 		size: surface.size === "huge" ? "huge" : null,
 		variants: decl ? specVariants(decl, key, res.service, primary) : []
@@ -345,11 +306,13 @@ function formsTable(defs) {
 				sidebar_key: sidebar.key,
 				default_service: boarded.length > 0 ? boarded[0] : id,
 				hidden: sidebar.hidden === true,
-				covers: boarded.length > 0 ? boarded : [id]
+				covers: boarded.length > 0 ? boarded : [id],
+				inputs: def.flowKinds.inputs,
+				outputs: def.flowKinds.outputs
 			}
 		});
 	}
-	rows.sort((a, b) => a.order - b.order || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
+	rows.sort((a, b) => a.order - b.order || (a.id < b.id ? -1 : 1));
 	const out = {};
 	for (const r of rows) out[r.id] = r.row;
 	return out;
@@ -422,6 +385,7 @@ async function cardToolsArm() {
 	for (const id of [...defs.keys()].sort()) {
 		const def = defs.get(id);
 		const ident = def.identity;
+		/* v8 ignore next -- loadCardDefs asserts identity (the m1 wall), so live defs always carry it (2026-09-12) */
 		if (ident === void 0) continue;
 		const boarded = [...def.boarded ?? []];
 		const fams = boarded.length > 0 ? boarded : [id];
@@ -474,6 +438,57 @@ async function formSpecArm(model) {
 	const res = resolveSpecKey(model, defs, boardedMap(defs));
 	if (res === null) return null;
 	return specBody(theService(), defs, res);
+}
+//#endregion
+//#region src/enhance-agent.ts
+/** Map a form-spec envelope onto its declared recipes (the ONE
+*  spelling — the request lane and the in-process sweep share it). */
+function declaredFieldsFromSpec(spec) {
+	let fields = {};
+	if (spec.enhance_prompts !== null && typeof spec.enhance_prompts === "object" && !Array.isArray(spec.enhance_prompts)) {
+		for (const [k, v] of Object.entries(spec.enhance_prompts)) if (typeof v === "string" && v.length > 0) fields[k] = v;
+	} else if (typeof spec.enhance_prompt === "string" && spec.enhance_prompt.length > 0) fields = { prompt: spec.enhance_prompt };
+	return {
+		fields,
+		names: Object.keys(fields)
+	};
+}
+/** One field's enhancement through the harness model. */
+function enhanceOneField(llm, recipe, prompt, temperature, signal, llmWant, defaultLlm) {
+	return harnessEnhance(llm, {
+		system: recipe,
+		prompt,
+		temperature,
+		signal,
+		...llmWant !== void 0 && llmWant.length > 0 ? { llm: llmWant } : {}
+	}, defaultLlm);
+}
+/**
+* GENERIC FALLBACK RECIPE — BACK HOME (the gateway kill,
+* 2026-09-10): the ONE spelling lives here, where it was born (the
+* disclosure bundle that shared it died with the gateway).
+*/
+const GENERIC_ENHANCE_RECIPE = "You rewrite rough generation prompts into model-optimal ones. Expand terse descriptions into concrete visual/audio language: subject, action, setting, lighting, composition, style, medium, detail level. Reply with ONLY a JSON object {\"positive\": \"<the rewritten prompt>\", \"negative\": \"<what to avoid, or empty string>\"} — no prose outside the JSON.";
+/**
+* THE SWEEP — every declared field, one press. The route's model-form uses
+* this: the CALLER orchestrates (a button, not a conversational agent), so
+* unlike the chat tool there is no listing round-trip — all declared fields
+* are enhanced sequentially and returned together. A model with NO declared
+* fields sweeps ONE generic 'prompt' field (the shared fallback recipe).
+*/
+async function agenticSweep(ctx, llm, opts) {
+	const spec = await formSpecArm(opts.model);
+	if (spec === null) throw new Error(`enhance: '${opts.model}' does not resolve (unknown, unoffered, or retired)`);
+	const { fields } = declaredFieldsFromSpec(spec);
+	let names = Object.keys(fields);
+	if (names.length === 0) names = ["prompt"];
+	if (names.length === 1 && fields[names[0]] === void 0) fields[names[0]] = GENERIC_ENHANCE_RECIPE;
+	const results = {};
+	for (const name of names) results[name] = await enhanceOneField(llm, fields[name], opts.prompt, opts.temperature, opts.signal, opts.llmWant, opts.defaultLlm);
+	return {
+		model: opts.model,
+		results
+	};
 }
 //#endregion
 //#region src/doors.ts
@@ -624,7 +639,7 @@ function apply(c, config = {}) {
 					const out = JSON.stringify({ path: "data/input/" + filename });
 					res.writeHead(200, { "content-type": "application/json" });
 					res.end(out);
-				}).catch((e) => fail(500, "uploads: " + (e instanceof Error ? e.message : String(e))));
+				}).catch((e) => fail(500, "uploads: " + (e instanceof Error ? e.message : /* v8 ignore next -- fs throws Errors only (2026-09-12) */ String(e))));
 			}
 		}), "melite-tools: uploads rail");
 		c.effect(() => c.webServer.register({
@@ -647,14 +662,14 @@ function apply(c, config = {}) {
 					const realDir = await fs.realpath(dir);
 					if (real === void 0 || !real.startsWith(realDir + path.sep)) return fail(404, "no such input");
 					const bytes = await fs.readFile(file);
-					const ext = name.split(".").pop()?.toLowerCase() ?? "";
+					const ext = name.split(".").pop().toLowerCase();
 					const type = ext === "png" ? "image/png" : ext === "jpg" || ext === "jpeg" ? "image/jpeg" : "image/webp";
 					res.writeHead(200, {
 						"content-type": type,
 						"content-length": String(bytes.byteLength)
 					});
 					res.end(bytes);
-				})().catch((e) => fail(500, "inputs: " + (e instanceof Error ? e.message : String(e))));
+				})().catch((e) => fail(500, "inputs: " + (e instanceof Error ? e.message : /* v8 ignore next -- fs throws Errors only (2026-09-12) */ String(e))));
 			}
 		}), "melite-tools: input preview");
 	}
@@ -678,16 +693,19 @@ function apply(c, config = {}) {
 				});
 				res.end(Buffer.from(body));
 			};
-			const url = new URL(req.url ?? "/", "http://localhost");
-			const path = url.pathname;
-			const method = (req.method ?? "GET").toUpperCase();
 			const callerGone = new AbortController();
 			res.on("close", () => {
 				if (!res.writableEnded) callerGone.abort();
 			});
 			const signal = callerGone.signal;
 			const serve = () => {
+				let path;
+				let method;
+				let url;
 				try {
+					url = new URL(req.url ?? "/", "http://localhost");
+					path = url.pathname;
+					method = (req.method ?? "GET").toUpperCase();
 					if (method === "GET" && path === "/v1/card-tools") {
 						cardToolsArm().then(ok, (e) => fail(500, { error: `discovery door: ${e instanceof Error ? e.message : String(e)}` }));
 						return;
@@ -714,7 +732,7 @@ function apply(c, config = {}) {
 						return;
 					}
 				} catch (error) {
-					return fail(500, { error: `discovery door: ${error instanceof Error ? error.message : String(error)}` });
+					return fail(500, { error: `discovery door: ${error instanceof Error ? error.message : /* v8 ignore next -- the try body throws Errors only (URL/arms are sync-Error sites, 2026-09-12) */ String(error)}` });
 				}
 				const request = makeEstateRequest(c);
 				if (method === "POST") {
