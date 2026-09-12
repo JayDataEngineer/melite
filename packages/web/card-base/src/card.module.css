@@ -1,6 +1,10 @@
 /* card.module.css — @melite/card-base: the atoms' own skin, moved
  * verbatim from the card-view module (the base owns its classes; the
  * consumer's chrome still wraps the constructor's output). */
+.specForm :where(input, textarea, select, button) {
+  box-sizing: border-box;
+}
+
 .specForm {
   display: flex;
   flex-direction: column;

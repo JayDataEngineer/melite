@@ -134,7 +134,7 @@ test('the envelope lift: the detail reports, the card law answers', async () => 
   expect(reported).toEqual(['mounted'])
   // the width law (framer strips inline width headless; the lane
   // proves the paint — this proves the decision)
-  expect(zoomWidthFor(null)).toBe('min(760px, 88vh)')
+  expect(zoomWidthFor(null)).toBe('min(760px, 94vw)') // width caps by vw (a vh cap clipped the right column)
   expect(zoomWidthFor('huge')).toBe('min(1160px, 94vw)')
 })
 

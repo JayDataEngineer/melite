@@ -54,10 +54,13 @@ const ZOOM_DETAIL_MAX_PX = 760
  *  room — the card grows (the DECLARATION is estate truth). */
 const ZOOM_HUGE_MAX_PX = 1160
 /** The card's width law, pure (the envelope lift's decision): the
- *  estate's surface.size='huge' grows the card for studio room. */
+ *  estate's surface.size='huge' grows the card for studio room. The
+ *  viewport cap measures WIDTH (94vw, room for the pane's own edge) —
+ *  a vh cap on width was a category error that clipped the right
+ *  half of the params column on short viewports (2026-09-12). */
 export function zoomWidthFor(surfaceSize: string | null): string {
   const huge = surfaceSize === 'huge'
-  return `min(${huge ? ZOOM_HUGE_MAX_PX : ZOOM_DETAIL_MAX_PX}px, ${huge ? '94vw' : '88vh'})`
+  return `min(${huge ? ZOOM_HUGE_MAX_PX : ZOOM_DETAIL_MAX_PX}px, 94vw)`
 }
 
 /** The zoomed card's DETAIL content — supplied by the bench tab (the
