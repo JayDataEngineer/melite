@@ -42,6 +42,11 @@ import { runsRemotePlugin } from "@melite/estate-runs";
 // replacement): run artifacts served same-origin from the queue
 // seat's own runs tree.
 import mediaPlugin from "@melite/estate-media";
+// The models provisions route (the /v1/models face's DSH-native
+// replacement): family DECL provision files served same-origin
+// from the booted models table + the weights mount — no remotes,
+// no proxies (the 2026-09-12 motion-skin 502).
+import modelsPlugin from "@melite/estate-models";
 
 /** The estate composition: the engine tier, the drafts service,
  *  the serial run queue, and the runs plane (REBUILD-5/9). A
@@ -83,6 +88,10 @@ const rows: readonly Plugin[] = [
   // (optional-dependency law), so order carries no meaning — it just
   // reads well after the estate rows it serves.
   mediaPlugin,
+  // The provisions route after it: it boots the models table itself
+  // (bootModels' singleton, the card registry's own boot), so order
+  // carries no meaning either.
+  modelsPlugin,
 ];
 
 export const name = "melite-estate";

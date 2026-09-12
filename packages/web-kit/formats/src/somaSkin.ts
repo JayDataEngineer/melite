@@ -25,8 +25,9 @@ import { apiFetch } from "@melite/catalog"
 
 // The skin is a DECLARED provision on the kimodo family (models/
 // motion/kimodo/model.py _SOMA_SKIN) — the provision door streams it
-// from the weights mount and ACQUIRES it on demand (sha-verified
-// through the comfy-mcp rail) when missing. NEVER a vite-public
+// from the weights mount and ACQUIRES it on demand (fetched direct
+// from the DECL's pinned distribution, DECL-sha-gated before it
+// lands) when missing. NEVER a vite-public
 // blob: the old /editor/soma-skin-standard.npz path 404'd whenever
 // the committed asset drifted from the declared one (2026-09-06).
 // Exported: the editor test wall pins the door shape.
