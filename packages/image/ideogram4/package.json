@@ -13,10 +13,13 @@
     "./ui/studio/ideoHelpers": "./src/ui/studio/ideoHelpers.ts",
     "./ui/studio/IdeoPanels": "./src/ui/studio/IdeoPanels.tsx"
   },
-  "scripts": {},
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
   "dependencies": {
     "@deepseek-ai/cordis": "^4.0.2",
     "@deepseek-ai/dsh-client-ui-primitives": "0.1.5-rc.2",
+    "@deepseek-ai/dsh-client-ui-renderer": "0.1.5-rc.2",
     "@deepseek-ai/schemastery": "*",
     "@melite/comfyui-card-kit": "workspace:*",
     "@melite/comfyui-cordis": "workspace:*",
@@ -28,11 +31,14 @@
     "clsx": "*"
   },
   "devDependencies": {
-    "@types/node": "*",
+    "@types/node": "^22.20.0",
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.2",
     "@testing-library/react": "*",
     "@testing-library/user-event": "*",
     "@testing-library/jest-dom": "*",
-    "tsdown": "^0.22.14"
+    "tsdown": "^0.22.14",
+    "typescript": "~6.0.3"
   },
   "name": "@melite/image-ideogram4",
   "dsh": {

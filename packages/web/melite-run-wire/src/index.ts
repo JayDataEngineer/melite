@@ -147,6 +147,10 @@ export interface RunStageStatus {
   id: string
   status: string
   url?: string
+  /** Completed stages carry the full artifact name list ({name}
+   * rows — the queue stamps stage["gallery"] alongside url; the
+   * harvest carry reads it to feed studio adapters real data). */
+  gallery?: { name: string }[]
 }
 
 /** The runs/status row, normalized once. */

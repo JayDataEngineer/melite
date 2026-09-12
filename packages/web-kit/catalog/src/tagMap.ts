@@ -292,7 +292,7 @@ export const useTagMap = Object.assign(useTagMapHook, {
   },
 })
 
-const tagMapActions = (set: typeof tagMapSetState, get: typeof tagMapGetState): TagMapState => ({
+const tagMapActions = (set: typeof tagMapSetState, get: typeof tagMapGetState): Omit<TagMapState, "tags" | "map"> => ({
 
   createTag: (name, color) => {
     const trimmed = name.trim()

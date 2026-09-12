@@ -128,7 +128,10 @@ export function apply(c: CtxView, config: Config = {}): void {
     },
   }), 'melite-tools: catalog route')
 
-  const enhanceHandler = (req: unknown, res: unknown): void => {
+  // The door's own handler seat (IncomingMessage/ServerResponse —
+  // the file's inline node:http idiom): `unknown` forced a cast at
+  // every touch site, so the signature states the seat (2026-09-12).
+  const enhanceHandler = (req: import('node:http').IncomingMessage, res: import('node:http').ServerResponse): void => {
       let ok = true
       const respond = (status: number, payload: unknown): void => {
         if (!ok) return

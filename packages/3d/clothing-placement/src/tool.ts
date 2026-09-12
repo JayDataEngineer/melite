@@ -23,7 +23,7 @@ import { GatewayError, jsonLane, type EstateCall } from '@melite/estate-call'
 import { emitParamsSpec } from "@melite/comfyui-cordis/params-emit";
 import { identity, schema } from "./card.ts";
 import { defineTool } from "@deepseek-ai/dsh-tools";
-import type { ToolDefinition, ParameterSchemaSpec } from "@deepseek-ai/dsh-tools";
+import type { InferValue, ToolDefinition, ParameterSchemaSpec } from "@deepseek-ai/dsh-tools";
 
 /**
  * The TOOL-plane name: the card id, hyphens→underscores, no
@@ -36,6 +36,25 @@ export const TOOL_NAME = "clothing_placement";
 
 const FLOW = "clothing-placement"
 const TIMEOUT_MS = 15e3
+
+/** The output envelope, stated once: defineTool infers execute's
+ * return from it, and the execute annotation below names the same
+ * inference — so multi-arm returns check arm-by-arm instead of
+ * collapsing into a union whose `?: undefined` fillers poison the
+ * schema's `& Record<string, JsonValue>` tail (gate-found, 2026-09-12). */
+const OUTPUT_SCHEMA = {
+  type: "object",
+  additionalProperties: true,
+  properties: {
+    run_id: { type: "string", description: "The queue run id — poll with run_status." },
+    draft_id: { type: "string", description: "The minted card draft id." },
+    flow: { type: "string", required: true },
+    status: { type: "string", description: "Registration status (queued/running)." },
+    error: { type: "string", description: "Named refusal reason, when the estate refused." },
+  },
+} as const
+
+type OutputEnvelope = InferValue<typeof OUTPUT_SCHEMA>
 
 export function buildCardTool(call: EstateCall): ToolDefinition {
   const gw = jsonLane(call)
@@ -63,17 +82,7 @@ export function buildCardTool(call: EstateCall): ToolDefinition {
       // openness declared (the value map never acquires an
       // accidental JSON-Schema default). render is the pure Native
       // projection of one validated canonical value.
-      schema: {
-        type: "object",
-        additionalProperties: true,
-        properties: {
-          run_id: { type: "string", description: "The queue run id — poll with run_status." },
-          draft_id: { type: "string", description: "The minted card draft id." },
-          flow: { type: "string", required: true },
-          status: { type: "string", description: "Registration status (queued/running)." },
-          error: { type: "string", description: "Named refusal reason, when the estate refused." },
-        },
-      },
+      schema: OUTPUT_SCHEMA,
       render: (_args, value) => {
         const v = (value ?? {}) as Record<string, unknown>;
         if (typeof v.error === "string" && v.error) {
@@ -99,7 +108,12 @@ export function buildCardTool(call: EstateCall): ToolDefinition {
         };
       },
     },
-    async execute(args, exec): Promise<CardResult> {
+    // The tool plane returns the FLOW ENVELOPE (flow + the run
+    // ids/status/error arms the output schema declares) — never a
+    // CardResult (the card plane owns artifacts). The annotation names
+    // the schema's own inference (OUTPUT_SCHEMA above): each arm checks
+    // against the envelope directly.
+    async execute(args, exec): Promise<OutputEnvelope> {
       try {
         const composed = await gw( "POST", "/v1/flows/drafts", { flow: FLOW, ...args }, exec.signal, TIMEOUT_MS);
         const draftId = (composed.draftId ?? composed.draft_id) as string | undefined;

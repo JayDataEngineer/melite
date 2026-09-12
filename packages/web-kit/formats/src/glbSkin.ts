@@ -152,7 +152,10 @@ export async function loadGlbSkin(url: string): Promise<SomaSkin> {
     }
     lbsIndices.set(si.array as ArrayLike<number>, vOff * GLTF_INFLUENCES)
     lbsWeights.set(sw.array as ArrayLike<number>, vOff * GLTF_INFLUENCES)
-    const idx = m.geometry.index
+    // Non-null by the counting pass's own refusal (`!m.geometry.index`
+    // threw above) — the assertion rides that enforced invariant, not
+    // an assumption (2026-09-12).
+    const idx = m.geometry.index!
     const base = vOff
     for (let i = 0; i < idx.count; i++) {
       faces[iOff + i] = idx.array[i]! + base

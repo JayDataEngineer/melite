@@ -164,8 +164,10 @@ describe("the executor path (two doors, flow law)", () => {
     // error present-but-empty falls through to the run-id voice.
     const quiet = tool.output.render({}, { error: "" });
     assert.match(String((quiet[0] as { text?: string }).text), /clothing_placement → \?/);
-    // no value at all: the ? placeholder names the gap.
-    const bare = tool.output.render({}, undefined);
+    // no value at all: the ? placeholder names the gap (the source
+    // tolerates undefined though the lib's render signature does not
+    // declare it — the pin documents the tolerance).
+    const bare = tool.output.render({}, undefined as never);
     assert.match(String((bare[0] as { text?: string }).text), /clothing_placement → \?/);
   });
 
@@ -176,8 +178,10 @@ describe("the executor path (two doors, flow law)", () => {
     // card's own prose relies on it: body/garment are always
     // present when the body runs).
     assert.equal(buildCardTool(seam).presentCall?.({}), undefined);
-    // Validated args present the execute card with both files named.
-    const card = buildCardTool(seam).presentCall?.(FULL_ARGS);
+    // Validated args present the execute card with both files named
+    // (rawInput rides the source's own presentCall return — the lib's
+    // ToolCallView does not declare it).
+    const card = buildCardTool(seam).presentCall?.(FULL_ARGS) as unknown as { rawInput?: unknown };
     assert.ok(card);
     assert.match(String(card.rawInput), /body=\/tmp\/b.glb garment=\/tmp\/g.glb/);
   });
@@ -196,12 +200,15 @@ describe("the executor path (two doors, flow law)", () => {
       meta({}, { run_id: "r1", draft_id: "d1", status: "running", error: "late" }),
       { flow: "clothing-placement", run_id: "r1", draft_id: "d1", status: "running", error: "late" },
     );
-    // Mixed: some fields present, some absent.
-    assert.deepEqual(meta({}, { draft_id: "d2", status: "queued" }), { flow: "clothing-placement", draft_id: "d2", status: "queued" });
+    // Mixed: some fields present, some absent (a partial value — the
+    // source defaults flow itself, though the lib types demand the
+    // full envelope).
+    assert.deepEqual(meta({}, { draft_id: "d2", status: "queued" } as never), { flow: "clothing-placement", draft_id: "d2", status: "queued" });
     // Nullish values ride the empty-object arm (replay seams may
-    // carry no value at all — re-green 2026-09-12).
-    assert.deepEqual(meta({}, undefined), { flow: "clothing-placement" });
-    assert.deepEqual(meta({}, null), { flow: "clothing-placement" });
+    // carry no value at all — re-green 2026-09-12; the source
+    // tolerates nullish though the lib types do not declare it).
+    assert.deepEqual(meta({}, undefined as never), { flow: "clothing-placement" });
+    assert.deepEqual(meta({}, null as never), { flow: "clothing-placement" });
   });
 
   it("the snake_case draft spelling mints too (the door's two spellings)", async () => {

@@ -21,6 +21,10 @@
 // (erased at runtime; the DSH-generated client assembly replaces
 // this reference when the generation pipeline lands host-side).
 import type {} from '@melite/estate-drafts'
+// Type-only: the `runs/*` codes (the queue owns them; melite-flow's
+// unknown-run arm discriminates on them) — same merge idiom.
+import type {} from '@melite/estate-queue'
+import type { EstateCall } from '@melite/estate-call'
 
 /**
  * DYING SHIM (HTTP-era refusal carrier). The seats never throw it;
@@ -38,6 +42,19 @@ export type EstateRequest = (
   execSignal: AbortSignal,
   timeoutMs: number,
 ) => Promise<unknown>
+
+/** Narrow the seat-bound request to the canonical EstateCall the card
+ * tool builders receive: the seats demand a caller signal (trySeats'
+ * throwIfAborted), so a signalless call fails HERE with a named error
+ * instead of deep inside the lane as a TypeError (2026-09-12). */
+export function asEstateCall(request: EstateRequest): EstateCall {
+  return (method, path, body, signal, timeoutMs) => {
+    if (signal === undefined) {
+      throw new Error(`estate call ${method} ${path} arrived without a caller signal (the seats require cancellation)`)
+    }
+    return request(method, path, body, signal, timeoutMs)
+  }
+}
 
 /** The estate row's Context-merged seats, stated structurally
  *  (the compiled remote types stay out of this source-run package). */

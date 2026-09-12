@@ -19,7 +19,14 @@
  * partial merge); the run rides the host drill's own Run row.
  */
 import { createElement as h } from 'react'
-import type { Context } from '@deepseek-ai/cordis'
+import type { Context as ClientContext } from '@deepseek-ai/cordis'
+// Type-only: the service seats this entry touches ride cordis Context
+// declaration-merging from each owning package's ./client entry — the
+// renderer owns ctx.slots. (The card-view client's own law, verbatim.)
+import type {} from '@deepseek-ai/dsh-client-ui-renderer/client'
+// Type-only: the 'cards.stage.view' seam declaration (card-base owns
+// the card-UI seams). Erased — the bundle stays pure.
+import type {} from '@melite/card-base/slots'
 import type { CardResult, CardStage, StageViewOwnerProps } from '@melite/contracts'
 import { MotionCardEditor } from '../ui/studio/component.tsx'
 
@@ -84,6 +91,9 @@ function toUpstreams(props: StageViewOwnerProps): CardStage[] {
     params: {},
     inputs: [],
     inputIndices: [],
+    // Upstream rows ARE latest outputs (produced artifacts) — 'done'
+    // is the honest status, not a default.
+    status: 'done',
     result: { artifacts: { [u.title]: u.url }, assetUrls: [u.url], metadata: {} },
   })) as CardStage[]
 }
@@ -94,7 +104,7 @@ export const name = 'motionStudio'
 
 export const inject = ['slots']
 
-export function apply(ctx: Context): void {
+export function apply(ctx: ClientContext): void {
   ctx.slots.inject('cards.stage.view', () =>
     ctx.slots.register({ name: 'cards.stage.view', key: 'motion' }, MotionStudio))
 }

@@ -35,9 +35,16 @@ import { SlotCore } from "./vendored/core.ts"
 
 /** The chain seat carrying the kind entries (declared once, at module
  * scope, by the lane owner's root claim — declaration = render
- * authorization, one table). */
+ * authorization, one table). The a-priori "root" seat rides the same
+ * table: SlotCore seeds it in the constructor (single), and
+ * RegisterOptions.name is keyof-checked — without this row every
+ * root claim in the estate fails the type gate (first caught
+ * 2026-09-12 by the studio typecheck gate; upstream declares the
+ * same seat in the renderer's registry). The local core carries no
+ * scope axis, so the entry is kind-only. */
 declare module "./vendored/core" {
   interface SlotMap {
+    "root": { kind: "single" }
     "card.kinds": { kind: "chain"; owner: CardKindOwner }
   }
 }

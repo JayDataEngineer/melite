@@ -482,7 +482,11 @@ export function JointManipulator({
         <>
           <group ref={gizmoRef} />
           <LiftAwareTransformControls
-            object={gizmoRef as React.RefObject<THREE.Object3D>}
+            // drei's TransformControls type still speaks the OLD React
+            // ref shape (MutableRefObject without null); the runtime
+            // dereferences the ref object, so the double-cast matches
+            // the sibling site in PoseViewer3D (2026-09-12).
+            object={gizmoRef as unknown as THREE.Object3D}
             mode={effectiveMode}
             size={gizmoSize}
             onMouseDown={() => { draggingRef.current = true; if (controls) controls.enabled = false }}

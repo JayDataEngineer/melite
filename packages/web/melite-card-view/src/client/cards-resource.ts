@@ -241,13 +241,10 @@ export async function observeRunOutcome(
     // name→url map + the flat stitch-first list; a url-only result
     // starves them). Gallery names rewrite onto the media route with
     // the same one-rewrite law as the stage url.
-    const gallery = stage !== undefined && Array.isArray((stage as Record<string, unknown>)['gallery'])
-      ? ((stage as Record<string, unknown>)['gallery'] as unknown[]) : []
+    const gallery: readonly { name: string }[] = stage?.gallery ?? []
     const artNames: string[] = []
     for (const g of gallery) {
-      const name = typeof g === 'object' && g !== null && typeof (g as Record<string, unknown>)['name'] === 'string'
-        ? (g as Record<string, unknown>)['name'] as string : ''
-      if (name !== '') artNames.push(name)
+      if (g.name !== '') artNames.push(g.name)
     }
     if (artNames.length > 0) {
       const mediaUrls = artNames.map((n): string => toRunMediaUrl(runId, n))

@@ -7,24 +7,43 @@
 // failure (loud, named). Uses per-package .bin/tsc + the repo
 // node_modules/.bin/vitest directly (no pnpm at run time).
 import { spawnSync } from "node:child_process";
-import { existsSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync } from "node:fs";
+import { join } from "node:path";
 
 const REPO = new URL("..", import.meta.url).pathname;
 
-// Every package owning a `typecheck` script (tsc --noEmit in its dir).
-const PACKAGES = [
-  "packages/3d/clothing-placement",
-  "packages/engines/comfyui-card-kit",
-  "packages/engines/comfyui-cordis",
-  "packages/estate/manage",
-  "packages/estate/runs",
-  "packages/harness/estate-queue",
-  "packages/harness/melite-tools",
-  "packages/web/editor",
-  "packages/web/infer-gallery",
-  "packages/web/melite-card-deck",
-  "packages/web/melite-card-view",
-];
+// Every package owning a `typecheck` script (tsc --noEmit in its dir),
+// DERIVED from the workspace manifests — never hardcoded. The
+// hardcoded list drifted twice (a dead packages/web/editor path;
+// estate/models + web/melite-run-wire silently ungated), so the
+// battery now reads the truth: any package that declares the script
+// is gated, the day it declares it (gate-found 2026-09-12).
+function typecheckPackages() {
+  const out = [];
+  const genres = readdirSync(join(REPO, "packages"), { withFileTypes: true })
+    .filter((d) => d.isDirectory());
+  for (const genre of genres) {
+    const genreDir = join(REPO, "packages", genre.name);
+    // A genre dir may itself be a package (packages/<name>/package.json).
+    for (const dir of [genreDir, ...readdirSync(genreDir, { withFileTypes: true })
+      .filter((d) => d.isDirectory())
+      .map((d) => join(genreDir, d.name))]) {
+      const manifest = join(dir, "package.json");
+      if (!existsSync(manifest)) continue;
+      let scripts;
+      try {
+        scripts = JSON.parse(readFileSync(manifest, "utf8")).scripts ?? {};
+      } catch {
+        continue; // unparseable manifest: not this battery's wall
+      }
+      if (typeof scripts.typecheck === "string") {
+        out.push(dir.slice(REPO.length));
+      }
+    }
+  }
+  return out.sort();
+}
+const PACKAGES = typecheckPackages();
 
 for (const p of PACKAGES) {
   const tsc = `${REPO}${p}/node_modules/.bin/tsc`;

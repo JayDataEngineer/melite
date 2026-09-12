@@ -16,6 +16,9 @@
  * itself carries.
  */
 import type { FieldOwnerProps, FormOwnerProps } from './owners.ts'
+// The stage-view seam's owner: the bench row + the host drill's verbs.
+// Type-only (erased — the client bundle-purity gate sees no value import).
+import type { StageViewOwnerProps } from '@melite/contracts'
 // The anchor: ui-slots' own slots module imports the module it
 // augments (declaration merging resolves through the same specifier).
 import type { SlotEntryDef } from '@deepseek-ai/dsh-client-ui-slots'
@@ -24,6 +27,7 @@ import type { SlotEntryDef } from '@deepseek-ai/dsh-client-ui-slots'
 export type CardSeamDefs = {
   field: SlotEntryDef
   form: SlotEntryDef
+  stageView: SlotEntryDef
 }
 
 /** The seam ids, spelled once. Claims use these constants. */
@@ -37,6 +41,10 @@ export const CARD_SLOTS = {
    *  half replaces the constructed form entirely (the studio law's
    *  form half; the drill consults this before constructing). */
   form: 'melite.card.form',
+  /** keyed by card id: the BENCH stage view — a card's client half
+   *  mounted on the bench slot (the studio law's bench half; the
+   *  first-party studio surface every card package ships). */
+  stageView: 'cards.stage.view',
 } as const
 
 declare module '@deepseek-ai/dsh-client-ui-slots' {
@@ -57,6 +65,16 @@ declare module '@deepseek-ai/dsh-client-ui-slots' {
       kind: 'keyed'
       scope: 'session'
       owner: FormOwnerProps
+    }
+    /** The bench stage view, keyed by card id (declared 2026-09-12
+     *  by the studio typecheck gate — every first-party client
+     *  claims this seam, but no table declared it, so keyof-checked
+     *  inject/register calls failed the gate estate-wide). Keyed
+     *  kind: at most one studio per card. */
+    'cards.stage.view': {
+      kind: 'keyed'
+      scope: 'session'
+      owner: StageViewOwnerProps
     }
   }
 }

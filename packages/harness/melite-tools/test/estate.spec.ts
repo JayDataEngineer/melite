@@ -4,7 +4,7 @@
 // get(name) answers the seat or undefined (seatless).
 import { describe, test } from 'vitest'
 import assert from 'node:assert/strict'
-import { makeEstateRequest, type EstateRequest } from '../src/estate.ts'
+import { makeEstateRequest, asEstateCall, type EstateRequest } from '../src/estate.ts'
 
 function ctxWith(seats: Record<string, unknown>): unknown {
   return { get: (name: string) => seats[name] }
@@ -44,6 +44,22 @@ describe('transport law', () => {
   test('a seat value rides verbatim', async () => {
     const r = req({ skills: { index: () => ({ rows: [1] }) } })
     assert.deepEqual(await r('GET', '/v1/skills', undefined, SIG, 1000), { rows: [1] })
+  })
+
+  test('asEstateCall forwards a carried signal verbatim', async () => {
+    const seen: unknown[] = []
+    const r: EstateRequest = async (method, path, body, signal, timeoutMs) => {
+      seen.push(method, path, body, signal, timeoutMs)
+      return { ok: true }
+    }
+    const value = await asEstateCall(r)('POST', '/v1/flows/drafts', { a: 1 }, SIG, 250)
+    assert.deepEqual(value, { ok: true })
+    assert.deepEqual(seen, ['POST', '/v1/flows/drafts', { a: 1 }, SIG, 250])
+  })
+
+  test('asEstateCall refuses a signalless call with the named error', async () => {
+    const msg = await throwsMsg(() => asEstateCall(req({}))('GET', '/v1/flows/drafts', undefined, undefined, 1000))
+    assert.ok(msg.includes('estate call GET /v1/flows/drafts arrived without a caller signal'), msg)
   })
 })
 

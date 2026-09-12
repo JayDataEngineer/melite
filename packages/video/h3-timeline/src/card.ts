@@ -49,14 +49,8 @@ import { finalizeH3 } from '@melite/comfyui-card-kit'
 // LORA_STACK_GOLD ← loras/h3/minimax_h3_fl2v_lightx2v_v0.1_dareties
 //_v4_step600_comfy_fro + loras/h3/
 // minimax_h3_fl2v_lightx2v_turbo_4to8step_v0.1-v1.0_768p_v4_step600_dareties.
-declare module '@melite/comfyui-cordis/service' {
-  interface CardDefinition {
-    /** Emitter carrier: when the registered schema is a hand-written
-     * normalizer (this card), the underlying Schemastery object whose
-     * .dict the params_schema emitter walks. */
-    schemaCarrier?: unknown
-  }
-}
+// (No local CardDefinition augmentation: the service's schemaCarrier
+// seat — Schema-typed since ledger row 23 — already carries this.)
 
 const UNET_GOLD = 'minimax_h3_hybrid_fl2va_ref2va_b30-49-int8.safetensors'
 const CLIP_GOLD = 'qwen3vl_32b_minimax_h3_int8_convrot.safetensors'

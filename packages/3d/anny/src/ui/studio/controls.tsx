@@ -17,7 +17,12 @@ interface TipProps {
   /** Short label shown in the bubble. Undefined renders bare. */
   tip?: string
   side?: "top" | "bottom" | "right"
-  children: ReactElement
+  /** The trigger element — a single element (the DSH Tooltip clones it
+   *  to attach hover/focus handlers; its own handlers are chained).
+   *  `any` is the timeline Tip's own contract, mirrored: the child is
+   *  genuinely unconstrained — Tooltip's AnchorProps are all optional
+   *  and injected by cloning. */
+  children: ReactElement<any>
 }
 
 export function Tip({ tip, side = "top", children }: TipProps) {

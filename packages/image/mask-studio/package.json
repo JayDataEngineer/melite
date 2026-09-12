@@ -12,10 +12,13 @@
     "./ui/studio/component": "./src/ui/studio/component.tsx"
   },
   "dsh": { "client": { "platform": "web" } },
-  "scripts": {},
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
   "dependencies": {
     "@deepseek-ai/cordis": "^4.0.2",
     "@deepseek-ai/dsh-client-ui-primitives": "0.1.5-rc.2",
+    "@deepseek-ai/dsh-client-ui-renderer": "0.1.5-rc.2",
     "@deepseek-ai/schemastery": "*",
     "@melite/card-base": "workspace:*",
     "@melite/comfyui-card-kit": "workspace:*",
@@ -30,8 +33,12 @@
     "@testing-library/jest-dom": "*",
     "@testing-library/react": "*",
     "@testing-library/user-event": "*",
-    "@types/node": "*",
-    "tsdown": "^0.22.14"
+    "@types/node": "^22.20.0",
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.2",
+    "@types/three": "^0.184.1",
+    "tsdown": "^0.22.14",
+    "typescript": "~6.0.3"
   },
   "name": "@melite/image-mask-studio"
 }

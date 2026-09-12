@@ -966,7 +966,10 @@ function ReferenceMesh({
       {editRefMode && editableJoints && onJointMove && (
         <JointManipulator
           jointsFlat={editableJoints}
-          selectedJoint={selectedJoint}
+          // Unpassed (undefined) IS unselected: the manipulator's none
+          // guard is `=== null`, and undefined would slip it into NaN
+          // joint positions (gate-caught real bug, 2026-09-12).
+          selectedJoint={selectedJoint ?? null}
           selectedChain={selectedChain}
           onSelectJoint={onSelectJoint ?? (() => {})}
           onSelectChain={onSelectChain}

@@ -129,8 +129,11 @@ export function SlotGrid({ stage, upstreams, onSaveParams, onWireSlot }: SlotGri
               badge={wired ? upstream!.title : undefined}
               metric={wired && !upstream!.result ? "not run yet" : undefined}
               onClick={onWireSlot ? () => setPicker({ slot, index: i }) : undefined}
-              onPickFile={onWireSlot !== undefined || onSaveParams ? (f) => void handleFile(f, slot) : undefined}
-              onDropFile={onWireSlot !== undefined || onSaveParams ? (f) => void handleFile(f, slot) : undefined}
+              // File attach rides param-saving (onSaveParams is required —
+              // display-only still edits params, only wiring is gated on
+              // onWireSlot), so these handlers are unconditional (2026-09-12).
+              onPickFile={(f) => void handleFile(f, slot)}
+              onDropFile={(f) => void handleFile(f, slot)}
               onDropAsset={onWireSlot !== undefined || onSaveParams ? (url) => { onSaveParams({ [slot]: url }); onWireSlot?.(slot, null, null) } : undefined}
               onClear={
                 wired || attached

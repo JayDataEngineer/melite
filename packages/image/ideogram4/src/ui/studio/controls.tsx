@@ -26,7 +26,10 @@ interface TipProps {
   tip?: string
   /** Which side the bubble appears on. Defaults to top (kit parity). */
   side?: "top" | "bottom" | "right"
-  children: ReactElement
+  // React 19 types default ReactElement's props to `unknown`, which no
+  // longer accepts every JSX child — `ReactElement<any>` keeps the
+  // Tooltip's child seat open (the timeline Tip twin, 2026-09-12).
+  children: ReactElement<any>
 }
 
 export function Tip({ tip, side = "top", children }: TipProps) {

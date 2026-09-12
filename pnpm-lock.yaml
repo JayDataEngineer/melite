@@ -77,8 +77,20 @@ importers:
         version: 19.2.8
     devDependencies:
       '@types/node':
-        specifier: '*'
-        version: 24.13.3
+        specifier: ^22.20.0
+        version: 22.20.1
+      '@types/react':
+        specifier: ^19.2.14
+        version: 19.2.18
+      '@types/react-dom':
+        specifier: ^19.2.2
+        version: 19.2.5(@types/react@19.2.18)
+      '@types/three':
+        specifier: ^0.184.1
+        version: 0.184.1
+      typescript:
+        specifier: ~6.0.3
+        version: 6.0.3
 
   packages/3d/clothing-placement:
     dependencies:
@@ -135,6 +147,9 @@ importers:
       '@deepseek-ai/dsh-client-ui-primitives':
         specifier: 0.1.5-rc.2
         version: 0.1.5-rc.2(@deepseek-ai/cordis@4.0.2)
+      '@deepseek-ai/dsh-client-ui-renderer':
+        specifier: 0.1.5-rc.2
+        version: 0.1.5-rc.2(@deepseek-ai/cordis@4.0.2)
       '@deepseek-ai/schemastery':
         specifier: '*'
         version: 3.18.2
@@ -163,7 +178,7 @@ importers:
         specifier: workspace:*
         version: link:../../harness/estate-call
       '@types/three':
-        specifier: '*'
+        specifier: ^0.184.1
         version: 0.184.1
       clsx:
         specifier: '*'
@@ -185,11 +200,20 @@ importers:
         specifier: '*'
         version: 14.6.7(@testing-library/dom@10.4.1)
       '@types/node':
-        specifier: '*'
-        version: 24.13.3
+        specifier: ^22.20.0
+        version: 22.20.1
+      '@types/react':
+        specifier: ^19.2.14
+        version: 19.2.18
+      '@types/react-dom':
+        specifier: ^19.2.2
+        version: 19.2.5(@types/react@19.2.18)
       tsdown:
         specifier: ^0.22.14
         version: 0.22.14(@tsdown/css@0.22.14)(oxc-resolver@11.24.2)(typescript@6.0.3)(unrun@0.3.1)
+      typescript:
+        specifier: ~6.0.3
+        version: 6.0.3
 
   packages/3d/quad-remesh:
     dependencies:
@@ -257,8 +281,8 @@ importers:
         version: link:../../harness/estate-call
     devDependencies:
       '@types/node':
-        specifier: '*'
-        version: 24.13.3
+        specifier: ^22.20.0
+        version: 22.20.1
 
   packages/audio/sfx:
     dependencies:
@@ -304,8 +328,8 @@ importers:
         version: link:../../harness/estate-call
     devDependencies:
       '@types/node':
-        specifier: '*'
-        version: 24.13.3
+        specifier: ^22.20.0
+        version: 22.20.1
 
   packages/audio/voice-lock:
     dependencies:
@@ -329,8 +353,8 @@ importers:
         version: link:../../harness/estate-call
     devDependencies:
       '@types/node':
-        specifier: '*'
-        version: 24.13.3
+        specifier: ^22.20.0
+        version: 22.20.1
 
   packages/engines/comfyui-card-kit:
     dependencies:
@@ -899,9 +923,15 @@ importers:
       '@melite/comfyui-cordis':
         specifier: workspace:*
         version: link:../../engines/comfyui-cordis
+      '@melite/estate-call':
+        specifier: workspace:*
+        version: link:../estate-call
       '@melite/estate-drafts':
         specifier: workspace:*
         version: link:../../estate/drafts
+      '@melite/estate-queue':
+        specifier: workspace:*
+        version: link:../estate-queue
       '@melite/image-image-edit':
         specifier: workspace:*
         version: link:../../image/image-edit
@@ -966,6 +996,9 @@ importers:
       '@deepseek-ai/dsh-client-ui-primitives':
         specifier: 0.1.5-rc.2
         version: 0.1.5-rc.2(@deepseek-ai/cordis@4.0.2)
+      '@deepseek-ai/dsh-client-ui-renderer':
+        specifier: 0.1.5-rc.2
+        version: 0.1.5-rc.2(@deepseek-ai/cordis@4.0.2)
       '@deepseek-ai/schemastery':
         specifier: '*'
         version: 3.18.2
@@ -1004,11 +1037,20 @@ importers:
         specifier: '*'
         version: 14.6.7(@testing-library/dom@10.4.1)
       '@types/node':
-        specifier: '*'
-        version: 24.13.3
+        specifier: ^22.20.0
+        version: 22.20.1
+      '@types/react':
+        specifier: ^19.2.14
+        version: 19.2.18
+      '@types/react-dom':
+        specifier: ^19.2.2
+        version: 19.2.5(@types/react@19.2.18)
       tsdown:
         specifier: ^0.22.14
         version: 0.22.14(@tsdown/css@0.22.14)(oxc-resolver@11.24.2)(typescript@6.0.3)(unrun@0.3.1)
+      typescript:
+        specifier: ~6.0.3
+        version: 6.0.3
 
   packages/image/image-edit:
     dependencies:
@@ -1032,8 +1074,8 @@ importers:
         version: link:../../harness/estate-call
     devDependencies:
       '@types/node':
-        specifier: '*'
-        version: 24.13.3
+        specifier: ^22.20.0
+        version: 22.20.1
 
   packages/image/image-gen:
     dependencies:
@@ -1099,6 +1141,9 @@ importers:
       '@deepseek-ai/dsh-client-ui-primitives':
         specifier: 0.1.5-rc.2
         version: 0.1.5-rc.2(@deepseek-ai/cordis@4.0.2)
+      '@deepseek-ai/dsh-client-ui-renderer':
+        specifier: 0.1.5-rc.2
+        version: 0.1.5-rc.2(@deepseek-ai/cordis@4.0.2)
       '@deepseek-ai/schemastery':
         specifier: '*'
         version: 3.18.2
@@ -1137,11 +1182,23 @@ importers:
         specifier: '*'
         version: 14.6.7(@testing-library/dom@10.4.1)
       '@types/node':
-        specifier: '*'
-        version: 24.13.3
+        specifier: ^22.20.0
+        version: 22.20.1
+      '@types/react':
+        specifier: ^19.2.14
+        version: 19.2.18
+      '@types/react-dom':
+        specifier: ^19.2.2
+        version: 19.2.5(@types/react@19.2.18)
+      '@types/three':
+        specifier: ^0.184.1
+        version: 0.184.1
       tsdown:
         specifier: ^0.22.14
         version: 0.22.14(@tsdown/css@0.22.14)(oxc-resolver@11.24.2)(typescript@6.0.3)(unrun@0.3.1)
+      typescript:
+        specifier: ~6.0.3
+        version: 6.0.3
 
   packages/image/tagger:
     dependencies:
@@ -1828,6 +1885,9 @@ importers:
       '@deepseek-ai/dsh-client-ui-primitives':
         specifier: 0.1.5-rc.2
         version: 0.1.5-rc.2(@deepseek-ai/cordis@4.0.2)
+      '@deepseek-ai/dsh-client-ui-renderer':
+        specifier: 0.1.5-rc.2
+        version: 0.1.5-rc.2(@deepseek-ai/cordis@4.0.2)
       '@deepseek-ai/dsh-tools':
         specifier: 0.1.5-rc.2
         version: 0.1.5-rc.2(7f9e302786cf21e030eafe960666842c)
@@ -1878,17 +1938,23 @@ importers:
         version: 0.184.0
     devDependencies:
       '@types/node':
-        specifier: '*'
-        version: 24.13.3
+        specifier: ^22.20.0
+        version: 22.20.1
       '@types/react':
         specifier: ~18.3.1
         version: 18.3.31
       '@types/react-dom':
         specifier: ~18.3.1
         version: 18.3.7(@types/react@18.3.31)
+      '@types/three':
+        specifier: ^0.184.1
+        version: 0.184.1
       tsdown:
         specifier: ^0.22.14
         version: 0.22.14(@tsdown/css@0.22.14)(oxc-resolver@11.24.2)(typescript@6.0.3)(unrun@0.3.1)
+      typescript:
+        specifier: ~6.0.3
+        version: 6.0.3
 
   packages/video/h3-timeline:
     dependencies:
@@ -1896,6 +1962,9 @@ importers:
         specifier: ^4.0.2
         version: 4.0.2(@deepseek-ai/cordis-plugin-loader@1.0.3)
       '@deepseek-ai/dsh-client-ui-primitives':
+        specifier: 0.1.5-rc.2
+        version: 0.1.5-rc.2(@deepseek-ai/cordis@4.0.2)
+      '@deepseek-ai/dsh-client-ui-renderer':
         specifier: 0.1.5-rc.2
         version: 0.1.5-rc.2(@deepseek-ai/cordis@4.0.2)
       '@deepseek-ai/dsh-tools':
@@ -1939,11 +2008,23 @@ importers:
         specifier: '*'
         version: 16.3.3(@testing-library/dom@10.4.1)(@types/react-dom@19.2.5(@types/react@19.2.18))(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
       '@types/node':
-        specifier: '*'
-        version: 24.13.3
+        specifier: ^22.20.0
+        version: 22.20.1
+      '@types/react':
+        specifier: ^19.2.14
+        version: 19.2.18
+      '@types/react-dom':
+        specifier: ^19.2.2
+        version: 19.2.5(@types/react@19.2.18)
+      '@types/three':
+        specifier: ^0.184.1
+        version: 0.184.1
       tsdown:
         specifier: ^0.22.14
         version: 0.22.14(@tsdown/css@0.22.14)(oxc-resolver@11.24.2)(typescript@6.0.3)(unrun@0.3.1)
+      typescript:
+        specifier: ~6.0.3
+        version: 6.0.3
 
   packages/video/video-gen:
     dependencies:
@@ -2040,6 +2121,9 @@ importers:
       '@dnd-kit/utilities':
         specifier: ^3.2.2
         version: 3.2.2(react@18.3.1)
+      '@melite/contracts':
+        specifier: workspace:*
+        version: link:../../web-kit/contracts
       '@melite/slots':
         specifier: workspace:*
         version: link:../../web-kit/slots

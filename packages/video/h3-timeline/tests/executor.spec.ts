@@ -18,7 +18,7 @@ import { TOOL_NAME, buildH3TimelineTool as FACE } from "../src/tool.ts";
 const DEFAULT_MODEL = "h3-timeline";
 const GOOD_ARGS = { prompt: "walks forward, then turns", calls: [{ text: "walks", start_frame: 0, end_frame: 56 }] };
 
-const calls: Array<{ method: string; path: string; body: Record<string, unknown> }> = {};
+const calls: Array<{ method: string; path: string; body: Record<string, unknown> }> = [];
 let n = 0;
 let draftsStatus = 200;
 let draftsBody: Record<string, unknown> = { draftId: "d_stub" };
@@ -142,11 +142,14 @@ describe("the executor path (two doors, envelope law)", () => {
   });
 
   it("the prose names the driving field (the card's own input)", () => {
-    const card = tool().presentCall?.(GOOD_ARGS);
+    // rawInput rides the source's own presentCall return — the lib's
+    // ToolCallView does not declare it, so the spec reads through the
+    // source's shape (never asserted absent: the prose IS the pin).
+    const card = tool().presentCall?.(GOOD_ARGS) as unknown as { rawInput?: unknown };
     assert.match(String(card?.rawInput), /shots=1/);
     // calls may arrive as its serialized JSON string (the
     // annotation-only json param) — the prose counts 0 then.
-    const asString = tool().presentCall?.({ ...GOOD_ARGS, calls: JSON.stringify(GOOD_ARGS.calls) });
+    const asString = tool().presentCall?.({ ...GOOD_ARGS, calls: JSON.stringify(GOOD_ARGS.calls) }) as unknown as { rawInput?: unknown };
     assert.match(String(asString?.rawInput), /shots=0/);
   });
 
@@ -163,7 +166,7 @@ describe("the render channel (one line, both voices)", () => {
     const t = tool();
     const gaps = t.output.render({}, {});
     assert.match(String((gaps[0] as { text?: string }).text), /h3_timeline \[\?\] → \?/);
-    const bare = t.output.render({}, undefined);
+    const bare = t.output.render({}, undefined as never);
     assert.match(String((bare[0] as { text?: string }).text), /h3_timeline \[\?\] → \?/);
     // a present-but-empty error falls through to the run voice.
     const quiet = t.output.render({}, { error: "" });
@@ -223,10 +226,10 @@ describe("presentCall prose (validated args only)", () => {
   });
 
   it("validated args name the resolved model (default when unstated)", () => {
-    const card = tool().presentCall?.(GOOD_ARGS);
+    const card = tool().presentCall?.(GOOD_ARGS) as unknown as { rawInput?: unknown };
     assert.ok(card);
     assert.match(String(card.rawInput), new RegExp("model=" + DEFAULT_MODEL + "(\\s|$)"));
-    const explicit = tool().presentCall?.({ ...GOOD_ARGS, model: "h3" });
+    const explicit = tool().presentCall?.({ ...GOOD_ARGS, model: "h3" }) as unknown as { rawInput?: unknown };
     assert.match(String(explicit?.rawInput), /model=h3\s/);
   });
 });
@@ -247,8 +250,11 @@ class StubToolsService extends Service {
 describe("the dual-face law: the root is the row-mount marker", () => {
   it("comfy AND tools present → the marker still registers NOTHING (the SSOT and melite-tools own the truths)", async () => {
     const ctx = new Context();
-    await ctx.plugin(ComfyUIService as never);
-    await ctx.plugin(StubToolsService as never);
+    // The second arg is the plugin config (absent here): cordis 4.0.2
+    // types require it positionally, so the suite passes undefined
+    // (cast with the plugin — the `as never` idiom is the estate's).
+    await ctx.plugin(ComfyUIService as never, undefined as never);
+    await ctx.plugin(StubToolsService as never, undefined as never);
     const svc = ctx.get("comfyui") as unknown as { cardIds(): string[] };
     const stub = ctx.get("tools") as unknown as StubToolsService;
     pkg.apply(ctx);
@@ -258,9 +264,9 @@ describe("the dual-face law: the root is the row-mount marker", () => {
 
   it("the CARD face registers where the registry seat lives (the SSOT subpath)", async () => {
     const ctx = new Context();
-    await ctx.plugin(ComfyUIService as never);
+    await ctx.plugin(ComfyUIService as never, undefined as never);
     const svc = ctx.get("comfyui") as unknown as { cardIds(): string[] };
-    await ctx.plugin(cardFace as never);
+    await ctx.plugin(cardFace as never, undefined as never);
     assert.ok(svc.cardIds().includes("h3-timeline"), "the card registered");
   });
 });

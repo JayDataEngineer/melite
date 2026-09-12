@@ -21,7 +21,7 @@
     "@melite/estate-call": "workspace:*"
   },
   "devDependencies": {
-    "@types/node": "*"
+    "@types/node": "^22.20.0"
   },
   "name": "@melite/audio-tts",
   "description": "the tts card (the audio lane) \u2014 one card one package: card.ts host face + ui/ studio + agents/ context"

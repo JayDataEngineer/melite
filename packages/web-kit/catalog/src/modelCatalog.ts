@@ -482,7 +482,7 @@ export function familyConditioning(
 ): string[] | undefined {
  const fam = familyOf(routeKey, cat)
  if (!fam) return undefined
- return cat.families?.[fam]?.video?.conditioning
+ return cat.families?.[fam]?.video?.conditioning ?? undefined
 }
 
 /**
@@ -602,13 +602,13 @@ export function modelLabel(routeKey: string, cat: Catalog = _cache ?? { families
 export function modelDescription(routeKey: string, cat: Catalog = _cache ?? { families: {}, models: {}, capabilities: null, engine_order: null, quant_order: null, input_vocabulary: null }): string | undefined {
  const fam = familyOf(routeKey, cat)
  if (!fam) return undefined
- return cat.families?.[fam]?.description
+ return cat.families?.[fam]?.description ?? undefined
 }
 
 export function promptGuide(routeKey: string, cat: Catalog = _cache ?? { families: {}, models: {}, capabilities: null, engine_order: null, quant_order: null, input_vocabulary: null }): PromptGuide | undefined {
  const fam = familyOf(routeKey, cat)
  if (!fam) return undefined
- return cat.families[fam]?.prompt_guide
+ return cat.families[fam]?.prompt_guide ?? undefined
 }
 
 export function dropdownModels(
@@ -752,8 +752,8 @@ export function routeCoordinates(
  // primeCatalog callers pass full catalogs. Direct access, no `?.`.
  const m = cat.models[routeKey]
  return {
- variant: m?.variant,
- quant: m?.quant ?? activeVariantForRoute(routeKey, cat)?.quant,
+ variant: m?.variant ?? undefined,
+ quant: m?.quant ?? activeVariantForRoute(routeKey, cat)?.quant ?? undefined,
  }
 }
 

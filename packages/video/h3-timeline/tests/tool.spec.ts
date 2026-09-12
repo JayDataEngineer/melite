@@ -5,7 +5,12 @@ import assert from "node:assert/strict";
 import { buildH3TimelineTool, TOOL_NAME } from "../src/tool.ts";
 import { carrier, schema } from "../src/card.ts";
 
-const tool = buildH3TimelineTool("http://127.0.0.1:1");
+// Face pins only — this spec never executes, so the transport is a
+// stub that refuses if ever invoked (the old URL-string arg predates
+// the EstateCall transport and never ran).
+const tool = buildH3TimelineTool(async () => {
+  throw new Error("tool.spec: no execute arm — the transport must stay cold")
+});
 // (defineTool validates args before presenters run — prompt AND
 // calls are both required on this surface)
 const ARGS = { prompt: "the courier pushes off", calls: [{ text: "the courier pushes off", start_frame: 0, end_frame: 56 }] };

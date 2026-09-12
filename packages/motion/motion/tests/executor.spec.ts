@@ -18,7 +18,7 @@ import { TOOL_NAME, buildMotionTool as FACE } from "../src/tool.ts";
 const DEFAULT_MODEL = "kimodo";
 const GOOD_ARGS = { prompt: "walks forward, then turns" };
 
-const calls: Array<{ method: string; path: string; body: Record<string, unknown> }> = {};
+const calls: Array<{ method: string; path: string; body: Record<string, unknown> }> = [];
 let n = 0;
 let draftsStatus = 200;
 let draftsBody: Record<string, unknown> = { draftId: "d_stub" };
@@ -142,7 +142,10 @@ describe("the executor path (two doors, envelope law)", () => {
   });
 
   it("the prose names the driving field (the card's own input)", () => {
-    const card = tool().presentCall?.(GOOD_ARGS);
+    // rawInput rides the source's own presentCall return — the lib's
+    // ToolCallView does not declare it, so the spec reads through the
+    // source's shape (never asserted absent: the prose IS the pin).
+    const card = tool().presentCall?.(GOOD_ARGS) as unknown as { rawInput?: unknown };
     assert.match(String(card?.rawInput), /prompt=walks forward, then turns/);
   });
 
@@ -159,7 +162,9 @@ describe("the render channel (one line, both voices)", () => {
     const t = tool();
     const gaps = t.output.render({}, {});
     assert.match(String((gaps[0] as { text?: string }).text), /motion \[\?\] → \?/);
-    const bare = t.output.render({}, undefined);
+    // undefined value: the source tolerates it (?? {}) though the
+    // lib's render signature does not declare it.
+    const bare = t.output.render({}, undefined as never);
     assert.match(String((bare[0] as { text?: string }).text), /motion \[\?\] → \?/);
     // a present-but-empty error falls through to the run voice.
     const quiet = t.output.render({}, { error: "" });
@@ -219,10 +224,10 @@ describe("presentCall prose (validated args only)", () => {
   });
 
   it("validated args name the resolved model (default when unstated)", () => {
-    const card = tool().presentCall?.(GOOD_ARGS);
+    const card = tool().presentCall?.(GOOD_ARGS) as unknown as { rawInput?: unknown };
     assert.ok(card);
     assert.match(String(card.rawInput), new RegExp("model=" + DEFAULT_MODEL));
-    const explicit = tool().presentCall?.({ ...GOOD_ARGS, model: "motion3" });
+    const explicit = tool().presentCall?.({ ...GOOD_ARGS, model: "motion3" }) as unknown as { rawInput?: unknown };
     assert.match(String(explicit?.rawInput), /model=motion3/);
   });
 });
@@ -243,20 +248,23 @@ class StubToolsService extends Service {
 describe("the dual-face law (2026-09-12, the loader-proven split)", () => {
   it("the ROOT face registers NOTHING (the web profile's row-mount marker)", async () => {
     const ctx = new Context();
-    await ctx.plugin(ComfyUIService as never);
-    await ctx.plugin(StubToolsService as never);
+    // The second arg is the plugin config (absent here): cordis 4.0.2
+    // types require it positionally, so the suite passes undefined
+    // rather than weakening the plugin cast.
+    await ctx.plugin(ComfyUIService as never, undefined as never);
+    await ctx.plugin(StubToolsService as never, undefined as never);
     const svc = ctx.get("comfyui") as unknown as { cardIds(): string[] };
     const stub = ctx.get("tools") as unknown as StubToolsService;
-    pkg.apply(ctx, { call: seam } as never);
+    pkg.apply(ctx);
     assert.ok(!svc.cardIds().includes("motion"), "no card from the marker");
     assert.equal(stub.registered.length, 0, "no tool from the marker");
   });
 
   it("the CARD face (./card — the cardPackages SSOT row) registers the card under comfyui", async () => {
     const ctx = new Context();
-    await ctx.plugin(ComfyUIService as never);
+    await ctx.plugin(ComfyUIService as never, undefined as never);
     const svc = ctx.get("comfyui") as unknown as { cardIds(): string[] };
-    await ctx.plugin(cardFace);
+    await ctx.plugin(cardFace, undefined as never);
     assert.ok(svc.cardIds().includes("motion"), "the card registered");
   });
 

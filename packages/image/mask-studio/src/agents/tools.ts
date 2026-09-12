@@ -31,12 +31,12 @@ async function laneJson(method: "GET" | "POST", path: string, body?: Record<stri
 
 /** Pre-flight: the form spec for a model route (fields + defaults). */
 export async function getFlowSpec(route: string = "mask-studio", signal?: AbortSignal): Promise<Record<string, unknown>> {
-  return laneJson("GET", "/v1/form-spec?model=" + encodeURIComponent(route), signal)
+  return laneJson("GET", "/v1/form-spec?model=" + encodeURIComponent(route), undefined, signal)
 }
 
 /** Poll a running generation — brick progress + the output artifacts. */
 export async function getRunStatus(runId: string, signal?: AbortSignal): Promise<Record<string, unknown>> {
-  return laneJson("GET", "/v1/flows/status/" + encodeURIComponent(runId), signal)
+  return laneJson("GET", "/v1/flows/status/" + encodeURIComponent(runId), undefined, signal)
 }
 
 export interface MaskRunArgs {

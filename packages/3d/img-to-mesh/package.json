@@ -8,12 +8,14 @@
     ".": "./src/index.ts",
     "./card": "./src/card.ts",
     "./client": "./lib/client.js",
-    "./package.json": "./package.json",
-    "./ui/studio/component": "./src/ui/studio/component.tsx"
+    "./package.json": "./package.json"
   },
-  "scripts": {},
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
   "dependencies": {
     "@deepseek-ai/cordis": "^4.0.2",
+    "@deepseek-ai/dsh-client-ui-renderer": "0.1.5-rc.2",
     "@deepseek-ai/schemastery": "*",
     "@melite-plugin/3d": "workspace:*",
     "@melite/catalog": "workspace:*",
@@ -26,15 +28,18 @@
     "@melite-plugin/melite-run-wire": "workspace:*",
     "@deepseek-ai/dsh-client-ui-primitives": "0.1.5-rc.2",
     "three": "^0.184.0",
-    "@types/three": "*",
+    "@types/three": "^0.184.1",
     "clsx": "*"
   },
   "devDependencies": {
-    "@types/node": "*",
+    "@types/node": "^22.20.0",
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.2",
     "@testing-library/react": "*",
     "@testing-library/user-event": "*",
     "@testing-library/jest-dom": "*",
-    "tsdown": "^0.22.14"
+    "tsdown": "^0.22.14",
+    "typescript": "~6.0.3"
   },
   "name": "@melite/3d-img-to-mesh",
   "dsh": {

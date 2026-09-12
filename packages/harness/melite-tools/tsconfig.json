@@ -4,7 +4,11 @@
     "module": "ESNext",
     "moduleResolution": "bundler",
     "allowImportingTsExtensions": true,
-    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    // Node-only (the engine plane): no DOM lib — DOM's globals shadow
+    // node's Buffer/Uint8Array shapes and poison every Buffer site in
+    // the program (gate-found 2026-09-12). fetch/AbortController/
+    // URLSearchParams all ride @types/node 22.
+    "lib": ["ES2022"],
     "strict": true,
     "noEmit": true,
     "skipLibCheck": true,

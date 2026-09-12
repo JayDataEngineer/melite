@@ -12,11 +12,13 @@
     "./ui/studio/component": "./src/ui/studio/component.tsx"
   },
   "scripts": {
-    "bundle": "tsdown"
+    "bundle": "tsdown",
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@deepseek-ai/cordis": "^4.0.2",
     "@deepseek-ai/dsh-client-ui-primitives": "0.1.5-rc.2",
+    "@deepseek-ai/dsh-client-ui-renderer": "0.1.5-rc.2",
     "@deepseek-ai/dsh-tools": "0.1.5-rc.2",
     "@deepseek-ai/schemastery": "*",
     "@melite-plugin/motion": "workspace:*",
@@ -35,10 +37,12 @@
     "react-dom": "^18.3.1"
   },
   "devDependencies": {
-    "@types/node": "*",
+    "@types/node": "^22.20.0",
     "@types/react": "~18.3.1",
     "@types/react-dom": "~18.3.1",
-    "tsdown": "^0.22.14"
+    "@types/three": "^0.184.1",
+    "tsdown": "^0.22.14",
+    "typescript": "~6.0.3"
   },
   "name": "@melite/motion-motion",
   "description": "the motion card (the motion lane) — one card one package: card.ts host face + ui/ studio + agents/ context",

@@ -17,7 +17,14 @@
  * status text. No lucide icons: text labels.
  */
 import { createElement as h, useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import type { Context } from '@deepseek-ai/cordis'
+import type { Context as ClientContext } from '@deepseek-ai/cordis'
+// Type-only: the service seats this entry touches ride cordis Context
+// declaration-merging from each owning package's ./client entry — the
+// renderer owns ctx.slots. (The card-view client's own law, verbatim.)
+import type {} from '@deepseek-ai/dsh-client-ui-renderer/client'
+// Type-only: the 'cards.stage.view' seam declaration (card-base owns
+// the card-UI seams). Erased — the bundle stays pure.
+import type {} from '@melite/card-base/slots'
 import { Button } from '@deepseek-ai/dsh-client-ui-primitives'
 import css from './client.module.css'
 import type { StageViewOwnerProps } from '@melite/contracts'
@@ -1155,7 +1162,7 @@ export const name = 'ideogram4Studio'
 
 export const inject = ['slots']
 
-export function apply(ctx: Context): void {
+export function apply(ctx: ClientContext): void {
 ctx.slots.inject('cards.stage.view', () =>
   ctx.slots.register({ name: 'cards.stage.view', key: 'ideogram4' }, Ideogram4Studio))
 }

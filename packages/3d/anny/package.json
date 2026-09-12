@@ -11,6 +11,7 @@
     "./ui/studio/shape": "./src/ui/studio/shape.tsx"
   },
   "scripts": {
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@deepseek-ai/cordis": "^4.0.2",
@@ -29,7 +30,11 @@
     "react": "^19.2.6"
   },
   "devDependencies": {
-    "@types/node": "*"
+    "@types/node": "^22.20.0",
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.2",
+    "@types/three": "^0.184.1",
+    "typescript": "~6.0.3"
   },
   "name": "@melite/3d-anny"
 }

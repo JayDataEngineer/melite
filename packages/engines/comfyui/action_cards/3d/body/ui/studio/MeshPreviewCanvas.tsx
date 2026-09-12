@@ -119,8 +119,11 @@ function PreviewScene({ meshData }: { meshData: SkinMeshData }) {
 // ── Outer component ─────────────────────────────────────────────────────────
 
 export interface MeshPreviewCanvasProps {
- /** Override which character to render. Defaults to studio's `editing`. */
- character?: Character
+ /** Which character to render. Required: the store-subscription
+  * default left the component with the S1 subscription cut — both
+  * call sites pass the studio's `editing` explicitly, and the
+  * optional marker lied to the type gate (2026-09-12). */
+ character: Character
  className?: string
  /**
  * Static preview pose. "arms_down" (default) renders the mesh in a

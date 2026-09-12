@@ -18,11 +18,18 @@
  * generic drill's own law, kept verbatim.
  */
 import { createElement as h, useEffect, useState } from 'react'
-import type { Context } from '@deepseek-ai/cordis'
+import type { Context as ClientContext } from '@deepseek-ai/cordis'
+// Type-only: the service seats this entry touches ride cordis Context
+// declaration-merging from each owning package's ./client entry — the
+// renderer owns ctx.slots. (The card-view client's own law, verbatim.)
+import type {} from '@deepseek-ai/dsh-client-ui-renderer/client'
+// Type-only: the 'cards.stage.view' seam declaration (card-base owns
+// the card-UI seams). Erased — the bundle stays pure.
+import type {} from '@melite/card-base/slots'
 import { Button, DisclosureRow, IconArchiveOutline20, Tag } from '@deepseek-ai/dsh-client-ui-primitives'
 import css from './client.module.css'
 import type { StageViewOwnerProps } from '@melite/contracts'
-import { fetchFormSpec, CardForm as SpecForm, specDefaults, useSquareProvider, type FormSpecDoc, type SpecField, type SpecValues } from '@melite/card-base'
+import { fetchFormSpec, CardForm as SpecForm, specDefaults, useSquareProvider, type FormSpecDoc, type SpecField, type SpecValues, type SquareHost } from '@melite/card-base'
 import { pollRunStageUrl } from '@melite-plugin/melite-run-wire'
 import { GlbViewport } from './glb-viewport.tsx'
 
@@ -154,7 +161,7 @@ function StudioFields({ fields, values, onEdit, square }: {
   fields: SpecField[]
   values: SpecValues
   onEdit(name: string, v: unknown): void
-  square?: (f: SpecField) => { verbs: import('./input-square.tsx').InputSquareVerbs; display?: string | null } | undefined
+  square?: (f: SpecField) => SquareHost | undefined
 }): ReturnType<typeof h> {
   if (fields.length === 0) return h('p', { className: css.groupNote }, 'no declared fields')
   return h(SpecForm, { fields, values, onEdit, square })
@@ -166,7 +173,7 @@ export const name = 'imgToMeshStudio'
 
 export const inject = ['slots']
 
-export function apply(ctx: Context): void {
+export function apply(ctx: ClientContext): void {
 ctx.slots.inject('cards.stage.view', () =>
   ctx.slots.register({ name: 'cards.stage.view', key: 'img-to-mesh' }, ImgToMeshStudio))
 }

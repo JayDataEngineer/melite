@@ -44,7 +44,7 @@ import { buildImageEditTool } from '@melite/image-image-edit/tool'
 import { buildMotionTool } from '@melite/motion-motion/tool'
 import { buildCardTool as buildClothingPlacementTool } from '@melite/3d-clothing-placement/tool'
 import { buildH3TimelineTool } from '@melite/video-h3-timeline/tool'
-import { makeEstateRequest } from './estate.ts'
+import { makeEstateRequest, asEstateCall } from './estate.ts'
 import { runStatus } from './tools/run-status.ts'
 import { meliteFlow } from './tools/melite-flow.ts'
 import { comfyManage } from './tools/comfy-manage.ts'
@@ -149,6 +149,10 @@ export async function apply(ctx: Context, config: Config = {}): Promise<void> {
   // host either mounts the estate bundle or it does not (an alien
   // lane names its own DSH in its own profile).
   const request = makeEstateRequest(ctx)
+  // The card tool builders speak the canonical EstateCall (signal
+  // optional); the seats demand a signal — the adapter narrows once
+  // here instead of at every register site (2026-09-12).
+  const call = asEstateCall(request)
 
   // config-first, env-override: a profile pins its interface; a
   // one-shot mount forces it without touching the profile.
@@ -208,12 +212,12 @@ export async function apply(ctx: Context, config: Config = {}): Promise<void> {
   // ToolRunContext types resolve to one copy and the casts are
   // gone. If a future pin drifts again, tsc fails HERE (not
   // silently downstream) — re-pin, never re-cast.
-  c.tools.register(buildMusicTool(request))
-  c.tools.register(buildTtsTool(request))
-  c.tools.register(buildVoiceLockTool(request))
-  c.tools.register(buildImageEditTool(request))
-  c.tools.register(buildMotionTool(request))
-  c.tools.register(buildH3TimelineTool(request))
-  c.tools.register(buildClothingPlacementTool(request))
+  c.tools.register(buildMusicTool(call))
+  c.tools.register(buildTtsTool(call))
+  c.tools.register(buildVoiceLockTool(call))
+  c.tools.register(buildImageEditTool(call))
+  c.tools.register(buildMotionTool(call))
+  c.tools.register(buildH3TimelineTool(call))
+  c.tools.register(buildClothingPlacementTool(call))
 
 }
