@@ -4,8 +4,8 @@
 //
 // `__test` lives here and is re-exported by IdeogramCanvasEditor.tsx
 // so the unit-test import path is unchanged.
-import { Square, RectangleHorizontal, RectangleVertical } from './icons'
-import { readAsDataURL } from './clipboard'
+import { SquareSmall as Square, RectangleHorizontal, RectangleVertical } from '@melite/card-base/icons'
+import { readAsDataURL } from '@melite/card-base/chrome'
 
 // ─── Types ────────────────────────────────────────────────────────────────
 

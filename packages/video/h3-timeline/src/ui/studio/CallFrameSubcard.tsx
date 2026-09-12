@@ -5,8 +5,9 @@
  */
 import { useState } from "react"
 import { Button, Input, Switch } from "@deepseek-ai/dsh-client-ui-primitives"
-import { SelectMenu, SlotSquare, Tip, cn, readAsDataURL } from "./kit"
-import { Link2, X } from "./icons"
+import { SelectMenu, SlotSquare, Tip } from "./kit"
+import { cn, readAsDataURL } from "@melite/card-base/chrome"
+import { Link2, X } from "@melite/card-base/icons"
 import s from "./studio.module.css"
 import type { LinkArtifact } from "./refUtils"
 

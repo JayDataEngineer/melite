@@ -8,7 +8,7 @@
 import { useEffect, useState } from "react"
 import { Button, Tooltip } from "@deepseek-ai/dsh-client-ui-primitives"
 import { clsx } from "clsx"
-import { ChevronDown, Focus, X } from "./icons"
+import { ChevronDown, Focus, X } from "@melite/card-base/icons"
 import { NumberField } from "./NumberField"
 import styles from "./mask.module.css"
 import type { MaskSource } from "./constants"

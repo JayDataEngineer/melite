@@ -118,41 +118,6 @@
   border: 1px solid color-mix(in srgb, var(--dsw-alias-border, #e2e4e9) 65%, transparent);
 }
 
-/* ── StudioShell ── */
-.shell {
-  display: flex;
-  min-height: 100%;
-  flex: 1;
-  flex-direction: column;
-}
-
-.shellErrors {
-  margin-top: 8px;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.shellError {
-  border-radius: 4px;
-  border: 1px solid color-mix(in srgb, var(--dsw-alias-danger, #dc2626) 40%, transparent);
-  background: color-mix(in srgb, var(--dsw-alias-danger, #dc2626) 10%, transparent);
-  padding: 6px 8px;
-  font-family: ui-monospace, monospace;
-  font-size: 9px;
-  line-height: 1.375;
-  overflow-wrap: break-word;
-  white-space: pre-wrap;
-  color: var(--dsw-alias-danger, #dc2626);
-}
-
-.shellErrorIcon {
-  margin-right: 4px;
-  display: inline;
-  width: 12px;
-  height: 12px;
-}
-
 /* ── SlotSquare ── */
 .slotCol {
   display: flex;

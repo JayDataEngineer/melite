@@ -7,7 +7,7 @@ import type { RefObject } from "react"
 import type { CardStage } from "@melite/contracts"
 import { EmptyState, FilmPlayer, PaneHeader } from "./kit"
 import type { FilmPlayerHandle } from "./kit"
-import { Clapperboard } from "./icons"
+import { Clapperboard } from "@melite/card-base/icons"
 import s from "./studio.module.css"
 
 /** Preview pane: final cut + window tiles + run history (lines 3928–4061).

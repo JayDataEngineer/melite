@@ -6,7 +6,7 @@
 // function (the two blocks share locals in the original — one function
 // keeps that shape). Pure derivation from args — the bar writes nothing;
 // the same grammar the agent-facing recipe model normalizes toward.
-import { BoxSelect, Brush, Expand, Focus } from "./icons"
+import { BoxSelect, Brush, Expand, Focus } from "@melite/card-base/icons"
 import { CLASS_COLORS, DETECTOR_DEFS, DETECT_CLASSES, recipeFilterLabel, SAM3_COLOR, PAINT_COLOR } from "./constants"
 import type { BoxEntry, DetectClass, FilterChip, RecipeEntry, RecipeOutput } from "./constants"
 

@@ -4,8 +4,9 @@
  * every logic line is verbatim from the monolith (source range noted).
  */
 import { Button, Input } from "@deepseek-ai/dsh-client-ui-primitives"
-import { NumberControl, Tip, cn } from "./kit"
-import { ChevronDown, X } from "./icons"
+import { NumberControl, Tip } from "./kit"
+import { cn } from "@melite/card-base/chrome"
+import { ChevronDown, X } from "@melite/card-base/icons"
 import s from "./studio.module.css"
 import { GUIDE_KINDS, KNOB_ORDER, VIDEO_TIMELINE_TRACKS } from "./docModel"
 import type { DocCall } from "./docModel"

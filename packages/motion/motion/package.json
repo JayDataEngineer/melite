@@ -9,7 +9,6 @@
     "./card": "./src/card.ts",
     "./package.json": "./package.json",
     "./tool": "./src/tool.ts",
-    "./ui/*": "./src/ui/*",
     "./ui/studio/component": "./src/ui/studio/component.tsx"
   },
   "scripts": {
@@ -22,6 +21,7 @@
     "@deepseek-ai/schemastery": "*",
     "@melite-plugin/motion": "workspace:*",
     "@melite-plugin/timeline": "workspace:*",
+    "@melite/card-base": "workspace:*",
     "@melite/catalog": "workspace:*",
     "@melite/comfyui-card-kit": "workspace:*",
     "@melite/comfyui-cordis": "workspace:*",
@@ -37,7 +37,8 @@
   "devDependencies": {
     "@types/node": "*",
     "@types/react": "~18.3.1",
-    "@types/react-dom": "~18.3.1"
+    "@types/react-dom": "~18.3.1",
+    "tsdown": "^0.22.14"
   },
   "name": "@melite/motion-motion",
   "description": "the motion card (the motion lane) — one card one package: card.ts host face + ui/ studio + agents/ context",

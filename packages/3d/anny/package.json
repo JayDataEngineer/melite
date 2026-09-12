@@ -6,7 +6,6 @@
   "main": "./src/card.ts",
   "exports": {
     ".": "./src/card.ts",
-    "./ui/*": "./src/ui/*",
     "./package.json": "./package.json",
     "./ui/studio/component": "./src/ui/studio/component.tsx",
     "./ui/studio/shape": "./src/ui/studio/shape.tsx"
@@ -18,6 +17,7 @@
     "@deepseek-ai/dsh-client-ui-primitives": "0.1.5-rc.2",
     "@deepseek-ai/schemastery": "*",
     "@melite-plugin/3d": "workspace:*",
+    "@melite/card-base": "workspace:*",
     "@melite/cards": "workspace:*",
     "@melite/catalog": "workspace:*",
     "@melite/comfyui-card-kit": "workspace:*",

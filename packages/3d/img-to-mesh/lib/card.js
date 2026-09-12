@@ -581,7 +581,7 @@ const identity = {
 	icon: "box"
 };
 function apply(ctx) {
-	ctx.effect(() => typeof ctx.comfyui?.registerCard === "function" ? ctx.comfyui.registerCard({
+	ctx.effect(() => ctx.comfyui.registerCard({
 		id: "img-to-mesh",
 		skeleton: "img-to-mesh",
 		boarded: [
@@ -632,7 +632,7 @@ function apply(ctx) {
 			if (model.id === "pixal3d") pixalArm(g, p, model);
 			else trellisArm(g, p, model);
 		}
-	}) : () => {});
+	}));
 }
 //#endregion
 export { apply, identity, inject };

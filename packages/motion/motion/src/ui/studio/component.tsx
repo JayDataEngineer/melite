@@ -40,15 +40,15 @@
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import {
- AlertTriangle, Info, Pause, Play, Download, Eye, EyeOff,
+ AlertTriangle, Info, Pause, PlayAlt as Play, Download, EyeAlt as Eye, EyeOff,
  RefreshCw, Move, RotateCw, RotateCcw, Target, Plus, ImagePlus, X, Link2,
  PersonStanding, User,
-} from "./glyphs"
+} from "@melite/card-base/icons"
 import * as THREE from "three"
 import { PoseViewer3D, type CameraFraming } from "@melite-plugin/motion/ui/viewer3d"
 import { Button } from "@deepseek-ai/dsh-client-ui-primitives"
 import type { JointMoveEvent } from "@melite-plugin/motion/ui/viewer3d"
-import { ToastViewport, useToastStore } from "./toast"
+import { ToastViewport, useToastStore } from "@melite/card-base/toast"
 import type { CardStage } from "@melite/contracts"
 import { stageSlots } from "@melite/catalog"
 import { formOf } from "@melite/catalog"
@@ -69,10 +69,12 @@ import {
  type TimelineKeyframe, type TimelineInterval, type TimelinePrompt,
 } from "@melite-plugin/timeline/ui/timeline"
 import {
-  ASSET_DRAG_MIME, cn, defineShellDeclaration, PaneHeader, PaneShell,
-  readAsDataURL, Skeleton, SlotSquare, StudioShell, Tip,
+  ASSET_DRAG_MIME, PaneHeader, PaneShell,
+  Skeleton, SlotSquare, Tip,
   useMotionThumbStore, ViewportAnchor, ViewportFrame, WirePickerModal,
 } from "./kit"
+import { cn, readAsDataURL } from "@melite/card-base/chrome"
+import { StudioShell, defineShellDeclaration } from "@melite/card-base/shell"
 import s from "./component.module.css"
 import { MotionTimelineBar } from "@melite-plugin/timeline/ui/timeline"
 import {

@@ -8,8 +8,8 @@
 import { Button, Tooltip } from "@deepseek-ai/dsh-client-ui-primitives"
 import { clsx } from "clsx"
 import {
-  Brush, Eraser, Eye, Link2, Move, ScanFace, Square, Trash2, X,
-} from "./icons"
+  Brush, Eraser, Eye, Link2, Move, ScanFace, Square, Trash2Alt, X,
+} from "@melite/card-base/icons"
 import { NumberField } from "./NumberField"
 import { ViewportAnchor } from "./viewport"
 // The 2D viewport PRIMITIVE (row 5 stroke 3): the wrapper/canvas/
@@ -152,7 +152,7 @@ export function StudioCanvas({
   <Tooltip label="Clear paint layer" side="top">
   <Button variant="ghost" type="button" onClick={clearPaint}
   className={styles.clearBtn}>
-  <Trash2 className={styles.sz12} /> Clear
+  <Trash2Alt className={styles.sz12} /> Clear
   </Button>
   </Tooltip>
   )}

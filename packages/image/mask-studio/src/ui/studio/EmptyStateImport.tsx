@@ -3,7 +3,7 @@
 import { useRef } from "react"
 import { Button } from "@deepseek-ai/dsh-client-ui-primitives"
 import { clsx } from "clsx"
-import { ImageUp, Link2 } from "./icons"
+import { ImageUp, Link2 } from "@melite/card-base/icons"
 import { ASSET_DRAG_MIME } from "./attach"
 import styles from "./mask.module.css"
 

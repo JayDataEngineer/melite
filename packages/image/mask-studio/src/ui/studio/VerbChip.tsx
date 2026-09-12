@@ -8,7 +8,7 @@
 // DSH Tooltip anchor (React 19 ref-as-prop).
 import type { ButtonHTMLAttributes, ReactElement, ReactNode, Ref } from "react"
 import { clsx } from "clsx"
-import { Loader2, Sparkles } from "./icons"
+import { Loader2, WandSparkles as Sparkles } from "@melite/card-base/icons"
 import styles from "./mask.module.css"
 
 export interface VerbChipProps extends Omit<ButtonHTMLAttributes<HTMLButtonElement>, "onClick"> {

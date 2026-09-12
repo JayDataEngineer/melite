@@ -1,4 +1,8 @@
-/* Anny studio shell — rail/center/bottom seams + loud errors. */
+/* Card-base shell — rail/center/bottom seams + loud errors.
+ * The ONE shell rule set (founded 2026-09-12, debt extermination:
+ * anny's superset rules; ideo's identical shell/errorLine folded in,
+ * its dead .rail dropped, its solid-danger errorRow unified to the
+ * translucent border; the kits' shellErrors look unified here). */
 
 .shell {
   display: flex;

@@ -11,7 +11,11 @@
     "./square": "./src/square.tsx",
     "./wire": "./src/wire.ts",
     "./package.json": "./package.json",
-    "./mods": "./src/mods.tsx"
+    "./mods": "./src/mods.tsx",
+    "./shell": "./src/shell.tsx",
+    "./icons": "./src/icons.tsx",
+    "./chrome": "./src/chrome.ts",
+    "./toast": "./src/toast.tsx"
   },
   "peerDependencies": {
     "@deepseek-ai/dsh-client-ui-slots": "0.1.5-rc.2",
@@ -33,6 +37,8 @@
   },
   "scripts": {},
   "dependencies": {
-    "@deepseek-ai/dsh-client-ui-primitives": "0.1.5-rc.2"
+    "@deepseek-ai/dsh-client-ui-primitives": "0.1.5-rc.2",
+    "@melite/slots": "workspace:*",
+    "clsx": "*"
   }
 }

@@ -4,7 +4,7 @@
 // numeric-draft state, always mounted — identical lifetime).
 import { Button, Input, Tooltip } from "@deepseek-ai/dsh-client-ui-primitives"
 import { clsx } from "clsx"
-import { BoxSelect, Brush, Expand, Loader2, Play, Plus, Sparkles } from "./icons"
+import { BoxSelect, Brush, Expand, Loader2, Play, Plus, WandSparkles as Sparkles } from "@melite/card-base/icons"
 import { DETECT_CLASSES } from "./constants"
 import type { BoxEntry, DetectClass, MaskSource } from "./constants"
 import { ClassChip } from "./ClassChip"

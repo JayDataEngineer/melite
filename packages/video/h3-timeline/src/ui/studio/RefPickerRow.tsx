@@ -4,8 +4,9 @@
  * every logic line is verbatim from the monolith (source range noted).
  */
 import { Button } from "@deepseek-ai/dsh-client-ui-primitives"
-import { SelectMenu, cn, readAsDataURL } from "./kit"
-import { Upload, X } from "./icons"
+import { SelectMenu } from "./kit"
+import { cn, readAsDataURL } from "@melite/card-base/chrome"
+import { Upload, X } from "@melite/card-base/icons"
 import s from "./studio.module.css"
 import { REF_UPLOAD_SPEC, artifactThumbNote, refGenreOf, splitRefList } from "./refUtils"
 

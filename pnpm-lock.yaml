@@ -45,6 +45,9 @@ importers:
       '@melite-plugin/3d':
         specifier: workspace:*
         version: link:../../engines/comfyui/action_cards/3d/ui
+      '@melite/card-base':
+        specifier: workspace:*
+        version: link:../../web/card-base
       '@melite/cards':
         specifier: workspace:*
         version: link:../../engines/comfyui/action_cards
@@ -184,6 +187,9 @@ importers:
       '@types/node':
         specifier: '*'
         version: 24.13.3
+      tsdown:
+        specifier: ^0.22.14
+        version: 0.22.14(@tsdown/css@0.22.14)(oxc-resolver@11.24.2)(typescript@6.0.3)(unrun@0.3.1)
 
   packages/3d/quad-remesh:
     dependencies:
@@ -1000,6 +1006,9 @@ importers:
       '@types/node':
         specifier: '*'
         version: 24.13.3
+      tsdown:
+        specifier: ^0.22.14
+        version: 0.22.14(@tsdown/css@0.22.14)(oxc-resolver@11.24.2)(typescript@6.0.3)(unrun@0.3.1)
 
   packages/image/image-edit:
     dependencies:
@@ -1093,6 +1102,9 @@ importers:
       '@deepseek-ai/schemastery':
         specifier: '*'
         version: 3.18.2
+      '@melite/card-base':
+        specifier: workspace:*
+        version: link:../../web/card-base
       '@melite/comfyui-card-kit':
         specifier: workspace:*
         version: link:../../engines/comfyui-card-kit
@@ -1816,6 +1828,9 @@ importers:
       '@melite-plugin/timeline':
         specifier: workspace:*
         version: link:../../web-kit/timeline
+      '@melite/card-base':
+        specifier: workspace:*
+        version: link:../../web/card-base
       '@melite/catalog':
         specifier: workspace:*
         version: link:../../web-kit/catalog
@@ -1859,6 +1874,9 @@ importers:
       '@types/react-dom':
         specifier: ~18.3.1
         version: 18.3.7(@types/react@18.3.31)
+      tsdown:
+        specifier: ^0.22.14
+        version: 0.22.14(@tsdown/css@0.22.14)(oxc-resolver@11.24.2)(typescript@6.0.3)(unrun@0.3.1)
 
   packages/video/h3-timeline:
     dependencies:
@@ -1877,6 +1895,9 @@ importers:
       '@melite-plugin/timeline':
         specifier: workspace:*
         version: link:../../web-kit/timeline
+      '@melite/card-base':
+        specifier: workspace:*
+        version: link:../../web/card-base
       '@melite/catalog':
         specifier: workspace:*
         version: link:../../web-kit/catalog
@@ -1908,6 +1929,9 @@ importers:
       '@types/node':
         specifier: '*'
         version: 24.13.3
+      tsdown:
+        specifier: ^0.22.14
+        version: 0.22.14(@tsdown/css@0.22.14)(oxc-resolver@11.24.2)(typescript@6.0.3)(unrun@0.3.1)
 
   packages/video/video-gen:
     dependencies:
@@ -2004,6 +2028,12 @@ importers:
       '@dnd-kit/utilities':
         specifier: ^3.2.2
         version: 3.2.2(react@18.3.1)
+      '@melite/slots':
+        specifier: workspace:*
+        version: link:../../web-kit/slots
+      clsx:
+        specifier: '*'
+        version: 2.1.1
       react:
         specifier: ^18.2.0
         version: 18.3.1
@@ -5983,7 +6013,7 @@ snapshots:
       lightningcss: 1.33.0
       postcss-load-config: 6.0.1(jiti@2.7.0)(postcss@8.5.26)(yaml@2.9.0)
       rolldown: 1.2.7
-      tsdown: 0.22.14(@tsdown/css@0.22.14)(oxc-resolver@11.24.2)(typescript@5.9.3)(unrun@0.3.1)
+      tsdown: 0.22.14(@tsdown/css@0.22.14)(oxc-resolver@11.24.2)(typescript@6.0.3)(unrun@0.3.1)
     optionalDependencies:
       postcss: 8.5.26
     transitivePeerDependencies:

@@ -80,7 +80,7 @@ const identity = {
 	]
 };
 function apply(ctx) {
-	ctx.effect(() => typeof ctx.comfyui?.registerCard === "function" ? ctx.comfyui.registerCard({
+	ctx.effect(() => ctx.comfyui.registerCard({
 		id: "ideogram4",
 		skeleton: "generate",
 		boarded: ["ideogram"],
@@ -110,7 +110,7 @@ function apply(ctx) {
 			ideogramLane(p, model, g, runId);
 		},
 		finalize: finalizeIdeogram
-	}) : () => {});
+	}));
 }
 //#endregion
 export { apply, identity, inject };

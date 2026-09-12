@@ -1,8 +1,12 @@
 /**
- * useToastStore + ToastViewport — studio-local toast store (the old
- * kit `useToastStore` import is dead). Same selector API:
+ * useToastStore + ToastViewport — the ONE studio toast store
+ * (founded 2026-09-12, debt extermination: the byte-identical
+ * ideo/motion copies collapsed here; mask's minimal getState port
+ * stays local — different store shape). Same selector API:
  * `useToastStore((s) => s.addToast)`. Rendering rides the DSH Toast
  * atom; mount one <ToastViewport/> per studio root.
+ *
+ * Per-seam subpath: `@melite/card-base/toast`.
  */
 import { useSyncExternalStore } from "react"
 import { Toast } from "@deepseek-ai/dsh-client-ui-primitives"

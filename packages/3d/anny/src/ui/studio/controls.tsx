@@ -7,8 +7,8 @@
  */
 import { useCallback, useEffect, useRef, useState, type ButtonHTMLAttributes, type ReactElement, type ReactNode } from "react"
 import { Button, Tooltip } from "@deepseek-ai/dsh-client-ui-primitives"
-import { ChevronDown, Loader2, Sparkles } from "./icons"
-import { cx } from "./cx"
+import { ChevronDown, Loader2, Sparkles } from "@melite/card-base/icons"
+import { cx } from "@melite/card-base/chrome"
 import styles from "./controls.module.css"
 
 /* ── Tip ──────────────────────────────────────────────────────── */

@@ -7,7 +7,7 @@
 // segmented rows, docked corners, ghosted until pointer-near).
 import type { ComponentProps, ReactElement, ReactNode } from "react"
 import { clsx } from "clsx"
-import { Loader2 } from "./icons"
+import { Loader2 } from "@melite/card-base/icons"
 import styles from "./mask.module.css"
 
 /* ── ViewportAnchor ─────────────────────────────────────────────── */

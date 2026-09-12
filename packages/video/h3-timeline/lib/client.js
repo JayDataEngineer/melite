@@ -62,8 +62,31 @@ window.__ModuleLoader__.load({
 			return n;
 		}
 		//#endregion
-		//#region src/ui/studio/icons.tsx
-		function base$1({ className, children, ...rest }) {
+		//#region ../../web/card-base/src/chrome.ts
+		/**
+		* Card chrome primitives — the ONE joiner + the ONE file reader
+		* (founded 2026-09-12, debt extermination: anny/ideo cx, motion/h3
+		* clsx-cn, and the four identical readAsDataURL copies collapsed
+		* here). DOM-free, no CSS, no atoms — safe for node and browser.
+		*
+		* Per-seam subpath: `@melite/card-base/chrome`.
+		*/
+		/** The merging joiner (clsx — objects/arrays/conditionals). */
+		function cn(...inputs) {
+			return clsx(...inputs);
+		}
+		/** Blob → data URL (FileReader promise). */
+		function readAsDataURL$1(file) {
+			return new Promise((resolve, reject) => {
+				const reader = new FileReader();
+				reader.onload = () => resolve(reader.result);
+				reader.onerror = () => reject(reader.error ?? /* @__PURE__ */ new Error("read failed"));
+				reader.readAsDataURL(file);
+			});
+		}
+		//#endregion
+		//#region ../../web/card-base/src/icons.tsx
+		function Svg({ className, style, children, ...rest }) {
 			return /* @__PURE__ */ (0, react_jsx_runtime.jsx)("svg", {
 				xmlns: "http://www.w3.org/2000/svg",
 				width: 24,
@@ -74,78 +97,86 @@ window.__ModuleLoader__.load({
 				strokeWidth: 2,
 				strokeLinecap: "round",
 				strokeLinejoin: "round",
+				"aria-hidden": "true",
+				focusable: "false",
 				className,
+				style,
 				...rest,
 				children
 			});
 		}
-		function X$1(props) {
-			return base$1({
-				...props,
-				children: /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(react_jsx_runtime.Fragment, { children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M18 6 6 18" }), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "m6 6 12 12" })] })
+		function X$1({ className, style, ...rest }) {
+			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(Svg, {
+				className,
+				style,
+				...rest,
+				children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M18 6 6 18" }), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "m6 6 12 12" })]
 			});
 		}
-		function ChevronDown(props) {
-			return base$1({
-				...props,
+		function ChevronDown({ className, style, ...rest }) {
+			return /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Svg, {
+				className,
+				style,
+				...rest,
 				children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "m6 9 6 6 6-6" })
 			});
 		}
-		function ChevronLeft(props) {
-			return base$1({
-				...props,
+		function ChevronLeft({ className, style, ...rest }) {
+			return /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Svg, {
+				className,
+				style,
+				...rest,
 				children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "m15 18-6-6 6-6" })
 			});
 		}
-		function Link2(props) {
-			return base$1({
-				...props,
-				children: /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(react_jsx_runtime.Fragment, { children: [
+		function Upload({ className, style, ...rest }) {
+			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(Svg, {
+				className,
+				style,
+				...rest,
+				children: [
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" }),
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "m17 8-5-5-5 5" }),
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M12 3v12" })
+				]
+			});
+		}
+		function Link2({ className, style, ...rest }) {
+			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(Svg, {
+				className,
+				style,
+				...rest,
+				children: [
 					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M9 17H7A5 5 0 0 1 7 7h2" }),
 					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M15 7h2a5 5 0 1 1 0 10h-2" }),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("line", {
-						x1: "8",
-						x2: "16",
-						y1: "12",
-						y2: "12"
-					})
-				] })
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M8 12h8" })
+				]
 			});
 		}
-		function Upload(props) {
-			return base$1({
-				...props,
-				children: /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(react_jsx_runtime.Fragment, { children: [
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" }),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("polyline", { points: "17 8 12 3 7 8" }),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("line", {
-						x1: "12",
-						x2: "12",
-						y1: "3",
-						y2: "15"
-					})
-				] })
+		/** h3's name for the alert triangle — same drawing. */
+		function TriangleAlert({ className, style, ...rest }) {
+			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(Svg, {
+				className,
+				style,
+				...rest,
+				children: [
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z" }),
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M12 9v4" }),
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M12 17h.01" })
+				]
 			});
 		}
-		function Clapperboard(props) {
-			return base$1({
-				...props,
-				children: /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(react_jsx_runtime.Fragment, { children: [
+		function Clapperboard({ className, style, ...rest }) {
+			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(Svg, {
+				className,
+				style,
+				...rest,
+				children: [
 					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M20.2 6 3 11l-.9-2.4c-.3-1.1.3-2.2 1.3-2.5l13.5-4c1.1-.3 2.2.3 2.5 1.3Z" }),
 					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "m6.2 5.3 3.1 3.9" }),
 					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "m12.4 3.4 3.1 4" }),
 					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M3 11h18v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z" })
-				] })
-			});
-		}
-		function TriangleAlert(props) {
-			return base$1({
-				...props,
-				children: /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(react_jsx_runtime.Fragment, { children: [
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z" }),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M12 9v4" }),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M12 17h.01" })
-				] })
+				]
 			});
 		}
 		//#endregion
@@ -410,20 +441,19 @@ window.__ModuleLoader__.load({
 		*     SliderControl / SelectMenu (native <select>: the custom
 		*     popover's keyboard/click-outside contract comes free) /
 		*     SlotSquare (verbatim drop logic + data-slot-* hooks) /
-		*     EmptyState / PaneHeader / PaneShell / StudioShell /
-		*     defineShellDeclaration / FilmPlayer (native <video controls>
-		*     exposing the same FilmPlayerHandle) / Tip (DSH Tooltip over a
-		*     layout-invisible anchor so React-18-ref-less DSH Buttons can
-		*     carry bubbles without warnings).
-		*   • cn is clsx (the repo has no tailwind-merge need once every
-		*     utility string is a real class).
-		*   • readAsDataURL / isImageUrl / ASSET_DRAG_MIME are verbatim
-		*     copies of the kit's single definitions (the studio's only
-		*     uses; the kit package itself is gone from this package).
+		*     EmptyState / PaneHeader / PaneShell / StudioShell (the
+		*     STANDALONE variant — rail renders inline, no StudioRail
+		*     portal; kept local deliberately, not the card-base shell) /
+		*     defineShellDeclaration (the narrow ViewportKind/BarKind seam
+		*     table — h3's own vocabulary) / FilmPlayer (native <video
+		*     controls> exposing the same FilmPlayerHandle) / Tip (DSH
+		*     Tooltip over a layout-invisible anchor so React-18-ref-less
+		*     DSH Buttons can carry bubbles without warnings).
+		*   • Shared chrome (cn, readAsDataURL, glyphs) is imported from
+		*     @melite/card-base — never re-declared here.
+		*   • isImageUrl / ASSET_DRAG_MIME are the studio's own rules (the
+		*     kit package itself is gone from this package).
 		*/
-		function cn(...inputs) {
-			return clsx(...inputs);
-		}
 		/** The w-* width vocabulary the width props name (call sites keep
 		*  their historical strings; the map resolves them to real classes). */
 		const WIDTHS = {
@@ -440,15 +470,6 @@ window.__ModuleLoader__.load({
 		};
 		function widthClass(width) {
 			return width === void 0 ? void 0 : WIDTHS[width];
-		}
-		/** Read a File / Blob and resolve its data: URL. */
-		function readAsDataURL$1(file) {
-			return new Promise((resolve, reject) => {
-				const reader = new FileReader();
-				reader.onload = () => resolve(reader.result);
-				reader.onerror = () => reject(reader.error ?? /* @__PURE__ */ new Error("read failed"));
-				reader.readAsDataURL(file);
-			});
 		}
 		/** THE "is this a thumbnail" rule for slot-shaped values. */
 		function isImageUrl(value) {
@@ -6833,6 +6854,10 @@ window.__ModuleLoader__.load({
 		function _getState$1() {
 			return _state$1;
 		}
+		/* v8 ignore next -- React-tree wiring: invoking the hook needs a renderer
+		* for useSyncExternalStore (dom-project territory, like the slots seam's
+		* useVersion). The selector contract is pinned node-side through
+		* getState/subscribe in catalog-contract-store.spec.ts. (2026-09-12) */
 		function _useCatalogContractStoreHook(selector) {
 			return (0, react.useSyncExternalStore)(_subscribe$1, selector ? () => selector(_getState$1()) : () => _getState$1());
 		}
@@ -7027,6 +7052,10 @@ window.__ModuleLoader__.load({
 		function _getState() {
 			return _state;
 		}
+		/* v8 ignore next -- React-tree wiring: invoking the hook needs a renderer
+		* for useSyncExternalStore (dom-project territory, like the slots seam's
+		* useVersion). The selector contract is pinned node-side through
+		* getState/subscribe in run-status-contract-store.spec.ts. (2026-09-12) */
 		function _useRunStatusContractStoreHook(selector) {
 			return (0, react.useSyncExternalStore)(_subscribe, selector ? () => selector(_getState()) : () => _getState());
 		}
@@ -8965,6 +8994,10 @@ window.__ModuleLoader__.load({
 				serverSyncEnabled = true;
 			} catch {}
 		}
+		/* v8 ignore next -- React-tree wiring: invoking the hook needs a renderer
+		* for useSyncExternalStore (dom-project territory, like the slots seam's
+		* useVersion). The selector contract is pinned node-side through
+		* getState/subscribe in tag-map.spec.ts. (2026-09-12) */
 		function useTagMapHook() {
 			return (0, react.useSyncExternalStore)((l) => {
 				tagMapListeners.add(l);

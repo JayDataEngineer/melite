@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react"
 import { Input, Tooltip } from "@deepseek-ai/dsh-client-ui-primitives"
 import { clsx } from "clsx"
-import { Loader2, Sparkles } from "./icons"
+import { Loader2, WandSparkles as Sparkles } from "@melite/card-base/icons"
 import { VerbChip } from "./VerbChip"
 import styles from "./mask.module.css"
 

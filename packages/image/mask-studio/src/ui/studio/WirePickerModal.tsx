@@ -10,7 +10,7 @@
 import type { CardStage } from "@melite/contracts"
 import { Modal } from "@deepseek-ai/dsh-client-ui-primitives"
 import { clsx } from "clsx"
-import { Link2 } from "./icons"
+import { Link2 } from "@melite/card-base/icons"
 import { isImageUrl } from "./attach"
 import styles from "./mask.module.css"
 

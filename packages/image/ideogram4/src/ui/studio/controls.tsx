@@ -5,7 +5,7 @@
  */
 import type { ReactElement, TextareaHTMLAttributes } from "react"
 import { Tooltip } from "@deepseek-ai/dsh-client-ui-primitives"
-import { cx } from "./cx"
+import { cx } from "@melite/card-base/chrome"
 import styles from "./controls.module.css"
 
 export function Textarea({

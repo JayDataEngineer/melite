@@ -4,7 +4,8 @@
  * every logic line is verbatim from the monolith (source range noted).
  */
 import { Button, Input } from "@deepseek-ai/dsh-client-ui-primitives"
-import { NumberControl, cn } from "./kit"
+import { NumberControl } from "./kit"
+import { cn } from "@melite/card-base/chrome"
 import s from "./studio.module.css"
 import type { DocBeatSegment, DocCall } from "./docModel"
 import type { TimelineSelection } from "./useViewSelection"

@@ -1,13 +1,21 @@
 /**
- * StudioShell + RailSection + defineShellDeclaration — studio-local
- * copies of the former kit shell seams (those kit imports are dead).
- * Same props, same declaration shape, DSH-token styling. The rail
- * still projects through the shell-provided slot when one exists.
+ * StudioShell + RailSection + defineShellDeclaration — the ONE card
+ * chrome owner (founded 2026-09-12, debt extermination: the six
+ * studio-local copies — anny/ideo/mask shells, motion/h3 kits, mesh
+ * shell.ts — collapsed here, bodies byte-identical). Same props,
+ * same declaration shape, DSH-token styling. The rail still projects
+ * through the shell-provided slot when one exists.
+ *
+ * Per-seam subpath: `@melite/card-base/shell` (shell body, rail
+ * section, declaration door). Styling rides `./shell.module.css`
+ * (the anny rule set — the superset; the kits' shellErrors look
+ * unified here: same border/bg, danger-ink text, reset rows,
+ * aligned icon).
  */
 import type { ComponentProps, ReactElement, ReactNode } from "react"
 import { StudioRail } from "@melite/slots"
 import { AlertTriangle } from "./icons"
-import { cx } from "./cx"
+import { cx } from "./chrome"
 import styles from "./shell.module.css"
 
 /** One loud failure row — the tenant derives them; the shell

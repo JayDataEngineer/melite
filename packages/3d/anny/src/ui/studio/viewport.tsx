@@ -4,7 +4,7 @@
  * dead). Same props, same data attributes, DSH-token styling.
  */
 import type { ComponentProps, ReactElement, ReactNode } from "react"
-import { cx } from "./cx"
+import { cx } from "@melite/card-base/chrome"
 import styles from "./viewport.module.css"
 
 export interface ViewportFrameProps extends ComponentProps<"div"> {

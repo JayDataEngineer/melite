@@ -7,9 +7,9 @@ import type { IdeoElement } from './ideoHelpers'
 import { CANVAS_MAX_HEIGHT, GRID_SIZE, MIN_BOX, bboxToRect, clamp, clampBbox, extractIdeogramCaptionFromPNG, genId, snap } from './ideoHelpers'
 import styles from './IdeogramCanvas.module.css'
 import { useCallback, useRef, useState } from 'react'
-import { useToastStore } from './toast'
-import { Box, Type, Image as ImageIcon } from './icons'
-import { cx } from './cx'
+import { useToastStore } from '@melite/card-base/toast'
+import { Box, Type, Image as ImageIcon } from '@melite/card-base/icons'
+import { cx } from '@melite/card-base/chrome'
 import { Tip } from './controls'
 
 

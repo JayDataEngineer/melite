@@ -9,7 +9,6 @@
     "./card": "./src/card.ts",
     "./package.json": "./package.json",
     "./tool": "./src/tool.ts",
-    "./ui/*": "./src/ui/*",
     "./ui/studio/component": "./src/ui/studio/component.tsx"
   },
   "scripts": {},
@@ -19,6 +18,7 @@
     "@deepseek-ai/dsh-tools": "0.1.5-rc.2",
     "@deepseek-ai/schemastery": "*",
     "@melite-plugin/timeline": "workspace:*",
+    "@melite/card-base": "workspace:*",
     "@melite/catalog": "workspace:*",
     "@melite/comfyui-card-kit": "workspace:*",
     "@melite/comfyui-cordis": "workspace:*",
@@ -30,7 +30,8 @@
   "devDependencies": {
     "@types/node": "*",
     "@testing-library/react": "*",
-    "@testing-library/jest-dom": "*"
+    "@testing-library/jest-dom": "*",
+    "tsdown": "^0.22.14"
   },
   "name": "@melite/video-h3-timeline",
   "description": "the h3-timeline card (the video lane) \u2014 one card one package: card.ts host face + ui/ studio + agents/ context",

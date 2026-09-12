@@ -15,16 +15,18 @@
  *     SliderControl / SelectMenu (native <select>: the custom
  *     popover's keyboard/click-outside contract comes free) /
  *     SlotSquare (verbatim drop logic + data-slot-* hooks) /
- *     EmptyState / PaneHeader / PaneShell / StudioShell /
- *     defineShellDeclaration / FilmPlayer (native <video controls>
- *     exposing the same FilmPlayerHandle) / Tip (DSH Tooltip over a
- *     layout-invisible anchor so React-18-ref-less DSH Buttons can
- *     carry bubbles without warnings).
- *   • cn is clsx (the repo has no tailwind-merge need once every
- *     utility string is a real class).
- *   • readAsDataURL / isImageUrl / ASSET_DRAG_MIME are verbatim
- *     copies of the kit's single definitions (the studio's only
- *     uses; the kit package itself is gone from this package).
+ *     EmptyState / PaneHeader / PaneShell / StudioShell (the
+ *     STANDALONE variant — rail renders inline, no StudioRail
+ *     portal; kept local deliberately, not the card-base shell) /
+ *     defineShellDeclaration (the narrow ViewportKind/BarKind seam
+ *     table — h3's own vocabulary) / FilmPlayer (native <video
+ *     controls> exposing the same FilmPlayerHandle) / Tip (DSH
+ *     Tooltip over a layout-invisible anchor so React-18-ref-less
+ *     DSH Buttons can carry bubbles without warnings).
+ *   • Shared chrome (cn, readAsDataURL, glyphs) is imported from
+ *     @melite/card-base — never re-declared here.
+ *   • isImageUrl / ASSET_DRAG_MIME are the studio's own rules (the
+ *     kit package itself is gone from this package).
  */
 import {
   forwardRef,
@@ -35,17 +37,13 @@ import {
   useState,
 } from "react"
 import type { ReactElement, ReactNode } from "react"
-import { clsx, type ClassValue } from "clsx"
+import { cn } from "@melite/card-base/chrome"
 import {
   Switch,
   Tooltip,
 } from "@deepseek-ai/dsh-client-ui-primitives"
-import { Upload, X, TriangleAlert } from "./icons"
+import { Upload, X, TriangleAlert } from "@melite/card-base/icons"
 import s from "./studio.module.css"
-
-export function cn(...inputs: ClassValue[]) {
-  return clsx(...inputs)
-}
 
 /** The w-* width vocabulary the width props name (call sites keep
  *  their historical strings; the map resolves them to real classes). */
@@ -67,16 +65,6 @@ function widthClass(width: string | undefined): string | undefined {
 }
 
 // ── helpers (verbatim from the kit's single definitions) ────────────
-
-/** Read a File / Blob and resolve its data: URL. */
-export function readAsDataURL(file: Blob): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader()
-    reader.onload = () => resolve(reader.result as string)
-    reader.onerror = () => reject(reader.error ?? new Error("read failed"))
-    reader.readAsDataURL(file)
-  })
-}
 
 /** THE "is this a thumbnail" rule for slot-shaped values. */
 export function isImageUrl(value: string): boolean {

@@ -65,8 +65,8 @@
  */
 import type { CardStage } from "@melite/contracts"
 import { defineShellDeclaration, StudioShell } from "./kit"
-import { ChevronDown, TriangleAlert } from "./icons"
-import { cn } from "./kit"
+import { ChevronDown, TriangleAlert } from "@melite/card-base/icons"
+import { cn } from "@melite/card-base/chrome"
 import s from "./studio.module.css"
 import { StudioPreview } from "./StudioPreview"
 import { StudioStripPane } from "./StudioStripPane"

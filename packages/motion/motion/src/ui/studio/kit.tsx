@@ -10,33 +10,25 @@
  *     elements + the studio's own CSS module (kit.module.css):
  *     ViewportAnchor (same docks, same data-dock) / ViewportFrame
  *     (same frame, same data-slot, ref-forwarding — the stage owns
- *     a measured ref) / PaneHeader / PaneShell / StudioShell (+ the
- *     loud error line; the rail still projects through the
- *     shell-provided slot when one exists) /
- *     defineShellDeclaration (same frozen-data shape) / SlotSquare
+ *     a measured ref) / PaneHeader / PaneShell / SlotSquare
  *     (verbatim drop logic + data-slot-* hooks) / WirePickerModal
  *     (verbatim wire UX + data-wire-* hooks) / useMotionThumbStore
  *     (same selector API + localStorage persistence, zustand-free)
  *     / Tip (DSH Tooltip over a layout-invisible anchor so
  *     ref-less DSH Buttons can carry bubbles without warnings).
- *   • cn is clsx (the repo has no tailwind-merge need once every
- *     utility string is a real class).
- *   • readAsDataURL / isImageUrl / ASSET_DRAG_MIME are verbatim
- *     copies of the kit's single definitions (the studio's only
- *     uses; the kit package itself is gone from this package).
+ *     Shared chrome (StudioShell + error line, the declaration
+ *     door, cn, readAsDataURL) lives in @melite/card-base —
+ *     imported, never re-declared here.
+ *   • isImageUrl / ASSET_DRAG_MIME are the studio's own rules (the
+ *     kit package itself is gone from this package).
  */
 import { forwardRef, useRef, useState, useSyncExternalStore } from "react"
 import type { ComponentProps, ReactElement, ReactNode } from "react"
-import { clsx, type ClassValue } from "clsx"
 import { Tooltip } from "@deepseek-ai/dsh-client-ui-primitives"
-import { StudioRail } from "@melite/slots"
 import type { CardStage } from "@melite/contracts"
-import { Link2, Upload, X, AlertTriangle } from "./glyphs"
+import { Link2, Upload, X } from "@melite/card-base/icons"
+import { cn } from "@melite/card-base/chrome"
 import s from "./kit.module.css"
-
-export function cn(...inputs: ClassValue[]) {
-  return clsx(...inputs)
-}
 
 // ── helpers (verbatim from the kit's single definitions) ────────────
 
@@ -50,17 +42,6 @@ export function isImageUrl(value: string): boolean {
     /^blob:/i.test(value) ||
     /^(?:https?:)?\/[^"'<>]*\.(?:png|jpe?g|webp|gif|bmp|avif)(?:[?#]|$)/i.test(value)
   )
-}
-
-/** Read a File / Blob and resolve its data: URL. THE one read path
- *  for every slot-shaped attach. */
-export function readAsDataURL(file: Blob): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader()
-    reader.onload = () => resolve(reader.result as string)
-    reader.onerror = () => reject(reader.error ?? new Error("read failed"))
-    reader.readAsDataURL(file)
-  })
 }
 
 // ── Tip — DSH Tooltip over a layout-invisible anchor ────────────────
@@ -205,90 +186,6 @@ export function PaneShell({ children, className }: { children: ReactNode; classN
       {children}
     </div>
   )
-}
-
-// ── StudioShell — the estate studio body (three declared seams) ─────
-
-export interface StudioShellError {
-  id: string
-  message: string
-}
-
-export function StudioShellErrorLine({
-  errors,
-}: {
-  errors: StudioShellError[]
-}): ReactElement | null {
-  if (errors.length === 0) return null
-  return (
-    <div role="alert" className={s.shellErrors}>
-      {errors.map((e) => (
-        <p key={e.id} className={s.shellError}>
-          <AlertTriangle className={s.shellErrorIcon} /> {e.id}: {e.message}
-        </p>
-      ))}
-    </div>
-  )
-}
-
-export interface StudioShellProps {
-  /** RAIL seam content (tenant-declared). */
-  rail: ReactNode
-  /** CENTER seam content (the viewport primitive, tenant-declared). */
-  center: ReactNode
-  /** BOTTOM seam content (aux bar; omit for none). */
-  bottom?: ReactNode
-  /** Shell-owned chrome: the loud error line (empty = no line). */
-  errors?: StudioShellError[]
-  /** Root override (tenant padding/gap/min-h). */
-  className?: string
-}
-
-export function StudioShell({
-  rail,
-  center,
-  bottom,
-  errors = [],
-  className,
-}: StudioShellProps): ReactElement {
-  return (
-    <div className={cn(s.shell, className)}>
-      {/* RAIL — what the card acts ON. */}
-      <StudioRail>{rail}</StudioRail>
-      {/* CENTER — what the card sees THROUGH. */}
-      {center}
-      {/* BOTTOM — what the card scrubs OVER. */}
-      {bottom}
-      {/* LOUD failures — shell-owned chrome, once. */}
-      <StudioShellErrorLine errors={errors} />
-    </div>
-  )
-}
-
-// ── shellDeclaration — the typed seam tables, as data ───────────────
-
-export interface CenterSeam {
-  kind: string
-}
-
-export interface BottomSeam {
-  kind: string
-}
-
-export interface RailSeam {
-  slots: readonly string[]
-}
-
-export interface ShellDeclaration {
-  center: CenterSeam
-  bottom?: BottomSeam
-  rail: RailSeam
-}
-
-export function defineShellDeclaration(
-  declaration: ShellDeclaration,
-): Readonly<ShellDeclaration> {
-  return Object.freeze(declaration)
 }
 
 // ── SlotSquare — the square slot shell (verbatim drop logic) ────────

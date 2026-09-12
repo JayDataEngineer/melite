@@ -5,8 +5,8 @@
 // declaration; `export` was added so the sibling modules can share them.
 // No value, label, color, or threshold changed.
 import {
-  BoxSelect, Brush, Hand, PersonStanding, ScanFace, Sparkles, User,
-} from "./icons"
+  BoxSelect, Brush, Hand, PersonStanding, ScanFace, WandSparkles as Sparkles, User,
+} from "@melite/card-base/icons"
 import styles from "./mask.module.css"
 
 /** The slot this editor sources. Mask Studio consumes one image — slot 0,

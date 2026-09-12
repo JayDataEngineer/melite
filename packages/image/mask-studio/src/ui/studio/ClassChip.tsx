@@ -2,7 +2,7 @@
 // (props shape unchanged).
 import { Button, Tooltip } from "@deepseek-ai/dsh-client-ui-primitives"
 import { clsx } from "clsx"
-import { ScanFace } from "./icons"
+import { ScanFace } from "@melite/card-base/icons"
 import styles from "./mask.module.css"
 import type { DetectClass } from "./constants"
 

@@ -2,7 +2,7 @@
 // component.tsx (props shape unchanged).
 import { Button } from "@deepseek-ai/dsh-client-ui-primitives"
 import { clsx } from "clsx"
-import { Hourglass, Link2 } from "./icons"
+import { Hourglass, Link2 } from "@melite/card-base/icons"
 import styles from "./mask.module.css"
 
 // ── Waiting state: wired to an upstream that hasn't run yet ───────────────

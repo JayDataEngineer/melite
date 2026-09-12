@@ -74,8 +74,8 @@
 // cardStudios glob imports that exact default export).
 import { useCallback, useEffect, useMemo, useState } from "react"
 import type { CardStage } from "@melite/contracts"
-import { StudioShell } from "./StudioShell"
-import { defineShellDeclaration } from "./shellDeclaration"
+import { StudioShell } from "@melite/card-base/shell"
+import { defineShellDeclaration } from "@melite/card-base/shell"
 import { WirePickerModal } from "./WirePickerModal"
 import styles from "./mask.module.css"
 import { EMPTY_ARTIFACTS, INPUT_SLOT } from "./constants"

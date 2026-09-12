@@ -29,15 +29,15 @@
 // by scripts/ideo_split.py (Phase 6 restructure) — pure refactor.
 import type { ElementType, IdeoElement, StyleType } from './ideoHelpers'
 import { ASPECT_PRESETS, GRID_SIZE, SNAP_UNITS, clamp, clampBbox, extractIdeogramCaptionFromPNG, genId, parseElementsJSON, sanitizeHexList, serializeElements } from './ideoHelpers'
-import { StudioShell, defineShellDeclaration } from "./shell"
+import { StudioShell, defineShellDeclaration } from "@melite/card-base/shell"
 import { IdeogramCanvas } from './IdeogramCanvas'
-import { ToastViewport, useToastStore } from './toast'
+import { ToastViewport, useToastStore } from '@melite/card-base/toast'
 import { ElementInspector, JsonPanel, MicroLabel, StylePanel } from './IdeoPanels'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Button, Modal, Tooltip } from '@deepseek-ai/dsh-client-ui-primitives'
 import { Textarea, Tip } from './controls'
-import { Box, Type, Trash2, Copy, Grid3x3, Magnet, Maximize2, ChevronUp, ChevronDown, Sparkles, Wand2, Code2, Layers, Palette as PaletteIcon, Square, Upload } from './icons'
-import { cx } from './cx'
+import { Box, Type, Trash2, Copy, Grid3x3, Magnet, Maximize2, ChevronUp, ChevronDown, SunSparkle, Wand2, Code2, Layers, Palette as PaletteIcon, SquareSmall as Square, Upload } from '@melite/card-base/icons'
+import { cx } from '@melite/card-base/chrome'
 import styles from './component.module.css'
 export { __test } from './ideoHelpers'
 
@@ -665,7 +665,7 @@ export function IdeogramCanvasEditor({ values, setValues }: IdeogramCanvasEditor
 
         {/* helper line — sits in the pb-7 gutter below the canvas */}
         <div className={styles.helperLine}>
-          <Sparkles className={cx(styles.i10, styles.toneBrand)} />
+          <SunSparkle className={cx(styles.i10, styles.toneBrand)} />
           <span>
             {elements.length === 0
               ? "Drag on the canvas to create a region, or use +Object / +Text"

@@ -5,9 +5,9 @@
  * pick buttons. Same props, same data attributes, DSH-token styling.
  */
 import { useRef, useState, type ReactElement, type ReactNode } from "react"
-import { Upload, X } from "./icons"
+import { Upload, X } from "@melite/card-base/icons"
 import { Tip } from "./controls"
-import { cx } from "./cx"
+import { cx } from "@melite/card-base/chrome"
 import styles from "./slot.module.css"
 
 export const ASSET_DRAG_MIME = "application/tech-noir-asset"
