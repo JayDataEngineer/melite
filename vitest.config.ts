@@ -78,6 +78,7 @@ const DOM_SPEC_TREES = [
   // (React 19, the store-pinned pair).
   `${rootPath('packages/video/h3-timeline')}/tests/**/*.spec.{ts,tsx}`,
   `${rootPath('packages/image/ideogram4')}/tests/**/*.spec.{ts,tsx}`,
+  `${rootPath('packages/image/mask-studio')}/tests/**/*.spec.{ts,tsx}`,
   `${rootPath('packages/3d/img-to-mesh')}/tests/**/*.spec.{ts,tsx}`,
 ]
 // The gallery's own tree — React 18, the universe the DSH shell hosts.

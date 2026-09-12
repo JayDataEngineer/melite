@@ -94,6 +94,9 @@
     - id: card-studio-img-to-mesh
       name: '@melite/3d-img-to-mesh'
 
+    - id: card-studio-mask-studio
+      name: '@melite/image-mask-studio'
+
     - id: card-studio-motion
       name: '@melite/motion-motion'
 

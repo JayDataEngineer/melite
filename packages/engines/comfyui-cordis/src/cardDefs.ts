@@ -59,7 +59,7 @@ export const cardPackages: string[] = [
     '@melite/audio-sfx',
     '@melite/image-ideogram4/card',
     '@melite/image-input-prep',
-    '@melite/image-mask-studio',
+    '@melite/image-mask-studio/card',
     '@melite/image-tagger',
     '@melite/image-upscale-tools',
     '@melite/video-video-gen',
