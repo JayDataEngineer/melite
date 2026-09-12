@@ -1,4 +1,4 @@
-import { a as makeEstateRequest, i as routeName, n as matchHarnessRoute, r as resolveHarnessRoutes, t as harnessEnhance } from "./llm-complete-D9QYcTSG.mjs";
+import { a as boardedMap, d as resolveSpecKey, f as makeEstateRequest, i as routeName, n as matchHarnessRoute, r as resolveHarnessRoutes, t as harnessEnhance } from "./llm-complete-CwIsLTrk.mjs";
 import { buildMusicTool } from "@melite/audio-music/tool";
 import { buildTtsTool } from "@melite/audio-tts/tool";
 import { buildVoiceLockTool } from "@melite/audio-voice-lock/tool";
@@ -8,6 +8,7 @@ import { buildCardTool } from "@melite/3d-clothing-placement/tool";
 import { buildH3TimelineTool } from "@melite/video-h3-timeline/tool";
 import { defineTool } from "@deepseek-ai/dsh-tools";
 import { remoteErrorOf } from "@deepseek-ai/dsh-typert-protocol";
+import { loadCardDefs } from "@melite/comfyui-cordis";
 //#region src/json-clean.ts
 /**
 * Deep JSON-normalization for tool results.
@@ -468,6 +469,19 @@ function meliteConstruct(request) {
 }
 //#endregion
 //#region src/tools/melite-flow.ts
+/** The row's model (the QUEUE LANE LAW, agent-side): the row's
+*  params may name `model` explicitly; otherwise the card id
+*  resolves through form-spec's OWN alias law (boarded[0] — the
+*  same truth /v1/form-spec serves and the UI's
+*  defaultFamilyForCard reads; ONE resolution, never re-derived).
+*  An unresolvable card rides verbatim and the start door refuses
+*  with its own named voice. */
+async function modelForCard(card, params) {
+	if (typeof params["model"] === "string" && params["model"] !== "") return params["model"];
+	const defs = await loadCardDefs();
+	const res = resolveSpecKey(card, defs, boardedMap(defs));
+	return res !== null ? res.model : card;
+}
 /** Fold flat connects into per-stage typed edges. LOUD on shapes the
 * gateway would only bounce later — the agent reads the refusal HERE,
 * before any HTTP round trip. Kind resolution: the connect's `kind`
@@ -569,41 +583,174 @@ async function loadBench(request, body, signal) {
 	if (typeof id !== "string" || id === "") throw new Error("bench ensure returned no draft_id");
 	return id;
 }
-/** BENCH (the bench rework's run verb): run THE shared bench as it
-*  stands — no composition, no sugar. The stages are projected onto
-*  the flow_inline wire contract (presentation extras strip), then
-*  started under the bench's own draft_id. This is what the user's
-*  Run press does and what {bench: true} does — one truth. */
+/** BENCH (the AI-control pillar, 2026-09-12): the agent drives THE
+*  shared bench exactly like the user's Run press — ONE SEQUENTIAL
+*  PASS, agent-side, one card at a time through the serial queue.
+*  The flow_inline batch arm is DEAD here (the executor takes
+*  single-stage pre-composed graphs only — a multi-stage bench was
+*  an honest refusal, never a pass): each row runs through the
+*  {model: card-id} compose arm under the bench's own draft_id
+*  (resolveCardFamily resolves the card → family estate-side — the
+*  same truth /v1/form-spec serves), the run is observed to
+*  terminal on the run-wire cadence, and EVERY flip is written onto
+*  the bench row (runStatus + result {run_id, url}) through the
+*  bench patch door — the same attribution the tab's observer
+*  performs, so the user's tiles go live WHILE the agent drives.
+*  The pass law is Run All's law verbatim: bench order, skip done
+*  rows, one refusal or failed terminal STOPS the pass. */
 async function runBench(request, a, signal) {
+	const empty = {
+		mode: "bench",
+		target: `bench-${DEFAULT_BENCH}`,
+		error: "the bench is empty — construct stages first (melite_construct)"
+	};
 	let b;
 	try {
 		b = await request("GET", `/v1/bench/${DEFAULT_BENCH}`, void 0, signal, 15e3);
 	} catch (e) {
-		if (remoteErrorOf(e)?.code === "bench/not-found") return {
-			mode: "bench",
-			target: DEFAULT_BENCH,
-			error: "the bench is empty — construct stages first (melite_construct)"
-		};
+		if (remoteErrorOf(e)?.code === "bench/not-found") return empty;
 		throw e;
 	}
-	const stages = projectStages(b["stages"]);
-	if (stages.length === 0) return {
-		mode: "bench",
-		target: DEFAULT_BENCH,
-		error: "the bench is empty — construct stages first (melite_construct)"
-	};
+	const rows = Array.isArray(b["stages"]) ? b["stages"].filter((s) => typeof s === "object" && s !== null && typeof s["id"] === "string") : [];
+	if (rows.length === 0) return empty;
 	const draftId = typeof b["draft_id"] === "string" ? b["draft_id"] : `bench-${DEFAULT_BENCH}`;
-	const started = await startRun(request, {
-		flow_inline: { stages },
-		test: a.test === true,
-		draft_id: draftId
-	}, signal);
+	const target = `bench-${DEFAULT_BENCH} @ rev ${String(b["rev"] ?? "?")}`;
+	const pass = [];
+	for (const row of rows) {
+		const stageId = row["id"];
+		const card = typeof row["card"] === "string" && row["card"] !== "" ? row["card"] : "";
+		if (row["runStatus"] === "done") {
+			pass.push({
+				stage: stageId,
+				card,
+				skipped: "done"
+			});
+			continue;
+		}
+		if (card === "") return {
+			mode: "bench",
+			target,
+			draft_id: draftId,
+			status: "stopped",
+			stoppedAt: stageId,
+			error: `stage ${stageId} names no card — nothing to compose (melite_construct patch)`,
+			pass
+		};
+		const params = row["params"] !== null && typeof row["params"] === "object" && !Array.isArray(row["params"]) ? row["params"] : {};
+		const model = await modelForCard(card, params);
+		const started = await startRun(request, {
+			...params,
+			model,
+			test: a.test === true,
+			draft_id: draftId
+		}, signal);
+		if (typeof started["error"] === "string") return {
+			mode: "bench",
+			target,
+			draft_id: draftId,
+			status: "stopped",
+			stoppedAt: stageId,
+			error: started["error"],
+			pass
+		};
+		const runId = started["run_id"];
+		const outcome = await observeAndAttribute(request, stageId, runId, signal);
+		pass.push({
+			stage: stageId,
+			card,
+			run_id: runId,
+			status: outcome.status,
+			...outcome.url !== "" ? { url: outcome.url } : {}
+		});
+		if (outcome.status !== "done") return {
+			mode: "bench",
+			target,
+			draft_id: draftId,
+			status: "stopped",
+			stoppedAt: stageId,
+			run_id: runId,
+			error: `stage ${stageId} (${card}) ended ${outcome.status}`,
+			pass
+		};
+	}
 	return {
 		mode: "bench",
-		target: `bench-${DEFAULT_BENCH} @ rev ${String(b["rev"] ?? "?")}`,
+		target,
 		draft_id: draftId,
-		...started
+		status: "done",
+		pass
 	};
+}
+/** Signal-honoring sleep — the observer's poll cadence (the run-wire
+*  cadence, 1500ms). */
+function sleepAbort(ms, signal) {
+	return new Promise((resolve) => {
+		const t = setTimeout(resolve, ms);
+		signal.addEventListener("abort", () => {
+			clearTimeout(t);
+			resolve();
+		}, { once: true });
+	});
+}
+/** THE OUTCOME OBSERVER, agent-side (observeRunOutcome's law, the
+*  attribution half): poll the run to terminal, writing every flip
+*  onto the bench row (runStatus + result) through the bench patch
+*  door. Patches are bookkeeping — a refusal is swallowed (the next
+*  run rewrites the row); the loop's own refusals are the run's.
+*  The url rides the estate's media route: run-RELATIVE names
+*  prefix /melite-media/runs/<runId>/, urls that carry a scheme or
+*  lead with / pass verbatim (the ONE rewrite — the run-wire law,
+*  mirrored). */
+async function observeAndAttribute(request, stageId, runId, signal) {
+	let lastLive = "";
+	for (;;) {
+		signal.throwIfAborted();
+		let doc;
+		try {
+			doc = await request("GET", `/v1/flows/status/${encodeURIComponent(runId)}`, void 0, signal, TIMEOUT_MS$2);
+		} catch (e) {
+			const re = remoteErrorOf(e);
+			if (re !== null && re !== void 0 && re.code === "runs/unknown-run") return {
+				status: "unknown",
+				url: ""
+			};
+			await sleepAbort(1500, signal);
+			continue;
+		}
+		const status = typeof doc["status"] === "string" ? doc["status"] : "unknown";
+		if (status === "completed" || status === "failed" || status === "stopped" || status === "unknown") {
+			const stages = Array.isArray(doc["stages"]) ? doc["stages"].filter((s) => typeof s === "object" && s !== null) : [];
+			const st = stages.find((s) => s["id"] === stageId) ?? (stages.length === 1 ? stages[0] : void 0);
+			const rawUrl = st !== void 0 && typeof st["url"] === "string" && st["url"] !== "" ? st["url"] : "";
+			const url = rawUrl === "" ? "" : /^([a-z][a-z0-9+.-]*:|\/)/i.test(rawUrl) ? rawUrl : `/melite-media/runs/${runId}/${rawUrl}`;
+			const result = { run_id: runId };
+			if (url !== "") result["url"] = url;
+			const terminal = status === "completed" ? "done" : status;
+			try {
+				await request("POST", `/v1/bench/${DEFAULT_BENCH}/patch`, {
+					stage: stageId,
+					runStatus: terminal,
+					result
+				}, signal, DRAFT_TIMEOUT_MS);
+			} catch {}
+			return {
+				status: terminal,
+				url
+			};
+		}
+		const live = status === "queued" || status === "pending" ? "queued" : "running";
+		if (live !== lastLive) {
+			lastLive = live;
+			try {
+				await request("POST", `/v1/bench/${DEFAULT_BENCH}/patch`, {
+					stage: stageId,
+					runStatus: live,
+					result: { run_id: runId }
+				}, signal, DRAFT_TIMEOUT_MS);
+			} catch {}
+		}
+		await sleepAbort(1500, signal);
+	}
 }
 /** SINGLE (the old card_run path, composed inside): manifest gate
 *  + runnability gate + defaults merge, then draft + {model}. */

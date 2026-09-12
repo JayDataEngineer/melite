@@ -31,8 +31,10 @@ import type {
   ModelDecl,
 } from '@melite/comfyui-cordis'
 
-/** The boarded map (family -> the card that boards it, first-seen). */
-function boardedMap(defs: Map<string, CardDefinition>): Map<string, string> {
+/** The boarded map (family -> the card that boards it, first-seen).
+ *  Exported for the flow tool's bench pass (the card-id alias
+ *  resolution rides the SAME table form-spec serves — one truth). */
+export function boardedMap(defs: Map<string, CardDefinition>): Map<string, string> {
   const out = new Map<string, string>()
   for (const [cardId, def] of defs) {
     for (const fam of def.boarded ?? []) {
