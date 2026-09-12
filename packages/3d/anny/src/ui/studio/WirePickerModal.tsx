@@ -1,0 +1,124 @@
+// WirePickerModal — anny-local DSH-pure port of mask's studio modal
+// (itself "the SAME modal SlotGrid uses": one wire UX everywhere).
+//
+// The shared "link to a previous output" picker: prior stages by
+// ARRAY INDEX, named outputs expanded per-row, "not run yet" for
+// un-run upstreams. PRESENTATIONAL: the caller owns the write
+// contract (onPick → setSlotInput + clear the slot param; onUnwire →
+// setSlotInput null + clear). Chrome rides the DSH Modal atom (mask,
+// Escape, labelled dialog); rows keep their data-wire-* hooks and
+// byte-identical selection math.
+//
+// (Founded 2026-09-12, anny gap-1 translation: 1:1 port of
+// mask-studio's WirePickerModal — isImageUrl rides anny's own slot
+// seam, classnames ride card-base cx so no new dependency lands.)
+import type { CardStage } from "@melite/contracts"
+import { Modal } from "@deepseek-ai/dsh-client-ui-primitives"
+import { cx } from "@melite/card-base/chrome"
+import { Link2 } from "@melite/card-base/icons"
+import { isImageUrl } from "./slot"
+import styles from "./wireModal.module.css"
+
+export interface WirePickerModalProps {
+  /** Slot key being wired (display only — "Wire {slot} from …"). */
+  slot: string
+  /** Prior stages by ARRAY INDEX (the caller already filtered forward of the
+   * current stage — F4: wires only point backwards). */
+  priorStages: CardStage[]
+  /** Currently-wired upstream id (undefined = nothing wired). */
+  currentId?: string
+  /** Currently-selected named output (null = primary assetUrls[0]). */
+  currentOutput?: string | null
+  /** Pick an upstream (+ optional named output). The caller writes the wire
+   * AND clears the slot param (mutual-exclusion). */
+  onPick: (upstreamId: string, outputName?: string | null) => void
+  /** Unwire — the slot returns to manual-attach / empty. */
+  onUnwire: () => void
+  onClose: () => void
+}
+
+/** The wire picker — prior stages by ARRAY INDEX, including ones that
+ * haven't run yet ("not run yet" — wire BEFORE the upstream runs).
+ *
+ * Named outputs: when an upstream stage produced >1 named artifact
+ * (input_prep → media + mask), it expands into ONE ROW PER output so the
+ * user can wire mask → lanpaint_mask specifically. Upstreams with 0–1
+ * named artifacts render as a single row (legacy — primary via
+ * assetUrls[0]). The output name rides onPick → setSlotInput →
+ * inputOutputs → collectUpstreamResults. */
+export function WirePickerModal({
+  slot,
+  priorStages,
+  currentId,
+  currentOutput,
+  onPick,
+  onUnwire,
+  onClose,
+}: WirePickerModalProps) {
+  return (
+    <Modal
+      open
+      onClose={onClose}
+      title={`Wire ${slot} from an earlier card`}
+      closeLabel="Close wire picker"
+      className={styles.wireDialog}
+    >
+      <div data-wire-modal>
+        {currentId && (
+          <button type="button" onClick={onUnwire} data-wire-unwire className={styles.wireUnwire}>
+            Unwire — this slot will ask for a file or wire again
+          </button>
+        )}
+        <ul className={styles.wireList}>
+          {priorStages.length === 0 && (
+            <li className={styles.wireEmpty}>
+              No earlier cards yet — add a card before this one to wire from it.
+            </li>
+          )}
+          {priorStages.map((u, i) => {
+            // Named artifacts the upstream produced (media, mask, …). When
+            // >1, expand into per-output rows; else a single primary row.
+            const named = u.result?.artifacts ?? {}
+            const namedEntries = Object.entries(named)
+            const multi = namedEntries.length > 1
+            const rows: Array<{ outputName: string | null; thumb?: string; label: string }> = multi
+              ? namedEntries.map(([name, url]) => ({ outputName: name, thumb: url, label: name }))
+              : [{ outputName: null, thumb: u.result?.assetUrls[0], label: "primary" }]
+            return rows.map((row, ri) => {
+              const selected = u.id === currentId && (currentOutput ?? null) === (row.outputName ?? null)
+              return (
+                <li key={u.id + (ri > 0 ? `:${row.outputName}` : "")}>
+                  <button
+                    type="button"
+                    onClick={() => onPick(u.id, row.outputName)}
+                    data-wire-option={row.outputName ?? "primary"}
+                    className={cx(styles.wireOption, selected && styles.wireSelected)}
+                  >
+                    <span className={styles.wireIdx}>{String(i + 1).padStart(2, "0")}</span>
+                    {row.thumb && isImageUrl(row.thumb) ? (
+                      <img src={row.thumb} alt="" className={styles.wireThumb} />
+                    ) : (
+                      <div className={styles.wireThumbFallback}>
+                        <Link2 className={styles.sz14} />
+                      </div>
+                    )}
+                    <div className={styles.wireMeta}>
+                      <div className={styles.wireTitle}>
+                        {u.title}
+                        {multi && <span className={styles.wireOut}>· {row.label}</span>}
+                      </div>
+                      <div className={styles.wireSub}>
+                        {u.result ? (row.thumb ?? "no artifacts") : "not run yet"}
+                      </div>
+                    </div>
+                    {selected && <span className={styles.wiredTag}>wired</span>}
+                  </button>
+                </li>
+              )
+            })
+          })}
+        </ul>
+      </div>
+    </Modal>
+  )
+}

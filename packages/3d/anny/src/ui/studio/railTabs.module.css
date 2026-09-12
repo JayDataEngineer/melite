@@ -1,0 +1,68 @@
+/* RailTabs — the reusable tab strip (top sections + dense sub-menu).
+   (Founded 2026-09-12, anny gap-1 translation: verbatim port of the old
+   `@melite-plugin/3d` railTabs.module.css.) */
+
+.strip {
+  display: flex;
+  flex-shrink: 0;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.stripTop {
+  padding: 8px 8px 0;
+}
+
+.stripDense {
+  padding-left: 8px;
+}
+
+.tab {
+  border-radius: 6px;
+  padding: 4px 10px;
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  transition: color 0.15s ease, background 0.15s ease;
+}
+
+.tabDense {
+  border-radius: 4px;
+  padding: 2px 8px;
+  font-size: 9px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  transition: color 0.15s ease, background 0.15s ease;
+}
+
+.tabActive {
+  background: rgba(59, 130, 246, 0.15);
+  color: var(--dsw-alias-label-primary, #0f1115);
+}
+
+.tabIdle {
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.tabIdle:hover {
+  color: #fff;
+}
+
+.badge {
+  margin-left: 4px;
+  font-size: 9px;
+}
+
+.badgeEmerald {
+  color: #34d399;
+}
+
+.badgeAmber {
+  color: #fbbf24;
+}
+
+.badgeFuchsia {
+  color: #e879f9;
+}
