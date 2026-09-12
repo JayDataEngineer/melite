@@ -5,7 +5,7 @@
 // shapes, and the WHOLE undo-inverse table — including crafted log
 // entries whose inverse payloads miss optional fields (the log is
 // data; the applier is robust to older/hand-written entries).
-import { test } from "vitest";
+import { describe, expect, test } from "vitest";
 import assert from "node:assert/strict";
 import { mkdtempSync, mkdirSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -24,7 +24,9 @@ import type { DraftsDomainSpec } from "../src/spec.js";
 import {
   ensureBench, getBench, patchBench, addStageBench, removeStageBench,
   rewireBench, reorderBench, groupBench, ungroupBench, undoBench,
+  onBenchChange, notifyBenchChange, notifyBenchDocWrite,
 } from "../src/bench.ts";
+import { BenchRemoteService } from "../src/remote.ts";
 
 const sig = new AbortController().signal;
 
@@ -725,4 +727,96 @@ test("crafted tail: inverses without stage/index/from/before degrade; unknown ki
   assert.deepEqual(ids.filter((x) => x === "keep" || x === "bare").length, 2);
   assert.equal(ids.includes("ghost"), false);
   assert.equal(ids.includes("nope"), false, "unknown-kind snapshot did not apply");
+});
+
+// ── THE CHANGE EVENTS + THE SUBSCRIBE STREAM (2026-09-12) ──────────
+// The push source: every bench write fires the change event at the
+// remote seam; bench/subscribe yields the doc on open and after every
+// write that touches the session (the collapse plan's stream arm —
+// the browser heartbeat consumes rev drift until the host's stream
+// face lands).
+
+describe("the bench change events (the push source)", () => {
+  test("a write notify reaches the listener with the session", () => {
+    const seen: string[] = [];
+    const off = onBenchChange((session) => { seen.push(session) });
+    notifyBenchChange("main");
+    notifyBenchChange("second");
+    off();
+    notifyBenchChange("main");
+    expect(seen).toEqual(["main", "second"]);
+  });
+
+  test("a listener's fault never breaks the write", () => {
+    const off = onBenchChange(() => { throw new Error("listener fault") });
+    expect(() => notifyBenchChange("main")).not.toThrow();
+    off();
+  });
+
+  test("notifyBenchDocWrite parses bench-shaped draft ids only", () => {
+    const seen: string[] = [];
+    const off = onBenchChange((session) => { seen.push(session) });
+    notifyBenchDocWrite("bench-main");
+    notifyBenchDocWrite("some-other-draft");
+    notifyBenchDocWrite("bench-");
+    expect(seen).toEqual(["main"]);
+    off();
+  });
+});
+
+describe("the bench/subscribe stream remote", () => {
+  type Row = { draft_id: string; session: string; rev: number; intent: unknown; stages: unknown[]; log: unknown[] };
+
+
+
+  test("yields the doc on open, after a write, and abort ends", async () => {
+    const controller = new AbortController();
+    const rows: Row[] = [
+      { draft_id: "bench-main", session: "main", rev: 3, intent: null, stages: [], log: [] },
+      { draft_id: "bench-main", session: "main", rev: 4, intent: null, stages: [{ id: "s_1" }], log: [] },
+    ];
+    // the receiver: a bare object with the get arm the generator calls
+    const fake = { get: async (): Promise<Row> => rows.shift() ?? rows[0]! };
+    const gen = BenchRemoteService.prototype.remoteExportSubscribe.call(
+      fake as never,
+      "main",
+      controller.signal,
+    ) as AsyncGenerator<Row>;
+    const first = await gen.next();
+    if (first.done !== false) throw new Error("no initial frame");
+    // resume the stream INTO the change wait, then land the write
+    const secondP = gen.next();
+    await new Promise((resolve) => setTimeout(resolve, 25));
+    notifyBenchChange("main");
+    const second = await secondP;
+    if (second.done !== false) throw new Error("no change frame");
+    expect([first.value.rev, second.value.rev]).toEqual([3, 4]);
+    controller.abort();
+    const third = await gen.next();
+    if (third.done !== true) throw new Error("abort must end the stream");
+  });
+
+  test("a foreign session's write does not wake the stream", async () => {
+    const controller = new AbortController();
+    const fake = {
+      get: async (): Promise<Row> => ({ draft_id: "bench-main", session: "main", rev: 1, intent: null, stages: [], log: [] }),
+    };
+    const gen = BenchRemoteService.prototype.remoteExportSubscribe.call(
+      fake as never,
+      "main",
+      controller.signal,
+    ) as AsyncGenerator<Row>;
+    const first = await gen.next();
+    expect(first.done).toBe(false);
+    // the foreign write: the stream must stay parked — only abort ends
+    notifyBenchChange("other-session");
+    const raced = await Promise.race([
+      gen.next().then((r) => r.done === true ? "ended" : "FRAME"),
+      new Promise((resolve) => setTimeout(() => resolve("parked"), 25)),
+    ]);
+    expect(raced).toBe("parked");
+    controller.abort();
+    const last = await gen.next();
+    expect(last.done).toBe(true);
+  });
 });

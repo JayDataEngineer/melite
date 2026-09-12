@@ -766,4 +766,33 @@ function applyInverse(doc, e) {
     if (Array.isArray(snapshot))
         doc["stages"] = snapshot;
 }
+const benchChangeListeners = new Set();
+/** Subscribe to bench writes; returns the unsubscribe. */
+export function onBenchChange(fn) {
+    benchChangeListeners.add(fn);
+    return () => {
+        benchChangeListeners.delete(fn);
+    };
+}
+/** Fire the write event — the remote layer calls this after every
+ *  successful bench write (the door seam: every in-process and
+ *  host-routed write crosses the remote arms). */
+export function notifyBenchChange(session) {
+    for (const fn of benchChangeListeners) {
+        try {
+            fn(session);
+        }
+        catch {
+            /* a listener's fault never breaks the write */
+        }
+    }
+}
+/** The public notify (the drafts-patch door writes bench docs from
+ *  remote.ts — outside this module; it fires this with the session
+ *  parsed from the bench-shaped draft id). */
+export function notifyBenchDocWrite(draftId) {
+    const m = /^bench-([A-Za-z0-9_-]{1,64})$/.exec(draftId);
+    if (m !== null)
+        notifyBenchChange(m[1]);
+}
 //# sourceMappingURL=bench.js.map

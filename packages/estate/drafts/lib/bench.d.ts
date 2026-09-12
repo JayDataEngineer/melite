@@ -137,4 +137,16 @@ export interface BenchUndoRow {
  *  snapshot. Undo entries are NEVER candidates — a plain undo
  *  walks ACTIONS (targeting them would ping-pong). */
 export declare function undoBench(drafts: Domain<DraftsDomainSpec>, session: string, body: Record<string, unknown>): Promise<BenchUndoRow>;
+type BenchChangeListener = (session: string) => void;
+/** Subscribe to bench writes; returns the unsubscribe. */
+export declare function onBenchChange(fn: BenchChangeListener): () => void;
+/** Fire the write event — the remote layer calls this after every
+ *  successful bench write (the door seam: every in-process and
+ *  host-routed write crosses the remote arms). */
+export declare function notifyBenchChange(session: string): void;
+/** The public notify (the drafts-patch door writes bench docs from
+ *  remote.ts — outside this module; it fires this with the session
+ *  parsed from the bench-shaped draft id). */
+export declare function notifyBenchDocWrite(draftId: string): void;
+export {};
 //# sourceMappingURL=bench.d.ts.map

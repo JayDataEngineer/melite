@@ -38,8 +38,20 @@ const BENCH: CardsBenchValue = {
 
 interface Call { method: string; args: Record<string, unknown> }
 
-function stubWire(): { calls: Call[] } {
+interface StubOpts {
+  /** The bench/get doc the stub serves (default: the BENCH fixture's wire shape). */
+  bench?: Record<string, unknown>
+  /** Sequential runs/status docs (default: one queued doc). */
+  runDocs?: Array<Record<string, unknown>>
+}
+function stubWire(opts?: StubOpts): { calls: Call[] } {
   const calls: Call[] = []
+  const benchDoc: Record<string, unknown> = opts?.bench ?? {
+    draft_id: 'bench-s1', rev: 7,
+    stages: [{ id: 's_0', card: 'image-gen', title: 'hero frame', engine: 'comfyui', params: { prompt: 'a red cube', steps: 8, turbo: false } }],
+    log: [],
+  }
+  const runDocs = [...(opts?.runDocs ?? [{ run_id: 'run-1', status: 'queued', draft_id: 'bench-s1', stages: [] }])]
   const impl = async (url: unknown, init?: RequestInit): Promise<Response> => {
     // the /v1 discovery doors (same-origin): the card form spec + catalog
     const path = String(url)
@@ -63,6 +75,8 @@ function stubWire(): { calls: Call[] } {
     }
     calls.push({ method: frame.method, args: frame.payload.args })
     let value: Record<string, unknown> = { ok: true }
+    if (frame.method === 'bench/get') value = benchDoc
+    if (frame.method === 'runs/status') value = runDocs.length > 1 ? runDocs.shift()! : runDocs[0]!
     if (frame.method === 'runs/start') value = { run_id: 'run-1', status: 'queued' }
     if (frame.method === 'drafts/patch') value = { draftId: 'bench-s1', stageId: 's_0', delivered: true, patched: ['params'] }
     return new Response(JSON.stringify({ type: 'server-response', rpcId: frame.rpcId, result: { ok: true, value } }), { status: 200 })

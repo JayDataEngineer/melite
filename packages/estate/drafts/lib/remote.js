@@ -35,11 +35,20 @@ var __esDecorate = (this && this.__esDecorate) || function (ctor, descriptorIn, 
 import { Remote, RemoteError, TypertRemoteService, } from "@deepseek-ai/dsh-typert-protocol";
 import { openDraftsDomain } from "./store.js";
 import { DRAFT_ID_RE } from "./spec.js";
-import { addStageBench, ensureBench, getBench, groupBench, patchBench, removeStageBench, reorderBench, rewireBench, undoBench, ungroupBench, } from "./bench.js";
+import { addStageBench, ensureBench, notifyBenchChange, notifyBenchDocWrite, onBenchChange, getBench, groupBench, patchBench, removeStageBench, reorderBench, rewireBench, undoBench, ungroupBench, } from "./bench.js";
 /** The stage-patch door's fixed key set (the old door's
  *  STAGE_PATCH_KEYS, order verbatim — the unknown-keys voice lists
  *  them in this order). */
 export const STAGE_PATCH_KEYS = ["params", "result", "runStatus", "inputs", "inputOutputs"];
+/** The wrap voice for a thrown store error: Error.message when the
+ *  value carries one, else the string form. Every store/domain throw
+ *  site constructs `new Error` (or an Error subclass), so the else
+ *  arm only guards degenerate non-Error throws. */
+function thrownMessage(error) {
+    /* v8 ignore next -- a non-Error throw requires a degenerate throw
+     * site; openDraftsDomain and the domain layer construct Errors. */
+    return error instanceof Error ? error.message : String(error);
+}
 /** First-seen display strings walk the doc depth-first (the index
  *  law: model/service cap 80, name/intent/title cap 160). */
 function docIndexFields(doc) {
@@ -117,7 +126,7 @@ let DraftsRemoteService = (() => {
                 drafts = await openDraftsDomain(this.ctx);
             }
             catch (error) {
-                throw new RemoteError("draft/store-failed", error instanceof Error ? error.message : String(error), {}, { cause: error });
+                throw new RemoteError("draft/store-failed", thrownMessage(error), {}, { cause: error });
             }
             const ents = [];
             for (const [did, rec] of drafts.table("docs").entries()) {
@@ -142,7 +151,7 @@ let DraftsRemoteService = (() => {
                 drafts = await openDraftsDomain(this.ctx);
             }
             catch (error) {
-                throw new RemoteError("draft/store-failed", error instanceof Error ? error.message : String(error), {}, { cause: error });
+                throw new RemoteError("draft/store-failed", thrownMessage(error), {}, { cause: error });
             }
             const rec = drafts.table("docs").get(draftId);
             if (rec === undefined) {
@@ -195,7 +204,7 @@ let DraftsRemoteService = (() => {
                 drafts = await openDraftsDomain(this.ctx);
             }
             catch (error) {
-                throw new RemoteError("draft/store-failed", error instanceof Error ? error.message : String(error), {}, { cause: error });
+                throw new RemoteError("draft/store-failed", thrownMessage(error), {}, { cause: error });
             }
             const rec = drafts.table("docs").get(draftId);
             if (rec === undefined) {
@@ -204,10 +213,10 @@ let DraftsRemoteService = (() => {
                 return { draftId, stageId, delivered: false, reason: "draft not found" };
             }
             const doc = rec.doc;
+            // The domain schema guarantees stages is an array (schema-failing
+            // records are backed up and skipped at read) — no re-defense here.
             const stages = doc["stages"];
-            const stage = Array.isArray(stages)
-                ? (stages.find((s) => typeof s === "object" && s !== null && s["id"] === stageId) ?? null)
-                : null;
+            const stage = stages.find((s) => typeof s === "object" && s !== null && s["id"] === stageId) ?? null;
             if (stage === null) {
                 return { draftId, stageId, delivered: false, reason: "stage not found" };
             }
@@ -236,8 +245,12 @@ let DraftsRemoteService = (() => {
                 });
             }
             catch (error) {
-                throw new RemoteError("draft/cannot-persist", error instanceof Error ? error.message : String(error), {}, { cause: error });
+                /* v8 ignore next 7 -- a domain put failure requires a storage IO
+                 * fault (disk/permission); the record is schema-valid by
+                 * construction, so no in-process input can reach this arm. */
+                throw new RemoteError("draft/cannot-persist", thrownMessage(error), {}, { cause: error });
             }
+            notifyBenchDocWrite(draftId);
             return {
                 draftId,
                 stageId,
@@ -254,6 +267,7 @@ let BenchRemoteService = (() => {
     let _classSuper = TypertRemoteService;
     let _instanceExtraInitializers = [];
     let _remoteExportGet_decorators;
+    let _remoteExportSubscribe_decorators;
     let _remoteExportEnsure_decorators;
     let _remoteExportPatch_decorators;
     let _remoteExportAddStage_decorators;
@@ -267,6 +281,7 @@ let BenchRemoteService = (() => {
         static {
             const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(_classSuper[Symbol.metadata] ?? null) : void 0;
             _remoteExportGet_decorators = [Remote("get")];
+            _remoteExportSubscribe_decorators = [Remote({ mode: "stream" })];
             _remoteExportEnsure_decorators = [Remote("ensure")];
             _remoteExportPatch_decorators = [Remote("patch")];
             _remoteExportAddStage_decorators = [Remote("add-stage")];
@@ -277,6 +292,7 @@ let BenchRemoteService = (() => {
             _remoteExportUngroup_decorators = [Remote("ungroup")];
             _remoteExportUndo_decorators = [Remote("undo")];
             __esDecorate(this, null, _remoteExportGet_decorators, { kind: "method", name: "remoteExportGet", static: false, private: false, access: { has: obj => "remoteExportGet" in obj, get: obj => obj.remoteExportGet }, metadata: _metadata }, null, _instanceExtraInitializers);
+            __esDecorate(this, null, _remoteExportSubscribe_decorators, { kind: "method", name: "remoteExportSubscribe", static: false, private: false, access: { has: obj => "remoteExportSubscribe" in obj, get: obj => obj.remoteExportSubscribe }, metadata: _metadata }, null, _instanceExtraInitializers);
             __esDecorate(this, null, _remoteExportEnsure_decorators, { kind: "method", name: "remoteExportEnsure", static: false, private: false, access: { has: obj => "remoteExportEnsure" in obj, get: obj => obj.remoteExportEnsure }, metadata: _metadata }, null, _instanceExtraInitializers);
             __esDecorate(this, null, _remoteExportPatch_decorators, { kind: "method", name: "remoteExportPatch", static: false, private: false, access: { has: obj => "remoteExportPatch" in obj, get: obj => obj.remoteExportPatch }, metadata: _metadata }, null, _instanceExtraInitializers);
             __esDecorate(this, null, _remoteExportAddStage_decorators, { kind: "method", name: "remoteExportAddStage", static: false, private: false, access: { has: obj => "remoteExportAddStage" in obj, get: obj => obj.remoteExportAddStage }, metadata: _metadata }, null, _instanceExtraInitializers);
@@ -296,6 +312,54 @@ let BenchRemoteService = (() => {
         async remoteExportGet(sessionKey, signal) {
             return await this.get(sessionKey, signal);
         }
+        /** Endpoint `bench/subscribe` — THE PUSH SOURCE (the collapse
+         *  plan's stream arm, 2026-09-12): the session's doc on open, then
+         *  a fresh doc after EVERY write that touches the session (the
+         *  change events the write arms fire). Stream mode rides the
+         *  typert logical-stream carrier — the in-process mux carries it
+         *  today; the browser's resource provider consumes rev drift until
+         *  the host's HTTP stream face lands, then swaps its source here
+         *  with zero consumer changes. Abort ends the stream; a write's
+         *  listener fault never breaks the stream (the next write re-wakes
+         *  it). */
+        async *remoteExportSubscribe(sessionKey, signal) {
+            signal.throwIfAborted();
+            for (;;) {
+                yield await this.get(sessionKey, signal);
+                // wake on the session's next write (or abort). An abort that
+                // landed while the generator was suspended AT A YIELD has no
+                // listener attached — the executor re-checks signal.aborted so
+                // the missed event still wakes the park. The stream then ends
+                // CLEAN on abort (done: true — the holder released; a throw
+                // would surface as an error on a normal close). One finish arm
+                // removes BOTH listeners: no stale abort listener per park.
+                await new Promise((resolve) => {
+                    if (signal.aborted) {
+                        resolve();
+                        return;
+                    }
+                    let settled = false;
+                    const offAbort = () => { signal.removeEventListener("abort", onAbort); };
+                    const finish = () => {
+                        if (settled)
+                            return;
+                        settled = true;
+                        offChange();
+                        offAbort();
+                        resolve();
+                    };
+                    const offChange = onBenchChange((session) => {
+                        if (session !== sessionKey)
+                            return;
+                        finish();
+                    });
+                    const onAbort = () => { finish(); };
+                    signal.addEventListener("abort", onAbort, { once: true });
+                });
+                if (signal.aborted)
+                    return;
+            }
+        }
         /** Endpoint `bench/ensure` — birth or load (the only creating arm). */
         async remoteExportEnsure(doc, signal) {
             return await this.ensure(doc, signal);
@@ -310,7 +374,7 @@ let BenchRemoteService = (() => {
                 drafts = await openDraftsDomain(this.ctx);
             }
             catch (error) {
-                throw new RemoteError("bench/store-failed", error instanceof Error ? error.message : String(error), {}, { cause: error });
+                throw new RemoteError("bench/store-failed", thrownMessage(error), {}, { cause: error });
             }
             return getBench(drafts, session);
         }
@@ -325,9 +389,11 @@ let BenchRemoteService = (() => {
                 drafts = await openDraftsDomain(this.ctx);
             }
             catch (error) {
-                throw new RemoteError("bench/store-failed", error instanceof Error ? error.message : String(error), {}, { cause: error });
+                throw new RemoteError("bench/store-failed", thrownMessage(error), {}, { cause: error });
             }
-            return await ensureBench(drafts, doc);
+            const row = await ensureBench(drafts, doc);
+            notifyBenchChange(String(doc["session"] ?? row.session));
+            return row;
         }
         /** Endpoint `bench/patch` — params merge (+result/runStatus) with
          *  CAS + log. */
@@ -351,20 +417,26 @@ let BenchRemoteService = (() => {
         async remoteExportReorder(sessionKey, doc, signal) {
             signal.throwIfAborted();
             const drafts = await this.open(signal);
-            return await reorderBench(drafts, sessionKey, doc);
+            const row = await reorderBench(drafts, sessionKey, doc);
+            notifyBenchChange(sessionKey);
+            return row;
         }
         /** Endpoint `bench/group` — collapse 2+ stages into a compound row
          *  (the Group Cards sub-view's door, 2026-09-11). */
         async remoteExportGroup(sessionKey, doc, signal) {
             signal.throwIfAborted();
             const drafts = await this.open(signal);
-            return await groupBench(drafts, sessionKey, doc);
+            const row = await groupBench(drafts, sessionKey, doc);
+            notifyBenchChange(sessionKey);
+            return row;
         }
         /** Endpoint `bench/ungroup` — spill a compound's children back. */
         async remoteExportUngroup(sessionKey, doc, signal) {
             signal.throwIfAborted();
             const drafts = await this.open(signal);
-            return await ungroupBench(drafts, sessionKey, doc);
+            const row = await ungroupBench(drafts, sessionKey, doc);
+            notifyBenchChange(sessionKey);
+            return row;
         }
         /** Endpoint `bench/undo` — walk the log tail, apply inverses. */
         async remoteExportUndo(sessionKey, doc, signal) {
@@ -379,33 +451,43 @@ let BenchRemoteService = (() => {
                 return await openDraftsDomain(this.ctx);
             }
             catch (error) {
-                throw new RemoteError("bench/store-failed", error instanceof Error ? error.message : String(error), {}, { cause: error });
+                throw new RemoteError("bench/store-failed", thrownMessage(error), {}, { cause: error });
             }
         }
         async patch(session, doc, signal) {
             signal.throwIfAborted();
             const drafts = await this.open(signal);
-            return await patchBench(drafts, session, doc);
+            const row = await patchBench(drafts, session, doc);
+            notifyBenchChange(session);
+            return row;
         }
         async addStage(session, doc, signal) {
             signal.throwIfAborted();
             const drafts = await this.open(signal);
-            return await addStageBench(drafts, session, doc);
+            const row = await addStageBench(drafts, session, doc);
+            notifyBenchChange(session);
+            return row;
         }
         async removeStage(session, doc, signal) {
             signal.throwIfAborted();
             const drafts = await this.open(signal);
-            return await removeStageBench(drafts, session, doc);
+            const row = await removeStageBench(drafts, session, doc);
+            notifyBenchChange(session);
+            return row;
         }
         async rewire(session, doc, signal) {
             signal.throwIfAborted();
             const drafts = await this.open(signal);
-            return await rewireBench(drafts, session, doc);
+            const row = await rewireBench(drafts, session, doc);
+            notifyBenchChange(session);
+            return row;
         }
         async undo(session, doc, signal) {
             signal.throwIfAborted();
             const drafts = await this.open(signal);
-            return await undoBench(drafts, session, doc);
+            const row = await undoBench(drafts, session, doc);
+            notifyBenchChange(session);
+            return row;
         }
     };
 })();

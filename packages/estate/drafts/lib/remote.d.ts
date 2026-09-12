@@ -97,6 +97,17 @@ export declare class BenchRemoteService extends TypertRemoteService {
     constructor(ctx: Context);
     /** Endpoint `bench/get` — one session's bench block as the row. */
     remoteExportGet(sessionKey: string, signal: AbortSignal): Promise<BenchGetRow>;
+    /** Endpoint `bench/subscribe` — THE PUSH SOURCE (the collapse
+     *  plan's stream arm, 2026-09-12): the session's doc on open, then
+     *  a fresh doc after EVERY write that touches the session (the
+     *  change events the write arms fire). Stream mode rides the
+     *  typert logical-stream carrier — the in-process mux carries it
+     *  today; the browser's resource provider consumes rev drift until
+     *  the host's HTTP stream face lands, then swaps its source here
+     *  with zero consumer changes. Abort ends the stream; a write's
+     *  listener fault never breaks the stream (the next write re-wakes
+     *  it). */
+    remoteExportSubscribe(sessionKey: string, signal: AbortSignal): AsyncGenerator<BenchGetRow>;
     /** Endpoint `bench/ensure` — birth or load (the only creating arm). */
     remoteExportEnsure(doc: Record<string, unknown>, signal: AbortSignal): Promise<BenchEnsureRow>;
     /** The in-process API the adapters above delegate to. Classified

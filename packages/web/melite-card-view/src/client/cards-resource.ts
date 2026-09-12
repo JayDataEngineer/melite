@@ -413,10 +413,18 @@ export function openCardsResource(
         return
       }
       yield { ok: true, value }
-      // No revision channel exists on the wire today: the bench log is
-      // append-only but unpublished. The stream ends with the snapshot;
-      // consumers reload after their own edits (the CAS law makes their
-      // PATCH answers authoritative).
+      // THE BENCH TAIL (live co-presence, 2026-09-12: "fix the [REDACTED 2026-11-05]
+      // gaps"): the bench is ONE shared doc — the agent (construct
+      // verbs, bench-mode passes) and out-of-band sessions write it
+      // too, and every write bumps the rev. The provider polls the rev
+      // on a cadence and yields a fresh frame ONLY on drift — every
+      // consumer of the resource sees the agent's rows land, with no
+      // view-level watchers and no manual refresh. The estate's change
+      // events + bench/subscribe stream remote (the push source) exist;
+      // the browser wire is one-frame HTTP, so this heartbeat carries
+      // the same law until the host's stream face lands — then the
+      // source swaps with zero consumer changes. Abort ends the tail.
+      yield* pollBenchFrames(value, ctx.signal)
       return
     }
     // run view: hydrate, then poll the status remote until terminal or
@@ -477,6 +485,43 @@ async function* pollRunFrames(
     const moved = next.status !== value.status
       || JSON.stringify(next.stages) !== JSON.stringify(value.stages)
     if (!moved) continue
+    value = next
+    yield { ok: true, value }
+  }
+}
+
+
+/** THE BENCH TAIL (the provider's live half — pollRunFrames' law,
+ *  applied to the shared doc): poll `bench/get` on a cadence and
+ *  yield a value ONLY when the rev moved (no frame spam) until the
+ *  holder aborts. A poll error is not a failure frame — the last ok
+ *  value stays; the next poll may recover. The cadence (2500ms)
+ *  balances agent-write visibility against doc-read chatter; a
+ *  hidden document still receives frames (the shell decides whether
+ *  the tab renders — the provider never guesses visibility). */
+async function* pollBenchFrames(
+  hydrated: CardsBenchValue,
+  signal: AbortSignal,
+): AsyncGenerator<RemoteResult<CardsBenchValue>> {
+  let value = hydrated
+  const sleep = (ms: number): Promise<'slept' | 'abort'> =>
+    new Promise((resolve) => {
+      const t = setTimeout(() => { signal.removeEventListener('abort', onAbort); resolve('slept') }, ms)
+      const onAbort = (): void => { clearTimeout(t); resolve('abort') }
+      if (signal.aborted) { onAbort(); return }
+      signal.addEventListener('abort', onAbort, { once: true })
+    })
+  while (!signal.aborted) {
+    const woke = await sleep(2500)
+    if (woke === 'abort' || signal.aborted) return
+    let row: Record<string, unknown>
+    try {
+      row = await wireCall('bench/get', { sessionKey: 'main' }, signal)
+    } catch {
+      continue // the last ok value stays; the next poll may recover
+    }
+    const next = readBench(row)
+    if (next.rev === value.rev) continue
     value = next
     yield { ok: true, value }
   }

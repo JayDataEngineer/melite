@@ -40680,6 +40680,7 @@ void main() {
 						ok: true,
 						value
 					};
+					yield* pollBenchFrames(value, ctx.signal);
 					return;
 				}
 				let value;
@@ -40739,6 +40740,48 @@ void main() {
 				}
 				const next = readRun(runId, row);
 				if (!(next.status !== value.status || JSON.stringify(next.stages) !== JSON.stringify(value.stages))) continue;
+				value = next;
+				yield {
+					ok: true,
+					value
+				};
+			}
+		}
+		/** THE BENCH TAIL (the provider's live half — pollRunFrames' law,
+		*  applied to the shared doc): poll `bench/get` on a cadence and
+		*  yield a value ONLY when the rev moved (no frame spam) until the
+		*  holder aborts. A poll error is not a failure frame — the last ok
+		*  value stays; the next poll may recover. The cadence (2500ms)
+		*  balances agent-write visibility against doc-read chatter; a
+		*  hidden document still receives frames (the shell decides whether
+		*  the tab renders — the provider never guesses visibility). */
+		async function* pollBenchFrames(hydrated, signal) {
+			let value = hydrated;
+			const sleep = (ms) => new Promise((resolve) => {
+				const t = setTimeout(() => {
+					signal.removeEventListener("abort", onAbort);
+					resolve("slept");
+				}, ms);
+				const onAbort = () => {
+					clearTimeout(t);
+					resolve("abort");
+				};
+				if (signal.aborted) {
+					onAbort();
+					return;
+				}
+				signal.addEventListener("abort", onAbort, { once: true });
+			});
+			while (!signal.aborted) {
+				if (await sleep(2500) === "abort" || signal.aborted) return;
+				let row;
+				try {
+					row = await wireCall("bench/get", { sessionKey: "main" }, signal);
+				} catch {
+					continue;
+				}
+				const next = readBench(row);
+				if (next.rev === value.rev) continue;
 				value = next;
 				yield {
 					ok: true,
