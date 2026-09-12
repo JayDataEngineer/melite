@@ -22,7 +22,7 @@
 .specField {
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  gap: 6px;
 }
 .specFieldKey {
   color: var(--dsw-alias-label-secondary, #61666b);

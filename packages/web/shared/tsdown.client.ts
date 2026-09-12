@@ -13,7 +13,7 @@
  * shell's seed table in `./web-platform.ts`.
  */
 import { readFile } from 'node:fs/promises'
-import { existsSync } from 'node:fs'
+import { existsSync, realpathSync } from 'node:fs'
 import { createRequire } from 'node:module'
 import { basename, dirname, isAbsolute, relative, resolve as resolvePath, sep } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -286,11 +286,25 @@ function clientConfig(id: string, entry: string): UserConfig {
       },
       async load(virtualId: string) {
         if (!virtualId.startsWith(CSS_VIRTUAL_PREFIX)) return null
-        const fileId = virtualId.slice(CSS_VIRTUAL_PREFIX.length, -CSS_VIRTUAL_SUFFIX.length)
+        let fileId = virtualId.slice(CSS_VIRTUAL_PREFIX.length, -CSS_VIRTUAL_SUFFIX.length)
         // Rebase the repo-relative id back onto the physical stylesheet; the
         // virtual id otherwise hides it from Rolldown's watch graph.
-        const physical = isAbsolute(fileId) ? fileId : resolvePath(REPOSITORY_ROOT, fileId)
+        let physical = isAbsolute(fileId) ? fileId : resolvePath(REPOSITORY_ROOT, fileId)
         this.addWatchFile(physical)
+        // CANONICALIZE (2026-09-12 — the silent-drop fix): one stylesheet
+        // reached the loader through TWO path spellings (symlinked workspace
+        // import vs direct relative), producing TWO class-hash families
+        // (e.g. FRpSCG_* and vYZV7a_*) from one source file — and the two
+        // injector sites shared ONE tagId (same basename), so the
+        // querySelector guard silently DROPPED the second stylesheet
+        // wholesale: entire component families rendered with zero rules.
+        // realpath collapses every spelling to the one physical file; the
+        // repo-relative id derived from IT is the single hash input.
+        const real = realpathSync(physical)
+        if (real !== physical) this.addWatchFile(real)
+        physical = real
+        const canonical = repositoryRelativePath(real)
+        if (canonical !== fileId) fileId = canonical
         const source = await readFile(physical)
         const { code, exports: cssExports } = transform({
           // Repo-relative filename: lightningcss's [hash] placeholder mixes
@@ -308,10 +322,19 @@ function clientConfig(id: string, entry: string): UserConfig {
         for (const [local, exp] of Object.entries(cssExports ?? {}).sort(([a], [b]) => a < b ? -1 : a > b ? 1 : 0)) {
           classMap[local] = exp.name
         }
+        // Content-addressed tag id (the second half of the silent-drop fix):
+        // even if two evaluations of one stylesheet ever diverge again, BOTH
+        // stylesheets land — the dedupe guard only collapses identical
+        // content, so no classmap can ever point at rules that never mount.
+        let contentHash = 0x811c9dc7
+        for (const byte of code.toString()) {
+          contentHash ^= byte.codePointAt(0)!
+          contentHash = Math.imul(contentHash, 0x01000193) >>> 0
+        }
         // One <style data-plugin> per module file; idempotent under re-evaluation.
         return [
           `const css = ${JSON.stringify(code.toString())};`,
-          `const tagId = ${JSON.stringify(`${id}/${basename(fileId)}`)};`,
+          `const tagId = ${JSON.stringify(`${id}/${basename(fileId)}@${contentHash.toString(16)}`)};`,
           'if (typeof document !== \'undefined\' && document.querySelector(\'style[data-plugin-css=\' + JSON.stringify(tagId) + \']\') === null) {',
           '  const tag = document.createElement(\'style\');',
           `  tag.dataset.plugin = ${JSON.stringify(id)};`,

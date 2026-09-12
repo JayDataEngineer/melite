@@ -109,13 +109,16 @@ describe("sliceFrameAsB64", () => {
   it("returns null for empty buffers and undecodable input", async () => {
     // Empty input resolves to zero bytes (no fetch rejection, so no
     // retry ladder — the ladder is apiFetch's tested contract, not
-    // this unit's; unpinned, this case rides ~5s of real backoff
-    // against the 5s default timeout and flakes on jitter).
+    // this unit's; the undecodable case DOES ride the real backoff
+    // ladder (~3.6s in isolation, more under suite load), so this test
+    // carries explicit timeout headroom instead of flaking on the 5s
+    // default under parallel jitter (2026-09-12: it failed a commit's
+    // full-suite hook at 5.0s while passing in isolation at 3.6s).
     stubFetch(async () => new Response(new Uint8Array(0)));
     assert.equal(await sliceFrameAsB64("", 0, 2), null);
     stubFetch(passthrough(async () => json({})));
     assert.equal(await sliceFrameAsB64("!!!not-base64!!!", 0, 2), null);
-  });
+  }, 20_000);
 });
 
 describe("submitTextToPose", () => {
