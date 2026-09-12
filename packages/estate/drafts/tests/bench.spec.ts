@@ -209,6 +209,28 @@ test("add_stage refuses an empty card; expected rides the row", async () => {
   assert.deepEqual(row["expected"], { default: "image" });
 });
 
+test("the id mint never collides after removals (max suffix + 1, not the count)", async () => {
+  const drafts = await boot();
+  await ensureBench(drafts, { session: "s" });
+  // a bench whose history includes removals: ten rows added, nine
+  // removed — the count would say s_1 again and collide
+  for (let i = 0; i < 10; i++) {
+    await addStageBench(drafts, "s", { card: "x", expect_rev: i });
+  }
+  const ids = (getBench(drafts, "s").stages as Array<Record<string, unknown>>)
+    .map((r) => r["id"] as string);
+  for (const id of ids.filter((id) => id !== "s_1")) {
+    await removeStageBench(drafts, "s", { stage: id, expect_rev: getBench(drafts, "s").rev });
+  }
+  const lone = getBench(drafts, "s");
+  assert.equal((lone.stages as unknown[]).length, 1);
+  const added = await addStageBench(drafts, "s", {
+    card: "hero",
+    expect_rev: lone.rev,
+  });
+  assert.equal(added.stage, "s_2", "max LIVE suffix + 1 — s_1 survives, s_2 is free (the count mint would collide on s_1)");
+});
+
 // ── reorder ─────────────────────────────────────────────────────
 
 test("reorder refuses bad stages, bad indexes, unknown ids; a past-end to clamps", async () => {

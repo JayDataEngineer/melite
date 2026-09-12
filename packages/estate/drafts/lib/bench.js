@@ -36,10 +36,10 @@ function benchBlockOf(doc) {
     return { rev: 0, log: [] };
 }
 function stagesOf(doc) {
-    const stages = doc["stages"];
-    if (!Array.isArray(stages))
-        return [];
-    return stages.filter((s) => isRecord(s));
+    // The domain schema guarantees stages is an array of id-carrying
+    // objects (DraftDocSchema; schema-failing records are backed up and
+    // skipped at read) — no re-defense here.
+    return doc["stages"];
 }
 /** Birth defaults per the composer's law (id, inputs, provenance)
  *  with the runner's object inputs. */
@@ -51,9 +51,11 @@ function normalizeStages(stagesIn, author) {
         .map((s, idx) => {
         const src = s;
         const row = {};
-        row["id"] = typeof src["id"] === "string" ? src["id"] : "s_" + idx;
         for (const k of Object.keys(src))
             row[k] = src[k];
+        // Defaults fill AFTER the caller's data (a junk or missing id
+        // must not ship an unaddressable row; the schema's id law).
+        row["id"] = typeof src["id"] === "string" ? src["id"] : "s_" + idx;
         if (typeof row["engine"] !== "string" || row["engine"] === "")
             row["engine"] = "comfyui";
         if (!isRecord(row["inputs"]))
@@ -240,15 +242,9 @@ async function appendAndSave(drafts, loaded, entry) {
     return full.rev;
 }
 function stageRow(doc, stageId) {
+    // Schema law (see stagesOf): rows are records with string ids.
     const stages = doc["stages"];
-    if (!Array.isArray(stages))
-        return null;
-    for (const st of stages) {
-        if (isRecord(st) && st["id"] === stageId) {
-            return st;
-        }
-    }
-    return null;
+    return stages.find((st) => st["id"] === stageId) ?? null;
 }
 const PATCH_KEYS = ["stage", "params", "result", "runStatus", "expect_rev", "author"];
 /** patch — params merge with CAS + log (result/runStatus ride too:
@@ -332,9 +328,18 @@ export async function addStageBench(drafts, session, body) {
         ? body["author"]
         : "agent";
     const stages = stagesOf(loaded.doc);
+    // THE MINT LAW (the collision fix, 2026-09-12): the count mint
+    // ("s_" + stages.length) collides the moment any stage was ever
+    // removed — [s_0..s_9] minus nine leaves s_1, and the count says
+    // s_1 again. The mint takes MAX numeric suffix + 1 over the live
+    // rows, so a fresh id is fresh against the bench AS IT STANDS.
     const stageId = typeof body["id"] === "string" && body["id"] !== ""
         ? body["id"]
-        : "s_" + stages.length;
+        : "s_" +
+            String(stages.reduce((max, row) => {
+                const m = /^s_(\d+)$/.exec(String(row["id"] ?? ""));
+                return m === null ? max : Math.max(max, Number(m[1]));
+            }, -1) + 1);
     if (stageRow(loaded.doc, stageId) !== null) {
         throw new RemoteError("bench/duplicate-stage", "stage id already on the bench: " + stageId, { session, stage: stageId });
     }
@@ -440,9 +445,9 @@ export async function groupBench(drafts, session, body) {
     }
     const firstIndex = stages.indexOf(picked[0]);
     for (const row of picked) {
-        const idx = stages.indexOf(row);
-        if (idx >= 0)
-            stages.splice(idx, 1);
+        // picked rows ARE stages members (built from the walk above) —
+        // splice by identity, no guard.
+        stages.splice(stages.indexOf(row), 1);
     }
     // id from the doc's own coordinates (rev + count) — no global RNG
     // dependency; unique per append by construction (rev advances).
@@ -754,10 +759,10 @@ function applyInverse(doc, e) {
         st["inputs"] = inputs;
         return;
     }
-    // load/undo: the coarse fallback — restore the snapshot.
-    const snapshot = e.kind === "load" || e.kind === "undo"
-        ? inv["stages_before"]
-        : undefined;
+    // load: the coarse fallback — restore the snapshot. (Undo entries
+    // are never walk candidates — the skip at the top guarantees it —
+    // so no "undo" disjunct here.)
+    const snapshot = e.kind === "load" ? inv["stages_before"] : undefined;
     if (Array.isArray(snapshot))
         doc["stages"] = snapshot;
 }

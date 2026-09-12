@@ -363,10 +363,11 @@ test("the tools' lane grammar rides the seats end-to-end (glue)", async () => {
     15000,
   )) as Record<string, unknown>;
   assert.equal(added["rev"], 1);
+  assert.equal(added["stage"], "s_0"); // THE MINT LAW: 'a' is not s_-shaped → s_0
   const patched = (await request(
     "POST",
     "/v1/bench/s1/patch",
-    { stage: "s_1", params: { steps: 4 }, expect_rev: 1 },
+    { stage: "s_0", params: { steps: 4 }, expect_rev: 1 },
     sig,
     15000,
   )) as Record<string, unknown>;
@@ -503,7 +504,11 @@ test("the wire arms speak: every remoteExportX delegates verbatim", async () => 
     { card: "hero", expect_rev: 1 },
     sig,
   );
-  assert.equal(added.stage, "s_3");
+  // THE MINT LAW (2026-09-12): max LIVE numeric suffix + 1 — the
+  // seeded rows a/b/c are not s_-shaped, so the mint starts at s_0
+  // (the old count mint said s_3; ids that never left cannot be
+  // re-minted, and ids that DID leave must never be re-served).
+  assert.equal(added.stage, "s_0");
   const rewired = await ctx.benchRemote.remoteExportRewire(
     "s1",
     { stage: "b", input: "image", from: { initial: "image" }, expect_rev: 2 },

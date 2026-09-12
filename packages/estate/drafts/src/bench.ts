@@ -527,10 +527,23 @@ export async function addStageBench(
     ? (body["author"] as Author)
     : "agent";
   const stages: Record<string, unknown>[] = stagesOf(loaded.doc);
+  // THE MINT LAW (the collision fix, 2026-09-12): the count mint
+  // ("s_" + stages.length) collides the moment any stage was ever
+  // removed — [s_0..s_9] minus nine leaves s_1, and the count says
+  // s_1 again. The mint takes MAX numeric suffix + 1 over the live
+  // rows, so a fresh id is fresh against the bench AS IT STANDS.
   const stageId: string =
     typeof body["id"] === "string" && body["id"] !== ""
       ? body["id"]
-      : "s_" + stages.length;
+      : "s_" +
+        String(
+          stages.reduce((max: number, row: Record<string, unknown>): number => {
+            const m: RegExpMatchArray | null = /^s_(\d+)$/.exec(
+              String(row["id"] ?? ""),
+            );
+            return m === null ? max : Math.max(max, Number(m[1]));
+          }, -1) + 1,
+        );
   if (stageRow(loaded.doc, stageId) !== null) {
     throw new RemoteError(
       "bench/duplicate-stage",
