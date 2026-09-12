@@ -232,6 +232,23 @@ test('the add door shows the REAL card for h3-timeline (not the spec form)', asy
   await expect(page.locator('[data-testid="add-stage-view"]'), 'the picked view is the studio (claimed)').toBeVisible({ timeout: 15_000 })
   await expect(page.locator('[data-testid="add-stage-view"] [data-testid="h3-studio-tenant"]')).toBeVisible({ timeout: 15_000 })
   await expect(page.locator('[data-testid="add-stage-view"] [data-testid="motion-timeline-bar"]')).toBeVisible()
+  // ── HOUR-9 LAWS ─────────────────────────────────────────────
+  // (a) the claimed door is PAGE-SIZED (the operator's "[REDACTED 2026-11-05]
+  //     interface" was the studio squeezed into an 860px drill).
+  const dBox = await page.locator('[role="dialog"]').boundingBox()
+  expect(dBox, 'the add door dialog exists').not.toBeNull()
+  expect(dBox!.width, 'claimed add door ≥ 90vw').toBeGreaterThanOrEqual(page.viewportSize()!.width * 0.9)
+  expect(dBox!.height, 'claimed add door ≥ 80vh').toBeGreaterThanOrEqual(page.viewportSize()!.height * 0.8)
+  // (b) the studio FILLS the page-sized dialog (headless chain —
+  //     no dead band below).
+  const tBox = await page.locator('[data-testid="add-stage-view"] [data-testid="h3-studio-tenant"]').boundingBox()
+  expect(tBox!.height, 'the previewed studio fills the door (≥60% of the dialog height)').toBeGreaterThanOrEqual(dBox!.height * 0.6)
+  // (c) the timeline strip sits INSIDE the tenant (the border-box
+  //     law — content-box padding was the "odd margins at the bottom
+  //     of the card" that cut the timeline off).
+  const sBox = await page.locator('[data-testid="add-stage-view"] [data-testid="h3-studio-tenant"] > div > div:nth-child(3)').boundingBox()
+  expect(sBox, 'the strip pane exists in the door').not.toBeNull()
+  expect(sBox!.y + sBox!.height, 'the strip bottoms out inside the tenant').toBeLessThanOrEqual(tBox!.y + tBox!.height + 1)
   expect(errors, errors.join('\n')).toEqual([])
 })
 

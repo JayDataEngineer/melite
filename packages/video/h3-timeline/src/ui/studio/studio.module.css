@@ -243,8 +243,8 @@ details[open] > summary .chev { transform: rotate(180deg); }
   display: flex;
   align-items: center;
   gap: 8px;
-  border-bottom: 1px solid var(--dsw-alias-border-l2));
-  background: var(--dsw-alias-interactive-bg-hover));
+  border-bottom: 1px solid var(--dsw-alias-border-l2);
+  background: var(--dsw-alias-interactive-bg-hover);
   padding: 4px 10px;
 }
 .paneTitle {
@@ -252,7 +252,7 @@ details[open] > summary .chev { transform: rotate(180deg); }
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  color: var(--dsw-alias-label-secondary));
+  color: var(--dsw-alias-label-secondary);
 }
 .paneMeta { font-size: 9px; color: rgba(154, 160, 166, 0.5); }
 .paneMetaNum { font-size: 9px; font-variant-numeric: tabular-nums; color: rgba(154, 160, 166, 0.5); }
@@ -265,8 +265,8 @@ details[open] > summary .chev { transform: rotate(180deg); }
   flex: none;
   overflow: hidden;
   border-radius: 6px;
-  border: 1px solid var(--dsw-alias-border-l2));
-  background: var(--dsw-alias-bg-layer-1));
+  border: 1px solid var(--dsw-alias-border-l2);
+  background: var(--dsw-alias-bg-layer-1);
 }
 
 /* ── kit: StudioShell ───────────────────────────────────── */
@@ -301,6 +301,7 @@ details[open] > summary .chev { transform: rotate(180deg); }
   grid-column: 1 / -1;
   grid-row: 2;
   min-height: 0;
+  min-height: 168px;
   max-height: min(42%, 380px);
   overflow-y: auto;
 }
@@ -321,6 +322,12 @@ details[open] > summary .chev { transform: rotate(180deg); }
 
 /* ── tenant root + rail (component.tsx) ─────────────────── */
 .studioRoot {
+  /* THE ODD-MARGIN ROOT CAUSE (hour-9): default content-box sizing
+   * made height:100% + padding 12 render 24px TALLER than the tenant
+   * (921 inside 897) — the strip sank below the fold and the card
+   * showed dead bands at the bottom. Border-box: the shell IS the
+   * tenant's content box, padding included. */
+  box-sizing: border-box;
   height: 100%;
   min-height: 0;
   gap: 8px;

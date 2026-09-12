@@ -15,7 +15,8 @@
     "./shell": "./src/shell.tsx",
     "./icons": "./src/icons.tsx",
     "./chrome": "./src/chrome.ts",
-    "./toast": "./src/toast.tsx"
+    "./toast": "./src/toast.tsx",
+    "./preview": "./src/preview.tsx"
   },
   "peerDependencies": {
     "@deepseek-ai/dsh-client-ui-slots": "0.1.5-rc.2",

@@ -168,11 +168,14 @@ export function apply(ctx: ClientContext): void {
       {
         name: 'sidebar.right.pane.tab',
         key: CARDS_TAB_ID,
-        // The tab HOSTS card surfaces: declaring the child puts
-        // renderSlot('cards.stage.view') into CardsTab's composed
-        // props (the ui-tool children law).
+        // The tab HOSTS card surfaces: declaring the children puts
+        // renderSlot('cards.stage.view') and
+        // renderSlot('cards.stage.preview') into CardsTab's composed
+        // props (the ui-tool children law — hour-9: the preview seam
+        // rides here so the shared video/image previews render).
         children: {
           'cards.stage.view': { kind: 'keyed', scope: 'session' },
+          'cards.stage.preview': { kind: 'keyed', scope: 'session' },
         },
       },
       CardsTab,

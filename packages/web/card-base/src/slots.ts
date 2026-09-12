@@ -18,7 +18,7 @@
 import type { FieldOwnerProps, FormOwnerProps } from './owners.ts'
 // The stage-view seam's owner: the bench row + the host drill's verbs.
 // Type-only (erased — the client bundle-purity gate sees no value import).
-import type { StageViewOwnerProps } from '@melite/contracts'
+import type { StageViewOwnerProps, PreviewOwnerProps } from '@melite/contracts'
 // The anchor: ui-slots' own slots module imports the module it
 // augments (declaration merging resolves through the same specifier).
 import type { SlotEntryDef } from '@deepseek-ai/dsh-client-ui-slots'
@@ -28,6 +28,7 @@ export type CardSeamDefs = {
   field: SlotEntryDef
   form: SlotEntryDef
   stageView: SlotEntryDef
+  stagePreview: SlotEntryDef
 }
 
 /** The seam ids, spelled once. Claims use these constants. */
@@ -45,6 +46,11 @@ export const CARD_SLOTS = {
    *  mounted on the bench slot (the studio law's bench half; the
    *  first-party studio surface every card package ships). */
   stageView: 'cards.stage.view',
+  /** keyed by media kind ('video' | 'image'): THE PREVIEW SEAM —
+   *  every card's rendered output previews through one shared slot
+   *  (shared DSH primitives, hour-9 law); a card claims its kind's
+   *  preview only to specialize, never to bespoke. */
+  stagePreview: 'cards.stage.preview',
 } as const
 
 declare module '@deepseek-ai/dsh-client-ui-slots' {
@@ -75,6 +81,14 @@ declare module '@deepseek-ai/dsh-client-ui-slots' {
       kind: 'keyed'
       scope: 'session'
       owner: StageViewOwnerProps
+    }
+    /** The preview seam (hour-9): the stage's rendered outputs,
+     *  keyed by media kind. Shared components claim 'video' and
+     *  'image'; the host consults with a fallback. */
+    'cards.stage.preview': {
+      kind: 'keyed'
+      scope: 'session'
+      owner: PreviewOwnerProps
     }
   }
 }

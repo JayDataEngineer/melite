@@ -535,7 +535,7 @@
  * rule — no workspace root; absolute would cover only part of the
  * auto-height embed). Solid backdrop: no fade, the grid hides. */
 .zoomOverlay {
-  background: var(--dsw-alias-bg-overlay));
+  background: var(--dsw-alias-bg-overlay);
   display: flex;
   flex-direction: column;
   inset: 0;
@@ -573,7 +573,7 @@
   background: var(--dsw-alias-bg-layer-1);
   border: 0;
   border-radius: 14px;
-  box-shadow: 0 0 0 0.5px rgba(0, 0, 0, 0.16), 0 3px 8px 0 rgba(0, 0, 0, 0.03), 0 0 16px 0 rgba(0, 0, 0, 0.02));
+  box-shadow: 0 0 0 0.5px rgba(0, 0, 0, 0.16), 0 3px 8px 0 rgba(0, 0, 0, 0.03), 0 0 16px 0 rgba(0, 0, 0, 0.02);
   color: var(--dsw-alias-label-primary);
   display: flex;
   flex-direction: column;
@@ -778,18 +778,18 @@
   overflow: hidden; position: relative; transition: border-color var(--ds-transition-duration, 120ms) var(--ds-ease-in-out, ease);
   width: 80px;
 }
-.squareBox:hover { border-color: var(--dsw-alias-border-l3)); }
-.squareOver { border-color: var(--dsw-alias-border-l3)); box-shadow: 0 0 0 2px var(--dsw-alias-border-l1)); }
+.squareBox:hover { border-color: var(--dsw-alias-border-l3); }
+.squareOver { border-color: var(--dsw-alias-border-l3); box-shadow: 0 0 0 2px var(--dsw-alias-border-l1); }
 .squareThumb { height: 100%; object-fit: cover; width: 100%; }
-.squareGlyph { color: var(--dsw-alias-label-tertiary)); }
+.squareGlyph { color: var(--dsw-alias-label-tertiary); }
 .squareX {
   align-items: center; background: var(--dsw-alias-bg-layer-1); border: 0.5px solid var(--dsw-alias-border-l2);
   border-radius: 999px; cursor: pointer; display: flex; font-size: 10px; line-height: 17px;
   padding: 0 4px; position: absolute; right: 4px; top: 4px;
 }
-.squareX:hover { border-color: var(--dsw-alias-border-l3)); }
+.squareX:hover { border-color: var(--dsw-alias-border-l3); }
 .squareLabel { color: var(--dsw-alias-label-primary); font-size: 11px; line-height: 17px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; width: 100%; }
-.squareMetric { color: var(--dsw-alias-label-tertiary)); font-size: 10px; line-height: 17px; }
+.squareMetric { color: var(--dsw-alias-label-tertiary); font-size: 10px; line-height: 17px; }
 .squareOff { opacity: 0.5; pointer-events: none; }
 .squareFileInput { display: none; }
 
@@ -798,7 +798,7 @@
   background: var(--dsw-alias-bg-base); border: 0.5px solid var(--dsw-alias-border-l2);
   border-radius: 10px; display: flex; min-height: 320px; overflow: hidden; position: relative;
 }
-.viewportEmpty { align-self: center; color: var(--dsw-alias-label-tertiary)); font-size: 12px; line-height: 20px; margin: auto; }
+.viewportEmpty { align-self: center; color: var(--dsw-alias-label-tertiary); font-size: 12px; line-height: 20px; margin: auto; }
 .viewport canvas { display: block; }
 .viewportCanvas { height: 380px; width: 100%; }
 
@@ -1463,4 +1463,71 @@
   flex: 1 1 0%;
   min-height: 420px;
   overflow: hidden;
+}
+
+/* THE PREVIEW SEAT (hour-9): the drill's RIGHT column — the shared
+ * preview (cards.stage.preview) rides ABOVE the Run row; params own
+ * the left column. Flexed min-zero so the hero video/img fills. */
+.outputsPreview {
+  display: flex;
+  flex: 1 1 0%;
+  flex-direction: column;
+  min-height: 220px;
+  min-width: 280px;
+  overflow: hidden;
+}
+.outputsHint {
+  display: flex;
+  flex: 1 1 0%;
+  align-items: center;
+  justify-content: center;
+  color: var(--dsw-alias-label-dimmed);
+  font-size: 11px;
+  border: 1px dashed var(--dsw-alias-border-l2);
+  border-radius: 6px;
+}
+
+/* THE CLAIMED-CARD ADD MODAL (hour-9): a studio preview rides the
+ * page-sized modal — the zoom's huge law (94vw × 94vh) — so the
+ * shell grid gets its real columns, never a squeezed column. */
+.addHugeModal {
+  width: 94vw;
+  max-width: 94vw;
+  height: 94vh;
+  max-height: 94vh;
+}
+/* The Modal's .content is content-sized by default — the page-sized
+ * dialog would show a dead band below the studio (the hour-9 "odd
+ * margins at the bottom"). The claimed preview's content column
+ * FILLS the dialog (flex, min-zero). */
+.addHugeContent {
+  display: flex;
+  flex: 1 1 0%;
+  flex-direction: column;
+  min-height: 0;
+  padding: 0 0 8px;
+}
+
+/* THE CLAIMED ADD LAYOUT (hour-9): the studio full-bleed above, the
+ * Add row pinned below — flexed min-zero so the shell's grid owns the
+ * height it is given by the page-sized modal. */
+.addClaimed {
+  display: flex;
+  flex: 1 1 0%;
+  flex-direction: column;
+  gap: 10px;
+  min-height: 0;
+  padding: 14px 16px 12px;
+}
+.addClaimedHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex: none;
+  padding: 4px 2px 8px;
+}
+.addClaimedTitle {
+  color: var(--dsw-alias-label-primary);
+  font-size: 14px;
+  font-weight: 500;
 }

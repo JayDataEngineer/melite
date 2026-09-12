@@ -60,6 +60,7 @@ import type { CardsBenchValue, CardsDraftValue, CardsRunValue, BenchStageRow } f
 import { CARDS_BENCH_ADDRESS, cardsRunAddress, fetchBench, fetchLatestRunForDraft, observeRunOutcome, openCardsResource, parseCardsAddress, restoreRunToBench, uploadInputFile } from './cards-resource.ts'
 import { defaultFamilyForCard, startCardRun, stopRun } from '@melite-plugin/melite-run-wire'
 import { addStageWire, groupStagesWire, removeStageWire, reorderStageWire, ungroupStageWire } from './add-stage.ts'
+import { ImageStagePreview, VideoStagePreview } from '@melite/card-base/preview'
 import { CardZoomOverlay } from './zoom.tsx'
 import { mediaUrl } from './draft.ts'
 
@@ -84,16 +85,21 @@ export interface CardsTabProps {
   useTabInfo?: () => TabInfo
   useResource?: ResourceHook
   /** Injected by the slot system because the seat registration
-   *  declares 'cards.stage.view' as a child (PropsRenderSlots shape;
-   *  optional so test doubles and legacy mounts render the generic
-   *  card). */
+   *  declares 'cards.stage.view' + 'cards.stage.preview' as children
+   *  (PropsRenderSlots shape; optional so test doubles and legacy
+   *  mounts render the generic card). */
   renderSlot?: StageViewRenderSlot
 }
 
 /** The typed dispatch fn the slot system injects for the declared
- *  child ('cards.stage.view') — RenderSlotFn spelled locally so the
- *  component file stays free of the slot package's runtime graph. */
-export type StageViewRenderSlot = (key: 'cards.stage.view', owner: StageViewOwnerProps, opts?: { entryKey?: string; fallback?: import('react').ReactNode }) => import('react').ReactNode
+ *  children — RenderSlotFn spelled locally so the component file
+ *  stays free of the slot package's runtime graph. Hour-9: the
+ *  preview seam's consult rides the same injection (keyed by media
+ *  kind — the shared video/image previews). */
+export interface StageViewRenderSlot {
+  (key: 'cards.stage.view', owner: StageViewOwnerProps, opts?: { entryKey?: string; fallback?: import('react').ReactNode }): import('react').ReactNode
+  (key: 'cards.stage.preview', owner: import('@melite/contracts').PreviewOwnerProps, opts?: { entryKey?: string; fallback?: import('react').ReactNode }): import('react').ReactNode
+}
 
 
 /** The flow_inline projection — the SAME wire shape melite_flow's bench
@@ -161,6 +167,41 @@ export async function runCardStage(
     }
   } catch { /* spec unavailable — params ride verbatim */ }
   return await startCardRun({ model, params: doc, draftId })
+}
+
+/** THE PREVIEW SEAM CONSULT (hour-9 law: "Where the VIDEO PREVIEW
+ *  and the IMAGE PREVIEW of other cards go in a SLOT with SHARED DSH
+ *  PRIMITIVES"): one consult, keyed by media kind, the card-base
+ *  shared previews as the DEFAULTS. Every card's rendered output
+ *  previews through this — image cards get the shared image preview,
+ *  video cards the shared video one; a studio's own stage view is
+ *  its specialization (the claim-over-default law). */
+export function previewKindFor(url: string): 'video' | 'image' | null {
+  const u = url.toLowerCase()
+  if (/\.(mp4|webm|mov|m4v)(\?|$)/.test(u)) return 'video'
+  if (/\.(png|jpe?g|webp|gif|avif)(\?|$)/.test(u)) return 'image'
+  return null
+}
+
+/** The stage row's preview artifacts, harvested from the estate's
+ *  result shape (artifacts name→url map first, the flat assetUrls
+ *  list second — the harvest law the h3 adapter states). */
+export function previewArtifactsFor(row: Record<string, unknown>): Array<{ name: string, url: string }> {
+  const result = typeof row['result'] === 'object' && row['result'] !== null ? row['result'] as Record<string, unknown> : {}
+  const out: Array<{ name: string, url: string }> = []
+  const arts = typeof result['artifacts'] === 'object' && result['artifacts'] !== null ? result['artifacts'] as Record<string, unknown> : {}
+  for (const [name, val] of Object.entries(arts)) {
+    if (typeof val === 'string' && val !== '') out.push({ name, url: val })
+  }
+  if (out.length === 0 && Array.isArray(result['assetUrls'])) {
+    for (const u of result['assetUrls']) {
+      if (typeof u === 'string' && u !== '') out.push({ name: 'output', url: u })
+    }
+  }
+  if (out.length === 0 && typeof result['url'] === 'string' && result['url'] !== '') {
+    out.push({ name: 'output', url: result['url'] as string })
+  }
+  return out
 }
 
 /** THE CATEGORIES: bench stages grouped by card (first-appearance
@@ -497,7 +538,7 @@ function benchRow(stage: BenchStageRow, bench?: CardsBenchValue): CardRowLineTab
  *  dump. Params left, Run right; the patch carries only CHANGED keys
  *  (coerced once, at patch time — the editPatch law); then the run
  *  gesture (patch lands in the domain BEFORE the run reads it). */
-function StageDrill({ stage, bench, running, onRun, onClose, onRemoved, onPatchParams, renderStageView, onSurface, runId, canRemove }: {
+function StageDrill({ stage, bench, running, onRun, onClose, onRemoved, onPatchParams, renderStageView, renderPreview, onSurface, runId, canRemove }: {
   stage: BenchStageRow
   bench: CardsBenchValue
   running: boolean
@@ -506,6 +547,10 @@ function StageDrill({ stage, bench, running, onRun, onClose, onRemoved, onPatchP
   onRemoved: () => void
   onPatchParams: (patch: Record<string, unknown>) => void
   renderStageView: (owner: StageViewOwnerProps, fallback: ReturnType<typeof h>) => ReturnType<typeof h>
+  /** the preview seam consult (hour-9): the shared video/image preview
+   *  rides the drill's RIGHT column — supplied by the host (it owns
+   *  the slot site); the shared card-base previews are the defaults. */
+  renderPreview?: (owner: { kind: 'video' | 'image', artifacts: Array<{ name: string, url: string }>, runStatus: string, stageId: string }, fallback: ReturnType<typeof h>) => ReturnType<typeof h>
   onSurface?: (size: string) => void
   runId?: string | null
   /** Whether stage removal is offered. The bench view owns its rows
@@ -661,6 +706,29 @@ function StageDrill({ stage, bench, running, onRun, onClose, onRemoved, onPatchP
   // Run split is the old drill content, container is the zoom card.
   // THE SURFACE SLOT (the ui-tool law): a registered card view takes
   // over the whole detail; unclaimed key renders this generic body.
+  // THE PREVIEW SEAM CONSULT (hour-9 law — the operator: "notice how
+  // image gen rides the defaults… that shared seem should go to teh
+  // RIGHT of the input parameters"): the stage's rendered outputs
+  // preview through the cards.stage.preview slot, keyed by media
+  // kind, with the card-base SHARED previews as the defaults. The
+  // consult sits in the drill's RIGHT column — params LEFT, preview
+  // RIGHT, the same law as the studio's rail/center.
+  const stagePreview = (): ReturnType<typeof h> | null => {
+    if (renderPreview === undefined) return null
+    const artifacts = previewArtifactsFor(stage as unknown as Record<string, unknown>)
+    const heroUrl = artifacts[0]?.url ?? ''
+    const kind = previewKindFor(heroUrl)
+    if (kind === null) return null
+    const owner = {
+      kind, artifacts,
+      runStatus: typeof stage.runStatus === 'string' ? stage.runStatus : '',
+      stageId: stage.id,
+    }
+    const fallback = kind === 'video'
+      ? h(VideoStagePreview, owner)
+      : h(ImageStagePreview, owner)
+    return renderPreview(owner, fallback)
+  }
   const genericDetail = (): ReturnType<typeof h> => h('div', { className: css.zoomDetail },
     h('div', { className: css.split },
       h('div', { className: css.params },
@@ -670,6 +738,9 @@ function StageDrill({ stage, bench, running, onRun, onClose, onRemoved, onPatchP
         : h('pre', { className: css.mono }, JSON.stringify(held, null, 2)),
       ),
       h('div', { className: css.outputs },
+        h('div', { className: css.outputsPreview, 'data-testid': 'stage-preview-seat' },
+          stagePreview() ?? h('div', { className: css.outputsHint },
+            running ? 'rendering… the preview lands here' : 'run lands the preview here')),
         h('div', { className: css.runRow },
           error !== null ? h('span', { className: css.runError }, error) : null,
           h(Button, { variant: 'primary', disabled: running, onClick: () => { void run() } },
@@ -838,7 +909,44 @@ function AddCardDoor({ bench, onAdded, onClose, renderStageView, onAddedRow }: {
     if (known === undefined) genres.push([g, [c]])
     else known[1].push(c)
   }
-  return h(Modal, { open: true, onClose, title: 'Add a card', closeLabel: 'Close picker', className: css.drill },
+  // THE CLAIMED-CARD MODAL LAW (hour-9: "when I press add card, it
+  // shows me a [REDACTED 2026-11-05] interface instead of the actual card"): the
+  // 860px drill modal squeezed the studio's shell grid into a 363px
+  // column — a card WITH a studio previews in the PAGE-SIZED modal
+  // (94vw × 94vh, the zoom's own huge law); the picker and the
+  // unclaimed form keep the compact drill.
+  // THE CLAIMED DOOR IS HEADLESS (hour-9): the primitive's own body
+  // div sits between .content and children as flex:0 — the studio
+  // could never fill the page-sized dialog through it. Headless puts
+  // the children directly in the dialog; this door renders its own
+  // header (title + close) + the full-bleed studio + the Add row.
+  // (The primitive's Modal type is a discriminated overload — the
+  // headless branch is its own literal-true call.)
+  const claimed = studioView !== null
+  if (claimed) {
+    return h(Modal, {
+      open: true, onClose, headless: true, title: 'Add a card',
+      className: css.addHugeModal,
+    },
+      h('div', { className: css.addClaimed },
+        h('div', { className: css.addClaimedHead },
+          h('span', { className: css.addClaimedTitle }, 'Add a card'),
+          h('button', { type: 'button', className: css.closeX, 'aria-label': 'Close picker', onClick: onClose }, '✕'),
+        ),
+        h('div', { className: css.addStageView, 'data-testid': 'add-stage-view' }, studioView),
+        h('div', { className: css.runRow },
+          h('button', { type: 'button', className: css.back, onClick: () => { setPicked(null); setSpec(null) } }, '← ' + (cards?.length ?? 0) + ' cards'),
+          formError !== null ? h('span', { className: css.runError }, formError) : null,
+          h(Button, { variant: 'primary', disabled: adding || spec === null, onClick: () => { void add() } },
+            adding ? 'adding…' : 'Add card'),
+        ),
+      ),
+    )
+  }
+  return h(Modal, {
+    open: true, onClose, title: 'Add a card', closeLabel: 'Close picker',
+    className: css.drill,
+  },
     picked === null
       ? h('div', { className: css.picker },
           h(Input, {
@@ -863,38 +971,33 @@ function AddCardDoor({ bench, onAdded, onClose, renderStageView, onAddedRow }: {
             )),
           )),
         )
+      // The UNCLAIMED card's honest fallback: the spec form beside the
+      // Add row — never a studio's stand-in.
       : h('div', { className: css.split },
           h('div', { className: css.params },
             h('button', { type: 'button', className: css.back, onClick: () => { setPicked(null); setSpec(null) } }, '← ' + (cards?.length ?? 0) + ' cards'),
             formError !== null ? h('p', { className: css.runError }, formError) : null,
-            // THE REAL CARD (claimed): the studio IS the param surface
-            // — its own rail. The spec form is the UNCLAIMED card's
-            // honest fallback, never a studio's stand-in.
-            studioView !== null
-              ? h('div', { className: css.addStageView, 'data-testid': 'add-stage-view' }, studioView)
-              : h(Fragment, null,
-                  spec === null && formError === null ? h('div', { className: css.load }, 'form…') : null,
-                  spec !== null ? h(SpecForm, { spec, fields: spec.fields, values, onEdit, wire }) : null,
-                ),
+            spec === null && formError === null ? h('div', { className: css.load }, 'form…') : null,
+            spec !== null ? h(SpecForm, { spec, fields: spec.fields, values, onEdit, wire }) : null,
           ),
-          h('div', { className: css.outputs },
-            h('div', { className: css.runRow },
-              formError !== null ? h('span', { className: css.runError }, formError) : null,
-              h(Button, { variant: 'primary', disabled: adding || spec === null, onClick: () => { void add() } },
-                adding ? 'adding…' : 'Add card'),
-            ),
+        h('div', { className: css.outputs },
+          h('div', { className: css.runRow },
+            h(Button, { variant: 'primary', disabled: adding || spec === null, onClick: () => { void add() } },
+              adding ? 'adding…' : 'Add card'),
           ),
         ),
+      ),
   )
 }
 
-function BenchView({ bench, onRun, onRunStage, running, onPatchParams, renderStageView, runId, refreshTick }: {
+function BenchView({ bench, onRun, onRunStage, running, onPatchParams, renderStageView, renderPreview, runId, refreshTick }: {
   bench: CardsBenchValue
   onRun: () => void
   onRunStage: (stage: BenchStageRow) => void
   running: boolean
   onPatchParams: (stage: BenchStageRow, patch: Record<string, unknown>) => void
   renderStageView: (owner: StageViewOwnerProps, fallback: ReturnType<typeof h>) => ReturnType<typeof h>
+  renderPreview?: (owner: { kind: 'video' | 'image', artifacts: Array<{ name: string, url: string }>, runStatus: string, stageId: string }, fallback: ReturnType<typeof h>) => ReturnType<typeof h>
   runId?: string | null
   /** The outcome observer's touch — the rail re-reads so tile
    *  runStatus/result stay live without ever leaving the bench. */
@@ -1228,13 +1331,14 @@ function BenchView({ bench, onRun, onRunStage, running, onPatchParams, renderSta
  * surface — the bench CAS door has no business here); the back affordance
  * returns to the shared bench, the tab's home address.
  */
-function DraftView({ value, running, onRun, onBack, onPatchParams, renderStageView, runId }: {
+function DraftView({ value, running, onRun, onBack, onPatchParams, renderStageView, renderPreview, runId }: {
   value: CardsDraftValue
   running: boolean
   onRun: () => void
   onBack: () => void
   onPatchParams: (patch: Record<string, unknown>) => void
   renderStageView: (owner: StageViewOwnerProps, fallback: ReturnType<typeof h>) => ReturnType<typeof h>
+  renderPreview?: (owner: { kind: 'video' | 'image', artifacts: Array<{ name: string, url: string }>, runStatus: string, stageId: string }, fallback: ReturnType<typeof h>) => ReturnType<typeof h>
   runId: string | null
 }): ReturnType<typeof h> {
   const found = value.stages.find((s) => s.id === value.stageId) ?? null
@@ -1275,6 +1379,7 @@ function DraftView({ value, running, onRun, onBack, onPatchParams, renderStageVi
     onRemoved: onBack,
     onPatchParams,
     renderStageView,
+    renderPreview,
     runId,
     canRemove: false,
   })
@@ -1383,6 +1488,14 @@ export function CardsTab(props: CardsTabProps): ReturnType<typeof h> {
   const renderStageView = (owner: StageViewOwnerProps, fallback: ReturnType<typeof h>): ReturnType<typeof h> => {
     if (props.renderSlot === undefined) return fallback
     return (props.renderSlot('cards.stage.view', owner, { entryKey: owner.cardName, fallback }) ?? fallback) as ReturnType<typeof h>
+  }
+  // THE PREVIEW SEAM CONSULT (hour-9): keyed by media kind; the shared
+  // card-base previews ride as the fallback — image gen rides the
+  // defaults TODAY, a card claims its kind only to specialize. This is
+  // the ONE consult site; the drill's RIGHT column renders it.
+  const renderPreview = (owner: { kind: 'video' | 'image', artifacts: Array<{ name: string, url: string }>, runStatus: string, stageId: string }, fallback: ReturnType<typeof h>): ReturnType<typeof h> => {
+    if (props.renderSlot === undefined) return fallback
+    return (props.renderSlot('cards.stage.preview', owner, { entryKey: owner.kind, fallback }) ?? fallback) as ReturnType<typeof h>
   }
   const info = typeof props.useTabInfo === 'function' ? props.useTabInfo() : undefined
   const rawAddress = info?.tab.navigation.address ?? info?.tab.contentId ?? CARDS_BENCH_ADDRESS
@@ -1541,6 +1654,7 @@ export function CardsTab(props: CardsTabProps): ReturnType<typeof h> {
           running,
           onPatchParams: onPatchParamsStage,
           renderStageView,
+          renderPreview,
           runId: lastRunId,
           refreshTick: benchTick,
         }),
@@ -1555,6 +1669,7 @@ export function CardsTab(props: CardsTabProps): ReturnType<typeof h> {
           onBack: openResource !== undefined ? onBack : (() => {}),
           onPatchParams: onPatchParamsDraft,
           renderStageView,
+          renderPreview,
           runId: lastRunId,
         }),
       )
