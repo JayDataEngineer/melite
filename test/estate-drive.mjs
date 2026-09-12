@@ -43,6 +43,15 @@ writeFileSync(
 
 const child = spawn("dsh", ["--profile", "estate"], {
   stdio: ["pipe", "pipe", "pipe"],
+  // NEUTRAL CWD (2026-09-12 debt fix): the child boots in the STATE
+  // ROOT, never the workspace. Booted in the repo, every session
+  // carries the workspace AGENTS.md system-reminder + the runtime
+  // context snapshot as extra user messages — the probe prompt drowns
+  // and weak routes answer about conformance instead of calling the
+  // tool. This probe is about TOOL EXECUTION; a neutral cwd is the
+  // honest isolation, not a dodge (the tool-output wall proves the
+  // seats; this drive proves the live turn).
+  cwd: STATE_ROOT,
   env: {
     ...process.env,
     MELITE_STATE_ROOT: STATE_ROOT,
@@ -149,8 +158,16 @@ await new Promise((r) => setTimeout(r, 1500));
 child.kill();
 
 // The proof: a committed assistant message naming the run + artifact.
+// ASSISTANT-ROLE TEXT ONLY (2026-09-12 debt fix): the drive used to
+// walk every event's content blocks — including the harness-injected
+// user messages (workspace AGENTS.md system-reminder, runtime-context
+// snapshot), which it then counted as "assistant chars" and dumped in
+// the failure tail, masking the real failure (a 429 turn death read
+// as "no run_id" with a wall of quoted reminders). user/message and
+// system/message never carry the proof; assistant messages do.
 const texts = [];
 for (const e of events) {
+  if (e?.type !== "assistant/message") continue;
   const blocks = e?.data?.content ?? e?.data?.message?.content ?? [];
   if (Array.isArray(blocks)) {
     for (const b of blocks) {
@@ -158,10 +175,24 @@ for (const e of events) {
     }
   }
 }
+// A turn that died mid-flight (route error, quota) is a NAMED
+// failure, never a silent "no run_id": surface turn/end reasons.
+const turnErrors = [];
+for (const e of events) {
+  const reason = e?.type === "turn/end" ? e?.data?.reason : undefined;
+  if (reason && reason.kind === "error") {
+    turnErrors.push(String(reason.error?.message ?? "unknown turn error"));
+  }
+}
 const all = texts.join("\n");
 const runId = all.match(/run-[0-9a-f]+-\w+/)?.[0];
 console.log("events:", events.length, "assistant chars:", all.length);
 console.log("run_id:", runId ?? "(none)");
+if (turnErrors.length > 0) {
+  console.error("estate-drive: the turn died —", turnErrors.join(" | "));
+  console.error("assistant text tail:", all.slice(-600) || "(no assistant text committed)");
+  process.exit(1);
+}
 
 if (process.env["ESTATE_DRIVE_FRAMES"]) {
   console.log("--- events ---");

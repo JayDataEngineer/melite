@@ -20,9 +20,11 @@
   },
   "scripts": {
     "build": "bun node_modules/tsdown/dist/run.mjs -c tsdown.config.ts",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test:e2e": "playwright test"
   },
   "devDependencies": {
+    "@playwright/test": "^1.62.1",
     "@deepseek-ai/cordis": "^4.0.1",
     "@deepseek-ai/dsh-client-connection": "0.1.5-rc.2",
     "@deepseek-ai/dsh-client-resources": "0.1.5-rc.2",

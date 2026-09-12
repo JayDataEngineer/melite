@@ -23,7 +23,7 @@
     "test:snapshot:refresh": "DSH_SNAPSHOT=refresh vitest run --config vitest.snapshot.config.ts",
     "test:web": "vitest run --config vitest.web.config.ts",
     "test:web:refresh": "DSH_SNAPSHOT=refresh vitest run --config vitest.web.config.ts",
-    "test:web:browser": "pnpm --filter @melite/editor exec playwright test && pnpm --filter @melite-plugin/dsh-card-deck exec playwright test",
+    "test:web:browser": "pnpm --filter @melite-plugin/dsh-card-view exec playwright test && pnpm --filter @melite-plugin/dsh-card-deck exec playwright test",
     "lint": "node tools/arch-lint.ts"
   }
 }

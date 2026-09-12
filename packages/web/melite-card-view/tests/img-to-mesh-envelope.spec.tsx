@@ -5,7 +5,7 @@
  * lives in @melite/3d-img-to-mesh's own tests since the
  * composition-root correction, 2026-09-12).
  */
-import { render, screen } from '@testing-library/react'
+import { render, screen, waitFor } from '@testing-library/react'
 import { expect, test, vi } from 'vitest'
 import { cleanup } from '@testing-library/react'
 import { afterEach } from 'vitest'
@@ -51,9 +51,16 @@ test('the envelope lift: the detail reports, the card law answers', async () => 
     onPatchParams: () => {}, renderStageView: (_o, fb) => fb,
     detail: Detail as never,
   }))
-  // the detail mounted through the skeleton gate and its report rode
+  // the detail mounted through the skeleton gate and its report rode.
+  // GATE ON THE SIDE EFFECT, NOT THE DOM COMMIT (2026-09-12 flake
+  // fix): findByText resolves the instant 'DETAIL' hits the DOM, but
+  // the passive effect that pushes 'mounted' flushes a tick later —
+  // under full-suite coverage instrumentation that tick once lost the
+  // race and reported read [] with the text already found. waitFor on
+  // the effect's own observable is deterministic at any speed; the
+  // 4s cap stays as the LOUD break, never the mechanism.
   await screen.findByText('DETAIL', {}, { timeout: 4000 })
-  expect(reported).toEqual(['mounted'])
+  await waitFor(() => { expect(reported).toEqual(['mounted']) })
   // the width law (framer strips inline width headless; the lane
   // proves the paint — this proves the decision)
   expect(zoomWidthFor(null)).toBe('min(760px, 94vw)') // width caps by vw (a vh cap clipped the right column)
