@@ -480,6 +480,24 @@ describe("uploadReferenced (the staging walk)", () => {
       assert.equal(Object.keys(uploaded).length, 1);
     } finally { await s.close(); }
   });
+  it("a runs-relative name alone uploads on first sight (no route-prefix sibling pre-warms the cache)", async () => {
+    const cfg = stub();
+    const s = await startStub(cfg);
+    try {
+      const root = tmpRoot();
+      mkdirSync(join(root, "run-solo", "mesh"), { recursive: true });
+      writeFileSync(join(root, "run-solo", "mesh", "only.png"), Buffer.from("PNG"));
+      // ONE spelling, first sight: the runs-relative arm itself pays
+      // the upload (the cache-miss half of the seen-map gate)
+      const { graph, uploaded } = await uploadReferenced(s.url, {
+        "1": { class_type: "L", inputs: { image: "run-solo/mesh/only.png" } },
+      } as never, { runsRoot: root });
+      const ins = (graph["1"] as Record<string, EngineJson>)["inputs"] as Record<string, EngineJson>;
+      assert.equal(ins["image"], "staged.png");
+      assert.equal(cfg.seen.uploads, 1);
+      assert.equal(Object.keys(uploaded).length, 1);
+    } finally { await s.close(); }
+  });
   it("estate asset urls refuse loud when dangling or rootless; runs-relative misses fall to cwd", async () => {
     const cfg = stub();
     const s = await startStub(cfg);

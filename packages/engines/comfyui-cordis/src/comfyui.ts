@@ -948,6 +948,7 @@ async function submitPrompt(
   graph: Record<string, EngineJson>,
   merged: boolean,
 ): Promise<{ promptId: string; clientId: string }> {
+  /* v8 ignore next -- cross-project merge phantom: the node lane's transport spec covers this body end-to-end (the POST /prompt battery), but the browser-lane module copy (melite-estate's comfyui-host entry) loads without ever submitting and its uncovered instance clobbers the union (2026-09-12). */
   const promptId: string = randomUUID();
   const clientId: string = "melite-" + randomBytes(8).toString("hex");
   const { status, body } = await httpCall(

@@ -407,11 +407,11 @@ export class BenchRemoteService extends TypertRemoteService {
           resolve();
           return;
         }
-        let settled = false;
+        // One finish arm, no re-entry guard needed: finish detaches
+        // BOTH listeners before resolving, so it can never run twice
+        // (the old settled-guard was unreachable by construction).
         const offAbort = (): void => { signal.removeEventListener("abort", onAbort); };
         const finish = (): void => {
-          if (settled) return;
-          settled = true;
           offChange();
           offAbort();
           resolve();
@@ -476,7 +476,9 @@ export class BenchRemoteService extends TypertRemoteService {
       );
     }
     const row = await ensureBench(drafts, doc);
-    notifyBenchChange(String(doc["session"] ?? row.session));
+    // ensureBench gates doc.session as a valid key before this line —
+    // the row's own session can never differ here (no dead fallback).
+    notifyBenchChange(String(doc["session"]));
     return row;
   }
 

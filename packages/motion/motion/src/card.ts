@@ -38,6 +38,17 @@ export const identity = {
   icon: 'motion',
 }
 
+/** The CARD face's plugin apply (the dual-face law, 2026-09-12):
+ * the cardPackages SSOT composes THIS subpath in the engine plane —
+ * '@melite/motion-motion/card' — where the registry seat lives. The
+ * package root is the web profile's row-mount marker (the tool ride
+ * is melite-tools', the studio ride is the client face's). */
+export const inject = ['comfyui']
+
+export function apply(ctx: Context): void {
+  registerCard(ctx, ctx.comfyui)
+}
+
 export function registerCard(ctx: Context, comfy: ComfyUIService): void {
   ctx.effect(() => comfy.registerCard({
     id: 'motion',

@@ -176,6 +176,10 @@ function _useCatalogContractStoreHook(): CatalogContractStoreState
 function _useCatalogContractStoreHook<T>(
   selector: (s: CatalogContractStoreState) => T,
 ): T
+/* v8 ignore next -- React-tree wiring: invoking the hook needs a renderer
+ * for useSyncExternalStore (dom-project territory, like the slots seam's
+ * useVersion). The selector contract is pinned node-side through
+ * getState/subscribe in catalog-contract-store.spec.ts. (2026-09-12) */
 function _useCatalogContractStoreHook<T>(
   selector?: (s: CatalogContractStoreState) => T,
 ): T | CatalogContractStoreState {

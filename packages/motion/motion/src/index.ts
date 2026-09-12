@@ -1,47 +1,30 @@
-// index.ts — the package entry: a thin coordinator (the
-// tool-bash law — registration lives HERE, modules export data
-// and builders).
+// index.ts — the package's HOST half (the composition marker).
 //
-// BOTH services are optional dependencies (tutorial ch.3: skip
-// inject, probe at the use site). A hard comfyui gate would hold
-// the plugin PENDING in a standalone dsh agent host — no
-// in-process ComfyUI service, the tool face's EstateCall rides
-// the estate's ctx seats — so the tool would never register. The estate
-// composition provides comfyui but no tools; the agent host provides
-// tools but no comfyui; each composition takes the faces it can.
-import type { EstateCall } from '@melite/estate-call'
+// THE DUAL-FACE LAW (2026-09-12, the composition-root correction —
+// adopted from the h3-timeline precedent after the loader proved the
+// coordinator shape unlawful: a row-mounted root that registers both
+// faces collides with the web profile's own registrars — "tool
+// motion is already registered"):
+// this package is ROW-MOUNTED in the web profile so its dsh.client
+// declaration carries the browser studio (lib/client.js — the
+// cards.stage.view registration under key 'motion'). The loader
+// applies THIS face node-side; it registers NOTHING (no card def,
+// no tool):
+//
+// - the card def rides the CARD face (./card — the cardPackages
+//   SSOT composes it in the engine plane, where the registry seat
+//   lives: '@melite/motion-motion/card')
+// - the tool ride is melite-tools' (the web profile's one tool
+//   registrar — buildMotionTool from ./tool, threaded with the
+//   EstateCall seam)
+//
+// One package, three faces, one truth each — no guards, no probes.
 import type { Context } from '@deepseek-ai/cordis'
-import Schema from '@deepseek-ai/schemastery'
-import { ComfyUIService } from '@melite/comfyui-cordis/service'
-import { registerCard } from './card.ts'
-import { buildMotionTool } from './tool.ts'
-import type { ToolRuntime } from '@deepseek-ai/dsh-tools'
 
-export const name = '@melite/motion/motion'
+export const name = '@melite/motion-motion'
 
 export const inject: string[] = []
 
-/** The documented Config idiom (tutorial ch.5): the interface is
- *  the type, the const is the runtime schema, one name. The env
- *  var resolves INSIDE the schema default — a schema-side
- *  .default() would otherwise mask it at every use site. */
-export interface Config {
-  /** The lane seam (R2b law): threaded by the registrar, never configured. */
-  call: EstateCall
-}
-
-export const Config: Schema<Config> = Schema.object({
-  call: Schema.any(),
-})
-
-export function apply(ctx: Context, config: Config): void {
-  const comfy = ctx.get('comfyui') as ComfyUIService | undefined
-  if (comfy !== undefined) registerCard(ctx, comfy)
-  const tools = ctx.get('tools') as ToolRuntime | undefined
-  if (tools !== undefined) {
-    // BARE registration, the tool-bash shape: the entry owns the
-    // register call; tool.ts exports the definition builder. The
-    // service attaches its own disposer (tutorial ch.2).
-    tools.register(buildMotionTool(config.call))
-  }
+export function apply(_ctx: Context): void {
+  /* the browser studio rides the client face (src/client) */
 }

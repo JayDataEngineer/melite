@@ -9,6 +9,7 @@
 // delegating to this seat. Failures throw the protocol's ONE
 // RemoteError with the runs/* codes declared HERE (the producing
 // package, next to the throws).
+import { join } from "node:path";
 import { Service } from "@deepseek-ai/cordis";
 import type { Context } from "@deepseek-ai/cordis";
 import { RemoteError } from "@deepseek-ai/dsh-typert-protocol";
@@ -41,6 +42,7 @@ import {
   strictBody,
 } from "./runsValidate.ts";
 import { FLOW_ID_RE } from "./runsGates.ts";
+import { filmMuxPlan, muxWindows, probeDurationSec, shouldMuxWindows } from "./filmMux.ts";
 import type { QueueCore, QueueRefusal } from "./queue.ts";
 import {
   compileFlowInline,
@@ -823,6 +825,27 @@ export class RunsRegistryService extends Service {
           const names: string[] = arts.map((a: string): string =>
             runRel(run, a),
           );
+          // THE FILM COMPLETION (2026-09-12, the 4s-stitch defect):
+          // when the stitch is shorter than the windows' total, the
+          // windows concat (stream copy) into film_video_mux.mp4 and
+          // the FILM leads the names — the hero never lies about the
+          // timeline. Any probe/mux failure keeps the engine's own
+          // stitch (loud, never a fake film).
+          const plan = filmMuxPlan(names);
+          if (plan !== null) {
+            const stitchSec = probeDurationSec(join(run.dir, plan.stitch));
+            const windowSecs = plan.windows.map((w): number | null =>
+              probeDurationSec(join(run.dir, w)));
+            const decidable = stitchSec !== null
+              && windowSecs.every((t): t is number => t !== null);
+            if (decidable && shouldMuxWindows(stitchSec, windowSecs)) {
+              const muxed = muxWindows(run.dir, plan);
+              if (muxed !== null) {
+                names.unshift(plan.out);
+                run.artifacts.push(muxed);
+              }
+            }
+          }
           stage["url"] = names[0];
           stage["gallery"] = names.map(
             (n: string): EngineJson => ({ name: n }) as unknown as EngineJson,

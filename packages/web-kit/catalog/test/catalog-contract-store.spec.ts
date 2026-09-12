@@ -15,6 +15,7 @@ vi.mock("../src/toast", () => ({
 vi.mock("../src/modelCatalog.ts", () => ({ loadCatalog: loadCatalogMock }));
 
 import { useCatalogContractStore } from "../src/catalogContractStore.ts";
+import type { CatalogContractRecord } from "../src/catalogContractStore.ts";
 
 const err = console.error;
 beforeEach(() => {
@@ -130,5 +131,59 @@ describe("reportError latch", () => {
     assert.deepEqual(record(), { state: "idle", violations: [], error: null });
     s.reportError("boom");
     assert.equal(toasts.length, 2);
+  });
+});
+
+describe("subscribe / setState plumbing", () => {
+  it("notifies subscribers on every mutation, stops after unsubscribe", () => {
+    const seen: string[] = [];
+    const unsub = useCatalogContractStore.subscribe(() => {
+      seen.push(useCatalogContractStore.getState().record.state);
+    });
+    useCatalogContractStore.getState().reportOk();
+    assert.deepEqual(seen, ["loaded"]);
+    unsub();
+    useCatalogContractStore.getState().reportViolation([{ kind: "catalog", message: "x" }]);
+    assert.deepEqual(seen, ["loaded"]); // nobody notified after unsubscribe
+  });
+
+  it("setState merges function patches", () => {
+    useCatalogContractStore.getState().reportOk();
+    useCatalogContractStore.setState((s) => ({ record: { ...s.record, error: "fn" } }));
+    assert.equal(record().error, "fn");
+    assert.equal(record().state, "loaded");
+  });
+
+  it("setState honors replace (and the store survives it)", () => {
+    const saved = useCatalogContractStore.getState();
+    let calls = 0;
+    const unsub = useCatalogContractStore.subscribe(() => {
+      calls++;
+    });
+    useCatalogContractStore.setState(saved, true);
+    assert.equal(calls, 1);
+    assert.equal(typeof useCatalogContractStore.getState().reportOk, "function");
+    unsub();
+    useCatalogContractStore.getState().reportOk();
+    assert.equal(record().state, "loaded");
+  });
+
+  it("exposes the initial record and a destroy no-op", () => {
+    assert.deepEqual(useCatalogContractStore.getInitialState().record, {
+      state: "idle",
+      violations: [],
+      error: null,
+    });
+    useCatalogContractStore.destroy();
+  });
+
+  it("pins the hook's selector contract through getState", () => {
+    // The hook (v8-ignored, renderer-only) is selector(getState()) with no
+    // selector yielding the full state — pin both readings here, no React.
+    useCatalogContractStore.getState().reportError("boom");
+    const recordOf = (s: ReturnType<typeof useCatalogContractStore.getState>): CatalogContractRecord =>
+      s.record;
+    assert.deepEqual(recordOf(useCatalogContractStore.getState()), record());
+    assert.equal(recordOf(useCatalogContractStore.getState()).state, "error");
   });
 });

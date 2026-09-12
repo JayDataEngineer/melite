@@ -12,6 +12,7 @@ import {
   tagsOf,
   useTagMap,
 } from "../src/tagMap.ts";
+import type { TagMapState } from "../src/tagMap.ts";
 
 const realFetch = globalThis.fetch;
 afterEach(() => {
@@ -125,6 +126,29 @@ describe("setItemTags + addTagToItem + removeTagFromItem", () => {
     s.deleteTag(a);
     assert.deepEqual(useTagMap.getState().tagsOf("k1"), [b]);
     assert.deepEqual(useTagMap.getState().tagsOf("k2"), []);
+  });
+});
+
+describe("store plumbing (subscribe + selector contract)", () => {
+  it("notifies subscribers on mutations, stops after unsubscribe", () => {
+    let calls = 0;
+    const unsub = useTagMap.subscribe(() => {
+      calls++;
+    });
+    useTagMap.getState().createTag("Notify");
+    assert.equal(calls, 1);
+    unsub();
+    useTagMap.getState().createTag("Silent");
+    assert.equal(calls, 1); // nobody notified after unsubscribe
+  });
+
+  it("pins the hook's selector contract through getState", () => {
+    // The hook (v8-ignored, renderer-only) is selector(getState()) with no
+    // selector yielding the full state — pin both readings here, no React.
+    const id = useTagMap.getState().createTag("Sel");
+    const tagsOfState = (s: TagMapState): TagMapState["tags"] => s.tags;
+    assert.ok(id in tagsOfState(useTagMap.getState()));
+    assert.deepEqual(tagsOfState(useTagMap.getState()), useTagMap.getState().tags);
   });
 });
 

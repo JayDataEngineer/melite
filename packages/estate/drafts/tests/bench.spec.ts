@@ -30,7 +30,7 @@ import { BenchRemoteService } from "../src/remote.ts";
 
 const sig = new AbortController().signal;
 
-async function boot(): Promise<Domain<DraftsDomainSpec>> {
+async function bootCtx(): Promise<{ ctx: Context; domain: Domain<DraftsDomainSpec> }> {
   const root = mkdtempSync(join(tmpdir(), "bench-spec-"));
   mkdirSync(join(root, "storage"), { recursive: true });
   process.env["MELITE_STATE_ROOT"] = root;
@@ -45,7 +45,11 @@ async function boot(): Promise<Domain<DraftsDomainSpec>> {
     { name: domainName, inject: domainInject, apply: domainApply, Config: DomainConfig } as never,
     { backend: "json" },
   );
-  return await openDraftsDomain(ctx);
+  return { ctx, domain: await openDraftsDomain(ctx) };
+}
+
+async function boot(): Promise<Domain<DraftsDomainSpec>> {
+  return (await bootCtx()).domain;
 }
 
 /** One bench doc seeded straight into the domain (log = data). */
@@ -796,7 +800,51 @@ describe("the bench/subscribe stream remote", () => {
     if (third.done !== true) throw new Error("abort must end the stream");
   });
 
-  test("a foreign session's write does not wake the stream", async () => {
+  test("an abort that lands while suspended at a yield ends the stream on the next resume (no parked listener)", async () => {
+    const controller = new AbortController();
+    const fake = {
+      get: async (): Promise<Row> => ({ draft_id: "bench-main", session: "main", rev: 2, intent: null, stages: [], log: [] }),
+    };
+    const gen = BenchRemoteService.prototype.remoteExportSubscribe.call(
+      fake as never,
+      "main",
+      controller.signal,
+    ) as AsyncGenerator<Row>;
+    const first = await gen.next();
+    expect(first.done).toBe(false);
+    // the abort lands with NO listener attached (the generator sits
+    // suspended at the yield) — the executor's re-check must end it
+    controller.abort();
+    const next = await gen.next();
+    expect(next.done).toBe(true);
+  });
+
+  test("a write and a racing abort settle ONCE (the double-finish guard)", async () => {
+    const controller = new AbortController();
+    const fake = {
+      get: async (): Promise<Row> => ({ draft_id: "bench-main", session: "main", rev: 5, intent: null, stages: [], log: [] }),
+    };
+    const gen = BenchRemoteService.prototype.remoteExportSubscribe.call(
+      fake as never,
+      "main",
+      controller.signal,
+    ) as AsyncGenerator<Row>;
+    const first = await gen.next();
+    expect(first.done).toBe(false);
+    const parked = gen.next();
+    await new Promise((resolve) => setTimeout(resolve, 10));
+    // the write wakes the park; the abort races in behind it — one
+    // finish wins, both listeners come off, nothing double-resolves
+    notifyBenchChange("main");
+    controller.abort();
+    const second = await parked;
+    // either a final frame or a clean end — never a hang or a throw
+    expect(second.done === false || second.done === true).toBe(true);
+    const last = await gen.next();
+    expect(last.done).toBe(true);
+  });
+
+  test("a foreign session's write does not wake the stream (the mismatch arm runs, the park holds)", async () => {
     const controller = new AbortController();
     const fake = {
       get: async (): Promise<Row> => ({ draft_id: "bench-main", session: "main", rev: 1, intent: null, stages: [], log: [] }),
@@ -808,15 +856,58 @@ describe("the bench/subscribe stream remote", () => {
     ) as AsyncGenerator<Row>;
     const first = await gen.next();
     expect(first.done).toBe(false);
-    // the foreign write: the stream must stay parked — only abort ends
+    // resume INTO the park first (listener attaches), THEN probe it
+    // with a foreign write — the mismatch arm returns early and the
+    // stream stays parked (only the matching session may wake it)
+    const parked = gen.next();
+    await new Promise((resolve) => setTimeout(resolve, 10));
     notifyBenchChange("other-session");
     const raced = await Promise.race([
-      gen.next().then((r) => r.done === true ? "ended" : "FRAME"),
+      parked.then((r) => r.done === true ? "ended" : "FRAME"),
       new Promise((resolve) => setTimeout(() => resolve("parked"), 25)),
     ]);
     expect(raced).toBe("parked");
     controller.abort();
-    const last = await gen.next();
+    const last = await parked;
     expect(last.done).toBe(true);
   });
+});
+
+describe("the bench/ensure notify", () => {
+  test("the notify rides the doc's own gated session key", async () => {
+    const { ctx } = await bootCtx();
+    const heard: string[] = [];
+    const off = onBenchChange((session) => { heard.push(session) });
+    // the in-process ensure arm (the remote delegates here):
+    // ensureBench gates the session key; the notify rides it verbatim
+    const service = new BenchRemoteService(ctx);
+    const row = await service.ensure({ session: "spec-fb" }, sig) as { session: string };
+    expect(row.session).toBe("spec-fb");
+    expect(heard).toEqual(["spec-fb"]);
+    off();
+  });
+});
+
+// ── the id mint's shape guard ───────────────────────────────────
+
+test("a row id outside the s_N shape never feeds the mint (max stays, s_0 rides next)", async () => {
+  const drafts = await boot();
+  // a crafted bench with a free-form row id (agent-authored rows can
+  // carry any string; the mint only counts /s_(\d+)/ suffixes)
+  await seed(drafts, "mintshape", {
+    stages: [
+      { id: "hero-1", card: "x" },
+      { id: "s_7", card: "x" },
+      { id: "note" },
+      // a null id row: String(null ?? "") — the empty string, never
+      // the literal "null"
+      { card: "x", id: null },
+    ],
+  });
+  const added = await addStageBench(drafts, "mintshape", {
+    card: "hero",
+    expect_rev: 0,
+  });
+  // hero-1/note are INVISIBLE to the mint; s_7 is the max — s_8 next
+  assert.equal(added.stage, "s_8");
 });

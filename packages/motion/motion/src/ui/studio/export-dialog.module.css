@@ -1,0 +1,427 @@
+/* MotionExportDialog — the in-flow export panel beside the stage.
+   DSH-token styled. The amber "pick at least one" nudge rides the
+   danger token (estate law). */
+
+.panel {
+  display: flex;
+  max-height: 100%;
+  min-height: 0;
+  width: min(340px, 42vw);
+  flex-shrink: 0;
+  flex-direction: column;
+  overflow: hidden;
+  border-radius: 12px;
+  border: 1px solid color-mix(in srgb, var(--dsw-alias-border, #e2e4e9) 60%, transparent);
+  background: var(--dsw-alias-bg-module-platform, #f5f6f7);
+  box-shadow: 0 25px 50px -12px rgb(0 0 0 / 0.45);
+}
+
+.head {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid color-mix(in srgb, var(--dsw-alias-border, #e2e4e9) 40%, transparent);
+  padding: 12px 20px;
+}
+
+.headTitle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.headIcon {
+  width: 16px;
+  height: 16px;
+  color: var(--dsw-alias-accent, #3b82f6);
+}
+
+.headText {
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.frameChip {
+  border-radius: 4px;
+  background: color-mix(in srgb, var(--dsw-alias-bg-module-platform, #f5f6f7) 60%, transparent);
+  padding: 2px 6px;
+  font-family: ui-monospace, monospace;
+  font-size: 10px;
+  color: color-mix(in srgb, var(--dsw-alias-label-secondary, #5b6470) 70%, transparent);
+}
+
+.closeBtn {
+  color: var(--dsw-alias-label-secondary, #5b6470);
+}
+
+.closeBtn:hover {
+  color: var(--dsw-alias-label-primary, #0f1115);
+}
+
+.body {
+  min-height: 0;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  overflow-y: auto;
+  padding: 20px;
+}
+
+.stack2 {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.secTitle {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--dsw-alias-label-secondary, #5b6470);
+}
+
+.secHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+/* Scope picker cards — one base, active/idle compose via cn(). */
+.scopeGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.scopeBtn {
+  display: flex;
+  width: 100%;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  padding: 10px;
+  text-align: left;
+  transition: color 120ms ease, background-color 120ms ease, border-color 120ms ease;
+}
+
+.scopeBtn:disabled {
+  cursor: not-allowed;
+  opacity: 0.4;
+}
+
+.scopeBtnActive {
+  border-color: color-mix(in srgb, var(--dsw-alias-accent, #3b82f6) 60%, transparent);
+  background: color-mix(in srgb, var(--dsw-alias-accent, #3b82f6) 10%, transparent);
+}
+
+.scopeBtnIdle {
+  border-color: color-mix(in srgb, var(--dsw-alias-border, #e2e4e9) 40%, transparent);
+}
+
+.scopeBtnIdle:hover {
+  border-color: var(--dsw-alias-border, #e2e4e9);
+  background: color-mix(in srgb, var(--dsw-alias-bg-module-platform, #f5f6f7) 30%, transparent);
+}
+
+.scopeBtnRow {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.scopeLabel {
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.scopeCheck {
+  margin-left: auto;
+  width: 12px;
+  height: 12px;
+  color: var(--dsw-alias-accent, #3b82f6);
+}
+
+.scopeDesc {
+  font-size: 9px;
+  color: color-mix(in srgb, var(--dsw-alias-label-secondary, #5b6470) 60%, transparent);
+}
+
+/* Live-framing panel. */
+.livePanel {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  border-radius: 8px;
+  border: 1px solid color-mix(in srgb, var(--dsw-alias-accent, #3b82f6) 30%, transparent);
+  background: color-mix(in srgb, var(--dsw-alias-accent, #3b82f6) 4%, transparent);
+  padding: 10px 12px;
+}
+
+.livePanelHead {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 10px;
+  font-weight: 500;
+  color: var(--dsw-alias-accent, #3b82f6);
+}
+
+.liveHelp {
+  font-size: 10px;
+  line-height: 1.375;
+  color: color-mix(in srgb, var(--dsw-alias-label-secondary, #5b6470) 80%, transparent);
+  margin: 0;
+}
+
+.liveHelpStrong {
+  color: color-mix(in srgb, var(--dsw-alias-label-primary, #0f1115) 90%, transparent);
+}
+
+.fieldGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.fieldLabel {
+  font-size: 9px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: color-mix(in srgb, var(--dsw-alias-label-secondary, #5b6470) 60%, transparent);
+}
+
+/* Typed px inputs — layout rides the DSH Input, which owns the box. */
+.numInput {
+  width: 100%;
+  font-family: ui-monospace, monospace;
+  font-size: 10px;
+  font-variant-numeric: tabular-nums;
+}
+
+.outRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: ui-monospace, monospace;
+  font-size: 10px;
+  color: color-mix(in srgb, var(--dsw-alias-label-secondary, #5b6470) 80%, transparent);
+}
+
+.outDim {
+  color: color-mix(in srgb, var(--dsw-alias-label-secondary, #5b6470) 60%, transparent);
+}
+
+.outVal {
+  color: var(--dsw-alias-accent, #3b82f6);
+}
+
+.presetRow {
+  display: flex;
+  gap: 6px;
+}
+
+.presetBtn {
+  border-radius: 4px;
+  border: 1px solid color-mix(in srgb, var(--dsw-alias-border, #e2e4e9) 40%, transparent);
+  padding: 4px 8px;
+  font-size: 10px;
+  color: var(--dsw-alias-label-secondary, #5b6470);
+  transition: color 120ms ease, background-color 120ms ease, border-color 120ms ease;
+}
+
+.presetBtn:hover {
+  color: var(--dsw-alias-label-primary, #0f1115);
+}
+
+/* "pick at least one" — the amber nudge, on the danger token. */
+.modesWarn {
+  font-size: 9px;
+  color: color-mix(in srgb, var(--dsw-alias-danger, #dc2626) 70%, transparent);
+}
+
+.modeGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.modeCard {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  padding: 8px;
+  text-align: left;
+  transition: color 120ms ease, background-color 120ms ease, border-color 120ms ease;
+}
+
+.modeCardActive {
+  border-color: color-mix(in srgb, var(--dsw-alias-accent, #3b82f6) 60%, transparent);
+  background: color-mix(in srgb, var(--dsw-alias-accent, #3b82f6) 10%, transparent);
+}
+
+.modeCardIdle {
+  border-color: color-mix(in srgb, var(--dsw-alias-border, #e2e4e9) 40%, transparent);
+}
+
+.modeCardIdle:hover {
+  border-color: var(--dsw-alias-border, #e2e4e9);
+  background: color-mix(in srgb, var(--dsw-alias-bg-module-platform, #f5f6f7) 30%, transparent);
+}
+
+/* Scrubber row. */
+.scrubRow {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.scrubPlay {
+  color: var(--dsw-alias-label-secondary, #5b6470);
+  transition: color 120ms ease;
+}
+
+.scrubPlay:hover {
+  color: var(--dsw-alias-accent, #3b82f6);
+}
+
+.scrubCount {
+  font-family: ui-monospace, monospace;
+  font-size: 10px;
+  color: color-mix(in srgb, var(--dsw-alias-label-secondary, #5b6470) 70%, transparent);
+}
+
+.stepBtn {
+  border-radius: 4px;
+  border: 1px solid color-mix(in srgb, var(--dsw-alias-border, #e2e4e9) 40%, transparent);
+  padding: 4px;
+  color: var(--dsw-alias-label-secondary, #5b6470);
+  transition: color 120ms ease;
+}
+
+.stepBtn:hover {
+  color: var(--dsw-alias-label-primary, #0f1115);
+}
+
+.stepBtn:disabled { opacity: 0.3; }
+
+/* Native range — DSH ships no slider atom (the h3 SliderControl rule). */
+.range {
+  height: 12px;
+  flex: 1;
+  accent-color: var(--dsw-alias-accent, #3b82f6);
+}
+
+/* Background picker. */
+.bgGrid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.bgBtn {
+  border-radius: 4px;
+  border: 1px solid transparent;
+  padding: 6px 0;
+  font-size: 10px;
+  transition: color 120ms ease, background-color 120ms ease, border-color 120ms ease;
+}
+
+.bgBtnActive {
+  border-color: color-mix(in srgb, var(--dsw-alias-accent, #3b82f6) 50%, transparent);
+  background: color-mix(in srgb, var(--dsw-alias-accent, #3b82f6) 10%, transparent);
+  color: var(--dsw-alias-accent, #3b82f6);
+}
+
+.bgBtnIdle {
+  border-color: color-mix(in srgb, var(--dsw-alias-border, #e2e4e9) 40%, transparent);
+}
+
+.bgBtnIdle:hover {
+  border-color: var(--dsw-alias-border, #e2e4e9);
+  background: color-mix(in srgb, var(--dsw-alias-bg-module-platform, #f5f6f7) 30%, transparent);
+}
+
+/* Summary + footer. */
+.summary {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  border-radius: 8px;
+  border: 1px solid color-mix(in srgb, var(--dsw-alias-border, #e2e4e9) 30%, transparent);
+  background: color-mix(in srgb, var(--dsw-alias-bg-module-platform, #f5f6f7) 40%, transparent);
+  padding: 8px 12px;
+}
+
+.summaryRow {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 10px;
+  color: color-mix(in srgb, var(--dsw-alias-label-secondary, #5b6470) 70%, transparent);
+}
+
+.foot {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  border-top: 1px solid color-mix(in srgb, var(--dsw-alias-border, #e2e4e9) 40%, transparent);
+  padding: 12px 20px;
+}
+
+.footGhost {
+  height: 32px;
+  border-radius: 6px;
+  border: 1px solid var(--dsw-alias-border, #e2e4e9);
+  padding: 0 12px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--dsw-alias-label-secondary, #5b6470);
+}
+
+.footGhost:hover {
+  color: var(--dsw-alias-label-primary, #0f1115);
+}
+
+/* Primary export — the brand fill (DSH primary carries the same). */
+.footPrimary {
+  display: flex;
+  height: 32px;
+  align-items: center;
+  gap: 6px;
+  border-radius: 6px;
+  background: var(--dsw-alias-accent, #3b82f6);
+  padding: 0 12px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--dsw-alias-bg-module-platform, #f5f6f7);
+}
+
+.footPrimary:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+/* ── icons ── */
+.i12 { width: 12px; height: 12px; }
+.i14 { width: 14px; height: 14px; }
+.i16 { width: 16px; height: 16px; }

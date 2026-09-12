@@ -65,16 +65,17 @@ import * as THREE from "three"
 import {
  Download, X, Camera, FileBox, Box, Palette, Check,
  Layers, RotateCw, Film, ChevronLeft, ChevronRight, Play, Pause, Crop,
- Frame,} from "lucide-react"
+ Frame,} from "./glyphs"
 import {
  AZIMUTH_PRESETS, type MotionAzimuth, type MotionNpz,
  soma77ToCoco18, azimuthCameraPos,
 } from "@melite/formats"
 import { renderOpenPoseCanvas } from "@melite/formats"
-import { Input } from "@melite/ui"
-import { useToastStore } from "@melite/ui"
-import { Button } from "@melite/ui/button"
-import { Tip } from "@melite/ui/tip"
+import { Input } from "@deepseek-ai/dsh-client-ui-primitives"
+import { useToastStore } from "./toast"
+import { Button } from "@deepseek-ai/dsh-client-ui-primitives"
+import { Tip, cn } from "./kit"
+import s from "./export-dialog.module.css"
 
 export type ThreeCtx = {
  gl: THREE.WebGLRenderer
@@ -585,24 +586,24 @@ export function MotionExportDialog({
  // the editor's row — never fixed, never a backdrop. Opening it PUSHES the
  // viewport narrower so the character is never covered ("it literally goes
  // over the mesh we need to see" was a fixed-overlay bug, fixed by layout).
- <div className="flex max-h-full min-h-0 w-[min(340px,42vw)] shrink-0 flex-col overflow-hidden rounded-xl border border-border/60 bg-card shadow-2xl">
+ <div className={s.panel}>
  {/* Header */}
- <div className="flex shrink-0 items-center justify-between border-b border-border/40 px-5 py-3">
- <div className="flex items-center gap-2">
- <Download className="h-4 w-4 text-brand" />
- <span className="text-sm font-medium">Export Motion</span>
- <span className="rounded bg-sidebar/60 px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground/70">
+ <div className={s.head}>
+ <div className={s.headTitle}>
+ <Download className={s.headIcon} />
+ <span className={s.headText}>Export Motion</span>
+ <span className={s.frameChip}>
  frame {frameIdx + 1}/{npz.T}
  </span>
  </div>
- <Button variant="ghost" onClick={onClose} aria-label="Close" className="text-muted-foreground hover:text-foreground">
- <X className="h-4 w-4" />
+ <Button variant="ghost" onClick={onClose} aria-label="Close" className={s.closeBtn}>
+ <X className={s.i16} />
  </Button>
  </div>
 
- <div className="min-h-0 flex-1 space-y-4 overflow-y-auto p-5">
+ <div className={s.body}>
  {/* Scope — which angles / files */}
- <div className="grid grid-cols-3 gap-1.5">
+ <div className={s.scopeGrid}>
  {([
  // The batch runs the SAME screenshot flow at the azimuth ring —
  // position + lookAt only, identical crop. No preset framing anywhere.
@@ -615,18 +616,14 @@ export function MotionExportDialog({
  onClick={() => setScope(m.id)}
  disabled={m.id === "downloads" && !npzUrl}
  title={m.id === "downloads" && !npzUrl ? "Run the card first — the raw NPZ exists after a run" : undefined}
- className={`flex w-full flex-col items-start gap-1 rounded-lg border p-2.5 text-left transition-colors disabled:cursor-not-allowed disabled:opacity-40 ${
- scope === m.id
- ? "border-brand/60 bg-brand/10"
- : "border-border/40 hover:border-border hover:bg-accent/30"
- }`}
+className={cn(s.scopeBtn, scope === m.id ? s.scopeBtnActive : s.scopeBtnIdle)}
  >
- <div className="flex items-center gap-1.5">
- <m.icon className="h-3.5 w-3.5" />
- <span className="text-[11px] font-medium">{m.label}</span>
- {scope === m.id && <Check className="ml-auto h-3 w-3 text-brand" />}
+ <div className={s.scopeBtnRow}>
+ <m.icon className={s.i14} />
+ <span className={s.scopeLabel}>{m.label}</span>
+ {scope === m.id && <Check className={s.scopeCheck} />}
  </div>
- <span className="text-[9px] text-muted-foreground/60">{m.desc}</span>
+ <span className={s.scopeDesc}>{m.desc}</span>
  </Button>
  ))}
  </div>
@@ -634,27 +631,27 @@ export function MotionExportDialog({
  {scope !== "downloads" && (
  <>
  {/* ── Visual framing — the ONE framing: the stage rect ─────────── */}
- <div className="space-y-2">
- <div className="flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
- <Crop className="h-3 w-3" /> Frame the shot
+ <div className={s.stack2}>
+ <div className={s.secTitle}>
+ <Crop className={s.i12} /> Frame the shot
  </div>
  {/* The rect lives ON THE STAGE (MotionCardEditor renders the overlay:
      body = move, four corners = resize). This panel carries the TYPED
      exact sizes + resets + the output dims the rect produces. */}
- <div className="space-y-2 rounded-lg border border-brand/30 bg-brand/[0.04] px-3 py-2.5" data-testid="export-live-panel">
- <div className="flex items-center gap-1.5 text-[10px] font-medium text-brand">
- <Frame className="h-3 w-3" /> Rectangle on the stage
+ <div className={s.livePanel} data-testid="export-live-panel">
+ <div className={s.livePanelHead}>
+ <Frame className={s.i12} /> Rectangle on the stage
  </div>
- <p className="text-[10px] leading-snug text-muted-foreground/80">
- Drag the <span className="text-foreground/90">rectangle over the character</span> —
+ <p className={s.liveHelp}>
+ Drag the <span className={s.liveHelpStrong}>rectangle over the character</span> —
  its body moves it, its corners resize it (aspect-locked). The rectangle is just the
- framing tool: <span className="text-foreground/90">any size on screen exports the
+ framing tool: <span className={s.liveHelpStrong}>any size on screen exports the
  typed pixels below</span>. The camera is yours — orbit/zoom for the angle.
  </p>
- <div className="grid grid-cols-2 gap-1.5" data-testid="export-rect-inputs">
+ <div className={s.fieldGrid} data-testid="export-rect-inputs">
  {(["x", "y"] as const).map((part) => (
- <label key={part} className="flex flex-col gap-0.5">
- <span className="text-[9px] font-semibold uppercase tracking-wider text-muted-foreground/60">
+ <label key={part} className={s.field}>
+ <span className={s.fieldLabel}>
  {part} pos %
  </span>
  <Input
@@ -667,16 +664,16 @@ export function MotionExportDialog({
  value={Math.round(stageRect[part] * 100)}
  onChange={(e) => setRectPos(part, Number(e.target.value))}
  disabled={!onStageRectChange}
- className="h-auto rounded border border-border/40 bg-background/60 px-1.5 py-1 font-mono text-[10px] tabular-nums text-foreground outline-none transition-colors focus:border-brand/60 disabled:opacity-40"
+ className={s.numInput}
  />
  </label>
  ))}
  </div>
  {/* OUTPUT SIZE — PIXELS (round 3). The typed truth; the rect refits. */}
- <div className="grid grid-cols-2 gap-1.5" data-testid="export-out-inputs">
+ <div className={s.fieldGrid} data-testid="export-out-inputs">
  {(["w", "h"] as const).map((dim) => (
- <label key={dim} className="flex flex-col gap-0.5">
- <span className="text-[9px] font-semibold uppercase tracking-wider text-muted-foreground/60">
+ <label key={dim} className={s.field}>
+ <span className={s.fieldLabel}>
  {dim === "w" ? "width px" : "height px"}
  </span>
  <Input
@@ -689,27 +686,27 @@ export function MotionExportDialog({
  value={dim === "w" ? outW : outH}
  onChange={(e) => setOutDim(dim, Number(e.target.value))}
  disabled={!onOutSize}
- className="h-auto rounded border border-border/40 bg-background/60 px-1.5 py-1 font-mono text-[10px] tabular-nums text-foreground outline-none transition-colors focus:border-brand/60 disabled:opacity-40"
+ className={s.numInput}
  />
  </label>
  ))}
  </div>
- <div className="flex items-center gap-2 font-mono text-[10px] text-muted-foreground/80">
- <span className="text-muted-foreground/60">output</span>
- <span data-testid="export-rect-readout" className="text-brand">
+ <div className={s.outRow}>
+ <span className={s.outDim}>output</span>
+ <span data-testid="export-rect-readout" className={s.outVal}>
  {outW} × {outH}
  </span>
  </div>
- <div className="flex gap-1.5">
+ <div className={s.presetRow}>
  <Button variant="ghost"
  onClick={() => onFramePreset ? onFramePreset("reset") : onStageRectChange?.(DEFAULT_STAGE_RECT)}
- className="rounded border border-border/40 px-2 py-1 text-[10px] text-muted-foreground transition-colors hover:text-foreground"
+ className={s.presetBtn}
  >
  Reset frame
  </Button>
  <Button variant="ghost"
  onClick={() => onFramePreset ? onFramePreset("whole") : onStageRectChange?.({ x: 0, y: 0, w: 1, h: 1 })}
- className="rounded border border-border/40 px-2 py-1 text-[10px] text-muted-foreground transition-colors hover:text-foreground"
+ className={s.presetBtn}
  >
  Whole stage
  </Button>
@@ -718,33 +715,29 @@ export function MotionExportDialog({
  </div>
 
  {/* Render modes — manual, none preselected */}
- <div className="space-y-2">
- <div className="flex items-center justify-between">
- <div className="flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
- <Layers className="h-3 w-3" /> Render modes
+ <div className={s.stack2}>
+ <div className={s.secHead}>
+ <div className={s.secTitle}>
+ <Layers className={s.i12} /> Render modes
  </div>
  {noModes && (
- <span className="text-[9px] text-amber-400/70">pick at least one</span>
+ <span className={s.modesWarn}>pick at least one</span>
  )}
  </div>
- <div className="grid grid-cols-3 gap-1.5">
+ <div className={s.modeGrid}>
  {RENDER_MODES.map((m) => {
  const on = enabledModes.has(m.id)
  return (
  <Button variant="ghost"
  key={m.id}
  onClick={() => toggleMode(m.id)}
- className={`flex flex-col items-start gap-0.5 rounded-lg border p-2 text-left transition-colors ${
- on
- ? "border-brand/60 bg-brand/10"
- : "border-border/40 hover:border-border hover:bg-accent/30"
- }`}
+className={cn(s.modeCard, on ? s.modeCardActive : s.modeCardIdle)}
  >
- <div className="flex items-center gap-1.5">
- <span className="text-[11px] font-medium">{m.label}</span>
- {on && <Check className="ml-auto h-3 w-3 text-brand" />}
+ <div className={s.scopeBtnRow}>
+ <span className={s.scopeLabel}>{m.label}</span>
+ {on && <Check className={s.scopeCheck} />}
  </div>
- <span className="text-[9px] text-muted-foreground/60">{m.desc}</span>
+ <span className={s.scopeDesc}>{m.desc}</span>
  </Button>
  )
  })}
@@ -760,50 +753,50 @@ export function MotionExportDialog({
      actually make motion to output a frame?" No, and no fake controls
      either. */}
  {onFrameChange && npz.T > 1 && (
- <div className="space-y-2">
- <div className="flex items-center justify-between">
- <div className="flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
- <Film className="h-3 w-3" /> Frame
+ <div className={s.stack2}>
+ <div className={s.secHead}>
+ <div className={s.secTitle}>
+ <Film className={s.i12} /> Frame
  </div>
- <div className="flex items-center gap-1.5">
+ <div className={s.scrubRow}>
  <Tip tip={previewing ? "Pause preview" : "Play preview"}>
  <Button variant="ghost"
  onClick={() => setPreviewing((p) => !p)}
  aria-label={previewing ? "Pause preview" : "Play preview"}
- className="text-muted-foreground transition-colors hover:text-brand"
+ className={s.scrubPlay}
  >
  {previewing
- ? <Pause className="h-3 w-3" />
- : <Play className="h-3 w-3" />}
+ ? <Pause className={s.i12} />
+ : <Play className={s.i12} />}
  </Button>
  </Tip>
- <span className="font-mono text-[10px] text-muted-foreground/70">
+ <span className={s.scrubCount}>
  {frameIdx + 1} / {npz.T}
  </span>
  </div>
  </div>
- <div className="flex items-center gap-1.5">
+ <div className={s.scrubRow}>
  <Button variant="ghost"
  onClick={() => onFrameChange(Math.max(0, frameIdx - 1))}
  disabled={frameIdx <= 0}
- className="rounded border border-border/40 p-1 text-muted-foreground transition-colors hover:text-foreground disabled:opacity-30"
+ className={s.stepBtn}
  >
- <ChevronLeft className="h-3 w-3" />
+ <ChevronLeft className={s.i12} />
  </Button>
- <Input
+ <input
  type="range"
  min={0}
  max={npz.T - 1}
  value={frameIdx}
  onChange={(e) => onFrameChange(Number(e.target.value))}
- className="accent-brand h-3 flex-1"
+ className={s.range}
  />
  <Button variant="ghost"
  onClick={() => onFrameChange(Math.min(npz.T - 1, frameIdx + 1))}
  disabled={frameIdx >= npz.T - 1}
- className="rounded border border-border/40 p-1 text-muted-foreground transition-colors hover:text-foreground disabled:opacity-30"
+ className={s.stepBtn}
  >
- <ChevronRight className="h-3 w-3" />
+ <ChevronRight className={s.i12} />
  </Button>
  </div>
  </div>
@@ -812,20 +805,16 @@ export function MotionExportDialog({
  {/* Background — Preserve keeps the stage's own (a user-uploaded custom
      image carries into the export); transparent gives alpha PNGs; depth is
      always clean. */}
- <div className="space-y-2">
- <div className="flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
- <Palette className="h-3 w-3" /> Background
+ <div className={s.stack2}>
+ <div className={s.secTitle}>
+ <Palette className={s.i12} /> Background
  </div>
- <div className="grid grid-cols-5 gap-1.5">
+ <div className={s.bgGrid}>
  {BACKGROUNDS.map((b, i) => (
  <Button variant="ghost"
  key={b.label}
  onClick={() => setBgIdx(i)}
- className={`rounded border py-1.5 text-[10px] transition-colors ${
- bgIdx === i
- ? "border-brand/50 bg-brand/10 text-brand"
- : "border-border/40 hover:border-border hover:bg-accent/30"
- }`}
+className={cn(s.bgBtn, bgIdx === i ? s.bgBtnActive : s.bgBtnIdle)}
  >
  {b.label}
  </Button>
@@ -837,9 +826,9 @@ export function MotionExportDialog({
  )}
 
  {/* Summary */}
- <div className="space-y-1 rounded-lg border border-border/30 bg-background/40 px-3 py-2">
- <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground/70">
- <RotateCw className="h-3 w-3" />
+ <div className={s.summary}>
+ <div className={s.summaryRow}>
+ <RotateCw className={s.i12} />
  <span>
  {scope === "single"
  ? `Stage frame — ${noModes ? "no modes selected" : [...enabledModes].map((m) => `stage_${m}.png`).join(" + ")}`
@@ -849,8 +838,8 @@ export function MotionExportDialog({
  </span>
  </div>
  {glbUrl && (
- <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground/70">
- <Box className="h-3 w-3" />
+ <div className={s.summaryRow}>
+ <Box className={s.i12} />
  <span>GLB preview available for download</span>
  </div>
  )}
@@ -858,17 +847,17 @@ export function MotionExportDialog({
  </div>
 
  {/* Footer */}
- <div className="flex shrink-0 items-center justify-end gap-2 border-t border-border/40 px-5 py-3">
+ <div className={s.foot}>
  <Button variant="ghost"
  onClick={onClose}
- className="h-8 rounded-md border px-3 text-xs font-medium text-muted-foreground hover:text-foreground"
+ className={s.footGhost}
  >
  Close
  </Button>
- <Button variant="ghost"
+ <Button variant="primary"
  onClick={handleExport}
  disabled={exporting || (scope !== "downloads" && noModes) || (scope === "downloads" && !npzUrl)}
- className="flex h-8 items-center gap-1.5 rounded-md bg-brand px-3 text-xs font-medium text-brand-foreground disabled:cursor-not-allowed disabled:opacity-50"
+ className={s.footPrimary}
  >
  {exporting ? "Exporting…" : `Export ${scope === "single" ? "the frame" : scope === "batch" ? "8 angles" : "files"}`}
  </Button>

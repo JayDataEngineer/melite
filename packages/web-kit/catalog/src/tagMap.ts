@@ -273,6 +273,10 @@ const tagMapSetState = (patch: Partial<TagMapState> | ((s: TagMapState) => Parti
 }
 const tagMapGetState = (): TagMapState => tagMapState
 
+/* v8 ignore next -- React-tree wiring: invoking the hook needs a renderer
+ * for useSyncExternalStore (dom-project territory, like the slots seam's
+ * useVersion). The selector contract is pinned node-side through
+ * getState/subscribe in tag-map.spec.ts. (2026-09-12) */
 function useTagMapHook(): TagMapState {
   return useSyncExternalStore(
     (l: TagMapListener) => { tagMapListeners.add(l); return () => { tagMapListeners.delete(l) } },

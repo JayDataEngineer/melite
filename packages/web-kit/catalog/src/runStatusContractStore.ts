@@ -129,6 +129,10 @@ function _useRunStatusContractStoreHook(): RunStatusContractStoreState
 function _useRunStatusContractStoreHook<T>(
   selector: (s: RunStatusContractStoreState) => T,
 ): T
+/* v8 ignore next -- React-tree wiring: invoking the hook needs a renderer
+ * for useSyncExternalStore (dom-project territory, like the slots seam's
+ * useVersion). The selector contract is pinned node-side through
+ * getState/subscribe in run-status-contract-store.spec.ts. (2026-09-12) */
 function _useRunStatusContractStoreHook<T>(
   selector?: (s: RunStatusContractStoreState) => T,
 ): T | RunStatusContractStoreState {

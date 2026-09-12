@@ -5,6 +5,7 @@
 // (its real-data voice is cards-registry.spec.ts's); the queue core
 // is real.
 import { describe, it, afterEach } from "vitest";
+import { spawnSync } from "node:child_process";
 import assert from "node:assert/strict";
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -352,6 +353,122 @@ describe("pump + engine", () => {
     }
     throw new Error("never claimed " + runId);
   };
+
+  // THE FILM COMPLETION (2026-09-12): real tiny mp4s written into the
+  // run dir by the fake engine — ffmpeg-gated (the host has it; the
+  // whole arm skips loudly without it, matching film-mux.spec).
+  const ffmpegOk = spawnSync("ffmpeg", ["-version"], { encoding: "utf8" }).status === 0;
+  const mkMp4 = (dir: string, name: string, secs: string): boolean =>
+    spawnSync(
+      "ffmpeg",
+      ["-y", "-f", "lavfi", "-i", `testsrc=duration=${secs}:size=64x64:rate=8`,
+       "-f", "lavfi", "-i", `anullsrc=duration=${secs}`,
+       "-c:v", "libx264", "-preset", "ultrafast", "-c:a", "aac",
+       join(dir, name)],
+      { encoding: "utf8" },
+    ).status === 0;
+
+  it("a short stitch completes into the film (windows concat, film leads)", async () => {
+    if (!ffmpegOk) { console.warn("runs-registry.spec: ffmpeg absent — film arm skipped"); return; }
+    const s = seat();
+    const engine = engineSeat(s);
+    engine.onFlow = async (_rows, runDir) => {
+      assert.ok(mkMp4(runDir, "stitch_video_0.mp4", "1"));
+      for (const w of ["window1_video_0.mp4", "window2_video_0.mp4", "window3_video_0.mp4"]) {
+        assert.ok(mkMp4(runDir, w, "1"));
+      }
+      return { stages: { s: { outputs: {}, artifacts: [
+        "stitch_video_0.mp4", "window1_video_0.mp4", "window2_video_0.mp4", "window3_video_0.mp4",
+      ] } }, promptId: "p" };
+    };
+    const ans = await s.svc.start(wfBody(), sig());
+    const row = await settleWait(s, ans.run_id);
+    assert.equal(row.status, "completed");
+    const stage = row.stages[0] as unknown as Record<string, unknown>;
+    // THE FILM LEADS: url + gallery head is the mux output, and the
+    // film artifact rides run.artifacts
+    assert.ok(typeof stage["url"] === "string" && (stage["url"] as string).endsWith("film_video_mux.mp4"));
+    const gallery = stage["gallery"] as Array<{ name: string }>;
+    assert.equal(gallery[0]!.name, "film_video_mux.mp4");
+    assert.ok(row.artifacts.some((a: string) => a.endsWith("film_video_mux.mp4")));
+  });
+
+  it("an undecided probe (missing stitch file) keeps the engine's own names", async () => {
+    const s = seat();
+    const engine = engineSeat(s);
+    engine.onFlow = async () => ({
+      stages: { s: { outputs: {}, artifacts: [
+        "stitch_video_0.mp4", "window1_video_0.mp4", "window2_video_0.mp4",
+      ] } }, promptId: "p",
+    });
+    const ans = await s.svc.start(wfBody(), sig());
+    const row = await settleWait(s, ans.run_id);
+    assert.equal(row.status, "completed");
+    const stage = row.stages[0] as unknown as Record<string, unknown>;
+    assert.ok(typeof stage["url"] === "string" && (stage["url"] as string).endsWith("stitch_video_0.mp4"));
+    assert.ok(!row.artifacts.some((a: string) => a.endsWith("film_video_mux.mp4")));
+  });
+
+  it("a full stitch is never re-muxed (the tolerance law, registry side)", async () => {
+    if (!ffmpegOk) { console.warn("runs-registry.spec: ffmpeg absent — film arm skipped"); return; }
+    const s = seat();
+    const engine = engineSeat(s);
+    engine.onFlow = async (_rows, runDir) => {
+      assert.ok(mkMp4(runDir, "stitch_video_0.mp4", "2"));
+      assert.ok(mkMp4(runDir, "window1_video_0.mp4", "1"));
+      assert.ok(mkMp4(runDir, "window2_video_0.mp4", "1"));
+      return { stages: { s: { outputs: {}, artifacts: [
+        "stitch_video_0.mp4", "window1_video_0.mp4", "window2_video_0.mp4",
+      ] } }, promptId: "p" };
+    };
+    const ans = await s.svc.start(wfBody(), sig());
+    const row = await settleWait(s, ans.run_id);
+    const stage = row.stages[0] as unknown as Record<string, unknown>;
+    assert.ok(typeof stage["url"] === "string" && (stage["url"] as string).endsWith("stitch_video_0.mp4"));
+    assert.ok(!row.artifacts.some((a: string) => a.endsWith("film_video_mux.mp4")));
+  });
+
+  it("a decided mux that cannot write its list keeps the stitch (muxed-null arm)", async () => {
+    if (!ffmpegOk) { console.warn("runs-registry.spec: ffmpeg absent — film arm skipped"); return; }
+    const s = seat();
+    const engine = engineSeat(s);
+    engine.onFlow = async (_rows, runDir) => {
+      // real, probe-able files (decidable + shouldMux true)…
+      assert.ok(mkMp4(runDir, "stitch_video_0.mp4", "1"));
+      assert.ok(mkMp4(runDir, "window1_video_0.mp4", "1"));
+      assert.ok(mkMp4(runDir, "window2_video_0.mp4", "1"));
+      // …but the mux's own list file is occupied by a directory —
+      // the concat never starts, the engine stitch stays the hero
+      mkdirSync(join(runDir, ".film-mux-list.txt"));
+      return { stages: { s: { outputs: {}, artifacts: [
+        "stitch_video_0.mp4", "window1_video_0.mp4", "window2_video_0.mp4",
+      ] } }, promptId: "p" };
+    };
+    const ans = await s.svc.start(wfBody(), sig());
+    const row = await settleWait(s, ans.run_id);
+    const stage = row.stages[0] as unknown as Record<string, unknown>;
+    assert.ok(typeof stage["url"] === "string" && (stage["url"] as string).endsWith("stitch_video_0.mp4"));
+    assert.ok(!row.artifacts.some((a: string) => a.endsWith("film_video_mux.mp4")));
+  });
+
+  it("a failed concat keeps the stitch (loud, never a fake film)", async () => {
+    if (!ffmpegOk) { console.warn("runs-registry.spec: ffmpeg absent — film arm skipped"); return; }
+    const s = seat();
+    const engine = engineSeat(s);
+    engine.onFlow = async (_rows, runDir) => {
+      assert.ok(mkMp4(runDir, "stitch_video_0.mp4", "1"));
+      writeFileSync(join(runDir, "window1_video_0.mp4"), "not an mp4");
+      writeFileSync(join(runDir, "window2_video_0.mp4"), "not an mp4");
+      return { stages: { s: { outputs: {}, artifacts: [
+        "stitch_video_0.mp4", "window1_video_0.mp4", "window2_video_0.mp4",
+      ] } }, promptId: "p" };
+    };
+    const ans = await s.svc.start(wfBody(), sig());
+    const row = await settleWait(s, ans.run_id);
+    const stage = row.stages[0] as unknown as Record<string, unknown>;
+    assert.ok(typeof stage["url"] === "string" && (stage["url"] as string).endsWith("stitch_video_0.mp4"));
+    assert.ok(!row.artifacts.some((a: string) => a.endsWith("film_video_mux.mp4")));
+  });
 
   it("the worker harvests artifacts (run-relative url + gallery)", async () => {
     const s = seat();

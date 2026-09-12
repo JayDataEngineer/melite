@@ -256,6 +256,45 @@ describe('live door arms', () => {
     assert.equal(await formSpecArm('__no_such_key__'), null)
   })
 
+  test('specBody primary falls to the card itself when no family boards (and nameless fields never join reqOf)', async () => {
+    const svc = theService()
+    // solo card: no boarded families → primary compares res.card;
+    // formSpec fragment carries one named required field and one
+    // NAMELESS field (the reqOf skip arm)
+    const defs = new Map([['__solo2__', card({
+      identity: { label: 'Solo', description: 'solo card', genre: 'image' },
+      flowKinds: { inputs: { frame: 'image', seed: 'int' }, outputs: { default: 'image' }, requiresModel: false },
+    })]])
+    const realFormSpec = svc.formSpec.bind(svc)
+    const fakeSvc = {
+      formSpec: (c: string, key: string): unknown => {
+        if (c !== '__solo2__') return realFormSpec(c, key)
+        return {
+          fields: [
+            { name: 'frame', required: true },
+            { name: 7, required: true }, // nameless junk — skipped
+            'not-even-an-object',
+          ],
+          schema_groups: [],
+        }
+      },
+      modCatalog: (pack: string, key: string): unknown => realFormSpec('__solo2__', key) === null ? [] : [],
+      cardModFields: (): unknown[] => [],
+    } as unknown as ReturnType<typeof theService>
+    const body = specBody(fakeSvc, defs, { card: '__solo2__', service: '__solo2__', model: '__solo2__' })
+    // PRIMARY via the card arm (boarded empty — res.card === key):
+    // no decl → no variants (empty, never null)
+    assert.equal(JSON.stringify(body['variants']), '[]')
+    // the named field joined reqOf; the nameless never did
+    const inputs = body['inputs'] as Array<Record<string, unknown>>
+    assert.equal(JSON.stringify(inputs.find((i) => i['name'] === 'frame')), '{"name":"frame","kind":"image","required":true}')
+    assert.equal(JSON.stringify(inputs.find((i) => i['name'] === 'seed')), '{"name":"seed","kind":"int"}')
+    // nameless junk rides the flat fields verbatim (only MOD keys
+    // drop) — but it can never join reqOf, so no input row names it
+    assert.equal(JSON.stringify((body['fields'] as Array<{ name: unknown }>).map((f) => f['name'])), '["frame",7,null]')
+    assert.equal(inputs.some((i) => i['name'] === 7 || i['name'] === undefined), false)
+  })
+
   test('specBody refuses unknown cards, identity-less cards, and null fragments', async () => {
     const svc = theService()
     const defs = await loadCardDefs()

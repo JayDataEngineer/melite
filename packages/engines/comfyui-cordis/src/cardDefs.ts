@@ -67,7 +67,7 @@ export const cardPackages: string[] = [
     '@melite/audio-tts',
     '@melite/audio-voice-lock',
     '@melite/image-image-edit',
-    '@melite/motion-motion',
+    '@melite/motion-motion/card',
     '@melite/video-h3-timeline/card',
     '@melite/3d-clothing-placement',
   '@melite/image-image-gen',

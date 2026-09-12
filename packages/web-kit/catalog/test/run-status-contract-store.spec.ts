@@ -5,6 +5,7 @@
 import { describe, it, afterEach } from "vitest";
 import assert from "node:assert/strict";
 import { useRunStatusContractStore } from "../src/runStatusContractStore.ts";
+import type { RunStatusVerdict } from "../src/runStatusContractStore.ts";
 import { useToastStore } from "../src/toast";
 import type { RunStatusViolation } from "../src/runStatusContract.ts";
 
@@ -74,6 +75,50 @@ describe("reportVerdicts", () => {
     captureToasts();
     useRunStatusContractStore.getState().reportViolation("r9", []);
     assert.match(captured[0].message, /did not match the expected shape/);
+  });
+});
+
+describe("subscribe / setState plumbing", () => {
+  it("notifies subscribers on every mutation, stops after unsubscribe", () => {
+    captureToasts();
+    let calls = 0;
+    const unsub = useRunStatusContractStore.subscribe(() => {
+      calls++;
+    });
+    useRunStatusContractStore.getState().reportViolation("r1", violation("x"));
+    assert.equal(calls, 1);
+    unsub();
+    useRunStatusContractStore.getState().reportError("r2", "y");
+    assert.equal(calls, 1); // nobody notified after unsubscribe
+  });
+
+  it("setState merges function patches and honors replace", () => {
+    const s0 = useRunStatusContractStore.getState();
+    useRunStatusContractStore.setState((s) => ({ verdict: s.verdict }));
+    assert.equal(useRunStatusContractStore.getState().verdict, null);
+    useRunStatusContractStore.setState(s0, true);
+    assert.equal(useRunStatusContractStore.getState().verdict, null);
+    assert.equal(typeof useRunStatusContractStore.getState().reportViolation, "function");
+  });
+
+  it("exposes the initial verdict and a destroy no-op", () => {
+    assert.equal(useRunStatusContractStore.getInitialState().verdict, null);
+    useRunStatusContractStore.destroy();
+  });
+
+  it("pins the hook's selector contract through getState", () => {
+    // The hook (v8-ignored, renderer-only) is selector(getState()) with no
+    // selector yielding the full state — pin both readings here, no React.
+    captureToasts();
+    useRunStatusContractStore.getState().reportError("r7", "m");
+    const verdictOf = (
+      s: ReturnType<typeof useRunStatusContractStore.getState>,
+    ): RunStatusVerdict | null => s.verdict;
+    assert.deepEqual(verdictOf(useRunStatusContractStore.getState()), {
+      kind: "error",
+      runId: "r7",
+      message: "m",
+    });
   });
 });
 

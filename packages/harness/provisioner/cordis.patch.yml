@@ -94,6 +94,9 @@
     - id: card-studio-img-to-mesh
       name: '@melite/3d-img-to-mesh'
 
+    - id: card-studio-motion
+      name: '@melite/motion-motion'
+
     - id: infer-card-deck
       name: '@melite-plugin/dsh-card-deck'
 

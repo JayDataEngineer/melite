@@ -12,6 +12,7 @@ import { ComfyUIService } from "@melite/comfyui-cordis/service";
 import { GatewayError, type EstateCall } from "@melite/estate-call";
 import type { ToolDefinition, ToolRuntime } from "@deepseek-ai/dsh-tools";
 import * as pkg from "../src/index.ts";
+import * as cardFace from "../src/card.ts";
 import { TOOL_NAME, buildMotionTool as FACE } from "../src/tool.ts";
 
 const DEFAULT_MODEL = "kimodo";
@@ -239,27 +240,28 @@ class StubToolsService extends Service {
   }
 }
 
-describe("the index face: apply takes the services it finds", () => {
-  it("comfy present → the card registers; tools absent → no tool", async () => {
+describe("the dual-face law (2026-09-12, the loader-proven split)", () => {
+  it("the ROOT face registers NOTHING (the web profile's row-mount marker)", async () => {
+    const ctx = new Context();
+    await ctx.plugin(ComfyUIService as never);
+    await ctx.plugin(StubToolsService as never);
+    const svc = ctx.get("comfyui") as unknown as { cardIds(): string[] };
+    const stub = ctx.get("tools") as unknown as StubToolsService;
+    pkg.apply(ctx, { call: seam } as never);
+    assert.ok(!svc.cardIds().includes("motion"), "no card from the marker");
+    assert.equal(stub.registered.length, 0, "no tool from the marker");
+  });
+
+  it("the CARD face (./card — the cardPackages SSOT row) registers the card under comfyui", async () => {
     const ctx = new Context();
     await ctx.plugin(ComfyUIService as never);
     const svc = ctx.get("comfyui") as unknown as { cardIds(): string[] };
-    pkg.apply(ctx, { call: seam } as never);
+    await ctx.plugin(cardFace);
     assert.ok(svc.cardIds().includes("motion"), "the card registered");
   });
 
-  it("tools present (no comfy) → the tool registers bare", async () => {
-    const ctx = new Context();
-    await ctx.plugin(StubToolsService as never);
-    const stub = ctx.get("tools") as unknown as StubToolsService;
-    pkg.apply(ctx, { call: seam } as never);
-    assert.equal(stub.registered.length, 1);
-    assert.equal(stub.registered[0]!.name, TOOL_NAME);
-  });
-
-  it("NEITHER service → apply is a no-op (the standalone host)", async () => {
-    const ctx = new Context();
-    pkg.apply(ctx, { call: seam } as never);
-    assert.ok(true, "no throw — both probes undefined");
+  it("the tool ride is melite-tools' — buildMotionTool stays the one builder", () => {
+    const def = FACE({ call: seam } as never);
+    assert.equal(def.name, TOOL_NAME);
   });
 });

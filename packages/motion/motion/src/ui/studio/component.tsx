@@ -43,24 +43,16 @@ import {
  AlertTriangle, Info, Pause, Play, Download, Eye, EyeOff,
  RefreshCw, Move, RotateCw, RotateCcw, Target, Plus, ImagePlus, X, Link2,
  PersonStanding, User,
-} from "lucide-react"
+} from "./glyphs"
 import * as THREE from "three"
 import { PoseViewer3D, type CameraFraming } from "@melite-plugin/motion/ui/viewer3d"
-import { Skeleton } from "@melite/ui/skeleton"
-import { Button } from "@melite/ui/button"
-import { Tip } from "@melite/ui/tip"
+import { Button } from "@deepseek-ai/dsh-client-ui-primitives"
 import type { JointMoveEvent } from "@melite-plugin/motion/ui/viewer3d"
-import { Input } from "@melite/ui"
-import { useToastStore } from "@melite/ui"
-import { cn } from "@melite/ui"
-import { ViewportAnchor } from "@melite/ui"
+import { ToastViewport, useToastStore } from "./toast"
 import type { CardStage } from "@melite/contracts"
-import { ASSET_DRAG_MIME, readAsDataURL, SlotSquare } from "@melite/ui"
-import { WirePickerModal } from "@melite/ui"
 import { stageSlots } from "@melite/catalog"
 import { formOf } from "@melite/catalog"
 import { collectStageUrls, ensureDraftId, pollFlowRun } from "@melite/catalog"
-import { useMotionThumbStore } from "@melite/ui"
 import {
  loadMotionNpz, precomputeDeformedVerts, precomputeDeformedVertsChunked, vertsToB64, stepAzimuth,
  jointsToCm, jointsFromCm, patchFrame, writeNpz, npzToDataUrl,
@@ -76,7 +68,12 @@ import {
  makeTimelineId,
  type TimelineKeyframe, type TimelineInterval, type TimelinePrompt,
 } from "@melite-plugin/timeline/ui/timeline"
-import { defineShellDeclaration, PaneHeader, PaneShell, StudioShell, ViewportFrame } from "@melite/ui"
+import {
+  ASSET_DRAG_MIME, cn, defineShellDeclaration, PaneHeader, PaneShell,
+  readAsDataURL, Skeleton, SlotSquare, StudioShell, Tip,
+  useMotionThumbStore, ViewportAnchor, ViewportFrame, WirePickerModal,
+} from "./kit"
+import s from "./component.module.css"
 import { MotionTimelineBar } from "@melite-plugin/timeline/ui/timeline"
 import {
  snapshotConstraint, serializeConstraints, hydrateConstraints,
@@ -593,7 +590,8 @@ export function MotionCardEditor({
  // ── Stage background image (option b): replace the dark #0e0e1a void
  // behind the mannequin with a user image. SAME multi-source pattern as
  // the image input subcards (InputCardEditor / MaskStudioEditor):
- //   • file picker (the Background button's hidden Input)
+ //   • file picker (the Background button's hidden native input — DSH
+ //     ships no file-picker atom, so the picker stays a plain <input>)
  //   • OS file drag-drop onto the stage (Files)
  //   • ASSET drag-drop from the Media sidebar (ASSET_DRAG_MIME — the
  //     payload carries the URL directly, no fetch/conversion needed)
@@ -1426,6 +1424,7 @@ export function MotionCardEditor({
   }, [targetT])
 
  return (
+ <>
  // STRETCH, NOT PERCENTAGE (2026-08-15, "only takes up the top third"):
  // inside the studio the viewport column is a FLEX COLUMN and this root
  // stretches (flex-1) — its height is the definite column height, so the
@@ -1435,7 +1434,7 @@ export function MotionCardEditor({
  // THE SHELL RIDE (2026-09-07): rail/center/bottom as declared seams —
  // the stub shellDeclaration comment above is now the live shape.
  <StudioShell
- className="gap-2 px-4 py-3"
+ className={s.shellPad}
  /* ── Generate — the card header's Run button IS the generate action.
  No duplicate bar here: the prompt cards below are the authoring
  surface, and a standalone status row wastes vertical space the
@@ -1450,21 +1449,17 @@ export function MotionCardEditor({
  StudioRail); standalone (inline form view) it renders in place —
  same component, same state, same onSave channel (E1 untouched). */
  rail={
- <div className="grid grid-cols-2 gap-1.5 border-b border-white/[0.07] px-3 py-2.5">
+ <div className={s.railGrid}>
  {/* VIEW */}
- <span className="col-span-2 px-1 pb-0.5 text-[9px] font-semibold uppercase tracking-[0.14em] text-muted-foreground/40">View</span>
+ <span className={s.railGroupLabel}>View</span>
  <Tip tip={effectiveNpz ? "Show the joint skeleton over the mesh" : "Loading mannequin…"}>
- <span className="contents">
+ <span className={s.contents}>
  <Button variant="ghost"
  onClick={() => setShowSkeleton((s) => !s)}
  disabled={!effectiveNpz}
- className={`flex h-8 w-full items-center justify-center gap-1.5 rounded-md border px-1.5 text-[10px] font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-40 ${
- showSkeleton
- ? "border-brand/50 bg-brand/15 text-brand"
- : "border-sidebar-border/50 bg-sidebar/30 text-muted-foreground hover:border-brand/40 hover:text-brand"
- }`}
+className={cn(s.railBtn, showSkeleton ? s.railBtnActive : s.railBtnIdle)}
  >
- {showSkeleton ? <Eye className="h-3.5 w-3.5" /> : <EyeOff className="h-3.5 w-3.5" />}
+ {showSkeleton ? <Eye className={s.i14} /> : <EyeOff className={s.i14} />}
  Skeleton
  </Button>
  </span>
@@ -1476,25 +1471,21 @@ export function MotionCardEditor({
  ? "Pinned at the origin — same motion, no travel (treadmill). Toggle to play the root's travel across the stage."
  : "Playing the root's travel across the stage. Toggle to pin the figure at the origin — same motion, no travel."}
  >
- <span className="contents">
+ <span className={s.contents}>
  <Button variant="ghost"
  onClick={() => setInPlace((v) => !v)}
  disabled={!effectiveNpz}
  aria-pressed={inPlace}
- className={`flex h-8 w-full items-center justify-center gap-1.5 rounded-md border px-1.5 text-[10px] font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-40 ${
- inPlace
- ? "border-brand/50 bg-brand/15 text-brand"
- : "border-sidebar-border/50 bg-sidebar/30 text-muted-foreground hover:border-brand/40 hover:text-brand"
- }`}
+className={cn(s.railBtn, inPlace ? s.railBtnActive : s.railBtnIdle)}
  >
- <Target className="h-3.5 w-3.5" />
+ <Target className={s.i14} />
  In-place
  </Button>
  </span>
  </Tip>
 
  {/* POSE */}
- <span className="col-span-2 mt-1 px-1 pb-0.5 text-[9px] font-semibold uppercase tracking-[0.14em] text-muted-foreground/40">Pose</span>
+ <span className={s.railGroupLabelMt}>Pose</span>
  <Tip
  tip={
  !effectiveNpz
@@ -1504,17 +1495,13 @@ export function MotionCardEditor({
  : "Drag joints to refine the pose at this frame"
  }
  >
- <span className="contents">
+ <span className={s.contents}>
  <Button variant="ghost"
  onClick={toggleEdit}
  disabled={!effectiveNpz}
- className={`flex h-8 w-full items-center justify-center gap-1.5 rounded-md border px-1.5 text-[10px] font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-40 ${
- editMode
- ? "border-amber-400/60 bg-amber-400/15 text-amber-300"
- : "border-sidebar-border/50 bg-sidebar/30 text-muted-foreground hover:border-brand/40 hover:text-brand"
- }`}
+className={cn(s.railBtn, editMode ? s.railBtnEditActive : s.railBtnIdle)}
  >
- <Move className="h-3.5 w-3.5" />
+ <Move className={s.i14} />
  {editMode ? "Done" : "Refine pose"}
  </Button>
  </span>
@@ -1526,25 +1513,25 @@ export function MotionCardEditor({
  ? `Update the full-body keyframe at frame ${frameIdx + 1} with this pose`
  : `Write this pose into the timeline as a full-body keyframe at frame ${frameIdx + 1}`}
  >
- <span className="contents">
+ <span className={s.contents}>
  <Button variant="ghost"
  onClick={stampConstraintAtFrame}
  disabled={!editableJoints}
- className="flex h-8 w-full items-center justify-center gap-1.5 rounded-md border border-amber-400/70 bg-amber-400/20 px-1.5 text-[10px] font-semibold text-amber-200 transition-colors hover:bg-amber-400/30 disabled:opacity-50"
+ className={s.stampBtn}
  >
- <Target className="h-3.5 w-3.5" />
+ <Target className={s.i14} />
  Stamp
  </Button>
  </span>
  </Tip>
  <Tip tip="Chain the edited pose as the starting point — kimodo conditions the next generation on it. Hit Run when ready.">
- <span className="contents">
+ <span className={s.contents}>
  <Button variant="ghost"
  onClick={handleRepose}
  disabled={reposing || !editableJoints}
- className="flex h-8 w-full items-center justify-center gap-1.5 rounded-md border border-brand/60 bg-brand/15 px-1.5 text-[10px] font-semibold text-brand transition-colors hover:bg-brand/25 disabled:opacity-50"
+ className={s.reposeBtn}
  >
- <RefreshCw className={`h-3.5 w-3.5 ${reposing ? "animate-spin" : ""}`} />
+ <RefreshCw className={reposing ? s.spinIcon : s.i14} />
  {reposing ? "Reposing…" : "Repose"}
  </Button>
  </span>
@@ -1555,16 +1542,16 @@ export function MotionCardEditor({
  <Tip tip="Discard the refined pose at this frame — revert to the raw motion">
  <Button variant="ghost"
  onClick={discardKeptEdit}
- className="flex h-8 w-full items-center justify-center gap-1.5 rounded-md border border-sidebar-border/50 bg-sidebar/30 px-1.5 text-[10px] font-medium text-muted-foreground transition-colors hover:border-red-400/50 hover:text-red-300"
+ className={s.railBtnDanger}
  >
- <RotateCcw className="h-3.5 w-3.5" />
+ <RotateCcw className={s.i14} />
  Reset pose
  </Button>
  </Tip>
  )}
 
  {/* OUTPUT */}
- <span className="col-span-2 mt-1 px-1 pb-0.5 text-[9px] font-semibold uppercase tracking-[0.14em] text-muted-foreground/40">Output</span>
+ <span className={s.railGroupLabelMt}>Output</span>
  <Tip
  tip={!effectiveNpz
  ? "Loading mannequin…"
@@ -1572,18 +1559,14 @@ export function MotionCardEditor({
  ? "Close the export panel"
  : "Frame a shot with the stage rectangle — no run needed; exports mesh / openpose / depth at the typed pixel size"}
  >
- <span className="contents">
+ <span className={s.contents}>
  <Button variant="ghost"
  onClick={() => setExportOpen((o) => !o)}
  disabled={!effectiveNpz}
  aria-pressed={exportOpen}
- className={`flex h-8 w-full items-center justify-center gap-1.5 rounded-md border px-1.5 text-[10px] font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-40 ${
- exportOpen
- ? "border-brand/50 bg-brand/15 text-brand"
- : "border-sidebar-border/50 bg-sidebar/30 text-muted-foreground hover:border-brand/40 hover:text-brand"
- }`}
+className={cn(s.railBtn, exportOpen ? s.railBtnActive : s.railBtnIdle)}
  >
- <Download className="h-3.5 w-3.5" />
+ <Download className={s.i14} />
  Export
  </Button>
  </span>
@@ -1595,9 +1578,9 @@ export function MotionCardEditor({
  >
  <Button variant="ghost"
  onClick={() => bgInputRef.current?.click()}
- className="flex h-8 w-full items-center justify-center gap-1.5 rounded-md border border-sidebar-border/50 bg-sidebar/30 px-1.5 text-[10px] font-medium text-muted-foreground transition-colors hover:border-brand/50 hover:text-brand"
+ className={s.bgBtnIdle}
  >
- <ImagePlus className="h-3.5 w-3.5" />
+ <ImagePlus className={s.i14} />
  Background
  </Button>
  </Tip>
@@ -1606,18 +1589,18 @@ export function MotionCardEditor({
  <Button variant="ghost"
  onClick={() => setBg(null)}
  aria-label="Clear the background image"
- className="flex h-8 w-full items-center justify-center gap-1.5 rounded-md border border-sidebar-border/50 bg-sidebar/30 px-1.5 text-[10px] font-medium text-muted-foreground transition-colors hover:border-red-400/50 hover:text-red-300"
+ className={s.railBtnDanger}
  >
- <X className="h-3.5 w-3.5" />
+ <X className={s.i14} />
  Clear
  </Button>
  </Tip>
  )}
- <Input
+ <input
  ref={bgInputRef}
  type="file"
  accept="image/*"
- className="hidden"
+ className={s.hiddenInput}
  onChange={(e) => handleBgFile(e.target.files?.[0] ?? null)}
  />
  {/* Preview body (2026-08-15 character import) — an INPUT SUBCARD, the
@@ -1628,15 +1611,15 @@ export function MotionCardEditor({
      (bottom-right ⛓ — a genre:"3d" producer feeds it; canWireSlot guards
      the type). The stage drop (GLB→body / image→bg) stays. A failed
      import leaves the amber notice; the mannequin keeps rendering. */}
- <span className="col-span-2 mt-1 px-1 pb-0.5 text-[9px] font-semibold uppercase tracking-[.14em] text-muted-foreground/40">Preview body</span>
- <div data-motion-body className="col-span-2 flex justify-center py-1">
+ <span className={s.railGroupLabelMt}>Preview body</span>
+ <div data-motion-body className={s.bodySquareWrap}>
  <SlotSquare
  size="md"
  label={MOTION_PREVIEW_GLB_PARAM}
  value={bodySrc || undefined}
  badge={bodyWired ? bodyWiredUpstream!.title : undefined}
  metric={bodyWired && !bodyWiredUrl ? "waiting for upstream" : undefined}
- emptyIcon={<PersonStanding className="h-5 w-5 text-brand/60" />}
+ emptyIcon={<PersonStanding className={s.bodyEmptyIcon} />}
  onPickFile={(f) => handleBodyFile(f)}
  onDropFile={(f) => handleBodyFile(f)}
  onDropAsset={(url) => {
@@ -1659,12 +1642,9 @@ export function MotionCardEditor({
  onClick={(e) => { e.stopPropagation(); setBodyWireOpen(true) }}
  aria-label="Wire the preview body from an earlier card"
  data-motion-body-wire
- className={cn(
- "flex h-5 w-5 items-center justify-center rounded bg-background/90 hover:text-brand",
- bodyWired ? "text-brand" : "text-muted-foreground/70",
- )}
+className={cn(s.wireBtn, bodyWired ? s.wireBtnOn : s.wireBtnOff)}
  >
- <Link2 className="h-3 w-3" />
+ <Link2 className={s.i12} />
  </Button>
  </Tip>
  )}
@@ -1673,7 +1653,7 @@ export function MotionCardEditor({
  {bodyNotice && (
  <p
  data-motion-body-error
- className="col-span-2 rounded border border-amber-500/40 bg-amber-500/10 px-1.5 py-1 text-[9px] leading-relaxed text-amber-200/90"
+ className={s.bodyNotice}
  >
  {/* The suffix lies mid-convert (nothing previews yet) — the
      converting notice carries its own state; the mannequin claim
@@ -1693,7 +1673,7 @@ export function MotionCardEditor({
  The canvas resizes (PoseViewer3D's observer), the character stays
  fully visible beside the panel, and the left rail is untouched. */
  center={
- <div className="flex min-h-0 flex-1 gap-2">
+ <div className={s.centerRow}>
  {/* ── Live stage — ALWAYS the viewer (pose-studio parity) ──────────
  No run yet → no deformed vertices → SkinnedHumanoid renders the
  bind pose: the neutral somax mannequin, orbit/zoom/azimuth live.
@@ -1708,10 +1688,7 @@ export function MotionCardEditor({
  are still there for click-to-pick. */}
  <ViewportFrame
  ref={stageBoxRef}
- className={cn(
-   "min-w-0 transition-colors",
-   bgDragOver && "border-brand/80 ring-2 ring-brand/40"
- )}
+className={cn(s.stageFrame, bgDragOver && s.stageFrameDrag)}
  onDragOver={(e) => {
    if (e.dataTransfer.types.includes(ASSET_DRAG_MIME) || e.dataTransfer.types.includes("Files")) {
      e.preventDefault()
@@ -1722,8 +1699,8 @@ export function MotionCardEditor({
  onDrop={handleStageDrop}
  >
  {bgImage && (
- <ViewportAnchor dock="fill" className="z-0">
-  <img src={bgImage} alt="" aria-hidden className="pointer-events-none h-full w-full object-cover" />
+ <ViewportAnchor dock="fill" className={s.ovBg}>
+  <img src={bgImage} alt="" aria-hidden className={s.bgImg} />
  </ViewportAnchor>
  )}
  {/* Drop overlay — visible only while an asset/file is dragged over
@@ -1731,9 +1708,9 @@ export function MotionCardEditor({
      what a drop does (mirrors SlotSquare's dragOver highlight). z-20
      sits above the bg <img> but below the viewer's error overlays. */}
  {bgDragOver && (
- <ViewportAnchor dock="fill" className="pointer-events-none z-20">
-  <div className="flex h-full w-full items-center justify-center bg-brand/10 backdrop-blur-[1px]">
- <span className="rounded-md bg-background/80 px-3 py-1.5 text-[11px] font-medium text-brand">
+ <ViewportAnchor dock="fill" className={s.ovDrop}>
+  <div className={s.dropVeil}>
+ <span className={s.dropVeilLabel}>
  Drop a GLB to set the preview body — an image to set the background
  </span>
   </div>
@@ -1771,12 +1748,12 @@ export function MotionCardEditor({
  role="status"
  aria-busy="true"
  aria-label="Loading mannequin"
- className="flex h-full flex-col items-center justify-center gap-2 text-muted-foreground/60"
+ className={s.stageLoading}
  >
  {/* Skeleton stands in for the mannequin viewport while the rig
      loads — a quiet block instead of a spinning dot. */}
- <Skeleton className="h-24 w-24 rounded-full" />
- <Skeleton className="h-3 w-28" />
+ <Skeleton className={s.skelAvatar} />
+ <Skeleton className={s.skelLine} />
  </div>
  )}
  {loading && (
@@ -1785,18 +1762,18 @@ export function MotionCardEditor({
  role="status"
  aria-busy="true"
  aria-label="Loading motion"
- className="flex h-full w-full flex-col items-center justify-center gap-2 bg-[#0e0e1a]/60 text-muted-foreground/70"
+ className={s.stageVeil}
  >
- <Skeleton className="h-20 w-20 rounded-full bg-muted/40" />
- <Skeleton className="h-3 w-28 bg-muted/40" />
+ <Skeleton className={s.skelAvatarSm} />
+ <Skeleton className={s.skelLine} />
  </div>
  </ViewportAnchor>
  )}
  {error && (
  <ViewportAnchor dock="fill">
- <div className="flex h-full w-full flex-col items-center justify-center gap-2 bg-[#0e0e1a]/60 text-muted-foreground/70">
- <AlertTriangle className="h-6 w-6 text-amber-400/70" />
- <span className="text-xs">{error}</span>
+ <div className={s.stageVeil}>
+ <AlertTriangle className={s.warnIcon} />
+ <span className={s.veilText}>{error}</span>
  </div>
  </ViewportAnchor>
  )}
@@ -1808,30 +1785,26 @@ export function MotionCardEditor({
  the tips carry it. The segmented toggle picks the FRAMING — full body
  vs upper half (framedCameraPos: same azimuth, tighter distances both).
  Framing is pure view state: never a param, never exported. */}
- <ViewportAnchor dock="top-right" className="z-30">
- <div className="flex items-center gap-1 rounded-full border border-sidebar-border/60 bg-background/80 p-1 shadow-lg backdrop-blur-sm">
+ <ViewportAnchor dock="top-right" className={s.ovCam}>
+ <div className={s.camPill}>
  <Tip tip="Rotate view left (45°)">
  <Button variant="ghost"
  onClick={() => setCameraView(stepAzimuth(cameraView, -1))}
  aria-label="Rotate view left (45°)"
- className="flex h-7 w-7 items-center justify-center rounded-full text-foreground/80 transition-colors hover:bg-sidebar-accent hover:text-brand"
+ className={s.camBtn}
  >
- <RotateCcw className="h-3.5 w-3.5" />
+ <RotateCcw className={s.i14} />
  </Button>
  </Tip>
- <span className="mx-0.5 h-4 w-px bg-sidebar-border/60" />
+ <span className={s.camDivider} />
  <Tip tip="Full body framing">
  <Button variant="ghost"
  onClick={() => setFraming("full")}
  aria-label="Full body framing"
  aria-pressed={framing === "full"}
- className={`flex h-7 w-7 items-center justify-center rounded-full transition-colors ${
- framing === "full"
- ? "bg-brand/15 text-brand"
- : "text-foreground/55 hover:bg-sidebar-accent hover:text-brand"
- }`}
+className={cn(s.frameBtn, framing === "full" ? s.frameBtnActive : s.frameBtnIdle)}
  >
- <PersonStanding className="h-3.5 w-3.5" />
+ <PersonStanding className={s.i14} />
  </Button>
  </Tip>
  <Tip tip="Upper half framing — closer, chest-height camera at the same angle">
@@ -1839,22 +1812,18 @@ export function MotionCardEditor({
  onClick={() => setFraming("upper")}
  aria-label="Upper half framing"
  aria-pressed={framing === "upper"}
- className={`flex h-7 w-7 items-center justify-center rounded-full transition-colors ${
- framing === "upper"
- ? "bg-brand/15 text-brand"
- : "text-foreground/55 hover:bg-sidebar-accent hover:text-brand"
- }`}
+className={cn(s.frameBtn, framing === "upper" ? s.frameBtnActive : s.frameBtnIdle)}
  >
- <User className="h-3.5 w-3.5" />
+ <User className={s.i14} />
  </Button>
  </Tip>
  <Tip tip="Rotate view right (45°)">
  <Button variant="ghost"
  onClick={() => setCameraView(stepAzimuth(cameraView, 1))}
  aria-label="Rotate view right (45°)"
- className="flex h-7 w-7 items-center justify-center rounded-full text-foreground/80 transition-colors hover:bg-sidebar-accent hover:text-brand"
+ className={s.camBtn}
  >
- <RotateCw className="h-3.5 w-3.5" />
+ <RotateCw className={s.i14} />
  </Button>
  </Tip>
  </div>
@@ -1867,7 +1836,7 @@ export function MotionCardEditor({
      keeps working; the rect dims everything outside it. The corner
      handle resizes FREE-aspect; the body moves it. */}
  {exportOpen && (
- <ViewportAnchor data-export-rect-overlay dock="fill" className="pointer-events-none z-40">
+ <ViewportAnchor data-export-rect-overlay dock="fill" className={s.ovRect}>
  <div
  data-export-rect
  role="presentation"
@@ -1876,7 +1845,7 @@ export function MotionCardEditor({
  onPointerMove={onRectPointerMove}
  onPointerUp={endRectDrag}
  onPointerCancel={endRectDrag}
- className="pointer-events-auto absolute cursor-move touch-none border-2 border-brand"
+ className={s.exportRect}
  style={{
  left: `${stageRect.x * 100}%`,
  top: `${stageRect.y * 100}%`,
@@ -1888,10 +1857,10 @@ export function MotionCardEditor({
  {/* FOUR corner handles (resize, free aspect — the opposite corner
      anchors). Typed exact sizes live in the dialog panel. */}
  {([
- { corner: "nw", cls: "-left-1.5 -top-1.5 cursor-nwse-resize" },
- { corner: "ne", cls: "-right-1.5 -top-1.5 cursor-nesw-resize" },
- { corner: "sw", cls: "-left-1.5 -bottom-1.5 cursor-nesw-resize" },
- { corner: "se", cls: "-right-1.5 -bottom-1.5 cursor-nwse-resize" },
+ { corner: "nw", cls: s.cornerNW },
+ { corner: "ne", cls: s.cornerNE },
+ { corner: "sw", cls: s.cornerSW },
+ { corner: "se", cls: s.cornerSE },
  ] as const).map((h) => (
  <div
  key={h.corner}
@@ -1900,15 +1869,15 @@ export function MotionCardEditor({
  onPointerMove={onRectPointerMove}
  onPointerUp={endRectDrag}
  onPointerCancel={endRectDrag}
- className={`absolute h-3 w-3 rounded-full border-2 border-white bg-brand ${h.cls}`}
+ className={cn(s.cornerHandle, h.cls)}
  />
  ))}
  {/* center crosshair */}
- <div className="pointer-events-none absolute left-1/2 top-1/2 h-3 w-px -translate-x-1/2 -translate-y-1/2 bg-brand/60" />
- <div className="pointer-events-none absolute left-1/2 top-1/2 h-px w-3 -translate-x-1/2 -translate-y-1/2 bg-brand/60" />
+ <div className={s.crossV} />
+ <div className={s.crossH} />
  </div>
  {/* hint — outside the rect, never blocks orbit */}
- <ViewportAnchor dock="bottom-center" className="rounded-full border border-brand/30 bg-background/80 px-3 py-1 text-[10px] text-brand shadow-lg backdrop-blur-sm">
+ <ViewportAnchor dock="bottom-center" className={s.rectHint}>
  Drag the rectangle over the character · corners resize (aspect-locked) · any size exports the typed pixels · orbit for the angle
  </ViewportAnchor>
  </ViewportAnchor>
@@ -1955,7 +1924,7 @@ export function MotionCardEditor({
  wheel, so the overlay's page scroll can't be relied on). */
  bottom={
  <>
- <PaneShell className="rounded-lg border-sidebar-border/40">
+ <PaneShell className={s.timelineShell}>
  {/* ── Bar header = transport + label + "add a card" ───────────────
  Play/pause/time live HERE now (was its own row above). The Add
  button is the discoverable "add a card" affordance: the viser bar's
@@ -1967,7 +1936,7 @@ export function MotionCardEditor({
  _generate). */}
  <PaneHeader
  variant="strip"
- className="flex-wrap border-sidebar-border/40 bg-sidebar/20 px-3 py-1.5"
+ className={s.transportHead}
  lead={<>
  <Tip
  tip={!npz
@@ -1978,39 +1947,39 @@ export function MotionCardEditor({
  ? "Pause (Space)"
  : "Play (Space)"}
  >
- <span className="contents">
+ <span className={s.contents}>
  <Button variant="ghost"
  onClick={() => setPlaying((p) => !p)}
  disabled={editMode || !npz}
  aria-label={playing ? "Pause (Space)" : "Play (Space)"}
- className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white/10 text-foreground transition-colors hover:bg-white/20 disabled:cursor-not-allowed disabled:opacity-40"
+ className={s.playBtn}
  >
- {playing ? <Pause className="h-3.5 w-3.5" /> : <Play className="ml-0.5 h-3.5 w-3.5" />}
+ {playing ? <Pause className={s.i14} /> : <Play className={s.playIcon} />}
  </Button>
  </span>
  </Tip>
- <div className="shrink-0 text-[11px]">
+ <div className={s.timeWrap}>
  {npz ? (
- <span className="font-mono tabular-nums text-foreground/80">
+ <span className={s.timeText}>
  {fmt(curSec)} / {fmt(totalSec)}
  </span>
  ) : (
- <span className="flex items-center gap-1 text-muted-foreground/60">
- <Info className="h-3.5 w-3.5" />
+ <span className={s.noMotion}>
+ <Info className={s.i14} />
  No motion yet — run the card
  </span>
  )}
  </div>
  {npz && (
- <div className="hidden shrink-0 rounded bg-white/10 px-1.5 py-0.5 font-mono text-[10px] text-foreground/60 sm:block">
+ <div className={s.fpsChip}>
  {`${npz.fps.toFixed(0)} fps · ${npz.T}f`}
  </div>
  )}
  </>
  }
  hint={
- <span className="flex items-center gap-2">
- <span className="shrink-0 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground/70">
+ <span className={s.hintWrap}>
+ <span className={s.hintTitle}>
  Timeline · prompt cards{tlPrompts.length > 0 ? ` (${tlPrompts.length})` : ""}
  </span>
  <Tip
@@ -2018,13 +1987,13 @@ export function MotionCardEditor({
  ? "Add a new prompt card — splits the last card so you can type a distinct motion for that segment"
  : "Loading the timeline…"}
  >
- <span className="contents">
+ <span className={s.contents}>
  <Button variant="ghost"
  onClick={addPromptCard}
  disabled={targetT <= 0}
- className="flex items-center gap-1 rounded-full border border-brand/60 bg-brand/15 px-2.5 py-0.5 text-[10px] font-semibold text-brand transition-colors hover:bg-brand/25 disabled:cursor-not-allowed disabled:opacity-40"
+ className={s.addCardBtn}
  >
- <Plus className="h-3 w-3" />
+ <Plus className={s.i12} />
  Add prompt card
  </Button>
  </span>
@@ -2054,19 +2023,19 @@ export function MotionCardEditor({
  play button explains WHY: "Run the card first"); this placeholder
  keeps the bar's box instead of the whole block vanishing. */}
  {!targetT && (
- <div className="flex items-center justify-center gap-1.5 px-3 py-6 text-[11px] text-muted-foreground/60">
- <Info className="h-3.5 w-3.5" />
+ <div className={s.timelineEmpty}>
+ <Info className={s.i14} />
  Run the card — the timeline appears with the motion
  </div>
  )}
  </PaneShell>
 
  {editMode && (
- <div className="flex shrink-0 items-start gap-2 bg-sidebar/20 px-3 py-2 text-[10px] text-muted-foreground/60">
- <RotateCw className="mt-0.5 h-3 w-3 shrink-0 text-amber-300/70" />
+ <div className={s.editHintBar}>
+ <RotateCw className={s.editHintIcon} />
  <span>
  Drag joints to refine the pose at this frame (IK moves the chain).
- <b className="text-muted-foreground/80"> Repose</b> patches rotations for the
+ <b className={s.editHintStrong}> Repose</b> patches rotations for the
  edited frame and saves it as the chain start. Hit Run when ready — kimodo conditions on it.
  Finger/toe tip rotations are approximate (translate edits).
  </span>
@@ -2102,6 +2071,8 @@ export function MotionCardEditor({
  </>
  }
  />
+ <ToastViewport />
+ </>
  )
 }
 export default MotionCardEditor

@@ -41,6 +41,7 @@ import {
   isTerminalRun,
   nextRpcId,
   readRunStatus,
+  toRunMediaUrl,
   wireCall as runWireCall,
 } from '@melite-plugin/melite-run-wire'
 import type { FlowEventFrame } from './draft.ts'
@@ -234,6 +235,30 @@ export async function observeRunOutcome(
       ? stage.url : ''
     const result: Record<string, unknown> = { run_id: runId }
     if (url !== '') result['url'] = url
+    // THE HARVEST CARRY (2026-09-12): the stage's full artifact set
+    // rides the row so studio adapters read REAL data (the h3
+    // timeline's filmstrip + window tiles key off artifacts'
+    // name→url map + the flat stitch-first list; a url-only result
+    // starves them). Gallery names rewrite onto the media route with
+    // the same one-rewrite law as the stage url.
+    const gallery = stage !== undefined && Array.isArray((stage as Record<string, unknown>)['gallery'])
+      ? ((stage as Record<string, unknown>)['gallery'] as unknown[]) : []
+    const artNames: string[] = []
+    for (const g of gallery) {
+      const name = typeof g === 'object' && g !== null && typeof (g as Record<string, unknown>)['name'] === 'string'
+        ? (g as Record<string, unknown>)['name'] as string : ''
+      if (name !== '') artNames.push(name)
+    }
+    if (artNames.length > 0) {
+      const mediaUrls = artNames.map((n): string => toRunMediaUrl(runId, n))
+      const artifacts: Record<string, string> = {}
+      if (url !== '') artifacts['video'] = url
+      for (let i = 0; i < artNames.length; i++) {
+        artifacts[artNames[i]!] = mediaUrls[i]!
+      }
+      result['artifacts'] = artifacts
+      result['assetUrls'] = url !== '' ? [url, ...mediaUrls] : mediaUrls
+    }
     const terminal = row.status === 'completed' ? 'done' : row.status
     try {
       await patchStageOutcome(draftId, stageId, { runStatus: terminal, result })

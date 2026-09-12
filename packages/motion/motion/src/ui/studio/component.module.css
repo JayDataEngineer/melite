@@ -1,0 +1,611 @@
+/* MotionCardEditor — rail tool grid, stage overlays, camera pill,
+   export-frame rectangle, transport bar. DSH-token styled.
+   Amber-family warning highlights ride the danger token (estate law);
+   faint white-based hairlines ride the border token at reduced mix. */
+
+@keyframes motionSpin {
+  to { transform: rotate(360deg); }
+}
+
+/* ── shell + rail ── */
+.shellPad {
+  gap: 8px;
+  padding: 12px 16px;
+}
+
+.railGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+  border-bottom: 1px solid color-mix(in srgb, var(--dsw-alias-border, #e2e4e9) 45%, transparent);
+  padding: 10px 12px;
+}
+
+.railGroupLabel {
+  grid-column: span 2;
+  padding: 0 4px 2px;
+  font-size: 9px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: color-mix(in srgb, var(--dsw-alias-label-secondary, #5b6470) 40%, transparent);
+}
+
+.railGroupLabelMt {
+  grid-column: span 2;
+  margin-top: 4px;
+  padding: 0 4px 2px;
+  font-size: 9px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: color-mix(in srgb, var(--dsw-alias-label-secondary, #5b6470) 40%, transparent);
+}
+
+.contents { display: contents; }
+
+/* Rail tool buttons — one base, state skins compose via cn(). */
+.railBtn {
+  display: flex;
+  height: 32px;
+  width: 100%;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border-radius: 6px;
+  border: 1px solid transparent;
+  padding: 0 6px;
+  font-size: 10px;
+  font-weight: 500;
+  transition: color 120ms ease, background-color 120ms ease, border-color 120ms ease;
+}
+
+.railBtn:disabled {
+  cursor: not-allowed;
+  opacity: 0.4;
+}
+
+.railBtnActive {
+  border-color: color-mix(in srgb, var(--dsw-alias-accent, #3b82f6) 50%, transparent);
+  background: color-mix(in srgb, var(--dsw-alias-accent, #3b82f6) 15%, transparent);
+  color: var(--dsw-alias-accent, #3b82f6);
+}
+
+.railBtnIdle {
+  border-color: color-mix(in srgb, var(--dsw-alias-border, #e2e4e9) 50%, transparent);
+  background: color-mix(in srgb, var(--dsw-alias-bg-module-platform, #f5f6f7) 30%, transparent);
+  color: var(--dsw-alias-label-secondary, #5b6470);
+}
+
+.railBtnIdle:hover {
+  border-color: color-mix(in srgb, var(--dsw-alias-accent, #3b82f6) 40%, transparent);
+  color: var(--dsw-alias-accent, #3b82f6);
+}
+
+/* Edit-mode ON skin — the amber active tint, on the danger token. */
+.railBtnEditActive {
+  border-color: color-mix(in srgb, var(--dsw-alias-danger, #dc2626) 60%, transparent);
+  background: color-mix(in srgb, var(--dsw-alias-danger, #dc2626) 15%, transparent);
+  color: var(--dsw-alias-danger, #dc2626);
+}
+
+/* Stamp — the amber keyframe-write button, on the danger token. */
+.stampBtn {
+  display: flex;
+  height: 32px;
+  width: 100%;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border-radius: 6px;
+  border: 1px solid color-mix(in srgb, var(--dsw-alias-danger, #dc2626) 70%, transparent);
+  background: color-mix(in srgb, var(--dsw-alias-danger, #dc2626) 20%, transparent);
+  padding: 0 6px;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--dsw-alias-danger, #dc2626);
+  transition: color 120ms ease, background-color 120ms ease, border-color 120ms ease;
+}
+
+.stampBtn:hover {
+  background: color-mix(in srgb, var(--dsw-alias-danger, #dc2626) 30%, transparent);
+}
+
+.stampBtn:disabled { opacity: 0.5; }
+
+/* Repose — the brand chain-start button. */
+.reposeBtn {
+  display: flex;
+  height: 32px;
+  width: 100%;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border-radius: 6px;
+  border: 1px solid color-mix(in srgb, var(--dsw-alias-accent, #3b82f6) 60%, transparent);
+  background: color-mix(in srgb, var(--dsw-alias-accent, #3b82f6) 15%, transparent);
+  padding: 0 6px;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--dsw-alias-accent, #3b82f6);
+  transition: color 120ms ease, background-color 120ms ease, border-color 120ms ease;
+}
+
+.reposeBtn:hover {
+  background: color-mix(in srgb, var(--dsw-alias-accent, #3b82f6) 25%, transparent);
+}
+
+.reposeBtn:disabled { opacity: 0.5; }
+
+/* Destructive ghost — reset-pose / clear-background. */
+.railBtnDanger {
+  display: flex;
+  height: 32px;
+  width: 100%;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border-radius: 6px;
+  border: 1px solid color-mix(in srgb, var(--dsw-alias-border, #e2e4e9) 50%, transparent);
+  background: color-mix(in srgb, var(--dsw-alias-bg-module-platform, #f5f6f7) 30%, transparent);
+  padding: 0 6px;
+  font-size: 10px;
+  font-weight: 500;
+  color: var(--dsw-alias-label-secondary, #5b6470);
+  transition: color 120ms ease, background-color 120ms ease, border-color 120ms ease;
+}
+
+.railBtnDanger:hover {
+  border-color: color-mix(in srgb, var(--dsw-alias-danger, #dc2626) 50%, transparent);
+  color: var(--dsw-alias-danger, #dc2626);
+}
+
+/* Background pick — the stronger brand hover. */
+.bgBtnIdle {
+  display: flex;
+  height: 32px;
+  width: 100%;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border-radius: 6px;
+  border: 1px solid color-mix(in srgb, var(--dsw-alias-border, #e2e4e9) 50%, transparent);
+  background: color-mix(in srgb, var(--dsw-alias-bg-module-platform, #f5f6f7) 30%, transparent);
+  padding: 0 6px;
+  font-size: 10px;
+  font-weight: 500;
+  color: var(--dsw-alias-label-secondary, #5b6470);
+  transition: color 120ms ease, background-color 120ms ease, border-color 120ms ease;
+}
+
+.bgBtnIdle:hover {
+  border-color: color-mix(in srgb, var(--dsw-alias-accent, #3b82f6) 50%, transparent);
+  color: var(--dsw-alias-accent, #3b82f6);
+}
+
+.hiddenInput { display: none; }
+
+/* Preview-body subcard row + convert notice (amber → danger token). */
+.bodySquareWrap {
+  grid-column: span 2;
+  display: flex;
+  justify-content: center;
+  padding: 4px 0;
+}
+
+.bodyNotice {
+  grid-column: span 2;
+  border-radius: 4px;
+  border: 1px solid color-mix(in srgb, var(--dsw-alias-danger, #dc2626) 40%, transparent);
+  background: color-mix(in srgb, var(--dsw-alias-danger, #dc2626) 10%, transparent);
+  padding: 4px 6px;
+  font-size: 9px;
+  line-height: 1.6;
+  color: var(--dsw-alias-danger, #dc2626);
+}
+
+.bodyEmptyIcon {
+  width: 20px;
+  height: 20px;
+  color: color-mix(in srgb, var(--dsw-alias-accent, #3b82f6) 60%, transparent);
+}
+
+/* Slot wire action (SlotSquare actions cluster). */
+.wireBtn {
+  display: flex;
+  width: 20px;
+  height: 20px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  background: color-mix(in srgb, var(--dsw-alias-bg-module-platform, #f5f6f7) 90%, transparent);
+}
+
+.wireBtn:hover {
+  color: var(--dsw-alias-accent, #3b82f6);
+}
+
+.wireBtnOn {
+  color: var(--dsw-alias-accent, #3b82f6);
+}
+
+.wireBtnOff {
+  color: color-mix(in srgb, var(--dsw-alias-label-secondary, #5b6470) 70%, transparent);
+}
+
+/* ── stage ── */
+.centerRow {
+  display: flex;
+  min-height: 0;
+  flex: 1;
+  gap: 8px;
+}
+
+.stageFrame {
+  min-width: 0;
+  transition: color 120ms ease, background-color 120ms ease, border-color 120ms ease;
+}
+
+.stageFrameDrag {
+  border-color: color-mix(in srgb, var(--dsw-alias-accent, #3b82f6) 80%, transparent);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--dsw-alias-accent, #3b82f6) 40%, transparent);
+}
+
+.ovBg { z-index: 0; }
+.ovCam { z-index: 30; }
+
+.ovDrop {
+  pointer-events: none;
+  z-index: 20;
+}
+
+.ovRect {
+  pointer-events: none;
+  z-index: 40;
+}
+
+.bgImg {
+  pointer-events: none;
+  height: 100%;
+  width: 100%;
+  object-fit: cover;
+}
+
+.dropVeil {
+  display: flex;
+  height: 100%;
+  width: 100%;
+  align-items: center;
+  justify-content: center;
+  background: color-mix(in srgb, var(--dsw-alias-accent, #3b82f6) 10%, transparent);
+  backdrop-filter: blur(1px);
+}
+
+.dropVeilLabel {
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--dsw-alias-bg-module-platform, #f5f6f7) 80%, transparent);
+  padding: 6px 12px;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--dsw-alias-accent, #3b82f6);
+}
+
+.stageLoading {
+  display: flex;
+  height: 100%;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  color: color-mix(in srgb, var(--dsw-alias-label-secondary, #5b6470) 60%, transparent);
+}
+
+.skelAvatar {
+  width: 96px;
+  height: 96px;
+  border-radius: 999px;
+}
+
+.skelAvatarSm {
+  width: 80px;
+  height: 80px;
+  border-radius: 999px;
+}
+
+.skelLine {
+  height: 12px;
+  width: 112px;
+}
+
+.stageVeil {
+  display: flex;
+  height: 100%;
+  width: 100%;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: rgb(14 14 26 / 0.6);
+  color: color-mix(in srgb, var(--dsw-alias-label-secondary, #5b6470) 70%, transparent);
+}
+
+/* Warning mark on the error veil — the amber tint, on danger. */
+.warnIcon {
+  width: 24px;
+  height: 24px;
+  color: color-mix(in srgb, var(--dsw-alias-danger, #dc2626) 70%, transparent);
+}
+
+.veilText { font-size: 12px; }
+
+/* ── camera pill ── */
+.camPill {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--dsw-alias-border, #e2e4e9) 60%, transparent);
+  background: color-mix(in srgb, var(--dsw-alias-bg-module-platform, #f5f6f7) 80%, transparent);
+  padding: 4px;
+  box-shadow: 0 8px 28px -12px rgb(0 0 0 / 0.45);
+  backdrop-filter: blur(4px);
+}
+
+.camBtn {
+  display: flex;
+  height: 28px;
+  width: 28px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  color: color-mix(in srgb, var(--dsw-alias-label-primary, #0f1115) 80%, transparent);
+  transition: color 120ms ease, background-color 120ms ease, border-color 120ms ease;
+}
+
+.camBtn:hover {
+  background: color-mix(in srgb, var(--dsw-alias-bg-module-platform, #f5f6f7) 40%, transparent);
+  color: var(--dsw-alias-accent, #3b82f6);
+}
+
+.camDivider {
+  margin: 0 2px;
+  height: 16px;
+  width: 1px;
+  background: color-mix(in srgb, var(--dsw-alias-border, #e2e4e9) 60%, transparent);
+}
+
+.frameBtn {
+  display: flex;
+  height: 28px;
+  width: 28px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  transition: color 120ms ease, background-color 120ms ease, border-color 120ms ease;
+}
+
+.frameBtnActive {
+  background: color-mix(in srgb, var(--dsw-alias-accent, #3b82f6) 15%, transparent);
+  color: var(--dsw-alias-accent, #3b82f6);
+}
+
+.frameBtnIdle {
+  color: color-mix(in srgb, var(--dsw-alias-label-primary, #0f1115) 55%, transparent);
+}
+
+.frameBtnIdle:hover {
+  background: color-mix(in srgb, var(--dsw-alias-bg-module-platform, #f5f6f7) 40%, transparent);
+  color: var(--dsw-alias-accent, #3b82f6);
+}
+
+/* ── export-frame rectangle ── */
+.exportRect {
+  pointer-events: auto;
+  position: absolute;
+  cursor: move;
+  touch-action: none;
+  border: 2px solid var(--dsw-alias-accent, #3b82f6);
+}
+
+.cornerHandle {
+  position: absolute;
+  height: 12px;
+  width: 12px;
+  border-radius: 999px;
+  border: 2px solid #ffffff;
+  background: var(--dsw-alias-accent, #3b82f6);
+}
+
+.cornerNW { left: -6px; top: -6px; cursor: nwse-resize; }
+.cornerNE { right: -6px; top: -6px; cursor: nesw-resize; }
+.cornerSW { left: -6px; bottom: -6px; cursor: nesw-resize; }
+.cornerSE { right: -6px; bottom: -6px; cursor: nwse-resize; }
+
+.crossV {
+  pointer-events: none;
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  height: 12px;
+  width: 1px;
+  transform: translate(-50%, -50%);
+  background: color-mix(in srgb, var(--dsw-alias-accent, #3b82f6) 60%, transparent);
+}
+
+.crossH {
+  pointer-events: none;
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  height: 1px;
+  width: 12px;
+  transform: translate(-50%, -50%);
+  background: color-mix(in srgb, var(--dsw-alias-accent, #3b82f6) 60%, transparent);
+}
+
+.rectHint {
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--dsw-alias-accent, #3b82f6) 30%, transparent);
+  background: color-mix(in srgb, var(--dsw-alias-bg-module-platform, #f5f6f7) 80%, transparent);
+  padding: 4px 12px;
+  font-size: 10px;
+  color: var(--dsw-alias-accent, #3b82f6);
+  box-shadow: 0 8px 28px -12px rgb(0 0 0 / 0.45);
+  backdrop-filter: blur(4px);
+}
+
+/* ── transport bar ── */
+.timelineShell {
+  border-radius: 8px;
+  border-color: color-mix(in srgb, var(--dsw-alias-border, #e2e4e9) 40%, transparent);
+}
+
+.transportHead {
+  flex-wrap: wrap;
+  border-color: color-mix(in srgb, var(--dsw-alias-border, #e2e4e9) 40%, transparent);
+  background: color-mix(in srgb, var(--dsw-alias-bg-module-platform, #f5f6f7) 20%, transparent);
+  padding: 6px 12px;
+}
+
+.playBtn {
+  display: flex;
+  height: 32px;
+  width: 32px;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: color-mix(in srgb, #ffffff 10%, transparent);
+  color: var(--dsw-alias-label-primary, #0f1115);
+  transition: color 120ms ease, background-color 120ms ease, border-color 120ms ease;
+}
+
+.playBtn:hover {
+  background: color-mix(in srgb, #ffffff 20%, transparent);
+}
+
+.playBtn:disabled {
+  cursor: not-allowed;
+  opacity: 0.4;
+}
+
+.playIcon {
+  margin-left: 2px;
+  width: 14px;
+  height: 14px;
+}
+
+.timeWrap {
+  flex-shrink: 0;
+  font-size: 11px;
+}
+
+.timeText {
+  font-family: ui-monospace, monospace;
+  font-variant-numeric: tabular-nums;
+  color: color-mix(in srgb, var(--dsw-alias-label-primary, #0f1115) 80%, transparent);
+}
+
+.noMotion {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: color-mix(in srgb, var(--dsw-alias-label-secondary, #5b6470) 60%, transparent);
+}
+
+.fpsChip {
+  display: none;
+  flex-shrink: 0;
+  border-radius: 4px;
+  background: color-mix(in srgb, #ffffff 10%, transparent);
+  padding: 2px 6px;
+  font-family: ui-monospace, monospace;
+  font-size: 10px;
+  color: color-mix(in srgb, var(--dsw-alias-label-primary, #0f1115) 60%, transparent);
+}
+
+@media (min-width: 640px) {
+  .fpsChip { display: block; }
+}
+
+.hintWrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.hintTitle {
+  flex-shrink: 0;
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.025em;
+  color: color-mix(in srgb, var(--dsw-alias-label-secondary, #5b6470) 70%, transparent);
+}
+
+.addCardBtn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--dsw-alias-accent, #3b82f6) 60%, transparent);
+  background: color-mix(in srgb, var(--dsw-alias-accent, #3b82f6) 15%, transparent);
+  padding: 2px 10px;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--dsw-alias-accent, #3b82f6);
+  transition: color 120ms ease, background-color 120ms ease, border-color 120ms ease;
+}
+
+.addCardBtn:hover {
+  background: color-mix(in srgb, var(--dsw-alias-accent, #3b82f6) 25%, transparent);
+}
+
+.addCardBtn:disabled {
+  cursor: not-allowed;
+  opacity: 0.4;
+}
+
+.timelineEmpty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 24px 12px;
+  font-size: 11px;
+  color: color-mix(in srgb, var(--dsw-alias-label-secondary, #5b6470) 60%, transparent);
+}
+
+.editHintBar {
+  display: flex;
+  flex-shrink: 0;
+  align-items: flex-start;
+  gap: 8px;
+  background: color-mix(in srgb, var(--dsw-alias-bg-module-platform, #f5f6f7) 20%, transparent);
+  padding: 8px 12px;
+  font-size: 10px;
+  color: color-mix(in srgb, var(--dsw-alias-label-secondary, #5b6470) 60%, transparent);
+}
+
+/* IK-hint mark — the amber tint, on the danger token. */
+.editHintIcon {
+  margin-top: 2px;
+  width: 12px;
+  height: 12px;
+  flex-shrink: 0;
+  color: color-mix(in srgb, var(--dsw-alias-danger, #dc2626) 70%, transparent);
+}
+
+.editHintStrong {
+  color: color-mix(in srgb, var(--dsw-alias-label-secondary, #5b6470) 80%, transparent);
+}
+
+/* ── icons ── */
+.i12 { width: 12px; height: 12px; }
+.i14 { width: 14px; height: 14px; }
+
+.spinIcon {
+  width: 14px;
+  height: 14px;
+  animation: motionSpin 1s linear infinite;
+}
