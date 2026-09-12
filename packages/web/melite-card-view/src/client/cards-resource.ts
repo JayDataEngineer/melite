@@ -184,10 +184,27 @@ function failure(address: string, message: string): RemoteResult<never> {
 
 /** Defensive row readers — the door's wire is untyped at this seam. */
 export function readBench(doc: Record<string, unknown>): CardsBenchValue {
-  const stages = Array.isArray(doc['stages'])
+  let stages = Array.isArray(doc['stages'])
     ? (doc['stages'] as unknown[]).filter((s): s is BenchStageRow =>
         typeof s === 'object' && s !== null && typeof (s as BenchStageRow)['id'] === 'string')
     : []
+  // CARD BIRTH LAW, bench side (2026-09-13, the hour-6 form
+  // regression): a chat-born bench's stages arrive from the estate's
+  // normalization with NO `card` (identity survives on the DRAFT
+  // INTENT alone). Every consumer of the bench value — the tiles,
+  // the row lines, and the ZOOM consult (StageDrill keys the studio
+  // slot on cardName) — reads the rows, so the re-attach lives HERE,
+  // once, at the value build: single-stage card-born bench only
+  // (user-authored multi-stage benches carry card per row and never
+  // take this arm — DraftView's consult states the same condition).
+  // Before this, the zoom consult saw cardName '' and every
+  // chat-born bench card rendered the GENERIC FORM while the chat
+  // path (which re-attaches in DraftView) mounted the studio.
+  const intent = typeof doc['intent'] === 'string' ? (doc['intent'] as string) : ''
+  if (intent !== '' && stages.length === 1
+    && (stages[0]!['card'] === undefined || stages[0]!['card'] === '')) {
+    stages = [{ ...stages[0]!, card: intent }]
+  }
   const log = Array.isArray(doc['log'])
     ? (doc['log'] as unknown[]).filter((s): s is BenchLogHead =>
         typeof s === 'object' && s !== null && typeof (s as BenchLogHead)['rev'] === 'number')

@@ -421,8 +421,18 @@ async function runSingle(
   // is {} anyway, so no fallback exists to cover (2026-09-12).
   const bag: Record<string, unknown> = { ...a.params }
   if (typeof a.prompt === 'string' && a.prompt !== '') bag["prompt"] = a.prompt
-  const intentSrc = typeof bag["prompt"] === 'string' ? bag["prompt"] as string : card
-  const intent = intentSrc.length > 80 ? intentSrc.slice(0, 77) + '…' : intentSrc
+  // CARD BIRTH LAW (2026-09-13, the hour-6 form regression): a card
+  // tool's draft is born with THE CARD ID AS ITS INTENT and one
+  // stage. The bench normalization strips `card` from the stage row
+  // (identity survives on the intent alone), and the studio consult
+  // re-attaches cardName from the intent — so intent MUST be the
+  // card id, never the prompt. The prompt-as-intent arm here is what
+  // rendered the generic form for every prompt-carrying chat birth:
+  // the consult keyed on "a quiet beach at dusk" and no studio
+  // claimed it. The prompt rides bag.prompt (params), its display
+  // home. (drafts/list shows the card id as the draft name — the
+  // bench-default receipt's own shape.)
+  const intent = card.length > 80 ? card.slice(0, 77) + '…' : card
   let draftId: string
   try {
     draftId = await loadBench(request, {

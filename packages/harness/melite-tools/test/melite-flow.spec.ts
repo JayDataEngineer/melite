@@ -780,7 +780,11 @@ describe('melite_flow card — compose inside', () => {
     assert.equal('prompt' in startBody, false)
   })
 
-  test('a long prompt truncates the intent; params.prompt rides the bag', async () => {
+  test('a long prompt never steals the intent (CARD BIRTH LAW); params.prompt rides the bag', async () => {
+    // 2026-09-13, the hour-6 form regression: prompt-as-intent broke
+    // the studio consult (the bench normalization strips stage.card;
+    // identity survives on the intent alone) and every prompt-carrying
+    // chat birth rendered the GENERIC FORM. The law: intent = card id.
     const seen = mockFetch([ensureOk('d4'), benchAlive, startOk('r4')])
     const tool = meliteFlow(seen.request)
     const long = 'p'.repeat(100)
@@ -790,8 +794,7 @@ describe('melite_flow card — compose inside', () => {
     ) as Record<string, unknown>
     assert.equal(out.run_id, 'r4')
     const ensureBody = decodeJsonBody(seen.calls.find((c) => c.url.endsWith('/v1/bench/ensure'))!.init) as { intent: string }
-    assert.equal(ensureBody.intent.length, 78)
-    assert.ok(ensureBody.intent.endsWith('…'), ensureBody.intent)
+    assert.equal(ensureBody.intent, 'img')
     const startBody = decodeJsonBody(seen.calls.find((c) => c.url.endsWith('/v1/flows/start'))!.init)
     assert.equal(startBody.prompt, long)
     assert.equal(startBody.seed, 1)

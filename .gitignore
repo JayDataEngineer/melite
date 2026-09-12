@@ -156,3 +156,4 @@ data/runtime/anny-commercial/sam-3d-body/
 # Platform tier vendored plugins: lib/ is BUILT per-host by
 # plugins/gateway/scripts/link-vendored-platform.sh (harness layout), never committed
 vendor/cordis_plugins/*/lib/
+test-results/

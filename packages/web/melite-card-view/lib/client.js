@@ -799,7 +799,12 @@ window.__ModuleLoader__.load({
 		}
 		/** Defensive row readers — the door's wire is untyped at this seam. */
 		function readBench(doc) {
-			const stages = Array.isArray(doc["stages"]) ? doc["stages"].filter((s) => typeof s === "object" && s !== null && typeof s["id"] === "string") : [];
+			let stages = Array.isArray(doc["stages"]) ? doc["stages"].filter((s) => typeof s === "object" && s !== null && typeof s["id"] === "string") : [];
+			const intent = typeof doc["intent"] === "string" ? doc["intent"] : "";
+			if (intent !== "" && stages.length === 1 && (stages[0]["card"] === void 0 || stages[0]["card"] === "")) stages = [{
+				...stages[0],
+				card: intent
+			}];
 			const log = Array.isArray(doc["log"]) ? doc["log"].filter((s) => typeof s === "object" && s !== null && typeof s["rev"] === "number") : [];
 			return {
 				kind: "bench",

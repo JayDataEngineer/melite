@@ -7,7 +7,7 @@
 // until terminal (pollRunFrames' law, already pinned in the run-wire
 // package; here the bench tail gets its own pins).
 import { describe, expect, test, vi, afterEach } from 'vitest'
-import { openCardsResource } from '../src/client/cards-resource.ts'
+import { openCardsResource, readBench } from '../src/client/cards-resource.ts'
 
 /** A /api wire frame answer for one method. */
 function stubApi(methods: Record<string, Array<Record<string, unknown> | Error>>): void {
@@ -39,6 +39,35 @@ const benchDoc = (rev: number, titles: string[]): Record<string, unknown> => ({
 afterEach(() => {
   vi.unstubAllGlobals()
   vi.useRealTimers()
+})
+
+describe('readBench — the card-birth re-attach (the hour-6 form regression)', () => {
+  test('a single-stage cardless bench with intent stamps the card on the row (the zoom consult keys on it)', () => {
+    const value = readBench({
+      draft_id: 'bench-default', rev: 5, intent: 'h3-timeline',
+      stages: [{ id: 's_0', engine: 'comfyui', params: {} }],
+    })
+    expect(value.stages[0]!.card).toBe('h3-timeline')
+  })
+
+  test('a multi-stage bench never takes the arm (user benches carry card per row)', () => {
+    const value = readBench({
+      draft_id: 'bench-main', rev: 194, intent: 'anime girl beach image generation',
+      stages: [
+        { id: 's_1', card: 'img-to-mesh', engine: 'comfyui', params: {} },
+        { id: 's_2', card: 'image-gen', engine: 'comfyui', params: {} },
+      ],
+    })
+    expect(value.stages.map((s) => s.card)).toEqual(['img-to-mesh', 'image-gen'])
+  })
+
+  test('a stage that already carries its card passes verbatim', () => {
+    const value = readBench({
+      draft_id: 'bench-seed', rev: 1, intent: 'ignored-when-card-present',
+      stages: [{ id: 's_0', card: 'h3-timeline', engine: 'comfyui', params: {} }],
+    })
+    expect(value.stages[0]!.card).toBe('h3-timeline')
+  })
 })
 
 describe('the bench resource stream (live co-presence)', () => {
