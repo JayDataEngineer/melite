@@ -19,7 +19,7 @@ import { RECIPE_KEYS } from "../src/recipes.ts";
 const DEFAULT_MODEL = "krea-2";
 const GOOD_ARGS = { prompt: "a koi pond at dusk" };
 
-const calls: Array<{ method: string; path: string; body: Record<string, unknown> }> = {};
+const calls: Array<{ method: string; path: string; body: Record<string, unknown> }> = [];
 let n = 0;
 let draftsStatus = 200;
 let draftsBody: Record<string, unknown> = { draftId: "d_stub" };
@@ -143,13 +143,13 @@ describe("the executor path (two doors, envelope law)", () => {
   });
 
   it("the prose names the driving fields (prompt + the recipe knob)", () => {
-    const card = tool().presentCall?.(GOOD_ARGS);
+    const card = tool().presentCall?.(GOOD_ARGS) as unknown as { rawInput?: unknown };
     assert.match(String(card?.rawInput), /prompt=a koi pond at dusk/);
     assert.match(String(card?.rawInput), /recipe=standard/, "the unstated recipe resolves");
     // a legal cataloged recipe (the closed key list)
     const alt = RECIPE_KEYS.find((k) => k !== "standard")!;
     assert.ok(alt, "a second cataloged recipe serves");
-    const explicit = tool().presentCall?.({ ...GOOD_ARGS, recipe: alt });
+    const explicit = tool().presentCall?.({ ...GOOD_ARGS, recipe: alt }) as unknown as { rawInput?: unknown };
     assert.match(String(explicit?.rawInput), new RegExp("recipe=" + alt));
   });
 
@@ -166,7 +166,7 @@ describe("the render channel (one line, both voices)", () => {
     const t = tool();
     const gaps = t.output.render({}, {});
     assert.match(String((gaps[0] as { text?: string }).text), /image_gen \[\?\] → \?/);
-    const bare = t.output.render({}, undefined);
+    const bare = t.output.render({}, undefined as never);
     assert.match(String((bare[0] as { text?: string }).text), /image_gen \[\?\] → \?/);
     // a present-but-empty error falls through to the run voice.
     const quiet = t.output.render({}, { error: "" });
@@ -226,10 +226,10 @@ describe("presentCall prose (validated args only)", () => {
   });
 
   it("validated args name the resolved model (default when unstated)", () => {
-    const card = tool().presentCall?.(GOOD_ARGS);
+    const card = tool().presentCall?.(GOOD_ARGS) as unknown as { rawInput?: unknown };
     assert.ok(card);
     assert.match(String(card.rawInput), new RegExp("model=" + DEFAULT_MODEL));
-    const explicit = tool().presentCall?.({ ...GOOD_ARGS, model: "krea-2" });
+    const explicit = tool().presentCall?.({ ...GOOD_ARGS, model: "krea-2" }) as unknown as { rawInput?: unknown };
     assert.match(String(explicit?.rawInput), /model=krea-2\s/);
   });
 });
@@ -250,7 +250,7 @@ class StubToolsService extends Service {
 describe("the index face: apply takes the services it finds", () => {
   it("comfy present → the card registers; tools absent → no tool", async () => {
     const ctx = new Context();
-    await ctx.plugin(ComfyUIService as never);
+    await ctx.plugin(ComfyUIService as never, undefined as never);
     const svc = ctx.get("comfyui") as unknown as { cardIds(): string[] };
     pkg.apply(ctx, { call: seam } as never);
     assert.ok(svc.cardIds().includes("image-gen"), "the card registered");
@@ -258,7 +258,7 @@ describe("the index face: apply takes the services it finds", () => {
 
   it("tools present (no comfy) → the tool registers bare", async () => {
     const ctx = new Context();
-    await ctx.plugin(StubToolsService as never);
+    await ctx.plugin(StubToolsService as never, undefined as never);
     const stub = ctx.get("tools") as unknown as StubToolsService;
     pkg.apply(ctx, { call: seam } as never);
     assert.equal(stub.registered.length, 1);

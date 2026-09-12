@@ -22,7 +22,7 @@ import { GatewayError, jsonLane, type EstateCall } from '@melite/estate-call'
 // schema (one walk), the key travels inside the stage params, and
 // the card's compose consumes it at the one merge point.
 import { defineTool } from '@deepseek-ai/dsh-tools'
-import type { ToolDefinition, ParameterSchemaSpec } from '@deepseek-ai/dsh-tools'
+import type { InferValue, ToolDefinition, ParameterSchemaSpec } from '@deepseek-ai/dsh-tools'
 import { emitParamsSpec } from '@melite/comfyui-cordis/params-emit'
 import { schema, identity, BOARDED } from './card.ts'
 import { TOOL_NAME } from './wire.ts'
@@ -33,6 +33,26 @@ const FLOW = 'image-gen'
  *  ride; one spelling). */
 const DEFAULT_MODEL: string = BOARDED[0]
 const TIMEOUT_MS = 15e3
+
+/** The output envelope, stated once: defineTool infers execute's
+ * return from it, and the execute annotation below names the same
+ * inference — so multi-arm returns check arm-by-arm instead of
+ * collapsing into a union whose `?: undefined` fillers poison the
+ * schema's `& Record<string, JsonValue>` tail (gate-found, 2026-09-12). */
+const OUTPUT_SCHEMA = {
+  type: 'object',
+  additionalProperties: true,
+  properties: {
+    flow: { type: 'string', required: true },
+    model: { type: 'string', required: true },
+    run_id: { type: 'string', description: 'The queue run id — poll with run_status.' },
+    draft_id: { type: 'string', description: 'The minted card draft id.' },
+    status: { type: 'string', description: 'Registration status (queued/running).' },
+    error: { type: 'string', description: 'Named refusal reason, when the estate refused.' },
+  },
+} as const
+
+type OutputEnvelope = InferValue<typeof OUTPUT_SCHEMA>
 
 export const buildImageGenTool = (call: EstateCall): ToolDefinition => {
   const gw = jsonLane(call)
@@ -56,18 +76,7 @@ export const buildImageGenTool = (call: EstateCall): ToolDefinition => {
       // The DSL's explicit object form: per-property required
       // where always-present, openness declared. render is the
       // pure Native projection of one validated canonical value.
-      schema: {
-        type: 'object',
-        additionalProperties: true,
-        properties: {
-          flow: { type: 'string', required: true },
-          model: { type: 'string', required: true },
-          run_id: { type: 'string', description: 'The queue run id — poll with run_status.' },
-          draft_id: { type: 'string', description: 'The minted card draft id.' },
-          status: { type: 'string', description: 'Registration status (queued/running).' },
-          error: { type: 'string', description: 'Named refusal reason, when the estate refused.' },
-        },
-      },
+      schema: OUTPUT_SCHEMA,
       render: (_args, value) => {
         const v = (value ?? {}) as Record<string, unknown>
         if (typeof v.error === 'string' && v.error) {
@@ -114,7 +123,11 @@ export const buildImageGenTool = (call: EstateCall): ToolDefinition => {
       const runId = typeof m.run_id === 'string' && m.run_id !== '' ? m.run_id : '?'
       return { card: 'generic', title: `${identity.label} [${model}] \u2192 ${runId}` }
     },
-    async execute(args, exec): Promise<CardResult> {
+    // The tool plane returns the FLOW ENVELOPE (flow + model + the
+    // run ids/status/error arms the output schema declares) — never
+    // a CardResult (the card plane owns artifacts). The annotation
+    // names the schema's own inference (OUTPUT_SCHEMA above).
+    async execute(args, exec): Promise<OutputEnvelope> {
       // Validated args (the defineTool wrapper) — always the object.
       const a = args as Record<string, unknown>
       // emitParamsSpec synthesizes a CLOSED model enum from BOARDED —

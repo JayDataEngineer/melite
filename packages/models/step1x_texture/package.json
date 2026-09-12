@@ -13,6 +13,10 @@
     "@melite/comfyui-cordis": "workspace:*"
   },
   "devDependencies": {
-    "@types/node": "*"
+    "@types/node": "^22.20.0",
+    "typescript": "^5.9.3"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit"
   }
 }

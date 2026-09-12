@@ -227,13 +227,16 @@ describe("the lora wire resolution (the id/name split, 2026-09-10)", () => {
   // pass through; unknown ids refuse LOUD.
   const loraBoot = async () => {
     const { svc, ctx } = await boot(["loras"]);
+    // The structural cast states the real seat's shape: the register
+    // arms return their DISPOSER (ctx.effect demands it — a void
+    // return is not an effect).
     ctx.effect(() => (svc as unknown as {
-      registerPack: (c: unknown) => void;
-      registerFlavor: (f: unknown) => void;
+      registerPack: (c: unknown) => () => void;
+      registerFlavor: (f: unknown) => () => void;
     }).registerPack({ pack: "loras", fields: z.object({}) }));
     ctx.effect(() => (svc as unknown as {
-      registerPack: (c: unknown) => void;
-      registerFlavor: (f: unknown) => void;
+      registerPack: (c: unknown) => () => void;
+      registerFlavor: (f: unknown) => () => void;
     }).registerFlavor({
       pack: "loras",
       families: ["krea-2"],

@@ -1,19 +1,16 @@
-// glbLoadEnv.spec.ts — the no-BASE_URL arm of the shared GLB kernel
-// (separate file: the DRACO singleton reads import.meta.env lazily on
-// first construction, and spec files are process-isolated, so this file
-// gets a fresh singleton. Measured TOGETHER with glbLoad.spec.ts for the
-// file's union coverage).
-import { describe, it, vi, afterEach } from "vitest";
+// glbLoadEnv.spec.ts — the shared GLB kernel's decoder root under the
+// vitest module env (BASE_URL "/" — read once at MODULE load since
+// 2026-09-12; the branch's other arm is production-only and rides a
+// dated v8 ignore in the source, modelCatalog precedent). vi.stubEnv
+// cannot steer the module env object (it mutates process.env only —
+// probed), so the assertion pins the observable: the vitest-env root
+// resolves the root decoder path.
+import { describe, it } from "vitest";
 import assert from "node:assert/strict";
 import { makeGLTFLoader } from "../src/glbLoad.ts";
 
-afterEach(() => {
-  vi.unstubAllEnvs();
-});
-
-describe("shared GLB kernel without BASE_URL", () => {
-  it("falls back to the root decoder path", () => {
-    vi.stubEnv("BASE_URL", undefined as unknown as string);
+describe("shared GLB kernel decoder root under the vitest module env", () => {
+  it("resolves the root decoder path", () => {
     const loader = makeGLTFLoader();
     const inner = loader as unknown as {
       dracoLoader: { decoderPath: string };

@@ -318567,8 +318567,7 @@ void main() {
 		function dracoLoader() {
 			if (!_draco) {
 				_draco = new DRACOLoader();
-				const base = { "MODE": "production" }.BASE_URL ?? "/";
-				_draco.setDecoderPath(`${base}draco/gltf/`);
+				_draco.setDecoderPath(`${base$1}draco/gltf/`);
 			}
 			return _draco;
 		}
@@ -318579,11 +318578,12 @@ void main() {
 			loader.setDRACOLoader(dracoLoader());
 			return loader;
 		}
-		var _draco;
+		var _draco, base$1;
 		var init_glbLoad = __esmMin((() => {
 			init_GLTFLoader();
 			init_DRACOLoader();
 			_draco = null;
+			base$1 = {}.env?.BASE_URL ?? "/";
 		}));
 		//#endregion
 		//#region ../../web-kit/formats/src/glbSkin.ts

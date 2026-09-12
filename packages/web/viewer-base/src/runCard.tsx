@@ -21,6 +21,7 @@
  * DSH attachment plugin's; our bytes are gateway assets).
  */
 import { useEffect, useState } from 'react'
+import type { JSX } from 'react'
 import { StateDot } from '@deepseek-ai/dsh-client-ui-primitives'
 import type { ToolCallViewProps } from '@deepseek-ai/dsh-client-ui-tool/client'
 import { assetProxyUrl, runProxyUrl } from './wire.ts'

@@ -10,7 +10,7 @@ import {
   downloadCanvasScreenshot,
   downloadMotionNpz,
 } from "../src/downloads.ts";
-import type { MotionData } from "@melite/contracts";
+import type { PoseMotion } from "@melite/catalog";
 
 type Globals = Record<string, unknown>;
 const G = globalThis as unknown as Globals;
@@ -115,7 +115,7 @@ describe("downloadMotionNpz", () => {
   it("throws when the motion carries no NPZ payload", () => {
     assert.throws(
       () =>
-        downloadMotionNpz({ fps: 30 } as unknown as MotionData, "m.npz"),
+        downloadMotionNpz({ fps: 30 } as unknown as PoseMotion, "m.npz"),
       /No NPZ data in motion result/,
     );
   });
@@ -123,7 +123,7 @@ describe("downloadMotionNpz", () => {
   it("downloads the embedded payload with default and explicit names", () => {
     installDocument();
     installUrls();
-    const motion = { fps: 30, soma_npz_b64: btoa("npz-bytes") } as unknown as MotionData;
+    const motion = { fps: 30, soma_npz_b64: btoa("npz-bytes") } as unknown as PoseMotion;
     downloadMotionNpz(motion);
     assert.equal(anchors[0].download, "motion.npz");
     downloadMotionNpz(motion, "custom.npz");

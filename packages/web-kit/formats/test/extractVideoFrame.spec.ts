@@ -180,7 +180,7 @@ describe("extractVideoFrame", () => {
     assert.equal(canvases[canvases.length - 1].width, 512);
     assert.equal(canvases[canvases.length - 1].height, 384);
 
-    const q = extractVideoFrame("u", 1, 512);
+    const q = extractVideoFrame("u", 1);
     const w = lastVideo();
     scriptVideo(w, { vw: 320, vh: 240 });
     w.onloadedmetadata!();

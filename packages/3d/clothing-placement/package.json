@@ -22,7 +22,7 @@
     "@melite/estate-call": "workspace:*"
   },
   "devDependencies": {
-    "@types/node": "*",
-    "typescript": "^5"
+    "@types/node": "^22.20.0",
+    "typescript": "^5.9.3"
   }
 }

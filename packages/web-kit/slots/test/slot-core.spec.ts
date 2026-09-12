@@ -13,6 +13,44 @@ import {
 } from "../src/index.ts";
 import type { SlotEntryView } from "../src/index.ts";
 
+// The spec's fixture seats, declared the DESIGNED way: SlotMap is
+// extensible by declaration merging (any module may extend the seat
+// vocabulary — cardSeam.ts declares the estate's own two rows the
+// same way). Kind per use: seats addressed with key: are keyed, id:
+// are list, the rest single; "route" exercises chain election.
+// (2026-09-12: before this block the spec never sat in a tsc
+// program, so its seat names rode the wide side.)
+declare module "../src/vendored/core" {
+  interface SlotMap {
+    a: { kind: "single" }
+    anon: { kind: "single" }
+    b: { kind: "list" }
+    bad: { kind: "single" }
+    bare: { kind: "list" }
+    c: { kind: "keyed" }
+    cells: { kind: "keyed" }
+    dup: { kind: "single" }
+    flaky: { kind: "single" }
+    g: { kind: "single" }
+    ghost: { kind: "single" }
+    inj: { kind: "single" }
+    items: { kind: "list" }
+    kid: { kind: "single" }
+    keyed: { kind: "keyed" }
+    late: { kind: "single" }
+    lax: { kind: "single" }
+    listed: { kind: "list" }
+    once: { kind: "single" }
+    p: { kind: "single" }
+    r: { kind: "single" }
+    rb: { kind: "single" }
+    route: { kind: "chain" }
+    s: { kind: "single" }
+    single: { kind: "single" }
+    solo: { kind: "single" }
+  }
+}
+
 function Null(): null {
   return null;
 }
@@ -34,8 +72,12 @@ describe("resolveSlotLabel", () => {
 describe("register validation", () => {
   it("throws into undeclared seats", () => {
     const core = new SlotCore();
+    // "ghost-seat" is deliberately OUTSIDE the merged fixture table —
+    // the runtime's undeclared-seat refusal is the thing under test,
+    // so the name rides the wide side (the uiSlotSeam dynamic-key
+    // precedent) rather than the declared table.
     assert.throws(
-      () => core.register({ name: "ghost-seat", registrant: "t" }, Null),
+      () => core.register({ name: "ghost-seat" as "root", registrant: "t" }, Null),
       /not declared/,
     );
   });

@@ -11,6 +11,7 @@
     "./ui/*": "./src/ui/*"
   },
   "scripts": {
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@deepseek-ai/cordis": "^4.0.2",
@@ -21,8 +22,9 @@
     "@melite/estate-call": "workspace:*"
   },
   "devDependencies": {
-    "@types/node": "^22.20.0"
+    "@types/node": "^22.20.0",
+    "typescript": "^5.9.3"
   },
   "name": "@melite/audio-music",
-  "description": "the music card (the audio lane) \u2014 one card one package: card.ts host face + ui/ studio + agents/ context"
+  "description": "the music card (the audio lane) — one card one package: card.ts host face + ui/ studio + agents/ context"
 }

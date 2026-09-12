@@ -21,5 +21,12 @@
     "@melite/estate-runs": "workspace:*",
     "@melite/estate-media": "workspace:*",
     "@melite/estate-models": "workspace:*"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.3",
+    "@types/node": "^22.20.0"
   }
 }

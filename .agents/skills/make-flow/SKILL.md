@@ -1,6 +1,6 @@
 ---
 name: make-flow
-description: Use when authoring a new multi-stage flow (a named pipeline of card stages served at /v1/flows/validate), or when a flow fails form-spec parity or the registry walls. Covers the REGISTRY declaration in doors/flowsRegistry.ts, the flows/ leaf (tool.json + agent docs), and the gates.
+description: Use when authoring a new multi-stage flow (a named pipeline of card stages served at /v1/flows/validate), or when a flow fails form-spec parity or the registry walls. Covers the REGISTRY declaration in estate-queue's flowsData.ts, the flows/ leaf (tool.json + agent docs), and the gates.
 ---
 
 # Make a flow
@@ -74,22 +74,28 @@ stages are AGENT-DRIVEN card chains through the queue door
 
 ## 3. The gates
 
+The walls are vitest specs under `tests/walls/ts/suites/` (the old
+`tests/walls/ts/run.mjs` runner and `*.test.ts` spellings died with
+the rebuild — never invoke them):
+
 ```sh
-node tests/walls/ts/run.mjs
-#   form-spec-parity — every card-carrying spec ≡ the frozen referee
-#   models-flows     — every compose-plane family exists in the
-#                      registry; flow names legal
-#   runs-remote      — the {flow:} arms: live expansion, the door's
-#                      voices (REBUILD-13)
-node --experimental-strip-types --test tests/walls/ts/suites/form-spec-parity.test.ts
-cd packages/harness/estate-queue && ./node_modules/.bin/tsc --noEmit
+pnpm install
+node node_modules/vitest/vitest.mjs run tests/walls/ts/suites/form-spec-parity.spec.ts
+node node_modules/vitest/vitest.mjs run tests/walls/ts/suites/models-flows.spec.ts
+node node_modules/vitest/vitest.mjs run tests/walls/ts/suites/runs-remote.spec.ts
+# or all walls at once (plus every typecheck-owning package's tsc):
+node tools/hook-full-battery.mjs
+cd packages/harness/estate-queue && pnpm run typecheck
 ```
 
 ## 4. Prove the flow (no second process — the estate row serves)
 
 ```sh
 MELITE_STATE_ROOT=$(mktemp -d) node test/estate-drive.mjs   # the live lane
-node --experimental-strip-types --test tests/walls/ts/suites/runs-remote.test.ts
+# or against the running lane's door:
+curl -s -X POST http://127.0.0.1:3088/v1/flows/validate \
+  -H 'content-type: application/json' \
+  -d '{"id":"<flow>","stages":[]}'
 ```
 
 A validate with your stages expanded (and the honest refusal from

@@ -364,7 +364,7 @@ export interface NpzEntry {
 export async function writeNpz(
   arrays: Record<string, NpzEntry>,
   compress = true,
-): Promise<Uint8Array> {
+): Promise<Uint8Array<ArrayBuffer>> {
   type Entry = {
     name: Uint8Array
     data: Uint8Array

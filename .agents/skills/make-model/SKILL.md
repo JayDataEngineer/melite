@@ -18,11 +18,14 @@ discharge stroke).
 packages/models/<family>/
   package.json     # name "@melite/models-<family>", private,
                    # deps: @melite/comfyui-cordis (models-service,
-                   # model-contract subpaths)
+                   # model-contract subpaths); devDeps: typescript
+                   # ^5.9.3 + @types/node ^22.20.0; scripts own
+                   # "typecheck": "tsc --noEmit" (the battery gates
+                   # the package the day the script exists)
   tsconfig.json    # copy from a sibling (packages/models/krea-2)
   src/index.ts     # THE DECL plugin (shape below)
   mods/            # OPTIONAL capability packs (loras.ts, ...)
-  tests/decl.test.ts   # the family's own conformance test
+  tests/decl.spec.ts   # the family's own conformance spec
 ```
 
 `src/index.ts` — the shape (copy from `packages/models/krea-2/src/index.ts`):
@@ -83,24 +86,32 @@ family never lands — the gates below catch the absence.
 
 ## 3. The gates
 
+The walls are vitest specs under `tests/walls/ts/suites/` (the old
+`tests/walls/ts/run.mjs` runner, the
+`--experimental-strip-types --test` invocations, and the
+`*.test.ts` spellings died with the rebuild — never use them):
+
 ```sh
 pnpm install
-node tests/walls/ts/run.mjs
-#   law-hygiene      — declaration conformance (no cast, no dead keys)
-#   families-golden  — family table ≡ golden snapshots
-#   models-registry  — hierarchy, resolve artifact, LOUD refusals
-#   models-against-cards — defaults live in card field domains
-node --experimental-strip-types --test tests/walls/ts/suites/law-hygiene.test.ts
-cd packages/models/<family> && npx tsc --noEmit
+node node_modules/vitest/vitest.mjs run tests/walls/ts/suites/families-golden.spec.ts
+node node_modules/vitest/vitest.mjs run tests/walls/ts/suites/models-registry.spec.ts
+node node_modules/vitest/vitest.mjs run tests/walls/ts/suites/models-against-cards.spec.ts
+# or all walls at once (plus every typecheck-owning package's tsc —
+# the battery DERIVES its package list from the manifests):
+node tools/hook-full-battery.mjs
+cd packages/models/<family> && pnpm run typecheck
+node node_modules/vitest/vitest.mjs run packages/models/<family>/tests/decl.spec.ts
 ```
 
 A new family means NEW GOLDEN ROWS — the families-golden wall will
 fail until the golden snapshots are regenerated (that is the wall
 working; update the goldens, never the comparison).
 
-## 4. Restart PROD, prove the routes
+## 4. Prove the family (no gateway — it died 2026-09-10)
 
-```sh
-systemctl --user restart melite-gateway.service
-curl -s http://127.0.0.1:33081/v1/lanes | python3 -m json.tool | grep '<family>'
-```
+The family's proof is the walls above (families-golden ≡ the table,
+models-registry's resolve artifact, the transactional boot count)
+plus the live lane's catalog doors on the DSH lane (:3088) — the
+composition serves model discovery through the estate row, and the
+engine loads weights through `melite-comfyui.service` (:8188). Never
+restart a gateway; there is none.

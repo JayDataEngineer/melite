@@ -64,7 +64,7 @@ async function motionBytes(
   T = 2,
   fps: number | "empty" | null = 30,
   marker = 1.5,
-): Promise<Uint8Array> {
+): Promise<Uint8Array<ArrayBuffer>> {
   const joints = new Float32Array(T * J * 3);
   joints[0] = marker;
   const entries: Record<string, NpzEntry> = {
@@ -76,7 +76,11 @@ async function motionBytes(
   return writeNpz(entries);
 }
 
-function mockFetch(bytes: Uint8Array, status = 200): void {
+function mockFetch(bytes: Uint8Array<ArrayBuffer>, status = 200): void {
+  // TS 5.9 splits typed arrays by backing buffer; Response's BodyInit
+  // wants the ArrayBuffer-backed flavor — the param states it and the
+  // callers' constructors (new Uint8Array(n), writeNpz output) are
+  // exactly that (2026-09-12).
   globalThis.fetch = (async () =>
     new Response(bytes, { status })) as typeof fetch;
 }

@@ -111,10 +111,10 @@ importers:
         version: link:../../harness/estate-call
     devDependencies:
       '@types/node':
-        specifier: '*'
-        version: 24.13.3
+        specifier: ^22.20.0
+        version: 22.20.1
       typescript:
-        specifier: ^5
+        specifier: ^5.9.3
         version: 5.9.3
 
   packages/3d/fit:
@@ -136,8 +136,11 @@ importers:
         version: link:../../harness/estate-call
     devDependencies:
       '@types/node':
-        specifier: '*'
-        version: 24.13.3
+        specifier: ^22.20.0
+        version: 22.20.1
+      typescript:
+        specifier: ^5.9.3
+        version: 5.9.3
 
   packages/3d/img-to-mesh:
     dependencies:
@@ -234,8 +237,11 @@ importers:
         version: link:../../harness/estate-call
     devDependencies:
       '@types/node':
-        specifier: '*'
-        version: 24.13.3
+        specifier: ^22.20.0
+        version: 22.20.1
+      typescript:
+        specifier: ^5.9.3
+        version: 5.9.3
 
   packages/3d/skin:
     dependencies:
@@ -256,8 +262,11 @@ importers:
         version: link:../../harness/estate-call
     devDependencies:
       '@types/node':
-        specifier: '*'
-        version: 24.13.3
+        specifier: ^22.20.0
+        version: 22.20.1
+      typescript:
+        specifier: ^5.9.3
+        version: 5.9.3
 
   packages/audio/music:
     dependencies:
@@ -283,6 +292,9 @@ importers:
       '@types/node':
         specifier: ^22.20.0
         version: 22.20.1
+      typescript:
+        specifier: ^5.9.3
+        version: 5.9.3
 
   packages/audio/sfx:
     dependencies:
@@ -303,8 +315,11 @@ importers:
         version: link:../../harness/estate-call
     devDependencies:
       '@types/node':
-        specifier: '*'
-        version: 24.13.3
+        specifier: ^22.20.0
+        version: 22.20.1
+      typescript:
+        specifier: ^5.9.3
+        version: 5.9.3
 
   packages/audio/tts:
     dependencies:
@@ -330,6 +345,9 @@ importers:
       '@types/node':
         specifier: ^22.20.0
         version: 22.20.1
+      typescript:
+        specifier: ^5.9.3
+        version: 5.9.3
 
   packages/audio/voice-lock:
     dependencies:
@@ -355,6 +373,9 @@ importers:
       '@types/node':
         specifier: ^22.20.0
         version: 22.20.1
+      typescript:
+        specifier: ^5.9.3
+        version: 5.9.3
 
   packages/engines/comfyui-card-kit:
     dependencies:
@@ -779,10 +800,10 @@ importers:
         version: 4.5.4
     devDependencies:
       '@types/node':
-        specifier: 22.19.2
-        version: 22.19.2
+        specifier: ^22.20.0
+        version: 22.20.1
       typescript:
-        specifier: 5.9.3
+        specifier: ^5.9.3
         version: 5.9.3
 
   packages/estate/manage:
@@ -820,8 +841,8 @@ importers:
         specifier: ^22.20.0
         version: 22.20.1
       typescript:
-        specifier: ~5.7.2
-        version: 5.7.3
+        specifier: ^5.9.3
+        version: 5.9.3
 
   packages/estate/models:
     dependencies:
@@ -864,7 +885,14 @@ importers:
         specifier: ^5.9.3
         version: 5.9.3
 
-  packages/harness/estate-call: {}
+  packages/harness/estate-call:
+    devDependencies:
+      '@types/node':
+        specifier: ^22.20.0
+        version: 22.20.1
+      typescript:
+        specifier: ^5.9.3
+        version: 5.9.3
 
   packages/harness/estate-queue:
     dependencies:
@@ -1076,6 +1104,9 @@ importers:
       '@types/node':
         specifier: ^22.20.0
         version: 22.20.1
+      typescript:
+        specifier: ^5.9.3
+        version: 5.9.3
 
   packages/image/image-gen:
     dependencies:
@@ -1108,8 +1139,11 @@ importers:
         version: link:../../models/z-image
     devDependencies:
       '@types/node':
-        specifier: '*'
-        version: 24.13.3
+        specifier: ^22.20.0
+        version: 22.20.1
+      typescript:
+        specifier: ^5.9.3
+        version: 5.9.3
 
   packages/image/input-prep:
     dependencies:
@@ -1130,8 +1164,11 @@ importers:
         version: link:../../harness/estate-call
     devDependencies:
       '@types/node':
-        specifier: '*'
-        version: 24.13.3
+        specifier: ^22.20.0
+        version: 22.20.1
+      typescript:
+        specifier: ^5.9.3
+        version: 5.9.3
 
   packages/image/mask-studio:
     dependencies:
@@ -1219,8 +1256,11 @@ importers:
         version: link:../../harness/estate-call
     devDependencies:
       '@types/node':
-        specifier: '*'
-        version: 24.13.3
+        specifier: ^22.20.0
+        version: 22.20.1
+      typescript:
+        specifier: ^5.9.3
+        version: 5.9.3
 
   packages/image/upscale-tools:
     dependencies:
@@ -1241,8 +1281,11 @@ importers:
         version: link:../../harness/estate-call
     devDependencies:
       '@types/node':
-        specifier: '*'
-        version: 24.13.3
+        specifier: ^22.20.0
+        version: 22.20.1
+      typescript:
+        specifier: ^5.9.3
+        version: 5.9.3
 
   packages/models/ace-step:
     dependencies:
@@ -1254,8 +1297,11 @@ importers:
         version: link:../../engines/comfyui-cordis
     devDependencies:
       '@types/node':
-        specifier: '*'
-        version: 24.13.3
+        specifier: ^22.20.0
+        version: 22.20.1
+      typescript:
+        specifier: ^5.9.3
+        version: 5.9.3
 
   packages/models/anima:
     dependencies:
@@ -1267,8 +1313,11 @@ importers:
         version: link:../../engines/comfyui-cordis
     devDependencies:
       '@types/node':
-        specifier: '*'
-        version: 24.13.3
+        specifier: ^22.20.0
+        version: 22.20.1
+      typescript:
+        specifier: ^5.9.3
+        version: 5.9.3
 
   packages/models/anny:
     dependencies:
@@ -1283,8 +1332,11 @@ importers:
         version: link:../../engines/comfyui-cordis
     devDependencies:
       '@types/node':
-        specifier: '*'
-        version: 24.13.3
+        specifier: ^22.20.0
+        version: 22.20.1
+      typescript:
+        specifier: ^5.9.3
+        version: 5.9.3
 
   packages/models/anycreature:
     dependencies:
@@ -1296,8 +1348,11 @@ importers:
         version: link:../../engines/comfyui-cordis
     devDependencies:
       '@types/node':
-        specifier: '*'
-        version: 24.13.3
+        specifier: ^22.20.0
+        version: 22.20.1
+      typescript:
+        specifier: ^5.9.3
+        version: 5.9.3
 
   packages/models/auto-detect:
     dependencies:
@@ -1309,8 +1364,11 @@ importers:
         version: link:../../engines/comfyui-cordis
     devDependencies:
       '@types/node':
-        specifier: '*'
-        version: 24.13.3
+        specifier: ^22.20.0
+        version: 22.20.1
+      typescript:
+        specifier: ^5.9.3
+        version: 5.9.3
 
   packages/models/autoremesher:
     dependencies:
@@ -1322,8 +1380,11 @@ importers:
         version: link:../../engines/comfyui-cordis
     devDependencies:
       '@types/node':
-        specifier: '*'
-        version: 24.13.3
+        specifier: ^22.20.0
+        version: 22.20.1
+      typescript:
+        specifier: ^5.9.3
+        version: 5.9.3
 
   packages/models/basic_resize:
     dependencies:
@@ -1335,8 +1396,11 @@ importers:
         version: link:../../engines/comfyui-cordis
     devDependencies:
       '@types/node':
-        specifier: '*'
-        version: 24.13.3
+        specifier: ^22.20.0
+        version: 22.20.1
+      typescript:
+        specifier: ^5.9.3
+        version: 5.9.3
 
   packages/models/concat:
     dependencies:
@@ -1348,8 +1412,11 @@ importers:
         version: link:../../engines/comfyui-cordis
     devDependencies:
       '@types/node':
-        specifier: '*'
-        version: 24.13.3
+        specifier: ^22.20.0
+        version: 22.20.1
+      typescript:
+        specifier: ^5.9.3
+        version: 5.9.3
 
   packages/models/dwpose:
     dependencies:
@@ -1361,8 +1428,11 @@ importers:
         version: link:../../engines/comfyui-cordis
     devDependencies:
       '@types/node':
-        specifier: '*'
-        version: 24.13.3
+        specifier: ^22.20.0
+        version: 22.20.1
+      typescript:
+        specifier: ^5.9.3
+        version: 5.9.3
 
   packages/models/fit:
     dependencies:
@@ -1374,8 +1444,11 @@ importers:
         version: link:../../engines/comfyui-cordis
     devDependencies:
       '@types/node':
-        specifier: '*'
-        version: 24.13.3
+        specifier: ^22.20.0
+        version: 22.20.1
+      typescript:
+        specifier: ^5.9.3
+        version: 5.9.3
 
   packages/models/florence2:
     dependencies:
@@ -1387,8 +1460,11 @@ importers:
         version: link:../../engines/comfyui-cordis
     devDependencies:
       '@types/node':
-        specifier: '*'
-        version: 24.13.3
+        specifier: ^22.20.0
+        version: 22.20.1
+      typescript:
+        specifier: ^5.9.3
+        version: 5.9.3
 
   packages/models/flux-fill-dev:
     dependencies:
@@ -1400,8 +1476,11 @@ importers:
         version: link:../../engines/comfyui-cordis
     devDependencies:
       '@types/node':
-        specifier: '*'
-        version: 24.13.3
+        specifier: ^22.20.0
+        version: 22.20.1
+      typescript:
+        specifier: ^5.9.3
+        version: 5.9.3
 
   packages/models/gem_soma:
     dependencies:
@@ -1413,8 +1492,11 @@ importers:
         version: link:../../engines/comfyui-cordis
     devDependencies:
       '@types/node':
-        specifier: '*'
-        version: 24.13.3
+        specifier: ^22.20.0
+        version: 22.20.1
+      typescript:
+        specifier: ^5.9.3
+        version: 5.9.3
 
   packages/models/h3:
     dependencies:
@@ -1426,8 +1508,11 @@ importers:
         version: link:../../engines/comfyui-cordis
     devDependencies:
       '@types/node':
-        specifier: '*'
-        version: 24.13.3
+        specifier: ^22.20.0
+        version: 22.20.1
+      typescript:
+        specifier: ^5.9.3
+        version: 5.9.3
 
   packages/models/h3-keyframe:
     dependencies:
@@ -1439,8 +1524,11 @@ importers:
         version: link:../../engines/comfyui-cordis
     devDependencies:
       '@types/node':
-        specifier: '*'
-        version: 24.13.3
+        specifier: ^22.20.0
+        version: 22.20.1
+      typescript:
+        specifier: ^5.9.3
+        version: 5.9.3
 
   packages/models/h3-timeline:
     dependencies:
@@ -1452,8 +1540,11 @@ importers:
         version: link:../../engines/comfyui-cordis
     devDependencies:
       '@types/node':
-        specifier: '*'
-        version: 24.13.3
+        specifier: ^22.20.0
+        version: 22.20.1
+      typescript:
+        specifier: ^5.9.3
+        version: 5.9.3
 
   packages/models/ideogram:
     dependencies:
@@ -1465,8 +1556,11 @@ importers:
         version: link:../../engines/comfyui-cordis
     devDependencies:
       '@types/node':
-        specifier: '*'
-        version: 24.13.3
+        specifier: ^22.20.0
+        version: 22.20.1
+      typescript:
+        specifier: ^5.9.3
+        version: 5.9.3
 
   packages/models/input:
     dependencies:
@@ -1478,8 +1572,11 @@ importers:
         version: link:../../engines/comfyui-cordis
     devDependencies:
       '@types/node':
-        specifier: '*'
-        version: 24.13.3
+        specifier: ^22.20.0
+        version: 22.20.1
+      typescript:
+        specifier: ^5.9.3
+        version: 5.9.3
 
   packages/models/joycaption:
     dependencies:
@@ -1491,8 +1588,11 @@ importers:
         version: link:../../engines/comfyui-cordis
     devDependencies:
       '@types/node':
-        specifier: '*'
-        version: 24.13.3
+        specifier: ^22.20.0
+        version: 22.20.1
+      typescript:
+        specifier: ^5.9.3
+        version: 5.9.3
 
   packages/models/joytag:
     dependencies:
@@ -1504,8 +1604,11 @@ importers:
         version: link:../../engines/comfyui-cordis
     devDependencies:
       '@types/node':
-        specifier: '*'
-        version: 24.13.3
+        specifier: ^22.20.0
+        version: 22.20.1
+      typescript:
+        specifier: ^5.9.3
+        version: 5.9.3
 
   packages/models/kimodo:
     dependencies:
@@ -1517,8 +1620,11 @@ importers:
         version: link:../../engines/comfyui-cordis
     devDependencies:
       '@types/node':
-        specifier: '*'
-        version: 24.13.3
+        specifier: ^22.20.0
+        version: 22.20.1
+      typescript:
+        specifier: ^5.9.3
+        version: 5.9.3
 
   packages/models/krea-2:
     dependencies:
@@ -1530,8 +1636,11 @@ importers:
         version: link:../../engines/comfyui-cordis
     devDependencies:
       '@types/node':
-        specifier: '*'
-        version: 24.13.3
+        specifier: ^22.20.0
+        version: 22.20.1
+      typescript:
+        specifier: ^5.9.3
+        version: 5.9.3
 
   packages/models/latentsync:
     dependencies:
@@ -1543,8 +1652,11 @@ importers:
         version: link:../../engines/comfyui-cordis
     devDependencies:
       '@types/node':
-        specifier: '*'
-        version: 24.13.3
+        specifier: ^22.20.0
+        version: 22.20.1
+      typescript:
+        specifier: ^5.9.3
+        version: 5.9.3
 
   packages/models/ltx-2-3:
     dependencies:
@@ -1556,8 +1668,11 @@ importers:
         version: link:../../engines/comfyui-cordis
     devDependencies:
       '@types/node':
-        specifier: '*'
-        version: 24.13.3
+        specifier: ^22.20.0
+        version: 22.20.1
+      typescript:
+        specifier: ^5.9.3
+        version: 5.9.3
 
   packages/models/ltx-director-distilled:
     dependencies:
@@ -1569,8 +1684,11 @@ importers:
         version: link:../../engines/comfyui-cordis
     devDependencies:
       '@types/node':
-        specifier: '*'
-        version: 24.13.3
+        specifier: ^22.20.0
+        version: 22.20.1
+      typescript:
+        specifier: ^5.9.3
+        version: 5.9.3
 
   packages/models/mesh_refine:
     dependencies:
@@ -1582,8 +1700,11 @@ importers:
         version: link:../../engines/comfyui-cordis
     devDependencies:
       '@types/node':
-        specifier: '*'
-        version: 24.13.3
+        specifier: ^22.20.0
+        version: 22.20.1
+      typescript:
+        specifier: ^5.9.3
+        version: 5.9.3
 
   packages/models/moss:
     dependencies:
@@ -1595,8 +1716,11 @@ importers:
         version: link:../../engines/comfyui-cordis
     devDependencies:
       '@types/node':
-        specifier: '*'
-        version: 24.13.3
+        specifier: ^22.20.0
+        version: 22.20.1
+      typescript:
+        specifier: ^5.9.3
+        version: 5.9.3
 
   packages/models/moss-sfx:
     dependencies:
@@ -1608,8 +1732,11 @@ importers:
         version: link:../../engines/comfyui-cordis
     devDependencies:
       '@types/node':
-        specifier: '*'
-        version: 24.13.3
+        specifier: ^22.20.0
+        version: 22.20.1
+      typescript:
+        specifier: ^5.9.3
+        version: 5.9.3
 
   packages/models/music3:
     dependencies:
@@ -1621,8 +1748,11 @@ importers:
         version: link:../../engines/comfyui-cordis
     devDependencies:
       '@types/node':
-        specifier: '*'
-        version: 24.13.3
+        specifier: ^22.20.0
+        version: 22.20.1
+      typescript:
+        specifier: ^5.9.3
+        version: 5.9.3
 
   packages/models/pixal3d:
     dependencies:
@@ -1634,8 +1764,11 @@ importers:
         version: link:../../engines/comfyui-cordis
     devDependencies:
       '@types/node':
-        specifier: '*'
-        version: 24.13.3
+        specifier: ^22.20.0
+        version: 22.20.1
+      typescript:
+        specifier: ^5.9.3
+        version: 5.9.3
 
   packages/models/pixel_upscale:
     dependencies:
@@ -1647,8 +1780,11 @@ importers:
         version: link:../../engines/comfyui-cordis
     devDependencies:
       '@types/node':
-        specifier: '*'
-        version: 24.13.3
+        specifier: ^22.20.0
+        version: 22.20.1
+      typescript:
+        specifier: ^5.9.3
+        version: 5.9.3
 
   packages/models/qwen-img-edit-2511:
     dependencies:
@@ -1663,8 +1799,11 @@ importers:
         version: link:../../engines/comfyui-cordis
     devDependencies:
       '@types/node':
-        specifier: '*'
-        version: 24.13.3
+        specifier: ^22.20.0
+        version: 22.20.1
+      typescript:
+        specifier: ^5.9.3
+        version: 5.9.3
 
   packages/models/qwen3-tts:
     dependencies:
@@ -1679,8 +1818,11 @@ importers:
         version: link:../../engines/comfyui-cordis
     devDependencies:
       '@types/node':
-        specifier: '*'
-        version: 24.13.3
+        specifier: ^22.20.0
+        version: 22.20.1
+      typescript:
+        specifier: ^5.9.3
+        version: 5.9.3
 
   packages/models/rtx-vsr:
     dependencies:
@@ -1692,8 +1834,11 @@ importers:
         version: link:../../engines/comfyui-cordis
     devDependencies:
       '@types/node':
-        specifier: '*'
-        version: 24.13.3
+        specifier: ^22.20.0
+        version: 22.20.1
+      typescript:
+        specifier: ^5.9.3
+        version: 5.9.3
 
   packages/models/scail2-animate:
     dependencies:
@@ -1705,8 +1850,11 @@ importers:
         version: link:../../engines/comfyui-cordis
     devDependencies:
       '@types/node':
-        specifier: '*'
-        version: 24.13.3
+        specifier: ^22.20.0
+        version: 22.20.1
+      typescript:
+        specifier: ^5.9.3
+        version: 5.9.3
 
   packages/models/see-through:
     dependencies:
@@ -1718,8 +1866,11 @@ importers:
         version: link:../../engines/comfyui-cordis
     devDependencies:
       '@types/node':
-        specifier: '*'
-        version: 24.13.3
+        specifier: ^22.20.0
+        version: 22.20.1
+      typescript:
+        specifier: ^5.9.3
+        version: 5.9.3
 
   packages/models/seedvr2_ema:
     dependencies:
@@ -1731,8 +1882,11 @@ importers:
         version: link:../../engines/comfyui-cordis
     devDependencies:
       '@types/node':
-        specifier: '*'
-        version: 24.13.3
+        specifier: ^22.20.0
+        version: 22.20.1
+      typescript:
+        specifier: ^5.9.3
+        version: 5.9.3
 
   packages/models/skin:
     dependencies:
@@ -1744,8 +1898,11 @@ importers:
         version: link:../../engines/comfyui-cordis
     devDependencies:
       '@types/node':
-        specifier: '*'
-        version: 24.13.3
+        specifier: ^22.20.0
+        version: 22.20.1
+      typescript:
+        specifier: ^5.9.3
+        version: 5.9.3
 
   packages/models/skintokens:
     dependencies:
@@ -1757,8 +1914,11 @@ importers:
         version: link:../../engines/comfyui-cordis
     devDependencies:
       '@types/node':
-        specifier: '*'
-        version: 24.13.3
+        specifier: ^22.20.0
+        version: 22.20.1
+      typescript:
+        specifier: ^5.9.3
+        version: 5.9.3
 
   packages/models/somax:
     dependencies:
@@ -1770,8 +1930,11 @@ importers:
         version: link:../../engines/comfyui-cordis
     devDependencies:
       '@types/node':
-        specifier: '*'
-        version: 24.13.3
+        specifier: ^22.20.0
+        version: 22.20.1
+      typescript:
+        specifier: ^5.9.3
+        version: 5.9.3
 
   packages/models/step1x_texture:
     dependencies:
@@ -1783,8 +1946,11 @@ importers:
         version: link:../../engines/comfyui-cordis
     devDependencies:
       '@types/node':
-        specifier: '*'
-        version: 24.13.3
+        specifier: ^22.20.0
+        version: 22.20.1
+      typescript:
+        specifier: ^5.9.3
+        version: 5.9.3
 
   packages/models/stretchy-rig:
     dependencies:
@@ -1796,8 +1962,11 @@ importers:
         version: link:../../engines/comfyui-cordis
     devDependencies:
       '@types/node':
-        specifier: '*'
-        version: 24.13.3
+        specifier: ^22.20.0
+        version: 22.20.1
+      typescript:
+        specifier: ^5.9.3
+        version: 5.9.3
 
   packages/models/transfer_rig:
     dependencies:
@@ -1809,8 +1978,11 @@ importers:
         version: link:../../engines/comfyui-cordis
     devDependencies:
       '@types/node':
-        specifier: '*'
-        version: 24.13.3
+        specifier: ^22.20.0
+        version: 22.20.1
+      typescript:
+        specifier: ^5.9.3
+        version: 5.9.3
 
   packages/models/trellis2-native:
     dependencies:
@@ -1822,8 +1994,11 @@ importers:
         version: link:../../engines/comfyui-cordis
     devDependencies:
       '@types/node':
-        specifier: '*'
-        version: 24.13.3
+        specifier: ^22.20.0
+        version: 22.20.1
+      typescript:
+        specifier: ^5.9.3
+        version: 5.9.3
 
   packages/models/trellis_native:
     dependencies:
@@ -1835,8 +2010,11 @@ importers:
         version: link:../../engines/comfyui-cordis
     devDependencies:
       '@types/node':
-        specifier: '*'
-        version: 24.13.3
+        specifier: ^22.20.0
+        version: 22.20.1
+      typescript:
+        specifier: ^5.9.3
+        version: 5.9.3
 
   packages/models/wan-vace:
     dependencies:
@@ -1848,8 +2026,11 @@ importers:
         version: link:../../engines/comfyui-cordis
     devDependencies:
       '@types/node':
-        specifier: '*'
-        version: 24.13.3
+        specifier: ^22.20.0
+        version: 22.20.1
+      typescript:
+        specifier: ^5.9.3
+        version: 5.9.3
 
   packages/models/wd14:
     dependencies:
@@ -1861,8 +2042,11 @@ importers:
         version: link:../../engines/comfyui-cordis
     devDependencies:
       '@types/node':
-        specifier: '*'
-        version: 24.13.3
+        specifier: ^22.20.0
+        version: 22.20.1
+      typescript:
+        specifier: ^5.9.3
+        version: 5.9.3
 
   packages/models/z-image:
     dependencies:
@@ -1874,8 +2058,11 @@ importers:
         version: link:../../engines/comfyui-cordis
     devDependencies:
       '@types/node':
-        specifier: '*'
-        version: 24.13.3
+        specifier: ^22.20.0
+        version: 22.20.1
+      typescript:
+        specifier: ^5.9.3
+        version: 5.9.3
 
   packages/motion/motion:
     dependencies:
@@ -2045,8 +2232,11 @@ importers:
         version: link:../../harness/estate-call
     devDependencies:
       '@types/node':
-        specifier: '*'
-        version: 24.13.3
+        specifier: ^22.20.0
+        version: 22.20.1
+      typescript:
+        specifier: ^5.9.3
+        version: 5.9.3
 
   packages/web-kit/catalog:
     dependencies:
@@ -2059,8 +2249,28 @@ importers:
       react:
         specifier: ^19.2.6
         version: 19.2.8
+    devDependencies:
+      '@types/node':
+        specifier: ^22.20.0
+        version: 22.20.1
+      '@types/react':
+        specifier: ^19.2.14
+        version: 19.2.18
+      '@types/react-dom':
+        specifier: ^19.2.2
+        version: 19.2.5(@types/react@19.2.18)
+      typescript:
+        specifier: ~6.0.3
+        version: 6.0.3
 
-  packages/web-kit/contracts: {}
+  packages/web-kit/contracts:
+    devDependencies:
+      '@types/node':
+        specifier: ^22.20.0
+        version: 22.20.1
+      typescript:
+        specifier: ^5.9.3
+        version: 5.9.3
 
   packages/web-kit/formats:
     dependencies:
@@ -2073,6 +2283,22 @@ importers:
       three:
         specifier: '*'
         version: 0.184.0
+    devDependencies:
+      '@types/node':
+        specifier: ^22.20.0
+        version: 22.20.1
+      '@types/react':
+        specifier: ^19.2.14
+        version: 19.2.18
+      '@types/react-dom':
+        specifier: ^19.2.2
+        version: 19.2.5(@types/react@19.2.18)
+      '@types/three':
+        specifier: ^0.184.1
+        version: 0.184.1
+      typescript:
+        specifier: ^5.9.3
+        version: 5.9.3
 
   packages/web-kit/slots:
     dependencies:
@@ -2085,6 +2311,19 @@ importers:
       react-dom:
         specifier: ^19.2.6
         version: 19.2.8(react@19.2.8)
+    devDependencies:
+      '@types/node':
+        specifier: ^22.20.0
+        version: 22.20.1
+      '@types/react':
+        specifier: ^19.2.14
+        version: 19.2.18
+      '@types/react-dom':
+        specifier: ^19.2.2
+        version: 19.2.5(@types/react@19.2.18)
+      typescript:
+        specifier: ~6.0.3
+        version: 6.0.3
 
   packages/web-kit/timeline:
     dependencies:
@@ -2138,11 +2377,17 @@ importers:
         specifier: 0.1.5-rc.2
         version: 0.1.5-rc.2(@deepseek-ai/cordis@4.0.2)
       '@types/node':
-        specifier: '*'
-        version: 24.13.3
+        specifier: ^22.20.0
+        version: 22.20.1
       '@types/react':
-        specifier: ~18.3.1
-        version: 18.3.31
+        specifier: ^19.2.14
+        version: 19.2.18
+      '@types/react-dom':
+        specifier: ^19.2.2
+        version: 19.2.5(@types/react@19.2.18)
+      typescript:
+        specifier: ~6.0.3
+        version: 6.0.3
 
   packages/web/editor-shell: {}
 
@@ -2395,6 +2640,13 @@ importers:
       '@melite/estate-runs':
         specifier: workspace:*
         version: link:../../estate/runs
+    devDependencies:
+      '@types/node':
+        specifier: ^22.20.0
+        version: 22.20.1
+      typescript:
+        specifier: ^5.9.3
+        version: 5.9.3
 
   packages/web/melite-run-wire:
     devDependencies:
@@ -2427,8 +2679,11 @@ importers:
         specifier: '*'
         version: 3.18.2
       '@types/node':
-        specifier: '*'
-        version: 24.13.3
+        specifier: ^22.20.0
+        version: 22.20.1
+      typescript:
+        specifier: ^5.9.3
+        version: 5.9.3
 
   packages/web/viewer-base:
     dependencies:
@@ -2446,11 +2701,17 @@ importers:
         specifier: 0.1.5-rc.2
         version: 0.1.5-rc.2(@deepseek-ai/cordis@4.0.2)
       '@types/node':
-        specifier: '*'
-        version: 24.13.3
+        specifier: ^22.20.0
+        version: 22.20.1
       '@types/react':
-        specifier: ~18.3.1
-        version: 18.3.31
+        specifier: ^19.2.14
+        version: 19.2.18
+      '@types/react-dom':
+        specifier: ^19.2.2
+        version: 19.2.5(@types/react@19.2.18)
+      typescript:
+        specifier: ~6.0.3
+        version: 6.0.3
 
   vendor/cordis_plugins/group:
     dependencies:
@@ -3619,9 +3880,6 @@ packages:
 
   '@types/estree@1.0.9':
     resolution: {integrity: sha512-GhdPgy1el4/ImP05X05Uw4cw2/M93BCUmnEvWZNStlCzEKME4Fkk+YpoA5OiHNQmoS7Cafb8Xa3Pya8m1Qrzeg==}
-
-  '@types/node@22.19.2':
-    resolution: {integrity: sha512-LPM2G3Syo1GLzXLGJAKdqoU35XvrWzGJ21/7sgZTUpbkBaOasTj8tjwn6w+hCkqaa1TfJ/w67rJSwYItlJ2mYw==}
 
   '@types/node@22.20.1':
     resolution: {integrity: sha512-EANqOCF9QFyra+4pfxUcX9STKJpCLjMbObVzljIJomAWSnuSIEAvyzEU53GaajbXJEgdh0iEcPL+DGvpUd4k1Q==}
@@ -6136,10 +6394,6 @@ snapshots:
   '@types/draco3d@1.4.10': {}
 
   '@types/estree@1.0.9': {}
-
-  '@types/node@22.19.2':
-    dependencies:
-      undici-types: 6.21.0
 
   '@types/node@22.20.1':
     dependencies:

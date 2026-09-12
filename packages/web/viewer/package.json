@@ -26,7 +26,11 @@
   "devDependencies": {
     "@deepseek-ai/dsh-host-webserver": "0.1.5-rc.2",
     "@deepseek-ai/schemastery": "*",
-    "@types/node": "*",
-    "@deepseek-ai/dsh-client-ui-renderer": "0.1.5-rc.2"
+    "@types/node": "^22.20.0",
+    "@deepseek-ai/dsh-client-ui-renderer": "0.1.5-rc.2",
+    "typescript": "^5.9.3"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit"
   }
 }

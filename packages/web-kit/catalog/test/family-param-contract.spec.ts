@@ -22,6 +22,7 @@ import {
   validateParamsAgainstSchema,
 } from "../src/familyParamContract.ts";
 import type { FamilyParamSchema } from "../src/familyParamContract.ts";
+import type { ModifierKindSpec } from "@melite/contracts";
 
 const STR: FamilyParamSchema = {
   properties: {
@@ -254,10 +255,14 @@ describe("validateParamsAgainstSchema", () => {
 });
 
 describe("validateModifierEntries", () => {
-  const loraKind = {
-    kind: "lora", param_key: "loras", cardinality: "list" as const,
-    fields: [{ name: "id", type: "string" as const }, { name: "strength", type: "float" as const, default: 1, min: 0, max: 2 }],
-    options: [{ value: "a" }, { value: 7 }, null],
+  // Fixtures stated against the real contract type — the object
+  // literal's widened `kind: string` never reaches the param.
+  // Options ride the contract's own shape ({value,label} — no
+  // number/null members: the openapi ModifierOption is closed).
+  const loraKind: ModifierKindSpec = {
+    kind: "lora", label: "LoRA", param_key: "loras", cardinality: "list",
+    fields: [{ name: "id", type: "string" }, { name: "strength", type: "float", default: 1, min: 0, max: 2 }],
+    options: [{ value: "a", label: "A" }, { value: "b", label: "B" }],
   };
   it("no-ops without kinds and without mods", () => {
     assert.deepEqual(validateModifierEntries(null, {}), []);
@@ -265,14 +270,17 @@ describe("validateModifierEntries", () => {
     assert.deepEqual(validateModifierEntries([], { loras: [] }), []);
     assert.deepEqual(validateModifierEntries([loraKind], {}), []);
     assert.deepEqual(validateModifierEntries([loraKind], { loras: null }), []);
-    // A kind declaring neither cardinality nor fields rides the defaults.
-    assert.deepEqual(validateModifierEntries([{ kind: "x", param_key: "xs" }], { xs: [{}] }), []);
+    // A kind declaring neither cardinality nor fields rides the
+    // defaults. fields is contract-required but the source tolerates
+    // its absence (defensive against backend rows) — this row rides
+    // the wide side ON PURPOSE to keep that tolerance arm measured.
+    assert.deepEqual(validateModifierEntries([{ kind: "x", label: "X", param_key: "xs" } as unknown as ModifierKindSpec], { xs: [{}] }), []);
   });
 
   it("gates cardinality strictly", () => {
-    const scalar = { kind: "s", param_key: "s", cardinality: "scalar" as const, fields: [] };
-    const scalarNamed = { kind: "s", param_key: "s", cardinality: "scalar" as const, fields: [{ name: "v", type: "string" as const }] };
-    const scalarAnon = { kind: "s", param_key: "s", cardinality: "scalar" as const, fields: [{ type: "string" as const }] };
+    const scalar: ModifierKindSpec = { kind: "s", label: "S", param_key: "s", cardinality: "scalar", fields: [] };
+    const scalarNamed: ModifierKindSpec = { kind: "s", label: "S", param_key: "s", cardinality: "scalar", fields: [{ name: "v", type: "string" }] };
+    const scalarAnon: ModifierKindSpec = { kind: "s", label: "S", param_key: "s", cardinality: "scalar", fields: [{ name: "", type: "string" }] };
     assert.match(validateModifierEntries([scalar], { s: {} })[0]!.message, /scalar.*got object/);
     assert.match(validateModifierEntries([scalar], { s: [1] })[0]!.message, /scalar.*got array/);
     assert.deepEqual(validateModifierEntries([scalar], { s: "x" }), []);
@@ -305,14 +313,14 @@ describe("validateModifierEntries", () => {
 
   it("requires fields unless defaulted, image, or artifact", () => {
     const kinds = [{
-      kind: "k", param_key: "ks", cardinality: "list" as const,
+      kind: "k", label: "K", param_key: "ks", cardinality: "list" as const,
       fields: [
         { name: "req", type: "string" as const },
         { name: "opt", type: "string" as const, default: "d" },
         { name: "img", type: "image" as const },
         { name: "artifact", type: "string" as const },
       ],
-    }];
+    }] satisfies ModifierKindSpec[];
     const v = validateModifierEntries(kinds, { ks: [{}] });
     assert.equal(v.length, 1);
     assert.match(v[0]!.path, /req/);
@@ -321,21 +329,23 @@ describe("validateModifierEntries", () => {
     assert.equal(v2.length, 1);
     // Image presence alone satisfies (no wire rules on conditioning).
     assert.deepEqual(validateModifierEntries(kinds, { ks: [{ req: "r", img: "blob" }] }), []);
-    // A nameless declared field declares nothing: skipped, never required.
+    // A nameless declared field declares nothing: skipped, never
+    // required (the contract demands a name; the empty string rides
+    // the function's own falsy-name skip).
     const nameless = [{
-      kind: "k", param_key: "ks", cardinality: "list" as const,
-      fields: [{ type: "string" as const, default: "d" }],
-    }];
+      kind: "k", label: "K", param_key: "ks", cardinality: "list" as const,
+      fields: [{ name: "", type: "string" as const, default: "d" }],
+    }] satisfies ModifierKindSpec[];
     assert.deepEqual(validateModifierEntries(nameless, { ks: [{}] }), []);
   });
 
   it("gates numeric bounds and types", () => {
-    const num = {
-      kind: "n", param_key: "ns", cardinality: "list" as const,
+    const num: ModifierKindSpec = {
+      kind: "n", label: "N", param_key: "ns", cardinality: "list",
       fields: [
-        { name: "i", type: "integer" as const, min: 0, max: 10 },
-        { name: "fl", type: "float" as const },
-        { name: "plain", type: "integer" as const },
+        { name: "i", type: "integer", min: 0, max: 10 },
+        { name: "fl", type: "float" },
+        { name: "plain", type: "integer" },
       ],
     };
     assert.deepEqual(validateModifierEntries([num], { ns: [{ i: 5, fl: 0.5, plain: 1 }] }), []);
@@ -349,13 +359,13 @@ describe("validateModifierEntries", () => {
 
   it("gates booleans, strings, and adapter membership", () => {
     const kinds = [{
-      kind: "lora", param_key: "loras", cardinality: "list" as const,
+      kind: "lora", label: "LoRA", param_key: "loras", cardinality: "list" as const,
       fields: [
         { name: "id", type: "string" as const },
         { name: "on", type: "boolean" as const },
         { name: "note", type: "string" as const },
       ],
-      options: [{ value: "a" }],
+      options: [{ value: "a", label: "A" }],
     }];
     assert.deepEqual(validateModifierEntries(kinds, { loras: [{ id: "a", on: true, note: "n" }] }), []);
     assert.match(validateModifierEntries(kinds, { loras: [{ id: "zzz", on: true, note: "n" }] })[0]!.message, /unknown adapter/);
@@ -373,22 +383,23 @@ describe("validateModifierEntries", () => {
 
   it("gates select membership (field options, then kind options)", () => {
     const kinds = [{
-      kind: "sampler", param_key: "s", cardinality: "list" as const,
+      kind: "sampler", label: "Sampler", param_key: "s", cardinality: "list" as const,
       fields: [{ name: "pick", type: "select" as const, options: ["a", "b"] }],
-    }];
+    }] satisfies ModifierKindSpec[];
     assert.deepEqual(validateModifierEntries(kinds, { s: [{ pick: "a" }] }), []);
     assert.match(validateModifierEntries(kinds, { s: [{ pick: "z" }] })[0]!.message, /unknown option/);
     assert.match(validateModifierEntries(kinds, { s: [{ pick: 5 }] })[0]!.message, /expected a string/);
     const kindBacked = [{
-      kind: "lora", param_key: "loras", cardinality: "list" as const,
+      kind: "lora", label: "LoRA", param_key: "loras", cardinality: "list" as const,
       fields: [{ name: "pick", type: "select" as const }],
-      options: [{ value: "a" }],
-    }];
-    assert.deepEqual(validateModifierEntries(kindBacked, { loras: [{ pick: "a" }] }), []);
-    assert.match(validateModifierEntries(kindBacked, { loras: [{ pick: "z" }] })[0]!.message, /unknown option/);
-    const up = [{ ...kindBacked[0]!, upload_dir: "d" }];
+      options: [{ value: "a", label: "A" }],
+    }] satisfies ModifierKindSpec[];
+    const base: ModifierKindSpec = kindBacked[0]!;
+    assert.deepEqual(validateModifierEntries([base], { loras: [{ pick: "a" }] }), []);
+    assert.match(validateModifierEntries([base], { loras: [{ pick: "z" }] })[0]!.message, /unknown option/);
+    const up: ModifierKindSpec[] = [{ ...base, upload_dir: "d" }];
     assert.deepEqual(validateModifierEntries(up, { loras: [{ pick: "z" }] }), []);
-    const cn = [{ ...kindBacked[0]!, kind: "controlnet" }];
+    const cn: ModifierKindSpec[] = [{ ...base, kind: "controlnet" }];
     assert.deepEqual(validateModifierEntries(cn, { loras: [{ pick: "z" }] }), []);
     const bare: [] = [];
     assert.deepEqual(validateModifierEntries(bare, { loras: [{ pick: "z" }] }), []);

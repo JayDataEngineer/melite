@@ -35,7 +35,9 @@ class FakeCtx {
   drawImage(src: unknown, ..._rest: unknown[]): void {
     const srcBuf =
       src instanceof FakeCanvas
-        ? src.ctx.buf
+        ? // a FakeCanvas reaching drawImage has drawn (getContext ran,
+          // so ctx is non-null — the dated assertion rides that invariant).
+          (() => { if (!src.ctx) throw new Error("FakeCanvas drawImage without ctx"); return src.ctx.buf })()
         : pixelRegistry.get((src as { src: string }).src) ?? new Uint8ClampedArray(this.buf.length);
     const a = this.globalAlpha;
     for (let i = 0; i < this.buf.length; i += 4) {

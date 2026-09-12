@@ -31,13 +31,22 @@ import type { GLTF } from "three/examples/jsm/loaders/GLTFLoader.js"
 let _draco: DRACOLoader | null = null
 let _loader: GLTFLoader | null = null
 
+// import.meta.env is Vite runtime truth; the cast states the read
+// locally (a global ImportMeta augmentation collides with the
+// vite/client programs some consumers carry — anny's, 2026-09-12).
+/* v8 ignore next -- the shipped client bundles never carry BASE_URL
+ * (the clientBundle preset defines import.meta.env as {MODE} only),
+ * so the fallback IS the production path; under vitest the module
+ * env always carries BASE_URL "/", making the right arm unreachable
+ * here (modelCatalog.ts precedent, 2026-09-12). */
+const base = (import.meta as { env?: { BASE_URL?: string } }).env?.BASE_URL ?? "/"
+
 function dracoLoader(): DRACOLoader {
   if (!_draco) {
     _draco = new DRACOLoader()
     // LOCAL decoder (offline, deterministic — no CDN, no SPOF). The
     // trailing slash matters: DRACOLoader concatenates filenames onto
     // the path verbatim.
-    const base = import.meta.env?.BASE_URL ?? "/"
     _draco.setDecoderPath(`${base}draco/gltf/`)
   }
   return _draco
