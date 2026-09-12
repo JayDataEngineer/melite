@@ -3,7 +3,8 @@
  * ui/studio/component.tsx. No behavior change: headers/footers are new,
  * every logic line is verbatim from the monolith (source range noted).
  */
-import { CheckControl, ControlRow, NumberControl, SelectControl, SliderControl, TextControl } from "@melite/ui"
+import { CheckControl, ControlRow, NumberControl, SelectControl, SliderControl, TextControl } from "./kit"
+import s from "./studio.module.css"
 import { SPEED_LORA_OPTIONS } from "./docModel"
 import type { LayerA, SetLayerAKey } from "./docModel"
 
@@ -18,8 +19,8 @@ export function RunAdvancedPanels({
     <>
     {/* SLA lab — only when Attention = SLA (block-sparse). */}
     {(layerA.h3_attention ?? "kitchen") === "sla" && (
-    <div className="space-y-1.5" data-testid="tl-sla-panel">
-      <div className="text-[9px] font-semibold uppercase tracking-wide text-muted-foreground/50">
+    <div className={s.group} data-testid="tl-sla-panel">
+      <div className={s.groupTitle}>
         SLA — block-sparse attention
       </div>
       <ControlRow label="Sparsity">
@@ -120,8 +121,8 @@ export function RunAdvancedPanels({
     {/* Speed adapter (plaguekind parity: the lightx2v LoRA at
         0.8 riding the model). Serializes as the family's loras
         vocabulary [{name, strength?}]; empty = none. */}
-    <div className="space-y-1.5" data-testid="tl-lora-panel">
-      <div className="text-[9px] font-semibold uppercase tracking-wide text-muted-foreground/50">
+    <div className={s.group} data-testid="tl-lora-panel">
+      <div className={s.groupTitle}>
         Speed LoRA
       </div>
       <ControlRow label="Name">
@@ -146,8 +147,8 @@ export function RunAdvancedPanels({
       </ControlRow>
     </div>
     {/* Post-processing — sharpen + interpolation, post-decode. */}
-    <div className="space-y-1.5" data-testid="tl-post-panel">
-      <div className="text-[9px] font-semibold uppercase tracking-wide text-muted-foreground/50">
+    <div className={s.group} data-testid="tl-post-panel">
+      <div className={s.groupTitle}>
         Post-processing
       </div>
       <ControlRow label="Sharpening">

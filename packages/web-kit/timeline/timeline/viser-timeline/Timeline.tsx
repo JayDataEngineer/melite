@@ -50,8 +50,9 @@ import {
  initialInteractionState,
  interactionReducer,
 } from "./interactions";
-import { Button } from "@melite/ui/button";
-import { Tip } from "@melite/ui/tip";
+import { Button } from "@deepseek-ai/dsh-client-ui-primitives";
+import { Tip } from "../tip";
+import css from "../timeline.module.css";
 
 interface TimelineProps {
  timelineState: TimelineMessage | null;
@@ -3266,27 +3267,27 @@ export function Timeline({
  />
  </div>
  <Tip tip="Zoom out">
- <Button variant="ghost"
+ <Button variant="ghost" size="sm"
  data-testid="timeline-zoom-out"
  onClick={() => zoomBy(1 / 1.5)}
  aria-label="Zoom out"
- className="flex h-5 w-5 shrink-0 items-center justify-center rounded-md border border-brand/60 bg-brand/15 text-[13px] leading-none text-brand transition-colors hover:bg-brand/25"
+ className={css.miniBtn}
  style={{ padding: 0 }}
  >−</Button>
  </Tip>
  <Tip tip="Fit to window (reset zoom)">
- <Button variant="ghost"
+ <Button variant="ghost" size="sm"
  data-testid="timeline-zoom-fit"
  onClick={resetZoom}
- className="flex h-5 shrink-0 items-center justify-center rounded-md border border-brand/60 bg-brand/15 px-1.5 text-[10px] font-semibold text-brand transition-colors hover:bg-brand/25"
+ className={css.miniFitBtn}
  >fit</Button>
  </Tip>
  <Tip tip="Zoom in">
- <Button variant="ghost"
+ <Button variant="ghost" size="sm"
  data-testid="timeline-zoom-in"
  onClick={() => zoomBy(1.5)}
  aria-label="Zoom in"
- className="flex h-5 w-5 shrink-0 items-center justify-center rounded-md border border-brand/60 bg-brand/15 text-[13px] leading-none text-brand transition-colors hover:bg-brand/25"
+ className={css.miniBtn}
  style={{ padding: 0 }}
  >+</Button>
  </Tip>

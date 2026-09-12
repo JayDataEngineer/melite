@@ -109,6 +109,16 @@ describe("the executor path (two doors, envelope law)", () => {
   });
 });
 
+  it("a pre-aborted signal aborts (cancellation propagates, never a refusal)", async () => {
+    const ac = new AbortController();
+    ac.abort();
+    const dead: EstateCall = async () => { throw new Error("never dialed"); };
+    await assert.rejects(
+      FACE(dead).execute(GOOD_ARGS, { ...exec, signal: ac.signal } as never),
+      /aborted/i,
+    );
+  });
+
   it("transport failures resolve canonically (jsonLane wraps status 0)", async () => {
     // jsonLane's contract: every transport fault becomes a
     // GatewayError(0, message, "") — one canonical arm, message as

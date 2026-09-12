@@ -1,0 +1,150 @@
+/* MotionViewer — skinned-motion preview chrome. */
+
+.stateBox {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  background: #0e0e1a;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.stateIcon {
+  width: 32px;
+  height: 32px;
+  color: rgba(251, 191, 36, 0.8);
+}
+
+.stateTitle {
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.stateDetail {
+  max-width: 448px;
+  text-align: center;
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.loadingBox {
+  background: #0e0e1a;
+}
+
+.loadingSkeleton {
+  height: 100%;
+  width: 100%;
+  border-radius: 8px;
+}
+
+.root {
+  position: relative;
+  overflow: hidden;
+  border-radius: 8px;
+  background: #0e0e1a;
+}
+
+.transport {
+  pointer-events: none;
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.8), transparent);
+  padding: 32px 16px 12px;
+}
+
+.playBtn {
+  pointer-events: auto;
+  display: flex;
+  height: 36px;
+  width: 36px;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.15);
+  color: #fff;
+  backdrop-filter: blur(4px);
+  transition: background-color 0.15s ease;
+}
+
+.playBtn:hover {
+  background: rgba(255, 255, 255, 0.25);
+}
+
+.playIcon {
+  width: 16px;
+  height: 16px;
+}
+
+.playIconNudge {
+  margin-left: 2px;
+}
+
+.scrubWrap {
+  pointer-events: auto;
+  position: relative;
+  display: flex;
+  height: 20px;
+  flex: 1;
+  align-items: center;
+}
+
+.scrubTrack {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 4px;
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.scrubPlayed {
+  position: absolute;
+  left: 0;
+  height: 4px;
+  border-radius: 9999px;
+  background: var(--dsw-alias-accent, #3b82f6);
+}
+
+.scrubKnob {
+  pointer-events: none;
+  position: absolute;
+  height: 12px;
+  width: 12px;
+  transform: translateX(-50%);
+  border-radius: 9999px;
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  outline: 2px solid rgba(59, 130, 246, 0.6);
+}
+
+.timeLabel {
+  flex-shrink: 0;
+  font-family: ui-monospace, monospace;
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.fpsBadge {
+  display: none;
+  flex-shrink: 0;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.1);
+  padding: 2px 6px;
+  font-family: ui-monospace, monospace;
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+@media (min-width: 640px) {
+  .fpsBadge {
+    display: block;
+  }
+}

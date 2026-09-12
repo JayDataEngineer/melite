@@ -19,8 +19,13 @@
  */
 import { useEffect, useState } from "react"
 import { collectStageUrls, ensureDraftId, estateInputUrl, pollFlowRun } from "@melite/catalog"
-import { Button, Checkbox, Input, NumberField, RailSection, SelectMenu, SlotSquare, VerbChip, readAsDataURL } from "@melite/ui"
-import { ReferenceImageBadge, StudioShell, ViewportAnchor, ViewportFrame, defineShellDeclaration } from "@melite/ui"
+import { Button, Input } from "@deepseek-ai/dsh-client-ui-primitives"
+import { Checkbox, NumberField, SelectMenu, VerbChip } from "./controls"
+import { SlotSquare } from "./slot"
+import { readAsDataURL } from "./clipboard"
+import { ReferenceImageBadge, ViewportAnchor, ViewportFrame } from "./viewport"
+import { RailSection, StudioShell, defineShellDeclaration } from "./shell"
+import styles from "./component.module.css"
 import { AssemblyStudio, type AssemblySlot, type AssemblyStudioProps } from "@melite-plugin/3d/ui/studios/assembly"
 import { RailTabs, type RailTabItem } from "@melite-plugin/3d/ui/railTabs"
 import { AnnyShapeBand, AnnyShapeDrawer, AnnyCharacterViewport, useAnnyShapeBridge, seedFromEstimate, type SculptDraftDoc } from "./shape"
@@ -133,7 +138,7 @@ export const ANNY_VERBS: AnnyVerb[] = [
     writes: ["body_glb"] },
 ]
 
-/** Source photo well — the STANDARD image input (kit SlotSquare:
+/** Source photo well — the STANDARD image input (local SlotSquare:
  *  file picker + OS drop + thumbnail + detach), backed by the
  *  uploads door (operator order, 2026-09-06: "THERE IS NO WAY FOR
  *  ME TO PUT AN IMAGE IN" + "NOT USING OUR STANDARD IMAGE INPUT").
@@ -196,7 +201,7 @@ export function AnnyPhotoUpload({ photo, onSave }: {
   }
 
   return (
-    <div className="flex flex-col gap-1.5">
+    <div className={styles.stackSm}>
       <SlotSquare
         label="Source photo"
         value={preview ?? (/^(data:|blob:|https?:)/i.test(photo ?? "") ? photo : null)}
@@ -210,14 +215,14 @@ export function AnnyPhotoUpload({ photo, onSave }: {
         } : undefined}
         disabled={busy}
       />
-      <p className="text-[9px] leading-relaxed text-muted-foreground/60">
+      <p className={styles.hint}>
         Drop a photo onto the square, or the small upload icon picks a file — it uploads first, then Estimate.
       </p>
       {note && (
         <p
           role="status"
           title={note ?? undefined}
-          className="line-clamp-2 text-[9px] leading-relaxed text-muted-foreground/70"
+          className={styles.noteLine}
         >
           {note}
         </p>
@@ -385,8 +390,8 @@ export function AnnyHmrVerb({ photo, onSave }: {
   }
 
   return (
-    <div className="flex flex-wrap items-center gap-1.5">
-      <p className="w-full text-[9px] leading-relaxed text-muted-foreground/60">
+    <div className={styles.rowWrap}>
+      <p className={styles.hintFull}>
         SAM 3D Body → MHR → SOMA → Anny — the licensed commercial chain.
       </p>
       {/* ONE VERB UX (stroke 5): the chip + its note line are the
@@ -612,7 +617,7 @@ export function AnnyPresets({ body, knobs, onSave }: {
   }
 
   return (
-    <div className="flex flex-wrap items-center gap-1.5">
+    <div className={styles.rowWrap}>
       <SelectMenu
         value={selectedId || placeholderOptions[0]?.value || ""}
         options={placeholderOptions}
@@ -620,7 +625,7 @@ export function AnnyPresets({ body, knobs, onSave }: {
         disabled={busy || !presets?.length}
         aria-label="Character preset"
         title={selected ? `${selected.label} (${selected.origin})` : "character preset"}
-        buttonClassName="max-w-44 rounded-md border border-muted-foreground/20 bg-transparent px-1.5 py-1 text-[10px] text-foreground disabled:opacity-50"
+        className={styles.presetPick}
       />
       <VerbChip
         onClick={() => void load()}
@@ -638,12 +643,13 @@ export function AnnyPresets({ body, knobs, onSave }: {
           onClick={() => void remove()}
           disabled={busy}
           aria-label={`Delete preset ${selected.label}`}
-          className="rounded-md border border-muted-foreground/20 px-2 py-1 text-[10px] text-muted-foreground/70 hover:text-foreground disabled:opacity-50"
+          size="sm"
+          className={styles.ghostBtn}
         >
           Delete
         </Button>
       )}
-      <label className="sr-only" htmlFor="anny-preset-name">New preset name</label>
+      <label className={styles.srOnly} htmlFor="anny-preset-name">New preset name</label>
       <Input
         id="anny-preset-name"
         value={name}
@@ -651,7 +657,7 @@ export function AnnyPresets({ body, knobs, onSave }: {
         onChange={(e) => setName(e.target.value)}
         placeholder="Save current body as…"
         aria-label="New preset name"
-        className="w-36 rounded-md border border-muted-foreground/20 bg-transparent px-1.5 py-1 text-[10px] text-foreground placeholder:text-muted-foreground/50 disabled:opacity-50"
+        className={styles.nameInput}
       />
       <Button
         type="button"
@@ -659,7 +665,8 @@ export function AnnyPresets({ body, knobs, onSave }: {
         onClick={() => void save()}
         disabled={busy}
         aria-label="Save current Body slot as a preset"
-        className="rounded-md border border-muted-foreground/20 px-2 py-1 text-[10px] text-muted-foreground/70 hover:text-foreground disabled:opacity-50"
+        size="sm"
+          className={styles.ghostBtn}
       >
         {phase === "saving" ? "Saving…" : "Save"}
       </Button>
@@ -673,7 +680,7 @@ export function AnnyPresets({ body, knobs, onSave }: {
 // ── at compose — model defaults (768/1.2/50/64/true) merge at compose,
 // ── so the rail shows the param when the card carries one and the
 // ── default when it does not; every change writes through onSave
-// ── (E1) exactly like a slot. NumberField/kit — the editor boundary
+// ── (E1) exactly like a slot. NumberField/local — the editor boundary
 // ── wall bans raw form primitives in tenants.
 // ── DRESS + PROP verbs (fit-card stroke 3, 2026-09-06): seat an
 // ── outfit / hand-prop onto the stage body via the fit-seat flow.
@@ -855,8 +862,8 @@ export function AnnyFitVerbs({ body, onSave }: {
     patch: (p: Partial<FitKnobs>) => void,
     prefix: string,
   ) => (
-    <div className="grid grid-cols-2 gap-1.5">
-      <label className="col-span-2 flex flex-col gap-0.5 text-[9px] text-muted-foreground/70">
+    <div className={styles.grid2}>
+      <label className={styles.knobWide}>
         Prop GLB (estate path or run artifact ref)
         <Input
           value={knobs.prop}
@@ -864,20 +871,20 @@ export function AnnyFitVerbs({ body, onSave }: {
           onChange={(e) => patch({ prop: e.target.value })}
           placeholder="data/input/keeper_trenchcoat.glb"
           aria-label={`${prefix} prop GLB ref`}
-          className="rounded-md border border-muted-foreground/20 bg-transparent px-1.5 py-1 text-[10px] text-foreground placeholder:text-muted-foreground/50 disabled:opacity-50"
+          className={styles.fieldInput}
         />
       </label>
-      <label className="flex flex-col gap-0.5 text-[9px] text-muted-foreground/70">
+      <label className={styles.knob}>
         Bone
         <Input
           value={knobs.bone}
           disabled={busy}
           onChange={(e) => patch({ bone: e.target.value })}
           aria-label={`${prefix} bone`}
-          className="rounded-md border border-muted-foreground/20 bg-transparent px-1.5 py-1 text-[10px] text-foreground disabled:opacity-50"
+          className={styles.fieldInput}
         />
       </label>
-      <label className="flex flex-col gap-0.5 text-[9px] text-muted-foreground/70">
+      <label className={styles.knob}>
         Law
         <SelectMenu
           value={knobs.align}
@@ -886,27 +893,27 @@ export function AnnyFitVerbs({ body, onSave }: {
           disabled={busy}
           aria-label={`${prefix} fit law`}
           title="socket: hang · fit: measure + scale · grip: hand-lock"
-          buttonClassName="rounded-md border border-muted-foreground/20 bg-transparent px-1.5 py-1 text-[10px] text-foreground disabled:opacity-50"
+          
         />
       </label>
-      <label className="flex flex-col gap-0.5 text-[9px] text-muted-foreground/70">
+      <label className={styles.knob}>
         Offset x,y,z
         <Input
           value={knobs.position}
           disabled={busy}
           onChange={(e) => patch({ position: e.target.value })}
           aria-label={`${prefix} offset`}
-          className="rounded-md border border-muted-foreground/20 bg-transparent px-1.5 py-1 text-[10px] text-foreground disabled:opacity-50"
+          className={styles.fieldInput}
         />
       </label>
-      <label className="flex flex-col gap-0.5 text-[9px] text-muted-foreground/70">
+      <label className={styles.knob}>
         Rotation x,y,z
         <Input
           value={knobs.rotation}
           disabled={busy}
           onChange={(e) => patch({ rotation: e.target.value })}
           aria-label={`${prefix} rotation`}
-          className="rounded-md border border-muted-foreground/20 bg-transparent px-1.5 py-1 text-[10px] text-foreground disabled:opacity-50"
+          className={styles.fieldInput}
         />
       </label>
       <NumberField
@@ -923,44 +930,44 @@ export function AnnyFitVerbs({ body, onSave }: {
         min={0} max={1} step={0.01}
         onChange={(v) => patch({ seat_ratio: v })}
       />
-      <label className="flex flex-col gap-0.5 text-[9px] text-muted-foreground/70">
+      <label className={styles.knob}>
         Measure to
         <Input
           value={knobs.fit_ref_bone}
           disabled={busy}
           onChange={(e) => patch({ fit_ref_bone: e.target.value })}
           aria-label={`${prefix} measure-to bone`}
-          className="rounded-md border border-muted-foreground/20 bg-transparent px-1.5 py-1 text-[10px] text-foreground disabled:opacity-50"
+          className={styles.fieldInput}
         />
       </label>
-      <label className="flex flex-col gap-0.5 text-[9px] text-muted-foreground/70">
+      <label className={styles.knob}>
         Measure from
         <Input
           value={knobs.fit_ref_bone2}
           disabled={busy}
           onChange={(e) => patch({ fit_ref_bone2: e.target.value })}
           aria-label={`${prefix} measure-from bone`}
-          className="rounded-md border border-muted-foreground/20 bg-transparent px-1.5 py-1 text-[10px] text-foreground disabled:opacity-50"
+          className={styles.fieldInput}
         />
       </label>
-      <label className="flex flex-col gap-0.5 text-[9px] text-muted-foreground/70">
+      <label className={styles.knob}>
         Finger bone
         <Input
           value={knobs.finger_bone}
           disabled={busy}
           onChange={(e) => patch({ finger_bone: e.target.value })}
           aria-label={`${prefix} finger bone`}
-          className="rounded-md border border-muted-foreground/20 bg-transparent px-1.5 py-1 text-[10px] text-foreground disabled:opacity-50"
+          className={styles.fieldInput}
         />
       </label>
-      <label className="flex flex-col gap-0.5 text-[9px] text-muted-foreground/70">
+      <label className={styles.knob}>
         Thumb bone
         <Input
           value={knobs.thumb_bone}
           disabled={busy}
           onChange={(e) => patch({ thumb_bone: e.target.value })}
           aria-label={`${prefix} thumb bone`}
-          className="rounded-md border border-muted-foreground/20 bg-transparent px-1.5 py-1 text-[10px] text-foreground disabled:opacity-50"
+          className={styles.fieldInput}
         />
       </label>
       <NumberField
@@ -981,8 +988,8 @@ export function AnnyFitVerbs({ body, onSave }: {
     button: string,
     running: string,
   ) => (
-    <div className="flex flex-col gap-1.5">
-      <p className="text-[9px] leading-relaxed text-muted-foreground/60">{title}</p>
+    <div className={styles.stackSm}>
+      <p className={styles.hint}>{title}</p>
       {knobForm(knobs, patch, verbId)}
       <VerbChip
         onClick={() => void seat(verbId)}
@@ -999,11 +1006,11 @@ export function AnnyFitVerbs({ body, onSave }: {
   )
 
   return (
-    <div className="flex flex-col gap-1.5">
+    <div className={styles.stackSm}>
       {chip("dress", dress, (p) => setDress((k) => ({ ...k, ...p })),
         "Socket/fit law — hang a coat, seat a hat. The dressed assembly hydrates Body.",
         "Dress with outfit", "Seating…")}
-      <div className="border-t border-sidebar-border/50" />
+      <div className={styles.divider} />
       {chip("prop", propK, (p) => setPropK((k) => ({ ...k, ...p })),
         "Grip law — lock a weapon into the hand. The armed assembly hydrates Body.",
         "Seat prop in hand", "Seating…")}
@@ -1109,8 +1116,8 @@ export function AnnySomaxVerb({ body, onSave }: {
   }
 
   return (
-    <div className="flex flex-col gap-1.5">
-      <p className="text-[9px] leading-relaxed text-muted-foreground/60">Bare mesh in, SOMA-77 rig out — the baked template transfer, no knobs.</p>
+    <div className={styles.stackSm}>
+      <p className={styles.hint}>Bare mesh in, SOMA-77 rig out — the baked template transfer, no knobs.</p>
       <VerbChip
         onClick={() => void convert()}
         disabled={busy}
@@ -1284,10 +1291,10 @@ export function AnnySkinVerbs({ body, onSave }: {
   }
 
   return (
-    <div className="flex flex-col gap-1.5">
-      <p className="text-[9px] leading-relaxed text-muted-foreground/60">Seeded pores onto the stage Body — tint stays data in the kind sidecar.</p>
-      <div className="grid grid-cols-2 gap-1.5">
-        <label className="flex flex-col gap-0.5 text-[9px] text-muted-foreground/70">
+    <div className={styles.stackSm}>
+      <p className={styles.hint}>Seeded pores onto the stage Body — tint stays data in the kind sidecar.</p>
+      <div className={styles.grid2}>
+        <label className={styles.knob}>
           Kind
           <SelectMenu
             value={knobs.kind}
@@ -1296,10 +1303,10 @@ export function AnnySkinVerbs({ body, onSave }: {
             disabled={busy}
             aria-label="skin kind"
             title="Which meld kind skins the body (tint stays data in the sidecar)"
-            buttonClassName="rounded-md border border-muted-foreground/20 bg-transparent px-1.5 py-1 text-[10px] text-foreground disabled:opacity-50"
+            
           />
         </label>
-        <label className="flex flex-col gap-0.5 text-[9px] text-muted-foreground/70">
+        <label className={styles.knob}>
           Map size
           <SelectMenu
             value={knobs.map_size}
@@ -1308,7 +1315,7 @@ export function AnnySkinVerbs({ body, onSave }: {
             disabled={busy}
             aria-label="skin map size"
             title="Detail-map resolution (pack + sidecar agree — one knob feeds both)"
-            buttonClassName="rounded-md border border-muted-foreground/20 bg-transparent px-1.5 py-1 text-[10px] text-foreground disabled:opacity-50"
+            
           />
         </label>
         <NumberField
@@ -1345,7 +1352,7 @@ function AnnyTurnaroundKnobs({ stage, onSave }: {
   const transparentParam = stage.params["transparent"]
   const transparent = typeof transparentParam === "boolean" ? transparentParam : true
   return (
-    <div className="grid grid-cols-2 gap-1.5">
+    <div className={styles.grid2}>
       <NumberField
         label="Resolution"
         tooltip="Turnaround render resolution (px, square)"
@@ -1377,7 +1384,7 @@ function AnnyTurnaroundKnobs({ stage, onSave }: {
       <label
         htmlFor="anny-transparent"
         title="Render turnarounds on a transparent background"
-        className="col-span-2 flex cursor-pointer items-center gap-1.5 text-[10px] text-foreground"
+        className={styles.checkRow}
       >
         <Checkbox
           id="anny-transparent"
@@ -1436,7 +1443,7 @@ export function AnnyStudio(props: AnnyStudioProps) {
   }
   return (
     <StudioShell
-      className="gap-2"
+      className={styles.shellGap}
       /* MAIN — the NATIVE anny figure fills the panel (the side-menu
          order, 2026-09-06: "you never made the side menu you
          planned" + "you are rendering GLB and not native ANNY…
@@ -1448,7 +1455,7 @@ export function AnnyStudio(props: AnnyStudioProps) {
       center={
       <ViewportFrame
         label="Character — native anny viewport"
-        className="min-h-[440px]"
+        className={styles.frameTall}
       >
         <AnnyCharacterViewport
           stage={props.stage}
@@ -1465,14 +1472,14 @@ export function AnnyStudio(props: AnnyStudioProps) {
             the data/input path through the preview door; no photo or
             a non-previewable mount path renders NO pin (honest or
             absent, never a broken frame). */}
-        <ViewportAnchor dock="top-right" className="z-10">
+        <ViewportAnchor dock="top-right" className={styles.pinRaise}>
           <ReferenceImageBadge
             url={photo ? estateInputUrl(photo) : null}
             label="Source photo"
           />
         </ViewportAnchor>
         {shapeExpanded && (
-          <ViewportAnchor dock="edge-right" className="z-10">
+          <ViewportAnchor dock="edge-right" className={styles.pinRaise}>
             <AnnyShapeDrawer onCollapse={() => setShapeExpanded(false)} />
           </ViewportAnchor>
         )}
@@ -1485,7 +1492,7 @@ export function AnnyStudio(props: AnnyStudioProps) {
          boxes (the companion order: "NOT EVEN A SCROLL? ARE YOU
          CRAZY?"). */
       rail={
-        <div className="flex h-full min-h-0 flex-col">
+        <div className={styles.railCol}>
           {/* THE SHARED STRIP (operator order: the Shape sub-menus
               reuse this too — "Reusing components") — Character /
               Render / Import, ONE concern at a time. */}
@@ -1499,10 +1506,10 @@ export function AnnyStudio(props: AnnyStudioProps) {
             role="tabpanel"
             aria-label={`${railTab} tab`}
             data-rail-tab={railTab}
-            className="min-h-0 flex-1 overflow-y-auto px-2 pb-2 pt-2"
+            className={styles.tabPane}
           >
             {railTab === "character" && (
-              <div className="flex flex-col gap-2">
+              <div className={styles.stackMd}>
                 {/* SHAPE — the Character Maker sliders (natural height;
                     the tab scrolls; Expand moves it over the figure).
                     Hidden while the drawer holds the panel — ONE
@@ -1511,18 +1518,18 @@ export function AnnyStudio(props: AnnyStudioProps) {
               </div>
             )}
             {railTab === "render" && (
-              <div className="flex flex-col gap-2">
+              <div className={styles.stackMd}>
                 <RailSection title="Turnaround — render params">
                   <AnnyTurnaroundKnobs stage={props.stage} onSave={props.onSave} />
                 </RailSection>
-                <p className="px-1 text-[9px] leading-relaxed text-muted-foreground/60">
+                <p className={styles.hintPad}>
                   The body GLB and source photo ride Assembly below as
                   file artifacts — the figure is the one mesh.
                 </p>
               </div>
             )}
             {railTab === "import" && (
-              <div className="flex flex-col gap-2">
+              <div className={styles.stackMd}>
                 {/* PRESETS — load/save characters (moved from Character
                     per the operator order: Import is where bodies COME
                     FROM — estate archetypes, saved rows, files). */}
@@ -1534,7 +1541,7 @@ export function AnnyStudio(props: AnnyStudioProps) {
                     a browser photo becomes an estate path in the
                     Source photo slot, composable on the estimate. */}
                 <RailSection title="Estimate from photo — SOMA-X commercial">
-                  <div className="flex flex-col gap-2">
+                  <div className={styles.stackMd}>
                     <AnnyPhotoUpload photo={photo} onSave={props.onSave} />
                     <AnnyHmrVerb photo={photo} onSave={props.onSave} />
                   </div>
@@ -1573,7 +1580,7 @@ export function AnnyStudio(props: AnnyStudioProps) {
         <RailSection
         id="anny-assembly-truth"
         title="Assembly — file artifacts (body, photo)"
-        className="px-3 pb-3 pt-2"
+        className={styles.assemblyPad}
       >
         <AssemblyStudio
           {...props}

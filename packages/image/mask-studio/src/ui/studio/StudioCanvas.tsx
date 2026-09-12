@@ -5,15 +5,13 @@
 // JSX + the canvas-column JSX, verbatim. All values arrive as explicit
 // props (no prop-shape changes upstream — this is a new internal seam);
 // every data-* hook the tests gesture through is preserved.
+import { Button, Tooltip } from "@deepseek-ai/dsh-client-ui-primitives"
+import { clsx } from "clsx"
 import {
   Brush, Eraser, Eye, Link2, Move, ScanFace, Square, Trash2, X,
-} from "lucide-react"
-import { Input } from "@melite/ui"
-import { NumberField } from "@melite/ui/NumberField"
-import { Button } from "@melite/ui/button"
-import { Tip } from "@melite/ui/tip"
-import { cn } from "@melite/ui"
-import { ViewportAnchor } from "@melite/ui"
+} from "./icons"
+import { NumberField } from "./NumberField"
+import { ViewportAnchor } from "./viewport"
 // The 2D viewport PRIMITIVE (row 5 stroke 3): the wrapper/canvas/
 // transform/triage live THERE; this module keeps the dock, the
 // options bar, and the mask overlays (verbatim) that fill its slots.
@@ -23,6 +21,7 @@ import type { BoxEntry, SelectionRect, ToolId } from "./constants"
 import { DockBtn } from "./DockBtn"
 import { EmptyStateImport } from "./EmptyStateImport"
 import { WiredWaiting } from "./WiredWaiting"
+import styles from "./mask.module.css"
 
 export interface StudioCanvasProps {
   tool: ToolId
@@ -100,62 +99,62 @@ export function StudioCanvas({
   return (
   <>
   {/* ToolDock — vertical palette (mirrors surfaces/canvas/ToolDock) */}
-  <div className="flex w-9 shrink-0 flex-col items-center gap-0.5 rounded-md border border-border/50 bg-sidebar/40 py-1.5">
-  <DockBtn active={tool === "move"} onClick={() => setTool("move")} title="Move / Pan (V)"><Move className="h-4 w-4" /></DockBtn>
+  <div className={styles.toolDock}>
+  <DockBtn active={tool === "move"} onClick={() => setTool("move")} title="Move / Pan (V)"><Move className={styles.sz16} /></DockBtn>
   <DockBtn active={tool === "brush"} onClick={() => setTool("brush")} title="Paint mask (B)">
-  <Brush className="h-4 w-4" />
+  <Brush className={styles.sz16} />
   </DockBtn>
   <DockBtn active={tool === "eraser"} onClick={() => setTool("eraser")} title="Erase paint (E)">
-  <Eraser className="h-4 w-4" />
+  <Eraser className={styles.sz16} />
   </DockBtn>
-  <div className="my-0.5 h-px w-5 bg-border/40" />
-  <DockBtn active={tool === "rect"} onClick={() => setTool("rect")} title="Select region (R) — drag a rectangle, then pick Segm or Bbox"><Square className="h-4 w-4" /></DockBtn>
-  <div className="my-0.5 h-px w-5 bg-border/40" />
+  <div className={styles.dockDivider} />
+  <DockBtn active={tool === "rect"} onClick={() => setTool("rect")} title="Select region (R) — drag a rectangle, then pick Segm or Bbox"><Square className={styles.sz16} /></DockBtn>
+  <div className={styles.dockDivider} />
   <DockBtn active={prepPreviewOn} onClick={() => setPrepPreviewOn((v) => !v)} title="Prep preview (view-only) — how grow/feather will shape the effective mask at the Inpaint card">
-  <Eye className="h-4 w-4" />
+  <Eye className={styles.sz16} />
   </DockBtn>
   </div>
 
   {/* Canvas column: options bar + canvas */}
-  <div ref={colRef} className="flex min-w-0 flex-1 flex-col">
+  <div ref={colRef} className={styles.canvasCol}>
   {/* ToolOptionsBar — context-sensitive (mirrors ToolOptionsBar) */}
-  <div className="flex h-8 shrink-0 items-center gap-3 rounded-md border border-border/50 bg-sidebar/40 px-3">
+  <div className={styles.optionsBar}>
   {showsSize ? (
-  <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
-  <span className="uppercase tracking-wide">Size</span>
+  <div className={styles.sizeLabel}>
+  <span className={styles.capsLabel}>Size</span>
   <NumberField value={brushSize} onChange={setBrushSize}
-  min={2} max={120} step={1} className="w-16"
+  min={2} max={120} step={1} className={styles.brushSizeField}
   tooltip="Brush diameter (px)" />
   </div>
   ) : tool === "rect" ? (
-  <span className="text-[10px] text-muted-foreground/60">
+  <span className={styles.rectHint}>
   Drag to select a region, then pick {selection ? "a different region" : "Segm or Bbox"} to detect inside it.
   </span>
   ) : null}
-  <div className="flex-1" />
+  <div className={styles.spacer} />
   {inputImage && (
-  <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
+  <div className={styles.zoomRow}>
     <Button variant="ghost" type="button" onClick={() => setZoom((z) => Math.min(ZOOM_MAX, z + 1))}
-      className="rounded px-1 py-0.5 transition-colors hover:bg-muted/50"
+      className={styles.zoomBtn}
       title="Zoom in (+)">+</Button>
-    <span className="w-8 text-center tabular-nums">{Math.round(zoom * 100)}%</span>
+    <span className={styles.zoomPct}>{Math.round(zoom * 100)}%</span>
     <Button variant="ghost" type="button" onClick={() => { setZoom((z) => Math.max(ZOOM_MIN, z - 1)); if (zoom <= 2) setPan({ x: 0, y: 0 }) }}
-      className="rounded px-1 py-0.5 transition-colors hover:bg-muted/50"
+      className={styles.zoomBtn}
       title="Zoom out (−)">−</Button>
     {isZoomed && (
     <Button variant="ghost" type="button" onClick={resetZoom}
-      className="rounded px-1 py-0.5 text-muted-foreground/60 transition-colors hover:bg-muted/50 hover:text-muted-foreground"
+      className={styles.zoomReset}
       title="Reset zoom (Esc)">Reset</Button>
     )}
   </div>
   )}
   {hasPaint && (
-  <Tip tip="Clear paint layer">
+  <Tooltip label="Clear paint layer" side="top">
   <Button variant="ghost" type="button" onClick={clearPaint}
-  className="flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground transition-colors hover:bg-red-500/10 hover:text-red-400">
-  <Trash2 className="h-3 w-3" /> Clear
+  className={styles.clearBtn}>
+  <Trash2 className={styles.sz12} /> Clear
   </Button>
-  </Tip>
+  </Tooltip>
   )}
   </div>
 
@@ -213,17 +212,17 @@ export function StudioCanvas({
   user can switch outputs or unwire without dropping to
   the layer panel. */}
   {isWired && canWire && (
-  <ViewportAnchor dock="top-right" className="z-10">
-  <Tip tip={`Wired from ${wiredUpstreamTitle} — click to change`}>
+  <ViewportAnchor dock="top-right">
+  <Tooltip label={`Wired from ${wiredUpstreamTitle} — click to change`} side="top">
   <Button variant="ghost"
   type="button"
   onClick={() => setWireOpen(true)}
   data-wired-badge
-  className="flex items-center gap-1 rounded bg-background/80 px-2 py-1 text-[10px] font-medium text-brand backdrop-blur-sm hover:bg-background"
+  className={styles.wiredBadge}
   >
-  <Link2 className="h-3 w-3" /> {wiredUpstreamTitle}
+  <Link2 className={styles.sz12} /> {wiredUpstreamTitle}
   </Button>
-  </Tip>
+  </Tooltip>
   </ViewportAnchor>
   )}
   {/* INSTANCE BADGES (phase B): one tappable chip per detected box,
@@ -234,24 +233,25 @@ export function StudioCanvas({
   {viewSize && boxes && (detectMode !== "none" || recipeDetect) && boxes.map((b) => {
   const on = selectedInstances.has(b.index)
   return (
-  <Tip
+  <Tooltip
   key={b.index}
-  tip={on
+  label={on
   ? `BBox${b.index + 1} (${b.class}) — tap to drop it from the mask`
   : `BBox${b.index + 1} (${b.class}) — tap to keep only this instance`}
+  side="top"
   >
   <Button variant="ghost"
   type="button" data-instance-badge={b.index}
   style={{ left: b.bbox[0] * viewSize.w, top: b.bbox[1] * viewSize.h }}
   onClick={() => toggleInstance(b.index)}
-  className={cn(
-  "absolute z-10 flex h-[18px] min-w-[18px] items-center justify-center rounded px-1 text-[10px] font-bold transition-colors",
-  on ? "bg-amber-400 text-black" : "bg-black/60 text-amber-200/80 hover:bg-black/80",
+  className={clsx(
+  styles.instanceBadge,
+  on ? styles.instanceOn : styles.instanceOff,
   )}
   >
   {b.index + 1}
   </Button>
-  </Tip>
+  </Tooltip>
   )
   })}
   </>)}
@@ -261,37 +261,37 @@ export function StudioCanvas({
   <ViewportAnchor
   data-prep-preview
   dock="bottom-left"
-  className="z-10 w-60 rounded-lg border border-[#22d3ee]/40 bg-background/92 p-2.5 shadow-lg backdrop-blur-sm"
+  className={styles.prepPanel}
   >
-  <div className="mb-1.5 flex items-center justify-between">
-  <span className="flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wide text-[#22d3ee]">
-  <Eye className="h-3 w-3" /> Effective mask
+  <div className={styles.prepHead}>
+  <span className={styles.prepTitle}>
+  <Eye className={styles.sz12} /> Effective mask
   </span>
   {prepCoveragePct !== null && (
-  <span className="font-mono text-[10px] tabular-nums text-muted-foreground">
+  <span className={styles.prepPct}>
   {prepCoveragePct < 0.1 ? prepCoveragePct.toFixed(2) : prepCoveragePct.toFixed(1)}%
   </span>
   )}
   </div>
-  <label className="block">
-  <span className="text-[10px] text-muted-foreground">Grow / Shrink</span>
-  <Input
+  <label className={styles.prepLabel}>
+  <span className={styles.prepCaption}>Grow / Shrink</span>
+  <input
   type="range" min={-32} max={32} step={1} value={prepGrow}
   onChange={(e) => setPrepGrow(Number(e.target.value))}
-  className="mt-0.5 w-full accent-[#22d3ee]"
+  className={styles.prepRange}
   />
-  <span className="font-mono text-[10px] tabular-nums text-[#22d3ee]">{prepGrow}px</span>
+  <span className={styles.prepVal}>{prepGrow}px</span>
   </label>
-  <label className="mt-1 block">
-  <span className="text-[10px] text-muted-foreground">Feather</span>
-  <Input
+  <label className={styles.prepLabelStack}>
+  <span className={styles.prepCaption}>Feather</span>
+  <input
   type="range" min={0} max={32} step={1} value={prepFeather}
   onChange={(e) => setPrepFeather(Number(e.target.value))}
-  className="mt-0.5 w-full accent-[#22d3ee]"
+  className={styles.prepRange}
   />
-  <span className="font-mono text-[10px] tabular-nums text-[#22d3ee]">{prepFeather}px</span>
+  <span className={styles.prepVal}>{prepFeather}px</span>
   </label>
-  <p className="mt-1.5 text-[9px] leading-relaxed text-muted-foreground/80">
+  <p className={styles.prepNote}>
   Source: {prepSourceLabel || "…"}. View-only — the Inpaint card applies
   grow/feather at run time; this studio writes raw masks.
   </p>
@@ -306,9 +306,9 @@ export function StudioCanvas({
   <ViewportAnchor
   data-selection-bar
   dock="bottom-center"
-  className="z-10 flex items-center gap-1.5 rounded-lg border border-border/60 bg-background/90 px-2.5 py-1.5 shadow-lg backdrop-blur-sm"
+  className={styles.selBar}
   >
-  <span className="mr-1 text-[10px] tabular-nums text-muted-foreground">
+  <span className={styles.selSize}>
   {Math.round(selection.w)}×{Math.round(selection.h)} px
   </span>
   {detectMode === "none" ? (
@@ -316,40 +316,40 @@ export function StudioCanvas({
   (exports under "none" are a contract violation). The
   marquee still scopes the SAM3 producer: type a prompt
   in the rail and Segment. */
-  <span data-sam3-scope-hint className="text-[10px] text-muted-foreground/80">
+  <span data-sam3-scope-hint className={styles.scopeHint}>
   Detect off — the selection scopes a SAM3 prompt
   </span>
   ) : (
   <>
-  <Tip tip="YOLO + SAM — precise object masks inside the selection">
+  <Tooltip label="YOLO + SAM — precise object masks inside the selection" side="top">
   <Button variant="ghost"
   type="button" data-detect-segm
   onClick={() => runDetect("segm")}
-  className="flex items-center gap-1 rounded-md bg-brand px-2.5 py-1 text-[11px] font-semibold text-white transition-colors hover:bg-brand/90"
+  className={styles.segmBtn}
   >
-  <ScanFace className="h-3 w-3" /> Segm
+  <ScanFace className={styles.sz12} /> Segm
   </Button>
-  </Tip>
-  <Tip tip="YOLO only — fast bounding boxes inside the selection">
+  </Tooltip>
+  <Tooltip label="YOLO only — fast bounding boxes inside the selection" side="top">
   <Button variant="ghost"
   type="button" data-detect-bbox
   onClick={() => runDetect("bbox")}
-  className="flex items-center gap-1 rounded-md border border-border/60 bg-background px-2.5 py-1 text-[11px] font-semibold text-foreground/90 transition-colors hover:bg-sidebar/60 hover:text-brand"
+  className={styles.bboxBtn}
   >
-  <Square className="h-3 w-3" /> Bbox
+  <Square className={styles.sz12} /> Bbox
   </Button>
-  </Tip>
+  </Tooltip>
   </>
   )}
-  <Tip tip="Clear selection">
+  <Tooltip label="Clear selection" side="top">
   <Button variant="ghost"
   type="button" onClick={clearSelection} data-clear-selection
   aria-label="Clear selection"
-  className="ml-0.5 rounded p-1 text-muted-foreground transition-colors hover:bg-red-500/10 hover:text-red-400"
+  className={styles.selClear}
   >
-  <X className="h-3.5 w-3.5" />
+  <X className={styles.sz14} />
   </Button>
-  </Tip>
+  </Tooltip>
   </ViewportAnchor>
   )}
   </PaintCanvas2D>

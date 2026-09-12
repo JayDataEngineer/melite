@@ -34,13 +34,13 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { Canvas, useFrame, useThree } from "@react-three/fiber"
 import { OrbitControls, ContactShadows } from "@react-three/drei"
 import * as THREE from "three"
-import { Play, Pause, AlertTriangle } from "lucide-react"
-import { Button } from "@melite/ui/button"
-import { ScrubInput } from "@melite/ui"
-import { Skeleton } from "@melite/ui/skeleton"
+import { Play, Pause, AlertTriangle } from "../../../ui-icons"
+import { Button } from "@deepseek-ai/dsh-client-ui-primitives"
+import { ScrubInput, Tip } from "../../../form-fields"
+import { Skeleton } from "../../../skeleton"
 import { loadSomaSkin, type SomaSkin } from "@melite/formats"
 import { loadMotionNpz, precomputeDeformedVerts } from "@melite/formats"
-import { Tip } from "@melite/ui/tip"
+import styles from "./MotionViewer.module.css"
 
 const FLOOR_LIFT_Y = 0.02
 
@@ -391,10 +391,10 @@ export default function MotionViewer({ url, className }: MotionViewerProps) {
 
   if (error) {
     return (
-      <div className={`flex flex-col items-center justify-center gap-3 bg-background text-muted-foreground ${className ?? "h-full w-full"}`}>
-        <AlertTriangle className="h-8 w-8 text-amber-400/80" />
-        <div className="text-sm font-medium">Motion preview unavailable</div>
-        <div className="max-w-md text-center text-xs text-muted-foreground/70">{error}</div>
+      <div className={className ? `${styles.stateBox} ${className}` : styles.stateBox}>
+        <AlertTriangle className={styles.stateIcon} />
+        <div className={styles.stateTitle}>Motion preview unavailable</div>
+        <div className={styles.stateDetail}>{error}</div>
       </div>
     )
   }
@@ -407,15 +407,15 @@ export default function MotionViewer({ url, className }: MotionViewerProps) {
         role="status"
         aria-busy="true"
         aria-label="Loading motion"
-        className={`bg-background ${className ?? "h-full w-full"}`}
+        className={className ? `${styles.loadingBox} ${className}` : styles.loadingBox}
       >
-        <Skeleton className="h-full w-full rounded-lg" />
+        <Skeleton className={styles.loadingSkeleton} />
       </div>
     )
   }
 
   return (
-    <div className={`relative overflow-hidden rounded-lg bg-background ${className ?? "h-full w-full"}`}>
+    <div className={className ? `${styles.root} ${className}` : styles.root}>
       <Canvas
         shadows
         camera={{ position: [0, 1.2, 3.5], fov: 40, near: 0.05, far: 50 }}
@@ -440,21 +440,21 @@ export default function MotionViewer({ url, className }: MotionViewerProps) {
       </Canvas>
 
       {frameCount > 0 && (
-        <div className="pointer-events-none absolute inset-x-0 bottom-0 flex items-center gap-3 bg-gradient-to-t from-black/80 to-transparent px-4 pb-3 pt-8">
+        <div className={styles.transport}>
           <Tip tip={playing ? "Pause (Space)" : "Play (Space)"}>
             <Button variant="ghost"
               onClick={togglePlay}
-              className="pointer-events-auto flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white/15 text-foreground backdrop-blur transition-colors hover:bg-white/25"
+              className={styles.playBtn}
               aria-label={playing ? "Pause (Space)" : "Play (Space)"}
             >
-              {playing ? <Pause className="h-4 w-4" /> : <Play className="ml-0.5 h-4 w-4" />}
+              {playing ? <Pause className={styles.playIcon} /> : <Play className={`${styles.playIcon} ${styles.playIconNudge}`} />}
             </Button>
           </Tip>
 
-          <div className="pointer-events-auto relative flex h-5 flex-1 items-center">
-            <div className="absolute inset-x-0 h-1 rounded-full bg-white/20" />
+          <div className={styles.scrubWrap}>
+            <div className={styles.scrubTrack} />
             <div
-              className="absolute left-0 h-1 rounded-full bg-brand"
+              className={styles.scrubPlayed}
               style={{ width: `${frameCount > 1 ? (displayFrame / (frameCount - 1)) * 100 : 0}%` }}
             />
             <ScrubInput
@@ -462,19 +462,18 @@ export default function MotionViewer({ url, className }: MotionViewerProps) {
               max={Math.max(0, frameCount - 1)}
               value={displayFrame}
               onChange={(e) => seek(Number(e.target.value) / Math.max(1, frameCount - 1))}
-              className="absolute inset-0 w-full cursor-pointer opacity-0"
               aria-label="Seek"
             />
             <div
-              className="pointer-events-none absolute h-3 w-3 -translate-x-1/2 rounded-full bg-white shadow ring-2 ring-brand/60"
+              className={styles.scrubKnob}
               style={{ left: `${frameCount > 1 ? (displayFrame / (frameCount - 1)) * 100 : 0}%` }}
             />
           </div>
 
-          <div className="shrink-0 font-mono text-[11px] tabular-nums text-foreground/80">
+          <div className={styles.timeLabel}>
             {fmt(curSec)} / {fmt(totalSec)}
           </div>
-          <div className="hidden shrink-0 rounded bg-white/10 px-1.5 py-0.5 font-mono text-[10px] text-foreground/60 sm:block">
+          <div className={styles.fpsBadge}>
             {fps.toFixed(0)} fps · {frameCount}f
           </div>
         </div>

@@ -33,8 +33,9 @@
 import { useCallback, useMemo, useState } from "react"
 import type { ReactElement } from "react"
 import type { CardStage } from "@melite/contracts"
-import { EmptyState, ReferenceImageBadge, StudioShell, ViewportAnchor, ViewportFrame } from "@melite/ui"
+import { EmptyState, ReferenceImageBadge, StudioShell, ViewportAnchor, ViewportFrame } from "../../../studio-shell"
 import { Stage, type StageAsset } from "../viewers"
+import styles from "./assembly.module.css"
 // The generic slot surface — the SAME squares every card renders.
 // Relative: the plugin tree owns no alias into the editor surface;
 // SlotGrid's own imports are all shared packages, so a future move
@@ -42,10 +43,10 @@ import { Stage, type StageAsset } from "../viewers"
 import { SlotGrid } from "../../../../../../web/editor/src/surfaces/flow/SlotGrid"
 
 // SHELL-OWNED chrome (row 5 stroke 1, 2026-09-07): the loud error
-// line moved into StudioShell (@melite/ui) — this re-export keeps
-// the kimodo adoption surface (StudioErrorLine/useStudioAssets)
-// alive unchanged.
-export { StudioShellErrorLine as StudioErrorLine } from "@melite/ui"
+// line moved into StudioShell (the local studio-shell module) — this
+// re-export keeps the kimodo adoption surface
+// (StudioErrorLine/useStudioAssets) alive unchanged.
+export { StudioShellErrorLine as StudioErrorLine } from "../../../studio-shell"
 
 // The tenant's slot-table declaration. The RAIL no longer reads it
 // (the generic SlotGrid derives squares from the card's declared slot
@@ -215,8 +216,8 @@ export function AssemblyStudio({
     <StudioShell
       /* RAIL — the part slots (the assembly authoring surface). */
       rail={
-        <div className="flex h-full min-h-0 flex-col px-3 py-2.5">
-          <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground/70">
+        <div className={styles.railCol}>
+          <p className={styles.railHeadline}>
             {headline}
           </p>
           {/* The generic squares — SlotGrid derives them from the
@@ -229,13 +230,13 @@ export function AssemblyStudio({
             onSaveParams={onSave}
             onWireSlot={onWireSlot}
           />
-          <p className="mt-2 text-[9px] leading-relaxed text-muted-foreground/50">{hint}</p>
+          <p className={styles.railHint}>{hint}</p>
           {mountNotes.length > 0 && (
-            <div role="note" className="mt-2 space-y-1">
+            <div role="note" className={styles.mountNotes}>
               {mountNotes.map((n) => (
                 <p
                   key={n.key}
-                  className="rounded border border-sky-500/30 bg-sky-500/10 px-1.5 py-1 text-[9px] leading-relaxed text-sky-200/80"
+                  className={styles.mountNote}
                 >
                   {n.key} points at the mounts ({n.value}) — composable, not browser-previewable
                   {viewport === "none" ? " at the bake." : ". Attach the file to see it on the stage."}
@@ -266,7 +267,7 @@ export function AssemblyStudio({
             {/* The pinned source preview — what the mesh was lifted
              * from, always in view beside the result. The pin
              * declares its dock; the badge is pure content. */}
-            <ViewportAnchor dock="top-right" className="z-10">
+            <ViewportAnchor dock="top-right" className={styles.anchorLift}>
               <ReferenceImageBadge url={referenceImage?.url ?? null} label={referenceImage?.label ?? "Source"} />
             </ViewportAnchor>
           </ViewportFrame>

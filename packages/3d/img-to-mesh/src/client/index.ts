@@ -1,0 +1,172 @@
+/**
+ * img-to-mesh-studio — the FIRST-PARTY cards.stage.view surface
+ * (2026-09-12, the ui-tool built-in law: the host package ships the
+ * shipped cards' views; third-party cards register additively).
+ *
+ * The door serves `layout: "studio"` for img-to-mesh — this view is
+ * what that declaration MEANS on the client: the card's knob surface
+ * composed in the card's own terms (the old LAW A), from the SAME
+ * form-spec SSOT the generic card renders. Not a copy of the generic
+ * form's layout: the everyday groups (input, generation) sit exposed;
+ * the deep groups (stage, mesh, bake, lab) fold behind ui-primitives
+ * DisclosureRow. Every ATOM is the generic card's own SpecForm render
+ * — the studio owns ORGANIZATION, the SSOT owns the knobs.
+ *
+ * The currency is StageViewOwnerProps (pure function of the bench):
+ * values seed from the frozen row + spec defaults; Run patches the
+ * domain FIRST (drafts/patch via onPatch), then starts the run — the
+ * generic drill's own law, kept verbatim.
+ */
+import { createElement as h, useEffect, useState } from 'react'
+import type { Context } from '@deepseek-ai/cordis'
+import { Button, DisclosureRow, IconArchiveOutline20, Tag } from '@deepseek-ai/dsh-client-ui-primitives'
+import css from './client.module.css'
+import type { StageViewOwnerProps } from '@melite/contracts'
+import { fetchFormSpec, CardForm as SpecForm, specDefaults, useSquareProvider, type FormSpecDoc, type SpecField, type SpecValues } from '@melite/card-base'
+import { pollRunStageUrl } from '@melite-plugin/melite-run-wire'
+import { GlbViewport } from './glb-viewport.tsx'
+
+/** The door's group truth (schema_groups, 2026-09-12 lane read):
+ *  input, generation — exposed; stage, mesh, bake, lab — folded. */
+const STUDIO_EXPOSED = ['input', 'generation']
+const STUDIO_FOLDS = ['stage', 'mesh', 'bake', 'lab']
+const STUDIO_TITLE: Record<string, string> = {
+  stage: 'Stage passes',
+  mesh: 'Mesh',
+  bake: 'Bake maps',
+  lab: 'Lab (samplers & overrides)',
+}
+
+function fieldsOf(fields: SpecField[], group: string): SpecField[] {
+  return fields.filter((f) => f.group === group)
+}
+
+/** The studio surface component — registered under key 'img-to-mesh'. */
+export function ImgToMeshStudio(props: StageViewOwnerProps): ReturnType<typeof h> {
+  const { row, runStatus, onPatch, onRun, onRemove } = props
+  const params = typeof row['params'] === 'object' && row['params'] !== null ? row['params'] as SpecValues : {}
+  const [spec, setSpec] = useState<FormSpecDoc | null>(null)
+  const [error, setError] = useState<string | null>(null)
+  const [values, setValues] = useState<SpecValues>(params)
+  const [open, setOpen] = useState<Record<string, boolean>>({})
+  const [running, setRunning] = useState(false)
+  // THE OUTPUT HALF — the ROW is the truth (runs are named by draft
+  //  only, so a tab-wide run id binds WRONG studios to other cards'
+  //  runs): this row's result carries its own run_id + artifact url
+  //  (the outcome observer writes both); the poll runs only while
+  //  this row's run is IN FLIGHT (runStatus 'running' with no url
+  //  yet — the run-wire package's ONE poll loop; its single-stage
+  //  fallback maps the card door's skeleton-named stage onto this
+  //  bench row's id).
+  const rowResult = typeof row['result'] === 'object' && row['result'] !== null
+    ? row['result'] as { run_id?: unknown; url?: unknown } : null
+  const ownRunId = typeof rowResult?.run_id === 'string' && rowResult.run_id !== ''
+    ? rowResult.run_id as string : null
+  const ownUrl = typeof rowResult?.url === 'string' && rowResult.url !== ''
+    ? rowResult.url as string : null
+  const [meshUrl, setMeshUrl] = useState<string | null>(ownUrl)
+  useEffect(() => {
+    setMeshUrl(ownUrl)
+    if (ownUrl !== null || ownRunId === null) return
+    const ctrl = new AbortController()
+    void pollRunStageUrl(ownRunId, props.stageId, { onUrl: setMeshUrl }, ctrl.signal)
+    return () => { ctrl.abort() }
+  }, [ownRunId, ownUrl, props.stageId])
+  useEffect(() => {
+    let alive = true
+    fetchFormSpec('img-to-mesh')
+      .then((doc) => {
+        if (!alive) return
+        setSpec(doc)
+        // seed: the spec's defaults UNDER the frozen bench params
+        setValues({ ...specDefaults(doc.fields), ...params })
+        // the envelope lift: report the estate's declared size class
+        if (alive) props.onSurface(doc.size === 'huge' ? 'huge' : '')
+      })
+      .catch((e: unknown) => { if (alive) setError(e instanceof Error ? e.message : 'form-spec failed') })
+    return () => { alive = false }
+  }, [])
+  const onEdit = (name: string, v: unknown): void => {
+    setValues((prev) => ({ ...prev, [name]: v }))
+  }
+  // the SAME shared square provider the generic drill rides — one
+  // definition, every surface (the operator's DRY law)
+  const { square: squareFor, wireMenu } = useSquareProvider(onEdit, {
+    candidates: props.upstream.map((u) => ({ id: u.id, label: u.title, url: u.url })),
+  })
+  const run = (): void => {
+    if (spec === null) return
+    setRunning(true)
+    // PATCH FIRST (the generic drill's law, kept): the run reads what
+    // the user SEES.
+    onPatch({ ...values } as Record<string, unknown>)
+    onRun()
+    setRunning(false)
+  }
+  return h('div', { className: css.zoomDetail },
+    wireMenu,
+    h('div', { className: css.studioHead },
+      h(Tag, { tone: 'info' }, 'studio'),
+      runStatus !== '' ? h(Tag, { tone: runStatus === 'done' ? 'success' : runStatus === 'error' ? 'danger' : 'neutral' }, runStatus) : null,
+    ),
+    error !== null ? h('p', { className: css.runError }, error) : null,
+    spec === null
+      ? h('p', { className: css.groupNote }, 'loading the declared knob surface…')
+      : h('div', { className: css.studioBody },
+        h('div', { className: css.studioSplit },
+          // THE 3D SPACE (the shared viewport — the old Stage law)
+          h(GlbViewport, { url: meshUrl, label: 'img-to-mesh' }),
+          h('div', { className: css.studioRail },
+        // SpecForm renders each group's title itself — no duplicate.
+        STUDIO_EXPOSED.map((g) => h('section', { key: g, className: css.studioGroup },
+          h(StudioFields, { fields: fieldsOf(spec.fields, g), values, onEdit, square: squareFor }),
+        )),
+        STUDIO_FOLDS.map((g) => {
+          const fs = fieldsOf(spec.fields, g)
+          if (fs.length === 0) return null
+          const isOpen = open[g] === true
+          return h(DisclosureRow, {
+            key: g,
+            icon: h(IconArchiveOutline20),
+            title: STUDIO_TITLE[g] ?? g,
+            open: isOpen,
+            expandable: true,
+            // the reference law (ToolRow/ReasoningRow/GenericCommandCard
+            // all pass it): the whole title row is the toggle target.
+            expandOnRowClick: true,
+            onToggle: () => { setOpen((prev) => ({ ...prev, [g]: !prev[g] })) },
+          }, h(StudioFields, { fields: fs, values, onEdit, square: squareFor }))
+        }),
+        h('div', { className: css.runRow },
+          error !== null ? h('span', { className: css.runError }, error) : null,
+          h(Button, { variant: 'primary', onClick: run }, running ? 'running…' : 'Run'),
+          h(Button, { variant: 'ghost', onClick: onRemove }, 'Remove stage'),
+        ),
+        ),
+        ),
+      ),
+  )
+}
+
+/** The generic card's OWN atoms (SpecForm renders one group's fields —
+ *  the studio hands it the group's slice; zero atom copies). */
+function StudioFields({ fields, values, onEdit, square }: {
+  fields: SpecField[]
+  values: SpecValues
+  onEdit(name: string, v: unknown): void
+  square?: (f: SpecField) => { verbs: import('./input-square.tsx').InputSquareVerbs; display?: string | null } | undefined
+}): ReturnType<typeof h> {
+  if (fields.length === 0) return h('p', { className: css.groupNote }, 'no declared fields')
+  return h(SpecForm, { fields, values, onEdit, square })
+}
+
+/** The built-in registration (the ui-tool law, verbatim — the
+ * module namespace IS the plugin: the loader consumes name/inject/apply). */
+export const name = 'imgToMeshStudio'
+
+export const inject = ['slots']
+
+export function apply(ctx: Context): void {
+ctx.slots.inject('cards.stage.view', () =>
+  ctx.slots.register({ name: 'cards.stage.view', key: 'img-to-mesh' }, ImgToMeshStudio))
+}

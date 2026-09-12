@@ -12,6 +12,7 @@ import { ComfyUIService } from "@melite/comfyui-cordis/service";
 import { GatewayError, type EstateCall } from "@melite/estate-call";
 import type { ToolDefinition, ToolRuntime } from "@deepseek-ai/dsh-tools";
 import * as pkg from "../src/index.ts";
+import * as cardFace from "../src/card.ts";
 import { TOOL_NAME, buildH3TimelineTool as FACE } from "../src/tool.ts";
 
 const DEFAULT_MODEL = "h3-timeline";
@@ -108,6 +109,16 @@ describe("the executor path (two doors, envelope law)", () => {
     assert.equal(v3.error, "estate 503");
   });
 });
+
+  it("a pre-aborted signal aborts (cancellation propagates, never a refusal)", async () => {
+    const ac = new AbortController();
+    ac.abort();
+    const dead: EstateCall = async () => { throw new Error("never dialed"); };
+    await assert.rejects(
+      FACE(dead).execute(GOOD_ARGS, { ...exec, signal: ac.signal } as never),
+      /aborted/i,
+    );
+  });
 
   it("transport failures resolve canonically (jsonLane wraps status 0)", async () => {
     // jsonLane's contract: every transport fault becomes a
@@ -233,27 +244,23 @@ class StubToolsService extends Service {
   }
 }
 
-describe("the index face: apply takes the services it finds", () => {
-  it("comfy present → the card registers; tools absent → no tool", async () => {
+describe("the dual-face law: the root is the row-mount marker", () => {
+  it("comfy AND tools present → the marker still registers NOTHING (the SSOT and melite-tools own the truths)", async () => {
+    const ctx = new Context();
+    await ctx.plugin(ComfyUIService as never);
+    await ctx.plugin(StubToolsService as never);
+    const svc = ctx.get("comfyui") as unknown as { cardIds(): string[] };
+    const stub = ctx.get("tools") as unknown as StubToolsService;
+    pkg.apply(ctx);
+    assert.ok(!svc.cardIds().includes("h3-timeline"), "no card from the marker");
+    assert.equal(stub.registered.length, 0, "no tool from the marker");
+  });
+
+  it("the CARD face registers where the registry seat lives (the SSOT subpath)", async () => {
     const ctx = new Context();
     await ctx.plugin(ComfyUIService as never);
     const svc = ctx.get("comfyui") as unknown as { cardIds(): string[] };
-    pkg.apply(ctx, { call: seam } as never);
+    await ctx.plugin(cardFace as never);
     assert.ok(svc.cardIds().includes("h3-timeline"), "the card registered");
-  });
-
-  it("tools present (no comfy) → the tool registers bare", async () => {
-    const ctx = new Context();
-    await ctx.plugin(StubToolsService as never);
-    const stub = ctx.get("tools") as unknown as StubToolsService;
-    pkg.apply(ctx, { call: seam } as never);
-    assert.equal(stub.registered.length, 1);
-    assert.equal(stub.registered[0]!.name, TOOL_NAME);
-  });
-
-  it("NEITHER service → apply is a no-op (the standalone host)", async () => {
-    const ctx = new Context();
-    pkg.apply(ctx, { call: seam } as never);
-    assert.ok(true, "no throw — both probes undefined");
   });
 });

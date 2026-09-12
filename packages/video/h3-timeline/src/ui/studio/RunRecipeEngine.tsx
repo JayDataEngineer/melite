@@ -4,7 +4,8 @@
  * every logic line is verbatim from the monolith (source range noted).
  */
 import type { CardStage } from "@melite/contracts"
-import { CheckControl, ControlRow, NumberControl, SectionLabel, SelectControl, SliderControl } from "@melite/ui"
+import { CheckControl, ControlRow, NumberControl, SectionLabel, SelectControl, SliderControl } from "./kit"
+import s from "./studio.module.css"
 import { AUDIO_MODES, SAMPLER_OPTIONS, SCHEDULER_OPTIONS } from "./docModel"
 import type { LayerA, SetLayerAKey } from "./docModel"
 
@@ -20,8 +21,8 @@ export function RunRecipeEngine({
   return (
     <>
     {/* Recipe — the document's clock + sampling base */}
-    <div className="space-y-1.5">
-      <div className="text-[9px] font-semibold uppercase tracking-wide text-muted-foreground/50">Recipe</div>
+    <div className={s.group}>
+      <div className={s.groupTitle}>Recipe</div>
       <ControlRow label="Model route">
         <SelectControl
           ariaLabel="Model route"
@@ -67,7 +68,7 @@ export function RunRecipeEngine({
           width="w-32"
         />
       </ControlRow>
-      <ControlRow label="Seam continuity" className="gap-3">
+      <ControlRow label="Seam continuity" className={s.ctlGap3}>
         <CheckControl
           ariaLabel="Seam continuity"
           checked={layerA.continuity}
@@ -89,7 +90,7 @@ export function RunRecipeEngine({
     {/* Engine (H3) — the sampling knobs, forwarded verbatim to
         every window; a beat's Call knobs REPLACE these per
         window. */}
-    <div className="space-y-1.5">
+    <div className={s.group}>
       <SectionLabel
         tail={`window ${String(stage.params?.width ?? "preset")}×${String(stage.params?.height ?? "preset")} · steps ${layerA.sampling_steps ?? "preset"}`}
       >
@@ -157,7 +158,7 @@ export function RunRecipeEngine({
       {/* (knob-audit law) window width/height are real injects —
        * the header readout becomes editable. Blank = preset. */}
       <ControlRow label="Window size">
-        <span className="flex items-center gap-1">
+        <span className={s.winSize}>
           <NumberControl
             ariaLabel="Window width (run)"
             value={layerA.width}
@@ -166,7 +167,7 @@ export function RunRecipeEngine({
             placeholder="preset W"
             width="w-[4.5rem]"
           />
-          <span className="text-muted-foreground/40">×</span>
+          <span className={s.times}>×</span>
           <NumberControl
             ariaLabel="Window height (run)"
             value={layerA.height}

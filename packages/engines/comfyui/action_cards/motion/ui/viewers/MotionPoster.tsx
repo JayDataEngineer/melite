@@ -14,7 +14,7 @@
  * the sidebar. A single static midpoint frame is all a tile needs.
  *
  * The tile lifecycle (cache → render-once → error/skeleton/img) rides the
- * shared poster shell (@melite/ui posterShell — the same shell MeshPoster
+ * shared poster shell (the local poster-shell module — the same shell MeshPoster
  * uses); this module keeps ONLY the motion scene builder.
  */
 import * as THREE from "three"
@@ -22,7 +22,7 @@ import { loadMotionNpz } from "@melite/formats"
 import { loadSomaSkin, deformFrame } from "@melite/formats"
 import { useMotionPosterStore } from "./motionPosterStore"
 import { snapshotSceneToJpeg } from "@melite/formats/renderSnapshot"
-import { PosterShell, usePosterDataUrl } from "@melite/ui/posterShell"
+import { PosterShell, usePosterDataUrl } from "../../../poster-shell"
 
 const FLOOR_LIFT_Y = 0.02
 const J = 77 // SOMA-77 joints

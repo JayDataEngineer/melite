@@ -1,0 +1,44 @@
+/* poster-shell — the poster-tile shell states (explicit error,
+   quiet skeleton, the served <img>). */
+
+/* EXPLICIT error — never a blank div. */
+.posterError {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.posterErrorIcon {
+  width: 20px;
+  height: 20px;
+  color: rgba(251, 191, 36, 0.8);
+}
+
+.posterErrorLabel {
+  font-size: 9px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+/* Tile defaults (the kit's w-full aspect-square / object-cover). */
+.posterDefault {
+  width: 100%;
+  aspect-ratio: 1;
+}
+
+.posterImgDefault {
+  width: 100%;
+  aspect-ratio: 1;
+  object-fit: cover;
+}
+
+.posterSkeleton {
+  height: 100%;
+  width: 100%;
+  border-radius: 0;
+}

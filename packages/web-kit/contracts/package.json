@@ -3,9 +3,7 @@
   "private": true,
   "type": "module",
   "main": "./src/index.ts",
-  "dependencies": {
-    "zustand": "*"
-  },
+  "dependencies": {},
   "exports": {
     ".": "./src/index.ts",
     "./browserStorage": "./src/browserStorage.ts",
@@ -22,6 +20,7 @@
     "./regions": "./src/regions.ts",
     "./schema": "./src/schema.d.ts",
     "./studio": "./src/studio.ts",
+    "./stageView": "./src/stageView.ts",
     "./timelineTypes": "./src/timelineTypes.ts",
     "./vocab": "./src/vocab.ts",
     "./wire": "./src/wire.ts"

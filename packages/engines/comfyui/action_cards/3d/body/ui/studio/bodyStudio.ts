@@ -19,7 +19,7 @@
  * and timeline.ts (no zustand/middleware).
  */
 import type { Character, } from "@melite/contracts"
-import { create } from "zustand"
+import { useSyncExternalStore } from "react"
 
 export interface SavedCharacter extends Character {
   id: string
@@ -133,69 +133,143 @@ function uid(): string {
   return `bc_${_nextId++}_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 6)}`
 }
 
-export const useBodyStudio = create<BodyStudioState>((set, get) => ({
+// ── Native store (DSH ships no state library — no zustand) ─────────────────
+// Module-level state + listener set + useSyncExternalStore hook. Shallow-
+// merge setState preserves the old call sites: useBodyStudio(selector) and
+// useBodyStudio.getState(). Actions are stable module functions, so selector
+// snapshots stay referentially stable between mutations.
+const _listeners = new Set<() => void>()
+
+function _subscribe(listener: () => void): () => void {
+  _listeners.add(listener)
+  return () => {
+    _listeners.delete(listener)
+  }
+}
+
+function _notify(): void {
+  _listeners.forEach((l) => l())
+}
+
+type _Patch =
+  | Partial<BodyStudioState>
+  | ((s: BodyStudioState) => Partial<BodyStudioState>)
+
+function _setState(patch: _Patch, replace?: boolean): void {
+  const p =
+    typeof patch === "function"
+      ? (patch as (s: BodyStudioState) => Partial<BodyStudioState>)(_state)
+      : patch
+  if (replace === true) {
+    _state = p as BodyStudioState
+  } else {
+    _state = { ..._state, ...p }
+  }
+  _notify()
+}
+
+function _getState(): BodyStudioState {
+  return _state
+}
+
+function _setEditing(c: Character): void {
+  _setState({ editing: c })
+}
+
+function _patchEditing(patch: Partial<Character>): void {
+  _setState((s) => ({ editing: { ...s.editing, ...patch } }))
+}
+
+function _resetEditing(): void {
+  _setState({ editing: { ...DEFAULT_CHARACTER } })
+}
+
+function _saveToLibrary(name: string, thumbnail?: string): SavedCharacter {
+  const trimmed = name.trim()
+  const cur = _getState()
+  const character: SavedCharacter = {
+    id: uid(),
+    name: trimmed || `Character ${cur.library.length + 1}`,
+    createdAt: Date.now(),
+    identityModel: cur.editing.identityModel,
+    coeffs: cur.editing.coeffs ? [...cur.editing.coeffs] : null,
+    localChanges: cur.editing.localChanges
+      ? { ...cur.editing.localChanges }
+      : null,
+    customTargets: cur.editing.customTargets
+      ? { ...cur.editing.customTargets }
+      : null,
+    ...(thumbnail ? { thumbnail } : {}),
+  }
+  const library = [...cur.library, character]
+  persistLibrary(library)
+  _setState({ library })
+  return character
+}
+
+function _loadFromLibrary(id: string): void {
+  const found = _getState().library.find((c) => c.id === id)
+  if (!found) return
+  _setState({
+    editing: {
+      identityModel: found.identityModel,
+      coeffs: found.coeffs ? [...found.coeffs] : null,
+      localChanges: found.localChanges ? { ...found.localChanges } : null,
+      customTargets: found.customTargets ? { ...found.customTargets } : null,
+    },
+  })
+}
+
+function _deleteFromLibrary(id: string): void {
+  const library = _getState().library.filter((c) => c.id !== id)
+  persistLibrary(library)
+  _setState({ library })
+}
+
+function _renameInLibrary(id: string, name: string): void {
+  const library = _getState().library.map((c) =>
+    c.id === id ? { ...c, name: name.trim() || c.name } : c,
+  )
+  persistLibrary(library)
+  _setState({ library })
+}
+
+let _state: BodyStudioState = {
   editing: { ...DEFAULT_CHARACTER },
   library: loadPersisted().library,
 
-  setEditing: (c) => set({ editing: c }),
+  setEditing: _setEditing,
 
-  patchEditing: (patch) =>
-    set((s) => ({ editing: { ...s.editing, ...patch } })),
+  patchEditing: _patchEditing,
 
-  resetEditing: () => set({ editing: { ...DEFAULT_CHARACTER } }),
+  resetEditing: _resetEditing,
 
-  saveToLibrary: (name, thumbnail) => {
-    const trimmed = name.trim()
-    const character: SavedCharacter = {
-      id: uid(),
-      name: trimmed || `Character ${get().library.length + 1}`,
-      createdAt: Date.now(),
-      identityModel: get().editing.identityModel,
-      coeffs: get().editing.coeffs ? [...get().editing.coeffs] : null,
-      localChanges: get().editing.localChanges
-        ? { ...get().editing.localChanges }
-        : null,
-      customTargets: get().editing.customTargets
-        ? { ...get().editing.customTargets }
-        : null,
-      ...(thumbnail ? { thumbnail } : {}),
-    }
-    set((s) => {
-      const library = [...s.library, character]
-      persistLibrary(library)
-      return { library }
-    })
-    return character
-  },
+  saveToLibrary: _saveToLibrary,
 
-  loadFromLibrary: (id) => {
-    const found = get().library.find((c) => c.id === id)
-    if (!found) return
-    set({
-      editing: {
-        identityModel: found.identityModel,
-        coeffs: found.coeffs ? [...found.coeffs] : null,
-        localChanges: found.localChanges ? { ...found.localChanges } : null,
-        customTargets: found.customTargets ? { ...found.customTargets } : null,
-      },
-    })
-  },
+  loadFromLibrary: _loadFromLibrary,
 
-  deleteFromLibrary: (id) => {
-    set((s) => {
-      const library = s.library.filter((c) => c.id !== id)
-      persistLibrary(library)
-      return { library }
-    })
-  },
+  deleteFromLibrary: _deleteFromLibrary,
 
-  renameInLibrary: (id, name) => {
-    set((s) => {
-      const library = s.library.map((c) =>
-        c.id === id ? { ...c, name: name.trim() || c.name } : c
-      )
-      persistLibrary(library)
-      return { library }
-    })
-  },
-}))
+  renameInLibrary: _renameInLibrary,
+}
+
+const _initialState: BodyStudioState = _state
+
+function _useBodyStudioHook(): BodyStudioState
+function _useBodyStudioHook<T>(selector: (s: BodyStudioState) => T): T
+function _useBodyStudioHook<T>(
+  selector?: (s: BodyStudioState) => T,
+): T | BodyStudioState {
+  const getSnapshot = selector
+    ? () => selector(_getState())
+    : () => _getState() as unknown as T
+  return useSyncExternalStore(_subscribe, getSnapshot)
+}
+
+export const useBodyStudio = Object.assign(_useBodyStudioHook, {
+  getState: _getState,
+  setState: _setState,
+  subscribe: _subscribe,
+  getInitialState: (): BodyStudioState => _initialState,
+  destroy: (): void => {},
+})

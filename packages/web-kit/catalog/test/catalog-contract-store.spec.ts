@@ -7,7 +7,7 @@ const { toasts, loadCatalogMock } = vi.hoisted(() => ({
   toasts: [] as Array<{ type: string; message: string; action?: { label: string; onClick: () => void } }>,
   loadCatalogMock: vi.fn(),
 }));
-vi.mock("@melite/ui", () => ({
+vi.mock("../src/toast", () => ({
   useToastStore: { getState: () => ({ addToast: (type: string, message: string, action?: { label: string; onClick: () => void }) => {
     toasts.push({ type, message, action });
   } }) },

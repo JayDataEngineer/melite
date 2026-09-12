@@ -6,8 +6,9 @@
  */
 import type { AssetViewerProps } from "@melite/contracts"
 import { MotionPoster, MotionViewer } from "../viewers"
+import styles from "./component.module.css"
 
 export default function MotionViewerClaim({ url, mode, className }: AssetViewerProps) {
-  if (mode === "tile") return <MotionPoster url={url} className={className ?? "w-full h-full object-cover"} />
-  return <MotionViewer url={url} className={className ?? "w-full h-[70vh] rounded-lg"} />
+  if (mode === "tile") return <MotionPoster url={url} className={className ?? styles.tileDefault} />
+  return <MotionViewer url={url} className={className ?? styles.fullDefault} />
 }

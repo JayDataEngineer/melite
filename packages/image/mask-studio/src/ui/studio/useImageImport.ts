@@ -7,7 +7,8 @@
 // (a slot is wired XOR attached, never both).
 import { useCallback, useEffect, useState } from "react"
 import type { CardStage } from "@melite/contracts"
-import { ASSET_DRAG_MIME, readAsDataURL, useToastStore } from "@melite/ui"
+import { ASSET_DRAG_MIME, readAsDataURL } from "./attach"
+import { useToastStore } from "./toast"
 import { INPUT_SLOT } from "./constants"
 
 export interface ImageImportOpts {

@@ -98,7 +98,6 @@
     "@melite/models-wd14": "workspace:*",
     "@melite/models-z-image": "workspace:*",
     "@melite/motion-motion": "workspace:*",
-    "@melite/ui": "workspace:*",
     "@melite/video-h3-timeline": "workspace:*",
     "@melite/video-video-gen": "workspace:*",
     "lucide-react": "*",

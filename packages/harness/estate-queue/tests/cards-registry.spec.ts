@@ -432,6 +432,26 @@ describe("phases", () => {
     );
   }, 240000);
 
+  it("h3 admission covers its own families' axis stamps (quant + recipe)", async () => {
+    const s = primed();
+    // the h3-timeline family declares Variant/Quant/Recipe groups —
+    // the axis seeding writes those keys onto every fresh stage, so
+    // the card's admission must cover them (image-gen's recipe-knob
+    // law; the lane run refused `recipe` before this row grew).
+    // Admission-level assertion: the keys must pass the GATE (compose
+    // may still refuse VALUES — that is the engine's own voice).
+    await s.phase1Card({ quant: "int8", recipe: "default" }, "h3").then(
+      () => "composed",
+      (e: unknown) => {
+        assert.doesNotMatch(
+          (e as Error).message,
+          /unknown param/,
+          "axis stamps refused at admission: " + (e as Error).message.slice(0, 80),
+        );
+      },
+    );
+  }, 240000);
+
   it("post-admission compose refusals ride the phase voice", async () => {
     const r = await primed().composeValidateCard("image-gen", "anima", {
       prompt: "x",

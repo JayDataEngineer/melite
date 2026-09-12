@@ -29,10 +29,10 @@
     "@deepseek-ai/dsh-client-ui-primitives": "0.1.5-rc.2",
     "@deepseek-ai/dsh-client-ui-slots": "0.1.5-rc.2",
     "@types/node": "*",
-    "@types/react": "~18.3.1",
-    "@dnd-kit/core": "^6.3.1",
-    "@dnd-kit/sortable": "^10.0.0",
-    "@dnd-kit/utilities": "^3.2.2"
+    "@types/react": "~18.3.1"
   },
-  "scripts": {}
+  "scripts": {},
+  "dependencies": {
+    "@deepseek-ai/dsh-client-ui-primitives": "0.1.5-rc.2"
+  }
 }

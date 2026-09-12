@@ -18,7 +18,7 @@
  * shell's Node inputs fold (owns_params=False).
  */
 import { estateInputUrl } from "@melite/catalog"
-import { defineShellDeclaration } from "@melite/ui"
+import { defineShellDeclaration } from "./shell"
 import { AssemblyStudio, type AssemblySlot, type AssemblyStudioProps } from "@melite-plugin/3d/ui/studios/assembly"
 
 export const TRELLIS_SLOTS: AssemblySlot[] = [

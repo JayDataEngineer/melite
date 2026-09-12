@@ -5,11 +5,12 @@
 // (Phase 6 restructure) — pure refactor.
 import type { IdeoElement } from './ideoHelpers'
 import { CANVAS_MAX_HEIGHT, GRID_SIZE, MIN_BOX, bboxToRect, clamp, clampBbox, extractIdeogramCaptionFromPNG, genId, snap } from './ideoHelpers'
+import styles from './IdeogramCanvas.module.css'
 import { useCallback, useRef, useState } from 'react'
-import { Textarea, useToastStore } from '@melite/ui'
-import { Box, Type, Image as ImageIcon } from 'lucide-react'
-import { cn } from '@melite/ui'
-import { Tip } from '@melite/ui/tip'
+import { useToastStore } from './toast'
+import { Box, Type, Image as ImageIcon } from './icons'
+import { cx } from './cx'
+import { Tip } from './controls'
 
 
 type PointerMode =
@@ -351,18 +352,17 @@ export function IdeogramCanvas({
   ]
 
   return (
-    <div className={cn("w-full flex flex-col items-center", className)}>
+    <div className={cx(styles.wrap, className)}>
       <div
-        className="relative w-full"
+        className={styles.viewport}
         style={{ maxWidth: `min(100%, ${cssMaxWidth}px)` }}
       >
         <div
           ref={containerRef}
-          className={cn(
-            "relative w-full touch-none select-none overflow-hidden rounded-lg border border-border/70",
-            "shadow-[inset_0_0_0_1px_oklch(0_0_0/0.04)]",
-            drawMode ? "cursor-crosshair" : "cursor-default",
-            pngDragOver && "ring-2 ring-brand/70 ring-offset-2 ring-offset-card",
+          className={cx(
+            styles.canvas,
+            drawMode ? styles.canvasDraw : undefined,
+            pngDragOver ? styles.canvasDrop : undefined,
           )}
           style={{
             aspectRatio: `${width} / ${height}`,
@@ -379,22 +379,22 @@ export function IdeogramCanvas({
         >
           {/* PNG drop overlay — shown while dragging a PNG over the canvas */}
           {pngDragOver && (
-            <div className="pointer-events-none absolute inset-0 z-20 flex flex-col items-center justify-center gap-1.5 rounded-lg bg-brand/15 backdrop-blur-[1px]">
-              <ImageIcon className="h-7 w-7 text-brand" />
-              <span className="text-xs font-semibold text-brand">
+            <div className={styles.dropOverlay}>
+              <ImageIcon className={cx(styles.i28, styles.toneBrand)} />
+              <span className={cx(styles.dropOverlayText, styles.toneBrand)}>
                 Drop PNG to restore layout
               </span>
             </div>
           )}
 
           {/* Background layer (catches empty-canvas clicks) */}
-          <div data-canvas-bg="1" className="absolute inset-0" />
+          <div data-canvas-bg="1" className={styles.bgLayer} />
 
           {/* Background text — centered hint of what the scene contains */}
           {background && (
-            <div className="pointer-events-none absolute inset-0 flex items-center justify-center p-6 text-center">
+            <div className={styles.bgText}>
               <span
-                className="line-clamp-4 text-base font-semibold text-muted-foreground/25 sm:text-lg"
+                className={styles.bgTextSpan}
                 style={{ wordBreak: "break-word" }}
               >
                 {background}
@@ -405,26 +405,8 @@ export function IdeogramCanvas({
           {/* Grid overlay — minor (2.5%) + major (10%) using CSS gradients */}
           {showGrid && (
             <>
-              <div
-                data-grid="1"
-                className="pointer-events-none absolute inset-0"
-                style={{
-                  backgroundImage:
-                    "linear-gradient(to right, oklch(0.7 0.02 264 / 0.07) 1px, transparent 1px)," +
-                    "linear-gradient(to bottom, oklch(0.7 0.02 264 / 0.07) 1px, transparent 1px)",
-                  backgroundSize: "2.5% 2.5%",
-                }}
-              />
-              <div
-                data-grid="1"
-                className="pointer-events-none absolute inset-0"
-                style={{
-                  backgroundImage:
-                    "linear-gradient(to right, oklch(0.7 0.02 264 / 0.18) 1px, transparent 1px)," +
-                    "linear-gradient(to bottom, oklch(0.7 0.02 264 / 0.18) 1px, transparent 1px)",
-                  backgroundSize: "10% 10%",
-                }}
-              />
+              <div data-grid="1" className={styles.gridLayer} data-minor="1" />
+              <div data-grid="1" className={styles.gridLayer} />
             </>
           )}
 
@@ -440,21 +422,21 @@ export function IdeogramCanvas({
                 ? "var(--ideo-logo, oklch(0.78 0.14 75))"
                 : "var(--ideo-obj, oklch(0.78 0.16 196))"
             const accentCls = isText
-              ? "border-violet-400/70 bg-violet-400/10"
+              ? styles.accentText
               : isLogo
-                ? "border-amber-400/70 bg-amber-400/10"
-                : "border-cyan-400/70 bg-cyan-400/10"
+                ? styles.accentLogo
+                : styles.accentObj
             const tagCls = isText
-              ? "bg-violet-400/90 text-violet-950"
+              ? styles.tagText
               : isLogo
-                ? "bg-amber-400/90 text-amber-950"
-                : "bg-cyan-400/90 text-cyan-950"
+                ? styles.tagLogo
+                : styles.tagObj
             const label = isText || isLogo ? `“${el.text || el.type}”` : el.desc || "object"
 
             return (
               <div
                 key={el.id}
-                className="absolute"
+                className={styles.elementBox}
                 style={{
                   left: `${x / 10}%`,
                   top: `${y / 10}%`,
@@ -465,8 +447,8 @@ export function IdeogramCanvas({
                 {/* Selection halo (slightly larger than the box) */}
                 {isSel && (
                   <div
-                    className="pointer-events-none absolute -inset-1 rounded-sm border-2"
-                    style={{ borderColor: accentVar, opacity: 0.4 }}
+                    className={styles.halo}
+                    style={{ borderColor: accentVar }}
                   />
                 )}
 
@@ -481,22 +463,19 @@ export function IdeogramCanvas({
                         }
                       : undefined
                   }
-                  className={cn(
-                    "absolute inset-0 rounded-sm border-2 transition-colors",
+                  className={cx(
+                    styles.outline,
                     accentCls,
-                    isSel ? "shadow-[0_0_0_1px_oklch(1_0_0/0.04)]" : "",
+                    isSel ? styles.outlineSelected : undefined,
                   )}
                   style={{ cursor: mode.kind === "move" && mode.subjects.some((s) => s.id === el.id) ? "grabbing" : "grab" }}
                 />
 
                 {/* Type tag (top-left) */}
                 <div
-                  className={cn(
-                    "pointer-events-none absolute left-1 top-1 inline-flex items-center gap-1 rounded-sm px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider",
-                    tagCls,
-                  )}
+                  className={cx(styles.tag, tagCls)}
                 >
-                  {isText ? <Type className="h-2.5 w-2.5" /> : <Box className="h-2.5 w-2.5" />}
+                  {isText ? <Type className={styles.i10} /> : <Box className={styles.i10} />}
                   {isText ? "TXT" : "OBJ"}
                 </div>
 
@@ -505,9 +484,7 @@ export function IdeogramCanvas({
                     460px-tall canvas, 80 grid-units ≈ 37px, just clearing the tag. */}
                 {w > 60 && h > 80 && (
                   <Tip tip={label}>
-                    <div
-                      className="pointer-events-none absolute left-1.5 top-7 max-w-[calc(100%-0.75rem)] truncate text-xs font-medium text-foreground/85"
-                    >
+                    <div className={styles.descLabel}>
                       {label}
                     </div>
                   </Tip>
@@ -515,12 +492,12 @@ export function IdeogramCanvas({
 
                 {/* Color palette strip (bottom) */}
                 {el.color_palette.length > 0 && (
-                  <div className="pointer-events-none absolute inset-x-0 bottom-0 flex h-2 overflow-hidden">
+                  <div className={styles.paletteStrip}>
                     {el.color_palette.map((c, i) => (
                       <div
                         key={i}
-                        style={{ background: c, flex: 1 }}
-                        className="opacity-95"
+                        style={{ background: c }}
+                        className={styles.paletteCell}
                       />
                     ))}
                   </div>
@@ -534,10 +511,9 @@ export function IdeogramCanvas({
                     <div
                       key={hdef.id}
                       onPointerDown={(e) => handleHandlePointerDown(e, el, hdef.id)}
-                      className="absolute h-3 w-3 rounded-sm border-2 bg-background"
+                      className={styles.handle}
                       style={{
                         ...hdef.pos,
-                        transform: "translate(-50%, -50%)",
                         borderColor: accentVar,
                         cursor: hdef.cursor,
                       }}
@@ -546,7 +522,7 @@ export function IdeogramCanvas({
 
                 {/* Inline text editor (double-click text/logo to edit) */}
                 {editingTextId === el.id && (isText || isLogo) && (
-                  <Textarea
+                  <textarea
                     autoFocus
                     value={inlineText}
                     onChange={(e) => setInlineText(e.target.value)}
@@ -565,7 +541,7 @@ export function IdeogramCanvas({
                     }}
                     onDoubleClick={(e) => e.stopPropagation()}
                     placeholder={isLogo ? "Logo text…" : "Text…"}
-                    className="absolute inset-0 z-20 h-auto resize-none rounded-sm border-2 border-brand bg-background/95 p-1.5 text-xs font-medium text-foreground outline-none ring-2 ring-brand/30 placeholder:text-muted-foreground/50"
+                    className={styles.inlineEditor}
                   />
                 )}
               </div>
@@ -575,7 +551,7 @@ export function IdeogramCanvas({
           {/* Drag-create preview */}
           {mode.kind === "draw" && (
             <div
-              className="pointer-events-none absolute border-2 border-dashed"
+              className={styles.drawPreview}
               style={{
                 left: `${Math.min(mode.startX, mode.curX) / 10}%`,
                 top: `${Math.min(mode.startY, mode.curY) / 10}%`,
@@ -590,7 +566,7 @@ export function IdeogramCanvas({
 
         {/* Coordinate readout while interacting */}
         {(mode.kind === "draw" || mode.kind === "move" || mode.kind === "resize") && (
-          <div className="pointer-events-none absolute -bottom-6 left-1/2 -translate-x-1/2 rounded-full bg-background/80 px-2 py-0.5 font-mono text-[10px] tabular-nums text-muted-foreground backdrop-blur">
+          <div className={styles.readout}>
             {mode.kind === "draw" && (
               <>
                 draw {Math.round(Math.min(mode.startX, mode.curX))},

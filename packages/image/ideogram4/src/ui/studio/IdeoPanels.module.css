@@ -1,0 +1,446 @@
+/* IdeoPanels — side panels for the Ideogram layout editor.
+   DSH-token styled; structural sizes mirror the previous
+   tailwind layout. */
+
+.stack {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+/* ── MicroLabel ── */
+.microLabel {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  color: var(--dsw-alias-label-secondary, #5b6470);
+}
+
+.microRow {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.infoHint {
+  cursor: help;
+  color: var(--dsw-alias-label-tertiary, #8a93a0);
+}
+
+.infoHint:hover {
+  color: var(--dsw-alias-label-secondary, #5b6470);
+}
+
+/* ── icon sizes / tones (ex-lucide sizing) ── */
+.i10 { width: 10px; height: 10px; }
+.i12 { width: 12px; height: 12px; }
+.i14 { width: 14px; height: 14px; }
+.i16 { width: 16px; height: 16px; }
+.i20 { width: 20px; height: 20px; }
+.i28 { width: 28px; height: 28px; }
+
+.toneDanger { color: var(--dsw-alias-danger, #dc2626); }
+.toneSuccess { color: var(--dsw-alias-success, #16a34a); }
+.toneBrand { color: var(--dsw-alias-accent, #3b82f6); }
+.toneCyan { color: #22d3ee; }
+.toneViolet { color: #a78bfa; }
+.toneMuted { color: var(--dsw-alias-label-secondary, #5b6470); }
+
+/* ── ColorPaletteInput ── */
+.swatchRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.swatchWrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.swatch {
+  position: relative;
+  border-radius: 6px;
+  border: 1px solid var(--dsw-alias-border, #e2e4e9);
+  overflow: hidden;
+}
+
+.swatchCompact { width: 28px; height: 28px; }
+.swatchFull { width: 32px; height: 32px; }
+
+.swatchInput {
+  position: absolute;
+  inset: 0;
+  height: auto;
+  width: 100%;
+  cursor: pointer;
+  opacity: 0;
+}
+
+.invalidMark {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 9px;
+  color: var(--dsw-alias-danger, #dc2626);
+}
+
+.removeBtn {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  border-radius: 999px;
+  border: none;
+  background: var(--dsw-alias-danger, #dc2626);
+  color: #fff;
+  cursor: pointer;
+  padding: 0;
+}
+
+.swatchWrap:hover .removeBtn {
+  display: flex;
+}
+
+.addBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  border: 1px dashed var(--dsw-alias-border, #e2e4e9);
+  background: transparent;
+  color: var(--dsw-alias-label-secondary, #5b6470);
+  cursor: pointer;
+  padding: 0;
+}
+
+.addBtn:hover {
+  color: var(--dsw-alias-label-primary, #0f1115);
+  border-color: var(--dsw-alias-label-tertiary, #8a93a0);
+}
+
+.hexInput {
+  flex: 1;
+  min-width: 120px;
+  font-family: ui-monospace, monospace;
+  font-size: 12px;
+}
+
+.presetWrap {
+  position: relative;
+}
+
+.scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+}
+
+.presetPop {
+  position: absolute;
+  right: 0;
+  top: 36px;
+  z-index: 40;
+  width: 208px;
+  border-radius: 8px;
+  border: 1px solid var(--dsw-alias-border, #e2e4e9);
+  background: var(--dsw-alias-bg-module-platform, #f5f6f7);
+  padding: 8px;
+  box-shadow: 0 8px 28px -12px rgb(0 0 0 / 0.45);
+}
+
+.presetTitle {
+  margin-bottom: 6px;
+  padding: 0 4px;
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--dsw-alias-label-secondary, #5b6470);
+}
+
+.presetList {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.presetRow {
+  width: 100%;
+  justify-content: flex-start;
+}
+
+.presetSwatches {
+  display: flex;
+  height: 16px;
+  overflow: hidden;
+  border-radius: 2px;
+  border: 1px solid var(--dsw-alias-border, #e2e4e9);
+}
+
+.presetSwatch {
+  width: 10px;
+}
+
+/* ── ElementInspector ── */
+.typeRow {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.typeBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  border-radius: 6px;
+  border: 1px solid;
+  padding: 2px 6px;
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.typeText {
+  border-color: rgb(167 139 250 / 0.4);
+  background: rgb(167 139 250 / 0.1);
+  color: #a78bfa;
+}
+
+.typeObj {
+  border-color: rgb(34 211 238 / 0.4);
+  background: rgb(34 211 238 / 0.1);
+  color: #22d3ee;
+}
+
+.iconActions {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.presetChipRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.bboxHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.bboxVal {
+  font-family: ui-monospace, monospace;
+  font-size: 10px;
+  font-variant-numeric: tabular-nums;
+  color: var(--dsw-alias-label-secondary, #5b6470);
+}
+
+.bboxGrid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+}
+
+.bboxCell {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.bboxLbl {
+  display: block;
+  text-align: center;
+  font-size: 9px;
+  font-family: ui-monospace, monospace;
+  text-transform: uppercase;
+  color: var(--dsw-alias-label-secondary, #5b6470);
+}
+
+.bboxInput {
+  height: 32px;
+  width: 100%;
+  min-width: 0;
+  border-radius: 8px;
+  border: 1px solid var(--dsw-alias-border, #e2e4e9);
+  background: transparent;
+  padding: 4px 10px;
+  font-size: 12px;
+  color: var(--dsw-alias-label-primary, #0f1115);
+  outline: none;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+.bboxInput:focus-visible {
+  border-color: var(--dsw-alias-accent, #3b82f6);
+}
+
+/* ── StylePanel ── */
+.presetChip {
+  justify-content: flex-start;
+}
+
+.chipSwatches {
+  display: flex;
+  height: 12px;
+  overflow: hidden;
+  border-radius: 2px;
+}
+
+.chipSwatch {
+  width: 6px;
+}
+
+.modeGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 4px;
+  border-radius: 8px;
+  border: 1px solid var(--dsw-alias-border, #e2e4e9);
+  padding: 2px;
+  font-size: 12px;
+}
+
+.twoCol {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+}
+
+/* ── JsonPanel ── */
+.jsonStack {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.jsonBar {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.i14ok { width: 14px; height: 14px; color: var(--dsw-alias-success, #16a34a); }
+.tabRow {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.tabGroup {
+  display: inline-flex;
+  border-radius: 6px;
+  border: 1px solid var(--dsw-alias-border, #e2e4e9);
+  padding: 2px;
+  font-size: 11px;
+}
+
+.tabActions {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* Pass-through wrapper so tooltips still fire over disabled buttons. */
+.contents { display: contents; }
+
+.captionPre {
+  max-height: 260px;
+  overflow: auto;
+  border-radius: 6px;
+  border: 1px solid var(--dsw-alias-border, #e2e4e9);
+  background: var(--dsw-alias-bg-module-platform, #f5f6f7);
+  padding: 10px;
+  margin: 0;
+  font-size: 11px;
+  line-height: 1.4;
+  color: var(--dsw-alias-success, #16a34a);
+}
+
+.jsonArea {
+  min-height: 200px;
+  font-family: ui-monospace, monospace;
+  font-size: 11px;
+  line-height: 1.4;
+  color: var(--dsw-alias-success, #16a34a);
+}
+
+.jsonAreaError {
+  border-color: var(--dsw-alias-danger, #dc2626);
+}
+
+.hintRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 10px;
+}
+
+.hintError { color: var(--dsw-alias-danger, #dc2626); }
+.hintOk { color: var(--dsw-alias-label-secondary, #5b6470); }
+.hintDim { color: var(--dsw-alias-label-tertiary, #8a93a0); }
+
+.dropzone {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border-radius: 6px;
+  border: 1px dashed var(--dsw-alias-border, #e2e4e9);
+  padding: 8px 0;
+  font-size: 11px;
+  cursor: pointer;
+  color: var(--dsw-alias-label-secondary, #5b6470);
+  transition: border-color 120ms ease, color 120ms ease;
+}
+
+.dropzone:hover {
+  border-color: var(--dsw-alias-label-tertiary, #8a93a0);
+}
+
+.dropzone:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--dsw-alias-accent, #3b82f6) 50%, transparent);
+  outline-offset: 1px;
+}
+
+.dropzoneActive {
+  border-color: var(--dsw-alias-accent, #3b82f6);
+  background: color-mix(in srgb, var(--dsw-alias-accent, #3b82f6) 10%, transparent);
+  color: var(--dsw-alias-accent, #3b82f6);
+}
+
+.hiddenInput {
+  display: none;
+}
+
+/* DSH Button layout helpers (atoms own their chrome) */
+.btnSquare {
+  width: 32px;
+  height: 32px;
+  padding: 0;
+}
+
+.contents {
+  display: contents;
+}

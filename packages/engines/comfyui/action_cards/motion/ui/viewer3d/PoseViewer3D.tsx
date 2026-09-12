@@ -19,7 +19,8 @@
  */
 import { useRef, useMemo, useState, useEffect, useCallback, memo } from "react"
 import type React from "react"
-import { Loader2 } from "lucide-react"
+import { Loader2 } from "../../../ui-icons"
+import styles from "./PoseViewer3D.module.css"
 import { Canvas, useFrame, useThree } from "@react-three/fiber"
 import { OrbitControls, Grid, ContactShadows, Text, Billboard } from "@react-three/drei"
 import * as THREE from "three"
@@ -1898,13 +1899,13 @@ function PoseViewer3DImpl({
 
   if (meshLoading)
     return (
-      <div className="flex flex-col items-center justify-center gap-3 bg-background" style={{ height }}>
-        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground/30" />
-        <span className="text-xs text-muted-foreground/40">Loading mesh…</span>
+      <div className={styles.loadingBox} style={{ height }}>
+        <Loader2 className={styles.loadingIcon} />
+        <span className={styles.loadingLabel}>Loading mesh…</span>
       </div>
     )
   if (meshError)
-    return <div className="flex items-center justify-center bg-background text-muted-foreground/60 text-xs" style={{ height }}>Mesh error: {meshError}</div>
+    return <div className={styles.errorBox} style={{ height }}>Mesh error: {meshError}</div>
 
   return (
     <div style={{ height, width: "100%", position: "relative" }}>

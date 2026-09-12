@@ -5,7 +5,7 @@
 import { describe, it, afterEach } from "vitest";
 import assert from "node:assert/strict";
 import { ensureCatalog, isCatalogLoaded } from "../src/modelCatalog.ts";
-import { useToastStore } from "@melite/ui";
+import { useToastStore } from "../src/toast";
 
 const realFetch = globalThis.fetch;
 const realAddToast = useToastStore.getState().addToast;

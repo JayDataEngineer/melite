@@ -1,7 +1,7 @@
 // DockBtn — the tool dock button. Pure move from component.tsx.
-import { Button } from "@melite/ui/button"
-import { Tip } from "@melite/ui/tip"
-import { cn } from "@melite/ui"
+import { Button, Tooltip } from "@deepseek-ai/dsh-client-ui-primitives"
+import { clsx } from "clsx"
+import styles from "./mask.module.css"
 
 // ── Tool dock button ─────────────────────────────────────────────────────
 export function DockBtn({
@@ -11,18 +11,18 @@ export function DockBtn({
   disabled?: boolean
 }) {
   return (
-  <Tip tip={title}>
+  <Tooltip label={title} side="top">
   <Button variant="ghost"
   type="button" onClick={() => { if (!disabled) onClick() }} aria-label={title}
   aria-disabled={disabled || undefined}
-  className={cn(
-  "flex h-7 w-7 items-center justify-center rounded transition-colors",
-  disabled && "cursor-not-allowed opacity-35",
-  active ? "bg-brand text-white" : "text-muted-foreground hover:bg-sidebar/60 hover:text-foreground",
+  className={clsx(
+  styles.dockBtn,
+  disabled && styles.dockBtnDisabled,
+  active ? styles.dockBtnActive : styles.dockBtnIdle,
   )}
   >
   {children}
   </Button>
-  </Tip>
+  </Tooltip>
   )
 }

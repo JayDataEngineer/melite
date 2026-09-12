@@ -4,7 +4,7 @@
 //
 // Replaces CopilotKit's useFrontendTool round-trip. Each of the 14 editor
 // tools (update_card, body_*, navigate_to_tab, select_model, asset
-// routing…) executes HERE in the browser against live zustand store state
+// routing…) executes HERE in the browser against live store state
 // the server can never reach. Tools register a handler while their surface
 // is mounted (useClientTool) and deregister on unmount — the SAME
 // conditional exposure CopilotKit had — so the active registry IS the

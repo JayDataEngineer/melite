@@ -53,11 +53,11 @@ export const theService = (): ComfyUIService => {
 export const cardPackages: string[] = [
     '@melite/3d-anny',
     '@melite/3d-fit',
-    '@melite/3d-img-to-mesh',
+    '@melite/3d-img-to-mesh/card',
     '@melite/3d-quad-remesh',
     '@melite/3d-skin',
     '@melite/audio-sfx',
-    '@melite/image-ideogram4',
+    '@melite/image-ideogram4/card',
     '@melite/image-input-prep',
     '@melite/image-mask-studio',
     '@melite/image-tagger',
@@ -68,7 +68,7 @@ export const cardPackages: string[] = [
     '@melite/audio-voice-lock',
     '@melite/image-image-edit',
     '@melite/motion-motion',
-    '@melite/video-h3-timeline',
+    '@melite/video-h3-timeline/card',
     '@melite/3d-clothing-placement',
   '@melite/image-image-gen',
 ]

@@ -3,6 +3,7 @@
 export * from "./card"
 export * from "./character"
 export * from "./studio"
+export * from "./stageView"
 export * from "./vocab"
 export * from "./wire"
 export * from "./regions"

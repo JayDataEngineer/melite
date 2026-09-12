@@ -76,6 +76,24 @@
     - id: infer-card-view
       name: '@melite-plugin/dsh-card-view'
 
+    # THE CARD STUDIOS (2026-09-12, the composition-root correction):
+    # each card package ships its OWN cards.stage.view registration —
+    # a new card never touches the bench host (the DSH plugin
+    # contract). The rows mount the packages' root faces (the browser
+    # graph's dsh.client scan needs bare-root entries); their tool
+    # registrations stay gated on the registrar-threaded EstateCall
+    # seam, so a row-mount registers nothing node-side. The studios
+    # ride the packages' dsh.client declarations (src/client ->
+    # lib/client.js).
+    - id: card-studio-h3-timeline
+      name: '@melite/video-h3-timeline'
+
+    - id: card-studio-ideogram4
+      name: '@melite/image-ideogram4'
+
+    - id: card-studio-img-to-mesh
+      name: '@melite/3d-img-to-mesh'
+
     - id: infer-card-deck
       name: '@melite-plugin/dsh-card-deck'
 

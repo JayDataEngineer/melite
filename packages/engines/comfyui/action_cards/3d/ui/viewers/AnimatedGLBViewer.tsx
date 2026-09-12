@@ -17,9 +17,10 @@ import { Canvas, useFrame } from "@react-three/fiber"
 import { OrbitControls, ContactShadows, Environment, Lightformer } from "@react-three/drei"
 import * as THREE from "three"
 import type { GLTF } from "three/examples/jsm/loaders/GLTFLoader.js"
-import { Button } from "@melite/ui/button"
-import { Loader2 } from "lucide-react"
+import { Button } from "@deepseek-ai/dsh-client-ui-primitives"
+import { Loader2 } from "../../../ui-icons"
 import { loadGLB } from "@melite/formats/glbLoad"
+import styles from "./AnimatedGLBViewer.module.css"
 
 // GLB loading rides the estate's shared kernel (@melite/formats
 // glbLoad): one DRACO-configured loader — LOCAL decoder files, no CDN —
@@ -139,10 +140,10 @@ function AnimatedModel({
 
 function LoadingOverlay({ label = "Loading character…" }: { label?: string }) {
   return (
-    <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-      <div className="flex flex-col items-center gap-2 text-muted-foreground bg-black/60 backdrop-blur px-6 py-4 rounded-lg">
-        <Loader2 className="h-6 w-6 animate-spin" />
-        <span className="text-[10px]">{label}</span>
+    <div className={styles.centerOverlay}>
+      <div className={styles.overlayCard}>
+        <Loader2 className={styles.loadingIcon} />
+        <span className={styles.loadingLabel}>{label}</span>
       </div>
     </div>
   )
@@ -219,14 +220,14 @@ export function AnimatedGLBViewer({
   // order stays stable between the two branches.
   if (!glbUrl) {
     return (
-      <div className={`relative flex w-full items-center justify-center ${className || "h-full"}`}>
-        <span className="text-[10px] text-muted-foreground">No 3D asset URL</span>
+      <div className={`${styles.emptyRoot} ${className || ""}`}>
+        <span className={styles.emptyLabel}>No 3D asset URL</span>
       </div>
     )
   }
 
   return (
-    <div className={`relative w-full ${className || "h-full"}`}>
+    <div className={`${styles.root} ${className || ""}`}>
       <Canvas
         shadows
         camera={{ fov: 35, near: 0.1, far: 100, position: [0, 1.2, 4.0] }}
@@ -304,21 +305,17 @@ export function AnimatedGLBViewer({
         <Button
           type="button"
           onClick={() => setShowRig((v) => !v)}
-          className={`absolute top-2 right-2 z-10 rounded-md border px-2 py-1 text-[10px] font-medium backdrop-blur transition-colors ${
-            showRig
-              ? "border-primary bg-primary text-primary-foreground"
-              : "bg-black/50 text-muted-foreground hover:text-foreground"
-          }`}
+          className={`${styles.rigChip} ${showRig ? styles.rigChipOn : styles.rigChipOff}`}
           title="Toggle skeleton overlay (the rig this artifact carries)"
         >
           Rig
         </Button>
       )}
       {error && (
-        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-          <div className="flex flex-col items-center gap-1 text-destructive bg-black/80 backdrop-blur px-6 py-4 rounded-lg max-w-xs text-center">
-            <span className="text-[10px] font-medium">Failed to load character</span>
-            <span className="text-[9px] text-muted-foreground">{error.slice(0, 120)}</span>
+        <div className={styles.centerOverlay}>
+          <div className={`${styles.overlayCard} ${styles.overlayCardError}`}>
+            <span className={styles.errorTitle}>Failed to load character</span>
+            <span className={styles.errorDetail}>{error.slice(0, 120)}</span>
           </div>
         </div>
       )}

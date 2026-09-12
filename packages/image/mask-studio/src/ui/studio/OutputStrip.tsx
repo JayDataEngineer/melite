@@ -1,12 +1,12 @@
 // OutputStrip — the RECIPE bar. Pure move from component.tsx (props shape
 // unchanged); the shared recipe/filter types + CHIP_TONE live in
 // constants.ts, the thumbnail in MaskThumb.tsx.
-import { Button } from "@melite/ui/button"
-import { Tip } from "@melite/ui/tip"
-import { cn } from "@melite/ui"
+import { Button, Tooltip } from "@deepseek-ai/dsh-client-ui-primitives"
+import { clsx } from "clsx"
 import { CHIP_TONE } from "./constants"
 import type { FilterChip, RecipeEntry } from "./constants"
 import { MaskThumb } from "./MaskThumb"
+import styles from "./mask.module.css"
 
 // ── Output strip — the RECIPE bar (2026-08-16 phase A) ────────────────────
 // "We have 'outputs' at the bottom. It's static, when it could be
@@ -39,10 +39,10 @@ export function OutputStrip({
   filters: FilterChip[]
 }) {
   return (
-  <div data-output-strip className="shrink-0 rounded-md border border-border/50 bg-sidebar/30 px-2 py-1.5">
-  <div className="flex items-baseline gap-1 pb-1">
-  <span className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground/70">Outputs</span>
-  <span className="text-[9px] text-muted-foreground/50">
+  <div data-output-strip className={styles.strip}>
+  <div className={styles.stripHead}>
+  <span className={styles.stripTitle}>Outputs</span>
+  <span className={styles.stripSub}>
   {entries.length === 0
   ? "— nothing armed yet"
   : running ? "— filling as the run lands…" : "— exported automatically"}
@@ -52,47 +52,47 @@ export function OutputStrip({
    * none, etc"), ALWAYS rendered: the switch ability is visible even
    * before a run (dim "BBox —" until instances land). Live chips switch
    * the recipe with one tap — no canvas-badge hunt. */}
-  <div data-filter-tier className="flex flex-wrap items-center gap-1 pb-1.5">
+  <div data-filter-tier className={styles.filterTier}>
   {filters.map((f) =>
   f.onTap ? (
-  <Tip key={f.key} tip={f.tip ?? f.label}>
+  <Tooltip key={f.key} label={f.tip ?? f.label} side="top">
   <Button variant="ghost"
   type="button" data-filter-chip={f.key}
   onClick={f.onTap}
-  className={cn(
-  "inline-flex items-center gap-0.5 rounded-full border px-1.5 py-px text-[9px] font-medium transition-colors",
-  f.dim && "opacity-40",
+  className={clsx(
+  styles.filterChip,
+  f.dim && styles.chipDim,
   f.active ? CHIP_TONE[f.tone].on : CHIP_TONE[f.tone].off,
-  f.onTap && !f.active && "hover:bg-sidebar/60",
+  !f.active && styles.chipHover,
   )}
   >
-  {f.icon && <f.icon className="h-2.5 w-2.5 shrink-0" />}
+  {f.icon && <f.icon className={styles.sz10} />}
   {f.label}
   </Button>
-  </Tip>
+  </Tooltip>
   ) : (
   <span
   key={f.key} data-filter-chip={f.key}
   title={f.tip}
-  className={cn(
-  "inline-flex items-center gap-0.5 rounded-full border px-1.5 py-px text-[9px] font-medium",
+  className={clsx(
+  styles.filterChip,
   f.active ? CHIP_TONE[f.tone].on : CHIP_TONE[f.tone].off,
-  f.dim && "opacity-40",
+  f.dim && styles.chipDim,
   )}
   >
-  {f.icon && <f.icon className="h-2.5 w-2.5 shrink-0" />}
+  {f.icon && <f.icon className={styles.sz10} />}
   {f.label}
   </span>
   ),
   )}
   </div>
   {entries.length === 0 ? (
-  <p className="pb-1 text-[9px] leading-relaxed text-muted-foreground/60">
+  <p className={styles.stripEmpty}>
   Nothing armed — pick a source in the rail and its recipe card appears
   here, filling when the run lands.
   </p>
   ) : (
-  <div className="flex gap-1.5 overflow-x-auto pb-0.5">
+  <div className={styles.recipeRow}>
   {entries.map((e) => {
   const filled = e.live ? hasPaint : !!e.url
   return (
@@ -103,14 +103,14 @@ export function OutputStrip({
   data-filter={e.filter}
   data-selection={e.selection}
   title={`${e.filter} · ${e.selection}${e.detail ? ` ${e.detail}` : ""}`}
-  className={cn(
-  "flex w-[92px] shrink-0 flex-col items-center gap-0.5 rounded border px-1.5 py-1.5 transition-colors",
+  className={clsx(
+  styles.recipeCard,
   filled
-  ? "border-border/60 bg-sidebar/40"
-  : cn("border-dashed border-border/40 bg-sidebar/20 opacity-60", running && "animate-pulse"),
+  ? styles.recipeFilled
+  : clsx(styles.recipeEmptyCard, running && styles.pulse),
   )}
   >
-  <span className="text-[8px] font-medium uppercase tracking-wider text-muted-foreground/60">
+  <span className={styles.recipeFilter}>
   {e.filter}
   </span>
   <MaskThumb
@@ -120,13 +120,13 @@ export function OutputStrip({
   paintCanvas={e.live ? paintCanvas : null}
   paintVersion={e.live ? paintVersion : 0}
   />
-  <span className="flex max-w-full items-center gap-0.5 text-[10px] text-foreground/80">
-  <span className="truncate">{e.selection}</span>
+  <span className={clsx(styles.recipeSel, styles.truncate)}>
+  <span className={styles.truncate}>{e.selection}</span>
   {e.detail && (
-  <span className="shrink-0 truncate text-[9px] text-muted-foreground/60">{e.detail}</span>
+  <span className={styles.recipeDetail}>{e.detail}</span>
   )}
   {!filled && !e.detail && (
-  <span className="text-[9px] text-muted-foreground/60">(empty)</span>
+  <span className={styles.recipeEmptyNote}>(empty)</span>
   )}
   </span>
   </div>

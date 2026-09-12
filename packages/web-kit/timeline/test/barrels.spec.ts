@@ -8,6 +8,17 @@
 import { describe, it, vi } from "vitest";
 import assert from "node:assert/strict";
 
+// Stub atoms for the DSH UI primitives barrel. The bar and the viser
+// timeline render DSH Button/Input/Tooltip atoms, whose built barrel
+// pulls per-atom CSS — the node project externalizes node_modules, so
+// the real barrel crashes native ESM here (the dom project inlines it
+// instead). Nothing below renders, so pass-through stubs keep every
+// re-export assertion meaningful; the tsc gate checks the real names.
+vi.mock("@deepseek-ai/dsh-client-ui-primitives", () => {
+  const stub = () => null;
+  return { Button: stub, Input: stub, Tooltip: stub, Switch: stub };
+});
+
 // Fakes for the store seam's self-hydration (runs at import time).
 const lsData = new Map<string, string>();
 (globalThis as Record<string, unknown>).localStorage = {

@@ -5,9 +5,8 @@
   "main": "./src/index.ts",
   "dependencies": {
     "@melite/contracts": "workspace:*",
-    "@melite/ui": "workspace:*",
-    "zustand": "*",
-    "@melite/formats": "workspace:*"
+    "@melite/formats": "workspace:*",
+    "react": "^19.2.6"
   },
   "exports": {
     ".": "./src/index.ts",

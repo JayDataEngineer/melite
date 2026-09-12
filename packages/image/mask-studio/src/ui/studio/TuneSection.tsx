@@ -6,11 +6,11 @@
 // reads them (the section is always mounted, never keyed — state lifetime
 // is identical to when it lived in the parent).
 import { useEffect, useState } from "react"
-import { ChevronDown, Focus, X } from "lucide-react"
-import { NumberField } from "@melite/ui/NumberField"
-import { Button } from "@melite/ui/button"
-import { Tip } from "@melite/ui/tip"
-import { cn } from "@melite/ui"
+import { Button, Tooltip } from "@deepseek-ai/dsh-client-ui-primitives"
+import { clsx } from "clsx"
+import { ChevronDown, Focus, X } from "./icons"
+import { NumberField } from "./NumberField"
+import styles from "./mask.module.css"
 import type { MaskSource } from "./constants"
 
 export function TuneSection({
@@ -55,53 +55,53 @@ export function TuneSection({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [params.detection_threshold, params.sam_threshold, params.sam_dilation])
   return (
-  <section className="border-b border-white/[0.07] px-0.5 py-1.5" data-tune-section>
+  <section className={styles.tuneSection} data-tune-section>
   <Button variant="ghost"
   type="button" data-tune-toggle
   onClick={() => setTuneOpen((v) => !v)}
   aria-expanded={tuneOpen}
-  className="flex w-full items-center justify-between text-[10px] font-semibold uppercase tracking-wide text-muted-foreground/70 transition-colors hover:text-foreground"
+  className={styles.tuneToggle}
   >
   Tune
-  <ChevronDown className={cn("h-3 w-3 transition-transform", !tuneOpen && "-rotate-90")} />
+  <ChevronDown className={clsx(styles.sz12, !tuneOpen && styles.tuneChevClosed, styles.tuneChev)} />
   </Button>
-  <div className={cn("space-y-2 pt-1.5", !tuneOpen && "hidden")}>
+  <div className={clsx(styles.tuneBody, !tuneOpen && styles.tuneHidden)}>
   {/* SHARED — the two knobs more than one producer reads. Threshold is
   * literally ONE param feeding YOLO and SAM3 (the brick reuses it);
   * Scope is the marquee's always-visible answer. */}
   <div>
-  <div className="flex items-center justify-between pb-1">
-  <span className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground/70">
+  <div className={styles.groupHead}>
+  <span className={styles.groupTitle}>
   Shared
   </span>
-  <span className="text-[9px] text-muted-foreground/50">person + text</span>
+  <span className={styles.groupNote}>person + text</span>
   </div>
   <NumberField label="Threshold" tooltip="Detection confidence — YOLO (Person/Box) and SAM3 (Text)"
   value={draft.detection_threshold}
   onChange={(v) => setDraft((d) => ({ ...d, detection_threshold: v }))}
   onCommit={(v) => onChange("detection_threshold", v)}
   min={0.05} max={0.95} step={0.05} />
-  <Tip tip="The marquee (R tool) scopes every producer — Person/Box crop to it, Text constrains to it. Clearing it returns to the full image.">
+  <Tooltip label="The marquee (R tool) scopes every producer — Person/Box crop to it, Text constrains to it. Clearing it returns to the full image." side="top">
   <div
   data-scope-chip
-  className="mt-1.5 flex items-center justify-between rounded border border-border/40 bg-sidebar/20 px-1.5 py-1"
+  className={styles.scopeChip}
   >
-  <span className="flex items-center gap-1 text-[10px] text-muted-foreground">
-  <Focus className="h-3 w-3" /> Scope
+  <span className={styles.scopeChipLabel}>
+  <Focus className={styles.sz12} /> Scope
   </span>
-  <span className="flex items-center gap-1">
-  <span className="text-[10px] tabular-nums text-foreground/80">{scopeLabel}</span>
+  <span className={styles.scopeVal}>
+  <span className={styles.scopeValText}>{scopeLabel}</span>
   {hasScope && (
   <Button variant="ghost"
   type="button" data-clear-scope onClick={onClearScope} aria-label="Clear scope"
-  className="rounded p-0.5 text-muted-foreground transition-colors hover:bg-red-500/10 hover:text-red-400"
+  className={styles.scopeClear}
   >
-  <X className="h-3 w-3" />
+  <X className={styles.sz12} />
   </Button>
   )}
   </span>
   </div>
-  </Tip>
+  </Tooltip>
   </div>
 
   {/* REFINE — Person/Box only, and only the knobs the mode actually
@@ -109,11 +109,11 @@ export function TuneSection({
   * rectangles instead), Person gets both. */}
   {isDetect && (
   <div>
-  <div className="pb-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground/70">
+  <div className={styles.refineTitle}>
   Refine
   </div>
   {source === "person" ? (
-  <div className="grid grid-cols-2 gap-1.5">
+  <div className={styles.refineGrid}>
   <NumberField label="SAM refine" tooltip="SAM mask refinement threshold — tighter masks"
   value={draft.sam_threshold}
   onChange={(v) => setDraft((d) => ({ ...d, sam_threshold: v }))}
@@ -126,13 +126,13 @@ export function TuneSection({
   min={0} max={50} step={1} />
   </div>
   ) : (
-  <div className="space-y-1">
+  <div className={styles.refineStack}>
   <NumberField label="Dilation" tooltip="Grow each rectangle by N px"
   value={draft.sam_dilation}
   onChange={(v) => setDraft((d) => ({ ...d, sam_dilation: v }))}
   onCommit={(v) => onChange("sam_dilation", v)}
   min={0} max={50} step={1} />
-  <p className="text-[9px] leading-relaxed text-muted-foreground/60">
+  <p className={styles.refineNote}>
   Box mode skips SAM refinement — switch to Person for traced masks.
   </p>
   </div>

@@ -16,19 +16,17 @@
  * owns the live-edit surface.
  */
 import { useEffect, useState, useCallback, useRef } from "react"
-import { Button } from "@melite/ui/button"
-import { Label } from "@melite/ui/label"
-import { NumberField } from "@melite/ui/NumberField"
-import { ScrollArea } from "@melite/ui/scroll-area"
+import { Button } from "@deepseek-ai/dsh-client-ui-primitives"
 import {
+ Label, NumberField, ScrollArea,
  Collapsible, CollapsibleContent, CollapsibleTrigger,
-} from "@melite/ui/collapsible"
-import { Tabs, TabsContent } from "@melite/ui/tabs"
+ Tabs, TabsContent, Tip,
+} from "../../../../form-fields"
 import { RailTabs } from "../../../ui/railTabs"
-import { Dices, RotateCcw, ChevronDown, Loader2 } from "lucide-react"
+import { Dices, RotateCcw, ChevronDown, Loader2 } from "../../../../ui-icons"
 import { fetchIdentitySpace, type IdentitySpace } from "./bodyMesh"
 import { useBodyStudio } from "./bodyStudio"
-import { Tip } from "@melite/ui/tip"
+import styles from "./BodyShapePanel.module.css"
 
 // ── Label formatting helpers ────────────────────────────────────────────────
 
@@ -120,9 +118,9 @@ interface SliderRowProps {
 function SliderRow({ label, value, min, max, defaultVal, onChange }: SliderRowProps) {
  const isDefault = Math.abs(value - defaultVal) < 0.001
  return (
- <div className="flex items-center gap-2 py-0.5">
+ <div className={styles.sliderRow}>
  <Tip tip={label}>
- <Label className="w-32 shrink-0 text-[10px] text-muted-foreground/80 leading-tight whitespace-normal">
+ <Label className={styles.sliderLabel}>
  {label}
  </Label>
  </Tip>
@@ -139,7 +137,7 @@ function SliderRow({ label, value, min, max, defaultVal, onChange }: SliderRowPr
  max={max}
  step={0.01}
  onChange={onChange}
- className="flex-1 min-w-0"
+ className={styles.sliderField}
  />
  {!isDefault && (
  <Tip tip={`Reset ${label} to default (${defaultVal})`}>
@@ -147,10 +145,10 @@ function SliderRow({ label, value, min, max, defaultVal, onChange }: SliderRowPr
  type="button"
  variant="ghost"
  onClick={() => onChange(defaultVal)}
- className="h-5 w-5 border-0 text-muted-foreground/40 hover:text-foreground shrink-0"
+ className={styles.miniReset}
  aria-label={`Reset ${label} to default (${defaultVal})`}
  >
- <RotateCcw className="h-2.5 w-2.5" />
+ <RotateCcw className={styles.miniResetIcon} />
  </Button>
  </Tip>
  )}
@@ -181,8 +179,8 @@ function RegionGroupList({
  )
  const totalInCategory = groups.reduce((n, g) => n + g.indices.length, 0)
  return (
- <div className="py-1">
- <div className="flex items-center justify-between py-1 px-1 text-[9px] uppercase tracking-wider text-muted-foreground/50">
+ <div className={styles.regionWrap}>
+ <div className={styles.regionHead}>
  <span>{category === "face" ? "Face detail morphs" : "Body detail morphs"}</span>
  <span>
  {activeInCategory > 0
@@ -200,18 +198,18 @@ function RegionGroupList({
  onOpenChange={(o) => setOpenDetailRegions((p) => ({ ...p, [region.label]: o }))}
  >
  <CollapsibleTrigger
- className={`flex items-center gap-1 w-full py-0.5 pl-1 text-[10px] hover:text-foreground ${
- category === "face" ? "text-amber-400/70" : "text-muted-foreground/70"
+ className={`${styles.regionTrigger} ${
+ category === "face" ? styles.regionTriggerFace : ""
  }`}
  >
- <ChevronDown className={`h-2.5 w-2.5 transition-transform ${isRegionOpen ? "" : "-rotate-90"}`} />
+ <ChevronDown className={`${styles.triggerChevron} ${isRegionOpen ? "" : styles.triggerChevronClosed}`} />
  {region.label}
- <span className="ml-auto text-muted-foreground/40">
+ <span className={styles.regionCount}>
  {regionActive > 0 ? `${regionActive}/${region.indices.length}` : `${region.indices.length}`}
  </span>
  </CollapsibleTrigger>
  <CollapsibleContent>
- <div className="pl-3 border-l border-border/20 ml-1.5 space-y-0">
+ <div className={styles.regionIndent}>
  {region.indices.map((idx) => {
  const lbl = lc.labels[idx] ?? `morph${idx}`
  const def = lc.defaults[idx] ?? 0
@@ -431,37 +429,37 @@ export function BodyShapePanel() {
  : true
 
  return (
- <div className="flex flex-col h-full min-h-0">
+ <div className={styles.panelRoot}>
  {editing.identityModel === "soma" && (
- <div className="py-8 text-center text-xs text-muted-foreground/60">
+ <div className={styles.somaHint}>
  The default SOMA mesh has no parametric identity controls.
  <br />
- Switch to <span className="text-foreground">MHR</span> or{" "}
- <span className="text-foreground">Anny</span> in the model picker to customize body shape.
+ Switch to <span className={styles.somaHintStrong}>MHR</span> or{" "}
+ <span className={styles.somaHintStrong}>Anny</span> in the model picker to customize body shape.
  </div>
  )}
 
  {loading && (
- <div className="flex flex-col gap-3 px-1 py-2 animate-pulse">
+ <div className={styles.loadingRoot}>
  {/* fake action bar */}
- <div className="flex items-center gap-2 pb-2 border-b border-border/30">
- <div className="h-7 w-24 rounded-md bg-muted/40" />
- <div className="h-7 w-16 rounded-md bg-muted/40" />
- <div className="flex-1" />
- <Loader2 className="h-4 w-4 animate-spin text-muted-foreground/40" />
+ <div className={styles.loadingBar}>
+ <div className={styles.loadingChip} style={{ width: 96 }} />
+ <div className={styles.loadingChip} style={{ width: 64 }} />
+ <div className={styles.loadingSpacer} />
+ <Loader2 className={styles.loadingSpin} />
  </div>
  {/* fake tab strip */}
- <div className="flex gap-1">
+ <div className={styles.loadingTabs}>
  {[72, 52, 48, 80].map((w, i) => (
- <div key={i} className="h-8 rounded-md bg-muted/40" style={{ width: w }} />
+ <div key={i} className={styles.loadingTab} style={{ width: w }} />
  ))}
  </div>
  {/* fake slider rows */}
  {Array.from({ length: 8 }).map((_, i) => (
- <div key={i} className="flex items-center gap-3">
- <div className="h-3 rounded bg-muted/30" style={{ width: 60 + (i % 3) * 20 }} />
- <div className="flex-1 h-2 rounded-full bg-muted/30" />
- <div className="h-3 w-8 rounded bg-muted/30" />
+ <div key={i} className={styles.loadingRow}>
+ <div className={styles.labelGhost} style={{ width: 60 + (i % 3) * 20 }} />
+ <div className={styles.trackGhost} />
+ <div className={styles.valueGhost} />
  </div>
  ))}
  </div>
@@ -470,16 +468,16 @@ export function BodyShapePanel() {
  {space && !loading && (
  <>
  {/* Action bar */}
- <div className="flex items-center gap-2 pb-2 border-b border-border/30 shrink-0">
+ <div className={styles.actionBar}>
  <Tip tip="Fill all dimensions with random N(0,1) samples">
- <span className="contents">
+ <span className={styles.tipAnchor}>
  <Button
  size="sm" variant="outline"
  onClick={handleRandomize}
  disabled={isAllDefaults && editing.identityModel !== "mhr"}
- className="h-7 text-[10px] gap-1"
+ className={styles.actionBtn}
  >
- <Dices className="h-3 w-3" /> Randomize
+ <Dices className={styles.actionIcon} /> Randomize
  </Button>
  </span>
  </Tip>
@@ -487,11 +485,11 @@ export function BodyShapePanel() {
  size="sm" variant="outline"
  onClick={handleReset}
  disabled={isAllDefaults}
- className="h-7 text-[10px] gap-1"
+ className={styles.actionBtn}
  >
- <RotateCcw className="h-3 w-3" /> Reset
+ <RotateCcw className={styles.actionIcon} /> Reset
  </Button>
- <div className="ml-auto text-[9px] text-muted-foreground/50">
+ <div className={styles.actionCount}>
  {detailTotal > 0 && detailCount > 0
  ? `${detailCount}/${detailTotal} morphs active`
  : `${space.dims} phenotype dims`}
@@ -516,7 +514,7 @@ export function BodyShapePanel() {
  <Tabs
  value={activeTab}
  onValueChange={setActiveTab}
- className="flex-1 min-h-0 flex flex-col gap-2"
+ className={styles.tabsRoot}
  >
  <RailTabs
  ariaLabel="Shape sub-menus"
@@ -554,13 +552,13 @@ export function BodyShapePanel() {
  <TabsContent
  key={`g${gi}`}
  value={`g${gi}`}
- className="data-[state=inactive]:hidden min-h-0"
+ className={styles.tabContent}
  >
- <ScrollArea className="pr-2" style={{ height: "calc(100% - 4px)" }}>
- <div className="py-1 px-1 text-[9px] uppercase tracking-wider text-muted-foreground/50">
+ <ScrollArea className={styles.scrollPad} style={{ height: "calc(100% - 4px)" }}>
+ <div className={styles.groupHead}>
  {grp.label} - {grp.count} dims
  </div>
- <div className="space-y-0.5">
+ <div className={styles.groupList}>
  {indices.map((i) => (
  <SliderRow
  key={i}
@@ -580,9 +578,9 @@ export function BodyShapePanel() {
 
  {/* Anny: Phenotype (flat list of 11 labeled dims) */}
  {!space.groups && (
- <TabsContent value="phenotype" className="data-[state=inactive]:hidden min-h-0">
- <ScrollArea className="pr-2" style={{ height: "calc(100% - 4px)" }}>
- <div className="space-y-0.5 py-1">
+ <TabsContent value="phenotype" className={styles.tabContent}>
+ <ScrollArea className={styles.scrollPad} style={{ height: "calc(100% - 4px)" }}>
+ <div className={styles.phenotypeList}>
  {local.map((_, i) => (
  <SliderRow
  key={i}
@@ -601,8 +599,8 @@ export function BodyShapePanel() {
 
  {/* Anny: Body detail morphs */}
  {space.local_changes && space.local_changes.dims > 0 && (
- <TabsContent value="body" className="data-[state=inactive]:hidden min-h-0">
- <ScrollArea className="pr-2" style={{ height: "calc(100% - 4px)" }}>
+ <TabsContent value="body" className={styles.tabContent}>
+ <ScrollArea className={styles.scrollPad} style={{ height: "calc(100% - 4px)" }}>
  <RegionGroupList
  space={space}
  category="body"
@@ -617,8 +615,8 @@ export function BodyShapePanel() {
 
  {/* Anny: Face detail morphs */}
  {space.local_changes && space.local_changes.dims > 0 && (
- <TabsContent value="face" className="data-[state=inactive]:hidden min-h-0">
- <ScrollArea className="pr-2" style={{ height: "calc(100% - 4px)" }}>
+ <TabsContent value="face" className={styles.tabContent}>
+ <ScrollArea className={styles.scrollPad} style={{ height: "calc(100% - 4px)" }}>
  <RegionGroupList
  space={space}
  category="face"
@@ -638,16 +636,16 @@ export function BodyShapePanel() {
  blendshape: 0 = no effect, 1 = full effect as designed by the
  target file. Values >1 are allowed for over-drive. */}
  {space.custom_targets && space.custom_targets.items.length > 0 && (
- <TabsContent value="style" className="data-[state=inactive]:hidden min-h-0">
- <ScrollArea className="pr-2" style={{ height: "calc(100% - 4px)" }}>
- <div className="py-1 px-1 text-[9px] uppercase tracking-wider text-muted-foreground/50">
+ <TabsContent value="style" className={styles.tabContent}>
+ <ScrollArea className={styles.scrollPad} style={{ height: "calc(100% - 4px)" }}>
+ <div className={styles.groupHead}>
  Stylization blends - {customTotal} target{customTotal === 1 ? "" : "s"}
  </div>
- <div className="space-y-0.5 py-1">
+ <div className={styles.phenotypeList}>
  {space.custom_targets.items.map((tgt, i) => {
  const def = space.custom_targets!.defaults[i] ?? 0
  return (
- <div key={tgt.id} className="py-1">
+ <div key={tgt.id} className={styles.styleRow}>
  <SliderRow
  label={tgt.name}
  value={customTargets[tgt.id] ?? def}
@@ -657,7 +655,7 @@ export function BodyShapePanel() {
  onChange={(v) => updateCustomTarget(tgt.id, v, def)}
  />
  {tgt.description && (
- <div className="pl-32 text-[9px] text-muted-foreground/50 leading-tight pb-1">
+ <div className={styles.styleDesc}>
  {tgt.description}
  </div>
  )}

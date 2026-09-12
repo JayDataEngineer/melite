@@ -457,6 +457,57 @@ describe("uploadReferenced (the staging walk)", () => {
       );
     } finally { await s.close(); }
   });
+  it("estate asset urls stage from runsRoot (the chain's disk half)", async () => {
+    const cfg = stub();
+    const s = await startStub(cfg);
+    try {
+      const root = tmpRoot();
+      mkdirSync(join(root, "run-x", "img-to-mesh"), { recursive: true });
+      writeFileSync(join(root, "run-x", "img-to-mesh", "out.png"), Buffer.from("PNG"));
+      const wf = {
+        "1": { class_type: "L", inputs: {
+          media: "/melite-media/runs/run-x/img-to-mesh/out.png",
+          asset: "/v1/assets/runs/run-x/img-to-mesh/out.png",
+          rel: "run-x/img-to-mesh/out.png",
+        } },
+      };
+      const { graph, uploaded } = await uploadReferenced(s.url, wf as never, { runsRoot: root });
+      const ins = (graph["1"] as Record<string, EngineJson>)["inputs"] as Record<string, EngineJson>;
+      assert.equal(ins["media"], "staged.png");
+      assert.equal(ins["asset"], "staged.png");
+      assert.equal(ins["rel"], "staged.png");
+      assert.equal(cfg.seen.uploads, 1, "the seen map dedupes the three spellings to one file");
+      assert.equal(Object.keys(uploaded).length, 1);
+    } finally { await s.close(); }
+  });
+  it("estate asset urls refuse loud when dangling or rootless; runs-relative misses fall to cwd", async () => {
+    const cfg = stub();
+    const s = await startStub(cfg);
+    try {
+      const root = tmpRoot();
+      // dangling under the root: loud (the http arm's law)
+      await assert.rejects(
+        uploadReferenced(s.url, { "1": { class_type: "L", inputs: { image: "/melite-media/runs/run-y/gone.png" } } } as never, { runsRoot: root }),
+        /estate asset url not found.*re-run the producer card/,
+      );
+      // traversal: loud
+      await assert.rejects(
+        uploadReferenced(s.url, { "1": { class_type: "L", inputs: { image: "/melite-media/runs/../escape.png" } } } as never, { runsRoot: root }),
+        /refuses traversal/,
+      );
+      // no runsRoot armed: loud (the caller's seam, named)
+      await assert.rejects(
+        uploadReferenced(s.url, { "1": { class_type: "L", inputs: { image: "/melite-media/runs/run-x/out.png" } } } as never),
+        /without a runs root/,
+      );
+      // a runs-relative MISS falls to the cwd arm and rides verbatim
+      // (the estate-relative input paths keep their old law)
+      const out = await uploadReferenced(s.url, { "1": { class_type: "L", inputs: { image: "no-run/miss.png" } } } as never, { runsRoot: root });
+      const ins = (out.graph["1"] as Record<string, EngineJson>)["inputs"] as Record<string, EngineJson>;
+      assert.equal(ins["image"], "no-run/miss.png");
+      assert.equal(cfg.seen.uploads, 0);
+    } finally { await s.close(); }
+  });
   it("every content-type arm + every failure shape", async () => {
     const exts = [".png", ".jpg", ".jpeg", ".webp", ".gif", ".mp4", ".wav", ".mp3", ".glb"];
     for (const ext of exts) {

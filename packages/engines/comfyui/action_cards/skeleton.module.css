@@ -1,0 +1,18 @@
+/* Skeleton — the quiet loading block (the kit's animate-pulse +
+   rounded-md + muted base, verbatim visuals). Callers add layout
+   classes beside this base. */
+@keyframes skeletonPulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+.skeleton {
+  animation: skeletonPulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  border-radius: 6px;
+  background: var(--dsw-alias-bg-module-platform, #f5f6f7);
+}

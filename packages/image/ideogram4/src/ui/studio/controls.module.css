@@ -1,0 +1,30 @@
+/* Shared studio controls — native elements where DSH ships no
+   atom (Textarea), DSH-token styled. */
+
+.textarea {
+  display: flex;
+  width: 100%;
+  min-height: 64px;
+  border-radius: 8px;
+  border: 1px solid var(--dsw-alias-border, #e2e4e9);
+  background: transparent;
+  padding: 8px 10px;
+  font-size: 14px;
+  line-height: 1.45;
+  color: var(--dsw-alias-label-primary, #0f1115);
+  outline: none;
+  transition: border-color 120ms ease;
+}
+
+.textarea::placeholder {
+  color: var(--dsw-alias-label-tertiary, #8a93a0);
+}
+
+.textarea:focus-visible {
+  border-color: var(--dsw-alias-accent, #3b82f6);
+}
+
+.textarea:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}

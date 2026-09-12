@@ -29,18 +29,16 @@
 // by scripts/ideo_split.py (Phase 6 restructure) — pure refactor.
 import type { ElementType, IdeoElement, StyleType } from './ideoHelpers'
 import { ASPECT_PRESETS, GRID_SIZE, SNAP_UNITS, clamp, clampBbox, extractIdeogramCaptionFromPNG, genId, parseElementsJSON, sanitizeHexList, serializeElements } from './ideoHelpers'
-import { StudioShell, defineShellDeclaration } from "@melite/ui"
+import { StudioShell, defineShellDeclaration } from "./shell"
 import { IdeogramCanvas } from './IdeogramCanvas'
+import { ToastViewport, useToastStore } from './toast'
 import { ElementInspector, JsonPanel, MicroLabel, StylePanel } from './IdeoPanels'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { Button } from '@melite/ui/button'
-import { Tip } from '@melite/ui/tip'
-import { Textarea } from '@melite/ui/textarea'
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@melite/ui/tooltip'
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@melite/ui/dialog'
-import { Input, useToastStore } from '@melite/ui'
-import { Box, Type, Trash2, Copy, Grid3x3, Magnet, Maximize2, ChevronUp, ChevronDown, Sparkles, Wand2, Code2, Layers, Palette as PaletteIcon, Square, Upload } from 'lucide-react'
-import { cn } from '@melite/ui'
+import { Button, Modal, Tooltip } from '@deepseek-ai/dsh-client-ui-primitives'
+import { Textarea, Tip } from './controls'
+import { Box, Type, Trash2, Copy, Grid3x3, Magnet, Maximize2, ChevronUp, ChevronDown, Sparkles, Wand2, Code2, Layers, Palette as PaletteIcon, Square, Upload } from './icons'
+import { cx } from './cx'
+import styles from './component.module.css'
 export { __test } from './ideoHelpers'
 
 
@@ -428,12 +426,13 @@ export function IdeogramCanvasEditor({ values, setValues }: IdeogramCanvasEditor
   }
 
   return (
+    <>
     <StudioShell
-      className="gap-3"
+      className={styles.shellGap}
       rail={
-        <div className="flex flex-col gap-3">
+        <div className={styles.railCol}>
       {/* Background field — kept at the top because it's required */}
-      <div className="space-y-1.5">
+      <div className={styles.bgField}>
         <MicroLabel tooltip="Scene background. Required by Ideogram — sets the environment everything exists in.">
           Background
         </MicroLabel>
@@ -442,63 +441,58 @@ export function IdeogramCanvasEditor({ values, setValues }: IdeogramCanvasEditor
           onChange={(e) => setValues((prev) => ({ ...prev, background: e.target.value }))}
           placeholder="A natural wood desk against a white wall."
           rows={2}
-          className="min-h-[60px] resize-y bg-input/25 border-input/70 text-sm"
+          className={styles.bgArea}
         />
       </div>
 
       {/* Toolbar */}
-      <div className="flex flex-wrap items-center gap-1.5">
+      <div className={styles.toolbar}>
         <Button
           variant="outline"
           size="sm"
-          className="h-8 gap-1.5 text-xs"
+          className={styles.toolBtn}
           onClick={() => addElement("obj")}
         >
-          <Box className="h-3.5 w-3.5 text-cyan-400" /> Object
+          <Box className={cx(styles.i14, styles.toneCyan)} /> Object
         </Button>
         <Button
           variant="outline"
           size="sm"
-          className="h-8 gap-1.5 text-xs"
+          className={styles.toolBtn}
           onClick={() => addElement("text")}
         >
-          <Type className="h-3.5 w-3.5 text-violet-400" /> Text
+          <Type className={cx(styles.i14, styles.toneViolet)} /> Text
         </Button>
 
-        <div className="mx-1 h-5 w-px bg-border/70" />
+        <div className={styles.divider} />
 
         {/* Aspect ratio picker */}
-        <div className="relative group">
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button variant="outline" size="sm" className="h-8 gap-1.5 text-xs">
-                  {(() => {
-                    const Icon = ASPECT_PRESETS.find((p) => p.id === aspectId)?.Icon ?? Square
-                    return <Icon className="h-3.5 w-3.5" />
-                  })()}
-                  {aspectId}
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent className="text-xs">Aspect ratio (syncs width × height)</TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
-          <div className="absolute left-0 top-9 z-30 hidden group-hover:block group-focus-within:block">
-            <div className="w-44 rounded-md border border-border/80 bg-popover p-1.5 shadow-lg">
-              <div className="grid grid-cols-1 gap-0.5">
+        <div className={styles.aspectWrap}>
+          <Tooltip label="Aspect ratio (syncs width × height)">
+            <Button variant="outline" size="sm" className={styles.toolBtn}>
+              {(() => {
+                const Icon = ASPECT_PRESETS.find((p) => p.id === aspectId)?.Icon ?? Square
+                return <Icon className={styles.i14} />
+              })()}
+              {aspectId}
+            </Button>
+          </Tooltip>
+          <div className={styles.aspectPop}>
+            <div className={styles.aspectCard}>
+              <div className={styles.aspectList}>
                 {ASPECT_PRESETS.map((p) => (
                   <Button variant="ghost"
                     key={p.id}
                     type="button"
                     onClick={() => applyAspect(p.w, p.h)}
-                    className={cn(
-                      "flex items-center gap-2 rounded-sm px-2 py-1.5 text-left text-xs hover:bg-accent/60",
-                      aspectId === p.id && "bg-accent/40",
+                    className={cx(
+                      styles.aspectRow,
+                      aspectId === p.id ? styles.aspectRowActive : undefined,
                     )}
                   >
-                    <p.Icon className="h-3.5 w-3.5 text-muted-foreground" />
+                    <p.Icon className={cx(styles.i14, styles.toneMuted)} />
                     <span>{p.id}</span>
-                    <span className="ml-auto text-[10px] text-muted-foreground">{p.w}×{p.h}</span>
+                    <span className={styles.aspectDims}>{p.w}×{p.h}</span>
                   </Button>
                 ))}
               </div>
@@ -506,124 +500,102 @@ export function IdeogramCanvasEditor({ values, setValues }: IdeogramCanvasEditor
           </div>
         </div>
 
-        <div className="mx-1 h-5 w-px bg-border/70" />
+        <div className={styles.divider} />
 
         {/* Grid + snap toggles */}
-        <TooltipProvider>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                variant={showGrid ? "secondary" : "outline"}
-                size="icon-sm"
-                className="h-8 w-8"
-                onClick={() => setShowGrid((v) => !v)}
-              >
-                <Grid3x3 className="h-3.5 w-3.5" />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent className="text-xs">Toggle 1000-grid overlay</TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
-        <TooltipProvider>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                variant={snapEnabled ? "secondary" : "outline"}
-                size="icon-sm"
-                className="h-8 w-8"
-                onClick={() => setSnapEnabled((v) => !v)}
-              >
-                <Magnet className="h-3.5 w-3.5" />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent className="text-xs">Snap to {SNAP_UNITS}-unit grid</TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
+        <Tooltip label="Toggle 1000-grid overlay">
+          <Button
+            variant={showGrid ? "primary" : "outline"}
+            size="sm"
+            className={styles.btnSquare}
+            onClick={() => setShowGrid((v) => !v)}
+          >
+            <Grid3x3 className={styles.i14} />
+          </Button>
+        </Tooltip>
+        <Tooltip label={`Snap to ${SNAP_UNITS}-unit grid`}>
+          <Button
+            variant={snapEnabled ? "primary" : "outline"}
+            size="sm"
+            className={styles.btnSquare}
+            onClick={() => setSnapEnabled((v) => !v)}
+          >
+            <Magnet className={styles.i14} />
+          </Button>
+        </Tooltip>
 
-        <div className="ml-auto flex items-center gap-1.5">
-          <Input
+        <div className={styles.toolbarRight}>
+          <input
             ref={pngInputRef}
             type="file"
             accept="image/png"
-            className="hidden"
+            className={styles.hiddenInput}
             onChange={handlePngPick}
           />
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="h-8 gap-1.5 text-xs"
-                  onClick={() => pngInputRef.current?.click()}
-                >
-                  <Upload className="h-3.5 w-3.5" /> Load PNG
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent className="text-xs">
-                Re-inflate layout from a generated PNG's metadata
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
+          <Tooltip label="Re-inflate layout from a generated PNG's metadata">
+            <Button
+              variant="outline"
+              size="sm"
+              className={styles.toolBtn}
+              onClick={() => pngInputRef.current?.click()}
+            >
+              <Upload className={styles.i14} /> Load PNG
+            </Button>
+          </Tooltip>
           {elements.length > 0 && (
             <Button
               variant="ghost"
               size="sm"
-              className="h-8 text-xs text-destructive hover:text-destructive"
+              className={cx(styles.toolBtn, styles.toneDanger)}
               onClick={clearAll}
             >
-              <Trash2 className="h-3.5 w-3.5" /> Clear
+              <Trash2 className={styles.i14} /> Clear
             </Button>
           )}
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="outline"
-                  size="icon-sm"
-                  className="h-8 w-8"
-                  onClick={() => setFullscreen(true)}
-                >
-                  <Maximize2 className="h-3.5 w-3.5" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent className="text-xs">Fullscreen canvas</TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
+          <Tooltip label="Fullscreen canvas">
+            <Button
+              variant="outline"
+              size="sm"
+              className={styles.btnSquare}
+              onClick={() => setFullscreen(true)}
+            >
+              <Maximize2 className={styles.i14} />
+            </Button>
+          </Tooltip>
         </div>
       </div>
 
       {/* Tabs: Elements / Style / JSON */}
-      <div className="rounded-xl border border-border/70 bg-card/40">
-        <div className="flex items-center gap-1 border-b border-border/70 px-2 pt-1.5">
-          <TabButton active={tab === "elements"} onClick={() => setTab("elements")} icon={<Layers className="h-3.5 w-3.5" />}>
+      <div className={styles.tabsCard}>
+        <div className={styles.tabsBar}>
+          <TabButton active={tab === "elements"} onClick={() => setTab("elements")} icon={<Layers className={styles.i14} />}>
             Elements
             {elements.length > 0 && (
-              <span className="ml-1 rounded-full bg-muted px-1.5 text-[10px] font-mono tabular-nums">
+              <span className={cx(styles.countBadge, styles.mono)}>
                 {elements.length}
               </span>
             )}
           </TabButton>
-          <TabButton active={tab === "style"} onClick={() => setTab("style")} icon={<PaletteIcon className="h-3.5 w-3.5" />}>
+          <TabButton active={tab === "style"} onClick={() => setTab("style")} icon={<PaletteIcon className={styles.i14} />}>
             Style
           </TabButton>
-          <TabButton active={tab === "json"} onClick={() => setTab("json")} icon={<Code2 className="h-3.5 w-3.5" />}>
+          <TabButton active={tab === "json"} onClick={() => setTab("json")} icon={<Code2 className={styles.i14} />}>
             JSON
           </TabButton>
         </div>
 
-        <div className="p-3">
+        <div className={styles.tabsBody}>
           {tab === "elements" && (
             selectedIds.length > 1 ? (
-              <div className="flex flex-col gap-3">
-                <div className="flex items-center gap-2 text-sm font-medium">
-                  <Layers className="h-4 w-4 text-brand" />
+              <div className={styles.multiSel}>
+                <div className={styles.multiTitle}>
+                  <Layers className={cx(styles.i16, styles.toneBrand)} />
                   {selectedIds.length} elements selected
                 </div>
-                <p className="text-[11px] text-muted-foreground">
+                <p className={styles.multiHint}>
                   Drag to move the group together. Use arrow keys to nudge. Ctrl/⌘-click toggles selection.
                 </p>
-                <div className="flex gap-2">
+                <div className={styles.multiBtns}>
                   <Button
                     type="button"
                     size="sm"
@@ -632,9 +604,8 @@ export function IdeogramCanvasEditor({ values, setValues }: IdeogramCanvasEditor
                       commitElements((prev) => prev.filter((el) => !selectedIds.includes(el.id)))
                       setSelectedIds([])
                     }}
-                    className="gap-1.5"
                   >
-                    <Trash2 className="h-3.5 w-3.5" />
+                    <Trash2 className={styles.i14} />
                     Delete all
                   </Button>
                   <Button
@@ -689,12 +660,12 @@ export function IdeogramCanvasEditor({ values, setValues }: IdeogramCanvasEditor
       center={
         <>
       {/* Canvas */}
-      <div className="relative rounded-xl border border-border/70 bg-card/40 p-3 pb-7 tn-seam">
+      <div className={cx(styles.canvasCard, "tn-seam")}>
         <IdeogramCanvas {...canvasProps} />
 
         {/* helper line — sits in the pb-7 gutter below the canvas */}
-        <div className="pointer-events-none absolute bottom-2 left-3 flex items-center gap-1.5 text-[10px] text-muted-foreground/80">
-          <Sparkles className="h-2.5 w-2.5 text-brand" />
+        <div className={styles.helperLine}>
+          <Sparkles className={cx(styles.i10, styles.toneBrand)} />
           <span>
             {elements.length === 0
               ? "Drag on the canvas to create a region, or use +Object / +Text"
@@ -704,24 +675,21 @@ export function IdeogramCanvasEditor({ values, setValues }: IdeogramCanvasEditor
       </div>
 
       {/* Fullscreen canvas dialog */}
-      <Dialog open={fullscreen} onOpenChange={setFullscreen}>
-        <DialogContent className="max-w-[calc(100vw-2rem)] sm:max-w-[min(1100px,calc(100vw-2rem))] p-4">
-          <DialogHeader className="pb-2">
-            <DialogTitle className="flex items-center gap-2 text-sm">
-              <Sparkles className="h-3.5 w-3.5 text-brand" />
-              Ideogram 4 Canvas
-              <span className="ml-auto text-[10px] font-mono text-muted-foreground">
-                {width}×{height} · {aspectId}
-              </span>
-            </DialogTitle>
-          </DialogHeader>
-          <div className="flex flex-col gap-3 lg:flex-row lg:items-start">
-            <div className="flex-1 rounded-lg border border-border/70 bg-card/40 p-3 pb-7">
+      <Modal
+        open={fullscreen}
+        onClose={() => setFullscreen(false)}
+        title="Ideogram 4 Canvas"
+        closeLabel="Close"
+        description={`${width}×${height} · ${aspectId}`}
+        contentClassName={styles.dialogScroll}
+      >
+          <div className={styles.dialogBody}>
+            <div className={styles.dialogCanvas}>
               <IdeogramCanvas {...canvasProps} maxHeight={620} />
             </div>
-            <div className="w-full lg:w-80 shrink-0">
+            <div className={styles.dialogSide}>
               {selected ? (
-                <div className="rounded-lg border border-border/70 bg-card/40 p-3">
+                <div className={styles.dialogPanel}>
                   <ElementInspector
                     element={selected}
                     onUpdate={(patch) => updateElement(selected.id, patch)}
@@ -732,7 +700,7 @@ export function IdeogramCanvasEditor({ values, setValues }: IdeogramCanvasEditor
                   />
                 </div>
               ) : (
-                <div className="rounded-lg border border-border/70 bg-card/40 p-3">
+                <div className={styles.dialogPanel}>
                   <ElementList
                     elements={elements}
                     selectedIds={selectedIds}
@@ -748,11 +716,12 @@ export function IdeogramCanvasEditor({ values, setValues }: IdeogramCanvasEditor
               )}
             </div>
           </div>
-        </DialogContent>
-      </Dialog>
+      </Modal>
         </>
       }
     />
+    <ToastViewport />
+    </>
   )
 }
 
@@ -773,12 +742,11 @@ function TabButton({
   return (
     <Button
       type="button"
+      variant="ghost"
       onClick={onClick}
-      className={cn(
-        "flex items-center gap-1.5 rounded-t-md border-b-2 px-2.5 py-1.5 text-xs font-medium transition-colors",
-        active
-          ? "border-brand text-foreground"
-          : "border-transparent text-muted-foreground hover:text-foreground",
+      className={cx(
+        styles.tabBtn,
+        active ? styles.tabBtnActive : styles.tabBtnIdle,
       )}
     >
       {icon}
@@ -811,21 +779,21 @@ function ElementList({
 }) {
   if (elements.length === 0) {
     return (
-      <div className="rounded-lg border border-dashed border-border/70 bg-muted/20 px-4 py-6 text-center">
-        <Wand2 className="mx-auto mb-2 h-5 w-5 text-muted-foreground/60" />
-        <div className="text-sm font-medium">No elements yet</div>
-        <p className="mx-auto mt-1 max-w-[28ch] text-[11px] text-muted-foreground">
+      <div className={styles.emptyState}>
+        <Wand2 className={cx(styles.i20, styles.emptyIcon)} />
+        <div className={styles.emptyTitle}>No elements yet</div>
+        <p className={styles.emptyHint}>
           Add an object, text, or logo element, or drag on the canvas to create a region.
         </p>
-        <div className="mt-3 flex justify-center gap-1.5">
-          <Button variant="outline" size="sm" className="h-8 gap-1.5 text-xs" onClick={onAddObject}>
-            <Box className="h-3.5 w-3.5 text-cyan-400" /> Object
+        <div className={styles.emptyBtns}>
+          <Button variant="outline" size="sm" className={styles.toolBtn} onClick={onAddObject}>
+            <Box className={cx(styles.i14, styles.toneCyan)} /> Object
           </Button>
-          <Button variant="outline" size="sm" className="h-8 gap-1.5 text-xs" onClick={onAddText}>
-            <Type className="h-3.5 w-3.5 text-violet-400" /> Text
+          <Button variant="outline" size="sm" className={styles.toolBtn} onClick={onAddText}>
+            <Type className={cx(styles.i14, styles.toneViolet)} /> Text
           </Button>
-          <Button variant="outline" size="sm" className="h-8 gap-1.5 text-xs" onClick={onAddLogo}>
-            <Layers className="h-3.5 w-3.5 text-amber-400" /> Logo
+          <Button variant="outline" size="sm" className={styles.toolBtn} onClick={onAddLogo}>
+            <Layers className={cx(styles.i14, styles.toneAmber)} /> Logo
           </Button>
         </div>
       </div>
@@ -833,12 +801,12 @@ function ElementList({
   }
 
   return (
-    <div className="space-y-1">
-      <div className="flex items-center justify-between px-1 pb-1">
+    <div className={styles.listStack}>
+      <div className={styles.listHead}>
         <MicroLabel>Layout stack</MicroLabel>
-        <span className="text-[10px] text-muted-foreground/60">top → bottom</span>
+        <span className={styles.listDir}>top → bottom</span>
       </div>
-      <div className="max-h-[280px] space-y-1 overflow-y-auto scrollbar-thin">
+      <div className={cx(styles.listScroll, "scrollbar-thin")}>
         {/* Display from top (end of array) to bottom (start of array) */}
         {[...elements].reverse().map((el, revIdx) => {
           const realIdx = elements.length - 1 - revIdx
@@ -848,89 +816,95 @@ function ElementList({
             <div
               key={el.id}
               onClick={() => onSelect(el.id)}
-              className={cn(
-                "group flex cursor-pointer items-center gap-2 rounded-md border px-2 py-1.5 text-xs transition-colors",
-                isSel
-                  ? "border-brand/70 bg-brand/10"
-                  : "border-border/60 bg-input/15 hover:bg-input/30",
+              className={cx(
+                styles.elRow,
+                isSel ? styles.elRowSelected : styles.elRowIdle,
               )}
             >
               <span
-                className={cn(
-                  "inline-flex h-5 w-5 shrink-0 items-center justify-center rounded text-[9px] font-bold",
+                className={cx(
+                  styles.elBadge,
                   el.type === "text"
-                    ? "bg-violet-400/15 text-violet-300"
+                    ? styles.elBadgeText
                     : el.type === "logo"
-                      ? "bg-amber-400/15 text-amber-300"
-                      : "bg-cyan-400/15 text-cyan-300",
+                      ? styles.elBadgeLogo
+                      : styles.elBadgeObj,
                 )}
               >
-                {el.type === "text" ? <Type className="h-3 w-3" /> : el.type === "logo" ? <Layers className="h-3 w-3" /> : <Box className="h-3 w-3" />}
+                {el.type === "text" ? <Type className={styles.i12} /> : el.type === "logo" ? <Layers className={styles.i12} /> : <Box className={styles.i12} />}
               </span>
-              <div className="min-w-0 flex-1">
-                <div className="truncate">{preview}</div>
-                <div className="font-mono text-[9px] tabular-nums text-muted-foreground">
+              <div className={styles.elMain}>
+                <div className={styles.elPreview}>{preview}</div>
+                <div className={cx(styles.elBbox, styles.mono)}>
                   bbox [{el.bbox.map((v) => Math.round(v)).join(", ")}]
                 </div>
               </div>
               {el.color_palette.length > 0 && (
-                <div className="flex h-3 overflow-hidden rounded-sm border border-border/60">
+                <div className={styles.elSwatches}>
                   {el.color_palette.slice(0, 4).map((c, i) => (
                     <div key={i} style={{ background: c, width: 6 }} />
                   ))}
                 </div>
               )}
-              <div className="flex shrink-0 items-center opacity-0 transition-opacity group-hover:opacity-100">
+              <div className={styles.elActions}>
                 <Tip tip="Bring to front">
                 <Button
                   type="button"
+                  variant="ghost"
+                  size="sm"
                   aria-label="Bring to front"
-                  className="rounded p-1 text-muted-foreground hover:text-foreground"
+                  className={styles.iconBtn}
                   onClick={(e) => {
                     e.stopPropagation()
                     onReorder(el.id, "front")
                   }}
                 >
-                  <ChevronUp className="h-3 w-3" />
+                  <ChevronUp className={styles.i12} />
                 </Button>
                 </Tip>
                 <Tip tip="Send to back">
                 <Button
                   type="button"
+                  variant="ghost"
+                  size="sm"
                   aria-label="Send to back"
-                  className="rounded p-1 text-muted-foreground hover:text-foreground"
+                  className={styles.iconBtn}
                   onClick={(e) => {
                     e.stopPropagation()
                     onReorder(el.id, "back")
                   }}
                 >
-                  <ChevronDown className="h-3 w-3" />
+                  <ChevronDown className={styles.i12} />
                 </Button>
                 </Tip>
                 <Tip tip="Duplicate">
                 <Button
                   type="button"
+                  variant="ghost"
+                  size="sm"
                   aria-label="Duplicate"
-                  className="rounded p-1 text-muted-foreground hover:text-foreground"
+                  className={styles.iconBtn}
                   onClick={(e) => {
                     e.stopPropagation()
                     onDuplicate(el.id)
                   }}
                 >
-                  <Copy className="h-3 w-3" />
+                  <Copy className={styles.i12} />
                 </Button>
                 </Tip>
                 <Tip tip="Delete">
                 <Button
                   type="button"
+                  variant="ghost"
+                  size="sm"
                   aria-label="Delete"
-                  className="rounded p-1 text-destructive hover:bg-destructive/10"
+                  className={cx(styles.iconBtn, styles.iconBtnDanger)}
                   onClick={(e) => {
                     e.stopPropagation()
                     onDelete(el.id)
                   }}
                 >
-                  <Trash2 className="h-3 w-3" />
+                  <Trash2 className={styles.i12} />
                 </Button>
                 </Tip>
               </div>

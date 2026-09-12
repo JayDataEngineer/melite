@@ -6,7 +6,7 @@
 import { useCallback, useEffect, useMemo, useRef } from "react"
 import type { Dispatch, SetStateAction } from "react"
 import type { CardStage } from "@melite/contracts"
-import { readAsDataURL } from "@melite/ui"
+import { readAsDataURL } from "./kit"
 import type { LayerA, SetLayerAKey } from "./docModel"
 
 /** Davinci map, artifact index, positioned audio clips + the mixer

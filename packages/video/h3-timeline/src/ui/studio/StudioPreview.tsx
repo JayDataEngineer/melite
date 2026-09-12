@@ -3,12 +3,12 @@
  * ui/studio/component.tsx. No behavior change: headers/footers are new,
  * every logic line is verbatim from the monolith (source range noted).
  */
-import { Clapperboard } from "lucide-react"
 import type { RefObject } from "react"
 import type { CardStage } from "@melite/contracts"
-import { FilmPlayer } from "@melite/ui/FilmPlayer"
-import type { FilmPlayerHandle } from "@melite/ui/FilmPlayer"
-import { EmptyState, PaneHeader } from "@melite/ui"
+import { EmptyState, FilmPlayer, PaneHeader } from "./kit"
+import type { FilmPlayerHandle } from "./kit"
+import { Clapperboard } from "./icons"
+import s from "./studio.module.css"
 
 /** Preview pane: final cut + window tiles + run history (lines 3928–4061).
  * Chrome rides the shared kit (2026-09-07): preview PaneHeader +
@@ -45,7 +45,7 @@ export function StudioPreview({
       playable tile, the run's windows behind it, mask-strip style. */}
   <div
     data-testid="tl-filmstrip"
-    className="flex min-h-0 flex-1 flex-col rounded-md border border-border/50 bg-sidebar/30 px-2.5 py-2"
+    className={s.filmBox}
   >
     <PaneHeader
       variant="preview"
@@ -68,8 +68,8 @@ export function StudioPreview({
       const hist = meta?.history
       if (!hist?.length) return null
       return (
-        <div data-testid="tl-run-history" className="flex shrink-0 flex-wrap items-center gap-1 pb-1.5">
-          <span className="text-[9px] font-semibold uppercase tracking-wide text-muted-foreground/60">
+        <div data-testid="tl-run-history" className={s.histRow}>
+          <span className={s.histTitle}>
             Runs ({hist.length})
           </span>
           {hist.slice(0, 8).map((h, i) => (
@@ -84,7 +84,7 @@ export function StudioPreview({
                 " · " + (h.durationSec ?? "?") + "s" +
                 (h.at ? " · " + new Date(h.at * 1000).toLocaleString() : "")
               }
-              className="rounded border border-sidebar-border/50 bg-sidebar/40 px-1.5 py-0.5 font-mono text-[9px] text-foreground/70 transition-colors hover:border-brand/50 hover:text-brand"
+              className={s.histChip}
             >
               {h.status === "completed" ? "✓" : "×"}{" "}
               {(h.runId ?? "run").replace(/^run-/, "").slice(0, 8)} · {h.durationSec ?? "?"}s
@@ -100,32 +100,32 @@ export function StudioPreview({
         a stitch exists); once the film lands, the player + the synced
         MotionTimelineBar below are the surface — the bar's call clips
         carry the per-window hover previews. */}
-    <div className="flex min-h-0 flex-1 items-center gap-2 overflow-x-auto pb-1">
+    <div className={s.heroRow}>
       {filmstrip.final && (
         <div
           data-testid="tl-final-cut"
-          className="flex h-full min-w-0 flex-1 flex-col gap-1 rounded-md border border-brand/50 bg-brand/[0.07] p-1.5 shadow-[0_0_18px_-6px_rgba(0,229,236,0.35)]"
+          className={s.finalCut}
         >
           <FilmPlayer
             ref={filmRef}
             src={filmstrip.final}
-            className="min-h-0 w-full flex-1 rounded bg-black/50"
+            className={s.player}
             data-testid="tl-film-player"
             onTime={handleFilmTime}
             onPlayingChange={handlePlayingChange}
             onDuration={onDuration}
           />
-          <div className="flex items-center gap-1 px-0.5">
-            <Clapperboard className="h-3 w-3 shrink-0 text-brand" aria-hidden />
-            <span className="text-[9px] font-medium uppercase tracking-wide text-foreground/80">Final cut</span>
-            <span className="ml-1 text-[9px] tabular-nums text-muted-foreground/60">
+          <div className={s.cutBar}>
+            <Clapperboard className={s.cutIcon} aria-hidden />
+            <span className={s.cutTitle}>Final cut</span>
+            <span className={s.cutTime}>
               {(frameIdx / (filmMap?.fps ?? (fps || 24))).toFixed(2)}s · frame {frameIdx}/{barTotal}
             </span>
             <a
               href={filmstrip.final}
               target="_blank"
               rel="noreferrer"
-              className="ml-auto text-[9px] text-brand underline-offset-2 hover:underline"
+              className={s.cutOpen}
             >
               open
             </a>
@@ -146,7 +146,7 @@ export function StudioPreview({
             data-testid="tl-window-tile"
             data-window={w.name}
             title={w.name}
-            className="flex h-full w-36 shrink-0 flex-col gap-1 rounded-md border border-border/60 bg-sidebar/40 p-1.5 transition-colors hover:border-brand/40"
+            className={s.winTile}
           >
             {/* eslint-disable-next-line jsx-a11y/media-has-caption -- muted B-roll progress tile */}
             <video
@@ -155,16 +155,16 @@ export function StudioPreview({
               playsInline
               preload="metadata"
               controls
-              className="min-h-0 w-full flex-1 rounded bg-black/50 object-cover"
+              className={s.winVid}
             />
-            <span className="truncate px-0.5 text-[9px] tabular-nums text-foreground/60" title={w.name}>
+            <span className={s.winName} title={w.name}>
               {/_w(\d+)_/.exec(w.name)?.[1] != null ? `window ${/_w(\d+)_/.exec(w.name)![1]}` : w.name}
             </span>
           </div>
         ))}
       {!filmstrip.windows.length && !filmstrip.final && (
         <EmptyState
-          icon={<Clapperboard className="h-5 w-5 text-muted-foreground/25" aria-hidden />}
+          icon={<Clapperboard className={s.emptyGlyph} aria-hidden />}
           title="No render yet — author the calls below, then Run."
           hint="Each window renders once; unchanged windows reuse across retakes."
         />

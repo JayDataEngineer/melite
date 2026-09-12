@@ -1,9 +1,11 @@
 // Sam3PromptBox — the Text (SAM3) prompt box. Pure move from
 // component.tsx (props shape unchanged).
 import { useEffect, useState } from "react"
-import { Loader2, Sparkles } from "lucide-react"
-import { Input, VerbChip } from "@melite/ui"
-import { Tip } from "@melite/ui/tip"
+import { Input, Tooltip } from "@deepseek-ai/dsh-client-ui-primitives"
+import { clsx } from "clsx"
+import { Loader2, Sparkles } from "./icons"
+import { VerbChip } from "./VerbChip"
+import styles from "./mask.module.css"
 
 /** The Text (SAM3) prompt box. Rendered when Text is the SOURCE — or when
  * a non-empty sam3_prompt is RIDING ALONG beside a Person/Box run (the
@@ -31,17 +33,17 @@ export function Sam3PromptBox({
   }, [params.sam3_prompt])
   const canRun = hasInput && draft.trim().length > 0
   return (
-  <section className="border-b border-white/[0.07] px-0.5 py-2">
-  <div className="flex items-center justify-between">
-  <span className="flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground/70">
-  <Sparkles className="h-3 w-3 text-violet-400" /> Text mask
+  <section className={styles.sam3Section}>
+  <div className={styles.sam3Head}>
+  <span className={styles.sam3Title}>
+  <Sparkles className={clsx(styles.sz12, styles.violetInk)} /> Text mask
   {rideAlong && (
-  <span className="ml-1 rounded bg-violet-400/15 px-1 py-px text-[8px] font-medium normal-case tracking-normal text-violet-300">
+  <span className={styles.rideAlong}>
   also running
   </span>
   )}
   </span>
-  {detecting && <Loader2 className="h-3 w-3 animate-spin text-brand" />}
+  {detecting && <Loader2 className={clsx(styles.sz12, styles.accentInk, styles.spin)} />}
   </div>
   <Input
   type="text" data-sam3-input
@@ -54,11 +56,11 @@ export function Sam3PromptBox({
   // the picker click is the intent to type. A ride-along box (Text not
   // the source, prompt already set) never steals focus.
   autoFocus={!rideAlong && draft === ""}
-  className="h-auto w-full rounded border border-border/50 bg-background px-2 py-1 text-[11px] text-foreground outline-none placeholder:text-muted-foreground/50 focus:border-violet-400/60 disabled:opacity-50"
+  className={styles.promptInput}
   />
-  <Tip tip={!hasInput
+  <Tooltip label={!hasInput
   ? "Add an image first"
-  : draft.trim() ? "Segment by text prompt (scoped to the selection when one is committed)" : "Type what to mask"}>
+  : draft.trim() ? "Segment by text prompt (scoped to the selection when one is committed)" : "Type what to mask"} side="top">
   {/* ONE VERB UX (stroke 5): the Segment gesture rides the shared
    * VerbChip (wide violet shape, the ride-along tone); the prompt
    * box keeps its draft + Enter wiring — the chip owns bones only. */}
@@ -69,8 +71,8 @@ export function Sam3PromptBox({
   disabled={!canRun}
   label="Segment"
   />
-  </Tip>
-  <p className="text-[9px] leading-relaxed text-muted-foreground/60">
+  </Tooltip>
+  <p className={styles.sam3Note}>
   Open-vocabulary segmentation — exports as its own mask (and as the
   Combined mask when Person/Box are off).
   </p>

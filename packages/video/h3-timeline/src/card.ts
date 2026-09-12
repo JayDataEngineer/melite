@@ -154,10 +154,17 @@ export function schema(v: unknown): Record<string, unknown> {
   // Schemastery walk never materializes the string default as a
   // value — a doc omitting the key used to throw at the gate, so
   // every caller had to supply it explicitly. The normalizer owns
-  // it now, as it owns variant derivation.
-  const walkInput = 'interpolate_enabled' in raw
-    ? raw
-    : { ...raw, interpolate_enabled: false }
+  // it now, as it owns variant derivation. The same normalizer owns
+  // the SEEDED string: a fresh stage from the bench add-door rides
+  // the served wire literal ("false"/"true") as an EXPLICIT key —
+  // coerce it to the runtime boolean before the boolean walk
+  // refuses it (the lane run's `expected boolean but got false`).
+  const walkInput: Record<string, unknown> = { ...raw }
+  if (typeof walkInput.interpolate_enabled === 'string') {
+    walkInput.interpolate_enabled = walkInput.interpolate_enabled === 'true'
+  } else if (!('interpolate_enabled' in walkInput)) {
+    walkInput.interpolate_enabled = false
+  }
   const out: Record<string, unknown> = paramSchema(walkInput)
   let variant = typeof raw.variant === 'string' ? raw.variant : undefined
   // variant DERIVATION (retired timeline/laws.py, b324c480^ —
@@ -544,6 +551,16 @@ function renderH3Window(p: Record<string, unknown>, g: GraphBuilder): void {
   })
 }
 
+/** The CARD face's plugin apply (the dual-face law, 2026-09-12):
+ * the cardPackages SSOT composes THIS subpath in the engine plane —
+ * '@melite/video-h3-timeline/card' — where the registry seat lives.
+ * The package root is the web profile's row-mount marker. */
+export const inject = ['comfyui']
+
+export function apply(ctx: Context): void {
+  registerCard(ctx, ctx.comfyui)
+}
+
 export function registerCard(ctx: Context, comfy: ComfyUIService): void {
   ctx.effect(() => comfy.registerCard({
     id: 'h3-timeline',
@@ -569,7 +586,12 @@ export function registerCard(ctx: Context, comfy: ComfyUIService): void {
     // retired row's admits minus the boarded families' studio
     // writes, which the projection unions from the facts file —
     // trailing-* ride verbatim, the gate matches them as prefixes).
-    admits: ['ctx_*', 'fps_seconds', 'image_name', 'k', 'motion_*', 'noise_seed', 'ref_image_size', 'sla_*', 'variant'],
+    // + the AXIS KEYS this card's own families stamp (the h3-timeline
+    // family declares Variant/Quant/Recipe groups — the axis seeding
+    // writes `variant`/`quant`/`recipe` onto every fresh stage; the
+    // admission covers the card's own served surface, image-gen's
+    // recipe-knob law).
+    admits: ['ctx_*', 'fps_seconds', 'image_name', 'k', 'motion_*', 'noise_seed', 'quant', 'recipe', 'ref_image_size', 'sla_*', 'variant'],
     // the six packs the window graph rides (EXTENSION LAW — mirrors
     // the python card's requires tuple verbatim)
     requires: [

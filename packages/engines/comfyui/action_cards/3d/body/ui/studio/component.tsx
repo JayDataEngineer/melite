@@ -30,7 +30,8 @@ import { useBodyStudio, characterFromParams } from "./bodyStudio"
 import { MeshPreviewCanvas } from "./MeshPreviewCanvas"
 import { BodyShapePanel } from "./BodyShapePanel"
 import { BODY_PRESETS } from "@melite/formats"
-import { StudioShell, ViewportFrame, defineShellDeclaration } from "@melite/ui"
+import { StudioShell, ViewportFrame, defineShellDeclaration } from "../../../../studio-shell"
+import styles from "./component.module.css"
 
 /** THE SHELL RIDE, as data (row 5 stroke 4) — declared for the
  *  wall while the full StudioShell ride lands in later strokes:
@@ -40,8 +41,8 @@ export const shellDeclaration = defineShellDeclaration({
   center: { kind: "native" },
   rail: { slots: [] },
 })
-import { Button } from "@melite/ui/button"
-import { Tip } from "@melite/ui/tip"
+import { Button } from "@deepseek-ai/dsh-client-ui-primitives"
+import { Tip } from "../../../../form-fields"
 import type { CardStage } from "@melite/contracts"
 interface BodyCardEditorProps {
   stage: CardStage
@@ -81,15 +82,15 @@ export function BodyCardEditor({ stage, onSave }: BodyCardEditorProps) {
          panel stretches the slot (flex column: presets shrink-0,
          panel flex-1 scrolls its tabs). */
       rail={
-        <div className="flex h-full min-h-0 flex-col">
-          <div className="shrink-0 border-b border-white/[0.07] px-3 py-2.5">
-            <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground/70">
+        <div className={styles.railCol}>
+          <div className={styles.presetHead}>
+            <p className={styles.presetTitle}>
               Body type
             </p>
             {/* The labeled body archetypes (the "labels for any body
                 type"): one click loads the preset into the scratchpad;
                 the bridge persists it to the card. */}
-            <div className="flex flex-wrap gap-1">
+            <div className={styles.presetRow}>
               {BODY_PRESETS.map((p) => (
                 <Tip key={p.id} tip={p.description}>
                   <Button
@@ -97,7 +98,7 @@ export function BodyCardEditor({ stage, onSave }: BodyCardEditorProps) {
                     variant="ghost"
                     onClick={() => setEditing(p)}
                     aria-label={`Preset ${p.name}`}
-                    className="rounded-full border border-sidebar-border/50 bg-sidebar/30 px-2.5 py-1 text-[10px] font-medium text-muted-foreground transition-colors hover:border-brand/50 hover:text-brand"
+                    className={styles.presetPill}
                   >
                     {p.name}
                   </Button>
@@ -108,7 +109,7 @@ export function BodyCardEditor({ stage, onSave }: BodyCardEditorProps) {
           {/* The levers — Phenotype / Body / Face / Style tabs of sliders.
               Same panel the Body Studio tab uses; writes to the
               scratchpad, the bridge persists to the card. */}
-          <div className="min-h-0 flex-1 px-3 pb-3 pt-2.5">
+          <div className={styles.leverWell}>
             <BodyShapePanel />
           </div>
         </div>

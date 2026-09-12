@@ -7,8 +7,9 @@
  */
 import type { AssetViewerProps } from "@melite/contracts"
 import { MeshPoster, AnimatedGLBViewer } from "../viewers"
+import styles from "./component.module.css"
 
 export default function MeshViewer({ url, mode, className }: AssetViewerProps) {
-  if (mode === "tile") return <MeshPoster url={url} className={className ?? "w-full h-full object-cover"} />
-  return <AnimatedGLBViewer glbUrl={url} className={className ?? "w-full h-[70vh] rounded-lg"} />
+  if (mode === "tile") return <MeshPoster url={url} className={className ?? styles.tileDefault} />
+  return <AnimatedGLBViewer glbUrl={url} className={className ?? styles.fullDefault} />
 }

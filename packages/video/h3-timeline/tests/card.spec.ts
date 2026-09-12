@@ -116,6 +116,23 @@ describe("schema() gates (the py model_validator port)", () => {
     assert.equal(many.variant, "t4_chain");
   });
 
+  it("interpolate_enabled: the seeded WIRE STRING coerces to the runtime boolean (the add-door law)", () => {
+    // a fresh stage from the bench add-door rides the served wire
+    // literal ("false"/"true" — byte-frozen in the goldens) as an
+    // EXPLICIT key; the normalizer coerces it so the boolean walk
+    // never refuses (`expected boolean but got false` on the lane).
+    const off = schema({ prompt: "x", interpolate_enabled: "false", calls: [{ start_frame: 0, end_frame: 56 }] });
+    assert.equal(off.interpolate_enabled, false);
+    const on = schema({ prompt: "x", interpolate_enabled: "true", calls: [{ start_frame: 0, end_frame: 56 }] });
+    assert.equal(on.interpolate_enabled, true);
+    // omitted → the pre-filled runtime boolean; explicit booleans
+    // ride untouched.
+    const omitted = schema({ prompt: "x", calls: [{ start_frame: 0, end_frame: 56 }] });
+    assert.equal(omitted.interpolate_enabled, false);
+    const explicit = schema({ prompt: "x", interpolate_enabled: true, calls: [{ start_frame: 0, end_frame: 56 }] });
+    assert.equal(explicit.interpolate_enabled, true);
+  });
+
   it("the shot laws: seam_carry is bounded lane physics (0 = hard cut)", () => {
     assert.throws(
       () => schema({ prompt: "x", calls: [{ start_frame: 0, end_frame: 56, seam_carry: 0.5 }] }),

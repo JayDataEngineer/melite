@@ -1,8 +1,9 @@
 // Audio player with WaveSurfer.js waveform visualization.
 import { useCallback, useEffect, useRef, useState } from "react"
 import WaveSurfer from "wavesurfer.js"
-import { Button } from "@melite/ui/button"
-import { Play, Pause } from "lucide-react"
+import { Button } from "@deepseek-ai/dsh-client-ui-primitives"
+import { Play, Pause } from "../../../ui-icons"
+import styles from "./AudioPlayer.module.css"
 
 function fmtTime(s: number): string {
   if (!isFinite(s) || s < 0) return "0:00"
@@ -110,14 +111,14 @@ export function AudioPlayer({ src, height = 128, className }: AudioPlayerProps) 
     // app's Tailwind scan doesn't reach this plugin file (verified: zero
     // occurrences of "min(880px" in the built CSS), so the class silently
     // did nothing.
-    <div className={`flex flex-col gap-2 ${className ?? ""}`} style={{ width: "min(880px, 88vw)" }}>
+    <div className={className ? `${styles.root} ${className}` : styles.root} style={{ width: "min(880px, 88vw)" }}>
       {/* Waveform — wrapped in a recessed "track" panel so the bars don't
           appear to float on the dialog background. The outer panel carries
           the surface bg + border; the inner div is the WaveSurfer mount. */}
-      <div className="w-full rounded-lg border border-white/10 bg-white/[0.04] p-2 shadow-[inset_0_1px_2px_rgba(0,0,0,0.35)]">
+      <div className={styles.trackPanel}>
         <div
           ref={containerRef}
-          className="w-full cursor-pointer"
+          className={styles.waveMount}
           onPointerDown={onScrubPointerDown}
           onPointerMove={onScrubPointerMove}
           onPointerUp={onScrubPointerUp}
@@ -127,12 +128,12 @@ export function AudioPlayer({ src, height = 128, className }: AudioPlayerProps) 
       </div>
 
       {/* Transport bar */}
-      <div className="flex items-center gap-3 text-foreground/80">
+      <div className={styles.transport}>
         <Button variant="ghost" onClick={togglePlay}
-          className="flex h-7 w-7 items-center justify-center rounded-full bg-white/10 transition-colors hover:bg-white/20">
-          {playing ? <Pause className="size-3.5 fill-current" /> : <Play className="size-3.5 fill-current ml-0.5" />}
+          className={styles.playBtn}>
+          {playing ? <Pause className={styles.playIcon} /> : <Play className={`${styles.playIcon} ${styles.playIconOffset}`} />}
         </Button>
-        <span className="text-xs tabular-nums font-mono text-foreground/60">
+        <span className={styles.timeLabel}>
           {fmtTime(current)} / {fmtTime(duration)}
         </span>
       </div>

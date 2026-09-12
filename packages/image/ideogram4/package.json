@@ -5,15 +5,16 @@
   "description": "the ideogram4 card (the image lane) \u2014 one card one package: card.ts host face + ui/ studio + agents/ context",
   "main": "./src/card.ts",
   "exports": {
-    ".": "./src/card.ts",
+    ".": "./src/index.ts",
+    "./card": "./src/card.ts",
+    "./client": "./lib/client.js",
     "./ui/*": "./src/ui/*",
     "./package.json": "./package.json",
     "./ui/studio/component": "./src/ui/studio/component.tsx",
     "./ui/studio/ideoHelpers": "./src/ui/studio/ideoHelpers.ts",
     "./ui/studio/IdeoPanels": "./src/ui/studio/IdeoPanels.tsx"
   },
-  "scripts": {
-  },
+  "scripts": {},
   "dependencies": {
     "@deepseek-ai/cordis": "^4.0.2",
     "@deepseek-ai/dsh-client-ui-primitives": "0.1.5-rc.2",
@@ -21,12 +22,22 @@
     "@melite/comfyui-card-kit": "workspace:*",
     "@melite/comfyui-cordis": "workspace:*",
     "@melite/estate-call": "workspace:*",
-    "@melite/ui": "workspace:*",
-    "lucide-react": "*",
-    "react": "^19.2.6"
+    "@melite/slots": "workspace:*",
+    "react": "^19.2.6",
+    "@melite/card-base": "workspace:*",
+    "@melite/contracts": "workspace:*",
+    "clsx": "*"
   },
   "devDependencies": {
-    "@types/node": "*"
+    "@types/node": "*",
+    "@testing-library/react": "*",
+    "@testing-library/user-event": "*",
+    "@testing-library/jest-dom": "*"
   },
-  "name": "@melite/image-ideogram4"
+  "name": "@melite/image-ideogram4",
+  "dsh": {
+    "client": {
+      "platform": "web"
+    }
+  }
 }

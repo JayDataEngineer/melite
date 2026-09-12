@@ -38,9 +38,6 @@ import type {} from '@deepseek-ai/dsh-client-ui-renderer/client'
 import type {} from '@deepseek-ai/dsh-client-ui-sidebar-right/client'
 import type {} from '@deepseek-ai/dsh-client-resources/client'
 import { claimCardViewApply, releaseCardViewApply } from './apply-guard.ts'
-import { imgToMeshStudio } from './img-to-mesh-studio.tsx'
-import { h3TimelineStudio } from './h3-timeline-studio.tsx'
-import { ideogram4Studio } from './ideogram4-studio.tsx'
 import { FlowCards } from './FlowCards.tsx'
 import { CardsTab } from './CardsTab.tsx'
 import { CARDS_BENCH_ADDRESS, openCardsResource } from './cards-resource.ts'
@@ -115,9 +112,6 @@ export function apply(ctx: ClientContext): void {
   // its own cards' views — read/search/web live in ui-tool; img-to-mesh
   // lives here). Third-party cards register additively from their own
   // packages through the same keyed slot.
-  ctx.plugin(imgToMeshStudio)
-  ctx.plugin(h3TimelineStudio)
-  ctx.plugin(ideogram4Studio)
 
   // Stage one — the tab type: claims every cards address; the bench
   // page is opened by kind ('cards'). Extension band is the default a

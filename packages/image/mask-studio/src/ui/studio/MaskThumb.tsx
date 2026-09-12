@@ -2,6 +2,7 @@
 // component.tsx (props shape unchanged).
 import { useEffect, useRef } from "react"
 import { makeTinted } from "./canvas-ops"
+import styles from "./mask.module.css"
 
 // ── Mask thumbnail (small canvas, redraws on content/version change) ──────
 export function MaskThumb({
@@ -41,5 +42,5 @@ export function MaskThumb({
   // 72×48 (bumped 40×28 → subcard size at tenant #3): the bottom bar's
   // subcards are the OUTPUT readout — big enough to read a mask at a
   // glance, small enough that six fit in a row.
-  return <canvas ref={ref} width={72} height={48} className="h-12 w-[72px] shrink-0 rounded-sm border border-black/40" />
+  return <canvas ref={ref} width={72} height={48} className={styles.thumb} />
 }

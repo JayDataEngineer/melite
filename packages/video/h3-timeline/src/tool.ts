@@ -141,12 +141,16 @@ export const buildH3TimelineTool = (call: EstateCall): ToolDefinition => {
           status: typeof started.status === 'string' ? started.status : 'queued',
         }
       } catch (e) {
-        // jsonLane's contract: EVERY seam failure arrives as a
-        // GatewayError (transport faults wrap with status 0 and the
-        // message as body). Refusals are DOMAIN OUTCOMES — one
-        // canonical arm, no instanceof split.
-        const g = e as GatewayError
-        return { flow: FLOW, model, error: g.named || g.body || `estate ${g.status}` }
+        // jsonLane's contract: transport faults arrive wrapped as
+        // GatewayError(0, message, ""); a PRE-ABORTED signal throws
+        // the DOMException BEFORE the lane — cancellation propagates,
+        // never becomes a refusal value.
+        if (e instanceof GatewayError) {
+          // Named refusals (4xx/5xx bodies carrying {error}) are
+          // DOMAIN OUTCOMES — canonical values, not throws.
+          return { flow: FLOW, model, error: e.named || e.body || `estate ${e.status}` }
+        }
+        throw e
       }
     },
   })

@@ -22,7 +22,7 @@
  * client-side before any POST (the door only takes png/jpeg/webp —
  * video/audio upload doors are a recorded gap, not a silent pass).
  */
-import { readAsDataURL } from "@melite/ui"
+import { readAsDataURL } from "@melite/formats/readFile"
 
 const IMAGE_TYPES = new Set(["image/png", "image/jpeg", "image/webp"])
 

@@ -11,16 +11,14 @@
     "./ui/railTabs": "./railTabs.tsx"
   },
   "dependencies": {
+    "@deepseek-ai/dsh-client-ui-primitives": "0.1.5-rc.2",
     "@melite/catalog": "workspace:*",
     "@melite/contracts": "workspace:*",
     "@melite/formats": "workspace:*",
-    "@melite/ui": "workspace:*",
     "@react-three/drei": "*",
     "@react-three/fiber": "*",
-    "lucide-react": "*",
     "react": "*",
     "react-dom": "*",
-    "three": "*",
-    "zustand": "*"
+    "three": "*"
   }
 }

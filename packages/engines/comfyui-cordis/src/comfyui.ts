@@ -538,12 +538,31 @@ function isFile(path: string): boolean {
   }
 }
 
+/** The estate's asset-URL prefixes — the two surfaces that serve
+ *  run artifacts. /melite-media/runs is the browser media route;
+ *  /v1/assets/runs is the compose door's artifact currency (the
+ *  dangling-ref gate accepts exactly these two forms). */
+const MEDIA_ROUTE_PREFIX = "/melite-media/runs/";
+const ASSET_ROUTE_PREFIX = "/v1/assets/runs/";
+
 /** Walk the FINAL graph; stage every existing local-media path.
  *  Mirrors native._upload_referenced (274-327) incl. the
- *  VHS_LoadVideoPath/VHS_LoadVideo `video` exemption. */
+ *  VHS_LoadVideoPath/VHS_LoadVideo `video` exemption.
+ *
+ *  opts.runsRoot (the runs OUTPUT tree root — callers hold the run
+ *  dir; its dirname is the root) arms the ESTATE-ASSET arm: URLs the
+ *  estate's own surfaces serve (/melite-media/runs/<run>/<rel>,
+ *  /v1/assets/runs/<run>/<rel>) and runs-relative <run>/<rel> names
+ *  resolve ON DISK under the root and upload like local files. This
+ *  is the chained-stage seam: a downstream card wired to an upstream
+ *  run's output carries that URL in its params, and ComfyUI consumes
+ *  only staged input-dir names. A prefixed URL that does not resolve
+ *  under the root refuses LOUD (never a dangling URL in the graph);
+ *  a runs-relative name that misses simply falls to the cwd arm. */
 export async function uploadReferenced(
   server: string,
   wf: Record<string, EngineJson>,
+  opts?: { runsRoot?: string },
 ): Promise<{ graph: Record<string, EngineJson>; uploaded: Record<string, string> }> {
   const seen: Record<string, string> = {};
   const stageOne = async (v: EngineJson): Promise<EngineJson> => {
@@ -589,6 +608,42 @@ export async function uploadReferenced(
         seen[p] = (await uploadFile(server, tmp)).name;
       }
       return seen[p] as string;
+    }
+    // ESTATE-ASSET ARM (2026-09-12 — the chain's disk half): a
+    // downstream stage wired to an upstream run's output arrives as
+    // one of the estate's own URLs (the tab rewrites artifact names
+    // onto the media route; the compose door speaks /v1/assets).
+    // Resolved on disk under opts.runsRoot — no HTTP hop to self —
+    // and uploaded exactly like a local file. Loud on dangling
+    // (the http arm's law: re-run the producer card).
+    const routePrefix =
+      lower.startsWith(MEDIA_ROUTE_PREFIX) ? MEDIA_ROUTE_PREFIX :
+      lower.startsWith(ASSET_ROUTE_PREFIX) ? ASSET_ROUTE_PREFIX : "";
+    if (routePrefix !== "") {
+      if (opts?.runsRoot === undefined) {
+        throw new ComfyError("estate asset url without a runs root (" + p + ") — the caller passed no runsRoot; the chained input cannot stage");
+      }
+      const rel: string = p.slice(routePrefix.length);
+      if (rel.includes("..")) {
+        throw new ComfyError("estate asset url refuses traversal: " + p);
+      }
+      const cand = join(opts.runsRoot, rel);
+      if (!isFile(cand)) {
+        throw new ComfyError("estate asset url not found (" + p + " -> " + cand + ") — the upstream output is unreachable; re-run the producer card");
+      }
+      if (!(cand in seen)) seen[cand] = (await uploadFile(server, cand)).name;
+      return seen[cand] as string;
+    }
+    // RUNS-RELATIVE ARM: '<run>/<rel>' (the estate's third accepted
+    // artifact form) resolves under the root when the file exists;
+    // a miss falls to the cwd arm below (estate-relative input paths
+    // like data/input/x.png ride there — unchanged law).
+    if (opts?.runsRoot !== undefined && !p.startsWith("/") && p.includes("/") && !p.includes("..")) {
+      const cand = join(opts.runsRoot, p);
+      if (isFile(cand)) {
+        if (!(cand in seen)) seen[cand] = (await uploadFile(server, cand)).name;
+        return seen[cand] as string;
+      }
     }
     const cand: string = p.startsWith("/") ? p : join(process.cwd(), p);
     if (!isFile(cand)) return v;
@@ -1003,7 +1058,7 @@ async function executeSingleInner(
 ): Promise<ExecuteResult> {
   const params: Record<string, EngineJson> = { ...nodeParams };
   const wf: Record<string, EngineJson> = spliceWorkflow(params);
-  const staged = await uploadReferenced(server, wf);
+  const staged = await uploadReferenced(server, wf, { runsRoot: dirname(String(runDir)) });
   const timeoutS: number = Number(params["timeout_s"] ?? 2400) || 2400;
   const deadline: number = Date.now() + timeoutS * 1000;
   const { promptId } = await submitPrompt(server, staged.graph, false);
@@ -1368,7 +1423,7 @@ async function executeFlowInner(
   active: Map<string, ActivePrompt>,
 ): Promise<FlowResult> {
   const plan = planMerge(rows, { ...initials }, inputNames);
-  const staged = await uploadReferenced(server, plan.workflow);
+  const staged = await uploadReferenced(server, plan.workflow, { runsRoot: dirname(String(runDir)) });
   const { promptId, clientId } = await submitPrompt(server, staged.graph, true);
   active.set(String(runDir), { promptId, clientId, server });
   // the merged deadline: the SUM of the stages' own budgets

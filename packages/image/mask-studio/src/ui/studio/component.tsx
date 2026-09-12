@@ -74,8 +74,10 @@
 // cardStudios glob imports that exact default export).
 import { useCallback, useEffect, useMemo, useState } from "react"
 import type { CardStage } from "@melite/contracts"
-import { StudioShell, defineShellDeclaration } from "@melite/ui"
-import { WirePickerModal } from "@melite/ui"
+import { StudioShell } from "./StudioShell"
+import { defineShellDeclaration } from "./shellDeclaration"
+import { WirePickerModal } from "./WirePickerModal"
+import styles from "./mask.module.css"
 import { EMPTY_ARTIFACTS, INPUT_SLOT } from "./constants"
 import type { MaskSource, SelectionRect } from "./constants"
 import { producedMasks } from "./canvas-ops"
@@ -253,7 +255,7 @@ export function MaskStudioEditor({
   // parity), so the canvas row eats every pixel above the OUTPUT bottom
   // bar. Standalone mounts (the test suite) keep the same tree; there is
   // no fixed 520px to lean on anywhere.
-  <div className="flex min-h-0 flex-1 flex-col gap-2 px-3 py-2.5" data-mask-studio>
+  <div className={styles.studioRoot} data-mask-studio>
   <StudioShell
   /* THE RAIL — the pre-ordained LEFT sidebar (2026-08-16): the whole
   mask param surface (source picker → classes → shared → refine →
@@ -300,7 +302,7 @@ export function MaskStudioEditor({
    * StudioCanvas): dock + canvas side by side, the canvas eating
    * every pixel above the OUTPUT bottom bar (HEIGHT RULE). */
   center={
-  <div className="flex min-h-0 flex-1 gap-2">
+  <div className={styles.centerRow}>
   <StudioCanvas
   tool={paint.tool}
   setTool={paint.setTool}

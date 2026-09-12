@@ -10,7 +10,7 @@
  *
  * MeshPoster loads the ACTUAL GLB, renders ONE frame at a 3/4 hero angle
  * via a disposable offscreen WebGLRenderer, snapshots it to a JPEG, and
- * caches the data URL in a zustand store persisted to localStorage. The
+ * caches the data URL in a native store persisted to localStorage. The
  * result is a plain <img> — no persistent WebGL context, no animation
  * loop — so a grid of these (the sidebar) stays smooth. This is the mesh
  * sibling of MotionPoster, and the tile companion to AnimatedGLBViewer
@@ -43,7 +43,7 @@ import { loadGLB } from "@melite/formats/glbLoad"
 import { useMeshPosterStore } from "./meshPosterStore"
 import { autoFitToHeight } from "@melite/formats/glbLoad"
 import { snapshotSceneToJpeg } from "@melite/formats/renderSnapshot"
-import { PosterShell, usePosterDataUrl } from "@melite/ui/posterShell"
+import { PosterShell, usePosterDataUrl } from "../../../poster-shell"
 
 interface MeshPosterProps {
   url: string

@@ -1,12 +1,13 @@
 // Custom video player — native <video> with a polished control overlay.
 // Modeled after redshiftdb's VideoPlayer pattern.
 import { useCallback, useEffect, useRef, useState } from "react"
-import { Button } from "@melite/ui/button"
-import { ScrubInput } from "@melite/ui"
+import { Button } from "@deepseek-ai/dsh-client-ui-primitives"
+import { ScrubInput } from "../../../form-fields"
 import {
   Play, Pause, Volume2, VolumeX, Maximize, Minimize2,
   RotateCcw, RotateCw,
-} from "lucide-react"
+} from "../../../ui-icons"
+import styles from "./VideoPlayer.module.css"
 
 function fmtTime(s: number): string {
   if (!isFinite(s) || s < 0) return "0:00"
@@ -131,7 +132,7 @@ export function VideoPlayer({ src, className, autoPlay = false }: VideoPlayerPro
     <div
       ref={containerRef}
       tabIndex={0}
-      className={`group relative overflow-hidden bg-black outline-none ${fullscreen ? "h-screen w-screen rounded-none" : "w-full rounded-lg"} ${className ?? ""}`}
+      className={`${styles.root} ${fullscreen ? styles.rootFullscreen : styles.rootWindowed} ${className ?? ""}`}
       onMouseMove={pokeControls}
       onMouseLeave={() => playing && setShowControls(false)}
       style={{ cursor: showControls ? "default" : "none" }}
@@ -142,7 +143,7 @@ export function VideoPlayer({ src, className, autoPlay = false }: VideoPlayerPro
         crossOrigin="anonymous"
         playsInline
         autoPlay={autoPlay}
-        className={`bg-black ${fullscreen ? "h-full w-full object-contain" : "w-full"}`}
+        className={fullscreen ? styles.videoFullscreen : styles.videoWindowed}
         style={fullscreen ? undefined : { aspectRatio: "16 / 9", maxHeight: "78vh" }}
         onClick={togglePlay}
         onPlay={() => { setPlaying(true); setEnded(false) }}
@@ -163,21 +164,21 @@ export function VideoPlayer({ src, className, autoPlay = false }: VideoPlayerPro
       {/* Center play/pause button */}
       {!playing && (
         <Button variant="ghost" onClick={togglePlay}
-          className="absolute inset-0 flex items-center justify-center bg-black/20 transition-opacity"
+          className={styles.centerPlay}
           aria-label={ended ? "Replay" : "Play"}>
-          <span className="flex size-20 items-center justify-center rounded-full bg-white/90 shadow-2xl transition-transform hover:scale-110">
+          <span className={styles.centerPlayDisc}>
             {ended
-              ? <RotateCcw className="size-8 text-black" />
-              : <Play className="ml-1 size-8 fill-black text-black" />}
+              ? <RotateCcw className={styles.centerIcon} />
+              : <Play className={`${styles.centerIcon} ${styles.centerIconFill} ${styles.centerIconNudge}`} />}
           </span>
         </Button>
       )}
 
       {/* Control bar */}
-      <div className={`absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/90 via-black/60 to-transparent px-4 pb-3 pt-8 transition-opacity duration-200 ${showControls ? "opacity-100" : "opacity-0 pointer-events-none"}`}>
+      <div className={`${styles.controlBar} ${showControls ? styles.controlBarShown : styles.controlBarHidden}`}>
         {/* Seek bar */}
         <div
-          className="group/seek relative mb-2 flex h-1.5 cursor-pointer items-center"
+          className={styles.seekBar}
           onClick={(e) => {
             if (!Number.isFinite(duration) || duration <= 0) return
             const rect = e.currentTarget.getBoundingClientRect()
@@ -185,29 +186,29 @@ export function VideoPlayer({ src, className, autoPlay = false }: VideoPlayerPro
             seek(ratio * duration)
           }}
         >
-          <div className="absolute inset-x-0 h-1 rounded-full bg-white/25" />
-          <div className="absolute h-1 rounded-full bg-white/35" style={{ width: `${bufferedPct}%` }} />
-          <div className="absolute h-1 rounded-full bg-brand" style={{ width: `${pct}%` }} />
-          <div className="absolute size-3.5 rounded-full bg-white shadow-md transition-transform group-hover/seek:scale-125" style={{ left: `calc(${pct}% - 7px)` }} />
+          <div className={styles.seekTrack} />
+          <div className={styles.seekBuffered} style={{ width: `${bufferedPct}%` }} />
+          <div className={styles.seekPlayed} style={{ width: `${pct}%` }} />
+          <div className={styles.seekKnob} style={{ left: `calc(${pct}% - 7px)` }} />
         </div>
 
         {/* Buttons row */}
-        <div className="flex items-center gap-3 text-foreground">
-          <Button variant="ghost" onClick={togglePlay} className="rounded p-1 transition-colors hover:bg-white/20" aria-label={playing ? "Pause" : "Play"}>
-            {playing ? <Pause className="size-5 fill-current" /> : <Play className="size-5 fill-current" />}
+        <div className={styles.buttonsRow}>
+          <Button variant="ghost" onClick={togglePlay} className={styles.transportBtn} aria-label={playing ? "Pause" : "Play"}>
+            {playing ? <Pause className={styles.transportIcon} /> : <Play className={styles.transportIcon} />}
           </Button>
 
-          <Button variant="ghost" onClick={() => skip(-10)} className="rounded p-1 transition-colors hover:bg-white/20" aria-label="Back 10 seconds">
-            <RotateCcw className="size-4" />
+          <Button variant="ghost" onClick={() => skip(-10)} className={styles.transportBtn} aria-label="Back 10 seconds">
+            <RotateCcw className={styles.transportIconSm} />
           </Button>
-          <Button variant="ghost" onClick={() => skip(10)} className="rounded p-1 transition-colors hover:bg-white/20" aria-label="Forward 10 seconds">
-            <RotateCw className="size-4" />
+          <Button variant="ghost" onClick={() => skip(10)} className={styles.transportBtn} aria-label="Forward 10 seconds">
+            <RotateCw className={styles.transportIconSm} />
           </Button>
 
           {/* Volume */}
-          <div className="group/vol flex items-center gap-1.5">
-            <Button variant="ghost" onClick={toggleMute} className="rounded p-1 transition-colors hover:bg-white/20">
-              {muted || volume === 0 ? <VolumeX className="size-4" /> : <Volume2 className="size-4" />}
+          <div className={styles.volumeWrap}>
+            <Button variant="ghost" onClick={toggleMute} className={styles.transportBtn}>
+              {muted || volume === 0 ? <VolumeX className={styles.transportIconSm} /> : <Volume2 className={styles.transportIconSm} />}
             </Button>
             <ScrubInput
               min={0} max={1} step={0.05}
@@ -217,16 +218,16 @@ export function VideoPlayer({ src, className, autoPlay = false }: VideoPlayerPro
                 const vid = videoRef.current
                 if (vid) { vid.volume = v; vid.muted = v === 0 }
               }}
-              className="w-0 group-hover/vol:w-20 transition-all duration-200 accent-white h-1 cursor-pointer opacity-0 group-hover/vol:opacity-100"
+              className={styles.volumeSlider}
             />
           </div>
 
-          <span className="text-xs tabular-nums text-foreground/70">{fmtTime(current)} / {fmtTime(duration)}</span>
+          <span className={styles.timeLabel}>{fmtTime(current)} / {fmtTime(duration)}</span>
 
-          <div className="flex-1" />
+          <div className={styles.spacer} />
 
-          <Button variant="ghost" onClick={toggleFullscreen} className="rounded p-1 transition-colors hover:bg-white/20">
-            {fullscreen ? <Minimize2 className="size-4" /> : <Maximize className="size-4" />}
+          <Button variant="ghost" onClick={toggleFullscreen} className={styles.transportBtn}>
+            {fullscreen ? <Minimize2 className={styles.transportIconSm} /> : <Maximize className={styles.transportIconSm} />}
           </Button>
         </div>
       </div>

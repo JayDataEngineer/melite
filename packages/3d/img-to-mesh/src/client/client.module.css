@@ -1,0 +1,54 @@
+/* extracted from melite-card-view card.module.css — the studio's own styles ride its own package now */
+
+
+.runRow { align-items: center; display: flex; gap: 10px; justify-content: flex-end; width: 100%; }
+
+.runError { color: var(--dsw-alias-label-error, #e05656); font-size: 11px; overflow-wrap: anywhere; }
+
+
+/* The detail payload sits inside the morphed card; it scrolls with the
+ * card's own bounds (max-height keeps the square law bounded). */
+.zoomDetail {
+  display: block;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 14px;
+}
+
+.groupNote {
+  color: var(--dsw-alias-label-secondary, #61666b);
+  font-size: 12px;
+  margin: 0 0 10px;
+
+  line-height: 20px;}
+
+
+/* ── the studio surface (cards.stage.view, img-to-mesh first party) ── */
+.studioHead { align-items: center; display: flex; gap: 8px; line-height: 20px; }
+
+.studioBody { display: flex; flex-direction: column; gap: 12px; }
+
+.studioGroup { display: flex; flex-direction: column; gap: 6px; }
+
+
+/* the studio split: the 3D space + the knob rail (the old rail↔Stage law) */
+.studioSplit { display: grid; gap: 12px; grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); }
+
+.studioRail { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+
+.runError { color: var(--dsw-alias-label-error, #e05656); font-size: 11px; overflow-wrap: anywhere; }
+
+
+/* ── the shared GLB viewport (the old Stage law, lean cut) ── */
+.viewport {
+  background: var(--dsw-alias-bg-canvas, #fff); border: 0.5px solid var(--dsw-alias-border-l2, rgba(0, 0, 0, 0.14));
+  border-radius: 10px; display: flex; min-height: 320px; overflow: hidden; position: relative;
+}
+
+.viewportEmpty { align-self: center; color: var(--dsw-alias-label-tertiary, rgba(0, 0, 0, 0.45)); font-size: 12px; line-height: 20px; margin: auto; }
+
+.viewport canvas { display: block; }
+
+.viewportCanvas { height: 380px; width: 100%; }
+
+.viewport:only-child { min-height: 380px; }

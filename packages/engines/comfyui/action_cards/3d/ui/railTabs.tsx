@@ -16,7 +16,8 @@
  * role=tablist/tab + aria-selected so the semantics are one shape at
  * every level.
  */
-import { Button } from "@melite/ui/button"
+import { Button } from "@deepseek-ai/dsh-client-ui-primitives"
+import styles from "./railTabs.module.css"
 
 export interface RailTabItem<T extends string> {
   id: T
@@ -27,9 +28,9 @@ export interface RailTabItem<T extends string> {
 }
 
 const TONE: Record<NonNullable<RailTabItem<string>["badgeTone"]>, string> = {
-  emerald: "text-emerald-400",
-  amber: "text-amber-400",
-  fuchsia: "text-fuchsia-400",
+  emerald: styles.badgeEmerald,
+  amber: styles.badgeAmber,
+  fuchsia: styles.badgeFuchsia,
 }
 
 export function RailTabs<T extends string>({ tabs, value, onChange, ariaLabel, dense = false }: {
@@ -44,7 +45,7 @@ export function RailTabs<T extends string>({ tabs, value, onChange, ariaLabel, d
     <div
       role="tablist"
       aria-label={ariaLabel}
-      className={`flex shrink-0 flex-wrap gap-1 ${dense ? "pl-2" : "px-2 pt-2"}`}
+      className={`${styles.strip} ${dense ? styles.stripDense : styles.stripTop}`}
     >
       {tabs.map((t) => (
         <Button variant="ghost"
@@ -55,21 +56,13 @@ export function RailTabs<T extends string>({ tabs, value, onChange, ariaLabel, d
           onClick={() => onChange(t.id)}
           className={
             dense
-              ? `rounded px-2 py-0.5 text-[9px] font-semibold uppercase tracking-[0.08em] transition-colors ${
-                  value === t.id
-                    ? "bg-brand/15 text-foreground"
-                    : "text-muted-foreground/60 hover:text-foreground"
-                }`
-              : `rounded-md px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] transition-colors ${
-                  value === t.id
-                    ? "bg-brand/15 text-foreground"
-                    : "text-muted-foreground/60 hover:text-foreground"
-                }`
+              ? `${styles.tabDense} ${value === t.id ? styles.tabActive : styles.tabIdle}`
+              : `${styles.tab} ${value === t.id ? styles.tabActive : styles.tabIdle}`
           }
         >
           {t.label}
           {t.badge !== undefined && t.badge > 0 && (
-            <span className={`ml-1 text-[9px] ${TONE[t.badgeTone ?? "emerald"]}`}>{t.badge}</span>
+            <span className={`${styles.badge} ${TONE[t.badgeTone ?? "emerald"]}`}>{t.badge}</span>
           )}
         </Button>
       ))}

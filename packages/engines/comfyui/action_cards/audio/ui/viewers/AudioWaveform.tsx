@@ -1,12 +1,14 @@
 import { useEffect, useRef } from "react"
+import styles from "./AudioWaveform.module.css"
 
 interface AudioWaveformProps {
   audioUrl: string
   height?: number
   color?: string
+  className?: string
 }
 
-export function AudioWaveform({ audioUrl, height = 60, color = "#3b82f6" }: AudioWaveformProps) {
+export function AudioWaveform({ audioUrl, height = 60, color = "#3b82f6", className }: AudioWaveformProps) {
   const containerRef = useRef<HTMLDivElement>(null)
   const wavesurferRef = useRef<any>(null)
 
@@ -55,6 +57,6 @@ export function AudioWaveform({ audioUrl, height = 60, color = "#3b82f6" }: Audi
   }, [audioUrl, height, color])
 
   return (
-    <div ref={containerRef} className="w-full rounded-md bg-background border" />
+    <div ref={containerRef} className={className ? `${styles.cell} ${className}` : styles.cell} />
   )
 }

@@ -1,37 +1,24 @@
-// index.ts — the package entry: a thin coordinator (the
-// tool-bash law — registration lives HERE, modules export data
-// and builders).
+// index.ts — the package's HOST half (the composition marker).
 //
-// BOTH services are optional dependencies (probe at the use
-// site): the gateway process provides comfyui but no tools; the
-// agent host provides tools but no comfyui (the tool face talks
-// to the gateway over HTTP); each composition takes its faces.
-import type { EstateCall } from '@melite/estate-call'
+// THE DUAL-FACE LAW (2026-09-12, the composition-root correction):
+// this package is ROW-MOUNTED in the web profile so its dsh.client
+// declaration carries the browser studio (lib/client.js — the
+// cards.stage.view registration). The loader applies THIS face
+// node-side; it registers NOTHING (no card def, no tool):
+//
+// - the card def rides the CARD face (./card — the cardPackages
+//   SSOT composes it in the engine plane, where the registry seat
+//   lives: '@melite/video-h3-timeline/card')
+// - the tool ride is melite-tools' (the web profile's one tool
+//   registrar — buildH3TimelineTool from ./tool)
+//
+// One package, three faces, one truth each — no guards, no probes.
 import type { Context } from '@deepseek-ai/cordis'
-import Schema from '@deepseek-ai/schemastery'
-import { ComfyUIService } from '@melite/comfyui-cordis/service'
-import { registerCard } from './card.ts'
-import { buildH3TimelineTool } from './tool.ts'
-import type { ToolRuntime } from '@deepseek-ai/dsh-tools'
 
 export const name = '@melite/video-h3-timeline'
 
 export const inject: string[] = []
 
-export interface Config {
-  /** The lane seam (R2b law): threaded by the registrar, never configured. */
-  call: EstateCall
-}
-
-export const Config: Schema<Config> = Schema.object({
-  call: Schema.any(),
-})
-
-export function apply(ctx: Context, config: Config): void {
-  const comfy = ctx.get('comfyui') as ComfyUIService | undefined
-  if (comfy !== undefined) registerCard(ctx, comfy)
-  const tools = ctx.get('tools') as ToolRuntime | undefined
-  if (tools !== undefined) {
-    tools.register(buildH3TimelineTool(config.call))
-  }
+export function apply(_ctx: Context): void {
+  /* the browser studio rides the client face (src/client) */
 }

@@ -4,7 +4,7 @@ import { describe, it, afterEach, beforeEach, vi } from "vitest";
 import assert from "node:assert/strict";
 
 const { readAsDataURLMock } = vi.hoisted(() => ({ readAsDataURLMock: vi.fn() }));
-vi.mock("@melite/ui", () => ({ readAsDataURL: readAsDataURLMock }));
+vi.mock("@melite/formats/readFile", () => ({ readAsDataURL: readAsDataURLMock }));
 
 import {
   apiFetch,

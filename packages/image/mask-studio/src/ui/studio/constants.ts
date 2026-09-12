@@ -6,7 +6,8 @@
 // No value, label, color, or threshold changed.
 import {
   BoxSelect, Brush, Hand, PersonStanding, ScanFace, Sparkles, User,
-} from "lucide-react"
+} from "./icons"
+import styles from "./mask.module.css"
 
 /** The slot this editor sources. Mask Studio consumes one image — slot 0,
  * the input_image vocabulary key. Hard-coded: the family declares exactly
@@ -200,8 +201,8 @@ export interface FilterChip {
 }
 
 export const CHIP_TONE: Record<FilterChip["tone"], { on: string; off: string }> = {
-  full: { on: "border-brand/60 bg-brand/15 text-brand", off: "border-border/40 text-muted-foreground/70" },
-  scope: { on: "border-sky-400/60 bg-sky-400/10 text-sky-300", off: "border-border/40 text-muted-foreground/70" },
-  instance: { on: "border-amber-400/70 bg-amber-400/20 text-amber-300", off: "border-border/40 text-amber-200/50" },
-  canvas: { on: "border-fuchsia-400/60 bg-fuchsia-400/10 text-fuchsia-300", off: "border-border/40 text-muted-foreground/70" },
+  full: { on: styles.toneFullOn, off: styles.toneFullOff },
+  scope: { on: styles.toneScopeOn, off: styles.toneScopeOff },
+  instance: { on: styles.toneInstanceOn, off: styles.toneInstanceOff },
+  canvas: { on: styles.toneCanvasOn, off: styles.toneCanvasOff },
 }

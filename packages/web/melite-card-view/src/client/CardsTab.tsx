@@ -53,10 +53,6 @@ function loadFormsEdgeMeta(): Promise<Record<string, { inputs?: Record<string, s
   })
   return formsEdgeMetaPromise
 }
-import { DndContext, closestCenter, PointerSensor, useSensor, useSensors } from '@dnd-kit/core'
-import type { DragEndEvent } from '@dnd-kit/core'
-import { SortableContext, useSortable, rectSortingStrategy } from '@dnd-kit/sortable'
-import { CSS } from '@dnd-kit/utilities'
 import type { CatalogCard, FormSpecDoc, ModifierKind, SpecValues } from './spec-form.tsx'
 import { paramFields, patchStageParams } from './draft.ts'
 import css from './card.module.css'
@@ -64,8 +60,7 @@ import type { CardsBenchValue, CardsRunValue, BenchStageRow } from './cards-reso
 import { CARDS_BENCH_ADDRESS, cardsRunAddress, fetchBench, fetchLatestRunForDraft, observeRunOutcome, openCardsResource, parseCardsAddress, restoreRunToBench, uploadInputFile } from './cards-resource.ts'
 import { defaultFamilyForCard, startCardRun, stopRun } from '@melite-plugin/melite-run-wire'
 import { addStageWire, groupStagesWire, removeStageWire, reorderStageWire, ungroupStageWire } from './add-stage.ts'
-import { CardZoomOverlay, cardLayoutId, ZOOM_SPRING } from './zoom.tsx'
-import { motion } from 'framer-motion'
+import { CardZoomOverlay } from './zoom.tsx'
 import { mediaUrl } from './draft.ts'
 
 /** The injected tab information hook's shape (dsh-client-ui-sidebar-right's
@@ -254,6 +249,9 @@ const STAGE_DOT: Record<string, 'done' | 'ongoing' | 'error' | 'warning' | null>
  *  target, two contracts, no ambiguity — the MIME pair is the law. */
 const CAPABILITY_DRAG_MIME = 'application/tech-noir-capability'
 const ASSET_DRAG_MIME = 'application/tech-noir-asset'
+/** The tile-reorder drag's MIME (native HTML5 sortable — DSH ships no
+ *  drag library; the estate drags natively). Carries the source id. */
+const CARD_DRAG_MIME = 'application/x-melite-card'
 
 interface CapabilityDropPayload { service: string; title: string; params?: Record<string, unknown>; kind?: string }
 
@@ -289,13 +287,20 @@ function statusTone(status: string): 'success' | 'danger' | 'info' | 'warning' |
   return 'neutral'
 }
 
-function SortableTile({ row, entered, onOpen, grouping, selected, onToggleSelect, onAssetAttach }: {
+function SortableTile({ row, entered, onOpen, grouping, selected, onToggleSelect, onAssetAttach,
+  dragging, dragOver, onReorderStart, onReorderOver, onReorderDrop }: {
   row: CardRowLineTabRow
   entered: boolean
   onOpen: (row: CardRowLineTabRow) => void
   grouping: boolean
   selected: boolean
   onToggleSelect: (id: string) => void
+  /** native reorder state (the drag source id / this tile is over). */
+  dragging: boolean
+  dragOver: boolean
+  onReorderStart: (id: string | null) => void
+  onReorderOver: (id: string) => void
+  onReorderDrop: (active: string, over: string) => void
   /** DROP-ON-CARD ATTACHES TO SLOT (the old SlotSquare law): an asset
    *  tile or OS image file dropped ON this tile patches the stage's
    *  source param — the estate's slot mechanism for direct assets.
@@ -303,26 +308,41 @@ function SortableTile({ row, entered, onOpen, grouping, selected, onToggleSelect
    *  and error surfacing. */
   onAssetAttach: (target: string, source: string | File, kind: 'image' | 'audio') => void
 }): ReturnType<typeof h> {
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: row.id })
-  // selection mode: pointer listeners OFF (reorder pauses), clicks
-  // toggle selection — the old sub-view's law, verbatim.
-  const dragProps = grouping ? {} : { ...attributes, ...listeners }
+  // NATIVE REORDER (the dnd-kit purge): the tile is HTML5-draggable
+  // outside grouping mode; the parent owns dragId/overId state and
+  // the reorder verb. Selection mode: draggable OFF (reorder pauses),
+  // clicks toggle selection — the old sub-view's law, verbatim.
+  const dragHandlers = grouping ? {} : {
+    draggable: true,
+    onDragStart: (e: React.DragEvent) => {
+      e.dataTransfer.setData(CARD_DRAG_MIME, row.id)
+      e.dataTransfer.effectAllowed = 'move'
+      onReorderStart(row.id)
+    },
+    onDragEnd: () => { onReorderStart(null) },
+  }
   // THE SLOT IS THE WIRE: this mark shows only an agent-recorded
   // edge (inputs.source on the row); the user-facing wiring IS the
   // input slot's picker — there is no tile wire gesture.
   const wiredFrom = typeof row.stage.inputs === 'object' && row.stage.inputs !== null
     && 'source' in (row.stage.inputs as Record<string, unknown>)
   return h('li', {
-    ref: setNodeRef,
     className: css.tile
       + (entered ? ' ' + css.tileEnter : '')
-      + (isDragging ? ' ' + css.tileDragging : ''),
-    style: { transform: CSS.Translate.toString(transform), ...(transition !== null ? { transition } : {}) },
+      + (dragging ? ' ' + css.tileDragging : '')
+      + (dragOver ? ' ' + css.tileDragOver : ''),
     'data-stage-id': row.id,
     'data-stage-status': row.status,
     'data-grouping': grouping ? 'on' : null,
     'data-selected': grouping && selected ? 'on' : null,
     onDragOver: (e: React.DragEvent) => {
+      if (e.dataTransfer.types.includes(CARD_DRAG_MIME)) {
+        e.preventDefault()
+        e.stopPropagation()
+        e.dataTransfer.dropEffect = 'move'
+        onReorderOver(row.id)
+        return
+      }
       if (e.dataTransfer.types.includes(ASSET_DRAG_MIME) || e.dataTransfer.types.includes('Files')) {
         e.preventDefault()
         e.stopPropagation()
@@ -330,6 +350,13 @@ function SortableTile({ row, entered, onOpen, grouping, selected, onToggleSelect
       }
     },
     onDrop: (e: React.DragEvent) => {
+      if (e.dataTransfer.types.includes(CARD_DRAG_MIME)) {
+        e.preventDefault()
+        e.stopPropagation()
+        const active = e.dataTransfer.getData(CARD_DRAG_MIME)
+        if (active !== '' && active !== row.id) onReorderDrop(active, row.id)
+        return
+      }
       const asset = parseAssetDrop(e.dataTransfer.types.includes(ASSET_DRAG_MIME) ? e.dataTransfer.getData(ASSET_DRAG_MIME) : '')
       if ((asset.url ?? '') !== '') {
         e.preventDefault()
@@ -346,9 +373,9 @@ function SortableTile({ row, entered, onOpen, grouping, selected, onToggleSelect
       e.stopPropagation()
       onAssetAttach(row.id, file, 'image')
     },
-    ...dragProps,
+    ...dragHandlers,
   },
-    h(motion.div, { layoutId: cardLayoutId(row.id), className: css.tileShared, transition: ZOOM_SPRING },
+    h('div', { className: css.tileShared },
       h('button', {
         className: css.tileInner, type: 'button', 'data-status': row.status,
         onClick: () => {
@@ -864,13 +891,20 @@ function BenchView({ bench, onRun, onRunStage, running, onPatchParams, renderSta
     setAdding(false)
     reload()
   }, [reload])
-  // ── DRAG REORDER (dnd-kit, the old grid's SortableCardWrap pattern):
-  //    optimistic splice, then the door; a refusal reloads the truth.
-  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }))
-  const onDragEnd = useCallback((e: DragEndEvent): void => {
-    const active = String(e.active.id)
-    const over = e.over !== null ? String(e.over.id) : null
-    if (over === null || over === active || over === 'add') return
+  // ── DRAG REORDER (native HTML5 sortable — the dnd-kit purge; DSH
+  //    ships no drag library): optimistic splice, then the door; a
+  //    refusal reloads the truth. The verb is the old one verbatim.
+  const [dragId, setDragId] = useState<string | null>(null)
+  const [overId, setOverId] = useState<string | null>(null)
+  const onReorderStart = useCallback((id: string | null): void => {
+    setDragId(id)
+    if (id === null) setOverId(null)
+  }, [])
+  const onReorderOver = useCallback((id: string): void => { setOverId(id) }, [])
+  const onReorderDrop = useCallback((active: string, over: string): void => {
+    setDragId(null)
+    setOverId(null)
+    if (over === active || over === 'add') return
     const from = live.stages.findIndex((s) => s.id === active)
     const to = live.stages.findIndex((s) => s.id === over)
     if (from < 0 || to < 0) return
@@ -1068,11 +1102,7 @@ function BenchView({ bench, onRun, onRunStage, running, onPatchParams, renderSta
     // zero stages shows exactly one thing, the standing Add tile (the
     // entry), because the grid ALWAYS carries it. No empty branch, no
     // special-cased render, no dead-end paragraph exists.
-    h(DndContext, { sensors, collisionDetection: closestCenter, onDragEnd },
-          h(SortableContext, {
-            items: live.stages.map((s) => s.id),
-            strategy: rectSortingStrategy,
-            children: h('ol', {
+    h('ol', {
               className: css.tileGrid + (capOver ? ' ' + css.capOver : ''),
               onDragOver: onGridDragOver,
               onDragLeave: onGridDragLeave,
@@ -1085,6 +1115,8 @@ function BenchView({ bench, onRun, onRunStage, running, onPatchParams, renderSta
                   key: s.id, row, entered: entered.has(s.id),
                   onOpen: (r) => onOpen(r.stage),
                   grouping, selected: selectedIds.has(s.id), onToggleSelect, onAssetAttach,
+                  dragging: dragId === s.id, dragOver: overId === s.id && dragId !== null && dragId !== s.id,
+                  onReorderStart, onReorderOver, onReorderDrop,
                 })
               }),
               h('li', { className: css.tile + ' ' + css.tileAdd },
@@ -1096,8 +1128,6 @@ function BenchView({ bench, onRun, onRunStage, running, onPatchParams, renderSta
                 ),
               ),
             ),
-          }),
-        ),
     live.log.length > 0
       ? h('p', { className: css.logHead }, live.log.length + ' log entr' + (live.log.length === 1 ? 'y' : 'ies'))
       : null,

@@ -1,0 +1,283 @@
+/* BodyShapePanel — the parametric identity slider surface. */
+
+.panelRoot {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+}
+
+/* ── SliderRow ── */
+
+.sliderRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-top: 2px;
+  padding-bottom: 2px;
+}
+
+.sliderLabel {
+  width: 128px;
+  flex-shrink: 0;
+  font-size: 10px;
+  line-height: 1.25;
+  white-space: normal;
+  color: rgba(255, 255, 255, 0.55);
+}
+
+.sliderField {
+  flex: 1;
+  min-width: 0;
+}
+
+.miniReset {
+  height: 20px;
+  width: 20px;
+  flex-shrink: 0;
+  border: 0;
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.miniReset:hover {
+  color: #fff;
+}
+
+.miniResetIcon {
+  width: 10px;
+  height: 10px;
+}
+
+/* ── RegionGroupList ── */
+
+.regionWrap {
+  padding-top: 4px;
+  padding-bottom: 4px;
+}
+
+.regionHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 4px;
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.regionTrigger {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  width: 100%;
+  padding-top: 2px;
+  padding-bottom: 2px;
+  padding-left: 4px;
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.45);
+}
+
+.regionTrigger:hover {
+  color: #fff;
+}
+
+.regionTriggerFace {
+  color: rgba(251, 191, 36, 0.7);
+}
+
+.triggerChevron {
+  width: 10px;
+  height: 10px;
+  transition: transform 0.15s ease;
+}
+
+.triggerChevronClosed {
+  transform: rotate(-90deg);
+}
+
+.regionCount {
+  margin-left: auto;
+  color: rgba(255, 255, 255, 0.35);
+}
+
+.regionIndent {
+  padding-left: 12px;
+  border-left: 1px solid rgba(255, 255, 255, 0.08);
+  margin-left: 6px;
+}
+
+/* ── SOMA hint ── */
+
+.somaHint {
+  padding-top: 32px;
+  padding-bottom: 32px;
+  text-align: center;
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.45);
+}
+
+.somaHintStrong {
+  color: #fff;
+}
+
+/* ── Loading skeleton ── */
+
+@keyframes panelPulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+.loadingRoot {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 8px 4px;
+  animation: panelPulse 2s ease-in-out infinite;
+}
+
+.loadingBar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.loadingChip {
+  height: 28px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.loadingSpacer {
+  flex: 1;
+}
+
+.loadingSpin {
+  width: 16px;
+  height: 16px;
+  color: rgba(255, 255, 255, 0.35);
+}
+
+.loadingTabs {
+  display: flex;
+  gap: 4px;
+}
+
+.loadingTab {
+  height: 32px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.loadingRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.labelGhost {
+  height: 12px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.trackGhost {
+  flex: 1;
+  height: 8px;
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.valueGhost {
+  height: 12px;
+  width: 32px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+/* ── Action bar ── */
+
+.actionBar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  flex-shrink: 0;
+}
+
+.tipAnchor {
+  display: contents;
+}
+
+.actionBtn {
+  height: 28px;
+  font-size: 10px;
+  gap: 4px;
+}
+
+.actionIcon {
+  width: 12px;
+  height: 12px;
+}
+
+.actionCount {
+  margin-left: auto;
+  font-size: 9px;
+  color: rgba(255, 255, 255, 0.4);
+}
+
+/* ── Tabs ── */
+
+.tabsRoot {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.tabContent {
+  min-height: 0;
+}
+
+.scrollPad {
+  padding-right: 8px;
+}
+
+.groupHead {
+  padding: 4px;
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.groupList {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.phenotypeList {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding-top: 4px;
+  padding-bottom: 4px;
+}
+
+.styleRow {
+  padding-top: 4px;
+  padding-bottom: 4px;
+}
+
+.styleDesc {
+  padding-left: 128px;
+  font-size: 9px;
+  line-height: 1.25;
+  color: rgba(255, 255, 255, 0.4);
+  padding-bottom: 4px;
+}

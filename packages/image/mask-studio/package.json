@@ -10,18 +10,17 @@
     "./package.json": "./package.json",
     "./ui/studio/component": "./src/ui/studio/component.tsx"
   },
-  "scripts": {
-  },
+  "scripts": {},
   "dependencies": {
     "@deepseek-ai/cordis": "^4.0.2",
+    "@deepseek-ai/dsh-client-ui-primitives": "0.1.5-rc.2",
     "@deepseek-ai/schemastery": "*",
     "@melite/comfyui-card-kit": "workspace:*",
     "@melite/comfyui-cordis": "workspace:*",
     "@melite/contracts": "workspace:*",
     "@melite/estate-call": "workspace:*",
     "@melite/formats": "workspace:*",
-    "@melite/ui": "workspace:*",
-    "lucide-react": "*",
+    "clsx": "*",
     "react": "^19.2.6"
   },
   "devDependencies": {

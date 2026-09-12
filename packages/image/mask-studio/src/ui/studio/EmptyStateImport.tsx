@@ -1,9 +1,11 @@
 // EmptyStateImport — the image-import card. Pure move from component.tsx
 // (props shape unchanged).
 import { useRef } from "react"
-import { ImageUp, Link2 } from "lucide-react"
-import { Button } from "@melite/ui/button"
-import { ASSET_DRAG_MIME, Input } from "@melite/ui"
+import { Button } from "@deepseek-ai/dsh-client-ui-primitives"
+import { clsx } from "clsx"
+import { ImageUp, Link2 } from "./icons"
+import { ASSET_DRAG_MIME } from "./attach"
+import styles from "./mask.module.css"
 
 // ── Empty state: the proper image-import card (the #1 fix) ────────────────
 // same image input stuff"): Upload (file picker), drop (OS file OR asset
@@ -21,7 +23,7 @@ export function EmptyStateImport({
   const inputRef = useRef<HTMLInputElement | null>(null)
   return (
   <div
-  className="flex flex-col items-center justify-center gap-3 p-8 text-center"
+  className={styles.emptyState}
   data-empty-state
   // Accept asset-tray drops directly on the empty card (the canvas
   // wrapper also handles drops, but the empty state is the prominent
@@ -45,36 +47,36 @@ export function EmptyStateImport({
   }
   }}
   >
-  <div className="flex h-14 w-14 items-center justify-center rounded-full bg-brand/15">
-  <ImageUp className="h-7 w-7 text-brand" />
+  <div className={styles.emptyIcon}>
+  <ImageUp className={clsx(styles.sz28, styles.accentInk)} />
   </div>
   <div>
-  <div className="text-sm font-medium text-foreground/90">Drop an image to mask</div>
-  <div className="mt-0.5 text-[11px] text-muted-foreground/70">
+  <div className={styles.emptyTitle}>Drop an image to mask</div>
+  <div className={styles.emptySub}>
   Drag &amp; drop, paste, or upload — or drag in from assets{onWire ? ", or wire from a previous card" : ""}.
   </div>
   </div>
-  <div className="flex items-center gap-2">
+  <div className={styles.emptyRow}>
   <Button variant="ghost"
   type="button"
   onClick={() => inputRef.current?.click()}
-  className="flex items-center gap-1.5 rounded-md bg-brand px-3 py-1.5 text-[12px] font-medium text-white transition-colors hover:bg-brand/90"
+  className={styles.uploadBtn}
   >
-  <ImageUp className="h-3.5 w-3.5" /> Upload image
+  <ImageUp className={styles.sz14} /> Upload image
   </Button>
   {onWire && (
   <Button variant="ghost"
   type="button"
   onClick={onWire}
   data-empty-wire
-  className="flex items-center gap-1.5 rounded-md border border-border/60 bg-background px-3 py-1.5 text-[12px] font-medium text-foreground/80 transition-colors hover:bg-sidebar/60 hover:text-brand"
+  className={styles.wireBtn}
   >
-  <Link2 className="h-3.5 w-3.5" /> Wire from card
+  <Link2 className={styles.sz14} /> Wire from card
   </Button>
   )}
   </div>
-  <Input
-  ref={inputRef} type="file" accept="image/png,image/jpeg,image/webp" className="hidden"
+  <input
+  ref={inputRef} type="file" accept="image/png,image/jpeg,image/webp" className={styles.hiddenInput}
   onChange={(e) => { const f = e.target.files?.[0]; if (f) onPick(f); e.target.value = "" }}
   />
   </div>

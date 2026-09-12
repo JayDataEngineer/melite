@@ -5,7 +5,7 @@
  */
 import { useMemo, useState } from "react"
 import type { CardStage } from "@melite/contracts"
-import { isImageUrl } from "@melite/ui"
+import { isImageUrl } from "./kit"
 import { PROMPT_COLORS } from "@melite-plugin/timeline/ui/timeline"
 import type { TimelineBeat } from "@melite-plugin/timeline/ui/timeline"
 import type { DocCall, DocKeyframe, LayerA } from "./docModel"

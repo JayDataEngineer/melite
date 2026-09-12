@@ -30,31 +30,48 @@ const REAL_SET = [
   "@deepseek-ai/dsh-client-web",
 ] as const;
 
-describe("S4a — the real DSH client set is the editor's dependency", () => {
-  it("editor package.json declares the real packages at the 0.1.5-rc lockstep (no dead runtime dep)", () => {
-    const pkg = JSON.parse(readFileSync(join(repoRoot, "packages/web/editor/package.json"), "utf8"));
-    // 2026-09-10: the whole client family rides the 0.1.5-rc train.
-    // dsh-client-runtime died upstream (last publish 0.1.1-rc.2) — the
-    // client root context is typed as cordis Context per DSH's own
-    // worked example (packages/client/ui-theme).
-    for (const name of REAL_SET) {
+// 2026-09-12: the oracle moved — the editor app is deleted (the purge),
+// so the real DSH client set is now declared by THE ESTATE'S client
+// surfaces themselves: every UI-bearing card/studio package rides the
+// atoms train (@deepseek-ai/dsh-client-ui-primitives at the coherent
+// 0.1.5-rc line) — the de-poisoning's structural fact.
+const ATOM_HOSTS = [
+  "packages/web/melite-card-view",
+  "packages/web/card-base",
+  "packages/video/h3-timeline",
+  "packages/image/mask-studio",
+  "packages/image/ideogram4",
+  "packages/3d/anny",
+  // img-to-mesh excluded: its studio rides local shell + slots only,
+  // no atoms imports — a host list must pin real dependencies.
+  "packages/web-kit/timeline",
+  "packages/engines/comfyui/action_cards",
+  "packages/engines/comfyui/action_cards/3d/ui",
+  "packages/engines/comfyui/action_cards/motion/ui",
+] as const;
+
+describe("S4a — the real DSH client set is the estate's dependency", () => {
+  it("every UI-bearing package declares the atoms at the 0.1.5-rc lockstep", () => {
+    for (const host of ATOM_HOSTS) {
+      const pkg = JSON.parse(readFileSync(join(repoRoot, host, "package.json"), "utf8"));
+      const v = pkg.dependencies?.["@deepseek-ai/dsh-client-ui-primitives"];
       assert.ok(
-        pkg.dependencies?.[name]?.startsWith("0.1.5-rc.") || pkg.dependencies?.[name]?.startsWith("^0.1.5-rc."),
-        `editor must depend on ${name} at the 0.1.5-rc lockstep line`,
+        typeof v === "string" && (v.startsWith("0.1.5-rc.") || v.startsWith("^0.1.5-rc.")),
+        // NO "*" — a star resolves to the dead 0.0.1-rc.1 line (proven
+        // 2026-09-12: mask + timeline rode it until pinned). Lockstep only.
+        `${host} must depend on the atoms at the 0.1.5-rc lockstep line (got ${String(v)})`,
+      );
+      assert.ok(
+        !pkg.dependencies?.["@deepseek-ai/dsh-client-runtime"],
+        "dsh-client-runtime is dead upstream — no package may depend on it",
       );
     }
-    assert.ok(
-      !pkg.dependencies?.["@deepseek-ai/dsh-client-runtime"],
-      "dsh-client-runtime is dead upstream — the editor must not depend on it",
-    );
   });
 
-  it("every real package resolves from the editor's tree (the coherence fact)", () => {
-    const req = createRequire(join(repoRoot, "packages/web/editor/package.json"));
-    for (const name of REAL_SET) {
-      const resolved = req.resolve(name);
-      assert.ok(resolved.includes("node_modules"), `${name} resolved from the store: ${resolved}`);
-    }
+  it("the atoms resolve from the store (the coherence fact)", () => {
+    const req = createRequire(join(repoRoot, "packages/web/melite-card-view", "package.json"));
+    const resolved = req.resolve("@deepseek-ai/dsh-client-ui-primitives");
+    assert.ok(resolved.includes("node_modules"), `atoms resolved from the store: ${resolved}`);
   });
 });
 

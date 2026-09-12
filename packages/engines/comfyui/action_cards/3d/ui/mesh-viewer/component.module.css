@@ -1,0 +1,14 @@
+/* mesh-viewer claim defaults (the tile/full geometry the host
+   sizes the cell with when it passes no className). */
+
+.tileDefault {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.fullDefault {
+  width: 100%;
+  height: 70vh;
+  border-radius: 8px;
+}

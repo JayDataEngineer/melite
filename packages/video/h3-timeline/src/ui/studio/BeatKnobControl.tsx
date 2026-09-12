@@ -3,7 +3,7 @@
  * ui/studio/component.tsx. No behavior change: headers/footers are new,
  * every logic line is verbatim from the monolith (source range noted).
  */
-import { ControlRow, NumberControl, SelectControl, TextControl, TriControl } from "@melite/ui"
+import { ControlRow, NumberControl, SelectControl, TextControl, TriControl } from "./kit"
 import { KNOB_LABELS, SAMPLER_OPTIONS, SCHEDULER_OPTIONS } from "./docModel"
 import type { KnobKey } from "./docModel"
 

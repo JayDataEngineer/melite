@@ -3,9 +3,10 @@
  * ui/studio/component.tsx. No behavior change: headers/footers are new,
  * every logic line is verbatim from the monolith (source range noted).
  */
-import { ChevronDown, X } from "lucide-react"
-import { Button } from "@melite/ui/button"
-import { Input, NumberControl, Tip, cn } from "@melite/ui"
+import { Button, Input } from "@deepseek-ai/dsh-client-ui-primitives"
+import { NumberControl, Tip, cn } from "./kit"
+import { ChevronDown, X } from "./icons"
+import s from "./studio.module.css"
 import { GUIDE_KINDS, KNOB_ORDER, VIDEO_TIMELINE_TRACKS } from "./docModel"
 import type { DocCall } from "./docModel"
 import { splitRefList } from "./refUtils"
@@ -49,21 +50,18 @@ export function CallCard({
       data-knobs={activeKnobs || undefined}
       data-selected={callSelected ? "true" : undefined}
       ref={(el) => { callCardRefs.current[i] = el }}
-      className={cn(
-        "px-0.5 py-1.5 transition-colors",
-        callSelected && "bg-brand/[0.05] ring-1 ring-brand/40",
-      )}
+      className={cn(s.callCard, callSelected && s.callCardSel)}
     >
       {/* Card header — the call identity + span readout. */}
-      <div className="flex items-center gap-2 pb-1">
-        <span className="shrink-0 text-[9px] font-semibold uppercase tabular-nums text-muted-foreground/60">
+      <div className={s.cardHead}>
+        <span className={s.cardId}>
           #{i} · Model call {i + 1}
         </span>
-        <span className="shrink-0 text-[9px] tabular-nums text-muted-foreground/50" title={`frames ${c.start_frame}–${c.end_frame} (end exclusive)`}>
+        <span className={s.cardSpan} title={`frames ${c.start_frame}–${c.end_frame} (end exclusive)`}>
           frames {c.start_frame}–{c.end_frame} · {((c.end_frame - c.start_frame) / fps).toFixed(1)}s
         </span>
         {activeKnobs > 0 && (
-          <span className="shrink-0 rounded border border-cyan-400/30 bg-cyan-400/10 px-1 py-px text-[8px] font-semibold uppercase tracking-wide text-cyan-300">
+          <span className={s.knobTag}>
             {activeKnobs} knob{activeKnobs === 1 ? "" : "s"}
           </span>
         )}
@@ -77,9 +75,9 @@ export function CallCard({
           <Button variant="ghost"
             onClick={() => handlePromptDelete(`call-${i}`)}
             aria-label={`Delete call ${i}`}
-            className="ml-auto flex h-5 shrink-0 items-center gap-1 rounded border border-white/10 px-1.5 text-[9px] uppercase tracking-wide text-muted-foreground/50 transition-colors hover:border-destructive/60 hover:bg-destructive/80 hover:text-white"
+            className={s.delBtn}
           >
-            <X className="h-2.5 w-2.5" aria-hidden /> Delete
+            <X className={s.sz10} aria-hidden /> Delete
           </Button>
         </Tip>
       </div>
@@ -104,8 +102,8 @@ export function CallCard({
     {/* The span — editable frames, synced both ways with the
         bar (an edge drag moves the cut; typing here does too,
         rippling into the neighbor). */}
-    <div className="flex items-center gap-1.5 pb-1 pt-1">
-      <span className="text-[9px] uppercase tracking-wide text-muted-foreground/40">Span</span>
+    <div className={s.spanRow}>
+      <span className={s.spanLabel}>Span</span>
       <NumberControl
         ariaLabel={`Call ${i} start frame`}
         value={c.start_frame}
@@ -115,7 +113,7 @@ export function CallCard({
         width="w-16"
         placeholder=""
       />
-      <span className="text-[9px] text-muted-foreground/40">–</span>
+      <span className={s.spanDash}>–</span>
       <NumberControl
         ariaLabel={`Call ${i} end frame`}
         value={c.end_frame}
@@ -125,7 +123,7 @@ export function CallCard({
         width="w-16"
         placeholder=""
       />
-      <span className="text-[9px] text-muted-foreground/35">end exclusive · edit ripples the cut into the neighbor</span>
+      <span className={s.spanNote}>end exclusive · edit ripples the cut into the neighbor</span>
     </div>
 
     {/* ── The frame conditioners — the SUBCARDS (the
@@ -137,7 +135,7 @@ export function CallCard({
         first_frame — plus the prev-video continuation
         option) and LAST frame (the closing still, pinned at
         the call's final frame). */}
-    <div className="flex items-stretch gap-2">
+    <div className={s.framesRow}>
       <CallFrameSubcard
         label="First frame"
         hint="the opening still — anchors frame 0 of the window"
@@ -184,12 +182,9 @@ export function CallCard({
         const total = extraCount + guidePresent
         if (total === 0) return null
         return (
-          <div className="flex items-center gap-1.5" data-testid="tl-call-ref-images">
+          <div className={s.refBadgeRow} data-testid="tl-call-ref-images">
             <span
-              className={cn(
-                "shrink-0 rounded border border-white/10 bg-black/30 px-1 py-px font-mono text-[9px] tabular-nums",
-                total > 10 ? "text-amber-400" : "text-cyan-300/80",
-              )}
+              className={cn(s.refBadge, total > 10 ? s.refBadgeOver : s.refBadgeOk)}
               title={total > 10 ? `${total} refs total — exceeds the 10-image cap` : `${total} ref image${total === 1 ? "" : "s"} (guide + extras) — managed in Identity refs below`}
             >
               refs {total}/10
@@ -202,15 +197,15 @@ export function CallCard({
         (anchored at the cut, in-point semantics). The IMAGE
         input moved into the First-frame subcard above —
         `image` IS the first-frame source. */}
-    <div className="flex items-center gap-2">
+    <div className={s.guidesRow}>
       {(["clip", "audio"] as GuideKind[]).map((kind) => {
         const track = VIDEO_TIMELINE_TRACKS.find((t) => t.uuid === kind)!
         const color = `rgb(${track.color?.[0] ?? 176}, ${track.color?.[1] ?? 180}, ${track.color?.[2] ?? 186})`
         const src = c[kind] ?? ""
         return (
-          <span key={kind} className="relative shrink-0">
+          <span key={kind} className={s.guideWrap}>
             <span
-              className="pointer-events-none absolute left-1.5 top-1/2 z-10 h-1.5 w-1.5 -translate-y-1/2 rotate-45"
+              className={s.guideDot}
               style={{ background: src.trim() ? color : "transparent", border: `1px solid ${color}77` }}
               aria-hidden
             />
@@ -221,12 +216,7 @@ export function CallCard({
               aria-label={`Call ${i} ${kind} guide`}
               data-testid="tl-call-guide"
               onChange={(e) => setCallGuide(i, kind, e.target.value)}
-              className={cn(
-                "w-28 h-auto rounded border bg-black/30 pl-4 pr-1.5 py-0.5 font-mono text-[10px] outline-none",
-                src.trim()
-                  ? "border-white/10 text-foreground/90 focus:border-brand/60"
-                  : "border-white/[0.06] text-muted-foreground/70 placeholder:text-muted-foreground/55 focus:border-brand/40",
-              )}
+              className={cn(s.guideIn, !src.trim() && s.guideInEmpty)}
             />
           </span>
         )
@@ -238,16 +228,16 @@ export function CallCard({
         REPLACE the run-level refs for this call's
         windows; empty = inherit the run defaults. */}
     {isRef2va && (
-      <div className="rounded border border-white/[0.07] bg-white/[0.015] p-1.5" data-testid="tl-call-refs">
-        <div className="flex items-baseline justify-between">
-          <span className="text-[9px] font-semibold uppercase tracking-wide text-muted-foreground/50">
+      <div className={s.callRefs} data-testid="tl-call-refs">
+        <div className={s.callRefsHead}>
+          <span className={s.callRefsTitle}>
             Identity refs (this call)
           </span>
-          <span className="text-[8px] text-muted-foreground/40">
+          <span className={s.callRefsNote}>
             replaces run refs · empty = inherit
           </span>
         </div>
-        <div className="mt-1 space-y-1">
+        <div className={s.callRefsBody}>
           {([
             ["images", "Ref images", "image", 10] as const,
           ]).map(([key, label, genre, cap]) => (
@@ -269,7 +259,7 @@ export function CallCard({
             values nothing reads. Videos/audios/video_audios
             ride at RUN level (the bundle bus is global);
             per-call is the image bus (t4r ref_image slots). */}
-          <p className="text-[8px] text-muted-foreground/40">
+          <p className={s.callRefsFoot}>
             per-call refs are the image bus — ref videos / audios ride at run level
           </p>
         </div>
@@ -281,17 +271,17 @@ export function CallCard({
         empty state is "inherit" (absent → the window inherits
         Layer A; the backend's CALL_KNOB_KEYS vocabulary —
         audio_mode is recipe-level and never appears here). */}
-    <details className="group mt-1">
-      <summary className="flex cursor-pointer select-none items-center gap-1 text-[9px] font-semibold uppercase tracking-wide text-muted-foreground/50 hover:text-muted-foreground/80">
-        <ChevronDown className="h-2.5 w-2.5 transition-transform group-open:rotate-180" aria-hidden />
+    <details className={s.knobFold}>
+      <summary className={s.knobSummary}>
+        <ChevronDown className={cn(s.sz10, s.chev)} aria-hidden />
         Call knobs
         {activeKnobs > 0 && (
-          <span className="rounded border border-cyan-400/30 bg-cyan-400/10 px-1 text-[8px] text-cyan-300">
+          <span className={s.knobCount}>
             {activeKnobs}
           </span>
         )}
       </summary>
-      <div className="mt-1 grid grid-cols-2 gap-x-4 gap-y-1.5 border-t border-white/[0.06] pt-1.5">
+      <div className={s.knobGrid}>
         {KNOB_ORDER.map((knob) => (
           <BeatKnobControl
             key={knob}

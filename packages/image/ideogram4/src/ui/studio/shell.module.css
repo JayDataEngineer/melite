@@ -1,0 +1,36 @@
+/* StudioShell — the studio body seams (rail / center / bottom /
+   loud errors), DSH-token styled. Structural sizes mirror the kit
+   shell (flex column body, rail column). */
+
+.shell {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 100%;
+}
+
+.rail {
+  display: flex;
+  flex-direction: column;
+}
+
+.errorLine {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 8px;
+}
+
+.errorRow {
+  border: 1px solid var(--dsw-alias-danger, #dc2626);
+  border-radius: 4px;
+  background: color-mix(in srgb, var(--dsw-alias-danger, #dc2626) 10%, transparent);
+  color: var(--dsw-alias-danger, #dc2626);
+  font-family: ui-monospace, monospace;
+  font-size: 9px;
+  line-height: 1.4;
+  overflow-wrap: break-word;
+  white-space: pre-wrap;
+  padding: 6px 8px;
+  margin: 0;
+}

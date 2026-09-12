@@ -88,6 +88,7 @@ export const PROXY_SETUP = './scripts/test-proxy-environment.ts'
  */
 export const SOURCE_PLANE_ALIAS: Record<string, string> = {
   '@melite-plugin/dsh-tools': path.join(import.meta.dirname, 'packages/harness/melite-tools/src/index.ts'),
+  '@melite-plugin/melite-run-wire': path.join(import.meta.dirname, 'packages/web/melite-run-wire/src/index.ts'),
   '@melite/estate-drafts': path.join(import.meta.dirname, 'packages/estate/drafts/src/index.ts'),
   '@melite/estate-manage': path.join(import.meta.dirname, 'packages/estate/manage/src/index.ts'),
   '@melite/estate-media': path.join(import.meta.dirname, 'packages/estate/media/src/index.ts'),

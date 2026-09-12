@@ -3,8 +3,9 @@
  * ui/studio/component.tsx. No behavior change: headers/footers are new,
  * every logic line is verbatim from the monolith (source range noted).
  */
-import { Button } from "@melite/ui/button"
-import { Input, NumberControl, Textarea, cn } from "@melite/ui"
+import { Button, Input } from "@deepseek-ai/dsh-client-ui-primitives"
+import { NumberControl, cn } from "./kit"
+import s from "./studio.module.css"
 import type { DocBeatSegment, DocCall } from "./docModel"
 import type { TimelineSelection } from "./useViewSelection"
 
@@ -39,16 +40,16 @@ export function CallCardPrompt({
       time markers and NEVER cut (cuts land on call
       boundaries). */}
   {segmentMode ? (
-    <div className="space-y-1" data-testid="tl-call-beats">
-      <div className="flex items-center gap-1.5">
-        <span className="text-[9px] uppercase tracking-wide text-muted-foreground/40">Prompt segments</span>
-        <span className="text-[9px] text-muted-foreground/35">
+    <div className={s.beatsWrap} data-testid="tl-call-beats">
+      <div className={s.beatsHead}>
+        <span className={s.beatsTitle}>Prompt segments</span>
+        <span className={s.beatsNote}>
           join into one prompt with time markers — they never cut
         </span>
         <Button variant="ghost"
           onClick={() => addBeatSegment(i)}
           aria-label={`Add segment to call ${i}`}
-          className="ml-auto flex h-4 w-4 shrink-0 items-center justify-center rounded border border-white/15 text-[10px] leading-none text-muted-foreground/70 transition-colors hover:border-brand/50 hover:text-brand"
+          className={s.addSeg}
         >
           +
         </Button>
@@ -60,10 +61,8 @@ export function CallCardPrompt({
           data-selected={callSelected && selected?.beatIdx === j ? "true" : undefined}
           ref={(el) => { beatRowRefs.current[i] ??= []; beatRowRefs.current[i]![j] = el }}
           className={cn(
-            "flex items-center gap-1.5 rounded transition-colors",
-            callSelected && selected?.beatIdx === j
-              ? "bg-cyan-400/[0.08] ring-1 ring-cyan-400/50"
-              : "",
+            s.beatRow,
+            callSelected && selected?.beatIdx === j && s.beatRowSel,
           )}
         >
           <Input
@@ -72,12 +71,7 @@ export function CallCardPrompt({
             aria-label={`Call ${i} segment ${j} text`}
             data-testid="tl-call-beat-text"
             onChange={(e) => setBeatSegment(i, j, { text: e.target.value })}
-            className={cn(
-              "min-w-0 flex-1 h-auto rounded border bg-black/30 px-1.5 py-0.5 text-[10px] leading-snug outline-none",
-              seg.text.trim()
-                ? "border-white/10 text-foreground/90 focus:border-brand/60"
-                : "border-amber-400/40 text-amber-300/90 placeholder:text-amber-300/40 focus:border-amber-300/70",
-            )}
+            className={cn(s.textIn, !seg.text.trim() && s.textInEmpty)}
           />
           <Button
             type="button"
@@ -89,7 +83,7 @@ export function CallCardPrompt({
               "call-" + i + "-beat-" + j, seg.text,
               (t) => setBeatSegment(i, j, { text: t }),
             )}
-            className="flex h-4 w-4 shrink-0 items-center justify-center rounded text-[9px] text-brand/80 transition-colors hover:bg-brand/15 hover:text-brand disabled:opacity-30"
+            className={s.iconMini}
           >
             {enhancing["call-" + i + "-beat-" + j] === true ? "…" : "\u2728"}
           </Button>
@@ -100,13 +94,13 @@ export function CallCardPrompt({
               aria-label={"Undo enhance call " + i + " segment " + j}
               data-testid="tl-beat-enhance-undo"
               onClick={() => undoEnhance("call-" + i + "-beat-" + j, (t) => setBeatSegment(i, j, { text: t }))}
-              className="flex h-4 w-4 shrink-0 items-center justify-center rounded text-[9px] text-muted-foreground/60 transition-colors hover:bg-white/10 hover:text-foreground"
+              className={cn(s.iconMini, s.iconMiniMut)}
             >
               {"\u21a9"}
             </Button>
           )}
           {enhanceErr["call-" + i + "-beat-" + j] && (
-            <span className="text-[8px] leading-tight text-destructive" data-testid="tl-beat-enhance-error">
+            <span className={s.beatErr} data-testid="tl-beat-enhance-error">
               {enhanceErr["call-" + i + "-beat-" + j]}
             </span>
           )}
@@ -122,7 +116,7 @@ export function CallCardPrompt({
             size="sm"
             placeholder=""
           />
-          <span className="text-[9px] text-muted-foreground/40">–</span>
+          <span className={s.beatDash}>–</span>
           <NumberControl
             value={seg.end_frame}
             ariaLabel={`Call ${i} segment ${j} end frame`}
@@ -138,7 +132,7 @@ export function CallCardPrompt({
           <Button variant="ghost"
             onClick={() => deleteBeatSegment(i, j)}
             aria-label={`Delete call ${i} segment ${j}`}
-            className="flex h-4 w-4 shrink-0 items-center justify-center rounded text-muted-foreground/60 transition-colors hover:bg-destructive/80 hover:text-white"
+            className={s.beatDel}
           >
             ×
           </Button>
@@ -146,10 +140,10 @@ export function CallCardPrompt({
       ))}
     </div>
   ) : (
-    <div className="space-y-1">
-      <div className="flex items-center justify-between">
-        <span className="text-[9px] uppercase tracking-wide text-muted-foreground/40">the prompt this call sends to H3</span>
-        <span className="flex items-center gap-1">
+    <div className={s.beatsWrap}>
+      <div className={s.textHead}>
+        <span className={s.textLabel}>the prompt this call sends to H3</span>
+        <span className={s.enhanceRow}>
           <Button
             type="button"
             title="Rewrite this call's prompt in H3 cinematic style"
@@ -160,7 +154,7 @@ export function CallCardPrompt({
               "call-" + i, c.text ?? "",
               (t) => handlePromptUpdate("call-" + i, t),
             )}
-            className="rounded px-1 py-0.5 text-[9px] font-medium uppercase tracking-wide text-brand/80 transition-colors hover:bg-brand/15 hover:text-brand disabled:opacity-30"
+            className={s.enhanceBtn}
           >
             {enhancing["call-" + i] === true ? "enhancing…" : "\u2728 H3 style"}
           </Button>
@@ -170,7 +164,7 @@ export function CallCardPrompt({
               aria-label={"Undo enhance call " + i + " prompt"}
               data-testid="tl-call-enhance-undo"
               onClick={() => undoEnhance("call-" + i, (t) => handlePromptUpdate("call-" + i, t))}
-              className="rounded px-1 py-0.5 text-[9px] text-muted-foreground/60 transition-colors hover:bg-white/10 hover:text-foreground"
+              className={s.undoBtn}
             >
               {"\u21a9 undo"}
             </Button>
@@ -178,28 +172,23 @@ export function CallCardPrompt({
         </span>
       </div>
       {enhanceErr["call-" + i] && (
-        <span className="text-[8px] leading-tight text-destructive" data-testid="tl-call-enhance-error">
+        <span className={s.beatErr} data-testid="tl-call-enhance-error">
           {enhanceErr["call-" + i]}
         </span>
       )}
-      <Textarea
+      <textarea
         value={c.text ?? ""}
         placeholder="describe the action, camera, and mood for this call — empty calls refuse the plan"
         aria-label={`Call ${i} prompt`}
         data-testid="tl-call-prompt"
         rows={2}
         onChange={(e) => handlePromptUpdate(`call-${i}`, e.target.value)}
-        className={cn(
-          "min-h-[2.25rem] w-full h-auto resize-y rounded border bg-black/30 px-2 py-1 text-[11px] leading-snug outline-none",
-          (c.text ?? "").trim()
-            ? "border-white/10 text-foreground/90 focus:border-brand/60"
-            : "border-amber-400/40 text-amber-300/90 placeholder:text-amber-300/40 focus:border-amber-300/70",
-        )}
+        className={cn(s.promptBox, !(c.text ?? "").trim() && s.promptBoxEmpty)}
       />
       <Button variant="ghost"
         onClick={() => addBeatSegment(i)}
         aria-label={`Add segment to call ${i}`}
-        className="text-[9px] font-medium uppercase tracking-wide text-muted-foreground/40 transition-colors hover:text-brand"
+        className={s.addSegText}
       >
         + prompt segments
       </Button>

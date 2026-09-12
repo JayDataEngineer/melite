@@ -50,7 +50,7 @@
 // compile. ─────────────────────────────────────────────────────────────────
 
 import type { EstateDoorUrl } from "./generated/gatewayDoors"
-import { readAsDataURL } from "@melite/ui"
+import { readAsDataURL } from "@melite/formats/readFile"
 
 /** A URL outside the door table (another service or a same-host row
  * door like /melite-tools/*). Constructible ONLY via externalUrl()

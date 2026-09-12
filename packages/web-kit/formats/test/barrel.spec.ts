@@ -11,6 +11,7 @@ describe("formats barrel", () => {
     assert.equal(typeof barrel.splitCaptions, "function");
     assert.equal(barrel.splitCaptions, splitCaptions);
     assert.ok("CAPABILITY_DRAG_MIME" in barrel);
-    assert.ok("SIDEBAR_GENRE_ORDER" in barrel);
+    // SIDEBAR_GENRE_ORDER left the barrel with sidebarGenres (2026-09-12,
+    // the lucide purge — the module died with the editor's sidebars).
   });
 });

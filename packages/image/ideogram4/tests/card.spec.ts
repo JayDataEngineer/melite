@@ -44,3 +44,14 @@ describe("the ideogram4 compose gate", () => {
     assert.ok(graph["CLIPTextEncode.0"], "the caption encodes");
   });
 });
+
+
+describe("the dual-face law: the root is the row-mount marker", () => {
+  it("apply registers NOTHING node-side (the card rides the CARD face; the studio rides the client face)", async () => {
+    const { Context } = await import("@deepseek-ai/cordis");
+    const marker = await import("../src/index.ts");
+    const ctx = new Context();
+    marker.apply(ctx);
+    assert.equal(marker.name, "@melite/image-ideogram4");
+  });
+});

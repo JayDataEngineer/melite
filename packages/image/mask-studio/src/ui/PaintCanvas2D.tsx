@@ -35,8 +35,10 @@
  * the honest shape (the SlotGrid precedent + debt note).
  */
 import type { ReactElement, ReactNode } from "react"
-import { Skeleton, ViewportOverlays, cn } from "@melite/ui"
-import type { ViewportOverlay } from "@melite/ui"
+import { clsx } from "clsx"
+import { Skeleton, ViewportOverlays } from "./studio/viewport"
+import type { ViewportOverlay } from "./studio/viewport"
+import styles from "./studio/mask.module.css"
 
 /** Viewport ease while a zoom/pan gesture settles (verbatim from the
  *  mask canvas constants — the feel IS the primitive). */
@@ -114,7 +116,8 @@ export function PaintCanvas2D({
       onDrop={onDrop}
       onDragOver={onDragOver}
       onDragLeave={onDragLeave}
-      className={cn(
+      className={clsx(
+        styles.viewportWrap,
         // With an image the wrapper HUGS the fitted canvas (viewSize)
         // so there is no letterboxed black around it; the flex-1 fill
         // is only for the empty state's import card. shrink-0 keeps
@@ -123,9 +126,8 @@ export function PaintCanvas2D({
         // height while the wrapper shrank, 2026-08-10). m-auto
         // centers the hugged canvas in whatever height the stretch
         // layout leaves above the bottom bar.
-        "relative m-auto overflow-hidden rounded-md bg-[#0e0e1a] transition-all",
-        hasImage ? "shrink-0" : "flex min-h-0 flex-1 items-center justify-center",
-        dropHighlight ? "ring-2 ring-brand ring-inset" : "ring-1 ring-border/50",
+        hasImage ? styles.viewportHug : styles.viewportFill,
+        dropHighlight ? styles.viewportDrop : styles.viewportIdle,
       )}
       style={hasImage && viewSize ? { width: viewSize.w, height: viewSize.h } : undefined}
     >
@@ -134,11 +136,11 @@ export function PaintCanvas2D({
           role="status"
           aria-busy="true"
           aria-label="Loading image"
-          className="absolute inset-0 z-10 flex items-center justify-center bg-[#0e0e1a]/70"
+          className={styles.loadingVeil}
         >
           {/* Skeleton stands in for the image while it decodes — a
               quiet block instead of a spinning dot over the canvas. */}
-          <Skeleton className="h-16 w-16 rounded-md bg-muted/30" />
+          <Skeleton />
         </div>
       )}
       {waiting ?? (hasImage ? (
@@ -148,10 +150,10 @@ export function PaintCanvas2D({
           onPointerMove={onPointerMove}
           onPointerUp={onPointerUp}
           onPointerLeave={onPointerUp}
-          className={cn(
-            "select-none",
-            panMode ? (isZoomed ? "cursor-grab" : "cursor-default") : "cursor-crosshair",
-            panDragging && "cursor-grabbing",
+          className={clsx(
+            styles.viewCanvas,
+            panMode ? (isZoomed ? styles.viewPanZoomed : styles.viewPanFlat) : styles.viewPaint,
+            panDragging && styles.viewDragging,
           )}
           style={viewSize ? {
             width: viewSize.w,

@@ -1,0 +1,106 @@
+{
+  "id": "s_0",
+  "kind": "generation",
+  "service": "h3-timeline",
+  "title": "H3 Timeline",
+  "params": {
+    "calls": [
+      {
+        "start_frame": 0,
+        "end_frame": 90,
+        "text": "Heavy rain hammers a weathered wooden dock at night. Dark water churns below, rain splashing off warped planks. A low sustained drone hums beneath the downpour. Lightning flickers in distant clouds. The dock stretches into blackness. Continuous heavy rain and low sustained drone throughout."
+      },
+      {
+        "start_frame": 90,
+        "end_frame": 179,
+        "text": "Inside a parked car on a clifftop overlook, the same violent storm rages. Rain pelts the windshield in sheets, wipers off. Through the rain-blurred glass, a dark ocean crashes far below. The low sustained drone continues without interruption. Heavy rain streams down the car's body panels. Continuous heavy rain and low sustained drone throughout."
+      },
+      {
+        "start_frame": 179,
+        "end_frame": 268,
+        "text": "The same storm pours over a subway entrance in a city. Rain cascades down the concrete stairs into the underground. Puddles form on the sidewalk, water flowing toward the stairwell. The low sustained drone persists. Neon signs reflect in the wet pavement. Continuous heavy rain and low sustained drone throughout."
+      },
+      {
+        "start_frame": 268,
+        "end_frame": 357,
+        "text": "The same storm at dawn on a farmhouse porch. Rain hammers the tin porch roof. The sky lightens to grey-pink on the horizon. Wet grass and a wooden fence visible beyond the porch railing. The low sustained drone continues. Dawn light grows through the rain. Continuous heavy rain and low sustained drone throughout."
+      }
+    ],
+    "fps": 24,
+    "intent": "Storm continuity proof — heavy rain and low drone across four locations",
+    "seed": 42
+  },
+  "result": {
+    "assetUrls": [
+      "/v1/assets/runs/run-6a96fdbb-748c0a7fc6c0-0/stitch_video_0.mp4",
+      "/v1/assets/runs/run-6a96fdbb-748c0a7fc6c0-0/window1_video_0.mp4",
+      "/v1/assets/runs/run-6a96fdbb-748c0a7fc6c0-0/window2_video_0.mp4",
+      "/v1/assets/runs/run-6a96fdbb-748c0a7fc6c0-0/window3_video_0.mp4",
+      "/v1/assets/runs/run-6a96fdbb-748c0a7fc6c0-0/window4_video_0.mp4"
+    ],
+    "artifacts": {
+      "video": "/v1/assets/runs/run-6a96fdbb-748c0a7fc6c0-0/stitch_video_0.mp4",
+      "video_w1_main": "/v1/assets/runs/run-6a96fdbb-748c0a7fc6c0-0/window1_video_0.mp4",
+      "video_w2_main": "/v1/assets/runs/run-6a96fdbb-748c0a7fc6c0-0/window2_video_0.mp4",
+      "video_w3_main": "/v1/assets/runs/run-6a96fdbb-748c0a7fc6c0-0/window3_video_0.mp4",
+      "video_w4_main": "/v1/assets/runs/run-6a96fdbb-748c0a7fc6c0-0/window4_video_0.mp4",
+      "windowFilms": [
+        "/v1/assets/runs/run-6a96fdbb-748c0a7fc6c0-0/window1_video_0.mp4",
+        "/v1/assets/runs/run-6a96fdbb-748c0a7fc6c0-0/window2_video_0.mp4",
+        "/v1/assets/runs/run-6a96fdbb-748c0a7fc6c0-0/window3_video_0.mp4",
+        "/v1/assets/runs/run-6a96fdbb-748c0a7fc6c0-0/window4_video_0.mp4"
+      ],
+      "seams": []
+    },
+    "metadata": {
+      "runId": "run-6a96fdbb-748c0a7fc6c0-0",
+      "seam": "latent-chain",
+      "windows": 4,
+      "history": [
+        {
+          "runId": "run-6a96fdbb-748c0a7fc6c0-0",
+          "status": "completed",
+          "at": 1788281160,
+          "durationSec": 909,
+          "video": "/v1/assets/runs/run-6a96fdbb-748c0a7fc6c0-0/stitch_video_0.mp4"
+        }
+      ],
+      "film": {
+        "fps": 24,
+        "windows": [
+          {
+            "start": 0,
+            "len": 107,
+            "trim": 0,
+            "docStart": 0,
+            "docSpan": 90
+          },
+          {
+            "start": 107,
+            "len": 141,
+            "trim": 0,
+            "docStart": 90,
+            "docSpan": 0
+          },
+          {
+            "start": 248,
+            "len": 141,
+            "trim": 0,
+            "docStart": 90,
+            "docSpan": 0
+          },
+          {
+            "start": 389,
+            "len": 141,
+            "trim": 0,
+            "docStart": 90,
+            "docSpan": 0
+          }
+        ],
+        "totalFrames": 530
+      }
+    },
+    "completedAt": 1788281160000,
+    "durationSec": 15
+  }
+}

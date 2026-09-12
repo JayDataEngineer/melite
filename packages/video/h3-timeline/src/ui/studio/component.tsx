@@ -64,8 +64,10 @@
  * every logic line below the imports is verbatim from the monolith.
  */
 import type { CardStage } from "@melite/contracts"
-import { defineShellDeclaration, StudioShell } from "@melite/ui"
-import { ChevronDown, TriangleAlert } from "lucide-react"
+import { defineShellDeclaration, StudioShell } from "./kit"
+import { ChevronDown, TriangleAlert } from "./icons"
+import { cn } from "./kit"
+import s from "./studio.module.css"
 import { StudioPreview } from "./StudioPreview"
 import { StudioStripPane } from "./StudioStripPane"
 import { RunRecipeEngine } from "./RunRecipeEngine"
@@ -134,12 +136,12 @@ export function VideoTimelineStudio({
        live shape. The document readout — every structural action is
        a direct gesture on the bar (add = double-click, delete = ✕ /
        the rail card's Delete). */
-    <StudioShell className="h-full min-h-0 gap-2 p-3"
+    <StudioShell className={cn(s.studioRoot)}
       rail={
-        <div className="flex h-full min-h-0 flex-col gap-2 overflow-y-auto px-3 py-2.5">
-          <div className="shrink-0 border-b border-white/[0.07] pb-2.5">
-          <div className="space-y-1 px-1 text-[10px] leading-relaxed text-muted-foreground/80">
-            <div data-testid="tl-doc-readout" className="tabular-nums">
+        <div className={s.railCol}>
+          <div className={s.docBlock}>
+          <div className={s.docLines}>
+            <div data-testid="tl-doc-readout" className={s.tabular}>
               {calls.length} call{calls.length === 1 ? "" : "s"} · {seconds}s ·{" "}
               {guideCount} guide{guideCount === 1 ? "" : "s"}
               {knobOverrides > 0 && (
@@ -147,8 +149,8 @@ export function VideoTimelineStudio({
               )}
             </div>
             {emptyText > 0 && (
-              <div className="flex items-start gap-1 text-amber-300/90">
-                <TriangleAlert className="mt-0.5 h-3 w-3 shrink-0" />
+              <div className={s.warnRow}>
+                <TriangleAlert className={cn(s.warnIcon, s.sz12)} />
                 <span>
                   {emptyText} call{emptyText === 1 ? " needs" : "s need"} a prompt — the plan
                   refuses empty prompts before any GPU work.
@@ -156,8 +158,8 @@ export function VideoTimelineStudio({
               </div>
             )}
             {unwired > 0 && (
-              <div className="flex items-start gap-1 text-amber-300/90">
-                <TriangleAlert className="mt-0.5 h-3 w-3 shrink-0" />
+              <div className={s.warnRow}>
+                <TriangleAlert className={cn(s.warnIcon, s.sz12)} />
                 <span>
                   {unwired} keyframe source{unwired === 1 ? "" : "s"} unwired — wire them below or the run door
                   names them as TODOs.
@@ -177,15 +179,15 @@ export function VideoTimelineStudio({
               selected in the bar — then it swaps to THAT item's editor;
               a click on the empty timeline swaps back). */}
           {selected == null && (
-          <details open data-testid="tl-run-panel" className="group shrink-0 border-b border-white/[0.07]">
-            <summary className="flex cursor-pointer select-none items-center gap-1.5 py-1.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground/70">
-              <ChevronDown className="h-3 w-3 transition-transform group-open:rotate-180" aria-hidden />
+          <details open data-testid="tl-run-panel" className={s.runFold}>
+            <summary className={s.runSummary}>
+              <ChevronDown className={cn(s.sz12, s.chev)} aria-hidden />
               Run parameters
-              <span className="font-normal normal-case tracking-normal text-[9px] text-muted-foreground/40">
+              <span className={s.runSummaryNote}>
                 Layer A — global · calls inherit
               </span>
             </summary>
-            <div className="space-y-2 pb-2.5">
+            <div className={s.runBody}>
           <RunRecipeEngine
             stage={stage}
             layerA={layerA}

@@ -3,8 +3,9 @@
  * ui/studio/component.tsx. No behavior change: headers/footers are new,
  * every logic line is verbatim from the monolith (source range noted).
  */
-import { Button } from "@melite/ui/button"
-import { ControlRow, Input, NumberControl, SelectControl } from "@melite/ui"
+import { Button, Input } from "@deepseek-ai/dsh-client-ui-primitives"
+import { ControlRow, NumberControl, SelectControl } from "./kit"
+import s from "./studio.module.css"
 import type { LayerA, SetLayerAKey } from "./docModel"
 import { RefPickerRow } from "./RefPickerRow"
 
@@ -26,12 +27,12 @@ export function RunRefsClips({
         for its windows. Hidden on FL2VA (the graph drops
         refs there — the run door refuses them loudly). */}
     {isRef2va && (
-    <div className="space-y-1.5" data-testid="tl-refs-panel">
-      <div className="flex items-baseline justify-between">
-        <span className="text-[9px] font-semibold uppercase tracking-wide text-muted-foreground/50">
+    <div className={s.group} data-testid="tl-refs-panel">
+      <div className={s.refsHead}>
+        <span className={s.groupTitle}>
           Identity refs (ref2va)
         </span>
-        <span className="text-[8px] text-muted-foreground/40">
+        <span className={s.refsNote}>
           ride EVERY window · identity across seams
         </span>
       </div>
@@ -118,29 +119,29 @@ export function RunRefsClips({
     {/* (Layer A NLE) the UPLOAD door: audio files land as clips
         on the Music row at frame 0 (drag them anywhere after);
         OS-dropping a file onto the row lands it AT the drop. */}
-    <div className="flex items-center gap-2">
-      <span className="shrink-0 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground/50">
+    <div className={s.clipsRow}>
+      <span className={s.clipsTitle}>
         Clips
       </span>
       <Button
         type="button"
         data-testid="tl-audio-upload"
         onClick={() => audioUploadRef.current?.click()}
-        className="rounded border border-violet-300/30 bg-violet-400/10 px-2 py-0.5 text-[10px] font-medium text-violet-200/90 transition-colors hover:border-violet-300/60 hover:bg-violet-400/20"
+        className={s.uploadAudio}
       >
         ⤴ Upload audio
       </Button>
-      <span className="min-w-0 flex-1 truncate text-[10px] text-muted-foreground/60">
+      <span className={s.clipsNote}>
         {layerA.audio_clips?.length
           ? `${layerA.audio_clips.length} clip${layerA.audio_clips.length === 1 ? "" : "s"} on the Music row — drag to move, × to remove`
           : "none — upload or drop a file on the Music row"}
       </span>
-      <Input
+      <input
         ref={audioUploadRef}
         type="file"
         accept="audio/*"
         multiple
-        className="hidden"
+        className={s.hiddenInput}
         onChange={(e) => {
           const fs = Array.from(e.target.files ?? [])
           fs.forEach((f) => takeAudioFile(f, 0))

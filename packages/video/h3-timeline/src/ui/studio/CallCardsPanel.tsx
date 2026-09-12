@@ -3,9 +3,10 @@
  * ui/studio/component.tsx. No behavior change: headers/footers are new,
  * every logic line is verbatim from the monolith (source range noted).
  */
-import { ChevronLeft } from "lucide-react"
-import { Button } from "@melite/ui/button"
-import { Input, NumberControl, Tip, cn } from "@melite/ui"
+import { Button, Input } from "@deepseek-ai/dsh-client-ui-primitives"
+import { NumberControl, Tip, cn } from "./kit"
+import { ChevronLeft } from "./icons"
+import s from "./studio.module.css"
 import { VIDEO_TIMELINE_TRACKS } from "./docModel"
 import { CallCard } from "./CallCard"
 import type { DocBeatSegment, DocCall, DocKeyframe } from "./docModel"
@@ -71,34 +72,34 @@ export function CallCardsPanel({
       boundaries — a new call = a new model invocation at that
       cut; beats (Layer C) are prompt segments WITHIN a call that
       join into its single prompt and never cut. */}
-  <div className="shrink-0" data-testid="tl-call-panel">
+  <div className={s.panel} data-testid="tl-call-panel">
     {selected == null ? (
-      <div className="flex items-baseline gap-1.5 pb-1">
-        <span className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground/70">
+      <div className={s.rowsHead}>
+        <span className={s.rowsTitle}>
           Model calls
         </span>
-        <span className="text-[9px] text-muted-foreground/50">
+        <span className={s.rowsHint}>
           click a row — or its clip in the bar — to edit that call here · a call's prompt is text, or beat segments within it · guides + knobs ride
           the call · the compiler cuts windows at call boundaries
         </span>
       </div>
     ) : (
-      <div className="flex items-center gap-2 pb-1.5">
+      <div className={s.focusHead}>
         <Tip tip="Back to the run's global parameters — or click any empty spot in the timeline">
           <Button variant="ghost"
             onClick={() => setSelected(null)}
             aria-label="Back to global parameters"
             data-testid="tl-back-to-global"
-            className="flex h-6 shrink-0 items-center gap-1 rounded border border-white/10 bg-white/[0.03] px-1.5 text-[10px] text-muted-foreground/80 transition-colors hover:border-brand/50 hover:text-brand"
+            className={s.backBtn}
           >
-            <ChevronLeft className="h-3 w-3" aria-hidden /> Global
+            <ChevronLeft className={s.sz12} aria-hidden /> Global
           </Button>
         </Tip>
-        <span className="shrink-0 text-[10px] font-semibold uppercase tracking-wide text-brand">
+        <span className={s.focusTitle}>
           #{selected.callIdx} · Model call {selected.callIdx + 1}
         </span>
         {selected.beatIdx != null && (
-          <span className="shrink-0 text-[9px] text-cyan-300/80">
+          <span className={s.beatFlag}>
             beat {selected.beatIdx + 1} selected
           </span>
         )}
@@ -112,7 +113,7 @@ export function CallCardsPanel({
       ))}
     </datalist>
     {selected == null && (
-      <div className="space-y-1">
+      <div className={s.compactList}>
         {calls.map((c, i) => {
           const segCount = c.beats?.length ?? 0
           const activeKnobs = c.knobs ? Object.keys(c.knobs).length : 0
@@ -125,30 +126,27 @@ export function CallCardsPanel({
               type="button"
               data-call-row={i}
               onClick={() => setSelected({ callIdx: i })}
-              className="flex w-full items-center gap-2 rounded-md border border-white/[0.08] bg-white/[0.02] px-2 py-1.5 text-left transition-colors hover:border-brand/40 hover:bg-brand/[0.05]"
+              className={s.callRow}
             >
-              <span className="shrink-0 text-[9px] font-semibold uppercase tabular-nums text-muted-foreground/60">
+              <span className={s.callIdx}>
                 #{i}
               </span>
               <span
-                className={cn(
-                  "min-w-0 flex-1 truncate text-[10px]",
-                  excerpt.trim() ? "text-foreground/85" : "italic text-foreground/30",
-                )}
+                className={cn(s.excerpt, excerpt.trim() ? s.excerptFull : s.excerptEmpty)}
               >
                 {excerpt.trim() || "(empty — needs a prompt)"}
               </span>
               {segCount > 0 && (
-                <span className="shrink-0 rounded border border-white/10 px-1 text-[8px] tabular-nums text-muted-foreground/60">
+                <span className={s.beatCount}>
                   {segCount} beat{segCount === 1 ? "" : "s"}
                 </span>
               )}
               {activeKnobs > 0 && (
-                <span className="shrink-0 rounded border border-cyan-400/30 bg-cyan-400/10 px-1 text-[8px] font-semibold uppercase text-cyan-300">
+                <span className={s.knobBadge}>
                   {activeKnobs}
                 </span>
               )}
-              <span className="shrink-0 text-[9px] tabular-nums text-muted-foreground/50">
+              <span className={s.callDur}>
                 {((c.end_frame - c.start_frame) / fps).toFixed(1)}s
               </span>
             </Button>
@@ -157,7 +155,7 @@ export function CallCardsPanel({
       </div>
     )}
     {selected != null && (
-    <div className="space-y-2">
+    <div className={s.focusList}>
             {calls.map((c, i) => (
               <CallCard key={i} c={c} i={i} deps={deps} />
             ))}
@@ -170,16 +168,16 @@ export function CallCardsPanel({
         but the call panel is where guides are authored. Global mode
         only — the focused rail is one call's editor. */}
     {selected == null && keyframes.length > 0 && (
-      <div className="mt-2 border-t border-white/[0.06] pt-1.5" data-testid="tl-keyframe-panel">
-        <div className="flex items-baseline gap-1.5 pb-1">
-          <span className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground/60">
+      <div className={s.kfPanel} data-testid="tl-keyframe-panel">
+        <div className={s.kfHead}>
+          <span className={s.kfTitle}>
             Frame-exact keyframes
           </span>
-          <span className="text-[9px] text-muted-foreground/40">
+          <span className={s.kfHint}>
             legacy vocabulary — prefer a beat's guides; a hand image at a cut is that window's first frame
           </span>
         </div>
-        <div className="space-y-1">
+        <div className={s.compactList}>
           {keyframes.map((k, i) => {
             const track = VIDEO_TIMELINE_TRACKS.find((t) => t.uuid === k.kind)!
             const color = `rgb(${track.color?.[0] ?? 176}, ${track.color?.[1] ?? 180}, ${track.color?.[2] ?? 186})`
@@ -188,10 +186,10 @@ export function CallCardsPanel({
                 key={i}
                 data-kf-row={i}
                 data-wired={k.source.trim() ? "true" : "false"}
-                className="flex items-center gap-2 rounded border border-white/[0.06] bg-white/[0.02] px-2 py-1"
+                className={s.kfRow}
               >
                 <span
-                  className="rounded px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide"
+                  className={s.kfKind}
                   style={{ color, background: `${color}1f`, border: `1px solid ${color}55` }}
                 >
                   {k.kind}
@@ -213,21 +211,16 @@ export function CallCardsPanel({
                   aria-label={`Keyframe ${i} source`}
                   data-testid="tl-kf-source"
                   onChange={(e) => setKeyframeSource(i, e.target.value)}
-                  className={cn(
-                    "min-w-0 flex-1 h-auto rounded border bg-black/30 px-1.5 py-0.5 font-mono text-[10px] outline-none",
-                    k.source.trim()
-                      ? "border-white/10 text-foreground/90 focus:border-brand/60"
-                      : "border-amber-400/40 text-amber-300/90 placeholder:text-amber-300/40 focus:border-amber-300/70",
-                  )}
+                  className={cn(s.kfIn, !k.source.trim() && s.textInEmpty)}
                 />
-                <span className="shrink-0 text-[9px] tabular-nums text-muted-foreground/40">
+                <span className={s.kfTime}>
                   {(k.frame / fps).toFixed(2)}s
                 </span>
                 <Tip tip={`Delete this ${k.kind} keyframe`}>
                   <Button variant="ghost"
                     onClick={() => handleKeyframeDelete(`kf-${i}`)}
                     aria-label={`Delete keyframe ${i}`}
-                    className="flex h-5 w-5 shrink-0 items-center justify-center rounded text-muted-foreground/60 transition-colors hover:bg-destructive/80 hover:text-white"
+                    className={s.kfDel}
                   >
                     ×
                   </Button>

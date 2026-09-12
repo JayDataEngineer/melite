@@ -2,16 +2,15 @@
 // order). Pure move from component.tsx (props shape unchanged) EXCEPT the
 // TUNE expander, which lives in TuneSection.tsx (same JSX + its tuneOpen /
 // numeric-draft state, always mounted — identical lifetime).
-import { BoxSelect, Brush, Expand, Loader2, Play, Plus, Sparkles } from "lucide-react"
-import { Input } from "@melite/ui"
-import { Button } from "@melite/ui/button"
-import { Tip } from "@melite/ui/tip"
-import { cn } from "@melite/ui"
+import { Button, Input, Tooltip } from "@deepseek-ai/dsh-client-ui-primitives"
+import { clsx } from "clsx"
+import { BoxSelect, Brush, Expand, Loader2, Play, Plus, Sparkles } from "./icons"
 import { DETECT_CLASSES } from "./constants"
 import type { BoxEntry, DetectClass, MaskSource } from "./constants"
 import { ClassChip } from "./ClassChip"
 import { Sam3PromptBox } from "./Sam3PromptBox"
 import { TuneSection } from "./TuneSection"
+import styles from "./mask.module.css"
 
 // ── The source rail (2026-08-16 — one column, top to bottom: SOURCE →
 // CLASSES → SHARED → REFINE → TEXT). Replaces the old DetectControls +
@@ -77,7 +76,7 @@ export function MaskSourceControls({
   face: exportFace, hands: exportHands, body: exportBody,
   }
   return (
-  <div className="flex max-h-full w-60 shrink-0 flex-col overflow-y-auto pb-1" data-mask-source-rail>
+  <div className={styles.rail} data-mask-source-rail>
 
   {/* ═══ STAGE 1 — BBOX (the owner's design, 2026-08-16, verbatim):
    * "FIRST STAGE IS BBOXX. I CAN SELECT THE NUMBER BEFOREHAND. NOT
@@ -88,82 +87,80 @@ export function MaskSourceControls({
    * on, boxes ON, no other exports). After a manifest lands, the found
    * instances are CLICKABLE here — tap BBox 1/2/3 to keep exactly that
    * one. OPTIONAL: with no count and no manifest, stage 2 runs full. */}
-  <section className="border-b border-white/[0.07] px-0.5 py-2" data-stage-bbox>
-  <div className="flex items-center justify-between pb-1.5">
-  <span className="flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground/70">
-  <BoxSelect className="h-3 w-3" /> BBox
+  <section className={styles.stageSection} data-stage-bbox>
+  <div className={styles.stageHead}>
+  <span className={styles.stageTitle}>
+  <BoxSelect className={styles.sz12} /> BBox
   </span>
-  {detecting && <Loader2 className="h-3 w-3 animate-spin text-brand" />}
+  {detecting && <Loader2 className={clsx(styles.sz12, styles.accentInk, styles.spin)} />}
   </div>
   {!boxes ? (
   <>
-  <div className="flex items-center gap-1.5">
-  <Tip tip="How many subjects to keep — set BEFORE the run. 0 = all.">
-  <div className="flex items-center overflow-hidden rounded border border-border/50" data-bbox-count>
+  <div className={styles.countRow}>
+  <Tooltip label="How many subjects to keep — set BEFORE the run. 0 = all." side="top">
+  <div className={styles.stepper} data-bbox-count>
   <Button variant="ghost"
   type="button" data-bbox-dec aria-label="Fewer boxes"
   onClick={() => onBboxCount(Math.max(0, bboxCount - 1))}
-  className="px-1.5 py-0.5 text-[11px] text-muted-foreground transition-colors hover:bg-sidebar/60 hover:text-foreground"
+  className={styles.stepBtn}
   >−</Button>
-  <span className="min-w-[2ch] text-center text-[11px] font-semibold tabular-nums text-foreground">
+  <span className={styles.stepVal}>
   {bboxCount === 0 ? "all" : bboxCount}
   </span>
   <Button variant="ghost"
   type="button" data-bbox-inc aria-label="More boxes"
   onClick={() => onBboxCount(Math.min(12, bboxCount + 1))}
-  className="px-1.5 py-0.5 text-[11px] text-muted-foreground transition-colors hover:bg-sidebar/60 hover:text-foreground"
+  className={styles.stepBtn}
   >+</Button>
   </div>
-  </Tip>
-  <Tip tip="Run BBox ISOLATED — find the boxes now; no masks yet">
+  </Tooltip>
+  <Tooltip label="Run BBox ISOLATED — find the boxes now; no masks yet" side="top">
   <Button variant="ghost"
   type="button" data-bbox-run
   onClick={onBboxRun}
   disabled={!hasInput}
-  className="ml-auto flex items-center gap-1 rounded bg-sky-500/15 px-2 py-0.5 text-[10px] font-semibold text-sky-300 transition-colors hover:bg-sky-500/25 disabled:cursor-not-allowed disabled:opacity-40"
+  className={styles.findBtn}
   >
-  <Play className="h-2.5 w-2.5" /> Find boxes
+  <Play className={styles.sz10} /> Find boxes
   </Button>
-  </Tip>
+  </Tooltip>
   </div>
-  <p className="pt-1.5 text-[9px] leading-relaxed text-muted-foreground/60">
+  <p className={styles.stageNote}>
   Stage 1 — find the subjects first (optional). The count caps how
   many BBoxes the next stages use.
   </p>
   </>
   ) : (
   <>
-  <div className="flex flex-wrap gap-1">
+  <div className={styles.pickRow}>
   <Button variant="ghost"
   type="button" data-bbox-all
   onClick={() => onInstancePick(new Set())}
-  className={cn(
-  "inline-flex items-center gap-0.5 rounded-full border px-1.5 py-px text-[9px] font-medium transition-colors",
-  selectedAll
-  ? "border-brand/60 bg-brand/15 text-brand"
-  : "border-border/40 text-muted-foreground hover:bg-sidebar/60",
+  className={clsx(
+  styles.pickBtn,
+  selectedAll ? styles.pickAllOn : styles.pickAllOff,
   )}
   >
-  <Expand className="h-2.5 w-2.5" /> All {boxes.length}
+  <Expand className={styles.sz10} /> All {boxes.length}
   </Button>
   {boxes.map((b) => (
-  <Tip key={b.index} tip={`Keep exactly BBox ${b.index + 1} (${b.class}) — one tap`}>
+  <Tooltip key={b.index} label={`Keep exactly BBox ${b.index + 1} (${b.class}) — one tap`} side="top">
   <Button variant="ghost"
   type="button" data-bbox-pick={b.index}
   onClick={() => onInstancePick(new Set([b.index]))}
-  className={cn(
-  "inline-flex items-center gap-0.5 rounded-full border px-1.5 py-px text-[9px] font-medium transition-colors",
+  className={clsx(
+  styles.pickBtn,
   instancesSelected.has(b.index)
-  ? "border-amber-400/60 bg-amber-400/15 text-amber-300"
-  : "border-border/40 text-muted-foreground hover:bg-sidebar/60",
+  ? styles.pickOneOn
+  : styles.pickOneOff,
   )}
   >
-  <BoxSelect className="h-2.5 w-2.5" /> {b.index + 1}
+  <BoxSelect className={styles.sz10} /> {b.index + 1}
   </Button>
-  </Tip>
+  </Tooltip>
   ))}
   </div>
-  <p className="pt-1.5 text-[9px] leading-relaxed text-muted-foreground/60">
+  <p className={styles.stageNote}>
   {boxes.length} found — tap one to keep exactly it; stages below
   run scoped to the kept BBoxes.
   </p>
@@ -176,11 +173,11 @@ export function MaskSourceControls({
    * PAINT (IF I HAVE PAINTNG ON THE CANVAS), TEXT". Selections ARE
    * classes — Text included, Paint when a painting exists. Pressing one
    * opens STAGE 3 below (its params + ADD). */}
-  <section className="border-b border-white/[0.07] px-0.5 py-2" data-stage-type>
-  <div className="pb-1.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground/70">
+  <section className={styles.stageSection} data-stage-type>
+  <div className={styles.stagePlainTitle}>
   Mask type
   </div>
-  <div className="flex flex-wrap gap-1">
+  <div className={styles.pickRow}>
   {DETECT_CLASSES.map(({ key, label, Icon }) => {
   const on = classOn[key] || detectMode === key
   const state = detectMode === key ? "primary" : on ? "extra" : "off"
@@ -191,41 +188,41 @@ export function MaskSourceControls({
   />
   )
   })}
-  <Tip tip="Text is a CLASS — SAM3 open-vocabulary (GPU)">
+  <Tooltip label="Text is a CLASS — SAM3 open-vocabulary (GPU)" side="top">
   <Button variant="ghost"
   type="button" data-type="text"
   data-type-active={typeDraft === "text" ? "true" : "false"}
   onClick={() => onStageType("text")}
-  className={cn(
-  "inline-flex items-center gap-1 rounded-full border px-2 py-1 text-[10px] font-medium capitalize transition-colors",
+  className={clsx(
+  styles.typeBtn,
   typeDraft === "text"
-  ? "border-violet-400/60 bg-violet-400/15 text-violet-300"
+  ? styles.typeTextOn
   : sam3Active
-  ? "border-violet-400/30 text-violet-300/70"
-  : "border-border/40 text-muted-foreground hover:bg-sidebar/50",
+  ? styles.typeTextArmed
+  : styles.typeTextOff,
   )}
   >
-  <Sparkles className="h-3 w-3" /> text
+  <Sparkles className={styles.sz12} /> text
   </Button>
-  </Tip>
-  <Tip tip={hasPaint ? "Paint is a CLASS — the canvas strokes" : "Paint a stroke on the canvas first"}>
+  </Tooltip>
+  <Tooltip label={hasPaint ? "Paint is a CLASS — the canvas strokes" : "Paint a stroke on the canvas first"} side="top">
   <Button variant="ghost"
   type="button" data-type="paint"
   data-type-active={typeDraft === "paint" ? "true" : "false"}
   disabled={!hasPaint}
   onClick={() => onStageType("paint")}
-  className={cn(
-  "inline-flex items-center gap-1 rounded-full border px-2 py-1 text-[10px] font-medium capitalize transition-colors disabled:cursor-not-allowed disabled:opacity-35",
+  className={clsx(
+  styles.typeBtn,
   typeDraft === "paint"
-  ? "border-fuchsia-400/60 bg-fuchsia-400/15 text-fuchsia-300"
-  : "border-border/40 text-muted-foreground hover:bg-sidebar/50",
+  ? styles.typePaintOn
+  : styles.typePaintOff,
   )}
   >
-  <Brush className="h-3 w-3" /> paint
+  <Brush className={styles.sz12} /> paint
   </Button>
-  </Tip>
+  </Tooltip>
   </div>
-  <p className="pt-1.5 text-[9px] leading-relaxed text-muted-foreground/60">
+  <p className={styles.stageNote}>
   Stage 2 — what to make the mask from. Text and paint are classes
   here, not modes; a class + a BBox from stage 1 compose.
   </p>
@@ -237,8 +234,8 @@ export function MaskSourceControls({
    * ADD." Pressing ADD commits the selection as a card under the canvas
    * (stage 2's button pops back out — the next class is a new card). */}
   {typeDraft && (
-  <section className="border-b border-white/[0.07] px-0.5 py-2" data-stage-params>
-  <div className="pb-1.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground/70">
+  <section className={styles.stageSection} data-stage-params>
+  <div className={styles.stagePlainTitle}>
   {typeDraft === "text" ? "Text params" : typeDraft === "paint" ? "Paint params" : `${typeDraft} params`}
   </div>
   {typeDraft === "text" ? (
@@ -248,23 +245,23 @@ export function MaskSourceControls({
   onChange={(e) => onPromptDraft(e.target.value)}
   onKeyDown={(e) => { if (e.key === "Enter") onAdd() }}
   placeholder="What to mask — e.g. shirt, jeans, hat"
-  className="h-auto w-full rounded border border-border/50 bg-background px-2 py-1 text-[11px] text-foreground outline-none placeholder:text-muted-foreground/50 focus:border-violet-400/60"
+  className={styles.promptInput}
   />
   ) : typeDraft === "paint" ? (
-  <p className="text-[9px] leading-relaxed text-muted-foreground/70">
+  <p className={styles.paintParamsNote}>
   The strokes on the canvas are the params — paint, then ADD.
   </p>
   ) : (
-  <div className="flex items-center gap-1">
+  <div className={styles.geomRow}>
   <Button variant="ghost"
   type="button" data-stage-geometry="segm"
   data-geometry-active={stageGeometry === "segm" ? "true" : "false"}
   onClick={() => onGeometry("segm")}
-  className={cn(
-  "flex-1 rounded border px-1.5 py-1 text-[10px] font-medium transition-colors",
+  className={clsx(
+  styles.geomBtn,
   stageGeometry === "segm"
-  ? "border-brand/60 bg-brand/15 text-brand"
-  : "border-border/40 text-muted-foreground hover:bg-sidebar/50",
+  ? styles.geomSegmOn
+  : styles.geomSegmOff,
   )}
   >
   Traced (SAM)
@@ -273,11 +270,11 @@ export function MaskSourceControls({
   type="button" data-stage-geometry="bbox"
   data-geometry-active={stageGeometry === "bbox" ? "true" : "false"}
   onClick={() => onGeometry("bbox")}
-  className={cn(
-  "flex-1 rounded border px-1.5 py-1 text-[10px] font-medium transition-colors",
+  className={clsx(
+  styles.geomBtn,
   stageGeometry === "bbox"
-  ? "border-sky-400/60 bg-sky-400/15 text-sky-300"
-  : "border-border/40 text-muted-foreground hover:bg-sidebar/50",
+  ? styles.geomBboxOn
+  : styles.geomBboxOff,
   )}
   >
   Rectangles
@@ -288,9 +285,9 @@ export function MaskSourceControls({
   type="button" data-stage-add
   onClick={onAdd}
   disabled={typeDraft === "text" && !draftPrompt.trim()}
-  className="mt-1.5 flex w-full items-center justify-center gap-1 rounded bg-brand px-2.5 py-1 text-[11px] font-semibold text-white transition-colors hover:bg-brand/90 disabled:cursor-not-allowed disabled:opacity-40"
+  className={styles.addBtn}
   >
-  <Plus className="h-3 w-3" /> Add {typeDraft}
+  <Plus className={styles.sz12} /> Add {typeDraft}
   </Button>
   </section>
   )}
@@ -329,7 +326,7 @@ export function MaskSourceControls({
   {/* BRUSH — no knobs (size lives in the canvas options bar, contextual
   * to the tool); just the pointer at the canvas. */}
   {source === "brush" && (
-  <p className="border-b border-white/[0.07] px-0.5 py-2 text-[9px] leading-relaxed text-muted-foreground/70">
+  <p className={styles.brushHint}>
   Pick the brush (B) and paint on the canvas — strokes export as the
   Paint mask (and as Combined while Person/Box/Text are off).
   </p>
@@ -339,14 +336,14 @@ export function MaskSourceControls({
   * BOTTOM LEFT, THERE IS PLAY." The stage flow's run: one button, bottom
   * of the rail, runs the committed cards (ADD commits; PLAY runs). The
   * count / filter / marquee all ride whatever this launches. */}
-  <div className="sticky bottom-0 z-10 mt-auto border-t border-white/[0.07] bg-background/95 px-0.5 py-2 backdrop-blur-sm" data-rail-play>
+  <div className={styles.playDock} data-rail-play>
   <Button variant="ghost"
   type="button" data-rail-run
   onClick={onPlay}
   disabled={!onPlay || detecting || !hasInput}
-  className="flex w-full items-center justify-center gap-1.5 rounded bg-brand px-3 py-1.5 text-[12px] font-bold uppercase tracking-wide text-white shadow-lg transition-colors hover:bg-brand/90 disabled:cursor-not-allowed disabled:opacity-40"
+  className={styles.playBtn}
   >
-  <Play className="h-3.5 w-3.5" /> Play
+  <Play className={styles.sz14} /> Play
   </Button>
   </div>
   </div>

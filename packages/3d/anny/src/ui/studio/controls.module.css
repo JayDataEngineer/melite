@@ -1,0 +1,168 @@
+/* Anny studio controls — verb chip, select, number, checkbox. */
+
+.verbChip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border-radius: 6px;
+  border: 1px solid color-mix(in srgb, var(--dsw-alias-accent, #3b82f6) 40%, transparent);
+  background: color-mix(in srgb, var(--dsw-alias-accent, #3b82f6) 10%, transparent);
+  padding: 4px 8px;
+  font-size: 10px;
+  font-weight: 500;
+}
+
+.verbChip:hover {
+  background: color-mix(in srgb, var(--dsw-alias-accent, #3b82f6) 20%, transparent);
+}
+
+.verbChip:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.verbIcon {
+  width: 12px;
+  height: 12px;
+  flex-shrink: 0;
+}
+
+.spin {
+  animation: anny-spin 1s linear infinite;
+}
+
+@keyframes anny-spin {
+  to { transform: rotate(360deg); }
+}
+
+.verbNote {
+  width: 100%;
+  margin: 0;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  font-size: 9px;
+  line-height: 1.5;
+  color: var(--dsw-alias-label-tertiary, #8a93a0);
+}
+
+.selectWrap {
+  position: relative;
+}
+
+.selectButton {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px;
+  width: 100%;
+  border-radius: 6px;
+  border: 1px solid var(--dsw-alias-border, #e2e4e9);
+  background: transparent;
+  color: var(--dsw-alias-label-primary, #0f1115);
+  padding: 4px 6px;
+  font-size: 10px;
+  outline: none;
+  cursor: pointer;
+}
+
+.selectButton:hover {
+  border-color: var(--dsw-alias-label-tertiary, #8a93a0);
+}
+
+.selectButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.selectCurrent {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.selectChevron {
+  width: 12px;
+  height: 12px;
+  flex-shrink: 0;
+  opacity: 0.6;
+}
+
+.selectPop {
+  position: absolute;
+  z-index: 50;
+  margin-top: 2px;
+  max-height: 192px;
+  width: 100%;
+  min-width: 8rem;
+  overflow-y: auto;
+  border-radius: 6px;
+  border: 1px solid var(--dsw-alias-border, #e2e4e9);
+  background: var(--dsw-alias-bg-module-platform, #f5f6f7);
+  box-shadow: 0 8px 24px rgb(0 0 0 / 0.25);
+}
+
+.selectOption {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  padding: 2px 6px;
+  text-align: left;
+  font-size: 9px;
+  font-weight: 500;
+  background: transparent;
+  border: none;
+  color: var(--dsw-alias-label-primary, #0f1115);
+  cursor: pointer;
+}
+
+.selectOptionActive {
+  background: color-mix(in srgb, var(--dsw-alias-accent, #3b82f6) 15%, transparent);
+  color: var(--dsw-alias-accent, #3b82f6);
+}
+
+.selectOptionHover {
+  background: color-mix(in srgb, var(--dsw-alias-label-primary, #0f1115) 8%, transparent);
+}
+
+.knobLabel {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 9px;
+  color: var(--dsw-alias-label-tertiary, #8a93a0);
+}
+
+.numberInput {
+  border-radius: 6px;
+  border: 1px solid var(--dsw-alias-border, #e2e4e9);
+  background: transparent;
+  color: var(--dsw-alias-label-primary, #0f1115);
+  padding: 4px 6px;
+  font-size: 10px;
+  width: 100%;
+  outline: none;
+}
+
+.numberInput:focus {
+  border-color: var(--dsw-alias-accent, #3b82f6);
+}
+
+.numberInput:disabled {
+  opacity: 0.5;
+}
+
+.checkbox {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+  cursor: pointer;
+  accent-color: var(--dsw-alias-accent, #3b82f6);
+  outline: none;
+}
+
+.checkbox:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}

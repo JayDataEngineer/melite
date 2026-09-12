@@ -1,4 +1,4 @@
-import { create } from 'zustand'
+import { create } from "./createStore"
 import type { TimelineSegment, AudioCue, AudioTrackDef, TimelineViewport, PlaybackState, DragState, InOutPoints, ChapterMarker, VideoVariant, ConsistencyAnchor, SegmentStatus } from "@melite/contracts"
 import { TRACK_COLORS, DEFAULT_SEGMENT_PARAMS, normalizeSegmentStatus } from "@melite/contracts"
 import { getCachedCatalog } from "@melite/catalog"

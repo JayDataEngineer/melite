@@ -11,12 +11,11 @@
     "./package.json": "./package.json"
   },
   "dependencies": {
+    "@deepseek-ai/dsh-client-ui-primitives": "0.1.5-rc.2",
     "@melite/catalog": "workspace:*",
     "@melite/contracts": "workspace:*",
-    "@melite/ui": "workspace:*",
-    "lucide-react": "*",
+    "clsx": "*",
     "react": "^19.2.6",
-    "react-dom": "^19.2.6",
-    "zustand": "*"
+    "react-dom": "^19.2.6"
   }
 }

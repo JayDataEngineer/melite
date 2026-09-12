@@ -1,0 +1,11 @@
+/* Shared icon spin (the Loader2 contract: the circular-arrow glyph
+   always spins — callers size/tint it, never animate it). */
+@keyframes uiIconSpin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.spin {
+  animation: uiIconSpin 1s linear infinite;
+}

@@ -15,7 +15,8 @@
 import { useEffect, useMemo, useRef, useState } from "react"
 import { Canvas } from "@react-three/fiber"
 import { OrbitControls, Grid, ContactShadows } from "@react-three/drei"
-import { Skeleton } from "@melite/ui/skeleton"
+import { Skeleton } from "../../../../skeleton"
+import styles from "./MeshPreviewCanvas.module.css"
 import * as THREE from "three"
 import {
  fetchBindMesh, buildGeometry, type SkinMeshData, type PreviewPose,
@@ -202,9 +203,9 @@ export function MeshPreviewCanvas({
  }, [onCanvasReady, meshData])
 
  return (
- <div ref={ref} className={className ?? "w-full h-full"} style={{ minHeight: 200 }}>
+ <div ref={ref} className={className ? `${styles.root} ${className}` : `${styles.root} ${styles.rootDefault}`}>
  {error && (
- <div className="flex items-center justify-center h-full text-xs text-red-400/80 p-4 text-center">
+ <div className={styles.errorBox}>
  {error}
  </div>
  )}
@@ -213,11 +214,11 @@ export function MeshPreviewCanvas({
  role="status"
  aria-busy="true"
  aria-label="Loading mesh"
- className="flex flex-col items-center justify-center h-full gap-3"
+ className={styles.loadingBox}
  >
  {/* Skeleton stands in for the mesh viewport while the GLB parses —
      a quiet block instead of a spinning dot. */}
- <Skeleton className="h-24 w-32 rounded-lg" />
+ <Skeleton className={styles.loadingSkeleton} />
  </div>
  )}
  {meshData && (
@@ -238,7 +239,7 @@ export function MeshPreviewCanvas({
  gl.setClearColor(new THREE.Color("#0e0e1a"))
  onCanvasReady?.(gl.domElement)
  }}
- className="bg-transparent"
+ className={styles.canvasClear}
  >
  <PreviewScene meshData={meshData} />
  </Canvas>

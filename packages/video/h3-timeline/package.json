@@ -5,16 +5,17 @@
   "main": "./src/index.ts",
   "exports": {
     ".": "./src/index.ts",
+    "./client": "./lib/client.js",
     "./card": "./src/card.ts",
     "./package.json": "./package.json",
     "./tool": "./src/tool.ts",
     "./ui/*": "./src/ui/*",
     "./ui/studio/component": "./src/ui/studio/component.tsx"
   },
-  "scripts": {
-  },
+  "scripts": {},
   "dependencies": {
     "@deepseek-ai/cordis": "^4.0.2",
+    "@deepseek-ai/dsh-client-ui-primitives": "0.1.5-rc.2",
     "@deepseek-ai/dsh-tools": "0.1.5-rc.2",
     "@deepseek-ai/schemastery": "*",
     "@melite-plugin/timeline": "workspace:*",
@@ -23,13 +24,19 @@
     "@melite/comfyui-cordis": "workspace:*",
     "@melite/contracts": "workspace:*",
     "@melite/estate-call": "workspace:*",
-    "@melite/ui": "workspace:*",
-    "lucide-react": "*",
+    "clsx": "*",
     "react": "^19.2.6"
   },
   "devDependencies": {
-    "@types/node": "*"
+    "@types/node": "*",
+    "@testing-library/react": "*",
+    "@testing-library/jest-dom": "*"
   },
   "name": "@melite/video-h3-timeline",
-  "description": "the h3-timeline card (the video lane) \u2014 one card one package: card.ts host face + ui/ studio + agents/ context"
+  "description": "the h3-timeline card (the video lane) \u2014 one card one package: card.ts host face + ui/ studio + agents/ context",
+  "dsh": {
+    "client": {
+      "platform": "web"
+    }
+  }
 }

@@ -1,9 +1,9 @@
 // ClassChip — one detect-class chip. Pure move from component.tsx
 // (props shape unchanged).
-import { ScanFace } from "lucide-react"
-import { Button } from "@melite/ui/button"
-import { Tip } from "@melite/ui/tip"
-import { cn } from "@melite/ui"
+import { Button, Tooltip } from "@deepseek-ai/dsh-client-ui-primitives"
+import { clsx } from "clsx"
+import { ScanFace } from "./icons"
+import styles from "./mask.module.css"
 import type { DetectClass } from "./constants"
 
 /** One class chip. States mirror the RUN-time truth (runDetect's OR rule):
@@ -20,29 +20,29 @@ export function ClassChip({
   onTap: () => void
 }) {
   return (
-  <Tip tip={
+  <Tooltip label={
   state === "primary"
   ? `${label} owns the Combined mask — press again to set its params`
   : state === "extra"
   ? `${label} rides along — press to set its params`
   : `Press to set the ${label} params — ADD commits the card`
-  }>
+  } side="top">
   <Button variant="ghost"
   type="button" data-detect-mode={cls} data-class-state={state}
   onClick={onTap}
-  className={cn(
-  "flex flex-1 flex-col items-center gap-0.5 rounded border px-1 py-1 text-[10px] capitalize transition-colors",
-  state === "primary" && "border-brand bg-brand/20 text-brand",
-  state === "extra" && "border-brand/40 bg-brand/5 text-brand/90",
-  state === "off" && "border-border/40 text-muted-foreground hover:bg-sidebar/50",
+  className={clsx(
+  styles.classChip,
+  state === "primary" && styles.classPrimary,
+  state === "extra" && styles.classExtra,
+  state === "off" && styles.classOff,
   )}
   >
-  <span className="flex items-center gap-1">
-  {state === "primary" && <span className="h-1 w-1 rounded-full bg-brand" />}
-  <Icon className="h-3.5 w-3.5" />
+  <span className={styles.chipTop}>
+  {state === "primary" && <span className={styles.chipDot} />}
+  <Icon className={styles.sz14} />
   </span>
   {label}
   </Button>
-  </Tip>
+  </Tooltip>
   )
 }

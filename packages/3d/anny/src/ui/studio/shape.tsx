@@ -27,9 +27,12 @@
  * sequenced, not forgotten).
  */
 import { useEffect, useRef, useState } from "react"
-import { Button } from "@melite/ui/button"
-import { RailSection, ViewportAnchor } from "@melite/ui"
-import { Loader2, PersonStanding } from "lucide-react"
+import { Button } from "@deepseek-ai/dsh-client-ui-primitives"
+import { RailSection } from "./shell"
+import { ViewportAnchor } from "./viewport"
+import styles from "./shape.module.css"
+import { Loader2, PersonStanding } from "./icons"
+import { cx } from "./cx"
 import { pollFlowRun, collectStageUrls, ensureDraftId } from "@melite/catalog"
 import { BodyShapePanel } from "@melite/cards/3d/body/ui/studio/BodyShapePanel"
 import { MeshPreviewCanvas } from "@melite/cards/3d/body/ui/studio/MeshPreviewCanvas"
@@ -375,14 +378,14 @@ export function AnnyCharacterViewport({ stage, onSave, replacesEstimate }: {
 }) {
   const { editing, phase, note, busy, apply } = useAnnyShapeApply(stage, onSave)
   return (
-    <div className="relative h-full w-full">
+    <div className={styles.viewRoot}>
       {/* live native sculpt — the /poser shaped bind mesh (18k verts,
           smooth normals — NOT the 13.7k export GLB), fills the panel */}
-      <MeshPreviewCanvas character={editing} className="h-full w-full" />
+      <MeshPreviewCanvas character={editing} className={styles.fillBoth} />
       {/* The apply verb FLOATS (top-right anchor; the 2.5 offset
         rides className) — a verb, not an overlay row: it writes
         card state, which is the overlays seam's line. */}
-      <ViewportAnchor dock="top-right" className="right-2.5 top-2.5">
+      <ViewportAnchor dock="top-right" className={styles.applyOffset}>
       <Button
         type="button"
         onClick={() => void apply()}
@@ -390,9 +393,9 @@ export function AnnyCharacterViewport({ stage, onSave, replacesEstimate }: {
         title={replacesEstimate
           ? "Bakes a NEW body from the lever recipe alone — the estimated photo body is replaced, not tweaked"
           : "Bake the lever recipe into the Body slot"}
-        className="inline-flex items-center gap-1.5 rounded-md bg-primary/90 px-2.5 py-1 text-[11px] font-medium text-primary-foreground shadow-lg hover:bg-primary disabled:opacity-50"
+        className={styles.applyBtn}
       >
-        {busy ? <Loader2 className="h-3 w-3 animate-spin" /> : <PersonStanding className="h-3 w-3" />}
+        {busy ? <Loader2 className={cx(styles.i12, styles.spin)} /> : <PersonStanding className={styles.i12} />}
         {busy ? "Baking…" : replacesEstimate ? "Replace estimated body" : "Apply to Body"}
       </Button>
       </ViewportAnchor>
@@ -402,11 +405,7 @@ export function AnnyCharacterViewport({ stage, onSave, replacesEstimate }: {
         <p
           role={phase === "error" ? "alert" : "note"}
           title={note}
-          className={`line-clamp-3 rounded border px-2 py-1 text-[10px] leading-relaxed ${
-            phase === "error"
-              ? "border-red-500/40 bg-red-500/10 text-red-300"
-              : "border-sky-500/30 bg-sky-500/10 text-sky-200/80"
-          }`}
+          className={phase === "error" ? cx(styles.notice, styles.noticeError) : cx(styles.notice, styles.noticeInfo)}
         >
           {note}
         </p>
@@ -436,7 +435,7 @@ export function AnnyShapeBand({ onExpand }: {
           onClick={onExpand}
           aria-label="Expand Shape sliders into the viewport drawer"
           title="Bigger slider surface over the figure"
-          className="rounded-md border border-muted-foreground/20 px-1.5 py-0.5 text-[10px] text-muted-foreground/70 hover:text-foreground"
+          className={styles.miniBtn}
         >
           Expand
         </Button>
@@ -458,22 +457,22 @@ export function AnnyShapeDrawer({ onCollapse }: { onCollapse: () => void }) {
   return (
     <aside
       aria-label="Shape — drawer"
-      className="flex h-full w-80 flex-col border-l border-sidebar-border/60 bg-[#12121f]/95 backdrop-blur-sm"
+      className={styles.drawer}
     >
-      <div className="flex shrink-0 items-center justify-between border-b border-sidebar-border/40 px-3 py-2">
-        <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground/70">
+      <div className={styles.drawerHead}>
+        <p className={styles.drawerTitle}>
           Shape — the character
         </p>
         <Button
           type="button"
           onClick={onCollapse}
           aria-label="Collapse Shape back into the rail"
-          className="rounded-md border border-muted-foreground/20 px-1.5 py-0.5 text-[10px] text-muted-foreground/70 hover:text-foreground"
+          className={styles.miniBtn}
         >
           Collapse
         </Button>
       </div>
-      <div className="min-h-0 flex-1 overflow-y-auto px-3 py-2">
+      <div className={styles.drawerBody}>
         <BodyShapePanel />
       </div>
     </aside>

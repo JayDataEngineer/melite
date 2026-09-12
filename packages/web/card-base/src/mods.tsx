@@ -27,9 +27,6 @@
  *        the fields NEVER render flat on the card form.
  */
 import { createElement as h, useState } from 'react'
-import { DndContext, PointerSensor, closestCenter, useSensor, useSensors, type DragEndEvent } from '@dnd-kit/core'
-import { SortableContext, horizontalListSortingStrategy, useSortable } from '@dnd-kit/sortable'
-import { CSS } from '@dnd-kit/utilities'
 import { Button, Input, Menu, Modal } from '@deepseek-ai/dsh-client-ui-primitives'
 import css from './card.module.css'
 import { SpecAtom } from './form.tsx'
@@ -47,7 +44,10 @@ export interface ModifiersSectionProps {
 
 export function ModifiersSection(props: ModifiersSectionProps): ReturnType<typeof h> | null {
   const { kinds, values, onEdit, onPatch } = props
-  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 4 } }))
+  // NATIVE REORDER STATE (the dnd-kit purge): the dragging tile id +
+  // the hovered tile id, keyed `${param_key}-${index}` like before.
+  const [dragTile, setDragTile] = useState<string | null>(null)
+  const [overTile, setOverTile] = useState<string | null>(null)
   // THE KIND PICKER (DSH Menu — portal: true escapes the zoom card's
   // clipping).
   const [pickAt, setPickAt] = useState<{ rect: DOMRect } | null>(null)
@@ -151,13 +151,13 @@ export function ModifiersSection(props: ModifiersSectionProps): ReturnType<typeo
     setLeaf(null)
   }
   // apply order = array order: the drop rewrites the bag; the
-  // composed graph follows (the old rule-2 parity).
-  const onDragEnd = (k: ModifierKind, event: DragEndEvent): void => {
-    const { active, over } = event
-    if (over === null || active.id === over.id) return
+  // composed graph follows (the old rule-2 parity). Same splice verb,
+  // native drag ids (the dnd-kit purge).
+  const onTileDrop = (k: ModifierKind, active: string, over: string): void => {
+    if (over === active) return
     const entries = entriesOf(k)
-    const from = entries.findIndex((_, i) => String(k.param_key + '-' + i) === String(active.id))
-    const to = entries.findIndex((_, i) => String(k.param_key + '-' + i) === String(over.id))
+    const from = entries.findIndex((_, i) => k.param_key + '-' + i === active)
+    const to = entries.findIndex((_, i) => k.param_key + '-' + i === over)
     if (from < 0 || to < 0) return
     const next = [...entries]
     const [moved] = next.splice(from, 1)
@@ -180,31 +180,27 @@ export function ModifiersSection(props: ModifiersSectionProps): ReturnType<typeo
       kinds.map((k) => {
         const entries = entriesOf(k)
         if (entries.length === 0) return null
-        return h(DndContext, {
-          key: k.kind,
-          sensors,
-          collisionDetection: closestCenter,
-          onDragEnd: (event: DragEndEvent) => { onDragEnd(k, event) },
-        },
-          h(SortableContext, {
-            items: entries.map((_, i) => k.param_key + '-' + i),
-            strategy: horizontalListSortingStrategy,
-            children: entries.map((entry, i) => {
+        return entries.map((entry, i) => {
               const id = typeof entry['id'] === 'string' ? entry['id'] as string : ''
               const option = optionOf(k, id)
               const strength = typeof entry['strength'] === 'number'
                 ? entry['strength'] as number
                 : option !== null && option.defaults !== undefined ? option.defaults.strength : undefined
-              return h(ModTile, {
-                key: k.param_key + '-' + i,
-                tileId: k.param_key + '-' + i,
-                label: option !== null ? option.label : (id !== '' ? id : (isOptionKind(k) ? k.label + ' ' + String(i + 1) : k.label)),
-                ...(strength !== undefined ? { strength } : {}),
-                onOpen: () => { openEdit(k, i) },
-              })
-            }),
-          }),
-        )
+          return h(ModTile, {
+            key: k.param_key + '-' + i,
+            tileId: k.param_key + '-' + i,
+            label: option !== null ? option.label : (id !== '' ? id : (isOptionKind(k) ? k.label + ' ' + String(i + 1) : k.label)),
+            ...(strength !== undefined ? { strength } : {}),
+            onOpen: () => { openEdit(k, i) },
+            dragging: dragTile === k.param_key + '-' + i,
+            dragOver: overTile === k.param_key + '-' + i && dragTile !== null && dragTile !== overTile,
+            onReorderStart: (id: string | null) => { setDragTile(id); if (id === null) setOverTile(null) },
+            onReorderOver: setOverTile,
+            onReorderDrop: (active: string, over: string) => {
+              setDragTile(null); setOverTile(null); onTileDrop(k, active, over)
+            },
+          })
+        })
       }),
       addable.length > 0
         ? h('button', {
@@ -327,20 +323,48 @@ function ModLeaf(props: {
 
 /** One mod tile (the original, verbatim: useSortable + click to
  *  edit + strength to 2 decimals). */
+/** The reorder drag's MIME (native HTML5 sortable). */
+const MOD_DRAG_MIME = 'application/x-melite-mod'
+
 function ModTile(props: {
   tileId: string
   label: string
   strength?: number
   onOpen: () => void
+  dragging: boolean
+  dragOver: boolean
+  onReorderStart: (id: string | null) => void
+  onReorderOver: (id: string) => void
+  onReorderDrop: (active: string, over: string) => void
 }): ReturnType<typeof h> {
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: props.tileId })
   return h('li', {
-    ref: setNodeRef,
-    className: css.modTile + (isDragging ? ' ' + css.tileDragging : ''),
-    style: { transform: CSS.Translate.toString(transform), ...(transition !== null ? { transition } : {}) },
+    className: css.modTile
+      + (props.dragging ? ' ' + css.tileDragging : '')
+      + (props.dragOver ? ' ' + css.modTileOver : ''),
+    draggable: true,
     'data-mod-tile': props.tileId,
     title: 'Drag to reorder · click to edit',
-    ...attributes, ...listeners,
+    onDragStart: (e: React.DragEvent) => {
+      e.dataTransfer.setData(MOD_DRAG_MIME, props.tileId)
+      e.dataTransfer.effectAllowed = 'move'
+      props.onReorderStart(props.tileId)
+    },
+    onDragEnd: () => { props.onReorderStart(null) },
+    onDragOver: (e: React.DragEvent) => {
+      if (e.dataTransfer.types.includes(MOD_DRAG_MIME)) {
+        e.preventDefault()
+        e.dataTransfer.dropEffect = 'move'
+        props.onReorderOver(props.tileId)
+      }
+    },
+    onDrop: (e: React.DragEvent) => {
+      if (e.dataTransfer.types.includes(MOD_DRAG_MIME)) {
+        e.preventDefault()
+        e.stopPropagation()
+        const active = e.dataTransfer.getData(MOD_DRAG_MIME)
+        if (active !== '' && active !== props.tileId) props.onReorderDrop(active, props.tileId)
+      }
+    },
     onClick: props.onOpen,
   },
     h('span', { className: css.modTileLabel }, props.label),

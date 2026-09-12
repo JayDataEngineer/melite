@@ -15,6 +15,7 @@
   },
   "dependencies": {
     "@deepseek-ai/cordis": "^4.0.2",
+    "@deepseek-ai/dsh-client-ui-primitives": "0.1.5-rc.2",
     "@deepseek-ai/schemastery": "*",
     "@melite-plugin/3d": "workspace:*",
     "@melite/cards": "workspace:*",
@@ -24,8 +25,7 @@
     "@melite/contracts": "workspace:*",
     "@melite/estate-call": "workspace:*",
     "@melite/formats": "workspace:*",
-    "@melite/ui": "workspace:*",
-    "lucide-react": "*",
+    "@melite/slots": "workspace:*",
     "react": "^19.2.6"
   },
   "devDependencies": {

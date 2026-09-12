@@ -48,13 +48,14 @@
  */
 import { useEffect, useLayoutEffect, useRef, useState } from "react"
 import type { CSSProperties } from "react"
-import { Film, Image, ListMusic, Music, X, ZoomIn, ZoomOut } from "lucide-react"
-import { ASSET_DRAG_MIME, cn } from "@melite/ui"
+import { Film, Image, ListMusic, Music, X, ZoomIn, ZoomOut } from "./icons"
+import { clsx as cn } from "clsx"
+import { ASSET_DRAG_MIME } from "./dragMime"
 import { MOTION_TIMELINE_TRACKS } from "./viser-timeline/motionTimelineState"
 import { PROMPT_COLORS } from "./viser-timeline/styles"
-import { Button } from "@melite/ui/button"
-import { Input } from "@melite/ui/input"
-import { Tip } from "@melite/ui/tip"
+import { Button, Input } from "@deepseek-ai/dsh-client-ui-primitives"
+import { Tip } from "./tip"
+import css from "./timeline.module.css"
 import type { TimelineKeyframe, TimelinePrompt, TimelineTrack } from "./viser-timeline/types"
 
 /** One Layer C prompt segment (video timeline) rendered in its OWN row
@@ -813,12 +814,12 @@ export function MotionTimelineBar({
   return (
     <div
       data-testid="motion-timeline-bar"
-      className={cn("flex select-none", className)}
+      className={cn(css.root, className)}
       style={{ background: barBg, ...style }}
     >
       {/* ── Label gutter (pinned — never scrolls) ────────────────────────── */}
       <div
-        className="flex shrink-0 flex-col border-r border-white/[0.06]"
+        className={css.gutter}
         style={{ width: GUTTER_W }}
       >
         {/* Header row = the ZOOM CLUSTER (was a lone "Time" label). 2026-08-14
@@ -826,77 +827,77 @@ export function MotionTimelineBar({
             covered the max-time label ("I can't see the max"). The gutter is
             pinned and always 112×28 — a natural home, NLE-style. */}
         <div
-          className="flex items-center justify-center gap-0.5 border-b border-white/[0.05]"
+          className={css.zoomRow}
           style={{ height: RULER_H }}
         >
           <Tip tip="Zoom out (back toward fit)">
-          <Button variant="ghost"
+          <Button variant="ghost" size="sm"
             onClick={() => zoom(1 / ZOOM_STEP)}
             aria-label="Zoom out"
-            className="flex h-5 w-5 items-center justify-center rounded text-foreground/70 transition-colors hover:bg-sidebar-accent hover:text-brand"
+            className={css.zoomBtn}
           >
-            <ZoomOut className="h-3.5 w-3.5" />
+            <ZoomOut />
           </Button>
           </Tip>
           <Tip tip="Fit the whole motion in view">
-          <Button variant="ghost"
+          <Button variant="ghost" size="sm"
             onClick={() => {
               anchorRef.current = { frame: frameIdx, off: frameToPx(frameIdx) - (scrollRef.current?.scrollLeft ?? 0) }
               setPpf(Math.max(1, fitPpf))
               setBasePpf(Math.max(1, fitPpf))
             }}
-            className="min-w-8 px-0.5 text-center font-mono text-[10px] tabular-nums text-foreground/60 transition-colors hover:text-brand"
+            className={css.zoomPct}
           >
             {Math.round((effPpf / (basePpf ?? fitPpf)) * 100)}%
           </Button>
           </Tip>
           <Tip tip="Zoom in — more pixels per frame (the bar scrolls horizontally)">
-          <Button variant="ghost"
+          <Button variant="ghost" size="sm"
             onClick={() => zoom(ZOOM_STEP)}
             aria-label="Zoom in"
-            className="flex h-5 w-5 items-center justify-center rounded text-foreground/70 transition-colors hover:bg-sidebar-accent hover:text-brand"
+            className={css.zoomBtn}
           >
-            <ZoomIn className="h-3.5 w-3.5" />
+            <ZoomIn />
           </Button>
           </Tip>
         </div>
         <div
-          className="flex items-center gap-1.5 border-b border-white/[0.04] bg-white/[0.02] px-2"
+          className={css.laneHead}
           style={{ height: promptsHeight }}
         >
-          <Film className="h-3.5 w-3.5 shrink-0 text-brand" aria-hidden />
-          <span className="truncate text-[10px] font-medium text-foreground/50">{promptsLabel}</span>
+          <Film aria-hidden />
+          <span className={css.gutterLabel}>{promptsLabel}</span>
         </div>
         {beats && (
           <div
-            className="flex items-center gap-1.5 border-b border-white/[0.04] bg-white/[0.01] px-2"
+            className={css.laneHeadBeats}
             style={{ height: beatsHeight }}
           >
-            <ListMusic className="h-3.5 w-3.5 shrink-0 text-cyan-300/80" aria-hidden />
-            <span className="truncate text-[10px] font-medium text-foreground/50">{beatsLabel}</span>
+            <ListMusic aria-hidden />
+            <span className={css.gutterLabel}>{beatsLabel}</span>
           </div>
         )}
         {audioLayers?.map((L) => (
           <div
             key={L.id}
-            className="flex items-center gap-1.5 border-b border-white/[0.03] px-2"
+            className={css.audioHead}
             style={{ height: AUDIO_H }}
             title={L.stem
               ? `${L.stem} — one bed under every cut; each window hears its own slice in time`
               : "drop an audio / music track — sliced to each window in time"}
           >
-            <Music className="h-3 w-3 shrink-0 text-violet-300/80" aria-hidden />
-            <span className="truncate text-[10px] font-medium text-foreground/40">{L.label}</span>
+            <Music aria-hidden />
+            <span className={css.gutterLabelDim}>{L.label}</span>
             {/* (2026-09-02) detach shows for CLIPS too — the NLE Music
                 row's clips are the primary content now; a clips-only
                 layer had no way to clear the whole row at once. */}
             {(L.stem || (L.clips?.length ?? 0) > 0) && onAudioDetach && (
-              <Button variant="ghost"
+              <Button variant="ghost" size="sm"
                 onClick={() => onAudioDetach(L.id)}
                 aria-label={`Detach ${L.label}`}
-                className="ml-auto flex h-4 w-4 shrink-0 items-center justify-center rounded text-muted-foreground/50 transition-colors hover:bg-destructive/80 hover:text-white"
+                className={css.detachBtn}
               >
-                <X className="h-2.5 w-2.5" aria-hidden />
+                <X aria-hidden />
               </Button>
             )}
           </div>
@@ -904,25 +905,25 @@ export function MotionTimelineBar({
         {tracks.map((t) => (
           <div
             key={t.uuid}
-            className="flex items-center gap-1.5 border-b border-white/[0.03] px-2 last:border-b-0"
+            className={css.laneRow}
             style={{ height: LANE_H }}
           >
             <span
-              className="h-1.5 w-1.5 shrink-0 rounded-full"
+              className={css.laneDot}
               style={{ background: rgb(t.color ?? [176, 180, 186]) }}
               aria-hidden
             />
-            <span className="truncate text-[10px] text-foreground/40">{t.name}</span>
+            <span className={css.laneName}>{t.name}</span>
           </div>
         ))}
       </div>
 
       {/* ── Scrollable content (ruler + prompts + lanes + playhead) ──────── */}
-      <div className="relative min-w-0 flex-1">
-        <div ref={scrollRef} data-testid="motion-timeline-scroll" className="scrollbar-thin h-full overflow-x-auto overflow-y-hidden">
+      <div className={css.contentWrap}>
+        <div ref={scrollRef} data-testid="motion-timeline-scroll" className={css.scroller}>
           <div
             data-testid="motion-timeline-content"
-            className="relative"
+            className={css.content}
             style={{ width: contentW, minWidth: "100%" }}
             onClick={(e) => {
               // Click-away deselect (the sidebar shifts back to global
@@ -955,7 +956,7 @@ export function MotionTimelineBar({
             >
               <div
                 data-testid="motion-timeline-ruler"
-                className="relative cursor-ew-resize border-b border-white/[0.05] touch-none"
+                className={css.ruler}
                 style={{ height: RULER_H }}
                 onPointerDown={seek}
                 onDoubleClick={(e) => {
@@ -967,9 +968,9 @@ export function MotionTimelineBar({
                 }}
               >
               {ticks.map((s) => (
-                <div key={s} className="absolute top-0 bottom-0" style={{ left: frameToPx(s * fps) }}>
-                  <div className="h-full w-px bg-white/[0.1]" />
-                  <span className="absolute left-1 top-0.5 font-mono text-[10px] leading-none text-foreground/45">
+                <div key={s} className={css.tick} style={{ left: frameToPx(s * fps) }}>
+                  <div className={css.tickLine} />
+                  <span className={css.tickLabel}>
                     {stepSec < 1 ? `${s.toFixed(1)}s` : `${s}s`}
                   </span>
                 </div>
@@ -982,7 +983,7 @@ export function MotionTimelineBar({
                   surface: clicking or dragging it scrubs. */}
               <span
                 data-testid="motion-timeline-timecode"
-                className="sticky left-0 z-10 flex h-full items-center pl-1.5 pr-2 font-mono text-[10px] leading-none tabular-nums text-brand"
+                className={css.timecode}
                 style={{ background: barBg, boxShadow: "2px 0 6px -2px rgba(0,0,0,0.8)" }}
               >
                 {fmtTimecode(frameIdx, fps)}
@@ -992,7 +993,7 @@ export function MotionTimelineBar({
 
             {/* Prompts — draggable/resizeable clips (the pose-studio affordance). */}
             <div
-              className={`relative border-b border-white/[0.04] ${onPromptAdd ? "cursor-copy" : ""}`}
+              className={cn(css.promptsLane, onPromptAdd && css.canAdd)}
               style={{ height: promptsHeight, background: "rgba(255,255,255,0.02)" }}
               onDoubleClick={(e) => {
                 // The additive gesture on the surfaces no clip owns (gaps,
@@ -1008,8 +1009,8 @@ export function MotionTimelineBar({
               }}
             >
               {prompts.length === 0 && (
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <span className="text-[10px] text-foreground/25">
+                <div className={css.emptyCenter}>
+                  <span className={css.emptyHint}>
                     {emptyPromptsHint}
                   </span>
                 </div>
@@ -1030,13 +1031,7 @@ export function MotionTimelineBar({
                   <Tip key={p.uuid} tip={clipTip}>
                   <div
                     data-prompt-clip={p.uuid}
-                    className={`group absolute bottom-1 top-1 touch-none overflow-hidden rounded-lg ${
-                      isMoving
-                        ? "z-30 cursor-grabbing border border-brand shadow-xl ring-2 ring-brand/70"
-                        : isSelected
-                          ? "z-30 cursor-grab border-brand ring-2 ring-brand/60"
-                          : "cursor-grab border border-white/10 hover:border-white/30"
-                    }`}
+                    className={cn(css.promptClip, isMoving ? css.clipMoving : isSelected ? css.clipSelected : undefined)}
                     style={{
                       left: frameToPx(p.start_frame),
                       width: `max(26px, ${wPx}px)`,
@@ -1080,11 +1075,7 @@ export function MotionTimelineBar({
                     <div
                       data-prompt-edge="l"
                       title={isFirst ? "First call — nothing before it to trim into" : undefined}
-                      className={`absolute bottom-0 left-0 top-0 z-30 flex w-3 touch-none items-center justify-center transition-colors ${
-                        isFirst
-                          ? "cursor-default opacity-35"
-                          : "cursor-ew-resize hover:bg-white/20"
-                      }`}
+                      className={cn(css.edgeL, isFirst && css.edgeDead)}
                       onPointerDown={(e) =>
                         !isFirst &&
                         startDrag(e, {
@@ -1097,7 +1088,7 @@ export function MotionTimelineBar({
                         })
                       }
                     >
-                      <div className="h-5 w-[3px] rounded-full bg-white/25 transition-colors group-hover:bg-white/60" />
+                      <div className={css.gripPill} />
                     </div>
                     {/* Seam indicator (F9 — motion-context visibility):
                         a small glyph at the clip's LEFT edge (the join
@@ -1107,7 +1098,7 @@ export function MotionTimelineBar({
                         Cut = no extra glyph — the default, unmarked. */}
                     {p.seam === "extend" && !isFirst && (
                       <div
-                        className="absolute left-0 top-0 z-35 h-2 w-2 -translate-x-1/2 -translate-y-1/2 rounded-full"
+                        className={css.seamDot}
                         style={{ background: playhead, boxShadow: `0 0 4px ${playhead}` }}
                         title="extend — latent tail carries across this seam"
                       />
@@ -1125,9 +1116,7 @@ export function MotionTimelineBar({
                     >
                     <div
                       data-prompt-edge="r"
-                      className={`absolute bottom-0 right-0 top-4 z-30 flex touch-none cursor-ew-resize items-center justify-center transition-colors hover:bg-white/20 ${
-                        isLast ? "w-4" : "w-3"
-                      }`}
+                      className={cn(css.edgeR, isLast && css.edgeWide)}
                       onPointerDown={(e) =>
                         startDrag(e, {
                           kind: "prompt-r",
@@ -1140,11 +1129,7 @@ export function MotionTimelineBar({
                       }
                     >
                       <div
-                        className={`h-5 w-[3px] rounded-full transition-colors ${
-                          isLast
-                            ? "bg-white/45 group-hover:bg-white/80"
-                            : "bg-white/25 group-hover:bg-white/60"
-                        }`}
+                        className={cn(css.gripPillR, isLast && css.gripPillBright)}
                       />
                     </div>
                     </Tip>
@@ -1163,40 +1148,40 @@ export function MotionTimelineBar({
                         onPointerDown={(e) => e.stopPropagation()}
                         onDoubleClick={(e) => e.stopPropagation()}
                         placeholder="Enter prompt…"
-                        className="pointer-events-auto absolute inset-x-2 top-1/2 h-6 -translate-y-1/2 rounded border-none bg-black/60 px-1.5 text-[11px] text-foreground outline-none ring-1 ring-brand/50"
+                        className={css.clipEditor}
                       />
                     ) : previewUrl ? (
                       // The window render INSIDE the clip (video timeline):
                       // first frame at rest, plays on hover, gradient scrim
                       // keeps the text legible over the frame.
-                      <div className="pointer-events-none absolute inset-0 z-10 overflow-hidden">
+                      <div className={css.previewWrap}>
                         <video
                           src={previewUrl}
                           muted
                           loop
                           playsInline
                           preload="metadata"
-                          className="absolute inset-0 h-full w-full object-cover opacity-60"
+                          className={css.previewVideo}
                         />
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/45 to-black/10" />
-                        <div className="absolute inset-x-0 bottom-0 z-20 flex flex-col gap-0.5 px-3 pb-1.5">
-                          <span className="truncate text-[11px] font-medium" style={{ color }}>
-                            {p.text || <span className="italic text-foreground/30">(empty)</span>}
+                        <div className={css.scrim} />
+                        <div className={css.clipTextCol}>
+                          <span className={css.clipTitle} style={{ color }}>
+                            {p.text || <span className={css.clipEmpty}>(empty)</span>}
                           </span>
                           {wPx > 72 && (
-                            <span className="text-[10px] tabular-nums text-foreground/40">
+                            <span className={css.clipDur}>
                               {((p.end_frame - p.start_frame) / Math.max(1, fps)).toFixed(1)}s
                             </span>
                           )}
                         </div>
                       </div>
                     ) : (
-                      <div className="pointer-events-none absolute inset-0 z-10 flex flex-col justify-center gap-0.5 px-3">
-                        <span className="truncate text-[11px] font-medium" style={{ color }}>
-                          {p.text || <span className="italic text-foreground/30">(empty)</span>}
+                      <div className={css.clipTextStack}>
+                        <span className={css.clipTitle} style={{ color }}>
+                          {p.text || <span className={css.clipEmpty}>(empty)</span>}
                         </span>
                         {wPx > 64 && (
-                          <span className="text-[10px] tabular-nums text-foreground/40">
+                          <span className={css.clipDur}>
                             {((p.end_frame - p.start_frame) / Math.max(1, fps)).toFixed(1)}s
                           </span>
                         )}
@@ -1209,7 +1194,7 @@ export function MotionTimelineBar({
                     {p.override && !isEditing && (
                       <span
                         title="This call overrides run knobs (per-call)"
-                        className="pointer-events-none absolute right-1.5 top-1 z-20 h-1.5 w-1.5 rounded-full bg-cyan-300 shadow-[0_0_6px_rgba(34,211,238,0.8)]"
+                        className={css.knobDot}
                       />
                     )}
 
@@ -1220,7 +1205,7 @@ export function MotionTimelineBar({
                     {p.audio && !isEditing && (
                       <Music
                         aria-hidden
-                        className="pointer-events-none absolute right-1 top-3 z-20 h-2.5 w-2.5 text-violet-300/90"
+                        className={css.refAudioBadge}
                       />
                     )}
 
@@ -1232,14 +1217,11 @@ export function MotionTimelineBar({
                     {(p.refImages ?? 0) > 0 && !isEditing && (
                       <span
                         data-testid="tl-ref-badge"
-                        className="pointer-events-none absolute right-0.5 top-5.5 z-20 flex items-center gap-px"
+                        className={css.refBadge}
                         title={`${p.refImages} reference image${p.refImages === 1 ? "" : "s"} (guide + extras)`}
                       >
-                        <Image
-                          aria-hidden
-                          className="h-2 w-2 text-emerald-400/90"
-                        />
-                        <span className="font-mono text-[8px] leading-none text-emerald-400/90">
+                        <Image aria-hidden />
+                        <span className={css.refCount}>
                           {p.refImages}
                         </span>
                       </span>
@@ -1257,16 +1239,16 @@ export function MotionTimelineBar({
                         corner = delete, edge below = extend. */}
                     {!isEditing && (
                       <Tip tip="Delete this prompt card">
-                        <Button variant="ghost"
+                        <Button variant="ghost" size="sm"
                           onPointerDown={(e) => e.stopPropagation()}
                           onClick={(e) => {
                             e.stopPropagation()
                             onPromptDelete(p.uuid)
                           }}
                           aria-label="Delete this prompt card"
-                          className="absolute right-1 top-1 z-40 flex h-4 w-4 items-center justify-center rounded-full bg-red-500/90 opacity-0 transition-opacity hover:bg-red-500 group-hover:opacity-100"
+                          className={css.promptDelete}
                         >
-                          <X className="h-2 w-2 text-foreground" />
+                          <X />
                         </Button>
                       </Tip>
                     )}
@@ -1284,7 +1266,7 @@ export function MotionTimelineBar({
             {beats && (
               <div
                 data-beats-row
-                className={`relative border-b border-white/[0.04] ${onBeatAdd ? "cursor-crosshair" : ""}`}
+                className={cn(css.beatsLane, onBeatAdd && css.beatsAdd)}
                 style={{ height: beatsHeight, background: "rgba(255,255,255,0.012)" }}
                 onDoubleClick={(e) => {
                   if (!onBeatAdd) return
@@ -1293,8 +1275,8 @@ export function MotionTimelineBar({
                 }}
               >
                 {beats.length === 0 && (
-                  <div className="absolute inset-0 flex items-center pl-3">
-                    <span className="text-[10px] text-foreground/40">{beatsHint}</span>
+                  <div className={css.beatsEmpty}>
+                    <span className={css.hintLine}>{beatsHint}</span>
                   </div>
                 )}
                 {beats.map((b) => {
@@ -1311,11 +1293,7 @@ export function MotionTimelineBar({
                       <div
                         data-beat-clip={b.id}
                         onClick={() => onSelect?.(b.id)}
-                        className={`absolute bottom-1 top-1 cursor-pointer overflow-hidden rounded-md border ${
-                          isSelected
-                            ? "z-30 border-cyan-300 ring-2 ring-cyan-400/60"
-                            : "border-white/10 hover:border-white/30"
-                        }`}
+                        className={cn(css.beatClip, isSelected && css.beatSelected)}
                         style={{
                           left: frameToPx(b.start_frame),
                           width: `max(14px, ${bW}px)`,
@@ -1323,9 +1301,9 @@ export function MotionTimelineBar({
                           borderLeft: `3px solid ${color}`,
                         }}
                       >
-                        <span className="pointer-events-none absolute inset-0 flex items-center px-1.5 text-[10px] leading-tight text-foreground/70">
-                          <span className="truncate">
-                            {b.text || <span className="italic text-foreground/35">(empty)</span>}
+                        <span className={css.beatLabel}>
+                          <span className={css.truncate}>
+                            {b.text || <span className={css.beatEmpty}>(empty)</span>}
                           </span>
                         </span>
                       </div>
@@ -1353,7 +1331,7 @@ export function MotionTimelineBar({
                 data-audio-layer={L.id}
                 data-wired={L.stem ? "true" : "false"}
                 data-clips={clips.length ? "true" : "false"}
-                className="relative border-b border-white/[0.03]"
+                className={css.audioLane}
                 style={{ height: AUDIO_H, background: "rgba(167,139,250,0.03)" }}
                 onDragOver={(e) => e.preventDefault()}
                 onDrop={(e) => {
@@ -1387,7 +1365,7 @@ export function MotionTimelineBar({
                         key={c.id}
                         data-audio-clip={c.id}
                         title={`${c.name} · ${a}–${b}s${c.gain != null ? ` · gain ${c.gain.toFixed(2)}` : ""} — drag to move`}
-                        className="group/clip absolute bottom-0.5 top-0.5 cursor-grab touch-none overflow-hidden rounded-sm border border-violet-300/40 bg-violet-400/25 active:cursor-grabbing"
+                        className={css.audioClip}
                         style={{
                           left: frameToPx(c.start_frame),
                           width: `max(6px, ${frameToPx(Math.max(1, c.dur_frames))}px)`,
@@ -1409,22 +1387,22 @@ export function MotionTimelineBar({
                         {c.gain != null && (
                           <span
                             aria-hidden
-                            className="pointer-events-none absolute inset-x-0 bottom-0 bg-violet-300/20"
+                            className={css.gainFill}
                             style={{ height: `${Math.max(4, Math.min(100, c.gain * 50))}%` }}
                           />
                         )}
-                        <span className="pointer-events-none absolute inset-0 flex items-center truncate px-1 text-[9px] leading-none text-violet-100/90">
-                          <span className="truncate font-medium">{c.name}</span>
-                          <span className="ml-1 shrink-0 font-mono tabular-nums text-violet-200/50">{a}s</span>
+                        <span className={css.audioClipLabel}>
+                          <span className={css.audioName}>{c.name}</span>
+                          <span className={css.audioTime}>{a}s</span>
                         </span>
                         {onAudioClipDelete && (
-                          <Button variant="ghost"
+                          <Button variant="ghost" size="sm"
                             data-audio-clip-delete={c.id}
                             aria-label={`Delete ${c.name}`}
                             onClick={(e) => { e.stopPropagation(); onAudioClipDelete(L.id, c.id) }}
-                            className="absolute right-0 top-0 hidden h-3.5 w-3.5 items-center justify-center rounded-bl bg-black/40 text-muted-foreground/70 transition-colors hover:bg-destructive/80 hover:text-white group-hover/clip:flex"
+                            className={css.audioClipDelete}
                           >
-                            <X className="h-2 w-2" aria-hidden />
+                            <X aria-hidden />
                           </Button>
                         )}
                       </div>
@@ -1439,21 +1417,21 @@ export function MotionTimelineBar({
                         key={p.uuid}
                         data-audio-slice={i}
                         title={`call #${i} · window hears bed ${a}–${b}s`}
-                        className="absolute bottom-0.5 top-0.5 overflow-hidden rounded-sm border border-violet-300/25 bg-violet-400/15"
+                        className={css.audioSlice}
                         style={{
                           left: frameToPx(p.start_frame),
                           width: `max(4px, ${frameToPx(Math.max(1, p.end_frame - p.start_frame))}px)`,
                         }}
                       >
-                        <span className="pointer-events-none absolute inset-0 flex items-center justify-center truncate px-1 font-mono text-[9px] tabular-nums text-violet-200/70">
+                        <span className={css.sliceLabel}>
                           {a}–{b}s
                         </span>
                       </div>
                     )
                   })
                 ) : (
-                  <div className="pointer-events-none absolute inset-x-1 inset-y-0.5 flex items-center justify-center rounded border border-dashed border-violet-300/20">
-                    <span className="truncate px-2 text-[9px] text-muted-foreground/40">
+                  <div className={css.audioDrop}>
+                    <span className={css.dropHint}>
                       drop or upload audio — clips land where you drop them, drag to move
                     </span>
                   </div>
@@ -1472,7 +1450,7 @@ export function MotionTimelineBar({
                 <div
                   key={track.uuid}
                   data-lane={track.uuid}
-                  className="relative border-b border-white/[0.03] last:border-b-0"
+                  className={css.kfLane}
                   style={{ height: LANE_H }}
                   onDoubleClick={(e) => {
                     const f = xToFrame(e.clientX)
@@ -1480,7 +1458,7 @@ export function MotionTimelineBar({
                   }}
                 >
                   {keyframes.length === 0 && ti === 0 && (
-                    <span className="pointer-events-none absolute inset-0 flex items-center pl-3 text-[10px] text-foreground/20">
+                    <span className={css.laneHint}>
                       {laneHint}
                     </span>
                   )}
@@ -1489,13 +1467,13 @@ export function MotionTimelineBar({
                     return (
                       <div
                         key={kf.uuid}
-                        className="group/kf absolute bottom-0 top-0"
+                        className={css.kfWrap}
                         style={{ left: frameToPx(kf.frame) }}
                       >
                         <Tip
                           tip={`${track.name} constraint @ frame ${kf.frame} — drag to move, click to jump, hover ✕ to delete`}
                         >
-                        <Button variant="ghost"
+                        <Button variant="ghost" size="sm"
                           data-kf={kf.uuid}
                           aria-label={`${track.name} keyframe at frame ${kf.frame}`}
                           onPointerDown={(e) =>
@@ -1508,27 +1486,25 @@ export function MotionTimelineBar({
                             })
                           }
                           onDoubleClick={(e) => e.stopPropagation()}
-                          className="absolute left-0 top-1/2 flex h-4 w-4 -translate-x-1/2 -translate-y-1/2 cursor-grab items-center justify-center active:translate-y-0 active:cursor-grabbing"
+                          className={css.kfBtn}
                         >
                           <span
-                            className={`block h-2.5 w-2.5 rotate-45 border ring-1 ring-white/30 transition-transform ${
-                              isMoving ? "scale-125" : ""
-                            }`}
+                            className={cn(css.kfDiamond, isMoving && css.kfMoving)}
                             style={{ background: color, borderColor: color }}
                           />
                         </Button>
                         </Tip>
                         <Tip tip={`Delete ${track.name} keyframe at frame ${kf.frame}`}>
-                        <Button variant="ghost"
+                        <Button variant="ghost" size="sm"
                           onPointerDown={(e) => e.stopPropagation()}
                           onClick={(e) => {
                             e.stopPropagation()
                             onKeyframeDelete(kf.uuid)
                           }}
                           aria-label={`Delete ${track.name} keyframe at frame ${kf.frame}`}
-                          className="absolute left-1.5 top-0 z-10 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-red-500/90 opacity-0 transition-opacity hover:bg-red-500 group-hover/kf:opacity-100"
+                          className={css.kfDelete}
                         >
-                          <X className="h-2 w-2 text-foreground" />
+                          <X />
                         </Button>
                         </Tip>
                       </div>
@@ -1541,7 +1517,7 @@ export function MotionTimelineBar({
             {/* Playhead — brand cyan, spans every row, above the clips. */}
             <div
               data-testid="motion-timeline-playhead"
-              className="pointer-events-none absolute bottom-0 top-0 z-40"
+              className={css.playhead}
               style={{
                 left: frameToPx(frameIdx),
                 width: 2,
@@ -1551,7 +1527,7 @@ export function MotionTimelineBar({
               }}
             >
               <span
-                className="absolute -top-0 left-1/2 h-2 w-2 -translate-x-1/2 rounded-full border border-white/50"
+                className={css.playheadCap}
                 style={{ background: playhead }}
               />
             </div>

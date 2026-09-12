@@ -30,16 +30,17 @@ import {
  *           card-deck host-routes) + tests/unit cross-cutting specs +
  *           repo script specs. Plain node environment, one fork per
  *           file.
- *   dom   — the browser-surface clients on React 19: the editor
- *           (happy-dom: tests/ + src/__tests__/226) plus the
- *           card-view client (happy-dom, React 19). Per-project
- *           aliases keep each client's React single-instance.
+ *   dom   — the browser-surface clients on React 19: the card-view
+ *           client (happy-dom, tests/**). Per-project aliases keep
+ *           each client's React single-instance. (2026-09-12: the
+ *           editor app was deleted — its 226 src/__tests__ specs died
+ *           with it; the lane's React universe now pins at the store.)
  *   dom18 — the media sidebar client (React 18, the universe the DSH
  *           shell hosts).
  *   deck  — the card-deck client (jsdom, React 18.3.1: tests/ +
  *           src/client/__tests__). Its own universe: riding `dom`
- *           would force the editor's React 19 aliases onto it (the
- *           dual-React trap).
+ *           would force the card-view lane's React 19 aliases onto it
+ *           (the dual-React trap).
  *
  * SOURCE PLANE: the resolution facade (SOURCE_PLANE_ALIAS in
  * vitest.shared.ts — melite-tools plus the four estate Typert
@@ -63,26 +64,28 @@ import {
 // require()s custom reporters (which is also why the reporter is CJS).
 const uncoveredLocationsReporter = fileURLToPath(new URL('./scripts/coverage-uncovered-locations.cjs', import.meta.url))
 
-const EDITOR = rootPath('packages/web/editor')
 const DECK = rootPath('packages/web/melite-card-deck')
 const CARD_VIEW = rootPath('packages/web/melite-card-view')
 const GALLERY = rootPath('packages/web/infer-gallery')
 
 // The dom-lane clients' spec trees (partitioned out of the node lane).
-// The editor's 226 src/__tests__ specs ride the same project (they are
-// vitest-native; the package's own `vitest run` script is deleted).
 const DOM_SPEC_TREES = [
-  `${EDITOR}/tests/**/*.spec.{ts,tsx}`,
-  `${EDITOR}/src/__tests__/**/*.spec.{ts,tsx}`,
   `${CARD_VIEW}/tests/**/*.spec.{ts,tsx}`,
   `${GALLERY}/tests/**/*.spec.{ts,tsx}`,
+  // THE CARD PACKAGES' OWN CLIENT SPECS (2026-09-12, the
+  // composition-root correction): each card's studio registration +
+  // adapter live in its package now — its spec rides the dom lane
+  // (React 19, the store-pinned pair).
+  `${rootPath('packages/video/h3-timeline')}/tests/**/*.spec.{ts,tsx}`,
+  `${rootPath('packages/image/ideogram4')}/tests/**/*.spec.{ts,tsx}`,
+  `${rootPath('packages/3d/img-to-mesh')}/tests/**/*.spec.{ts,tsx}`,
 ]
 // The gallery's own tree — React 18, the universe the DSH shell hosts.
 const GALLERY_SPEC_TREES = [`${GALLERY}/tests/**/*.spec.{ts,tsx}`]
 // The deck's own trees — React 18.3.1, the universe the DSH shell hosts
 // for this client (its vitest.config pins jsdom + no aliases: pnpm
 // isolation supplies the single React). Riding `dom` would force the
-// editor's React 19 aliases onto it (the dual-React trap — an element
+// card-view lane's React 19 aliases onto it (the dual-React trap — an element
 // built by 19 rendered by 18), so the deck gets its own universe like
 // the gallery. `${DECK}/tests/**` matches nothing today (no such dir);
 // it rides here so future deck specs land in the right universe.
@@ -129,27 +132,64 @@ export default defineConfig({
         resolve: {
           alias: {
             ...resolutionFacade(),
-            '@': path.join(EDITOR, 'src'),
-            react: path.join(EDITOR, 'node_modules/react'),
-            'react-dom': path.join(EDITOR, 'node_modules/react-dom'),
-            'react/jsx-runtime': path.join(EDITOR, 'node_modules/react/jsx-runtime'),
-            'lucide-react': path.join(EDITOR, 'node_modules/lucide-react'),
-            'three/addons': path.join(EDITOR, 'node_modules/three/examples/jsm'),
-            'three/examples': path.join(EDITOR, 'node_modules/three/examples'),
-            three: path.join(EDITOR, 'node_modules/three'),
-            '@react-three/drei': path.join(EDITOR, 'node_modules/@react-three/drei'),
-            '@react-three/fiber': path.join(EDITOR, 'node_modules/@react-three/fiber'),
-            'shiki/core': path.join(EDITOR, 'node_modules/shiki/dist/core.mjs'),
-            'shiki/engine/javascript': path.join(EDITOR, 'node_modules/shiki/dist/engine-javascript.mjs'),
-            '@shikijs/langs/typescript': path.join(EDITOR, 'node_modules/@shikijs/langs/dist/typescript.mjs'),
-            '@shikijs/langs/shellscript': path.join(EDITOR, 'node_modules/@shikijs/langs/dist/shellscript.mjs'),
-            '@shikijs/langs/json': path.join(EDITOR, 'node_modules/@shikijs/langs/dist/json.mjs'),
-            anser: path.join(EDITOR, 'node_modules/anser'),
-            shiki: path.join(EDITOR, 'node_modules/shiki'),
-            // card-view legacy Toaster (src/old) imports sonner, installed
-            // only under the card-view package — alias so the root vite
-            // server resolves it without hoisting.
-            sonner: path.join(CARD_VIEW, 'node_modules/sonner/dist/index.mjs'),
+            // 2026-09-12: the dom universe re-homed from the deleted
+            // editor app. React pins at the STORE's matched 19 pair
+            // (ONE react for the lane — the dual-React trap), icons
+            // and three ride the card-view client's resolution.
+            react: rootPath('node_modules/.pnpm/react@19.2.8/node_modules/react'),
+            'react-dom': rootPath('node_modules/.pnpm/react-dom@19.2.8_react@19.2.8/node_modules/react-dom'),
+            'react/jsx-runtime': rootPath('node_modules/.pnpm/react@19.2.8/node_modules/react/jsx-runtime'),
+            // anser: the atoms' rc.2 dist imports this undeclared
+            // transitive (editor's tree used to supply it). Pinned at
+            // the store copy like the React pair.
+            anser: rootPath('node_modules/.pnpm/anser@2.3.5/node_modules/anser'),
+            // shiki: the atoms' rc.2 dist imports these undeclared
+            // transitives (the editor's tree used to supply them).
+            'shiki/core': rootPath('node_modules/.pnpm/shiki@4.4.3/node_modules/shiki/dist/core.mjs'),
+            'shiki/engine/javascript': rootPath('node_modules/.pnpm/shiki@4.4.3/node_modules/shiki/dist/engine-javascript.mjs'),
+            shiki: rootPath('node_modules/.pnpm/shiki@4.4.3/node_modules/shiki'),
+            '@shikijs/langs/c': rootPath('node_modules/.pnpm/@shikijs+langs@4.4.3/node_modules/@shikijs/langs/dist/c.mjs'),
+            '@shikijs/langs/cpp': rootPath('node_modules/.pnpm/@shikijs+langs@4.4.3/node_modules/@shikijs/langs/dist/cpp.mjs'),
+            '@shikijs/langs/csharp': rootPath('node_modules/.pnpm/@shikijs+langs@4.4.3/node_modules/@shikijs/langs/dist/csharp.mjs'),
+            '@shikijs/langs/css': rootPath('node_modules/.pnpm/@shikijs+langs@4.4.3/node_modules/@shikijs/langs/dist/css.mjs'),
+            '@shikijs/langs/go': rootPath('node_modules/.pnpm/@shikijs+langs@4.4.3/node_modules/@shikijs/langs/dist/go.mjs'),
+            '@shikijs/langs/html': rootPath('node_modules/.pnpm/@shikijs+langs@4.4.3/node_modules/@shikijs/langs/dist/html.mjs'),
+            '@shikijs/langs/ini': rootPath('node_modules/.pnpm/@shikijs+langs@4.4.3/node_modules/@shikijs/langs/dist/ini.mjs'),
+            '@shikijs/langs/java': rootPath('node_modules/.pnpm/@shikijs+langs@4.4.3/node_modules/@shikijs/langs/dist/java.mjs'),
+            '@shikijs/langs/json': rootPath('node_modules/.pnpm/@shikijs+langs@4.4.3/node_modules/@shikijs/langs/dist/json.mjs'),
+            '@shikijs/langs/kotlin': rootPath('node_modules/.pnpm/@shikijs+langs@4.4.3/node_modules/@shikijs/langs/dist/kotlin.mjs'),
+            '@shikijs/langs/less': rootPath('node_modules/.pnpm/@shikijs+langs@4.4.3/node_modules/@shikijs/langs/dist/less.mjs'),
+            '@shikijs/langs/lua': rootPath('node_modules/.pnpm/@shikijs+langs@4.4.3/node_modules/@shikijs/langs/dist/lua.mjs'),
+            '@shikijs/langs/markdown': rootPath('node_modules/.pnpm/@shikijs+langs@4.4.3/node_modules/@shikijs/langs/dist/markdown.mjs'),
+            '@shikijs/langs/mdx': rootPath('node_modules/.pnpm/@shikijs+langs@4.4.3/node_modules/@shikijs/langs/dist/mdx.mjs'),
+            '@shikijs/langs/php': rootPath('node_modules/.pnpm/@shikijs+langs@4.4.3/node_modules/@shikijs/langs/dist/php.mjs'),
+            '@shikijs/langs/python': rootPath('node_modules/.pnpm/@shikijs+langs@4.4.3/node_modules/@shikijs/langs/dist/python.mjs'),
+            '@shikijs/langs/ruby': rootPath('node_modules/.pnpm/@shikijs+langs@4.4.3/node_modules/@shikijs/langs/dist/ruby.mjs'),
+            '@shikijs/langs/rust': rootPath('node_modules/.pnpm/@shikijs+langs@4.4.3/node_modules/@shikijs/langs/dist/rust.mjs'),
+            '@shikijs/langs/scss': rootPath('node_modules/.pnpm/@shikijs+langs@4.4.3/node_modules/@shikijs/langs/dist/scss.mjs'),
+            '@shikijs/langs/shellscript': rootPath('node_modules/.pnpm/@shikijs+langs@4.4.3/node_modules/@shikijs/langs/dist/shellscript.mjs'),
+            '@shikijs/langs/sql': rootPath('node_modules/.pnpm/@shikijs+langs@4.4.3/node_modules/@shikijs/langs/dist/sql.mjs'),
+            '@shikijs/langs/swift': rootPath('node_modules/.pnpm/@shikijs+langs@4.4.3/node_modules/@shikijs/langs/dist/swift.mjs'),
+            '@shikijs/langs/toml': rootPath('node_modules/.pnpm/@shikijs+langs@4.4.3/node_modules/@shikijs/langs/dist/toml.mjs'),
+            '@shikijs/langs/typescript': rootPath('node_modules/.pnpm/@shikijs+langs@4.4.3/node_modules/@shikijs/langs/dist/typescript.mjs'),
+            '@shikijs/langs/xml': rootPath('node_modules/.pnpm/@shikijs+langs@4.4.3/node_modules/@shikijs/langs/dist/xml.mjs'),
+            '@shikijs/langs/yaml': rootPath('node_modules/.pnpm/@shikijs+langs@4.4.3/node_modules/@shikijs/langs/dist/yaml.mjs'),
+            katex: rootPath('node_modules/.pnpm/katex@0.16.47/node_modules/katex'),
+            'mdast-util-from-markdown': rootPath('node_modules/.pnpm/mdast-util-from-markdown@2.0.3_supports-color@9.4.0/node_modules/mdast-util-from-markdown'),
+            'mdast-util-gfm': rootPath('node_modules/.pnpm/mdast-util-gfm@3.1.0_supports-color@9.4.0/node_modules/mdast-util-gfm'),
+            'mdast-util-math': rootPath('node_modules/.pnpm/mdast-util-math@3.0.0_supports-color@9.4.0/node_modules/mdast-util-math'),
+            'micromark-core-commonmark': rootPath('node_modules/.pnpm/micromark-core-commonmark@2.0.3/node_modules/micromark-core-commonmark'),
+            'micromark-extension-gfm': rootPath('node_modules/.pnpm/micromark-extension-gfm@3.0.0/node_modules/micromark-extension-gfm'),
+            'micromark-extension-math': rootPath('node_modules/.pnpm/micromark-extension-math@3.1.0/node_modules/micromark-extension-math'),
+            'micromark-factory-space': rootPath('node_modules/.pnpm/micromark-factory-space@2.0.1/node_modules/micromark-factory-space'),
+            'micromark-util-character': rootPath('node_modules/.pnpm/micromark-util-character@2.1.1/node_modules/micromark-util-character'),
+            'micromark-util-classify-character': rootPath('node_modules/.pnpm/micromark-util-classify-character@2.0.1/node_modules/micromark-util-classify-character'),
+            'micromark-util-sanitize-uri': rootPath('node_modules/.pnpm/micromark-util-sanitize-uri@2.0.1/node_modules/micromark-util-sanitize-uri'),
+            'micromark-util-symbol': rootPath('node_modules/.pnpm/micromark-util-symbol@2.0.1/node_modules/micromark-util-symbol'),
+            'lucide-react': path.join(CARD_VIEW, 'node_modules/lucide-react'),
+            'three/addons': path.join(CARD_VIEW, 'node_modules/three/examples/jsm'),
+            'three/examples': path.join(CARD_VIEW, 'node_modules/three/examples'),
+            three: path.join(CARD_VIEW, 'node_modules/three')
           },
         },
         test: {
@@ -157,14 +197,14 @@ export default defineConfig({
           environment: 'happy-dom',
           pool: 'forks',
           execArgv: vitestExecArgv,
-          setupFiles: [PROXY_SETUP, path.join(EDITOR, 'tests/setup.ts')],
+          setupFiles: [PROXY_SETUP, path.join(CARD_VIEW, 'tests/setup.ts')],
           globals: true,
           css: false,
           include: DOM19_SPEC_TREES,
           exclude: ['**/*.e2e.ts', '**/*.expected.e2e.ts', '**/*.snapshot.ts'],
           server: {
             deps: {
-              inline: [/@deepseek-ai\/dsh-client-ui-primitives/, /sonner/],
+              inline: [/@deepseek-ai\/dsh-client-ui-primitives/],
             },
           },
         },
@@ -177,6 +217,53 @@ export default defineConfig({
             react: path.join(GALLERY, 'node_modules/react'),
             'react-dom': path.join(GALLERY, 'node_modules/react-dom'),
             'react/jsx-runtime': path.join(GALLERY, 'node_modules/react/jsx-runtime'),
+            // anser: the atoms' rc.2 dist imports this undeclared
+            // transitive (editor's tree used to supply it). Pinned at
+            // the store copy like the React pair.
+            anser: rootPath('node_modules/.pnpm/anser@2.3.5/node_modules/anser'),
+            // shiki: the atoms' rc.2 dist imports these undeclared
+            // transitives (the editor's tree used to supply them).
+            'shiki/core': rootPath('node_modules/.pnpm/shiki@4.4.3/node_modules/shiki/dist/core.mjs'),
+            'shiki/engine/javascript': rootPath('node_modules/.pnpm/shiki@4.4.3/node_modules/shiki/dist/engine-javascript.mjs'),
+            shiki: rootPath('node_modules/.pnpm/shiki@4.4.3/node_modules/shiki'),
+            '@shikijs/langs/c': rootPath('node_modules/.pnpm/@shikijs+langs@4.4.3/node_modules/@shikijs/langs/dist/c.mjs'),
+            '@shikijs/langs/cpp': rootPath('node_modules/.pnpm/@shikijs+langs@4.4.3/node_modules/@shikijs/langs/dist/cpp.mjs'),
+            '@shikijs/langs/csharp': rootPath('node_modules/.pnpm/@shikijs+langs@4.4.3/node_modules/@shikijs/langs/dist/csharp.mjs'),
+            '@shikijs/langs/css': rootPath('node_modules/.pnpm/@shikijs+langs@4.4.3/node_modules/@shikijs/langs/dist/css.mjs'),
+            '@shikijs/langs/go': rootPath('node_modules/.pnpm/@shikijs+langs@4.4.3/node_modules/@shikijs/langs/dist/go.mjs'),
+            '@shikijs/langs/html': rootPath('node_modules/.pnpm/@shikijs+langs@4.4.3/node_modules/@shikijs/langs/dist/html.mjs'),
+            '@shikijs/langs/ini': rootPath('node_modules/.pnpm/@shikijs+langs@4.4.3/node_modules/@shikijs/langs/dist/ini.mjs'),
+            '@shikijs/langs/java': rootPath('node_modules/.pnpm/@shikijs+langs@4.4.3/node_modules/@shikijs/langs/dist/java.mjs'),
+            '@shikijs/langs/json': rootPath('node_modules/.pnpm/@shikijs+langs@4.4.3/node_modules/@shikijs/langs/dist/json.mjs'),
+            '@shikijs/langs/kotlin': rootPath('node_modules/.pnpm/@shikijs+langs@4.4.3/node_modules/@shikijs/langs/dist/kotlin.mjs'),
+            '@shikijs/langs/less': rootPath('node_modules/.pnpm/@shikijs+langs@4.4.3/node_modules/@shikijs/langs/dist/less.mjs'),
+            '@shikijs/langs/lua': rootPath('node_modules/.pnpm/@shikijs+langs@4.4.3/node_modules/@shikijs/langs/dist/lua.mjs'),
+            '@shikijs/langs/markdown': rootPath('node_modules/.pnpm/@shikijs+langs@4.4.3/node_modules/@shikijs/langs/dist/markdown.mjs'),
+            '@shikijs/langs/mdx': rootPath('node_modules/.pnpm/@shikijs+langs@4.4.3/node_modules/@shikijs/langs/dist/mdx.mjs'),
+            '@shikijs/langs/php': rootPath('node_modules/.pnpm/@shikijs+langs@4.4.3/node_modules/@shikijs/langs/dist/php.mjs'),
+            '@shikijs/langs/python': rootPath('node_modules/.pnpm/@shikijs+langs@4.4.3/node_modules/@shikijs/langs/dist/python.mjs'),
+            '@shikijs/langs/ruby': rootPath('node_modules/.pnpm/@shikijs+langs@4.4.3/node_modules/@shikijs/langs/dist/ruby.mjs'),
+            '@shikijs/langs/rust': rootPath('node_modules/.pnpm/@shikijs+langs@4.4.3/node_modules/@shikijs/langs/dist/rust.mjs'),
+            '@shikijs/langs/scss': rootPath('node_modules/.pnpm/@shikijs+langs@4.4.3/node_modules/@shikijs/langs/dist/scss.mjs'),
+            '@shikijs/langs/shellscript': rootPath('node_modules/.pnpm/@shikijs+langs@4.4.3/node_modules/@shikijs/langs/dist/shellscript.mjs'),
+            '@shikijs/langs/sql': rootPath('node_modules/.pnpm/@shikijs+langs@4.4.3/node_modules/@shikijs/langs/dist/sql.mjs'),
+            '@shikijs/langs/swift': rootPath('node_modules/.pnpm/@shikijs+langs@4.4.3/node_modules/@shikijs/langs/dist/swift.mjs'),
+            '@shikijs/langs/toml': rootPath('node_modules/.pnpm/@shikijs+langs@4.4.3/node_modules/@shikijs/langs/dist/toml.mjs'),
+            '@shikijs/langs/typescript': rootPath('node_modules/.pnpm/@shikijs+langs@4.4.3/node_modules/@shikijs/langs/dist/typescript.mjs'),
+            '@shikijs/langs/xml': rootPath('node_modules/.pnpm/@shikijs+langs@4.4.3/node_modules/@shikijs/langs/dist/xml.mjs'),
+            '@shikijs/langs/yaml': rootPath('node_modules/.pnpm/@shikijs+langs@4.4.3/node_modules/@shikijs/langs/dist/yaml.mjs'),
+            katex: rootPath('node_modules/.pnpm/katex@0.16.47/node_modules/katex'),
+            'mdast-util-from-markdown': rootPath('node_modules/.pnpm/mdast-util-from-markdown@2.0.3_supports-color@9.4.0/node_modules/mdast-util-from-markdown'),
+            'mdast-util-gfm': rootPath('node_modules/.pnpm/mdast-util-gfm@3.1.0_supports-color@9.4.0/node_modules/mdast-util-gfm'),
+            'mdast-util-math': rootPath('node_modules/.pnpm/mdast-util-math@3.0.0_supports-color@9.4.0/node_modules/mdast-util-math'),
+            'micromark-core-commonmark': rootPath('node_modules/.pnpm/micromark-core-commonmark@2.0.3/node_modules/micromark-core-commonmark'),
+            'micromark-extension-gfm': rootPath('node_modules/.pnpm/micromark-extension-gfm@3.0.0/node_modules/micromark-extension-gfm'),
+            'micromark-extension-math': rootPath('node_modules/.pnpm/micromark-extension-math@3.1.0/node_modules/micromark-extension-math'),
+            'micromark-factory-space': rootPath('node_modules/.pnpm/micromark-factory-space@2.0.1/node_modules/micromark-factory-space'),
+            'micromark-util-character': rootPath('node_modules/.pnpm/micromark-util-character@2.1.1/node_modules/micromark-util-character'),
+            'micromark-util-classify-character': rootPath('node_modules/.pnpm/micromark-util-classify-character@2.0.1/node_modules/micromark-util-classify-character'),
+            'micromark-util-sanitize-uri': rootPath('node_modules/.pnpm/micromark-util-sanitize-uri@2.0.1/node_modules/micromark-util-sanitize-uri'),
+            'micromark-util-symbol': rootPath('node_modules/.pnpm/micromark-util-symbol@2.0.1/node_modules/micromark-util-symbol'),
           },
         },
         test: {
@@ -308,6 +395,13 @@ export default defineConfig({
         // stays GUI-debt: DOM components, the dom project's
         // territory, same carve-out as the web tree.
         'packages/motion/**/src/ui/**/*.{ts,tsx}',
+        // + the card packages' CLIENT faces (src/client/** — the
+        // ported studio registration + tenants, 2026-09-12): DOM
+        // territory, the dom project's specs exercise them; per-file
+        // 100 is the HOST plane's gate (card.ts/index.ts stay gated —
+        // the seat-probe + lane-gate laws are pinned by unit tests).
+        // glb-viewport's WebGL mount is jsdom-impossible by nature.
+        'packages/*/*/src/client/**/*.{ts,tsx}',
         // video closed (2026-09-12, §TEST-13): h3-timeline (the four
         // frozen goldens replay byte-level + schema gates + overlay
         // arms) + video-gen (two-family admission) + the tool face's

@@ -1,7 +1,9 @@
 // WiredWaiting — the blocked-canvas waiting card. Pure move from
 // component.tsx (props shape unchanged).
-import { Button } from "@melite/ui/button"
-import { Hourglass, Link2 } from "lucide-react"
+import { Button } from "@deepseek-ai/dsh-client-ui-primitives"
+import { clsx } from "clsx"
+import { Hourglass, Link2 } from "./icons"
+import styles from "./mask.module.css"
 
 // ── Waiting state: wired to an upstream that hasn't run yet ───────────────
 // The "goofy" case (2026-08-10): a wire is a LIVE reference, but it only
@@ -17,17 +19,17 @@ export function WiredWaiting({
 }) {
   return (
   <div
-  className="flex flex-col items-center justify-center gap-3 p-8 text-center"
+  className={styles.emptyState}
   data-wired-waiting
   >
-  <div className="flex h-14 w-14 items-center justify-center rounded-full bg-brand/15">
-  <Hourglass className="h-7 w-7 text-brand" />
+  <div className={styles.emptyIcon}>
+  <Hourglass className={clsx(styles.sz28, styles.accentInk)} />
   </div>
   <div>
-  <div className="text-sm font-medium text-foreground/90">
-  Waiting for <span className="text-brand">{upstreamTitle}</span> to run
+  <div className={styles.emptyTitle}>
+  Waiting for <span className={styles.emptyTitleAccent}>{upstreamTitle}</span> to run
   </div>
-  <div className="mt-1 max-w-xs text-[11px] leading-relaxed text-muted-foreground/70">
+  <div className={styles.waitingSub}>
   This input is wired to a previous card's output. It arrives once that card
   runs — masking unlocks then. Run the flow up to that stage, or unwire
   to attach a file now.
@@ -37,9 +39,9 @@ export function WiredWaiting({
   type="button"
   onClick={onUnwire}
   data-wired-unwire
-  className="flex items-center gap-1.5 rounded-md border border-border/60 bg-background px-3 py-1.5 text-[12px] font-medium text-foreground/80 transition-colors hover:bg-sidebar/60 hover:text-destructive"
+  className={styles.unwireBtn}
   >
-  <Link2 className="h-3.5 w-3.5" /> Unwire
+  <Link2 className={styles.sz14} /> Unwire
   </Button>
   </div>
   )

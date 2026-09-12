@@ -1,6 +1,6 @@
 "use client"
 
-// catalogContractStore — the Zustand half of the catalog contract.
+// catalogContractStore — the native-store half of the catalog contract.
 //
 // 2026-08-11 directive: "make declarative contracts in the Zustand and
 // pydantic so it's impossible to fail this". The catalog module cache
@@ -21,9 +21,9 @@
 // every attempt, and each report used to push a fresh toast (the reported
 // "spammed every 5 seconds"). See the latch below reportError.
 
-import { create } from "zustand"
+import { useSyncExternalStore } from "react"
 import type { CatalogViolation } from "./catalogContract"
-import { useToastStore } from "@melite/ui"
+import { useToastStore } from "./toast"
 
 export type CatalogContractState = "idle" | "loaded" | "violation" | "error"
 
@@ -77,16 +77,50 @@ function retryCatalog(): void {
     })
 }
 
-export const useCatalogContractStore = create<CatalogContractStoreState>((set) => ({
+// ── Native store (DSH ships no state library — no zustand) ─────────────────
+// Module-level record + listener set + useSyncExternalStore hook. The toast
+// latch (_lastToastedOutage) and retry wiring above are unchanged; the action
+// bodies below are verbatim apart from set() → _setState().
+const _listeners = new Set<() => void>()
+
+function _subscribe(listener: () => void): () => void {
+  _listeners.add(listener)
+  return () => {
+    _listeners.delete(listener)
+  }
+}
+
+type _Patch =
+  | Partial<CatalogContractStoreState>
+  | ((s: CatalogContractStoreState) => Partial<CatalogContractStoreState>)
+
+function _setState(patch: _Patch, replace?: boolean): void {
+  const p =
+    typeof patch === "function"
+      ? (patch as (s: CatalogContractStoreState) => Partial<CatalogContractStoreState>)(_state)
+      : patch
+  if (replace === true) {
+    _state = p as CatalogContractStoreState
+  } else {
+    _state = { ..._state, ...p }
+  }
+  _listeners.forEach((l) => l())
+}
+
+function _getState(): CatalogContractStoreState {
+  return _state
+}
+
+const _seed: CatalogContractStoreState = ({
  record: IDLE,
 
  reportOk: () => {
-  // Read BEFORE set() — the error→ok transition decides the recovery toast.
+  // Read BEFORE _setState() — the error→ok transition decides the recovery toast.
   // The store const is assigned by call time (this closure only runs later).
   const wasOutage =
    useCatalogContractStore.getState().record.state === "error"
   _lastToastedOutage = null // re-arm: the next outage is a NEW event
-  set({ record: { state: "loaded", violations: [], error: null } })
+  _setState({ record: { state: "loaded", violations: [], error: null } })
   // Close the loop the once-only error opened: the outage announced itself
   // with ONE toast, so its end also gets exactly one (info, 5s auto-dismiss).
   // Only for error→ok — a violation clearing means a backend deploy landed;
@@ -98,7 +132,7 @@ export const useCatalogContractStore = create<CatalogContractStoreState>((set) =
 
  reportViolation: (violations) => {
   console.error(`[catalogContract] catalog contract violation (at ${_stamp()}):`, violations)
-  set({ record: { state: "violation", violations, error: null } })
+  _setState({ record: { state: "violation", violations, error: null } })
   const first = violations[0]
   const msg = first
    ? first.kind && first.kind !== "catalog"
@@ -118,7 +152,7 @@ export const useCatalogContractStore = create<CatalogContractStoreState>((set) =
   const clean = message.trim()
   console.error(`[catalogContract] catalog fetch failed (at ${_stamp()}):`, clean)
   // The record is per-attempt truth — always updated, never latched.
-  set({ record: { state: "error", violations: [], error: clean } })
+  _setState({ record: { state: "error", violations: [], error: clean } })
   if (clean === _lastToastedOutage) return // same ongoing outage — no re-toast
   _lastToastedOutage = clean
   useToastStore.getState().addToast(
@@ -130,6 +164,34 @@ export const useCatalogContractStore = create<CatalogContractStoreState>((set) =
 
  clear: () => {
   _lastToastedOutage = null
-  set({ record: IDLE })
+  _setState({ record: IDLE })
  },
-}))
+})
+
+let _state: CatalogContractStoreState = _seed
+
+const _initialState: CatalogContractStoreState = _state
+
+function _useCatalogContractStoreHook(): CatalogContractStoreState
+function _useCatalogContractStoreHook<T>(
+  selector: (s: CatalogContractStoreState) => T,
+): T
+function _useCatalogContractStoreHook<T>(
+  selector?: (s: CatalogContractStoreState) => T,
+): T | CatalogContractStoreState {
+  const getSnapshot = selector
+    ? () => selector(_getState())
+    : () => _getState() as unknown as T
+  return useSyncExternalStore(_subscribe, getSnapshot)
+}
+
+export const useCatalogContractStore = Object.assign(
+  _useCatalogContractStoreHook,
+  {
+    getState: _getState,
+    setState: _setState,
+    subscribe: _subscribe,
+    getInitialState: (): CatalogContractStoreState => _initialState,
+    destroy: (): void => {},
+  },
+)

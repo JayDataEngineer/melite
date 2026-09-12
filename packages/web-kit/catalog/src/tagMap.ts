@@ -23,7 +23,7 @@
 //     written synchronously on every mutation so the cache is never stale.
 //   • Server sync is GATED: it only activates after `initTagSync()` is called
 //     (by the app shell on mount). Tests never call it, so no PUTs fire.
-import { create } from "zustand"
+import { useSyncExternalStore } from "react"
 import { apiFetch } from "./api"
 
 // ── TagColor — TS mirror of the pydantic enum ────────────────────────────
@@ -258,9 +258,37 @@ export interface TagMapState {
 
 const initial = loadPersisted()
 
-export const useTagMap = create<TagMapState>((set, get) => ({
-  tags: initial.tags,
-  map: initial.map,
+// NATIVE STORE (the zustand purge — DSH ships no state library):
+// module state + listener set + React's useSyncExternalStore. The
+// zustand API surface is preserved (setState merges shallow patches,
+// both object and (s)=>patch forms; getState reads; subscribe notifies).
+type TagMapListener = () => void
+const tagMapListeners = new Set<TagMapListener>()
+let tagMapState: TagMapState
+const notifyTagMap = (): void => { for (const l of tagMapListeners) l() }
+const tagMapSetState = (patch: Partial<TagMapState> | ((s: TagMapState) => Partial<TagMapState>)): void => {
+  const p = typeof patch === "function" ? patch(tagMapState) : patch
+  tagMapState = { ...tagMapState, ...p }
+  notifyTagMap()
+}
+const tagMapGetState = (): TagMapState => tagMapState
+
+function useTagMapHook(): TagMapState {
+  return useSyncExternalStore(
+    (l: TagMapListener) => { tagMapListeners.add(l); return () => { tagMapListeners.delete(l) } },
+    tagMapGetState,
+  )
+}
+export const useTagMap = Object.assign(useTagMapHook, {
+  getState: tagMapGetState,
+  setState: tagMapSetState,
+  subscribe: (l: TagMapListener): (() => void) => {
+    tagMapListeners.add(l)
+    return () => { tagMapListeners.delete(l) }
+  },
+})
+
+const tagMapActions = (set: typeof tagMapSetState, get: typeof tagMapGetState): TagMapState => ({
 
   createTag: (name, color) => {
     const trimmed = name.trim()
@@ -355,7 +383,8 @@ export const useTagMap = create<TagMapState>((set, get) => ({
   tagsOf: (key) => get().map[key] ?? [],
 
   hasTag: (key, tagId) => (get().map[key] ?? []).includes(tagId),
-}))
+})
+tagMapState = { ...tagMapActions(tagMapSetState, tagMapGetState), tags: initial.tags, map: initial.map }
 
 // ── Non-hook helpers (for use outside React, e.g. in the filter accessor) ─
 /** Read tagsOf without a React subscription. The useListFilter accessor uses

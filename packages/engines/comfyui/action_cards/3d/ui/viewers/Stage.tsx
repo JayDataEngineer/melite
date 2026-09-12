@@ -37,15 +37,16 @@
 // (stage-loop-probe.test.tsx) pins the settled behavior.
 
 import { useRef, useEffect, useState, useMemo, useCallback } from "react"
-import { ViewportOverlays } from "@melite/ui"
-import type { ViewportOverlay } from "@melite/ui"
+import { ViewportOverlays } from "../../../studio-shell"
+import type { ViewportOverlay } from "../../../studio-shell"
 import { Canvas, useFrame, useThree } from "@react-three/fiber"
 import { OrbitControls, TransformControls, Grid, ContactShadows, Environment, Lightformer } from "@react-three/drei"
 import * as THREE from "three"
 import type { GLTF } from "three/examples/jsm/loaders/GLTFLoader.js"
-import { Button } from "@melite/ui/button"
-import { Loader2 } from "lucide-react"
+import { Button } from "@deepseek-ai/dsh-client-ui-primitives"
+import { Loader2 } from "../../../ui-icons"
 import { loadGLB, autoFitToHeight } from "@melite/formats/glbLoad"
+import styles from "./Stage.module.css"
 
 // GLB loading + normalization ride the estate's shared kernel
 // (@melite/formats glbLoad): one DRACO-configured loader — LOCAL
@@ -420,7 +421,7 @@ export function Stage({
   const selected = selectedId ? objs[selectedId] : null
 
   return (
-    <div className={`relative w-full ${className || "h-full"}`}>
+    <div className={`${styles.root} ${className || ""}`}>
       <ViewportOverlays overlays={overlays ?? []} />
       <Canvas
         shadows
@@ -505,33 +506,29 @@ export function Stage({
       {/* selection chip rail: per-asset Rig toggles (skinned only) +
           the loading badge */}
       {assets.length > 0 && (
-        <div className="absolute top-2 left-2 z-10 flex flex-wrap gap-1">
+        <div className={styles.chipRail}>
           {assets.map((a) => (
             <Button variant="ghost"
               key={a.id}
               type="button"
               onClick={() => onSelect?.(a.id === selectedId ? null : a.id)}
-              className={`rounded-md border px-2 py-1 text-[10px] font-medium backdrop-blur transition-colors ${
-                a.id === selectedId
-                  ? "border-primary bg-primary text-primary-foreground"
-                  : "bg-black/50 text-muted-foreground hover:text-foreground"
-              }`}
+              className={`${styles.assetChip} ${a.id === selectedId ? styles.assetChipSelected : styles.assetChipIdle}`}
               title={a.url}
             >
               {a.name ?? a.id}
-              {rigOn[a.id] && <span className="ml-1 text-[9px]">·rig</span>}
+              {rigOn[a.id] && <span className={styles.rigTick}>·rig</span>}
             </Button>
           ))}
         </div>
       )}
       {loadingCount > 0 && (
-        <div className="absolute bottom-2 right-2 z-10 flex items-center gap-1 rounded-md bg-black/60 px-2 py-1 text-[10px] text-muted-foreground backdrop-blur">
-          <Loader2 className="h-3 w-3 animate-spin" />
+        <div className={styles.loadingBadge}>
+          <Loader2 className={styles.loadingIcon} />
           {loadingCount} loading…
         </div>
       )}
       {dragging && (
-        <div className="pointer-events-none absolute inset-0 border-2 border-primary/40" />
+        <div className={styles.dragFrame} />
       )}
     </div>
   )
