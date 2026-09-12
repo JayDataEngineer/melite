@@ -56,7 +56,7 @@ function loadFormsEdgeMeta(): Promise<Record<string, { inputs?: Record<string, s
 import type { CatalogCard, FormSpecDoc, ModifierKind, SpecValues } from './spec-form.tsx'
 import { paramFields, patchStageParams } from './draft.ts'
 import css from './card.module.css'
-import type { CardsBenchValue, CardsRunValue, BenchStageRow } from './cards-resource.ts'
+import type { CardsBenchValue, CardsDraftValue, CardsRunValue, BenchStageRow } from './cards-resource.ts'
 import { CARDS_BENCH_ADDRESS, cardsRunAddress, fetchBench, fetchLatestRunForDraft, observeRunOutcome, openCardsResource, parseCardsAddress, restoreRunToBench, uploadInputFile } from './cards-resource.ts'
 import { defaultFamilyForCard, startCardRun, stopRun } from '@melite-plugin/melite-run-wire'
 import { addStageWire, groupStagesWire, removeStageWire, reorderStageWire, ungroupStageWire } from './add-stage.ts'
@@ -77,7 +77,7 @@ interface TabInfo {
 /** The global standard resource hook's shape (UseResource specialized to
  *  the cards protocol, local spelling). */
 interface ResourceHook {
-  (address: string): { status: 'none' | 'loading' | 'live' | 'failed'; value?: CardsBenchValue | CardsRunValue; failure?: { message?: string } }
+  (address: string): { status: 'none' | 'loading' | 'live' | 'failed'; value?: CardsBenchValue | CardsRunValue | CardsDraftValue; failure?: { message?: string } }
 }
 
 export interface CardsTabProps {
@@ -497,7 +497,7 @@ function benchRow(stage: BenchStageRow, bench?: CardsBenchValue): CardRowLineTab
  *  dump. Params left, Run right; the patch carries only CHANGED keys
  *  (coerced once, at patch time — the editPatch law); then the run
  *  gesture (patch lands in the domain BEFORE the run reads it). */
-function StageDrill({ stage, bench, running, onRun, onClose, onRemoved, onPatchParams, renderStageView, onSurface, runId }: {
+function StageDrill({ stage, bench, running, onRun, onClose, onRemoved, onPatchParams, renderStageView, onSurface, runId, canRemove }: {
   stage: BenchStageRow
   bench: CardsBenchValue
   running: boolean
@@ -508,6 +508,11 @@ function StageDrill({ stage, bench, running, onRun, onClose, onRemoved, onPatchP
   renderStageView: (owner: StageViewOwnerProps, fallback: ReturnType<typeof h>) => ReturnType<typeof h>
   onSurface?: (size: string) => void
   runId?: string | null
+  /** Whether stage removal is offered. The bench view owns its rows
+   *  (remove rides the bench CAS door); a DRAFT view does not — the
+   *  draft's shape belongs to its authoring surface, so the button is
+   *  absent there, not broken. */
+  canRemove?: boolean
 }): ReturnType<typeof h> {
   const title = String(stage.title ?? stage.card ?? stage.id)
   const held: SpecValues = typeof stage.params === 'object' && stage.params !== null ? stage.params : {}
@@ -671,7 +676,7 @@ function StageDrill({ stage, bench, running, onRun, onClose, onRemoved, onPatchP
             running ? 'running…' : 'Run'),
         ),
         h('div', { className: css.runRow },
-          h('button', {
+          canRemove === false ? null : h('button', {
             className: css.back,
             type: 'button',
             disabled: running || removing,
@@ -1151,6 +1156,71 @@ function BenchView({ bench, onRun, onRunStage, running, onPatchParams, renderSta
   )
 }
 
+/**
+ * THE DRAFT VIEW (the conversation card's target, 2026-09-12 — the
+ * old embed's law restored): one flow draft's stage on the authoring
+ * surface. The studio claims `cards.stage.view` exactly as the bench's
+ * zoom does — same slot, same owner currency, same run/patch doors —
+ * so the chat card opens the timeline/video/splits/audio surface, and
+ * a card with no registered studio falls back to the generic zoom
+ * card (params + Run), the bench's own fallback.
+ *
+ * Removal is NOT offered (the draft's shape belongs to its authoring
+ * surface — the bench CAS door has no business here); the back affordance
+ * returns to the shared bench, the tab's home address.
+ */
+function DraftView({ value, running, onRun, onBack, onPatchParams, renderStageView, runId }: {
+  value: CardsDraftValue
+  running: boolean
+  onRun: () => void
+  onBack: () => void
+  onPatchParams: (patch: Record<string, unknown>) => void
+  renderStageView: (owner: StageViewOwnerProps, fallback: ReturnType<typeof h>) => ReturnType<typeof h>
+  runId: string | null
+}): ReturnType<typeof h> {
+  const found = value.stages.find((s) => s.id === value.stageId) ?? null
+  if (found === null) {
+    return h('div', { className: css.zoomDetail },
+      h('p', { className: css.groupNote },
+        'Stage ' + value.stageId + ' is no longer on draft ' + value.draftId + '.'),
+      h('div', { className: css.runRow },
+        h('button', { className: css.back, type: 'button', onClick: onBack }, 'Back to the bench'),
+      ),
+    )
+  }
+  // CARD BIRTH LAW (the runs door's own text: "every run is born from
+  // an action card"): a card tool's draft is born with the card id as
+  // its intent and ONE stage — the estate's bench normalization keeps
+  // only the engine row (service/title discarded), so the card
+  // identity survives on the DRAFT INTENT alone. The studio consult
+  // keys on cardName; re-attach it from the intent for the
+  // single-stage card-born draft only (user-authored benches carry
+  // card on the row itself and never take this arm). Live-lane
+  // receipt 2026-09-12: the chat-born bench-default/s_0 rendered the
+  // generic drill because the consult saw cardName ''.
+  let stage = found
+  if ((stage['card'] === undefined || stage['card'] === '') && value.intent !== '' && value.stages.length === 1) {
+    stage = { ...found, card: value.intent }
+  }
+  // The synthetic bench: siblings for the input picker (the
+  // slot-is-the-wire law), the draft id for the patch door. rev -1 is
+  // the no-CAS marker — removal is absent (canRemove false), so the
+  // marker is never spent.
+  const bench: CardsBenchValue = { kind: 'bench', draftId: value.draftId, rev: -1, stages: value.stages, log: [] }
+  return h(StageDrill, {
+    stage,
+    bench,
+    running,
+    onRun,
+    onClose: onBack,
+    onRemoved: onBack,
+    onPatchParams,
+    renderStageView,
+    runId,
+    canRemove: false,
+  })
+}
+
 function RunView({ run, onBack, onRestored, onStop }: {
   run: CardsRunValue
   onBack: (() => void) | undefined
@@ -1267,7 +1337,7 @@ export function CardsTab(props: CardsTabProps): ReturnType<typeof h> {
   const [lastRunId, setLastRunId] = useState<string | null>(null)
   useEffect(() => {
     if (lastRunId !== null) return
-    if (snapshot?.value?.kind !== 'bench') return
+    if (snapshot?.value?.kind !== 'bench' && snapshot?.value?.kind !== 'draft') return
     const draftId = snapshot.value.draftId
     if (draftId === '') return
     let alive = true
@@ -1337,8 +1407,38 @@ export function CardsTab(props: CardsTabProps): ReturnType<typeof h> {
   // PARAMS PATCH for surface views (the slot's onPatch currency):
   // the same drafts/patch door the drill's own editor rides.
   const onPatchParamsStage = useCallback((stage: BenchStageRow, patch: Record<string, unknown>): void => {
-    if (snapshot?.value?.kind !== 'bench') return
+    if (snapshot?.value?.kind !== 'bench' && snapshot?.value?.kind !== 'draft') return
     void patchStageParams(snapshot.value.draftId, stage.id, patch)
+      .then(() => { setLocalRunError(null) })
+      .catch((e: unknown) => {
+        setLocalRunError(e instanceof Error ? e.message : 'patch failed')
+      })
+  }, [snapshot])
+  // DRAFT-STAGE RUN (the draft view's Run): the same composing door —
+  // patch happens in the drill, this starts the stage's run and arms
+  // the same outcome observer (the observer writes the draft's stage
+  // outcome; the bench is never touched).
+  const onRunDraftStage = useCallback((): void => {
+    const value = snapshot?.value
+    if (value?.kind !== 'draft') return
+    const target = value.stages.find((s) => s.id === value.stageId)
+    if (target === undefined) return
+    setRunning(true)
+    setLocalRunError(null)
+    void runCardStage(value.draftId, target).then((res) => {
+      if ('runId' in res) onStarted(res.runId, { draftId: value.draftId, stageId: target.id })
+      else {
+        setRunning(false)
+        setLocalRunError(res.refused)
+      }
+    })
+  }, [snapshot, onStarted])
+  // DRAFT-STAGE PATCH (the draft view's onPatch currency): the drafts
+  // door directly — the same verb the drill's editor rides.
+  const onPatchParamsDraft = useCallback((patch: Record<string, unknown>): void => {
+    const value = snapshot?.value
+    if (value?.kind !== 'draft') return
+    void patchStageParams(value.draftId, value.stageId, patch)
       .then(() => { setLocalRunError(null) })
       .catch((e: unknown) => {
         setLocalRunError(e instanceof Error ? e.message : 'patch failed')
@@ -1384,6 +1484,19 @@ export function CardsTab(props: CardsTabProps): ReturnType<typeof h> {
           renderStageView,
           runId: lastRunId,
           refreshTick: benchTick,
+        }),
+      )
+    : value.kind === 'draft'
+    ? h(Fragment, null,
+        localRunError !== null ? h('p', { className: css.runError }, localRunError) : null,
+        h(DraftView, {
+          value,
+          running,
+          onRun: onRunDraftStage,
+          onBack: openResource !== undefined ? onBack : (() => {}),
+          onPatchParams: onPatchParamsDraft,
+          renderStageView,
+          runId: lastRunId,
         }),
       )
     : h(RunView, { run: value, onBack: openResource !== undefined ? onBack : undefined, onRestored: onBack, onStop })

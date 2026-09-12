@@ -54,6 +54,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import css from './card.module.css'
 import { Pill, StateDot } from '@deepseek-ai/dsh-client-ui-primitives'
 import { CardDrill } from './card-drill.tsx'
+import { cardsDraftStageAddress } from './cards-resource.ts'
+import { openCardsSurface } from './surface.ts'
 import type { ToolCallBlockView } from './types.ts'
 import {
   cardRows, fetchDraft, paramFields, patchStageParams, runFinished, runStatus, startDraft,
@@ -185,7 +187,11 @@ function useDraft(draftId: string | null): {
   return { doc, live, error, refresh }
 }
 
-/** The chat-listed card row: kind tag, title, service, status dot, prompt. */
+/** The chat-listed card row: kind tag, title, service, status dot, prompt.
+ *  THE CLICK opens the AUTHORING SURFACE in the Cards tab (the old
+ *  embed's law — timeline, video preview, per-gen splits, global
+ *  audio) when the shell face is installed; without a shell (unit
+ *  tests, headless harnesses) it falls back to the in-card drill. */
 function CardRowLine({ row, onOpen }: { row: CardRow; onOpen: () => void }) {
   // installed StateDot union: done | warning | ongoing | error — a
   // READY card (never run) shows no dot at all, not a fake state.
@@ -249,7 +255,16 @@ export function FlowCards({ block }: FlowCardsProps) {
       </div>
       {doc === null && error === null && <div className={css.load}>cards…</div>}
       {rows.map((row) => (
-        <CardRowLine key={row.stageId} row={row} onOpen={() => { setOpenStage(row.stageId) }} />
+        <CardRowLine key={row.stageId} row={row} onOpen={() => {
+          // THE OLD LAW: the chat card opens the authoring surface —
+          // the studio (or the generic zoom card for studio-less
+          // cards) in the shell's Cards tab, addressed to THIS stage.
+          // No shell face → the in-card drill (the degraded path,
+          // never a throw).
+          if (parsed.draftId === null || !openCardsSurface(cardsDraftStageAddress(parsed.draftId, row.stageId))) {
+            setOpenStage(row.stageId)
+          }
+        }} />
       ))}
       {openRow !== null && (
         <CardDrill

@@ -707,7 +707,14 @@ export class RunsRegistryService extends Service {
       return { kind: "refusal", refusal: envelopeRefusal("not-object", doc) };
     }
     const body: Record<string, unknown> = doc as Record<string, unknown>;
-    const testFlag: unknown = body["test"];
+    // ONE ENVELOPE LAW with checkFlowsStartEnvelope (runsGates) and the
+    // queue door: absent/null test means false — a chat tool's start
+    // doc may carry test:null (LLM serializers emit nulls for omitted
+    // booleans) and the py-era gate (submit 1179-1270) never refused
+    // it. This copy had drifted to a bare read, refusing legal calls
+    // (live lane receipt 2026-09-12: h3_timeline chat call refused
+    // "test flag must be a boolean (got unknown null)").
+    const testFlag: unknown = body["test"] ?? false;
     if (typeof testFlag !== "boolean") {
       return {
         kind: "refusal",

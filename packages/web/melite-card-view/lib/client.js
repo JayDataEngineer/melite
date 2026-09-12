@@ -6,8 +6,8 @@ window.__ModuleLoader__.load({
 		Object.defineProperty(exports, Symbol.toStringTag, { value: "Module" });
 		let react = require("react");
 		let _deepseek_ai_dsh_client_ui_primitives = require("@deepseek-ai/dsh-client-ui-primitives");
-		let react_jsx_runtime = require("react/jsx-runtime");
 		require("@deepseek-ai/cordis");
+		let react_jsx_runtime = require("react/jsx-runtime");
 		let react_dom = require("react-dom");
 		//#region src/client/apply-guard.ts
 		/** Claims the plugin apply slot. Returns true when this call won the slot. */
@@ -19,6 +19,22 @@ window.__ModuleLoader__.load({
 		/** Releases the claim so a hot-reloaded bundle can claim again in-page. */
 		function releaseCardViewApply() {
 			globalThis.__rayCardViewApplied = void 0;
+		}
+		//#endregion
+		//#region src/client/surface.ts
+		let open = null;
+		/** Install the shell face (the client entry's apply; idempotent overwrite). */
+		function setOpenCardsSurface(fn) {
+			open = fn;
+		}
+		/**
+		* Open a cards address in the shell's Cards tab. Returns false when no
+		* shell face is installed — the caller falls back to its in-card view.
+		*/
+		function openCardsSurface(address) {
+			if (open === null) return false;
+			open(address);
+			return true;
 		}
 		//#endregion
 		//#region \0dsh-css:melite-card-view/src/client/card.module.css.mjs
@@ -663,6 +679,528 @@ window.__ModuleLoader__.load({
 			}, running ? "running…" : "Run")))));
 		}
 		//#endregion
+		//#region ../card-base/src/wire.ts
+		/** Read a same-origin /v1 JSON door. Non-200 → named throw (the door's
+		*  own error text when present). */
+		async function v1Get(path, signal) {
+			const res = await fetch(path, { ...signal === void 0 ? {} : { signal } });
+			const body = await res.json().catch(() => null);
+			if (!res.ok) {
+				const err = typeof body === "object" && body !== null ? Reflect.get(body, "error") : void 0;
+				throw new Error(typeof err === "string" ? err : path + ": HTTP " + String(res.status));
+			}
+			return body;
+		}
+		/** /v1/model-catalog → the cards section (the picker's ONE surface —
+		*  action cards, one tile per card package; models are NOT entries). */
+		async function fetchCardCatalog(signal) {
+			const raw = (await v1Get("/v1/model-catalog", signal))["cards"] ?? {};
+			const out = [];
+			for (const [id, row] of Object.entries(raw)) {
+				if (typeof row !== "object" || row === null) continue;
+				const famsRaw = row["families"];
+				out.push({
+					id,
+					label: typeof row["label"] === "string" ? row["label"] : id,
+					description: typeof row["description"] === "string" ? row["description"] : "",
+					genre: typeof row["genre"] === "string" ? row["genre"] : "",
+					families: Array.isArray(famsRaw) ? famsRaw.filter((x) => typeof x === "string") : [id]
+				});
+			}
+			return out.sort((a, b) => a.label.localeCompare(b.label));
+		}
+		/** /v1/form-spec?model=<family> — the card family's emission (fields
+		*  + the declared edges + the mod kinds). */
+		async function fetchFormSpec(model, signal) {
+			const doc = await v1Get("/v1/form-spec?model=" + encodeURIComponent(model), signal);
+			if (!Array.isArray(doc["fields"])) throw new Error("form-spec: no fields array");
+			return doc;
+		}
+		/** /v1/forms — every card's meta row (the edge emission included). */
+		async function fetchFormsTable(signal) {
+			return v1Get("/v1/forms", signal);
+		}
+		/** OS-file drop → the /v1/uploads door (png/jpeg/webp data-URL) → the
+		*  input-dir path the param accepts. The door's own gates (type
+		*  whitelist, one clean segment) are the law — the client only
+		*  voices its refusals, never invents its own. */
+		async function uploadInputFile(file) {
+			const isImage = file.type === "image/png" || file.type === "image/jpeg" || file.type === "image/webp";
+			const isAudio = file.type.startsWith("audio/");
+			if (!isImage && !isAudio) throw new Error("Input cards don’t accept " + (file.type !== "" ? file.type : "that file") + " — drop an image or audio file");
+			if (isAudio) throw new Error("audio uploads have no door yet — the uploads door boards png / jpeg / webp only");
+			const dataUrl = await new Promise((resolve, reject) => {
+				const r = new FileReader();
+				r.onload = () => {
+					resolve(String(r.result));
+				};
+				r.onerror = () => {
+					reject(/* @__PURE__ */ new Error("could not read the dropped file"));
+				};
+				r.readAsDataURL(file);
+			});
+			const res = await fetch("/v1/uploads", {
+				method: "POST",
+				headers: { "content-type": "application/json" },
+				body: JSON.stringify({
+					filename: file.name.replace(/[^A-Za-z0-9._-]/g, "_"),
+					data: dataUrl
+				})
+			});
+			if (!res.ok) throw new Error("upload refused: HTTP " + String(res.status));
+			const out = await res.json();
+			const path = typeof out === "object" && out !== null && typeof Reflect.get(out, "path") === "string" ? Reflect.get(out, "path") : "";
+			if (path === "") throw new Error("upload answered without a path");
+			return {
+				name: path,
+				file: path.split("/").pop() ?? file.name
+			};
+		}
+		//#endregion
+		//#region ../../../node_modules/.pnpm/@deepseek-ai+dsh-typert-protocol@0.1.5-rc.2_@deepseek-ai+cordis@4.0.2/node_modules/@deepseek-ai/dsh-typert-protocol/lib/index.js
+		/** The one Remote failure class shared by owners, the Gateway, and consumers. */
+		/**
+		* One Remote call failure: a real Error carrying its stable code and typed
+		* details. Owners throw it at the failure point; the Host Gateway encodes it
+		* onto the wire unchanged; the Client face rebuilds an instance for the
+		* `RemoteResult` error branch, so `throw result.error` keeps throw semantics.
+		* Discrimination is always by `code`, never by instanceof.
+		*/
+		var RemoteError = class extends Error {
+			code;
+			details;
+			/** Structural marker: cross-realm/bundle identification never uses instanceof. */
+			isDSHRemoteError = true;
+			/**
+			* @param code - stable failure code declared in {@link RemoteErrorDetailsMap}.
+			* @param message - human diagnostic carried across the wire.
+			* @param details - structured payload typed by the code.
+			* @param options - standard Error options (`cause` survives in-process only).
+			*/
+			constructor(code, message, details, options) {
+				super(message, options);
+				this.code = code;
+				this.details = details;
+				this.name = "RemoteError";
+			}
+		};
+		//#endregion
+		//#region src/client/cards-resource.ts
+		/** The bench key the tab serves (melite-tools' DEFAULT_BENCH — 'main'). */
+		const CARDS_BENCH_ADDRESS = "dsh-resource://cards/bench";
+		/** The run address (the wand's target, plan §5). */
+		function cardsRunAddress(runId) {
+			return "dsh-resource://cards/run/" + encodeURIComponent(runId);
+		}
+		/** The draft-stage address — the conversation card's studio target
+		*  (the old embed's law; both segments encode, either may carry the
+		*  separators the bare grammar refuses). */
+		function cardsDraftStageAddress(draftId, stageId) {
+			return "dsh-resource://cards/draft/" + encodeURIComponent(draftId) + "/" + encodeURIComponent(stageId);
+		}
+		/** Parse a cards address; null when the path is not one of ours. */
+		function parseCardsAddress(address) {
+			if (!address.startsWith("dsh-resource://cards/")) return null;
+			const rest = address.slice(21);
+			if (rest === "bench") return { bench: true };
+			if (rest.startsWith("run/")) {
+				const runId = decodeURIComponent(rest.slice(4));
+				if (runId !== "") return { run: runId };
+			}
+			if (rest.startsWith("draft/")) {
+				const body = rest.slice(6);
+				const slash = body.indexOf("/");
+				if (slash > 0 && slash < body.length - 1) {
+					const draftId = decodeURIComponent(body.slice(0, slash));
+					const stageId = decodeURIComponent(body.slice(slash + 1));
+					if (draftId !== "" && stageId !== "") return {
+						draft: draftId,
+						stage: stageId
+					};
+				}
+			}
+			return null;
+		}
+		/** One failure frame (the contract's error branch — a real RemoteError
+		*  on the unclassified cards code; the address prefixes the diagnostic). */
+		function failure(address, message) {
+			return {
+				ok: false,
+				error: new RemoteError("cards/unclassified", address + ": " + message, {})
+			};
+		}
+		/** Defensive row readers — the door's wire is untyped at this seam. */
+		function readBench(doc) {
+			const stages = Array.isArray(doc["stages"]) ? doc["stages"].filter((s) => typeof s === "object" && s !== null && typeof s["id"] === "string") : [];
+			const log = Array.isArray(doc["log"]) ? doc["log"].filter((s) => typeof s === "object" && s !== null && typeof s["rev"] === "number") : [];
+			return {
+				kind: "bench",
+				draftId: typeof doc["draft_id"] === "string" ? doc["draft_id"] : "bench-main",
+				rev: typeof doc["rev"] === "number" ? doc["rev"] : 0,
+				stages,
+				log
+			};
+		}
+		/** Re-read the shared bench (session 'main') — the consumer's reload
+		*  after its own edits (the provider's bench stream is a single
+		*  snapshot; same-address navigation does not re-run it). */
+		async function fetchBench(signal) {
+			return readBench(await wireCall("bench/get", { sessionKey: "main" }, signal));
+		}
+		/** THE OUTCOME OBSERVER (the attribution half): poll the run to
+		*  terminal on the run-wire cadence, then write runStatus + result
+		*  onto the bench row through the shared-state door. Both run paths
+		*  (in-tab stream and shell navigation) start this once per gesture;
+		*  the patch is bookkeeping — a refusal is swallowed (the next run
+		*  rewrites the row), an abort ends the watch. The result.url rides
+		*  the status door's already-rewritten media route. */
+		async function observeRunOutcome(draftId, stageId, runId, signal, onTouched) {
+			try {
+				const startStatus = await fetchRunStatus(runId, signal).then((r) => r.status).catch(() => "running");
+				await patchStageOutcome(draftId, stageId, {
+					runStatus: startStatus === "queued" || startStatus === "pending" ? "queued" : "running",
+					result: { run_id: runId }
+				});
+				onTouched?.();
+			} catch {}
+			const sleep = (ms) => new Promise((resolve) => {
+				const t = setTimeout(resolve, ms);
+				signal?.addEventListener("abort", () => {
+					clearTimeout(t);
+					resolve();
+				}, { once: true });
+			});
+			let lastLive = "running";
+			while (signal?.aborted !== true) {
+				let row;
+				try {
+					row = await fetchRunStatus(runId, signal);
+				} catch {
+					await sleep(1500);
+					continue;
+				}
+				if (!isTerminalRun(row.status)) {
+					const live = row.status === "queued" || row.status === "pending" ? "queued" : "running";
+					if (live !== lastLive) {
+						lastLive = live;
+						try {
+							await patchStageOutcome(draftId, stageId, { runStatus: live });
+							onTouched?.();
+						} catch {}
+					}
+					await sleep(1500);
+					continue;
+				}
+				const stage = row.stages.find((s) => s.id === stageId) ?? (row.stages.length === 1 ? row.stages[0] : void 0);
+				const url = stage !== void 0 && typeof stage.url === "string" && stage.url !== "" ? stage.url : "";
+				const result = { run_id: runId };
+				if (url !== "") result["url"] = url;
+				const gallery = stage?.gallery ?? [];
+				const artNames = [];
+				for (const g of gallery) if (g.name !== "") artNames.push(g.name);
+				if (artNames.length > 0) {
+					const mediaUrls = artNames.map((n) => toRunMediaUrl(runId, n));
+					const artifacts = {};
+					if (url !== "") artifacts["video"] = url;
+					for (let i = 0; i < artNames.length; i++) artifacts[artNames[i]] = mediaUrls[i];
+					result["artifacts"] = artifacts;
+					result["assetUrls"] = url !== "" ? [url, ...mediaUrls] : mediaUrls;
+				}
+				const terminal = row.status === "completed" ? "done" : row.status;
+				try {
+					await patchStageOutcome(draftId, stageId, {
+						runStatus: terminal,
+						result
+					});
+					onTouched?.();
+				} catch {}
+				if (terminal === "done" || terminal === "failed" || terminal === "stopped") return terminal;
+				return null;
+			}
+			return null;
+		}
+		function readRun(runId, doc) {
+			const row = readRunStatus(runId, doc);
+			return {
+				kind: "run",
+				runId: row.runId,
+				status: row.status,
+				draftId: row.draftId,
+				stages: row.stages,
+				lastFrame: void 0
+			};
+		}
+		/**
+		* Normalize a `drafts/get` doc into the draft-stage value. The row
+		* shape is the bench's own (DraftRecord stages carry id/card/params/
+		* result extras verbatim); the defensive filter keeps rows with a
+		* string id, mirroring readBench — the door's wire is untyped at this
+		* seam and a malformed row must not break the whole view.
+		*/
+		function readDraft(draftId, stageId, doc) {
+			const stages = Array.isArray(doc["stages"]) ? doc["stages"].filter((s) => typeof s === "object" && s !== null && typeof s["id"] === "string") : [];
+			return {
+				kind: "draft",
+				draftId,
+				stageId,
+				intent: typeof doc["intent"] === "string" ? doc["intent"] : "",
+				stages
+			};
+		}
+		/** The frame is the run-wire package's ONE definition; this wrapper
+		*  narrows the method set for the cards protocol's own verbs. */
+		async function wireCall(nsMethod, args, signal) {
+			return await wireCall$2(nsMethod, args, { signal });
+		}
+		/** Card-back-into-flow: restore a run's producing draft onto the
+		*  shared bench — drafts/get (the draft holds the full
+		*  card/engine/params stages) then per-stage bench/add-stage as the
+		*  USER (the CAS law: bench/get first, each add carries expect_rev,
+		*  chained from the previous answer's rev). A stage with no card is
+		*  SKIPPED and counted (add-stage requires one); an id collision
+		*  retries once without the id (the bench auto-ids s_<n>) and notes
+		*  it. Any other refusal throws with the door's own text — the bench
+		*  keeps whatever landed before it, and the report says so. */
+		async function restoreRunToBench(run, signal) {
+			if (run.draftId === null || run.draftId === "") throw new Error("this run names no draft — nothing to restore");
+			let draft;
+			try {
+				draft = await wireCall("drafts/get", { draftId: run.draftId }, signal);
+			} catch (e) {
+				throw new Error("the producing draft is unreadable: " + (e instanceof Error ? e.message : String(e)));
+			}
+			const raw = draft["stages"];
+			const stages = Array.isArray(raw) ? raw.filter((s) => typeof s === "object" && s !== null) : [];
+			if (stages.length === 0) throw new Error("the producing draft holds no stages — nothing to restore");
+			let bench;
+			try {
+				bench = await wireCall("bench/get", { sessionKey: "main" }, signal);
+			} catch (e) {
+				throw new Error("the bench is unreadable: " + (e instanceof Error ? e.message : String(e)));
+			}
+			let rev = typeof bench["rev"] === "number" ? bench["rev"] : 0;
+			const report = {
+				added: 0,
+				skipped: 0,
+				notes: []
+			};
+			for (const st of stages) {
+				const card = st["card"];
+				if (typeof card !== "string" || card === "") {
+					report.skipped += 1;
+					report.notes.push("skipped a stage with no card (add-stage requires one)");
+					continue;
+				}
+				const doc = {
+					card,
+					author: "user",
+					expect_rev: rev
+				};
+				if (typeof st["engine"] === "string" && st["engine"] !== "") doc["engine"] = st["engine"];
+				if (typeof st["params"] === "object" && st["params"] !== null && !Array.isArray(st["params"])) doc["params"] = st["params"];
+				const id = typeof st["id"] === "string" && st["id"] !== "" ? st["id"] : null;
+				if (id !== null) doc["id"] = id;
+				try {
+					const row = await wireCall("bench/add-stage", {
+						sessionKey: "main",
+						doc
+					}, signal);
+					if (typeof row["rev"] === "number") rev = row["rev"];
+					report.added += 1;
+				} catch (e) {
+					const message = e instanceof Error ? e.message : String(e);
+					if (id !== null && message.includes("already on the bench")) {
+						const retry = { ...doc };
+						delete retry["id"];
+						try {
+							const row = await wireCall("bench/add-stage", {
+								sessionKey: "main",
+								doc: retry
+							}, signal);
+							if (typeof row["rev"] === "number") rev = row["rev"];
+							report.added += 1;
+							report.notes.push(id + " was already on the bench — added under a fresh id");
+						} catch (e2) {
+							throw new Error("restore stopped after " + String(report.added) + " stage(s): " + (e2 instanceof Error ? e2.message : String(e2)));
+						}
+					} else throw new Error("restore stopped after " + String(report.added) + " stage(s): " + message);
+				}
+			}
+			return report;
+		}
+		/** Merge one events frame into a run value (stage rows upserted by id;
+		*  run-status frames replace the status; the frame is kept for the view). */
+		function mergeRunFrame(value, frame) {
+			const next = {
+				...value,
+				lastFrame: frame
+			};
+			const type = frame["type"];
+			if (type === "run" && typeof frame["status"] === "string") next.status = frame["status"];
+			if (type === "stage") {
+				const stageId = frame["stage"];
+				if (typeof stageId === "string") {
+					if (next.stages.find((s) => s.id === stageId) === void 0) next.stages = [...next.stages, {
+						id: stageId,
+						status: "running"
+					}];
+					else next.stages = next.stages.map((s) => s.id === stageId ? {
+						...s,
+						status: "running"
+					} : s);
+				}
+			}
+			return next;
+		}
+		/** The provider registration body: `ctx.resources.register({ protocol:
+		*  'cards', open })`. The estate remotes over the wire frame; abort
+		*  ends the stream per the contract. */
+		function openCardsResource(address, ctx) {
+			const target = parseCardsAddress(address);
+			const bench = target !== null && "bench" in target;
+			const runId = target !== null && "run" in target ? target.run : "";
+			const draftTarget = target !== null && "draft" in target ? target : null;
+			return (async function* () {
+				if (target === null) {
+					yield failure(address, "not a cards address");
+					return;
+				}
+				if (bench) {
+					let value;
+					try {
+						value = readBench(await wireCall("bench/get", { sessionKey: "main" }));
+					} catch (e) {
+						yield failure(address, e instanceof Error ? e.message : String(e));
+						return;
+					}
+					yield {
+						ok: true,
+						value
+					};
+					yield* pollBenchFrames(value, ctx.signal);
+					return;
+				}
+				if (draftTarget !== null) {
+					let value;
+					try {
+						value = readDraft(draftTarget.draft, draftTarget.stage, await wireCall("drafts/get", { draftId: draftTarget.draft }));
+					} catch (e) {
+						yield failure(address, e instanceof Error ? e.message : String(e));
+						return;
+					}
+					yield {
+						ok: true,
+						value
+					};
+					return;
+				}
+				let value;
+				try {
+					value = readRun(runId, await wireCall("runs/status", { runId }));
+				} catch (e) {
+					yield failure(address, e instanceof Error ? e.message : String(e));
+					return;
+				}
+				yield {
+					ok: true,
+					value
+				};
+				if (ctx.signal.aborted) return;
+				if (isTerminal(value.status)) return;
+				yield* pollRunFrames(runId, value, ctx.signal);
+			})();
+		}
+		/** The terminal statuses — the runs seat's own vocabulary (runsRegistry:
+		*  stopFlag stamps 'stopped'; the settle path stamps 'completed' or
+		*  'failed'. A settled run ends the stream; the hydrated/polled value
+		*  stays as the last ok frame. */
+		function isTerminal(status) {
+			return status === "completed" || status === "failed" || status === "stopped";
+		}
+		/** The live tail (the honest degrade): poll `runs/status` and yield a
+		*  value ONLY when the row moved (no frame spam) until the run turns
+		*  terminal or the holder aborts. A poll error mid-run is not a
+		*  failure frame — the last ok value stays (the kit keeps it); the
+		*  next poll may recover. The cadence (1500ms) rides the run pump's
+		*  own observation granularity, not user perception of latency: stage
+		*  transitions inside the estate tick on the pump's settle path. */
+		async function* pollRunFrames(runId, hydrated, signal) {
+			let value = hydrated;
+			const sleep = (ms) => new Promise((resolve) => {
+				const t = setTimeout(() => {
+					signal.removeEventListener("abort", onAbort);
+					resolve("slept");
+				}, ms);
+				const onAbort = () => {
+					clearTimeout(t);
+					resolve("abort");
+				};
+				if (signal.aborted) {
+					onAbort();
+					return;
+				}
+				signal.addEventListener("abort", onAbort, { once: true });
+			});
+			while (!signal.aborted && !isTerminal(value.status)) {
+				if (await sleep(1500) === "abort" || signal.aborted) return;
+				let row;
+				try {
+					row = await wireCall("runs/status", { runId }, signal);
+				} catch {
+					continue;
+				}
+				const next = readRun(runId, row);
+				if (!(next.status !== value.status || JSON.stringify(next.stages) !== JSON.stringify(value.stages))) continue;
+				value = next;
+				yield {
+					ok: true,
+					value
+				};
+			}
+		}
+		/** THE BENCH TAIL (the provider's live half — pollRunFrames' law,
+		*  applied to the shared doc): poll `bench/get` on a cadence and
+		*  yield a value ONLY when the rev moved (no frame spam) until the
+		*  holder aborts. A poll error is not a failure frame — the last ok
+		*  value stays; the next poll may recover. The cadence (2500ms)
+		*  balances agent-write visibility against doc-read chatter; a
+		*  hidden document still receives frames (the shell decides whether
+		*  the tab renders — the provider never guesses visibility). */
+		async function* pollBenchFrames(hydrated, signal) {
+			let value = hydrated;
+			const sleep = (ms) => new Promise((resolve) => {
+				const t = setTimeout(() => {
+					signal.removeEventListener("abort", onAbort);
+					resolve("slept");
+				}, ms);
+				const onAbort = () => {
+					clearTimeout(t);
+					resolve("abort");
+				};
+				if (signal.aborted) {
+					onAbort();
+					return;
+				}
+				signal.addEventListener("abort", onAbort, { once: true });
+			});
+			while (!signal.aborted) {
+				if (await sleep(2500) === "abort" || signal.aborted) return;
+				let row;
+				try {
+					row = await wireCall("bench/get", { sessionKey: "main" }, signal);
+				} catch {
+					continue;
+				}
+				const next = readBench(row);
+				if (next.rev === value.rev) continue;
+				value = next;
+				yield {
+					ok: true,
+					value
+				};
+			}
+		}
+		//#endregion
 		//#region src/client/FlowCards.tsx
 		/**
 		* The melite_flow toolview — THE ACTION CARDS, rendered NATIVE in the
@@ -818,7 +1356,11 @@ window.__ModuleLoader__.load({
 				refresh
 			};
 		}
-		/** The chat-listed card row: kind tag, title, service, status dot, prompt. */
+		/** The chat-listed card row: kind tag, title, service, status dot, prompt.
+		*  THE CLICK opens the AUTHORING SURFACE in the Cards tab (the old
+		*  embed's law — timeline, video preview, per-gen splits, global
+		*  audio) when the shell face is installed; without a shell (unit
+		*  tests, headless harnesses) it falls back to the in-card drill. */
 		function CardRowLine({ row, onOpen }) {
 			const dot = {
 				queued: "warning",
@@ -923,7 +1465,7 @@ window.__ModuleLoader__.load({
 					rows.map((row) => /* @__PURE__ */ (0, react_jsx_runtime.jsx)(CardRowLine, {
 						row,
 						onOpen: () => {
-							setOpenStage(row.stageId);
+							if (parsed.draftId === null || !openCardsSurface(cardsDraftStageAddress(parsed.draftId, row.stageId))) setOpenStage(row.stageId);
 						}
 					}, row.stageId)),
 					openRow !== null && /* @__PURE__ */ (0, react_jsx_runtime.jsx)(CardDrill, {
@@ -1333,84 +1875,6 @@ window.__ModuleLoader__.load({
 					if (fileRef.current !== null) fileRef.current.value = "";
 				}
 			}) : null);
-		}
-		//#endregion
-		//#region ../card-base/src/wire.ts
-		/** Read a same-origin /v1 JSON door. Non-200 → named throw (the door's
-		*  own error text when present). */
-		async function v1Get(path, signal) {
-			const res = await fetch(path, { ...signal === void 0 ? {} : { signal } });
-			const body = await res.json().catch(() => null);
-			if (!res.ok) {
-				const err = typeof body === "object" && body !== null ? Reflect.get(body, "error") : void 0;
-				throw new Error(typeof err === "string" ? err : path + ": HTTP " + String(res.status));
-			}
-			return body;
-		}
-		/** /v1/model-catalog → the cards section (the picker's ONE surface —
-		*  action cards, one tile per card package; models are NOT entries). */
-		async function fetchCardCatalog(signal) {
-			const raw = (await v1Get("/v1/model-catalog", signal))["cards"] ?? {};
-			const out = [];
-			for (const [id, row] of Object.entries(raw)) {
-				if (typeof row !== "object" || row === null) continue;
-				const famsRaw = row["families"];
-				out.push({
-					id,
-					label: typeof row["label"] === "string" ? row["label"] : id,
-					description: typeof row["description"] === "string" ? row["description"] : "",
-					genre: typeof row["genre"] === "string" ? row["genre"] : "",
-					families: Array.isArray(famsRaw) ? famsRaw.filter((x) => typeof x === "string") : [id]
-				});
-			}
-			return out.sort((a, b) => a.label.localeCompare(b.label));
-		}
-		/** /v1/form-spec?model=<family> — the card family's emission (fields
-		*  + the declared edges + the mod kinds). */
-		async function fetchFormSpec(model, signal) {
-			const doc = await v1Get("/v1/form-spec?model=" + encodeURIComponent(model), signal);
-			if (!Array.isArray(doc["fields"])) throw new Error("form-spec: no fields array");
-			return doc;
-		}
-		/** /v1/forms — every card's meta row (the edge emission included). */
-		async function fetchFormsTable(signal) {
-			return v1Get("/v1/forms", signal);
-		}
-		/** OS-file drop → the /v1/uploads door (png/jpeg/webp data-URL) → the
-		*  input-dir path the param accepts. The door's own gates (type
-		*  whitelist, one clean segment) are the law — the client only
-		*  voices its refusals, never invents its own. */
-		async function uploadInputFile(file) {
-			const isImage = file.type === "image/png" || file.type === "image/jpeg" || file.type === "image/webp";
-			const isAudio = file.type.startsWith("audio/");
-			if (!isImage && !isAudio) throw new Error("Input cards don’t accept " + (file.type !== "" ? file.type : "that file") + " — drop an image or audio file");
-			if (isAudio) throw new Error("audio uploads have no door yet — the uploads door boards png / jpeg / webp only");
-			const dataUrl = await new Promise((resolve, reject) => {
-				const r = new FileReader();
-				r.onload = () => {
-					resolve(String(r.result));
-				};
-				r.onerror = () => {
-					reject(/* @__PURE__ */ new Error("could not read the dropped file"));
-				};
-				r.readAsDataURL(file);
-			});
-			const res = await fetch("/v1/uploads", {
-				method: "POST",
-				headers: { "content-type": "application/json" },
-				body: JSON.stringify({
-					filename: file.name.replace(/[^A-Za-z0-9._-]/g, "_"),
-					data: dataUrl
-				})
-			});
-			if (!res.ok) throw new Error("upload refused: HTTP " + String(res.status));
-			const out = await res.json();
-			const path = typeof out === "object" && out !== null && typeof Reflect.get(out, "path") === "string" ? Reflect.get(out, "path") : "";
-			if (path === "") throw new Error("upload answered without a path");
-			return {
-				name: path,
-				file: path.split("/").pop() ?? file.name
-			};
 		}
 		//#endregion
 		//#region ../card-base/src/form.tsx
@@ -2083,389 +2547,6 @@ window.__ModuleLoader__.load({
 			}, (0, react.createElement)("span", { className: card_module_css_default.modTileLabel }, props.label), props.strength !== void 0 ? (0, react.createElement)("span", { className: card_module_css_default.modTileStrength }, props.strength.toFixed(2)) : null);
 		}
 		//#endregion
-		//#region ../../../node_modules/.pnpm/@deepseek-ai+dsh-typert-protocol@0.1.5-rc.2_@deepseek-ai+cordis@4.0.2/node_modules/@deepseek-ai/dsh-typert-protocol/lib/index.js
-		/** The one Remote failure class shared by owners, the Gateway, and consumers. */
-		/**
-		* One Remote call failure: a real Error carrying its stable code and typed
-		* details. Owners throw it at the failure point; the Host Gateway encodes it
-		* onto the wire unchanged; the Client face rebuilds an instance for the
-		* `RemoteResult` error branch, so `throw result.error` keeps throw semantics.
-		* Discrimination is always by `code`, never by instanceof.
-		*/
-		var RemoteError = class extends Error {
-			code;
-			details;
-			/** Structural marker: cross-realm/bundle identification never uses instanceof. */
-			isDSHRemoteError = true;
-			/**
-			* @param code - stable failure code declared in {@link RemoteErrorDetailsMap}.
-			* @param message - human diagnostic carried across the wire.
-			* @param details - structured payload typed by the code.
-			* @param options - standard Error options (`cause` survives in-process only).
-			*/
-			constructor(code, message, details, options) {
-				super(message, options);
-				this.code = code;
-				this.details = details;
-				this.name = "RemoteError";
-			}
-		};
-		//#endregion
-		//#region src/client/cards-resource.ts
-		/** The bench key the tab serves (melite-tools' DEFAULT_BENCH — 'main'). */
-		const CARDS_BENCH_ADDRESS = "dsh-resource://cards/bench";
-		/** The run address (the wand's target, plan §5). */
-		function cardsRunAddress(runId) {
-			return "dsh-resource://cards/run/" + encodeURIComponent(runId);
-		}
-		/** Parse a cards address; null when the path is not one of ours. */
-		function parseCardsAddress(address) {
-			if (!address.startsWith("dsh-resource://cards/")) return null;
-			const rest = address.slice(21);
-			if (rest === "bench") return { bench: true };
-			if (rest.startsWith("run/")) {
-				const runId = decodeURIComponent(rest.slice(4));
-				if (runId !== "") return { run: runId };
-			}
-			return null;
-		}
-		/** One failure frame (the contract's error branch — a real RemoteError
-		*  on the unclassified cards code; the address prefixes the diagnostic). */
-		function failure(address, message) {
-			return {
-				ok: false,
-				error: new RemoteError("cards/unclassified", address + ": " + message, {})
-			};
-		}
-		/** Defensive row readers — the door's wire is untyped at this seam. */
-		function readBench(doc) {
-			const stages = Array.isArray(doc["stages"]) ? doc["stages"].filter((s) => typeof s === "object" && s !== null && typeof s["id"] === "string") : [];
-			const log = Array.isArray(doc["log"]) ? doc["log"].filter((s) => typeof s === "object" && s !== null && typeof s["rev"] === "number") : [];
-			return {
-				kind: "bench",
-				draftId: typeof doc["draft_id"] === "string" ? doc["draft_id"] : "bench-main",
-				rev: typeof doc["rev"] === "number" ? doc["rev"] : 0,
-				stages,
-				log
-			};
-		}
-		/** Re-read the shared bench (session 'main') — the consumer's reload
-		*  after its own edits (the provider's bench stream is a single
-		*  snapshot; same-address navigation does not re-run it). */
-		async function fetchBench(signal) {
-			return readBench(await wireCall("bench/get", { sessionKey: "main" }, signal));
-		}
-		/** THE OUTCOME OBSERVER (the attribution half): poll the run to
-		*  terminal on the run-wire cadence, then write runStatus + result
-		*  onto the bench row through the shared-state door. Both run paths
-		*  (in-tab stream and shell navigation) start this once per gesture;
-		*  the patch is bookkeeping — a refusal is swallowed (the next run
-		*  rewrites the row), an abort ends the watch. The result.url rides
-		*  the status door's already-rewritten media route. */
-		async function observeRunOutcome(draftId, stageId, runId, signal, onTouched) {
-			try {
-				const startStatus = await fetchRunStatus(runId, signal).then((r) => r.status).catch(() => "running");
-				await patchStageOutcome(draftId, stageId, {
-					runStatus: startStatus === "queued" || startStatus === "pending" ? "queued" : "running",
-					result: { run_id: runId }
-				});
-				onTouched?.();
-			} catch {}
-			const sleep = (ms) => new Promise((resolve) => {
-				const t = setTimeout(resolve, ms);
-				signal?.addEventListener("abort", () => {
-					clearTimeout(t);
-					resolve();
-				}, { once: true });
-			});
-			let lastLive = "running";
-			while (signal?.aborted !== true) {
-				let row;
-				try {
-					row = await fetchRunStatus(runId, signal);
-				} catch {
-					await sleep(1500);
-					continue;
-				}
-				if (!isTerminalRun(row.status)) {
-					const live = row.status === "queued" || row.status === "pending" ? "queued" : "running";
-					if (live !== lastLive) {
-						lastLive = live;
-						try {
-							await patchStageOutcome(draftId, stageId, { runStatus: live });
-							onTouched?.();
-						} catch {}
-					}
-					await sleep(1500);
-					continue;
-				}
-				const stage = row.stages.find((s) => s.id === stageId) ?? (row.stages.length === 1 ? row.stages[0] : void 0);
-				const url = stage !== void 0 && typeof stage.url === "string" && stage.url !== "" ? stage.url : "";
-				const result = { run_id: runId };
-				if (url !== "") result["url"] = url;
-				const terminal = row.status === "completed" ? "done" : row.status;
-				try {
-					await patchStageOutcome(draftId, stageId, {
-						runStatus: terminal,
-						result
-					});
-					onTouched?.();
-				} catch {}
-				if (terminal === "done" || terminal === "failed" || terminal === "stopped") return terminal;
-				return null;
-			}
-			return null;
-		}
-		function readRun(runId, doc) {
-			const row = readRunStatus(runId, doc);
-			return {
-				kind: "run",
-				runId: row.runId,
-				status: row.status,
-				draftId: row.draftId,
-				stages: row.stages,
-				lastFrame: void 0
-			};
-		}
-		/** The frame is the run-wire package's ONE definition; this wrapper
-		*  narrows the method set for the cards protocol's own verbs. */
-		async function wireCall(nsMethod, args, signal) {
-			return await wireCall$2(nsMethod, args, { signal });
-		}
-		/** Card-back-into-flow: restore a run's producing draft onto the
-		*  shared bench — drafts/get (the draft holds the full
-		*  card/engine/params stages) then per-stage bench/add-stage as the
-		*  USER (the CAS law: bench/get first, each add carries expect_rev,
-		*  chained from the previous answer's rev). A stage with no card is
-		*  SKIPPED and counted (add-stage requires one); an id collision
-		*  retries once without the id (the bench auto-ids s_<n>) and notes
-		*  it. Any other refusal throws with the door's own text — the bench
-		*  keeps whatever landed before it, and the report says so. */
-		async function restoreRunToBench(run, signal) {
-			if (run.draftId === null || run.draftId === "") throw new Error("this run names no draft — nothing to restore");
-			let draft;
-			try {
-				draft = await wireCall("drafts/get", { draftId: run.draftId }, signal);
-			} catch (e) {
-				throw new Error("the producing draft is unreadable: " + (e instanceof Error ? e.message : String(e)));
-			}
-			const raw = draft["stages"];
-			const stages = Array.isArray(raw) ? raw.filter((s) => typeof s === "object" && s !== null) : [];
-			if (stages.length === 0) throw new Error("the producing draft holds no stages — nothing to restore");
-			let bench;
-			try {
-				bench = await wireCall("bench/get", { sessionKey: "main" }, signal);
-			} catch (e) {
-				throw new Error("the bench is unreadable: " + (e instanceof Error ? e.message : String(e)));
-			}
-			let rev = typeof bench["rev"] === "number" ? bench["rev"] : 0;
-			const report = {
-				added: 0,
-				skipped: 0,
-				notes: []
-			};
-			for (const st of stages) {
-				const card = st["card"];
-				if (typeof card !== "string" || card === "") {
-					report.skipped += 1;
-					report.notes.push("skipped a stage with no card (add-stage requires one)");
-					continue;
-				}
-				const doc = {
-					card,
-					author: "user",
-					expect_rev: rev
-				};
-				if (typeof st["engine"] === "string" && st["engine"] !== "") doc["engine"] = st["engine"];
-				if (typeof st["params"] === "object" && st["params"] !== null && !Array.isArray(st["params"])) doc["params"] = st["params"];
-				const id = typeof st["id"] === "string" && st["id"] !== "" ? st["id"] : null;
-				if (id !== null) doc["id"] = id;
-				try {
-					const row = await wireCall("bench/add-stage", {
-						sessionKey: "main",
-						doc
-					}, signal);
-					if (typeof row["rev"] === "number") rev = row["rev"];
-					report.added += 1;
-				} catch (e) {
-					const message = e instanceof Error ? e.message : String(e);
-					if (id !== null && message.includes("already on the bench")) {
-						const retry = { ...doc };
-						delete retry["id"];
-						try {
-							const row = await wireCall("bench/add-stage", {
-								sessionKey: "main",
-								doc: retry
-							}, signal);
-							if (typeof row["rev"] === "number") rev = row["rev"];
-							report.added += 1;
-							report.notes.push(id + " was already on the bench — added under a fresh id");
-						} catch (e2) {
-							throw new Error("restore stopped after " + String(report.added) + " stage(s): " + (e2 instanceof Error ? e2.message : String(e2)));
-						}
-					} else throw new Error("restore stopped after " + String(report.added) + " stage(s): " + message);
-				}
-			}
-			return report;
-		}
-		/** Merge one events frame into a run value (stage rows upserted by id;
-		*  run-status frames replace the status; the frame is kept for the view). */
-		function mergeRunFrame(value, frame) {
-			const next = {
-				...value,
-				lastFrame: frame
-			};
-			const type = frame["type"];
-			if (type === "run" && typeof frame["status"] === "string") next.status = frame["status"];
-			if (type === "stage") {
-				const stageId = frame["stage"];
-				if (typeof stageId === "string") {
-					if (next.stages.find((s) => s.id === stageId) === void 0) next.stages = [...next.stages, {
-						id: stageId,
-						status: "running"
-					}];
-					else next.stages = next.stages.map((s) => s.id === stageId ? {
-						...s,
-						status: "running"
-					} : s);
-				}
-			}
-			return next;
-		}
-		/** The provider registration body: `ctx.resources.register({ protocol:
-		*  'cards', open })`. The estate remotes over the wire frame; abort
-		*  ends the stream per the contract. */
-		function openCardsResource(address, ctx) {
-			const target = parseCardsAddress(address);
-			const bench = target !== null && "bench" in target;
-			const runId = target !== null && "run" in target ? target.run : "";
-			return (async function* () {
-				if (target === null) {
-					yield failure(address, "not a cards address");
-					return;
-				}
-				if (bench) {
-					let value;
-					try {
-						value = readBench(await wireCall("bench/get", { sessionKey: "main" }));
-					} catch (e) {
-						yield failure(address, e instanceof Error ? e.message : String(e));
-						return;
-					}
-					yield {
-						ok: true,
-						value
-					};
-					yield* pollBenchFrames(value, ctx.signal);
-					return;
-				}
-				let value;
-				try {
-					value = readRun(runId, await wireCall("runs/status", { runId }));
-				} catch (e) {
-					yield failure(address, e instanceof Error ? e.message : String(e));
-					return;
-				}
-				yield {
-					ok: true,
-					value
-				};
-				if (ctx.signal.aborted) return;
-				if (isTerminal(value.status)) return;
-				yield* pollRunFrames(runId, value, ctx.signal);
-			})();
-		}
-		/** The terminal statuses — the runs seat's own vocabulary (runsRegistry:
-		*  stopFlag stamps 'stopped'; the settle path stamps 'completed' or
-		*  'failed'. A settled run ends the stream; the hydrated/polled value
-		*  stays as the last ok frame. */
-		function isTerminal(status) {
-			return status === "completed" || status === "failed" || status === "stopped";
-		}
-		/** The live tail (the honest degrade): poll `runs/status` and yield a
-		*  value ONLY when the row moved (no frame spam) until the run turns
-		*  terminal or the holder aborts. A poll error mid-run is not a
-		*  failure frame — the last ok value stays (the kit keeps it); the
-		*  next poll may recover. The cadence (1500ms) rides the run pump's
-		*  own observation granularity, not user perception of latency: stage
-		*  transitions inside the estate tick on the pump's settle path. */
-		async function* pollRunFrames(runId, hydrated, signal) {
-			let value = hydrated;
-			const sleep = (ms) => new Promise((resolve) => {
-				const t = setTimeout(() => {
-					signal.removeEventListener("abort", onAbort);
-					resolve("slept");
-				}, ms);
-				const onAbort = () => {
-					clearTimeout(t);
-					resolve("abort");
-				};
-				if (signal.aborted) {
-					onAbort();
-					return;
-				}
-				signal.addEventListener("abort", onAbort, { once: true });
-			});
-			while (!signal.aborted && !isTerminal(value.status)) {
-				if (await sleep(1500) === "abort" || signal.aborted) return;
-				let row;
-				try {
-					row = await wireCall("runs/status", { runId }, signal);
-				} catch {
-					continue;
-				}
-				const next = readRun(runId, row);
-				if (!(next.status !== value.status || JSON.stringify(next.stages) !== JSON.stringify(value.stages))) continue;
-				value = next;
-				yield {
-					ok: true,
-					value
-				};
-			}
-		}
-		/** THE BENCH TAIL (the provider's live half — pollRunFrames' law,
-		*  applied to the shared doc): poll `bench/get` on a cadence and
-		*  yield a value ONLY when the rev moved (no frame spam) until the
-		*  holder aborts. A poll error is not a failure frame — the last ok
-		*  value stays; the next poll may recover. The cadence (2500ms)
-		*  balances agent-write visibility against doc-read chatter; a
-		*  hidden document still receives frames (the shell decides whether
-		*  the tab renders — the provider never guesses visibility). */
-		async function* pollBenchFrames(hydrated, signal) {
-			let value = hydrated;
-			const sleep = (ms) => new Promise((resolve) => {
-				const t = setTimeout(() => {
-					signal.removeEventListener("abort", onAbort);
-					resolve("slept");
-				}, ms);
-				const onAbort = () => {
-					clearTimeout(t);
-					resolve("abort");
-				};
-				if (signal.aborted) {
-					onAbort();
-					return;
-				}
-				signal.addEventListener("abort", onAbort, { once: true });
-			});
-			while (!signal.aborted) {
-				if (await sleep(2500) === "abort" || signal.aborted) return;
-				let row;
-				try {
-					row = await wireCall("bench/get", { sessionKey: "main" }, signal);
-				} catch {
-					continue;
-				}
-				const next = readBench(row);
-				if (next.rev === value.rev) continue;
-				value = next;
-				yield {
-					ok: true,
-					value
-				};
-			}
-		}
-		//#endregion
 		//#region src/client/add-stage.ts
 		/**
 		* add-stage.ts — the bench's mutation wire door callers (the tab's
@@ -2988,7 +3069,7 @@ window.__ModuleLoader__.load({
 		*  dump. Params left, Run right; the patch carries only CHANGED keys
 		*  (coerced once, at patch time — the editPatch law); then the run
 		*  gesture (patch lands in the domain BEFORE the run reads it). */
-		function StageDrill({ stage, bench, running, onRun, onClose, onRemoved, onPatchParams, renderStageView, onSurface, runId }) {
+		function StageDrill({ stage, bench, running, onRun, onClose, onRemoved, onPatchParams, renderStageView, onSurface, runId, canRemove }) {
 			String(stage.title ?? stage.card ?? stage.id);
 			const held = typeof stage.params === "object" && stage.params !== null ? stage.params : {};
 			const [spec, setSpec] = (0, react.useState)(null);
@@ -3140,7 +3221,7 @@ window.__ModuleLoader__.load({
 				onClick: () => {
 					run();
 				}
-			}, running ? "running…" : "Run")), (0, react.createElement)("div", { className: card_module_css_default$1.runRow }, (0, react.createElement)("button", {
+			}, running ? "running…" : "Run")), (0, react.createElement)("div", { className: card_module_css_default$1.runRow }, canRemove === false ? null : (0, react.createElement)("button", {
 				className: card_module_css_default$1.back,
 				type: "button",
 				disabled: running || removing,
@@ -3589,6 +3670,51 @@ window.__ModuleLoader__.load({
 				}
 			}) : null);
 		}
+		/**
+		* THE DRAFT VIEW (the conversation card's target, 2026-09-12 — the
+		* old embed's law restored): one flow draft's stage on the authoring
+		* surface. The studio claims `cards.stage.view` exactly as the bench's
+		* zoom does — same slot, same owner currency, same run/patch doors —
+		* so the chat card opens the timeline/video/splits/audio surface, and
+		* a card with no registered studio falls back to the generic zoom
+		* card (params + Run), the bench's own fallback.
+		*
+		* Removal is NOT offered (the draft's shape belongs to its authoring
+		* surface — the bench CAS door has no business here); the back affordance
+		* returns to the shared bench, the tab's home address.
+		*/
+		function DraftView({ value, running, onRun, onBack, onPatchParams, renderStageView, runId }) {
+			const found = value.stages.find((s) => s.id === value.stageId) ?? null;
+			if (found === null) return (0, react.createElement)("div", { className: card_module_css_default$1.zoomDetail }, (0, react.createElement)("p", { className: card_module_css_default$1.groupNote }, "Stage " + value.stageId + " is no longer on draft " + value.draftId + "."), (0, react.createElement)("div", { className: card_module_css_default$1.runRow }, (0, react.createElement)("button", {
+				className: card_module_css_default$1.back,
+				type: "button",
+				onClick: onBack
+			}, "Back to the bench")));
+			let stage = found;
+			if ((stage["card"] === void 0 || stage["card"] === "") && value.intent !== "" && value.stages.length === 1) stage = {
+				...found,
+				card: value.intent
+			};
+			const bench = {
+				kind: "bench",
+				draftId: value.draftId,
+				rev: -1,
+				stages: value.stages,
+				log: []
+			};
+			return (0, react.createElement)(StageDrill, {
+				stage,
+				bench,
+				running,
+				onRun,
+				onClose: onBack,
+				onRemoved: onBack,
+				onPatchParams,
+				renderStageView,
+				runId,
+				canRemove: false
+			});
+		}
 		function RunView({ run, onBack, onRestored, onStop }) {
 			const [restoring, setRestoring] = (0, react.useState)(false);
 			const [note, setNote] = (0, react.useState)(null);
@@ -3683,7 +3809,7 @@ window.__ModuleLoader__.load({
 			const [lastRunId, setLastRunId] = (0, react.useState)(null);
 			(0, react.useEffect)(() => {
 				if (lastRunId !== null) return;
-				if (snapshot?.value?.kind !== "bench") return;
+				if (snapshot?.value?.kind !== "bench" && snapshot?.value?.kind !== "draft") return;
 				const draftId = snapshot.value.draftId;
 				if (draftId === "") return;
 				let alive = true;
@@ -3745,8 +3871,35 @@ window.__ModuleLoader__.load({
 				});
 			}, [snapshot, onStarted]);
 			const onPatchParamsStage = (0, react.useCallback)((stage, patch) => {
-				if (snapshot?.value?.kind !== "bench") return;
+				if (snapshot?.value?.kind !== "bench" && snapshot?.value?.kind !== "draft") return;
 				patchStageParams(snapshot.value.draftId, stage.id, patch).then(() => {
+					setLocalRunError(null);
+				}).catch((e) => {
+					setLocalRunError(e instanceof Error ? e.message : "patch failed");
+				});
+			}, [snapshot]);
+			const onRunDraftStage = (0, react.useCallback)(() => {
+				const value = snapshot?.value;
+				if (value?.kind !== "draft") return;
+				const target = value.stages.find((s) => s.id === value.stageId);
+				if (target === void 0) return;
+				setRunning(true);
+				setLocalRunError(null);
+				runCardStage(value.draftId, target).then((res) => {
+					if ("runId" in res) onStarted(res.runId, {
+						draftId: value.draftId,
+						stageId: target.id
+					});
+					else {
+						setRunning(false);
+						setLocalRunError(res.refused);
+					}
+				});
+			}, [snapshot, onStarted]);
+			const onPatchParamsDraft = (0, react.useCallback)((patch) => {
+				const value = snapshot?.value;
+				if (value?.kind !== "draft") return;
+				patchStageParams(value.draftId, value.stageId, patch).then(() => {
 					setLocalRunError(null);
 				}).catch((e) => {
 					setLocalRunError(e instanceof Error ? e.message : "patch failed");
@@ -3774,6 +3927,14 @@ window.__ModuleLoader__.load({
 				renderStageView,
 				runId: lastRunId,
 				refreshTick: benchTick
+			})) : value.kind === "draft" ? (0, react.createElement)(react.Fragment, null, localRunError !== null ? (0, react.createElement)("p", { className: card_module_css_default$1.runError }, localRunError) : null, (0, react.createElement)(DraftView, {
+				value,
+				running,
+				onRun: onRunDraftStage,
+				onBack: openResource !== void 0 ? onBack : (() => {}),
+				onPatchParams: onPatchParamsDraft,
+				renderStageView,
+				runId: lastRunId
 			})) : (0, react.createElement)(RunView, {
 				run: value,
 				onBack: openResource !== void 0 ? onBack : void 0,
@@ -3800,18 +3961,22 @@ window.__ModuleLoader__.load({
 			"humanoid_flow",
 			"non_humanoid_flow",
 			"prop_flow",
-			"sprite_sheet"
+			"sprite_sheet",
+			"h3_timeline"
 		];
 		/** @deprecated use CARD_TOOLS — kept for back-compat imports */
 		const FLOW_START_TOOL = CARD_TOOLS[0];
 		/** The tab type's identity (the key its body registers under). */
 		const CARDS_TAB_ID = "@melite-plugin/dsh-card-view";
 		/** Required services (fiber inject waiting — the registries must be up
-		*  first: the native sidebar subsystem + the resource model). */
+		*  first: the native sidebar subsystem + the resource model + the
+		*  sidebar's navigation face, which the conversation card's rows ride
+		*  to open the Cards tab at a draft stage — the old embed's law). */
 		const inject = [
 			"slots",
 			"sidebarRightTabs",
-			"resources"
+			"resources",
+			"sidebarRight"
 		];
 		/**
 		* Register both planes: the toolview keys for every card tool, and the
@@ -3821,6 +3986,14 @@ window.__ModuleLoader__.load({
 		function apply(ctx) {
 			if (!claimCardViewApply()) return;
 			ctx.effect(() => releaseCardViewApply, "melite-card-view: apply claim");
+			ctx.effect(() => {
+				setOpenCardsSurface((address) => {
+					ctx.sidebarRight.openResource(address);
+				});
+				return () => {
+					setOpenCardsSurface(null);
+				};
+			}, "melite-card-view: cards surface face");
 			for (const tool of CARD_TOOLS) try {
 				ctx.slots.inject("tool.call.toolview", () => ctx.slots.register({
 					name: "tool.call.toolview",

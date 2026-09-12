@@ -38,6 +38,7 @@ import type {} from '@deepseek-ai/dsh-client-ui-renderer/client'
 import type {} from '@deepseek-ai/dsh-client-ui-sidebar-right/client'
 import type {} from '@deepseek-ai/dsh-client-resources/client'
 import { claimCardViewApply, releaseCardViewApply } from './apply-guard.ts'
+import { setOpenCardsSurface } from './surface.ts'
 import { FlowCards } from './FlowCards.tsx'
 import { CardsTab } from './CardsTab.tsx'
 import { CARDS_BENCH_ADDRESS, openCardsResource } from './cards-resource.ts'
@@ -75,6 +76,14 @@ export const CARD_TOOLS = [
   'h3_timeline_card',
   'creature_flow', 'humanoid_flow', 'non_humanoid_flow', 'prop_flow',
   'sprite_sheet',
+  // TOOL-PLANE names (the DSH plain-id convention — h3-timeline
+  // tool.ts: "the card id, hyphens→underscores, no suffix"): the
+  // chat harness calls the tool by THIS name, so the toolview seat
+  // must claim it for the conversation card to render (the registry
+  // plane's h3_timeline_card is the composition wire name, a
+  // different plane). Live-lane receipt 2026-09-12: an accepted
+  // h3_timeline chat run rendered the generic tool card, no rows.
+  'h3_timeline',
 ]
 /** @deprecated use CARD_TOOLS — kept for back-compat imports */
 export const FLOW_START_TOOL = CARD_TOOLS[0]
@@ -83,8 +92,10 @@ export const FLOW_START_TOOL = CARD_TOOLS[0]
 const CARDS_TAB_ID = '@melite-plugin/dsh-card-view'
 
 /** Required services (fiber inject waiting — the registries must be up
- *  first: the native sidebar subsystem + the resource model). */
-export const inject = ['slots', 'sidebarRightTabs', 'resources']
+ *  first: the native sidebar subsystem + the resource model + the
+ *  sidebar's navigation face, which the conversation card's rows ride
+ *  to open the Cards tab at a draft stage — the old embed's law). */
+export const inject = ['slots', 'sidebarRightTabs', 'resources', 'sidebarRight']
 
 /**
  * Register both planes: the toolview keys for every card tool, and the
@@ -96,6 +107,16 @@ export function apply(ctx: ClientContext): void {
   // would register a second keyed entry. First application wins.
   if (!claimCardViewApply()) return
   ctx.effect(() => releaseCardViewApply, 'melite-card-view: apply claim')
+
+  // THE SURFACE FACE (2026-09-12): the conversation card's way into
+  // the Cards tab — ctx.sidebarRight.openResource claims the address,
+  // places it, and reveals the column in one step (ISidebarRight).
+  // Captured for the React tree through the surface seam (the
+  // toolview owner currency carries no navigation; see surface.ts).
+  ctx.effect(() => {
+    setOpenCardsSurface((address: string) => { ctx.sidebarRight.openResource(address) })
+    return () => { setOpenCardsSurface(null) }
+  }, 'melite-card-view: cards surface face')
 
   for (const tool of CARD_TOOLS) {
     try {

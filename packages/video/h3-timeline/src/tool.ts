@@ -122,6 +122,21 @@ export const buildH3TimelineTool = (call: EstateCall): ToolDefinition => {
       const model = typeof a.model === 'string' ? a.model : DEFAULT_MODEL
       const params: Record<string, unknown> = {}
       for (const [k, v] of Object.entries(a)) if (k !== 'model') params[k] = v
+      // JSON-TYPED params arrive as the RAW STRING (DSH tool law) and
+      // the card gate wants the ARRAY (card.ts:171 — a string calls
+      // reads as "no calls to compose"). Normalize the shots both
+      // ways: native array senders pass through, string senders (the
+      // LLM serializer's default) unwrap here. Live-lane receipt
+      // 2026-09-12: a legal chat call refused on exactly this seam.
+      if (typeof params['calls'] === 'string') {
+        try {
+          const parsed: unknown = JSON.parse(params['calls'] as string)
+          if (Array.isArray(parsed)) params['calls'] = parsed
+        } catch {
+          // a malformed string rides on — the card gate refuses with
+          // its own text; this face never invents a verdict
+        }
+      }
       try {
         // DOOR ONE (compose — CARD BIRTH LAW): one stage; calls rides
         // as the array, the shot laws fire in the card gate.

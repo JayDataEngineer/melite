@@ -113,7 +113,24 @@ export interface CardsRunValue {
   lastFrame: FlowEventFrame | undefined
 }
 
-export type CardsValue = CardsBenchValue | CardsRunValue
+export type CardsValue = CardsBenchValue | CardsRunValue | CardsDraftValue
+
+/**
+ * `dsh-resource://cards/draft/<draftId>/<stageId>` — ONE stage of a
+ * flow draft, the conversation card's studio target (the old embed's
+ * law, restored: the chat card opens the authoring surface — the
+ * studio claims `cards.stage.view` inside the Cards tab — never a
+ * params form). The value carries the WHOLE draft's stages so the
+ * drill's input picker (the slot-is-the-wire law) sees siblings'
+ * latest outputs exactly as the bench view does.
+ */
+export interface CardsDraftValue {
+  kind: 'draft'
+  draftId: string
+  stageId: string
+  intent: string
+  stages: BenchStageRow[]
+}
 
 declare module '@deepseek-ai/dsh-client-ui-slots' {
   interface ResourceProtocolMap {
@@ -130,8 +147,15 @@ export function cardsRunAddress(runId: string): string {
   return 'dsh-resource://cards/run/' + encodeURIComponent(runId)
 }
 
+/** The draft-stage address — the conversation card's studio target
+ *  (the old embed's law; both segments encode, either may carry the
+ *  separators the bare grammar refuses). */
+export function cardsDraftStageAddress(draftId: string, stageId: string): string {
+  return 'dsh-resource://cards/draft/' + encodeURIComponent(draftId) + '/' + encodeURIComponent(stageId)
+}
+
 /** Parse a cards address; null when the path is not one of ours. */
-export function parseCardsAddress(address: string): { bench: true } | { run: string } | null {
+export function parseCardsAddress(address: string): { bench: true } | { run: string } | { draft: string; stage: string } | null {
   const prefix = 'dsh-resource://cards/'
   if (!address.startsWith(prefix)) return null
   const rest = address.slice(prefix.length)
@@ -139,6 +163,15 @@ export function parseCardsAddress(address: string): { bench: true } | { run: str
   if (rest.startsWith('run/')) {
     const runId = decodeURIComponent(rest.slice('run/'.length))
     if (runId !== '') return { run: runId }
+  }
+  if (rest.startsWith('draft/')) {
+    const body = rest.slice('draft/'.length)
+    const slash = body.indexOf('/')
+    if (slash > 0 && slash < body.length - 1) {
+      const draftId = decodeURIComponent(body.slice(0, slash))
+      const stageId = decodeURIComponent(body.slice(slash + 1))
+      if (draftId !== '' && stageId !== '') return { draft: draftId, stage: stageId }
+    }
   }
   return null
 }
@@ -284,6 +317,27 @@ export function readRun(runId: string, doc: Record<string, unknown>): CardsRunVa
   }
 }
 
+/**
+ * Normalize a `drafts/get` doc into the draft-stage value. The row
+ * shape is the bench's own (DraftRecord stages carry id/card/params/
+ * result extras verbatim); the defensive filter keeps rows with a
+ * string id, mirroring readBench — the door's wire is untyped at this
+ * seam and a malformed row must not break the whole view.
+ */
+export function readDraft(draftId: string, stageId: string, doc: Record<string, unknown>): CardsDraftValue {
+  const stages = Array.isArray(doc['stages'])
+    ? (doc['stages'] as unknown[]).filter((s): s is BenchStageRow =>
+        typeof s === 'object' && s !== null && typeof (s as BenchStageRow)['id'] === 'string')
+    : []
+  return {
+    kind: 'draft',
+    draftId,
+    stageId,
+    intent: typeof doc['intent'] === 'string' ? (doc['intent'] as string) : '',
+    stages,
+  }
+}
+
 /** The bench/drafts verbs this module rides (the RUN verbs live in
  *  the run-wire package — the DRY law; this union narrows the frame
  *  call to the doors this file owns). */
@@ -421,6 +475,7 @@ export function openCardsResource(
   const target = parseCardsAddress(address)
   const bench = target !== null && 'bench' in target
   const runId = target !== null && 'run' in target ? target.run : ''
+  const draftTarget = target !== null && 'draft' in target ? target : null
   return (async function* () {
     if (target === null) {
       yield failure(address, 'not a cards address')
@@ -447,6 +502,23 @@ export function openCardsResource(
       // the same law until the host's stream face lands — then the
       // source swaps with zero consumer changes. Abort ends the tail.
       yield* pollBenchFrames(value, ctx.signal)
+      return
+    }
+    // draft-stage view (the conversation card's studio target): one
+    // snapshot per open — the drill's own Run gesture refreshes the
+    // doc through its outcome observer, and the bench's shared-doc
+    // heartbeat does not apply (this draft is not the bench; the
+    // agent's writes land on the next open, the same snapshot law the
+    // bench held before its tail landed).
+    if (draftTarget !== null) {
+      let value: CardsDraftValue
+      try {
+        value = readDraft(draftTarget.draft, draftTarget.stage, await wireCall('drafts/get', { draftId: draftTarget.draft }))
+      } catch (e) {
+        yield failure(address, e instanceof Error ? e.message : String(e))
+        return
+      }
+      yield { ok: true, value }
       return
     }
     // run view: hydrate, then poll the status remote until terminal or

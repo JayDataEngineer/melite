@@ -54,6 +54,46 @@ describe("the h3-timeline tool face", () => {
     assert.ok(view?.card === "generic");
     assert.equal(view?.title, "H3 Timeline [h3-timeline] → r9");
   });
+
+  it("a JSON-STRING calls unwraps to the array before the estate sees it (DSH json-param law)", async () => {
+    // the LLM serializer delivers type:'json' params as raw strings;
+    // the card gate wants the ARRAY (card.ts:171) — the face
+    // normalizes (live-lane receipt 2026-09-12: string calls refused
+    // "no calls to compose").
+    const posts: Array<{ path: string; body: Record<string, unknown> }> = [];
+    const transport = buildH3TimelineTool(async (_m, path, body) => {
+      posts.push({ path, body: (body ?? {}) as Record<string, unknown> });
+      if (path === "/v1/flows/drafts") return { draftId: "d-str" };
+      return { run_id: "r-str", status: "queued" };
+    });
+    const out = await transport.execute?.(
+      { prompt: "p", model: "h3-timeline", calls: JSON.stringify(ARGS.calls) } as never,
+      { signal: undefined } as never,
+    );
+    assert.equal((out as { run_id?: string }).run_id, "r-str");
+    const start = posts.find((p) => p.path === "/v1/flows/start");
+    assert.ok(start, "the start door was dialed");
+    assert.ok(Array.isArray(start.body["calls"]), "calls rode as the ARRAY");
+    assert.equal((start.body["calls"] as Array<{ text: string }>)[0]?.text, "the courier pushes off");
+    const draft = posts.find((p) => p.path === "/v1/flows/drafts");
+    const stage = (draft?.body["stages"] as Array<{ params?: { calls?: unknown } }>)[0];
+    assert.ok(Array.isArray(stage?.params?.calls), "the draft stage carried the array too");
+  });
+
+  it("a native ARRAY calls passes through untouched", async () => {
+    const posts: Array<{ path: string; body: Record<string, unknown> }> = [];
+    const transport = buildH3TimelineTool(async (_m, path, body) => {
+      posts.push({ path, body: (body ?? {}) as Record<string, unknown> });
+      if (path === "/v1/flows/drafts") return { draftId: "d-arr" };
+      return { run_id: "r-arr", status: "queued" };
+    });
+    await transport.execute?.(
+      { prompt: "p", model: "h3-timeline", calls: ARGS.calls } as never,
+      { signal: undefined } as never,
+    );
+    const start = posts.find((p) => p.path === "/v1/flows/start");
+    assert.ok(Array.isArray(start?.body["calls"]));
+  });
 });
 
 describe("the shot laws (the card gate — py schema.py port)", () => {

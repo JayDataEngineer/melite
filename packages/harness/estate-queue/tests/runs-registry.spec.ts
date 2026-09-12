@@ -151,6 +151,11 @@ describe("start envelope", () => {
     await assert.rejects(s.svc.start(["x"], dead()));
     assert.equal((await remote(() => s.svc.start(["x"], sig()))).code, "runs/bad-envelope");
     assert.equal((await remote(() => s.svc.start({ test: "yes" }, sig()))).code, "runs/bad-envelope");
+    // ONE LAW with checkFlowsStartEnvelope: absent/null test means
+    // false (live lane receipt 2026-09-12 — a chat tool's test:null
+    // start doc must never refuse bad-test).
+    assert.equal((await remote(() => s.svc.start({}, sig()))).code, "runs/draft-required");
+    assert.equal((await remote(() => s.svc.start({ test: null, draft_id: "ghost" }, sig()))).code, "runs/draft-unknown");
     assert.equal((await remote(() => s.svc.start({ test: false }, sig()))).code, "runs/draft-required");
     assert.equal((await remote(() => s.svc.start({ test: false, draft_id: "bad id!" }, sig()))).code, "runs/draft-malformed");
     assert.equal((await remote(() => s.svc.start({ test: false, draft_id: "ghost" }, sig()))).code, "runs/draft-unknown");
