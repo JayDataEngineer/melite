@@ -119,6 +119,12 @@
   max-height: 60vh;
   overflow-y: auto;
   min-width: 0;
+  /* the scroll's own margin (hour 24: the fields were getting cut off
+   * by the scrollbar once the column overflows — reserve breathing
+   * room so the inputs never sit under the thumb; the stable gutter
+   * keeps the layout from shifting when the bar appears) */
+  padding-right: 10px;
+  scrollbar-gutter: stable;
 }
 
 .field { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
