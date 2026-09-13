@@ -63,3 +63,5 @@ export function ImageStagePreview(props: PreviewOwnerProps): ReturnType<typeof h
  *  the preview seam stays ONE subpath: import { GlbStagePreview }
  *  from '@melite/card-base/preview'. */
 export { GlbStagePreview, autoFitToHeight, type StageAsset } from './glb-stage.tsx'
+export { ViewportFrame, ViewportAnchor, ReferenceImageBadge } from './viewportChrome.tsx'
+export type { ViewportFrameProps, ViewportAnchorProps, ReferenceImageBadgeProps, ViewportAnchorDock } from './viewportChrome.tsx'

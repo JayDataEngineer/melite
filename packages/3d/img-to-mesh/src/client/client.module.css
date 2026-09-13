@@ -26,14 +26,14 @@
 /* ── the studio surface (cards.stage.view, img-to-mesh first party) ── */
 .studioHead { align-items: center; display: flex; gap: 8px; line-height: 20px; }
 
-.studioBody { display: flex; flex-direction: column; gap: 12px; }
+/* .studioBody died with the shell port — StudioShell owns the body. */
 
 .studioGroup { display: flex; flex-direction: column; gap: 6px; }
 
 
 /* the studio split: the 3D space + the knob rail (the old rail↔Stage law) */
-.studioSplit { display: grid; gap: 12px; grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); }
-
+/* .studioSplit died with the hand-rolled split (hour 15): the uniform
+ * StudioShell owns the params-LEFT / preview-RIGHT grid now. */
 .studioRail { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
 
 .runError { color: var(--dsw-alias-label-error, #e05656); font-size: 11px; overflow-wrap: anywhere; }

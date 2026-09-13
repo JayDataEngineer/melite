@@ -30,7 +30,12 @@ import { useBodyStudio, characterFromParams } from "./bodyStudio"
 import { MeshPreviewCanvas } from "./MeshPreviewCanvas"
 import { BodyShapePanel } from "./BodyShapePanel"
 import { BODY_PRESETS } from "@melite/formats"
-import { StudioShell, ViewportFrame, defineShellDeclaration } from "../../../../studio-shell"
+// THE UNIFORM SHELL + THE PREVIEW PORT'S CHROME (hour 15, stroke B):
+// the action_cards-local studio-shell is buried — card-base owns the
+// shell and the viewport chrome now; this studio's declaration reads
+// the same seams it always did.
+import { StudioShell, defineShellDeclaration } from "@melite/card-base/shell"
+import { ViewportFrame } from "@melite/card-base/preview"
 import styles from "./component.module.css"
 
 /** THE SHELL RIDE, as data (row 5 stroke 4) — declared for the

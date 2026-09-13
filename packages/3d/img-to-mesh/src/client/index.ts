@@ -35,6 +35,11 @@ import { pollRunStageUrl } from '@melite-plugin/melite-run-wire'
 // card-base — the SAME stage anny rides (one preview-port interaction
 // law: selection + per-asset errors are the stage's own surface).
 import { GlbStagePreview } from '@melite/card-base/preview'
+// THE UNIFORM SHELL (hour 15, stroke B finish): trellis rode its own
+// split (preview LEFT 7fr / rail RIGHT 5fr — inverted against the
+// law). card-base's StudioShell now carries the shape: params LEFT,
+// preview RIGHT — the same grain as anny/h3/motion/mask/ideo.
+import { StudioShell } from '@melite/card-base/shell'
 
 /** The door's group truth (schema_groups, 2026-09-12 lane read):
  *  input, generation — exposed; stage, mesh, bake, lab — folded. */
@@ -122,15 +127,9 @@ export function ImgToMeshStudio(props: StageViewOwnerProps): ReturnType<typeof h
     error !== null ? h('p', { className: css.runError }, error) : null,
     spec === null
       ? h('p', { className: css.groupNote }, 'loading the declared knob surface…')
-      : h('div', { className: css.studioBody },
-        h('div', { className: css.studioSplit },
-          // THE 3D SPACE (the shared viewport — the old Stage law)
-          h(GlbStagePreview, {
-            assets: meshUrl === null ? [] : [{ id: 'mesh', url: meshUrl, name: 'mesh' }],
-            label: 'img-to-mesh',
-            emptyHint: 'Run the card to see the mesh',
-          }),
-          h('div', { className: css.studioRail },
+      : h(StudioShell, {
+          // LEFT — the params rail (the declared knob surface)
+          params: h('div', { className: css.studioRail },
         // SpecForm renders each group's title itself — no duplicate.
         STUDIO_EXPOSED.map((g) => h('section', { key: g, className: css.studioGroup },
           h(StudioFields, { fields: fieldsOf(spec.fields, g), values, onEdit, square: squareFor }),
@@ -151,14 +150,19 @@ export function ImgToMeshStudio(props: StageViewOwnerProps): ReturnType<typeof h
             onToggle: () => { setOpen((prev) => ({ ...prev, [g]: !prev[g] })) },
           }, h(StudioFields, { fields: fs, values, onEdit, square: squareFor }))
         }),
-        h('div', { className: css.runRow },
-          error !== null ? h('span', { className: css.runError }, error) : null,
-          h(Button, { variant: 'primary', onClick: run }, running ? 'running…' : 'Run'),
-          h(Button, { variant: 'ghost', onClick: onRemove }, 'Remove stage'),
-        ),
-        ),
-        ),
-      ),
+          h('div', { className: css.runRow },
+            error !== null ? h('span', { className: css.runError }, error) : null,
+            h(Button, { variant: 'primary', onClick: run }, running ? 'running…' : 'Run'),
+            h(Button, { variant: 'ghost', onClick: onRemove }, 'Remove stage'),
+          ),
+          ),
+          // RIGHT — the mesh stage (the shared viewport, the old Stage law)
+          preview: h(GlbStagePreview, {
+            assets: meshUrl === null ? [] : [{ id: 'mesh', url: meshUrl, name: 'mesh' }],
+            label: 'img-to-mesh',
+            emptyHint: 'Run the card to see the mesh',
+          }),
+        })
   )
 }
 
