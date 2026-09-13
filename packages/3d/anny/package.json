@@ -6,6 +6,7 @@
   "main": "./src/card.ts",
   "exports": {
     ".": "./src/card.ts",
+    "./client": "./lib/client.js",
     "./package.json": "./package.json",
     "./ui/studio/component": "./src/ui/studio/component.tsx",
     "./ui/studio/shape": "./src/ui/studio/shape.tsx"
@@ -33,7 +34,13 @@
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.2",
     "@types/three": "^0.184.1",
-    "typescript": "~6.0.3"
+    "typescript": "~6.0.3",
+    "tsdown": "^0.22.14"
   },
-  "name": "@melite/3d-anny"
+  "name": "@melite/3d-anny",
+  "dsh": {
+    "client": {
+      "platform": "web"
+    }
+  }
 }
