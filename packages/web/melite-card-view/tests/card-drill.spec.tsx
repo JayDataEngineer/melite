@@ -52,6 +52,10 @@ function stubWire(opts?: StubOpts): { calls: Call[] } {
     log: [],
   }
   const runDocs = [...(opts?.runDocs ?? [{ run_id: 'run-1', status: 'queued', draft_id: 'bench-s1', stages: [] }])]
+  // THE ESTATE MODEL (2026-09-13 incident): drafts/patch APPLIES into
+  // the served draft — the fresh read (drafts/get) must see what the
+  // patch wrote, or the harness lies about the read-back law.
+  const liveParams: Record<string, unknown> = { prompt: '', steps: 8, turbo: false }
   const impl = async (url: unknown, init?: RequestInit): Promise<Response> => {
     // the /v1 discovery doors (same-origin): the card form spec + catalog
     const path = String(url)
@@ -76,9 +80,14 @@ function stubWire(opts?: StubOpts): { calls: Call[] } {
     calls.push({ method: frame.method, args: frame.payload.args })
     let value: Record<string, unknown> = { ok: true }
     if (frame.method === 'bench/get') value = benchDoc
+    if (frame.method === 'drafts/get') value = { draft_id: 'bench-s1', rev: 7, intent: '', stages: [{ id: 's_0', card: 'image-gen', title: 'hero frame', engine: 'comfyui', params: liveParams }] }
     if (frame.method === 'runs/status') value = runDocs.length > 1 ? runDocs.shift()! : runDocs[0]!
     if (frame.method === 'runs/start') value = { run_id: 'run-1', status: 'queued' }
-    if (frame.method === 'drafts/patch') value = { draftId: 'bench-s1', stageId: 's_0', delivered: true, patched: ['params'] }
+    if (frame.method === 'drafts/patch') {
+      const patch = (frame.payload.args as { patch?: { params?: Record<string, unknown> } }).patch
+      if (patch?.params !== undefined) Object.assign(liveParams, patch.params)
+      value = { draftId: 'bench-s1', stageId: 's_0', delivered: true, patched: ['params'] }
+    }
     return new Response(JSON.stringify({ type: 'server-response', rpcId: frame.rpcId, result: { ok: true, value } }), { status: 200 })
   }
   vi.stubGlobal('fetch', impl)
@@ -148,7 +157,12 @@ test('Run in the drill patches the domain FIRST, then starts the run', async () 
   await user.click(tileButton())
   // the drill's fields arrive after the morph settles
   await screen.findByText('Prompt', {}, { timeout: 4000 })
-  // edit steps 8 → 20 (the drill's own Run — not the bench head's)
+  // edit steps 8 → 20 AND type a prompt (the drill's own Run — not
+  // the bench head's; the prompt is the operator's exact case: a
+  // REQUIRED param the compose guard refuses when dropped)
+  const boxes = screen.getAllByRole('textbox')
+  expect(boxes.length).toBeGreaterThan(0)
+  await user.type(boxes[0] as HTMLElement, 'a red cube on ice')
   const steps = screen.getByDisplayValue('8')
   await user.clear(steps)
   await user.type(steps, '20')
@@ -160,9 +174,17 @@ test('Run in the drill patches the domain FIRST, then starts the run', async () 
     expect(methods.indexOf('runs/start')).toBeGreaterThan(methods.indexOf('drafts/patch'))
   })
   const patch = calls.find((c) => c.method === 'drafts/patch')
-  expect(patch?.args).toEqual({
-    draftId: 'bench-s1', stageId: 's_0', patch: { params: { steps: 20 } },
-  })
+  const typed = String((patch?.args as { patch?: { params?: { prompt?: unknown } } }).patch?.params?.prompt ?? '')
+  expect(typed).toContain('red cube')
+  // THE DROP-PIN (2026-09-13 incident): the started run must CARRY the
+  // typed value — the composing door re-reads the estate's row AFTER
+  // the patch (freshStageRow), never the client's stale open-row. The
+  // old assertion stopped at patch-order; the run composed the row as
+  // it stood at tile-click and silently dropped every edit.
+  const methods = calls.map((c) => c.method)
+  expect(methods.indexOf('drafts/get')).toBeGreaterThan(methods.indexOf('drafts/patch'))
+  const start = calls.find((c) => c.method === 'runs/start')
+  expect(start?.args).toMatchObject({ doc: { prompt: typed, steps: 20 } })
   // THE BENCH IS NEVER TAKEN OVER (2026-09-12): the started run
   // stays a TILE — no navigation, the bench surface stays; the
   // observer writes running/terminal onto the row

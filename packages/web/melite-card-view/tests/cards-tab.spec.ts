@@ -223,10 +223,15 @@ describe("runCardStage / runBenchSequential — the door contract", () => {
     (globalThis as Record<string, unknown>)["fetch"] = realFetchRef;
     resetCardFamiliesCache();
     expect(res).toEqual({ runId: "run-9" });
+    // THE FRESH-READ FIRST (2026-09-13): the composing door reads the
+    // estate's row before starting (the drop law) — the read precedes
+    // the start; the stub's answer carries no stages so the held row
+    // composes.
+    expect(calls[0]?.method).toBe("drafts/get");
     // THE CONTRACT: model = the DEFAULT FAMILY (the runs door resolves
     // neither card ids nor aliases), knobs TOP-LEVEL (the door's own
     // convention), draft under the bench, test explicit false.
-    expect(calls[0]?.args).toEqual({ doc: {
+    expect(calls[1]?.args).toEqual({ doc: {
       input_image: "drop.png",
       resolution: "1024",
       model: "trellis2-native",

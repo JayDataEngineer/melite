@@ -189,9 +189,12 @@ test('runCardStage composes the HELD model; the default family is only the resti
       result: null,
     })
     expect(res).toEqual({ runId: 'run-77' })
+    // THE FRESH-READ FIRST (2026-09-13 drop law): the composing door
+    // reads the estate row before starting — find the START call.
+    const start = calls.find((c) => c.method === 'runs/start')
     // THE PASS-ALONG: the door's model arm is the HELD krea-2-raw —
     // the raw variant's re-point — never the default family
-    expect((calls[0]?.args['doc'] as Record<string, unknown>)['model']).toBe('krea-2-raw')
+    expect((start?.args['doc'] as Record<string, unknown>)['model']).toBe('krea-2-raw')
   } finally {
     ;(globalThis as Record<string, unknown>)['fetch'] = realFetch
   }

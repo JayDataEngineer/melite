@@ -919,6 +919,22 @@ window.__ModuleLoader__.load({
 		* string id, mirroring readBench — the door's wire is untyped at this
 		* seam and a malformed row must not break the whole view.
 		*/
+		/** THE FRESH-READ LAW (2026-09-13 incident): the run composes the
+		*  ESTATE's row — read back AFTER the drill's patch — never the
+		*  client's stale render row. The drill patches the bench, then Run
+		*  reads; composing the clicked-open row object drops every param
+		*  typed between open and Run (the music prompt refusal: typed, Run,
+		*  compose saw nothing). Returns null when the estate read fails or
+		*  the row is gone — the caller composes its held row and the door
+		*  refuses honestly. */
+		async function freshStageRow(draftId, stageId, signal) {
+			try {
+				const doc = await wireCall("drafts/get", { draftId }, signal);
+				return (Array.isArray(doc["stages"]) ? doc["stages"].filter((s) => typeof s === "object" && s !== null && typeof s["id"] === "string") : []).find((s) => s.id === stageId) ?? null;
+			} catch {
+				return null;
+			}
+		}
 		function readDraft(draftId, stageId, doc) {
 			const stages = Array.isArray(doc["stages"]) ? doc["stages"].filter((s) => typeof s === "object" && s !== null && typeof s["id"] === "string") : [];
 			return {
@@ -42259,8 +42275,10 @@ void main() {
 		*  it under its runs-root arm. No client-side edge resolution exists.
 		*  Exported for the tab seam's door-contract spec. */
 		async function runCardStage(draftId, row) {
-			const params = typeof row.params === "object" && row.params !== null && !Array.isArray(row.params) ? row.params : {};
-			const card = typeof row.card === "string" && row.card !== "" ? row.card : "";
+			if (typeof row.card !== "string" || row.card === "") return { refused: "this stage names no card — nothing to compose" };
+			const src = await freshStageRow(draftId, row.id) ?? row;
+			const params = typeof src.params === "object" && src.params !== null && !Array.isArray(src.params) ? src.params : {};
+			const card = typeof src.card === "string" && src.card !== "" ? src.card : "";
 			if (card === "") return { refused: "this stage names no card — nothing to compose" };
 			const heldModel = params["model"];
 			const model = typeof heldModel === "string" && heldModel !== "" ? heldModel : await defaultFamilyForCard(card);

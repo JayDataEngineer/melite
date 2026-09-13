@@ -57,7 +57,7 @@ import type { CatalogCard, FormSpecDoc, ModifierKind, SpecValues } from './spec-
 import { paramFields, patchStageParams } from './draft.ts'
 import css from './card.module.css'
 import type { CardsBenchValue, CardsDraftValue, CardsRunValue, BenchStageRow } from './cards-resource.ts'
-import { CARDS_BENCH_ADDRESS, cardsRunAddress, fetchBench, fetchLatestRunForDraft, observeRunOutcome, openCardsResource, parseCardsAddress, restoreRunToBench, uploadInputFile } from './cards-resource.ts'
+import { CARDS_BENCH_ADDRESS, cardsRunAddress, fetchBench, fetchLatestRunForDraft, freshStageRow, observeRunOutcome, openCardsResource, parseCardsAddress, restoreRunToBench, uploadInputFile } from './cards-resource.ts'
 import { defaultFamilyForCard, startCardRun, stopRun } from '@melite-plugin/melite-run-wire'
 import { addStageWire, groupStagesWire, removeStageWire, reorderStageWire, ungroupStageWire } from './add-stage.ts'
 import { AudioStagePreview, ImageStagePreview, MeshStagePreview, VideoStagePreview } from '@melite/card-base/preview'
@@ -133,10 +133,23 @@ export async function runCardStage(
   draftId: string,
   row: BenchStageRow,
 ): Promise<{ runId: string } | { refused: string }> {
-  const params = typeof row.params === 'object' && row.params !== null && !Array.isArray(row.params)
-    ? row.params as Record<string, unknown>
+  // THE NO-WIRE REFUSAL FIRST (the door contract): a row naming no
+  // card refuses before any wire fires.
+  if (typeof row.card !== 'string' || row.card === '') {
+    return { refused: 'this stage names no card — nothing to compose' }
+  }
+  // THE FRESH-READ LAW (2026-09-13 incident): compose the ESTATE's
+  // row, read back AFTER the drill's patch — the passed row is the
+  // client's render snapshot (the row as it stood at open) and the
+  // patch the drill just awaited lives only estate-side. Without this
+  // read-back every param typed between open and Run is dropped (the
+  // music prompt refusal). A failed read composes the held row — the
+  // door refuses honestly rather than lying with a fallback fetch.
+  const src = await freshStageRow(draftId, row.id) ?? row
+  const params = typeof src.params === 'object' && src.params !== null && !Array.isArray(src.params)
+    ? src.params as Record<string, unknown>
     : {}
-  const card = typeof row.card === 'string' && row.card !== '' ? row.card : ''
+  const card = typeof src.card === 'string' && src.card !== '' ? src.card : ''
   if (card === '') return { refused: 'this stage names no card — nothing to compose' }
   // THE MODEL PASS-ALONG (2026-09-12: "the card-ui package is supposed
   //  to pass along the model, variant, and quant fields"): the stage's

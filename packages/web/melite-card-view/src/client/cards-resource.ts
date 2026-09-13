@@ -341,6 +341,31 @@ export function readRun(runId: string, doc: Record<string, unknown>): CardsRunVa
  * string id, mirroring readBench — the door's wire is untyped at this
  * seam and a malformed row must not break the whole view.
  */
+/** THE FRESH-READ LAW (2026-09-13 incident): the run composes the
+ *  ESTATE's row — read back AFTER the drill's patch — never the
+ *  client's stale render row. The drill patches the bench, then Run
+ *  reads; composing the clicked-open row object drops every param
+ *  typed between open and Run (the music prompt refusal: typed, Run,
+ *  compose saw nothing). Returns null when the estate read fails or
+ *  the row is gone — the caller composes its held row and the door
+ *  refuses honestly. */
+export async function freshStageRow(
+  draftId: string,
+  stageId: string,
+  signal?: AbortSignal,
+): Promise<BenchStageRow | null> {
+  try {
+    const doc = await wireCall('drafts/get', { draftId }, signal)
+    const stages = Array.isArray(doc['stages'])
+      ? (doc['stages'] as unknown[]).filter((s): s is BenchStageRow =>
+          typeof s === 'object' && s !== null && typeof (s as BenchStageRow)['id'] === 'string')
+      : []
+    return stages.find((s) => s.id === stageId) ?? null
+  } catch {
+    return null
+  }
+}
+
 export function readDraft(draftId: string, stageId: string, doc: Record<string, unknown>): CardsDraftValue {
   const stages = Array.isArray(doc['stages'])
     ? (doc['stages'] as unknown[]).filter((s): s is BenchStageRow =>
