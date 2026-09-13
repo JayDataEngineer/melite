@@ -38,6 +38,7 @@ import {
 } from "react"
 import type { ReactElement, ReactNode } from "react"
 import { cn } from "@melite/card-base/chrome"
+import { TriStateAtom } from "@melite/card-base"
 import {
   Switch,
   Tooltip,
@@ -249,7 +250,9 @@ export function SelectControl({
   )
 }
 
-// ── TriControl — inherit / on / off ─────────────────────────────────
+// ── TriControl — inherit / on / off (card-base's TriStateAtom in
+// rail clothing: h3's width/disabled ergonomics over the shared
+// semantics — one spelling of tri-state everywhere) ────────────────
 
 export function TriControl({
   ariaLabel, value, onChange, width = "w-full", disabled,
@@ -261,20 +264,15 @@ export function TriControl({
   disabled?: boolean
 }) {
   return (
-    <select
-      aria-label={ariaLabel}
-      disabled={disabled}
-      value={value === undefined ? "" : String(value)}
-      onChange={(e) => {
-        const v = e.target.value
-        onChange(v === "" ? undefined : v === "true")
-      }}
-      className={cn(s.ctlSelect, widthClass(width))}
-    >
-      <option value="">inherit</option>
-      <option value="true">on</option>
-      <option value="false">off</option>
-    </select>
+    <span className={cn(widthClass(width), "inline-block")}>
+      <TriStateAtom
+        label={ariaLabel}
+        name={ariaLabel}
+        value={value}
+        disabled={disabled}
+        onEdit={(_name, v) => { onChange(v === undefined ? undefined : v === true) }}
+      />
+    </span>
   )
 }
 

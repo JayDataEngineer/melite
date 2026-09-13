@@ -164,6 +164,76 @@ export type FieldAtomClaim = (props: {
   square?: SquareHost
 }) => ReturnType<typeof h>
 
+/** THE TRI-STATE ATOM (hour 15, stroke C): inherit / on / off —
+ *  promoted from h3's studio-local TriControl (same semantics, same
+ *  option order). Serves schema-bound fields of type 'tri' AND the
+ *  standalone rail rows that hand-rolled the select before. */
+export function TriStateAtom({ label, value, onEdit, name, disabled }: {
+  label: string
+  value: boolean | undefined
+  onEdit(name: string, v: unknown): void
+  name: string
+  disabled?: boolean
+}): ReturnType<typeof h> {
+  return h('select', {
+    className: css.specSelect,
+    'aria-label': label,
+    disabled: disabled === true,
+    value: value === undefined ? '' : String(value),
+    onChange: (e: unknown) => {
+      const v = (e as { target: { value: string } }).target.value
+      onEdit(name, v === '' ? undefined : v === 'true')
+    },
+  },
+  h('option', { value: '' }, 'inherit'),
+  h('option', { value: 'true' }, 'on'),
+  h('option', { value: 'false' }, 'off'))
+}
+
+/** The slider's local display during a drag (the settle law's
+ *  carrier): local owns the bubble while dragging; an external move
+ *  of the backing value (agent write, revive, another card opened)
+ *  reclaims the display. */
+function useLocalSliderValue(value: unknown, def: unknown): { value: number, set(n: number): void } {
+  const num = typeof value === 'number' ? value : Number(value)
+  const [local, setLocal] = useState<number | null>(null)
+  useEffect(() => { setLocal(null) }, [num]) // eslint-disable-line react-hooks/exhaustive-deps
+  return {
+    value: local !== null ? local : (Number.isFinite(num) ? num : Number(def ?? 0)),
+    set: setLocal,
+  }
+}
+
+/** THE SETTLE LAW for slider atoms (hour 15, stroke C — grown from
+ *  mask-studio's draft absorber, 2026-08-10): a drag fires input
+ *  60×/sec; if every step wrote to the card, updateStageParams →
+ *  _recomputeKeys would hash multi-MB paint data 60×/sec and freeze
+ *  the editor. The atom shows the drag locally and persists ONCE on
+ *  settle (the change event = release / keyboard step). External
+ *  writes (agent, revive) re-sync the display when the backing
+ *  value actually moves. */
+export function SpecSliderAtom({ f, value, onEdit }: {
+  f: SpecField
+  value: unknown
+  onEdit(name: string, v: unknown): void
+}): ReturnType<typeof h> {
+  const shown = useLocalSliderValue(value, f.default)
+  return h('span', { className: css.specSliderRow },
+    h('input', {
+      className: css.specSlider,
+      type: 'range',
+      min: f.min ?? 0,
+      max: f.max ?? 10,
+      step: f.step ?? 0.1,
+      value: shown,
+      onInput: (e: unknown) => { shown.set(Number((e as { target: { value: string } }).target.value)) },
+      onChange: (e: unknown) => { onEdit(f.name, (e as { target: { value: string } }).target.value) },
+      'aria-label': f.label,
+    }),
+    h('span', { className: css.specSliderValue }, String(shown.value)),
+  )
+}
+
 /** One spec atom — typed by the declaration, edited as a raw string
  *  while typing (decimal dots survive; coercion happens once at patch). */
 export function SpecAtom({ f, value, onEdit, square }: {
@@ -199,20 +269,18 @@ export function SpecAtom({ f, value, onEdit, square }: {
     }))
   }
   if (f.type === 'slider') {
-    const num = typeof value === 'number' ? value : Number(value)
-    return h('span', { className: css.specSliderRow },
-      h('input', {
-        className: css.specSlider,
-        type: 'range',
-        min: f.min ?? 0,
-        max: f.max ?? 10,
-        step: f.step ?? 0.1,
-        value: Number.isFinite(num) ? num : (f.default ?? 0),
-        onInput: (e: unknown) => onEdit(f.name, (e as { target: { value: string } }).target.value),
-        'aria-label': f.label,
-      }),
-      h('span', { className: css.specSliderValue }, String(value ?? f.default ?? '')),
-    )
+    return h(SpecSliderAtom, { f, value, onEdit })
+  }
+  if (f.type === 'tri') {
+    // THE TRI-STATE ATOM (hour 15, stroke C — h3's TriControl
+    // semantics, promoted): boolean | undefined — inherit (the
+    // upstream default), on, off. One spelling everywhere.
+    return h(TriStateAtom, {
+      label: f.label !== '' ? f.label : f.name,
+      value: value === undefined || value === null ? undefined : (value === true || value === 'true'),
+      onEdit,
+      name: f.name,
+    })
   }
   if (f.type === 'switch' || f.type === 'boolean') {
     // the primitives catalog owns the two-state toggle — Switch, with
@@ -327,6 +395,27 @@ export function ModelAxes({ spec, values, onEdit }: {
  *  it. The caller hands only the WIRE (picker candidates), never the
  *  component; a caller that passes its own `square` fn overrides (the
  *  host-claim seam), but the default is the constructor's own. */
+/** ONE SPEC FIELD ROW (hour 15, stroke C): the label chrome (key,
+ *  required star, hint) around the atom — CardForm's own row, opened
+ *  to rail sections that render served fields outside a whole form
+ *  (mask's TuneSection). The claim seam stays CardForm's; this row
+ *  takes the resolved atom inputs. */
+export function SpecFieldRow({ f, value, onEdit, square }: {
+  f: SpecField
+  value: unknown
+  onEdit(name: string, v: unknown): void
+  square?: SquareHost
+}): ReturnType<typeof h> {
+  return h('label', { className: css.specField },
+    h('span', { className: css.specFieldKey },
+      f.label,
+      f.required === true ? h('span', { className: css.specRequired }, ' *') : null,
+    ),
+    h(SpecAtom, { f, value, onEdit, square }),
+    f.tooltip !== undefined && f.tooltip !== '' ? h('span', { className: css.specHint }, f.tooltip) : null,
+  )
+}
+
 export function CardForm({ spec, fields, values, onEdit, wire, square, atoms, onPatch }: {
   /** the WHOLE emission (fields + model/variants) — present whenever
    *  the host fetched the doc; the axes render from THIS. */
@@ -375,19 +464,21 @@ export function CardForm({ spec, fields, values, onEdit, wire, square, atoms, on
     spec !== undefined ? h(ModelAxes, { spec, values, onEdit }) : null,
     groups.map((g) => h('section', { key: g.group ?? '', className: css.specGroup },
       g.group !== null ? h('h4', { className: css.specGroupTitle }, g.group) : null,
-      g.fields.map((f) => h('label', { key: f.name, className: css.specField },
-        h('span', { className: css.specFieldKey },
-          f.label,
-          f.required === true ? h('span', { className: css.specRequired }, ' *') : null,
-        ),
-        (() => {
-          const claim = atomOf(f)
-          const sq = squareFor(f)
-          if (claim !== undefined) return claim({ f, value: values[f.name], onEdit, square: sq })
-          return h(SpecAtom, { f, value: values[f.name], onEdit, square: sq })
-        })(),
-        f.tooltip !== undefined && f.tooltip !== '' ? h('span', { className: css.specHint }, f.tooltip) : null,
-      )),
+      g.fields.map((f) => {
+        const claim = atomOf(f)
+        const sq = squareFor(f)
+        if (claim !== undefined) {
+          return h('label', { key: f.name, className: css.specField },
+            h('span', { className: css.specFieldKey },
+              f.label,
+              f.required === true ? h('span', { className: css.specRequired }, ' *') : null,
+            ),
+            claim({ f, value: values[f.name], onEdit, square: sq }),
+            f.tooltip !== undefined && f.tooltip !== '' ? h('span', { className: css.specHint }, f.tooltip) : null,
+          )
+        }
+        return h(SpecFieldRow, { key: f.name, f, value: values[f.name], onEdit, square: sq })
+      }),
     )),
     // THE MOD SYSTEM — rendered by the constructor itself: every
     // surface (stage drill, add drill, studios) obeys, none wires it.
