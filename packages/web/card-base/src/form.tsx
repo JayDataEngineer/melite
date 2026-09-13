@@ -340,60 +340,6 @@ export function SourceRow(props: SourceRowProps): ReturnType<typeof h> {
   )
 }
 
-/** THE MULTI-IMAGE ROW (2026-09-13, the operator's source-row law):
- *  an image_list value renders as ONE row of source squares — one per
- *  entry (each with the full three-source grammar: menu, modal, OS
- *  file, drops, detach) plus a trailing add square that APPENDS. The
- *  row is the mods grammar applied to inputs: same plus square, same
- *  menu, dynamically addable. The cap rides the declaration's tooltip
- *  law (the frozen picker served up to 3). */
-const IMAGE_LIST_CAP = 3
-
-function ImageListAtom({ f, value, onEdit, candidates }: {
-  f: SpecField
-  value: unknown
-  onEdit(name: string, v: unknown): void
-  candidates?: Array<{ id: string; label: string; url: string }>
-}): ReturnType<typeof h> {
-  const arr: string[] = Array.isArray(value)
-    ? value.filter((v): v is string => typeof v === 'string')
-    : []
-  const write = (next: string[]): void => { onEdit(f.name, next) }
-  const writeAt = (i: number, v: string): void => {
-    if (v === '') { write(arr.filter((_, j) => j !== i)); return }
-    const next = [...arr]
-    next[i] = v
-    write(next)
-  }
-  const append = (v: string): void => {
-    if (v === '') return
-    write([...arr, v])
-  }
-  return h('div', { className: css.specListBlock, 'data-image-list': f.name },
-    h('span', { className: css.specFieldKey }, f.label),
-    h('div', { className: css.specSlotRow },
-      arr.map((v, i) => h(SourceRow, {
-        key: f.name + '-' + i + '-' + v,
-        label: '',
-        kind: 'image',
-        value: v,
-        candidates,
-        onEdit: (nv: string) => { writeAt(i, nv) },
-      })),
-      arr.length < IMAGE_LIST_CAP
-        ? h(SourceRow, {
-            key: f.name + '-add',
-            label: '',
-            kind: 'image',
-            value: null,
-            candidates,
-            onEdit: append,
-          })
-        : null,
-    ),
-  )
-}
-
 /** THE TRI-STATE ATOM (hour 15, stroke C): inherit / on / off —
  *  promoted from h3's studio-local TriControl (same semantics, same
  *  option order). Serves schema-bound fields of type 'tri' AND the
@@ -533,9 +479,6 @@ export function SpecAtom({ f, value, onEdit, square, wireCandidates }: {
       onChange: (e: unknown) => onEdit(f.name, (e as { target: { value: string } }).target.value),
       'aria-label': f.label,
     })
-  }
-  if (f.type === 'image_list') {
-    return h(ImageListAtom, { f, value, onEdit, candidates: wireCandidates })
   }
   // number, seed, text — the raw-string Input (coerce once at patch)
   return h(Input, {
@@ -691,14 +634,16 @@ export function CardForm({ spec, fields, values, onEdit, wire, square, atoms, on
   const railOf = (inp: { name: string; kind?: string }): SpecField | undefined => {
     const f = flatFields.find((x) => x.name === inp.name)
     if (f === undefined) return undefined
-    if (f.type === 'image' || f.type === 'file' || f.type === 'image_list') return f
+    if (f.type === 'image' || f.type === 'file') return f
     return undefined
   }
   const railFields = signature
     .map((inp) => (typeof inp?.name === 'string' ? railOf(inp as { name: string }) : undefined))
     .filter((f): f is SpecField => f !== undefined)
   const railNames = new Set(railFields.map((f) => f.name))
-  const groupFieldsAll = railNames.size > 0 ? flatFields.filter((f) => !railNames.has(f.name)) : flatFields
+  const visible = (f: SpecField): boolean =>
+    f.type !== 'image_list' && !railNames.has(f.name)
+  const groupFieldsAll = flatFields.filter(visible)
   const groups = groupFields(groupFieldsAll, values)
   const atomOf = (f: SpecField): FieldAtomClaim | undefined => atoms?.[f.type]
   // THE CONSTRUCTOR'S OWN PROVIDER — always built (hook law), used
@@ -733,15 +678,6 @@ export function CardForm({ spec, fields, values, onEdit, wire, square, atoms, on
               )
             }),
           ),
-          railFields.filter((f) => f.type === 'image_list').map((f) =>
-            h(SpecAtom, {
-              key: f.name,
-              f,
-              value: values[f.name],
-              onEdit,
-              ...(wire?.candidates !== undefined ? { wireCandidates: wire.candidates } : {}),
-            }),
-          ),
         )
       : null,
     groups.map((g) => {
@@ -769,17 +705,6 @@ export function CardForm({ spec, fields, values, onEdit, wire, square, atoms, on
             ),
             claim({ f, value: values[f.name], onEdit, square: sq }),
             f.tooltip !== undefined && f.tooltip !== '' ? h('span', { className: css.specHint }, f.tooltip) : null,
-          ))
-          continue
-        }
-        if (f.type === 'image_list') {
-          flush()
-          children.push(h('div', {
-            key: f.name,
-            className: css.specSlotCell,
-            title: f.tooltip !== undefined && f.tooltip !== '' ? f.tooltip : undefined,
-          },
-            h(SpecAtom, { f, value: values[f.name], onEdit, square: sq, ...(wireCandidates !== undefined ? { wireCandidates } : {}) }),
           ))
           continue
         }

@@ -99,21 +99,19 @@ export function registerCard(ctx: Context, comfy: ComfyUIService): void {
     // flow-stage declarations; the discovery arms derive from here).
     sidebar: { key: 'image-edit', order: 2 },
     flowKinds: {
-      // THE INPUT SIGNATURE (the operator's law, 2026-09-13: "cards
-      // emit input signatures, so it's clean data the UI package
-      // receives") — the TRUE slots in run order, not the retired
-      // input_image alias: image1 is the anchor (the lanpaint flavor's
-      // absorbed declaration, REQUIRED — the compose gate enforces),
-      // image2/3 the card's own, reference_images the image_list rail
-      // (kind image — it carries image artifacts; the list SHAPE rides
-      // the field's wtype). prompt stays a text edge (flow wiring),
-      // never a rail slot.
+      // THE INPUT SIGNATURE = the old yaml's input_slots, VERBATIM
+      // (["image1", "image2", "image3"], 1:1 — prompt stays a text
+      // edge for flow wiring). reference_images is NOT a slot: the
+      // old system declared it (workflows pass resolved image lists
+      // through it) but NEVER rendered it — no input_slots entry, no
+      // slot component anywhere in the old tree, and the params flow
+      // excluded every non-params zone field. Declaration-only data;
+      // the form never shows it.
       inputs: {
         prompt: 'text',
         image1: 'image',
         image2: 'image',
         image3: 'image',
-        reference_images: 'image',
       },
       outputs: { default: 'image' },
       requiresModel: false,

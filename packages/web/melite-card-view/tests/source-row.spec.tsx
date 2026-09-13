@@ -1,12 +1,14 @@
-// source-row.spec.tsx — THE SLOT ROW LAW + THE MULTI-IMAGE ROW (hour 24,
-// the operator's lane report: "the images aren't even in a row… a slot
-// for REFERENCE IMAGES and the PLUS????"). Pins:
+// source-row.spec.tsx — THE SLOT ROW LAW + THE UNCLAIMED-SLOT LAW
+// (hour 24 strokes 4-6; the operator's lane reports drove each cut).
+// Pins:
 //  1. the slot-shaped fields of one group render side-by-side in ONE
 //     row container (labels under squares, no stacked key rows);
-//  2. image_list renders one SourceRow square per entry + a trailing
-//     add square (the mods' dynamically-addable grammar), capped at 3;
-//  3. the add square's menu appends (From flow); detach removes the
-//     index (the array rewrite, never a string clobber).
+//  2. THE INPUT RAIL renders from the declared signature
+//     (= the old yaml's input_slots) in signature order;
+//  3. image_list is DECLARATION-ONLY: the old tree declared it but no
+//     surface ever claimed it (no input_slots entry, no slot
+//     component, the params flow excluded non-params zone fields) —
+//     the default form renders NOTHING for it, 1:1.
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, expect, test, vi } from 'vitest'
@@ -49,69 +51,15 @@ test('THE SLOT ROW: one group\'s image squares sit side-by-side in ONE row conta
   expect(row.querySelector('[class*="specFieldKey"]')).toBeNull()
 })
 
-test('THE MULTI-IMAGE ROW: entries render as squares + the trailing add, capped at 3', () => {
-  const { container } = render(createElement(Host, {
-    fields: [listField],
-    values: { reference_images: ['/melite-media/runs/r1/a.png', '/melite-media/runs/r1/b.png'] },
-    onEdit: vi.fn(),
-  }))
-  const block = container.querySelector('[data-image-list="reference_images"]') as HTMLElement
-  expect(block).toBeTruthy()
-  // the named key line survives (a NAMED multi-slot row)
-  expect(screen.getByText('Reference Images')).toBeTruthy()
-  const squares = block.querySelectorAll('[role="button"][aria-label*="source"]')
-  expect(squares.length).toBe(3) // 2 entries + the add square
-  // the entries carry thumbnails
-  expect(block.querySelectorAll('img').length).toBe(2)
-})
-
-test('the add square appends through the menu (From flow) — the array grows, never clobbers', async () => {
-  const onEdit = vi.fn()
-  const user = userEvent.setup()
-  const wire = {
-    candidates: [{ id: 's1', label: 'image-gen', url: '/melite-media/runs/r8/gen_00001_.png' }],
-  }
-  render(createElement(SpecForm, {
-    fields: [listField],
-    values: { reference_images: ['keep.png'] },
-    onEdit,
-    wire,
-  }))
-  const block = document.querySelector('[data-image-list="reference_images"]') as HTMLElement
-  // the ADD square is the TRAILING one — last in the row by construction
-  const add = Array.from(block.querySelectorAll('[role="button"][aria-label*="source"]')).pop() as HTMLElement
-  expect(add).toBeTruthy()
-  await user.click(add)
-  const flow = await screen.findByText('From flow', {}, { timeout: 2000 })
-  fireEvent.click(flow.closest('[role="menuitem"], [role="option"], li') as HTMLElement)
-  const row = (await screen.findAllByTestId('source-pick-row'))[0] as HTMLElement
-  fireEvent.click(row)
-  await waitFor(() => {
-    // the rewrite is the ARRAY with the pick appended — the entry kept
-    expect(onEdit).toHaveBeenCalledWith('reference_images', ['keep.png', '/melite-media/runs/r8/gen_00001_.png'])
-  })
-})
-
-test('the cap: three entries render NO add square (the frozen picker law)', () => {
-  const { container } = render(createElement(Host, {
-    fields: [listField],
-    values: { reference_images: ['a.png', 'b.png', 'c.png'] },
-    onEdit: vi.fn(),
-  }))
-  const block = container.querySelector('[data-image-list="reference_images"]') as HTMLElement
-  const squares = block.querySelectorAll('[role="button"][aria-label*="source"]')
-  expect(squares.length).toBe(3) // full — no fourth
-})
-
 // ── THE INPUT RAIL (the operator's second lane report: "an input rail
 //    with images 2 and 3, then ANOTHER rail for reference images and
 //    image 1 stacked vertically") — the signature builds ONE rail ──
 const railSpec = {
+  // = the old yaml's input_slots, VERBATIM — reference_images is not a slot
   inputs: [
     { name: 'image1', kind: 'image', required: true },
     { name: 'image2', kind: 'image' },
     { name: 'image3', kind: 'image' },
-    { name: 'reference_images', kind: 'image' },
   ],
 } as never
 
@@ -132,19 +80,14 @@ test('THE INPUT RAIL: the declared signature renders ONE rail in signature order
   const rail = container.querySelector('[data-input-rail]') as HTMLElement
   expect(rail).toBeTruthy()
   const squares = Array.from(rail.querySelectorAll('[role="button"][aria-label*="source"]'))
-  expect(squares.length).toBe(3 + 2) // image1/2/3 + the list entry + its add
-  // SIGNATURE order: the anchor (Image 1) rides FIRST, not after the list
+  expect(squares.length).toBe(3) // input_slots: image1/2/3 — nothing else
+  // SIGNATURE order: the anchor (Image 1) rides FIRST
   const labels = squares.map((s) => (s as HTMLElement).getAttribute('aria-label'))
   expect(labels.indexOf('Image 1 source')).toBe(0)
-  // the list row lives IN the rail zone (its own named block)
-  expect(rail.querySelector('[data-image-list="reference_images"]')).toBeTruthy()
-  // the param groups EXCLUDE the rail names — no second input group, no stray squares
-  const groups = container.querySelectorAll('section[class*="specGroup"]:not([class*="inputRail"])')
-  groups.forEach((g) => {
-    const el = g as HTMLElement
-    expect(el.querySelector('[role="button"][aria-label*="source"]')).toBeNull()
-    expect(el.textContent).not.toContain('Reference Images')
-  })
+  // DECLARATION-ONLY: reference_images renders NOWHERE — not the rail,
+  // not the groups, not even its label text (the old unclaimed-slot law)
+  expect(container.textContent).not.toContain('Reference Images')
+  expect(container.querySelector('[data-image-list]')).toBeNull()
 })
 
 test('without a signature the group grammar still holds (backward face)', () => {
@@ -155,4 +98,6 @@ test('without a signature the group grammar still holds (backward face)', () => 
   }))
   expect(container.querySelector('[data-input-rail]')).toBeNull()
   expect(container.querySelectorAll('[class*="specSlotRow"]').length).toBeGreaterThan(0)
+  // and the unclaimed list stays invisible there too — 1:1, no seam leak
+  expect(container.textContent).not.toContain('Reference Images')
 })
