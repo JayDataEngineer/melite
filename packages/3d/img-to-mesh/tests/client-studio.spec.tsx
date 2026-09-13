@@ -121,12 +121,16 @@ test("THE SLOT IS THE WIRE: picking an upstream output writes the param", async 
       upstream: [{ id: 's_1', title: 'Boat gen', url: '/melite-media/runs/r9/gen/gen_00001_.png' }],
       onPatch, onRun,
     }))
-    // the input square (the image field) — click opens the picker
+    // the input square (the image field) — click opens the source menu
     const square = await screen.findByRole('button', { name: /Input image source/i })
     fireEvent.click(square)
-    // the picker menu (portal): the upstream output row
-    const item = await screen.findByRole('menuitem', { name: /Boat gen/ })
-    fireEvent.click(item)
+    // the LIVE picker face is two-step (the flat picker is dead): the
+    // menu first, then From flow's selector modal carries the rows
+    const fromFlow = await screen.findByRole('menuitem', { name: /From flow/i })
+    fireEvent.click(fromFlow)
+    const row = await screen.findByTestId('source-pick-row')
+    if (!row.textContent?.includes('Boat gen')) throw new Error('row lost its candidate label')
+    fireEvent.click(row)
     // run: PATCH FIRST — the picked url rides the params VERBATIM
     const runBtn = await screen.findByRole('button', { name: /^Run$/ })
     fireEvent.click(runBtn)

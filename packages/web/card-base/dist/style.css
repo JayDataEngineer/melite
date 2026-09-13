@@ -404,3 +404,148 @@
 .VMoOIq_inputRail {
   gap: 10px;
 }
+
+.VMoOIq_sz14 {
+  flex: none;
+  width: 14px;
+  height: 14px;
+}
+
+.VMoOIq_wireDialog {
+  width: min(448px, 100vw - 32px);
+  max-height: 60vh;
+  overflow-y: auto;
+}
+
+.VMoOIq_wireUnwire {
+  text-align: left;
+  cursor: pointer;
+  border: 0;
+  border-bottom: 1px solid color-mix(in srgb, var(--dsw-alias-label-primary) 12%, transparent);
+  width: 100%;
+  color: var(--dsw-alias-state-error-primary);
+  background: none;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  font-size: 11px;
+  display: flex;
+}
+
+.VMoOIq_wireUnwire:hover {
+  background: color-mix(in srgb, var(--dsw-alias-bg-module-platform) 40%, transparent);
+}
+
+.VMoOIq_wireList {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.VMoOIq_wireList > li + li {
+  border-top: 1px solid color-mix(in srgb, var(--dsw-alias-label-primary) 12%, transparent);
+}
+
+.VMoOIq_wireEmpty {
+  color: color-mix(in srgb, var(--dsw-alias-label-primary) 48%, transparent);
+  padding: 12px;
+  font-size: 11px;
+}
+
+.VMoOIq_wireOption {
+  text-align: left;
+  cursor: pointer;
+  width: 100%;
+  color: var(--dsw-alias-label-primary);
+  background: none;
+  border: 0;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  display: flex;
+}
+
+.VMoOIq_wireOption:hover {
+  background: color-mix(in srgb, var(--dsw-alias-bg-module-platform) 40%, transparent);
+}
+
+.VMoOIq_wireSelected {
+  background: color-mix(in srgb, var(--dsw-alias-brand-primary) 8%, transparent);
+}
+
+.VMoOIq_wireIdx {
+  font-variant-numeric: tabular-nums;
+  background: color-mix(in srgb, var(--dsw-alias-brand-primary) 60%, transparent);
+  width: 20px;
+  height: 20px;
+  color: color-mix(in srgb, var(--dsw-alias-label-primary) 60%, transparent);
+  border-radius: 4px;
+  flex: none;
+  justify-content: center;
+  align-items: center;
+  font-size: 9px;
+  font-weight: 700;
+  display: flex;
+}
+
+.VMoOIq_wireThumb {
+  object-fit: cover;
+  border: 1px solid color-mix(in srgb, var(--dsw-alias-label-primary) 20%, transparent);
+  border-radius: 4px;
+  flex: none;
+  width: 32px;
+  height: 32px;
+}
+
+.VMoOIq_wireThumbFallback {
+  border: 1px solid color-mix(in srgb, var(--dsw-alias-label-primary) 20%, transparent);
+  background: color-mix(in srgb, var(--dsw-alias-bg-module-platform) 40%, transparent);
+  width: 32px;
+  height: 32px;
+  color: color-mix(in srgb, var(--dsw-alias-label-primary) 60%, transparent);
+  border-radius: 4px;
+  flex: none;
+  justify-content: center;
+  align-items: center;
+  display: flex;
+}
+
+.VMoOIq_wireMeta {
+  flex: 1;
+  min-width: 0;
+}
+
+.VMoOIq_wireTitle {
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--dsw-alias-label-primary);
+  font-size: 11px;
+  font-weight: 500;
+  overflow: hidden;
+}
+
+.VMoOIq_wireOut {
+  font-family: var(--dsw-alias-font-mono, ui-monospace, monospace);
+  color: color-mix(in srgb, var(--dsw-alias-brand-primary) 80%, transparent);
+  margin-left: 4px;
+  font-size: 9px;
+}
+
+.VMoOIq_wireSub {
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: var(--dsw-alias-font-mono, ui-monospace, monospace);
+  color: color-mix(in srgb, var(--dsw-alias-label-primary) 48%, transparent);
+  font-size: 9px;
+  overflow: hidden;
+}
+
+.VMoOIq_wiredTag {
+  background: color-mix(in srgb, var(--dsw-alias-brand-primary) 15%, transparent);
+  color: var(--dsw-alias-brand-primary);
+  border-radius: 4px;
+  flex: none;
+  padding: 2px 6px;
+  font-size: 9px;
+  font-weight: 600;
+}

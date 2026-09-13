@@ -13,6 +13,7 @@
     "./package.json": "./package.json",
     "./mods": "./src/mods.tsx",
     "./shell": "./src/shell.tsx",
+    "./wirePicker": "./src/wirePicker.tsx",
     "./icons": "./src/icons.tsx",
     "./chrome": "./src/chrome.ts",
     "./toast": "./src/toast.tsx",

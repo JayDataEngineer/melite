@@ -1,5 +1,7 @@
-import { Fragment, createElement, useCallback, useEffect, useRef, useState } from "react";
 import { Button, IconPlusOutline16, Input, Menu, Modal, Switch } from "@deepseek-ai/dsh-client-ui-primitives";
+import { clsx } from "clsx";
+import { jsx, jsxs } from "react/jsx-runtime";
+import { Fragment, createElement, useCallback, useEffect, useRef, useState } from "react";
 import { fetchMediaLibrary } from "@melite-plugin/melite-run-wire";
 import * as THREE from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
@@ -232,6 +234,39 @@ function seedAxisValues(spec, held) {
 	return out;
 }
 //#endregion
+//#region src/icons.tsx
+function Svg({ className, style, children, ...rest }) {
+	return /* @__PURE__ */ jsx("svg", {
+		xmlns: "http://www.w3.org/2000/svg",
+		width: 24,
+		height: 24,
+		viewBox: "0 0 24 24",
+		fill: "none",
+		stroke: "currentColor",
+		strokeWidth: 2,
+		strokeLinecap: "round",
+		strokeLinejoin: "round",
+		"aria-hidden": "true",
+		focusable: "false",
+		className,
+		style,
+		...rest,
+		children
+	});
+}
+function Link2({ className, style, ...rest }) {
+	return /* @__PURE__ */ jsxs(Svg, {
+		className,
+		style,
+		...rest,
+		children: [
+			/* @__PURE__ */ jsx("path", { d: "M9 17H7A5 5 0 0 1 7 7h2" }),
+			/* @__PURE__ */ jsx("path", { d: "M15 7h2a5 5 0 1 1 0 10h-2" }),
+			/* @__PURE__ */ jsx("path", { d: "M8 12h8" })
+		]
+	});
+}
+//#endregion
 //#region src/card.module.css
 var card_module_default = {
 	"inputRail": "VMoOIq_inputRail",
@@ -283,7 +318,22 @@ var card_module_default = {
 	"squareThumb": "VMoOIq_squareThumb",
 	"squareWrap": "VMoOIq_squareWrap",
 	"squareX": "VMoOIq_squareX",
-	"tileDragging": "VMoOIq_tileDragging"
+	"sz14": "VMoOIq_sz14",
+	"tileDragging": "VMoOIq_tileDragging",
+	"wireDialog": "VMoOIq_wireDialog",
+	"wiredTag": "VMoOIq_wiredTag",
+	"wireEmpty": "VMoOIq_wireEmpty",
+	"wireIdx": "VMoOIq_wireIdx",
+	"wireList": "VMoOIq_wireList",
+	"wireMeta": "VMoOIq_wireMeta",
+	"wireOption": "VMoOIq_wireOption",
+	"wireOut": "VMoOIq_wireOut",
+	"wireSelected": "VMoOIq_wireSelected",
+	"wireSub": "VMoOIq_wireSub",
+	"wireThumb": "VMoOIq_wireThumb",
+	"wireThumbFallback": "VMoOIq_wireThumbFallback",
+	"wireTitle": "VMoOIq_wireTitle",
+	"wireUnwire": "VMoOIq_wireUnwire"
 };
 //#endregion
 //#region src/square.tsx
@@ -419,6 +469,94 @@ function InputSquare(props) {
 			if (fileRef.current !== null) fileRef.current.value = "";
 		}
 	}) : null);
+}
+//#endregion
+//#region src/wirePicker.tsx
+/** The wire picker — prior stages by ARRAY INDEX, including ones that
+* haven't run yet ("not run yet" — wire BEFORE the upstream runs).
+*
+* Named outputs: when an upstream stage produced >1 named artifact
+* (input_prep → media + mask), it expands into ONE ROW PER output so the
+* user can wire mask → lanpaint_mask specifically. Upstreams with 0–1
+* named artifacts render as a single row (legacy — primary via
+* assetUrls[0]). The output name rides onPick → setSlotInput →
+* inputOutputs → collectUpstreamResults. */
+function WirePickerModal({ slot, priorStages, currentId, currentOutput, onPick, onUnwire, onClose }) {
+	return /* @__PURE__ */ jsx(Modal, {
+		open: true,
+		onClose,
+		title: `Wire ${slot} from an earlier card`,
+		closeLabel: "Close wire picker",
+		className: card_module_default.wireDialog,
+		children: /* @__PURE__ */ jsxs("div", {
+			"data-wire-modal": true,
+			children: [currentId && /* @__PURE__ */ jsx("button", {
+				type: "button",
+				onClick: onUnwire,
+				"data-wire-unwire": true,
+				className: card_module_default.wireUnwire,
+				children: "Unwire — this slot will ask for a file or wire again"
+			}), /* @__PURE__ */ jsxs("ul", {
+				className: card_module_default.wireList,
+				children: [priorStages.length === 0 && /* @__PURE__ */ jsx("li", {
+					className: card_module_default.wireEmpty,
+					children: "No earlier cards yet — add a card before this one to wire from it."
+				}), priorStages.map((u, i) => {
+					const named = u.result?.artifacts ?? {};
+					const namedEntries = Object.entries(named);
+					const multi = namedEntries.length > 1;
+					return (multi ? namedEntries.map(([name, url]) => ({
+						outputName: name,
+						thumb: url,
+						label: name
+					})) : [{
+						outputName: null,
+						thumb: u.result?.assetUrls[0],
+						label: "primary"
+					}]).map((row, ri) => {
+						const selected = u.id === currentId && (currentOutput ?? null) === (row.outputName ?? null);
+						return /* @__PURE__ */ jsx("li", { children: /* @__PURE__ */ jsxs("button", {
+							type: "button",
+							onClick: () => onPick(u.id, row.outputName),
+							"data-wire-option": row.outputName ?? "primary",
+							className: clsx(card_module_default.wireOption, selected && card_module_default.wireSelected),
+							children: [
+								/* @__PURE__ */ jsx("span", {
+									className: card_module_default.wireIdx,
+									children: String(i + 1).padStart(2, "0")
+								}),
+								row.thumb && isImageUrl(row.thumb) ? /* @__PURE__ */ jsx("img", {
+									src: row.thumb,
+									alt: "",
+									className: card_module_default.wireThumb
+								}) : /* @__PURE__ */ jsx("div", {
+									className: card_module_default.wireThumbFallback,
+									children: /* @__PURE__ */ jsx(Link2, { className: card_module_default.sz14 })
+								}),
+								/* @__PURE__ */ jsxs("div", {
+									className: card_module_default.wireMeta,
+									children: [/* @__PURE__ */ jsxs("div", {
+										className: card_module_default.wireTitle,
+										children: [u.title, multi && /* @__PURE__ */ jsxs("span", {
+											className: card_module_default.wireOut,
+											children: ["· ", row.label]
+										})]
+									}), /* @__PURE__ */ jsx("div", {
+										className: card_module_default.wireSub,
+										children: u.result ? row.thumb ?? "no artifacts" : "not run yet"
+									})]
+								}),
+								selected && /* @__PURE__ */ jsx("span", {
+									className: card_module_default.wiredTag,
+									children: "wired"
+								})
+							]
+						}) }, u.id + (ri > 0 ? `:${row.outputName}` : ""));
+					});
+				})]
+			})]
+		})
+	});
 }
 //#endregion
 //#region src/wire.ts
@@ -1688,4 +1826,4 @@ function makeLabelSprite(text, color, worldHeight) {
 	return sprite;
 }
 //#endregion
-export { ASSET_DRAG_MIME, CARD_SLOTS, CardForm, InputSquare, ModelAxes, ModifiersSection, SourceRow, SpecAtom, SpecFieldRow, SpecSliderAtom, TriStateAtom, activeRowId, activeVariantId, axisGroups, axisKey, axisPickPatch, composingRows, fetchCardCatalog, fetchFormSpec, fetchFormsTable, fieldVisible, groupFields, inputEdgeOf, isImageUrl, isOptionKind, makeLabelSprite, modOwnedFields, modelChoices, mountStage3D, quantRowsFor, readAsDataUrl, rowsFor, seedAxisValues, specDefaults, specPatch, uploadInputFile, useFormSpec, useSquareProvider, variantGroupsContract, variantRows };
+export { ASSET_DRAG_MIME, CARD_SLOTS, CardForm, InputSquare, ModelAxes, ModifiersSection, SourceRow, SpecAtom, SpecFieldRow, SpecSliderAtom, TriStateAtom, WirePickerModal, activeRowId, activeVariantId, axisGroups, axisKey, axisPickPatch, composingRows, fetchCardCatalog, fetchFormSpec, fetchFormsTable, fieldVisible, groupFields, inputEdgeOf, isImageUrl, isOptionKind, makeLabelSprite, modOwnedFields, modelChoices, mountStage3D, quantRowsFor, readAsDataUrl, rowsFor, seedAxisValues, specDefaults, specPatch, uploadInputFile, useFormSpec, useSquareProvider, variantGroupsContract, variantRows };

@@ -1,4 +1,7 @@
-// WirePickerModal — local DSH-pure port of the shared kit/WirePickerModal.
+// WirePickerModal — THE shared wire picker (promoted from the
+// mask-studio local port, hour 25 stroke 17): one component, every
+// surface that wires EDGES adopts it; value-attaching surfaces ride
+// SourceRow instead. Both live in card-base now.
 //
 // The shared "link to a previous output" picker: prior stages by
 // ARRAY INDEX, named outputs expanded per-row, "not run yet" for
@@ -10,9 +13,9 @@
 import type { CardStage } from "@melite/contracts"
 import { Modal } from "@deepseek-ai/dsh-client-ui-primitives"
 import { clsx } from "clsx"
-import { Link2 } from "@melite/card-base/icons"
-import { isImageUrl } from "./attach"
-import styles from "./mask.module.css"
+import { Link2 } from "./icons"
+import { isImageUrl } from "./square"
+import styles from "./card.module.css"
 
 export interface WirePickerModalProps {
   /** Slot key being wired (display only — "Wire {slot} from …"). */

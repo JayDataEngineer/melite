@@ -27,7 +27,7 @@
 }
 
 .aspectRowActive {
-  background: color-mix(in srgb, var(--dsw-alias-accent, #3b82f6) 20%, transparent);
+  background: color-mix(in srgb, var(--dsw-alias-accent) 20%, transparent);
 }
 
 /* icon-only row actions (element list) */
@@ -38,22 +38,22 @@
   border-radius: 4px;
   border: none;
   background: transparent;
-  color: var(--dsw-alias-label-secondary, #5b6470);
+  color: var(--dsw-alias-label-secondary);
   cursor: pointer;
   padding: 4px;
 }
 
 .iconBtn:hover {
-  color: var(--dsw-alias-label-primary, #0f1115);
+  color: var(--dsw-alias-label-primary);
 }
 
 .iconBtnDanger {
-  color: var(--dsw-alias-danger, #dc2626);
+  color: var(--dsw-alias-danger);
 }
 
 .iconBtnDanger:hover {
-  background: color-mix(in srgb, var(--dsw-alias-danger, #dc2626) 10%, transparent);
-  color: var(--dsw-alias-danger, #dc2626);
+  background: color-mix(in srgb, var(--dsw-alias-danger) 10%, transparent);
+  color: var(--dsw-alias-danger);
 }
 
 .bgField {
@@ -73,7 +73,7 @@
   margin: 0 4px;
   height: 20px;
   width: 1px;
-  background: var(--dsw-alias-border, #e2e4e9);
+  background: var(--dsw-alias-border);
 }
 
 .aspectWrap {
@@ -96,10 +96,10 @@
 .aspectCard {
   width: 176px;
   border-radius: 6px;
-  border: 1px solid var(--dsw-alias-border, #e2e4e9);
-  background: var(--dsw-alias-bg-module-platform, #f5f6f7);
+  border: 1px solid var(--dsw-alias-border);
+  background: var(--dsw-alias-bg-module-platform);
   padding: 6px;
-  box-shadow: 0 8px 28px -12px rgb(0 0 0 / 0.45);
+  box-shadow: 0 8px 28px -12px color-mix(in srgb, var(--dsw-alias-label-primary) 45%, transparent);
 }
 
 .aspectList {
@@ -116,7 +116,7 @@
 .aspectDims {
   margin-left: auto;
   font-size: 10px;
-  color: var(--dsw-alias-label-secondary, #5b6470);
+  color: var(--dsw-alias-label-secondary);
 }
 
 .toolbarRight {
@@ -133,15 +133,15 @@
 /* ── tabs card ── */
 .tabsCard {
   border-radius: 12px;
-  border: 1px solid var(--dsw-alias-border, #e2e4e9);
-  background: color-mix(in srgb, var(--dsw-alias-bg-module-platform, #f5f6f7) 40%, transparent);
+  border: 1px solid var(--dsw-alias-border);
+  background: color-mix(in srgb, var(--dsw-alias-bg-module-platform) 40%, transparent);
 }
 
 .tabsBar {
   display: flex;
   align-items: center;
   gap: 4px;
-  border-bottom: 1px solid var(--dsw-alias-border, #e2e4e9);
+  border-bottom: 1px solid var(--dsw-alias-border);
   padding: 6px 8px 0;
 }
 
@@ -164,23 +164,23 @@
 }
 
 .tabBtnActive {
-  border-bottom-color: var(--dsw-alias-accent, #3b82f6);
-  color: var(--dsw-alias-label-primary, #0f1115);
+  border-bottom-color: var(--dsw-alias-accent);
+  color: var(--dsw-alias-label-primary);
 }
 
 .tabBtnIdle {
   border-bottom-color: transparent;
-  color: var(--dsw-alias-label-secondary, #5b6470);
+  color: var(--dsw-alias-label-secondary);
 }
 
 .tabBtnIdle:hover {
-  color: var(--dsw-alias-label-primary, #0f1115);
+  color: var(--dsw-alias-label-primary);
 }
 
 .countBadge {
   margin-left: 4px;
   border-radius: 999px;
-  background: var(--dsw-alias-bg-module-platform, #f5f6f7);
+  background: var(--dsw-alias-bg-module-platform);
   padding: 0 6px;
   font-size: 10px;
   font-family: ui-monospace, monospace;
@@ -204,7 +204,7 @@
 
 .multiHint {
   font-size: 11px;
-  color: var(--dsw-alias-label-secondary, #5b6470);
+  color: var(--dsw-alias-label-secondary);
   margin: 0;
 }
 
@@ -215,8 +215,8 @@
 
 .emptyState {
   border-radius: 8px;
-  border: 1px dashed var(--dsw-alias-border, #e2e4e9);
-  background: color-mix(in srgb, var(--dsw-alias-bg-module-platform, #f5f6f7) 20%, transparent);
+  border: 1px dashed var(--dsw-alias-border);
+  background: color-mix(in srgb, var(--dsw-alias-bg-module-platform) 20%, transparent);
   padding: 24px 16px;
   text-align: center;
 }
@@ -228,14 +228,14 @@
 
 .emptyIcon {
   margin: 0 auto 8px;
-  color: var(--dsw-alias-label-tertiary, #8a93a0);
+  color: var(--dsw-alias-label-tertiary);
 }
 
 .emptyHint {
   margin: 4px auto 0;
   max-width: 28ch;
   font-size: 11px;
-  color: var(--dsw-alias-label-secondary, #5b6470);
+  color: var(--dsw-alias-label-secondary);
 }
 
 .emptyBtns {
@@ -260,7 +260,7 @@
 
 .listDir {
   font-size: 10px;
-  color: var(--dsw-alias-label-tertiary, #8a93a0);
+  color: var(--dsw-alias-label-tertiary);
 }
 
 .listScroll {
@@ -276,7 +276,7 @@
   align-items: center;
   gap: 8px;
   border-radius: 6px;
-  border: 1px solid var(--dsw-alias-border, #e2e4e9);
+  border: 1px solid var(--dsw-alias-border);
   padding: 6px 8px;
   font-size: 12px;
   cursor: pointer;
@@ -284,16 +284,16 @@
 }
 
 .elRowSelected {
-  border-color: color-mix(in srgb, var(--dsw-alias-accent, #3b82f6) 70%, transparent);
-  background: color-mix(in srgb, var(--dsw-alias-accent, #3b82f6) 10%, transparent);
+  border-color: color-mix(in srgb, var(--dsw-alias-accent) 70%, transparent);
+  background: color-mix(in srgb, var(--dsw-alias-accent) 10%, transparent);
 }
 
 .elRowIdle {
-  background: color-mix(in srgb, var(--dsw-alias-bg-module-platform, #f5f6f7) 15%, transparent);
+  background: color-mix(in srgb, var(--dsw-alias-bg-module-platform) 15%, transparent);
 }
 
 .elRowIdle:hover {
-  background: color-mix(in srgb, var(--dsw-alias-bg-module-platform, #f5f6f7) 30%, transparent);
+  background: color-mix(in srgb, var(--dsw-alias-bg-module-platform) 30%, transparent);
 }
 
 .elBadge {
@@ -309,18 +309,18 @@
 }
 
 .elBadgeText {
-  background: rgb(167 139 250 / 0.15);
-  color: #a78bfa;
+  background: color-mix(in srgb, var(--dsw-alias-brand-primary) 15%, transparent);
+  color: var(--dsw-alias-brand-primary);
 }
 
 .elBadgeLogo {
-  background: rgb(251 191 36 / 0.15);
-  color: #fbbf24;
+  background: color-mix(in srgb, var(--dsw-alias-state-warn-primary) 15%, transparent);
+  color: var(--dsw-alias-state-warn-primary);
 }
 
 .elBadgeObj {
-  background: rgb(34 211 238 / 0.15);
-  color: #22d3ee;
+  background: color-mix(in srgb, var(--dsw-alias-state-business-primary) 15%, transparent);
+  color: var(--dsw-alias-state-business-primary);
 }
 
 .elMain {
@@ -338,7 +338,7 @@
   font-family: ui-monospace, monospace;
   font-size: 9px;
   font-variant-numeric: tabular-nums;
-  color: var(--dsw-alias-label-secondary, #5b6470);
+  color: var(--dsw-alias-label-secondary);
 }
 
 .elSwatches {
@@ -346,7 +346,7 @@
   height: 12px;
   overflow: hidden;
   border-radius: 2px;
-  border: 1px solid var(--dsw-alias-border, #e2e4e9);
+  border: 1px solid var(--dsw-alias-border);
 }
 
 .elSwatch {
@@ -370,8 +370,8 @@
 .canvasCard {
   position: relative;
   border-radius: 12px;
-  border: 1px solid var(--dsw-alias-border, #e2e4e9);
-  background: color-mix(in srgb, var(--dsw-alias-bg-module-platform, #f5f6f7) 40%, transparent);
+  border: 1px solid var(--dsw-alias-border);
+  background: color-mix(in srgb, var(--dsw-alias-bg-module-platform) 40%, transparent);
   padding: 12px 12px 28px;
 }
 
@@ -384,7 +384,7 @@
   align-items: center;
   gap: 6px;
   font-size: 10px;
-  color: var(--dsw-alias-label-secondary, #5b6470);
+  color: var(--dsw-alias-label-secondary);
 }
 
 /* ── fullscreen dialog ── */
@@ -404,8 +404,8 @@
 .dialogCanvas {
   flex: 1;
   border-radius: 8px;
-  border: 1px solid var(--dsw-alias-border, #e2e4e9);
-  background: color-mix(in srgb, var(--dsw-alias-bg-module-platform, #f5f6f7) 40%, transparent);
+  border: 1px solid var(--dsw-alias-border);
+  background: color-mix(in srgb, var(--dsw-alias-bg-module-platform) 40%, transparent);
   padding: 12px 12px 28px;
 }
 
@@ -422,8 +422,8 @@
 
 .dialogPanel {
   border-radius: 8px;
-  border: 1px solid var(--dsw-alias-border, #e2e4e9);
-  background: color-mix(in srgb, var(--dsw-alias-bg-module-platform, #f5f6f7) 40%, transparent);
+  border: 1px solid var(--dsw-alias-border);
+  background: color-mix(in srgb, var(--dsw-alias-bg-module-platform) 40%, transparent);
   padding: 12px;
 }
 
@@ -438,12 +438,12 @@
 .i16 { width: 16px; height: 16px; }
 .i20 { width: 20px; height: 20px; }
 
-.toneCyan { color: #22d3ee; }
-.toneViolet { color: #a78bfa; }
-.toneAmber { color: #fbbf24; }
-.toneBrand { color: var(--dsw-alias-accent, #3b82f6); }
-.toneDanger { color: var(--dsw-alias-danger, #dc2626); }
-.toneMuted { color: var(--dsw-alias-label-secondary, #5b6470); }
+.toneCyan { color: var(--dsw-alias-state-business-primary); }
+.toneViolet { color: var(--dsw-alias-brand-primary); }
+.toneAmber { color: var(--dsw-alias-state-warn-primary); }
+.toneBrand { color: var(--dsw-alias-accent); }
+.toneDanger { color: var(--dsw-alias-danger); }
+.toneMuted { color: var(--dsw-alias-label-secondary); }
 
 .btnSquare {
   width: 32px;

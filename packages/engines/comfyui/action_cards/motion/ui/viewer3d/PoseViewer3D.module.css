@@ -7,25 +7,25 @@
   align-items: center;
   justify-content: center;
   gap: 12px;
-  background: #0e0e1a;
+  background: var(--dsw-alias-bg-base);
 }
 
 .loadingIcon {
   width: 32px;
   height: 32px;
-  color: rgba(255, 255, 255, 0.3);
+  color: color-mix(in srgb, var(--dsw-alias-bg-module) 30%, transparent);
 }
 
 .loadingLabel {
   font-size: 12px;
-  color: rgba(255, 255, 255, 0.4);
+  color: color-mix(in srgb, var(--dsw-alias-bg-module) 40%, transparent);
 }
 
 .errorBox {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #0e0e1a;
-  color: rgba(255, 255, 255, 0.6);
+  background: var(--dsw-alias-bg-base);
+  color: color-mix(in srgb, var(--dsw-alias-bg-module) 60%, transparent);
   font-size: 12px;
 }

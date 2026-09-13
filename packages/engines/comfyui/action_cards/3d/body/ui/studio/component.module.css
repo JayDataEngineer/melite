@@ -10,7 +10,7 @@
 
 .presetHead {
   flex-shrink: 0;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+  border-bottom: 1px solid var(--dsw-alias-border-l1);
   padding: 10px 12px;
 }
 
@@ -20,7 +20,7 @@
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.14em;
-  color: rgba(255, 255, 255, 0.45);
+  color: color-mix(in srgb, var(--dsw-alias-bg-module) 45%, transparent);
 }
 
 .presetRow {
@@ -31,18 +31,18 @@
 
 .presetPill {
   border-radius: 9999px;
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--dsw-alias-border-l2);
+  background: var(--dsw-alias-border-l1);
   padding: 4px 10px;
   font-size: 10px;
   font-weight: 500;
-  color: rgba(255, 255, 255, 0.55);
+  color: color-mix(in srgb, var(--dsw-alias-bg-module) 55%, transparent);
   transition: color 0.15s ease, border-color 0.15s ease;
 }
 
 .presetPill:hover {
-  border-color: rgba(59, 130, 246, 0.5);
-  color: var(--dsw-alias-accent, #3b82f6);
+  border-color: color-mix(in srgb, var(--dsw-alias-brand-primary) 50%, transparent);
+  color: var(--dsw-alias-accent);
 }
 
 .leverWell {

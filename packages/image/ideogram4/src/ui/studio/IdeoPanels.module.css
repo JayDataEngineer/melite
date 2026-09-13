@@ -20,7 +20,7 @@
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.16em;
-  color: var(--dsw-alias-label-secondary, #5b6470);
+  color: var(--dsw-alias-label-secondary);
 }
 
 .microRow {
@@ -31,11 +31,11 @@
 
 .infoHint {
   cursor: help;
-  color: var(--dsw-alias-label-tertiary, #8a93a0);
+  color: var(--dsw-alias-label-tertiary);
 }
 
 .infoHint:hover {
-  color: var(--dsw-alias-label-secondary, #5b6470);
+  color: var(--dsw-alias-label-secondary);
 }
 
 /* ── icon sizes / tones (ex-lucide sizing) ── */
@@ -46,12 +46,12 @@
 .i20 { width: 20px; height: 20px; }
 .i28 { width: 28px; height: 28px; }
 
-.toneDanger { color: var(--dsw-alias-danger, #dc2626); }
-.toneSuccess { color: var(--dsw-alias-success, #16a34a); }
-.toneBrand { color: var(--dsw-alias-accent, #3b82f6); }
-.toneCyan { color: #22d3ee; }
-.toneViolet { color: #a78bfa; }
-.toneMuted { color: var(--dsw-alias-label-secondary, #5b6470); }
+.toneDanger { color: var(--dsw-alias-danger); }
+.toneSuccess { color: var(--dsw-alias-success); }
+.toneBrand { color: var(--dsw-alias-accent); }
+.toneCyan { color: var(--dsw-alias-state-business-primary); }
+.toneViolet { color: var(--dsw-alias-brand-primary); }
+.toneMuted { color: var(--dsw-alias-label-secondary); }
 
 /* ── ColorPaletteInput ── */
 .swatchRow {
@@ -70,7 +70,7 @@
 .swatch {
   position: relative;
   border-radius: 6px;
-  border: 1px solid var(--dsw-alias-border, #e2e4e9);
+  border: 1px solid var(--dsw-alias-border);
   overflow: hidden;
 }
 
@@ -93,7 +93,7 @@
   align-items: center;
   justify-content: center;
   font-size: 9px;
-  color: var(--dsw-alias-danger, #dc2626);
+  color: var(--dsw-alias-danger);
 }
 
 .removeBtn {
@@ -107,8 +107,8 @@
   height: 16px;
   border-radius: 999px;
   border: none;
-  background: var(--dsw-alias-danger, #dc2626);
-  color: #fff;
+  background: var(--dsw-alias-danger);
+  color: var(--dsw-alias-bg-module);
   cursor: pointer;
   padding: 0;
 }
@@ -122,16 +122,16 @@
   align-items: center;
   justify-content: center;
   border-radius: 6px;
-  border: 1px dashed var(--dsw-alias-border, #e2e4e9);
+  border: 1px dashed var(--dsw-alias-border);
   background: transparent;
-  color: var(--dsw-alias-label-secondary, #5b6470);
+  color: var(--dsw-alias-label-secondary);
   cursor: pointer;
   padding: 0;
 }
 
 .addBtn:hover {
-  color: var(--dsw-alias-label-primary, #0f1115);
-  border-color: var(--dsw-alias-label-tertiary, #8a93a0);
+  color: var(--dsw-alias-label-primary);
+  border-color: var(--dsw-alias-label-tertiary);
 }
 
 .hexInput {
@@ -158,10 +158,10 @@
   z-index: 40;
   width: 208px;
   border-radius: 8px;
-  border: 1px solid var(--dsw-alias-border, #e2e4e9);
-  background: var(--dsw-alias-bg-module-platform, #f5f6f7);
+  border: 1px solid var(--dsw-alias-border);
+  background: var(--dsw-alias-bg-module-platform);
   padding: 8px;
-  box-shadow: 0 8px 28px -12px rgb(0 0 0 / 0.45);
+  box-shadow: 0 8px 28px -12px color-mix(in srgb, var(--dsw-alias-label-primary) 45%, transparent);
 }
 
 .presetTitle {
@@ -171,7 +171,7 @@
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.08em;
-  color: var(--dsw-alias-label-secondary, #5b6470);
+  color: var(--dsw-alias-label-secondary);
 }
 
 .presetList {
@@ -190,7 +190,7 @@
   height: 16px;
   overflow: hidden;
   border-radius: 2px;
-  border: 1px solid var(--dsw-alias-border, #e2e4e9);
+  border: 1px solid var(--dsw-alias-border);
 }
 
 .presetSwatch {
@@ -218,15 +218,15 @@
 }
 
 .typeText {
-  border-color: rgb(167 139 250 / 0.4);
-  background: rgb(167 139 250 / 0.1);
-  color: #a78bfa;
+  border-color: color-mix(in srgb, var(--dsw-alias-brand-primary) 40%, transparent);
+  background: color-mix(in srgb, var(--dsw-alias-brand-primary) 10%, transparent);
+  color: var(--dsw-alias-brand-primary);
 }
 
 .typeObj {
-  border-color: rgb(34 211 238 / 0.4);
-  background: rgb(34 211 238 / 0.1);
-  color: #22d3ee;
+  border-color: color-mix(in srgb, var(--dsw-alias-state-business-primary) 40%, transparent);
+  background: color-mix(in srgb, var(--dsw-alias-state-business-primary) 10%, transparent);
+  color: var(--dsw-alias-state-business-primary);
 }
 
 .iconActions {
@@ -252,7 +252,7 @@
   font-family: ui-monospace, monospace;
   font-size: 10px;
   font-variant-numeric: tabular-nums;
-  color: var(--dsw-alias-label-secondary, #5b6470);
+  color: var(--dsw-alias-label-secondary);
 }
 
 .bboxGrid {
@@ -273,7 +273,7 @@
   font-size: 9px;
   font-family: ui-monospace, monospace;
   text-transform: uppercase;
-  color: var(--dsw-alias-label-secondary, #5b6470);
+  color: var(--dsw-alias-label-secondary);
 }
 
 .bboxInput {
@@ -281,18 +281,18 @@
   width: 100%;
   min-width: 0;
   border-radius: 8px;
-  border: 1px solid var(--dsw-alias-border, #e2e4e9);
+  border: 1px solid var(--dsw-alias-border);
   background: transparent;
   padding: 4px 10px;
   font-size: 12px;
-  color: var(--dsw-alias-label-primary, #0f1115);
+  color: var(--dsw-alias-label-primary);
   outline: none;
   text-align: center;
   font-variant-numeric: tabular-nums;
 }
 
 .bboxInput:focus-visible {
-  border-color: var(--dsw-alias-accent, #3b82f6);
+  border-color: var(--dsw-alias-accent);
 }
 
 /* ── StylePanel ── */
@@ -316,7 +316,7 @@
   grid-template-columns: repeat(3, 1fr);
   gap: 4px;
   border-radius: 8px;
-  border: 1px solid var(--dsw-alias-border, #e2e4e9);
+  border: 1px solid var(--dsw-alias-border);
   padding: 2px;
   font-size: 12px;
 }
@@ -340,7 +340,7 @@
   gap: 4px;
 }
 
-.i14ok { width: 14px; height: 14px; color: var(--dsw-alias-success, #16a34a); }
+.i14ok { width: 14px; height: 14px; color: var(--dsw-alias-success); }
 .tabRow {
   display: flex;
   align-items: center;
@@ -350,7 +350,7 @@
 .tabGroup {
   display: inline-flex;
   border-radius: 6px;
-  border: 1px solid var(--dsw-alias-border, #e2e4e9);
+  border: 1px solid var(--dsw-alias-border);
   padding: 2px;
   font-size: 11px;
 }
@@ -369,13 +369,13 @@
   max-height: 260px;
   overflow: auto;
   border-radius: 6px;
-  border: 1px solid var(--dsw-alias-border, #e2e4e9);
-  background: var(--dsw-alias-bg-module-platform, #f5f6f7);
+  border: 1px solid var(--dsw-alias-border);
+  background: var(--dsw-alias-bg-module-platform);
   padding: 10px;
   margin: 0;
   font-size: 11px;
   line-height: 1.4;
-  color: var(--dsw-alias-success, #16a34a);
+  color: var(--dsw-alias-success);
 }
 
 .jsonArea {
@@ -383,11 +383,11 @@
   font-family: ui-monospace, monospace;
   font-size: 11px;
   line-height: 1.4;
-  color: var(--dsw-alias-success, #16a34a);
+  color: var(--dsw-alias-success);
 }
 
 .jsonAreaError {
-  border-color: var(--dsw-alias-danger, #dc2626);
+  border-color: var(--dsw-alias-danger);
 }
 
 .hintRow {
@@ -397,9 +397,9 @@
   font-size: 10px;
 }
 
-.hintError { color: var(--dsw-alias-danger, #dc2626); }
-.hintOk { color: var(--dsw-alias-label-secondary, #5b6470); }
-.hintDim { color: var(--dsw-alias-label-tertiary, #8a93a0); }
+.hintError { color: var(--dsw-alias-danger); }
+.hintOk { color: var(--dsw-alias-label-secondary); }
+.hintDim { color: var(--dsw-alias-label-tertiary); }
 
 .dropzone {
   display: flex;
@@ -407,27 +407,27 @@
   justify-content: center;
   gap: 8px;
   border-radius: 6px;
-  border: 1px dashed var(--dsw-alias-border, #e2e4e9);
+  border: 1px dashed var(--dsw-alias-border);
   padding: 8px 0;
   font-size: 11px;
   cursor: pointer;
-  color: var(--dsw-alias-label-secondary, #5b6470);
+  color: var(--dsw-alias-label-secondary);
   transition: border-color 120ms ease, color 120ms ease;
 }
 
 .dropzone:hover {
-  border-color: var(--dsw-alias-label-tertiary, #8a93a0);
+  border-color: var(--dsw-alias-label-tertiary);
 }
 
 .dropzone:focus-visible {
-  outline: 2px solid color-mix(in srgb, var(--dsw-alias-accent, #3b82f6) 50%, transparent);
+  outline: 2px solid color-mix(in srgb, var(--dsw-alias-accent) 50%, transparent);
   outline-offset: 1px;
 }
 
 .dropzoneActive {
-  border-color: var(--dsw-alias-accent, #3b82f6);
-  background: color-mix(in srgb, var(--dsw-alias-accent, #3b82f6) 10%, transparent);
-  color: var(--dsw-alias-accent, #3b82f6);
+  border-color: var(--dsw-alias-accent);
+  background: color-mix(in srgb, var(--dsw-alias-accent) 10%, transparent);
+  color: var(--dsw-alias-accent);
 }
 
 .hiddenInput {

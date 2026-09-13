@@ -6,22 +6,22 @@
   width: 100%;
   min-height: 64px;
   border-radius: 8px;
-  border: 1px solid var(--dsw-alias-border, #e2e4e9);
+  border: 1px solid var(--dsw-alias-border-l2);
   background: transparent;
   padding: 8px 10px;
   font-size: 14px;
   line-height: 1.45;
-  color: var(--dsw-alias-label-primary, #0f1115);
+  color: var(--dsw-alias-label-primary);
   outline: none;
   transition: border-color 120ms ease;
 }
 
 .textarea::placeholder {
-  color: var(--dsw-alias-label-tertiary, #8a93a0);
+  color: var(--dsw-alias-label-tertiary);
 }
 
 .textarea:focus-visible {
-  border-color: var(--dsw-alias-accent, #3b82f6);
+  border-color: var(--dsw-alias-brand-primary);
 }
 
 .textarea:disabled {

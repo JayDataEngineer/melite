@@ -17,10 +17,30 @@ const here = dirname(fileURLToPath(import.meta.url))
 
 /** The guarded set: the shared timeline substrate (css + tsx) and the
  *  h3 studio skin — every consumer of the bar inherits the law. */
-const GUARDED: Array<{ file: string, why: string }> = [
+/** min: the vacuity floor per file — small skins (the ideogram
+ *  controls file is 4 honest uses) get a calibrated floor; the
+ *  no-literal and no-fallback walls above stay ABSOLUTE for all. */
+const GUARDED: Array<{ file: string, why: string, min?: number }> = [
   { file: join(here, '../timeline/timeline.module.css'), why: 'the shared timeline skin' },
   { file: join(here, '../timeline/MotionTimelineBar.tsx'), why: 'the shared timeline component' },
   { file: join(here, '../../../video/h3-timeline/src/ui/studio/studio.module.css'), why: 'the h3 studio skin' },
+  // THE SWEEP COMPLETES (hour 25, the operator: "fix ALL DEBT"): the
+  // named debt files fell one by one; the wall now guards each of
+  // them where it lives. Canvas-DATA colors (SAM overlays, brush
+  // inks, checkerboards in mask-studio's ts constants) are bitmap
+  // content the engine reads, not chrome — outside the wall's law.
+  { file: join(here, '../../../image/mask-studio/src/ui/studio/mask.module.css'), why: 'the mask studio skin' },
+  { file: join(here, '../../../image/ideogram4/src/client/client.module.css'), why: 'the ideogram card skin' },
+  { file: join(here, '../../../image/ideogram4/src/ui/studio/component.module.css'), why: 'the ideogram studio skin' },
+  { file: join(here, '../../../image/ideogram4/src/ui/studio/IdeoPanels.module.css'), why: 'the ideogram panels skin' },
+  { file: join(here, '../../../image/ideogram4/src/ui/studio/IdeogramCanvas.module.css'), why: 'the ideogram canvas skin' },
+  { file: join(here, '../../../image/ideogram4/src/ui/studio/controls.module.css'), why: 'the ideogram controls skin', min: 3 },
+  { file: join(here, '../../../web/melite-card-view/src/client/card.module.css'), why: 'the card view skin' },
+  { file: join(here, '../../../engines/comfyui/action_cards/3d/body/ui/studio/BodyShapePanel.module.css'), why: 'the body studio skin' },
+  { file: join(here, '../../../engines/comfyui/action_cards/3d/body/ui/studio/component.module.css'), why: 'the body studio chrome' },
+  { file: join(here, '../../../engines/comfyui/action_cards/3d/body/ui/studio/MeshPreviewCanvas.module.css'), why: 'the body mesh preview skin', min: 0 },
+  { file: join(here, '../../../engines/comfyui/action_cards/motion/ui/viewers/MotionViewer.module.css'), why: 'the motion viewer skin' },
+  { file: join(here, '../../../engines/comfyui/action_cards/motion/ui/viewer3d/PoseViewer3D.module.css'), why: 'the pose viewer skin', min: 4 },
 ]
 
 /** Strip comments — the law governs declarations, not prose. */
@@ -47,9 +67,9 @@ test('no color fallback args inside var() (the token IS the value)', () => {
 })
 
 test('the tokens are actually ridden (dsw aliases present, not vacuously clean)', () => {
-  for (const { file, why } of GUARDED) {
+  for (const { file, why, min } of GUARDED) {
     const src = readFileSync(file, 'utf8')
     const uses = src.match(/--dsw-alias-[\w-]+/g) ?? []
-    expect(uses.length, why + ' — no dsw token uses').toBeGreaterThan(5)
+    expect(uses.length, why + ' — no dsw token uses').toBeGreaterThan(min ?? 5)
   }
 })
