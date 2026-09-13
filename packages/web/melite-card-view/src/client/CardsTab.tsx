@@ -31,7 +31,7 @@
  * see index.ts) keep this package off sibling runtime imports.
  */
 import { createElement as h, Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { Button, Input, Menu, Modal, Pill, StateDot, Tag } from '@deepseek-ai/dsh-client-ui-primitives'
+import { Button, IconLoadingOutline16, IconPlayOutline16, IconStopFill16, IconTrashOutline16, Input, Menu, Modal, Pill, StateDot, Tag } from '@deepseek-ai/dsh-client-ui-primitives'
 import { CardDrill } from './card-drill.tsx'
 import type { StageViewOwnerProps } from './types.ts'
 import { fetchCardCatalog, fetchFormSpec, seedAxisValues, specDefaults, specPatch, SpecForm, useSquareProvider } from './spec-form.tsx'
@@ -353,18 +353,10 @@ function parseAssetDrop(raw: string): AssetDropPayload {
  *  pattern: the li is the drag unit, transform/transition ride the
  *  wrapper, the shared-element layoutId stays INSIDE (the morph
  *  anchor is unbroken). */
-/** runStatus text → the installed Tag tone union (the primitives
- *  catalog owns badge palettes; a copy is forbidden). */
-function statusTone(status: string): 'success' | 'danger' | 'info' | 'warning' | 'neutral' {
-  if (status === 'done' || status === 'succeeded') return 'success'
-  if (status === 'error' || status === 'failed') return 'danger'
-  if (status === 'running' || status === 'queued' || status === 'pending') return 'info'
-  if (status === 'cancelled' || status === 'timeout') return 'warning'
-  return 'neutral'
-}
 
 function SortableTile({ row, entered, onOpen, grouping, selected, onToggleSelect, onAssetAttach,
-  dragging, dragOver, onReorderStart, onReorderOver, onReorderDrop }: {
+  dragging, dragOver, onReorderStart, onReorderOver, onReorderDrop,
+  onRun, onStop, onRemove, activeRunId }: {
   row: CardRowLineTabRow
   entered: boolean
   onOpen: (row: CardRowLineTabRow) => void
@@ -383,6 +375,15 @@ function SortableTile({ row, entered, onOpen, grouping, selected, onToggleSelect
    *  source = the asset URL or the raw File; the bench owns upload
    *  and error surfacing. */
   onAssetAttach: (target: string, source: string | File, kind: 'image' | 'audio') => void
+  /** THE CHAT-INPUT CHROME (2026-09-13, the operator): the tile's
+   *  hover affordances — trash top-right, play bottom-right (→ stop
+   *  while running), spinner bottom-left persisting past hover. */
+  onRun: (row: CardRowLineTabRow) => void
+  onStop: (row: CardRowLineTabRow) => void
+  onRemove: (row: CardRowLineTabRow) => void
+  /** the stage's live run id (the stop wire's target; null when the
+   *  tab never started it — reconcile heals those rows). */
+  activeRunId: string | null
 }): ReturnType<typeof h> {
   // NATIVE REORDER (the dnd-kit purge): the tile is HTML5-draggable
   // outside grouping mode; the parent owns dragId/overId state and
@@ -474,7 +475,31 @@ function SortableTile({ row, entered, onOpen, grouping, selected, onToggleSelect
                 h('span', { className: css.kindInitial }, row.kind.slice(0, 1).toUpperCase()),
                 h('span', { className: css.kindName }, row.kind),
               ),
-          row.dot !== null ? h('span', { className: css.tileDot }, h(StateDot, { state: row.dot })) : null,
+          // THE CHAT-INPUT CHROME (replaces the badge + green dot):
+          // trash top-right + play/stop bottom-right ride hover; the
+          // loading spinner bottom-left PERSISTS while the row runs
+          // (the operator's law — loading outlives the hover).
+          rowRunning(row)
+            ? h('span', { className: css.tileSpin, 'data-testid': 'tile-spin', role: 'status', 'aria-label': 'running' },
+                h(IconLoadingOutline16, { size: 14 }))
+            : null,
+          grouping ? null : h('button', {
+            className: css.tileIconBtn + ' ' + css.tileTrash,
+            type: 'button', 'aria-label': 'Remove stage', 'data-testid': 'tile-remove',
+            onClick: (e: React.MouseEvent) => { e.stopPropagation(); onRemove(row) },
+          }, h(IconTrashOutline16, { size: 14 })),
+          grouping ? null : (rowRunning(row)
+            ? h('button', {
+                className: css.tileIconBtn + ' ' + css.tileRunBtn,
+                type: 'button', 'aria-label': 'Stop run', 'data-testid': 'tile-stop',
+                disabled: activeRunId === null,
+                onClick: (e: React.MouseEvent) => { e.stopPropagation(); onStop(row) },
+              }, h(IconStopFill16, { size: 14 }))
+            : h('button', {
+                className: css.tileIconBtn + ' ' + css.tileRunBtn,
+                type: 'button', 'aria-label': 'Run stage', 'data-testid': 'tile-run',
+                onClick: (e: React.MouseEvent) => { e.stopPropagation(); onRun(row) },
+              }, h(IconPlayOutline16, { size: 14 }))),
         ),
         h('span', { className: css.tileCaption },
           h('span', { className: css.tileTitle }, row.title,
@@ -486,13 +511,16 @@ function SortableTile({ row, entered, onOpen, grouping, selected, onToggleSelect
             row.upstream !== null ? h(Tag, { tone: 'quiet' }, '⟵ ' + row.upstream) : null,
             row.prompt !== null ? h('span', { className: css.tilePrompt }, row.prompt) : null,
           ),
-          row.status !== '' && row.status !== 'ready'
-            ? h(Tag, { tone: statusTone(row.status) }, row.status)
-            : null,
         ),
       ),
     ),
   )
+}
+
+/** The chrome's running truth: the row's stamped status (the observer
+ *  patches it terminal the moment the run lands). */
+function rowRunning(row: CardRowLineTabRow): boolean {
+  return row.status === 'running' || row.status === 'queued' || row.status === 'pending'
 }
 
 function UnusedCardRowLineTab({ row, onOpen }: {
@@ -1076,10 +1104,14 @@ function AddCardDoor({ bench, onAdded, onClose, renderStageView, onAddedRow }: {
   )
 }
 
-function BenchView({ bench, onRun, onRunStage, running, onPatchParams, renderStageView, renderPreview, runId, refreshTick }: {
+function BenchView({ bench, onRun, onRunStage, onStopStage, onRemoveStage, stageRuns, running, onPatchParams, renderStageView, renderPreview, runId, refreshTick }: {
   bench: CardsBenchValue
   onRun: () => void
   onRunStage: (stage: BenchStageRow) => void
+  /** the tile chrome's stop + remove verbs (the chat-input law). */
+  onStopStage: (stage: BenchStageRow) => void
+  onRemoveStage: (stage: BenchStageRow) => void
+  stageRuns: Record<string, string>
   running: boolean
   onPatchParams: (stage: BenchStageRow, patch: Record<string, unknown>) => void
   renderStageView: (owner: StageViewOwnerProps, fallback: ReturnType<typeof h>) => ReturnType<typeof h>
@@ -1364,6 +1396,10 @@ function BenchView({ bench, onRun, onRunStage, running, onPatchParams, renderSta
                   grouping, selected: selectedIds.has(s.id), onToggleSelect, onAssetAttach,
                   dragging: dragId === s.id, dragOver: overId === s.id && dragId !== null && dragId !== s.id,
                   onReorderStart, onReorderOver, onReorderDrop,
+                  onRun: (r) => onRunStage(r.stage),
+                  onStop: (r) => onStopStage(r.stage),
+                  onRemove: (r) => onRemoveStage(r.stage),
+                  activeRunId: stageRuns[s.id] ?? null,
                 })
               }),
               h('li', { className: css.tile + ' ' + css.tileAdd },
@@ -1638,13 +1674,24 @@ export function CardsTab(props: CardsTabProps): ReturnType<typeof h> {
     })
   }, [benchValue, touchBench])
 
+  // THE TILE CHROME'S RUN MAP (2026-09-13): stageId → live runId —
+  // armed when a run starts (the drill's Run, the tile's play, the
+  // sequential pass), cleared when its observer settles terminal.
+  // The stop button targets this; unknown-run rows (another session)
+  // disable stop — reconcile heals their status instead.
+  const [stageRuns, setStageRuns] = useState<Record<string, string>>({})
+  const clearStageRun = useCallback((stageId: string): void => {
+    setStageRuns((m) => { const n = { ...m }; delete n[stageId]; return n })
+  }, [])
   const onStarted = useCallback((runId: string, ran?: { draftId: string; stageId: string }): void => {
     setRunning(false)
     setLastRunId(runId)
     if (ran === undefined) return
+    setStageRuns((m) => ({ ...m, [ran.stageId]: runId }))
     if (outcomeAbort.current === null) outcomeAbort.current = new AbortController()
     void observeRunOutcome(ran.draftId, ran.stageId, runId, outcomeAbort.current.signal, touchBench)
-  }, [touchBench])
+      .then(() => { clearStageRun(ran.stageId) })
+  }, [touchBench, clearStageRun])
   // RUN ALL — the sequential pass (the old runAll law): one run per
   //  card in bench order, stop on failure; every tile flips through
   //  the SAME observer the drill's Run uses. Cancel stops the pass
@@ -1682,6 +1729,25 @@ export function CardsTab(props: CardsTabProps): ReturnType<typeof h> {
       }
     })
   }, [snapshot, onStarted])
+  // THE TILE CHROME'S STOP + REMOVE (the chat-input law's verbs):
+  // stop rides the run-wire's cancel door for the row's live run;
+  // remove rides the bench's CAS door (the drill's own verb, lifted
+  // to the tile — the trash replaces the drill-only affordance).
+  const onStopStage = useCallback((stage: BenchStageRow): void => {
+    const rid = stageRuns[stage.id]
+    if (rid === undefined) return
+    void stopRun(rid).catch((e: unknown) => {
+      setLocalRunError(e instanceof Error ? e.message : 'stop failed')
+    })
+  }, [stageRuns])
+  const onRemoveStage = useCallback((stage: BenchStageRow): void => {
+    if (snapshot?.value?.kind !== 'bench') return
+    void removeStageWire({ stage: stage.id, expect_rev: snapshot.value.rev })
+      .then(() => { touchBench() })
+      .catch((e: unknown) => {
+        setLocalRunError(e instanceof Error ? e.message : 'remove failed')
+      })
+  }, [snapshot, touchBench])
   // PARAMS PATCH for surface views (the slot's onPatch currency):
   // the same drafts/patch door the drill's own editor rides.
   const onPatchParamsStage = useCallback((stage: BenchStageRow, patch: Record<string, unknown>): void => {
@@ -1757,6 +1823,9 @@ export function CardsTab(props: CardsTabProps): ReturnType<typeof h> {
           bench: value,
           onRun,
           onRunStage,
+          onStopStage,
+          onRemoveStage,
+          stageRuns,
           running,
           onPatchParams: onPatchParamsStage,
           renderStageView,

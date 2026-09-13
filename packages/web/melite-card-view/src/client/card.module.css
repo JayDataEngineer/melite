@@ -357,12 +357,91 @@
   white-space: nowrap;
 }
 
-/* image-anchored overlay: INSIDE the preview cell, bottom-right
- * rides the artifact's corner (the documented contract) */
+/* the RUN VIEW's stage-row dot (kept — a different surface from the
+ * bench tile; the chrome law owns the bench tile's status face) */
 .tileDot {
   bottom: 6px;
   position: absolute;
   right: 6px;
+}
+
+/* THE CHAT-INPUT CHROME (2026-09-13, the operator): the tile's
+ * hover affordances mirror the DSH chat input — ghost icon circles
+ * pinned to the preview's corners. Trash top-right, play/stop
+ * bottom-right (hover-revealed); the loading spinner bottom-left
+ * PERSISTS while the row runs (loading outlives the hover). All
+ * token colors (the color law). */
+.tileIconBtn {
+  align-items: center;
+  background: color-mix(in srgb, var(--dsw-alias-bg-base) 72%, transparent);
+  border: 1px solid var(--dsw-alias-border-l2);
+  border-radius: 999px;
+  color: var(--dsw-alias-label-secondary);
+  cursor: pointer;
+  display: inline-flex;
+  height: 24px;
+  justify-content: center;
+  opacity: 0;
+  padding: 0;
+  position: absolute;
+  transition: opacity var(--ds-transition-duration, 120ms) var(--ds-ease-in-out, ease),
+    color var(--ds-transition-duration, 120ms) var(--ds-ease-in-out, ease);
+  width: 24px;
+  z-index: 2;
+}
+
+.tileIconBtn:hover {
+  border-color: var(--dsw-alias-border-l4);
+  color: var(--dsw-alias-label-primary);
+}
+
+.tileInner:hover .tileIconBtn,
+.tileIconBtn:focus-visible {
+  opacity: 1;
+}
+
+.tileIconBtn:disabled {
+  cursor: default;
+}
+
+.tileTrash {
+  color: var(--dsw-alias-label-tertiary);
+  right: 6px;
+  top: 6px;
+}
+
+.tileTrash:hover {
+  color: var(--dsw-alias-state-error-primary);
+}
+
+.tileRunBtn {
+  bottom: 6px;
+  color: var(--dsw-alias-label-secondary);
+  right: 6px;
+}
+
+.tileRunBtn:hover {
+  color: var(--dsw-alias-brand-primary);
+}
+
+/* the spinner seat — bottom-left, NEVER hover-gated (the loading
+ * state persists past the hover; the operator's law). */
+.tileSpin {
+  align-items: center;
+  bottom: 6px;
+  color: var(--dsw-alias-brand-primary);
+  display: inline-flex;
+  left: 6px;
+  position: absolute;
+  z-index: 2;
+}
+
+.tileSpin > svg {
+  animation: tileSpinTurn 1s linear infinite;
+}
+
+@keyframes tileSpinTurn {
+  to { transform: rotate(360deg); }
 }
 
 /* the CAPTION STRIP — shrink-0, natural height */
