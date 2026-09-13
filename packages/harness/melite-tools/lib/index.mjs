@@ -239,7 +239,7 @@ function meliteConstruct(request, opts = {}) {
 	};
 	const def = defineTool({
 		name: "melite_construct",
-		description: "Author THE shared bench — one working flow the user sees live in the cards tab and edits alongside you. " + (opts.headless === true ? "This never executes (melite_flow runs what is here; the user presses Run). " : "This never executes — your job ENDS at the bench: tell the user to press Run on the card. ") + "Verbs: read (the state — always start here) | load (replace stages wholesale) | patch {stage, params} | add_stage {card, params?, inputs?} | remove_stage {stage} | rewire {stage, input, from?} | undo {n?, author?} | validate (compile check, no GPU). Mutations take expect_rev from your last read — a moved bench refuses 409 with current_rev; re-read, re-apply. No ids anywhere: the bench is the one shared state.",
+		description: "Author THE shared bench — one working flow the user sees live in the cards tab and edits alongside you. " + (opts.headless === true ? "This never executes (melite_flow runs what is here; the user presses Run). " : "You compose the flow and edit its state here, live with the user — runs start at the user's Run press, never yours. ") + "Verbs: read (the state — always start here) | load (replace stages wholesale) | patch {stage, params} | add_stage {card, params?, inputs?} | remove_stage {stage} | rewire {stage, input, from?} | undo {n?, author?} | validate (compile check, no GPU). Mutations take expect_rev from your last read — a moved bench refuses 409 with current_rev; re-read, re-apply. No ids anywhere: the bench is the one shared state.",
 		parameters: {
 			verb: {
 				type: "string",
@@ -1515,7 +1515,7 @@ function meliteLoad(request, opts = {}) {
 				}];
 				const b = v?.bundle ?? {};
 				const str = (x) => typeof x === "string" ? x : "";
-				const next = opts.headless === true ? "open with melite_flow" : "compose with melite_construct (add_stage); the run door is the user's Run press on the card";
+				const next = opts.headless === true ? "open with melite_flow" : "compose it with melite_construct (add_stage) — the flow state is live in the user's cards tab; keep editing it there; runs start at the user's Run press";
 				const out = [`loaded ${str(b.kind) || "?"} ${str(b.name) || "?"} — ${next}`];
 				const hints = Array.isArray(b.model_hints) ? b.model_hints : [];
 				if (hints.length > 0) out.push("models: " + hints.map((h) => `${str(h?.id)}${str(h?.label) !== "" ? " (" + str(h?.label) + ")" : ""}`).join(", "));

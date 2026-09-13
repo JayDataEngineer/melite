@@ -504,8 +504,8 @@ describe('melite_construct — THE INTERFACE LAW (the agent-mode breakdown, 2026
   test('the browser face (default) never names melite_flow', async () => {
     const tool = meliteConstruct((async () => ({})) as unknown as EstateRequest)
     assert.ok(!tool.description.includes('melite_flow'), tool.description)
-    assert.ok(tool.description.includes('ENDS at the bench'), tool.description)
-    assert.ok(tool.description.includes('press Run'), tool.description)
+    assert.ok(tool.description.includes('You compose the flow and edit its state here, live with the user'), tool.description)
+    assert.ok(tool.description.includes("runs start at the user's Run press, never yours"), tool.description)
   })
 
   test('the headless face keeps the delegated-operator phrasing', async () => {

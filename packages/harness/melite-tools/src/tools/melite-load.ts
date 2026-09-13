@@ -116,17 +116,19 @@ export function meliteLoad(
         const b = v?.bundle ?? {}
         const str = (x: unknown): string => typeof x === 'string' ? x : ''
         // THE INTERFACE LAW (2026-09-13, the operator's agent-mode
-        // breakdown): the NEXT-STEP hint names a door THIS agent
-        // actually has. The browser interface registers no melite_flow
-        // (compose-only — the user's Run press is the start door), so
-        // pointing the model at melite_flow there sends it hunting a
-        // phantom verb until it breaks down (the caught trajectory:
-        // load → "open with melite_flow" → add_stage lands → no run
-        // verb anywhere → flailing into comfy_manage). Headless keeps
-        // the old line — it owns the verb.
+        // breakdown + the follow-up correction): the NEXT-STEP hint
+        // names a door THIS agent actually has. The browser interface
+        // registers no melite_flow (compose-only), so pointing the
+        // model at melite_flow there sends it hunting a phantom verb
+        // until it breaks down. But compose-only is NOT a hand-off —
+        // the browser agent is the live co-editor of the flow state
+        // in the user's cards tab (right sidebar): it composes the
+        // flow and keeps editing it as asked; runs start at the
+        // user's Run press. Headless keeps the old line — it owns
+        // the verb.
         const next = opts.headless === true
           ? 'open with melite_flow'
-          : 'compose with melite_construct (add_stage); the run door is the user\'s Run press on the card'
+          : 'compose it with melite_construct (add_stage) — the flow state is live in the user\'s cards tab; keep editing it there; runs start at the user\'s Run press'
         const out: string[] = [`loaded ${str(b.kind) || '?'} ${str(b.name) || '?'} — ${next}`]
         const hints = Array.isArray(b.model_hints) ? b.model_hints : []
         if (hints.length > 0) {

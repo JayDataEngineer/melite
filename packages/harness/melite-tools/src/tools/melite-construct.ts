@@ -137,13 +137,14 @@ export function meliteConstruct(
     description:
       'Author THE shared bench — one working flow the user sees live in the cards tab and edits alongside you. '
       // THE INTERFACE LAW (2026-09-13): name the run door the agent
-      // actually has — melite_flow only exists headless; the browser
-      // agent's contract ENDS at the bench (the user's Run press is
-      // the start door — say so, or the model hunts a verb it was
-      // never given and breaks down mid-task).
+      // actually has — melite_flow only exists headless. The browser
+      // agent is the LIVE CO-EDITOR of the flow state (compose it,
+      // keep editing it as the user asks — the bench is the shared
+      // state), never its executor: runs start at the user's Run
+      // press. Say the contract, never a phantom verb.
       + (opts.headless === true
         ? 'This never executes (melite_flow runs what is here; the user presses Run). '
-        : 'This never executes — your job ENDS at the bench: tell the user to press Run on the card. ')
+        : 'You compose the flow and edit its state here, live with the user — runs start at the user\'s Run press, never yours. ')
       + 'Verbs: read (the state — '
       + 'always start here) | load (replace stages wholesale) | patch {stage, params} | add_stage {card, params?, '
       + 'inputs?} | remove_stage {stage} | rewire {stage, input, from?} | undo {n?, author?} | validate (compile '

@@ -154,7 +154,7 @@ describe('melite_load render — the loaded line', () => {
     ) as Array<{ text?: string }>
     assert.equal(
       parts.map((p) => p?.text ?? '').join('\n'),
-      'loaded card c — compose with melite_construct (add_stage); the run door is the user\'s Run press on the card\n'
+      'loaded card c — compose it with melite_construct (add_stage) — the flow state is live in the user\'s cards tab; keep editing it there; runs start at the user\'s Run press\n'
       + 'models: music-gen (MusicGen)\n'
       + 'params: prompt*, seed (* required)\n'
       + 'skills: 1 — read one with skill_read: s1\n'
@@ -170,13 +170,13 @@ describe('melite_load render — the loaded line', () => {
       { name: 'c', inference_type: 'card' },
       { name: 'c', inference_type: 'card' } as never,
     ) as Array<{ text?: string }>
-    assert.equal(parts.map((p) => p?.text ?? '').join('\n'), 'loaded ? ? — compose with melite_construct (add_stage); the run door is the user\'s Run press on the card')
+    assert.equal(parts.map((p) => p?.text ?? '').join('\n'), 'loaded ? ? — compose it with melite_construct (add_stage) — the flow state is live in the user\'s cards tab; keep editing it there; runs start at the user\'s Run press')
   })
 
   test('a nullish value still renders the header line', () => {
     const tool = meliteLoad((async () => ({})) as unknown as EstateRequest)
     const parts = tool.output.render({ name: 'c', inference_type: 'card' }, null as never) as Array<{ text?: string }>
-    assert.equal(parts.map((p) => p?.text ?? '').join('\n'), 'loaded ? ? — compose with melite_construct (add_stage); the run door is the user\'s Run press on the card')
+    assert.equal(parts.map((p) => p?.text ?? '').join('\n'), 'loaded ? ? — compose it with melite_construct (add_stage) — the flow state is live in the user\'s cards tab; keep editing it there; runs start at the user\'s Run press')
   })
 })
 
@@ -195,7 +195,7 @@ describe('melite_load render — THE INTERFACE LAW (the agent-mode breakdown, 20
     ) as Array<{ text?: string }>
     const text = parts.map((p) => p?.text ?? '').join('\n')
     assert.ok(!text.includes('melite_flow'), 'the browser face must not name the headless verb: ' + text)
-    assert.ok(text.includes('melite_construct') && text.includes("user's Run press"), text)
+    assert.ok(text.includes('melite_construct') && text.includes("live in the user's cards tab") && text.includes("user's Run press"), text)
   })
 
   test('the headless face keeps the execution verb', () => {
