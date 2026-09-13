@@ -8,7 +8,7 @@
  * anchors, badges and in-card action buttons dock on these.
  */
 import type { ComponentProps, ReactElement, ReactNode } from "react"
-import { cx } from "./chrome.tsx"
+import { cx } from "./chrome.ts"
 import styles from "./viewportChrome.module.css"
 
 export interface ViewportFrameProps extends ComponentProps<"div"> {

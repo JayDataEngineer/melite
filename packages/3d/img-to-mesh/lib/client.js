@@ -6,25 +6,25 @@ window.__ModuleLoader__.load({
 		Object.defineProperty(exports, Symbol.toStringTag, { value: "Module" });
 		let react = require("react");
 		let _deepseek_ai_dsh_client_ui_primitives = require("@deepseek-ai/dsh-client-ui-primitives");
+		let react_jsx_runtime = require("react/jsx-runtime");
+		let react_dom = require("react-dom");
 		//#region \0dsh-css:/home/user/Documents/programs/active/inference.cpp/packages/3d/img-to-mesh/src/client/client.module.css.mjs
-		const css$2 = ".xjw8Uq_runRow{justify-content:flex-end;align-items:center;gap:10px;width:100%;display:flex}.xjw8Uq_zoomDetail{min-height:0;padding:14px;display:block;overflow-y:auto}.xjw8Uq_groupNote{color:var(--dsw-alias-label-secondary,#61666b);margin:0 0 10px;font-size:12px;line-height:20px}.xjw8Uq_studioHead{align-items:center;gap:8px;line-height:20px;display:flex}.xjw8Uq_studioBody{flex-direction:column;gap:12px;display:flex}.xjw8Uq_studioGroup{flex-direction:column;gap:6px;display:flex}.xjw8Uq_studioSplit{grid-template-columns:minmax(0,7fr) minmax(0,5fr);gap:12px;display:grid}.xjw8Uq_studioRail{flex-direction:column;gap:10px;min-width:0;display:flex}.xjw8Uq_runError{color:var(--dsw-alias-label-error,#e05656);overflow-wrap:anywhere;font-size:11px}.xjw8Uq_viewport{background:var(--dsw-alias-bg-canvas,#fff);border:.5px solid var(--dsw-alias-border-l2,#00000024);border-radius:10px;min-height:320px;display:flex;position:relative;overflow:hidden}.xjw8Uq_viewportEmpty{color:var(--dsw-alias-label-tertiary,#00000073);align-self:center;margin:auto;font-size:12px;line-height:20px}.xjw8Uq_viewport canvas{display:block}.xjw8Uq_viewportCanvas{width:100%;height:380px}.xjw8Uq_viewport:only-child{min-height:380px}";
-		const tagId$2 = "@melite/3d-img-to-mesh/client.module.css@eada7904";
-		if (typeof document !== "undefined" && document.querySelector("style[data-plugin-css=" + JSON.stringify(tagId$2) + "]") === null) {
+		const css$4 = ".xjw8Uq_runRow{justify-content:flex-end;align-items:center;gap:10px;width:100%;display:flex}.xjw8Uq_zoomDetail{min-height:0;padding:14px;display:block;overflow-y:auto}.xjw8Uq_groupNote{color:var(--dsw-alias-label-secondary,#61666b);margin:0 0 10px;font-size:12px;line-height:20px}.xjw8Uq_studioHead{align-items:center;gap:8px;line-height:20px;display:flex}.xjw8Uq_studioGroup{flex-direction:column;gap:6px;display:flex}.xjw8Uq_studioRail{flex-direction:column;gap:10px;min-width:0;display:flex}.xjw8Uq_runError{color:var(--dsw-alias-label-error,#e05656);overflow-wrap:anywhere;font-size:11px}.xjw8Uq_viewport{background:var(--dsw-alias-bg-canvas,#fff);border:.5px solid var(--dsw-alias-border-l2,#00000024);border-radius:10px;min-height:320px;display:flex;position:relative;overflow:hidden}.xjw8Uq_viewportEmpty{color:var(--dsw-alias-label-tertiary,#00000073);align-self:center;margin:auto;font-size:12px;line-height:20px}.xjw8Uq_viewport canvas{display:block}.xjw8Uq_viewportCanvas{width:100%;height:380px}.xjw8Uq_viewport:only-child{min-height:380px}";
+		const tagId$4 = "@melite/3d-img-to-mesh/client.module.css@5a132b69";
+		if (typeof document !== "undefined" && document.querySelector("style[data-plugin-css=" + JSON.stringify(tagId$4) + "]") === null) {
 			const tag = document.createElement("style");
 			tag.dataset.plugin = "@melite/3d-img-to-mesh";
-			tag.dataset.pluginCss = tagId$2;
-			tag.textContent = css$2;
+			tag.dataset.pluginCss = tagId$4;
+			tag.textContent = css$4;
 			document.head.appendChild(tag);
 		}
 		var client_module_css_default = {
 			"groupNote": "xjw8Uq_groupNote",
 			"runError": "xjw8Uq_runError",
 			"runRow": "xjw8Uq_runRow",
-			"studioBody": "xjw8Uq_studioBody",
 			"studioGroup": "xjw8Uq_studioGroup",
 			"studioHead": "xjw8Uq_studioHead",
 			"studioRail": "xjw8Uq_studioRail",
-			"studioSplit": "xjw8Uq_studioSplit",
 			"viewport": "xjw8Uq_viewport",
 			"viewportCanvas": "xjw8Uq_viewportCanvas",
 			"viewportEmpty": "xjw8Uq_viewportEmpty",
@@ -218,13 +218,13 @@ window.__ModuleLoader__.load({
 		}
 		//#endregion
 		//#region \0dsh-css:card-base/src/card.module.css.mjs
-		const css$1 = ".FRpSCG_specForm :where(input,textarea,select,button){box-sizing:border-box}.FRpSCG_specForm{flex-direction:column;gap:12px;display:flex}.FRpSCG_specGroup{flex-direction:column;gap:8px;display:flex}.FRpSCG_modelAxes{grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;display:grid}.FRpSCG_specGroupTitle{color:var(--dsw-alias-label-secondary,#61666b);letter-spacing:.04em;text-transform:uppercase;margin:0 0 2px;font-size:11px;font-weight:600}.FRpSCG_specField{flex-direction:column;gap:6px;display:flex}.FRpSCG_specFieldKey{color:var(--dsw-alias-label-secondary,#61666b);font-size:12px}.FRpSCG_specRequired{color:var(--dsw-alias-state-critical,#e5484d)}.FRpSCG_specHint{color:var(--dsw-alias-label-secondary,#61666b);font-size:11px}.FRpSCG_specSelect{background:var(--dsw-alias-interactive-bg-hover,#2631480f);border:.5px solid var(--dsw-alias-border-l2,#0000001a);color:inherit;font:inherit;border-radius:6px;width:100%;padding:5px 8px;font-size:13px}.FRpSCG_specSliderRow{align-items:center;gap:8px;display:flex}.FRpSCG_specSlider{flex:1}.FRpSCG_specSliderValue{color:var(--dsw-alias-label-secondary,#61666b);font-family:var(--dsw-alias-font-mono,ui-monospace, monospace);text-align:right;min-width:4ch;font-size:12px}.FRpSCG_specTextarea{background:var(--dsw-alias-interactive-bg-hover,#2631480f);border:.5px solid var(--dsw-alias-border-l2,#0000001a);color:inherit;font:inherit;resize:vertical;border-radius:6px;width:100%;padding:6px 8px;font-size:13px}.FRpSCG_squareWrap{flex-direction:column;align-items:center;gap:4px;width:84px;display:flex}.FRpSCG_squareOff{opacity:.5;pointer-events:none}.FRpSCG_squareBox{border:.5px solid var(--dsw-alias-border-l2,#00000024);cursor:pointer;height:80px;transition:border-color var(--ds-transition-duration,.12s) var(--ds-ease-in-out,ease);border-radius:8px;justify-content:center;align-items:center;width:80px;display:flex;position:relative;overflow:hidden}.FRpSCG_squareOver{border-color:var(--dsw-alias-border-l3,#00000047);box-shadow:0 0 0 2px var(--dsw-alias-border-l1,#00000014)}.FRpSCG_squareThumb{object-fit:cover;width:100%;height:100%}.FRpSCG_squareGlyph{color:var(--dsw-alias-label-tertiary,#00000073)}.FRpSCG_squareX{background:var(--dsw-alias-bg-module,#fff);border:.5px solid var(--dsw-alias-border-l2,#00000024);cursor:pointer;border-radius:999px;align-items:center;padding:0 4px;font-size:10px;line-height:17px;display:flex;position:absolute;top:4px;right:4px}.FRpSCG_squareLabel{color:var(--dsw-alias-label-primary,#0f1115);text-overflow:ellipsis;white-space:nowrap;width:100%;font-size:11px;line-height:17px;overflow:hidden}.FRpSCG_squareMetric{color:var(--dsw-alias-label-tertiary,#00000073);font-size:10px;line-height:17px}.FRpSCG_squareFileInput{display:none}.FRpSCG_modSection{border-top:1px dashed var(--border,#80808040);flex-direction:column;gap:6px;margin-top:10px;padding-top:8px;display:flex}.FRpSCG_modHead{align-items:baseline;gap:8px;display:flex}.FRpSCG_modTitle{letter-spacing:.06em;text-transform:uppercase;opacity:.7;font-size:10px;font-weight:600}.FRpSCG_modHint{opacity:.45;font-size:9px}.FRpSCG_modRow{flex-wrap:wrap;align-items:stretch;gap:6px;margin:0;padding:0;list-style:none;display:flex}.FRpSCG_modTile{border:1px solid var(--border,#8080804d);background:var(--bg-elevated,#80808014);cursor:grab;touch-action:none;border-radius:8px;flex-direction:column;justify-content:center;gap:2px;min-width:84px;max-width:132px;padding:6px 8px;display:flex}.FRpSCG_modTile:active{cursor:grabbing}.FRpSCG_modTileLabel{text-overflow:ellipsis;white-space:nowrap;font-size:11px;line-height:1.2;overflow:hidden}.FRpSCG_modTileStrength{opacity:.55;font-size:9px}.FRpSCG_modAdd{border:1px dashed var(--border,#80808059);min-width:64px;color:inherit;cursor:pointer;opacity:.6;background:0 0;border-radius:8px;justify-content:center;align-items:center;padding:6px 10px;font-size:11px;display:flex}.FRpSCG_modAdd:hover{opacity:1}.FRpSCG_tileDragging{opacity:.5}.FRpSCG_modLeaf{flex-direction:column;gap:10px;min-width:260px;display:flex}.FRpSCG_modLeafFields{gap:8px;display:grid}.FRpSCG_modLeafActions{gap:8px;display:flex}.FRpSCG_modField{flex-direction:column;gap:4px;font-size:11px;display:flex}.FRpSCG_modSelect{border:1px solid var(--border,#8080804d);background:var(--bg-elevated,#8080800f);color:inherit;border-radius:6px;padding:6px 8px;font-size:12px}.FRpSCG_modLeafError{color:#e06c5f;margin:0;font-size:11px}";
-		const tagId$1 = "@melite/3d-img-to-mesh/card.module.css@1335c13b";
-		if (typeof document !== "undefined" && document.querySelector("style[data-plugin-css=" + JSON.stringify(tagId$1) + "]") === null) {
+		const css$3 = ".FRpSCG_specForm :where(input,textarea,select,button){box-sizing:border-box}.FRpSCG_specForm{flex-direction:column;gap:12px;display:flex}.FRpSCG_specGroup{flex-direction:column;gap:8px;display:flex}.FRpSCG_modelAxes{grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;display:grid}.FRpSCG_specGroupTitle{color:var(--dsw-alias-label-secondary,#61666b);letter-spacing:.04em;text-transform:uppercase;margin:0 0 2px;font-size:11px;font-weight:600}.FRpSCG_specField{flex-direction:column;gap:6px;display:flex}.FRpSCG_specFieldKey{color:var(--dsw-alias-label-secondary,#61666b);font-size:12px}.FRpSCG_specRequired{color:var(--dsw-alias-state-critical,#e5484d)}.FRpSCG_specHint{color:var(--dsw-alias-label-secondary,#61666b);font-size:11px}.FRpSCG_specSelect{background:var(--dsw-alias-interactive-bg-hover,#2631480f);border:.5px solid var(--dsw-alias-border-l2,#0000001a);color:inherit;font:inherit;border-radius:6px;width:100%;padding:5px 8px;font-size:13px}.FRpSCG_specSliderRow{align-items:center;gap:8px;display:flex}.FRpSCG_specSlider{flex:1}.FRpSCG_specSliderValue{color:var(--dsw-alias-label-secondary,#61666b);font-family:var(--dsw-alias-font-mono,ui-monospace, monospace);text-align:right;min-width:4ch;font-size:12px}.FRpSCG_specTextarea{background:var(--dsw-alias-interactive-bg-hover,#2631480f);border:.5px solid var(--dsw-alias-border-l2,#0000001a);color:inherit;font:inherit;resize:vertical;border-radius:6px;width:100%;padding:6px 8px;font-size:13px}.FRpSCG_squareWrap{flex-direction:column;align-items:center;gap:4px;width:84px;display:flex}.FRpSCG_squareOff{opacity:.5;pointer-events:none}.FRpSCG_squareBox{border:.5px solid var(--dsw-alias-border-l2,#00000024);cursor:pointer;height:80px;transition:border-color var(--ds-transition-duration,.12s) var(--ds-ease-in-out,ease);border-radius:8px;justify-content:center;align-items:center;width:80px;display:flex;position:relative;overflow:hidden}.FRpSCG_squareOver{border-color:var(--dsw-alias-border-l3,#00000047);box-shadow:0 0 0 2px var(--dsw-alias-border-l1,#00000014)}.FRpSCG_squareThumb{object-fit:cover;width:100%;height:100%}.FRpSCG_squareGlyph{color:var(--dsw-alias-label-tertiary,#00000073)}.FRpSCG_squareX{background:var(--dsw-alias-bg-module,#fff);border:.5px solid var(--dsw-alias-border-l2,#00000024);cursor:pointer;border-radius:999px;align-items:center;padding:0 4px;font-size:10px;line-height:17px;display:flex;position:absolute;top:4px;right:4px}.FRpSCG_squareLabel{color:var(--dsw-alias-label-primary,#0f1115);text-overflow:ellipsis;white-space:nowrap;width:100%;font-size:11px;line-height:17px;overflow:hidden}.FRpSCG_squareMetric{color:var(--dsw-alias-label-tertiary,#00000073);font-size:10px;line-height:17px}.FRpSCG_squareFileInput{display:none}.FRpSCG_modSection{border-top:1px dashed var(--border,#80808040);flex-direction:column;gap:6px;margin-top:10px;padding-top:8px;display:flex}.FRpSCG_modHead{align-items:baseline;gap:8px;display:flex}.FRpSCG_modTitle{letter-spacing:.06em;text-transform:uppercase;opacity:.7;font-size:10px;font-weight:600}.FRpSCG_modHint{opacity:.45;font-size:9px}.FRpSCG_modRow{flex-wrap:wrap;align-items:stretch;gap:6px;margin:0;padding:0;list-style:none;display:flex}.FRpSCG_modTile{border:1px solid var(--border,#8080804d);background:var(--bg-elevated,#80808014);cursor:grab;touch-action:none;border-radius:8px;flex-direction:column;justify-content:center;gap:2px;min-width:84px;max-width:132px;padding:6px 8px;display:flex}.FRpSCG_modTile:active{cursor:grabbing}.FRpSCG_modTileLabel{text-overflow:ellipsis;white-space:nowrap;font-size:11px;line-height:1.2;overflow:hidden}.FRpSCG_modTileStrength{opacity:.55;font-size:9px}.FRpSCG_modAdd{border:1px dashed var(--border,#80808059);min-width:64px;color:inherit;cursor:pointer;opacity:.6;background:0 0;border-radius:8px;justify-content:center;align-items:center;padding:6px 10px;font-size:11px;display:flex}.FRpSCG_modAdd:hover{opacity:1}.FRpSCG_tileDragging{opacity:.5}.FRpSCG_modLeaf{flex-direction:column;gap:10px;min-width:260px;display:flex}.FRpSCG_modLeafFields{gap:8px;display:grid}.FRpSCG_modLeafActions{gap:8px;display:flex}.FRpSCG_modField{flex-direction:column;gap:4px;font-size:11px;display:flex}.FRpSCG_modSelect{border:1px solid var(--border,#8080804d);background:var(--bg-elevated,#8080800f);color:inherit;border-radius:6px;padding:6px 8px;font-size:12px}.FRpSCG_modLeafError{color:#e06c5f;margin:0;font-size:11px}";
+		const tagId$3 = "@melite/3d-img-to-mesh/card.module.css@1335c13b";
+		if (typeof document !== "undefined" && document.querySelector("style[data-plugin-css=" + JSON.stringify(tagId$3) + "]") === null) {
 			const tag = document.createElement("style");
 			tag.dataset.plugin = "@melite/3d-img-to-mesh";
-			tag.dataset.pluginCss = tagId$1;
-			tag.textContent = css$1;
+			tag.dataset.pluginCss = tagId$3;
+			tag.textContent = css$3;
 			document.head.appendChild(tag);
 		}
 		var card_module_css_default = {
@@ -600,6 +600,63 @@ window.__ModuleLoader__.load({
 				}))
 			};
 		}
+		/** THE TRI-STATE ATOM (hour 15, stroke C): inherit / on / off —
+		*  promoted from h3's studio-local TriControl (same semantics, same
+		*  option order). Serves schema-bound fields of type 'tri' AND the
+		*  standalone rail rows that hand-rolled the select before. */
+		function TriStateAtom({ label, value, onEdit, name, disabled }) {
+			return (0, react.createElement)("select", {
+				className: card_module_css_default.specSelect,
+				"aria-label": label,
+				disabled: disabled === true,
+				value: value === void 0 ? "" : String(value),
+				onChange: (e) => {
+					const v = e.target.value;
+					onEdit(name, v === "" ? void 0 : v === "true");
+				}
+			}, (0, react.createElement)("option", { value: "" }, "inherit"), (0, react.createElement)("option", { value: "true" }, "on"), (0, react.createElement)("option", { value: "false" }, "off"));
+		}
+		/** The slider's local display during a drag (the settle law's
+		*  carrier): local owns the bubble while dragging; an external move
+		*  of the backing value (agent write, revive, another card opened)
+		*  reclaims the display. */
+		function useLocalSliderValue(value, def) {
+			const num = typeof value === "number" ? value : Number(value);
+			const [local, setLocal] = (0, react.useState)(null);
+			(0, react.useEffect)(() => {
+				setLocal(null);
+			}, [num]);
+			return {
+				value: local !== null ? local : Number.isFinite(num) ? num : Number(def ?? 0),
+				set: setLocal
+			};
+		}
+		/** THE SETTLE LAW for slider atoms (hour 15, stroke C — grown from
+		*  mask-studio's draft absorber, 2026-08-10): a drag fires input
+		*  60×/sec; if every step wrote to the card, updateStageParams →
+		*  _recomputeKeys would hash multi-MB paint data 60×/sec and freeze
+		*  the editor. The atom shows the drag locally and persists ONCE on
+		*  settle (the change event = release / keyboard step). External
+		*  writes (agent, revive) re-sync the display when the backing
+		*  value actually moves. */
+		function SpecSliderAtom({ f, value, onEdit }) {
+			const shown = useLocalSliderValue(value, f.default);
+			return (0, react.createElement)("span", { className: card_module_css_default.specSliderRow }, (0, react.createElement)("input", {
+				className: card_module_css_default.specSlider,
+				type: "range",
+				min: f.min ?? 0,
+				max: f.max ?? 10,
+				step: f.step ?? .1,
+				value: shown,
+				onInput: (e) => {
+					shown.set(Number(e.target.value));
+				},
+				onChange: (e) => {
+					onEdit(f.name, e.target.value);
+				},
+				"aria-label": f.label
+			}), (0, react.createElement)("span", { className: card_module_css_default.specSliderValue }, String(shown.value)));
+		}
 		/** One spec atom — typed by the declaration, edited as a raw string
 		*  while typing (decimal dots survive; coercion happens once at patch). */
 		function SpecAtom({ f, value, onEdit, square }) {
@@ -627,19 +684,17 @@ window.__ModuleLoader__.load({
 					value: row.value
 				}, row.label);
 			}));
-			if (f.type === "slider") {
-				const num = typeof value === "number" ? value : Number(value);
-				return (0, react.createElement)("span", { className: card_module_css_default.specSliderRow }, (0, react.createElement)("input", {
-					className: card_module_css_default.specSlider,
-					type: "range",
-					min: f.min ?? 0,
-					max: f.max ?? 10,
-					step: f.step ?? .1,
-					value: Number.isFinite(num) ? num : f.default ?? 0,
-					onInput: (e) => onEdit(f.name, e.target.value),
-					"aria-label": f.label
-				}), (0, react.createElement)("span", { className: card_module_css_default.specSliderValue }, String(value ?? f.default ?? "")));
-			}
+			if (f.type === "slider") return (0, react.createElement)(SpecSliderAtom, {
+				f,
+				value,
+				onEdit
+			});
+			if (f.type === "tri") return (0, react.createElement)(TriStateAtom, {
+				label: f.label !== "" ? f.label : f.name,
+				value: value === void 0 || value === null ? void 0 : value === true || value === "true",
+				onEdit,
+				name: f.name
+			});
 			if (f.type === "switch" || f.type === "boolean") {
 				const on = value === true || value === "true";
 				return (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Switch, {
@@ -743,6 +798,19 @@ window.__ModuleLoader__.load({
 		*  it. The caller hands only the WIRE (picker candidates), never the
 		*  component; a caller that passes its own `square` fn overrides (the
 		*  host-claim seam), but the default is the constructor's own. */
+		/** ONE SPEC FIELD ROW (hour 15, stroke C): the label chrome (key,
+		*  required star, hint) around the atom — CardForm's own row, opened
+		*  to rail sections that render served fields outside a whole form
+		*  (mask's TuneSection). The claim seam stays CardForm's; this row
+		*  takes the resolved atom inputs. */
+		function SpecFieldRow({ f, value, onEdit, square }) {
+			return (0, react.createElement)("label", { className: card_module_css_default.specField }, (0, react.createElement)("span", { className: card_module_css_default.specFieldKey }, f.label, f.required === true ? (0, react.createElement)("span", { className: card_module_css_default.specRequired }, " *") : null), (0, react.createElement)(SpecAtom, {
+				f,
+				value,
+				onEdit,
+				square
+			}), f.tooltip !== void 0 && f.tooltip !== "" ? (0, react.createElement)("span", { className: card_module_css_default.specHint }, f.tooltip) : null);
+		}
 		function CardForm({ spec, fields, values, onEdit, wire, square, atoms, onPatch }) {
 			const modKinds = spec?.features?.modifiers ?? [];
 			const owned = modOwnedFields(spec ?? {
@@ -770,25 +838,26 @@ window.__ModuleLoader__.load({
 			}) : null, groups.map((g) => (0, react.createElement)("section", {
 				key: g.group ?? "",
 				className: card_module_css_default.specGroup
-			}, g.group !== null ? (0, react.createElement)("h4", { className: card_module_css_default.specGroupTitle }, g.group) : null, g.fields.map((f) => (0, react.createElement)("label", {
-				key: f.name,
-				className: card_module_css_default.specField
-			}, (0, react.createElement)("span", { className: card_module_css_default.specFieldKey }, f.label, f.required === true ? (0, react.createElement)("span", { className: card_module_css_default.specRequired }, " *") : null), (() => {
+			}, g.group !== null ? (0, react.createElement)("h4", { className: card_module_css_default.specGroupTitle }, g.group) : null, g.fields.map((f) => {
 				const claim = atomOf(f);
 				const sq = squareFor(f);
-				if (claim !== void 0) return claim({
+				if (claim !== void 0) return (0, react.createElement)("label", {
+					key: f.name,
+					className: card_module_css_default.specField
+				}, (0, react.createElement)("span", { className: card_module_css_default.specFieldKey }, f.label, f.required === true ? (0, react.createElement)("span", { className: card_module_css_default.specRequired }, " *") : null), claim({
+					f,
+					value: values[f.name],
+					onEdit,
+					square: sq
+				}), f.tooltip !== void 0 && f.tooltip !== "" ? (0, react.createElement)("span", { className: card_module_css_default.specHint }, f.tooltip) : null);
+				return (0, react.createElement)(SpecFieldRow, {
+					key: f.name,
 					f,
 					value: values[f.name],
 					onEdit,
 					square: sq
 				});
-				return (0, react.createElement)(SpecAtom, {
-					f,
-					value: values[f.name],
-					onEdit,
-					square: sq
-				});
-			})(), f.tooltip !== void 0 && f.tooltip !== "" ? (0, react.createElement)("span", { className: card_module_css_default.specHint }, f.tooltip) : null)))), modKinds.length > 0 ? (0, react.createElement)(ModifiersSection, {
+			}))), modKinds.length > 0 ? (0, react.createElement)(ModifiersSection, {
 				kinds: modKinds,
 				values,
 				onEdit,
@@ -1315,14 +1384,21 @@ window.__ModuleLoader__.load({
 			}
 		}
 		//#endregion
+		//#region ../../web/card-base/src/chrome.ts
+		/** Plain classnames joiner (no conflicting utilities to merge —
+		*  plain join is exact). */
+		function cx(...parts) {
+			return parts.filter(Boolean).join(" ");
+		}
+		//#endregion
 		//#region \0dsh-css:card-base/src/preview.module.css.mjs
-		const css = ".ClEuBa_stagePreview{flex-direction:column;flex:1;gap:8px;min-height:0;display:flex;overflow:hidden}.ClEuBa_hero,.ClEuBa_heroImg{object-fit:contain;background:var(--dsw-alias-bg-base);border:1px solid var(--dsw-alias-border-l2);border-radius:6px;flex:1;width:100%;min-height:0}.ClEuBa_empty{color:var(--dsw-alias-label-dimmed);border:1px dashed var(--dsw-alias-border-l2);border-radius:6px;flex:1;justify-content:center;align-items:center;font-size:11px;display:flex}.ClEuBa_strip{flex:none;gap:6px;display:flex;overflow-x:auto}.ClEuBa_stripLink{color:var(--dsw-alias-brand-primary);white-space:nowrap;border:1px solid var(--dsw-alias-border-l2);border-radius:6px;padding:2px 6px;font-size:10px;text-decoration:none}.ClEuBa_thumbRow{flex:none;gap:6px;display:flex;overflow-x:auto}.ClEuBa_thumb{border:1px solid var(--dsw-alias-border-l2);border-radius:4px;height:48px}.ClEuBa_stageCanvas{touch-action:none;width:100%;height:100%;min-height:320px;display:block}";
-		const tagId = "@melite/3d-img-to-mesh/preview.module.css@c05f7449";
-		if (typeof document !== "undefined" && document.querySelector("style[data-plugin-css=" + JSON.stringify(tagId) + "]") === null) {
+		const css$2 = ".ClEuBa_stagePreview{flex-direction:column;flex:1;gap:8px;min-height:0;display:flex;overflow:hidden}.ClEuBa_hero,.ClEuBa_heroImg{object-fit:contain;background:var(--dsw-alias-bg-base);border:1px solid var(--dsw-alias-border-l2);border-radius:6px;flex:1;width:100%;min-height:0}.ClEuBa_empty{color:var(--dsw-alias-label-dimmed);border:1px dashed var(--dsw-alias-border-l2);border-radius:6px;flex:1;justify-content:center;align-items:center;font-size:11px;display:flex}.ClEuBa_strip{flex:none;gap:6px;display:flex;overflow-x:auto}.ClEuBa_stripLink{color:var(--dsw-alias-brand-primary);white-space:nowrap;border:1px solid var(--dsw-alias-border-l2);border-radius:6px;padding:2px 6px;font-size:10px;text-decoration:none}.ClEuBa_thumbRow{flex:none;gap:6px;display:flex;overflow-x:auto}.ClEuBa_thumb{border:1px solid var(--dsw-alias-border-l2);border-radius:4px;height:48px}.ClEuBa_stageCanvas{touch-action:none;width:100%;height:100%;min-height:320px;display:block}";
+		const tagId$2 = "@melite/3d-img-to-mesh/preview.module.css@c05f7449";
+		if (typeof document !== "undefined" && document.querySelector("style[data-plugin-css=" + JSON.stringify(tagId$2) + "]") === null) {
 			const tag = document.createElement("style");
 			tag.dataset.plugin = "@melite/3d-img-to-mesh";
-			tag.dataset.pluginCss = tagId;
-			tag.textContent = css;
+			tag.dataset.pluginCss = tagId$2;
+			tag.textContent = css$2;
 			document.head.appendChild(tag);
 		}
 		var preview_module_css_default = {
@@ -40352,6 +40428,33 @@ void main() {
 			}));
 		}
 		//#endregion
+		//#region \0dsh-css:card-base/src/viewportChrome.module.css.mjs
+		const css$1 = "._8t0iwG_frame{border:1px solid var(--dsw-alias-border,#e2e4e9);background:#0e0e1a;border-radius:8px;flex:1;min-height:340px;position:relative;overflow:hidden}._8t0iwG_dockTopRight{position:absolute;top:8px;right:8px}._8t0iwG_dockTopLeft{position:absolute;top:8px;left:8px}._8t0iwG_dockBottomRight{position:absolute;bottom:8px;right:8px}._8t0iwG_dockBottomLeft{position:absolute;bottom:8px;left:8px}._8t0iwG_dockBottomCenter{position:absolute;bottom:8px;left:50%;transform:translate(-50%)}._8t0iwG_dockBottom{position:absolute;bottom:10px;left:10px;right:10px}._8t0iwG_dockFill{position:absolute;inset:0}._8t0iwG_dockEdgeRight{position:absolute;top:0;bottom:0;right:0}._8t0iwG_dockEdgeLeft{position:absolute;top:0;bottom:0;left:0}._8t0iwG_badge{pointer-events:none;border:1px solid var(--dsw-alias-border,#e2e4e9);backdrop-filter:blur(4px);background:#0e0e1ae6;border-radius:6px;width:112px;margin:0;overflow:hidden;box-shadow:0 8px 24px #00000059}._8t0iwG_badgeImg{object-fit:contain;width:100%;height:112px}._8t0iwG_badgeCaption{text-align:center;text-transform:uppercase;letter-spacing:.12em;color:var(--dsw-alias-label-tertiary,#8a93a0);padding:2px 6px;font-size:8px;font-weight:500}";
+		const tagId$1 = "@melite/3d-img-to-mesh/viewportChrome.module.css@5b8532dc";
+		if (typeof document !== "undefined" && document.querySelector("style[data-plugin-css=" + JSON.stringify(tagId$1) + "]") === null) {
+			const tag = document.createElement("style");
+			tag.dataset.plugin = "@melite/3d-img-to-mesh";
+			tag.dataset.pluginCss = tagId$1;
+			tag.textContent = css$1;
+			document.head.appendChild(tag);
+		}
+		var viewportChrome_module_css_default = {
+			"badge": "_8t0iwG_badge",
+			"badgeCaption": "_8t0iwG_badgeCaption",
+			"badgeImg": "_8t0iwG_badgeImg",
+			"dockBottom": "_8t0iwG_dockBottom",
+			"dockBottomCenter": "_8t0iwG_dockBottomCenter",
+			"dockBottomLeft": "_8t0iwG_dockBottomLeft",
+			"dockBottomRight": "_8t0iwG_dockBottomRight",
+			"dockEdgeLeft": "_8t0iwG_dockEdgeLeft",
+			"dockEdgeRight": "_8t0iwG_dockEdgeRight",
+			"dockFill": "_8t0iwG_dockFill",
+			"dockTopLeft": "_8t0iwG_dockTopLeft",
+			"dockTopRight": "_8t0iwG_dockTopRight",
+			"frame": "_8t0iwG_frame"
+		};
+		viewportChrome_module_css_default.dockTopRight, viewportChrome_module_css_default.dockTopLeft, viewportChrome_module_css_default.dockBottomRight, viewportChrome_module_css_default.dockBottomLeft, viewportChrome_module_css_default.dockBottomCenter, viewportChrome_module_css_default.dockBottom, viewportChrome_module_css_default.dockFill, viewportChrome_module_css_default.dockEdgeRight, viewportChrome_module_css_default.dockEdgeLeft;
+		//#endregion
 		//#region ../../web/card-base/src/preview.tsx
 		/**
 		* preview.tsx — THE SHARED PREVIEW COMPONENTS (the preview seam's
@@ -40366,6 +40469,135 @@ void main() {
 		* to specialize — the h3 studio rides the shared VIDEO preview for
 		* its hero, exactly as an image-gen card rides the IMAGE one.
 		*/
+		//#endregion
+		//#region ../../web/card-base/src/studioRail.tsx
+		/**
+		* StudioRail — the shell-provided TOOLS slot in the studio's left rail
+		* (spec docs/design/card-studio-pattern.md §5 + §7.10).
+		*
+		* WHY A PORTAL: vertical space is the scarce axis (§7.9 — human figures),
+		* so a tenant's tool buttons (Skeleton / Refine pose / Export / …) must
+		* live in the RAIL, but their state lives INSIDE the tenant component
+		* (showSkeleton, editMode, bgImage…). Splitting the tenant into two
+		* registered components would force that state up through the shell —
+		* breaking E1 (the tenant receives exactly {stage, running, onSave}).
+		* Instead the tenant stays ONE component and PROJECTS its tools into the
+		* shell's slot; the shell stays genre-blind (it renders an empty div and
+		* knows nothing about motion).
+		*
+		* THE CONTRACT IS UNCHANGED: portaled tools write through the same
+		* onSave channel — nothing about the write path moves. Without the shell
+		* (a tenant mounted inline, e.g. the form view) the tools render in place
+		* — the exact layout the tenant had before the slot existed.
+		*
+		* Mount order (no flash): CardStudio renders the slot div and the tenant
+		* in the same commit; the div's ref lands before the tenant's effects
+		* run, so the portal binds on the first effect pass. The one render
+		* before that is inside the skeleton-masked mount anyway.
+		*/
+		/** The rail's tools-slot element, published by CardStudio. Null when the
+		*  tenant is mounted outside a studio shell (inline fallback). */
+		const StudioRailCtx = (0, react.createContext)(null);
+		/** TENANT side: renders children into the studio rail when one exists,
+		*  inline otherwise. Wrap the tenant's toolbar in this — nothing else. */
+		function StudioRail({ children }) {
+			const slot = (0, react.useContext)(StudioRailCtx);
+			const [el, setEl] = (0, react.useState)(null);
+			(0, react.useEffect)(() => {
+				if (slot && slot !== el) setEl(slot);
+			}, [slot]);
+			if (el) return (0, react_dom.createPortal)(children, el);
+			if (slot) return null;
+			return /* @__PURE__ */ (0, react_jsx_runtime.jsx)(react_jsx_runtime.Fragment, { children });
+		}
+		//#endregion
+		//#region ../../web/card-base/src/icons.tsx
+		function Svg({ className, style, children, ...rest }) {
+			return /* @__PURE__ */ (0, react_jsx_runtime.jsx)("svg", {
+				xmlns: "http://www.w3.org/2000/svg",
+				width: 24,
+				height: 24,
+				viewBox: "0 0 24 24",
+				fill: "none",
+				stroke: "currentColor",
+				strokeWidth: 2,
+				strokeLinecap: "round",
+				strokeLinejoin: "round",
+				"aria-hidden": "true",
+				focusable: "false",
+				className,
+				style,
+				...rest,
+				children
+			});
+		}
+		function AlertTriangle({ className, style, ...rest }) {
+			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(Svg, {
+				className,
+				style,
+				...rest,
+				children: [
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z" }),
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M12 9v4" }),
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M12 17h.01" })
+				]
+			});
+		}
+		//#endregion
+		//#region \0dsh-css:card-base/src/shell.module.css.mjs
+		const css = "._4etGFq_shell{grid-template-rows:minmax(0,1fr) auto;grid-template-columns:minmax(280px,330px) minmax(0,1fr);height:100%;min-height:0;display:grid}._4etGFq_shell>:first-child{grid-area:1/1}._4etGFq_shell>:nth-child(2){grid-area:1/2;min-height:0;overflow-y:auto}._4etGFq_shell>:nth-child(3){grid-area:2/1/auto/-1;min-height:168px;max-height:min(42%,380px);overflow-y:auto}._4etGFq_errorLine{flex-direction:column;grid-column:1/-1;gap:4px;display:flex}._4etGFq_errorRow{border:1px solid color-mix(in srgb, var(--dsw-alias-danger,#dc2626) 40%, transparent);background:color-mix(in srgb, var(--dsw-alias-danger,#dc2626) 10%, transparent);color:var(--dsw-alias-danger,#dc2626);overflow-wrap:break-word;white-space:pre-wrap;border-radius:4px;margin:0;padding:6px 8px;font-family:ui-monospace,monospace;font-size:9px;line-height:1.4}._4etGFq_errorIcon{vertical-align:-2px;width:12px;height:12px;margin-right:4px;display:inline}._4etGFq_railSection{border:1px solid var(--dsw-alias-border,#e2e4e9);border-radius:8px;padding:8px 12px}._4etGFq_railHead{justify-content:space-between;align-items:center;gap:8px;margin-bottom:6px;display:flex}._4etGFq_railTitle{text-transform:uppercase;letter-spacing:.14em;color:var(--dsw-alias-label-tertiary,#8a93a0);margin:0;font-size:10px;font-weight:600}";
+		const tagId = "@melite/3d-img-to-mesh/shell.module.css@8f875633";
+		if (typeof document !== "undefined" && document.querySelector("style[data-plugin-css=" + JSON.stringify(tagId) + "]") === null) {
+			const tag = document.createElement("style");
+			tag.dataset.plugin = "@melite/3d-img-to-mesh";
+			tag.dataset.pluginCss = tagId;
+			tag.textContent = css;
+			document.head.appendChild(tag);
+		}
+		var shell_module_css_default = {
+			"errorIcon": "_4etGFq_errorIcon",
+			"errorLine": "_4etGFq_errorLine",
+			"errorRow": "_4etGFq_errorRow",
+			"railHead": "_4etGFq_railHead",
+			"railSection": "_4etGFq_railSection",
+			"railTitle": "_4etGFq_railTitle",
+			"shell": "_4etGFq_shell"
+		};
+		//#endregion
+		//#region ../../web/card-base/src/shell.tsx
+		/** The loud error line — shell-owned chrome. Same DOM the assembly
+		*  body always rendered. */
+		function StudioShellErrorLine({ errors }) {
+			if (errors.length === 0) return null;
+			return /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
+				role: "alert",
+				className: shell_module_css_default.errorLine,
+				children: errors.map((e) => /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("p", {
+					className: shell_module_css_default.errorRow,
+					children: [
+						/* @__PURE__ */ (0, react_jsx_runtime.jsx)(AlertTriangle, { className: shell_module_css_default.errorIcon }),
+						e.id,
+						": ",
+						e.message
+					]
+				}, e.id))
+			});
+		}
+		/** The studio body: params column LEFT (projected into the shell rail
+		*  slot when one exists), preview RIGHT, optional bottom bar, then the
+		*  error line. The uniform three-slot shape — timeline and form cards
+		*  are the same grain, forms simply leave the right/bottom slots empty. */
+		function StudioShell({ params, preview, bottom, errors = [], className }) {
+			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+				className: cx(shell_module_css_default.shell, className),
+				children: [
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)(StudioRail, { children: params }),
+					preview,
+					bottom,
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)(StudioShellErrorLine, { errors })
+				]
+			});
+		}
 		//#endregion
 		//#region src/client/index.ts
 		/**
@@ -40466,52 +40698,55 @@ void main() {
 				onRun();
 				setRunning(false);
 			};
-			return (0, react.createElement)("div", { className: client_module_css_default.zoomDetail }, wireMenu, (0, react.createElement)("div", { className: client_module_css_default.studioHead }, (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Tag, { tone: "info" }, "studio"), runStatus !== "" ? (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Tag, { tone: runStatus === "done" ? "success" : runStatus === "error" ? "danger" : "neutral" }, runStatus) : null), error !== null ? (0, react.createElement)("p", { className: client_module_css_default.runError }, error) : null, spec === null ? (0, react.createElement)("p", { className: client_module_css_default.groupNote }, "loading the declared knob surface…") : (0, react.createElement)("div", { className: client_module_css_default.studioBody }, (0, react.createElement)("div", { className: client_module_css_default.studioSplit }, (0, react.createElement)(GlbStagePreview, {
-				assets: meshUrl === null ? [] : [{
-					id: "mesh",
-					url: meshUrl,
-					name: "mesh"
-				}],
-				label: "img-to-mesh",
-				emptyHint: "Run the card to see the mesh"
-			}), (0, react.createElement)("div", { className: client_module_css_default.studioRail }, STUDIO_EXPOSED.map((g) => (0, react.createElement)("section", {
-				key: g,
-				className: client_module_css_default.studioGroup
-			}, (0, react.createElement)(StudioFields, {
-				fields: fieldsOf(spec.fields, g),
-				values,
-				onEdit,
-				square: squareFor
-			}))), STUDIO_FOLDS.map((g) => {
-				const fs = fieldsOf(spec.fields, g);
-				if (fs.length === 0) return null;
-				const isOpen = open[g] === true;
-				return (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.DisclosureRow, {
+			return (0, react.createElement)("div", { className: client_module_css_default.zoomDetail }, wireMenu, (0, react.createElement)("div", { className: client_module_css_default.studioHead }, (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Tag, { tone: "info" }, "studio"), runStatus !== "" ? (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Tag, { tone: runStatus === "done" ? "success" : runStatus === "error" ? "danger" : "neutral" }, runStatus) : null), error !== null ? (0, react.createElement)("p", { className: client_module_css_default.runError }, error) : null, spec === null ? (0, react.createElement)("p", { className: client_module_css_default.groupNote }, "loading the declared knob surface…") : (0, react.createElement)(StudioShell, {
+				params: (0, react.createElement)("div", { className: client_module_css_default.studioRail }, STUDIO_EXPOSED.map((g) => (0, react.createElement)("section", {
 					key: g,
-					icon: (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.IconArchiveOutline20),
-					title: STUDIO_TITLE[g] ?? g,
-					open: isOpen,
-					expandable: true,
-					expandOnRowClick: true,
-					onToggle: () => {
-						setOpen((prev) => ({
-							...prev,
-							[g]: !prev[g]
-						}));
-					}
+					className: client_module_css_default.studioGroup
 				}, (0, react.createElement)(StudioFields, {
-					fields: fs,
+					fields: fieldsOf(spec.fields, g),
 					values,
 					onEdit,
 					square: squareFor
-				}));
-			}), (0, react.createElement)("div", { className: client_module_css_default.runRow }, error !== null ? (0, react.createElement)("span", { className: client_module_css_default.runError }, error) : null, (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Button, {
-				variant: "primary",
-				onClick: run
-			}, running ? "running…" : "Run"), (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Button, {
-				variant: "ghost",
-				onClick: onRemove
-			}, "Remove stage"))))));
+				}))), STUDIO_FOLDS.map((g) => {
+					const fs = fieldsOf(spec.fields, g);
+					if (fs.length === 0) return null;
+					const isOpen = open[g] === true;
+					return (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.DisclosureRow, {
+						key: g,
+						icon: (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.IconArchiveOutline20),
+						title: STUDIO_TITLE[g] ?? g,
+						open: isOpen,
+						expandable: true,
+						expandOnRowClick: true,
+						onToggle: () => {
+							setOpen((prev) => ({
+								...prev,
+								[g]: !prev[g]
+							}));
+						}
+					}, (0, react.createElement)(StudioFields, {
+						fields: fs,
+						values,
+						onEdit,
+						square: squareFor
+					}));
+				}), (0, react.createElement)("div", { className: client_module_css_default.runRow }, error !== null ? (0, react.createElement)("span", { className: client_module_css_default.runError }, error) : null, (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+					variant: "primary",
+					onClick: run
+				}, running ? "running…" : "Run"), (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+					variant: "ghost",
+					onClick: onRemove
+				}, "Remove stage"))),
+				preview: (0, react.createElement)(GlbStagePreview, {
+					assets: meshUrl === null ? [] : [{
+						id: "mesh",
+						url: meshUrl,
+						name: "mesh"
+					}],
+					label: "img-to-mesh",
+					emptyHint: "Run the card to see the mesh"
+				})
+			}));
 		}
 		/** The generic card's OWN atoms (SpecForm renders one group's fields —
 		*  the studio hands it the group's slice; zero atom copies). */

@@ -41634,241 +41634,14 @@ void main() {
 			});
 		}
 		//#endregion
-		//#region \0dsh-css:/home/user/Documents/programs/active/inference.cpp/packages/3d/anny/src/ui/studio/viewport.module.css.mjs
-		const css$14 = ".raWgPa_frame{border:1px solid var(--dsw-alias-border,#e2e4e9);background:#0e0e1a;border-radius:8px;flex:1;min-height:340px;position:relative;overflow:hidden}.raWgPa_dockTopRight{position:absolute;top:8px;right:8px}.raWgPa_dockTopLeft{position:absolute;top:8px;left:8px}.raWgPa_dockBottomRight{position:absolute;bottom:8px;right:8px}.raWgPa_dockBottomLeft{position:absolute;bottom:8px;left:8px}.raWgPa_dockBottomCenter{position:absolute;bottom:8px;left:50%;transform:translate(-50%)}.raWgPa_dockBottom{position:absolute;bottom:10px;left:10px;right:10px}.raWgPa_dockFill{position:absolute;inset:0}.raWgPa_dockEdgeRight{position:absolute;top:0;bottom:0;right:0}.raWgPa_dockEdgeLeft{position:absolute;top:0;bottom:0;left:0}.raWgPa_badge{pointer-events:none;border:1px solid var(--dsw-alias-border,#e2e4e9);backdrop-filter:blur(4px);background:#0e0e1ae6;border-radius:6px;width:112px;margin:0;overflow:hidden;box-shadow:0 8px 24px #00000059}.raWgPa_badgeImg{object-fit:contain;width:100%;height:112px}.raWgPa_badgeCaption{text-align:center;text-transform:uppercase;letter-spacing:.12em;color:var(--dsw-alias-label-tertiary,#8a93a0);padding:2px 6px;font-size:8px;font-weight:500}";
-		const tagId$14 = "@melite/3d-anny/viewport.module.css@3792c4a0";
+		//#region \0dsh-css:card-base/src/preview.module.css.mjs
+		const css$14 = ".ClEuBa_stagePreview{flex-direction:column;flex:1;gap:8px;min-height:0;display:flex;overflow:hidden}.ClEuBa_hero,.ClEuBa_heroImg{object-fit:contain;background:var(--dsw-alias-bg-base);border:1px solid var(--dsw-alias-border-l2);border-radius:6px;flex:1;width:100%;min-height:0}.ClEuBa_empty{color:var(--dsw-alias-label-dimmed);border:1px dashed var(--dsw-alias-border-l2);border-radius:6px;flex:1;justify-content:center;align-items:center;font-size:11px;display:flex}.ClEuBa_strip{flex:none;gap:6px;display:flex;overflow-x:auto}.ClEuBa_stripLink{color:var(--dsw-alias-brand-primary);white-space:nowrap;border:1px solid var(--dsw-alias-border-l2);border-radius:6px;padding:2px 6px;font-size:10px;text-decoration:none}.ClEuBa_thumbRow{flex:none;gap:6px;display:flex;overflow-x:auto}.ClEuBa_thumb{border:1px solid var(--dsw-alias-border-l2);border-radius:4px;height:48px}.ClEuBa_stageCanvas{touch-action:none;width:100%;height:100%;min-height:320px;display:block}";
+		const tagId$14 = "@melite/3d-anny/preview.module.css@c05f7449";
 		if (typeof document !== "undefined" && document.querySelector("style[data-plugin-css=" + JSON.stringify(tagId$14) + "]") === null) {
 			const tag = document.createElement("style");
 			tag.dataset.plugin = "@melite/3d-anny";
 			tag.dataset.pluginCss = tagId$14;
 			tag.textContent = css$14;
-			document.head.appendChild(tag);
-		}
-		var viewport_module_css_default = {
-			"badge": "raWgPa_badge",
-			"badgeCaption": "raWgPa_badgeCaption",
-			"badgeImg": "raWgPa_badgeImg",
-			"dockBottom": "raWgPa_dockBottom",
-			"dockBottomCenter": "raWgPa_dockBottomCenter",
-			"dockBottomLeft": "raWgPa_dockBottomLeft",
-			"dockBottomRight": "raWgPa_dockBottomRight",
-			"dockEdgeLeft": "raWgPa_dockEdgeLeft",
-			"dockEdgeRight": "raWgPa_dockEdgeRight",
-			"dockFill": "raWgPa_dockFill",
-			"dockTopLeft": "raWgPa_dockTopLeft",
-			"dockTopRight": "raWgPa_dockTopRight",
-			"frame": "raWgPa_frame"
-		};
-		//#endregion
-		//#region src/ui/studio/viewport.tsx
-		function ViewportFrame({ children, label, empty, className, ...props }) {
-			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-				"data-slot": "viewport-frame",
-				"aria-label": label,
-				className: cx(viewport_module_css_default.frame, className),
-				...props,
-				children: [children, empty]
-			});
-		}
-		const DOCK_CLASS = {
-			"top-right": viewport_module_css_default.dockTopRight,
-			"top-left": viewport_module_css_default.dockTopLeft,
-			"bottom-right": viewport_module_css_default.dockBottomRight,
-			"bottom-left": viewport_module_css_default.dockBottomLeft,
-			"bottom-center": viewport_module_css_default.dockBottomCenter,
-			bottom: viewport_module_css_default.dockBottom,
-			fill: viewport_module_css_default.dockFill,
-			"edge-right": viewport_module_css_default.dockEdgeRight,
-			"edge-left": viewport_module_css_default.dockEdgeLeft
-		};
-		function ViewportAnchor({ dock = "top-right", className, ...props }) {
-			return /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
-				"data-slot": "viewport-anchor",
-				"data-dock": dock,
-				className: cx(DOCK_CLASS[dock], className),
-				...props
-			});
-		}
-		function ReferenceImageBadge({ url, label, className, ...props }) {
-			if (!url) return null;
-			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("figure", {
-				"data-slot": "reference-image-badge",
-				"data-reference-image": true,
-				"aria-label": label,
-				className: cx(viewport_module_css_default.badge, className),
-				...props,
-				children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("img", {
-					src: url,
-					alt: label,
-					className: viewport_module_css_default.badgeImg,
-					draggable: false
-				}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("figcaption", {
-					className: viewport_module_css_default.badgeCaption,
-					children: label
-				})]
-			});
-		}
-		//#endregion
-		//#region ../../web/card-base/src/studioRail.tsx
-		/**
-		* StudioRail — the shell-provided TOOLS slot in the studio's left rail
-		* (spec docs/design/card-studio-pattern.md §5 + §7.10).
-		*
-		* WHY A PORTAL: vertical space is the scarce axis (§7.9 — human figures),
-		* so a tenant's tool buttons (Skeleton / Refine pose / Export / …) must
-		* live in the RAIL, but their state lives INSIDE the tenant component
-		* (showSkeleton, editMode, bgImage…). Splitting the tenant into two
-		* registered components would force that state up through the shell —
-		* breaking E1 (the tenant receives exactly {stage, running, onSave}).
-		* Instead the tenant stays ONE component and PROJECTS its tools into the
-		* shell's slot; the shell stays genre-blind (it renders an empty div and
-		* knows nothing about motion).
-		*
-		* THE CONTRACT IS UNCHANGED: portaled tools write through the same
-		* onSave channel — nothing about the write path moves. Without the shell
-		* (a tenant mounted inline, e.g. the form view) the tools render in place
-		* — the exact layout the tenant had before the slot existed.
-		*
-		* Mount order (no flash): CardStudio renders the slot div and the tenant
-		* in the same commit; the div's ref lands before the tenant's effects
-		* run, so the portal binds on the first effect pass. The one render
-		* before that is inside the skeleton-masked mount anyway.
-		*/
-		/** The rail's tools-slot element, published by CardStudio. Null when the
-		*  tenant is mounted outside a studio shell (inline fallback). */
-		const StudioRailCtx = (0, react.createContext)(null);
-		/** TENANT side: renders children into the studio rail when one exists,
-		*  inline otherwise. Wrap the tenant's toolbar in this — nothing else. */
-		function StudioRail({ children }) {
-			const slot = (0, react.useContext)(StudioRailCtx);
-			const [el, setEl] = (0, react.useState)(null);
-			(0, react.useEffect)(() => {
-				if (slot && slot !== el) setEl(slot);
-			}, [slot]);
-			if (el) return (0, react_dom.createPortal)(children, el);
-			if (slot) return null;
-			return /* @__PURE__ */ (0, react_jsx_runtime.jsx)(react_jsx_runtime.Fragment, { children });
-		}
-		//#endregion
-		//#region \0dsh-css:card-base/src/shell.module.css.mjs
-		const css$13 = "._4etGFq_shell{grid-template-rows:minmax(0,1fr) auto;grid-template-columns:minmax(280px,330px) minmax(0,1fr);height:100%;min-height:0;display:grid}._4etGFq_shell>:first-child{grid-area:1/1}._4etGFq_shell>:nth-child(2){grid-area:1/2;min-height:0;overflow-y:auto}._4etGFq_shell>:nth-child(3){grid-area:2/1/auto/-1;min-height:168px;max-height:min(42%,380px);overflow-y:auto}._4etGFq_errorLine{flex-direction:column;grid-column:1/-1;gap:4px;display:flex}._4etGFq_errorRow{border:1px solid color-mix(in srgb, var(--dsw-alias-danger,#dc2626) 40%, transparent);background:color-mix(in srgb, var(--dsw-alias-danger,#dc2626) 10%, transparent);color:var(--dsw-alias-danger,#dc2626);overflow-wrap:break-word;white-space:pre-wrap;border-radius:4px;margin:0;padding:6px 8px;font-family:ui-monospace,monospace;font-size:9px;line-height:1.4}._4etGFq_errorIcon{vertical-align:-2px;width:12px;height:12px;margin-right:4px;display:inline}._4etGFq_railSection{border:1px solid var(--dsw-alias-border,#e2e4e9);border-radius:8px;padding:8px 12px}._4etGFq_railHead{justify-content:space-between;align-items:center;gap:8px;margin-bottom:6px;display:flex}._4etGFq_railTitle{text-transform:uppercase;letter-spacing:.14em;color:var(--dsw-alias-label-tertiary,#8a93a0);margin:0;font-size:10px;font-weight:600}";
-		const tagId$13 = "@melite/3d-anny/shell.module.css@8f875633";
-		if (typeof document !== "undefined" && document.querySelector("style[data-plugin-css=" + JSON.stringify(tagId$13) + "]") === null) {
-			const tag = document.createElement("style");
-			tag.dataset.plugin = "@melite/3d-anny";
-			tag.dataset.pluginCss = tagId$13;
-			tag.textContent = css$13;
-			document.head.appendChild(tag);
-		}
-		var shell_module_css_default = {
-			"errorIcon": "_4etGFq_errorIcon",
-			"errorLine": "_4etGFq_errorLine",
-			"errorRow": "_4etGFq_errorRow",
-			"railHead": "_4etGFq_railHead",
-			"railSection": "_4etGFq_railSection",
-			"railTitle": "_4etGFq_railTitle",
-			"shell": "_4etGFq_shell"
-		};
-		//#endregion
-		//#region ../../web/card-base/src/shell.tsx
-		/** The loud error line — shell-owned chrome. Same DOM the assembly
-		*  body always rendered. */
-		function StudioShellErrorLine({ errors }) {
-			if (errors.length === 0) return null;
-			return /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
-				role: "alert",
-				className: shell_module_css_default.errorLine,
-				children: errors.map((e) => /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("p", {
-					className: shell_module_css_default.errorRow,
-					children: [
-						/* @__PURE__ */ (0, react_jsx_runtime.jsx)(AlertTriangle, { className: shell_module_css_default.errorIcon }),
-						e.id,
-						": ",
-						e.message
-					]
-				}, e.id))
-			});
-		}
-		/** The studio body: params column LEFT (projected into the shell rail
-		*  slot when one exists), preview RIGHT, optional bottom bar, then the
-		*  error line. The uniform three-slot shape — timeline and form cards
-		*  are the same grain, forms simply leave the right/bottom slots empty. */
-		function StudioShell({ params, preview, bottom, errors = [], className }) {
-			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-				className: cx(shell_module_css_default.shell, className),
-				children: [
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)(StudioRail, { children: params }),
-					preview,
-					bottom,
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)(StudioShellErrorLine, { errors })
-				]
-			});
-		}
-		function RailSection({ title, actions, children, className, titleClassName, ...props }) {
-			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("section", {
-				"data-slot": "rail-section",
-				"aria-label": typeof title === "string" ? title : void 0,
-				className: cx(shell_module_css_default.railSection, className),
-				...props,
-				children: [/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-					className: shell_module_css_default.railHead,
-					children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
-						className: cx(shell_module_css_default.railTitle, titleClassName),
-						children: title
-					}), actions]
-				}), children]
-			});
-		}
-		/** The construction door: one obvious way to build a declaration,
-		*  typed at the call site. Runtime-frozen. */
-		function defineShellDeclaration(declaration) {
-			return Object.freeze(declaration);
-		}
-		//#endregion
-		//#region \0dsh-css:/home/user/Documents/programs/active/inference.cpp/packages/3d/anny/src/ui/studio/component.module.css.mjs
-		const css$12 = ".NzYpCa_shellGap{gap:8px}.NzYpCa_stackSm{flex-direction:column;gap:6px;display:flex}.NzYpCa_stackMd{flex-direction:column;gap:8px;display:flex}.NzYpCa_rowWrap{flex-wrap:wrap;align-items:center;gap:6px;display:flex}.NzYpCa_hint{color:var(--dsw-alias-label-tertiary,#8a93a0);margin:0;font-size:9px;line-height:1.5}.NzYpCa_hintFull{width:100%;color:var(--dsw-alias-label-tertiary,#8a93a0);margin:0;font-size:9px;line-height:1.5}.NzYpCa_hintPad{color:var(--dsw-alias-label-tertiary,#8a93a0);margin:0;padding:0 4px;font-size:9px;line-height:1.5}.NzYpCa_noteLine{-webkit-line-clamp:2;color:var(--dsw-alias-label-tertiary,#8a93a0);-webkit-box-orient:vertical;margin:0;font-size:9px;line-height:1.5;display:-webkit-box;overflow:hidden}.NzYpCa_grid2{grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;display:grid}.NzYpCa_knob{color:var(--dsw-alias-label-tertiary,#8a93a0);flex-direction:column;gap:2px;margin:0;font-size:9px;display:flex}.NzYpCa_knobWide{color:var(--dsw-alias-label-tertiary,#8a93a0);flex-direction:column;grid-column:span 2;gap:2px;margin:0;font-size:9px;display:flex}.NzYpCa_fieldInput{border:1px solid var(--dsw-alias-border,#e2e4e9);color:var(--dsw-alias-label-primary,#0f1115);background:0 0;border-radius:6px;width:100%;padding:4px 6px;font-size:10px}.NzYpCa_fieldInput::placeholder{color:var(--dsw-alias-label-tertiary,#8a93a0);opacity:.7}.NzYpCa_fieldInput:disabled{opacity:.5}.NzYpCa_ghostBtn{border:1px solid var(--dsw-alias-border,#e2e4e9);color:var(--dsw-alias-label-secondary,#5b6470);border-radius:6px;padding:4px 8px;font-size:10px}.NzYpCa_ghostBtn:hover{color:var(--dsw-alias-label-primary,#0f1115)}.NzYpCa_ghostBtn:disabled{opacity:.5}.NzYpCa_presetPick{max-width:176px}.NzYpCa_nameInput{width:144px}.NzYpCa_srOnly{clip:rect(0, 0, 0, 0);white-space:nowrap;border:0;width:1px;height:1px;margin:-1px;padding:0;position:absolute;overflow:hidden}.NzYpCa_divider{border-top:1px solid var(--dsw-alias-border,#e2e4e9)}.NzYpCa_checkRow{color:var(--dsw-alias-label-primary,#0f1115);cursor:pointer;grid-column:span 2;align-items:center;gap:6px;margin:0;font-size:10px;display:flex}.NzYpCa_frameTall{min-height:440px}.NzYpCa_pinRaise{z-index:10}.NzYpCa_railCol{flex-direction:column;height:100%;min-height:0;display:flex}.NzYpCa_tabPane{flex:1;min-height:0;padding:8px;overflow-y:auto}.NzYpCa_assemblyPad{padding:8px 12px 12px}";
-		const tagId$12 = "@melite/3d-anny/component.module.css@40d76b37";
-		if (typeof document !== "undefined" && document.querySelector("style[data-plugin-css=" + JSON.stringify(tagId$12) + "]") === null) {
-			const tag = document.createElement("style");
-			tag.dataset.plugin = "@melite/3d-anny";
-			tag.dataset.pluginCss = tagId$12;
-			tag.textContent = css$12;
-			document.head.appendChild(tag);
-		}
-		var component_module_css_default = {
-			"assemblyPad": "NzYpCa_assemblyPad",
-			"checkRow": "NzYpCa_checkRow",
-			"divider": "NzYpCa_divider",
-			"fieldInput": "NzYpCa_fieldInput",
-			"frameTall": "NzYpCa_frameTall",
-			"ghostBtn": "NzYpCa_ghostBtn",
-			"grid2": "NzYpCa_grid2",
-			"hint": "NzYpCa_hint",
-			"hintFull": "NzYpCa_hintFull",
-			"hintPad": "NzYpCa_hintPad",
-			"knob": "NzYpCa_knob",
-			"knobWide": "NzYpCa_knobWide",
-			"nameInput": "NzYpCa_nameInput",
-			"noteLine": "NzYpCa_noteLine",
-			"pinRaise": "NzYpCa_pinRaise",
-			"presetPick": "NzYpCa_presetPick",
-			"railCol": "NzYpCa_railCol",
-			"rowWrap": "NzYpCa_rowWrap",
-			"shellGap": "NzYpCa_shellGap",
-			"srOnly": "NzYpCa_srOnly",
-			"stackMd": "NzYpCa_stackMd",
-			"stackSm": "NzYpCa_stackSm",
-			"tabPane": "NzYpCa_tabPane"
-		};
-		//#endregion
-		//#region \0dsh-css:card-base/src/preview.module.css.mjs
-		const css$11 = ".ClEuBa_stagePreview{flex-direction:column;flex:1;gap:8px;min-height:0;display:flex;overflow:hidden}.ClEuBa_hero,.ClEuBa_heroImg{object-fit:contain;background:var(--dsw-alias-bg-base);border:1px solid var(--dsw-alias-border-l2);border-radius:6px;flex:1;width:100%;min-height:0}.ClEuBa_empty{color:var(--dsw-alias-label-dimmed);border:1px dashed var(--dsw-alias-border-l2);border-radius:6px;flex:1;justify-content:center;align-items:center;font-size:11px;display:flex}.ClEuBa_strip{flex:none;gap:6px;display:flex;overflow-x:auto}.ClEuBa_stripLink{color:var(--dsw-alias-brand-primary);white-space:nowrap;border:1px solid var(--dsw-alias-border-l2);border-radius:6px;padding:2px 6px;font-size:10px;text-decoration:none}.ClEuBa_thumbRow{flex:none;gap:6px;display:flex;overflow-x:auto}.ClEuBa_thumb{border:1px solid var(--dsw-alias-border-l2);border-radius:4px;height:48px}.ClEuBa_stageCanvas{touch-action:none;width:100%;height:100%;min-height:320px;display:block}";
-		const tagId$11 = "@melite/3d-anny/preview.module.css@c05f7449";
-		if (typeof document !== "undefined" && document.querySelector("style[data-plugin-css=" + JSON.stringify(tagId$11) + "]") === null) {
-			const tag = document.createElement("style");
-			tag.dataset.plugin = "@melite/3d-anny";
-			tag.dataset.pluginCss = tagId$11;
-			tag.textContent = css$11;
 			document.head.appendChild(tag);
 		}
 		var preview_module_css_default = {
@@ -43255,6 +43028,81 @@ void main() {
 			}));
 		}
 		//#endregion
+		//#region \0dsh-css:card-base/src/viewportChrome.module.css.mjs
+		const css$13 = "._8t0iwG_frame{border:1px solid var(--dsw-alias-border,#e2e4e9);background:#0e0e1a;border-radius:8px;flex:1;min-height:340px;position:relative;overflow:hidden}._8t0iwG_dockTopRight{position:absolute;top:8px;right:8px}._8t0iwG_dockTopLeft{position:absolute;top:8px;left:8px}._8t0iwG_dockBottomRight{position:absolute;bottom:8px;right:8px}._8t0iwG_dockBottomLeft{position:absolute;bottom:8px;left:8px}._8t0iwG_dockBottomCenter{position:absolute;bottom:8px;left:50%;transform:translate(-50%)}._8t0iwG_dockBottom{position:absolute;bottom:10px;left:10px;right:10px}._8t0iwG_dockFill{position:absolute;inset:0}._8t0iwG_dockEdgeRight{position:absolute;top:0;bottom:0;right:0}._8t0iwG_dockEdgeLeft{position:absolute;top:0;bottom:0;left:0}._8t0iwG_badge{pointer-events:none;border:1px solid var(--dsw-alias-border,#e2e4e9);backdrop-filter:blur(4px);background:#0e0e1ae6;border-radius:6px;width:112px;margin:0;overflow:hidden;box-shadow:0 8px 24px #00000059}._8t0iwG_badgeImg{object-fit:contain;width:100%;height:112px}._8t0iwG_badgeCaption{text-align:center;text-transform:uppercase;letter-spacing:.12em;color:var(--dsw-alias-label-tertiary,#8a93a0);padding:2px 6px;font-size:8px;font-weight:500}";
+		const tagId$13 = "@melite/3d-anny/viewportChrome.module.css@5b8532dc";
+		if (typeof document !== "undefined" && document.querySelector("style[data-plugin-css=" + JSON.stringify(tagId$13) + "]") === null) {
+			const tag = document.createElement("style");
+			tag.dataset.plugin = "@melite/3d-anny";
+			tag.dataset.pluginCss = tagId$13;
+			tag.textContent = css$13;
+			document.head.appendChild(tag);
+		}
+		var viewportChrome_module_css_default = {
+			"badge": "_8t0iwG_badge",
+			"badgeCaption": "_8t0iwG_badgeCaption",
+			"badgeImg": "_8t0iwG_badgeImg",
+			"dockBottom": "_8t0iwG_dockBottom",
+			"dockBottomCenter": "_8t0iwG_dockBottomCenter",
+			"dockBottomLeft": "_8t0iwG_dockBottomLeft",
+			"dockBottomRight": "_8t0iwG_dockBottomRight",
+			"dockEdgeLeft": "_8t0iwG_dockEdgeLeft",
+			"dockEdgeRight": "_8t0iwG_dockEdgeRight",
+			"dockFill": "_8t0iwG_dockFill",
+			"dockTopLeft": "_8t0iwG_dockTopLeft",
+			"dockTopRight": "_8t0iwG_dockTopRight",
+			"frame": "_8t0iwG_frame"
+		};
+		//#endregion
+		//#region ../../web/card-base/src/viewportChrome.tsx
+		function ViewportFrame({ children, label, empty, className, ...props }) {
+			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+				"data-slot": "viewport-frame",
+				"aria-label": label,
+				className: cx(viewportChrome_module_css_default.frame, className),
+				...props,
+				children: [children, empty]
+			});
+		}
+		const DOCK_CLASS = {
+			"top-right": viewportChrome_module_css_default.dockTopRight,
+			"top-left": viewportChrome_module_css_default.dockTopLeft,
+			"bottom-right": viewportChrome_module_css_default.dockBottomRight,
+			"bottom-left": viewportChrome_module_css_default.dockBottomLeft,
+			"bottom-center": viewportChrome_module_css_default.dockBottomCenter,
+			bottom: viewportChrome_module_css_default.dockBottom,
+			fill: viewportChrome_module_css_default.dockFill,
+			"edge-right": viewportChrome_module_css_default.dockEdgeRight,
+			"edge-left": viewportChrome_module_css_default.dockEdgeLeft
+		};
+		function ViewportAnchor({ dock = "top-right", className, ...props }) {
+			return /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
+				"data-slot": "viewport-anchor",
+				"data-dock": dock,
+				className: cx(DOCK_CLASS[dock], className),
+				...props
+			});
+		}
+		function ReferenceImageBadge({ url, label, className, ...props }) {
+			if (!url) return null;
+			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("figure", {
+				"data-slot": "reference-image-badge",
+				"data-reference-image": true,
+				"aria-label": label,
+				className: cx(viewportChrome_module_css_default.badge, className),
+				...props,
+				children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("img", {
+					src: url,
+					alt: label,
+					className: viewportChrome_module_css_default.badgeImg,
+					draggable: false
+				}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("figcaption", {
+					className: viewportChrome_module_css_default.badgeCaption,
+					children: label
+				})]
+			});
+		}
+		//#endregion
 		//#region ../../web/card-base/src/preview.tsx
 		/**
 		* preview.tsx — THE SHARED PREVIEW COMPONENTS (the preview seam's
@@ -43269,6 +43117,158 @@ void main() {
 		* to specialize — the h3 studio rides the shared VIDEO preview for
 		* its hero, exactly as an image-gen card rides the IMAGE one.
 		*/
+		//#endregion
+		//#region ../../web/card-base/src/studioRail.tsx
+		/**
+		* StudioRail — the shell-provided TOOLS slot in the studio's left rail
+		* (spec docs/design/card-studio-pattern.md §5 + §7.10).
+		*
+		* WHY A PORTAL: vertical space is the scarce axis (§7.9 — human figures),
+		* so a tenant's tool buttons (Skeleton / Refine pose / Export / …) must
+		* live in the RAIL, but their state lives INSIDE the tenant component
+		* (showSkeleton, editMode, bgImage…). Splitting the tenant into two
+		* registered components would force that state up through the shell —
+		* breaking E1 (the tenant receives exactly {stage, running, onSave}).
+		* Instead the tenant stays ONE component and PROJECTS its tools into the
+		* shell's slot; the shell stays genre-blind (it renders an empty div and
+		* knows nothing about motion).
+		*
+		* THE CONTRACT IS UNCHANGED: portaled tools write through the same
+		* onSave channel — nothing about the write path moves. Without the shell
+		* (a tenant mounted inline, e.g. the form view) the tools render in place
+		* — the exact layout the tenant had before the slot existed.
+		*
+		* Mount order (no flash): CardStudio renders the slot div and the tenant
+		* in the same commit; the div's ref lands before the tenant's effects
+		* run, so the portal binds on the first effect pass. The one render
+		* before that is inside the skeleton-masked mount anyway.
+		*/
+		/** The rail's tools-slot element, published by CardStudio. Null when the
+		*  tenant is mounted outside a studio shell (inline fallback). */
+		const StudioRailCtx = (0, react.createContext)(null);
+		/** TENANT side: renders children into the studio rail when one exists,
+		*  inline otherwise. Wrap the tenant's toolbar in this — nothing else. */
+		function StudioRail({ children }) {
+			const slot = (0, react.useContext)(StudioRailCtx);
+			const [el, setEl] = (0, react.useState)(null);
+			(0, react.useEffect)(() => {
+				if (slot && slot !== el) setEl(slot);
+			}, [slot]);
+			if (el) return (0, react_dom.createPortal)(children, el);
+			if (slot) return null;
+			return /* @__PURE__ */ (0, react_jsx_runtime.jsx)(react_jsx_runtime.Fragment, { children });
+		}
+		//#endregion
+		//#region \0dsh-css:card-base/src/shell.module.css.mjs
+		const css$12 = "._4etGFq_shell{grid-template-rows:minmax(0,1fr) auto;grid-template-columns:minmax(280px,330px) minmax(0,1fr);height:100%;min-height:0;display:grid}._4etGFq_shell>:first-child{grid-area:1/1}._4etGFq_shell>:nth-child(2){grid-area:1/2;min-height:0;overflow-y:auto}._4etGFq_shell>:nth-child(3){grid-area:2/1/auto/-1;min-height:168px;max-height:min(42%,380px);overflow-y:auto}._4etGFq_errorLine{flex-direction:column;grid-column:1/-1;gap:4px;display:flex}._4etGFq_errorRow{border:1px solid color-mix(in srgb, var(--dsw-alias-danger,#dc2626) 40%, transparent);background:color-mix(in srgb, var(--dsw-alias-danger,#dc2626) 10%, transparent);color:var(--dsw-alias-danger,#dc2626);overflow-wrap:break-word;white-space:pre-wrap;border-radius:4px;margin:0;padding:6px 8px;font-family:ui-monospace,monospace;font-size:9px;line-height:1.4}._4etGFq_errorIcon{vertical-align:-2px;width:12px;height:12px;margin-right:4px;display:inline}._4etGFq_railSection{border:1px solid var(--dsw-alias-border,#e2e4e9);border-radius:8px;padding:8px 12px}._4etGFq_railHead{justify-content:space-between;align-items:center;gap:8px;margin-bottom:6px;display:flex}._4etGFq_railTitle{text-transform:uppercase;letter-spacing:.14em;color:var(--dsw-alias-label-tertiary,#8a93a0);margin:0;font-size:10px;font-weight:600}";
+		const tagId$12 = "@melite/3d-anny/shell.module.css@8f875633";
+		if (typeof document !== "undefined" && document.querySelector("style[data-plugin-css=" + JSON.stringify(tagId$12) + "]") === null) {
+			const tag = document.createElement("style");
+			tag.dataset.plugin = "@melite/3d-anny";
+			tag.dataset.pluginCss = tagId$12;
+			tag.textContent = css$12;
+			document.head.appendChild(tag);
+		}
+		var shell_module_css_default = {
+			"errorIcon": "_4etGFq_errorIcon",
+			"errorLine": "_4etGFq_errorLine",
+			"errorRow": "_4etGFq_errorRow",
+			"railHead": "_4etGFq_railHead",
+			"railSection": "_4etGFq_railSection",
+			"railTitle": "_4etGFq_railTitle",
+			"shell": "_4etGFq_shell"
+		};
+		//#endregion
+		//#region ../../web/card-base/src/shell.tsx
+		/** The loud error line — shell-owned chrome. Same DOM the assembly
+		*  body always rendered. */
+		function StudioShellErrorLine({ errors }) {
+			if (errors.length === 0) return null;
+			return /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
+				role: "alert",
+				className: shell_module_css_default.errorLine,
+				children: errors.map((e) => /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("p", {
+					className: shell_module_css_default.errorRow,
+					children: [
+						/* @__PURE__ */ (0, react_jsx_runtime.jsx)(AlertTriangle, { className: shell_module_css_default.errorIcon }),
+						e.id,
+						": ",
+						e.message
+					]
+				}, e.id))
+			});
+		}
+		/** The studio body: params column LEFT (projected into the shell rail
+		*  slot when one exists), preview RIGHT, optional bottom bar, then the
+		*  error line. The uniform three-slot shape — timeline and form cards
+		*  are the same grain, forms simply leave the right/bottom slots empty. */
+		function StudioShell({ params, preview, bottom, errors = [], className }) {
+			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+				className: cx(shell_module_css_default.shell, className),
+				children: [
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)(StudioRail, { children: params }),
+					preview,
+					bottom,
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)(StudioShellErrorLine, { errors })
+				]
+			});
+		}
+		function RailSection({ title, actions, children, className, titleClassName, ...props }) {
+			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("section", {
+				"data-slot": "rail-section",
+				"aria-label": typeof title === "string" ? title : void 0,
+				className: cx(shell_module_css_default.railSection, className),
+				...props,
+				children: [/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+					className: shell_module_css_default.railHead,
+					children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
+						className: cx(shell_module_css_default.railTitle, titleClassName),
+						children: title
+					}), actions]
+				}), children]
+			});
+		}
+		/** The construction door: one obvious way to build a declaration,
+		*  typed at the call site. Runtime-frozen. */
+		function defineShellDeclaration(declaration) {
+			return Object.freeze(declaration);
+		}
+		//#endregion
+		//#region \0dsh-css:/home/user/Documents/programs/active/inference.cpp/packages/3d/anny/src/ui/studio/component.module.css.mjs
+		const css$11 = ".NzYpCa_shellGap{gap:8px}.NzYpCa_stackSm{flex-direction:column;gap:6px;display:flex}.NzYpCa_stackMd{flex-direction:column;gap:8px;display:flex}.NzYpCa_rowWrap{flex-wrap:wrap;align-items:center;gap:6px;display:flex}.NzYpCa_hint{color:var(--dsw-alias-label-tertiary,#8a93a0);margin:0;font-size:9px;line-height:1.5}.NzYpCa_hintFull{width:100%;color:var(--dsw-alias-label-tertiary,#8a93a0);margin:0;font-size:9px;line-height:1.5}.NzYpCa_hintPad{color:var(--dsw-alias-label-tertiary,#8a93a0);margin:0;padding:0 4px;font-size:9px;line-height:1.5}.NzYpCa_noteLine{-webkit-line-clamp:2;color:var(--dsw-alias-label-tertiary,#8a93a0);-webkit-box-orient:vertical;margin:0;font-size:9px;line-height:1.5;display:-webkit-box;overflow:hidden}.NzYpCa_grid2{grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;display:grid}.NzYpCa_knob{color:var(--dsw-alias-label-tertiary,#8a93a0);flex-direction:column;gap:2px;margin:0;font-size:9px;display:flex}.NzYpCa_knobWide{color:var(--dsw-alias-label-tertiary,#8a93a0);flex-direction:column;grid-column:span 2;gap:2px;margin:0;font-size:9px;display:flex}.NzYpCa_fieldInput{border:1px solid var(--dsw-alias-border,#e2e4e9);color:var(--dsw-alias-label-primary,#0f1115);background:0 0;border-radius:6px;width:100%;padding:4px 6px;font-size:10px}.NzYpCa_fieldInput::placeholder{color:var(--dsw-alias-label-tertiary,#8a93a0);opacity:.7}.NzYpCa_fieldInput:disabled{opacity:.5}.NzYpCa_ghostBtn{border:1px solid var(--dsw-alias-border,#e2e4e9);color:var(--dsw-alias-label-secondary,#5b6470);border-radius:6px;padding:4px 8px;font-size:10px}.NzYpCa_ghostBtn:hover{color:var(--dsw-alias-label-primary,#0f1115)}.NzYpCa_ghostBtn:disabled{opacity:.5}.NzYpCa_presetPick{max-width:176px}.NzYpCa_nameInput{width:144px}.NzYpCa_srOnly{clip:rect(0, 0, 0, 0);white-space:nowrap;border:0;width:1px;height:1px;margin:-1px;padding:0;position:absolute;overflow:hidden}.NzYpCa_divider{border-top:1px solid var(--dsw-alias-border,#e2e4e9)}.NzYpCa_checkRow{color:var(--dsw-alias-label-primary,#0f1115);cursor:pointer;grid-column:span 2;align-items:center;gap:6px;margin:0;font-size:10px;display:flex}.NzYpCa_frameTall{min-height:440px}.NzYpCa_pinRaise{z-index:10}.NzYpCa_railCol{flex-direction:column;height:100%;min-height:0;display:flex}.NzYpCa_tabPane{flex:1;min-height:0;padding:8px;overflow-y:auto}.NzYpCa_assemblyPad{padding:8px 12px 12px}";
+		const tagId$11 = "@melite/3d-anny/component.module.css@40d76b37";
+		if (typeof document !== "undefined" && document.querySelector("style[data-plugin-css=" + JSON.stringify(tagId$11) + "]") === null) {
+			const tag = document.createElement("style");
+			tag.dataset.plugin = "@melite/3d-anny";
+			tag.dataset.pluginCss = tagId$11;
+			tag.textContent = css$11;
+			document.head.appendChild(tag);
+		}
+		var component_module_css_default = {
+			"assemblyPad": "NzYpCa_assemblyPad",
+			"checkRow": "NzYpCa_checkRow",
+			"divider": "NzYpCa_divider",
+			"fieldInput": "NzYpCa_fieldInput",
+			"frameTall": "NzYpCa_frameTall",
+			"ghostBtn": "NzYpCa_ghostBtn",
+			"grid2": "NzYpCa_grid2",
+			"hint": "NzYpCa_hint",
+			"hintFull": "NzYpCa_hintFull",
+			"hintPad": "NzYpCa_hintPad",
+			"knob": "NzYpCa_knob",
+			"knobWide": "NzYpCa_knobWide",
+			"nameInput": "NzYpCa_nameInput",
+			"noteLine": "NzYpCa_noteLine",
+			"pinRaise": "NzYpCa_pinRaise",
+			"presetPick": "NzYpCa_presetPick",
+			"railCol": "NzYpCa_railCol",
+			"rowWrap": "NzYpCa_rowWrap",
+			"shellGap": "NzYpCa_shellGap",
+			"srOnly": "NzYpCa_srOnly",
+			"stackMd": "NzYpCa_stackMd",
+			"stackSm": "NzYpCa_stackSm",
+			"tabPane": "NzYpCa_tabPane"
+		};
 		//#endregion
 		//#region ../../web/card-base/src/toast.tsx
 		/**
