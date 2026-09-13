@@ -178,8 +178,6 @@ export default function MotionViewer({ url, className }: MotionViewerProps) {
     if (stage === null) return
     stageRef.current = stage
     stage.renderer.setClearColor("#0a0a0f")
-    stage.renderer.toneMapping = THREE.ACESFilmicToneMapping
-    stage.renderer.toneMappingExposure = 1.0
 
     const scene = stage.scene
     scene.add(new THREE.AmbientLight(0xffffff, 0.5))

@@ -97,6 +97,10 @@ function mountScene(canvas: HTMLCanvasElement, onFail: (msg: string) => void): {
     fov: 40,
     camera: [2.2, 1.6, 2.6],
     target: [0, 0.8, 0],
+    // the old private mountScene's raw renderer default — NoToneMapping.
+    // (The core's ACESFilmic default mirrors r3f Canvases; this stage
+    // was never an r3f Canvas, so it pins its historical look.)
+    toneMapping: THREE.NoToneMapping,
     onContextFailure: onFail,
     onEmptyClick: () => clickSink(null),
   })

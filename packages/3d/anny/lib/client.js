@@ -42891,7 +42891,8 @@ void main() {
 				renderer = new WebGLRenderer({
 					canvas,
 					antialias: true,
-					alpha: opts.alpha !== false
+					alpha: opts.alpha !== false,
+					preserveDrawingBuffer: opts.preserveDrawingBuffer === true
 				});
 			} catch (e) {
 				opts.onContextFailure?.(e instanceof Error ? e.message : "WebGL unavailable");
@@ -42899,7 +42900,8 @@ void main() {
 			}
 			renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 			renderer.shadowMap.enabled = true;
-			renderer.shadowMap.type = 2;
+			renderer.shadowMap.type = 1;
+			renderer.toneMapping = opts.toneMapping ?? 4;
 			const scene = new Scene();
 			scene.background = null;
 			const camera = new PerspectiveCamera(opts.fov ?? 45, 1, opts.near ?? .05, opts.far ?? 60);
@@ -43105,6 +43107,7 @@ void main() {
 					.8,
 					0
 				],
+				toneMapping: 0,
 				onContextFailure: onFail,
 				onEmptyClick: () => clickSink(null)
 			});

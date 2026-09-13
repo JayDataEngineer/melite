@@ -389,7 +389,25 @@ export function mountPoseStage(
     maxDistance: 12,
     maxPolarAngle: Math.PI / 1.85,
     alpha: false,
+    // the old r3f Canvas's gl prop verbatim — the export dialog reads
+    // the canvas back (toDataURL); without this the buffer clears
+    // after present and every screenshot comes back blank
+    preserveDrawingBuffer: true,
     onContextFailure: opts.onFail,
+    // EMPTY-SPACE DESELECT: the old tree carried a radius-0.001
+    // invisible sphere inside the joint manipulator (effectively dead
+    // — no raycast could ever hit it) whose INTENT was click-nothing →
+    // deselect. The raw stage makes the intent real: an empty click
+    // while a manipulator is live clears the joint + chain selection.
+    onEmptyClick: (): void => {
+      if (refManip.root !== null) {
+        refManip.onSelectJoint(null)
+        refManip.onSelectChain?.(null)
+      } else if (manip.active) {
+        manip.onSelectJoint(null)
+        manip.onSelectChain?.(null)
+      }
+    },
   })
   if (stage === null) return null
   opts.onCanvasReady?.(canvas)

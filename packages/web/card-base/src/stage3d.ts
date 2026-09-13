@@ -46,6 +46,14 @@ export interface Stage3DOptions {
   onContextFailure?: (msg: string) => void
   /** Click-vs-drag threshold in ms (default 350). */
   clickVsDragMs?: number
+  /** WebGL preserveDrawingBuffer — REQUIRED by consumers that read the
+   *  canvas back (toDataURL screenshots: motion's export dialog).
+   *  Without it the buffer is cleared after present and screenshots
+   *  come back blank. Default false (the browser default). */
+  preserveDrawingBuffer?: boolean
+  /** Tone mapping (default ACESFilmic — the r3f Canvas default this
+   *  core mirrors; r3f set ACES unless overridden). */
+  toneMapping?: THREE.ToneMapping
   /** Fired when a click resolves NO pick carrier (empty-space click —
    *  selection-style consumers deselect on it). */
   onEmptyClick?: () => void
@@ -96,6 +104,7 @@ export function mountStage3D(
       canvas,
       antialias: true,
       alpha: opts.alpha !== false,
+      preserveDrawingBuffer: opts.preserveDrawingBuffer === true,
     })
   } catch (e: unknown) {
     opts.onContextFailure?.(e instanceof Error ? e.message : "WebGL unavailable")
@@ -103,7 +112,12 @@ export function mountStage3D(
   }
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
   renderer.shadowMap.enabled = true
-  renderer.shadowMap.type = THREE.PCFSoftShadowMap
+  // PCFShadowMap (not PCFSoft): three r184 DEPRECATED PCFSoftShadowMap —
+  // it warns on every mount and falls back to PCF anyway; PCF is the
+  // recommended soft-shadow type post-r155 (the old r3f Canvas's
+  // shadows="percentage", ported deliberately).
+  renderer.shadowMap.type = THREE.PCFShadowMap
+  renderer.toneMapping = opts.toneMapping ?? THREE.ACESFilmicToneMapping
 
   const scene = new THREE.Scene()
   scene.background = null

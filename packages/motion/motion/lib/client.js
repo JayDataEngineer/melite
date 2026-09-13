@@ -47014,7 +47014,8 @@ void main() {
 				renderer = new WebGLRenderer({
 					canvas,
 					antialias: true,
-					alpha: opts.alpha !== false
+					alpha: opts.alpha !== false,
+					preserveDrawingBuffer: opts.preserveDrawingBuffer === true
 				});
 			} catch (e) {
 				opts.onContextFailure?.(e instanceof Error ? e.message : "WebGL unavailable");
@@ -47022,7 +47023,8 @@ void main() {
 			}
 			renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 			renderer.shadowMap.enabled = true;
-			renderer.shadowMap.type = 2;
+			renderer.shadowMap.type = 1;
+			renderer.toneMapping = opts.toneMapping ?? 4;
 			const scene = new Scene();
 			scene.background = null;
 			const camera = new PerspectiveCamera(opts.fov ?? 45, 1, opts.near ?? .05, opts.far ?? 60);
@@ -47442,7 +47444,17 @@ void main() {
 				maxDistance: 12,
 				maxPolarAngle: Math.PI / 1.85,
 				alpha: false,
-				onContextFailure: opts.onFail
+				preserveDrawingBuffer: true,
+				onContextFailure: opts.onFail,
+				onEmptyClick: () => {
+					if (refManip.root !== null) {
+						refManip.onSelectJoint(null);
+						refManip.onSelectChain?.(null);
+					} else if (manip.active) {
+						manip.onSelectJoint(null);
+						manip.onSelectChain?.(null);
+					}
+				}
 			});
 			if (stage === null) return null;
 			opts.onCanvasReady?.(canvas);
