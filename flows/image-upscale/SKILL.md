@@ -1,19 +1,19 @@
 # image-upscale (flow mega-skill)
 
 One call: prompt → image → 1080p SeedVR2 upscale. No graph to build,
-no card to compose — mount the `image_upscale` tool and POST.
+no card to compose — stage the flow and the user runs it.
 
 ## Call shape
 
 ```
-POST /v1/flows/start  {"flow": "image-upscale", ...params}
+melite_construct add_stage  card "image-upscale" (or the two cards:
+image-gen + upscale-tools) — the stage is live in the user's cards
+tab; the run starts at the user's Run press.
 ```
 
-Compile first without a queue slot (verbatim refusals, zero GPU):
-
-```
-POST /v1/flows/validate  {"flow": "image-upscale", ...params}
-```
+The compile gate rides the stage's own validate (`melite_construct`
+`validate` — verbatim refusals, zero GPU) before the user presses
+Run.
 
 ## Knobs
 
@@ -48,9 +48,11 @@ no model docs, so all upscale craft rides the card row).
 
 ```json
 {
-  "flow": "image-upscale",
-  "image_model": "krea-2",
-  "prompt": "a fox at dawn, mist, 35mm",
-  "seed": 7
+  "card": "image-upscale",
+  "params": {
+    "image_model": "krea-2",
+    "prompt": "a fox at dawn, mist, 35mm",
+    "seed": 7
+  }
 }
 ```

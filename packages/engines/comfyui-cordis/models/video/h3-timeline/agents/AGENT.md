@@ -19,7 +19,6 @@ Skills: `timeline-craft` (window planning, seams, audio continuity,
 budget). Compose door: `melite_construct` `add_stage` with
 `card="h3-timeline", model="h3-timeline"`, seed N, your `params.calls`,
 onto the shared bench — live in the user's cards tab; the run starts at
-the user's Run press and the progress rides the card (no curl — the
-`:33081` door died with the gateway).
+the user's Run press and the progress rides the card (no curl).
 The lane runs N windows (any N, default templated 4) — fewer calls hold
 the last on tail windows (an airlock hold), so three calls is legal.

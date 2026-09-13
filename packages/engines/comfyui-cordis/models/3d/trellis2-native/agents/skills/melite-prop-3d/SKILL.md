@@ -18,8 +18,7 @@ Copy that YAML, swap prompt + seeds. (Lane YAML lives at the repo-root `flows/`,
 
 ## Run door
 Compose with `melite_construct` `add_stage`, `card="img-to-mesh",
-model="trellis2-native"` + your prompt/views params (no curl — the
-`:33081` door died with the gateway); the run starts at the user's
+model="trellis2-native"` + your prompt/views params (no curl); the run starts at the user's
 Run press, the progress rides the card, artifacts listed under the
 run. GLB goes to Unity delivery (FBX via blender headless or glTFast — the
 unity-delivery lane lives at

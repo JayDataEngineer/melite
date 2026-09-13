@@ -16,6 +16,5 @@ Presets: draft_short (iteration), song (standard), final_long (delivery). Iterat
 
 ## Run door
 Compose it with `melite_construct` `add_stage` (`card="music",
-model="music3"` + your caption/arrangement params — no curl, the
-`:33081` door died with the gateway); the run starts at the user's
-Run press, the progress rides the card. One style per run; variations = new seeds/captions, not param salad.
+model="music3"` + your caption/arrangement params — no curl); the
+run starts at the user's Run press, the progress rides the card. One style per run; variations = new seeds/captions, not param salad.

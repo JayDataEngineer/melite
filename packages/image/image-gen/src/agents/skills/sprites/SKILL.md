@@ -16,8 +16,7 @@ transparent sprite sheet grid.
 
 Each action/pose is generated as a separate z-image stage —
 `melite_construct` `add_stage` with `card="image-gen", model="z-image"`
-onto the shared bench (no curl — the `:33081` door died with the
-gateway; the run starts at the user's Run press):
+onto the shared bench (no curl):
 
 ```
 {

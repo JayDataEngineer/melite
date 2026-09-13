@@ -18,5 +18,4 @@ merged into qwen-img-edit-2511.)
 Skill: `keyframe-flow`. Compose door: `melite_construct` `add_stage`
 with `card="h3-timeline", model="h3-keyframe"`, your prompt/image/seed,
 onto the shared bench — the run starts at the user's Run press, the
-progress rides the card (no curl — the `:33081` door died with the
-gateway).
+progress rides the card (no curl).

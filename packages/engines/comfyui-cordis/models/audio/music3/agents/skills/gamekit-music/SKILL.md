@@ -12,8 +12,7 @@ Arrangement (instrumentation timeline, bpm, key).
 
 ## Run
 Compose with `melite_construct` `add_stage`, `card="music",
-model="music3"` + your caption and `preset` (no curl — the `:33081`
-door died with the gateway); the run starts at the user's Run
+model="music3"` + your caption and `preset` (no curl); the run starts at the user's Run
 press, the progress rides the card.
 Iterate ONLY on `preset: draft_short`; render `final_long` once the caption
 is locked. Variations = same caption, new seeds.

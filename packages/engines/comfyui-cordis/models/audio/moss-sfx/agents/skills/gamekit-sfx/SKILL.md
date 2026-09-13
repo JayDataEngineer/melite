@@ -7,8 +7,7 @@ Deploy: `./setup.sh extensions` (declared packs: registry via comfy-mcp `install
 
 ## Run
 Compose with `melite_construct` `add_stage`, `card="sfx",
-model="moss-sfx"` + your params (no curl — the `:33081` door died
-with the gateway). The run starts at the user's Run press; the
+model="moss-sfx"` + your params (no curl). The run starts at the user's Run press; the
 progress rides the card. Five bricks
 run serially ON PURPOSE
 (concurrent audio model loads contend and fail).
