@@ -53075,7 +53075,7 @@ void main() {
 			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(react_jsx_runtime.Fragment, { children: [
 				"className=",
 				component_module_css_default.shellPad,
-				"/* ── Generate — the card header's Run button IS the generate action. No duplicate bar here: the prompt cards below are the authoring surface, and a standalone status row wastes vertical space the timeline + 3D stage need. The empty-prompt guard lives in the header's Run button (the backend's \"prompt is required\" check is the backstop). */ /* ── Rail tools — the RAIL SEAM (§7.10). The toolbar no longer spends a viewport-height row: the buttons stack in the rail beside the stage, grouped VIEW / POSE / OUTPUT. The seam content portals into the shell's [data-studio-tools] slot (StudioShell wraps it in StudioRail); standalone (inline form view) it renders in place — same component, same state, same onSave channel (E1 untouched). */ params=",
+				"params=",
 				/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
 					className: component_module_css_default.railGrid,
 					children: [
@@ -53259,7 +53259,7 @@ void main() {
 						})
 					]
 				}),
-				"/* ── Stage row: the stage + (while exporting) the dialog PANEL ────── IN-FLOW SIBLINGS (2026-08-15 round 2, \"it literally goes OVER the mesh we need to see\"): the export dialog is NOT a fixed overlay docked over the window — it is a flex sibling that PUSHES the viewport narrower. The canvas resizes (PoseViewer3D's observer), the character stays fully visible beside the panel, and the left rail is untouched. */ preview=",
+				"preview=",
 				/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
 					className: component_module_css_default.centerRow,
 					children: [/* @__PURE__ */ (0, react_jsx_runtime.jsxs)(ViewportFrame, {
@@ -53478,7 +53478,7 @@ void main() {
 						onFramePreset: handleFramePreset
 					})]
 				}),
-				"/* ── The bar — MotionTimelineBar (pose-studio display model) ──────── 2026-08-14 rethink, round 2: the vendored viser canvas Timeline is OUT (its zoom + scrollbar hid frames, and canvas hit-targets made the prompt cards hard to grab). IN: the legacy pose studio's DOM-clip model — prompt cards you drag (body = move, edges = resize), edit inline (double-click), delete (hover ✕); keyframe lanes with draggable diamonds. Same state + persistence underneath (tlPrompts / tlKeyframes / constraints.ts serialize). The transport (play/time/ play controls) folded into this bar's header — one chrome line, and the card stays short enough to clear the viewport (both canvases swallow the wheel, so the overlay's page scroll can't be relied on). */ bottom=",
+				"bottom=",
 				/* @__PURE__ */ (0, react_jsx_runtime.jsxs)(react_jsx_runtime.Fragment, { children: [
 					/* @__PURE__ */ (0, react_jsx_runtime.jsxs)(PaneShell, {
 						className: component_module_css_default.timelineShell,
