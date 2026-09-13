@@ -69,6 +69,12 @@ export interface ZoomDetailProps {
   runId?: string | null
   /** the cards.stage.view consult (unclaimed → the generic card). */
   renderStageView: (owner: StageViewOwnerProps, fallback: ReturnType<typeof h>) => ReturnType<typeof h>
+  /** the cards.stage.preview consult (hour-9 seam; the primary-output
+   *  dispatch's seat). The zoom's detail renders the preview column —
+   *  the seam was declared but never threaded through the overlay
+   *  (the zoom drill showed only the hint text); forwarded since
+   *  2026-09-13 with the primary-output law. */
+  renderPreview?: (owner: { kind: 'video' | 'image' | 'audio' | 'mesh', artifacts: Array<{ name: string, url: string }>, runStatus: string, stageId: string }, fallback: ReturnType<typeof h>) => ReturnType<typeof h>
 }
 
 /** The settle skeleton — an all-skeleton layout with no real content
@@ -139,7 +145,7 @@ function ZoomMount(props: ZoomDetailProps & { detail: (p: ZoomDetailProps) => Re
           // unaffected: their zoomDetail scrolls inside.
           h('div', { className: css.zoomBody },
             ready
-              ? h(props.detail, { stage, bench: rest.bench, running: rest.running, onRun: rest.onRun, onClose, onRemoved: rest.onRemoved, onPatchParams: rest.onPatchParams, renderStageView: rest.renderStageView, onSurface, runId: rest.runId })
+              ? h(props.detail, { stage, bench: rest.bench, running: rest.running, onRun: rest.onRun, onClose, onRemoved: rest.onRemoved, onPatchParams: rest.onPatchParams, renderStageView: rest.renderStageView, renderPreview: rest.renderPreview, onSurface, runId: rest.runId })
               : h(ZoomSkeleton),
           ),
         ),

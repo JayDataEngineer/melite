@@ -27,6 +27,12 @@
   border: 1px solid var(--dsw-alias-border-l2);
   border-radius: 6px;
 }
+.heroAudio {
+  flex: 1 1 0%;
+  width: 100%;
+  min-height: 48px;
+  align-self: center;
+}
 .empty {
   display: flex;
   flex: 1 1 0%;

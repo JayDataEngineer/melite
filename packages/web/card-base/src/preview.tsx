@@ -12,6 +12,7 @@
  * its hero, exactly as an image-gen card rides the IMAGE one.
  */
 import { createElement as h } from 'react'
+import { GlbStagePreview } from './glb-stage.tsx'
 import type { PreviewOwnerProps } from '@melite/contracts'
 import { cn } from './chrome.ts'
 import s from './preview.module.css'
@@ -55,6 +56,42 @@ export function ImageStagePreview(props: PreviewOwnerProps): ReturnType<typeof h
             key: a.url, className: s.thumb, src: a.url, alt: a.name, loading: 'lazy',
           })))
       : null,
+  )
+}
+
+/** THE AUDIO PREVIEW — one hero track, one native player (the same
+ *  law as the video preview: native <audio controls>; no library).
+ *  Named clips follow in the strip row. */
+export function AudioStagePreview(props: PreviewOwnerProps): ReturnType<typeof h> {
+  const hero = props.artifacts[0]
+  return h('div', { className: s.stagePreview, 'data-testid': 'stage-preview-audio' },
+    hero === undefined
+      ? h('div', { className: s.empty },
+          props.runStatus === 'running' ? 'rendering… the track lands here' : 'No render yet — run lands the track here')
+      : h('audio', {
+          className: s.heroAudio, controls: true, key: hero.url,
+          src: hero.url, 'data-testid': 'stage-preview-audio-hero',
+        }),
+    props.artifacts.length > 1
+      ? h('div', { className: s.strip },
+          props.artifacts.slice(1, 12).map((a) => h('a', {
+            key: a.url + a.name, className: s.stripLink, href: a.url, target: '_blank', rel: 'noreferrer',
+            title: a.name,
+          }, a.name)))
+      : null,
+  )
+}
+
+/** THE MESH PREVIEW — the seam's adapter onto the raw-three
+ *  multi-asset stage (GlbStagePreview, the substrate law: NO
+ *  @react-three in any client bundle). Artifacts become stage
+ *  assets; the empty hint honors the live-run flag. */
+export function MeshStagePreview(props: PreviewOwnerProps): ReturnType<typeof h> {
+  return h('div', { className: s.stagePreview, 'data-testid': 'stage-preview-mesh' },
+    h(GlbStagePreview, {
+      assets: props.artifacts.map((a, i) => ({ id: `${props.stageId}:${a.name || i}`, url: a.url, name: a.name })),
+      emptyHint: props.runStatus === 'running' ? 'rendering… the mesh lands here' : 'No render yet — run lands the mesh here',
+    }),
   )
 }
 

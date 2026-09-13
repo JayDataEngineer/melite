@@ -60,7 +60,7 @@ import type { CardsBenchValue, CardsDraftValue, CardsRunValue, BenchStageRow } f
 import { CARDS_BENCH_ADDRESS, cardsRunAddress, fetchBench, fetchLatestRunForDraft, observeRunOutcome, openCardsResource, parseCardsAddress, restoreRunToBench, uploadInputFile } from './cards-resource.ts'
 import { defaultFamilyForCard, startCardRun, stopRun } from '@melite-plugin/melite-run-wire'
 import { addStageWire, groupStagesWire, removeStageWire, reorderStageWire, ungroupStageWire } from './add-stage.ts'
-import { ImageStagePreview, VideoStagePreview } from '@melite/card-base/preview'
+import { AudioStagePreview, ImageStagePreview, MeshStagePreview, VideoStagePreview } from '@melite/card-base/preview'
 import { CardZoomOverlay } from './zoom.tsx'
 import { mediaUrl } from './draft.ts'
 
@@ -181,6 +181,26 @@ export function previewKindFor(url: string): 'video' | 'image' | null {
   if (/\.(mp4|webm|mov|m4v)(\?|$)/.test(u)) return 'video'
   if (/\.(png|jpe?g|webp|gif|avif)(\?|$)/.test(u)) return 'image'
   return null
+}
+
+/** THE PRIMARY-OUTPUT RESOLUTION (2026-09-13): the card's DECLARED
+ *  primary output — the served form-spec's `outputs.default` — is
+ *  the preview's kind, never a url sniff. The sniff stays ONLY as
+ *  the fallback: when no spec is in hand (a flow row without card
+ *  identity), or when the declaration names a non-previewable kind
+ *  (text/seg) whose artifacts may still carry a renderable url —
+ *  mask-studio declares 'seg' and its artifact IS a png; the sniff
+ *  keeps its gallery alive. Declared-previewable ALWAYS wins: an
+ *  audio card previews audio even before artifacts land (the empty
+ *  state names the kind), a mesh card rides the raw-three stage. */
+const PREVIEWABLE_KINDS: ReadonlySet<string> = new Set(['video', 'image', 'audio', 'mesh'])
+
+export function primaryKindFor(spec: FormSpecDoc | null | undefined, url: string): 'video' | 'image' | 'audio' | 'mesh' | null {
+  const declared = spec?.outputs?.['default']
+  if (typeof declared === 'string' && PREVIEWABLE_KINDS.has(declared)) {
+    return declared as 'video' | 'image' | 'audio' | 'mesh'
+  }
+  return previewKindFor(url)
 }
 
 /** The stage row's preview artifacts, harvested from the estate's
@@ -550,7 +570,7 @@ function StageDrill({ stage, bench, running, onRun, onClose, onRemoved, onPatchP
   /** the preview seam consult (hour-9): the shared video/image preview
    *  rides the drill's RIGHT column — supplied by the host (it owns
    *  the slot site); the shared card-base previews are the defaults. */
-  renderPreview?: (owner: { kind: 'video' | 'image', artifacts: Array<{ name: string, url: string }>, runStatus: string, stageId: string }, fallback: ReturnType<typeof h>) => ReturnType<typeof h>
+  renderPreview?: (owner: { kind: 'video' | 'image' | 'audio' | 'mesh', artifacts: Array<{ name: string, url: string }>, runStatus: string, stageId: string }, fallback: ReturnType<typeof h>) => ReturnType<typeof h>
   onSurface?: (size: string) => void
   runId?: string | null
   /** Whether stage removal is offered. The bench view owns its rows
@@ -717,7 +737,10 @@ function StageDrill({ stage, bench, running, onRun, onClose, onRemoved, onPatchP
     if (renderPreview === undefined) return null
     const artifacts = previewArtifactsFor(stage as unknown as Record<string, unknown>)
     const heroUrl = artifacts[0]?.url ?? ''
-    const kind = previewKindFor(heroUrl)
+    // the card's DECLARED primary output drives the kind (the spec is
+    // already in hand for the form); the url sniff only stands in when
+    // the declaration is absent or non-previewable
+    const kind = primaryKindFor(spec, heroUrl)
     if (kind === null) return null
     const owner = {
       kind, artifacts,
@@ -726,7 +749,11 @@ function StageDrill({ stage, bench, running, onRun, onClose, onRemoved, onPatchP
     }
     const fallback = kind === 'video'
       ? h(VideoStagePreview, owner)
-      : h(ImageStagePreview, owner)
+      : kind === 'audio'
+        ? h(AudioStagePreview, owner)
+        : kind === 'mesh'
+          ? h(MeshStagePreview, owner)
+          : h(ImageStagePreview, owner)
     return renderPreview(owner, fallback)
   }
   const genericDetail = (): ReturnType<typeof h> => h('div', { className: css.zoomDetail },
@@ -997,7 +1024,7 @@ function BenchView({ bench, onRun, onRunStage, running, onPatchParams, renderSta
   running: boolean
   onPatchParams: (stage: BenchStageRow, patch: Record<string, unknown>) => void
   renderStageView: (owner: StageViewOwnerProps, fallback: ReturnType<typeof h>) => ReturnType<typeof h>
-  renderPreview?: (owner: { kind: 'video' | 'image', artifacts: Array<{ name: string, url: string }>, runStatus: string, stageId: string }, fallback: ReturnType<typeof h>) => ReturnType<typeof h>
+  renderPreview?: (owner: { kind: 'video' | 'image' | 'audio' | 'mesh', artifacts: Array<{ name: string, url: string }>, runStatus: string, stageId: string }, fallback: ReturnType<typeof h>) => ReturnType<typeof h>
   runId?: string | null
   /** The outcome observer's touch — the rail re-reads so tile
    *  runStatus/result stay live without ever leaving the bench. */
@@ -1305,6 +1332,7 @@ function BenchView({ bench, onRun, onRunStage, running, onPatchParams, renderSta
       onRemoved: () => { setOpen(null); reload() },
       onPatchParams: (patch: Record<string, unknown>) => { onPatchParams(open, patch) },
       renderStageView,
+      renderPreview,
       runId,
       detail: StageDrill,
     }) : null,
@@ -1338,7 +1366,7 @@ function DraftView({ value, running, onRun, onBack, onPatchParams, renderStageVi
   onBack: () => void
   onPatchParams: (patch: Record<string, unknown>) => void
   renderStageView: (owner: StageViewOwnerProps, fallback: ReturnType<typeof h>) => ReturnType<typeof h>
-  renderPreview?: (owner: { kind: 'video' | 'image', artifacts: Array<{ name: string, url: string }>, runStatus: string, stageId: string }, fallback: ReturnType<typeof h>) => ReturnType<typeof h>
+  renderPreview?: (owner: { kind: 'video' | 'image' | 'audio' | 'mesh', artifacts: Array<{ name: string, url: string }>, runStatus: string, stageId: string }, fallback: ReturnType<typeof h>) => ReturnType<typeof h>
   runId: string | null
 }): ReturnType<typeof h> {
   const found = value.stages.find((s) => s.id === value.stageId) ?? null
@@ -1493,7 +1521,7 @@ export function CardsTab(props: CardsTabProps): ReturnType<typeof h> {
   // card-base previews ride as the fallback — image gen rides the
   // defaults TODAY, a card claims its kind only to specialize. This is
   // the ONE consult site; the drill's RIGHT column renders it.
-  const renderPreview = (owner: { kind: 'video' | 'image', artifacts: Array<{ name: string, url: string }>, runStatus: string, stageId: string }, fallback: ReturnType<typeof h>): ReturnType<typeof h> => {
+  const renderPreview = (owner: { kind: 'video' | 'image' | 'audio' | 'mesh', artifacts: Array<{ name: string, url: string }>, runStatus: string, stageId: string }, fallback: ReturnType<typeof h>): ReturnType<typeof h> => {
     if (props.renderSlot === undefined) return fallback
     return (props.renderSlot('cards.stage.preview', owner, { entryKey: owner.kind, fallback }) ?? fallback) as ReturnType<typeof h>
   }

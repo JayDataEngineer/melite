@@ -1,0 +1,300 @@
+.VMoOIq_specForm :where(input, textarea, select, button) {
+  box-sizing: border-box;
+}
+
+.VMoOIq_specForm {
+  flex-direction: column;
+  gap: 12px;
+  display: flex;
+}
+
+.VMoOIq_specGroup {
+  flex-direction: column;
+  gap: 8px;
+  display: flex;
+}
+
+.VMoOIq_modelAxes {
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 10px;
+  display: grid;
+}
+
+.VMoOIq_specGroupTitle {
+  color: var(--dsw-alias-label-secondary, #61666b);
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  margin: 0 0 2px;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.VMoOIq_specField {
+  flex-direction: column;
+  gap: 6px;
+  display: flex;
+}
+
+.VMoOIq_specFieldKey {
+  color: var(--dsw-alias-label-secondary, #61666b);
+  font-size: 12px;
+}
+
+.VMoOIq_specRequired {
+  color: var(--dsw-alias-state-critical, #e5484d);
+}
+
+.VMoOIq_specHint {
+  color: var(--dsw-alias-label-secondary, #61666b);
+  font-size: 11px;
+}
+
+.VMoOIq_specSelect {
+  background: var(--dsw-alias-interactive-bg-hover, #2631480f);
+  border: .5px solid var(--dsw-alias-border-l2, #0000001a);
+  color: inherit;
+  font: inherit;
+  border-radius: 6px;
+  width: 100%;
+  padding: 5px 8px;
+  font-size: 13px;
+}
+
+.VMoOIq_specSliderRow {
+  align-items: center;
+  gap: 8px;
+  display: flex;
+}
+
+.VMoOIq_specSlider {
+  flex: 1;
+}
+
+.VMoOIq_specSliderValue {
+  color: var(--dsw-alias-label-secondary, #61666b);
+  font-family: var(--dsw-alias-font-mono, ui-monospace, monospace);
+  text-align: right;
+  min-width: 4ch;
+  font-size: 12px;
+}
+
+.VMoOIq_specTextarea {
+  background: var(--dsw-alias-interactive-bg-hover, #2631480f);
+  border: .5px solid var(--dsw-alias-border-l2, #0000001a);
+  color: inherit;
+  font: inherit;
+  resize: vertical;
+  border-radius: 6px;
+  width: 100%;
+  padding: 6px 8px;
+  font-size: 13px;
+}
+
+.VMoOIq_squareWrap {
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  width: 84px;
+  display: flex;
+}
+
+.VMoOIq_squareOff {
+  opacity: .5;
+  pointer-events: none;
+}
+
+.VMoOIq_squareBox {
+  border: .5px solid var(--dsw-alias-border-l2, #00000024);
+  cursor: pointer;
+  height: 80px;
+  transition: border-color var(--ds-transition-duration, .12s) var(--ds-ease-in-out, ease);
+  border-radius: 8px;
+  justify-content: center;
+  align-items: center;
+  width: 80px;
+  display: flex;
+  position: relative;
+  overflow: hidden;
+}
+
+.VMoOIq_squareOver {
+  border-color: var(--dsw-alias-border-l3, #00000047);
+  box-shadow: 0 0 0 2px var(--dsw-alias-border-l1, #00000014);
+}
+
+.VMoOIq_squareThumb {
+  object-fit: cover;
+  width: 100%;
+  height: 100%;
+}
+
+.VMoOIq_squareGlyph {
+  color: var(--dsw-alias-label-tertiary, #00000073);
+}
+
+.VMoOIq_squareX {
+  background: var(--dsw-alias-bg-module, #fff);
+  border: .5px solid var(--dsw-alias-border-l2, #00000024);
+  cursor: pointer;
+  border-radius: 999px;
+  align-items: center;
+  padding: 0 4px;
+  font-size: 10px;
+  line-height: 17px;
+  display: flex;
+  position: absolute;
+  top: 4px;
+  right: 4px;
+}
+
+.VMoOIq_squareLabel {
+  color: var(--dsw-alias-label-primary, #0f1115);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  width: 100%;
+  font-size: 11px;
+  line-height: 17px;
+  overflow: hidden;
+}
+
+.VMoOIq_squareMetric {
+  color: var(--dsw-alias-label-tertiary, #00000073);
+  font-size: 10px;
+  line-height: 17px;
+}
+
+.VMoOIq_squareFileInput {
+  display: none;
+}
+
+.VMoOIq_modSection {
+  border-top: 1px dashed var(--border, #80808040);
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 10px;
+  padding-top: 8px;
+  display: flex;
+}
+
+.VMoOIq_modHead {
+  align-items: baseline;
+  gap: 8px;
+  display: flex;
+}
+
+.VMoOIq_modTitle {
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  opacity: .7;
+  font-size: 10px;
+  font-weight: 600;
+}
+
+.VMoOIq_modHint {
+  opacity: .45;
+  font-size: 9px;
+}
+
+.VMoOIq_modRow {
+  flex-wrap: wrap;
+  align-items: stretch;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+}
+
+.VMoOIq_modTile {
+  border: 1px solid var(--border, #8080804d);
+  background: var(--bg-elevated, #80808014);
+  cursor: grab;
+  touch-action: none;
+  border-radius: 8px;
+  flex-direction: column;
+  justify-content: center;
+  gap: 2px;
+  min-width: 84px;
+  max-width: 132px;
+  padding: 6px 8px;
+  display: flex;
+}
+
+.VMoOIq_modTile:active {
+  cursor: grabbing;
+}
+
+.VMoOIq_modTileLabel {
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 11px;
+  line-height: 1.2;
+  overflow: hidden;
+}
+
+.VMoOIq_modTileStrength {
+  opacity: .55;
+  font-size: 9px;
+}
+
+.VMoOIq_modAdd {
+  border: 1px dashed var(--border, #80808059);
+  min-width: 64px;
+  color: inherit;
+  cursor: pointer;
+  opacity: .6;
+  background: none;
+  border-radius: 8px;
+  justify-content: center;
+  align-items: center;
+  padding: 6px 10px;
+  font-size: 11px;
+  display: flex;
+}
+
+.VMoOIq_modAdd:hover {
+  opacity: 1;
+}
+
+.VMoOIq_tileDragging {
+  opacity: .5;
+}
+
+.VMoOIq_modLeaf {
+  flex-direction: column;
+  gap: 10px;
+  min-width: 260px;
+  display: flex;
+}
+
+.VMoOIq_modLeafFields {
+  gap: 8px;
+  display: grid;
+}
+
+.VMoOIq_modLeafActions {
+  gap: 8px;
+  display: flex;
+}
+
+.VMoOIq_modField {
+  flex-direction: column;
+  gap: 4px;
+  font-size: 11px;
+  display: flex;
+}
+
+.VMoOIq_modSelect {
+  border: 1px solid var(--border, #8080804d);
+  background: var(--bg-elevated, #8080800f);
+  color: inherit;
+  border-radius: 6px;
+  padding: 6px 8px;
+  font-size: 12px;
+}
+
+.VMoOIq_modLeafError {
+  color: #e06c5f;
+  margin: 0;
+  font-size: 11px;
+}
