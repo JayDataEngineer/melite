@@ -47,7 +47,7 @@ window.__ModuleLoader__.load({
 		react = __toESM(react, 1);
 		let react_jsx_runtime = require("react/jsx-runtime");
 		let _deepseek_ai_dsh_client_ui_primitives = require("@deepseek-ai/dsh-client-ui-primitives");
-		let react_dom = require("react-dom");
+		require("react-dom");
 		//#region ../../web/card-base/src/icons.tsx
 		function Svg$1({ className, style, children, ...rest }) {
 			return /* @__PURE__ */ (0, react_jsx_runtime.jsx)("svg", {
@@ -34480,8 +34480,8 @@ void main() {
 		}
 		//#endregion
 		//#region \0dsh-css:/home/user/Documents/programs/active/inference.cpp/packages/engines/comfyui/action_cards/motion/ui/viewer3d/PoseViewer3D.module.css.mjs
-		const css$6 = ".Xnnowa_loadingBox{background:#0e0e1a;flex-direction:column;justify-content:center;align-items:center;gap:12px;display:flex}.Xnnowa_loadingIcon{color:#ffffff4d;width:32px;height:32px}.Xnnowa_loadingLabel{color:#fff6;font-size:12px}.Xnnowa_errorBox{color:#fff9;background:#0e0e1a;justify-content:center;align-items:center;font-size:12px;display:flex}";
-		const tagId$6 = "@melite/motion-motion/PoseViewer3D.module.css@82517a17";
+		const css$6 = ".Xnnowa_loadingBox{background:var(--dsw-alias-bg-base);flex-direction:column;justify-content:center;align-items:center;gap:12px;display:flex}.Xnnowa_loadingIcon{width:32px;height:32px;color:color-mix(in srgb, var(--dsw-alias-bg-module) 30%, transparent)}.Xnnowa_loadingLabel{color:color-mix(in srgb, var(--dsw-alias-bg-module) 40%, transparent);font-size:12px}.Xnnowa_errorBox{background:var(--dsw-alias-bg-base);color:color-mix(in srgb, var(--dsw-alias-bg-module) 60%, transparent);justify-content:center;align-items:center;font-size:12px;display:flex}";
+		const tagId$6 = "@melite/motion-motion/PoseViewer3D.module.css@3cd59d93";
 		if (typeof document !== "undefined" && document.querySelector("style[data-plugin-css=" + JSON.stringify(tagId$6) + "]") === null) {
 			const tag = document.createElement("style");
 			tag.dataset.plugin = "@melite/motion-motion";
@@ -45780,9 +45780,24 @@ void main() {
 			init_specContract();
 		}));
 		//#endregion
+		//#region ../../../node_modules/.pnpm/clsx@2.1.1/node_modules/clsx/dist/clsx.mjs
+		function r(e) {
+			var t, f, n = "";
+			if ("string" == typeof e || "number" == typeof e) n += e;
+			else if ("object" == typeof e) if (Array.isArray(e)) {
+				var o = e.length;
+				for (t = 0; t < o; t++) e[t] && (f = r(e[t])) && (n && (n += " "), n += f);
+			} else for (f in e) e[f] && (n && (n += " "), n += f);
+			return n;
+		}
+		function clsx() {
+			for (var e, t, f = 0, n = "", o = arguments.length; f < o; f++) (e = arguments[f]) && (t = r(e)) && (n && (n += " "), n += t);
+			return n;
+		}
+		//#endregion
 		//#region \0dsh-css:card-base/src/card.module.css.mjs
-		const css$5 = ".FRpSCG_specForm :where(input,textarea,select,button){box-sizing:border-box}.FRpSCG_specForm{flex-direction:column;gap:12px;display:flex}.FRpSCG_specGroup{flex-direction:column;gap:8px;display:flex}.FRpSCG_modelAxes{grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;display:grid}.FRpSCG_modelAxes .FRpSCG_specGroupTitle{grid-column:1/-1;margin-bottom:0}.FRpSCG_specGroupTitle{color:var(--dsw-alias-label-secondary,#61666b);letter-spacing:.04em;text-transform:uppercase;margin:0 0 2px;font-size:11px;font-weight:600}.FRpSCG_specField{flex-direction:column;gap:6px;display:flex}.FRpSCG_specFieldKey{color:var(--dsw-alias-label-secondary,#61666b);font-size:12px}.FRpSCG_specRequired{color:var(--dsw-alias-state-critical,#e5484d)}.FRpSCG_specHint{color:var(--dsw-alias-label-secondary,#61666b);font-size:11px}.FRpSCG_specSelect option{color:#0f1115;background:#fff}.FRpSCG_specSelect{color-scheme:light;background:var(--dsw-alias-interactive-bg-hover,#2631480f);border:.5px solid var(--dsw-alias-border-l2,#0000001a);color:inherit;font:inherit;border-radius:6px;width:100%;padding:5px 8px;font-size:13px}.FRpSCG_specSliderRow{align-items:center;gap:8px;display:flex}.FRpSCG_specSlider{flex:1}.FRpSCG_specSliderValue{color:var(--dsw-alias-label-secondary,#61666b);font-family:var(--dsw-alias-font-mono,ui-monospace, monospace);text-align:right;min-width:4ch;font-size:12px}.FRpSCG_specTextarea{background:var(--dsw-alias-interactive-bg-hover,#2631480f);border:.5px solid var(--dsw-alias-border-l2,#0000001a);color:inherit;font:inherit;resize:vertical;border-radius:6px;width:100%;padding:6px 8px;font-size:13px}.FRpSCG_squareWrap{flex-direction:column;align-items:center;gap:4px;width:84px;display:flex}.FRpSCG_squareOff{opacity:.5;pointer-events:none}.FRpSCG_squareBox{border:.5px solid var(--dsw-alias-border-l2,#00000024);cursor:pointer;height:80px;transition:border-color var(--ds-transition-duration,.12s) var(--ds-ease-in-out,ease);border-radius:8px;justify-content:center;align-items:center;width:80px;display:flex;position:relative;overflow:hidden}.FRpSCG_squareOver{border-color:var(--dsw-alias-border-l3,#00000047);box-shadow:0 0 0 2px var(--dsw-alias-border-l1,#00000014)}.FRpSCG_squareThumb{object-fit:cover;width:100%;height:100%}.FRpSCG_squareGlyph{color:var(--dsw-alias-label-tertiary,#00000073)}.FRpSCG_squareX{background:var(--dsw-alias-bg-module,#fff);border:.5px solid var(--dsw-alias-border-l2,#00000024);cursor:pointer;border-radius:999px;align-items:center;padding:0 4px;font-size:10px;line-height:17px;display:flex;position:absolute;top:4px;right:4px}.FRpSCG_squareLabel{color:var(--dsw-alias-label-primary,#0f1115);text-overflow:ellipsis;white-space:nowrap;width:100%;font-size:11px;line-height:17px;overflow:hidden}.FRpSCG_squareMetric{color:var(--dsw-alias-label-tertiary,#00000073);font-size:10px;line-height:17px}.FRpSCG_squareFileInput{display:none}.FRpSCG_modSection{border-top:1px dashed var(--border,#80808040);flex-direction:column;gap:6px;margin-top:10px;padding-top:8px;display:flex}.FRpSCG_modHead{align-items:baseline;gap:8px;display:flex}.FRpSCG_modTitle{letter-spacing:.06em;text-transform:uppercase;opacity:.7;font-size:10px;font-weight:600}.FRpSCG_modHint{opacity:.45;font-size:9px}.FRpSCG_modRow{flex-wrap:wrap;align-items:stretch;gap:6px;margin:0;padding:0;list-style:none;display:flex}.FRpSCG_modTile{border:1px solid var(--border,#8080804d);background:var(--bg-elevated,#80808014);cursor:grab;touch-action:none;border-radius:8px;flex-direction:column;justify-content:center;gap:2px;min-width:84px;max-width:132px;padding:6px 8px;display:flex}.FRpSCG_modTile:active{cursor:grabbing}.FRpSCG_modTileLabel{text-overflow:ellipsis;white-space:nowrap;font-size:11px;line-height:1.2;overflow:hidden}.FRpSCG_modTileStrength{opacity:.55;font-size:9px}.FRpSCG_modAddSquare{border:1px dashed var(--dsw-alias-border-l3,#00000047);cursor:pointer;opacity:.7;height:64px;transition:border-color var(--ds-transition-duration,.12s) var(--ds-ease-in-out,ease), background-color var(--ds-transition-duration,.12s) var(--ds-ease-in-out,ease);background:0 0;border-radius:8px;justify-content:center;align-items:center;width:64px;display:flex}.FRpSCG_modAddSquare:hover{background:var(--dsw-alias-interactive-bg-hover,#0000000d);border-color:var(--dsw-alias-border-l4,#0006);opacity:1}.FRpSCG_tileDragging{opacity:.5}.FRpSCG_modLeaf{flex-direction:column;gap:10px;min-width:260px;display:flex}.FRpSCG_modLeafFields{gap:8px;display:grid}.FRpSCG_modLeafActions{gap:8px;display:flex}.FRpSCG_modField{flex-direction:column;gap:4px;font-size:11px;display:flex}.FRpSCG_modSelect{border:1px solid var(--border,#8080804d);background:var(--bg-elevated,#8080800f);color:inherit;border-radius:6px;padding:6px 8px;font-size:12px}.FRpSCG_modLeafError{color:#e06c5f;margin:0;font-size:11px}.FRpSCG_pickList{flex-direction:column;gap:4px;max-height:60vh;margin:0;padding:0;list-style:none;display:flex;overflow-y:auto}.FRpSCG_pickRow{display:block}.FRpSCG_pickBtn{border:1px solid var(--dsw-alias-border-l2);color:var(--dsw-alias-label-primary);cursor:pointer;text-align:left;transition:border-color var(--ds-transition-duration,.12s) var(--ds-ease-in-out,ease), background-color var(--ds-transition-duration,.12s) var(--ds-ease-in-out,ease);background:0 0;border-radius:6px;align-items:center;gap:10px;width:100%;padding:6px;display:flex}.FRpSCG_pickBtn:hover{background:var(--dsw-alias-interactive-bg-hover);border-color:var(--dsw-alias-border-l4)}.FRpSCG_pickThumb{object-fit:cover;border-radius:4px;flex:none;width:40px;height:40px}.FRpSCG_pickGlyph{background:var(--dsw-alias-interactive-bg-hover);color:var(--dsw-alias-label-secondary);border-radius:4px;flex:none;justify-content:center;align-items:center;width:40px;height:40px;font-size:15px;font-weight:600;display:inline-flex}.FRpSCG_pickLabel{text-overflow:ellipsis;white-space:nowrap;font-size:13px;overflow:hidden}.FRpSCG_pickEmpty{color:var(--dsw-alias-label-tertiary);margin:0;font-size:13px}.FRpSCG_sourceRow{flex-direction:column;display:flex}.FRpSCG_specSlotRow{flex-wrap:wrap;align-items:flex-start;gap:8px;display:flex}.FRpSCG_specSlotCell{flex-direction:column;gap:4px;display:flex}.FRpSCG_inputRail{gap:10px}";
-		const tagId$5 = "@melite/motion-motion/card.module.css@c9c5974a";
+		const css$5 = ".FRpSCG_specForm :where(input,textarea,select,button){box-sizing:border-box}.FRpSCG_specForm{flex-direction:column;gap:12px;display:flex}.FRpSCG_specGroup{flex-direction:column;gap:8px;display:flex}.FRpSCG_modelAxes{grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;display:grid}.FRpSCG_modelAxes .FRpSCG_specGroupTitle{grid-column:1/-1;margin-bottom:0}.FRpSCG_specGroupTitle{color:var(--dsw-alias-label-secondary,#61666b);letter-spacing:.04em;text-transform:uppercase;margin:0 0 2px;font-size:11px;font-weight:600}.FRpSCG_specField{flex-direction:column;gap:6px;display:flex}.FRpSCG_specFieldKey{color:var(--dsw-alias-label-secondary,#61666b);font-size:12px}.FRpSCG_specRequired{color:var(--dsw-alias-state-critical,#e5484d)}.FRpSCG_specHint{color:var(--dsw-alias-label-secondary,#61666b);font-size:11px}.FRpSCG_specSelect option{color:#0f1115;background:#fff}.FRpSCG_specSelect{color-scheme:light;background:var(--dsw-alias-interactive-bg-hover,#2631480f);border:.5px solid var(--dsw-alias-border-l2,#0000001a);color:inherit;font:inherit;border-radius:6px;width:100%;padding:5px 8px;font-size:13px}.FRpSCG_specSliderRow{align-items:center;gap:8px;display:flex}.FRpSCG_specSlider{flex:1}.FRpSCG_specSliderValue{color:var(--dsw-alias-label-secondary,#61666b);font-family:var(--dsw-alias-font-mono,ui-monospace, monospace);text-align:right;min-width:4ch;font-size:12px}.FRpSCG_specTextarea{background:var(--dsw-alias-interactive-bg-hover,#2631480f);border:.5px solid var(--dsw-alias-border-l2,#0000001a);color:inherit;font:inherit;resize:vertical;border-radius:6px;width:100%;padding:6px 8px;font-size:13px}.FRpSCG_squareWrap{flex-direction:column;align-items:center;gap:4px;width:84px;display:flex}.FRpSCG_squareOff{opacity:.5;pointer-events:none}.FRpSCG_squareBox{border:.5px solid var(--dsw-alias-border-l2,#00000024);cursor:pointer;height:80px;transition:border-color var(--ds-transition-duration,.12s) var(--ds-ease-in-out,ease);border-radius:8px;justify-content:center;align-items:center;width:80px;display:flex;position:relative;overflow:hidden}.FRpSCG_squareOver{border-color:var(--dsw-alias-border-l3,#00000047);box-shadow:0 0 0 2px var(--dsw-alias-border-l1,#00000014)}.FRpSCG_squareThumb{object-fit:cover;width:100%;height:100%}.FRpSCG_squareGlyph{color:var(--dsw-alias-label-tertiary,#00000073)}.FRpSCG_squareX{background:var(--dsw-alias-bg-module,#fff);border:.5px solid var(--dsw-alias-border-l2,#00000024);cursor:pointer;border-radius:999px;align-items:center;padding:0 4px;font-size:10px;line-height:17px;display:flex;position:absolute;top:4px;right:4px}.FRpSCG_squareLabel{color:var(--dsw-alias-label-primary,#0f1115);text-overflow:ellipsis;white-space:nowrap;width:100%;font-size:11px;line-height:17px;overflow:hidden}.FRpSCG_squareMetric{color:var(--dsw-alias-label-tertiary,#00000073);font-size:10px;line-height:17px}.FRpSCG_squareFileInput{display:none}.FRpSCG_modSection{border-top:1px dashed var(--border,#80808040);flex-direction:column;gap:6px;margin-top:10px;padding-top:8px;display:flex}.FRpSCG_modHead{align-items:baseline;gap:8px;display:flex}.FRpSCG_modTitle{letter-spacing:.06em;text-transform:uppercase;opacity:.7;font-size:10px;font-weight:600}.FRpSCG_modHint{opacity:.45;font-size:9px}.FRpSCG_modRow{flex-wrap:wrap;align-items:stretch;gap:6px;margin:0;padding:0;list-style:none;display:flex}.FRpSCG_modTile{border:1px solid var(--border,#8080804d);background:var(--bg-elevated,#80808014);cursor:grab;touch-action:none;border-radius:8px;flex-direction:column;justify-content:center;gap:2px;min-width:84px;max-width:132px;padding:6px 8px;display:flex}.FRpSCG_modTile:active{cursor:grabbing}.FRpSCG_modTileLabel{text-overflow:ellipsis;white-space:nowrap;font-size:11px;line-height:1.2;overflow:hidden}.FRpSCG_modTileStrength{opacity:.55;font-size:9px}.FRpSCG_modAddSquare{border:1px dashed var(--dsw-alias-border-l3,#00000047);cursor:pointer;opacity:.7;height:64px;transition:border-color var(--ds-transition-duration,.12s) var(--ds-ease-in-out,ease), background-color var(--ds-transition-duration,.12s) var(--ds-ease-in-out,ease);background:0 0;border-radius:8px;justify-content:center;align-items:center;width:64px;display:flex}.FRpSCG_modAddSquare:hover{background:var(--dsw-alias-interactive-bg-hover,#0000000d);border-color:var(--dsw-alias-border-l4,#0006);opacity:1}.FRpSCG_tileDragging{opacity:.5}.FRpSCG_modLeaf{flex-direction:column;gap:10px;min-width:260px;display:flex}.FRpSCG_modLeafFields{gap:8px;display:grid}.FRpSCG_modLeafActions{gap:8px;display:flex}.FRpSCG_modField{flex-direction:column;gap:4px;font-size:11px;display:flex}.FRpSCG_modSelect{border:1px solid var(--border,#8080804d);background:var(--bg-elevated,#8080800f);color:inherit;border-radius:6px;padding:6px 8px;font-size:12px}.FRpSCG_modLeafError{color:#e06c5f;margin:0;font-size:11px}.FRpSCG_pickList{flex-direction:column;gap:4px;max-height:60vh;margin:0;padding:0;list-style:none;display:flex;overflow-y:auto}.FRpSCG_pickRow{display:block}.FRpSCG_pickBtn{border:1px solid var(--dsw-alias-border-l2);color:var(--dsw-alias-label-primary);cursor:pointer;text-align:left;transition:border-color var(--ds-transition-duration,.12s) var(--ds-ease-in-out,ease), background-color var(--ds-transition-duration,.12s) var(--ds-ease-in-out,ease);background:0 0;border-radius:6px;align-items:center;gap:10px;width:100%;padding:6px;display:flex}.FRpSCG_pickBtn:hover{background:var(--dsw-alias-interactive-bg-hover);border-color:var(--dsw-alias-border-l4)}.FRpSCG_pickThumb{object-fit:cover;border-radius:4px;flex:none;width:40px;height:40px}.FRpSCG_pickGlyph{background:var(--dsw-alias-interactive-bg-hover);color:var(--dsw-alias-label-secondary);border-radius:4px;flex:none;justify-content:center;align-items:center;width:40px;height:40px;font-size:15px;font-weight:600;display:inline-flex}.FRpSCG_pickLabel{text-overflow:ellipsis;white-space:nowrap;font-size:13px;overflow:hidden}.FRpSCG_pickEmpty{color:var(--dsw-alias-label-tertiary);margin:0;font-size:13px}.FRpSCG_sourceRow{flex-direction:column;display:flex}.FRpSCG_specSlotRow{flex-wrap:wrap;align-items:flex-start;gap:8px;display:flex}.FRpSCG_specSlotCell{flex-direction:column;gap:4px;display:flex}.FRpSCG_inputRail{gap:10px}.FRpSCG_sz14{flex:none;width:14px;height:14px}.FRpSCG_wireDialog{width:min(448px,100vw - 32px);max-height:60vh;overflow-y:auto}.FRpSCG_wireUnwire{text-align:left;cursor:pointer;border:0;border-bottom:1px solid color-mix(in srgb, var(--dsw-alias-label-primary) 12%, transparent);width:100%;color:var(--dsw-alias-state-error-primary);background:0 0;align-items:center;gap:8px;padding:8px 12px;font-size:11px;display:flex}.FRpSCG_wireUnwire:hover{background:color-mix(in srgb, var(--dsw-alias-bg-module-platform) 40%, transparent)}.FRpSCG_wireList{margin:0;padding:0;list-style:none}.FRpSCG_wireList>li+li{border-top:1px solid color-mix(in srgb, var(--dsw-alias-label-primary) 12%, transparent)}.FRpSCG_wireEmpty{color:color-mix(in srgb, var(--dsw-alias-label-primary) 48%, transparent);padding:12px;font-size:11px}.FRpSCG_wireOption{text-align:left;cursor:pointer;width:100%;color:var(--dsw-alias-label-primary);background:0 0;border:0;align-items:center;gap:8px;padding:8px 12px;display:flex}.FRpSCG_wireOption:hover{background:color-mix(in srgb, var(--dsw-alias-bg-module-platform) 40%, transparent)}.FRpSCG_wireSelected{background:color-mix(in srgb, var(--dsw-alias-brand-primary) 8%, transparent)}.FRpSCG_wireIdx{font-variant-numeric:tabular-nums;background:color-mix(in srgb, var(--dsw-alias-brand-primary) 60%, transparent);width:20px;height:20px;color:color-mix(in srgb, var(--dsw-alias-label-primary) 60%, transparent);border-radius:4px;flex:none;justify-content:center;align-items:center;font-size:9px;font-weight:700;display:flex}.FRpSCG_wireThumb{object-fit:cover;border:1px solid color-mix(in srgb, var(--dsw-alias-label-primary) 20%, transparent);border-radius:4px;flex:none;width:32px;height:32px}.FRpSCG_wireThumbFallback{border:1px solid color-mix(in srgb, var(--dsw-alias-label-primary) 20%, transparent);background:color-mix(in srgb, var(--dsw-alias-bg-module-platform) 40%, transparent);width:32px;height:32px;color:color-mix(in srgb, var(--dsw-alias-label-primary) 60%, transparent);border-radius:4px;flex:none;justify-content:center;align-items:center;display:flex}.FRpSCG_wireMeta{flex:1;min-width:0}.FRpSCG_wireTitle{text-overflow:ellipsis;white-space:nowrap;color:var(--dsw-alias-label-primary);font-size:11px;font-weight:500;overflow:hidden}.FRpSCG_wireOut{font-family:var(--dsw-alias-font-mono,ui-monospace, monospace);color:color-mix(in srgb, var(--dsw-alias-brand-primary) 80%, transparent);margin-left:4px;font-size:9px}.FRpSCG_wireSub{text-overflow:ellipsis;white-space:nowrap;font-family:var(--dsw-alias-font-mono,ui-monospace, monospace);color:color-mix(in srgb, var(--dsw-alias-label-primary) 48%, transparent);font-size:9px;overflow:hidden}.FRpSCG_wiredTag{background:color-mix(in srgb, var(--dsw-alias-brand-primary) 15%, transparent);color:var(--dsw-alias-brand-primary);border-radius:4px;flex:none;padding:2px 6px;font-size:9px;font-weight:600}";
+		const tagId$5 = "@melite/motion-motion/card.module.css@51780f29";
 		if (typeof document !== "undefined" && document.querySelector("style[data-plugin-css=" + JSON.stringify(tagId$5) + "]") === null) {
 			const tag = document.createElement("style");
 			tag.dataset.plugin = "@melite/motion-motion";
@@ -49216,21 +49231,6 @@ void main() {
 			}, t.id)) });
 		}
 		//#endregion
-		//#region ../../../node_modules/.pnpm/clsx@2.1.1/node_modules/clsx/dist/clsx.mjs
-		function r(e) {
-			var t, f, n = "";
-			if ("string" == typeof e || "number" == typeof e) n += e;
-			else if ("object" == typeof e) if (Array.isArray(e)) {
-				var o = e.length;
-				for (t = 0; t < o; t++) e[t] && (f = r(e[t])) && (n && (n += " "), n += f);
-			} else for (f in e) e[f] && (n && (n += " "), n += f);
-			return n;
-		}
-		function clsx() {
-			for (var e, t, f = 0, n = "", o = arguments.length; f < o; f++) (e = arguments[f]) && (t = r(e)) && (n && (n += " "), n += t);
-			return n;
-		}
-		//#endregion
 		//#region ../../web/card-base/src/chrome.ts
 		/**
 		* Card chrome primitives — the ONE joiner + the ONE file reader
@@ -49240,11 +49240,6 @@ void main() {
 		*
 		* Per-seam subpath: `@melite/card-base/chrome`.
 		*/
-		/** Plain classnames joiner (no conflicting utilities to merge —
-		*  plain join is exact). */
-		function cx(...parts) {
-			return parts.filter(Boolean).join(" ");
-		}
 		/** The merging joiner (clsx — objects/arrays/conditionals). */
 		function cn(...inputs) {
 			return clsx(...inputs);
@@ -51926,51 +51921,11 @@ void main() {
 			});
 		}
 		(0, react.createContext)({ useGui: (selector) => selector({ theme: { dark_mode: true } }) });
-		//#endregion
-		//#region ../../web/card-base/src/studioRail.tsx
-		/**
-		* StudioRail — the shell-provided TOOLS slot in the studio's left rail
-		* (spec docs/design/card-studio-pattern.md §5 + §7.10).
-		*
-		* WHY A PORTAL: vertical space is the scarce axis (§7.9 — human figures),
-		* so a tenant's tool buttons (Skeleton / Refine pose / Export / …) must
-		* live in the RAIL, but their state lives INSIDE the tenant component
-		* (showSkeleton, editMode, bgImage…). Splitting the tenant into two
-		* registered components would force that state up through the shell —
-		* breaking E1 (the tenant receives exactly {stage, running, onSave}).
-		* Instead the tenant stays ONE component and PROJECTS its tools into the
-		* shell's slot; the shell stays genre-blind (it renders an empty div and
-		* knows nothing about motion).
-		*
-		* THE CONTRACT IS UNCHANGED: portaled tools write through the same
-		* onSave channel — nothing about the write path moves. Without the shell
-		* (a tenant mounted inline, e.g. the form view) the tools render in place
-		* — the exact layout the tenant had before the slot existed.
-		*
-		* Mount order (no flash): CardStudio renders the slot div and the tenant
-		* in the same commit; the div's ref lands before the tenant's effects
-		* run, so the portal binds on the first effect pass. The one render
-		* before that is inside the skeleton-masked mount anyway.
-		*/
-		/** The rail's tools-slot element, published by CardStudio. Null when the
-		*  tenant is mounted outside a studio shell (inline fallback). */
-		const StudioRailCtx = (0, react.createContext)(null);
-		/** TENANT side: renders children into the studio rail when one exists,
-		*  inline otherwise. Wrap the tenant's toolbar in this — nothing else. */
-		function StudioRail({ children }) {
-			const slot = (0, react.useContext)(StudioRailCtx);
-			const [el, setEl] = (0, react.useState)(null);
-			(0, react.useEffect)(() => {
-				if (slot && slot !== el) setEl(slot);
-			}, [slot]);
-			if (el) return (0, react_dom.createPortal)(children, el);
-			if (slot) return null;
-			return /* @__PURE__ */ (0, react_jsx_runtime.jsx)(react_jsx_runtime.Fragment, { children });
-		}
+		(0, react.createContext)(null);
 		//#endregion
 		//#region \0dsh-css:card-base/src/shell.module.css.mjs
-		const css$1 = "._4etGFq_shell{grid-template-rows:minmax(0,1fr) auto;grid-template-columns:minmax(280px,330px) minmax(0,1fr);height:100%;min-height:0;display:grid}._4etGFq_shell>:first-child{grid-area:1/1}._4etGFq_shell>:nth-child(2){grid-area:1/2;min-height:0;overflow-y:auto}._4etGFq_shell>:nth-child(3){grid-area:2/1/auto/-1;min-height:168px;max-height:min(42%,380px);overflow-y:auto}._4etGFq_errorLine{flex-direction:column;grid-column:1/-1;gap:4px;display:flex}._4etGFq_errorRow{border:1px solid color-mix(in srgb, var(--dsw-alias-danger,#dc2626) 40%, transparent);background:color-mix(in srgb, var(--dsw-alias-danger,#dc2626) 10%, transparent);color:var(--dsw-alias-danger,#dc2626);overflow-wrap:break-word;white-space:pre-wrap;border-radius:4px;margin:0;padding:6px 8px;font-family:ui-monospace,monospace;font-size:9px;line-height:1.4}._4etGFq_errorIcon{vertical-align:-2px;width:12px;height:12px;margin-right:4px;display:inline}._4etGFq_railSection{border:1px solid var(--dsw-alias-border,#e2e4e9);border-radius:8px;padding:8px 12px}._4etGFq_railHead{justify-content:space-between;align-items:center;gap:8px;margin-bottom:6px;display:flex}._4etGFq_railTitle{text-transform:uppercase;letter-spacing:.14em;color:var(--dsw-alias-label-tertiary,#8a93a0);margin:0;font-size:10px;font-weight:600}";
-		const tagId$1 = "@melite/motion-motion/shell.module.css@8f875633";
+		const css$1 = "._4etGFq_shell{grid-template-rows:minmax(0,1fr) auto;grid-template-columns:minmax(280px,330px) minmax(0,1fr);height:100%;min-height:0;display:grid}@media (width<=640px){._4etGFq_shell{grid-template-rows:none;grid-template-columns:1fr}._4etGFq_shell>:first-child{max-height:none;overflow-y:visible}}._4etGFq_shell>:first-child{scrollbar-gutter:stable;grid-area:1/1;min-height:0;padding-right:10px;overflow-y:auto}._4etGFq_shell>:nth-child(2){grid-area:1/2;min-height:0;overflow-y:auto}._4etGFq_shell>:nth-child(3){grid-area:2/1/auto/-1;min-height:168px;max-height:min(42%,380px);overflow-y:auto}._4etGFq_errorLine{flex-direction:column;grid-column:1/-1;gap:4px;display:flex}._4etGFq_errorRow{border:1px solid color-mix(in srgb, var(--dsw-alias-danger,#dc2626) 40%, transparent);background:color-mix(in srgb, var(--dsw-alias-danger,#dc2626) 10%, transparent);color:var(--dsw-alias-danger,#dc2626);overflow-wrap:break-word;white-space:pre-wrap;border-radius:4px;margin:0;padding:6px 8px;font-family:ui-monospace,monospace;font-size:9px;line-height:1.4}._4etGFq_errorIcon{vertical-align:-2px;width:12px;height:12px;margin-right:4px;display:inline}._4etGFq_railSection{border:1px solid var(--dsw-alias-border,#e2e4e9);border-radius:8px;padding:8px 12px}._4etGFq_railHead{justify-content:space-between;align-items:center;gap:8px;margin-bottom:6px;display:flex}._4etGFq_railTitle{text-transform:uppercase;letter-spacing:.14em;color:var(--dsw-alias-label-tertiary,#8a93a0);margin:0;font-size:10px;font-weight:600}";
+		const tagId$1 = "@melite/motion-motion/shell.module.css@62658dc6";
 		if (typeof document !== "undefined" && document.querySelector("style[data-plugin-css=" + JSON.stringify(tagId$1) + "]") === null) {
 			const tag = document.createElement("style");
 			tag.dataset.plugin = "@melite/motion-motion";
@@ -51978,50 +51933,8 @@ void main() {
 			tag.textContent = css$1;
 			document.head.appendChild(tag);
 		}
-		var shell_module_css_default = {
-			"errorIcon": "_4etGFq_errorIcon",
-			"errorLine": "_4etGFq_errorLine",
-			"errorRow": "_4etGFq_errorRow",
-			"railHead": "_4etGFq_railHead",
-			"railSection": "_4etGFq_railSection",
-			"railTitle": "_4etGFq_railTitle",
-			"shell": "_4etGFq_shell"
-		};
 		//#endregion
 		//#region ../../web/card-base/src/shell.tsx
-		/** The loud error line — shell-owned chrome. Same DOM the assembly
-		*  body always rendered. */
-		function StudioShellErrorLine({ errors }) {
-			if (errors.length === 0) return null;
-			return /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
-				role: "alert",
-				className: shell_module_css_default.errorLine,
-				children: errors.map((e) => /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("p", {
-					className: shell_module_css_default.errorRow,
-					children: [
-						/* @__PURE__ */ (0, react_jsx_runtime.jsx)(AlertTriangle, { className: shell_module_css_default.errorIcon }),
-						e.id,
-						": ",
-						e.message
-					]
-				}, e.id))
-			});
-		}
-		/** The studio body: params column LEFT (projected into the shell rail
-		*  slot when one exists), preview RIGHT, optional bottom bar, then the
-		*  error line. The uniform three-slot shape — timeline and form cards
-		*  are the same grain, forms simply leave the right/bottom slots empty. */
-		function StudioShell({ params, preview, bottom, errors = [], className }) {
-			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-				className: cx(shell_module_css_default.shell, className),
-				children: [
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)(StudioRail, { children: params }),
-					preview,
-					bottom,
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)(StudioShellErrorLine, { errors })
-				]
-			});
-		}
 		/** The construction door: one obvious way to build a declaration,
 		*  typed at the call site. Runtime-frozen. */
 		function defineShellDeclaration(declaration) {
@@ -53160,525 +53073,526 @@ void main() {
 				setTlPrompts((prev) => carveNewPromptCard(prev, targetT));
 			}, [targetT]);
 			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(react_jsx_runtime.Fragment, { children: [
-				"// STRETCH, NOT PERCENTAGE (2026-08-15, \"only takes up the top third\"): // inside the studio the viewport column is a FLEX COLUMN and this root // stretches (flex-1) — its height is the definite column height, so the // stage's flex-1 fills every pixel below the strip. Standalone mounts // (the inline form view) keep min-h-full as the fallback (the shell's // own root class, plus this tenant's gap/padding through className). // THE SHELL RIDE (2026-09-07): rail/center/bottom as declared seams — // the stub shellDeclaration comment above is now the live shape.",
-				/* @__PURE__ */ (0, react_jsx_runtime.jsx)(StudioShell, {
-					className: component_module_css_default.shellPad,
-					params: /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-						className: component_module_css_default.railGrid,
+				"className=",
+				component_module_css_default.shellPad,
+				"/* ── Generate — the card header's Run button IS the generate action. No duplicate bar here: the prompt cards below are the authoring surface, and a standalone status row wastes vertical space the timeline + 3D stage need. The empty-prompt guard lives in the header's Run button (the backend's \"prompt is required\" check is the backstop). */ /* ── Rail tools — the RAIL SEAM (§7.10). The toolbar no longer spends a viewport-height row: the buttons stack in the rail beside the stage, grouped VIEW / POSE / OUTPUT. The seam content portals into the shell's [data-studio-tools] slot (StudioShell wraps it in StudioRail); standalone (inline form view) it renders in place — same component, same state, same onSave channel (E1 untouched). */ params=",
+				/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+					className: component_module_css_default.railGrid,
+					children: [
+						/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+							className: component_module_css_default.railGroupLabel,
+							children: "View"
+						}),
+						/* @__PURE__ */ (0, react_jsx_runtime.jsx)(Tip$1, {
+							tip: effectiveNpz ? "Show the joint skeleton over the mesh" : "Loading mannequin…",
+							children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+								className: component_module_css_default.contents,
+								children: /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+									variant: "ghost",
+									onClick: () => setShowSkeleton((s) => !s),
+									disabled: !effectiveNpz,
+									className: cn(component_module_css_default.railBtn, showSkeleton ? component_module_css_default.railBtnActive : component_module_css_default.railBtnIdle),
+									children: [showSkeleton ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)(EyeAlt, { className: component_module_css_default.i14 }) : /* @__PURE__ */ (0, react_jsx_runtime.jsx)(EyeOff, { className: component_module_css_default.i14 }), "Skeleton"]
+								})
+							})
+						}),
+						/* @__PURE__ */ (0, react_jsx_runtime.jsx)(Tip$1, {
+							tip: !effectiveNpz ? "Loading mannequin…" : inPlace ? "Pinned at the origin — same motion, no travel (treadmill). Toggle to play the root's travel across the stage." : "Playing the root's travel across the stage. Toggle to pin the figure at the origin — same motion, no travel.",
+							children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+								className: component_module_css_default.contents,
+								children: /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+									variant: "ghost",
+									onClick: () => setInPlace((v) => !v),
+									disabled: !effectiveNpz,
+									"aria-pressed": inPlace,
+									className: cn(component_module_css_default.railBtn, inPlace ? component_module_css_default.railBtnActive : component_module_css_default.railBtnIdle),
+									children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(Target, { className: component_module_css_default.i14 }), "In-place"]
+								})
+							})
+						}),
+						/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+							className: component_module_css_default.railGroupLabelMt,
+							children: "Pose"
+						}),
+						/* @__PURE__ */ (0, react_jsx_runtime.jsx)(Tip$1, {
+							tip: !effectiveNpz ? "Loading mannequin…" : editMode ? "Exit edit mode — keeps the refined pose on the character at this frame" : "Drag joints to refine the pose at this frame",
+							children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+								className: component_module_css_default.contents,
+								children: /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+									variant: "ghost",
+									onClick: toggleEdit,
+									disabled: !effectiveNpz,
+									className: cn(component_module_css_default.railBtn, editMode ? component_module_css_default.railBtnEditActive : component_module_css_default.railBtnIdle),
+									children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(Move, { className: component_module_css_default.i14 }), editMode ? "Done" : "Refine pose"]
+								})
+							})
+						}),
+						editMode && /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(react_jsx_runtime.Fragment, { children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(Tip$1, {
+							tip: fullbodyKfAtFrame ? `Update the full-body keyframe at frame ${frameIdx + 1} with this pose` : `Write this pose into the timeline as a full-body keyframe at frame ${frameIdx + 1}`,
+							children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+								className: component_module_css_default.contents,
+								children: /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+									variant: "ghost",
+									onClick: stampConstraintAtFrame,
+									disabled: !editableJoints,
+									className: component_module_css_default.stampBtn,
+									children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(Target, { className: component_module_css_default.i14 }), "Stamp"]
+								})
+							})
+						}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Tip$1, {
+							tip: "Chain the edited pose as the starting point — kimodo conditions the next generation on it. Hit Run when ready.",
+							children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+								className: component_module_css_default.contents,
+								children: /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+									variant: "ghost",
+									onClick: handleRepose,
+									disabled: reposing || !editableJoints,
+									className: component_module_css_default.reposeBtn,
+									children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(RefreshCw, { className: reposing ? component_module_css_default.spinIcon : component_module_css_default.i14 }), reposing ? "Reposing…" : "Repose"]
+								})
+							})
+						})] }),
+						!editMode && keptEdit && keptEdit.frame === frameIdx && /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Tip$1, {
+							tip: "Discard the refined pose at this frame — revert to the raw motion",
+							children: /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+								variant: "ghost",
+								onClick: discardKeptEdit,
+								className: component_module_css_default.railBtnDanger,
+								children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(RotateCcw, { className: component_module_css_default.i14 }), "Reset pose"]
+							})
+						}),
+						/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+							className: component_module_css_default.railGroupLabelMt,
+							children: "Output"
+						}),
+						/* @__PURE__ */ (0, react_jsx_runtime.jsx)(Tip$1, {
+							tip: !effectiveNpz ? "Loading mannequin…" : exportOpen ? "Close the export panel" : "Frame a shot with the stage rectangle — no run needed; exports mesh / openpose / depth at the typed pixel size",
+							children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+								className: component_module_css_default.contents,
+								children: /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+									variant: "ghost",
+									onClick: () => setExportOpen((o) => !o),
+									disabled: !effectiveNpz,
+									"aria-pressed": exportOpen,
+									className: cn(component_module_css_default.railBtn, exportOpen ? component_module_css_default.railBtnActive : component_module_css_default.railBtnIdle),
+									children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(Download, { className: component_module_css_default.i14 }), "Export"]
+								})
+							})
+						}),
+						/* @__PURE__ */ (0, react_jsx_runtime.jsx)(Tip$1, {
+							tip: bgImage ? "Replace the background image behind the mannequin (or drop an asset/file on the stage)" : "Set a background image behind the mannequin — click to pick, or drop an asset/file on the stage",
+							children: /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+								variant: "ghost",
+								onClick: () => bgInputRef.current?.click(),
+								className: component_module_css_default.bgBtnIdle,
+								children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(ImagePlus, { className: component_module_css_default.i14 }), "Background"]
+							})
+						}),
+						bgImage && /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Tip$1, {
+							tip: "Clear the background image",
+							children: /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+								variant: "ghost",
+								onClick: () => setBg(null),
+								"aria-label": "Clear the background image",
+								className: component_module_css_default.railBtnDanger,
+								children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(X$1, { className: component_module_css_default.i14 }), "Clear"]
+							})
+						}),
+						/* @__PURE__ */ (0, react_jsx_runtime.jsx)("input", {
+							ref: bgInputRef,
+							type: "file",
+							accept: "image/*",
+							className: component_module_css_default.hiddenInput,
+							onChange: (e) => handleBgFile(e.target.files?.[0] ?? null)
+						}),
+						/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+							className: component_module_css_default.railGroupLabelMt,
+							children: "Preview body"
+						}),
+						/* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
+							"data-motion-body": true,
+							className: component_module_css_default.bodySquareWrap,
+							children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(SlotSquare, {
+								size: "md",
+								label: MOTION_PREVIEW_GLB_PARAM,
+								value: bodySrc || void 0,
+								badge: bodyWired ? bodyWiredUpstream.title : void 0,
+								metric: bodyWired && !bodyWiredUrl ? "waiting for upstream" : void 0,
+								emptyIcon: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(PersonStanding, { className: component_module_css_default.bodyEmptyIcon }),
+								onPickFile: (f) => handleBodyFile(f),
+								onDropFile: (f) => handleBodyFile(f),
+								onDropAsset: (url) => {
+									if (!isGlbUrl(url)) {
+										toast("error", "Preview body must be a .glb (SOMAX-rigged character).");
+										return;
+									}
+									attachBody(url);
+								},
+								onClear: bodyWired ? () => {
+									onWireSlot?.(MOTION_PREVIEW_GLB_PARAM, null, null);
+									onSave({
+										...stage.params,
+										[MOTION_PREVIEW_GLB_PARAM]: null
+									});
+								} : () => attachBody(null),
+								actions: onWireSlot && bodySlotIdx >= 0 && /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Tip$1, {
+									tip: "Wire from an earlier card's GLB output",
+									children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+										variant: "ghost",
+										type: "button",
+										onClick: (e) => {
+											e.stopPropagation();
+											setBodyWireOpen(true);
+										},
+										"aria-label": "Wire the preview body from an earlier card",
+										"data-motion-body-wire": true,
+										className: cn(component_module_css_default.wireBtn, bodyWired ? component_module_css_default.wireBtnOn : component_module_css_default.wireBtnOff),
+										children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Link2, { className: component_module_css_default.i12 })
+									})
+								})
+							})
+						}),
+						bodyNotice && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
+							"data-motion-body-error": true,
+							className: component_module_css_default.bodyNotice,
+							children: bodyNotice.includes("converting through the queue") ? bodyNotice : `${bodyNotice} — previewing on the neutral mannequin.`
+						})
+					]
+				}),
+				"/* ── Stage row: the stage + (while exporting) the dialog PANEL ────── IN-FLOW SIBLINGS (2026-08-15 round 2, \"it literally goes OVER the mesh we need to see\"): the export dialog is NOT a fixed overlay docked over the window — it is a flex sibling that PUSHES the viewport narrower. The canvas resizes (PoseViewer3D's observer), the character stays fully visible beside the panel, and the left rail is untouched. */ preview=",
+				/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+					className: component_module_css_default.centerRow,
+					children: [/* @__PURE__ */ (0, react_jsx_runtime.jsxs)(ViewportFrame, {
+						ref: stageBoxRef,
+						className: cn(component_module_css_default.stageFrame, bgDragOver && component_module_css_default.stageFrameDrag),
+						onDragOver: (e) => {
+							if (e.dataTransfer.types.includes("application/tech-noir-asset") || e.dataTransfer.types.includes("Files")) {
+								e.preventDefault();
+								setBgDragOver(true);
+							}
+						},
+						onDragLeave: () => setBgDragOver(false),
+						onDrop: handleStageDrop,
 						children: [
-							/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-								className: component_module_css_default.railGroupLabel,
-								children: "View"
+							bgImage && /* @__PURE__ */ (0, react_jsx_runtime.jsx)(ViewportAnchor, {
+								dock: "fill",
+								className: component_module_css_default.ovBg,
+								children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)("img", {
+									src: bgImage,
+									alt: "",
+									"aria-hidden": true,
+									className: component_module_css_default.bgImg
+								})
 							}),
-							/* @__PURE__ */ (0, react_jsx_runtime.jsx)(Tip$1, {
-								tip: effectiveNpz ? "Show the joint skeleton over the mesh" : "Loading mannequin…",
-								children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-									className: component_module_css_default.contents,
-									children: /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(_deepseek_ai_dsh_client_ui_primitives.Button, {
-										variant: "ghost",
-										onClick: () => setShowSkeleton((s) => !s),
-										disabled: !effectiveNpz,
-										className: cn(component_module_css_default.railBtn, showSkeleton ? component_module_css_default.railBtnActive : component_module_css_default.railBtnIdle),
-										children: [showSkeleton ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)(EyeAlt, { className: component_module_css_default.i14 }) : /* @__PURE__ */ (0, react_jsx_runtime.jsx)(EyeOff, { className: component_module_css_default.i14 }), "Skeleton"]
+							bgDragOver && /* @__PURE__ */ (0, react_jsx_runtime.jsx)(ViewportAnchor, {
+								dock: "fill",
+								className: component_module_css_default.ovDrop,
+								children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
+									className: component_module_css_default.dropVeil,
+									children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+										className: component_module_css_default.dropVeilLabel,
+										children: "Drop a GLB to set the preview body — an image to set the background"
 									})
 								})
 							}),
-							/* @__PURE__ */ (0, react_jsx_runtime.jsx)(Tip$1, {
-								tip: !effectiveNpz ? "Loading mannequin…" : inPlace ? "Pinned at the origin — same motion, no travel (treadmill). Toggle to play the root's travel across the stage." : "Playing the root's travel across the stage. Toggle to pin the figure at the origin — same motion, no travel.",
-								children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-									className: component_module_css_default.contents,
-									children: /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(_deepseek_ai_dsh_client_ui_primitives.Button, {
-										variant: "ghost",
-										onClick: () => setInPlace((v) => !v),
-										disabled: !effectiveNpz,
-										"aria-pressed": inPlace,
-										className: cn(component_module_css_default.railBtn, inPlace ? component_module_css_default.railBtnActive : component_module_css_default.railBtnIdle),
-										children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(Target, { className: component_module_css_default.i14 }), "In-place"]
-									})
+							skin ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)(PoseViewer3D, {
+								deformedVertsDirect: allVertsM,
+								deformedVerticesB64: restB64 ?? "",
+								editedDeformedB64,
+								frameIdx,
+								onFrameChange: setFrameIdx,
+								animate: npz ? playing && !editMode : false,
+								fps: npz?.fps ?? 30,
+								cameraView,
+								cameraFraming: framing,
+								soma77JointsFlat: jointsFlatCm,
+								showSkeleton: effectiveNpz ? showSkeleton && !editMode : false,
+								customBindMesh,
+								identityModel: "soma",
+								inPlace,
+								threeCtxRef,
+								darkMode: true,
+								editMode,
+								editableJoints,
+								selectedJoint,
+								onSelectJoint: setSelectedJoint,
+								onJointMove: handleJointMove,
+								kinematicMode: "ik",
+								gizmoMode: "translate"
+							}) : /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+								role: "status",
+								"aria-busy": "true",
+								"aria-label": "Loading mannequin",
+								className: component_module_css_default.stageLoading,
+								children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(Skeleton, { className: component_module_css_default.skelAvatar }), /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Skeleton, { className: component_module_css_default.skelLine })]
+							}),
+							loading && /* @__PURE__ */ (0, react_jsx_runtime.jsx)(ViewportAnchor, {
+								dock: "fill",
+								children: /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+									role: "status",
+									"aria-busy": "true",
+									"aria-label": "Loading motion",
+									className: component_module_css_default.stageVeil,
+									children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(Skeleton, { className: component_module_css_default.skelAvatarSm }), /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Skeleton, { className: component_module_css_default.skelLine })]
 								})
 							}),
-							/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-								className: component_module_css_default.railGroupLabelMt,
-								children: "Pose"
-							}),
-							/* @__PURE__ */ (0, react_jsx_runtime.jsx)(Tip$1, {
-								tip: !effectiveNpz ? "Loading mannequin…" : editMode ? "Exit edit mode — keeps the refined pose on the character at this frame" : "Drag joints to refine the pose at this frame",
-								children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-									className: component_module_css_default.contents,
-									children: /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(_deepseek_ai_dsh_client_ui_primitives.Button, {
-										variant: "ghost",
-										onClick: toggleEdit,
-										disabled: !effectiveNpz,
-										className: cn(component_module_css_default.railBtn, editMode ? component_module_css_default.railBtnEditActive : component_module_css_default.railBtnIdle),
-										children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(Move, { className: component_module_css_default.i14 }), editMode ? "Done" : "Refine pose"]
-									})
+							error && /* @__PURE__ */ (0, react_jsx_runtime.jsx)(ViewportAnchor, {
+								dock: "fill",
+								children: /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+									className: component_module_css_default.stageVeil,
+									children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(AlertTriangle, { className: component_module_css_default.warnIcon }), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+										className: component_module_css_default.veilText,
+										children: error
+									})]
 								})
 							}),
-							editMode && /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(react_jsx_runtime.Fragment, { children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(Tip$1, {
-								tip: fullbodyKfAtFrame ? `Update the full-body keyframe at frame ${frameIdx + 1} with this pose` : `Write this pose into the timeline as a full-body keyframe at frame ${frameIdx + 1}`,
-								children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-									className: component_module_css_default.contents,
-									children: /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(_deepseek_ai_dsh_client_ui_primitives.Button, {
-										variant: "ghost",
-										onClick: stampConstraintAtFrame,
-										disabled: !editableJoints,
-										className: component_module_css_default.stampBtn,
-										children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(Target, { className: component_module_css_default.i14 }), "Stamp"]
-									})
-								})
-							}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Tip$1, {
-								tip: "Chain the edited pose as the starting point — kimodo conditions the next generation on it. Hit Run when ready.",
-								children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-									className: component_module_css_default.contents,
-									children: /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(_deepseek_ai_dsh_client_ui_primitives.Button, {
-										variant: "ghost",
-										onClick: handleRepose,
-										disabled: reposing || !editableJoints,
-										className: component_module_css_default.reposeBtn,
-										children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(RefreshCw, { className: reposing ? component_module_css_default.spinIcon : component_module_css_default.i14 }), reposing ? "Reposing…" : "Repose"]
-									})
-								})
-							})] }),
-							!editMode && keptEdit && keptEdit.frame === frameIdx && /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Tip$1, {
-								tip: "Discard the refined pose at this frame — revert to the raw motion",
-								children: /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(_deepseek_ai_dsh_client_ui_primitives.Button, {
-									variant: "ghost",
-									onClick: discardKeptEdit,
-									className: component_module_css_default.railBtnDanger,
-									children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(RotateCcw, { className: component_module_css_default.i14 }), "Reset pose"]
-								})
-							}),
-							/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-								className: component_module_css_default.railGroupLabelMt,
-								children: "Output"
-							}),
-							/* @__PURE__ */ (0, react_jsx_runtime.jsx)(Tip$1, {
-								tip: !effectiveNpz ? "Loading mannequin…" : exportOpen ? "Close the export panel" : "Frame a shot with the stage rectangle — no run needed; exports mesh / openpose / depth at the typed pixel size",
-								children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-									className: component_module_css_default.contents,
-									children: /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(_deepseek_ai_dsh_client_ui_primitives.Button, {
-										variant: "ghost",
-										onClick: () => setExportOpen((o) => !o),
-										disabled: !effectiveNpz,
-										"aria-pressed": exportOpen,
-										className: cn(component_module_css_default.railBtn, exportOpen ? component_module_css_default.railBtnActive : component_module_css_default.railBtnIdle),
-										children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(Download, { className: component_module_css_default.i14 }), "Export"]
-									})
-								})
-							}),
-							/* @__PURE__ */ (0, react_jsx_runtime.jsx)(Tip$1, {
-								tip: bgImage ? "Replace the background image behind the mannequin (or drop an asset/file on the stage)" : "Set a background image behind the mannequin — click to pick, or drop an asset/file on the stage",
-								children: /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(_deepseek_ai_dsh_client_ui_primitives.Button, {
-									variant: "ghost",
-									onClick: () => bgInputRef.current?.click(),
-									className: component_module_css_default.bgBtnIdle,
-									children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(ImagePlus, { className: component_module_css_default.i14 }), "Background"]
-								})
-							}),
-							bgImage && /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Tip$1, {
-								tip: "Clear the background image",
-								children: /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(_deepseek_ai_dsh_client_ui_primitives.Button, {
-									variant: "ghost",
-									onClick: () => setBg(null),
-									"aria-label": "Clear the background image",
-									className: component_module_css_default.railBtnDanger,
-									children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(X$1, { className: component_module_css_default.i14 }), "Clear"]
-								})
-							}),
-							/* @__PURE__ */ (0, react_jsx_runtime.jsx)("input", {
-								ref: bgInputRef,
-								type: "file",
-								accept: "image/*",
-								className: component_module_css_default.hiddenInput,
-								onChange: (e) => handleBgFile(e.target.files?.[0] ?? null)
-							}),
-							/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-								className: component_module_css_default.railGroupLabelMt,
-								children: "Preview body"
-							}),
-							/* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
-								"data-motion-body": true,
-								className: component_module_css_default.bodySquareWrap,
-								children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(SlotSquare, {
-									size: "md",
-									label: MOTION_PREVIEW_GLB_PARAM,
-									value: bodySrc || void 0,
-									badge: bodyWired ? bodyWiredUpstream.title : void 0,
-									metric: bodyWired && !bodyWiredUrl ? "waiting for upstream" : void 0,
-									emptyIcon: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(PersonStanding, { className: component_module_css_default.bodyEmptyIcon }),
-									onPickFile: (f) => handleBodyFile(f),
-									onDropFile: (f) => handleBodyFile(f),
-									onDropAsset: (url) => {
-										if (!isGlbUrl(url)) {
-											toast("error", "Preview body must be a .glb (SOMAX-rigged character).");
-											return;
-										}
-										attachBody(url);
-									},
-									onClear: bodyWired ? () => {
-										onWireSlot?.(MOTION_PREVIEW_GLB_PARAM, null, null);
-										onSave({
-											...stage.params,
-											[MOTION_PREVIEW_GLB_PARAM]: null
-										});
-									} : () => attachBody(null),
-									actions: onWireSlot && bodySlotIdx >= 0 && /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Tip$1, {
-										tip: "Wire from an earlier card's GLB output",
-										children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
-											variant: "ghost",
-											type: "button",
-											onClick: (e) => {
-												e.stopPropagation();
-												setBodyWireOpen(true);
-											},
-											"aria-label": "Wire the preview body from an earlier card",
-											"data-motion-body-wire": true,
-											className: cn(component_module_css_default.wireBtn, bodyWired ? component_module_css_default.wireBtnOn : component_module_css_default.wireBtnOff),
-											children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Link2, { className: component_module_css_default.i12 })
+							/* @__PURE__ */ (0, react_jsx_runtime.jsx)(ViewportAnchor, {
+								dock: "top-right",
+								className: component_module_css_default.ovCam,
+								children: /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+									className: component_module_css_default.camPill,
+									children: [
+										/* @__PURE__ */ (0, react_jsx_runtime.jsx)(Tip$1, {
+											tip: "Rotate view left (45°)",
+											children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+												variant: "ghost",
+												onClick: () => setCameraView(stepAzimuth(cameraView, -1)),
+												"aria-label": "Rotate view left (45°)",
+												className: component_module_css_default.camBtn,
+												children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(RotateCcw, { className: component_module_css_default.i14 })
+											})
+										}),
+										/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", { className: component_module_css_default.camDivider }),
+										/* @__PURE__ */ (0, react_jsx_runtime.jsx)(Tip$1, {
+											tip: "Full body framing",
+											children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+												variant: "ghost",
+												onClick: () => setFraming("full"),
+												"aria-label": "Full body framing",
+												"aria-pressed": framing === "full",
+												className: cn(component_module_css_default.frameBtn, framing === "full" ? component_module_css_default.frameBtnActive : component_module_css_default.frameBtnIdle),
+												children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(PersonStanding, { className: component_module_css_default.i14 })
+											})
+										}),
+										/* @__PURE__ */ (0, react_jsx_runtime.jsx)(Tip$1, {
+											tip: "Upper half framing — closer, chest-height camera at the same angle",
+											children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+												variant: "ghost",
+												onClick: () => setFraming("upper"),
+												"aria-label": "Upper half framing",
+												"aria-pressed": framing === "upper",
+												className: cn(component_module_css_default.frameBtn, framing === "upper" ? component_module_css_default.frameBtnActive : component_module_css_default.frameBtnIdle),
+												children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(User, { className: component_module_css_default.i14 })
+											})
+										}),
+										/* @__PURE__ */ (0, react_jsx_runtime.jsx)(Tip$1, {
+											tip: "Rotate view right (45°)",
+											children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+												variant: "ghost",
+												onClick: () => setCameraView(stepAzimuth(cameraView, 1)),
+												"aria-label": "Rotate view right (45°)",
+												className: component_module_css_default.camBtn,
+												children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(RotateCw, { className: component_module_css_default.i14 })
+											})
 										})
-									})
+									]
 								})
 							}),
-							bodyNotice && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
-								"data-motion-body-error": true,
-								className: component_module_css_default.bodyNotice,
-								children: bodyNotice.includes("converting through the queue") ? bodyNotice : `${bodyNotice} — previewing on the neutral mannequin.`
+							exportOpen && /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(ViewportAnchor, {
+								"data-export-rect-overlay": true,
+								dock: "fill",
+								className: component_module_css_default.ovRect,
+								children: [/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+									"data-export-rect": true,
+									role: "presentation",
+									"aria-label": "Export frame — drag to move, drag a corner to resize",
+									onPointerDown: (e) => beginRectDrag(e, "move"),
+									onPointerMove: onRectPointerMove,
+									onPointerUp: endRectDrag,
+									onPointerCancel: endRectDrag,
+									className: component_module_css_default.exportRect,
+									style: {
+										left: `${stageRect.x * 100}%`,
+										top: `${stageRect.y * 100}%`,
+										width: `${stageRect.w * 100}%`,
+										height: `${stageRect.h * 100}%`,
+										boxShadow: "0 0 0 9999px rgba(0,0,0,0.35)"
+									},
+									children: [
+										[
+											{
+												corner: "nw",
+												cls: component_module_css_default.cornerNW
+											},
+											{
+												corner: "ne",
+												cls: component_module_css_default.cornerNE
+											},
+											{
+												corner: "sw",
+												cls: component_module_css_default.cornerSW
+											},
+											{
+												corner: "se",
+												cls: component_module_css_default.cornerSE
+											}
+										].map((h) => /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
+											"data-export-corner": h.corner,
+											onPointerDown: (e) => beginRectDrag(e, h.corner),
+											onPointerMove: onRectPointerMove,
+											onPointerUp: endRectDrag,
+											onPointerCancel: endRectDrag,
+											className: cn(component_module_css_default.cornerHandle, h.cls)
+										}, h.corner)),
+										/* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", { className: component_module_css_default.crossV }),
+										/* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", { className: component_module_css_default.crossH })
+									]
+								}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)(ViewportAnchor, {
+									dock: "bottom-center",
+									className: component_module_css_default.rectHint,
+									children: "Drag the rectangle over the character · corners resize (aspect-locked) · any size exports the typed pixels · orbit for the angle"
+								})]
+							})
+						]
+					}), effectiveNpz && /* @__PURE__ */ (0, react_jsx_runtime.jsx)(MotionExportDialog, {
+						open: exportOpen,
+						onClose: () => setExportOpen(false),
+						npz: effectiveNpz,
+						npzUrl,
+						glbUrl: stage.result?.motionPreviews?.find((m) => m.url)?.url ?? null,
+						frameIdx,
+						onFrameChange: (f) => {
+							setFrameIdx(f);
+							setPlaying(false);
+						},
+						cameraView,
+						displayJointsM,
+						liftY,
+						inPlace,
+						threeCtxRef,
+						stageRect,
+						onStageRectChange: setStageRect,
+						outW: exportOut.w,
+						outH: exportOut.h,
+						onOutSize: handleOutSize,
+						onFramePreset: handleFramePreset
+					})]
+				}),
+				"/* ── The bar — MotionTimelineBar (pose-studio display model) ──────── 2026-08-14 rethink, round 2: the vendored viser canvas Timeline is OUT (its zoom + scrollbar hid frames, and canvas hit-targets made the prompt cards hard to grab). IN: the legacy pose studio's DOM-clip model — prompt cards you drag (body = move, edges = resize), edit inline (double-click), delete (hover ✕); keyframe lanes with draggable diamonds. Same state + persistence underneath (tlPrompts / tlKeyframes / constraints.ts serialize). The transport (play/time/ play controls) folded into this bar's header — one chrome line, and the card stays short enough to clear the viewport (both canvases swallow the wheel, so the overlay's page scroll can't be relied on). */ bottom=",
+				/* @__PURE__ */ (0, react_jsx_runtime.jsxs)(react_jsx_runtime.Fragment, { children: [
+					/* @__PURE__ */ (0, react_jsx_runtime.jsxs)(PaneShell, {
+						className: component_module_css_default.timelineShell,
+						children: [
+							/* @__PURE__ */ (0, react_jsx_runtime.jsx)(PaneHeader, {
+								variant: "strip",
+								className: component_module_css_default.transportHead,
+								lead: /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(react_jsx_runtime.Fragment, { children: [
+									/* @__PURE__ */ (0, react_jsx_runtime.jsx)(Tip$1, {
+										tip: !npz ? "Run the card first — nothing to play yet" : editMode ? "Pause playback while refining" : playing ? "Pause (Space)" : "Play (Space)",
+										children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+											className: component_module_css_default.contents,
+											children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+												variant: "ghost",
+												onClick: () => setPlaying((p) => !p),
+												disabled: editMode || !npz,
+												"aria-label": playing ? "Pause (Space)" : "Play (Space)",
+												className: component_module_css_default.playBtn,
+												children: playing ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Pause, { className: component_module_css_default.i14 }) : /* @__PURE__ */ (0, react_jsx_runtime.jsx)(PlayAlt, { className: component_module_css_default.playIcon })
+											})
+										})
+									}),
+									/* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
+										className: component_module_css_default.timeWrap,
+										children: npz ? /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", {
+											className: component_module_css_default.timeText,
+											children: [
+												fmt(curSec),
+												" / ",
+												fmt(totalSec)
+											]
+										}) : /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", {
+											className: component_module_css_default.noMotion,
+											children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(Info, { className: component_module_css_default.i14 }), "No motion yet — run the card"]
+										})
+									}),
+									npz && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
+										className: component_module_css_default.fpsChip,
+										children: `${npz.fps.toFixed(0)} fps · ${npz.T}f`
+									})
+								] }),
+								hint: /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", {
+									className: component_module_css_default.hintWrap,
+									children: [/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", {
+										className: component_module_css_default.hintTitle,
+										children: ["Timeline · prompt cards", tlPrompts.length > 0 ? ` (${tlPrompts.length})` : ""]
+									}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Tip$1, {
+										tip: targetT > 0 ? "Add a new prompt card — splits the last card so you can type a distinct motion for that segment" : "Loading the timeline…",
+										children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+											className: component_module_css_default.contents,
+											children: /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+												variant: "ghost",
+												onClick: addPromptCard,
+												disabled: targetT <= 0,
+												className: component_module_css_default.addCardBtn,
+												children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(Plus, { className: component_module_css_default.i12 }), "Add prompt card"]
+											})
+										})
+									})]
+								})
+							}),
+							targetT > 0 && /* @__PURE__ */ (0, react_jsx_runtime.jsx)(MotionTimelineBar, {
+								prompts: tlPrompts,
+								keyframes: tlKeyframes,
+								frameIdx,
+								totalFrames: targetT,
+								fps: effectiveNpz?.fps ?? 30,
+								onExtend: onTimelineExtend,
+								onFrameChange: handleTimelineFrameChange,
+								onKeyframeAdd,
+								onKeyframeMove,
+								onKeyframeDelete,
+								onPromptUpdate,
+								onPromptMove,
+								onPromptResize,
+								onPromptDelete
+							}),
+							!targetT && /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+								className: component_module_css_default.timelineEmpty,
+								children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(Info, { className: component_module_css_default.i14 }), "Run the card — the timeline appears with the motion"]
 							})
 						]
 					}),
-					preview: /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-						className: component_module_css_default.centerRow,
-						children: [/* @__PURE__ */ (0, react_jsx_runtime.jsxs)(ViewportFrame, {
-							ref: stageBoxRef,
-							className: cn(component_module_css_default.stageFrame, bgDragOver && component_module_css_default.stageFrameDrag),
-							onDragOver: (e) => {
-								if (e.dataTransfer.types.includes("application/tech-noir-asset") || e.dataTransfer.types.includes("Files")) {
-									e.preventDefault();
-									setBgDragOver(true);
-								}
-							},
-							onDragLeave: () => setBgDragOver(false),
-							onDrop: handleStageDrop,
-							children: [
-								bgImage && /* @__PURE__ */ (0, react_jsx_runtime.jsx)(ViewportAnchor, {
-									dock: "fill",
-									className: component_module_css_default.ovBg,
-									children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)("img", {
-										src: bgImage,
-										alt: "",
-										"aria-hidden": true,
-										className: component_module_css_default.bgImg
-									})
-								}),
-								bgDragOver && /* @__PURE__ */ (0, react_jsx_runtime.jsx)(ViewportAnchor, {
-									dock: "fill",
-									className: component_module_css_default.ovDrop,
-									children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
-										className: component_module_css_default.dropVeil,
-										children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-											className: component_module_css_default.dropVeilLabel,
-											children: "Drop a GLB to set the preview body — an image to set the background"
-										})
-									})
-								}),
-								skin ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)(PoseViewer3D, {
-									deformedVertsDirect: allVertsM,
-									deformedVerticesB64: restB64 ?? "",
-									editedDeformedB64,
-									frameIdx,
-									onFrameChange: setFrameIdx,
-									animate: npz ? playing && !editMode : false,
-									fps: npz?.fps ?? 30,
-									cameraView,
-									cameraFraming: framing,
-									soma77JointsFlat: jointsFlatCm,
-									showSkeleton: effectiveNpz ? showSkeleton && !editMode : false,
-									customBindMesh,
-									identityModel: "soma",
-									inPlace,
-									threeCtxRef,
-									darkMode: true,
-									editMode,
-									editableJoints,
-									selectedJoint,
-									onSelectJoint: setSelectedJoint,
-									onJointMove: handleJointMove,
-									kinematicMode: "ik",
-									gizmoMode: "translate"
-								}) : /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-									role: "status",
-									"aria-busy": "true",
-									"aria-label": "Loading mannequin",
-									className: component_module_css_default.stageLoading,
-									children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(Skeleton, { className: component_module_css_default.skelAvatar }), /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Skeleton, { className: component_module_css_default.skelLine })]
-								}),
-								loading && /* @__PURE__ */ (0, react_jsx_runtime.jsx)(ViewportAnchor, {
-									dock: "fill",
-									children: /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-										role: "status",
-										"aria-busy": "true",
-										"aria-label": "Loading motion",
-										className: component_module_css_default.stageVeil,
-										children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(Skeleton, { className: component_module_css_default.skelAvatarSm }), /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Skeleton, { className: component_module_css_default.skelLine })]
-									})
-								}),
-								error && /* @__PURE__ */ (0, react_jsx_runtime.jsx)(ViewportAnchor, {
-									dock: "fill",
-									children: /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-										className: component_module_css_default.stageVeil,
-										children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(AlertTriangle, { className: component_module_css_default.warnIcon }), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-											className: component_module_css_default.veilText,
-											children: error
-										})]
-									})
-								}),
-								/* @__PURE__ */ (0, react_jsx_runtime.jsx)(ViewportAnchor, {
-									dock: "top-right",
-									className: component_module_css_default.ovCam,
-									children: /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-										className: component_module_css_default.camPill,
-										children: [
-											/* @__PURE__ */ (0, react_jsx_runtime.jsx)(Tip$1, {
-												tip: "Rotate view left (45°)",
-												children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
-													variant: "ghost",
-													onClick: () => setCameraView(stepAzimuth(cameraView, -1)),
-													"aria-label": "Rotate view left (45°)",
-													className: component_module_css_default.camBtn,
-													children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(RotateCcw, { className: component_module_css_default.i14 })
-												})
-											}),
-											/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", { className: component_module_css_default.camDivider }),
-											/* @__PURE__ */ (0, react_jsx_runtime.jsx)(Tip$1, {
-												tip: "Full body framing",
-												children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
-													variant: "ghost",
-													onClick: () => setFraming("full"),
-													"aria-label": "Full body framing",
-													"aria-pressed": framing === "full",
-													className: cn(component_module_css_default.frameBtn, framing === "full" ? component_module_css_default.frameBtnActive : component_module_css_default.frameBtnIdle),
-													children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(PersonStanding, { className: component_module_css_default.i14 })
-												})
-											}),
-											/* @__PURE__ */ (0, react_jsx_runtime.jsx)(Tip$1, {
-												tip: "Upper half framing — closer, chest-height camera at the same angle",
-												children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
-													variant: "ghost",
-													onClick: () => setFraming("upper"),
-													"aria-label": "Upper half framing",
-													"aria-pressed": framing === "upper",
-													className: cn(component_module_css_default.frameBtn, framing === "upper" ? component_module_css_default.frameBtnActive : component_module_css_default.frameBtnIdle),
-													children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(User, { className: component_module_css_default.i14 })
-												})
-											}),
-											/* @__PURE__ */ (0, react_jsx_runtime.jsx)(Tip$1, {
-												tip: "Rotate view right (45°)",
-												children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
-													variant: "ghost",
-													onClick: () => setCameraView(stepAzimuth(cameraView, 1)),
-													"aria-label": "Rotate view right (45°)",
-													className: component_module_css_default.camBtn,
-													children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(RotateCw, { className: component_module_css_default.i14 })
-												})
-											})
-										]
-									})
-								}),
-								exportOpen && /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(ViewportAnchor, {
-									"data-export-rect-overlay": true,
-									dock: "fill",
-									className: component_module_css_default.ovRect,
-									children: [/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-										"data-export-rect": true,
-										role: "presentation",
-										"aria-label": "Export frame — drag to move, drag a corner to resize",
-										onPointerDown: (e) => beginRectDrag(e, "move"),
-										onPointerMove: onRectPointerMove,
-										onPointerUp: endRectDrag,
-										onPointerCancel: endRectDrag,
-										className: component_module_css_default.exportRect,
-										style: {
-											left: `${stageRect.x * 100}%`,
-											top: `${stageRect.y * 100}%`,
-											width: `${stageRect.w * 100}%`,
-											height: `${stageRect.h * 100}%`,
-											boxShadow: "0 0 0 9999px rgba(0,0,0,0.35)"
-										},
-										children: [
-											[
-												{
-													corner: "nw",
-													cls: component_module_css_default.cornerNW
-												},
-												{
-													corner: "ne",
-													cls: component_module_css_default.cornerNE
-												},
-												{
-													corner: "sw",
-													cls: component_module_css_default.cornerSW
-												},
-												{
-													corner: "se",
-													cls: component_module_css_default.cornerSE
-												}
-											].map((h) => /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
-												"data-export-corner": h.corner,
-												onPointerDown: (e) => beginRectDrag(e, h.corner),
-												onPointerMove: onRectPointerMove,
-												onPointerUp: endRectDrag,
-												onPointerCancel: endRectDrag,
-												className: cn(component_module_css_default.cornerHandle, h.cls)
-											}, h.corner)),
-											/* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", { className: component_module_css_default.crossV }),
-											/* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", { className: component_module_css_default.crossH })
-										]
-									}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)(ViewportAnchor, {
-										dock: "bottom-center",
-										className: component_module_css_default.rectHint,
-										children: "Drag the rectangle over the character · corners resize (aspect-locked) · any size exports the typed pixels · orbit for the angle"
-									})]
-								})
-							]
-						}), effectiveNpz && /* @__PURE__ */ (0, react_jsx_runtime.jsx)(MotionExportDialog, {
-							open: exportOpen,
-							onClose: () => setExportOpen(false),
-							npz: effectiveNpz,
-							npzUrl,
-							glbUrl: stage.result?.motionPreviews?.find((m) => m.url)?.url ?? null,
-							frameIdx,
-							onFrameChange: (f) => {
-								setFrameIdx(f);
-								setPlaying(false);
-							},
-							cameraView,
-							displayJointsM,
-							liftY,
-							inPlace,
-							threeCtxRef,
-							stageRect,
-							onStageRectChange: setStageRect,
-							outW: exportOut.w,
-							outH: exportOut.h,
-							onOutSize: handleOutSize,
-							onFramePreset: handleFramePreset
-						})]
+					editMode && /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+						className: component_module_css_default.editHintBar,
+						children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(RotateCw, { className: component_module_css_default.editHintIcon }), /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", { children: [
+							"Drag joints to refine the pose at this frame (IK moves the chain).",
+							/* @__PURE__ */ (0, react_jsx_runtime.jsx)("b", {
+								className: component_module_css_default.editHintStrong,
+								children: " Repose"
+							}),
+							" patches rotations for the edited frame and saves it as the chain start. Hit Run when ready — kimodo conditions on it. Finger/toe tip rotations are approximate (translate edits)."
+						] })]
 					}),
-					bottom: /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(react_jsx_runtime.Fragment, { children: [
-						/* @__PURE__ */ (0, react_jsx_runtime.jsxs)(PaneShell, {
-							className: component_module_css_default.timelineShell,
-							children: [
-								/* @__PURE__ */ (0, react_jsx_runtime.jsx)(PaneHeader, {
-									variant: "strip",
-									className: component_module_css_default.transportHead,
-									lead: /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(react_jsx_runtime.Fragment, { children: [
-										/* @__PURE__ */ (0, react_jsx_runtime.jsx)(Tip$1, {
-											tip: !npz ? "Run the card first — nothing to play yet" : editMode ? "Pause playback while refining" : playing ? "Pause (Space)" : "Play (Space)",
-											children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-												className: component_module_css_default.contents,
-												children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
-													variant: "ghost",
-													onClick: () => setPlaying((p) => !p),
-													disabled: editMode || !npz,
-													"aria-label": playing ? "Pause (Space)" : "Play (Space)",
-													className: component_module_css_default.playBtn,
-													children: playing ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Pause, { className: component_module_css_default.i14 }) : /* @__PURE__ */ (0, react_jsx_runtime.jsx)(PlayAlt, { className: component_module_css_default.playIcon })
-												})
-											})
-										}),
-										/* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
-											className: component_module_css_default.timeWrap,
-											children: npz ? /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", {
-												className: component_module_css_default.timeText,
-												children: [
-													fmt(curSec),
-													" / ",
-													fmt(totalSec)
-												]
-											}) : /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", {
-												className: component_module_css_default.noMotion,
-												children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(Info, { className: component_module_css_default.i14 }), "No motion yet — run the card"]
-											})
-										}),
-										npz && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
-											className: component_module_css_default.fpsChip,
-											children: `${npz.fps.toFixed(0)} fps · ${npz.T}f`
-										})
-									] }),
-									hint: /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", {
-										className: component_module_css_default.hintWrap,
-										children: [/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", {
-											className: component_module_css_default.hintTitle,
-											children: ["Timeline · prompt cards", tlPrompts.length > 0 ? ` (${tlPrompts.length})` : ""]
-										}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Tip$1, {
-											tip: targetT > 0 ? "Add a new prompt card — splits the last card so you can type a distinct motion for that segment" : "Loading the timeline…",
-											children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-												className: component_module_css_default.contents,
-												children: /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(_deepseek_ai_dsh_client_ui_primitives.Button, {
-													variant: "ghost",
-													onClick: addPromptCard,
-													disabled: targetT <= 0,
-													className: component_module_css_default.addCardBtn,
-													children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(Plus, { className: component_module_css_default.i12 }), "Add prompt card"]
-												})
-											})
-										})]
-									})
-								}),
-								targetT > 0 && /* @__PURE__ */ (0, react_jsx_runtime.jsx)(MotionTimelineBar, {
-									prompts: tlPrompts,
-									keyframes: tlKeyframes,
-									frameIdx,
-									totalFrames: targetT,
-									fps: effectiveNpz?.fps ?? 30,
-									onExtend: onTimelineExtend,
-									onFrameChange: handleTimelineFrameChange,
-									onKeyframeAdd,
-									onKeyframeMove,
-									onKeyframeDelete,
-									onPromptUpdate,
-									onPromptMove,
-									onPromptResize,
-									onPromptDelete
-								}),
-								!targetT && /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-									className: component_module_css_default.timelineEmpty,
-									children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(Info, { className: component_module_css_default.i14 }), "Run the card — the timeline appears with the motion"]
-								})
-							]
-						}),
-						editMode && /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-							className: component_module_css_default.editHintBar,
-							children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(RotateCw, { className: component_module_css_default.editHintIcon }), /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", { children: [
-								"Drag joints to refine the pose at this frame (IK moves the chain).",
-								/* @__PURE__ */ (0, react_jsx_runtime.jsx)("b", {
-									className: component_module_css_default.editHintStrong,
-									children: " Repose"
-								}),
-								" patches rotations for the edited frame and saves it as the chain start. Hit Run when ready — kimodo conditions on it. Finger/toe tip rotations are approximate (translate edits)."
-							] })]
-						}),
-						bodyWireOpen && onWireSlot && /* @__PURE__ */ (0, react_jsx_runtime.jsx)(WirePickerModal, {
-							slot: MOTION_PREVIEW_GLB_PARAM,
-							priorStages,
-							currentId: bodyWired ? bodyWiredId : "",
-							currentOutput: null,
-							onPick: (upstreamId) => {
-								onWireSlot(MOTION_PREVIEW_GLB_PARAM, upstreamId, null);
-								onSave({ [MOTION_PREVIEW_GLB_PARAM]: null });
-								setBodyGlbState(null);
-								setBodyNotice(null);
-								setBodyWireOpen(false);
-							},
-							onUnwire: () => {
-								onWireSlot(MOTION_PREVIEW_GLB_PARAM, null, null);
-								onSave({ [MOTION_PREVIEW_GLB_PARAM]: null });
-								setBodyWireOpen(false);
-							},
-							onClose: () => setBodyWireOpen(false)
-						})
-					] })
-				}),
+					bodyWireOpen && onWireSlot && /* @__PURE__ */ (0, react_jsx_runtime.jsx)(WirePickerModal, {
+						slot: MOTION_PREVIEW_GLB_PARAM,
+						priorStages,
+						currentId: bodyWired ? bodyWiredId : "",
+						currentOutput: null,
+						onPick: (upstreamId) => {
+							onWireSlot(MOTION_PREVIEW_GLB_PARAM, upstreamId, null);
+							onSave({ [MOTION_PREVIEW_GLB_PARAM]: null });
+							setBodyGlbState(null);
+							setBodyNotice(null);
+							setBodyWireOpen(false);
+						},
+						onUnwire: () => {
+							onWireSlot(MOTION_PREVIEW_GLB_PARAM, null, null);
+							onSave({ [MOTION_PREVIEW_GLB_PARAM]: null });
+							setBodyWireOpen(false);
+						},
+						onClose: () => setBodyWireOpen(false)
+					})
+				] }),
 				/* @__PURE__ */ (0, react_jsx_runtime.jsx)(ToastViewport, {})
 			] });
 		}
