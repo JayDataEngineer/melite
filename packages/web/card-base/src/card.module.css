@@ -210,3 +210,8 @@
 .specSlotRow { display: flex; flex-wrap: wrap; gap: 8px; align-items: flex-start; }
 .specSlotCell { display: flex; flex-direction: column; gap: 4px; }
 .specListBlock { display: flex; flex-direction: column; gap: 6px; }
+
+/* THE INPUT RAIL (the operator's law: cards emit input signatures —
+ * clean data in, ONE rail out). The input zone is the rail: squares in
+ * declared-signature order, the list row in the same zone. */
+.inputRail { gap: 10px; }

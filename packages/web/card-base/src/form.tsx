@@ -678,7 +678,28 @@ export function CardForm({ spec, fields, values, onEdit, wire, square, atoms, on
   const modKinds = spec?.features?.modifiers ?? []
   const owned = modOwnedFields(spec ?? { form: '', fields: [], variants: [] })
   const flatFields = owned.size > 0 ? fields.filter((f) => !owned.has(f.name)) : fields
-  const groups = groupFields(flatFields, values)
+  // THE INPUT RAIL (the operator's law, 2026-09-13: "CARDS EMIT INPUT
+  // SIGNATURES, SO IT'S CLEAN DATA THE UI PACKAGE RECEIVES"): when the
+  // spec carries the declared input signature, the slot-shaped inputs
+  // render in ONE rail IN DECLARED ORDER — image1, image2, image3 side
+  // by side, the image_list row in the same zone — and the param groups
+  // EXCLUDE them (the flat fields' incidental grouping — card-owned vs
+  // absorbed flavor, group ids, emission order — never shapes the
+  // input surface again). Text-kind edges stay params; fields whose
+  // wtype has no slot atom yet stay in the groups.
+  const signature = spec !== undefined && Array.isArray(spec.inputs) ? spec.inputs : []
+  const railOf = (inp: { name: string; kind?: string }): SpecField | undefined => {
+    const f = flatFields.find((x) => x.name === inp.name)
+    if (f === undefined) return undefined
+    if (f.type === 'image' || f.type === 'file' || f.type === 'image_list') return f
+    return undefined
+  }
+  const railFields = signature
+    .map((inp) => (typeof inp?.name === 'string' ? railOf(inp as { name: string }) : undefined))
+    .filter((f): f is SpecField => f !== undefined)
+  const railNames = new Set(railFields.map((f) => f.name))
+  const groupFieldsAll = railNames.size > 0 ? flatFields.filter((f) => !railNames.has(f.name)) : flatFields
+  const groups = groupFields(groupFieldsAll, values)
   const atomOf = (f: SpecField): FieldAtomClaim | undefined => atoms?.[f.type]
   // THE CONSTRUCTOR'S OWN PROVIDER — always built (hook law), used
   // unless the host claimed the square seam itself.
@@ -698,6 +719,31 @@ export function CardForm({ spec, fields, values, onEdit, wire, square, atoms, on
   }, [spec, onEdit])
   return h('div', { className: css.specForm },
     spec !== undefined ? h(ModelAxes, { spec, values, onEdit }) : null,
+    railFields.length > 0
+      ? h('section', { className: css.specGroup + ' ' + css.inputRail, 'data-input-rail': '1' },
+          h('div', { className: css.specSlotRow },
+            railFields.map((f) => {
+              if (f.type === 'image_list') return null
+              return h('div', {
+                key: f.name,
+                className: css.specSlotCell,
+                title: f.tooltip !== undefined && f.tooltip !== '' ? f.tooltip : undefined,
+              },
+                h(SpecAtom, { f, value: values[f.name], onEdit, square: squareFor(f), ...(wire?.candidates !== undefined ? { wireCandidates: wire.candidates } : {}) }),
+              )
+            }),
+          ),
+          railFields.filter((f) => f.type === 'image_list').map((f) =>
+            h(SpecAtom, {
+              key: f.name,
+              f,
+              value: values[f.name],
+              onEdit,
+              ...(wire?.candidates !== undefined ? { wireCandidates: wire.candidates } : {}),
+            }),
+          ),
+        )
+      : null,
     groups.map((g) => {
       // THE SLOT ROW partition: image/image_list fields of one group
       // share a horizontal row (their labels live under their squares);
@@ -710,6 +756,7 @@ export function CardForm({ spec, fields, values, onEdit, wire, square, atoms, on
         row = []
       }
       for (const f of g.fields) {
+        if (railNames.has(f.name)) continue
         const claim = atomOf(f)
         const sq = squareFor(f)
         const wireCandidates = wire?.candidates

@@ -102,3 +102,57 @@ test('the cap: three entries render NO add square (the frozen picker law)', () =
   const squares = block.querySelectorAll('[role="button"][aria-label*="source"]')
   expect(squares.length).toBe(3) // full — no fourth
 })
+
+// ── THE INPUT RAIL (the operator's second lane report: "an input rail
+//    with images 2 and 3, then ANOTHER rail for reference images and
+//    image 1 stacked vertically") — the signature builds ONE rail ──
+const railSpec = {
+  inputs: [
+    { name: 'image1', kind: 'image', required: true },
+    { name: 'image2', kind: 'image' },
+    { name: 'image3', kind: 'image' },
+    { name: 'reference_images', kind: 'image' },
+  ],
+} as never
+
+const railFields: SpecField[] = [
+  { name: 'image2', label: 'Image 2', type: 'image' },
+  { name: 'image3', label: 'Image 3', type: 'image' },
+  { name: 'reference_images', label: 'Reference Images', type: 'image_list' },
+  { name: 'image1', label: 'Image 1', type: 'image' },
+]
+
+test('THE INPUT RAIL: the declared signature renders ONE rail in signature order — image1 first, no second input group', () => {
+  const { container } = render(createElement(SpecForm, {
+    fields: railFields,
+    values: { reference_images: ['a.png'] },
+    onEdit: vi.fn(),
+    spec: railSpec,
+  }))
+  const rail = container.querySelector('[data-input-rail]') as HTMLElement
+  expect(rail).toBeTruthy()
+  const squares = Array.from(rail.querySelectorAll('[role="button"][aria-label*="source"]'))
+  expect(squares.length).toBe(3 + 2) // image1/2/3 + the list entry + its add
+  // SIGNATURE order: the anchor (Image 1) rides FIRST, not after the list
+  const labels = squares.map((s) => (s as HTMLElement).getAttribute('aria-label'))
+  expect(labels.indexOf('Image 1 source')).toBe(0)
+  // the list row lives IN the rail zone (its own named block)
+  expect(rail.querySelector('[data-image-list="reference_images"]')).toBeTruthy()
+  // the param groups EXCLUDE the rail names — no second input group, no stray squares
+  const groups = container.querySelectorAll('section[class*="specGroup"]:not([class*="inputRail"])')
+  groups.forEach((g) => {
+    const el = g as HTMLElement
+    expect(el.querySelector('[role="button"][aria-label*="source"]')).toBeNull()
+    expect(el.textContent).not.toContain('Reference Images')
+  })
+})
+
+test('without a signature the group grammar still holds (backward face)', () => {
+  const { container } = render(createElement(Host, {
+    fields: railFields,
+    values: {},
+    onEdit: vi.fn(),
+  }))
+  expect(container.querySelector('[data-input-rail]')).toBeNull()
+  expect(container.querySelectorAll('[class*="specSlotRow"]').length).toBeGreaterThan(0)
+})
