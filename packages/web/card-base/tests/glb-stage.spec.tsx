@@ -9,7 +9,7 @@ import { afterEach, expect, test, vi } from 'vitest'
 import { createElement } from 'react'
 import * as THREE from 'three'
 
-import { GlbViewport, autoFitToHeight } from '../src/client/glb-viewport.tsx'
+import { GlbStagePreview, autoFitToHeight } from '../src/glb-stage.tsx'
 
 afterEach(() => {
   cleanup()
@@ -17,14 +17,14 @@ afterEach(() => {
 })
 
 test('no run → the honest empty state (no Canvas mounted)', () => {
-  render(createElement(GlbViewport, { url: null }))
+  render(createElement(GlbStagePreview, { assets: [] }))
   expect(screen.getByText('Run the card to see the mesh')).toBeTruthy()
   expect(document.querySelector('canvas')).toBeNull()
 })
 
 test('a pending url shows the honest loading state (WebGL-less headless)', () => {
   // the model load is pending — the honest loading state shows while the Canvas mounts
-  render(createElement(GlbViewport, { url: '/melite-media/runs/r1/mesh.glb' }))
+  render(createElement(GlbStagePreview, { assets: [{ id: 'mesh', url: '/melite-media/runs/r1/mesh.glb' }] }))
   expect(screen.getByText('loading mesh…')).toBeTruthy()
 })
 

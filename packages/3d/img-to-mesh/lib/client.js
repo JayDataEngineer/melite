@@ -7,13 +7,13 @@ window.__ModuleLoader__.load({
 		let react = require("react");
 		let _deepseek_ai_dsh_client_ui_primitives = require("@deepseek-ai/dsh-client-ui-primitives");
 		//#region \0dsh-css:/home/user/Documents/programs/active/inference.cpp/packages/3d/img-to-mesh/src/client/client.module.css.mjs
-		const css$1 = ".xjw8Uq_runRow{justify-content:flex-end;align-items:center;gap:10px;width:100%;display:flex}.xjw8Uq_zoomDetail{min-height:0;padding:14px;display:block;overflow-y:auto}.xjw8Uq_groupNote{color:var(--dsw-alias-label-secondary,#61666b);margin:0 0 10px;font-size:12px;line-height:20px}.xjw8Uq_studioHead{align-items:center;gap:8px;line-height:20px;display:flex}.xjw8Uq_studioBody{flex-direction:column;gap:12px;display:flex}.xjw8Uq_studioGroup{flex-direction:column;gap:6px;display:flex}.xjw8Uq_studioSplit{grid-template-columns:minmax(0,7fr) minmax(0,5fr);gap:12px;display:grid}.xjw8Uq_studioRail{flex-direction:column;gap:10px;min-width:0;display:flex}.xjw8Uq_runError{color:var(--dsw-alias-label-error,#e05656);overflow-wrap:anywhere;font-size:11px}.xjw8Uq_viewport{background:var(--dsw-alias-bg-canvas,#fff);border:.5px solid var(--dsw-alias-border-l2,#00000024);border-radius:10px;min-height:320px;display:flex;position:relative;overflow:hidden}.xjw8Uq_viewportEmpty{color:var(--dsw-alias-label-tertiary,#00000073);align-self:center;margin:auto;font-size:12px;line-height:20px}.xjw8Uq_viewport canvas{display:block}.xjw8Uq_viewportCanvas{width:100%;height:380px}.xjw8Uq_viewport:only-child{min-height:380px}";
-		const tagId$1 = "@melite/3d-img-to-mesh/client.module.css@eada7904";
-		if (typeof document !== "undefined" && document.querySelector("style[data-plugin-css=" + JSON.stringify(tagId$1) + "]") === null) {
+		const css$2 = ".xjw8Uq_runRow{justify-content:flex-end;align-items:center;gap:10px;width:100%;display:flex}.xjw8Uq_zoomDetail{min-height:0;padding:14px;display:block;overflow-y:auto}.xjw8Uq_groupNote{color:var(--dsw-alias-label-secondary,#61666b);margin:0 0 10px;font-size:12px;line-height:20px}.xjw8Uq_studioHead{align-items:center;gap:8px;line-height:20px;display:flex}.xjw8Uq_studioBody{flex-direction:column;gap:12px;display:flex}.xjw8Uq_studioGroup{flex-direction:column;gap:6px;display:flex}.xjw8Uq_studioSplit{grid-template-columns:minmax(0,7fr) minmax(0,5fr);gap:12px;display:grid}.xjw8Uq_studioRail{flex-direction:column;gap:10px;min-width:0;display:flex}.xjw8Uq_runError{color:var(--dsw-alias-label-error,#e05656);overflow-wrap:anywhere;font-size:11px}.xjw8Uq_viewport{background:var(--dsw-alias-bg-canvas,#fff);border:.5px solid var(--dsw-alias-border-l2,#00000024);border-radius:10px;min-height:320px;display:flex;position:relative;overflow:hidden}.xjw8Uq_viewportEmpty{color:var(--dsw-alias-label-tertiary,#00000073);align-self:center;margin:auto;font-size:12px;line-height:20px}.xjw8Uq_viewport canvas{display:block}.xjw8Uq_viewportCanvas{width:100%;height:380px}.xjw8Uq_viewport:only-child{min-height:380px}";
+		const tagId$2 = "@melite/3d-img-to-mesh/client.module.css@eada7904";
+		if (typeof document !== "undefined" && document.querySelector("style[data-plugin-css=" + JSON.stringify(tagId$2) + "]") === null) {
 			const tag = document.createElement("style");
 			tag.dataset.plugin = "@melite/3d-img-to-mesh";
-			tag.dataset.pluginCss = tagId$1;
-			tag.textContent = css$1;
+			tag.dataset.pluginCss = tagId$2;
+			tag.textContent = css$2;
 			document.head.appendChild(tag);
 		}
 		var client_module_css_default = {
@@ -218,13 +218,13 @@ window.__ModuleLoader__.load({
 		}
 		//#endregion
 		//#region \0dsh-css:card-base/src/card.module.css.mjs
-		const css = ".FRpSCG_specForm :where(input,textarea,select,button){box-sizing:border-box}.FRpSCG_specForm{flex-direction:column;gap:12px;display:flex}.FRpSCG_specGroup{flex-direction:column;gap:8px;display:flex}.FRpSCG_modelAxes{grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;display:grid}.FRpSCG_specGroupTitle{color:var(--dsw-alias-label-secondary,#61666b);letter-spacing:.04em;text-transform:uppercase;margin:0 0 2px;font-size:11px;font-weight:600}.FRpSCG_specField{flex-direction:column;gap:6px;display:flex}.FRpSCG_specFieldKey{color:var(--dsw-alias-label-secondary,#61666b);font-size:12px}.FRpSCG_specRequired{color:var(--dsw-alias-state-critical,#e5484d)}.FRpSCG_specHint{color:var(--dsw-alias-label-secondary,#61666b);font-size:11px}.FRpSCG_specSelect{background:var(--dsw-alias-interactive-bg-hover,#2631480f);border:.5px solid var(--dsw-alias-border-l2,#0000001a);color:inherit;font:inherit;border-radius:6px;width:100%;padding:5px 8px;font-size:13px}.FRpSCG_specSliderRow{align-items:center;gap:8px;display:flex}.FRpSCG_specSlider{flex:1}.FRpSCG_specSliderValue{color:var(--dsw-alias-label-secondary,#61666b);font-family:var(--dsw-alias-font-mono,ui-monospace, monospace);text-align:right;min-width:4ch;font-size:12px}.FRpSCG_specTextarea{background:var(--dsw-alias-interactive-bg-hover,#2631480f);border:.5px solid var(--dsw-alias-border-l2,#0000001a);color:inherit;font:inherit;resize:vertical;border-radius:6px;width:100%;padding:6px 8px;font-size:13px}.FRpSCG_squareWrap{flex-direction:column;align-items:center;gap:4px;width:84px;display:flex}.FRpSCG_squareOff{opacity:.5;pointer-events:none}.FRpSCG_squareBox{border:.5px solid var(--dsw-alias-border-l2,#00000024);cursor:pointer;height:80px;transition:border-color var(--ds-transition-duration,.12s) var(--ds-ease-in-out,ease);border-radius:8px;justify-content:center;align-items:center;width:80px;display:flex;position:relative;overflow:hidden}.FRpSCG_squareOver{border-color:var(--dsw-alias-border-l3,#00000047);box-shadow:0 0 0 2px var(--dsw-alias-border-l1,#00000014)}.FRpSCG_squareThumb{object-fit:cover;width:100%;height:100%}.FRpSCG_squareGlyph{color:var(--dsw-alias-label-tertiary,#00000073)}.FRpSCG_squareX{background:var(--dsw-alias-bg-module,#fff);border:.5px solid var(--dsw-alias-border-l2,#00000024);cursor:pointer;border-radius:999px;align-items:center;padding:0 4px;font-size:10px;line-height:17px;display:flex;position:absolute;top:4px;right:4px}.FRpSCG_squareLabel{color:var(--dsw-alias-label-primary,#0f1115);text-overflow:ellipsis;white-space:nowrap;width:100%;font-size:11px;line-height:17px;overflow:hidden}.FRpSCG_squareMetric{color:var(--dsw-alias-label-tertiary,#00000073);font-size:10px;line-height:17px}.FRpSCG_squareFileInput{display:none}.FRpSCG_modSection{border-top:1px dashed var(--border,#80808040);flex-direction:column;gap:6px;margin-top:10px;padding-top:8px;display:flex}.FRpSCG_modHead{align-items:baseline;gap:8px;display:flex}.FRpSCG_modTitle{letter-spacing:.06em;text-transform:uppercase;opacity:.7;font-size:10px;font-weight:600}.FRpSCG_modHint{opacity:.45;font-size:9px}.FRpSCG_modRow{flex-wrap:wrap;align-items:stretch;gap:6px;margin:0;padding:0;list-style:none;display:flex}.FRpSCG_modTile{border:1px solid var(--border,#8080804d);background:var(--bg-elevated,#80808014);cursor:grab;touch-action:none;border-radius:8px;flex-direction:column;justify-content:center;gap:2px;min-width:84px;max-width:132px;padding:6px 8px;display:flex}.FRpSCG_modTile:active{cursor:grabbing}.FRpSCG_modTileLabel{text-overflow:ellipsis;white-space:nowrap;font-size:11px;line-height:1.2;overflow:hidden}.FRpSCG_modTileStrength{opacity:.55;font-size:9px}.FRpSCG_modAdd{border:1px dashed var(--border,#80808059);min-width:64px;color:inherit;cursor:pointer;opacity:.6;background:0 0;border-radius:8px;justify-content:center;align-items:center;padding:6px 10px;font-size:11px;display:flex}.FRpSCG_modAdd:hover{opacity:1}.FRpSCG_tileDragging{opacity:.5}.FRpSCG_modLeaf{flex-direction:column;gap:10px;min-width:260px;display:flex}.FRpSCG_modLeafFields{gap:8px;display:grid}.FRpSCG_modLeafActions{gap:8px;display:flex}.FRpSCG_modField{flex-direction:column;gap:4px;font-size:11px;display:flex}.FRpSCG_modSelect{border:1px solid var(--border,#8080804d);background:var(--bg-elevated,#8080800f);color:inherit;border-radius:6px;padding:6px 8px;font-size:12px}.FRpSCG_modLeafError{color:#e06c5f;margin:0;font-size:11px}";
-		const tagId = "@melite/3d-img-to-mesh/card.module.css@1335c13b";
-		if (typeof document !== "undefined" && document.querySelector("style[data-plugin-css=" + JSON.stringify(tagId) + "]") === null) {
+		const css$1 = ".FRpSCG_specForm :where(input,textarea,select,button){box-sizing:border-box}.FRpSCG_specForm{flex-direction:column;gap:12px;display:flex}.FRpSCG_specGroup{flex-direction:column;gap:8px;display:flex}.FRpSCG_modelAxes{grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;display:grid}.FRpSCG_specGroupTitle{color:var(--dsw-alias-label-secondary,#61666b);letter-spacing:.04em;text-transform:uppercase;margin:0 0 2px;font-size:11px;font-weight:600}.FRpSCG_specField{flex-direction:column;gap:6px;display:flex}.FRpSCG_specFieldKey{color:var(--dsw-alias-label-secondary,#61666b);font-size:12px}.FRpSCG_specRequired{color:var(--dsw-alias-state-critical,#e5484d)}.FRpSCG_specHint{color:var(--dsw-alias-label-secondary,#61666b);font-size:11px}.FRpSCG_specSelect{background:var(--dsw-alias-interactive-bg-hover,#2631480f);border:.5px solid var(--dsw-alias-border-l2,#0000001a);color:inherit;font:inherit;border-radius:6px;width:100%;padding:5px 8px;font-size:13px}.FRpSCG_specSliderRow{align-items:center;gap:8px;display:flex}.FRpSCG_specSlider{flex:1}.FRpSCG_specSliderValue{color:var(--dsw-alias-label-secondary,#61666b);font-family:var(--dsw-alias-font-mono,ui-monospace, monospace);text-align:right;min-width:4ch;font-size:12px}.FRpSCG_specTextarea{background:var(--dsw-alias-interactive-bg-hover,#2631480f);border:.5px solid var(--dsw-alias-border-l2,#0000001a);color:inherit;font:inherit;resize:vertical;border-radius:6px;width:100%;padding:6px 8px;font-size:13px}.FRpSCG_squareWrap{flex-direction:column;align-items:center;gap:4px;width:84px;display:flex}.FRpSCG_squareOff{opacity:.5;pointer-events:none}.FRpSCG_squareBox{border:.5px solid var(--dsw-alias-border-l2,#00000024);cursor:pointer;height:80px;transition:border-color var(--ds-transition-duration,.12s) var(--ds-ease-in-out,ease);border-radius:8px;justify-content:center;align-items:center;width:80px;display:flex;position:relative;overflow:hidden}.FRpSCG_squareOver{border-color:var(--dsw-alias-border-l3,#00000047);box-shadow:0 0 0 2px var(--dsw-alias-border-l1,#00000014)}.FRpSCG_squareThumb{object-fit:cover;width:100%;height:100%}.FRpSCG_squareGlyph{color:var(--dsw-alias-label-tertiary,#00000073)}.FRpSCG_squareX{background:var(--dsw-alias-bg-module,#fff);border:.5px solid var(--dsw-alias-border-l2,#00000024);cursor:pointer;border-radius:999px;align-items:center;padding:0 4px;font-size:10px;line-height:17px;display:flex;position:absolute;top:4px;right:4px}.FRpSCG_squareLabel{color:var(--dsw-alias-label-primary,#0f1115);text-overflow:ellipsis;white-space:nowrap;width:100%;font-size:11px;line-height:17px;overflow:hidden}.FRpSCG_squareMetric{color:var(--dsw-alias-label-tertiary,#00000073);font-size:10px;line-height:17px}.FRpSCG_squareFileInput{display:none}.FRpSCG_modSection{border-top:1px dashed var(--border,#80808040);flex-direction:column;gap:6px;margin-top:10px;padding-top:8px;display:flex}.FRpSCG_modHead{align-items:baseline;gap:8px;display:flex}.FRpSCG_modTitle{letter-spacing:.06em;text-transform:uppercase;opacity:.7;font-size:10px;font-weight:600}.FRpSCG_modHint{opacity:.45;font-size:9px}.FRpSCG_modRow{flex-wrap:wrap;align-items:stretch;gap:6px;margin:0;padding:0;list-style:none;display:flex}.FRpSCG_modTile{border:1px solid var(--border,#8080804d);background:var(--bg-elevated,#80808014);cursor:grab;touch-action:none;border-radius:8px;flex-direction:column;justify-content:center;gap:2px;min-width:84px;max-width:132px;padding:6px 8px;display:flex}.FRpSCG_modTile:active{cursor:grabbing}.FRpSCG_modTileLabel{text-overflow:ellipsis;white-space:nowrap;font-size:11px;line-height:1.2;overflow:hidden}.FRpSCG_modTileStrength{opacity:.55;font-size:9px}.FRpSCG_modAdd{border:1px dashed var(--border,#80808059);min-width:64px;color:inherit;cursor:pointer;opacity:.6;background:0 0;border-radius:8px;justify-content:center;align-items:center;padding:6px 10px;font-size:11px;display:flex}.FRpSCG_modAdd:hover{opacity:1}.FRpSCG_tileDragging{opacity:.5}.FRpSCG_modLeaf{flex-direction:column;gap:10px;min-width:260px;display:flex}.FRpSCG_modLeafFields{gap:8px;display:grid}.FRpSCG_modLeafActions{gap:8px;display:flex}.FRpSCG_modField{flex-direction:column;gap:4px;font-size:11px;display:flex}.FRpSCG_modSelect{border:1px solid var(--border,#8080804d);background:var(--bg-elevated,#8080800f);color:inherit;border-radius:6px;padding:6px 8px;font-size:12px}.FRpSCG_modLeafError{color:#e06c5f;margin:0;font-size:11px}";
+		const tagId$1 = "@melite/3d-img-to-mesh/card.module.css@1335c13b";
+		if (typeof document !== "undefined" && document.querySelector("style[data-plugin-css=" + JSON.stringify(tagId$1) + "]") === null) {
 			const tag = document.createElement("style");
 			tag.dataset.plugin = "@melite/3d-img-to-mesh";
-			tag.dataset.pluginCss = tagId;
-			tag.textContent = css;
+			tag.dataset.pluginCss = tagId$1;
+			tag.textContent = css$1;
 			document.head.appendChild(tag);
 		}
 		var card_module_css_default = {
@@ -1314,6 +1314,28 @@ window.__ModuleLoader__.load({
 				if (await sleep(interval) === "abort") return;
 			}
 		}
+		//#endregion
+		//#region \0dsh-css:card-base/src/preview.module.css.mjs
+		const css = ".ClEuBa_stagePreview{flex-direction:column;flex:1;gap:8px;min-height:0;display:flex;overflow:hidden}.ClEuBa_hero,.ClEuBa_heroImg{object-fit:contain;background:var(--dsw-alias-bg-base);border:1px solid var(--dsw-alias-border-l2);border-radius:6px;flex:1;width:100%;min-height:0}.ClEuBa_empty{color:var(--dsw-alias-label-dimmed);border:1px dashed var(--dsw-alias-border-l2);border-radius:6px;flex:1;justify-content:center;align-items:center;font-size:11px;display:flex}.ClEuBa_strip{flex:none;gap:6px;display:flex;overflow-x:auto}.ClEuBa_stripLink{color:var(--dsw-alias-brand-primary);white-space:nowrap;border:1px solid var(--dsw-alias-border-l2);border-radius:6px;padding:2px 6px;font-size:10px;text-decoration:none}.ClEuBa_thumbRow{flex:none;gap:6px;display:flex;overflow-x:auto}.ClEuBa_thumb{border:1px solid var(--dsw-alias-border-l2);border-radius:4px;height:48px}.ClEuBa_stageCanvas{touch-action:none;width:100%;height:100%;min-height:320px;display:block}";
+		const tagId = "@melite/3d-img-to-mesh/preview.module.css@c05f7449";
+		if (typeof document !== "undefined" && document.querySelector("style[data-plugin-css=" + JSON.stringify(tagId) + "]") === null) {
+			const tag = document.createElement("style");
+			tag.dataset.plugin = "@melite/3d-img-to-mesh";
+			tag.dataset.pluginCss = tagId;
+			tag.textContent = css;
+			document.head.appendChild(tag);
+		}
+		var preview_module_css_default = {
+			"empty": "ClEuBa_empty",
+			"hero": "ClEuBa_hero",
+			"heroImg": "ClEuBa_heroImg",
+			"stageCanvas": "ClEuBa_stageCanvas",
+			"stagePreview": "ClEuBa_stagePreview",
+			"strip": "ClEuBa_strip",
+			"stripLink": "ClEuBa_stripLink",
+			"thumb": "ClEuBa_thumb",
+			"thumbRow": "ClEuBa_thumbRow"
+		};
 		/**
 		* @license
 		* Copyright 2010-2026 Three.js Authors
@@ -24524,6 +24546,195 @@ window.__ModuleLoader__.load({
 				PropertyBinding.prototype._setValue_fromArray_setMatrixWorldNeedsUpdate
 			]
 		];
+		const _matrix = /*@__PURE__*/ new Matrix4();
+		/**
+		* This class is designed to assist with raycasting. Raycasting is used for
+		* mouse picking (working out what objects in the 3d space the mouse is over)
+		* amongst other things.
+		*/
+		var Raycaster = class {
+			/**
+			* Constructs a new raycaster.
+			*
+			* @param {Vector3} origin - The origin vector where the ray casts from.
+			* @param {Vector3} direction - The (normalized) direction vector that gives direction to the ray.
+			* @param {number} [near=0] - All results returned are further away than near. Near can't be negative.
+			* @param {number} [far=Infinity] - All results returned are closer than far. Far can't be lower than near.
+			*/
+			constructor(origin, direction, near = 0, far = Infinity) {
+				/**
+				* The ray used for raycasting.
+				*
+				* @type {Ray}
+				*/
+				this.ray = new Ray(origin, direction);
+				/**
+				* All results returned are further away than near. Near can't be negative.
+				*
+				* @type {number}
+				* @default 0
+				*/
+				this.near = near;
+				/**
+				* All results returned are closer than far. Far can't be lower than near.
+				*
+				* @type {number}
+				* @default Infinity
+				*/
+				this.far = far;
+				/**
+				* The camera to use when raycasting against view-dependent objects such as
+				* billboarded objects like sprites. This field can be set manually or
+				* is set when calling `setFromCamera()`.
+				*
+				* @type {?Camera}
+				* @default null
+				*/
+				this.camera = null;
+				/**
+				* Allows to selectively ignore 3D objects when performing intersection tests.
+				* The following code example ensures that only 3D objects on layer `1` will be
+				* honored by raycaster.
+				* ```js
+				* raycaster.layers.set( 1 );
+				* object.layers.enable( 1 );
+				* ```
+				*
+				* @type {Layers}
+				*/
+				this.layers = new Layers();
+				/**
+				* A parameter object that configures the raycasting. It has the structure:
+				*
+				* ```
+				* {
+				* 	Mesh: {},
+				* 	Line: { threshold: 1 },
+				* 	LOD: {},
+				* 	Points: { threshold: 1 },
+				* 	Sprite: {}
+				* }
+				* ```
+				* Where `threshold` is the precision of the raycaster when intersecting objects, in world units.
+				*
+				* @type {Object}
+				*/
+				this.params = {
+					Mesh: {},
+					Line: { threshold: 1 },
+					LOD: {},
+					Points: { threshold: 1 },
+					Sprite: {}
+				};
+			}
+			/**
+			* Updates the ray with a new origin and direction by copying the values from the arguments.
+			*
+			* @param {Vector3} origin - The origin vector where the ray casts from.
+			* @param {Vector3} direction - The (normalized) direction vector that gives direction to the ray.
+			*/
+			set(origin, direction) {
+				this.ray.set(origin, direction);
+			}
+			/**
+			* Uses the given coordinates and camera to compute a new origin and direction for the internal ray.
+			*
+			* @param {Vector2} coords - 2D coordinates of the mouse, in normalized device coordinates (NDC).
+			* X and Y components should be between `-1` and `1`.
+			* @param {Camera} camera - The camera from which the ray should originate.
+			*/
+			setFromCamera(coords, camera) {
+				if (camera.isPerspectiveCamera) {
+					this.ray.origin.setFromMatrixPosition(camera.matrixWorld);
+					this.ray.direction.set(coords.x, coords.y, .5).unproject(camera).sub(this.ray.origin).normalize();
+					this.camera = camera;
+				} else if (camera.isOrthographicCamera) {
+					this.ray.origin.set(coords.x, coords.y, (camera.near + camera.far) / (camera.near - camera.far)).unproject(camera);
+					this.ray.direction.set(0, 0, -1).transformDirection(camera.matrixWorld);
+					this.camera = camera;
+				} else error("Raycaster: Unsupported camera type: " + camera.type);
+			}
+			/**
+			* Uses the given WebXR controller to compute a new origin and direction for the internal ray.
+			*
+			* @param {WebXRController} controller - The controller to copy the position and direction from.
+			* @return {Raycaster} A reference to this raycaster.
+			*/
+			setFromXRController(controller) {
+				_matrix.identity().extractRotation(controller.matrixWorld);
+				this.ray.origin.setFromMatrixPosition(controller.matrixWorld);
+				this.ray.direction.set(0, 0, -1).applyMatrix4(_matrix);
+				return this;
+			}
+			/**
+			* The intersection point of a raycaster intersection test.
+			* @typedef {Object} Raycaster~Intersection
+			* @property {number} distance - The distance from the ray's origin to the intersection point.
+			* @property {number} distanceToRay -  Some 3D objects e.g. {@link Points} provide the distance of the
+			* intersection to the nearest point on the ray. For other objects it will be `undefined`.
+			* @property {Vector3} point - The intersection point, in world coordinates.
+			* @property {Object} face - The face that has been intersected.
+			* @property {number} faceIndex - The face index.
+			* @property {Object3D} object - The 3D object that has been intersected.
+			* @property {Vector2} uv - U,V coordinates at point of intersection.
+			* @property {Vector2} uv1 - Second set of U,V coordinates at point of intersection.
+			* @property {Vector3} normal - Interpolated normal vector at point of intersection.
+			* @property {number} instanceId - The index number of the instance where the ray
+			* intersects the {@link InstancedMesh}.
+			*/
+			/**
+			* Checks all intersection between the ray and the object with or without the
+			* descendants. Intersections are returned sorted by distance, closest first.
+			*
+			* `Raycaster` delegates to the `raycast()` method of the passed 3D object, when
+			* evaluating whether the ray intersects the object or not. This allows meshes to respond
+			* differently to ray casting than lines or points.
+			*
+			* Note that for meshes, faces must be pointed towards the origin of the ray in order
+			* to be detected; intersections of the ray passing through the back of a face will not
+			* be detected. To raycast against both faces of an object, you'll want to set  {@link Material#side}
+			* to `THREE.DoubleSide`.
+			*
+			* @param {Object3D} object - The 3D object to check for intersection with the ray.
+			* @param {boolean} [recursive=true] - If set to `true`, it also checks all descendants.
+			* Otherwise it only checks intersection with the object.
+			* @param {Array<Raycaster~Intersection>} [intersects=[]] The target array that holds the result of the method.
+			* @return {Array<Raycaster~Intersection>} An array holding the intersection points.
+			*/
+			intersectObject(object, recursive = true, intersects = []) {
+				intersect(object, this, intersects, recursive);
+				intersects.sort(ascSort);
+				return intersects;
+			}
+			/**
+			* Checks all intersection between the ray and the objects with or without
+			* the descendants. Intersections are returned sorted by distance, closest first.
+			*
+			* @param {Array<Object3D>} objects - The 3D objects to check for intersection with the ray.
+			* @param {boolean} [recursive=true] - If set to `true`, it also checks all descendants.
+			* Otherwise it only checks intersection with the object.
+			* @param {Array<Raycaster~Intersection>} [intersects=[]] The target array that holds the result of the method.
+			* @return {Array<Raycaster~Intersection>} An array holding the intersection points.
+			*/
+			intersectObjects(objects, recursive = true, intersects = []) {
+				for (let i = 0, l = objects.length; i < l; i++) intersect(objects[i], this, intersects, recursive);
+				intersects.sort(ascSort);
+				return intersects;
+			}
+		};
+		function ascSort(a, b) {
+			return a.distance - b.distance;
+		}
+		function intersect(object, raycaster, intersects, recursive) {
+			let propagate = true;
+			if (object.layers.test(raycaster.layers)) {
+				if (object.raycast(raycaster, intersects) === false) propagate = false;
+			}
+			if (propagate === true && recursive === true) {
+				const children = object.children;
+				for (let i = 0, l = children.length; i < l; i++) intersect(children[i], raycaster, intersects, true);
+			}
+		}
 		/**
 		* This class can be used to represent points in 3D space as
 		* [Spherical coordinates](https://en.wikipedia.org/wiki/Spherical_coordinate_system).
@@ -39885,27 +40096,29 @@ void main() {
 			}
 		}
 		//#endregion
-		//#region src/client/glb-viewport.tsx
+		//#region ../../web/card-base/src/glb-stage.tsx
 		/**
-		* GlbViewport — the shared 3D space for card studios, ported from the
-		* old Stage law ("TRELLIS GLB props + Anny rigged avatars + Kimodo
-		* skeletal motion, one lightweight viewer — never embedded Blender")
-		* at the LEAN first cut: see and orbit the generated mesh. The old
-		* Stage's placement gizmos / mixers / rig chips promote here when
-		* their consumers port (the promotion law — no speculative chrome).
+		* glb-stage.tsx — THE MESH PREVIEW (the preview seam's mesh-kind
+		* claim, hour 14 2026-09-13). Grown from img-to-mesh's GlbViewport
+		* (the raw-three substrate, verbatim) + the old @melite-plugin/3d
+		* Stage's multi-asset contract (assets/selection/per-asset errors —
+		* the four props anny's assembly actually uses; drop-placement
+		* gizmos and mixers stay unported until a consumer ports them, the
+		* promotion law).
 		*
-		* SUBSTRATE LAW (2026-09-12, the boot-crash lesson): RAW three.js —
-		* imperative scene in a useEffect, no @react-three. r3f's bundled
-		* react-reconciler reads the seeded React 19 internals by minified
-		* single-letter fields and a version-skew throws at boot ("reading
-		* 'S' of undefined") — a duplicate-React-instance hazard the client
-		* preset's purity gate exists to prevent. three is a pure leaf
-		* library: no React entanglement, no reconciler, mounts like any
-		* imperative canvas lib (the DSH pattern for chart/DOM libs).
+		* SUBSTRATE LAW (verbatim, the 2026-09-12 boot-crash lesson): RAW
+		* three.js — imperative scene in a useEffect, NO @react-three. r3f's
+		* bundled react-reconciler reads the seeded React 19 internals by
+		* minified single-letter fields and a version-skew throws at boot
+		* ("reading 'S' of undefined"). three is a pure leaf library: no
+		* React entanglement, mounts like any imperative canvas lib.
 		*
-		* The artifact channel: the RUN is the SSOT (readRun rewrites bare
-		* names onto /melite-media/runs/<id>/<rel>) — the studio polls
-		* runs/status until the stage's url lands (the old pollFlowRun law).
+		* THE PREVIEW-PORT INTERACTION LAW (the operator's catch, hour 14:
+		* "Anny and Trellis are close to the same, but the way they interact
+		* with the preview port is different"): ONE stage component serves
+		* both — selection + per-asset errors are the stage's own uniform
+		* interaction surface; studio chrome (anchors, badges, in-card
+		* actions like anny's HMR fit-body) docks AROUND it, never inside.
 		*/
 		let draco = null;
 		function loader() {
@@ -39917,7 +40130,7 @@ void main() {
 			l.setDRACOLoader(draco);
 			return l;
 		}
-		/** Normalize a loaded scene to a known viewing size — the old
+		/** Normalize a loaded scene to a known viewing size — the
 		*  autoFitToHeight law, verbatim port: center X/Z, scale the largest
 		*  dimension to targetHeight, feet on y=0. Mutates the root in place.
 		*  (Meshes arrive at wildly different scales; this is the ONE place
@@ -39946,7 +40159,10 @@ void main() {
 		}
 		/** The imperative three scene (a pure leaf library — the substrate
 		*  law above). Owns renderer/camera/controls, the rAF loop, the
-		*  resize observation, and full disposal on unmount. */
+		*  resize observation, the click→asset resolution, and full disposal
+		*  on unmount. Clicks resolve to the stage asset id under the cursor
+		*  (group.userData.stageId, walked parentward) or null on empty
+		*  space; a drag-orbit never reads as a click (the 350ms threshold). */
 		function mountScene(canvas, onFail) {
 			let renderer;
 			try {
@@ -39968,6 +40184,9 @@ void main() {
 			const key = new DirectionalLight(16777215, 2.2);
 			key.position.set(3, 5, 2);
 			scene.add(key);
+			const fill = new DirectionalLight(16777215, .6);
+			fill.position.set(-3, 2, -2);
+			scene.add(fill);
 			const grid = new GridHelper(6, 24, 12303291, 14540253);
 			const gridMat = grid.material;
 			gridMat.transparent = true;
@@ -39976,6 +40195,32 @@ void main() {
 			const controls = new OrbitControls(camera, canvas);
 			controls.target.set(0, .8, 0);
 			controls.enableDamping = true;
+			const raycaster = new Raycaster();
+			const pointer = new Vector2();
+			let clickSink = () => {};
+			let downAt = 0;
+			const onPointerDown = (e) => {
+				downAt = e.timeStamp;
+			};
+			const onClick = (e) => {
+				if (e.timeStamp - downAt > 350) return;
+				const r = canvas.getBoundingClientRect();
+				pointer.x = (e.clientX - r.left) / r.width * 2 - 1;
+				pointer.y = -((e.clientY - r.top) / r.height) * 2 + 1;
+				raycaster.setFromCamera(pointer, camera);
+				const hits = raycaster.intersectObjects(scene.children, true);
+				for (const hit of hits) {
+					let o = hit.object;
+					while (o !== null && o.userData.stageId === void 0) o = o.parent;
+					if (o !== null) {
+						clickSink(o.userData.stageId);
+						return;
+					}
+				}
+				clickSink(null);
+			};
+			canvas.addEventListener("pointerdown", onPointerDown);
+			canvas.addEventListener("click", onClick);
 			let raf = 0;
 			const render = () => {
 				raf = requestAnimationFrame(render);
@@ -39995,64 +40240,132 @@ void main() {
 			ro.observe(canvas);
 			return {
 				scene,
+				setClickSink: (fn) => {
+					clickSink = fn;
+				},
 				dispose: () => {
 					cancelAnimationFrame(raf);
 					ro.disconnect();
+					canvas.removeEventListener("pointerdown", onPointerDown);
+					canvas.removeEventListener("click", onClick);
 					controls.dispose();
 					renderer.dispose();
 				}
 			};
 		}
-		/** The viewport. url null → the empty state (the honest pre-run face);
-		*  a load failure is LOUD (the old studio law — never a silent blank). */
-		function GlbViewport({ url, label }) {
+		/** The selection tint — emissive lift on the selected group's meshes
+		*  (the old Stage's highlight, the DOM-free way; lifted meshes read
+		*  at any theme because emissive adds, never replaces). */
+		function tint(root, on) {
+			root.traverse((o) => {
+				const m = o.material;
+				if (Array.isArray(m)) {
+					for (const mm of m) if ("emissive" in mm) mm.emissive.setHex(on ? 3159626 : 0);
+				} else if (m !== void 0 && m !== null && "emissive" in m) m.emissive.setHex(on ? 3159626 : 0);
+			});
+		}
+		/** THE MESH STAGE PREVIEW — the multi-asset GLB viewport (assets in a
+		*  row, click to select, per-asset load failures reported upward).
+		*  No assets → the honest empty state; the canvas mounts when the
+		*  first asset lands. */
+		function GlbStagePreview({ assets, selectedId, onSelect, onAssetError, emptyHint, label }) {
 			const canvasRef = (0, react.useRef)(null);
-			const [gltf, setGltf] = (0, react.useState)(null);
-			const [error, setError] = (0, react.useState)(null);
-			const [loaded, setLoaded] = (0, react.useState)(false);
+			const sceneRef = (0, react.useRef)(null);
+			const [loaded, setLoaded] = (0, react.useState)([]);
+			const [failed, setFailed] = (0, react.useState)(null);
+			const [ready, setReady] = (0, react.useState)(false);
+			const selectRef = (0, react.useRef)(onSelect);
+			selectRef.current = onSelect;
+			const key = assets.map((a) => a.id + "@" + a.url).join("|");
+			const errRef = (0, react.useRef)(onAssetError);
+			errRef.current = onAssetError;
 			(0, react.useEffect)(() => {
-				setGltf(null);
-				setError(null);
-				setLoaded(false);
-				if (url === null) return;
+				setLoaded([]);
+				setFailed(null);
+				setReady(false);
+				if (assets.length === 0) return;
 				let alive = true;
-				loader().load(url, (g) => {
-					if (alive) {
-						autoFitToHeight(g.scene);
-						setGltf(g);
-						setLoaded(true);
-					}
+				let pending = assets.length;
+				const settle = () => {
+					if (alive && pending === 0) setReady(true);
+				};
+				for (const a of assets) loader().load(a.url, (g) => {
+					if (!alive) return;
+					autoFitToHeight(g.scene);
+					const group = new Group();
+					group.userData.stageId = a.id;
+					group.add(g.scene);
+					if (a.scale !== void 0) group.scale.multiplyScalar(a.scale);
+					if (a.rotation !== void 0) group.rotation.set(a.rotation[0], a.rotation[1], a.rotation[2]);
+					if (a.position !== void 0) group.position.set(a.position[0], a.position[1], a.position[2]);
+					setLoaded((prev) => [...prev, {
+						asset: a,
+						group
+					}]);
+					errRef.current?.(a.id, null);
+					pending -= 1;
+					settle();
 				}, void 0, (e) => {
-					if (alive) setError(e instanceof Error ? e.message : "glb load failed");
+					if (!alive) return;
+					errRef.current?.(a.id, e instanceof Error ? e.message : "glb load failed");
+					pending -= 1;
+					settle();
 				});
 				return () => {
 					alive = false;
 				};
-			}, [url]);
+			}, [key]);
 			(0, react.useEffect)(() => {
-				if (url === null || error !== null || !loaded) return;
+				if (!ready || loaded.length === 0) return;
 				const canvas = canvasRef.current;
 				if (canvas === null) return;
-				const mounted = mountScene(canvas, setError);
+				const mounted = mountScene(canvas, (m) => setFailed(m));
 				if (mounted === null) return;
-				if (gltf !== null) mounted.scene.add(gltf.scene);
+				sceneRef.current = mounted;
+				mounted.setClickSink((id) => selectRef.current?.(id));
+				let x = 0;
+				for (const { asset, group } of loaded) {
+					mounted.scene.add(group);
+					if (asset.position === void 0) {
+						const box = new Box3().setFromObject(group);
+						const size = new Vector3();
+						box.getSize(size);
+						group.position.x += x + size.x / 2;
+						x += size.x + .4;
+					}
+				}
 				return () => {
+					sceneRef.current = null;
 					mounted.dispose();
 				};
-			}, [
-				url,
-				error,
-				loaded,
-				gltf
-			]);
+			}, [ready, loaded]);
+			(0, react.useEffect)(() => {
+				for (const { asset, group } of loaded) tint(group, asset.id === selectedId);
+			}, [loaded, selectedId]);
 			return (0, react.createElement)("div", {
-				className: client_module_css_default.viewport,
-				"data-viewport": label ?? "glb"
-			}, url === null ? (0, react.createElement)("p", { className: client_module_css_default.viewportEmpty }, "Run the card to see the mesh") : error !== null ? (0, react.createElement)("p", { className: client_module_css_default.runError }, "mesh failed to load: " + error) : !loaded ? (0, react.createElement)("p", { className: client_module_css_default.viewportEmpty }, "loading mesh…") : (0, react.createElement)("canvas", {
+				className: preview_module_css_default.stagePreview,
+				"data-viewport": label ?? "glb-stage"
+			}, assets.length === 0 ? (0, react.createElement)("div", { className: preview_module_css_default.empty }, emptyHint ?? "Run the card to see the mesh") : failed !== null ? (0, react.createElement)("div", { className: preview_module_css_default.empty }, "viewport failed: " + failed) : !ready ? (0, react.createElement)("div", { className: preview_module_css_default.empty }, "loading mesh…") : (0, react.createElement)("canvas", {
 				ref: canvasRef,
-				className: client_module_css_default.viewportCanvas
+				className: preview_module_css_default.stageCanvas,
+				"data-testid": "stage-preview-glb"
 			}));
 		}
+		//#endregion
+		//#region ../../web/card-base/src/preview.tsx
+		/**
+		* preview.tsx — THE SHARED PREVIEW COMPONENTS (the preview seam's
+		* built-in claims, hour-9 2026-09-13 — the operator's law: "Where
+		* the VIDEO PREVIEW and the IMAGE PREVIEW of other cards go in a
+		* SLOT with SHARED DSH PRIMITIVES"). One preview per media kind,
+		* DSH-pure: native media elements on card-base chrome, DSW tokens
+		* BARE (no fallbacks — the hour-8 name law), zero bespoke islands.
+		*
+		* These are the DEFAULTS the pattern prescribes (the ui-tool law:
+		* "central default views"); a card claims its kind's preview only
+		* to specialize — the h3 studio rides the shared VIDEO preview for
+		* its hero, exactly as an image-gen card rides the IMAGE one.
+		*/
 		//#endregion
 		//#region src/client/index.ts
 		/**
@@ -40153,9 +40466,14 @@ void main() {
 				onRun();
 				setRunning(false);
 			};
-			return (0, react.createElement)("div", { className: client_module_css_default.zoomDetail }, wireMenu, (0, react.createElement)("div", { className: client_module_css_default.studioHead }, (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Tag, { tone: "info" }, "studio"), runStatus !== "" ? (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Tag, { tone: runStatus === "done" ? "success" : runStatus === "error" ? "danger" : "neutral" }, runStatus) : null), error !== null ? (0, react.createElement)("p", { className: client_module_css_default.runError }, error) : null, spec === null ? (0, react.createElement)("p", { className: client_module_css_default.groupNote }, "loading the declared knob surface…") : (0, react.createElement)("div", { className: client_module_css_default.studioBody }, (0, react.createElement)("div", { className: client_module_css_default.studioSplit }, (0, react.createElement)(GlbViewport, {
-				url: meshUrl,
-				label: "img-to-mesh"
+			return (0, react.createElement)("div", { className: client_module_css_default.zoomDetail }, wireMenu, (0, react.createElement)("div", { className: client_module_css_default.studioHead }, (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Tag, { tone: "info" }, "studio"), runStatus !== "" ? (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Tag, { tone: runStatus === "done" ? "success" : runStatus === "error" ? "danger" : "neutral" }, runStatus) : null), error !== null ? (0, react.createElement)("p", { className: client_module_css_default.runError }, error) : null, spec === null ? (0, react.createElement)("p", { className: client_module_css_default.groupNote }, "loading the declared knob surface…") : (0, react.createElement)("div", { className: client_module_css_default.studioBody }, (0, react.createElement)("div", { className: client_module_css_default.studioSplit }, (0, react.createElement)(GlbStagePreview, {
+				assets: meshUrl === null ? [] : [{
+					id: "mesh",
+					url: meshUrl,
+					name: "mesh"
+				}],
+				label: "img-to-mesh",
+				emptyHint: "Run the card to see the mesh"
 			}), (0, react.createElement)("div", { className: client_module_css_default.studioRail }, STUDIO_EXPOSED.map((g) => (0, react.createElement)("section", {
 				key: g,
 				className: client_module_css_default.studioGroup

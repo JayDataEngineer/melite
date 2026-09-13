@@ -39,11 +39,12 @@ import { useCallback, useMemo, useState } from "react"
 import type { ReactElement, ReactNode } from "react"
 import type { CardStage } from "@melite/contracts"
 import { StudioShell } from "@melite/card-base/shell"
-// The shared 3D Stage (gap-1 debt note: the old viewers module is
-// alive — every import in its graph resolves — but translating the
-// three.js Stage onto the native viewport seam is follow-up work;
-// anny runs viewport="none" so this branch never executes for it).
-import { Stage, type StageAsset } from "@melite-plugin/3d/ui/viewers"
+// THE MESH STAGE (hour 14): the shared raw-three preview from
+// card-base — the r3f Stage died with the substrate law (no
+// @react-three in any client bundle; the old Stage imported
+// @react-three/fiber + drei). ONE stage serves Anny and Trellis:
+// selection + per-asset errors are its uniform interaction surface.
+import { GlbStagePreview as Stage, type StageAsset } from "@melite/card-base/preview"
 // The generic slot surface — the SAME squares every card renders.
 import { SlotGrid } from "./slotGrid"
 import styles from "./assembly.module.css"

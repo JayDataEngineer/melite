@@ -57,3 +57,9 @@ export function ImageStagePreview(props: PreviewOwnerProps): ReturnType<typeof h
       : null,
   )
 }
+
+/** THE MESH PREVIEW — the raw-three multi-asset stage (the substrate
+ *  law: NO @react-three in any client bundle). Re-exported here so
+ *  the preview seam stays ONE subpath: import { GlbStagePreview }
+ *  from '@melite/card-base/preview'. */
+export { GlbStagePreview, autoFitToHeight, type StageAsset } from './glb-stage.tsx'

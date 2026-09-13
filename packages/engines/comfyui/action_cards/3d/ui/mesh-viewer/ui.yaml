@@ -1,8 +1,0 @@
-# 3d's mesh-viewer claim (the viewer seam, 2026-08-21): the GLB
-# render path for AssetMedia tiles + dialogs + CardDetailModal. Claim
-# data here; the component (component.tsx) owns the mode dispatch —
-# tile → MeshPoster (the cached static poster), full → AnimatedGLBViewer
-# (the interactive turntable). Both live in the ui/viewers tenant.
-slot: mesh-viewer
-precedence: 10
-title: GLB mesh viewer (3d default)

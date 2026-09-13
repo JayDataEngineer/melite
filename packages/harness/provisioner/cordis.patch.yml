@@ -85,6 +85,9 @@
     # seam, so a row-mount registers nothing node-side. The studios
     # ride the packages' dsh.client declarations (src/client ->
     # lib/client.js).
+    - id: card-studio-anny
+      name: '@melite/3d-anny'
+
     - id: card-studio-h3-timeline
       name: '@melite/video-h3-timeline'
 

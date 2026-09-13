@@ -80,6 +80,9 @@ const DOM_SPEC_TREES = [
   `${rootPath('packages/image/ideogram4')}/tests/**/*.spec.{ts,tsx}`,
   `${rootPath('packages/image/mask-studio')}/tests/**/*.spec.{ts,tsx}`,
   `${rootPath('packages/3d/img-to-mesh')}/tests/**/*.spec.{ts,tsx}`,
+  // card-base's own spec tree (hour 14: the mesh stage's decision
+  // layer moved here with the component — the preview seam's claim)
+  `${rootPath('packages/web/card-base')}/tests/**/*.spec.{ts,tsx}`,
 ]
 // The gallery's own tree — React 18, the universe the DSH shell hosts.
 const GALLERY_SPEC_TREES = [`${GALLERY}/tests/**/*.spec.{ts,tsx}`]

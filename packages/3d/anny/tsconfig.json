@@ -12,16 +12,32 @@
       "DOM",
       "DOM.Iterable"
     ],
-    "types": ["node"],
+    "types": [
+      "node"
+    ],
     "paths": {
-      "react": ["./node_modules/@types/react"],
-      "react/*": ["./node_modules/@types/react/*"],
-      "react-dom": ["./node_modules/@types/react-dom"],
-      "react-dom/*": ["./node_modules/@types/react-dom/*"],
-      "three": ["./node_modules/@types/three"],
+      "react": [
+        "./node_modules/@types/react"
+      ],
+      "react/*": [
+        "./node_modules/@types/react/*"
+      ],
+      "react-dom": [
+        "./node_modules/@types/react-dom"
+      ],
+      "react-dom/*": [
+        "./node_modules/@types/react-dom/*"
+      ],
+      "three": [
+        "./node_modules/@types/three"
+      ],
       "three/examples/*": [
-        "./node_modules/@types/three/examples/*",
-        "./node_modules/three/examples/*"
+        "./node_modules/@types/three/examples/jsm/*",
+        "./node_modules/three/examples/jsm/*"
+      ],
+      "three/addons/*": [
+        "./node_modules/@types/three/examples/jsm/*",
+        "./node_modules/three/examples/jsm/*"
       ]
     },
     "skipLibCheck": true,

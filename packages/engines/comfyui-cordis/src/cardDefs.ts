@@ -51,7 +51,7 @@ export const theService = (): ComfyUIService => {
  *  cards (only tenants remain: the fetch-registrar manifests,
  *  retired with their rows). */
 export const cardPackages: string[] = [
-    '@melite/3d-anny',
+    '@melite/3d-anny/card',
     '@melite/3d-fit',
     '@melite/3d-img-to-mesh/card',
     '@melite/3d-quad-remesh',

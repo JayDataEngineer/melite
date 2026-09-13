@@ -27,8 +27,6 @@
     "@melite/contracts": "workspace:*",
     "@melite-plugin/melite-run-wire": "workspace:*",
     "@deepseek-ai/dsh-client-ui-primitives": "0.1.5-rc.2",
-    "three": "^0.184.0",
-    "@types/three": "^0.184.1",
     "clsx": "*"
   },
   "devDependencies": {

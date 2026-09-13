@@ -11,242 +11,270 @@
  * Reuses fetchBindMesh + buildGeometry from lib/bodyMesh so the cache is
  * shared with the main scene viewer (applying a character you were just
  * previewing is instant).
+ *
+ * SUBSTRATE LAW (hour 14, 2026-09-13): RAW three.js — imperative scene
+ * in a useEffect, NO @react-three. r3f's bundled react-reconciler reads
+ * the seeded React 19 internals by minified single-letter fields and a
+ * version-skew throws at boot; this file was the LAST @react-three
+ * import in any card client's graph (anny's shape face pulled it in).
+ * The scene graph below is the r3f tree's verbatim translation:
+ * lights/shadows/grid/orbit with identical parameters.
  */
 import { useEffect, useMemo, useRef, useState } from "react"
-import { Canvas } from "@react-three/fiber"
-import { OrbitControls, Grid, ContactShadows } from "@react-three/drei"
+import { OrbitControls } from "three/addons/controls/OrbitControls.js"
 import { Skeleton } from "../../../../skeleton"
 import styles from "./MeshPreviewCanvas.module.css"
 import * as THREE from "three"
 import {
- fetchBindMesh, buildGeometry, type SkinMeshData, type PreviewPose,
+  fetchBindMesh, buildGeometry, type SkinMeshData, type PreviewPose,
 } from "./bodyMesh"
 import type { Character } from "@melite/contracts"
-// ── Mesh ────────────────────────────────────────────────────────────────────
 
-function PreviewMesh({ meshData }: { meshData: SkinMeshData }) {
- const geo = useMemo(() => {
- const g = new THREE.BufferGeometry()
- g.setAttribute("position", new THREE.BufferAttribute(buildGeometry(meshData), 3))
- // SkinMeshData.faces is V x 3 triangle indices.
- const indices = new Uint32Array(meshData.faces.length * 3)
- for (let i = 0; i < meshData.faces.length; i++) {
- indices[i * 3] = meshData.faces[i][0]
- indices[i * 3 + 1] = meshData.faces[i][1]
- indices[i * 3 + 2] = meshData.faces[i][2]
- }
- g.setIndex(new THREE.BufferAttribute(indices, 1))
- g.computeVertexNormals()
- g.computeBoundingSphere()
- return g
- }, [meshData])
-
- return (
- <mesh geometry={geo} castShadow receiveShadow>
- <meshStandardMaterial
- color="#9bd0f7"
- roughness={0.55}
- metalness={0.05}
- flatShading={false}
- side={THREE.DoubleSide}
- />
- </mesh>
- )
-}
-
-// ── Scene ───────────────────────────────────────────────────────────────────
-
-function PreviewScene({ meshData }: { meshData: SkinMeshData }) {
- return (
- <>
- <ambientLight intensity={0.45} />
- <directionalLight
- position={[5, 8, 5]}
- intensity={1.0}
- castShadow
- shadow-mapSize-width={2048}
- shadow-mapSize-height={2048}
- shadow-camera-left={-3}
- shadow-camera-right={3}
- shadow-camera-top={3}
- shadow-camera-bottom={-3}
- shadow-camera-near={0.5}
- shadow-camera-far={20}
- shadow-bias={-0.0005}
- />
- <directionalLight position={[-4, 3, -2]} intensity={0.25} />
- <hemisphereLight args={["#cdd6f4", "#1a1a2e", 0.35]} />
-
- <ContactShadows
- position={[0, 0.001, 0]}
- scale={6}
- far={3}
- blur={2.5}
- opacity={0.55}
- resolution={1024}
- color="#000000"
- />
-
- <Grid
- position={[0, 0, 0]}
- args={[12, 12]}
- cellSize={0.25}
- cellThickness={0.5}
- cellColor="#3a3a5a"
- sectionSize={1}
- sectionThickness={1.0}
- sectionColor="#5a5a8a"
- fadeDistance={14}
- fadeStrength={1.2}
- infiniteGrid
- />
-
- <PreviewMesh meshData={meshData} />
-
- <OrbitControls
- makeDefault
- target={[0, 0.9, 0]}
- enableDamping
- dampingFactor={0.1}
- minDistance={0.8}
- maxDistance={12}
- maxPolarAngle={Math.PI / 1.85}
- />
- </>
- )
+/** Build the bind-mesh geometry (positions + V×3 face indices, smooth
+ *  normals) — the PreviewMesh body, verbatim. */
+function buildMeshGeometry(meshData: SkinMeshData): THREE.BufferGeometry {
+  const g = new THREE.BufferGeometry()
+  g.setAttribute("position", new THREE.BufferAttribute(buildGeometry(meshData), 3))
+  // SkinMeshData.faces is V x 3 triangle indices.
+  const indices = new Uint32Array(meshData.faces.length * 3)
+  for (let i = 0; i < meshData.faces.length; i++) {
+    indices[i * 3] = meshData.faces[i][0]
+    indices[i * 3 + 1] = meshData.faces[i][1]
+    indices[i * 3 + 2] = meshData.faces[i][2]
+  }
+  g.setIndex(new THREE.BufferAttribute(indices, 1))
+  g.computeVertexNormals()
+  g.computeBoundingSphere()
+  return g
 }
 
 // ── Outer component ─────────────────────────────────────────────────────────
 
 export interface MeshPreviewCanvasProps {
- /** Which character to render. Required: the store-subscription
-  * default left the component with the S1 subscription cut — both
-  * call sites pass the studio's `editing` explicitly, and the
-  * optional marker lied to the type gate (2026-09-12). */
- character: Character
- className?: string
- /**
- * Static preview pose. "arms_down" (default) renders the mesh in a
- * natural A-pose with arms at the sides; "tpose" renders the bind
- * (T-pose with arms out). Body Studio defaults to arms_down so the
- * preview reads as a person, not a crucifix.
- */
- previewPose?: PreviewPose
- /** Called with the canvas element after first mount (for thumbnails). */
- onCanvasReady?: (el: HTMLCanvasElement | null) => void
+  /** Which character to render. Required: the store-subscription
+   * default left the component with the S1 subscription cut — both
+   * call sites pass the studio's `editing` explicitly, and the
+   * optional marker lied to the type gate (2026-09-12). */
+  character: Character
+  className?: string
+  /**
+   * Static preview pose. "arms_down" (default) renders the mesh in a
+   * natural A-pose with arms at the sides; "tpose" renders the bind
+   * (T-pose with arms out). Body Studio defaults to arms_down so the
+   * preview reads as a person, not a crucifix.
+   */
+  previewPose?: PreviewPose
+  /** Called with the canvas element after first mount (for thumbnails). */
+  onCanvasReady?: (el: HTMLCanvasElement | null) => void
 }
 
 export function MeshPreviewCanvas({
- character, className, previewPose = "arms_down", onCanvasReady,
+  character, className, previewPose = "arms_down", onCanvasReady,
 }: MeshPreviewCanvasProps) {
- // The character may come from props OR from the host's editing store —
- // packages never import the app data plane, so the default subscription
- // moved to the call sites (BodyStudioTab passes its store value).
- const c = character
+  // The character may come from props OR from the host's editing store —
+  // packages never import the app data plane, so the default subscription
+  // moved to the call sites (BodyStudioTab passes its store value).
+  const c = character
 
- const [meshData, setMeshData] = useState<SkinMeshData | null>(null)
- const [error, setError] = useState<string | null>(null)
+  const [meshData, setMeshData] = useState<SkinMeshData | null>(null)
+  const [error, setError] = useState<string | null>(null)
+  const canvasRef = useRef<HTMLCanvasElement | null>(null)
+  // the mounted scene handle — rebuilt when the canvas mounts
+  const [sceneReady, setSceneReady] = useState(false)
 
- // Round coefficients for the fetch signature - matches bodyMesh.fetchBindMesh
- // rounding so we share cache entries with the main viewer.
- const coeffsSig = c.coeffs && c.coeffs.length > 0
- ? c.coeffs.map((v) => v.toFixed(1)).join(",")
- : ""
- const lcSig = c.localChanges && Object.keys(c.localChanges).length > 0
- ? Object.entries(c.localChanges)
- .sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))
- .map(([k, v]) => `${k}=${v.toFixed(2)}`)
- .join(",")
- : ""
- // Custom .target blendshape weights (e.g. anime stylization).
- const ctSig = c.customTargets && Object.keys(c.customTargets).length > 0
- ? Object.entries(c.customTargets)
- .sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))
- .map(([k, v]) => `${k}=${v.toFixed(2)}`)
- .join(",")
- : ""
- const poseSig = previewPose && previewPose !== "tpose" ? previewPose : ""
+  // Round coefficients for the fetch signature - matches bodyMesh.fetchBindMesh
+  // rounding so we share cache entries with the main viewer.
+  const coeffsSig = c.coeffs && c.coeffs.length > 0
+  ? c.coeffs.map((v) => v.toFixed(1)).join(",")
+  : ""
+  const lcSig = c.localChanges && Object.keys(c.localChanges).length > 0
+  ? Object.entries(c.localChanges)
+    .sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))
+    .map(([k, v]) => `${k}=${v.toFixed(2)}`)
+    .join(",")
+  : ""
+  // Custom .target blendshape weights (e.g. anime stylization).
+  const ctSig = c.customTargets && Object.keys(c.customTargets).length > 0
+  ? Object.entries(c.customTargets)
+    .sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))
+    .map(([k, v]) => `${k}=${v.toFixed(2)}`)
+    .join(",")
+  : ""
+  const poseSig = previewPose && previewPose !== "tpose" ? previewPose : ""
 
- useEffect(() => {
- let cancelled = false
- setError(null)
- // Debounce: wait 60ms before fetching. During rapid slider drags this
- // coalesces dozens of coefficient changes into a single backend request
- // so we don't queue 500ms POSTs for every pixel of slider movement.
- const timer = setTimeout(() => {
- fetchBindMesh({
+  useEffect(() => {
+    let cancelled = false
+    setError(null)
+    // Debounce: wait 60ms before fetching. During rapid slider drags this
+    // coalesces dozens of coefficient changes into a single backend request
+    // so we don't queue 500ms POSTs for every pixel of slider movement.
+    const timer = setTimeout(() => {
+      fetchBindMesh({
           identityModel: c.identityModel,
           identityCoeffs: c.coeffs,
           localChanges: c.localChanges,
           previewPose,
           customTargets: c.customTargets,
         })
- .then((data) => {
- if (!cancelled) setMeshData(data)
- })
- .catch((e) => {
- if (!cancelled) {
- setError(e instanceof Error ? e.message : String(e))
- setMeshData(null)
- }
- })
- }, 60)
- return () => {
- cancelled = true
- clearTimeout(timer)
- }
- }, [c.identityModel, coeffsSig, lcSig, ctSig, poseSig]) // eslint-disable-line react-hooks/exhaustive-deps
+        .then((data) => {
+          if (!cancelled) setMeshData(data)
+        })
+        .catch((e) => {
+          if (!cancelled) {
+            setError(e instanceof Error ? e.message : String(e))
+            setMeshData(null)
+          }
+        })
+    }, 60)
+    return () => {
+      cancelled = true
+      clearTimeout(timer)
+    }
+  }, [c.identityModel, coeffsSig, lcSig, ctSig, poseSig]) // eslint-disable-line react-hooks/exhaustive-deps
 
- // Notify parent of canvas element for thumbnail capture.
- const ref = useRef<HTMLDivElement>(null)
- useEffect(() => {
- if (!onCanvasReady) return
- const canvas = ref.current?.querySelector("canvas") ?? null
- onCanvasReady(canvas)
- }, [onCanvasReady, meshData])
+  // THE SCENE (the r3f tree's verbatim translation — see the substrate
+  // law in the header): lights, shadows, grid, orbit; mounts once when
+  // meshData first lands; the mesh itself swaps per meshData below.
+  const meshGroupRef = useRef<THREE.Group | null>(null)
+  useEffect(() => {
+    if (!meshData || sceneReady) return
+    const canvas = canvasRef.current
+    if (canvas === null) return
+    const renderer = new THREE.WebGLRenderer({
+      canvas, antialias: true, alpha: false, preserveDrawingBuffer: true,
+    })
+    // preserveDrawingBuffer is REQUIRED for canvas.toDataURL() to
+    // capture a non-black thumbnail (the r3f comment's law, verbatim).
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
+    renderer.shadowMap.enabled = true
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap
+    renderer.setClearColor(new THREE.Color("#0e0e1a"))
+    const scene = new THREE.Scene()
+    scene.add(new THREE.AmbientLight(0xffffff, 0.45))
+    const key = new THREE.DirectionalLight(0xffffff, 1.0)
+    key.position.set(5, 8, 5)
+    key.castShadow = true
+    key.shadow.mapSize.set(2048, 2048)
+    key.shadow.camera.left = -3; key.shadow.camera.right = 3
+    key.shadow.camera.top = 3; key.shadow.camera.bottom = -3
+    key.shadow.camera.near = 0.5; key.shadow.camera.far = 20
+    key.shadow.bias = -0.0005
+    scene.add(key)
+    const fill = new THREE.DirectionalLight(0xffffff, 0.25)
+    fill.position.set(-4, 3, -2)
+    scene.add(fill)
+    scene.add(new THREE.HemisphereLight(0xcdd6f4, 0x1a1a2e, 0.35))
+    // ContactShadows' raw equivalent: a ground plane receiving the
+    // key light's shadow through ShadowMaterial (the soft blurred
+    // contact look; opacity 0.55 matches the drei call).
+    const ground = new THREE.Mesh(
+      new THREE.PlaneGeometry(12, 12),
+      new THREE.ShadowMaterial({ opacity: 0.55 }),
+    )
+    ground.rotation.x = -Math.PI / 2
+    ground.position.y = 0.001
+    ground.receiveShadow = true
+    scene.add(ground)
+    // the grid — drei's infinite grid at its raw floor: cell .25
+    // (thickness .5), section 1 (thickness 1), the stage's own helper
+    const grid = new THREE.GridHelper(12, 48, 0x5a5a8a, 0x3a3a5a)
+    const gridMat = grid.material as THREE.Material
+    gridMat.transparent = true
+    gridMat.opacity = 0.9
+    scene.add(grid)
+    // the mesh carrier — geometry swaps per meshData, scene persists
+    const meshGroup = new THREE.Group()
+    meshGroupRef.current = meshGroup
+    scene.add(meshGroup)
+    const camera = new THREE.PerspectiveCamera(45, 1, 0.05, 100)
+    camera.position.set(2.74, 1.88, 3.5)
+    camera.lookAt(0, 0.9, 0)
+    const controls = new OrbitControls(camera, canvas)
+    controls.target.set(0, 0.9, 0)
+    controls.enableDamping = true
+    controls.dampingFactor = 0.1
+    controls.minDistance = 0.8
+    controls.maxDistance = 12
+    controls.maxPolarAngle = Math.PI / 1.85
+    let raf = 0
+    const render = (): void => {
+      raf = requestAnimationFrame(render)
+      controls.update()
+      renderer.render(scene, camera)
+    }
+    render()
+    const fit = (): void => {
+      const w = canvas.clientWidth, hh = canvas.clientHeight
+      if (w === 0 || hh === 0) return
+      renderer.setSize(w, hh, false)
+      camera.aspect = w / hh
+      camera.updateProjectionMatrix()
+    }
+    fit()
+    const ro = new ResizeObserver(fit)
+    ro.observe(canvas)
+    setSceneReady(true)
+    onCanvasReady?.(canvas)
+    return () => {
+      cancelAnimationFrame(raf)
+      ro.disconnect()
+      controls.dispose()
+      renderer.dispose()
+      meshGroupRef.current = null
+      setSceneReady(false)
+    }
+  }, [meshData !== null]) // eslint-disable-line react-hooks/exhaustive-deps
 
- return (
- <div ref={ref} className={className ? `${styles.root} ${className}` : `${styles.root} ${styles.rootDefault}`}>
- {error && (
- <div className={styles.errorBox}>
- {error}
- </div>
- )}
- {!error && !meshData && (
- <div
- role="status"
- aria-busy="true"
- aria-label="Loading mesh"
- className={styles.loadingBox}
- >
- {/* Skeleton stands in for the mesh viewport while the GLB parses —
-     a quiet block instead of a spinning dot. */}
- <Skeleton className={styles.loadingSkeleton} />
- </div>
- )}
- {meshData && (
- <Canvas
- shadows="percentage"
- camera={{ position: [2.74, 1.88, 3.5], fov: 45, near: 0.05, far: 100 }}
- // preserveDrawingBuffer: true is REQUIRED for canvas.toDataURL()
- // to capture a non-black thumbnail. Without it, the WebGL buffer
- // is swapped to the display compositor after each frame and the
- // next readback returns an empty (all-black) image — the exact
- // "pure black screen" bug in saved-character thumbnails. Cost is
- // a small per-frame perf hit (the buffer is preserved instead of
- // discarded), well worth it for working previews + screenshots.
- gl={{ preserveDrawingBuffer: true, antialias: true, alpha: false }}
- onCreated={({ gl }) => {
- // Clear to the dark Body Studio background so even a partial
- // first frame reads correctly on toDataURL.
- gl.setClearColor(new THREE.Color("#0e0e1a"))
- onCanvasReady?.(gl.domElement)
- }}
- className={styles.canvasClear}
- >
- <PreviewScene meshData={meshData} />
- </Canvas>
- )}
- </div>
- )
+  // the mesh body — geometry rebuilds per meshData on the persistent
+  // carrier group (the debounced fetch's 60ms coalescing upstream)
+  const geo = useMemo(() => (meshData === null ? null : buildMeshGeometry(meshData)), [meshData])
+  useEffect(() => {
+    const group = meshGroupRef.current
+    if (group === null || geo === null) return
+    while (group.children.length > 0) {
+      const child = group.children[0]
+      group.remove(child)
+      if (child instanceof THREE.Mesh) {
+        child.geometry.dispose()
+        const m = child.material
+        if (Array.isArray(m)) m.forEach((mm) => mm.dispose())
+        else m.dispose()
+      }
+    }
+    const mesh = new THREE.Mesh(geo, new THREE.MeshStandardMaterial({
+      color: 0x9bd0f7,
+      roughness: 0.55,
+      metalness: 0.05,
+      flatShading: false,
+      side: THREE.DoubleSide,
+    }))
+    mesh.castShadow = true
+    mesh.receiveShadow = true
+    group.add(mesh)
+  }, [geo, sceneReady])
+
+  return (
+    <div className={className ? `${styles.root} ${className}` : `${styles.root} ${styles.rootDefault}`}>
+      {error && (
+        <div className={styles.errorBox}>
+          {error}
+        </div>
+      )}
+      {!error && !meshData && (
+        <div
+          role="status"
+          aria-busy="true"
+          aria-label="Loading mesh"
+          className={styles.loadingBox}
+        >
+          {/* Skeleton stands in for the mesh viewport while the GLB parses —
+              a quiet block instead of a spinning dot. */}
+          <Skeleton className={styles.loadingSkeleton} />
+        </div>
+      )}
+      {meshData && (
+        <canvas ref={canvasRef} className={styles.canvasClear} />
+      )}
+    </div>
+  )
 }

@@ -36,7 +36,8 @@
     "@types/node": "^22.20.0",
     "@types/react": "^19.2.14",
     "typescript": "~6.0.3",
-    "@types/react-dom": "^19.2.2"
+    "@types/react-dom": "^19.2.2",
+    "@types/three": "^0.184.1"
   },
   "scripts": {
     "typecheck": "tsc --noEmit"
@@ -44,6 +45,7 @@
   "dependencies": {
     "@deepseek-ai/dsh-client-ui-primitives": "0.1.5-rc.2",
     "@melite/contracts": "workspace:*",
-    "clsx": "*"
+    "clsx": "*",
+    "three": "^0.184.0"
   }
 }

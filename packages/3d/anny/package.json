@@ -3,9 +3,10 @@
   "private": true,
   "type": "module",
   "description": "the anny card (the 3d lane) \u2014 one card one package: card.ts host face + ui/ studio + agents/ context",
-  "main": "./src/card.ts",
+  "main": "./src/index.ts",
   "exports": {
-    ".": "./src/card.ts",
+    ".": "./src/index.ts",
+    "./card": "./src/card.ts",
     "./client": "./lib/client.js",
     "./package.json": "./package.json",
     "./ui/studio/component": "./src/ui/studio/component.tsx",
@@ -17,8 +18,8 @@
   "dependencies": {
     "@deepseek-ai/cordis": "^4.0.2",
     "@deepseek-ai/dsh-client-ui-primitives": "0.1.5-rc.2",
+    "@deepseek-ai/dsh-client-ui-renderer": "0.1.5-rc.2",
     "@deepseek-ai/schemastery": "*",
-    "@melite-plugin/3d": "workspace:*",
     "@melite/card-base": "workspace:*",
     "@melite/cards": "workspace:*",
     "@melite/catalog": "workspace:*",

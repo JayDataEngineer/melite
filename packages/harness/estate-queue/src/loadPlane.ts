@@ -38,8 +38,10 @@ export function resolveCardPackageDir(repo: string, cardId: string): string {
   }
   const hits: string[] = [];
   for (const row of cardPackages) {
-    // (every cardPackages row carries the @melite/ prefix — the bare arm never fires)
-    const tail: string = row.startsWith("@melite/") ? row.slice("@melite/".length) : /* v8 ignore next */ row;
+    // (every cardPackages row carries the @melite/ prefix — the bare arm never fires;
+    // studio cards' rows point at the CARD subpath ('.../card') — strip it: the
+    // resolver wants the package name, and the dir guard below does the rest)
+    const tail: string = (row.startsWith("@melite/") ? row.slice("@melite/".length) : /* v8 ignore next */ row).replace(/\/card$/, "");
     if (!tail.endsWith("-" + cardId)) continue;
     for (const dom of domains) {
       if (!tail.startsWith(dom + "-")) continue;

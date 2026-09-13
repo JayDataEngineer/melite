@@ -31,7 +31,10 @@ import css from './client.module.css'
 import type { StageViewOwnerProps } from '@melite/contracts'
 import { fetchFormSpec, CardForm as SpecForm, specDefaults, useSquareProvider, type FormSpecDoc, type SpecField, type SpecValues, type SquareHost } from '@melite/card-base'
 import { pollRunStageUrl } from '@melite-plugin/melite-run-wire'
-import { GlbViewport } from './glb-viewport.tsx'
+// THE MESH STAGE (hour 14): the shared raw-three preview from
+// card-base — the SAME stage anny rides (one preview-port interaction
+// law: selection + per-asset errors are the stage's own surface).
+import { GlbStagePreview } from '@melite/card-base/preview'
 
 /** The door's group truth (schema_groups, 2026-09-12 lane read):
  *  input, generation — exposed; stage, mesh, bake, lab — folded. */
@@ -122,7 +125,11 @@ export function ImgToMeshStudio(props: StageViewOwnerProps): ReturnType<typeof h
       : h('div', { className: css.studioBody },
         h('div', { className: css.studioSplit },
           // THE 3D SPACE (the shared viewport — the old Stage law)
-          h(GlbViewport, { url: meshUrl, label: 'img-to-mesh' }),
+          h(GlbStagePreview, {
+            assets: meshUrl === null ? [] : [{ id: 'mesh', url: meshUrl, name: 'mesh' }],
+            label: 'img-to-mesh',
+            emptyHint: 'Run the card to see the mesh',
+          }),
           h('div', { className: css.studioRail },
         // SpecForm renders each group's title itself — no duplicate.
         STUDIO_EXPOSED.map((g) => h('section', { key: g, className: css.studioGroup },
