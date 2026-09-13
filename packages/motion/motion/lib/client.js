@@ -47,7 +47,7 @@ window.__ModuleLoader__.load({
 		react = __toESM(react, 1);
 		let react_jsx_runtime = require("react/jsx-runtime");
 		let _deepseek_ai_dsh_client_ui_primitives = require("@deepseek-ai/dsh-client-ui-primitives");
-		require("react-dom");
+		let react_dom = require("react-dom");
 		//#region ../../web/card-base/src/icons.tsx
 		function Svg$1({ className, style, children, ...rest }) {
 			return /* @__PURE__ */ (0, react_jsx_runtime.jsx)("svg", {
@@ -49240,6 +49240,11 @@ void main() {
 		*
 		* Per-seam subpath: `@melite/card-base/chrome`.
 		*/
+		/** Plain classnames joiner (no conflicting utilities to merge —
+		*  plain join is exact). */
+		function cx(...parts) {
+			return parts.filter(Boolean).join(" ");
+		}
 		/** The merging joiner (clsx — objects/arrays/conditionals). */
 		function cn(...inputs) {
 			return clsx(...inputs);
@@ -51921,7 +51926,47 @@ void main() {
 			});
 		}
 		(0, react.createContext)({ useGui: (selector) => selector({ theme: { dark_mode: true } }) });
-		(0, react.createContext)(null);
+		//#endregion
+		//#region ../../web/card-base/src/studioRail.tsx
+		/**
+		* StudioRail — the shell-provided TOOLS slot in the studio's left rail
+		* (spec docs/design/card-studio-pattern.md §5 + §7.10).
+		*
+		* WHY A PORTAL: vertical space is the scarce axis (§7.9 — human figures),
+		* so a tenant's tool buttons (Skeleton / Refine pose / Export / …) must
+		* live in the RAIL, but their state lives INSIDE the tenant component
+		* (showSkeleton, editMode, bgImage…). Splitting the tenant into two
+		* registered components would force that state up through the shell —
+		* breaking E1 (the tenant receives exactly {stage, running, onSave}).
+		* Instead the tenant stays ONE component and PROJECTS its tools into the
+		* shell's slot; the shell stays genre-blind (it renders an empty div and
+		* knows nothing about motion).
+		*
+		* THE CONTRACT IS UNCHANGED: portaled tools write through the same
+		* onSave channel — nothing about the write path moves. Without the shell
+		* (a tenant mounted inline, e.g. the form view) the tools render in place
+		* — the exact layout the tenant had before the slot existed.
+		*
+		* Mount order (no flash): CardStudio renders the slot div and the tenant
+		* in the same commit; the div's ref lands before the tenant's effects
+		* run, so the portal binds on the first effect pass. The one render
+		* before that is inside the skeleton-masked mount anyway.
+		*/
+		/** The rail's tools-slot element, published by CardStudio. Null when the
+		*  tenant is mounted outside a studio shell (inline fallback). */
+		const StudioRailCtx = (0, react.createContext)(null);
+		/** TENANT side: renders children into the studio rail when one exists,
+		*  inline otherwise. Wrap the tenant's toolbar in this — nothing else. */
+		function StudioRail({ children }) {
+			const slot = (0, react.useContext)(StudioRailCtx);
+			const [el, setEl] = (0, react.useState)(null);
+			(0, react.useEffect)(() => {
+				if (slot && slot !== el) setEl(slot);
+			}, [slot]);
+			if (el) return (0, react_dom.createPortal)(children, el);
+			if (slot) return null;
+			return /* @__PURE__ */ (0, react_jsx_runtime.jsx)(react_jsx_runtime.Fragment, { children });
+		}
 		//#endregion
 		//#region \0dsh-css:card-base/src/shell.module.css.mjs
 		const css$1 = "._4etGFq_shell{grid-template-rows:minmax(0,1fr) auto;grid-template-columns:minmax(280px,330px) minmax(0,1fr);height:100%;min-height:0;display:grid}@media (width<=640px){._4etGFq_shell{grid-template-rows:none;grid-template-columns:1fr}._4etGFq_shell>:first-child{max-height:none;overflow-y:visible}}._4etGFq_shell>:first-child{scrollbar-gutter:stable;grid-area:1/1;min-height:0;padding-right:10px;overflow-y:auto}._4etGFq_shell>:nth-child(2){grid-area:1/2;min-height:0;overflow-y:auto}._4etGFq_shell>:nth-child(3){grid-area:2/1/auto/-1;min-height:168px;max-height:min(42%,380px);overflow-y:auto}._4etGFq_errorLine{flex-direction:column;grid-column:1/-1;gap:4px;display:flex}._4etGFq_errorRow{border:1px solid color-mix(in srgb, var(--dsw-alias-danger,#dc2626) 40%, transparent);background:color-mix(in srgb, var(--dsw-alias-danger,#dc2626) 10%, transparent);color:var(--dsw-alias-danger,#dc2626);overflow-wrap:break-word;white-space:pre-wrap;border-radius:4px;margin:0;padding:6px 8px;font-family:ui-monospace,monospace;font-size:9px;line-height:1.4}._4etGFq_errorIcon{vertical-align:-2px;width:12px;height:12px;margin-right:4px;display:inline}._4etGFq_railSection{border:1px solid var(--dsw-alias-border,#e2e4e9);border-radius:8px;padding:8px 12px}._4etGFq_railHead{justify-content:space-between;align-items:center;gap:8px;margin-bottom:6px;display:flex}._4etGFq_railTitle{text-transform:uppercase;letter-spacing:.14em;color:var(--dsw-alias-label-tertiary,#8a93a0);margin:0;font-size:10px;font-weight:600}";
@@ -51933,8 +51978,50 @@ void main() {
 			tag.textContent = css$1;
 			document.head.appendChild(tag);
 		}
+		var shell_module_css_default = {
+			"errorIcon": "_4etGFq_errorIcon",
+			"errorLine": "_4etGFq_errorLine",
+			"errorRow": "_4etGFq_errorRow",
+			"railHead": "_4etGFq_railHead",
+			"railSection": "_4etGFq_railSection",
+			"railTitle": "_4etGFq_railTitle",
+			"shell": "_4etGFq_shell"
+		};
 		//#endregion
 		//#region ../../web/card-base/src/shell.tsx
+		/** The loud error line — shell-owned chrome. Same DOM the assembly
+		*  body always rendered. */
+		function StudioShellErrorLine({ errors }) {
+			if (errors.length === 0) return null;
+			return /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
+				role: "alert",
+				className: shell_module_css_default.errorLine,
+				children: errors.map((e) => /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("p", {
+					className: shell_module_css_default.errorRow,
+					children: [
+						/* @__PURE__ */ (0, react_jsx_runtime.jsx)(AlertTriangle, { className: shell_module_css_default.errorIcon }),
+						e.id,
+						": ",
+						e.message
+					]
+				}, e.id))
+			});
+		}
+		/** The studio body: params column LEFT (projected into the shell rail
+		*  slot when one exists), preview RIGHT, optional bottom bar, then the
+		*  error line. The uniform three-slot shape — timeline and form cards
+		*  are the same grain, forms simply leave the right/bottom slots empty. */
+		function StudioShell({ params, preview, bottom, errors = [], className }) {
+			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+				className: cx(shell_module_css_default.shell, className),
+				children: [
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)(StudioRail, { children: params }),
+					preview,
+					bottom,
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)(StudioShellErrorLine, { errors })
+				]
+			});
+		}
 		/** The construction door: one obvious way to build a declaration,
 		*  typed at the call site. Runtime-frozen. */
 		function defineShellDeclaration(declaration) {
@@ -53072,11 +53159,9 @@ void main() {
 				pushUndo();
 				setTlPrompts((prev) => carveNewPromptCard(prev, targetT));
 			}, [targetT]);
-			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(react_jsx_runtime.Fragment, { children: [
-				"className=",
-				component_module_css_default.shellPad,
-				"params=",
-				/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+			return /* @__PURE__ */ (0, react_jsx_runtime.jsx)(StudioShell, {
+				className: component_module_css_default.shellPad,
+				params: /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
 					className: component_module_css_default.railGrid,
 					children: [
 						/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
@@ -53259,8 +53344,7 @@ void main() {
 						})
 					]
 				}),
-				"preview=",
-				/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+				preview: /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
 					className: component_module_css_default.centerRow,
 					children: [/* @__PURE__ */ (0, react_jsx_runtime.jsxs)(ViewportFrame, {
 						ref: stageBoxRef,
@@ -53478,8 +53562,7 @@ void main() {
 						onFramePreset: handleFramePreset
 					})]
 				}),
-				"bottom=",
-				/* @__PURE__ */ (0, react_jsx_runtime.jsxs)(react_jsx_runtime.Fragment, { children: [
+				bottom: /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(react_jsx_runtime.Fragment, { children: [
 					/* @__PURE__ */ (0, react_jsx_runtime.jsxs)(PaneShell, {
 						className: component_module_css_default.timelineShell,
 						children: [
@@ -53593,8 +53676,8 @@ void main() {
 						onClose: () => setBodyWireOpen(false)
 					})
 				] }),
-				/* @__PURE__ */ (0, react_jsx_runtime.jsx)(ToastViewport, {})
-			] });
+				children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(react_jsx_runtime.Fragment, { children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(ToastViewport, {}) })
+			});
 		}
 		defineShellDeclaration({
 			preview: { kind: "native" },
