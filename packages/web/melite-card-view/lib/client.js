@@ -381,12 +381,16 @@ window.__ModuleLoader__.load({
 		*  and leading-/ urls pass verbatim — the one rewrite, never two). */
 		function readRunStatus(runId, doc) {
 			const stages = Array.isArray(doc["stages"]) ? doc["stages"].filter((s) => typeof s === "object" && s !== null && typeof s["id"] === "string") : [];
-			for (const stage of stages) if (typeof stage.url === "string" && stage.url !== "") stage.url = toRunMediaUrl(runId, stage.url);
+			for (const stage of stages) {
+				if (typeof stage.url === "string" && stage.url !== "") stage.url = toRunMediaUrl(runId, stage.url);
+				if (typeof stage.error !== "string" || stage.error === "") delete stage.error;
+			}
 			return {
 				runId,
 				status: typeof doc["status"] === "string" ? doc["status"] : "unknown",
 				draftId: typeof doc["draft_id"] === "string" && doc["draft_id"] !== "" ? doc["draft_id"] : null,
-				stages
+				stages,
+				...typeof doc["error"] === "string" && doc["error"] !== "" ? { error: doc["error"] } : {}
 			};
 		}
 		/** One runs/status read. */
@@ -982,6 +986,10 @@ window.__ModuleLoader__.load({
 					result["assetUrls"] = url !== "" ? [url, ...mediaUrls] : mediaUrls;
 				}
 				const terminal = row.status === "completed" ? "done" : row.status;
+				if (terminal === "failed") {
+					const reason = stage?.error ?? row.error;
+					if (typeof reason === "string" && reason !== "") result["error"] = reason;
+				}
 				try {
 					await patchStageOutcome(draftId, stageId, {
 						runStatus: terminal,
@@ -43233,7 +43241,11 @@ void main() {
 			}, " ⛓") : null, row.sourceAttached ? (0, react.createElement)("span", {
 				className: card_module_css_default$1.wiredMark,
 				title: "source attached"
-			}, " 📎") : null), (0, react.createElement)("span", { className: card_module_css_default$1.tileMeta }, row.service !== null ? row.service : null, row.upstream !== null ? (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Tag, { tone: "quiet" }, "⟵ " + row.upstream) : null, row.prompt !== null ? (0, react.createElement)("span", { className: card_module_css_default$1.tilePrompt }, row.prompt) : null)))));
+			}, " 📎") : null), (0, react.createElement)("span", { className: card_module_css_default$1.tileMeta }, row.service !== null ? row.service : null, row.upstream !== null ? (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Tag, { tone: "quiet" }, "⟵ " + row.upstream) : null, row.prompt !== null ? (0, react.createElement)("span", { className: card_module_css_default$1.tilePrompt }, row.prompt) : null), row.error !== null && row.status === "failed" ? (0, react.createElement)("span", {
+				className: card_module_css_default$1.runError,
+				"data-testid": "tile-run-error",
+				title: row.error
+			}, row.error.length > 140 ? row.error.slice(0, 140) + "…" : row.error) : null))));
 		}
 		/** The chrome's running truth: the row's stamped status (the observer
 		*  patches it terminal the moment the run lands). */
@@ -43269,6 +43281,7 @@ void main() {
 			const promptRaw = typeof params["prompt"] === "string" ? params["prompt"] : "";
 			const result = stage.result;
 			const url = typeof result === "object" && result !== null && typeof Reflect.get(result, "url") === "string" ? Reflect.get(result, "url") : "";
+			const failText = typeof result === "object" && result !== null && typeof Reflect.get(result, "error") === "string" ? Reflect.get(result, "error") : "";
 			const face = previewKindFor(url);
 			const absolute = (u) => /^(https?:\/\/|\/)/.test(u);
 			const posterFromArtifacts = (() => {
@@ -43284,6 +43297,8 @@ void main() {
 				status,
 				dot: STAGE_DOT[status] ?? null,
 				prompt: promptRaw !== "" ? promptRaw.slice(0, 96) : null,
+				/** the failure carry — the run's own refusal text, or null. */
+				error: failText !== "" ? failText : null,
 				thumbUrl: face === "image" && absolute(url) ? url : posterFromArtifacts,
 				face,
 				videoUrl: face === "video" && absolute(url) ? url : null,
@@ -43552,7 +43567,10 @@ void main() {
 					onClose: () => {
 						setDrillItem(null);
 					}
-				}) : null, (0, react.createElement)("div", { className: card_module_css_default$1.runRow }, error !== null ? (0, react.createElement)("span", { className: card_module_css_default$1.runError }, error) : null, (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+				}) : null, typeof stage.runStatus === "string" && stage.runStatus === "failed" && typeof stage.result?.["error"] === "string" ? (0, react.createElement)("p", {
+					className: card_module_css_default$1.runError,
+					"data-testid": "drill-run-error"
+				}, String(stage.result["error"])) : null, (0, react.createElement)("div", { className: card_module_css_default$1.runRow }, error !== null ? (0, react.createElement)("span", { className: card_module_css_default$1.runError }, error) : null, (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Button, {
 					variant: "primary",
 					disabled: running,
 					onClick: () => {

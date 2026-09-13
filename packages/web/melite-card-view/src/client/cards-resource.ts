@@ -325,6 +325,16 @@ export async function observeRunOutcome(
       result['assetUrls'] = url !== '' ? [url, ...mediaUrls] : mediaUrls
     }
     const terminal = row.status === 'completed' ? 'done' : row.status
+    // THE FAILURE CARRY (2026-09-13, the silent-failure cure): a
+    // failed run's reason rides the row verbatim — the stage's own
+    // error first (the ComfyUI validation refusal names the node and
+    // the missing file), the run-level text as fallback. Without it
+    // a failed run reads as "no response at all": the tile flips
+    // back with no artifact and no word.
+    if (terminal === 'failed') {
+      const reason = stage?.error ?? row.error
+      if (typeof reason === 'string' && reason !== '') result['error'] = reason
+    }
     try {
       await patchStageOutcome(draftId, stageId, { runStatus: terminal, result })
       onTouched?.()

@@ -43,6 +43,29 @@ export const DECL: ModelDecl = {
     "loras",
     "mask"
   ],
+  // THE PROVISION TRUTH (2026-09-13, the silent-failure cure): the
+  // family declared lane_inputs files but NO downloadable rows — the
+  // manage rail could not name where the text encoder lives, and the
+  // card died at ComfyUI validation with no surfaced reason. Every
+  // lane_inputs weight now carries its provision (shas from the HF
+  // tree APIs; the encoder and vae share the Qwen-Image_ComfyUI
+  // split_files repo, the unet rides the edit repo's convrot row).
+  "provisions": [
+    {
+      "name": "qwen_2.5_vl_7b_fp8_scaled.safetensors",
+      "url": "https://huggingface.co/Comfy-Org/Qwen-Image_ComfyUI/resolve/main/split_files/text_encoders/qwen_2.5_vl_7b_fp8_scaled.safetensors",
+      "folder": "text_encoders",
+      "sha256": "cb5636d852a0ea6a9075ab1bef496c0db7aef13c02350571e388aea959c5c0b4",
+      "size_bytes": 9384670680
+    },
+    {
+      "name": "qwen_image_vae.safetensors",
+      "url": "https://huggingface.co/Comfy-Org/Qwen-Image_ComfyUI/resolve/main/split_files/vae/qwen_image_vae.safetensors",
+      "folder": "vae",
+      "sha256": "a70580f0213e67967ee9c95f05bb400e8fb08307e017a924bf3441223e023d1f",
+      "size_bytes": 253806246
+    }
+  ],
   "variants": [
     {
       "id": "lightning",
@@ -60,6 +83,14 @@ export const DECL: ModelDecl = {
           "label": "FP8 Lightning",
           "route": "qwen-img-edit-2511-lightning4",
           "vram_peak_gb": 20,
+          "artifact": {
+            "source_url": "https://huggingface.co/lightx2v/Qwen-Image-Edit-2511-Lightning/resolve/main/qwen_image_edit_2511_fp8_e4m3fn_scaled_lightning_comfyui_4steps_v1.0.safetensors",
+            "size_bytes": 20447469486,
+            "sha256": "16d03fd9bab36b0a588e77db23825629df62ab99fc3e62f3a36887b201dcc36f",
+            "dest_root": "COMFYUI_ROOT",
+            "dest_sub": "checkpoints",
+            "size_hint_gb": 20.4
+          }
         }
       ]
     },
@@ -80,6 +111,14 @@ export const DECL: ModelDecl = {
           "label": "INT8 ConvRot",
           "route": "qwen-img-edit-2511-int8",
           "vram_peak_gb": 20,
+          "artifact": {
+            "source_url": "https://huggingface.co/Comfy-Org/Qwen-Image-Edit_ComfyUI/resolve/main/split_files/diffusion_models/qwen_image_edit_2511_int8_convrot.safetensors",
+            "size_bytes": 20499083824,
+            "sha256": "11b5af5ac601821d73930c84846c9a158e67177356daf927ce1c8d10f3963829",
+            "dest_root": "COMFYUI_ROOT",
+            "dest_sub": "diffusion_models",
+            "size_hint_gb": 20.5
+          }
         }
       ]
     },

@@ -103,6 +103,10 @@ declare module "@deepseek-ai/dsh-typert-protocol" {
       readonly expected?: string;
       readonly got?: string;
     };
+    /** The lane presence gate refused (2026-09-13): a family's
+     * declared lane file is missing from every store folder — the
+     * message names the file and the provision's fetch URL. */
+    "runs/lane-input-missing": RunsRefusalDetails;
     /** Status on an id this process owns no row for. */
     "runs/unknown-run": { readonly runId: string };
     /** Stop on an id this process owns no row for. */
@@ -119,7 +123,7 @@ declare module "@deepseek-ai/cordis" {
 /** The py refusal codes this remote serves, folded to the
  *  protocol's vocabulary — a literal table, no dynamic key. */
 const RUNS_ERROR_CODES: Readonly<
-  Record<string, "runs/bad-envelope" | "runs/draft-required" | "runs/draft-malformed" | "runs/draft-unknown" | "runs/invalid-request" | "runs/preview-scope" | "runs/flow-compile" | "runs/workflow-pin" | "runs/card-compose">
+  Record<string, "runs/bad-envelope" | "runs/draft-required" | "runs/draft-malformed" | "runs/draft-unknown" | "runs/invalid-request" | "runs/preview-scope" | "runs/flow-compile" | "runs/workflow-pin" | "runs/card-compose" | "runs/lane-input-missing">
 > = {
   bad_envelope: "runs/bad-envelope",
   draft_required: "runs/draft-required",
@@ -130,6 +134,7 @@ const RUNS_ERROR_CODES: Readonly<
   flow_compile: "runs/flow-compile",
   workflow_pin: "runs/workflow-pin",
   card_compose: "runs/card-compose",
+  lane_input_missing: "runs/lane-input-missing",
 };
 
 /** Map a CardArmError onto the refusal envelope (door-verbatim:

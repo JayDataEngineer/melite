@@ -513,6 +513,12 @@ function SortableTile({ row, entered, onOpen, grouping, selected, onToggleSelect
             row.upstream !== null ? h(Tag, { tone: 'quiet' }, '⟵ ' + row.upstream) : null,
             row.prompt !== null ? h('span', { className: css.tilePrompt }, row.prompt) : null,
           ),
+          // THE FAILURE FACE: the run's own refusal text under the
+          // caption — a failed run never again reads as silence.
+          row.error !== null && row.status === 'failed'
+            ? h('span', { className: css.runError, 'data-testid': 'tile-run-error', title: row.error },
+                row.error.length > 140 ? row.error.slice(0, 140) + '…' : row.error)
+            : null,
         ),
       ),
     ),
@@ -556,6 +562,9 @@ interface CardRowLineTabRow {
   status: string
   dot: 'done' | 'ongoing' | 'error' | 'warning' | null
   prompt: string | null
+  /** the failure carry — the run's own refusal text (rendered on the
+   *  tile caption and the drill; null when the run never failed). */
+  error: string | null
   thumbUrl: string | null
   /** the artifact's kind — drives the tile face dispatch. */
   face: 'video' | 'image' | 'audio' | 'mesh' | null
@@ -595,6 +604,12 @@ export function benchRow(stage: BenchStageRow, bench?: CardsBenchValue): CardRow
   const url = typeof result === 'object' && result !== null && typeof Reflect.get(result, 'url') === 'string'
     ? Reflect.get(result, 'url') as string
     : ''
+  // THE FAILURE FACE (2026-09-13): the observer's failure carry —
+  // a failed run's reason, sliced for the caption (the drill shows
+  // the full text).
+  const failText = typeof result === 'object' && result !== null
+    && typeof Reflect.get(result, 'error') === 'string'
+    ? (Reflect.get(result, 'error') as string) : ''
   // THE TILE FACE (2026-09-13, the broken-image cure): the artifact's
   // kind decides the face — an mp3 NEVER reaches <img> (the old
   // system's audio-bars face), a glb neither; mesh rows show a real
@@ -617,6 +632,8 @@ export function benchRow(stage: BenchStageRow, bench?: CardsBenchValue): CardRow
     status,
     dot: STAGE_DOT[status] ?? null,
     prompt: promptRaw !== '' ? promptRaw.slice(0, 96) : null,
+    /** the failure carry — the run's own refusal text, or null. */
+    error: failText !== '' ? failText : null,
     // same-origin absolute or leading-/ artifact urls render; a bare
     // run-relative filename cannot resolve without its run (the run
     // view owns that face) — the kind Pill rides instead.
@@ -975,6 +992,15 @@ function StageDrill({ stage, bench, running, onRun, onClose, onRemoved, onPatchP
             running ? 'rendering… the preview lands here' : 'run lands the preview here')),
         drillItem !== null
           ? h(MediaDrilldown, { item: drillItem, onClose: () => { setDrillItem(null) } })
+          : null,
+        // THE FAILURE FACE (2026-09-13): the observer's failure carry,
+        // full text — the drill is where the reason is READ (the tile
+        // caption slices it). Runs against the run row so the word
+        // "failed" always has its why one glance away.
+        typeof stage.runStatus === 'string' && stage.runStatus === 'failed'
+          && typeof (stage.result as Record<string, unknown> | null | undefined)?.['error'] === 'string'
+          ? h('p', { className: css.runError, 'data-testid': 'drill-run-error' },
+              String((stage.result as Record<string, unknown>)['error']))
           : null,
         h('div', { className: css.runRow },
           error !== null ? h('span', { className: css.runError }, error) : null,

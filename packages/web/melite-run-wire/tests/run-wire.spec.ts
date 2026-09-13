@@ -125,6 +125,36 @@ describe('the status law (readRunStatus)', () => {
     expect(isTerminalRun('stopped')).toBe(true)
     expect(isTerminalRun('running')).toBe(false)
   })
+
+  // THE SILENT-FAILURE CURE (2026-09-13): runs/status serves the
+  // ComfyUI refusal on stages[].error + the run-level error — the
+  // reader must CARRY it, not drop it (a dropped reason reads as
+  // "no response at all" in the UI).
+  it('carries the stage error and the run-level error (the silent-failure cure)', () => {
+    const row = readRunStatus('r/1', {
+      status: 'failed',
+      error: 'ComfyError: POST /prompt 400 value_not_in_list',
+      stages: [
+        { id: 'edit', status: 'error', url: '', error: "clip_name 'x' not in [14 clips]" },
+        { id: 'clean', status: 'done', url: 'ok.png', error: '' },
+      ],
+    })
+    expect(row.status).toBe('failed')
+    expect(row.error).toBe('ComfyError: POST /prompt 400 value_not_in_list')
+    expect(row.stages[0]?.error).toBe("clip_name 'x' not in [14 clips]")
+    // empty-string errors are deleted (absent ≡ empty, never a
+    // phantom "error:" caption on a healthy stage)
+    expect(row.stages[1]?.error).toBeUndefined()
+  })
+
+  it('absent errors stay absent (no phantom keys on healthy rows)', () => {
+    const row = readRunStatus('r1', {
+      status: 'completed',
+      stages: [{ id: 's', status: 'done', url: 'a.png' }],
+    })
+    expect(row.error).toBeUndefined()
+    expect(row.stages[0]?.error).toBeUndefined()
+  })
 })
 
 describe('the single-stage fallback (fetchRunStageUrl)', () => {

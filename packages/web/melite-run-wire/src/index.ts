@@ -159,6 +159,12 @@ export interface RunStageStatus {
   id: string
   status: string
   url?: string
+  /** The stage's failure text, served verbatim by the status door
+   *  (the ComfyUI validation refusal, the asset miss). A failed run
+   *  with no visible reason reads as "no response at all"; the
+   *  observer carries THIS onto the bench row so the tile can
+   *  render it (2026-09-13, the silent-failure cure). */
+  error?: string
   /** Completed stages carry the full artifact name list ({name}
    * rows — the queue stamps stage["gallery"] alongside url; the
    * harvest carry reads it to feed studio adapters real data). */
@@ -171,6 +177,9 @@ export interface RunStatusRow {
   status: string
   draftId: string | null
   stages: RunStageStatus[]
+  /** The run-level failure text (the same channel the stages carry;
+   *  the observer's fallback when no single stage owns the reason). */
+  error?: string
 }
 
 /** The terminal statuses — the runs seat's own vocabulary (the settle
@@ -204,6 +213,9 @@ export function readRunStatus(runId: string, doc: Record<string, unknown>): RunS
     if (typeof stage.url === 'string' && stage.url !== '') {
       stage.url = toRunMediaUrl(runId, stage.url)
     }
+    if (typeof stage.error !== 'string' || stage.error === '') {
+      delete stage.error
+    }
   }
   return {
     runId,
@@ -212,6 +224,7 @@ export function readRunStatus(runId: string, doc: Record<string, unknown>): RunS
       ? (doc['draft_id'] as string)
       : null,
     stages,
+    ...(typeof doc['error'] === 'string' && doc['error'] !== '' ? { error: doc['error'] as string } : {}),
   }
 }
 

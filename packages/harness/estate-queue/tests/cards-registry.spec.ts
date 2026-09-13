@@ -29,6 +29,13 @@ beforeAll(async () => {
   const s = svc();
   await s.prime();
   (globalThis as unknown as { __cards: CardRegistryService }).__cards = s;
+  // THE LANE PRESENCE GATE's hermetic deferral (2026-09-13): the
+  // real-family phase tests below are registry-logic tests, not
+  // store tests — a sandboxed world with no endpoint fixture has no
+  // store to enforce against, so the gate stands down for them
+  // (CI-deterministic: no machine store required). The gate's own
+  // describe re-arms it with a fixture endpoint config.
+  process.env.INFERENCE_TEST_SANDBOX = "1";
 }, 240000);
 
 const primed = (): CardRegistryService =>
@@ -476,4 +483,97 @@ describe("phases", () => {
     assert.ok(ok === null || typeof ok.message === "string");
     assert.equal(await primed().composeValidateCard("image-gen", "anima", { prompt: "x" }), null);
   }, 240000);
+});
+
+// ── THE LANE PRESENCE GATE (2026-09-13, the one-pattern law) ───────
+// Img Gen worked while Img Edit died because presence was luck, not
+// law. The gate enforces every family's declared lane files against
+// the store BEFORE a graph composes. Hermetic fixture drive: temp
+// repo root (no data/runtime — the runtime leg misses
+// deterministically) + fixture endpoint config whose model_base_path
+// points at a temp store we seed per test. The sandbox default the
+// file set in beforeAll is deleted per-test here (the fixture env
+// re-arms the gate).
+describe("the lane presence gate", () => {
+  const withGateEnv = (): { base: string } => {
+    const root = tmpRoot();
+    // NO MELITE_REPO_ROOT here: phase-1 reads facts/defs from the
+    // REAL repo root — only the store is fixture-driven. The
+    // runtime-tree leg probes the real data/runtime (placeholder
+    // files only — a deterministic miss for every lane file, CI and
+    // dev alike), so the fixture base below is the only hit source.
+    const base = join(root, "store");
+    mkdirSync(base, { recursive: true });
+    const endpoint = join(root, "endpoint.json");
+    writeFileSync(
+      endpoint,
+      JSON.stringify({ model_base_path: base, extra_model_folders: { SEEDVR2: "SEEDVR2" } }),
+    );
+    process.env.COMFYUI_ENDPOINT_CONFIG = endpoint;
+    delete process.env.INFERENCE_TEST_SANDBOX;
+    return { base };
+  };
+
+  it("refuses LOUD when a declared lane file is missing — with the provision fetch hint", async () => {
+    withGateEnv();
+    // qwen-img-edit-2511 declares text_encoder
+    // qwen_2.5_vl_7b_fp8_scaled.safetensors and PROVISIONS it (the
+    // 2026-09-13 cure) — an empty store must name family, key,
+    // file, and the fetch URL. The refusal fires BEFORE compose
+    // (phase-1, the run never reaches ComfyUI to die silently).
+    await assert.rejects(
+      primed().phase1Card({ prompt: "x", image1: "plain.png" }, "qwen-img-edit-2511"),
+      (e: unknown) => {
+        assert.ok(e instanceof CardArmError);
+        assert.equal((e as CardArmError).code, "lane_input_missing");
+        assert.match((e as Error).message, /lane presence: family 'qwen-img-edit-2511' declares text_encoder 'qwen_2\.5_vl_7b_fp8_scaled\.safetensors'/);
+        assert.match((e as Error).message, /— fetch it: https:\/\/huggingface\.co\/Comfy-Org\/Qwen-Image_ComfyUI\//);
+        return true;
+      },
+    );
+  }, 240000);
+
+  it("the seed lands the lane: present files compose (anima)", async () => {
+    const { base } = withGateEnv();
+    // Seed anima's declared lane files into the fixture store — the
+    // gate passes and phase-1 proceeds to a real compose (the
+    // pattern the phases describe above proves for the happy path).
+    mkdirSync(join(base, "text_encoders"), { recursive: true });
+    mkdirSync(join(base, "vae"), { recursive: true });
+    mkdirSync(join(base, "diffusion_models"), { recursive: true });
+    writeFileSync(join(base, "text_encoders", "qwen_3_06b_base.safetensors"), "x");
+    writeFileSync(join(base, "vae", "qwen_image_vae.safetensors"), "x");
+    writeFileSync(join(base, "diffusion_models", "anima-base-v1.0.safetensors"), "x");
+    const p1 = await primed().phase1Card({ prompt: "a red square" }, "anima");
+    assert.equal(p1.mid, "anima");
+    assert.equal(p1.spell, null);
+  }, 240000);
+
+  it("pack folders count (the SEEDVR2 law: custom-node homes are stores too)", async () => {
+    const { base } = withGateEnv();
+    // seedvr2_ema's unet/vae live ONLY in the SEEDVR2 pack folder —
+    // the gate unions the endpoint's extra_model_folders keys, so a
+    // file in a pack satisfies presence (never breaks a working
+    // lane). Spell body: the gate fires before the spell branch.
+    mkdirSync(join(base, "SEEDVR2"), { recursive: true });
+    writeFileSync(join(base, "SEEDVR2", "seedvr2_ema_3b_fp16.safetensors"), "x");
+    writeFileSync(join(base, "SEEDVR2", "ema_vae_fp16.safetensors"), "x");
+    const p1 = await primed().phase1Card({ input_image: "$slot" }, "seedvr2_ema");
+    assert.ok(p1.spell !== null && p1.spell.inputs["input_image"] === "$slot");
+  }, 240000);
+
+  it("a sandboxed world with no endpoint fixture defers (the hermetic seam)", async () => {
+    delete process.env.COMFYUI_ENDPOINT_CONFIG;
+    process.env.INFERENCE_TEST_SANDBOX = "1";
+    // No store anywhere — the gate stands down and phase-1 proceeds
+    // (the registry-logic tests above all ride this deferral).
+    const p1 = await primed().phase1Card({ prompt: "a red square" }, "anima");
+    assert.equal(p1.mid, "anima");
+  }, 240000);
+
+  afterEach(() => {
+    delete process.env.COMFYUI_ENDPOINT_CONFIG;
+    // Restore the file's hermetic default for the describes above.
+    process.env.INFERENCE_TEST_SANDBOX = "1";
+  });
 });

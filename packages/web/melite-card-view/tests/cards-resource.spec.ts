@@ -7,7 +7,7 @@
 // until terminal (pollRunFrames' law, already pinned in the run-wire
 // package; here the bench tail gets its own pins).
 import { describe, expect, test, vi, afterEach } from 'vitest'
-import { openCardsResource, readBench } from '../src/client/cards-resource.ts'
+import { observeRunOutcome, openCardsResource, readBench } from '../src/client/cards-resource.ts'
 
 /** A /api wire frame answer for one method. */
 function stubApi(methods: Record<string, Array<Record<string, unknown> | Error>>): void {
@@ -133,5 +133,72 @@ describe('the bench resource stream (live co-presence)', () => {
     const second = frames[1] as { ok: boolean; value: { rev: number } }
     expect(second.ok).toBe(true)
     expect(second.value.rev).toBe(9)
+  })
+})
+
+// ── THE FAILURE CARRY (2026-09-13, the silent-failure cure) ────────
+// A failed run's reason must ride the bench row verbatim — the
+// stage's error first, the run-level text as the fallback. Without
+// the carry, "run image edit, no response at all": the tile flips
+// back with no artifact and no word, and the operator cannot tell
+// a missing weight from a dead wire.
+describe('observeRunOutcome — the failure carry', () => {
+  const statusDoc = (error: string | undefined): Record<string, unknown> => ({
+    run_id: 'run-1', status: 'failed', draft_id: 'bench-main',
+    ...(error !== undefined ? { error } : {}),
+    stages: [{ id: 's_0', status: 'error', url: '', error: "clip_name 'qwen_2.5_vl_7b_fp8_scaled.safetensors' not in [14 clips]" }],
+  })
+  const patches: Array<Record<string, unknown>> = []
+  const stubRunWire = (doc: Record<string, unknown>): void => {
+    vi.stubGlobal('fetch', async (url: unknown, init?: RequestInit): Promise<Response> => {
+      const path = String(url)
+      const rpcId = (JSON.parse(String(init?.body)) as { rpcId: string }).rpcId
+      if (path.includes('/api/runs/status')) {
+        return new Response(JSON.stringify({ type: 'server-response', rpcId, result: { ok: true, value: doc } }), { status: 200, headers: { 'content-type': 'application/json' } })
+      }
+      if (path.includes('/api/drafts/patch')) {
+        patches.push((JSON.parse(String(init?.body)) as { payload: { args: Record<string, unknown> } }).payload.args)
+        return new Response(JSON.stringify({ type: 'server-response', rpcId, result: { ok: true, value: { delivered: true } } }), { status: 200, headers: { 'content-type': 'application/json' } })
+      }
+      return new Response(JSON.stringify({ type: 'server-response', rpcId, result: { ok: true, value: {} } }), { status: 200, headers: { 'content-type': 'application/json' } })
+    })
+  }
+
+  test('a failed run patches the row with the stage error (the ComfyUI refusal verbatim)', async () => {
+    vi.useFakeTimers()
+    stubRunWire(statusDoc(undefined))
+    const verdict = await observeRunOutcome('bench-main', 's_0', 'run-1')
+    expect(verdict).toBe('failed')
+    const terminal = patches.at(-1)
+    expect(terminal?.['patch']).toMatchObject({
+      runStatus: 'failed',
+      result: {
+        run_id: 'run-1',
+        error: "clip_name 'qwen_2.5_vl_7b_fp8_scaled.safetensors' not in [14 clips]",
+      },
+    })
+  })
+
+  test('a stage without its own text falls back to the run-level error', async () => {
+    vi.useFakeTimers()
+    const doc = statusDoc('ComfyError: POST /prompt 400 (run-level)')
+    delete (doc.stages as Array<Record<string, unknown>>)[0]!['error']
+    stubRunWire(doc)
+    const verdict = await observeRunOutcome('bench-main', 's_0', 'run-1')
+    expect(verdict).toBe('failed')
+    const terminal = patches.at(-1)
+    expect((terminal?.['patch'] as { result: { error?: string } }).result.error).toBe('ComfyError: POST /prompt 400 (run-level)')
+  })
+
+  test('a completed run never carries an error (absent ≡ clean)', async () => {
+    vi.useFakeTimers()
+    stubRunWire({
+      run_id: 'run-1', status: 'completed', draft_id: 'bench-main',
+      stages: [{ id: 's_0', status: 'done', url: 'out/flat.png', error: '' }],
+    })
+    const verdict = await observeRunOutcome('bench-main', 's_0', 'run-1')
+    expect(verdict).toBe('done')
+    const terminal = patches.at(-1)
+    expect((terminal?.['patch'] as { result: Record<string, unknown> }).result).not.toHaveProperty('error')
   })
 })
