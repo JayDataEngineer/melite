@@ -37,6 +37,7 @@ import { MediaDrilldown, type MediaDrilldownItem } from '@melite-plugin/dsh-gall
 import type { StageViewOwnerProps } from './types.ts'
 import { fetchCardCatalog, fetchFormSpec, seedAxisValues, specDefaults, specPatch, SpecForm, useSquareProvider } from './spec-form.tsx'
 import { fetchFormsTable } from '@melite/card-base/wire'
+import { StudioShell } from '@melite/card-base/shell'
 
 /** The /v1/forms edge-meta cache (card id → declared input/output
  *  kinds) — ONE fetch per browser session; the picker's kind
@@ -908,8 +909,12 @@ function StageDrill({ stage, bench, running, onRun, onClose, onRemoved, onPatchP
     return renderPreview(owner, fallback)
   }
   const genericDetail = (): ReturnType<typeof h> => h('div', { className: css.zoomDetail },
-    h('div', { className: css.split },
-      h('div', { className: css.paramsCol },
+    // THE UNIFORM SHELL (hour 24 stroke 15 — the operator's sharing
+    // call): the zoom rides the SAME StudioShell every studio card
+    // rides — one params-scroll law, one three-slot shape. The zoom's
+    // outputs column claims the preview slot.
+    h(StudioShell, {
+    params: h('div', { className: css.paramsCol },
         // the ✦ row is a HEADER ACTION, never scroll content (hour 24
         // stroke 12: flush at the params column's scroll top, the
         // button's capsule top clipped under the boundary — the row
@@ -932,7 +937,7 @@ function StageDrill({ stage, bench, running, onRun, onClose, onRemoved, onPatchP
         : h('pre', { className: css.mono }, JSON.stringify(held, null, 2)),
         ),
       ),
-      h('div', { className: css.outputs },
+      preview: h('div', { className: css.outputs },
         h('div', {
           className: css.outputsPreview + ' ' + css.previewClickable,
           'data-testid': 'stage-preview-seat',
@@ -984,9 +989,9 @@ function StageDrill({ stage, bench, running, onRun, onClose, onRemoved, onPatchP
             onClick: () => { void remove() },
           }, removing ? 'removing…' : 'Remove stage'),
         ),
-      ),
-    ),
-  )
+        ),
+      }),
+    )
   // the consult (ToolCallTree's call verbatim): entryKey = card name
   return renderStageView({
     stageId: stage.id,
@@ -1152,20 +1157,20 @@ function AddCardDoor({ bench, onAdded, onClose, onAddedRow }: {
         )
       // The UNCLAIMED card's honest fallback: the spec form beside the
       // Add row — never a studio's stand-in.
-      : h('div', { className: css.split },
-          h('div', { className: css.params },
+      : h(StudioShell, {
+          params: h('div', { className: css.params },
             h('button', { type: 'button', className: css.back, onClick: () => { setPicked(null); setSpec(null) } }, '← ' + (cards?.length ?? 0) + ' cards'),
             formError !== null ? h('p', { className: css.runError }, formError) : null,
             spec === null && formError === null ? h('div', { className: css.load }, 'form…') : null,
             spec !== null ? h(SpecForm, { spec, fields: spec.fields, values, onEdit, wire }) : null,
           ),
-        h('div', { className: css.outputs },
+        preview: h('div', { className: css.outputs },
           h('div', { className: css.runRow },
             h(Button, { variant: 'primary', disabled: adding || spec === null, onClick: () => { void add() } },
               adding ? 'adding…' : 'Add card'),
           ),
         ),
-      ),
+      }),
   )
 }
 

@@ -104,14 +104,6 @@
    + Run right (operator directive 2026-09-10). */
 .drill { max-width: min(860px, 92vw); width: 92vw; }
 
-.split {
-  display: grid;
-  gap: 14px;
-  grid-template-columns: minmax(240px, 1fr) minmax(0, 1.2fr);
-  min-width: 0;
-}
-@media (max-width: 640px) { .split { grid-template-columns: 1fr; } }
-
 .paramsCol {
   display: flex;
   flex-direction: column;
@@ -123,15 +115,10 @@
   display: flex;
   flex-direction: column;
   gap: 8px;
-  max-height: 60vh;
-  overflow-y: auto;
   min-width: 0;
-  /* the scroll's own margin (hour 24: the fields were getting cut off
-   * by the scrollbar once the column overflows — reserve breathing
-   * room so the inputs never sit under the thumb; the stable gutter
-   * keeps the layout from shifting when the bar appears) */
-  padding-right: 10px;
-  scrollbar-gutter: stable;
+  /* the scroll + its right margin moved to THE SHELL's params cell
+   * (stroke 15): one law, every card surface — the zoom, the add
+   * form, and every studio tenant ride StudioShell now. */
 }
 
 .field { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
