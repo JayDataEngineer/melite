@@ -131,6 +131,12 @@ export const DECL: ModelDecl = {
   ],
   "variant_groups": [
     {
+      "id": "Recipe",
+      "label": "Recipe",
+      "tooltip": "One-click recipes — patch-only rows that stamp picks onto the draft; Default stamps nothing.",
+      "default": "default"
+    },
+    {
       "id": "Variant",
       "label": "Variant",
       "tooltip": "Base checkpoint — Turbo (8-step distilled, fast/photorealistic) or Raw (52-step base, for LoRA training).",
@@ -139,12 +145,6 @@ export const DECL: ModelDecl = {
       "id": "Quant",
       "label": "Quant",
       "tooltip": "Quantization tier — INT8 ConvRot (the official Comfy-Org convrot artifact, DEFAULT).",
-    },
-    {
-      "id": "Recipe",
-      "label": "Recipe",
-      "tooltip": "One-click recipes — patch-only rows that stamp picks onto the draft; Default stamps nothing.",
-      "default": "default"
     }
   ],
   "timeout_floor": 300,

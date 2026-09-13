@@ -254,8 +254,11 @@
 
 .tileGrid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-  gap: 8px;
+  /* WIDER AND TALLER default cards (the operator's hour-24 call):
+   * the preview cell is aspect-square, so the column min drives BOTH
+   * axes — 150px crammed them; 200 gives the default card room. */
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 10px;
   list-style: none;
   margin: 0;
   padding: 0;

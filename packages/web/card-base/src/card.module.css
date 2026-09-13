@@ -22,6 +22,11 @@
   grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
   gap: 10px;
 }
+/* the zone title SPANS the row — the h4 is a grid CHILD by default
+ * and was eating the first cell (the empty slot under "Model", the
+ * operator's lane report: "nothing is placed under the MODEL intro
+ * title area, it takes up two vertical slots"). */
+.modelAxes .specGroupTitle { grid-column: 1 / -1; margin-bottom: 0; }
 .specGroupTitle {
   color: var(--dsw-alias-label-secondary, #61666b);
   font-size: 11px;
