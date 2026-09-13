@@ -193,16 +193,53 @@ describe('melite_discover render — the counts line', () => {
     assert.equal(parts.map((p) => p?.text ?? '').join('\n'), 'melite_discover REFUSED: nope')
   })
 
-  test('lines render as flow/card counts', () => {
+  test('THE ROWS RIDE (melite_load demands a name "exactly as discovered")', () => {
     const tool = meliteDiscover(stubRequest())
     const parts = tool.output.render(
       {},
-      { flows: [flowLine(0), flowLine(1)], cards: [cardLine(0)] } as never,
+      {
+        flows: [flowLine(0), flowLine(1)],
+        cards: [cardLine(0, ['image', 'upscale'])],
+      } as never,
     ) as Array<{ text?: string }>
     assert.equal(
       parts.map((p) => p?.text ?? '').join('\n'),
-      'discover: 2 flows, 1 cards — open one with melite_load',
+      'discover: 2 flows, 1 cards — open one with melite_load\n'
+      + 'flows:\n'
+      + '  flow-0 — Flow 0 (2 stages)\n'
+      + '  flow-1 — Flow 1 (2 stages)\n'
+      + 'cards:\n'
+      + '  card-0 — Card 0 [image,upscale]',
     )
+  })
+
+  test('the clamped shape renders counts over truncated rows + vocabulary + hint', () => {
+    const tool = meliteDiscover(stubRequest())
+    const parts = tool.output.render(
+      {},
+      {
+        counts: { flows: 0, cards: 20 },
+        tag_vocabulary: ['image', 'video'],
+        hint: 'clamped — narrow with tags/q, or detail=true for every line',
+        flows: [],
+        cards: Array.from({ length: 8 }, (_v, i) => cardLine(i)),
+      } as never,
+    ) as Array<{ text?: string }>
+    const out = parts.map((p) => p?.text ?? '').join('\n')
+    assert.ok(out.startsWith('discover: 0 flows, 20 cards — open one with melite_load'), 'counts come from counts (not the truncated array)')
+    assert.ok(out.includes('+12 more — narrow with tags/q, or detail=true'), 'the clamp tail counts the rest')
+    assert.ok(out.includes('tag vocabulary: image, video'), 'the vocabulary rides')
+    assert.ok(out.includes('hint: clamped — narrow with tags/q, or detail=true for every line'), 'the hint rides')
+  })
+
+  test('over RENDER_CLAMP per plane the rows clamp with a +N more tail', () => {
+    const tool = meliteDiscover(stubRequest())
+    const flows = Array.from({ length: 10 }, (_v, i) => flowLine(i))
+    const parts = tool.output.render({}, { flows, cards: [] } as never) as Array<{ text?: string }>
+    const out = parts.map((p) => p?.text ?? '').join('\n')
+    assert.ok(out.includes('  flow-7 —'), 'clamp boundary rides')
+    assert.ok(!out.includes('  flow-8 —'), 'past the clamp nothing rides')
+    assert.ok(out.includes('+2 more — detail=true lists every line'), 'the tail counts the rest')
   })
 
   test('missing lines render as zeroes', () => {

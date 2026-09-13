@@ -84,11 +84,18 @@ export function skillRead(request: EstateRequest): ToolDefinition {
       },
       render: (args, value) => {
         const a = (typeof args === "object" && args !== null ? args : {}) as { id?: string }
-        const v = value as { id?: string; name?: string }
-        return [{
-          type: 'text',
-          text: 'skill_read ' + String(a.id ?? v.id ?? '?') + ': ' + String(v.name ?? 'loaded'),
-        }]
+        const v = value as { id?: string; name?: string; content?: string; error?: string }
+        if (v && typeof v.error === 'string' && v.error !== '') {
+          return [{ type: 'text', text: 'skill_read REFUSED: ' + v.error }]
+        }
+        // THE BODY RIDES (the render IS the model-facing tool response
+        // — see melite-discover's render note): tier 2's whole purpose
+        // is "load ONE skill document in full" so the agent writes
+        // prompts from the craft it READS. A title-only line leaves
+        // the agent having read nothing.
+        const head = 'skill_read ' + String(a.id ?? v.id ?? '?') + ': ' + String(v.name ?? 'loaded')
+        const body = typeof v.content === 'string' ? v.content : ''
+        return [{ type: 'text', text: body !== '' ? head + '\n' + body : head + '\n(no body)' }]
       },
     },
     async execute(args, exec): Promise<SkillReadResult> {

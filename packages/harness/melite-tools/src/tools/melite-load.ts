@@ -88,11 +88,65 @@ export function meliteLoad(request: EstateRequest): ToolDefinition {
         },
       },
       render: (_args, value) => {
-        const v = value as { bundle?: { name?: string; kind?: string; skills?: unknown[] }; error?: string }
+        const v = value as {
+          bundle?: {
+            name?: unknown; kind?: unknown; digest?: unknown
+            signature?: {
+              name?: unknown; model?: unknown; card?: unknown
+              params_schema?: { properties?: Record<string, unknown>; required?: unknown }
+            } | null
+            agents?: Array<{ path?: unknown; text?: unknown }>
+            skills?: Array<Record<string, unknown>>
+            model_hints?: Array<{ id?: unknown; label?: unknown }>
+            stages?: Array<Record<string, unknown>>
+          }
+          error?: string
+        }
         if (v && typeof v.error === 'string') return [{ type: 'text', text: 'melite_load REFUSED: ' + v.error }]
+        // THE BUNDLE RIDES (the render IS the model-facing tool response
+        // — see melite-discover's render note): the follow-up call needs
+        // the params keys (melite_flow's params) and the model ids (its
+        // model arg) — counts alone leave the agent unable to compose
+        // anything. Agents md rides verbatim (the estate already caps
+        // it: 8 files / 32KB); the digest rides so a reload can be
+        // skipped by quoting it.
         const b = v?.bundle ?? {}
-        const n = Array.isArray(b.skills) ? b.skills.length : 0
-        return [{ type: 'text', text: `loaded ${String(b.kind ?? '?')} ${String(b.name ?? '?')} — ${n} skill lines` }]
+        const str = (x: unknown): string => typeof x === 'string' ? x : ''
+        const out: string[] = [`loaded ${str(b.kind) || '?'} ${str(b.name) || '?'} — open with melite_flow`]
+        const hints = Array.isArray(b.model_hints) ? b.model_hints : []
+        if (hints.length > 0) {
+          out.push('models: ' + hints.map((h) => `${str(h?.id)}${str(h?.label) !== '' ? ' (' + str(h?.label) + ')' : ''}`).join(', '))
+        }
+        const sig = b.signature
+        if (sig !== null && sig !== undefined) {
+          const props = sig.params_schema?.properties
+          const keys = props !== undefined && props !== null ? Object.keys(props) : []
+          const req = Array.isArray(sig.params_schema?.required)
+            ? sig.params_schema.required.filter((r): r is string => typeof r === 'string') : []
+          if (keys.length > 0) {
+            const marked = keys.map((k) => req.includes(k) ? k + '*' : k)
+            out.push('params: ' + marked.join(', ') + ' (* required)')
+          }
+          const model = str(sig.model)
+          if (model !== '') out.push('signature model: ' + model)
+        }
+        const stages = Array.isArray(b.stages) ? b.stages : []
+        if (stages.length > 0) {
+          out.push('stages: ' + stages.map((s) => `${str(s?.id)}:${str(s?.card)}`).join(' → '))
+        }
+        const skills = Array.isArray(b.skills) ? b.skills : []
+        if (skills.length > 0) {
+          const names = skills.slice(0, 8).map((s) => str(s?.id) !== '' ? str(s?.id) : str(s?.ref))
+          out.push(`skills: ${skills.length} lines — ${names.join(', ')}${skills.length > 8 ? ' …' : ''}`)
+        }
+        const digest = str(b.digest)
+        if (digest !== '') out.push('digest: ' + digest + ' (quote it to skip a reload)')
+        const docs = Array.isArray(b.agents) ? b.agents : []
+        if (docs.length > 0) {
+          out.push('agents md:')
+          for (const d of docs) out.push(str(d?.text))
+        }
+        return [{ type: 'text', text: out.join('\n') }]
       },
     },
     async execute(args, exec): Promise<LoadResult> {

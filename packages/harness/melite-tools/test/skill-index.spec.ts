@@ -66,11 +66,29 @@ describe('skill_index execute — the cheap scan', () => {
   })
 })
 
-describe('skill_index render — the human line', () => {
-  test('the count rides the line (0 on sparse values)', () => {
-    const tool = skillIndex((async () => ({})) as EstateRequest)
-    const text = (v: unknown) => (tool.output.render({} as never, v as never) as Array<{ text?: string }>)[0].text ?? ''
-    assert.equal(text({ count: 3 }), 'skill_index: 3 skills (load one with skill_read)')
-    assert.equal(text({}), 'skill_index: 0 skills (load one with skill_read)')
+describe('skill_index render — the model-facing ids', () => {
+  const tool = skillIndex((async () => ({})) as EstateRequest)
+  const text = (v: unknown) => (tool.output.render({} as never, v as never) as Array<{ text?: string }>)[0].text ?? ''
+
+  test('the count rides the header (0 on sparse values)', () => {
+    assert.equal(text({}), 'skill_index: 0 skills — read one with skill_read')
+  })
+
+  test('THE IDS RIDE (skill_read demands an id "from skill_index")', () => {
+    assert.equal(
+      text({ count: 2, skills: [{ id: 'run-recovery', name: 'Run recovery' }, { id: 'model:music:style' }] }),
+      'skill_index: 2 skills — read one with skill_read\n'
+      + '  run-recovery — Run recovery\n'
+      + '  model:music:style',
+    )
+  })
+
+  test('over RENDER_CLAMP the ids clamp with a +N more tail', () => {
+    const skills = Array.from({ length: 45 }, (_v, i) => ({ id: 's' + i }))
+    const out = text({ count: 45, skills })
+    assert.ok(out.includes('  s0\n'), 'first id rides')
+    assert.ok(out.includes('  s39\n'), 'clamp boundary rides')
+    assert.ok(!out.includes('  s40'), 'past the clamp nothing rides')
+    assert.ok(out.endsWith('+5 more'), 'the tail counts the rest')
   })
 })

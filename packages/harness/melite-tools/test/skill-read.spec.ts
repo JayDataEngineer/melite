@@ -73,14 +73,21 @@ describe('skill_read execute — the tier-2 body', () => {
   })
 })
 
-describe('skill_read render — the human line', () => {
-  test('the call id wins, then the value id, then ?', () => {
-    const tool = skillRead((async () => ({})) as EstateRequest)
-    const text = (a: unknown, v: unknown) =>
-      (tool.output.render(a as never, v as never) as Array<{ text?: string }>)[0].text ?? ''
-    assert.equal(text({ id: 'a' }, { id: 'a', name: 'N' }), 'skill_read a: N')
-    assert.equal(text({}, { id: 'b' }), 'skill_read b: loaded')
-    assert.equal(text({}, {}), 'skill_read ?: loaded')
-    assert.equal(text(null, { id: 'b', name: 'N' }), 'skill_read b: N')
+describe('skill_read render — the body rides (tier 2)', () => {
+  const tool = skillRead((async () => ({})) as EstateRequest)
+  const text = (a: unknown, v: unknown) =>
+    (tool.output.render(a as never, v as never) as Array<{ text?: string }>)[0].text ?? ''
+
+  test('the body rides under the header (the agent reads the craft)', () => {
+    assert.equal(
+      text({ id: 'a' }, { id: 'a', name: 'N', content: 'write it thus' }),
+      'skill_read a: N\nwrite it thus',
+    )
+  })
+
+  test('the call id wins, then the value id, then ?; empty body says so', () => {
+    assert.equal(text({}, { id: 'b' }), 'skill_read b: loaded\n(no body)')
+    assert.equal(text({}, {}), 'skill_read ?: loaded\n(no body)')
+    assert.equal(text(null, { id: 'b', name: 'N', content: '' }), 'skill_read b: N\n(no body)')
   })
 })

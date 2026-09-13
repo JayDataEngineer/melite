@@ -158,4 +158,62 @@ describe("the melite tool faces answer over the live composition", () => {
     assert.ok(lines.length >= 1 && lines.join("").length > 0,
       `render returns model-facing lines (got ${lines.length}: ${lines.join(" | ").slice(0, 200)}`);
   });
+
+  // ── THE DISCLOSURE LINES RIDE (2026-09-13, operator: "melite_discover
+  // is not returning the tools + hints, it is supposed to have these as a
+  // tool response"). dsh-tools buildSuccessResult feeds output.render
+  // straight into the model-facing ToolResult.content — the envelope only
+  // feeds the GUI. Counts-only renders starved the whole agent loop
+  // (melite_load needs a name "exactly as discovered"; skill_read needs
+  // an id "from skill_index"; the load follow-up needs params + model
+  // ids). These arms pin the LINES, not the counts. ──────────────────
+  it("melite_discover render NAMES real flows and cards from the envelope", async () => {
+    const { envelope, lines } = await drive("melite_discover", { lookup: "all" });
+    const env = envelope as { flows?: Array<{ name?: string }>; cards?: Array<{ id?: string }>; error?: string };
+    const text = lines.join("\n");
+    const firstFlow = env.flows?.[0]?.name;
+    assert.ok(typeof firstFlow === "string" && text.includes(`  ${firstFlow} —`),
+      `a rendered line names the first flow by id (want '  ${firstFlow} —' in: ${text.slice(0, 300)}`);
+    const firstCard = env.cards?.[0]?.id;
+    assert.ok(typeof firstCard === "string" && text.includes(`  ${firstCard} —`),
+      `a rendered line names the first card by id`);
+  });
+
+  it("skill_index render CARRIES the ids (skill_read demands one)", async () => {
+    const { envelope, lines } = await drive("skill_index", {});
+    const env = envelope as { skills?: Array<{ id?: string }>; error?: string };
+    const first = env.skills?.find((s) => typeof s.id === "string" && s.id !== "")?.id;
+    assert.ok(typeof first === "string" && lines.join("\n").includes(first),
+      `the rendered lines carry a real skill id (want ${first} in: ${lines.join(" | ").slice(0, 200)}`);
+  });
+
+  it("skill_read render CARRIES the body (tier 2's whole purpose)", async () => {
+    const idx = await drive("skill_index", {});
+    const id = (idx.envelope as { skills?: Array<{ id?: string }> }).skills
+      ?.find((s) => typeof s.id === "string" && s.id !== "")?.id;
+    assert.ok(typeof id === "string", "an id came from skill_index");
+    const { envelope, lines } = await drive("skill_read", { id });
+    const env = envelope as { content?: string; error?: string };
+    const body = typeof env.content === "string" ? env.content : "";
+    assert.ok(body.length > 0, `the envelope carries the body`);
+    const text = lines.join("\n");
+    assert.ok(text.length > body.slice(0, 40).length && text.includes(body.slice(0, 40)),
+      `the rendered lines carry the body's head (got: ${text.slice(0, 200)}`);
+  });
+
+  it("melite_load render CARRIES params + digest (the follow-up call needs them)", async () => {
+    const disc = await drive("melite_discover", { lookup: "cards" });
+    const card = (disc.envelope as { cards?: Array<{ id?: string }> }).cards?.[0]?.id;
+    assert.ok(typeof card === "string", "a card id came from discover");
+    const { envelope, lines } = await drive("melite_load", { name: card, inference_type: "card" });
+    const env = envelope as { bundle?: { digest?: string }; error?: string };
+    const refused = typeof env.error === "string";
+    if (refused) return; // a composition without the card docs refuses honestly — not this wall's law
+    const text = lines.join("\n");
+    assert.ok(text.includes("params:") || text.includes("signature model:"),
+      `the rendered lines carry the signature (got: ${text.slice(0, 200)}`);
+    const digest = env.bundle?.digest;
+    assert.ok(typeof digest === "string" && text.includes(digest),
+      `the rendered lines carry the digest (got: ${text.slice(0, 200)}`);
+  });
 });

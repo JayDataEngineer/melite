@@ -77,11 +77,23 @@ export function skillIndex(request: EstateRequest): ToolDefinition {
         },
       },
       render: (_args, value) => {
-        const v = value as { count?: number }
-        return [{
-          type: 'text',
-          text: 'skill_index: ' + String(v.count ?? 0) + ' skills (load one with skill_read)',
-        }]
+        const v = value as { count?: number; skills?: Array<{ id?: unknown; name?: unknown }>; error?: string }
+        if (v && typeof v.error === 'string') return [{ type: 'text', text: 'skill_index REFUSED: ' + v.error }]
+        // THE MODEL-FACING IDS (the render IS the tool response — see
+        // melite-discover's render note): a count alone starves
+        // routing, because skill_read demands an id "from
+        // skill_index". RENDER_CLAMP ids ride, the count above them.
+        const RENDER_CLAMP = 40
+        const rows = Array.isArray(v?.skills) ? v.skills : []
+        const count = typeof v?.count === 'number' ? v.count : rows.length
+        const out: string[] = [`skill_index: ${count} skills — read one with skill_read`]
+        for (const r of rows.slice(0, RENDER_CLAMP)) {
+          const id = typeof r?.id === 'string' ? r.id : ''
+          const name = typeof r?.name === 'string' ? r.name : ''
+          if (id !== '') out.push(`  ${id}${name !== '' ? ' — ' + name : ''}`)
+        }
+        if (count > RENDER_CLAMP) out.push(`  +${count - RENDER_CLAMP} more`)
+        return [{ type: 'text', text: out.join('\n') }]
       },
     },
     async execute(_args, exec): Promise<SkillIndexResult> {

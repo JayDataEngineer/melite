@@ -136,27 +136,46 @@ describe('melite_load render — the loaded line', () => {
     assert.equal(parts.map((p) => p?.text ?? '').join('\n'), 'melite_load REFUSED: nope')
   })
 
-  test('a bundle renders kind, name, and the skill-line count', () => {
+  test('THE BUNDLE RIDES (params, models, skills, digest, agents — the follow-up call needs them)', () => {
     const tool = meliteLoad((async () => ({})) as unknown as EstateRequest)
     const parts = tool.output.render(
       { name: 'c', inference_type: 'card' },
-      { name: 'c', inference_type: 'card', bundle: { kind: 'card', name: 'c', skills: [{ id: 's1' }] } } as never,
+      {
+        name: 'c', inference_type: 'card',
+        bundle: {
+          kind: 'card', name: 'c',
+          skills: [{ id: 's1' }],
+          model_hints: [{ id: 'music-gen', label: 'MusicGen' }],
+          signature: { params_schema: { properties: { prompt: {}, seed: {} }, required: ['prompt'] } },
+          digest: 'abc123',
+          agents: [{ path: 'AGENT.md', text: 'craft doc' }],
+        },
+      } as never,
     ) as Array<{ text?: string }>
-    assert.equal(parts.map((p) => p?.text ?? '').join('\n'), 'loaded card c — 1 skill lines')
+    assert.equal(
+      parts.map((p) => p?.text ?? '').join('\n'),
+      'loaded card c — open with melite_flow\n'
+      + 'models: music-gen (MusicGen)\n'
+      + 'params: prompt*, seed (* required)\n'
+      + 'skills: 1 lines — s1\n'
+      + 'digest: abc123 (quote it to skip a reload)\n'
+      + 'agents md:\n'
+      + 'craft doc',
+    )
   })
 
-  test('a bundless value renders unknowns with zero lines', () => {
+  test('a bundless value renders the header alone', () => {
     const tool = meliteLoad((async () => ({})) as unknown as EstateRequest)
     const parts = tool.output.render(
       { name: 'c', inference_type: 'card' },
       { name: 'c', inference_type: 'card' } as never,
     ) as Array<{ text?: string }>
-    assert.equal(parts.map((p) => p?.text ?? '').join('\n'), 'loaded ? ? — 0 skill lines')
+    assert.equal(parts.map((p) => p?.text ?? '').join('\n'), 'loaded ? ? — open with melite_flow')
   })
 
-  test('a nullish value still renders the counts line', () => {
+  test('a nullish value still renders the header line', () => {
     const tool = meliteLoad((async () => ({})) as unknown as EstateRequest)
     const parts = tool.output.render({ name: 'c', inference_type: 'card' }, null as never) as Array<{ text?: string }>
-    assert.equal(parts.map((p) => p?.text ?? '').join('\n'), 'loaded ? ? — 0 skill lines')
+    assert.equal(parts.map((p) => p?.text ?? '').join('\n'), 'loaded ? ? — open with melite_flow')
   })
 })

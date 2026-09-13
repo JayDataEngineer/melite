@@ -113,11 +113,51 @@ export function meliteDiscover(request: EstateRequest): ToolDefinition {
         },
       },
       render: (_args, value) => {
-        const v = value as { flows?: unknown[]; cards?: unknown[]; error?: string }
+        const v = value as {
+          flows?: Array<{ name?: unknown; title?: unknown; stages?: unknown }>
+          cards?: Array<{ id?: unknown; label?: unknown; tags?: unknown }>
+          counts?: { flows?: unknown; cards?: unknown }
+          tag_vocabulary?: unknown
+          hint?: unknown
+          error?: string
+        }
         if (v && typeof v.error === 'string') return [{ type: 'text', text: 'melite_discover REFUSED: ' + v.error }]
-        const nf = Array.isArray(v?.flows) ? v.flows.length : 0
-        const nc = Array.isArray(v?.cards) ? v.cards.length : 0
-        return [{ type: 'text', text: `discover: ${nf} flows, ${nc} cards — open one with melite_load` }]
+        // THE MODEL-FACING LINES (the render IS the tool response the
+        // model reads — dsh-tools createSuccessResult builds content
+        // from output.render; the envelope only feeds the GUI). A
+        // counts-only line starves routing: melite_load demands a name
+        // "exactly as discovered", so the render MUST carry the lines.
+        // Counts-first stays: RENDER_CLAMP rows per plane, the counts
+        // and the clamp hint ride above them.
+        const RENDER_CLAMP = 8
+        const flows = Array.isArray(v?.flows) ? v.flows : []
+        const cards = Array.isArray(v?.cards) ? v.cards : []
+        const nf = typeof v?.counts?.flows === 'number' ? v.counts.flows : flows.length
+        const nc = typeof v?.counts?.cards === 'number' ? v.counts.cards : cards.length
+        const line = (x: unknown): string => typeof x === 'string' ? x : ''
+        const num = (x: unknown): string => typeof x === 'number' ? String(x) : '?'
+        const out: string[] = [`discover: ${nf} flows, ${nc} cards — open one with melite_load`]
+        if (flows.length > 0) {
+          out.push('flows:')
+          for (const f of flows.slice(0, RENDER_CLAMP)) {
+            out.push(`  ${line(f?.name)} — ${line(f?.title)} (${num(f?.stages)} stages)`)
+          }
+          if (nf > RENDER_CLAMP) out.push(`  +${nf - RENDER_CLAMP} more — detail=true lists every line`)
+        }
+        if (cards.length > 0) {
+          out.push('cards:')
+          for (const c of cards.slice(0, RENDER_CLAMP)) {
+            const tags = Array.isArray(c?.tags) ? c.tags.filter((t): t is string => typeof t === 'string') : []
+            out.push(`  ${line(c?.id)} — ${line(c?.label)}${tags.length > 0 ? ` [${tags.join(',')}]` : ''}`)
+          }
+          if (nc > RENDER_CLAMP) out.push(`  +${nc - RENDER_CLAMP} more — narrow with tags/q, or detail=true`)
+        }
+        if (Array.isArray(v?.tag_vocabulary)) {
+          const vocab = v.tag_vocabulary.filter((t): t is string => typeof t === 'string')
+          if (vocab.length > 0) out.push('tag vocabulary: ' + vocab.join(', '))
+        }
+        if (typeof v?.hint === 'string' && v.hint !== '') out.push('hint: ' + v.hint)
+        return [{ type: 'text', text: out.join('\n') }]
       },
     },
     async execute(args, exec) {
@@ -163,6 +203,9 @@ export function meliteDiscover(request: EstateRequest): ToolDefinition {
         return jsonClean(res) as DiscoverResult;
       } catch (e) {
         const err = e as { body?: unknown; message?: string };
+        // makeEstateRequest throws LOUD with its own named text when no
+        // seat serves the lane ("no remote serves GET /v1/discover…") —
+        // that message IS the honest answer; no string sniffing here.
         return jsonClean<DiscoverResult>({ error: typeof err.body === 'string' && err.body !== '' ? err.body : (err.message ?? 'discover failed') });
       }
     },
