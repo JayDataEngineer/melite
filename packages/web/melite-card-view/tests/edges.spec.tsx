@@ -82,12 +82,15 @@ test('THE EDGE LAW: the picker offers only kind-matching outputs — a text-outp
   }
   render(createElement(Host))
   await user.click(screen.getByRole('button', { name: /Input image source/ }))
+  // the three-entry menu → From flow → the selector modal's rows
+  const flow = await screen.findByText('From flow', {}, { timeout: 2000 })
+  fireEvent.click(flow.closest('[role="menuitem"], [role="option"], li') as HTMLElement)
   const imgRow = await screen.findByText('image-gen', {}, { timeout: 2000 })
-  expect(imgRow.closest('[role="menuitem"], [role="option"], li')).toBeTruthy()
+  expect(imgRow.closest('[data-testid="source-pick-row"]')).toBeTruthy()
   // THE LAW: the tts row (audio-declared output) NEVER serves the
   // image edge — not because of its url, because of its declaration
   await waitFor(() => {
-    const rows = [...document.querySelectorAll('[role="menuitem"], [role="option"], li')]
+    const rows = [...document.querySelectorAll('[data-testid="source-pick-row"]')]
     expect(rows.some((el) => (el.textContent ?? '').includes('tts'))).toBe(false)
     expect(rows.some((el) => (el.textContent ?? '').includes('image-gen'))).toBe(true)
   })
@@ -119,6 +122,8 @@ test('THE EDGE LAW: a field with no declared edge falls to the full list (the pi
   }
   render(createElement(Host))
   await user.click(screen.getByRole('button', { name: /Extra source/ }))
+  const flow = await screen.findByText('From flow', {}, { timeout: 2000 })
+  fireEvent.click(flow.closest('[role="menuitem"], [role="option"], li') as HTMLElement)
   const row = await screen.findByText('image-gen', {}, { timeout: 2000 })
-  expect(row.closest('[role="menuitem"], [role="option"], li')).toBeTruthy()
+  expect(row.closest('[data-testid="source-pick-row"]')).toBeTruthy()
 })

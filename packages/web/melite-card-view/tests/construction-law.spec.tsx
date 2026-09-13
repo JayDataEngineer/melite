@@ -62,9 +62,12 @@ describe('the construction law (bare CardForm)', () => {
       onEdit: (name, v) => { edits[name] = v },
       wire: { candidates: [{ id: 's_0', label: 'a red cube', url: '/media/out.png' }] },
     }))
-    // the wire verbs live on the square: onPick opens the menu
+    // the wire verbs live on the square: onPick opens the
+    // three-entry menu; From flow opens the selector modal
     const square = screen.getByRole('button', { name: 'Input image source' })
     fireEvent.click(square)
+    const flow = await screen.findByText('From flow', undefined, { timeout: 2000 })
+    fireEvent.click(flow.closest('[role="menuitem"], [role="option"], li') as HTMLElement)
     const item = await screen.findByText('a red cube', undefined, { timeout: 2000 })
     fireEvent.click(item)
     await waitFor(() => { expect(edits['image']).toBe('/media/out.png') })
@@ -156,5 +159,66 @@ describe('the construction law (DRY)', () => {
     // the form owns the menu mount point (empty when no pick is open)
     expect(container.firstChild).toBeTruthy()
     expect(screen.getByRole('button', { name: 'Input image source' })).toBeTruthy()
+  })
+})
+
+// ── 4. THE PLAIN DOOR (the operator's hour-24 order: "a random
+//      screen pops up that I don't want. It should just add the card
+//      and go into the drilldown view"): the add door is picker →
+//      form → Add for EVERY card — even one whose stage view is
+//      CLAIMED (a studio). The hour-9 claimed-studio preview is
+//      REPEALED; the studio lives in the ZOOM, never the door. ──────
+describe('the construction law (the plain add door)', () => {
+  it('a CLAIMED card picks into the plain form — no studio preview hijacks the door', async () => {
+    const claimed = (owner: unknown, fallback: ReturnType<typeof createElement>): ReturnType<typeof createElement> => {
+      void owner
+      return createElement('div', { 'data-testid': 'studio-hijack' }, 'THE STUDIO')
+    }
+    const BENCH: CardsBenchValue = {
+      kind: 'bench', draftId: 'bench-plain', rev: 1, stages: [], log: [],
+    }
+    vi.stubGlobal('fetch', async (url: unknown, init?: RequestInit): Promise<Response> => {
+      const path = String(url)
+      if (path.includes('/v1/form-spec')) {
+        return new Response(JSON.stringify({ form: 'mask-studio', model: 'm', fields: IMAGE_FIELDS.map((f) => ({ ...f })), variants: [] }), { status: 200, headers: { 'content-type': 'application/json' } })
+      }
+      if (path.includes('/v1/model-catalog')) {
+        return new Response(JSON.stringify({ cards: { 'mask-studio': { label: 'Mask Studio', genre: 'image', families: ['mask-studio'] } } }), { status: 200, headers: { 'content-type': 'application/json' } })
+      }
+      const frame = JSON.parse(String(init?.body)) as { rpcId: string, method: string }
+      let value: Record<string, unknown> = { ok: true }
+      if (frame.method === 'bench/add-stage') {
+        value = { ok: true, stage: { id: 'fresh_1', card: 'mask-studio', engine: 'comfyui', params: {} } }
+      }
+      if (frame.method === 'bench/get') {
+        value = { kind: 'bench', draftId: 'bench-plain', rev: 2, stages: [{ id: 'fresh_1', card: 'mask-studio', engine: 'comfyui', params: {} }], log: [] }
+      }
+      return new Response(JSON.stringify({ type: 'server-response', rpcId: frame.rpcId, result: { ok: true, value } }), { status: 200 })
+    })
+    render(createElement(CardsTab, {
+      useTabInfo: () => ({
+        tab: {
+          kind: 'sidebar.right.pane.tab', contentId: undefined,
+          navigation: { address: 'dsh-resource://cards/bench' },
+          actions: { openResource: () => {} },
+        },
+      }),
+      useResource: () => ({ status: 'live', value: BENCH }),
+      renderSlot: claimed,
+    } as CardsTabProps_))
+    const addTile = await screen.findAllByText(/add a card/i, undefined, { timeout: 4000 })
+    fireEvent.click(addTile[0])
+    const row = await screen.findByText('Mask Studio', undefined, { timeout: 4000 })
+    fireEvent.click(row)
+    // THE PLAIN FORM renders for the claimed card…
+    expect(await screen.findByRole('button', { name: 'Input image source' }, undefined, { timeout: 4000 })).toBeTruthy()
+    // …and the studio NEVER hijacks the door
+    expect(screen.queryByTestId('studio-hijack')).toBeNull()
+    // Add lands the stage and the door hands the fresh row up — the
+    // drilldown opens (the zoom mounts, keyed by the fresh stage)
+    fireEvent.click(await screen.findByText('Add card', undefined, { timeout: 4000 }))
+    await waitFor(() => {
+      expect(screen.getByTestId('studio-hijack')).toBeTruthy() // the ZOOM consult — the studio's lawful seat
+    }, { timeout: 4000 })
   })
 })

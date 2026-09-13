@@ -892,21 +892,25 @@ function StageDrill({ stage, bench, running, onRun, onClose, onRemoved, onPatchP
  *  groups) → the card's DECLARED form (defaults seeded) → bench/add-stage
  *  as the user (CAS-chained). ONE surface: action cards; models are not
  *  entries (the model select lives ON the card's form). */
-function AddCardDoor({ bench, onAdded, onClose, renderStageView, onAddedRow }: {
+function AddCardDoor({ bench, onAdded, onClose, onAddedRow }: {
   bench: CardsBenchValue
   onAdded: () => void
-  /** THE REAL-CARD LAW (the operator's hour-7: "It shows me a
-   *  [REDACTED 2026-11-05] form card and not the real card"): when the picked
-   *  card's stage view is CLAIMED (a studio), the picked preview IS
-   *  the studio — the card, live, its own rail the param surface
-   *  (E1: a studio is a param editor) — never the spec form. */
-  renderStageView?: (owner: StageViewOwnerProps, fallback: ReturnType<typeof h>) => ReturnType<typeof h>
   /** The add's fresh row, when the bench diff found it — the parent
-   *  opens the REAL card right after the add (the old system's
-   *  open-on-add). */
+   *  opens the card's drilldown right after the add (the old tree's
+   *  law, InlinePipelineCards.handlePick: "Auto-open the new card —
+   *  the user types the prompt immediately, in the zoom drilldown,
+   *  not a mystery tile"). */
   onAddedRow?: (row: BenchStageRow) => void
   onClose: () => void
 }): ReturnType<typeof h> {
+  // THE PLAIN DOOR (the operator's hour-24 order: "a random screen
+  //  pops up that I don't want. It should just add the card and go
+  //  into the drilldown view"): the door is picker, the card's
+  //  declared form, Add — for EVERY card, claimed or not. The
+  //  hour-9 claimed-studio preview (a page-sized studio modal
+  //  hijacking the door the moment a studio card was picked) is
+  //  REPEALED — the studio is the ZOOM face for its cards (the
+  //  real-card law lives there), never the add door's.
   const [cards, setCards] = useState<CatalogCard[] | null>(null)
   const [catalogError, setCatalogError] = useState<string | null>(null)
   const [query, setQuery] = useState('')
@@ -950,27 +954,6 @@ function AddCardDoor({ bench, onAdded, onClose, renderStageView, onAddedRow }: {
       return url === '' ? [] : [{ id: s.id, label: String(s.title ?? s.card ?? s.id), url }]
     }),
   }
-  // THE REAL-CARD PROBE (the operator's hour-7): consult the keyed
-  // slot with a SENTINEL fallback — identity return means unclaimed
-  // (no studio: the spec form stays, honestly). A claimed card
-  // previews as THE CARD itself, live; its onPatch merges doc params
-  // into the values that ride the add door verbatim.
-  const studioView = useMemo(() => {
-    if (picked === null || renderStageView === undefined) return null
-    const sentinel = h('div', { key: '__unclaimed__' })
-    const probe: StageViewOwnerProps = {
-      stageId: '__add__',
-      cardName: picked.id,
-      row: { id: '__add__', card: picked.id, params: { ...specDefaults(spec?.fields ?? []), ...values } },
-      runStatus: '',
-      onPatch: (patch: Record<string, unknown>) => { setValues((m) => ({ ...m, ...patch })) },
-      onRun: () => {}, onStop: () => {}, onRemove: () => {}, onSurface: () => {},
-      upstream: [],
-      runId: null,
-    }
-    const node = renderStageView(probe, sentinel)
-    return node === sentinel ? null : node
-  }, [picked, spec, values, renderStageView])
   const add = async (): Promise<void> => {
     if (picked === null) return
     setAdding(true)
@@ -1022,40 +1005,6 @@ function AddCardDoor({ bench, onAdded, onClose, renderStageView, onAddedRow }: {
     const known = genres.find((x) => x[0] === g)
     if (known === undefined) genres.push([g, [c]])
     else known[1].push(c)
-  }
-  // THE CLAIMED-CARD MODAL LAW (hour-9: "when I press add card, it
-  // shows me a [REDACTED 2026-11-05] interface instead of the actual card"): the
-  // 860px drill modal squeezed the studio's shell grid into a 363px
-  // column — a card WITH a studio previews in the PAGE-SIZED modal
-  // (94vw × 94vh, the zoom's own huge law); the picker and the
-  // unclaimed form keep the compact drill.
-  // THE CLAIMED DOOR IS HEADLESS (hour-9): the primitive's own body
-  // div sits between .content and children as flex:0 — the studio
-  // could never fill the page-sized dialog through it. Headless puts
-  // the children directly in the dialog; this door renders its own
-  // header (title + close) + the full-bleed studio + the Add row.
-  // (The primitive's Modal type is a discriminated overload — the
-  // headless branch is its own literal-true call.)
-  const claimed = studioView !== null
-  if (claimed) {
-    return h(Modal, {
-      open: true, onClose, headless: true, title: 'Add a card',
-      className: css.addHugeModal,
-    },
-      h('div', { className: css.addClaimed },
-        h('div', { className: css.addClaimedHead },
-          h('span', { className: css.addClaimedTitle }, 'Add a card'),
-          h('button', { type: 'button', className: css.closeX, 'aria-label': 'Close picker', onClick: onClose }, '✕'),
-        ),
-        h('div', { className: css.addStageView, 'data-testid': 'add-stage-view' }, studioView),
-        h('div', { className: css.runRow },
-          h('button', { type: 'button', className: css.back, onClick: () => { setPicked(null); setSpec(null) } }, '← ' + (cards?.length ?? 0) + ' cards'),
-          formError !== null ? h('span', { className: css.runError }, formError) : null,
-          h(Button, { variant: 'primary', disabled: adding || spec === null, onClick: () => { void add() } },
-            adding ? 'adding…' : 'Add card'),
-        ),
-      ),
-    )
   }
   return h(Modal, {
     open: true, onClose, title: 'Add a card', closeLabel: 'Close picker',
@@ -1433,9 +1382,10 @@ function BenchView({ bench, onRun, onRunStage, onStopStage, onRemoveStage, stage
     }) : null,
     adding ? h(AddCardDoor, {
       bench: live, onAdded, onClose: () => { setAdding(false) },
-      renderStageView,
-      // THE OPEN-ON-ADD: the fresh row's zoom opens the REAL card
-      // (the consult) the moment the door lands it.
+      // THE OPEN-ON-ADD (the old tree's law verbatim): the fresh
+      // row's zoom (the drilldown; for a studio card the studio IS
+      // its drilldown face — the real-card law) opens the moment
+      // the door lands it.
       onAddedRow: (row: BenchStageRow) => { setAdding(false); setOpen(row) },
     }) : null,
   )

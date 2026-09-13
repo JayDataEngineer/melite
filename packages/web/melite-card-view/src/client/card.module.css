@@ -1559,12 +1559,6 @@
 /* THE ADD-DOOR STAGE SEAT (hour-7): the claimed studio preview in the
  * add door — flexed, min-zero, its own bounds; the studio's rail
  * scrolls inside. The modal's own scroll stays for the form cards. */
-.addStageView {
-  display: flex;
-  flex: 1 1 0%;
-  min-height: 420px;
-  overflow: hidden;
-}
 
 /* THE PREVIEW SEAT (hour-9): the drill's RIGHT column — the shared
  * preview (cards.stage.preview) rides ABOVE the Run row; params own
@@ -1591,12 +1585,6 @@
 /* THE CLAIMED-CARD ADD MODAL (hour-9): a studio preview rides the
  * page-sized modal — the zoom's huge law (94vw × 94vh) — so the
  * shell grid gets its real columns, never a squeezed column. */
-.addHugeModal {
-  width: 94vw;
-  max-width: 94vw;
-  height: 94vh;
-  max-height: 94vh;
-}
 /* The Modal's .content is content-sized by default — the page-sized
  * dialog would show a dead band below the studio (the hour-9 "odd
  * margins at the bottom"). The claimed preview's content column
@@ -1612,23 +1600,3 @@
 /* THE CLAIMED ADD LAYOUT (hour-9): the studio full-bleed above, the
  * Add row pinned below — flexed min-zero so the shell's grid owns the
  * height it is given by the page-sized modal. */
-.addClaimed {
-  display: flex;
-  flex: 1 1 0%;
-  flex-direction: column;
-  gap: 10px;
-  min-height: 0;
-  padding: 14px 16px 12px;
-}
-.addClaimedHead {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  flex: none;
-  padding: 4px 2px 8px;
-}
-.addClaimedTitle {
-  color: var(--dsw-alias-label-primary);
-  font-size: 14px;
-  font-weight: 500;
-}
