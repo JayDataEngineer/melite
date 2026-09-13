@@ -29,11 +29,15 @@
  * pose-editing scene). This is a lightweight autoplay preview for the assets
  * gallery: Kimodo motions carry no mesh, so we drape them over the neutral
  * SOMAX mesh exactly as the kimodo demo does.
+ *
+ * RENDERED ON THE SHARED RAW-THREE STAGE (card-base stage3d, the substrate
+ * law) — the r3f Canvas/useFrame/OrbitControls tree was ported away
+ * 1:1; playback stays ref-driven (frameIdxRef advanced in the stage tick,
+ * React re-rendered at ~15fps for the transport bar only).
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
-import { Canvas, useFrame, useThree } from "@react-three/fiber"
-import { OrbitControls, ContactShadows } from "@react-three/drei"
 import * as THREE from "three"
+import { mountStage3D, type Stage3D } from "@melite/card-base"
 import { Play, Pause, AlertTriangle } from "../../../ui-icons"
 import { Button } from "@deepseek-ai/dsh-client-ui-primitives"
 import { ScrubInput, Tip } from "../../../form-fields"
@@ -65,198 +69,6 @@ function computeFloorLift(deformedFlat: Float32Array): number {
   return isFinite(minY) ? FLOOR_LIFT_Y - minY : FLOOR_LIFT_Y
 }
 
-// ── Animated mesh ──────────────────────────────────────────────────────────
-
-function AnimatedMesh({
-  skin,
-  deformedFlat,
-  frameIdxRef,
-  liftY,
-}: {
-  skin: SomaSkin
-  deformedFlat: Float32Array
-  frameIdxRef: React.MutableRefObject<number>
-  liftY: number
-}) {
-  const geo = useMemo(() => buildSkinGeometry(skin), [skin])
-  const numVerts = skin.vertexCount
-  const lastUploaded = useRef(-1)
-
-  const uploadFrame = useCallback(
-    (idx: number) => {
-      const pos = geo.attributes.position as THREE.BufferAttribute
-      const arr = pos.array as Float32Array
-      const stride = numVerts * 3
-      const frameCount = deformedFlat.length / stride
-      if (frameCount < 1) return
-      const clamped = Math.max(0, Math.min(idx, Math.floor(frameCount) - 1))
-      const base = clamped * stride
-      // Already meters — copy straight in.
-      arr.set(deformedFlat.subarray(base, base + stride), 0)
-      pos.needsUpdate = true
-      geo.computeVertexNormals()
-      geo.computeBoundingSphere()
-      lastUploaded.current = clamped
-    },
-    [geo, deformedFlat, numVerts],
-  )
-
-  useFrame(() => {
-    const target = frameIdxRef.current
-    if (target !== lastUploaded.current) uploadFrame(target)
-  })
-
-  useEffect(() => {
-    uploadFrame(frameIdxRef.current)
-  }, [uploadFrame, frameIdxRef])
-
-  return (
-    <group position={[0, liftY, 0]}>
-      <mesh geometry={geo} castShadow receiveShadow>
-        <meshStandardMaterial
-          color="#9bd0f7"
-          roughness={0.55}
-          metalness={0.05}
-          flatShading={false}
-          side={THREE.DoubleSide}
-        />
-      </mesh>
-    </group>
-  )
-}
-
-// ── Playback clock ─────────────────────────────────────────────────────────
-
-function PlaybackClock({
-  frameCount,
-  fps,
-  playingRef,
-  frameIdxRef,
-  playGenRef,
-}: {
-  frameCount: number
-  fps: number
-  playingRef: React.MutableRefObject<boolean>
-  frameIdxRef: React.MutableRefObject<number>
-  playGenRef: React.MutableRefObject<number>
-}): null {
-  const timeRef = useRef(0)
-  const lastGen = useRef(-1)
-  useFrame((_, delta) => {
-    if (frameCount < 1) return
-    if (playingRef.current && playGenRef.current !== lastGen.current) {
-      lastGen.current = playGenRef.current
-      timeRef.current = (frameIdxRef.current / fps) || 0
-    }
-    if (!playingRef.current) return
-    timeRef.current += Math.min(delta, 0.1)
-    const frameDuration = 1 / fps
-    frameIdxRef.current = Math.floor(timeRef.current / frameDuration) % frameCount
-  })
-  return null
-}
-
-// ── Adaptive camera framing ────────────────────────────────────────────────
-
-function CameraRig({ framing }: { framing: { centerY: number; height: number } | null }): null {
-  const controls = useThree((s) => s.controls) as unknown as
-    { target: THREE.Vector3; update: () => void } | null
-  const camera = useThree((s) => s.camera)
-  useEffect(() => {
-    if (!framing) return
-    const dist = Math.max(1.6, framing.height * 2.4)
-    camera.position.set(0, framing.centerY + framing.height * 0.15, dist)
-    if (controls) {
-      controls.target.set(0, framing.centerY, 0)
-      controls.update()
-    } else {
-      camera.lookAt(0, framing.centerY, 0)
-    }
-  }, [framing, camera, controls])
-  return null
-}
-
-// ── Scene ──────────────────────────────────────────────────────────────────
-
-function Scene({
-  skin,
-  deformedFlat,
-  frameCount,
-  fps,
-  liftY,
-  framing,
-  playingRef,
-  frameIdxRef,
-  playGenRef,
-}: {
-  skin: SomaSkin
-  deformedFlat: Float32Array
-  frameCount: number
-  fps: number
-  liftY: number
-  framing: { centerY: number; height: number } | null
-  playingRef: React.MutableRefObject<boolean>
-  frameIdxRef: React.MutableRefObject<number>
-  playGenRef: React.MutableRefObject<number>
-}) {
-  return (
-    <>
-      <OrbitControls
-        makeDefault
-        target={[0, 0.9, 0]}
-        enableDamping
-        dampingFactor={0.1}
-        minDistance={0.6}
-        maxDistance={12}
-        maxPolarAngle={Math.PI / 1.85}
-      />
-      <CameraRig framing={framing} />
-      <ambientLight intensity={0.5} />
-      <directionalLight
-        position={[5, 8, 5]}
-        intensity={1.1}
-        castShadow
-        shadow-mapSize-width={2048}
-        shadow-mapSize-height={2048}
-        shadow-camera-left={-3}
-        shadow-camera-right={3}
-        shadow-camera-top={3}
-        shadow-camera-bottom={-3}
-        shadow-camera-near={0.5}
-        shadow-camera-far={20}
-        shadow-bias={-0.0005}
-      />
-      <directionalLight position={[-4, 3, -2]} intensity={0.3} />
-      <hemisphereLight args={["#cdd6f4", "#1a1a2e", 0.35]} />
-
-      <AnimatedMesh
-        skin={skin}
-        deformedFlat={deformedFlat}
-        frameIdxRef={frameIdxRef}
-        liftY={liftY}
-      />
-      <PlaybackClock
-        frameCount={frameCount}
-        fps={fps}
-        playingRef={playingRef}
-        frameIdxRef={frameIdxRef}
-        playGenRef={playGenRef}
-      />
-
-      <ContactShadows
-        position={[0, 0, 0]}
-        opacity={0.5}
-        scale={6}
-        blur={2.5}
-        far={4}
-        resolution={1024}
-        color="#000000"
-      />
-      <gridHelper args={[10, 40, "#3a3a4a", "#22222e"]} position={[0, 0, 0]} />
-    </>
-  )
-}
-
 // ── Main ───────────────────────────────────────────────────────────────────
 
 interface MotionViewerProps {
@@ -277,6 +89,9 @@ export default function MotionViewer({ url, className }: MotionViewerProps) {
   const frameIdxRef = useRef(0)
   const playGenRef = useRef(0)
   const [displayFrame, setDisplayFrame] = useState(0)
+
+  const canvasRef = useRef<HTMLCanvasElement | null>(null)
+  const stageRef = useRef<Stage3D | null>(null)
 
   useEffect(() => {
     playingRef.current = playing
@@ -338,6 +153,143 @@ export default function MotionViewer({ url, className }: MotionViewerProps) {
     if (!isFinite(minY)) return null
     return { centerY: (minY + maxY) / 2 + liftY, height: maxY - minY }
   }, [deformedFlat, liftY])
+
+  // ── The raw-three stage (the r3f Canvas port) ───────────────────────────
+  // Built once per (skin, deformedFlat) pair — a data swap rebuilds the
+  // figure exactly like the old geo-memo remount did. Scene content:
+  // the three-point light rig, the shadow-catching floor, the Kimodo grid,
+  // the lifted figure group. Frame logic: the playback clock tick + the
+  // mesh upload tick, registered IN THAT ORDER (the clock advances
+  // frameIdxRef, the mesh reads it — one rAF, zero React renders).
+  useEffect(() => {
+    const canvas = canvasRef.current
+    if (!canvas || !skin || !deformedFlat) return
+    const stage = mountStage3D(canvas, {
+      fov: 40,
+      near: 0.05,
+      far: 50,
+      camera: [0, 1.2, 3.5],
+      target: [0, 0.9, 0],
+      minDistance: 0.6,
+      maxDistance: 12,
+      maxPolarAngle: Math.PI / 1.85,
+      alpha: false,
+    })
+    if (stage === null) return
+    stageRef.current = stage
+    stage.renderer.setClearColor("#0a0a0f")
+    stage.renderer.toneMapping = THREE.ACESFilmicToneMapping
+    stage.renderer.toneMappingExposure = 1.0
+
+    const scene = stage.scene
+    scene.add(new THREE.AmbientLight(0xffffff, 0.5))
+    const key = new THREE.DirectionalLight(0xffffff, 1.1)
+    key.position.set(5, 8, 5)
+    key.castShadow = true
+    key.shadow.mapSize.set(2048, 2048)
+    key.shadow.camera.left = -3
+    key.shadow.camera.right = 3
+    key.shadow.camera.top = 3
+    key.shadow.camera.bottom = -3
+    key.shadow.camera.near = 0.5
+    key.shadow.camera.far = 20
+    key.shadow.bias = -0.0005
+    scene.add(key)
+    const fill = new THREE.DirectionalLight(0xffffff, 0.3)
+    fill.position.set(-4, 3, -2)
+    scene.add(fill)
+    scene.add(new THREE.HemisphereLight(0xcdd6f4, 0x1a1a2e, 0.35))
+
+    // Contact-shadow analogue: the floor catches the key light's shadow
+    // (PCFSoft) through a ShadowMaterial plane — same read as the old
+    // ContactShadows pass for a single grounded figure.
+    const ground = new THREE.Mesh(
+      new THREE.PlaneGeometry(12, 12),
+      new THREE.ShadowMaterial({ opacity: 0.5 }),
+    )
+    ground.rotation.x = -Math.PI / 2
+    ground.receiveShadow = true
+    scene.add(ground)
+
+    const grid = new THREE.GridHelper(10, 40, 0x3a3a4a, 0x22222e)
+    scene.add(grid)
+
+    // The figure — lifted so feet clear the floor, per-frame verts.
+    const group = new THREE.Group()
+    group.position.y = liftY
+    scene.add(group)
+    const geo = buildSkinGeometry(skin)
+    const mat = new THREE.MeshStandardMaterial({
+      color: 0x9bd0f7,
+      roughness: 0.55,
+      metalness: 0.05,
+      flatShading: false,
+      side: THREE.DoubleSide,
+    })
+    const mesh = new THREE.Mesh(geo, mat)
+    mesh.castShadow = true
+    mesh.receiveShadow = true
+    group.add(mesh)
+
+    const numVerts = skin.vertexCount
+    const stride = numVerts * 3
+    let lastUploaded = -1
+    const uploadFrame = (idx: number): void => {
+      const pos = geo.attributes.position as THREE.BufferAttribute
+      const arr = pos.array as Float32Array
+      const frames = deformedFlat.length / stride
+      if (frames < 1) return
+      const clamped = Math.max(0, Math.min(idx, Math.floor(frames) - 1))
+      const base = clamped * stride
+      // Already meters — copy straight in.
+      arr.set(deformedFlat.subarray(base, base + stride), 0)
+      pos.needsUpdate = true
+      geo.computeVertexNormals()
+      geo.computeBoundingSphere()
+      lastUploaded = clamped
+    }
+
+    // Playback clock (the PlaybackClock port), fused with the mesh upload
+    // in ONE stage tick so the advance→read order is fixed: resume-from-
+    // current-frame semantics preserved via the play generation counter,
+    // then the mesh uploads whatever frameIdxRef landed on (skip when
+    // unchanged — paused or rAF faster than fps).
+    const time = { cur: 0 }
+    let lastGen = -1
+    stage.addTick((delta) => {
+      if (playingRef.current && frameCount >= 1) {
+        if (playGenRef.current !== lastGen) {
+          lastGen = playGenRef.current
+          time.cur = frameIdxRef.current / fps || 0
+        }
+        time.cur += Math.min(delta, 0.1)
+        frameIdxRef.current = Math.floor(time.cur / (1 / fps)) % frameCount
+      }
+      const target = frameIdxRef.current
+      if (target !== lastUploaded) uploadFrame(target)
+    })
+
+    return () => {
+      stageRef.current = null
+      stage.dispose()
+      geo.dispose()
+      mat.dispose()
+      ground.geometry.dispose()
+      ;(ground.material as THREE.Material).dispose()
+      grid.geometry.dispose()
+    }
+  }, [skin, deformedFlat, liftY, frameCount, fps])
+
+  // ── Adaptive camera framing (the CameraRig port) ────────────────────────
+  useEffect(() => {
+    const stage = stageRef.current
+    if (!stage || !framing) return
+    const dist = Math.max(1.6, framing.height * 2.4)
+    stage.camera.position.set(0, framing.centerY + framing.height * 0.15, dist)
+    stage.controls.target.set(0, framing.centerY, 0)
+    stage.controls.update()
+    stage.camera.lookAt(0, framing.centerY, 0)
+  }, [framing])
 
   useEffect(() => {
     if (loading || error || frameCount < 1) return
@@ -416,28 +368,7 @@ export default function MotionViewer({ url, className }: MotionViewerProps) {
 
   return (
     <div className={className ? `${styles.root} ${className}` : styles.root}>
-      <Canvas
-        shadows
-        camera={{ position: [0, 1.2, 3.5], fov: 40, near: 0.05, far: 50 }}
-        gl={{ antialias: true, alpha: false }}
-        onCreated={({ gl }) => {
-          gl.setClearColor("#0a0a0f")
-          gl.toneMapping = THREE.ACESFilmicToneMapping
-          gl.toneMappingExposure = 1.0
-        }}
-      >
-        <Scene
-          skin={skin}
-          deformedFlat={deformedFlat}
-          frameCount={frameCount}
-          fps={fps}
-          liftY={liftY}
-          framing={framing}
-          playingRef={playingRef}
-          frameIdxRef={frameIdxRef}
-          playGenRef={playGenRef}
-        />
-      </Canvas>
+      <canvas ref={canvasRef} className={styles.canvas} data-testid="motion-viewer-3d" />
 
       {frameCount > 0 && (
         <div className={styles.transport}>

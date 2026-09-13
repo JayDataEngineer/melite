@@ -668,6 +668,63 @@ window.__ModuleLoader__.load({
 				}))
 			};
 		}
+		/** THE TRI-STATE ATOM (hour 15, stroke C): inherit / on / off —
+		*  promoted from h3's studio-local TriControl (same semantics, same
+		*  option order). Serves schema-bound fields of type 'tri' AND the
+		*  standalone rail rows that hand-rolled the select before. */
+		function TriStateAtom({ label, value, onEdit, name, disabled }) {
+			return (0, react.createElement)("select", {
+				className: card_module_css_default.specSelect,
+				"aria-label": label,
+				disabled: disabled === true,
+				value: value === void 0 ? "" : String(value),
+				onChange: (e) => {
+					const v = e.target.value;
+					onEdit(name, v === "" ? void 0 : v === "true");
+				}
+			}, (0, react.createElement)("option", { value: "" }, "inherit"), (0, react.createElement)("option", { value: "true" }, "on"), (0, react.createElement)("option", { value: "false" }, "off"));
+		}
+		/** The slider's local display during a drag (the settle law's
+		*  carrier): local owns the bubble while dragging; an external move
+		*  of the backing value (agent write, revive, another card opened)
+		*  reclaims the display. */
+		function useLocalSliderValue(value, def) {
+			const num = typeof value === "number" ? value : Number(value);
+			const [local, setLocal] = (0, react.useState)(null);
+			(0, react.useEffect)(() => {
+				setLocal(null);
+			}, [num]);
+			return {
+				value: local !== null ? local : Number.isFinite(num) ? num : Number(def ?? 0),
+				set: setLocal
+			};
+		}
+		/** THE SETTLE LAW for slider atoms (hour 15, stroke C — grown from
+		*  mask-studio's draft absorber, 2026-08-10): a drag fires input
+		*  60×/sec; if every step wrote to the card, updateStageParams →
+		*  _recomputeKeys would hash multi-MB paint data 60×/sec and freeze
+		*  the editor. The atom shows the drag locally and persists ONCE on
+		*  settle (the change event = release / keyboard step). External
+		*  writes (agent, revive) re-sync the display when the backing
+		*  value actually moves. */
+		function SpecSliderAtom({ f, value, onEdit }) {
+			const shown = useLocalSliderValue(value, f.default);
+			return (0, react.createElement)("span", { className: card_module_css_default.specSliderRow }, (0, react.createElement)("input", {
+				className: card_module_css_default.specSlider,
+				type: "range",
+				min: f.min ?? 0,
+				max: f.max ?? 10,
+				step: f.step ?? .1,
+				value: shown,
+				onInput: (e) => {
+					shown.set(Number(e.target.value));
+				},
+				onChange: (e) => {
+					onEdit(f.name, e.target.value);
+				},
+				"aria-label": f.label
+			}), (0, react.createElement)("span", { className: card_module_css_default.specSliderValue }, String(shown.value)));
+		}
 		/** One spec atom — typed by the declaration, edited as a raw string
 		*  while typing (decimal dots survive; coercion happens once at patch). */
 		function SpecAtom({ f, value, onEdit, square }) {
@@ -695,19 +752,17 @@ window.__ModuleLoader__.load({
 					value: row.value
 				}, row.label);
 			}));
-			if (f.type === "slider") {
-				const num = typeof value === "number" ? value : Number(value);
-				return (0, react.createElement)("span", { className: card_module_css_default.specSliderRow }, (0, react.createElement)("input", {
-					className: card_module_css_default.specSlider,
-					type: "range",
-					min: f.min ?? 0,
-					max: f.max ?? 10,
-					step: f.step ?? .1,
-					value: Number.isFinite(num) ? num : f.default ?? 0,
-					onInput: (e) => onEdit(f.name, e.target.value),
-					"aria-label": f.label
-				}), (0, react.createElement)("span", { className: card_module_css_default.specSliderValue }, String(value ?? f.default ?? "")));
-			}
+			if (f.type === "slider") return (0, react.createElement)(SpecSliderAtom, {
+				f,
+				value,
+				onEdit
+			});
+			if (f.type === "tri") return (0, react.createElement)(TriStateAtom, {
+				label: f.label !== "" ? f.label : f.name,
+				value: value === void 0 || value === null ? void 0 : value === true || value === "true",
+				onEdit,
+				name: f.name
+			});
 			if (f.type === "switch" || f.type === "boolean") {
 				const on = value === true || value === "true";
 				return (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Switch, {
@@ -811,6 +866,19 @@ window.__ModuleLoader__.load({
 		*  it. The caller hands only the WIRE (picker candidates), never the
 		*  component; a caller that passes its own `square` fn overrides (the
 		*  host-claim seam), but the default is the constructor's own. */
+		/** ONE SPEC FIELD ROW (hour 15, stroke C): the label chrome (key,
+		*  required star, hint) around the atom — CardForm's own row, opened
+		*  to rail sections that render served fields outside a whole form
+		*  (mask's TuneSection). The claim seam stays CardForm's; this row
+		*  takes the resolved atom inputs. */
+		function SpecFieldRow({ f, value, onEdit, square }) {
+			return (0, react.createElement)("label", { className: card_module_css_default.specField }, (0, react.createElement)("span", { className: card_module_css_default.specFieldKey }, f.label, f.required === true ? (0, react.createElement)("span", { className: card_module_css_default.specRequired }, " *") : null), (0, react.createElement)(SpecAtom, {
+				f,
+				value,
+				onEdit,
+				square
+			}), f.tooltip !== void 0 && f.tooltip !== "" ? (0, react.createElement)("span", { className: card_module_css_default.specHint }, f.tooltip) : null);
+		}
 		function CardForm({ spec, fields, values, onEdit, wire, square, atoms, onPatch }) {
 			const modKinds = spec?.features?.modifiers ?? [];
 			const owned = modOwnedFields(spec ?? {
@@ -838,25 +906,26 @@ window.__ModuleLoader__.load({
 			}) : null, groups.map((g) => (0, react.createElement)("section", {
 				key: g.group ?? "",
 				className: card_module_css_default.specGroup
-			}, g.group !== null ? (0, react.createElement)("h4", { className: card_module_css_default.specGroupTitle }, g.group) : null, g.fields.map((f) => (0, react.createElement)("label", {
-				key: f.name,
-				className: card_module_css_default.specField
-			}, (0, react.createElement)("span", { className: card_module_css_default.specFieldKey }, f.label, f.required === true ? (0, react.createElement)("span", { className: card_module_css_default.specRequired }, " *") : null), (() => {
+			}, g.group !== null ? (0, react.createElement)("h4", { className: card_module_css_default.specGroupTitle }, g.group) : null, g.fields.map((f) => {
 				const claim = atomOf(f);
 				const sq = squareFor(f);
-				if (claim !== void 0) return claim({
+				if (claim !== void 0) return (0, react.createElement)("label", {
+					key: f.name,
+					className: card_module_css_default.specField
+				}, (0, react.createElement)("span", { className: card_module_css_default.specFieldKey }, f.label, f.required === true ? (0, react.createElement)("span", { className: card_module_css_default.specRequired }, " *") : null), claim({
+					f,
+					value: values[f.name],
+					onEdit,
+					square: sq
+				}), f.tooltip !== void 0 && f.tooltip !== "" ? (0, react.createElement)("span", { className: card_module_css_default.specHint }, f.tooltip) : null);
+				return (0, react.createElement)(SpecFieldRow, {
+					key: f.name,
 					f,
 					value: values[f.name],
 					onEdit,
 					square: sq
 				});
-				return (0, react.createElement)(SpecAtom, {
-					f,
-					value: values[f.name],
-					onEdit,
-					square: sq
-				});
-			})(), f.tooltip !== void 0 && f.tooltip !== "" ? (0, react.createElement)("span", { className: card_module_css_default.specHint }, f.tooltip) : null)))), modKinds.length > 0 ? (0, react.createElement)(ModifiersSection, {
+			}))), modKinds.length > 0 ? (0, react.createElement)(ModifiersSection, {
 				kinds: modKinds,
 				values,
 				onEdit,

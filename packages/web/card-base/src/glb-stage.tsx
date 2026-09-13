@@ -25,7 +25,7 @@ import { createElement as h, useEffect, useRef, useState } from 'react'
 import * as THREE from 'three'
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js'
 import { DRACOLoader } from 'three/addons/loaders/DRACOLoader.js'
-import { OrbitControls } from 'three/addons/controls/OrbitControls.js'
+import { mountStage3D } from './stage3d.ts'
 import s from './preview.module.css'
 
 let draco: DRACOLoader | null = null
@@ -82,30 +82,26 @@ export function autoFitToHeight(root: THREE.Object3D, targetHeight = 1.6): { box
   return { box: box3, height: size3.y }
 }
 
-/** The imperative three scene (a pure leaf library — the substrate
- *  law above). Owns renderer/camera/controls, the rAF loop, the
- *  resize observation, the click→asset resolution, and full disposal
- *  on unmount. Clicks resolve to the stage asset id under the cursor
- *  (group.userData.stageId, walked parentward) or null on empty
- *  space; a drag-orbit never reads as a click (the 350ms threshold). */
+/** The imperative three scene — BUILT ON THE SHARED STAGE CORE
+ *  (stage3d.ts): the core owns renderer/camera/controls/rAF/resize/picking;
+ *  this adds the glb-stage's own light rig + floor grid and maps the core's
+ *  pick semantics onto the stage-asset id (group.userData.pick → clickSink,
+ *  empty click → clickSink(null)). A drag-orbit never reads as a click. */
 function mountScene(canvas: HTMLCanvasElement, onFail: (msg: string) => void): {
   scene: THREE.Scene
   setClickSink: (fn: (id: string | null) => void) => void
   dispose: () => void
 } | null {
-  let renderer: THREE.WebGLRenderer
-  try {
-    renderer = new THREE.WebGLRenderer({ canvas, antialias: true })
-  } catch (e: unknown) {
-    onFail(e instanceof Error ? e.message : 'WebGL unavailable')
-    return null
-  }
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
-  const scene = new THREE.Scene()
-  scene.background = null
-  const camera = new THREE.PerspectiveCamera(40, 1, 0.05, 60)
-  camera.position.set(2.2, 1.6, 2.6)
-  camera.lookAt(0, 0.8, 0)
+  let clickSink: (id: string | null) => void = () => {}
+  const stage = mountStage3D(canvas, {
+    fov: 40,
+    camera: [2.2, 1.6, 2.6],
+    target: [0, 0.8, 0],
+    onContextFailure: onFail,
+    onEmptyClick: () => clickSink(null),
+  })
+  if (stage === null) return null
+  const scene = stage.scene
   scene.add(new THREE.HemisphereLight(0xffffff, 0x8a8a8a, 1.4))
   const key = new THREE.DirectionalLight(0xffffff, 2.2)
   key.position.set(3, 5, 2)
@@ -119,57 +115,12 @@ function mountScene(canvas: HTMLCanvasElement, onFail: (msg: string) => void): {
   gridMat.transparent = true
   gridMat.opacity = 0.35
   scene.add(grid)
-  const controls = new OrbitControls(camera, canvas)
-  controls.target.set(0, 0.8, 0)
-  controls.enableDamping = true
-  const raycaster = new THREE.Raycaster()
-  const pointer = new THREE.Vector2()
-  let clickSink: (id: string | null) => void = () => {}
-  let downAt = 0
-  const onPointerDown = (e: PointerEvent): void => { downAt = e.timeStamp }
-  const onClick = (e: MouseEvent): void => {
-    if (e.timeStamp - downAt > 350) return // a drag, not a click
-    const r = canvas.getBoundingClientRect()
-    pointer.x = ((e.clientX - r.left) / r.width) * 2 - 1
-    pointer.y = -((e.clientY - r.top) / r.height) * 2 + 1
-    raycaster.setFromCamera(pointer, camera)
-    const hits = raycaster.intersectObjects(scene.children, true)
-    for (const hit of hits) {
-      let o: THREE.Object3D | null = hit.object
-      while (o !== null && o.userData.stageId === undefined) o = o.parent
-      if (o !== null) { clickSink(o.userData.stageId as string); return }
-    }
-    clickSink(null)
-  }
-  canvas.addEventListener('pointerdown', onPointerDown)
-  canvas.addEventListener('click', onClick)
-  let raf = 0
-  const render = (): void => {
-    raf = requestAnimationFrame(render)
-    controls.update()
-    renderer.render(scene, camera)
-  }
-  render()
-  const fit = (): void => {
-    const w = canvas.clientWidth, hh = canvas.clientHeight
-    if (w === 0 || hh === 0) return
-    renderer.setSize(w, hh, false)
-    camera.aspect = w / hh
-    camera.updateProjectionMatrix()
-  }
-  fit()
-  const ro = new ResizeObserver(fit)
-  ro.observe(canvas)
   return {
     scene,
     setClickSink: (fn) => { clickSink = fn },
     dispose: () => {
-      cancelAnimationFrame(raf)
-      ro.disconnect()
-      canvas.removeEventListener('pointerdown', onPointerDown)
-      canvas.removeEventListener('click', onClick)
-      controls.dispose()
-      renderer.dispose()
+      grid.geometry.dispose()
+      stage.dispose()
     },
   }
 }
@@ -234,6 +185,9 @@ export function GlbStagePreview({ assets, selectedId, onSelect, onAssetError, em
           autoFitToHeight(g.scene)
           const group = new THREE.Group()
           group.userData.stageId = a.id
+          // the shared core's pick seam (replaces the old parentward
+          // stageId walk): click → the caller's selection state
+          group.userData.pick = { click: () => selectRef.current?.(a.id) }
           group.add(g.scene)
           if (a.scale !== undefined) group.scale.multiplyScalar(a.scale)
           if (a.rotation !== undefined) group.rotation.set(a.rotation[0], a.rotation[1], a.rotation[2])

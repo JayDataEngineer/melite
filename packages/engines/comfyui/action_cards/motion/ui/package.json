@@ -11,12 +11,15 @@
   },
   "dependencies": {
     "@deepseek-ai/dsh-client-ui-primitives": "0.1.5-rc.2",
+    "@melite/card-base": "workspace:*",
+    "@melite/catalog": "workspace:*",
     "@melite/contracts": "workspace:*",
     "@melite/formats": "workspace:*",
-    "@react-three/drei": "^9.122.0",
-    "@react-three/fiber": "^8.18.0",
     "react": "*",
     "react-dom": "*",
     "three": "*"
+  },
+  "devDependencies": {
+    "@types/three": "^0.184.1"
   }
 }

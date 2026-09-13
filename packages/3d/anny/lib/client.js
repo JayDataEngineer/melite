@@ -4815,7 +4815,7 @@ window.__ModuleLoader__.load({
 			}
 			throw new Error(`Unknown texture type ${type}.`);
 		}
-		var MOUSE, TOUCH, AttachedBindMode, RepeatWrapping, ClampToEdgeWrapping, MirroredRepeatWrapping, NearestFilter, NearestMipmapNearestFilter, NearestMipmapLinearFilter, LinearFilter, LinearMipmapNearestFilter, LinearMipmapLinearFilter, UnsignedByteType, ByteType, ShortType, UnsignedShortType, IntType, UnsignedIntType, FloatType, HalfFloatType, UnsignedShort4444Type, UnsignedShort5551Type, UnsignedInt248Type, UnsignedInt5999Type, UnsignedInt101111Type, AlphaFormat, RGBFormat, RGBAFormat, DepthFormat, DepthStencilFormat, RedFormat, RedIntegerFormat, RGFormat, RGIntegerFormat, RGBAIntegerFormat, RGB_S3TC_DXT1_Format, RGBA_S3TC_DXT1_Format, RGBA_S3TC_DXT3_Format, RGBA_S3TC_DXT5_Format, RGB_PVRTC_4BPPV1_Format, RGB_PVRTC_2BPPV1_Format, RGBA_PVRTC_4BPPV1_Format, RGBA_PVRTC_2BPPV1_Format, RGB_ETC1_Format, RGB_ETC2_Format, RGBA_ETC2_EAC_Format, R11_EAC_Format, SIGNED_R11_EAC_Format, RG11_EAC_Format, SIGNED_RG11_EAC_Format, RGBA_ASTC_4x4_Format, RGBA_ASTC_5x4_Format, RGBA_ASTC_5x5_Format, RGBA_ASTC_6x5_Format, RGBA_ASTC_6x6_Format, RGBA_ASTC_8x5_Format, RGBA_ASTC_8x6_Format, RGBA_ASTC_8x8_Format, RGBA_ASTC_10x5_Format, RGBA_ASTC_10x6_Format, RGBA_ASTC_10x8_Format, RGBA_ASTC_10x10_Format, RGBA_ASTC_12x10_Format, RGBA_ASTC_12x12_Format, RGBA_BPTC_Format, RGB_BPTC_SIGNED_Format, RGB_BPTC_UNSIGNED_Format, RED_RGTC1_Format, SIGNED_RED_RGTC1_Format, RED_GREEN_RGTC2_Format, SIGNED_RED_GREEN_RGTC2_Format, InterpolateDiscrete, InterpolateLinear, InterpolateSmooth, InterpolateBezier, ZeroCurvatureEnding, ZeroSlopeEnding, WrapAroundEnding, NormalAnimationBlendMode, BasicDepthPacking, SRGBColorSpace, LinearSRGBColorSpace, LinearTransfer, SRGBTransfer, KeepStencilOp, StaticDrawUsage, WebGLCoordinateSystem, _cache$1, _setConsoleFunction, ReversedDepthFuncs, EventDispatcher, _lut, _seed, DEG2RAD, RAD2DEG, MathUtils, Vector2, Quaternion, Vector3, _vector$c, _quaternion$5, Matrix3, _m3, LINEAR_REC709_TO_XYZ, XYZ_TO_LINEAR_REC709, ColorManagement, _canvas, ImageUtils, _sourceId, Source, _textureId, _tempVec3, Texture, Vector4, RenderTarget, WebGLRenderTarget, DataArrayTexture, Data3DTexture, Matrix4, _v1$7, _m1$2, _zero, _one, _x, _y, _z, _matrix$2, _quaternion$4, Euler, Layers, _object3DId, _v1$6, _q1, _m1$1$1, _target, _position$4, _scale$3, _quaternion$3, _xAxis, _yAxis, _zAxis, _addedEvent, _removedEvent, _childaddedEvent, _childremovedEvent, Object3D, Group, _moveEvent, WebXRController, _colorKeywords, _hslA, _hslB, Color, _color, Scene, _v0$2, _v1$5, _v2$4, _v3$2, _vab, _vac, _vbc, _vap, _vbp, _vcp, _v40, _v41, _v42, Triangle, Box3, _points, _vector$b, _box$4, _v0$1, _v1$4, _v2$3, _f0, _f1, _f2, _center, _extents, _triangleNormal, _testAxis, _vector$a, _vector2$1, _id$2, BufferAttribute, Uint16BufferAttribute, Uint32BufferAttribute, Float32BufferAttribute, _box$3, _v1$3, _v2$2, Sphere, _id$1, _m1$3, _obj, _offset, _box$2, _boxMorphTargets, _vector$9, BufferGeometry, InterleavedBuffer, _vector$8, InterleavedBufferAttribute, _materialId, Material, _vector$7, _segCenter, _segDir, _diff, _edge1, _edge2, _normal$1, Ray, MeshBasicMaterial, _inverseMatrix$3, _ray$3, _sphere$6, _sphereHitAt, _vA, _vB, _vC, _tempA, _morphA, _intersectionPoint, _intersectionPointWorld, Mesh, _baseVector, _skinIndex, _skinWeight, _vector4, _matrix4, _vertex, _sphere$5, _inverseMatrix$2, _ray$2, SkinnedMesh, Bone, DataTexture, _offsetMatrix, _identityMatrix$1, Skeleton$1, InstancedBufferAttribute, _instanceLocalMatrix, _instanceWorldMatrix, _instanceIntersects, _box3, _identity, _mesh$1, _sphere$4, InstancedMesh, _vector1, _vector2, _normalMatrix, Plane, _sphere$3, _defaultSpriteCenter, _vector$6, Frustum, LineBasicMaterial, _vStart, _vEnd, _inverseMatrix$1, _ray$1, _sphere$1, _intersectPointOnRay, _intersectPointOnSegment, Line, _start, _end, LineSegments, LineLoop, PointsMaterial, _inverseMatrix, _ray$4, _sphere, _position$3, Points, CubeTexture, DepthTexture, CubeDepthTexture, ExternalTexture, BoxGeometry, PlaneGeometry, ShadowMaterial, UniformsUtils, default_vertex, default_fragment, ShaderMaterial, RawShaderMaterial, MeshStandardMaterial, MeshPhysicalMaterial, MeshDepthMaterial, MeshDistanceMaterial, Interpolant, CubicInterpolant, LinearInterpolant, DiscreteInterpolant, BezierInterpolant, KeyframeTrack, BooleanKeyframeTrack, ColorKeyframeTrack, NumberKeyframeTrack, QuaternionLinearInterpolant, QuaternionKeyframeTrack, StringKeyframeTrack, VectorKeyframeTrack, AnimationClip, Cache, LoadingManager, DefaultLoadingManager, Loader, loading, HttpError, FileLoader, _loading, ImageLoader, TextureLoader, Light, HemisphereLight, _projScreenMatrix$1, _lightPositionWorld$1, _lookTarget$1, LightShadow, _position$2, _quaternion$2, _scale$2, Camera, _v3$1, _minTarget, _maxTarget, PerspectiveCamera, SpotLightShadow, SpotLight, PointLightShadow, PointLight, OrthographicCamera, DirectionalLightShadow, DirectionalLight, AmbientLight, LoaderUtils, _errorMap, ImageBitmapLoader, fov, aspect, CubeCamera, ArrayCamera, _RESERVED_CHARS_RE, _reservedRe, _wordChar, _wordCharOrDot, _directoryRe, _nodeRe, _objectRe, _propertyRe, _trackRe, _supportedObjectNames, Composite, PropertyBinding, _matrix, Raycaster, Spherical, GridHelper, Controls;
+		var MOUSE, TOUCH, AttachedBindMode, RepeatWrapping, ClampToEdgeWrapping, MirroredRepeatWrapping, NearestFilter, NearestMipmapNearestFilter, NearestMipmapLinearFilter, LinearFilter, LinearMipmapNearestFilter, LinearMipmapLinearFilter, UnsignedByteType, ByteType, ShortType, UnsignedShortType, IntType, UnsignedIntType, FloatType, HalfFloatType, UnsignedShort4444Type, UnsignedShort5551Type, UnsignedInt248Type, UnsignedInt5999Type, UnsignedInt101111Type, AlphaFormat, RGBFormat, RGBAFormat, DepthFormat, DepthStencilFormat, RedFormat, RedIntegerFormat, RGFormat, RGIntegerFormat, RGBAIntegerFormat, RGB_S3TC_DXT1_Format, RGBA_S3TC_DXT1_Format, RGBA_S3TC_DXT3_Format, RGBA_S3TC_DXT5_Format, RGB_PVRTC_4BPPV1_Format, RGB_PVRTC_2BPPV1_Format, RGBA_PVRTC_4BPPV1_Format, RGBA_PVRTC_2BPPV1_Format, RGB_ETC1_Format, RGB_ETC2_Format, RGBA_ETC2_EAC_Format, R11_EAC_Format, SIGNED_R11_EAC_Format, RG11_EAC_Format, SIGNED_RG11_EAC_Format, RGBA_ASTC_4x4_Format, RGBA_ASTC_5x4_Format, RGBA_ASTC_5x5_Format, RGBA_ASTC_6x5_Format, RGBA_ASTC_6x6_Format, RGBA_ASTC_8x5_Format, RGBA_ASTC_8x6_Format, RGBA_ASTC_8x8_Format, RGBA_ASTC_10x5_Format, RGBA_ASTC_10x6_Format, RGBA_ASTC_10x8_Format, RGBA_ASTC_10x10_Format, RGBA_ASTC_12x10_Format, RGBA_ASTC_12x12_Format, RGBA_BPTC_Format, RGB_BPTC_SIGNED_Format, RGB_BPTC_UNSIGNED_Format, RED_RGTC1_Format, SIGNED_RED_RGTC1_Format, RED_GREEN_RGTC2_Format, SIGNED_RED_GREEN_RGTC2_Format, InterpolateDiscrete, InterpolateLinear, InterpolateSmooth, InterpolateBezier, ZeroCurvatureEnding, ZeroSlopeEnding, WrapAroundEnding, NormalAnimationBlendMode, BasicDepthPacking, SRGBColorSpace, LinearSRGBColorSpace, LinearTransfer, SRGBTransfer, KeepStencilOp, StaticDrawUsage, WebGLCoordinateSystem, _cache$1, _setConsoleFunction, ReversedDepthFuncs, EventDispatcher, _lut, _seed, DEG2RAD, RAD2DEG, MathUtils, Vector2, Quaternion, Vector3, _vector$c, _quaternion$5, Matrix3, _m3, LINEAR_REC709_TO_XYZ, XYZ_TO_LINEAR_REC709, ColorManagement, _canvas, ImageUtils, _sourceId, Source, _textureId, _tempVec3, Texture, Vector4, RenderTarget, WebGLRenderTarget, DataArrayTexture, Data3DTexture, Matrix4, _v1$7, _m1$2, _zero, _one, _x, _y, _z, _matrix$2, _quaternion$4, Euler, Layers, _object3DId, _v1$6, _q1, _m1$1$1, _target, _position$4, _scale$3, _quaternion$3, _xAxis, _yAxis, _zAxis, _addedEvent, _removedEvent, _childaddedEvent, _childremovedEvent, Object3D, Group, _moveEvent, WebXRController, _colorKeywords, _hslA, _hslB, Color, _color, Scene, _v0$2, _v1$5, _v2$4, _v3$2, _vab, _vac, _vbc, _vap, _vbp, _vcp, _v40, _v41, _v42, Triangle, Box3, _points, _vector$b, _box$4, _v0$1, _v1$4, _v2$3, _f0, _f1, _f2, _center, _extents, _triangleNormal, _testAxis, _vector$a, _vector2$1, _id$2, BufferAttribute, Uint16BufferAttribute, Uint32BufferAttribute, Float32BufferAttribute, _box$3, _v1$3, _v2$2, Sphere, _id$1, _m1$3, _obj, _offset, _box$2, _boxMorphTargets, _vector$9, BufferGeometry, InterleavedBuffer, _vector$8, InterleavedBufferAttribute, _materialId, Material, _vector$7, _segCenter, _segDir, _diff, _edge1, _edge2, _normal$1, Ray, MeshBasicMaterial, _inverseMatrix$3, _ray$3, _sphere$6, _sphereHitAt, _vA, _vB, _vC, _tempA, _morphA, _intersectionPoint, _intersectionPointWorld, Mesh, _baseVector, _skinIndex, _skinWeight, _vector4, _matrix4, _vertex, _sphere$5, _inverseMatrix$2, _ray$2, SkinnedMesh, Bone, DataTexture, _offsetMatrix, _identityMatrix$1, Skeleton$1, InstancedBufferAttribute, _instanceLocalMatrix, _instanceWorldMatrix, _instanceIntersects, _box3, _identity, _mesh$1, _sphere$4, InstancedMesh, _vector1, _vector2, _normalMatrix, Plane, _sphere$3, _defaultSpriteCenter, _vector$6, Frustum, LineBasicMaterial, _vStart, _vEnd, _inverseMatrix$1, _ray$1, _sphere$1, _intersectPointOnRay, _intersectPointOnSegment, Line, _start, _end, LineSegments, LineLoop, PointsMaterial, _inverseMatrix, _ray$4, _sphere, _position$3, Points, CubeTexture, DepthTexture, CubeDepthTexture, ExternalTexture, BoxGeometry, PlaneGeometry, ShadowMaterial, UniformsUtils, default_vertex, default_fragment, ShaderMaterial, RawShaderMaterial, MeshStandardMaterial, MeshPhysicalMaterial, MeshDepthMaterial, MeshDistanceMaterial, Interpolant, CubicInterpolant, LinearInterpolant, DiscreteInterpolant, BezierInterpolant, KeyframeTrack, BooleanKeyframeTrack, ColorKeyframeTrack, NumberKeyframeTrack, QuaternionLinearInterpolant, QuaternionKeyframeTrack, StringKeyframeTrack, VectorKeyframeTrack, AnimationClip, Cache, LoadingManager, DefaultLoadingManager, Loader, loading, HttpError, FileLoader, _loading, ImageLoader, TextureLoader, Light, HemisphereLight, _projScreenMatrix$1, _lightPositionWorld$1, _lookTarget$1, LightShadow, _position$2, _quaternion$2, _scale$2, Camera, _v3$1, _minTarget, _maxTarget, PerspectiveCamera, SpotLightShadow, SpotLight, PointLightShadow, PointLight, OrthographicCamera, DirectionalLightShadow, DirectionalLight, AmbientLight, LoaderUtils, _errorMap, ImageBitmapLoader, fov, aspect, CubeCamera, ArrayCamera, _RESERVED_CHARS_RE, _reservedRe, _wordChar, _wordCharOrDot, _directoryRe, _nodeRe, _objectRe, _propertyRe, _trackRe, _supportedObjectNames, Composite, PropertyBinding, _matrix, Raycaster, Clock, Spherical, GridHelper, Controls;
 		var init_three_core = __esmMin((() => {
 			MOUSE = {
 				LEFT: 0,
@@ -25568,6 +25568,101 @@ window.__ModuleLoader__.load({
 					return intersects;
 				}
 			};
+			Clock = class {
+				/**
+				* Constructs a new clock.
+				*
+				* @deprecated since 183.
+				* @param {boolean} [autoStart=true] - Whether to automatically start the clock when
+				* `getDelta()` is called for the first time.
+				*/
+				constructor(autoStart = true) {
+					/**
+					* If set to `true`, the clock starts automatically when `getDelta()` is called
+					* for the first time.
+					*
+					* @type {boolean}
+					* @default true
+					*/
+					this.autoStart = autoStart;
+					/**
+					* Holds the time at which the clock's `start()` method was last called.
+					*
+					* @type {number}
+					* @default 0
+					*/
+					this.startTime = 0;
+					/**
+					* Holds the time at which the clock's `start()`, `getElapsedTime()` or
+					* `getDelta()` methods were last called.
+					*
+					* @type {number}
+					* @default 0
+					*/
+					this.oldTime = 0;
+					/**
+					* Keeps track of the total time that the clock has been running.
+					*
+					* @type {number}
+					* @default 0
+					*/
+					this.elapsedTime = 0;
+					/**
+					* Whether the clock is running or not.
+					*
+					* @type {boolean}
+					* @default true
+					*/
+					this.running = false;
+					warn("Clock: This module has been deprecated. Please use THREE.Timer instead.");
+				}
+				/**
+				* Starts the clock. When `autoStart` is set to `true`, the method is automatically
+				* called by the class.
+				*/
+				start() {
+					this.startTime = performance.now();
+					this.oldTime = this.startTime;
+					this.elapsedTime = 0;
+					this.running = true;
+				}
+				/**
+				* Stops the clock.
+				*/
+				stop() {
+					this.getElapsedTime();
+					this.running = false;
+					this.autoStart = false;
+				}
+				/**
+				* Returns the elapsed time in seconds.
+				*
+				* @return {number} The elapsed time.
+				*/
+				getElapsedTime() {
+					this.getDelta();
+					return this.elapsedTime;
+				}
+				/**
+				* Returns the delta time in seconds.
+				*
+				* @return {number} The delta time.
+				*/
+				getDelta() {
+					let diff = 0;
+					if (this.autoStart && !this.running) {
+						this.start();
+						return 0;
+					}
+					if (this.running) {
+						const newTime = performance.now();
+						diff = (newTime - this.oldTime) / 1e3;
+						this.oldTime = newTime;
+						this.elapsedTime += diff;
+					}
+					return diff;
+				}
+			};
 			Spherical = class {
 				/**
 				* Constructs a new spherical.
@@ -42769,6 +42864,164 @@ void main() {
 			}
 		}
 		//#endregion
+		//#region ../../web/card-base/src/stage3d.ts
+		init_three_module();
+		/** The r3f pointer-events analogue lives on userData.pick (see header). */
+		function findPickCarrier(o) {
+			let cur = o;
+			while (cur !== null) {
+				if (cur.userData !== void 0 && cur.userData.pick !== void 0) return cur;
+				cur = cur.parent;
+			}
+			return null;
+		}
+		/** Skip hits on a TransformControls gizmo subtree (invisible pick planes
+		*  would swallow every click while a gizmo is attached). */
+		function isGizmoHit(o) {
+			let cur = o;
+			while (cur !== null) {
+				if (cur.gizmo !== void 0) return true;
+				cur = cur.parent;
+			}
+			return false;
+		}
+		function mountStage3D(canvas, opts = {}) {
+			let renderer;
+			try {
+				renderer = new WebGLRenderer({
+					canvas,
+					antialias: true,
+					alpha: opts.alpha !== false
+				});
+			} catch (e) {
+				opts.onContextFailure?.(e instanceof Error ? e.message : "WebGL unavailable");
+				return null;
+			}
+			renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+			renderer.shadowMap.enabled = true;
+			renderer.shadowMap.type = 2;
+			const scene = new Scene();
+			scene.background = null;
+			const camera = new PerspectiveCamera(opts.fov ?? 45, 1, opts.near ?? .05, opts.far ?? 60);
+			camera.position.set(...opts.camera ?? [
+				2.2,
+				1.6,
+				2.6
+			]);
+			camera.lookAt(0, .8, 0);
+			const controls = new OrbitControls(camera, canvas);
+			controls.target.set(...opts.target ?? [
+				0,
+				.8,
+				0
+			]);
+			controls.enableDamping = true;
+			controls.dampingFactor = .1;
+			if (opts.minDistance !== void 0) controls.minDistance = opts.minDistance;
+			if (opts.maxDistance !== void 0) controls.maxDistance = opts.maxDistance;
+			if (opts.maxPolarAngle !== void 0) controls.maxPolarAngle = opts.maxPolarAngle;
+			controls.update();
+			const ticks = [];
+			const addTick = (fn) => {
+				ticks.push(fn);
+				return () => {
+					const i = ticks.indexOf(fn);
+					if (i >= 0) ticks.splice(i, 1);
+				};
+			};
+			const raycaster = new Raycaster();
+			const pointer = new Vector2();
+			let hovered = null;
+			let downAt = 0;
+			const threshold = opts.clickVsDragMs ?? 350;
+			const pickAt = (ev) => {
+				const r = canvas.getBoundingClientRect();
+				if (r.width === 0 || r.height === 0) return null;
+				pointer.x = (ev.clientX - r.left) / r.width * 2 - 1;
+				pointer.y = -((ev.clientY - r.top) / r.height) * 2 + 1;
+				raycaster.setFromCamera(pointer, camera);
+				const hits = raycaster.intersectObjects(scene.children, true);
+				for (const hit of hits) {
+					if (isGizmoHit(hit.object)) continue;
+					const carrier = findPickCarrier(hit.object);
+					if (carrier !== null) return {
+						carrier,
+						point: hit.point
+					};
+				}
+				return null;
+			};
+			const onPointerDown = (e) => {
+				downAt = e.timeStamp;
+			};
+			const onPointerMove = (e) => {
+				const found = pickAt(e);
+				const carrier = found?.carrier ?? null;
+				if (carrier !== hovered) {
+					(hovered?.userData.pick)?.out?.(e);
+					document.body.style.cursor = "auto";
+					hovered = carrier;
+					if (carrier !== null && found !== null) carrier.userData.pick.over?.(found.point, e);
+				}
+			};
+			const onPointerLeave = (e) => {
+				if (hovered !== null) {
+					hovered.userData.pick.out?.(e);
+					document.body.style.cursor = "auto";
+					hovered = null;
+				}
+			};
+			const onClick = (e) => {
+				if (e.timeStamp - downAt > threshold) return;
+				const found = pickAt(e);
+				if (found !== null) found.carrier.userData.pick.click?.(found.point, e);
+				else opts.onEmptyClick?.();
+			};
+			canvas.addEventListener("pointerdown", onPointerDown);
+			canvas.addEventListener("pointermove", onPointerMove);
+			canvas.addEventListener("pointerleave", onPointerLeave);
+			canvas.addEventListener("click", onClick);
+			let raf = 0;
+			const clock = new Clock();
+			const frame = () => {
+				raf = requestAnimationFrame(frame);
+				const delta = clock.getDelta();
+				for (const t of ticks) t(delta);
+				controls.update();
+				renderer.render(scene, camera);
+			};
+			frame();
+			const resize = () => {
+				const w = canvas.clientWidth, h = canvas.clientHeight;
+				if (w === 0 || h === 0) return;
+				renderer.setSize(w, h, false);
+				camera.aspect = w / h;
+				camera.updateProjectionMatrix();
+			};
+			resize();
+			const ro = new ResizeObserver(resize);
+			ro.observe(canvas);
+			return {
+				canvas,
+				renderer,
+				scene,
+				camera,
+				controls,
+				addTick,
+				resize,
+				dispose: () => {
+					cancelAnimationFrame(raf);
+					ro.disconnect();
+					canvas.removeEventListener("pointerdown", onPointerDown);
+					canvas.removeEventListener("pointermove", onPointerMove);
+					canvas.removeEventListener("pointerleave", onPointerLeave);
+					canvas.removeEventListener("click", onClick);
+					controls.dispose();
+					renderer.dispose();
+				}
+			};
+		}
+		//#endregion
 		//#region ../../web/card-base/src/glb-stage.tsx
 		/**
 		* glb-stage.tsx — THE MESH PREVIEW (the preview seam's mesh-kind
@@ -42833,29 +43086,30 @@ void main() {
 				height: size3.y
 			};
 		}
-		/** The imperative three scene (a pure leaf library — the substrate
-		*  law above). Owns renderer/camera/controls, the rAF loop, the
-		*  resize observation, the click→asset resolution, and full disposal
-		*  on unmount. Clicks resolve to the stage asset id under the cursor
-		*  (group.userData.stageId, walked parentward) or null on empty
-		*  space; a drag-orbit never reads as a click (the 350ms threshold). */
+		/** The imperative three scene — BUILT ON THE SHARED STAGE CORE
+		*  (stage3d.ts): the core owns renderer/camera/controls/rAF/resize/picking;
+		*  this adds the glb-stage's own light rig + floor grid and maps the core's
+		*  pick semantics onto the stage-asset id (group.userData.pick → clickSink,
+		*  empty click → clickSink(null)). A drag-orbit never reads as a click. */
 		function mountScene(canvas, onFail) {
-			let renderer;
-			try {
-				renderer = new WebGLRenderer({
-					canvas,
-					antialias: true
-				});
-			} catch (e) {
-				onFail(e instanceof Error ? e.message : "WebGL unavailable");
-				return null;
-			}
-			renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-			const scene = new Scene();
-			scene.background = null;
-			const camera = new PerspectiveCamera(40, 1, .05, 60);
-			camera.position.set(2.2, 1.6, 2.6);
-			camera.lookAt(0, .8, 0);
+			let clickSink = () => {};
+			const stage = mountStage3D(canvas, {
+				fov: 40,
+				camera: [
+					2.2,
+					1.6,
+					2.6
+				],
+				target: [
+					0,
+					.8,
+					0
+				],
+				onContextFailure: onFail,
+				onEmptyClick: () => clickSink(null)
+			});
+			if (stage === null) return null;
+			const scene = stage.scene;
 			scene.add(new HemisphereLight(16777215, 9079434, 1.4));
 			const key = new DirectionalLight(16777215, 2.2);
 			key.position.set(3, 5, 2);
@@ -42868,64 +43122,14 @@ void main() {
 			gridMat.transparent = true;
 			gridMat.opacity = .35;
 			scene.add(grid);
-			const controls = new OrbitControls(camera, canvas);
-			controls.target.set(0, .8, 0);
-			controls.enableDamping = true;
-			const raycaster = new Raycaster();
-			const pointer = new Vector2();
-			let clickSink = () => {};
-			let downAt = 0;
-			const onPointerDown = (e) => {
-				downAt = e.timeStamp;
-			};
-			const onClick = (e) => {
-				if (e.timeStamp - downAt > 350) return;
-				const r = canvas.getBoundingClientRect();
-				pointer.x = (e.clientX - r.left) / r.width * 2 - 1;
-				pointer.y = -((e.clientY - r.top) / r.height) * 2 + 1;
-				raycaster.setFromCamera(pointer, camera);
-				const hits = raycaster.intersectObjects(scene.children, true);
-				for (const hit of hits) {
-					let o = hit.object;
-					while (o !== null && o.userData.stageId === void 0) o = o.parent;
-					if (o !== null) {
-						clickSink(o.userData.stageId);
-						return;
-					}
-				}
-				clickSink(null);
-			};
-			canvas.addEventListener("pointerdown", onPointerDown);
-			canvas.addEventListener("click", onClick);
-			let raf = 0;
-			const render = () => {
-				raf = requestAnimationFrame(render);
-				controls.update();
-				renderer.render(scene, camera);
-			};
-			render();
-			const fit = () => {
-				const w = canvas.clientWidth, hh = canvas.clientHeight;
-				if (w === 0 || hh === 0) return;
-				renderer.setSize(w, hh, false);
-				camera.aspect = w / hh;
-				camera.updateProjectionMatrix();
-			};
-			fit();
-			const ro = new ResizeObserver(fit);
-			ro.observe(canvas);
 			return {
 				scene,
 				setClickSink: (fn) => {
 					clickSink = fn;
 				},
 				dispose: () => {
-					cancelAnimationFrame(raf);
-					ro.disconnect();
-					canvas.removeEventListener("pointerdown", onPointerDown);
-					canvas.removeEventListener("click", onClick);
-					controls.dispose();
-					renderer.dispose();
+					grid.geometry.dispose();
+					stage.dispose();
 				}
 			};
 		}
@@ -42970,6 +43174,7 @@ void main() {
 					autoFitToHeight(g.scene);
 					const group = new Group();
 					group.userData.stageId = a.id;
+					group.userData.pick = { click: () => selectRef.current?.(a.id) };
 					group.add(g.scene);
 					if (a.scale !== void 0) group.scale.multiplyScalar(a.scale);
 					if (a.rotation !== void 0) group.rotation.set(a.rotation[0], a.rotation[1], a.rotation[2]);

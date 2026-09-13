@@ -1194,224 +1194,6 @@ window.__ModuleLoader__.load({
 				onClick: props.onOpen
 			}, (0, react.createElement)("span", { className: card_module_css_default.modTileLabel }, props.label), props.strength !== void 0 ? (0, react.createElement)("span", { className: card_module_css_default.modTileStrength }, props.strength.toFixed(2)) : null);
 		}
-		//#endregion
-		//#region ../../web/melite-run-wire/src/index.ts
-		/** Correlation id for one client-request frame (crypto.randomUUID is
-		*  the browser standard; the hand-rolled arm covers non-secure
-		*  contexts where the standard is absent). */
-		function nextRpcId() {
-			const cryptoApi = globalThis.crypto;
-			if (cryptoApi?.randomUUID !== void 0) return cryptoApi.randomUUID();
-			return "rpc-" + Math.random().toString(36).slice(2) + "-" + Date.now().toString(36);
-		}
-		/** The estate's domain refusal (result.ok !== true): the message
-		*  rides verbatim (the door's own law — the client never
-		*  paraphrases); the class separates DOMAIN verdicts from transport
-		*  failures, which carry the caller's voice prefix instead. */
-		var WireRefusedError = class extends Error {
-			constructor(message) {
-				super(message);
-				this.name = "WireRefusedError";
-			}
-		};
-		/** One client-request round trip: POST /api/<method> with the frame,
-		*  narrow the server-response envelope. Non-ok results throw the
-		*  estate's message; channel surprises throw honestly. */
-		async function wireCall(method, args, opts) {
-			const voice = opts?.voice ?? "wire";
-			const rpcId = nextRpcId();
-			const res = await fetch("/api/" + method, {
-				method: "POST",
-				headers: { "content-type": "application/json" },
-				body: JSON.stringify({
-					type: "client-request",
-					rpcId,
-					method,
-					payload: { args }
-				}),
-				...opts?.signal === void 0 ? {} : { signal: opts.signal }
-			});
-			if (!res.ok) throw new Error(voice + ": HTTP " + String(res.status));
-			const body = await res.json();
-			if (typeof body !== "object" || body === null || Reflect.get(body, "type") !== "server-response" || Reflect.get(body, "rpcId") !== rpcId) throw new Error(voice + ": malformed response frame");
-			const result = Reflect.get(body, "result");
-			if (typeof result !== "object" || result === null) throw new Error(voice + ": malformed result");
-			if (Reflect.get(result, "ok") !== true) {
-				const error = Reflect.get(result, "error");
-				throw new WireRefusedError(typeof error === "object" && error !== null && typeof Reflect.get(error, "message") === "string" ? Reflect.get(error, "message") : voice + ": refused");
-			}
-			const value = Reflect.get(result, "value");
-			if (typeof value !== "object" || value === null || Array.isArray(value)) throw new Error(voice + ": not a JSON object");
-			return value;
-		}
-		/** The terminal statuses — the runs seat's own vocabulary (the settle
-		*  path stamps 'completed' or 'failed'; runs/stop stamps 'stopped'). */
-		function isTerminalRun(status) {
-			return status === "completed" || status === "failed" || status === "stopped";
-		}
-		/** The ONE media-url rewrite (readRunStatus + the file-era list
-		*  fallback share it): bare run-relative names ride the estate's
-		*  media route (/melite-media/runs/<runId>/<rel>); urls that already
-		*  carry a scheme or lead with / pass verbatim (never double-encoded). */
-		function toRunMediaUrl(runId, url) {
-			if (url === "") return "";
-			if (!/^(https?:\/\/|\/)/.test(url)) return "/melite-media/runs/" + encodeURIComponent(runId) + "/" + url.split("/").map((seg) => encodeURIComponent(seg)).join("/");
-			return url;
-		}
-		/** Normalize a runs/status doc: stage rows distilled, bare run-
-		*  relative urls rewritten onto the estate's media route (absolute
-		*  and leading-/ urls pass verbatim — the one rewrite, never two). */
-		function readRunStatus(runId, doc) {
-			const stages = Array.isArray(doc["stages"]) ? doc["stages"].filter((s) => typeof s === "object" && s !== null && typeof s["id"] === "string") : [];
-			for (const stage of stages) if (typeof stage.url === "string" && stage.url !== "") stage.url = toRunMediaUrl(runId, stage.url);
-			return {
-				runId,
-				status: typeof doc["status"] === "string" ? doc["status"] : "unknown",
-				draftId: typeof doc["draft_id"] === "string" && doc["draft_id"] !== "" ? doc["draft_id"] : null,
-				stages
-			};
-		}
-		/** One runs/status read. */
-		async function fetchRunStatus(runId, signal) {
-			return readRunStatus(runId, await wireCall("runs/status", { runId }, { signal }));
-		}
-		/** The runs/list rows as loose records (the restore port's own
-		*  shape — run_id, draft_id, created_at, status, artifacts). */
-		async function listRunRows(signal) {
-			const row = await wireCall("runs/list", { rawLimit: "500" }, { signal });
-			return (Array.isArray(row["runs"]) ? row["runs"] : []).filter((r) => typeof r === "object" && r !== null);
-		}
-		/** One runs/list row by run_id (the file-era face — runs/status only
-		*  knows live runs; the list is the completed runs' SSOT). */
-		async function fetchListRow(runId, signal) {
-			for (const r of await listRunRows(signal)) {
-				const rid = r["run_id"] ?? r["id"];
-				if (typeof rid === "string" && rid !== "" && rid === runId) return r;
-			}
-			return null;
-		}
-		/** The list row's served artifact url onto the media route. The
-		*  list's currency DIFFERS from the status door's: runArtifacts
-		*  serves urls already prefixed with the run dir
-		*  (`<runId>/<rel>` — `url: runBase + "/" + cand.rel`), while live
-		*  stage urls are bare rels (runRel strips the dir). So the list
-		*  url rides under the route root directly — prepending the run id
-		*  again would double it. Absolute and rooted urls pass verbatim. */
-		function listArtifactMediaUrl(url) {
-			if (url === "") return null;
-			if (/^(https?:\/\/|\/)/.test(url)) return url;
-			return "/melite-media/runs/" + url.split("/").map((seg) => encodeURIComponent(seg)).join("/");
-		}
-		/** The list row's first media artifact url, rewritten onto the media
-		*  route (the row's own currency is run-prefixed, like the
-		*  thumbnail). Truncated markers carry no url and are skipped. */
-		function listRowMediaUrl(row) {
-			const arts = Array.isArray(row["artifacts"]) ? row["artifacts"] : [];
-			for (const a of arts) {
-				if (typeof a !== "object" || a === null) continue;
-				const url = a["url"];
-				if (typeof url === "string") {
-					const media = listArtifactMediaUrl(url);
-					if (media !== null) return media;
-				}
-			}
-			return null;
-		}
-		/** THE ARTIFACT POLL (the old pollFlowRun law): the run is the SSOT —
-		*  check the stage's url immediately, then on the cadence until it
-		*  lands (onUrl once, resolve), the run settles without one (resolve
-		*  silent — the caller's empty state is honest), or signal aborts.
-		*
-		*  THE TWO ERROR CLASSES settle differently:
-		*  - TRANSPORT failures (HTTP / malformed frames — the caller's
-		*    voice prefix) are swallowed: the next poll may recover.
-		*  - REFUSALS (WireRefusedError — the estate answered) on
-		*    runs/status prove the run is NOT in the live map: nothing is
-		*    executing for it (the registry writes the map at enqueue and
-		*    keeps it for the process life; a disavowed id is a restart
-		*    survivor or never existed). The file-era arm then consults the
-		*    runs/list row ONCE and settles from it — its artifact url when
-		*    it carries one, silent otherwise (file-era rows never update,
-		*    so waiting would be the lie); no row at all settles silent the
-		*    same way. This holds for "failed" rows too: a live run answers
-		*    200 at the status door, so a refused status + failed list row
-		*    is a dead run, not a blip. A transport-failed list read keeps
-		*    the poll alive (the answer may land next cadence). */
-		async function pollRunStageUrl(runId, stageId, opts, signal) {
-			const interval = opts.intervalMs ?? 1500;
-			const sleep = (ms) => new Promise((resolve) => {
-				const t = setTimeout(() => {
-					signal?.removeEventListener("abort", onAbort);
-					resolve("slept");
-				}, ms);
-				const onAbort = () => {
-					clearTimeout(t);
-					resolve("abort");
-				};
-				if (signal?.aborted === true) {
-					onAbort();
-					return;
-				}
-				signal?.addEventListener("abort", onAbort, { once: true });
-			});
-			while (signal?.aborted !== true) {
-				let row;
-				try {
-					row = await fetchRunStatus(runId, signal);
-				} catch (e) {
-					if (e instanceof WireRefusedError) try {
-						const listed = await fetchListRow(runId, signal);
-						const url = listed !== null ? listRowMediaUrl(listed) : null;
-						if (url !== null) opts.onUrl(url);
-						return;
-					} catch (listErr) {
-						if (listErr instanceof WireRefusedError) return;
-					}
-					row = {
-						runId,
-						status: "unknown",
-						draftId: null,
-						stages: []
-					};
-				}
-				const stage = row.stages.find((s) => s.id === stageId) ?? (row.stages.length === 1 ? row.stages[0] : void 0);
-				if (stage !== void 0 && typeof stage.url === "string" && stage.url !== "") {
-					opts.onUrl(stage.url);
-					return;
-				}
-				if (isTerminalRun(row.status)) return;
-				if (await sleep(interval) === "abort") return;
-			}
-		}
-		//#endregion
-		//#region ../../web/card-base/src/chrome.ts
-		/** Plain classnames joiner (no conflicting utilities to merge —
-		*  plain join is exact). */
-		function cx(...parts) {
-			return parts.filter(Boolean).join(" ");
-		}
-		//#endregion
-		//#region \0dsh-css:card-base/src/preview.module.css.mjs
-		const css$2 = ".ClEuBa_stagePreview{flex-direction:column;flex:1;gap:8px;min-height:0;display:flex;overflow:hidden}.ClEuBa_hero,.ClEuBa_heroImg{object-fit:contain;background:var(--dsw-alias-bg-base);border:1px solid var(--dsw-alias-border-l2);border-radius:6px;flex:1;width:100%;min-height:0}.ClEuBa_empty{color:var(--dsw-alias-label-dimmed);border:1px dashed var(--dsw-alias-border-l2);border-radius:6px;flex:1;justify-content:center;align-items:center;font-size:11px;display:flex}.ClEuBa_strip{flex:none;gap:6px;display:flex;overflow-x:auto}.ClEuBa_stripLink{color:var(--dsw-alias-brand-primary);white-space:nowrap;border:1px solid var(--dsw-alias-border-l2);border-radius:6px;padding:2px 6px;font-size:10px;text-decoration:none}.ClEuBa_thumbRow{flex:none;gap:6px;display:flex;overflow-x:auto}.ClEuBa_thumb{border:1px solid var(--dsw-alias-border-l2);border-radius:4px;height:48px}.ClEuBa_stageCanvas{touch-action:none;width:100%;height:100%;min-height:320px;display:block}";
-		const tagId$2 = "@melite/3d-img-to-mesh/preview.module.css@c05f7449";
-		if (typeof document !== "undefined" && document.querySelector("style[data-plugin-css=" + JSON.stringify(tagId$2) + "]") === null) {
-			const tag = document.createElement("style");
-			tag.dataset.plugin = "@melite/3d-img-to-mesh";
-			tag.dataset.pluginCss = tagId$2;
-			tag.textContent = css$2;
-			document.head.appendChild(tag);
-		}
-		var preview_module_css_default = {
-			"empty": "ClEuBa_empty",
-			"hero": "ClEuBa_hero",
-			"heroImg": "ClEuBa_heroImg",
-			"stageCanvas": "ClEuBa_stageCanvas",
-			"stagePreview": "ClEuBa_stagePreview",
-			"strip": "ClEuBa_strip",
-			"stripLink": "ClEuBa_stripLink",
-			"thumb": "ClEuBa_thumb",
-			"thumbRow": "ClEuBa_thumbRow"
-		};
 		/**
 		* @license
 		* Copyright 2010-2026 Three.js Authors
@@ -24812,6 +24594,106 @@ window.__ModuleLoader__.load({
 			}
 		}
 		/**
+		* Class for keeping track of time.
+		*
+		* @deprecated since r183.
+		*/
+		var Clock = class {
+			/**
+			* Constructs a new clock.
+			*
+			* @deprecated since 183.
+			* @param {boolean} [autoStart=true] - Whether to automatically start the clock when
+			* `getDelta()` is called for the first time.
+			*/
+			constructor(autoStart = true) {
+				/**
+				* If set to `true`, the clock starts automatically when `getDelta()` is called
+				* for the first time.
+				*
+				* @type {boolean}
+				* @default true
+				*/
+				this.autoStart = autoStart;
+				/**
+				* Holds the time at which the clock's `start()` method was last called.
+				*
+				* @type {number}
+				* @default 0
+				*/
+				this.startTime = 0;
+				/**
+				* Holds the time at which the clock's `start()`, `getElapsedTime()` or
+				* `getDelta()` methods were last called.
+				*
+				* @type {number}
+				* @default 0
+				*/
+				this.oldTime = 0;
+				/**
+				* Keeps track of the total time that the clock has been running.
+				*
+				* @type {number}
+				* @default 0
+				*/
+				this.elapsedTime = 0;
+				/**
+				* Whether the clock is running or not.
+				*
+				* @type {boolean}
+				* @default true
+				*/
+				this.running = false;
+				warn("Clock: This module has been deprecated. Please use THREE.Timer instead.");
+			}
+			/**
+			* Starts the clock. When `autoStart` is set to `true`, the method is automatically
+			* called by the class.
+			*/
+			start() {
+				this.startTime = performance.now();
+				this.oldTime = this.startTime;
+				this.elapsedTime = 0;
+				this.running = true;
+			}
+			/**
+			* Stops the clock.
+			*/
+			stop() {
+				this.getElapsedTime();
+				this.running = false;
+				this.autoStart = false;
+			}
+			/**
+			* Returns the elapsed time in seconds.
+			*
+			* @return {number} The elapsed time.
+			*/
+			getElapsedTime() {
+				this.getDelta();
+				return this.elapsedTime;
+			}
+			/**
+			* Returns the delta time in seconds.
+			*
+			* @return {number} The delta time.
+			*/
+			getDelta() {
+				let diff = 0;
+				if (this.autoStart && !this.running) {
+					this.start();
+					return 0;
+				}
+				if (this.running) {
+					const newTime = performance.now();
+					diff = (newTime - this.oldTime) / 1e3;
+					this.oldTime = newTime;
+					this.elapsedTime += diff;
+				}
+				return diff;
+			}
+		};
+		/**
 		* This class can be used to represent points in 3D space as
 		* [Spherical coordinates](https://en.wikipedia.org/wiki/Spherical_coordinate_system).
 		*/
@@ -36102,6 +35984,1516 @@ void main() {
 			}
 		};
 		//#endregion
+		//#region ../../../node_modules/.pnpm/three@0.184.0/node_modules/three/examples/jsm/controls/OrbitControls.js
+		/**
+		* Fires when the camera has been transformed by the controls.
+		*
+		* @event OrbitControls#change
+		* @type {Object}
+		*/
+		const _changeEvent = { type: "change" };
+		/**
+		* Fires when an interaction was initiated.
+		*
+		* @event OrbitControls#start
+		* @type {Object}
+		*/
+		const _startEvent = { type: "start" };
+		/**
+		* Fires when an interaction has finished.
+		*
+		* @event OrbitControls#end
+		* @type {Object}
+		*/
+		const _endEvent = { type: "end" };
+		const _ray = new Ray();
+		const _plane = new Plane();
+		const _TILT_LIMIT = Math.cos(70 * MathUtils.DEG2RAD);
+		const _v = new Vector3();
+		const _twoPI = 2 * Math.PI;
+		const _STATE = {
+			NONE: -1,
+			ROTATE: 0,
+			DOLLY: 1,
+			PAN: 2,
+			TOUCH_ROTATE: 3,
+			TOUCH_PAN: 4,
+			TOUCH_DOLLY_PAN: 5,
+			TOUCH_DOLLY_ROTATE: 6
+		};
+		const _EPS = 1e-6;
+		/**
+		* Orbit controls allow the camera to orbit around a target.
+		*
+		* OrbitControls performs orbiting, dollying (zooming), and panning. Unlike {@link TrackballControls},
+		* it maintains the "up" direction `object.up` (+Y by default).
+		*
+		* - Orbit: Left mouse / touch: one-finger move.
+		* - Zoom: Middle mouse, or mousewheel / touch: two-finger spread or squish.
+		* - Pan: Right mouse, or left mouse + ctrl/meta/shiftKey, or arrow keys / touch: two-finger move.
+		*
+		* ```js
+		* const controls = new OrbitControls( camera, renderer.domElement );
+		*
+		* // controls.update() must be called after any manual changes to the camera's transform
+		* camera.position.set( 0, 20, 100 );
+		* controls.update();
+		*
+		* function animate() {
+		*
+		* 	// required if controls.enableDamping or controls.autoRotate are set to true
+		* 	controls.update();
+		*
+		* 	renderer.render( scene, camera );
+		*
+		* }
+		* ```
+		*
+		* @augments Controls
+		* @three_import import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+		*/
+		var OrbitControls = class extends Controls {
+			/**
+			* Constructs a new controls instance.
+			*
+			* @param {Object3D} object - The object that is managed by the controls.
+			* @param {?HTMLElement} domElement - The HTML element used for event listeners.
+			*/
+			constructor(object, domElement = null) {
+				super(object, domElement);
+				this.state = _STATE.NONE;
+				/**
+				* The focus point of the controls, the `object` orbits around this.
+				* It can be updated manually at any point to change the focus of the controls.
+				*
+				* @type {Vector3}
+				*/
+				this.target = new Vector3();
+				/**
+				* The focus point of the `minTargetRadius` and `maxTargetRadius` limits.
+				* It can be updated manually at any point to change the center of interest
+				* for the `target`.
+				*
+				* @type {Vector3}
+				*/
+				this.cursor = new Vector3();
+				/**
+				* How far you can dolly in (perspective camera only).
+				*
+				* @type {number}
+				* @default 0
+				*/
+				this.minDistance = 0;
+				/**
+				* How far you can dolly out (perspective camera only).
+				*
+				* @type {number}
+				* @default Infinity
+				*/
+				this.maxDistance = Infinity;
+				/**
+				* How far you can zoom in (orthographic camera only).
+				*
+				* @type {number}
+				* @default 0
+				*/
+				this.minZoom = 0;
+				/**
+				* How far you can zoom out (orthographic camera only).
+				*
+				* @type {number}
+				* @default Infinity
+				*/
+				this.maxZoom = Infinity;
+				/**
+				* How close you can get the target to the 3D `cursor`.
+				*
+				* @type {number}
+				* @default 0
+				*/
+				this.minTargetRadius = 0;
+				/**
+				* How far you can move the target from the 3D `cursor`.
+				*
+				* @type {number}
+				* @default Infinity
+				*/
+				this.maxTargetRadius = Infinity;
+				/**
+				* How far you can orbit vertically, lower limit. Range is `[0, Math.PI]` radians.
+				*
+				* @type {number}
+				* @default 0
+				*/
+				this.minPolarAngle = 0;
+				/**
+				* How far you can orbit vertically, upper limit. Range is `[0, Math.PI]` radians.
+				*
+				* @type {number}
+				* @default Math.PI
+				*/
+				this.maxPolarAngle = Math.PI;
+				/**
+				* How far you can orbit horizontally, lower limit. If set, the interval `[ min, max ]`
+				* must be a sub-interval of `[ - 2 PI, 2 PI ]`, with `( max - min < 2 PI )`.
+				*
+				* @type {number}
+				* @default -Infinity
+				*/
+				this.minAzimuthAngle = -Infinity;
+				/**
+				* How far you can orbit horizontally, upper limit. If set, the interval `[ min, max ]`
+				* must be a sub-interval of `[ - 2 PI, 2 PI ]`, with `( max - min < 2 PI )`.
+				*
+				* @type {number}
+				* @default -Infinity
+				*/
+				this.maxAzimuthAngle = Infinity;
+				/**
+				* Set to `true` to enable damping (inertia), which can be used to give a sense of weight
+				* to the controls. Note that if this is enabled, you must call `update()` in your animation
+				* loop.
+				*
+				* @type {boolean}
+				* @default false
+				*/
+				this.enableDamping = false;
+				/**
+				* The damping inertia used if `enableDamping` is set to `true`.
+				*
+				* Note that for this to work, you must call `update()` in your animation loop.
+				*
+				* @type {number}
+				* @default 0.05
+				*/
+				this.dampingFactor = .05;
+				/**
+				* Enable or disable zooming (dollying) of the camera.
+				*
+				* @type {boolean}
+				* @default true
+				*/
+				this.enableZoom = true;
+				/**
+				* Speed of zooming / dollying.
+				*
+				* @type {number}
+				* @default 1
+				*/
+				this.zoomSpeed = 1;
+				/**
+				* Enable or disable horizontal and vertical rotation of the camera.
+				*
+				* Note that it is possible to disable a single axis by setting the min and max of the
+				* `minPolarAngle` or `minAzimuthAngle` to the same value, which will cause the vertical
+				* or horizontal rotation to be fixed at that value.
+				*
+				* @type {boolean}
+				* @default true
+				*/
+				this.enableRotate = true;
+				/**
+				* Speed of rotation.
+				*
+				* @type {number}
+				* @default 1
+				*/
+				this.rotateSpeed = 1;
+				/**
+				* How fast to rotate the camera when the keyboard is used.
+				*
+				* @type {number}
+				* @default 1
+				*/
+				this.keyRotateSpeed = 1;
+				/**
+				* Enable or disable camera panning.
+				*
+				* @type {boolean}
+				* @default true
+				*/
+				this.enablePan = true;
+				/**
+				* Speed of panning.
+				*
+				* @type {number}
+				* @default 1
+				*/
+				this.panSpeed = 1;
+				/**
+				* Defines how the camera's position is translated when panning. If `true`, the camera pans
+				* in screen space. Otherwise, the camera pans in the plane orthogonal to the camera's up
+				* direction.
+				*
+				* @type {boolean}
+				* @default true
+				*/
+				this.screenSpacePanning = true;
+				/**
+				* How fast to pan the camera when the keyboard is used in
+				* pixels per keypress.
+				*
+				* @type {number}
+				* @default 7
+				*/
+				this.keyPanSpeed = 7;
+				/**
+				* Setting this property to `true` allows to zoom to the cursor's position.
+				*
+				* @type {boolean}
+				* @default false
+				*/
+				this.zoomToCursor = false;
+				/**
+				* Set to true to automatically rotate around the target
+				*
+				* Note that if this is enabled, you must call `update()` in your animation loop.
+				* If you want the auto-rotate speed to be independent of the frame rate (the refresh
+				* rate of the display), you must pass the time `deltaTime`, in seconds, to `update()`.
+				*
+				* @type {boolean}
+				* @default false
+				*/
+				this.autoRotate = false;
+				/**
+				* How fast to rotate around the target if `autoRotate` is `true`. The default  equates to 30 seconds
+				* per orbit at 60fps.
+				*
+				* Note that if `autoRotate` is enabled, you must call `update()` in your animation loop.
+				*
+				* @type {number}
+				* @default 2
+				*/
+				this.autoRotateSpeed = 2;
+				/**
+				* This object contains references to the keycodes for controlling camera panning.
+				*
+				* ```js
+				* controls.keys = {
+				* 	LEFT: 'ArrowLeft', //left arrow
+				* 	UP: 'ArrowUp', // up arrow
+				* 	RIGHT: 'ArrowRight', // right arrow
+				* 	BOTTOM: 'ArrowDown' // down arrow
+				* }
+				* ```
+				* @type {Object}
+				*/
+				this.keys = {
+					LEFT: "ArrowLeft",
+					UP: "ArrowUp",
+					RIGHT: "ArrowRight",
+					BOTTOM: "ArrowDown"
+				};
+				/**
+				* This object contains references to the mouse actions used by the controls.
+				*
+				* ```js
+				* controls.mouseButtons = {
+				* 	LEFT: THREE.MOUSE.ROTATE,
+				* 	MIDDLE: THREE.MOUSE.DOLLY,
+				* 	RIGHT: THREE.MOUSE.PAN
+				* }
+				* ```
+				* @type {Object}
+				*/
+				this.mouseButtons = {
+					LEFT: MOUSE.ROTATE,
+					MIDDLE: MOUSE.DOLLY,
+					RIGHT: MOUSE.PAN
+				};
+				/**
+				* This object contains references to the touch actions used by the controls.
+				*
+				* ```js
+				* controls.mouseButtons = {
+				* 	ONE: THREE.TOUCH.ROTATE,
+				* 	TWO: THREE.TOUCH.DOLLY_PAN
+				* }
+				* ```
+				* @type {Object}
+				*/
+				this.touches = {
+					ONE: TOUCH.ROTATE,
+					TWO: TOUCH.DOLLY_PAN
+				};
+				/**
+				* Used internally by `saveState()` and `reset()`.
+				*
+				* @type {Vector3}
+				*/
+				this.target0 = this.target.clone();
+				/**
+				* Used internally by `saveState()` and `reset()`.
+				*
+				* @type {Vector3}
+				*/
+				this.position0 = this.object.position.clone();
+				/**
+				* Used internally by `saveState()` and `reset()`.
+				*
+				* @type {number}
+				*/
+				this.zoom0 = this.object.zoom;
+				this._cursorStyle = "auto";
+				this._domElementKeyEvents = null;
+				this._lastPosition = new Vector3();
+				this._lastQuaternion = new Quaternion();
+				this._lastTargetPosition = new Vector3();
+				this._quat = new Quaternion().setFromUnitVectors(object.up, new Vector3(0, 1, 0));
+				this._quatInverse = this._quat.clone().invert();
+				this._spherical = new Spherical();
+				this._sphericalDelta = new Spherical();
+				this._scale = 1;
+				this._panOffset = new Vector3();
+				this._rotateStart = new Vector2();
+				this._rotateEnd = new Vector2();
+				this._rotateDelta = new Vector2();
+				this._panStart = new Vector2();
+				this._panEnd = new Vector2();
+				this._panDelta = new Vector2();
+				this._dollyStart = new Vector2();
+				this._dollyEnd = new Vector2();
+				this._dollyDelta = new Vector2();
+				this._dollyDirection = new Vector3();
+				this._mouse = new Vector2();
+				this._performCursorZoom = false;
+				this._pointers = [];
+				this._pointerPositions = {};
+				this._controlActive = false;
+				this._onPointerMove = onPointerMove.bind(this);
+				this._onPointerDown = onPointerDown.bind(this);
+				this._onPointerUp = onPointerUp.bind(this);
+				this._onContextMenu = onContextMenu.bind(this);
+				this._onMouseWheel = onMouseWheel.bind(this);
+				this._onKeyDown = onKeyDown.bind(this);
+				this._onTouchStart = onTouchStart.bind(this);
+				this._onTouchMove = onTouchMove.bind(this);
+				this._onMouseDown = onMouseDown.bind(this);
+				this._onMouseMove = onMouseMove.bind(this);
+				this._interceptControlDown = interceptControlDown.bind(this);
+				this._interceptControlUp = interceptControlUp.bind(this);
+				if (this.domElement !== null) this.connect(this.domElement);
+				this.update();
+			}
+			/**
+			* Defines the visual representation of the cursor.
+			*
+			* @type {('auto'|'grab')}
+			* @default 'auto'
+			*/
+			set cursorStyle(type) {
+				this._cursorStyle = type;
+				if (type === "grab") this.domElement.style.cursor = "grab";
+				else this.domElement.style.cursor = "auto";
+			}
+			get cursorStyle() {
+				return this._cursorStyle;
+			}
+			connect(element) {
+				super.connect(element);
+				this.domElement.addEventListener("pointerdown", this._onPointerDown);
+				this.domElement.addEventListener("pointercancel", this._onPointerUp);
+				this.domElement.addEventListener("contextmenu", this._onContextMenu);
+				this.domElement.addEventListener("wheel", this._onMouseWheel, { passive: false });
+				this.domElement.getRootNode().addEventListener("keydown", this._interceptControlDown, {
+					passive: true,
+					capture: true
+				});
+				this.domElement.style.touchAction = "none";
+			}
+			disconnect() {
+				this.domElement.removeEventListener("pointerdown", this._onPointerDown);
+				this.domElement.ownerDocument.removeEventListener("pointermove", this._onPointerMove);
+				this.domElement.ownerDocument.removeEventListener("pointerup", this._onPointerUp);
+				this.domElement.removeEventListener("pointercancel", this._onPointerUp);
+				this.domElement.removeEventListener("wheel", this._onMouseWheel);
+				this.domElement.removeEventListener("contextmenu", this._onContextMenu);
+				this.stopListenToKeyEvents();
+				this.domElement.getRootNode().removeEventListener("keydown", this._interceptControlDown, { capture: true });
+				this.domElement.style.touchAction = "";
+			}
+			dispose() {
+				this.disconnect();
+			}
+			/**
+			* Get the current vertical rotation, in radians.
+			*
+			* @return {number} The current vertical rotation, in radians.
+			*/
+			getPolarAngle() {
+				return this._spherical.phi;
+			}
+			/**
+			* Get the current horizontal rotation, in radians.
+			*
+			* @return {number} The current horizontal rotation, in radians.
+			*/
+			getAzimuthalAngle() {
+				return this._spherical.theta;
+			}
+			/**
+			* Returns the distance from the camera to the target.
+			*
+			* @return {number} The distance from the camera to the target.
+			*/
+			getDistance() {
+				return this.object.position.distanceTo(this.target);
+			}
+			/**
+			* Adds key event listeners to the given DOM element.
+			* `window` is a recommended argument for using this method.
+			*
+			* @param {HTMLElement} domElement - The DOM element
+			*/
+			listenToKeyEvents(domElement) {
+				domElement.addEventListener("keydown", this._onKeyDown);
+				this._domElementKeyEvents = domElement;
+			}
+			/**
+			* Removes the key event listener previously defined with `listenToKeyEvents()`.
+			*/
+			stopListenToKeyEvents() {
+				if (this._domElementKeyEvents !== null) {
+					this._domElementKeyEvents.removeEventListener("keydown", this._onKeyDown);
+					this._domElementKeyEvents = null;
+				}
+			}
+			/**
+			* Save the current state of the controls. This can later be recovered with `reset()`.
+			*/
+			saveState() {
+				this.target0.copy(this.target);
+				this.position0.copy(this.object.position);
+				this.zoom0 = this.object.zoom;
+			}
+			/**
+			* Reset the controls to their state from either the last time the `saveState()`
+			* was called, or the initial state.
+			*/
+			reset() {
+				this.target.copy(this.target0);
+				this.object.position.copy(this.position0);
+				this.object.zoom = this.zoom0;
+				this.object.updateProjectionMatrix();
+				this.dispatchEvent(_changeEvent);
+				this.update();
+				this.state = _STATE.NONE;
+			}
+			/**
+			* Programmatically pan the camera.
+			*
+			* @param {number} deltaX - The horizontal pan amount in pixels.
+			* @param {number} deltaY - The vertical pan amount in pixels.
+			*/
+			pan(deltaX, deltaY) {
+				this._pan(deltaX, deltaY);
+				this.update();
+			}
+			/**
+			* Programmatically dolly in (zoom in for perspective camera).
+			*
+			* @param {number} dollyScale - The dolly scale factor.
+			*/
+			dollyIn(dollyScale) {
+				this._dollyIn(dollyScale);
+				this.update();
+			}
+			/**
+			* Programmatically dolly out (zoom out for perspective camera).
+			*
+			* @param {number} dollyScale - The dolly scale factor.
+			*/
+			dollyOut(dollyScale) {
+				this._dollyOut(dollyScale);
+				this.update();
+			}
+			/**
+			* Programmatically rotate the camera left (around the vertical axis).
+			*
+			* @param {number} angle - The rotation angle in radians.
+			*/
+			rotateLeft(angle) {
+				this._rotateLeft(angle);
+				this.update();
+			}
+			/**
+			* Programmatically rotate the camera up (around the horizontal axis).
+			*
+			* @param {number} angle - The rotation angle in radians.
+			*/
+			rotateUp(angle) {
+				this._rotateUp(angle);
+				this.update();
+			}
+			update(deltaTime = null) {
+				const position = this.object.position;
+				_v.copy(position).sub(this.target);
+				_v.applyQuaternion(this._quat);
+				this._spherical.setFromVector3(_v);
+				if (this.autoRotate && this.state === _STATE.NONE) this._rotateLeft(this._getAutoRotationAngle(deltaTime));
+				if (this.enableDamping) {
+					this._spherical.theta += this._sphericalDelta.theta * this.dampingFactor;
+					this._spherical.phi += this._sphericalDelta.phi * this.dampingFactor;
+				} else {
+					this._spherical.theta += this._sphericalDelta.theta;
+					this._spherical.phi += this._sphericalDelta.phi;
+				}
+				let min = this.minAzimuthAngle;
+				let max = this.maxAzimuthAngle;
+				if (isFinite(min) && isFinite(max)) {
+					if (min < -Math.PI) min += _twoPI;
+					else if (min > Math.PI) min -= _twoPI;
+					if (max < -Math.PI) max += _twoPI;
+					else if (max > Math.PI) max -= _twoPI;
+					if (min <= max) this._spherical.theta = Math.max(min, Math.min(max, this._spherical.theta));
+					else this._spherical.theta = this._spherical.theta > (min + max) / 2 ? Math.max(min, this._spherical.theta) : Math.min(max, this._spherical.theta);
+				}
+				this._spherical.phi = Math.max(this.minPolarAngle, Math.min(this.maxPolarAngle, this._spherical.phi));
+				this._spherical.makeSafe();
+				if (this.enableDamping === true) this.target.addScaledVector(this._panOffset, this.dampingFactor);
+				else this.target.add(this._panOffset);
+				this.target.sub(this.cursor);
+				this.target.clampLength(this.minTargetRadius, this.maxTargetRadius);
+				this.target.add(this.cursor);
+				let zoomChanged = false;
+				if (this.zoomToCursor && this._performCursorZoom || this.object.isOrthographicCamera) this._spherical.radius = this._clampDistance(this._spherical.radius);
+				else {
+					const prevRadius = this._spherical.radius;
+					this._spherical.radius = this._clampDistance(this._spherical.radius * this._scale);
+					zoomChanged = prevRadius != this._spherical.radius;
+				}
+				_v.setFromSpherical(this._spherical);
+				_v.applyQuaternion(this._quatInverse);
+				position.copy(this.target).add(_v);
+				this.object.lookAt(this.target);
+				if (this.enableDamping === true) {
+					this._sphericalDelta.theta *= 1 - this.dampingFactor;
+					this._sphericalDelta.phi *= 1 - this.dampingFactor;
+					this._panOffset.multiplyScalar(1 - this.dampingFactor);
+				} else {
+					this._sphericalDelta.set(0, 0, 0);
+					this._panOffset.set(0, 0, 0);
+				}
+				if (this.zoomToCursor && this._performCursorZoom) {
+					let newRadius = null;
+					if (this.object.isPerspectiveCamera) {
+						const prevRadius = _v.length();
+						newRadius = this._clampDistance(prevRadius * this._scale);
+						const radiusDelta = prevRadius - newRadius;
+						this.object.position.addScaledVector(this._dollyDirection, radiusDelta);
+						this.object.updateMatrixWorld();
+						zoomChanged = !!radiusDelta;
+					} else if (this.object.isOrthographicCamera) {
+						const mouseBefore = new Vector3(this._mouse.x, this._mouse.y, 0);
+						mouseBefore.unproject(this.object);
+						const prevZoom = this.object.zoom;
+						this.object.zoom = Math.max(this.minZoom, Math.min(this.maxZoom, this.object.zoom / this._scale));
+						this.object.updateProjectionMatrix();
+						zoomChanged = prevZoom !== this.object.zoom;
+						const mouseAfter = new Vector3(this._mouse.x, this._mouse.y, 0);
+						mouseAfter.unproject(this.object);
+						this.object.position.sub(mouseAfter).add(mouseBefore);
+						this.object.updateMatrixWorld();
+						newRadius = _v.length();
+					} else {
+						console.warn("WARNING: OrbitControls.js encountered an unknown camera type - zoom to cursor disabled.");
+						this.zoomToCursor = false;
+					}
+					if (newRadius !== null) {
+						if (this.screenSpacePanning) this.target.set(0, 0, -1).transformDirection(this.object.matrix).multiplyScalar(newRadius).add(this.object.position);
+						else {
+							_ray.origin.copy(this.object.position);
+							_ray.direction.set(0, 0, -1).transformDirection(this.object.matrix);
+							if (Math.abs(this.object.up.dot(_ray.direction)) < _TILT_LIMIT) this.object.lookAt(this.target);
+							else {
+								_plane.setFromNormalAndCoplanarPoint(this.object.up, this.target);
+								_ray.intersectPlane(_plane, this.target);
+							}
+						}
+					}
+				} else if (this.object.isOrthographicCamera) {
+					const prevZoom = this.object.zoom;
+					this.object.zoom = Math.max(this.minZoom, Math.min(this.maxZoom, this.object.zoom / this._scale));
+					if (prevZoom !== this.object.zoom) {
+						this.object.updateProjectionMatrix();
+						zoomChanged = true;
+					}
+				}
+				this._scale = 1;
+				this._performCursorZoom = false;
+				if (zoomChanged || this._lastPosition.distanceToSquared(this.object.position) > _EPS || 8 * (1 - this._lastQuaternion.dot(this.object.quaternion)) > _EPS || this._lastTargetPosition.distanceToSquared(this.target) > _EPS) {
+					this.dispatchEvent(_changeEvent);
+					this._lastPosition.copy(this.object.position);
+					this._lastQuaternion.copy(this.object.quaternion);
+					this._lastTargetPosition.copy(this.target);
+					return true;
+				}
+				return false;
+			}
+			_getAutoRotationAngle(deltaTime) {
+				if (deltaTime !== null) return _twoPI / 60 * this.autoRotateSpeed * deltaTime;
+				else return _twoPI / 60 / 60 * this.autoRotateSpeed;
+			}
+			_getZoomScale(delta) {
+				const normalizedDelta = Math.abs(delta * .01);
+				return Math.pow(.95, this.zoomSpeed * normalizedDelta);
+			}
+			_rotateLeft(angle) {
+				this._sphericalDelta.theta -= angle;
+			}
+			_rotateUp(angle) {
+				this._sphericalDelta.phi -= angle;
+			}
+			_panLeft(distance, objectMatrix) {
+				_v.setFromMatrixColumn(objectMatrix, 0);
+				_v.multiplyScalar(-distance);
+				this._panOffset.add(_v);
+			}
+			_panUp(distance, objectMatrix) {
+				if (this.screenSpacePanning === true) _v.setFromMatrixColumn(objectMatrix, 1);
+				else {
+					_v.setFromMatrixColumn(objectMatrix, 0);
+					_v.crossVectors(this.object.up, _v);
+				}
+				_v.multiplyScalar(distance);
+				this._panOffset.add(_v);
+			}
+			_pan(deltaX, deltaY) {
+				const element = this.domElement;
+				if (this.object.isPerspectiveCamera) {
+					const position = this.object.position;
+					_v.copy(position).sub(this.target);
+					let targetDistance = _v.length();
+					targetDistance *= Math.tan(this.object.fov / 2 * Math.PI / 180);
+					this._panLeft(2 * deltaX * targetDistance / element.clientHeight, this.object.matrix);
+					this._panUp(2 * deltaY * targetDistance / element.clientHeight, this.object.matrix);
+				} else if (this.object.isOrthographicCamera) {
+					this._panLeft(deltaX * (this.object.right - this.object.left) / this.object.zoom / element.clientWidth, this.object.matrix);
+					this._panUp(deltaY * (this.object.top - this.object.bottom) / this.object.zoom / element.clientHeight, this.object.matrix);
+				} else {
+					console.warn("WARNING: OrbitControls.js encountered an unknown camera type - pan disabled.");
+					this.enablePan = false;
+				}
+			}
+			_dollyOut(dollyScale) {
+				if (this.object.isPerspectiveCamera || this.object.isOrthographicCamera) this._scale /= dollyScale;
+				else {
+					console.warn("WARNING: OrbitControls.js encountered an unknown camera type - dolly/zoom disabled.");
+					this.enableZoom = false;
+				}
+			}
+			_dollyIn(dollyScale) {
+				if (this.object.isPerspectiveCamera || this.object.isOrthographicCamera) this._scale *= dollyScale;
+				else {
+					console.warn("WARNING: OrbitControls.js encountered an unknown camera type - dolly/zoom disabled.");
+					this.enableZoom = false;
+				}
+			}
+			_updateZoomParameters(x, y) {
+				if (!this.zoomToCursor) return;
+				this._performCursorZoom = true;
+				const rect = this.domElement.getBoundingClientRect();
+				const dx = x - rect.left;
+				const dy = y - rect.top;
+				const w = rect.width;
+				const h = rect.height;
+				this._mouse.x = dx / w * 2 - 1;
+				this._mouse.y = -(dy / h) * 2 + 1;
+				this._dollyDirection.set(this._mouse.x, this._mouse.y, 1).unproject(this.object).sub(this.object.position).normalize();
+			}
+			_clampDistance(dist) {
+				return Math.max(this.minDistance, Math.min(this.maxDistance, dist));
+			}
+			_handleMouseDownRotate(event) {
+				this._rotateStart.set(event.clientX, event.clientY);
+			}
+			_handleMouseDownDolly(event) {
+				this._updateZoomParameters(event.clientX, event.clientX);
+				this._dollyStart.set(event.clientX, event.clientY);
+			}
+			_handleMouseDownPan(event) {
+				this._panStart.set(event.clientX, event.clientY);
+			}
+			_handleMouseMoveRotate(event) {
+				this._rotateEnd.set(event.clientX, event.clientY);
+				this._rotateDelta.subVectors(this._rotateEnd, this._rotateStart).multiplyScalar(this.rotateSpeed);
+				const element = this.domElement;
+				this._rotateLeft(_twoPI * this._rotateDelta.x / element.clientHeight);
+				this._rotateUp(_twoPI * this._rotateDelta.y / element.clientHeight);
+				this._rotateStart.copy(this._rotateEnd);
+				this.update();
+			}
+			_handleMouseMoveDolly(event) {
+				this._dollyEnd.set(event.clientX, event.clientY);
+				this._dollyDelta.subVectors(this._dollyEnd, this._dollyStart);
+				if (this._dollyDelta.y > 0) this._dollyOut(this._getZoomScale(this._dollyDelta.y));
+				else if (this._dollyDelta.y < 0) this._dollyIn(this._getZoomScale(this._dollyDelta.y));
+				this._dollyStart.copy(this._dollyEnd);
+				this.update();
+			}
+			_handleMouseMovePan(event) {
+				this._panEnd.set(event.clientX, event.clientY);
+				this._panDelta.subVectors(this._panEnd, this._panStart).multiplyScalar(this.panSpeed);
+				this._pan(this._panDelta.x, this._panDelta.y);
+				this._panStart.copy(this._panEnd);
+				this.update();
+			}
+			_handleMouseWheel(event) {
+				this._updateZoomParameters(event.clientX, event.clientY);
+				if (event.deltaY < 0) this._dollyIn(this._getZoomScale(event.deltaY));
+				else if (event.deltaY > 0) this._dollyOut(this._getZoomScale(event.deltaY));
+				this.update();
+			}
+			_handleKeyDown(event) {
+				let needsUpdate = false;
+				switch (event.code) {
+					case this.keys.UP:
+						if (event.ctrlKey || event.metaKey || event.shiftKey) {
+							if (this.enableRotate) this._rotateUp(_twoPI * this.keyRotateSpeed / this.domElement.clientHeight);
+						} else if (this.enablePan) this._pan(0, this.keyPanSpeed);
+						needsUpdate = true;
+						break;
+					case this.keys.BOTTOM:
+						if (event.ctrlKey || event.metaKey || event.shiftKey) {
+							if (this.enableRotate) this._rotateUp(-_twoPI * this.keyRotateSpeed / this.domElement.clientHeight);
+						} else if (this.enablePan) this._pan(0, -this.keyPanSpeed);
+						needsUpdate = true;
+						break;
+					case this.keys.LEFT:
+						if (event.ctrlKey || event.metaKey || event.shiftKey) {
+							if (this.enableRotate) this._rotateLeft(_twoPI * this.keyRotateSpeed / this.domElement.clientHeight);
+						} else if (this.enablePan) this._pan(this.keyPanSpeed, 0);
+						needsUpdate = true;
+						break;
+					case this.keys.RIGHT:
+						if (event.ctrlKey || event.metaKey || event.shiftKey) {
+							if (this.enableRotate) this._rotateLeft(-_twoPI * this.keyRotateSpeed / this.domElement.clientHeight);
+						} else if (this.enablePan) this._pan(-this.keyPanSpeed, 0);
+						needsUpdate = true;
+				}
+				if (needsUpdate) {
+					event.preventDefault();
+					this.update();
+				}
+			}
+			_handleTouchStartRotate(event) {
+				if (this._pointers.length === 1) this._rotateStart.set(event.pageX, event.pageY);
+				else {
+					const position = this._getSecondPointerPosition(event);
+					const x = .5 * (event.pageX + position.x);
+					const y = .5 * (event.pageY + position.y);
+					this._rotateStart.set(x, y);
+				}
+			}
+			_handleTouchStartPan(event) {
+				if (this._pointers.length === 1) this._panStart.set(event.pageX, event.pageY);
+				else {
+					const position = this._getSecondPointerPosition(event);
+					const x = .5 * (event.pageX + position.x);
+					const y = .5 * (event.pageY + position.y);
+					this._panStart.set(x, y);
+				}
+			}
+			_handleTouchStartDolly(event) {
+				const position = this._getSecondPointerPosition(event);
+				const dx = event.pageX - position.x;
+				const dy = event.pageY - position.y;
+				const distance = Math.sqrt(dx * dx + dy * dy);
+				this._dollyStart.set(0, distance);
+			}
+			_handleTouchStartDollyPan(event) {
+				if (this.enableZoom) this._handleTouchStartDolly(event);
+				if (this.enablePan) this._handleTouchStartPan(event);
+			}
+			_handleTouchStartDollyRotate(event) {
+				if (this.enableZoom) this._handleTouchStartDolly(event);
+				if (this.enableRotate) this._handleTouchStartRotate(event);
+			}
+			_handleTouchMoveRotate(event) {
+				if (this._pointers.length == 1) this._rotateEnd.set(event.pageX, event.pageY);
+				else {
+					const position = this._getSecondPointerPosition(event);
+					const x = .5 * (event.pageX + position.x);
+					const y = .5 * (event.pageY + position.y);
+					this._rotateEnd.set(x, y);
+				}
+				this._rotateDelta.subVectors(this._rotateEnd, this._rotateStart).multiplyScalar(this.rotateSpeed);
+				const element = this.domElement;
+				this._rotateLeft(_twoPI * this._rotateDelta.x / element.clientHeight);
+				this._rotateUp(_twoPI * this._rotateDelta.y / element.clientHeight);
+				this._rotateStart.copy(this._rotateEnd);
+			}
+			_handleTouchMovePan(event) {
+				if (this._pointers.length === 1) this._panEnd.set(event.pageX, event.pageY);
+				else {
+					const position = this._getSecondPointerPosition(event);
+					const x = .5 * (event.pageX + position.x);
+					const y = .5 * (event.pageY + position.y);
+					this._panEnd.set(x, y);
+				}
+				this._panDelta.subVectors(this._panEnd, this._panStart).multiplyScalar(this.panSpeed);
+				this._pan(this._panDelta.x, this._panDelta.y);
+				this._panStart.copy(this._panEnd);
+			}
+			_handleTouchMoveDolly(event) {
+				const position = this._getSecondPointerPosition(event);
+				const dx = event.pageX - position.x;
+				const dy = event.pageY - position.y;
+				const distance = Math.sqrt(dx * dx + dy * dy);
+				this._dollyEnd.set(0, distance);
+				this._dollyDelta.set(0, Math.pow(this._dollyEnd.y / this._dollyStart.y, this.zoomSpeed));
+				this._dollyOut(this._dollyDelta.y);
+				this._dollyStart.copy(this._dollyEnd);
+				const centerX = (event.pageX + position.x) * .5;
+				const centerY = (event.pageY + position.y) * .5;
+				this._updateZoomParameters(centerX, centerY);
+			}
+			_handleTouchMoveDollyPan(event) {
+				if (this.enableZoom) this._handleTouchMoveDolly(event);
+				if (this.enablePan) this._handleTouchMovePan(event);
+			}
+			_handleTouchMoveDollyRotate(event) {
+				if (this.enableZoom) this._handleTouchMoveDolly(event);
+				if (this.enableRotate) this._handleTouchMoveRotate(event);
+			}
+			_addPointer(event) {
+				this._pointers.push(event.pointerId);
+			}
+			_removePointer(event) {
+				delete this._pointerPositions[event.pointerId];
+				for (let i = 0; i < this._pointers.length; i++) if (this._pointers[i] == event.pointerId) {
+					this._pointers.splice(i, 1);
+					return;
+				}
+			}
+			_isTrackingPointer(event) {
+				for (let i = 0; i < this._pointers.length; i++) if (this._pointers[i] == event.pointerId) return true;
+				return false;
+			}
+			_trackPointer(event) {
+				let position = this._pointerPositions[event.pointerId];
+				if (position === void 0) {
+					position = new Vector2();
+					this._pointerPositions[event.pointerId] = position;
+				}
+				position.set(event.pageX, event.pageY);
+			}
+			_getSecondPointerPosition(event) {
+				const pointerId = event.pointerId === this._pointers[0] ? this._pointers[1] : this._pointers[0];
+				return this._pointerPositions[pointerId];
+			}
+			_customWheelEvent(event) {
+				const mode = event.deltaMode;
+				const newEvent = {
+					clientX: event.clientX,
+					clientY: event.clientY,
+					deltaY: event.deltaY
+				};
+				switch (mode) {
+					case 1:
+						newEvent.deltaY *= 16;
+						break;
+					case 2: newEvent.deltaY *= 100;
+				}
+				if (event.ctrlKey && !this._controlActive) newEvent.deltaY *= 10;
+				return newEvent;
+			}
+		};
+		function onPointerDown(event) {
+			if (this.enabled === false) return;
+			if (this._pointers.length === 0) {
+				this.domElement.setPointerCapture(event.pointerId);
+				this.domElement.ownerDocument.addEventListener("pointermove", this._onPointerMove);
+				this.domElement.ownerDocument.addEventListener("pointerup", this._onPointerUp);
+			}
+			if (this._isTrackingPointer(event)) return;
+			this._addPointer(event);
+			if (event.pointerType === "touch") this._onTouchStart(event);
+			else this._onMouseDown(event);
+			if (this._cursorStyle === "grab") this.domElement.style.cursor = "grabbing";
+		}
+		function onPointerMove(event) {
+			if (this.enabled === false) return;
+			if (event.pointerType === "touch") this._onTouchMove(event);
+			else this._onMouseMove(event);
+		}
+		function onPointerUp(event) {
+			this._removePointer(event);
+			switch (this._pointers.length) {
+				case 0:
+					this.domElement.releasePointerCapture(event.pointerId);
+					this.domElement.ownerDocument.removeEventListener("pointermove", this._onPointerMove);
+					this.domElement.ownerDocument.removeEventListener("pointerup", this._onPointerUp);
+					this.dispatchEvent(_endEvent);
+					this.state = _STATE.NONE;
+					if (this._cursorStyle === "grab") this.domElement.style.cursor = "grab";
+					break;
+				case 1:
+					const pointerId = this._pointers[0];
+					const position = this._pointerPositions[pointerId];
+					this._onTouchStart({
+						pointerId,
+						pageX: position.x,
+						pageY: position.y
+					});
+			}
+		}
+		function onMouseDown(event) {
+			let mouseAction;
+			switch (event.button) {
+				case 0:
+					mouseAction = this.mouseButtons.LEFT;
+					break;
+				case 1:
+					mouseAction = this.mouseButtons.MIDDLE;
+					break;
+				case 2:
+					mouseAction = this.mouseButtons.RIGHT;
+					break;
+				default: mouseAction = -1;
+			}
+			switch (mouseAction) {
+				case MOUSE.DOLLY:
+					if (this.enableZoom === false) return;
+					this._handleMouseDownDolly(event);
+					this.state = _STATE.DOLLY;
+					break;
+				case MOUSE.ROTATE:
+					if (event.ctrlKey || event.metaKey || event.shiftKey) {
+						if (this.enablePan === false) return;
+						this._handleMouseDownPan(event);
+						this.state = _STATE.PAN;
+					} else {
+						if (this.enableRotate === false) return;
+						this._handleMouseDownRotate(event);
+						this.state = _STATE.ROTATE;
+					}
+					break;
+				case MOUSE.PAN:
+					if (event.ctrlKey || event.metaKey || event.shiftKey) {
+						if (this.enableRotate === false) return;
+						this._handleMouseDownRotate(event);
+						this.state = _STATE.ROTATE;
+					} else {
+						if (this.enablePan === false) return;
+						this._handleMouseDownPan(event);
+						this.state = _STATE.PAN;
+					}
+					break;
+				default: this.state = _STATE.NONE;
+			}
+			if (this.state !== _STATE.NONE) this.dispatchEvent(_startEvent);
+		}
+		function onMouseMove(event) {
+			switch (this.state) {
+				case _STATE.ROTATE:
+					if (this.enableRotate === false) return;
+					this._handleMouseMoveRotate(event);
+					break;
+				case _STATE.DOLLY:
+					if (this.enableZoom === false) return;
+					this._handleMouseMoveDolly(event);
+					break;
+				case _STATE.PAN:
+					if (this.enablePan === false) return;
+					this._handleMouseMovePan(event);
+			}
+		}
+		function onMouseWheel(event) {
+			if (this.enabled === false || this.enableZoom === false || this.state !== _STATE.NONE) return;
+			event.preventDefault();
+			this.dispatchEvent(_startEvent);
+			this._handleMouseWheel(this._customWheelEvent(event));
+			this.dispatchEvent(_endEvent);
+		}
+		function onKeyDown(event) {
+			if (this.enabled === false) return;
+			this._handleKeyDown(event);
+		}
+		function onTouchStart(event) {
+			this._trackPointer(event);
+			switch (this._pointers.length) {
+				case 1:
+					switch (this.touches.ONE) {
+						case TOUCH.ROTATE:
+							if (this.enableRotate === false) return;
+							this._handleTouchStartRotate(event);
+							this.state = _STATE.TOUCH_ROTATE;
+							break;
+						case TOUCH.PAN:
+							if (this.enablePan === false) return;
+							this._handleTouchStartPan(event);
+							this.state = _STATE.TOUCH_PAN;
+							break;
+						default: this.state = _STATE.NONE;
+					}
+					break;
+				case 2:
+					switch (this.touches.TWO) {
+						case TOUCH.DOLLY_PAN:
+							if (this.enableZoom === false && this.enablePan === false) return;
+							this._handleTouchStartDollyPan(event);
+							this.state = _STATE.TOUCH_DOLLY_PAN;
+							break;
+						case TOUCH.DOLLY_ROTATE:
+							if (this.enableZoom === false && this.enableRotate === false) return;
+							this._handleTouchStartDollyRotate(event);
+							this.state = _STATE.TOUCH_DOLLY_ROTATE;
+							break;
+						default: this.state = _STATE.NONE;
+					}
+					break;
+				default: this.state = _STATE.NONE;
+			}
+			if (this.state !== _STATE.NONE) this.dispatchEvent(_startEvent);
+		}
+		function onTouchMove(event) {
+			this._trackPointer(event);
+			switch (this.state) {
+				case _STATE.TOUCH_ROTATE:
+					if (this.enableRotate === false) return;
+					this._handleTouchMoveRotate(event);
+					this.update();
+					break;
+				case _STATE.TOUCH_PAN:
+					if (this.enablePan === false) return;
+					this._handleTouchMovePan(event);
+					this.update();
+					break;
+				case _STATE.TOUCH_DOLLY_PAN:
+					if (this.enableZoom === false && this.enablePan === false) return;
+					this._handleTouchMoveDollyPan(event);
+					this.update();
+					break;
+				case _STATE.TOUCH_DOLLY_ROTATE:
+					if (this.enableZoom === false && this.enableRotate === false) return;
+					this._handleTouchMoveDollyRotate(event);
+					this.update();
+					break;
+				default: this.state = _STATE.NONE;
+			}
+		}
+		function onContextMenu(event) {
+			if (this.enabled === false) return;
+			event.preventDefault();
+		}
+		function interceptControlDown(event) {
+			if (event.key === "Control") {
+				this._controlActive = true;
+				this.domElement.getRootNode().addEventListener("keyup", this._interceptControlUp, {
+					passive: true,
+					capture: true
+				});
+			}
+		}
+		function interceptControlUp(event) {
+			if (event.key === "Control") {
+				this._controlActive = false;
+				this.domElement.getRootNode().removeEventListener("keyup", this._interceptControlUp, {
+					passive: true,
+					capture: true
+				});
+			}
+		}
+		//#endregion
+		//#region ../../web/card-base/src/stage3d.ts
+		/**
+		* stage3d — the SHARED raw-three stage core (the substrate law).
+		*
+		* One imperative mount that every 3D viewport in the card plane builds
+		* on: renderer + camera + OrbitControls + the rAF loop + resize
+		* observation + pointer picking + full disposal. Pure TypeScript over
+		* three and three/addons — NO @react-three anywhere (the r3f
+		* react-reconciler version-skew boot crash is why this exists).
+		*
+		* Consumers own their SCENE CONTENT (lights, floor, figures) and their
+		* FRAME LOGIC via addTick (ordered registry — ticks run in registration
+		* order before each render, the raw analogue of useFrame declared top
+		* to bottom in a JSX tree).
+		*
+		* Pointer semantics (the r3f onClick/onPointerOver/onPointerOut
+		* analogue): an object becomes interactive by carrying
+		* `userData.pick = { click?, over?, out? }` on itself or an ancestor.
+		* The stage raycasts on pointermove and click, walks parentward from
+		* the hit to the first pick carrier, and calls the handlers with the
+		* world intersection point + the DOM event. A drag-orbit never reads
+		* as a click (the 350ms threshold). Gizmo subtrees (TransformControls)
+		* are excluded from picking — r3f did this implicitly.
+		*/
+		/** The r3f pointer-events analogue lives on userData.pick (see header). */
+		function findPickCarrier(o) {
+			let cur = o;
+			while (cur !== null) {
+				if (cur.userData !== void 0 && cur.userData.pick !== void 0) return cur;
+				cur = cur.parent;
+			}
+			return null;
+		}
+		/** Skip hits on a TransformControls gizmo subtree (invisible pick planes
+		*  would swallow every click while a gizmo is attached). */
+		function isGizmoHit(o) {
+			let cur = o;
+			while (cur !== null) {
+				if (cur.gizmo !== void 0) return true;
+				cur = cur.parent;
+			}
+			return false;
+		}
+		function mountStage3D(canvas, opts = {}) {
+			let renderer;
+			try {
+				renderer = new WebGLRenderer({
+					canvas,
+					antialias: true,
+					alpha: opts.alpha !== false
+				});
+			} catch (e) {
+				opts.onContextFailure?.(e instanceof Error ? e.message : "WebGL unavailable");
+				return null;
+			}
+			renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+			renderer.shadowMap.enabled = true;
+			renderer.shadowMap.type = 2;
+			const scene = new Scene();
+			scene.background = null;
+			const camera = new PerspectiveCamera(opts.fov ?? 45, 1, opts.near ?? .05, opts.far ?? 60);
+			camera.position.set(...opts.camera ?? [
+				2.2,
+				1.6,
+				2.6
+			]);
+			camera.lookAt(0, .8, 0);
+			const controls = new OrbitControls(camera, canvas);
+			controls.target.set(...opts.target ?? [
+				0,
+				.8,
+				0
+			]);
+			controls.enableDamping = true;
+			controls.dampingFactor = .1;
+			if (opts.minDistance !== void 0) controls.minDistance = opts.minDistance;
+			if (opts.maxDistance !== void 0) controls.maxDistance = opts.maxDistance;
+			if (opts.maxPolarAngle !== void 0) controls.maxPolarAngle = opts.maxPolarAngle;
+			controls.update();
+			const ticks = [];
+			const addTick = (fn) => {
+				ticks.push(fn);
+				return () => {
+					const i = ticks.indexOf(fn);
+					if (i >= 0) ticks.splice(i, 1);
+				};
+			};
+			const raycaster = new Raycaster();
+			const pointer = new Vector2();
+			let hovered = null;
+			let downAt = 0;
+			const threshold = opts.clickVsDragMs ?? 350;
+			const pickAt = (ev) => {
+				const r = canvas.getBoundingClientRect();
+				if (r.width === 0 || r.height === 0) return null;
+				pointer.x = (ev.clientX - r.left) / r.width * 2 - 1;
+				pointer.y = -((ev.clientY - r.top) / r.height) * 2 + 1;
+				raycaster.setFromCamera(pointer, camera);
+				const hits = raycaster.intersectObjects(scene.children, true);
+				for (const hit of hits) {
+					if (isGizmoHit(hit.object)) continue;
+					const carrier = findPickCarrier(hit.object);
+					if (carrier !== null) return {
+						carrier,
+						point: hit.point
+					};
+				}
+				return null;
+			};
+			const onPointerDown = (e) => {
+				downAt = e.timeStamp;
+			};
+			const onPointerMove = (e) => {
+				const found = pickAt(e);
+				const carrier = found?.carrier ?? null;
+				if (carrier !== hovered) {
+					(hovered?.userData.pick)?.out?.(e);
+					document.body.style.cursor = "auto";
+					hovered = carrier;
+					if (carrier !== null && found !== null) carrier.userData.pick.over?.(found.point, e);
+				}
+			};
+			const onPointerLeave = (e) => {
+				if (hovered !== null) {
+					hovered.userData.pick.out?.(e);
+					document.body.style.cursor = "auto";
+					hovered = null;
+				}
+			};
+			const onClick = (e) => {
+				if (e.timeStamp - downAt > threshold) return;
+				const found = pickAt(e);
+				if (found !== null) found.carrier.userData.pick.click?.(found.point, e);
+				else opts.onEmptyClick?.();
+			};
+			canvas.addEventListener("pointerdown", onPointerDown);
+			canvas.addEventListener("pointermove", onPointerMove);
+			canvas.addEventListener("pointerleave", onPointerLeave);
+			canvas.addEventListener("click", onClick);
+			let raf = 0;
+			const clock = new Clock();
+			const frame = () => {
+				raf = requestAnimationFrame(frame);
+				const delta = clock.getDelta();
+				for (const t of ticks) t(delta);
+				controls.update();
+				renderer.render(scene, camera);
+			};
+			frame();
+			const resize = () => {
+				const w = canvas.clientWidth, h = canvas.clientHeight;
+				if (w === 0 || h === 0) return;
+				renderer.setSize(w, h, false);
+				camera.aspect = w / h;
+				camera.updateProjectionMatrix();
+			};
+			resize();
+			const ro = new ResizeObserver(resize);
+			ro.observe(canvas);
+			return {
+				canvas,
+				renderer,
+				scene,
+				camera,
+				controls,
+				addTick,
+				resize,
+				dispose: () => {
+					cancelAnimationFrame(raf);
+					ro.disconnect();
+					canvas.removeEventListener("pointerdown", onPointerDown);
+					canvas.removeEventListener("pointermove", onPointerMove);
+					canvas.removeEventListener("pointerleave", onPointerLeave);
+					canvas.removeEventListener("click", onClick);
+					controls.dispose();
+					renderer.dispose();
+				}
+			};
+		}
+		//#endregion
+		//#region ../../web/melite-run-wire/src/index.ts
+		/** Correlation id for one client-request frame (crypto.randomUUID is
+		*  the browser standard; the hand-rolled arm covers non-secure
+		*  contexts where the standard is absent). */
+		function nextRpcId() {
+			const cryptoApi = globalThis.crypto;
+			if (cryptoApi?.randomUUID !== void 0) return cryptoApi.randomUUID();
+			return "rpc-" + Math.random().toString(36).slice(2) + "-" + Date.now().toString(36);
+		}
+		/** The estate's domain refusal (result.ok !== true): the message
+		*  rides verbatim (the door's own law — the client never
+		*  paraphrases); the class separates DOMAIN verdicts from transport
+		*  failures, which carry the caller's voice prefix instead. */
+		var WireRefusedError = class extends Error {
+			constructor(message) {
+				super(message);
+				this.name = "WireRefusedError";
+			}
+		};
+		/** One client-request round trip: POST /api/<method> with the frame,
+		*  narrow the server-response envelope. Non-ok results throw the
+		*  estate's message; channel surprises throw honestly. */
+		async function wireCall(method, args, opts) {
+			const voice = opts?.voice ?? "wire";
+			const rpcId = nextRpcId();
+			const res = await fetch("/api/" + method, {
+				method: "POST",
+				headers: { "content-type": "application/json" },
+				body: JSON.stringify({
+					type: "client-request",
+					rpcId,
+					method,
+					payload: { args }
+				}),
+				...opts?.signal === void 0 ? {} : { signal: opts.signal }
+			});
+			if (!res.ok) throw new Error(voice + ": HTTP " + String(res.status));
+			const body = await res.json();
+			if (typeof body !== "object" || body === null || Reflect.get(body, "type") !== "server-response" || Reflect.get(body, "rpcId") !== rpcId) throw new Error(voice + ": malformed response frame");
+			const result = Reflect.get(body, "result");
+			if (typeof result !== "object" || result === null) throw new Error(voice + ": malformed result");
+			if (Reflect.get(result, "ok") !== true) {
+				const error = Reflect.get(result, "error");
+				throw new WireRefusedError(typeof error === "object" && error !== null && typeof Reflect.get(error, "message") === "string" ? Reflect.get(error, "message") : voice + ": refused");
+			}
+			const value = Reflect.get(result, "value");
+			if (typeof value !== "object" || value === null || Array.isArray(value)) throw new Error(voice + ": not a JSON object");
+			return value;
+		}
+		/** The terminal statuses — the runs seat's own vocabulary (the settle
+		*  path stamps 'completed' or 'failed'; runs/stop stamps 'stopped'). */
+		function isTerminalRun(status) {
+			return status === "completed" || status === "failed" || status === "stopped";
+		}
+		/** The ONE media-url rewrite (readRunStatus + the file-era list
+		*  fallback share it): bare run-relative names ride the estate's
+		*  media route (/melite-media/runs/<runId>/<rel>); urls that already
+		*  carry a scheme or lead with / pass verbatim (never double-encoded). */
+		function toRunMediaUrl(runId, url) {
+			if (url === "") return "";
+			if (!/^(https?:\/\/|\/)/.test(url)) return "/melite-media/runs/" + encodeURIComponent(runId) + "/" + url.split("/").map((seg) => encodeURIComponent(seg)).join("/");
+			return url;
+		}
+		/** Normalize a runs/status doc: stage rows distilled, bare run-
+		*  relative urls rewritten onto the estate's media route (absolute
+		*  and leading-/ urls pass verbatim — the one rewrite, never two). */
+		function readRunStatus(runId, doc) {
+			const stages = Array.isArray(doc["stages"]) ? doc["stages"].filter((s) => typeof s === "object" && s !== null && typeof s["id"] === "string") : [];
+			for (const stage of stages) if (typeof stage.url === "string" && stage.url !== "") stage.url = toRunMediaUrl(runId, stage.url);
+			return {
+				runId,
+				status: typeof doc["status"] === "string" ? doc["status"] : "unknown",
+				draftId: typeof doc["draft_id"] === "string" && doc["draft_id"] !== "" ? doc["draft_id"] : null,
+				stages
+			};
+		}
+		/** One runs/status read. */
+		async function fetchRunStatus(runId, signal) {
+			return readRunStatus(runId, await wireCall("runs/status", { runId }, { signal }));
+		}
+		/** The runs/list rows as loose records (the restore port's own
+		*  shape — run_id, draft_id, created_at, status, artifacts). */
+		async function listRunRows(signal) {
+			const row = await wireCall("runs/list", { rawLimit: "500" }, { signal });
+			return (Array.isArray(row["runs"]) ? row["runs"] : []).filter((r) => typeof r === "object" && r !== null);
+		}
+		/** One runs/list row by run_id (the file-era face — runs/status only
+		*  knows live runs; the list is the completed runs' SSOT). */
+		async function fetchListRow(runId, signal) {
+			for (const r of await listRunRows(signal)) {
+				const rid = r["run_id"] ?? r["id"];
+				if (typeof rid === "string" && rid !== "" && rid === runId) return r;
+			}
+			return null;
+		}
+		/** The list row's served artifact url onto the media route. The
+		*  list's currency DIFFERS from the status door's: runArtifacts
+		*  serves urls already prefixed with the run dir
+		*  (`<runId>/<rel>` — `url: runBase + "/" + cand.rel`), while live
+		*  stage urls are bare rels (runRel strips the dir). So the list
+		*  url rides under the route root directly — prepending the run id
+		*  again would double it. Absolute and rooted urls pass verbatim. */
+		function listArtifactMediaUrl(url) {
+			if (url === "") return null;
+			if (/^(https?:\/\/|\/)/.test(url)) return url;
+			return "/melite-media/runs/" + url.split("/").map((seg) => encodeURIComponent(seg)).join("/");
+		}
+		/** The list row's first media artifact url, rewritten onto the media
+		*  route (the row's own currency is run-prefixed, like the
+		*  thumbnail). Truncated markers carry no url and are skipped. */
+		function listRowMediaUrl(row) {
+			const arts = Array.isArray(row["artifacts"]) ? row["artifacts"] : [];
+			for (const a of arts) {
+				if (typeof a !== "object" || a === null) continue;
+				const url = a["url"];
+				if (typeof url === "string") {
+					const media = listArtifactMediaUrl(url);
+					if (media !== null) return media;
+				}
+			}
+			return null;
+		}
+		/** THE ARTIFACT POLL (the old pollFlowRun law): the run is the SSOT —
+		*  check the stage's url immediately, then on the cadence until it
+		*  lands (onUrl once, resolve), the run settles without one (resolve
+		*  silent — the caller's empty state is honest), or signal aborts.
+		*
+		*  THE TWO ERROR CLASSES settle differently:
+		*  - TRANSPORT failures (HTTP / malformed frames — the caller's
+		*    voice prefix) are swallowed: the next poll may recover.
+		*  - REFUSALS (WireRefusedError — the estate answered) on
+		*    runs/status prove the run is NOT in the live map: nothing is
+		*    executing for it (the registry writes the map at enqueue and
+		*    keeps it for the process life; a disavowed id is a restart
+		*    survivor or never existed). The file-era arm then consults the
+		*    runs/list row ONCE and settles from it — its artifact url when
+		*    it carries one, silent otherwise (file-era rows never update,
+		*    so waiting would be the lie); no row at all settles silent the
+		*    same way. This holds for "failed" rows too: a live run answers
+		*    200 at the status door, so a refused status + failed list row
+		*    is a dead run, not a blip. A transport-failed list read keeps
+		*    the poll alive (the answer may land next cadence). */
+		async function pollRunStageUrl(runId, stageId, opts, signal) {
+			const interval = opts.intervalMs ?? 1500;
+			const sleep = (ms) => new Promise((resolve) => {
+				const t = setTimeout(() => {
+					signal?.removeEventListener("abort", onAbort);
+					resolve("slept");
+				}, ms);
+				const onAbort = () => {
+					clearTimeout(t);
+					resolve("abort");
+				};
+				if (signal?.aborted === true) {
+					onAbort();
+					return;
+				}
+				signal?.addEventListener("abort", onAbort, { once: true });
+			});
+			while (signal?.aborted !== true) {
+				let row;
+				try {
+					row = await fetchRunStatus(runId, signal);
+				} catch (e) {
+					if (e instanceof WireRefusedError) try {
+						const listed = await fetchListRow(runId, signal);
+						const url = listed !== null ? listRowMediaUrl(listed) : null;
+						if (url !== null) opts.onUrl(url);
+						return;
+					} catch (listErr) {
+						if (listErr instanceof WireRefusedError) return;
+					}
+					row = {
+						runId,
+						status: "unknown",
+						draftId: null,
+						stages: []
+					};
+				}
+				const stage = row.stages.find((s) => s.id === stageId) ?? (row.stages.length === 1 ? row.stages[0] : void 0);
+				if (stage !== void 0 && typeof stage.url === "string" && stage.url !== "") {
+					opts.onUrl(stage.url);
+					return;
+				}
+				if (isTerminalRun(row.status)) return;
+				if (await sleep(interval) === "abort") return;
+			}
+		}
+		//#endregion
+		//#region ../../web/card-base/src/chrome.ts
+		/** Plain classnames joiner (no conflicting utilities to merge —
+		*  plain join is exact). */
+		function cx(...parts) {
+			return parts.filter(Boolean).join(" ");
+		}
+		//#endregion
+		//#region \0dsh-css:card-base/src/preview.module.css.mjs
+		const css$2 = ".ClEuBa_stagePreview{flex-direction:column;flex:1;gap:8px;min-height:0;display:flex;overflow:hidden}.ClEuBa_hero,.ClEuBa_heroImg{object-fit:contain;background:var(--dsw-alias-bg-base);border:1px solid var(--dsw-alias-border-l2);border-radius:6px;flex:1;width:100%;min-height:0}.ClEuBa_empty{color:var(--dsw-alias-label-dimmed);border:1px dashed var(--dsw-alias-border-l2);border-radius:6px;flex:1;justify-content:center;align-items:center;font-size:11px;display:flex}.ClEuBa_strip{flex:none;gap:6px;display:flex;overflow-x:auto}.ClEuBa_stripLink{color:var(--dsw-alias-brand-primary);white-space:nowrap;border:1px solid var(--dsw-alias-border-l2);border-radius:6px;padding:2px 6px;font-size:10px;text-decoration:none}.ClEuBa_thumbRow{flex:none;gap:6px;display:flex;overflow-x:auto}.ClEuBa_thumb{border:1px solid var(--dsw-alias-border-l2);border-radius:4px;height:48px}.ClEuBa_stageCanvas{touch-action:none;width:100%;height:100%;min-height:320px;display:block}";
+		const tagId$2 = "@melite/3d-img-to-mesh/preview.module.css@c05f7449";
+		if (typeof document !== "undefined" && document.querySelector("style[data-plugin-css=" + JSON.stringify(tagId$2) + "]") === null) {
+			const tag = document.createElement("style");
+			tag.dataset.plugin = "@melite/3d-img-to-mesh";
+			tag.dataset.pluginCss = tagId$2;
+			tag.textContent = css$2;
+			document.head.appendChild(tag);
+		}
+		var preview_module_css_default = {
+			"empty": "ClEuBa_empty",
+			"hero": "ClEuBa_hero",
+			"heroImg": "ClEuBa_heroImg",
+			"stageCanvas": "ClEuBa_stageCanvas",
+			"stagePreview": "ClEuBa_stagePreview",
+			"strip": "ClEuBa_strip",
+			"stripLink": "ClEuBa_stripLink",
+			"thumb": "ClEuBa_thumb",
+			"thumbRow": "ClEuBa_thumbRow"
+		};
+		//#endregion
 		//#region ../../../node_modules/.pnpm/three@0.184.0/node_modules/three/examples/jsm/utils/BufferGeometryUtils.js
 		/**
 		* Returns a new indexed geometry based on `TrianglesDrawMode` draw mode.
@@ -39060,1118 +40452,6 @@ void main() {
 			}
 		}
 		//#endregion
-		//#region ../../../node_modules/.pnpm/three@0.184.0/node_modules/three/examples/jsm/controls/OrbitControls.js
-		/**
-		* Fires when the camera has been transformed by the controls.
-		*
-		* @event OrbitControls#change
-		* @type {Object}
-		*/
-		const _changeEvent = { type: "change" };
-		/**
-		* Fires when an interaction was initiated.
-		*
-		* @event OrbitControls#start
-		* @type {Object}
-		*/
-		const _startEvent = { type: "start" };
-		/**
-		* Fires when an interaction has finished.
-		*
-		* @event OrbitControls#end
-		* @type {Object}
-		*/
-		const _endEvent = { type: "end" };
-		const _ray = new Ray();
-		const _plane = new Plane();
-		const _TILT_LIMIT = Math.cos(70 * MathUtils.DEG2RAD);
-		const _v = new Vector3();
-		const _twoPI = 2 * Math.PI;
-		const _STATE = {
-			NONE: -1,
-			ROTATE: 0,
-			DOLLY: 1,
-			PAN: 2,
-			TOUCH_ROTATE: 3,
-			TOUCH_PAN: 4,
-			TOUCH_DOLLY_PAN: 5,
-			TOUCH_DOLLY_ROTATE: 6
-		};
-		const _EPS = 1e-6;
-		/**
-		* Orbit controls allow the camera to orbit around a target.
-		*
-		* OrbitControls performs orbiting, dollying (zooming), and panning. Unlike {@link TrackballControls},
-		* it maintains the "up" direction `object.up` (+Y by default).
-		*
-		* - Orbit: Left mouse / touch: one-finger move.
-		* - Zoom: Middle mouse, or mousewheel / touch: two-finger spread or squish.
-		* - Pan: Right mouse, or left mouse + ctrl/meta/shiftKey, or arrow keys / touch: two-finger move.
-		*
-		* ```js
-		* const controls = new OrbitControls( camera, renderer.domElement );
-		*
-		* // controls.update() must be called after any manual changes to the camera's transform
-		* camera.position.set( 0, 20, 100 );
-		* controls.update();
-		*
-		* function animate() {
-		*
-		* 	// required if controls.enableDamping or controls.autoRotate are set to true
-		* 	controls.update();
-		*
-		* 	renderer.render( scene, camera );
-		*
-		* }
-		* ```
-		*
-		* @augments Controls
-		* @three_import import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-		*/
-		var OrbitControls = class extends Controls {
-			/**
-			* Constructs a new controls instance.
-			*
-			* @param {Object3D} object - The object that is managed by the controls.
-			* @param {?HTMLElement} domElement - The HTML element used for event listeners.
-			*/
-			constructor(object, domElement = null) {
-				super(object, domElement);
-				this.state = _STATE.NONE;
-				/**
-				* The focus point of the controls, the `object` orbits around this.
-				* It can be updated manually at any point to change the focus of the controls.
-				*
-				* @type {Vector3}
-				*/
-				this.target = new Vector3();
-				/**
-				* The focus point of the `minTargetRadius` and `maxTargetRadius` limits.
-				* It can be updated manually at any point to change the center of interest
-				* for the `target`.
-				*
-				* @type {Vector3}
-				*/
-				this.cursor = new Vector3();
-				/**
-				* How far you can dolly in (perspective camera only).
-				*
-				* @type {number}
-				* @default 0
-				*/
-				this.minDistance = 0;
-				/**
-				* How far you can dolly out (perspective camera only).
-				*
-				* @type {number}
-				* @default Infinity
-				*/
-				this.maxDistance = Infinity;
-				/**
-				* How far you can zoom in (orthographic camera only).
-				*
-				* @type {number}
-				* @default 0
-				*/
-				this.minZoom = 0;
-				/**
-				* How far you can zoom out (orthographic camera only).
-				*
-				* @type {number}
-				* @default Infinity
-				*/
-				this.maxZoom = Infinity;
-				/**
-				* How close you can get the target to the 3D `cursor`.
-				*
-				* @type {number}
-				* @default 0
-				*/
-				this.minTargetRadius = 0;
-				/**
-				* How far you can move the target from the 3D `cursor`.
-				*
-				* @type {number}
-				* @default Infinity
-				*/
-				this.maxTargetRadius = Infinity;
-				/**
-				* How far you can orbit vertically, lower limit. Range is `[0, Math.PI]` radians.
-				*
-				* @type {number}
-				* @default 0
-				*/
-				this.minPolarAngle = 0;
-				/**
-				* How far you can orbit vertically, upper limit. Range is `[0, Math.PI]` radians.
-				*
-				* @type {number}
-				* @default Math.PI
-				*/
-				this.maxPolarAngle = Math.PI;
-				/**
-				* How far you can orbit horizontally, lower limit. If set, the interval `[ min, max ]`
-				* must be a sub-interval of `[ - 2 PI, 2 PI ]`, with `( max - min < 2 PI )`.
-				*
-				* @type {number}
-				* @default -Infinity
-				*/
-				this.minAzimuthAngle = -Infinity;
-				/**
-				* How far you can orbit horizontally, upper limit. If set, the interval `[ min, max ]`
-				* must be a sub-interval of `[ - 2 PI, 2 PI ]`, with `( max - min < 2 PI )`.
-				*
-				* @type {number}
-				* @default -Infinity
-				*/
-				this.maxAzimuthAngle = Infinity;
-				/**
-				* Set to `true` to enable damping (inertia), which can be used to give a sense of weight
-				* to the controls. Note that if this is enabled, you must call `update()` in your animation
-				* loop.
-				*
-				* @type {boolean}
-				* @default false
-				*/
-				this.enableDamping = false;
-				/**
-				* The damping inertia used if `enableDamping` is set to `true`.
-				*
-				* Note that for this to work, you must call `update()` in your animation loop.
-				*
-				* @type {number}
-				* @default 0.05
-				*/
-				this.dampingFactor = .05;
-				/**
-				* Enable or disable zooming (dollying) of the camera.
-				*
-				* @type {boolean}
-				* @default true
-				*/
-				this.enableZoom = true;
-				/**
-				* Speed of zooming / dollying.
-				*
-				* @type {number}
-				* @default 1
-				*/
-				this.zoomSpeed = 1;
-				/**
-				* Enable or disable horizontal and vertical rotation of the camera.
-				*
-				* Note that it is possible to disable a single axis by setting the min and max of the
-				* `minPolarAngle` or `minAzimuthAngle` to the same value, which will cause the vertical
-				* or horizontal rotation to be fixed at that value.
-				*
-				* @type {boolean}
-				* @default true
-				*/
-				this.enableRotate = true;
-				/**
-				* Speed of rotation.
-				*
-				* @type {number}
-				* @default 1
-				*/
-				this.rotateSpeed = 1;
-				/**
-				* How fast to rotate the camera when the keyboard is used.
-				*
-				* @type {number}
-				* @default 1
-				*/
-				this.keyRotateSpeed = 1;
-				/**
-				* Enable or disable camera panning.
-				*
-				* @type {boolean}
-				* @default true
-				*/
-				this.enablePan = true;
-				/**
-				* Speed of panning.
-				*
-				* @type {number}
-				* @default 1
-				*/
-				this.panSpeed = 1;
-				/**
-				* Defines how the camera's position is translated when panning. If `true`, the camera pans
-				* in screen space. Otherwise, the camera pans in the plane orthogonal to the camera's up
-				* direction.
-				*
-				* @type {boolean}
-				* @default true
-				*/
-				this.screenSpacePanning = true;
-				/**
-				* How fast to pan the camera when the keyboard is used in
-				* pixels per keypress.
-				*
-				* @type {number}
-				* @default 7
-				*/
-				this.keyPanSpeed = 7;
-				/**
-				* Setting this property to `true` allows to zoom to the cursor's position.
-				*
-				* @type {boolean}
-				* @default false
-				*/
-				this.zoomToCursor = false;
-				/**
-				* Set to true to automatically rotate around the target
-				*
-				* Note that if this is enabled, you must call `update()` in your animation loop.
-				* If you want the auto-rotate speed to be independent of the frame rate (the refresh
-				* rate of the display), you must pass the time `deltaTime`, in seconds, to `update()`.
-				*
-				* @type {boolean}
-				* @default false
-				*/
-				this.autoRotate = false;
-				/**
-				* How fast to rotate around the target if `autoRotate` is `true`. The default  equates to 30 seconds
-				* per orbit at 60fps.
-				*
-				* Note that if `autoRotate` is enabled, you must call `update()` in your animation loop.
-				*
-				* @type {number}
-				* @default 2
-				*/
-				this.autoRotateSpeed = 2;
-				/**
-				* This object contains references to the keycodes for controlling camera panning.
-				*
-				* ```js
-				* controls.keys = {
-				* 	LEFT: 'ArrowLeft', //left arrow
-				* 	UP: 'ArrowUp', // up arrow
-				* 	RIGHT: 'ArrowRight', // right arrow
-				* 	BOTTOM: 'ArrowDown' // down arrow
-				* }
-				* ```
-				* @type {Object}
-				*/
-				this.keys = {
-					LEFT: "ArrowLeft",
-					UP: "ArrowUp",
-					RIGHT: "ArrowRight",
-					BOTTOM: "ArrowDown"
-				};
-				/**
-				* This object contains references to the mouse actions used by the controls.
-				*
-				* ```js
-				* controls.mouseButtons = {
-				* 	LEFT: THREE.MOUSE.ROTATE,
-				* 	MIDDLE: THREE.MOUSE.DOLLY,
-				* 	RIGHT: THREE.MOUSE.PAN
-				* }
-				* ```
-				* @type {Object}
-				*/
-				this.mouseButtons = {
-					LEFT: MOUSE.ROTATE,
-					MIDDLE: MOUSE.DOLLY,
-					RIGHT: MOUSE.PAN
-				};
-				/**
-				* This object contains references to the touch actions used by the controls.
-				*
-				* ```js
-				* controls.mouseButtons = {
-				* 	ONE: THREE.TOUCH.ROTATE,
-				* 	TWO: THREE.TOUCH.DOLLY_PAN
-				* }
-				* ```
-				* @type {Object}
-				*/
-				this.touches = {
-					ONE: TOUCH.ROTATE,
-					TWO: TOUCH.DOLLY_PAN
-				};
-				/**
-				* Used internally by `saveState()` and `reset()`.
-				*
-				* @type {Vector3}
-				*/
-				this.target0 = this.target.clone();
-				/**
-				* Used internally by `saveState()` and `reset()`.
-				*
-				* @type {Vector3}
-				*/
-				this.position0 = this.object.position.clone();
-				/**
-				* Used internally by `saveState()` and `reset()`.
-				*
-				* @type {number}
-				*/
-				this.zoom0 = this.object.zoom;
-				this._cursorStyle = "auto";
-				this._domElementKeyEvents = null;
-				this._lastPosition = new Vector3();
-				this._lastQuaternion = new Quaternion();
-				this._lastTargetPosition = new Vector3();
-				this._quat = new Quaternion().setFromUnitVectors(object.up, new Vector3(0, 1, 0));
-				this._quatInverse = this._quat.clone().invert();
-				this._spherical = new Spherical();
-				this._sphericalDelta = new Spherical();
-				this._scale = 1;
-				this._panOffset = new Vector3();
-				this._rotateStart = new Vector2();
-				this._rotateEnd = new Vector2();
-				this._rotateDelta = new Vector2();
-				this._panStart = new Vector2();
-				this._panEnd = new Vector2();
-				this._panDelta = new Vector2();
-				this._dollyStart = new Vector2();
-				this._dollyEnd = new Vector2();
-				this._dollyDelta = new Vector2();
-				this._dollyDirection = new Vector3();
-				this._mouse = new Vector2();
-				this._performCursorZoom = false;
-				this._pointers = [];
-				this._pointerPositions = {};
-				this._controlActive = false;
-				this._onPointerMove = onPointerMove.bind(this);
-				this._onPointerDown = onPointerDown.bind(this);
-				this._onPointerUp = onPointerUp.bind(this);
-				this._onContextMenu = onContextMenu.bind(this);
-				this._onMouseWheel = onMouseWheel.bind(this);
-				this._onKeyDown = onKeyDown.bind(this);
-				this._onTouchStart = onTouchStart.bind(this);
-				this._onTouchMove = onTouchMove.bind(this);
-				this._onMouseDown = onMouseDown.bind(this);
-				this._onMouseMove = onMouseMove.bind(this);
-				this._interceptControlDown = interceptControlDown.bind(this);
-				this._interceptControlUp = interceptControlUp.bind(this);
-				if (this.domElement !== null) this.connect(this.domElement);
-				this.update();
-			}
-			/**
-			* Defines the visual representation of the cursor.
-			*
-			* @type {('auto'|'grab')}
-			* @default 'auto'
-			*/
-			set cursorStyle(type) {
-				this._cursorStyle = type;
-				if (type === "grab") this.domElement.style.cursor = "grab";
-				else this.domElement.style.cursor = "auto";
-			}
-			get cursorStyle() {
-				return this._cursorStyle;
-			}
-			connect(element) {
-				super.connect(element);
-				this.domElement.addEventListener("pointerdown", this._onPointerDown);
-				this.domElement.addEventListener("pointercancel", this._onPointerUp);
-				this.domElement.addEventListener("contextmenu", this._onContextMenu);
-				this.domElement.addEventListener("wheel", this._onMouseWheel, { passive: false });
-				this.domElement.getRootNode().addEventListener("keydown", this._interceptControlDown, {
-					passive: true,
-					capture: true
-				});
-				this.domElement.style.touchAction = "none";
-			}
-			disconnect() {
-				this.domElement.removeEventListener("pointerdown", this._onPointerDown);
-				this.domElement.ownerDocument.removeEventListener("pointermove", this._onPointerMove);
-				this.domElement.ownerDocument.removeEventListener("pointerup", this._onPointerUp);
-				this.domElement.removeEventListener("pointercancel", this._onPointerUp);
-				this.domElement.removeEventListener("wheel", this._onMouseWheel);
-				this.domElement.removeEventListener("contextmenu", this._onContextMenu);
-				this.stopListenToKeyEvents();
-				this.domElement.getRootNode().removeEventListener("keydown", this._interceptControlDown, { capture: true });
-				this.domElement.style.touchAction = "";
-			}
-			dispose() {
-				this.disconnect();
-			}
-			/**
-			* Get the current vertical rotation, in radians.
-			*
-			* @return {number} The current vertical rotation, in radians.
-			*/
-			getPolarAngle() {
-				return this._spherical.phi;
-			}
-			/**
-			* Get the current horizontal rotation, in radians.
-			*
-			* @return {number} The current horizontal rotation, in radians.
-			*/
-			getAzimuthalAngle() {
-				return this._spherical.theta;
-			}
-			/**
-			* Returns the distance from the camera to the target.
-			*
-			* @return {number} The distance from the camera to the target.
-			*/
-			getDistance() {
-				return this.object.position.distanceTo(this.target);
-			}
-			/**
-			* Adds key event listeners to the given DOM element.
-			* `window` is a recommended argument for using this method.
-			*
-			* @param {HTMLElement} domElement - The DOM element
-			*/
-			listenToKeyEvents(domElement) {
-				domElement.addEventListener("keydown", this._onKeyDown);
-				this._domElementKeyEvents = domElement;
-			}
-			/**
-			* Removes the key event listener previously defined with `listenToKeyEvents()`.
-			*/
-			stopListenToKeyEvents() {
-				if (this._domElementKeyEvents !== null) {
-					this._domElementKeyEvents.removeEventListener("keydown", this._onKeyDown);
-					this._domElementKeyEvents = null;
-				}
-			}
-			/**
-			* Save the current state of the controls. This can later be recovered with `reset()`.
-			*/
-			saveState() {
-				this.target0.copy(this.target);
-				this.position0.copy(this.object.position);
-				this.zoom0 = this.object.zoom;
-			}
-			/**
-			* Reset the controls to their state from either the last time the `saveState()`
-			* was called, or the initial state.
-			*/
-			reset() {
-				this.target.copy(this.target0);
-				this.object.position.copy(this.position0);
-				this.object.zoom = this.zoom0;
-				this.object.updateProjectionMatrix();
-				this.dispatchEvent(_changeEvent);
-				this.update();
-				this.state = _STATE.NONE;
-			}
-			/**
-			* Programmatically pan the camera.
-			*
-			* @param {number} deltaX - The horizontal pan amount in pixels.
-			* @param {number} deltaY - The vertical pan amount in pixels.
-			*/
-			pan(deltaX, deltaY) {
-				this._pan(deltaX, deltaY);
-				this.update();
-			}
-			/**
-			* Programmatically dolly in (zoom in for perspective camera).
-			*
-			* @param {number} dollyScale - The dolly scale factor.
-			*/
-			dollyIn(dollyScale) {
-				this._dollyIn(dollyScale);
-				this.update();
-			}
-			/**
-			* Programmatically dolly out (zoom out for perspective camera).
-			*
-			* @param {number} dollyScale - The dolly scale factor.
-			*/
-			dollyOut(dollyScale) {
-				this._dollyOut(dollyScale);
-				this.update();
-			}
-			/**
-			* Programmatically rotate the camera left (around the vertical axis).
-			*
-			* @param {number} angle - The rotation angle in radians.
-			*/
-			rotateLeft(angle) {
-				this._rotateLeft(angle);
-				this.update();
-			}
-			/**
-			* Programmatically rotate the camera up (around the horizontal axis).
-			*
-			* @param {number} angle - The rotation angle in radians.
-			*/
-			rotateUp(angle) {
-				this._rotateUp(angle);
-				this.update();
-			}
-			update(deltaTime = null) {
-				const position = this.object.position;
-				_v.copy(position).sub(this.target);
-				_v.applyQuaternion(this._quat);
-				this._spherical.setFromVector3(_v);
-				if (this.autoRotate && this.state === _STATE.NONE) this._rotateLeft(this._getAutoRotationAngle(deltaTime));
-				if (this.enableDamping) {
-					this._spherical.theta += this._sphericalDelta.theta * this.dampingFactor;
-					this._spherical.phi += this._sphericalDelta.phi * this.dampingFactor;
-				} else {
-					this._spherical.theta += this._sphericalDelta.theta;
-					this._spherical.phi += this._sphericalDelta.phi;
-				}
-				let min = this.minAzimuthAngle;
-				let max = this.maxAzimuthAngle;
-				if (isFinite(min) && isFinite(max)) {
-					if (min < -Math.PI) min += _twoPI;
-					else if (min > Math.PI) min -= _twoPI;
-					if (max < -Math.PI) max += _twoPI;
-					else if (max > Math.PI) max -= _twoPI;
-					if (min <= max) this._spherical.theta = Math.max(min, Math.min(max, this._spherical.theta));
-					else this._spherical.theta = this._spherical.theta > (min + max) / 2 ? Math.max(min, this._spherical.theta) : Math.min(max, this._spherical.theta);
-				}
-				this._spherical.phi = Math.max(this.minPolarAngle, Math.min(this.maxPolarAngle, this._spherical.phi));
-				this._spherical.makeSafe();
-				if (this.enableDamping === true) this.target.addScaledVector(this._panOffset, this.dampingFactor);
-				else this.target.add(this._panOffset);
-				this.target.sub(this.cursor);
-				this.target.clampLength(this.minTargetRadius, this.maxTargetRadius);
-				this.target.add(this.cursor);
-				let zoomChanged = false;
-				if (this.zoomToCursor && this._performCursorZoom || this.object.isOrthographicCamera) this._spherical.radius = this._clampDistance(this._spherical.radius);
-				else {
-					const prevRadius = this._spherical.radius;
-					this._spherical.radius = this._clampDistance(this._spherical.radius * this._scale);
-					zoomChanged = prevRadius != this._spherical.radius;
-				}
-				_v.setFromSpherical(this._spherical);
-				_v.applyQuaternion(this._quatInverse);
-				position.copy(this.target).add(_v);
-				this.object.lookAt(this.target);
-				if (this.enableDamping === true) {
-					this._sphericalDelta.theta *= 1 - this.dampingFactor;
-					this._sphericalDelta.phi *= 1 - this.dampingFactor;
-					this._panOffset.multiplyScalar(1 - this.dampingFactor);
-				} else {
-					this._sphericalDelta.set(0, 0, 0);
-					this._panOffset.set(0, 0, 0);
-				}
-				if (this.zoomToCursor && this._performCursorZoom) {
-					let newRadius = null;
-					if (this.object.isPerspectiveCamera) {
-						const prevRadius = _v.length();
-						newRadius = this._clampDistance(prevRadius * this._scale);
-						const radiusDelta = prevRadius - newRadius;
-						this.object.position.addScaledVector(this._dollyDirection, radiusDelta);
-						this.object.updateMatrixWorld();
-						zoomChanged = !!radiusDelta;
-					} else if (this.object.isOrthographicCamera) {
-						const mouseBefore = new Vector3(this._mouse.x, this._mouse.y, 0);
-						mouseBefore.unproject(this.object);
-						const prevZoom = this.object.zoom;
-						this.object.zoom = Math.max(this.minZoom, Math.min(this.maxZoom, this.object.zoom / this._scale));
-						this.object.updateProjectionMatrix();
-						zoomChanged = prevZoom !== this.object.zoom;
-						const mouseAfter = new Vector3(this._mouse.x, this._mouse.y, 0);
-						mouseAfter.unproject(this.object);
-						this.object.position.sub(mouseAfter).add(mouseBefore);
-						this.object.updateMatrixWorld();
-						newRadius = _v.length();
-					} else {
-						console.warn("WARNING: OrbitControls.js encountered an unknown camera type - zoom to cursor disabled.");
-						this.zoomToCursor = false;
-					}
-					if (newRadius !== null) {
-						if (this.screenSpacePanning) this.target.set(0, 0, -1).transformDirection(this.object.matrix).multiplyScalar(newRadius).add(this.object.position);
-						else {
-							_ray.origin.copy(this.object.position);
-							_ray.direction.set(0, 0, -1).transformDirection(this.object.matrix);
-							if (Math.abs(this.object.up.dot(_ray.direction)) < _TILT_LIMIT) this.object.lookAt(this.target);
-							else {
-								_plane.setFromNormalAndCoplanarPoint(this.object.up, this.target);
-								_ray.intersectPlane(_plane, this.target);
-							}
-						}
-					}
-				} else if (this.object.isOrthographicCamera) {
-					const prevZoom = this.object.zoom;
-					this.object.zoom = Math.max(this.minZoom, Math.min(this.maxZoom, this.object.zoom / this._scale));
-					if (prevZoom !== this.object.zoom) {
-						this.object.updateProjectionMatrix();
-						zoomChanged = true;
-					}
-				}
-				this._scale = 1;
-				this._performCursorZoom = false;
-				if (zoomChanged || this._lastPosition.distanceToSquared(this.object.position) > _EPS || 8 * (1 - this._lastQuaternion.dot(this.object.quaternion)) > _EPS || this._lastTargetPosition.distanceToSquared(this.target) > _EPS) {
-					this.dispatchEvent(_changeEvent);
-					this._lastPosition.copy(this.object.position);
-					this._lastQuaternion.copy(this.object.quaternion);
-					this._lastTargetPosition.copy(this.target);
-					return true;
-				}
-				return false;
-			}
-			_getAutoRotationAngle(deltaTime) {
-				if (deltaTime !== null) return _twoPI / 60 * this.autoRotateSpeed * deltaTime;
-				else return _twoPI / 60 / 60 * this.autoRotateSpeed;
-			}
-			_getZoomScale(delta) {
-				const normalizedDelta = Math.abs(delta * .01);
-				return Math.pow(.95, this.zoomSpeed * normalizedDelta);
-			}
-			_rotateLeft(angle) {
-				this._sphericalDelta.theta -= angle;
-			}
-			_rotateUp(angle) {
-				this._sphericalDelta.phi -= angle;
-			}
-			_panLeft(distance, objectMatrix) {
-				_v.setFromMatrixColumn(objectMatrix, 0);
-				_v.multiplyScalar(-distance);
-				this._panOffset.add(_v);
-			}
-			_panUp(distance, objectMatrix) {
-				if (this.screenSpacePanning === true) _v.setFromMatrixColumn(objectMatrix, 1);
-				else {
-					_v.setFromMatrixColumn(objectMatrix, 0);
-					_v.crossVectors(this.object.up, _v);
-				}
-				_v.multiplyScalar(distance);
-				this._panOffset.add(_v);
-			}
-			_pan(deltaX, deltaY) {
-				const element = this.domElement;
-				if (this.object.isPerspectiveCamera) {
-					const position = this.object.position;
-					_v.copy(position).sub(this.target);
-					let targetDistance = _v.length();
-					targetDistance *= Math.tan(this.object.fov / 2 * Math.PI / 180);
-					this._panLeft(2 * deltaX * targetDistance / element.clientHeight, this.object.matrix);
-					this._panUp(2 * deltaY * targetDistance / element.clientHeight, this.object.matrix);
-				} else if (this.object.isOrthographicCamera) {
-					this._panLeft(deltaX * (this.object.right - this.object.left) / this.object.zoom / element.clientWidth, this.object.matrix);
-					this._panUp(deltaY * (this.object.top - this.object.bottom) / this.object.zoom / element.clientHeight, this.object.matrix);
-				} else {
-					console.warn("WARNING: OrbitControls.js encountered an unknown camera type - pan disabled.");
-					this.enablePan = false;
-				}
-			}
-			_dollyOut(dollyScale) {
-				if (this.object.isPerspectiveCamera || this.object.isOrthographicCamera) this._scale /= dollyScale;
-				else {
-					console.warn("WARNING: OrbitControls.js encountered an unknown camera type - dolly/zoom disabled.");
-					this.enableZoom = false;
-				}
-			}
-			_dollyIn(dollyScale) {
-				if (this.object.isPerspectiveCamera || this.object.isOrthographicCamera) this._scale *= dollyScale;
-				else {
-					console.warn("WARNING: OrbitControls.js encountered an unknown camera type - dolly/zoom disabled.");
-					this.enableZoom = false;
-				}
-			}
-			_updateZoomParameters(x, y) {
-				if (!this.zoomToCursor) return;
-				this._performCursorZoom = true;
-				const rect = this.domElement.getBoundingClientRect();
-				const dx = x - rect.left;
-				const dy = y - rect.top;
-				const w = rect.width;
-				const h = rect.height;
-				this._mouse.x = dx / w * 2 - 1;
-				this._mouse.y = -(dy / h) * 2 + 1;
-				this._dollyDirection.set(this._mouse.x, this._mouse.y, 1).unproject(this.object).sub(this.object.position).normalize();
-			}
-			_clampDistance(dist) {
-				return Math.max(this.minDistance, Math.min(this.maxDistance, dist));
-			}
-			_handleMouseDownRotate(event) {
-				this._rotateStart.set(event.clientX, event.clientY);
-			}
-			_handleMouseDownDolly(event) {
-				this._updateZoomParameters(event.clientX, event.clientX);
-				this._dollyStart.set(event.clientX, event.clientY);
-			}
-			_handleMouseDownPan(event) {
-				this._panStart.set(event.clientX, event.clientY);
-			}
-			_handleMouseMoveRotate(event) {
-				this._rotateEnd.set(event.clientX, event.clientY);
-				this._rotateDelta.subVectors(this._rotateEnd, this._rotateStart).multiplyScalar(this.rotateSpeed);
-				const element = this.domElement;
-				this._rotateLeft(_twoPI * this._rotateDelta.x / element.clientHeight);
-				this._rotateUp(_twoPI * this._rotateDelta.y / element.clientHeight);
-				this._rotateStart.copy(this._rotateEnd);
-				this.update();
-			}
-			_handleMouseMoveDolly(event) {
-				this._dollyEnd.set(event.clientX, event.clientY);
-				this._dollyDelta.subVectors(this._dollyEnd, this._dollyStart);
-				if (this._dollyDelta.y > 0) this._dollyOut(this._getZoomScale(this._dollyDelta.y));
-				else if (this._dollyDelta.y < 0) this._dollyIn(this._getZoomScale(this._dollyDelta.y));
-				this._dollyStart.copy(this._dollyEnd);
-				this.update();
-			}
-			_handleMouseMovePan(event) {
-				this._panEnd.set(event.clientX, event.clientY);
-				this._panDelta.subVectors(this._panEnd, this._panStart).multiplyScalar(this.panSpeed);
-				this._pan(this._panDelta.x, this._panDelta.y);
-				this._panStart.copy(this._panEnd);
-				this.update();
-			}
-			_handleMouseWheel(event) {
-				this._updateZoomParameters(event.clientX, event.clientY);
-				if (event.deltaY < 0) this._dollyIn(this._getZoomScale(event.deltaY));
-				else if (event.deltaY > 0) this._dollyOut(this._getZoomScale(event.deltaY));
-				this.update();
-			}
-			_handleKeyDown(event) {
-				let needsUpdate = false;
-				switch (event.code) {
-					case this.keys.UP:
-						if (event.ctrlKey || event.metaKey || event.shiftKey) {
-							if (this.enableRotate) this._rotateUp(_twoPI * this.keyRotateSpeed / this.domElement.clientHeight);
-						} else if (this.enablePan) this._pan(0, this.keyPanSpeed);
-						needsUpdate = true;
-						break;
-					case this.keys.BOTTOM:
-						if (event.ctrlKey || event.metaKey || event.shiftKey) {
-							if (this.enableRotate) this._rotateUp(-_twoPI * this.keyRotateSpeed / this.domElement.clientHeight);
-						} else if (this.enablePan) this._pan(0, -this.keyPanSpeed);
-						needsUpdate = true;
-						break;
-					case this.keys.LEFT:
-						if (event.ctrlKey || event.metaKey || event.shiftKey) {
-							if (this.enableRotate) this._rotateLeft(_twoPI * this.keyRotateSpeed / this.domElement.clientHeight);
-						} else if (this.enablePan) this._pan(this.keyPanSpeed, 0);
-						needsUpdate = true;
-						break;
-					case this.keys.RIGHT:
-						if (event.ctrlKey || event.metaKey || event.shiftKey) {
-							if (this.enableRotate) this._rotateLeft(-_twoPI * this.keyRotateSpeed / this.domElement.clientHeight);
-						} else if (this.enablePan) this._pan(-this.keyPanSpeed, 0);
-						needsUpdate = true;
-				}
-				if (needsUpdate) {
-					event.preventDefault();
-					this.update();
-				}
-			}
-			_handleTouchStartRotate(event) {
-				if (this._pointers.length === 1) this._rotateStart.set(event.pageX, event.pageY);
-				else {
-					const position = this._getSecondPointerPosition(event);
-					const x = .5 * (event.pageX + position.x);
-					const y = .5 * (event.pageY + position.y);
-					this._rotateStart.set(x, y);
-				}
-			}
-			_handleTouchStartPan(event) {
-				if (this._pointers.length === 1) this._panStart.set(event.pageX, event.pageY);
-				else {
-					const position = this._getSecondPointerPosition(event);
-					const x = .5 * (event.pageX + position.x);
-					const y = .5 * (event.pageY + position.y);
-					this._panStart.set(x, y);
-				}
-			}
-			_handleTouchStartDolly(event) {
-				const position = this._getSecondPointerPosition(event);
-				const dx = event.pageX - position.x;
-				const dy = event.pageY - position.y;
-				const distance = Math.sqrt(dx * dx + dy * dy);
-				this._dollyStart.set(0, distance);
-			}
-			_handleTouchStartDollyPan(event) {
-				if (this.enableZoom) this._handleTouchStartDolly(event);
-				if (this.enablePan) this._handleTouchStartPan(event);
-			}
-			_handleTouchStartDollyRotate(event) {
-				if (this.enableZoom) this._handleTouchStartDolly(event);
-				if (this.enableRotate) this._handleTouchStartRotate(event);
-			}
-			_handleTouchMoveRotate(event) {
-				if (this._pointers.length == 1) this._rotateEnd.set(event.pageX, event.pageY);
-				else {
-					const position = this._getSecondPointerPosition(event);
-					const x = .5 * (event.pageX + position.x);
-					const y = .5 * (event.pageY + position.y);
-					this._rotateEnd.set(x, y);
-				}
-				this._rotateDelta.subVectors(this._rotateEnd, this._rotateStart).multiplyScalar(this.rotateSpeed);
-				const element = this.domElement;
-				this._rotateLeft(_twoPI * this._rotateDelta.x / element.clientHeight);
-				this._rotateUp(_twoPI * this._rotateDelta.y / element.clientHeight);
-				this._rotateStart.copy(this._rotateEnd);
-			}
-			_handleTouchMovePan(event) {
-				if (this._pointers.length === 1) this._panEnd.set(event.pageX, event.pageY);
-				else {
-					const position = this._getSecondPointerPosition(event);
-					const x = .5 * (event.pageX + position.x);
-					const y = .5 * (event.pageY + position.y);
-					this._panEnd.set(x, y);
-				}
-				this._panDelta.subVectors(this._panEnd, this._panStart).multiplyScalar(this.panSpeed);
-				this._pan(this._panDelta.x, this._panDelta.y);
-				this._panStart.copy(this._panEnd);
-			}
-			_handleTouchMoveDolly(event) {
-				const position = this._getSecondPointerPosition(event);
-				const dx = event.pageX - position.x;
-				const dy = event.pageY - position.y;
-				const distance = Math.sqrt(dx * dx + dy * dy);
-				this._dollyEnd.set(0, distance);
-				this._dollyDelta.set(0, Math.pow(this._dollyEnd.y / this._dollyStart.y, this.zoomSpeed));
-				this._dollyOut(this._dollyDelta.y);
-				this._dollyStart.copy(this._dollyEnd);
-				const centerX = (event.pageX + position.x) * .5;
-				const centerY = (event.pageY + position.y) * .5;
-				this._updateZoomParameters(centerX, centerY);
-			}
-			_handleTouchMoveDollyPan(event) {
-				if (this.enableZoom) this._handleTouchMoveDolly(event);
-				if (this.enablePan) this._handleTouchMovePan(event);
-			}
-			_handleTouchMoveDollyRotate(event) {
-				if (this.enableZoom) this._handleTouchMoveDolly(event);
-				if (this.enableRotate) this._handleTouchMoveRotate(event);
-			}
-			_addPointer(event) {
-				this._pointers.push(event.pointerId);
-			}
-			_removePointer(event) {
-				delete this._pointerPositions[event.pointerId];
-				for (let i = 0; i < this._pointers.length; i++) if (this._pointers[i] == event.pointerId) {
-					this._pointers.splice(i, 1);
-					return;
-				}
-			}
-			_isTrackingPointer(event) {
-				for (let i = 0; i < this._pointers.length; i++) if (this._pointers[i] == event.pointerId) return true;
-				return false;
-			}
-			_trackPointer(event) {
-				let position = this._pointerPositions[event.pointerId];
-				if (position === void 0) {
-					position = new Vector2();
-					this._pointerPositions[event.pointerId] = position;
-				}
-				position.set(event.pageX, event.pageY);
-			}
-			_getSecondPointerPosition(event) {
-				const pointerId = event.pointerId === this._pointers[0] ? this._pointers[1] : this._pointers[0];
-				return this._pointerPositions[pointerId];
-			}
-			_customWheelEvent(event) {
-				const mode = event.deltaMode;
-				const newEvent = {
-					clientX: event.clientX,
-					clientY: event.clientY,
-					deltaY: event.deltaY
-				};
-				switch (mode) {
-					case 1:
-						newEvent.deltaY *= 16;
-						break;
-					case 2: newEvent.deltaY *= 100;
-				}
-				if (event.ctrlKey && !this._controlActive) newEvent.deltaY *= 10;
-				return newEvent;
-			}
-		};
-		function onPointerDown(event) {
-			if (this.enabled === false) return;
-			if (this._pointers.length === 0) {
-				this.domElement.setPointerCapture(event.pointerId);
-				this.domElement.ownerDocument.addEventListener("pointermove", this._onPointerMove);
-				this.domElement.ownerDocument.addEventListener("pointerup", this._onPointerUp);
-			}
-			if (this._isTrackingPointer(event)) return;
-			this._addPointer(event);
-			if (event.pointerType === "touch") this._onTouchStart(event);
-			else this._onMouseDown(event);
-			if (this._cursorStyle === "grab") this.domElement.style.cursor = "grabbing";
-		}
-		function onPointerMove(event) {
-			if (this.enabled === false) return;
-			if (event.pointerType === "touch") this._onTouchMove(event);
-			else this._onMouseMove(event);
-		}
-		function onPointerUp(event) {
-			this._removePointer(event);
-			switch (this._pointers.length) {
-				case 0:
-					this.domElement.releasePointerCapture(event.pointerId);
-					this.domElement.ownerDocument.removeEventListener("pointermove", this._onPointerMove);
-					this.domElement.ownerDocument.removeEventListener("pointerup", this._onPointerUp);
-					this.dispatchEvent(_endEvent);
-					this.state = _STATE.NONE;
-					if (this._cursorStyle === "grab") this.domElement.style.cursor = "grab";
-					break;
-				case 1:
-					const pointerId = this._pointers[0];
-					const position = this._pointerPositions[pointerId];
-					this._onTouchStart({
-						pointerId,
-						pageX: position.x,
-						pageY: position.y
-					});
-			}
-		}
-		function onMouseDown(event) {
-			let mouseAction;
-			switch (event.button) {
-				case 0:
-					mouseAction = this.mouseButtons.LEFT;
-					break;
-				case 1:
-					mouseAction = this.mouseButtons.MIDDLE;
-					break;
-				case 2:
-					mouseAction = this.mouseButtons.RIGHT;
-					break;
-				default: mouseAction = -1;
-			}
-			switch (mouseAction) {
-				case MOUSE.DOLLY:
-					if (this.enableZoom === false) return;
-					this._handleMouseDownDolly(event);
-					this.state = _STATE.DOLLY;
-					break;
-				case MOUSE.ROTATE:
-					if (event.ctrlKey || event.metaKey || event.shiftKey) {
-						if (this.enablePan === false) return;
-						this._handleMouseDownPan(event);
-						this.state = _STATE.PAN;
-					} else {
-						if (this.enableRotate === false) return;
-						this._handleMouseDownRotate(event);
-						this.state = _STATE.ROTATE;
-					}
-					break;
-				case MOUSE.PAN:
-					if (event.ctrlKey || event.metaKey || event.shiftKey) {
-						if (this.enableRotate === false) return;
-						this._handleMouseDownRotate(event);
-						this.state = _STATE.ROTATE;
-					} else {
-						if (this.enablePan === false) return;
-						this._handleMouseDownPan(event);
-						this.state = _STATE.PAN;
-					}
-					break;
-				default: this.state = _STATE.NONE;
-			}
-			if (this.state !== _STATE.NONE) this.dispatchEvent(_startEvent);
-		}
-		function onMouseMove(event) {
-			switch (this.state) {
-				case _STATE.ROTATE:
-					if (this.enableRotate === false) return;
-					this._handleMouseMoveRotate(event);
-					break;
-				case _STATE.DOLLY:
-					if (this.enableZoom === false) return;
-					this._handleMouseMoveDolly(event);
-					break;
-				case _STATE.PAN:
-					if (this.enablePan === false) return;
-					this._handleMouseMovePan(event);
-			}
-		}
-		function onMouseWheel(event) {
-			if (this.enabled === false || this.enableZoom === false || this.state !== _STATE.NONE) return;
-			event.preventDefault();
-			this.dispatchEvent(_startEvent);
-			this._handleMouseWheel(this._customWheelEvent(event));
-			this.dispatchEvent(_endEvent);
-		}
-		function onKeyDown(event) {
-			if (this.enabled === false) return;
-			this._handleKeyDown(event);
-		}
-		function onTouchStart(event) {
-			this._trackPointer(event);
-			switch (this._pointers.length) {
-				case 1:
-					switch (this.touches.ONE) {
-						case TOUCH.ROTATE:
-							if (this.enableRotate === false) return;
-							this._handleTouchStartRotate(event);
-							this.state = _STATE.TOUCH_ROTATE;
-							break;
-						case TOUCH.PAN:
-							if (this.enablePan === false) return;
-							this._handleTouchStartPan(event);
-							this.state = _STATE.TOUCH_PAN;
-							break;
-						default: this.state = _STATE.NONE;
-					}
-					break;
-				case 2:
-					switch (this.touches.TWO) {
-						case TOUCH.DOLLY_PAN:
-							if (this.enableZoom === false && this.enablePan === false) return;
-							this._handleTouchStartDollyPan(event);
-							this.state = _STATE.TOUCH_DOLLY_PAN;
-							break;
-						case TOUCH.DOLLY_ROTATE:
-							if (this.enableZoom === false && this.enableRotate === false) return;
-							this._handleTouchStartDollyRotate(event);
-							this.state = _STATE.TOUCH_DOLLY_ROTATE;
-							break;
-						default: this.state = _STATE.NONE;
-					}
-					break;
-				default: this.state = _STATE.NONE;
-			}
-			if (this.state !== _STATE.NONE) this.dispatchEvent(_startEvent);
-		}
-		function onTouchMove(event) {
-			this._trackPointer(event);
-			switch (this.state) {
-				case _STATE.TOUCH_ROTATE:
-					if (this.enableRotate === false) return;
-					this._handleTouchMoveRotate(event);
-					this.update();
-					break;
-				case _STATE.TOUCH_PAN:
-					if (this.enablePan === false) return;
-					this._handleTouchMovePan(event);
-					this.update();
-					break;
-				case _STATE.TOUCH_DOLLY_PAN:
-					if (this.enableZoom === false && this.enablePan === false) return;
-					this._handleTouchMoveDollyPan(event);
-					this.update();
-					break;
-				case _STATE.TOUCH_DOLLY_ROTATE:
-					if (this.enableZoom === false && this.enableRotate === false) return;
-					this._handleTouchMoveDollyRotate(event);
-					this.update();
-					break;
-				default: this.state = _STATE.NONE;
-			}
-		}
-		function onContextMenu(event) {
-			if (this.enabled === false) return;
-			event.preventDefault();
-		}
-		function interceptControlDown(event) {
-			if (event.key === "Control") {
-				this._controlActive = true;
-				this.domElement.getRootNode().addEventListener("keyup", this._interceptControlUp, {
-					passive: true,
-					capture: true
-				});
-			}
-		}
-		function interceptControlUp(event) {
-			if (event.key === "Control") {
-				this._controlActive = false;
-				this.domElement.getRootNode().removeEventListener("keyup", this._interceptControlUp, {
-					passive: true,
-					capture: true
-				});
-			}
-		}
-		//#endregion
 		//#region ../../web/card-base/src/glb-stage.tsx
 		/**
 		* glb-stage.tsx — THE MESH PREVIEW (the preview seam's mesh-kind
@@ -40233,29 +40513,30 @@ void main() {
 				height: size3.y
 			};
 		}
-		/** The imperative three scene (a pure leaf library — the substrate
-		*  law above). Owns renderer/camera/controls, the rAF loop, the
-		*  resize observation, the click→asset resolution, and full disposal
-		*  on unmount. Clicks resolve to the stage asset id under the cursor
-		*  (group.userData.stageId, walked parentward) or null on empty
-		*  space; a drag-orbit never reads as a click (the 350ms threshold). */
+		/** The imperative three scene — BUILT ON THE SHARED STAGE CORE
+		*  (stage3d.ts): the core owns renderer/camera/controls/rAF/resize/picking;
+		*  this adds the glb-stage's own light rig + floor grid and maps the core's
+		*  pick semantics onto the stage-asset id (group.userData.pick → clickSink,
+		*  empty click → clickSink(null)). A drag-orbit never reads as a click. */
 		function mountScene(canvas, onFail) {
-			let renderer;
-			try {
-				renderer = new WebGLRenderer({
-					canvas,
-					antialias: true
-				});
-			} catch (e) {
-				onFail(e instanceof Error ? e.message : "WebGL unavailable");
-				return null;
-			}
-			renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-			const scene = new Scene();
-			scene.background = null;
-			const camera = new PerspectiveCamera(40, 1, .05, 60);
-			camera.position.set(2.2, 1.6, 2.6);
-			camera.lookAt(0, .8, 0);
+			let clickSink = () => {};
+			const stage = mountStage3D(canvas, {
+				fov: 40,
+				camera: [
+					2.2,
+					1.6,
+					2.6
+				],
+				target: [
+					0,
+					.8,
+					0
+				],
+				onContextFailure: onFail,
+				onEmptyClick: () => clickSink(null)
+			});
+			if (stage === null) return null;
+			const scene = stage.scene;
 			scene.add(new HemisphereLight(16777215, 9079434, 1.4));
 			const key = new DirectionalLight(16777215, 2.2);
 			key.position.set(3, 5, 2);
@@ -40268,64 +40549,14 @@ void main() {
 			gridMat.transparent = true;
 			gridMat.opacity = .35;
 			scene.add(grid);
-			const controls = new OrbitControls(camera, canvas);
-			controls.target.set(0, .8, 0);
-			controls.enableDamping = true;
-			const raycaster = new Raycaster();
-			const pointer = new Vector2();
-			let clickSink = () => {};
-			let downAt = 0;
-			const onPointerDown = (e) => {
-				downAt = e.timeStamp;
-			};
-			const onClick = (e) => {
-				if (e.timeStamp - downAt > 350) return;
-				const r = canvas.getBoundingClientRect();
-				pointer.x = (e.clientX - r.left) / r.width * 2 - 1;
-				pointer.y = -((e.clientY - r.top) / r.height) * 2 + 1;
-				raycaster.setFromCamera(pointer, camera);
-				const hits = raycaster.intersectObjects(scene.children, true);
-				for (const hit of hits) {
-					let o = hit.object;
-					while (o !== null && o.userData.stageId === void 0) o = o.parent;
-					if (o !== null) {
-						clickSink(o.userData.stageId);
-						return;
-					}
-				}
-				clickSink(null);
-			};
-			canvas.addEventListener("pointerdown", onPointerDown);
-			canvas.addEventListener("click", onClick);
-			let raf = 0;
-			const render = () => {
-				raf = requestAnimationFrame(render);
-				controls.update();
-				renderer.render(scene, camera);
-			};
-			render();
-			const fit = () => {
-				const w = canvas.clientWidth, hh = canvas.clientHeight;
-				if (w === 0 || hh === 0) return;
-				renderer.setSize(w, hh, false);
-				camera.aspect = w / hh;
-				camera.updateProjectionMatrix();
-			};
-			fit();
-			const ro = new ResizeObserver(fit);
-			ro.observe(canvas);
 			return {
 				scene,
 				setClickSink: (fn) => {
 					clickSink = fn;
 				},
 				dispose: () => {
-					cancelAnimationFrame(raf);
-					ro.disconnect();
-					canvas.removeEventListener("pointerdown", onPointerDown);
-					canvas.removeEventListener("click", onClick);
-					controls.dispose();
-					renderer.dispose();
+					grid.geometry.dispose();
+					stage.dispose();
 				}
 			};
 		}
@@ -40370,6 +40601,7 @@ void main() {
 					autoFitToHeight(g.scene);
 					const group = new Group();
 					group.userData.stageId = a.id;
+					group.userData.pick = { click: () => selectRef.current?.(a.id) };
 					group.add(g.scene);
 					if (a.scale !== void 0) group.scale.multiplyScalar(a.scale);
 					if (a.rotation !== void 0) group.rotation.set(a.rotation[0], a.rotation[1], a.rotation[2]);
