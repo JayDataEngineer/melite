@@ -107,7 +107,7 @@ class FakeEngine extends ComfyUIHostService {
     runDir: string,
     inputNames: Record<string, Record<string, string>>,
     initials: Record<string, EngineJson>,
-    opts: { shouldStop?: () => boolean },
+    opts: { shouldStop?: () => boolean; report?: (updates: Record<string, EngineJson>) => void },
   ) => Promise<FlowResult> = async () => ({ stages: {}, promptId: "p" });
   constructor(ctx: Context) {
     super(ctx as unknown as never, {});
@@ -117,7 +117,7 @@ class FakeEngine extends ComfyUIHostService {
     runDir: string,
     inputNames: Record<string, Record<string, string>>,
     initials: Record<string, EngineJson>,
-    opts: { shouldStop?: () => boolean } = {},
+    opts: { shouldStop?: () => boolean; report?: (updates: Record<string, EngineJson>) => void } = {},
   ): Promise<FlowResult> {
     return this.onFlow(rows, runDir, inputNames, initials, opts);
   }
@@ -358,6 +358,37 @@ describe("pump + engine", () => {
     }
     throw new Error("never claimed " + runId);
   };
+
+  // THE PROGRESS TAP FOLD (2026-09-13, the operator's "forward the
+  // comfyui progress webhooks like before"): the worker hands its
+  // report to executeFlow; the engine's /ws tap folds live frames —
+  // the fold stamps EVERY stage row (the merged submit mints one
+  // prompt), the status door serves stages verbatim, and the
+  // terminal finisher deletes both keys (no stale percent on a
+  // completed face).
+  it("the report fold stamps live progress+activity on stage rows and clears them at terminal", async () => {
+    const s = seat();
+    const engine = engineSeat(s);
+    engine.onFlow = async (_rows, _runDir, _in, _init, opts) => {
+      opts.report?.({
+        progress: { value: 7, max: 20, node: "10" },
+        activity: "sampling 7/20",
+      } as never);
+      await new Promise((r) => setTimeout(r, 120));
+      return { stages: { s: { outputs: {}, artifacts: [] } }, promptId: "p" };
+    };
+    const ans = await s.svc.start(wfBody(), sig());
+    await waitRunning(s, ans.run_id);
+    const mid = await s.svc.status(ans.run_id, sig());
+    const midStage = (mid["stages"] as Array<Record<string, unknown>>)[0]!;
+    assert.deepEqual(midStage["progress"], { value: 7, max: 20 });
+    assert.equal(midStage["activity"], "sampling 7/20");
+    const row = await settleWait(s, ans.run_id);
+    assert.equal(row.status, "completed");
+    const doneStage = row.stages[0] as unknown as Record<string, unknown>;
+    assert.equal(doneStage["progress"], undefined, "no stale percent on the completed face");
+    assert.equal(doneStage["activity"], undefined);
+  });
 
   // THE FILM COMPLETION (2026-09-12): real tiny mp4s written into the
   // run dir by the fake engine — ffmpeg-gated (the host has it; the

@@ -928,12 +928,118 @@ function sleep(ms: number): Promise<void> {
   return new Promise<void>((resolveP) => setTimeout(resolveP, ms));
 }
 
+// ── the progress tap (the _ws_tap port, 2026-09-13 — the operator's
+//    "forward the comfyui progress webhooks like before") ──────────
+// The py native hand-rolled the WebSocket handshake because py had no
+// stdlib client; Node 22 ships one (undici's global WebSocket) — the
+// platform client retires the hand-roll, the CONTRACT stays verbatim:
+// connect /ws?clientId=<ours>, queue every JSON event targeted at our
+// client_id, READ-ONLY (the client's own pong/close hygiene), and a
+// dropped tap NEVER kills the run — /history stays the terminal
+// authority (native.py:28-29, the documented law).
+
+/** One /ws JSON event (type + data), queued by the tap. */
+export interface ComfyWsEvent {
+  readonly type: string;
+  readonly data: Record<string, EngineJson>;
+}
+
+/** The tap handle: drain() snapshots the queue (never awaits — the
+ *  get_nowait fold), close() idempotent. */
+export interface TapHandle {
+  readonly drain: () => ComfyWsEvent[];
+  readonly close: () => void;
+}
+
+/** Open the read-only progress tap for one run's client_id. Never
+ *  throws: a refused/dropped socket logs nothing and simply yields
+ *  no events (progress is additive, never load-bearing). */
+export function openProgressTap(server: string, clientId: string): TapHandle {
+  const queue: ComfyWsEvent[] = [];
+  let ws: WebSocket | null = null;
+  try {
+    const url: string =
+      server.replace(/^http/, "ws") + "/ws?clientId=" + encodeURIComponent(clientId);
+    ws = new WebSocket(url);
+    ws.onmessage = (ev: MessageEvent): void => {
+      if (typeof ev.data !== "string") return; // text only (binary previews skipped, py parity)
+      try {
+        const parsed: unknown = JSON.parse(ev.data);
+        if (
+          typeof parsed === "object" && parsed !== null && !Array.isArray(parsed) &&
+          typeof (parsed as Record<string, unknown>)["type"] === "string"
+        ) {
+          const rec = parsed as Record<string, unknown>;
+          const d: unknown = rec["data"];
+          queue.push({
+            type: rec["type"] as string,
+            data: typeof d === "object" && d !== null && !Array.isArray(d)
+              ? (d as Record<string, EngineJson>)
+              : {},
+          });
+        }
+      } catch {
+        /* non-JSON frame — skipped (py parity) */
+      }
+    };
+  } catch {
+    /* the platform client refused the URL — the tap stays empty */
+  }
+  return {
+    drain: (): ComfyWsEvent[] => queue.splice(0, queue.length),
+    close: (): void => {
+      try { ws?.close(); } catch { /* already gone */ }
+    },
+  };
+}
+
+/** _drain_relevant port: fold queued events into report() calls.
+ *  Frames for ANOTHER run's prompt_id are skipped (queue
+ *  concurrency). Progress rides {progress:{value,max,node},
+ *  activity:"sampling v/m"}; node flips ride {activity:"node n"};
+ *  execution_error is recorded (returned) but NEVER thrown — the
+ *  history verdict owns the failure voice (the documented law). */
+export function drainRelevant(
+  events: readonly ComfyWsEvent[],
+  promptId: string,
+  report: (updates: Record<string, EngineJson>) => void,
+): string | null {
+  let err: string | null = null;
+  for (const ev of events) {
+    const t: string = ev.type;
+    const d: Record<string, EngineJson> = ev.data;
+    const pid: unknown = d["prompt_id"];
+    if (pid !== undefined && pid !== null && String(pid) !== promptId) {
+      continue; // another run's prompt (queue concurrency)
+    }
+    if (t === "progress" && typeof d["value"] === "number") {
+      const mx: number = typeof d["max"] === "number" ? d["max"] : 0;
+      report({
+        progress: {
+          value: d["value"],
+          max: mx,
+          node: String(d["node"] ?? ""),
+        },
+        activity:
+          "sampling " + Math.trunc(d["value"]) + "/" +
+          (mx > 0 ? String(Math.trunc(mx)) : "?"),
+      });
+    } else if (t === "executing" && d["node"] !== undefined && d["node"] !== null) {
+      report({ activity: "node " + String(d["node"]) });
+    } else if (t === "execution_error") {
+      err = "ComfyUI execution_error: " + JSON.stringify(d).slice(0, 400);
+    }
+  }
+  return err;
+}
+
 export interface ExecuteOpts {
   /** Seconds; native default 2400 (never hours of silent hang). */
   readonly timeoutS?: number;
   /** Polled every tick — mirrors stop_event.is_set(). */
   readonly shouldStop?: () => boolean;
-  /** Progress fold — mirrors report() (tap-less: only submit/activity). */
+  /** Progress fold — the tap's frames folded here (progress +
+   *  activity). Absent = no tap opened (the wire stays quiet). */
   readonly report?: (updates: Record<string, EngineJson>) => void;
 }
 
@@ -988,9 +1094,17 @@ async function pollToTerminal(
   deadline: number,
   exceededText: () => string,
   shouldStop: () => boolean,
+  tap: TapHandle | null = null,
+  report: (updates: Record<string, EngineJson>) => void = (): void => {},
 ): Promise<Record<string, EngineJson>> {
   for (;;) {
     await sleep(250); // the py-identical cadence (native 378)
+    if (tap !== null) {
+      // the tap fold (native 379): progress/activity ride report;
+      // execution_error is recorded but the history verdict below
+      // owns the failure voice (a dropped tap never kills the run)
+      drainRelevant(tap.drain(), promptId, report);
+    }
     if (shouldStop()) {
       await interrupt(server, promptId);
       throw new ComfyError("stopped (interrupt delivered)");
@@ -1062,12 +1176,16 @@ async function executeSingleInner(
   const staged = await uploadReferenced(server, wf, { runsRoot: dirname(String(runDir)) });
   const timeoutS: number = Number(params["timeout_s"] ?? 2400) || 2400;
   const deadline: number = Date.now() + timeoutS * 1000;
-  const { promptId } = await submitPrompt(server, staged.graph, false);
+  const { promptId, clientId } = await submitPrompt(server, staged.graph, false);
   active.set(String(runDir), {
     promptId,
-    clientId: "",
+    clientId,
     server,
   });
+  // THE PROGRESS TAP (2026-09-13): opened only when a report fold
+  // exists — no consumer, no socket (progress is additive).
+  const tap: TapHandle | null = opts.report !== undefined
+    ? openProgressTap(server, clientId) : null;
   try {
     const entry: Record<string, EngineJson> = await pollToTerminal(
       server,
@@ -1076,12 +1194,15 @@ async function executeSingleInner(
       (): string =>
         "ComfyUI run exceeded " + formatTimeout0f(timeoutS) + "s (interrupt delivered)",
       opts.shouldStop ?? ((): boolean => false),
+      tap,
+      opts.report ?? ((): void => {}),
     );
     const arts: string[] = await fetchOutputs(server, String(runDir), entry);
     const outputs: Record<string, EngineJson> = { prompt_id: promptId };
     Object.assign(outputs, publishOutputChannels(nodeOutputs, arts));
     return { outputs, artifacts: arts, promptId };
   } finally {
+    tap?.close();
     ACTIVE.delete(String(runDir));
   }
 }
@@ -1427,6 +1548,11 @@ async function executeFlowInner(
   const staged = await uploadReferenced(server, plan.workflow, { runsRoot: dirname(String(runDir)) });
   const { promptId, clientId } = await submitPrompt(server, staged.graph, true);
   active.set(String(runDir), { promptId, clientId, server });
+  // THE PROGRESS TAP (2026-09-13): the merged submit mints ONE
+  // client_id — every stage's row shares the same live fold (the
+  // report consumer stamps each stage; the stages share the run).
+  const tap: TapHandle | null = opts.report !== undefined
+    ? openProgressTap(server, clientId) : null;
   // the merged deadline: the SUM of the stages' own budgets
   // (mergegraph 318-327); per-stage floors apply.
   let budget: number = 0;
@@ -1449,6 +1575,8 @@ async function executeFlowInner(
       (): string =>
         "merged run exceeded " + formatTimeout0f(floor) + "s (interrupt delivered)",
       opts.shouldStop ?? ((): boolean => false),
+      tap,
+      opts.report ?? ((): void => {}),
     );
     const allOutputs = entry["outputs"];
     const allRec: Record<string, EngineJson> =
@@ -1473,6 +1601,7 @@ async function executeFlowInner(
     }
     return { stages: results, promptId };
   } finally {
+    tap?.close();
     active.delete(String(runDir));
   }
 }

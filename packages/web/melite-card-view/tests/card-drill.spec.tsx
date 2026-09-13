@@ -167,7 +167,7 @@ test('Run in the drill patches the domain FIRST, then starts the run', async () 
   await user.clear(steps)
   await user.type(steps, '20')
   const detail = screen.getByText('Steps').closest('div[class*="zoomDetail"]') as HTMLElement
-  await user.click(within(detail).getByRole('button', { name: 'Run' }))
+  await user.click(within(detail).getByRole('button', { name: 'Run stage' }))
   await waitFor(() => {
     const methods = calls.map((c) => c.method)
     expect(methods.indexOf('drafts/patch')).toBeGreaterThanOrEqual(0)
@@ -226,7 +226,7 @@ test('a patch refusal names itself and the run never fires', async () => {
   await user.clear(steps)
   await user.type(steps, '20')
   const detail = screen.getByText('Steps').closest('div[class*="zoomDetail"]') as HTMLElement
-  await user.click(within(detail).getByRole('button', { name: 'Run' }))
+  await user.click(within(detail).getByRole('button', { name: 'Run stage' }))
   await waitFor(() => {
     expect(screen.getByText(/stage not found/)).toBeTruthy()
   })

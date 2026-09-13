@@ -259,6 +259,8 @@ export async function observeRunOutcome(
       signal?.addEventListener('abort', () => { clearTimeout(t); resolve() }, { once: true })
     })
   let lastLive = 'running'
+  let lastPct: number | null = null
+  let lastAct = ''
   while (signal?.aborted !== true) {
     let row: Awaited<ReturnType<typeof fetchRunStatus>>
     try {
@@ -287,10 +289,31 @@ export async function observeRunOutcome(
       // the LIVE flip (queued → running): patch the tile the moment
       // the estate picks the run up — never a stuck 'queued' face
       const live = row.status === 'queued' || row.status === 'pending' ? 'queued' : 'running'
-      if (live !== lastLive) {
+      // THE PROGRESS FORWARD (2026-09-13, the operator's "forward
+      // the comfyui progress webhooks like before"): the tap's live
+      // fold rides the row — patched ONLY when the integer percent
+      // or activity line moves (the bench stream re-renders per
+      // patch; percent granularity keeps the CAS churn honest).
+      const stage = row.stages.find((s) => s.id === stageId)
+        ?? (row.stages.length === 1 ? row.stages[0] : undefined)
+      const p = stage?.progress
+      const pct = p !== undefined && p.max > 0
+        ? Math.floor((100 * p.value) / p.max) : null
+      const act = stage?.activity ?? ''
+      if (live !== lastLive || pct !== lastPct || act !== lastAct) {
+        const patch: { runStatus: string; result?: Record<string, unknown> } = { runStatus: live }
+        if (pct !== null || act !== '') {
+          patch['result'] = {
+            run_id: runId,
+            ...(pct !== null && p !== undefined ? { progress: { value: p.value, max: p.max } } : {}),
+            ...(act !== '' ? { activity: act } : {}),
+          }
+        }
         lastLive = live
+        lastPct = pct
+        lastAct = act
         try {
-          await patchStageOutcome(draftId, stageId, { runStatus: live })
+          await patchStageOutcome(draftId, stageId, patch)
           onTouched?.()
         } catch { /* bookkeeping */ }
       }

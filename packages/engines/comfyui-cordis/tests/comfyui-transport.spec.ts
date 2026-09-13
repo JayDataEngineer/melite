@@ -7,6 +7,7 @@
 import { afterEach, beforeEach, describe, it } from "vitest";
 import assert from "node:assert/strict";
 import { createServer } from "node:http";
+import { createHash } from "node:crypto";
 import type { IncomingMessage, Server, ServerResponse } from "node:http";
 import { mkdtempSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -14,9 +15,9 @@ import { join } from "node:path";
 import { Context } from "@deepseek-ai/cordis";
 import {
   ComfyError, ComfyUIHostService, activeCount, comfyuiHostProvider,
-  endpointConfigPath, executeFlow, executeSingle, fetchOutputs,
+  drainRelevant, endpointConfigPath, executeFlow, executeSingle, fetchOutputs,
   formatTimeout0f, httpCall, interrupt, loadEndpointConfig,
-  mapHistoryEntry, needComfyUI, parseComfyUIHostConfig, planMerge,
+  mapHistoryEntry, needComfyUI, openProgressTap, parseComfyUIHostConfig, planMerge,
   publishOutputChannels, pyDumps400, pyReprStr, pyReprStrList, pyStr,
   resolveEngineBaseUrl, resolveRepoRoot, spliceWorkflow, stopForRunDir,
   unloadModels, uploadReferenced,
@@ -53,7 +54,12 @@ interface StubCfg {
   freeStatus?: number;
   statsStatus?: number;
   delayMs?: number;
-  seen: { queue: number; interrupt: number; uploads: number; frees: number; prompts: string[] };
+  /** the /ws upgrade arm (2026-09-13): text frames pushed to every
+   *  upgrading client ~60ms after the handshake (the tap battery). */
+  wsFrames?: string[];
+  /** count upgrades into seen.upgrades (the no-report test's pin). */
+  trackUpgrades?: boolean;
+  seen: { queue: number; interrupt: number; uploads: number; frees: number; prompts: string[]; upgrades: number };
   calls?: Map<string, number>;
 }
 
@@ -142,19 +148,88 @@ const startStub = async (cfg: StubCfg): Promise<{ url: string; close: () => Prom
       }
     });
   });
+  // the /ws upgrade arm: same server, same port — the tap's frames
+  // ride the same 101 handshake the product client opens
+  const wsSockets: import("node:net").Socket[] = [];
+  srv.on("upgrade", (req: IncomingMessage, socket, head: Buffer) => {
+    if (cfg.trackUpgrades === true) cfg.seen.upgrades += 1;
+    const key = String(req.headers["sec-websocket-key"] ?? "");
+    const accept = createHash("sha1").update(key + WS_GUID).digest("base64");
+    socket.write(
+      "HTTP/1.1 101 Switching Protocols\r\n" +
+      "Upgrade: websocket\r\nConnection: Upgrade\r\n" +
+      "Sec-WebSocket-Accept: " + accept + "\r\n\r\n",
+      "utf8",
+    );
+    if (head.length > 0) socket.write(head);
+    wsSockets.push(socket);
+    const frames = cfg.wsFrames ?? [];
+    setTimeout(() => {
+      for (const f of frames) socket.write(wsTextFrame(f));
+    }, 60);
+  });
   await new Promise<void>((r) => srv.listen(0, "127.0.0.1", r));
   const addr = srv.address();
   const port = typeof addr === "object" && addr !== null ? addr.port : 0;
   return {
     url: "http://127.0.0.1:" + port,
-    close: () => new Promise<void>((r, j) => srv.close((e) => (e ? j(e) : r()))),
+    close: () => {
+      for (const sck of wsSockets) sck.destroy();
+      return new Promise<void>((r, j) => srv.close((e) => (e ? j(e) : r())));
+    },
   };
 };
 
 const stub = (over: Partial<StubCfg> = {}): StubCfg => ({
-  seen: { queue: 0, interrupt: 0, uploads: 0, frees: 0, prompts: [] },
+  seen: { queue: 0, interrupt: 0, uploads: 0, frees: 0, prompts: [], upgrades: 0 },
   ...over,
 });
+
+/** ── the /ws upgrade arm (2026-09-13, the progress tap battery) ──
+ *  A hand-rolled WebSocket SERVER for fixtures only (product code
+ *  rides the platform client): 101 + accept key, then unmasked
+ *  server→client text frames — the tap is read-only, so the fixture
+ *  never needs to read client frames. */
+const WS_GUID = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
+const wsTextFrame = (payload: string): Buffer => {
+  const data = Buffer.from(payload, "utf8");
+  if (data.length < 126) return Buffer.concat([Buffer.from([0x81, data.length]), data]);
+  const head = Buffer.alloc(4);
+  head[0] = 0x81; head[1] = 126; head.writeUInt16BE(data.length, 2);
+  return Buffer.concat([head, data]);
+};
+const startWsStub = async (
+  frames: string[],
+  delayMs = 60,
+): Promise<{ url: string; close: () => Promise<void> }> => {
+  const sockets: import("node:net").Socket[] = [];
+  const srv: Server = createServer();
+  srv.on("upgrade", (req: IncomingMessage, socket, head: Buffer) => {
+    const key = String(req.headers["sec-websocket-key"] ?? "");
+    const accept = createHash("sha1").update(key + WS_GUID).digest("base64");
+    socket.write(
+      "HTTP/1.1 101 Switching Protocols\r\n" +
+      "Upgrade: websocket\r\nConnection: Upgrade\r\n" +
+      "Sec-WebSocket-Accept: " + accept + "\r\n\r\n",
+      "utf8",
+    );
+    if (head.length > 0) socket.write(head);
+    sockets.push(socket);
+    setTimeout(() => {
+      for (const f of frames) socket.write(wsTextFrame(f));
+    }, delayMs);
+  });
+  await new Promise<void>((r) => srv.listen(0, "127.0.0.1", r));
+  const addr = srv.address();
+  const port = typeof addr === "object" && addr !== null ? addr.port : 0;
+  return {
+    url: "http://127.0.0.1:" + port,
+    close: () => {
+      for (const s of sockets) s.destroy();
+      return new Promise<void>((r, j) => srv.close((e) => (e ? j(e) : r())));
+    },
+  };
+};
 
 const tmpRoot = (): string => mkdtempSync(join(tmpdir(), "comfyui-t-"));
 const wfParams = (over: Record<string, EngineJson> = {}): Record<string, EngineJson> => ({
@@ -1173,4 +1248,106 @@ describe("ComfyUIHostService (the plugin face)", () => {
     await assert.rejects(dark.executeSingle(tmpRoot(), wfParams(), {}, {}), /ECONNREFUSED|EADDR/);
     (dark as unknown as { resetForTests: () => void }).resetForTests();
   }, 60000);
+});
+
+// ── the progress tap (the _ws_tap port, 2026-09-13 — the
+//    operator's "forward the comfyui progress webhooks like
+//    before") ───────────────────────────────────────────────────
+
+describe("openProgressTap + drainRelevant (the tap fold)", () => {
+  it("queues JSON events for its client and folds only relevant frames", async () => {
+    const s = await startWsStub([
+      // OUR prompt: progress folds with the sampling activity
+      '{"type":"progress","data":{"value":3,"max":20,"node":"11","prompt_id":"p1"}}',
+      // ANOTHER run's prompt: skipped (queue concurrency)
+      '{"type":"progress","data":{"value":9,"max":99,"prompt_id":"other"}}',
+      // node flip: activity only
+      '{"type":"executing","data":{"node":"20","prompt_id":"p1"}}',
+      // the executor's failure: recorded, NEVER thrown
+      '{"type":"execution_error","data":{"node_id":"20","prompt_id":"p1"}}',
+      // non-dict / non-typed / non-JSON frames: skipped silently
+      '[1,2]',
+      '{"no_type":true}',
+      'not json',
+      // prompt-less frames pass (py parity: None matches)
+      '{"type":"progress","data":{"value":1,"max":2}}',
+    ]);
+    try {
+      const tap = openProgressTap(s.url, "melite-tap-1");
+      await sleep(400); // frames land at ~60ms
+      const events = tap.drain();
+      tap.close();
+      assert.equal(events.filter((e) => e.type === "progress").length, 3, "3 progress frames queued (other-run + junk included)");
+      const seen: Record<string, EngineJson>[] = [];
+      const err = drainRelevant(events, "p1", (u) => { seen.push(u); });
+      // the fold: our progress + node activity + the prompt-less frame
+      assert.deepEqual(seen[0], {
+        progress: { value: 3, max: 20, node: "11" },
+        activity: "sampling 3/20",
+      });
+      assert.deepEqual(seen[1], { activity: "node 20" });
+      assert.deepEqual(seen[2], {
+        progress: { value: 1, max: 2, node: "" },
+        activity: "sampling 1/2",
+      });
+      assert.match(String(err), /execution_error/, "the executor's failure is recorded");
+    } finally { await s.close(); }
+  });
+  it("a refused socket yields no events and never throws (progress is additive)", async () => {
+    const tap = openProgressTap("http://127.0.0.1:1", "melite-dead");
+    await sleep(50);
+    assert.deepEqual(tap.drain(), []);
+    tap.close(); // idempotent
+    tap.close();
+  });
+});
+
+describe("executeFlow forwards the tap's frames to report", () => {
+  const rows = (): MergeRow[] => [
+    {
+      stageId: "a",
+      workflow: { "10": { class_type: "CheckpointLoader", inputs: {} } },
+      outputs: {},
+      outputNodes: {},
+      params: { timeout_s: 30 },
+    },
+  ];
+  it("the live fold rides report while /history stays terminal", async () => {
+    const cfg = stub({
+      history: [pendingEntry(), doneEntry()],
+      // the upgrade arm: frames without prompt_id pass the fold's
+      // filter (py parity — None matches every prompt)
+      wsFrames: [
+        '{"type":"progress","data":{"value":1,"max":4,"node":"10"}}',
+        '{"type":"progress","data":{"value":4,"max":4,"node":"10"}}',
+      ],
+    });
+    const s = await startStub(cfg);
+    try {
+      const updates: Record<string, EngineJson>[] = [];
+      const out = await executeFlow(rows(), tmpRoot(), {}, {}, {
+        report: (u) => { updates.push(u); },
+      }, s.url);
+      assert.ok(out.promptId.length > 0);
+      const progress = updates.filter((u) => u["progress"] !== undefined);
+      assert.equal(progress.length, 2, "both tap frames reached the fold");
+      assert.deepEqual(progress[0], {
+        progress: { value: 1, max: 4, node: "10" },
+        activity: "sampling 1/4",
+      });
+      assert.deepEqual(progress[1], {
+        progress: { value: 4, max: 4, node: "10" },
+        activity: "sampling 4/4",
+      });
+    } finally { await s.close(); }
+  });
+  it("no report consumer = no socket (the tap opens only for a fold)", async () => {
+    const cfg = stub({ history: [doneEntry()], trackUpgrades: true });
+    const s = await startStub(cfg);
+    try {
+      const out = await executeFlow(rows(), tmpRoot(), {}, {}, {}, s.url);
+      assert.ok(out.promptId.length > 0);
+      assert.equal(cfg.seen.upgrades, 0, "no report fold — the tap never connected");
+    } finally { await s.close(); }
+  });
 });

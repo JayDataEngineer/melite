@@ -117,6 +117,25 @@ describe('the status law (readRunStatus)', () => {
     expect(row.draftId).toBe('bench-main')
   })
 
+  it('the tap fold rides through: live progress + activity kept, junk dropped', () => {
+    // THE PROGRESS CARRY (2026-09-13, the operator's "forward the
+    // comfyui progress webhooks like before"): well-formed
+    // {value,max} + activity strings pass verbatim; malformed pairs
+    // and empty strings drop (terminal rows carry none — the
+    // finisher deletes).
+    const row = readRunStatus('r1', {
+      status: 'running',
+      stages: [
+        { id: 's_1', status: 'running', progress: { value: 7, max: 20 }, activity: 'sampling 7/20' },
+        { id: 's_2', status: 'running', progress: { value: 'x', max: 20 }, activity: '' },
+      ],
+    })
+    expect(row.stages[0]?.progress).toEqual({ value: 7, max: 20 })
+    expect(row.stages[0]?.activity).toBe('sampling 7/20')
+    expect(row.stages[1]?.progress).toBeUndefined()
+    expect(row.stages[1]?.activity).toBeUndefined()
+  })
+
   it('a missing draft_id is null; terminal statuses are the seat vocabulary', () => {
     const row = readRunStatus('r1', { status: 'completed', stages: [] })
     expect(row.draftId).toBeNull()

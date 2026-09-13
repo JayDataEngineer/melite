@@ -483,7 +483,17 @@ function SortableTile({ row, entered, onOpen, grouping, selected, onToggleSelect
           // (the operator's law — loading outlives the hover).
           rowRunning(row)
             ? h('span', { className: css.tileSpin, 'data-testid': 'tile-spin', role: 'status', 'aria-label': 'running' },
-                h(IconLoadingOutline16, { size: 14 }))
+                h(IconLoadingOutline16, { size: 14 }),
+                // THE PROGRESS FACE (2026-09-13): the tap's percent
+                // rides beside the spinner — the operator's "forward
+                // the comfyui progress webhooks like before".
+                row.progress !== null && row.progress.max > 0
+                  ? h('span', {
+                      className: css.tilePct, 'data-testid': 'tile-progress',
+                      'aria-label': 'progress percent',
+                    }, Math.floor((100 * row.progress.value) / row.progress.max) + '%')
+                  : null,
+              )
             : null,
           grouping ? null : h('button', {
             className: css.tileIconBtn + ' ' + css.tileTrash,
@@ -565,6 +575,12 @@ interface CardRowLineTabRow {
   /** the failure carry — the run's own refusal text (rendered on the
    *  tile caption and the drill; null when the run never failed). */
   error: string | null
+  /** THE PROGRESS CARRY (2026-09-13): the tap's live fold — percent
+   *  faces on the tile spinner and the drill's run row while the row
+   *  runs; null off-run (terminal rows carry none). */
+  progress: { value: number; max: number } | null
+  /** the activity line ("sampling 7/20", "node 12") — same channel. */
+  activity: string
   thumbUrl: string | null
   /** the artifact's kind — drives the tile face dispatch. */
   face: 'video' | 'image' | 'audio' | 'mesh' | null
@@ -634,6 +650,17 @@ export function benchRow(stage: BenchStageRow, bench?: CardsBenchValue): CardRow
     prompt: promptRaw !== '' ? promptRaw.slice(0, 96) : null,
     /** the failure carry — the run's own refusal text, or null. */
     error: failText !== '' ? failText : null,
+    // THE PROGRESS CARRY (2026-09-13): the observer patches the tap's
+    // live fold onto the row's result while it runs — the tile and
+    // drill read it as percent/activity (never on terminal rows).
+    progress: typeof result === 'object' && result !== null
+      && typeof Reflect.get(result, 'progress') === 'object'
+      && Reflect.get(result, 'progress') !== null
+      ? Reflect.get(result, 'progress') as { value: number; max: number }
+      : null,
+    activity: typeof result === 'object' && result !== null
+      && typeof Reflect.get(result, 'activity') === 'string'
+      ? (Reflect.get(result, 'activity') as string) : '',
     // same-origin absolute or leading-/ artifact urls render; a bare
     // run-relative filename cannot resolve without its run (the run
     // view owns that face) — the kind Pill rides instead.
@@ -664,11 +691,15 @@ export function benchRow(stage: BenchStageRow, bench?: CardsBenchValue): CardRow
  *  dump. Params left, Run right; the patch carries only CHANGED keys
  *  (coerced once, at patch time — the editPatch law); then the run
  *  gesture (patch lands in the domain BEFORE the run reads it). */
-function StageDrill({ stage, bench, running, onRun, onClose, onRemoved, onPatchParams, renderStageView, renderPreview, onSurface, runId, canRemove }: {
+function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRemoved, onPatchParams, renderStageView, renderPreview, onSurface, runId, canRemove }: {
   stage: BenchStageRow
   bench: CardsBenchValue
   running: boolean
   onRun: () => void
+  /** THE STOP DOOR (2026-09-13): the run button flips to a stop
+   *  glyph while running (the tile's own affordance, carried into
+   *  the drill — one gesture language, both faces). */
+  onStop: () => void
   onClose: () => void
   onRemoved: () => void
   onPatchParams: (patch: Record<string, unknown>) => void
@@ -679,10 +710,10 @@ function StageDrill({ stage, bench, running, onRun, onClose, onRemoved, onPatchP
   renderPreview?: (owner: { kind: 'video' | 'image' | 'audio' | 'mesh', artifacts: Array<{ name: string, url: string }>, runStatus: string, stageId: string }, fallback: ReturnType<typeof h>) => ReturnType<typeof h>
   onSurface?: (size: string) => void
   runId?: string | null
-  /** Whether stage removal is offered. The bench view owns its rows
-   *  (remove rides the bench CAS door); a DRAFT view does not — the
-   *  draft's shape belongs to its authoring surface, so the button is
-   *  absent there, not broken. */
+  /** Retired seat (2026-09-13, the operator's "it doesn't need
+   *  remove stage button"): the drill no longer renders the remove
+   *  row — removal rides the tile's trash. The prop stays for the
+   *  call-site seam (nothing reads it; the row is gone). */
   canRemove?: boolean
 }): ReturnType<typeof h> {
   const title = String(stage.title ?? stage.card ?? stage.id)
@@ -702,6 +733,15 @@ function StageDrill({ stage, bench, running, onRun, onClose, onRemoved, onPatchP
   const [error, setError] = useState<string | null>(null)
   const [loaded, setLoaded] = useState(false)
   const reportSurface = onSurface ?? (() => {})
+  // THE LIVE GESTURE STATE: the tab's optimistic start flag OR the
+  // ROW's own run state — a restored running bench (reopened tab,
+  // another surface's run) shows stop + progress without a
+  // client-started binding (the stop door no-ops without one, the
+  // same guard the tile's stop rides).
+  const live: boolean = running || (
+    typeof stage.runStatus === 'string'
+    && (stage.runStatus === 'running' || stage.runStatus === 'queued' || stage.runStatus === 'pending')
+  )
   const [removing, setRemoving] = useState(false)
   // THE SLOT IS THE WIRE (the two-month law, restored 2026-09-12):
   //  no wiring mechanic exists. The square picker lists the OTHER
@@ -1002,19 +1042,45 @@ function StageDrill({ stage, bench, running, onRun, onClose, onRemoved, onPatchP
           ? h('p', { className: css.runError, 'data-testid': 'drill-run-error' },
               String((stage.result as Record<string, unknown>)['error']))
           : null,
+        // THE PROGRESS FACE (2026-09-13): the tap's live fold — the
+        // activity line + percent ride the run row while live.
+        live
+          ? (() => {
+              const rec = stage.result as Record<string, unknown> | null | undefined
+              const p = typeof rec?.['progress'] === 'object' && rec?.['progress'] !== null
+                ? rec['progress'] as { value: number, max: number } : null
+              const act = typeof rec?.['activity'] === 'string' ? rec['activity'] as string : ''
+              const pct = p !== null && p.max > 0 ? Math.floor((100 * p.value) / p.max) : null
+              return h('span', { className: css.drillProgress, 'data-testid': 'drill-progress', role: 'status' },
+                h(IconLoadingOutline16, { size: 14 }),
+                h('span', null, [
+                  act !== '' ? act : 'running',
+                  pct !== null ? ' · ' + String(pct) + '%' : '',
+                ].join('')),
+              )
+            })()
+          : null,
         h('div', { className: css.runRow },
           error !== null ? h('span', { className: css.runError }, error) : null,
-          h(Button, { variant: 'primary', disabled: running, onClick: () => { void run() } },
-            running ? 'running…' : 'Run'),
+          // THE RUN GESTURE (2026-09-13, the operator's "instead of
+          // 'Run' it should have a run button"): the tile's own icon
+          // affordance carried into the drill — play at rest, stop
+          // mid-run; ONE gesture language, both faces.
+          live
+            ? h('button', {
+                className: css.drillRunBtn, type: 'button',
+                'aria-label': 'Stop run', 'data-testid': 'drill-stop',
+                onClick: () => { onStop() },
+              }, h(IconStopFill16, { size: 16 }))
+            : h('button', {
+                className: css.drillRunBtn, type: 'button',
+                'aria-label': 'Run stage', 'data-testid': 'drill-run',
+                onClick: () => { void run() },
+              }, h(IconPlayOutline16, { size: 16 })),
         ),
-        h('div', { className: css.runRow },
-          canRemove === false ? null : h('button', {
-            className: css.back,
-            type: 'button',
-            disabled: running || removing,
-            onClick: () => { void remove() },
-          }, removing ? 'removing…' : 'Remove stage'),
-        ),
+        // (the RETIRED remove row — 2026-09-13, the operator's "it
+        //  doesn't need remove state button": removal rides the
+        //  tile's trash; the drill runs, never dismembers.)
         ),
       }),
     )
@@ -1026,7 +1092,7 @@ function StageDrill({ stage, bench, running, onRun, onClose, onRemoved, onPatchP
     runStatus: typeof stage.runStatus === 'string' ? stage.runStatus : '',
     onPatch: onPatchParams,
     onRun,
-    onStop: () => {},
+    onStop,
     onRemove: () => { void remove() },
     onSurface: reportSurface,
     upstream: candidates.map((c) => ({ id: c.id, title: c.label, url: c.url })),
@@ -1519,6 +1585,7 @@ function BenchView({ bench, onRun, onRunStage, onStopStage, onRemoveStage, stage
       bench: live,
       running,
       onRun: () => { onRunStage(open) },
+      onStop: () => { onStopStage(open) },
       onClose,
       onRemoved: () => { setOpen(null); reload() },
       onPatchParams: (patch: Record<string, unknown>) => { onPatchParams(open, patch) },
@@ -1551,10 +1618,13 @@ function BenchView({ bench, onRun, onRunStage, onStopStage, onRemoveStage, stage
  * surface — the bench CAS door has no business here); the back affordance
  * returns to the shared bench, the tab's home address.
  */
-function DraftView({ value, running, onRun, onBack, onPatchParams, renderStageView, renderPreview, runId }: {
+function DraftView({ value, running, onRun, onStop, onBack, onPatchParams, renderStageView, renderPreview, runId }: {
   value: CardsDraftValue
   running: boolean
   onRun: () => void
+  /** THE STOP DOOR (2026-09-13): the draft drill's run button flips
+   *  to stop mid-run, same gesture as the bench faces. */
+  onStop: () => void
   onBack: () => void
   onPatchParams: (patch: Record<string, unknown>) => void
   renderStageView: (owner: StageViewOwnerProps, fallback: ReturnType<typeof h>) => ReturnType<typeof h>
@@ -1595,6 +1665,7 @@ function DraftView({ value, running, onRun, onBack, onPatchParams, renderStageVi
     bench,
     running,
     onRun,
+    onStop,
     onClose: onBack,
     onRemoved: onBack,
     onPatchParams,
@@ -1938,6 +2009,7 @@ export function CardsTab(props: CardsTabProps): ReturnType<typeof h> {
           value,
           running,
           onRun: onRunDraftStage,
+          onStop: lastRunId !== null && onStop !== undefined ? () => { onStop(lastRunId) } : () => {},
           onBack: openResource !== undefined ? onBack : (() => {}),
           onPatchParams: onPatchParamsDraft,
           renderStageView,

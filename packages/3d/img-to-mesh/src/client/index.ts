@@ -26,7 +26,7 @@ import type {} from '@deepseek-ai/dsh-client-ui-renderer/client'
 // Type-only: the 'cards.stage.view' seam declaration (card-base owns
 // the card-UI seams). Erased — the bundle stays pure.
 import type {} from '@melite/card-base/slots'
-import { Button, DisclosureRow, IconArchiveOutline20, Tag } from '@deepseek-ai/dsh-client-ui-primitives'
+import { DisclosureRow, IconArchiveOutline20, IconLoadingOutline16, IconPlayOutline16, IconStopFill16 } from '@deepseek-ai/dsh-client-ui-primitives'
 import css from './client.module.css'
 import type { StageViewOwnerProps } from '@melite/contracts'
 import { CardForm as SpecForm, specDefaults, useFormSpec, useSquareProvider, type FormSpecDoc, type SpecField, type SpecValues, type SquareHost } from '@melite/card-base'
@@ -58,13 +58,25 @@ function fieldsOf(fields: SpecField[], group: string): SpecField[] {
 
 /** The studio surface component — registered under key 'img-to-mesh'. */
 export function ImgToMeshStudio(props: StageViewOwnerProps): ReturnType<typeof h> {
-  const { row, runStatus, onPatch, onRun, onRemove } = props
+  const { row, runStatus, onPatch, onRun, onStop } = props
   const params = typeof row['params'] === 'object' && row['params'] !== null ? row['params'] as SpecValues : {}
   const [spec, setSpec] = useState<FormSpecDoc | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [values, setValues] = useState<SpecValues>(params)
   const [open, setOpen] = useState<Record<string, boolean>>({})
-  const [running, setRunning] = useState(false)
+  // THE LIVE GESTURE STATE + THE TAP FOLD (2026-09-13): the row's own
+  // run state drives the gesture (play at rest, stop mid-run) and the
+  // observer's progress carry renders beside it — the same faces the
+  // generic drill rides, one gesture language.
+  const live: boolean = runStatus === 'running' || runStatus === 'queued' || runStatus === 'pending'
+  const foldRec = typeof row['result'] === 'object' && row['result'] !== null
+    ? row['result'] as Record<string, unknown> : null
+  const foldP = typeof foldRec?.['progress'] === 'object' && foldRec?.['progress'] !== null
+    ? foldRec['progress'] as { value: number, max: number } : null
+  const activity: string = typeof foldRec?.['activity'] === 'string'
+    ? foldRec['activity'] as string : ''
+  const pct: number | null = foldP !== null && foldP.max > 0
+    ? Math.floor((100 * foldP.value) / foldP.max) : null
   // THE OUTPUT HALF — the ROW is the truth (runs are named by draft
   //  only, so a tab-wide run id binds WRONG studios to other cards'
   //  runs): this row's result carries its own run_id + artifact url
@@ -110,19 +122,19 @@ export function ImgToMeshStudio(props: StageViewOwnerProps): ReturnType<typeof h
   })
   const run = (): void => {
     if (spec === null) return
-    setRunning(true)
     // PATCH FIRST (the generic drill's law, kept): the run reads what
-    // the user SEES.
+    // the user SEES. (The live face keys on the ROW's run state — no
+    // client-side running flag to forget to clear.)
     onPatch({ ...values } as Record<string, unknown>)
     onRun()
-    setRunning(false)
   }
   return h('div', { className: css.zoomDetail },
     wireMenu,
-    h('div', { className: css.studioHead },
-      h(Tag, { tone: 'info' }, 'studio'),
-      runStatus !== '' ? h(Tag, { tone: runStatus === 'done' ? 'success' : runStatus === 'error' ? 'danger' : 'neutral' }, runStatus) : null,
-    ),
+    // (THE BADGE ROW IS RETIRED — 2026-09-13, the operator's "there
+    //  are rando badges that need to go": the 'studio' + runStatus
+    //  Tags carried no currency the zoom bar doesn't already own
+    //  ('Stage <title>' + the run's own faces); the head div goes
+    //  with them.)
     error !== null ? h('p', { className: css.runError }, error) : null,
     spec === null
       ? h('p', { className: css.groupNote }, 'loading the declared knob surface…')
@@ -151,8 +163,31 @@ export function ImgToMeshStudio(props: StageViewOwnerProps): ReturnType<typeof h
         }),
           h('div', { className: css.runRow },
             error !== null ? h('span', { className: css.runError }, error) : null,
-            h(Button, { variant: 'primary', onClick: run }, running ? 'running…' : 'Run'),
-            h(Button, { variant: 'ghost', onClick: onRemove }, 'Remove stage'),
+            // THE RUN GESTURE (2026-09-13, the operator's "instead of
+            // 'Run' it should have a run button"): the shared icon
+            // affordance — play at rest, stop mid-run; the wide text
+            // Button and the Remove row are RETIRED here exactly as
+            // in the generic drill (removal rides the tile's trash).
+            live
+              ? h('span', { className: css.studioProgress, 'data-testid': 'studio-progress', role: 'status' },
+                  h(IconLoadingOutline16, { size: 14 }),
+                  h('span', null, [
+                    activity !== '' ? activity : 'running',
+                    pct !== null ? ' · ' + String(pct) + '%' : '',
+                  ].join('')),
+                )
+              : null,
+            live
+              ? h('button', {
+                  className: css.drillRunBtn, type: 'button',
+                  'aria-label': 'Stop run', 'data-testid': 'studio-stop',
+                  onClick: onStop,
+                }, h(IconStopFill16, { size: 16 }))
+              : h('button', {
+                  className: css.drillRunBtn, type: 'button',
+                  'aria-label': 'Run stage', 'data-testid': 'studio-run',
+                  onClick: run,
+                }, h(IconPlayOutline16, { size: 16 })),
           ),
           ),
           // RIGHT — the mesh stage (the shared viewport, the old Stage law)

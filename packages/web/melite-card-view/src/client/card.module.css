@@ -145,6 +145,37 @@
 .runRow { align-items: center; display: flex; gap: 10px; justify-content: flex-end; width: 100%; }
 .runError { color: var(--dsw-alias-state-error-primary); font-size: 11px; overflow-wrap: anywhere; }
 
+/* THE DRILL RUN GESTURE (2026-09-13): the tile's icon affordance
+ * carried in — a round primary-tinted play/stop glyph, hover-lit;
+ * the row keeps its right alignment (params left, gesture right). */
+.drillRunBtn {
+  align-items: center;
+  border: 0;
+  border-radius: 999px;
+  background: var(--dsw-alias-brand-primary);
+  color: var(--dsw-alias-text-white);
+  cursor: pointer;
+  display: inline-flex;
+  height: 32px;
+  justify-content: center;
+  transition: filter 120ms ease;
+  width: 32px;
+}
+.drillRunBtn:hover { filter: brightness(1.1); }
+.drillRunBtn:active { filter: brightness(0.95); }
+
+/* the drill's live progress line (the tap fold): spinner + activity
+ * text + percent, riding the run row's left while it runs. */
+.drillProgress {
+  align-items: center;
+  color: var(--dsw-alias-label-secondary);
+  display: inline-flex;
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  gap: 6px;
+}
+.drillProgress > svg { animation: tileSpinTurn 1s linear infinite; }
+
 /* legacy note for pre-draft-contract blocks (superseded, inert) */
 .state[data-state='legacy'] { color: var(--dsw-alias-label-secondary); }
 
@@ -441,6 +472,14 @@
 
 .tileSpin > svg {
   animation: tileSpinTurn 1s linear infinite;
+}
+
+/* the percent rider (2026-09-13) — the tap's live fold beside the
+ * spinner; tabular figures keep the strip steady while it counts. */
+.tilePct {
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  margin-left: 4px;
 }
 
 @keyframes tileSpinTurn {

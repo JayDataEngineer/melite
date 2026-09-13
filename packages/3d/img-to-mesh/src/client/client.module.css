@@ -24,7 +24,6 @@
 
 
 /* ── the studio surface (cards.stage.view, img-to-mesh first party) ── */
-.studioHead { align-items: center; display: flex; gap: 8px; line-height: 20px; }
 
 /* .studioBody died with the shell port — StudioShell owns the body. */
 
@@ -52,3 +51,31 @@
 .viewportCanvas { height: 380px; width: 100%; }
 
 .viewport:only-child { min-height: 380px; }
+
+/* THE RUN GESTURE (2026-09-13): the shared drill affordance — round
+ * play/stop glyph; the progress line rides the row's left. */
+.drillRunBtn {
+  align-items: center;
+  border: 0;
+  border-radius: 999px;
+  background: var(--dsw-alias-brand-primary);
+  color: var(--dsw-alias-text-white);
+  cursor: pointer;
+  display: inline-flex;
+  height: 32px;
+  justify-content: center;
+  transition: filter 120ms ease;
+  width: 32px;
+}
+.drillRunBtn:hover { filter: brightness(1.1); }
+.drillRunBtn:active { filter: brightness(0.95); }
+.studioProgress {
+  align-items: center;
+  color: var(--dsw-alias-label-secondary);
+  display: inline-flex;
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  gap: 6px;
+}
+.studioProgress > svg { animation: studioProgressTurn 1s linear infinite; }
+@keyframes studioProgressTurn { to { transform: rotate(360deg); } }

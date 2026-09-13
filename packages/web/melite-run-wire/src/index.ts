@@ -169,6 +169,15 @@ export interface RunStageStatus {
    * rows — the queue stamps stage["gallery"] alongside url; the
    * harvest carry reads it to feed studio adapters real data). */
   gallery?: { name: string }[]
+  /** LIVE progress while the stage runs (2026-09-13, the operator's
+   *  "forward the comfyui progress webhooks like before"): the
+   *  engine's /ws tap folds {value,max} per KSampler step onto the
+   *  run row; the status door serves stages VERBATIM. Absent on
+   *  terminal rows (the finisher deletes it). */
+  progress?: { value: number; max: number }
+  /** The live activity line ("sampling 7/20", "node 12") — the tap's
+   *  activity fold, same channel as progress. */
+  activity?: string
 }
 
 /** The runs/status row, normalized once. */
@@ -215,6 +224,21 @@ export function readRunStatus(runId: string, doc: Record<string, unknown>): RunS
     }
     if (typeof stage.error !== 'string' || stage.error === '') {
       delete stage.error
+    }
+    // progress normalize (the tap fold): keep only well-formed
+    // {value,max} pairs; anything else drops (terminal rows carry
+    // none — the finisher deletes).
+    const p = stage.progress
+    if (
+      p === undefined ||
+      typeof p !== 'object' ||
+      typeof p.value !== 'number' ||
+      typeof p.max !== 'number'
+    ) {
+      delete stage.progress
+    }
+    if (typeof stage.activity !== 'string' || stage.activity === '') {
+      delete stage.activity
     }
   }
   return {

@@ -80,14 +80,19 @@ test('row-click opens a fold and reveals its SSOT fields', async () => {
   expect(await screen.findByText('Atlas size', {}, { timeout: 2000 })).toBeTruthy()
 })
 
-test('Run patches the domain FIRST, then starts (the generic drill law, kept)', async () => {
+test('the icon run gesture patches the domain FIRST, then starts (the drill law, kept)', async () => {
   stubWire()
   const user = userEvent.setup()
   const onPatch = vi.fn()
   const onRun = vi.fn()
   render(createElement(ImgToMeshStudio, { ...OWNER, onPatch, onRun }))
-  await screen.findByText('Run', {}, { timeout: 4000 })
-  await user.click(screen.getByText('Run'))
+  // THE RUN GESTURE (2026-09-13): the icon affordance replaces the
+  // text Button (aria-named play glyph); the Remove row is retired.
+  const run = await screen.findByRole('button', { name: 'Run stage' }, { timeout: 4000 })
+  expect(run.getAttribute('data-testid')).toBe('studio-run')
+  expect(screen.queryByRole('button', { name: 'Run' })).toBeNull()
+  expect(screen.queryByRole('button', { name: 'Remove stage' })).toBeNull()
+  await user.click(run)
   expect(onPatch).toHaveBeenCalledTimes(1)
   expect(onRun).toHaveBeenCalledTimes(1)
   // order: patch BEFORE run
@@ -96,9 +101,27 @@ test('Run patches the domain FIRST, then starts (the generic drill law, kept)', 
   const patch = onPatch.mock.calls[0][0] as Record<string, unknown>
   expect(patch['steps']).toBe(20) // frozen row wins
   expect(patch['resolution']).toBe('1024') // spec default seeds the rest
-  // Remove rides the currency too
-  await user.click(screen.getByText('Remove stage'))
-  expect(OWNER.onRemove).toHaveBeenCalledTimes(1)
+})
+
+test('a live row shows stop + the tap fold (the restored bench face)', async () => {
+  stubWire()
+  const user = userEvent.setup()
+  const onStop = vi.fn()
+  render(createElement(ImgToMeshStudio, {
+    ...OWNER,
+    runStatus: 'running',
+    row: { ...OWNER.row, result: { run_id: 'run-9', progress: { value: 7, max: 20 }, activity: 'sampling 7/20' } },
+    onStop,
+  }))
+  // the stop glyph replaces play while live; the fold renders beside it
+  const stop = await screen.findByRole('button', { name: 'Stop run' }, { timeout: 4000 })
+  expect(stop.getAttribute('data-testid')).toBe('studio-stop')
+  expect(screen.queryByRole('button', { name: 'Run stage' })).toBeNull()
+  const prog = screen.getByTestId('studio-progress')
+  expect(prog.textContent).toContain('sampling 7/20')
+  expect(prog.textContent).toContain('35%')
+  await user.click(stop)
+  expect(onStop).toHaveBeenCalledTimes(1)
 })
 
 test('the registration is keyed under img-to-mesh (the readToolview shape)', () => {
@@ -132,7 +155,7 @@ test("THE SLOT IS THE WIRE: picking an upstream output writes the param", async 
     if (!row.textContent?.includes('Boat gen')) throw new Error('row lost its candidate label')
     fireEvent.click(row)
     // run: PATCH FIRST — the picked url rides the params VERBATIM
-    const runBtn = await screen.findByRole('button', { name: /^Run$/ })
+    const runBtn = await screen.findByRole('button', { name: 'Run stage' })
     fireEvent.click(runBtn)
     await waitFor(() => {
       expect(onPatch).toHaveBeenCalledWith(expect.objectContaining({

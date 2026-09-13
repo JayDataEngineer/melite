@@ -825,6 +825,30 @@ export class RunsRuntimeService extends Service {
       }
       const result = await engine.executeFlow(rows, run.dir, inputNames, {}, {
         shouldStop: (): boolean => run.stopFlag,
+        // THE PROGRESS TAP FOLD (2026-09-13, the operator's "forward
+        // the comfyui progress webhooks like before"): the engine
+        // drains its /ws tap into this callback; the merged submit
+        // mints ONE prompt, so every stage row shares the same live
+        // fold (status serves stages VERBATIM — the poll rides the
+        // existing door, no new wire verb).
+        report: (updates: Record<string, unknown>): void => {
+          const act: unknown = updates["activity"];
+          const prog: unknown = updates["progress"];
+          const pRec: Record<string, unknown> | null =
+            typeof prog === "object" && prog !== null && !Array.isArray(prog)
+              ? (prog as Record<string, unknown>)
+              : null;
+          for (const stage of run.stages) {
+            if (typeof act === "string" && act !== "") stage["activity"] = act;
+            if (
+              pRec !== null &&
+              typeof pRec["value"] === "number" &&
+              typeof pRec["max"] === "number"
+            ) {
+              stage["progress"] = { value: pRec["value"], max: pRec["max"] };
+            }
+          }
+        },
       });
       for (const stage of run.stages) {
         const row = result.stages[stage.id] ?? { outputs: {}, artifacts: [] };
@@ -883,6 +907,8 @@ export class RunsRuntimeService extends Service {
           stage["status"] = stopped ? "stopped" : "failed";
           stage["error"] = text;
         }
+        delete stage["progress"];
+        delete stage["activity"];
       }
       run.status = stopped ? "stopped" : "failed";
       if (!stopped) run.error = text;

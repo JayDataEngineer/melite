@@ -9,8 +9,8 @@ window.__ModuleLoader__.load({
 		let react_jsx_runtime = require("react/jsx-runtime");
 		let react_dom = require("react-dom");
 		//#region \0dsh-css:/home/user/Documents/programs/active/inference.cpp/packages/3d/img-to-mesh/src/client/client.module.css.mjs
-		const css$4 = ".xjw8Uq_runRow{justify-content:flex-end;align-items:center;gap:10px;width:100%;display:flex}.xjw8Uq_zoomDetail{min-height:0;padding:14px;display:block;overflow-y:auto}.xjw8Uq_groupNote{color:var(--dsw-alias-label-secondary,#61666b);margin:0 0 10px;font-size:12px;line-height:20px}.xjw8Uq_studioHead{align-items:center;gap:8px;line-height:20px;display:flex}.xjw8Uq_studioGroup{flex-direction:column;gap:6px;display:flex}.xjw8Uq_studioRail{flex-direction:column;gap:10px;min-width:0;display:flex}.xjw8Uq_runError{color:var(--dsw-alias-label-error,#e05656);overflow-wrap:anywhere;font-size:11px}.xjw8Uq_viewport{background:var(--dsw-alias-bg-canvas,#fff);border:.5px solid var(--dsw-alias-border-l2,#00000024);border-radius:10px;min-height:320px;display:flex;position:relative;overflow:hidden}.xjw8Uq_viewportEmpty{color:var(--dsw-alias-label-tertiary,#00000073);align-self:center;margin:auto;font-size:12px;line-height:20px}.xjw8Uq_viewport canvas{display:block}.xjw8Uq_viewportCanvas{width:100%;height:380px}.xjw8Uq_viewport:only-child{min-height:380px}";
-		const tagId$4 = "@melite/3d-img-to-mesh/client.module.css@5a132b69";
+		const css$4 = ".xjw8Uq_runRow{justify-content:flex-end;align-items:center;gap:10px;width:100%;display:flex}.xjw8Uq_zoomDetail{min-height:0;padding:14px;display:block;overflow-y:auto}.xjw8Uq_groupNote{color:var(--dsw-alias-label-secondary,#61666b);margin:0 0 10px;font-size:12px;line-height:20px}.xjw8Uq_studioGroup{flex-direction:column;gap:6px;display:flex}.xjw8Uq_studioRail{flex-direction:column;gap:10px;min-width:0;display:flex}.xjw8Uq_runError{color:var(--dsw-alias-label-error,#e05656);overflow-wrap:anywhere;font-size:11px}.xjw8Uq_viewport{background:var(--dsw-alias-bg-canvas,#fff);border:.5px solid var(--dsw-alias-border-l2,#00000024);border-radius:10px;min-height:320px;display:flex;position:relative;overflow:hidden}.xjw8Uq_viewportEmpty{color:var(--dsw-alias-label-tertiary,#00000073);align-self:center;margin:auto;font-size:12px;line-height:20px}.xjw8Uq_viewport canvas{display:block}.xjw8Uq_viewportCanvas{width:100%;height:380px}.xjw8Uq_viewport:only-child{min-height:380px}.xjw8Uq_drillRunBtn{background:var(--dsw-alias-brand-primary);color:var(--dsw-alias-text-white);cursor:pointer;border:0;border-radius:999px;justify-content:center;align-items:center;width:32px;height:32px;transition:filter .12s;display:inline-flex}.xjw8Uq_drillRunBtn:hover{filter:brightness(1.1)}.xjw8Uq_drillRunBtn:active{filter:brightness(.95)}.xjw8Uq_studioProgress{color:var(--dsw-alias-label-secondary);font-variant-numeric:tabular-nums;align-items:center;gap:6px;font-size:11px;display:inline-flex}.xjw8Uq_studioProgress>svg{animation:1s linear infinite xjw8Uq_studioProgressTurn}@keyframes xjw8Uq_studioProgressTurn{to{transform:rotate(360deg)}}";
+		const tagId$4 = "@melite/3d-img-to-mesh/client.module.css@2d104594";
 		if (typeof document !== "undefined" && document.querySelector("style[data-plugin-css=" + JSON.stringify(tagId$4) + "]") === null) {
 			const tag = document.createElement("style");
 			tag.dataset.plugin = "@melite/3d-img-to-mesh";
@@ -19,11 +19,13 @@ window.__ModuleLoader__.load({
 			document.head.appendChild(tag);
 		}
 		var client_module_css_default = {
+			"drillRunBtn": "xjw8Uq_drillRunBtn",
 			"groupNote": "xjw8Uq_groupNote",
 			"runError": "xjw8Uq_runError",
 			"runRow": "xjw8Uq_runRow",
 			"studioGroup": "xjw8Uq_studioGroup",
-			"studioHead": "xjw8Uq_studioHead",
+			"studioProgress": "xjw8Uq_studioProgress",
+			"studioProgressTurn": "xjw8Uq_studioProgressTurn",
 			"studioRail": "xjw8Uq_studioRail",
 			"viewport": "xjw8Uq_viewport",
 			"viewportCanvas": "xjw8Uq_viewportCanvas",
@@ -587,12 +589,19 @@ window.__ModuleLoader__.load({
 		*  and leading-/ urls pass verbatim — the one rewrite, never two). */
 		function readRunStatus(runId, doc) {
 			const stages = Array.isArray(doc["stages"]) ? doc["stages"].filter((s) => typeof s === "object" && s !== null && typeof s["id"] === "string") : [];
-			for (const stage of stages) if (typeof stage.url === "string" && stage.url !== "") stage.url = toRunMediaUrl(runId, stage.url);
+			for (const stage of stages) {
+				if (typeof stage.url === "string" && stage.url !== "") stage.url = toRunMediaUrl(runId, stage.url);
+				if (typeof stage.error !== "string" || stage.error === "") delete stage.error;
+				const p = stage.progress;
+				if (p === void 0 || typeof p !== "object" || typeof p.value !== "number" || typeof p.max !== "number") delete stage.progress;
+				if (typeof stage.activity !== "string" || stage.activity === "") delete stage.activity;
+			}
 			return {
 				runId,
 				status: typeof doc["status"] === "string" ? doc["status"] : "unknown",
 				draftId: typeof doc["draft_id"] === "string" && doc["draft_id"] !== "" ? doc["draft_id"] : null,
-				stages
+				stages,
+				...typeof doc["error"] === "string" && doc["error"] !== "" ? { error: doc["error"] } : {}
 			};
 		}
 		/** One runs/status read. */
@@ -41120,13 +41129,17 @@ void main() {
 		}
 		/** The studio surface component — registered under key 'img-to-mesh'. */
 		function ImgToMeshStudio(props) {
-			const { row, runStatus, onPatch, onRun, onRemove } = props;
+			const { row, runStatus, onPatch, onRun, onStop } = props;
 			const params = typeof row["params"] === "object" && row["params"] !== null ? row["params"] : {};
 			const [spec, setSpec] = (0, react.useState)(null);
 			const [error, setError] = (0, react.useState)(null);
 			const [values, setValues] = (0, react.useState)(params);
 			const [open, setOpen] = (0, react.useState)({});
-			const [running, setRunning] = (0, react.useState)(false);
+			const live = runStatus === "running" || runStatus === "queued" || runStatus === "pending";
+			const foldRec = typeof row["result"] === "object" && row["result"] !== null ? row["result"] : null;
+			const foldP = typeof foldRec?.["progress"] === "object" && foldRec?.["progress"] !== null ? foldRec["progress"] : null;
+			const activity = typeof foldRec?.["activity"] === "string" ? foldRec["activity"] : "";
+			const pct = foldP !== null && foldP.max > 0 ? Math.floor(100 * foldP.value / foldP.max) : null;
 			const rowResult = typeof row["result"] === "object" && row["result"] !== null ? row["result"] : null;
 			const ownRunId = typeof rowResult?.run_id === "string" && rowResult.run_id !== "" ? rowResult.run_id : null;
 			const ownUrl = typeof rowResult?.url === "string" && rowResult.url !== "" ? rowResult.url : null;
@@ -41171,12 +41184,10 @@ void main() {
 			})) });
 			const run = () => {
 				if (spec === null) return;
-				setRunning(true);
 				onPatch({ ...values });
 				onRun();
-				setRunning(false);
 			};
-			return (0, react.createElement)("div", { className: client_module_css_default.zoomDetail }, wireMenu, (0, react.createElement)("div", { className: client_module_css_default.studioHead }, (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Tag, { tone: "info" }, "studio"), runStatus !== "" ? (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Tag, { tone: runStatus === "done" ? "success" : runStatus === "error" ? "danger" : "neutral" }, runStatus) : null), error !== null ? (0, react.createElement)("p", { className: client_module_css_default.runError }, error) : null, spec === null ? (0, react.createElement)("p", { className: client_module_css_default.groupNote }, "loading the declared knob surface…") : (0, react.createElement)(StudioShell, {
+			return (0, react.createElement)("div", { className: client_module_css_default.zoomDetail }, wireMenu, error !== null ? (0, react.createElement)("p", { className: client_module_css_default.runError }, error) : null, spec === null ? (0, react.createElement)("p", { className: client_module_css_default.groupNote }, "loading the declared knob surface…") : (0, react.createElement)(StudioShell, {
 				params: (0, react.createElement)("div", { className: client_module_css_default.studioRail }, STUDIO_EXPOSED.map((g) => (0, react.createElement)("section", {
 					key: g,
 					className: client_module_css_default.studioGroup
@@ -41208,13 +41219,23 @@ void main() {
 						onEdit,
 						square: squareFor
 					}));
-				}), (0, react.createElement)("div", { className: client_module_css_default.runRow }, error !== null ? (0, react.createElement)("span", { className: client_module_css_default.runError }, error) : null, (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Button, {
-					variant: "primary",
+				}), (0, react.createElement)("div", { className: client_module_css_default.runRow }, error !== null ? (0, react.createElement)("span", { className: client_module_css_default.runError }, error) : null, live ? (0, react.createElement)("span", {
+					className: client_module_css_default.studioProgress,
+					"data-testid": "studio-progress",
+					role: "status"
+				}, (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.IconLoadingOutline16, { size: 14 }), (0, react.createElement)("span", null, [activity !== "" ? activity : "running", pct !== null ? " · " + String(pct) + "%" : ""].join(""))) : null, live ? (0, react.createElement)("button", {
+					className: client_module_css_default.drillRunBtn,
+					type: "button",
+					"aria-label": "Stop run",
+					"data-testid": "studio-stop",
+					onClick: onStop
+				}, (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.IconStopFill16, { size: 16 })) : (0, react.createElement)("button", {
+					className: client_module_css_default.drillRunBtn,
+					type: "button",
+					"aria-label": "Run stage",
+					"data-testid": "studio-run",
 					onClick: run
-				}, running ? "running…" : "Run"), (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Button, {
-					variant: "ghost",
-					onClick: onRemove
-				}, "Remove stage"))),
+				}, (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.IconPlayOutline16, { size: 16 })))),
 				preview: (0, react.createElement)(GlbStagePreview, {
 					assets: meshUrl === null ? [] : [{
 						id: "mesh",

@@ -57,6 +57,9 @@ export interface ZoomDetailProps {
   bench: CardsBenchValue
   running: boolean
   onRun: () => void
+  /** THE STOP DOOR (2026-09-13): the run gesture flips to stop
+   *  mid-run (the tile's affordance, carried into the drill). */
+  onStop: () => void
   onClose: () => void
   onRemoved: () => void
   /** params patch verb (the surface slot's onPatch currency). */
@@ -145,7 +148,7 @@ function ZoomMount(props: ZoomDetailProps & { detail: (p: ZoomDetailProps) => Re
           // unaffected: their zoomDetail scrolls inside.
           h('div', { className: css.zoomBody },
             ready
-              ? h(props.detail, { stage, bench: rest.bench, running: rest.running, onRun: rest.onRun, onClose, onRemoved: rest.onRemoved, onPatchParams: rest.onPatchParams, renderStageView: rest.renderStageView, renderPreview: rest.renderPreview, onSurface, runId: rest.runId })
+              ? h(props.detail, { stage, bench: rest.bench, running: rest.running, onRun: rest.onRun, onStop: rest.onStop, onClose, onRemoved: rest.onRemoved, onPatchParams: rest.onPatchParams, renderStageView: rest.renderStageView, renderPreview: rest.renderPreview, onSurface, runId: rest.runId })
               : h(ZoomSkeleton),
           ),
         ),

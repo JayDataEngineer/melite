@@ -202,3 +202,70 @@ describe('observeRunOutcome — the failure carry', () => {
     expect((terminal?.['patch'] as { result: Record<string, unknown> }).result).not.toHaveProperty('error')
   })
 })
+
+describe('observeRunOutcome — the progress carry', () => {
+  const patches: Array<Record<string, unknown>> = []
+  const stubProgressWire = (docs: Array<Record<string, unknown>>): void => {
+    let i = 0
+    vi.stubGlobal('fetch', async (url: unknown, init?: RequestInit): Promise<Response> => {
+      const path = String(url)
+      const rpcId = (JSON.parse(String(init?.body)) as { rpcId: string }).rpcId
+      if (path.includes('/api/runs/status')) {
+        const doc = docs[Math.min(i, docs.length - 1)]
+        i += 1
+        return new Response(JSON.stringify({ type: 'server-response', rpcId, result: { ok: true, value: doc } }), { status: 200, headers: { 'content-type': 'application/json' } })
+      }
+      if (path.includes('/api/drafts/patch')) {
+        patches.push((JSON.parse(String(init?.body)) as { payload: { args: Record<string, unknown> } }).payload.args)
+        return new Response(JSON.stringify({ type: 'server-response', rpcId, result: { ok: true, value: { delivered: true } } }), { status: 200, headers: { 'content-type': 'application/json' } })
+      }
+      return new Response(JSON.stringify({ type: 'server-response', rpcId, result: { ok: true, value: {} } }), { status: 200, headers: { 'content-type': 'application/json' } })
+    })
+  }
+
+  test('a moved percent patches the row; a still percent never re-patches (the CAS churn law)', async () => {
+    vi.useFakeTimers()
+    stubProgressWire([
+      // first poll: 7/20 = 35%
+      { run_id: 'run-1', status: 'running', draft_id: 'bench-main',
+        stages: [{ id: 's_0', status: 'running', progress: { value: 7, max: 20 }, activity: 'sampling 7/20' }] },
+      // second poll: SAME percent (8/20 still floors to 40? no — 8/20=40) —
+      // use the same floor: value 7 again (a node flip moved nothing)
+      { run_id: 'run-1', status: 'running', draft_id: 'bench-main',
+        stages: [{ id: 's_0', status: 'running', progress: { value: 7, max: 20 }, activity: 'sampling 7/20' }] },
+      // third poll: 10/20 = 50%
+      { run_id: 'run-1', status: 'running', draft_id: 'bench-main',
+        stages: [{ id: 's_0', status: 'running', progress: { value: 10, max: 20 }, activity: 'sampling 10/20' }] },
+      // terminal
+      { run_id: 'run-1', status: 'completed', draft_id: 'bench-main',
+        stages: [{ id: 's_0', status: 'done', url: 'out/flat.png' }] },
+    ])
+    const verdict = observeRunOutcome('bench-main', 's_0', 'run-1')
+    // the loop's 1500ms sleeps: advance the fake clock until the
+    // observer settles (each tick fires one poll)
+    for (let i = 0; i < 8; i++) await vi.advanceTimersByTimeAsync(1600)
+    expect(await verdict).toBe('done')
+    const live = patches.find((p) => (p['patch'] as { runStatus?: string }).runStatus === 'running'
+      && (p['patch'] as { result?: { progress?: unknown } }).result?.progress !== undefined)
+    expect(live?.['patch']).toMatchObject({
+      runStatus: 'running',
+      result: {
+        run_id: 'run-1',
+        progress: { value: 7, max: 20 },
+        activity: 'sampling 7/20',
+      },
+    })
+    // the CHURN LAW: the 35% fold patched ONCE — the still-percent
+    // poll never re-patched (the next live carry is the 50% one)
+    const livePatches = patches.filter((p) => {
+      const r = (p['patch'] as { result?: { progress?: { value?: unknown } } }).result
+      return r?.progress !== undefined
+    })
+    expect(livePatches.length).toBe(2)
+    const last = livePatches.at(-1)
+    expect((last?.['patch'] as { result: { progress: { value: number } } }).result.progress.value).toBe(10)
+    // the terminal patch REPLACES the fold — no stale percent
+    const terminal = patches.at(-1)
+    expect((terminal?.['patch'] as { result: Record<string, unknown> }).result).not.toHaveProperty('progress')
+  })
+})
