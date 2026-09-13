@@ -120,7 +120,7 @@ The main iteration loop is MANY SMALL FAST GENS, never one long gen:
 
   (`...4step_v1.1_768p...` pairs with `sampling_steps: 4`.) A name
   with no file on disk is a TODO like any source — provision once via
-  `POST /v1/models/provision` body `{"model": "h3"}`, then re-plan.
+  `comfy_manage` `provision_model` for `h3`, then re-plan.
 - The FINAL pass drops the shortcuts: `final_hd` preset,
   `sampling_steps: 30`, no `h3_attention`, no `loras`. Same calls
   otherwise — windows whose cache key changed simply re-render.

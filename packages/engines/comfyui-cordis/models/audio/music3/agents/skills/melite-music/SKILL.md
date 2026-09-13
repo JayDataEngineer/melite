@@ -15,6 +15,7 @@ Tagged sections: [Intro] [Verse 1] [Chorus] [Verse 2] [Bridge] [Outro]. Match th
 Presets: draft_short (iteration), song (standard), final_long (delivery). Iterate on draft_short; only final render at song/final_long.
 
 ## Run door
-Start it with `melite_flow` (`card="music", model="music3"` + your
-caption/arrangement params — no curl, the `:33081` door died with
-the gateway); poll `run_status` for the receipt. One style per run; variations = new seeds/captions, not param salad.
+Compose it with `melite_construct` `add_stage` (`card="music",
+model="music3"` + your caption/arrangement params — no curl, the
+`:33081` door died with the gateway); the run starts at the user's
+Run press, the progress rides the card. One style per run; variations = new seeds/captions, not param salad.

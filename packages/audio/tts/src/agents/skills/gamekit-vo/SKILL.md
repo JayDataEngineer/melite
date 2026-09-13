@@ -20,12 +20,14 @@ Drive lines THROUGH a cast voice via the voice-studio flow:
 Gateway: in-process estate lanes (DSH host; no port — the python gateway is retired).
 
 Cast voice:
-Run via the estate tools (melite_flow) — same verb, in-process.
+Compose via `melite_construct` `add_stage` onto the shared bench — the run
+starts at the user's Run press.
 
 Raw TTS (no cast):
-Run via the estate tools (melite_flow) — same verb, in-process.
+Compose via `melite_construct` `add_stage` onto the shared bench — the run
+starts at the user's Run press.
 
-Poll `GET /v1/flows/status/<run_id>`.
+The progress rides the card (the user watches it run).
 
 ## Deliver
 WAV/FLAC -> `data/delivery/unity/audio/vo/<character>/`, manifest rows.

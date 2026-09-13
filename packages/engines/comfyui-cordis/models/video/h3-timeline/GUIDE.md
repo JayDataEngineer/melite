@@ -21,25 +21,22 @@ GPU budget at 1344×768: 96f opener ≈ 2–3 min, 56f chain window ≈ 1–1.5 
 ### Shot 1 — a new film (image-anchored opener + beats)
 
 ```json
-POST /v1/flows/start
+melite_construct add_stage — card "h3-timeline", params:
 {
-  "model": "h3-timeline",
   "prompt": "film label",
-  "params": {
-    "fps": 24,
-    "seed": 59144818769896,
-    "width": 1344, "height": 768,
-    "identity": "yellow-eared rabbit mascot, pink dress",
-    "calls": [
-      { "text": "opener beat — settle, then explode into a sprint",
-        "start_frame": 0, "end_frame": 96,
-        "image": "example.png" },
-      { "text": "continue the sprint drive, knees high, dust kicking",
-        "start_frame": 96, "end_frame": 152 },
-      { "text": "more beats — 56f each",
-        "start_frame": 152, "end_frame": 208 }
-    ]
-  }
+  "fps": 24,
+  "seed": 59144818769896,
+  "width": 1344, "height": 768,
+  "identity": "yellow-eared rabbit mascot, pink dress",
+  "calls": [
+    { "text": "opener beat — settle, then explode into a sprint",
+      "start_frame": 0, "end_frame": 96,
+      "image": "example.png" },
+    { "text": "continue the sprint drive, knees high, dust kicking",
+      "start_frame": 96, "end_frame": 152 },
+    { "text": "more beats — 56f each",
+      "start_frame": 152, "end_frame": 208 }
+  ]
 }
 ```
 
@@ -136,8 +133,8 @@ Films are made ONE VERIFIED WINDOW AT A TIME. Look BEFORE more GPU burns:
    and just past it. Same subject? Ship. Morph? The identity line drifted or an
    unsanctioned switch flipped (both impossible by default now).
 2. To extend a GOOD run: `continue_from` that run id (never re-render the head).
-3. One active run at a time (serial GPU). Stop door: `POST /v1/flows/stop/<id>`.
-   NEVER kill processes; gateway restarts are operator-only.
+3. One active run at a time (serial GPU). The user's stop control on the
+   card halts a run. NEVER kill processes; gateway restarts are operator-only.
 
 ## 5. THE MECHANISM (what you're trusting)
 

@@ -1,6 +1,6 @@
 # agents/ — the h3-timeline card's LLM-facing instruction surface.
 
-- `AGENT.md` — the card agent. Compose via `h3_timeline_card` tool call.
+- `AGENT.md` — the card agent. Compose via `melite_construct` `add_stage`.
 - `prompts.yaml` — render-time prompt framing declaration (loaded by graph.py).
 - `skills/timeline-craft/` — general timelines authoring skill.
 - `skills/video-timeline/` — h3-timeline skill (draft→queue→fix loop, seam law, continuation).

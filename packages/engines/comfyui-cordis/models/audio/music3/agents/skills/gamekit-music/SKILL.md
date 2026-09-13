@@ -11,9 +11,10 @@ Genre (2-4 tags + era) / Vocal Details (or "instrumental, no vocals") /
 Arrangement (instrumentation timeline, bpm, key).
 
 ## Run
-Call `melite_flow` with `card="music", model="music3"` + your caption
-and `preset` (no curl — the `:33081` door died with the gateway);
-poll `run_status` for the receipt.
+Compose with `melite_construct` `add_stage`, `card="music",
+model="music3"` + your caption and `preset` (no curl — the `:33081`
+door died with the gateway); the run starts at the user's Run
+press, the progress rides the card.
 Iterate ONLY on `preset: draft_short`; render `final_long` once the caption
 is locked. Variations = same caption, new seeds.
 

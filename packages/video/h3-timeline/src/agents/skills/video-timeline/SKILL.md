@@ -89,23 +89,22 @@ previous run's id.
 
 ## Composing and queuing
 
-The card composes via the `h3_timeline_card` tool — the tool the model
-receives for this non-form card (progressive disclosure: the tool's
-schema IS the card document contract).
+The card composes via `melite_construct` `add_stage` (card
+`h3-timeline`) — the stage's params ARE the card document contract
+(progressive disclosure: the card's schema rides the stage).
 
 The loop (agent law):
 
-1. **COMPOSE**: `h3_timeline_card(intent, calls, seed?, fps?)` —
+1. **COMPOSE**: `melite_construct` `add_stage` with card
+   `h3-timeline` and your `params.calls` (seed?, fps?) — the compile
    validates the document (contiguous frame tiling from 0, seam law,
-   window budgets) and returns the durable draft + runPlan (>4 calls →
-   chained runs with `context`).
-2. **RUN**: submit to the queue start door —
-   `POST /v1/flows/start` with `{yaml: "h3-timeline", ...}`.
+   window budgets; >4 calls → chained runs with `context`). The
+   stage is live in the user's cards tab.
+2. **RUN**: THE USER'S Run press on the card — never yours.
    NEVER by-pass the queue (INFERENCE LAW).
-3. **MONITOR**: `GET /v1/flows/status/<run_id>` every 10s.
-   Status: queued → running → completed | error.
-4. **FIX**: on error, read the exact error from the status response,
-   fix the CARD (not the queue), resubmit. Max 3 retries.
+3. **MONITOR**: the progress on the card (the user watches it run).
+4. **FIX**: on error, read the exact error the card reports,
+   fix the CARD (not the queue), `patch` the stage. Max 3 retries.
 5. **DELIVER**: verify the video bytes (ffprobe duration, md5), then
    `complete_asset_request(run_id, sha16)`.
 

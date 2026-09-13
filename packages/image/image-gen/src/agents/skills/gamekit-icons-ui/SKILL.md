@@ -15,8 +15,9 @@ description: UI icon wave via z-image - four-icon set with identical style suffi
 
 ## Run (queue door — the only inference door)
 Gateway: in-process estate lanes (DSH host; no port — the python gateway is retired).
-Run via the estate tools (melite_flow) — same verb, in-process.
-Poll `GET /v1/flows/status/<run_id>`.
+Run via the estate tools — compose with `melite_construct` `add_stage`
+onto the shared bench; the run starts at the user's Run press.
+The progress rides the card (the user watches it run).
 
 ## Gate
 Vision-check each icon: subject must read instantly at 64px. Regenerate the

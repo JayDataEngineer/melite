@@ -10,8 +10,9 @@ Arrangement (instrumentation timeline, bpm, key).
 
 ## Run (queue door — the only inference door)
 Gateway: in-process estate lanes (DSH host; no port — the python gateway is retired).
-Run via the estate tools (melite_flow) — same verb, in-process.
-Poll `GET /v1/flows/status/<run_id>`. Iterate ONLY on `preset: draft_short`;
+Compose via `melite_construct` `add_stage` onto the shared bench — the run
+starts at the user's Run press.
+Iterate ONLY on `preset: draft_short`;
 render `final_long` once the caption is locked. Variations = same caption, new seeds.
 
 ## Gotcha

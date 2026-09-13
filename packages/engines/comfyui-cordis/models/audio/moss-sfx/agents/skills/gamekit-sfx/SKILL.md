@@ -6,9 +6,10 @@ description: Gameplay SFX wave via moss-sfx - five-event lane (combat, creature,
 Deploy: `./setup.sh extensions` (declared packs: registry via comfy-mcp `install_node`; vendor packs symlinked from `vendor/comfyui_extensions/`). No `sync.sh`, no `data/flows/` — the EXTENSION LAW (extensions DECLARED, never vendored) replaces the C-era `sync.sh` ritual.
 
 ## Run
-Call `melite_flow` with `card="sfx", model="moss-sfx"` + your composed
-params (no curl — the `:33081` door died with the gateway; the tool
-is the run door now). Poll `run_status` for the receipt. Five bricks
+Compose with `melite_construct` `add_stage`, `card="sfx",
+model="moss-sfx"` + your params (no curl — the `:33081` door died
+with the gateway). The run starts at the user's Run press; the
+progress rides the card. Five bricks
 run serially ON PURPOSE
 (concurrent audio model loads contend and fail).
 

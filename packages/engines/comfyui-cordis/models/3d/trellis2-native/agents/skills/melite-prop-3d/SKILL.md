@@ -17,9 +17,11 @@ Copy that YAML, swap prompt + seeds. (Lane YAML lives at the repo-root `flows/`,
 - Views land at `data/runs/<run_id>/render_glb_views_<run_id>_<view>_mesh.png` — NOTE the `_mesh` suffix; gate with the melite-agent-eyes skill.
 
 ## Run door
-Call `melite_flow` with `card="img-to-mesh", model="trellis2-native"`
-+ your prompt/views params (no curl — the `:33081` door died with
-the gateway); poll `run_status`, artifacts listed under the run. GLB goes to Unity delivery (FBX via blender headless or glTFast — the
+Compose with `melite_construct` `add_stage`, `card="img-to-mesh",
+model="trellis2-native"` + your prompt/views params (no curl — the
+`:33081` door died with the gateway); the run starts at the user's
+Run press, the progress rides the card, artifacts listed under the
+run. GLB goes to Unity delivery (FBX via blender headless or glTFast — the
 unity-delivery lane lives at
 `flows/humanoid-flow/agents/skills/gamekit-unity-delivery/`; the
 legacy `docs/asset-flows/delivery-unity.md` path was retired with

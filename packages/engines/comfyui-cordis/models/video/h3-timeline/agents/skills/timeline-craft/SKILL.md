@@ -100,9 +100,10 @@ Each window renders its own audio. Sound must EVOLVE, not restart:
 
 ## Running it
 
-Call `melite_flow` with `card="h3-timeline", model="h3-timeline"` +
-your window plan (no curl — the `:33081` door died with the gateway;
-poll `run_status` for the receipt):
+Compose with `melite_construct` `add_stage`, `card="h3-timeline",
+model="h3-timeline"` + your window plan (no curl — the `:33081`
+door died with the gateway; the run starts at the user's Run
+press, the progress rides the card):
 
 ```
 {
