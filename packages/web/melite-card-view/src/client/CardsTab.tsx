@@ -57,7 +57,7 @@ import type { CatalogCard, FormSpecDoc, ModifierKind, SpecValues } from './spec-
 import { paramFields, patchStageParams } from './draft.ts'
 import css from './card.module.css'
 import type { CardsBenchValue, CardsDraftValue, CardsRunValue, BenchStageRow } from './cards-resource.ts'
-import { CARDS_BENCH_ADDRESS, cardsRunAddress, fetchBench, fetchLatestRunForDraft, freshStageRow, observeRunOutcome, openCardsResource, parseCardsAddress, restoreRunToBench, uploadInputFile } from './cards-resource.ts'
+import { CARDS_BENCH_ADDRESS, cardsRunAddress, fetchBench, fetchLatestRunForDraft, freshStageRow, observeRunOutcome, openCardsResource, parseCardsAddress, reconcileBenchRuns, restoreRunToBench, uploadInputFile } from './cards-resource.ts'
 import { defaultFamilyForCard, startCardRun, stopRun } from '@melite-plugin/melite-run-wire'
 import { addStageWire, groupStagesWire, removeStageWire, reorderStageWire, ungroupStageWire } from './add-stage.ts'
 import { AudioStagePreview, ImageStagePreview, MeshStagePreview, VideoStagePreview } from '@melite/card-base/preview'
@@ -1572,6 +1572,25 @@ export function CardsTab(props: CardsTabProps): ReturnType<typeof h> {
   const [benchTick, setBenchTick] = useState(0)
   useEffect(() => () => { outcomeAbort.current?.abort() }, [])
   const touchBench = useCallback((): void => { setBenchTick((t) => t + 1) }, [])
+  // THE PHANTOM RECONCILE (2026-09-13): when a bench value lands, rows
+  // stamped running/queued are probed ONCE per stage:run — dead runs
+  // (the registry restarted under them) flip to their honest terminal,
+  // live runs arm a tab-side observer so terminal always lands. The
+  // armed set spans refreshes (one probe per run, ever); the controller
+  // lives for the tab's lifetime (a refresh never kills a live probe).
+  const reconcileArmed = useRef<Set<string>>(new Set())
+  const reconcileCtrl = useRef<AbortController | null>(null)
+  if (reconcileCtrl.current === null) reconcileCtrl.current = new AbortController()
+  useEffect(() => () => { reconcileCtrl.current?.abort() }, [])
+  const benchValue = snapshot?.value?.kind === 'bench' ? snapshot.value : null
+  useEffect(() => {
+    if (benchValue === null) return
+    void reconcileBenchRuns(benchValue, {
+      signal: reconcileCtrl.current?.signal,
+      onTouched: touchBench,
+      armed: reconcileArmed.current,
+    })
+  }, [benchValue, touchBench])
 
   const onStarted = useCallback((runId: string, ran?: { draftId: string; stageId: string }): void => {
     setRunning(false)

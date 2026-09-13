@@ -263,6 +263,29 @@ async function listRunRows(signal?: AbortSignal): Promise<Record<string, unknown
   return runs.filter((r): r is Record<string, unknown> => typeof r === 'object' && r !== null)
 }
 
+/** THE GONE-VERDICT (2026-09-13 phantom-running incident): for a run
+ *  the live registry no longer knows (an estate restart wiped the
+ *  in-memory map). The file-era law: a refused id may still answer
+ *  from runs/list (the completed runs' SSOT); absent from both, the
+ *  run is GONE — nothing will ever write its terminal, so the caller
+ *  stamps 'stopped'. Transport errors rethrow (not a verdict — the
+ *  caller retries or leaves the row alone). */
+export async function probeRunGone(
+  runId: string,
+  signal?: AbortSignal,
+): Promise<'live' | 'gone' | string> {
+  try {
+    await fetchRunStatus(runId, signal)
+    return 'live'
+  } catch (e: unknown) {
+    if (!(e instanceof WireRefusedError)) throw e
+    const listed = await fetchListRow(runId, signal).catch((): null => null)
+    if (listed === null) return 'gone'
+    const status = listed['status']
+    return typeof status === 'string' && status !== '' ? status : 'completed'
+  }
+}
+
 /** One runs/list row by run_id (the file-era face — runs/status only
  *  knows live runs; the list is the completed runs' SSOT). */
 export async function fetchListRow(

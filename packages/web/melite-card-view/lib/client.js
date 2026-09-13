@@ -371,6 +371,34 @@ window.__ModuleLoader__.load({
 			const row = await wireCall$2("runs/list", { rawLimit: "500" }, { signal });
 			return (Array.isArray(row["runs"]) ? row["runs"] : []).filter((r) => typeof r === "object" && r !== null);
 		}
+		/** THE GONE-VERDICT (2026-09-13 phantom-running incident): for a run
+		*  the live registry no longer knows (an estate restart wiped the
+		*  in-memory map). The file-era law: a refused id may still answer
+		*  from runs/list (the completed runs' SSOT); absent from both, the
+		*  run is GONE — nothing will ever write its terminal, so the caller
+		*  stamps 'stopped'. Transport errors rethrow (not a verdict — the
+		*  caller retries or leaves the row alone). */
+		async function probeRunGone(runId, signal) {
+			try {
+				await fetchRunStatus(runId, signal);
+				return "live";
+			} catch (e) {
+				if (!(e instanceof WireRefusedError)) throw e;
+				const listed = await fetchListRow(runId, signal).catch(() => null);
+				if (listed === null) return "gone";
+				const status = listed["status"];
+				return typeof status === "string" && status !== "" ? status : "completed";
+			}
+		}
+		/** One runs/list row by run_id (the file-era face — runs/status only
+		*  knows live runs; the list is the completed runs' SSOT). */
+		async function fetchListRow(runId, signal) {
+			for (const r of await listRunRows(signal)) {
+				const rid = r["run_id"] ?? r["id"];
+				if (typeof rid === "string" && rid !== "" && rid === runId) return r;
+			}
+			return null;
+		}
 		/** The draft's newest run (runs/list adoption — the reload-proof
 		*  bridge: the estate is the SSOT, never the client's memory).
 		*  NOTE the list's C-parity ordering: media-bearing runs first, then
@@ -857,7 +885,19 @@ window.__ModuleLoader__.load({
 				let row;
 				try {
 					row = await fetchRunStatus(runId, signal);
-				} catch {
+				} catch (e) {
+					if (e instanceof WireRefusedError) {
+						const verdict = await probeRunGone(runId, signal);
+						const terminal = verdict === "gone" ? "stopped" : verdict === "completed" ? "done" : verdict === "live" || verdict === "running" ? "running" : verdict;
+						try {
+							await patchStageOutcome(draftId, stageId, {
+								runStatus: terminal,
+								result: { run_id: runId }
+							});
+							onTouched?.();
+						} catch {}
+						return terminal === "done" || terminal === "failed" || terminal === "stopped" ? terminal : null;
+					}
 					await sleep(1500);
 					continue;
 				}
@@ -900,6 +940,44 @@ window.__ModuleLoader__.load({
 				return null;
 			}
 			return null;
+		}
+		/** THE PHANTOM RECONCILE (2026-09-13): rows stamped running/queued
+		*  whose run the restarted estate no longer knows flip to their
+		*  honest terminal (the file-era list's answer, else stopped) — the
+		*  observer that would have written it died with the session that
+		*  started the run. Live rows arm a tab-side observer so terminal
+		*  always lands even when the starting session is gone. Idempotent
+		*  per stage:run key (the `armed` set is the caller's, kept across
+		*  bench refreshes). */
+		async function reconcileBenchRuns(bench, hooks = {}) {
+			for (const stage of bench.stages) {
+				if (stage.runStatus !== "running" && stage.runStatus !== "queued") continue;
+				const result = typeof stage.result === "object" && stage.result !== null ? stage.result : null;
+				const runId = result !== null && typeof result["run_id"] === "string" ? result["run_id"] : "";
+				if (runId === "") continue;
+				const key = stage.id + ":" + runId;
+				if (hooks.armed?.has(key) === true) continue;
+				hooks.armed?.add(key);
+				let verdict;
+				try {
+					verdict = await probeRunGone(runId, hooks.signal);
+				} catch {
+					hooks.armed?.delete(key);
+					continue;
+				}
+				if (verdict === "live") {
+					observeRunOutcome(bench.draftId, stage.id, runId, hooks.signal, hooks.onTouched);
+					continue;
+				}
+				const terminal = verdict === "gone" ? "stopped" : verdict === "completed" ? "done" : verdict;
+				try {
+					await patchStageOutcome(bench.draftId, stage.id, {
+						runStatus: terminal,
+						result: { run_id: runId }
+					});
+					hooks.onTouched?.();
+				} catch {}
+			}
 		}
 		function readRun(runId, doc) {
 			const row = readRunStatus(runId, doc);
@@ -43462,6 +43540,21 @@ void main() {
 			const touchBench = (0, react.useCallback)(() => {
 				setBenchTick((t) => t + 1);
 			}, []);
+			const reconcileArmed = (0, react.useRef)(/* @__PURE__ */ new Set());
+			const reconcileCtrl = (0, react.useRef)(null);
+			if (reconcileCtrl.current === null) reconcileCtrl.current = new AbortController();
+			(0, react.useEffect)(() => () => {
+				reconcileCtrl.current?.abort();
+			}, []);
+			const benchValue = snapshot?.value?.kind === "bench" ? snapshot.value : null;
+			(0, react.useEffect)(() => {
+				if (benchValue === null) return;
+				reconcileBenchRuns(benchValue, {
+					signal: reconcileCtrl.current?.signal,
+					onTouched: touchBench,
+					armed: reconcileArmed.current
+				});
+			}, [benchValue, touchBench]);
 			const onStarted = (0, react.useCallback)((runId, ran) => {
 				setRunning(false);
 				setLastRunId(runId);

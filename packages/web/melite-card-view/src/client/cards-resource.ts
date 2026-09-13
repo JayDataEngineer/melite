@@ -34,12 +34,14 @@ import type { ResourceProtocolMap } from '@deepseek-ai/dsh-client-ui-slots'
 import { RemoteError } from '@deepseek-ai/dsh-typert-protocol'
 import type { RemoteResult } from '@deepseek-ai/dsh-typert-protocol'
 import {
+  WireRefusedError,
   fetchLatestRunForDraft,
   fetchRunStageUrl,
   fetchRunStatus,
   fetchRunTerminal,
   isTerminalRun,
   nextRpcId,
+  probeRunGone,
   readRunStatus,
   toRunMediaUrl,
   wireCall as runWireCall,
@@ -261,7 +263,23 @@ export async function observeRunOutcome(
     let row: Awaited<ReturnType<typeof fetchRunStatus>>
     try {
       row = await fetchRunStatus(runId, signal)
-    } catch {
+    } catch (e: unknown) {
+      if (e instanceof WireRefusedError) {
+        // THE PHANTOM CURE (2026-09-13): the estate ANSWERED — the
+        // run is not in the live map (the registry restarted since
+        // the start). Never poll forever: the file-era list may still
+        // hold a terminal answer; else the run is gone and the row's
+        // honest terminal is 'stopped'.
+        const verdict = await probeRunGone(runId, signal)
+        const terminal = verdict === 'gone' ? 'stopped'
+          : verdict === 'completed' ? 'done'
+          : verdict === 'live' || verdict === 'running' ? 'running' : verdict
+        try {
+          await patchStageOutcome(draftId, stageId, { runStatus: terminal, result: { run_id: runId } })
+          onTouched?.()
+        } catch { /* bookkeeping */ }
+        return terminal === 'done' || terminal === 'failed' || terminal === 'stopped' ? terminal : null
+      }
       await sleep(1500) // transport — the next poll may recover
       continue
     }
@@ -317,6 +335,45 @@ export async function observeRunOutcome(
     return null
   }
   return null
+}
+
+/** THE PHANTOM RECONCILE (2026-09-13): rows stamped running/queued
+ *  whose run the restarted estate no longer knows flip to their
+ *  honest terminal (the file-era list's answer, else stopped) — the
+ *  observer that would have written it died with the session that
+ *  started the run. Live rows arm a tab-side observer so terminal
+ *  always lands even when the starting session is gone. Idempotent
+ *  per stage:run key (the `armed` set is the caller's, kept across
+ *  bench refreshes). */
+export async function reconcileBenchRuns(
+  bench: CardsBenchValue,
+  hooks: { signal?: AbortSignal; onTouched?: () => void; armed?: Set<string> } = {},
+): Promise<void> {
+  for (const stage of bench.stages) {
+    if (stage.runStatus !== 'running' && stage.runStatus !== 'queued') continue
+    const result = typeof stage.result === 'object' && stage.result !== null ? stage.result as Record<string, unknown> : null
+    const runId = result !== null && typeof result['run_id'] === 'string' ? result['run_id'] as string : ''
+    if (runId === '') continue
+    const key = stage.id + ':' + runId
+    if (hooks.armed?.has(key) === true) continue
+    hooks.armed?.add(key)
+    let verdict: 'live' | 'gone' | string
+    try {
+      verdict = await probeRunGone(runId, hooks.signal)
+    } catch {
+      hooks.armed?.delete(key) // transport — a later refresh retries
+      continue
+    }
+    if (verdict === 'live') {
+      void observeRunOutcome(bench.draftId, stage.id, runId, hooks.signal, hooks.onTouched)
+      continue
+    }
+    const terminal = verdict === 'gone' ? 'stopped' : verdict === 'completed' ? 'done' : verdict
+    try {
+      await patchStageOutcome(bench.draftId, stage.id, { runStatus: terminal, result: { run_id: runId } })
+      hooks.onTouched?.()
+    } catch { /* bookkeeping — the row heals on a later refresh */ }
+  }
 }
 
 export function readRun(runId: string, doc: Record<string, unknown>): CardsRunValue {
