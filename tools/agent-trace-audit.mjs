@@ -30,7 +30,7 @@
 // audit must never contend with the operator's lane.)
 
 import { execSync, spawnSync } from 'node:child_process'
-import { existsSync, mkdirSync, copyFileSync, chmodSync, readdirSync } from 'node:fs'
+import { existsSync, mkdirSync, copyFileSync, chmodSync, readdirSync, statSync } from 'node:fs'
 import { join, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { tmpdir } from 'node:os'
@@ -45,6 +45,7 @@ const TASK = 'AUDIT RUN — no generation, no runs, no melite_flow. '
   + '1) Call melite_discover with lookup=all. '
   + '2) From its response pick the card whose id relates to music; call melite_load with name=<that exact id> and inference_type=card. '
   + '3) Call skill_index. 4) Pick any one id from skill_index\'s response and call skill_read with it. '
+  + '4b) Also pick one id from the skills line melite_load printed and read THAT with skill_read too. '
   + '5) Reply with four bullets: (a) how many flows+cards discover reported and THREE card ids it listed, '
   + '(b) the music card\'s params and model ids that load showed, (c) two skill ids the index listed, '
   + '(d) the first sentence of the body skill_read returned. Use ONLY what the tool responses say; never guess an id.'
@@ -83,9 +84,14 @@ function runAgent() {
 // ── 3. trace audit (read-only) ─────────────────────────────────────────
 function newestSession() {
   const root = join(HOME, 'sessions', '--tmp-melite-agent-audit-run--')
-  const dirs = readdirSync(root).filter((d) => d.startsWith('session-')).sort()
+  const dirs = readdirSync(root)
+    .filter((d) => d.startsWith('session-'))
+    .map((d) => ({ d, m: statSync(join(root, d)).mtimeMs }))
+    .sort((a, b) => a.m - b.m)
   if (dirs.length === 0) throw new Error('no session dir under ' + root)
-  return join(root, dirs[dirs.length - 1], 'session.v3.jsonl.zstd')
+  // mtime order, NOT name order — uuid dirs don't sort chronologically
+  // (audited a stale pre-fix session on the first run of this law)
+  return join(root, dirs[dirs.length - 1].d, 'session.v3.jsonl.zstd')
 }
 
 function audit() {
@@ -128,6 +134,12 @@ function audit() {
   const ld = byName.get('melite_load')?.find((x) => !x.isError)
   law(ld !== undefined && ld.text.includes('params:') && /models?: /.test(ld.text) && ld.text.includes('digest:'),
     'melite_load: params + models + digest ride (schema-valid success)')
+  law(ld !== undefined && /skills: \d+ — read one with skill_read: \S/.test(ld.text),
+    'melite_load: the skills line NAMES skill_read (no bare id lists — wrong-door risk)')
+  const loadSkillIds = ld !== undefined ? (ld.text.match(/skill_read: ([^\n]+)/)?.[1] ?? '').split(/[\s,]+/) : []
+  const readIds = (byName.get('skill_read') ?? []).filter((x) => !x.isError).map((x) => JSON.parse(x.args || '{}').id)
+  law(readIds.some((id) => loadSkillIds.includes(id)),
+    'a load-advertised skill id was read through skill_read (the routing loop closes)')
 
   log('\n── tool calls the model made ──')
   for (const [name, rs] of byName) log(`  ${name} ×${rs.length}`)

@@ -157,7 +157,7 @@ describe('melite_load render — the loaded line', () => {
       'loaded card c — open with melite_flow\n'
       + 'models: music-gen (MusicGen)\n'
       + 'params: prompt*, seed (* required)\n'
-      + 'skills: 1 lines — s1\n'
+      + 'skills: 1 — read one with skill_read: s1\n'
       + 'digest: abc123 (quote it to skip a reload)\n'
       + 'agents md:\n'
       + 'craft doc',

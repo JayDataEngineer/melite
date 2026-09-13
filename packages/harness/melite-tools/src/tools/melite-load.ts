@@ -137,7 +137,14 @@ export function meliteLoad(request: EstateRequest): ToolDefinition {
         const skills = Array.isArray(b.skills) ? b.skills : []
         if (skills.length > 0) {
           const names = skills.slice(0, 8).map((s) => str(s?.id) !== '' ? str(s?.id) : str(s?.ref))
-          out.push(`skills: ${skills.length} lines — ${names.join(', ')}${skills.length > 8 ? ' …' : ''}`)
+          // THE ROUTING LAW (2026-09-13, image-flow session): a bare id
+          // list points the model at the WRONG door — the harness's own
+          // core `skill` tool (session catalog) refused
+          // `invalid skill name "card:image-gen:image-craft"` while the
+          // melite plane served the very id 200. Every list-yielding
+          // render names the tool that opens one entry; these ids open
+          // with skill_read, never the core skill tool.
+          out.push(`skills: ${skills.length} — read one with skill_read: ${names.join(', ')}${skills.length > 8 ? ' …' : ''}`)
         }
         const digest = str(b.digest)
         if (digest !== '') out.push('digest: ' + digest + ' (quote it to skip a reload)')

@@ -1535,7 +1535,7 @@ function meliteLoad(request) {
 				const skills = Array.isArray(b.skills) ? b.skills : [];
 				if (skills.length > 0) {
 					const names = skills.slice(0, 8).map((s) => str(s?.id) !== "" ? str(s?.id) : str(s?.ref));
-					out.push(`skills: ${skills.length} lines — ${names.join(", ")}${skills.length > 8 ? " …" : ""}`);
+					out.push(`skills: ${skills.length} — read one with skill_read: ${names.join(", ")}${skills.length > 8 ? " …" : ""}`);
 				}
 				const digest = str(b.digest);
 				if (digest !== "") out.push("digest: " + digest + " (quote it to skip a reload)");
