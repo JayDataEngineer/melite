@@ -286,8 +286,8 @@ window.__ModuleLoader__.load({
 		}
 		//#endregion
 		//#region \0dsh-css:card-base/src/card.module.css.mjs
-		const css = ".FRpSCG_specForm :where(input,textarea,select,button){box-sizing:border-box}.FRpSCG_specForm{flex-direction:column;gap:12px;display:flex}.FRpSCG_specGroup{flex-direction:column;gap:8px;display:flex}.FRpSCG_modelAxes{grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;display:grid}.FRpSCG_specGroupTitle{color:var(--dsw-alias-label-secondary,#61666b);letter-spacing:.04em;text-transform:uppercase;margin:0 0 2px;font-size:11px;font-weight:600}.FRpSCG_specField{flex-direction:column;gap:6px;display:flex}.FRpSCG_specFieldKey{color:var(--dsw-alias-label-secondary,#61666b);font-size:12px}.FRpSCG_specRequired{color:var(--dsw-alias-state-critical,#e5484d)}.FRpSCG_specHint{color:var(--dsw-alias-label-secondary,#61666b);font-size:11px}.FRpSCG_specSelect{background:var(--dsw-alias-interactive-bg-hover,#2631480f);border:.5px solid var(--dsw-alias-border-l2,#0000001a);color:inherit;font:inherit;border-radius:6px;width:100%;padding:5px 8px;font-size:13px}.FRpSCG_specSliderRow{align-items:center;gap:8px;display:flex}.FRpSCG_specSlider{flex:1}.FRpSCG_specSliderValue{color:var(--dsw-alias-label-secondary,#61666b);font-family:var(--dsw-alias-font-mono,ui-monospace, monospace);text-align:right;min-width:4ch;font-size:12px}.FRpSCG_specTextarea{background:var(--dsw-alias-interactive-bg-hover,#2631480f);border:.5px solid var(--dsw-alias-border-l2,#0000001a);color:inherit;font:inherit;resize:vertical;border-radius:6px;width:100%;padding:6px 8px;font-size:13px}.FRpSCG_squareWrap{flex-direction:column;align-items:center;gap:4px;width:84px;display:flex}.FRpSCG_squareOff{opacity:.5;pointer-events:none}.FRpSCG_squareBox{border:.5px solid var(--dsw-alias-border-l2,#00000024);cursor:pointer;height:80px;transition:border-color var(--ds-transition-duration,.12s) var(--ds-ease-in-out,ease);border-radius:8px;justify-content:center;align-items:center;width:80px;display:flex;position:relative;overflow:hidden}.FRpSCG_squareOver{border-color:var(--dsw-alias-border-l3,#00000047);box-shadow:0 0 0 2px var(--dsw-alias-border-l1,#00000014)}.FRpSCG_squareThumb{object-fit:cover;width:100%;height:100%}.FRpSCG_squareGlyph{color:var(--dsw-alias-label-tertiary,#00000073)}.FRpSCG_squareX{background:var(--dsw-alias-bg-module,#fff);border:.5px solid var(--dsw-alias-border-l2,#00000024);cursor:pointer;border-radius:999px;align-items:center;padding:0 4px;font-size:10px;line-height:17px;display:flex;position:absolute;top:4px;right:4px}.FRpSCG_squareLabel{color:var(--dsw-alias-label-primary,#0f1115);text-overflow:ellipsis;white-space:nowrap;width:100%;font-size:11px;line-height:17px;overflow:hidden}.FRpSCG_squareMetric{color:var(--dsw-alias-label-tertiary,#00000073);font-size:10px;line-height:17px}.FRpSCG_squareFileInput{display:none}.FRpSCG_modSection{border-top:1px dashed var(--border,#80808040);flex-direction:column;gap:6px;margin-top:10px;padding-top:8px;display:flex}.FRpSCG_modHead{align-items:baseline;gap:8px;display:flex}.FRpSCG_modTitle{letter-spacing:.06em;text-transform:uppercase;opacity:.7;font-size:10px;font-weight:600}.FRpSCG_modHint{opacity:.45;font-size:9px}.FRpSCG_modRow{flex-wrap:wrap;align-items:stretch;gap:6px;margin:0;padding:0;list-style:none;display:flex}.FRpSCG_modTile{border:1px solid var(--border,#8080804d);background:var(--bg-elevated,#80808014);cursor:grab;touch-action:none;border-radius:8px;flex-direction:column;justify-content:center;gap:2px;min-width:84px;max-width:132px;padding:6px 8px;display:flex}.FRpSCG_modTile:active{cursor:grabbing}.FRpSCG_modTileLabel{text-overflow:ellipsis;white-space:nowrap;font-size:11px;line-height:1.2;overflow:hidden}.FRpSCG_modTileStrength{opacity:.55;font-size:9px}.FRpSCG_modAdd{border:1px dashed var(--border,#80808059);min-width:64px;color:inherit;cursor:pointer;opacity:.6;background:0 0;border-radius:8px;justify-content:center;align-items:center;padding:6px 10px;font-size:11px;display:flex}.FRpSCG_modAdd:hover{opacity:1}.FRpSCG_tileDragging{opacity:.5}.FRpSCG_modLeaf{flex-direction:column;gap:10px;min-width:260px;display:flex}.FRpSCG_modLeafFields{gap:8px;display:grid}.FRpSCG_modLeafActions{gap:8px;display:flex}.FRpSCG_modField{flex-direction:column;gap:4px;font-size:11px;display:flex}.FRpSCG_modSelect{border:1px solid var(--border,#8080804d);background:var(--bg-elevated,#8080800f);color:inherit;border-radius:6px;padding:6px 8px;font-size:12px}.FRpSCG_modLeafError{color:#e06c5f;margin:0;font-size:11px}";
-		const tagId = "@melite/image-ideogram4/card.module.css@1335c13b";
+		const css = ".FRpSCG_specForm :where(input,textarea,select,button){box-sizing:border-box}.FRpSCG_specForm{flex-direction:column;gap:12px;display:flex}.FRpSCG_specGroup{flex-direction:column;gap:8px;display:flex}.FRpSCG_modelAxes{grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;display:grid}.FRpSCG_specGroupTitle{color:var(--dsw-alias-label-secondary,#61666b);letter-spacing:.04em;text-transform:uppercase;margin:0 0 2px;font-size:11px;font-weight:600}.FRpSCG_specField{flex-direction:column;gap:6px;display:flex}.FRpSCG_specFieldKey{color:var(--dsw-alias-label-secondary,#61666b);font-size:12px}.FRpSCG_specRequired{color:var(--dsw-alias-state-critical,#e5484d)}.FRpSCG_specHint{color:var(--dsw-alias-label-secondary,#61666b);font-size:11px}.FRpSCG_specSelect{background:var(--dsw-alias-interactive-bg-hover,#2631480f);border:.5px solid var(--dsw-alias-border-l2,#0000001a);color:inherit;font:inherit;border-radius:6px;width:100%;padding:5px 8px;font-size:13px}.FRpSCG_specSliderRow{align-items:center;gap:8px;display:flex}.FRpSCG_specSlider{flex:1}.FRpSCG_specSliderValue{color:var(--dsw-alias-label-secondary,#61666b);font-family:var(--dsw-alias-font-mono,ui-monospace, monospace);text-align:right;min-width:4ch;font-size:12px}.FRpSCG_specTextarea{background:var(--dsw-alias-interactive-bg-hover,#2631480f);border:.5px solid var(--dsw-alias-border-l2,#0000001a);color:inherit;font:inherit;resize:vertical;border-radius:6px;width:100%;padding:6px 8px;font-size:13px}.FRpSCG_squareWrap{flex-direction:column;align-items:center;gap:4px;width:84px;display:flex}.FRpSCG_squareOff{opacity:.5;pointer-events:none}.FRpSCG_squareBox{border:.5px solid var(--dsw-alias-border-l2,#00000024);cursor:pointer;height:80px;transition:border-color var(--ds-transition-duration,.12s) var(--ds-ease-in-out,ease);border-radius:8px;justify-content:center;align-items:center;width:80px;display:flex;position:relative;overflow:hidden}.FRpSCG_squareOver{border-color:var(--dsw-alias-border-l3,#00000047);box-shadow:0 0 0 2px var(--dsw-alias-border-l1,#00000014)}.FRpSCG_squareThumb{object-fit:cover;width:100%;height:100%}.FRpSCG_squareGlyph{color:var(--dsw-alias-label-tertiary,#00000073)}.FRpSCG_squareX{background:var(--dsw-alias-bg-module,#fff);border:.5px solid var(--dsw-alias-border-l2,#00000024);cursor:pointer;border-radius:999px;align-items:center;padding:0 4px;font-size:10px;line-height:17px;display:flex;position:absolute;top:4px;right:4px}.FRpSCG_squareLabel{color:var(--dsw-alias-label-primary,#0f1115);text-overflow:ellipsis;white-space:nowrap;width:100%;font-size:11px;line-height:17px;overflow:hidden}.FRpSCG_squareMetric{color:var(--dsw-alias-label-tertiary,#00000073);font-size:10px;line-height:17px}.FRpSCG_squareFileInput{display:none}.FRpSCG_modSection{border-top:1px dashed var(--border,#80808040);flex-direction:column;gap:6px;margin-top:10px;padding-top:8px;display:flex}.FRpSCG_modHead{align-items:baseline;gap:8px;display:flex}.FRpSCG_modTitle{letter-spacing:.06em;text-transform:uppercase;opacity:.7;font-size:10px;font-weight:600}.FRpSCG_modHint{opacity:.45;font-size:9px}.FRpSCG_modRow{flex-wrap:wrap;align-items:stretch;gap:6px;margin:0;padding:0;list-style:none;display:flex}.FRpSCG_modTile{border:1px solid var(--border,#8080804d);background:var(--bg-elevated,#80808014);cursor:grab;touch-action:none;border-radius:8px;flex-direction:column;justify-content:center;gap:2px;min-width:84px;max-width:132px;padding:6px 8px;display:flex}.FRpSCG_modTile:active{cursor:grabbing}.FRpSCG_modTileLabel{text-overflow:ellipsis;white-space:nowrap;font-size:11px;line-height:1.2;overflow:hidden}.FRpSCG_modTileStrength{opacity:.55;font-size:9px}.FRpSCG_modAddSquare{border:1px dashed var(--dsw-alias-border-l3,#00000047);cursor:pointer;opacity:.7;height:64px;transition:border-color var(--ds-transition-duration,.12s) var(--ds-ease-in-out,ease), background-color var(--ds-transition-duration,.12s) var(--ds-ease-in-out,ease);background:0 0;border-radius:8px;justify-content:center;align-items:center;width:64px;display:flex}.FRpSCG_modAddSquare:hover{background:var(--dsw-alias-interactive-bg-hover,#0000000d);border-color:var(--dsw-alias-border-l4,#0006);opacity:1}.FRpSCG_tileDragging{opacity:.5}.FRpSCG_modLeaf{flex-direction:column;gap:10px;min-width:260px;display:flex}.FRpSCG_modLeafFields{gap:8px;display:grid}.FRpSCG_modLeafActions{gap:8px;display:flex}.FRpSCG_modField{flex-direction:column;gap:4px;font-size:11px;display:flex}.FRpSCG_modSelect{border:1px solid var(--border,#8080804d);background:var(--bg-elevated,#8080800f);color:inherit;border-radius:6px;padding:6px 8px;font-size:12px}.FRpSCG_modLeafError{color:#e06c5f;margin:0;font-size:11px}.FRpSCG_pickList{flex-direction:column;gap:4px;max-height:60vh;margin:0;padding:0;list-style:none;display:flex;overflow-y:auto}.FRpSCG_pickRow{display:block}.FRpSCG_pickBtn{border:1px solid var(--dsw-alias-border-l2);color:var(--dsw-alias-label-primary);cursor:pointer;text-align:left;transition:border-color var(--ds-transition-duration,.12s) var(--ds-ease-in-out,ease), background-color var(--ds-transition-duration,.12s) var(--ds-ease-in-out,ease);background:0 0;border-radius:6px;align-items:center;gap:10px;width:100%;padding:6px;display:flex}.FRpSCG_pickBtn:hover{background:var(--dsw-alias-interactive-bg-hover);border-color:var(--dsw-alias-border-l4)}.FRpSCG_pickThumb{object-fit:cover;border-radius:4px;flex:none;width:40px;height:40px}.FRpSCG_pickGlyph{background:var(--dsw-alias-interactive-bg-hover);color:var(--dsw-alias-label-secondary);border-radius:4px;flex:none;justify-content:center;align-items:center;width:40px;height:40px;font-size:15px;font-weight:600;display:inline-flex}.FRpSCG_pickLabel{text-overflow:ellipsis;white-space:nowrap;font-size:13px;overflow:hidden}.FRpSCG_pickEmpty{color:var(--dsw-alias-label-tertiary);margin:0;font-size:13px}.FRpSCG_sourceRow{flex-direction:column;display:flex}";
+		const tagId = "@melite/image-ideogram4/card.module.css@90c83eb9";
 		if (typeof document !== "undefined" && document.querySelector("style[data-plugin-css=" + JSON.stringify(tagId) + "]") === null) {
 			const tag = document.createElement("style");
 			tag.dataset.plugin = "@melite/image-ideogram4";
@@ -296,7 +296,7 @@ window.__ModuleLoader__.load({
 			document.head.appendChild(tag);
 		}
 		var card_module_css_default = {
-			"modAdd": "FRpSCG_modAdd",
+			"modAddSquare": "FRpSCG_modAddSquare",
 			"modField": "FRpSCG_modField",
 			"modHead": "FRpSCG_modHead",
 			"modHint": "FRpSCG_modHint",
@@ -312,6 +312,14 @@ window.__ModuleLoader__.load({
 			"modTileStrength": "FRpSCG_modTileStrength",
 			"modTitle": "FRpSCG_modTitle",
 			"modelAxes": "FRpSCG_modelAxes",
+			"pickBtn": "FRpSCG_pickBtn",
+			"pickEmpty": "FRpSCG_pickEmpty",
+			"pickGlyph": "FRpSCG_pickGlyph",
+			"pickLabel": "FRpSCG_pickLabel",
+			"pickList": "FRpSCG_pickList",
+			"pickRow": "FRpSCG_pickRow",
+			"pickThumb": "FRpSCG_pickThumb",
+			"sourceRow": "FRpSCG_sourceRow",
 			"specField": "FRpSCG_specField",
 			"specFieldKey": "FRpSCG_specFieldKey",
 			"specForm": "FRpSCG_specForm",
@@ -346,7 +354,11 @@ window.__ModuleLoader__.load({
 		* DSH substrate: ui-primitives glyphs, module CSS under the
 		* web-styling chrome laws, no lucide/cn/tip.
 		*
-		* THE OLD LAW, KEPT VERBATIM — a square thumbnail with label + badge
+		* THE PLUS LAW (2026-09-13, the operator): the empty square
+		* carries the PLUS — "add a source" — and the click opens the
+		* three-entry source menu (From flow / From media / From file) in
+		* the provider; a bare square without a picker still files.
+		* THE OLD LAW, KEPT — a square thumbnail with label + badge
 		* + the THREE source verbs (operator, 2026-09-12: "we rendered a
 		* square and gave the option to do 1 of 3 things"):
 		*   a) from previous card  → onClick (the host opens the wire picker;
@@ -444,7 +456,7 @@ window.__ModuleLoader__.load({
 				className: card_module_css_default.squareThumb,
 				src: thumb,
 				alt: label
-			}) : (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.IconPaperclipOutline16, { className: card_module_css_default.squareGlyph }), !empty && props.onClear !== void 0 ? (0, react.createElement)("button", {
+			}) : (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.IconPlusOutline16, { className: card_module_css_default.squareGlyph }), !empty && props.onClear !== void 0 ? (0, react.createElement)("button", {
 				className: card_module_css_default.squareX,
 				type: "button",
 				title: "Detach",
@@ -524,6 +536,81 @@ window.__ModuleLoader__.load({
 			};
 		}
 		//#endregion
+		//#region ../../web/melite-run-wire/src/index.ts
+		/** Correlation id for one client-request frame (crypto.randomUUID is
+		*  the browser standard; the hand-rolled arm covers non-secure
+		*  contexts where the standard is absent). */
+		function nextRpcId() {
+			const cryptoApi = globalThis.crypto;
+			if (cryptoApi?.randomUUID !== void 0) return cryptoApi.randomUUID();
+			return "rpc-" + Math.random().toString(36).slice(2) + "-" + Date.now().toString(36);
+		}
+		/** The estate's domain refusal (result.ok !== true): the message
+		*  rides verbatim (the door's own law — the client never
+		*  paraphrases); the class separates DOMAIN verdicts from transport
+		*  failures, which carry the caller's voice prefix instead. */
+		var WireRefusedError = class extends Error {
+			constructor(message) {
+				super(message);
+				this.name = "WireRefusedError";
+			}
+		};
+		/** One client-request round trip: POST /api/<method> with the frame,
+		*  narrow the server-response envelope. Non-ok results throw the
+		*  estate's message; channel surprises throw honestly. */
+		async function wireCall(method, args, opts) {
+			const voice = opts?.voice ?? "wire";
+			const rpcId = nextRpcId();
+			const res = await fetch("/api/" + method, {
+				method: "POST",
+				headers: { "content-type": "application/json" },
+				body: JSON.stringify({
+					type: "client-request",
+					rpcId,
+					method,
+					payload: { args }
+				}),
+				...opts?.signal === void 0 ? {} : { signal: opts.signal }
+			});
+			if (!res.ok) throw new Error(voice + ": HTTP " + String(res.status));
+			const body = await res.json();
+			if (typeof body !== "object" || body === null || Reflect.get(body, "type") !== "server-response" || Reflect.get(body, "rpcId") !== rpcId) throw new Error(voice + ": malformed response frame");
+			const result = Reflect.get(body, "result");
+			if (typeof result !== "object" || result === null) throw new Error(voice + ": malformed result");
+			if (Reflect.get(result, "ok") !== true) {
+				const error = Reflect.get(result, "error");
+				throw new WireRefusedError(typeof error === "object" && error !== null && typeof Reflect.get(error, "message") === "string" ? Reflect.get(error, "message") : voice + ": refused");
+			}
+			const value = Reflect.get(result, "value");
+			if (typeof value !== "object" || value === null || Array.isArray(value)) throw new Error(voice + ": not a JSON object");
+			return value;
+		}
+		/** media/list — the runs-tree library, kind-filtered (image | audio |
+		*  video | model | all). The url is the SAME /melite-media/runs
+		*  grammar the byte route serves; picking one writes it verbatim. */
+		async function fetchMediaLibrary(kind, signal) {
+			const items = (await wireCall("media/list", { kind }, {
+				signal,
+				voice: "media/list"
+			}))["items"];
+			if (!Array.isArray(items)) return [];
+			const out = [];
+			for (const it of items) {
+				if (typeof it !== "object" || it === null) continue;
+				const url = Reflect.get(it, "url");
+				const name = Reflect.get(it, "name");
+				const k = Reflect.get(it, "kind");
+				const runId = Reflect.get(it, "runId");
+				if (typeof url === "string" && typeof name === "string" && typeof k === "string" && typeof runId === "string") out.push({
+					url,
+					name,
+					kind: k,
+					runId
+				});
+			}
+			return out;
+		}
+		//#endregion
 		//#region ../../web/card-base/src/form.tsx
 		/**
 		* form.tsx — @melite/card-base: THE CONSTRUCTOR.
@@ -581,6 +668,12 @@ window.__ModuleLoader__.load({
 				error
 			};
 		}
+		/** The media-kind the picker fetches for a field: image fields name
+		*  image; file fields take the whole library (their accept narrows
+		*  client-side per row). */
+		function mediaKindForField(f) {
+			return f.type === "image" ? "image" : "all";
+		}
 		/** THE ONE square provider (the old SlotGrid law, DSH substrate):
 		*  every slot-shaped field of a stage gets the same verbs — file
 		*  upload (the /v1/uploads door + the data-URL mirror), media drop
@@ -592,8 +685,15 @@ window.__ModuleLoader__.load({
 		function useSquareProvider(onEdit, wire) {
 			const [mirror, setMirror] = (0, react.useState)({});
 			const [pickAt, setPickAt] = (0, react.useState)(null);
+			const [modalAt, setModalAt] = (0, react.useState)(null);
+			const fieldRef = (0, react.useRef)(null);
+			const [mediaRows, setMediaRows] = (0, react.useState)(null);
 			const fileRef = (0, react.useRef)(null);
 			const onFile = (0, react.useCallback)(async (f, file) => {
+				if (wire.onFile !== void 0) {
+					wire.onFile(file);
+					return;
+				}
 				try {
 					const dataUrl = await readAsDataUrl(file);
 					setMirror((m) => ({
@@ -605,7 +705,7 @@ window.__ModuleLoader__.load({
 				} catch (e) {
 					onEdit(f.name, e instanceof Error ? e.message : "upload failed");
 				}
-			}, [onEdit]);
+			}, [onEdit, wire.onFile]);
 			const square = (f) => {
 				if (f.type !== "image" && f.type !== "file") return void 0;
 				return {
@@ -638,67 +738,146 @@ window.__ModuleLoader__.load({
 					}
 				};
 			};
+			const sourceMenu = pickAt === null ? null : (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Menu, {
+				open: true,
+				anchor: null,
+				getAnchorRect: () => pickAt.rect,
+				items: [
+					{
+						id: "__flow__",
+						label: "From flow"
+					},
+					{
+						id: "__media__",
+						label: "From media"
+					},
+					{
+						id: "__file__",
+						label: "From file"
+					},
+					{
+						type: "separator",
+						id: "sep"
+					},
+					{
+						id: "__none__",
+						label: "— clear —",
+						danger: true
+					}
+				],
+				onSelect: (id) => {
+					const f = pickAt.field;
+					setPickAt(null);
+					if (id === "__flow__") {
+						setModalAt({
+							mode: "flow",
+							field: f
+						});
+						return;
+					}
+					if (id === "__media__") {
+						setModalAt({
+							mode: "media",
+							field: f
+						});
+						return;
+					}
+					if (id === "__file__") {
+						fieldRef.current = f;
+						fileRef.current?.click();
+						return;
+					}
+					if (id === "__none__") {
+						setMirror((m) => {
+							const n = { ...m };
+							delete n[f.name];
+							return n;
+						});
+						onEdit(f.name, "");
+						return;
+					}
+				},
+				onClose: () => {
+					setPickAt(null);
+				},
+				portal: true
+			});
+			(0, react.useEffect)(() => {
+				if (modalAt?.mode !== "media") return;
+				const ctrl = new AbortController();
+				setMediaRows(null);
+				fetchMediaLibrary(mediaKindForField(modalAt.field), ctrl.signal).then((items) => {
+					setMediaRows(items.map((it) => ({
+						id: it.url,
+						label: it.name,
+						url: it.url
+					})));
+				}).catch(() => {
+					setMediaRows([]);
+				});
+				return () => {
+					ctrl.abort();
+				};
+			}, [modalAt]);
+			const pickerModal = modalAt === null ? null : (() => {
+				const f = modalAt.field;
+				const candidates = modalAt.mode === "flow" ? wire.candidatesFor !== void 0 ? wire.candidatesFor(f) : wire.candidates : mediaRows ?? [];
+				const req = {
+					mode: modalAt.mode,
+					kind: mediaKindForField(f),
+					field: f,
+					candidates
+				};
+				const pick = (url) => {
+					setModalAt(null);
+					if (url !== "") onEdit(f.name, url);
+				};
+				const fallback = (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Modal, {
+					open: true,
+					onClose: () => {
+						setModalAt(null);
+					},
+					title: modalAt.mode === "flow" ? "From flow" : "From media",
+					description: modalAt.mode === "flow" ? "The other stages’ latest outputs" + (req.kind !== "all" ? " (" + req.kind + ")" : "") : "The runs library" + (req.kind !== "all" ? " (" + req.kind + ")" : ""),
+					closeLabel: "Close picker"
+				}, candidates.length === 0 ? (0, react.createElement)("p", { className: card_module_css_default.pickEmpty }, modalAt.mode === "media" && mediaRows === null ? "loading…" : "nothing to pick yet") : (0, react.createElement)("ul", { className: card_module_css_default.pickList }, candidates.map((c) => (0, react.createElement)("li", {
+					key: c.id,
+					className: card_module_css_default.pickRow
+				}, (0, react.createElement)("button", {
+					type: "button",
+					className: card_module_css_default.pickBtn,
+					"data-testid": "source-pick-row",
+					onClick: () => {
+						pick(c.url);
+					}
+				}, isImageUrl(c.url) ? (0, react.createElement)("img", {
+					className: card_module_css_default.pickThumb,
+					src: c.url,
+					alt: c.label,
+					loading: "lazy"
+				}) : (0, react.createElement)("span", { className: card_module_css_default.pickGlyph }, c.label.slice(0, 1).toUpperCase()), (0, react.createElement)("span", { className: card_module_css_default.pickLabel }, c.label))))));
+				return wire.renderSourcePick !== void 0 ? wire.renderSourcePick(req, fallback) : fallback;
+			})();
+			const fileInput = (0, react.createElement)("input", {
+				ref: fileRef,
+				type: "file",
+				accept: "image/png,image/jpeg,image/webp",
+				"aria-hidden": true,
+				tabIndex: -1,
+				style: { display: "none" },
+				onChange: (e) => {
+					const file = e.target.files?.[0];
+					const f = fieldRef.current;
+					if (f !== null && file !== void 0 && file !== null) {
+						fieldRef.current = null;
+						onFile(f, file);
+					}
+					if (fileRef.current !== null) fileRef.current.value = "";
+				}
+			});
 			return {
 				square,
-				wireMenu: pickAt === null ? null : (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Menu, {
-					open: true,
-					anchor: null,
-					getAnchorRect: () => pickAt.rect,
-					items: [
-						...(wire.candidatesFor !== void 0 ? wire.candidatesFor(pickAt.field) : wire.candidates).map((c) => ({
-							id: c.id,
-							label: c.label
-						})),
-						{
-							type: "separator",
-							id: "sep"
-						},
-						{
-							id: "__file__",
-							label: "Upload a file…"
-						},
-						{
-							id: "__none__",
-							label: "— clear —",
-							danger: true
-						}
-					],
-					onSelect: (id) => {
-						const f = pickAt.field;
-						setPickAt(null);
-						if (id === "__file__") {
-							fileRef.current?.click();
-							return;
-						}
-						if (id === "__none__") {
-							setMirror((m) => {
-								const n = { ...m };
-								delete n[f.name];
-								return n;
-							});
-							onEdit(f.name, "");
-							return;
-						}
-						const c = (wire.candidatesFor !== void 0 ? wire.candidatesFor(f) : wire.candidates).find((x) => x.id === id);
-						if (c !== void 0 && c.url !== "") onEdit(f.name, c.url);
-					},
-					onClose: () => {
-						setPickAt(null);
-					},
-					portal: true
-				}, (0, react.createElement)("input", {
-					ref: fileRef,
-					type: "file",
-					accept: "image/png,image/jpeg,image/webp",
-					"aria-hidden": true,
-					tabIndex: -1,
-					style: { display: "none" },
-					onChange: (e) => {
-						const file = e.target.files?.[0];
-						if (pickAt !== null && file !== void 0 && file !== null) onFile(pickAt.field, file);
-						if (fileRef.current !== null) fileRef.current.value = "";
-					}
-				}))
+				wireMenu: (0, react.createElement)(react.Fragment, null, sourceMenu, pickerModal, fileInput)
 			};
 		}
 		/** THE TRI-STATE ATOM (hour 15, stroke C): inherit / on / off —
@@ -1163,12 +1342,14 @@ window.__ModuleLoader__.load({
 				});
 			}), addable.length > 0 ? (0, react.createElement)("button", {
 				type: "button",
-				className: card_module_css_default.modAdd,
+				className: card_module_css_default.modAddSquare,
 				"data-subcard-add": "mod",
+				"aria-label": "Add modifier",
+				title: "Add a modifier",
 				onClick: (e) => {
 					setPickAt({ rect: e.currentTarget.getBoundingClientRect() });
 				}
-			}, "+ Mod") : null), pickAt !== null ? (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Menu, {
+			}, (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.IconPlusOutline16, { className: card_module_css_default.squareGlyph })) : null), pickAt !== null ? (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Menu, {
 				open: true,
 				anchor: null,
 				getAnchorRect: () => pickAt.rect,
