@@ -161,13 +161,14 @@ export function ImgToMeshStudio(props: StageViewOwnerProps): ReturnType<typeof h
             onToggle: () => { setOpen((prev) => ({ ...prev, [g]: !prev[g] })) },
           }, h(StudioFields, { fields: fs, values, onEdit, square: squareFor }))
         }),
-          h('div', { className: css.runRow },
+          // THE RUN SEAT (hour-25 follow-up, the operator: "the run
+          // button should be at the bottom right of parameters"): the
+          // gesture rides the rail's STICKY bottom-right — pinned
+          // while the groups scroll above it, ghost-styled like the
+          // tile (the first cut was a filled brand circle; wrong
+          // face), and the Remove row stays retired.
+          h('div', { className: css.drillRunRow },
             error !== null ? h('span', { className: css.runError }, error) : null,
-            // THE RUN GESTURE (2026-09-13, the operator's "instead of
-            // 'Run' it should have a run button"): the shared icon
-            // affordance — play at rest, stop mid-run; the wide text
-            // Button and the Remove row are RETIRED here exactly as
-            // in the generic drill (removal rides the tile's trash).
             live
               ? h('span', { className: css.studioProgress, 'data-testid': 'studio-progress', role: 'status' },
                   h(IconLoadingOutline16, { size: 14 }),

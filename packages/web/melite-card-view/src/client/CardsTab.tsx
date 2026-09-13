@@ -993,6 +993,42 @@ function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRemoved, 
           ? h(SpecForm, { spec, fields: spec.fields, values, onEdit, wire, onPatch: onPatchParams })
         : h('pre', { className: css.mono }, JSON.stringify(held, null, 2)),
         ),
+        // THE RUN SEAT (hour-25 follow-up, the operator: "the run
+        // button should be at the bottom right of parameters"): the
+        // gesture rides the params rail's STICKY bottom-right —
+        // pinned while the form scrolls above it, ghost-styled like
+        // the tile (the first cut sat in the outputs column as a
+        // filled brand circle; wrong seat, wrong face).
+        h('div', { className: css.drillRunRow },
+          error !== null ? h('span', { className: css.runError }, error) : null,
+          live
+            ? (() => {
+                const rec = stage.result as Record<string, unknown> | null | undefined
+                const p = typeof rec?.['progress'] === 'object' && rec?.['progress'] !== null
+                  ? rec['progress'] as { value: number, max: number } : null
+                const act = typeof rec?.['activity'] === 'string' ? rec['activity'] as string : ''
+                const pct = p !== null && p.max > 0 ? Math.floor((100 * p.value) / p.max) : null
+                return h('span', { className: css.drillProgress, 'data-testid': 'drill-progress', role: 'status' },
+                  h(IconLoadingOutline16, { size: 14 }),
+                  h('span', null, [
+                    act !== '' ? act : 'running',
+                    pct !== null ? ' · ' + String(pct) + '%' : '',
+                  ].join('')),
+                )
+              })()
+            : null,
+          live
+            ? h('button', {
+                className: css.drillRunBtn, type: 'button',
+                'aria-label': 'Stop run', 'data-testid': 'drill-stop',
+                onClick: () => { onStop() },
+              }, h(IconStopFill16, { size: 16 }))
+            : h('button', {
+                className: css.drillRunBtn, type: 'button',
+                'aria-label': 'Run stage', 'data-testid': 'drill-run',
+                onClick: () => { void run() },
+              }, h(IconPlayOutline16, { size: 16 })),
+        ),
       ),
       preview: h('div', { className: css.outputs },
         h('div', {
@@ -1042,45 +1078,9 @@ function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRemoved, 
           ? h('p', { className: css.runError, 'data-testid': 'drill-run-error' },
               String((stage.result as Record<string, unknown>)['error']))
           : null,
-        // THE PROGRESS FACE (2026-09-13): the tap's live fold — the
-        // activity line + percent ride the run row while live.
-        live
-          ? (() => {
-              const rec = stage.result as Record<string, unknown> | null | undefined
-              const p = typeof rec?.['progress'] === 'object' && rec?.['progress'] !== null
-                ? rec['progress'] as { value: number, max: number } : null
-              const act = typeof rec?.['activity'] === 'string' ? rec['activity'] as string : ''
-              const pct = p !== null && p.max > 0 ? Math.floor((100 * p.value) / p.max) : null
-              return h('span', { className: css.drillProgress, 'data-testid': 'drill-progress', role: 'status' },
-                h(IconLoadingOutline16, { size: 14 }),
-                h('span', null, [
-                  act !== '' ? act : 'running',
-                  pct !== null ? ' · ' + String(pct) + '%' : '',
-                ].join('')),
-              )
-            })()
-          : null,
-        h('div', { className: css.runRow },
-          error !== null ? h('span', { className: css.runError }, error) : null,
-          // THE RUN GESTURE (2026-09-13, the operator's "instead of
-          // 'Run' it should have a run button"): the tile's own icon
-          // affordance carried into the drill — play at rest, stop
-          // mid-run; ONE gesture language, both faces.
-          live
-            ? h('button', {
-                className: css.drillRunBtn, type: 'button',
-                'aria-label': 'Stop run', 'data-testid': 'drill-stop',
-                onClick: () => { onStop() },
-              }, h(IconStopFill16, { size: 16 }))
-            : h('button', {
-                className: css.drillRunBtn, type: 'button',
-                'aria-label': 'Run stage', 'data-testid': 'drill-run',
-                onClick: () => { void run() },
-              }, h(IconPlayOutline16, { size: 16 })),
-        ),
-        // (the RETIRED remove row — 2026-09-13, the operator's "it
-        //  doesn't need remove state button": removal rides the
-        //  tile's trash; the drill runs, never dismembers.)
+        // (the run gesture MOVED to the params rail's sticky bottom
+        //  — hour-25 follow-up; the outputs column keeps only the
+        //  failure face + the preview. The remove row stays retired.)
         ),
       }),
     )

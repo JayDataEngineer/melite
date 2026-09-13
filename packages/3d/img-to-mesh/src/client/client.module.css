@@ -52,23 +52,50 @@
 
 .viewport:only-child { min-height: 380px; }
 
-/* THE RUN GESTURE (2026-09-13): the shared drill affordance — round
- * play/stop glyph; the progress line rides the row's left. */
+/* THE RUN SEAT (hour-25 follow-up, the operator: "the run button
+ * should be at the bottom right of parameters"): the rail's sticky
+ * bottom row + the TILE's ghost affordance (bg-mix + border +
+ * secondary icon, brand on hover) — one gesture language, every
+ * face, no invented fills. */
+.drillRunRow {
+  align-items: center;
+  background: linear-gradient(
+    to top,
+    var(--dsw-alias-bg-base) 30%,
+    color-mix(in srgb, var(--dsw-alias-bg-base) 60%, transparent)
+  );
+  bottom: 0;
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+  margin-top: 4px;
+  padding: 8px 0 2px;
+  position: sticky;
+  z-index: 1;
+}
 .drillRunBtn {
   align-items: center;
-  border: 0;
+  background: color-mix(in srgb, var(--dsw-alias-bg-base) 72%, transparent);
+  border: 1px solid var(--dsw-alias-border-l2);
   border-radius: 999px;
-  background: var(--dsw-alias-brand-primary);
-  color: var(--dsw-alias-text-white);
+  color: var(--dsw-alias-label-secondary);
   cursor: pointer;
   display: inline-flex;
-  height: 32px;
+  height: 28px;
   justify-content: center;
-  transition: filter 120ms ease;
-  width: 32px;
+  padding: 0;
+  transition: color var(--ds-transition-duration, 120ms) var(--ds-ease-in-out, ease),
+    border-color var(--ds-transition-duration, 120ms) var(--ds-ease-in-out, ease);
+  width: 28px;
 }
-.drillRunBtn:hover { filter: brightness(1.1); }
-.drillRunBtn:active { filter: brightness(0.95); }
+.drillRunBtn:hover {
+  border-color: var(--dsw-alias-border-l4);
+  color: var(--dsw-alias-brand-primary);
+}
+.drillRunBtn:focus-visible {
+  border-color: var(--dsw-alias-brand-primary);
+  color: var(--dsw-alias-brand-primary);
+}
 .studioProgress {
   align-items: center;
   color: var(--dsw-alias-label-secondary);

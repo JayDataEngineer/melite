@@ -9,8 +9,8 @@ window.__ModuleLoader__.load({
 		let react_jsx_runtime = require("react/jsx-runtime");
 		let react_dom = require("react-dom");
 		//#region \0dsh-css:/home/user/Documents/programs/active/inference.cpp/packages/3d/img-to-mesh/src/client/client.module.css.mjs
-		const css$4 = ".xjw8Uq_runRow{justify-content:flex-end;align-items:center;gap:10px;width:100%;display:flex}.xjw8Uq_zoomDetail{min-height:0;padding:14px;display:block;overflow-y:auto}.xjw8Uq_groupNote{color:var(--dsw-alias-label-secondary,#61666b);margin:0 0 10px;font-size:12px;line-height:20px}.xjw8Uq_studioGroup{flex-direction:column;gap:6px;display:flex}.xjw8Uq_studioRail{flex-direction:column;gap:10px;min-width:0;display:flex}.xjw8Uq_runError{color:var(--dsw-alias-label-error,#e05656);overflow-wrap:anywhere;font-size:11px}.xjw8Uq_viewport{background:var(--dsw-alias-bg-canvas,#fff);border:.5px solid var(--dsw-alias-border-l2,#00000024);border-radius:10px;min-height:320px;display:flex;position:relative;overflow:hidden}.xjw8Uq_viewportEmpty{color:var(--dsw-alias-label-tertiary,#00000073);align-self:center;margin:auto;font-size:12px;line-height:20px}.xjw8Uq_viewport canvas{display:block}.xjw8Uq_viewportCanvas{width:100%;height:380px}.xjw8Uq_viewport:only-child{min-height:380px}.xjw8Uq_drillRunBtn{background:var(--dsw-alias-brand-primary);color:var(--dsw-alias-text-white);cursor:pointer;border:0;border-radius:999px;justify-content:center;align-items:center;width:32px;height:32px;transition:filter .12s;display:inline-flex}.xjw8Uq_drillRunBtn:hover{filter:brightness(1.1)}.xjw8Uq_drillRunBtn:active{filter:brightness(.95)}.xjw8Uq_studioProgress{color:var(--dsw-alias-label-secondary);font-variant-numeric:tabular-nums;align-items:center;gap:6px;font-size:11px;display:inline-flex}.xjw8Uq_studioProgress>svg{animation:1s linear infinite xjw8Uq_studioProgressTurn}@keyframes xjw8Uq_studioProgressTurn{to{transform:rotate(360deg)}}";
-		const tagId$4 = "@melite/3d-img-to-mesh/client.module.css@2d104594";
+		const css$4 = ".xjw8Uq_runRow{justify-content:flex-end;align-items:center;gap:10px;width:100%;display:flex}.xjw8Uq_zoomDetail{min-height:0;padding:14px;display:block;overflow-y:auto}.xjw8Uq_groupNote{color:var(--dsw-alias-label-secondary,#61666b);margin:0 0 10px;font-size:12px;line-height:20px}.xjw8Uq_studioGroup{flex-direction:column;gap:6px;display:flex}.xjw8Uq_studioRail{flex-direction:column;gap:10px;min-width:0;display:flex}.xjw8Uq_runError{color:var(--dsw-alias-label-error,#e05656);overflow-wrap:anywhere;font-size:11px}.xjw8Uq_viewport{background:var(--dsw-alias-bg-canvas,#fff);border:.5px solid var(--dsw-alias-border-l2,#00000024);border-radius:10px;min-height:320px;display:flex;position:relative;overflow:hidden}.xjw8Uq_viewportEmpty{color:var(--dsw-alias-label-tertiary,#00000073);align-self:center;margin:auto;font-size:12px;line-height:20px}.xjw8Uq_viewport canvas{display:block}.xjw8Uq_viewportCanvas{width:100%;height:380px}.xjw8Uq_viewport:only-child{min-height:380px}.xjw8Uq_drillRunRow{background:linear-gradient(to top, var(--dsw-alias-bg-base) 30%, color-mix(in srgb, var(--dsw-alias-bg-base) 60%, transparent));z-index:1;justify-content:flex-end;align-items:center;gap:8px;margin-top:4px;padding:8px 0 2px;display:flex;position:sticky;bottom:0}.xjw8Uq_drillRunBtn{background:color-mix(in srgb, var(--dsw-alias-bg-base) 72%, transparent);border:1px solid var(--dsw-alias-border-l2);color:var(--dsw-alias-label-secondary);cursor:pointer;height:28px;transition:color var(--ds-transition-duration,.12s) var(--ds-ease-in-out,ease), border-color var(--ds-transition-duration,.12s) var(--ds-ease-in-out,ease);border-radius:999px;justify-content:center;align-items:center;width:28px;padding:0;display:inline-flex}.xjw8Uq_drillRunBtn:hover{border-color:var(--dsw-alias-border-l4);color:var(--dsw-alias-brand-primary)}.xjw8Uq_drillRunBtn:focus-visible{border-color:var(--dsw-alias-brand-primary);color:var(--dsw-alias-brand-primary)}.xjw8Uq_studioProgress{color:var(--dsw-alias-label-secondary);font-variant-numeric:tabular-nums;align-items:center;gap:6px;font-size:11px;display:inline-flex}.xjw8Uq_studioProgress>svg{animation:1s linear infinite xjw8Uq_studioProgressTurn}@keyframes xjw8Uq_studioProgressTurn{to{transform:rotate(360deg)}}";
+		const tagId$4 = "@melite/3d-img-to-mesh/client.module.css@cd32dd3";
 		if (typeof document !== "undefined" && document.querySelector("style[data-plugin-css=" + JSON.stringify(tagId$4) + "]") === null) {
 			const tag = document.createElement("style");
 			tag.dataset.plugin = "@melite/3d-img-to-mesh";
@@ -20,6 +20,7 @@ window.__ModuleLoader__.load({
 		}
 		var client_module_css_default = {
 			"drillRunBtn": "xjw8Uq_drillRunBtn",
+			"drillRunRow": "xjw8Uq_drillRunRow",
 			"groupNote": "xjw8Uq_groupNote",
 			"runError": "xjw8Uq_runError",
 			"runRow": "xjw8Uq_runRow",
@@ -41219,7 +41220,7 @@ void main() {
 						onEdit,
 						square: squareFor
 					}));
-				}), (0, react.createElement)("div", { className: client_module_css_default.runRow }, error !== null ? (0, react.createElement)("span", { className: client_module_css_default.runError }, error) : null, live ? (0, react.createElement)("span", {
+				}), (0, react.createElement)("div", { className: client_module_css_default.drillRunRow }, error !== null ? (0, react.createElement)("span", { className: client_module_css_default.runError }, error) : null, live ? (0, react.createElement)("span", {
 					className: client_module_css_default.studioProgress,
 					"data-testid": "studio-progress",
 					role: "status"
