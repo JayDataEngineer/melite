@@ -232,3 +232,68 @@ test('a patch refusal names itself and the run never fires', async () => {
   })
   expect(calls.some((c) => c.method === 'runs/start')).toBe(false)
 })
+
+// ── THE MEDIA DRILLDOWN MIRROR (hour 24: "clicking the preview
+//    component should mirror the media drilldown view 1:1") — the
+//    seat is a door; the SHARED component (the gallery's own
+//    MediaDrilldown) answers ──────────────────────────────────────
+test('clicking the preview seat opens the SHARED media drilldown (1:1)', async () => {
+  const user = userEvent.setup()
+  const calls: Call[] = []
+  const benchWithResult: Record<string, unknown> = {
+    draft_id: 'bench-s1', rev: 7,
+    stages: [{
+      id: 's_0', card: 'image-gen', title: 'hero frame', engine: 'comfyui',
+      params: { prompt: 'a red cube', steps: 8, turbo: false },
+      result: { url: '/melite-media/runs/run-1/img/gen_00001_.png', name: 'gen_00001_.png' },
+    }],
+    log: [],
+  }
+  // the tab's FIRST paint reads the resource fixture — the result rides THERE
+  const benchLive: CardsBenchValue = {
+    kind: 'bench', draftId: 'bench-s1', rev: 7,
+    stages: [{
+      id: 's_0', card: 'image-gen', title: 'hero frame', engine: 'comfyui',
+      params: { prompt: 'a red cube', steps: 8, turbo: false },
+      result: { url: '/melite-media/runs/run-1/img/gen_00001_.png', name: 'gen_00001_.png' },
+    }],
+    log: [],
+  }
+  vi.stubGlobal('fetch', async (url: unknown, init?: RequestInit): Promise<Response> => {
+    const path = String(url)
+    if (path.includes('/v1/form-spec')) {
+      return new Response(JSON.stringify({ form: 'image-gen', model: 'krea-2', fields: [
+        { name: 'prompt', label: 'Prompt', type: 'textarea' }], variants: [] }), { status: 200, headers: { 'content-type': 'application/json' } })
+    }
+    if (path.includes('/v1/model-catalog')) {
+      return new Response(JSON.stringify({ cards: { 'image-gen': { label: 'Image Gen', genre: 'image', families: ['krea-2'] } } }), { status: 200, headers: { 'content-type': 'application/json' } })
+    }
+    const frame = JSON.parse(String(init?.body)) as { rpcId: string, method: string }
+    calls.push({ method: frame.method, args: {} })
+    let value: Record<string, unknown> = { ok: true }
+    if (frame.method === 'bench/get') value = benchWithResult
+    return new Response(JSON.stringify({ type: 'server-response', rpcId: frame.rpcId, result: { ok: true, value } }), { status: 200 })
+  })
+  render(createElement(CardsTab, {
+    useTabInfo: () => ({
+      tab: {
+        kind: 'sidebar.right.pane.tab', contentId: undefined,
+        navigation: { address: 'dsh-resource://cards/bench' },
+        actions: { openResource: () => {} },
+      },
+    }),
+    useResource: () => ({ status: 'live', value: benchLive }),
+  } as Parameters<typeof CardsTab>[0]))
+  // open the drill
+  await user.click(await screen.findByText('hero frame', {}, { timeout: 4000 }))
+  // the preview seat is a DOOR (role button, the aria contract)
+  const seat = await screen.findByRole('button', { name: 'Open media drilldown' }, { timeout: 4000 })
+  await user.click(seat)
+  // THE SHARED DRILLDOWN answers: the media modal's own caption +
+  // esc hint (the gallery Overlay's face, verbatim)
+  expect(await screen.findByText('Esc or click the mask to close', {}, { timeout: 4000 })).toBeTruthy()
+  expect(screen.getAllByText('hero frame').length).toBeGreaterThan(0) // tile + drilldown caption
+  expect(screen.getByText(/gen_00001_\.png/)).toBeTruthy()
+  // and the artifact itself renders (the image)
+  expect(document.querySelector('img[src*="gen_00001_"]')).toBeTruthy()
+})

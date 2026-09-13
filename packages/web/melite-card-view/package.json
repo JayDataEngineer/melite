@@ -64,6 +64,7 @@
   },
   "dependencies": {
     "@deepseek-ai/dsh-client-ui-primitives": "0.1.5-rc.2",
+    "@melite-plugin/dsh-gallery": "workspace:*",
     "@melite-plugin/melite-run-wire": "workspace:*",
     "@melite/contracts": "workspace:*",
     "@melite/video-h3-timeline": "workspace:*",

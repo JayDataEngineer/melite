@@ -18,6 +18,7 @@
 import * as React from 'react'
 import { useMemo, useState } from 'react'
 import { Modal, Pill, Tooltip } from '@deepseek-ai/dsh-client-ui-primitives'
+import { MediaDrilldown } from '../drilldown.tsx'
 import { loadDraftOntoBench, loadRunOntoBench } from './bench-load.ts'
 
 /** THE ESTATE-ARTIFACT ADDRESS (2026-09-10 regression fix): run artifacts
@@ -360,55 +361,10 @@ function ModelView({ item, openArtifact }: { item: MediaItem; openArtifact: (ite
  * the bare gallery opened a new browser tab instead.)
  */
 function Overlay({ item, onClose, openArtifact }: { item: MediaItem; onClose: () => void; openArtifact: (item: MediaItem) => void }) {
-  return (
-    <Modal
-      open
-      onClose={onClose}
-      title={item.file || 'media preview'}
-      headless
-      className={css.lightbox}
-    >
-      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 14, padding: 24 }}>
-        {item.kind === 'video'
-          ? (
-              <video
-                src={item.url}
-                controls
-                autoPlay
-                playsInline
-                style={{ maxWidth: '94vw', maxHeight: '78vh', borderRadius: 8, background: bgBase1 }}
-              />
-            )
-          : item.kind === 'audio'
-            ? (
-                <audio
-                  src={item.url}
-                  controls
-                  autoPlay
-                  style={{ width: 'min(560px, 90vw)' }}
-                />
-              )
-            : item.kind === 'model'
-            ? (
-                <ModelView item={item} openArtifact={openArtifact} />
-              )
-            : item.kind === 'image'
-            ? (
-                <img
-                  src={item.url}
-                  alt={item.file}
-                  style={{ maxWidth: '94vw', maxHeight: '78vh', borderRadius: 8, objectFit: 'contain' }}
-                />
-              )
-            : null}
-        <div style={{ color: labelPrimary2, fontSize: 13, maxWidth: '80vw', textAlign: 'center', lineHeight: 1.5 }}>
-          <div style={{ fontWeight: 600 }}>{item.head}</div>
-          <div style={{ opacity: 0.7 }}>{[item.time, item.file].filter(Boolean).join(' · ')}</div>
-        </div>
-        <div style={{ color: textTertiary3, fontSize: 12 }}>Esc or click the mask to close</div>
-      </div>
-    </Modal>
-  )
+  // ONE face everywhere (the operator's 1:1 order): the shared
+  // MediaDrilldown — this surface only adapts its richer item (the
+  // sidebar door keeps the gallery's full MediaItem currency).
+  return <MediaDrilldown item={item} onClose={onClose} openArtifact={(drill) => { openArtifact(item) }} />
 }
 
 /** Sidebar tab glyph — exported for the (JSX-free) client entry. */

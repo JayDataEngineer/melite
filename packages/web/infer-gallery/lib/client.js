@@ -47,6 +47,188 @@ window.__ModuleLoader__.load({
 			claimed = false;
 		}
 		//#endregion
+		//#region \0dsh-css:infer-gallery/src/client/overlay.module.css.mjs
+		const css = "._2saHFG_lightbox{width:min(1200px,96vw);max-width:96vw}._2saHFG_wand{z-index:3;background:var(--dsw-alias-fill-subtle,#020617d1);color:var(--dsw-alias-state-warn-primary,#fde68a);letter-spacing:.4px;cursor:pointer;opacity:1;border-radius:6px;align-items:center;gap:4px;padding:4px 6px;font-family:inherit;font-size:9px;font-weight:700;display:flex;position:absolute;top:6px;right:6px}";
+		const tagId = "@melite-plugin/dsh-gallery/overlay.module.css@d29a3d30";
+		if (typeof document !== "undefined" && document.querySelector("style[data-plugin-css=" + JSON.stringify(tagId) + "]") === null) {
+			const tag = document.createElement("style");
+			tag.dataset.plugin = "@melite-plugin/dsh-gallery";
+			tag.dataset.pluginCss = tagId;
+			tag.textContent = css;
+			document.head.appendChild(tag);
+		}
+		var overlay_module_css_default = {
+			"lightbox": "_2saHFG_lightbox",
+			"wand": "_2saHFG_wand"
+		};
+		//#endregion
+		//#region src/client/ui.tokens.ts
+		/**
+		* Design tokens — every var(--dsw-alias-…) string in the media family
+		* declared ONCE (audit F6). Numbered suffixes = same alias, different
+		* fallback (opacity variants). Pinned by the parity wall
+		* (tests/walls/ts/suites/media-sidebar.test.ts — tokens single site).
+		*/
+		const bgBase1 = "var(--dsw-alias-bg-base, #000)";
+		const bgBase2 = "var(--dsw-alias-bg-base, #0b0e14)";
+		const bgBase3 = "var(--dsw-alias-bg-base, #422006)";
+		const bgLayer1 = "var(--dsw-alias-bg-layer-1, #1e293b)";
+		const bgLayer2 = "var(--dsw-alias-bg-layer-2, #0f172a)";
+		const bgOverlay1 = "var(--dsw-alias-bg-overlay, rgba(127,29,29,0.35))";
+		const borderL2 = "var(--dsw-alias-border-l2, rgba(148,163,184,0.25))";
+		/** Caption-scrim weight of the same fill token (the full port's
+		*  single-site fix: the old package restated this raw spelling inline
+		*  in ui.tsx — one token, one site, three weights). */
+		const fillSubtleCaption = "var(--dsw-alias-fill-subtle, rgba(2,6,23,0.92))";
+		const labelPrimary1 = "var(--dsw-alias-label-primary, rgb(226,232,240))";
+		const labelPrimary2 = "var(--dsw-alias-label-primary, rgba(226,232,240,0.85))";
+		const labelSecondary2 = "var(--dsw-alias-label-secondary, rgba(148,163,184,0.9))";
+		const stateBusinessPrimary = "var(--dsw-alias-state-business-primary, rgb(147,197,253))";
+		const stateBusinessPrimaryBg2 = "var(--dsw-alias-state-business-primary-bg, rgba(59,130,246,0.28))";
+		const stateWarnPrimary1 = "var(--dsw-alias-state-warn-primary, rgba(250,204,21,0.9))";
+		const stateWarnPrimary2 = "var(--dsw-alias-state-warn-primary, rgba(250,204,21,0.92))";
+		const textTertiary2 = "var(--dsw-alias-text-tertiary, rgba(148,163,184,0.75))";
+		const textTertiary3 = "var(--dsw-alias-text-tertiary, rgba(148,163,184,0.8))";
+		//#endregion
+		//#region src/drilldown.tsx
+		/**
+		* drilldown.tsx — THE MEDIA DRILLDOWN, one component for every surface
+		* (the operator's hour-24 order: "clicking the preview component should
+		* mirror the media drilldown view 1:1"). Extracted VERBATIM from the
+		* gallery's MediaPanel Overlay — the gallery's media tiles and the
+		* cards' stage previews ride the SAME face: DSH's Modal (headless —
+		* body portal, mask, Escape, aria-modal and focus handling are the
+		* primitive's, never ours), the kind-switched full-size artifact, the
+		* caption, the esc hint.
+		*
+		* The gallery's MediaItem EXTENDS MediaDrilldownItem; the cards map
+		* their stage artifact onto it (mesh kind → 'model' — the media vocab
+		* alignment, one spelling).
+		*/
+		/** 3D artifact view — hands the artifact to the sidebar as a RESOURCE
+		*  (estate-artifact address, claimed by a viewer tab type; the mesh
+		*  renders in the right panel, orbitable beside the run list).
+		*  The download link stays: when the viewer plugin is absent no tab
+		*  type claims the address and openResource is a no-op — the artifact
+		*  must still be reachable. openArtifact is OPTIONAL: a surface with
+		*  no sidebar door (the card zoom) simply hides the link. */
+		function ModelView({ item, openArtifact }) {
+			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+				style: {
+					display: "flex",
+					flexDirection: "column",
+					gap: 10,
+					alignItems: "center"
+				},
+				children: [openArtifact !== void 0 ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("a", {
+					role: "button",
+					tabIndex: 0,
+					style: {
+						color: stateBusinessPrimary,
+						fontSize: 14,
+						cursor: "pointer"
+					},
+					onClick: (e) => {
+						e.stopPropagation();
+						openArtifact(item);
+					},
+					onKeyDown: (e) => {
+						if (e.key === "Enter" || e.key === " ") {
+							e.stopPropagation();
+							openArtifact(item);
+						}
+					},
+					children: "open 3D view in sidebar"
+				}) : null, /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("a", {
+					href: item.url,
+					download: item.file,
+					style: {
+						color: textTertiary3,
+						fontSize: 13,
+						cursor: "pointer"
+					},
+					onClick: (e) => {
+						e.stopPropagation();
+					},
+					children: ["download ", item.file]
+				})]
+			});
+		}
+		/** THE MEDIA DRILLDOWN (the gallery Overlay, verbatim — one face). */
+		function MediaDrilldown({ item, onClose, openArtifact }) {
+			return /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Modal, {
+				open: true,
+				onClose,
+				title: item.file || "media preview",
+				headless: true,
+				className: overlay_module_css_default.lightbox,
+				children: /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+					style: {
+						display: "flex",
+						flexDirection: "column",
+						alignItems: "center",
+						justifyContent: "center",
+						gap: 14,
+						padding: 24
+					},
+					children: [
+						item.kind === "video" ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("video", {
+							src: item.url,
+							controls: true,
+							autoPlay: true,
+							playsInline: true,
+							style: {
+								maxWidth: "94vw",
+								maxHeight: "78vh",
+								borderRadius: 8,
+								background: bgBase1
+							}
+						}) : item.kind === "audio" ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("audio", {
+							src: item.url,
+							controls: true,
+							autoPlay: true,
+							style: { width: "min(560px, 90vw)" }
+						}) : item.kind === "model" ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)(ModelView, {
+							item,
+							openArtifact
+						}) : item.kind === "image" ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("img", {
+							src: item.url,
+							alt: item.file,
+							style: {
+								maxWidth: "94vw",
+								maxHeight: "78vh",
+								borderRadius: 8,
+								objectFit: "contain"
+							}
+						}) : null,
+						/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+							style: {
+								color: labelPrimary2,
+								fontSize: 13,
+								maxWidth: "80vw",
+								textAlign: "center",
+								lineHeight: 1.5
+							},
+							children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
+								style: { fontWeight: 600 },
+								children: item.head
+							}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
+								style: { opacity: .7 },
+								children: [item.time, item.file].filter(Boolean).join(" · ")
+							})]
+						}),
+						/* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
+							style: {
+								color: textTertiary3,
+								fontSize: 12
+							},
+							children: "Esc or click the mask to close"
+						})
+					]
+				})
+			});
+		}
+		//#endregion
 		//#region src/client/bench-load.ts
 		/**
 		* bench-load — the restore gestures of the media plane (MediaPanel's
@@ -260,49 +442,6 @@ window.__ModuleLoader__.load({
 				setData
 			};
 		}
-		//#endregion
-		//#region \0dsh-css:infer-gallery/src/client/overlay.module.css.mjs
-		const css = "._2saHFG_lightbox{width:min(1200px,96vw);max-width:96vw}._2saHFG_wand{z-index:3;background:var(--dsw-alias-fill-subtle,#020617d1);color:var(--dsw-alias-state-warn-primary,#fde68a);letter-spacing:.4px;cursor:pointer;opacity:1;border-radius:6px;align-items:center;gap:4px;padding:4px 6px;font-family:inherit;font-size:9px;font-weight:700;display:flex;position:absolute;top:6px;right:6px}";
-		const tagId = "@melite-plugin/dsh-gallery/overlay.module.css@d29a3d30";
-		if (typeof document !== "undefined" && document.querySelector("style[data-plugin-css=" + JSON.stringify(tagId) + "]") === null) {
-			const tag = document.createElement("style");
-			tag.dataset.plugin = "@melite-plugin/dsh-gallery";
-			tag.dataset.pluginCss = tagId;
-			tag.textContent = css;
-			document.head.appendChild(tag);
-		}
-		var overlay_module_css_default = {
-			"lightbox": "_2saHFG_lightbox",
-			"wand": "_2saHFG_wand"
-		};
-		//#endregion
-		//#region src/client/ui.tokens.ts
-		/**
-		* Design tokens — every var(--dsw-alias-…) string in the media family
-		* declared ONCE (audit F6). Numbered suffixes = same alias, different
-		* fallback (opacity variants). Pinned by the parity wall
-		* (tests/walls/ts/suites/media-sidebar.test.ts — tokens single site).
-		*/
-		const bgBase1 = "var(--dsw-alias-bg-base, #000)";
-		const bgBase2 = "var(--dsw-alias-bg-base, #0b0e14)";
-		const bgBase3 = "var(--dsw-alias-bg-base, #422006)";
-		const bgLayer1 = "var(--dsw-alias-bg-layer-1, #1e293b)";
-		const bgLayer2 = "var(--dsw-alias-bg-layer-2, #0f172a)";
-		const bgOverlay1 = "var(--dsw-alias-bg-overlay, rgba(127,29,29,0.35))";
-		const borderL2 = "var(--dsw-alias-border-l2, rgba(148,163,184,0.25))";
-		/** Caption-scrim weight of the same fill token (the full port's
-		*  single-site fix: the old package restated this raw spelling inline
-		*  in ui.tsx — one token, one site, three weights). */
-		const fillSubtleCaption = "var(--dsw-alias-fill-subtle, rgba(2,6,23,0.92))";
-		const labelPrimary1 = "var(--dsw-alias-label-primary, rgb(226,232,240))";
-		const labelPrimary2 = "var(--dsw-alias-label-primary, rgba(226,232,240,0.85))";
-		const labelSecondary2 = "var(--dsw-alias-label-secondary, rgba(148,163,184,0.9))";
-		const stateBusinessPrimary = "var(--dsw-alias-state-business-primary, rgb(147,197,253))";
-		const stateBusinessPrimaryBg2 = "var(--dsw-alias-state-business-primary-bg, rgba(59,130,246,0.28))";
-		const stateWarnPrimary1 = "var(--dsw-alias-state-warn-primary, rgba(250,204,21,0.9))";
-		const stateWarnPrimary2 = "var(--dsw-alias-state-warn-primary, rgba(250,204,21,0.92))";
-		const textTertiary2 = "var(--dsw-alias-text-tertiary, rgba(148,163,184,0.75))";
-		const textTertiary3 = "var(--dsw-alias-text-tertiary, rgba(148,163,184,0.8))";
 		//#endregion
 		//#region src/client/ui.tsx
 		const FONT = "system-ui, -apple-system, Segoe UI, Roboto, sans-serif";
@@ -730,56 +869,6 @@ window.__ModuleLoader__.load({
 			return gradientStage;
 		}
 		/**
-		* 3D artifact view — hands the artifact to the sidebar as a RESOURCE
-		* (estate-artifact address, claimed by a viewer tab type; the mesh
-		* renders in the right panel, orbitable beside the run list).
-		* The download link stays: when the viewer plugin is absent no tab type
-		* claims the address and openResource is a no-op — the artifact must
-		* still be reachable.
-		*/
-		function ModelView({ item, openArtifact }) {
-			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-				style: {
-					display: "flex",
-					flexDirection: "column",
-					gap: 10,
-					alignItems: "center"
-				},
-				children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("a", {
-					role: "button",
-					tabIndex: 0,
-					style: {
-						color: stateBusinessPrimary,
-						fontSize: 14,
-						cursor: "pointer"
-					},
-					onClick: (e) => {
-						e.stopPropagation();
-						openArtifact(item);
-					},
-					onKeyDown: (e) => {
-						if (e.key === "Enter" || e.key === " ") {
-							e.stopPropagation();
-							openArtifact(item);
-						}
-					},
-					children: "open 3D view in sidebar"
-				}), /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("a", {
-					href: item.url,
-					download: item.file,
-					style: {
-						color: textTertiary3,
-						fontSize: 13,
-						cursor: "pointer"
-					},
-					onClick: (e) => {
-						e.stopPropagation();
-					},
-					children: ["download ", item.file]
-				})]
-			});
-		}
-		/**
 		* The centered preview — DSH's Modal (headless), the FlowCards drilldown
 		* ride verbatim: body portal, mask, Escape, aria-modal, and focus
 		* handling are the primitive's, never ours. The 2026-09-10 operator
@@ -790,76 +879,12 @@ window.__ModuleLoader__.load({
 		* the bare gallery opened a new browser tab instead.)
 		*/
 		function Overlay({ item, onClose, openArtifact }) {
-			return /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Modal, {
-				open: true,
+			return /* @__PURE__ */ (0, react_jsx_runtime.jsx)(MediaDrilldown, {
+				item,
 				onClose,
-				title: item.file || "media preview",
-				headless: true,
-				className: overlay_module_css_default.lightbox,
-				children: /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-					style: {
-						display: "flex",
-						flexDirection: "column",
-						alignItems: "center",
-						justifyContent: "center",
-						gap: 14,
-						padding: 24
-					},
-					children: [
-						item.kind === "video" ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("video", {
-							src: item.url,
-							controls: true,
-							autoPlay: true,
-							playsInline: true,
-							style: {
-								maxWidth: "94vw",
-								maxHeight: "78vh",
-								borderRadius: 8,
-								background: bgBase1
-							}
-						}) : item.kind === "audio" ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("audio", {
-							src: item.url,
-							controls: true,
-							autoPlay: true,
-							style: { width: "min(560px, 90vw)" }
-						}) : item.kind === "model" ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)(ModelView, {
-							item,
-							openArtifact
-						}) : item.kind === "image" ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("img", {
-							src: item.url,
-							alt: item.file,
-							style: {
-								maxWidth: "94vw",
-								maxHeight: "78vh",
-								borderRadius: 8,
-								objectFit: "contain"
-							}
-						}) : null,
-						/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-							style: {
-								color: labelPrimary2,
-								fontSize: 13,
-								maxWidth: "80vw",
-								textAlign: "center",
-								lineHeight: 1.5
-							},
-							children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
-								style: { fontWeight: 600 },
-								children: item.head
-							}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
-								style: { opacity: .7 },
-								children: [item.time, item.file].filter(Boolean).join(" · ")
-							})]
-						}),
-						/* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
-							style: {
-								color: textTertiary3,
-								fontSize: 12
-							},
-							children: "Esc or click the mask to close"
-						})
-					]
-				})
+				openArtifact: (drill) => {
+					openArtifact(item);
+				}
 			});
 		}
 		/** Sidebar tab glyph — exported for the (JSX-free) client entry. */

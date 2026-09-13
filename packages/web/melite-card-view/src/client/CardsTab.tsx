@@ -33,6 +33,7 @@
 import { createElement as h, Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Button, IconLoadingOutline16, IconPlayOutline16, IconStopFill16, IconTrashOutline16, Input, Menu, Modal, Pill, StateDot, Tag } from '@deepseek-ai/dsh-client-ui-primitives'
 import { CardDrill } from './card-drill.tsx'
+import { MediaDrilldown, type MediaDrilldownItem } from '@melite-plugin/dsh-gallery/drilldown'
 import type { StageViewOwnerProps } from './types.ts'
 import { fetchCardCatalog, fetchFormSpec, seedAxisValues, specDefaults, specPatch, SpecForm, useSquareProvider } from './spec-form.tsx'
 import { fetchFormsTable } from '@melite/card-base/wire'
@@ -670,6 +671,10 @@ function StageDrill({ stage, bench, running, onRun, onClose, onRemoved, onPatchP
   const held: SpecValues = typeof stage.params === 'object' && stage.params !== null ? stage.params : {}
   const [spec, setSpec] = useState<FormSpecDoc | null>(null)
   const [values, setValues] = useState<SpecValues>({})
+  // THE MEDIA DRILLDOWN SEAT (hour 24: clicking the preview mirrors
+  // the media drilldown 1:1 — the SAME shared component the gallery
+  // rides; the click maps the stage's primary artifact onto it).
+  const [drillItem, setDrillItem] = useState<MediaDrilldownItem | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [loaded, setLoaded] = useState(false)
   const reportSurface = onSurface ?? (() => {})
@@ -852,9 +857,44 @@ function StageDrill({ stage, bench, running, onRun, onClose, onRemoved, onPatchP
         : h('pre', { className: css.mono }, JSON.stringify(held, null, 2)),
       ),
       h('div', { className: css.outputs },
-        h('div', { className: css.outputsPreview, 'data-testid': 'stage-preview-seat' },
+        h('div', {
+          className: css.outputsPreview + ' ' + css.previewClickable,
+          'data-testid': 'stage-preview-seat',
+          role: 'button',
+          tabIndex: 0,
+          'aria-label': 'Open media drilldown',
+          onClick: () => {
+            const artifacts = previewArtifactsFor(stage as unknown as Record<string, unknown>)
+            const hero = artifacts[0]
+            if (hero === undefined) return
+            const kind = primaryKindFor(spec, hero.url)
+            if (kind === null) return
+            setDrillItem({
+              kind: kind === 'mesh' ? 'model' : kind,
+              url: hero.url,
+              // the drilldown's caption shows the FILE (the gallery's
+              // own column) — the harvest's generic 'output' name
+              // falls to the url's basename
+              file: hero.name !== '' && hero.name !== 'output'
+                ? hero.name
+                : hero.url.split('/').pop() ?? hero.url,
+              head: String(stage.title ?? stage.card ?? stage.id),
+              time: '',
+            })
+          },
+          onKeyDown: (e: unknown) => {
+            const ke = e as KeyboardEvent
+            if (ke.key === 'Enter' || ke.key === ' ') {
+              ke.stopPropagation()
+              ;(e as { target: HTMLElement }).target.click()
+            }
+          },
+        },
           stagePreview() ?? h('div', { className: css.outputsHint },
             running ? 'rendering… the preview lands here' : 'run lands the preview here')),
+        drillItem !== null
+          ? h(MediaDrilldown, { item: drillItem, onClose: () => { setDrillItem(null) } })
+          : null,
         h('div', { className: css.runRow },
           error !== null ? h('span', { className: css.runError }, error) : null,
           h(Button, { variant: 'primary', disabled: running, onClick: () => { void run() } },

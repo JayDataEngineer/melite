@@ -1603,3 +1603,11 @@
 /* THE CLAIMED ADD LAYOUT (hour-9): the studio full-bleed above, the
  * Add row pinned below — flexed min-zero so the shell's grid owns the
  * height it is given by the page-sized modal. */
+
+/* the preview seat is a DOOR (hour 24): clicking it mirrors the media
+ * drilldown 1:1 — the pointer says so. Token-only. */
+.previewClickable { cursor: pointer; }
+.previewClickable:focus-visible {
+  outline: 2px solid var(--dsw-alias-state-business-primary);
+  outline-offset: 2px;
+}

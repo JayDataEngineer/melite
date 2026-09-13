@@ -2477,6 +2477,9 @@ importers:
       '@deepseek-ai/dsh-client-ui-primitives':
         specifier: 0.1.5-rc.2
         version: 0.1.5-rc.2(@deepseek-ai/cordis@4.0.2)
+      '@melite-plugin/dsh-gallery':
+        specifier: workspace:*
+        version: link:../infer-gallery
       '@melite-plugin/melite-run-wire':
         specifier: workspace:*
         version: link:../melite-run-wire
