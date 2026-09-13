@@ -1427,15 +1427,14 @@ export function MotionCardEditor({
 
  return (
  <>
- // STRETCH, NOT PERCENTAGE (2026-08-15, "only takes up the top third"):
- // inside the studio the viewport column is a FLEX COLUMN and this root
- // stretches (flex-1) — its height is the definite column height, so the
- // stage's flex-1 fills every pixel below the strip. Standalone mounts
- // (the inline form view) keep min-h-full as the fallback (the shell's
- // own root class, plus this tenant's gap/padding through className).
- // THE SHELL RIDE (2026-09-07): rail/center/bottom as declared seams —
- // the stub shellDeclaration comment above is now the live shape.
- <StudioShell
+  {/* STRETCH, NOT PERCENTAGE (2026-08-15, "only takes up the top third"):
+  inside the studio the viewport column is a FLEX COLUMN and this root
+  stretches (flex-1) — its height is the definite column height, so the
+  stage's flex-1 fills every pixel below the strip. Standalone mounts
+  (the inline form view) keep min-h-full as the fallback (the shell's
+  own root class, plus this tenant's gap/padding through className).
+  THE SHELL RIDE (2026-09-07): rail/center/bottom as declared seams —
+  the stub shellDeclaration comment above is now the live shape. */}
  className={s.shellPad}
  /* ── Generate — the card header's Run button IS the generate action.
  No duplicate bar here: the prompt cards below are the authoring
