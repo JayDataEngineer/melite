@@ -604,6 +604,18 @@
   font-size: 11px;
 }
 
+
+/* THE POPUP FACE (hour 24 stroke 13: the operator caught white-on-
+ * white — `color: inherit` is light text on the dark theme, and the
+ * browser's dropdown popup defaults to a white list: every option
+ * invisible until highlighted). The option rows pin a LIGHT popup
+ * with dark text — deterministic on every theme (the closed select
+ * keeps the card's own inherited face). */
+.specSelect option {
+  background: #fff;
+  color: #0f1115;
+}
+.specSelect { color-scheme: light; }
 .specSelect {
   background: var(--dsw-alias-interactive-bg-hover);
   border: 0.5px solid var(--dsw-alias-border-l2);
@@ -1006,6 +1018,9 @@
   padding: 4px 8px;
   width: 110px;
 }
+/* the popup face (the white-on-white law, stroke 13 — same fix) */
+.h3RecipeRow select option { background: #fff; color: #0f1115; }
+.h3RecipeRow select { color-scheme: light; }
 .h3CallList { display: flex; flex-direction: column; gap: 4px; }
 .h3CallRow {
   align-items: center;
@@ -1202,6 +1217,9 @@
   padding: 6px 8px;
   width: 100%;
 }
+.ideoField select option { background: #fff; color: #0f1115; }
+.ideoField select { color-scheme: light; }
+
 .ideoToolbar {
   align-items: center;
   display: flex;

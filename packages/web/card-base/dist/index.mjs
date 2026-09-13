@@ -1,5 +1,6 @@
-import { createElement, useCallback, useEffect, useRef, useState } from "react";
-import { Button, IconPaperclipOutline16, Input, Menu, Modal, Switch } from "@deepseek-ai/dsh-client-ui-primitives";
+import { Fragment, createElement, useCallback, useEffect, useRef, useState } from "react";
+import { Button, IconPlusOutline16, Input, Menu, Modal, Switch } from "@deepseek-ai/dsh-client-ui-primitives";
+import { fetchMediaLibrary } from "@melite-plugin/melite-run-wire";
 import * as THREE from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 //#region src/spec.ts
@@ -233,7 +234,8 @@ function seedAxisValues(spec, held) {
 //#endregion
 //#region src/card.module.css
 var card_module_default = {
-	"modAdd": "VMoOIq_modAdd",
+	"inputRail": "VMoOIq_inputRail",
+	"modAddSquare": "VMoOIq_modAddSquare",
 	"modelAxes": "VMoOIq_modelAxes",
 	"modField": "VMoOIq_modField",
 	"modHead": "VMoOIq_modHead",
@@ -249,6 +251,14 @@ var card_module_default = {
 	"modTileLabel": "VMoOIq_modTileLabel",
 	"modTileStrength": "VMoOIq_modTileStrength",
 	"modTitle": "VMoOIq_modTitle",
+	"pickBtn": "VMoOIq_pickBtn",
+	"pickEmpty": "VMoOIq_pickEmpty",
+	"pickGlyph": "VMoOIq_pickGlyph",
+	"pickLabel": "VMoOIq_pickLabel",
+	"pickList": "VMoOIq_pickList",
+	"pickRow": "VMoOIq_pickRow",
+	"pickThumb": "VMoOIq_pickThumb",
+	"sourceRow": "VMoOIq_sourceRow",
 	"specField": "VMoOIq_specField",
 	"specFieldKey": "VMoOIq_specFieldKey",
 	"specForm": "VMoOIq_specForm",
@@ -260,6 +270,8 @@ var card_module_default = {
 	"specSlider": "VMoOIq_specSlider",
 	"specSliderRow": "VMoOIq_specSliderRow",
 	"specSliderValue": "VMoOIq_specSliderValue",
+	"specSlotCell": "VMoOIq_specSlotCell",
+	"specSlotRow": "VMoOIq_specSlotRow",
 	"specTextarea": "VMoOIq_specTextarea",
 	"squareBox": "VMoOIq_squareBox",
 	"squareFileInput": "VMoOIq_squareFileInput",
@@ -283,7 +295,11 @@ var card_module_default = {
 * DSH substrate: ui-primitives glyphs, module CSS under the
 * web-styling chrome laws, no lucide/cn/tip.
 *
-* THE OLD LAW, KEPT VERBATIM — a square thumbnail with label + badge
+* THE PLUS LAW (2026-09-13, the operator): the empty square
+* carries the PLUS — "add a source" — and the click opens the
+* three-entry source menu (From flow / From media / From file) in
+* the provider; a bare square without a picker still files.
+* THE OLD LAW, KEPT — a square thumbnail with label + badge
 * + the THREE source verbs (operator, 2026-09-12: "we rendered a
 * square and gave the option to do 1 of 3 things"):
 *   a) from previous card  → onClick (the host opens the wire picker;
@@ -381,7 +397,7 @@ function InputSquare(props) {
 		className: card_module_default.squareThumb,
 		src: thumb,
 		alt: label
-	}) : createElement(IconPaperclipOutline16, { className: card_module_default.squareGlyph }), !empty && props.onClear !== void 0 ? createElement("button", {
+	}) : createElement(IconPlusOutline16, { className: card_module_default.squareGlyph }), !empty && props.onClear !== void 0 ? createElement("button", {
 		className: card_module_default.squareX,
 		type: "button",
 		title: "Detach",
@@ -540,6 +556,12 @@ function useFormSpec(modelId) {
 		error
 	};
 }
+/** The media-kind the picker fetches for a field: image fields name
+*  image; file fields take the whole library (their accept narrows
+*  client-side per row). */
+function mediaKindForField(f) {
+	return f.type === "image" ? "image" : "all";
+}
 /** THE ONE square provider (the old SlotGrid law, DSH substrate):
 *  every slot-shaped field of a stage gets the same verbs — file
 *  upload (the /v1/uploads door + the data-URL mirror), media drop
@@ -551,8 +573,15 @@ function useFormSpec(modelId) {
 function useSquareProvider(onEdit, wire) {
 	const [mirror, setMirror] = useState({});
 	const [pickAt, setPickAt] = useState(null);
+	const [modalAt, setModalAt] = useState(null);
+	const fieldRef = useRef(null);
+	const [mediaRows, setMediaRows] = useState(null);
 	const fileRef = useRef(null);
 	const onFile = useCallback(async (f, file) => {
+		if (wire.onFile !== void 0) {
+			wire.onFile(file);
+			return;
+		}
 		try {
 			const dataUrl = await readAsDataUrl(file);
 			setMirror((m) => ({
@@ -564,7 +593,7 @@ function useSquareProvider(onEdit, wire) {
 		} catch (e) {
 			onEdit(f.name, e instanceof Error ? e.message : "upload failed");
 		}
-	}, [onEdit]);
+	}, [onEdit, wire.onFile]);
 	const square = (f) => {
 		if (f.type !== "image" && f.type !== "file") return void 0;
 		return {
@@ -597,68 +626,172 @@ function useSquareProvider(onEdit, wire) {
 			}
 		};
 	};
+	const sourceMenu = pickAt === null ? null : createElement(Menu, {
+		open: true,
+		anchor: null,
+		getAnchorRect: () => pickAt.rect,
+		items: [
+			{
+				id: "__flow__",
+				label: "From flow"
+			},
+			{
+				id: "__media__",
+				label: "From media"
+			},
+			{
+				id: "__file__",
+				label: "From file"
+			},
+			{
+				type: "separator",
+				id: "sep"
+			},
+			{
+				id: "__none__",
+				label: "— clear —",
+				danger: true
+			}
+		],
+		onSelect: (id) => {
+			const f = pickAt.field;
+			setPickAt(null);
+			if (id === "__flow__") {
+				setModalAt({
+					mode: "flow",
+					field: f
+				});
+				return;
+			}
+			if (id === "__media__") {
+				setModalAt({
+					mode: "media",
+					field: f
+				});
+				return;
+			}
+			if (id === "__file__") {
+				fieldRef.current = f;
+				fileRef.current?.click();
+				return;
+			}
+			if (id === "__none__") {
+				setMirror((m) => {
+					const n = { ...m };
+					delete n[f.name];
+					return n;
+				});
+				onEdit(f.name, "");
+				return;
+			}
+		},
+		onClose: () => {
+			setPickAt(null);
+		},
+		portal: true
+	});
+	useEffect(() => {
+		if (modalAt?.mode !== "media") return;
+		const ctrl = new AbortController();
+		setMediaRows(null);
+		fetchMediaLibrary(mediaKindForField(modalAt.field), ctrl.signal).then((items) => {
+			setMediaRows(items.map((it) => ({
+				id: it.url,
+				label: it.name,
+				url: it.url
+			})));
+		}).catch(() => {
+			setMediaRows([]);
+		});
+		return () => {
+			ctrl.abort();
+		};
+	}, [modalAt]);
+	const pickerModal = modalAt === null ? null : (() => {
+		const f = modalAt.field;
+		const candidates = modalAt.mode === "flow" ? wire.candidatesFor !== void 0 ? wire.candidatesFor(f) : wire.candidates : mediaRows ?? [];
+		const req = {
+			mode: modalAt.mode,
+			kind: mediaKindForField(f),
+			field: f,
+			candidates
+		};
+		const pick = (url) => {
+			setModalAt(null);
+			if (url !== "") onEdit(f.name, url);
+		};
+		const fallback = createElement(Modal, {
+			open: true,
+			onClose: () => {
+				setModalAt(null);
+			},
+			title: modalAt.mode === "flow" ? "From flow" : "From media",
+			description: modalAt.mode === "flow" ? "The other stages’ latest outputs" + (req.kind !== "all" ? " (" + req.kind + ")" : "") : "The runs library" + (req.kind !== "all" ? " (" + req.kind + ")" : ""),
+			closeLabel: "Close picker"
+		}, candidates.length === 0 ? createElement("p", { className: card_module_default.pickEmpty }, modalAt.mode === "media" && mediaRows === null ? "loading…" : "nothing to pick yet") : createElement("ul", { className: card_module_default.pickList }, candidates.map((c) => createElement("li", {
+			key: c.id,
+			className: card_module_default.pickRow
+		}, createElement("button", {
+			type: "button",
+			className: card_module_default.pickBtn,
+			"data-testid": "source-pick-row",
+			onClick: () => {
+				pick(c.url);
+			}
+		}, isImageUrl(c.url) ? createElement("img", {
+			className: card_module_default.pickThumb,
+			src: c.url,
+			alt: c.label,
+			loading: "lazy"
+		}) : createElement("span", { className: card_module_default.pickGlyph }, c.label.slice(0, 1).toUpperCase()), createElement("span", { className: card_module_default.pickLabel }, c.label))))));
+		return wire.renderSourcePick !== void 0 ? wire.renderSourcePick(req, fallback) : fallback;
+	})();
+	const fileInput = createElement("input", {
+		ref: fileRef,
+		type: "file",
+		accept: "image/png,image/jpeg,image/webp",
+		"aria-hidden": true,
+		tabIndex: -1,
+		style: { display: "none" },
+		onChange: (e) => {
+			const file = e.target.files?.[0];
+			const f = fieldRef.current;
+			if (f !== null && file !== void 0 && file !== null) {
+				fieldRef.current = null;
+				onFile(f, file);
+			}
+			if (fileRef.current !== null) fileRef.current.value = "";
+		}
+	});
 	return {
 		square,
-		wireMenu: pickAt === null ? null : createElement(Menu, {
-			open: true,
-			anchor: null,
-			getAnchorRect: () => pickAt.rect,
-			items: [
-				...(wire.candidatesFor !== void 0 ? wire.candidatesFor(pickAt.field) : wire.candidates).map((c) => ({
-					id: c.id,
-					label: c.label
-				})),
-				{
-					type: "separator",
-					id: "sep"
-				},
-				{
-					id: "__file__",
-					label: "Upload a file…"
-				},
-				{
-					id: "__none__",
-					label: "— clear —",
-					danger: true
-				}
-			],
-			onSelect: (id) => {
-				const f = pickAt.field;
-				setPickAt(null);
-				if (id === "__file__") {
-					fileRef.current?.click();
-					return;
-				}
-				if (id === "__none__") {
-					setMirror((m) => {
-						const n = { ...m };
-						delete n[f.name];
-						return n;
-					});
-					onEdit(f.name, "");
-					return;
-				}
-				const c = (wire.candidatesFor !== void 0 ? wire.candidatesFor(f) : wire.candidates).find((x) => x.id === id);
-				if (c !== void 0 && c.url !== "") onEdit(f.name, c.url);
-			},
-			onClose: () => {
-				setPickAt(null);
-			},
-			portal: true
-		}, createElement("input", {
-			ref: fileRef,
-			type: "file",
-			accept: "image/png,image/jpeg,image/webp",
-			"aria-hidden": true,
-			tabIndex: -1,
-			style: { display: "none" },
-			onChange: (e) => {
-				const file = e.target.files?.[0];
-				if (pickAt !== null && file !== void 0 && file !== null) onFile(pickAt.field, file);
-				if (fileRef.current !== null) fileRef.current.value = "";
-			}
-		}))
+		wireMenu: createElement(Fragment, null, sourceMenu, pickerModal, fileInput)
 	};
+}
+function SourceRow(props) {
+	const field = {
+		name: "__source_row__",
+		label: props.label,
+		type: props.kind === "image" ? "image" : "file"
+	};
+	const { square, wireMenu } = useSquareProvider(useCallback((name, v) => {
+		props.onEdit(typeof v === "string" ? v : String(v ?? ""));
+	}, [props.onEdit]), {
+		candidates: props.candidates ?? [],
+		...props.onFile !== void 0 ? { onFile: props.onFile } : {},
+		...props.renderSourcePick !== void 0 ? { renderSourcePick: props.renderSourcePick } : {}
+	});
+	const host = square(field);
+	const shown = host !== void 0 ? host.display ?? props.value ?? null : props.value ?? null;
+	return createElement("div", {
+		className: card_module_default.sourceRow,
+		"data-source-row": props.label
+	}, wireMenu, createElement(InputSquare, {
+		label: props.label,
+		value: shown !== null && isImageUrl(shown) ? shown : null,
+		metric: typeof props.value === "string" && props.value !== "" && !isImageUrl(props.value) ? props.value : void 0,
+		...host !== void 0 ? host.verbs : {}
+	}));
 }
 /** THE TRI-STATE ATOM (hour 15, stroke C): inherit / on / off —
 *  promoted from h3's studio-local TriControl (same semantics, same
@@ -719,7 +852,7 @@ function SpecSliderAtom({ f, value, onEdit }) {
 }
 /** One spec atom — typed by the declaration, edited as a raw string
 *  while typing (decimal dots survive; coercion happens once at patch). */
-function SpecAtom({ f, value, onEdit, square }) {
+function SpecAtom({ f, value, onEdit, square, wireCandidates }) {
 	if ((f.type === "image" || f.type === "file") && square !== void 0) {
 		const shown = square.display !== void 0 && square.display !== null && square.display !== "" ? square.display : typeof value === "string" ? value : null;
 		return createElement(InputSquare, {
@@ -863,12 +996,13 @@ function ModelAxes({ spec, values, onEdit }) {
 *  to rail sections that render served fields outside a whole form
 *  (mask's TuneSection). The claim seam stays CardForm's; this row
 *  takes the resolved atom inputs. */
-function SpecFieldRow({ f, value, onEdit, square }) {
+function SpecFieldRow({ f, value, onEdit, square, wireCandidates }) {
 	return createElement("label", { className: card_module_default.specField }, createElement("span", { className: card_module_default.specFieldKey }, f.label, f.required === true ? createElement("span", { className: card_module_default.specRequired }, " *") : null), createElement(SpecAtom, {
 		f,
 		value,
 		onEdit,
-		square
+		square,
+		...wireCandidates !== void 0 ? { wireCandidates } : {}
 	}), f.tooltip !== void 0 && f.tooltip !== "" ? createElement("span", { className: card_module_default.specHint }, f.tooltip) : null);
 }
 function CardForm({ spec, fields, values, onEdit, wire, square, atoms, onPatch }) {
@@ -878,7 +1012,17 @@ function CardForm({ spec, fields, values, onEdit, wire, square, atoms, onPatch }
 		fields: [],
 		variants: []
 	});
-	const groups = groupFields(owned.size > 0 ? fields.filter((f) => !owned.has(f.name)) : fields, values);
+	const flatFields = owned.size > 0 ? fields.filter((f) => !owned.has(f.name)) : fields;
+	const signature = spec !== void 0 && Array.isArray(spec.inputs) ? spec.inputs : [];
+	const railOf = (inp) => {
+		const f = flatFields.find((x) => x.name === inp.name);
+		if (f === void 0) return void 0;
+		if (f.type === "image" || f.type === "file") return f;
+	};
+	const railFields = signature.map((inp) => typeof inp?.name === "string" ? railOf(inp) : void 0).filter((f) => f !== void 0);
+	const railNames = new Set(railFields.map((f) => f.name));
+	const visible = (f) => f.type !== "image_list" && !railNames.has(f.name);
+	const groups = groupFields(flatFields.filter(visible), values);
 	const atomOf = (f) => atoms?.[f.type];
 	const own = useSquareProvider(onEdit, wire ?? { candidates: [] });
 	const squareFor = square ?? own.square;
@@ -895,29 +1039,81 @@ function CardForm({ spec, fields, values, onEdit, wire, square, atoms, onPatch }
 		spec,
 		values,
 		onEdit
-	}) : null, groups.map((g) => createElement("section", {
-		key: g.group ?? "",
-		className: card_module_default.specGroup
-	}, g.group !== null ? createElement("h4", { className: card_module_default.specGroupTitle }, g.group) : null, g.fields.map((f) => {
-		const claim = atomOf(f);
-		const sq = squareFor(f);
-		if (claim !== void 0) return createElement("label", {
+	}) : null, railFields.length > 0 ? createElement("section", {
+		className: card_module_default.specGroup + " " + card_module_default.inputRail,
+		"data-input-rail": "1"
+	}, createElement("div", { className: card_module_default.specSlotRow }, railFields.map((f) => {
+		if (f.type === "image_list") return null;
+		return createElement("div", {
 			key: f.name,
-			className: card_module_default.specField
-		}, createElement("span", { className: card_module_default.specFieldKey }, f.label, f.required === true ? createElement("span", { className: card_module_default.specRequired }, " *") : null), claim({
+			className: card_module_default.specSlotCell,
+			title: f.tooltip !== void 0 && f.tooltip !== "" ? f.tooltip : void 0
+		}, createElement(SpecAtom, {
 			f,
 			value: values[f.name],
 			onEdit,
-			square: sq
-		}), f.tooltip !== void 0 && f.tooltip !== "" ? createElement("span", { className: card_module_default.specHint }, f.tooltip) : null);
-		return createElement(SpecFieldRow, {
-			key: f.name,
-			f,
-			value: values[f.name],
-			onEdit,
-			square: sq
-		});
-	}))), modKinds.length > 0 ? createElement(ModifiersSection, {
+			square: squareFor(f),
+			...wire?.candidates !== void 0 ? { wireCandidates: wire.candidates } : {}
+		}));
+	}))) : null, groups.map((g) => {
+		const children = [];
+		let row = [];
+		const flush = () => {
+			if (row.length === 0) return;
+			children.push(createElement("div", {
+				key: "slotrow-" + String(children.length),
+				className: card_module_default.specSlotRow
+			}, row));
+			row = [];
+		};
+		for (const f of g.fields) {
+			if (railNames.has(f.name)) continue;
+			const claim = atomOf(f);
+			const sq = squareFor(f);
+			const wireCandidates = wire?.candidates;
+			if (claim !== void 0) {
+				flush();
+				children.push(createElement("label", {
+					key: f.name,
+					className: card_module_default.specField
+				}, createElement("span", { className: card_module_default.specFieldKey }, f.label, f.required === true ? createElement("span", { className: card_module_default.specRequired }, " *") : null), claim({
+					f,
+					value: values[f.name],
+					onEdit,
+					square: sq
+				}), f.tooltip !== void 0 && f.tooltip !== "" ? createElement("span", { className: card_module_default.specHint }, f.tooltip) : null));
+				continue;
+			}
+			if (f.type === "image" || f.type === "file") {
+				row.push(createElement("div", {
+					key: f.name,
+					className: card_module_default.specSlotCell,
+					title: f.tooltip !== void 0 && f.tooltip !== "" ? f.tooltip : void 0
+				}, createElement(SpecAtom, {
+					f,
+					value: values[f.name],
+					onEdit,
+					square: sq,
+					...wireCandidates !== void 0 ? { wireCandidates } : {}
+				})));
+				continue;
+			}
+			flush();
+			children.push(createElement(SpecFieldRow, {
+				key: f.name,
+				f,
+				value: values[f.name],
+				onEdit,
+				square: sq,
+				...wireCandidates !== void 0 ? { wireCandidates } : {}
+			}));
+		}
+		flush();
+		return createElement("section", {
+			key: g.group ?? "",
+			className: card_module_default.specGroup
+		}, g.group !== null ? createElement("h4", { className: card_module_default.specGroupTitle }, g.group) : null, children);
+	}), modKinds.length > 0 ? createElement(ModifiersSection, {
 		kinds: modKinds,
 		values,
 		onEdit,
@@ -1122,12 +1318,14 @@ function ModifiersSection(props) {
 		});
 	}), addable.length > 0 ? createElement("button", {
 		type: "button",
-		className: card_module_default.modAdd,
+		className: card_module_default.modAddSquare,
 		"data-subcard-add": "mod",
+		"aria-label": "Add modifier",
+		title: "Add a modifier",
 		onClick: (e) => {
 			setPickAt({ rect: e.currentTarget.getBoundingClientRect() });
 		}
-	}, "+ Mod") : null), pickAt !== null ? createElement(Menu, {
+	}, createElement(IconPlusOutline16, { className: card_module_default.squareGlyph })) : null), pickAt !== null ? createElement(Menu, {
 		open: true,
 		anchor: null,
 		getAnchorRect: () => pickAt.rect,
@@ -1490,4 +1688,4 @@ function makeLabelSprite(text, color, worldHeight) {
 	return sprite;
 }
 //#endregion
-export { ASSET_DRAG_MIME, CARD_SLOTS, CardForm, InputSquare, ModelAxes, ModifiersSection, SpecAtom, SpecFieldRow, SpecSliderAtom, TriStateAtom, activeRowId, activeVariantId, axisGroups, axisKey, axisPickPatch, composingRows, fetchCardCatalog, fetchFormSpec, fetchFormsTable, fieldVisible, groupFields, inputEdgeOf, isImageUrl, isOptionKind, makeLabelSprite, modOwnedFields, modelChoices, mountStage3D, quantRowsFor, readAsDataUrl, rowsFor, seedAxisValues, specDefaults, specPatch, uploadInputFile, useFormSpec, useSquareProvider, variantGroupsContract, variantRows };
+export { ASSET_DRAG_MIME, CARD_SLOTS, CardForm, InputSquare, ModelAxes, ModifiersSection, SourceRow, SpecAtom, SpecFieldRow, SpecSliderAtom, TriStateAtom, activeRowId, activeVariantId, axisGroups, axisKey, axisPickPatch, composingRows, fetchCardCatalog, fetchFormSpec, fetchFormsTable, fieldVisible, groupFields, inputEdgeOf, isImageUrl, isOptionKind, makeLabelSprite, modOwnedFields, modelChoices, mountStage3D, quantRowsFor, readAsDataUrl, rowsFor, seedAxisValues, specDefaults, specPatch, uploadInputFile, useFormSpec, useSquareProvider, variantGroupsContract, variantRows };

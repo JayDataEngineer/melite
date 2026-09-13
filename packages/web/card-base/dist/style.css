@@ -20,6 +20,11 @@
   display: grid;
 }
 
+.VMoOIq_modelAxes .VMoOIq_specGroupTitle {
+  grid-column: 1 / -1;
+  margin-bottom: 0;
+}
+
 .VMoOIq_specGroupTitle {
   color: var(--dsw-alias-label-secondary, #61666b);
   letter-spacing: .04em;
@@ -49,7 +54,13 @@
   font-size: 11px;
 }
 
+.VMoOIq_specSelect option {
+  color: #0f1115;
+  background: #fff;
+}
+
 .VMoOIq_specSelect {
+  color-scheme: light;
   background: var(--dsw-alias-interactive-bg-hover, #2631480f);
   border: .5px solid var(--dsw-alias-border-l2, #0000001a);
   color: inherit;
@@ -237,22 +248,24 @@
   font-size: 9px;
 }
 
-.VMoOIq_modAdd {
-  border: 1px dashed var(--border, #80808059);
-  min-width: 64px;
-  color: inherit;
+.VMoOIq_modAddSquare {
+  border: 1px dashed var(--dsw-alias-border-l3, #00000047);
   cursor: pointer;
-  opacity: .6;
+  opacity: .7;
+  height: 64px;
+  transition: border-color var(--ds-transition-duration, .12s) var(--ds-ease-in-out, ease),
+    background-color var(--ds-transition-duration, .12s) var(--ds-ease-in-out, ease);
   background: none;
   border-radius: 8px;
   justify-content: center;
   align-items: center;
-  padding: 6px 10px;
-  font-size: 11px;
+  width: 64px;
   display: flex;
 }
 
-.VMoOIq_modAdd:hover {
+.VMoOIq_modAddSquare:hover {
+  background: var(--dsw-alias-interactive-bg-hover, #0000000d);
+  border-color: var(--dsw-alias-border-l4, #0006);
   opacity: 1;
 }
 
@@ -297,4 +310,97 @@
   color: #e06c5f;
   margin: 0;
   font-size: 11px;
+}
+
+.VMoOIq_pickList {
+  flex-direction: column;
+  gap: 4px;
+  max-height: 60vh;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  overflow-y: auto;
+}
+
+.VMoOIq_pickRow {
+  display: block;
+}
+
+.VMoOIq_pickBtn {
+  border: 1px solid var(--dsw-alias-border-l2);
+  color: var(--dsw-alias-label-primary);
+  cursor: pointer;
+  text-align: left;
+  transition: border-color var(--ds-transition-duration, .12s) var(--ds-ease-in-out, ease),
+    background-color var(--ds-transition-duration, .12s) var(--ds-ease-in-out, ease);
+  background: none;
+  border-radius: 6px;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 6px;
+  display: flex;
+}
+
+.VMoOIq_pickBtn:hover {
+  background: var(--dsw-alias-interactive-bg-hover);
+  border-color: var(--dsw-alias-border-l4);
+}
+
+.VMoOIq_pickThumb {
+  object-fit: cover;
+  border-radius: 4px;
+  flex: none;
+  width: 40px;
+  height: 40px;
+}
+
+.VMoOIq_pickGlyph {
+  background: var(--dsw-alias-interactive-bg-hover);
+  color: var(--dsw-alias-label-secondary);
+  border-radius: 4px;
+  flex: none;
+  justify-content: center;
+  align-items: center;
+  width: 40px;
+  height: 40px;
+  font-size: 15px;
+  font-weight: 600;
+  display: inline-flex;
+}
+
+.VMoOIq_pickLabel {
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 13px;
+  overflow: hidden;
+}
+
+.VMoOIq_pickEmpty {
+  color: var(--dsw-alias-label-tertiary);
+  margin: 0;
+  font-size: 13px;
+}
+
+.VMoOIq_sourceRow {
+  flex-direction: column;
+  display: flex;
+}
+
+.VMoOIq_specSlotRow {
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 8px;
+  display: flex;
+}
+
+.VMoOIq_specSlotCell {
+  flex-direction: column;
+  gap: 4px;
+  display: flex;
+}
+
+.VMoOIq_inputRail {
+  gap: 10px;
 }

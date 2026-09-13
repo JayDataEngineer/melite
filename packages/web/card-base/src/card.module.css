@@ -49,6 +49,18 @@
   color: var(--dsw-alias-label-secondary, #61666b);
   font-size: 11px;
 }
+
+/* THE POPUP FACE (hour 24 stroke 13: the operator caught white-on-
+ * white — `color: inherit` is light text on the dark theme, and the
+ * browser's dropdown popup defaults to a white list: every option
+ * invisible until highlighted). The option rows pin a LIGHT popup
+ * with dark text — deterministic on every theme (the closed select
+ * keeps the card's own inherited face). */
+.specSelect option {
+  background: #fff;
+  color: #0f1115;
+}
+.specSelect { color-scheme: light; }
 .specSelect {
   background: var(--dsw-alias-interactive-bg-hover, #2631480f);
   border: 0.5px solid var(--dsw-alias-border-l2, rgba(0, 0, 0, 0.1));
