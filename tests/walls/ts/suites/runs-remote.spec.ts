@@ -527,9 +527,27 @@ test("runs/validate — the pure compile pipeline, door-verbatim voices", async 
     assert.match(String((e as Error).message), /no flow at flows\/photo-glb\/flow\.py/);
   }
 
-  // 4. the pin-sweep gap (ledgered): cards=null → the sweep sees 0
-  //    pinned classes, so an OBJECT workflow refuses — exactly as
-  //    the door served on an unpinned estate.
+  // 4. the pin sweep reads the WIRED registry's real pin (the
+  //    cardGate wire, 2026-09-13: the arm threads ctx.cardRegistry,
+  //    so the sweep sees the estate's 1330-class pin — KSampler
+  //    compiles). The refusal voice is pinned with a class no pin
+  //    ever carries.
+  const pinnedOk = (await runs.validate(
+    {
+      flow_inline: {
+        id: "pinned",
+        stages: [
+          {
+            id: "s0",
+            engine: "comfyui",
+            params: { workflow: { "1": { class_type: "KSampler" } } },
+          },
+        ],
+      },
+    },
+    sig,
+  )) as { ok?: boolean };
+  assert.equal(pinnedOk["ok"], true);
   try {
     await runs.validate(
       {
@@ -539,7 +557,7 @@ test("runs/validate — the pure compile pipeline, door-verbatim voices", async 
             {
               id: "s0",
               engine: "comfyui",
-              params: { workflow: { "1": { class_type: "KSampler" } } },
+              params: { workflow: { "1": { class_type: "NoSuchNodeEver" } } },
             },
           ],
         },
@@ -549,7 +567,7 @@ test("runs/validate — the pure compile pipeline, door-verbatim voices", async 
     assert.fail("expected pin refusal");
   } catch (e) {
     assert.equal((e as { code?: string })["code"], "runs/workflow-pin");
-    assert.match(String((e as Error).message), /0 pinned classes/);
+    assert.match(String((e as Error).message), /NoSuchNodeEver.*not in the pinned object_info/);
   }
 
   // 5. the lane + the construct caller's compiles flag.
@@ -684,19 +702,13 @@ test("runs {flow:} — the named-flow shim: live expansion, the door's voices (R
   );
   // 2. a single-stage registry flow serves at BOTH arms (the
   //    skill's wire law): validate compiles it through the SAME
-  //    inline arm — and in THIS wall (no engine seat, 0 pinned
-  //    classes — the wall's own law, never a silent accept) the
-  //    pin sweep refuses with the workflow-pin voice naming the
-  //    flow's own first class.
-  try {
-    await runs.validate({ flow: "fit-seat" }, sig);
-    assert.fail("expected the pin-sweep refusal");
-  } catch (e) {
-    const re = remoteErrorOf(e);
-    assert.ok(re, "a RemoteError");
-    assert.equal(re.code, "runs/workflow-pin");
-    assert.match(re.message, /FitRow.*not in the pinned object_info/);
-  }
+  //    inline arm — the wired registry's real pin carries FitRow,
+  //    so the compile is ok (the cardGate wire, 2026-09-13; the
+  //    old wall pinned the null-registry gap — 0 pinned classes).
+  const fitSeat = (await runs.validate({ flow: "fit-seat" }, sig)) as {
+    ok?: boolean;
+  };
+  assert.equal(fitSeat["ok"], true);
   // 3. start on a single-stage flow: expansion rides the inline
   //    pipeline and the run REGISTERS (the pin sweep is the
   //    validate gate; start's engine seam is the pump) — the run
@@ -710,18 +722,13 @@ test("runs {flow:} — the named-flow shim: live expansion, the door's voices (R
   //    validate; start refuses with the preview_scope voice at the
   //    EXISTING single-stage gate (never widened quietly).
   // character (7 stages incl. the z-image builder graph) rides the
-  // SAME pin-sweep law at validate: the wall answers the honest
-  // workflow-pin refusal naming ITS first class (multi-stage is
-  // structurally legal at validate — the compile reaches the pin).
-  try {
-    await runs.validate({ flow: "character" }, sig);
-    assert.fail("expected the pin-sweep refusal");
-  } catch (e) {
-    const re = remoteErrorOf(e);
-    assert.ok(re, "a RemoteError");
-    assert.equal(re.code, "runs/workflow-pin");
-    assert.match(re.message, /UNETLoader.*not in the pinned object_info/);
-  }
+  // SAME law at validate: the real pin carries UNETLoader, so the
+  // multi-stage compile is ok (structurally legal at validate —
+  // the compile reaches the pin through the wired registry).
+  const character = (await runs.validate({ flow: "character" }, sig)) as {
+    ok?: boolean;
+  };
+  assert.equal(character["ok"], true);
   await assert.rejects(
     runs.start({ flow: "character", test: true, draft_id: "d_ok" }, sig),
     (e: unknown) => {
@@ -774,13 +781,14 @@ test("the compile-time initial gate — both {flow:} doors refuse before registr
     (e: Error) => /browser-local/.test(e.message),
   );
   // 6. absent initials ride PAST the initial gate (the $channel
-  //    arms own them) — fit-seat then refuses at the pin sweep (the
-  //    honest wall voice: 0 pinned classes, no engine seat), which
-  //    PROVES the gate did not fire on absent initials.
-  await assert.rejects(
-    () => runs.validate({ flow: "fit-seat", test: true, draft_id: "d_ok" }, sig),
-    (e: Error & { code?: string }) => e.code === "runs/workflow-pin" && /not in the pinned object_info/.test(e.message),
-  );
+  //    arms own them) — fit-seat then COMPILES through the wired
+  //    registry's real pin, which PROVES the gate did not fire on
+  //    absent initials (the ok, not a refusal, is the proof).
+  const fitPastGate = (await runs.validate(
+    { flow: "fit-seat", test: true, draft_id: "d_ok" },
+    sig,
+  )) as { ok?: boolean };
+  assert.equal(fitPastGate["ok"], true);
 });
 
 test("the remote adapter speaks every registry arm (start/status/list/stop/validate)", async () => {

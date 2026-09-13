@@ -157,3 +157,4 @@ data/runtime/anny-commercial/sam-3d-body/
 # plugins/gateway/scripts/link-vendored-platform.sh (harness layout), never committed
 vendor/cordis_plugins/*/lib/
 test-results/
+packages/harness/estate-queue/dist/

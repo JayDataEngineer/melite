@@ -58,6 +58,13 @@ const seat = (cardOver: Record<string, (...args: never[]) => unknown> = {}): Sea
     },
   };
   const cards: Record<string, (...args: never[]) => unknown> = {
+    // The validate arm now passes the seat's registry into the
+    // inline compile (the cardGate wire, 2026-09-13): the pin
+    // sweep reads objectInfo (null = the fail-open empty pin set,
+    // the door's absent-pin degrade) and card= stages read
+    // defsSync (no card stages ride this rig's flows).
+    objectInfo: (): unknown => null,
+    defsSync: (): unknown => new Map(),
     modelFacts: (): unknown => {
       throw new Error("no facts");
     },
@@ -651,6 +658,32 @@ describe("validate", () => {
     assert.equal((good as { status?: unknown })["ok"] ?? true, true);
     const bad = await remote(() => s.svc.validate({ nope: 1 }, sig()));
     assert.equal(bad.code, "runs/flow-compile");
+  });
+
+  it("card= stages compile through the seat's registry (the cardGate wire)", async () => {
+    // THE NAMED-DEBT PIN (2026-09-13): the validate arm passed null
+    // into the inline compile — every card= stage refused with the
+    // LOUD miswire ("no CardRegistryService for cardGate") while the
+    // same stage ran fine at start. The arm now threads the seat's
+    // ctx.cardRegistry; a registered card validates, a ghost keeps
+    // the door's registry voice.
+    const defs = new Map([
+      ["c", { requiresModel: false, schema: (p: unknown): unknown => p }],
+    ]);
+    const s = seat({ defsSync: (): unknown => defs });
+    const ok = await s.svc.validate(
+      inlineBody({ flow_inline: { id: "x", stages: [{ id: "s", card: "c", engine: "comfyui", params: {} }] } }),
+      sig(),
+    );
+    assert.equal((ok as { status?: unknown })["ok"] ?? true, true);
+    const ghost = await remote(() =>
+      s.svc.validate(
+        inlineBody({ flow_inline: { id: "x", stages: [{ id: "s", card: "ghost", engine: "comfyui", params: { model: "m" } }] } }),
+        sig(),
+      ),
+    );
+    assert.equal(ghost.code, "runs/flow-compile");
+    assert.match(ghost.message, /not a registered card/);
   });
 
   it("the flow shim keeps the door's voice (unknown names, pin sweep)", async () => {

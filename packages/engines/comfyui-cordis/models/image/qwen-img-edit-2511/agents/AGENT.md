@@ -17,11 +17,13 @@ stages it into ComfyUI's input dir (phase 1 validates the ref
 existence on the mounts BEFORE any run registers).
 
 Skill: `pose-iteration` (this family) + `prompt-enhance` (qwen-scoped).
-Door: `POST /v1/flows/start {"model":"qwen-img-edit-2511",
-"prompt":...,"image":"/abs.png"}` (or the lightning route
-`qwen-img-edit-2511-lightning4` for the 4-step distilled cell;
-`qwen-img-edit-2511-int8` for the standard 20-step int8 ConvRot
-cell). The image-edit card is the queue-native interface.
+Compose door: `melite_construct` `add_stage` with the image-edit card
+and `model="qwen-img-edit-2511"`, your prompt/image (or the lightning
+route `qwen-img-edit-2511-lightning4` for the 4-step distilled cell;
+`qwen-img-edit-2511-int8` for the standard 20-step int8 ConvRot cell)
+— onto the shared bench; the run starts at the user's Run press, the
+progress rides the card. The image-edit card is the queue-native
+interface.
 
 (2026-09-05) The pre-flip `img-edit` family head is RETIRED — same
 physical lane, but the duplicate catalog row served the default

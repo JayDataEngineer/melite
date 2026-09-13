@@ -462,7 +462,13 @@ export class RunsRuntimeService extends Service {
         liveDoc = { ...rest, flow_inline: inlineDoc };
       }
     }
-    const answer: FlowsValidateAnswer = inlineArm(liveDoc, null);
+    // The card-stage lattice reads through the primed registry (the
+    // cards stroke's CardRegistryService — ctx.cardRegistry, primed
+    // at boot). Passing null here refused EVERY card= stage with the
+    // LOUD miswire ("no CardRegistryService for cardGate") — the
+    // named debt the flow test surfaced (2026-09-13): a bench stage
+    // could run but never validate.
+    const answer: FlowsValidateAnswer = inlineArm(liveDoc, this.ctx.cardRegistry);
     if (answer.status === 200) return answer.payload;
     const p = answer.payload as {
       error: string;
