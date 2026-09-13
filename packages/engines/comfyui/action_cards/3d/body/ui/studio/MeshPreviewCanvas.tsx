@@ -21,7 +21,7 @@
  * lights/shadows/grid/orbit with identical parameters.
  */
 import { useEffect, useMemo, useRef, useState } from "react"
-import { OrbitControls } from "three/addons/controls/OrbitControls.js"
+import { mountStage3D } from "@melite/card-base"
 import { Skeleton } from "../../../../skeleton"
 import styles from "./MeshPreviewCanvas.module.css"
 import * as THREE from "three"
@@ -133,23 +133,42 @@ export function MeshPreviewCanvas({
   }, [c.identityModel, coeffsSig, lcSig, ctSig, poseSig]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // THE SCENE (the r3f tree's verbatim translation — see the substrate
-  // law in the header): lights, shadows, grid, orbit; mounts once when
-  // meshData first lands; the mesh itself swaps per meshData below.
+  // law in the header): rides the SHARED stage core (card-base
+  // stage3d.ts — @melite/card-base) for renderer/camera/orbit/rAF/
+  // resize/dispose, exactly like glb-stage and the pose studio: one
+  // core, three consumers. This file keeps only its own light rig,
+  // floor, and mesh carrier. Mounts once when meshData first lands;
+  // the mesh itself swaps per meshData below.
   const meshGroupRef = useRef<THREE.Group | null>(null)
   useEffect(() => {
     if (!meshData || sceneReady) return
     const canvas = canvasRef.current
     if (canvas === null) return
-    const renderer = new THREE.WebGLRenderer({
-      canvas, antialias: true, alpha: false, preserveDrawingBuffer: true,
+    const stage = mountStage3D(canvas, {
+      fov: 45,
+      near: 0.05,
+      far: 100,
+      camera: [2.74, 1.88, 3.5],
+      target: [0, 0.9, 0],
+      minDistance: 0.8,
+      maxDistance: 12,
+      maxPolarAngle: Math.PI / 1.85,
+      alpha: false,
+      // preserveDrawingBuffer is REQUIRED for canvas.toDataURL() to
+      // capture a non-black thumbnail (the r3f comment's law, verbatim).
+      preserveDrawingBuffer: true,
+      // the hour-14 raw port silently dropped the r3f Canvas's ACES
+      // tone mapping (raw three defaults to none — the preview read
+      // washed-out bright against the original); the core's ACES
+      // default restores the r3f parity deliberately.
+      // Shadow type likewise rides the core: PCFShadowMap (r184
+      // deprecates PCFSoft — warns per mount, falls back anyway).
+      onContextFailure: (msg) => { setError(`WebGL unavailable: ${msg}`) },
     })
-    // preserveDrawingBuffer is REQUIRED for canvas.toDataURL() to
-    // capture a non-black thumbnail (the r3f comment's law, verbatim).
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
-    renderer.shadowMap.enabled = true
-    renderer.shadowMap.type = THREE.PCFSoftShadowMap
+    if (stage === null) return
+    const renderer = stage.renderer
+    const scene = stage.scene
     renderer.setClearColor(new THREE.Color("#0e0e1a"))
-    const scene = new THREE.Scene()
     scene.add(new THREE.AmbientLight(0xffffff, 0.45))
     const key = new THREE.DirectionalLight(0xffffff, 1.0)
     key.position.set(5, 8, 5)
@@ -186,40 +205,11 @@ export function MeshPreviewCanvas({
     const meshGroup = new THREE.Group()
     meshGroupRef.current = meshGroup
     scene.add(meshGroup)
-    const camera = new THREE.PerspectiveCamera(45, 1, 0.05, 100)
-    camera.position.set(2.74, 1.88, 3.5)
-    camera.lookAt(0, 0.9, 0)
-    const controls = new OrbitControls(camera, canvas)
-    controls.target.set(0, 0.9, 0)
-    controls.enableDamping = true
-    controls.dampingFactor = 0.1
-    controls.minDistance = 0.8
-    controls.maxDistance = 12
-    controls.maxPolarAngle = Math.PI / 1.85
-    let raf = 0
-    const render = (): void => {
-      raf = requestAnimationFrame(render)
-      controls.update()
-      renderer.render(scene, camera)
-    }
-    render()
-    const fit = (): void => {
-      const w = canvas.clientWidth, hh = canvas.clientHeight
-      if (w === 0 || hh === 0) return
-      renderer.setSize(w, hh, false)
-      camera.aspect = w / hh
-      camera.updateProjectionMatrix()
-    }
-    fit()
-    const ro = new ResizeObserver(fit)
-    ro.observe(canvas)
     setSceneReady(true)
     onCanvasReady?.(canvas)
     return () => {
-      cancelAnimationFrame(raf)
-      ro.disconnect()
-      controls.dispose()
-      renderer.dispose()
+      grid.geometry.dispose()
+      stage.dispose()
       meshGroupRef.current = null
       setSceneReady(false)
     }
