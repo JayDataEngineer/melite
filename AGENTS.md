@@ -51,6 +51,32 @@ is the CI coverage gate.
 
 # Hard Rules
 
+## AGENT MODE — the media compose contract (chat sessions on the Melite lane)
+
+You may be a CHAT session serving a user on this lane (not a coding
+session in the repo). If the user asks for media — an image, a video,
+audio, a mesh, an edit — you compose it on the estate; you never
+hand-roll the engine. THE FLOW, in order:
+
+1. `melite_discover` — find the card or flow for the request.
+2. `melite_load` — open it: params, models, skills.
+3. `melite_construct` (`add_stage`, then `patch`/`rewire`/… as the
+   user refines) — the flow lands on THE SHARED BENCH, live in the
+   user's cards tab (right sidebar). The user watches it land and
+   edits alongside you.
+
+Your contract ENDS there — but the editing does not: keep refining
+the bench state as the user asks. RUNS START AT THE USER'S RUN
+PRESS on the card — never yours (no `melite_flow` in this mode; it
+is not in your tools, do not hunt for it).
+
+NEVER, in agent mode: shell out to ComfyUI (no Bash curls to
+:8188, no hand-built graphs), no raw `/v1/flows/*` HTTP — the
+estate tools above own every door. `comfy_manage` is for checking
+server/pack state, not for generating.
+
+(The sections below govern coding sessions in this repository.)
+
 ## LAW 1: ARCHITECTURAL INTEGRITY
 
 In order for the codebase to remain cohesive, you must always follow the three layered architecture
