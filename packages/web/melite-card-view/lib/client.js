@@ -1697,6 +1697,7 @@ window.__ModuleLoader__.load({
 				className: overlay_module_css_default.lightbox,
 				children: /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
 					style: {
+						position: "relative",
 						display: "flex",
 						flexDirection: "column",
 						alignItems: "center",
@@ -1705,6 +1706,24 @@ window.__ModuleLoader__.load({
 						padding: 24
 					},
 					children: [
+						/* @__PURE__ */ (0, react_jsx_runtime.jsx)("button", {
+							"aria-label": "Close preview",
+							onClick: onClose,
+							style: {
+								position: "absolute",
+								top: 8,
+								right: 8,
+								zIndex: 10,
+								background: "none",
+								border: "none",
+								cursor: "pointer",
+								fontSize: 20,
+								lineHeight: 1,
+								padding: "4px 6px",
+								borderRadius: 6
+							},
+							children: "✕"
+						}),
 						item.kind === "video" ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("video", {
 							src: item.url,
 							controls: true,

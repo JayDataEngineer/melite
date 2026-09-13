@@ -73,7 +73,10 @@ export function MediaDrilldown({ item, onClose, openArtifact }: {
       headless
       className={css.lightbox}
     >
-      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 14, padding: 24 }}>
+      <div style={{ position: 'relative', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 14, padding: 24 }}>
+        <button aria-label="Close preview" onClick={onClose}
+          style={{ position: 'absolute', top: 8, right: 8, zIndex: 10, background: 'none', border: 'none',
+            cursor: 'pointer', fontSize: 20, lineHeight: 1, padding: '4px 6px', borderRadius: 6 }}>✕</button>
         {item.kind === 'video'
           ? (
               <video
