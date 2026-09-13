@@ -909,7 +909,11 @@ function StageDrill({ stage, bench, running, onRun, onClose, onRemoved, onPatchP
   }
   const genericDetail = (): ReturnType<typeof h> => h('div', { className: css.zoomDetail },
     h('div', { className: css.split },
-      h('div', { className: css.params },
+      h('div', { className: css.paramsCol },
+        // the ✦ row is a HEADER ACTION, never scroll content (hour 24
+        // stroke 12: flush at the params column's scroll top, the
+        // button's capsule top clipped under the boundary — the row
+        // now rides ABOVE the scrolling list and never moves)
         h('div', { className: css.enhanceRow },
           h(Button, {
             variant: 'outline',
@@ -921,10 +925,12 @@ function StageDrill({ stage, bench, running, onRun, onClose, onRemoved, onPatchP
             ? h('span', { className: enhanceNote.err ? css.runError : css.enhanceNote }, enhanceNote.text)
             : null,
         ),
+        h('div', { className: css.params },
         !loaded ? h('div', { className: css.load }, 'form…')
         : spec !== null
           ? h(SpecForm, { spec, fields: spec.fields, values, onEdit, wire, onPatch: onPatchParams })
         : h('pre', { className: css.mono }, JSON.stringify(held, null, 2)),
+        ),
       ),
       h('div', { className: css.outputs },
         h('div', {
