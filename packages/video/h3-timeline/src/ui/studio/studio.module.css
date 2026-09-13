@@ -13,20 +13,14 @@
  */
 
 /* ── tokens ─────────────────────────────────────────────── */
-.studioRoot {
-  --st-fg: var(--dsw-alias-label-primary);
-  --st-muted: var(--dsw-alias-label-secondary);
-  --st-panel: var(--dsw-alias-bg-layer-1);
-  --st-brand: var(--dsw-alias-brand-primary);
-  --st-danger: var(--dsw-alias-state-error-primary);
-  --st-amber: #fbbf24;
-  --st-cyan: #67e8f9;
-  --st-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-}
+/* No studio-local token layer (hour 15, stroke D): THEME colors ride
+ * --dsw-alias-* at the use site; the two media DATA accents (amber
+ * empty states, cyan knob badges) stay literals per the mask
+ * precedent — they are semantic data colors, not theme. */
 
 /* ── generic helpers ────────────────────────────────────── */
 .hiddenInput { display: none; }
-.mono { font-family: var(--st-mono); }
+.mono { font-family: var(--dsw-alias-font-mono, ui-monospace, SFMono-Regular, Menlo, Consolas, monospace); }
 .alignR { text-align: right; }
 .alignC { text-align: center; }
 .tabular { font-variant-numeric: tabular-nums; }
@@ -106,17 +100,17 @@ details[open] > summary .chev { transform: rotate(180deg); }
   font-variant-numeric: tabular-nums;
 }
 .ctlInput::placeholder { color: var(--dsw-alias-label-tertiary, #8a93a0); }
-.ctlInput:focus, .ctlSelect:focus { border-color: var(--st-brand); }
+.ctlInput:focus, .ctlSelect:focus { border-color: var(--dsw-alias-brand-primary); }
 .ctlSelect { font-family: inherit; }
 .ctlInputSm { padding: 2px 4px; font-size: 9px; }
 
 /* ── kit: slider ────────────────────────────────────────── */
 .sliderWrap { display: flex; align-items: center; gap: 8px; }
-.slider { accent-color: var(--st-brand); }
+.slider { accent-color: var(--dsw-alias-brand-primary); }
 .sliderReadout {
   width: 2.5rem;
   text-align: right;
-  font-family: var(--st-mono);
+  font-family: var(--dsw-alias-font-mono, ui-monospace, SFMono-Regular, Menlo, Consolas, monospace);
   font-size: 10px;
   font-variant-numeric: tabular-nums;
   color: rgba(232, 234, 237, 0.8);
@@ -133,7 +127,7 @@ details[open] > summary .chev { transform: rotate(180deg); }
   color: rgba(232, 234, 237, 0.9);
   outline: none;
 }
-.selMenuBox:focus { border-color: var(--st-brand); }
+.selMenuBox:focus { border-color: var(--dsw-alias-brand-primary); }
 .selMenuBox:disabled { opacity: 0.5; }
 
 /* ── kit: SlotSquare ────────────────────────────────────── */
@@ -150,7 +144,7 @@ details[open] > summary .chev { transform: rotate(180deg); }
 }
 .slotSm { height: 36px; width: 36px; }
 .slotMd { height: 80px; width: 80px; }
-.slotHot { border-color: var(--st-brand); background: rgba(59, 130, 246, 0.1); }
+.slotHot { border-color: var(--dsw-alias-brand-primary); background: rgba(59, 130, 246, 0.1); }
 .slotFilled { border-color: rgba(59, 130, 246, 0.4); background: rgba(59, 130, 246, 0.06); }
 .slotEmpty { border-style: dashed; border-color: rgba(255, 255, 255, 0.18); background: rgba(255, 255, 255, 0.04); }
 .slotHover:hover { border-color: rgba(59, 130, 246, 0.4); background: rgba(255, 255, 255, 0.06); }
@@ -162,7 +156,7 @@ details[open] > summary .chev { transform: rotate(180deg); }
   text-overflow: ellipsis;
   white-space: nowrap;
   padding: 0 4px;
-  font-family: var(--st-mono);
+  font-family: var(--dsw-alias-font-mono, ui-monospace, SFMono-Regular, Menlo, Consolas, monospace);
   font-size: 8px;
   color: rgba(154, 160, 166, 1);
 }
@@ -189,9 +183,9 @@ details[open] > summary .chev { transform: rotate(180deg); }
   padding: 0;
 }
 .slotClear { position: absolute; right: 2px; top: 2px; }
-.slotClear:hover { color: var(--st-danger); }
+.slotClear:hover { color: var(--dsw-alias-state-error-primary); }
 .slotPick { position: absolute; bottom: 2px; left: 2px; }
-.slotPick:hover { color: var(--st-brand); }
+.slotPick:hover { color: var(--dsw-alias-brand-primary); }
 .slotLabel {
   max-width: 100%;
   overflow: hidden;
@@ -211,14 +205,14 @@ details[open] > summary .chev { transform: rotate(180deg); }
   white-space: nowrap;
   font-size: 9px;
   line-height: 1.25;
-  color: var(--st-brand);
+  color: var(--dsw-alias-brand-primary);
 }
 .slotMetric {
   max-width: 100%;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font-family: var(--st-mono);
+  font-family: var(--dsw-alias-font-mono, ui-monospace, SFMono-Regular, Menlo, Consolas, monospace);
   font-size: 8px;
   color: rgba(154, 160, 166, 0.5);
 }
@@ -317,12 +311,12 @@ details[open] > summary .chev { transform: rotate(180deg); }
   border: 1px solid rgba(248, 113, 113, 0.4);
   background: rgba(248, 113, 113, 0.1);
   padding: 6px 8px;
-  font-family: var(--st-mono);
+  font-family: var(--dsw-alias-font-mono, ui-monospace, SFMono-Regular, Menlo, Consolas, monospace);
   font-size: 9px;
   line-height: 1.5;
   overflow-wrap: break-word;
   white-space: pre-wrap;
-  color: var(--st-danger);
+  color: var(--dsw-alias-state-error-primary);
   margin: 0;
 }
 
@@ -338,7 +332,7 @@ details[open] > summary .chev { transform: rotate(180deg); }
   min-height: 0;
   gap: 8px;
   padding: 12px;
-  color: var(--st-fg);
+  color: var(--dsw-alias-label-primary);
 }
 .railCol {
   display: flex;
@@ -393,8 +387,8 @@ details[open] > summary .chev { transform: rotate(180deg); }
   cursor: pointer;
   transition: color 0.15s ease, border-color 0.15s ease;
 }
-.backBtn:hover { border-color: var(--st-brand); color: var(--st-brand); }
-.focusTitle { flex: none; font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: var(--st-brand); }
+.backBtn:hover { border-color: var(--dsw-alias-brand-primary); color: var(--dsw-alias-brand-primary); }
+.focusTitle { flex: none; font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: var(--dsw-alias-brand-primary); }
 .beatFlag { flex: none; font-size: 9px; color: rgba(103, 232, 249, 0.8); }
 .compactList { display: flex; flex-direction: column; gap: 4px; }
 .focusList { display: flex; flex-direction: column; gap: 8px; }
@@ -411,7 +405,7 @@ details[open] > summary .chev { transform: rotate(180deg); }
   cursor: pointer;
   transition: border-color 0.15s ease, background-color 0.15s ease;
 }
-.callRow:hover { border-color: var(--st-brand); background: rgba(59, 130, 246, 0.05); }
+.callRow:hover { border-color: var(--dsw-alias-brand-primary); background: rgba(59, 130, 246, 0.05); }
 .callIdx { flex: none; font-size: 9px; font-weight: 600; text-transform: uppercase; font-variant-numeric: tabular-nums; color: rgba(154, 160, 166, 0.6); }
 .excerpt { min-width: 0; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 10px; }
 .excerptFull { color: rgba(232, 234, 237, 0.85); }
@@ -434,7 +428,7 @@ details[open] > summary .chev { transform: rotate(180deg); }
   font-size: 8px;
   font-weight: 600;
   text-transform: uppercase;
-  color: var(--st-cyan);
+  color: #67e8f9;
 }
 .callDur { flex: none; font-size: 9px; font-variant-numeric: tabular-nums; color: rgba(154, 160, 166, 0.5); }
 .kfPanel { margin-top: 8px; border-top: 1px solid rgba(255, 255, 255, 0.06); padding-top: 6px; }
@@ -479,14 +473,14 @@ details[open] > summary .chev { transform: rotate(180deg); }
   border: 1px solid rgba(255, 255, 255, 0.1);
   background: rgba(0, 0, 0, 0.3);
   padding: 2px 6px;
-  font-family: var(--st-mono);
+  font-family: var(--dsw-alias-font-mono, ui-monospace, SFMono-Regular, Menlo, Consolas, monospace);
   font-size: 10px;
   line-height: 1.5;
   color: rgba(232, 234, 237, 0.9);
   outline: none;
 }
 .textIn > input:focus, .guideIn > input:focus, .srcIn > input:focus, .prevNum > input:focus, .kfIn > input:focus {
-  border-color: var(--st-brand);
+  border-color: var(--dsw-alias-brand-primary);
 }
 .textInEmpty > input, .guideInEmpty > input {
   border-color: rgba(251, 191, 36, 0.4);
@@ -513,7 +507,7 @@ details[open] > summary .chev { transform: rotate(180deg); }
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  color: var(--st-cyan);
+  color: #67e8f9;
 }
 .delBtn {
   margin-left: auto;
@@ -546,12 +540,12 @@ details[open] > summary .chev { transform: rotate(180deg); }
   border: 1px solid rgba(255, 255, 255, 0.1);
   background: rgba(0, 0, 0, 0.3);
   padding: 1px 4px;
-  font-family: var(--st-mono);
+  font-family: var(--dsw-alias-font-mono, ui-monospace, SFMono-Regular, Menlo, Consolas, monospace);
   font-size: 9px;
   font-variant-numeric: tabular-nums;
 }
 .refBadgeOk { color: rgba(103, 232, 249, 0.8); }
-.refBadgeOver { color: var(--st-amber); }
+.refBadgeOver { color: #fbbf24; }
 .guidesRow { display: flex; align-items: center; gap: 8px; }
 .guideWrap { position: relative; flex: none; }
 .guideDot {
@@ -597,7 +591,7 @@ details[open] > summary .chev { transform: rotate(180deg); }
   background: rgba(103, 232, 249, 0.1);
   padding: 0 4px;
   font-size: 8px;
-  color: var(--st-cyan);
+  color: #67e8f9;
 }
 .knobGrid {
   margin-top: 4px;
@@ -631,7 +625,7 @@ details[open] > summary .chev { transform: rotate(180deg); }
   cursor: pointer;
   transition: border-color 0.15s ease, color 0.15s ease;
 }
-.addSeg:hover { border-color: var(--st-brand); color: var(--st-brand); }
+.addSeg:hover { border-color: var(--dsw-alias-brand-primary); color: var(--dsw-alias-brand-primary); }
 .beatRow { display: flex; align-items: center; gap: 6px; border-radius: 6px; transition: background-color 0.15s ease; }
 .beatRowSel { background: rgba(103, 232, 249, 0.08); outline: 1px solid rgba(103, 232, 249, 0.5); }
 .iconMini {
@@ -645,7 +639,7 @@ details[open] > summary .chev { transform: rotate(180deg); }
   border: none;
   background: none;
   font-size: 9px;
-  color: var(--st-brand);
+  color: var(--dsw-alias-brand-primary);
   cursor: pointer;
   padding: 0;
   transition: background-color 0.15s ease, color 0.15s ease;
@@ -653,8 +647,8 @@ details[open] > summary .chev { transform: rotate(180deg); }
 .iconMini:hover { background: rgba(59, 130, 246, 0.15); }
 .iconMini:disabled { opacity: 0.3; }
 .iconMiniMut { color: rgba(154, 160, 166, 0.6); }
-.iconMiniMut:hover { background: rgba(255, 255, 255, 0.1); color: var(--st-fg); }
-.beatErr { font-size: 8px; line-height: 1.25; color: var(--st-danger); }
+.iconMiniMut:hover { background: rgba(255, 255, 255, 0.1); color: var(--dsw-alias-label-primary); }
+.beatErr { font-size: 8px; line-height: 1.25; color: var(--dsw-alias-state-error-primary); }
 .beatDash { font-size: 9px; color: rgba(154, 160, 166, 0.4); }
 .beatDel {
   display: flex;
@@ -684,7 +678,7 @@ details[open] > summary .chev { transform: rotate(180deg); }
   font-weight: 500;
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  color: var(--st-brand);
+  color: var(--dsw-alias-brand-primary);
   cursor: pointer;
   transition: background-color 0.15s ease;
 }
@@ -700,7 +694,7 @@ details[open] > summary .chev { transform: rotate(180deg); }
   cursor: pointer;
   transition: background-color 0.15s ease, color 0.15s ease;
 }
-.undoBtn:hover { background: rgba(255, 255, 255, 0.1); color: var(--st-fg); }
+.undoBtn:hover { background: rgba(255, 255, 255, 0.1); color: var(--dsw-alias-label-primary); }
 .promptBox {
   min-height: 2.25rem;
   width: 100%;
@@ -716,7 +710,7 @@ details[open] > summary .chev { transform: rotate(180deg); }
   outline: none;
 }
 .promptBox::placeholder { color: rgba(154, 160, 166, 0.55); }
-.promptBox:focus { border-color: var(--st-brand); }
+.promptBox:focus { border-color: var(--dsw-alias-brand-primary); }
 .promptBoxEmpty { border-color: rgba(251, 191, 36, 0.4); color: rgba(252, 211, 77, 0.9); }
 .promptBoxEmpty::placeholder { color: rgba(252, 211, 77, 0.4); }
 .promptBoxEmpty:focus { border-color: rgba(252, 211, 77, 0.7); }
@@ -732,7 +726,7 @@ details[open] > summary .chev { transform: rotate(180deg); }
   cursor: pointer;
   transition: color 0.15s ease;
 }
-.addSegText:hover { color: var(--st-brand); }
+.addSegText:hover { color: var(--dsw-alias-brand-primary); }
 
 /* ── CallFrameSubcard ───────────────────────────────────── */
 .sub { display: flex; min-width: 0; flex: 1; flex-direction: column; gap: 4px; }
@@ -749,7 +743,7 @@ details[open] > summary .chev { transform: rotate(180deg); }
   border-radius: 6px;
   border: none;
   background: rgba(0, 0, 0, 0.9);
-  color: var(--st-brand);
+  color: var(--dsw-alias-brand-primary);
   cursor: pointer;
   padding: 0;
 }
@@ -757,12 +751,12 @@ details[open] > summary .chev { transform: rotate(180deg); }
 .srcIn { min-width: 0; flex: 1; display: inline-flex; }
 .srcIn > input { font-size: 10px; }
 .srcIn > input::placeholder { font-family: sans-serif; color: rgba(154, 160, 166, 0.55); }
-.fileErr { font-size: 8px; line-height: 1.25; color: var(--st-danger); }
-.linkPanel { border-radius: 6px; border: 1px solid rgba(255, 255, 255, 0.1); background: var(--st-panel); padding: 4px; box-shadow: 0 1px 2px rgba(0, 0, 0, 0.4); }
+.fileErr { font-size: 8px; line-height: 1.25; color: var(--dsw-alias-state-error-primary); }
+.linkPanel { border-radius: 6px; border: 1px solid rgba(255, 255, 255, 0.1); background: var(--dsw-alias-bg-layer-1); padding: 4px; box-shadow: 0 1px 2px rgba(0, 0, 0, 0.4); }
 .linkHead { display: flex; align-items: center; justify-content: space-between; padding: 0 4px 2px; }
-.linkTitle { font-size: 8px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: var(--st-muted); }
-.linkClose { border: none; background: none; color: var(--st-muted); cursor: pointer; padding: 0; display: inline-flex; }
-.linkClose:hover { color: var(--st-fg); }
+.linkTitle { font-size: 8px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: var(--dsw-alias-label-secondary); }
+.linkClose { border: none; background: none; color: var(--dsw-alias-label-secondary); cursor: pointer; padding: 0; display: inline-flex; }
+.linkClose:hover { color: var(--dsw-alias-label-primary); }
 .linkList { max-height: 9rem; overflow-y: auto; }
 .linkRow {
   display: flex;
@@ -780,7 +774,7 @@ details[open] > summary .chev { transform: rotate(180deg); }
 .linkRow:hover { background: rgba(255, 255, 255, 0.08); }
 .linkThumb { height: 24px; width: 24px; flex: none; border-radius: 6px; border: 1px solid rgba(255, 255, 255, 0.1); object-fit: cover; }
 .linkNameWrap { min-width: 0; flex: 1; }
-.linkName { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-family: var(--st-mono); font-size: 9px; color: rgba(232, 234, 237, 0.9); }
+.linkName { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-family: var(--dsw-alias-font-mono, ui-monospace, SFMono-Regular, Menlo, Consolas, monospace); font-size: 9px; color: rgba(232, 234, 237, 0.9); }
 .linkSub { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 8px; color: rgba(154, 160, 166, 0.5); }
 .linkEmpty { display: block; padding: 4px; font-size: 8px; line-height: 1.5; color: rgba(154, 160, 166, 0.45); }
 .seamRow { display: flex; align-items: center; gap: 4px; font-size: 10px; line-height: 1.25; color: rgba(154, 160, 166, 0.7); }
@@ -796,14 +790,14 @@ details[open] > summary .chev { transform: rotate(180deg); }
   background: rgba(0, 0, 0, 0.3);
   padding: 1px 4px;
   text-align: center;
-  font-family: var(--st-mono);
+  font-family: var(--dsw-alias-font-mono, ui-monospace, SFMono-Regular, Menlo, Consolas, monospace);
   font-size: 10px;
   font-variant-numeric: tabular-nums;
   color: rgba(232, 234, 237, 0.9);
   outline: none;
 }
 .prevNum9 > input { font-size: 9px; }
-.prevNum > input:focus { border-color: var(--st-brand); }
+.prevNum > input:focus { border-color: var(--dsw-alias-brand-primary); }
 .prevCarryNote { width: 100%; font-size: 8px; color: rgba(59, 130, 246, 0.55); }
 .prevNote { width: 100%; font-size: 8px; color: rgba(154, 160, 166, 0.35); }
 
@@ -812,7 +806,7 @@ details[open] > summary .chev { transform: rotate(180deg); }
 .refHead { display: flex; align-items: baseline; justify-content: space-between; }
 .refLabel { font-size: 9px; color: rgba(154, 160, 166, 0.7); }
 .refCount { font-size: 8px; font-variant-numeric: tabular-nums; }
-.refCountOk { color: rgba(154, 160, 166, 0.35); }.refCountOver { color: var(--st-amber); }
+.refCountOk { color: rgba(154, 160, 166, 0.35); }.refCountOver { color: #fbbf24; }
 .chips { display: flex; flex-wrap: wrap; gap: 4px; }
 .chip {
   display: inline-flex;
@@ -823,7 +817,7 @@ details[open] > summary .chev { transform: rotate(180deg); }
   border: 1px solid rgba(255, 255, 255, 0.1);
   background: rgba(0, 0, 0, 0.3);
   padding: 1px 4px;
-  font-family: var(--st-mono);
+  font-family: var(--dsw-alias-font-mono, ui-monospace, SFMono-Regular, Menlo, Consolas, monospace);
   font-size: 9px;
   color: rgba(232, 234, 237, 0.85);
 }
@@ -836,7 +830,7 @@ details[open] > summary .chev { transform: rotate(180deg); }
   cursor: pointer;
   display: inline-flex;
 }
-.chipX:hover { background: rgba(255, 255, 255, 0.1); color: var(--st-fg); }
+.chipX:hover { background: rgba(255, 255, 255, 0.1); color: var(--dsw-alias-label-primary); }
 .pickRow { display: flex; align-items: center; gap: 4px; }
 .pickSel { min-width: 0; flex: 1; }
 .pickSelBoxOk {
@@ -846,12 +840,12 @@ details[open] > summary .chev { transform: rotate(180deg); }
   border: 1px solid rgba(255, 255, 255, 0.1);
   background: rgba(0, 0, 0, 0.3);
   padding: 2px 4px;
-  font-family: var(--st-mono);
+  font-family: var(--dsw-alias-font-mono, ui-monospace, SFMono-Regular, Menlo, Consolas, monospace);
   font-size: 9px;
   color: rgba(232, 234, 237, 0.85);
   outline: none;
 }
-.pickSelBoxOk:focus { border-color: var(--st-brand); }
+.pickSelBoxOk:focus { border-color: var(--dsw-alias-brand-primary); }
 .pickSelBoxEmpty {
   min-width: 0;
   flex: 1;
@@ -859,7 +853,7 @@ details[open] > summary .chev { transform: rotate(180deg); }
   border: 1px solid rgba(255, 255, 255, 0.06);
   background: rgba(0, 0, 0, 0.3);
   padding: 2px 4px;
-  font-family: var(--st-mono);
+  font-family: var(--dsw-alias-font-mono, ui-monospace, SFMono-Regular, Menlo, Consolas, monospace);
   font-size: 9px;
   color: rgba(154, 160, 166, 0.4);
   outline: none;
@@ -877,7 +871,7 @@ details[open] > summary .chev { transform: rotate(180deg); }
   cursor: pointer;
   transition: border-color 0.15s ease, color 0.15s ease;
 }
-.uploadBtn:hover { border-color: var(--st-brand); color: var(--st-fg); }
+.uploadBtn:hover { border-color: var(--dsw-alias-brand-primary); color: var(--dsw-alias-label-primary); }
 
 /* ── Run panels ─────────────────────────────────────────── */
 .group { display: flex; flex-direction: column; gap: 6px; }
@@ -920,13 +914,13 @@ details[open] > summary .chev { transform: rotate(180deg); }
   border: 1px solid rgba(255, 255, 255, 0.12);
   background: rgba(255, 255, 255, 0.05);
   padding: 2px 6px;
-  font-family: var(--st-mono);
+  font-family: var(--dsw-alias-font-mono, ui-monospace, SFMono-Regular, Menlo, Consolas, monospace);
   font-size: 9px;
   color: rgba(232, 234, 237, 0.7);
   text-decoration: none;
   transition: border-color 0.15s ease, color 0.15s ease;
 }
-.histChip:hover { border-color: var(--st-brand); color: var(--st-brand); }
+.histChip:hover { border-color: var(--dsw-alias-brand-primary); color: var(--dsw-alias-brand-primary); }
 .heroRow { display: flex; min-height: 0; flex: 1; align-items: center; gap: 8px; overflow-x: auto; padding-bottom: 4px; }
 .finalCut {
   display: flex;
@@ -936,17 +930,17 @@ details[open] > summary .chev { transform: rotate(180deg); }
   flex-direction: column;
   gap: 4px;
   border-radius: 6px;
-  border: 1px solid var(--st-brand);
+  border: 1px solid var(--dsw-alias-brand-primary);
   background: rgba(59, 130, 246, 0.07);
   padding: 6px;
   box-shadow: 0 0 18px -6px rgba(0, 229, 236, 0.35);
 }
 .player { min-height: 0; width: 100%; flex: 1; border-radius: 6px; background: rgba(0, 0, 0, 0.5); }
 .cutBar { display: flex; align-items: center; gap: 4px; padding: 0 2px; }
-.cutIcon { width: 12px; height: 12px; flex: none; color: var(--st-brand); }
+.cutIcon { width: 12px; height: 12px; flex: none; color: var(--dsw-alias-brand-primary); }
 .cutTitle { font-size: 9px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.06em; color: rgba(232, 234, 237, 0.8); }
 .cutTime { margin-left: 4px; font-size: 9px; font-variant-numeric: tabular-nums; color: rgba(154, 160, 166, 0.6); }
-.cutOpen { margin-left: auto; font-size: 9px; color: var(--st-brand); text-underline-offset: 2px; }
+.cutOpen { margin-left: auto; font-size: 9px; color: var(--dsw-alias-brand-primary); text-underline-offset: 2px; }
 .cutOpen:hover { text-decoration: underline; }
 .winTile {
   display: flex;
