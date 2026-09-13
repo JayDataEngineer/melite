@@ -1,4 +1,4 @@
-import { a as boardedMap, d as resolveSpecKey, f as makeEstateRequest, i as routeName, n as matchHarnessRoute, r as resolveHarnessRoutes, t as harnessEnhance } from "./llm-complete-CwIsLTrk.mjs";
+import { a as boardedMap, d as resolveSpecKey, f as asEstateCall, i as routeName, n as matchHarnessRoute, p as makeEstateRequest, r as resolveHarnessRoutes, t as harnessEnhance } from "./llm-complete-DnInwT8j.mjs";
 import { buildMusicTool } from "@melite/audio-music/tool";
 import { buildTtsTool } from "@melite/audio-tts/tool";
 import { buildVoiceLockTool } from "@melite/audio-voice-lock/tool";
@@ -764,8 +764,7 @@ async function runSingle(request, a, signal) {
 	};
 	const bag = { ...a.params };
 	if (typeof a.prompt === "string" && a.prompt !== "") bag["prompt"] = a.prompt;
-	const intentSrc = typeof bag["prompt"] === "string" ? bag["prompt"] : card;
-	const intent = intentSrc.length > 80 ? intentSrc.slice(0, 77) + "…" : intentSrc;
+	const intent = card.length > 80 ? card.slice(0, 77) + "…" : card;
 	let draftId;
 	try {
 		draftId = await loadBench(request, {
@@ -1381,9 +1380,35 @@ function meliteDiscover(request) {
 					type: "text",
 					text: "melite_discover REFUSED: " + v.error
 				}];
+				const RENDER_CLAMP = 8;
+				const flows = Array.isArray(v?.flows) ? v.flows : [];
+				const cards = Array.isArray(v?.cards) ? v.cards : [];
+				const nf = typeof v?.counts?.flows === "number" ? v.counts.flows : flows.length;
+				const nc = typeof v?.counts?.cards === "number" ? v.counts.cards : cards.length;
+				const line = (x) => typeof x === "string" ? x : "";
+				const num = (x) => typeof x === "number" ? String(x) : "?";
+				const out = [`discover: ${nf} flows, ${nc} cards — open one with melite_load`];
+				if (flows.length > 0) {
+					out.push("flows:");
+					for (const f of flows.slice(0, RENDER_CLAMP)) out.push(`  ${line(f?.name)} — ${line(f?.title)} (${num(f?.stages)} stages)`);
+					if (nf > RENDER_CLAMP) out.push(`  +${nf - RENDER_CLAMP} more — detail=true lists every line`);
+				}
+				if (cards.length > 0) {
+					out.push("cards:");
+					for (const c of cards.slice(0, RENDER_CLAMP)) {
+						const tags = Array.isArray(c?.tags) ? c.tags.filter((t) => typeof t === "string") : [];
+						out.push(`  ${line(c?.id)} — ${line(c?.label)}${tags.length > 0 ? ` [${tags.join(",")}]` : ""}`);
+					}
+					if (nc > RENDER_CLAMP) out.push(`  +${nc - RENDER_CLAMP} more — narrow with tags/q, or detail=true`);
+				}
+				if (Array.isArray(v?.tag_vocabulary)) {
+					const vocab = v.tag_vocabulary.filter((t) => typeof t === "string");
+					if (vocab.length > 0) out.push("tag vocabulary: " + vocab.join(", "));
+				}
+				if (typeof v?.hint === "string" && v.hint !== "") out.push("hint: " + v.hint);
 				return [{
 					type: "text",
-					text: `discover: ${Array.isArray(v?.flows) ? v.flows.length : 0} flows, ${Array.isArray(v?.cards) ? v.cards.length : 0} cards — open one with melite_load`
+					text: out.join("\n")
 				}];
 			}
 		},
@@ -1489,10 +1514,39 @@ function meliteLoad(request) {
 					text: "melite_load REFUSED: " + v.error
 				}];
 				const b = v?.bundle ?? {};
-				const n = Array.isArray(b.skills) ? b.skills.length : 0;
+				const str = (x) => typeof x === "string" ? x : "";
+				const out = [`loaded ${str(b.kind) || "?"} ${str(b.name) || "?"} — open with melite_flow`];
+				const hints = Array.isArray(b.model_hints) ? b.model_hints : [];
+				if (hints.length > 0) out.push("models: " + hints.map((h) => `${str(h?.id)}${str(h?.label) !== "" ? " (" + str(h?.label) + ")" : ""}`).join(", "));
+				const sig = b.signature;
+				if (sig !== null && sig !== void 0) {
+					const props = sig.params_schema?.properties;
+					const keys = props !== void 0 && props !== null ? Object.keys(props) : [];
+					const req = Array.isArray(sig.params_schema?.required) ? sig.params_schema.required.filter((r) => typeof r === "string") : [];
+					if (keys.length > 0) {
+						const marked = keys.map((k) => req.includes(k) ? k + "*" : k);
+						out.push("params: " + marked.join(", ") + " (* required)");
+					}
+					const model = str(sig.model);
+					if (model !== "") out.push("signature model: " + model);
+				}
+				const stages = Array.isArray(b.stages) ? b.stages : [];
+				if (stages.length > 0) out.push("stages: " + stages.map((s) => `${str(s?.id)}:${str(s?.card)}`).join(" → "));
+				const skills = Array.isArray(b.skills) ? b.skills : [];
+				if (skills.length > 0) {
+					const names = skills.slice(0, 8).map((s) => str(s?.id) !== "" ? str(s?.id) : str(s?.ref));
+					out.push(`skills: ${skills.length} lines — ${names.join(", ")}${skills.length > 8 ? " …" : ""}`);
+				}
+				const digest = str(b.digest);
+				if (digest !== "") out.push("digest: " + digest + " (quote it to skip a reload)");
+				const docs = Array.isArray(b.agents) ? b.agents : [];
+				if (docs.length > 0) {
+					out.push("agents md:");
+					for (const d of docs) out.push(str(d?.text));
+				}
 				return [{
 					type: "text",
-					text: `loaded ${String(b.kind ?? "?")} ${String(b.name ?? "?")} — ${n} skill lines`
+					text: out.join("\n")
 				}];
 			}
 		},
@@ -1515,7 +1569,11 @@ function meliteLoad(request) {
 				inference_type: inferenceType
 			});
 			try {
-				return jsonClean(await request("GET", "/v1/load?" + params.toString(), void 0, exec.signal, TIMEOUT_MS));
+				return jsonClean({
+					...await request("GET", "/v1/load?" + params.toString(), void 0, exec.signal, TIMEOUT_MS) ?? {},
+					name,
+					inference_type: inferenceType
+				});
 			} catch (e) {
 				const err = e;
 				return jsonClean({
@@ -1577,9 +1635,24 @@ function skillIndex(request) {
 				}
 			},
 			render: (_args, value) => {
+				const v = value;
+				if (v && typeof v.error === "string") return [{
+					type: "text",
+					text: "skill_index REFUSED: " + v.error
+				}];
+				const RENDER_CLAMP = 40;
+				const rows = Array.isArray(v?.skills) ? v.skills : [];
+				const count = typeof v?.count === "number" ? v.count : rows.length;
+				const out = [`skill_index: ${count} skills — read one with skill_read`];
+				for (const r of rows.slice(0, RENDER_CLAMP)) {
+					const id = typeof r?.id === "string" ? r.id : "";
+					const name = typeof r?.name === "string" ? r.name : "";
+					if (id !== "") out.push(`  ${id}${name !== "" ? " — " + name : ""}`);
+				}
+				if (count > RENDER_CLAMP) out.push(`  +${count - RENDER_CLAMP} more`);
 				return [{
 					type: "text",
-					text: "skill_index: " + String(value.count ?? 0) + " skills (load one with skill_read)"
+					text: out.join("\n")
 				}];
 			}
 		},
@@ -1658,9 +1731,15 @@ function skillRead(request) {
 			render: (args, value) => {
 				const a = typeof args === "object" && args !== null ? args : {};
 				const v = value;
+				if (v && typeof v.error === "string" && v.error !== "") return [{
+					type: "text",
+					text: "skill_read REFUSED: " + v.error
+				}];
+				const head = "skill_read " + String(a.id ?? v.id ?? "?") + ": " + String(v.name ?? "loaded");
+				const body = typeof v.content === "string" ? v.content : "";
 				return [{
 					type: "text",
-					text: "skill_read " + String(a.id ?? v.id ?? "?") + ": " + String(v.name ?? "loaded")
+					text: body !== "" ? head + "\n" + body : head + "\n(no body)"
 				}];
 			}
 		},
@@ -1807,6 +1886,7 @@ const MELITE_TOOL_NAMES = [
 async function apply(ctx, config = {}) {
 	const c = ctx;
 	const request = makeEstateRequest(ctx);
+	const call = asEstateCall(request);
 	const headless = process.env.MELITE_HEADLESS === "1" || config.headless === true;
 	const adhocEnv = (process.env.MELITE_ADHOC || "").split(",").map((s) => s.trim()).filter(Boolean);
 	const adhocCfg = Array.isArray(config.adhocTools) ? config.adhocTools.map((s) => s.trim()).filter(Boolean) : typeof config.adhocTools === "string" ? config.adhocTools.split(",").map((s) => s.trim()).filter(Boolean) : [];
@@ -1823,13 +1903,13 @@ async function apply(ctx, config = {}) {
 		c.tools.register(meliteFlow(request));
 		c.tools.register(runStatus(request));
 	}
-	c.tools.register(buildMusicTool(request));
-	c.tools.register(buildTtsTool(request));
-	c.tools.register(buildVoiceLockTool(request));
-	c.tools.register(buildImageEditTool(request));
-	c.tools.register(buildMotionTool(request));
-	c.tools.register(buildH3TimelineTool(request));
-	c.tools.register(buildCardTool(request));
+	c.tools.register(buildMusicTool(call));
+	c.tools.register(buildTtsTool(call));
+	c.tools.register(buildVoiceLockTool(call));
+	c.tools.register(buildImageEditTool(call));
+	c.tools.register(buildMotionTool(call));
+	c.tools.register(buildH3TimelineTool(call));
+	c.tools.register(buildCardTool(call));
 }
 //#endregion
 export { ADHOC_TOOL_NAMES, BASE_TOOL_NAMES, DEFAULT_BENCH, HEADLESS_TOOL_NAMES, MELITE_TOOL_NAMES, apply, comfyManage, harnessEnhance, inject, ledgerTail, makeEstateRequest, matchHarnessRoute, meliteConstruct, meliteDiscover, meliteFlow, meliteLoad, name, resolveHarnessRoutes, routeName, runStatus, skillIndex, skillRead };

@@ -89,10 +89,23 @@ beforeAll(async () => {
   await ctx.plugin(Storage as never);
   await ctx.plugin({ name: jsonName, inject: jsonInject, apply: jsonApply, Config: JsonConfig } as never, { root });
   await ctx.plugin({ name: domainName, inject: domainInject, apply: domainApply, Config: DomainConfig } as never, { backend: "json" });
+  // THE CORE-SKILLS DECOY (agent-trace audit, 2026-09-13): DSH
+  // core's dsh-skill registers a service ALSO named "skills" in every
+  // dsh-base composition — the tools' seat probe once read that name
+  // and skill_index died live ("seats.skills.index is not a function")
+  // while this wall's bare composition stayed green. The decoy
+  // reproduces the collision ON PURPOSE: if any probe touches
+  // ctx.get('skills') again, the arms below fail loudly.
+  class SkillsDecoy extends Service {
+    constructor(c: Context) { super(c, "skills"); }
+    index(): never { throw new Error("decoy skills service touched — the estate seat is meliteSkills"); }
+    read(): never { throw new Error("decoy skills service touched — the estate seat is meliteSkills"); }
+  }
+  new SkillsDecoy(ctx);
   await ctx.plugin(estateBundle as never);
   // settle the seats the tools' transports resolve (the composition
   // wall's settle pattern — the bundle fans out un-awaited)
-  const seats = ["queue", "draftsRemote", "benchRemote", "cardRegistry", "disclose", "manage", "skills", "load", "runs", "comfyui"];
+  const seats = ["queue", "draftsRemote", "benchRemote", "cardRegistry", "disclose", "manage", "meliteSkills", "load", "runs", "comfyui"];
   const deadline = Date.now() + 15_000;
   for (;;) {
     const missing = seats.filter((n) => ctx.get(n, false) === undefined);

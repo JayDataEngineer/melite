@@ -1,6 +1,16 @@
 import { CARD_KINDS, SLOT_VOCABULARY, buildCatalog, emitParamsSchema, getModel, isServedFamily, loadCardDefs, modelIds, theService } from "@melite/comfyui-cordis";
 import { createUserMessage } from "@deepseek-ai/dsh-llm";
 //#region src/estate.ts
+/** Narrow the seat-bound request to the canonical EstateCall the card
+* tool builders receive: the seats demand a caller signal (trySeats'
+* throwIfAborted), so a signalless call fails HERE with a named error
+* instead of deep inside the lane as a TypeError (2026-09-12). */
+function asEstateCall(request) {
+	return (method, path, body, signal, timeoutMs) => {
+		if (signal === void 0) throw new Error(`estate call ${method} ${path} arrived without a caller signal (the seats require cancellation)`);
+		return request(method, path, body, signal, timeoutMs);
+	};
+}
 /** Route one KV/runs lane to its seat; undefined = no seat / no match. */
 async function trySeats(ctx, method, path, body, signal) {
 	const probe = ctx;
@@ -21,7 +31,7 @@ async function trySeats(ctx, method, path, body, signal) {
 			return probe.get("manage");
 		},
 		get skills() {
-			return probe.get("skills");
+			return probe.get("meliteSkills");
 		},
 		get load() {
 			return probe.get("load");
@@ -781,4 +791,4 @@ function parseEnhanceJson(text) {
 	throw new Error("enhance: the model reply was not the recipe JSON — head: " + text.slice(0, 160));
 }
 //#endregion
-export { boardedMap as a, formsArm as c, resolveSpecKey as d, makeEstateRequest as f, routeName as i, kindsDoorArm as l, matchHarnessRoute as n, cardToolsArm as o, resolveHarnessRoutes as r, formSpecArm as s, harnessEnhance as t, modelCatalogArm as u };
+export { boardedMap as a, formsArm as c, resolveSpecKey as d, asEstateCall as f, routeName as i, kindsDoorArm as l, matchHarnessRoute as n, cardToolsArm as o, makeEstateRequest as p, resolveHarnessRoutes as r, formSpecArm as s, harnessEnhance as t, modelCatalogArm as u };

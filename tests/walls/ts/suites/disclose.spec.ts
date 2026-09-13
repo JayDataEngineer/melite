@@ -194,7 +194,7 @@ test("the skills seat — index + read, the door's voices (REBUILD-16)", async (
   await ctx.plugin(cardRegistryProvider as never);
   const { skillProvider } = await import("../../../../packages/harness/estate-queue/src/index.ts");
   await ctx.plugin(skillProvider as never);
-  const skills = ctx.get("skills", false) as { index(): { count?: number; skills?: Array<{ id: string }> }; read(id: string, signal: AbortSignal): { id: string; content?: string } };
+  const skills = ctx.get("meliteSkills", false) as { index(): { count?: number; skills?: Array<{ id: string }> }; read(id: string, signal: AbortSignal): { id: string; content?: string } };
   assert.ok(skills, "the skills seat is live");
   // 1. the index: count + wire rows over BOTH planes (flows +
   //    models + cards from the real doc tree).

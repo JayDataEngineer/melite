@@ -10,12 +10,20 @@ import type { Context } from "@deepseek-ai/cordis";
 import { resolveRepoRoot } from "@melite/comfyui-cordis";
 import { buildSkillIndex, hSkillRead } from "./skillPlane.ts";
 
-// ROLE (cookbook adding-a-package role table): Directory: index/read over skill docs. Key "skills" unchanged.
+// ROLE (cookbook adding-a-package role table): Directory: index/read over skill docs. Key "meliteSkills" —
+// renamed from "skills" (agent-trace audit, 2026-09-13): DSH core's own
+// dsh-skill package registers `super(ctx, "skills")`, and in any
+// dsh-base composition the core service OWNS the name — the tools'
+// ctx.get('skills') probe resolved to the core service and
+// `seats.skills.index is not a function` killed skill_index/skill_read
+// in every real agent mount (the wall's bare composition had no core
+// row, so the collision was invisible there). Namespaced seat names
+// are the law for every estate service that could meet a core twin.
 export class SkillDirectoryService extends Service {
   static inject = ["queue"];
 
   constructor(ctx: Context) {
-    super(ctx, "skills");
+    super(ctx, "meliteSkills");
   }
 
   /** GET /v1/skills — the index (count + wire rows, both planes). */
@@ -51,6 +59,6 @@ export const skillProvider = {
 
 declare module "@deepseek-ai/cordis" {
   interface Context {
-    skills: SkillDirectoryService;
+    meliteSkills: SkillDirectoryService;
   }
 }

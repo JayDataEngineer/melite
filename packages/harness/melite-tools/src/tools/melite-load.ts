@@ -168,7 +168,17 @@ export function meliteLoad(request: EstateRequest): ToolDefinition {
         const res = await request( 'GET', '/v1/load?' + params.toString(),
           undefined, exec.signal, TIMEOUT_MS,
         );
-        return jsonClean(res) as LoadResult;
+        // THE ECHO LAW (agent-trace audit, 2026-09-13): the output
+        // schema marks name/inference_type required on EVERY shape
+        // (ledger row 11) and dsh-tools' registry validates the value
+        // against it at the tool-service layer — the seat's success
+        // answer is {bundle} alone, so a verbatim return was
+        // schema-INVALID in every real agent mount ("missing required
+        // property value.name"; the wall drove execute() directly and
+        // bypassed that validation — blind spot closed there too).
+        // Spread the seat answer, echo the args over it.
+        const body = (res ?? {}) as Record<string, unknown>
+        return jsonClean({ ...body, name, inference_type: inferenceType }) as LoadResult;
       } catch (e) {
         const err = e as { body?: unknown; message?: string };
         return jsonClean<LoadResult>({ error: typeof err.body === 'string' && err.body !== '' ? err.body : (err.message ?? 'load failed'), name, inference_type: inferenceType });

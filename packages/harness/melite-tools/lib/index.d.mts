@@ -1,6 +1,7 @@
 import { a as routeName, i as resolveHarnessRoutes, n as harnessEnhance, r as matchHarnessRoute } from "./llm-complete-CXD7-zEN.mjs";
 import { ToolDefinition } from "@deepseek-ai/dsh-tools";
 import "@deepseek-ai/dsh-llm";
+import "@melite/estate-call";
 import "@deepseek-ai/dsh-util-values";
 //#region ../../../node_modules/.pnpm/@deepseek-ai+cosmokit@1.8.3/node_modules/@deepseek-ai/cosmokit/lib/types/misc.d.ts
 /** String/symbol keyed dictionary type. */
@@ -1126,23 +1127,6 @@ declare abstract class Service<out T = never> {
 }
 //#endregion
 //#region src/estate.d.ts
-/**
- * estate.ts — the tools' ONE transport: the ctx seats, in-process.
- *
- * NO HTTP, NO URL, NO PORT (the remotes migration, R2b). The KV/runs
- * lanes ride the estate row's Typert seats (draftsRemote/
- * benchRemote/runsRemote — plain method calls on ctx). The lane
- * fallback died with the gateway (2026-09-10): any lane without a
- * seat throws LOUD — no silent absorb, QUEUE LANE LAW.
- *
- * Seat reads are OPTIONAL-dependency probes — ctx.get(name), the
- * tutorial's documented pattern (cordis-tutorial/03-services.md:
- * "skip inject and probe at the use site"; property reads demand
- * inject and the tools plane must activate in EVERY composition).
- *
- * Remote failures arrive as the protocol's RemoteError (code +
- * details) — discriminate with remoteErrorOf, never instanceof.
- */
 /**
  * DYING SHIM (HTTP-era refusal carrier). The seats never throw it;
  * only lanes still awaiting their remotes keep instanceof arms for

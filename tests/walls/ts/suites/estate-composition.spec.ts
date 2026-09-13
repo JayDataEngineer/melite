@@ -79,7 +79,7 @@ describe("the estate bundle composes", () => {
       "cardRegistry",
       "disclose",
       "manage",
-      "skills",
+      "meliteSkills",
       "load",
       "runs",
       "comfyui",

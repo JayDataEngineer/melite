@@ -28,7 +28,7 @@ function req(seats: Record<string, unknown>): EstateRequest {
 describe('transport law', () => {
   test('an aborted signal refuses before any seat', async () => {
     let touched = false
-    const r = req({ skills: { index: () => { touched = true; return [] } } })
+    const r = req({ meliteSkills: { index: () => { touched = true; return [] } } })
     const ctrl = new AbortController()
     ctrl.abort()
     await assert.rejects(r('GET', '/v1/skills', undefined, ctrl.signal, 1000))
@@ -42,7 +42,7 @@ describe('transport law', () => {
   })
 
   test('a seat value rides verbatim', async () => {
-    const r = req({ skills: { index: () => ({ rows: [1] }) } })
+    const r = req({ meliteSkills: { index: () => ({ rows: [1] }) } })
     assert.deepEqual(await r('GET', '/v1/skills', undefined, SIG, 1000), { rows: [1] })
   })
 
@@ -331,7 +331,7 @@ describe('disclose/manage/skills/load/ledger lanes', () => {
   })
 
   test('skills index + read (decoded); seatless refuses', async () => {
-    const r = req({ skills: { index: () => ['a'], read: (id: string) => ({ id }) } })
+    const r = req({ meliteSkills: { index: () => ['a'], read: (id: string) => ({ id }) } })
     assert.deepEqual(await r('GET', '/v1/skills', undefined, SIG, 1000), ['a'])
     assert.deepEqual(await r('GET', '/v1/skills/skill%20x', undefined, SIG, 1000), { id: 'skill x' })
     await assert.rejects(req({})('GET', '/v1/skills', undefined, SIG, 1000))

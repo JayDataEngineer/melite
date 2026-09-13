@@ -21,7 +21,7 @@ const seat = (): SkillDirectoryService => {
   const ctx = new Context();
   (ctx as unknown as { queue: unknown }).queue = { stateRoot: state };
   skillProvider.apply(ctx);
-  const svc = (ctx as unknown as { skills: SkillDirectoryService }).skills;
+  const svc = (ctx as unknown as { meliteSkills: SkillDirectoryService }).meliteSkills;
   assert.ok(svc instanceof SkillDirectoryService);
   return svc;
 };

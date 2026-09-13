@@ -137,7 +137,7 @@ async function trySeats(
     get runs() { return probe.get('runs') as Seats['runs'] },
     get disclose() { return probe.get('disclose') as Seats['disclose'] },
     get manage() { return probe.get('manage') as Seats['manage'] },
-    get skills() { return probe.get('skills') as Seats['skills'] },
+    get skills() { return probe.get('meliteSkills') as Seats['skills'] },
     get load() { return probe.get('load') as Seats['load'] },
     get queue() { return probe.get('queue') as Seats['queue'] },
   }

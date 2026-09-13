@@ -806,7 +806,7 @@ describe('/v1 prefix seat lanes', () => {
           return { ok: true }
         },
       },
-      skills: {
+      meliteSkills: {
         index: () => {
           calls.push(['index'])
           return ['a']
@@ -885,7 +885,7 @@ describe('/v1 prefix seat lanes', () => {
           },
         }
       }
-      if (serviceName === 'skills') {
+      if (serviceName === 'meliteSkills') {
         return {
           index: () => {
             throw 'skills blew up'
