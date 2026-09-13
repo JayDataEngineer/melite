@@ -9,7 +9,7 @@ import { SPEED_LORA_OPTIONS } from "./docModel"
 import type { LayerA, SetLayerAKey } from "./docModel"
 import { useEffect, useState } from "react"
 import type { ReactElement } from "react"
-import { fetchFormSpec, SpecFieldRow, type FormSpecDoc, type SpecField } from "@melite/card-base"
+import { SpecFieldRow, useFormSpec, type SpecField } from "@melite/card-base"
 
 /** The spec's name → LayerA's key (the h3_ prefix is the studio's
  * document spelling of the card's renderer vocabulary). */
@@ -33,14 +33,9 @@ export function RunAdvancedPanels({
   layerA: LayerA
   setLayerAKey: SetLayerAKey
 }) {
-  const [spec, setSpec] = useState<FormSpecDoc | null>(null)
-  useEffect(() => {
-    const ctl = new AbortController()
-    void fetchFormSpec("h3-timeline", ctl.signal)
-      .then((doc) => { setSpec(doc) })
-      .catch(() => { /* spec door refused — hand-rolled rows below keep the rail alive */ })
-    return () => { ctl.abort() }
-  }, [])
+  // the served spec rides the shared hook (spec door refusal — the
+  // hand-rolled rows below keep the rail alive)
+  const { spec } = useFormSpec("h3-timeline")
   const byName = new Map((spec?.fields ?? []).map((f: SpecField) => [f.name, f]))
   const row = (name: string): ReactElement | null => {
     const f = byName.get(name)

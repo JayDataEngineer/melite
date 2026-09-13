@@ -9,11 +9,11 @@
 // the draft existed for — one persist per release, the multi-MB
 // rehash freeze stays dead). The expander and the scope chip are
 // document chrome; they stay.
-import { useEffect, useState, type ReactElement } from "react"
+import { useMemo, useState, type ReactElement } from "react"
 import { Button, Tooltip } from "@deepseek-ai/dsh-client-ui-primitives"
 import { clsx } from "clsx"
 import { ChevronDown, Focus, X } from "@melite/card-base/icons"
-import { fetchFormSpec, SpecFieldRow, type FormSpecDoc, type SpecField } from "@melite/card-base"
+import { SpecFieldRow, useFormSpec, type FormSpecDoc, type SpecField } from "@melite/card-base"
 import styles from "./mask.module.css"
 import type { MaskSource } from "./constants"
 
@@ -51,14 +51,11 @@ export function TuneSection({
   const [tuneOpen, setTuneOpen] = useState(false)
   // The served declaration (fetch once — the spec is the card's
   // emission, stable for the session).
-  const [fields, setFields] = useState<SpecField[]>([])
-  useEffect(() => {
-    const ctl = new AbortController()
-    void fetchFormSpec("mask-studio", ctl.signal)
-      .then((spec) => { setFields(tuneFields(spec)) })
-      .catch(() => { /* the spec door refused — the section renders its chrome empty */ })
-    return () => { ctl.abort() }
-  }, [])
+  // the served spec rides the shared hook; the tune subset derives
+  // per render (spec door refusal — the section renders its chrome
+  // empty)
+  const { spec } = useFormSpec("mask-studio")
+  const fields = useMemo(() => (spec === null ? [] : tuneFields(spec)), [spec])
   const byName = new Map(fields.map((f) => [f.name, f]))
   const row = (name: string): ReactElement | null => {
     const f = byName.get(name)

@@ -29,7 +29,7 @@ import type {} from '@melite/card-base/slots'
 import { Button, DisclosureRow, IconArchiveOutline20, Tag } from '@deepseek-ai/dsh-client-ui-primitives'
 import css from './client.module.css'
 import type { StageViewOwnerProps } from '@melite/contracts'
-import { fetchFormSpec, CardForm as SpecForm, specDefaults, useSquareProvider, type FormSpecDoc, type SpecField, type SpecValues, type SquareHost } from '@melite/card-base'
+import { CardForm as SpecForm, specDefaults, useFormSpec, useSquareProvider, type FormSpecDoc, type SpecField, type SpecValues, type SquareHost } from '@melite/card-base'
 import { pollRunStageUrl } from '@melite-plugin/melite-run-wire'
 // THE MESH STAGE (hour 14): the shared raw-three preview from
 // card-base — the SAME stage anny rides (one preview-port interaction
@@ -87,20 +87,19 @@ export function ImgToMeshStudio(props: StageViewOwnerProps): ReturnType<typeof h
     void pollRunStageUrl(ownRunId, props.stageId, { onUrl: setMeshUrl }, ctrl.signal)
     return () => { ctrl.abort() }
   }, [ownRunId, ownUrl, props.stageId])
+  // the served spec rides the shared hook (loud refusal — the client
+  // renders the error surface); seeding + the envelope lift react to
+  // the doc landing
+  const { spec: liveSpec, error: specError } = useFormSpec('img-to-mesh')
   useEffect(() => {
-    let alive = true
-    fetchFormSpec('img-to-mesh')
-      .then((doc) => {
-        if (!alive) return
-        setSpec(doc)
-        // seed: the spec's defaults UNDER the frozen bench params
-        setValues({ ...specDefaults(doc.fields), ...params })
-        // the envelope lift: report the estate's declared size class
-        if (alive) props.onSurface(doc.size === 'huge' ? 'huge' : '')
-      })
-      .catch((e: unknown) => { if (alive) setError(e instanceof Error ? e.message : 'form-spec failed') })
-    return () => { alive = false }
-  }, [])
+    if (specError !== null) { setError(specError); return }
+    if (liveSpec === null) return
+    setSpec(liveSpec)
+    // seed: the spec's defaults UNDER the frozen bench params
+    setValues({ ...specDefaults(liveSpec.fields), ...params })
+    // the envelope lift: report the estate's declared size class
+    props.onSurface(liveSpec.size === 'huge' ? 'huge' : '')
+  }, [liveSpec, specError])
   const onEdit = (name: string, v: unknown): void => {
     setValues((prev) => ({ ...prev, [name]: v }))
   }

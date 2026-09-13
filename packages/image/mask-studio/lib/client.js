@@ -1391,6 +1391,39 @@ window.__ModuleLoader__.load({
 		* layout-only module CSS over native elements, every color an
 		* inherited --dsw-alias-* token (the package's documented pattern).
 		*/
+		/** THE SERVED-SPEC HOOK (the DRY extraction, 2026-09-13): four
+		*  consumers (mask-studio's TuneSection, h3's RunAdvancedPanels,
+		*  img-to-mesh's client, ideogram4's client) each hand-copied the
+		*  same fetch-once + abort dance. One spelling now: fetches
+		*  /v1/form-spec?model=<id> when the id is non-empty, aborts the
+		*  in-flight fetch on unmount or id change, and hands back the doc
+		*  (null until it lands) + the refusal message (null unless the door
+		*  refused — loud consumers render it, silent ones ignore it).
+		*  Consumer-specific derivations (field filters, value seeding) stay
+		*  at the call site as reactions to `spec`. */
+		function useFormSpec(modelId) {
+			const [spec, setSpec] = (0, react.useState)(null);
+			const [error, setError] = (0, react.useState)(null);
+			const id = typeof modelId === "string" && modelId !== "" ? modelId : null;
+			(0, react.useEffect)(() => {
+				if (id === null) return;
+				const ctl = new AbortController();
+				setSpec(null);
+				setError(null);
+				fetchFormSpec(id, ctl.signal).then((doc) => {
+					setSpec(doc);
+				}).catch((e) => {
+					setError(e instanceof Error ? e.message : "form-spec failed");
+				});
+				return () => {
+					ctl.abort();
+				};
+			}, [id]);
+			return {
+				spec,
+				error
+			};
+		}
 		/** THE TRI-STATE ATOM (hour 15, stroke C): inherit / on / off —
 		*  promoted from h3's studio-local TriControl (same semantics, same
 		*  option order). Serves schema-bound fields of type 'tri' AND the
@@ -1590,16 +1623,8 @@ window.__ModuleLoader__.load({
 		function TuneSection({ params, source, scopeLabel, hasScope, onChange, onClearScope }) {
 			const isDetect = source === "person" || source === "box";
 			const [tuneOpen, setTuneOpen] = (0, react.useState)(false);
-			const [fields, setFields] = (0, react.useState)([]);
-			(0, react.useEffect)(() => {
-				const ctl = new AbortController();
-				fetchFormSpec("mask-studio", ctl.signal).then((spec) => {
-					setFields(tuneFields(spec));
-				}).catch(() => {});
-				return () => {
-					ctl.abort();
-				};
-			}, []);
+			const { spec } = useFormSpec("mask-studio");
+			const fields = (0, react.useMemo)(() => spec === null ? [] : tuneFields(spec), [spec]);
 			const byName = new Map(fields.map((f) => [f.name, f]));
 			const row = (name) => {
 				const f = byName.get(name);

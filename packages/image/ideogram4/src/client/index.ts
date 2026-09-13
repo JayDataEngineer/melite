@@ -29,7 +29,7 @@ import { Button } from '@deepseek-ai/dsh-client-ui-primitives'
 import css from './client.module.css'
 import type { StageViewOwnerProps } from '@melite/contracts'
 import type { SpecValues } from '@melite/card-base'
-import { fetchFormSpec, specDefaults, specPatch, CardForm as SpecForm, type FormSpecDoc } from '@melite/card-base'
+import { specDefaults, specPatch, CardForm as SpecForm, useFormSpec, type FormSpecDoc } from '@melite/card-base'
 
 // ── The types (ideoHelpers.ts verbatim) ─────────────────────────────────────
 
@@ -448,21 +448,18 @@ export function Ideogram4Studio(props: StageViewOwnerProps): ReturnType<typeof h
 
   // ── The remaining spec fields (seed/steps/cfg/… — the generic drill
   //    serves them inside the rail; the studio owns prompt/width/height).
+  // the served spec rides the shared hook (dynamic card id — the hook
+  // refetches + aborts on change; the studio's field filter and value
+  // seeding react to the doc landing)
+  const card = typeof props['cardName'] === 'string' ? props['cardName'] : ''
+  const { spec: servedSpec } = useFormSpec(card)
   const [spec, setSpec] = useState<FormSpecDoc | null>(null)
   useEffect(() => {
-    let alive = true
-    const card = typeof props['cardName'] === 'string' ? props['cardName'] : ''
-    if (card === '') return
-    fetchFormSpec(card)
-      .then((doc) => {
-        if (!alive) return
-        const rest = doc.fields.filter((f) => !SPEC_EXCLUDED.has(f.name))
-        setSpec({ ...doc, fields: rest })
-        setValues((prev) => ({ ...specDefaults(rest), ...params, ...prev }))
-      })
-      .catch(() => {})
-    return () => { alive = false }
-  }, [props['cardName']])
+    if (servedSpec === null) return
+    const rest = servedSpec.fields.filter((f) => !SPEC_EXCLUDED.has(f.name))
+    setSpec({ ...servedSpec, fields: rest })
+    setValues((prev) => ({ ...specDefaults(rest), ...params, ...prev }))
+  }, [servedSpec])
 
   // ── The elements document (the echo-guard law, verbatim) ──
   const [elements, setElementsInternal] = useState<IdeoElement[]>(() => parseElementsJSON(String(values['elements'] ?? '[]')) ?? [])

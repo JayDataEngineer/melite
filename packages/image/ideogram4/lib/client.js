@@ -548,6 +548,39 @@ window.__ModuleLoader__.load({
 		* layout-only module CSS over native elements, every color an
 		* inherited --dsw-alias-* token (the package's documented pattern).
 		*/
+		/** THE SERVED-SPEC HOOK (the DRY extraction, 2026-09-13): four
+		*  consumers (mask-studio's TuneSection, h3's RunAdvancedPanels,
+		*  img-to-mesh's client, ideogram4's client) each hand-copied the
+		*  same fetch-once + abort dance. One spelling now: fetches
+		*  /v1/form-spec?model=<id> when the id is non-empty, aborts the
+		*  in-flight fetch on unmount or id change, and hands back the doc
+		*  (null until it lands) + the refusal message (null unless the door
+		*  refused — loud consumers render it, silent ones ignore it).
+		*  Consumer-specific derivations (field filters, value seeding) stay
+		*  at the call site as reactions to `spec`. */
+		function useFormSpec(modelId) {
+			const [spec, setSpec] = (0, react.useState)(null);
+			const [error, setError] = (0, react.useState)(null);
+			const id = typeof modelId === "string" && modelId !== "" ? modelId : null;
+			(0, react.useEffect)(() => {
+				if (id === null) return;
+				const ctl = new AbortController();
+				setSpec(null);
+				setError(null);
+				fetchFormSpec(id, ctl.signal).then((doc) => {
+					setSpec(doc);
+				}).catch((e) => {
+					setError(e instanceof Error ? e.message : "form-spec failed");
+				});
+				return () => {
+					ctl.abort();
+				};
+			}, [id]);
+			return {
+				spec,
+				error
+			};
+		}
 		/** THE ONE square provider (the old SlotGrid law, DSH substrate):
 		*  every slot-shaped field of a stage gets the same verbs — file
 		*  upload (the /v1/uploads door + the data-URL mirror), media drop
@@ -1805,28 +1838,21 @@ window.__ModuleLoader__.load({
 			const { row, runStatus, onPatch, onRun, onStop, onRemove, onSurface } = props;
 			const params = typeof row["params"] === "object" && row["params"] !== null ? row["params"] : {};
 			const [values, setValues] = (0, react.useState)(() => flattenCaption(params["prompt"], Number(params["width"] ?? 1024) || 1024, Number(params["height"] ?? 1024) || 1024));
+			const { spec: servedSpec } = useFormSpec(typeof props["cardName"] === "string" ? props["cardName"] : "");
 			const [spec, setSpec] = (0, react.useState)(null);
 			(0, react.useEffect)(() => {
-				let alive = true;
-				const card = typeof props["cardName"] === "string" ? props["cardName"] : "";
-				if (card === "") return;
-				fetchFormSpec(card).then((doc) => {
-					if (!alive) return;
-					const rest = doc.fields.filter((f) => !SPEC_EXCLUDED.has(f.name));
-					setSpec({
-						...doc,
-						fields: rest
-					});
-					setValues((prev) => ({
-						...specDefaults(rest),
-						...params,
-						...prev
-					}));
-				}).catch(() => {});
-				return () => {
-					alive = false;
-				};
-			}, [props["cardName"]]);
+				if (servedSpec === null) return;
+				const rest = servedSpec.fields.filter((f) => !SPEC_EXCLUDED.has(f.name));
+				setSpec({
+					...servedSpec,
+					fields: rest
+				});
+				setValues((prev) => ({
+					...specDefaults(rest),
+					...params,
+					...prev
+				}));
+			}, [servedSpec]);
 			const [elements, setElementsInternal] = (0, react.useState)(() => parseElementsJSON(String(values["elements"] ?? "[]")) ?? []);
 			const [selectedIds, setSelectedIds] = (0, react.useState)([]);
 			const selectedId = selectedIds.length === 1 ? selectedIds[0] : null;
