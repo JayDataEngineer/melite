@@ -1,12 +1,10 @@
 /* timeline.module.css — @melite-plugin/timeline: the MotionTimelineBar NLE
  * skin, replacing every tailwind utility the bar used (DSH-pure UI law).
  *
- * Palette: the bar keeps its dark-NLE look — navy wash, white-at-alpha
- * hairlines, cyan brand accents. DSW tokens first with dark fallbacks so
- * the bar renders identically inside and outside a DSH shell:
- *   text/surfaces → var(--dsw-alias-*, dark fallback)
- *   brand accent  → var(--dsw-alias-brand-primary) (the bar's cyan)
- * Literal media colors (cyan-300/violet/emerald/red badges) stay verbatim.
+ * COLOR LAW (2026-09-13): the bar rides the DSH design system — every
+ * color is a --dsw-alias-* token or a color-mix() over one. No literal
+ * palette, no var() fallbacks: the shell's tokens ARE the values. Kind
+ * identity (audio/refs/delete) rides the state tokens via color-mix.
  */
 
 .root {
@@ -19,7 +17,7 @@
   display: flex;
   flex: none;
   flex-direction: column;
-  border-right: 1px solid rgba(255, 255, 255, 0.06);
+  border-right: 1px solid var(--dsw-alias-border-l2);
 }
 
 .zoomRow {
@@ -27,7 +25,7 @@
   align-items: center;
   justify-content: center;
   gap: 2px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  border-bottom: 1px solid var(--dsw-alias-border-l2);
 }
 
 /* Icon zoom buttons (DSH Button, ghost/sm): exact 20px geometry. */
@@ -41,13 +39,13 @@
   border: none;
   border-radius: 4px;
   background: transparent;
-  color: rgba(255, 255, 255, 0.7);
+  color: var(--dsw-alias-label-secondary);
   font-size: inherit;
   line-height: 1;
   cursor: pointer;
 }
 .zoomBtn:hover {
-  background: rgba(255, 255, 255, 0.08);
+  background: var(--dsw-alias-interactive-bg-hover);
   color: var(--dsw-alias-brand-primary);
 }
 .zoomBtn svg {
@@ -63,7 +61,7 @@
   border: none;
   border-radius: 4px;
   background: transparent;
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--dsw-alias-label-secondary);
   font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   font-size: 10px;
   text-align: center;
@@ -79,16 +77,16 @@
   align-items: center;
   gap: 6px;
   padding: 0 8px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
-  background: rgba(255, 255, 255, 0.02);
+  border-bottom: 1px solid var(--dsw-alias-border-l1);
+  background: var(--dsw-alias-bg-layer-1);
 }
 .laneHeadBeats {
   display: flex;
   align-items: center;
   gap: 6px;
   padding: 0 8px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
-  background: rgba(255, 255, 255, 0.01);
+  border-bottom: 1px solid var(--dsw-alias-border-l1);
+  background: var(--dsw-alias-bg-layer-1);
 }
 .laneHead > svg,
 .laneHeadBeats > svg {
@@ -98,7 +96,7 @@
   color: var(--dsw-alias-brand-primary);
 }
 .laneHeadBeats > svg {
-  color: rgba(103, 232, 249, 0.8);
+  color: var(--dsw-alias-brand-primary);
 }
 
 .gutterLabel {
@@ -107,7 +105,7 @@
   white-space: nowrap;
   font-size: 10px;
   font-weight: 500;
-  color: rgba(255, 255, 255, 0.5);
+  color: var(--dsw-alias-label-tertiary);
 }
 
 .audioHead {
@@ -115,13 +113,13 @@
   align-items: center;
   gap: 6px;
   padding: 0 8px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+  border-bottom: 1px solid var(--dsw-alias-border-l1);
 }
 .audioHead > svg {
   flex: none;
   width: 12px;
   height: 12px;
-  color: rgba(196, 181, 253, 0.8);
+  color: var(--dsw-alias-state-business-primary);
 }
 .gutterLabelDim {
   overflow: hidden;
@@ -129,7 +127,7 @@
   white-space: nowrap;
   font-size: 10px;
   font-weight: 500;
-  color: rgba(255, 255, 255, 0.4);
+  color: var(--dsw-alias-label-tertiary);
 }
 
 .detachBtn {
@@ -144,12 +142,12 @@
   border: none;
   border-radius: 4px;
   background: transparent;
-  color: rgba(154, 160, 166, 0.55);
+  color: var(--dsw-alias-label-tertiary);
   cursor: pointer;
 }
 .detachBtn:hover {
-  background: rgba(239, 68, 68, 0.8);
-  color: #fff;
+  background: var(--dsw-alias-state-error-primary);
+  color: var(--dsw-alias-label-primary);
 }
 .detachBtn svg {
   width: 10px;
@@ -161,7 +159,7 @@
   align-items: center;
   gap: 6px;
   padding: 0 8px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+  border-bottom: 1px solid var(--dsw-alias-border-l1);
 }
 .laneRow:last-child {
   border-bottom: 0;
@@ -177,7 +175,7 @@
   text-overflow: ellipsis;
   white-space: nowrap;
   font-size: 10px;
-  color: rgba(255, 255, 255, 0.4);
+  color: var(--dsw-alias-label-tertiary);
 }
 
 /* ── Scrollable content ────────────────────────────────────────────── */
@@ -191,7 +189,7 @@
   overflow-x: auto;
   overflow-y: hidden;
   scrollbar-width: thin;
-  scrollbar-color: rgba(255, 255, 255, 0.25) transparent;
+  scrollbar-color: var(--dsw-alias-border-l3) transparent;
 }
 .scroller::-webkit-scrollbar {
   height: 8px;
@@ -200,7 +198,7 @@
   background: transparent;
 }
 .scroller::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.18);
+  background: var(--dsw-alias-border-l2);
   border-radius: 4px;
 }
 .content {
@@ -210,7 +208,7 @@
 /* ── Ruler ─────────────────────────────────────────────────────────── */
 .ruler {
   position: relative;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  border-bottom: 1px solid var(--dsw-alias-border-l2);
   cursor: ew-resize;
   touch-action: none;
 }
@@ -222,7 +220,7 @@
 .tickLine {
   height: 100%;
   width: 1px;
-  background: rgba(255, 255, 255, 0.1);
+  background: var(--dsw-alias-border-l2);
 }
 .tickLabel {
   position: absolute;
@@ -231,7 +229,7 @@
   font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   font-size: 10px;
   line-height: 1;
-  color: rgba(255, 255, 255, 0.45);
+  color: var(--dsw-alias-label-tertiary);
 }
 .timecode {
   position: sticky;
@@ -252,7 +250,7 @@
 /* ── Prompts lane ──────────────────────────────────────────────────── */
 .promptsLane {
   position: relative;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  border-bottom: 1px solid var(--dsw-alias-border-l1);
 }
 .canAdd {
   cursor: copy;
@@ -266,7 +264,7 @@
 }
 .emptyHint {
   font-size: 10px;
-  color: rgba(255, 255, 255, 0.25);
+  color: var(--dsw-alias-label-tertiary);
 }
 
 /* Prompt clip + its three states (default / selected ring / dragging). */
@@ -278,10 +276,10 @@
   overflow: hidden;
   border-radius: 8px;
   cursor: grab;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid var(--dsw-alias-border-l2);
 }
 .promptClip:hover {
-  border-color: rgba(255, 255, 255, 0.3);
+  border-color: var(--dsw-alias-border-l4);
 }
 .clipSelected {
   z-index: 30;
@@ -297,8 +295,8 @@
   cursor: grabbing;
   border: 1px solid var(--dsw-alias-brand-primary);
   box-shadow:
-    0 20px 25px -5px rgba(0, 0, 0, 0.5),
-    0 8px 10px -6px rgba(0, 0, 0, 0.5),
+    0 20px 25px -5px color-mix(in srgb, var(--dsw-alias-bg-base) 50%, transparent),
+    0 8px 10px -6px color-mix(in srgb, var(--dsw-alias-bg-base) 50%, transparent),
     0 0 0 2px color-mix(in srgb, var(--dsw-alias-brand-primary) 70%, transparent);
 }
 
@@ -317,7 +315,7 @@
   cursor: ew-resize;
 }
 .edgeL:hover {
-  background: rgba(255, 255, 255, 0.2);
+  background: var(--dsw-alias-interactive-bg-hover);
 }
 .edgeDead {
   cursor: default;
@@ -330,10 +328,10 @@
   height: 20px;
   width: 3px;
   border-radius: 9999px;
-  background: rgba(255, 255, 255, 0.25);
+  background: color-mix(in srgb, var(--dsw-alias-label-primary) 25%, transparent);
 }
 .promptClip:hover .gripPill {
-  background: rgba(255, 255, 255, 0.6);
+  background: color-mix(in srgb, var(--dsw-alias-label-primary) 60%, transparent);
 }
 
 /* Seam indicator (extend glyph at the clip's left join). */
@@ -362,7 +360,7 @@
   cursor: ew-resize;
 }
 .edgeR:hover {
-  background: rgba(255, 255, 255, 0.2);
+  background: var(--dsw-alias-interactive-bg-hover);
 }
 .edgeWide {
   width: 16px;
@@ -371,16 +369,16 @@
   height: 20px;
   width: 3px;
   border-radius: 9999px;
-  background: rgba(255, 255, 255, 0.25);
+  background: color-mix(in srgb, var(--dsw-alias-label-primary) 25%, transparent);
 }
 .gripPillBright {
-  background: rgba(255, 255, 255, 0.45);
+  background: color-mix(in srgb, var(--dsw-alias-label-primary) 45%, transparent);
 }
 .promptClip:hover .gripPillR {
-  background: rgba(255, 255, 255, 0.6);
+  background: color-mix(in srgb, var(--dsw-alias-label-primary) 60%, transparent);
 }
 .promptClip:hover .gripPillBright {
-  background: rgba(255, 255, 255, 0.8);
+  background: color-mix(in srgb, var(--dsw-alias-label-primary) 80%, transparent);
 }
 
 /* Inline prompt editor (DSH Input atom: className lands on the wrap). */
@@ -396,7 +394,7 @@
   padding: 0 6px;
   border: none;
   border-radius: 4px;
-  background: rgba(0, 0, 0, 0.6);
+  background: color-mix(in srgb, var(--dsw-alias-bg-base) 60%, transparent);
   box-shadow: 0 0 0 1px color-mix(in srgb, var(--dsw-alias-brand-primary) 50%, transparent);
   pointer-events: auto;
 }
@@ -414,7 +412,7 @@
   color: var(--dsw-alias-label-primary);
 }
 .clipEditor input::placeholder {
-  color: rgba(255, 255, 255, 0.35);
+  color: var(--dsw-alias-label-tertiary);
 }
 
 /* Clip body: preview strip vs plain text. */
@@ -436,7 +434,7 @@
 .scrim {
   position: absolute;
   inset: 0;
-  background: linear-gradient(to top, rgba(0, 0, 0, 0.85), rgba(0, 0, 0, 0.45) 50%, rgba(0, 0, 0, 0.1));
+  background: linear-gradient(to top, color-mix(in srgb, var(--dsw-alias-bg-base) 85%, transparent), color-mix(in srgb, var(--dsw-alias-bg-base) 45%, transparent) 50%, color-mix(in srgb, var(--dsw-alias-bg-base) 10%, transparent));
 }
 .clipTextCol {
   position: absolute;
@@ -469,12 +467,12 @@
 }
 .clipEmpty {
   font-style: italic;
-  color: rgba(255, 255, 255, 0.3);
+  color: var(--dsw-alias-label-tertiary);
 }
 .clipDur {
   font-size: 10px;
   font-variant-numeric: tabular-nums;
-  color: rgba(255, 255, 255, 0.4);
+  color: var(--dsw-alias-label-tertiary);
 }
 
 /* Per-call badges. */
@@ -486,8 +484,8 @@
   height: 6px;
   width: 6px;
   border-radius: 9999px;
-  background: #67e8f9;
-  box-shadow: 0 0 6px rgba(34, 211, 238, 0.8);
+  background: var(--dsw-alias-brand-primary);
+  box-shadow: 0 0 6px color-mix(in srgb, var(--dsw-alias-brand-primary) 80%, transparent);
   pointer-events: none;
 }
 .refAudioBadge {
@@ -497,7 +495,7 @@
   z-index: 20;
   width: 10px;
   height: 10px;
-  color: rgba(196, 181, 253, 0.9);
+  color: var(--dsw-alias-state-business-primary);
   pointer-events: none;
 }
 .refBadge {
@@ -513,13 +511,13 @@
 .refBadge svg {
   width: 8px;
   height: 8px;
-  color: rgba(52, 211, 153, 0.9);
+  color: var(--dsw-alias-state-success-primary);
 }
 .refCount {
   font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   font-size: 8px;
   line-height: 1;
-  color: rgba(52, 211, 153, 0.9);
+  color: var(--dsw-alias-state-success-primary);
 }
 
 /* Hover delete (DSH Button, ghost): revealed by clip hover. */
@@ -536,12 +534,12 @@
   padding: 0;
   border: none;
   border-radius: 9999px;
-  background: rgba(239, 68, 68, 0.9);
+  background: var(--dsw-alias-state-error-primary);
   opacity: 0;
   cursor: pointer;
 }
 .promptDelete:hover {
-  background: #ef4444;
+  background: color-mix(in srgb, var(--dsw-alias-state-error-primary) 85%, var(--dsw-alias-label-primary));
 }
 .promptClip:hover .promptDelete {
   opacity: 1;
@@ -555,7 +553,7 @@
 /* ── Beats lane ────────────────────────────────────────────────────── */
 .beatsLane {
   position: relative;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  border-bottom: 1px solid var(--dsw-alias-border-l1);
 }
 .beatsAdd {
   cursor: crosshair;
@@ -569,7 +567,7 @@
 }
 .hintLine {
   font-size: 10px;
-  color: rgba(255, 255, 255, 0.4);
+  color: var(--dsw-alias-label-tertiary);
 }
 .beatClip {
   position: absolute;
@@ -577,19 +575,19 @@
   top: 4px;
   overflow: hidden;
   border-radius: 6px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid var(--dsw-alias-border-l2);
   cursor: pointer;
 }
 .beatClip:hover {
-  border-color: rgba(255, 255, 255, 0.3);
+  border-color: var(--dsw-alias-border-l4);
 }
 .beatSelected {
   z-index: 30;
-  border-color: #67e8f9;
-  box-shadow: 0 0 0 2px rgba(34, 211, 238, 0.6);
+  border-color: var(--dsw-alias-brand-primary);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--dsw-alias-brand-primary) 60%, transparent);
 }
 .beatSelected:hover {
-  border-color: #67e8f9;
+  border-color: var(--dsw-alias-brand-primary);
 }
 .beatLabel {
   position: absolute;
@@ -599,7 +597,7 @@
   padding: 0 6px;
   font-size: 10px;
   line-height: 1.25;
-  color: rgba(255, 255, 255, 0.7);
+  color: var(--dsw-alias-label-secondary);
   pointer-events: none;
 }
 .truncate {
@@ -609,13 +607,13 @@
 }
 .beatEmpty {
   font-style: italic;
-  color: rgba(255, 255, 255, 0.35);
+  color: var(--dsw-alias-label-tertiary);
 }
 
 /* ── Audio lanes ───────────────────────────────────────────────────── */
 .audioLane {
   position: relative;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+  border-bottom: 1px solid var(--dsw-alias-border-l1);
 }
 .audioClip {
   position: absolute;
@@ -623,8 +621,8 @@
   top: 2px;
   overflow: hidden;
   border-radius: 2px;
-  border: 1px solid rgba(196, 181, 253, 0.4);
-  background: rgba(167, 139, 250, 0.25);
+  border: 1px solid color-mix(in srgb, var(--dsw-alias-state-business-primary) 40%, transparent);
+  background: color-mix(in srgb, var(--dsw-alias-state-business-primary) 25%, transparent);
   cursor: grab;
   touch-action: none;
 }
@@ -636,7 +634,7 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(196, 181, 253, 0.2);
+  background: color-mix(in srgb, var(--dsw-alias-state-business-primary) 20%, transparent);
   pointer-events: none;
 }
 .audioClipLabel {
@@ -650,7 +648,7 @@
   padding: 0 4px;
   font-size: 9px;
   line-height: 1;
-  color: rgba(237, 233, 254, 0.9);
+  color: color-mix(in srgb, var(--dsw-alias-state-business-primary) 70%, var(--dsw-alias-label-primary));
   pointer-events: none;
 }
 .audioName {
@@ -664,7 +662,7 @@
   flex: none;
   font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   font-variant-numeric: tabular-nums;
-  color: rgba(221, 214, 254, 0.5);
+  color: color-mix(in srgb, var(--dsw-alias-state-business-primary) 50%, var(--dsw-alias-label-tertiary));
 }
 .audioClipDelete {
   position: absolute;
@@ -678,13 +676,13 @@
   justify-content: center;
   border: none;
   border-radius: 0 0 0 4px;
-  background: rgba(0, 0, 0, 0.4);
-  color: rgba(154, 160, 166, 0.7);
+  background: color-mix(in srgb, var(--dsw-alias-bg-base) 40%, transparent);
+  color: var(--dsw-alias-label-tertiary);
   cursor: pointer;
 }
 .audioClipDelete:hover {
-  background: rgba(239, 68, 68, 0.8);
-  color: #fff;
+  background: var(--dsw-alias-state-error-primary);
+  color: var(--dsw-alias-label-primary);
 }
 .audioClip:hover .audioClipDelete {
   display: flex;
@@ -699,8 +697,8 @@
   top: 2px;
   overflow: hidden;
   border-radius: 2px;
-  border: 1px solid rgba(196, 181, 253, 0.25);
-  background: rgba(167, 139, 250, 0.15);
+  border: 1px solid color-mix(in srgb, var(--dsw-alias-state-business-primary) 25%, transparent);
+  background: color-mix(in srgb, var(--dsw-alias-state-business-primary) 15%, transparent);
 }
 .sliceLabel {
   position: absolute;
@@ -715,7 +713,7 @@
   font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   font-size: 9px;
   font-variant-numeric: tabular-nums;
-  color: rgba(221, 214, 254, 0.7);
+  color: color-mix(in srgb, var(--dsw-alias-state-business-primary) 70%, var(--dsw-alias-label-secondary));
   pointer-events: none;
 }
 .audioDrop {
@@ -728,7 +726,7 @@
   align-items: center;
   justify-content: center;
   border-radius: 4px;
-  border: 1px dashed rgba(196, 181, 253, 0.2);
+  border: 1px dashed color-mix(in srgb, var(--dsw-alias-state-business-primary) 20%, transparent);
   pointer-events: none;
 }
 .dropHint {
@@ -737,13 +735,13 @@
   white-space: nowrap;
   padding: 0 8px;
   font-size: 9px;
-  color: rgba(154, 160, 166, 0.4);
+  color: var(--dsw-alias-label-tertiary);
 }
 
 /* ── Keyframe lanes ────────────────────────────────────────────────── */
 .kfLane {
   position: relative;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+  border-bottom: 1px solid var(--dsw-alias-border-l1);
 }
 .kfLane:last-child {
   border-bottom: 0;
@@ -755,7 +753,7 @@
   align-items: center;
   padding-left: 12px;
   font-size: 10px;
-  color: rgba(255, 255, 255, 0.2);
+  color: var(--dsw-alias-label-tertiary);
   pointer-events: none;
 }
 .kfWrap {
@@ -788,7 +786,7 @@
   width: 10px;
   transform: rotate(45deg);
   border: 1px solid;
-  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.3);
+  box-shadow: 0 0 0 1px var(--dsw-alias-border-l4);
 }
 .kfMoving {
   transform: rotate(45deg) scale(1.25);
@@ -806,12 +804,12 @@
   padding: 0;
   border: none;
   border-radius: 9999px;
-  background: rgba(239, 68, 68, 0.9);
+  background: var(--dsw-alias-state-error-primary);
   opacity: 0;
   cursor: pointer;
 }
 .kfDelete:hover {
-  background: #ef4444;
+  background: color-mix(in srgb, var(--dsw-alias-state-error-primary) 85%, var(--dsw-alias-label-primary));
 }
 .kfWrap:hover .kfDelete {
   opacity: 1;
@@ -838,7 +836,7 @@
   width: 8px;
   transform: translateX(-50%);
   border-radius: 9999px;
-  border: 1px solid rgba(255, 255, 255, 0.5);
+  border: 1px solid var(--dsw-alias-border-l4);
 }
 
 /* ── Viser-timeline zoom cluster (DSH Buttons, ghost) ──────────────── */

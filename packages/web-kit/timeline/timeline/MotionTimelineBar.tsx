@@ -40,8 +40,8 @@
  * — the sidebar shifts back to its global mode; a real drag never
  * deselects (the post-pointerup synthetic click is suppressed).
  *
- * Theme: the navy/cyan tokens (bg --blue-2 #111927, playhead brand cyan
- * #00E9EC), matching the 2026-08-14 timeline re-skin. The palette is
+ * Theme: the DSH tokens (bg --dsw-alias-bg-layer-1, playhead
+ * --dsw-alias-brand-primary), the 2026-09-13 color law. The palette is
  * themeable per mount (the 2026-09-07 styling seam: className/style on
  * the root, theme.{barBg,playhead} for the accents) — defaults render
  * byte-identical, so no tenant changes.
@@ -85,10 +85,10 @@ const LANE_H = 24
  * header row now carries the timecode positioning indicator beside the
  * zoom cluster, DaVinci-style; every gutter row shares the one const.) */
 const GUTTER_W = 112
-/** Playhead brand cyan (theme --primary = #00E9EC). */
-const PLAYHEAD = "#00E9EC"
+/** Playhead accent — the DSH brand token. */
+const PLAYHEAD = "var(--dsw-alias-brand-primary)"
 /** Unified background for the timeline bar and its sticky timecode chip. */
-const BAR_BG = "#111927"
+const BAR_BG = "var(--dsw-alias-bg-layer-1)"
 /** Zoom bounds: multiplier steps + the px-per-frame ceiling. */
 const ZOOM_STEP = 1.6
 
@@ -255,9 +255,9 @@ export interface MotionTimelineBarProps {
 
 /** The bar's themeable palette (defaults: the navy/cyan tokens). */
 export interface MotionTimelineBarTheme {
-  /** The bar's background wash (default #111927, --blue-2). */
+  /** The bar's background wash (the DSH bg-layer token). */
   barBg?: string
-  /** The playhead + seam/extend accent (default brand cyan #00E9EC). */
+  /** The playhead + seam/extend accent (the DSH brand token). */
   playhead?: string
 }
 
@@ -984,7 +984,7 @@ export function MotionTimelineBar({
               <span
                 data-testid="motion-timeline-timecode"
                 className={css.timecode}
-                style={{ background: barBg, boxShadow: "2px 0 6px -2px rgba(0,0,0,0.8)" }}
+                style={{ background: barBg, boxShadow: "2px 0 6px -2px color-mix(in srgb, var(--dsw-alias-bg-base) 80%, transparent)" }}
               >
                 {fmtTimecode(frameIdx, fps)}
               </span>
@@ -994,7 +994,7 @@ export function MotionTimelineBar({
             {/* Prompts — draggable/resizeable clips (the pose-studio affordance). */}
             <div
               className={cn(css.promptsLane, onPromptAdd && css.canAdd)}
-              style={{ height: promptsHeight, background: "rgba(255,255,255,0.02)" }}
+              style={{ height: promptsHeight, background: "var(--dsw-alias-bg-layer-1)" }}
               onDoubleClick={(e) => {
                 // The additive gesture on the surfaces no clip owns (gaps,
                 // the past-the-end margin) — a clip's own double-click is
@@ -1267,7 +1267,7 @@ export function MotionTimelineBar({
               <div
                 data-beats-row
                 className={cn(css.beatsLane, onBeatAdd && css.beatsAdd)}
-                style={{ height: beatsHeight, background: "rgba(255,255,255,0.012)" }}
+                style={{ height: beatsHeight, background: "var(--dsw-alias-bg-layer-1)" }}
                 onDoubleClick={(e) => {
                   if (!onBeatAdd) return
                   const f = xToFrame(e.clientX)
@@ -1332,7 +1332,7 @@ export function MotionTimelineBar({
                 data-wired={L.stem ? "true" : "false"}
                 data-clips={clips.length ? "true" : "false"}
                 className={css.audioLane}
-                style={{ height: AUDIO_H, background: "rgba(167,139,250,0.03)" }}
+                style={{ height: AUDIO_H, background: "color-mix(in srgb, var(--dsw-alias-state-business-primary) 3%, transparent)" }}
                 onDragOver={(e) => e.preventDefault()}
                 onDrop={(e) => {
                   e.preventDefault()
@@ -1522,7 +1522,7 @@ export function MotionTimelineBar({
                 left: frameToPx(frameIdx),
                 width: 2,
                 background: playhead,
-                boxShadow: `0 0 6px ${playhead}66`,
+                boxShadow: `0 0 6px color-mix(in srgb, ${playhead} 40%, transparent)`,
                 transform: "translateX(-50%)",
               }}
             >
