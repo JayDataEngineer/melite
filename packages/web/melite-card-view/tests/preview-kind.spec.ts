@@ -35,6 +35,9 @@ test('no spec in hand: the url sniff alone (flow rows without card identity)', (
 test('previewKindFor stays the pure url sniff (the fallback, pinned)', () => {
   expect(previewKindFor('/a/b.mp4')).toBe('video')
   expect(previewKindFor('/a/b.PNG?x=1')).toBe('image')
-  expect(previewKindFor('/a/b.glb')).toBe(null)
+  expect(previewKindFor('/a/b.glb')).toBe('mesh')
+  expect(previewKindFor('/a/song.mp3')).toBe('audio')
+  expect(previewKindFor('/a/loop.wav')).toBe('audio')
+  expect(previewKindFor('/a/model.gltf')).toBe('mesh')
   expect(previewKindFor('')).toBe(null)
 })

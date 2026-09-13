@@ -309,6 +309,28 @@
   object-fit: cover;
 }
 
+/* THE AUDIO-BARS FACE (2026-09-13) — the old system's music preview:
+ * a deterministic bar strip, pure CSS, zero media cost. Token-only
+ * colors (the color law): bars ride the audio identity. */
+.audioBars {
+  align-items: flex-end;
+  box-sizing: border-box;
+  display: flex;
+  gap: 2px;
+  height: 100%;
+  justify-content: center;
+  padding: 18% 12%;
+  width: 100%;
+}
+
+.audioBar {
+  background: var(--dsw-alias-state-business-primary);
+  border-radius: 1px;
+  flex: 1;
+  max-width: 6px;
+  opacity: 0.85;
+}
+
 /* the KIND FACE — the preview when no artifact exists yet */
 .kindFace {
   align-items: center;

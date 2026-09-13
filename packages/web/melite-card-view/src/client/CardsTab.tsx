@@ -189,10 +189,12 @@ export async function runCardStage(
  *  previews through this — image cards get the shared image preview,
  *  video cards the shared video one; a studio's own stage view is
  *  its specialization (the claim-over-default law). */
-export function previewKindFor(url: string): 'video' | 'image' | null {
+export function previewKindFor(url: string): 'video' | 'image' | 'audio' | 'mesh' | null {
   const u = url.toLowerCase()
   if (/\.(mp4|webm|mov|m4v)(\?|$)/.test(u)) return 'video'
   if (/\.(png|jpe?g|webp|gif|avif)(\?|$)/.test(u)) return 'image'
+  if (/\.(mp3|wav|ogg|flac|m4a|aac)(\?|$)/.test(u)) return 'audio'
+  if (/\.(glb|gltf)(\?|$)/.test(u)) return 'mesh'
   return null
 }
 
@@ -462,7 +464,11 @@ function SortableTile({ row, entered, onOpen, grouping, selected, onToggleSelect
           'aria-hidden': 'true',
         }, selected ? '\u2713' : '') : null,
         h('span', { className: css.tilePreview },
-          row.thumbUrl !== null
+          row.face === 'audio'
+            ? AudioBarsFace({ stageId: row.id })
+            : row.videoUrl !== null
+            ? h('video', { className: css.tileImg, src: row.videoUrl, muted: true, playsInline: true, preload: 'metadata', 'data-testid': 'tile-face-video' })
+            : row.thumbUrl !== null
             ? h('img', { className: css.tileImg, src: row.thumbUrl, alt: row.title, loading: 'lazy' })
             : h('span', { className: css.kindFace, 'data-kind': row.kind },
                 h('span', { className: css.kindInitial }, row.kind.slice(0, 1).toUpperCase()),
@@ -495,7 +501,11 @@ function UnusedCardRowLineTab({ row, onOpen }: {
 }): ReturnType<typeof h> {
   return h('li', { className: css.tile, 'data-stage-id': row.id, 'data-stage-status': row.status },
     h('button', { className: css.row, type: 'button', 'data-status': row.status, onClick: () => onOpen(row) },
-      row.thumbUrl !== null
+      row.face === 'audio'
+        ? AudioBarsFace({ stageId: row.id })
+        : row.videoUrl !== null
+        ? h('video', { className: css.thumb, src: row.videoUrl, muted: true, playsInline: true, preload: 'metadata' })
+        : row.thumbUrl !== null
         ? h('img', { className: css.thumb, src: row.thumbUrl, alt: row.title, loading: 'lazy' })
         : h(Pill, null, row.kind),
       h('span', { className: css.rowTitle }, row.title),
@@ -517,12 +527,32 @@ interface CardRowLineTabRow {
   dot: 'done' | 'ongoing' | 'error' | 'warning' | null
   prompt: string | null
   thumbUrl: string | null
+  /** the artifact's kind — drives the tile face dispatch. */
+  face: 'video' | 'image' | 'audio' | 'mesh' | null
+  videoUrl: string | null
   upstream: string | null
   sourceAttached: boolean
   stage: BenchStageRow
 }
 
-function benchRow(stage: BenchStageRow, bench?: CardsBenchValue): CardRowLineTabRow {
+/** THE AUDIO-BARS FACE (2026-09-13): the old system's music tile
+ *  preview — a deterministic bar strip (heights hashed from the stage
+ *  id, stable across renders; pure CSS, zero media cost). Rides the
+ *  audio identity token per the color law. */
+function AudioBarsFace({ stageId }: { stageId: string }): ReturnType<typeof h> {
+  let h1 = 0
+  for (let i = 0; i < stageId.length; i++) h1 = ((h1 * 31) + stageId.charCodeAt(i)) | 0
+  const heights: number[] = []
+  for (let i = 0; i < 14; i++) {
+    heights.push(18 + (Math.abs(h1 >> (i % 15)) % 60))
+  }
+  return h('span', { className: css.audioBars, 'data-testid': 'tile-face-audio', 'aria-hidden': 'true' },
+    heights.map((ht, i) => h('span', { key: i, className: css.audioBar, style: { height: ht + '%' } })),
+  )
+}
+
+/** exported for the door-contract specs (the tile-face law). */
+export function benchRow(stage: BenchStageRow, bench?: CardsBenchValue): CardRowLineTabRow {
   const isGroup = stage.card === 'group'
   const children = isGroup && Array.isArray(stage.children) ? stage.children.length : 0
   const title = isGroup
@@ -535,6 +565,20 @@ function benchRow(stage: BenchStageRow, bench?: CardsBenchValue): CardRowLineTab
   const url = typeof result === 'object' && result !== null && typeof Reflect.get(result, 'url') === 'string'
     ? Reflect.get(result, 'url') as string
     : ''
+  // THE TILE FACE (2026-09-13, the broken-image cure): the artifact's
+  // kind decides the face — an mp3 NEVER reaches <img> (the old
+  // system's audio-bars face), a glb neither; mesh rows show a real
+  // POSTER when the run shipped one (anny's turnaround renders ride
+  // alongside the glb — zero render cost), else the kind face.
+  const face = previewKindFor(url)
+  const absolute = (u: string): boolean => /^(https?:\/\/|\/)/.test(u)
+  const posterFromArtifacts = ((): string | null => {
+    if (face !== 'mesh') return null
+    for (const a of previewArtifactsFor(stage as unknown as Record<string, unknown>)) {
+      if (previewKindFor(a.url) === 'image' && absolute(a.url)) return a.url
+    }
+    return null
+  })()
   return {
     id: stage.id,
     kind: isGroup ? 'group' : String(stage.card ?? 'card'),
@@ -546,7 +590,9 @@ function benchRow(stage: BenchStageRow, bench?: CardsBenchValue): CardRowLineTab
     // same-origin absolute or leading-/ artifact urls render; a bare
     // run-relative filename cannot resolve without its run (the run
     // view owns that face) — the kind Pill rides instead.
-      thumbUrl: /^(https?:\/\/|\/)/.test(url) ? url : null,
+    thumbUrl: face === 'image' && absolute(url) ? url : posterFromArtifacts,
+    face,
+    videoUrl: face === 'video' && absolute(url) ? url : null,
     // THE UPSTREAM BADGE's text: the source stage's own card name (the
     // old UpstreamBadge resolved indices; the named-input era resolves
     // the id through the bench).
