@@ -226,7 +226,7 @@ function projectStages(stages) {
 		return row;
 	});
 }
-function meliteConstruct(request) {
+function meliteConstruct(request, opts = {}) {
 	const presentCall = (args) => {
 		const a = args ?? {};
 		const verb = typeof a.verb === "string" ? a.verb : "?";
@@ -239,7 +239,7 @@ function meliteConstruct(request) {
 	};
 	const def = defineTool({
 		name: "melite_construct",
-		description: "Author THE shared bench — one working flow the user sees live in the cards tab and edits alongside you. This never executes (melite_flow runs what is here; the user presses Run). Verbs: read (the state — always start here) | load (replace stages wholesale) | patch {stage, params} | add_stage {card, params?, inputs?} | remove_stage {stage} | rewire {stage, input, from?} | undo {n?, author?} | validate (compile check, no GPU). Mutations take expect_rev from your last read — a moved bench refuses 409 with current_rev; re-read, re-apply. No ids anywhere: the bench is the one shared state.",
+		description: "Author THE shared bench — one working flow the user sees live in the cards tab and edits alongside you. " + (opts.headless === true ? "This never executes (melite_flow runs what is here; the user presses Run). " : "This never executes — your job ENDS at the bench: tell the user to press Run on the card. ") + "Verbs: read (the state — always start here) | load (replace stages wholesale) | patch {stage, params} | add_stage {card, params?, inputs?} | remove_stage {stage} | rewire {stage, input, from?} | undo {n?, author?} | validate (compile check, no GPU). Mutations take expect_rev from your last read — a moved bench refuses 409 with current_rev; re-read, re-apply. No ids anywhere: the bench is the one shared state.",
 		parameters: {
 			verb: {
 				type: "string",
@@ -1456,7 +1456,7 @@ function meliteDiscover(request) {
 //#endregion
 //#region src/tools/melite-load.ts
 const TIMEOUT_MS = 2e4;
-function meliteLoad(request) {
+function meliteLoad(request, opts = {}) {
 	const presentCall = (args) => {
 		const a = args ?? {};
 		return {
@@ -1515,7 +1515,8 @@ function meliteLoad(request) {
 				}];
 				const b = v?.bundle ?? {};
 				const str = (x) => typeof x === "string" ? x : "";
-				const out = [`loaded ${str(b.kind) || "?"} ${str(b.name) || "?"} — open with melite_flow`];
+				const next = opts.headless === true ? "open with melite_flow" : "compose with melite_construct (add_stage); the run door is the user's Run press on the card";
+				const out = [`loaded ${str(b.kind) || "?"} ${str(b.name) || "?"} — ${next}`];
 				const hints = Array.isArray(b.model_hints) ? b.model_hints : [];
 				if (hints.length > 0) out.push("models: " + hints.map((h) => `${str(h?.id)}${str(h?.label) !== "" ? " (" + str(h?.label) + ")" : ""}`).join(", "));
 				const sig = b.signature;
@@ -1893,8 +1894,8 @@ async function apply(ctx, config = {}) {
 	const adhoc = adhocEnv.length ? adhocEnv : adhocCfg;
 	c.logger.info("melite-tools: %s interface — %d base + %d headless run door(s) + %d ad hoc, gateway %s", headless ? "HEADLESS" : "BROWSER", BASE_TOOL_NAMES.length, headless ? HEADLESS_TOOL_NAMES.length : 0, adhoc.length, request);
 	c.tools.register(meliteDiscover(request));
-	c.tools.register(meliteConstruct(request));
-	c.tools.register(meliteLoad(request));
+	c.tools.register(meliteConstruct(request, { headless }));
+	c.tools.register(meliteLoad(request, { headless }));
 	c.tools.register(comfyManage(request));
 	c.tools.register(skillIndex(request));
 	c.tools.register(skillRead(request));

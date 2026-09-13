@@ -26,7 +26,10 @@ type LoadResult = {
   error?: string;
 } & Record<string, JsonValue>;
 
-export function meliteLoad(request: EstateRequest): ToolDefinition {
+export function meliteLoad(
+  request: EstateRequest,
+  opts: { headless?: boolean } = {},
+): ToolDefinition {
   // PRESENTATION ADAPTATION (tool-presentation wall + conversion
   // invariance — presentCall output must not change): defineTool
   // soft-gates presentCall behind arg validation (invalid → undefined),
@@ -112,7 +115,19 @@ export function meliteLoad(request: EstateRequest): ToolDefinition {
         // skipped by quoting it.
         const b = v?.bundle ?? {}
         const str = (x: unknown): string => typeof x === 'string' ? x : ''
-        const out: string[] = [`loaded ${str(b.kind) || '?'} ${str(b.name) || '?'} — open with melite_flow`]
+        // THE INTERFACE LAW (2026-09-13, the operator's agent-mode
+        // breakdown): the NEXT-STEP hint names a door THIS agent
+        // actually has. The browser interface registers no melite_flow
+        // (compose-only — the user's Run press is the start door), so
+        // pointing the model at melite_flow there sends it hunting a
+        // phantom verb until it breaks down (the caught trajectory:
+        // load → "open with melite_flow" → add_stage lands → no run
+        // verb anywhere → flailing into comfy_manage). Headless keeps
+        // the old line — it owns the verb.
+        const next = opts.headless === true
+          ? 'open with melite_flow'
+          : 'compose with melite_construct (add_stage); the run door is the user\'s Run press on the card'
+        const out: string[] = [`loaded ${str(b.kind) || '?'} ${str(b.name) || '?'} — ${next}`]
         const hints = Array.isArray(b.model_hints) ? b.model_hints : []
         if (hints.length > 0) {
           out.push('models: ' + hints.map((h) => `${str(h?.id)}${str(h?.label) !== '' ? ' (' + str(h?.label) + ')' : ''}`).join(', '))

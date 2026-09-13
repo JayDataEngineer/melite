@@ -121,7 +121,10 @@ export function projectStages(stages: unknown): Record<string, unknown>[] {
     })
 }
 
-export function meliteConstruct(request: EstateRequest): ToolDefinition {
+export function meliteConstruct(
+  request: EstateRequest,
+  opts: { headless?: boolean } = {},
+): ToolDefinition {
   const presentCall: (args: unknown) => ToolCallView = (args) => {
     const a = (args ?? {}) as { verb?: unknown; stage?: unknown; card?: unknown }
     const verb = typeof a.verb === 'string' ? a.verb : '?'
@@ -133,7 +136,15 @@ export function meliteConstruct(request: EstateRequest): ToolDefinition {
     name: 'melite_construct',
     description:
       'Author THE shared bench — one working flow the user sees live in the cards tab and edits alongside you. '
-      + 'This never executes (melite_flow runs what is here; the user presses Run). Verbs: read (the state — '
+      // THE INTERFACE LAW (2026-09-13): name the run door the agent
+      // actually has — melite_flow only exists headless; the browser
+      // agent's contract ENDS at the bench (the user's Run press is
+      // the start door — say so, or the model hunts a verb it was
+      // never given and breaks down mid-task).
+      + (opts.headless === true
+        ? 'This never executes (melite_flow runs what is here; the user presses Run). '
+        : 'This never executes — your job ENDS at the bench: tell the user to press Run on the card. ')
+      + 'Verbs: read (the state — '
       + 'always start here) | load (replace stages wholesale) | patch {stage, params} | add_stage {card, params?, '
       + 'inputs?} | remove_stage {stage} | rewire {stage, input, from?} | undo {n?, author?} | validate (compile '
       + 'check, no GPU). Mutations take expect_rev from your last read — a moved bench refuses 409 with '

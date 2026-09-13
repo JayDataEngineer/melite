@@ -173,10 +173,14 @@ export async function apply(ctx: Context, config: Config = {}): Promise<void> {
   )
 
   // BASE (both interfaces): disclosure (flow preferred, card
-  // fallback), discovery, compose, management, audit.
+  // fallback), discovery, compose, management, audit. The compose
+  // face carries the interface flag (the INTERFACE LAW, 2026-09-13:
+  // its model-facing copy names the run door THIS mount owns — the
+  // browser hint points at the user's Run press, headless at
+  // melite_flow — never a phantom verb).
   c.tools.register(meliteDiscover(request))
-  c.tools.register(meliteConstruct(request))
-  c.tools.register(meliteLoad(request))
+  c.tools.register(meliteConstruct(request, { headless }))
+  c.tools.register(meliteLoad(request, { headless }))
   c.tools.register(comfyManage(request))
   c.tools.register(skillIndex(request))
   c.tools.register(skillRead(request))

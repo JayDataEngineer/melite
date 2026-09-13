@@ -154,7 +154,7 @@ describe('melite_load render — the loaded line', () => {
     ) as Array<{ text?: string }>
     assert.equal(
       parts.map((p) => p?.text ?? '').join('\n'),
-      'loaded card c — open with melite_flow\n'
+      'loaded card c — compose with melite_construct (add_stage); the run door is the user\'s Run press on the card\n'
       + 'models: music-gen (MusicGen)\n'
       + 'params: prompt*, seed (* required)\n'
       + 'skills: 1 — read one with skill_read: s1\n'
@@ -170,12 +170,41 @@ describe('melite_load render — the loaded line', () => {
       { name: 'c', inference_type: 'card' },
       { name: 'c', inference_type: 'card' } as never,
     ) as Array<{ text?: string }>
-    assert.equal(parts.map((p) => p?.text ?? '').join('\n'), 'loaded ? ? — open with melite_flow')
+    assert.equal(parts.map((p) => p?.text ?? '').join('\n'), 'loaded ? ? — compose with melite_construct (add_stage); the run door is the user\'s Run press on the card')
   })
 
   test('a nullish value still renders the header line', () => {
     const tool = meliteLoad((async () => ({})) as unknown as EstateRequest)
     const parts = tool.output.render({ name: 'c', inference_type: 'card' }, null as never) as Array<{ text?: string }>
-    assert.equal(parts.map((p) => p?.text ?? '').join('\n'), 'loaded ? ? — open with melite_flow')
+    assert.equal(parts.map((p) => p?.text ?? '').join('\n'), 'loaded ? ? — compose with melite_construct (add_stage); the run door is the user\'s Run press on the card')
+  })
+})
+
+describe('melite_load render — THE INTERFACE LAW (the agent-mode breakdown, 2026-09-13)', () => {
+  // The browser interface registers NO melite_flow (compose-only —
+  // the user's Run press is the start door). A load hint naming
+  // melite_flow there sends the model hunting a phantom verb until
+  // it breaks down (the caught trajectory: load → add_stage lands →
+  // no run verb anywhere → flailing into comfy_manage). The hint
+  // names the door THIS agent actually has.
+  test('the browser face (default) never names melite_flow', () => {
+    const tool = meliteLoad((async () => ({})) as unknown as EstateRequest)
+    const parts = tool.output.render(
+      { name: 'c', inference_type: 'card' },
+      { name: 'c', inference_type: 'card', bundle: { kind: 'card', name: 'c' } } as never,
+    ) as Array<{ text?: string }>
+    const text = parts.map((p) => p?.text ?? '').join('\n')
+    assert.ok(!text.includes('melite_flow'), 'the browser face must not name the headless verb: ' + text)
+    assert.ok(text.includes('melite_construct') && text.includes("user's Run press"), text)
+  })
+
+  test('the headless face keeps the execution verb', () => {
+    const tool = meliteLoad((async () => ({})) as unknown as EstateRequest, { headless: true })
+    const parts = tool.output.render(
+      { name: 'c', inference_type: 'card' },
+      { name: 'c', inference_type: 'card', bundle: { kind: 'card', name: 'c' } } as never,
+    ) as Array<{ text?: string }>
+    const text = parts.map((p) => p?.text ?? '').join('\n')
+    assert.ok(text.startsWith('loaded card c — open with melite_flow'), text)
   })
 })

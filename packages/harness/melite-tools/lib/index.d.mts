@@ -1149,7 +1149,9 @@ declare function meliteDiscover(request: EstateRequest): ToolDefinition;
 //#region src/tools/melite-construct.d.ts
 /** The default bench — one shared state per gateway. */
 declare const DEFAULT_BENCH = "main";
-declare function meliteConstruct(request: EstateRequest): ToolDefinition;
+declare function meliteConstruct(request: EstateRequest, opts?: {
+  headless?: boolean;
+}): ToolDefinition;
 //#endregion
 //#region src/tools/melite-flow.d.ts
 declare function meliteFlow(request: EstateRequest): ToolDefinition;
@@ -1171,7 +1173,9 @@ declare module '@deepseek-ai/dsh-typert-protocol' {
 declare function comfyManage(request: EstateRequest): ToolDefinition;
 //#endregion
 //#region src/tools/melite-load.d.ts
-declare function meliteLoad(request: EstateRequest): ToolDefinition;
+declare function meliteLoad(request: EstateRequest, opts?: {
+  headless?: boolean;
+}): ToolDefinition;
 //#endregion
 //#region src/tools/skill-index.d.ts
 declare function skillIndex(request: EstateRequest): ToolDefinition;

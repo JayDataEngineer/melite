@@ -493,3 +493,23 @@ describe('projectStages — the wire projection', () => {
     )
   })
 })
+
+describe('melite_construct — THE INTERFACE LAW (the agent-mode breakdown, 2026-09-13)', () => {
+  // The description names the run door the mount owns: the browser
+  // face ends the contract AT THE BENCH (the user's Run press is the
+  // start door — melite_flow is not the browser agent's verb); the
+  // headless face keeps the delegated-operator phrasing. A phantom
+  // verb in the description sent the caught session hunting a run
+  // door it was never given.
+  test('the browser face (default) never names melite_flow', async () => {
+    const tool = meliteConstruct((async () => ({})) as unknown as EstateRequest)
+    assert.ok(!tool.description.includes('melite_flow'), tool.description)
+    assert.ok(tool.description.includes('ENDS at the bench'), tool.description)
+    assert.ok(tool.description.includes('press Run'), tool.description)
+  })
+
+  test('the headless face keeps the delegated-operator phrasing', async () => {
+    const tool = meliteConstruct((async () => ({})) as unknown as EstateRequest, { headless: true })
+    assert.ok(tool.description.includes('melite_flow runs what is here'), tool.description)
+  })
+})
