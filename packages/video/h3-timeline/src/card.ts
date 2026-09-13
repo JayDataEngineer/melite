@@ -121,6 +121,28 @@ const paramSchema = z.object({
   // (the family-literal resolution path) passes untouched.
   shift_video: nullable(z.number().description("Video Shift").min(1).max(20).step(0.5).default(8).extra('extra', { order: null, tooltip: "Timestep shift for video attention. Higher = more coherent motion.", wtype: 'number' })),
   shift_audio: z.number().description("Audio Shift").min(1).max(10).step(0.5).default(3).extra('extra', { order: null, tooltip: "Timestep shift for audio attention. Lower = more detailed sound.", wtype: 'number' }),
+  // ── the SLA family (hour 16, item 3): compose-read knobs, now
+  // EMITTED — the studio's advanced panel rides the served spec
+  // (SpecFieldRow) instead of hand-rolled rows. Defaults are the
+  // compose's own ?? fallbacks, byte-for-byte; the h3_ prefix is the
+  // studio's LayerA spelling (docModel), never the card's.
+  sla_sparsity: z.number().description("SLA sparsity").min(0).max(0.95).step(0.05).default(0.9).extra('extra', { order: null, group: "sla", wtype: 'slider', tooltip: "Block-sparse attention density. 0.90 ≈ 1.75x speedup, no quality loss." }),
+  sla_block_size: z.string().description("SLA block size").default("32").extra('extra', { order: null, group: "sla", options: ["32", "64", "128"], wtype: 'select', tooltip: "64 = clean audio; 128 = faster, robotic." }),
+  sla_min_seq_len: z.number().description("SLA min seq length").min(512).step(512).default(8192).extra('extra', { order: null, group: "sla", wtype: 'number', tooltip: "Sequences shorter than this skip sparsity." }),
+  sla_dense_last_steps: z.number().description("SLA dense last steps").min(0).max(10).step(1).default(1).extra('extra', { order: null, group: "sla", wtype: 'number', tooltip: "Final steps run dense for convergence." }),
+  sla_dense_steps: z.string().description("SLA dense steps (explicit)").default("0").extra('extra', { order: null, group: "sla", tooltip: "e.g. 0,1 or 0-2 — explicit dense step indices." }),
+  sla_dense_backend: z.string().description("SLA dense backend").default("comfy_kitchen").extra('extra', { order: null, group: "sla", options: ["comfy_kitchen", "pytorch", "auto"], wtype: 'select' }),
+  sla_reference_protection: z.string().description("SLA ref protection").default("Heavy Enforcement").extra('extra', { order: null, group: "sla", options: ["Off", "Light", "Heavy Enforcement"], wtype: 'select', tooltip: "Protects reference frames from sparse-attention drift." }),
+  sla_protect_audio: z.boolean().description("SLA protect audio").default(true).extra('extra', { order: null, group: "sla" }),
+  sla_stabilize_motion: z.boolean().description("SLA stabilize motion").extra('extra', { order: null, group: "sla", tooltip: "Default on except t4r openers (the family-conditional compose fallback stays the truth at run)." }),
+  sla_disable_fp16_accum: z.boolean().description("SLA full-precision accum").default(true).extra('extra', { order: null, group: "sla" }),
+  // ── the sharpen leaves (compose: only EXPLICITLY-set leaves patch
+  // ImageSharpenKJ's grouped dict — bare emission defaults do NOT
+  // change a run that never sets them).
+  sharpen_method: z.string().description("Sharpen Method").extra('extra', { order: null, options: ["rcas", "adaptive_usm", "high_pass", "deconvolution"], wtype: 'select' }),
+  sharpen_radius: z.number().description("Sharpen Radius").min(0.5).max(5).step(0.5).extra('extra', { order: null, wtype: 'number', tooltip: "adaptive_usm / high_pass / deconvolution only." }),
+  sharpen_threshold: z.number().description("Sharpen Noise Gate").min(0).max(1).step(0.05).extra('extra', { order: null, wtype: 'number', tooltip: "adaptive_usm only." }),
+  sharpen_iterations: z.number().description("Sharpen Iterations").min(1).max(100).step(1).extra('extra', { order: null, wtype: 'number', tooltip: "deconvolution only." }),
   // NOTE: the calls[] SHOTS surface is deliberately NOT a carrier
   // knob — the carrier feeds the studio's frozen form-spec (the
   // studio owns its own shots editor, ui/studio/docModel) and the

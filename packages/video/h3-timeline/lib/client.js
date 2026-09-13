@@ -621,6 +621,115 @@ window.__ModuleLoader__.load({
 		* automatically. One input component; no card hand-rolls its own
 		* file field ever again.
 		*/
+		/** The media-bar drag contract (the tab's drop surface serves the
+		* same MIME — ONE spelling, imported from the base's law). */
+		const ASSET_DRAG_MIME$2 = "application/tech-noir-asset";
+		/** THE "is this a thumbnail" rule (SlotSquare's, kept verbatim):
+		*  data: images, blob: fresh-upload mirrors, and http(s)/root-relative
+		*  artifact URLs. Every slot-shaped value renders the same way. */
+		function isImageUrl$1(value) {
+			return /^data:image\//i.test(value) || /^blob:/i.test(value) || /^(?:https?:)?\/[^"'<>]*\.(?:png|jpe?g|webp|gif|bmp|avif)(?:[?#]|$)/i.test(value);
+		}
+		/** Parse the asset MIME off a drop event. null = absent or malformed. */
+		function assetPayload(e) {
+			const raw = e.dataTransfer.getData(ASSET_DRAG_MIME$2);
+			if (raw === "") return null;
+			try {
+				const p = JSON.parse(raw);
+				return typeof p["url"] === "string" ? p["url"] : null;
+			} catch {
+				return null;
+			}
+		}
+		function InputSquare(props) {
+			const { label, value, metric, disabled } = props;
+			const fileRef = (0, react.useRef)(null);
+			const boxRef = (0, react.useRef)(null);
+			const [over, setOver] = (0, react.useState)(false);
+			const thumb = typeof value === "string" && isImageUrl$1(value) ? value : null;
+			const empty = thumb === null;
+			const pick = () => {
+				if (disabled) return;
+				if (props.onPick !== void 0) props.onPick(boxRef.current);
+				else if (empty && props.onFile !== void 0) fileRef.current?.click();
+			};
+			return (0, react.createElement)("div", { className: card_module_css_default.squareWrap + (disabled ? " " + card_module_css_default.squareOff : "") }, (0, react.createElement)("div", {
+				ref: boxRef,
+				className: card_module_css_default.squareBox + (over ? " " + card_module_css_default.squareOver : ""),
+				role: "button",
+				tabIndex: 0,
+				"aria-label": label + " source",
+				onClick: pick,
+				onKeyDown: (e) => {
+					if (e.key === "Enter") pick();
+				},
+				onDragOver: (e) => {
+					if (disabled) return;
+					e.preventDefault();
+					setOver(true);
+				},
+				onDragLeave: () => {
+					setOver(false);
+				},
+				onDrop: (e) => {
+					if (disabled) return;
+					e.preventDefault();
+					setOver(false);
+					const asset = assetPayload(e);
+					if (asset !== null && props.onAsset !== void 0) {
+						props.onAsset(asset);
+						return;
+					}
+					const f = e.dataTransfer.files[0];
+					if (f !== void 0 && props.onFile !== void 0) props.onFile(f);
+				}
+			}, thumb !== null ? (0, react.createElement)("img", {
+				className: card_module_css_default.squareThumb,
+				src: thumb,
+				alt: label
+			}) : (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.IconPaperclipOutline16, { className: card_module_css_default.squareGlyph }), !empty && props.onClear !== void 0 ? (0, react.createElement)("button", {
+				className: card_module_css_default.squareX,
+				type: "button",
+				title: "Detach",
+				"aria-label": "Detach " + label,
+				onClick: (e) => {
+					e.stopPropagation();
+					props.onClear?.();
+				}
+			}, "✕") : null), (0, react.createElement)("span", { className: card_module_css_default.squareLabel }, label), metric !== void 0 ? (0, react.createElement)("span", { className: card_module_css_default.squareMetric }, metric) : null, props.onFile !== void 0 && !disabled ? (0, react.createElement)("input", {
+				ref: fileRef,
+				type: "file",
+				accept: "image/png,image/jpeg,image/webp",
+				className: card_module_css_default.squareFileInput,
+				"aria-hidden": true,
+				tabIndex: -1,
+				onChange: (e) => {
+					const f = e.target.files?.[0];
+					if (f !== void 0 && f !== null) props.onFile?.(f);
+					if (fileRef.current !== null) fileRef.current.value = "";
+				}
+			}) : null);
+		}
+		//#endregion
+		//#region ../../web/card-base/src/wire.ts
+		/** Read a same-origin /v1 JSON door. Non-200 → named throw (the door's
+		*  own error text when present). */
+		async function v1Get(path, signal) {
+			const res = await fetch(path, { ...signal === void 0 ? {} : { signal } });
+			const body = await res.json().catch(() => null);
+			if (!res.ok) {
+				const err = typeof body === "object" && body !== null ? Reflect.get(body, "error") : void 0;
+				throw new Error(typeof err === "string" ? err : path + ": HTTP " + String(res.status));
+			}
+			return body;
+		}
+		/** /v1/form-spec?model=<family> — the card family's emission (fields
+		*  + the declared edges + the mod kinds). */
+		async function fetchFormSpec(model, signal) {
+			const doc = await v1Get("/v1/form-spec?model=" + encodeURIComponent(model), signal);
+			if (!Array.isArray(doc["fields"])) throw new Error("form-spec: no fields array");
+			return doc;
+		}
 		//#endregion
 		//#region ../../web/card-base/src/form.tsx
 		/**
@@ -661,6 +770,138 @@ window.__ModuleLoader__.load({
 					onEdit(name, v === "" ? void 0 : v === "true");
 				}
 			}, (0, react.createElement)("option", { value: "" }, "inherit"), (0, react.createElement)("option", { value: "true" }, "on"), (0, react.createElement)("option", { value: "false" }, "off"));
+		}
+		/** The slider's local display during a drag (the settle law's
+		*  carrier): local owns the bubble while dragging; an external move
+		*  of the backing value (agent write, revive, another card opened)
+		*  reclaims the display. */
+		function useLocalSliderValue(value, def) {
+			const num = typeof value === "number" ? value : Number(value);
+			const [local, setLocal] = (0, react.useState)(null);
+			(0, react.useEffect)(() => {
+				setLocal(null);
+			}, [num]);
+			return {
+				value: local !== null ? local : Number.isFinite(num) ? num : Number(def ?? 0),
+				set: setLocal
+			};
+		}
+		/** THE SETTLE LAW for slider atoms (hour 15, stroke C — grown from
+		*  mask-studio's draft absorber, 2026-08-10): a drag fires input
+		*  60×/sec; if every step wrote to the card, updateStageParams →
+		*  _recomputeKeys would hash multi-MB paint data 60×/sec and freeze
+		*  the editor. The atom shows the drag locally and persists ONCE on
+		*  settle (the change event = release / keyboard step). External
+		*  writes (agent, revive) re-sync the display when the backing
+		*  value actually moves. */
+		function SpecSliderAtom({ f, value, onEdit }) {
+			const shown = useLocalSliderValue(value, f.default);
+			return (0, react.createElement)("span", { className: card_module_css_default.specSliderRow }, (0, react.createElement)("input", {
+				className: card_module_css_default.specSlider,
+				type: "range",
+				min: f.min ?? 0,
+				max: f.max ?? 10,
+				step: f.step ?? .1,
+				value: shown,
+				onInput: (e) => {
+					shown.set(Number(e.target.value));
+				},
+				onChange: (e) => {
+					onEdit(f.name, e.target.value);
+				},
+				"aria-label": f.label
+			}), (0, react.createElement)("span", { className: card_module_css_default.specSliderValue }, String(shown.value)));
+		}
+		/** One spec atom — typed by the declaration, edited as a raw string
+		*  while typing (decimal dots survive; coercion happens once at patch). */
+		function SpecAtom({ f, value, onEdit, square }) {
+			if ((f.type === "image" || f.type === "file") && square !== void 0) {
+				const shown = square.display !== void 0 && square.display !== null && square.display !== "" ? square.display : typeof value === "string" ? value : null;
+				return (0, react.createElement)(InputSquare, {
+					label: f.label !== "" ? f.label : f.name,
+					value: shown !== null && isImageUrl$1(shown) ? shown : null,
+					metric: typeof value === "string" && value !== "" && !isImageUrl$1(value) ? value : void 0,
+					...square.verbs
+				});
+			}
+			if (f.type === "select" && Array.isArray(f.options) && f.options.length > 0) return (0, react.createElement)("select", {
+				className: card_module_css_default.specSelect,
+				value: String(value ?? ""),
+				onChange: (e) => onEdit(f.name, e.target.value),
+				"aria-label": f.label
+			}, f.options.map((o) => {
+				const row = typeof o === "string" ? {
+					value: o,
+					label: o
+				} : o;
+				return (0, react.createElement)("option", {
+					key: row.value,
+					value: row.value
+				}, row.label);
+			}));
+			if (f.type === "slider") return (0, react.createElement)(SpecSliderAtom, {
+				f,
+				value,
+				onEdit
+			});
+			if (f.type === "tri") return (0, react.createElement)(TriStateAtom, {
+				label: f.label !== "" ? f.label : f.name,
+				value: value === void 0 || value === null ? void 0 : value === true || value === "true",
+				onEdit,
+				name: f.name
+			});
+			if (f.type === "switch" || f.type === "boolean") {
+				const on = value === true || value === "true";
+				return (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Switch, {
+					label: f.label,
+					checked: on,
+					onChange: (next) => {
+						onEdit(f.name, next);
+					}
+				});
+			}
+			if (f.type === "textarea") return (0, react.createElement)("textarea", {
+				className: card_module_css_default.specTextarea,
+				rows: 3,
+				value: String(value ?? ""),
+				placeholder: f.placeholder ?? "",
+				onChange: (e) => onEdit(f.name, e.target.value),
+				"aria-label": f.label
+			});
+			return (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Input, {
+				value: String(value ?? ""),
+				placeholder: f.placeholder ?? "",
+				onChange: (e) => onEdit(f.name, e.target.value),
+				"aria-label": f.label
+			});
+		}
+		/** THE CARD FORM (the constructor's surface half) — the spec's
+		*  fields, grouped, visible-when honored, defaults seeded by the
+		*  caller (specDefaults — propagated from the emission). Edits ride
+		*  the caller's values map. Each field renders through the claimed
+		*  atom for its emitted type when the caller passes one; the base's
+		*  built-in atom is the default.
+		*
+		*  THE CONSTRUCTION LAW IS NOT OPTIONAL (operator, 2026-09-12: "the
+		*  img-to-mesh input component — you are not using it around — you
+		*  are hardcoding"): an emitted image/file input constructs THE ONE
+		*  SQUARE AUTOMATICALLY, in EVERY surface. The constructor OWNS the
+		*  square provider — no call site wires it, no call site can forget
+		*  it. The caller hands only the WIRE (picker candidates), never the
+		*  component; a caller that passes its own `square` fn overrides (the
+		*  host-claim seam), but the default is the constructor's own. */
+		/** ONE SPEC FIELD ROW (hour 15, stroke C): the label chrome (key,
+		*  required star, hint) around the atom — CardForm's own row, opened
+		*  to rail sections that render served fields outside a whole form
+		*  (mask's TuneSection). The claim seam stays CardForm's; this row
+		*  takes the resolved atom inputs. */
+		function SpecFieldRow({ f, value, onEdit, square }) {
+			return (0, react.createElement)("label", { className: card_module_css_default.specField }, (0, react.createElement)("span", { className: card_module_css_default.specFieldKey }, f.label, f.required === true ? (0, react.createElement)("span", { className: card_module_css_default.specRequired }, " *") : null), (0, react.createElement)(SpecAtom, {
+				f,
+				value,
+				onEdit,
+				square
+			}), f.tooltip !== void 0 && f.tooltip !== "" ? (0, react.createElement)("span", { className: card_module_css_default.specHint }, f.tooltip) : null);
 		}
 		//#endregion
 		//#region ../../web/card-base/src/mods.tsx
@@ -3204,8 +3445,45 @@ window.__ModuleLoader__.load({
 		* ui/studio/component.tsx. No behavior change: headers/footers are new,
 		* every logic line is verbatim from the monolith (source range noted).
 		*/
-		/** Layer A rail: SLA lab + Speed LoRA + Post-processing (lines 2905–3188). */
+		/** The spec's name → LayerA's key (the h3_ prefix is the studio's
+		* document spelling of the card's renderer vocabulary). */
+		function layerKey(name) {
+			return name.startsWith("sla_") ? "h3_" + name : name;
+		}
+		/** Layer A rail: SLA lab + Speed LoRA + Post-processing (lines 2905–3188).
+		*
+		* Hour 16, item 3: the compose-read knobs (the SLA family + the
+		* sharpen leaves) RIDE THE SERVED SPEC now — /v1/form-spec?model=
+		* h3-timeline declares them; SpecFieldRow renders each with the
+		* declaration's shape (slider/select/number ranges). The section
+		* layout and the conditional leaves stay studio logic (visible_when
+		* is single-equality — "method ≠ rcas" is not expressible). The
+		* Speed LoRA + RTX + CRF rows are document-local vocabulary (not
+		* card params; the compose never reads them) and stay hand-rolled. */
 		function RunAdvancedPanels({ layerA, setLayerAKey }) {
+			const [spec, setSpec] = (0, react.useState)(null);
+			(0, react.useEffect)(() => {
+				const ctl = new AbortController();
+				fetchFormSpec("h3-timeline", ctl.signal).then((doc) => {
+					setSpec(doc);
+				}).catch(() => {});
+				return () => {
+					ctl.abort();
+				};
+			}, []);
+			const byName = new Map((spec?.fields ?? []).map((f) => [f.name, f]));
+			const row = (name) => {
+				const f = byName.get(name);
+				if (f === void 0) return null;
+				const key = layerKey(name);
+				return /* @__PURE__ */ (0, react_jsx_runtime.jsx)(SpecFieldRow, {
+					f,
+					value: layerA[key],
+					onEdit: (k, v) => {
+						setLayerAKey(layerKey(k), v);
+					}
+				});
+			};
 			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(react_jsx_runtime.Fragment, { children: [
 				(layerA.h3_attention ?? "kitchen") === "sla" && /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
 					className: studio_module_css_default.group,
@@ -3215,123 +3493,16 @@ window.__ModuleLoader__.load({
 							className: studio_module_css_default.groupTitle,
 							children: "SLA — block-sparse attention"
 						}),
-						/* @__PURE__ */ (0, react_jsx_runtime.jsx)(ControlRow, {
-							label: "Sparsity",
-							children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(SliderControl, {
-								ariaLabel: "SLA sparsity (run)",
-								value: layerA.h3_sla_sparsity ?? .9,
-								onChange: (v) => setLayerAKey("h3_sla_sparsity", v),
-								min: 0,
-								max: .95,
-								step: .05
-							})
-						}),
-						/* @__PURE__ */ (0, react_jsx_runtime.jsx)(ControlRow, {
-							label: "Block size",
-							children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(SelectControl, {
-								ariaLabel: "SLA block size (run)",
-								value: layerA.h3_sla_block_size ?? "64",
-								onChange: (v) => setLayerAKey("h3_sla_block_size", v === "128" ? "128" : "64"),
-								options: [{
-									value: "64",
-									label: "64 (clean audio)"
-								}, {
-									value: "128",
-									label: "128 (faster, robotic)"
-								}],
-								emptyLabel: false,
-								width: "w-32"
-							})
-						}),
-						/* @__PURE__ */ (0, react_jsx_runtime.jsx)(ControlRow, {
-							label: "Min seq length",
-							children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(NumberControl, {
-								ariaLabel: "SLA min seq length (run)",
-								value: layerA.h3_sla_min_seq_len,
-								onChange: (v) => setLayerAKey("h3_sla_min_seq_len", v),
-								min: 512,
-								step: 512,
-								placeholder: "4096",
-								width: "w-32"
-							})
-						}),
-						/* @__PURE__ */ (0, react_jsx_runtime.jsx)(ControlRow, {
-							label: "Dense last steps",
-							children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(NumberControl, {
-								ariaLabel: "SLA dense last steps (run)",
-								value: layerA.h3_sla_dense_last_steps,
-								onChange: (v) => setLayerAKey("h3_sla_dense_last_steps", v),
-								min: 0,
-								max: 10,
-								step: 1,
-								placeholder: "1",
-								width: "w-32"
-							})
-						}),
-						/* @__PURE__ */ (0, react_jsx_runtime.jsx)(ControlRow, {
-							label: "Dense steps (explicit)",
-							children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(TextControl, {
-								ariaLabel: "SLA dense steps (run)",
-								value: layerA.h3_sla_dense_steps,
-								onChange: (v) => setLayerAKey("h3_sla_dense_steps", v),
-								placeholder: "e.g. 0,1 or 0-2",
-								width: "w-32"
-							})
-						}),
-						/* @__PURE__ */ (0, react_jsx_runtime.jsx)(ControlRow, {
-							label: "Dense backend",
-							children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(SelectControl, {
-								ariaLabel: "SLA dense backend (run)",
-								value: layerA.h3_sla_dense_backend ?? "comfy_kitchen",
-								onChange: (v) => setLayerAKey("h3_sla_dense_backend", v === "pytorch" || v === "auto" ? v : "comfy_kitchen"),
-								options: [
-									"comfy_kitchen",
-									"pytorch",
-									"auto"
-								],
-								emptyLabel: false,
-								width: "w-32"
-							})
-						}),
-						/* @__PURE__ */ (0, react_jsx_runtime.jsx)(ControlRow, {
-							label: "Ref protection",
-							children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(SelectControl, {
-								ariaLabel: "SLA ref protection (run)",
-								value: layerA.h3_sla_reference_protection ?? "Off",
-								onChange: (v) => setLayerAKey("h3_sla_reference_protection", v === "Light" || v === "Heavy Enforcement" ? v : "Off"),
-								options: [
-									"Off",
-									"Light",
-									"Heavy Enforcement"
-								],
-								emptyLabel: false,
-								width: "w-32"
-							})
-						}),
-						/* @__PURE__ */ (0, react_jsx_runtime.jsx)(ControlRow, {
-							label: "Protect audio",
-							children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(CheckControl, {
-								ariaLabel: "SLA protect audio (run)",
-								checked: layerA.h3_sla_protect_audio,
-								onChange: (v) => setLayerAKey("h3_sla_protect_audio", v)
-							})
-						}),
-						/* @__PURE__ */ (0, react_jsx_runtime.jsx)(ControlRow, {
-							label: "Stabilize motion",
-							children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(CheckControl, {
-								ariaLabel: "SLA stabilize motion (run)",
-								checked: layerA.h3_sla_stabilize_motion,
-								onChange: (v) => setLayerAKey("h3_sla_stabilize_motion", v)
-							})
-						}),
-						/* @__PURE__ */ (0, react_jsx_runtime.jsx)(ControlRow, {
-							label: "Full-precision accum",
-							children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(CheckControl, {
-								ariaLabel: "SLA full-precision accumulation (run)",
-								checked: layerA.h3_sla_disable_fp16_accum,
-								onChange: (v) => setLayerAKey("h3_sla_disable_fp16_accum", v)
-							})
-						})
+						row("sla_sparsity"),
+						row("sla_block_size"),
+						row("sla_min_seq_len"),
+						row("sla_dense_last_steps"),
+						row("sla_dense_steps"),
+						row("sla_dense_backend"),
+						row("sla_reference_protection"),
+						row("sla_protect_audio"),
+						row("sla_stabilize_motion"),
+						row("sla_disable_fp16_accum")
 					]
 				}),
 				/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
@@ -3376,92 +3547,15 @@ window.__ModuleLoader__.load({
 							className: studio_module_css_default.groupTitle,
 							children: "Post-processing"
 						}),
-						/* @__PURE__ */ (0, react_jsx_runtime.jsx)(ControlRow, {
-							label: "Sharpening",
-							children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(CheckControl, {
-								ariaLabel: "Sharpening (run)",
-								checked: layerA.sharpen_enabled,
-								onChange: (v) => setLayerAKey("sharpen_enabled", v)
-							})
-						}),
+						row("sharpen_enabled"),
 						layerA.sharpen_enabled && /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(react_jsx_runtime.Fragment, { children: [
-							/* @__PURE__ */ (0, react_jsx_runtime.jsx)(ControlRow, {
-								label: "Method",
-								children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(SelectControl, {
-									ariaLabel: "Sharpen method (run)",
-									value: layerA.sharpen_method ?? "rcas",
-									onChange: (v) => setLayerAKey("sharpen_method", v === "adaptive_usm" || v === "high_pass" || v === "deconvolution" ? v : "rcas"),
-									options: [
-										"rcas",
-										"adaptive_usm",
-										"high_pass",
-										"deconvolution"
-									],
-									emptyLabel: false,
-									width: "w-32"
-								})
-							}),
-							/* @__PURE__ */ (0, react_jsx_runtime.jsx)(ControlRow, {
-								label: "Strength",
-								children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(NumberControl, {
-									ariaLabel: "Sharpen strength (run)",
-									value: layerA.sharpen_strength,
-									onChange: (v) => setLayerAKey("sharpen_strength", v),
-									min: 0,
-									max: 3,
-									step: .05,
-									placeholder: "0.5",
-									width: "w-32"
-								})
-							}),
-							(layerA.sharpen_method ?? "rcas") !== "rcas" && /* @__PURE__ */ (0, react_jsx_runtime.jsx)(ControlRow, {
-								label: "Radius",
-								children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(NumberControl, {
-									ariaLabel: "Sharpen radius (run)",
-									value: layerA.sharpen_radius,
-									onChange: (v) => setLayerAKey("sharpen_radius", v),
-									min: .5,
-									max: 5,
-									step: .5,
-									placeholder: "1.0",
-									width: "w-32"
-								})
-							}),
-							layerA.sharpen_method === "adaptive_usm" && /* @__PURE__ */ (0, react_jsx_runtime.jsx)(ControlRow, {
-								label: "Noise gate",
-								children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(NumberControl, {
-									ariaLabel: "Sharpen threshold (run)",
-									value: layerA.sharpen_threshold,
-									onChange: (v) => setLayerAKey("sharpen_threshold", v),
-									min: 0,
-									max: 1,
-									step: .05,
-									placeholder: "0.05",
-									width: "w-32"
-								})
-							}),
-							layerA.sharpen_method === "deconvolution" && /* @__PURE__ */ (0, react_jsx_runtime.jsx)(ControlRow, {
-								label: "Iterations",
-								children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(NumberControl, {
-									ariaLabel: "Sharpen iterations (run)",
-									value: layerA.sharpen_iterations,
-									onChange: (v) => setLayerAKey("sharpen_iterations", v),
-									min: 1,
-									max: 100,
-									step: 1,
-									placeholder: "10",
-									width: "w-32"
-								})
-							})
+							row("sharpen_method"),
+							row("sharpen_strength"),
+							(layerA.sharpen_method ?? "rcas") !== "rcas" && row("sharpen_radius"),
+							layerA.sharpen_method === "adaptive_usm" && row("sharpen_threshold"),
+							layerA.sharpen_method === "deconvolution" && row("sharpen_iterations")
 						] }),
-						/* @__PURE__ */ (0, react_jsx_runtime.jsx)(ControlRow, {
-							label: "Interpolation",
-							children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(CheckControl, {
-								ariaLabel: "Interpolation (run)",
-								checked: layerA.interpolate_enabled,
-								onChange: (v) => setLayerAKey("interpolate_enabled", v)
-							})
-						}),
+						row("interpolate_enabled"),
 						layerA.interpolate_enabled && /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(react_jsx_runtime.Fragment, { children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(ControlRow, {
 							label: "Model",
 							children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(SelectControl, {
@@ -4888,7 +4982,7 @@ window.__ModuleLoader__.load({
 				h3_context_steps: raw?.h3_context_steps != null ? Number(raw.h3_context_steps) : void 0,
 				h3_audio_context_steps: raw?.h3_audio_context_steps != null ? Number(raw.h3_audio_context_steps) : void 0,
 				h3_sla_sparsity: raw?.h3_sla_sparsity != null ? Number(raw.h3_sla_sparsity) : void 0,
-				h3_sla_block_size: raw?.h3_sla_block_size === "64" || raw?.h3_sla_block_size === "128" ? raw.h3_sla_block_size : void 0,
+				h3_sla_block_size: raw?.h3_sla_block_size === "32" || raw?.h3_sla_block_size === "64" || raw?.h3_sla_block_size === "128" ? raw.h3_sla_block_size : void 0,
 				h3_sla_min_seq_len: raw?.h3_sla_min_seq_len != null ? Number(raw.h3_sla_min_seq_len) : void 0,
 				h3_sla_dense_last_steps: raw?.h3_sla_dense_last_steps != null ? Number(raw.h3_sla_dense_last_steps) : void 0,
 				h3_sla_protect_audio: raw?.h3_sla_protect_audio !== false,

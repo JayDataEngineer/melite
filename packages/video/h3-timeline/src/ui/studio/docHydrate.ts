@@ -46,7 +46,7 @@ export function hydrateLayerA(raw: Record<string, unknown> | undefined): LayerA 
     h3_context_steps: raw?.h3_context_steps != null ? Number(raw.h3_context_steps) : undefined,
     h3_audio_context_steps: raw?.h3_audio_context_steps != null ? Number(raw.h3_audio_context_steps) : undefined,
     h3_sla_sparsity: raw?.h3_sla_sparsity != null ? Number(raw.h3_sla_sparsity) : undefined,
-    h3_sla_block_size: raw?.h3_sla_block_size === "64" || raw?.h3_sla_block_size === "128"
+    h3_sla_block_size: raw?.h3_sla_block_size === "32" || raw?.h3_sla_block_size === "64" || raw?.h3_sla_block_size === "128"
       ? raw.h3_sla_block_size : undefined,
     h3_sla_min_seq_len: raw?.h3_sla_min_seq_len != null ? Number(raw.h3_sla_min_seq_len) : undefined,
     h3_sla_dense_last_steps: raw?.h3_sla_dense_last_steps != null ? Number(raw.h3_sla_dense_last_steps) : undefined,

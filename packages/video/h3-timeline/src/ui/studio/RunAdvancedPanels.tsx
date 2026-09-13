@@ -3,18 +3,60 @@
  * ui/studio/component.tsx. No behavior change: headers/footers are new,
  * every logic line is verbatim from the monolith (source range noted).
  */
-import { CheckControl, ControlRow, NumberControl, SelectControl, SliderControl, TextControl } from "./kit"
+import { CheckControl, ControlRow, NumberControl, SelectControl } from "./kit"
 import s from "./studio.module.css"
 import { SPEED_LORA_OPTIONS } from "./docModel"
 import type { LayerA, SetLayerAKey } from "./docModel"
+import { useEffect, useState } from "react"
+import type { ReactElement } from "react"
+import { fetchFormSpec, SpecFieldRow, type FormSpecDoc, type SpecField } from "@melite/card-base"
 
-/** Layer A rail: SLA lab + Speed LoRA + Post-processing (lines 2905–3188). */
+/** The spec's name → LayerA's key (the h3_ prefix is the studio's
+ * document spelling of the card's renderer vocabulary). */
+function layerKey(name: string): string {
+  return name.startsWith("sla_") ? "h3_" + name : name
+}
+
+/** Layer A rail: SLA lab + Speed LoRA + Post-processing (lines 2905–3188).
+ *
+ * Hour 16, item 3: the compose-read knobs (the SLA family + the
+ * sharpen leaves) RIDE THE SERVED SPEC now — /v1/form-spec?model=
+ * h3-timeline declares them; SpecFieldRow renders each with the
+ * declaration's shape (slider/select/number ranges). The section
+ * layout and the conditional leaves stay studio logic (visible_when
+ * is single-equality — "method ≠ rcas" is not expressible). The
+ * Speed LoRA + RTX + CRF rows are document-local vocabulary (not
+ * card params; the compose never reads them) and stay hand-rolled. */
 export function RunAdvancedPanels({
   layerA, setLayerAKey,
 }: {
   layerA: LayerA
   setLayerAKey: SetLayerAKey
 }) {
+  const [spec, setSpec] = useState<FormSpecDoc | null>(null)
+  useEffect(() => {
+    const ctl = new AbortController()
+    void fetchFormSpec("h3-timeline", ctl.signal)
+      .then((doc) => { setSpec(doc) })
+      .catch(() => { /* spec door refused — hand-rolled rows below keep the rail alive */ })
+    return () => { ctl.abort() }
+  }, [])
+  const byName = new Map((spec?.fields ?? []).map((f: SpecField) => [f.name, f]))
+  const row = (name: string): ReactElement | null => {
+    const f = byName.get(name)
+    if (f === undefined) return null
+    const key = layerKey(name)
+    const values = layerA as unknown as Record<string, unknown>
+    return (
+      <SpecFieldRow
+        f={f}
+        value={values[key]}
+        onEdit={(k, v) => {
+          (setLayerAKey as unknown as (kk: string, vv: unknown) => void)(layerKey(k), v)
+        }}
+      />
+    )
+  }
   return (
     <>
     {/* SLA lab — only when Attention = SLA (block-sparse). */}
@@ -23,99 +65,16 @@ export function RunAdvancedPanels({
       <div className={s.groupTitle}>
         SLA — block-sparse attention
       </div>
-      <ControlRow label="Sparsity">
-        <SliderControl
-          ariaLabel="SLA sparsity (run)"
-          value={layerA.h3_sla_sparsity ?? 0.9}
-          onChange={(v) => setLayerAKey("h3_sla_sparsity", v)}
-          min={0} max={0.95} step={0.05}
-        />
-      </ControlRow>
-      <ControlRow label="Block size">
-        <SelectControl
-          ariaLabel="SLA block size (run)"
-          value={layerA.h3_sla_block_size ?? "64"}
-          onChange={(v) => setLayerAKey("h3_sla_block_size", v === "128" ? "128" : "64")}
-          options={[
-            { value: "64", label: "64 (clean audio)" },
-            { value: "128", label: "128 (faster, robotic)" },
-          ]}
-          emptyLabel={false}
-          width="w-32"
-        />
-      </ControlRow>
-      <ControlRow label="Min seq length">
-        <NumberControl
-          ariaLabel="SLA min seq length (run)"
-          value={layerA.h3_sla_min_seq_len}
-          onChange={(v) => setLayerAKey("h3_sla_min_seq_len", v)}
-          min={512} step={512}
-          placeholder="4096"
-          width="w-32"
-        />
-      </ControlRow>
-      <ControlRow label="Dense last steps">
-        <NumberControl
-          ariaLabel="SLA dense last steps (run)"
-          value={layerA.h3_sla_dense_last_steps}
-          onChange={(v) => setLayerAKey("h3_sla_dense_last_steps", v)}
-          min={0} max={10} step={1}
-          placeholder="1"
-          width="w-32"
-        />
-      </ControlRow>
-      <ControlRow label="Dense steps (explicit)">
-        <TextControl
-          ariaLabel="SLA dense steps (run)"
-          value={layerA.h3_sla_dense_steps}
-          onChange={(v) => setLayerAKey("h3_sla_dense_steps", v)}
-          placeholder="e.g. 0,1 or 0-2"
-          width="w-32"
-        />
-      </ControlRow>
-      <ControlRow label="Dense backend">
-        <SelectControl
-          ariaLabel="SLA dense backend (run)"
-          value={layerA.h3_sla_dense_backend ?? "comfy_kitchen"}
-          onChange={(v) => setLayerAKey("h3_sla_dense_backend",
-            v === "pytorch" || v === "auto" ? v : "comfy_kitchen")}
-          options={["comfy_kitchen", "pytorch", "auto"]}
-          emptyLabel={false}
-          width="w-32"
-        />
-      </ControlRow>
-      <ControlRow label="Ref protection">
-        <SelectControl
-          ariaLabel="SLA ref protection (run)"
-          value={layerA.h3_sla_reference_protection ?? "Off"}
-          onChange={(v) => setLayerAKey("h3_sla_reference_protection",
-            v === "Light" || v === "Heavy Enforcement" ? v : "Off")}
-          options={["Off", "Light", "Heavy Enforcement"]}
-          emptyLabel={false}
-          width="w-32"
-        />
-      </ControlRow>
-      <ControlRow label="Protect audio">
-        <CheckControl
-          ariaLabel="SLA protect audio (run)"
-          checked={layerA.h3_sla_protect_audio}
-          onChange={(v) => setLayerAKey("h3_sla_protect_audio", v)}
-        />
-      </ControlRow>
-      <ControlRow label="Stabilize motion">
-        <CheckControl
-          ariaLabel="SLA stabilize motion (run)"
-          checked={layerA.h3_sla_stabilize_motion}
-          onChange={(v) => setLayerAKey("h3_sla_stabilize_motion", v)}
-        />
-      </ControlRow>
-      <ControlRow label="Full-precision accum">
-        <CheckControl
-          ariaLabel="SLA full-precision accumulation (run)"
-          checked={layerA.h3_sla_disable_fp16_accum}
-          onChange={(v) => setLayerAKey("h3_sla_disable_fp16_accum", v)}
-        />
-      </ControlRow>
+      {row("sla_sparsity")}
+      {row("sla_block_size")}
+      {row("sla_min_seq_len")}
+      {row("sla_dense_last_steps")}
+      {row("sla_dense_steps")}
+      {row("sla_dense_backend")}
+      {row("sla_reference_protection")}
+      {row("sla_protect_audio")}
+      {row("sla_stabilize_motion")}
+      {row("sla_disable_fp16_accum")}
     </div>
     )}
     {/* Speed adapter (plaguekind parity: the lightx2v LoRA at
@@ -151,79 +110,15 @@ export function RunAdvancedPanels({
       <div className={s.groupTitle}>
         Post-processing
       </div>
-      <ControlRow label="Sharpening">
-        <CheckControl
-          ariaLabel="Sharpening (run)"
-          checked={layerA.sharpen_enabled}
-          onChange={(v) => setLayerAKey("sharpen_enabled", v)}
-        />
-      </ControlRow>
+      {row("sharpen_enabled")}
       {layerA.sharpen_enabled && (<>
-      <ControlRow label="Method">
-        <SelectControl
-          ariaLabel="Sharpen method (run)"
-          value={layerA.sharpen_method ?? "rcas"}
-          onChange={(v) => setLayerAKey("sharpen_method",
-            v === "adaptive_usm" || v === "high_pass" || v === "deconvolution" ? v : "rcas")}
-          options={["rcas", "adaptive_usm", "high_pass", "deconvolution"]}
-          emptyLabel={false}
-          width="w-32"
-        />
-      </ControlRow>
-      <ControlRow label="Strength">
-        <NumberControl
-          ariaLabel="Sharpen strength (run)"
-          value={layerA.sharpen_strength}
-          onChange={(v) => setLayerAKey("sharpen_strength", v)}
-          min={0} max={3} step={0.05}
-          placeholder="0.5"
-          width="w-32"
-        />
-      </ControlRow>
-      {(layerA.sharpen_method ?? "rcas") !== "rcas" && (
-      <ControlRow label="Radius">
-        <NumberControl
-          ariaLabel="Sharpen radius (run)"
-          value={layerA.sharpen_radius}
-          onChange={(v) => setLayerAKey("sharpen_radius", v)}
-          min={0.5} max={5} step={0.5}
-          placeholder="1.0"
-          width="w-32"
-        />
-      </ControlRow>
-      )}
-      {layerA.sharpen_method === "adaptive_usm" && (
-      <ControlRow label="Noise gate">
-        <NumberControl
-          ariaLabel="Sharpen threshold (run)"
-          value={layerA.sharpen_threshold}
-          onChange={(v) => setLayerAKey("sharpen_threshold", v)}
-          min={0} max={1} step={0.05}
-          placeholder="0.05"
-          width="w-32"
-        />
-      </ControlRow>
-      )}
-      {layerA.sharpen_method === "deconvolution" && (
-      <ControlRow label="Iterations">
-        <NumberControl
-          ariaLabel="Sharpen iterations (run)"
-          value={layerA.sharpen_iterations}
-          onChange={(v) => setLayerAKey("sharpen_iterations", v)}
-          min={1} max={100} step={1}
-          placeholder="10"
-          width="w-32"
-        />
-      </ControlRow>
-      )}
+      {row("sharpen_method")}
+      {row("sharpen_strength")}
+      {(layerA.sharpen_method ?? "rcas") !== "rcas" && row("sharpen_radius")}
+      {layerA.sharpen_method === "adaptive_usm" && row("sharpen_threshold")}
+      {layerA.sharpen_method === "deconvolution" && row("sharpen_iterations")}
       </>)}
-      <ControlRow label="Interpolation">
-        <CheckControl
-          ariaLabel="Interpolation (run)"
-          checked={layerA.interpolate_enabled}
-          onChange={(v) => setLayerAKey("interpolate_enabled", v)}
-        />
-      </ControlRow>
+      {row("interpolate_enabled")}
       {layerA.interpolate_enabled && (<>
       <ControlRow label="Model">
         <SelectControl

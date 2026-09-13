@@ -91,7 +91,7 @@ export interface BeatKnobs {
   h3_context_steps?: number
   h3_audio_context_steps?: number
   h3_sla_sparsity?: number
-  h3_sla_block_size?: "64" | "128"
+  h3_sla_block_size?: "32" | "64" | "128"
   h3_sla_min_seq_len?: number
   h3_sla_dense_last_steps?: number
   h3_sla_protect_audio?: boolean
@@ -260,7 +260,7 @@ export interface LayerA {
   h3_context_steps?: number
   h3_audio_context_steps?: number
   h3_sla_sparsity?: number
-  h3_sla_block_size?: "64" | "128"
+  h3_sla_block_size?: "32" | "64" | "128"
   h3_sla_min_seq_len?: number
   h3_sla_dense_last_steps?: number
   h3_sla_protect_audio: boolean
