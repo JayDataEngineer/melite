@@ -286,8 +286,8 @@ window.__ModuleLoader__.load({
 		}
 		//#endregion
 		//#region \0dsh-css:card-base/src/card.module.css.mjs
-		const css = ".FRpSCG_specForm :where(input,textarea,select,button){box-sizing:border-box}.FRpSCG_specForm{flex-direction:column;gap:12px;display:flex}.FRpSCG_specGroup{flex-direction:column;gap:8px;display:flex}.FRpSCG_modelAxes{grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;display:grid}.FRpSCG_specGroupTitle{color:var(--dsw-alias-label-secondary,#61666b);letter-spacing:.04em;text-transform:uppercase;margin:0 0 2px;font-size:11px;font-weight:600}.FRpSCG_specField{flex-direction:column;gap:6px;display:flex}.FRpSCG_specFieldKey{color:var(--dsw-alias-label-secondary,#61666b);font-size:12px}.FRpSCG_specRequired{color:var(--dsw-alias-state-critical,#e5484d)}.FRpSCG_specHint{color:var(--dsw-alias-label-secondary,#61666b);font-size:11px}.FRpSCG_specSelect{background:var(--dsw-alias-interactive-bg-hover,#2631480f);border:.5px solid var(--dsw-alias-border-l2,#0000001a);color:inherit;font:inherit;border-radius:6px;width:100%;padding:5px 8px;font-size:13px}.FRpSCG_specSliderRow{align-items:center;gap:8px;display:flex}.FRpSCG_specSlider{flex:1}.FRpSCG_specSliderValue{color:var(--dsw-alias-label-secondary,#61666b);font-family:var(--dsw-alias-font-mono,ui-monospace, monospace);text-align:right;min-width:4ch;font-size:12px}.FRpSCG_specTextarea{background:var(--dsw-alias-interactive-bg-hover,#2631480f);border:.5px solid var(--dsw-alias-border-l2,#0000001a);color:inherit;font:inherit;resize:vertical;border-radius:6px;width:100%;padding:6px 8px;font-size:13px}.FRpSCG_squareWrap{flex-direction:column;align-items:center;gap:4px;width:84px;display:flex}.FRpSCG_squareOff{opacity:.5;pointer-events:none}.FRpSCG_squareBox{border:.5px solid var(--dsw-alias-border-l2,#00000024);cursor:pointer;height:80px;transition:border-color var(--ds-transition-duration,.12s) var(--ds-ease-in-out,ease);border-radius:8px;justify-content:center;align-items:center;width:80px;display:flex;position:relative;overflow:hidden}.FRpSCG_squareOver{border-color:var(--dsw-alias-border-l3,#00000047);box-shadow:0 0 0 2px var(--dsw-alias-border-l1,#00000014)}.FRpSCG_squareThumb{object-fit:cover;width:100%;height:100%}.FRpSCG_squareGlyph{color:var(--dsw-alias-label-tertiary,#00000073)}.FRpSCG_squareX{background:var(--dsw-alias-bg-module,#fff);border:.5px solid var(--dsw-alias-border-l2,#00000024);cursor:pointer;border-radius:999px;align-items:center;padding:0 4px;font-size:10px;line-height:17px;display:flex;position:absolute;top:4px;right:4px}.FRpSCG_squareLabel{color:var(--dsw-alias-label-primary,#0f1115);text-overflow:ellipsis;white-space:nowrap;width:100%;font-size:11px;line-height:17px;overflow:hidden}.FRpSCG_squareMetric{color:var(--dsw-alias-label-tertiary,#00000073);font-size:10px;line-height:17px}.FRpSCG_squareFileInput{display:none}.FRpSCG_modSection{border-top:1px dashed var(--border,#80808040);flex-direction:column;gap:6px;margin-top:10px;padding-top:8px;display:flex}.FRpSCG_modHead{align-items:baseline;gap:8px;display:flex}.FRpSCG_modTitle{letter-spacing:.06em;text-transform:uppercase;opacity:.7;font-size:10px;font-weight:600}.FRpSCG_modHint{opacity:.45;font-size:9px}.FRpSCG_modRow{flex-wrap:wrap;align-items:stretch;gap:6px;margin:0;padding:0;list-style:none;display:flex}.FRpSCG_modTile{border:1px solid var(--border,#8080804d);background:var(--bg-elevated,#80808014);cursor:grab;touch-action:none;border-radius:8px;flex-direction:column;justify-content:center;gap:2px;min-width:84px;max-width:132px;padding:6px 8px;display:flex}.FRpSCG_modTile:active{cursor:grabbing}.FRpSCG_modTileLabel{text-overflow:ellipsis;white-space:nowrap;font-size:11px;line-height:1.2;overflow:hidden}.FRpSCG_modTileStrength{opacity:.55;font-size:9px}.FRpSCG_modAddSquare{border:1px dashed var(--dsw-alias-border-l3,#00000047);cursor:pointer;opacity:.7;height:64px;transition:border-color var(--ds-transition-duration,.12s) var(--ds-ease-in-out,ease), background-color var(--ds-transition-duration,.12s) var(--ds-ease-in-out,ease);background:0 0;border-radius:8px;justify-content:center;align-items:center;width:64px;display:flex}.FRpSCG_modAddSquare:hover{background:var(--dsw-alias-interactive-bg-hover,#0000000d);border-color:var(--dsw-alias-border-l4,#0006);opacity:1}.FRpSCG_tileDragging{opacity:.5}.FRpSCG_modLeaf{flex-direction:column;gap:10px;min-width:260px;display:flex}.FRpSCG_modLeafFields{gap:8px;display:grid}.FRpSCG_modLeafActions{gap:8px;display:flex}.FRpSCG_modField{flex-direction:column;gap:4px;font-size:11px;display:flex}.FRpSCG_modSelect{border:1px solid var(--border,#8080804d);background:var(--bg-elevated,#8080800f);color:inherit;border-radius:6px;padding:6px 8px;font-size:12px}.FRpSCG_modLeafError{color:#e06c5f;margin:0;font-size:11px}.FRpSCG_pickList{flex-direction:column;gap:4px;max-height:60vh;margin:0;padding:0;list-style:none;display:flex;overflow-y:auto}.FRpSCG_pickRow{display:block}.FRpSCG_pickBtn{border:1px solid var(--dsw-alias-border-l2);color:var(--dsw-alias-label-primary);cursor:pointer;text-align:left;transition:border-color var(--ds-transition-duration,.12s) var(--ds-ease-in-out,ease), background-color var(--ds-transition-duration,.12s) var(--ds-ease-in-out,ease);background:0 0;border-radius:6px;align-items:center;gap:10px;width:100%;padding:6px;display:flex}.FRpSCG_pickBtn:hover{background:var(--dsw-alias-interactive-bg-hover);border-color:var(--dsw-alias-border-l4)}.FRpSCG_pickThumb{object-fit:cover;border-radius:4px;flex:none;width:40px;height:40px}.FRpSCG_pickGlyph{background:var(--dsw-alias-interactive-bg-hover);color:var(--dsw-alias-label-secondary);border-radius:4px;flex:none;justify-content:center;align-items:center;width:40px;height:40px;font-size:15px;font-weight:600;display:inline-flex}.FRpSCG_pickLabel{text-overflow:ellipsis;white-space:nowrap;font-size:13px;overflow:hidden}.FRpSCG_pickEmpty{color:var(--dsw-alias-label-tertiary);margin:0;font-size:13px}.FRpSCG_sourceRow{flex-direction:column;display:flex}";
-		const tagId = "@melite/image-ideogram4/card.module.css@90c83eb9";
+		const css = ".FRpSCG_specForm :where(input,textarea,select,button){box-sizing:border-box}.FRpSCG_specForm{flex-direction:column;gap:12px;display:flex}.FRpSCG_specGroup{flex-direction:column;gap:8px;display:flex}.FRpSCG_modelAxes{grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;display:grid}.FRpSCG_specGroupTitle{color:var(--dsw-alias-label-secondary,#61666b);letter-spacing:.04em;text-transform:uppercase;margin:0 0 2px;font-size:11px;font-weight:600}.FRpSCG_specField{flex-direction:column;gap:6px;display:flex}.FRpSCG_specFieldKey{color:var(--dsw-alias-label-secondary,#61666b);font-size:12px}.FRpSCG_specRequired{color:var(--dsw-alias-state-critical,#e5484d)}.FRpSCG_specHint{color:var(--dsw-alias-label-secondary,#61666b);font-size:11px}.FRpSCG_specSelect{background:var(--dsw-alias-interactive-bg-hover,#2631480f);border:.5px solid var(--dsw-alias-border-l2,#0000001a);color:inherit;font:inherit;border-radius:6px;width:100%;padding:5px 8px;font-size:13px}.FRpSCG_specSliderRow{align-items:center;gap:8px;display:flex}.FRpSCG_specSlider{flex:1}.FRpSCG_specSliderValue{color:var(--dsw-alias-label-secondary,#61666b);font-family:var(--dsw-alias-font-mono,ui-monospace, monospace);text-align:right;min-width:4ch;font-size:12px}.FRpSCG_specTextarea{background:var(--dsw-alias-interactive-bg-hover,#2631480f);border:.5px solid var(--dsw-alias-border-l2,#0000001a);color:inherit;font:inherit;resize:vertical;border-radius:6px;width:100%;padding:6px 8px;font-size:13px}.FRpSCG_squareWrap{flex-direction:column;align-items:center;gap:4px;width:84px;display:flex}.FRpSCG_squareOff{opacity:.5;pointer-events:none}.FRpSCG_squareBox{border:.5px solid var(--dsw-alias-border-l2,#00000024);cursor:pointer;height:80px;transition:border-color var(--ds-transition-duration,.12s) var(--ds-ease-in-out,ease);border-radius:8px;justify-content:center;align-items:center;width:80px;display:flex;position:relative;overflow:hidden}.FRpSCG_squareOver{border-color:var(--dsw-alias-border-l3,#00000047);box-shadow:0 0 0 2px var(--dsw-alias-border-l1,#00000014)}.FRpSCG_squareThumb{object-fit:cover;width:100%;height:100%}.FRpSCG_squareGlyph{color:var(--dsw-alias-label-tertiary,#00000073)}.FRpSCG_squareX{background:var(--dsw-alias-bg-module,#fff);border:.5px solid var(--dsw-alias-border-l2,#00000024);cursor:pointer;border-radius:999px;align-items:center;padding:0 4px;font-size:10px;line-height:17px;display:flex;position:absolute;top:4px;right:4px}.FRpSCG_squareLabel{color:var(--dsw-alias-label-primary,#0f1115);text-overflow:ellipsis;white-space:nowrap;width:100%;font-size:11px;line-height:17px;overflow:hidden}.FRpSCG_squareMetric{color:var(--dsw-alias-label-tertiary,#00000073);font-size:10px;line-height:17px}.FRpSCG_squareFileInput{display:none}.FRpSCG_modSection{border-top:1px dashed var(--border,#80808040);flex-direction:column;gap:6px;margin-top:10px;padding-top:8px;display:flex}.FRpSCG_modHead{align-items:baseline;gap:8px;display:flex}.FRpSCG_modTitle{letter-spacing:.06em;text-transform:uppercase;opacity:.7;font-size:10px;font-weight:600}.FRpSCG_modHint{opacity:.45;font-size:9px}.FRpSCG_modRow{flex-wrap:wrap;align-items:stretch;gap:6px;margin:0;padding:0;list-style:none;display:flex}.FRpSCG_modTile{border:1px solid var(--border,#8080804d);background:var(--bg-elevated,#80808014);cursor:grab;touch-action:none;border-radius:8px;flex-direction:column;justify-content:center;gap:2px;min-width:84px;max-width:132px;padding:6px 8px;display:flex}.FRpSCG_modTile:active{cursor:grabbing}.FRpSCG_modTileLabel{text-overflow:ellipsis;white-space:nowrap;font-size:11px;line-height:1.2;overflow:hidden}.FRpSCG_modTileStrength{opacity:.55;font-size:9px}.FRpSCG_modAddSquare{border:1px dashed var(--dsw-alias-border-l3,#00000047);cursor:pointer;opacity:.7;height:64px;transition:border-color var(--ds-transition-duration,.12s) var(--ds-ease-in-out,ease), background-color var(--ds-transition-duration,.12s) var(--ds-ease-in-out,ease);background:0 0;border-radius:8px;justify-content:center;align-items:center;width:64px;display:flex}.FRpSCG_modAddSquare:hover{background:var(--dsw-alias-interactive-bg-hover,#0000000d);border-color:var(--dsw-alias-border-l4,#0006);opacity:1}.FRpSCG_tileDragging{opacity:.5}.FRpSCG_modLeaf{flex-direction:column;gap:10px;min-width:260px;display:flex}.FRpSCG_modLeafFields{gap:8px;display:grid}.FRpSCG_modLeafActions{gap:8px;display:flex}.FRpSCG_modField{flex-direction:column;gap:4px;font-size:11px;display:flex}.FRpSCG_modSelect{border:1px solid var(--border,#8080804d);background:var(--bg-elevated,#8080800f);color:inherit;border-radius:6px;padding:6px 8px;font-size:12px}.FRpSCG_modLeafError{color:#e06c5f;margin:0;font-size:11px}.FRpSCG_pickList{flex-direction:column;gap:4px;max-height:60vh;margin:0;padding:0;list-style:none;display:flex;overflow-y:auto}.FRpSCG_pickRow{display:block}.FRpSCG_pickBtn{border:1px solid var(--dsw-alias-border-l2);color:var(--dsw-alias-label-primary);cursor:pointer;text-align:left;transition:border-color var(--ds-transition-duration,.12s) var(--ds-ease-in-out,ease), background-color var(--ds-transition-duration,.12s) var(--ds-ease-in-out,ease);background:0 0;border-radius:6px;align-items:center;gap:10px;width:100%;padding:6px;display:flex}.FRpSCG_pickBtn:hover{background:var(--dsw-alias-interactive-bg-hover);border-color:var(--dsw-alias-border-l4)}.FRpSCG_pickThumb{object-fit:cover;border-radius:4px;flex:none;width:40px;height:40px}.FRpSCG_pickGlyph{background:var(--dsw-alias-interactive-bg-hover);color:var(--dsw-alias-label-secondary);border-radius:4px;flex:none;justify-content:center;align-items:center;width:40px;height:40px;font-size:15px;font-weight:600;display:inline-flex}.FRpSCG_pickLabel{text-overflow:ellipsis;white-space:nowrap;font-size:13px;overflow:hidden}.FRpSCG_pickEmpty{color:var(--dsw-alias-label-tertiary);margin:0;font-size:13px}.FRpSCG_sourceRow{flex-direction:column;display:flex}.FRpSCG_specSlotRow{flex-wrap:wrap;align-items:flex-start;gap:8px;display:flex}.FRpSCG_specSlotCell{flex-direction:column;gap:4px;display:flex}.FRpSCG_specListBlock{flex-direction:column;gap:6px;display:flex}";
+		const tagId = "@melite/image-ideogram4/card.module.css@b6a32ba5";
 		if (typeof document !== "undefined" && document.querySelector("style[data-plugin-css=" + JSON.stringify(tagId) + "]") === null) {
 			const tag = document.createElement("style");
 			tag.dataset.plugin = "@melite/image-ideogram4";
@@ -326,11 +326,14 @@ window.__ModuleLoader__.load({
 			"specGroup": "FRpSCG_specGroup",
 			"specGroupTitle": "FRpSCG_specGroupTitle",
 			"specHint": "FRpSCG_specHint",
+			"specListBlock": "FRpSCG_specListBlock",
 			"specRequired": "FRpSCG_specRequired",
 			"specSelect": "FRpSCG_specSelect",
 			"specSlider": "FRpSCG_specSlider",
 			"specSliderRow": "FRpSCG_specSliderRow",
 			"specSliderValue": "FRpSCG_specSliderValue",
+			"specSlotCell": "FRpSCG_specSlotCell",
+			"specSlotRow": "FRpSCG_specSlotRow",
 			"specTextarea": "FRpSCG_specTextarea",
 			"squareBox": "FRpSCG_squareBox",
 			"squareFileInput": "FRpSCG_squareFileInput",
@@ -465,7 +468,7 @@ window.__ModuleLoader__.load({
 					e.stopPropagation();
 					props.onClear?.();
 				}
-			}, "✕") : null), (0, react.createElement)("span", { className: card_module_css_default.squareLabel }, label), metric !== void 0 ? (0, react.createElement)("span", { className: card_module_css_default.squareMetric }, metric) : null, props.onFile !== void 0 && !disabled ? (0, react.createElement)("input", {
+			}, "✕") : null), label !== "" ? (0, react.createElement)("span", { className: card_module_css_default.squareLabel }, label) : null, metric !== void 0 ? (0, react.createElement)("span", { className: card_module_css_default.squareMetric }, metric) : null, props.onFile !== void 0 && !disabled ? (0, react.createElement)("input", {
 				ref: fileRef,
 				type: "file",
 				accept: "image/png,image/jpeg,image/webp",
@@ -880,6 +883,78 @@ window.__ModuleLoader__.load({
 				wireMenu: (0, react.createElement)(react.Fragment, null, sourceMenu, pickerModal, fileInput)
 			};
 		}
+		function SourceRow(props) {
+			const field = {
+				name: "__source_row__",
+				label: props.label,
+				type: props.kind === "image" ? "image" : "file"
+			};
+			const { square, wireMenu } = useSquareProvider((0, react.useCallback)((name, v) => {
+				props.onEdit(typeof v === "string" ? v : String(v ?? ""));
+			}, [props.onEdit]), {
+				candidates: props.candidates ?? [],
+				...props.onFile !== void 0 ? { onFile: props.onFile } : {},
+				...props.renderSourcePick !== void 0 ? { renderSourcePick: props.renderSourcePick } : {}
+			});
+			const host = square(field);
+			const shown = host !== void 0 ? host.display ?? props.value ?? null : props.value ?? null;
+			return (0, react.createElement)("div", {
+				className: card_module_css_default.sourceRow,
+				"data-source-row": props.label
+			}, wireMenu, (0, react.createElement)(InputSquare, {
+				label: props.label,
+				value: shown !== null && isImageUrl(shown) ? shown : null,
+				metric: typeof props.value === "string" && props.value !== "" && !isImageUrl(props.value) ? props.value : void 0,
+				...host !== void 0 ? host.verbs : {}
+			}));
+		}
+		/** THE MULTI-IMAGE ROW (2026-09-13, the operator's source-row law):
+		*  an image_list value renders as ONE row of source squares — one per
+		*  entry (each with the full three-source grammar: menu, modal, OS
+		*  file, drops, detach) plus a trailing add square that APPENDS. The
+		*  row is the mods grammar applied to inputs: same plus square, same
+		*  menu, dynamically addable. The cap rides the declaration's tooltip
+		*  law (the frozen picker served up to 3). */
+		const IMAGE_LIST_CAP = 3;
+		function ImageListAtom({ f, value, onEdit, candidates }) {
+			const arr = Array.isArray(value) ? value.filter((v) => typeof v === "string") : [];
+			const write = (next) => {
+				onEdit(f.name, next);
+			};
+			const writeAt = (i, v) => {
+				if (v === "") {
+					write(arr.filter((_, j) => j !== i));
+					return;
+				}
+				const next = [...arr];
+				next[i] = v;
+				write(next);
+			};
+			const append = (v) => {
+				if (v === "") return;
+				write([...arr, v]);
+			};
+			return (0, react.createElement)("div", {
+				className: card_module_css_default.specListBlock,
+				"data-image-list": f.name
+			}, (0, react.createElement)("span", { className: card_module_css_default.specFieldKey }, f.label), (0, react.createElement)("div", { className: card_module_css_default.specSlotRow }, arr.map((v, i) => (0, react.createElement)(SourceRow, {
+				key: f.name + "-" + i + "-" + v,
+				label: "",
+				kind: "image",
+				value: v,
+				candidates,
+				onEdit: (nv) => {
+					writeAt(i, nv);
+				}
+			})), arr.length < IMAGE_LIST_CAP ? (0, react.createElement)(SourceRow, {
+				key: f.name + "-add",
+				label: "",
+				kind: "image",
+				value: null,
+				candidates,
+				onEdit: append
+			}) : null));
+		}
 		/** THE TRI-STATE ATOM (hour 15, stroke C): inherit / on / off —
 		*  promoted from h3's studio-local TriControl (same semantics, same
 		*  option order). Serves schema-bound fields of type 'tri' AND the
@@ -939,7 +1014,7 @@ window.__ModuleLoader__.load({
 		}
 		/** One spec atom — typed by the declaration, edited as a raw string
 		*  while typing (decimal dots survive; coercion happens once at patch). */
-		function SpecAtom({ f, value, onEdit, square }) {
+		function SpecAtom({ f, value, onEdit, square, wireCandidates }) {
 			if ((f.type === "image" || f.type === "file") && square !== void 0) {
 				const shown = square.display !== void 0 && square.display !== null && square.display !== "" ? square.display : typeof value === "string" ? value : null;
 				return (0, react.createElement)(InputSquare, {
@@ -992,6 +1067,12 @@ window.__ModuleLoader__.load({
 				placeholder: f.placeholder ?? "",
 				onChange: (e) => onEdit(f.name, e.target.value),
 				"aria-label": f.label
+			});
+			if (f.type === "image_list") return (0, react.createElement)(ImageListAtom, {
+				f,
+				value,
+				onEdit,
+				candidates: wireCandidates
 			});
 			return (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Input, {
 				value: String(value ?? ""),
@@ -1083,12 +1164,13 @@ window.__ModuleLoader__.load({
 		*  to rail sections that render served fields outside a whole form
 		*  (mask's TuneSection). The claim seam stays CardForm's; this row
 		*  takes the resolved atom inputs. */
-		function SpecFieldRow({ f, value, onEdit, square }) {
+		function SpecFieldRow({ f, value, onEdit, square, wireCandidates }) {
 			return (0, react.createElement)("label", { className: card_module_css_default.specField }, (0, react.createElement)("span", { className: card_module_css_default.specFieldKey }, f.label, f.required === true ? (0, react.createElement)("span", { className: card_module_css_default.specRequired }, " *") : null), (0, react.createElement)(SpecAtom, {
 				f,
 				value,
 				onEdit,
-				square
+				square,
+				...wireCandidates !== void 0 ? { wireCandidates } : {}
 			}), f.tooltip !== void 0 && f.tooltip !== "" ? (0, react.createElement)("span", { className: card_module_css_default.specHint }, f.tooltip) : null);
 		}
 		function CardForm({ spec, fields, values, onEdit, wire, square, atoms, onPatch }) {
@@ -1115,29 +1197,79 @@ window.__ModuleLoader__.load({
 				spec,
 				values,
 				onEdit
-			}) : null, groups.map((g) => (0, react.createElement)("section", {
-				key: g.group ?? "",
-				className: card_module_css_default.specGroup
-			}, g.group !== null ? (0, react.createElement)("h4", { className: card_module_css_default.specGroupTitle }, g.group) : null, g.fields.map((f) => {
-				const claim = atomOf(f);
-				const sq = squareFor(f);
-				if (claim !== void 0) return (0, react.createElement)("label", {
-					key: f.name,
-					className: card_module_css_default.specField
-				}, (0, react.createElement)("span", { className: card_module_css_default.specFieldKey }, f.label, f.required === true ? (0, react.createElement)("span", { className: card_module_css_default.specRequired }, " *") : null), claim({
-					f,
-					value: values[f.name],
-					onEdit,
-					square: sq
-				}), f.tooltip !== void 0 && f.tooltip !== "" ? (0, react.createElement)("span", { className: card_module_css_default.specHint }, f.tooltip) : null);
-				return (0, react.createElement)(SpecFieldRow, {
-					key: f.name,
-					f,
-					value: values[f.name],
-					onEdit,
-					square: sq
-				});
-			}))), modKinds.length > 0 ? (0, react.createElement)(ModifiersSection, {
+			}) : null, groups.map((g) => {
+				const children = [];
+				let row = [];
+				const flush = () => {
+					if (row.length === 0) return;
+					children.push((0, react.createElement)("div", {
+						key: "slotrow-" + String(children.length),
+						className: card_module_css_default.specSlotRow
+					}, row));
+					row = [];
+				};
+				for (const f of g.fields) {
+					const claim = atomOf(f);
+					const sq = squareFor(f);
+					const wireCandidates = wire?.candidates;
+					if (claim !== void 0) {
+						flush();
+						children.push((0, react.createElement)("label", {
+							key: f.name,
+							className: card_module_css_default.specField
+						}, (0, react.createElement)("span", { className: card_module_css_default.specFieldKey }, f.label, f.required === true ? (0, react.createElement)("span", { className: card_module_css_default.specRequired }, " *") : null), claim({
+							f,
+							value: values[f.name],
+							onEdit,
+							square: sq
+						}), f.tooltip !== void 0 && f.tooltip !== "" ? (0, react.createElement)("span", { className: card_module_css_default.specHint }, f.tooltip) : null));
+						continue;
+					}
+					if (f.type === "image_list") {
+						flush();
+						children.push((0, react.createElement)("div", {
+							key: f.name,
+							className: card_module_css_default.specSlotCell,
+							title: f.tooltip !== void 0 && f.tooltip !== "" ? f.tooltip : void 0
+						}, (0, react.createElement)(SpecAtom, {
+							f,
+							value: values[f.name],
+							onEdit,
+							square: sq,
+							...wireCandidates !== void 0 ? { wireCandidates } : {}
+						})));
+						continue;
+					}
+					if (f.type === "image" || f.type === "file") {
+						row.push((0, react.createElement)("div", {
+							key: f.name,
+							className: card_module_css_default.specSlotCell,
+							title: f.tooltip !== void 0 && f.tooltip !== "" ? f.tooltip : void 0
+						}, (0, react.createElement)(SpecAtom, {
+							f,
+							value: values[f.name],
+							onEdit,
+							square: sq,
+							...wireCandidates !== void 0 ? { wireCandidates } : {}
+						})));
+						continue;
+					}
+					flush();
+					children.push((0, react.createElement)(SpecFieldRow, {
+						key: f.name,
+						f,
+						value: values[f.name],
+						onEdit,
+						square: sq,
+						...wireCandidates !== void 0 ? { wireCandidates } : {}
+					}));
+				}
+				flush();
+				return (0, react.createElement)("section", {
+					key: g.group ?? "",
+					className: card_module_css_default.specGroup
+				}, g.group !== null ? (0, react.createElement)("h4", { className: card_module_css_default.specGroupTitle }, g.group) : null, children);
+			}), modKinds.length > 0 ? (0, react.createElement)(ModifiersSection, {
 				kinds: modKinds,
 				values,
 				onEdit,

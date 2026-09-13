@@ -203,3 +203,10 @@
 }
 
 .sourceRow { display: flex; flex-direction: column; }
+
+/* THE SLOT ROW (2026-09-13, the old melite's input-zone grammar): the
+ * slot-shaped fields of one group render side-by-side — their labels
+ * live under their squares, not in stacked key rows. Token-only. */
+.specSlotRow { display: flex; flex-wrap: wrap; gap: 8px; align-items: flex-start; }
+.specSlotCell { display: flex; flex-direction: column; gap: 4px; }
+.specListBlock { display: flex; flex-direction: column; gap: 6px; }

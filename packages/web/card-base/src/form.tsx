@@ -340,6 +340,60 @@ export function SourceRow(props: SourceRowProps): ReturnType<typeof h> {
   )
 }
 
+/** THE MULTI-IMAGE ROW (2026-09-13, the operator's source-row law):
+ *  an image_list value renders as ONE row of source squares — one per
+ *  entry (each with the full three-source grammar: menu, modal, OS
+ *  file, drops, detach) plus a trailing add square that APPENDS. The
+ *  row is the mods grammar applied to inputs: same plus square, same
+ *  menu, dynamically addable. The cap rides the declaration's tooltip
+ *  law (the frozen picker served up to 3). */
+const IMAGE_LIST_CAP = 3
+
+function ImageListAtom({ f, value, onEdit, candidates }: {
+  f: SpecField
+  value: unknown
+  onEdit(name: string, v: unknown): void
+  candidates?: Array<{ id: string; label: string; url: string }>
+}): ReturnType<typeof h> {
+  const arr: string[] = Array.isArray(value)
+    ? value.filter((v): v is string => typeof v === 'string')
+    : []
+  const write = (next: string[]): void => { onEdit(f.name, next) }
+  const writeAt = (i: number, v: string): void => {
+    if (v === '') { write(arr.filter((_, j) => j !== i)); return }
+    const next = [...arr]
+    next[i] = v
+    write(next)
+  }
+  const append = (v: string): void => {
+    if (v === '') return
+    write([...arr, v])
+  }
+  return h('div', { className: css.specListBlock, 'data-image-list': f.name },
+    h('span', { className: css.specFieldKey }, f.label),
+    h('div', { className: css.specSlotRow },
+      arr.map((v, i) => h(SourceRow, {
+        key: f.name + '-' + i + '-' + v,
+        label: '',
+        kind: 'image',
+        value: v,
+        candidates,
+        onEdit: (nv: string) => { writeAt(i, nv) },
+      })),
+      arr.length < IMAGE_LIST_CAP
+        ? h(SourceRow, {
+            key: f.name + '-add',
+            label: '',
+            kind: 'image',
+            value: null,
+            candidates,
+            onEdit: append,
+          })
+        : null,
+    ),
+  )
+}
+
 /** THE TRI-STATE ATOM (hour 15, stroke C): inherit / on / off —
  *  promoted from h3's studio-local TriControl (same semantics, same
  *  option order). Serves schema-bound fields of type 'tri' AND the
@@ -412,11 +466,13 @@ export function SpecSliderAtom({ f, value, onEdit }: {
 
 /** One spec atom — typed by the declaration, edited as a raw string
  *  while typing (decimal dots survive; coercion happens once at patch). */
-export function SpecAtom({ f, value, onEdit, square }: {
+export function SpecAtom({ f, value, onEdit, square, wireCandidates }: {
   f: SpecField
   value: unknown
   onEdit(name: string, v: unknown): void
   square?: SquareHost
+  /** the wire's flow rows (the image_list slots source From flow too) */
+  wireCandidates?: Array<{ id: string; label: string; url: string }>
 }): ReturnType<typeof h> {
   // THE INPUT SQUARE (the old law: slot-shaped values render the ONE
   // square with the three source verbs — never a bare text Input).
@@ -477,6 +533,9 @@ export function SpecAtom({ f, value, onEdit, square }: {
       onChange: (e: unknown) => onEdit(f.name, (e as { target: { value: string } }).target.value),
       'aria-label': f.label,
     })
+  }
+  if (f.type === 'image_list') {
+    return h(ImageListAtom, { f, value, onEdit, candidates: wireCandidates })
   }
   // number, seed, text — the raw-string Input (coerce once at patch)
   return h(Input, {
@@ -576,18 +635,19 @@ export function ModelAxes({ spec, values, onEdit }: {
  *  to rail sections that render served fields outside a whole form
  *  (mask's TuneSection). The claim seam stays CardForm's; this row
  *  takes the resolved atom inputs. */
-export function SpecFieldRow({ f, value, onEdit, square }: {
+export function SpecFieldRow({ f, value, onEdit, square, wireCandidates }: {
   f: SpecField
   value: unknown
   onEdit(name: string, v: unknown): void
   square?: SquareHost
+  wireCandidates?: Array<{ id: string; label: string; url: string }>
 }): ReturnType<typeof h> {
   return h('label', { className: css.specField },
     h('span', { className: css.specFieldKey },
       f.label,
       f.required === true ? h('span', { className: css.specRequired }, ' *') : null,
     ),
-    h(SpecAtom, { f, value, onEdit, square }),
+    h(SpecAtom, { f, value, onEdit, square, ...(wireCandidates !== undefined ? { wireCandidates } : {}) }),
     f.tooltip !== undefined && f.tooltip !== '' ? h('span', { className: css.specHint }, f.tooltip) : null,
   )
 }
@@ -638,24 +698,63 @@ export function CardForm({ spec, fields, values, onEdit, wire, square, atoms, on
   }, [spec, onEdit])
   return h('div', { className: css.specForm },
     spec !== undefined ? h(ModelAxes, { spec, values, onEdit }) : null,
-    groups.map((g) => h('section', { key: g.group ?? '', className: css.specGroup },
-      g.group !== null ? h('h4', { className: css.specGroupTitle }, g.group) : null,
-      g.fields.map((f) => {
+    groups.map((g) => {
+      // THE SLOT ROW partition: image/image_list fields of one group
+      // share a horizontal row (their labels live under their squares);
+      // every other field keeps its stacked key row.
+      const children: Array<ReturnType<typeof h>> = []
+      let row: Array<ReturnType<typeof h>> = []
+      const flush = (): void => {
+        if (row.length === 0) return
+        children.push(h('div', { key: 'slotrow-' + String(children.length), className: css.specSlotRow }, row))
+        row = []
+      }
+      for (const f of g.fields) {
         const claim = atomOf(f)
         const sq = squareFor(f)
+        const wireCandidates = wire?.candidates
         if (claim !== undefined) {
-          return h('label', { key: f.name, className: css.specField },
+          flush()
+          children.push(h('label', { key: f.name, className: css.specField },
             h('span', { className: css.specFieldKey },
               f.label,
               f.required === true ? h('span', { className: css.specRequired }, ' *') : null,
             ),
             claim({ f, value: values[f.name], onEdit, square: sq }),
             f.tooltip !== undefined && f.tooltip !== '' ? h('span', { className: css.specHint }, f.tooltip) : null,
-          )
+          ))
+          continue
         }
-        return h(SpecFieldRow, { key: f.name, f, value: values[f.name], onEdit, square: sq })
-      }),
-    )),
+        if (f.type === 'image_list') {
+          flush()
+          children.push(h('div', {
+            key: f.name,
+            className: css.specSlotCell,
+            title: f.tooltip !== undefined && f.tooltip !== '' ? f.tooltip : undefined,
+          },
+            h(SpecAtom, { f, value: values[f.name], onEdit, square: sq, ...(wireCandidates !== undefined ? { wireCandidates } : {}) }),
+          ))
+          continue
+        }
+        if (f.type === 'image' || f.type === 'file') {
+          row.push(h('div', {
+            key: f.name,
+            className: css.specSlotCell,
+            title: f.tooltip !== undefined && f.tooltip !== '' ? f.tooltip : undefined,
+          },
+            h(SpecAtom, { f, value: values[f.name], onEdit, square: sq, ...(wireCandidates !== undefined ? { wireCandidates } : {}) }),
+          ))
+          continue
+        }
+        flush()
+        children.push(h(SpecFieldRow, { key: f.name, f, value: values[f.name], onEdit, square: sq, ...(wireCandidates !== undefined ? { wireCandidates } : {}) }))
+      }
+      flush()
+      return h('section', { key: g.group ?? '', className: css.specGroup },
+        g.group !== null ? h('h4', { className: css.specGroupTitle }, g.group) : null,
+        children,
+      )
+    }),
     // THE MOD SYSTEM — rendered by the constructor itself: every
     // surface (stage drill, add drill, studios) obeys, none wires it.
     modKinds.length > 0

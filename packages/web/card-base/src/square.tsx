@@ -144,7 +144,7 @@ export function InputSquare(props: InputSquareProps): ReturnType<typeof h> {
           }, '✕')
         : null,
     ),
-    h('span', { className: css.squareLabel }, label),
+    label !== '' ? h('span', { className: css.squareLabel }, label) : null,
     metric !== undefined ? h('span', { className: css.squareMetric }, metric) : null,
     props.onFile !== undefined && !disabled
       ? h('input', {
