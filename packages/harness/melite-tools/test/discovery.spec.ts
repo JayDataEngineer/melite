@@ -3,9 +3,19 @@
 // formsTable/cardSections, which take their defs as an argument):
 // key resolution, the forms table law, section shapes, and the live
 // door arms.
+import { readFileSync } from 'node:fs'
+import { dirname, join, resolve } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { describe, test } from 'vitest'
 import assert from 'node:assert/strict'
 import { loadCardDefs, theService } from '@melite/comfyui-cordis'
+
+/** The OLD tree's served-spec fixtures — the byte referee for recipe
+ *  composition (infer-baseline-tmp sits beside this repo). */
+const OLD_FIXTURES = resolve(
+  dirname(fileURLToPath(import.meta.url)),
+  '../../../../../infer-baseline-tmp/web/editor/src/__tests__/fixtures',
+)
 import type { CardDefinition } from '@melite/comfyui-cordis'
 import {
   cardSections,
@@ -314,3 +324,25 @@ describe('live door arms', () => {
     )
   })
 })
+
+  // ── THE RECIPE SEAT (hour 24 stroke 10): the form-spec serves the
+  //    model's prompt-enhance SKILL.md, composed with the old
+  //    composer's grammar ─────────────────────────────────────────
+  test('formSpecArm serves krea-2 the composed prompt-enhance recipe (byte referee: the old served fixture)', async () => {
+    const spec = (await formSpecArm('krea-2')) as { enhance_prompts?: Record<string, unknown> }
+    const served = spec.enhance_prompts?.['prompt']
+    assert.equal(typeof served, 'string')
+    // the composition grammar is pinned by the OLD tree's served spec
+    // fixture — byte-for-byte (role + notes + img_gen + img_gen_json)
+    const referee = JSON.parse(
+      readFileSync(join(OLD_FIXTURES, 'spec_krea-2.json'), 'utf8'),
+    ) as { enhance_prompts: { prompt: string } }
+    assert.equal(served, referee.enhance_prompts.prompt)
+  })
+
+  test('formSpecArm serves the recipe for an aliased route key and the stub for a recipe-less model', async () => {
+    const aliased = (await formSpecArm('krea-2-raw')) as { enhance_prompts?: Record<string, unknown> }
+    assert.equal(typeof aliased.enhance_prompts?.['prompt'], 'string')
+    const none = (await formSpecArm('joytag')) as { enhance_prompts?: Record<string, unknown> }
+    assert.equal(none.enhance_prompts?.['prompt'], null) // the no-file law: sweep → generic
+  })

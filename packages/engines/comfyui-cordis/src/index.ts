@@ -11,6 +11,7 @@ export * from "./catalog.ts";
 export * from "./comfyui.ts";
 
 export * from "./models/models.ts";
+export { enhanceRecipes, enhanceRecipeFor } from "./models/enhanceRecipes.ts";
 export * from "./models/validate.ts";
 export * from "./models/catalogEmission.ts";
 

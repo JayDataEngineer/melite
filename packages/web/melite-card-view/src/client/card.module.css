@@ -1611,3 +1611,18 @@
   outline: 2px solid var(--dsw-alias-state-business-primary);
   outline-offset: 2px;
 }
+
+/* the ✦ Agent Enhance row — one press above the params (hour 24
+ * stroke 10). The note is muted for success, red for refusal
+ * (.runError already exists). Token-only. */
+.enhanceRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+  min-height: 26px;
+}
+.enhanceNote {
+  color: var(--dsw-alias-text-tertiary);
+  font-size: 12px;
+}

@@ -18,6 +18,7 @@ import {
   buildCatalog,
   CARD_KINDS,
   emitParamsSchema,
+  enhanceRecipeFor,
   getModel,
   isServedFamily,
   loadCardDefs,
@@ -387,7 +388,14 @@ export function specBody(
     defaults: decl?.defaults ?? schemaDefaults(def),
     engine: decl?.engine ?? 'comfyui',
     enhance_prompt: null,
-    enhance_prompts: { prompt: null, lyrics: '' },
+    // THE RECIPE SEAT (hour 24 stroke 10): the model's prompt-enhance
+    // SKILL.md composed (role + notes + tree-wide shared base blocks)
+    // — served as enhance_prompts.prompt, the sweep's SSOT read. A
+    // recipe-less model serves the stub and the sweep falls to the
+    // generic recipe (the no-file law).
+    enhance_prompts: enhanceRecipeFor(key, res.service) !== null
+      ? { prompt: enhanceRecipeFor(key, res.service) }
+      : { prompt: null, lyrics: '' },
     features: {
       modifiers,
       variant_groups: groupContract(decl),

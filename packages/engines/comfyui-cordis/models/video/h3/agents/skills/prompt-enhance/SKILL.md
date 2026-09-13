@@ -125,3 +125,40 @@ shared:
       "highly detailed") or other-model sampler syntax ("score_9", "dpm++").
     - Emit the labeled fields as plain 'field: content' lines — no markdown
       headings, no bullet lists inside the fields.
+
+  # The output-format blocks (restored 2026-09-13, hour 24 stroke 10):
+  # the dead gateway's loader injected these tails in code; the
+  # migration into this file lost them — a recipe without a STRICT
+  # JSON clause yields prose and the enhance parser refuses. The
+  # file owns them now (the z-image law: img_gen_json lives in
+  # z-image's file). Text is the old served fixtures', dedented to
+  # this file's own grammar.
+  video_gen_json: |
+    ## Output format — STRICT
+    Return ONLY a single JSON object. No markdown fences, no explanation,
+    no text before or after. The whole response must be parseable by
+    JSON.parse.
+
+    Schema:
+      {"positive": "<your output>", "negative": ""}
+
+    Rules:
+    - "positive" is always filled with your output per the instructions above.
+    - "negative" is always the empty string "".
+    - Both values are plain strings. Escape inner quotes and newlines per JSON.
+    - Never wrap the whole response in extra quotes.
+
+  video_h3_native_json: |
+    ## Output format — STRICT
+    Return ONLY a single JSON object. No markdown fences, no explanation,
+    no text before or after. The whole response must be parseable by
+    JSON.parse.
+
+    Schema:
+      {"positive": "<your output>", "negative": ""}
+
+    Rules:
+    - "positive" is always filled with your output per the instructions above.
+    - "negative" is always the empty string "".
+    - Both values are plain strings. Escape inner quotes and newlines per JSON.
+    - Never wrap the whole response in extra quotes.

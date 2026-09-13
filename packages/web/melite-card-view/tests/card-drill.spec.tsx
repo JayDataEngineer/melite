@@ -297,3 +297,133 @@ test('clicking the preview seat opens the SHARED media drilldown (1:1)', async (
   // and the artifact itself renders (the image)
   expect(document.querySelector('img[src*="gen_00001_"]')).toBeTruthy()
 })
+
+// ── THE ✦ AGENT ENHANCE PIN (hour 24 stroke 10): one press — the
+//    sweep door enhances every declared field; the write-back rides
+//    the same values seam a hand edit rides; the no-clobber law
+//    holds (an empty negative never wipes the card's own) ─────────
+test('✦ Agent Enhance sweeps the declared fields and writes back through the values seam', async () => {
+  const user = userEvent.setup()
+  const enhanceCalls: Array<Record<string, unknown>> = []
+  vi.stubGlobal('fetch', async (url: unknown, init?: RequestInit): Promise<Response> => {
+    const path = String(url)
+    if (path.includes('/melite-tools/enhance')) {
+      enhanceCalls.push(JSON.parse(String(init?.body)) as Record<string, unknown>)
+      return new Response(JSON.stringify({
+        model: 'krea-2',
+        results: {
+          prompt: { positive: 'A weathered fisherman mending nets at golden hour, 85mm portrait lens…', negative: 'blurry, low quality, distorted', via: 'dsh/default' },
+        },
+      }), { status: 200, headers: { 'content-type': 'application/json' } })
+    }
+    if (path.includes('/v1/form-spec')) {
+      return new Response(JSON.stringify({ form: 'image-gen', model: 'krea-2', fields: [
+        { name: 'prompt', label: 'Prompt', type: 'textarea' },
+        { name: 'negative_prompt', label: 'Negative Prompt', type: 'textarea' },
+      ], variants: [] }), { status: 200, headers: { 'content-type': 'application/json' } })
+    }
+    if (path.includes('/v1/model-catalog')) {
+      return new Response(JSON.stringify({ cards: { 'image-gen': { label: 'Image Gen', genre: 'image', families: ['krea-2'] } } }), { status: 200, headers: { 'content-type': 'application/json' } })
+    }
+    const frame = JSON.parse(String(init?.body)) as { rpcId: string, method: string }
+    let value: Record<string, unknown> = { ok: true }
+    if (frame.method === 'bench/get') value = {
+      draft_id: 'bench-s1', rev: 7,
+      stages: [{ id: 's_0', card: 'image-gen', title: 'hero frame', engine: 'comfyui',
+        params: { prompt: 'a red cube', negative_prompt: '', steps: 8 } }],
+      log: [],
+    }
+    return new Response(JSON.stringify({ type: 'server-response', rpcId: frame.rpcId, result: { ok: true, value } }), { status: 200 })
+  })
+  render(createElement(CardsTab, {
+    useTabInfo: () => ({
+      tab: {
+        kind: 'sidebar.right.pane.tab', contentId: undefined,
+        navigation: { address: 'dsh-resource://cards/bench' },
+        actions: { openResource: () => {} },
+      },
+    }),
+    useResource: () => ({
+      status: 'live',
+      value: {
+        kind: 'bench', draftId: 'bench-s1', rev: 7,
+        stages: [{ id: 's_0', card: 'image-gen', title: 'hero frame', engine: 'comfyui',
+          params: { prompt: 'a red cube', negative_prompt: '', steps: 8 } }],
+        log: [],
+      } as CardsBenchValue,
+    }),
+  } as Parameters<typeof CardsTab>[0]))
+  await user.click(await screen.findByText('hero frame', {}, { timeout: 4000 }))
+  const wand = await screen.findByRole('button', { name: 'Agent Enhance' }, { timeout: 4000 })
+  await user.click(wand)
+  // the sweep wire: {model, prompt} — the card's model + the live text
+  expect(enhanceCalls.length).toBe(1)
+  expect(enhanceCalls[0]!['model']).toBe('krea-2')
+  expect(enhanceCalls[0]!['prompt']).toBe('a red cube')
+  // the write-back: both text fields hold the enhanced values, the
+  // serving route is named (never silent)
+  await waitFor(() => {
+    expect((screen.getByLabelText('Prompt') as HTMLTextAreaElement).value)
+      .toBe('A weathered fisherman mending nets at golden hour, 85mm portrait lens…')
+  }, { timeout: 4000 })
+  expect((screen.getByLabelText('Negative Prompt') as HTMLTextAreaElement).value)
+    .toBe('blurry, low quality, distorted')
+  expect(screen.getByText('enhanced via dsh/default')).toBeTruthy()
+})
+
+test('the no-clobber law: an empty negative never wipes the card\'s own', async () => {
+  const user = userEvent.setup()
+  vi.stubGlobal('fetch', async (url: unknown, init?: RequestInit): Promise<Response> => {
+    const path = String(url)
+    if (path.includes('/melite-tools/enhance')) {
+      // distilled flavor: negative comes back "" (the model ignores it)
+      return new Response(JSON.stringify({
+        model: 'krea-2',
+        results: { prompt: { positive: 'enhanced prose', negative: '', via: 'dsh/default' } },
+      }), { status: 200, headers: { 'content-type': 'application/json' } })
+    }
+    if (path.includes('/v1/form-spec')) {
+      return new Response(JSON.stringify({ form: 'image-gen', model: 'krea-2', fields: [
+        { name: 'prompt', label: 'Prompt', type: 'textarea' },
+        { name: 'negative_prompt', label: 'Negative Prompt', type: 'textarea' },
+      ], variants: [] }), { status: 200, headers: { 'content-type': 'application/json' } })
+    }
+    if (path.includes('/v1/model-catalog')) {
+      return new Response(JSON.stringify({ cards: { 'image-gen': { label: 'Image Gen', genre: 'image', families: ['krea-2'] } } }), { status: 200, headers: { 'content-type': 'application/json' } })
+    }
+    const frame = JSON.parse(String(init?.body)) as { rpcId: string, method: string }
+    let value: Record<string, unknown> = { ok: true }
+    if (frame.method === 'bench/get') value = {
+      draft_id: 'bench-s1', rev: 7,
+      stages: [{ id: 's_0', card: 'image-gen', title: 'hero frame', engine: 'comfyui',
+        params: { prompt: 'a red cube', negative_prompt: 'user wrote this', steps: 8 } }],
+      log: [],
+    }
+    return new Response(JSON.stringify({ type: 'server-response', rpcId: frame.rpcId, result: { ok: true, value } }), { status: 200 })
+  })
+  render(createElement(CardsTab, {
+    useTabInfo: () => ({
+      tab: {
+        kind: 'sidebar.right.pane.tab', contentId: undefined,
+        navigation: { address: 'dsh-resource://cards/bench' },
+        actions: { openResource: () => {} },
+      },
+    }),
+    useResource: () => ({
+      status: 'live',
+      value: {
+        kind: 'bench', draftId: 'bench-s1', rev: 7,
+        stages: [{ id: 's_0', card: 'image-gen', title: 'hero frame', engine: 'comfyui',
+          params: { prompt: 'a red cube', negative_prompt: 'user wrote this', steps: 8 } }],
+        log: [],
+      } as CardsBenchValue,
+    }),
+  } as Parameters<typeof CardsTab>[0]))
+  await user.click(await screen.findByText('hero frame', {}, { timeout: 4000 }))
+  await user.click(await screen.findByRole('button', { name: 'Agent Enhance' }, { timeout: 4000 }))
+  await waitFor(() => {
+    expect((screen.getByLabelText('Prompt') as HTMLTextAreaElement).value).toBe('enhanced prose')
+  }, { timeout: 4000 })
+  // the card's OWN negative survives the empty result
+  expect((screen.getByLabelText('Negative Prompt') as HTMLTextAreaElement).value).toBe('user wrote this')
+})

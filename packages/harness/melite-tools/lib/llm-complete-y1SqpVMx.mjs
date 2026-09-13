@@ -1,4 +1,4 @@
-import { CARD_KINDS, SLOT_VOCABULARY, buildCatalog, emitParamsSchema, getModel, isServedFamily, loadCardDefs, modelIds, theService } from "@melite/comfyui-cordis";
+import { CARD_KINDS, SLOT_VOCABULARY, buildCatalog, emitParamsSchema, enhanceRecipeFor, getModel, isServedFamily, loadCardDefs, modelIds, theService } from "@melite/comfyui-cordis";
 import { createUserMessage } from "@deepseek-ai/dsh-llm";
 //#region src/estate.ts
 /** Narrow the seat-bound request to the canonical EstateCall the card
@@ -442,7 +442,7 @@ function specBody(svc, defs, res) {
 		defaults: decl?.defaults ?? schemaDefaults(def),
 		engine: decl?.engine ?? "comfyui",
 		enhance_prompt: null,
-		enhance_prompts: {
+		enhance_prompts: enhanceRecipeFor(key, res.service) !== null ? { prompt: enhanceRecipeFor(key, res.service) } : {
 			prompt: null,
 			lyrics: ""
 		},

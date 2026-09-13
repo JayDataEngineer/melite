@@ -675,6 +675,12 @@ function StageDrill({ stage, bench, running, onRun, onClose, onRemoved, onPatchP
   // the media drilldown 1:1 — the SAME shared component the gallery
   // rides; the click maps the stage's primary artifact onto it).
   const [drillItem, setDrillItem] = useState<MediaDrilldownItem | null>(null)
+  // THE ✦ AGENT ENHANCE SEAT (hour 24 stroke 10): one press — the
+  // sweep door enhances every declared field; the write-back rides
+  // the SAME values seam the form's own edits ride (the next Run
+  // patches the domain with what the user SEES).
+  const [enhancing, setEnhancing] = useState(false)
+  const [enhanceNote, setEnhanceNote] = useState<{ err: boolean, text: string } | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [loaded, setLoaded] = useState(false)
   const reportSurface = onSurface ?? (() => {})
@@ -740,6 +746,59 @@ function StageDrill({ stage, bench, running, onRun, onClose, onRemoved, onPatchP
   const onEdit = useCallback((name: string, v: unknown): void => {
     setValues((m) => ({ ...m, [name]: v }))
   }, [])
+  // ✦ AGENT ENHANCE (hour 24 stroke 10 — the operator's one-shot
+  // order): one press gathers the card's prompt text, the sweep door
+  // (/melite-tools/enhance {model, prompt}) enhances EVERY declared
+  // field over the model's own SKILL.md recipe, and the results land
+  // through the SAME values seam a hand edit rides. The no-clobber
+  // law is the old tree's verbatim: the negative carries back ONLY
+  // for the prompt field, ONLY when the card declares it, ONLY when
+  // the backend produced one — never wipe an existing negative with
+  // an empty string (distilled variants return "" because they
+  // ignore negatives).
+  const enhance = async (): Promise<void> => {
+    if (enhancing) return
+    const current = String(values['prompt'] ?? '').trim()
+    if (current === '') return
+    const model = String(spec?.model ?? held['model'] ?? '')
+    if (model === '') return
+    setEnhancing(true)
+    setEnhanceNote(null)
+    try {
+      const res = await fetch('/melite-tools/enhance', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ model, prompt: current }),
+      })
+      const doc = await res.json() as {
+        results?: Record<string, { positive?: unknown, negative?: unknown, via?: unknown }>
+        error?: unknown
+      }
+      if (!res.ok || typeof doc.error === 'string') {
+        throw new Error(typeof doc.error === 'string' ? doc.error : 'enhance failed (' + res.status + ')')
+      }
+      const results = doc.results ?? {}
+      const declared = new Set((spec?.fields ?? []).map((f) => String(f['name'] ?? '')))
+      setValues((m) => {
+        const next: SpecValues = { ...m }
+        for (const [field, r] of Object.entries(results)) {
+          if (typeof r?.positive !== 'string' || r.positive === '') continue
+          if (field === 'prompt' || declared.has(field)) next[field] = r.positive
+          if (field === 'prompt' && declared.has('negative_prompt')
+            && typeof r.negative === 'string' && r.negative !== '') {
+            next['negative_prompt'] = r.negative
+          }
+        }
+        return next
+      })
+      const via = Object.values(results)[0]?.via
+      setEnhanceNote({ err: false, text: typeof via === 'string' && via !== '' ? 'enhanced via ' + via : 'enhanced' })
+    } catch (e: unknown) {
+      setEnhanceNote({ err: true, text: e instanceof Error ? e.message : 'enhance failed' })
+    } finally {
+      setEnhancing(false)
+    }
+  }
   // THE PICKER WIRE (data only — the CONSTRUCTOR owns the square now,
   //  the operator's law: an emitted image input constructs the input
   //  component automatically, no surface wires it). candidatesFor
@@ -851,6 +910,17 @@ function StageDrill({ stage, bench, running, onRun, onClose, onRemoved, onPatchP
   const genericDetail = (): ReturnType<typeof h> => h('div', { className: css.zoomDetail },
     h('div', { className: css.split },
       h('div', { className: css.params },
+        h('div', { className: css.enhanceRow },
+          h(Button, {
+            variant: 'outline',
+            disabled: enhancing || String(values['prompt'] ?? '').trim() === '',
+            onClick: () => { void enhance() },
+            'aria-label': 'Agent Enhance',
+          }, enhancing ? 'enhancing…' : '✦ Agent Enhance'),
+          enhanceNote !== null
+            ? h('span', { className: enhanceNote.err ? css.runError : css.enhanceNote }, enhanceNote.text)
+            : null,
+        ),
         !loaded ? h('div', { className: css.load }, 'form…')
         : spec !== null
           ? h(SpecForm, { spec, fields: spec.fields, values, onEdit, wire, onPatch: onPatchParams })
