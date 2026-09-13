@@ -1,43 +1,7 @@
-// mediaKinds.ts — the estate media-kind vocabulary as TYPED DATA
-// (REBUILD-7 re-home). The DATA's first home was the media plugin's
-// media-kinds.json (SSOT for python/editor_runs.py + MediaPanel);
-// that file died with the media client (5cbb5bcc). The vocabulary
-// re-homes HERE — with the runs-list owner (the only estate-queue
-// consumer) — as a typed constant: no repo-anchored file reads, no
-// process cache, no missing-file refusal (the DATA travels with the
-// code that classifies by it).
-//
-// THE LAWS THE DATA CARRIES (from the file's $comment, preserved):
-//  - gallery = exts that LIST in the sidebar; exts = the full
-//    classifier. Gallery extras (svg/bmp/mkv/m4a/aac) classify but
-//    do NOT list — deliberate, documented here, not scattered.
-//  - maxListedImages = 3: the door-tier cap (_MAX_IMGS) — image
-//    rows past it are counted but unlisted, flagged by the run
-//    row's truncated marker {listed, total}. The client display
-//    guard is a fallback, never the truncation law.
-export interface MediaVocab {
-  readonly image: readonly string[];
-  readonly audio: readonly string[];
-  readonly video: readonly string[];
-  readonly model: readonly string[];
-  readonly galleryImage: readonly string[];
-  readonly galleryAudio: readonly string[];
-  readonly galleryVideo: readonly string[];
-  readonly galleryModel: readonly string[];
-  readonly maxListedImages: number;
-}
-
-/** The estate media-kind vocabulary (typed DATA — see header). */
-export function mediaVocab(): MediaVocab {
-  return {
-    image: ["png", "jpg", "jpeg", "webp", "gif", "svg", "bmp"],
-    audio: ["wav", "flac", "mp3", "ogg", "m4a", "aac"],
-    video: ["mp4", "webm", "mkv", "mov"],
-    model: ["glb", "gltf"],
-    galleryImage: ["png", "jpg", "jpeg", "webp", "gif"],
-    galleryAudio: ["wav", "flac", "ogg", "mp3"],
-    galleryVideo: ["mp4", "webm", "mov"],
-    galleryModel: ["glb", "gltf"],
-    maxListedImages: 3,
-  };
-}
+// mediaKinds.ts — RE-EXPORT face: the vocabulary's SSOT moved to the
+// contracts leaf (@melite/contracts/mediaKinds — the zero-dep home
+// both the queue's source-run graph and the built media package
+// share). This face keeps @melite/estate-queue's import address
+// stable for its own consumers (runsList, flowsData, pyValue).
+export type { MediaVocab } from '@melite/contracts/mediaKinds'
+export { mediaVocab } from '@melite/contracts/mediaKinds'

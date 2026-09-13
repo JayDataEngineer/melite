@@ -828,6 +828,9 @@ importers:
       '@deepseek-ai/dsh-typert-protocol':
         specifier: 0.1.5-rc.2
         version: 0.1.5-rc.2(@deepseek-ai/cordis@4.0.2)
+      '@melite/contracts':
+        specifier: workspace:*
+        version: link:../../web-kit/contracts
     devDependencies:
       '@types/node':
         specifier: ^22.20.0
@@ -903,6 +906,9 @@ importers:
       '@melite/comfyui-cordis':
         specifier: workspace:*
         version: link:../../engines/comfyui-cordis
+      '@melite/contracts':
+        specifier: workspace:*
+        version: link:../../web-kit/contracts
       '@melite/estate-drafts':
         specifier: workspace:*
         version: link:../../estate/drafts
@@ -2321,6 +2327,9 @@ importers:
       '@dnd-kit/utilities':
         specifier: ^3.2.2
         version: 3.2.2(react@18.3.1)
+      '@melite-plugin/melite-run-wire':
+        specifier: workspace:*
+        version: link:../melite-run-wire
       '@melite/contracts':
         specifier: workspace:*
         version: link:../../web-kit/contracts

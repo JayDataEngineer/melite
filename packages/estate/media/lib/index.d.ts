@@ -1,4 +1,5 @@
 import type { Context } from "@deepseek-ai/cordis";
+import { TypertRemoteService } from "@deepseek-ai/dsh-typert-protocol";
 export declare const name = "estate-media";
 /** NOTHING is injected: the estate bundle rides headless mounts too
  * (the queue/drafts seats are headless-safe; the web carrier is
@@ -16,6 +17,51 @@ export declare function apply(ctx: Context): void;
  *  (http(s) or a rooted path) passes VERBATIM — the rewrite only
  *  claims bare run-relative names (the runs rows' post-kill shape). */
 export declare function mediaUrl(runId: string, name: string): string;
+/** One listed media item — the source row's picker row. `url` is
+ *  the SAME /melite-media/runs grammar the byte route serves (one
+ *  spelling, minted at the tree, never restated client-side). */
+export interface MediaListRow {
+    readonly url: string;
+    readonly name: string;
+    readonly kind: string;
+    readonly runId: string;
+}
+/** THE LIST ARM — walk the runs output tree (run dirs by mtime,
+ *  newest first), collect files of the asked kind, mint the route
+ *  URL for each. Bounded: depth 3 (run/stage/file), cap LIST_CAP.
+ *  Synchronous fs on purpose: the door answers one page; the tree
+ *  is the queue's own bounded output, not an adversarial mount. */
+/** Exported for the door pins (the draft's benchRow precedent): the
+ *  list arm runs pure over a tree fixture. */
+export declare function listMedia(stateRoot: string, kind: string): Promise<{
+    count: number;
+    items: MediaListRow[];
+}>;
+declare module "@deepseek-ai/dsh-typert-protocol" {
+    interface RemoteErrorDetailsMap {
+        /** The kind is not one of the vocab families (+all). */
+        "media/kind": {
+            readonly kind: string;
+        };
+        /** The queue seat (the runs tree root owner) is not mounted. */
+        "media/no-seat": Record<string, never>;
+    }
+}
+declare module "@deepseek-ai/cordis" {
+    interface Context {
+        mediaRemote: MediaRemoteService;
+    }
+}
+/** The media remote: media/list over the queue seat's runs tree. */
+export declare class MediaRemoteService extends TypertRemoteService {
+    static inject: string[];
+    constructor(ctx: Context);
+    /** Endpoint `media/list` — the source row's From media arm. */
+    remoteExportList(kind: string, signal: AbortSignal): Promise<{
+        count: number;
+        items: MediaListRow[];
+    }>;
+}
 /** The cordis row shape: a plugin object (name + apply). */
 declare const _default: {
     name: string;

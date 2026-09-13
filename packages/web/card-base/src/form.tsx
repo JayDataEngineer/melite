@@ -21,8 +21,8 @@
  * layout-only module CSS over native elements, every color an
  * inherited --dsw-alias-* token (the package's documented pattern).
  */
-import { createElement as h, useCallback, useEffect, useRef, useState } from 'react'
-import { Menu, Input, Switch } from '@deepseek-ai/dsh-client-ui-primitives'
+import { createElement as h, Fragment, useCallback, useEffect, useRef, useState } from 'react'
+import { Menu, Input, Modal, Switch } from '@deepseek-ai/dsh-client-ui-primitives'
 import { InputSquare, isImageUrl, readAsDataUrl, type InputSquareVerbs } from './square.tsx'
 import { ModifiersSection } from './mods.tsx'
 import { uploadInputFile } from './wire.ts'
@@ -32,6 +32,7 @@ import {
   type FormSpecDoc, type SpecField, type SpecValues, type VariantRow,
 } from './spec.ts'
 import { fetchFormSpec } from './wire.ts'
+import { fetchMediaLibrary } from '@melite-plugin/melite-run-wire'
 import css from './card.module.css'
 
 /** THE SERVED-SPEC HOOK (the DRY extraction, 2026-09-13): four
@@ -86,6 +87,26 @@ export interface SquareHost {
 export interface SquareWire {
   candidates: Array<{ id: string; label: string; url: string }>
   candidatesFor?: (f: SpecField) => Array<{ id: string; label: string; url: string }>
+  /** THE SOURCE-PICK SEAM (2026-09-13, the operator's law: one
+   *  system, no exceptions): the host may claim the picker modal's
+   *  face — same grammar as the stage-view consult. The fallback is
+   *  the base's own modal (the plain filtered list). */
+  renderSourcePick?: (
+    req: {
+      mode: 'flow' | 'media'
+      kind: string
+      field: SpecField
+      candidates: Array<{ id: string; label: string; url: string }>
+    },
+    fallback: ReturnType<typeof h>,
+  ) => ReturnType<typeof h>
+}
+
+/** The media-kind the picker fetches for a field: image fields name
+ *  image; file fields take the whole library (their accept narrows
+ *  client-side per row). */
+function mediaKindForField(f: SpecField): string {
+  return f.type === 'image' ? 'image' : 'all'
 }
 
 /** THE ONE square provider (the old SlotGrid law, DSH substrate):
@@ -102,6 +123,15 @@ export function useSquareProvider(onEdit: (name: string, v: unknown) => void, wi
 } {
   const [mirror, setMirror] = useState<Record<string, string>>({})
   const [pickAt, setPickAt] = useState<{ rect: DOMRect; field: SpecField } | null>(null)
+  // THE PICKER MODAL seat (2026-09-13): From flow / From media open
+  // ONE selector modal — mode decides the rows; From file goes to the
+  // OS dialog. The flat click-through picker is dead (the operator:
+  // "Flat pick didn't even make any sense").
+  const [modalAt, setModalAt] = useState<{ mode: 'flow' | 'media'; field: SpecField } | null>(null)
+  // the From file capture: the menu closes (pickAt → null) BEFORE the
+  // OS dialog answers — the field rides a ref from the menu click.
+  const fieldRef = useRef<SpecField | null>(null)
+  const [mediaRows, setMediaRows] = useState<Array<{ id: string; label: string; url: string }> | null>(null)
   const fileRef = useRef<HTMLInputElement | null>(null)
   const onFile = useCallback(async (f: SpecField, file: File): Promise<void> => {
     try {
@@ -133,55 +163,108 @@ export function useSquareProvider(onEdit: (name: string, v: unknown) => void, wi
       },
     }
   }
-  const wireMenu = pickAt === null ? null : h(Menu, {
+  const sourceMenu = pickAt === null ? null : h(Menu, {
     open: true,
     anchor: null,
     getAnchorRect: () => pickAt.rect,
     items: [
-      // THE EDGE LAW: per-field candidates when the host narrows by
-      // the declared input-edge kind; the static list otherwise.
-      ...(wire.candidatesFor !== undefined ? wire.candidatesFor(pickAt.field) : wire.candidates)
-        .map((c) => ({ id: c.id, label: c.label })),
+      { id: '__flow__', label: 'From flow' },
+      { id: '__media__', label: 'From media' },
+      { id: '__file__', label: 'From file' },
       { type: 'separator' as const, id: 'sep' },
-      { id: '__file__', label: 'Upload a file…' },
       { id: '__none__', label: '— clear —', danger: true },
     ],
     onSelect: (id: string) => {
       const f = pickAt.field
       setPickAt(null)
-      if (id === '__file__') { fileRef.current?.click(); return }
+      if (id === '__flow__') { setModalAt({ mode: 'flow', field: f }); return }
+      if (id === '__media__') { setModalAt({ mode: 'media', field: f }); return }
+      if (id === '__file__') { fieldRef.current = f; fileRef.current?.click(); return }
       if (id === '__none__') {
         setMirror((m) => { const n = { ...m }; delete n[f.name]; return n })
         onEdit(f.name, '')
         return
       }
-      const list = wire.candidatesFor !== undefined ? wire.candidatesFor(f) : wire.candidates
-      const c = list.find((x) => x.id === id)
-      // THE SLOT IS THE WIRE: the picked output's url rides into the
-      // param VERBATIM (media-route spelling — renders in the square
-      // and stages at the engine under its runs-root arm)
-      if (c !== undefined && c.url !== '') onEdit(f.name, c.url)
     },
     onClose: () => { setPickAt(null) },
     portal: true,
-  },
-    // the picker's upload entry (the menu renders portal-side, so its
-    // hidden file input rides WITH it)
-    h('input', {
-      ref: fileRef,
-      type: 'file',
-      accept: 'image/png,image/jpeg,image/webp',
-      'aria-hidden': true,
-      tabIndex: -1,
-      style: { display: 'none' },
-      onChange: (e: unknown) => {
-        const inp = e as { target: { files: FileList | null } }
-        const file = inp.target.files?.[0]
-        if (pickAt !== null && file !== undefined && file !== null) void onFile(pickAt.field, file)
-        if (fileRef.current !== null) fileRef.current.value = ''
-      },
-    }),
-  )
+  })
+
+  // THE PICKER MODAL (default face; the seam may claim it): ONE
+  // component, two row sources — flow candidates (edge-law narrowed)
+  // and the media library (kind-filtered through the wire's door).
+  useEffect(() => {
+    if (modalAt?.mode !== 'media') return
+    const ctrl = new AbortController()
+    setMediaRows(null)
+    fetchMediaLibrary(mediaKindForField(modalAt.field), ctrl.signal)
+      .then((items) => { setMediaRows(items.map((it) => ({ id: it.url, label: it.name, url: it.url }))) })
+      .catch(() => { setMediaRows([]) })
+    return () => { ctrl.abort() }
+  }, [modalAt])
+  const pickerModal = modalAt === null ? null : (() => {
+    const f = modalAt.field
+    const candidates = modalAt.mode === 'flow'
+      ? (wire.candidatesFor !== undefined ? wire.candidatesFor(f) : wire.candidates)
+      : (mediaRows ?? [])
+    const req = { mode: modalAt.mode, kind: mediaKindForField(f), field: f, candidates }
+    const pick = (url: string): void => {
+      setModalAt(null)
+      if (url !== '') onEdit(f.name, url)
+    }
+    const fallback = h(Modal, {
+      open: true,
+      onClose: () => { setModalAt(null) },
+      title: modalAt.mode === 'flow' ? 'From flow' : 'From media',
+      description: modalAt.mode === 'flow'
+        ? 'The other stages\u2019 latest outputs' + (req.kind !== 'all' ? ' (' + req.kind + ')' : '')
+        : 'The runs library' + (req.kind !== 'all' ? ' (' + req.kind + ')' : ''),
+      closeLabel: 'Close picker',
+    },
+      candidates.length === 0
+        ? h('p', { className: css.pickEmpty },
+            modalAt.mode === 'media' && mediaRows === null ? 'loading\u2026' : 'nothing to pick yet')
+        : h('ul', { className: css.pickList },
+            candidates.map((c) => h('li', { key: c.id, className: css.pickRow },
+              h('button', {
+                type: 'button',
+                className: css.pickBtn,
+                'data-testid': 'source-pick-row',
+                onClick: () => { pick(c.url) },
+              },
+                isImageUrl(c.url)
+                  ? h('img', { className: css.pickThumb, src: c.url, alt: c.label, loading: 'lazy' })
+                  : h('span', { className: css.pickGlyph }, c.label.slice(0, 1).toUpperCase()),
+                h('span', { className: css.pickLabel }, c.label),
+              ),
+            ))),
+    )
+    return wire.renderSourcePick !== undefined ? wire.renderSourcePick(req, fallback) : fallback
+  })()
+
+  // THE FILE INPUT lives OUTSIDE the Menu (the Menu's close path
+  // tears its children down before the From file branch can click);
+  // it rides the provider fragment and closes over pickAt per render.
+  const fileInput = h('input', {
+    ref: fileRef,
+    type: 'file',
+    accept: 'image/png,image/jpeg,image/webp',
+    'aria-hidden': true,
+    tabIndex: -1,
+    style: { display: 'none' },
+    onChange: (e: unknown) => {
+      const inp = e as { target: { files: FileList | null } }
+      const file = inp.target.files?.[0]
+      const f = fieldRef.current
+      if (f !== null && file !== undefined && file !== null) {
+        fieldRef.current = null
+        void onFile(f, file)
+      }
+      if (fileRef.current !== null) fileRef.current.value = ''
+    },
+  })
+
+  const wireMenu = h(Fragment, null, sourceMenu, pickerModal, fileInput)
   return { square, wireMenu }
 }
 

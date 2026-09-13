@@ -354,6 +354,37 @@ export async function fetchLatestRunForDraft(
   return newest !== null ? newest.rid : null
 }
 
+/** One media/list row (the source row's From media arm — the
+ *  media remote's item, typed at the wire SSOT). */
+export interface MediaLibraryItem {
+  url: string
+  name: string
+  kind: string
+  runId: string
+}
+
+/** media/list — the runs-tree library, kind-filtered (image | audio |
+ *  video | model | all). The url is the SAME /melite-media/runs
+ *  grammar the byte route serves; picking one writes it verbatim. */
+export async function fetchMediaLibrary(kind: string, signal?: AbortSignal): Promise<MediaLibraryItem[]> {
+  const v = await wireCall('media/list', { kind }, { signal, voice: 'media/list' })
+  const items = v['items']
+  if (!Array.isArray(items)) return []
+  const out: MediaLibraryItem[] = []
+  for (const it of items) {
+    if (typeof it !== 'object' || it === null) continue
+    const url = Reflect.get(it, 'url')
+    const name = Reflect.get(it, 'name')
+    const k = Reflect.get(it, 'kind')
+    const runId = Reflect.get(it, 'runId')
+    if (typeof url === 'string' && typeof name === 'string'
+        && typeof k === 'string' && typeof runId === 'string') {
+      out.push({ url, name, kind: k, runId })
+    }
+  }
+  return out
+}
+
 /** runs/stop — the cancel door (the registry seat's flag + interrupt).
  *  Refusals throw the estate's text. */
 export async function stopRun(runId: string, signal?: AbortSignal): Promise<void> {

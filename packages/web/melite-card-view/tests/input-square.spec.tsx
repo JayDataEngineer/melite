@@ -35,7 +35,7 @@ test('select options render text for BOTH door shapes', () => {
 
 // ── the square atom (the old law verbatim) ────────────────────────────
 
-test('empty square: paperclip glyph, label, click opens the FILE picker', async () => {
+test('empty square: plus glyph, label, bare click opens the FILE picker (no picker attached)', async () => {
   const onFile = vi.fn()
   const user = userEvent.setup()
   render(createElement(InputSquare, { label: 'input_image', value: null, onFile }))
@@ -127,27 +127,104 @@ function HostSquare(): ReturnType<typeof createElement> {
   )
 }
 
-test("the provider: THE SLOT IS THE WIRE — the picker writes the picked url into the param", async () => {
+test("the provider: THE THREE-ENTRY SOURCE MENU — flat pick is dead, From flow opens the picker modal and writes the picked url", async () => {
   const user = userEvent.setup()
   render(createElement(HostSquare))
-  // the square click opens the picker (Menu) — even with a value set
+  // the square click opens the SOURCE MENU — even with a value set
   const box = screen.getByRole('button', { name: /Input image source/ })
   await user.click(box)
-  // the Menu opened: candidates as menu rows + upload + clear
-  const tagRow = await screen.findByText('tagger', {}, { timeout: 2000 })
-  expect(tagRow).toBeTruthy()
-  expect(screen.getByText('Upload a file…')).toBeTruthy()
-  const menuRow = screen.getAllByText('image-gen')
-    .find((el) => el.closest('[role="menuitem"], [role="option"], li') !== null)
-  expect(menuRow).toBeTruthy()
-  // a plain click (the Menu's outside-pointerdown guard would eat
-  // userEvent's pointer dance before the click lands)
-  fireEvent.click(menuRow as HTMLElement)
+  // THE LAW: three entries + clear — never a flat candidates list
+  const flowItem = await screen.findByText('From flow', {}, { timeout: 2000 })
+  expect(screen.getByText('From media')).toBeTruthy()
+  expect(screen.getByText('From file')).toBeTruthy()
+  expect(screen.queryByText('Upload a file…')).toBeNull()
+  expect(screen.queryByText('tagger')).toBeNull() // no flat rows on the first page
+  fireEvent.click(flowItem.closest('[role="menuitem"], [role="option"], li') as HTMLElement)
+  // the picker MODAL lists the flow candidates (edge-law narrowed)
+  const row = (await screen.findAllByTestId('source-pick-row'))
+    .find((el) => el.textContent?.includes('image-gen') === true)
+  expect(row).toBeTruthy()
+  fireEvent.click(row as HTMLElement)
   // THE LAW: picking writes the field's param to the output's url
   await waitFor(() => {
     expect(hostEdit).toHaveBeenCalledWith('input_image', '/melite-media/runs/r8/img/gen_00001_.png')
   })
-  await waitFor(() => { expect(screen.queryByText('tagger')).toBeNull() }, { timeout: 2000 })
+})
+
+test('the provider: From media lists the runs library and writes the picked url', async () => {
+  vi.stubGlobal('fetch', async (input: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
+    const url = String(input)
+    if (url.endsWith('/api/media/list')) {
+      // the frame law: the response ECHOES the minted rpcId
+      const sent = JSON.parse(String(init?.body ?? '{}')) as { rpcId?: string }
+      return new Response(JSON.stringify({
+        type: 'server-response', rpcId: sent.rpcId ?? '',
+        result: { ok: true, value: { count: 2, items: [
+          { url: '/melite-media/runs/r9/gen_00002_.png', name: 'gen_00002_.png', kind: 'image', runId: 'r9' },
+          { url: '/melite-media/runs/r9/out.mp4', name: 'out.mp4', kind: 'video', runId: 'r9' },
+        ] } },
+      }), { status: 200, headers: { 'content-type': 'application/json' } })
+    }
+    throw new Error('unexpected fetch ' + url)
+  })
+  const user = userEvent.setup()
+  render(createElement(HostSquare))
+  await user.click(screen.getByRole('button', { name: /Input image source/ }))
+  fireEvent.click(screen.getByText('From media').closest('[role="menuitem"], [role="option"], li') as HTMLElement)
+  const row = (await screen.findAllByTestId('source-pick-row'))
+    .find((el) => el.textContent?.includes('gen_00002_.png') === true)
+  expect(row).toBeTruthy()
+  // an image row carries a thumbnail
+  expect((row as HTMLElement).querySelector('img')).toBeTruthy()
+  fireEvent.click(row as HTMLElement)
+  await waitFor(() => {
+    expect(hostEdit).toHaveBeenCalledWith('input_image', '/melite-media/runs/r9/gen_00002_.png')
+  })
+})
+
+test('the seam: renderSourcePick claims the picker face — the host override beats the default', async () => {
+  vi.stubGlobal('fetch', async (): Promise<Response> =>
+    new Response(JSON.stringify({
+      type: 'server-response', rpcId: 'r2',
+      result: { ok: true, value: { count: 0, items: [] } },
+    }), { status: 200, headers: { 'content-type': 'application/json' } }))
+  const seam = vi.fn((req: { mode: string; kind: string }, fallback: unknown) =>
+    req.mode === 'media' ? createElement('div', { 'data-testid': 'host-picker' }, 'host face ' + req.kind) : fallback)
+  function SeamHost(): ReturnType<typeof createElement> {
+    const { square, wireMenu } = useSquareProvider(vi.fn(), { candidates: [], renderSourcePick: seam as never })
+    return createElement('div', null,
+      wireMenu,
+      createElement(SpecForm, {
+        fields: [{ name: 'input_image', label: 'Input image', type: 'image' }],
+        values: {},
+        onEdit: vi.fn(),
+        square,
+      }),
+    )
+  }
+  const user = userEvent.setup()
+  render(createElement(SeamHost))
+  await user.click(screen.getByRole('button', { name: /Input image source/ }))
+  fireEvent.click(screen.getByText('From media').closest('[role="menuitem"], [role="option"], li') as HTMLElement)
+  const host = await screen.findByTestId('host-picker')
+  expect(host.textContent).toBe('host face image') // the claim; the default modal never renders
+  expect(screen.queryByTestId('source-pick-row')).toBeNull()
+})
+
+test('the provider: From file rides the hidden OS picker', async () => {
+  const user = userEvent.setup()
+  render(createElement(HostSquare))
+  await user.click(screen.getByRole('button', { name: /Input image source/ }))
+  // spy EVERY file input (the square's bare arm renders one too);
+  // the law: the menu's From file drives ONE of them
+  const inputs = Array.from(document.querySelectorAll('input[type=file]'))
+  expect(inputs.length > 0).toBe(true)
+  const spies = inputs.map((i) => vi.spyOn(i, 'click').mockImplementation(() => {}))
+  const item = screen.getByText('From file').closest('[role="menuitem"], [role="option"], li')
+  expect(item !== null).toBe(true)
+  fireEvent.click(item as HTMLElement)
+  expect(spies.filter((s) => s.mock.calls.length === 1).length).toBe(1)
+  for (const s of spies) s.mockRestore()
 })
 
 test('the provider: upload mirrors locally, patches with the estate path', async () => {
@@ -156,7 +233,10 @@ test('the provider: upload mirrors locally, patches with the estate path', async
   render(createElement(HostSquare))
   // the field carries a non-URL value → metric line shows it
   expect(screen.getByText('mesh.png')).toBeTruthy()
-  // upload through the hidden picker (the real gesture)
+  // the real gesture under the source-menu law: menu → From file →
+  // the OS dialog's change lands with the menu already closed
+  await user.click(screen.getByRole('button', { name: /Input image source/ }))
+  fireEvent.click(screen.getByText('From file').closest('[role="menuitem"], [role="option"], li') as HTMLElement)
   const input = document.querySelector('input[type=file]') as HTMLInputElement
   const f = new File([new Uint8Array([1, 2])], 'photo.png', { type: 'image/png' })
   await user.upload(input, f)

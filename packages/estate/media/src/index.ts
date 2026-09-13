@@ -18,8 +18,13 @@
 // not regex trust. GET/HEAD only; everything else is 405. A miss is
 // a LOUD 404 (never a fallback absorbing it).
 //
-// Erasable-syntax TS only: no enums, `import type` for types.
+// Erasable-syntax TS only in the ROUTE arm: no enums, `import type`
+// for types. The REMOTE arm (2026-09-13, the source-row stroke)
+// carries @Remote decorators — non-erasable — which is why this
+// package BUILDS (tsc, the drafts recipe); the route stays plain.
 import type { Context } from "@deepseek-ai/cordis";
+import { Remote, RemoteError, TypertRemoteService } from "@deepseek-ai/dsh-typert-protocol";
+import { mediaVocab } from "@melite/contracts/mediaKinds";
 // Type-only: pulls the webServer service declaration onto Context.
 import type {} from "@deepseek-ai/dsh-host-webserver";
 
@@ -90,6 +95,10 @@ function parseTarget(sub: string): { runId: string; rel: string } | null {
 const NOT_FOUND_BODY = '{"error":"media/not-found"}';
 
 export function apply(ctx: Context): void {
+  // THE MEDIA LIST REMOTE (2026-09-13): media/list rides the RPC
+  // wire regardless of the web carrier — headless mounts keep the
+  // door (tests, tools); only the byte route needs webServer.
+  new MediaRemoteService(ctx);
   const webServer = ctx.get("webServer", false) as
     | {
         register(
@@ -197,6 +206,130 @@ export function mediaUrl(runId: string, name: string): string {
     .split("/")
     .map((seg) => encodeURIComponent(seg))
     .join("/")}`;
+}
+
+/** One listed media item — the source row's picker row. `url` is
+ *  the SAME /melite-media/runs grammar the byte route serves (one
+ *  spelling, minted at the tree, never restated client-side). */
+export interface MediaListRow {
+  readonly url: string;
+  readonly name: string;
+  readonly kind: string;
+  readonly runId: string;
+}
+
+/** The kinds the list door names (mediaVocab's families + all). */
+const LIST_KINDS = ["image", "audio", "video", "model", "all"] as const;
+
+/** The listed cap: a picker page, not an unbounded dump. */
+const LIST_CAP = 300;
+
+/** Classify one extension into the vocab's families ("" when the
+ *  extension classifies nowhere — sidecars, prompts, workflows). */
+function kindForExt(ext: string): string {
+  const v = mediaVocab();
+  for (const kind of ["image", "audio", "video", "model"] as const) {
+    if ((v[kind] as readonly string[]).includes(ext)) return kind;
+  }
+  return "";
+}
+
+/** THE LIST ARM — walk the runs output tree (run dirs by mtime,
+ *  newest first), collect files of the asked kind, mint the route
+ *  URL for each. Bounded: depth 3 (run/stage/file), cap LIST_CAP.
+ *  Synchronous fs on purpose: the door answers one page; the tree
+ *  is the queue's own bounded output, not an adversarial mount. */
+/** Exported for the door pins (the draft's benchRow precedent): the
+ *  list arm runs pure over a tree fixture. */
+export async function listMedia(stateRoot: string, kind: string): Promise<{ count: number; items: MediaListRow[] }> {
+  const fs = await import("node:fs");
+  const path = await import("node:path");
+  const wanted = kind === "all" ? "" : kind;
+  const items: MediaListRow[] = [];
+  const outRoot = path.join(stateRoot, "output");
+  let runIds: string[] = [];
+  try {
+    runIds = fs.readdirSync(outRoot).filter((id) => RUN_ID.test(id));
+  } catch {
+    return { count: 0, items: [] };
+  }
+  const runTimes = new Map<string, number>();
+  for (const id of runIds) {
+    try { runTimes.set(id, fs.statSync(path.join(outRoot, id)).mtimeMs); } catch { /* raced */ }
+  }
+  runIds.sort((a, b) => (runTimes.get(b) ?? 0) - (runTimes.get(a) ?? 0));
+  const walk = (runId: string, dir: string, rel: string, depth: number): void => {
+    if (items.length >= LIST_CAP || depth > 3) return;
+    let entries: import("node:fs").Dirent[];
+    try { entries = fs.readdirSync(dir, { withFileTypes: true }); } catch { return; }
+    const files: Array<{ name: string; t: number }> = [];
+    for (const e of entries) {
+      if (e.isDirectory()) { walk(runId, path.join(dir, e.name), rel === "" ? e.name : `${rel}/${e.name}`, depth + 1); continue; }
+      if (!e.isFile()) continue;
+      const dot = e.name.lastIndexOf(".");
+      if (dot < 0) continue;
+      const ext = e.name.slice(dot + 1).toLowerCase();
+      const k = kindForExt(ext);
+      if (k === "") continue;
+      if (wanted !== "" && k !== wanted) continue;
+      let t = 0;
+      try { t = fs.statSync(path.join(dir, e.name)).mtimeMs; } catch { /* raced */ }
+      files.push({ name: e.name, t });
+    }
+    files.sort((a, b) => b.t - a.t);
+    for (const f of files) {
+      if (items.length >= LIST_CAP) return;
+      const name = rel === "" ? f.name : `${rel}/${f.name}`;
+      items.push({
+        url: `${MEDIA_PREFIX}/${runId}/${name}`,
+        name,
+        kind: kindForExt(f.name.slice(f.name.lastIndexOf(".") + 1).toLowerCase()),
+        runId,
+      });
+    }
+  };
+  for (const id of runIds) walk(id, path.join(outRoot, id), "", 1);
+  return { count: items.length, items };
+}
+
+declare module "@deepseek-ai/dsh-typert-protocol" {
+  interface RemoteErrorDetailsMap {
+    /** The kind is not one of the vocab families (+all). */
+    "media/kind": { readonly kind: string };
+    /** The queue seat (the runs tree root owner) is not mounted. */
+    "media/no-seat": Record<string, never>;
+  }
+}
+
+declare module "@deepseek-ai/cordis" {
+  interface Context {
+    mediaRemote: MediaRemoteService;
+  }
+}
+
+/** The media remote: media/list over the queue seat's runs tree. */
+export class MediaRemoteService extends TypertRemoteService {
+  static inject = ["queue"];
+
+  constructor(ctx: Context) {
+    super(ctx, "mediaRemote", { namespace: "media" });
+  }
+
+  /** Endpoint `media/list` — the source row's From media arm. */
+  @Remote("list")
+  async remoteExportList(
+    kind: string,
+    signal: AbortSignal,
+  ): Promise<{ count: number; items: MediaListRow[] }> {
+    if (!(LIST_KINDS as readonly string[]).includes(kind)) {
+      throw new RemoteError("media/kind", `media/list: unknown kind '\'${kind}\' (wanted one of ${LIST_KINDS.join(", ")})`, { kind });
+    }
+    const seat = this.ctx.get("queue", false) as QueueSeat | undefined;
+    if (seat === undefined) {
+      throw new RemoteError("media/no-seat", "media/list: the queue seat owns the runs tree root — mount @melite-plugin/melite-estate", {});
+    }
+    return await listMedia(seat.stateRoot, kind);
+  }
 }
 
 /** The cordis row shape: a plugin object (name + apply). */

@@ -6,7 +6,11 @@
  * DSH substrate: ui-primitives glyphs, module CSS under the
  * web-styling chrome laws, no lucide/cn/tip.
  *
- * THE OLD LAW, KEPT VERBATIM — a square thumbnail with label + badge
+ * THE PLUS LAW (2026-09-13, the operator): the empty square
+ * carries the PLUS — "add a source" — and the click opens the
+ * three-entry source menu (From flow / From media / From file) in
+ * the provider; a bare square without a picker still files.
+ * THE OLD LAW, KEPT — a square thumbnail with label + badge
  * + the THREE source verbs (operator, 2026-09-12: "we rendered a
  * square and gave the option to do 1 of 3 things"):
  *   a) from previous card  → onClick (the host opens the wire picker;
@@ -25,7 +29,7 @@
  * file field ever again.
  */
 import { createElement as h, useRef, useState, type DragEvent, type ReactNode } from 'react'
-import { IconPaperclipOutline16 } from '@deepseek-ai/dsh-client-ui-primitives'
+import { IconPlusOutline16 } from '@deepseek-ai/dsh-client-ui-primitives'
 import css from './card.module.css'
 
 /** The media-bar drag contract (the tab's drop surface serves the
@@ -129,7 +133,7 @@ export function InputSquare(props: InputSquareProps): ReturnType<typeof h> {
     },
       thumb !== null
         ? h('img', { className: css.squareThumb, src: thumb, alt: label })
-        : h(IconPaperclipOutline16, { className: css.squareGlyph }),
+        : h(IconPlusOutline16, { className: css.squareGlyph }),
       !empty && props.onClear !== undefined
         ? h('button', {
             className: css.squareX,

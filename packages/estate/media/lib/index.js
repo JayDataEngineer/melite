@@ -1,3 +1,39 @@
+var __runInitializers = (this && this.__runInitializers) || function (thisArg, initializers, value) {
+    var useValue = arguments.length > 2;
+    for (var i = 0; i < initializers.length; i++) {
+        value = useValue ? initializers[i].call(thisArg, value) : initializers[i].call(thisArg);
+    }
+    return useValue ? value : void 0;
+};
+var __esDecorate = (this && this.__esDecorate) || function (ctor, descriptorIn, decorators, contextIn, initializers, extraInitializers) {
+    function accept(f) { if (f !== void 0 && typeof f !== "function") throw new TypeError("Function expected"); return f; }
+    var kind = contextIn.kind, key = kind === "getter" ? "get" : kind === "setter" ? "set" : "value";
+    var target = !descriptorIn && ctor ? contextIn["static"] ? ctor : ctor.prototype : null;
+    var descriptor = descriptorIn || (target ? Object.getOwnPropertyDescriptor(target, contextIn.name) : {});
+    var _, done = false;
+    for (var i = decorators.length - 1; i >= 0; i--) {
+        var context = {};
+        for (var p in contextIn) context[p] = p === "access" ? {} : contextIn[p];
+        for (var p in contextIn.access) context.access[p] = contextIn.access[p];
+        context.addInitializer = function (f) { if (done) throw new TypeError("Cannot add initializers after decoration has completed"); extraInitializers.push(accept(f || null)); };
+        var result = (0, decorators[i])(kind === "accessor" ? { get: descriptor.get, set: descriptor.set } : descriptor[key], context);
+        if (kind === "accessor") {
+            if (result === void 0) continue;
+            if (result === null || typeof result !== "object") throw new TypeError("Object expected");
+            if (_ = accept(result.get)) descriptor.get = _;
+            if (_ = accept(result.set)) descriptor.set = _;
+            if (_ = accept(result.init)) initializers.unshift(_);
+        }
+        else if (_ = accept(result)) {
+            if (kind === "field") initializers.unshift(_);
+            else descriptor[key] = _;
+        }
+    }
+    if (target) Object.defineProperty(target, contextIn.name, descriptor);
+    done = true;
+};
+import { Remote, RemoteError, TypertRemoteService } from "@deepseek-ai/dsh-typert-protocol";
+import { mediaVocab } from "@melite/contracts/mediaKinds";
 export const name = "estate-media";
 /** NOTHING is injected: the estate bundle rides headless mounts too
  * (the queue/drafts seats are headless-safe; the web carrier is
@@ -36,7 +72,7 @@ function parseTarget(sub) {
     const parts = sub.split("/").filter((p) => p !== "");
     if (parts.length < 2)
         return null;
-    const runId = parts[0] ?? "";
+    const runId = parts[0];
     const relParts = parts.slice(1);
     if (!RUN_ID.test(runId))
         return null;
@@ -48,6 +84,10 @@ function parseTarget(sub) {
 }
 const NOT_FOUND_BODY = '{"error":"media/not-found"}';
 export function apply(ctx) {
+    // THE MEDIA LIST REMOTE (2026-09-13): media/list rides the RPC
+    // wire regardless of the web carrier — headless mounts keep the
+    // door (tests, tools); only the byte route needs webServer.
+    new MediaRemoteService(ctx);
     const webServer = ctx.get("webServer", false);
     if (webServer === undefined) {
         ctx.logger.info("estate-media: no webServer seat in this mount — the runs media route stays unmounted");
@@ -140,5 +180,129 @@ export function mediaUrl(runId, name) {
         .map((seg) => encodeURIComponent(seg))
         .join("/")}`;
 }
+/** The kinds the list door names (mediaVocab's families + all). */
+const LIST_KINDS = ["image", "audio", "video", "model", "all"];
+/** The listed cap: a picker page, not an unbounded dump. */
+const LIST_CAP = 300;
+/** Classify one extension into the vocab's families ("" when the
+ *  extension classifies nowhere — sidecars, prompts, workflows). */
+function kindForExt(ext) {
+    const v = mediaVocab();
+    for (const kind of ["image", "audio", "video", "model"]) {
+        if (v[kind].includes(ext))
+            return kind;
+    }
+    return "";
+}
+/** THE LIST ARM — walk the runs output tree (run dirs by mtime,
+ *  newest first), collect files of the asked kind, mint the route
+ *  URL for each. Bounded: depth 3 (run/stage/file), cap LIST_CAP.
+ *  Synchronous fs on purpose: the door answers one page; the tree
+ *  is the queue's own bounded output, not an adversarial mount. */
+/** Exported for the door pins (the draft's benchRow precedent): the
+ *  list arm runs pure over a tree fixture. */
+export async function listMedia(stateRoot, kind) {
+    const fs = await import("node:fs");
+    const path = await import("node:path");
+    const wanted = kind === "all" ? "" : kind;
+    const items = [];
+    const outRoot = path.join(stateRoot, "output");
+    let runIds = [];
+    try {
+        runIds = fs.readdirSync(outRoot).filter((id) => RUN_ID.test(id));
+    }
+    catch {
+        return { count: 0, items: [] };
+    }
+    const runTimes = new Map();
+    for (const id of runIds) {
+        try {
+            runTimes.set(id, fs.statSync(path.join(outRoot, id)).mtimeMs);
+        }
+        catch { /* raced */ }
+    }
+    runIds.sort((a, b) => (runTimes.get(b) ?? 0) - (runTimes.get(a) ?? 0));
+    const walk = (runId, dir, rel, depth) => {
+        if (items.length >= LIST_CAP || depth > 3)
+            return;
+        let entries;
+        try {
+            entries = fs.readdirSync(dir, { withFileTypes: true });
+        }
+        catch {
+            return;
+        }
+        const files = [];
+        for (const e of entries) {
+            if (e.isDirectory()) {
+                walk(runId, path.join(dir, e.name), rel === "" ? e.name : `${rel}/${e.name}`, depth + 1);
+                continue;
+            }
+            if (!e.isFile())
+                continue;
+            const dot = e.name.lastIndexOf(".");
+            if (dot < 0)
+                continue;
+            const ext = e.name.slice(dot + 1).toLowerCase();
+            const k = kindForExt(ext);
+            if (k === "")
+                continue;
+            if (wanted !== "" && k !== wanted)
+                continue;
+            let t = 0;
+            try {
+                t = fs.statSync(path.join(dir, e.name)).mtimeMs;
+            }
+            catch { /* raced */ }
+            files.push({ name: e.name, t });
+        }
+        files.sort((a, b) => b.t - a.t);
+        for (const f of files) {
+            if (items.length >= LIST_CAP)
+                return;
+            const name = rel === "" ? f.name : `${rel}/${f.name}`;
+            items.push({
+                url: `${MEDIA_PREFIX}/${runId}/${name}`,
+                name,
+                kind: kindForExt(f.name.slice(f.name.lastIndexOf(".") + 1).toLowerCase()),
+                runId,
+            });
+        }
+    };
+    for (const id of runIds)
+        walk(id, path.join(outRoot, id), "", 1);
+    return { count: items.length, items };
+}
+/** The media remote: media/list over the queue seat's runs tree. */
+let MediaRemoteService = (() => {
+    let _classSuper = TypertRemoteService;
+    let _instanceExtraInitializers = [];
+    let _remoteExportList_decorators;
+    return class MediaRemoteService extends _classSuper {
+        static {
+            const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(_classSuper[Symbol.metadata] ?? null) : void 0;
+            _remoteExportList_decorators = [Remote("list")];
+            __esDecorate(this, null, _remoteExportList_decorators, { kind: "method", name: "remoteExportList", static: false, private: false, access: { has: obj => "remoteExportList" in obj, get: obj => obj.remoteExportList }, metadata: _metadata }, null, _instanceExtraInitializers);
+            if (_metadata) Object.defineProperty(this, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
+        }
+        static inject = ["queue"];
+        constructor(ctx) {
+            super(ctx, "mediaRemote", { namespace: "media" });
+            __runInitializers(this, _instanceExtraInitializers);
+        }
+        /** Endpoint `media/list` — the source row's From media arm. */
+        async remoteExportList(kind, signal) {
+            if (!LIST_KINDS.includes(kind)) {
+                throw new RemoteError("media/kind", `media/list: unknown kind '\'${kind}\' (wanted one of ${LIST_KINDS.join(", ")})`, { kind });
+            }
+            const seat = this.ctx.get("queue", false);
+            if (seat === undefined) {
+                throw new RemoteError("media/no-seat", "media/list: the queue seat owns the runs tree root — mount @melite-plugin/melite-estate", {});
+            }
+            return await listMedia(seat.stateRoot, kind);
+        }
+    };
+})();
+export { MediaRemoteService };
 /** The cordis row shape: a plugin object (name + apply). */
 export default { name, apply };

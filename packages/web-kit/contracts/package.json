@@ -23,7 +23,8 @@
     "./stageView": "./src/stageView.ts",
     "./timelineTypes": "./src/timelineTypes.ts",
     "./vocab": "./src/vocab.ts",
-    "./wire": "./src/wire.ts"
+    "./wire": "./src/wire.ts",
+    "./mediaKinds": "./src/mediaKinds.ts"
   },
   "version": "0.1.0",
   "types": "./src/index.ts",
