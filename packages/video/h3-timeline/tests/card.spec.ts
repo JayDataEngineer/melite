@@ -107,6 +107,19 @@ describe("schema() gates (the py model_validator port)", () => {
     );
   });
 
+  it("length: an omitted key normalizes to null so the family's frame budget computes (the walk-shadow fix)", () => {
+    // t4_open's body literal is 90 — the walk must NOT materialize the
+    // declared 56 over it. Explicit keys ride untouched (the goldens
+    // carry length 90 explicitly and stay byte-identical).
+    const omitted = schema({ prompt: "x", calls: [{ start_frame: 0, end_frame: 90 }] });
+    assert.equal(omitted.variant, "t4_open");
+    assert.equal(omitted.length, null);
+    // (90: on both the 17k+5 frame grid and the declared step grid —
+    // the step(5) vs 17k+5 incoherence is ledgered separately)
+    const explicit = schema({ prompt: "x", length: 90, calls: [{ start_frame: 0, end_frame: 90 }] });
+    assert.equal(explicit.length, 90);
+  });
+
   it("variant derivation: guide image → t4r, single text call → t4_open, many → t4_chain", () => {
     const withGuide = schema({ prompt: "x", calls: [{ image_name: "/m/g.png", start_frame: 0, end_frame: 56 }] });
     assert.equal(withGuide.variant, "t4r");

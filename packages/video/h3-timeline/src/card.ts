@@ -112,7 +112,18 @@ const paramSchema = z.object({
   seed: z.number().description("Seed").step(1).default(42).extra('extra', { order: null, tooltip: "Same seed across re-rolls = same world texture" }),
   width: z.number().description("Width").min(448).max(1344).step(64).default(1344).extra('extra', { order: null, wtype: 'number' }),
   height: z.number().description("Height").min(448).max(768).step(64).default(768).extra('extra', { order: null, wtype: 'number' }),
-  length: z.number().description("Frames").min(21).max(362).step(5).default(56).extra('extra', { order: null, tooltip: "17k+5 grid at 24fps: 56 = 2.33s, 124 = 5.17s, 362 = 15s", wtype: 'number' }),
+  // length (the grid-law fix, 2026-09-13): the row's old validators
+  // (min 21, step 5) contradicted the card's own declared law — the
+  // 17k+5 frame grid (identity principle + tooltip: 56/90/124/362).
+  // Schemastery step is offset-from-min, so step(5) from 21 admitted
+  // {21, 26, ...} and REFUSED the documented values (90, 124, 362 —
+  // the compose door's `expected number multiple of 5` on a user-set
+  // Frames). min(22).step(17) admits exactly (L-5) % 17 === 0 — the
+  // served stepper now walks the true grid 22/39/56/.../362 and the
+  // frozen goldens' explicit 90 passes the walk. 56 (the declared
+  // default) is on-grid; the omitted-key path normalizes to null in
+  // schema() so the body computes the family's frame budget.
+  length: z.number().description("Frames").min(22).max(362).step(17).default(56).extra('extra', { order: null, tooltip: "17k+5 grid at 24fps: 56 = 2.33s, 124 = 5.17s, 362 = 15s", wtype: 'number' }),
   steps: z.number().description("Steps").min(4).max(30).default(12).extra('extra', { order: null, tooltip: "12 for draft; 30 standard; 10 with the turbo LoRA", wtype: 'number' }),
   sharpen_enabled: z.boolean().description("FSR Sharpening").default(false).extra('extra', { order: null, tooltip: "Apply AMD FidelityFX RCAS sharpening to the final output. Strength 0.3 looks natural." }),
   sharpen_strength: z.number().description("Sharpen Strength").min(0).max(1).step(0.05).default(0.3).extra('extra', { order: null, tooltip: "RCAS sharpening intensity. 0.3 = natural; 0.5 = crisp; 0.0 = off.", wtype: 'number' }),
@@ -236,6 +247,14 @@ export function schema(v: unknown): Record<string, unknown> {
   // body resolves the family's literal (t4 INT 8 / t4r 8.0) and the
   // frozen graphs stay byte-identical.
   if (!explicit.has('shift_video')) out.shift_video = null
+  // length: the SAME law (the walk-shadow fix, 2026-09-13) — the
+  // declared .default(56) mirrors py card.py for the parity referee,
+  // but the body computes the family's frame budget where the python
+  // computes it (t4_open 90 / else 56 — "None = absent on wire").
+  // Without this normalization the schemastery walk materializes 56 on
+  // every doc that omits the key and the t4_open 90 branch is dead —
+  // a hand-authored single text window silently rendered 56 frames.
+  if (!explicit.has('length')) out.length = null
   const bad = (keys: readonly string[]) => keys.filter((kk) => explicit.has(kk)).sort()
   if (variant === 't4r') {
     const b = bad(T4_ONLY_KEYS)
