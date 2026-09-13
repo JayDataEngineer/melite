@@ -87,6 +87,11 @@ export interface SquareHost {
 export interface SquareWire {
   candidates: Array<{ id: string; label: string; url: string }>
   candidatesFor?: (f: SpecField) => Array<{ id: string; label: string; url: string }>
+  /** The surface's OWN file law (optional): when present, From file
+   *  and OS drops route here instead of the default upload door —
+   *  bespoke vocabularies (the studio's inline data:-URL cap) keep
+   *  their semantics under the same three-entry grammar. */
+  onFile?: (file: File) => void
   /** THE SOURCE-PICK SEAM (2026-09-13, the operator's law: one
    *  system, no exceptions): the host may claim the picker modal's
    *  face — same grammar as the stage-view consult. The fallback is
@@ -134,6 +139,7 @@ export function useSquareProvider(onEdit: (name: string, v: unknown) => void, wi
   const [mediaRows, setMediaRows] = useState<Array<{ id: string; label: string; url: string }> | null>(null)
   const fileRef = useRef<HTMLInputElement | null>(null)
   const onFile = useCallback(async (f: SpecField, file: File): Promise<void> => {
+    if (wire.onFile !== undefined) { wire.onFile(file); return }
     try {
       const dataUrl = await readAsDataUrl(file)
       setMirror((m) => ({ ...m, [f.name]: dataUrl }))
@@ -142,7 +148,7 @@ export function useSquareProvider(onEdit: (name: string, v: unknown) => void, wi
     } catch (e: unknown) {
       onEdit(f.name, e instanceof Error ? e.message : 'upload failed')
     }
-  }, [onEdit])
+  }, [onEdit, wire.onFile])
   const square = (f: SpecField): SquareHost | undefined => {
     if (f.type !== 'image' && f.type !== 'file') return undefined
     return {
@@ -277,6 +283,62 @@ export type FieldAtomClaim = (props: {
   onEdit(name: string, v: unknown): void
   square?: SquareHost
 }) => ReturnType<typeof h>
+
+/** THE GENERIC SOURCE ROW (2026-09-13, the operator's law: ONE
+ *  generic input component — "EVEN FOR THE ADVANCED STUDIO CARDS…
+ *  sources from ONE SYSTEM with NO EXCEPTIONS"). SpecForm fields get
+ *  the row through the constructor; every NON-field surface (studio
+ *  cards, bespoke rails) rides THIS wrapper: the same plus square,
+ *  the same three-entry menu (From flow / From media / From file),
+ *  the same picker modal — with the surface's OWN flow candidates
+ *  and an optional seam claim. One grammar, zero bespoke slots. */
+export interface SourceRowProps {
+  /** Short key shown under the square. */
+  label: string
+  /** 'image' narrows the media modal to image; anything else lists
+   *  the whole library (the file face). */
+  kind?: 'image' | 'file'
+  /** Attached value (thumbnail when it passes isImageUrl). */
+  value?: string | null
+  /** The ONE write verb — every source funnels here. */
+  onEdit: (v: string) => void
+  /** The surface's own upstream outputs (the From flow rows). */
+  candidates?: Array<{ id: string; label: string; url: string }>
+  /** The surface's own file law (From file + OS drops route here). */
+  onFile?: (file: File) => void
+  /** The seam claim (same grammar as the field wire). */
+  renderSourcePick?: SquareWire['renderSourcePick']
+}
+
+export function SourceRow(props: SourceRowProps): ReturnType<typeof h> {
+  const field: SpecField = {
+    name: '__source_row__',
+    label: props.label,
+    type: props.kind === 'image' ? 'image' : 'file',
+  }
+  const onEditField = useCallback((name: string, v: unknown): void => {
+    void name
+    props.onEdit(typeof v === 'string' ? v : String(v ?? ''))
+  }, [props.onEdit])
+  const { square, wireMenu } = useSquareProvider(onEditField, {
+    candidates: props.candidates ?? [],
+    ...(props.onFile !== undefined ? { onFile: props.onFile } : {}),
+    ...(props.renderSourcePick !== undefined ? { renderSourcePick: props.renderSourcePick } : {}),
+  })
+  const host = square(field)
+  const shown = host !== undefined ? host.display ?? props.value ?? null : props.value ?? null
+  return h('div', { className: css.sourceRow, 'data-source-row': props.label },
+    wireMenu,
+    h(InputSquare, {
+      label: props.label,
+      value: shown !== null && isImageUrl(shown) ? shown : null,
+      metric: typeof props.value === 'string' && props.value !== '' && !isImageUrl(props.value)
+        ? props.value
+        : undefined,
+      ...(host !== undefined ? host.verbs : {}),
+    }),
+  )
+}
 
 /** THE TRI-STATE ATOM (hour 15, stroke C): inherit / on / off —
  *  promoted from h3's studio-local TriControl (same semantics, same

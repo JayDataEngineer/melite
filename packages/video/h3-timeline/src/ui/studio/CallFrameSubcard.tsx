@@ -4,10 +4,10 @@
  * every logic line is verbatim from the monolith (source range noted).
  */
 import { useState } from "react"
-import { Button, Input, Switch } from "@deepseek-ai/dsh-client-ui-primitives"
-import { SelectMenu, SlotSquare, Tip } from "./kit"
+import { Input, Switch } from "@deepseek-ai/dsh-client-ui-primitives"
+import { SelectMenu } from "./kit"
 import { cn, readAsDataURL } from "@melite/card-base/chrome"
-import { Link2, X } from "@melite/card-base/icons"
+import { SourceRow } from "@melite/card-base/form"
 import s from "./studio.module.css"
 import type { LinkArtifact } from "./refUtils"
 
@@ -16,21 +16,21 @@ import type { LinkArtifact } from "./refUtils"
  * are weak versions compared to other image input nodes — I can't link
  * back to previous outputs"). The affordances:
  *
- *   • UPLOAD / OS-file drop → readAsDataURL → the source becomes a
- *     data: URL (_resolveSource decodes data: first-class).
- *   • TRAY drop → wires ONLY a known upstream artifact NAME (URL→name
- *     via the artifact index; drop honesty — an unmatched URL writes
- *     NOTHING, it would pass through unresolved at render time).
- *   • LINK TO PREVIOUS OUTPUT → the Link2 button opens an inline picker
- *     over the upstream cards' IMAGE artifacts; picking writes the
- *     artifact NAME — a LIVE reference the backend re-resolves from ctx
- *     at render time (retakes flow through; stronger than a snapshot).
+ *   THE SOURCE ROW (2026-09-13, the operator's law: ONE generic input
+ *   component, no exceptions — even the studio): the bespoke SlotSquare
+ *   + typed source line + inline link panel are DEAD. This subcard
+ *   rides @melite/card-base's SourceRow — the same plus square, the
+ *   same three-entry menu (From flow / From media / From file):
+ *     • From flow lists the upstream cards' IMAGE artifacts (links);
+ *       the write maps URL→NAME (the drop-honesty law: an unmatched
+ *       URL writes NOTHING — it would pass through unresolved).
+ *     • From file keeps the studio's OWN file law (image-only, 20 MB
+ *       cap, readAsDataURL → data: URL; _resolveSource decodes data:
+ *       first-class) through the wire's onFile override.
+ *     • From media lists the runs library through the same door; the
+ *       URL→NAME honesty applies (foreign URLs refuse visibly).
  *   • the FIRST frame's exception — the prev-video continuation toggle
- *     ("use the last X seconds of the previous video", rule 3b).
- *
- * Otherwise the qwen-img-edit-2511 input pattern (2026-08-16): a typed
- * source line (artifact name / uploaded filename via the datalist), and
- * blank = none (the key deletes). */
+ *     ("use the last X seconds of the previous video", rule 3b). */
 export function CallFrameSubcard({
   label,
   hint,
@@ -68,7 +68,6 @@ export function CallFrameSubcard({
   prevNote?: string
 }) {
   const [fileError, setFileError] = useState<string | null>(null)
-  const [linkOpen, setLinkOpen] = useState(false)
   const v = value?.trim() ?? ""
   // Thumbnails resolve like everywhere: a known artifact NAME → its URL;
   // an uploaded data: URL IS its own preview.
@@ -102,98 +101,30 @@ export function CallFrameSubcard({
         </span>
         <span className={cn(s.truncate, s.subHint)} title={hint}>{hint}</span>
       </div>
-      <div className={s.subRow}>
-        <SlotSquare
-          label={label}
-          size="sm"
-          value={thumb}
-          onPickFile={(f) => void takeFile(f)}
-          onDropFile={(f) => void takeFile(f)}
-          onDropAsset={(url) => {
-            // Drop honesty: wire ONLY a known upstream artifact (the
-            // URL maps to its NAME — the vocabulary the renderer
-            // resolves). A foreign URL is not this slot's language.
-            const name = urlToName.get(url)
-            if (name) onChange(name)
-          }}
-          onClear={v ? () => onChange("") : undefined}
-          actions={
-            <Tip tip="Link to a previous output">
-              <Button
-                type="button"
-                onClick={(e) => { e.stopPropagation(); setLinkOpen((o) => !o) }}
-                aria-label={`Link ${label} to a previous output`}
-                aria-expanded={linkOpen}
-                data-testid={`${testId}-link`}
-                className={s.linkBtn}
-              >
-                <Link2 className={s.sz8} />
-              </Button>
-            </Tip>
-          }
-        />
-        <Input
-          list="tl-kf-sources"
-          data-testid={`${testId}-source`}
-          value={value ?? ""}
-          placeholder={nameToUrl.size ? "artifact or filename" : "uploaded filename"}
-          aria-label={`Call ${callIndex} ${label}`}
-          onChange={(e) => onChange(e.target.value)}
-          className={s.srcIn}
-        />
-      </div>
+      {/* THE SOURCE ROW — one grammar with every input in the system
+          (the operator's law); the studio's vocabulary adapters ride
+          the props, not a second face. */}
+      <SourceRow
+        label={label}
+        kind="image"
+        value={v === "" ? null : v.startsWith("data:") ? v : nameToUrl.get(v) ?? v}
+        candidates={(links ?? []).map((a) => ({ id: a.name, label: a.name, url: a.url }))}
+        onFile={(f) => { void takeFile(f) }}
+        onEdit={(src) => {
+          if (src === "") { onChange(""); return }
+          if (src.startsWith("data:")) { onChange(src); return }
+          // URL→NAME honesty (the drop law, verbatim): a foreign URL
+          // writes NOTHING — it would pass through unresolved at
+          // render time. The refusal is visible, never silent.
+          const name = urlToName.get(src)
+          if (name !== undefined) { onChange(name); setFileError(null); return }
+          setFileError("that source is not in this timeline\u2019s vocabulary")
+        }}
+      />
       {fileError && (
         <span data-testid={`${testId}-file-error`} className={s.fileErr}>
           {fileError}
         </span>
-      )}
-      {/* ── Link-to-previous-output picker (the inline panel over the
-          upstream cards' image artifacts; picking writes the ctx-key
-          NAME — the live reference _resolveSource re-resolves). ── */}
-      {linkOpen && (
-        <div
-          data-testid={`${testId}-link-panel`}
-          className={s.linkPanel}
-        >
-          <div className={s.linkHead}>
-            <span className={s.linkTitle}>
-              Link to previous output
-            </span>
-            <Button
-              type="button"
-              onClick={() => setLinkOpen(false)}
-              aria-label={`Close ${label} link picker`}
-              className={s.linkClose}
-            >
-              <X className={s.sz10} />
-            </Button>
-          </div>
-          {links && links.length > 0 ? (
-            <div className={s.linkList}>
-              {links.map((a) => (
-                <Button variant="ghost"
-                  key={`${a.title}:${a.name}`}
-                  type="button"
-                  data-testid={`${testId}-link-row`}
-                  data-name={a.name}
-                  title={`${a.title} · ${a.name}`}
-                  onClick={() => { onChange(a.name); setFileError(null); setLinkOpen(false) }}
-                  className={s.linkRow}
-                >
-                  <img src={a.url} alt="" className={s.linkThumb} />
-                  <span className={s.linkNameWrap}>
-                    <span className={s.linkName}>{a.name}</span>
-                    <span className={s.linkSub}>{a.title}</span>
-                  </span>
-                </Button>
-              ))}
-            </div>
-          ) : (
-            <span className={s.linkEmpty}>
-              no upstream image outputs yet — run an earlier card, or upload above
-            </span>
-          )}
-        </div>
       )}
       {onPrevSec && onTransition && (
         <div

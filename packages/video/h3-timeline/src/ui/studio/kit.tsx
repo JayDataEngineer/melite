@@ -14,7 +14,9 @@
  *     boolean — DSH's Switch, the catalog's two-state atom) /
  *     SliderControl / SelectMenu (native <select>: the custom
  *     popover's keyboard/click-outside contract comes free) /
- *     SlotSquare (verbatim drop logic + data-slot-* hooks) /
+ *     [SlotSquare DELETED 2026-09-13 — the source-row law: every
+ *     studio input rides @melite/card-base's SourceRow (one grammar,
+ *     no exceptions); the bespoke slot + its lucide trio died] /
  *     EmptyState / PaneHeader / PaneShell / StudioShell (the
  *     STANDALONE variant — rail renders inline, no StudioRail
  *     portal; kept local deliberately, not the card-base shell) /
@@ -43,7 +45,6 @@ import {
   Switch,
   Tooltip,
 } from "@deepseek-ai/dsh-client-ui-primitives"
-import { Upload, X, TriangleAlert } from "@melite/card-base/icons"
 import s from "./studio.module.css"
 
 /** The w-* width vocabulary the width props name (call sites keep
@@ -376,170 +377,6 @@ export function SelectMenu<T extends string>({
         ))}
       </select>
     </span>
-  )
-}
-
-// ── SlotSquare — the square slot shell (verbatim drop logic) ────────
-
-export function SlotSquare({
-  label,
-  value,
-  badge,
-  metric,
-  actions,
-  onPickFile,
-  onDropFile,
-  onDropAsset,
-  onClear,
-  onClick,
-  disabled = false,
-  selected = false,
-  emptyIcon,
-  size = "md",
-  className,
-}: {
-  label: string
-  value?: string | null
-  badge?: ReactNode
-  metric?: string
-  actions?: ReactNode
-  onPickFile?: (file: File) => void
-  onDropFile?: (file: File) => void
-  onDropAsset?: (url: string) => void
-  onClear?: () => void
-  onClick?: () => void
-  disabled?: boolean
-  selected?: boolean
-  emptyIcon?: ReactNode
-  size?: "sm" | "md"
-  className?: string
-}) {
-  const fileRef = useRef<HTMLInputElement | null>(null)
-  const [dragOver, setDragOver] = useState(false)
-  const interactive = !disabled && (onPickFile || onDropFile || onDropAsset || onClick || onClear)
-
-  function handleDrop(e: React.DragEvent) {
-    e.preventDefault()
-    setDragOver(false)
-    if (disabled) return
-    const asset = e.dataTransfer.getData(ASSET_DRAG_MIME)
-    if (asset) {
-      try {
-        const payload = JSON.parse(asset) as { url?: string }
-        if (payload.url && onDropAsset) {
-          onDropAsset(payload.url)
-          return
-        }
-      } catch {
-        /* malformed payload — fall through to file drop */
-      }
-    }
-    const file = e.dataTransfer.files?.[0]
-    if (file && onDropFile) onDropFile(file)
-  }
-
-  return (
-    <div className={cn(s.slotCol, className)}>
-      <div
-        data-slot-square
-        onClick={disabled ? undefined : onClick}
-        onDragOver={(e) => {
-          if (disabled) return
-          if (e.dataTransfer.types.includes(ASSET_DRAG_MIME) || e.dataTransfer.types.includes("Files")) {
-            e.preventDefault()
-            setDragOver(true)
-          }
-        }}
-        onDragLeave={() => setDragOver(false)}
-        onDrop={handleDrop}
-        className={cn(
-          s.slotSquare,
-          size === "sm" ? s.slotSm : s.slotMd,
-          dragOver || selected
-            ? s.slotHot
-            : value
-              ? s.slotFilled
-              : s.slotEmpty,
-          interactive && (onClick || onPickFile) && !dragOver && s.slotHover,
-          disabled && s.slotDisabled,
-        )}
-      >
-        <input
-          ref={fileRef}
-          type="file"
-          className={s.hiddenInput}
-          data-slot-input
-          onChange={(e) => {
-            const file = e.target.files?.[0]
-            e.target.value = ""
-            if (file && onPickFile) onPickFile(file)
-          }}
-        />
-
-        {value ? (
-          isImageUrl(value) ? (
-            <img src={value} alt={label} className={s.slotImg} />
-          ) : (
-            <Tip tip={value}>
-              <span className={s.slotUrl}>
-                {value.startsWith("data:") ? `${value.slice(0, 16)}…` : value.split("/").pop()}
-              </span>
-            </Tip>
-          )
-        ) : (
-          <span className={s.slotEmptyGlyph}>
-            {emptyIcon ?? <Upload className={size === "md" ? s.sz20 : s.sz12} aria-hidden />}
-          </span>
-        )}
-
-        {actions && !disabled && (
-          <span className={s.slotActions}>
-            {actions}
-          </span>
-        )}
-        {onClear && value && !disabled && (
-          <Tip tip="Detach">
-            <button
-              type="button"
-              onClick={(e) => { e.stopPropagation(); onClear() }}
-              aria-label="Detach"
-              className={s.slotClear}
-            >
-              <X className={s.sz12} aria-hidden />
-            </button>
-          </Tip>
-        )}
-        {onPickFile && !disabled && (
-          <Tip tip={`Pick a file for ${label}`}>
-            <button
-              type="button"
-              onClick={(e) => { e.stopPropagation(); fileRef.current?.click() }}
-              aria-label={`Pick a file for ${label}`}
-              data-slot-pick
-              className={s.slotPick}
-            >
-              <Upload className={s.sz12} aria-hidden />
-            </button>
-          </Tip>
-        )}
-      </div>
-
-      <Tip tip={label}>
-        <span className={cn(s.slotLabel, size === "sm" && s.slotLabelSm)} data-slot-label>
-          {label}
-        </span>
-      </Tip>
-      {badge !== undefined && (
-        <Tip tip={typeof badge === "string" ? badge : undefined}>
-          <span className={s.slotBadge}>
-            {badge}
-          </span>
-        </Tip>
-      )}
-      {metric && (
-        <span className={s.slotMetric}>{metric}</span>
-      )}
-    </div>
   )
 }
 

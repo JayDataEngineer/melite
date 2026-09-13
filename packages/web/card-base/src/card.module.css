@@ -108,8 +108,19 @@
 .modTile:active { cursor: grabbing; }
 .modTileLabel { font-size: 11px; line-height: 1.2; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .modTileStrength { font-size: 9px; opacity: .55; }
-.modAdd { display: flex; align-items: center; justify-content: center; min-width: 64px; padding: 6px 10px; border: 1px dashed var(--border, rgba(128,128,128,.35)); border-radius: 8px; background: transparent; color: inherit; font-size: 11px; cursor: pointer; opacity: .6; }
-.modAdd:hover { opacity: 1; }
+.modAddSquare {
+  align-items: center; background: transparent;
+  border: 1px dashed var(--dsw-alias-border-l3, rgba(0, 0, 0, 0.28)); border-radius: 8px;
+  cursor: pointer; display: flex; height: 64px; justify-content: center; opacity: .7;
+  transition: border-color var(--ds-transition-duration, 120ms) var(--ds-ease-in-out, ease),
+    background-color var(--ds-transition-duration, 120ms) var(--ds-ease-in-out, ease);
+  width: 64px;
+}
+.modAddSquare:hover {
+  background: var(--dsw-alias-interactive-bg-hover, rgba(0, 0, 0, 0.05));
+  border-color: var(--dsw-alias-border-l4, rgba(0, 0, 0, 0.4));
+  opacity: 1;
+}
 .tileDragging { opacity: .5; }
 .modLeaf { display: flex; flex-direction: column; gap: 10px; min-width: 260px; }
 .modLeafFields { display: grid; gap: 8px; }
@@ -190,3 +201,5 @@
   font-size: 13px;
   margin: 0;
 }
+
+.sourceRow { display: flex; flex-direction: column; }

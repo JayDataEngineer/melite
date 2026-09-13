@@ -27,7 +27,7 @@
  *        the fields NEVER render flat on the card form.
  */
 import { createElement as h, useState } from 'react'
-import { Button, Input, Menu, Modal } from '@deepseek-ai/dsh-client-ui-primitives'
+import { Button, IconPlusOutline16, Input, Menu, Modal } from '@deepseek-ai/dsh-client-ui-primitives'
 import css from './card.module.css'
 import { SpecAtom } from './form.tsx'
 import { useSquareProvider } from './form.tsx'
@@ -202,15 +202,23 @@ export function ModifiersSection(props: ModifiersSectionProps): ReturnType<typeo
           })
         })
       }),
+      // THE ADD ROW (2026-09-13, the source-row law): the same
+      // plus-square grammar as every input — a dashed empty square
+      // with the plus glyph; the menu's first page lists the declared
+      // mod kinds (the estate's kind vocabulary), the leaf's own image
+      // inputs ride the SAME three-source square (the construction
+      // law via useSquareProvider). One pattern, no exceptions.
       addable.length > 0
         ? h('button', {
             type: 'button',
-            className: css.modAdd,
+            className: css.modAddSquare,
             'data-subcard-add': 'mod',
+            'aria-label': 'Add modifier',
+            title: 'Add a modifier',
             onClick: (e: MouseEvent) => {
               setPickAt({ rect: (e.currentTarget as HTMLButtonElement).getBoundingClientRect() })
             },
-          }, '+ Mod')
+          }, h(IconPlusOutline16, { className: css.squareGlyph }))
         : null,
     ),
     // THE KIND PICKER — the DSH Menu (every declared kind is

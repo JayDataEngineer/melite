@@ -75,7 +75,7 @@ test('tiles derive from the bag — a stated strength shows; a landed recipe row
 
 test('+ Mod opens the picker; picking the kind opens the leaf; Add commits the bag with the row-default strength', async () => {
   const { onEdit, onPatch } = mount({})
-  await userEvent.click(screen.getByText('+ Mod'))
+  await userEvent.click(screen.getByRole('button', { name: 'Add modifier' }))
   // the DSH Menu picker (portal) lists every addable kind
   const pick = await screen.findByRole('menuitem', { name: 'LoRAs' })
   fireEvent.click(pick)
@@ -113,7 +113,7 @@ test('a tile click opens the leaf editor — Save patches the strength; Remove d
 
 test('a create with no picked row is refused LOUD — never a silent entry', async () => {
   const { onPatch } = mount({})
-  await userEvent.click(screen.getByText('+ Mod'))
+  await userEvent.click(screen.getByRole('button', { name: 'Add modifier' }))
   fireEvent.click(await screen.findByRole('menuitem', { name: 'LoRAs' }))
   // no option picked — Add must refuse (a number input cannot yield
   // 'abc' in a real browser; the reachable loud refusal is the
@@ -131,7 +131,7 @@ test('max_stack refuses a second tile LOUD (the mask cap law)', async () => {
     onEdit: vi.fn(),
     onPatch,
   }))
-  await userEvent.click(screen.getByText('+ Mod'))
+  await userEvent.click(screen.getByRole('button', { name: 'Add modifier' }))
   fireEvent.click(await screen.findByRole('menuitem', { name: 'Region Mask' }))
   expect(await screen.findByText(/stack limit reached \(1\)/)).toBeTruthy()
   expect(onPatch).not.toHaveBeenCalled()
@@ -190,7 +190,7 @@ test('THE LAW: mod-owned fields NEVER render flat on the card form — the secti
   // but the card's OWN fields render + the section rides under them
   expect(screen.getByLabelText('Prompt')).toBeTruthy()
   expect(screen.getByText('Modifiers')).toBeTruthy()
-  expect(screen.getByText('+ Mod')).toBeTruthy()
+  expect(screen.getByRole('button', { name: 'Add modifier' })).toBeTruthy()
 })
 
 test('FIELD kinds: + Mod → Region Mask → the leaf renders the kind\'s OWN fields (image square included)', async () => {
@@ -204,7 +204,7 @@ test('FIELD kinds: + Mod → Region Mask → the leaf renders the kind\'s OWN fi
     onEdit,
   }))
   // open the kind picker, pick the mask kind
-  fireEvent.click(screen.getByText('+ Mod'))
+  fireEvent.click(screen.getByRole('button', { name: 'Add modifier' }))
   const maskRow = await screen.findByText('Region Mask', undefined, { timeout: 2000 })
   fireEvent.click(maskRow)
   // THE LEAF: the kind's fields render INSIDE the modal — the image
@@ -234,7 +234,7 @@ test('OPTION kinds still ride the served rows: lora create seeds the row default
     values,
     onEdit,
   }))
-  fireEvent.click(screen.getByText('+ Mod'))
+  fireEvent.click(screen.getByRole('button', { name: 'Add modifier' }))
   fireEvent.click(await screen.findByText('LoRAs', undefined, { timeout: 2000 }))
   fireEvent.change(await screen.findByRole('combobox'), { target: { value: 'krea2_realism_lora' } })
   fireEvent.click(screen.getByText('Add'))
