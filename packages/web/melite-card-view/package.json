@@ -40,7 +40,6 @@
     "@melite/catalog": "workspace:*",
     "@melite/contracts": "workspace:*",
     "@melite/formats": "workspace:*",
-    "@melite/slots": "workspace:*",
     "@tailwindcss/cli": "^4.3.3",
     "@testing-library/react": "^16.3.2",
     "@testing-library/user-event": "^14.6.1",

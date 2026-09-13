@@ -429,7 +429,7 @@ export function IdeogramCanvasEditor({ values, setValues }: IdeogramCanvasEditor
     <>
     <StudioShell
       className={styles.shellGap}
-      rail={
+      params={
         <div className={styles.railCol}>
       {/* Background field — kept at the top because it's required */}
       <div className={styles.bgField}>
@@ -657,7 +657,7 @@ export function IdeogramCanvasEditor({ values, setValues }: IdeogramCanvasEditor
 
         </div>
       }
-      center={
+      preview={
         <>
       {/* Canvas */}
       <div className={cx(styles.canvasCard, "tn-seam")}>
@@ -921,6 +921,6 @@ function ElementList({
  *  overlay canvas is the viewport (kind "native"), the element tabs
  *  are the rail surface (no file slots today). */
 export const shellDeclaration = defineShellDeclaration({
-  center: { kind: "native" },
-  rail: { slots: [] },
+  preview: { kind: "native" },
+  params: { slots: [] },
 })

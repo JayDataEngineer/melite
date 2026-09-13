@@ -18,35 +18,9 @@ expect.extend(jestDomMatchers)
 // (lockstep; drift is CI failure).
 //
 // ORDER LAW: this file runs BEFORE each test file's vi.mock calls
-// register, so it must ONLY import modules with ZERO runtime imports —
-// cardSeam is pure (types only) and the fixture imports nothing. Going
-// through pluginKinds here would transitively pre-load the store graph
-// (pluginKinds → pluginShell → chrome → store) and bake the REAL
-// editorClient into store modules before any mock applies — 83 tests
-// died on exactly that (2026-08-19). The icon map is inlined for the
-// same reason: lucide is a leaf, pluginShell is not.
-import { registerCardKind } from '@melite/slots'
-// the kind badge glyph as a local stub (the lucide purge — test plane
-// rides no icon library): same component shape the registry expects.
-const Box = (): null => null
-import { MELITE_CORE_KINDS } from './fixtures/meliteCoreKinds'
-for (const k of MELITE_CORE_KINDS) {
- registerCardKind({
-  kind: k.kind,
-  runnable: k.runnable,
-  executable: k.executable,
-  formSpec: k.formSpec,
-  compound: k.compound,
-  opensStudio: k.opensStudio,
-  badgeTone: k.badgeTone,
-  // Declarative runner family (the dispatcher's SSOT, 2026-09-05).
-  // Forwarded from the fixture so the jsdom suite mirrors the
-  // server's /v1/kinds wire. A future refactor that drops runner
-  // here would silently misroute — the runner test pins it.
-  ...(k.runner !== undefined ? { runner: k.runner } : { runner: "" }),
-  ...(k.icon === 'Box' ? { icon: Box } : {}),
- })
-}
+// register, so it must ONLY import modules with ZERO runtime imports.
+// (2026-09-13: the card-kind registration block died with @melite/slots —
+// the registry had no runtime readers; the kinds wire is estate-served.)
 
 // Mock localStorage
 const store: Record<string, string> = {}

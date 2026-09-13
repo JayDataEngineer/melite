@@ -7,7 +7,7 @@
  * Mapping (kit → DSH):
  *   StudioShell / StudioShellErrorLine → local shell (same three
  *                 seams rail/center/bottom + the loud error line;
- *                 the RAIL still portals through @melite/slots
+ *                 the RAIL still portals through card-base's
  *                 StudioRail — the domain rail slot, not UI kit).
  *   defineShellDeclaration + seam types → local frozen-data copy
  *                 (same closed ViewportKind/BarKind unions).
@@ -20,7 +20,7 @@
  *                 variants, same null-when-no-url contract).
  */
 import type { ComponentProps, ReactElement, ReactNode } from "react"
-import { StudioRail } from "@melite/slots"
+import { StudioRail } from "@melite/card-base/shell"
 import { AlertTriangle } from "./ui-icons"
 import { Loader2 } from "./ui-icons"
 import styles from "./studio-shell.module.css"

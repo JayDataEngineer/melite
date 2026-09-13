@@ -13,7 +13,7 @@
  * aligned icon).
  */
 import type { ComponentProps, ReactElement, ReactNode } from "react"
-import { StudioRail } from "@melite/slots"
+import { StudioRail } from "./studioRail.tsx"
 import { AlertTriangle } from "./icons"
 import { cx } from "./chrome"
 import styles from "./shell.module.css"
@@ -26,11 +26,15 @@ export interface StudioShellError {
 }
 
 export interface StudioShellProps {
-  /** RAIL seam content (tenant-declared). */
-  rail: ReactNode
-  /** CENTER seam content (the viewport primitive, tenant-declared). */
-  center: ReactNode
-  /** BOTTOM seam content (aux bar; omit for none). */
+  /** LEFT slot — parameters (tenant-declared). The uniform shell law
+   *  (2026-09-13): every card surface — timeline studio or standard
+   *  form — is the same three-slot shape: params LEFT, preview RIGHT,
+   *  bottom OPTIONAL (forms leave preview/bottom unclaimed). */
+  params: ReactNode
+  /** RIGHT slot — preview (the viewport/output primitive, tenant-declared;
+   *  unclaimed on form-only cards). */
+  preview: ReactNode
+  /** BOTTOM slot — optional aux bar (timeline scrub; omit for none). */
   bottom?: ReactNode
   /** Shell-owned chrome: the loud error line (empty = no line). */
   errors?: StudioShellError[]
@@ -58,22 +62,23 @@ export function StudioShellErrorLine({
   )
 }
 
-/** The studio body: rail column (projected into the shell rail slot
- *  when one exists), center viewport, optional bottom bar, then the
- *  error line. */
+/** The studio body: params column LEFT (projected into the shell rail
+ *  slot when one exists), preview RIGHT, optional bottom bar, then the
+ *  error line. The uniform three-slot shape — timeline and form cards
+ *  are the same grain, forms simply leave the right/bottom slots empty. */
 export function StudioShell({
-  rail,
-  center,
+  params,
+  preview,
   bottom,
   errors = [],
   className,
 }: StudioShellProps): ReactElement {
   return (
     <div className={cx(styles.shell, className)}>
-      {/* RAIL — what the card acts ON. */}
-      <StudioRail>{rail}</StudioRail>
-      {/* CENTER — what the card sees THROUGH. */}
-      {center}
+      {/* LEFT — parameters: what the card acts ON. */}
+      <StudioRail>{params}</StudioRail>
+      {/* RIGHT — preview: what the card sees THROUGH. */}
+      {preview}
       {/* BOTTOM — what the card scrubs OVER. */}
       {bottom}
       {/* LOUD failures — shell-owned chrome, once. */}
@@ -127,9 +132,9 @@ export interface RailSeam {
 }
 
 export interface ShellDeclaration {
-  center: CenterSeam
+  preview: CenterSeam
   bottom?: BottomSeam
-  rail: RailSeam
+  params: RailSeam
 }
 
 /** The construction door: one obvious way to build a declaration,
@@ -139,3 +144,5 @@ export function defineShellDeclaration(
 ): Readonly<ShellDeclaration> {
   return Object.freeze(declaration)
 }
+
+export { StudioRail }

@@ -7,18 +7,19 @@
 // unification: the whole repo rides 0.1.5-rc.x; dsh-client-runtime —
 // last published 0.1.1-rc.2, peers frozen to the dead 0.1.1 world —
 // is GONE: DSH's own client entries type the context as cordis
-// Context, and packages/client has no runtime member), and (2) the
-// vendored slot fork is ON NOTICE — no importer of @melite/slots'
-// vendored core may exist outside the seam layer that S4c rewrites; a
-// new importer outside that list is drift against the order
-// ("rejecting handrolling our own things").
+// Context, and packages/client has no runtime member).
+//
+// 2026-09-13: the vendored-slot-fork arm is DELETED with its subject —
+// @melite/slots died in the burial stroke (StudioRail moved to
+// card-base; the kernel + seven dead seam faces + their walls went
+// with it). The atoms arms below are the wall's live body.
 //
 // Run: npx vitest run tests/walls/ts/suites/s4-client-deps.spec.ts
 // (or the whole gate: pnpm run test)
 import { describe, it } from "vitest";
 import assert from "node:assert/strict";
-import { readFileSync, readdirSync, statSync } from "node:fs";
-import { join, dirname, relative } from "node:path";
+import { readFileSync } from "node:fs";
+import { join, dirname } from "node:path";
 import { createRequire } from "node:module";
 import { fileURLToPath } from "node:url";
 
@@ -72,51 +73,5 @@ describe("S4a — the real DSH client set is the estate's dependency", () => {
     const req = createRequire(join(repoRoot, "packages/web/melite-card-view", "package.json"));
     const resolved = req.resolve("@deepseek-ai/dsh-client-ui-primitives");
     assert.ok(resolved.includes("node_modules"), `atoms resolved from the store: ${resolved}`);
-  });
-});
-
-/** Files whose vendored-core imports are lawful until S4c rewrites them. */
-const SEAM_LAYER = new Set([
-  "uiSlotSeam.ts",
-  "cardSeam.ts",
-  "cardBodySeam.ts",
-  "cardElementSeams.ts",
-  "regionSeams.ts",
-  "viewerSeams.ts",
-  "studioCapabilities.ts",
-  "studioContextSeam.ts",
-  "uiSlotSeam.tsx",
-  "studioRail.tsx",
-  "index.ts",
-]);
-
-function walk(dir: string, out: string[] = []): string[] {
-  for (const entry of readdirSync(dir)) {
-    const full = join(dir, entry);
-    if (statSync(full).isDirectory()) {
-      if (entry === "node_modules" || entry === "vendored") continue;
-      walk(full, out);
-    } else if (/\.(ts|tsx)$/.test(entry)) {
-      out.push(full);
-    }
-  }
-  return out;
-}
-
-describe("S4a — the vendored slot fork is on notice", () => {
-  it("no file outside the seam layer imports the vendored core", () => {
-    const slotsSrc = join(repoRoot, "packages/web-kit/slots/src");
-    const violators: string[] = [];
-    for (const file of walk(join(repoRoot, "packages"))) {
-      const text = readFileSync(file, "utf8");
-      if (/from ["'][^"']*vendored\/(core|react)/.test(text)) {
-        const rel = relative(slotsSrc, file);
-        const base = rel.split("/").pop() ?? rel;
-        if (!file.startsWith(slotsSrc) || !SEAM_LAYER.has(base)) {
-          violators.push(relative(repoRoot, file));
-        }
-      }
-    }
-    assert.deepStrictEqual(violators, [], "vendored-core importers must stay inside the seam layer S4c rewrites");
   });
 });

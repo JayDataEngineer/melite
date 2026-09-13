@@ -47,8 +47,8 @@ export const ANNY_SLOTS: AssemblySlot[] = [
  *  bar. The describeShellTenant harness + the shell wall pin this
  *  table against what renders — drift refuses. */
 export const shellDeclaration = defineShellDeclaration({
-  center: { kind: "native" },
-  rail: { slots: ANNY_SLOTS.map((s) => s.key) },
+  preview: { kind: "native" },
+  params: { slots: ANNY_SLOTS.map((s) => s.key) },
 })
 
 // ── ACTIONS band: SubAction verbs (pilot stroke 1, 2026-09-05;
@@ -1452,7 +1452,7 @@ export function AnnyStudio(props: AnnyStudioProps) {
          verts, 77 joints, smooth normals — is THE mesh: neutral
          base on open, the estimated body once seeded, the lever
          draft while sculpting. There is no other scene. */
-      center={
+      preview={
       <ViewportFrame
         label="Character — native anny viewport"
         className={styles.frameTall}
@@ -1491,7 +1491,7 @@ export function AnnyStudio(props: AnnyStudioProps) {
          SURFACE — natural-height sections, never nested scroll
          boxes (the companion order: "NOT EVEN A SCROLL? ARE YOU
          CRAZY?"). */
-      rail={
+      params={
         <div className={styles.railCol}>
           {/* THE SHARED STRIP (operator order: the Shape sub-menus
               reuse this too — "Reusing components") — Character /

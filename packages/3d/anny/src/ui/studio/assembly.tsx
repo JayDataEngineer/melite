@@ -244,7 +244,7 @@ export function AssemblyStudio({
   return (
     <StudioShell
       /* RAIL — the part slots (the assembly authoring surface). */
-      rail={
+      params={
         <div className={styles.railCol}>
           <p className={styles.railHeadline}>
             {headline}
@@ -278,7 +278,7 @@ export function AssemblyStudio({
       /* CENTER — the shared Stage. Empty state is explicit.
        * viewport="none" (the one-mesh order) renders NO second scene:
        * the tenant's own viewport is the mesh; GLBs stay artifacts. */
-      center={
+      preview={
         viewport === "stage" ? (
           <ViewportFrame
             label="Stage"

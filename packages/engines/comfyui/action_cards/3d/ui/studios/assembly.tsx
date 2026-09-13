@@ -39,7 +39,7 @@ import styles from "./assembly.module.css"
 // The generic slot surface — the SAME squares every card renders.
 // Relative: the plugin tree owns no alias into the editor surface;
 // SlotGrid's own imports are all shared packages, so a future move
-// to @melite/slots is mechanical (debt noted in the design record).
+// to card-base's StudioRail is mechanical (debt noted in the design record).
 import { SlotGrid } from "../../../../../../web/editor/src/surfaces/flow/SlotGrid"
 
 // SHELL-OWNED chrome (row 5 stroke 1, 2026-09-07): the loud error

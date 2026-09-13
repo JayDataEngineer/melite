@@ -38,8 +38,8 @@ import styles from "./component.module.css"
  *  the sculpt viewport is the body itself (kind "native"), the
  *  rail carries presets + levers (no part slots today). */
 export const shellDeclaration = defineShellDeclaration({
-  center: { kind: "native" },
-  rail: { slots: [] },
+  preview: { kind: "native" },
+  params: { slots: [] },
 })
 import { Button } from "@deepseek-ai/dsh-client-ui-primitives"
 import { Tip } from "../../../../form-fields"
@@ -81,7 +81,7 @@ export function BodyCardEditor({ stage, onSave }: BodyCardEditorProps) {
          shell's rail portal. The wrapper is h-full so the slider
          panel stretches the slot (flex column: presets shrink-0,
          panel flex-1 scrolls its tabs). */
-      rail={
+      params={
         <div className={styles.railCol}>
           <div className={styles.presetHead}>
             <p className={styles.presetTitle}>
@@ -117,7 +117,7 @@ export function BodyCardEditor({ stage, onSave }: BodyCardEditorProps) {
       /* VIEWPORT — the mesh, full panel height, no bottom bar. The live
          preview deforms from the scratchpad on every slider drag
          (/poser/skin/* exactly as in the Body Studio tab). */
-      center={
+      preview={
         <ViewportFrame label="Body — mesh viewport">
           <MeshPreviewCanvas character={editing} />
         </ViewportFrame>

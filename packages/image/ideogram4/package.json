@@ -24,7 +24,6 @@
     "@melite/comfyui-card-kit": "workspace:*",
     "@melite/comfyui-cordis": "workspace:*",
     "@melite/estate-call": "workspace:*",
-    "@melite/slots": "workspace:*",
     "react": "^19.2.6",
     "@melite/card-base": "workspace:*",
     "@melite/contracts": "workspace:*",

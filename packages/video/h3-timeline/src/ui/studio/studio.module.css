@@ -87,19 +87,25 @@ details[open] > summary .chev { transform: rotate(180deg); }
   color: rgba(154, 160, 166, 0.4);
 }
 
-/* ── kit: native inputs / selects ───────────────────────── */
+/* ── kit: native inputs / selects ─────────────────────────
+ * THE UNIFORM FORM SKIN (2026-09-13): same DSW token aliases the
+ * standard form atoms ride (card.module.css .specSelect/.specTextarea)
+ * — one form appearance across every card, timeline included. The
+ * compact density (padding/font-size) stays: the rail is a dense
+ * override editor; the SKIN (bg/border/color/focus) is the shared
+ * vocabulary. Inherit-tri-state semantics unchanged. */
 .ctlInput, .ctlSelect {
   border-radius: 6px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  background: rgba(0, 0, 0, 0.3);
+  border: 0.5px solid var(--dsw-alias-border-l2, rgba(0, 0, 0, 0.1));
+  background: var(--dsw-alias-interactive-bg-hover, #2631480f);
   padding: 2px 6px;
-  font-family: var(--st-mono);
+  font-family: var(--dsw-alias-font-mono, ui-monospace, monospace);
   font-size: 10px;
-  color: rgba(232, 234, 237, 0.9);
+  color: var(--dsw-alias-label-primary, inherit);
   outline: none;
   font-variant-numeric: tabular-nums;
 }
-.ctlInput::placeholder { color: rgba(154, 160, 166, 0.55); }
+.ctlInput::placeholder { color: var(--dsw-alias-label-tertiary, #8a93a0); }
 .ctlInput:focus, .ctlSelect:focus { border-color: var(--st-brand); }
 .ctlSelect { font-family: inherit; }
 .ctlInputSm { padding: 2px 4px; font-size: 9px; }

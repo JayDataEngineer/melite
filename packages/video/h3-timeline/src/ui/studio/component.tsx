@@ -64,7 +64,7 @@
  * every logic line below the imports is verbatim from the monolith.
  */
 import type { CardStage } from "@melite/contracts"
-import { defineShellDeclaration, StudioShell } from "./kit"
+import { defineShellDeclaration, StudioShell } from "@melite/card-base/shell"
 import { ChevronDown, TriangleAlert } from "@melite/card-base/icons"
 import { cn } from "@melite/card-base/chrome"
 import s from "./studio.module.css"
@@ -137,7 +137,7 @@ export function VideoTimelineStudio({
        a direct gesture on the bar (add = double-click, delete = ✕ /
        the rail card's Delete). */
     <StudioShell className={cn(s.studioRoot)}
-      rail={
+      params={
         <div className={s.railCol}>
           <div className={s.docBlock}>
           <div className={s.docLines}>
@@ -270,7 +270,7 @@ export function VideoTimelineStudio({
           )}
         </div>
       }
-      center={
+      preview={
           <StudioPreview
             stage={stage}
             running={running}
@@ -351,7 +351,7 @@ export default VideoTimelineStudio
  *  the viewport, kind "native" — the card renders no shared
  *  viewport; MotionTimelineBar is the view model on the bottom). */
 export const shellDeclaration = defineShellDeclaration({
-  center: { kind: "native" },
+  preview: { kind: "native" },
   bottom: { kind: "timeline" },
-  rail: { slots: [] },
+  params: { slots: [] },
 })

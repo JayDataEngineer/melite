@@ -26,7 +26,6 @@
     "@melite/contracts": "workspace:*",
     "@melite/estate-call": "workspace:*",
     "@melite/formats": "workspace:*",
-    "@melite/slots": "workspace:*",
     "react": "^19.2.6"
   },
   "devDependencies": {

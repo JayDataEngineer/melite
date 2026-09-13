@@ -264,7 +264,7 @@ export function MaskStudioEditor({
   mounts) the shell renders it in place — the one-shell standalone
   shape every studio shares. Vertical space is precious: it is
   one narrow scrolling column, never a wide right panel. */
-  rail={
+  params={
   <MaskSourceControls
   params={params}
   source={source}
@@ -301,7 +301,7 @@ export function MaskStudioEditor({
   /* CENTER — the 2D paint viewport (PaintCanvas2D inside
    * StudioCanvas): dock + canvas side by side, the canvas eating
    * every pixel above the OUTPUT bottom bar (HEIGHT RULE). */
-  center={
+  preview={
   <div className={styles.centerRow}>
   <StudioCanvas
   tool={paint.tool}
@@ -412,9 +412,9 @@ export function MaskStudioEditor({
  *  the bottom. Pinned by the shell wall + the mask suite's
  *  declaration coherence test. */
 export const shellDeclaration = defineShellDeclaration({
-  center: { kind: "paint2d" },
+  preview: { kind: "paint2d" },
   bottom: { kind: "recipe" },
-  rail: { slots: [INPUT_SLOT] },
+  params: { slots: [INPUT_SLOT] },
 })
 
 export default MaskStudioEditor

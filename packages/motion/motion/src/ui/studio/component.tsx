@@ -1450,7 +1450,7 @@ export function MotionCardEditor({
  the shell's [data-studio-tools] slot (StudioShell wraps it in
  StudioRail); standalone (inline form view) it renders in place —
  same component, same state, same onSave channel (E1 untouched). */
- rail={
+ params={
  <div className={s.railGrid}>
  {/* VIEW */}
  <span className={s.railGroupLabel}>View</span>
@@ -1674,7 +1674,7 @@ className={cn(s.wireBtn, bodyWired ? s.wireBtnOn : s.wireBtnOff)}
  the window — it is a flex sibling that PUSHES the viewport narrower.
  The canvas resizes (PoseViewer3D's observer), the character stays
  fully visible beside the panel, and the left rail is untouched. */
- center={
+ preview={
  <div className={s.centerRow}>
  {/* ── Live stage — ALWAYS the viewer (pose-studio parity) ──────────
  No run yet → no deformed vertices → SkinnedHumanoid renders the
@@ -2085,7 +2085,7 @@ export default MotionCardEditor
  *  "native"; the rail carries the view/pose/output tool groups;
  *  MotionTimelineBar in a PaneShell is the bottom). */
 export const shellDeclaration = defineShellDeclaration({
-  center: { kind: "native" },
+  preview: { kind: "native" },
   bottom: { kind: "timeline" },
-  rail: { slots: [] },
+  params: { slots: [] },
 })
