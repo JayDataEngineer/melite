@@ -44259,6 +44259,9 @@ void main() {
 			const children = isGroup && Array.isArray(stage.children) ? stage.children.length : 0;
 			const title = isGroup ? "Group (" + String(children) + ")" : stage.title ?? stage.card ?? stage.id;
 			const status = typeof stage.runStatus === "string" && stage.runStatus !== "" ? stage.runStatus : "ready";
+			typeof stage.activity === "string" && stage.activity;
+			const progress = stage.progress ?? null;
+			progress !== null && progress.max > 0 && Math.floor(100 * progress.value / progress.max);
 			const params = typeof stage.params === "object" && stage.params !== null ? stage.params : {};
 			const promptRaw = typeof params["prompt"] === "string" ? params["prompt"] : "";
 			const result = stage.result;
@@ -44563,7 +44566,21 @@ void main() {
 				};
 				return renderPreview(owner, kind === "video" ? (0, react.createElement)(VideoStagePreview, owner) : kind === "audio" ? (0, react.createElement)(AudioStagePreview, owner) : kind === "mesh" ? (0, react.createElement)(MeshStagePreview, owner) : (0, react.createElement)(ImageStagePreview, owner));
 			};
-			const genericDetail = () => (0, react.createElement)("div", { className: card_module_css_default$1.zoomDetail }, (0, react.createElement)(StudioShell, {
+			const activity = typeof stage.activity === "string" ? stage.activity : "";
+			const progress = stage.progress ?? null;
+			const pct = progress !== null && progress.max > 0 ? Math.floor(100 * progress.value / progress.max) : null;
+			const webhookFeed = (0, react.createElement)("div", {
+				className: card_module_css_default$1.runRow,
+				"data-testid": "drill-webhooks"
+			}, activity !== "" ? (0, react.createElement)("span", {
+				className: card_module_css_default$1.tilePct,
+				"aria-label": "engine activity"
+			}, activity) : null, pct !== null ? (0, react.createElement)("span", {
+				className: card_module_css_default$1.tilePct,
+				"data-testid": "drill-progress",
+				"aria-label": "progress percent"
+			}, pct + "% (" + String(progress.value) + "/" + String(progress.max) + ")") : null);
+			const genericDetail = () => (0, react.createElement)("div", { className: card_module_css_default$1.zoomDetail }, webhookFeed, (0, react.createElement)(StudioShell, {
 				params: (0, react.createElement)("div", { className: card_module_css_default$1.paramsCol }, enhanceNote !== null ? (0, react.createElement)("div", {
 					className: card_module_css_default$1.enhanceRow,
 					"data-testid": "enhance-note"
