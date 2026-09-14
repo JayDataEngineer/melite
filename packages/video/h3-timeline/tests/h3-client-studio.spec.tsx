@@ -47,6 +47,50 @@ function owner(over: Partial<StageViewOwnerProps> = {}): StageViewOwnerProps {
   } as StageViewOwnerProps
 }
 
+// ── STROKE 41: THE STICKY STARTER (operator, 2026-09-14: "h3
+//    timeline is broken: card_compose phase 1 … no calls to
+//    compose") — a fresh stage carries NO calls; the studio's
+//    hydrate fallback must PERSIST, not just render. ─────────────
+
+describe('THE STICKY STARTER (stroke 41: a calls-less stage persists the starter doc on mount)', () => {
+  beforeEach(() => cleanup())
+
+  it('a FRESH stage (params carry no calls) writes the starter calls on mount — Run can never meet "no calls to compose"', async () => {
+    const p = owner({ row: { id: 's_9', card: 'h3-timeline', title: 'H3', params: { fps: 24, seed: 7 } } })
+    render(h(H3TimelineStudio, p))
+    await waitFor(() => {
+      const calls = (p.onPatch as ReturnType<typeof vi.fn>).mock.calls
+        .map((c) => c[0] as Record<string, unknown>)
+        .filter((patch) => Array.isArray(patch['calls']))
+      expect(calls.length).toBeGreaterThanOrEqual(1)
+    })
+    const patch = (p.onPatch as ReturnType<typeof vi.fn>).mock.calls
+      .map((c) => c[0] as Record<string, unknown>)
+      .filter((x) => Array.isArray(x['calls']))
+      .at(-1)!
+    const calls = patch['calls'] as Array<{ start_frame?: number; end_frame?: number; text?: string }>
+    // the starter is a REAL shot list: ≥1 call, int spans, non-reversed
+    expect(calls.length).toBeGreaterThanOrEqual(1)
+    for (const c of calls) {
+      expect(Number.isInteger(c.start_frame)).toBe(true)
+      expect(Number.isInteger(c.end_frame)).toBe(true)
+      expect((c.end_frame as number) - (c.start_frame as number)).toBeGreaterThan(0)
+    }
+  })
+
+  it('a stage WITH calls still no-ops on mount (the old guard behavior is untouched)', async () => {
+    const p = owner()
+    render(h(H3TimelineStudio, p))
+    await waitFor(() => { expect(document.body.textContent ?? '').toMatch(/2 calls/) })
+    // settle: no calls-writing patch may fire for the hydrated doc
+    await new Promise((r) => { setTimeout(r, 30) })
+    const callsPatches = (p.onPatch as ReturnType<typeof vi.fn>).mock.calls
+      .map((c) => c[0] as Record<string, unknown>)
+      .filter((x) => Array.isArray(x['calls']))
+    expect(callsPatches.length).toBe(0)
+  })
+})
+
 describe('H3TimelineStudio (the card-package tenant, mounted)', () => {
   beforeEach(() => cleanup())
 
