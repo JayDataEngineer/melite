@@ -378,7 +378,7 @@ export function MediaTabIcon({ size }: { size?: number }) {
   )
 }
 
-export function MediaPanel({ useTabInfo }: { useTabInfo?: () => TabInfo }): React.JSX.Element {
+export function MediaPanel({ useTabInfo, sessionId }: { useTabInfo?: () => TabInfo; sessionId?: string }): React.JSX.Element {
   /* TWO independent feeds (useFeed): runs and drafts each own their
    * fetch/decode/never-stale engine — one failing never blanks the other
    * (the drafts feed's error is deliberately not rendered; the runs view
@@ -433,7 +433,7 @@ export function MediaPanel({ useTabInfo }: { useTabInfo?: () => TabInfo }): Reac
       setError('Cards view unavailable — the sidebar tab service is not loaded.')
       return
     }
-    const deps = { openResource: open, onError: setError }
+    const deps = { openResource: open, onError: setError, sessionId }
     if (item.draftId !== '') {
       void loadDraftOntoBench(item.draftId, deps)
       return
@@ -451,7 +451,7 @@ export function MediaPanel({ useTabInfo }: { useTabInfo?: () => TabInfo }): Reac
       setError('Cards view unavailable — the sidebar tab service is not loaded.')
       return
     }
-    void loadDraftOntoBench(draftId, { openResource: open, onError: setError })
+    void loadDraftOntoBench(draftId, { openResource: open, onError: setError, sessionId })
   }
 
   const items = useMemo(() => flatten(runs), [runs])

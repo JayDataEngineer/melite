@@ -340,7 +340,7 @@ describe('MediaPanel — the flows face + the bench CAS load', () => {
       return el as HTMLElement
     })
     fireEvent.click(row)
-    await waitFor(() => { expect(opened).toEqual(['dsh-resource://cards/bench']) })
+    await waitFor(() => { expect(opened).toEqual(['dsh-resource://cards/bench/main']) })
     // THE CAS LAW: the bench row was read first, its rev rode as expect_rev.
     expect(gets).toEqual(['/v1/bench/main'])
     expect(bodies).toHaveLength(1)
@@ -359,7 +359,7 @@ describe('MediaPanel — the flows face + the bench CAS load', () => {
     }) as never} />)
     fireEvent.click(await screen.findByText(/Flows 1/))
     fireEvent.click(await waitFor(() => screen.getByText('card one').closest('button') as HTMLElement))
-    await waitFor(() => { expect(opened).toEqual(['dsh-resource://cards/bench']) })
+    await waitFor(() => { expect(opened).toEqual(['dsh-resource://cards/bench/main']) })
     expect(bodies).toHaveLength(1)
     expect('expect_rev' in bodies[0]).toBe(false)
   })
@@ -432,7 +432,7 @@ describe('MediaPanel — the wand restores the run onto the bench', () => {
       return el as HTMLElement
     })
     fireEvent.click(wand)
-    await waitFor(() => { expect(opened).toEqual(['dsh-resource://cards/bench']) })
+    await waitFor(() => { expect(opened).toEqual(['dsh-resource://cards/bench/main']) })
     // the row's draft went straight onto the bench — no sidecar read.
     expect(hits.some((u) => u.startsWith('/infer-gallery/flow?'))).toBe(false)
     expect(bodies).toHaveLength(1)
@@ -467,7 +467,7 @@ describe('MediaPanel — the wand restores the run onto the bench', () => {
         actions: { openResource: (a: string) => { opened.push(a) } } },
     }) as never} />)
     fireEvent.click(await waitFor(() => screen.getByText('✦ CARDS') as HTMLElement))
-    await waitFor(() => { expect(opened).toEqual(['dsh-resource://cards/bench']) })
+    await waitFor(() => { expect(opened).toEqual(['dsh-resource://cards/bench/main']) })
     expect(hits).toContain('/infer-gallery/flow?run_id=r1')
   })
 

@@ -39,7 +39,7 @@ import type {} from '@deepseek-ai/dsh-client-ui-sidebar-right/client'
 import type {} from '@deepseek-ai/dsh-client-resources/client'
 import { FlowCards } from './FlowCards.tsx'
 import { CardsTab } from './CardsTab.tsx'
-import { CARDS_BENCH_ADDRESS, openCardsResource, shouldSpotlight, watchBenchLands } from './cards-resource.ts'
+import { CARDS_BENCH_ADDRESS, benchAddressOf, benchSessionKey, openCardsResource, shouldSpotlight, watchBenchLands } from './cards-resource.ts'
 import { resolveCardsAddress } from './CardsTab.tsx'
 import type { StageViewOwnerProps, ToolCallBlockView, ToolCallOwnerProps } from './types.ts'
 
@@ -150,7 +150,8 @@ export function apply(ctx: ClientContext): void {
         // (guide clicks arrive as sidebar://cards, openTab as the
         // dsh-resource form).
         const resolved = resolveCardsAddress(address)
-        return resolved === CARDS_BENCH_ADDRESS ? 'Cards' : resolved.replace(/^dsh-resource:\/\/cards\//, '')
+        if (resolved.startsWith(CARDS_BENCH_ADDRESS)) return 'Cards'
+        return resolved.replace(/^dsh-resource:\/\/cards\//, '')
       },
       guide: [{
         order: 50,
@@ -208,10 +209,26 @@ export function apply(ctx: ClientContext): void {
   // reveal (no session mounted yet) surfaces in the console, never
   // silently.
   try {
-    ctx.effect(() => watchBenchLands(() => {
+    // THE SESSION SOURCE (stroke 44): uiSession's scope adapter
+    // follows the current selection — getSnapshot().props.sessionId
+    // (the ui-session merge's SessionStandardProps) is the active
+    // conversation. The watcher re-reads it on EVERY poll, so a
+    // conversation switch re-baselines onto the new bench at the next
+    // tick without any subscription bookkeeping.
+    const activeBenchSession = (): string => {
+      try {
+        const uiSession = (ctx as unknown as { uiSession?: { adapter?: { current?: { getSnapshot?: () => { props?: Record<string, unknown> } } } } }).uiSession
+        const snap = uiSession?.adapter?.current?.getSnapshot?.()
+        const sid = snap?.props?.['sessionId']
+        return benchSessionKey(typeof sid === 'string' ? sid : undefined)
+      } catch {
+        return 'main'
+      }
+    }
+    ctx.effect(() => watchBenchLands(activeBenchSession, (sessionKey) => {
       try {
         if (shouldSpotlight(ctx.sidebarRight.isExpanded())) {
-          ctx.sidebarRight.openResource(CARDS_BENCH_ADDRESS)
+          ctx.sidebarRight.openResource(benchAddressOf(sessionKey))
         }
       } catch (error) {
         console.error('[melite-card-view] bench spotlight reveal failed:', error)

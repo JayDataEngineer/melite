@@ -35,8 +35,23 @@ import type { EstateRequest } from '../estate.ts'
 import type { JsonValue, ToolDefinition } from '../types.ts'
 import { jsonClean } from '../json-clean.ts'
 
-/** The default bench — one shared state per gateway. */
+/** The default bench — the unattributed seat (headless runs,
+ *  legacy callers). */
 export const DEFAULT_BENCH = 'main'
+
+// ── THE PER-CONVERSATION BENCH (stroke 44: the flow belongs to the
+// conversation — "when I start a new conversation, that old flow
+// will be there like before" — never again). The agent on whose
+// behalf the call runs IS the conversation: ToolExecution.agent.id
+// is the SessionId (dsh-agent: "Session-backed Agent identity"; the
+// agent loop sets it on every chat dispatch — tools.md:195). The
+// construct binds to exactly that key, so a conversation's agent
+// can only ever author its OWN bench — cross-conversation state is
+// unreachable, not merely discouraged.
+export function benchKeyOfExec(exec: { agent?: { id?: unknown } }): string {
+  const id = exec.agent?.id
+  return typeof id === 'string' && /^[A-Za-z0-9_-]{1,64}$/.test(id) ? id : DEFAULT_BENCH
+}
 
 type ConstructResult = {
   verb: string;
@@ -213,7 +228,11 @@ export function meliteConstruct(
       // (2026-09-12).
       const a = args as Record<string, unknown>
       const verb = typeof a.verb === 'string' ? a.verb : ''
-      const bench = benchKeyOf(a)
+      // The conversation wins (the one-flow law rides the agent's own
+      // session); an explicit bench key applies only to unattributed
+      // seats (headless, scripts) that carry no agent.
+      const agentBench = benchKeyOfExec(exec as { agent?: { id?: unknown } })
+      const bench = agentBench !== DEFAULT_BENCH ? agentBench : benchKeyOf(a)
       const signal = exec.signal
       const out = (payload: Record<string, unknown>): ConstructResult =>
         jsonClean<ConstructResult>({ verb, bench, ok: true, ...payload })

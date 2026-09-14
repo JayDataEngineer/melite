@@ -69,6 +69,57 @@ describe('melite_construct presentCall — the Bench card', () => {
   })
 })
 
+describe('melite_construct — THE PER-CONVERSATION BENCH (stroke 44: the flow belongs to the conversation)', () => {
+  test("the agent's own session IS the bench key — ToolExecution.agent.id binds it", async () => {
+    const { seen, request } = mockRequest((method, path) => {
+      if (method === 'GET' && path === '/v1/bench/s_chat7') return { ...ROW, session: 's_chat7' }
+      throw new Error('unmocked ' + method + ' ' + path)
+    })
+    const tool = meliteConstruct(request)
+    const out = await tool.execute({ verb: 'read' }, { signal: AbortSignal.timeout(5000), agent: { id: 's_chat7' } }) as Record<string, unknown>
+    assert.equal(out.bench, 's_chat7')
+    assert.equal(out.ok, true)
+    assert.ok(seen.some((r) => r.path === '/v1/bench/s_chat7'))
+  })
+
+  test('the conversation WINS over an explicit bench key — cross-conversation state is unreachable, not merely discouraged', async () => {
+    const { request } = mockRequest((method, path) => {
+      if (method === 'GET' && path === '/v1/bench/s_chat7') return { ...ROW, session: 's_chat7' }
+      throw new Error('unmocked ' + method + ' ' + path)
+    })
+    const tool = meliteConstruct(request)
+    const out = await tool.execute({ verb: 'read', bench: 'main' }, { signal: AbortSignal.timeout(5000), agent: { id: 's_chat7' } }) as Record<string, unknown>
+    assert.equal(out.bench, 's_chat7')
+  })
+
+  test('no agent (headless/script seats) — the explicit key applies, else main', async () => {
+    const a = mockRequest((method, path) => {
+      if (method === 'GET' && path === '/v1/bench/probe') return ROW
+      throw new Error('unmocked ' + method + ' ' + path)
+    })
+    const outA = await meliteConstruct(a.request).execute({ verb: 'read', bench: 'probe' }, exec()) as Record<string, unknown>
+    assert.equal(outA.bench, 'probe')
+
+    const b = mockRequest((method, path) => {
+      if (method === 'GET' && path === '/v1/bench/main') return ROW
+      throw new Error('unmocked ' + method + ' ' + path)
+    })
+    const outB = await meliteConstruct(b.request).execute({ verb: 'read' }, exec()) as Record<string, unknown>
+    assert.equal(outB.bench, 'main')
+  })
+
+  test('a junk agent id refuses to leak — sanitized to main', async () => {
+    const { seen, request } = mockRequest((method, path) => {
+      if (method === 'GET' && path === '/v1/bench/main') return ROW
+      throw new Error('unmocked ' + method + ' ' + path)
+    })
+    const tool = meliteConstruct(request)
+    const out = await tool.execute({ verb: 'read' }, { signal: AbortSignal.timeout(5000), agent: { id: 'not a key/..' } }) as Record<string, unknown>
+    assert.equal(out.bench, 'main')
+    assert.ok(seen.some((r) => r.path === '/v1/bench/main'))
+  })
+})
+
 describe('melite_construct read — freshness first', () => {
   test('read GETs the bench row', async () => {
     const { seen, request } = mockRequest((method, path) => {

@@ -61,7 +61,7 @@ import type { CatalogCard, FormSpecDoc, ModifierKind, SpecValues } from './spec-
 import { paramFields, patchStageOutcome, patchStageParams } from './draft.ts'
 import css from './card.module.css'
 import type { CardsBenchValue, CardsDraftValue, CardsRunValue, BenchStageRow } from './cards-resource.ts'
-import { CARDS_BENCH_ADDRESS, cardsRunAddress, fetchBench, fetchLatestRunForDraft, freshStageRow, markCardsSurface, observeRunOutcome, openCardsResource, parseCardsAddress, reconcileBenchRuns, restoreRunToBench, uploadInputFile } from './cards-resource.ts'
+import { CARDS_BENCH_ADDRESS, benchAddressOf, benchSessionKey, benchSessionOfAddress, cardsRunAddress, fetchBench, fetchLatestRunForDraft, freshStageRow, markCardsSurface, observeRunOutcome, openCardsResource, parseCardsAddress, reconcileBenchRuns, restoreRunToBench, uploadInputFile } from './cards-resource.ts'
 import { defaultFamilyForCard, startCardRun, stopRun } from '@melite-plugin/melite-run-wire'
 import { addStageWire, groupStagesWire, removeStageWire, reorderStageWire, ungroupStageWire } from './add-stage.ts'
 import { AudioStagePreview, ImageStagePreview, MeshStagePreview, VideoStagePreview } from '@melite/card-base/preview'
@@ -88,6 +88,11 @@ interface ResourceHook {
 export interface CardsTabProps {
   useTabInfo?: () => TabInfo
   useResource?: ResourceHook
+  /** The conversation this tab serves (SessionStandardProps — the
+   *  ui-session merge delivers sessionId to every session-scoped slot
+   *  body). The bench is per-conversation (stroke 44): the tab binds
+   *  its bench to exactly this key; unattributed seats serve 'main'. */
+  sessionId?: string
   /** Injected by the slot system because the seat registration
    *  declares 'cards.stage.view' + 'cards.stage.preview' as children
    *  (PropsRenderSlots shape; optional so test doubles and legacy
@@ -1208,7 +1213,8 @@ function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRemoved, 
  *  groups) → the card's DECLARED form (defaults seeded) → bench/add-stage
  *  as the user (CAS-chained). ONE surface: action cards; models are not
  *  entries (the model select lives ON the card's form). */
-function AddCardDoor({ bench, onAdded, onClose, onAddedRow }: {
+function AddCardDoor({ bench, sessionKey, onAdded, onClose, onAddedRow }: {
+  sessionKey: string
   bench: CardsBenchValue
   onAdded: () => void
   /** The add's fresh row, when the bench diff found it — the parent
@@ -1282,7 +1288,7 @@ function AddCardDoor({ bench, onAdded, onClose, onAddedRow }: {
       // (the row still lands; only the auto-open is skipped).
       try {
         const before = new Set(bench.stages.map((r) => r.id))
-        const next = await fetchBench()
+        const next = await fetchBench(sessionKey)
         const fresh = next.stages.find((r) => !before.has(r.id)) ?? null
         if (fresh !== null && onAddedRow !== undefined) onAddedRow(fresh)
         else onAdded()
@@ -1338,7 +1344,8 @@ function AddCardDoor({ bench, onAdded, onClose, onAddedRow }: {
   )
 }
 
-function BenchView({ bench, onRun, onRunStage, onStopStage, onRemoveStage, stageRuns, running, onPatchParams, renderStageView, renderPreview, runId, refreshTick, startError }: {
+function BenchView({ bench, sessionKey, onRun, onRunStage, onStopStage, onRemoveStage, stageRuns, running, onPatchParams, renderStageView, renderPreview, runId, refreshTick, startError }: {
+  sessionKey: string
   bench: CardsBenchValue
   onRun: () => void
   onRunStage: (stage: BenchStageRow) => void
@@ -1393,7 +1400,7 @@ function BenchView({ bench, onRun, onRunStage, onStopStage, onRemoveStage, stage
   }, [refreshTick])
   const reload = useCallback((opts?: { keepOpen?: boolean }): void => {
     setReloadError(null)
-    fetchBench()
+    fetchBench(sessionKey)
       .then((next) => {
         setLive(next)
         if (opts?.keepOpen === true) {
@@ -1403,7 +1410,7 @@ function BenchView({ bench, onRun, onRunStage, onStopStage, onRemoveStage, stage
         }
       })
       .catch((e: unknown) => { setReloadError(e instanceof Error ? e.message : 'bench reload failed') })
-  }, [])
+  }, [sessionKey])
   const onAdded = useCallback((): void => {
     setAdding(false)
     reload()
@@ -1672,6 +1679,7 @@ function BenchView({ bench, onRun, onRunStage, onStopStage, onRemoveStage, stage
       detail: StageDrill,
     }) : null,
     adding ? h(AddCardDoor, {
+      sessionKey,
       bench: live, onAdded, onClose: () => { setAdding(false) },
       // THE OPEN-ON-ADD (the old tree's law verbatim): the fresh
       // row's zoom (the drilldown; for a studio card the studio IS
@@ -1755,7 +1763,8 @@ function DraftView({ value, running, onRun, onStop, onBack, onPatchParams, rende
   })
 }
 
-function RunView({ run, onBack, onRestored, onStop }: {
+function RunView({ run, sessionKey, onBack, onRestored, onStop }: {
+  sessionKey: string
   run: CardsRunValue
   onBack: (() => void) | undefined
   onRestored: () => void
@@ -1773,7 +1782,7 @@ function RunView({ run, onBack, onRestored, onStop }: {
   const onRestore = useCallback((): void => {
     setRestoring(true)
     setNote(null)
-    restoreRunToBench(run).then((report) => {
+    restoreRunToBench(run, sessionKey).then((report) => {
       const extra = report.notes.length > 0 ? ' (' + report.notes.join('; ') + ')' : ''
       const skipped = report.skipped > 0 ? ', ' + String(report.skipped) + ' skipped' : ''
       setNote('restored ' + String(report.added) + ' stage(s) to the bench' + skipped + extra)
@@ -1783,7 +1792,7 @@ function RunView({ run, onBack, onRestored, onStop }: {
       setNote(e instanceof Error ? e.message : String(e))
       setRestoring(false)
     })
-  }, [run, onRestored])
+  }, [run, onRestored, sessionKey])
   return h('section', { className: css.runView, 'data-run-status': run.status },
     h('header', { className: css.runHead },
       h('span', { className: css.runId }, run.runId),
@@ -1878,7 +1887,17 @@ export function CardsTab(props: CardsTabProps): ReturnType<typeof h> {
   }
   const info = typeof props.useTabInfo === 'function' ? props.useTabInfo() : undefined
   const rawAddress = info?.tab.navigation.address ?? info?.tab.contentId ?? CARDS_BENCH_ADDRESS
-  const address = resolveCardsAddress(rawAddress)
+  // THE PER-CONVERSATION BINDING (stroke 44): the tab serves ITS
+  // conversation's bench — the session prop wins (the law), the
+  // address tail backs it (spotlight-opened tabs carry the key), and
+  // 'main' serves unattributed seats. The bench record rides the
+  // session-qualified address so two conversations' tabs never share
+  // one stream; run/draft addresses pass through untouched.
+  const benchKey = benchSessionKey(props.sessionId ?? benchSessionOfAddress(resolveCardsAddress(rawAddress)))
+  const benchAddress = benchAddressOf(benchKey)
+  const resolved = resolveCardsAddress(rawAddress)
+  const parsed = parseCardsAddress(resolved)
+  const address = parsed !== null && ('run' in parsed || 'draft' in parsed) ? resolved : benchAddress
   const openResource = info?.tab.actions.openResource
   const snapshot = typeof props.useResource === 'function' ? props.useResource(address) : undefined
   const [running, setRunning] = useState(false)
@@ -2097,8 +2116,8 @@ export function CardsTab(props: CardsTabProps): ReturnType<typeof h> {
   }, [])
 
   const onBack = useCallback((): void => {
-    if (openResource !== undefined) openResource(CARDS_BENCH_ADDRESS)
-  }, [openResource])
+    if (openResource !== undefined) openResource(benchAddress)
+  }, [openResource, benchAddress])
   if (snapshot === undefined) {
     return h('p', { className: css.missing }, 'cards resource hook unavailable')
   }
@@ -2125,6 +2144,7 @@ export function CardsTab(props: CardsTabProps): ReturnType<typeof h> {
         // one renderer per document, whichever seat is live.
         h(ToastViewport),
         h(BenchView, {
+          sessionKey: benchKey,
           bench: value,
           onRun,
           onRunStage,
@@ -2155,5 +2175,5 @@ export function CardsTab(props: CardsTabProps): ReturnType<typeof h> {
           runId: lastRunId,
         }),
       )
-    : h(RunView, { run: value, onBack: openResource !== undefined ? onBack : undefined, onRestored: onBack, onStop })
+    : h(RunView, { run: value, sessionKey: benchKey, onBack: openResource !== undefined ? onBack : undefined, onRestored: onBack, onStop })
 }

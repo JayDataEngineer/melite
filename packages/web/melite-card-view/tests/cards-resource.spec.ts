@@ -7,7 +7,7 @@
 // until terminal (pollRunFrames' law, already pinned in the run-wire
 // package; here the bench tail gets its own pins).
 import { describe, expect, test, vi, afterEach } from 'vitest'
-import { observeRunOutcome, openCardsResource, readBench } from '../src/client/cards-resource.ts'
+import { benchAddressOf, benchSessionOfAddress, observeRunOutcome, openCardsResource, readBench } from '../src/client/cards-resource.ts'
 
 /** A /api wire frame answer for one method. */
 function stubApi(methods: Record<string, Array<Record<string, unknown> | Error>>): void {
@@ -67,6 +67,78 @@ describe('readBench — the card-birth re-attach (the hour-6 form regression)', 
       stages: [{ id: 's_0', card: 'h3-timeline', engine: 'comfyui', params: {} }],
     })
     expect(value.stages[0]!.card).toBe('h3-timeline')
+  })
+})
+
+describe('the bench address law (stroke 44 — the key rides the address tail, the file protocol pattern)', () => {
+  test('benchAddressOf ∘ benchSessionOfAddress round-trips every legal session key', () => {
+    for (const key of ['main', 's_chat7', 'a-b_c9', 'x']) {
+      expect(benchSessionOfAddress(benchAddressOf(key))).toBe(key)
+    }
+  })
+
+  test('the legacy bare address and foreign addresses resolve to main — old records keep serving', () => {
+    expect(benchSessionOfAddress('dsh-resource://cards/bench')).toBe('main')
+    expect(benchSessionOfAddress('dsh-resource://cards/bench/')).toBe('main')
+    expect(benchSessionOfAddress('dsh-resource://cards/run/r1')).toBe('main')
+    expect(benchSessionOfAddress('sidebar://guide')).toBe('main')
+  })
+
+  test('a tail the estate would refuse sanitizes to main, never a 400', () => {
+    expect(benchSessionOfAddress('dsh-resource://cards/bench/not a key')).toBe('main')
+    expect(benchAddressOf('also junk!!')).toBe('dsh-resource://cards/bench/main')
+  })
+
+  test('two conversations get two addresses — one record each, never a shared stream', () => {
+    expect(benchAddressOf('s_a')).not.toBe(benchAddressOf('s_b'))
+  })
+})
+
+describe('stroke 44 — a fresh conversation\'s bench (missing = empty, never failure)', () => {
+  test('the stream opens with the empty bench and the birth lands as a fresh frame', async () => {
+    vi.useFakeTimers()
+    stubApi({
+      'bench/get': [new Error('typert: no such bench: s_new'), benchDoc(1, ['first card'])],
+    })
+    const controller = new AbortController()
+    const frames: unknown[] = []
+    const stream = openCardsResource('dsh-resource://cards/bench/s_new', { signal: controller.signal })
+    const done = (async (): Promise<void> => {
+      for await (const frame of stream) {
+        frames.push(frame)
+        if (frames.length === 2) controller.abort()
+      }
+    })()
+    await vi.advanceTimersByTimeAsync(2600)
+    await done
+    const first = frames[0] as { ok: boolean; value: { rev: number; stages: unknown[] } }
+    expect(first.ok).toBe(true) // NOT a failure frame — the honest empty bench
+    expect(first.value.rev).toBe(0)
+    expect(first.value.stages).toEqual([])
+    const second = frames[1] as { value: { rev: number } }
+    expect(second.value.rev).toBe(1) // the birth is a fresh frame
+  })
+
+  test('other refusions are still failures — only the missing bench is the zero state', async () => {
+    stubApi({ 'bench/get': [new Error('gateway exploded')] })
+    const frames: unknown[] = []
+    for await (const frame of openCardsResource('dsh-resource://cards/bench/s_x', { signal: AbortSignal.timeout(50) })) {
+      frames.push(frame)
+      break
+    }
+    expect((frames[0] as { ok: boolean }).ok).toBe(false)
+  })
+
+  test('the watcher baselines a missing bench at rev 0 — the FIRST agent card in a new conversation reveals', async () => {
+    vi.useFakeTimers()
+    stubApi({
+      'bench/get': [new Error('typert: no such bench: s_new'), agentDoc(1, ['first agent card'])],
+    })
+    const landed: string[] = []
+    const stop = watchBenchLands(() => 's_new', (key) => { landed.push(key) })
+    await vi.advanceTimersByTimeAsync(2200)
+    expect(landed).toEqual(['s_new'])
+    stop()
   })
 })
 
@@ -303,7 +375,7 @@ describe('the bench spotlight (the one-flow reveal)', () => {
       'bench/get': [agentDoc(12, ['hero frame']), agentDoc(13, ['hero frame', 'agent row'])],
     })
     const lands: number[] = []
-    const stop = watchBenchLands(() => { lands.push(1) })
+    const stop = watchBenchLands(() => 'main', () => { lands.push(1) })
     await vi.advanceTimersByTimeAsync(100)
     expect(lands.length).toBe(0) // hydration: the first read is baseline
     await vi.advanceTimersByTimeAsync(2100)
@@ -319,7 +391,7 @@ describe('the bench spotlight (the one-flow reveal)', () => {
       'bench/get': [userDoc(12, ['hero frame']), userDoc(13, ['hero frame', 'user edit'])],
     })
     const lands: number[] = []
-    const stop = watchBenchLands(() => { lands.push(1) })
+    const stop = watchBenchLands(() => 'main', () => { lands.push(1) })
     await vi.advanceTimersByTimeAsync(4200)
     expect(lands.length).toBe(0)
     stop()
@@ -331,9 +403,34 @@ describe('the bench spotlight (the one-flow reveal)', () => {
       'bench/get': [userDoc(12, ['hero frame']), new Error('lane restarted'), agentDoc(14, ['agent row'])],
     })
     const lands: number[] = []
-    const stop = watchBenchLands(() => { lands.push(1) })
+    const stop = watchBenchLands(() => 'main', () => { lands.push(1) })
     await vi.advanceTimersByTimeAsync(6300)
     expect(lands.length).toBe(1) // poll 1 baseline, poll 2 dead, poll 3 landed
+    stop()
+  })
+
+  test('stroke 44 — switching sessions re-baselines: the new conversation\'s history never reveals, its fresh agent lands fire with the key', async () => {
+    vi.useFakeTimers()
+    let current = 's_old'
+    // s_old's bench: rev 12 hydration with OLD agent rows (history);
+    // s_new's bench: rev 40 hydration (fresh conversation baseline),
+    // then rev 41 — the new conversation's agent composing.
+    stubApi({
+      'bench/get': [
+        agentDoc(12, ['old conversation row']),
+        agentDoc(40, []),
+        agentDoc(41, ['new conversation row']),
+      ],
+    })
+    const landed: string[] = []
+    const stop = watchBenchLands(() => current, (key) => { landed.push(key) })
+    await vi.advanceTimersByTimeAsync(100)
+    expect(landed.length).toBe(0) // s_old hydration — baseline
+    current = 's_new' // the operator starts a new conversation
+    await vi.advanceTimersByTimeAsync(2100)
+    expect(landed.length).toBe(0) // s_new FIRST sight: hydration, never a reveal
+    await vi.advanceTimersByTimeAsync(2100)
+    expect(landed).toEqual(['s_new']) // the new conversation's agent: fires with ITS key
     stop()
   })
 

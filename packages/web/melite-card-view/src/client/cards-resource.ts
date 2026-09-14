@@ -153,8 +153,41 @@ declare module '@deepseek-ai/dsh-client-ui-slots' {
   }
 }
 
-/** The bench key the tab serves (melite-tools' DEFAULT_BENCH — 'main'). */
+/** The bench address (the legacy bare form serves 'main' — the
+ *  pre-session key records resolve unchanged). */
 export const CARDS_BENCH_ADDRESS = 'dsh-resource://cards/bench'
+
+// ── THE PER-CONVERSATION BENCH (stroke 44: "when I start a new
+// conversation, that old flow will be there like before" — never
+// again). The flow BELONGS TO THE CONVERSATION: one bench per
+// conversation, fresh on the first turn, shared by its human and its
+// agent (the one-flow law, unchanged within a conversation). The
+// session key is the DSH Session id (the same value the tool side
+// reads from exec.agent.id); the key rides the ADDRESS TAIL (the
+// file protocol's documented pattern,
+// dsh-resource://file/session/<sessionId>/…) so one address = one
+// resource record = one session's stream — two conversations' cards
+// tabs never share state. 'main' remains the fallback for
+// unattributed seats (headless, legacy records).
+export const BENCH_SESSION_RE = /^[A-Za-z0-9_-]{1,64}$/
+
+/** Sanitize one candidate id onto a legal bench session key ('main'
+ *  for anything the bench would refuse — the estate's own SESSION_RE). */
+export function benchSessionKey(id: string | undefined): string {
+  return typeof id === 'string' && BENCH_SESSION_RE.test(id) ? id : 'main'
+}
+
+/** The bench address for one session key. */
+export function benchAddressOf(sessionKey: string): string {
+  return CARDS_BENCH_ADDRESS + '/' + benchSessionKey(sessionKey)
+}
+
+/** The session key a bench address carries (the bare legacy address
+ *  and every non-bench address resolve to 'main'). */
+export function benchSessionOfAddress(address: string): string {
+  if (!address.startsWith(CARDS_BENCH_ADDRESS + '/')) return 'main'
+  return benchSessionKey(address.slice(CARDS_BENCH_ADDRESS.length + 1))
+}
 
 /** The run address (the wand's target, plan §5). */
 export function cardsRunAddress(runId: string): string {
@@ -173,7 +206,9 @@ export function parseCardsAddress(address: string): { bench: true } | { run: str
   const prefix = 'dsh-resource://cards/'
   if (!address.startsWith(prefix)) return null
   const rest = address.slice(prefix.length)
-  if (rest === 'bench') return { bench: true }
+  // The bench carries its session key in the tail (stroke 44, the
+  // file protocol's scope-in-path pattern); the bare form serves 'main'.
+  if (rest === 'bench' || rest.startsWith('bench/')) return { bench: true }
   if (rest.startsWith('run/')) {
     const runId = decodeURIComponent(rest.slice('run/'.length))
     if (runId !== '') return { run: runId }
@@ -232,11 +267,32 @@ export function readBench(doc: Record<string, unknown>): CardsBenchValue {
   }
 }
 
-/** Re-read the shared bench (session 'main') — the consumer's reload
+/** A missing bench is a FRESH conversation's honest zero state, not a
+ *  failure (stroke 44): a conversation's bench is born by its first
+ *  write; reading before that serves the empty bench — rev 0, so the
+ *  birth (rev 1) lands as a FRESH frame and the spotlight reveals
+ *  the very first card. */
+export function emptyBench(sessionKey: string): CardsBenchValue {
+  const key = benchSessionKey(sessionKey)
+  return readBench({ draft_id: 'bench-' + key, session: key, rev: 0, intent: '', stages: [] })
+}
+
+function isMissingBench(e: unknown): boolean {
+  const message = e instanceof Error ? e.message : String(e)
+  return message.includes('no such bench')
+}
+
+/** Re-read one conversation's bench — the consumer's reload
  *  after its own edits (the provider's bench stream is a single
  *  snapshot; same-address navigation does not re-run it). */
-export async function fetchBench(signal?: AbortSignal): Promise<CardsBenchValue> {
-  return readBench(await wireCall('bench/get', { sessionKey: 'main' }, signal))
+export async function fetchBench(sessionKey: string = 'main', signal?: AbortSignal): Promise<CardsBenchValue> {
+  const key = benchSessionKey(sessionKey)
+  try {
+    return readBench(await wireCall('bench/get', { sessionKey: key }, signal))
+  } catch (e) {
+    if (isMissingBench(e)) return emptyBench(key)
+    throw e
+  }
 }
 
 // ── THE BENCH SPOTLIGHT (stroke 42, the operator's law 2026-09-14:
@@ -282,7 +338,8 @@ export function shouldSpotlight(isExpanded: boolean): boolean {
  *  truth, the tab tail does, so its swallow can hide nothing. Returns
  *  the stop function (the plugin's effect disposer). */
 export function watchBenchLands(
-  onAgentLand: () => void,
+  getSession: () => string,
+  onAgentLand: (sessionKey: string) => void,
   signal?: AbortSignal,
 ): () => void {
   let stopped = false
@@ -301,20 +358,26 @@ export function watchBenchLands(
       ctrl.signal.addEventListener('abort', onAbort, { once: true })
       if (ctrl.signal.aborted) { clearTimeout(t); resolve() }
     })
-  let lastRev: number | null = null
+  // One baseline PER SESSION KEY: switching conversations re-reads a
+  // fresh key whose first poll is hydration (history never reveals),
+  // and the revealed key rides the callback so the reveal opens the
+  // right conversation's bench address.
+  const lastRevs = new Map<string, number>()
   const loop = async (): Promise<void> => {
     while (!stopped) {
       try {
-        const bench = await fetchBench(ctrl.signal)
+        const key = benchSessionKey(getSession())
+        const bench = await fetchBench(key, ctrl.signal)
+        const lastRev = lastRevs.get(key) ?? null
         if (lastRev === null) {
-          lastRev = bench.rev // page-load hydration: history never reveals
+          lastRevs.set(key, bench.rev) // first sight of this key: hydration
         } else if (bench.rev > lastRev) {
           const seen = lastRev
-          lastRev = bench.rev
+          lastRevs.set(key, bench.rev)
           const fresh = bench.log.filter((e) => e.rev > seen)
-          if (fresh.some((e) => e.author === 'agent')) onAgentLand()
+          if (fresh.some((e) => e.author === 'agent')) onAgentLand(key)
         } else {
-          lastRev = bench.rev // honesty on regression: resync, never fire
+          lastRevs.set(key, bench.rev) // honesty on regression: resync, never fire
         }
       } catch {
         /* wire death: keep trying — the next poll may recover */
@@ -612,11 +675,13 @@ export interface RestoreReport {
  *  keeps whatever landed before it, and the report says so. */
 export async function restoreRunToBench(
   run: CardsRunValue,
+  sessionKey: string = 'main',
   signal?: AbortSignal,
 ): Promise<RestoreReport> {
   if (run.draftId === null || run.draftId === '') {
     throw new Error('this run names no draft — nothing to restore')
   }
+  const key = benchSessionKey(sessionKey)
   let draft: Record<string, unknown>
   try {
     draft = await wireCall('drafts/get', { draftId: run.draftId }, signal)
@@ -632,7 +697,7 @@ export async function restoreRunToBench(
   }
   let bench: Record<string, unknown>
   try {
-    bench = await wireCall('bench/get', { sessionKey: 'main' }, signal)
+    bench = await wireCall('bench/get', { sessionKey: key }, signal)
   } catch (e) {
     throw new Error('the bench is unreadable: ' + (e instanceof Error ? e.message : String(e)))
   }
@@ -653,7 +718,7 @@ export async function restoreRunToBench(
     const id = typeof st['id'] === 'string' && (st['id'] as string) !== '' ? (st['id'] as string) : null
     if (id !== null) doc['id'] = id
     try {
-      const row = await wireCall('bench/add-stage', { sessionKey: 'main', doc }, signal)
+      const row = await wireCall('bench/add-stage', { sessionKey: key, doc }, signal)
       if (typeof row['rev'] === 'number') rev = row['rev'] as number
       report.added += 1
     } catch (e) {
@@ -664,7 +729,7 @@ export async function restoreRunToBench(
         const retry: Record<string, unknown> = { ...doc }
         delete retry['id']
         try {
-          const row = await wireCall('bench/add-stage', { sessionKey: 'main', doc: retry }, signal)
+          const row = await wireCall('bench/add-stage', { sessionKey: key, doc: retry }, signal)
           if (typeof row['rev'] === 'number') rev = row['rev'] as number
           report.added += 1
           report.notes.push(id + ' was already on the bench — added under a fresh id')
@@ -710,6 +775,7 @@ export function openCardsResource(
   ctx: { signal: AbortSignal },
 ): AsyncIterable<RemoteResult<CardsValue>> {
   const target = parseCardsAddress(address)
+  const benchKey = benchSessionOfAddress(address)
   const bench = target !== null && 'bench' in target
   const runId = target !== null && 'run' in target ? target.run : ''
   const draftTarget = target !== null && 'draft' in target ? target : null
@@ -721,10 +787,16 @@ export function openCardsResource(
     if (bench) {
       let value: CardsBenchValue
       try {
-        value = readBench(await wireCall('bench/get', { sessionKey: 'main' }))
+        value = readBench(await wireCall('bench/get', { sessionKey: benchKey }))
       } catch (e) {
-        yield failure(address, e instanceof Error ? e.message : String(e))
-        return
+        // a fresh conversation's bench does not exist until its first
+        // write — the empty bench is the honest first frame, and the
+        // tail keeps watching for the birth
+        if (!isMissingBench(e)) {
+          yield failure(address, e instanceof Error ? e.message : String(e))
+          return
+        }
+        value = emptyBench(benchKey)
       }
       yield { ok: true, value }
       // THE BENCH TAIL (live co-presence, 2026-09-12: "fix the [REDACTED 2026-11-05]
@@ -738,7 +810,7 @@ export function openCardsResource(
       // the browser wire is one-frame HTTP, so this heartbeat carries
       // the same law until the host's stream face lands — then the
       // source swaps with zero consumer changes. Abort ends the tail.
-      yield* pollBenchFrames(value, ctx.signal)
+      yield* pollBenchFrames(value, benchKey, ctx.signal)
       return
     }
     // draft-stage view (the conversation card's studio target): one
@@ -832,6 +904,7 @@ async function* pollRunFrames(
  *  the tab renders — the provider never guesses visibility). */
 async function* pollBenchFrames(
   hydrated: CardsBenchValue,
+  sessionKey: string,
   signal: AbortSignal,
 ): AsyncGenerator<RemoteResult<CardsBenchValue>> {
   let value = hydrated
@@ -847,7 +920,7 @@ async function* pollBenchFrames(
     if (woke === 'abort' || signal.aborted) return
     let row: Record<string, unknown>
     try {
-      row = await wireCall('bench/get', { sessionKey: 'main' }, signal)
+      row = await wireCall('bench/get', { sessionKey }, signal)
     } catch {
       continue // the last ok value stays; the next poll may recover
     }

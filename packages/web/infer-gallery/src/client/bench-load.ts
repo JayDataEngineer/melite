@@ -21,13 +21,22 @@
  * surface as honest caller-side errors, never thrown past React.
  */
 
-/** The bench session the cards tab serves (melite-tools' DEFAULT_BENCH). */
-const BENCH_SESSION = 'main'
+/** One bench session key — 'main' only for unattributed seats
+ *  (stroke 44: the bench belongs to the conversation; the gallery's
+ *  load writes the ACTIVE session's bench, never a stranger's). */
+const BENCH_SESSION_RE = /^[A-Za-z0-9_-]{1,64}$/
 
-/** The bench tab's address (cross-plugin contract, the estate-artifact
- * pattern: client bundles cannot import across plugins, so the prefix
- * is restated with its definition site named — cards-resource.ts). */
-export const CARDS_BENCH_ADDRESS = 'dsh-resource://cards/bench'
+function benchSessionOf(id: string | undefined): string {
+  return typeof id === 'string' && BENCH_SESSION_RE.test(id) ? id : 'main'
+}
+
+/** The bench tab's address for one session (cross-plugin contract,
+ * the estate-artifact pattern: client bundles cannot import across
+ * plugins, so the form is restated with its definition site named —
+ * cards-resource.ts's benchAddressOf). */
+export function cardsBenchAddress(sessionId: string | undefined): string {
+  return 'dsh-resource://cards/bench/' + benchSessionOf(sessionId)
+}
 
 /** The run tab's address (same contract; live runs open in the cards
  *  tab's run view — the wand restores through the bench address
@@ -42,6 +51,9 @@ export interface BenchLoadDeps {
   openResource(address: string): void
   /** Honest inline error surface (the panel's setError). */
   onError(message: string): void
+  /** The conversation the gallery serves (the session-scoped slot's
+   *  standard sessionId prop); unattributed seats load 'main'. */
+  sessionId?: string
 }
 
 /** The error message an !ok JSON response carries, else HTTP n. */
@@ -54,6 +66,7 @@ async function refusalOf(res: Response, answer: unknown): Promise<string> {
  *  @param draftId the drafts door's row id (never empty — callers gate).
  *  @param deps the open action + the error surface. */
 export async function loadDraftOntoBench(draftId: string, deps: BenchLoadDeps): Promise<void> {
+  const BENCH_SESSION = benchSessionOf(deps.sessionId)
   try {
     // 1. the draft doc (stages + intent).
     const docRes = await fetch('/v1/flows/drafts/' + encodeURIComponent(draftId), {
@@ -96,7 +109,7 @@ export async function loadDraftOntoBench(draftId: string, deps: BenchLoadDeps): 
       deps.onError('the bench refused the load (' + await refusalOf(ensureRes, answer) + ')')
       return
     }
-    deps.openResource(CARDS_BENCH_ADDRESS)
+    deps.openResource(cardsBenchAddress(deps.sessionId))
   } catch (e) {
     deps.onError('bench load failed — ' + (e instanceof Error ? e.message : String(e)))
   }
@@ -115,6 +128,7 @@ export async function loadDraftOntoBench(draftId: string, deps: BenchLoadDeps): 
  *  @param runId the runs door's row id (never empty — callers gate).
  *  @param deps the open action + the error surface. */
 export async function loadRunOntoBench(runId: string, deps: BenchLoadDeps): Promise<void> {
+  const BENCH_SESSION = benchSessionOf(deps.sessionId)
   try {
     const sideRes = await fetch('/infer-gallery/flow?run_id=' + encodeURIComponent(runId), {
       headers: { accept: 'application/json' },
