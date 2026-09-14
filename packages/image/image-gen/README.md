@@ -10,18 +10,21 @@ two optional faces, one spelling of everything.
   (`@melite/melite-models-{krea-2,z-image,anima}`) — the card gets
   its models from the MODEL plugins (distinct domain from card
   plugins); the id is spelled once, in the model.
-  The schema is the 1:1 port (frozen field order) PLUS the recipe
-  knob, declared last. Compose calls the card-kit recipe
-  (`imageT2I`); `finalizeImageGen` strips. LoRAs ride the MOD
-  absorption (`mods/loras.ts`) — deliberately not in the schema.
-- `src/recipes.ts` — THE RECIPE CATALOG (operator law: recipes are
-  CONFIGS ON THE CARD — named override sets that can carry mod
-  payloads; serializable JSON the card consumes). DATA ONLY. The
-  engine's compose resolves them at its one merge point
-  (service.ts `applyRecipe`): schema defaults < recipe overlay <
-  explicit args (the settings cascade order); scalars layer, the
-  lora stack concats (recipe first, caller after). The schema's
-  recipe enum derives from the catalog keys — one spelling.
+  The schema is the 1:1 port (frozen field order; NO recipe knob
+  — deleted with the catalog, stroke 34). Compose calls the
+  card-kit recipe (`imageT2I`); `finalizeImageGen` strips. LoRAs
+  ride the MOD absorption (`mods/loras.ts`) — deliberately not in
+  the schema.
+- THE RECIPE CATALOG IS DELETED (stroke 34 — the operator's law:
+  card recipes were model-blind modes; family Recipe rows are
+  ONE-CLICK MACROS now: the door serves each payload row's
+  `defaults` and the drill's pill stamps its KNOB keys — what it
+  stamps is what you see. Stroke 38: a row whose stamp is entirely
+  mod-owned — krea-2's realism lora — renders NO pill at all;
+  lora is never standalone, the Modifiers menu is its one surface.
+  The stamp-less `default` row renders nothing). The compose
+  cascade is one law with no overlay leg: schema defaults <
+  model-folder defaults < explicit args.
 - `src/tool.ts` — `buildImageGenTool(gatewayUrl)`: the DSH tool
   `image_gen` (registry row `image_gen_card`). The params walk
   synthesizes the `model` knob from the boarded array
@@ -35,12 +38,8 @@ two optional faces, one spelling of everything.
 
 No toolview claim, no studio, no custom presentCall. The schema's
 `.default()`s are the prefill, the Schemastery meta is the layout
-(the recipe knob included — group sampling, select), GenericToolCard
-is the fallback. The frozen referee
-(`gateway/shell/data/discovery-catalog.json`) carries the recipe
-field for the three boarded families — a hand-owned, wall-pinned
-edit (recipe-only diff), the mechanical consequence of the
-operator-ordered surface addition.
+(no recipe knob — the field rides nowhere, stroke 34),
+GenericToolCard is the fallback.
 
 ## Transitional composition
 
@@ -54,5 +53,5 @@ land.
 
 ## Gates
 
-Package tests 27/27 (composition 5, recipes 7, tool 15),
+Package tests 54 (composition + recipes death-certificate + executor + tool),
 package/engine/doors/melite-tools tsc clean, walls 19/19.

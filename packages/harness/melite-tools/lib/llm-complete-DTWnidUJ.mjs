@@ -254,7 +254,10 @@ function variantRow(v, declEngine) {
 		id: v.id,
 		label: v.label,
 		group: v.group,
-		defaults: v.resolver_defaults ?? {},
+		defaults: {
+			...v.resolver_defaults ?? {},
+			...v.wire_defaults ?? {}
+		},
 		route: v.route ?? "",
 		hint: v.hint ?? null,
 		engine: v.engine ?? declEngine,
@@ -311,11 +314,17 @@ function groupContract(decl) {
 	}
 	return out;
 }
-/** The modifier-pack table (the subcard packs). lanpaint/qvoice ride
-*  the spec fields inline, never as subcards, so they have no row
-*  here; controlnet waits unboarded (the phantom-capability gate).
-*  kind/label/cardinality are UI strings with no other live source —
-*  one row per pack, stated once. */
+/** The modifier-pack table (the subcard packs). controlnet waits
+*  unboarded (the phantom-capability gate). kind/label/cardinality
+*  are UI strings with no other live source — one row per pack,
+*  stated once.
+*  LANPAINT'S ROW (stroke 32 — the operator's missing-seat report:
+*  image-edit's required image1 never rendered): the port moved the
+*  anchor out of the schema into the lanpaint mod, so the old
+*  "rides inline" exemption became a dropped seat — the family
+*  boards lanpaint, mod_schemas serves it, compose requires it, but
+*  no modifiers entry ever offered the brick. The rail seats the
+*  anchor (the client half); this row offers the knobs. */
 const MODIFIER_PACKS = {
 	loras: {
 		kind: "lora",
@@ -330,6 +339,12 @@ const MODIFIER_PACKS = {
 	mask: {
 		kind: "mask",
 		label: "Region Mask",
+		cardinality: "list",
+		max_stack: 1
+	},
+	lanpaint: {
+		kind: "brick",
+		label: "Lanpaint",
 		cardinality: "list",
 		max_stack: 1
 	}
@@ -424,12 +439,6 @@ function specBody(svc, defs, res) {
 		mod_schemas: schemas.mods,
 		model: res.model,
 		outputs: def.flowKinds.outputs,
-		recipes: def.recipes === void 0 ? null : Object.fromEntries(Object.entries(def.recipes).map(([key, r]) => [key, {
-			label: r.label,
-			description: r.description,
-			params: { ...r.params },
-			...r.loras !== void 0 ? { loras: r.loras.map((e) => ({ ...e })) } : {}
-		}])),
 		schema: schemas.schema,
 		service: res.service,
 		size: surface.size === "huge" ? "huge" : null,

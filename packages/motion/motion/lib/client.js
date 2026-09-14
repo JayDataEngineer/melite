@@ -36374,19 +36374,19 @@ void main() {
 			return GATEWAY_CODES.has(status) || SAFE_METHODS.has(method) && status >= 500 && status < 600;
 		}
 		function getBackendState() {
-			return state$1;
+			return state;
 		}
 		/** Subscribe to backend liveness changes. Returns an unsubscribe fn. */
 		function onBackendState(cb) {
-			listeners$2.add(cb);
+			listeners$1.add(cb);
 			return () => {
-				listeners$2.delete(cb);
+				listeners$1.delete(cb);
 			};
 		}
-		function setState$1(next) {
-			if (next === state$1) return;
-			state$1 = next;
-			for (const cb of listeners$2) try {
+		function setState(next) {
+			if (next === state) return;
+			state = next;
+			for (const cb of listeners$1) try {
 				cb(next);
 			} catch {}
 		}
@@ -36440,13 +36440,13 @@ void main() {
 							signal: ctrl.signal
 						});
 						if (shouldRetryStatus(res.status, method) && attempt < MAX_RETRIES && Date.now() < deadline) {
-							if (backend) setState$1("degraded");
+							if (backend) setState("degraded");
 							await sleep$1(backoffMs(attempt), callerSignal);
 							continue;
 						}
 						if (backend) {
 							consecutiveFail = 0;
-							setState$1("online");
+							setState("online");
 						}
 						return res;
 					} catch (err) {
@@ -36454,7 +36454,7 @@ void main() {
 						lastErr = err;
 						if (backend) {
 							consecutiveFail++;
-							setState$1(consecutiveFail >= OFFLINE_THRESHOLD ? "offline" : "degraded");
+							setState(consecutiveFail >= OFFLINE_THRESHOLD ? "offline" : "degraded");
 						}
 						if (attempt < MAX_RETRIES && Date.now() < deadline) await sleep$1(backoffMs(attempt));
 					}
@@ -36503,7 +36503,7 @@ void main() {
 				throw new Error(`Failed to read ${url.slice(0, 200)} as data URL`);
 			}
 		}
-		var MAX_RETRIES, BASE_MS, CAP_MS, OFFLINE_THRESHOLD, TOTAL_BUDGET_MS, SAFE_METHODS, GATEWAY_CODES, state$1, consecutiveFail, listeners$2, inflight;
+		var MAX_RETRIES, BASE_MS, CAP_MS, OFFLINE_THRESHOLD, TOTAL_BUDGET_MS, SAFE_METHODS, GATEWAY_CODES, state, consecutiveFail, listeners$1, inflight;
 		var init_api = __esmMin((() => {
 			init_readFile();
 			MAX_RETRIES = 4;
@@ -36517,9 +36517,9 @@ void main() {
 				503,
 				504
 			]);
-			state$1 = "online";
+			state = "online";
 			consecutiveFail = 0;
-			listeners$2 = /* @__PURE__ */ new Set();
+			listeners$1 = /* @__PURE__ */ new Set();
 			inflight = /* @__PURE__ */ new Map();
 		}));
 		//#endregion
@@ -36636,49 +36636,111 @@ void main() {
 			isNonEmptyString = (v) => typeof v === "string" && v.trim().length > 0;
 		}));
 		//#endregion
-		//#region ../../web-kit/catalog/src/toast.ts
-		var nextId$1, listeners$1, state, notify$1, setState, useToastStore$1;
-		var init_toast = __esmMin((() => {
-			nextId$1 = 0;
-			listeners$1 = /* @__PURE__ */ new Set();
-			notify$1 = () => {
-				for (const l of listeners$1) l();
+		//#region ../../web/card-base/src/toastStore.ts
+		/**
+		* THE ONE TOAST STORE (node-safe half of the one toast system,
+		* stroke 37): module state + the dual API (hook selector for React,
+		* zustand-classic statics for module-level pushers and tests). NO
+		* atom imports — node-env suites (the catalog contract specs) import
+		* this half without dragging DSH UI primitives' .css through the
+		* door. The renderer half lives in ./toast.tsx (ToastViewport); the
+		* store is the system, the viewport is its face.
+		*
+		* History: founded 2026-09-12 (the ideo/motion copies collapsed
+		* here). Stroke 36: the shell mounts the viewport — chrome is
+		* shell-owned. Stroke 37: the LAST two private stores died —
+		* web-kit/catalog's (whose toasts NEVER rendered: pushed from module
+		* context with no viewport anywhere, console-only) and
+		* mask-studio's (whose drop-errors never rendered either). Their
+		* pushers migrated here verbatim via the static surface.
+		*
+		* ONE API, two faces (the zustand-classic dual shape):
+		*   - hook:      useToastStore((s) => s.addToast)   — inside React
+		*   - statics:   useToastStore.getState().addToast(type, msg)
+		*                useToastStore.getState().toasts
+		*                useToastStore.subscribe(l) / .setState(patch)
+		*                — module-level pushers (contract stores, import
+		*                hooks) and test reset.
+		*
+		* Rendering: the DSH Toast atom (presentational banner — the atom is
+		* the surface, this module is the system). ToastViewport claims
+		* rendering: the FIRST live viewport renders, every other mounted
+		* viewport renders nothing, and ownership re-broadcasts when owners
+		* unmount — so the shell, the cards console, or any future seat may
+		* mount one and the document still renders toasts exactly once.
+		*
+		* Timing law (verbatim from the kit): errors persist 15s (the
+		* operator must SEE them), success/info auto-dismiss at 5s. Errors
+		* also console.error so nothing is silent even with no viewport.
+		*
+		* The third addToast argument (action {label, onClick}) is ACCEPTED
+		* and ignored: the DSH Toast atom owns the surface and ships no
+		* action chrome — the kit store dropped it the same way. When the
+		* atom grows an action prop, store and render it here.
+		*
+		* Per-seam subpath: `@melite/card-base/toast-store`.
+		*/
+		function emit() {
+			listeners.forEach((l) => l());
+		}
+		function subscribe(listener) {
+			listeners.add(listener);
+			return () => {
+				listeners.delete(listener);
 			};
-			setState = (patch) => {
-				state = {
-					...state,
-					...patch
-				};
-				notify$1();
+		}
+		function getSnapshot() {
+			return entries;
+		}
+		function addToast(type, message, _action) {
+			const id = nextId++;
+			entries = [...entries, {
+				id,
+				type,
+				message
+			}];
+			if (type === "error") console.error("[toast]", message);
+			else console.info("[toast]", message);
+			emit();
+			setTimeout(() => {
+				removeToast(id);
+			}, type === "error" ? 15e3 : 5e3);
+		}
+		function removeToast(id) {
+			if (!entries.some((t) => t.id === id)) return;
+			entries = entries.filter((t) => t.id !== id);
+			emit();
+		}
+		function getStore() {
+			return {
+				toasts: entries,
+				addToast: liveAddToast,
+				removeToast
 			};
-			state = {
-				toasts: [],
-				addToast: (type, message, action) => {
-					const duration = type === "error" ? 15e3 : 5e3;
-					if (type === "error") console.error("[toast]", message, action ?? "");
-					else console.info("[toast]", message);
-					const id = nextId$1++;
-					setState({ toasts: [...state.toasts, {
-						id,
-						type,
-						message
-					}] });
-					setTimeout(() => {
-						setState({ toasts: state.toasts.filter((t) => t.id !== id) });
-					}, duration);
-				},
-				removeToast: (id) => setState({ toasts: state.toasts.filter((t) => t.id !== id) })
-			};
-			useToastStore$1 = {
-				getState: () => state,
-				setState,
-				subscribe: (l) => {
-					listeners$1.add(l);
-					return () => {
-						listeners$1.delete(l);
-					};
-				}
-			};
+		}
+		function setStoreState(patch) {
+			if (patch.addToast !== void 0) liveAddToast = patch.addToast;
+			if (patch.toasts !== void 0) entries = patch.toasts;
+			emit();
+		}
+		var nextId, entries, listeners, liveAddToast, useToastStore;
+		var init_toastStore = __esmMin((() => {
+			nextId = 1;
+			entries = [];
+			listeners = /* @__PURE__ */ new Set();
+			liveAddToast = addToast;
+			useToastStore = Object.assign(function useToastStore(selector) {
+				const toasts = (0, react.useSyncExternalStore)(subscribe, getSnapshot, getSnapshot);
+				return selector({
+					addToast: liveAddToast,
+					removeToast,
+					toasts
+				});
+			}, {
+				getState: getStore,
+				setState: setStoreState,
+				subscribe
+			});
 		}));
 		//#endregion
 		//#region ../../web-kit/catalog/src/inputSlots.ts
@@ -37706,7 +37768,7 @@ void main() {
 		}
 		var IDLE, _lastToastedOutage, _listeners$2, _state$1, _initialState$1, useCatalogContractStore;
 		var init_catalogContractStore = __esmMin((() => {
-			init_toast();
+			init_toastStore();
 			IDLE = {
 				state: "idle",
 				violations: [],
@@ -37724,7 +37786,7 @@ void main() {
 						violations: [],
 						error: null
 					} });
-					if (wasOutage) useToastStore$1.getState().addToast("info", `Catalog back online (at ${_stamp()}).`);
+					if (wasOutage) useToastStore.getState().addToast("info", `Catalog back online (at ${_stamp()}).`);
 				},
 				reportViolation: (violations) => {
 					console.error(`[catalogContract] catalog contract violation (at ${_stamp()}):`, violations);
@@ -37735,7 +37797,7 @@ void main() {
 					} });
 					const first = violations[0];
 					const msg = first ? first.kind && first.kind !== "catalog" ? `${first.kind}: ${first.message}` : first.message : "the catalog response did not match the expected shape";
-					useToastStore$1.getState().addToast("error", `Catalog contract violation — ${msg} (at ${_stamp()}). Some models may be missing. Retry re-fetches the catalog.`, {
+					useToastStore.getState().addToast("error", `Catalog contract violation — ${msg} (at ${_stamp()}). Some models may be missing. Retry re-fetches the catalog.`, {
 						label: "Retry",
 						onClick: retryCatalog
 					});
@@ -37750,7 +37812,7 @@ void main() {
 					} });
 					if (clean === _lastToastedOutage) return;
 					_lastToastedOutage = clean;
-					useToastStore$1.getState().addToast("error", `Catalog unavailable — ${clean} (at ${_stamp()}). Retry re-fetches the catalog.`, {
+					useToastStore.getState().addToast("error", `Catalog unavailable — ${clean} (at ${_stamp()}). Retry re-fetches the catalog.`, {
 						label: "Retry",
 						onClick: retryCatalog
 					});
@@ -37865,7 +37927,7 @@ void main() {
 			})).then(() => useRunStatusContractStore.getState().clear()).catch(() => {});
 		}
 		function toastVerdict(v) {
-			const toast = useToastStore$1.getState().addToast;
+			const toast = useToastStore.getState().addToast;
 			if (v.kind === "violation") {
 				const first = v.violations[0]?.message ?? "the status response did not match the expected shape";
 				toast("error", `Run ${v.runId}: ${v.violations.length} contract issue(s) — ${first}. Retry to re-check, or re-run the card.`, {
@@ -37904,7 +37966,7 @@ void main() {
 		}
 		var _listeners$1, _state, _initialState, useRunStatusContractStore;
 		var init_runStatusContractStore = __esmMin((() => {
-			init_toast();
+			init_toastStore();
 			_listeners$1 = /* @__PURE__ */ new Set();
 			_state = {
 				verdict: null,
@@ -45561,8 +45623,8 @@ void main() {
 		}
 		//#endregion
 		//#region \0dsh-css:card-base/src/card.module.css.mjs
-		const css$5 = ".FRpSCG_specForm :where(input,textarea,select,button){box-sizing:border-box}.FRpSCG_specForm{flex-direction:column;gap:12px;display:flex}.FRpSCG_specGroup{flex-direction:column;gap:8px;display:flex}.FRpSCG_modelAxes{grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;display:grid}.FRpSCG_modelAxes .FRpSCG_specGroupTitle{grid-column:1/-1;margin-bottom:0}.FRpSCG_specGroupTitle{color:var(--dsw-alias-label-secondary,#61666b);letter-spacing:.04em;text-transform:uppercase;margin:0 0 2px;font-size:11px;font-weight:600}.FRpSCG_specField{flex-direction:column;gap:6px;display:flex}.FRpSCG_specFieldKey{color:var(--dsw-alias-label-secondary,#61666b);font-size:12px}.FRpSCG_specRequired{color:var(--dsw-alias-state-critical,#e5484d)}.FRpSCG_specHint{color:var(--dsw-alias-label-secondary,#61666b);font-size:11px}.FRpSCG_specSelect option{color:#0f1115;background:#fff}.FRpSCG_specSelect{color-scheme:light;background:var(--dsw-alias-interactive-bg-hover,#2631480f);border:.5px solid var(--dsw-alias-border-l2,#0000001a);color:inherit;font:inherit;border-radius:6px;width:100%;padding:5px 8px;font-size:13px}.FRpSCG_specSliderRow{align-items:center;gap:8px;display:flex}.FRpSCG_specSlider{flex:1}.FRpSCG_specSliderValue{color:var(--dsw-alias-label-secondary,#61666b);font-family:var(--dsw-alias-font-mono,ui-monospace, monospace);text-align:right;min-width:4ch;font-size:12px}.FRpSCG_specTextarea{background:var(--dsw-alias-interactive-bg-hover,#2631480f);border:.5px solid var(--dsw-alias-border-l2,#0000001a);color:inherit;font:inherit;resize:vertical;border-radius:6px;width:100%;padding:6px 8px;font-size:13px}.FRpSCG_squareWrap{flex-direction:column;align-items:center;gap:4px;width:84px;display:flex}.FRpSCG_squareOff{opacity:.5;pointer-events:none}.FRpSCG_squareBox{border:.5px solid var(--dsw-alias-border-l2,#00000024);cursor:pointer;height:80px;transition:border-color var(--ds-transition-duration,.12s) var(--ds-ease-in-out,ease);border-radius:8px;justify-content:center;align-items:center;width:80px;display:flex;position:relative;overflow:hidden}.FRpSCG_squareOver{border-color:var(--dsw-alias-border-l3,#00000047);box-shadow:0 0 0 2px var(--dsw-alias-border-l1,#00000014)}.FRpSCG_squareThumb{object-fit:cover;width:100%;height:100%}.FRpSCG_squareGlyph{color:var(--dsw-alias-label-tertiary,#00000073)}.FRpSCG_squareX{background:var(--dsw-alias-bg-module,#fff);border:.5px solid var(--dsw-alias-border-l2,#00000024);cursor:pointer;border-radius:999px;align-items:center;padding:0 4px;font-size:10px;line-height:17px;display:flex;position:absolute;top:4px;right:4px}.FRpSCG_squareLabel{color:var(--dsw-alias-label-primary,#0f1115);text-overflow:ellipsis;white-space:nowrap;width:100%;font-size:11px;line-height:17px;overflow:hidden}.FRpSCG_squareMetric{color:var(--dsw-alias-label-tertiary,#00000073);font-size:10px;line-height:17px}.FRpSCG_squareFileInput{display:none}.FRpSCG_modSection{border-top:1px dashed var(--border,#80808040);flex-direction:column;gap:6px;margin-top:10px;padding-top:8px;display:flex}.FRpSCG_modHead{align-items:baseline;gap:8px;display:flex}.FRpSCG_modTitle{letter-spacing:.06em;text-transform:uppercase;opacity:.7;font-size:10px;font-weight:600}.FRpSCG_modHint{opacity:.45;font-size:9px}.FRpSCG_modRow{flex-wrap:wrap;align-items:stretch;gap:6px;margin:0;padding:0;list-style:none;display:flex}.FRpSCG_modTile{border:1px solid var(--border,#8080804d);background:var(--bg-elevated,#80808014);cursor:grab;touch-action:none;border-radius:8px;flex-direction:column;justify-content:center;gap:2px;min-width:84px;max-width:132px;padding:6px 8px;display:flex}.FRpSCG_modTile:active{cursor:grabbing}.FRpSCG_modTileLabel{text-overflow:ellipsis;white-space:nowrap;font-size:11px;line-height:1.2;overflow:hidden}.FRpSCG_modTileStrength{opacity:.55;font-size:9px}.FRpSCG_modAddSquare{border:1px dashed var(--dsw-alias-border-l3,#00000047);cursor:pointer;opacity:.7;height:64px;transition:border-color var(--ds-transition-duration,.12s) var(--ds-ease-in-out,ease), background-color var(--ds-transition-duration,.12s) var(--ds-ease-in-out,ease);background:0 0;border-radius:8px;justify-content:center;align-items:center;width:64px;display:flex}.FRpSCG_modAddSquare:hover{background:var(--dsw-alias-interactive-bg-hover,#0000000d);border-color:var(--dsw-alias-border-l4,#0006);opacity:1}.FRpSCG_tileDragging{opacity:.5}.FRpSCG_modTileRecipe{cursor:default;border-style:dashed}.FRpSCG_modTileRecipe .FRpSCG_modTileStrength:after{content:\" · recipe\"}.FRpSCG_modLeaf{flex-direction:column;gap:10px;min-width:260px;display:flex}.FRpSCG_modLeafFields{gap:8px;display:grid}.FRpSCG_modLeafActions{gap:8px;display:flex}.FRpSCG_modField{flex-direction:column;gap:4px;font-size:11px;display:flex}.FRpSCG_modSelect{border:1px solid var(--border,#8080804d);background:var(--bg-elevated,#8080800f);color:inherit;border-radius:6px;padding:6px 8px;font-size:12px}.FRpSCG_modLeafError{color:#e06c5f;margin:0;font-size:11px}.FRpSCG_pickList{flex-direction:column;gap:4px;max-height:60vh;margin:0;padding:0;list-style:none;display:flex;overflow-y:auto}.FRpSCG_pickRow{display:block}.FRpSCG_pickBtn{border:1px solid var(--dsw-alias-border-l2);color:var(--dsw-alias-label-primary);cursor:pointer;text-align:left;transition:border-color var(--ds-transition-duration,.12s) var(--ds-ease-in-out,ease), background-color var(--ds-transition-duration,.12s) var(--ds-ease-in-out,ease);background:0 0;border-radius:6px;align-items:center;gap:10px;width:100%;padding:6px;display:flex}.FRpSCG_pickBtn:hover{background:var(--dsw-alias-interactive-bg-hover);border-color:var(--dsw-alias-border-l4)}.FRpSCG_pickThumb{object-fit:cover;border-radius:4px;flex:none;width:40px;height:40px}.FRpSCG_pickGlyph{background:var(--dsw-alias-interactive-bg-hover);color:var(--dsw-alias-label-secondary);border-radius:4px;flex:none;justify-content:center;align-items:center;width:40px;height:40px;font-size:15px;font-weight:600;display:inline-flex}.FRpSCG_pickLabel{text-overflow:ellipsis;white-space:nowrap;font-size:13px;overflow:hidden}.FRpSCG_pickEmpty{color:var(--dsw-alias-label-tertiary);margin:0;font-size:13px}.FRpSCG_sourceRow{flex-direction:column;display:flex}.FRpSCG_specSlotRow{flex-wrap:wrap;align-items:flex-start;gap:8px;display:flex}.FRpSCG_specSlotCell{flex-direction:column;gap:4px;display:flex}.FRpSCG_inputRail{gap:10px}.FRpSCG_sz14{flex:none;width:14px;height:14px}.FRpSCG_wireDialog{width:min(448px,100vw - 32px);max-height:60vh;overflow-y:auto}.FRpSCG_wireUnwire{text-align:left;cursor:pointer;border:0;border-bottom:1px solid color-mix(in srgb, var(--dsw-alias-label-primary) 12%, transparent);width:100%;color:var(--dsw-alias-state-error-primary);background:0 0;align-items:center;gap:8px;padding:8px 12px;font-size:11px;display:flex}.FRpSCG_wireUnwire:hover{background:color-mix(in srgb, var(--dsw-alias-bg-module-platform) 40%, transparent)}.FRpSCG_wireList{margin:0;padding:0;list-style:none}.FRpSCG_wireList>li+li{border-top:1px solid color-mix(in srgb, var(--dsw-alias-label-primary) 12%, transparent)}.FRpSCG_wireEmpty{color:color-mix(in srgb, var(--dsw-alias-label-primary) 48%, transparent);padding:12px;font-size:11px}.FRpSCG_wireOption{text-align:left;cursor:pointer;width:100%;color:var(--dsw-alias-label-primary);background:0 0;border:0;align-items:center;gap:8px;padding:8px 12px;display:flex}.FRpSCG_wireOption:hover{background:color-mix(in srgb, var(--dsw-alias-bg-module-platform) 40%, transparent)}.FRpSCG_wireSelected{background:color-mix(in srgb, var(--dsw-alias-brand-primary) 8%, transparent)}.FRpSCG_wireIdx{font-variant-numeric:tabular-nums;background:color-mix(in srgb, var(--dsw-alias-brand-primary) 60%, transparent);width:20px;height:20px;color:color-mix(in srgb, var(--dsw-alias-label-primary) 60%, transparent);border-radius:4px;flex:none;justify-content:center;align-items:center;font-size:9px;font-weight:700;display:flex}.FRpSCG_wireThumb{object-fit:cover;border:1px solid color-mix(in srgb, var(--dsw-alias-label-primary) 20%, transparent);border-radius:4px;flex:none;width:32px;height:32px}.FRpSCG_wireThumbFallback{border:1px solid color-mix(in srgb, var(--dsw-alias-label-primary) 20%, transparent);background:color-mix(in srgb, var(--dsw-alias-bg-module-platform) 40%, transparent);width:32px;height:32px;color:color-mix(in srgb, var(--dsw-alias-label-primary) 60%, transparent);border-radius:4px;flex:none;justify-content:center;align-items:center;display:flex}.FRpSCG_wireMeta{flex:1;min-width:0}.FRpSCG_wireTitle{text-overflow:ellipsis;white-space:nowrap;color:var(--dsw-alias-label-primary);font-size:11px;font-weight:500;overflow:hidden}.FRpSCG_wireOut{font-family:var(--dsw-alias-font-mono,ui-monospace, monospace);color:color-mix(in srgb, var(--dsw-alias-brand-primary) 80%, transparent);margin-left:4px;font-size:9px}.FRpSCG_wireSub{text-overflow:ellipsis;white-space:nowrap;font-family:var(--dsw-alias-font-mono,ui-monospace, monospace);color:color-mix(in srgb, var(--dsw-alias-label-primary) 48%, transparent);font-size:9px;overflow:hidden}.FRpSCG_wiredTag{background:color-mix(in srgb, var(--dsw-alias-brand-primary) 15%, transparent);color:var(--dsw-alias-brand-primary);border-radius:4px;flex:none;padding:2px 6px;font-size:9px;font-weight:600}";
-		const tagId$5 = "@melite/motion-motion/card.module.css@d15b0389";
+		const css$5 = ".FRpSCG_specForm :where(input,textarea,select,button){box-sizing:border-box}.FRpSCG_specForm{flex-direction:column;gap:12px;display:flex}.FRpSCG_specGroup{flex-direction:column;gap:8px;display:flex}.FRpSCG_modelAxes{grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;display:grid}.FRpSCG_modelAxes .FRpSCG_specGroupTitle{grid-column:1/-1;margin-bottom:0}.FRpSCG_specGroupTitle{color:var(--dsw-alias-label-secondary,#61666b);letter-spacing:.04em;text-transform:uppercase;margin:0 0 2px;font-size:11px;font-weight:600}.FRpSCG_specField{flex-direction:column;gap:6px;display:flex}.FRpSCG_specFieldKey{color:var(--dsw-alias-label-secondary,#61666b);font-size:12px}.FRpSCG_specRequired{color:var(--dsw-alias-state-critical,#e5484d)}.FRpSCG_specHint{color:var(--dsw-alias-label-secondary,#61666b);font-size:11px}.FRpSCG_specSelect option{color:#0f1115;background:#fff}.FRpSCG_specSelect{color-scheme:light;background:var(--dsw-alias-interactive-bg-hover,#2631480f);border:.5px solid var(--dsw-alias-border-l2,#0000001a);color:inherit;font:inherit;border-radius:6px;width:100%;padding:5px 8px;font-size:13px}.FRpSCG_specSliderRow{align-items:center;gap:8px;display:flex}.FRpSCG_specSlider{flex:1}.FRpSCG_specSliderValue{color:var(--dsw-alias-label-secondary,#61666b);font-family:var(--dsw-alias-font-mono,ui-monospace, monospace);text-align:right;min-width:4ch;font-size:12px}.FRpSCG_specTextarea{background:var(--dsw-alias-interactive-bg-hover,#2631480f);border:.5px solid var(--dsw-alias-border-l2,#0000001a);color:inherit;font:inherit;resize:vertical;border-radius:6px;width:100%;padding:6px 8px;font-size:13px}.FRpSCG_squareWrap{flex-direction:column;align-items:center;gap:4px;width:84px;display:flex}.FRpSCG_squareOff{opacity:.5;pointer-events:none}.FRpSCG_squareBox{border:.5px solid var(--dsw-alias-border-l2,#00000024);cursor:pointer;height:80px;transition:border-color var(--ds-transition-duration,.12s) var(--ds-ease-in-out,ease);border-radius:8px;justify-content:center;align-items:center;width:80px;display:flex;position:relative;overflow:hidden}.FRpSCG_squareOver{border-color:var(--dsw-alias-border-l3,#00000047);box-shadow:0 0 0 2px var(--dsw-alias-border-l1,#00000014)}.FRpSCG_squareThumb{object-fit:cover;width:100%;height:100%}.FRpSCG_squareGlyph{color:var(--dsw-alias-label-tertiary,#00000073)}.FRpSCG_squareX{background:var(--dsw-alias-bg-module,#fff);border:.5px solid var(--dsw-alias-border-l2,#00000024);cursor:pointer;border-radius:999px;align-items:center;padding:0 4px;font-size:10px;line-height:17px;display:flex;position:absolute;top:4px;right:4px}.FRpSCG_squareLabel{color:var(--dsw-alias-label-primary,#0f1115);text-overflow:ellipsis;white-space:nowrap;width:100%;font-size:11px;line-height:17px;overflow:hidden}.FRpSCG_squareMetric{color:var(--dsw-alias-label-tertiary,#00000073);font-size:10px;line-height:17px}.FRpSCG_squareFileInput{display:none}.FRpSCG_modSection{border-top:1px dashed var(--border,#80808040);flex-direction:column;gap:6px;margin-top:10px;padding-top:8px;display:flex}.FRpSCG_modHead{align-items:baseline;gap:8px;display:flex}.FRpSCG_modTitle{letter-spacing:.06em;text-transform:uppercase;opacity:.7;font-size:10px;font-weight:600}.FRpSCG_modHint{opacity:.45;font-size:9px}.FRpSCG_modRow{flex-wrap:wrap;align-items:stretch;gap:6px;margin:0;padding:0;list-style:none;display:flex}.FRpSCG_modTile{border:1px solid var(--border,#8080804d);background:var(--bg-elevated,#80808014);cursor:grab;touch-action:none;border-radius:8px;flex-direction:column;justify-content:center;gap:2px;min-width:84px;max-width:132px;padding:6px 8px;display:flex}.FRpSCG_modTile:active{cursor:grabbing}.FRpSCG_modTileLabel{text-overflow:ellipsis;white-space:nowrap;font-size:11px;line-height:1.2;overflow:hidden}.FRpSCG_modTileStrength{opacity:.55;font-size:9px}.FRpSCG_modAddSquare{border:1px dashed var(--dsw-alias-border-l3,#00000047);cursor:pointer;opacity:.7;height:64px;transition:border-color var(--ds-transition-duration,.12s) var(--ds-ease-in-out,ease), background-color var(--ds-transition-duration,.12s) var(--ds-ease-in-out,ease);background:0 0;border-radius:8px;justify-content:center;align-items:center;width:64px;display:flex}.FRpSCG_modAddSquare:hover{background:var(--dsw-alias-interactive-bg-hover,#0000000d);border-color:var(--dsw-alias-border-l4,#0006);opacity:1}.FRpSCG_tileDragging{opacity:.5}.FRpSCG_modTileRecipe{cursor:default;border-style:dashed}.FRpSCG_modTileRecipe .FRpSCG_modTileStrength:after{content:\" · recipe\"}.FRpSCG_modLeaf{flex-direction:column;gap:10px;min-width:260px;display:flex}.FRpSCG_modLeafFields{gap:8px;display:grid}.FRpSCG_modLeafActions{gap:8px;display:flex}.FRpSCG_modField{flex-direction:column;gap:4px;font-size:11px;display:flex}.FRpSCG_modSelect{border:1px solid var(--border,#8080804d);background:var(--bg-elevated,#8080800f);color:inherit;border-radius:6px;padding:6px 8px;font-size:12px}.FRpSCG_modLeafError{color:#e06c5f;margin:0;font-size:11px}.FRpSCG_pickList{flex-direction:column;gap:4px;max-height:60vh;margin:0;padding:0;list-style:none;display:flex;overflow-y:auto}.FRpSCG_pickRow{display:block}.FRpSCG_pickBtn{border:1px solid var(--dsw-alias-border-l2);color:var(--dsw-alias-label-primary);cursor:pointer;text-align:left;transition:border-color var(--ds-transition-duration,.12s) var(--ds-ease-in-out,ease), background-color var(--ds-transition-duration,.12s) var(--ds-ease-in-out,ease);background:0 0;border-radius:6px;align-items:center;gap:10px;width:100%;padding:6px;display:flex}.FRpSCG_pickBtn:hover{background:var(--dsw-alias-interactive-bg-hover);border-color:var(--dsw-alias-border-l4)}.FRpSCG_pickThumb{object-fit:cover;border-radius:4px;flex:none;width:40px;height:40px}.FRpSCG_pickGlyph{background:var(--dsw-alias-interactive-bg-hover);color:var(--dsw-alias-label-secondary);border-radius:4px;flex:none;justify-content:center;align-items:center;width:40px;height:40px;font-size:15px;font-weight:600;display:inline-flex}.FRpSCG_pickLabel{text-overflow:ellipsis;white-space:nowrap;font-size:13px;overflow:hidden}.FRpSCG_pickEmpty{color:var(--dsw-alias-label-tertiary);margin:0;font-size:13px}.FRpSCG_sourceRow{flex-direction:column;display:flex}.FRpSCG_specSlotRow{flex-wrap:wrap;align-items:flex-start;gap:8px;display:flex}.FRpSCG_specGrid{align-items:start;gap:8px;display:grid}.FRpSCG_specSlotCell{flex-direction:column;gap:4px;display:flex}.FRpSCG_inputRail{gap:10px}.FRpSCG_sz14{flex:none;width:14px;height:14px}.FRpSCG_wireDialog{width:min(448px,100vw - 32px);max-height:60vh;overflow-y:auto}.FRpSCG_wireUnwire{text-align:left;cursor:pointer;border:0;border-bottom:1px solid color-mix(in srgb, var(--dsw-alias-label-primary) 12%, transparent);width:100%;color:var(--dsw-alias-state-error-primary);background:0 0;align-items:center;gap:8px;padding:8px 12px;font-size:11px;display:flex}.FRpSCG_wireUnwire:hover{background:color-mix(in srgb, var(--dsw-alias-bg-module-platform) 40%, transparent)}.FRpSCG_wireList{margin:0;padding:0;list-style:none}.FRpSCG_wireList>li+li{border-top:1px solid color-mix(in srgb, var(--dsw-alias-label-primary) 12%, transparent)}.FRpSCG_wireEmpty{color:color-mix(in srgb, var(--dsw-alias-label-primary) 48%, transparent);padding:12px;font-size:11px}.FRpSCG_wireOption{text-align:left;cursor:pointer;width:100%;color:var(--dsw-alias-label-primary);background:0 0;border:0;align-items:center;gap:8px;padding:8px 12px;display:flex}.FRpSCG_wireOption:hover{background:color-mix(in srgb, var(--dsw-alias-bg-module-platform) 40%, transparent)}.FRpSCG_wireSelected{background:color-mix(in srgb, var(--dsw-alias-brand-primary) 8%, transparent)}.FRpSCG_wireIdx{font-variant-numeric:tabular-nums;background:color-mix(in srgb, var(--dsw-alias-brand-primary) 60%, transparent);width:20px;height:20px;color:color-mix(in srgb, var(--dsw-alias-label-primary) 60%, transparent);border-radius:4px;flex:none;justify-content:center;align-items:center;font-size:9px;font-weight:700;display:flex}.FRpSCG_wireThumb{object-fit:cover;border:1px solid color-mix(in srgb, var(--dsw-alias-label-primary) 20%, transparent);border-radius:4px;flex:none;width:32px;height:32px}.FRpSCG_wireThumbFallback{border:1px solid color-mix(in srgb, var(--dsw-alias-label-primary) 20%, transparent);background:color-mix(in srgb, var(--dsw-alias-bg-module-platform) 40%, transparent);width:32px;height:32px;color:color-mix(in srgb, var(--dsw-alias-label-primary) 60%, transparent);border-radius:4px;flex:none;justify-content:center;align-items:center;display:flex}.FRpSCG_wireMeta{flex:1;min-width:0}.FRpSCG_wireTitle{text-overflow:ellipsis;white-space:nowrap;color:var(--dsw-alias-label-primary);font-size:11px;font-weight:500;overflow:hidden}.FRpSCG_wireOut{font-family:var(--dsw-alias-font-mono,ui-monospace, monospace);color:color-mix(in srgb, var(--dsw-alias-brand-primary) 80%, transparent);margin-left:4px;font-size:9px}.FRpSCG_wireSub{text-overflow:ellipsis;white-space:nowrap;font-family:var(--dsw-alias-font-mono,ui-monospace, monospace);color:color-mix(in srgb, var(--dsw-alias-label-primary) 48%, transparent);font-size:9px;overflow:hidden}.FRpSCG_wiredTag{background:color-mix(in srgb, var(--dsw-alias-brand-primary) 15%, transparent);color:var(--dsw-alias-brand-primary);border-radius:4px;flex:none;padding:2px 6px;font-size:9px;font-weight:600}.FRpSCG_specLinkBtn{all:unset;cursor:pointer;color:var(--melite-accent,#6ea8fe);font:inherit;text-decoration:underline}.FRpSCG_specLinkBtn:disabled{cursor:default;color:var(--melite-muted,#8a8f98);text-decoration:none}.FRpSCG_specGrid :where(input,select){width:100%}";
+		const tagId$5 = "@melite/motion-motion/card.module.css@ffcafa97";
 		if (typeof document !== "undefined" && document.querySelector("style[data-plugin-css=" + JSON.stringify(tagId$5) + "]") === null) {
 			const tag = document.createElement("style");
 			tag.dataset.plugin = "@melite/motion-motion";
@@ -48933,63 +48995,59 @@ void main() {
 		//#endregion
 		//#region ../../web/card-base/src/toast.tsx
 		/**
-		* useToastStore + ToastViewport — the ONE studio toast store
-		* (founded 2026-09-12, debt extermination: the byte-identical
-		* ideo/motion copies collapsed here; mask's minimal getState port
-		* stays local — different store shape). Same selector API:
-		* `useToastStore((s) => s.addToast)`. Rendering rides the DSH Toast
-		* atom; mount one <ToastViewport/> per studio root.
+		* ToastViewport — THE RENDERER FACE of the one toast system
+		* (stroke 37). The store lives in ./toastStore.ts (node-safe, no
+		* atom); this file re-exports it so UI users keep the single
+		* `@melite/card-base/toast` import — and mounts the viewport.
+		*
+		* THE MOUNT-CLAIM LAW: the viewport may mount at every seat — the
+		* studio shell, the cards console — and the document still renders
+		* toasts exactly ONCE. The first live viewport owns rendering;
+		* every other mounted viewport renders nothing; ownership
+		* re-broadcasts when owners unmount. No studio wires it, no studio
+		* can forget it, no seat can duplicate it.
 		*
 		* Per-seam subpath: `@melite/card-base/toast`.
 		*/
-		let nextId = 1;
-		let entries = [];
-		const listeners = /* @__PURE__ */ new Set();
-		function emit() {
-			listeners.forEach((l) => l());
+		init_toastStore();
+		init_toastStore();
+		const liveViewportIds = /* @__PURE__ */ new Set();
+		let viewportEpoch = 0;
+		const viewportListeners = /* @__PURE__ */ new Set();
+		function emitViewportChange() {
+			viewportEpoch++;
+			viewportListeners.forEach((l) => l());
 		}
-		function subscribe(listener) {
-			listeners.add(listener);
+		function subscribeViewport(l) {
+			viewportListeners.add(l);
 			return () => {
-				listeners.delete(listener);
+				viewportListeners.delete(l);
 			};
 		}
-		function getSnapshot() {
-			return entries;
+		function getViewportEpoch() {
+			return viewportEpoch;
 		}
-		function addToast(type, message) {
-			const id = nextId++;
-			entries = [...entries, {
-				id,
-				type,
-				message
-			}];
-			emit();
-			setTimeout(() => {
-				removeToast(id);
-			}, type === "error" ? 15e3 : 5e3);
-		}
-		function removeToast(id) {
-			if (!entries.some((t) => t.id === id)) return;
-			entries = entries.filter((t) => t.id !== id);
-			emit();
-		}
-		const api = {
-			addToast,
-			removeToast
-		};
-		function useToastStore(selector) {
-			const toasts = (0, react.useSyncExternalStore)(subscribe, getSnapshot, getSnapshot);
-			return selector({
-				...api,
-				toasts
-			});
-		}
-		/** Mount once per studio root — renders the live entries through
-		*  the DSH Toast atom (body-portaled banner, owner unmounts onDone). */
+		let nextViewportId = 1;
+		/** Mount anywhere the system needs a renderer — the studio shell,
+		*  the cards console, any seat. The claim law guarantees exactly one
+		*  live renderer per document: the first-mounted viewport renders,
+		*  others render nothing until the owner unmounts. Renders the live
+		*  entries through the DSH Toast atom (body-portaled banner, owner
+		*  unmounts onDone). */
 		function ToastViewport() {
+			const idRef = (0, react.useRef)(nextViewportId++);
+			(0, react.useEffect)(() => {
+				const id = idRef.current;
+				liveViewportIds.add(id);
+				emitViewportChange();
+				return () => {
+					liveViewportIds.delete(id);
+					emitViewportChange();
+				};
+			}, []);
+			(0, react.useSyncExternalStore)(subscribeViewport, getViewportEpoch, getViewportEpoch);
 			const toasts = (0, react.useSyncExternalStore)(subscribe, getSnapshot, getSnapshot);
-			if (toasts.length === 0) return null;
+			if (!(liveViewportIds.size === 0 || Math.min(...liveViewportIds) === idRef.current) || toasts.length === 0) return null;
 			return /* @__PURE__ */ (0, react_jsx_runtime.jsx)(react_jsx_runtime.Fragment, { children: toasts.map((t) => /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Toast, {
 				text: t.message,
 				holdMs: t.type === "error" ? 15e3 : 5e3,
@@ -51776,7 +51834,16 @@ void main() {
 		/** The studio body: params column LEFT (projected into the shell rail
 		*  slot when one exists), preview RIGHT, optional bottom bar, then the
 		*  error line. The uniform three-slot shape — timeline and form cards
-		*  are the same grain, forms simply leave the right/bottom slots empty. */
+		*  are the same grain, forms simply leave the right/bottom slots empty.
+		*
+		*  THE TOAST LAW (stroke 36): the shell mounts the ONE toast viewport
+		*  — toasts are shell-owned chrome exactly like the error line (the
+		*  construction law: no studio wires it, no studio can forget it).
+		*  Before: motion hand-mounted a copy in a slot the contract never
+		*  had (type drift), anny pushed toasts with NO viewport mounted —
+		*  silently dropped — and ideogram4 hand-wired its own outside the
+		*  shell. The per-studio mount is DEAD; any toast pushed from any
+		*  seam renders here, once. */
 		function StudioShell({ params, preview, bottom, errors = [], className }) {
 			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
 				className: cx(shell_module_css_default.shell, className),
@@ -51784,7 +51851,8 @@ void main() {
 					/* @__PURE__ */ (0, react_jsx_runtime.jsx)(StudioRail, { children: params }),
 					preview,
 					bottom,
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)(StudioShellErrorLine, { errors })
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)(StudioShellErrorLine, { errors }),
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)(ToastViewport, {})
 				]
 			});
 		}
@@ -53441,8 +53509,7 @@ void main() {
 						},
 						onClose: () => setBodyWireOpen(false)
 					})
-				] }),
-				children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(react_jsx_runtime.Fragment, { children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(ToastViewport, {}) })
+				] })
 			});
 		}
 		defineShellDeclaration({

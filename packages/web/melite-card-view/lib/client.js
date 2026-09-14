@@ -561,24 +561,71 @@ window.__ModuleLoader__.load({
 			if (typeof doc["draft_id"] !== "string" || !Array.isArray(doc["stages"])) throw new Error("drafts/get: not a draft doc");
 			return doc;
 		}
-		/** Edit one stage's params — the REAL door, reborn 2026-09-11: the
-		*  drafts remote's `drafts/patch` write arm over the drafts domain
-		*  (the gateway-era PATCH /v1/flows/drafts/:id/stages/:sid died with
-		*  the app; stroke L stubbed this to a loud throw — the shared-state
-		*  door is back, same per-key merge semantics server-side). Throws
-		*  the door's named refusal; delivered:false lands as a named throw
-		*  (never a lying success). */
-		async function patchStageParams(draftId, stageId, params, expectRev) {
+		/** The draft's CURRENT bench rev — the CAS handle for a write the
+		*  caller composed without one (the outcome observer holds no rev;
+		*  a drill held its open-time rev while the agent moved the bench).
+		*  Reads the served doc's own bench block; null when the door won't
+		*  say (the caller then throws loud, never writes blind). */
+		async function fetchDraftRev(draftId) {
+			try {
+				const doc = await fetchDraft(draftId);
+				return typeof doc.bench?.rev === "number" ? doc.bench.rev : null;
+			} catch {
+				return null;
+			}
+		}
+		/** True when the throw is the door's CAS verdict (stale or missing
+		*  expect_rev) — the ONLY refusal a rebase-and-retry may answer. Any
+		*  other refusal (admission, unknown stage, store failure) throws
+		*  through untouched: retrying those would be a fallback. */
+		function isCasConflict(e) {
+			const msg = e instanceof Error ? e.message : String(e);
+			return msg.includes("cas-conflict") || msg.includes("bench moved") || msg.includes("expect_rev");
+		}
+		/** One drafts/patch round trip; throws the door's named refusal. */
+		async function patchOnce(draftId, stageId, patch, expectRev) {
 			const row = await wireCall$1("drafts/patch", {
 				draftId,
 				stageId,
-				patch: { params },
+				patch,
 				...expectRev !== void 0 ? { expectRev } : {}
 			});
 			if (row["delivered"] !== true) {
 				const reason = typeof row["reason"] === "string" ? row["reason"] : "undelivered";
 				throw new Error("drafts/patch: " + reason + " (draft " + draftId + ", stage " + stageId + ")");
 			}
+		}
+		/** The CAS dance (the run-start face law, 2026-09-14): write with the
+		*  held rev; on the door's cas-conflict RE-READ the rev and re-apply
+		*  ONCE (the server message's own instruction — "re-read and
+		*  re-apply"). A second conflict, a missing rev, or any non-CAS
+		*  refusal throws LOUD — never a silent drop, never a blind write. */
+		async function patchWithRebase(draftId, stageId, patch, expectRev) {
+			let rev = expectRev;
+			if (rev === void 0) {
+				rev = await fetchDraftRev(draftId) ?? void 0;
+				if (rev === void 0) throw new Error("drafts/patch: no bench rev to write against (draft " + draftId + ")");
+			}
+			try {
+				await patchOnce(draftId, stageId, patch, rev);
+			} catch (e) {
+				if (!isCasConflict(e)) throw e;
+				const fresh = await fetchDraftRev(draftId) ?? void 0;
+				if (fresh === void 0) throw e;
+				await patchOnce(draftId, stageId, patch, fresh);
+			}
+		}
+		/** Edit one stage's params — the REAL door, reborn 2026-09-11: the
+		*  drafts remote's `drafts/patch` write arm over the drafts domain
+		*  (the gateway-era PATCH /v1/flows/drafts/:id/stages/:sid died with
+		*  the app; stroke L stubbed this to a loud throw — the shared-state
+		*  door is back, same per-key merge semantics server-side). Throws
+		*  the door's named refusal; delivered:false lands as a named throw
+		*  (never a lying success). Null params values ride VERBATIM —
+		*  the door's JSON Merge Patch arm deletes those keys (the unset
+		*  path's domain half). */
+		async function patchStageParams(draftId, stageId, params, expectRev) {
+			await patchWithRebase(draftId, stageId, { params }, expectRev);
 		}
 		/** Report a stage's RUN OUTCOME onto the bench row — the same
 		*  shared-state door (runStatus + result keys of the fixed patch
@@ -588,16 +635,8 @@ window.__ModuleLoader__.load({
 		*  writes the outcome the wire edge later reads. result.url rides
 		*  the media-route currency (renders in tiles AND stages verbatim
 		*  as the next run's chained input). */
-		async function patchStageOutcome(draftId, stageId, outcome) {
-			const row = await wireCall$1("drafts/patch", {
-				draftId,
-				stageId,
-				patch: outcome
-			});
-			if (row["delivered"] !== true) {
-				const reason = typeof row["reason"] === "string" ? row["reason"] : "undelivered";
-				throw new Error("drafts/patch: " + reason + " (draft " + draftId + ", stage " + stageId + ")");
-			}
+		async function patchStageOutcome(draftId, stageId, outcome, expectRev) {
+			await patchWithRebase(draftId, stageId, outcome, expectRev);
 		}
 		/** Start the run; returns the run_id or throws the door's named refusal. */
 		async function startDraft(draftId) {
@@ -1897,6 +1936,15 @@ window.__ModuleLoader__.load({
 		function isOptionKind(k) {
 			return (k.options ?? []).length > 0;
 		}
+		/** THE TITLE-CASE FACE (the operator's sweep law): machine ids
+		*  (krea-2, z-image, euler, comfyui…) render titled — never raw.
+		*  FACES ONLY: option values, param keys, and wire bodies keep the
+		*  verbatim id (the 1:1 law — the eye gets prose, the door gets the
+		*  id). First letter of each separator-bound word upper, the rest
+		*  untouched (INT8 stays INT8); idempotent on titled prose. */
+		function titleCaseId(id) {
+			return id.split(/[-_\s]+/).filter((w) => w !== "").map((w) => w.slice(0, 1).toUpperCase() + w.slice(1)).join(" ");
+		}
 		/** THE SCHEMA LAYER's declared defaults (fieldsOfEnvelope's output —
 		*  resolveValue's first layer; the base never invents one). */
 		function specDefaults(fields) {
@@ -2019,24 +2067,22 @@ window.__ModuleLoader__.load({
 		function fieldsOf(spec) {
 			return fieldsOfEnvelope(spec.schema, typeof spec.model === "string" ? spec.model : void 0);
 		}
-		/** THE LAYERED RESOLUTION — the engine's compose cascade (applyRecipe
-		* in the card's service plane) mirrored client-side: schema
-		* defaults <- model defaults <- SERVED STAMPS <- card-recipe params
-		* <- user. The form SHOWS exactly what a run composes; `user` rides
-		* verbatim by key presence (a PRESENCE is the override mark, never
-		* its value — the settings law). Arrays (lora bags) and nulls in
-		* model_defaults skip, matching the engine's overlay filter.
+		/** THE LAYERED RESOLUTION — the engine's compose cascade mirrored
+		* client-side (stroke 34 — the card-recipe layer is dead): schema
+		* defaults <- model defaults <- SERVED STAMPS <- user. The form
+		* SHOWS exactly what a run composes; `user` rides verbatim by key
+		* presence (a PRESENCE is the override mark, never its value — the
+		* settings law). Arrays (lora bags) and nulls in model_defaults
+		* skip, matching the engine's overlay filter.
 		*
 		* THE SERVED BASE (hour-26 stroke 15, the 1:1 run law): `base` is the
 		* stage row's `resolved` map — prepareCardParams' own stamped +
 		* lifted body, served by the drafts doors. It layers UNDER the user
 		* (presence still wins) and OVER model_defaults (the server's own
 		* family/variant stamps replace the client's guesses — variant
-		* resolver_defaults, family defaults, the surface filter). The
-		* recipe key reads user.recipe ?? base.recipe ?? the field default,
-		* so the server's stamped recipe wins over the client's guess when
-		* the user never touched it. Absent base = the registry-less lane
-		* derive (the wall pins parity on the golden families). PURE. */
+		* resolver_defaults, family defaults, the surface filter). Absent
+		* base = the registry-less lane derive (the wall pins parity on
+		* the golden families). PURE. */
 		function resolveValue(spec, user, base) {
 			const out = specDefaults(fieldsOf(spec));
 			for (const [k, v] of Object.entries(spec.model_defaults ?? {})) {
@@ -2047,40 +2093,8 @@ window.__ModuleLoader__.load({
 				if (v === null || v === void 0 || Array.isArray(v)) continue;
 				out[k] = v;
 			}
-			const rkey = recipeKeyOf(spec, user, base);
-			if (rkey !== void 0) {
-				const overlay = spec.recipes?.[rkey]?.params;
-				if (overlay !== void 0) Object.assign(out, overlay);
-			}
 			Object.assign(out, user);
 			return out;
-		}
-		/** THE EFFECTIVE RECIPE KEY — one law, one seat: user.recipe (the
-		*  pick) ?? the served base's stamped recipe ?? the field's declared
-		*  default. resolveValue and the mod plane's recipe-stack derivation
-		*  both read THIS (never two spellings of the recipe-key law). */
-		function recipeKeyOf(spec, user, base) {
-			const userRecipe = user["recipe"];
-			if (typeof userRecipe === "string" && userRecipe !== "") return userRecipe;
-			const baseRecipe = base?.["recipe"];
-			if (typeof baseRecipe === "string" && baseRecipe !== "") return baseRecipe;
-			const dflt = fieldsOf(spec).find((f) => f.name === "recipe")?.default;
-			return typeof dflt === "string" && dflt !== "" ? dflt : void 0;
-		}
-		/** THE RECIPE'S MOD PAYLOAD (hour-26 stroke 16, the V4 closure —
-		* loras are a MOD TYPE, never a standalone flat thing): the stacks
-		* the engine's applyRecipe will concat AHEAD of the caller's at
-		* compose, keyed by the mod kind's param_key. The flat resolver
-		* NEVER layers these (a flat concat would feed the bag's editable
-		* entries and a bag edit would commit the merged rows back — the
-		* engine would stack them AGAIN); the mod plane renders them as
-		* read-only recipe-owned rows ahead of the user's. */
-		function recipeModStacks(spec, user, base) {
-			const rkey = recipeKeyOf(spec, user, base);
-			if (rkey === void 0) return {};
-			const recipe = spec.recipes?.[rkey];
-			if (recipe?.loras === void 0 || recipe.loras.length === 0) return {};
-			return { loras: recipe.loras };
 		}
 		/** evalVisibleWhen's serving shape: "key=value" (a field shows when its
 		*  guard key holds the value). A field with no visible_when always
@@ -2111,22 +2125,10 @@ window.__ModuleLoader__.load({
 			}
 			return out;
 		}
-		/** THE RECIPE-YIELD LAW (operator, 2026-09-14: "IMG GEN UI CARD
-		*  HAS TWO RECIPES"): the card's own `recipe` schema field and the
-		*  family matrix's `Recipe` axis group share the `recipe` values key
-		*  — two selects writing one key (the family's pick clobbers the
-		*  card's, and the axis seed stamps `default` where the card catalog
-		*  only knows `standard/...`). When the card declares its own recipe
-		*  field, the card OWNS the name: the family axis yields (hidden,
-		*  never seeded). PURE. */
-		function cardOwnsRecipe(spec) {
-			return fieldsOf(spec).some((f) => f.name === "recipe");
-		}
 		/** The axis groups in declaration order: features.variant_groups'
 		*  key order when the door serves it, else the rows' distinct groups
 		*  in first-seen order. Empty group names never ride. The Recipe
-		*  group yields when the card owns its own recipe field (the
-		*  recipe-yield law above). */
+		*  group never rides (the recipe-axis yield above). */
 		function axisGroups(spec) {
 			const rows = spec.variants ?? [];
 			const groups = [];
@@ -2135,8 +2137,7 @@ window.__ModuleLoader__.load({
 				for (const g of declared) if (g !== "" && !groups.includes(g)) groups.push(g);
 			}
 			for (const v of rows) if (v.group !== "" && !groups.includes(v.group)) groups.push(v.group);
-			if (cardOwnsRecipe(spec)) return groups.filter((g) => g !== "Recipe");
-			return groups;
+			return groups.filter((g) => g !== "Recipe");
 		}
 		/** The variant_groups contract's keys, in served order (the door
 		*  serves it under features when the family declares axis groups). */
@@ -2216,7 +2217,8 @@ window.__ModuleLoader__.load({
 			const active = {};
 			for (const g of groups) if (g === row.group) active[g] = row.id;
 			else if (typeof row.defaults["model"] === "string") active[g] = void 0;
-			patch[axisKey(row.group)] = row.id;
+			if (groups.includes(row.group)) patch[axisKey(row.group)] = row.id;
+			if (at < 0) return patch;
 			for (const g of groups.slice(at + 1)) {
 				const composing = composingRows(spec, g, active);
 				if (composing.length > 0) patch[axisKey(g)] = composing[0].id;
@@ -2288,12 +2290,11 @@ window.__ModuleLoader__.load({
 		* survived the reopen), the absent axis keys seed per the axis law
 		* (seedAxisValues above — first composing row, one direction).
 		*
-		* THE ONE VALIDATION CLAUSE (the double-recipe migration, kept from
-		* the heal walk but expressed as validation — never value-compare):
-		* when the card's schema owns the `recipe` field, a held `recipe`
-		* the card's own option list does not know is a stale family-axis
-		* stamp — it falls back to the field's declared default (dropped
-		* when none). Everything else rides untouched.
+		* THE ONE VALIDATION CLAUSE (never value-compare): a held `recipe`
+		* the card's schema does not declare is poison — the dead
+		* card-recipe layer's stamp (strokes 33+34). Dropped on open, so
+		* the run flush's null-domain half deletes the bench key and the
+		* card composes again. Everything else rides untouched.
 		*
 		* PURE — the caller owns the write (onSet per fresh key). */
 		function seedUser(spec, held) {
@@ -2301,15 +2302,7 @@ window.__ModuleLoader__.load({
 				...held,
 				...seedAxisValues(spec, held)
 			};
-			const field = fieldsOf(spec).find((f) => f.name === "recipe");
-			if (field === void 0) return out;
-			const cur = out["recipe"];
-			if (typeof cur !== "string" || cur === "") return out;
-			const opts = (field.options ?? []).map((o) => typeof o === "string" ? o : o.value);
-			if (opts.length > 0 && !opts.includes(cur)) {
-				if (field.default !== void 0 && field.default !== null) out["recipe"] = field.default;
-				else delete out["recipe"];
-			}
+			if (!fieldsOf(spec).some((f) => f.name === "recipe")) delete out["recipe"];
 			return out;
 		}
 		//#endregion
@@ -2900,7 +2893,7 @@ window.__ModuleLoader__.load({
 				return (0, react.createElement)("option", {
 					key: row.value,
 					value: row.value
-				}, row.label);
+				}, titleCaseId(row.label));
 			}));
 			if (f.type === "slider") return (0, react.createElement)(SpecSliderAtom, {
 				f,
@@ -3000,7 +2993,7 @@ window.__ModuleLoader__.load({
 				}
 			}, st === "idle" ? "Install " + id : st === "busy" ? "Requesting…" : st === "queued" ? "Install queued ✓ (restart the engine when it lands)" : "Install request failed — retry from the assets tab"));
 		}
-		function ModelAxes({ spec, value, onSet, onDownloadModel, recipeField }) {
+		function ModelAxes({ spec, value, onSet, onDownloadModel }) {
 			const groups = axisGroups(spec);
 			if (groups.length === 0) return null;
 			const models = modelChoices(spec);
@@ -3014,6 +3007,13 @@ window.__ModuleLoader__.load({
 				const patch = axisPickPatch(spec, row);
 				for (const [k, v] of Object.entries(patch)) onSet(k, v);
 			};
+			const modOwned = modOwnedFields(spec);
+			const knobStamp = (r) => {
+				const stamp = {};
+				for (const [k, v] of Object.entries(axisPickPatch(spec, r))) if (!modOwned.has(k)) stamp[k] = v;
+				return stamp;
+			};
+			const pillRows = rowsFor(spec, "Recipe").filter((r) => Object.keys(knobStamp(r)).length > 0);
 			const heldModelRaw = value["model"];
 			const heldModel = typeof heldModelRaw === "string" && heldModelRaw !== "" ? heldModelRaw : void 0;
 			const knownModel = (m) => models.includes(m) || (spec.families ?? []).some((f) => f.id === m);
@@ -3050,16 +3050,16 @@ window.__ModuleLoader__.load({
 			}, refusedModel !== void 0 ? (0, react.createElement)("option", {
 				key: refusedModel,
 				value: refusedModel
-			}, refusedModel + " — not an offered model of this card") : null, familyRows.map((f) => f.inMatrix ? null : (0, react.createElement)("option", {
+			}, titleCaseId(refusedModel) + " — not an offered model of this card") : null, familyRows.map((f) => f.inMatrix ? null : (0, react.createElement)("option", {
 				key: "fam-" + f.id,
 				value: f.id
-			}, f.id + (f.present ? "" : " — not downloaded on this machine"))), models.map((m) => (0, react.createElement)("option", {
+			}, titleCaseId(f.id) + (f.present ? "" : " — not downloaded on this machine"))), models.map((m) => (0, react.createElement)("option", {
 				key: m,
 				value: m
-			}, m))), heldFam !== void 0 && onDownloadModel !== void 0 ? (0, react.createElement)("div", {
+			}, titleCaseId(m)))), heldFam !== void 0 && onDownloadModel !== void 0 ? (0, react.createElement)("div", {
 				className: card_module_css_default.specHint,
 				"data-download-prompt": heldFam.id
-			}, heldFam.id + " is offered by this card but not downloaded on this machine.", " ", (0, react.createElement)("button", {
+			}, titleCaseId(heldFam.id) + " is offered by this card but not downloaded on this machine.", " ", (0, react.createElement)("button", {
 				type: "button",
 				className: card_module_css_default.specLinkBtn,
 				disabled: dlState !== "idle",
@@ -3067,13 +3067,13 @@ window.__ModuleLoader__.load({
 					setDlState("busy");
 					onDownloadModel(heldFam.id).then((ok) => setDlState(ok ? "queued" : "failed")).catch(() => setDlState("failed"));
 				}
-			}, dlState === "idle" ? "Download " + heldFam.id : dlState === "busy" ? "Requesting…" : dlState === "queued" ? "Download queued ✓ (run when it lands)" : "Download request failed — retry from the assets tab")) : null), groups.map((g) => {
+			}, dlState === "idle" ? "Download " + titleCaseId(heldFam.id) : dlState === "busy" ? "Requesting…" : dlState === "queued" ? "Download queued ✓ (run when it lands)" : "Download request failed — retry from the assets tab")) : null), groups.map((g) => {
 				const rows = rowsOf(g, active);
 				const heldRaw = value[axisKey(g)];
 				const heldId = typeof heldRaw === "string" && heldRaw !== "" ? heldRaw : void 0;
 				const refusedId = heldId !== void 0 && !rows.some((r) => r.id === heldId) ? heldId : void 0;
 				if (rows.length === 0 && refusedId === void 0) return null;
-				const label = contract[g]?.label ?? g;
+				const label = contract[g]?.label ?? titleCaseId(g);
 				return (0, react.createElement)("label", {
 					key: g,
 					className: card_module_css_default.specField
@@ -3091,29 +3091,23 @@ window.__ModuleLoader__.load({
 				}, refusedId !== void 0 ? (0, react.createElement)("option", {
 					key: refusedId,
 					value: refusedId
-				}, refusedId + " — invalid " + label.toLowerCase() + " for " + (heldModel ?? shownModel)) : null, rows.map((v) => (0, react.createElement)("option", {
+				}, titleCaseId(refusedId) + " — invalid " + label.toLowerCase() + " for " + titleCaseId(heldModel ?? shownModel)) : null, rows.map((v) => (0, react.createElement)("option", {
 					key: v.id,
 					value: v.id
-				}, v.label + (typeof v.hint === "string" && v.hint !== "" ? ` — ${v.hint}` : "")))));
-			}), recipeField !== void 0 ? (0, react.createElement)("label", {
-				className: card_module_css_default.specField,
-				"data-recipe-seat": "axes"
-			}, (0, react.createElement)("span", { className: card_module_css_default.specFieldKey }, recipeField.label), (0, react.createElement)("select", {
-				className: card_module_css_default.specSelect,
-				"aria-label": recipeField.label,
-				value: typeof value["recipe"] === "string" ? value["recipe"] : typeof recipeField.default === "string" ? recipeField.default : "",
-				onChange: (e) => {
-					const v = e.target.value;
-					onSet("recipe", v);
+				}, titleCaseId(v.label) + (typeof v.hint === "string" && v.hint !== "" ? ` — ${v.hint}` : "")))));
+			}), pillRows.length > 0 ? (0, react.createElement)("div", {
+				className: card_module_css_default.specGroup,
+				"data-recipe-pills": "1"
+			}, pillRows.map((r) => (0, react.createElement)("button", {
+				key: r.id,
+				type: "button",
+				className: card_module_css_default.specLinkBtn,
+				"data-recipe-pill": r.id,
+				title: typeof r.hint === "string" && r.hint !== "" ? r.hint : void 0,
+				onClick: () => {
+					for (const [k, v] of Object.entries(knobStamp(r))) onSet(k, v);
 				}
-			}, (recipeField.options ?? []).map((o) => {
-				const val = typeof o === "string" ? o : o.value;
-				const lab = typeof o === "string" ? o : o.label;
-				return (0, react.createElement)("option", {
-					key: val,
-					value: val
-				}, lab);
-			}))) : null);
+			}, titleCaseId(r.label)))) : null);
 		}
 		/** THE CARD FORM (the constructor's surface half) — the emission's
 		*  fields walked off the schema envelope, grouped, visible-when
@@ -3165,15 +3159,16 @@ window.__ModuleLoader__.load({
 			const owned = modOwnedFields(spec);
 			const flatFields = owned.size > 0 ? fields.filter((f) => !owned.has(f.name)) : fields;
 			const signature = Array.isArray(spec.inputs) ? spec.inputs : [];
+			const modFieldByName = /* @__PURE__ */ new Map();
+			for (const k of modKinds) for (const f of k.fields ?? []) if (!modFieldByName.has(f.name)) modFieldByName.set(f.name, f);
 			const railOf = (inp) => {
-				const f = flatFields.find((x) => x.name === inp.name);
+				const f = flatFields.find((x) => x.name === inp.name) ?? modFieldByName.get(inp.name);
 				if (f === void 0) return void 0;
 				if (f.type === "image" || f.type === "file") return f;
 			};
 			const railFields = signature.map((inp) => typeof inp?.name === "string" ? railOf(inp) : void 0).filter((f) => f !== void 0);
 			const railNames = new Set(railFields.map((f) => f.name));
-			const liftedRecipe = (spec.variants ?? []).length > 0 ? flatFields.find((f) => f.name === "recipe") : void 0;
-			const visible = (f) => f.type !== "image_list" && !railNames.has(f.name) && f !== liftedRecipe;
+			const visible = (f) => f.type !== "image_list" && !railNames.has(f.name);
 			const groups = groupFields(flatFields.filter(visible), value);
 			const atomOf = (f) => atoms?.[f.type];
 			const own = useSquareProvider(edit, wire ?? { candidates: [] });
@@ -3185,8 +3180,7 @@ window.__ModuleLoader__.load({
 				spec,
 				value,
 				onSet: edit,
-				onDownloadModel,
-				recipeField: liftedRecipe
+				onDownloadModel
 			}), railFields.length > 0 ? (0, react.createElement)("section", {
 				className: card_module_css_default.specGroup + " " + card_module_css_default.inputRail,
 				"data-input-rail": "1"
@@ -3284,7 +3278,7 @@ window.__ModuleLoader__.load({
 				return (0, react.createElement)("section", {
 					key: g.group ?? "",
 					className: card_module_css_default.specGroup
-				}, g.group !== null ? (0, react.createElement)("h4", { className: card_module_css_default.specGroupTitle }, g.group) : null, gridCols === void 0 ? children : (0, react.createElement)("div", {
+				}, g.group !== null ? (0, react.createElement)("h4", { className: card_module_css_default.specGroupTitle }, titleCaseId(g.group)) : null, gridCols === void 0 ? children : (0, react.createElement)("div", {
 					className: card_module_css_default.specGrid,
 					style: { gridTemplateColumns: `repeat(${gridCols}, minmax(0, 1fr))` }
 				}, children));
@@ -3292,8 +3286,8 @@ window.__ModuleLoader__.load({
 				kinds: modKinds,
 				values: value,
 				onEdit: edit,
-				...onPatch !== void 0 ? { onPatch } : {},
-				base: recipeModStacks(spec, user, base)
+				railSeated: railNames,
+				...onPatch !== void 0 ? { onPatch } : {}
 			}) : null, own.wireMenu);
 		}
 		//#endregion
@@ -3327,7 +3321,7 @@ window.__ModuleLoader__.load({
 		*        the fields NEVER render flat on the card form.
 		*/
 		function ModifiersSection(props) {
-			const { kinds, values, onEdit, onPatch, base } = props;
+			const { kinds, values, onEdit, onPatch } = props;
 			const [dragTile, setDragTile] = (0, react.useState)(null);
 			const [overTile, setOverTile] = (0, react.useState)(null);
 			const [pickAt, setPickAt] = (0, react.useState)(null);
@@ -3347,9 +3341,13 @@ window.__ModuleLoader__.load({
 			};
 			const addable = kinds.filter((k) => k.cardinality !== "scalar");
 			if (kinds.length === 0) return null;
+			const seated = props.railSeated;
 			const fieldDefaults = (k) => {
 				const out = {};
-				for (const f of k.fields ?? []) if (f.default !== void 0 && f.default !== null) out[f.name] = f.default;
+				for (const f of k.fields ?? []) {
+					if (seated?.has(f.name) ?? false) continue;
+					if (f.default !== void 0 && f.default !== null) out[f.name] = f.default;
+				}
 				return out;
 			};
 			const openCreate = (k) => {
@@ -3376,7 +3374,10 @@ window.__ModuleLoader__.load({
 					setDraftStrength(strength !== void 0 ? String(strength) : "");
 				} else {
 					const params = {};
-					for (const f of k.fields ?? []) if (entry[f.name] !== void 0) params[f.name] = entry[f.name];
+					for (const f of k.fields ?? []) {
+						if (seated?.has(f.name) ?? false) continue;
+						if (entry[f.name] !== void 0) params[f.name] = entry[f.name];
+					}
 					setDraftParams(params);
 				}
 				setLeafError(null);
@@ -3465,26 +3466,15 @@ window.__ModuleLoader__.load({
 				"data-subcard-row": "flow"
 			}, kinds.map((k) => {
 				const entries = entriesOf(k);
-				const recipeRows = base?.[k.param_key] ?? [];
-				if (entries.length === 0 && recipeRows.length === 0) return null;
-				return [...recipeRows.map((entry, i) => {
-					const name = typeof entry["name"] === "string" ? entry["name"] : "";
-					const strength = typeof entry["strength"] === "number" ? entry["strength"] : typeof entry["weight"] === "number" ? entry["weight"] : 1;
-					return (0, react.createElement)("li", {
-						key: k.param_key + "-base-" + i,
-						className: card_module_css_default.modTile + " " + card_module_css_default.modTileRecipe,
-						"data-mod-tile": k.param_key + "-base-" + i,
-						"data-mod-recipe": "on",
-						title: "Recipe-owned — the card recipe stacks it ahead of yours at run"
-					}, (0, react.createElement)("span", { className: card_module_css_default.modTileLabel }, name !== "" ? name : k.label), (0, react.createElement)("span", { className: card_module_css_default.modTileStrength }, strength.toFixed(2)));
-				}), ...entries.map((entry, i) => {
+				if (entries.length === 0) return null;
+				return [...entries.map((entry, i) => {
 					const id = typeof entry["id"] === "string" ? entry["id"] : "";
 					const option = optionOf(k, id);
 					const strength = typeof entry["strength"] === "number" ? entry["strength"] : option !== null && option.defaults !== void 0 ? option.defaults.strength : void 0;
 					return (0, react.createElement)(ModTile, {
 						key: k.param_key + "-" + i,
 						tileId: k.param_key + "-" + i,
-						label: option !== null ? option.label : id !== "" ? id : isOptionKind(k) ? k.label + " " + String(i + 1) : k.label,
+						label: option !== null ? option.label : id !== "" ? titleCaseId(id) : isOptionKind(k) ? k.label + " " + String(i + 1) : k.label,
 						...strength !== void 0 ? { strength } : {},
 						onOpen: () => {
 							openEdit(k, i);
@@ -3539,6 +3529,7 @@ window.__ModuleLoader__.load({
 			}, (0, react.createElement)(ModLeaf, {
 				leaf,
 				values,
+				hideFields: seated,
 				onDraft: {
 					setDraftOption,
 					setDraftStrength,
@@ -3559,6 +3550,8 @@ window.__ModuleLoader__.load({
 		function ModLeaf(props) {
 			const { leaf, onDraft, onSave, onDelete, leafError } = props;
 			const k = leaf.kind;
+			const hidden = props.hideFields;
+			const leafFields = (k.fields ?? []).filter((f) => !(hidden?.has(f.name) ?? false));
 			const own = useSquareProvider((name, v) => {
 				onDraft.setDraftParams({
 					...onDraft.draftParams,
@@ -3582,7 +3575,7 @@ window.__ModuleLoader__.load({
 				onChange: (e) => {
 					onDraft.setDraftStrength(e.target.value);
 				}
-			}))) : (0, react.createElement)("div", { className: card_module_css_default.modLeafFields }, (k.fields ?? []).map((f) => (0, react.createElement)("label", {
+			}))) : (0, react.createElement)("div", { className: card_module_css_default.modLeafFields }, leafFields.map((f) => (0, react.createElement)("label", {
 				key: f.name,
 				className: card_module_css_default.modField
 			}, f.label ?? f.name, (0, react.createElement)(SpecAtom, {
@@ -39723,6 +39716,170 @@ void main() {
 			};
 		}
 		//#endregion
+		//#region ../card-base/src/toastStore.ts
+		/**
+		* THE ONE TOAST STORE (node-safe half of the one toast system,
+		* stroke 37): module state + the dual API (hook selector for React,
+		* zustand-classic statics for module-level pushers and tests). NO
+		* atom imports — node-env suites (the catalog contract specs) import
+		* this half without dragging DSH UI primitives' .css through the
+		* door. The renderer half lives in ./toast.tsx (ToastViewport); the
+		* store is the system, the viewport is its face.
+		*
+		* History: founded 2026-09-12 (the ideo/motion copies collapsed
+		* here). Stroke 36: the shell mounts the viewport — chrome is
+		* shell-owned. Stroke 37: the LAST two private stores died —
+		* web-kit/catalog's (whose toasts NEVER rendered: pushed from module
+		* context with no viewport anywhere, console-only) and
+		* mask-studio's (whose drop-errors never rendered either). Their
+		* pushers migrated here verbatim via the static surface.
+		*
+		* ONE API, two faces (the zustand-classic dual shape):
+		*   - hook:      useToastStore((s) => s.addToast)   — inside React
+		*   - statics:   useToastStore.getState().addToast(type, msg)
+		*                useToastStore.getState().toasts
+		*                useToastStore.subscribe(l) / .setState(patch)
+		*                — module-level pushers (contract stores, import
+		*                hooks) and test reset.
+		*
+		* Rendering: the DSH Toast atom (presentational banner — the atom is
+		* the surface, this module is the system). ToastViewport claims
+		* rendering: the FIRST live viewport renders, every other mounted
+		* viewport renders nothing, and ownership re-broadcasts when owners
+		* unmount — so the shell, the cards console, or any future seat may
+		* mount one and the document still renders toasts exactly once.
+		*
+		* Timing law (verbatim from the kit): errors persist 15s (the
+		* operator must SEE them), success/info auto-dismiss at 5s. Errors
+		* also console.error so nothing is silent even with no viewport.
+		*
+		* The third addToast argument (action {label, onClick}) is ACCEPTED
+		* and ignored: the DSH Toast atom owns the surface and ships no
+		* action chrome — the kit store dropped it the same way. When the
+		* atom grows an action prop, store and render it here.
+		*
+		* Per-seam subpath: `@melite/card-base/toast-store`.
+		*/
+		let nextId = 1;
+		let entries = [];
+		const listeners = /* @__PURE__ */ new Set();
+		function emit() {
+			listeners.forEach((l) => l());
+		}
+		function subscribe(listener) {
+			listeners.add(listener);
+			return () => {
+				listeners.delete(listener);
+			};
+		}
+		function getSnapshot() {
+			return entries;
+		}
+		function addToast(type, message, _action) {
+			const id = nextId++;
+			entries = [...entries, {
+				id,
+				type,
+				message
+			}];
+			if (type === "error") console.error("[toast]", message);
+			else console.info("[toast]", message);
+			emit();
+			setTimeout(() => {
+				removeToast(id);
+			}, type === "error" ? 15e3 : 5e3);
+		}
+		function removeToast(id) {
+			if (!entries.some((t) => t.id === id)) return;
+			entries = entries.filter((t) => t.id !== id);
+			emit();
+		}
+		let liveAddToast = addToast;
+		function getStore() {
+			return {
+				toasts: entries,
+				addToast: liveAddToast,
+				removeToast
+			};
+		}
+		function setStoreState(patch) {
+			if (patch.addToast !== void 0) liveAddToast = patch.addToast;
+			if (patch.toasts !== void 0) entries = patch.toasts;
+			emit();
+		}
+		Object.assign(function useToastStore(selector) {
+			const toasts = (0, react.useSyncExternalStore)(subscribe, getSnapshot, getSnapshot);
+			return selector({
+				addToast: liveAddToast,
+				removeToast,
+				toasts
+			});
+		}, {
+			getState: getStore,
+			setState: setStoreState,
+			subscribe
+		});
+		//#endregion
+		//#region ../card-base/src/toast.tsx
+		/**
+		* ToastViewport — THE RENDERER FACE of the one toast system
+		* (stroke 37). The store lives in ./toastStore.ts (node-safe, no
+		* atom); this file re-exports it so UI users keep the single
+		* `@melite/card-base/toast` import — and mounts the viewport.
+		*
+		* THE MOUNT-CLAIM LAW: the viewport may mount at every seat — the
+		* studio shell, the cards console — and the document still renders
+		* toasts exactly ONCE. The first live viewport owns rendering;
+		* every other mounted viewport renders nothing; ownership
+		* re-broadcasts when owners unmount. No studio wires it, no studio
+		* can forget it, no seat can duplicate it.
+		*
+		* Per-seam subpath: `@melite/card-base/toast`.
+		*/
+		const liveViewportIds = /* @__PURE__ */ new Set();
+		let viewportEpoch = 0;
+		const viewportListeners = /* @__PURE__ */ new Set();
+		function emitViewportChange() {
+			viewportEpoch++;
+			viewportListeners.forEach((l) => l());
+		}
+		function subscribeViewport(l) {
+			viewportListeners.add(l);
+			return () => {
+				viewportListeners.delete(l);
+			};
+		}
+		function getViewportEpoch() {
+			return viewportEpoch;
+		}
+		let nextViewportId = 1;
+		/** Mount anywhere the system needs a renderer — the studio shell,
+		*  the cards console, any seat. The claim law guarantees exactly one
+		*  live renderer per document: the first-mounted viewport renders,
+		*  others render nothing until the owner unmounts. Renders the live
+		*  entries through the DSH Toast atom (body-portaled banner, owner
+		*  unmounts onDone). */
+		function ToastViewport() {
+			const idRef = (0, react.useRef)(nextViewportId++);
+			(0, react.useEffect)(() => {
+				const id = idRef.current;
+				liveViewportIds.add(id);
+				emitViewportChange();
+				return () => {
+					liveViewportIds.delete(id);
+					emitViewportChange();
+				};
+			}, []);
+			(0, react.useSyncExternalStore)(subscribeViewport, getViewportEpoch, getViewportEpoch);
+			const toasts = (0, react.useSyncExternalStore)(subscribe, getSnapshot, getSnapshot);
+			if (!(liveViewportIds.size === 0 || Math.min(...liveViewportIds) === idRef.current) || toasts.length === 0) return null;
+			return /* @__PURE__ */ (0, react_jsx_runtime.jsx)(react_jsx_runtime.Fragment, { children: toasts.map((t) => /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Toast, {
+				text: t.message,
+				holdMs: t.type === "error" ? 15e3 : 5e3,
+				onDone: () => removeToast(t.id)
+			}, t.id)) });
+		}
+		//#endregion
 		//#region ../card-base/src/studioRail.tsx
 		/**
 		* StudioRail — the shell-provided TOOLS slot in the studio's left rail
@@ -39825,7 +39982,16 @@ void main() {
 		/** The studio body: params column LEFT (projected into the shell rail
 		*  slot when one exists), preview RIGHT, optional bottom bar, then the
 		*  error line. The uniform three-slot shape — timeline and form cards
-		*  are the same grain, forms simply leave the right/bottom slots empty. */
+		*  are the same grain, forms simply leave the right/bottom slots empty.
+		*
+		*  THE TOAST LAW (stroke 36): the shell mounts the ONE toast viewport
+		*  — toasts are shell-owned chrome exactly like the error line (the
+		*  construction law: no studio wires it, no studio can forget it).
+		*  Before: motion hand-mounted a copy in a slot the contract never
+		*  had (type drift), anny pushed toasts with NO viewport mounted —
+		*  silently dropped — and ideogram4 hand-wired its own outside the
+		*  shell. The per-studio mount is DEAD; any toast pushed from any
+		*  seam renders here, once. */
 		function StudioShell({ params, preview, bottom, errors = [], className }) {
 			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
 				className: cx(shell_module_css_default.shell, className),
@@ -39833,7 +39999,8 @@ void main() {
 					/* @__PURE__ */ (0, react_jsx_runtime.jsx)(StudioRail, { children: params }),
 					preview,
 					bottom,
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)(StudioShellErrorLine, { errors })
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)(StudioShellErrorLine, { errors }),
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)(ToastViewport, {})
 				]
 			});
 		}
@@ -43322,6 +43489,7 @@ void main() {
 			const act = rec !== null && typeof rec["activity"] === "string" ? rec["activity"] : "";
 			const pct = prog !== null && prog.max > 0 ? Math.floor(100 * prog.value / prog.max) : null;
 			const failedText = typeof stage.runStatus === "string" && stage.runStatus === "failed" && typeof rec?.["error"] === "string" ? rec["error"] : null;
+			const startError = typeof props.startError === "string" && props.startError !== "" ? props.startError : null;
 			return (0, react.createElement)("div", {
 				className: card_module_css_default$1.zoomOverlay,
 				onClick: (e) => {
@@ -43354,11 +43522,11 @@ void main() {
 					(boundRef.current ?? props.onRun)();
 				}
 			}, (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.IconPlayOutline16, { size: 16 }), (0, react.createElement)("span", null, "Run")), (0, react.createElement)("button", {
-				className: card_module_css_default$1.closeX,
+				className: card_module_css_default$1.drillRunBtn,
 				type: "button",
 				"aria-label": "Collapse card",
 				onClick: onClose
-			}, "✕")), live || failedText !== null ? (0, react.createElement)("div", {
+			}, (0, react.createElement)("span", null, "✕"), (0, react.createElement)("span", null, "Close"))), live || failedText !== null || startError !== null ? (0, react.createElement)("div", {
 				className: card_module_css_default$1.zoomWebhook,
 				role: "status"
 			}, live ? (0, react.createElement)("span", {
@@ -43370,7 +43538,7 @@ void main() {
 			})) : null) : (0, react.createElement)("span", {
 				className: card_module_css_default$1.runError,
 				"data-testid": "drill-run-error"
-			}, failedText)) : null, (0, react.createElement)("div", { className: card_module_css_default$1.zoomBody }, ready ? (0, react.createElement)(props.detail, {
+			}, startError ?? failedText)) : null, (0, react.createElement)("div", { className: card_module_css_default$1.zoomBody }, ready ? (0, react.createElement)(props.detail, {
 				stage,
 				bench: rest.bench,
 				running: rest.running,
@@ -43751,7 +43919,7 @@ void main() {
 			}) : (0, react.createElement)("span", {
 				className: card_module_css_default$1.kindFace,
 				"data-kind": row.kind
-			}, (0, react.createElement)("span", { className: card_module_css_default$1.kindInitial }, row.kind.slice(0, 1).toUpperCase()), (0, react.createElement)("span", { className: card_module_css_default$1.kindName }, row.kind)), rowRunning(row) ? (0, react.createElement)("span", {
+			}, (0, react.createElement)("span", { className: card_module_css_default$1.kindInitial }, row.kind.slice(0, 1).toUpperCase()), (0, react.createElement)("span", { className: card_module_css_default$1.kindName }, titleCaseId(row.kind))), rowRunning(row) ? (0, react.createElement)("span", {
 				className: card_module_css_default$1.tileSpin,
 				"data-testid": "tile-spin",
 				role: "status",
@@ -43794,7 +43962,7 @@ void main() {
 			}, " ⛓") : null, row.sourceAttached ? (0, react.createElement)("span", {
 				className: card_module_css_default$1.wiredMark,
 				title: "source attached"
-			}, " 📎") : null), (0, react.createElement)("span", { className: card_module_css_default$1.tileMeta }, row.service !== null ? row.service : null, row.upstream !== null ? (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Tag, { tone: "quiet" }, "⟵ " + row.upstream) : null, row.prompt !== null ? (0, react.createElement)("span", { className: card_module_css_default$1.tilePrompt }, row.prompt) : null), row.error !== null && row.status === "failed" ? (0, react.createElement)("span", {
+			}, " 📎") : null), (0, react.createElement)("span", { className: card_module_css_default$1.tileMeta }, row.service !== null ? titleCaseId(row.service) : null, row.upstream !== null ? (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Tag, { tone: "quiet" }, "⟵ " + row.upstream) : null, row.prompt !== null ? (0, react.createElement)("span", { className: card_module_css_default$1.tilePrompt }, row.prompt) : null), row.error !== null && row.status === "failed" ? (0, react.createElement)("span", {
 				className: card_module_css_default$1.runError,
 				"data-testid": "tile-run-error",
 				title: row.error
@@ -44212,11 +44380,8 @@ void main() {
 			const [cards, setCards] = (0, react.useState)(null);
 			const [catalogError, setCatalogError] = (0, react.useState)(null);
 			const [query, setQuery] = (0, react.useState)("");
-			const [picked, setPicked] = (0, react.useState)(null);
-			const [spec, setSpec] = (0, react.useState)(null);
-			const [user, setUser] = (0, react.useState)({});
-			const [formError, setFormError] = (0, react.useState)(null);
-			const [adding, setAdding] = (0, react.useState)(false);
+			const [busyId, setBusyId] = (0, react.useState)(null);
+			const [addError, setAddError] = (0, react.useState)(null);
 			(0, react.useEffect)(() => {
 				let alive = true;
 				fetchCardCatalog().then((list) => {
@@ -44229,51 +44394,26 @@ void main() {
 				};
 			}, []);
 			const pick = (card) => {
-				setPicked(card);
-				setSpec(null);
-				setFormError(null);
-				fetchFormSpec(card.families[0] ?? card.id).then((doc) => {
-					setSpec(doc);
-					setUser(seedUser(doc, {}));
-				}).catch((e) => setFormError(e instanceof Error ? e.message : "form-spec unavailable"));
-			};
-			const onSet = (0, react.useCallback)((name, v) => {
-				setUser((m) => ({
-					...m,
-					[name]: v
-				}));
-			}, []);
-			(0, react.useCallback)((name) => {
-				setUser((m) => {
-					if (!Object.prototype.hasOwnProperty.call(m, name)) return m;
-					const next = {};
-					for (const [k, v] of Object.entries(m)) if (k !== name) next[k] = v;
-					return next;
+				if (busyId !== null) return;
+				setBusyId(card.id);
+				setAddError(null);
+				fetchFormSpec(card.families[0] ?? card.id).then((doc) => add(card, doc), (e) => {
+					setBusyId(null);
+					setAddError(card.label + ": " + (e instanceof Error ? e.message : "form-spec unavailable"));
 				});
-			}, []);
-			const wire = { candidates: bench.stages.flatMap((s) => {
-				const res = typeof s.result === "object" && s.result !== null ? s.result : null;
-				const url = res !== null && typeof res["url"] === "string" && res["url"] !== "" ? res["url"] : "";
-				return url === "" ? [] : [{
-					id: s.id,
-					label: String(s.title ?? s.card ?? s.id),
-					url
-				}];
-			}) };
-			const add = async () => {
-				if (picked === null) return;
-				setAdding(true);
-				setFormError(null);
+			};
+			const add = async (picked, spec) => {
 				try {
 					const doc = {
 						card: picked.id,
 						author: "user",
-						engine: spec?.engine ?? "comfyui",
+						engine: spec.engine ?? "comfyui",
 						expect_rev: bench.rev
 					};
-					if (Object.keys(user).length > 0) doc["params"] = { ...user };
+					const seeds = seedUser(spec, {});
+					if (Object.keys(seeds).length > 0) doc["params"] = { ...seeds };
 					await addStageWire(doc);
-					setAdding(false);
+					setBusyId(null);
 					try {
 						const before = new Set(bench.stages.map((r) => r.id));
 						const fresh = (await fetchBench()).stages.find((r) => !before.has(r.id)) ?? null;
@@ -44283,8 +44423,8 @@ void main() {
 						onAdded();
 					}
 				} catch (e) {
-					setFormError(e instanceof Error ? e.message : "add refused");
-					setAdding(false);
+					setBusyId(null);
+					setAddError(picked.label + ": " + (e instanceof Error ? e.message : "add refused"));
 				}
 			};
 			const filtered = (cards ?? []).filter((c) => {
@@ -44305,43 +44445,23 @@ void main() {
 				title: "Add a card",
 				closeLabel: "Close picker",
 				className: card_module_css_default$1.drill
-			}, picked === null ? (0, react.createElement)("div", { className: card_module_css_default$1.picker }, (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Input, {
+			}, (0, react.createElement)("div", { className: card_module_css_default$1.picker }, (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Input, {
 				value: query,
 				placeholder: "search cards…",
 				onChange: (e) => setQuery(e.target.value),
 				"aria-label": "Search cards"
-			}), catalogError !== null ? (0, react.createElement)("p", { className: card_module_css_default$1.runError }, catalogError) : null, cards === null && catalogError === null ? (0, react.createElement)("div", { className: card_module_css_default$1.load }, "cards…") : null, genres.map(([g, list]) => (0, react.createElement)("section", {
+			}), catalogError !== null ? (0, react.createElement)("p", { className: card_module_css_default$1.runError }, catalogError) : null, addError !== null ? (0, react.createElement)("p", { className: card_module_css_default$1.runError }, addError) : null, cards === null && catalogError === null ? (0, react.createElement)("div", { className: card_module_css_default$1.load }, "cards…") : null, genres.map(([g, list]) => (0, react.createElement)("section", {
 				key: g,
 				className: card_module_css_default$1.pickerGenre
-			}, (0, react.createElement)("h4", { className: card_module_css_default$1.specGroupTitle }, g), list.map((c) => (0, react.createElement)("button", {
+			}, (0, react.createElement)("h4", { className: card_module_css_default$1.specGroupTitle }, titleCaseId(g)), list.map((c) => (0, react.createElement)("button", {
 				key: c.id,
 				type: "button",
 				className: card_module_css_default$1.pickerCard,
+				disabled: busyId !== null,
 				onClick: () => pick(c)
-			}, (0, react.createElement)("span", { className: card_module_css_default$1.pickerCardLabel }, c.label), c.description !== "" ? (0, react.createElement)("span", { className: card_module_css_default$1.pickerCardDesc }, c.description) : null, (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Pill, null, c.families[0] ?? c.id)))))) : (0, react.createElement)(StudioShell, {
-				params: (0, react.createElement)("div", { className: card_module_css_default$1.params }, (0, react.createElement)("button", {
-					type: "button",
-					className: card_module_css_default$1.back,
-					onClick: () => {
-						setPicked(null);
-						setSpec(null);
-					}
-				}, "← " + (cards?.length ?? 0) + " cards"), formError !== null ? (0, react.createElement)("p", { className: card_module_css_default$1.runError }, formError) : null, spec === null && formError === null ? (0, react.createElement)("div", { className: card_module_css_default$1.load }, "form…") : null, spec !== null ? (0, react.createElement)(CardForm, {
-					spec,
-					user,
-					onSet,
-					wire
-				}) : null),
-				preview: (0, react.createElement)("div", { className: card_module_css_default$1.outputs }, (0, react.createElement)("div", { className: card_module_css_default$1.runRow }, (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Button, {
-					variant: "primary",
-					disabled: adding || spec === null,
-					onClick: () => {
-						add();
-					}
-				}, adding ? "adding…" : "Add card")))
-			}));
+			}, (0, react.createElement)("span", { className: card_module_css_default$1.pickerCardLabel }, busyId === c.id ? "adding " + c.label + "…" : c.label), c.description !== "" ? (0, react.createElement)("span", { className: card_module_css_default$1.pickerCardDesc }, c.description) : null, (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Pill, null, titleCaseId(c.families[0] ?? c.id))))))));
 		}
-		function BenchView({ bench, onRun, onRunStage, onStopStage, onRemoveStage, stageRuns, running, onPatchParams, renderStageView, renderPreview, runId, refreshTick }) {
+		function BenchView({ bench, onRun, onRunStage, onStopStage, onRemoveStage, stageRuns, running, onPatchParams, renderStageView, renderPreview, runId, refreshTick, startError }) {
 			const [live, setLive] = (0, react.useState)(bench);
 			(0, react.useEffect)(() => {
 				setLive(bench);
@@ -44615,6 +44735,7 @@ void main() {
 			}, (0, react.createElement)("span", { className: card_module_css_default$1.tilePreview + " " + card_module_css_default$1.addFace }, "+"), (0, react.createElement)("span", { className: card_module_css_default$1.tileCaption }, (0, react.createElement)("span", { className: card_module_css_default$1.tileTitle }, "Add a card"))))), live.log.length > 0 ? (0, react.createElement)("p", { className: card_module_css_default$1.logHead }, live.log.length + " log entr" + (live.log.length === 1 ? "y" : "ies")) : null, open !== null ? (0, react.createElement)(CardZoomOverlay, {
 				stage: open,
 				bench: live,
+				startError,
 				running,
 				onRun: () => {
 					onRunStage(open);
@@ -44721,7 +44842,7 @@ void main() {
 			return (0, react.createElement)("section", {
 				className: card_module_css_default$1.runView,
 				"data-run-status": run.status
-			}, (0, react.createElement)("header", { className: card_module_css_default$1.runHead }, (0, react.createElement)("span", { className: card_module_css_default$1.runId }, run.runId), (0, react.createElement)("span", { className: card_module_css_default$1.runStatus }, run.status)), (0, react.createElement)("div", { className: card_module_css_default$1.runActions }, onBack !== void 0 ? (0, react.createElement)("button", {
+			}, (0, react.createElement)("header", { className: card_module_css_default$1.runHead }, (0, react.createElement)("span", { className: card_module_css_default$1.runId }, run.runId), (0, react.createElement)("span", { className: card_module_css_default$1.runStatus }, titleCaseId(run.status))), (0, react.createElement)("div", { className: card_module_css_default$1.runActions }, onBack !== void 0 ? (0, react.createElement)("button", {
 				className: card_module_css_default$1.back,
 				type: "button",
 				onClick: onBack
@@ -44871,27 +44992,33 @@ void main() {
 				});
 			}, [snapshot, touchBench]);
 			const onRunStage = (0, react.useCallback)((stage) => {
-				if (snapshot?.value?.kind !== "bench") return;
+				if (snapshot?.value?.kind !== "bench") {
+					setLocalRunError("the bench is not ready to run from — reopen the Cards tab (snapshot kind: " + String(snapshot?.value?.kind ?? "none") + ")");
+					return;
+				}
 				setRunning(true);
 				setLocalRunError(null);
-				runCardStage(snapshot.value.draftId, stage).then((res) => {
+				const draftId = snapshot.value.draftId;
+				const stageId = stage.id;
+				const carryFailure = (error) => {
+					setRunning(false);
+					setLocalRunError(error);
+					const rev = snapshot.value.kind === "bench" ? snapshot.value.rev : void 0;
+					patchStageOutcome(draftId, stageId, {
+						runStatus: "failed",
+						result: { error }
+					}, rev).then(() => {
+						touchBench();
+					}).catch(() => {});
+				};
+				runCardStage(draftId, stage).then((res) => {
 					if ("runId" in res) onStarted(res.runId, {
-						draftId: snapshot.value.draftId,
-						stageId: stage.id
+						draftId,
+						stageId
 					});
-					else {
-						setRunning(false);
-						setLocalRunError(res.refused);
-						const draftId = snapshot.value.draftId;
-						const stageId = stage.id;
-						const error = res.refused;
-						patchStageOutcome(draftId, stageId, {
-							runStatus: "failed",
-							result: { error }
-						}).then(() => {
-							touchBench();
-						}).catch(() => {});
-					}
+					else carryFailure(res.refused);
+				}, (e) => {
+					carryFailure(e instanceof Error ? e.message : "run start failed");
 				});
 			}, [
 				snapshot,
@@ -44944,10 +45071,11 @@ void main() {
 						const draftId = value.draftId;
 						const stageId = target.id;
 						const error = res.refused;
+						const rev = value.kind === "draft" ? value.rev : void 0;
 						patchStageOutcome(draftId, stageId, {
 							runStatus: "failed",
 							result: { error }
-						}).catch(() => {});
+						}, rev).catch(() => {});
 					}
 				});
 			}, [snapshot, onStarted]);
@@ -44973,7 +45101,7 @@ void main() {
 			if (snapshot.status === "failed") return (0, react.createElement)("p", { className: card_module_css_default$1.failed }, snapshot.failure?.message ?? "cards resource failed");
 			const value = snapshot.value;
 			if (value === void 0) return (0, react.createElement)("p", { className: card_module_css_default$1.failed }, "cards resource gave no value");
-			return value.kind === "bench" ? (0, react.createElement)(react.Fragment, null, localRunError !== null ? (0, react.createElement)("p", { className: card_module_css_default$1.runError }, localRunError) : null, (0, react.createElement)(BenchView, {
+			return value.kind === "bench" ? (0, react.createElement)(react.Fragment, null, localRunError !== null ? (0, react.createElement)("p", { className: card_module_css_default$1.runError }, localRunError) : null, (0, react.createElement)(ToastViewport), (0, react.createElement)(BenchView, {
 				bench: value,
 				onRun,
 				onRunStage,
@@ -44985,7 +45113,8 @@ void main() {
 				renderStageView,
 				renderPreview,
 				runId: lastRunId,
-				refreshTick: benchTick
+				refreshTick: benchTick,
+				startError: localRunError
 			})) : value.kind === "draft" ? (0, react.createElement)(react.Fragment, null, localRunError !== null ? (0, react.createElement)("p", { className: card_module_css_default$1.runError }, localRunError) : null, (0, react.createElement)(DraftView, {
 				value,
 				running,
