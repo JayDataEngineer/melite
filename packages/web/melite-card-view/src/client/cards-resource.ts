@@ -80,6 +80,11 @@ export interface BenchStageRow {
    *  prepareCardParams' own stamped + lifted body, served by the
    *  drafts doors — the form layers it under the user layer. */
   resolved?: Record<string, unknown> | null
+  /** THE OUTPUT HISTORY (stroke 40): the stage's PREVIOUS results,
+   *  newest first, estate-capped at 12 — archived server-side at
+   *  every result overwrite (the live poll's progress faces never
+   *  destroy a run's outputs; entries are unique by url set). */
+  history?: unknown[]
   [key: string]: unknown
 }
 

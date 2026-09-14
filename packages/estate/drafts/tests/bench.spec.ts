@@ -923,6 +923,86 @@ test("a row id outside the s_N shape never feeds the mint (max stays, s_0 rides 
   assert.equal(added.stage, "s_8");
 });
 
+// ── THE OUTPUT HISTORY (stroke 40 — the operator's QOL law: the
+//    preview's mini row is a CARD OUTPUT HISTORY) ─────────────────
+
+describe("the drafts/patch door: the output history archive", () => {
+  /** Boot a real DraftsRemoteService over the json+domain stack. */
+  async function bootRemote(): Promise<{ svc: DraftsRemoteService; drafts: Domain<DraftsDomainSpec> }> {
+    const { ctx, domain } = await bootCtx();
+    const svc = new DraftsRemoteService(ctx);
+    return { svc, drafts: domain };
+  }
+
+  async function historyOf(svc: DraftsRemoteService, stageId = "s_0"): Promise<unknown[]> {
+    const doc = await svc.get("bench-main", sig);
+    const stage = (doc["stages"] as Array<Record<string, unknown>>).find((s) => s["id"] === stageId)!;
+    return Array.isArray(stage["history"]) ? (stage["history"] as unknown[]) : [];
+  }
+
+  test("a LIVE progress face over a completed result ARCHIVES the outputs (the poll never destroys a run)", async () => {
+    const { svc, drafts } = await bootRemote();
+    await ensureBench(drafts, { session: "main", stages: [{ id: "s_0" }] });
+    // run A completes: the terminal result carries outputs
+    await svc.patch("bench-main", "s_0", { runStatus: "completed", result: { run_id: "a", url: "/runs/a/out.png", artifacts: { out: "/runs/a/out.png" } } }, 0, sig);
+    // run B goes live: the poll's progress face carries NO outputs
+    await svc.patch("bench-main", "s_0", { runStatus: "running", result: { run_id: "b", progress: { value: 1, max: 10 } } }, 1, sig);
+    // the previous outputs are ARCHIVED, newest first — and the
+    // live face is the current result, not the archive's
+    const hist = await historyOf(svc);
+    expect(hist.length).toBe(1);
+    expect((hist[0] as Record<string, unknown>)["url"]).toBe("/runs/a/out.png");
+    const doc = await svc.get("bench-main", sig);
+    const stage = (doc["stages"] as Array<Record<string, unknown>>)[0]!;
+    expect((stage["result"] as Record<string, unknown>)["run_id"]).toBe("b");
+  });
+
+  test("a terminal overwrite archives the previous outputs (re-generate lands in history)", async () => {
+    const { svc, drafts } = await bootRemote();
+    await ensureBench(drafts, { session: "main", stages: [{ id: "s_0" }] });
+    await svc.patch("bench-main", "s_0", { runStatus: "completed", result: { run_id: "a", url: "/runs/a/out.png", artifacts: { out: "/runs/a/out.png" } } }, 0, sig);
+    await svc.patch("bench-main", "s_0", { runStatus: "completed", result: { run_id: "b", url: "/runs/b/out.png", artifacts: { out: "/runs/b/out.png" } } }, 1, sig);
+    const hist = await historyOf(svc);
+    expect(hist.length).toBe(1);
+    expect((hist[0] as Record<string, unknown>)["run_id"]).toBe("a");
+  });
+
+  test("the SAME outputs never double-list (the operator's uniqueness: re-generate UNIQUE outputs only)", async () => {
+    const { svc, drafts } = await bootRemote();
+    await ensureBench(drafts, { session: "main", stages: [{ id: "s_0" }] });
+    await svc.patch("bench-main", "s_0", { runStatus: "completed", result: { run_id: "a", url: "/runs/a/out.png" } }, 0, sig);
+    // a progress face, then the SAME urls land again (an idempotent
+    // re-delivery) — the archive holds ONE entry for those urls
+    await svc.patch("bench-main", "s_0", { runStatus: "running", result: { run_id: "b", progress: { value: 1, max: 4 } } }, 1, sig);
+    await svc.patch("bench-main", "s_0", { runStatus: "completed", result: { run_id: "c", url: "/runs/a/out.png" } }, 2, sig);
+    const hist = await historyOf(svc);
+    expect(hist.length).toBe(1);
+  });
+
+  test("the archive is CAPPED at 12 (a reasonable maximum)", async () => {
+    const { svc, drafts } = await bootRemote();
+    await ensureBench(drafts, { session: "main", stages: [{ id: "s_0" }] });
+    let rev = 0;
+    for (let i = 0; i < 16; i++) {
+      await svc.patch("bench-main", "s_0", { runStatus: "completed", result: { run_id: "r" + i, url: "/runs/r" + i + "/out.png" } }, rev, sig);
+      rev += 1;
+    }
+    const hist = await historyOf(svc);
+    expect(hist.length).toBe(12);
+    // NEWEST FIRST: the head is the run just before the current
+    expect((hist[0] as Record<string, unknown>)["run_id"]).toBe("r14");
+    expect((hist[11] as Record<string, unknown>)["run_id"]).toBe("r3");
+  });
+
+  test("results without outputs never archive (a progress face over a progress face)", async () => {
+    const { svc, drafts } = await bootRemote();
+    await ensureBench(drafts, { session: "main", stages: [{ id: "s_0" }] });
+    await svc.patch("bench-main", "s_0", { runStatus: "running", result: { run_id: "a", progress: { value: 1, max: 4 } } }, 0, sig);
+    await svc.patch("bench-main", "s_0", { runStatus: "running", result: { run_id: "a", progress: { value: 2, max: 4 } } }, 1, sig);
+    expect((await historyOf(svc)).length).toBe(0);
+  });
+});
+
 // ── the drafts/patch door (the layered-params law, 2026-09-14) ────
 
 describe("the drafts/patch door: null-unset, CAS fence, rev+log", () => {

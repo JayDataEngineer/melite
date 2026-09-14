@@ -11,18 +11,62 @@
  * to specialize — the h3 studio rides the shared VIDEO preview for
  * its hero, exactly as an image-gen card rides the IMAGE one.
  */
-import { createElement as h } from 'react'
+import { createElement as h, useEffect, useState } from 'react'
 import { GlbStagePreview } from './glb-stage.tsx'
-import type { PreviewOwnerProps } from '@melite/contracts'
+import type { PreviewArtifact, PreviewOwnerProps } from '@melite/contracts'
 import { cn } from './chrome.ts'
 import s from './preview.module.css'
+
+/** THE HISTORY STRIP (stroke 40 — the operator's QOL law): the mini
+ *  row under the main preview is a CARD OUTPUT HISTORY — the stage's
+ *  previous UNIQUE outputs, newest first, estate-capped at 12. The
+ *  hero defaults to the CURRENT run; clicking a history entry
+ *  promotes it to the hero (viewing an older output never rewrites
+ *  the stage — the selection is a view state, and a NEW result
+ *  resets it to the current run). Shared by every media preview. */
+function useHistoryHero(props: PreviewOwnerProps): { hero: PreviewArtifact | undefined, viewingHistory: boolean, promote: (i: number) => void } {
+  const flat: PreviewArtifact[] = props.artifacts.length > 0
+    ? props.artifacts
+    : (props.history ?? []).flat()
+  const [picked, setPicked] = useState<number>(-1)
+  // a NEW result resets the view to the current run (keyed on the
+  // current artifacts' urls — the selection never outlives the run
+  // it was made against)
+  const currentKey = props.artifacts.map((a) => a.url).join('|')
+  useEffect(() => { setPicked(-1) }, [currentKey])
+  const history = props.history ?? []
+  const promote = (i: number): void => { setPicked(i) }
+  const hero = picked >= 0 && history[picked] !== undefined && history[picked].length > 0
+    ? history[picked][0]
+    : flat[0]
+  return { hero, viewingHistory: picked >= 0, promote }
+}
+
+function HistoryStrip(props: PreviewOwnerProps, promote: (i: number) => void, testid: string): ReturnType<typeof h> | null {
+  const history = props.history ?? []
+  if (history.length === 0) return null
+  return h('div', { className: s.historyBlock, 'data-testid': testid },
+    h('span', { className: s.historyTitle }, 'History'),
+    h('div', { className: s.thumbRow },
+      history.map((entry, i) => h('button', {
+        key: entry[0]?.url ?? String(i),
+        type: 'button',
+        className: s.historyTile,
+        title: entry.map((a) => a.name).join(', '),
+        onClick: () => { promote(i) },
+      },
+        entry.slice(0, 1).map((a) => h('img', {
+          key: a.url, className: s.thumb, src: a.url, alt: a.name, loading: 'lazy',
+        }))))),
+  )
+}
 
 /** THE VIDEO PREVIEW — one hero film, one native player (the kit's
  *  FilmPlayer law: native <video controls>; no library, no kit). The
  *  stitch/hero is artifacts[0]; named windows follow in the strip
  *  row. Honest empty state while no artifact has landed. */
 export function VideoStagePreview(props: PreviewOwnerProps): ReturnType<typeof h> {
-  const hero = props.artifacts[0]
+  const { hero, promote } = useHistoryHero(props)
   return h('div', { className: s.stagePreview, 'data-testid': 'stage-preview-video' },
     hero === undefined
       ? h('div', { className: s.empty },
@@ -38,13 +82,16 @@ export function VideoStagePreview(props: PreviewOwnerProps): ReturnType<typeof h
             title: a.name,
           }, a.name)))
       : null,
+    HistoryStrip(props, promote, 'stage-output-history'),
   )
 }
 
 /** THE IMAGE PREVIEW — the latest render hero (native <img>), the
- *  gallery thumbs beneath. Same chrome, same law. */
+ *  current run's gallery thumbs beneath, then THE OUTPUT HISTORY
+ *  (stroke 40): the stage's previous unique outputs, newest first —
+ *  click one to view it in the hero. Same chrome, same law. */
 export function ImageStagePreview(props: PreviewOwnerProps): ReturnType<typeof h> {
-  const hero = props.artifacts[0]
+  const { hero, promote } = useHistoryHero(props)
   return h('div', { className: cn(s.stagePreview), 'data-testid': 'stage-preview-image' },
     hero === undefined
       ? h('div', { className: s.empty },
@@ -56,6 +103,7 @@ export function ImageStagePreview(props: PreviewOwnerProps): ReturnType<typeof h
             key: a.url, className: s.thumb, src: a.url, alt: a.name, loading: 'lazy',
           })))
       : null,
+    HistoryStrip(props, promote, 'stage-output-history'),
   )
 }
 
@@ -63,7 +111,7 @@ export function ImageStagePreview(props: PreviewOwnerProps): ReturnType<typeof h
  *  law as the video preview: native <audio controls>; no library).
  *  Named clips follow in the strip row. */
 export function AudioStagePreview(props: PreviewOwnerProps): ReturnType<typeof h> {
-  const hero = props.artifacts[0]
+  const { hero, promote } = useHistoryHero(props)
   return h('div', { className: s.stagePreview, 'data-testid': 'stage-preview-audio' },
     hero === undefined
       ? h('div', { className: s.empty },
@@ -79,6 +127,7 @@ export function AudioStagePreview(props: PreviewOwnerProps): ReturnType<typeof h
             title: a.name,
           }, a.name)))
       : null,
+    HistoryStrip(props, promote, 'stage-output-history'),
   )
 }
 

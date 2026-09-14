@@ -32,4 +32,14 @@ export interface PreviewOwnerProps {
   runStatus: string
   /** Bench stage identity (for keyed React identity downstream). */
   stageId: string
+  /** THE OUTPUT HISTORY (stroke 40 — the operator's QOL law: the
+   *  mini row under the main preview is a CARD OUTPUT HISTORY):
+   *  the stage's PREVIOUS unique outputs, newest first, capped at
+   *  12 by the estate (derived server-side at every result
+   *  overwrite — the live poll's progress faces never destroy a
+   *  run's outputs; a re-run landing the same urls never
+   *  double-lists). Each entry is one past run's artifact set —
+   *  the hero's own run is NOT in it. Absent on lanes/rows without
+   *  history. */
+  history?: PreviewArtifact[][]
 }

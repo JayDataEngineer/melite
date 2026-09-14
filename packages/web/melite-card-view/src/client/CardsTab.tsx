@@ -713,7 +713,7 @@ function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRemoved, 
   /** the preview seam consult (hour-9): the shared video/image preview
    *  rides the drill's RIGHT column — supplied by the host (it owns
    *  the slot site); the shared card-base previews are the defaults. */
-  renderPreview?: (owner: { kind: 'video' | 'image' | 'audio' | 'mesh', artifacts: Array<{ name: string, url: string }>, runStatus: string, stageId: string }, fallback: ReturnType<typeof h>) => ReturnType<typeof h>
+  renderPreview?: (owner: { kind: 'video' | 'image' | 'audio' | 'mesh', artifacts: Array<{ name: string, url: string }>, runStatus: string, stageId: string, history?: Array<Array<{ name: string, url: string }>> }, fallback: ReturnType<typeof h>) => ReturnType<typeof h>
   onSurface?: (size: string) => void
   runId?: string | null
   /** Retired seat (2026-09-13, the operator's "it doesn't need
@@ -1063,10 +1063,22 @@ function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRemoved, 
     // the declaration is absent or non-previewable
     const kind = primaryKindFor(spec, heroUrl)
     if (kind === null) return null
+    // THE OUTPUT HISTORY (stroke 40): the estate archives the stage's
+    // previous results (each a result-shaped row) — newest first,
+    // capped, unique by url set. Each entry walks the SAME artifact
+    // harvest as the hero's own result (one spelling — the history
+    // and the hero can never disagree about what a run produced).
+    const historyRaw = Array.isArray((stage as Record<string, unknown>)['history'])
+      ? ((stage as Record<string, unknown>)['history'] as unknown[])
+      : []
+    const history = historyRaw
+      .map((e) => previewArtifactsFor({ result: e }))
+      .filter((arts) => arts.length > 0)
     const owner = {
       kind, artifacts,
       runStatus: typeof stage.runStatus === 'string' ? stage.runStatus : '',
       stageId: stage.id,
+      ...(history.length > 0 ? { history } : {}),
     }
     const fallback = kind === 'video'
       ? h(VideoStagePreview, owner)
@@ -1337,7 +1349,7 @@ function BenchView({ bench, onRun, onRunStage, onStopStage, onRemoveStage, stage
   running: boolean
   onPatchParams: (stage: BenchStageRow, patch: Record<string, unknown>) => void
   renderStageView: (owner: StageViewOwnerProps, fallback: ReturnType<typeof h>) => ReturnType<typeof h>
-  renderPreview?: (owner: { kind: 'video' | 'image' | 'audio' | 'mesh', artifacts: Array<{ name: string, url: string }>, runStatus: string, stageId: string }, fallback: ReturnType<typeof h>) => ReturnType<typeof h>
+  renderPreview?: (owner: { kind: 'video' | 'image' | 'audio' | 'mesh', artifacts: Array<{ name: string, url: string }>, runStatus: string, stageId: string, history?: Array<Array<{ name: string, url: string }>> }, fallback: ReturnType<typeof h>) => ReturnType<typeof h>
   runId?: string | null
   /** The outcome observer's touch — the rail re-reads so tile
    *  runStatus/result stay live without ever leaving the bench. */
@@ -1693,7 +1705,7 @@ function DraftView({ value, running, onRun, onStop, onBack, onPatchParams, rende
   onBack: () => void
   onPatchParams: (patch: Record<string, unknown>) => void
   renderStageView: (owner: StageViewOwnerProps, fallback: ReturnType<typeof h>) => ReturnType<typeof h>
-  renderPreview?: (owner: { kind: 'video' | 'image' | 'audio' | 'mesh', artifacts: Array<{ name: string, url: string }>, runStatus: string, stageId: string }, fallback: ReturnType<typeof h>) => ReturnType<typeof h>
+  renderPreview?: (owner: { kind: 'video' | 'image' | 'audio' | 'mesh', artifacts: Array<{ name: string, url: string }>, runStatus: string, stageId: string, history?: Array<Array<{ name: string, url: string }>> }, fallback: ReturnType<typeof h>) => ReturnType<typeof h>
   runId: string | null
   bindRun?: (run: () => void) => void
 }): ReturnType<typeof h> {

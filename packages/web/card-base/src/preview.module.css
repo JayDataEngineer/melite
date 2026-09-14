@@ -59,6 +59,29 @@
   border: 1px solid var(--dsw-alias-border-l2);
   border-radius: 4px;
 }
+/* THE OUTPUT HISTORY (stroke 40): the mini row under the hero is a
+   titled section — the stage's previous unique outputs, newest
+   first. Tiles are buttons (click promotes the entry to the hero). */
+.historyBlock {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: none;
+  padding-top: 4px;
+}
+.historyTitle {
+  color: var(--dsw-alias-label-secondary, #61666b);
+  font-size: 11px;
+}
+.historyTile {
+  display: inline-flex;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  background: none;
+  cursor: pointer;
+}
+.historyTile:hover { border-color: var(--dsw-alias-border-l2); }
 
 /* THE MESH STAGE canvas — the raw-three viewport fills the preview
  * pane (the shell's preview column owns the overflow, hour-13). */

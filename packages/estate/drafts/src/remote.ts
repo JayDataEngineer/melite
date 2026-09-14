@@ -124,6 +124,42 @@ function thrownMessage(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
 }
 
+/** ── THE OUTPUT HISTORY HELPERS (stroke 40) ──────────────────────
+ * A result's OUTPUT urls, one spelling: the artifacts name→url map
+ * first, the flat assetUrls list second, the lone url third (the
+ * same harvest order the client's preview reads — the history and
+ * the hero can never disagree about what a run produced). */
+export function resultOutputUrls(result: unknown): string[] {
+  if (typeof result !== "object" || result === null || Array.isArray(result)) return [];
+  const row = result as Record<string, unknown>;
+  const urls: string[] = [];
+  if (row["artifacts"] !== null && typeof row["artifacts"] === "object" && !Array.isArray(row["artifacts"])) {
+    for (const v of Object.values(row["artifacts"] as Record<string, unknown>)) {
+      if (typeof v === "string" && v !== "") urls.push(v);
+    }
+  }
+  if (urls.length === 0 && Array.isArray(row["assetUrls"])) {
+    for (const v of row["assetUrls"]) {
+      if (typeof v === "string" && v !== "") urls.push(v);
+    }
+  }
+  if (urls.length === 0 && typeof row["url"] === "string" && row["url"] !== "") urls.push(row["url"]);
+  return urls;
+}
+
+/** Same OUTPUTS (the uniqueness key): two results match when their
+ * url sets are equal — a re-run landing the same urls is not a new
+ * history entry (the operator's "when it is unique"). */
+export function sameResultOutputs(a: unknown, b: unknown): boolean {
+  return sameUrlSet(resultOutputUrls(a), resultOutputUrls(b));
+}
+
+function sameUrlSet(a: string[], b: string[]): boolean {
+  if (a.length !== b.length) return false;
+  const sa = new Set(a);
+  return b.every((u): boolean => sa.has(u));
+}
+
 /** THE RESOLVED SERVE (hour-26 stroke 15, the 1:1 run law): the
  *  registry seat behind the optional-dependency law. The drafts
  *  package never imports the registry (dependency direction is
@@ -426,7 +462,34 @@ export class DraftsRemoteService extends TypertRemoteService {
         { current_rev: bench.rev, expect_rev: expectRev },
       );
     }
-    if ("result" in patch) stage["result"] = patch["result"];
+    if ("result" in patch) {
+      // THE OUTPUT HISTORY (stroke 40 — the operator's QOL law: the
+      // preview's mini row is a CARD OUTPUT HISTORY): a stage's
+      // result is the CURRENT run's face, and every poll state
+      // overwrites it — the live patch ({run_id, progress}) would
+      // destroy the previous run's outputs. Before any result
+      // overwrite, a result CARRYING outputs is archived onto the
+      // stage's history, newest first, capped (12), deduped by its
+      // url set: only UNIQUE outputs ride (the operator's word — a
+      // re-run landing the same urls never double-lists). The
+      // history is DERIVED here, never patched in — the estate owns
+      // the trail; the client reads it.
+      const prev = stage["result"];
+      const next = patch["result"];
+      if (resultOutputUrls(prev).length > 0 && !sameResultOutputs(prev, next)) {
+        const urls = resultOutputUrls(prev);
+        const entry = { ...(prev as Record<string, unknown>) };
+        const hist = Array.isArray(stage["history"]) ? [...(stage["history"] as unknown[])] : [];
+        const alreadyHead = hist.some(
+          (e): boolean => sameUrlSet(resultOutputUrls(e), urls),
+        );
+        if (!alreadyHead) {
+          hist.unshift(entry);
+          stage["history"] = hist.slice(0, 12);
+        }
+      }
+      stage["result"] = patch["result"];
+    }
     if ("runStatus" in patch) stage["runStatus"] = patch["runStatus"];
     if ("params" in patch && patch["params"] !== null && typeof patch["params"] === "object" && !Array.isArray(patch["params"])) {
       // PER-KEY merge (never replace) — the old door's law, now with
