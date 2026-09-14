@@ -391,6 +391,24 @@ window.__ModuleLoader__.load({
 				}
 				const flow = side["flow"];
 				const snap = typeof flow === "object" && flow !== null ? flow["card_snapshot"] : void 0;
+				const benchSnap = typeof flow === "object" && flow !== null ? flow["bench_snapshot"] : void 0;
+				if (typeof benchSnap === "object" && benchSnap !== null) {
+					const bs = benchSnap;
+					const bsStages = Array.isArray(bs["stages"]) ? bs["stages"].map((st) => ({ ...st })) : [];
+					if (bsStages.length > 1) {
+						const ranCard = typeof snap === "object" && snap !== null ? snap["card"] : void 0;
+						const result = resultOfRun(flow, String(side["run_id"] ?? ""));
+						for (const st of bsStages) {
+							delete st["result"];
+							delete st["runStatus"];
+							delete st["resolved"];
+							if (ranCard !== void 0 && st["card"] === ranCard && result !== void 0) st["result"] = result;
+							st["provenance"] = "restored";
+						}
+						await loadStagesOntoBench(bsStages, (typeof bs["intent"] === "string" && bs["intent"] !== "" ? bs["intent"] : "restored run").slice(0, 77), deps);
+						return;
+					}
+				}
 				if (typeof snap === "object" && snap !== null && typeof snap["card"] === "string") {
 					const card = snap["card"];
 					const rawParams = snap["params"];
