@@ -304,6 +304,20 @@ export interface CatalogCard {
   families: string[]
 }
 
+/** THE TITLE-CASE FACE (the operator's sweep law): machine ids
+ *  (krea-2, z-image, euler, comfyui…) render titled — never raw.
+ *  FACES ONLY: option values, param keys, and wire bodies keep the
+ *  verbatim id (the 1:1 law — the eye gets prose, the door gets the
+ *  id). First letter of each separator-bound word upper, the rest
+ *  untouched (INT8 stays INT8); idempotent on titled prose. */
+export function titleCaseId(id: string): string {
+  return id
+    .split(/[-_\s]+/)
+    .filter((w) => w !== '')
+    .map((w) => w.slice(0, 1).toUpperCase() + w.slice(1))
+    .join(' ')
+}
+
 export type SpecValues = Record<string, unknown>
 
 /** THE SCHEMA LAYER's declared defaults (fieldsOfEnvelope's output —

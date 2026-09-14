@@ -24,6 +24,7 @@ import {
   axisPickPatch,
   modelChoices,
   quantRowsFor,
+  titleCaseId,
   schemaEnvelope,
   seedAxisValues,
   seedUser,
@@ -122,7 +123,10 @@ test('CardForm renders Model, Variant, and Quant selects ABOVE the parameters', 
   const model = await screen.findByLabelText('Model')
   const variant = screen.getByLabelText('Variant')
   const quant = screen.getByLabelText('Quant')
-  expect(model.textContent ?? '').toContain('krea-2')
+  // THE TITLE-CASE FACE (the operator's sweep law): the eye gets
+  // prose, the door gets the id — text titled, value verbatim.
+  expect(model.textContent ?? '').toContain('Krea 2')
+  expect(model.textContent ?? '').not.toContain('krea-2')
   expect((model as HTMLSelectElement).value).toBe('krea-2')
   expect((variant as HTMLSelectElement).value).toBe('turbo')
   expect((quant as HTMLSelectElement).value).toBe('int8')
@@ -453,7 +457,8 @@ test('THE LANE PROOF: the Model select renders the HELD model as itself, refused
   // same. NEVER the first <option> (krea-2) painted over it.
   expect(model.value).toBe('anima')
   expect(model.getAttribute('data-refused')).toBe('model')
-  expect(model.selectedOptions[0]?.textContent).toContain('anima — not an offered model of this card')
+  // THE TITLE-CASE FACE: the eye gets Anima, the door keeps anima
+  expect(model.selectedOptions[0]?.textContent).toContain('Anima — not an offered model of this card')
   // the held coords are REAL rows of the card's matrix — they render
   // grounded, their own values (the run composes variant=turbo,
   // quant=int8; the visual shows exactly that). The PAIR's
@@ -499,7 +504,7 @@ test('a held coord that breaks the OWNER CHAIN refuses as itself — the first-r
   const quant = (await screen.findByLabelText('Quant')) as HTMLSelectElement
   expect(quant.value).toBe('int8')
   expect(quant.getAttribute('data-refused')).toBe('Quant')
-  expect(quant.selectedOptions[0]?.textContent).toContain('int8 — invalid')
+  expect(quant.selectedOptions[0]?.textContent).toContain('Int8 — invalid')
 })
 
 test('one pick repairs a refused stage — the pick\'s overlay re-points the model coherently', async () => {
@@ -545,7 +550,7 @@ test('a boarded-but-not-downloaded family SERVES in the Model rail — visible, 
   // download prompt handles absence — offered is offered)
   expect(opt).toBeTruthy()
   expect(opt.disabled).toBe(false)
-  expect(opt.textContent).toContain('anima — not downloaded on this machine')
+  expect(opt.textContent).toContain('Anima — not downloaded on this machine')
 })
 
 test('a HELD absent family grounds through the families block — the rail shows it, not krea-2', async () => {
@@ -628,9 +633,11 @@ test('the Model rail NEVER renders a family\'s prose label — ids only (the DEC
   })
   render(comp)
   const model = (await screen.findByLabelText('Model')) as HTMLSelectElement
-  const opts = [...model.querySelectorAll('option')].map((o) => o.textContent ?? '')
-  // ids only — no prose anywhere in the Model rail
-  for (const t of opts) expect(t).toMatch(/^(krea-2|z-image|anima)( — not downloaded on this machine)?$/)
+  const opts = [...model.querySelectorAll('option')]
+  // TITLED ids only — no prose anywhere in the Model rail (the
+  // title-case face); every option VALUE rides the verbatim id.
+  for (const o of opts) expect((o.textContent ?? '')).toMatch(/^(Krea 2|Z Image|Anima)( — not downloaded on this machine)?$/)
+  expect(opts.map((o) => o.value).sort()).toEqual(['anima', 'krea-2', 'z-image'])
 })
 
 test('SELECTING A FAMILY FILTERS VARIANT+QUANT: the cross-spec pick clears the axes (never the old spec\'s rows under a foreign model)', async () => {
@@ -715,7 +722,7 @@ test('a DECLared columns group grids its fields — Width and Height share ONE r
     }),
   }
   render(createElement(SpecForm, { spec, user: {}, onSet: () => {} }))
-  const res = await screen.findByText('resolution')
+  const res = await screen.findByText('Resolution')
   const grid = res.parentElement?.querySelector('div[class*="specGrid"]') as HTMLElement
   expect(grid).not.toBeNull()
   // the DECL's grid: 3 columns (width/height/seed-shaped thirds)
@@ -734,7 +741,7 @@ test('a DECLared columns group grids its fields — Width and Height share ONE r
   expect(labels.some((t) => t.includes('Height'))).toBe(true)
   expect((cells[0] as HTMLElement).style.gridColumn).toBe('span 1')
   // an UNDECLARED group keeps the stacked face (no grid node)
-  const samp = screen.getByText('sampling')
+  const samp = screen.getByText('Sampling')
   expect(samp.parentElement?.querySelector('div[class*="specGrid"]')).toBeNull()
 })
 
@@ -784,7 +791,7 @@ test('the grid law is parametric — columns:4 with a width:2 span, no overflow 
     }),
   }
   render(createElement(SpecForm, { spec, user: {}, onSet: () => {} }))
-  const head = await screen.findByText('frame')
+  const head = await screen.findByText('Frame')
   const grid = head.parentElement?.querySelector('div[class*="specGrid"]') as HTMLElement
   expect(grid).not.toBeNull()
   // the DECL's OWN count renders — 4, not 3: nothing in the form is
@@ -804,4 +811,20 @@ test('the grid law is parametric — columns:4 with a width:2 span, no overflow 
   const spanSum = cells.reduce((acc, c) => acc + Number(/span (\d+)/.exec(c.style.gridColumn)?.[1] ?? 1), 0)
   expect(spanSum).toBe(5)
   expect(grid.style.gridTemplateColumns).toBe('repeat(4, minmax(0, 1fr))')
+})
+
+// ── STROKE 30: THE TITLE-CASE FACE (the operator's sweep law) ──
+test('titleCaseId titles machine ids and leaves titled prose alone', () => {
+  expect(titleCaseId('krea-2')).toBe('Krea 2')
+  expect(titleCaseId('z-image')).toBe('Z Image')
+  expect(titleCaseId('anima')).toBe('Anima')
+  expect(titleCaseId('krea-2-raw')).toBe('Krea 2 Raw')
+  expect(titleCaseId('euler')).toBe('Euler')
+  expect(titleCaseId('comfyui')).toBe('Comfyui')
+  expect(titleCaseId('image-gen')).toBe('Image Gen')
+  expect(titleCaseId('sampling')).toBe('Sampling')
+  // idempotent on the prose the DECLs already carry
+  expect(titleCaseId('Turbo')).toBe('Turbo')
+  expect(titleCaseId('INT8 ConvRot')).toBe('INT8 ConvRot')
+  expect(titleCaseId('')).toBe('')
 })

@@ -43,7 +43,10 @@ test('select options render text for BOTH door shapes', () => {
   const s1 = screen.getByLabelText('Resolution') as HTMLSelectElement
   expect([...s1.options].map((o) => o.textContent)).toEqual(['512', '1024'])
   const s2 = screen.getByLabelText('BG') as HTMLSelectElement
-  expect([...s2.options].map((o) => o.textContent)).toEqual(['Auto removal'])
+  // THE TITLE-CASE FACE (the operator's sweep law): the declared
+  // prose renders titled — the option VALUE rides verbatim.
+  expect([...s2.options].map((o) => o.textContent)).toEqual(['Auto Removal'])
+  expect([...s2.options].map((o) => o.value)).toEqual(['auto'])
 })
 
 // ── the square atom (the old law verbatim) ────────────────────────────

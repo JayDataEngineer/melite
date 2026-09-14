@@ -29,7 +29,7 @@ import { ModifiersSection } from './mods.tsx'
 import { uploadInputFile } from './wire.ts'
 import {
   activeRowId, activeVariantId, axisGroups, axisKey, axisPickPatch, coerceFieldEdit, composingRows, fieldsOf,
-  fieldsOfEnvelope, groupFields, modelChoices, modOwnedFields, modelSwitchPatch, recipeModStacks, resolveValue, rowsFor, variantRows,
+  fieldsOfEnvelope, groupFields, modelChoices, modOwnedFields, modelSwitchPatch, recipeModStacks, resolveValue, rowsFor, titleCaseId, variantRows,
   quantRowsFor,
   type FormSpecDoc, type SpecField, type SpecValues, type VariantRow,
 } from './spec.ts'
@@ -457,9 +457,11 @@ export function SpecAtom({ f, value, onEdit, square, wireCandidates }: {
       onChange: (e: unknown) => onEdit(f.name, (e as { target: { value: string } }).target.value),
       'aria-label': f.label,
     }, f.options.map((o) => {
-      // normalize: '1024' | {value:'1024', label:'1K'} → one shape
+      // normalize: '1024' | {value:'1024', label:'1K'} → one shape.
+      // THE TITLE-CASE FACE (the operator's sweep law): raw-id
+      // labels render titled — the value rides verbatim.
       const row = typeof o === 'string' ? { value: o, label: o } : o
-      return h('option', { key: row.value, value: row.value }, row.label)
+      return h('option', { key: row.value, value: row.value }, titleCaseId(row.label))
     }))
   }
   if (f.type === 'slider') {
@@ -697,7 +699,7 @@ export function ModelAxes({ spec, value, onSet, onDownloadModel, recipeField }: 
         // (neutral mark — the error, not a scream)
         refusedModel !== undefined
           ? h('option', { key: refusedModel, value: refusedModel },
-              refusedModel + ' — not an offered model of this card')
+              titleCaseId(refusedModel) + ' — not an offered model of this card')
           : null,
         // boarded families: pickable — offered is offered (stroke
         // 18); absent ones carry the machine truth in the label and
@@ -706,15 +708,15 @@ export function ModelAxes({ spec, value, onSet, onDownloadModel, recipeField }: 
         // variant+quant config — never a model option's face.
         familyRows.map((f) => f.inMatrix ? null : h('option', {
           key: 'fam-' + f.id, value: f.id,
-        }, f.id + (f.present ? '' : ' — not downloaded on this machine'))),
-        models.map((m) => h('option', { key: m, value: m }, m))),
+        }, titleCaseId(f.id) + (f.present ? '' : ' — not downloaded on this machine'))),
+        models.map((m) => h('option', { key: m, value: m }, titleCaseId(m)))),
     // THE DOWNLOAD PROMPT (stroke 18): the held model is boarded
     // but its weights are not on the machine — ask the user, never
     // block the pick. The button is the gesture; the manage door
     // queues the provision.
     heldFam !== undefined && onDownloadModel !== undefined
       ? h('div', { className: css.specHint, 'data-download-prompt': heldFam.id },
-          heldFam.id + ' is offered by this card but not downloaded on this machine.',
+          titleCaseId(heldFam.id) + ' is offered by this card but not downloaded on this machine.',
           ' ',
           h('button', {
             type: 'button',
@@ -726,7 +728,7 @@ export function ModelAxes({ spec, value, onSet, onDownloadModel, recipeField }: 
                 .then((ok: boolean) => setDlState(ok ? 'queued' : 'failed'))
                 .catch(() => setDlState('failed'))
             },
-          }, dlState === 'idle' ? 'Download ' + heldFam.id
+          }, dlState === 'idle' ? 'Download ' + titleCaseId(heldFam.id)
             : dlState === 'busy' ? 'Requesting…'
             : dlState === 'queued' ? 'Download queued ✓ (run when it lands)'
             : 'Download request failed — retry from the assets tab'))
@@ -737,7 +739,7 @@ export function ModelAxes({ spec, value, onSet, onDownloadModel, recipeField }: 
       const heldId = typeof heldRaw === 'string' && heldRaw !== '' ? heldRaw : undefined
       const refusedId = heldId !== undefined && !rows.some((r) => r.id === heldId) ? heldId : undefined
       if (rows.length === 0 && refusedId === undefined) return null
-      const label = contract[g]?.label ?? g
+      const label = contract[g]?.label ?? titleCaseId(g)
       return h('label', { key: g, className: css.specField },
         h('span', { className: css.specFieldKey }, label),
         h('select', {
@@ -757,10 +759,10 @@ export function ModelAxes({ spec, value, onSet, onDownloadModel, recipeField }: 
           // visual; the grounded rows stay one pick away as repair
           refusedId !== undefined
             ? h('option', { key: refusedId, value: refusedId },
-                refusedId + ' — invalid ' + label.toLowerCase() + ' for ' + (heldModel ?? shownModel))
+                titleCaseId(refusedId) + ' — invalid ' + label.toLowerCase() + ' for ' + titleCaseId(heldModel ?? shownModel))
             : null,
           rows.map((v) => h('option', { key: v.id, value: v.id },
-            v.label + (typeof v.hint === 'string' && v.hint !== '' ? ` — ${v.hint}` : '')))))
+            titleCaseId(v.label) + (typeof v.hint === 'string' && v.hint !== '' ? ` — ${v.hint}` : '')))))
     }),
     // THE RECIPE'S SEAT (stroke 20): the card's own recipe field
     // renders UNDER the axes — same options the field always served
@@ -782,7 +784,7 @@ export function ModelAxes({ spec, value, onSet, onDownloadModel, recipeField }: 
             (recipeField.options ?? []).map((o) => {
               const val = typeof o === 'string' ? o : o.value
               const lab = typeof o === 'string' ? o : o.label
-              return h('option', { key: val, value: val }, lab)
+              return h('option', { key: val, value: val }, titleCaseId(lab))
             })))
       : null,
   )
@@ -1029,7 +1031,7 @@ export function CardForm({ spec, user, base, onSet, onUnset, wire, square, atoms
       }
       flush()
       return h('section', { key: g.group ?? '', className: css.specGroup },
-        g.group !== null ? h('h4', { className: css.specGroupTitle }, g.group) : null,
+        g.group !== null ? h('h4', { className: css.specGroupTitle }, titleCaseId(g.group)) : null,
         gridCols === undefined ? children
           : h('div', { className: css.specGrid, style: { gridTemplateColumns: `repeat(${gridCols}, minmax(0, 1fr))` } }, children),
       )

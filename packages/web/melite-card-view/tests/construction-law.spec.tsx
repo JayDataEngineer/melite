@@ -148,8 +148,9 @@ describe('the construction law (add-a-card drill)', () => {
     const addTile = await screen.findAllByText(/add a card/i, undefined, { timeout: 4000 })
     fireEvent.click(addTile[0])
     // the catalog's card row — one click adds (the preadd form
-    // screen is gone: no Add button, no back row, ever)
-    const row = await screen.findByText('Image Edit', undefined, { timeout: 4000 })
+    // screen is gone: no Add button, no back row, ever). By role:
+    // the titled family pill echoes the label, so text is ambiguous.
+    const row = await screen.findByRole('button', { name: /Image Edit/ }, undefined, { timeout: 4000 })
     fireEvent.click(row)
     expect(screen.queryByText('Add card')).toBeNull()
     // the add lands and the drill opens on the fresh row — THE
@@ -224,7 +225,7 @@ describe('the construction law (the plain add door)', () => {
     } as CardsTabProps_))
     const addTile = await screen.findAllByText(/add a card/i, undefined, { timeout: 4000 })
     fireEvent.click(addTile[0])
-    const row = await screen.findByText('Mask Studio', undefined, { timeout: 4000 })
+    const row = await screen.findByRole('button', { name: /Mask Studio/ }, undefined, { timeout: 4000 })
     fireEvent.click(row)
     // the pick IS the add — no preadd screen between: no Add button,
     // no back row, only the busy face on the picked row…

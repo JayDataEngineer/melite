@@ -35,6 +35,7 @@ export {
   rowsFor,
   composingRows,
   modelChoices,
+  titleCaseId,
   modelSwitchPatch,
   activeVariantId,
   activeRowId,

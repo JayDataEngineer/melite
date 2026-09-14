@@ -31,7 +31,7 @@ import { Button, IconPlusOutline16, Input, Menu, Modal } from '@deepseek-ai/dsh-
 import css from './card.module.css'
 import { SpecAtom } from './form.tsx'
 import { useSquareProvider } from './form.tsx'
-import { isOptionKind, type ModifierKind, type SpecValues } from './spec.ts'
+import { isOptionKind, titleCaseId, type ModifierKind, type SpecValues } from './spec.ts'
 
 export interface ModifiersSectionProps {
   kinds: ModifierKind[]
@@ -217,7 +217,7 @@ export function ModifiersSection(props: ModifiersSectionProps): ReturnType<typeo
           return h(ModTile, {
             key: k.param_key + '-' + i,
             tileId: k.param_key + '-' + i,
-            label: option !== null ? option.label : (id !== '' ? id : (isOptionKind(k) ? k.label + ' ' + String(i + 1) : k.label)),
+            label: option !== null ? option.label : (id !== '' ? titleCaseId(id) : (isOptionKind(k) ? k.label + ' ' + String(i + 1) : k.label)),
             ...(strength !== undefined ? { strength } : {}),
             onOpen: () => { openEdit(k, i) },
             dragging: dragTile === k.param_key + '-' + i,

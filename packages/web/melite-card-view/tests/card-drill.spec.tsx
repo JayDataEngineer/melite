@@ -162,8 +162,9 @@ test('the bench row is a card (Pill kind, bold title, engine Pill) and opens the
   }))
   const tile = tileButton()
   // THE TILE FACE: kind face in the preview cell, caption strip below
-  expect(within(tile).getByText('image-gen')).toBeTruthy()
-  expect(within(tile).getByText('comfyui')).toBeTruthy()
+  // THE TITLE-CASE FACE: the eye gets prose, the door keeps ids
+  expect(within(tile).getByText('Image Gen')).toBeTruthy()
+  expect(within(tile).getByText('Comfyui')).toBeTruthy()
   expect(tile.querySelector('[data-kind="image-gen"]')).toBeTruthy()
   await user.click(tile)
   // the zoom opens: bar title + (after the settle) the drill fields

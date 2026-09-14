@@ -36,6 +36,7 @@ import { CardDrill } from './card-drill.tsx'
 import { MediaDrilldown, type MediaDrilldownItem } from '@melite-plugin/dsh-gallery/drilldown'
 import type { StageViewOwnerProps } from './types.ts'
 import { fetchCardCatalog, fetchFormSpec, fieldsOf, resolveValue, seedUser, SpecForm } from './spec-form.tsx'
+import { titleCaseId } from '@melite/card-base/spec'
 import { fetchFormsTable, postManageAction } from '@melite/card-base/wire'
 import { StudioShell } from '@melite/card-base/shell'
 
@@ -475,7 +476,7 @@ function SortableTile({ row, entered, onOpen, grouping, selected, onToggleSelect
             ? h('img', { className: css.tileImg, src: row.thumbUrl, alt: row.title, loading: 'lazy' })
             : h('span', { className: css.kindFace, 'data-kind': row.kind },
                 h('span', { className: css.kindInitial }, row.kind.slice(0, 1).toUpperCase()),
-                h('span', { className: css.kindName }, row.kind),
+                h('span', { className: css.kindName }, titleCaseId(row.kind)),
               ),
           // THE CHAT-INPUT CHROME (replaces the badge + green dot):
           // trash top-right + play/stop bottom-right ride hover; the
@@ -519,7 +520,7 @@ function SortableTile({ row, entered, onOpen, grouping, selected, onToggleSelect
             row.sourceAttached ? h('span', { className: css.wiredMark, title: 'source attached' }, ' 📎') : null,
           ),
           h('span', { className: css.tileMeta },
-            row.service !== null ? row.service : null,
+            row.service !== null ? titleCaseId(row.service) : null,
             row.upstream !== null ? h(Tag, { tone: 'quiet' }, '⟵ ' + row.upstream) : null,
             row.prompt !== null ? h('span', { className: css.tilePrompt }, row.prompt) : null,
           ),
@@ -553,9 +554,9 @@ function UnusedCardRowLineTab({ row, onOpen }: {
         ? h('video', { className: css.thumb, src: row.videoUrl, muted: true, playsInline: true, preload: 'metadata' })
         : row.thumbUrl !== null
         ? h('img', { className: css.thumb, src: row.thumbUrl, alt: row.title, loading: 'lazy' })
-        : h(Pill, null, row.kind),
+        : h(Pill, null, titleCaseId(row.kind)),
       h('span', { className: css.rowTitle }, row.title),
-      row.service !== null ? h(Pill, null, row.service) : null,
+      row.service !== null ? h(Pill, null, titleCaseId(row.service)) : null,
       row.dot !== null ? h(StateDot, { state: row.dot }) : null,
       row.prompt !== null ? h('span', { className: css.prompt }, row.prompt) : null,
     ),
@@ -1307,7 +1308,7 @@ function AddCardDoor({ bench, onAdded, onClose, onAddedRow }: {
       addError !== null ? h('p', { className: css.runError }, addError) : null,
       cards === null && catalogError === null ? h('div', { className: css.load }, 'cards…') : null,
       genres.map(([g, list]) => h('section', { key: g, className: css.pickerGenre },
-        h('h4', { className: css.specGroupTitle }, g),
+        h('h4', { className: css.specGroupTitle }, titleCaseId(g)),
         list.map((c) => h('button', {
           key: c.id,
           type: 'button',
@@ -1317,7 +1318,7 @@ function AddCardDoor({ bench, onAdded, onClose, onAddedRow }: {
         },
           h('span', { className: css.pickerCardLabel }, busyId === c.id ? 'adding ' + c.label + '…' : c.label),
           c.description !== '' ? h('span', { className: css.pickerCardDesc }, c.description) : null,
-          h(Pill, null, c.families[0] ?? c.id),
+          h(Pill, null, titleCaseId(c.families[0] ?? c.id)),
         )),
       )),
     ),
@@ -1773,7 +1774,7 @@ function RunView({ run, onBack, onRestored, onStop }: {
   return h('section', { className: css.runView, 'data-run-status': run.status },
     h('header', { className: css.runHead },
       h('span', { className: css.runId }, run.runId),
-      h('span', { className: css.runStatus }, run.status),
+      h('span', { className: css.runStatus }, titleCaseId(run.status)),
     ),
     h('div', { className: css.runActions },
       onBack !== undefined
