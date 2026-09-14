@@ -50,6 +50,47 @@ function thrownMessage(error) {
      * site; openDraftsDomain and the domain layer construct Errors. */
     return error instanceof Error ? error.message : String(error);
 }
+function resolverOf(ctx) {
+    let seat;
+    try {
+        seat = ctx.get("cardRegistry", false);
+    }
+    catch {
+        return null;
+    }
+    if (seat === null || seat === undefined || typeof seat !== "object")
+        return null;
+    const fn = seat.resolveStageParams;
+    if (typeof fn !== "function")
+        return null;
+    return seat;
+}
+/** Attach the served `resolved` map per stage (prepareCardParams'
+ *  own stamped + lifted body — the exact input the next run
+ *  composes). Copies rows, never mutates the domain's cached doc:
+ *  the stored record keeps params/result/runStatus only, the serve
+ *  derives `resolved` fresh on every read. A stage whose params name
+ *  no resolvable unit rides un-resolved (no key at all — the client
+ *  treats absence as the local-derive fallback). */
+function withResolvedStages(ctx, stages) {
+    if (!Array.isArray(stages))
+        return stages;
+    const reg = resolverOf(ctx);
+    if (reg === null)
+        return stages;
+    return stages.map((s) => {
+        if (typeof s !== "object" || s === null || Array.isArray(s))
+            return s;
+        const row = s;
+        const params = row["params"];
+        if (params === null || typeof params !== "object" || Array.isArray(params))
+            return row;
+        const resolved = reg.resolveStageParams(params);
+        if (resolved === null)
+            return row;
+        return { ...row, resolved };
+    });
+}
 /** First-seen display strings walk the doc depth-first (the index
  *  law: model/service cap 80, name/intent/title cap 160). */
 function docIndexFields(doc) {
@@ -160,7 +201,8 @@ let DraftsRemoteService = (() => {
                     draftId,
                 });
             }
-            return rec.doc;
+            const doc = rec.doc;
+            return { ...doc, stages: withResolvedStages(this.ctx, doc["stages"]) };
         }
         /** Endpoint `drafts/patch` — the stage patch door, REBORN on the
          *  domain (2026-09-11; the gateway-era PATCH /v1/flows/drafts/:id/
@@ -416,7 +458,8 @@ let BenchRemoteService = (() => {
             catch (error) {
                 throw new RemoteError("bench/store-failed", thrownMessage(error), {}, { cause: error });
             }
-            return getBench(drafts, session);
+            const row = getBench(drafts, session);
+            return { ...row, stages: withResolvedStages(this.ctx, row.stages) };
         }
         /** The in-process API the adapter above delegates to. */
         async ensure(doc, signal) {

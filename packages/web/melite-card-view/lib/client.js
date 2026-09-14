@@ -1964,19 +1964,36 @@ window.__ModuleLoader__.load({
 		}
 		/** THE LAYERED RESOLUTION — the engine's compose cascade (applyRecipe
 		* in the card's service plane) mirrored client-side: schema
-		* defaults <- model defaults <- card-recipe params <- user. The form
-		* SHOWS exactly what a run composes; `user` rides verbatim by key
-		* presence (a PRESENCE is the override mark, never its value — the
-		* settings law). Arrays (lora bags) and nulls in model_defaults
-		* skip, matching the engine's overlay filter. */
-		function resolveValue(spec, user) {
+		* defaults <- model defaults <- SERVED STAMPS <- card-recipe params
+		* <- user. The form SHOWS exactly what a run composes; `user` rides
+		* verbatim by key presence (a PRESENCE is the override mark, never
+		* its value — the settings law). Arrays (lora bags) and nulls in
+		* model_defaults skip, matching the engine's overlay filter.
+		*
+		* THE SERVED BASE (hour-26 stroke 15, the 1:1 run law): `base` is the
+		* stage row's `resolved` map — prepareCardParams' own stamped +
+		* lifted body, served by the drafts doors. It layers UNDER the user
+		* (presence still wins) and OVER model_defaults (the server's own
+		* family/variant stamps replace the client's guesses — variant
+		* resolver_defaults, family defaults, the surface filter). The
+		* recipe key reads user.recipe ?? base.recipe ?? the field default,
+		* so the server's stamped recipe wins over the client's guess when
+		* the user never touched it. Absent base = the registry-less lane
+		* derive (the wall pins parity on the golden families). PURE. */
+		function resolveValue(spec, user, base) {
 			const out = specDefaults(fieldsOf(spec));
 			for (const [k, v] of Object.entries(spec.model_defaults ?? {})) {
 				if (v === null || Array.isArray(v)) continue;
 				out[k] = v;
 			}
+			if (base !== void 0) for (const [k, v] of Object.entries(base)) {
+				if (v === null || v === void 0 || Array.isArray(v)) continue;
+				out[k] = v;
+			}
 			const fields = fieldsOf(spec);
-			const rkey = typeof user["recipe"] === "string" && user["recipe"] !== "" ? user["recipe"] : fields.find((f) => f.name === "recipe")?.default;
+			const userRecipe = user["recipe"];
+			const baseRecipe = base?.["recipe"];
+			const rkey = typeof userRecipe === "string" && userRecipe !== "" ? userRecipe : typeof baseRecipe === "string" && baseRecipe !== "" ? baseRecipe : fields.find((f) => f.name === "recipe")?.default;
 			if (typeof rkey === "string" && rkey !== "") {
 				const overlay = spec.recipes?.[rkey]?.params;
 				if (overlay !== void 0) Object.assign(out, overlay);
@@ -2922,17 +2939,8 @@ window.__ModuleLoader__.load({
 		*  to rail sections that render served fields outside a whole form
 		*  (mask's TuneSection). The claim seam stays CardForm's; this row
 		*  takes the resolved atom inputs. */
-		function SpecFieldRow({ f, value, onEdit, square, wireCandidates, overridden, onUnset }) {
-			return (0, react.createElement)("div", { className: card_module_css_default.specField }, (0, react.createElement)("span", { className: card_module_css_default.specFieldKey }, f.label, f.required === true ? (0, react.createElement)("span", { className: card_module_css_default.specRequired }, " *") : null, overridden === true && onUnset !== void 0 ? (0, react.createElement)("button", {
-				type: "button",
-				className: card_module_css_default.specUnset,
-				title: "Reset to default",
-				"aria-label": "Reset " + f.label + " to default",
-				onClick: (e) => {
-					e.preventDefault();
-					onUnset(f.name);
-				}
-			}, "reset") : null), (0, react.createElement)(SpecAtom, {
+		function SpecFieldRow({ f, value, onEdit, square, wireCandidates }) {
+			return (0, react.createElement)("div", { className: card_module_css_default.specField }, (0, react.createElement)("span", { className: card_module_css_default.specFieldKey }, f.label, f.required === true ? (0, react.createElement)("span", { className: card_module_css_default.specRequired }, " *") : null), (0, react.createElement)(SpecAtom, {
 				f,
 				value,
 				onEdit,
@@ -2940,9 +2948,9 @@ window.__ModuleLoader__.load({
 				...wireCandidates !== void 0 ? { wireCandidates } : {}
 			}), f.tooltip !== void 0 && f.tooltip !== "" ? (0, react.createElement)("span", { className: card_module_css_default.specHint }, f.tooltip) : null);
 		}
-		function CardForm({ spec, user, onSet, onUnset, wire, square, atoms, onPatch }) {
+		function CardForm({ spec, user, base, onSet, onUnset, wire, square, atoms, onPatch }) {
 			const fields = fieldsOf(spec);
-			const value = resolveValue(spec, user);
+			const value = resolveValue(spec, user, base);
 			const fieldByName = new Map(fields.map((f) => [f.name, f]));
 			const edit = (name, v) => {
 				if (v === void 0) {
@@ -3007,22 +3015,12 @@ window.__ModuleLoader__.load({
 					const claim = atomOf(f);
 					const sq = squareFor(f);
 					const wireCandidates = wire?.candidates;
-					const overridden = onUnset !== void 0 && Object.prototype.hasOwnProperty.call(user, f.name);
 					if (claim !== void 0) {
 						flush();
 						children.push((0, react.createElement)("div", {
 							key: f.name,
 							className: card_module_css_default.specField
-						}, (0, react.createElement)("span", { className: card_module_css_default.specFieldKey }, f.label, f.required === true ? (0, react.createElement)("span", { className: card_module_css_default.specRequired }, " *") : null, overridden ? (0, react.createElement)("button", {
-							type: "button",
-							className: card_module_css_default.specUnset,
-							title: "Reset to default",
-							"aria-label": "Reset " + f.label + " to default",
-							onClick: (e) => {
-								e.preventDefault();
-								onUnset(f.name);
-							}
-						}, "reset") : null), claim({
+						}, (0, react.createElement)("span", { className: card_module_css_default.specFieldKey }, f.label, f.required === true ? (0, react.createElement)("span", { className: card_module_css_default.specRequired }, " *") : null), claim({
 							f,
 							value: value[f.name],
 							onEdit: edit,
@@ -3051,9 +3049,7 @@ window.__ModuleLoader__.load({
 						value: value[f.name],
 						onEdit: edit,
 						...sq !== void 0 ? { square: sq } : {},
-						...wireCandidates !== void 0 ? { wireCandidates } : {},
-						...overridden ? { overridden } : {},
-						...onUnset !== void 0 ? { onUnset } : {}
+						...wireCandidates !== void 0 ? { wireCandidates } : {}
 					}));
 				}
 				flush();
@@ -43701,7 +43697,8 @@ void main() {
 					return next;
 				});
 			}, []);
-			const value = resolveValue(spec ?? { form: "" }, user);
+			const servedBase = typeof stage.resolved === "object" && stage.resolved !== null && !Array.isArray(stage.resolved) ? stage.resolved : void 0;
+			const value = resolveValue(spec ?? { form: "" }, user, servedBase);
 			const enhance = async () => {
 				if (enhancing) return;
 				const current = String(value["prompt"] ?? "").trim();
@@ -43839,6 +43836,7 @@ void main() {
 				}, enhancing ? "enhancing…" : "✦ Agent Enhance"), enhanceNote !== null ? (0, react.createElement)("span", { className: enhanceNote.err ? card_module_css_default$1.runError : card_module_css_default$1.enhanceNote }, enhanceNote.text) : null), (0, react.createElement)("div", { className: card_module_css_default$1.params }, !loaded ? (0, react.createElement)("div", { className: card_module_css_default$1.load }, "form…") : spec !== null ? (0, react.createElement)(CardForm, {
 					spec,
 					user,
+					base: servedBase,
 					onSet,
 					onUnset,
 					wire,

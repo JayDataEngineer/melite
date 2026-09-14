@@ -107,8 +107,14 @@ export function ImgToMeshStudio(props: StageViewOwnerProps): ReturnType<typeof h
   const onEdit = (name: string, v: unknown): void => {
     setUser((prev) => ({ ...prev, [name]: coerceFieldEdit(fieldByName.get(name), v) }))
   }
-  // the resolved value — derived per render (what a run composes)
-  const value: SpecValues = resolveValue(spec ?? { form: '' }, user)
+  // the resolved value — derived per render (what a run composes).
+  // THE SERVED BASE (hour-26 stroke 15, the 1:1 run law): the row's
+  // `resolved` map layers under the user (same law as the generic
+  // drill — one resolver, served to the visual).
+  const servedBase: SpecValues | undefined =
+    typeof row['resolved'] === 'object' && row['resolved'] !== null && !Array.isArray(row['resolved'])
+      ? row['resolved'] as SpecValues : undefined
+  const value: SpecValues = resolveValue(spec ?? { form: '' }, user, servedBase)
   const specRows: SpecField[] = spec !== null ? fieldsOf(spec) : []
   // the SAME shared square provider the generic drill rides — one
   // definition, every surface (the operator's DRY law)

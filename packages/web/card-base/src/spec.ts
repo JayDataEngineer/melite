@@ -428,21 +428,42 @@ export function fieldsOf(spec: FormSpecDoc): SpecField[] {
 
 /** THE LAYERED RESOLUTION — the engine's compose cascade (applyRecipe
  * in the card's service plane) mirrored client-side: schema
- * defaults <- model defaults <- card-recipe params <- user. The form
- * SHOWS exactly what a run composes; `user` rides verbatim by key
- * presence (a PRESENCE is the override mark, never its value — the
- * settings law). Arrays (lora bags) and nulls in model_defaults
- * skip, matching the engine's overlay filter. */
-export function resolveValue(spec: FormSpecDoc, user: SpecValues): SpecValues {
+ * defaults <- model defaults <- SERVED STAMPS <- card-recipe params
+ * <- user. The form SHOWS exactly what a run composes; `user` rides
+ * verbatim by key presence (a PRESENCE is the override mark, never
+ * its value — the settings law). Arrays (lora bags) and nulls in
+ * model_defaults skip, matching the engine's overlay filter.
+ *
+ * THE SERVED BASE (hour-26 stroke 15, the 1:1 run law): `base` is the
+ * stage row's `resolved` map — prepareCardParams' own stamped +
+ * lifted body, served by the drafts doors. It layers UNDER the user
+ * (presence still wins) and OVER model_defaults (the server's own
+ * family/variant stamps replace the client's guesses — variant
+ * resolver_defaults, family defaults, the surface filter). The
+ * recipe key reads user.recipe ?? base.recipe ?? the field default,
+ * so the server's stamped recipe wins over the client's guess when
+ * the user never touched it. Absent base = the registry-less lane
+ * derive (the wall pins parity on the golden families). PURE. */
+export function resolveValue(spec: FormSpecDoc, user: SpecValues, base?: SpecValues): SpecValues {
   const out: SpecValues = specDefaults(fieldsOf(spec))
   for (const [k, v] of Object.entries(spec.model_defaults ?? {})) {
     if (v === null || Array.isArray(v)) continue
     out[k] = v
   }
+  if (base !== undefined) {
+    for (const [k, v] of Object.entries(base)) {
+      if (v === null || v === undefined || Array.isArray(v)) continue
+      out[k] = v
+    }
+  }
   const fields = fieldsOf(spec)
-  const rkey = typeof user['recipe'] === 'string' && user['recipe'] !== ''
-    ? user['recipe'] as string
-    : (fields.find((f) => f.name === 'recipe')?.default)
+  const userRecipe = user['recipe']
+  const baseRecipe = base?.['recipe']
+  const rkey = typeof userRecipe === 'string' && userRecipe !== ''
+    ? userRecipe as string
+    : (typeof baseRecipe === 'string' && baseRecipe !== ''
+      ? baseRecipe as string
+      : (fields.find((f) => f.name === 'recipe')?.default))
   if (typeof rkey === 'string' && rkey !== '') {
     const overlay = spec.recipes?.[rkey]?.params
     if (overlay !== undefined) Object.assign(out, overlay)

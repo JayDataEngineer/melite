@@ -8,7 +8,8 @@
  * resolveValue (schema defaults <- model defaults <- recipe <- user)
  * — the engine's compose cascade mirrored. No stamp ledger, no
  * value-compare heuristics: a value the user SET wins by presence
- * (the reset chip un-owns it); switching recipes re-derives every
+ * (the reset chips retired hour-26 — the unset path is the
+ * tri-state's native undefined); switching recipes re-derives every
  * derived key; stale stamps cannot exist (nothing is stamped).
  *
  * Cover: the pure resolution (layering order, manual-wins-by-
@@ -102,6 +103,31 @@ test('the model_defaults layer sits UNDER the recipe (the engine compose order)'
   const picked = resolveValue(doc, { recipe: 'fast_draft' })
   expect(picked['steps']).toBe(6)
   expect(picked['cfg']).toBe(3.5)
+})
+
+test('the SERVED BASE sits over model_defaults, under the recipe and the user (the 1:1 law)', () => {
+  const doc: FormSpecDoc = {
+    ...STAMP,
+    model_defaults: { steps: 10, cfg: 5 },
+  }
+  // the server's stamps replace the client's guesses
+  const served = resolveValue(doc, {}, { steps: 52, cfg: 7 })
+  expect(served['steps']).toBe(52)
+  expect(served['cfg']).toBe(7)
+  // the recipe still overlays the served base (compose order)
+  const picked = resolveValue(doc, { recipe: 'fast_draft' }, { steps: 52, cfg: 7 })
+  expect(picked['steps']).toBe(6)
+  // presence still wins over everything
+  const owned = resolveValue(doc, { steps: 8 }, { steps: 52 })
+  expect(owned['steps']).toBe(8)
+  // the stamped recipe key wins when the user never touched it
+  const stamped = resolveValue(doc, {}, { recipe: 'cinematic' })
+  expect(stamped['steps']).toBe(12)
+  expect(stamped['cfg']).toBe(6)
+  // arrays ride the overlay filter, never the base
+  const bag = resolveValue(doc, {}, { steps: 52, loras: ['a', 'b'] } as unknown as SpecValues)
+  expect(bag['steps']).toBe(52)
+  expect(bag['loras']).toBeUndefined()
 })
 
 // ── the rendered drill ──────────────────────────────────────────────

@@ -590,46 +590,29 @@ export function ModelAxes({ spec, value, onSet }: {
  *  to rail sections that render served fields outside a whole form
  *  (mask's TuneSection). The claim seam stays CardForm's; this row
  *  takes the resolved atom inputs. */
-export function SpecFieldRow({ f, value, onEdit, square, wireCandidates, overridden, onUnset }: {
+export function SpecFieldRow({ f, value, onEdit, square, wireCandidates }: {
   f: SpecField
   value: unknown
   onEdit(name: string, v: unknown): void
   square?: SquareHost
   wireCandidates?: Array<{ id: string; label: string; url: string }>
-  /** THE OVERRIDE MARK (the settings law): the field's key is
-   *  present in the user layer — the row shows the reset chip, and
-   *  onUnset (when the host wires it) removes the presence. */
-  overridden?: boolean
-  onUnset?(name: string): void
 }): ReturnType<typeof h> {
   // the row is a DIV, not a wrapper label: the atoms self-label
-  // (aria-label) and the reset chip is a button — a button inside a
-  // <label> steals the label association (getByLabelText matched the
-  // chip next to the control; interactive-in-label is the discouraged
-  // shape anyway)
+  // (aria-label) — a button inside a <label> steals the label
+  // association (interactive-in-label is the discouraged shape
+  // anyway; the reset chips retired hour-26 — the unset path is the
+  // tri-state's native undefined, no chrome needed)
   return h('div', { className: css.specField },
     h('span', { className: css.specFieldKey },
       f.label,
       f.required === true ? h('span', { className: css.specRequired }, ' *') : null,
-      overridden === true && onUnset !== undefined
-        ? h('button', {
-            type: 'button',
-            className: css.specUnset,
-            title: 'Reset to default',
-            'aria-label': 'Reset ' + f.label + ' to default',
-            onClick: (e: unknown) => {
-              (e as { preventDefault(): void }).preventDefault()
-              onUnset(f.name)
-            },
-          }, 'reset')
-        : null,
     ),
     h(SpecAtom, { f, value, onEdit, square, ...(wireCandidates !== undefined ? { wireCandidates } : {}) }),
     f.tooltip !== undefined && f.tooltip !== '' ? h('span', { className: css.specHint }, f.tooltip) : null,
   )
 }
 
-export function CardForm({ spec, user, onSet, onUnset, wire, square, atoms, onPatch }: {
+export function CardForm({ spec, user, base, onSet, onUnset, wire, square, atoms, onPatch }: {
   /** the WHOLE emission (the schema envelope + model/variants) —
    *  REQUIRED now: the fields, the axes, and the mod param rows all
    *  derive from THIS (useFormSpec fetches it). */
@@ -639,6 +622,12 @@ export function CardForm({ spec, user, onSet, onUnset, wire, square, atoms, onPa
    *  value derives (resolveValue: schema defaults <- model defaults
    *  <- card recipe <- user), never a seeded values map. */
   user: SpecValues
+  /** THE SERVED BASE (hour-26 stroke 15, the 1:1 run law): the stage
+   *  row's `resolved` map — prepareCardParams' own stamps, served by
+   *  the drafts doors. Layers under the user (presence still wins)
+   *  and over the client's guesses — one resolver, served to the
+   *  visual. Absent = the registry-less lane derive. */
+  base?: SpecValues
   onSet(name: string, v: unknown): void
   /** Remove an override (the reset path): the host patches the key
    *  out of the user layer; the row re-derives to its base. */
@@ -661,7 +650,7 @@ export function CardForm({ spec, user, onSet, onUnset, wire, square, atoms, onPa
   // composes. No seeding, no mirrors, no stamp ledger: one source,
   // re-derived every render.
   const fields = fieldsOf(spec)
-  const value = resolveValue(spec, user)
+  const value = resolveValue(spec, user, base)
   const fieldByName = new Map(fields.map((f) => [f.name, f] as const))
   // THE EDIT COERCION (the one specPatch duty that survives, moved
   // to the edit boundary where it always belonged): atoms emit raw
@@ -752,24 +741,13 @@ export function CardForm({ spec, user, onSet, onUnset, wire, square, atoms, onPa
         const claim = atomOf(f)
         const sq = squareFor(f)
         const wireCandidates = wire?.candidates
-        const overridden = onUnset !== undefined && Object.prototype.hasOwnProperty.call(user, f.name)
         if (claim !== undefined) {
           flush()
-          // div, not label — the reset chip is a button (see SpecFieldRow)
+          // div, not label (see SpecFieldRow)
           children.push(h('div', { key: f.name, className: css.specField },
             h('span', { className: css.specFieldKey },
               f.label,
               f.required === true ? h('span', { className: css.specRequired }, ' *') : null,
-              overridden ? h('button', {
-                type: 'button',
-                className: css.specUnset,
-                title: 'Reset to default',
-                'aria-label': 'Reset ' + f.label + ' to default',
-                onClick: (e: unknown) => {
-                  (e as { preventDefault(): void }).preventDefault()
-                  onUnset(f.name)
-                },
-              }, 'reset') : null,
             ),
             claim({ f, value: value[f.name], onEdit: edit, square: sq }),
             f.tooltip !== undefined && f.tooltip !== '' ? h('span', { className: css.specHint }, f.tooltip) : null,
@@ -791,7 +769,6 @@ export function CardForm({ spec, user, onSet, onUnset, wire, square, atoms, onPa
           key: f.name, f, value: value[f.name], onEdit: edit,
           ...(sq !== undefined ? { square: sq } : {}),
           ...(wireCandidates !== undefined ? { wireCandidates } : {}),
-          ...(overridden ? { overridden } : {}), ...(onUnset !== undefined ? { onUnset } : {}),
         }))
       }
       flush()

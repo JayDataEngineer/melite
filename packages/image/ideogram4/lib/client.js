@@ -83,206 +83,163 @@ window.__ModuleLoader__.load({
 		};
 		//#endregion
 		//#region ../../web/card-base/src/spec.ts
-		/** THE MOD-OWNED NAMES (the SubcardGrid law, enforced): every name a
-		*  served modifier kind owns — its fields' names plus its param_key
-		*  (the bag storage). CardForm EXCLUDES these from the flat param
-		*  groups: mod params render ONLY inside the mod system. PURE. */
-		function modOwnedFields(spec) {
-			const owned = /* @__PURE__ */ new Set();
-			for (const k of spec.features?.modifiers ?? []) {
-				owned.add(k.param_key);
-				for (const f of k.fields ?? []) owned.add(f.name);
-			}
-			return owned;
-		}
-		/** Is this kind an OPTION kind (lora-shaped: served catalog rows) —
-		*  as opposed to a FIELD kind (mask-shaped: its own param fields)? */
-		function isOptionKind(k) {
-			return (k.options ?? []).length > 0;
-		}
-		/** Seed the editable values from the spec's declared defaults (the old
-		*  picker's law: pick → defaults seeded → the user edits from there).
-		*  DEFAULTS PROPAGATE FROM THE EMISSION — the base never invents one. */
+		/** THE SCHEMA LAYER's declared defaults (fieldsOfEnvelope's output —
+		*  resolveValue's first layer; the base never invents one). */
 		function specDefaults(fields) {
 			const out = {};
 			for (const f of fields) if (f.default !== void 0 && f.default !== null) out[f.name] = f.default;
 			return out;
 		}
-		/** evalVisibleWhen's serving shape: "key=value" (a field shows when its
-		*  guard key holds the value). A field with no visible_when always
-		*  shows. Unknown guard keys: show (never hide on a typo). */
-		function fieldVisible(f, values) {
-			const rule = f.visible_when;
-			if (typeof rule !== "string" || rule === "") return true;
-			const eq = rule.indexOf("=");
-			if (eq < 0) return true;
-			const key = rule.slice(0, eq);
-			const want = rule.slice(eq + 1);
-			const held = values[key];
-			return String(held ?? "") === want;
-		}
-		/** Group the visible fields (the spec's own group key, first-appearance
-		*  order — ungrouped first under no heading). */
-		function groupFields(fields, values) {
+		/** ── THE ENVELOPE WALKER ─────────────────────────────────────────
+		*
+		* One pure projection: serialized schemastery schema -> derived
+		* SpecFields. Every presentation fact lives in the nodes' meta (the
+		* declaration IS the UI contract — the py Field.emit law); this
+		* walk reads, never invents. THE ORDER: dict insertion order with
+		* the declared `order` hint as tie-break (a stable sort — equal
+		* keys keep insertion order).
+		*
+		* Families scoping: a node whose extra.families names families the
+		* spec does NOT serve skips (the absorption is family-scoped —
+		* the card serves only the boarded plane).
+		*
+		* Nullable pairs: a union of [X, const(null)] wires as X — the
+		* OUTER meta wins (schemastery's nullable() shape, probed live on
+		* image-gen 2026-09-14).
+		*
+		* Presentation types (the audit's client-side derivation — a view
+		* choice over typed meta, never a server row): extra.wtype wins
+		* (declared presentation); union-of-consts -> select; number ->
+		* step 1 -> seed, any other step -> slider, no step -> slider;
+		* string -> text; boolean -> boolean; array -> loras.
+		*
+		* Option labels: a union's const members carry their own
+		* meta.description (the py emitter's label law) — the declared
+		* extra.options override when present. */
+		function fieldsOfEnvelope(env, family) {
+			if (env == null) return [];
+			const dict = env.refs[env.uid]?.dict ?? {};
 			const out = [];
-			for (const f of fields) {
-				if (!fieldVisible(f, values)) continue;
-				const g = typeof f.group === "string" && f.group !== "" ? f.group : null;
-				const known = out.find((x) => x.group === g);
-				if (known === void 0) out.push({
-					group: g,
-					fields: [f]
+			for (const [name, id] of Object.entries(dict)) {
+				let node = env.refs[id];
+				if (node === void 0) continue;
+				if (node.type === "union" && Array.isArray(node.list) && node.list.length === 2) {
+					const a = env.refs[node.list[0]];
+					const b = env.refs[node.list[1]];
+					const nullConst = (r) => r?.type === "const" && r.value === null;
+					if (a !== void 0 && b !== void 0 && (nullConst(a) && b.type !== "const" || nullConst(b) && a.type !== "const")) node = nullConst(a) ? b : a;
+				}
+				const meta = node.meta ?? {};
+				const extra = typeof meta["extra"] === "object" && meta["extra"] !== null && !Array.isArray(meta["extra"]) ? meta["extra"] : {};
+				const families = Array.isArray(extra["families"]) ? extra["families"] : null;
+				if (families !== null && family !== void 0 && !families.includes(family)) continue;
+				let options;
+				if (node.type === "union" && Array.isArray(node.list)) {
+					const opts = [];
+					for (const mid of node.list) {
+						const m = env.refs[mid];
+						if (m?.type !== "const") continue;
+						const v = m.value;
+						if (v === null || v === void 0) continue;
+						const label = typeof m.meta?.["description"] === "string" ? m.meta["description"] : String(v);
+						if (label === String(v)) opts.push(String(v));
+						else opts.push({
+							value: String(v),
+							label
+						});
+					}
+					if (opts.length > 0) options = opts;
+				}
+				if (Array.isArray(extra["options"])) options = extra["options"].map((o) => typeof o === "string" ? o : typeof o === "object" && o !== null && "value" in o && "label" in o ? {
+					value: String(o["value"]),
+					label: String(o["label"])
+				} : String(o));
+				const hint = typeof extra["wtype"] === "string" ? extra["wtype"] : "";
+				let type;
+				if (hint !== "") type = hint;
+				else if (options !== void 0 && node.type === "union") type = "select";
+				else if (node.type === "number") type = String(meta["step"] ?? "") === "1" ? "seed" : "slider";
+				else if (node.type === "string") type = "text";
+				else if (node.type === "boolean") type = "boolean";
+				else if (node.type === "array") type = "loras";
+				else type = node.type ?? "string";
+				const num = (k) => typeof meta[k] === "number" ? meta[k] : void 0;
+				const str = (k) => typeof extra[k] === "string" ? extra[k] : typeof meta[k] === "string" ? meta[k] : void 0;
+				out.push({
+					name,
+					label: typeof meta["description"] === "string" && meta["description"] !== "" ? meta["description"] : name,
+					order: typeof extra["order"] === "number" ? extra["order"] : void 0,
+					type,
+					default: meta["default"] === void 0 ? void 0 : meta["default"],
+					min: num("min"),
+					max: num("max"),
+					step: type === "seed" ? void 0 : num("step"),
+					options,
+					group: str("group") ?? "",
+					zone: str("zone"),
+					required: extra["required"] === true || meta["required"] === true,
+					placeholder: str("placeholder"),
+					tooltip: str("tooltip"),
+					visible_when: str("visible_when")
 				});
-				else known.fields.push(f);
 			}
-			return out;
+			return out.map((f, i) => [f, i]).sort((a, b) => (a[0].order ?? 0) - (b[0].order ?? 0) || a[1] - b[1]).map((x) => x[0]);
 		}
-		/** Coerce the raw edit strings to the spec's declared types — ONCE, at
-		*  patch time (the editPatch law). Only keys that CHANGED from the
-		*  stage's held params ride the patch. */
-		function specPatch(fields, values, held) {
-			const out = {};
-			for (const f of fields) {
-				const v = values[f.name];
-				if (v === void 0) continue;
-				const before = held[f.name] ?? f.default;
-				if (String(v) === String(before ?? "")) continue;
-				if (f.type === "number" || f.type === "seed" || f.type === "slider") {
-					const n = Number(v);
-					out[f.name] = Number.isFinite(n) ? n : v;
-				} else if (f.type === "switch" || f.type === "boolean") out[f.name] = v === true || v === "true";
-				else out[f.name] = v;
+		/** THE EDIT COERCION (the one specPatch duty that survives, moved
+		* to the edit boundary): atoms emit raw strings while typing; a
+		* numeric field's edit rides the user layer as a NUMBER. An
+		* unparseable/empty numeric string rides VERBATIM (the run's schema
+		* parse refuses loud, naming the field — never a silent 0). `v ===
+		* undefined` stays undefined (the tri-state's inherit — the caller's
+		* unset signal). PURE. */
+		function coerceFieldEdit(f, v) {
+			if (v === void 0) return void 0;
+			if (f !== void 0 && (f.type === "number" || f.type === "seed" || f.type === "slider") && typeof v === "string" && v.trim() !== "" && Number.isFinite(Number(v))) return Number(v);
+			return v;
+		}
+		/** The card's own derived fields (the schema envelope walked,
+		* families-scoped to the served family). Memoize at the caller for
+		* hot loops — the walk is pure. */
+		function fieldsOf(spec) {
+			return fieldsOfEnvelope(spec.schema, typeof spec.model === "string" ? spec.model : void 0);
+		}
+		/** THE LAYERED RESOLUTION — the engine's compose cascade (applyRecipe
+		* in the card's service plane) mirrored client-side: schema
+		* defaults <- model defaults <- SERVED STAMPS <- card-recipe params
+		* <- user. The form SHOWS exactly what a run composes; `user` rides
+		* verbatim by key presence (a PRESENCE is the override mark, never
+		* its value — the settings law). Arrays (lora bags) and nulls in
+		* model_defaults skip, matching the engine's overlay filter.
+		*
+		* THE SERVED BASE (hour-26 stroke 15, the 1:1 run law): `base` is the
+		* stage row's `resolved` map — prepareCardParams' own stamped +
+		* lifted body, served by the drafts doors. It layers UNDER the user
+		* (presence still wins) and OVER model_defaults (the server's own
+		* family/variant stamps replace the client's guesses — variant
+		* resolver_defaults, family defaults, the surface filter). The
+		* recipe key reads user.recipe ?? base.recipe ?? the field default,
+		* so the server's stamped recipe wins over the client's guess when
+		* the user never touched it. Absent base = the registry-less lane
+		* derive (the wall pins parity on the golden families). PURE. */
+		function resolveValue(spec, user, base) {
+			const out = specDefaults(fieldsOf(spec));
+			for (const [k, v] of Object.entries(spec.model_defaults ?? {})) {
+				if (v === null || Array.isArray(v)) continue;
+				out[k] = v;
 			}
-			return out;
-		}
-		/** The axis groups in declaration order: features.variant_groups'
-		*  key order when the door serves it, else the rows' distinct groups
-		*  in first-seen order. Empty group names never ride. */
-		function axisGroups(spec) {
-			const rows = spec.variants ?? [];
-			const groups = [];
-			const declared = variantGroupsContract(spec);
-			if (declared.length > 0) {
-				for (const g of declared) if (g !== "" && !groups.includes(g)) groups.push(g);
+			if (base !== void 0) for (const [k, v] of Object.entries(base)) {
+				if (v === null || v === void 0 || Array.isArray(v)) continue;
+				out[k] = v;
 			}
-			for (const v of rows) if (v.group !== "" && !groups.includes(v.group)) groups.push(v.group);
-			return groups;
-		}
-		/** The variant_groups contract's keys, in served order (the door
-		*  serves it under features when the family declares axis groups). */
-		function variantGroupsContract(spec) {
-			const vg = spec.features?.["variant_groups"];
-			if (vg === null || typeof vg !== "object" || Array.isArray(vg)) return [];
-			return Object.keys(vg);
-		}
-		/** One axis' rows (served order). */
-		function rowsFor(spec, group) {
-			return (spec.variants ?? []).filter((v) => v.group === group);
-		}
-		/** THE CHAIN (one direction: an axis filters the axes BELOW it): a
-		*  row composes with the current selection when its `owner` is empty
-		*  (composes with everything — patch-only rows) or names the ACTIVE
-		*  row of another axis. */
-		function composingRows(spec, group, active) {
-			return rowsFor(spec, group).filter((v) => {
-				if (v.owner === void 0 || v.owner === "") return true;
-				for (const g of axisGroups(spec)) {
-					if (g === group) continue;
-					if (rowsFor(spec, g).find((x) => x.id === v.owner) !== void 0) return active[g] === v.owner;
-				}
-				return true;
-			});
-		}
-		/** The Model select's options — the distinct model ROUTES the matrix
-		*  can land on: the spec root's family + every row's defaults.model
-		*  (dedup, first-seen order; the family leads). */
-		function modelChoices(spec) {
-			const out = [];
-			const push = (m) => {
-				if (typeof m !== "string" || m === "") return;
-				if (!out.includes(m)) out.push(m);
-			};
-			push(spec.model);
-			for (const v of spec.variants ?? []) push(v.defaults["model"]);
-			return out;
-		}
-		/** One group's active row under the owner chain (inner recursion of
-		*  activeVariantId — Variant resolves first, chained groups after). */
-		function activeRowId(spec, values, group, active) {
-			const held = typeof values["model"] === "string" ? values["model"] : void 0;
-			if (held === void 0) return void 0;
-			for (const v of rowsFor(spec, group)) {
-				const rePoint = typeof v.defaults["model"] === "string" ? v.defaults["model"] : v.route;
-				if (rePoint === "" || rePoint !== held) continue;
-				if (v.owner !== void 0 && v.owner !== "") {
-					let chainHolds = false;
-					for (const g of axisGroups(spec)) {
-						if (g === group) continue;
-						if (rowsFor(spec, g).find((x) => x.id === v.owner) !== void 0) {
-							chainHolds = active[g] === v.owner;
-							break;
-						}
-					}
-					if (!chainHolds) continue;
-				}
-				return v.id;
+			const fields = fieldsOf(spec);
+			const userRecipe = user["recipe"];
+			const baseRecipe = base?.["recipe"];
+			const rkey = typeof userRecipe === "string" && userRecipe !== "" ? userRecipe : typeof baseRecipe === "string" && baseRecipe !== "" ? baseRecipe : fields.find((f) => f.name === "recipe")?.default;
+			if (typeof rkey === "string" && rkey !== "") {
+				const overlay = spec.recipes?.[rkey]?.params;
+				if (overlay !== void 0) Object.assign(out, overlay);
 			}
-		}
-		/** The durable param key an axis rides (the group's id, lowercased —
-		*  'variant', 'quant', 'recipe', 'precision'). */
-		function axisKey(group) {
-			return group.toLowerCase();
-		}
-		/** A pick's full value patch — the old onPick law: the row's
-		*  `defaults` overlay rides (model re-point + every resolver default),
-		*  plus the durable axis keys themselves so a reopened stage restores
-		*  its selects. Picking a row also re-seeds the axes BELOW it (their
-		*  first composing row). */
-		function axisPickPatch(spec, row) {
-			const patch = { ...row.defaults };
-			const groups = axisGroups(spec);
-			const at = groups.indexOf(row.group);
-			const active = {};
-			for (const g of groups) if (g === row.group) active[g] = row.id;
-			else if (typeof row.defaults["model"] === "string") active[g] = void 0;
-			patch[axisKey(row.group)] = row.id;
-			for (const g of groups.slice(at + 1)) {
-				const composing = composingRows(spec, g, active);
-				if (composing.length > 0) patch[axisKey(g)] = composing[0].id;
-				else patch[axisKey(g)] = "";
-			}
-			return patch;
-		}
-		/** Seed the axis keys for a fresh stage (the catalog's first-declared
-		*  law: each axis defaults to its FIRST composing row). Held values
-		*  win (a reopened stage never re-seeds). */
-		function seedAxisValues(spec, held) {
-			const out = {};
-			const groups = axisGroups(spec);
-			if (groups.length === 0) return out;
-			const active = {};
-			for (const g of groups) {
-				const heldKey = typeof held[axisKey(g)] === "string" ? held[axisKey(g)] : "";
-				const heldRow = rowsFor(spec, g).find((x) => x.id === heldKey);
-				if (heldRow !== void 0) active[g] = heldRow.id;
-				else {
-					const composing = composingRows(spec, g, active);
-					active[g] = composing.length > 0 ? composing[0].id : "";
-				}
-				out[axisKey(g)] = active[g];
-			}
-			const heldModel = held["model"];
-			if (typeof heldModel !== "string" || heldModel === "") {
-				let model = typeof spec.model === "string" && spec.model !== "" ? spec.model : "";
-				for (const g of groups) {
-					const row = rowsFor(spec, g).find((x) => x.id === active[g]);
-					if (row !== void 0 && typeof row.defaults["model"] === "string" && row.defaults["model"] !== "") {
-						model = row.defaults["model"];
-						break;
-					}
-				}
-				if (model !== "") out["model"] = model;
-			}
+			Object.assign(out, user);
 			return out;
 		}
 		//#endregion
@@ -404,20 +361,6 @@ window.__ModuleLoader__.load({
 		function isImageUrl(value) {
 			return /^data:image\//i.test(value) || /^blob:/i.test(value) || /^(?:https?:)?\/[^"'<>]*\.(?:png|jpe?g|webp|gif|bmp|avif)(?:[?#]|$)/i.test(value);
 		}
-		/** Read a File/Blob and resolve its data: URL — the ONE read path for
-		*  every slot-shaped attach (the old law, single definition). */
-		function readAsDataUrl(file) {
-			return new Promise((resolve, reject) => {
-				const r = new FileReader();
-				r.onload = () => {
-					resolve(String(r.result));
-				};
-				r.onerror = () => {
-					reject(r.error ?? /* @__PURE__ */ new Error("read failed"));
-				};
-				r.readAsDataURL(file);
-			});
-		}
 		/** Parse the asset MIME off a drop event. null = absent or malformed. */
 		function assetPayload(e) {
 			const raw = e.dataTransfer.getData(ASSET_DRAG_MIME);
@@ -511,123 +454,14 @@ window.__ModuleLoader__.load({
 			}
 			return body;
 		}
-		/** /v1/form-spec?model=<family> — the card family's emission (fields
-		*  + the declared edges + the mod kinds). */
+		/** /v1/form-spec?model=<family> — the card family's emission (the
+		*  serialized schema envelope + model defaults + the declared edges
+		*  + the mod kinds and their envelopes). */
 		async function fetchFormSpec(model, signal) {
 			const doc = await v1Get("/v1/form-spec?model=" + encodeURIComponent(model), signal);
-			if (!Array.isArray(doc["fields"])) throw new Error("form-spec: no fields array");
+			const env = doc["schema"];
+			if (env !== null && (typeof env !== "object" || typeof env.uid !== "number" || typeof env.refs !== "object")) throw new Error("form-spec: no schema envelope");
 			return doc;
-		}
-		/** OS-file drop → the /v1/uploads door (png/jpeg/webp data-URL) → the
-		*  input-dir path the param accepts. The door's own gates (type
-		*  whitelist, one clean segment) are the law — the client only
-		*  voices its refusals, never invents its own. */
-		async function uploadInputFile(file) {
-			const isImage = file.type === "image/png" || file.type === "image/jpeg" || file.type === "image/webp";
-			const isAudio = file.type.startsWith("audio/");
-			if (!isImage && !isAudio) throw new Error("Input cards don’t accept " + (file.type !== "" ? file.type : "that file") + " — drop an image or audio file");
-			if (isAudio) throw new Error("audio uploads have no door yet — the uploads door boards png / jpeg / webp only");
-			const dataUrl = await new Promise((resolve, reject) => {
-				const r = new FileReader();
-				r.onload = () => {
-					resolve(String(r.result));
-				};
-				r.onerror = () => {
-					reject(/* @__PURE__ */ new Error("could not read the dropped file"));
-				};
-				r.readAsDataURL(file);
-			});
-			const res = await fetch("/v1/uploads", {
-				method: "POST",
-				headers: { "content-type": "application/json" },
-				body: JSON.stringify({
-					filename: file.name.replace(/[^A-Za-z0-9._-]/g, "_"),
-					data: dataUrl
-				})
-			});
-			if (!res.ok) throw new Error("upload refused: HTTP " + String(res.status));
-			const out = await res.json();
-			const path = typeof out === "object" && out !== null && typeof Reflect.get(out, "path") === "string" ? Reflect.get(out, "path") : "";
-			if (path === "") throw new Error("upload answered without a path");
-			return {
-				name: path,
-				file: path.split("/").pop() ?? file.name
-			};
-		}
-		//#endregion
-		//#region ../../web/melite-run-wire/src/index.ts
-		/** Correlation id for one client-request frame (crypto.randomUUID is
-		*  the browser standard; the hand-rolled arm covers non-secure
-		*  contexts where the standard is absent). */
-		function nextRpcId() {
-			const cryptoApi = globalThis.crypto;
-			if (cryptoApi?.randomUUID !== void 0) return cryptoApi.randomUUID();
-			return "rpc-" + Math.random().toString(36).slice(2) + "-" + Date.now().toString(36);
-		}
-		/** The estate's domain refusal (result.ok !== true): the message
-		*  rides verbatim (the door's own law — the client never
-		*  paraphrases); the class separates DOMAIN verdicts from transport
-		*  failures, which carry the caller's voice prefix instead. */
-		var WireRefusedError = class extends Error {
-			constructor(message) {
-				super(message);
-				this.name = "WireRefusedError";
-			}
-		};
-		/** One client-request round trip: POST /api/<method> with the frame,
-		*  narrow the server-response envelope. Non-ok results throw the
-		*  estate's message; channel surprises throw honestly. */
-		async function wireCall(method, args, opts) {
-			const voice = opts?.voice ?? "wire";
-			const rpcId = nextRpcId();
-			const res = await fetch("/api/" + method, {
-				method: "POST",
-				headers: { "content-type": "application/json" },
-				body: JSON.stringify({
-					type: "client-request",
-					rpcId,
-					method,
-					payload: { args }
-				}),
-				...opts?.signal === void 0 ? {} : { signal: opts.signal }
-			});
-			if (!res.ok) throw new Error(voice + ": HTTP " + String(res.status));
-			const body = await res.json();
-			if (typeof body !== "object" || body === null || Reflect.get(body, "type") !== "server-response" || Reflect.get(body, "rpcId") !== rpcId) throw new Error(voice + ": malformed response frame");
-			const result = Reflect.get(body, "result");
-			if (typeof result !== "object" || result === null) throw new Error(voice + ": malformed result");
-			if (Reflect.get(result, "ok") !== true) {
-				const error = Reflect.get(result, "error");
-				throw new WireRefusedError(typeof error === "object" && error !== null && typeof Reflect.get(error, "message") === "string" ? Reflect.get(error, "message") : voice + ": refused");
-			}
-			const value = Reflect.get(result, "value");
-			if (typeof value !== "object" || value === null || Array.isArray(value)) throw new Error(voice + ": not a JSON object");
-			return value;
-		}
-		/** media/list — the runs-tree library, kind-filtered (image | audio |
-		*  video | model | all). The url is the SAME /melite-media/runs
-		*  grammar the byte route serves; picking one writes it verbatim. */
-		async function fetchMediaLibrary(kind, signal) {
-			const items = (await wireCall("media/list", { kind }, {
-				signal,
-				voice: "media/list"
-			}))["items"];
-			if (!Array.isArray(items)) return [];
-			const out = [];
-			for (const it of items) {
-				if (typeof it !== "object" || it === null) continue;
-				const url = Reflect.get(it, "url");
-				const name = Reflect.get(it, "name");
-				const k = Reflect.get(it, "kind");
-				const runId = Reflect.get(it, "runId");
-				if (typeof url === "string" && typeof name === "string" && typeof k === "string" && typeof runId === "string") out.push({
-					url,
-					name,
-					kind: k,
-					runId
-				});
-			}
-			return out;
 		}
 		//#endregion
 		//#region ../../web/card-base/src/form.tsx
@@ -638,9 +472,10 @@ window.__ModuleLoader__.load({
 		* construct the card ui should see that the card package emits an
 		* image input, then constructs the input component automatically"):
 		* the base reads the card package's EMISSION — the served form-spec
-		* (fields, declared input/output edges, mod kinds) — and constructs
-		* the surface. Defaults propagate from the emission (specDefaults);
-		* every image/file field gets THE ONE square (square.tsx) with the
+		* (the schema envelope, declared input/output edges, mod kinds) —
+		* and constructs the surface. The resolved value derives per render
+		* (resolveValue — the engine's compose cascade mirrored); every
+		* image/file field gets THE ONE square (square.tsx) with the
 		* three source verbs; no card ever hand-rolls an input component.
 		*
 		* THE SEAM (slots.ts): each field renders through the field-atom seam
@@ -685,218 +520,6 @@ window.__ModuleLoader__.load({
 			return {
 				spec,
 				error
-			};
-		}
-		/** The media-kind the picker fetches for a field: image fields name
-		*  image; file fields take the whole library (their accept narrows
-		*  client-side per row). */
-		function mediaKindForField(f) {
-			return f.type === "image" ? "image" : "all";
-		}
-		/** THE ONE square provider (the old SlotGrid law, DSH substrate):
-		*  every slot-shaped field of a stage gets the same verbs — file
-		*  upload (the /v1/uploads door + the data-URL mirror), media drop
-		*  (the asset MIME → the param), and THE PICKER (a DSH Menu anchored
-		*  on the square listing the other stages' latest outputs; picking
-		*  one writes the PARAM — the slot is the wire, no separate wiring
-		*  mechanic exists). ONE definition; the constructor and every
-		*  claimed atom ride it. */
-		function useSquareProvider(onEdit, wire) {
-			const [mirror, setMirror] = (0, react.useState)({});
-			const [pickAt, setPickAt] = (0, react.useState)(null);
-			const [modalAt, setModalAt] = (0, react.useState)(null);
-			const fieldRef = (0, react.useRef)(null);
-			const [mediaRows, setMediaRows] = (0, react.useState)(null);
-			const fileRef = (0, react.useRef)(null);
-			const onFile = (0, react.useCallback)(async (f, file) => {
-				if (wire.onFile !== void 0) {
-					wire.onFile(file);
-					return;
-				}
-				try {
-					const dataUrl = await readAsDataUrl(file);
-					setMirror((m) => ({
-						...m,
-						[f.name]: dataUrl
-					}));
-					const { name } = await uploadInputFile(file);
-					onEdit(f.name, name);
-				} catch (e) {
-					onEdit(f.name, e instanceof Error ? e.message : "upload failed");
-				}
-			}, [onEdit, wire.onFile]);
-			const square = (f) => {
-				if (f.type !== "image" && f.type !== "file") return void 0;
-				return {
-					display: mirror[f.name] ?? null,
-					verbs: {
-						onPick: (anchor) => {
-							const el = anchor instanceof HTMLElement ? anchor : null;
-							setPickAt(el !== null ? {
-								rect: el.getBoundingClientRect(),
-								field: f
-							} : {
-								rect: new DOMRect(8, 8, 1, 1),
-								field: f
-							});
-						},
-						onFile: (file) => {
-							onFile(f, file);
-						},
-						onAsset: (url) => {
-							onEdit(f.name, url);
-						},
-						onClear: () => {
-							setMirror((m) => {
-								const n = { ...m };
-								delete n[f.name];
-								return n;
-							});
-							onEdit(f.name, "");
-						}
-					}
-				};
-			};
-			const sourceMenu = pickAt === null ? null : (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Menu, {
-				open: true,
-				anchor: null,
-				getAnchorRect: () => pickAt.rect,
-				items: [
-					{
-						id: "__flow__",
-						label: "From flow"
-					},
-					{
-						id: "__media__",
-						label: "From media"
-					},
-					{
-						id: "__file__",
-						label: "From file"
-					},
-					{
-						type: "separator",
-						id: "sep"
-					},
-					{
-						id: "__none__",
-						label: "— clear —",
-						danger: true
-					}
-				],
-				onSelect: (id) => {
-					const f = pickAt.field;
-					setPickAt(null);
-					if (id === "__flow__") {
-						setModalAt({
-							mode: "flow",
-							field: f
-						});
-						return;
-					}
-					if (id === "__media__") {
-						setModalAt({
-							mode: "media",
-							field: f
-						});
-						return;
-					}
-					if (id === "__file__") {
-						fieldRef.current = f;
-						fileRef.current?.click();
-						return;
-					}
-					if (id === "__none__") {
-						setMirror((m) => {
-							const n = { ...m };
-							delete n[f.name];
-							return n;
-						});
-						onEdit(f.name, "");
-						return;
-					}
-				},
-				onClose: () => {
-					setPickAt(null);
-				},
-				portal: true
-			});
-			(0, react.useEffect)(() => {
-				if (modalAt?.mode !== "media") return;
-				const ctrl = new AbortController();
-				setMediaRows(null);
-				fetchMediaLibrary(mediaKindForField(modalAt.field), ctrl.signal).then((items) => {
-					setMediaRows(items.map((it) => ({
-						id: it.url,
-						label: it.name,
-						url: it.url
-					})));
-				}).catch(() => {
-					setMediaRows([]);
-				});
-				return () => {
-					ctrl.abort();
-				};
-			}, [modalAt]);
-			const pickerModal = modalAt === null ? null : (() => {
-				const f = modalAt.field;
-				const candidates = modalAt.mode === "flow" ? wire.candidatesFor !== void 0 ? wire.candidatesFor(f) : wire.candidates : mediaRows ?? [];
-				const req = {
-					mode: modalAt.mode,
-					kind: mediaKindForField(f),
-					field: f,
-					candidates
-				};
-				const pick = (url) => {
-					setModalAt(null);
-					if (url !== "") onEdit(f.name, url);
-				};
-				const fallback = (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Modal, {
-					open: true,
-					onClose: () => {
-						setModalAt(null);
-					},
-					title: modalAt.mode === "flow" ? "From flow" : "From media",
-					description: modalAt.mode === "flow" ? "The other stages’ latest outputs" + (req.kind !== "all" ? " (" + req.kind + ")" : "") : "The runs library" + (req.kind !== "all" ? " (" + req.kind + ")" : ""),
-					closeLabel: "Close picker"
-				}, candidates.length === 0 ? (0, react.createElement)("p", { className: card_module_css_default.pickEmpty }, modalAt.mode === "media" && mediaRows === null ? "loading…" : "nothing to pick yet") : (0, react.createElement)("ul", { className: card_module_css_default.pickList }, candidates.map((c) => (0, react.createElement)("li", {
-					key: c.id,
-					className: card_module_css_default.pickRow
-				}, (0, react.createElement)("button", {
-					type: "button",
-					className: card_module_css_default.pickBtn,
-					"data-testid": "source-pick-row",
-					onClick: () => {
-						pick(c.url);
-					}
-				}, isImageUrl(c.url) ? (0, react.createElement)("img", {
-					className: card_module_css_default.pickThumb,
-					src: c.url,
-					alt: c.label,
-					loading: "lazy"
-				}) : (0, react.createElement)("span", { className: card_module_css_default.pickGlyph }, c.label.slice(0, 1).toUpperCase()), (0, react.createElement)("span", { className: card_module_css_default.pickLabel }, c.label))))));
-				return wire.renderSourcePick !== void 0 ? wire.renderSourcePick(req, fallback) : fallback;
-			})();
-			const fileInput = (0, react.createElement)("input", {
-				ref: fileRef,
-				type: "file",
-				accept: "image/png,image/jpeg,image/webp",
-				"aria-hidden": true,
-				tabIndex: -1,
-				style: { display: "none" },
-				onChange: (e) => {
-					const file = e.target.files?.[0];
-					const f = fieldRef.current;
-					if (f !== null && file !== void 0 && file !== null) {
-						fieldRef.current = null;
-						onFile(f, file);
-					}
-					if (fileRef.current !== null) fileRef.current.value = "";
-				}
-			});
-			return {
-				square,
-				wireMenu: (0, react.createElement)(react.Fragment, null, sourceMenu, pickerModal, fileInput)
 			};
 		}
 		/** THE TRI-STATE ATOM (hour 15, stroke C): inherit / on / off —
@@ -1019,75 +642,14 @@ window.__ModuleLoader__.load({
 				"aria-label": f.label
 			});
 		}
-		/** THE MODEL AXES (the pass-along law, 2026-09-12): the Model select
-		*  plus ONE SELECT PER SERVED AXIS GROUP — Variant, Quant, Recipe,
-		*  Precision, … the declaration's whole vocabulary, NEVER a hardcoded
-		*  list (the operator's lane proof caught the hardcoded Quant-only
-		*  list dropping seedvr2's and qwen's other axes). Order: the door's
-		*  variant_groups contract, else first-seen. Chain: an axis' options
-		*  are the rows composing with the axes above (the row's `owner`).
-		*  Each pick applies the row's defaults overlay through onEdit — the
-		*  values (model + every axis key + overlay keys) ride the caller's
-		*  map and pass along at Run. Renders nothing when the spec declares
-		*  no matrix. */
-		function ModelAxes({ spec, values, onEdit }) {
-			const groups = axisGroups(spec);
-			if (groups.length === 0) return null;
-			const models = modelChoices(spec);
-			const contract = spec.features?.variant_groups ?? {};
-			const pick = (row) => {
-				const patch = axisPickPatch(spec, row);
-				for (const [k, v] of Object.entries(patch)) onEdit(k, v);
-			};
-			const active = {};
-			for (const g of groups) {
-				const held = values[axisKey(g)];
-				const rows = composingRows(spec, g, active);
-				if (typeof held === "string" && held !== "" && rows.some((r) => r.id === held)) active[g] = held;
-				else active[g] = activeRowId(spec, values, g, active) ?? (rows.length > 0 ? rows[0].id : "");
-			}
-			return (0, react.createElement)("section", {
-				className: `${card_module_css_default.specGroup} ${card_module_css_default.modelAxes}`,
-				"data-model-axes": "1"
-			}, (0, react.createElement)("h4", { className: card_module_css_default.specGroupTitle }, "Model"), (0, react.createElement)("label", { className: card_module_css_default.specField }, (0, react.createElement)("span", { className: card_module_css_default.specFieldKey }, "Model"), (0, react.createElement)("select", {
-				className: card_module_css_default.specSelect,
-				"aria-label": "Model",
-				value: typeof values["model"] === "string" && values["model"] !== "" ? values["model"] : typeof spec.model === "string" && spec.model !== "" ? spec.model : models[0] ?? "",
-				onChange: (e) => {
-					onEdit("model", e.target.value);
-				}
-			}, models.map((m) => (0, react.createElement)("option", {
-				key: m,
-				value: m
-			}, m)))), groups.map((g) => {
-				const rows = composingRows(spec, g, active);
-				if (rows.length === 0) return null;
-				const label = contract[g]?.label ?? g;
-				return (0, react.createElement)("label", {
-					key: g,
-					className: card_module_css_default.specField
-				}, (0, react.createElement)("span", { className: card_module_css_default.specFieldKey }, label), (0, react.createElement)("select", {
-					className: card_module_css_default.specSelect,
-					"aria-label": label,
-					"data-axis": g,
-					value: active[g] ?? "",
-					onChange: (e) => {
-						const id = e.target.value;
-						const row = rows.find((v) => v.id === id);
-						if (row !== void 0) pick(row);
-					}
-				}, rows.map((v) => (0, react.createElement)("option", {
-					key: v.id,
-					value: v.id
-				}, v.label + (typeof v.hint === "string" && v.hint !== "" ? ` — ${v.hint}` : "")))));
-			}));
-		}
-		/** THE CARD FORM (the constructor's surface half) — the spec's
-		*  fields, grouped, visible-when honored, defaults seeded by the
-		*  caller (specDefaults — propagated from the emission). Edits ride
-		*  the caller's values map. Each field renders through the claimed
-		*  atom for its emitted type when the caller passes one; the base's
-		*  built-in atom is the default.
+		/** THE CARD FORM (the constructor's surface half) — the emission's
+		*  fields walked off the schema envelope, grouped, visible-when
+		*  honored; the RESOLVED value derives per render (resolveValue —
+		*  the engine's compose cascade mirrored), edits are set/unset ops
+		*  over the USER layer (the settings law: presence IS the override
+		*  mark, the reset chip removes it). Each field renders through the
+		*  claimed atom for its emitted type when the caller passes one;
+		*  the base's built-in atom is the default.
 		*
 		*  THE CONSTRUCTION LAW IS NOT OPTIONAL (operator, 2026-09-12: "the
 		*  img-to-mesh input component — you are not using it around — you
@@ -1103,128 +665,13 @@ window.__ModuleLoader__.load({
 		*  (mask's TuneSection). The claim seam stays CardForm's; this row
 		*  takes the resolved atom inputs. */
 		function SpecFieldRow({ f, value, onEdit, square, wireCandidates }) {
-			return (0, react.createElement)("label", { className: card_module_css_default.specField }, (0, react.createElement)("span", { className: card_module_css_default.specFieldKey }, f.label, f.required === true ? (0, react.createElement)("span", { className: card_module_css_default.specRequired }, " *") : null), (0, react.createElement)(SpecAtom, {
+			return (0, react.createElement)("div", { className: card_module_css_default.specField }, (0, react.createElement)("span", { className: card_module_css_default.specFieldKey }, f.label, f.required === true ? (0, react.createElement)("span", { className: card_module_css_default.specRequired }, " *") : null), (0, react.createElement)(SpecAtom, {
 				f,
 				value,
 				onEdit,
 				square,
 				...wireCandidates !== void 0 ? { wireCandidates } : {}
 			}), f.tooltip !== void 0 && f.tooltip !== "" ? (0, react.createElement)("span", { className: card_module_css_default.specHint }, f.tooltip) : null);
-		}
-		function CardForm({ spec, fields, values, onEdit, wire, square, atoms, onPatch }) {
-			const modKinds = spec?.features?.modifiers ?? [];
-			const owned = modOwnedFields(spec ?? {
-				form: "",
-				fields: [],
-				variants: []
-			});
-			const flatFields = owned.size > 0 ? fields.filter((f) => !owned.has(f.name)) : fields;
-			const signature = spec !== void 0 && Array.isArray(spec.inputs) ? spec.inputs : [];
-			const railOf = (inp) => {
-				const f = flatFields.find((x) => x.name === inp.name);
-				if (f === void 0) return void 0;
-				if (f.type === "image" || f.type === "file") return f;
-			};
-			const railFields = signature.map((inp) => typeof inp?.name === "string" ? railOf(inp) : void 0).filter((f) => f !== void 0);
-			const railNames = new Set(railFields.map((f) => f.name));
-			const visible = (f) => f.type !== "image_list" && !railNames.has(f.name);
-			const groups = groupFields(flatFields.filter(visible), values);
-			const atomOf = (f) => atoms?.[f.type];
-			const own = useSquareProvider(onEdit, wire ?? { candidates: [] });
-			const squareFor = square ?? own.square;
-			const seeded = (0, react.useRef)(false);
-			const valuesRef = (0, react.useRef)(values);
-			valuesRef.current = values;
-			(0, react.useEffect)(() => {
-				if (spec === void 0 || seeded.current) return;
-				seeded.current = true;
-				const seed = seedAxisValues(spec, valuesRef.current);
-				for (const [k, v] of Object.entries(seed)) onEdit(k, v);
-			}, [spec, onEdit]);
-			return (0, react.createElement)("div", { className: card_module_css_default.specForm }, spec !== void 0 ? (0, react.createElement)(ModelAxes, {
-				spec,
-				values,
-				onEdit
-			}) : null, railFields.length > 0 ? (0, react.createElement)("section", {
-				className: card_module_css_default.specGroup + " " + card_module_css_default.inputRail,
-				"data-input-rail": "1"
-			}, (0, react.createElement)("div", { className: card_module_css_default.specSlotRow }, railFields.map((f) => {
-				if (f.type === "image_list") return null;
-				return (0, react.createElement)("div", {
-					key: f.name,
-					className: card_module_css_default.specSlotCell,
-					title: f.tooltip !== void 0 && f.tooltip !== "" ? f.tooltip : void 0
-				}, (0, react.createElement)(SpecAtom, {
-					f,
-					value: values[f.name],
-					onEdit,
-					square: squareFor(f),
-					...wire?.candidates !== void 0 ? { wireCandidates: wire.candidates } : {}
-				}));
-			}))) : null, groups.map((g) => {
-				const children = [];
-				let row = [];
-				const flush = () => {
-					if (row.length === 0) return;
-					children.push((0, react.createElement)("div", {
-						key: "slotrow-" + String(children.length),
-						className: card_module_css_default.specSlotRow
-					}, row));
-					row = [];
-				};
-				for (const f of g.fields) {
-					if (railNames.has(f.name)) continue;
-					const claim = atomOf(f);
-					const sq = squareFor(f);
-					const wireCandidates = wire?.candidates;
-					if (claim !== void 0) {
-						flush();
-						children.push((0, react.createElement)("label", {
-							key: f.name,
-							className: card_module_css_default.specField
-						}, (0, react.createElement)("span", { className: card_module_css_default.specFieldKey }, f.label, f.required === true ? (0, react.createElement)("span", { className: card_module_css_default.specRequired }, " *") : null), claim({
-							f,
-							value: values[f.name],
-							onEdit,
-							square: sq
-						}), f.tooltip !== void 0 && f.tooltip !== "" ? (0, react.createElement)("span", { className: card_module_css_default.specHint }, f.tooltip) : null));
-						continue;
-					}
-					if (f.type === "image" || f.type === "file") {
-						row.push((0, react.createElement)("div", {
-							key: f.name,
-							className: card_module_css_default.specSlotCell,
-							title: f.tooltip !== void 0 && f.tooltip !== "" ? f.tooltip : void 0
-						}, (0, react.createElement)(SpecAtom, {
-							f,
-							value: values[f.name],
-							onEdit,
-							square: sq,
-							...wireCandidates !== void 0 ? { wireCandidates } : {}
-						})));
-						continue;
-					}
-					flush();
-					children.push((0, react.createElement)(SpecFieldRow, {
-						key: f.name,
-						f,
-						value: values[f.name],
-						onEdit,
-						square: sq,
-						...wireCandidates !== void 0 ? { wireCandidates } : {}
-					}));
-				}
-				flush();
-				return (0, react.createElement)("section", {
-					key: g.group ?? "",
-					className: card_module_css_default.specGroup
-				}, g.group !== null ? (0, react.createElement)("h4", { className: card_module_css_default.specGroupTitle }, g.group) : null, children);
-			}), modKinds.length > 0 ? (0, react.createElement)(ModifiersSection, {
-				kinds: modKinds,
-				values,
-				onEdit,
-				...onPatch !== void 0 ? { onPatch } : {}
-			}) : null, own.wireMenu);
 		}
 		//#endregion
 		//#region ../../web/card-base/src/mods.tsx
@@ -1256,308 +703,6 @@ window.__ModuleLoader__.load({
 		*        renders kind.fields through the same constructor atoms —
 		*        the fields NEVER render flat on the card form.
 		*/
-		function ModifiersSection(props) {
-			const { kinds, values, onEdit, onPatch } = props;
-			const [dragTile, setDragTile] = (0, react.useState)(null);
-			const [overTile, setOverTile] = (0, react.useState)(null);
-			const [pickAt, setPickAt] = (0, react.useState)(null);
-			const [leaf, setLeaf] = (0, react.useState)(null);
-			const [leafError, setLeafError] = (0, react.useState)(null);
-			const [draftOption, setDraftOption] = (0, react.useState)("");
-			const [draftStrength, setDraftStrength] = (0, react.useState)("");
-			const [draftParams, setDraftParams] = (0, react.useState)({});
-			const entriesOf = (k) => {
-				const v = values[k.param_key];
-				return Array.isArray(v) ? v.filter((e) => typeof e === "object" && e !== null) : [];
-			};
-			const optionOf = (k, value) => (k.options ?? []).find((o) => o.value === value) ?? null;
-			const commit = (k, next) => {
-				onEdit(k.param_key, next);
-				onPatch?.({ [k.param_key]: next });
-			};
-			const addable = kinds.filter((k) => k.cardinality !== "scalar");
-			if (kinds.length === 0) return null;
-			const fieldDefaults = (k) => {
-				const out = {};
-				for (const f of k.fields ?? []) if (f.default !== void 0 && f.default !== null) out[f.name] = f.default;
-				return out;
-			};
-			const openCreate = (k) => {
-				const entries = entriesOf(k);
-				if (k.max_stack !== void 0 && entries.length >= k.max_stack) {
-					setLeafError(k.label + " stack limit reached (" + String(k.max_stack) + ") — remove one to add another.");
-					return;
-				}
-				setDraftOption("");
-				setDraftStrength("");
-				setDraftParams(fieldDefaults(k));
-				setLeafError(null);
-				setLeaf({
-					mode: "create",
-					kind: k,
-					index: -1
-				});
-			};
-			const openEdit = (k, index) => {
-				const entry = entriesOf(k)[index];
-				if (entry === void 0) return;
-				if (isOptionKind(k)) {
-					const strength = typeof entry["strength"] === "number" ? entry["strength"] : void 0;
-					setDraftStrength(strength !== void 0 ? String(strength) : "");
-				} else {
-					const params = {};
-					for (const f of k.fields ?? []) if (entry[f.name] !== void 0) params[f.name] = entry[f.name];
-					setDraftParams(params);
-				}
-				setLeafError(null);
-				setLeaf({
-					mode: "edit",
-					kind: k,
-					index
-				});
-			};
-			const saveLeaf = () => {
-				if (leaf === null) return;
-				const k = leaf.kind;
-				const entries = entriesOf(k);
-				if (isOptionKind(k)) {
-					if (leaf.mode === "create") {
-						if (draftOption === "") {
-							setLeafError("Pick one from the served rows.");
-							return;
-						}
-						const option = optionOf(k, draftOption);
-						const seed = option !== null && option.defaults?.strength !== void 0 ? option.defaults.strength : 1;
-						const strength = draftStrength.trim() === "" ? seed : Number(draftStrength);
-						if (!Number.isFinite(strength)) {
-							setLeafError("Strength must be a number.");
-							return;
-						}
-						commit(k, [...entries, {
-							id: draftOption,
-							strength
-						}]);
-					} else {
-						const entry = entries[leaf.index];
-						if (entry === void 0) {
-							setLeaf(null);
-							return;
-						}
-						const strength = Number(draftStrength);
-						if (!Number.isFinite(strength)) {
-							setLeafError("Strength must be a number.");
-							return;
-						}
-						const next = [...entries];
-						next[leaf.index] = {
-							...entry,
-							strength
-						};
-						commit(k, next);
-					}
-				} else if (leaf.mode === "create") commit(k, [...entries, { ...draftParams }]);
-				else {
-					const entry = entries[leaf.index];
-					if (entry === void 0) {
-						setLeaf(null);
-						return;
-					}
-					const next = [...entries];
-					next[leaf.index] = {
-						...entry,
-						...draftParams
-					};
-					commit(k, next);
-				}
-				setLeaf(null);
-			};
-			const deleteLeaf = () => {
-				if (leaf === null || leaf.mode !== "edit") return;
-				commit(leaf.kind, entriesOf(leaf.kind).filter((_, i) => i !== leaf.index));
-				setLeaf(null);
-			};
-			const onTileDrop = (k, active, over) => {
-				if (over === active) return;
-				const entries = entriesOf(k);
-				const from = entries.findIndex((_, i) => k.param_key + "-" + i === active);
-				const to = entries.findIndex((_, i) => k.param_key + "-" + i === over);
-				if (from < 0 || to < 0) return;
-				const next = [...entries];
-				const [moved] = next.splice(from, 1);
-				next.splice(to, 0, moved);
-				commit(k, next);
-			};
-			return (0, react.createElement)("section", {
-				className: card_module_css_default.modSection,
-				"data-subcard-grid": "on"
-			}, (0, react.createElement)("div", { className: card_module_css_default.modHead }, (0, react.createElement)("span", { className: card_module_css_default.modTitle }, "Modifiers"), (0, react.createElement)("span", { className: card_module_css_default.modHint }, "drag to set apply order")), leafError !== null && leaf === null ? (0, react.createElement)("p", { className: card_module_css_default.modLeafError }, leafError) : null, (0, react.createElement)("div", {
-				className: card_module_css_default.modRow,
-				"data-subcard-row": "flow"
-			}, kinds.map((k) => {
-				const entries = entriesOf(k);
-				if (entries.length === 0) return null;
-				return entries.map((entry, i) => {
-					const id = typeof entry["id"] === "string" ? entry["id"] : "";
-					const option = optionOf(k, id);
-					const strength = typeof entry["strength"] === "number" ? entry["strength"] : option !== null && option.defaults !== void 0 ? option.defaults.strength : void 0;
-					return (0, react.createElement)(ModTile, {
-						key: k.param_key + "-" + i,
-						tileId: k.param_key + "-" + i,
-						label: option !== null ? option.label : id !== "" ? id : isOptionKind(k) ? k.label + " " + String(i + 1) : k.label,
-						...strength !== void 0 ? { strength } : {},
-						onOpen: () => {
-							openEdit(k, i);
-						},
-						dragging: dragTile === k.param_key + "-" + i,
-						dragOver: overTile === k.param_key + "-" + i && dragTile !== null && dragTile !== overTile,
-						onReorderStart: (id) => {
-							setDragTile(id);
-							if (id === null) setOverTile(null);
-						},
-						onReorderOver: setOverTile,
-						onReorderDrop: (active, over) => {
-							setDragTile(null);
-							setOverTile(null);
-							onTileDrop(k, active, over);
-						}
-					});
-				});
-			}), addable.length > 0 ? (0, react.createElement)("button", {
-				type: "button",
-				className: card_module_css_default.modAddSquare,
-				"data-subcard-add": "mod",
-				"aria-label": "Add modifier",
-				title: "Add a modifier",
-				onClick: (e) => {
-					setPickAt({ rect: e.currentTarget.getBoundingClientRect() });
-				}
-			}, (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.IconPlusOutline16, { className: card_module_css_default.squareGlyph })) : null), pickAt !== null ? (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Menu, {
-				open: true,
-				anchor: null,
-				getAnchorRect: () => pickAt.rect,
-				items: addable.map((k) => ({
-					id: k.kind,
-					label: k.label
-				})),
-				onSelect: (id) => {
-					setPickAt(null);
-					const k = addable.find((x) => x.kind === id);
-					if (k !== void 0) openCreate(k);
-				},
-				onClose: () => {
-					setPickAt(null);
-				},
-				portal: true
-			}) : null, leaf !== null ? (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Modal, {
-				open: true,
-				onClose: () => {
-					setLeaf(null);
-				},
-				title: (leaf.mode === "create" ? "Add " : "Edit ") + leaf.kind.label,
-				closeLabel: "Close"
-			}, (0, react.createElement)(ModLeaf, {
-				leaf,
-				values,
-				onDraft: {
-					setDraftOption,
-					setDraftStrength,
-					setDraftParams,
-					draftOption,
-					draftStrength,
-					draftParams
-				},
-				onError: setLeafError,
-				onSave: saveLeaf,
-				onDelete: deleteLeaf,
-				leafError
-			})) : null);
-		}
-		/** THE LEAF BODY — split so the FIELD-kind editor gets its own
-		*  square provider (the construction law: an image input constructs
-		*  the square automatically, even inside a mod leaf). */
-		function ModLeaf(props) {
-			const { leaf, onDraft, onSave, onDelete, leafError } = props;
-			const k = leaf.kind;
-			const own = useSquareProvider((name, v) => {
-				onDraft.setDraftParams({
-					...onDraft.draftParams,
-					[name]: v
-				});
-			}, { candidates: [] });
-			return (0, react.createElement)("div", { className: card_module_css_default.modLeaf }, leafError !== null ? (0, react.createElement)("p", { className: card_module_css_default.modLeafError }, leafError) : null, isOptionKind(k) ? (0, react.createElement)("div", { className: card_module_css_default.modLeafFields }, leaf.mode === "create" ? (0, react.createElement)("label", { className: card_module_css_default.modField }, k.label, (0, react.createElement)("select", {
-				className: card_module_css_default.modSelect,
-				value: onDraft.draftOption,
-				onChange: (e) => {
-					onDraft.setDraftOption(e.target.value);
-				}
-			}, (0, react.createElement)("option", { value: "" }, "— pick —"), (k.options ?? []).map((o) => (0, react.createElement)("option", {
-				key: o.value,
-				value: o.value
-			}, o.label)))) : null, (0, react.createElement)("label", { className: card_module_css_default.modField }, "Strength", (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Input, {
-				type: "number",
-				step: "0.05",
-				value: onDraft.draftStrength,
-				placeholder: "the row default",
-				onChange: (e) => {
-					onDraft.setDraftStrength(e.target.value);
-				}
-			}))) : (0, react.createElement)("div", { className: card_module_css_default.modLeafFields }, (k.fields ?? []).map((f) => (0, react.createElement)("label", {
-				key: f.name,
-				className: card_module_css_default.modField
-			}, f.label ?? f.name, (0, react.createElement)(SpecAtom, {
-				f,
-				value: onDraft.draftParams[f.name],
-				onEdit: (name, v) => {
-					onDraft.setDraftParams({
-						...onDraft.draftParams,
-						[name]: v
-					});
-				},
-				square: own.square(f)
-			}))), own.wireMenu), (0, react.createElement)("div", { className: card_module_css_default.modLeafActions }, (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Button, {
-				variant: "primary",
-				onClick: onSave
-			}, leaf.mode === "create" ? "Add" : "Save"), leaf.mode === "edit" ? (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Button, {
-				variant: "ghost",
-				onClick: onDelete
-			}, "Remove") : null));
-		}
-		/** One mod tile (the original, verbatim: useSortable + click to
-		*  edit + strength to 2 decimals). */
-		/** The reorder drag's MIME (native HTML5 sortable). */
-		const MOD_DRAG_MIME = "application/x-melite-mod";
-		function ModTile(props) {
-			return (0, react.createElement)("li", {
-				className: card_module_css_default.modTile + (props.dragging ? " " + card_module_css_default.tileDragging : "") + (props.dragOver ? " " + card_module_css_default.modTileOver : ""),
-				draggable: true,
-				"data-mod-tile": props.tileId,
-				title: "Drag to reorder · click to edit",
-				onDragStart: (e) => {
-					e.dataTransfer.setData(MOD_DRAG_MIME, props.tileId);
-					e.dataTransfer.effectAllowed = "move";
-					props.onReorderStart(props.tileId);
-				},
-				onDragEnd: () => {
-					props.onReorderStart(null);
-				},
-				onDragOver: (e) => {
-					if (e.dataTransfer.types.includes(MOD_DRAG_MIME)) {
-						e.preventDefault();
-						e.dataTransfer.dropEffect = "move";
-						props.onReorderOver(props.tileId);
-					}
-				},
-				onDrop: (e) => {
-					if (e.dataTransfer.types.includes(MOD_DRAG_MIME)) {
-						e.preventDefault();
-						e.stopPropagation();
-						const active = e.dataTransfer.getData(MOD_DRAG_MIME);
-						if (active !== "" && active !== props.tileId) props.onReorderDrop(active, props.tileId);
-					}
-				},
-				onClick: props.onOpen
-			}, (0, react.createElement)("span", { className: card_module_css_default.modTileLabel }, props.label), props.strength !== void 0 ? (0, react.createElement)("span", { className: card_module_css_default.modTileStrength }, props.strength.toFixed(2)) : null);
-		}
 		//#endregion
 		//#region src/client/index.ts
 		/**
@@ -2105,17 +1250,19 @@ window.__ModuleLoader__.load({
 			const [spec, setSpec] = (0, react.useState)(null);
 			(0, react.useEffect)(() => {
 				if (servedSpec === null) return;
-				const rest = servedSpec.fields.filter((f) => !SPEC_EXCLUDED.has(f.name));
-				setSpec({
-					...servedSpec,
-					fields: rest
+				setSpec(servedSpec);
+				setValues((prev) => {
+					const seeded = { ...params };
+					delete seeded["prompt"];
+					return {
+						...seeded,
+						...prev
+					};
 				});
-				setValues((prev) => ({
-					...specDefaults(rest),
-					...params,
-					...prev
-				}));
 			}, [servedSpec]);
+			const specRows = spec !== null ? fieldsOf(spec).filter((f) => !SPEC_EXCLUDED.has(f.name)) : [];
+			const servedBase = typeof row["resolved"] === "object" && row["resolved"] !== null && !Array.isArray(row["resolved"]) ? row["resolved"] : void 0;
+			const value = resolveValue(spec ?? { form: "" }, values, servedBase);
 			const [elements, setElementsInternal] = (0, react.useState)(() => parseElementsJSON(String(values["elements"] ?? "[]")) ?? []);
 			const [selectedIds, setSelectedIds] = (0, react.useState)([]);
 			const selectedId = selectedIds.length === 1 ? selectedIds[0] : null;
@@ -2551,13 +1698,15 @@ window.__ModuleLoader__.load({
 				setSelectedId
 			]);
 			const run = () => {
+				const userKeys = new Set(Object.keys(values));
 				const patch = {
 					...params,
-					...spec !== null ? specPatch(spec.fields, values, params) : {},
 					prompt: JSON.stringify(assembleCaption(values)),
 					width,
 					height
 				};
+				for (const k of userKeys) if (k !== "prompt") patch[k] = values[k];
+				for (const k of Object.keys(params)) if (!userKeys.has(k) && k !== "prompt" && k !== "width" && k !== "height" && k !== "elements") patch[k] = null;
 				delete patch["elements"];
 				onPatch(patch);
 				onRun();
@@ -2566,12 +1715,13 @@ window.__ModuleLoader__.load({
 			const cssMaxWidth = Math.round(CANVAS_MAX_HEIGHT * ratio);
 			const drawMode = mode.kind === "idle" ? false : mode.kind === "draw";
 			const primaryId = selectedIds.length > 0 ? selectedIds[selectedIds.length - 1] : null;
+			const fieldByName = new Map(specRows.map((f) => [f.name, f]));
 			const onEdit = (0, react.useCallback)((name, v) => {
 				setValues((prev) => ({
 					...prev,
-					[name]: v
+					[name]: coerceFieldEdit(fieldByName.get(name), v)
 				}));
-			}, []);
+			}, [fieldByName]);
 			const styleInput = (key, label) => (0, react.createElement)("label", { className: client_module_css_default.ideoField }, (0, react.createElement)("span", { className: client_module_css_default.ideoFieldKey }, label), (0, react.createElement)("input", {
 				value: String(values[key] ?? ""),
 				onChange: (e) => {
@@ -2902,12 +2052,12 @@ window.__ModuleLoader__.load({
 				onClick: () => {
 					setTab("json");
 				}
-			}, "JSON")), tab === "elements" ? elementsTab : null, tab === "style" ? styleTab : null, tab === "json" ? jsonTab : null, spec !== null && spec.fields.length > 0 ? (0, react.createElement)(CardForm, {
-				spec,
-				fields: spec.fields,
-				values,
+			}, "JSON")), tab === "elements" ? elementsTab : null, tab === "style" ? styleTab : null, tab === "json" ? jsonTab : null, specRows.length > 0 ? (0, react.createElement)("div", null, specRows.map((f) => (0, react.createElement)(SpecFieldRow, {
+				key: f.name,
+				f,
+				value: value[f.name],
 				onEdit
-			}) : null), (0, react.createElement)("div", { className: client_module_css_default.ideoCanvasWrap }, (0, react.createElement)("div", {
+			}))) : null), (0, react.createElement)("div", { className: client_module_css_default.ideoCanvasWrap }, (0, react.createElement)("div", {
 				ref: containerRef,
 				className: `${client_module_css_default.ideoCanvas}${drawMode ? ` ${client_module_css_default.ideoCanvasDraw}` : ""}`,
 				style: {

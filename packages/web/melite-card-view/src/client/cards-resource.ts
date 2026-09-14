@@ -76,6 +76,10 @@ export interface BenchStageRow {
   provenance?: string
   runStatus?: string
   result?: unknown
+  /** THE SERVED RESOLVED MAP (hour-26 stroke 15, the 1:1 run law):
+   *  prepareCardParams' own stamped + lifted body, served by the
+   *  drafts doors — the form layers it under the user layer. */
+  resolved?: Record<string, unknown> | null
   [key: string]: unknown
 }
 

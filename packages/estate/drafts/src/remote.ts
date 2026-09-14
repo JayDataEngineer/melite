@@ -124,6 +124,55 @@ function thrownMessage(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
 }
 
+/** THE RESOLVED SERVE (hour-26 stroke 15, the 1:1 run law): the
+ *  registry seat behind the optional-dependency law. The drafts
+ *  package never imports the registry (dependency direction is
+ *  queue -> drafts); the serve probes ctx.get('cardRegistry') at the
+ *  use site — the documented no-inject read (context.md: "without
+ *  the inject requirement", undefined when unprovided; a direct
+ *  ctx.cardRegistry read would throw "without inject" on lanes that
+ *  never mount the seat). Present on card lanes, absent on
+ *  registry-less ones (the serve then skips, and the client falls
+ *  back to its local derive). */
+interface StageResolver {
+  resolveStageParams(body: Record<string, unknown>): Record<string, unknown> | null;
+}
+
+function resolverOf(ctx: Context): StageResolver | null {
+  let seat: unknown;
+  try {
+    seat = ctx.get("cardRegistry", false);
+  } catch {
+    return null;
+  }
+  if (seat === null || seat === undefined || typeof seat !== "object") return null;
+  const fn: unknown = (seat as { resolveStageParams?: unknown }).resolveStageParams;
+  if (typeof fn !== "function") return null;
+  return seat as StageResolver;
+}
+
+/** Attach the served `resolved` map per stage (prepareCardParams'
+ *  own stamped + lifted body — the exact input the next run
+ *  composes). Copies rows, never mutates the domain's cached doc:
+ *  the stored record keeps params/result/runStatus only, the serve
+ *  derives `resolved` fresh on every read. A stage whose params name
+ *  no resolvable unit rides un-resolved (no key at all — the client
+ *  treats absence as the local-derive fallback). */
+function withResolvedStages(ctx: Context, stages: unknown): unknown {
+  if (!Array.isArray(stages)) return stages;
+  const reg = resolverOf(ctx);
+  if (reg === null) return stages;
+  return (stages as unknown[]).map((s: unknown): unknown => {
+    if (typeof s !== "object" || s === null || Array.isArray(s)) return s;
+    const row = s as Record<string, unknown>;
+    const params = row["params"];
+    if (params === null || typeof params !== "object" || Array.isArray(params)) return row;
+    const resolved = reg.resolveStageParams(params as Record<string, unknown>);
+    if (resolved === null) return row;
+    return { ...row, resolved };
+  });
+}
+
 /** First-seen display strings walk the doc depth-first (the index
  *  law: model/service cap 80, name/intent/title cap 160). */
 function docIndexFields(doc: unknown): { model: string; name: string } {
@@ -235,7 +284,8 @@ export class DraftsRemoteService extends TypertRemoteService {
         draftId,
       });
     }
-    return rec.doc as unknown as Record<string, unknown>;
+    const doc = rec.doc as unknown as Record<string, unknown>;
+    return { ...doc, stages: withResolvedStages(this.ctx, doc["stages"]) };
   }
 
   /** Endpoint `drafts/patch` — the stage patch door, REBORN on the
@@ -500,7 +550,8 @@ export class BenchRemoteService extends TypertRemoteService {
         { cause: error },
       );
     }
-    return getBench(drafts, session);
+    const row = getBench(drafts, session);
+    return { ...row, stages: withResolvedStages(this.ctx, row.stages) };
   }
 
   /** The in-process API the adapter above delegates to. */

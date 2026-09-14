@@ -233,6 +233,29 @@ describe("prepareCardParams", () => {
   });
 });
 
+describe("resolveStageParams (the 1:1 run law's served truth)", () => {
+  it("serves the run's own compose input (prepare parity)", () => {
+    const s = primed();
+    const body = {
+      model: "anima", variant: "standard", quant: null, recipe: "standard",
+      prompt: "a cheerful anime girl at the beach",
+    };
+    const served = s.resolveStageParams({ ...body });
+    const prep = s.prepareCardParams({ ...body }, "anima", "1");
+    assert.deepEqual(served, prep.params);
+    assert.ok(!(served as Record<string, unknown>)["variant"] && !("quant" in (served as Record<string, unknown>)));
+    assert.equal((served as Record<string, unknown>)["prompt"], "a cheerful anime girl at the beach");
+  });
+
+  it("returns null when no unit resolves (never a throw on the serve path)", () => {
+    const s = primed();
+    assert.equal(s.resolveStageParams({}), null);
+    assert.equal(s.resolveStageParams({ model: "" }), null);
+    assert.equal(s.resolveStageParams({ model: "ghost-mid" }), null);
+    assert.equal(s.resolveStageParams({ model: "anima", variant: "turbo", quant: "int8" }), null);
+  });
+});
+
 describe("selectCardVariant", () => {
   const row = (variants: ModelFactsRow["variants"]): ModelFactsRow => ({
     card: "c",

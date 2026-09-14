@@ -475,7 +475,13 @@ export function Ideogram4Studio(props: StageViewOwnerProps): ReturnType<typeof h
   // the RESOLVED value (resolveValue — what a run composes).
   const specRows: SpecField[] = spec !== null
     ? fieldsOf(spec).filter((f) => !SPEC_EXCLUDED.has(f.name)) : []
-  const value: Record<string, unknown> = resolveValue(spec ?? { form: '' }, values)
+  // THE SERVED BASE (hour-26 stroke 15, the 1:1 run law): the row's
+  // `resolved` map layers under the edits (same law as the generic
+  // drill — one resolver, served to the visual).
+  const servedBase: SpecValues | undefined =
+    typeof row['resolved'] === 'object' && row['resolved'] !== null && !Array.isArray(row['resolved'])
+      ? row['resolved'] as SpecValues : undefined
+  const value: Record<string, unknown> = resolveValue(spec ?? { form: '' }, values, servedBase)
 
   // ── The elements document (the echo-guard law, verbatim) ──
   const [elements, setElementsInternal] = useState<IdeoElement[]>(() => parseElementsJSON(String(values['elements'] ?? '[]')) ?? [])

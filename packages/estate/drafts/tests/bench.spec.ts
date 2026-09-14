@@ -992,3 +992,75 @@ describe("the drafts/patch door: null-unset, CAS fence, rev+log", () => {
     expect((doc["bench"] as Record<string, unknown>)["rev"]).toBe(1);
   });
 });
+
+// ── the resolved serve (hour-26 stroke 15, the 1:1 run law) ──────
+// The doors attach prepareCardParams' own stamps per stage (the
+// registry behind the optional-dependency law) and never store
+// them: the domain keeps params/result/runStatus, the serve derives
+// `resolved` fresh on every read.
+
+async function seedDraft(
+  drafts: Domain<DraftsDomainSpec>,
+  draftId: string,
+  stages: unknown[],
+): Promise<void> {
+  await drafts.table("docs").put(draftId, {
+    updated_at: 1,
+    doc: {
+      draft_id: draftId,
+      intent: "seeded",
+      status: "ready",
+      createdAt: 1,
+      completedAt: null,
+      stages,
+    } as never,
+  });
+}
+
+function fakeRegistry(ctx: Context): void {
+  // the serve probes ctx.get('cardRegistry') (the no-inject read),
+  // so the fake rides ctx.provide — the store the probe reads.
+  ctx.provide("cardRegistry", {
+    resolveStageParams: (body: Record<string, unknown>): Record<string, unknown> | null =>
+      typeof body["model"] === "string" && body["model"] !== ""
+        ? { ...body, steps: 52 }
+        : null,
+  });
+}
+
+test("drafts/get + bench/get attach the served resolved map and never store it", async () => {
+  const { ctx, domain } = await bootCtx();
+  const stages = [{ id: "s_0", card: "image-gen", engine: "comfyui", params: { model: "anima", prompt: "x" } }];
+  await seedDraft(domain, "rs-draft", stages);
+  await seed(domain, "rs", { stages: [{ id: "s_0", card: "image-gen", engine: "comfyui", params: { model: "anima", prompt: "x" } }] });
+  fakeRegistry(ctx);
+  const doc = await new DraftsRemoteService(ctx).get("rs-draft", sig);
+  const dstages = doc["stages"] as Array<Record<string, unknown>>;
+  assert.deepEqual(dstages[0]?.["resolved"], { model: "anima", prompt: "x", steps: 52 });
+  const row = await new BenchRemoteService(ctx).get("rs", sig);
+  const rstages = row.stages as Array<Record<string, unknown>>;
+  assert.deepEqual(rstages[0]?.["resolved"], { model: "anima", prompt: "x", steps: 52 });
+  // the stored records keep params only — the serve derived, never persisted
+  const storedDraft = domain.table("docs").get("rs-draft");
+  assert.ok(!("resolved" in ((storedDraft?.doc as unknown as { stages: Array<Record<string, unknown>> }).stages[0] as object)));
+  const storedBench = domain.table("docs").get("bench-rs");
+  assert.ok(!("resolved" in ((storedBench?.doc as unknown as { stages: Array<Record<string, unknown>> }).stages[0] as object)));
+});
+
+test("registry-less lanes serve stages un-resolved (the local-derive fallback)", async () => {
+  const { ctx, domain } = await bootCtx();
+  await seedDraft(domain, "plain-draft", [{ id: "s_0", card: "image-gen", params: { model: "anima" } }]);
+  await seed(domain, "plain", { stages: [{ id: "s_0", card: "image-gen", params: { model: "anima" } }] });
+  const doc = await new DraftsRemoteService(ctx).get("plain-draft", sig);
+  assert.ok(!("resolved" in ((doc["stages"] as Array<Record<string, unknown>>)[0] as object)));
+  const row = await new BenchRemoteService(ctx).get("plain", sig);
+  assert.ok(!("resolved" in ((row.stages as Array<Record<string, unknown>>)[0] as object)));
+});
+
+test("unresolvable params ride un-resolved (no key, never null)", async () => {
+  const { ctx, domain } = await bootCtx();
+  await seedDraft(domain, "ghost-draft", [{ id: "s_0", card: "image-gen", params: {} }]);
+  fakeRegistry(ctx);
+  const doc = await new DraftsRemoteService(ctx).get("ghost-draft", sig);
+  assert.ok(!("resolved" in ((doc["stages"] as Array<Record<string, unknown>>)[0] as object)));
+});

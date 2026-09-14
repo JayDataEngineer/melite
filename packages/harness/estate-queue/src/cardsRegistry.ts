@@ -626,6 +626,29 @@ export class CardRegistryService extends Service {
     };
   }
 
+  /** THE RESOLVED SERVE (hour-26 stroke 15, the 1:1 run law): the
+   *  map the NEXT RUN composes from a stage row — prepareCardParams'
+   *  stamped + lifted body (variant resolver_defaults + family
+   *  defaults injected for absent keys, surface-filtered, envelope
+   *  keys + variant/quant consumed), the exact input the {model:}
+   *  door hands compose. The drafts serve carries it on the stage
+   *  row; the form renders it UNDER the user layer — ONE resolver,
+   *  served to the visual, never a second client-side truth. Null
+   *  when the row names no resolvable unit (registry-less lanes and
+   *  model-less rows fall back to the client derive; the wall pins
+   *  parity on the golden families). */
+  resolveStageParams(
+    body: Record<string, unknown>,
+  ): Record<string, unknown> | null {
+    const mid: unknown = body["model"];
+    if (typeof mid !== "string" || mid === "") return null;
+    try {
+      return this.prepareCardParams(body, mid, "serve").params;
+    } catch {
+      return null;
+    }
+  }
+
   /** The validate-door overlay (the SAME overlay, phase-1 voice) —
    *  R1 selection + the route-lens stamp overlay + lift, so
    *  start+validate compose the identical params (phase-1 with

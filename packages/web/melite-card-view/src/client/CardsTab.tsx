@@ -825,8 +825,15 @@ function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRemoved, 
   }, [])
   // THE RESOLVED VALUE — derived per render (never state): exactly
   // what a Run composes, what the prompt tile and the enhance sweep
-  // read, what the form shows.
-  const value: SpecValues = resolveValue(spec ?? { form: '' }, user)
+  // read, what the form shows. THE SERVED BASE (hour-26 stroke 15,
+  // the 1:1 run law): the row's `resolved` map — prepareCardParams'
+  // own stamps, served by the drafts doors — layers under the user
+  // and over the client's guesses (one resolver, served to the
+  // visual; absent = the registry-less lane derive).
+  const servedBase: SpecValues | undefined =
+    typeof stage.resolved === 'object' && stage.resolved !== null && !Array.isArray(stage.resolved)
+      ? stage.resolved as SpecValues : undefined
+  const value: SpecValues = resolveValue(spec ?? { form: '' }, user, servedBase)
   // ✦ AGENT ENHANCE (hour 24 stroke 10 — the operator's one-shot
   // order): one press gathers the card's prompt text, the sweep door
   // (/melite-tools/enhance {model, prompt}) enhances EVERY declared
@@ -1028,7 +1035,7 @@ function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRemoved, 
         h('div', { className: css.params },
         !loaded ? h('div', { className: css.load }, 'form…')
         : spec !== null
-          ? h(SpecForm, { spec, user, onSet, onUnset, wire, onPatch: onPatchParams })
+          ? h(SpecForm, { spec, user, base: servedBase, onSet, onUnset, wire, onPatch: onPatchParams })
         : h('pre', { className: css.mono }, JSON.stringify(held, null, 2)),
         ),
         // THE RUN SEAT RETIRED (hour-26, the operator: the play

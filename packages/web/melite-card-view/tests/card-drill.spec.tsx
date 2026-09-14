@@ -42,6 +42,10 @@ interface Call { method: string; args: Record<string, unknown> }
 interface StubOpts {
   /** The bench/get doc the stub serves (default: the BENCH fixture's wire shape). */
   bench?: Record<string, unknown>
+  /** The drafts/get stages the stub serves (default: the live-params
+   *  row — override to carry the served `resolved` map like the real
+   *  lane's resolved serve does). */
+  draftStages?: Array<Record<string, unknown>>
   /** Sequential runs/status docs (default: one queued doc). */
   runDocs?: Array<Record<string, unknown>>
 }
@@ -81,7 +85,7 @@ function stubWire(opts?: StubOpts): { calls: Call[] } {
     calls.push({ method: frame.method, args: frame.payload.args })
     let value: Record<string, unknown> = { ok: true }
     if (frame.method === 'bench/get') value = benchDoc
-    if (frame.method === 'drafts/get') value = { draft_id: 'bench-s1', rev: 7, intent: '', stages: [{ id: 's_0', card: 'image-gen', title: 'hero frame', engine: 'comfyui', params: liveParams }] }
+    if (frame.method === 'drafts/get') value = { draft_id: 'bench-s1', rev: 7, intent: '', stages: opts?.draftStages ?? [{ id: 's_0', card: 'image-gen', title: 'hero frame', engine: 'comfyui', params: liveParams }] }
     if (frame.method === 'runs/status') value = runDocs.length > 1 ? runDocs.shift()! : runDocs[0]!
     if (frame.method === 'runs/start') value = { run_id: 'run-1', status: 'queued' }
     if (frame.method === 'drafts/patch') {
@@ -427,4 +431,47 @@ test('the no-clobber law: an empty negative never wipes the card\'s own', async 
   }, { timeout: 4000 })
   // the card's OWN negative survives the empty result
   expect((screen.getByLabelText('Negative Prompt') as HTMLTextAreaElement).value).toBe('user wrote this')
+})
+
+test('the drill renders the SERVED resolved map under the user layer (the 1:1 law)', async () => {
+  // the drill fresh-reads the row through drafts/get (the 2026-09-13
+  // drop-pin) — the served `resolved` rides THAT read, like the real
+  // lane's resolved serve
+  const served = {
+    draft_id: 'bench-s1', rev: 7,
+    stages: [{ id: 's_0', card: 'image-gen', title: 'hero frame', engine: 'comfyui',
+      params: { prompt: 'a red cube' }, resolved: { steps: 52 } }],
+    log: [],
+  }
+  stubWire({
+    bench: served,
+    draftStages: [{ id: 's_0', card: 'image-gen', title: 'hero frame', engine: 'comfyui',
+      params: { prompt: 'a red cube' }, resolved: { steps: 52 } }],
+  })
+  const user = userEvent.setup()
+  render(createElement(CardsTab, {
+    useTabInfo: () => ({
+      tab: {
+        kind: 'sidebar.right.pane.tab', contentId: undefined,
+        navigation: { address: 'dsh-resource://cards/bench' },
+        actions: { openResource: noop },
+      },
+    }),
+    // the estate served the run's own stamps (steps 52 — neither the
+    // schema default 8 nor any user key); the user layer holds only
+    // the prompt, so the served base is what the Steps input shows
+    useResource: () => ({
+      status: 'live',
+      value: {
+        kind: 'bench', draftId: 'bench-s1', rev: 7,
+        stages: [{ id: 's_0', card: 'image-gen', title: 'hero frame', engine: 'comfyui',
+          params: { prompt: 'a red cube' }, resolved: { steps: 52 } }],
+        log: [],
+      } as CardsBenchValue,
+    }),
+  } as Parameters<typeof CardsTab>[0]))
+  await user.click(tileButton())
+  await screen.findByText('Prompt', {}, { timeout: 4000 })
+  // served 52 wins over the schema default 8 (no user steps key)
+  expect(screen.getByDisplayValue('52')).toBeTruthy()
 })
