@@ -570,6 +570,7 @@
 }
 
 .picker {
+  margin-top: -6px;
   display: flex;
   flex-direction: column;
   gap: 10px;
@@ -590,12 +591,18 @@
 }
 .pickerGenreTitle {
   grid-column: 1 / -1;
-  font-size: 13px;
+  font-size: 15px;
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--dsh-text-primary, inherit);
-  margin: 10px 0 0;
+  margin: 12px 0 10px;
+}
+/* (a,c,d): the dialog's own title — bold and bigger, and pull the
+   picker up so the title→search gap is tight. */
+.drill :global([class*="_title_"]) {
+  font-weight: 800;
+  font-size: 18px;
 }
 .pickerCardLabel { font-size: 12px; font-weight: 500; }
 .pickerCard {

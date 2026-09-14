@@ -1327,7 +1327,10 @@ function AddCardDoor({ bench, sessionKey, onAdded, onClose, onAddedRow }: {
   })
   const genres: Array<[string, CatalogCard[]]> = []
   for (const c of filtered) {
-    const g = c.genre !== '' ? c.genre : 'other'
+    // (f, operator): Motion belongs to 3d — one section, the 3d
+    // lane's own motion cards sit with their kin.
+    const g0 = c.genre !== '' ? c.genre : 'other'
+    const g = g0 === 'motion' ? '3d' : g0
     const known = genres.find((x) => x[0] === g)
     if (known === undefined) genres.push([g, [c]])
     else known[1].push(c)
@@ -1339,7 +1342,7 @@ function AddCardDoor({ bench, sessionKey, onAdded, onClose, onAddedRow }: {
     h('div', { className: css.picker },
       h(Input, {
         value: query,
-        placeholder: 'search cards…',
+        placeholder: 'Search cards…',
         onChange: (e: unknown) => setQuery((e as { target: { value: string } }).target.value),
         'aria-label': 'Search cards',
       }),
