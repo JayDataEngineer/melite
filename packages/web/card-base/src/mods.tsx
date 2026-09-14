@@ -44,18 +44,10 @@ export interface ModifiersSectionProps {
   /** immediate persistence (the onSaveParams law) — optional: an
    *  add-drill without a stage commits through its values map. */
   onPatch?: (patch: Record<string, unknown>) => void
-  /** THE RECIPE'S MOD PAYLOAD (hour-26 stroke 16 — loras are a MOD
-   *  TYPE): stacks keyed by param_key that the engine's applyRecipe
-   *  will concat AHEAD of the caller's at compose. Rendered as
-   *  READ-ONLY recipe-owned rows first in the bag: the user SEES the
-   *  full stack (the 1:1 law) while `values` stays the user's own —
-   *  a bag edit can never commit recipe rows back (the double-stack
-   *  guard). */
-  base?: Record<string, ReadonlyArray<Record<string, unknown>>>
 }
 
 export function ModifiersSection(props: ModifiersSectionProps): ReturnType<typeof h> | null {
-  const { kinds, values, onEdit, onPatch, base } = props
+  const { kinds, values, onEdit, onPatch } = props
   // NATIVE REORDER STATE (the dnd-kit purge): the dragging tile id +
   // the hovered tile id, keyed `${param_key}-${index}` like before.
   const [dragTile, setDragTile] = useState<string | null>(null)
@@ -194,27 +186,8 @@ export function ModifiersSection(props: ModifiersSectionProps): ReturnType<typeo
     h('div', { className: css.modRow, 'data-subcard-row': 'flow' },
       kinds.map((k) => {
         const entries = entriesOf(k)
-        const recipeRows = base?.[k.param_key] ?? []
-        if (entries.length === 0 && recipeRows.length === 0) return null
-        // RECIPE-OWNED rows first (read-only — compose concats them
-        // ahead of the caller's; apply order = array order, so the
-        // visual order IS the stack order).
+        if (entries.length === 0) return null
         return [
-          ...recipeRows.map((entry, i) => {
-            const name = typeof entry['name'] === 'string' ? entry['name'] as string : ''
-            const strength = typeof entry['strength'] === 'number' ? entry['strength'] as number
-              : typeof entry['weight'] === 'number' ? entry['weight'] as number : 1
-            return h('li', {
-              key: k.param_key + '-base-' + i,
-              className: css.modTile + ' ' + css.modTileRecipe,
-              'data-mod-tile': k.param_key + '-base-' + i,
-              'data-mod-recipe': 'on',
-              title: 'Recipe-owned — the card recipe stacks it ahead of yours at run',
-            },
-              h('span', { className: css.modTileLabel }, name !== '' ? name : k.label),
-              h('span', { className: css.modTileStrength }, strength.toFixed(2)),
-            )
-          }),
           ...entries.map((entry, i) => {
               const id = typeof entry['id'] === 'string' ? entry['id'] as string : ''
               const option = optionOf(k, id)

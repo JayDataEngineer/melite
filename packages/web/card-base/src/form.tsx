@@ -29,7 +29,7 @@ import { ModifiersSection } from './mods.tsx'
 import { uploadInputFile } from './wire.ts'
 import {
   activeRowId, activeVariantId, axisGroups, axisKey, axisPickPatch, coerceFieldEdit, composingRows, fieldsOf,
-  fieldsOfEnvelope, groupFields, modelChoices, modOwnedFields, modelSwitchPatch, recipeModStacks, resolveValue, rowsFor, titleCaseId, variantRows,
+  fieldsOfEnvelope, groupFields, modelChoices, modOwnedFields, modelSwitchPatch, resolveValue, rowsFor, titleCaseId, variantRows,
   quantRowsFor,
   type FormSpecDoc, type SpecField, type SpecValues, type VariantRow,
 } from './spec.ts'
@@ -587,7 +587,7 @@ function PackPromptRow({ id, onInstallPack }: {
       : 'Install request failed — retry from the assets tab'))
 }
 
-export function ModelAxes({ spec, value, onSet, onDownloadModel, recipeField }: {
+export function ModelAxes({ spec, value, onSet, onDownloadModel }: {
   spec: FormSpecDoc
   value: SpecValues
   onSet(name: string, v: unknown): void
@@ -596,7 +596,6 @@ export function ModelAxes({ spec, value, onSet, onDownloadModel, recipeField }: 
    *  field renders HERE — under Model/Variant/Quant — never at the
    *  bottom of the params list. One key, one seat; the options stay
    *  the card's own (the recipe-yield law above). */
-  recipeField?: SpecField
   /** THE DOWNLOAD PROMPT's arm (stroke 18, the operator's law: a
    *  boarded model is OFFERED — absence prompts the user to
    *  download, never blocks the pick): when the HELD model is a
@@ -764,28 +763,30 @@ export function ModelAxes({ spec, value, onSet, onDownloadModel, recipeField }: 
           rows.map((v) => h('option', { key: v.id, value: v.id },
             titleCaseId(v.label) + (typeof v.hint === 'string' && v.hint !== '' ? ` — ${v.hint}` : '')))))
     }),
-    // THE RECIPE'S SEAT (stroke 20): the card's own recipe field
-    // renders UNDER the axes — same options the field always served
-    // (the card's consts, the yield law), the same edit seam; the
-    // params-list row suppresses (one key, one seat)
-    recipeField !== undefined
-      ? h('label', { className: css.specField, 'data-recipe-seat': 'axes' },
-          h('span', { className: css.specFieldKey }, recipeField.label),
-          h('select', {
-            className: css.specSelect,
-            'aria-label': recipeField.label,
-            value: typeof value['recipe'] === 'string' ? value['recipe'] as string
-              : typeof recipeField.default === 'string' ? recipeField.default : '',
-            onChange: (e: unknown) => {
-              const v = (e as { target: { value: string } }).target.value
-              onSet('recipe', v)
-            },
-          },
-            (recipeField.options ?? []).map((o) => {
-              const val = typeof o === 'string' ? o : o.value
-              const lab = typeof o === 'string' ? o : o.label
-              return h('option', { key: val, value: val }, titleCaseId(lab))
-            })))
+    // THE FAMILY RECIPE PILLS (stroke 34 — recipes are macros now,
+    // never a mode): every served Recipe row that CARRIES a payload
+    // renders as a stamp pill under the axes. The click writes the
+    // row's stamp onto DECLARED keys (axisPickPatch — the same pick
+    // verb as every axis row: knobs ride the user layer, the lora
+    // bag lands in the mod surface where it is visible and
+    // editable). No recipe key persists, nothing derives, nothing
+    // goes stale when the variant rail moves — what it stamped is
+    // what you see. Stamp-less rows (the family `default`) render
+    // nothing: a pill that writes nothing is a dead control.
+    rowsFor(spec, 'Recipe').filter((r) => Object.keys(r.defaults).length > 0).length > 0
+      ? h('div', { className: css.specGroup, 'data-recipe-pills': '1' },
+          rowsFor(spec, 'Recipe').filter((r) => Object.keys(r.defaults).length > 0)
+            .map((r) => h('button', {
+              key: r.id,
+              type: 'button',
+              className: css.specLinkBtn,
+              'data-recipe-pill': r.id,
+              title: typeof r.hint === 'string' && r.hint !== '' ? r.hint : undefined,
+              onClick: () => {
+                const patch = axisPickPatch(spec, r)
+                for (const [k, v] of Object.entries(patch)) onSet(k, v)
+              },
+            }, titleCaseId(r.label))))
       : null,
   )
 }
@@ -937,17 +938,8 @@ export function CardForm({ spec, user, base, onSet, onUnset, wire, square, atoms
     .map((inp) => (typeof inp?.name === 'string' ? railOf(inp as { name: string }) : undefined))
     .filter((f): f is SpecField => f !== undefined)
   const railNames = new Set(railFields.map((f) => f.name))
-  // THE RECIPE'S SEAT (stroke 20, the operator's placement law:
-  // "recipe is supposed to be under the model section"): when the
-  // matrix serves, the card's own recipe field lifts UNDER THE AXES
-  // (ModelAxes' last row); the params-list row suppresses — one key,
-  // one seat. No matrix (variants absent) → the field stays a param.
-  const matrixServes = (spec.variants ?? []).length > 0
-  const liftedRecipe = matrixServes
-    ? flatFields.find((f) => f.name === 'recipe')
-    : undefined
   const visible = (f: SpecField): boolean =>
-    f.type !== 'image_list' && !railNames.has(f.name) && f !== liftedRecipe
+    f.type !== 'image_list' && !railNames.has(f.name)
   const groupFieldsAll = flatFields.filter(visible)
   const groups = groupFields(groupFieldsAll, value)
   const atomOf = (f: SpecField): FieldAtomClaim | undefined => atoms?.[f.type]
@@ -959,7 +951,7 @@ export function CardForm({ spec, user, base, onSet, onUnset, wire, square, atoms
     // THE AXES ride the user layer through the same edit seam (their
     // picks are ordinary sets; the resolved value passes along).
     h(PackPrompt, { spec, onInstallPack }),
-    h(ModelAxes, { spec, value, onSet: edit, onDownloadModel, recipeField: liftedRecipe }),
+    h(ModelAxes, { spec, value, onSet: edit, onDownloadModel }),
     railFields.length > 0
       ? h('section', { className: css.specGroup + ' ' + css.inputRail, 'data-input-rail': '1' },
           h('div', { className: css.specSlotRow },
@@ -1053,9 +1045,6 @@ export function CardForm({ spec, user, base, onSet, onUnset, wire, square, atoms
       ? h(ModifiersSection, {
           kinds: modKinds, values: value, onEdit: edit, railSeated: railNames,
           ...(onPatch !== undefined ? { onPatch } : {}),
-          // the recipe's mod payload — read-only rows ahead of the
-          // user's (the mod plane owns them; loras are a mod type)
-          base: recipeModStacks(spec, user, base),
         })
       : null,
     own.wireMenu,

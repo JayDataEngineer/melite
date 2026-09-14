@@ -15,12 +15,12 @@
  * one serializer server-side) and the bench's stage params ARE the
  * USER layer: a key's PRESENCE is the override mark, never its
  * value. resolveValue layers schema defaults <- model defaults <-
- * card-recipe params <- user — the engine's compose cascade
- * (applyRecipe) verbatim, resolved client-side so the form shows
- * exactly what a run composes. Edits are set/unset ops over the
- * user layer; a recipe pick is an ordinary set of `recipe` whose
- * base re-derives — no stamp ledger, no value-compare heuristics,
- * no heal walk (seedUser's one validation clause aside).
+ * served stamps <- user — the engine's compose cascade verbatim,
+ * resolved client-side so the form shows exactly what a run
+ * composes. Edits are set/unset ops over the user layer; a family
+ * Recipe macro pick is an ordinary multi-set of declared keys —
+ * no stamp ledger, no value-compare heuristics, no heal walk
+ * (seedUser's one validation clause aside).
  *
  * THE EDGE LAW (operator order, 2026-09-12: "whenever a card emits
  * via the package system, it needs to have 'input' 'required=True',
@@ -203,25 +203,6 @@ export interface VariantRow {
   owner?: string
 }
 
-/** One served card recipe (the form-spec `recipes` map — the card's
- *  own catalog projected: label/description/params. The engine
- *  layers params under explicit values at compose (applyRecipe);
- *  the constructor stamps the same overlay into the VISIBLE fields
- *  so the dropdown's effect reads on the card, not just in the run.
- *  Lora stacks stay server-applied (they render in the mod
- *  surface, never as flat params). */
-export interface CardRecipeRow {
-  label?: string
-  description?: string
-  params?: Record<string, unknown>
-  /** The recipe's MOD PAYLOAD (the V4 closure, hour-26 stroke 16):
-   *  the lora stack — LORAS ARE A MOD TYPE, not a standalone flat
-   *  thing. Name-keyed rows, served verbatim from the card's recipe
-   *  DECL; applyRecipe concats them ahead of the caller's at
-   *  compose. The flat resolver never layers these — the mod plane
-   *  renders them as read-only recipe-owned rows (recipeModStacks). */
-  loras?: ReadonlyArray<Record<string, unknown>>
-}
 /** The served form-spec document — the card package's emission as the
  *  base consumes it. */
 export interface FormSpecDoc {
@@ -241,7 +222,7 @@ export interface FormSpecDoc {
   mod_schemas?: Record<string, SchemaEnvelope | null>
   /** THE BASE LAYER INPUT (the family row's own defaults —
    *  resolveValue layers it over the schema defaults, under the
-   *  recipe, under user). */
+   *  user). */
   model_defaults?: Record<string, unknown>
   /** THE FAMILY the spec serves (?model=<key> resolution) — the Model
    *  axis' resting value and the run's family when no variant re-point
@@ -281,11 +262,6 @@ export interface FormSpecDoc {
     modifiers?: ModifierKind[]
     variant_groups?: Record<string, { label?: string, tooltip?: string, filters_on?: string | null, default?: string }>
   }
-  /** THE CARD-RECIPE CATALOG (the card's own `recipes` emission —
-   *  null when the card declares none). The constructor stamps the
-   *  key — a set re-derives every visible layer); the engine layers
-   *  the same params at compose. */
-  recipes?: Record<string, CardRecipeRow> | null
   /** The estate's surface envelope (served TOP-LEVEL by the door —
    *  2026-09-12 lane read): layout='studio' means a registered view
    *  exists (the client's business is the keyed slot, not this flag);
@@ -472,24 +448,22 @@ export function fieldsOf(spec: FormSpecDoc): SpecField[] {
   return fieldsOfEnvelope(spec.schema, typeof spec.model === 'string' ? spec.model : undefined)
 }
 
-/** THE LAYERED RESOLUTION — the engine's compose cascade (applyRecipe
- * in the card's service plane) mirrored client-side: schema
- * defaults <- model defaults <- SERVED STAMPS <- card-recipe params
- * <- user. The form SHOWS exactly what a run composes; `user` rides
- * verbatim by key presence (a PRESENCE is the override mark, never
- * its value — the settings law). Arrays (lora bags) and nulls in
- * model_defaults skip, matching the engine's overlay filter.
+/** THE LAYERED RESOLUTION — the engine's compose cascade mirrored
+ * client-side (stroke 34 — the card-recipe layer is dead): schema
+ * defaults <- model defaults <- SERVED STAMPS <- user. The form
+ * SHOWS exactly what a run composes; `user` rides verbatim by key
+ * presence (a PRESENCE is the override mark, never its value — the
+ * settings law). Arrays (lora bags) and nulls in model_defaults
+ * skip, matching the engine's overlay filter.
  *
  * THE SERVED BASE (hour-26 stroke 15, the 1:1 run law): `base` is the
  * stage row's `resolved` map — prepareCardParams' own stamped +
  * lifted body, served by the drafts doors. It layers UNDER the user
  * (presence still wins) and OVER model_defaults (the server's own
  * family/variant stamps replace the client's guesses — variant
- * resolver_defaults, family defaults, the surface filter). The
- * recipe key reads user.recipe ?? base.recipe ?? the field default,
- * so the server's stamped recipe wins over the client's guess when
- * the user never touched it. Absent base = the registry-less lane
- * derive (the wall pins parity on the golden families). PURE. */
+ * resolver_defaults, family defaults, the surface filter). Absent
+ * base = the registry-less lane derive (the wall pins parity on
+ * the golden families). PURE. */
 export function resolveValue(spec: FormSpecDoc, user: SpecValues, base?: SpecValues): SpecValues {
   const out: SpecValues = specDefaults(fieldsOf(spec))
   for (const [k, v] of Object.entries(spec.model_defaults ?? {})) {
@@ -502,46 +476,8 @@ export function resolveValue(spec: FormSpecDoc, user: SpecValues, base?: SpecVal
       out[k] = v
     }
   }
-  const rkey = recipeKeyOf(spec, user, base)
-  if (rkey !== undefined) {
-    const overlay = spec.recipes?.[rkey]?.params
-    if (overlay !== undefined) Object.assign(out, overlay)
-  }
   Object.assign(out, user)
   return out
-}
-
-/** THE EFFECTIVE RECIPE KEY — one law, one seat: user.recipe (the
- *  pick) ?? the served base's stamped recipe ?? the field's declared
- *  default. resolveValue and the mod plane's recipe-stack derivation
- *  both read THIS (never two spellings of the recipe-key law). */
-export function recipeKeyOf(spec: FormSpecDoc, user: SpecValues, base?: SpecValues): string | undefined {
-  const userRecipe = user['recipe']
-  if (typeof userRecipe === 'string' && userRecipe !== '') return userRecipe
-  const baseRecipe = base?.['recipe']
-  if (typeof baseRecipe === 'string' && baseRecipe !== '') return baseRecipe
-  const dflt = fieldsOf(spec).find((f) => f.name === 'recipe')?.default
-  return typeof dflt === 'string' && dflt !== '' ? dflt : undefined
-}
-
-/** THE RECIPE'S MOD PAYLOAD (hour-26 stroke 16, the V4 closure —
- * loras are a MOD TYPE, never a standalone flat thing): the stacks
- * the engine's applyRecipe will concat AHEAD of the caller's at
- * compose, keyed by the mod kind's param_key. The flat resolver
- * NEVER layers these (a flat concat would feed the bag's editable
- * entries and a bag edit would commit the merged rows back — the
- * engine would stack them AGAIN); the mod plane renders them as
- * read-only recipe-owned rows ahead of the user's. */
-export function recipeModStacks(
-  spec: FormSpecDoc,
-  user: SpecValues,
-  base?: SpecValues,
-): Record<string, ReadonlyArray<Record<string, unknown>>> {
-  const rkey = recipeKeyOf(spec, user, base)
-  if (rkey === undefined) return {}
-  const recipe = spec.recipes?.[rkey]
-  if (recipe?.loras === undefined || recipe.loras.length === 0) return {}
-  return { loras: recipe.loras }
 }
 
 /** evalVisibleWhen's serving shape: "key=value" (a field shows when its
@@ -579,18 +515,6 @@ export function inputEdgeOf(spec: FormSpecDoc, paramName: string): InputEdge | u
   return (spec.inputs ?? []).find((e) => e.name === paramName)
 }
 
-/** THE RECIPE-YIELD LAW (operator, 2026-09-14: "IMG GEN UI CARD
- *  HAS TWO RECIPES"): the card's own `recipe` schema field and the
- *  family matrix's `Recipe` axis group share the `recipe` values key
- *  — two selects writing one key (the family's pick clobbers the
- *  card's, and the axis seed stamps `default` where the card catalog
- *  only knows `standard/...`). When the card declares its own recipe
- *  field, the card OWNS the name: the family axis yields (hidden,
- *  never seeded). PURE. */
-export function cardOwnsRecipe(spec: FormSpecDoc): boolean {
-  return fieldsOf(spec).some((f) => f.name === 'recipe')
-}
-
 /** The axis groups in declaration order: features.variant_groups'
  *  key order when the door serves it, else the rows' distinct groups
  *  in first-seen order. Empty group names never ride. The Recipe
@@ -605,14 +529,12 @@ export function axisGroups(spec: FormSpecDoc): string[] {
   for (const v of rows) {
     if (v.group !== '' && !groups.includes(v.group)) groups.push(v.group)
   }
-  // THE RECIPE-AXIS YIELD (stroke 33 — the compose-door's
-  // missing-seat mirror: "unknown param(s): recipe" on image-edit):
-  // the `recipe` user key is legal IFF the card's schema owns the
-  // recipe field — so the Recipe MATRIX group never rides as an
-  // axis. Owns → the card's own field is the seat (lifted under
-  // Model); doesn't own → no seat exists (the served row is one
-  // stamp-less `default` — a seat for it could only ever persist
-  // the poison key). One arm, no direction to get wrong.
+  // THE RECIPE-AXIS YIELD (strokes 33+34): the Recipe MATRIX group
+  // NEVER rides as an axis — no card owns a `recipe` field anymore
+  // (the card-recipe layer is dead), so the key has no legal seat
+  // anywhere. Family Recipe rows serve as MACRO PILLS (the stamp
+  // verb writes their payload onto declared keys); the stamp-less
+  // `default` row is display metadata and renders nothing.
   return groups.filter((g) => g !== 'Recipe')
 }
 
@@ -848,33 +770,16 @@ export function seedAxisValues(spec: FormSpecDoc, held: SpecValues): SpecValues 
  * survived the reopen), the absent axis keys seed per the axis law
  * (seedAxisValues above — first composing row, one direction).
  *
- * TWO VALIDATION CLAUSES (never value-compare):
- * (a) the double-recipe migration (kept from the heal walk): when
- * the card's schema owns the `recipe` field, a held `recipe` the
- * card's own option list does not know is a stale family-axis stamp
- * — it falls back to the field's declared default (dropped when
- * none).
- * (b) THE UNDECLARABLE-KEY HEAL (stroke 33 — the compose-door
- * refused `recipe` on image-edit): when the card does NOT own the
- * field, a held `recipe` is the old axis seed's poison — dropped,
- * so the run flush's null-domain half deletes the bench key and
- * the card composes again. Everything else rides untouched.
+ * THE ONE VALIDATION CLAUSE (never value-compare): a held `recipe`
+ * the card's schema does not declare is poison — the dead
+ * card-recipe layer's stamp (strokes 33+34). Dropped on open, so
+ * the run flush's null-domain half deletes the bench key and the
+ * card composes again. Everything else rides untouched.
  *
  * PURE — the caller owns the write (onSet per fresh key). */
 export function seedUser(spec: FormSpecDoc, held: SpecValues): SpecValues {
   const out: SpecValues = { ...held, ...seedAxisValues(spec, held) }
-  const field = fieldsOf(spec).find((f) => f.name === 'recipe')
-  if (field === undefined) {
-    delete out['recipe']
-    return out
-  }
-  const cur = out['recipe']
-  if (typeof cur !== 'string' || cur === '') return out
-  const opts = (field.options ?? []).map((o) => typeof o === 'string' ? o : o.value)
-  if (opts.length > 0 && !opts.includes(cur)) {
-    if (field.default !== undefined && field.default !== null) out['recipe'] = field.default
-    else delete out['recipe']
-  }
+  if (!fieldsOf(spec).some((f) => f.name === 'recipe')) delete out['recipe']
   return out
 }
 

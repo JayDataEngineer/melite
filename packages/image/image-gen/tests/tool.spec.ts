@@ -56,7 +56,7 @@ const seam: EstateCall = async (method, path, body) => {
 // Minimal ToolRunContext per the contract's required identity fields
 // (the registry materializes real ones; tests fill every required
 // field and the executor only consumes signal).
-const FULL_ARGS = { prompt: "a cat in neon rain", model: "krea-2", recipe: "cinematic" };
+const FULL_ARGS = { prompt: "a cat in neon rain", model: "krea-2" };
 
 const exec = {
   callId: "test-call",
@@ -81,7 +81,7 @@ describe("single spelling (the emission derives from the card)", () => {
     assert.equal(tool.description, identity.description);
   });
 
-  it("parameters are the SPEC projection of the same walk — model knob synthesized, recipe rides", () => {
+  it("parameters are the SPEC projection of the same walk — model knob synthesized, recipe gone (stroke 34)", () => {
     // One walk, two planes: the registry serves the JSON-schema
     // form (/v1/tools); defineTool takes the implicit property map
     // and compiles it — the definition carries the compiled form.
@@ -91,7 +91,7 @@ describe("single spelling (the emission derives from the card)", () => {
     // The model input, spelled once: enum from the boarded array.
     const props = compiled.properties as Record<string, { enum?: string[] }>;
     assert.deepEqual(props.model!.enum, [...BOARDED]);
-    assert.deepEqual(props.recipe!.enum, ["standard", "fast_draft", "cinematic"]);
+    assert.equal("recipe" in props, false, "the recipe knob is gone from the projection");
   });
 
   it("presentCall claims a generic execute card", () => {
@@ -101,7 +101,7 @@ describe("single spelling (the emission derives from the card)", () => {
     assert.equal(card.title, identity.label);
     assert.equal(card.kind, "execute");
     assert.ok(String(card.rawInput).includes("krea-2"), "model rides the summary");
-    assert.ok(String(card.rawInput).includes("cinematic"), "recipe rides the summary");
+    assert.ok(!String(card.rawInput).includes("recipe="), "the dead layer never names itself");
   });
 });
 
@@ -171,7 +171,7 @@ describe("the executor path (two doors, the model-card law)", () => {
     assert.equal(stage.kind, "generation");
     const stageParams = stage.params as Record<string, unknown>;
     assert.equal(stageParams.prompt, "a cat in neon rain");
-    assert.equal(stageParams.recipe, "cinematic", "the recipe travels inside the stage params");
+    assert.ok(!("recipe" in stageParams), "no recipe key travels (stroke 34)");
     assert.ok(!("model" in stageParams), "model rides service, never params");
     assert.equal(calls[1].path, "/v1/flows/start");
     assert.equal(calls[1].body.draft_id, "d_77", "the minted draft rides the start envelope");

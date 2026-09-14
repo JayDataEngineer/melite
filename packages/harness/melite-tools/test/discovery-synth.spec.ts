@@ -386,7 +386,7 @@ describe('specBody declaration-absent arms', () => {
     assert.deepEqual((spec['features'] as { variant_groups: unknown }).variant_groups, {})
   })
 
-  test('the recipe catalog carries its MOD PAYLOAD — loras ride verbatim (the V4 serve)', () => {
+  test('stroke 34: the recipes key NEVER rides — the card-recipe emission is dead', () => {
     reset()
     mockState.decls = { 'syn-r': decl({}) }
     const defs = new Map<string, CardDefinition>([
@@ -394,14 +394,6 @@ describe('specBody declaration-absent arms', () => {
         boarded: ['syn-r'],
         identity: { label: 'Syn', description: 's', genre: 'image' },
         schemaCarrier: { dict: {} },
-        recipes: {
-          plain: { label: 'Plain', description: 'no stack', params: { steps: 6 } },
-          stacked: {
-            label: 'Stacked', description: 'carries the lora stack',
-            params: { steps: 12 },
-            loras: [{ name: 'cel_shade.safetensors', weight: 0.7 }, { name: 'ink.safetensors' }],
-          },
-        },
       })],
     ])
     const carrier = { uid: 0, refs: { 0: { type: 'object', dict: {} } } }
@@ -409,15 +401,39 @@ describe('specBody declaration-absent arms', () => {
     const spec = specBody(mockState.svc as ComfyUIService, defs, {
       card: 'syn-card', service: 'syn-r', model: 'syn-r',
     }) as Record<string, unknown>
-    const recipes = spec['recipes'] as Record<string, Record<string, unknown>>
-    // the stackless row serves NO loras key (absent, never undefined)
-    assert.ok(!('loras' in recipes['plain']!))
-    // the stacked row serves its payload VERBATIM (name-keyed rows,
-    // weight honored — the mod plane renders them read-only)
-    assert.deepEqual(recipes['stacked']!['loras'], [
-      { name: 'cel_shade.safetensors', weight: 0.7 },
-      { name: 'ink.safetensors' },
+    assert.equal('recipes' in spec, false)
+  })
+
+  test('stroke 34: a family row\'s WIRE PAYLOAD rides its served defaults (the macro stamp source)', () => {
+    reset()
+    mockState.decls = {
+      'syn-r': {
+        ...decl({}),
+        variants: [
+          { id: 'realism', label: 'Realism', hint: '', group: 'Recipe', route: '', order: 0,
+            resolver_defaults: {}, lane_inputs: {}, wire_defaults: { loras: [{ id: 'cel_shade' }] }, cells: [] },
+          { id: 'plain', label: 'Plain', hint: '', group: 'Recipe', route: '', order: 1,
+            resolver_defaults: {}, lane_inputs: {}, wire_defaults: null, cells: [] },
+        ],
+      },
+    }
+    const defs = new Map<string, CardDefinition>([
+      ['syn-card', card({
+        boarded: ['syn-r'],
+        identity: { label: 'Syn', description: 's', genre: 'image' },
+        schemaCarrier: { dict: {} },
+      })],
     ])
+    const carrier = { uid: 0, refs: { 0: { type: 'object', dict: {} } } }
+    mockState.svc = svc({ formSchemas: () => ({ schema: carrier, mods: {} }) })
+    const spec = specBody(mockState.svc as ComfyUIService, defs, {
+      card: 'syn-card', service: 'syn-r', model: 'syn-r',
+    }) as Record<string, unknown>
+    const rows = spec['variants'] as Array<{ id: string; defaults: Record<string, unknown> }>
+    // the payload row: the stamp the pill writes at click
+    assert.deepEqual(rows.find((r) => r.id === 'realism')!.defaults, { loras: [{ id: 'cel_shade' }] })
+    // the stamp-less row stays stamp-less
+    assert.deepEqual(rows.find((r) => r.id === 'plain')!.defaults, {})
   })
 
   test('a declaration-less key rides the envelope verbatim (defaults derive client-side)', () => {

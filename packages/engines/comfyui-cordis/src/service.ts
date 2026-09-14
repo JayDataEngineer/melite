@@ -29,23 +29,6 @@ export class ComposeRefusal extends Error {
 export const cardWireName = (id: string): string =>
   id.replace(/-/g, "_") + "_card";
 
-/** One recipe in a card's catalog: named param overrides plus
- *  optional mod payloads (the lora stack), applied between the
- *  model defaults and the explicit args — the settings cascade
- *  order (settings.md: "schema defaults, then base, then the user
- *  layer"). The full estate order, enforced in compose below: schema
- *  defaults < model-folder defaults (the family rail feeds through
- *  here — rail selection resolves the model row) < card recipe <
- *  explicit args. Scalars layer (user wins); the lora list CONCATs
- *  (recipe stack first, user's after — stacking semantics, not
- *  replacement). */
-export interface CardRecipe {
-  readonly label: string
-  readonly description: string
-  readonly params: Readonly<Record<string, unknown>>
-  readonly loras?: ReadonlyArray<{ readonly name: string; readonly weight?: number }>
-}
-
 export interface CardDefinition {
   id: string
   /** Stage-row id the compose emits (retired compose.py skeleton=
@@ -89,14 +72,6 @@ export interface CardDefinition {
    *  typed as Schema — the field's whole job is carrying .dict;
    *  the old `unknown` forced cast-throughs at every walk site.) */
   schemaCarrier?: Schema
-  /** The card's recipe catalog (DATA ONLY — authored in the card
-   *  package; this service resolves it at the one merge point
-   *  below). Recipes are configs ON THE CARD: named override sets
-   *  that can carry mod payloads. The schema's recipe enum and
-   *  these keys are one spelling (the enum derives from the
-   *  catalog). Absent = the card has no recipes. */
-  recipes?: Readonly<Record<string, CardRecipe>>
-  /** Build the graph. Order of node creation IS the node-id order. */
   compose(params: Record<string, unknown>, model: ModelFacts, g: GraphBuilder, runId: string): void
   /** Post-serialize pass — the lane's autofill-strip calibration
    *  (stripAutofill / stripEmptyAutofill). Cards whose python
@@ -561,31 +536,6 @@ export class ComfyUIService extends Service {
     })
   }
 
-  /** THE RECIPE OVERLAY (one merge point): consumes the validated
-   *  recipe key, layers the payload's params over the merged base,
-   *  concats its lora stack ahead of the stated one. Returns the
-   *  recipe-less merged dict; unknown keys never reach here (the
-   *  schema enum refuses them at parse). */
-  private static applyRecipe(
-    def: CardDefinition,
-    merged: Record<string, unknown>,
-    stated: Record<string, unknown>,
-  ): Record<string, unknown> {
-    const key = merged.recipe
-    const out: Record<string, unknown> = { ...merged }
-    delete out.recipe
-    delete stated.recipe
-    if (def.recipes === undefined || typeof key !== 'string') return out
-    const recipe = def.recipes[key]
-    if (recipe === undefined) return out
-    const rest = { ...out, ...recipe.params, ...stated }
-    if (recipe.loras !== undefined || stated.loras !== undefined) {
-      const stack = Array.isArray(stated.loras) ? stated.loras : []
-      rest.loras = [...(recipe.loras ?? []), ...stack]
-    }
-    return rest
-  }
-
   compose(cardId: string, modelId: string | null, params: unknown, runId: string): PromptGraph {
     const def = this.cards.get(cardId)
     if (!def) throw new ComposeRefusal('unknown-card', `unknown card '${cardId}' (registered: ${[...this.cards.keys()].sort().join(', ') || 'none'})`)
@@ -611,7 +561,6 @@ export class ComfyUIService extends Service {
           }
         }
       }
-      merged = ComfyUIService.applyRecipe(def, merged, { ...((params ?? {}) as Record<string, unknown>) })
       const g = new GraphBuilder(this.pinDefaults)
       def.compose(merged, { id: '', card: cardId, defaults: {}, lane_inputs: {}, card_knobs: [], variants: [], variant_groups: [], outputs: [], mods: [] }, g, runId)
       const graph = g.toJSON()
@@ -628,14 +577,11 @@ export class ComfyUIService extends Service {
     if (!model) throw new ComposeRefusal('no-model-facts', `model '${modelId}' has no facts row (rows assemble in facts.ts from the registry roster + card slices in packages/engines/comfyui/data/model-facts.json)`)
     if (model.card !== cardId) throw new ComposeRefusal('card-mismatch', `model '${modelId}' facts name card '${model.card}', not '${cardId}'`)
 
-    // THE ONE param cascade (image-gen row, 2026-09-10 — five layers,
-    // closest-to-explicit wins; the ORDER is the contract, wall-pinned
-    // in the card package's recipes suite): schema defaults ←
+    // THE ONE param cascade (stroke 34 — the card-recipe layer is
+    // DEAD, recipes are family macros now): schema defaults ←
     // model-folder defaults (the family rail feeds through HERE —
-    // rail selection resolves this model row; arrays never ride —
-    // lora stacks concat in applyRecipe, never replace) ← card
-    // recipe overlay ← explicit params. applyRecipe holds the last
-    // two legs ({...merged, ...recipe.params, ...stated}).
+    // rail selection resolves this model row; arrays never ride) ←
+    // explicit params. The merge below IS the whole law.
     let merged: Record<string, unknown>
     try {
       merged = def.schema(params)
@@ -643,7 +589,6 @@ export class ComfyUIService extends Service {
       throw new ComposeRefusal('bad-params', `card '${cardId}' refused params: ${(e as Error).message}`)
     }
     merged = { ...merged, ...Object.fromEntries(Object.entries(model.defaults).filter(([, v]) => v !== null && !Array.isArray(v))), ...((params ?? {}) as Record<string, unknown>) }
-    merged = ComfyUIService.applyRecipe(def, merged, { ...((params ?? {}) as Record<string, unknown>) })
 
     // LORA WIRE RESOLUTION (2026-09-10 — the id/name split): the UI
     // boundary emits id-keyed rows ({id, strength} — LoRAEntry, the
@@ -657,9 +602,9 @@ export class ComfyUIService extends Service {
     if (Array.isArray(merged.loras)) {
       const cat = this.modCatalog('loras', modelId)
       merged.loras = (merged.loras as Array<Record<string, unknown>>).map((e) => {
-        // strength first (the UI bag's wire shape); CardRecipe rows
-        // carry `weight` (service.ts' own type) — honor it, never
-        // stack a declared weight at silent full strength.
+        // strength first (the UI bag's wire shape); hand-authored
+        // JSON rows may carry `weight` — honor it, never stack a
+        // declared weight at silent full strength.
         const strength = typeof e?.strength === 'number' ? (e.strength as number)
           : typeof e?.weight === 'number' ? (e.weight as number) : 1.0
         if (typeof e?.name === 'string' && (e.name as string) !== '') return { name: e.name as string, strength }

@@ -11,7 +11,6 @@
 export {
   type SpecField,
   type InputEdge,
-  type CardRecipeRow,
   type ModifierKind,
   type FormSpecDoc,
   type CatalogCard,
@@ -23,8 +22,6 @@ export {
   fieldsOf,
   fieldsOfEnvelope,
   resolveValue,
-  recipeKeyOf,
-  recipeModStacks,
   seedUser,
   specDefaults,
   fieldVisible,
@@ -42,7 +39,6 @@ export {
   axisGroups,
   axisKey,
   axisPickPatch,
-  cardOwnsRecipe,
   seedAxisValues,
   variantGroupsContract,
 } from '@melite/card-base'

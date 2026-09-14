@@ -128,6 +128,7 @@ function variantRow(
     label: string
     group: string
     resolver_defaults?: Record<string, unknown>
+    wire_defaults?: Record<string, unknown> | null
     route?: string
     hint?: string
     engine?: string
@@ -138,7 +139,12 @@ function variantRow(
     id: v.id,
     label: v.label,
     group: v.group,
-    defaults: v.resolver_defaults ?? {},
+    // THE MACRO PAYLOAD (stroke 34): the served defaults are the
+    // row's FULL stamp — resolver knobs + wire payloads (the
+    // realism row's lora stack). The client's pick verb writes
+    // exactly this onto the user layer: what a family row stamps is
+    // what the run composes, declared keys only.
+    defaults: { ...(v.resolver_defaults ?? {}), ...(v.wire_defaults ?? {}) },
     route: v.route ?? '',
     hint: v.hint ?? null,
     engine: v.engine ?? declEngine,
@@ -381,30 +387,6 @@ export function specBody(
     mod_schemas: schemas.mods,
     model: res.model,
     outputs: def.flowKinds.outputs,
-    // THE CARD-RECIPE EMISSION (operator, 2026-09-14: "when I do
-    // dropdown there, it should change parameters"): the run-time
-    // cascade already layers the card recipe under explicit values
-    // (the engine's applyRecipe), but the client never SAW the
-    // catalog — the dropdown stored a key with no visible effect.
-    // The card DECLARES these (recipes.ts, data not invention); the
-    // emission projects label/description/params so the constructor
-    // can stamp the overlay into the visible fields (untouched-only
-    // — the user's explicit values still win, same cascade). Null
-    // when the card declares no recipes (the house absent-shape).
-    recipes: def.recipes === undefined ? null : Object.fromEntries(
-      Object.entries(def.recipes).map(([key, r]) => [key, {
-        label: r.label,
-        description: r.description,
-        params: { ...r.params },
-        // THE V4 CLOSURE (hour-26 stroke 16, the 1:1 run law): the
-        // recipe's lora stack rides the emission — applyRecipe
-        // concats it ahead of the caller's at compose (stacking
-        // semantics); the visual needs the same rows to show what
-        // the run will stack. Verbatim (name-keyed rows; the
-        // engine's wire resolution resolves names natively).
-        ...(r.loras !== undefined ? { loras: r.loras.map((e) => ({ ...e })) } : {}),
-      }]),
-    ),
     // THE CARD'S OWN SERIALIZED SCHEMA — the served form's SSOT.
     schema: schemas.schema,
     service: res.service,

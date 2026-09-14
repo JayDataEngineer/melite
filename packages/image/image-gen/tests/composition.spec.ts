@@ -36,16 +36,14 @@ describe("real composition (the production path)", () => {
     assert.equal(def.identity?.label, "Image");
   });
 
-  it("the card carries its recipe catalog (configs ON the card)", async () => {
+  it("stroke 34: the card-recipe layer is DEAD — no catalog, no knob", async () => {
     const defs = await loadCardDefs();
     const def = defs.get("image-gen")!;
-    assert.deepEqual(Object.keys(def.recipes ?? {}).sort(), ["cinematic", "fast_draft", "standard"]);
-    // The schema validates the recipe key (the enum derives from
-    // the catalog — one spelling): unstated fills the default,
-    // unknown refuses.
-    const parsed = def.schema({ prompt: "x" });
-    assert.equal(parsed.recipe, "standard");
-    assert.throws(() => def.schema({ prompt: "x", recipe: "nope" }), "unknown recipe refuses at the schema gate");
+    // the catalog is gone from the definition…
+    assert.equal("recipes" in def, false);
+    // …and the knob is gone from the walked surface (the schema's
+    // own declaration order — one spelling)
+    assert.equal(def.schema({ prompt: "x" }).recipe, undefined);
   });
 
   it("the card emits its tool row (M1 law holds through the package)", async () => {

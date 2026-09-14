@@ -2,10 +2,11 @@
 //
 // Ported verbatim from engines/comfyui-cordis/src/cards/image/
 // image-gen/card.ts (the package home, M2′): decl, schema, compose
-// (the card-kit recipe call), finalize. ONE addition — the recipe
-// knob (the operator's law, this stroke): recipes are configs on
-// the card, cataloged in ./recipes.ts, resolved by the engine's
-// compose at its one merge point.
+// (the card-kit recipe call), finalize. The card-recipe knob is
+// GONE (stroke 34 — the operator's catch: the catalog was
+// model-blind, stamping steps/cfg that fight the variant rail);
+// one-click presets live in the FAMILY DECL as Recipe rows the
+// client stamps as macros.
 import type { Context } from '@deepseek-ai/cordis'
 import z from '@deepseek-ai/schemastery'
 import { imageT2I, finalizeImageGen } from '@melite/comfyui-card-kit'
@@ -15,7 +16,6 @@ import type { ComfyUIService } from '@melite/comfyui-cordis/service'
 import { DECL as krea2Decl } from '@melite/models-krea-2'
 import { DECL as zImageDecl } from '@melite/models-z-image'
 import { DECL as animaDecl } from '@melite/models-anima'
-import { RECIPES, RECIPE_KEYS, DEFAULT_RECIPE } from './recipes.ts'
 
 /** The card's boarding — where the card gets its models: THE AI
  *  MODELS' own plugin declarations (packages/models/*), each
@@ -31,8 +31,8 @@ export const schema = z.object({
   // order = the py field order (frozen form_spec krea-2 referee).
   // loras is NOT here — the krea-2 LoRA knob rides the MOD
   // absorption (mods/loras.ts; the py interlock). compose still
-  // consumes p.loras (kit.ts stackLoras); a recipe may stack its
-  // own loras ahead of the caller's (recipes.ts).
+  // consumes p.loras (kit.ts stackLoras) — the user bag, however
+  // it was filled (a family Recipe macro may have stamped it).
   prompt: z.string().description('Prompt').extra('extra', { order: 0, group: 'prompt', columns: 2, width: 1, required: true, zone: 'params', wtype: 'textarea' }),
   negative_prompt: z.string().description('Negative Prompt').extra('extra', { order: 1, group: 'prompt', width: 1, zone: 'params', wtype: 'textarea' }),
   width: z.number().description('Width').min(256).max(2048).step(16).default(1024).extra('extra', { order: 0, group: 'resolution', columns: 3, width: 1, zone: 'params', wtype: 'number' }),
@@ -42,11 +42,6 @@ export const schema = z.object({
   cfg: z.number().description('Guidance Scale').min(1).max(20).step(0.1).default(4.5).extra('extra', samplingExtra('cfg', { tooltip: 'How closely the diffusion follows the prompt. Higher = stricter.' })),
   sampler: SAMPLERS.description('Sampler').extra('extra', samplingExtra('sampler')),
   scheduler: SCHEDULERS.description('Scheduler').extra('extra', samplingExtra('scheduler')),
-  // THE RECIPE KNOB (this stroke): a config ON the card. The enum
-  // derives from the catalog (one spelling); the engine consumes
-  // the key at compose — it never reaches the kit recipe. Declared
-  // LAST: the ported field order above stays frozen.
-  recipe: z.union(RECIPE_KEYS.map((k) => z.const(k))).description('Recipe').default(DEFAULT_RECIPE).extra('extra', { order: 5, group: 'sampling', width: 1, zone: 'params', wtype: 'select', tooltip: 'Named run config — overlays the schema + model-folder defaults and yields to your explicit values. The family rail above selects the MODEL (its recipe arrives as that model\u2019s defaults, under this one).' }),
 })
 
 export const identity = {
@@ -56,7 +51,7 @@ export const identity = {
   icon: 'image',
   principles: [
     'prompt is required — an empty/whitespace prompt is rejected loud, never sampled with empty conditioning',
-    'ONE param cascade, five layers (closest-to-explicit wins): schema defaults < model-folder defaults < family-rail recipe (arrives as the selected model facts row) < card recipe < your explicit values. The schema defaults are the form base; a model folder MAY carry per-model defaults (empty today — no boarded model does); scalars layer, lora stacks concat (recipe first, yours after)',
+    'ONE param cascade (stroke 34 — the card-recipe layer is dead): schema defaults < model-folder defaults (the family rail resolves the model row) < your explicit values. Presets are FAMILY Recipe rows — one-click macros that stamp declared knobs/bags, never a persisted mode',
     'Sampler and scheduler option lists resolve from the ONE vocabulary (media.comfyui.sampler_vocab) — never hand-copied',
     'A preset fills untouched fields; values you have set win',
     'Mods are model-level declarations: lanpaint rides the families that declare it (anima, z-image) — input_image + lanpaint_mask switch the builder to LanPaintKSampler; loras ride krea-2 (apply on Turbo, train on Raw)',
@@ -83,7 +78,6 @@ export function registerCard(ctx: Context, comfy: ComfyUIService): void {
       outputs: { default: 'image' },
       requiresModel: true,
     },
-    recipes: RECIPES,
     schema: schema as unknown as (v: unknown) => Record<string, unknown>,
     compose(p, model, g, runId) {
       if (!p.prompt || !(p.prompt as string).trim()) {

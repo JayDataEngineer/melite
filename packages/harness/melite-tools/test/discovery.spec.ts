@@ -249,7 +249,6 @@ describe('live door arms', () => {
       'model_defaults',
       'outputs',
       'packs',
-      'recipes',
       'schema',
       'service',
       'size',
@@ -271,21 +270,22 @@ describe('live door arms', () => {
     assert.equal(spec['service'], 'mask-studio')
     assert.deepEqual(spec['variants'], [])
     assert.deepEqual((spec['features'] as { modifiers: unknown[] }).modifiers, [])
-    // a recipe-less card serves the absent-shape (null, never a
-    // missing key — the constructor reads one spelling)
-    assert.equal(spec['recipes'], null)
+    // stroke 34: the recipes key never rides — the layer is dead
+    assert.equal('recipes' in spec, false)
   })
 
-  test('formSpecArm serves image-gen\'s card-recipe catalog (the visible-recipe law)', async () => {
+  test('formSpecArm serves image-gen with NO recipe catalog (stroke 34 — the layer is dead)', async () => {
     const spec = (await formSpecArm('image-gen')) as Record<string, unknown>
-    const recipes = spec['recipes'] as Record<string, { label: string, description: string, params: Record<string, unknown> }>
-    assert.deepEqual(Object.keys(recipes).sort(), ['cinematic', 'fast_draft', 'standard'])
-    // the dropdown's stamp source: fast_draft moves steps + cfg…
-    assert.deepEqual(recipes['fast_draft'].params, { steps: 6, cfg: 3.5 })
-    // …cinematic deepens the negative prompt; standard is the bare base
-    assert.deepEqual(recipes['cinematic'].params,
-      { steps: 12, cfg: 6, negative_prompt: 'flat lighting, low contrast, snapshot' })
-    assert.deepEqual(recipes['standard'].params, {})
+    assert.equal('recipes' in spec, false)
+    // the macro payload rides the FAMILY row instead: krea-2's
+    // realism row serves its lora stamp in the variant defaults
+    const rows = spec['variants'] as Array<{ id: string; group: string; defaults: Record<string, unknown> }>
+    const realism = rows.find((r) => r.id === 'realism')
+    assert.ok(realism, 'the realism row serves')
+    assert.deepEqual(realism!.defaults, { loras: [{ id: 'krea2_realism_lora' }] })
+    // the stamp-less family default stays stamp-less
+    const dflt = rows.find((r) => r.group === 'Recipe' && r.id === 'default')
+    assert.deepEqual(dflt!.defaults, {})
   })
 
   test('formSpecArm 404s unknown keys as null', async () => {

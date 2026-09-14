@@ -14,7 +14,6 @@ import type { ToolDefinition, ToolRuntime } from "@deepseek-ai/dsh-tools";
 import * as pkg from "../src/index.ts";
 import { buildImageGenTool as FACE } from "../src/tool.ts";
 import { TOOL_NAME } from "../src/wire.ts";
-import { RECIPE_KEYS } from "../src/recipes.ts";
 
 const DEFAULT_MODEL = "krea-2";
 const GOOD_ARGS = { prompt: "a koi pond at dusk" };
@@ -142,15 +141,12 @@ describe("the executor path (two doors, envelope law)", () => {
     assert.match(String(ran?.title), /\[\?\] → \?/);
   });
 
-  it("the prose names the driving fields (prompt + the recipe knob)", () => {
+  it("the prose names the driving fields (prompt + model; recipe is gone, stroke 34)", () => {
     const card = tool().presentCall?.(GOOD_ARGS) as unknown as { rawInput?: unknown };
     assert.match(String(card?.rawInput), /prompt=a koi pond at dusk/);
-    assert.match(String(card?.rawInput), /recipe=standard/, "the unstated recipe resolves");
-    // a legal cataloged recipe (the closed key list)
-    const alt = RECIPE_KEYS.find((k) => k !== "standard")!;
-    assert.ok(alt, "a second cataloged recipe serves");
-    const explicit = tool().presentCall?.({ ...GOOD_ARGS, recipe: alt }) as unknown as { rawInput?: unknown };
-    assert.match(String(explicit?.rawInput), new RegExp("recipe=" + alt));
+    // the card-recipe layer is dead — the summary never names a key
+    // the card can no longer declare
+    assert.doesNotMatch(String(card?.rawInput), /recipe=/);
   });
 
 describe("the render channel (one line, both voices)", () => {

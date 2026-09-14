@@ -62,14 +62,13 @@ export const buildImageGenTool = (call: EstateCall): ToolDefinition => {
     parameters: emitParamsSpec(schema as never, BOARDED) as ParameterSchemaSpec,
     presentCall(args: unknown) {
       // Validated args (defineTool's wrapper): prompt is a required
-      // knob — always present; recipe and model are the optional
-      // defaults.
+      // knob — always present; model rides its optional default.
       const a = args as Record<string, unknown>
       return {
         card: 'generic',
         title: identity.label,
         kind: 'execute',
-        rawInput: `model=${String(a.model ?? DEFAULT_MODEL)} recipe=${String(a.recipe ?? 'standard')} prompt=${String(a.prompt).slice(0, 60)}`,
+        rawInput: `model=${String(a.model ?? DEFAULT_MODEL)} prompt=${String(a.prompt).slice(0, 60)}`,
       };
     },
     output: {
@@ -139,7 +138,7 @@ export const buildImageGenTool = (call: EstateCall): ToolDefinition => {
       try {
         // DOOR ONE (compose — CARD BIRTH LAW): the stage doc names
         // the model as the stage's service; the params carry the
-        // card's own surface (recipe included).
+        // card's own surface.
         const draft = await gw( 'POST', '/v1/flows/drafts', {
           intent: FLOW,
           stages: [{ title: identity.label, kind: 'generation', service: model, params }],
@@ -147,8 +146,8 @@ export const buildImageGenTool = (call: EstateCall): ToolDefinition => {
         const draftId = typeof draft.draftId === 'string' ? draft.draftId : ''
         if (draftId === '') return { flow: FLOW, model, error: 'gateway draft POST returned no draftId' }
         // DOOR TWO (start): draft_id + exactly one door key — the
-        // {model:} arm resolves, composes (the recipe overlay rides
-        // the engine's merge point), and queues the run.
+        // {model:} arm resolves, composes at the engine's merge
+        // point, and queues the run.
         // THE ENVELOPE LIFT (card_compose_body 363-372): the start
         // body carries the card params BESIDE the envelope keys —
         // the editor's own wire posts the SAME body (params + model)

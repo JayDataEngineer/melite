@@ -35,7 +35,6 @@ afterEach(() => {
 
 function mount(
   values: SpecValues,
-  base?: Record<string, ReadonlyArray<Record<string, unknown>>>,
 ): { onEdit: ReturnType<typeof vi.fn>; onPatch: ReturnType<typeof vi.fn> } {
   const onEdit = vi.fn()
   const onPatch = vi.fn()
@@ -44,7 +43,6 @@ function mount(
     values,
     onEdit,
     onPatch,
-    ...(base !== undefined ? { base } : {}),
   }))
   return { onEdit, onPatch }
 }
@@ -248,44 +246,25 @@ test('OPTION kinds still ride the served rows: lora create seeds the row default
   })
 })
 
-// ── THE RECIPE'S MOD PAYLOAD (hour-26 stroke 16 — loras are a MOD
-//    TYPE, never a standalone flat thing) ─────────────────────────
+// ── STROKE 34: THE RECIPE'S MOD PAYLOAD IS THE USER BAG ────────────
+//    (the read-only recipe-owned rows died with the card-recipe
+//    layer — a family macro pill stamps its loras INTO the bag:
+//    visible, editable, removable, exactly like a hand-picked row)
 
-test('recipe-owned rows render AHEAD of the user bag, read-only (the 1:1 visual of the compose concat)', () => {
-  mount({ loras: [{ id: 'krea2_darkbrush', strength: 0.5 }] }, {
-    loras: [
-      { name: 'krea2_realism_lora.safetensors', weight: 0.7 },
-      { name: 'cel_shade.safetensors' },
-    ],
-  })
+test('a family-macro lora rides the bag as an ORDINARY editable row — no recipe mark, no second stack', () => {
+  // the realism pill stamped this row; the user added dark brush after
+  mount({ loras: [{ id: 'krea2_realism_lora' }, { id: 'krea2_darkbrush', strength: 0.5 }] })
   const tiles = Array.from(document.querySelectorAll('[data-mod-tile]'))
-  expect(tiles).toHaveLength(3)
-  // recipe rows first — the compose concat order (apply order = array order)
-  expect(tiles[0].getAttribute('data-mod-recipe')).toBe('on')
-  expect(tiles[0].textContent).toContain('krea2_realism_lora.safetensors')
-  expect(tiles[0].textContent).toContain('0.70') // weight honored
-  expect(tiles[1].getAttribute('data-mod-recipe')).toBe('on')
-  expect(tiles[1].textContent).toContain('cel_shade.safetensors')
-  expect(tiles[1].textContent).toContain('1.00') // weightless = full strength
-  // the user's row rides after, editable (no recipe mark)
-  expect(tiles[2].getAttribute('data-mod-recipe')).toBe(null)
-  expect(tiles[2].textContent).toContain('Dark Brush')
+  expect(tiles).toHaveLength(2)
+  // ONE stack, no read-only guests: every row carries the same face
+  for (const t of tiles) expect(t.getAttribute('data-mod-recipe')).toBe(null)
+  expect(tiles[0].textContent).toContain('Realism')
+  expect(tiles[1].textContent).toContain('Dark Brush')
 })
 
-test('THE DOUBLE-STACK GUARD: removing a user row commits ONLY the user bag — recipe rows never enter the write', () => {
-  const { onEdit } = mount({ loras: [{ id: 'krea2_darkbrush', strength: 0.5 }] }, {
-    loras: [{ name: 'krea2_realism_lora.safetensors', weight: 0.7 }],
-  })
-  // open the USER row's leaf (recipe rows carry no click verb)
+test('removing a macro-stamped row commits the plain bag — no guard needed, one stack only', () => {
+  const { onEdit } = mount({ loras: [{ id: 'krea2_realism_lora' }, { id: 'krea2_darkbrush', strength: 0.5 }] })
   fireEvent.click(document.querySelector('[data-mod-tile="loras-0"]') as HTMLElement)
-  // the leaf's delete commits the bag WITHOUT the recipe row
   fireEvent.click(screen.getByRole('button', { name: 'Remove' }))
-  expect(onEdit).toHaveBeenCalledWith('loras', [])
-})
-
-test('a recipe row carries no click verb — the leaf never opens on it', () => {
-  mount({}, { loras: [{ name: 'krea2_realism_lora.safetensors', weight: 0.7 }] })
-  fireEvent.click(document.querySelector('[data-mod-tile="loras-base-0"]') as HTMLElement)
-  // no leaf modal opened (no editor on screen)
-  expect(screen.queryByRole('button', { name: 'Remove' })).toBe(null)
+  expect(onEdit).toHaveBeenCalledWith('loras', [{ id: 'krea2_darkbrush', strength: 0.5 }])
 })

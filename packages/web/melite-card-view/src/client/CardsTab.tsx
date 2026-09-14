@@ -799,14 +799,12 @@ function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRemoved, 
         // model): every HELD key rides verbatim (presence survived
         // the reopen — never re-derived, never value-compared); the
         // absent axis keys seed per the axis law (first-declared
-        // composing row, one direction); a stale family-recipe stamp
-        // the card's catalog does not know falls back to the field
-        // default — and a held recipe on a card WITHOUT the field is
-        // dropped outright (seedUser's two validation clauses; the
-        // run flush's null-domain half deletes the bench key). A
-        // model-pick re-key seeds from
-        // the USER state (the pick survives; the new matrix's rows
-        // seed under it).
+        // composing row, one direction); a held recipe key is
+        // dropped outright — the card-recipe layer is dead (stroke
+        // 34; seedUser's one validation clause; the run flush's
+        // null-domain half deletes the bench key). A model-pick
+        // re-key seeds from the USER state (the pick survives; the
+        // new matrix's rows seed under it).
         setUser(seedUser(doc, freshOpen ? held : userRef.current))
         setLoaded(true)
         reportSurface(doc.size === 'huge' ? 'huge' : '')
@@ -845,7 +843,7 @@ function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRemoved, 
   }, [])
   // THE UNSET PATH (the settings law): removing an override is a
   // first-class edit — the key leaves the user map and the row
-  // re-derives to its base (defaults <- model defaults <- recipe).
+  // re-derives to its base (defaults <- model defaults <- base).
   // The domain write rides the Run press with the rest (a null
   // value under JSON Merge Patch semantics deletes the key).
   const onUnset = useCallback((name: string): void => {
@@ -957,8 +955,8 @@ function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRemoved, 
     setError(null)
     try {
       // THE USER LAYER RIDES VERBATIM (the parameter audit): the
-      // whole explicit map — params, axis keys, recipe — presence
-      // IS the truth the engine composes. Keys the stage HELD that
+      // whole explicit map — params, axis keys, macro stamps —
+      // presence IS the truth the engine composes. Keys the stage HELD that
       // left the user map ride as nulls (JSON Merge Patch: null
       // deletes — the unset's domain half). An identical map skips
       // the write (a noise guard, never a semantic — marking is by

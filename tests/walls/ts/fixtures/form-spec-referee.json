@@ -228,29 +228,6 @@
         "placeholder": "",
         "tooltip": "",
         "visible_when": null
-      },
-      {
-        "name": "recipe",
-        "type": "select",
-        "label": "Recipe",
-        "default": "standard",
-        "options": [
-          "standard",
-          "fast_draft",
-          "cinematic"
-        ],
-        "group": "sampling",
-        "zone": "",
-        "order": 5,
-        "required": null,
-        "columns": null,
-        "width": 1,
-        "min": null,
-        "max": null,
-        "step": null,
-        "placeholder": "",
-        "tooltip": "Named run config — overlays the schema + model-folder defaults and yields to your explicit values. The family rail above selects the MODEL (its recipe arrives as that model’s defaults, under this one).",
-        "visible_when": null
       }
     ],
     "schema_groups": [
@@ -415,20 +392,6 @@
               "sgm_uniform",
               "simple"
             ]
-          },
-          {
-            "name": "recipe",
-            "type": "select",
-            "label": "Recipe",
-            "order": 5,
-            "width": 1,
-            "default": "standard",
-            "tooltip": "Named run config — overlays the schema + model-folder defaults and yields to your explicit values. The family rail above selects the MODEL (its recipe arrives as that model’s defaults, under this one).",
-            "options": [
-              "standard",
-              "fast_draft",
-              "cinematic"
-            ]
           }
         ],
         "order": 2,
@@ -455,7 +418,7 @@
         "max": null,
         "step": null,
         "placeholder": "",
-        "tooltip": "The base body — empty autoloads the Model-declared neutral body (anny-base-body.glb, provisioned); or attach a rigged/static character GLB. (Photo→body estimation is the pilot arc; clothing composite moves to its own card later.)",
+        "tooltip": "The base body \u2014 empty autoloads the Model-declared neutral body (anny-base-body.glb, provisioned); or attach a rigged/static character GLB. (Photo\u2192body estimation is the pilot arc; clothing composite moves to its own card later.)",
         "visible_when": null
       },
       {
@@ -474,7 +437,7 @@
         "max": null,
         "step": null,
         "placeholder": "",
-        "tooltip": "Character photo — SAM segments hair/outfit sprites (feeds the estimator arc).",
+        "tooltip": "Character photo \u2014 SAM segments hair/outfit sprites (feeds the estimator arc).",
         "visible_when": null
       },
       {
@@ -512,7 +475,7 @@
         "max": 3,
         "step": 0.05,
         "placeholder": "",
-        "tooltip": "Camera distance factor — larger frames the whole body looser.",
+        "tooltip": "Camera distance factor \u2014 larger frames the whole body looser.",
         "visible_when": null
       },
       {
@@ -531,7 +494,7 @@
         "max": 400,
         "step": 1,
         "placeholder": "",
-        "tooltip": "Lens focal length — lower = wider perspective.",
+        "tooltip": "Lens focal length \u2014 lower = wider perspective.",
         "visible_when": null
       },
       {
@@ -550,7 +513,7 @@
         "max": 4096,
         "step": 1,
         "placeholder": "",
-        "tooltip": "Render samples per view — more = cleaner but slower.",
+        "tooltip": "Render samples per view \u2014 more = cleaner but slower.",
         "visible_when": null
       },
       {
@@ -587,7 +550,7 @@
             "label": "Body GLB",
             "order": 0,
             "columns": 1,
-            "tooltip": "The base body — empty autoloads the Model-declared neutral body (anny-base-body.glb, provisioned); or attach a rigged/static character GLB. (Photo→body estimation is the pilot arc; clothing composite moves to its own card later.)"
+            "tooltip": "The base body \u2014 empty autoloads the Model-declared neutral body (anny-base-body.glb, provisioned); or attach a rigged/static character GLB. (Photo\u2192body estimation is the pilot arc; clothing composite moves to its own card later.)"
           }
         ],
         "order": 0,
@@ -602,7 +565,7 @@
             "type": "file",
             "label": "Source photo",
             "order": 0,
-            "tooltip": "Character photo — SAM segments hair/outfit sprites (feeds the estimator arc)."
+            "tooltip": "Character photo \u2014 SAM segments hair/outfit sprites (feeds the estimator arc)."
           }
         ],
         "order": 1,
@@ -634,7 +597,7 @@
             "max": 3,
             "step": 0.05,
             "default": 1.2,
-            "tooltip": "Camera distance factor — larger frames the whole body looser."
+            "tooltip": "Camera distance factor \u2014 larger frames the whole body looser."
           },
           {
             "name": "focal_length",
@@ -646,7 +609,7 @@
             "max": 400,
             "step": 1,
             "default": 50,
-            "tooltip": "Lens focal length — lower = wider perspective."
+            "tooltip": "Lens focal length \u2014 lower = wider perspective."
           },
           {
             "name": "samples",
@@ -658,7 +621,7 @@
             "max": 4096,
             "step": 1,
             "default": 64,
-            "tooltip": "Render samples per view — more = cleaner but slower."
+            "tooltip": "Render samples per view \u2014 more = cleaner but slower."
           },
           {
             "name": "transparent",
@@ -1507,7 +1470,7 @@
         "max": 1,
         "step": 0.05,
         "placeholder": "",
-        "tooltip": "Character-tag confidence floor — keep high.",
+        "tooltip": "Character-tag confidence floor \u2014 keep high.",
         "visible_when": null
       },
       {
@@ -1695,7 +1658,7 @@
         "max": null,
         "step": null,
         "placeholder": "",
-        "tooltip": "JoyCaption: target length (the node also takes word counts 20-260 — bare/API bodies only). Ignored by other families.",
+        "tooltip": "JoyCaption: target length (the node also takes word counts 20-260 \u2014 bare/API bodies only). Ignored by other families.",
         "visible_when": null
       },
       {
@@ -1786,7 +1749,7 @@
             "max": 1,
             "step": 0.05,
             "default": 0.85,
-            "tooltip": "Character-tag confidence floor — keep high."
+            "tooltip": "Character-tag confidence floor \u2014 keep high."
           },
           {
             "name": "exclude_tags",
@@ -1886,7 +1849,7 @@
             "order": 10,
             "width": 1,
             "default": "long",
-            "tooltip": "JoyCaption: target length (the node also takes word counts 20-260 — bare/API bodies only). Ignored by other families.",
+            "tooltip": "JoyCaption: target length (the node also takes word counts 20-260 \u2014 bare/API bodies only). Ignored by other families.",
             "options": [
               "any",
               "very short",
@@ -1945,7 +1908,7 @@
         "max": null,
         "step": null,
         "placeholder": "the courier pushes off and rolls forward through the lantern glow; rain hisses on the stall awnings, a vendor calls out",
-        "tooltip": "Verb-first motion + the sounds. For keyframes the image already sets the scene — prompt what CHANGES.",
+        "tooltip": "Verb-first motion + the sounds. For keyframes the image already sets the scene \u2014 prompt what CHANGES.",
         "visible_when": null
       },
       {
@@ -2173,7 +2136,7 @@
         "max": 0.95,
         "step": 0.05,
         "placeholder": "",
-        "tooltip": "Block-sparse attention density. 0.90 ≈ 1.75x speedup, no quality loss.",
+        "tooltip": "Block-sparse attention density. 0.90 \u2248 1.75x speedup, no quality loss.",
         "visible_when": null
       },
       {
@@ -2253,7 +2216,7 @@
         "max": null,
         "step": null,
         "placeholder": "",
-        "tooltip": "e.g. 0,1 or 0-2 — explicit dense step indices.",
+        "tooltip": "e.g. 0,1 or 0-2 \u2014 explicit dense step indices.",
         "visible_when": null
       },
       {
@@ -2452,7 +2415,7 @@
             "label": "Prompt",
             "required": true,
             "placeholder": "the courier pushes off and rolls forward through the lantern glow; rain hisses on the stall awnings, a vendor calls out",
-            "tooltip": "Verb-first motion + the sounds. For keyframes the image already sets the scene — prompt what CHANGES."
+            "tooltip": "Verb-first motion + the sounds. For keyframes the image already sets the scene \u2014 prompt what CHANGES."
           },
           {
             "name": "image",
@@ -2602,7 +2565,7 @@
             "max": 0.95,
             "step": 0.05,
             "default": 0.9,
-            "tooltip": "Block-sparse attention density. 0.90 ≈ 1.75x speedup, no quality loss."
+            "tooltip": "Block-sparse attention density. 0.90 \u2248 1.75x speedup, no quality loss."
           },
           {
             "name": "sla_block_size",
@@ -2640,7 +2603,7 @@
             "type": "text",
             "label": "SLA dense steps (explicit)",
             "default": "0",
-            "tooltip": "e.g. 0,1 or 0-2 — explicit dense step indices."
+            "tooltip": "e.g. 0,1 or 0-2 \u2014 explicit dense step indices."
           },
           {
             "name": "sla_dense_backend",
@@ -2708,7 +2671,7 @@
         "max": null,
         "step": null,
         "placeholder": "the courier pushes off and rolls forward through the lantern glow; rain hisses on the stall awnings, a vendor calls out",
-        "tooltip": "Verb-first motion + the sounds. For keyframes the image already sets the scene — prompt what CHANGES.",
+        "tooltip": "Verb-first motion + the sounds. For keyframes the image already sets the scene \u2014 prompt what CHANGES.",
         "visible_when": null
       },
       {
@@ -2936,7 +2899,7 @@
         "max": 0.95,
         "step": 0.05,
         "placeholder": "",
-        "tooltip": "Block-sparse attention density. 0.90 ≈ 1.75x speedup, no quality loss.",
+        "tooltip": "Block-sparse attention density. 0.90 \u2248 1.75x speedup, no quality loss.",
         "visible_when": null
       },
       {
@@ -3016,7 +2979,7 @@
         "max": null,
         "step": null,
         "placeholder": "",
-        "tooltip": "e.g. 0,1 or 0-2 — explicit dense step indices.",
+        "tooltip": "e.g. 0,1 or 0-2 \u2014 explicit dense step indices.",
         "visible_when": null
       },
       {
@@ -3215,7 +3178,7 @@
             "label": "Prompt",
             "required": true,
             "placeholder": "the courier pushes off and rolls forward through the lantern glow; rain hisses on the stall awnings, a vendor calls out",
-            "tooltip": "Verb-first motion + the sounds. For keyframes the image already sets the scene — prompt what CHANGES."
+            "tooltip": "Verb-first motion + the sounds. For keyframes the image already sets the scene \u2014 prompt what CHANGES."
           },
           {
             "name": "image",
@@ -3365,7 +3328,7 @@
             "max": 0.95,
             "step": 0.05,
             "default": 0.9,
-            "tooltip": "Block-sparse attention density. 0.90 ≈ 1.75x speedup, no quality loss."
+            "tooltip": "Block-sparse attention density. 0.90 \u2248 1.75x speedup, no quality loss."
           },
           {
             "name": "sla_block_size",
@@ -3403,7 +3366,7 @@
             "type": "text",
             "label": "SLA dense steps (explicit)",
             "default": "0",
-            "tooltip": "e.g. 0,1 or 0-2 — explicit dense step indices."
+            "tooltip": "e.g. 0,1 or 0-2 \u2014 explicit dense step indices."
           },
           {
             "name": "sla_dense_backend",
@@ -3471,7 +3434,7 @@
         "max": null,
         "step": null,
         "placeholder": "the courier pushes off and rolls forward through the lantern glow; rain hisses on the stall awnings, a vendor calls out",
-        "tooltip": "Verb-first motion + the sounds. For keyframes the image already sets the scene — prompt what CHANGES.",
+        "tooltip": "Verb-first motion + the sounds. For keyframes the image already sets the scene \u2014 prompt what CHANGES.",
         "visible_when": null
       },
       {
@@ -3699,7 +3662,7 @@
         "max": 0.95,
         "step": 0.05,
         "placeholder": "",
-        "tooltip": "Block-sparse attention density. 0.90 ≈ 1.75x speedup, no quality loss.",
+        "tooltip": "Block-sparse attention density. 0.90 \u2248 1.75x speedup, no quality loss.",
         "visible_when": null
       },
       {
@@ -3779,7 +3742,7 @@
         "max": null,
         "step": null,
         "placeholder": "",
-        "tooltip": "e.g. 0,1 or 0-2 — explicit dense step indices.",
+        "tooltip": "e.g. 0,1 or 0-2 \u2014 explicit dense step indices.",
         "visible_when": null
       },
       {
@@ -3978,7 +3941,7 @@
             "label": "Prompt",
             "required": true,
             "placeholder": "the courier pushes off and rolls forward through the lantern glow; rain hisses on the stall awnings, a vendor calls out",
-            "tooltip": "Verb-first motion + the sounds. For keyframes the image already sets the scene — prompt what CHANGES."
+            "tooltip": "Verb-first motion + the sounds. For keyframes the image already sets the scene \u2014 prompt what CHANGES."
           },
           {
             "name": "image",
@@ -4128,7 +4091,7 @@
             "max": 0.95,
             "step": 0.05,
             "default": 0.9,
-            "tooltip": "Block-sparse attention density. 0.90 ≈ 1.75x speedup, no quality loss."
+            "tooltip": "Block-sparse attention density. 0.90 \u2248 1.75x speedup, no quality loss."
           },
           {
             "name": "sla_block_size",
@@ -4166,7 +4129,7 @@
             "type": "text",
             "label": "SLA dense steps (explicit)",
             "default": "0",
-            "tooltip": "e.g. 0,1 or 0-2 — explicit dense step indices."
+            "tooltip": "e.g. 0,1 or 0-2 \u2014 explicit dense step indices."
           },
           {
             "name": "sla_dense_backend",
@@ -4348,7 +4311,7 @@
         "max": 10,
         "step": 0.05,
         "placeholder": "",
-        "tooltip": "Ideogram4 scheduler mean shift — the official Default preset is 0.5.",
+        "tooltip": "Ideogram4 scheduler mean shift \u2014 the official Default preset is 0.5.",
         "visible_when": null
       },
       {
@@ -4367,7 +4330,7 @@
         "max": 5,
         "step": 0.05,
         "placeholder": "",
-        "tooltip": "Ideogram4 scheduler spread — the official Default preset is 1.75.",
+        "tooltip": "Ideogram4 scheduler spread \u2014 the official Default preset is 1.75.",
         "visible_when": null
       },
       {
@@ -4525,7 +4488,7 @@
             "min": -10,
             "max": 10,
             "step": 0.05,
-            "tooltip": "Ideogram4 scheduler mean shift — the official Default preset is 0.5."
+            "tooltip": "Ideogram4 scheduler mean shift \u2014 the official Default preset is 0.5."
           },
           {
             "name": "std",
@@ -4536,7 +4499,7 @@
             "min": 0.1,
             "max": 5,
             "step": 0.05,
-            "tooltip": "Ideogram4 scheduler spread — the official Default preset is 1.75."
+            "tooltip": "Ideogram4 scheduler spread \u2014 the official Default preset is 1.75."
           },
           {
             "name": "sampler",
@@ -4617,7 +4580,7 @@
         "max": null,
         "step": null,
         "placeholder": "",
-        "tooltip": "The file to stage — upload, asset drop, prior-run artifact, or mount path. Image or audio (video is not boarded yet).",
+        "tooltip": "The file to stage \u2014 upload, asset drop, prior-run artifact, or mount path. Image or audio (video is not boarded yet).",
         "visible_when": null
       }
     ],
@@ -4632,7 +4595,7 @@
             "label": "Source file",
             "order": 0,
             "required": true,
-            "tooltip": "The file to stage — upload, asset drop, prior-run artifact, or mount path. Image or audio (video is not boarded yet)."
+            "tooltip": "The file to stage \u2014 upload, asset drop, prior-run artifact, or mount path. Image or audio (video is not boarded yet)."
           }
         ],
         "order": 0,
@@ -4716,7 +4679,7 @@
         "max": 1,
         "step": 0.05,
         "placeholder": "",
-        "tooltip": "Character-tag confidence floor — keep high.",
+        "tooltip": "Character-tag confidence floor \u2014 keep high.",
         "visible_when": null
       },
       {
@@ -4904,7 +4867,7 @@
         "max": null,
         "step": null,
         "placeholder": "",
-        "tooltip": "JoyCaption: target length (the node also takes word counts 20-260 — bare/API bodies only). Ignored by other families.",
+        "tooltip": "JoyCaption: target length (the node also takes word counts 20-260 \u2014 bare/API bodies only). Ignored by other families.",
         "visible_when": null
       },
       {
@@ -4995,7 +4958,7 @@
             "max": 1,
             "step": 0.05,
             "default": 0.85,
-            "tooltip": "Character-tag confidence floor — keep high."
+            "tooltip": "Character-tag confidence floor \u2014 keep high."
           },
           {
             "name": "exclude_tags",
@@ -5095,7 +5058,7 @@
             "order": 10,
             "width": 1,
             "default": "long",
-            "tooltip": "JoyCaption: target length (the node also takes word counts 20-260 — bare/API bodies only). Ignored by other families.",
+            "tooltip": "JoyCaption: target length (the node also takes word counts 20-260 \u2014 bare/API bodies only). Ignored by other families.",
             "options": [
               "any",
               "very short",
@@ -5211,7 +5174,7 @@
         "max": 1,
         "step": 0.05,
         "placeholder": "",
-        "tooltip": "Character-tag confidence floor — keep high.",
+        "tooltip": "Character-tag confidence floor \u2014 keep high.",
         "visible_when": null
       },
       {
@@ -5399,7 +5362,7 @@
         "max": null,
         "step": null,
         "placeholder": "",
-        "tooltip": "JoyCaption: target length (the node also takes word counts 20-260 — bare/API bodies only). Ignored by other families.",
+        "tooltip": "JoyCaption: target length (the node also takes word counts 20-260 \u2014 bare/API bodies only). Ignored by other families.",
         "visible_when": null
       },
       {
@@ -5490,7 +5453,7 @@
             "max": 1,
             "step": 0.05,
             "default": 0.85,
-            "tooltip": "Character-tag confidence floor — keep high."
+            "tooltip": "Character-tag confidence floor \u2014 keep high."
           },
           {
             "name": "exclude_tags",
@@ -5590,7 +5553,7 @@
             "order": 10,
             "width": 1,
             "default": "long",
-            "tooltip": "JoyCaption: target length (the node also takes word counts 20-260 — bare/API bodies only). Ignored by other families.",
+            "tooltip": "JoyCaption: target length (the node also takes word counts 20-260 \u2014 bare/API bodies only). Ignored by other families.",
             "options": [
               "any",
               "very short",
@@ -5649,7 +5612,7 @@
         "max": null,
         "step": null,
         "placeholder": "",
-        "tooltip": "What the body DOES — verb-first, one continuous action per segment. Multi-segment: separate with | and pair with motion_prompts.",
+        "tooltip": "What the body DOES \u2014 verb-first, one continuous action per segment. Multi-segment: separate with | and pair with motion_prompts.",
         "visible_when": null
       },
       {
@@ -5824,7 +5787,7 @@
         "max": null,
         "step": null,
         "placeholder": "",
-        "tooltip": "Previous motion NPZ to continue — the new prompt takes over after num_transition_frames of blend.",
+        "tooltip": "Previous motion NPZ to continue \u2014 the new prompt takes over after num_transition_frames of blend.",
         "visible_when": null
       },
       {
@@ -5843,7 +5806,7 @@
         "max": null,
         "step": null,
         "placeholder": "",
-        "tooltip": "Segment prompts joined with | — one motion per segment, auto-chained in order.",
+        "tooltip": "Segment prompts joined with | \u2014 one motion per segment, auto-chained in order.",
         "visible_when": null
       },
       {
@@ -5862,7 +5825,7 @@
         "max": null,
         "step": null,
         "placeholder": "",
-        "tooltip": "Pin joints (e.g. left_foot:ground) — JSON or key:value lines, applied per segment.",
+        "tooltip": "Pin joints (e.g. left_foot:ground) \u2014 JSON or key:value lines, applied per segment.",
         "visible_when": null
       },
       {
@@ -5881,7 +5844,7 @@
         "max": null,
         "step": null,
         "placeholder": "",
-        "tooltip": "SOMAX-rigged character GLB — the motion is skinned onto it (somax bake) as an animated GLB artifact.",
+        "tooltip": "SOMAX-rigged character GLB \u2014 the motion is skinned onto it (somax bake) as an animated GLB artifact.",
         "visible_when": null
       }
     ],
@@ -5897,7 +5860,7 @@
             "order": 0,
             "columns": 1,
             "required": true,
-            "tooltip": "What the body DOES — verb-first, one continuous action per segment. Multi-segment: separate with | and pair with motion_prompts."
+            "tooltip": "What the body DOES \u2014 verb-first, one continuous action per segment. Multi-segment: separate with | and pair with motion_prompts."
           },
           {
             "name": "seed",
@@ -6023,21 +5986,21 @@
             "type": "text",
             "label": "Chain from NPZ",
             "order": 0,
-            "tooltip": "Previous motion NPZ to continue — the new prompt takes over after num_transition_frames of blend."
+            "tooltip": "Previous motion NPZ to continue \u2014 the new prompt takes over after num_transition_frames of blend."
           },
           {
             "name": "motion_prompts",
             "type": "textarea",
             "label": "Multi-segment prompts",
             "order": 1,
-            "tooltip": "Segment prompts joined with | — one motion per segment, auto-chained in order."
+            "tooltip": "Segment prompts joined with | \u2014 one motion per segment, auto-chained in order."
           },
           {
             "name": "motion_constraints",
             "type": "textarea",
             "label": "Joint constraints",
             "order": 2,
-            "tooltip": "Pin joints (e.g. left_foot:ground) — JSON or key:value lines, applied per segment."
+            "tooltip": "Pin joints (e.g. left_foot:ground) \u2014 JSON or key:value lines, applied per segment."
           }
         ],
         "order": 3,
@@ -6052,7 +6015,7 @@
             "type": "file",
             "label": "Preview character GLB",
             "order": 0,
-            "tooltip": "SOMAX-rigged character GLB — the motion is skinned onto it (somax bake) as an animated GLB artifact."
+            "tooltip": "SOMAX-rigged character GLB \u2014 the motion is skinned onto it (somax bake) as an animated GLB artifact."
           }
         ],
         "order": 4,
@@ -6291,29 +6254,6 @@
         "visible_when": null
       },
       {
-        "name": "recipe",
-        "type": "select",
-        "label": "Recipe",
-        "default": "standard",
-        "options": [
-          "standard",
-          "fast_draft",
-          "cinematic"
-        ],
-        "group": "sampling",
-        "zone": "",
-        "order": 5,
-        "required": null,
-        "columns": null,
-        "width": 1,
-        "min": null,
-        "max": null,
-        "step": null,
-        "placeholder": "",
-        "tooltip": "Named run config — overlays the schema + model-folder defaults and yields to your explicit values. The family rail above selects the MODEL (its recipe arrives as that model’s defaults, under this one).",
-        "visible_when": null
-      },
-      {
         "name": "loras",
         "type": "loras",
         "label": "LoRAs",
@@ -6495,20 +6435,6 @@
               "sgm_uniform",
               "simple"
             ]
-          },
-          {
-            "name": "recipe",
-            "type": "select",
-            "label": "Recipe",
-            "order": 5,
-            "width": 1,
-            "default": "standard",
-            "tooltip": "Named run config — overlays the schema + model-folder defaults and yields to your explicit values. The family rail above selects the MODEL (its recipe arrives as that model’s defaults, under this one).",
-            "options": [
-              "standard",
-              "fast_draft",
-              "cinematic"
-            ]
           }
         ],
         "order": 2,
@@ -6541,7 +6467,7 @@
             {
               "value": "krea2_realism_lora",
               "label": "Realism",
-              "tooltip": "photorealism — krea-2/krea2_realism_lora.safetensors",
+              "tooltip": "photorealism \u2014 krea-2/krea2_realism_lora.safetensors",
               "defaults": {
                 "strength": 0.7
               }
@@ -6549,7 +6475,7 @@
             {
               "value": "krea2_turbo_lora_rank_64_bf16",
               "label": "Turbo Rank-64 (BF16)",
-              "tooltip": "quality — krea-2/krea2_turbo_lora_rank_64_bf16.safetensors",
+              "tooltip": "quality \u2014 krea-2/krea2_turbo_lora_rank_64_bf16.safetensors",
               "defaults": {
                 "strength": 1
               }
@@ -6557,7 +6483,7 @@
             {
               "value": "krea2_darkbrush",
               "label": "Dark Brush",
-              "tooltip": "style — krea-2/krea2_darkbrush.safetensors",
+              "tooltip": "style \u2014 krea-2/krea2_darkbrush.safetensors",
               "defaults": {
                 "strength": 0.8
               }
@@ -6565,7 +6491,7 @@
             {
               "value": "krea2_dotmatrix",
               "label": "Dot Matrix",
-              "tooltip": "style — krea-2/krea2_dotmatrix.safetensors",
+              "tooltip": "style \u2014 krea-2/krea2_dotmatrix.safetensors",
               "defaults": {
                 "strength": 0.8
               }
@@ -6573,7 +6499,7 @@
             {
               "value": "krea2_kidsdrawing",
               "label": "Kids Drawing",
-              "tooltip": "style — krea-2/krea2_kidsdrawing.safetensors",
+              "tooltip": "style \u2014 krea-2/krea2_kidsdrawing.safetensors",
               "defaults": {
                 "strength": 0.8
               }
@@ -6581,7 +6507,7 @@
             {
               "value": "krea2_neondrip",
               "label": "Neon Drip",
-              "tooltip": "style — krea-2/krea2_neondrip.safetensors",
+              "tooltip": "style \u2014 krea-2/krea2_neondrip.safetensors",
               "defaults": {
                 "strength": 0.8
               }
@@ -6589,7 +6515,7 @@
             {
               "value": "krea2_rainywindow",
               "label": "Rainy Window",
-              "tooltip": "style — krea-2/krea2_rainywindow.safetensors",
+              "tooltip": "style \u2014 krea-2/krea2_rainywindow.safetensors",
               "defaults": {
                 "strength": 0.8
               }
@@ -6597,7 +6523,7 @@
             {
               "value": "krea2_retroanime",
               "label": "Retro Anime",
-              "tooltip": "style — krea-2/krea2_retroanime.safetensors",
+              "tooltip": "style \u2014 krea-2/krea2_retroanime.safetensors",
               "defaults": {
                 "strength": 0.8
               }
@@ -6605,7 +6531,7 @@
             {
               "value": "krea2_softwatercolor",
               "label": "Soft Watercolor",
-              "tooltip": "style — krea-2/krea2_softwatercolor.safetensors",
+              "tooltip": "style \u2014 krea-2/krea2_softwatercolor.safetensors",
               "defaults": {
                 "strength": 0.8
               }
@@ -6613,7 +6539,7 @@
             {
               "value": "krea2_sunsetblur",
               "label": "Sunset Blur",
-              "tooltip": "style — krea-2/krea2_sunsetblur.safetensors",
+              "tooltip": "style \u2014 krea-2/krea2_sunsetblur.safetensors",
               "defaults": {
                 "strength": 0.8
               }
@@ -6621,7 +6547,7 @@
             {
               "value": "krea2_vintagetarot",
               "label": "Vintage Tarot",
-              "tooltip": "style — krea-2/krea2_vintagetarot.safetensors",
+              "tooltip": "style \u2014 krea-2/krea2_vintagetarot.safetensors",
               "defaults": {
                 "strength": 0.8
               }
@@ -6629,7 +6555,7 @@
             {
               "value": "krea2filterbypass3",
               "label": "Filter Bypass 3",
-              "tooltip": "style — krea-2/krea2filterbypass3.safetensors",
+              "tooltip": "style \u2014 krea-2/krea2filterbypass3.safetensors",
               "defaults": {
                 "strength": 0.8
               }
@@ -6643,15 +6569,15 @@
       "variant_groups": {
         "Variant": {
           "label": "Variant",
-          "tooltip": "Base checkpoint — Turbo (8-step distilled, fast/photorealistic) or Raw (52-step base, for LoRA training)."
+          "tooltip": "Base checkpoint \u2014 Turbo (8-step distilled, fast/photorealistic) or Raw (52-step base, for LoRA training)."
         },
         "Quant": {
           "label": "Quant",
-          "tooltip": "Quantization tier — INT8 ConvRot (the official Comfy-Org convrot artifact, DEFAULT)."
+          "tooltip": "Quantization tier \u2014 INT8 ConvRot (the official Comfy-Org convrot artifact, DEFAULT)."
         },
         "Recipe": {
           "label": "Recipe",
-          "tooltip": "One-click recipes — patch-only rows that stamp picks onto the draft; Default stamps nothing.",
+          "tooltip": "One-click recipes \u2014 patch-only rows that stamp picks onto the draft; Default stamps nothing.",
           "default": "default"
         }
       }
@@ -7107,7 +7033,7 @@
         "max": null,
         "step": null,
         "placeholder": "",
-        "tooltip": "Upsample target (official pins 1536). All tiers run the full official chain — upsample + both texture passes + remesh tail.",
+        "tooltip": "Upsample target (official pins 1536). All tiers run the full official chain \u2014 upsample + both texture passes + remesh tail.",
         "visible_when": null
       },
       {
@@ -7145,7 +7071,7 @@
         "max": 15,
         "step": 0.5,
         "placeholder": "",
-        "tooltip": "Structure-stage guidance. 7.5 is the official template calibration (2026-09-06: the 3.0 default sampled the coarse shape at under half guidance — blobby trash out of the box). Lower runs looser.",
+        "tooltip": "Structure-stage guidance. 7.5 is the official template calibration (2026-09-06: the 3.0 default sampled the coarse shape at under half guidance \u2014 blobby trash out of the box). Lower runs looser.",
         "visible_when": null
       },
       {
@@ -7194,7 +7120,7 @@
         "max": null,
         "step": null,
         "placeholder": "",
-        "tooltip": "Pixal3D only — per-image horizontal FoV feeding the camera transform matrix. auto: MoGeInference estimates from the source image (recommended); a literal degree value skips MoGe (operator-vouched camera, e.g. calibrated).",
+        "tooltip": "Pixal3D only \u2014 per-image horizontal FoV feeding the camera transform matrix. auto: MoGeInference estimates from the source image (recommended); a literal degree value skips MoGe (operator-vouched camera, e.g. calibrated).",
         "visible_when": null
       },
       {
@@ -7289,7 +7215,7 @@
         "max": 60,
         "step": 1,
         "placeholder": "",
-        "tooltip": "Second texture pass steps (raw unet — the detail pass). 12 is the official calibration.",
+        "tooltip": "Second texture pass steps (raw unet \u2014 the detail pass). 12 is the official calibration.",
         "visible_when": null
       },
       {
@@ -7864,7 +7790,7 @@
         "max": 1,
         "step": 0.05,
         "placeholder": "",
-        "tooltip": "Shape-arm RescaleCFG multiplier (also feeds texture pass 1 — one node). 0.5 is the official calibration.",
+        "tooltip": "Shape-arm RescaleCFG multiplier (also feeds texture pass 1 \u2014 one node). 0.5 is the official calibration.",
         "visible_when": null
       },
       {
@@ -7944,7 +7870,7 @@
             "order": 0,
             "width": 1,
             "default": "1024",
-            "tooltip": "Upsample target (official pins 1536). All tiers run the full official chain — upsample + both texture passes + remesh tail.",
+            "tooltip": "Upsample target (official pins 1536). All tiers run the full official chain \u2014 upsample + both texture passes + remesh tail.",
             "options": [
               "512",
               "1024",
@@ -7973,7 +7899,7 @@
             "max": 15,
             "step": 0.5,
             "default": 7.5,
-            "tooltip": "Structure-stage guidance. 7.5 is the official template calibration (2026-09-06: the 3.0 default sampled the coarse shape at under half guidance — blobby trash out of the box). Lower runs looser."
+            "tooltip": "Structure-stage guidance. 7.5 is the official template calibration (2026-09-06: the 3.0 default sampled the coarse shape at under half guidance \u2014 blobby trash out of the box). Lower runs looser."
           },
           {
             "name": "bg_removal",
@@ -7996,7 +7922,7 @@
             "order": 4,
             "width": 1,
             "default": "auto",
-            "tooltip": "Pixal3D only — per-image horizontal FoV feeding the camera transform matrix. auto: MoGeInference estimates from the source image (recommended); a literal degree value skips MoGe (operator-vouched camera, e.g. calibrated).",
+            "tooltip": "Pixal3D only \u2014 per-image horizontal FoV feeding the camera transform matrix. auto: MoGeInference estimates from the source image (recommended); a literal degree value skips MoGe (operator-vouched camera, e.g. calibrated).",
             "options": [
               "auto",
               "35",
@@ -8072,7 +7998,7 @@
             "max": 60,
             "step": 1,
             "default": 12,
-            "tooltip": "Second texture pass steps (raw unet — the detail pass). 12 is the official calibration."
+            "tooltip": "Second texture pass steps (raw unet \u2014 the detail pass). 12 is the official calibration."
           },
           {
             "name": "tex2_cfg",
@@ -8523,7 +8449,7 @@
             "max": 1,
             "step": 0.05,
             "default": 0.5,
-            "tooltip": "Shape-arm RescaleCFG multiplier (also feeds texture pass 1 — one node). 0.5 is the official calibration."
+            "tooltip": "Shape-arm RescaleCFG multiplier (also feeds texture pass 1 \u2014 one node). 0.5 is the official calibration."
           },
           {
             "name": "override_struct",
@@ -9146,7 +9072,7 @@
         "max": null,
         "step": null,
         "placeholder": "",
-        "tooltip": "RGBA PNG whose alpha channel marks the region. Standalone: region semantics for this lane. Alongside lanpaint: the inpaint region — present with image1, the builder switches to the lanpaint sampler.",
+        "tooltip": "RGBA PNG whose alpha channel marks the region. Standalone: region semantics for this lane. Alongside lanpaint: the inpaint region \u2014 present with image1, the builder switches to the lanpaint sampler.",
         "visible_when": null
       },
       {
@@ -9169,7 +9095,7 @@
         "max": null,
         "step": null,
         "placeholder": "",
-        "tooltip": "How the mask is honored: auto (the lane's own region ControlNet if its weights are present, else crop+stitch), crop_stitch (crop to the mask + context, work the crop, composite back — pixels outside the mask never change), full_frame (legacy whole-image pass; unmasked regions may drift).",
+        "tooltip": "How the mask is honored: auto (the lane's own region ControlNet if its weights are present, else crop+stitch), crop_stitch (crop to the mask + context, work the crop, composite back \u2014 pixels outside the mask never change), full_frame (legacy whole-image pass; unmasked regions may drift).",
         "visible_when": null
       },
       {
@@ -9207,7 +9133,7 @@
         "max": 32,
         "step": 1,
         "placeholder": "",
-        "tooltip": "Expand (+) or shrink (−) the region by an exact pixel disk before the run. Applied host-side.",
+        "tooltip": "Expand (+) or shrink (\u2212) the region by an exact pixel disk before the run. Applied host-side.",
         "visible_when": null
       },
       {
@@ -9226,7 +9152,7 @@
         "max": 32,
         "step": 1,
         "placeholder": "",
-        "tooltip": "Gaussian falloff the composite blends through — kills the pasted-on rectangle edge.",
+        "tooltip": "Gaussian falloff the composite blends through \u2014 kills the pasted-on rectangle edge.",
         "visible_when": null
       },
       {
@@ -9656,7 +9582,7 @@
             "type": "image",
             "label": "Region Mask",
             "order": 0,
-            "tooltip": "RGBA PNG whose alpha channel marks the region. Standalone: region semantics for this lane. Alongside lanpaint: the inpaint region — present with image1, the builder switches to the lanpaint sampler."
+            "tooltip": "RGBA PNG whose alpha channel marks the region. Standalone: region semantics for this lane. Alongside lanpaint: the inpaint region \u2014 present with image1, the builder switches to the lanpaint sampler."
           },
           {
             "name": "mask_mode",
@@ -9665,7 +9591,7 @@
             "order": 1,
             "width": 1,
             "default": "auto",
-            "tooltip": "How the mask is honored: auto (the lane's own region ControlNet if its weights are present, else crop+stitch), crop_stitch (crop to the mask + context, work the crop, composite back — pixels outside the mask never change), full_frame (legacy whole-image pass; unmasked regions may drift).",
+            "tooltip": "How the mask is honored: auto (the lane's own region ControlNet if its weights are present, else crop+stitch), crop_stitch (crop to the mask + context, work the crop, composite back \u2014 pixels outside the mask never change), full_frame (legacy whole-image pass; unmasked regions may drift).",
             "options": [
               "auto",
               "crop_stitch",
@@ -9694,7 +9620,7 @@
             "max": 32,
             "step": 1,
             "default": 8,
-            "tooltip": "Expand (+) or shrink (−) the region by an exact pixel disk before the run. Applied host-side."
+            "tooltip": "Expand (+) or shrink (\u2212) the region by an exact pixel disk before the run. Applied host-side."
           },
           {
             "name": "mask_feather",
@@ -9706,7 +9632,7 @@
             "max": 32,
             "step": 1,
             "default": 8,
-            "tooltip": "Gaussian falloff the composite blends through — kills the pasted-on rectangle edge."
+            "tooltip": "Gaussian falloff the composite blends through \u2014 kills the pasted-on rectangle edge."
           },
           {
             "name": "mask_threshold",
@@ -9859,7 +9785,7 @@
         "max": null,
         "step": null,
         "placeholder": "",
-        "tooltip": "Pre-computed speaker embedding (.qvoice/.voice — the voice-lock card exports these). Present = synthesize with THIS voice instead of the preset one.",
+        "tooltip": "Pre-computed speaker embedding (.qvoice/.voice \u2014 the voice-lock card exports these). Present = synthesize with THIS voice instead of the preset one.",
         "visible_when": null
       },
       {
@@ -9878,7 +9804,7 @@
         "max": null,
         "step": null,
         "placeholder": "",
-        "tooltip": "JSON knobs over the embedding's principal components, e.g. {\"pca_pc1.dir\": 0.5} — subtle voice direction without re-designing the persona.",
+        "tooltip": "JSON knobs over the embedding's principal components, e.g. {\"pca_pc1.dir\": 0.5} \u2014 subtle voice direction without re-designing the persona.",
         "visible_when": null
       }
     ],
@@ -9947,14 +9873,14 @@
             "type": "file",
             "label": "Voice (.qvoice)",
             "order": 0,
-            "tooltip": "Pre-computed speaker embedding (.qvoice/.voice — the voice-lock card exports these). Present = synthesize with THIS voice instead of the preset one."
+            "tooltip": "Pre-computed speaker embedding (.qvoice/.voice \u2014 the voice-lock card exports these). Present = synthesize with THIS voice instead of the preset one."
           },
           {
             "name": "voice_pca_strengths",
             "type": "textarea",
             "label": "PCA Steering",
             "order": 1,
-            "tooltip": "JSON knobs over the embedding's principal components, e.g. {\"pca_pc1.dir\": 0.5} — subtle voice direction without re-designing the persona."
+            "tooltip": "JSON knobs over the embedding's principal components, e.g. {\"pca_pc1.dir\": 0.5} \u2014 subtle voice direction without re-designing the persona."
           }
         ],
         "order": 1,
@@ -10148,7 +10074,7 @@
         "max": null,
         "step": null,
         "placeholder": "",
-        "tooltip": "Name for the locked persona — becomes the .qvoice filename stem. Reused across every future TTS render.",
+        "tooltip": "Name for the locked persona \u2014 becomes the .qvoice filename stem. Reused across every future TTS render.",
         "visible_when": null
       },
       {
@@ -10167,7 +10093,7 @@
         "max": null,
         "step": null,
         "placeholder": "",
-        "tooltip": "The voice description — becomes the VoiceDesign prompt (e.g. 'A warm female voice with a British accent').",
+        "tooltip": "The voice description \u2014 becomes the VoiceDesign prompt (e.g. 'A warm female voice with a British accent').",
         "visible_when": null
       },
       {
@@ -10278,7 +10204,7 @@
             "order": 0,
             "width": 1,
             "required": true,
-            "tooltip": "Name for the locked persona — becomes the .qvoice filename stem. Reused across every future TTS render."
+            "tooltip": "Name for the locked persona \u2014 becomes the .qvoice filename stem. Reused across every future TTS render."
           },
           {
             "name": "style_instruction",
@@ -10287,7 +10213,7 @@
             "order": 1,
             "columns": 1,
             "required": true,
-            "tooltip": "The voice description — becomes the VoiceDesign prompt (e.g. 'A warm female voice with a British accent')."
+            "tooltip": "The voice description \u2014 becomes the VoiceDesign prompt (e.g. 'A warm female voice with a British accent')."
           }
         ],
         "order": 0,
@@ -10458,7 +10384,7 @@
         "max": 121,
         "step": 4,
         "placeholder": "",
-        "tooltip": "4n+1 (Wan latent grid). 49 ≈ 2s, 81 ≈ 3.4s at 24fps.",
+        "tooltip": "4n+1 (Wan latent grid). 49 \u2248 2s, 81 \u2248 3.4s at 24fps.",
         "visible_when": null
       },
       {
@@ -10647,7 +10573,7 @@
         "max": null,
         "step": null,
         "placeholder": "",
-        "tooltip": "The anchor frame — identity, subject, scene (wan-vace); the character to animate (scail2-animate).",
+        "tooltip": "The anchor frame \u2014 identity, subject, scene (wan-vace); the character to animate (scail2-animate).",
         "visible_when": null
       },
       {
@@ -10666,7 +10592,7 @@
         "max": null,
         "step": null,
         "placeholder": "",
-        "tooltip": "The motion source — SCAIL-2 drives the reference character with this video.",
+        "tooltip": "The motion source \u2014 SCAIL-2 drives the reference character with this video.",
         "visible_when": null
       },
       {
@@ -10749,7 +10675,7 @@
             "min": 9,
             "max": 121,
             "step": 4,
-            "tooltip": "4n+1 (Wan latent grid). 49 ≈ 2s, 81 ≈ 3.4s at 24fps."
+            "tooltip": "4n+1 (Wan latent grid). 49 \u2248 2s, 81 \u2248 3.4s at 24fps."
           },
           {
             "name": "fps",
@@ -10896,7 +10822,7 @@
             "label": "Reference image",
             "order": 0,
             "width": 1,
-            "tooltip": "The anchor frame — identity, subject, scene (wan-vace); the character to animate (scail2-animate)."
+            "tooltip": "The anchor frame \u2014 identity, subject, scene (wan-vace); the character to animate (scail2-animate)."
           },
           {
             "name": "pose_video",
@@ -10904,7 +10830,7 @@
             "label": "Driving video",
             "order": 1,
             "width": 1,
-            "tooltip": "The motion source — SCAIL-2 drives the reference character with this video."
+            "tooltip": "The motion source \u2014 SCAIL-2 drives the reference character with this video."
           }
         ],
         "order": 3,
@@ -10969,7 +10895,7 @@
         "max": 4096,
         "step": 64,
         "placeholder": "",
-        "tooltip": "The hard ceiling — inputs already past it pass through.",
+        "tooltip": "The hard ceiling \u2014 inputs already past it pass through.",
         "visible_when": null
       },
       {
@@ -11055,7 +10981,7 @@
             "min": 512,
             "max": 4096,
             "step": 64,
-            "tooltip": "The hard ceiling — inputs already past it pass through."
+            "tooltip": "The hard ceiling \u2014 inputs already past it pass through."
           }
         ],
         "order": 1,
@@ -11450,7 +11376,7 @@
         "max": null,
         "step": null,
         "placeholder": "",
-        "tooltip": "The SOMA-rigged clean mesh — JOINTS_0/WEIGHTS_0 + armature. The rig donor.",
+        "tooltip": "The SOMA-rigged clean mesh \u2014 JOINTS_0/WEIGHTS_0 + armature. The rig donor.",
         "visible_when": null
       },
       {
@@ -11469,7 +11395,7 @@
         "max": null,
         "step": null,
         "placeholder": "",
-        "tooltip": "The clothed mesh — geometry + textures, no rig. Receives the rig.",
+        "tooltip": "The clothed mesh \u2014 geometry + textures, no rig. Receives the rig.",
         "visible_when": null
       },
       {
@@ -11511,7 +11437,7 @@
         "max": null,
         "step": null,
         "placeholder": "",
-        "tooltip": "Upsample target (official pins 1536). All tiers run the full official chain — upsample + both texture passes + remesh tail.",
+        "tooltip": "Upsample target (official pins 1536). All tiers run the full official chain \u2014 upsample + both texture passes + remesh tail.",
         "visible_when": null
       },
       {
@@ -11549,7 +11475,7 @@
         "max": 15,
         "step": 0.5,
         "placeholder": "",
-        "tooltip": "Structure-stage guidance. 7.5 is the official template calibration (2026-09-06: the 3.0 default sampled the coarse shape at under half guidance — blobby trash out of the box). Lower runs looser.",
+        "tooltip": "Structure-stage guidance. 7.5 is the official template calibration (2026-09-06: the 3.0 default sampled the coarse shape at under half guidance \u2014 blobby trash out of the box). Lower runs looser.",
         "visible_when": null
       },
       {
@@ -11587,7 +11513,7 @@
             "label": "Rigged source GLB",
             "order": 0,
             "columns": 1,
-            "tooltip": "The SOMA-rigged clean mesh — JOINTS_0/WEIGHTS_0 + armature. The rig donor."
+            "tooltip": "The SOMA-rigged clean mesh \u2014 JOINTS_0/WEIGHTS_0 + armature. The rig donor."
           },
           {
             "name": "target_glb",
@@ -11595,7 +11521,7 @@
             "label": "Target GLB",
             "order": 1,
             "columns": 1,
-            "tooltip": "The clothed mesh — geometry + textures, no rig. Receives the rig."
+            "tooltip": "The clothed mesh \u2014 geometry + textures, no rig. Receives the rig."
           },
           {
             "name": "seed",
@@ -11621,7 +11547,7 @@
             "order": 0,
             "width": 1,
             "default": "1024",
-            "tooltip": "Upsample target (official pins 1536). All tiers run the full official chain — upsample + both texture passes + remesh tail.",
+            "tooltip": "Upsample target (official pins 1536). All tiers run the full official chain \u2014 upsample + both texture passes + remesh tail.",
             "options": [
               "512",
               "1024",
@@ -11650,7 +11576,7 @@
             "max": 15,
             "step": 0.5,
             "default": 7.5,
-            "tooltip": "Structure-stage guidance. 7.5 is the official template calibration (2026-09-06: the 3.0 default sampled the coarse shape at under half guidance — blobby trash out of the box). Lower runs looser."
+            "tooltip": "Structure-stage guidance. 7.5 is the official template calibration (2026-09-06: the 3.0 default sampled the coarse shape at under half guidance \u2014 blobby trash out of the box). Lower runs looser."
           },
           {
             "name": "bg_removal",
@@ -11733,7 +11659,7 @@
         "max": null,
         "step": null,
         "placeholder": "",
-        "tooltip": "Upsample target (official pins 1536). All tiers run the full official chain — upsample + both texture passes + remesh tail.",
+        "tooltip": "Upsample target (official pins 1536). All tiers run the full official chain \u2014 upsample + both texture passes + remesh tail.",
         "visible_when": null
       },
       {
@@ -11771,7 +11697,7 @@
         "max": 15,
         "step": 0.5,
         "placeholder": "",
-        "tooltip": "Structure-stage guidance. 7.5 is the official template calibration (2026-09-06: the 3.0 default sampled the coarse shape at under half guidance — blobby trash out of the box). Lower runs looser.",
+        "tooltip": "Structure-stage guidance. 7.5 is the official template calibration (2026-09-06: the 3.0 default sampled the coarse shape at under half guidance \u2014 blobby trash out of the box). Lower runs looser.",
         "visible_when": null
       },
       {
@@ -11889,7 +11815,7 @@
         "max": 60,
         "step": 1,
         "placeholder": "",
-        "tooltip": "Second texture pass steps (raw unet — the detail pass). 12 is the official calibration.",
+        "tooltip": "Second texture pass steps (raw unet \u2014 the detail pass). 12 is the official calibration.",
         "visible_when": null
       },
       {
@@ -12464,7 +12390,7 @@
         "max": 1,
         "step": 0.05,
         "placeholder": "",
-        "tooltip": "Shape-arm RescaleCFG multiplier (also feeds texture pass 1 — one node). 0.5 is the official calibration.",
+        "tooltip": "Shape-arm RescaleCFG multiplier (also feeds texture pass 1 \u2014 one node). 0.5 is the official calibration.",
         "visible_when": null
       },
       {
@@ -12544,7 +12470,7 @@
             "order": 0,
             "width": 1,
             "default": "1024",
-            "tooltip": "Upsample target (official pins 1536). All tiers run the full official chain — upsample + both texture passes + remesh tail.",
+            "tooltip": "Upsample target (official pins 1536). All tiers run the full official chain \u2014 upsample + both texture passes + remesh tail.",
             "options": [
               "512",
               "1024",
@@ -12573,7 +12499,7 @@
             "max": 15,
             "step": 0.5,
             "default": 7.5,
-            "tooltip": "Structure-stage guidance. 7.5 is the official template calibration (2026-09-06: the 3.0 default sampled the coarse shape at under half guidance — blobby trash out of the box). Lower runs looser."
+            "tooltip": "Structure-stage guidance. 7.5 is the official template calibration (2026-09-06: the 3.0 default sampled the coarse shape at under half guidance \u2014 blobby trash out of the box). Lower runs looser."
           },
           {
             "name": "bg_removal",
@@ -12655,7 +12581,7 @@
             "max": 60,
             "step": 1,
             "default": 12,
-            "tooltip": "Second texture pass steps (raw unet — the detail pass). 12 is the official calibration."
+            "tooltip": "Second texture pass steps (raw unet \u2014 the detail pass). 12 is the official calibration."
           },
           {
             "name": "tex2_cfg",
@@ -13106,7 +13032,7 @@
             "max": 1,
             "step": 0.05,
             "default": 0.5,
-            "tooltip": "Shape-arm RescaleCFG multiplier (also feeds texture pass 1 — one node). 0.5 is the official calibration."
+            "tooltip": "Shape-arm RescaleCFG multiplier (also feeds texture pass 1 \u2014 one node). 0.5 is the official calibration."
           },
           {
             "name": "override_struct",
@@ -13233,7 +13159,7 @@
         "max": 121,
         "step": 4,
         "placeholder": "",
-        "tooltip": "4n+1 (Wan latent grid). 49 ≈ 2s, 81 ≈ 3.4s at 24fps.",
+        "tooltip": "4n+1 (Wan latent grid). 49 \u2248 2s, 81 \u2248 3.4s at 24fps.",
         "visible_when": null
       },
       {
@@ -13422,7 +13348,7 @@
         "max": null,
         "step": null,
         "placeholder": "",
-        "tooltip": "The anchor frame — identity, subject, scene (wan-vace); the character to animate (scail2-animate).",
+        "tooltip": "The anchor frame \u2014 identity, subject, scene (wan-vace); the character to animate (scail2-animate).",
         "visible_when": null
       }
     ],
@@ -13486,7 +13412,7 @@
             "min": 9,
             "max": 121,
             "step": 4,
-            "tooltip": "4n+1 (Wan latent grid). 49 ≈ 2s, 81 ≈ 3.4s at 24fps."
+            "tooltip": "4n+1 (Wan latent grid). 49 \u2248 2s, 81 \u2248 3.4s at 24fps."
           },
           {
             "name": "fps",
@@ -13621,7 +13547,7 @@
             "label": "Reference image",
             "order": 0,
             "width": 1,
-            "tooltip": "The anchor frame — identity, subject, scene (wan-vace); the character to animate (scail2-animate)."
+            "tooltip": "The anchor frame \u2014 identity, subject, scene (wan-vace); the character to animate (scail2-animate)."
           }
         ],
         "order": 3,
@@ -13705,7 +13631,7 @@
         "max": 1,
         "step": 0.05,
         "placeholder": "",
-        "tooltip": "Character-tag confidence floor — keep high.",
+        "tooltip": "Character-tag confidence floor \u2014 keep high.",
         "visible_when": null
       },
       {
@@ -13893,7 +13819,7 @@
         "max": null,
         "step": null,
         "placeholder": "",
-        "tooltip": "JoyCaption: target length (the node also takes word counts 20-260 — bare/API bodies only). Ignored by other families.",
+        "tooltip": "JoyCaption: target length (the node also takes word counts 20-260 \u2014 bare/API bodies only). Ignored by other families.",
         "visible_when": null
       },
       {
@@ -13984,7 +13910,7 @@
             "max": 1,
             "step": 0.05,
             "default": 0.85,
-            "tooltip": "Character-tag confidence floor — keep high."
+            "tooltip": "Character-tag confidence floor \u2014 keep high."
           },
           {
             "name": "exclude_tags",
@@ -14084,7 +14010,7 @@
             "order": 10,
             "width": 1,
             "default": "long",
-            "tooltip": "JoyCaption: target length (the node also takes word counts 20-260 — bare/API bodies only). Ignored by other families.",
+            "tooltip": "JoyCaption: target length (the node also takes word counts 20-260 \u2014 bare/API bodies only). Ignored by other families.",
             "options": [
               "any",
               "very short",
@@ -14353,29 +14279,6 @@
         "placeholder": "",
         "tooltip": "",
         "visible_when": null
-      },
-      {
-        "name": "recipe",
-        "type": "select",
-        "label": "Recipe",
-        "default": "standard",
-        "options": [
-          "standard",
-          "fast_draft",
-          "cinematic"
-        ],
-        "group": "sampling",
-        "zone": "",
-        "order": 5,
-        "required": null,
-        "columns": null,
-        "width": 1,
-        "min": null,
-        "max": null,
-        "step": null,
-        "placeholder": "",
-        "tooltip": "Named run config — overlays the schema + model-folder defaults and yields to your explicit values. The family rail above selects the MODEL (its recipe arrives as that model’s defaults, under this one).",
-        "visible_when": null
       }
     ],
     "schema_groups": [
@@ -14539,20 +14442,6 @@
               "normal",
               "sgm_uniform",
               "simple"
-            ]
-          },
-          {
-            "name": "recipe",
-            "type": "select",
-            "label": "Recipe",
-            "order": 5,
-            "width": 1,
-            "default": "standard",
-            "tooltip": "Named run config — overlays the schema + model-folder defaults and yields to your explicit values. The family rail above selects the MODEL (its recipe arrives as that model’s defaults, under this one).",
-            "options": [
-              "standard",
-              "fast_draft",
-              "cinematic"
             ]
           }
         ],

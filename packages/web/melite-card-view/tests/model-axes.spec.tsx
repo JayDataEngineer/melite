@@ -268,8 +268,8 @@ test('axisGroups: the Recipe group NEVER rides as an axis (stroke 33 — the com
   expect(axisGroups(QWEN)).toEqual(['Variant', 'Quant'])
   // no groups contract → first-seen row order (KREA has no features)
   expect(axisGroups(KREA)).toEqual(['Variant', 'Quant'])
-  // even a card that OWNS the field seats it as a FIELD, never an axis
-  expect(axisGroups(OWNS)).toEqual(['Variant'])
+  // stroke 34: the family rows carry the payloads — still no axis
+  expect(axisGroups(PILLS)).toEqual(['Variant'])
 })
 
 test('the seedvr2 drill renders Model + Variant and NO Recipe seat — nothing persists what the card cannot declare', async () => {
@@ -344,62 +344,63 @@ test('STROKE 33 HEAL: a held recipe on a card without the field is dropped — t
   expect(healed['variant']).toBe('lightning') // held truth rides untouched
 })
 
-/** image-gen's shape: the card OWNS the recipe field — the seat is
- *  the field under Model, never an axis; the matrix serves so the
- *  lift engages. */
-const OWNS: FormSpecDoc = {
+// ── STROKE 34: THE FAMILY MACRO PILLS (recipes are macros, never
+//    a mode) — a Recipe row that CARRIES a payload stamps it onto
+//    declared keys; the stamp-less `default` row renders nothing. ──
+const PILLS: FormSpecDoc = {
   form: 'image-gen-shape',
   schema: schemaEnvelope({
-    recipe: {
-      consts: ['standard', 'fast_draft'],
-      meta: { description: 'Recipe', default: 'standard', extra: { group: 'sampling' } },
-    },
+    prompt: { type: 'string', meta: { description: 'Prompt', extra: { wtype: 'textarea', group: 'prompt' } } },
   }),
   model: 'krea-2',
   variants: [
     { id: 'base', label: 'Base', group: 'Variant', defaults: { model: 'krea-2' }, route: 'krea-2', hint: 'base' },
+    // the family's one-click: a lora payload (the krea-2 realism row)
+    { id: 'realism', label: 'Realism', group: 'Recipe', defaults: { loras: [{ id: 'krea2_realism_lora' }] }, route: '', hint: 'the realism one-click' },
+    // the stamp-less family default — display metadata, NO pill
+    { id: 'default', label: 'Default', group: 'Recipe', defaults: {}, route: '', hint: 'no extra stamps' },
   ],
 }
 
-test('STROKE 33 OWNERSHIP: the card-owned recipe field seats under Model — one key, one seat, no axis twin', async () => {
-  const state = { user: seedUser(OWNS, {}) as SpecValues }
-  // absent stays absent (the initial-value law — the default derives
-  // at resolve, never stamps the bench as a fake override)
-  expect(state.user['recipe']).toBeUndefined()
+test('STROKE 34 PILLS: a payload row renders a stamp pill; the stamp-less default renders nothing', async () => {
+  const state = { user: seedUser(PILLS, {}) as SpecValues }
   const onSet = (name: string, v: unknown): void => { state.user = { ...state.user, [name]: v } }
-  render(createElement(SpecForm, {
-    spec: OWNS,
+  const { container } = render(createElement(SpecForm, {
+    spec: PILLS,
     user: state.user,
     onSet,
   }))
-  // the FIELD seat renders (titled face, card's own options)…
-  const seat = screen.getByLabelText('Recipe') as HTMLSelectElement
-  expect([...seat.options].map((o) => o.value)).toEqual(['standard', 'fast_draft'])
-  // …exactly once (no axis twin doubling it)
-  expect(screen.queryAllByLabelText('Recipe').length).toBe(1)
-  // and the pick rides the ONE key the card declares
-  fireEvent.change(seat, { target: { value: 'fast_draft' } })
-  await waitFor(() => { expect(state.user['recipe']).toBe('fast_draft') })
+  const pills = container.querySelectorAll('[data-recipe-pill]')
+  expect(pills.length).toBe(1) // realism only — default writes nothing
+  expect(pills[0]?.getAttribute('data-recipe-pill')).toBe('realism')
+  expect(pills[0]?.textContent).toBe('Realism') // the titled face
+})
+
+test('STROKE 34 STAMP: the pill click writes the payload onto declared keys — no recipe key, ever', async () => {
+  const state = { user: seedUser(PILLS, {}) as SpecValues }
+  const onSet = (name: string, v: unknown): void => { state.user = { ...state.user, [name]: v } }
+  const { container } = render(createElement(SpecForm, {
+    spec: PILLS,
+    user: state.user,
+    onSet,
+  }))
+  fireEvent.click(container.querySelector('[data-recipe-pill="realism"]') as HTMLElement)
+  await waitFor(() => { expect(state.user['loras']).toEqual([{ id: 'krea2_realism_lora' }]) })
+  expect(state.user['recipe']).toBeUndefined() // the dead layer's key never rides
 })
 
 // ── the recipe-yield law (operator 2026-09-14: "IMG GEN UI CARD HAS
 //    TWO RECIPES") — the card's own `recipe` field and the family
 //    Recipe axis share one values key; the card owns the name. ─────
 
-// image-gen serves BOTH: the card recipe field (standard/…) AND the
-// krea-2 family Recipe rows (realism/default) — the double select.
+// image-gen's serving shape (stroke 34): NO card recipe field — the
+// family Recipe rows (realism/default) are the only recipe concept.
 const IMGGEN: FormSpecDoc = {
   ...KREA,
   schema: schemaEnvelope({
     prompt: { type: 'string', meta: { description: 'Prompt', extra: { wtype: 'textarea', group: 'prompt' } } },
     steps: { type: 'number', meta: { description: 'Steps', default: 8, extra: { group: 'sampling' } } },
     cfg: { type: 'number', meta: { description: 'CFG', default: 1.5, step: 0.1, extra: { group: 'sampling' } } },
-    // the card's own recipe field: a union of consts (labels ride the
-    // const members' meta.description — the walker's option law)
-    recipe: {
-      consts: ['standard', 'fast_draft', 'cinematic'],
-      meta: { description: 'Recipe', default: 'standard', extra: { group: 'sampling' } },
-    },
   }),
   features: {
     variant_groups: {
@@ -410,50 +411,42 @@ const IMGGEN: FormSpecDoc = {
   },
   variants: [
     ...(KREA.variants ?? []),
-    { id: 'realism', label: 'Realism', group: 'Recipe', defaults: {}, route: '', hint: 'the realism one-click' },
+    { id: 'realism', label: 'Realism', group: 'Recipe', defaults: { loras: [{ id: 'krea2_realism_lora' }] }, route: '', hint: 'the realism one-click' },
     { id: 'default', label: 'Default', group: 'Recipe', defaults: {}, route: '', hint: 'no extra stamps' },
   ],
 }
 
-test('recipe-yield: the family Recipe axis hides when the card owns a recipe field', async () => {
-  const { axisGroups, cardOwnsRecipe } = await import('../src/client/spec-form.tsx')
-  expect(cardOwnsRecipe(IMGGEN)).toBe(true)
-  expect(cardOwnsRecipe(KREA)).toBe(false)
-  // the family axis is gone — ONE recipe (the card's own field)
+test('recipe-yield (stroke 34): NO card owns a recipe field — the group never rides, nothing seeds', async () => {
+  const { axisGroups } = await import('../src/client/spec-form.tsx')
+  // the card-recipe layer is dead: even a schema that still declares
+  // a plain `recipe` knob gets NO Recipe axis (it renders as an
+  // ordinary param field if it exists — image-gen's is deleted)
   expect(axisGroups(IMGGEN)).toEqual(['Variant', 'Quant'])
-  // …and never seeded (the old seed stamped family `default` where
-  // the card catalog only knows standard/fast_draft/cinematic)
   const seed = seedAxisValues(IMGGEN, {})
   expect(seed['recipe']).toBeUndefined()
   expect(seed['variant']).toBe('turbo')
-  // cards without their own recipe field keep NO family axis
-  // either (stroke 33 — the seat would only stamp the compose-door's
-  // poison key; the stamp-less `default` row is display metadata)
   expect(axisGroups(QWEN)).toEqual(['Variant', 'Quant'])
 })
 
-test('recipe-yield: the drill renders ONE Recipe — the card field, never the family axis', async () => {
+test('stroke 34: the drill renders NO recipe select — the dead layer has no seat anywhere', async () => {
   const state = { user: { ...seedUser(IMGGEN, { recipe: 'standard' }) } as SpecValues }
+  // the heal dropped the poison before the mount
+  expect(state.user['recipe']).toBeUndefined()
   const onSet = (name: string, v: unknown): void => { state.user = { ...state.user, [name]: v } }
-  render(createElement(SpecForm, {
+  const { container } = render(createElement(SpecForm, {
     spec: IMGGEN,
     user: state.user,
     onSet,
   }))
-  // exactly one Recipe combobox — the card's own field
-  expect(screen.getAllByLabelText('Recipe')).toHaveLength(1)
-  expect((screen.getByLabelText('Recipe') as HTMLSelectElement).value).toBe('standard')
+  expect(screen.queryByLabelText('Recipe')).toBeNull()
+  expect(container.querySelector('[data-recipe-seat]')).toBeNull()
 })
 
-test('seedUser heals double-recipe-era benches (family `default` → card default)', async () => {
-  // a bench holding the family's `default` heals to the card default
-  // (the one validation clause — the option list judges, presence
-  // rides verbatim otherwise)
-  expect(seedUser(IMGGEN, { recipe: 'default' })['recipe']).toBe('standard')
-  // a lawful card recipe passes through untouched
-  expect(seedUser(IMGGEN, { recipe: 'cinematic' })['recipe']).toBe('cinematic')
-  // cards without their own recipe field DROP the stamp (stroke
-  // 33 — the undeclareable-key heal: the poisoned stage composes again)
+test('seedUser drops every held recipe key (stroke 34 — no card declares the field)', async () => {
+  // the family stamp…
+  expect(seedUser(IMGGEN, { recipe: 'default' })['recipe']).toBeUndefined()
+  // …and the dead card layer's stamp — both poison, both dropped
+  expect(seedUser(IMGGEN, { recipe: 'cinematic' })['recipe']).toBeUndefined()
   expect(seedUser(QWEN, { recipe: 'default' })['recipe']).toBeUndefined()
 })
 
@@ -740,28 +733,25 @@ test('THE FILTER, END TO END: a cleared cross-spec pick seeds the NEW family\'s 
 
 // ── STROKE 20: RECIPE'S SEAT (the operator's placement law:
 //    "recipe is supposed to be under the model section") ────────
-test('recipe field renders UNDER THE MODEL SECTION — the params-list row never renders twice', async () => {
-  // IMGGEN: the card owns the recipe field (standard/fast_draft/
-  // cinematic) AND the family serves Recipe rows (realism/default) —
-  // the yield law keeps the CARD's options; the SEAT moves under the
-  // axes
+test('STROKE 34: the family pills render UNDER THE MODEL SECTION — the dead layer has no seat anywhere', async () => {
+  // IMGGEN (stroke-34 shape): no card recipe field; the family
+  // serves realism (payload) + default (stamp-less). The pills sit
+  // inside the axes section; no select exists to double-face.
   const sets: Array<[string, unknown]> = []
-  render(createElement(SpecForm, {
-    spec: IMGGEN, user: { model: 'krea-2', recipe: 'standard' },
+  const { container } = render(createElement(SpecForm, {
+    spec: IMGGEN, user: { model: 'krea-2' },
     onSet: (n: string, v: unknown) => { sets.push([n, v]) },
   }))
-  const recipe = await screen.findByLabelText('Recipe')
+  const pills = container.querySelectorAll('[data-recipe-pill]')
+  expect(pills.length).toBe(1) // realism carries the payload
   // THE SEAT: inside the model axes section (under Model, Variant,
-  // Quant — never the sampling group at the bottom)
-  expect(recipe.closest('[data-model-axes]')).not.toBeNull()
-  // ONE seat + the CARD's options (the yield law: the family's
-  // realism/default rows never render under the card's key)
-  expect(screen.queryAllByLabelText('Recipe').length).toBe(1)
-  const opts = [...(recipe as HTMLSelectElement).querySelectorAll('option')].map((o) => o.value)
-  expect(opts).toEqual(['standard', 'fast_draft', 'cinematic'])
-  // the pick rides the user layer (the same edit seam)
-  fireEvent.change(recipe, { target: { value: 'cinematic' } })
-  await waitFor(() => { expect(sets).toContainEqual(['recipe', 'cinematic']) })
+  // Quant — never a sampling-group row at the bottom)
+  expect(pills[0]?.closest('[data-model-axes]')).not.toBeNull()
+  // NO select exists — the dead layer's key has no writer
+  expect(screen.queryByLabelText('Recipe')).toBeNull()
+  // the stamp rides declared keys (krea-2's realism = the lora bag)
+  fireEvent.click(pills[0] as HTMLElement)
+  await waitFor(() => { expect(sets).toContainEqual(['loras', [{ id: 'krea2_realism_lora' }]]) })
 })
 
 
