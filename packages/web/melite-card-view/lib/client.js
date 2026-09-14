@@ -44905,7 +44905,7 @@ void main() {
 					return next;
 				});
 			}, [live.stages, selectedIds]);
-			const onGroup = (0, react.useCallback)(() => {
+			(0, react.useCallback)(() => {
 				const ordered = live.stages.map((s) => s.id).filter((id) => selectedIds.has(id));
 				if (ordered.length < 2) return;
 				groupStagesWire({
@@ -44940,30 +44940,13 @@ void main() {
 			return (0, react.createElement)("section", {
 				className: card_module_css_default$1.cardsBench,
 				"data-cards-bench": benchRev
-			}, (0, react.createElement)("header", { className: card_module_css_default$1.benchHead }, (0, react.createElement)("span", { className: card_module_css_default$1.revTag }, "rev " + benchRev), grouping ? (0, react.createElement)("span", { className: card_module_css_default$1.groupBar }, (0, react.createElement)("button", {
-				className: card_module_css_default$1.runBtn,
-				type: "button",
-				disabled: selectedIds.size < 2,
-				title: selectedIds.size < 2 ? "select 2+ tiles to group" : "collapse the selected stages into one compound",
-				onClick: onGroup
-			}, "Group " + String(selectedIds.size) + " cards"), (0, react.createElement)("button", {
-				className: card_module_css_default$1.back,
-				type: "button",
-				onClick: exitGrouping
-			}, "Cancel")) : (0, react.createElement)("span", { className: card_module_css_default$1.groupBar }, (0, react.createElement)("button", {
-				className: card_module_css_default$1.back,
-				type: "button",
-				disabled: live.stages.length < 2,
-				title: live.stages.length < 2 ? "grouping needs 2+ stages" : "enter the selection sub-view",
-				onClick: () => {
-					setGrouping(true);
-				}
-			}, "Group Cards"), (0, react.createElement)("button", {
+			}, (0, react.createElement)("header", { className: card_module_css_default$1.benchHead }, (0, react.createElement)("span", { className: card_module_css_default$1.revTag }, "rev " + benchRev), (0, react.createElement)("span", { className: card_module_css_default$1.groupBar }, (0, react.createElement)("button", {
 				className: card_module_css_default$1.runBtn,
 				type: "button",
 				disabled: running || live.stages.length === 0,
+				title: running ? "the pass is running" : "run every card in bench order — one run per card, stop on failure",
 				onClick: onRun
-			}, "Run"))), reloadError !== null ? (0, react.createElement)("p", { className: card_module_css_default$1.runError }, reloadError) : null, (0, react.createElement)("ol", {
+			}, running ? (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.IconLoadingOutline16, { size: 14 }) : (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.IconPlayOutline16, { size: 14 }), " Play"))), reloadError !== null ? (0, react.createElement)("p", { className: card_module_css_default$1.runError }, reloadError) : null, (0, react.createElement)("ol", {
 				className: card_module_css_default$1.tileGrid + (capOver ? " " + card_module_css_default$1.capOver : ""),
 				onDragOver: onGridDragOver,
 				onDragLeave: onGridDragLeave,
@@ -44995,7 +44978,7 @@ void main() {
 				className: card_module_css_default$1.tileInner,
 				"aria-label": "Add a card",
 				onClick: onAddCard
-			}, (0, react.createElement)("span", { className: card_module_css_default$1.tilePreview + " " + card_module_css_default$1.addFace }, "+"), (0, react.createElement)("span", { className: card_module_css_default$1.tileCaption }, (0, react.createElement)("span", { className: card_module_css_default$1.tileTitle }, "Add a card"))))), live.log.length > 0 ? (0, react.createElement)("p", { className: card_module_css_default$1.logHead }, live.log.length + " log entr" + (live.log.length === 1 ? "y" : "ies")) : null, open !== null ? (0, react.createElement)(CardZoomOverlay, {
+			}, (0, react.createElement)("span", { className: card_module_css_default$1.tilePreview + " " + card_module_css_default$1.addFace }, "+"), (0, react.createElement)("span", { className: card_module_css_default$1.tileCaption }, (0, react.createElement)("span", { className: card_module_css_default$1.tileTitle }, "Add a card"))))), open !== null ? (0, react.createElement)(CardZoomOverlay, {
 				stage: open,
 				bench: live,
 				startError,
