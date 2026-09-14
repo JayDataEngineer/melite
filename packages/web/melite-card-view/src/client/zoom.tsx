@@ -15,7 +15,7 @@
  * • The overlay is the scroll container; the inner flex centers a
  *   card shorter than the area and scrolls one that is taller.
  */
-import { createElement as h, useEffect, useRef, useState } from 'react'
+import { createElement as h, useCallback, useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { IconLoadingOutline16, IconPlayOutline16, IconStopFill16 } from '@deepseek-ai/dsh-client-ui-primitives'
 import css from './card.module.css'
@@ -71,6 +71,12 @@ export interface ZoomDetailProps {
   onSurface?: (size: string) => void
   /** the draft's last started run (the studio polls it for artifacts). */
   runId?: string | null
+  /** THE ✦ GESTURE REGISTRATION (stroke 23, the operator's law:
+   *  "agent enhance goes inside the top bar seam next to run"): the
+   *  detail binds its enhance verb; the bar renders the capsule
+   *  beside Run. The verb's promise owns the busy face; absence of
+   *  a binding renders no capsule (non-prompt cards). */
+  bindEnhance?: (verb: () => Promise<void> | void) => void
   /** THE GESTURE REGISTRATION (hour-26, the 1:1 law): the frame's
    * top-bar Run pill owns the BUTTON, the detail owns the LAW (the
    * drill flushes the user layer to the estate BEFORE the start;
@@ -115,6 +121,18 @@ function ZoomMount(props: ZoomDetailProps & { detail: (p: ZoomDetailProps) => Re
   // and store undefined); the ref stores the verb untouched and the
   // pill reads it at click time.
   const boundRef = useRef<(() => void) | null>(null)
+  // THE ✦ SEAT (stroke 23): the detail's enhance verb lands beside
+  // Run — state (not a ref) because the capsule's PRESENCE and busy
+  // face render. The binder is STABLE (useCallback, []) so the
+  // detail's bind effect fires once per mount, never a loop.
+  const [enhanceVerb, setEnhanceVerb] = useState<(() => Promise<void> | void) | null>(null)
+  const [enhancingBar, setEnhancingBar] = useState(false)
+  const bindEnhanceStable = useCallback((v: () => Promise<void> | void): void => { setEnhanceVerb(() => v) }, [])
+  const fireEnhance = (): void => {
+    if (enhanceVerb === null || enhancingBar) return
+    setEnhancingBar(true)
+    void Promise.resolve(enhanceVerb()).finally(() => { setEnhancingBar(false) })
+  }
   // THE ENVELOPE LIFT: the detail reports the estate's surface.size;
   // the frame grows for 'huge' (the card listens, the view talks).
   const [surfaceSize, setSurfaceSize] = useState<string | null>(null)
@@ -171,6 +189,16 @@ function ZoomMount(props: ZoomDetailProps & { detail: (p: ZoomDetailProps) => Re
             // THE RUN PILL (the one gesture seat, frame-owned): ghost
             // face, glyph + word, Stop mid-run — the drill/studio
             // bottom seats retired with it.
+            // THE ✦ CAPSULE (stroke 23): beside Run, frame-rendered —
+            // the detail bound the verb; the promise owns the busy face
+            enhanceVerb !== null
+              ? h('button', {
+                className: css.drillRunBtn, type: 'button',
+                'aria-label': 'Agent Enhance', 'data-testid': 'drill-enhance',
+                disabled: enhancingBar,
+                onClick: fireEnhance,
+              }, h('span', null, enhancingBar ? '✦ enhancing…' : '✦ Enhance'))
+              : null,
             live
               ? h('button', {
                 className: css.drillRunBtn, type: 'button',
@@ -219,7 +247,7 @@ function ZoomMount(props: ZoomDetailProps & { detail: (p: ZoomDetailProps) => Re
           // unaffected: their zoomDetail scrolls inside.
           h('div', { className: css.zoomBody },
             ready
-              ? h(props.detail, { stage, bench: rest.bench, running: rest.running, onRun: rest.onRun, onStop: rest.onStop, onClose, onRemoved: rest.onRemoved, onPatchParams: rest.onPatchParams, renderStageView: rest.renderStageView, renderPreview: rest.renderPreview, onSurface, runId: rest.runId, bindRun: (r: () => void) => { boundRef.current = r } })
+              ? h(props.detail, { stage, bench: rest.bench, running: rest.running, onRun: rest.onRun, onStop: rest.onStop, onClose, onRemoved: rest.onRemoved, onPatchParams: rest.onPatchParams, renderStageView: rest.renderStageView, renderPreview: rest.renderPreview, onSurface, runId: rest.runId, bindRun: (r: () => void) => { boundRef.current = r }, bindEnhance: bindEnhanceStable })
               : h(ZoomSkeleton),
           ),
         ),

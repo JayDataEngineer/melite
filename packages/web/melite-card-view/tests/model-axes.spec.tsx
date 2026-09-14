@@ -730,3 +730,28 @@ test('a DECLared columns group grids its fields — Width and Height share ONE r
   const samp = screen.getByText('sampling')
   expect(samp.parentElement?.querySelector('div[class*="specGrid"]')).toBeNull()
 })
+
+
+// ── STROKE 23: THE TEXTAREA LAW — prompts never share a row; they
+//    start two lines and grow with text. ────────────────────────
+test('textareas span the FULL row in a columns group (prompts never sit side by side) and start at rows=2', async () => {
+  const spec: FormSpecDoc = {
+    ...KREA,
+    schema: schemaEnvelope({
+      prompt: { type: 'string', meta: { description: 'Prompt', extra: { wtype: 'textarea', group: 'prompt', columns: 2, width: 1 } } },
+      negative_prompt: { type: 'string', meta: { description: 'Negative Prompt', extra: { wtype: 'textarea', group: 'prompt', columns: 2, width: 1 } } },
+    }),
+  }
+  render(createElement(SpecForm, { spec, user: {}, onSet: () => {} }))
+  const ta = (await screen.findByLabelText('Prompt')) as HTMLTextAreaElement
+  // STARTS two lines
+  expect(ta.getAttribute('rows')).toBe('2')
+  // the group grids (columns: 2 served) but the textarea cells span
+  // FULL rows — stacked, never side by side
+  const grid = ta.closest('div[class*="specGrid"]') as HTMLElement
+  expect(grid).not.toBeNull()
+  expect((ta.closest('div[style*="grid-column"]') as HTMLElement)?.style.gridColumn).toBe('1 / -1')
+  const cells = [...grid.children].filter((c) => (c as HTMLElement).style.gridColumn !== '')
+  expect(cells.length).toBe(2)
+  for (const c of cells) expect((c as HTMLElement).style.gridColumn).toBe('1 / -1')
+})

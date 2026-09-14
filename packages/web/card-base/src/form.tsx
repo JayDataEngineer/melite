@@ -497,12 +497,28 @@ export function SpecAtom({ f, value, onEdit, square, wireCandidates }: {
     })
   }
   if (f.type === 'textarea') {
+    // THE TEXTAREA LAW (stroke 23, the operator's word): "they
+    // should start two lines, then as text enters them, they grow."
+    // rows=2 sets the floor; the ref + input resize keeps the box at
+    // its content (height:auto → scrollHeight, never below the
+    // two-row floor). The ref fires on mount AND on outside writes
+    // (the enhance sweep's write-back grows it too).
+    const fit = (el: HTMLTextAreaElement | null): void => {
+      if (el === null) return
+      el.style.height = 'auto'
+      el.style.height = Math.max(el.scrollHeight, 2 * 22) + 'px'
+    }
     return h('textarea', {
       className: css.specTextarea,
-      rows: 3,
+      rows: 2,
       value: String(value ?? ''),
       placeholder: f.placeholder ?? '',
-      onChange: (e: unknown) => onEdit(f.name, (e as { target: { value: string } }).target.value),
+      ref: fit,
+      onChange: (e: unknown) => {
+        const el = (e as { target: HTMLTextAreaElement }).target
+        fit(el)
+        onEdit(f.name, el.value)
+      },
       'aria-label': f.label,
     })
   }
@@ -952,8 +968,13 @@ export function CardForm({ spec, user, base, onSet, onUnset, wire, square, atoms
       // its fields — first-seen wins) grids the section; each field
       // spans its declared `width`. Undeclared → the stacked face.
       const gridCols = g.fields.find((f) => typeof f.columns === 'number' && f.columns >= 2)?.columns
-      const cellStyle = (f: SpecField): Record<string, string> | undefined =>
-        gridCols === undefined ? undefined : { gridColumn: `span ${Math.max(1, Math.floor(f.width ?? 1))}` }
+      const cellStyle = (f: SpecField): Record<string, string> | undefined => {
+        if (gridCols === undefined) return undefined
+        // THE TEXTAREA LAW: prompts never sit side by side — a
+        // textarea spans the full row however the group grids
+        if (f.type === 'textarea') return { gridColumn: '1 / -1' }
+        return { gridColumn: `span ${Math.max(1, Math.floor(f.width ?? 1))}` }
+      }
       // THE SLOT ROW partition: image/image_list fields of one group
       // share a horizontal row (their labels live under their squares);
       // every other field keeps its stacked key row.

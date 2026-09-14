@@ -113,6 +113,11 @@ function stubWire(opts?: StubOpts): { calls: Call[] } {
 
 const noop = (): void => {}
 
+/** True when the node sits inside the zoom bar (the Run/Stop strip). */
+function sitsInZoomBar(node: HTMLElement): boolean {
+  return node.closest('div[class*="zoomBar"]') !== null
+}
+
 /** The tile's OPEN button — the dnd-kit sortable wrapper (li) also
  * carries role="button" with the same accessible name; scope to the
  * tile's inner button by its class (module hash keeps tileInner). */
@@ -372,6 +377,10 @@ test('✦ Agent Enhance sweeps the declared fields and writes back through the v
   } as Parameters<typeof CardsTab>[0]))
   await user.click(await screen.findByText('hero frame', {}, { timeout: 4000 }))
   const wand = await screen.findByRole('button', { name: 'Agent Enhance' }, { timeout: 4000 })
+  // STROKE 23: the ✦ rides the TOP BAR beside Run (the frame's
+  // capsule — data-testid drill-enhance), never the params rail
+  expect(wand.getAttribute('data-testid')).toBe('drill-enhance')
+  expect(sitsInZoomBar(wand)).toBe(true)
   await user.click(wand)
   // the sweep wire: {model, prompt} — the card's model + the live text
   expect(enhanceCalls.length).toBe(1)

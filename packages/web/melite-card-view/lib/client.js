@@ -2927,14 +2927,26 @@ window.__ModuleLoader__.load({
 					}
 				});
 			}
-			if (f.type === "textarea") return (0, react.createElement)("textarea", {
-				className: card_module_css_default.specTextarea,
-				rows: 3,
-				value: String(value ?? ""),
-				placeholder: f.placeholder ?? "",
-				onChange: (e) => onEdit(f.name, e.target.value),
-				"aria-label": f.label
-			});
+			if (f.type === "textarea") {
+				const fit = (el) => {
+					if (el === null) return;
+					el.style.height = "auto";
+					el.style.height = Math.max(el.scrollHeight, 44) + "px";
+				};
+				return (0, react.createElement)("textarea", {
+					className: card_module_css_default.specTextarea,
+					rows: 2,
+					value: String(value ?? ""),
+					placeholder: f.placeholder ?? "",
+					ref: fit,
+					onChange: (e) => {
+						const el = e.target;
+						fit(el);
+						onEdit(f.name, el.value);
+					},
+					"aria-label": f.label
+				});
+			}
 			return (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Input, {
 				value: String(value ?? ""),
 				placeholder: f.placeholder ?? "",
@@ -3193,7 +3205,11 @@ window.__ModuleLoader__.load({
 				}));
 			}))) : null, groups.map((g) => {
 				const gridCols = g.fields.find((f) => typeof f.columns === "number" && f.columns >= 2)?.columns;
-				const cellStyle = (f) => gridCols === void 0 ? void 0 : { gridColumn: `span ${Math.max(1, Math.floor(f.width ?? 1))}` };
+				const cellStyle = (f) => {
+					if (gridCols === void 0) return void 0;
+					if (f.type === "textarea") return { gridColumn: "1 / -1" };
+					return { gridColumn: `span ${Math.max(1, Math.floor(f.width ?? 1))}` };
+				};
 				const children = [];
 				let row = [];
 				const flush = () => {
@@ -43258,6 +43274,18 @@ void main() {
 			const { stage, detail, onClose, ...rest } = props;
 			const [ready, setReady] = (0, react.useState)(false);
 			const boundRef = (0, react.useRef)(null);
+			const [enhanceVerb, setEnhanceVerb] = (0, react.useState)(null);
+			const [enhancingBar, setEnhancingBar] = (0, react.useState)(false);
+			const bindEnhanceStable = (0, react.useCallback)((v) => {
+				setEnhanceVerb(() => v);
+			}, []);
+			const fireEnhance = () => {
+				if (enhanceVerb === null || enhancingBar) return;
+				setEnhancingBar(true);
+				Promise.resolve(enhanceVerb()).finally(() => {
+					setEnhancingBar(false);
+				});
+			};
 			const [surfaceSize, setSurfaceSize] = (0, react.useState)(null);
 			const onSurface = (size) => {
 				setSurfaceSize(size === "" ? null : size);
@@ -43293,7 +43321,14 @@ void main() {
 			}, (0, react.createElement)("div", { className: card_module_css_default$1.zoomScroll }, (0, react.createElement)("div", { className: card_module_css_default$1.zoomInner }, (0, react.createElement)("div", {
 				className: card_module_css_default$1.zoomCard,
 				style: zoomSizeFor(surfaceSize)
-			}, (0, react.createElement)("div", { className: card_module_css_default$1.zoomBar }, (0, react.createElement)("span", { className: card_module_css_default$1.zoomTitle }, "Stage " + String(stage.title ?? stage.card ?? stage.id)), live ? (0, react.createElement)("button", {
+			}, (0, react.createElement)("div", { className: card_module_css_default$1.zoomBar }, (0, react.createElement)("span", { className: card_module_css_default$1.zoomTitle }, "Stage " + String(stage.title ?? stage.card ?? stage.id)), enhanceVerb !== null ? (0, react.createElement)("button", {
+				className: card_module_css_default$1.drillRunBtn,
+				type: "button",
+				"aria-label": "Agent Enhance",
+				"data-testid": "drill-enhance",
+				disabled: enhancingBar,
+				onClick: fireEnhance
+			}, (0, react.createElement)("span", null, enhancingBar ? "✦ enhancing…" : "✦ Enhance")) : null, live ? (0, react.createElement)("button", {
 				className: card_module_css_default$1.drillRunBtn,
 				type: "button",
 				"aria-label": "Stop run",
@@ -43341,7 +43376,8 @@ void main() {
 				runId: rest.runId,
 				bindRun: (r) => {
 					boundRef.current = r;
-				}
+				},
+				bindEnhance: bindEnhanceStable
 			}) : (0, react.createElement)(ZoomSkeleton))))));
 		}
 		/** CardZoomOverlay — portal to document.body, FIXED inset-0 (the old
@@ -43830,7 +43866,7 @@ void main() {
 		*  dump. Params left, Run right; the patch carries only CHANGED keys
 		*  (coerced once, at patch time — the editPatch law); then the run
 		*  gesture (patch lands in the domain BEFORE the run reads it). */
-		function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRemoved, onPatchParams, renderStageView, renderPreview, onSurface, runId, canRemove, bindRun }) {
+		function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRemoved, onPatchParams, renderStageView, renderPreview, onSurface, runId, canRemove, bindRun, bindEnhance }) {
 			String(stage.title ?? stage.card ?? stage.id);
 			const held = typeof stage.params === "object" && stage.params !== null ? stage.params : {};
 			const [spec, setSpec] = (0, react.useState)(null);
@@ -43997,6 +44033,11 @@ void main() {
 					runRef.current();
 				});
 			}, [bindRun]);
+			const enhanceRef = (0, react.useRef)(enhance);
+			enhanceRef.current = enhance;
+			(0, react.useEffect)(() => {
+				bindEnhance?.(() => enhanceRef.current());
+			}, [bindEnhance]);
 			const remove = async () => {
 				setError(null);
 				setRemoving(true);
@@ -44054,14 +44095,10 @@ void main() {
 				return renderPreview(owner, kind === "video" ? (0, react.createElement)(VideoStagePreview, owner) : kind === "audio" ? (0, react.createElement)(AudioStagePreview, owner) : kind === "mesh" ? (0, react.createElement)(MeshStagePreview, owner) : (0, react.createElement)(ImageStagePreview, owner));
 			};
 			const genericDetail = () => (0, react.createElement)("div", { className: card_module_css_default$1.zoomDetail }, (0, react.createElement)(StudioShell, {
-				params: (0, react.createElement)("div", { className: card_module_css_default$1.paramsCol }, (0, react.createElement)("div", { className: card_module_css_default$1.enhanceRow }, (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Button, {
-					variant: "outline",
-					disabled: enhancing || String(value["prompt"] ?? "").trim() === "",
-					onClick: () => {
-						enhance();
-					},
-					"aria-label": "Agent Enhance"
-				}, enhancing ? "enhancing…" : "✦ Agent Enhance"), enhanceNote !== null ? (0, react.createElement)("span", { className: enhanceNote.err ? card_module_css_default$1.runError : card_module_css_default$1.enhanceNote }, enhanceNote.text) : null), (0, react.createElement)("div", { className: card_module_css_default$1.params }, !loaded ? (0, react.createElement)("div", { className: card_module_css_default$1.load }, "form…") : spec !== null ? (0, react.createElement)(CardForm, {
+				params: (0, react.createElement)("div", { className: card_module_css_default$1.paramsCol }, enhanceNote !== null ? (0, react.createElement)("div", {
+					className: card_module_css_default$1.enhanceRow,
+					"data-testid": "enhance-note"
+				}, (0, react.createElement)("span", { className: enhanceNote.err ? card_module_css_default$1.runError : card_module_css_default$1.enhanceNote }, enhanceNote.text)) : null, (0, react.createElement)("div", { className: card_module_css_default$1.params }, !loaded ? (0, react.createElement)("div", { className: card_module_css_default$1.load }, "form…") : spec !== null ? (0, react.createElement)(CardForm, {
 					spec,
 					user,
 					base: servedBase,

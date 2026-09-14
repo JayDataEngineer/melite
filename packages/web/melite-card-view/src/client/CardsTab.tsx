@@ -691,11 +691,15 @@ export function benchRow(stage: BenchStageRow, bench?: CardsBenchValue): CardRow
  *  dump. Params left, Run right; the patch carries only CHANGED keys
  *  (coerced once, at patch time — the editPatch law); then the run
  *  gesture (patch lands in the domain BEFORE the run reads it). */
-function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRemoved, onPatchParams, renderStageView, renderPreview, onSurface, runId, canRemove, bindRun }: {
+function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRemoved, onPatchParams, renderStageView, renderPreview, onSurface, runId, canRemove, bindRun, bindEnhance }: {
   stage: BenchStageRow
   bench: CardsBenchValue
   running: boolean
   onRun: () => void
+  /** THE ✦ GESTURE (stroke 23): the drill binds its enhance verb —
+   *  the zoom bar renders the capsule beside Run (the rail's own
+   *  button is retired; the note stays as inline feedback). */
+  bindEnhance?: (verb: () => Promise<void> | void) => void
   /** THE STOP DOOR (2026-09-13): the run button flips to a stop
    *  glyph while running (the tile's own affordance, carried into
    *  the drill — one gesture language, both faces). */
@@ -954,6 +958,13 @@ function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRemoved, 
   useEffect(() => {
     bindRun?.(() => { void runRef.current() })
   }, [bindRun])
+  // THE ✦ BINDING (stroke 23): a STABLE wrapper over the ref — the
+  // bar's capsule calls the CURRENT closure, bound once per mount
+  const enhanceRef = useRef(enhance)
+  enhanceRef.current = enhance
+  useEffect(() => {
+    bindEnhance?.(() => enhanceRef.current())
+  }, [bindEnhance])
   const remove = async (): Promise<void> => {
     setError(null)
     setRemoving(true)
@@ -1047,17 +1058,13 @@ function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRemoved, 
         // stroke 12: flush at the params column's scroll top, the
         // button's capsule top clipped under the boundary — the row
         // now rides ABOVE the scrolling list and never moves)
-        h('div', { className: css.enhanceRow },
-          h(Button, {
-            variant: 'outline',
-            disabled: enhancing || String(value['prompt'] ?? '').trim() === '',
-            onClick: () => { void enhance() },
-            'aria-label': 'Agent Enhance',
-          }, enhancing ? 'enhancing…' : '✦ Agent Enhance'),
-          enhanceNote !== null
-            ? h('span', { className: enhanceNote.err ? css.runError : css.enhanceNote }, enhanceNote.text)
-            : null,
-        ),
+        // THE ✦ BUTTON RETIRED FROM THE RAIL (stroke 23, the operator's
+        // law: it rides the top bar beside Run now — the frame's
+        // capsule, this rail keeps only the note as inline feedback)
+        enhanceNote !== null
+          ? h('div', { className: css.enhanceRow, 'data-testid': 'enhance-note' },
+              h('span', { className: enhanceNote.err ? css.runError : css.enhanceNote }, enhanceNote.text))
+          : null,
         h('div', { className: css.params },
         !loaded ? h('div', { className: css.load }, 'form…')
         : spec !== null
