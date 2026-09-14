@@ -104,3 +104,63 @@ test('without a signature the group grammar still holds (backward face)', () => 
   // and the unclaimed list stays invisible there too — 1:1, no seam leak
   expect(container.textContent).not.toContain('Reference Images')
 })
+
+// ── STROKE 32: THE MOD-OWNED SLOT LAW (the operator's missing-seat
+//    report: image-edit's REQUIRED image1 never rendered — the rail
+//    looked up signature names in schema fields only, and the
+//    lanpaint brick's anchor is mod-owned) ──
+// THE LANE SHAPE: image1 rides the lanpaint mod (not the schema);
+// image2/3 are schema fields; the signature names all three.
+const modSlotSpec: FormSpecDoc = {
+  form: 'mod-slot-fixture',
+  inputs: [
+    { name: 'image1', kind: 'image', required: true },
+    { name: 'image2', kind: 'image' },
+    { name: 'image3', kind: 'image' },
+  ],
+  schema: schemaEnvelope({
+    image2: { type: 'string', meta: { description: 'Image 2', extra: { wtype: 'image' } } },
+    image3: { type: 'string', meta: { description: 'Image 3', extra: { wtype: 'image' } } },
+  }),
+  features: {
+    modifiers: [{ kind: 'brick', label: 'Lanpaint', param_key: 'lanpaint', cardinality: 'one' }],
+  },
+  mod_schemas: {
+    lanpaint: schemaEnvelope({
+      image1: { type: 'string', meta: { description: 'Image 1', extra: { wtype: 'image', group: 'input', zone: 'inputs', order: -1, width: 1, required: true } } },
+      lanpaint_enabled: { type: 'boolean', meta: { description: 'Force LanPaint', extra: { wtype: 'boolean', group: 'lanpaint', order: 1 } } },
+    }),
+  },
+}
+
+test('STROKE 32: a mod-owned signature slot seats in the rail — the required anchor renders, first', () => {
+  const { container } = render(createElement(SpecForm, {
+    user: {},
+    onSet: vi.fn(),
+    spec: modSlotSpec,
+  }))
+  const rail = container.querySelector('[data-input-rail]') as HTMLElement
+  expect(rail).toBeTruthy()
+  const squares = Array.from(rail.querySelectorAll('[role="button"][aria-label*="source"]'))
+  expect(squares.length).toBe(3) // image1 joins image2/3 — nothing silently dropped
+  const labels = squares.map((s) => (s as HTMLElement).getAttribute('aria-label'))
+  expect(labels.indexOf('Image 1 source')).toBe(0) // the anchor rides FIRST
+})
+
+test('STROKE 32: the brick keeps its knobs — the leaf never double-faces the rail-seated anchor', async () => {
+  const user = userEvent.setup()
+  render(createElement(SpecForm, {
+    user: {},
+    onSet: vi.fn(),
+    spec: modSlotSpec,
+  }))
+  await user.click(screen.getByRole('button', { name: 'Add modifier' }))
+  await user.click(await screen.findByRole('menuitem', { name: 'Lanpaint' }))
+  // the leaf opens on the brick's KNOBS…
+  expect(await screen.findByText('Force LanPaint')).toBeTruthy()
+  // …never the rail-seated anchor (one seat, no double face — the
+  // rail behind the modal keeps its own square, out of scope here)
+  const dialog = screen.getByRole('dialog')
+  expect(dialog.textContent).toContain('Force LanPaint')
+  expect(dialog.textContent).not.toContain('Image 1')
+})

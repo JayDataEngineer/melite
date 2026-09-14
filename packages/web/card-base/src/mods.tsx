@@ -31,12 +31,16 @@ import { Button, IconPlusOutline16, Input, Menu, Modal } from '@deepseek-ai/dsh-
 import css from './card.module.css'
 import { SpecAtom } from './form.tsx'
 import { useSquareProvider } from './form.tsx'
-import { isOptionKind, titleCaseId, type ModifierKind, type SpecValues } from './spec.ts'
+import { isOptionKind, titleCaseId, type ModifierKind, type SpecField, type SpecValues } from './spec.ts'
 
 export interface ModifiersSectionProps {
   kinds: ModifierKind[]
   values: SpecValues
   onEdit: (name: string, v: unknown) => void
+  /** rail-seated field names (the stroke-32 mod-owned slot law): a
+   *  mod field seated in the input rail never renders in the leaf —
+   *  the signature is the seat, the brick keeps its knobs. */
+  railSeated?: ReadonlySet<string>
   /** immediate persistence (the onSaveParams law) — optional: an
    *  add-drill without a stage commits through its values map. */
   onPatch?: (patch: Record<string, unknown>) => void
@@ -83,9 +87,11 @@ export function ModifiersSection(props: ModifiersSectionProps): ReturnType<typeo
 
   if (kinds.length === 0) return null
 
+  const seated = props.railSeated
   const fieldDefaults = (k: ModifierKind): SpecValues => {
     const out: SpecValues = {}
     for (const f of k.fields ?? []) {
+      if ((seated?.has(f.name) ?? false)) continue
       if (f.default !== undefined && f.default !== null) out[f.name] = f.default
     }
     return out
@@ -112,6 +118,7 @@ export function ModifiersSection(props: ModifiersSectionProps): ReturnType<typeo
     } else {
       const params: SpecValues = {}
       for (const f of k.fields ?? []) {
+        if ((seated?.has(f.name) ?? false)) continue
         if (entry[f.name] !== undefined) params[f.name] = entry[f.name]
       }
       setDraftParams(params)
@@ -276,7 +283,7 @@ export function ModifiersSection(props: ModifiersSectionProps): ReturnType<typeo
       title: (leaf.mode === 'create' ? 'Add ' : 'Edit ') + leaf.kind.label,
       closeLabel: 'Close',
     },
-      h(ModLeaf, { leaf, values, onDraft: { setDraftOption, setDraftStrength, setDraftParams, draftOption, draftStrength, draftParams }, onError: setLeafError, onSave: saveLeaf, onDelete: deleteLeaf, leafError }),
+      h(ModLeaf, { leaf, values, hideFields: seated, onDraft: { setDraftOption, setDraftStrength, setDraftParams, draftOption, draftStrength, draftParams }, onError: setLeafError, onSave: saveLeaf, onDelete: deleteLeaf, leafError }),
     ) : null,
   )
 }
@@ -286,6 +293,7 @@ export function ModifiersSection(props: ModifiersSectionProps): ReturnType<typeo
  *  the square automatically, even inside a mod leaf). */
 function ModLeaf(props: {
   leaf: { mode: 'create' | 'edit'; kind: ModifierKind; index: number }
+  hideFields?: ReadonlySet<string>
   values: SpecValues
   onDraft: {
     setDraftOption: (v: string) => void
@@ -302,6 +310,8 @@ function ModLeaf(props: {
 }): ReturnType<typeof h> {
   const { leaf, onDraft, onSave, onDelete, leafError } = props
   const k = leaf.kind
+  const hidden = props.hideFields
+  const leafFields: SpecField[] = (k.fields ?? []).filter((f) => !(hidden?.has(f.name) ?? false))
   // the FIELD-kind leaf's own provider: the mod's image inputs get
   // the three verbs (upload/drop/pick) exactly like a card's
   const own = useSquareProvider(
@@ -338,7 +348,7 @@ function ModLeaf(props: {
           ),
         )
       : h('div', { className: css.modLeafFields },
-          (k.fields ?? []).map((f) => h('label', { key: f.name, className: css.modField },
+          leafFields.map((f) => h('label', { key: f.name, className: css.modField },
             f.label ?? f.name,
             h(SpecAtom, {
               f,

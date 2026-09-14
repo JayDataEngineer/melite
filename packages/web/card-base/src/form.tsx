@@ -916,8 +916,19 @@ export function CardForm({ spec, user, base, onSet, onUnset, wire, square, atoms
   // input surface again). Text-kind edges stay params; fields whose
   // wtype has no slot atom yet stay in the groups.
   const signature = Array.isArray(spec.inputs) ? spec.inputs : []
+  // THE MOD-OWNED SLOT LAW (stroke 32 — the operator's missing-seat
+  // report: image-edit's required image1 never rendered): the
+  // signature names SLOTS, not schema fields — a mod-owned slot
+  // (image1, the lanpaint brick's anchor) seats in the rail like any
+  // other, so the rail falls back to the mod kinds' fields. The mod
+  // leaf skips rail-seated fields (no double face) — the signature
+  // is the seat, the brick keeps its knobs.
+  const modFieldByName = new Map<string, SpecField>()
+  for (const k of modKinds) for (const f of k.fields ?? []) {
+    if (!modFieldByName.has(f.name)) modFieldByName.set(f.name, f)
+  }
   const railOf = (inp: { name: string; kind?: string }): SpecField | undefined => {
-    const f = flatFields.find((x) => x.name === inp.name)
+    const f = flatFields.find((x) => x.name === inp.name) ?? modFieldByName.get(inp.name)
     if (f === undefined) return undefined
     if (f.type === 'image' || f.type === 'file') return f
     return undefined
@@ -1040,7 +1051,7 @@ export function CardForm({ spec, user, base, onSet, onUnset, wire, square, atoms
     // surface (stage drill, add drill, studios) obeys, none wires it.
     modKinds.length > 0
       ? h(ModifiersSection, {
-          kinds: modKinds, values: value, onEdit: edit,
+          kinds: modKinds, values: value, onEdit: edit, railSeated: railNames,
           ...(onPatch !== undefined ? { onPatch } : {}),
           // the recipe's mod payload — read-only rows ahead of the
           // user's (the mod plane owns them; loras are a mod type)

@@ -207,11 +207,17 @@ function groupContract(decl: ModelDecl | null): Record<string, unknown> {
   return out
 }
 
-/** The modifier-pack table (the subcard packs). lanpaint/qvoice ride
- *  the spec fields inline, never as subcards, so they have no row
- *  here; controlnet waits unboarded (the phantom-capability gate).
- *  kind/label/cardinality are UI strings with no other live source —
- *  one row per pack, stated once. */
+/** The modifier-pack table (the subcard packs). controlnet waits
+ *  unboarded (the phantom-capability gate). kind/label/cardinality
+ *  are UI strings with no other live source — one row per pack,
+ *  stated once.
+ *  LANPAINT'S ROW (stroke 32 — the operator's missing-seat report:
+ *  image-edit's required image1 never rendered): the port moved the
+ *  anchor out of the schema into the lanpaint mod, so the old
+ *  "rides inline" exemption became a dropped seat — the family
+ *  boards lanpaint, mod_schemas serves it, compose requires it, but
+ *  no modifiers entry ever offered the brick. The rail seats the
+ *  anchor (the client half); this row offers the knobs. */
 const MODIFIER_PACKS: Record<
   string,
   { kind: string; label: string; cardinality: string; max_stack?: number }
@@ -219,6 +225,7 @@ const MODIFIER_PACKS: Record<
   loras: { kind: 'lora', label: 'LoRAs', cardinality: 'list' },
   controlnet: { kind: 'controlnet', label: 'ControlNet', cardinality: 'list' },
   mask: { kind: 'mask', label: 'Region Mask', cardinality: 'list', max_stack: 1 },
+  lanpaint: { kind: 'brick', label: 'Lanpaint', cardinality: 'list', max_stack: 1 },
 }
 
 function optionTooltip(
