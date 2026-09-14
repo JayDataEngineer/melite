@@ -9,7 +9,7 @@ import { SPEED_LORA_OPTIONS } from "./docModel"
 import type { LayerA, SetLayerAKey } from "./docModel"
 import { useEffect, useState } from "react"
 import type { ReactElement } from "react"
-import { SpecFieldRow, useFormSpec, type SpecField } from "@melite/card-base"
+import { SpecFieldRow, fieldsOf, useFormSpec, type SpecField } from "@melite/card-base"
 
 /** The spec's name → LayerA's key (the h3_ prefix is the studio's
  * document spelling of the card's renderer vocabulary). */
@@ -33,10 +33,15 @@ export function RunAdvancedPanels({
   layerA: LayerA
   setLayerAKey: SetLayerAKey
 }) {
-  // the served spec rides the shared hook (spec door refusal — the
-  // hand-rolled rows below keep the rail alive)
-  const { spec } = useFormSpec("h3-timeline")
-  const byName = new Map((spec?.fields ?? []).map((f: SpecField) => [f.name, f]))
+  // the served spec rides the shared hook — THE MASTER FORM'S WALKER
+  // (fieldsOf, the envelope grammar; the old `spec.fields` read was
+  // the flat grammar deleted in stroke 16, so every row() silently
+  // returned null — the SLA lab and sharpen leaves rendered NOTHING
+  // while the hand-rolled rows kept the rail looking alive. Stroke
+  // 35: no fallback, no silent drops; a spec that fails to serve is
+  // an ERROR the hook surfaces, not a cue to render fewer knobs).
+  const { spec, error } = useFormSpec("h3-timeline")
+  const byName = new Map((spec === null ? [] : fieldsOf(spec)).map((f: SpecField) => [f.name, f]))
   const row = (name: string): ReactElement | null => {
     const f = byName.get(name)
     if (f === undefined) return null
@@ -54,7 +59,12 @@ export function RunAdvancedPanels({
   }
   return (
     <>
-    {/* SLA lab — only when Attention = SLA (block-sparse). */}
+    {error !== null && (
+      <div className={s.group} data-testid="tl-spec-error" role="alert">
+        <div className={s.groupTitle}>form-spec failed — advanced knobs unavailable</div>
+        <div>{error}</div>
+      </div>
+    )}    {/* SLA lab — only when Attention = SLA (block-sparse). */}
     {(layerA.h3_attention ?? "kitchen") === "sla" && (
     <div className={s.group} data-testid="tl-sla-panel">
       <div className={s.groupTitle}>

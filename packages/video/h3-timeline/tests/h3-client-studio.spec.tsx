@@ -13,6 +13,9 @@ import { describe, expect, it, vi, beforeEach } from 'vitest'
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { createElement as h } from 'react'
 import { H3TimelineStudio } from '../src/client/index.ts'
+import { RunAdvancedPanels } from '../src/ui/studio/RunAdvancedPanels.tsx'
+import { schemaEnvelope } from '@melite/card-base'
+import type { LayerA } from '../src/ui/studio/docModel.ts'
 import type { StageViewOwnerProps } from '@melite/contracts'
 
 /** A bench-owner shape: two text calls tiling 0..247 @24fps (10.3s). */
@@ -81,5 +84,93 @@ describe('H3TimelineStudio (the card-package tenant, mounted)', () => {
   it('running rides the tenant contract (runStatus → running prop)', () => {
     render(h(H3TimelineStudio, owner({ runStatus: 'running' })))
     expect(document.body.textContent ?? '').not.toBe('')
+  })
+})
+
+// ── STROKE 35: THE MASTER-FORM INHERITANCE (operator, 2026-09-14:
+//    "the H3 cheats — it hand-rolls its own forms instead of true
+//    inheriting of master form") — the advanced rail reads the
+//    SERVED ENVELOPE through card-base's own walker (fieldsOf), the
+//    row atom is SpecFieldRow (the master form's row), and a failed
+//    spec renders as ERROR — never a silently-thinner panel. ────────
+
+/** A minimal served envelope in the stroke-16 grammar — built by
+ *  card-base's own serializer (the same toJSON the door serves),
+ *  declaring the SLA + sharpen knobs the card declares (card.ts). */
+function envelopeSpec(): unknown {
+  return {
+    form: 'h3-timeline',
+    schema: schemaEnvelope({
+      sla_sparsity: { type: 'number', meta: { description: 'SLA sparsity', default: 0.9, extra: { group: 'sla', wtype: 'slider' } } },
+      sla_block_size: { consts: ['32', '64', '128'], meta: { description: 'SLA block size', default: '32', extra: { group: 'sla', wtype: 'select' } } },
+      sharpen_enabled: { type: 'boolean', meta: { description: 'FSR Sharpening', default: false, extra: {} } },
+      sharpen_method: { consts: ['rcas', 'adaptive_usm'], meta: { description: 'Sharpen Method', default: 'rcas', extra: { wtype: 'select' } } },
+    }),
+    variants: [],
+  }
+}
+
+function stubSpecServe(body: unknown | (() => Promise<Response>)): void {
+  vi.stubGlobal('fetch', typeof body === 'function' ? body : () =>
+    Promise.resolve(new Response(JSON.stringify(body), { headers: { 'content-type': 'application/json' } })))
+}
+
+describe('RunAdvancedPanels (stroke 35 — the master-form inheritance)', () => {
+  beforeEach(() => { cleanup(); vi.unstubAllGlobals() })
+
+  it('the served ENVELOPE feeds the rail — declared knobs render through the master row atom', async () => {
+    stubSpecServe(envelopeSpec())
+    const layerA = { h3_attention: 'sla', sharpen_enabled: true, sharpen_method: 'adaptive_usm' } as unknown as LayerA
+    render(h(RunAdvancedPanels, {
+      layerA,
+      setLayerAKey: () => {},
+    }))
+    // the SLA lab renders BOTH declared rows (labels are the row
+    // atom's chrome; the old `spec.fields` read rendered NEITHER)
+    expect(await screen.findByText('SLA sparsity')).toBeTruthy()
+    expect(screen.getByText('SLA block size')).toBeTruthy()
+    // the master atom's select carries the DECLARED options
+    const block = screen.getByLabelText('SLA block size') as HTMLSelectElement
+    expect([...block.options].map((o) => o.value)).toEqual(['32', '64', '128'])
+    // the sharpen leaves render from the same envelope
+    expect(screen.getByText('FSR Sharpening')).toBeTruthy()
+    expect(screen.getByText('Sharpen Method')).toBeTruthy()
+  })
+
+  it('a knob the envelope does not declare renders NOTHING — never a hand-rolled twin', async () => {
+    stubSpecServe(envelopeSpec())
+    render(h(RunAdvancedPanels, {
+      layerA: { h3_attention: 'sla', sharpen_enabled: true } as unknown as LayerA,
+      setLayerAKey: () => {},
+    }))
+    await screen.findByText('SLA sparsity')
+    // sla_min_seq_len is not in this envelope: no row, no ghost
+    expect(screen.queryByText('SLA min seq length')).toBeNull()
+  })
+
+  it('NO FALLBACK: a failed spec renders the ERROR as itself — never a silently-thinner panel', async () => {
+    stubSpecServe(() => Promise.reject(new Error('form-spec: door refused (503)')))
+    render(h(RunAdvancedPanels, {
+      layerA: { h3_attention: 'sla' } as unknown as LayerA,
+      setLayerAKey: () => {},
+    }))
+    const alert = await screen.findByRole('alert')
+    expect(alert.textContent).toContain('form-spec: door refused (503)')
+    // and not one declared knob silently vanished into a look-alive rail
+    expect(screen.queryByText('SLA sparsity')).toBeNull()
+  })
+
+  it('the document-local rows stay hand-rolled (document vocabulary, never card knobs)', async () => {
+    stubSpecServe(envelopeSpec())
+    render(h(RunAdvancedPanels, {
+      layerA: { sharpen_enabled: false, interpolate_enabled: true, crf: 19 } as unknown as LayerA,
+      setLayerAKey: () => {},
+    }))
+    await screen.findByText('Post-processing')
+    // interpolation model/multiplier + CRF are the DOCUMENT's own
+    // (interp_*/codec vocabulary at compose) — hand-rolled is the law
+    expect(screen.getByLabelText('Interpolation model (run)')).toBeTruthy()
+    expect(screen.getByLabelText('Interpolation multiplier (run)')).toBeTruthy()
+    expect(screen.getByLabelText('Output CRF (run)')).toBeTruthy()
   })
 })

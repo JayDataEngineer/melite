@@ -50,7 +50,7 @@ beforeAll(async () => {
 // builder carries the live pin defaults (object_info snapshot →
 // deriveDefaults — CreateVideo's color_space autofills), and the
 // params ride the carrier's defaults with the explicit overlay
-// LAST (applyRecipe's cascade; schema() gates are driven below —
+// LAST (the compose cascade's order; schema() gates are driven below —
 // the frozen cases carry renderer-vocabulary keys like length 90
 // that the 12-knob walk would refuse, the img-to-mesh precedent).
 const PIN_DEFAULTS = deriveDefaults(
