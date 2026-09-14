@@ -65,8 +65,54 @@ async function refusalOf(res: Response, answer: unknown): Promise<string> {
 /** Load one draft onto the bench and open the cards tab.
  *  @param draftId the drafts door's row id (never empty — callers gate).
  *  @param deps the open action + the error surface. */
-export async function loadDraftOntoBench(draftId: string, deps: BenchLoadDeps): Promise<void> {
+/** The shared load tail (stroke 45): stages onto THE conversation's
+ *  bench (the CAS law — read rev, ensure with expect_rev, birth on
+ *  miss) + open the cards tab on it. */
+async function loadStagesOntoBench(
+  stages: unknown[],
+  intent: string,
+  deps: BenchLoadDeps,
+): Promise<void> {
   const BENCH_SESSION = benchSessionOf(deps.sessionId)
+  try {
+    // THE CAS READ — the shared bench's current rev (birth arm on
+    // any miss: ensure is the only arm that may create).
+    let expectRev: number | undefined
+    const getRes = await fetch('/v1/bench/' + encodeURIComponent(BENCH_SESSION), {
+      headers: { accept: 'application/json' },
+    })
+    if (getRes.ok) {
+      const cur: unknown = await getRes.json().catch(() => null)
+      const rev = (cur as Record<string, unknown> | null)?.['rev']
+      if (typeof rev === 'number') expectRev = rev
+    }
+    // THE LOAD — stages replace; expect_rev carries the CAS.
+    const ensureRes = await fetch('/v1/bench/ensure', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({
+        session: BENCH_SESSION,
+        author: 'user',
+        stages: Array.isArray(stages) ? stages : [],
+        intent,
+        ...(expectRev !== undefined ? { expect_rev: expectRev } : {}),
+      }),
+    })
+    const answer: unknown = await ensureRes.json().catch(() => null)
+    if (!ensureRes.ok) {
+      deps.onError('the bench refused the load (' + await refusalOf(ensureRes, answer) + ')')
+      return
+    }
+    deps.openResource(cardsBenchAddress(deps.sessionId))
+  } catch (e) {
+    deps.onError('bench load failed — ' + (e instanceof Error ? e.message : String(e)))
+  }
+}
+
+/** Load one draft onto the bench and open the cards tab.
+ *  @param draftId the drafts door's row id (never empty — callers gate).
+ *  @param deps the open action + the error surface. */
+export async function loadDraftOntoBench(draftId: string, deps: BenchLoadDeps): Promise<void> {
   try {
     // 1. the draft doc (stages + intent).
     const docRes = await fetch('/v1/flows/drafts/' + encodeURIComponent(draftId), {
@@ -79,37 +125,11 @@ export async function loadDraftOntoBench(draftId: string, deps: BenchLoadDeps): 
     }
     const stages = (doc as Record<string, unknown>)['stages']
     const intent = (doc as Record<string, unknown>)['intent']
-
-    // 2. THE CAS READ — the shared bench's current rev (birth arm on
-    //    any miss: ensure is the only arm that may create).
-    let expectRev: number | undefined
-    const getRes = await fetch('/v1/bench/' + encodeURIComponent(BENCH_SESSION), {
-      headers: { accept: 'application/json' },
-    })
-    if (getRes.ok) {
-      const cur: unknown = await getRes.json().catch(() => null)
-      const rev = (cur as Record<string, unknown> | null)?.['rev']
-      if (typeof rev === 'number') expectRev = rev
-    }
-
-    // 3. THE LOAD — stages replace; expect_rev carries the CAS.
-    const ensureRes = await fetch('/v1/bench/ensure', {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({
-        session: BENCH_SESSION,
-        author: 'user',
-        stages: Array.isArray(stages) ? stages : [],
-        ...(typeof intent === 'string' ? { intent } : {}),
-        ...(expectRev !== undefined ? { expect_rev: expectRev } : {}),
-      }),
-    })
-    const answer: unknown = await ensureRes.json().catch(() => null)
-    if (!ensureRes.ok) {
-      deps.onError('the bench refused the load (' + await refusalOf(ensureRes, answer) + ')')
-      return
-    }
-    deps.openResource(cardsBenchAddress(deps.sessionId))
+    await loadStagesOntoBench(
+      Array.isArray(stages) ? stages : [],
+      typeof intent === 'string' && intent !== '' ? intent : 'restored draft',
+      deps,
+    )
   } catch (e) {
     deps.onError('bench load failed — ' + (e instanceof Error ? e.message : String(e)))
   }
@@ -139,6 +159,36 @@ export async function loadRunOntoBench(runId: string, deps: BenchLoadDeps): Prom
       return
     }
     const flow = (side as Record<string, unknown>)['flow']
+    // THE RUN'S OWN RECORD WINS (stroke 45, the operator's law: "the
+    // workflow that HAD that image"). draft_id names the MUTABLE
+    // bench — re-reading it serves whatever the bench holds NOW, not
+    // what ran. The card_snapshot (runs born after this law) is the
+    // exact card + params; the verbatim request body (older runs) is
+    // the honest floor. The living bench is NEVER the source.
+    const snap = typeof flow === 'object' && flow !== null
+      ? (flow as Record<string, unknown>)['card_snapshot']
+      : undefined
+    if (typeof snap === 'object' && snap !== null
+      && typeof (snap as Record<string, unknown>)['card'] === 'string') {
+      const card = (snap as Record<string, unknown>)['card'] as string
+      const rawParams = (snap as Record<string, unknown>)['params']
+      const params = typeof rawParams === 'object' && rawParams !== null
+        ? { ...(rawParams as Record<string, unknown>) } : {}
+      delete params['draft_id']; delete params['test']
+      const intentSrc = typeof params['prompt'] === 'string' ? params['prompt'] as string : 'restored run'
+      const stages = [{ id: 's_0', engine: 'comfyui', card, params, provenance: 'restored' }]
+      await loadStagesOntoBench(stages, intentSrc.slice(0, 77), deps)
+      return
+    }
+    const request = (side as Record<string, unknown>)['request']
+    if (typeof request === 'object' && request !== null && typeof (request as Record<string, unknown>)['model'] === 'string') {
+      const params = { ...(request as Record<string, unknown>) }
+      delete params['draft_id']; delete params['test']
+      const intentSrc = typeof params['prompt'] === 'string' ? params['prompt'] as string : 'restored run'
+      const stages = [{ id: 's_0', engine: 'comfyui', params, provenance: 'restored' }]
+      await loadStagesOntoBench(stages, intentSrc.slice(0, 77), deps)
+      return
+    }
     const flowDraft = typeof flow === 'object' && flow !== null
       ? (flow as Record<string, unknown>)['draft_id']
       : undefined
@@ -147,7 +197,7 @@ export async function loadRunOntoBench(runId: string, deps: BenchLoadDeps): Prom
       ? flowDraft
       : typeof topDraft === 'string' && topDraft !== '' ? topDraft : ''
     if (draftId === '') {
-      deps.onError('this run names no draft — nothing to restore')
+      deps.onError('this run keeps no card record — nothing to restore')
       return
     }
     await loadDraftOntoBench(draftId, deps)

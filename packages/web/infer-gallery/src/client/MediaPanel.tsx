@@ -434,7 +434,12 @@ export function MediaPanel({ useTabInfo, sessionId }: { useTabInfo?: () => TabIn
       return
     }
     const deps = { openResource: open, onError: setError, sessionId }
-    if (item.draftId !== '') {
+    // THE MUTABLE-BENCH REFUSAL (stroke 45): a bench-prefixed
+    // draft_id names the LIVING bench — loading it serves whatever
+    // the bench holds NOW, never the workflow that made this image.
+    // Bench-born artifacts always carry their run id: restore from
+    // the run's own record instead.
+    if (item.draftId !== '' && !item.draftId.startsWith('bench-')) {
       void loadDraftOntoBench(item.draftId, deps)
       return
     }

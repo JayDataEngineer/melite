@@ -471,6 +471,77 @@ describe('MediaPanel — the wand restores the run onto the bench', () => {
     expect(hits).toContain('/infer-gallery/flow?run_id=r1')
   })
 
+  it('stroke 45 — a run WITH a card_snapshot restores THAT card exactly; the living bench is never read', async () => {
+    const opened: string[] = []
+    const hits: string[] = []
+    const ensures: Record<string, unknown>[] = []
+    vi.stubGlobal('fetch', (url: string, init?: RequestInit) => {
+      const u = String(url)
+      hits.push(u)
+      if (u === '/infer-gallery/runs') return runsFeed([run({ draft_id: 'bench-main', artifacts: [{ url: '/v/red.png', type: 'image' }] })])
+      if (u === '/infer-gallery/drafts') return draftsFeed([])
+      if (u.startsWith('/infer-gallery/flow?run_id=')) {
+        return Promise.resolve(new Response(JSON.stringify({
+          run_id: 'r1',
+          flow: { draft_id: 'bench-main', card_snapshot: { card: 'image-edit', params: { model: 'qwen-img-edit-2511', prompt: 'red hair', draft_id: 'bench-main', test: false } } },
+          request: null,
+        }), { status: 200 }))
+      }
+      if (u === '/v1/bench/main') return Promise.resolve(new Response(JSON.stringify({ rev: 4 }), { status: 200 }))
+      if (u === '/v1/bench/ensure') {
+        ensures.push(JSON.parse(String(init?.body ?? '{}')) as Record<string, unknown>)
+        return Promise.resolve(new Response(JSON.stringify({ draft_id: 'bench-main', rev: 5 }), { status: 200 }))
+      }
+      return Promise.resolve(new Response('{}', { status: 200 }))
+    })
+    render(<MediaPanel useTabInfo={() => ({
+      tab: { navigation: { address: 'dsh-resource://media' },
+        actions: { openResource: (a: string) => { opened.push(a) } } },
+    }) as never} />)
+    fireEvent.click(await waitFor(() => screen.getByText('✦ CARDS') as HTMLElement))
+    await waitFor(() => { expect(opened).toEqual(['dsh-resource://cards/bench/main']) })
+    expect(hits).not.toContain('/v1/flows/drafts/bench-main')
+    expect(ensures[0]?.['expect_rev']).toBe(4)
+    expect(ensures[0]?.['stages']).toEqual([
+      { id: 's_0', engine: 'comfyui', card: 'image-edit', params: { model: 'qwen-img-edit-2511', prompt: 'red hair' }, provenance: 'restored' },
+    ])
+  })
+
+  it('stroke 45 — an OLD run (no snapshot) restores from its verbatim request body — the honest floor, never the bench draft', async () => {
+    const opened: string[] = []
+    const hits: string[] = []
+    const ensures: Record<string, unknown>[] = []
+    vi.stubGlobal('fetch', (url: string, init?: RequestInit) => {
+      const u = String(url)
+      hits.push(u)
+      if (u === '/infer-gallery/runs') return runsFeed([run({ draft_id: 'bench-main', artifacts: [{ url: '/v/beach.png', type: 'image' }] })])
+      if (u === '/infer-gallery/drafts') return draftsFeed([])
+      if (u.startsWith('/infer-gallery/flow?run_id=')) {
+        return Promise.resolve(new Response(JSON.stringify({
+          run_id: 'r1',
+          flow: { draft_id: 'bench-main' },
+          request: { model: 'anima', prompt: 'beach girl', variant: 'fp8', draft_id: 'bench-main' },
+        }), { status: 200 }))
+      }
+      if (u === '/v1/bench/main') return Promise.resolve(new Response(JSON.stringify({ rev: 9 }), { status: 200 }))
+      if (u === '/v1/bench/ensure') {
+        ensures.push(JSON.parse(String(init?.body ?? '{}')) as Record<string, unknown>)
+        return Promise.resolve(new Response(JSON.stringify({ draft_id: 'bench-main', rev: 10 }), { status: 200 }))
+      }
+      return Promise.resolve(new Response('{}', { status: 200 }))
+    })
+    render(<MediaPanel useTabInfo={() => ({
+      tab: { navigation: { address: 'dsh-resource://media' },
+        actions: { openResource: (a: string) => { opened.push(a) } } },
+    }) as never} />)
+    fireEvent.click(await waitFor(() => screen.getByText('✦ CARDS') as HTMLElement))
+    await waitFor(() => { expect(opened).toEqual(['dsh-resource://cards/bench/main']) })
+    expect(hits).not.toContain('/v1/flows/drafts/bench-main')
+    expect(ensures[0]?.['stages']).toEqual([
+      { id: 's_0', engine: 'comfyui', params: { model: 'anima', prompt: 'beach girl', variant: 'fp8' }, provenance: 'restored' },
+    ])
+  })
+
   it('a run whose sidecar names no draft states it honestly — no bench write, no open', async () => {
     const opened: string[] = []
     let ensured = 0
@@ -494,7 +565,7 @@ describe('MediaPanel — the wand restores the run onto the bench', () => {
         actions: { openResource: (a: string) => { opened.push(a) } } },
     }) as never} />)
     fireEvent.click(await waitFor(() => screen.getByText('✦ CARDS') as HTMLElement))
-    expect(await screen.findByText(/names no draft/)).toBeTruthy()
+    expect(await screen.findByText(/keeps no card record/)).toBeTruthy()
     expect(opened).toEqual([])
     expect(ensured).toBe(0)
   })

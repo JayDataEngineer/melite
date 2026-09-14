@@ -355,6 +355,19 @@ export function registerCompiledRun(args: {
     (run as { cardId?: string }).cardId = door.cardId;
     run.pipeline = door.pipeline;
   }
+  // THE CARD SNAPSHOT LAW (stroke 45, the operator's wand complaint):
+  // _flow.json's stage faces are HOLLOW (ids/status only) — the card
+  // + params that actually ran were recorded nowhere, so "restore the
+  // workflow that made this image" could only re-read the MUTABLE
+  // bench draft and serve whatever it holds NOW. The card arm knows
+  // the exact card + body here; they ride the sidecar verbatim. The
+  // wand reconstructs from THIS, never from the living bench.
+  if (door !== undefined) {
+    (run as { cardSnapshot?: unknown }).cardSnapshot = {
+      card: door.cardId,
+      params: door.requestBody,
+    };
+  }
   // R3 durable queue (submit 1317-1351): the verbatim request
   // rides _request.json, the compiled document rides _flow.json,
   // and run.queued in the ledger is what a restart reconciles
@@ -393,6 +406,7 @@ function sidecarDocFor(run: RunRecord): Record<string, unknown> {
     createdAt: run.createdAt,
     testFlag: run.testFlag,
     draftId: run.draftId,
+    card_snapshot: (run as { cardSnapshot?: unknown }).cardSnapshot,
     pipeline: run.pipeline,
     graph: run.graphRows,
   });

@@ -196,7 +196,15 @@ export function apply(ctx: Context, config: Config = {}): void {
         } catch {
           doc = JSON.parse(raw.replaceAll(',""', ',"'))
         }
-        const body = JSON.stringify({ run_id: runId, flow: doc })
+        // THE OLD-RUN FLOOR (stroke 45): pre-snapshot runs recorded
+        // their invocation verbatim in _request.json (model/prompt/
+        // variant/...) — the honest reconstruction material when no
+        // card_snapshot exists. Same tree, same confinement.
+        let request: unknown = null
+        try {
+          request = JSON.parse(await fs.readFile(`${flowDir}/${runId}/_request.json`, 'utf8'))
+        } catch { request = null }
+        const body = JSON.stringify({ run_id: runId, flow: doc, request })
         res.writeHead(200, { ...JSON_HEADERS, 'content-length': String(Buffer.byteLength(body)) })
         res.end(Buffer.from(body))
       } catch (error) {
