@@ -2233,9 +2233,15 @@ window.__ModuleLoader__.load({
 			const patch = { model };
 			const groups = axisGroups(spec);
 			const active = {};
+			const known = /* @__PURE__ */ new Set();
+			for (const g of groups) for (const r of rowsFor(spec, g)) {
+				const rePoint = typeof r.defaults["model"] === "string" && r.defaults["model"] !== "" ? r.defaults["model"] : r.route;
+				if (rePoint !== "") known.add(rePoint);
+			}
+			const crossSpec = model !== "" && !known.has(model);
 			for (const g of groups) {
 				const composing = composingRows(spec, g, active);
-				if (composing.length === 0) {
+				if (composing.length === 0 || crossSpec) {
 					patch[axisKey(g)] = "";
 					active[g] = "";
 					continue;
@@ -3040,13 +3046,13 @@ window.__ModuleLoader__.load({
 			}, refusedModel + " — not an offered model of this card") : null, familyRows.map((f) => f.inMatrix ? null : (0, react.createElement)("option", {
 				key: "fam-" + f.id,
 				value: f.id
-			}, f.label + (f.present ? "" : " — not downloaded on this machine"))), models.map((m) => (0, react.createElement)("option", {
+			}, f.id + (f.present ? "" : " — not downloaded on this machine"))), models.map((m) => (0, react.createElement)("option", {
 				key: m,
 				value: m
 			}, m))), heldFam !== void 0 && onDownloadModel !== void 0 ? (0, react.createElement)("div", {
 				className: card_module_css_default.specHint,
 				"data-download-prompt": heldFam.id
-			}, heldFam.label + " is offered by this card but not downloaded on this machine.", " ", (0, react.createElement)("button", {
+			}, heldFam.id + " is offered by this card but not downloaded on this machine.", " ", (0, react.createElement)("button", {
 				type: "button",
 				className: card_module_css_default.specLinkBtn,
 				disabled: dlState !== "idle",
@@ -3054,7 +3060,7 @@ window.__ModuleLoader__.load({
 					setDlState("busy");
 					onDownloadModel(heldFam.id).then((ok) => setDlState(ok ? "queued" : "failed")).catch(() => setDlState("failed"));
 				}
-			}, dlState === "idle" ? "Download " + heldFam.label : dlState === "busy" ? "Requesting…" : dlState === "queued" ? "Download queued ✓ (run when it lands)" : "Download request failed — retry from the assets tab")) : null), groups.map((g) => {
+			}, dlState === "idle" ? "Download " + heldFam.id : dlState === "busy" ? "Requesting…" : dlState === "queued" ? "Download queued ✓ (run when it lands)" : "Download request failed — retry from the assets tab")) : null), groups.map((g) => {
 				const rows = rowsOf(g, active);
 				const heldRaw = value[axisKey(g)];
 				const heldId = typeof heldRaw === "string" && heldRaw !== "" ? heldRaw : void 0;

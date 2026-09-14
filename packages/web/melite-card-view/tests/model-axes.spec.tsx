@@ -516,8 +516,8 @@ test('one pick repairs a refused stage — the pick\'s overlay re-points the mod
 // ── THE FAMILIES BLOCK (no-silent-drop law, hour 26 stroke 17) ──
 test('a boarded-but-not-downloaded family SERVES in the Model rail — visible, marked, PICKABLE (stroke 18: absence prompts, never blocks)', async () => {
   const spec = { ...KREA, families: [
-    { id: 'krea-2', label: 'Krea 2', present: true },
-    { id: 'anima', label: 'Anima', present: false },
+    { id: 'krea-2', present: true },
+    { id: 'anima', present: false },
   ] }
   const comp = createElement(function Host() {
     const [user, setUser] = useState<SpecValues>({ model: 'krea-2' })
@@ -534,13 +534,13 @@ test('a boarded-but-not-downloaded family SERVES in the Model rail — visible, 
   // download prompt handles absence — offered is offered)
   expect(opt).toBeTruthy()
   expect(opt.disabled).toBe(false)
-  expect(opt.textContent).toContain('Anima — not downloaded on this machine')
+  expect(opt.textContent).toContain('anima — not downloaded on this machine')
 })
 
 test('a HELD absent family grounds through the families block — the rail shows it, not krea-2', async () => {
   const spec = { ...KREA, families: [
-    { id: 'krea-2', label: 'Krea 2', present: true },
-    { id: 'anima', label: 'Anima', present: false },
+    { id: 'krea-2', present: true },
+    { id: 'anima', present: false },
   ] }
   const comp = createElement(function Host() {
     const [user, setUser] = useState<SpecValues>({ model: 'anima', variant: 'turbo', quant: 'int8' })
@@ -587,8 +587,8 @@ test('a DECLARED extension pack the engine cannot see renders AS ITSELF — mark
 
 test('no install arm, no prompt chrome — and absent boarded family option is PICKABLE (stroke 18: offered is offered)', async () => {
   const spec = { ...KREA, families: [
-    { id: 'krea-2', label: 'Krea 2', present: true },
-    { id: 'anima', label: 'Anima', present: false },
+    { id: 'krea-2', present: true },
+    { id: 'anima', present: false },
   ], packs: [{ id: 'SEEDVR2', present: false }] }
   const comp = createElement(function Host() {
     const [user, setUser] = useState<SpecValues>({ model: 'krea-2' })
@@ -605,4 +605,59 @@ test('no install arm, no prompt chrome — and absent boarded family option is P
   const model = (await screen.findByLabelText('Model')) as HTMLSelectElement
   const opt = model.querySelector('option[value="anima"]') as HTMLOptionElement
   expect(opt.disabled).toBe(false)
+})
+
+
+// ── STROKE 19: ids only + the cross-spec filter ──
+test('the Model rail NEVER renders a family\'s prose label — ids only (the DECL label names a variant+quant config, not a model)', async () => {
+  const spec = { ...KREA, families: [{ id: 'z-image', present: true }, { id: 'anima', present: false }] }
+  const comp = createElement(function Host() {
+    const [user, setUser] = useState<SpecValues>({ model: 'krea-2' })
+    return createElement(SpecForm, { spec, user, onSet: (n: string, v: unknown) => { setUser((m) => ({ ...m, [n]: v })) } })
+  })
+  render(comp)
+  const model = (await screen.findByLabelText('Model')) as HTMLSelectElement
+  const opts = [...model.querySelectorAll('option')].map((o) => o.textContent ?? '')
+  // ids only — no prose anywhere in the Model rail
+  for (const t of opts) expect(t).toMatch(/^(krea-2|krea-2-raw|z-image|anima)( — not downloaded on this machine)?$/)
+})
+
+test('SELECTING A FAMILY FILTERS VARIANT+QUANT: the cross-spec pick clears the axes (never the old spec\'s rows under a foreign model)', async () => {
+  // krea-2's matrix: turbo/int8 + raw/raw__int8; anima boards as a
+  // family (the cross-spec pick's only legal seat)
+  const spec = { ...KREA, families: [{ id: 'anima', present: true }] }
+  const picked: SpecValues[] = []
+  const comp = createElement(function Host() {
+    const [user, setUser] = useState<SpecValues>({ model: 'krea-2', variant: 'turbo', quant: 'int8' })
+    return createElement(SpecForm, {
+      spec, user,
+      onSet: (n: string, v: unknown) => {
+        setUser((m) => {
+          const next = { ...m, [n]: v }
+          picked.push({ ...next })
+          return next
+        })
+      },
+    })
+  })
+  render(comp)
+  fireEvent.change(await screen.findByLabelText('Model'), { target: { value: 'anima' } })
+  // the patch modelSwitchPatch produced: axes CLEARED — turbo/int8
+  // (krea's rows) never ride under anima
+  const after = picked[picked.length - 1]
+  expect(after['model']).toBe('anima')
+  expect(after['variant']).toBe('')
+  expect(after['quant']).toBe('')
+})
+
+test('THE FILTER, END TO END: a cleared cross-spec pick seeds the NEW family\'s rows on its own spec (select krea-2 → variant/quant become krea\'s)', async () => {
+  const { seedUser } = await import('../src/client/spec-form.tsx')
+  // the drill's post-refetch state: model=krea-2 landed, axes cleared
+  // by modelSwitchPatch; seedUser over the KREA spec (what the
+  // form-spec?model=krea-2 fetch serves) seeds krea's OWN rows —
+  // never a foreign family's variant under krea
+  const seeded = seedUser(KREA, { model: 'krea-2', variant: '', quant: '' })
+  expect(seeded['variant']).toBe('turbo')
+  expect(seeded['quant']).toBe('int8')
+  expect(seeded['model']).toBe('krea-2')
 })

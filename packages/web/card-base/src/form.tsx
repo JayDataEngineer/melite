@@ -679,10 +679,12 @@ export function ModelAxes({ spec, value, onSet, onDownloadModel }: {
           : null,
         // boarded families: pickable — offered is offered (stroke
         // 18); absent ones carry the machine truth in the label and
-        // the download prompt below (never dropped, never blocked)
+        // the download prompt below (never dropped, never blocked).
+        // IDs ONLY (stroke 19): the DECL label is prose describing a
+        // variant+quant config — never a model option's face.
         familyRows.map((f) => f.inMatrix ? null : h('option', {
           key: 'fam-' + f.id, value: f.id,
-        }, f.label + (f.present ? '' : ' — not downloaded on this machine'))),
+        }, f.id + (f.present ? '' : ' — not downloaded on this machine'))),
         models.map((m) => h('option', { key: m, value: m }, m))),
     // THE DOWNLOAD PROMPT (stroke 18): the held model is boarded
     // but its weights are not on the machine — ask the user, never
@@ -690,7 +692,7 @@ export function ModelAxes({ spec, value, onSet, onDownloadModel }: {
     // queues the provision.
     heldFam !== undefined && onDownloadModel !== undefined
       ? h('div', { className: css.specHint, 'data-download-prompt': heldFam.id },
-          heldFam.label + ' is offered by this card but not downloaded on this machine.',
+          heldFam.id + ' is offered by this card but not downloaded on this machine.',
           ' ',
           h('button', {
             type: 'button',
@@ -702,7 +704,7 @@ export function ModelAxes({ spec, value, onSet, onDownloadModel }: {
                 .then((ok: boolean) => setDlState(ok ? 'queued' : 'failed'))
                 .catch(() => setDlState('failed'))
             },
-          }, dlState === 'idle' ? 'Download ' + heldFam.label
+          }, dlState === 'idle' ? 'Download ' + heldFam.id
             : dlState === 'busy' ? 'Requesting…'
             : dlState === 'queued' ? 'Download queued ✓ (run when it lands)'
             : 'Download request failed — retry from the assets tab'))

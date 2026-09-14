@@ -246,7 +246,7 @@ export interface FormSpecDoc {
    *  it disabled with its reason instead of silently dropping it
    *  (the bench doors refuse it loudly at write time with the same
    *  list). */
-  families?: ReadonlyArray<{ id: string; label: string; present: boolean }>
+  families?: ReadonlyArray<{ id: string; present: boolean }>
   /** THE PACKS BLOCK (the no-silent-drop law's extension half,
    *  stroke 18): the card's declared extension packs for this
    *  family, presence-marked by the EXTENSION-LAW gate's own read.
@@ -722,13 +722,34 @@ export function modelSwitchPatch(spec: FormSpecDoc, model: string): SpecValues {
   const patch: SpecValues = { model }
   const groups = axisGroups(spec)
   const active: Record<string, string | undefined> = {}
+  // CROSS-SPEC SWITCH GUARD (stroke 19, the operator's burn: "when I
+  // select krea 2 it is supposed to filter variant and quant"): when
+  // NO row of THIS spec re-points to the picked model, the pick is a
+  // FAMILY switch — this spec's rows belong to ANOTHER family, and
+  // seeding its first row under the new model is poison (z-image +
+  // turbo + int8: turbo is krea's variant). The axes CLEAR; the
+  // drill refetches the new family's spec and the absent axis keys
+  // seed from ITS first-declared rows (the initial-value law). Never
+  // a foreign row, never a leftover.
+  const known = new Set<string>()
+  for (const g of groups) {
+    for (const r of rowsFor(spec, g)) {
+      const rePoint = typeof r.defaults['model'] === 'string' && r.defaults['model'] !== ''
+        ? r.defaults['model'] as string : r.route
+      if (rePoint !== '') known.add(rePoint)
+    }
+  }
+  const crossSpec = model !== '' && !known.has(model)
   for (const g of groups) {
     // THE CHAIN (one direction, the activeRowId law): only composing
     // rows are pickable — when nothing composes (raw owns no quant
     // cells) the axis rests EMPTY, never a foreign row (int8 belongs
     // to turbo; seating it under raw is turbo-for-anima again).
     const composing = composingRows(spec, g, active)
-    if (composing.length === 0) {
+    if (composing.length === 0 || crossSpec) {
+      // cross-spec: EVERY axis clears (variant and quant filter to
+      // the NEW family's rows once its spec lands — never this
+      // spec's rows carried over)
       patch[axisKey(g)] = ''
       active[g] = ''
       continue

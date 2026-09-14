@@ -675,7 +675,9 @@ describe("cardFamilies (the presence-marked serve)", () => {
     assert.ok(ids.includes("anima"));
     for (const r of rows) {
       assert.equal(typeof r.present, "boolean");
-      assert.equal(typeof r.label, "string");
+      // ids only (stroke 19): the DECL label is prose describing a
+      // variant+quant config — it never serves here
+      assert.equal(typeof r.id, "string");
     }
     // presence is per-row and MIRRORS the live catalog offer (the
     // machine truth, one spelling) — whatever this world says, the

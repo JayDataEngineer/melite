@@ -419,14 +419,12 @@ export function specBody(
     // modifier bag or a run-time surprise. null = unknown (engine
     // facts not loaded; the gate cannot see it either).
     packs: svc.packPresence(def.requiresByFamily?.[key] ?? def.requires ?? []),
-    families: (def.boarded ?? []).map((fam) => {
-      let label = fam
-      try {
-        const fd = getModel(fam) as { label?: unknown } | undefined
-        if (fd !== undefined && typeof fd.label === 'string' && fd.label !== '') label = fd.label
-      } catch { /* unknown to the registry — the id stands */ }
-      return { id: fam, label, present: liveMids.has(fam) }
-    }),
+    // ids + presence ONLY (the operator's burn, stroke 19: the DECL
+    // label is PROSE describing a variant+quant config — "Krea 2
+    // Turbo INT8 ConvRot" is NOT a model name; it must never render
+    // as a Model option). The rail speaks ids; descriptions live on
+    // the load surface where they have context.
+    families: (def.boarded ?? []).map((fam) => ({ id: fam, present: liveMids.has(fam) })),
   }
 }
 

@@ -435,18 +435,10 @@ function specBody(svc, defs, res) {
 		size: surface.size === "huge" ? "huge" : null,
 		variants: decl ? specVariants(decl, key, res.service, primary) : [],
 		packs: svc.packPresence(def.requiresByFamily?.[key] ?? def.requires ?? []),
-		families: (def.boarded ?? []).map((fam) => {
-			let label = fam;
-			try {
-				const fd = getModel(fam);
-				if (fd !== void 0 && typeof fd.label === "string" && fd.label !== "") label = fd.label;
-			} catch {}
-			return {
-				id: fam,
-				label,
-				present: liveMids.has(fam)
-			};
-		})
+		families: (def.boarded ?? []).map((fam) => ({
+			id: fam,
+			present: liveMids.has(fam)
+		}))
 	};
 }
 /** The forms table (the /v1/forms body — card meta only, no fields).

@@ -649,29 +649,13 @@ export class CardRegistryService extends Service {
    *  downloaded is SERVED, marked absent — never silently dropped
    *  from any surface). Present = the live catalog offer
    *  (buildCatalog's served keys, route-id-as-model). */
-  cardFamilies(
-    card: string,
-  ): Array<{ id: string; label: string; present: boolean }> {
+  cardFamilies(card: string): Array<{ id: string; present: boolean }> {
     const def: CardDefinition | undefined = this.defsSync().get(card);
-    const facts: Record<string, ModelFactsRow> = this.modelFacts();
     const mids: Set<string> = this.modelMids();
-    const out: Array<{ id: string; label: string; present: boolean }> = [];
-    for (const fam of def?.boarded ?? []) {
-      // the family's own DECL carries the label (facts rows are
-      // compose facts, not display)
-      let label = fam;
-      try {
-        const decl = getModel(fam) as { label?: unknown } | undefined;
-        if (decl !== undefined && typeof decl.label === "string" && decl.label !== "") {
-          label = decl.label;
-        }
-      } catch {
-        // unknown to the registry — the id stands (never a throw on
-        // the serve path)
-      }
-      out.push({ id: fam, label, present: mids.has(fam) });
-    }
-    return out;
+    // ids + presence ONLY (stroke 19): the DECL label is prose
+    // describing a variant+quant config, never a model name — no
+    // serving surface may render it as one
+    return (def?.boarded ?? []).map((fam) => ({ id: fam, present: mids.has(fam) }));
   }
 
   /** ADMISSION (the door half of the no-silent-drop law, re-cut
