@@ -136,6 +136,10 @@ function thrownMessage(error: unknown): string {
  *  back to its local derive). */
 interface StageResolver {
   resolveStageParams(body: Record<string, unknown>): Record<string, unknown> | null;
+  admitStageModel?(
+    card: string,
+    model: unknown,
+  ): { ok: true } | { ok: false; error: string; offered: string[] };
 }
 
 function resolverOf(ctx: Context): StageResolver | null {
@@ -149,6 +153,27 @@ function resolverOf(ctx: Context): StageResolver | null {
   const fn: unknown = (seat as { resolveStageParams?: unknown }).resolveStageParams;
   if (typeof fn !== "function") return null;
   return seat as StageResolver;
+}
+
+/** THE WRITE-TIME MODEL ADMISSION (the no-silent-drop law's door):
+ *  the registry refuses a model the card does not offer — or a
+ *  boarded model the machine has not downloaded — the moment it
+ *  would land on the bench (add/patch/load), with the offered list
+ *  in the error. Registry-less lanes admit everything (the local
+ *  derive; never a silent throw on the serve path). */
+function admissionOf(ctx: Context): ((card: string, params: Record<string, unknown>) => void) | undefined {
+  const reg = resolverOf(ctx);
+  if (reg === null || reg.admitStageModel === undefined) return undefined;
+  return (card: string, params: Record<string, unknown>): void => {
+    const verdict = reg.admitStageModel!(card, params["model"]);
+    if (!verdict.ok) {
+      throw new RemoteError(
+        "bench/bad-model",
+        verdict.error,
+        { card, offered: verdict.offered },
+      );
+    }
+  };
 }
 
 /** Attach the served `resolved` map per stage (prepareCardParams'
@@ -574,7 +599,7 @@ export class BenchRemoteService extends TypertRemoteService {
         { cause: error },
       );
     }
-    const row = await ensureBench(drafts, doc);
+    const row = await ensureBench(drafts, doc, admissionOf(this.ctx));
     // ensureBench gates doc.session as a valid key before this line —
     // the row's own session can never differ here (no dead fallback).
     notifyBenchChange(String(doc["session"]));
@@ -702,7 +727,7 @@ export class BenchRemoteService extends TypertRemoteService {
   ): Promise<BenchPatchRow> {
     signal.throwIfAborted();
     const drafts: Domain<DraftsDomainSpec> = await this.open(signal);
-    const row = await patchBench(drafts, session, doc);
+    const row = await patchBench(drafts, session, doc, admissionOf(this.ctx));
     notifyBenchChange(session);
     return row;
   }
@@ -714,7 +739,7 @@ export class BenchRemoteService extends TypertRemoteService {
   ): Promise<BenchStageRow> {
     signal.throwIfAborted();
     const drafts: Domain<DraftsDomainSpec> = await this.open(signal);
-    const row = await addStageBench(drafts, session, doc);
+    const row = await addStageBench(drafts, session, doc, admissionOf(this.ctx));
     notifyBenchChange(session);
     return row;
   }

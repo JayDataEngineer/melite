@@ -534,6 +534,15 @@ export function ModelAxes({ spec, value, onSet }: {
   const groups = axisGroups(spec)
   if (groups.length === 0) return null
   const models = modelChoices(spec)
+  // THE FAMILIES BLOCK (no-silent-drop law): the card's boarded
+  // families render in the Model rail even when the machine has not
+  // downloaded them — visible, disabled, marked. Present families
+  // not in the matrix (sibling boards) become pickable options.
+  const matrixSet = new Set(models)
+  const familyRows = (spec.families ?? []).map((f) => ({
+    ...f,
+    inMatrix: matrixSet.has(f.id),
+  }))
   const contract = spec.features?.variant_groups ?? {}
   const pick = (row: VariantRow): void => {
     const patch = axisPickPatch(spec, row)
@@ -552,7 +561,9 @@ export function ModelAxes({ spec, value, onSet }: {
   // initial-value law); a HELD key renders its own truth.
   const heldModelRaw = value['model']
   const heldModel = typeof heldModelRaw === 'string' && heldModelRaw !== '' ? heldModelRaw : undefined
-  const refusedModel = heldModel !== undefined && !models.includes(heldModel) ? heldModel : undefined
+  const knownModel = (m: string): boolean =>
+    models.includes(m) || (spec.families ?? []).some((f) => f.id === m)
+  const refusedModel = heldModel !== undefined && !knownModel(heldModel) ? heldModel : undefined
   // absent alone seeds (spec.model, the declared initial model)
   const shownModel = heldModel ?? (typeof spec.model === 'string' && spec.model !== '' ? spec.model : models[0] ?? '')
   // rows compose with the axes above (the owner chain — the
@@ -602,10 +613,17 @@ export function ModelAxes({ spec, value, onSet }: {
       },
         // the refused model renders AS ITSELF — the run will shoot
         // it and the engine will refuse; the visual says the same
+        // (neutral mark — the error, not a scream)
         refusedModel !== undefined
           ? h('option', { key: refusedModel, value: refusedModel },
-              refusedModel + ' — REFUSED: not offered by this card')
+              refusedModel + ' — not an offered model of this card')
           : null,
+        // boarded families: present+not-in-matrix = pickable;
+        // absent = DISABLED with the machine truth (never dropped)
+        familyRows.map((f) => f.inMatrix ? null : h('option', {
+          key: 'fam-' + f.id, value: f.id,
+          ...(f.present ? {} : { disabled: true }),
+        }, f.label + (f.present ? '' : ' — not downloaded on this machine'))),
         models.map((m) => h('option', { key: m, value: m }, m)))),
     groups.map((g) => {
       const rows = rowsOf(g, active)
@@ -633,7 +651,7 @@ export function ModelAxes({ spec, value, onSet }: {
           // visual; the grounded rows stay one pick away as repair
           refusedId !== undefined
             ? h('option', { key: refusedId, value: refusedId },
-                refusedId + ' — REFUSED: not a ' + label.toLowerCase() + ' of ' + (heldModel ?? shownModel))
+                refusedId + ' — invalid ' + label.toLowerCase() + ' for ' + (heldModel ?? shownModel))
             : null,
           rows.map((v) => h('option', { key: v.id, value: v.id },
             v.label + (typeof v.hint === 'string' && v.hint !== '' ? ` — ${v.hint}` : '')))))

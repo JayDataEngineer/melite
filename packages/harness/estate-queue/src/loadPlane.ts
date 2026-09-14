@@ -262,10 +262,16 @@ export function loadCard(
   const pkgDir: string = resolveCardPackageDir(repo, cardId);
   const decls = new Map(models.allDecls().map((d): [string, { id: string; label: string; description: string }] => [d.id, { id: d.id, label: d.label, description: d.description ?? "" }]));
   const hints: Array<Record<string, unknown>> = [];
+  // THE PRESENCE MARK (no-silent-drop law, hour 26 stroke 17): every
+  // boarded family serves — INCLUDING the ones this machine has not
+  // downloaded, marked present:false. The LLM sees the machine truth
+  // at load time (never picks a model the run cannot shoot, never
+  // learns it from a run-time refusal).
+  const mids: Set<string> = cards.modelMids();
   for (const fam of (def as { boarded: readonly string[] }).boarded) {
     const d = decls.get(fam);
     if (d === undefined) continue;
-    hints.push({ id: d.id, label: d.label, description: d.description });
+    hints.push({ id: d.id, label: d.label, description: d.description, present: mids.has(d.id) });
   }
   const bundle: Record<string, unknown> = {
     name: cardId,

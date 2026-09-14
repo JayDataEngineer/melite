@@ -65,6 +65,23 @@ function resolverOf(ctx) {
         return null;
     return seat;
 }
+/** THE WRITE-TIME MODEL ADMISSION (the no-silent-drop law's door):
+ *  the registry refuses a model the card does not offer — or a
+ *  boarded model the machine has not downloaded — the moment it
+ *  would land on the bench (add/patch/load), with the offered list
+ *  in the error. Registry-less lanes admit everything (the local
+ *  derive; never a silent throw on the serve path). */
+function admissionOf(ctx) {
+    const reg = resolverOf(ctx);
+    if (reg === null || reg.admitStageModel === undefined)
+        return undefined;
+    return (card, params) => {
+        const verdict = reg.admitStageModel(card, params["model"]);
+        if (!verdict.ok) {
+            throw new RemoteError("bench/bad-model", verdict.error, { card, offered: verdict.offered });
+        }
+    };
+}
 /** Attach the served `resolved` map per stage (prepareCardParams'
  *  own stamped + lifted body — the exact input the next run
  *  composes). Copies rows, never mutates the domain's cached doc:
@@ -474,7 +491,7 @@ let BenchRemoteService = (() => {
             catch (error) {
                 throw new RemoteError("bench/store-failed", thrownMessage(error), {}, { cause: error });
             }
-            const row = await ensureBench(drafts, doc);
+            const row = await ensureBench(drafts, doc, admissionOf(this.ctx));
             // ensureBench gates doc.session as a valid key before this line —
             // the row's own session can never differ here (no dead fallback).
             notifyBenchChange(String(doc["session"]));
@@ -542,14 +559,14 @@ let BenchRemoteService = (() => {
         async patch(session, doc, signal) {
             signal.throwIfAborted();
             const drafts = await this.open(signal);
-            const row = await patchBench(drafts, session, doc);
+            const row = await patchBench(drafts, session, doc, admissionOf(this.ctx));
             notifyBenchChange(session);
             return row;
         }
         async addStage(session, doc, signal) {
             signal.throwIfAborted();
             const drafts = await this.open(signal);
-            const row = await addStageBench(drafts, session, doc);
+            const row = await addStageBench(drafts, session, doc, admissionOf(this.ctx));
             notifyBenchChange(session);
             return row;
         }

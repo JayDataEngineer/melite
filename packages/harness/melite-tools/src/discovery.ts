@@ -21,6 +21,7 @@ import {
   enhanceRecipeFor,
   getModel,
   isServedFamily,
+  liveScanOrder,
   loadCardDefs,
   modelIds,
   SLOT_VOCABULARY,
@@ -313,6 +314,16 @@ export function specBody(
   // proves the law by absence: the pack waits unboarded and no
   // envelope, no entry, no endpoint ever names it.
   const modifiers = specModifiers(svc, res.card, key, decl)
+  // the machine truth (one spelling: liveScanOrder, the registry's
+  // own admission read) — presence marks ride the families block
+  let liveMids: Set<string>
+  try {
+    liveMids = new Set(liveScanOrder())
+  } catch {
+    /* v8 ignore next -- the booted registry serves in practice; an
+       empty set degrades to all-absent marks, never a throw */
+    liveMids = new Set()
+  }
   const surface = def.surface ?? {}
   const boarded = def.boarded ?? []
   const primary = (boarded.length > 0 ? boarded[0] : res.card) === key
@@ -392,6 +403,20 @@ export function specBody(
     service: res.service,
     size: surface.size === 'huge' ? 'huge' : null,
     variants: decl ? specVariants(decl, key, res.service, primary) : [],
+    // THE FAMILIES BLOCK (the no-silent-drop law, hour 26 stroke 17):
+    // every family the card BOARDS, presence-marked against the live
+    // catalog offer. A boarded-but-not-downloaded model SERVES —
+    // visible and marked — never silently dropped from the surface
+    // (the Model rail renders it disabled with its reason; the bench
+    // doors refuse it loudly at write time with the same list).
+    families: (def.boarded ?? []).map((fam) => {
+      let label = fam
+      try {
+        const fd = getModel(fam) as { label?: unknown } | undefined
+        if (fd !== undefined && typeof fd.label === 'string' && fd.label !== '') label = fd.label
+      } catch { /* unknown to the registry — the id stands */ }
+      return { id: fam, label, present: liveMids.has(fam) }
+    }),
   }
 }
 

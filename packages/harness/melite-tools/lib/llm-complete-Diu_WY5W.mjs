@@ -1,4 +1,4 @@
-import { CARD_KINDS, SLOT_VOCABULARY, buildCatalog, emitParamsSchema, enhanceRecipeFor, getModel, isServedFamily, loadCardDefs, modelIds, theService } from "@melite/comfyui-cordis";
+import { CARD_KINDS, SLOT_VOCABULARY, buildCatalog, emitParamsSchema, enhanceRecipeFor, getModel, isServedFamily, liveScanOrder, loadCardDefs, modelIds, theService } from "@melite/comfyui-cordis";
 import { createUserMessage } from "@deepseek-ai/dsh-llm";
 //#region src/estate.ts
 /** Narrow the seat-bound request to the canonical EstateCall the card
@@ -340,9 +340,10 @@ function optionTooltip(row, shared) {
 }
 /** The modifiers offer: one entry per boarded modifier pack (the
 *  DECL's mods order, filtered to the pack table). Options ride the
-*  pack rows (union-served rows carry the shared suffix); fields
-*  ride the pack's schema_groups member rows minus the pack's own
-*  stack knob. */
+*  pack rows (union-served rows carry the shared suffix); the
+*  entry's param rows derive client-side off `mod_schemas[pack]`
+*  (the absorbed contract's own toJSON — same walker as the card
+*  fields, one meta path). */
 function specModifiers(svc, card, key, decl) {
 	const out = [];
 	for (const pack of decl?.mods ?? []) {
@@ -385,6 +386,14 @@ function specBody(svc, defs, res) {
 	const schemas = svc.formSchemas(res.card, key);
 	if (schemas === null) throw new Error(`form-spec: card '${res.card}' unknown`);
 	const modifiers = specModifiers(svc, res.card, key, decl);
+	let liveMids;
+	try {
+		liveMids = new Set(liveScanOrder());
+	} catch {
+		/* v8 ignore next -- the booted registry serves in practice; an
+		empty set degrades to all-absent marks, never a throw */
+		liveMids = /* @__PURE__ */ new Set();
+	}
 	const surface = def.surface ?? {};
 	const boarded = def.boarded ?? [];
 	const primary = (boarded.length > 0 ? boarded[0] : res.card) === key;
@@ -418,12 +427,25 @@ function specBody(svc, defs, res) {
 		recipes: def.recipes === void 0 ? null : Object.fromEntries(Object.entries(def.recipes).map(([key, r]) => [key, {
 			label: r.label,
 			description: r.description,
-			params: { ...r.params }
+			params: { ...r.params },
+			...r.loras !== void 0 ? { loras: r.loras.map((e) => ({ ...e })) } : {}
 		}])),
 		schema: schemas.schema,
 		service: res.service,
 		size: surface.size === "huge" ? "huge" : null,
-		variants: decl ? specVariants(decl, key, res.service, primary) : []
+		variants: decl ? specVariants(decl, key, res.service, primary) : [],
+		families: (def.boarded ?? []).map((fam) => {
+			let label = fam;
+			try {
+				const fd = getModel(fam);
+				if (fd !== void 0 && typeof fd.label === "string" && fd.label !== "") label = fd.label;
+			} catch {}
+			return {
+				id: fam,
+				label,
+				present: liveMids.has(fam)
+			};
+		})
 	};
 }
 /** The forms table (the /v1/forms body — card meta only, no fields).

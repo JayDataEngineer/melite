@@ -19,6 +19,8 @@ const seat = (): LoadResolverService => {
   const svc = new LoadResolverService(ctx);
   (ctx as unknown as { cardRegistry: unknown }).cardRegistry = {
     defsSync: () => new Map([["anny", DEF]]),
+    // the presence seam (no-silent-drop law): hints marks present
+    modelMids: () => new Set<string>(),
   };
   return svc;
 };

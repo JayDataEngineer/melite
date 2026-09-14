@@ -93,7 +93,7 @@ import type { Context } from "@deepseek-ai/cordis";
  *  imported through the engine's public surface like every other
  *  engine dep. No deep path, no runtime-only dodge. */
 import { EngineContext } from "@melite/comfyui-cordis";
-import { bootModels, buildCatalog, checkModelPresent, ComfyUIService, ComposeRefusal, composeCards, composeModPlane, getModel, loadCardDefs, loadEndpointConfig, loadFacts, modelIds, registryIds, registryModel, theService } from "@melite/comfyui-cordis";
+import { bootModels, buildCatalog, checkModelPresent, ComfyUIService, ComposeRefusal, composeCards, composeModPlane, getModel, liveScanOrder, loadCardDefs, loadEndpointConfig, loadFacts, modelIds, registryIds, registryModel, theService } from "@melite/comfyui-cordis";
 import type { CardDefinition, FactsFile, FactsReads } from "@melite/comfyui-cordis";
 import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
 import { join, relative, resolve, sep } from "node:path";
@@ -101,15 +101,6 @@ import { pathToFileURL } from "node:url";
 import { DOOR_KEYS } from "./runsGates.ts";
 import { FLOW_ID_RE } from "./runsGates.ts";
 import { pyReprStr, resolveRepoRoot } from "@melite/comfyui-cordis";
-// liveScanOrder (discoveryLive.ts, second move): the LIVE offer's
-// scan order — buildCatalog's served models over the registry.
-function liveScanOrder(): string[] {
-  const live = buildCatalog(modelIds().map((id) => getModel(id)));
-  return Object.keys(
-    (live as unknown as Record<string, Record<string, unknown>>).models,
-  ).sort();
-}
-
 /** The card-envelope keys (gateway.py:360 CARD_ENVELOPE_KEYS =
  *  DOOR_KEYS + draft/test/service): select the graph, never ride it. */
 export const CARD_ENVELOPE_KEYS: readonly string[] = [
@@ -637,6 +628,84 @@ export class CardRegistryService extends Service {
    *  when the row names no resolvable unit (registry-less lanes and
    *  model-less rows fall back to the client derive; the wall pins
    *  parity on the golden families). */
+  /** The card's boarded families WITH PRESENCE (the no-silent-drop
+   *  law, hour 26 stroke 17: a boarded family the machine has not
+   *  downloaded is SERVED, marked absent — never silently dropped
+   *  from any surface). Present = the live catalog offer
+   *  (buildCatalog's served keys, route-id-as-model). */
+  cardFamilies(
+    card: string,
+  ): Array<{ id: string; label: string; present: boolean }> {
+    const def: CardDefinition | undefined = this.defsSync().get(card);
+    const facts: Record<string, ModelFactsRow> = this.modelFacts();
+    const mids: Set<string> = this.modelMids();
+    const out: Array<{ id: string; label: string; present: boolean }> = [];
+    for (const fam of def?.boarded ?? []) {
+      // the family's own DECL carries the label (facts rows are
+      // compose facts, not display)
+      let label = fam;
+      try {
+        const decl = getModel(fam) as { label?: unknown } | undefined;
+        if (decl !== undefined && typeof decl.label === "string" && decl.label !== "") {
+          label = decl.label;
+        }
+      } catch {
+        // unknown to the registry — the id stands (never a throw on
+        // the serve path)
+      }
+      out.push({ id: fam, label, present: mids.has(fam) });
+    }
+    return out;
+  }
+
+  /** ADMISSION (the door half of the no-silent-drop law): can a
+   *  bench stage for THIS card hold THIS model? The model's OWNING
+   *  family (resolveCardFamily — variant routes resolve to their
+   *  family) must be (a) boarded on the card and (b) PRESENT on the
+   *  machine. Refusals name the reason AND the offered list — the
+   *  writer (agent or human patch) gets the error AT WRITE TIME,
+   *  never a silent drop discovered at run time. Model-less rows
+   *  pass (they compose on the card's default family). */
+  admitStageModel(
+    card: string,
+    model: unknown,
+  ): { ok: true } | { ok: false; error: string; offered: string[] } {
+    if (typeof model !== "string" || model === "") return { ok: true };
+    const def: CardDefinition | undefined = this.defsSync().get(card);
+    if (def === undefined) {
+      return {
+        ok: false,
+        error: "card '" + card + "' has no registered card definition",
+        offered: [],
+      };
+    }
+    const boarded: readonly string[] = def.boarded ?? [];
+    const mids: Set<string> = this.modelMids();
+    const offered: string[] = boarded.filter((fam) => mids.has(fam));
+    const fam: string = this.resolveCardFamily(model, this.modelFacts());
+    if (!boarded.includes(fam)) {
+      return {
+        ok: false,
+        error:
+          "model '" + model + "' is not offered by card '" + card +
+          "' (boarded: " + (boarded.join(", ") || "none") +
+          "; downloadable+present here: " + (offered.join(", ") || "none") + ")",
+        offered,
+      };
+    }
+    if (!mids.has(model)) {
+      return {
+        ok: false,
+        error:
+          "model '" + model + "' is boarded by card '" + card +
+          "' but NOT DOWNLOADED on this machine (present: " +
+          (offered.join(", ") || "none") + ") — download it or pick a present model",
+        offered,
+      };
+    }
+    return { ok: true };
+  }
+
   resolveStageParams(
     body: Record<string, unknown>,
   ): Record<string, unknown> | null {

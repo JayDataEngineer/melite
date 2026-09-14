@@ -235,6 +235,7 @@ describe('live door arms', () => {
       'engine',
       'enhance_prompt',
       'enhance_prompts',
+      'families',
       'features',
       'form',
       'genre',

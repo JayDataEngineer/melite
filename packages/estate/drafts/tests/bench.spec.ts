@@ -27,6 +27,7 @@ import {
   onBenchChange, notifyBenchChange, notifyBenchDocWrite,
 } from "../src/bench.ts";
 import { BenchRemoteService, DraftsRemoteService } from "../src/remote.ts";
+import { RemoteError } from "@deepseek-ai/dsh-typert-protocol";
 
 const sig = new AbortController().signal;
 
@@ -1063,4 +1064,60 @@ test("unresolvable params ride un-resolved (no key, never null)", async () => {
   fakeRegistry(ctx);
   const doc = await new DraftsRemoteService(ctx).get("ghost-draft", sig);
   assert.ok(!("resolved" in ((doc["stages"] as Array<Record<string, unknown>>)[0] as object)));
+});
+
+// ── THE MODEL ADMISSION (no-silent-drop law, hour 26 stroke 17) ──
+// The lane proof: the LLM wrote model=anima (boarded but NOT
+// downloaded) onto the image-gen card; the bench swallowed it; the
+// form painted krea-2; the run refused. Now the WRITE refuses first.
+
+test("add_stage REFUSES a model the admission rejects — bench/bad-model, the row never lands", async () => {
+  const drafts = await boot();
+  await ensureBench(drafts, { session: "s" });
+  const admit = (card: string, params: Record<string, unknown>): void => {
+    if (params["model"] === "anima") {
+      throw new RemoteError(
+        "bench/bad-model",
+        "model 'anima' is boarded by card 'image-gen' but NOT DOWNLOADED on this machine (present: krea-2)",
+        { card, offered: ["krea-2"] },
+      );
+    }
+  };
+  assert.match(
+    await codeOf(addStageBench(drafts, "s", {
+      card: "image-gen", params: { model: "anima", variant: "turbo" }, expect_rev: 0,
+    }, admit)),
+    /^bench\/bad-model\|.*NOT DOWNLOADED/,
+  );
+  // the row never landed
+  assert.equal((getBench(drafts, "s").stages as unknown[]).length, 0);
+});
+
+test("patch admission reads the MERGED params — landing poison via patch is as refused as via add", async () => {
+  const drafts = await boot();
+  await ensureBench(drafts, { session: "s" });
+  const row = await addStageBench(drafts, "s", { card: "image-gen", params: { prompt: "x" }, expect_rev: 0 });
+  const admit = (card: string, params: Record<string, unknown>): void => {
+    if (params["model"] === "anima") {
+      throw new RemoteError("bench/bad-model", "model 'anima' not downloaded", { card, offered: ["krea-2"] });
+    }
+  };
+  assert.match(
+    await codeOf(patchBench(drafts, "s", {
+      stage: row.stage, params: { model: "anima" }, expect_rev: 1,
+    }, admit)),
+    /^bench\/bad-model/,
+  );
+});
+
+test("a model-less stage passes admission untouched (model-less cards compose on the default family)", async () => {
+  const drafts = await boot();
+  await ensureBench(drafts, { session: "s" });
+  const seen: string[] = [];
+  const admit = (card: string, params: Record<string, unknown>): void => {
+    seen.push(card + ":" + String(params["model"] ?? ""));
+  };
+  const row = await addStageBench(drafts, "s", { card: "mask-studio", params: {}, expect_rev: 0 }, admit);
+  assert.equal(row.stage, "s_0");
+  assert.deepEqual(seen, ["mask-studio:"]);
 });

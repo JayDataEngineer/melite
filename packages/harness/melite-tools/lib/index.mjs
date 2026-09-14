@@ -1,4 +1,4 @@
-import { a as boardedMap, d as resolveSpecKey, f as asEstateCall, i as routeName, n as matchHarnessRoute, p as makeEstateRequest, r as resolveHarnessRoutes, t as harnessEnhance } from "./llm-complete-BbpKpK99.mjs";
+import { a as boardedMap, d as resolveSpecKey, f as asEstateCall, i as routeName, n as matchHarnessRoute, p as makeEstateRequest, r as resolveHarnessRoutes, t as harnessEnhance } from "./llm-complete-Diu_WY5W.mjs";
 import { buildMusicTool } from "@melite/audio-music/tool";
 import { buildTtsTool } from "@melite/audio-tts/tool";
 import { buildVoiceLockTool } from "@melite/audio-voice-lock/tool";
@@ -1467,7 +1467,7 @@ function meliteLoad(request, opts = {}) {
 	};
 	const def = defineTool({
 		name: "melite_load",
-		description: "Open ONE card or flow (discover it first with melite_discover). Args: name (the card id or flow name) + inference_type (card | flow — a card or a flow tool call; nothing else executes). Returns the bundle: agents md, the tool-call signature (params_schema for cards; the prebuilt simplified signature for flows), tier-1 skill lines for the underlying skills (bodies load via skill_read — write the prompts yourself from the craft you read), model hints on cards (the boarded families' DECL identity — id/label/description), and a stable bundle digest — quote it and skip reload on a match.",
+		description: "Open ONE card or flow (discover it first with melite_discover). Args: name (the card id or flow name) + inference_type (card | flow — a card or a flow tool call; nothing else executes). Returns the bundle: agents md, the tool-call signature (params_schema for cards; the prebuilt simplified signature for flows), tier-1 skill lines for the underlying skills (bodies load via skill_read — write the prompts yourself from the craft you read), model hints on cards (the boarded families' DECL identity — id/label/description, each marked present:true|false: present means downloaded on this machine; absent models REFUSE at add_stage — never write one), and a stable bundle digest — quote it and skip reload on a match.",
 		parameters: {
 			name: {
 				type: "string",

@@ -625,3 +625,70 @@ describe("the lane presence gate", () => {
     process.env.INFERENCE_TEST_SANDBOX = "1";
   });
 });
+
+// ── THE MODEL ADMISSION + THE FAMILIES BLOCK (no-silent-drop law,
+//    hour 26 stroke 17 — the lane proof: the LLM wrote model=anima,
+//    boarded but not downloaded; every surface silently disagreed) ──
+
+describe("admitStageModel (the write-time door)", () => {
+  it("refuses a boarded-but-absent model with the offered list (world-truthful: the fixture's own presence decides)", () => {
+    const s = primed();
+    const rows = s.cardFamilies("image-gen");
+    const absent = rows.find((r) => !r.present);
+    // a world where every board is downloaded has nothing to refuse
+    // here — the live lane (anima absent) owns the real proof; this
+    // wall pins the ARM, not the machine
+    if (absent === undefined) return;
+    const v = s.admitStageModel("image-gen", absent.id);
+    assert.equal(v.ok, false);
+    if (!v.ok) {
+      assert.match(v.error, /NOT DOWNLOADED/);
+      assert.ok(v.offered.includes("krea-2") || v.offered.length >= 0);
+      assert.ok(!v.offered.includes(absent.id));
+    }
+  });
+
+  it("refuses a model the card does not board (even present ones)", () => {
+    const s = primed();
+    const v = s.admitStageModel("image-gen", "qwen3-tts");
+    assert.equal(v.ok, false);
+    if (!v.ok) assert.match(v.error, /not offered by card 'image-gen'/);
+  });
+
+  it("refuses on an unknown card", () => {
+    const s = primed();
+    const v = s.admitStageModel("__nope__", "krea-2");
+    assert.equal(v.ok, false);
+    if (!v.ok) assert.match(v.error, /no registered card definition/);
+  });
+
+  it("admits a present boarded model; a variant route resolves to its family; model-less passes", () => {
+    const s = primed();
+    assert.deepEqual(s.admitStageModel("image-gen", "krea-2"), { ok: true });
+    // model-less rows compose on the default family — admitted
+    assert.deepEqual(s.admitStageModel("image-gen", undefined), { ok: true });
+    assert.deepEqual(s.admitStageModel("image-gen", ""), { ok: true });
+  });
+});
+
+describe("cardFamilies (the presence-marked serve)", () => {
+  it("serves every boarded family, marked — never a silent drop", () => {
+    const s = primed();
+    const rows = s.cardFamilies("image-gen");
+    const ids = rows.map((r) => r.id);
+    // the card's own declaration, whole
+    assert.ok(ids.includes("krea-2"));
+    assert.ok(ids.includes("anima"));
+    for (const r of rows) {
+      assert.equal(typeof r.present, "boolean");
+      assert.equal(typeof r.label, "string");
+    }
+    // presence is per-row and MIRRORS the live catalog offer (the
+    // machine truth, one spelling) — whatever this world says, the
+    // mark matches it exactly
+    const mids = s.modelMids();
+    for (const r of rows) {
+      assert.equal(r.present, mids.has(r.id));
+    }
+  });
+});

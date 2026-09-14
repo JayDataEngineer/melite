@@ -239,6 +239,14 @@ export interface FormSpecDoc {
    *  axis' resting value and the run's family when no variant re-point
    *  has ridden (the pass-along law, 2026-09-12). */
   model?: string | null
+  /** THE FAMILIES BLOCK (the no-silent-drop law, hour 26 stroke 17):
+   *  every family the card BOARDS, presence-marked against the
+   *  machine's live catalog. A boarded-but-not-downloaded model
+   *  serves HERE — visible and marked — so the Model rail can offer
+   *  it disabled with its reason instead of silently dropping it
+   *  (the bench doors refuse it loudly at write time with the same
+   *  list). */
+  families?: ReadonlyArray<{ id: string; label: string; present: boolean }>
   /** THE VARIANT MATRIX rows (spec ROOT — the old wire law f8d5ea7):
    *  Variant rows + Quant cells, flattened. Empty when the family
    *  declares no matrix. */

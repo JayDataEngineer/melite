@@ -197,7 +197,12 @@ describe("skillLineForRef", () => {
 });
 
 describe("loadCard", () => {
-  const cards = { defsSync: () => new Map([["anny", DEF()]]) };
+  // the fake registry now carries the presence seam (modelMids) —
+  // the no-silent-drop law's machine half rides every hints row
+  const cards = {
+    defsSync: () => new Map([["anny", DEF()]]),
+    modelMids: () => new Set(["fam-a"]),
+  };
   const models = {
     allDecls: () => [
       { id: "fam-a", label: "A", description: "first" },
@@ -212,9 +217,11 @@ describe("loadCard", () => {
     assert.equal((b["signature"] as { name: string }).name, "anny_card");
     assert.ok(Array.isArray(b["agents"]));
     assert.ok(Array.isArray(b["skills"]));
+    // presence rides every hint (present for fam-a, absent for
+    // ghost-fam — the LLM sees the machine truth at load time)
     assert.deepEqual(b["model_hints"], [
-      { id: "fam-a", label: "A", description: "first" },
-      { id: "ghost-fam", label: "G", description: "" },
+      { id: "fam-a", label: "A", description: "first", present: true },
+      { id: "ghost-fam", label: "G", description: "", present: false },
     ]);
     assert.match(String(b["digest"]), /^[0-9a-f]{16}$/);
   });

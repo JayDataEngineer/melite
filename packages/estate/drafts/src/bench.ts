@@ -24,6 +24,14 @@ declare module "@deepseek-ai/dsh-typert-protocol" {
     "bench/bad-session": Record<string, never>;
     /** The body failed the bench contract (non-object / unknown keys). */
     "bench/bad-body": Record<string, never>;
+    /** THE MODEL ADMISSION (no-silent-drop law, hour 26 stroke 17):
+     *  the stage's model is not offered by the card, or boarded but
+     *  not downloaded on this machine — the write refuses with the
+     *  card + the offered (present) models. */
+    "bench/bad-model": {
+      readonly card: string;
+      readonly offered: readonly string[];
+    };
     /** The CAS law: expect_rev missing, or the bench moved under the
      *  caller — current_rev is the rev to re-read from. */
     "bench/cas-conflict": {
@@ -182,6 +190,7 @@ function refuseUnknown(
 export async function ensureBench(
   drafts: Domain<DraftsDomainSpec>,
   body: Record<string, unknown>,
+  admit?: StageAdmission,
 ): Promise<BenchEnsureRow> {
   refuseUnknown(body, ENSURE_KEYS);
   const session: unknown = body["session"];
@@ -200,6 +209,7 @@ export async function ensureBench(
 
   if (rec === undefined) {
     const stagesIn: unknown = Array.isArray(body["stages"]) ? body["stages"] : [];
+    admitStages(admit, stagesIn);
     const doc: Record<string, unknown> = {
       draft_id: draftId,
       intent: typeof body["intent"] === "string" ? body["intent"] : "bench",
@@ -251,6 +261,7 @@ export async function ensureBench(
     );
   }
   const before: Record<string, unknown>[] = stagesOf(doc);
+  admitStages(admit, body["stages"]);
   doc["stages"] = normalizeStages(body["stages"], author);
   if (typeof body["intent"] === "string") doc["intent"] = body["intent"];
   const entry: BenchEntry = {
@@ -427,6 +438,7 @@ export async function patchBench(
   drafts: Domain<DraftsDomainSpec>,
   session: string,
   body: Record<string, unknown>,
+  admit?: StageAdmission,
 ): Promise<BenchPatchRow> {
   refuseUnknown(body, PATCH_KEYS);
   const loaded: LoadedBench = loadBench(drafts, session);
@@ -461,6 +473,10 @@ export async function patchBench(
       else added.push(k);
       cur[k] = (paramsIn as Record<string, unknown>)[k];
     }
+    // admission on the MERGED view (the row's card + the params the
+    // NEXT run would compose — a patch that lands poison is as bad
+    // as an add that lands it)
+    admitStage(admit, st["card"], cur);
     st["params"] = cur;
   }
   let touched = 0;
@@ -509,14 +525,49 @@ export interface BenchStageRow {
   readonly stage: string;
 }
 
+/** THE ADMISSION SEAT (the no-silent-drop law, hour 26 stroke 17):
+ *  the remote injects the registry's model admission (card +
+ *  params.model -> refusal with the offered list); the domain stays
+ *  pure (tests inject nothing and every model passes). A refusal
+ *  throws bench/bad-model AT WRITE TIME — the writer (agent or
+ *  human patch) learns the model is not offered/downloaded the
+ *  moment it lands, never at run time. */
+export type StageAdmission = (
+  card: string,
+  params: Record<string, unknown>,
+) => void;
+
+function admitStage(
+  admit: StageAdmission | undefined,
+  card: unknown,
+  params: unknown,
+): void {
+  if (admit === undefined) return;
+  if (typeof card !== "string" || card === "") return;
+  if (!isRecord(params)) return;
+  admit(card, params);
+}
+
+/** Admission over a wholesale stage list (the load arm — every row
+ *  passes the same door an add passes). */
+function admitStages(admit: StageAdmission | undefined, stages: unknown): void {
+  if (admit === undefined || !Array.isArray(stages)) return;
+  for (const s of stages) {
+    if (!isRecord(s)) continue;
+    admitStage(admit, s["card"], s["params"]);
+  }
+}
+
 /** add_stage — append a card stage with optional wiring (the
  *  runner's input convention rides the row). */
 export async function addStageBench(
   drafts: Domain<DraftsDomainSpec>,
   session: string,
   body: Record<string, unknown>,
+  admit?: StageAdmission,
 ): Promise<BenchStageRow> {
   refuseUnknown(body, ADD_KEYS);
+  admitStage(admit, body["card"], body["params"]);
   const loaded: LoadedBench = loadBench(drafts, session);
   casCheck(loaded.block, body["expect_rev"], session);
   const card: unknown = body["card"];

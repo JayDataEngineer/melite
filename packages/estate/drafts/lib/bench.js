@@ -83,7 +83,7 @@ function refuseUnknown(body, allowed) {
 /** ensure — create the bench (birth: rev 0, empty log) or LOAD onto
  *  it (replace stages, snapshot inverse). The only arm that may
  *  create; everything else refuses a missing bench. */
-export async function ensureBench(drafts, body) {
+export async function ensureBench(drafts, body, admit) {
     refuseUnknown(body, ENSURE_KEYS);
     const session = body["session"];
     if (typeof session !== "string" || !SESSION_RE.test(session)) {
@@ -96,6 +96,7 @@ export async function ensureBench(drafts, body) {
     const rec = drafts.table("docs").get(draftId);
     if (rec === undefined) {
         const stagesIn = Array.isArray(body["stages"]) ? body["stages"] : [];
+        admitStages(admit, stagesIn);
         const doc = {
             draft_id: draftId,
             intent: typeof body["intent"] === "string" ? body["intent"] : "bench",
@@ -138,6 +139,7 @@ export async function ensureBench(drafts, body) {
         throw new RemoteError("bench/cas-conflict", "bench moved: rev is " + block.rev + ", caller held " + expect, { current_rev: block.rev, expect_rev: expect });
     }
     const before = stagesOf(doc);
+    admitStages(admit, body["stages"]);
     doc["stages"] = normalizeStages(body["stages"], author);
     if (typeof body["intent"] === "string")
         doc["intent"] = body["intent"];
@@ -249,7 +251,7 @@ function stageRow(doc, stageId) {
 const PATCH_KEYS = ["stage", "params", "result", "runStatus", "expect_rev", "author"];
 /** patch — params merge with CAS + log (result/runStatus ride too:
  *  run-status writes from the tab land here, authored "user"). */
-export async function patchBench(drafts, session, body) {
+export async function patchBench(drafts, session, body, admit) {
     refuseUnknown(body, PATCH_KEYS);
     const loaded = loadBench(drafts, session);
     casCheck(loaded.block, body["expect_rev"], session);
@@ -281,6 +283,10 @@ export async function patchBench(drafts, session, body) {
                 added.push(k);
             cur[k] = paramsIn[k];
         }
+        // admission on the MERGED view (the row's card + the params the
+        // NEXT run would compose — a patch that lands poison is as bad
+        // as an add that lands it)
+        admitStage(admit, st["card"], cur);
         st["params"] = cur;
     }
     let touched = 0;
@@ -314,10 +320,31 @@ export async function patchBench(drafts, session, body) {
     };
 }
 const ADD_KEYS = ["id", "card", "engine", "params", "inputs", "outputs", "expected", "expect_rev", "author"];
+function admitStage(admit, card, params) {
+    if (admit === undefined)
+        return;
+    if (typeof card !== "string" || card === "")
+        return;
+    if (!isRecord(params))
+        return;
+    admit(card, params);
+}
+/** Admission over a wholesale stage list (the load arm — every row
+ *  passes the same door an add passes). */
+function admitStages(admit, stages) {
+    if (admit === undefined || !Array.isArray(stages))
+        return;
+    for (const s of stages) {
+        if (!isRecord(s))
+            continue;
+        admitStage(admit, s["card"], s["params"]);
+    }
+}
 /** add_stage — append a card stage with optional wiring (the
  *  runner's input convention rides the row). */
-export async function addStageBench(drafts, session, body) {
+export async function addStageBench(drafts, session, body, admit) {
     refuseUnknown(body, ADD_KEYS);
+    admitStage(admit, body["card"], body["params"]);
     const loaded = loadBench(drafts, session);
     casCheck(loaded.block, body["expect_rev"], session);
     const card = body["card"];

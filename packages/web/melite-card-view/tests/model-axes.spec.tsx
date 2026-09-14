@@ -442,7 +442,7 @@ test('THE LANE PROOF: the Model select renders the HELD model as itself, refused
   // same. NEVER the first <option> (krea-2) painted over it.
   expect(model.value).toBe('anima')
   expect(model.getAttribute('data-refused')).toBe('model')
-  expect(model.selectedOptions[0]?.textContent).toContain('anima — REFUSED: not offered by this card')
+  expect(model.selectedOptions[0]?.textContent).toContain('anima — not an offered model of this card')
   // the held coords are REAL rows of the card's matrix — they render
   // grounded, their own values (the run composes variant=turbo,
   // quant=int8; the visual shows exactly that). The PAIR's
@@ -488,7 +488,7 @@ test('a held coord that breaks the OWNER CHAIN refuses as itself — the first-r
   const quant = (await screen.findByLabelText('Quant')) as HTMLSelectElement
   expect(quant.value).toBe('int8')
   expect(quant.getAttribute('data-refused')).toBe('Quant')
-  expect(quant.selectedOptions[0]?.textContent).toContain('int8 — REFUSED')
+  expect(quant.selectedOptions[0]?.textContent).toContain('int8 — invalid')
 })
 
 test('one pick repairs a refused stage — the pick\'s overlay re-points the model coherently', async () => {
@@ -510,4 +510,52 @@ test('one pick repairs a refused stage — the pick\'s overlay re-points the mod
     // the stale-variant cure rides the same patch: axes re-seed
     expect(edits['variant']).toBe('turbo')
   })
+})
+
+
+// ── THE FAMILIES BLOCK (no-silent-drop law, hour 26 stroke 17) ──
+test('a boarded-but-not-downloaded family SERVES in the Model rail — visible, disabled, marked; never dropped', async () => {
+  const spec = { ...KREA, families: [
+    { id: 'krea-2', label: 'Krea 2', present: true },
+    { id: 'anima', label: 'Anima', present: false },
+  ] }
+  const comp = createElement(function Host() {
+    const [user, setUser] = useState<SpecValues>({ model: 'krea-2' })
+    return createElement(SpecForm, {
+      spec,
+      user,
+      onSet: (name: string, v: unknown) => { setUser((m) => ({ ...m, [name]: v })) },
+    })
+  })
+  render(comp)
+  const model = (await screen.findByLabelText('Model')) as HTMLSelectElement
+  const opt = model.querySelector('option[value="anima"]') as HTMLOptionElement
+  // visible + disabled + the machine truth in the label
+  expect(opt).toBeTruthy()
+  expect(opt.disabled).toBe(true)
+  expect(opt.textContent).toContain('Anima — not downloaded on this machine')
+})
+
+test('a HELD absent family grounds through the families block — the rail shows it, not krea-2', async () => {
+  const spec = { ...KREA, families: [
+    { id: 'krea-2', label: 'Krea 2', present: true },
+    { id: 'anima', label: 'Anima', present: false },
+  ] }
+  const comp = createElement(function Host() {
+    const [user, setUser] = useState<SpecValues>({ model: 'anima', variant: 'turbo', quant: 'int8' })
+    return createElement(SpecForm, {
+      spec,
+      user,
+      onSet: (name: string, v: unknown) => { setUser((m) => ({ ...m, [name]: v })) },
+    })
+  })
+  render(comp)
+  const model = (await screen.findByLabelText('Model')) as HTMLSelectElement
+  // the held model renders AS ITSELF (an option exists — the
+  // families block grounds it); no data-refused (it is boarded),
+  // never krea-2 painted over it
+  expect(model.value).toBe('anima')
+  expect(model.getAttribute('data-refused')).toBe(null)
+  const opt = model.querySelector('option[value="anima"]') as HTMLOptionElement
+  expect(opt.textContent).toContain('not downloaded')
 })

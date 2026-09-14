@@ -8,6 +8,14 @@ declare module "@deepseek-ai/dsh-typert-protocol" {
         "bench/bad-session": Record<string, never>;
         /** The body failed the bench contract (non-object / unknown keys). */
         "bench/bad-body": Record<string, never>;
+        /** THE MODEL ADMISSION (no-silent-drop law, hour 26 stroke 17):
+         *  the stage's model is not offered by the card, or boarded but
+         *  not downloaded on this machine — the write refuses with the
+         *  card + the offered (present) models. */
+        "bench/bad-model": {
+            readonly card: string;
+            readonly offered: readonly string[];
+        };
         /** The CAS law: expect_rev missing, or the bench moved under the
          *  caller — current_rev is the rev to re-read from. */
         "bench/cas-conflict": {
@@ -77,7 +85,7 @@ export interface BenchGetRow {
 /** ensure — create the bench (birth: rev 0, empty log) or LOAD onto
  *  it (replace stages, snapshot inverse). The only arm that may
  *  create; everything else refuses a missing bench. */
-export declare function ensureBench(drafts: Domain<DraftsDomainSpec>, body: Record<string, unknown>): Promise<BenchEnsureRow>;
+export declare function ensureBench(drafts: Domain<DraftsDomainSpec>, body: Record<string, unknown>, admit?: StageAdmission): Promise<BenchEnsureRow>;
 /** get — one session's bench block as the served row. */
 export declare function getBench(drafts: Domain<DraftsDomainSpec>, session: string): BenchGetRow;
 /** The patch row: the touched stage + the params keys merged. */
@@ -90,7 +98,7 @@ export interface BenchPatchRow {
 }
 /** patch — params merge with CAS + log (result/runStatus ride too:
  *  run-status writes from the tab land here, authored "user"). */
-export declare function patchBench(drafts: Domain<DraftsDomainSpec>, session: string, body: Record<string, unknown>): Promise<BenchPatchRow>;
+export declare function patchBench(drafts: Domain<DraftsDomainSpec>, session: string, body: Record<string, unknown>, admit?: StageAdmission): Promise<BenchPatchRow>;
 /** The stage row: the arm's answer (stage id + rev). */
 export interface BenchStageRow {
     readonly draft_id: string;
@@ -98,9 +106,17 @@ export interface BenchStageRow {
     readonly rev: number;
     readonly stage: string;
 }
+/** THE ADMISSION SEAT (the no-silent-drop law, hour 26 stroke 17):
+ *  the remote injects the registry's model admission (card +
+ *  params.model -> refusal with the offered list); the domain stays
+ *  pure (tests inject nothing and every model passes). A refusal
+ *  throws bench/bad-model AT WRITE TIME — the writer (agent or
+ *  human patch) learns the model is not offered/downloaded the
+ *  moment it lands, never at run time. */
+export type StageAdmission = (card: string, params: Record<string, unknown>) => void;
 /** add_stage — append a card stage with optional wiring (the
  *  runner's input convention rides the row). */
-export declare function addStageBench(drafts: Domain<DraftsDomainSpec>, session: string, body: Record<string, unknown>): Promise<BenchStageRow>;
+export declare function addStageBench(drafts: Domain<DraftsDomainSpec>, session: string, body: Record<string, unknown>, admit?: StageAdmission): Promise<BenchStageRow>;
 /** reorder — move ONE stage to a new index in the bench's stage order
  *  (the drag-reorder door, 2026-09-11: the old system's reorderRange
  *  gesture; the reborn bench is SSOT so the door exists before the UX

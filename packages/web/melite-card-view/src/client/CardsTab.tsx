@@ -760,9 +760,17 @@ function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRemoved, 
       ? res['url'] as string : ''
     return url === '' ? [] : [{ id: s.id, label: String(s.title ?? s.card ?? s.id), url }]
   })
+  // THE SPEC KEY FOLLOWS THE STAGE'S OWN MODEL (no-silent-drop
+  // law, hour 26 stroke 17): a stage holding model=anima fetches
+  // the ANIMA spec — its own matrix, its own axes — never the
+  // card's default-family matrix painted over a foreign model.
+  // Absent model alone rides the card key (the initial-value law).
+  const heldModelRaw = (typeof stage.params === 'object' && stage.params !== null
+    ? (stage.params as Record<string, unknown>)['model'] : undefined)
+  const modelKey = typeof heldModelRaw === 'string' && heldModelRaw !== '' ? heldModelRaw : ''
   useEffect(() => {
     let alive = true
-    const family = String(stage.card ?? '')
+    const family = modelKey !== '' ? modelKey : String(stage.card ?? '')
     if (family === '') { setLoaded(true); return }
     fetchFormSpec(family)
       .then((doc) => {
@@ -786,7 +794,9 @@ function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRemoved, 
         setLoaded(true)
       })
     return () => { alive = false }
-  }, [stage.id])
+    // stage.id re-opens; the held model re-SPECS (a model pick
+    // refetches the family's own matrix — the axes follow the truth)
+  }, [stage.id, modelKey])
   // the forms-table cache (card meta with the DECLARED edges) — one
   // fetch per session; the picker's kind matching reads it
   const [edgeMeta, setEdgeMeta] = useState<Record<string, { inputs?: Record<string, string>; outputs?: Record<string, string> }> | null>(null)

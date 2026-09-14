@@ -13,6 +13,7 @@
 import type { ModelRow } from "./families/contract.ts";
 import type { CellRow, ModelDecl, VariantRow } from "./families/contract.ts";
 import { bootModels, modelsService, resolveCascade } from "./service.ts";
+import { buildCatalog } from "./catalogEmission.ts";
 
 export * from "./families/contract.ts";
 export { assertAddressesServe, assertFactsCallers, assertModInterlock, bootModels, modelsService, resolveCascade, MODELS_SERVICE, ModelsService, modelsProvider, needModels } from "./service.ts";
@@ -25,6 +26,19 @@ export function getModel(id: string): ModelDecl {
 }
 
 export const modelIds = (): string[] => modelsService().modelIds();
+
+/** THE LIVE OFFER's scan order (the machine truth): buildCatalog's
+ *  served model ids over the registry, sorted — the existence set
+ *  every presence-marked surface reads (the registry's admission,
+ *  the form-spec's family marks, the load hints). ONE spelling:
+ *  exported here, consumed everywhere (the no-silent-drop law's
+ *  machine half). */
+export function liveScanOrder(): string[] {
+  const live = buildCatalog(modelIds().map((id) => getModel(id)));
+  return Object.keys(
+    (live as unknown as Record<string, Record<string, unknown>>).models,
+  ).sort();
+}
 
 /** The MODEL registry ids — one per model (the declaration plane,
  *  vs the served route view). */

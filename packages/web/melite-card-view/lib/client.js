@@ -2900,6 +2900,11 @@ window.__ModuleLoader__.load({
 			const groups = axisGroups(spec);
 			if (groups.length === 0) return null;
 			const models = modelChoices(spec);
+			const matrixSet = new Set(models);
+			const familyRows = (spec.families ?? []).map((f) => ({
+				...f,
+				inMatrix: matrixSet.has(f.id)
+			}));
 			const contract = spec.features?.variant_groups ?? {};
 			const pick = (row) => {
 				const patch = axisPickPatch(spec, row);
@@ -2907,7 +2912,8 @@ window.__ModuleLoader__.load({
 			};
 			const heldModelRaw = value["model"];
 			const heldModel = typeof heldModelRaw === "string" && heldModelRaw !== "" ? heldModelRaw : void 0;
-			const refusedModel = heldModel !== void 0 && !models.includes(heldModel) ? heldModel : void 0;
+			const knownModel = (m) => models.includes(m) || (spec.families ?? []).some((f) => f.id === m);
+			const refusedModel = heldModel !== void 0 && !knownModel(heldModel) ? heldModel : void 0;
 			const shownModel = heldModel ?? (typeof spec.model === "string" && spec.model !== "" ? spec.model : models[0] ?? "");
 			const rowsOf = (g, active) => composingRows(spec, g, active);
 			const active = {};
@@ -2935,7 +2941,11 @@ window.__ModuleLoader__.load({
 			}, refusedModel !== void 0 ? (0, react.createElement)("option", {
 				key: refusedModel,
 				value: refusedModel
-			}, refusedModel + " — REFUSED: not offered by this card") : null, models.map((m) => (0, react.createElement)("option", {
+			}, refusedModel + " — not an offered model of this card") : null, familyRows.map((f) => f.inMatrix ? null : (0, react.createElement)("option", {
+				key: "fam-" + f.id,
+				value: f.id,
+				...f.present ? {} : { disabled: true }
+			}, f.label + (f.present ? "" : " — not downloaded on this machine"))), models.map((m) => (0, react.createElement)("option", {
 				key: m,
 				value: m
 			}, m)))), groups.map((g) => {
@@ -2962,7 +2972,7 @@ window.__ModuleLoader__.load({
 				}, refusedId !== void 0 ? (0, react.createElement)("option", {
 					key: refusedId,
 					value: refusedId
-				}, refusedId + " — REFUSED: not a " + label.toLowerCase() + " of " + (heldModel ?? shownModel)) : null, rows.map((v) => (0, react.createElement)("option", {
+				}, refusedId + " — invalid " + label.toLowerCase() + " for " + (heldModel ?? shownModel)) : null, rows.map((v) => (0, react.createElement)("option", {
 					key: v.id,
 					value: v.id
 				}, v.label + (typeof v.hint === "string" && v.hint !== "" ? ` — ${v.hint}` : "")))));
@@ -43697,9 +43707,11 @@ void main() {
 					url
 				}];
 			});
+			const heldModelRaw = typeof stage.params === "object" && stage.params !== null ? stage.params["model"] : void 0;
+			const modelKey = typeof heldModelRaw === "string" && heldModelRaw !== "" ? heldModelRaw : "";
 			(0, react.useEffect)(() => {
 				let alive = true;
-				const family = String(stage.card ?? "");
+				const family = modelKey !== "" ? modelKey : String(stage.card ?? "");
 				if (family === "") {
 					setLoaded(true);
 					return;
@@ -43718,7 +43730,7 @@ void main() {
 				return () => {
 					alive = false;
 				};
-			}, [stage.id]);
+			}, [stage.id, modelKey]);
 			const [edgeMeta, setEdgeMeta] = (0, react.useState)(null);
 			(0, react.useEffect)(() => {
 				let alive = true;
