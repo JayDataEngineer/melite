@@ -594,8 +594,7 @@ export function cardOwnsRecipe(spec: FormSpecDoc): boolean {
 /** The axis groups in declaration order: features.variant_groups'
  *  key order when the door serves it, else the rows' distinct groups
  *  in first-seen order. Empty group names never ride. The Recipe
- *  group yields when the card owns its own recipe field (the
- *  recipe-yield law above). */
+ *  group never rides (the recipe-axis yield above). */
 export function axisGroups(spec: FormSpecDoc): string[] {
   const rows = spec.variants ?? []
   const groups: string[] = []
@@ -606,8 +605,15 @@ export function axisGroups(spec: FormSpecDoc): string[] {
   for (const v of rows) {
     if (v.group !== '' && !groups.includes(v.group)) groups.push(v.group)
   }
-  if (cardOwnsRecipe(spec)) return groups.filter((g) => g !== 'Recipe')
-  return groups
+  // THE RECIPE-AXIS YIELD (stroke 33 — the compose-door's
+  // missing-seat mirror: "unknown param(s): recipe" on image-edit):
+  // the `recipe` user key is legal IFF the card's schema owns the
+  // recipe field — so the Recipe MATRIX group never rides as an
+  // axis. Owns → the card's own field is the seat (lifted under
+  // Model); doesn't own → no seat exists (the served row is one
+  // stamp-less `default` — a seat for it could only ever persist
+  // the poison key). One arm, no direction to get wrong.
+  return groups.filter((g) => g !== 'Recipe')
 }
 
 /** The variant_groups contract's keys, in served order (the door
@@ -729,9 +735,16 @@ export function axisPickPatch(spec: FormSpecDoc, row: VariantRow): SpecValues {
     if (g === row.group) active[g] = row.id
     else if (typeof row.defaults['model'] === 'string') active[g] = undefined
   }
-  patch[axisKey(row.group)] = row.id
+  // THE VOCABULARY GUARD (stroke 33): the durable axis key stamps
+  // only when the group rides as an axis — a Recipe-row pick on a
+  // card without the field keeps its declared-knob defaults, never
+  // the undeclareable `recipe` key (the compose-door refusal).
+  if (groups.includes(row.group)) patch[axisKey(row.group)] = row.id
   // ONLY the axes BELOW the picked one re-seed (the chain runs one
-  // direction); the axes above stay exactly as the user set them.
+  // direction); the axes above stay exactly as the user set them. A
+  // group outside the axes (Recipe since the yield) has nothing
+  // below it — no reseed at all.
+  if (at < 0) return patch
   for (const g of groups.slice(at + 1)) {
     const composing = composingRows(spec, g, active)
     if (composing.length > 0) patch[axisKey(g)] = composing[0].id
@@ -835,18 +848,26 @@ export function seedAxisValues(spec: FormSpecDoc, held: SpecValues): SpecValues 
  * survived the reopen), the absent axis keys seed per the axis law
  * (seedAxisValues above — first composing row, one direction).
  *
- * THE ONE VALIDATION CLAUSE (the double-recipe migration, kept from
- * the heal walk but expressed as validation — never value-compare):
- * when the card's schema owns the `recipe` field, a held `recipe`
- * the card's own option list does not know is a stale family-axis
- * stamp — it falls back to the field's declared default (dropped
- * when none). Everything else rides untouched.
+ * TWO VALIDATION CLAUSES (never value-compare):
+ * (a) the double-recipe migration (kept from the heal walk): when
+ * the card's schema owns the `recipe` field, a held `recipe` the
+ * card's own option list does not know is a stale family-axis stamp
+ * — it falls back to the field's declared default (dropped when
+ * none).
+ * (b) THE UNDECLARABLE-KEY HEAL (stroke 33 — the compose-door
+ * refused `recipe` on image-edit): when the card does NOT own the
+ * field, a held `recipe` is the old axis seed's poison — dropped,
+ * so the run flush's null-domain half deletes the bench key and
+ * the card composes again. Everything else rides untouched.
  *
  * PURE — the caller owns the write (onSet per fresh key). */
 export function seedUser(spec: FormSpecDoc, held: SpecValues): SpecValues {
   const out: SpecValues = { ...held, ...seedAxisValues(spec, held) }
   const field = fieldsOf(spec).find((f) => f.name === 'recipe')
-  if (field === undefined) return out
+  if (field === undefined) {
+    delete out['recipe']
+    return out
+  }
   const cur = out['recipe']
   if (typeof cur !== 'string' || cur === '') return out
   const opts = (field.options ?? []).map((o) => typeof o === 'string' ? o : o.value)

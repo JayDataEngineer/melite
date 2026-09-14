@@ -259,18 +259,23 @@ const QWEN: FormSpecDoc = {
   ],
 }
 
-test('axisGroups: every served group is an axis — no hardcoded Quant-only list', async () => {
+test('axisGroups: the Recipe group NEVER rides as an axis (stroke 33 — the compose-door refused the stamped key)', async () => {
   const { axisGroups } = await import('../src/client/spec-form.tsx')
-  // seedvr2's second axis is RECIPE, not Quant — the hardcoded list
-  // dropped it on the lane (the operator's catch)
-  expect(axisGroups(SEEDVR)).toEqual(['Variant', 'Recipe'])
-  expect(axisGroups(QWEN)).toEqual(['Variant', 'Quant', 'Recipe'])
+  // neither fixture owns a recipe field: the served `default` row is
+  // stamp-less display metadata — seating it stamped `recipe` onto
+  // cards that cannot declare it (image-edit's compose refusal)
+  expect(axisGroups(SEEDVR)).toEqual(['Variant'])
+  expect(axisGroups(QWEN)).toEqual(['Variant', 'Quant'])
   // no groups contract → first-seen row order (KREA has no features)
   expect(axisGroups(KREA)).toEqual(['Variant', 'Quant'])
+  // even a card that OWNS the field seats it as a FIELD, never an axis
+  expect(axisGroups(OWNS)).toEqual(['Variant'])
 })
 
-test('the seedvr2 drill renders Model + Variant + Recipe axes — the Recipe axis the hardcoded list dropped', async () => {
+test('the seedvr2 drill renders Model + Variant and NO Recipe seat — nothing persists what the card cannot declare', async () => {
   const state = { user: seedUser(SEEDVR, {}) as SpecValues }
+  // the seed carries no recipe key (stroke 33)
+  expect(state.user['recipe']).toBeUndefined()
   const onSet = (name: string, v: unknown): void => { state.user = { ...state.user, [name]: v } }
   render(createElement(SpecForm, {
     spec: SEEDVR,
@@ -281,17 +286,18 @@ test('the seedvr2 drill renders Model + Variant + Recipe axes — the Recipe axi
   expect(model.value).toBe('seedvr2_ema')
   const variant = screen.getByLabelText('Variant')
   expect(variant.value).toBe('3b')
-  // THE DROPPED AXIS — renders now
-  const recipe = screen.getByLabelText('Recipe')
-  expect(recipe.value).toBe('default')
+  // NO SEAT: the card owns no recipe field — a Recipe select here
+  // could only ever persist the compose-door's poison key
+  expect(screen.queryByLabelText('Recipe')).toBeNull()
   // picking 7B rides the VARIANT key — the model NEVER moves (the
   // route seedvr2_ema_7b is the server's compose stamp, stroke 21)
   fireEvent.change(screen.getByLabelText('Variant'), { target: { value: '7b' } })
   await waitFor(() => { expect(state.user['variant']).toBe('7b') })
   expect(state.user['model']).toBe('seedvr2_ema')
+  expect(state.user['recipe']).toBeUndefined()
 })
 
-test('the qwen drill chains Quant by owner and keeps Recipe composing with both variants', async () => {
+test('the qwen drill chains Quant by owner — the user layer never gains a recipe key', async () => {
   const state = { user: seedUser(QWEN, {}) as SpecValues }
   const onSet = (name: string, v: unknown): void => { state.user = { ...state.user, [name]: v } }
   render(createElement(SpecForm, {
@@ -301,31 +307,79 @@ test('the qwen drill chains Quant by owner and keeps Recipe composing with both 
   }))
   expect(screen.getByLabelText('Variant').value).toBe('lightning')
   expect(screen.getByLabelText('Quant').value).toBe('lightning4')
-  expect(screen.getByLabelText('Recipe').value).toBe('default')
+  expect(screen.queryByLabelText('Recipe')).toBeNull()
   // switch to Standard: the Quant axis re-seeds to int8 (the standard
-  // chain), the Recipe axis is untouched (owner '' composes always)
+  // chain) — and still no recipe key anywhere in the user layer
   fireEvent.change(screen.getByLabelText('Variant'), { target: { value: 'standard' } })
   await waitFor(() => { expect(state.user['quant']).toBe('int8') })
   // the model stays the FAMILY (the lightning route never rode)
   expect(state.user['model']).toBe('qwen-img-edit-2511')
-  expect(state.user['recipe']).toBe('default')
+  expect(state.user['recipe']).toBeUndefined()
 })
 
-test('a Recipe pick stamps its overlay WITHOUT re-pointing the model (patch-only law)', async () => {
+test('a Recipe pick keeps its declared-knob defaults but NEVER stamps the recipe key (the vocabulary guard)', async () => {
   const { axisPickPatch } = await import('../src/client/spec-form.tsx')
   const patch = axisPickPatch(SEEDVR, SEEDVR.variants![2]!)
-  expect(patch['recipe']).toBe('default')
+  // the group rides no axis — no durable key, no below-reseed, no model move
+  expect(patch['recipe']).toBeUndefined()
   expect(patch['model']).toBeUndefined()
+  expect(patch['variant']).toBeUndefined()
 })
 
-test('seedAxisValues seeds EVERY axis key (variant/quant/recipe — the group ids lowercased)', async () => {
+test('seedAxisValues seeds variant/quant — never recipe (the card cannot declare it)', async () => {
   const seedQ = seedAxisValues(QWEN, {})
   expect(seedQ['variant']).toBe('lightning')
   expect(seedQ['quant']).toBe('lightning4')
-  expect(seedQ['recipe']).toBe('default')
+  expect(seedQ['recipe']).toBeUndefined()
   // the model arm is THE FAMILY — never the seeded row's route
   // (qwen-img-edit-2511-lightning4 is the lightning variant's stamp)
   expect(seedQ['model']).toBe('qwen-img-edit-2511')
+})
+
+test('STROKE 33 HEAL: a held recipe on a card without the field is dropped — the poisoned stage composes again', async () => {
+  // the operator's live stage held recipe:'default' (the old seed's
+  // stamp) — the drill opens onto a user layer the compose-door admits
+  const healed = seedUser(QWEN, { recipe: 'default', variant: 'lightning' })
+  expect(healed['recipe']).toBeUndefined()
+  expect(healed['variant']).toBe('lightning') // held truth rides untouched
+})
+
+/** image-gen's shape: the card OWNS the recipe field — the seat is
+ *  the field under Model, never an axis; the matrix serves so the
+ *  lift engages. */
+const OWNS: FormSpecDoc = {
+  form: 'image-gen-shape',
+  schema: schemaEnvelope({
+    recipe: {
+      consts: ['standard', 'fast_draft'],
+      meta: { description: 'Recipe', default: 'standard', extra: { group: 'sampling' } },
+    },
+  }),
+  model: 'krea-2',
+  variants: [
+    { id: 'base', label: 'Base', group: 'Variant', defaults: { model: 'krea-2' }, route: 'krea-2', hint: 'base' },
+  ],
+}
+
+test('STROKE 33 OWNERSHIP: the card-owned recipe field seats under Model — one key, one seat, no axis twin', async () => {
+  const state = { user: seedUser(OWNS, {}) as SpecValues }
+  // absent stays absent (the initial-value law — the default derives
+  // at resolve, never stamps the bench as a fake override)
+  expect(state.user['recipe']).toBeUndefined()
+  const onSet = (name: string, v: unknown): void => { state.user = { ...state.user, [name]: v } }
+  render(createElement(SpecForm, {
+    spec: OWNS,
+    user: state.user,
+    onSet,
+  }))
+  // the FIELD seat renders (titled face, card's own options)…
+  const seat = screen.getByLabelText('Recipe') as HTMLSelectElement
+  expect([...seat.options].map((o) => o.value)).toEqual(['standard', 'fast_draft'])
+  // …exactly once (no axis twin doubling it)
+  expect(screen.queryAllByLabelText('Recipe').length).toBe(1)
+  // and the pick rides the ONE key the card declares
+  fireEvent.change(seat, { target: { value: 'fast_draft' } })
+  await waitFor(() => { expect(state.user['recipe']).toBe('fast_draft') })
 })
 
 // ── the recipe-yield law (operator 2026-09-14: "IMG GEN UI CARD HAS
@@ -372,8 +426,10 @@ test('recipe-yield: the family Recipe axis hides when the card owns a recipe fie
   const seed = seedAxisValues(IMGGEN, {})
   expect(seed['recipe']).toBeUndefined()
   expect(seed['variant']).toBe('turbo')
-  // cards without their own recipe field keep the family axis
-  expect(axisGroups(QWEN)).toEqual(['Variant', 'Quant', 'Recipe'])
+  // cards without their own recipe field keep NO family axis
+  // either (stroke 33 — the seat would only stamp the compose-door's
+  // poison key; the stamp-less `default` row is display metadata)
+  expect(axisGroups(QWEN)).toEqual(['Variant', 'Quant'])
 })
 
 test('recipe-yield: the drill renders ONE Recipe — the card field, never the family axis', async () => {
@@ -396,8 +452,9 @@ test('seedUser heals double-recipe-era benches (family `default` → card defaul
   expect(seedUser(IMGGEN, { recipe: 'default' })['recipe']).toBe('standard')
   // a lawful card recipe passes through untouched
   expect(seedUser(IMGGEN, { recipe: 'cinematic' })['recipe']).toBe('cinematic')
-  // cards without their own recipe field never heal
-  expect(seedUser(QWEN, { recipe: 'default' })['recipe']).toBe('default')
+  // cards without their own recipe field DROP the stamp (stroke
+  // 33 — the undeclareable-key heal: the poisoned stage composes again)
+  expect(seedUser(QWEN, { recipe: 'default' })['recipe']).toBeUndefined()
 })
 
 // ── the stale-variant cure (operator 2026-09-14: model anima +

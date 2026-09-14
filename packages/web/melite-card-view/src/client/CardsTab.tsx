@@ -801,8 +801,10 @@ function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRemoved, 
         // absent axis keys seed per the axis law (first-declared
         // composing row, one direction); a stale family-recipe stamp
         // the card's catalog does not know falls back to the field
-        // default (seedUser's one validation clause — the
-        // double-recipe migration). A model-pick re-key seeds from
+        // default — and a held recipe on a card WITHOUT the field is
+        // dropped outright (seedUser's two validation clauses; the
+        // run flush's null-domain half deletes the bench key). A
+        // model-pick re-key seeds from
         // the USER state (the pick survives; the new matrix's rows
         // seed under it).
         setUser(seedUser(doc, freshOpen ? held : userRef.current))
