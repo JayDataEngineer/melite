@@ -2,6 +2,8 @@
 // lock, the journal, refusals, the envelope chain, the registry, retry,
 // the sidecar, sweeps, resurrection, and the py-compat value helpers.
 import { describe, it, afterEach } from "vitest";
+import { QueueService } from "../src/service.ts";
+import { Context } from "@deepseek-ai/cordis";
 import assert from "node:assert/strict";
 import { chmodSync, mkdtempSync, mkdirSync, rmSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -655,3 +657,18 @@ describe("durable + resurrect", () => {
     );
   });
 });
+
+
+// THE ROOT PIN (stroke 45c): the cwd fallback is dead — an unpinned
+// boot refuses loud (the silent empty-runs-tree drop never again).
+describe('stroke 45c — the runs state root pin', () => {
+  it('no repoRoot config and no MELITE_STATE_ROOT refuses at construction', () => {
+    const before = process.env['MELITE_STATE_ROOT']
+    delete process.env['MELITE_STATE_ROOT']
+    try {
+      assert.throws(() => new QueueService(new Context(), {}), /unpinned/)
+    } finally {
+      if (before !== undefined) process.env['MELITE_STATE_ROOT'] = before
+    }
+  })
+})

@@ -96,8 +96,21 @@ const rows: readonly Plugin[] = [
 
 export const name = "melite-estate";
 
-export function apply(ctx: Context): void {
+/** The estate's config face (stroke 45c): repoRoot PINS the runs
+ *  state tree — the queue seat refuses unpinned boots (a cwd-guessed
+ *  root silently serves an empty runs tree; the profile patch names
+ *  the repo). */
+export interface Config {
+  repoRoot?: string;
+}
+
+export function apply(ctx: Context, config: Config = {}): void {
   for (const row of rows) {
+    // the queue row receives the pin (its QueueConfig.repoRoot)
+    if (row === queuePlugin) {
+      ctx.plugin(row, { repoRoot: config.repoRoot });
+      continue;
+    }
     ctx.plugin(row);
   }
 }

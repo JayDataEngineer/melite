@@ -53,6 +53,17 @@ export class QueueService extends Service {
 
   constructor(ctx: Context, config: QueueConfig = {}) {
     super(ctx, "queue");
+    // THE ROOT PIN (stroke 45c, the operator's catch): the cwd
+    // fallback was the py-gateway's accidental law — a lane booted
+    // from any other directory silently birthed an EMPTY runs tree
+    // (200-empty listings, no error: the exact silent drop this
+    // estate refuses). The root must be NAMED: config.repoRoot or
+    // MELITE_STATE_ROOT; anything else refuses at boot, loud.
+    if ((config.repoRoot ?? "") === "" && (process.env["MELITE_STATE_ROOT"] ?? "") === "") {
+      throw new Error(
+        "[queue] the runs state root is unpinned — set the queue config's repoRoot (the profile's plugin config) or MELITE_STATE_ROOT; refusing to guess from the process cwd (a wrong cwd silently serves an empty runs tree)",
+      );
+    }
     this.stateRoot = resolveStateRoot(config.repoRoot ?? process.cwd());
     // Pre-boot gate (main 4474-4480 heritage): BEFORE any boot side
     // effect. A held-by-live-pid lock refuses HERE — the throw is
