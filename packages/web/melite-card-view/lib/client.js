@@ -2161,18 +2161,15 @@ window.__ModuleLoader__.load({
 				return true;
 			});
 		}
-		/** The Model select's options — the distinct model ROUTES the matrix
-		*  can land on: the spec root's family + every row's defaults.model
-		*  (dedup, first-seen order; the family leads). */
+		/** The Model select's options (stroke 21, the operator's law:
+		*  "WHY IS KREA-2 AND KREA-2-RAW MODELS! THAT IS A VARIANT") — THE
+		*  FAMILY THE SPEC SERVES, full stop. A variant row's re-point
+		*  (krea-2-raw) is the DECL's compose stamp, resolved server-side
+		*  into the run's params — it is NOT a model and never renders as
+		*  one. The rail's other options are the card's boarded families
+		*  (spec.families, served from the card package). */
 		function modelChoices(spec) {
-			const out = [];
-			const push = (m) => {
-				if (typeof m !== "string" || m === "") return;
-				if (!out.includes(m)) out.push(m);
-			};
-			push(spec.model);
-			for (const v of spec.variants ?? []) push(v.defaults["model"]);
-			return out;
+			return typeof spec.model === "string" && spec.model !== "" ? [spec.model] : [];
 		}
 		/** One group's active row under the owner chain (inner recursion of
 		*  activeVariantId — Variant resolves first, chained groups after). */
@@ -2207,7 +2204,11 @@ window.__ModuleLoader__.load({
 		*  its selects. Picking a row also re-seeds the axes BELOW it (their
 		*  first composing row). */
 		function axisPickPatch(spec, row) {
-			const patch = { ...row.defaults };
+			const patch = {};
+			for (const [k, v] of Object.entries(row.defaults)) {
+				if (k === "model") continue;
+				patch[k] = v;
+			}
 			const groups = axisGroups(spec);
 			const at = groups.indexOf(row.group);
 			const active = {};
@@ -2233,12 +2234,7 @@ window.__ModuleLoader__.load({
 			const patch = { model };
 			const groups = axisGroups(spec);
 			const active = {};
-			const known = /* @__PURE__ */ new Set();
-			for (const g of groups) for (const r of rowsFor(spec, g)) {
-				const rePoint = typeof r.defaults["model"] === "string" && r.defaults["model"] !== "" ? r.defaults["model"] : r.route;
-				if (rePoint !== "") known.add(rePoint);
-			}
-			const crossSpec = model !== "" && !known.has(model);
+			const crossSpec = model !== "" && model !== spec.model;
 			for (const g of groups) {
 				const composing = composingRows(spec, g, active);
 				if (composing.length === 0 || crossSpec) {
@@ -2249,7 +2245,10 @@ window.__ModuleLoader__.load({
 				const row = composing.find((r) => {
 					return (typeof r.defaults["model"] === "string" && r.defaults["model"] !== "" ? r.defaults["model"] : r.route) === model;
 				}) ?? composing[0];
-				Object.assign(patch, row.defaults);
+				for (const [k, v] of Object.entries(row.defaults)) {
+					if (k === "model") continue;
+					patch[k] = v;
+				}
 				patch[axisKey(g)] = row.id;
 				active[g] = row.id;
 			}
@@ -2276,14 +2275,7 @@ window.__ModuleLoader__.load({
 			}
 			const heldModel = held["model"];
 			if (typeof heldModel !== "string" || heldModel === "") {
-				let model = typeof spec.model === "string" && spec.model !== "" ? spec.model : "";
-				for (const g of groups) {
-					const row = rowsFor(spec, g).find((x) => x.id === active[g]);
-					if (row !== void 0 && typeof row.defaults["model"] === "string" && row.defaults["model"] !== "") {
-						model = row.defaults["model"];
-						break;
-					}
-				}
+				const model = typeof spec.model === "string" && spec.model !== "" ? spec.model : "";
 				if (model !== "") out["model"] = model;
 			}
 			return out;

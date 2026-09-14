@@ -61,8 +61,10 @@ test('variantRows keeps the served Variant rows; the quant chain filters by owne
   expect(quantRowsFor(KREA, 'raw')).toEqual([])
 })
 
-test('modelChoices dedups the matrix routes, family first', () => {
-  expect(modelChoices(KREA)).toEqual(['krea-2', 'krea-2-raw'])
+test('modelChoices: THE FAMILY THE SPEC SERVES — a variant route is never a model (stroke 21)', () => {
+  // krea-2-raw is the raw VARIANT's re-point (the DECL's compose
+  // stamp) — it never renders in the Model rail
+  expect(modelChoices(KREA)).toEqual(['krea-2'])
 })
 
 test('activeVariantId: exact route match; quant chains under the active variant', () => {
@@ -72,12 +74,14 @@ test('activeVariantId: exact route match; quant chains under the active variant'
   expect(activeVariantId(KREA, { model: 'krea-2-raw' } as SpecValues, 'Quant')).toBeUndefined()
 })
 
-test('axisPickPatch: the defaults overlay rides + the durable axis keys', () => {
-  // a Variant pick re-points the model, overlays steps/cfg, and lands
-  // variant + the first quant of the new variant
+test('axisPickPatch: the visible stamps ride; the route NEVER lands in the user plane (stroke 21)', () => {
+  // a Variant pick overlays steps/cfg and lands variant + the
+  // reseeded quant — the model key is NEVER written (the re-point
+  // krea-2-raw is the server's compose business)
   expect(axisPickPatch(KREA, KREA.variants![2]!)).toEqual({
-    model: 'krea-2-raw', steps: 52, cfg: 3.5, variant: 'raw', quant: '',
+    steps: 52, cfg: 3.5, variant: 'raw', quant: '',
   })
+  expect('model' in axisPickPatch(KREA, KREA.variants![2]!)).toBe(false)
   // a Quant pick overlays the cell's own defaults + quant
   expect(axisPickPatch(KREA, KREA.variants![1]!)).toEqual({ quant: 'int8' })
 })
@@ -128,7 +132,7 @@ test('CardForm renders Model, Variant, and Quant selects ABOVE the parameters', 
   expect(form?.firstElementChild?.getAttribute('data-model-axes')).toBe('1')
 })
 
-test('picking Raw applies the overlay: model re-points, steps/cfg ride, quant clears', async () => {
+test('picking Raw applies the overlay: steps/cfg ride, quant clears, the model NEVER moves (stroke 21)', async () => {
   const edits: Record<string, unknown> = {}
   const user = userEvent.setup()
   const comp = createElement(function Host() {
@@ -144,7 +148,9 @@ test('picking Raw applies the overlay: model re-points, steps/cfg ride, quant cl
   })
   render(comp)
   await user.selectOptions(screen.getByLabelText('Variant'), 'raw')
-  expect(edits['model']).toBe('krea-2-raw')
+  // THE VARIANT/MODEL DISTINCTION: a variant pick writes the variant
+  // and its stamps — the model key is untouched (krea-2 stays)
+  expect(edits['model']).toBeUndefined()
   expect(edits['steps']).toBe(52)
   expect(edits['cfg']).toBe(3.5)
   expect(edits['variant']).toBe('raw')
@@ -274,9 +280,11 @@ test('the seedvr2 drill renders Model + Variant + Recipe axes — the Recipe axi
   // THE DROPPED AXIS — renders now
   const recipe = screen.getByLabelText('Recipe')
   expect(recipe.value).toBe('default')
-  // picking 7B re-points the model
+  // picking 7B rides the VARIANT key — the model NEVER moves (the
+  // route seedvr2_ema_7b is the server's compose stamp, stroke 21)
   fireEvent.change(screen.getByLabelText('Variant'), { target: { value: '7b' } })
-  await waitFor(() => { expect(state.user['model']).toBe('seedvr2_ema_7b') })
+  await waitFor(() => { expect(state.user['variant']).toBe('7b') })
+  expect(state.user['model']).toBe('seedvr2_ema')
 })
 
 test('the qwen drill chains Quant by owner and keeps Recipe composing with both variants', async () => {
@@ -293,8 +301,9 @@ test('the qwen drill chains Quant by owner and keeps Recipe composing with both 
   // switch to Standard: the Quant axis re-seeds to int8 (the standard
   // chain), the Recipe axis is untouched (owner '' composes always)
   fireEvent.change(screen.getByLabelText('Variant'), { target: { value: 'standard' } })
-  await waitFor(() => { expect(state.user['model']).toBe('qwen-img-edit-2511') })
-  expect(state.user['quant']).toBe('int8')
+  await waitFor(() => { expect(state.user['quant']).toBe('int8') })
+  // the model stays the FAMILY (the lightning route never rode)
+  expect(state.user['model']).toBe('qwen-img-edit-2511')
   expect(state.user['recipe']).toBe('default')
 })
 
@@ -310,7 +319,9 @@ test('seedAxisValues seeds EVERY axis key (variant/quant/recipe — the group id
   expect(seedQ['variant']).toBe('lightning')
   expect(seedQ['quant']).toBe('lightning4')
   expect(seedQ['recipe']).toBe('default')
-  expect(seedQ['model']).toBe('qwen-img-edit-2511-lightning4')
+  // the model arm is THE FAMILY — never the seeded row's route
+  // (qwen-img-edit-2511-lightning4 is the lightning variant's stamp)
+  expect(seedQ['model']).toBe('qwen-img-edit-2511')
 })
 
 // ── the recipe-yield law (operator 2026-09-14: "IMG GEN UI CARD HAS
@@ -390,25 +401,25 @@ test('seedUser heals double-recipe-era benches (family `default` → card defaul
 
 test('modelSwitchPatch: a model switch re-seeds every axis (never the old family\'s variant)', async () => {
   const { modelSwitchPatch } = await import('../src/client/spec-form.tsx')
-  // krea-2 → krea-2-raw: variant/quant follow + the overlay rides
-  expect(modelSwitchPatch(KREA, 'krea-2-raw')).toEqual({
-    model: 'krea-2-raw', steps: 52, cfg: 3.5, variant: 'raw', quant: '',
-  })
-  // …and back: turbo re-seats with its cell
+  // the spec's own family seats the chain (turbo + its cell); the
+  // route never rides (krea-2-raw is not a model — stroke 21)
   expect(modelSwitchPatch(KREA, 'krea-2')).toMatchObject({ model: 'krea-2', variant: 'turbo', quant: 'int8' })
+  expect(modelSwitchPatch(KREA, 'krea-2')['steps']).toBeUndefined()
 })
 
 test('switching the Model select resets the Variant axis (the drill never holds turbo-for-anima)', async () => {
   const state = { user: { prompt: 'a cat', model: 'krea-2', variant: 'turbo', quant: 'int8' } as SpecValues }
   const onSet = (name: string, v: unknown): void => { state.user = { ...state.user, [name]: v } }
   render(createElement(SpecForm, {
-    spec: KREA,
+    spec: { ...KREA, families: [{ id: 'anima', present: true }] },
     user: state.user,
     onSet,
   }))
-  fireEvent.change(screen.getByLabelText('Model'), { target: { value: 'krea-2-raw' } })
-  await waitFor(() => { expect(state.user['model']).toBe('krea-2-raw') })
-  expect(state.user['variant']).toBe('raw')
+  // a FAMILY switch clears the axes (the refetched family's rows
+  // seed — stroke 19/20's law); krea-2-raw is not an option at all
+  fireEvent.change(screen.getByLabelText('Model'), { target: { value: 'anima' } })
+  await waitFor(() => { expect(state.user['model']).toBe('anima') })
+  expect(state.user['variant']).toBe('')
   expect(state.user['quant']).toBe('')
 })
 
@@ -619,7 +630,7 @@ test('the Model rail NEVER renders a family\'s prose label — ids only (the DEC
   const model = (await screen.findByLabelText('Model')) as HTMLSelectElement
   const opts = [...model.querySelectorAll('option')].map((o) => o.textContent ?? '')
   // ids only — no prose anywhere in the Model rail
-  for (const t of opts) expect(t).toMatch(/^(krea-2|krea-2-raw|z-image|anima)( — not downloaded on this machine)?$/)
+  for (const t of opts) expect(t).toMatch(/^(krea-2|z-image|anima)( — not downloaded on this machine)?$/)
 })
 
 test('SELECTING A FAMILY FILTERS VARIANT+QUANT: the cross-spec pick clears the axes (never the old spec\'s rows under a foreign model)', async () => {

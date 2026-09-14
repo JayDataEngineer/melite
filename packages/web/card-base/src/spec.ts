@@ -626,18 +626,15 @@ export function quantRowsFor(spec: FormSpecDoc, variantId: string | null): Varia
   return composingRows(spec, 'Quant', { Variant: variantId ?? undefined })
 }
 
-/** The Model select's options — the distinct model ROUTES the matrix
- *  can land on: the spec root's family + every row's defaults.model
- *  (dedup, first-seen order; the family leads). */
+/** The Model select's options (stroke 21, the operator's law:
+ *  "WHY IS KREA-2 AND KREA-2-RAW MODELS! THAT IS A VARIANT") — THE
+ *  FAMILY THE SPEC SERVES, full stop. A variant row's re-point
+ *  (krea-2-raw) is the DECL's compose stamp, resolved server-side
+ *  into the run's params — it is NOT a model and never renders as
+ *  one. The rail's other options are the card's boarded families
+ *  (spec.families, served from the card package). */
 export function modelChoices(spec: FormSpecDoc): string[] {
-  const out: string[] = []
-  const push = (m: unknown): void => {
-    if (typeof m !== 'string' || m === '') return
-    if (!out.includes(m)) out.push(m)
-  }
-  push(spec.model)
-  for (const v of spec.variants ?? []) push(v.defaults['model'])
-  return out
+  return typeof spec.model === 'string' && spec.model !== '' ? [spec.model] : []
 }
 
 /** THE ACTIVE-ENTRY LAW (activeVariantId, generalized to the served
@@ -691,7 +688,16 @@ export function axisKey(group: string): string {
  *  its selects. Picking a row also re-seeds the axes BELOW it (their
  *  first composing row). */
 export function axisPickPatch(spec: FormSpecDoc, row: VariantRow): SpecValues {
-  const patch: SpecValues = { ...row.defaults }
+  // THE USER PLANE SPEAKS THE CARD'S VOCABULARY (stroke 21): the
+  // row's re-point stamp (model: krea-2-raw) never lands in the user
+  // layer — the server's compose resolves the route into the run's
+  // params. The row's other defaults (steps, cfg) ride as the pick's
+  // visible stamps.
+  const patch: SpecValues = {}
+  for (const [k, v] of Object.entries(row.defaults)) {
+    if (k === 'model') continue
+    patch[k] = v
+  }
   const groups = axisGroups(spec)
   const at = groups.indexOf(row.group)
   const active: Record<string, string | undefined> = {}
@@ -722,24 +728,13 @@ export function modelSwitchPatch(spec: FormSpecDoc, model: string): SpecValues {
   const patch: SpecValues = { model }
   const groups = axisGroups(spec)
   const active: Record<string, string | undefined> = {}
-  // CROSS-SPEC SWITCH GUARD (stroke 19, the operator's burn: "when I
-  // select krea 2 it is supposed to filter variant and quant"): when
-  // NO row of THIS spec re-points to the picked model, the pick is a
-  // FAMILY switch — this spec's rows belong to ANOTHER family, and
-  // seeding its first row under the new model is poison (z-image +
-  // turbo + int8: turbo is krea's variant). The axes CLEAR; the
-  // drill refetches the new family's spec and the absent axis keys
-  // seed from ITS first-declared rows (the initial-value law). Never
-  // a foreign row, never a leftover.
-  const known = new Set<string>()
-  for (const g of groups) {
-    for (const r of rowsFor(spec, g)) {
-      const rePoint = typeof r.defaults['model'] === 'string' && r.defaults['model'] !== ''
-        ? r.defaults['model'] as string : r.route
-      if (rePoint !== '') known.add(rePoint)
-    }
-  }
-  const crossSpec = model !== '' && !known.has(model)
+  // FAMILY SWITCH (stroke 21: a model pick is either the spec's own
+  // family or a switch — routes are not models, so the re-point union
+  // is gone). A switch CLEARS the axes (stroke 19's law): this
+  // spec's rows belong to another family; seeding them under the new
+  // model is poison. The drill refetches the family's spec and the
+  // absent axis keys seed from ITS first-declared rows.
+  const crossSpec = model !== '' && model !== spec.model
   for (const g of groups) {
     // THE CHAIN (one direction, the activeRowId law): only composing
     // rows are pickable — when nothing composes (raw owns no quant
@@ -760,7 +755,17 @@ export function modelSwitchPatch(spec: FormSpecDoc, model: string): SpecValues {
       return rePoint === model
     })
     const row = match ?? composing[0]
-    Object.assign(patch, row.defaults)
+    // THE USER PLANE SPEAKS THE CARD'S VOCABULARY (model = family,
+    // variant/quant = row ids): a row's re-point stamp (model:
+    // krea-2-raw) is the DECL's compose business — the server
+    // resolves it into the run's params. It NEVER lands in the user
+    // layer, so the Model rail never shows routes and a reopened
+    // stage never holds one. The row's OTHER defaults (steps, cfg)
+    // still ride — they are the pick's visible stamps.
+    for (const [k, v] of Object.entries(row.defaults)) {
+      if (k === 'model') continue
+      patch[k] = v
+    }
     patch[axisKey(g)] = row.id
     active[g] = row.id
   }
@@ -791,15 +796,10 @@ export function seedAxisValues(spec: FormSpecDoc, held: SpecValues): SpecValues 
   }
   const heldModel = held['model']
   if (typeof heldModel !== 'string' || heldModel === '') {
-    // the model rests on the spec family unless a seeded row re-points
-    let model = typeof spec.model === 'string' && spec.model !== '' ? spec.model : ''
-    for (const g of groups) {
-      const row = rowsFor(spec, g).find((x) => x.id === active[g])
-      if (row !== undefined && typeof row.defaults['model'] === 'string' && row.defaults['model'] !== '') {
-        model = row.defaults['model'] as string
-        break
-      }
-    }
+    // THE MODEL ARM IS THE FAMILY (stroke 21): the seeded row's
+    // re-point (qwen-img-edit-2511-lightning4) is the server's
+    // compose stamp — the user plane never holds a route
+    const model = typeof spec.model === 'string' && spec.model !== '' ? spec.model : ''
     if (model !== '') out['model'] = model
   }
   return out
