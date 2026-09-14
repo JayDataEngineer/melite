@@ -114,6 +114,14 @@ describe('the construction law (add-a-card drill)', () => {
       const frame = JSON.parse(String(init?.body)) as { rpcId: string, method: string }
       let value: Record<string, unknown> = { ok: true }
       if (frame.method === 'drafts/patch') value = { delivered: true }
+      // the pick IS the add: the door lands bench/add-stage, re-reads
+      // bench/get, diffs the fresh row, and opens its drill
+      if (frame.method === 'bench/add-stage') {
+        value = { ok: true, stage: { id: 'fresh_1', card: 'image-edit', engine: 'comfyui', params: {} } }
+      }
+      if (frame.method === 'bench/get') {
+        value = { kind: 'bench', draftId: 'bench-cl', rev: 4, stages: [...BENCH.stages, { id: 'fresh_1', card: 'image-edit', title: 'image edit', engine: 'comfyui', params: {} }], log: [] }
+      }
       return new Response(JSON.stringify({ type: 'server-response', rpcId: frame.rpcId, result: { ok: true, value } }), { status: 200 })
     })
   }
@@ -134,16 +142,20 @@ describe('the construction law (add-a-card drill)', () => {
     } as CardsTabProps_))
   }
 
-  it('the picked card\'s image input is THE SQUARE, not a text field', async () => {
+  it('the picked card adds STRAIGHT into its drill — no preadd screen, and its image input is THE SQUARE', async () => {
     mount()
     // open the add door
     const addTile = await screen.findAllByText(/add a card/i, undefined, { timeout: 4000 })
     fireEvent.click(addTile[0])
-    // the catalog's card row
+    // the catalog's card row — one click adds (the preadd form
+    // screen is gone: no Add button, no back row, ever)
     const row = await screen.findByText('Image Edit', undefined, { timeout: 4000 })
     fireEvent.click(row)
-    // THE SQUARE — the constructor built it with zero caller wiring
-    const square = await screen.findByRole('button', { name: 'Input image source' }, undefined, { timeout: 4000 })
+    expect(screen.queryByText('Add card')).toBeNull()
+    // the add lands and the drill opens on the fresh row — THE
+    // SQUARE rides the drill's own form (the constructor built it
+    // with zero caller wiring)
+    const square = await screen.findByRole('button', { name: 'Input image source' }, undefined, { timeout: 6000 })
     expect(square).toBeTruthy()
     // never the degenerate bare text input
     expect(screen.queryByLabelText('Input image')).toBeNull()
@@ -173,7 +185,7 @@ describe('the construction law (DRY)', () => {
 //      CLAIMED (a studio). The hour-9 claimed-studio preview is
 //      REPEALED; the studio lives in the ZOOM, never the door. ──────
 describe('the construction law (the plain add door)', () => {
-  it('a CLAIMED card picks into the plain form — no studio preview hijacks the door', async () => {
+  it('a CLAIMED card picks STRAIGHT into its drill — no preadd screen, no studio hijack of the door', async () => {
     const claimed = (owner: unknown, fallback: ReturnType<typeof createElement>): ReturnType<typeof createElement> => {
       void owner
       return createElement('div', { 'data-testid': 'studio-hijack' }, 'THE STUDIO')
@@ -214,15 +226,17 @@ describe('the construction law (the plain add door)', () => {
     fireEvent.click(addTile[0])
     const row = await screen.findByText('Mask Studio', undefined, { timeout: 4000 })
     fireEvent.click(row)
-    // THE PLAIN FORM renders for the claimed card…
-    expect(await screen.findByRole('button', { name: 'Input image source' }, undefined, { timeout: 4000 })).toBeTruthy()
-    // …and the studio NEVER hijacks the door
+    // the pick IS the add — no preadd screen between: no Add button,
+    // no back row, only the busy face on the picked row…
+    expect(screen.queryByText('Add card')).toBeNull()
+    expect(await screen.findByText('adding Mask Studio…', undefined, { timeout: 4000 })).toBeTruthy()
+    // …and the studio NEVER hijacks the door (it renders nothing
+    // until its lawful seat: the zoom drilldown of the fresh row)
     expect(screen.queryByTestId('studio-hijack')).toBeNull()
-    // Add lands the stage and the door hands the fresh row up — the
-    // drilldown opens (the zoom mounts, keyed by the fresh stage)
-    fireEvent.click(await screen.findByText('Add card', undefined, { timeout: 4000 }))
+    // the add lands and the drilldown opens (the zoom mounts, keyed
+    // by the fresh stage) — the ZOOM consult is the studio's seat
     await waitFor(() => {
-      expect(screen.getByTestId('studio-hijack')).toBeTruthy() // the ZOOM consult — the studio's lawful seat
-    }, { timeout: 4000 })
+      expect(screen.getByTestId('studio-hijack')).toBeTruthy()
+    }, { timeout: 6000 })
   })
 })

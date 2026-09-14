@@ -1207,22 +1207,22 @@ function AddCardDoor({ bench, onAdded, onClose, onAddedRow }: {
 }): ReturnType<typeof h> {
   // THE PLAIN DOOR (the operator's hour-24 order: "a random screen
   //  pops up that I don't want. It should just add the card and go
-  //  into the drilldown view"): the door is picker, the card's
-  //  declared form, Add — for EVERY card, claimed or not. The
-  //  hour-9 claimed-studio preview (a page-sized studio modal
-  //  hijacking the door the moment a studio card was picked) is
-  //  REPEALED — the studio is the ZOOM face for its cards (the
-  //  real-card law lives there), never the add door's.
+  //  into the drilldown view" — and the preadd form screen goes with
+  //  it): the door is picker ONLY — the pick IS the add (the spec
+  //  fetch rides silent for engine + axis seeds), then the fresh
+  //  row's drill opens. For EVERY card, claimed or not. The hour-9
+  //  claimed-studio preview (a page-sized studio modal hijacking the
+  //  door the moment a studio card was picked) is REPEALED — the
+  //  studio is the ZOOM face for its cards (the real-card law lives
+  //  there), never the add door's.
   const [cards, setCards] = useState<CatalogCard[] | null>(null)
   const [catalogError, setCatalogError] = useState<string | null>(null)
   const [query, setQuery] = useState('')
-  const [picked, setPicked] = useState<CatalogCard | null>(null)
-  const [spec, setSpec] = useState<FormSpecDoc | null>(null)
-  // the add drill's USER layer (the settings law): axis seeds at
-  // pick, edits on top; the resolved value derives in the form.
-  const [user, setUser] = useState<SpecValues>({})
-  const [formError, setFormError] = useState<string | null>(null)
-  const [adding, setAdding] = useState(false)
+  // THE PICK IS THE ADD (the operator's law: the preadd form screen
+  // goes — clicking a card adds it and opens its drill, no middle
+  // screen). busyId marks the row while its spec + add land.
+  const [busyId, setBusyId] = useState<string | null>(null)
+  const [addError, setAddError] = useState<string | null>(null)
   useEffect(() => {
     let alive = true
     fetchCardCatalog()
@@ -1231,66 +1231,34 @@ function AddCardDoor({ bench, onAdded, onClose, onAddedRow }: {
     return () => { alive = false }
   }, [])
   const pick = (card: CatalogCard): void => {
-    setPicked(card)
-    setSpec(null)
-    setFormError(null)
+    if (busyId !== null) return
+    setBusyId(card.id)
+    setAddError(null)
+    // the spec fetch goes SILENT (engine + axis seeds for the add —
+    // the drill fetches it again for editing): the card's declared
+    // form never renders here anymore.
     const family = card.families[0] ?? card.id
-    fetchFormSpec(family)
-      .then((doc) => {
-        setSpec(doc)
-        // THE AXIS SEED rides the add too: a new card is born with its
-        // declared variant/quant/model (the first-declared law). The
-        // user layer carries ONLY the seeds — defaults derive at
-        // compose, never ride the bench as fake overrides.
-        setUser(seedUser(doc, {}))
-      })
-      .catch((e: unknown) => setFormError(e instanceof Error ? e.message : 'form-spec unavailable'))
-  }
-  const onSet = useCallback((name: string, v: unknown): void => {
-    setUser((m) => ({ ...m, [name]: v }))
-  }, [])
-  // THE UNSET PATH (the settings law): removing an override is a
-  // first-class edit — the key leaves the user map and the row
-  // re-derives to its base (defaults <- model defaults <- recipe).
-  // The domain write rides the Run press with the rest (a null
-  // value under JSON Merge Patch semantics deletes the key).
-  const onUnset = useCallback((name: string): void => {
-    setUser((m) => {
-      if (!Object.prototype.hasOwnProperty.call(m, name)) return m
-      const next: SpecValues = {}
-      for (const [k, v] of Object.entries(m)) if (k !== name) next[k] = v
-      return next
+    void fetchFormSpec(family).then((doc) => add(card, doc), (e: unknown) => {
+      setBusyId(null)
+      setAddError(card.label + ': ' + (e instanceof Error ? e.message : 'form-spec unavailable'))
     })
-  }, [])
-  // THE PICKER WIRE for the add drill too (the constructor owns the
-  //  square — the SAME input component everywhere, operator law
-  //  2026-09-12; a fresh card may pick from every existing stage's
-  //  latest output).
-  const wire = {
-    candidates: bench.stages.flatMap((s) => {
-      const res = typeof s.result === 'object' && s.result !== null ? s.result as Record<string, unknown> : null
-      const url = res !== null && typeof res['url'] === 'string' && (res['url'] as string) !== '' ? res['url'] as string : ''
-      return url === '' ? [] : [{ id: s.id, label: String(s.title ?? s.card ?? s.id), url }]
-    }),
   }
-  const add = async (): Promise<void> => {
-    if (picked === null) return
-    setAdding(true)
-    setFormError(null)
+  const add = async (picked: CatalogCard, spec: FormSpecDoc): Promise<void> => {
     try {
       const doc: Record<string, unknown> = {
         card: picked.id,
         author: 'user',
-        engine: spec?.engine ?? 'comfyui',
+        engine: spec.engine ?? 'comfyui',
         expect_rev: bench.rev,
       }
-      // THE USER LAYER RIDES (the settings law): a new card is born
-      // with its axis seeds + explicit edits — the declared defaults
-      // DERIVE at compose (the engine's own cascade), never ride the
-      // bench as fake overrides.
-      if (Object.keys(user).length > 0) doc['params'] = { ...user }
+      // THE AXIS SEED rides the add: a new card is born with its
+      // declared variant/quant/model (the first-declared law). The
+      // seeds ride as the row's params — defaults derive at compose,
+      // never ride the bench as fake overrides.
+      const seeds = seedUser(spec, {})
+      if (Object.keys(seeds).length > 0) doc['params'] = { ...seeds }
       await addStageWire(doc)
-      setAdding(false)
+      setBusyId(null)
       // THE OPEN-ON-ADD LAW (the operator's hour-7): after the door
       // lands, the bench is re-read and the ONE fresh id (the card
       // just added — the flow is one card at a time) is handed up;
@@ -1308,8 +1276,8 @@ function AddCardDoor({ bench, onAdded, onClose, onAddedRow }: {
         onAdded()
       }
     } catch (e: unknown) {
-      setFormError(e instanceof Error ? e.message : 'add refused')
-      setAdding(false)
+      setBusyId(null)
+      setAddError(picked.label + ': ' + (e instanceof Error ? e.message : 'add refused'))
     }
   }
   const filtered = (cards ?? []).filter((c) => {
@@ -1328,46 +1296,31 @@ function AddCardDoor({ bench, onAdded, onClose, onAddedRow }: {
     open: true, onClose, title: 'Add a card', closeLabel: 'Close picker',
     className: css.drill,
   },
-    picked === null
-      ? h('div', { className: css.picker },
-          h(Input, {
-            value: query,
-            placeholder: 'search cards…',
-            onChange: (e: unknown) => setQuery((e as { target: { value: string } }).target.value),
-            'aria-label': 'Search cards',
-          }),
-          catalogError !== null ? h('p', { className: css.runError }, catalogError) : null,
-          cards === null && catalogError === null ? h('div', { className: css.load }, 'cards…') : null,
-          genres.map(([g, list]) => h('section', { key: g, className: css.pickerGenre },
-            h('h4', { className: css.specGroupTitle }, g),
-            list.map((c) => h('button', {
-              key: c.id,
-              type: 'button',
-              className: css.pickerCard,
-              onClick: () => pick(c),
-            },
-              h('span', { className: css.pickerCardLabel }, c.label),
-              c.description !== '' ? h('span', { className: css.pickerCardDesc }, c.description) : null,
-              h(Pill, null, c.families[0] ?? c.id),
-            )),
-          )),
-        )
-      // The UNCLAIMED card's honest fallback: the spec form beside the
-      // Add row — never a studio's stand-in.
-      : h(StudioShell, {
-          params: h('div', { className: css.params },
-            h('button', { type: 'button', className: css.back, onClick: () => { setPicked(null); setSpec(null) } }, '← ' + (cards?.length ?? 0) + ' cards'),
-            formError !== null ? h('p', { className: css.runError }, formError) : null,
-            spec === null && formError === null ? h('div', { className: css.load }, 'form…') : null,
-            spec !== null ? h(SpecForm, { spec, user, onSet, wire }) : null,
-          ),
-        preview: h('div', { className: css.outputs },
-          h('div', { className: css.runRow },
-            h(Button, { variant: 'primary', disabled: adding || spec === null, onClick: () => { void add() } },
-              adding ? 'adding…' : 'Add card'),
-          ),
-        ),
+    h('div', { className: css.picker },
+      h(Input, {
+        value: query,
+        placeholder: 'search cards…',
+        onChange: (e: unknown) => setQuery((e as { target: { value: string } }).target.value),
+        'aria-label': 'Search cards',
       }),
+      catalogError !== null ? h('p', { className: css.runError }, catalogError) : null,
+      addError !== null ? h('p', { className: css.runError }, addError) : null,
+      cards === null && catalogError === null ? h('div', { className: css.load }, 'cards…') : null,
+      genres.map(([g, list]) => h('section', { key: g, className: css.pickerGenre },
+        h('h4', { className: css.specGroupTitle }, g),
+        list.map((c) => h('button', {
+          key: c.id,
+          type: 'button',
+          className: css.pickerCard,
+          disabled: busyId !== null,
+          onClick: () => pick(c),
+        },
+          h('span', { className: css.pickerCardLabel }, busyId === c.id ? 'adding ' + c.label + '…' : c.label),
+          c.description !== '' ? h('span', { className: css.pickerCardDesc }, c.description) : null,
+          h(Pill, null, c.families[0] ?? c.id),
+        )),
+      )),
+    ),
   )
 }
 
