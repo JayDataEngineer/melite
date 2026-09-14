@@ -394,7 +394,7 @@ test('✦ Agent Enhance sweeps the declared fields and writes back through the v
   }, { timeout: 4000 })
   expect((screen.getByLabelText('Negative Prompt') as HTMLTextAreaElement).value)
     .toBe('blurry, low quality, distorted')
-  expect(screen.getByText('enhanced via dsh/default')).toBeTruthy()
+  expect(screen.getByText('enhanced via dsh/default (1 field)')).toBeTruthy()
 })
 
 test('the no-clobber law: an empty negative never wipes the card\'s own', async () => {
@@ -573,4 +573,65 @@ test('picking a family in the Model select RE-SPECS LIVE: the anima matrix lands
   await waitFor(() => { expect((variant as HTMLSelectElement).value).toBe('standard') })
   const offered = [...variant.querySelectorAll('option')].map((o) => o.value)
   expect(offered).toEqual(['standard'])
+})
+
+
+// ── STROKE 25: THE NO-SILENT-REJECT LAW (the operator: "I should
+//    never get auto rejected without an error message") — every
+//    rejection path of the ✦ verb renders its face. ──────────────
+test('✦ every enhance rejection renders its message — empty prompt, no model, zero-sweep, non-JSON error', async () => {
+  const userEv = userEvent.setup()
+  const cases: Array<{ name: string, prompt: string, withModel: boolean, status: number, body: string, want: string }> = [
+    { name: 'empty prompt', prompt: '', withModel: true, status: 0, body: '', want: 'nothing to enhance — the prompt is empty' },
+    { name: 'no model', prompt: 'a red cube', withModel: false, status: 0, body: '', want: 'no model to enhance with' },
+    { name: 'zero declared fields', prompt: 'a red cube', withModel: true, status: 200, body: JSON.stringify({ model: 'krea-2', results: { style_notes: { positive: 'x', via: 'dsh/default' } } }), want: 'the enhancer returned no declared fields' },
+    { name: 'non-JSON error body', prompt: 'a red cube', withModel: true, status: 502, body: 'upstream melite down', want: 'enhance failed (502: upstream melite down)' },
+  ]
+  for (const c of cases) {
+    const bench: CardsBenchValue = {
+      ...BENCH,
+      stages: [{
+        ...BENCH.stages[0] as typeof BENCH.stages[0],
+        params: { prompt: c.prompt, negative_prompt: '', steps: 8, ...(c.withModel ? { model: 'krea-2' } : {}) },
+      }],
+    }
+    vi.stubGlobal('fetch', async (url: unknown, init?: RequestInit): Promise<Response> => {
+      const path = String(url)
+      if (path.includes('/melite-tools/enhance')) {
+        if (c.status === 0) return new Response(null, { status: 204 })
+        return new Response(c.body, { status: c.status, headers: { 'content-type': 'text/plain' } })
+      }
+      if (path.includes('/v1/form-spec')) {
+        return new Response(JSON.stringify({ form: 'image-gen', model: c.withModel ? 'krea-2' : '', schema: schemaEnvelope({
+          prompt: { type: 'string', meta: { description: 'Prompt', extra: { wtype: 'textarea' } } },
+          negative_prompt: { type: 'string', meta: { description: 'Negative Prompt', extra: { wtype: 'textarea' } } },
+        }), variants: [] }), { status: 200, headers: { 'content-type': 'application/json' } })
+      }
+      if (path.includes('/v1/model-catalog')) {
+        return new Response(JSON.stringify({ cards: { 'image-gen': { label: 'Image Gen', genre: 'image', families: ['krea-2'] } } }), { status: 200, headers: { 'content-type': 'application/json' } })
+      }
+      const frame = JSON.parse(String(init?.body)) as { rpcId: string, method: string }
+      let value: Record<string, unknown> = { ok: true }
+      if (frame.method === 'bench/get') value = { draft_id: 'bench-s1', rev: 7, stages: bench.stages, log: [] }
+      if (frame.method === 'bench/patch') value = { ok: true, rev: 8 }
+      return new Response(JSON.stringify({ v: '1', id: 'f1', rpcId: frame.rpcId, ok: true, value }), { status: 200, headers: { 'content-type': 'application/json' } })
+    })
+    const view = render(createElement(CardsTab, {
+      useTabInfo: () => ({
+        tab: {
+          kind: 'sidebar.right.pane.tab', contentId: undefined,
+          navigation: { address: 'dsh-resource://cards/bench' },
+          actions: { openResource: noop },
+        },
+      }),
+      useResource: () => ({ status: 'live', value: bench }),
+    }))
+    await userEv.click(tileButton())
+    const wand = await screen.findByRole('button', { name: 'Agent Enhance' }, { timeout: 5000 })
+    await userEv.click(wand)
+    const note = await screen.findByTestId('enhance-note', {}, { timeout: 5000 })
+    expect(note.textContent ?? '', c.name).toContain(c.want)
+    view.unmount()
+    cleanup()
+  }
 })

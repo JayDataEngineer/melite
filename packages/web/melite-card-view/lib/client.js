@@ -43973,11 +43973,29 @@ void main() {
 			const servedBase = typeof stage.resolved === "object" && stage.resolved !== null && !Array.isArray(stage.resolved) ? stage.resolved : void 0;
 			const value = resolveValue(spec ?? { form: "" }, user, servedBase);
 			const enhance = async () => {
-				if (enhancing) return;
+				if (enhancing) {
+					setEnhanceNote({
+						err: true,
+						text: "enhance already running"
+					});
+					return;
+				}
 				const current = String(value["prompt"] ?? "").trim();
-				if (current === "") return;
+				if (current === "") {
+					setEnhanceNote({
+						err: true,
+						text: "nothing to enhance — the prompt is empty"
+					});
+					return;
+				}
 				const model = String(spec?.model ?? held["model"] ?? "");
-				if (model === "") return;
+				if (model === "") {
+					setEnhanceNote({
+						err: true,
+						text: "no model to enhance with — pick a Model first"
+					});
+					return;
+				}
 				setEnhancing(true);
 				setEnhanceNote(null);
 				try {
@@ -43989,8 +44007,12 @@ void main() {
 							prompt: current
 						})
 					});
-					const doc = await res.json();
-					if (!res.ok || typeof doc.error === "string") throw new Error(typeof doc.error === "string" ? doc.error : "enhance failed (" + res.status + ")");
+					const raw = await res.text();
+					let doc = {};
+					try {
+						doc = JSON.parse(raw);
+					} catch {}
+					if (!res.ok || typeof doc.error === "string") throw new Error(typeof doc.error === "string" ? doc.error : res.ok ? "enhance failed: unexpected payload" : "enhance failed (" + res.status + (raw.length > 0 && raw.length < 200 ? ": " + raw : "") + ")");
 					const results = doc.results ?? {};
 					const declared = new Set(spec !== null ? fieldsOf(spec).map((f) => f.name) : []);
 					setUser((m) => {
@@ -44002,11 +44024,18 @@ void main() {
 						}
 						return next;
 					});
-					const via = Object.values(results)[0]?.via;
-					setEnhanceNote({
-						err: false,
-						text: typeof via === "string" && via !== "" ? "enhanced via " + via : "enhanced"
+					const swept = Object.entries(results).filter(([field, r]) => typeof r?.positive === "string" && r.positive !== "" && (field === "prompt" || declared.has(field))).length;
+					if (swept === 0) setEnhanceNote({
+						err: true,
+						text: "the enhancer returned no declared fields (" + Object.keys(results).join(", ") + ")"
 					});
+					else {
+						const via = Object.values(results)[0]?.via;
+						setEnhanceNote({
+							err: false,
+							text: typeof via === "string" && via !== "" ? "enhanced via " + via + " (" + String(swept) + " field" + (swept === 1 ? "" : "s") + ")" : "enhanced (" + String(swept) + " field" + (swept === 1 ? "" : "s") + ")"
+						});
+					}
 				} catch (e) {
 					setEnhanceNote({
 						err: true,

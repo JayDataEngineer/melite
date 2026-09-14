@@ -875,11 +875,23 @@ function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRemoved, 
   // an empty string (distilled variants return "" because they
   // ignore negatives).
   const enhance = async (): Promise<void> => {
-    if (enhancing) return
+    // THE NO-SILENT-REJECT LAW (the operator's word: "I should never
+    // get auto rejected without an error message"): EVERY rejection
+    // renders its face — no guard in this verb returns quietly.
+    if (enhancing) {
+      setEnhanceNote({ err: true, text: 'enhance already running' })
+      return
+    }
     const current = String(value['prompt'] ?? '').trim()
-    if (current === '') return
+    if (current === '') {
+      setEnhanceNote({ err: true, text: 'nothing to enhance — the prompt is empty' })
+      return
+    }
     const model = String(spec?.model ?? held['model'] ?? '')
-    if (model === '') return
+    if (model === '') {
+      setEnhanceNote({ err: true, text: 'no model to enhance with — pick a Model first' })
+      return
+    }
     setEnhancing(true)
     setEnhanceNote(null)
     try {
@@ -888,12 +900,18 @@ function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRemoved, 
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({ model, prompt: current }),
       })
-      const doc = await res.json() as {
+      // read TEXT first — a non-JSON error body must surface its own
+      // words, never a JSON parse stack trace
+      const raw = await res.text()
+      let doc: {
         results?: Record<string, { positive?: unknown, negative?: unknown, via?: unknown }>
         error?: unknown
-      }
+      } = {}
+      try { doc = JSON.parse(raw) as typeof doc } catch { /* handled below */ }
       if (!res.ok || typeof doc.error === 'string') {
-        throw new Error(typeof doc.error === 'string' ? doc.error : 'enhance failed (' + res.status + ')')
+        throw new Error(typeof doc.error === 'string' ? doc.error
+          : res.ok ? 'enhance failed: unexpected payload'
+          : 'enhance failed (' + res.status + (raw.length > 0 && raw.length < 200 ? ': ' + raw : '') + ')')
       }
       const results = doc.results ?? {}
       const declared = new Set(spec !== null ? fieldsOf(spec).map((f) => f.name) : [])
@@ -909,8 +927,18 @@ function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRemoved, 
         }
         return next
       })
-      const via = Object.values(results)[0]?.via
-      setEnhanceNote({ err: false, text: typeof via === 'string' && via !== '' ? 'enhanced via ' + via : 'enhanced' })
+      const swept = Object.entries(results)
+        .filter(([field, r]) => typeof r?.positive === 'string' && r.positive !== ''
+          && (field === 'prompt' || declared.has(field))).length
+      if (swept === 0) {
+        // the call "succeeded" but nothing landed — that is a
+        // rejection with the server's shape as its reason, not a
+        // silent no-op and never a lying 'enhanced'
+        setEnhanceNote({ err: true, text: 'the enhancer returned no declared fields (' + Object.keys(results).join(', ') + ')' })
+      } else {
+        const via = Object.values(results)[0]?.via
+        setEnhanceNote({ err: false, text: typeof via === 'string' && via !== '' ? 'enhanced via ' + via + ' (' + String(swept) + ' field' + (swept === 1 ? '' : 's') + ')' : 'enhanced (' + String(swept) + ' field' + (swept === 1 ? '' : 's') + ')' })
+      }
     } catch (e: unknown) {
       setEnhanceNote({ err: true, text: e instanceof Error ? e.message : 'enhance failed' })
     } finally {
