@@ -1348,16 +1348,19 @@ function AddCardDoor({ bench, sessionKey, onAdded, onClose, onAddedRow }: {
       cards === null && catalogError === null ? h('div', { className: css.load }, 'cards…') : null,
       genres.map(([g, list]) => h('section', { key: g, className: css.pickerGenre },
         h('h4', { className: css.specGroupTitle }, titleCaseId(g)),
+        // THE COMPACT FACE (operator, stroke 46c): rectangles with
+        // the NAME only, several per row — the description and the
+        // family pill took the room; the title attribute keeps the
+        // description one hover away, never in the layout.
         list.map((c) => h('button', {
           key: c.id,
           type: 'button',
           className: css.pickerCard,
           disabled: busyId !== null,
+          title: c.description !== '' ? c.label + ' — ' + c.description : c.label,
           onClick: () => pick(c),
         },
-          h('span', { className: css.pickerCardLabel }, busyId === c.id ? 'adding ' + c.label + '…' : c.label),
-          c.description !== '' ? h('span', { className: css.pickerCardDesc }, c.description) : null,
-          h(Pill, null, titleCaseId(c.families[0] ?? c.id)),
+          h('span', { className: css.pickerCardLabel }, busyId === c.id ? 'adding…' : c.label),
         )),
       )),
     ),

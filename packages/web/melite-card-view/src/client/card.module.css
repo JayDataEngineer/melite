@@ -583,7 +583,18 @@
   gap: 4px;
 }
 
+.pickerGenre {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+  gap: 6px;
+}
 .pickerCard {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  min-height: 44px;
+  width: 100%;
+  box-sizing: border-box;
   align-items: baseline;
   background: transparent;
   border: 0.5px solid var(--dsw-alias-border-l2);

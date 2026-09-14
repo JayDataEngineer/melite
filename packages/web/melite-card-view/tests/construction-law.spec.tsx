@@ -230,7 +230,7 @@ describe('the construction law (the plain add door)', () => {
     // the pick IS the add — no preadd screen between: no Add button,
     // no back row, only the busy face on the picked row…
     expect(screen.queryByText('Add card')).toBeNull()
-    expect(await screen.findByText('adding Mask Studio…', undefined, { timeout: 4000 })).toBeTruthy()
+    expect(await screen.findByText('adding…', undefined, { timeout: 4000 })).toBeTruthy()
     // …and the studio NEVER hijacks the door (it renders nothing
     // until its lawful seat: the zoom drilldown of the fresh row)
     expect(screen.queryByTestId('studio-hijack')).toBeNull()
