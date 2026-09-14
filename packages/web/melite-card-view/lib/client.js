@@ -2993,7 +2993,7 @@ window.__ModuleLoader__.load({
 				}
 			}, st === "idle" ? "Install " + id : st === "busy" ? "Requesting…" : st === "queued" ? "Install queued ✓ (restart the engine when it lands)" : "Install request failed — retry from the assets tab"));
 		}
-		function ModelAxes({ spec, value, onSet, onDownloadModel }) {
+		function ModelAxes({ spec, value, onSet, onDownloadModel, recipeField }) {
 			const groups = axisGroups(spec);
 			if (groups.length === 0) return null;
 			const models = modelChoices(spec);
@@ -3088,7 +3088,25 @@ window.__ModuleLoader__.load({
 					key: v.id,
 					value: v.id
 				}, v.label + (typeof v.hint === "string" && v.hint !== "" ? ` — ${v.hint}` : "")))));
-			}));
+			}), recipeField !== void 0 ? (0, react.createElement)("label", {
+				className: card_module_css_default.specField,
+				"data-recipe-seat": "axes"
+			}, (0, react.createElement)("span", { className: card_module_css_default.specFieldKey }, recipeField.label), (0, react.createElement)("select", {
+				className: card_module_css_default.specSelect,
+				"aria-label": recipeField.label,
+				value: typeof value["recipe"] === "string" ? value["recipe"] : typeof recipeField.default === "string" ? recipeField.default : "",
+				onChange: (e) => {
+					const v = e.target.value;
+					onSet("recipe", v);
+				}
+			}, (recipeField.options ?? []).map((o) => {
+				const val = typeof o === "string" ? o : o.value;
+				const lab = typeof o === "string" ? o : o.label;
+				return (0, react.createElement)("option", {
+					key: val,
+					value: val
+				}, lab);
+			}))) : null);
 		}
 		/** THE CARD FORM (the constructor's surface half) — the emission's
 		*  fields walked off the schema envelope, grouped, visible-when
@@ -3147,7 +3165,8 @@ window.__ModuleLoader__.load({
 			};
 			const railFields = signature.map((inp) => typeof inp?.name === "string" ? railOf(inp) : void 0).filter((f) => f !== void 0);
 			const railNames = new Set(railFields.map((f) => f.name));
-			const visible = (f) => f.type !== "image_list" && !railNames.has(f.name);
+			const liftedRecipe = (spec.variants ?? []).length > 0 ? flatFields.find((f) => f.name === "recipe") : void 0;
+			const visible = (f) => f.type !== "image_list" && !railNames.has(f.name) && f !== liftedRecipe;
 			const groups = groupFields(flatFields.filter(visible), value);
 			const atomOf = (f) => atoms?.[f.type];
 			const own = useSquareProvider(edit, wire ?? { candidates: [] });
@@ -3159,7 +3178,8 @@ window.__ModuleLoader__.load({
 				spec,
 				value,
 				onSet: edit,
-				onDownloadModel
+				onDownloadModel,
+				recipeField: liftedRecipe
 			}), railFields.length > 0 ? (0, react.createElement)("section", {
 				className: card_module_css_default.specGroup + " " + card_module_css_default.inputRail,
 				"data-input-rail": "1"
@@ -43824,9 +43844,17 @@ void main() {
 				}];
 			});
 			const heldModelRaw = typeof stage.params === "object" && stage.params !== null ? stage.params["model"] : void 0;
-			const modelKey = typeof heldModelRaw === "string" && heldModelRaw !== "" ? heldModelRaw : "";
+			const benchModel = typeof heldModelRaw === "string" && heldModelRaw !== "" ? heldModelRaw : "";
+			const userModelRaw = user["model"];
+			const userModel = typeof userModelRaw === "string" && userModelRaw !== "" ? userModelRaw : "";
+			const modelKey = userModel !== "" ? userModel : benchModel;
+			const lastStageRef = (0, react.useRef)("");
+			const userRef = (0, react.useRef)(user);
+			userRef.current = user;
 			(0, react.useEffect)(() => {
 				let alive = true;
+				const freshOpen = lastStageRef.current !== stage.id;
+				lastStageRef.current = stage.id;
 				const family = modelKey !== "" ? modelKey : String(stage.card ?? "");
 				if (family === "") {
 					setLoaded(true);
@@ -43835,7 +43863,7 @@ void main() {
 				fetchFormSpec(family).then((doc) => {
 					if (!alive) return;
 					setSpec(doc);
-					setUser(seedUser(doc, held));
+					setUser(seedUser(doc, freshOpen ? held : userRef.current));
 					setLoaded(true);
 					reportSurface(doc.size === "huge" ? "huge" : "");
 				}).catch((e) => {

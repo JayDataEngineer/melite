@@ -760,16 +760,30 @@ function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRemoved, 
       ? res['url'] as string : ''
     return url === '' ? [] : [{ id: s.id, label: String(s.title ?? s.card ?? s.id), url }]
   })
-  // THE SPEC KEY FOLLOWS THE STAGE'S OWN MODEL (no-silent-drop
-  // law, hour 26 stroke 17): a stage holding model=anima fetches
-  // the ANIMA spec — its own matrix, its own axes — never the
-  // card's default-family matrix painted over a foreign model.
-  // Absent model alone rides the card key (the initial-value law).
+  // THE SPEC KEY FOLLOWS THE EFFECTIVE MODEL (stroke 20, the live
+  // filter fix): the pick lives in the USER layer (onSet) — the
+  // bench row (stage.params) does not move until Run — so the key
+  // must read the USER's held model first (the pick), else the
+  // bench row's, else the card. Reading only stage.params left the
+  // spec frozen on the old family: the pick cleared the axes and
+  // nothing ever re-filtered (the operator's burn).
   const heldModelRaw = (typeof stage.params === 'object' && stage.params !== null
     ? (stage.params as Record<string, unknown>)['model'] : undefined)
-  const modelKey = typeof heldModelRaw === 'string' && heldModelRaw !== '' ? heldModelRaw : ''
+  const benchModel = typeof heldModelRaw === 'string' && heldModelRaw !== '' ? heldModelRaw : ''
+  const userModelRaw = user['model']
+  const userModel = typeof userModelRaw === 'string' && userModelRaw !== '' ? userModelRaw : ''
+  const modelKey = userModel !== '' ? userModel : benchModel
+  // the pick-preserving seed source: a FRESH OPEN (stage.id moved)
+  // seeds from the bench row; a MODEL-PICK re-key (same stage) seeds
+  // from the CURRENT user state — the pick + its cleared axes ride,
+  // and the new family's own rows seed (never reseed the pick away)
+  const lastStageRef = useRef<string>('')
+  const userRef = useRef<SpecValues>(user)
+  userRef.current = user
   useEffect(() => {
     let alive = true
+    const freshOpen = lastStageRef.current !== stage.id
+    lastStageRef.current = stage.id
     const family = modelKey !== '' ? modelKey : String(stage.card ?? '')
     if (family === '') { setLoaded(true); return }
     fetchFormSpec(family)
@@ -783,8 +797,10 @@ function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRemoved, 
         // composing row, one direction); a stale family-recipe stamp
         // the card's catalog does not know falls back to the field
         // default (seedUser's one validation clause — the
-        // double-recipe migration).
-        setUser(seedUser(doc, held))
+        // double-recipe migration). A model-pick re-key seeds from
+        // the USER state (the pick survives; the new matrix's rows
+        // seed under it).
+        setUser(seedUser(doc, freshOpen ? held : userRef.current))
         setLoaded(true)
         reportSurface(doc.size === 'huge' ? 'huge' : '')
       })
@@ -794,8 +810,8 @@ function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRemoved, 
         setLoaded(true)
       })
     return () => { alive = false }
-    // stage.id re-opens; the held model re-SPECS (a model pick
-    // refetches the family's own matrix — the axes follow the truth)
+    // stage.id re-opens; the EFFECTIVE model re-SPECS (a pick
+    // refetches the family's own matrix — the axes re-filter LIVE)
   }, [stage.id, modelKey])
   // the forms-table cache (card meta with the DECLARED edges) — one
   // fetch per session; the picker's kind matching reads it

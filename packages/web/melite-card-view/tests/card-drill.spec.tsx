@@ -42,6 +42,13 @@ interface Call { method: string; args: Record<string, unknown> }
 interface StubOpts {
   /** The bench/get doc the stub serves (default: the BENCH fixture's wire shape). */
   bench?: Record<string, unknown>
+  /** Per-model form-spec docs (keyed by the model query param). A
+   *  fetch of an unmapped model falls back to the default doc — the
+   *  wall names what it expects to serve. */
+  formSpecs?: Record<string, Record<string, unknown>>
+  /** Records every form-spec model key fetched (the live-filter
+   *  walls assert the refetch). */
+  specsSeen?: string[]
   /** The drafts/get stages the stub serves (default: the live-params
    *  row — override to carry the served `resolved` map like the real
    *  lane's resolved serve does). */
@@ -65,6 +72,11 @@ function stubWire(opts?: StubOpts): { calls: Call[] } {
     // the /v1 discovery doors (same-origin): the card form spec + catalog
     const path = String(url)
     if (path.includes('/v1/form-spec')) {
+      const qm = path.includes('model=') ? path.split('model=')[1]?.split('&')[0] : undefined
+      if (qm !== undefined) opts?.specsSeen?.push(qm)
+      if (qm !== undefined && opts?.formSpecs?.[qm] !== undefined) {
+        return new Response(JSON.stringify(opts.formSpecs[qm]), { status: 200, headers: { 'content-type': 'application/json' } })
+      }
       const doc = {
         form: 'image-gen', genre: 'image', engine: 'comfyui',
         schema: schemaEnvelope({
@@ -474,4 +486,82 @@ test('the drill renders the SERVED resolved map under the user layer (the 1:1 la
   await screen.findByText('Prompt', {}, { timeout: 4000 })
   // served 52 wins over the schema default 8 (no user steps key)
   expect(screen.getByDisplayValue('52')).toBeTruthy()
+})
+
+
+// ── STROKE 20: THE LIVE FILTER (the operator's burn: "changing the
+//    MODEL isn't changing any parameters or filtering variants") —
+//    through the REAL drill wiring: the pick lives in the USER
+//    layer; the spec key follows the EFFECTIVE model; the refetched
+//    family's own matrix reseeds the axes. ──────────────────────
+test('picking a family in the Model select RE-SPECS LIVE: the anima matrix lands and the Variant axis reseats to anima\'s own row', async () => {
+  const kreaSpec = {
+    form: 'image-gen', genre: 'image', engine: 'comfyui', model: 'krea-2',
+    families: [{ id: 'anima', present: true }],
+    schema: schemaEnvelope({
+      prompt: { type: 'string', meta: { description: 'Prompt', extra: { wtype: 'textarea' } } },
+    }),
+    variants: [
+      { id: 'turbo', label: 'Turbo', group: 'Variant', defaults: { model: 'krea-2' }, route: 'krea-2' },
+      { id: 'int8', label: 'INT8', group: 'Quant', defaults: {}, route: 'krea-2', owner: 'turbo' },
+      { id: 'raw', label: 'Raw', group: 'Variant', defaults: { model: 'krea-2-raw' }, route: 'krea-2-raw' },
+      { id: 'raw__int8', label: 'INT8', group: 'Quant', defaults: {}, route: 'krea-2-raw', owner: 'raw' },
+    ],
+  }
+  const animaSpec = {
+    form: 'image-gen', genre: 'image', engine: 'comfyui', model: 'anima',
+    families: [{ id: 'krea-2', present: true }],
+    schema: schemaEnvelope({
+      prompt: { type: 'string', meta: { description: 'Prompt', extra: { wtype: 'textarea' } } },
+    }),
+    variants: [
+      { id: 'standard', label: 'Standard', group: 'Variant', defaults: {}, route: 'anima' },
+      { id: 'f32', label: 'F32', group: 'Quant', defaults: {}, route: 'anima', owner: 'standard' },
+    ],
+  }
+  const specsSeen: string[] = []
+  stubWire({
+    formSpecs: { 'krea-2': kreaSpec, anima: animaSpec },
+    specsSeen,
+    bench: {
+      draft_id: 'bench-s1', rev: 7,
+      stages: [{ id: 's_0', card: 'image-gen', title: 'hero frame', engine: 'comfyui', params: { model: 'krea-2', prompt: 'a red cube' } }],
+      log: [],
+    },
+  })
+  // the resource value carries the held model too (the drill's stage
+  // rides the LIVE resource, not the stub's bench/get)
+  const LIVE: CardsBenchValue = {
+    ...BENCH,
+    stages: [{ ...BENCH.stages[0], params: { ...BENCH.stages[0].params, model: 'krea-2' } }],
+  }
+  const user = userEvent.setup()
+  render(createElement(CardsTab, {
+    useTabInfo: () => ({
+      tab: {
+        kind: 'sidebar.right.pane.tab', contentId: undefined,
+        navigation: { address: 'dsh-resource://cards/bench' },
+        actions: { openResource: noop },
+      },
+    }),
+    useResource: () => ({ status: 'live', value: LIVE }),
+  }))
+  await user.click(tileButton())
+  await screen.findByText('Prompt', {}, { timeout: 4000 })
+  const modelSel = await screen.findByLabelText('Model', {}, { timeout: 2000 })
+  // seeded on the bench row's family: krea's turbo/int8
+  expect((modelSel as HTMLSelectElement).value).toBe('krea-2')
+  await screen.findByLabelText('Variant')
+  expect((screen.getByLabelText('Variant') as HTMLSelectElement).value).toBe('turbo')
+  // THE PICK: anima (a boarded family outside krea's matrix)
+  await user.selectOptions(modelSel, 'anima')
+  // the spec RE-FETCHES for anima (the user layer's pick drives the
+  // key — the bench row still says krea-2)
+  await waitFor(() => { expect(specsSeen).toContain('anima') })
+  // THE FILTER: the Variant axis reseats to ANIMA's own row — turbo
+  // (krea's variant) is gone from the offers
+  const variant = await screen.findByLabelText('Variant')
+  await waitFor(() => { expect((variant as HTMLSelectElement).value).toBe('standard') })
+  const offered = [...variant.querySelectorAll('option')].map((o) => o.value)
+  expect(offered).toEqual(['standard'])
 })

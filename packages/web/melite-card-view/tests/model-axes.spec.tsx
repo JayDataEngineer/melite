@@ -661,3 +661,30 @@ test('THE FILTER, END TO END: a cleared cross-spec pick seeds the NEW family\'s 
   expect(seeded['quant']).toBe('int8')
   expect(seeded['model']).toBe('krea-2')
 })
+
+
+// ── STROKE 20: RECIPE'S SEAT (the operator's placement law:
+//    "recipe is supposed to be under the model section") ────────
+test('recipe field renders UNDER THE MODEL SECTION — the params-list row never renders twice', async () => {
+  // IMGGEN: the card owns the recipe field (standard/fast_draft/
+  // cinematic) AND the family serves Recipe rows (realism/default) —
+  // the yield law keeps the CARD's options; the SEAT moves under the
+  // axes
+  const sets: Array<[string, unknown]> = []
+  render(createElement(SpecForm, {
+    spec: IMGGEN, user: { model: 'krea-2', recipe: 'standard' },
+    onSet: (n: string, v: unknown) => { sets.push([n, v]) },
+  }))
+  const recipe = await screen.findByLabelText('Recipe')
+  // THE SEAT: inside the model axes section (under Model, Variant,
+  // Quant — never the sampling group at the bottom)
+  expect(recipe.closest('[data-model-axes]')).not.toBeNull()
+  // ONE seat + the CARD's options (the yield law: the family's
+  // realism/default rows never render under the card's key)
+  expect(screen.queryAllByLabelText('Recipe').length).toBe(1)
+  const opts = [...(recipe as HTMLSelectElement).querySelectorAll('option')].map((o) => o.value)
+  expect(opts).toEqual(['standard', 'fast_draft', 'cinematic'])
+  // the pick rides the user layer (the same edit seam)
+  fireEvent.change(recipe, { target: { value: 'cinematic' } })
+  await waitFor(() => { expect(sets).toContainEqual(['recipe', 'cinematic']) })
+})

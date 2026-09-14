@@ -569,10 +569,16 @@ function PackPromptRow({ id, onInstallPack }: {
       : 'Install request failed — retry from the assets tab'))
 }
 
-export function ModelAxes({ spec, value, onSet, onDownloadModel }: {
+export function ModelAxes({ spec, value, onSet, onDownloadModel, recipeField }: {
   spec: FormSpecDoc
   value: SpecValues
   onSet(name: string, v: unknown): void
+  /** THE RECIPE'S SEAT (stroke 20, the operator's placement law):
+   *  when the card owns a recipe field AND the matrix serves, the
+   *  field renders HERE — under Model/Variant/Quant — never at the
+   *  bottom of the params list. One key, one seat; the options stay
+   *  the card's own (the recipe-yield law above). */
+  recipeField?: SpecField
   /** THE DOWNLOAD PROMPT's arm (stroke 18, the operator's law: a
    *  boarded model is OFFERED — absence prompts the user to
    *  download, never blocks the pick): when the HELD model is a
@@ -740,6 +746,29 @@ export function ModelAxes({ spec, value, onSet, onDownloadModel }: {
           rows.map((v) => h('option', { key: v.id, value: v.id },
             v.label + (typeof v.hint === 'string' && v.hint !== '' ? ` — ${v.hint}` : '')))))
     }),
+    // THE RECIPE'S SEAT (stroke 20): the card's own recipe field
+    // renders UNDER the axes — same options the field always served
+    // (the card's consts, the yield law), the same edit seam; the
+    // params-list row suppresses (one key, one seat)
+    recipeField !== undefined
+      ? h('label', { className: css.specField, 'data-recipe-seat': 'axes' },
+          h('span', { className: css.specFieldKey }, recipeField.label),
+          h('select', {
+            className: css.specSelect,
+            'aria-label': recipeField.label,
+            value: typeof value['recipe'] === 'string' ? value['recipe'] as string
+              : typeof recipeField.default === 'string' ? recipeField.default : '',
+            onChange: (e: unknown) => {
+              const v = (e as { target: { value: string } }).target.value
+              onSet('recipe', v)
+            },
+          },
+            (recipeField.options ?? []).map((o) => {
+              const val = typeof o === 'string' ? o : o.value
+              const lab = typeof o === 'string' ? o : o.label
+              return h('option', { key: val, value: val }, lab)
+            })))
+      : null,
   )
 }
 
@@ -879,8 +908,17 @@ export function CardForm({ spec, user, base, onSet, onUnset, wire, square, atoms
     .map((inp) => (typeof inp?.name === 'string' ? railOf(inp as { name: string }) : undefined))
     .filter((f): f is SpecField => f !== undefined)
   const railNames = new Set(railFields.map((f) => f.name))
+  // THE RECIPE'S SEAT (stroke 20, the operator's placement law:
+  // "recipe is supposed to be under the model section"): when the
+  // matrix serves, the card's own recipe field lifts UNDER THE AXES
+  // (ModelAxes' last row); the params-list row suppresses — one key,
+  // one seat. No matrix (variants absent) → the field stays a param.
+  const matrixServes = (spec.variants ?? []).length > 0
+  const liftedRecipe = matrixServes
+    ? flatFields.find((f) => f.name === 'recipe')
+    : undefined
   const visible = (f: SpecField): boolean =>
-    f.type !== 'image_list' && !railNames.has(f.name)
+    f.type !== 'image_list' && !railNames.has(f.name) && f !== liftedRecipe
   const groupFieldsAll = flatFields.filter(visible)
   const groups = groupFields(groupFieldsAll, value)
   const atomOf = (f: SpecField): FieldAtomClaim | undefined => atoms?.[f.type]
@@ -892,7 +930,7 @@ export function CardForm({ spec, user, base, onSet, onUnset, wire, square, atoms
     // THE AXES ride the user layer through the same edit seam (their
     // picks are ordinary sets; the resolved value passes along).
     h(PackPrompt, { spec, onInstallPack }),
-    h(ModelAxes, { spec, value, onSet: edit, onDownloadModel }),
+    h(ModelAxes, { spec, value, onSet: edit, onDownloadModel, recipeField: liftedRecipe }),
     railFields.length > 0
       ? h('section', { className: css.specGroup + ' ' + css.inputRail, 'data-input-rail': '1' },
           h('div', { className: css.specSlotRow },
