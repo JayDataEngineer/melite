@@ -621,6 +621,13 @@ export function benchRow(stage: BenchStageRow, bench?: CardsBenchValue): CardRow
     ? 'Group (' + String(children) + ')'
     : (stage.title ?? stage.card ?? stage.id)
   const status = typeof stage.runStatus === 'string' && stage.runStatus !== '' ? stage.runStatus : 'ready'
+  // THE WEBHOOK FEED (stroke 46b, the operator's order): the engine's
+  // /ws progress tap folds activity + progress onto the stage rows —
+  // the drill shows them LIVE (the tile keeps its percent pill).
+  const activity = typeof (stage as { activity?: unknown }).activity === 'string'
+    ? (stage as { activity?: unknown }).activity as string : ''
+  const progress = (stage as { progress?: { value: number, max: number } | null }).progress ?? null
+  const pct = progress !== null && progress.max > 0 ? Math.floor((100 * progress.value) / progress.max) : null
   const params = typeof stage.params === 'object' && stage.params !== null ? stage.params : {}
   const promptRaw = typeof params['prompt'] === 'string' ? params['prompt'] : ''
   const result = stage.result
@@ -1094,7 +1101,20 @@ function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRemoved, 
           : h(ImageStagePreview, owner)
     return renderPreview(owner, fallback)
   }
+  // THE WEBHOOK FEED (stroke 46b, the operator's order: "see the
+  // received webhooks in the drilled-out view"): the engine's /ws
+  // progress tap folds activity + progress onto the stage rows — the
+  // drill renders them LIVE (the tile keeps its percent pill).
+  const activity = typeof (stage as { activity?: unknown }).activity === 'string'
+    ? (stage as { activity?: unknown }).activity as string : ''
+  const progress = (stage as { progress?: { value: number, max: number } | null }).progress ?? null
+  const pct = progress !== null && progress.max > 0 ? Math.floor((100 * progress.value) / progress.max) : null
+  const webhookFeed = h('div', { className: css.runRow, 'data-testid': 'drill-webhooks' },
+    activity !== '' ? h('span', { className: css.tilePct, 'aria-label': 'engine activity' }, activity) : null,
+    pct !== null ? h('span', { className: css.tilePct, 'data-testid': 'drill-progress', 'aria-label': 'progress percent' }, pct + '% (' + String(progress.value) + '/' + String(progress.max) + ')') : null,
+  )
   const genericDetail = (): ReturnType<typeof h> => h('div', { className: css.zoomDetail },
+    webhookFeed,
     // THE UNIFORM SHELL (hour 24 stroke 15 — the operator's sharing
     // call): the zoom rides the SAME StudioShell every studio card
     // rides — one params-scroll law, one three-slot shape. The zoom's
