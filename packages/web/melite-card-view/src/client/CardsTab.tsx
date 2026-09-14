@@ -1371,7 +1371,7 @@ function AddCardDoor({ bench, onAdded, onClose, onAddedRow }: {
   )
 }
 
-function BenchView({ bench, onRun, onRunStage, onStopStage, onRemoveStage, stageRuns, running, onPatchParams, renderStageView, renderPreview, runId, refreshTick }: {
+function BenchView({ bench, onRun, onRunStage, onStopStage, onRemoveStage, stageRuns, running, onPatchParams, renderStageView, renderPreview, runId, refreshTick, startError }: {
   bench: CardsBenchValue
   onRun: () => void
   onRunStage: (stage: BenchStageRow) => void
@@ -1387,6 +1387,10 @@ function BenchView({ bench, onRun, onRunStage, onStopStage, onRemoveStage, stage
   /** The outcome observer's touch — the rail re-reads so tile
    *  runStatus/result stay live without ever leaving the bench. */
   refreshTick?: number
+  /** THE START-ERROR SEAM (stroke 25): a run-start rejection rides
+   *  INTO the open drill's webhook bar — the tab-level seat renders
+   *  behind the zoom overlay, invisible where Run was pressed. */
+  startError?: string | null
 }): ReturnType<typeof h> {
   // The LIVE bench: the resource snapshot is the first frame only (the
   // provider's bench stream ends after one snapshot), so the view owns
@@ -1688,6 +1692,7 @@ function BenchView({ bench, onRun, onRunStage, onStopStage, onRemoveStage, stage
     open !== null ? h(CardZoomOverlay, {
       stage: open,
       bench: live,
+      startError,
       running,
       onRun: () => { onRunStage(open) },
       onStop: () => { onStopStage(open) },
@@ -1993,26 +1998,38 @@ export function CardsTab(props: CardsTabProps): ReturnType<typeof h> {
   // reads it (the drill does the patch, this does the start), then
   // startCardRun over the run-wire package.
   const onRunStage = useCallback((stage: BenchStageRow): void => {
-    if (snapshot?.value?.kind !== 'bench') return
+    // THE NO-SILENT-REJECT LAW (stroke 25's law, applied to the run
+    // start): a stale/unhydrated bench is a REJECTION WITH A FACE,
+    // never a quiet return — the operator pressed Run and got
+    // nothing.
+    if (snapshot?.value?.kind !== 'bench') {
+      setLocalRunError('the bench is not ready to run from — reopen the Cards tab (snapshot kind: ' + String(snapshot?.value?.kind ?? 'none') + ')')
+      return
+    }
     setRunning(true)
     setLocalRunError(null)
-    void runCardStage(snapshot.value.draftId, stage).then((res) => {
-      if ('runId' in res) onStarted(res.runId, { draftId: snapshot.value.draftId, stageId: stage.id })
-      else {
-        setRunning(false)
-        setLocalRunError(res.refused)
-        // THE REFUSAL CARRY (operator 2026-09-14: the compose refusal
-        // "needs to be in drill down card as well"): a refused start
-        // writes the row FAILED with the reason — the tile AND the
-        // open drill's failure face read the same row, so the why
-        // lands where the Run was pressed, not just the tab top.
-        const draftId = snapshot.value.draftId
-        const stageId = stage.id
-        const error = res.refused
-        void patchStageOutcome(draftId, stageId, { runStatus: 'failed', result: { error } })
-          .then(() => { touchBench() })
-          .catch(() => {})
-      }
+    const draftId = snapshot.value.draftId
+    const stageId = stage.id
+    // THE REFUSAL/FAILURE CARRY (operator 2026-09-14: the compose
+    // refusal "needs to be in drill down card as well"): a refused —
+    // or THROWN — start writes the row FAILED with the reason: the
+    // tile AND the open drill's failure face read the same row, so
+    // the why lands where the Run was pressed, not just the tab top.
+    const carryFailure = (error: string): void => {
+      setRunning(false)
+      setLocalRunError(error)
+      void patchStageOutcome(draftId, stageId, { runStatus: 'failed', result: { error } })
+        .then(() => { touchBench() })
+        .catch(() => {})
+    }
+    void runCardStage(draftId, stage).then((res) => {
+      if ('runId' in res) onStarted(res.runId, { draftId, stageId })
+      else carryFailure(res.refused)
+    }, (e: unknown) => {
+      // a THROWN start (wire down, 500, read-back failure) is a
+      // rejection too — the old code had NO catch here: the promise
+      // died unhandled, running stuck, and the operator saw NOTHING
+      carryFailure(e instanceof Error ? e.message : 'run start failed')
     })
   }, [snapshot, onStarted, touchBench])
   // THE TILE CHROME'S STOP + REMOVE (the chat-input law's verbs):
@@ -2134,6 +2151,7 @@ export function CardsTab(props: CardsTabProps): ReturnType<typeof h> {
           renderPreview,
           runId: lastRunId,
           refreshTick: benchTick,
+          startError: localRunError,
         }),
       )
     : value.kind === 'draft'

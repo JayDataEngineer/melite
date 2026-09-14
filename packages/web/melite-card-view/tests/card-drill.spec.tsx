@@ -17,6 +17,7 @@ import userEvent from '@testing-library/user-event'
 import { afterEach, expect, test, vi } from 'vitest'
 import { createElement } from 'react'
 
+import { resetCardFamiliesCache } from '@melite-plugin/melite-run-wire'
 import { CardsTab } from '../src/client/CardsTab.tsx'
 import { schemaEnvelope } from '../src/client/spec-form.tsx'
 import type { CardsBenchValue } from '../src/client/cards-resource.ts'
@@ -634,4 +635,46 @@ test('✦ every enhance rejection renders its message — empty prompt, no model
     view.unmount()
     cleanup()
   }
+})
+
+// ── STROKE 26: THE RUN-START REJECTION FACE (the operator pressed
+//    Run and got NOTHING — the guard returned quiet and the start
+//    promise had no catch). A THROWN start must render its reason
+//    IN THE OPEN DRILL's webhook bar, and the Run pill must come
+//    back (running resets). ─────────────────────────────────────
+test('a THROWN run start renders its reason in the open drill — never silent, never stuck', async () => {
+  stubWire()
+  // the BENCH fixture holds no model arm, so the start resolves the
+  // default family via the catalog — kill that wire and the start
+  // THROWS (the exact unhandled path the old code died on). The
+  // family cache is module state: reset it or no fetch fires.
+  resetCardFamiliesCache()
+  const base = globalThis.fetch
+  vi.stubGlobal('fetch', async (u: unknown, init?: RequestInit): Promise<Response> => {
+    if (String(u).includes('/v1/model-catalog')) throw new Error('catalog wire down')
+    return (base as (u: unknown, init?: RequestInit) => Promise<Response>)(u, init)
+  })
+  const user = userEvent.setup()
+  render(createElement(CardsTab, {
+    useTabInfo: () => ({
+      tab: {
+        kind: 'sidebar.right.pane.tab', contentId: undefined,
+        navigation: { address: 'dsh-resource://cards/bench' },
+        actions: { openResource: noop },
+      },
+    }),
+    useResource: () => ({ status: 'live', value: BENCH }),
+  }))
+  await user.click(tileButton())
+  await screen.findByText('Prompt', {}, { timeout: 4000 })
+  const detail = screen.getByText('Steps').closest('div[class*="zoomCard"]') as HTMLElement
+  await user.click(within(detail).getByRole('button', { name: 'Run stage' }))
+  // the reason lands in the OPEN drill's webhook bar (the startError
+  // seam — the tab-level seat renders behind the overlay)
+  const face = await screen.findByTestId('drill-run-error', {}, { timeout: 5000 })
+  expect(face.textContent ?? '').toContain('catalog wire down')
+  // running resets — the Run pill comes back, never stuck on Stop
+  await waitFor(() => {
+    expect(within(detail).getByRole('button', { name: 'Run stage' })).toBeTruthy()
+  })
 })

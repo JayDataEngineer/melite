@@ -56,6 +56,10 @@ export function zoomSizeFor(surfaceSize: string | null): Record<string, string> 
 export interface ZoomDetailProps {
   stage: BenchStageRow
   bench: CardsBenchValue
+  /** THE START-ERROR SEAM (stroke 25): a run-start rejection (wire
+   *  down, refused compose, stale bench) renders in the webhook bar
+   *  — the press seat must never die silently behind the overlay. */
+  startError?: string | null
   running: boolean
   onRun: () => void
   /** THE STOP DOOR (2026-09-13): the run gesture flips to stop
@@ -171,6 +175,10 @@ function ZoomMount(props: ZoomDetailProps & { detail: (p: ZoomDetailProps) => Re
   const pct = prog !== null && prog.max > 0 ? Math.floor((100 * prog.value) / prog.max) : null
   const failedText = typeof stage.runStatus === 'string' && stage.runStatus === 'failed'
     && typeof rec?.['error'] === 'string' ? rec['error'] : null
+  // THE START-ERROR OVERRIDE: a client-side start rejection (no row
+  // write yet, or the row write itself failed) still owns the bar —
+  // the freshest rejection wins
+  const startError = typeof props.startError === 'string' && props.startError !== '' ? props.startError : null
 
   return h('div', {
     className: css.zoomOverlay,
@@ -220,7 +228,7 @@ function ZoomMount(props: ZoomDetailProps & { detail: (p: ZoomDetailProps) => Re
           // THE WEBHOOK BAR: live → spinner + activity + percent + a
           // thin meter; failed → the reason, whole text (the drill is
           // where it is READ); idle/succeeded → nothing.
-          live || failedText !== null
+          live || failedText !== null || startError !== null
             ? h('div', { className: css.zoomWebhook, role: 'status' },
               live
                 ? h('span', { className: css.drillProgress, 'data-testid': 'drill-progress' },
@@ -235,7 +243,7 @@ function ZoomMount(props: ZoomDetailProps & { detail: (p: ZoomDetailProps) => Re
                     : null,
                 )
                 : h('span', { className: css.runError, 'data-testid': 'drill-run-error' },
-                  failedText),
+                  startError ?? failedText),
             )
             : null,
           // THE BODY SEAT (the hour-7 height war): the detail sits in
