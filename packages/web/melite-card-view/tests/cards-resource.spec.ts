@@ -275,3 +275,75 @@ describe('observeRunOutcome — the progress carry', () => {
     expect((terminal?.['patch'] as { result: Record<string, unknown> }).result).not.toHaveProperty('progress')
   })
 })
+
+// ── THE BENCH SPOTLIGHT (stroke 42, the one-flow law: "AI
+// conversation and human share 1 FLOW") — the watcher that brings the
+// Cards surface forward when the OTHER author of the shared bench
+// writes. The discriminator is the served log's author field
+// ("agent"|"user"), never guesswork about who moved the rev.
+import { markCardsSurface, shouldSpotlight, watchBenchLands } from '../src/client/cards-resource.ts'
+
+const agentDoc = (rev: number, titles: string[]): Record<string, unknown> => ({
+  draft_id: 'bench-main', rev,
+  stages: titles.map((t, i) => ({ id: `s_${i}`, card: 'image-gen', title: t, engine: 'comfyui', params: {} })),
+  log: [{ rev, at: 1, author: 'agent', kind: 'add_stage' }],
+})
+const userDoc = (rev: number, titles: string[]): Record<string, unknown> => ({
+  draft_id: 'bench-main', rev,
+  stages: titles.map((t, i) => ({ id: `s_${i}`, card: 'image-gen', title: t, engine: 'comfyui', params: {} })),
+  log: [{ rev, at: 1, author: 'user', kind: 'patch' }],
+})
+
+describe('the bench spotlight (the one-flow reveal)', () => {
+  test('an agent-authored land fires the reveal — hydration history never does', async () => {
+    vi.useFakeTimers()
+    // the wire: hydration (rev 12 — its log may carry OLD agent rows;
+    // history never yanks), then the agent's write (rev 13)
+    stubApi({
+      'bench/get': [agentDoc(12, ['hero frame']), agentDoc(13, ['hero frame', 'agent row'])],
+    })
+    const lands: number[] = []
+    const stop = watchBenchLands(() => { lands.push(1) })
+    await vi.advanceTimersByTimeAsync(100)
+    expect(lands.length).toBe(0) // hydration: the first read is baseline
+    await vi.advanceTimersByTimeAsync(2100)
+    expect(lands.length).toBe(1) // the agent's row: the surface comes forward
+    stop()
+    await vi.advanceTimersByTimeAsync(2100)
+    expect(lands.length).toBe(1) // stopped: never fires again
+  })
+
+  test('a user-authored bump NEVER reveals — the human was the author', async () => {
+    vi.useFakeTimers()
+    stubApi({
+      'bench/get': [userDoc(12, ['hero frame']), userDoc(13, ['hero frame', 'user edit'])],
+    })
+    const lands: number[] = []
+    const stop = watchBenchLands(() => { lands.push(1) })
+    await vi.advanceTimersByTimeAsync(4200)
+    expect(lands.length).toBe(0)
+    stop()
+  })
+
+  test('a dead wire keeps trying — the agent land after recovery still fires', async () => {
+    vi.useFakeTimers()
+    stubApi({
+      'bench/get': [userDoc(12, ['hero frame']), new Error('lane restarted'), agentDoc(14, ['agent row'])],
+    })
+    const lands: number[] = []
+    const stop = watchBenchLands(() => { lands.push(1) })
+    await vi.advanceTimersByTimeAsync(6300)
+    expect(lands.length).toBe(1) // poll 1 baseline, poll 2 dead, poll 3 landed
+    stop()
+  })
+
+  test('the seat law: reveal only when the cards surface is not the visible seat', () => {
+    markCardsSurface(false)
+    expect(shouldSpotlight(true)).toBe(true) // another tab owns the pane
+    expect(shouldSpotlight(false)).toBe(true) // column collapsed to rail
+    markCardsSurface(true)
+    expect(shouldSpotlight(true)).toBe(false) // the user is reading the flow
+    expect(shouldSpotlight(false)).toBe(true) // mounted but collapsed: rail shows no flow
+    markCardsSurface(false) // leave the module state clean for the next test
+  })
+})

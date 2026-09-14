@@ -39,7 +39,7 @@ import type {} from '@deepseek-ai/dsh-client-ui-sidebar-right/client'
 import type {} from '@deepseek-ai/dsh-client-resources/client'
 import { FlowCards } from './FlowCards.tsx'
 import { CardsTab } from './CardsTab.tsx'
-import { CARDS_BENCH_ADDRESS, openCardsResource } from './cards-resource.ts'
+import { CARDS_BENCH_ADDRESS, openCardsResource, shouldSpotlight, watchBenchLands } from './cards-resource.ts'
 import { resolveCardsAddress } from './CardsTab.tsx'
 import type { StageViewOwnerProps, ToolCallBlockView, ToolCallOwnerProps } from './types.ts'
 
@@ -193,6 +193,32 @@ export function apply(ctx: ClientContext): void {
     }), 'melite-card-view: cards resource provider')
   } catch (error) {
     console.error('[melite-card-view] cards resource provider registration failed:', error)
+  }
+
+  // THE BENCH SPOTLIGHT (stroke 42, the one-flow law: "AI
+  // conversation and human share 1 FLOW — there is no other flow
+  // state"): while the cards surface is not the user's visible seat,
+  // an agent-authored bench write brings the Cards tab FORWARD —
+  // openResource claims the bench address, places it, and reveals
+  // the column in one step (ISidebarRight: "content the user cannot
+  // see is not opened"). The chat's construct writes carry author
+  // "agent" in the served log (bench.ts's default), the human's own
+  // writes carry "user" — the watcher discriminates on exactly that,
+  // so the reveal never fires for the user's own gestures. A failed
+  // reveal (no session mounted yet) surfaces in the console, never
+  // silently.
+  try {
+    ctx.effect(() => watchBenchLands(() => {
+      try {
+        if (shouldSpotlight(ctx.sidebarRight.isExpanded())) {
+          ctx.sidebarRight.openResource(CARDS_BENCH_ADDRESS)
+        }
+      } catch (error) {
+        console.error('[melite-card-view] bench spotlight reveal failed:', error)
+      }
+    }), 'melite-card-view: bench spotlight')
+  } catch (error) {
+    console.error('[melite-card-view] bench spotlight registration failed:', error)
   }
 }
 

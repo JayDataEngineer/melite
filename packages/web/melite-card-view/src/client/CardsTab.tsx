@@ -61,7 +61,7 @@ import type { CatalogCard, FormSpecDoc, ModifierKind, SpecValues } from './spec-
 import { paramFields, patchStageOutcome, patchStageParams } from './draft.ts'
 import css from './card.module.css'
 import type { CardsBenchValue, CardsDraftValue, CardsRunValue, BenchStageRow } from './cards-resource.ts'
-import { CARDS_BENCH_ADDRESS, cardsRunAddress, fetchBench, fetchLatestRunForDraft, freshStageRow, observeRunOutcome, openCardsResource, parseCardsAddress, reconcileBenchRuns, restoreRunToBench, uploadInputFile } from './cards-resource.ts'
+import { CARDS_BENCH_ADDRESS, cardsRunAddress, fetchBench, fetchLatestRunForDraft, freshStageRow, markCardsSurface, observeRunOutcome, openCardsResource, parseCardsAddress, reconcileBenchRuns, restoreRunToBench, uploadInputFile } from './cards-resource.ts'
 import { defaultFamilyForCard, startCardRun, stopRun } from '@melite-plugin/melite-run-wire'
 import { addStageWire, groupStagesWire, removeStageWire, reorderStageWire, ungroupStageWire } from './add-stage.ts'
 import { AudioStagePreview, ImageStagePreview, MeshStagePreview, VideoStagePreview } from '@melite/card-base/preview'
@@ -1853,6 +1853,15 @@ export function resolveCardsAddress(rawAddress: string): string {
 
 /** The tab body component. */
 export function CardsTab(props: CardsTabProps): ReturnType<typeof h> {
+  // THE SPOTLIGHT MARKER (stroke 42, the one-flow law): true while
+  // THIS body is the mounted seat rendering the bench. The plugin's
+  // bench watcher reads it to decide whether an agent-authored land
+  // needs the reveal — a seat the user is already reading must not be
+  // re-placed (their scroll/selection would reset for nothing).
+  useEffect(() => {
+    markCardsSurface(true)
+    return () => { markCardsSurface(false) }
+  }, [])
   // cards.stage.view dispatch (the ui-tool ToolCallTree call verbatim):
   // keyed by card name; unclaimed key renders the drill's own body.
   const renderStageView = (owner: StageViewOwnerProps, fallback: ReturnType<typeof h>): ReturnType<typeof h> => {

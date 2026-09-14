@@ -239,6 +239,94 @@ export async function fetchBench(signal?: AbortSignal): Promise<CardsBenchValue>
   return readBench(await wireCall('bench/get', { sessionKey: 'main' }, signal))
 }
 
+// ── THE BENCH SPOTLIGHT (stroke 42, the operator's law 2026-09-14:
+// "AI CONVERSATION AND HUMAN SHARE 1 FLOW — there is no other flow
+// state"). The cards sidebar IS the one shared flow state, so an
+// agent-authored bench write (the chat's melite_construct, a
+// bench-mode pass) must BRING THE SURFACE FORWARD, not land invisibly
+// behind whatever tab the human is reading. The served log carries
+// per-entry author ("agent"|"user" — bench.ts AUTHORSHIP), which is
+// the whole discriminator: user-authored bumps are the human's own
+// gestures (their tab tail renders them), agent-authored bumps are
+// the OTHER author of the one flow — the reveal fires for those.
+
+/** The cards surface's live marker (set by CardsTab's mount effect —
+ *  the only seat that renders the bench). The spotlight skips the
+ *  reveal while the surface is mounted AND the column is expanded:
+ *  re-placing an address the user is already reading would reset
+ *  their scroll/selection for nothing. */
+let cardsSurfaceLive = false
+
+/** CardsTab's visibility contract: true while the bench surface is
+ *  the mounted tab body, false the moment it unmounts (another tab
+ *  took the pane, or the column collapsed its body away). */
+export function markCardsSurface(live: boolean): void {
+  cardsSurfaceLive = live
+}
+
+/** Whether the spotlight should reveal given the seat's own state
+ *  (exported for the wall battery: the flag + the column's expanded
+ *  face decide together — a collapsed column shows the rail, not the
+ *  flow, so it still reveals). */
+export function shouldSpotlight(isExpanded: boolean): boolean {
+  return !cardsSurfaceLive || !isExpanded
+}
+
+/** THE SPOTLIGHT WATCHER: poll the shared bench's rev on a heartbeat
+ *  (the same honest HTTP degrade the resource tail rides — the
+ *  estate's stream face lands later, then the source swaps); on a rev
+ *  drift whose fresh log entries carry author "agent", fire
+ *  onAgentLand once. The FIRST read is hydration — history never
+ *  yanks the user forward on page load. A dead wire keeps trying
+ *  (restarts recover — proven live): the watcher owns no rendered
+ *  truth, the tab tail does, so its swallow can hide nothing. Returns
+ *  the stop function (the plugin's effect disposer). */
+export function watchBenchLands(
+  onAgentLand: () => void,
+  signal?: AbortSignal,
+): () => void {
+  let stopped = false
+  const ctrl = new AbortController()
+  const halt = (): void => {
+    if (stopped) return
+    stopped = true
+    ctrl.abort()
+  }
+  signal?.addEventListener('abort', halt, { once: true })
+  if (signal?.aborted === true) halt()
+  const sleep = (ms: number): Promise<void> =>
+    new Promise((resolve) => {
+      const t = setTimeout(() => { ctrl.signal.removeEventListener('abort', onAbort); resolve() }, ms)
+      const onAbort = (): void => { clearTimeout(t); resolve() }
+      ctrl.signal.addEventListener('abort', onAbort, { once: true })
+      if (ctrl.signal.aborted) { clearTimeout(t); resolve() }
+    })
+  let lastRev: number | null = null
+  const loop = async (): Promise<void> => {
+    while (!stopped) {
+      try {
+        const bench = await fetchBench(ctrl.signal)
+        if (lastRev === null) {
+          lastRev = bench.rev // page-load hydration: history never reveals
+        } else if (bench.rev > lastRev) {
+          const seen = lastRev
+          lastRev = bench.rev
+          const fresh = bench.log.filter((e) => e.rev > seen)
+          if (fresh.some((e) => e.author === 'agent')) onAgentLand()
+        } else {
+          lastRev = bench.rev // honesty on regression: resync, never fire
+        }
+      } catch {
+        /* wire death: keep trying — the next poll may recover */
+      }
+      if (stopped) return
+      await sleep(2000)
+    }
+  }
+  void loop()
+  return halt
+}
+
 /** THE OUTCOME OBSERVER (the attribution half): poll the run to
  *  terminal on the run-wire cadence, then write runStatus + result
  *  onto the bench row through the shared-state door. Both run paths
