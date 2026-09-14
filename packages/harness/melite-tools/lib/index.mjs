@@ -163,8 +163,13 @@ function runStatus(request) {
 }
 //#endregion
 //#region src/tools/melite-construct.ts
-/** The default bench — one shared state per gateway. */
+/** The default bench — the unattributed seat (headless runs,
+*  legacy callers). */
 const DEFAULT_BENCH = "main";
+function benchKeyOfExec(exec) {
+	const id = exec.agent?.id;
+	return typeof id === "string" && /^[A-Za-z0-9_-]{1,64}$/.test(id) ? id : DEFAULT_BENCH;
+}
 function benchKeyOf(a) {
 	const k = a["bench"];
 	return typeof k === "string" && /^[A-Za-z0-9_-]{1,64}$/.test(k) ? k : DEFAULT_BENCH;
@@ -346,7 +351,8 @@ function meliteConstruct(request, opts = {}) {
 		async execute(args, exec) {
 			const a = args;
 			const verb = typeof a.verb === "string" ? a.verb : "";
-			const bench = benchKeyOf(a);
+			const agentBench = benchKeyOfExec(exec);
+			const bench = agentBench !== "main" ? agentBench : benchKeyOf(a);
 			const signal = exec.signal;
 			const out = (payload) => jsonClean({
 				verb,

@@ -1147,7 +1147,8 @@ declare function runStatus(request: EstateRequest): ToolDefinition;
 declare function meliteDiscover(request: EstateRequest): ToolDefinition;
 //#endregion
 //#region src/tools/melite-construct.d.ts
-/** The default bench — one shared state per gateway. */
+/** The default bench — the unattributed seat (headless runs,
+ *  legacy callers). */
 declare const DEFAULT_BENCH = "main";
 declare function meliteConstruct(request: EstateRequest, opts?: {
   headless?: boolean;

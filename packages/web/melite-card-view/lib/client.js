@@ -959,8 +959,25 @@ window.__ModuleLoader__.load({
 		};
 		//#endregion
 		//#region src/client/cards-resource.ts
-		/** The bench key the tab serves (melite-tools' DEFAULT_BENCH — 'main'). */
+		/** The bench address (the legacy bare form serves 'main' — the
+		*  pre-session key records resolve unchanged). */
 		const CARDS_BENCH_ADDRESS = "dsh-resource://cards/bench";
+		const BENCH_SESSION_RE = /^[A-Za-z0-9_-]{1,64}$/;
+		/** Sanitize one candidate id onto a legal bench session key ('main'
+		*  for anything the bench would refuse — the estate's own SESSION_RE). */
+		function benchSessionKey(id) {
+			return typeof id === "string" && BENCH_SESSION_RE.test(id) ? id : "main";
+		}
+		/** The bench address for one session key. */
+		function benchAddressOf(sessionKey) {
+			return CARDS_BENCH_ADDRESS + "/" + benchSessionKey(sessionKey);
+		}
+		/** The session key a bench address carries (the bare legacy address
+		*  and every non-bench address resolve to 'main'). */
+		function benchSessionOfAddress(address) {
+			if (!address.startsWith("dsh-resource://cards/bench/")) return "main";
+			return benchSessionKey(address.slice(27));
+		}
 		/** The draft-stage address — the conversation card's studio target
 		*  (the old embed's law; both segments encode, either may carry the
 		*  separators the bare grammar refuses). */
@@ -971,7 +988,7 @@ window.__ModuleLoader__.load({
 		function parseCardsAddress(address) {
 			if (!address.startsWith("dsh-resource://cards/")) return null;
 			const rest = address.slice(21);
-			if (rest === "bench") return { bench: true };
+			if (rest === "bench" || rest.startsWith("bench/")) return { bench: true };
 			if (rest.startsWith("run/")) {
 				const runId = decodeURIComponent(rest.slice(4));
 				if (runId !== "") return { run: runId };
@@ -1015,11 +1032,35 @@ window.__ModuleLoader__.load({
 				log
 			};
 		}
-		/** Re-read the shared bench (session 'main') — the consumer's reload
+		/** A missing bench is a FRESH conversation's honest zero state, not a
+		*  failure (stroke 44): a conversation's bench is born by its first
+		*  write; reading before that serves the empty bench — rev 0, so the
+		*  birth (rev 1) lands as a FRESH frame and the spotlight reveals
+		*  the very first card. */
+		function emptyBench(sessionKey) {
+			const key = benchSessionKey(sessionKey);
+			return readBench({
+				draft_id: "bench-" + key,
+				session: key,
+				rev: 0,
+				intent: "",
+				stages: []
+			});
+		}
+		function isMissingBench(e) {
+			return (e instanceof Error ? e.message : String(e)).includes("no such bench");
+		}
+		/** Re-read one conversation's bench — the consumer's reload
 		*  after its own edits (the provider's bench stream is a single
 		*  snapshot; same-address navigation does not re-run it). */
-		async function fetchBench(signal) {
-			return readBench(await wireCall("bench/get", { sessionKey: "main" }, signal));
+		async function fetchBench(sessionKey = "main", signal) {
+			const key = benchSessionKey(sessionKey);
+			try {
+				return readBench(await wireCall("bench/get", { sessionKey: key }, signal));
+			} catch (e) {
+				if (isMissingBench(e)) return emptyBench(key);
+				throw e;
+			}
 		}
 		/** The cards surface's live marker (set by CardsTab's mount effect —
 		*  the only seat that renders the bench). The spotlight skips the
@@ -1049,7 +1090,7 @@ window.__ModuleLoader__.load({
 		*  (restarts recover — proven live): the watcher owns no rendered
 		*  truth, the tab tail does, so its swallow can hide nothing. Returns
 		*  the stop function (the plugin's effect disposer). */
-		function watchBenchLands(onAgentLand, signal) {
+		function watchBenchLands(getSession, onAgentLand, signal) {
 			let stopped = false;
 			const ctrl = new AbortController();
 			const halt = () => {
@@ -1074,17 +1115,19 @@ window.__ModuleLoader__.load({
 					resolve();
 				}
 			});
-			let lastRev = null;
+			const lastRevs = /* @__PURE__ */ new Map();
 			const loop = async () => {
 				while (!stopped) {
 					try {
-						const bench = await fetchBench(ctrl.signal);
-						if (lastRev === null) lastRev = bench.rev;
+						const key = benchSessionKey(getSession());
+						const bench = await fetchBench(key, ctrl.signal);
+						const lastRev = lastRevs.get(key) ?? null;
+						if (lastRev === null) lastRevs.set(key, bench.rev);
 						else if (bench.rev > lastRev) {
 							const seen = lastRev;
-							lastRev = bench.rev;
-							if (bench.log.filter((e) => e.rev > seen).some((e) => e.author === "agent")) onAgentLand();
-						} else lastRev = bench.rev;
+							lastRevs.set(key, bench.rev);
+							if (bench.log.filter((e) => e.rev > seen).some((e) => e.author === "agent")) onAgentLand(key);
+						} else lastRevs.set(key, bench.rev);
 					} catch {}
 					if (stopped) return;
 					await sleep(2e3);
@@ -1297,8 +1340,9 @@ window.__ModuleLoader__.load({
 		*  retries once without the id (the bench auto-ids s_<n>) and notes
 		*  it. Any other refusal throws with the door's own text — the bench
 		*  keeps whatever landed before it, and the report says so. */
-		async function restoreRunToBench(run, signal) {
+		async function restoreRunToBench(run, sessionKey = "main", signal) {
 			if (run.draftId === null || run.draftId === "") throw new Error("this run names no draft — nothing to restore");
+			const key = benchSessionKey(sessionKey);
 			let draft;
 			try {
 				draft = await wireCall("drafts/get", { draftId: run.draftId }, signal);
@@ -1310,7 +1354,7 @@ window.__ModuleLoader__.load({
 			if (stages.length === 0) throw new Error("the producing draft holds no stages — nothing to restore");
 			let bench;
 			try {
-				bench = await wireCall("bench/get", { sessionKey: "main" }, signal);
+				bench = await wireCall("bench/get", { sessionKey: key }, signal);
 			} catch (e) {
 				throw new Error("the bench is unreadable: " + (e instanceof Error ? e.message : String(e)));
 			}
@@ -1338,7 +1382,7 @@ window.__ModuleLoader__.load({
 				if (id !== null) doc["id"] = id;
 				try {
 					const row = await wireCall("bench/add-stage", {
-						sessionKey: "main",
+						sessionKey: key,
 						doc
 					}, signal);
 					if (typeof row["rev"] === "number") rev = row["rev"];
@@ -1350,7 +1394,7 @@ window.__ModuleLoader__.load({
 						delete retry["id"];
 						try {
 							const row = await wireCall("bench/add-stage", {
-								sessionKey: "main",
+								sessionKey: key,
 								doc: retry
 							}, signal);
 							if (typeof row["rev"] === "number") rev = row["rev"];
@@ -1369,6 +1413,7 @@ window.__ModuleLoader__.load({
 		*  ends the stream per the contract. */
 		function openCardsResource(address, ctx) {
 			const target = parseCardsAddress(address);
+			const benchKey = benchSessionOfAddress(address);
 			const bench = target !== null && "bench" in target;
 			const runId = target !== null && "run" in target ? target.run : "";
 			const draftTarget = target !== null && "draft" in target ? target : null;
@@ -1380,16 +1425,19 @@ window.__ModuleLoader__.load({
 				if (bench) {
 					let value;
 					try {
-						value = readBench(await wireCall("bench/get", { sessionKey: "main" }));
+						value = readBench(await wireCall("bench/get", { sessionKey: benchKey }));
 					} catch (e) {
-						yield failure(address, e instanceof Error ? e.message : String(e));
-						return;
+						if (!isMissingBench(e)) {
+							yield failure(address, e instanceof Error ? e.message : String(e));
+							return;
+						}
+						value = emptyBench(benchKey);
 					}
 					yield {
 						ok: true,
 						value
 					};
-					yield* pollBenchFrames(value, ctx.signal);
+					yield* pollBenchFrames(value, benchKey, ctx.signal);
 					return;
 				}
 				if (draftTarget !== null) {
@@ -1478,7 +1526,7 @@ window.__ModuleLoader__.load({
 		*  balances agent-write visibility against doc-read chatter; a
 		*  hidden document still receives frames (the shell decides whether
 		*  the tab renders — the provider never guesses visibility). */
-		async function* pollBenchFrames(hydrated, signal) {
+		async function* pollBenchFrames(hydrated, sessionKey, signal) {
 			let value = hydrated;
 			const sleep = (ms) => new Promise((resolve) => {
 				const t = setTimeout(() => {
@@ -1499,7 +1547,7 @@ window.__ModuleLoader__.load({
 				if (await sleep(2500) === "abort" || signal.aborted) return;
 				let row;
 				try {
-					row = await wireCall("bench/get", { sessionKey: "main" }, signal);
+					row = await wireCall("bench/get", { sessionKey }, signal);
 				} catch {
 					continue;
 				}
@@ -44591,7 +44639,7 @@ void main() {
 		*  groups) → the card's DECLARED form (defaults seeded) → bench/add-stage
 		*  as the user (CAS-chained). ONE surface: action cards; models are not
 		*  entries (the model select lives ON the card's form). */
-		function AddCardDoor({ bench, onAdded, onClose, onAddedRow }) {
+		function AddCardDoor({ bench, sessionKey, onAdded, onClose, onAddedRow }) {
 			const [cards, setCards] = (0, react.useState)(null);
 			const [catalogError, setCatalogError] = (0, react.useState)(null);
 			const [query, setQuery] = (0, react.useState)("");
@@ -44631,7 +44679,7 @@ void main() {
 					setBusyId(null);
 					try {
 						const before = new Set(bench.stages.map((r) => r.id));
-						const fresh = (await fetchBench()).stages.find((r) => !before.has(r.id)) ?? null;
+						const fresh = (await fetchBench(sessionKey)).stages.find((r) => !before.has(r.id)) ?? null;
 						if (fresh !== null && onAddedRow !== void 0) onAddedRow(fresh);
 						else onAdded();
 					} catch {
@@ -44676,7 +44724,7 @@ void main() {
 				onClick: () => pick(c)
 			}, (0, react.createElement)("span", { className: card_module_css_default$1.pickerCardLabel }, busyId === c.id ? "adding " + c.label + "…" : c.label), c.description !== "" ? (0, react.createElement)("span", { className: card_module_css_default$1.pickerCardDesc }, c.description) : null, (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Pill, null, titleCaseId(c.families[0] ?? c.id))))))));
 		}
-		function BenchView({ bench, onRun, onRunStage, onStopStage, onRemoveStage, stageRuns, running, onPatchParams, renderStageView, renderPreview, runId, refreshTick, startError }) {
+		function BenchView({ bench, sessionKey, onRun, onRunStage, onStopStage, onRemoveStage, stageRuns, running, onPatchParams, renderStageView, renderPreview, runId, refreshTick, startError }) {
 			const [live, setLive] = (0, react.useState)(bench);
 			(0, react.useEffect)(() => {
 				setLive(bench);
@@ -44706,14 +44754,14 @@ void main() {
 			}, [refreshTick]);
 			const reload = (0, react.useCallback)((opts) => {
 				setReloadError(null);
-				fetchBench().then((next) => {
+				fetchBench(sessionKey).then((next) => {
 					setLive(next);
 					if (opts?.keepOpen === true) setOpen((cur) => cur === null ? null : next.stages.find((s) => s.id === cur.id) ?? null);
 					else setOpen(null);
 				}).catch((e) => {
 					setReloadError(e instanceof Error ? e.message : "bench reload failed");
 				});
-			}, []);
+			}, [sessionKey]);
 			const onAdded = (0, react.useCallback)(() => {
 				setAdding(false);
 				reload();
@@ -44971,6 +45019,7 @@ void main() {
 				runId,
 				detail: StageDrill
 			}) : null, adding ? (0, react.createElement)(AddCardDoor, {
+				sessionKey,
 				bench: live,
 				onAdded,
 				onClose: () => {
@@ -45030,7 +45079,7 @@ void main() {
 				bindRun
 			});
 		}
-		function RunView({ run, onBack, onRestored, onStop }) {
+		function RunView({ run, sessionKey, onBack, onRestored, onStop }) {
 			const [restoring, setRestoring] = (0, react.useState)(false);
 			const [note, setNote] = (0, react.useState)(null);
 			const [stopping, setStopping] = (0, react.useState)(false);
@@ -45043,7 +45092,7 @@ void main() {
 			const onRestore = (0, react.useCallback)(() => {
 				setRestoring(true);
 				setNote(null);
-				restoreRunToBench(run).then((report) => {
+				restoreRunToBench(run, sessionKey).then((report) => {
 					const extra = report.notes.length > 0 ? " (" + report.notes.join("; ") + ")" : "";
 					const skipped = report.skipped > 0 ? ", " + String(report.skipped) + " skipped" : "";
 					setNote("restored " + String(report.added) + " stage(s) to the bench" + skipped + extra);
@@ -45053,7 +45102,11 @@ void main() {
 					setNote(e instanceof Error ? e.message : String(e));
 					setRestoring(false);
 				});
-			}, [run, onRestored]);
+			}, [
+				run,
+				onRestored,
+				sessionKey
+			]);
 			return (0, react.createElement)("section", {
 				className: card_module_css_default$1.runView,
 				"data-run-status": run.status
@@ -45130,7 +45183,12 @@ void main() {
 				}) ?? fallback;
 			};
 			const info = typeof props.useTabInfo === "function" ? props.useTabInfo() : void 0;
-			const address = resolveCardsAddress(info?.tab.navigation.address ?? info?.tab.contentId ?? "dsh-resource://cards/bench");
+			const rawAddress = info?.tab.navigation.address ?? info?.tab.contentId ?? "dsh-resource://cards/bench";
+			const benchKey = benchSessionKey(props.sessionId ?? benchSessionOfAddress(resolveCardsAddress(rawAddress)));
+			const benchAddress = benchAddressOf(benchKey);
+			const resolved = resolveCardsAddress(rawAddress);
+			const parsed = parseCardsAddress(resolved);
+			const address = parsed !== null && ("run" in parsed || "draft" in parsed) ? resolved : benchAddress;
 			const openResource = info?.tab.actions.openResource;
 			const snapshot = typeof props.useResource === "function" ? props.useResource(address) : void 0;
 			const [running, setRunning] = (0, react.useState)(false);
@@ -45315,14 +45373,15 @@ void main() {
 				});
 			}, []);
 			const onBack = (0, react.useCallback)(() => {
-				if (openResource !== void 0) openResource(CARDS_BENCH_ADDRESS);
-			}, [openResource]);
+				if (openResource !== void 0) openResource(benchAddress);
+			}, [openResource, benchAddress]);
 			if (snapshot === void 0) return (0, react.createElement)("p", { className: card_module_css_default$1.missing }, "cards resource hook unavailable");
 			if (snapshot.status === "loading" || snapshot.status === "none") return (0, react.createElement)("p", { className: card_module_css_default$1.loading }, "loading " + address + "…");
 			if (snapshot.status === "failed") return (0, react.createElement)("p", { className: card_module_css_default$1.failed }, snapshot.failure?.message ?? "cards resource failed");
 			const value = snapshot.value;
 			if (value === void 0) return (0, react.createElement)("p", { className: card_module_css_default$1.failed }, "cards resource gave no value");
 			return value.kind === "bench" ? (0, react.createElement)(react.Fragment, null, localRunError !== null ? (0, react.createElement)("p", { className: card_module_css_default$1.runError }, localRunError) : null, (0, react.createElement)(ToastViewport), (0, react.createElement)(BenchView, {
+				sessionKey: benchKey,
 				bench: value,
 				onRun,
 				onRunStage,
@@ -45350,6 +45409,7 @@ void main() {
 				runId: lastRunId
 			})) : (0, react.createElement)(RunView, {
 				run: value,
+				sessionKey: benchKey,
 				onBack: openResource !== void 0 ? onBack : void 0,
 				onRestored: onBack,
 				onStop
@@ -45416,7 +45476,8 @@ void main() {
 					patterns: ["dsh-resource://cards/**"],
 					title: (address) => {
 						const resolved = resolveCardsAddress(address);
-						return resolved === "dsh-resource://cards/bench" ? "Cards" : resolved.replace(/^dsh-resource:\/\/cards\//, "");
+						if (resolved.startsWith("dsh-resource://cards/bench")) return "Cards";
+						return resolved.replace(/^dsh-resource:\/\/cards\//, "");
 					},
 					guide: [{
 						order: 50,
@@ -45454,9 +45515,17 @@ void main() {
 				console.error("[melite-card-view] cards resource provider registration failed:", error);
 			}
 			try {
-				ctx.effect(() => watchBenchLands(() => {
+				const activeBenchSession = () => {
 					try {
-						if (shouldSpotlight(ctx.sidebarRight.isExpanded())) ctx.sidebarRight.openResource(CARDS_BENCH_ADDRESS);
+						const sid = (ctx.uiSession?.adapter?.current?.getSnapshot?.())?.props?.["sessionId"];
+						return benchSessionKey(typeof sid === "string" ? sid : void 0);
+					} catch {
+						return "main";
+					}
+				};
+				ctx.effect(() => watchBenchLands(activeBenchSession, (sessionKey) => {
+					try {
+						if (shouldSpotlight(ctx.sidebarRight.isExpanded())) ctx.sidebarRight.openResource(benchAddressOf(sessionKey));
 					} catch (error) {
 						console.error("[melite-card-view] bench spotlight reveal failed:", error);
 					}
