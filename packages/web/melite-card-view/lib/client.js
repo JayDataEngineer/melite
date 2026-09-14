@@ -40229,9 +40229,9 @@ void main() {
 		*/
 		/** The bench add-stage wire door caller (the tab's add-card path).
 		*  The doc holds card/author/engine/params/expect_rev. */
-		async function addStageWire(doc, signal) {
+		async function addStageWire(doc, sessionKey = "main", signal) {
 			return await wireCall$2("bench/add-stage", {
-				sessionKey: "main",
+				sessionKey,
 				doc
 			}, {
 				signal,
@@ -44693,7 +44693,7 @@ void main() {
 					};
 					const seeds = seedUser(spec, {});
 					if (Object.keys(seeds).length > 0) doc["params"] = { ...seeds };
-					await addStageWire(doc);
+					await addStageWire(doc, sessionKey);
 					setBusyId(null);
 					try {
 						const before = new Set(bench.stages.map((r) => r.id));
@@ -44843,7 +44843,7 @@ void main() {
 				if (e.dataTransfer.types.includes(CAPABILITY_DRAG_MIME)) {
 					const cap = parseCapabilityDrop(e.dataTransfer.getData(CAPABILITY_DRAG_MIME));
 					if (cap === null) return;
-					addStageWire({
+					addStageWire(sessionKey, {
 						card: cap.service,
 						...cap.params !== void 0 && Object.keys(cap.params).length > 0 ? { params: cap.params } : {},
 						expect_rev: live.rev
@@ -44862,7 +44862,7 @@ void main() {
 						setReloadError(t !== "" ? "Input cards don’t accept " + t + " assets" : "That asset isn’t supported — drop an image or audio asset");
 						return;
 					}
-					addStageWire({
+					addStageWire(sessionKey, {
 						card: "input-prep",
 						params: { source: payload.url },
 						expect_rev: live.rev
@@ -44876,7 +44876,7 @@ void main() {
 				if (e.dataTransfer.files.length > 0) {
 					const file = e.dataTransfer.files[0];
 					if (file === void 0) return;
-					uploadInputFile(file).then(({ name }) => addStageWire({
+					uploadInputFile(file).then(({ name }) => addStageWire(sessionKey, {
 						card: "input-prep",
 						params: { source: name },
 						expect_rev: live.rev

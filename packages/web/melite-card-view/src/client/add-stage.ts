@@ -12,8 +12,8 @@ import { wireCall } from '@melite-plugin/melite-run-wire'
 
 /** The bench add-stage wire door caller (the tab's add-card path).
  *  The doc holds card/author/engine/params/expect_rev. */
-export async function addStageWire(doc: Record<string, unknown>, signal?: AbortSignal): Promise<Record<string, unknown>> {
-  return await wireCall('bench/add-stage', { sessionKey: 'main', doc }, { signal, voice: 'bench/add-stage' })
+export async function addStageWire(doc: Record<string, unknown>, sessionKey = 'main', signal?: AbortSignal): Promise<Record<string, unknown>> {
+  return await wireCall('bench/add-stage', { sessionKey, doc }, { signal, voice: 'bench/add-stage' })
 }
 
 /** The bench remove-stage wire door caller (the drill's Remove path).

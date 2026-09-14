@@ -1297,7 +1297,7 @@ function AddCardDoor({ bench, sessionKey, onAdded, onClose, onAddedRow }: {
       // never ride the bench as fake overrides.
       const seeds = seedUser(spec, {})
       if (Object.keys(seeds).length > 0) doc['params'] = { ...seeds }
-      await addStageWire(doc)
+      await addStageWire(doc, sessionKey)
       setBusyId(null)
       // THE OPEN-ON-ADD LAW (the operator's hour-7): after the door
       // lands, the bench is re-read and the ONE fresh id (the card
@@ -1500,7 +1500,7 @@ function BenchView({ bench, sessionKey, onRun, onRunStage, onStopStage, onRemove
       // the door's ADD_KEYS carry no `title` — stages are named by
       // their card (benchRow: title ?? card ?? id); the payload's
       // title is diagnostics, not a stage field.
-      void addStageWire({
+      void addStageWire(sessionKey, {
         card: cap.service,
         ...(cap.params !== undefined && Object.keys(cap.params).length > 0 ? { params: cap.params } : {}),
         expect_rev: live.rev,
@@ -1518,7 +1518,7 @@ function BenchView({ bench, sessionKey, onRun, onRunStage, onStopStage, onRemove
         setReloadError(t !== '' ? 'Input cards don\u2019t accept ' + t + ' assets' : 'That asset isn\u2019t supported \u2014 drop an image or audio asset')
         return
       }
-      void addStageWire({
+      void addStageWire(sessionKey, {
         card: 'input-prep',
         params: { source: payload.url },
         expect_rev: live.rev,
@@ -1531,7 +1531,7 @@ function BenchView({ bench, sessionKey, onRun, onRunStage, onStopStage, onRemove
       const file = e.dataTransfer.files[0]
       if (file === undefined) return
       void uploadInputFile(file)
-        .then(({ name }) => addStageWire({
+        .then(({ name }) => addStageWire(sessionKey, {
           card: 'input-prep',
           params: { source: name },
           expect_rev: live.rev,
