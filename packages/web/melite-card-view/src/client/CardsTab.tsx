@@ -2018,7 +2018,10 @@ export function CardsTab(props: CardsTabProps): ReturnType<typeof h> {
     const carryFailure = (error: string): void => {
       setRunning(false)
       setLocalRunError(error)
-      void patchStageOutcome(draftId, stageId, { runStatus: 'failed', result: { error } })
+      // the snapshot's rev fences the row write (stale revs rebase
+      // inside the door — the revless-write cure, 2026-09-14).
+      const rev = snapshot.value.kind === 'bench' ? snapshot.value.rev : undefined
+      void patchStageOutcome(draftId, stageId, { runStatus: 'failed', result: { error } }, rev)
         .then(() => { touchBench() })
         .catch(() => {})
     }
@@ -2088,7 +2091,8 @@ export function CardsTab(props: CardsTabProps): ReturnType<typeof h> {
         const draftId = value.draftId
         const stageId = target.id
         const error = res.refused
-        void patchStageOutcome(draftId, stageId, { runStatus: 'failed', result: { error } })
+        const rev = value.kind === 'draft' ? value.rev : undefined
+        void patchStageOutcome(draftId, stageId, { runStatus: 'failed', result: { error } }, rev)
           .catch(() => {})
       }
     })

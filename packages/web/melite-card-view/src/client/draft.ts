@@ -92,13 +92,77 @@ export async function fetchDraft(draftId: string): Promise<DraftDoc> {
   return doc as unknown as DraftDoc
 }
 
+/** The draft's CURRENT bench rev — the CAS handle for a write the
+ *  caller composed without one (the outcome observer holds no rev;
+ *  a drill held its open-time rev while the agent moved the bench).
+ *  Reads the served doc's own bench block; null when the door won't
+ *  say (the caller then throws loud, never writes blind). */
+export async function fetchDraftRev(draftId: string): Promise<number | null> {
+  try {
+    const doc = await fetchDraft(draftId)
+    return typeof doc.bench?.rev === 'number' ? doc.bench.rev : null
+  } catch {
+    return null
+  }
+}
+
+/** True when the throw is the door's CAS verdict (stale or missing
+ *  expect_rev) — the ONLY refusal a rebase-and-retry may answer. Any
+ *  other refusal (admission, unknown stage, store failure) throws
+ *  through untouched: retrying those would be a fallback. */
+function isCasConflict(e: unknown): boolean {
+  const msg = e instanceof Error ? e.message : String(e)
+  return msg.includes('cas-conflict') || msg.includes('bench moved') || msg.includes('expect_rev')
+}
+
+/** One drafts/patch round trip; throws the door's named refusal. */
+async function patchOnce(
+  draftId: string, stageId: string, patch: Record<string, unknown>,
+  expectRev: number | undefined,
+): Promise<void> {
+  const row = await wireCall('drafts/patch', {
+    draftId, stageId, patch,
+    ...(expectRev !== undefined ? { expectRev } : {}),
+  })
+  if (row['delivered'] !== true) {
+    const reason = typeof row['reason'] === 'string' ? row['reason'] : 'undelivered'
+    throw new Error('drafts/patch: ' + reason + ' (draft ' + draftId + ', stage ' + stageId + ')')
+  }
+}
+
+/** The CAS dance (the run-start face law, 2026-09-14): write with the
+ *  held rev; on the door's cas-conflict RE-READ the rev and re-apply
+ *  ONCE (the server message's own instruction — "re-read and
+ *  re-apply"). A second conflict, a missing rev, or any non-CAS
+ *  refusal throws LOUD — never a silent drop, never a blind write. */
+async function patchWithRebase(
+  draftId: string, stageId: string, patch: Record<string, unknown>,
+  expectRev: number | undefined,
+): Promise<void> {
+  let rev = expectRev
+  if (rev === undefined) {
+    rev = await fetchDraftRev(draftId) ?? undefined
+    if (rev === undefined) throw new Error('drafts/patch: no bench rev to write against (draft ' + draftId + ')')
+  }
+  try {
+    await patchOnce(draftId, stageId, patch, rev)
+  } catch (e: unknown) {
+    if (!isCasConflict(e)) throw e
+    const fresh = await fetchDraftRev(draftId) ?? undefined
+    if (fresh === undefined) throw e
+    await patchOnce(draftId, stageId, patch, fresh)
+  }
+}
+
 /** Edit one stage's params — the REAL door, reborn 2026-09-11: the
  *  drafts remote's `drafts/patch` write arm over the drafts domain
  *  (the gateway-era PATCH /v1/flows/drafts/:id/stages/:sid died with
  *  the app; stroke L stubbed this to a loud throw — the shared-state
  *  door is back, same per-key merge semantics server-side). Throws
  *  the door's named refusal; delivered:false lands as a named throw
- *  (never a lying success). */
+ *  (never a lying success). Null params values ride VERBATIM —
+ *  the door's JSON Merge Patch arm deletes those keys (the unset
+ *  path's domain half). */
 export async function patchStageParams(
   draftId: string, stageId: string, params: Record<string, unknown>,
   expectRev?: number,
@@ -106,17 +170,10 @@ export async function patchStageParams(
   // THE CAS FENCE (the parameter audit, 2026-09-14): the caller
   // hands the bench revision it composed against; the door refuses
   // bench/cas-conflict loud when the bench moved (never merges
-  // under the earlier author). Null params values ride VERBATIM —
-  // the door's JSON Merge Patch arm deletes those keys (the unset
-  // path's domain half).
-  const row = await wireCall('drafts/patch', {
-    draftId, stageId, patch: { params },
-    ...(expectRev !== undefined ? { expectRev } : {}),
-  })
-  if (row['delivered'] !== true) {
-    const reason = typeof row['reason'] === 'string' ? row['reason'] : 'undelivered'
-    throw new Error('drafts/patch: ' + reason + ' (draft ' + draftId + ', stage ' + stageId + ')')
-  }
+  // under the earlier author). On conflict the write re-reads the
+  // rev and re-applies once (patchWithRebase) — a second conflict
+  // still throws loud.
+  await patchWithRebase(draftId, stageId, { params }, expectRev)
 }
 
 /** Report a stage's RUN OUTCOME onto the bench row — the same
@@ -130,12 +187,16 @@ export async function patchStageParams(
 export async function patchStageOutcome(
   draftId: string, stageId: string,
   outcome: { runStatus: string; result?: Record<string, unknown> },
+  expectRev?: number,
 ): Promise<void> {
-  const row = await wireCall('drafts/patch', { draftId, stageId, patch: outcome })
-  if (row['delivered'] !== true) {
-    const reason = typeof row['reason'] === 'string' ? row['reason'] : 'undelivered'
-    throw new Error('drafts/patch: ' + reason + ' (draft ' + draftId + ', stage ' + stageId + ')')
-  }
+  // THE REVLESS-WRITE CURE (2026-09-14, the operator's "PRESS PLAY.
+  // NOTHING HAPPENS"): this door sent NO expect_rev, and the server
+  // REQUIRES it — every outcome write (running, progress, terminal)
+  // refused bench/cas-conflict, deterministically, forever. Finished
+  // images piled up on disk while the drill said "No render yet".
+  // Now the write carries a rev (the caller's, else a fresh read)
+  // and rebases once on conflict; a final failure throws LOUD.
+  await patchWithRebase(draftId, stageId, outcome, expectRev)
 }
 
 /** Start the run; returns the run_id or throws the door's named refusal. */

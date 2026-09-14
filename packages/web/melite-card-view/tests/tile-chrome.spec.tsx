@@ -72,7 +72,7 @@ function stubWire(): { calls: Call[] } {
     calls.push({ method: frame.method, args: frame.payload.args })
     let value: Record<string, unknown> = { ok: true }
     if (frame.method === 'bench/get') value = benchDoc
-    if (frame.method === 'drafts/get') value = { draft_id: 'bench-s1', rev: 7, intent: '', stages: [stage] }
+    if (frame.method === 'drafts/get') value = { draft_id: 'bench-s1', rev: 7, intent: '', bench: { rev: 7, log: [] }, stages: [stage] }
     if (frame.method === 'runs/status') value = { run_id: 'run-1', status: runStatus, draft_id: 'bench-s1', stages: [] }
     if (frame.method === 'runs/list') value = { runs: [] }
     if (frame.method === 'runs/start') value = { run_id: 'run-1', status: 'queued' }

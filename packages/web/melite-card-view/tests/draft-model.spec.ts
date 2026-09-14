@@ -120,22 +120,37 @@ describe("door narrowing — named refusals, malformed docs", () => {
 
   test("patchStageParams rides the drafts/patch wire door (reborn 2026-09-11)", async () => {
     // The REAL door: the write arm over the drafts domain. The frame
-    // carries the named args + the {params} patch body; delivered
+    // carries the named args + the {params} patch body + the CAS
+    // expectRev (the revless-write cure: the door requires a rev, so
+    // the write reads the served doc's bench block first); delivered
     // false lands as a named throw (never a lying success).
-    let sent: Record<string, unknown> | null = null;
+    const sent: Array<Record<string, unknown>> = [];
     (globalThis as { fetch: unknown }).fetch = async (_i: unknown, init?: RequestInit): Promise<Response> => {
-      sent = JSON.parse(String(init?.body)) as Record<string, unknown>;
+      const frame = JSON.parse(String(init?.body)) as { rpcId: string; method: string };
+      sent.push(frame as unknown as Record<string, unknown>);
+      const value = frame.method === "drafts/get"
+        ? { draft_id: "d", stages: [], bench: { rev: 9, log: [] } }
+        : { draftId: "d", stageId: "s_0", delivered: true, patched: ["params"] };
       return new Response(JSON.stringify({
-        type: "server-response", rpcId: (sent as { rpcId: string }).rpcId,
-        result: { ok: true, value: { draftId: "d", stageId: "s_0", delivered: true, patched: ["params"] } },
+        type: "server-response", rpcId: frame.rpcId,
+        result: { ok: true, value },
       }), { status: 200, headers: { "content-type": "application/json" } });
     };
     await patchStageParams("d", "s_0", { steps: 12 });
-    const frame = sent as unknown as { method: string; payload: { args: Record<string, unknown> } };
-    expect(frame.method).toBe("drafts/patch");
-    expect(frame.payload.args).toEqual({ draftId: "d", stageId: "s_0", patch: { params: { steps: 12 } } });
+    const write = sent.find((f) => (f as { method: string }).method === "drafts/patch") as unknown as { method: string; payload: { args: Record<string, unknown> } };
+    expect(write.method).toBe("drafts/patch");
+    expect(write.payload.args).toEqual({ draftId: "d", stageId: "s_0", patch: { params: { steps: 12 } }, expectRev: 9 });
 
-    stubWire({ ok: true, value: { draftId: "d", stageId: "s_x", delivered: false, reason: "stage not found" } });
+    (globalThis as { fetch: unknown }).fetch = async (_i: unknown, init?: RequestInit): Promise<Response> => {
+      const frame = JSON.parse(String(init?.body)) as { rpcId: string; method: string };
+      const value = frame.method === "drafts/get"
+        ? { draft_id: "d", stages: [], bench: { rev: 9, log: [] } }
+        : { draftId: "d", stageId: "s_x", delivered: false, reason: "stage not found" };
+      return new Response(JSON.stringify({
+        type: "server-response", rpcId: frame.rpcId,
+        result: { ok: true, value },
+      }), { status: 200, headers: { "content-type": "application/json" } });
+    };
     const message = await patchStageParams("d", "s_x", { steps: 1 }).catch((e: Error) => e.message);
     expect(message).toContain("stage not found");
   });

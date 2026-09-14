@@ -160,6 +160,9 @@ describe('observeRunOutcome — the failure carry', () => {
         patches.push((JSON.parse(String(init?.body)) as { payload: { args: Record<string, unknown> } }).payload.args)
         return new Response(JSON.stringify({ type: 'server-response', rpcId, result: { ok: true, value: { delivered: true } } }), { status: 200, headers: { 'content-type': 'application/json' } })
       }
+      if (path.includes('/api/drafts/get')) {
+        return new Response(JSON.stringify({ type: 'server-response', rpcId, result: { ok: true, value: { draft_id: 'bench-main', stages: [], bench: { rev: 3, log: [] } } } }), { status: 200, headers: { 'content-type': 'application/json' } })
+      }
       return new Response(JSON.stringify({ type: 'server-response', rpcId, result: { ok: true, value: {} } }), { status: 200, headers: { 'content-type': 'application/json' } })
     })
   }
@@ -218,6 +221,9 @@ describe('observeRunOutcome — the progress carry', () => {
       if (path.includes('/api/drafts/patch')) {
         patches.push((JSON.parse(String(init?.body)) as { payload: { args: Record<string, unknown> } }).payload.args)
         return new Response(JSON.stringify({ type: 'server-response', rpcId, result: { ok: true, value: { delivered: true } } }), { status: 200, headers: { 'content-type': 'application/json' } })
+      }
+      if (path.includes('/api/drafts/get')) {
+        return new Response(JSON.stringify({ type: 'server-response', rpcId, result: { ok: true, value: { draft_id: 'bench-main', stages: [], bench: { rev: 3, log: [] } } } }), { status: 200, headers: { 'content-type': 'application/json' } })
       }
       return new Response(JSON.stringify({ type: 'server-response', rpcId, result: { ok: true, value: {} } }), { status: 200, headers: { 'content-type': 'application/json' } })
     })

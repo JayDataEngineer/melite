@@ -218,12 +218,15 @@ function ZoomMount(props: ZoomDetailProps & { detail: (p: ZoomDetailProps) => Re
                 'aria-label': 'Run stage', 'data-testid': 'drill-run',
                 onClick: () => { (boundRef.current ?? props.onRun)() },
               }, h(IconPlayOutline16, { size: 16 }), h('span', null, 'Run')),
+            // THE CLOSE PILL (the operator's law: the ✕ rides the
+            // SAME ghost-pill grammar as ✦ Enhance and Run — glyph +
+            // word, one button row, no orphan icon seat).
             h('button', {
-              className: css.closeX,
+              className: css.drillRunBtn,
               type: 'button',
               'aria-label': 'Collapse card',
               onClick: onClose,
-            }, '✕'),
+            }, h('span', null, '✕'), h('span', null, 'Close')),
           ),
           // THE WEBHOOK BAR: live → spinner + activity + percent + a
           // thin meter; failed → the reason, whole text (the drill is

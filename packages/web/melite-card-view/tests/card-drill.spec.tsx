@@ -56,6 +56,11 @@ interface StubOpts {
   draftStages?: Array<Record<string, unknown>>
   /** Sequential runs/status docs (default: one queued doc). */
   runDocs?: Array<Record<string, unknown>>
+  /** Queue of drafts/patch answers served INSTEAD of success (the CAS
+   *  walls burn one conflict, then the door succeeds). */
+  patchFailures?: Array<Record<string, unknown>>
+  /** The bench-block rev drafts/get serves (default 7). */
+  draftBenchRev?: number
 }
 function stubWire(opts?: StubOpts): { calls: Call[] } {
   const calls: Call[] = []
@@ -98,13 +103,17 @@ function stubWire(opts?: StubOpts): { calls: Call[] } {
     calls.push({ method: frame.method, args: frame.payload.args })
     let value: Record<string, unknown> = { ok: true }
     if (frame.method === 'bench/get') value = benchDoc
-    if (frame.method === 'drafts/get') value = { draft_id: 'bench-s1', rev: 7, intent: '', stages: opts?.draftStages ?? [{ id: 's_0', card: 'image-gen', title: 'hero frame', engine: 'comfyui', params: liveParams }] }
+    if (frame.method === 'drafts/get') value = { draft_id: 'bench-s1', rev: 7, intent: '', bench: { rev: opts?.draftBenchRev ?? 7, log: [] }, stages: opts?.draftStages ?? [{ id: 's_0', card: 'image-gen', title: 'hero frame', engine: 'comfyui', params: liveParams }] }
     if (frame.method === 'runs/status') value = runDocs.length > 1 ? runDocs.shift()! : runDocs[0]!
     if (frame.method === 'runs/start') value = { run_id: 'run-1', status: 'queued' }
     if (frame.method === 'drafts/patch') {
-      const patch = (frame.payload.args as { patch?: { params?: Record<string, unknown> } }).patch
-      if (patch?.params !== undefined) Object.assign(liveParams, patch.params)
-      value = { draftId: 'bench-s1', stageId: 's_0', delivered: true, patched: ['params'] }
+      if (opts?.patchFailures !== undefined && opts.patchFailures.length > 0) {
+        value = opts.patchFailures.shift()!
+      } else {
+        const patch = (frame.payload.args as { patch?: { params?: Record<string, unknown> } }).patch
+        if (patch?.params !== undefined) Object.assign(liveParams, patch.params)
+        value = { draftId: 'bench-s1', stageId: 's_0', delivered: true, patched: ['params'] }
+      }
     }
     return new Response(JSON.stringify({ type: 'server-response', rpcId: frame.rpcId, result: { ok: true, value } }), { status: 200 })
   }
@@ -677,4 +686,78 @@ test('a THROWN run start renders its reason in the open drill — never silent, 
   await waitFor(() => {
     expect(within(detail).getByRole('button', { name: 'Run stage' })).toBeTruthy()
   })
+})
+
+// ── STROKE 27: THE REVLESS-WRITE CURE (the operator pressed Play,
+//    the run COMPLETED on the estate, and the drill said nothing —
+//    every outcome write sent NO expect_rev and the door requires
+//    it, so running/progress/terminal all refused cas-conflict and
+//    finished images piled up on disk while the row stayed empty).
+//  ─────────────────────────────────────────────────────────────
+test('the run-outcome write carries a numeric expect_rev (never revless)', async () => {
+  const { calls } = stubWire()
+  const user = userEvent.setup()
+  render(createElement(CardsTab, {
+    useTabInfo: () => ({
+      tab: {
+        kind: 'sidebar.right.pane.tab', contentId: undefined,
+        navigation: { address: 'dsh-resource://cards/bench' },
+        actions: { openResource: noop },
+      },
+    }),
+    useResource: () => ({ status: 'live', value: BENCH }),
+  }))
+  await user.click(tileButton())
+  await screen.findByText('Prompt', {}, { timeout: 4000 })
+  // no edits — the flush skips, so the FIRST drafts/patch is the
+  // observer's running-outcome write (the exact call that used to
+  // ride revless and die on the door's CAS law)
+  const detail = screen.getByText('Steps').closest('div[class*="zoomCard"]') as HTMLElement
+  await user.click(within(detail).getByRole('button', { name: 'Run stage' }))
+  await waitFor(() => {
+    expect(calls.some((c) => c.method === 'runs/start')).toBe(true)
+    expect(calls.some((c) => c.method === 'drafts/patch')).toBe(true)
+  })
+  const writes = calls.filter((c) => c.method === 'drafts/patch')
+  expect(writes.length).toBeGreaterThan(0)
+  for (const w of writes) {
+    expect(typeof (w.args as { expectRev?: unknown }).expectRev, 'every outcome write carries expect_rev').toBe('number')
+  }
+})
+
+test('a CAS-conflicted write re-reads the rev and re-applies once — the run still starts', async () => {
+  const { calls } = stubWire({
+    patchFailures: [{ draftId: 'bench-s1', stageId: 's_0', delivered: false, reason: 'bench/cas-conflict: bench moved: rev is 8, caller held 7' }],
+    draftBenchRev: 8,
+  })
+  const user = userEvent.setup()
+  render(createElement(CardsTab, {
+    useTabInfo: () => ({
+      tab: {
+        kind: 'sidebar.right.pane.tab', contentId: undefined,
+        navigation: { address: 'dsh-resource://cards/bench' },
+        actions: { openResource: noop },
+      },
+    }),
+    useResource: () => ({ status: 'live', value: BENCH }),
+  }))
+  await user.click(tileButton())
+  await screen.findByText('Prompt', {}, { timeout: 4000 })
+  // an edit forces the flush write — it conflicts once, rebases to
+  // the served rev 8, re-applies, and the run starts with the edit
+  const steps = screen.getByDisplayValue('8')
+  await user.clear(steps)
+  await user.type(steps, '20')
+  const detail = screen.getByText('Steps').closest('div[class*="zoomCard"]') as HTMLElement
+  await user.click(within(detail).getByRole('button', { name: 'Run stage' }))
+  await waitFor(() => {
+    expect(calls.some((c) => c.method === 'runs/start')).toBe(true)
+  }, { timeout: 5000 })
+  const writes = calls.filter((c) => c.method === 'drafts/patch')
+  // the conflict burned exactly one failure, the retry carried the
+  // fresh rev — the press survived the moved bench
+  expect(writes.length).toBeGreaterThanOrEqual(2)
+  expect((writes[1]?.args as { expectRev?: unknown }).expectRev).toBe(8)
+  const start = calls.find((c) => c.method === 'runs/start')
+  expect(start?.args).toMatchObject({ doc: { steps: 20 } })
 })

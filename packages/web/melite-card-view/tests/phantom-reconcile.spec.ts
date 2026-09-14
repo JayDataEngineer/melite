@@ -33,6 +33,7 @@ function stubWire(answers: {
       }
     }
     if (frame.method === 'runs/list') value = { runs: answers.list ?? [] }
+    if (frame.method === 'drafts/get') value = { draft_id: 'bench-p', stages: [], bench: { rev: 1, log: [] } }
     if (frame.method === 'drafts/patch') value = { draftId: 'bench-p', stageId: 's_h3', delivered: true, patched: ['runStatus'] }
     return new Response(JSON.stringify({ type: 'server-response', rpcId: frame.rpcId, result: { ok: true, value } }), { status: 200, headers: { 'content-type': 'application/json' } })
   }))
