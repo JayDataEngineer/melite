@@ -230,9 +230,10 @@ function optionTooltip(
 
 /** The modifiers offer: one entry per boarded modifier pack (the
  *  DECL's mods order, filtered to the pack table). Options ride the
- *  pack rows (union-served rows carry the shared suffix); fields
- *  ride the pack's schema_groups member rows minus the pack's own
- *  stack knob. */
+ *  pack rows (union-served rows carry the shared suffix); the
+ *  entry's param rows derive client-side off `mod_schemas[pack]`
+ *  (the absorbed contract's own toJSON — same walker as the card
+ *  fields, one meta path). */
 function specModifiers(
   svc: ComfyUIService,
   card: string,

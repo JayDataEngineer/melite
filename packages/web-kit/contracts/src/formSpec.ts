@@ -1,12 +1,17 @@
 /**
- * Unified form descriptor — fetched from /v1/form-spec?model=...
+ * LEGACY (the retired editor's form grammar) — stroke 13 (2026-09-14)
+ * replaced the wire this types: `/v1/form-spec` now serves the
+ * SCHEMA ENVELOPE (the card schema's own schemastery `toJSON()` +
+ * family-scoped `mod_schemas` + `model_defaults` + the recipes
+ * catalog), consumed via `@melite/card-base` (`FormSpecDoc`,
+ * `fieldsOfEnvelope`). This flat `FormSpec` tree has NO live
+ * consumer outside web-kit's own tests — it stays as the recorded
+ * exempt GUI-debt (CONFORMANCE_LEDGER H-rows). Do not build on it.
  *
- * The backend builds this from the model catalog, service tags, flow
- * catalog, and field options. The frontend renders it directly — no
- * model-specific branches, no hardcoded model lists.
- *
- * Adding a model is a YAML edit on the server; the form adapts here
- * without any code changes.
+ * Historical: the retired editor fetched this from
+ * /v1/form-spec?model=... — the backend built it from the model
+ * catalog, service tags, flow catalog, and field options, and the
+ * frontend rendered it directly (no model-specific branches).
  */
 
 /** One select option — a display ``label`` distinct from the wire ``value``.

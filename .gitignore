@@ -152,6 +152,10 @@ data/**
 # (provision copies them in at sync time).
 data/runtime/anny-commercial/SOMA-X/
 data/runtime/anny-commercial/sam-3d-body/
+# the provisioned ComfyUI checkout is an EMBEDDED REPO (has .git) —
+# without an explicit row, `git add data/` would re-record it as a
+# gitlink (exactly what commit 5dc013e4 did by accident).
+data/runtime/comfyui/
 
 # Platform tier vendored plugins: lib/ is BUILT per-host by
 # plugins/gateway/scripts/link-vendored-platform.sh (harness layout), never committed
