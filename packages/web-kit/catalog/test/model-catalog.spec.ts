@@ -44,7 +44,7 @@ import {
 } from "../src/modelCatalog.ts";
 import type { Catalog, FamilyEntry } from "../src/modelCatalog.ts";
 import { useCatalogContractStore } from "../src/catalogContractStore.ts";
-import { useToastStore } from "../src/toast";
+import { useToastStore } from "@melite/card-base/toast-store";
 
 const realFetch = globalThis.fetch;
 const realAddToast = useToastStore.getState().addToast;

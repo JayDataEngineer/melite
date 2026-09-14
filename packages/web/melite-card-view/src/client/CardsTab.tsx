@@ -38,6 +38,7 @@ import type { StageViewOwnerProps } from './types.ts'
 import { fetchCardCatalog, fetchFormSpec, fieldsOf, resolveValue, seedUser, SpecForm } from './spec-form.tsx'
 import { titleCaseId } from '@melite/card-base/spec'
 import { fetchFormsTable, postManageAction } from '@melite/card-base/wire'
+import { ToastViewport } from '@melite/card-base/toast'
 import { StudioShell } from '@melite/card-base/shell'
 
 /** The /v1/forms edge-meta cache (card id → declared input/output
@@ -2096,6 +2097,12 @@ export function CardsTab(props: CardsTabProps): ReturnType<typeof h> {
     // FlowCanvas branch was retired in Phase 2 (src/old/ deleted).
     ? h(Fragment, null,
         localRunError !== null ? h('p', { className: css.runError }, localRunError) : null,
+        // THE APP-SEAT TOAST VIEWPORT (the toast law): the cards
+        // console is the always-alive surface — catalog/run-status
+        // contract toasts render here when no studio is open. The
+        // mount-claim law dedupes with the studio shell's viewport:
+        // one renderer per document, whichever seat is live.
+        h(ToastViewport),
         h(BenchView, {
           bench: value,
           onRun,

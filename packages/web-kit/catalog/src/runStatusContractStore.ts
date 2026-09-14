@@ -20,7 +20,7 @@
 
 import { useSyncExternalStore } from "react"
 import type { RunStatusViolation } from "./runStatusContract"
-import { useToastStore } from "./toast"
+import { useToastStore } from "@melite/card-base/toast-store"
 
 export type RunStatusVerdict =
  | { kind: "violation"; runId: string; violations: RunStatusViolation[] }

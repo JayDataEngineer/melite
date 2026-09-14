@@ -23,7 +23,7 @@
 
 import { useSyncExternalStore } from "react"
 import type { CatalogViolation } from "./catalogContract"
-import { useToastStore } from "./toast"
+import { useToastStore } from "@melite/card-base/toast-store"
 
 export type CatalogContractState = "idle" | "loaded" | "violation" | "error"
 

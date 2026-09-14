@@ -8,7 +8,7 @@
 import { useCallback, useEffect, useState } from "react"
 import type { CardStage } from "@melite/contracts"
 import { ASSET_DRAG_MIME, readAsDataURL } from "./attach"
-import { useToastStore } from "./toast"
+import { useToastStore } from "@melite/card-base/toast-store"
 import { INPUT_SLOT } from "./constants"
 
 export interface ImageImportOpts {

@@ -16,6 +16,7 @@ import type { ComponentProps, ReactElement, ReactNode } from "react"
 import { StudioRail } from "./studioRail.tsx"
 import { AlertTriangle } from "./icons"
 import { cx } from "./chrome"
+import { ToastViewport } from "./toast.tsx"
 import styles from "./shell.module.css"
 
 /** One loud failure row — the tenant derives them; the shell
@@ -65,7 +66,16 @@ export function StudioShellErrorLine({
 /** The studio body: params column LEFT (projected into the shell rail
  *  slot when one exists), preview RIGHT, optional bottom bar, then the
  *  error line. The uniform three-slot shape — timeline and form cards
- *  are the same grain, forms simply leave the right/bottom slots empty. */
+ *  are the same grain, forms simply leave the right/bottom slots empty.
+ *
+ *  THE TOAST LAW (stroke 36): the shell mounts the ONE toast viewport
+ *  — toasts are shell-owned chrome exactly like the error line (the
+ *  construction law: no studio wires it, no studio can forget it).
+ *  Before: motion hand-mounted a copy in a slot the contract never
+ *  had (type drift), anny pushed toasts with NO viewport mounted —
+ *  silently dropped — and ideogram4 hand-wired its own outside the
+ *  shell. The per-studio mount is DEAD; any toast pushed from any
+ *  seam renders here, once. */
 export function StudioShell({
   params,
   preview,
@@ -83,6 +93,8 @@ export function StudioShell({
       {bottom}
       {/* LOUD failures — shell-owned chrome, once. */}
       <StudioShellErrorLine errors={errors} />
+      {/* TRANSIENT notices — shell-owned chrome, once (the toast law). */}
+      <ToastViewport />
     </div>
   )
 }

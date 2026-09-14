@@ -48,7 +48,7 @@ import * as THREE from "three"
 import { PoseViewer3D, type CameraFraming } from "@melite-plugin/motion/ui/viewer3d"
 import { Button } from "@deepseek-ai/dsh-client-ui-primitives"
 import type { JointMoveEvent } from "@melite-plugin/motion/ui/viewer3d"
-import { ToastViewport, useToastStore } from "@melite/card-base/toast"
+import { useToastStore } from "@melite/card-base/toast"
 import type { CardStage } from "@melite/contracts"
 import { stageSlots } from "@melite/catalog"
 import { formOf } from "@melite/catalog"
@@ -2028,49 +2028,6 @@ className={cn(s.frameBtn, framing === "upper" ? s.frameBtnActive : s.frameBtnIdl
  </>
  }
     >
-    <>
-  {/* STRETCH, NOT PERCENTAGE (2026-08-15, "only takes up the top third"):
-  inside the studio the viewport column is a FLEX COLUMN and this root
-  stretches (flex-1) — its height is the definite column height, so the
-  stage's flex-1 fills every pixel below the strip. Standalone mounts
-  (the inline form view) keep min-h-full as the fallback (the shell's
-  own root class, plus this tenant's gap/padding through className).
-  THE SHELL RIDE (2026-09-07): rail/center/bottom as declared seams —
-  the stub shellDeclaration comment above is now the live shape. */}
- {/* ── Generate — the card header's Run button IS the generate action.
- No duplicate bar here: the prompt cards below are the authoring
- surface, and a standalone status row wastes vertical space the
- timeline + 3D stage need. The empty-prompt guard lives in the
- header's Run button (the backend's "prompt is required" check is the
- backstop). */}
-
- {/* ── Rail tools — the RAIL SEAM (§7.10). The toolbar no longer spends
- a viewport-height row: the buttons stack in the rail beside the
- stage, grouped VIEW / POSE / OUTPUT. The seam content portals into
- the shell's [data-studio-tools] slot (StudioShell wraps it in
- StudioRail); standalone (inline form view) it renders in place —
- same component, same state, same onSave channel (E1 untouched). */}
-
- {/* ── Stage row: the stage + (while exporting) the dialog PANEL ──────
- IN-FLOW SIBLINGS (2026-08-15 round 2, "it literally goes OVER the mesh
- we need to see"): the export dialog is NOT a fixed overlay docked over
- the window — it is a flex sibling that PUSHES the viewport narrower.
- The canvas resizes (PoseViewer3D's observer), the character stays
- fully visible beside the panel, and the left rail is untouched. */}
-
- {/* ── The bar — MotionTimelineBar (pose-studio display model) ────────
- 2026-08-14 rethink, round 2: the vendored viser canvas Timeline is OUT
- (its zoom + scrollbar hid frames, and canvas hit-targets made the
- prompt cards hard to grab). IN: the legacy pose studio's DOM-clip
- model — prompt cards you drag (body = move, edges = resize), edit
- inline (double-click), delete (hover ✕); keyframe lanes with draggable
- diamonds. Same state + persistence underneath (tlPrompts /
- tlKeyframes / constraints.ts serialize). The transport (play/time/
- play controls) folded into this bar's header — one chrome line, and the card
- stays short enough to clear the viewport (both canvases swallow the
- wheel, so the overlay's page scroll can't be relied on). */}
- <ToastViewport />
-  </>
 </StudioShell>
  )
 }

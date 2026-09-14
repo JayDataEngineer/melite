@@ -6,7 +6,7 @@ import { describe, it, afterEach } from "vitest";
 import assert from "node:assert/strict";
 import { useRunStatusContractStore } from "../src/runStatusContractStore.ts";
 import type { RunStatusVerdict } from "../src/runStatusContractStore.ts";
-import { useToastStore } from "../src/toast";
+import { useToastStore } from "@melite/card-base/toast-store";
 import type { RunStatusViolation } from "../src/runStatusContract.ts";
 
 const realFetch = globalThis.fetch;

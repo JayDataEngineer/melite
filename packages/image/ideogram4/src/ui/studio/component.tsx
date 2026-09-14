@@ -31,7 +31,7 @@ import type { ElementType, IdeoElement, StyleType } from './ideoHelpers'
 import { ASPECT_PRESETS, GRID_SIZE, SNAP_UNITS, clamp, clampBbox, extractIdeogramCaptionFromPNG, genId, parseElementsJSON, sanitizeHexList, serializeElements } from './ideoHelpers'
 import { StudioShell, defineShellDeclaration } from "@melite/card-base/shell"
 import { IdeogramCanvas } from './IdeogramCanvas'
-import { ToastViewport, useToastStore } from '@melite/card-base/toast'
+import { useToastStore } from '@melite/card-base/toast'
 import { ElementInspector, JsonPanel, MicroLabel, StylePanel } from './IdeoPanels'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Button, Modal, Tooltip } from '@deepseek-ai/dsh-client-ui-primitives'
@@ -720,7 +720,6 @@ export function IdeogramCanvasEditor({ values, setValues }: IdeogramCanvasEditor
         </>
       }
     />
-    <ToastViewport />
     </>
   )
 }

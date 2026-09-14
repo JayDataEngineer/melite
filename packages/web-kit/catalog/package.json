@@ -6,7 +6,8 @@
   "dependencies": {
     "@melite/contracts": "workspace:*",
     "@melite/formats": "workspace:*",
-    "react": "^19.2.6"
+    "react": "^19.2.6",
+    "@melite/card-base": "workspace:*"
   },
   "exports": {
     ".": "./src/index.ts",
