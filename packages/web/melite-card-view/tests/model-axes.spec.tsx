@@ -699,3 +699,34 @@ test('recipe field renders UNDER THE MODEL SECTION — the params-list row never
   fireEvent.change(recipe, { target: { value: 'cinematic' } })
   await waitFor(() => { expect(sets).toContainEqual(['recipe', 'cinematic']) })
 })
+
+
+// ── STROKE 22: THE DECL GRID (the operator's law: "smaller things
+//    like width/height need to take up one row and not 2") — the
+//    card package declares columns/width; the form renders them. ──
+test('a DECLared columns group grids its fields — Width and Height share ONE row; undeclared groups stack', async () => {
+  const spec: FormSpecDoc = {
+    ...KREA,
+    schema: schemaEnvelope({
+      prompt: { type: 'string', meta: { description: 'Prompt', extra: { wtype: 'textarea', group: 'prompt' } } },
+      width: { type: 'number', meta: { description: 'Width', default: 1024, extra: { group: 'resolution', columns: 3, width: 1, wtype: 'number' } } },
+      height: { type: 'number', meta: { description: 'Height', default: 1024, extra: { group: 'resolution', columns: 3, width: 1, wtype: 'number' } } },
+      steps: { type: 'number', meta: { description: 'Steps', default: 8, extra: { group: 'sampling' } } },
+    }),
+  }
+  render(createElement(SpecForm, { spec, user: {}, onSet: () => {} }))
+  const res = await screen.findByText('resolution')
+  const grid = res.parentElement?.querySelector('div[class*="specGrid"]') as HTMLElement
+  expect(grid).not.toBeNull()
+  // the DECL's grid: 3 columns (width/height/seed-shaped thirds)
+  expect(grid.style.gridTemplateColumns).toBe('repeat(3, 1fr)')
+  // Width + Height are grid SIBLINGS on one row (spans declared 1)
+  const cells = [...grid.children]
+  const labels = cells.map((c) => c.textContent ?? '')
+  expect(labels.some((t) => t.includes('Width'))).toBe(true)
+  expect(labels.some((t) => t.includes('Height'))).toBe(true)
+  expect((cells[0] as HTMLElement).style.gridColumn).toBe('span 1')
+  // an UNDECLARED group keeps the stacked face (no grid node)
+  const samp = screen.getByText('sampling')
+  expect(samp.parentElement?.querySelector('div[class*="specGrid"]')).toBeNull()
+})

@@ -230,6 +230,13 @@
  * slot-shaped fields of one group render side-by-side — their labels
  * live under their squares, not in stacked key rows. Token-only. */
 .specSlotRow { display: flex; flex-wrap: wrap; gap: 8px; align-items: flex-start; }
+
+/* THE DECL GRID (stroke 22, the operator's law: "smaller things
+ * like width/height need to take up one row and not 2"): when the
+ * card package's fields declare `columns` (the group's grid), the
+ * group renders as a grid and each field spans its declared
+ * `width`. The DECL owns the geometry — the form renders it. */
+.specGrid { display: grid; gap: 8px; align-items: start; }
 .specSlotCell { display: flex; flex-direction: column; gap: 4px; }
 
 /* THE INPUT RAIL (the operator's law: cards emit input signatures —

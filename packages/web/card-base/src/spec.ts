@@ -118,6 +118,14 @@ export interface SpecField {
   placeholder?: string
   tooltip?: string
   visible_when?: string
+  /** The DECL's LAYOUT VOCABULARY (stroke 22, the operator's law:
+   *  the card package owns the form's geometry — "smaller things
+   *  like width/height need to take up one row"): `columns` = the
+   *  group's grid columns (declared on the group's fields —
+   *  first-seen wins), `width` = this field's column span. A group
+   *  without columns stacks one-per-row (today's face). */
+  columns?: number
+  width?: number
 }
 
 /** One DECLARED input edge: `name` is the schema param the edge feeds
@@ -418,6 +426,8 @@ export function fieldsOfEnvelope(
       placeholder: str('placeholder'),
       tooltip: str('tooltip'),
       visible_when: str('visible_when'),
+      columns: typeof extra['columns'] === 'number' ? extra['columns'] as number : undefined,
+      width: typeof extra['width'] === 'number' ? extra['width'] as number : undefined,
     })
   }
   // declared order first, dict insertion order as tie-break (stable)

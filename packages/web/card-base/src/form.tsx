@@ -948,6 +948,12 @@ export function CardForm({ spec, user, base, onSet, onUnset, wire, square, atoms
         )
       : null,
     groups.map((g) => {
+      // THE DECL GRID (stroke 22): the group's `columns` (declared on
+      // its fields — first-seen wins) grids the section; each field
+      // spans its declared `width`. Undeclared → the stacked face.
+      const gridCols = g.fields.find((f) => typeof f.columns === 'number' && f.columns >= 2)?.columns
+      const cellStyle = (f: SpecField): Record<string, string> | undefined =>
+        gridCols === undefined ? undefined : { gridColumn: `span ${Math.max(1, Math.floor(f.width ?? 1))}` }
       // THE SLOT ROW partition: image/image_list fields of one group
       // share a horizontal row (their labels live under their squares);
       // every other field keeps its stacked key row.
@@ -955,7 +961,10 @@ export function CardForm({ spec, user, base, onSet, onUnset, wire, square, atoms
       let row: Array<ReturnType<typeof h>> = []
       const flush = (): void => {
         if (row.length === 0) return
-        children.push(h('div', { key: 'slotrow-' + String(children.length), className: css.specSlotRow }, row))
+        children.push(h('div', {
+          key: 'slotrow-' + String(children.length), className: css.specSlotRow,
+          ...(gridCols !== undefined ? { style: { gridColumn: '1 / -1' } } : {}),
+        }, row))
         row = []
       }
       for (const f of g.fields) {
@@ -965,15 +974,15 @@ export function CardForm({ spec, user, base, onSet, onUnset, wire, square, atoms
         const wireCandidates = wire?.candidates
         if (claim !== undefined) {
           flush()
-          // div, not label (see SpecFieldRow)
-          children.push(h('div', { key: f.name, className: css.specField },
+          const cell = h('div', { key: f.name, className: css.specField },
             h('span', { className: css.specFieldKey },
               f.label,
               f.required === true ? h('span', { className: css.specRequired }, ' *') : null,
             ),
             claim({ f, value: value[f.name], onEdit: edit, square: sq }),
             f.tooltip !== undefined && f.tooltip !== '' ? h('span', { className: css.specHint }, f.tooltip) : null,
-          ))
+          )
+          children.push(gridCols === undefined ? cell : h('div', { key: f.name + '-cell', style: cellStyle(f) }, cell))
           continue
         }
         if (f.type === 'image' || f.type === 'file') {
@@ -987,16 +996,18 @@ export function CardForm({ spec, user, base, onSet, onUnset, wire, square, atoms
           continue
         }
         flush()
-        children.push(h(SpecFieldRow, {
+        const cell = h(SpecFieldRow, {
           key: f.name, f, value: value[f.name], onEdit: edit,
           ...(sq !== undefined ? { square: sq } : {}),
           ...(wireCandidates !== undefined ? { wireCandidates } : {}),
-        }))
+        })
+        children.push(gridCols === undefined ? cell : h('div', { key: f.name + '-cell', style: cellStyle(f) }, cell))
       }
       flush()
       return h('section', { key: g.group ?? '', className: css.specGroup },
         g.group !== null ? h('h4', { className: css.specGroupTitle }, g.group) : null,
-        children,
+        gridCols === undefined ? children
+          : h('div', { className: css.specGrid, style: { gridTemplateColumns: `repeat(${gridCols}, 1fr)` } }, children),
       )
     }),
     // THE MOD SYSTEM — rendered by the constructor itself: every
