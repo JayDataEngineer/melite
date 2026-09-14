@@ -22,14 +22,14 @@ import {
 } from "../../../../packages/engines/comfyui-cordis/src/models/models.ts";
 
 describe("the resurrected model registry (families/variants/cells/links)", () => {
-  it("carries the hierarchy: 48 registry models, 91 serving routes (the fold)", (): void => {
+  it("carries the hierarchy: 48 registry models, 93 serving routes (the fold — z-image base ×2, stroke 46h)", (): void => {
     assert.equal(registryIds().length, 48);
-    assert.equal(modelIds().length, 91);
+    assert.equal(modelIds().length, 93);
     const comfy = modelIds().filter((id) => {
       const e = getModel(id).engine ?? "";
       return (e ?? "") === "" || e === "comfyui";
     });
-    assert.equal(comfy.length, 79);
+    assert.equal(comfy.length, 81); // z-image base ×2 (stroke 46h)
     const rcomfy = registryIds().filter((id) => {
       const e = registryModel(id).engine ?? "";
       return (e ?? "") === "" || e === "comfyui";
@@ -37,9 +37,9 @@ describe("the resurrected model registry (families/variants/cells/links)", () =>
     assert.equal(rcomfy.length, 44);
   });
 
-  it("serves 53 offered routes; the unoffered are excluded loud-side", (): void => {
+  it("serves 55 offered routes; the unoffered are excluded loud-side (z-image base ×2)", (): void => {
     const cat = modelCatalog();
-    assert.equal(Object.keys(cat).length, 53);
+    assert.equal(Object.keys(cat).length, 55);
     // the 4 fragment/retired unoffered + the 13 hollow atoms
     // (2026-09-08: served but callerless and unrunnable — the
     // catalog offers only runnable atoms, walled in
@@ -101,7 +101,7 @@ describe("the resurrected model registry (families/variants/cells/links)", () =>
     assert.throws(() => mergedDefaults("krea-2", "no-such-variant"), ModelError);
   });
 
-  it("variant matrices ride (the hierarchy: 46 serving variants, 54 quant cells, composed comfyui)", (): void => {
+  it("variant matrices ride (the hierarchy: 47 serving variants, 54 quant cells, composed comfyui)", (): void => {
     // registry plane: serving variants (cells > 0) and quant cells;
     // recipe rows are routing recipes, not serving variants
     // the engine rides the variant (the moss meld) — a variant
@@ -118,7 +118,7 @@ describe("the resurrected model registry (families/variants/cells/links)", () =>
         cells += v.cells.length;
       }
     }
-    assert.equal(variants, 46);
-    assert.equal(cells, 54);
+    assert.equal(variants, 47); // z-image base (stroke 46h)
+    assert.equal(cells, 55); // z-image base int8 (stroke 46h)
   });
 });

@@ -46,6 +46,22 @@ export const DECL: ModelDecl = {
       ]
     },
     {
+      "id": "base",
+      "label": "Base",
+      "hint": "The full base model - no distillation; more steps, top quality.",
+      "group": "Variant",
+      "route": "z-image-base",
+      "order": 1,
+      "cells": [
+        {
+          "quant": "int8",
+          "label": "INT8",
+          "route": "z-image-base-int8",
+          "vram_peak_gb": 14,
+        }
+      ]
+    },
+    {
       "id": "default",
       "label": "Default",
       "hint": "The family default — no extra stamps; a fresh card lands here.",
