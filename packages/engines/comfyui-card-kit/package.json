@@ -9,6 +9,7 @@
     ".": "./src/kit.ts",
     "./graph": "./src/graph.ts",
     "./facts": "./src/facts.ts",
+    "./fields": "./src/fields.ts",
     "./vocab": "./src/vocab.ts",
     "./guard": "./src/mods/guard.ts",
     "./package.json": "./package.json"

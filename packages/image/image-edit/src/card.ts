@@ -33,6 +33,7 @@ import z from '@deepseek-ai/schemastery'
 import { imageEdit, refuseImageEditFiring, finalizeImageEdit } from '@melite/comfyui-card-kit'
 import type { ComfyUIService } from '@melite/comfyui-cordis/service'
 import { SAMPLERS, SCHEDULERS } from '@melite/comfyui-card-kit/vocab'
+import { samplingExtra } from '@melite/comfyui-card-kit/fields'
 
 export const schema = z.object({
   // CARD-OWNED SURFACE ONLY (2026-09-08, the 1:1 port): the py
@@ -53,10 +54,10 @@ export const schema = z.object({
   prompt: z.string().description("Prompt").extra('extra', { order: 0, group: "prompt", columns: 2, width: 1, required: true, zone: 'params', wtype: 'textarea', }),
   negative_prompt: z.string().description("Negative Prompt").extra('extra', { order: 1, group: "prompt", width: 1, zone: 'params', wtype: 'textarea' }),
   seed: z.number().description("Seed").step(1).default(-1).extra('extra', { order: 4, group: "resolution", width: 1, zone: 'params' }),
-  steps: z.number().description("Steps").min(1).max(50).step(1).default(4).extra('extra', { order: 0, group: "sampling", width: 1, zone: 'params', wtype: 'number' }),
-  cfg: z.number().description("Guidance Scale").min(0.1).max(10).step(0.1).default(1).extra('extra', { order: 1, group: "sampling", width: 1, tooltip: "Qwen-Image-Edit uses low CFG (flow-matching).", zone: 'params' }),
-  sampler: SAMPLERS.description("Sampler").extra('extra', { order: 2, group: "sampling", width: 1, zone: 'params', wtype: 'select' }),
-  scheduler: SCHEDULERS.description("Scheduler").extra('extra', { order: 3, group: "sampling", width: 1, zone: 'params', wtype: 'select' }),
+  steps: z.number().description("Steps").min(1).max(50).step(1).default(4).extra('extra', samplingExtra('steps')),
+  cfg: z.number().description("Guidance Scale").min(0.1).max(10).step(0.1).default(1).extra('extra', samplingExtra('cfg', { tooltip: "Qwen-Image-Edit uses low CFG (flow-matching)." })),
+  sampler: SAMPLERS.description("Sampler").extra('extra', samplingExtra('sampler')),
+  scheduler: SCHEDULERS.description("Scheduler").extra('extra', samplingExtra('scheduler')),
   use_stock_nodes: z.boolean().description("Use Stock Nodes").default(false).extra('extra', { order: 1, group: "edit_tuning", width: 1, tooltip: "When true, build_img2img_edit emits the stock Qwen-Image-Edit node graph (no DiffSynth patches, no custom ControlNet wiring). Useful for reproducing upstream behavior exactly.", zone: 'params' }),
   double_reference: z.boolean().description("Double Reference").default(false).extra('extra', { order: 2, group: "edit_tuning", width: 1, tooltip: "Encode the input image twice (VAE + vision encoder) for stronger identity preservation. Disable for faster runs where identity drift is acceptable.", zone: 'params' }),
 })

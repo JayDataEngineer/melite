@@ -24,6 +24,7 @@ import type { ComfyUIService } from '@melite/comfyui-cordis/service'
 import type { GraphBuilder } from '@melite/comfyui-card-kit/graph'
 import { wanVace, scail2, VIDEO_NEGATIVE_FALLBACK, VIDEO_REQUIRED_PATHS } from '@melite/comfyui-card-kit'
 import { SAMPLERS, SCHEDULERS } from '@melite/comfyui-card-kit/vocab'
+import { samplingExtra } from '@melite/comfyui-card-kit/fields'
 
 const schema = z.object({
   prompt: z.string().description("Prompt").extra('extra', { order: 0, group: "prompt", columns: 2, width: 1, required: true, wtype: 'textarea', }),
@@ -35,10 +36,10 @@ const schema = z.object({
   length: z.number().description("Frames").min(9).max(121).step(4).extra('extra', { order: 2, group: "resolution", columns: 3, width: 1, tooltip: "4n+1 (Wan latent grid). 49 ≈ 2s, 81 ≈ 3.4s at 24fps.", wtype: 'number' }),
   fps: z.number().description("FPS").min(8).max(30).step(1).extra('extra', { order: 3, group: "resolution", width: 1, min: 8, max: 30, wtype: 'number' }),
   seed: z.number().description("Seed").step(1).default(-1).extra('extra', { order: 4, group: "resolution", width: 1 }),
-  steps: z.number().description("Steps").min(1).max(50).step(1).extra('extra', { order: 0, group: "sampling", width: 1, min: 1, max: 50, wtype: 'number' }),
-  cfg: z.number().description("Guidance Scale").min(1).max(12).step(0.1).extra('extra', { order: 1, group: "sampling", width: 1, tooltip: "Lightning-distilled lanes run CFG 1 (guidance baked in)." }),
-  sampler: SAMPLERS.description("Sampler").extra('extra', { order: 2, group: "sampling", width: 1, wtype: 'select' }),
-  scheduler: SCHEDULERS.description("Scheduler").extra('extra', { order: 3, group: "sampling", width: 1, wtype: 'select' }),
+  steps: z.number().description("Steps").min(1).max(50).step(1).extra('extra', samplingExtra('steps', { min: 1, max: 50 })),
+  cfg: z.number().description("Guidance Scale").min(1).max(12).step(0.1).extra('extra', samplingExtra('cfg', { tooltip: "Lightning-distilled lanes run CFG 1 (guidance baked in)." })),
+  sampler: SAMPLERS.description("Sampler").extra('extra', samplingExtra('sampler')),
+  scheduler: SCHEDULERS.description("Scheduler").extra('extra', samplingExtra('scheduler')),
   reference_image: z.string().role('path').description("Reference image").extra('extra', { order: 0, group: "input", width: 1, tooltip: "The anchor frame — identity, subject, scene (wan-vace); the character to animate (scail2-animate).", wtype: 'image' }),
   pose_video: z.string().role('path').description("Driving video").extra('extra', { order: 1, group: "input", width: 1, tooltip: "The motion source — SCAIL-2 drives the reference character with this video.", wtype: 'video', families: ['scail2-animate'] }),
   pose_strength: z.number().description("Pose strength").min(0).max(2).step(0.05).default(1).extra('extra', { order: 2, group: "sampling", width: 1, tooltip: "How tightly SCAIL-2 follows the driving motion.", families: ['scail2-animate'] }),

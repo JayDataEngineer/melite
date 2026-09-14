@@ -10,6 +10,7 @@ import type { Context } from '@deepseek-ai/cordis'
 import z from '@deepseek-ai/schemastery'
 import { imageT2I, finalizeImageGen } from '@melite/comfyui-card-kit'
 import { SAMPLERS, SCHEDULERS } from '@melite/comfyui-card-kit/vocab'
+import { samplingExtra } from '@melite/comfyui-card-kit/fields'
 import type { ComfyUIService } from '@melite/comfyui-cordis/service'
 import { DECL as krea2Decl } from '@melite/models-krea-2'
 import { DECL as zImageDecl } from '@melite/models-z-image'
@@ -37,10 +38,10 @@ export const schema = z.object({
   width: z.number().description('Width').min(256).max(2048).step(16).default(1024).extra('extra', { order: 0, group: 'resolution', columns: 3, width: 1, zone: 'params', wtype: 'number' }),
   height: z.number().description('Height').min(256).max(2048).step(16).default(1024).extra('extra', { order: 1, group: 'resolution', width: 1, zone: 'params', wtype: 'number' }),
   seed: z.number().description('Seed').step(1).default(-1).extra('extra', { order: 4, group: 'resolution', width: 1, zone: 'params' }),
-  steps: z.number().description('Steps').min(1).max(100).step(1).default(8).extra('extra', { order: 0, group: 'sampling', columns: 2, width: 1, zone: 'params', wtype: 'number' }),
-  cfg: z.number().description('Guidance Scale').min(1).max(20).step(0.1).default(4.5).extra('extra', { order: 1, group: 'sampling', width: 1, tooltip: 'How closely the diffusion follows the prompt. Higher = stricter.', zone: 'params' }),
-  sampler: SAMPLERS.description('Sampler').extra('extra', { order: 2, group: 'sampling', width: 1, zone: 'params', wtype: 'select' }),
-  scheduler: SCHEDULERS.description('Scheduler').extra('extra', { order: 3, group: 'sampling', width: 1, zone: 'params', wtype: 'select' }),
+  steps: z.number().description('Steps').min(1).max(100).step(1).default(8).extra('extra', samplingExtra('steps')),
+  cfg: z.number().description('Guidance Scale').min(1).max(20).step(0.1).default(4.5).extra('extra', samplingExtra('cfg', { tooltip: 'How closely the diffusion follows the prompt. Higher = stricter.' })),
+  sampler: SAMPLERS.description('Sampler').extra('extra', samplingExtra('sampler')),
+  scheduler: SCHEDULERS.description('Scheduler').extra('extra', samplingExtra('scheduler')),
   // THE RECIPE KNOB (this stroke): a config ON the card. The enum
   // derives from the catalog (one spelling); the engine consumes
   // the key at compose — it never reaches the kit recipe. Declared

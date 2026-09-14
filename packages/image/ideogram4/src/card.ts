@@ -7,6 +7,7 @@ import z from '@deepseek-ai/schemastery'
 import { ideogramLane, finalizeIdeogram } from '@melite/comfyui-card-kit'
 import type { ComfyUIService } from '@melite/comfyui-cordis/service'
 import { SAMPLERS } from '@melite/comfyui-card-kit/vocab'
+import { SAMPLING_GROUP, samplingExtra } from '@melite/comfyui-card-kit/fields'
 
 const schema = z.object({
   prompt: z.string().description("Prompt").extra('extra', { order: 0, group: "prompt", columns: 2, width: 1, required: true, wtype: 'textarea', }),
@@ -16,11 +17,11 @@ const schema = z.object({
   width: z.number().description("Width").min(256).max(2048).step(16).extra('extra', { order: 0, group: "resolution", columns: 3, width: 1, min: 256, max: 2048, wtype: 'number' }),
   height: z.number().description("Height").min(256).max(2048).step(16).extra('extra', { order: 1, group: "resolution", width: 1, min: 256, max: 2048, wtype: 'number' }),
   seed: z.number().description("Seed").step(1).default(-1).extra('extra', { order: 4, group: "resolution", width: 1 }),
-  steps: z.number().description("Steps").min(1).max(100).step(1).extra('extra', { order: 0, group: "sampling", width: 1, min: 1, max: 100, wtype: 'number' }),
-  cfg: z.number().description("Guidance Scale").min(1).max(20).step(0.1).extra('extra', { order: 1, group: "sampling", width: 1, tooltip: "How closely the diffusion follows the prompt. Higher = stricter." }),
-  mu: z.number().description("Mu").min(-10).max(10).step(0.05).extra('extra', { order: 2, group: "sampling", width: 1, tooltip: "Ideogram4 scheduler mean shift — the official Default preset is 0.5." }),
-  std: z.number().description("Std").min(0.1).max(5).step(0.05).extra('extra', { order: 3, group: "sampling", width: 1, tooltip: "Ideogram4 scheduler spread — the official Default preset is 1.75." }),
-  sampler: SAMPLERS.description("Sampler").extra('extra', { order: 4, group: "sampling", width: 1, wtype: 'select' }),
+  steps: z.number().description("Steps").min(1).max(100).step(1).extra('extra', samplingExtra('steps', { min: 1, max: 100 })),
+  cfg: z.number().description("Guidance Scale").min(1).max(20).step(0.1).extra('extra', samplingExtra('cfg', { tooltip: "How closely the diffusion follows the prompt. Higher = stricter." })),
+  mu: z.number().description("Mu").min(-10).max(10).step(0.05).extra('extra', { order: 2, group: SAMPLING_GROUP, width: 1, tooltip: "Ideogram4 scheduler mean shift — the official Default preset is 0.5." }),
+  std: z.number().description("Std").min(0.1).max(5).step(0.05).extra('extra', { order: 3, group: SAMPLING_GROUP, width: 1, tooltip: "Ideogram4 scheduler spread — the official Default preset is 1.75." }),
+  sampler: SAMPLERS.description("Sampler").extra('extra', samplingExtra('sampler', { order: 4 })),
 })
 
 export const inject = ['comfyui']
