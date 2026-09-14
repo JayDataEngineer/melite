@@ -300,17 +300,12 @@ window.__ModuleLoader__.load({
 		/** Load one draft onto the bench and open the cards tab.
 		*  @param draftId the drafts door's row id (never empty — callers gate).
 		*  @param deps the open action + the error surface. */
-		async function loadDraftOntoBench(draftId, deps) {
+		/** The shared load tail (stroke 45): stages onto THE conversation's
+		*  bench (the CAS law — read rev, ensure with expect_rev, birth on
+		*  miss) + open the cards tab on it. */
+		async function loadStagesOntoBench(stages, intent, deps) {
 			const BENCH_SESSION = benchSessionOf(deps.sessionId);
 			try {
-				const docRes = await fetch("/v1/flows/drafts/" + encodeURIComponent(draftId), { headers: { accept: "application/json" } });
-				const doc = await docRes.json().catch(() => null);
-				if (!docRes.ok || typeof doc !== "object" || doc === null) {
-					deps.onError("could not read that card (" + await refusalOf(docRes, doc) + ")");
-					return;
-				}
-				const stages = doc["stages"];
-				const intent = doc["intent"];
 				let expectRev;
 				const getRes = await fetch("/v1/bench/" + encodeURIComponent(BENCH_SESSION), { headers: { accept: "application/json" } });
 				if (getRes.ok) {
@@ -324,7 +319,7 @@ window.__ModuleLoader__.load({
 						session: BENCH_SESSION,
 						author: "user",
 						stages: Array.isArray(stages) ? stages : [],
-						...typeof intent === "string" ? { intent } : {},
+						intent,
 						...expectRev !== void 0 ? { expect_rev: expectRev } : {}
 					})
 				});
@@ -334,6 +329,24 @@ window.__ModuleLoader__.load({
 					return;
 				}
 				deps.openResource(cardsBenchAddress(deps.sessionId));
+			} catch (e) {
+				deps.onError("bench load failed — " + (e instanceof Error ? e.message : String(e)));
+			}
+		}
+		/** Load one draft onto the bench and open the cards tab.
+		*  @param draftId the drafts door's row id (never empty — callers gate).
+		*  @param deps the open action + the error surface. */
+		async function loadDraftOntoBench(draftId, deps) {
+			try {
+				const docRes = await fetch("/v1/flows/drafts/" + encodeURIComponent(draftId), { headers: { accept: "application/json" } });
+				const doc = await docRes.json().catch(() => null);
+				if (!docRes.ok || typeof doc !== "object" || doc === null) {
+					deps.onError("could not read that card (" + await refusalOf(docRes, doc) + ")");
+					return;
+				}
+				const stages = doc["stages"];
+				const intent = doc["intent"];
+				await loadStagesOntoBench(Array.isArray(stages) ? stages : [], typeof intent === "string" && intent !== "" ? intent : "restored draft", deps);
 			} catch (e) {
 				deps.onError("bench load failed — " + (e instanceof Error ? e.message : String(e)));
 			}
@@ -360,11 +373,42 @@ window.__ModuleLoader__.load({
 					return;
 				}
 				const flow = side["flow"];
+				const snap = typeof flow === "object" && flow !== null ? flow["card_snapshot"] : void 0;
+				if (typeof snap === "object" && snap !== null && typeof snap["card"] === "string") {
+					const card = snap["card"];
+					const rawParams = snap["params"];
+					const params = typeof rawParams === "object" && rawParams !== null ? { ...rawParams } : {};
+					delete params["draft_id"];
+					delete params["test"];
+					const intentSrc = typeof params["prompt"] === "string" ? params["prompt"] : "restored run";
+					await loadStagesOntoBench([{
+						id: "s_0",
+						engine: "comfyui",
+						card,
+						params,
+						provenance: "restored"
+					}], intentSrc.slice(0, 77), deps);
+					return;
+				}
+				const request = side["request"];
+				if (typeof request === "object" && request !== null && typeof request["model"] === "string") {
+					const params = { ...request };
+					delete params["draft_id"];
+					delete params["test"];
+					const intentSrc = typeof params["prompt"] === "string" ? params["prompt"] : "restored run";
+					await loadStagesOntoBench([{
+						id: "s_0",
+						engine: "comfyui",
+						params,
+						provenance: "restored"
+					}], intentSrc.slice(0, 77), deps);
+					return;
+				}
 				const flowDraft = typeof flow === "object" && flow !== null ? flow["draft_id"] : void 0;
 				const topDraft = side["draft_id"];
 				const draftId = typeof flowDraft === "string" && flowDraft !== "" ? flowDraft : typeof topDraft === "string" && topDraft !== "" ? topDraft : "";
 				if (draftId === "") {
-					deps.onError("this run names no draft — nothing to restore");
+					deps.onError("this run keeps no card record — nothing to restore");
 					return;
 				}
 				await loadDraftOntoBench(draftId, deps);
@@ -1000,7 +1044,7 @@ window.__ModuleLoader__.load({
 					onError: setError,
 					sessionId
 				};
-				if (item.draftId !== "") {
+				if (item.draftId !== "" && !item.draftId.startsWith("bench-")) {
 					loadDraftOntoBench(item.draftId, deps);
 					return;
 				}

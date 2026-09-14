@@ -121,16 +121,24 @@ function apply(ctx, config = {}) {
 				return;
 			}
 			try {
-				const raw = await (await import("node:fs/promises")).readFile(`${flowDir}/${runId}/_flow.json`, "utf8");
+				const fs = await import("node:fs/promises");
+				const raw = await fs.readFile(`${flowDir}/${runId}/_flow.json`, "utf8");
 				let doc;
 				try {
 					doc = JSON.parse(raw);
 				} catch {
 					doc = JSON.parse(raw.replaceAll(",\"\"", ",\""));
 				}
+				let request = null;
+				try {
+					request = JSON.parse(await fs.readFile(`${flowDir}/${runId}/_request.json`, "utf8"));
+				} catch {
+					request = null;
+				}
 				const body = JSON.stringify({
 					run_id: runId,
-					flow: doc
+					flow: doc,
+					request
 				});
 				res.writeHead(200, {
 					...JSON_HEADERS,
