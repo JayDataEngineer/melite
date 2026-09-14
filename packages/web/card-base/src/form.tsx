@@ -625,6 +625,24 @@ export function ModelAxes({ spec, value, onSet, onDownloadModel }: {
     const patch = axisPickPatch(spec, row)
     for (const [k, v] of Object.entries(patch)) onSet(k, v)
   }
+  // STROKE 38 — THE OPERATOR'S LAW: "LORA IS NEVER STANDALONE. IT
+  // IS ALWAYS A SUBSET OF THE MOD SYSTEM." A recipe pill's stamp
+  // drops every mod-owned key (the bag storages and the mod fields
+  // — modOwnedFields, the SubcardGrid law's own gate): the pill
+  // never writes them, and a row whose stamp is ENTIRELY mod-owned
+  // renders NO pill at all — the Modifiers menu is that payload's
+  // one surface (it already serves every flavor row — label,
+  // tooltip, default strength; a pill beside the axes was a second,
+  // lesser door to the same entries).
+  const modOwned = modOwnedFields(spec)
+  const knobStamp = (r: VariantRow): SpecValues => {
+    const stamp: SpecValues = {}
+    for (const [k, v] of Object.entries(axisPickPatch(spec, r))) {
+      if (!modOwned.has(k)) stamp[k] = v
+    }
+    return stamp
+  }
+  const pillRows = rowsFor(spec, 'Recipe').filter((r) => Object.keys(knobStamp(r)).length > 0)
   // ── THE NO-FALLBACK LAW (operator, hour 26: "NO. MORE.
   //    FALLBACKS.") ───────────────────────────────────────────────
   // A HELD value that cannot be honored is an ERROR and renders AS
@@ -764,27 +782,24 @@ export function ModelAxes({ spec, value, onSet, onDownloadModel }: {
             titleCaseId(v.label) + (typeof v.hint === 'string' && v.hint !== '' ? ` — ${v.hint}` : '')))))
     }),
     // THE FAMILY RECIPE PILLS (stroke 34 — recipes are macros now,
-    // never a mode): every served Recipe row that CARRIES a payload
+    // never a mode): a served Recipe row that CARRIES a knob payload
     // renders as a stamp pill under the axes. The click writes the
-    // row's stamp onto DECLARED keys (axisPickPatch — the same pick
-    // verb as every axis row: knobs ride the user layer, the lora
-    // bag lands in the mod surface where it is visible and
-    // editable). No recipe key persists, nothing derives, nothing
-    // goes stale when the variant rail moves — what it stamped is
-    // what you see. Stamp-less rows (the family `default`) render
-    // nothing: a pill that writes nothing is a dead control.
-    rowsFor(spec, 'Recipe').filter((r) => Object.keys(r.defaults).length > 0).length > 0
+    // row's knobStamp (above — the stroke-38 law) onto declared knob
+    // keys (axisPickPatch — the same pick verb as every axis row). No
+    // recipe key persists, nothing derives, nothing goes stale when
+    // the variant rail moves — what it stamped is what you see.
+    // Stamp-less rows (the family `default`) render nothing: a pill
+    // that writes nothing is a dead control.
+    pillRows.length > 0
       ? h('div', { className: css.specGroup, 'data-recipe-pills': '1' },
-          rowsFor(spec, 'Recipe').filter((r) => Object.keys(r.defaults).length > 0)
-            .map((r) => h('button', {
+          pillRows.map((r) => h('button', {
               key: r.id,
               type: 'button',
               className: css.specLinkBtn,
               'data-recipe-pill': r.id,
               title: typeof r.hint === 'string' && r.hint !== '' ? r.hint : undefined,
               onClick: () => {
-                const patch = axisPickPatch(spec, r)
-                for (const [k, v] of Object.entries(patch)) onSet(k, v)
+                for (const [k, v] of Object.entries(knobStamp(r))) onSet(k, v)
               },
             }, titleCaseId(r.label))))
       : null,
