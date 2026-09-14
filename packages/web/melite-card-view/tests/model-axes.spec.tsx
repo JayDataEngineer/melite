@@ -762,3 +762,46 @@ test('textareas span the FULL row in a columns group (prompts never sit side by 
   expect(cells.length).toBe(2)
   for (const c of cells) expect((c as HTMLElement).style.gridColumn).toBe('1 / -1')
 })
+
+
+// ── STROKE 24b: THE GRID IS PARAMETRIC — the operator's question:
+//    "when different cards have different numbers of parameters, it
+//    will fail?" NO. The track law is scale-free: ANY declared
+//    column count renders the same physics, spans distribute over
+//    the same shrinkable tracks, and the row can never outgrow its
+//    card. This wall pins a DIFFERENT card shape than image-gen's
+//    (columns:4, one field spanning 2 tracks) to prove no constant
+//    is wired to the 3.
+test('the grid law is parametric — columns:4 with a width:2 span, no overflow constants', async () => {
+  const spec: FormSpecDoc = {
+    ...KREA,
+    schema: schemaEnvelope({
+      // a DIFFERENT card's DECL: four small params, one eating half
+      x: { type: 'number', meta: { description: 'X', default: 0, extra: { group: 'frame', columns: 4, width: 1, wtype: 'number' } } },
+      y: { type: 'number', meta: { description: 'Y', default: 0, extra: { group: 'frame', columns: 4, width: 1, wtype: 'number' } } },
+      scale: { type: 'number', meta: { description: 'Scale', default: 1, extra: { group: 'frame', columns: 4, width: 2, wtype: 'number' } } },
+      denoise: { type: 'number', meta: { description: 'Denoise', default: 0.7, extra: { group: 'frame', columns: 4, width: 1, wtype: 'number' } } },
+    }),
+  }
+  render(createElement(SpecForm, { spec, user: {}, onSet: () => {} }))
+  const head = await screen.findByText('frame')
+  const grid = head.parentElement?.querySelector('div[class*="specGrid"]') as HTMLElement
+  expect(grid).not.toBeNull()
+  // the DECL's OWN count renders — 4, not 3: nothing in the form is
+  // wired to image-gen's shape
+  expect(grid.style.gridTemplateColumns).toBe('repeat(4, minmax(0, 1fr))')
+  const cells = [...grid.children] as Array<HTMLElement>
+  expect(cells.length).toBe(4)
+  for (const c of cells) expect(c.style.minWidth).toBe('0')
+  // spans ride the same tracks: scale eats TWO, the rest eat one
+  const byLabel = (t: string): HTMLElement => cells.find((c) => (c.textContent ?? '').includes(t)) as HTMLElement
+  expect(byLabel('X').style.gridColumn).toBe('span 1')
+  expect(byLabel('Y').style.gridColumn).toBe('span 1')
+  expect(byLabel('Scale').style.gridColumn).toBe('span 2')
+  expect(byLabel('Denoise').style.gridColumn).toBe('span 1')
+  // surplus spans AUTO-WRAP (grid semantics, not failure): 1+1+2+1
+  // = 5 spans over 4 tracks — denoise opens row 2 on its own
+  const spanSum = cells.reduce((acc, c) => acc + Number(/span (\d+)/.exec(c.style.gridColumn)?.[1] ?? 1), 0)
+  expect(spanSum).toBe(5)
+  expect(grid.style.gridTemplateColumns).toBe('repeat(4, minmax(0, 1fr))')
+})
