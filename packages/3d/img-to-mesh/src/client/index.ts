@@ -17,7 +17,7 @@
  * domain FIRST (drafts/patch via onPatch), then starts the run — the
  * generic drill's own law, kept verbatim.
  */
-import { createElement as h, useEffect, useState } from 'react'
+import { createElement as h, useEffect, useRef, useState } from 'react'
 import type { Context as ClientContext } from '@deepseek-ai/cordis'
 // Type-only: the service seats this entry touches ride cordis Context
 // declaration-merging from each owning package's ./client entry — the
@@ -26,7 +26,7 @@ import type {} from '@deepseek-ai/dsh-client-ui-renderer/client'
 // Type-only: the 'cards.stage.view' seam declaration (card-base owns
 // the card-UI seams). Erased — the bundle stays pure.
 import type {} from '@melite/card-base/slots'
-import { DisclosureRow, IconArchiveOutline20, IconLoadingOutline16, IconPlayOutline16, IconStopFill16 } from '@deepseek-ai/dsh-client-ui-primitives'
+import { DisclosureRow, IconArchiveOutline20 } from '@deepseek-ai/dsh-client-ui-primitives'
 import css from './client.module.css'
 import type { StageViewOwnerProps } from '@melite/contracts'
 import { SpecFieldRow, coerceFieldEdit, fieldsOf, resolveValue, useFormSpec, useSquareProvider, type FormSpecDoc, type SpecField, type SpecValues, type SquareHost } from '@melite/card-base'
@@ -64,19 +64,8 @@ export function ImgToMeshStudio(props: StageViewOwnerProps): ReturnType<typeof h
   const [error, setError] = useState<string | null>(null)
   const [user, setUser] = useState<SpecValues>(params)
   const [open, setOpen] = useState<Record<string, boolean>>({})
-  // THE LIVE GESTURE STATE + THE TAP FOLD (2026-09-13): the row's own
-  // run state drives the gesture (play at rest, stop mid-run) and the
-  // observer's progress carry renders beside it — the same faces the
-  // generic drill rides, one gesture language.
-  const live: boolean = runStatus === 'running' || runStatus === 'queued' || runStatus === 'pending'
-  const foldRec = typeof row['result'] === 'object' && row['result'] !== null
-    ? row['result'] as Record<string, unknown> : null
-  const foldP = typeof foldRec?.['progress'] === 'object' && foldRec?.['progress'] !== null
-    ? foldRec['progress'] as { value: number, max: number } : null
-  const activity: string = typeof foldRec?.['activity'] === 'string'
-    ? foldRec['activity'] as string : ''
-  const pct: number | null = foldP !== null && foldP.max > 0
-    ? Math.floor((100 * foldP.value) / foldP.max) : null
+  // (THE LIVE GESTURE + TAP FOLD moved to the frame (hour-26): the
+  //  top-bar Run pill and the webhook strip own them for every face.)
   // THE OUTPUT HALF — the ROW is the truth (runs are named by draft
   //  only, so a tab-wide run id binds WRONG studios to other cards'
   //  runs): this row's result carries its own run_id + artifact url
@@ -139,6 +128,15 @@ export function ImgToMeshStudio(props: StageViewOwnerProps): ReturnType<typeof h
     onPatch(patch as Record<string, unknown>)
     onRun()
   }
+  // THE GESTURE BINDING (hour-26): the frame's top-bar pill calls
+  // THIS verb (patch-domain-first). A REF DISPATCHER: the bound fn
+  // is stable (bound once), the ref re-points every render — the
+  // call always sees the current user/params maps.
+  const runRef = useRef(run)
+  runRef.current = run
+  useEffect(() => {
+    props.bindRun?.(() => { runRef.current() })
+  }, [props.bindRun])
   return h('div', { className: css.zoomDetail },
     wireMenu,
     // (THE BADGE ROW IS RETIRED — 2026-09-13, the operator's "there
@@ -175,35 +173,14 @@ export function ImgToMeshStudio(props: StageViewOwnerProps): ReturnType<typeof h
             onToggle: () => { setOpen((prev) => ({ ...prev, [g]: !prev[g] })) },
           }, h(StudioFields, { fields: fs, value, onEdit, square: squareFor }))
         }),
-          // THE RUN SEAT (hour-25 follow-up, the operator: "the run
-          // button should be at the bottom right of parameters"): the
-          // gesture rides the rail's STICKY bottom-right — pinned
-          // while the groups scroll above it, ghost-styled like the
-          // tile (the first cut was a filled brand circle; wrong
-          // face), and the Remove row stays retired.
-          h('div', { className: css.drillRunRow },
-            error !== null ? h('span', { className: css.runError }, error) : null,
-            live
-              ? h('span', { className: css.studioProgress, 'data-testid': 'studio-progress', role: 'status' },
-                  h(IconLoadingOutline16, { size: 14 }),
-                  h('span', null, [
-                    activity !== '' ? activity : 'running',
-                    pct !== null ? ' · ' + String(pct) + '%' : '',
-                  ].join('')),
-                )
-              : null,
-            live
-              ? h('button', {
-                  className: css.drillRunBtn, type: 'button',
-                  'aria-label': 'Stop run', 'data-testid': 'studio-stop',
-                  onClick: onStop,
-                }, h(IconStopFill16, { size: 16 }), h('span', null, 'Stop'))
-              : h('button', {
-                  className: css.drillRunBtn, type: 'button',
-                  'aria-label': 'Run stage', 'data-testid': 'studio-run',
-                  onClick: run,
-                }, h(IconPlayOutline16, { size: 16 }), h('span', null, 'Run')),
-          ),
+          // (THE RUN SEAT RETIRED (hour-26): the frame's top-bar Run
+          //  pill + the webhook strip under it own the gesture and
+          //  the live fold for EVERY face — the studio rail keeps
+          //  only its groups; a client-side error still lands at the
+          //  rail's bottom.)
+          error !== null ? h('div', { className: css.drillRunRow },
+            h('span', { className: css.runError }, error),
+          ) : null,
           ),
           // RIGHT — the mesh stage (the shared viewport, the old Stage law)
           preview: h(GlbStagePreview, {

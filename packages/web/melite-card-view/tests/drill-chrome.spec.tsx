@@ -9,7 +9,9 @@
  *   1. the drill's run gesture is a LABELED button at the params
  *      rail's sticky footer — play glyph + 'Run' at rest (aria 'Run
  *      stage', testid drill-run), stop glyph + 'Stop' mid-run (aria
- *      'Stop run', drill-stop); the operator retired the 28px
+ *      'Stop run', drill-stop) — both ride the FRAME's top bar
+ *      (hour-26: the pill + the webhook strip under it; the
+ *      drill-body seat retired); the operator retired the 28px
  *      icon-only ghost circle as too small. The 'Remove stage' row
  *      stays retired (removal rides the tile trash).
  *   2. the tile carries the live percent beside its spinner while
@@ -109,9 +111,11 @@ test('the drill runs on the labeled gesture; the remove row is retired', async (
   // open the IDLE stage's drill (tile 1)
   await user.click(tileButtons()[1] as HTMLElement)
   await screen.findByText('Prompt', {}, { timeout: 4000 })
-  const drill = document.querySelector('div[class*="zoomDetail"]') as HTMLElement
+  const drill = document.querySelector('div[class*="zoomCard"]') as HTMLElement
   expect(drill).toBeTruthy()
-  // the labeled gesture: aria-named play button carrying the word 'Run'
+  // the labeled gesture rides the TOP BAR now (hour-26): the frame's
+  // zoomBar owns the Run/Stop pill + the webhook strip under it
+  // (scope: the whole zoom card, not just the detail body)
   const run = within(drill).getByRole('button', { name: 'Run stage' })
   expect(run.getAttribute('data-testid')).toBe('drill-run')
   expect(run.textContent).toContain('Run')
@@ -130,7 +134,7 @@ test('the running drill shows stop + the tap fold; the tile shows the percent', 
   // THE DRILL HALF: open the RUNNING stage (tile 0)
   await user.click(tileButtons()[0] as HTMLElement)
   await screen.findByText('Prompt', {}, { timeout: 4000 })
-  const drill = document.querySelector('div[class*="zoomDetail"]') as HTMLElement
+  const drill = document.querySelector('div[class*="zoomCard"]') as HTMLElement
   // stop glyph replaces play while running
   const stop = within(drill).getByRole('button', { name: 'Stop run' })
   expect(stop.getAttribute('data-testid')).toBe('drill-stop')

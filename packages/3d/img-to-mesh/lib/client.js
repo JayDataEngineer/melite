@@ -9,8 +9,8 @@ window.__ModuleLoader__.load({
 		let react_jsx_runtime = require("react/jsx-runtime");
 		let react_dom = require("react-dom");
 		//#region \0dsh-css:/home/user/Documents/programs/active/inference.cpp/packages/3d/img-to-mesh/src/client/client.module.css.mjs
-		const css$4 = ".xjw8Uq_runRow{justify-content:flex-end;align-items:center;gap:10px;width:100%;display:flex}.xjw8Uq_zoomDetail{min-height:0;padding:14px;display:block;overflow-y:auto}.xjw8Uq_groupNote{color:var(--dsw-alias-label-secondary,#61666b);margin:0 0 10px;font-size:12px;line-height:20px}.xjw8Uq_studioGroup{flex-direction:column;gap:6px;display:flex}.xjw8Uq_studioGroupTitle{letter-spacing:.04em;text-transform:uppercase;opacity:.65;margin:0;font-size:11px;font-weight:600}.xjw8Uq_studioRail{flex-direction:column;gap:10px;min-width:0;display:flex}.xjw8Uq_runError{color:var(--dsw-alias-label-error,#e05656);overflow-wrap:anywhere;font-size:11px}.xjw8Uq_viewport{background:var(--dsw-alias-bg-canvas,#fff);border:.5px solid var(--dsw-alias-border-l2,#00000024);border-radius:10px;min-height:320px;display:flex;position:relative;overflow:hidden}.xjw8Uq_viewportEmpty{color:var(--dsw-alias-label-tertiary,#00000073);align-self:center;margin:auto;font-size:12px;line-height:20px}.xjw8Uq_viewport canvas{display:block}.xjw8Uq_viewportCanvas{width:100%;height:380px}.xjw8Uq_viewport:only-child{min-height:380px}.xjw8Uq_drillRunRow{background:var(--dsw-alias-bg-base);border-top:1px solid var(--dsw-alias-border-l2);z-index:1;justify-content:flex-end;align-items:center;gap:8px;margin-top:8px;padding:10px 0 4px;display:flex;position:sticky;bottom:0}.xjw8Uq_drillRunBtn{background:color-mix(in srgb, var(--dsw-alias-bg-base) 72%, transparent);border:1px solid var(--dsw-alias-border-l2);color:var(--dsw-alias-label-secondary);cursor:pointer;height:36px;transition:color var(--ds-transition-duration,.12s) var(--ds-ease-in-out,ease), border-color var(--ds-transition-duration,.12s) var(--ds-ease-in-out,ease);border-radius:8px;justify-content:center;align-items:center;gap:8px;padding:0 16px;font-size:13px;font-weight:600;display:inline-flex}.xjw8Uq_drillRunBtn:hover{border-color:var(--dsw-alias-border-l4);color:var(--dsw-alias-brand-primary)}.xjw8Uq_drillRunBtn:focus-visible{border-color:var(--dsw-alias-brand-primary);color:var(--dsw-alias-brand-primary)}.xjw8Uq_studioProgress{color:var(--dsw-alias-label-secondary);font-variant-numeric:tabular-nums;align-items:center;gap:6px;font-size:11px;display:inline-flex}.xjw8Uq_studioProgress>svg{animation:1s linear infinite xjw8Uq_studioProgressTurn}@keyframes xjw8Uq_studioProgressTurn{to{transform:rotate(360deg)}}";
-		const tagId$4 = "@melite/3d-img-to-mesh/client.module.css@831e00e";
+		const css$4 = ".xjw8Uq_runRow{justify-content:flex-end;align-items:center;gap:10px;width:100%;display:flex}.xjw8Uq_zoomDetail{min-height:0;padding:14px;display:block;overflow-y:auto}.xjw8Uq_groupNote{color:var(--dsw-alias-label-secondary,#61666b);margin:0 0 10px;font-size:12px;line-height:20px}.xjw8Uq_studioGroup{flex-direction:column;gap:6px;display:flex}.xjw8Uq_studioGroupTitle{letter-spacing:.04em;text-transform:uppercase;opacity:.65;margin:0;font-size:11px;font-weight:600}.xjw8Uq_studioRail{flex-direction:column;gap:10px;min-width:0;display:flex}.xjw8Uq_runError{color:var(--dsw-alias-label-error,#e05656);overflow-wrap:anywhere;font-size:11px}.xjw8Uq_viewport{background:var(--dsw-alias-bg-canvas,#fff);border:.5px solid var(--dsw-alias-border-l2,#00000024);border-radius:10px;min-height:320px;display:flex;position:relative;overflow:hidden}.xjw8Uq_viewportEmpty{color:var(--dsw-alias-label-tertiary,#00000073);align-self:center;margin:auto;font-size:12px;line-height:20px}.xjw8Uq_viewport canvas{display:block}.xjw8Uq_viewportCanvas{width:100%;height:380px}.xjw8Uq_viewport:only-child{min-height:380px}.xjw8Uq_drillRunRow{background:var(--dsw-alias-bg-base);border-top:1px solid var(--dsw-alias-border-l2);z-index:1;justify-content:flex-end;align-items:center;gap:8px;margin-top:8px;padding:10px 0 4px;display:flex;position:sticky;bottom:0}.xjw8Uq_drillRunBtn{background:color-mix(in srgb, var(--dsw-alias-bg-base) 72%, transparent);border:1px solid var(--dsw-alias-border-l2);color:var(--dsw-alias-label-secondary);cursor:pointer;height:36px;transition:color var(--ds-transition-duration,.12s) var(--ds-ease-in-out,ease), border-color var(--ds-transition-duration,.12s) var(--ds-ease-in-out,ease);border-radius:8px;justify-content:center;align-items:center;gap:8px;padding:0 16px;font-size:13px;font-weight:600;display:inline-flex}.xjw8Uq_drillRunBtn:hover{border-color:var(--dsw-alias-border-l4);color:var(--dsw-alias-brand-primary)}.xjw8Uq_drillRunBtn:focus-visible{border-color:var(--dsw-alias-brand-primary);color:var(--dsw-alias-brand-primary)}";
+		const tagId$4 = "@melite/3d-img-to-mesh/client.module.css@12d022b0";
 		if (typeof document !== "undefined" && document.querySelector("style[data-plugin-css=" + JSON.stringify(tagId$4) + "]") === null) {
 			const tag = document.createElement("style");
 			tag.dataset.plugin = "@melite/3d-img-to-mesh";
@@ -26,8 +26,6 @@ window.__ModuleLoader__.load({
 			"runRow": "xjw8Uq_runRow",
 			"studioGroup": "xjw8Uq_studioGroup",
 			"studioGroupTitle": "xjw8Uq_studioGroupTitle",
-			"studioProgress": "xjw8Uq_studioProgress",
-			"studioProgressTurn": "xjw8Uq_studioProgressTurn",
 			"studioRail": "xjw8Uq_studioRail",
 			"viewport": "xjw8Uq_viewport",
 			"viewportCanvas": "xjw8Uq_viewportCanvas",
@@ -40599,11 +40597,6 @@ void main() {
 			const [error, setError] = (0, react.useState)(null);
 			const [user, setUser] = (0, react.useState)(params);
 			const [open, setOpen] = (0, react.useState)({});
-			const live = runStatus === "running" || runStatus === "queued" || runStatus === "pending";
-			const foldRec = typeof row["result"] === "object" && row["result"] !== null ? row["result"] : null;
-			const foldP = typeof foldRec?.["progress"] === "object" && foldRec?.["progress"] !== null ? foldRec["progress"] : null;
-			const activity = typeof foldRec?.["activity"] === "string" ? foldRec["activity"] : "";
-			const pct = foldP !== null && foldP.max > 0 ? Math.floor(100 * foldP.value / foldP.max) : null;
 			const rowResult = typeof row["result"] === "object" && row["result"] !== null ? row["result"] : null;
 			const ownRunId = typeof rowResult?.run_id === "string" && rowResult.run_id !== "" ? rowResult.run_id : null;
 			const ownUrl = typeof rowResult?.url === "string" && rowResult.url !== "" ? rowResult.url : null;
@@ -40655,6 +40648,13 @@ void main() {
 				onPatch(patch);
 				onRun();
 			};
+			const runRef = (0, react.useRef)(run);
+			runRef.current = run;
+			(0, react.useEffect)(() => {
+				props.bindRun?.(() => {
+					runRef.current();
+				});
+			}, [props.bindRun]);
 			return (0, react.createElement)("div", { className: client_module_css_default.zoomDetail }, wireMenu, error !== null ? (0, react.createElement)("p", { className: client_module_css_default.runError }, error) : null, spec === null ? (0, react.createElement)("p", { className: client_module_css_default.groupNote }, "loading the declared knob surface…") : (0, react.createElement)(StudioShell, {
 				params: (0, react.createElement)("div", { className: client_module_css_default.studioRail }, STUDIO_EXPOSED.map((g) => (0, react.createElement)("section", {
 					key: g,
@@ -40687,23 +40687,7 @@ void main() {
 						onEdit,
 						square: squareFor
 					}));
-				}), (0, react.createElement)("div", { className: client_module_css_default.drillRunRow }, error !== null ? (0, react.createElement)("span", { className: client_module_css_default.runError }, error) : null, live ? (0, react.createElement)("span", {
-					className: client_module_css_default.studioProgress,
-					"data-testid": "studio-progress",
-					role: "status"
-				}, (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.IconLoadingOutline16, { size: 14 }), (0, react.createElement)("span", null, [activity !== "" ? activity : "running", pct !== null ? " · " + String(pct) + "%" : ""].join(""))) : null, live ? (0, react.createElement)("button", {
-					className: client_module_css_default.drillRunBtn,
-					type: "button",
-					"aria-label": "Stop run",
-					"data-testid": "studio-stop",
-					onClick: onStop
-				}, (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.IconStopFill16, { size: 16 }), (0, react.createElement)("span", null, "Stop")) : (0, react.createElement)("button", {
-					className: client_module_css_default.drillRunBtn,
-					type: "button",
-					"aria-label": "Run stage",
-					"data-testid": "studio-run",
-					onClick: run
-				}, (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.IconPlayOutline16, { size: 16 }), (0, react.createElement)("span", null, "Run")))),
+				}), error !== null ? (0, react.createElement)("div", { className: client_module_css_default.drillRunRow }, (0, react.createElement)("span", { className: client_module_css_default.runError }, error)) : null),
 				preview: (0, react.createElement)(GlbStagePreview, {
 					assets: meshUrl === null ? [] : [{
 						id: "mesh",

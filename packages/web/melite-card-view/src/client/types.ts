@@ -81,6 +81,11 @@ export interface StageViewOwnerProps {
   onPatch: (patch: Record<string, unknown>) => void
   /** Start the run for THIS stage (the single-stage gateway). */
   onRun: () => void
+  /** THE GESTURE REGISTRATION (hour-26, the 1:1 law): a studio that
+   * must PATCH ITS DOMAIN FIRST binds its run verb here — the frame's
+   * top-bar pill calls the bound verb, never a bare onRun that would
+   * start past un-flushed domain state. */
+  bindRun?: (run: () => void) => void
   /** Cancel a live run (runs/stop). */
   onStop: () => void
   /** Remove the stage from the bench. */

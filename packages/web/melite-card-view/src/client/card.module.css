@@ -783,7 +783,34 @@
   justify-content: space-between;
   padding: 10px 14px;
 }
-.zoomTitle { font-size: 13px; font-weight: 600; 
+/* THE WEBHOOK BAR (hour-26): the comfyui progress-forward strip under
+ * the top bar — live shows spinner + activity + percent + a thin
+ * meter; failed shows the reason. Frame-owned, one per card. */
+.zoomWebhook {
+  align-items: center;
+  border-bottom: 0.5px solid var(--dsw-alias-border-l2);
+  display: flex;
+  flex: 0 0 auto;
+  gap: 10px;
+  min-height: 0;
+  overflow: hidden;
+  padding: 4px 14px;
+}
+.zoomMeter {
+  background: var(--dsw-alias-border-l2);
+  border-radius: 999px;
+  flex: 1 1 auto;
+  height: 3px;
+  overflow: hidden;
+}
+.zoomMeterFill {
+  background: var(--dsw-alias-fill-brand-primary);
+  display: block;
+  height: 100%;
+  transition: width 240ms ease;
+}
+.zoomTitle { font-size: 13px; font-weight: 600;
+  flex: 1 1 auto;
   line-height: 20px;}
 .closeX {
   background: transparent;

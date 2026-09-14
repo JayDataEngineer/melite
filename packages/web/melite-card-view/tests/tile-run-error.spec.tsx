@@ -215,7 +215,7 @@ test('a refused start lands on the row — the open drill reads the why', async 
   // open the drill, press its labeled Run
   await user.click(tileButton())
   await screen.findByText('Prompt', {}, { timeout: 4000 })
-  const drill = document.querySelector('div[class*="zoomDetail"]') as HTMLElement
+  const drill = document.querySelector('div[class*="zoomCard"]') as HTMLElement
   await user.click(within(drill).getByRole('button', { name: 'Run stage' }))
   // the refusal lands IN the drill — the full compose text
   const drillErr = await screen.findByTestId('drill-run-error', undefined, { timeout: 4000 })

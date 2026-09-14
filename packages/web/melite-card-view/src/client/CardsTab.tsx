@@ -691,7 +691,7 @@ export function benchRow(stage: BenchStageRow, bench?: CardsBenchValue): CardRow
  *  dump. Params left, Run right; the patch carries only CHANGED keys
  *  (coerced once, at patch time — the editPatch law); then the run
  *  gesture (patch lands in the domain BEFORE the run reads it). */
-function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRemoved, onPatchParams, renderStageView, renderPreview, onSurface, runId, canRemove }: {
+function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRemoved, onPatchParams, renderStageView, renderPreview, onSurface, runId, canRemove, bindRun }: {
   stage: BenchStageRow
   bench: CardsBenchValue
   running: boolean
@@ -715,6 +715,10 @@ function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRemoved, 
    *  row — removal rides the tile's trash. The prop stays for the
    *  call-site seam (nothing reads it; the row is gone). */
   canRemove?: boolean
+  /** THE GESTURE REGISTRATION (hour-26): the frame's top-bar pill
+   *  calls the drill's OWN run (flush-then-start), never a bare
+   *  start that would drop un-flushed form edits (the 1:1 law). */
+  bindRun?: (run: () => void) => void
 }): ReturnType<typeof h> {
   const title = String(stage.title ?? stage.card ?? stage.id)
   const held: SpecValues = typeof stage.params === 'object' && stage.params !== null ? stage.params : {}
@@ -737,15 +741,9 @@ function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRemoved, 
   const [error, setError] = useState<string | null>(null)
   const [loaded, setLoaded] = useState(false)
   const reportSurface = onSurface ?? (() => {})
-  // THE LIVE GESTURE STATE: the tab's optimistic start flag OR the
-  // ROW's own run state — a restored running bench (reopened tab,
-  // another surface's run) shows stop + progress without a
-  // client-started binding (the stop door no-ops without one, the
-  // same guard the tile's stop rides).
-  const live: boolean = running || (
-    typeof stage.runStatus === 'string'
-    && (stage.runStatus === 'running' || stage.runStatus === 'queued' || stage.runStatus === 'pending')
-  )
+  // (THE LIVE GESTURE STATE moved to the frame (hour-26): the top
+  //  bar's Run/Stop pill + the webhook strip derive the row's run
+  //  state there — the drill body no longer needs its own copy.)
   const [removing, setRemoving] = useState(false)
   // THE SLOT IS THE WIRE (the two-month law, restored 2026-09-12):
   //  no wiring mechanic exists. The square picker lists the OTHER
@@ -912,6 +910,17 @@ function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRemoved, 
       setError(e instanceof Error ? e.message : 'run failed')
     }
   }
+  // THE GESTURE BINDING (hour-26, the 1:1 law): the frame's top-bar
+  // Run pill calls THIS verb — the flush-then-start law the drill
+  // owns. A REF DISPATCHER: the bound fn is STABLE (bound once —
+  // never a re-render loop) yet always runs the CURRENT closure
+  // (the ref re-points every render; the verb reads it at call
+  // time, so the flush sees the latest user/held maps).
+  const runRef = useRef(run)
+  runRef.current = run
+  useEffect(() => {
+    bindRun?.(() => { void runRef.current() })
+  }, [bindRun])
   const remove = async (): Promise<void> => {
     setError(null)
     setRemoving(true)
@@ -1022,42 +1031,16 @@ function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRemoved, 
           ? h(SpecForm, { spec, user, onSet, onUnset, wire, onPatch: onPatchParams })
         : h('pre', { className: css.mono }, JSON.stringify(held, null, 2)),
         ),
-        // THE RUN SEAT (hour-25 follow-up, the operator: "the run
-        // button should be at the bottom right of parameters"): the
-        // gesture rides the params rail's STICKY bottom-right —
-        // pinned while the form scrolls above it, ghost-styled like
-        // the tile (the first cut sat in the outputs column as a
-        // filled brand circle; wrong seat, wrong face).
-        h('div', { className: css.drillRunRow },
-          error !== null ? h('span', { className: css.runError }, error) : null,
-          live
-            ? (() => {
-                const rec = stage.result as Record<string, unknown> | null | undefined
-                const p = typeof rec?.['progress'] === 'object' && rec?.['progress'] !== null
-                  ? rec['progress'] as { value: number, max: number } : null
-                const act = typeof rec?.['activity'] === 'string' ? rec['activity'] as string : ''
-                const pct = p !== null && p.max > 0 ? Math.floor((100 * p.value) / p.max) : null
-                return h('span', { className: css.drillProgress, 'data-testid': 'drill-progress', role: 'status' },
-                  h(IconLoadingOutline16, { size: 14 }),
-                  h('span', null, [
-                    act !== '' ? act : 'running',
-                    pct !== null ? ' · ' + String(pct) + '%' : '',
-                  ].join('')),
-                )
-              })()
-            : null,
-          live
-            ? h('button', {
-                className: css.drillRunBtn, type: 'button',
-                'aria-label': 'Stop run', 'data-testid': 'drill-stop',
-                onClick: () => { onStop() },
-              }, h(IconStopFill16, { size: 16 }), h('span', null, 'Stop'))
-            : h('button', {
-                className: css.drillRunBtn, type: 'button',
-                'aria-label': 'Run stage', 'data-testid': 'drill-run',
-                onClick: () => { void run() },
-              }, h(IconPlayOutline16, { size: 16 }), h('span', null, 'Run')),
-        ),
+        // THE RUN SEAT RETIRED (hour-26, the operator: the play
+        // button rides the top bar and the comfyui progress webhooks
+        // surface in the strip under it — the frame's zoomBar owns
+        // the gesture and the live fold now, for every face). The
+        // params rail keeps only what it owns: the ✦ row and the
+        // form; a client-side error (not the run's) still lands at
+        // the rail's bottom.
+        error !== null ? h('div', { className: css.drillRunRow },
+          h('span', { className: css.runError }, error),
+        ) : null,
       ),
       preview: h('div', { className: css.outputs },
         h('div', {
@@ -1098,18 +1081,10 @@ function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRemoved, 
         drillItem !== null
           ? h(MediaDrilldown, { item: drillItem, onClose: () => { setDrillItem(null) } })
           : null,
-        // THE FAILURE FACE (2026-09-13): the observer's failure carry,
-        // full text — the drill is where the reason is READ (the tile
-        // caption slices it). Runs against the run row so the word
-        // "failed" always has its why one glance away.
-        typeof stage.runStatus === 'string' && stage.runStatus === 'failed'
-          && typeof (stage.result as Record<string, unknown> | null | undefined)?.['error'] === 'string'
-          ? h('p', { className: css.runError, 'data-testid': 'drill-run-error' },
-              String((stage.result as Record<string, unknown>)['error']))
-          : null,
-        // (the run gesture MOVED to the params rail's sticky bottom
-        //  — hour-25 follow-up; the outputs column keeps only the
-        //  failure face + the preview. The remove row stays retired.)
+        // (THE FAILURE FACE MOVED TO THE FRAME (hour-26): the run's
+        //  error text rides the webhook strip under the top bar —
+        //  the outputs column keeps only the preview. The remove row
+        //  stays retired.)
         ),
       }),
     )
@@ -1122,6 +1097,10 @@ function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRemoved, 
     onPatch: onPatchParams,
     onRun,
     onStop,
+    // THE GESTURE CHANNEL (hour-26): a studio with a domain-first
+    // law binds its verb THROUGH the drill's claim — the frame's
+    // pill then runs the studio's law, not a bare start.
+    bindRun: (r: () => void) => { bindRun?.(r) },
     onRemove: () => { void remove() },
     onSurface: reportSurface,
     upstream: candidates.map((c) => ({ id: c.id, title: c.label, url: c.url })),
@@ -1663,7 +1642,7 @@ function BenchView({ bench, onRun, onRunStage, onStopStage, onRemoveStage, stage
  * surface — the bench CAS door has no business here); the back affordance
  * returns to the shared bench, the tab's home address.
  */
-function DraftView({ value, running, onRun, onStop, onBack, onPatchParams, renderStageView, renderPreview, runId }: {
+function DraftView({ value, running, onRun, onStop, onBack, onPatchParams, renderStageView, renderPreview, runId, bindRun }: {
   value: CardsDraftValue
   running: boolean
   onRun: () => void
@@ -1675,6 +1654,7 @@ function DraftView({ value, running, onRun, onStop, onBack, onPatchParams, rende
   renderStageView: (owner: StageViewOwnerProps, fallback: ReturnType<typeof h>) => ReturnType<typeof h>
   renderPreview?: (owner: { kind: 'video' | 'image' | 'audio' | 'mesh', artifacts: Array<{ name: string, url: string }>, runStatus: string, stageId: string }, fallback: ReturnType<typeof h>) => ReturnType<typeof h>
   runId: string | null
+  bindRun?: (run: () => void) => void
 }): ReturnType<typeof h> {
   const found = value.stages.find((s) => s.id === value.stageId) ?? null
   if (found === null) {
@@ -1718,6 +1698,7 @@ function DraftView({ value, running, onRun, onStop, onBack, onPatchParams, rende
     renderPreview,
     runId,
     canRemove: false,
+    bindRun,
   })
 }
 

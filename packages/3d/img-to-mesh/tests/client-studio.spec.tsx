@@ -81,19 +81,25 @@ test('row-click opens a fold and reveals its SSOT fields', async () => {
   expect(await screen.findByText('Atlas size', {}, { timeout: 2000 })).toBeTruthy()
 })
 
-test('the icon run gesture patches the domain FIRST, then starts (the drill law, kept)', async () => {
+test('the run verb BINDS to the frame: patch the domain FIRST, then start (the drill law, kept)', async () => {
   stubWire()
-  const user = userEvent.setup()
   const onPatch = vi.fn()
   const onRun = vi.fn()
-  render(createElement(ImgToMeshStudio, { ...OWNER, onPatch, onRun }))
-  // THE RUN GESTURE (2026-09-13): the icon affordance replaces the
-  // text Button (aria-named play glyph); the Remove row is retired.
-  const run = await screen.findByRole('button', { name: 'Run stage' }, { timeout: 4000 })
-  expect(run.getAttribute('data-testid')).toBe('studio-run')
-  expect(screen.queryByRole('button', { name: 'Run' })).toBeNull()
-  expect(screen.queryByRole('button', { name: 'Remove stage' })).toBeNull()
-  await user.click(run)
+  // THE GESTURE SEAT MOVED (hour-26): the frame's top-bar pill owns
+  // the button; the studio BINDS its patch-first verb through
+  // bindRun — the pill can never start past un-flushed domain state
+  // (the 1:1 law). No run/stop button renders in the studio body.
+  const bound: Array<() => void> = []
+  render(createElement(ImgToMeshStudio, {
+    ...OWNER, onPatch, onRun,
+    bindRun: (r: () => void) => { bound.push(r) },
+  }))
+  await screen.findByText('Resolution', {}, { timeout: 4000 })
+  await waitFor(() => { expect(bound.length).toBeGreaterThan(0) })
+  expect(screen.queryByRole('button', { name: 'Run stage' })).toBeNull()
+  expect(screen.queryByRole('button', { name: 'Stop run' })).toBeNull()
+  expect(screen.queryByTestId('studio-progress')).toBeNull()
+  bound[bound.length - 1]!()
   expect(onPatch).toHaveBeenCalledTimes(1)
   expect(onRun).toHaveBeenCalledTimes(1)
   // order: patch BEFORE run
@@ -106,9 +112,8 @@ test('the icon run gesture patches the domain FIRST, then starts (the drill law,
   expect(patch['resolution']).toBeUndefined()
 })
 
-test('a live row shows stop + the tap fold (the restored bench face)', async () => {
+test('a live row binds stop; no studio-body progress face (the frame owns the fold)', async () => {
   stubWire()
-  const user = userEvent.setup()
   const onStop = vi.fn()
   render(createElement(ImgToMeshStudio, {
     ...OWNER,
@@ -116,15 +121,11 @@ test('a live row shows stop + the tap fold (the restored bench face)', async () 
     row: { ...OWNER.row, result: { run_id: 'run-9', progress: { value: 7, max: 20 }, activity: 'sampling 7/20' } },
     onStop,
   }))
-  // the stop glyph replaces play while live; the fold renders beside it
-  const stop = await screen.findByRole('button', { name: 'Stop run' }, { timeout: 4000 })
-  expect(stop.getAttribute('data-testid')).toBe('studio-stop')
-  expect(screen.queryByRole('button', { name: 'Run stage' })).toBeNull()
-  const prog = screen.getByTestId('studio-progress')
-  expect(prog.textContent).toContain('sampling 7/20')
-  expect(prog.textContent).toContain('35%')
-  await user.click(stop)
-  expect(onStop).toHaveBeenCalledTimes(1)
+  await screen.findByText('Resolution', {}, { timeout: 4000 })
+  // the webhook strip + Stop pill ride the FRAME (the zoom bar) —
+  // the studio body renders no gesture of its own
+  expect(screen.queryByTestId('studio-progress')).toBeNull()
+  expect(screen.queryByRole('button', { name: 'Stop run' })).toBeNull()
 })
 
 test('the registration is keyed under img-to-mesh (the readToolview shape)', () => {
@@ -143,9 +144,11 @@ test("THE SLOT IS THE WIRE: picking an upstream output writes the param", async 
     stubWire()
     const onPatch = vi.fn()
     const onRun = vi.fn()
+    const bound: Array<() => void> = []
     render(createElement(ImgToMeshStudio, { ...OWNER,
       upstream: [{ id: 's_1', title: 'Boat gen', url: '/melite-media/runs/r9/gen/gen_00001_.png' }],
       onPatch, onRun,
+      bindRun: (r: () => void) => { bound.push(r) },
     }))
     // the input square (the image field) — click opens the source menu
     const square = await screen.findByRole('button', { name: /Input image source/i })
@@ -157,9 +160,10 @@ test("THE SLOT IS THE WIRE: picking an upstream output writes the param", async 
     const row = await screen.findByTestId('source-pick-row')
     if (!row.textContent?.includes('Boat gen')) throw new Error('row lost its candidate label')
     fireEvent.click(row)
-    // run: PATCH FIRST — the picked url rides the params VERBATIM
-    const runBtn = await screen.findByRole('button', { name: 'Run stage' })
-    fireEvent.click(runBtn)
+    // run (the BOUND verb — the frame pill's gesture): PATCH FIRST —
+    // the picked url rides the params VERBATIM
+    await waitFor(() => { expect(bound.length).toBeGreaterThan(0) })
+    bound[bound.length - 1]!()
     await waitFor(() => {
       expect(onPatch).toHaveBeenCalledWith(expect.objectContaining({
         input_image: '/melite-media/runs/r9/gen/gen_00001_.png',

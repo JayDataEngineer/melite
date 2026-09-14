@@ -105,13 +105,5 @@
   border-color: var(--dsw-alias-brand-primary);
   color: var(--dsw-alias-brand-primary);
 }
-.studioProgress {
-  align-items: center;
-  color: var(--dsw-alias-label-secondary);
-  display: inline-flex;
-  font-size: 11px;
-  font-variant-numeric: tabular-nums;
-  gap: 6px;
-}
-.studioProgress > svg { animation: studioProgressTurn 1s linear infinite; }
-@keyframes studioProgressTurn { to { transform: rotate(360deg); } }
+/* (studioProgress retired hour-26: the live fold rides the frame
+ * webhook strip under the top bar.) */

@@ -15,8 +15,9 @@
  * • The overlay is the scroll container; the inner flex centers a
  *   card shorter than the area and scrolls one that is taller.
  */
-import { createElement as h, useEffect, useState } from 'react'
+import { createElement as h, useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
+import { IconLoadingOutline16, IconPlayOutline16, IconStopFill16 } from '@deepseek-ai/dsh-client-ui-primitives'
 import css from './card.module.css'
 import { BenchStageRow, CardsBenchValue } from './cards-resource.ts'
 import type { StageViewOwnerProps } from './types.ts'
@@ -70,6 +71,13 @@ export interface ZoomDetailProps {
   onSurface?: (size: string) => void
   /** the draft's last started run (the studio polls it for artifacts). */
   runId?: string | null
+  /** THE GESTURE REGISTRATION (hour-26, the 1:1 law): the frame's
+   * top-bar Run pill owns the BUTTON, the detail owns the LAW (the
+   * drill flushes the user layer to the estate BEFORE the start;
+   * studios patch their domain first). The detail registers its run
+   * verb through this channel; the pill falls back to onRun when no
+   * detail-bound verb exists (never a silent param drop). */
+  bindRun?: (run: () => void) => void
   /** the cards.stage.view consult (unclaimed → the generic card). */
   renderStageView: (owner: StageViewOwnerProps, fallback: ReturnType<typeof h>) => ReturnType<typeof h>
   /** the cards.stage.preview consult (hour-9 seam; the primary-output
@@ -100,6 +108,13 @@ function ZoomSkeleton(): ReturnType<typeof h> {
 function ZoomMount(props: ZoomDetailProps & { detail: (p: ZoomDetailProps) => ReturnType<typeof h> }): ReturnType<typeof h> {
   const { stage, detail, onClose, ...rest } = props
   const [ready, setReady] = useState(false)
+  // THE REGISTERED GESTURE (the 1:1 law): whatever the detail body
+  // bound wins; onRun is the fallback, never the bypass. A REF, NOT
+  // STATE — React's lazy-state law CALLS any function handed to a
+  // state setter (the verb would fire as an "updater" at bind time
+  // and store undefined); the ref stores the verb untouched and the
+  // pill reads it at click time.
+  const boundRef = useRef<(() => void) | null>(null)
   // THE ENVELOPE LIFT: the detail reports the estate's surface.size;
   // the frame grows for 'huge' (the card listens, the view talks).
   const [surfaceSize, setSurfaceSize] = useState<string | null>(null)
@@ -118,6 +133,27 @@ function ZoomMount(props: ZoomDetailProps & { detail: (p: ZoomDetailProps) => Re
     return () => { window.removeEventListener('keydown', onKey) }
   }, [onClose])
 
+  // THE FRAME GESTURE + THE WEBHOOK BAR (hour-26, the operator: the
+  // play button rides the top bar; the comfyui progress webhooks
+  // surface in a strip under it, like the old system). The frame
+  // derives both from the row it already holds — the SAME currency
+  // the drill read (the optimistic start flag OR the row's run
+  // state; stage.result.progress {value,max} + activity; the failed
+  // run's error text) — so every face (generic drill or studio
+  // claim) gets ONE gesture seat at the top and ONE live strip,
+  // never per-body duplicates.
+  const live: boolean = props.running || (
+    typeof stage.runStatus === 'string'
+    && (stage.runStatus === 'running' || stage.runStatus === 'queued' || stage.runStatus === 'pending')
+  )
+  const rec = typeof stage.result === 'object' && stage.result !== null ? stage.result as Record<string, unknown> : null
+  const prog = rec !== null && typeof rec['progress'] === 'object' && rec['progress'] !== null
+    ? rec['progress'] as { value: number, max: number } : null
+  const act = rec !== null && typeof rec['activity'] === 'string' ? rec['activity'] : ''
+  const pct = prog !== null && prog.max > 0 ? Math.floor((100 * prog.value) / prog.max) : null
+  const failedText = typeof stage.runStatus === 'string' && stage.runStatus === 'failed'
+    && typeof rec?.['error'] === 'string' ? rec['error'] : null
+
   return h('div', {
     className: css.zoomOverlay,
     // backdrop click closes (target === currentTarget so card clicks
@@ -132,6 +168,20 @@ function ZoomMount(props: ZoomDetailProps & { detail: (p: ZoomDetailProps) => Re
         },
           h('div', { className: css.zoomBar },
             h('span', { className: css.zoomTitle }, 'Stage ' + String(stage.title ?? stage.card ?? stage.id)),
+            // THE RUN PILL (the one gesture seat, frame-owned): ghost
+            // face, glyph + word, Stop mid-run — the drill/studio
+            // bottom seats retired with it.
+            live
+              ? h('button', {
+                className: css.drillRunBtn, type: 'button',
+                'aria-label': 'Stop run', 'data-testid': 'drill-stop',
+                onClick: () => { props.onStop() },
+              }, h(IconStopFill16, { size: 16 }), h('span', null, 'Stop'))
+              : h('button', {
+                className: css.drillRunBtn, type: 'button',
+                'aria-label': 'Run stage', 'data-testid': 'drill-run',
+                onClick: () => { (boundRef.current ?? props.onRun)() },
+              }, h(IconPlayOutline16, { size: 16 }), h('span', null, 'Run')),
             h('button', {
               className: css.closeX,
               type: 'button',
@@ -139,6 +189,27 @@ function ZoomMount(props: ZoomDetailProps & { detail: (p: ZoomDetailProps) => Re
               onClick: onClose,
             }, '✕'),
           ),
+          // THE WEBHOOK BAR: live → spinner + activity + percent + a
+          // thin meter; failed → the reason, whole text (the drill is
+          // where it is READ); idle/succeeded → nothing.
+          live || failedText !== null
+            ? h('div', { className: css.zoomWebhook, role: 'status' },
+              live
+                ? h('span', { className: css.drillProgress, 'data-testid': 'drill-progress' },
+                  h(IconLoadingOutline16, { size: 14 }),
+                  h('span', null, [
+                    act !== '' ? act : 'running',
+                    pct !== null ? ' · ' + String(pct) + '%' : '',
+                  ].join('')),
+                  pct !== null
+                    ? h('span', { className: css.zoomMeter },
+                      h('span', { className: css.zoomMeterFill, style: { width: pct + '%' } }))
+                    : null,
+                )
+                : h('span', { className: css.runError, 'data-testid': 'drill-run-error' },
+                  failedText),
+            )
+            : null,
           // THE BODY SEAT (the hour-7 height war): the detail sits in
           // a FLEXED, MIN-ZERO body — the studio's own height:100%
           // chain (studioRoot → .shell grid) needs a parent that GIVES
@@ -148,7 +219,7 @@ function ZoomMount(props: ZoomDetailProps & { detail: (p: ZoomDetailProps) => Re
           // unaffected: their zoomDetail scrolls inside.
           h('div', { className: css.zoomBody },
             ready
-              ? h(props.detail, { stage, bench: rest.bench, running: rest.running, onRun: rest.onRun, onStop: rest.onStop, onClose, onRemoved: rest.onRemoved, onPatchParams: rest.onPatchParams, renderStageView: rest.renderStageView, renderPreview: rest.renderPreview, onSurface, runId: rest.runId })
+              ? h(props.detail, { stage, bench: rest.bench, running: rest.running, onRun: rest.onRun, onStop: rest.onStop, onClose, onRemoved: rest.onRemoved, onPatchParams: rest.onPatchParams, renderStageView: rest.renderStageView, renderPreview: rest.renderPreview, onSurface, runId: rest.runId, bindRun: (r: () => void) => { boundRef.current = r } })
               : h(ZoomSkeleton),
           ),
         ),
