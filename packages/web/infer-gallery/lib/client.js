@@ -164,6 +164,7 @@ window.__ModuleLoader__.load({
 				className: overlay_module_css_default.lightbox,
 				children: /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
 					style: {
+						position: "relative",
 						display: "flex",
 						flexDirection: "column",
 						alignItems: "center",
@@ -172,6 +173,24 @@ window.__ModuleLoader__.load({
 						padding: 24
 					},
 					children: [
+						/* @__PURE__ */ (0, react_jsx_runtime.jsx)("button", {
+							"aria-label": "Close preview",
+							onClick: onClose,
+							style: {
+								position: "absolute",
+								top: 8,
+								right: 8,
+								zIndex: 10,
+								background: "none",
+								border: "none",
+								cursor: "pointer",
+								fontSize: 20,
+								lineHeight: 1,
+								padding: "4px 6px",
+								borderRadius: 6
+							},
+							children: "✕"
+						}),
 						item.kind === "video" ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("video", {
 							src: item.url,
 							controls: true,
@@ -252,12 +271,20 @@ window.__ModuleLoader__.load({
 		* All wires are same-origin doors the host already serves; failures
 		* surface as honest caller-side errors, never thrown past React.
 		*/
-		/** The bench session the cards tab serves (melite-tools' DEFAULT_BENCH). */
-		const BENCH_SESSION = "main";
-		/** The bench tab's address (cross-plugin contract, the estate-artifact
-		* pattern: client bundles cannot import across plugins, so the prefix
-		* is restated with its definition site named — cards-resource.ts). */
-		const CARDS_BENCH_ADDRESS = "dsh-resource://cards/bench";
+		/** One bench session key — 'main' only for unattributed seats
+		*  (stroke 44: the bench belongs to the conversation; the gallery's
+		*  load writes the ACTIVE session's bench, never a stranger's). */
+		const BENCH_SESSION_RE = /^[A-Za-z0-9_-]{1,64}$/;
+		function benchSessionOf(id) {
+			return typeof id === "string" && BENCH_SESSION_RE.test(id) ? id : "main";
+		}
+		/** The bench tab's address for one session (cross-plugin contract,
+		* the estate-artifact pattern: client bundles cannot import across
+		* plugins, so the form is restated with its definition site named —
+		* cards-resource.ts's benchAddressOf). */
+		function cardsBenchAddress(sessionId) {
+			return "dsh-resource://cards/bench/" + benchSessionOf(sessionId);
+		}
 		/** The run tab's address (same contract; live runs open in the cards
 		*  tab's run view — the wand restores through the bench address
 		*  instead, so this twin stays for address-compat, pinned by the
@@ -274,6 +301,7 @@ window.__ModuleLoader__.load({
 		*  @param draftId the drafts door's row id (never empty — callers gate).
 		*  @param deps the open action + the error surface. */
 		async function loadDraftOntoBench(draftId, deps) {
+			const BENCH_SESSION = benchSessionOf(deps.sessionId);
 			try {
 				const docRes = await fetch("/v1/flows/drafts/" + encodeURIComponent(draftId), { headers: { accept: "application/json" } });
 				const doc = await docRes.json().catch(() => null);
@@ -305,7 +333,7 @@ window.__ModuleLoader__.load({
 					deps.onError("the bench refused the load (" + await refusalOf(ensureRes, answer) + ")");
 					return;
 				}
-				deps.openResource(CARDS_BENCH_ADDRESS);
+				deps.openResource(cardsBenchAddress(deps.sessionId));
 			} catch (e) {
 				deps.onError("bench load failed — " + (e instanceof Error ? e.message : String(e)));
 			}
@@ -323,6 +351,7 @@ window.__ModuleLoader__.load({
 		*  @param runId the runs door's row id (never empty — callers gate).
 		*  @param deps the open action + the error surface. */
 		async function loadRunOntoBench(runId, deps) {
+			benchSessionOf(deps.sessionId);
 			try {
 				const sideRes = await fetch("/infer-gallery/flow?run_id=" + encodeURIComponent(runId), { headers: { accept: "application/json" } });
 				const side = await sideRes.json().catch(() => null);
@@ -920,7 +949,7 @@ window.__ModuleLoader__.load({
 				]
 			});
 		}
-		function MediaPanel({ useTabInfo }) {
+		function MediaPanel({ useTabInfo, sessionId }) {
 			const runsFeed = useFeed("/infer-gallery/runs", decodeRuns, {
 				runs: [],
 				errors: []
@@ -968,7 +997,8 @@ window.__ModuleLoader__.load({
 				}
 				const deps = {
 					openResource: open,
-					onError: setError
+					onError: setError,
+					sessionId
 				};
 				if (item.draftId !== "") {
 					loadDraftOntoBench(item.draftId, deps);
@@ -988,7 +1018,8 @@ window.__ModuleLoader__.load({
 				}
 				loadDraftOntoBench(draftId, {
 					openResource: open,
-					onError: setError
+					onError: setError,
+					sessionId
 				});
 			};
 			const items = (0, react.useMemo)(() => flatten(runs), [runs]);
@@ -1321,12 +1352,12 @@ window.__ModuleLoader__.load({
 			}
 		}
 		//#endregion
-		exports.CARDS_BENCH_ADDRESS = CARDS_BENCH_ADDRESS;
 		exports.MEDIA_KINDS = MEDIA_KINDS;
 		exports.MediaPanel = MediaPanel;
 		exports.MediaTabIcon = MediaTabIcon;
 		exports.apply = apply;
 		exports.callsTextOf = callsTextOf;
+		exports.cardsBenchAddress = cardsBenchAddress;
 		exports.cardsRunAddress = cardsRunAddress;
 		exports.decodeDrafts = decodeDrafts;
 		exports.decodeRuns = decodeRuns;
@@ -1334,6 +1365,7 @@ window.__ModuleLoader__.load({
 		exports.inject = inject;
 		exports.kindOf = kindOf;
 		exports.loadDraftOntoBench = loadDraftOntoBench;
+		exports.loadRunOntoBench = loadRunOntoBench;
 		exports.useFeed = useFeed;
 		return module.exports;
 	}
