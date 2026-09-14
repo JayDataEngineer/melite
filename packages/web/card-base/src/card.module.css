@@ -49,6 +49,31 @@
   color: var(--dsw-alias-label-secondary, #61666b);
   font-size: 11px;
 }
+/* THE SEED DICE (stroke 39): the key line becomes a header — name
+   left, dice right (the operator's placement law: "top right,
+   across from Seed"). The pip fill IS the state: filled = random
+   (a new seed every run), hollow = fixed. */
+.specFieldHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+}
+.specDice {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--dsw-alias-label-secondary, #61666b);
+  cursor: pointer;
+  opacity: 0.65;
+}
+.specDice:hover { opacity: 1; }
+.specDiceOn { color: var(--dsw-alias-accent-primary, #4a7dbd); opacity: 1; }
 
 /* THE POPUP FACE (hour 24 stroke 13: the operator caught white-on-
  * white — `color: inherit` is light text on the dark theme, and the
