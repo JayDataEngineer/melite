@@ -434,6 +434,7 @@ function specBody(svc, defs, res) {
 		service: res.service,
 		size: surface.size === "huge" ? "huge" : null,
 		variants: decl ? specVariants(decl, key, res.service, primary) : [],
+		packs: svc.packPresence(def.requiresByFamily?.[key] ?? def.requires ?? []),
 		families: (def.boarded ?? []).map((fam) => {
 			let label = fam;
 			try {

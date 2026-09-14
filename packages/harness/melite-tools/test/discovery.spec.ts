@@ -248,6 +248,7 @@ describe('live door arms', () => {
       'model',
       'model_defaults',
       'outputs',
+      'packs',
       'recipes',
       'schema',
       'service',
@@ -326,6 +327,10 @@ describe('live door arms', () => {
       },
       modCatalog: (pack: string, key: string): unknown => realFormSchemas('__solo2__', key) === null ? { shared: false, rows: [] } : { shared: false, rows: [] },
       cardModFields: (): unknown[] => [],
+      // packPresence (stroke 18): the solo fake carries no engine
+      // facts — unknown marks, the honest serve
+      packPresence: (packs: readonly string[]): Array<{ id: string, present: boolean | null }> =>
+        packs.map((id) => ({ id, present: null })),
     } as unknown as ReturnType<typeof theService>
     const body = specBody(fakeSvc, defs, { card: '__solo2__', service: '__solo2__', model: '__solo2__' })
     // PRIMARY via the card arm (boarded empty — res.card === key):

@@ -631,21 +631,15 @@ describe("the lane presence gate", () => {
 //    boarded but not downloaded; every surface silently disagreed) ──
 
 describe("admitStageModel (the write-time door)", () => {
-  it("refuses a boarded-but-absent model with the offered list (world-truthful: the fixture's own presence decides)", () => {
+  it("ADMITS a boarded-but-absent model (stroke 18: absence prompts download, never blocks the write — world-truthful: the fixture's own presence decides)", () => {
     const s = primed();
     const rows = s.cardFamilies("image-gen");
     const absent = rows.find((r) => !r.present);
-    // a world where every board is downloaded has nothing to refuse
-    // here — the live lane (anima absent) owns the real proof; this
-    // wall pins the ARM, not the machine
+    // a world where every board is downloaded has nothing to prove
+    // here; this wall pins the ARM (offered is offered), not the
+    // machine
     if (absent === undefined) return;
-    const v = s.admitStageModel("image-gen", absent.id);
-    assert.equal(v.ok, false);
-    if (!v.ok) {
-      assert.match(v.error, /NOT DOWNLOADED/);
-      assert.ok(v.offered.includes("krea-2") || v.offered.length >= 0);
-      assert.ok(!v.offered.includes(absent.id));
-    }
+    assert.deepEqual(s.admitStageModel("image-gen", absent.id), { ok: true });
   });
 
   it("refuses a model the card does not board (even present ones)", () => {

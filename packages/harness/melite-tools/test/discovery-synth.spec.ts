@@ -39,7 +39,12 @@ function card(partial: Record<string, unknown>): CardDefinition {
 }
 
 function svc(partial: Record<string, unknown>): ComfyUIService {
-  return partial as unknown as ComfyUIService
+  // packPresence: the EXTENSION-LAW gate's read (stroke 18) — the
+  // synth fakes carry no engine facts, so the default marks unknown
+  return {
+    packPresence: (packs: readonly string[]) => packs.map((id) => ({ id, present: null })),
+    ...partial,
+  } as unknown as ComfyUIService
 }
 
 /** A schema-envelope stand-in (the served shape — schemastery's own

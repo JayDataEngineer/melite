@@ -55,7 +55,7 @@ export function meliteLoad(
       + 'inference_type (card | flow — a card or a flow tool call; nothing else executes). Returns the bundle: '
       + 'agents md, the tool-call signature (params_schema for cards; the prebuilt simplified signature for flows), '
       + 'tier-1 skill lines for the underlying skills (bodies load via skill_read — write the prompts yourself from '
-      + 'the craft you read), model hints on cards (the boarded families\' DECL identity — id/label/description, each marked present:true|false: present means downloaded on this machine; absent models REFUSE at add_stage — never write one), '
+      + 'the craft you read), model hints on cards (the boarded families\' DECL identity — id/label/description, each marked present:true|false: present means downloaded on this machine; absent-but-boarded models are OFFERED — prompt the user to download, or provision via comfy_manage provision_model) + pack hints (the card\'s declared ComfyUI extension packs, marked present:true|false|null — missing packs refuse the run: install via comfy_manage install_extension), '
       + 'and a stable bundle digest — quote it and skip reload on a match.',
     // ParameterSchemaSpec grammar: the map IS the implicit object root
     // (no type/properties wrapper), per-property `required: true`.

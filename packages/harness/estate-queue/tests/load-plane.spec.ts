@@ -223,7 +223,34 @@ describe("loadCard", () => {
       { id: "fam-a", label: "A", description: "first", present: true },
       { id: "ghost-fam", label: "G", description: "", present: false },
     ]);
+    // THE PACK HINTS (stroke 18): the card's declared extension
+    // packs serve presence-marked — this fixture's DEF carries no
+    // requires, so the empty list (never absent)
+    assert.deepEqual(b["pack_hints"], []);
     assert.match(String(b["digest"]), /^[0-9a-f]{16}$/);
+  });
+
+  it("pack_hints carry the declared packs with the gate's presence marks", () => {
+    // a DEF declaring requires + a family slice — presence rides the
+    // engine read (the booted singleton: unknown marks in this
+    // world; the mark's shape is the wall, not the machine)
+    const defReq = {
+      identity: { label: "L", description: "d" },
+      boarded: [],
+      schema: { dict: {} },
+      requires: ["pack-flat"],
+      requiresByFamily: { "fam-a": ["pack-fam"] },
+    } as unknown as CardDefinition;
+    const cards2 = {
+      defsSync: () => new Map([["anny", defReq]]),
+      modelMids: () => new Set(["fam-a"]),
+    };
+    const b = loadCard(REPO, cards2 as never, models as never, "anny");
+    const hints = b["pack_hints"] as Array<{ id: string; present: boolean | null }>;
+    assert.deepEqual(hints.map((h) => h.id).sort(), ["pack-fam", "pack-flat"]);
+    for (const h of hints) {
+      assert.ok(h.present === null || typeof h.present === "boolean");
+    }
   });
 
   it("unknown cards refuse LOUD", () => {

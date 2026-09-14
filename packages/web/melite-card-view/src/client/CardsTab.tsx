@@ -36,7 +36,7 @@ import { CardDrill } from './card-drill.tsx'
 import { MediaDrilldown, type MediaDrilldownItem } from '@melite-plugin/dsh-gallery/drilldown'
 import type { StageViewOwnerProps } from './types.ts'
 import { fetchCardCatalog, fetchFormSpec, fieldsOf, resolveValue, seedUser, SpecForm } from './spec-form.tsx'
-import { fetchFormsTable } from '@melite/card-base/wire'
+import { fetchFormsTable, postManageAction } from '@melite/card-base/wire'
 import { StudioShell } from '@melite/card-base/shell'
 
 /** The /v1/forms edge-meta cache (card id → declared input/output
@@ -1045,7 +1045,20 @@ function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRemoved, 
         h('div', { className: css.params },
         !loaded ? h('div', { className: css.load }, 'form…')
         : spec !== null
-          ? h(SpecForm, { spec, user, base: servedBase, onSet, onUnset, wire, onPatch: onPatchParams })
+          ? h(SpecForm, {
+            spec, user, base: servedBase, onSet, onUnset, wire,
+            onPatch: onPatchParams,
+            // THE TWO PROMPTS' ARMS (stroke 18, the operator's law:
+            // offered-but-absent PROMPTS, never blocks): a boarded
+            // model not on the machine → provision_model; a declared
+            // extension pack the engine cannot see → install_extension.
+            // Both ride the manage door's wire (the user gesture is
+            // the click; the reply's truth renders inline).
+            onDownloadModel: (id: string) => postManageAction('provision_model', { model: id })
+              .then((r) => r.ok),
+            onInstallPack: (id: string) => postManageAction('install_extension', { nodes: [id] })
+              .then((r) => r.ok),
+          })
         : h('pre', { className: css.mono }, JSON.stringify(held, null, 2)),
         ),
         // THE RUN SEAT RETIRED (hour-26, the operator: the play

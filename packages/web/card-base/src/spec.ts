@@ -247,6 +247,13 @@ export interface FormSpecDoc {
    *  (the bench doors refuse it loudly at write time with the same
    *  list). */
   families?: ReadonlyArray<{ id: string; label: string; present: boolean }>
+  /** THE PACKS BLOCK (the no-silent-drop law's extension half,
+   *  stroke 18): the card's declared extension packs for this
+   *  family, presence-marked by the EXTENSION-LAW gate's own read.
+   *  present:false = the run will refuse (missing extension) — the
+   *  rail prompts install; present:null = unknown (engine facts not
+   *  loaded — no mark, no guess). Never a silently absent pack. */
+  packs?: ReadonlyArray<{ id: string; present: boolean | null }>
   /** THE VARIANT MATRIX rows (spec ROOT — the old wire law f8d5ea7):
    *  Variant rows + Quant cells, flattened. Empty when the family
    *  declares no matrix. */

@@ -537,6 +537,30 @@ export class ComfyUIService extends Service {
     this.objectInfoNodes = nodes ? new Set(nodes) : null
   }
 
+  /** THE PACK PRESENCE READ (the no-silent-drop law's extension
+   *  half, hour 26 stroke 18): the EXTENSION-LAW gate's own check as
+   *  a READ for the serving surfaces (the spec's packs block, the
+   *  load bundle's pack hints). Same semantics, one spelling — a
+   *  pack is present when at least one of its declared node types
+   *  (facts.extension_node_types) is live on the engine; a pack with
+   *  NO declared node types, or engine facts not loaded, is UNKNOWN
+   *  (null — the gate cannot see it either; never a guessed mark). */
+  packPresence(
+    packs: readonly string[],
+  ): Array<{ id: string; present: boolean | null }> {
+    if (this.objectInfoNodes === null) {
+      return packs.map((id) => ({ id, present: null }))
+    }
+    const extMap = this.facts?.extension_node_types ?? {}
+    const nodes = this.objectInfoNodes
+    return packs.map((id) => {
+      const expected = extMap[id] ?? []
+      if (expected.length === 0) return { id, present: null }
+      const found = expected.filter((n) => nodes.has(n))
+      return { id, present: found.length > 0 }
+    })
+  }
+
   /** THE RECIPE OVERLAY (one merge point): consumes the validated
    *  recipe key, layers the payload's params over the merged base,
    *  concats its lora stack ahead of the stated one. Returns the

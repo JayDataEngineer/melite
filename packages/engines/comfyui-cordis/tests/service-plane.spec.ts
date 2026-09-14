@@ -588,3 +588,26 @@ describe("compose (the model path)", () => {
     assert.ok("TestNode.0" in graph && "final" in graph, "compose emits, finalize rides");
   });
 });
+
+// ── THE PACK PRESENCE READ (no-silent-drop law's extension half,
+//    hour 26 stroke 18 — the EXTENSION-LAW gate's own check as a
+//    serve; the spec's packs block and the load bundle's pack hints
+//    read THIS, one spelling) ──
+describe("packPresence (the gate's check as a read)", () => {
+  it("present when a declared node type is live; missing when none; unknown without facts or engine", async () => {
+    const svc = await boot();
+    // engine facts not loaded: everything unknown (never a guess)
+    svc.setObjectInfo({ NodeA: {} });
+    assert.deepEqual(svc.packPresence(["pack-a"]), [{ id: "pack-a", present: null }]);
+    // facts loaded, pack-a declares NodeA (live) + pack-b declares NodeB (dead)
+    svc.setFacts(factsFor({}, { "pack-a": ["NodeA"], "pack-b": ["NodeB"] }));
+    assert.deepEqual(svc.packPresence(["pack-a", "pack-b", "pack-ghost"]), [
+      { id: "pack-a", present: true },
+      { id: "pack-b", present: false },
+      { id: "pack-ghost", present: null }, // no declared node types — the gate cannot see it
+    ]);
+    // engine snapshot absent: unknown again (the gate stands down too)
+    svc.setObjectInfo(null);
+    assert.deepEqual(svc.packPresence(["pack-a"]), [{ id: "pack-a", present: null }]);
+  });
+});

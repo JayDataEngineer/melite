@@ -10,7 +10,7 @@
 import { createHash } from "node:crypto";
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
-import { cardPackages, cardWireName, emitParamsSchema, resolveRepoRoot } from "@melite/comfyui-cordis";
+import {cardPackages, cardWireName, emitParamsSchema, resolveRepoRoot, theService} from "@melite/comfyui-cordis";
 import type { ModelsService } from "@melite/comfyui-cordis";
 import type { CardRegistryService } from "./cardsRegistry.ts";
 import { getRegistryFlow } from "./flowsData.ts";
@@ -273,6 +273,29 @@ export function loadCard(
     if (d === undefined) continue;
     hints.push({ id: d.id, label: d.label, description: d.description, present: mids.has(d.id) });
   }
+  // THE PACK HINTS (the no-silent-drop law's extension half,
+  // stroke 18): the card's declared extension packs (flat requires +
+  // every per-family slice), presence-marked by the EXTENSION-LAW
+  // gate's own read via the engine service. The LLM sees a missing
+  // pack at LOAD time — install via comfy_manage install_extension
+  // before running, never a run-time surprise.
+  const extDef = def as {
+    requires?: readonly string[];
+    requiresByFamily?: Record<string, readonly string[]>;
+  };
+  const packIds: string[] = [...(extDef.requires ?? [])];
+  for (const slice of Object.values(extDef.requiresByFamily ?? {})) {
+    for (const p of slice) if (!packIds.includes(p)) packIds.push(p);
+  }
+  let pack_hints: Array<Record<string, unknown>> = [];
+  try {
+    const svc = theService();
+    pack_hints = svc.packPresence(packIds).map((r) => ({ id: r.id, present: r.present }));
+  } catch {
+    // engine service unavailable at load time — the ids still serve
+    // (present: null — unknown, never a silent drop)
+    pack_hints = packIds.map((id) => ({ id, present: null }));
+  }
   const bundle: Record<string, unknown> = {
     name: cardId,
     kind: "card",
@@ -280,6 +303,7 @@ export function loadCard(
     agents: cardSkillDocs(pkgDir),
     skills: skillLinesForCard(repo, cardId),
     model_hints: hints,
+    pack_hints,
   };
   bundle["digest"] = bundleDigest(bundle);
   return bundle;

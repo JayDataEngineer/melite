@@ -1066,28 +1066,30 @@ test("unresolvable params ride un-resolved (no key, never null)", async () => {
   assert.ok(!("resolved" in ((doc["stages"] as Array<Record<string, unknown>>)[0] as object)));
 });
 
-// ── THE MODEL ADMISSION (no-silent-drop law, hour 26 stroke 17) ──
-// The lane proof: the LLM wrote model=anima (boarded but NOT
-// downloaded) onto the image-gen card; the bench swallowed it; the
-// form painted krea-2; the run refused. Now the WRITE refuses first.
+// ── THE MODEL ADMISSION (no-silent-drop law, strokes 17-18) ──
+// The lane proof: the LLM wrote a model the card never offered; the
+// bench swallowed it; the form painted another family. Now the WRITE
+// refuses first. (Stroke 18 narrowed the refusal to NOT-BOARDED
+// models — a boarded-but-not-downloaded model is OFFERED: the write
+// lands and the surfaces prompt the download.)
 
 test("add_stage REFUSES a model the admission rejects — bench/bad-model, the row never lands", async () => {
   const drafts = await boot();
   await ensureBench(drafts, { session: "s" });
   const admit = (card: string, params: Record<string, unknown>): void => {
-    if (params["model"] === "anima") {
+    if (params["model"] === "gibberish-net") {
       throw new RemoteError(
         "bench/bad-model",
-        "model 'anima' is boarded by card 'image-gen' but NOT DOWNLOADED on this machine (present: krea-2)",
-        { card, offered: ["krea-2"] },
+        "model 'gibberish-net' is not offered by card 'image-gen' (boards: krea-2, z-image, anima)",
+        { card, offered: ["krea-2", "z-image", "anima"] },
       );
     }
   };
   assert.match(
     await codeOf(addStageBench(drafts, "s", {
-      card: "image-gen", params: { model: "anima", variant: "turbo" }, expect_rev: 0,
+      card: "image-gen", params: { model: "gibberish-net" }, expect_rev: 0,
     }, admit)),
-    /^bench\/bad-model\|.*NOT DOWNLOADED/,
+    /^bench\/bad-model\|.*not offered by card/,
   );
   // the row never landed
   assert.equal((getBench(drafts, "s").stages as unknown[]).length, 0);
@@ -1098,13 +1100,13 @@ test("patch admission reads the MERGED params — landing poison via patch is as
   await ensureBench(drafts, { session: "s" });
   const row = await addStageBench(drafts, "s", { card: "image-gen", params: { prompt: "x" }, expect_rev: 0 });
   const admit = (card: string, params: Record<string, unknown>): void => {
-    if (params["model"] === "anima") {
-      throw new RemoteError("bench/bad-model", "model 'anima' not downloaded", { card, offered: ["krea-2"] });
+    if (params["model"] === "gibberish-net") {
+      throw new RemoteError("bench/bad-model", "model 'gibberish-net' is not offered by card 'image-gen'", { card, offered: ["krea-2"] });
     }
   };
   assert.match(
     await codeOf(patchBench(drafts, "s", {
-      stage: row.stage, params: { model: "anima" }, expect_rev: 1,
+      stage: row.stage, params: { model: "gibberish-net" }, expect_rev: 1,
     }, admit)),
     /^bench\/bad-model/,
   );

@@ -514,7 +514,7 @@ test('one pick repairs a refused stage — the pick\'s overlay re-points the mod
 
 
 // ── THE FAMILIES BLOCK (no-silent-drop law, hour 26 stroke 17) ──
-test('a boarded-but-not-downloaded family SERVES in the Model rail — visible, disabled, marked; never dropped', async () => {
+test('a boarded-but-not-downloaded family SERVES in the Model rail — visible, marked, PICKABLE (stroke 18: absence prompts, never blocks)', async () => {
   const spec = { ...KREA, families: [
     { id: 'krea-2', label: 'Krea 2', present: true },
     { id: 'anima', label: 'Anima', present: false },
@@ -530,9 +530,10 @@ test('a boarded-but-not-downloaded family SERVES in the Model rail — visible, 
   render(comp)
   const model = (await screen.findByLabelText('Model')) as HTMLSelectElement
   const opt = model.querySelector('option[value="anima"]') as HTMLOptionElement
-  // visible + disabled + the machine truth in the label
+  // visible + the machine truth in the label + PICKABLE (the
+  // download prompt handles absence — offered is offered)
   expect(opt).toBeTruthy()
-  expect(opt.disabled).toBe(true)
+  expect(opt.disabled).toBe(false)
   expect(opt.textContent).toContain('Anima — not downloaded on this machine')
 })
 
@@ -558,4 +559,50 @@ test('a HELD absent family grounds through the families block — the rail shows
   expect(model.getAttribute('data-refused')).toBe(null)
   const opt = model.querySelector('option[value="anima"]') as HTMLOptionElement
   expect(opt.textContent).toContain('not downloaded')
+})
+
+// ── THE PACK PROMPT (no-silent-drop law's extension half, stroke 18) ──
+test('a DECLARED extension pack the engine cannot see renders AS ITSELF — marked missing, install one click away', async () => {
+  const spec = { ...KREA, packs: [{ id: 'SEEDVR2', present: false }, { id: 'pack-live', present: true }] }
+  let fired = ''
+  const comp = createElement(function Host() {
+    const [user, setUser] = useState<SpecValues>({ model: 'krea-2' })
+    return createElement(SpecForm, {
+      spec,
+      user,
+      onSet: (name: string, v: unknown) => { setUser((m) => ({ ...m, [name]: v })) },
+      onInstallPack: (id: string) => { fired = id; return Promise.resolve(true) },
+    })
+  })
+  render(comp)
+  const row = await screen.findByText(/SEEDVR2 is required by this card but not installed/)
+  expect(row).toBeTruthy()
+  const btn = screen.getByText('Install SEEDVR2')
+  fireEvent.click(btn)
+  expect(fired).toBe('SEEDVR2')
+  await waitFor(() => { expect(screen.getByText(/Install queued/)).toBeTruthy() })
+  // present packs render NOTHING (nothing to act on — no false alarm)
+  expect(screen.queryByText(/pack-live/)).toBe(null)
+})
+
+test('no install arm, no prompt chrome — and absent boarded family option is PICKABLE (stroke 18: offered is offered)', async () => {
+  const spec = { ...KREA, families: [
+    { id: 'krea-2', label: 'Krea 2', present: true },
+    { id: 'anima', label: 'Anima', present: false },
+  ], packs: [{ id: 'SEEDVR2', present: false }] }
+  const comp = createElement(function Host() {
+    const [user, setUser] = useState<SpecValues>({ model: 'krea-2' })
+    return createElement(SpecForm, {
+      spec,
+      user,
+      onSet: (name: string, v: unknown) => { setUser((m) => ({ ...m, [name]: v })) },
+    })
+  })
+  render(comp)
+  // the mark without the verb is truth, not dead chrome: the prompt
+  // row hides (no arm), but nothing blocks the pick
+  expect(screen.queryByText(/Install SEEDVR2/)).toBe(null)
+  const model = (await screen.findByLabelText('Model')) as HTMLSelectElement
+  const opt = model.querySelector('option[value="anima"]') as HTMLOptionElement
+  expect(opt.disabled).toBe(false)
 })

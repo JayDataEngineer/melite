@@ -401,6 +401,22 @@ export class CardRegistryService extends Service {
     await bootModels();
     this.reads = { getModel, registryIds, registryModel };
     this.facts = null;
+    // ARM THE SINGLETON for the presence reads (stroke 18): the
+    // compose path builds a FRESH service per run (armed with the
+    // snapshot below), but the serving surfaces (the spec's packs
+    // block, the load bundle's pack hints) read theService() —
+    // without this arm every pack marks unknown (null) on a healthy
+    // lane. Same snapshot + same facts file the compose gate reads:
+    // one truth, two seats, one spelling of the check.
+    try {
+      const svc = theService();
+      svc.setObjectInfo(this.objectInfo());
+      svc.setFacts(loadFacts(factsPath(), this.readsSync()));
+    } catch {
+      // the singleton is not resolvable in this context — the
+      // serving surfaces degrade to unknown marks (never a throw on
+      // the prime path; compose still arms its own fresh service)
+    }
   }
 
   /** Test seam: drop all registry state (walls boot fresh processes;
@@ -658,14 +674,16 @@ export class CardRegistryService extends Service {
     return out;
   }
 
-  /** ADMISSION (the door half of the no-silent-drop law): can a
-   *  bench stage for THIS card hold THIS model? The model's OWNING
-   *  family (resolveCardFamily — variant routes resolve to their
-   *  family) must be (a) boarded on the card and (b) PRESENT on the
-   *  machine. Refusals name the reason AND the offered list — the
-   *  writer (agent or human patch) gets the error AT WRITE TIME,
-   *  never a silent drop discovered at run time. Model-less rows
-   *  pass (they compose on the card's default family). */
+  /** ADMISSION (the door half of the no-silent-drop law, re-cut
+   *  hour 26 stroke 18 per the operator: a BOARDED model is
+   *  OFFERED — the write lands even when the weights are not yet
+   *  downloaded; absence is a DOWNLOAD PROMPT on the surfaces, never
+   *  a block). The model's OWNING family (resolveCardFamily —
+   *  variant routes resolve to their family) must be BOARDED on the
+   *  card; anything else refuses AT WRITE TIME with the card's
+   *  board — the writer (agent or human patch) gets the error the
+   *  moment it lands, never at run time. Model-less rows pass (they
+   *  compose on the card's default family). */
   admitStageModel(
     card: string,
     model: unknown,
@@ -681,28 +699,22 @@ export class CardRegistryService extends Service {
     }
     const boarded: readonly string[] = def.boarded ?? [];
     const mids: Set<string> = this.modelMids();
-    const offered: string[] = boarded.filter((fam) => mids.has(fam));
+    const downloaded: string[] = boarded.filter((fam) => mids.has(fam));
     const fam: string = this.resolveCardFamily(model, this.modelFacts());
     if (!boarded.includes(fam)) {
       return {
         ok: false,
         error:
           "model '" + model + "' is not offered by card '" + card +
-          "' (boarded: " + (boarded.join(", ") || "none") +
-          "; downloadable+present here: " + (offered.join(", ") || "none") + ")",
-        offered,
+          "' (boards: " + (boarded.join(", ") || "none") +
+          "; downloaded here: " + (downloaded.join(", ") || "none") + ")",
+        // the OFFER is the board itself (absent weights are
+        // offered too — downloadable; the prompt handles them)
+        offered: [...boarded],
       };
     }
-    if (!mids.has(model)) {
-      return {
-        ok: false,
-        error:
-          "model '" + model + "' is boarded by card '" + card +
-          "' but NOT DOWNLOADED on this machine (present: " +
-          (offered.join(", ") || "none") + ") — download it or pick a present model",
-        offered,
-      };
-    }
+    // boarded = offered = admitted. Not-yet-downloaded weights are
+    // the user's download prompt (provision_model), never a refusal
     return { ok: true };
   }
 

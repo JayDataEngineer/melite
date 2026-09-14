@@ -19,6 +19,72 @@ async function v1Get<T>(path: string, signal?: AbortSignal): Promise<T> {
   return body as T
 }
 
+/** Correlation id for one client-request frame (the reference caller
+ * uses a random uuid per call; crypto.randomUUID is the browser
+ * standard — the deck's assets tab owns the older copy; this is the
+ * card chrome's seat). */
+function nextRpcId(): string {
+  const cryptoApi: Crypto | undefined = globalThis.crypto
+  if (cryptoApi?.randomUUID !== undefined) return cryptoApi.randomUUID()
+  return 'rpc-' + Math.random().toString(36).slice(2) + '-' + Date.now().toString(36)
+}
+
+export interface ManageActionReply {
+  ok: boolean
+  detail?: string
+  data?: unknown
+}
+
+/** POST one manage action over the `manage` remote's wire door —
+ * same-origin /api/manage/act carrying the documented client-request
+ * frame (api-gateway.md). The single argument is `doc` (the
+ * adapter's parameter name — the wire field rides it verbatim).
+ * THE DOWNLOAD PROMPT's arm (no-silent-drop law, stroke 18): a
+ * boarded-but-not-downloaded model is OFFERED — the surfaces prompt
+ * the user, the click lands here as provision_model (the manager
+ * queues the download; present files are skipped). A refusal is a
+ * DOMAIN outcome: the envelope carries it (ok:false + detail) — the
+ * caller renders the truth, never a throw past the surface. */
+export async function postManageAction(
+  action: string,
+  payload: Record<string, unknown>,
+  signal?: AbortSignal,
+): Promise<ManageActionReply> {
+  const response = await fetch('/api/manage/act', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({
+      type: 'client-request',
+      rpcId: nextRpcId(),
+      method: 'manage/act',
+      payload: { args: { doc: { action, ...payload } } },
+    }),
+    ...(signal === undefined ? {} : { signal }),
+  })
+  const body: unknown = await response.json().catch(() => null)
+  const row = typeof body === 'object' && body !== null
+    ? Reflect.get(body, 'result') as unknown : undefined
+  const inner = typeof row === 'object' && row !== null ? row as Record<string, unknown> : {}
+  if (!response.ok) {
+    return {
+      ok: false,
+      detail: typeof inner['message'] === 'string' ? inner['message'] : 'manage/' + action + ': HTTP ' + String(response.status),
+    }
+  }
+  // the typert result envelope: {ok, value} | {ok:false, error}
+  const okRaw = inner['ok']
+  if (okRaw === false) {
+    const err = inner['error'] as Record<string, unknown> | undefined
+    return { ok: false, detail: typeof err?.['message'] === 'string' ? err['message'] : 'manage/' + action + ' refused' }
+  }
+  const value = inner['value'] as Record<string, unknown> | undefined
+  return {
+    ok: true,
+    detail: typeof value?.['detail'] === 'string' ? value['detail'] : undefined,
+    data: value?.['data'],
+  }
+}
+
 /** /v1/model-catalog → the cards section (the picker's ONE surface —
  *  action cards, one tile per card package; models are NOT entries). */
 export async function fetchCardCatalog(signal?: AbortSignal): Promise<CatalogCard[]> {

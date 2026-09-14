@@ -409,6 +409,16 @@ export function specBody(
     // visible and marked — never silently dropped from the surface
     // (the Model rail renders it disabled with its reason; the bench
     // doors refuse it loudly at write time with the same list).
+    // THE PACKS BLOCK (the no-silent-drop law's extension half,
+    // stroke 18): the card's DECLARED extension packs for the spec's
+    // own family (the EXTENSION-LAW gate's slice semantics mirrored:
+    // requiresByFamily[key] wins when declared, else the flat
+    // requires), presence-marked by the gate's own read
+    // (svc.packPresence — one spelling). A missing pack SERVES —
+    // visible, marked, prompting install — never a silently empty
+    // modifier bag or a run-time surprise. null = unknown (engine
+    // facts not loaded; the gate cannot see it either).
+    packs: svc.packPresence(def.requiresByFamily?.[key] ?? def.requires ?? []),
     families: (def.boarded ?? []).map((fam) => {
       let label = fam
       try {

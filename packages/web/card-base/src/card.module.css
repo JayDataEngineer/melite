@@ -309,3 +309,19 @@
   background: color-mix(in srgb, var(--dsw-alias-brand-primary) 15%, transparent);
   color: var(--dsw-alias-brand-primary);
 }
+
+/* THE DOWNLOAD PROMPT's action (stroke 18): the inline verb on the
+ * mark — a plain text-button face (never dead chrome; the manage
+ * door queues the provision). */
+.specLinkBtn {
+  all: unset;
+  cursor: pointer;
+  color: var(--melite-accent, #6ea8fe);
+  text-decoration: underline;
+  font: inherit;
+}
+.specLinkBtn:disabled {
+  cursor: default;
+  color: var(--melite-muted, #8a8f98);
+  text-decoration: none;
+}

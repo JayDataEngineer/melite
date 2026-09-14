@@ -526,18 +526,72 @@ export function SpecAtom({ f, value, onEdit, square, wireCandidates }: {
  *  values (model + every axis key + overlay keys) ride the caller's
  *  map and pass along at Run. Renders nothing when the spec declares
  *  no matrix. */
-export function ModelAxes({ spec, value, onSet }: {
+/** THE PACK PROMPT (the no-silent-drop law's extension half,
+ *  stroke 18): the card's DECLARED extension packs that the engine
+ *  cannot see render AS THEMSELVES — marked missing, with the
+ *  install verb one click away (the manage door's install_extension;
+ *  the host owns the wire). Present and unknown packs render nothing
+ *  (nothing to act on; the spec carries their truth for anyone who
+ *  reads it). Never a silently absent pack: the run's refusal text
+ *  and this prompt name the same id. */
+export function PackPrompt({ spec, onInstallPack }: {
+  spec: FormSpecDoc
+  onInstallPack?: (id: string) => Promise<boolean>
+}): ReturnType<typeof h> | null {
+  const missing = (spec.packs ?? []).filter((p) => p.present === false)
+  if (missing.length === 0 || onInstallPack === undefined) return null
+  return h('section', { className: `${css.specGroup} ${css.modelAxes}`, 'data-pack-prompt': '1' },
+    h('h4', { className: css.specGroupTitle }, 'Extensions'),
+    missing.map((p) => h(PackPromptRow, { key: p.id, id: p.id, onInstallPack })))
+}
+
+function PackPromptRow({ id, onInstallPack }: {
+  id: string
+  onInstallPack: (id: string) => Promise<boolean>
+}): ReturnType<typeof h> {
+  const [st, setSt] = useState<'idle' | 'busy' | 'queued' | 'failed'>('idle')
+  return h('div', { className: css.specHint, 'data-missing-pack': id },
+    id + ' is required by this card but not installed on the engine.',
+    ' ',
+    h('button', {
+      type: 'button',
+      className: css.specLinkBtn,
+      disabled: st !== 'idle',
+      onClick: () => {
+        setSt('busy')
+        void onInstallPack(id)
+          .then((ok: boolean) => setSt(ok ? 'queued' : 'failed'))
+          .catch(() => setSt('failed'))
+      },
+    }, st === 'idle' ? 'Install ' + id
+      : st === 'busy' ? 'Requesting…'
+      : st === 'queued' ? 'Install queued ✓ (restart the engine when it lands)'
+      : 'Install request failed — retry from the assets tab'))
+}
+
+export function ModelAxes({ spec, value, onSet, onDownloadModel }: {
   spec: FormSpecDoc
   value: SpecValues
   onSet(name: string, v: unknown): void
+  /** THE DOWNLOAD PROMPT's arm (stroke 18, the operator's law: a
+   *  boarded model is OFFERED — absence prompts the user to
+   *  download, never blocks the pick): when the HELD model is a
+   *  boarded family whose weights are not on the machine, the rail
+   *  renders the prompt; the click fires this (the host owns the
+   *  manage wire — postManageAction provision_model). Without the
+   *  arm the mark still renders (hosts without the manage door
+   *  never show a dead button). Returns whether the provision
+   *  request queued. */
+  onDownloadModel?: (id: string) => Promise<boolean>
 }): ReturnType<typeof h> | null {
   const groups = axisGroups(spec)
   if (groups.length === 0) return null
   const models = modelChoices(spec)
   // THE FAMILIES BLOCK (no-silent-drop law): the card's boarded
   // families render in the Model rail even when the machine has not
-  // downloaded them — visible, disabled, marked. Present families
-  // not in the matrix (sibling boards) become pickable options.
+  // downloaded them — visible, marked, PICKABLE (stroke 18: offered
+  // is offered; absence prompts, never blocks). Present families
+  // not in the matrix (sibling boards) ride as options too.
   const matrixSet = new Set(models)
   const familyRows = (spec.families ?? []).map((f) => ({
     ...f,
@@ -566,6 +620,11 @@ export function ModelAxes({ spec, value, onSet }: {
   const refusedModel = heldModel !== undefined && !knownModel(heldModel) ? heldModel : undefined
   // absent alone seeds (spec.model, the declared initial model)
   const shownModel = heldModel ?? (typeof spec.model === 'string' && spec.model !== '' ? spec.model : models[0] ?? '')
+  // the HELD family's presence (the download prompt's trigger —
+  // stroke 18) + the prompt's own gesture state
+  const heldFam = (spec.families ?? []).find((f) => f.id === shownModel && !f.present)
+  const [dlState, setDlState] = useState<'idle' | 'busy' | 'queued' | 'failed'>('idle')
+  useEffect(() => { setDlState('idle') }, [shownModel])
   // rows compose with the axes above (the owner chain — the
   // declared matrix law: the Variant axis is the family's OWN
   // cross-model map, so its offers stay the full served list; the
@@ -618,13 +677,36 @@ export function ModelAxes({ spec, value, onSet }: {
           ? h('option', { key: refusedModel, value: refusedModel },
               refusedModel + ' — not an offered model of this card')
           : null,
-        // boarded families: present+not-in-matrix = pickable;
-        // absent = DISABLED with the machine truth (never dropped)
+        // boarded families: pickable — offered is offered (stroke
+        // 18); absent ones carry the machine truth in the label and
+        // the download prompt below (never dropped, never blocked)
         familyRows.map((f) => f.inMatrix ? null : h('option', {
           key: 'fam-' + f.id, value: f.id,
-          ...(f.present ? {} : { disabled: true }),
         }, f.label + (f.present ? '' : ' — not downloaded on this machine'))),
-        models.map((m) => h('option', { key: m, value: m }, m)))),
+        models.map((m) => h('option', { key: m, value: m }, m))),
+    // THE DOWNLOAD PROMPT (stroke 18): the held model is boarded
+    // but its weights are not on the machine — ask the user, never
+    // block the pick. The button is the gesture; the manage door
+    // queues the provision.
+    heldFam !== undefined && onDownloadModel !== undefined
+      ? h('div', { className: css.specHint, 'data-download-prompt': heldFam.id },
+          heldFam.label + ' is offered by this card but not downloaded on this machine.',
+          ' ',
+          h('button', {
+            type: 'button',
+            className: css.specLinkBtn,
+            disabled: dlState !== 'idle',
+            onClick: () => {
+              setDlState('busy')
+              void onDownloadModel(heldFam.id)
+                .then((ok: boolean) => setDlState(ok ? 'queued' : 'failed'))
+                .catch(() => setDlState('failed'))
+            },
+          }, dlState === 'idle' ? 'Download ' + heldFam.label
+            : dlState === 'busy' ? 'Requesting…'
+            : dlState === 'queued' ? 'Download queued ✓ (run when it lands)'
+            : 'Download request failed — retry from the assets tab'))
+      : null),
     groups.map((g) => {
       const rows = rowsOf(g, active)
       const heldRaw = value[axisKey(g)]
@@ -703,7 +785,7 @@ export function SpecFieldRow({ f, value, onEdit, square, wireCandidates }: {
   )
 }
 
-export function CardForm({ spec, user, base, onSet, onUnset, wire, square, atoms, onPatch }: {
+export function CardForm({ spec, user, base, onSet, onUnset, wire, square, atoms, onPatch, onDownloadModel, onInstallPack }: {
   /** the WHOLE emission (the schema envelope + model/variants) —
    *  REQUIRED now: the fields, the axes, and the mod param rows all
    *  derive from THIS (useFormSpec fetches it). */
@@ -734,6 +816,14 @@ export function CardForm({ spec, user, base, onSet, onUnset, wire, square, atoms
   /** immediate persistence for mod commits (the onSaveParams law).
    *  Absent (the add drill): commits ride the user map. */
   onPatch?: (patch: Record<string, unknown>) => void
+  /** THE DOWNLOAD PROMPT's arm (stroke 18): a boarded-but-absent
+   *  model prompts download; the host supplies the manage wire. See
+   *  ModelAxes. */
+  onDownloadModel?: (id: string) => Promise<boolean>
+  /** THE EXTENSION INSTALL ARM (stroke 18): a missing declared pack
+   *  prompts install; the host supplies the manage wire. See
+   *  PackPrompt. */
+  onInstallPack?: (id: string) => Promise<boolean>
 }): ReturnType<typeof h> {
   // DERIVED, ALWAYS FRESH (the layered law): fields walk the schema
   // envelope (families-scoped); the resolved value layers defaults
@@ -799,7 +889,8 @@ export function CardForm({ spec, user, base, onSet, onUnset, wire, square, atoms
   return h('div', { className: css.specForm },
     // THE AXES ride the user layer through the same edit seam (their
     // picks are ordinary sets; the resolved value passes along).
-    h(ModelAxes, { spec, value, onSet: edit }),
+    h(PackPrompt, { spec, onInstallPack }),
+    h(ModelAxes, { spec, value, onSet: edit, onDownloadModel }),
     railFields.length > 0
       ? h('section', { className: css.specGroup + ' ' + css.inputRail, 'data-input-rail': '1' },
           h('div', { className: css.specSlotRow },
