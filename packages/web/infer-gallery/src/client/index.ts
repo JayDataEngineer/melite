@@ -116,7 +116,7 @@ export function apply(ctx: ClientContext): void {
 
 // Re-exported for headless harnesses; the loader consumes only name/inject/apply.
 export { MediaPanel, MediaTabIcon, kindOf, callsTextOf, flatten } from './MediaPanel.tsx'
-export { loadDraftOntoBench, cardsRunAddress, CARDS_BENCH_ADDRESS } from './bench-load.ts'
+export { loadDraftOntoBench, loadRunOntoBench, cardsBenchAddress, cardsRunAddress } from './bench-load.ts'
 export { useFeed } from './useFeed.ts'
 export { decodeRuns, decodeDrafts } from './decode.ts'
 export type { RunRow, RunArtifact, DraftRow } from './decode.ts'
