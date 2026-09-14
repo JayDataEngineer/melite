@@ -286,21 +286,43 @@ describe('specBody primary envelope', () => {
     const { defs, res } = mega()
     const spec = specBody(mockState.svc as ComfyUIService, defs, res) as Record<string, unknown>
     const modifiers = (spec['features'] as { modifiers: Array<Record<string, unknown>> }).modifiers
-    assert.deepEqual(modifiers.map((m) => m['param_key']), ['loras', 'controlnet', 'mask'])
+    // THE WIRE IS PLURAL (the retired controlnets bag — kind stays
+    // singular, param_key is plural, schema_key names the pack
+    // envelope for the client's hybrid walk)
+    assert.deepEqual(modifiers.map((m) => m['param_key']), ['loras', 'controlnets', 'mask'])
     const loras = modifiers[0]!
     assert.equal(loras['kind'], 'lora')
+    assert.equal(loras['entry'], 'option')
+    assert.equal(loras['option_key'], 'id')
+    assert.equal(loras['schema_key'], 'loras')
     assert.equal('max_stack' in loras, false)
     // THE PARAM FIELDS ARE THE ENVELOPE'S: the entry carries catalog
     // facts only — its param rows derive client-side off mod_schemas
     assert.equal('fields' in loras, false)
+    // THE RESOLVED FACTS ride every option (the hybrid leaf stamps
+    // model + preprocessor onto new entries; lora leaves ignore
+    // them — additive, never a second wire)
     assert.deepEqual(loras['options'], [
-      { value: 'l1', label: 'L1', tooltip: 'cat — f.safetensors — runtime catalog', defaults: { strength: 0.8 } },
-      { value: 'l2', label: 'l2', tooltip: 'g.safetensors — runtime catalog', defaults: {} },
+      { value: 'l1', label: 'L1', tooltip: 'cat — f.safetensors — runtime catalog', defaults: { strength: 0.8 }, model: 'f.safetensors' },
+      { value: 'l2', label: 'l2', tooltip: 'g.safetensors — runtime catalog', defaults: {}, model: 'g.safetensors' },
     ])
     assert.equal('fields' in modifiers[1]!, false)
+    // the hybrid entry mode is served (the leaf switches on THIS,
+    // never the kind name)
+    assert.deepEqual(
+      (({ kind, param_key, schema_key, entry, option_key, max_stack, cardinality }) =>
+        ({ kind, param_key, schema_key, entry, option_key, max_stack, cardinality }))(
+        modifiers[1]! as Record<string, string | number>,
+      ),
+      {
+        kind: 'controlnet', param_key: 'controlnets', schema_key: 'controlnet',
+        entry: 'hybrid', option_key: 'type', max_stack: 5, cardinality: 'list',
+      },
+    )
+    assert.deepEqual(modifiers[1]!['options'], [])
     assert.equal(modifiers[2]!['max_stack'], 1)
     assert.deepEqual(modifiers[2]!['options'], [
-      { value: 'm1', label: 'M1', tooltip: 'm.safetensors', defaults: {} },
+      { value: 'm1', label: 'M1', tooltip: 'm.safetensors', defaults: {}, model: 'm.safetensors' },
     ])
     // THE MOD CONTRACT ENVELOPES ride keyed by pack; mask (family
     // 'other') never boards syn-a — the law by absence

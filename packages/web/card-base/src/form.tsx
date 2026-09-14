@@ -29,7 +29,7 @@ import { ModifiersSection } from './mods.tsx'
 import { uploadInputFile } from './wire.ts'
 import {
   activeRowId, activeVariantId, axisGroups, axisKey, axisPickPatch, coerceFieldEdit, composingRows, fieldsOf,
-  fieldsOfEnvelope, groupFields, modelChoices, modOwnedFields, modelSwitchPatch, resolveValue, rowsFor, titleCaseId, variantRows,
+  fieldsOfEnvelope, entryFieldsOfEnvelope, kindScalarFieldsOfEnvelope, groupFields, modelChoices, modOwnedFields, modelSwitchPatch, resolveValue, rowsFor, titleCaseId, variantRows,
   quantRowsFor,
   type FormSpecDoc, type SpecField, type SpecValues, type VariantRow,
 } from './spec.ts'
@@ -987,11 +987,20 @@ export function CardForm({ spec, user, base, onSet, onUnset, wire, square, atoms
   // from the served kinds alone, in EVERY surface, automatically.
   // The FIELD kinds' param rows derive off the mod contracts' own
   // envelopes (mod_schemas — the same walker as the card fields).
+  // HYBRID kinds (the served entry mode — never the kind name):
+  // the catalog select binds the option_key field while the bag
+  // element's REMAINING fields render as entry rows, plus the
+  // pack-level scalars as the section's own rows (the floor).
   const family = typeof spec.model === 'string' ? spec.model : undefined
-  const modKinds = (spec.features?.modifiers ?? []).map((k) => ({
-    ...k,
-    fields: fieldsOfEnvelope(spec.mod_schemas?.[k.param_key], family),
-  }))
+  const modKinds = (spec.features?.modifiers ?? []).map((k) => {
+    const env = spec.mod_schemas?.[k.schema_key ?? k.param_key]
+    const hybrid = k.entry === 'hybrid'
+    return {
+      ...k,
+      fields: hybrid ? entryFieldsOfEnvelope(env, k.param_key, family) : fieldsOfEnvelope(env, family),
+      kindFields: hybrid ? kindScalarFieldsOfEnvelope(env, k.param_key, family) : [],
+    }
+  })
   const owned = modOwnedFields(spec)
   const flatFields = owned.size > 0 ? fields.filter((f) => !owned.has(f.name)) : fields
   // THE INPUT RAIL (the operator's law, 2026-09-13: "CARDS EMIT INPUT

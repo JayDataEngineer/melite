@@ -28,6 +28,7 @@ export const DECL: ModelDecl = {
     "negative_prompt": null
   },
   "genre": "image",
+  "mods": ["loras", "controlnet"],
   "variants": [
     {
       "id": "turbo",

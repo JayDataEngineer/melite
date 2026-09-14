@@ -30,13 +30,13 @@
 import { GraphBuilder, OutputHandle, stripAutofill, stripEmptyAutofill } from './graph.ts'
 import type { NodeInputs, NodeRef, PromptGraph, StripTable } from './graph.ts'
 import type { ModelFacts } from './facts.ts'
-import { loadTextPair, decodeSave, stackLoras } from './blocks/render-kit.ts'
+import { loadTextPair, decodeSave, stackLoras, stackControlNets } from './blocks/render-kit.ts'
 
-// The package face re-exports the render-kit trio (the reference's
+// The package face re-exports the render-kit quartet (the reference's
 // subtree-top-index mechanism: consumers name the package, never a
 // path inside it — P46).
-export { loadTextPair, decodeSave, stackLoras }
-import { fireLoras, fireKnob } from './mods/guard.ts'
+export { loadTextPair, decodeSave, stackLoras, stackControlNets }
+import { fireLoras, fireControlNets, fireKnob } from './mods/guard.ts'
 import {
   AUDIACORE_TTS_AUTOFILL,
   AUDIACORE_STUDIO_AUTOFILL,
@@ -53,9 +53,10 @@ import {
 } from './blocks/poser-kit.ts'
 
 // ── archetype I: the image-diffuse family ───────────────────────────
-// Loader chain → lora stack → text pair → latent → KSampler →
-// decode → save. Pin defaults ride AUTOFILL; each lane's strip table
-// is the python renderer's own calibration, moved here verbatim.
+// Loader chain → lora stack → text pair → controlnet stack → latent
+// → KSampler → decode → save. Pin defaults ride AUTOFILL; each
+// lane's strip table is the python renderer's own calibration,
+// moved here verbatim.
 
 /** GATE S (the seed-sentinel contract, estate law): -1 is RANDOM —
  *  the dice mints HERE at render so every node sharing the seed
@@ -98,6 +99,14 @@ export function imageT2I(p: Record<string, unknown>, model: ModelFacts, g: Graph
   }
   unet = stackLoras(g, unet, fireLoras(model, p))
   const { clip, vae } = loadTextPair(g, li)
+  // THE CONTROLNET STACK (the z-image restoration): the fired picks
+  // wrap the LoRA'd model — ModelPatchLoader → ZImageFunControlnet
+  // per entry, array order = apply order. Empty picks = the bare
+  // model (the plain path is byte-stable — no new nodes). THE SEAM
+  // (the packs.ts lanpaint precedent): the node pair is z-image's —
+  // a second controlnet family re-opens node selection inside
+  // stackControlNets, never a silent node swap here.
+  unet = stackControlNets(g, unet, vae, fireControlNets(model, p))
   const pos = g.node('CLIPTextEncode', { clip, text: p.prompt })
   const neg = g.node('CLIPTextEncode', { clip, text: p.negative_prompt ?? '' })
   const latent = g.node(String(li.latent_node), { batch_size: 1, width: p.width, height: p.height })

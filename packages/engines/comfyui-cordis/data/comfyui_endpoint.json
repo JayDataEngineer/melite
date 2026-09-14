@@ -9,6 +9,7 @@
     "anny": "anny",
     "audiocpp": "audio",
     "frame_interpolation": "frame_interpolation",
+    "model_patches": "controlnet",
     "qwen3_tts": "audio/qwen3-tts/hf",
     "text_encoders": "text_encoders"
   },

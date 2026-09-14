@@ -580,9 +580,8 @@ export function assertModInterlock(
     //
     // the fourth edge (gate (d), the pack fate): a boarded pack
     // no lane fires or refuses-loud = a surfaced knob with no
-    // lane to carry it (controlnet today — registered, waiting,
-    // unboardable until a lane lands its fate). Verbs skip:
-    // their fate is the family-scoped mount, pinned above.
+    // lane to carry it. Verbs skip: their fate is the
+    // family-scoped mount, pinned above.
     for (const entry of d.mods ?? []) {
       if (verbs.has(entry)) continue;
       const mine = flavorsOf.some((f) => f.pack === entry && f.families.includes(d.id));

@@ -1531,6 +1531,50 @@
       "has_inference": false,
       "has_rubric": false
     },
+    "z-image-base": {
+      "id": "z-image-base",
+      "family": "z-image-base",
+      "genre": "image",
+      "label": "Z-Image Base INT8",
+      "description": "Fast Z-Image / Z-Image Turbo text-to-image generation.",
+      "form": "form_generate",
+      "source": {
+        "type": ""
+      },
+      "defaults": {
+        "scheduler": "simple",
+        "width": 1024,
+        "height": 1024,
+        "steps": 8,
+        "sampler": "res_multistep",
+        "cfg": 1
+      },
+      "engine": "comfyui",
+      "has_inference": false,
+      "has_rubric": false
+    },
+    "z-image-base-int8": {
+      "id": "z-image-base-int8",
+      "family": "z-image-base-int8",
+      "genre": "image",
+      "label": "Z-Image Base INT8",
+      "description": "Fast Z-Image / Z-Image Turbo text-to-image generation.",
+      "form": "form_generate",
+      "source": {
+        "type": ""
+      },
+      "defaults": {
+        "scheduler": "simple",
+        "width": 1024,
+        "height": 1024,
+        "steps": 8,
+        "sampler": "res_multistep",
+        "cfg": 1
+      },
+      "engine": "comfyui",
+      "has_inference": false,
+      "has_rubric": false
+    },
     "z-image-int8": {
       "id": "z-image-int8",
       "family": "z-image-int8",
@@ -2028,6 +2072,14 @@
     },
     "z-image": {
       "label": "Z-Image Turbo INT8 ConvRot",
+      "genre": "image"
+    },
+    "z-image-base": {
+      "label": "Z-Image Base INT8",
+      "genre": "image"
+    },
+    "z-image-base-int8": {
+      "label": "Z-Image Base INT8",
       "genre": "image"
     },
     "z-image-int8": {

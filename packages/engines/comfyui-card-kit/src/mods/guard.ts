@@ -57,6 +57,127 @@ export function fireLoras(model: ModBoarding, p: Record<string, unknown>): LoraP
   return picks;
 }
 
+/** One resolved ControlNet pick (the service's wire resolution
+ *  normalizes run-record and UI rows to this: the catalog TYPE, the
+ *  union weight FILENAME, and the staged conditioning source —
+ *  artifact already won over image_b64 there, the retired
+ *  precedence). */
+export interface ControlNetPick {
+  readonly type: string;
+  readonly model: string;
+  readonly image: string;
+  readonly strength: number;
+}
+
+/** A run-record / UI ControlNet row (the retired wire shape:
+ *  type + model + preprocessor + image_b64/artifact + strength +
+ *  step range + enabled/source — every field the old leaf editor
+ *  wrote; the lane reads only what executes). */
+export interface ControlNetEntry {
+  readonly type?: unknown;
+  readonly model?: unknown;
+  readonly image_b64?: unknown;
+  readonly artifact?: unknown;
+  readonly strength?: unknown;
+  readonly start_percent?: unknown;
+  readonly end_percent?: unknown;
+  readonly enabled?: unknown;
+}
+
+/**
+ * The schedule law (the live node's own limit): ZImageFunControlnet
+ * carries NO start/end inputs — it conditions the full schedule.
+ * A row at exactly (0.0, 1.0) rides; anything else refuses LOUD
+ * here (never a silent full-strength run). One spelling — the kit
+ * firing gate and the service wire resolution read this same
+ * function.
+ */
+export function assertControlNetSchedule(type: string, start: number, end: number): void {
+  if (start === 0 && end === 1) return;
+  throw new Error(
+    `controlnet '${type}' asks for steps ${String(start)}–${String(end)}, ` +
+      `but the lane's ZImageFunControlnet node carries no start/end inputs (full-schedule only) — ` +
+      `refusing instead of silently running full-strength`,
+  );
+}
+
+/**
+ * The controlnet firing gate (the z-image restoration): returns the
+ * run's ControlNet picks, asserting the boarding FIRST when the
+ * list is non-empty. Empty = no mutation = no gate. Per entry:
+ * enabled:false skips (a declared off-state, like a muted tile —
+ * not a drop); a non-boolean enabled refuses (the wire law, both
+ * planes); a stated entry with no conditioning source refuses
+ * (artifact already won over image_b64 upstream — neither present
+ * is a map-less lock); the pack floor clamps weak entries UP with
+ * a log line (the contract's own tooltip law).
+ */
+export function fireControlNets(model: ModBoarding, p: Record<string, unknown>): ControlNetPick[] {
+  const entries = p.controlnets;
+  if (!Array.isArray(entries) || entries.length === 0) return [];
+  assertModUse(model, "controlnet");
+  const floorRaw = p.controlnet_strength_floor ?? 0;
+  if (typeof floorRaw !== "number" || !Number.isFinite(floorRaw) || floorRaw < 0 || floorRaw > 1) {
+    throw new Error(
+      `controlnet_strength_floor = ${String(p.controlnet_strength_floor)}: a number in [0, 1] is required (0.0 = no floor)`,
+    );
+  }
+  const floor = floorRaw as number;
+  const picks: ControlNetPick[] = [];
+  for (const raw of entries) {
+    const e = (raw ?? {}) as ControlNetEntry;
+    if (e.enabled === false) continue;
+    // the service refuses non-boolean enabled at the wire — the
+    // kit (the last line) refuses it too, never a truthy fire.
+    if (e.enabled !== undefined && typeof e.enabled !== "boolean") {
+      throw new Error(`a controlnet entry's enabled = ${String(e.enabled)}: a boolean is required`);
+    }
+    const type = typeof e.type === "string" && e.type !== "" ? e.type : null;
+    if (type === null) {
+      throw new Error(`a controlnet entry names no type — pick from the served catalog, never hand-spell`);
+    }
+    const file = typeof e.model === "string" && e.model !== "" ? e.model : null;
+    if (file === null) {
+      throw new Error(
+        `controlnet '${type}' carries no weight file — the service resolves the catalog type to its union file at compose; a hand-built row must name it`,
+      );
+    }
+    const strength = e.strength;
+    if (typeof strength !== "number" || !Number.isFinite(strength) || strength < 0 || strength > 2) {
+      throw new Error(`controlnet '${type}' strength = ${String(e.strength)}: a number in [0, 2] is required`);
+    }
+    const start = e.start_percent ?? 0;
+    const end = e.end_percent ?? 1;
+    if (typeof start !== "number" || !Number.isFinite(start) || start < 0 || start > 1
+      || typeof end !== "number" || !Number.isFinite(end) || end < 0 || end > 1 || start > end) {
+      throw new Error(
+        `controlnet '${type}' step range = ${String(e.start_percent)}–${String(e.end_percent)}: numbers in [0, 1] with start <= end are required`,
+      );
+    }
+    assertControlNetSchedule(type, start, end);
+    const artifact = typeof e.artifact === "string" && e.artifact !== "" ? e.artifact : null;
+    const map = typeof e.image_b64 === "string" && e.image_b64 !== "" ? e.image_b64 : null;
+    // THE ARTIFACT PRECEDENCE (the retired brick law): a present
+    // artifact uploads THAT file as the conditioning image.
+    const image = artifact ?? map;
+    if (image === null) {
+      throw new Error(
+        `controlnet '${type}' carries no conditioning image (neither artifact nor image_b64) — a structure lock with no map is drift, not a skip`,
+      );
+    }
+    // THE FLOOR (the contract's clamp-UP law): entries below the
+    // pack floor apply AT the floor, with a log line.
+    const applied = Math.max(strength, floor);
+    if (applied !== strength) {
+      console.warn(
+        `[controlnet] entry '${type}' strength ${String(strength)} below the pack floor ${String(floor)} — clamped UP (the run applies ${String(applied)})`,
+      );
+    }
+    picks.push({ type, model: file, image, strength: applied });
+  }
+  return picks;
+}
+
 /**
  * The scalar-knob firing gate (the qvoice shape): returns the raw
  * knob value, asserting the boarding FIRST when the knob is
@@ -80,13 +201,14 @@ export function fireKnob(model: ModBoarding, pack: string, key: string, raw: unk
 //   'refused' — no lane builds it; the card's firing gate refuses
 //               every stated knob LOUD (never a silent plain run)
 //   'mounted' — verbs only: family-scoped mount, knobs never surface
-// A pack with NO fate (controlnet today: registered, unboarded,
-// waiting) can be neither fired nor refused — boarding it is a
-// dead declaration, and the boot refuses it until a lane lands the
-// fate. This is the py truth made a gate: "the entry waits in the
-// menu until one truthfully does" — waiting means UNBOARDED.
+// A pack with NO fate can be neither fired nor refused — boarding
+// it is a dead declaration, and the boot refuses it until a lane
+// lands the fate. controlnet LANDED its fate with the z-image
+// restoration (the ModelPatchLoader → ZImageFunControlnet lane in
+// render-kit.ts, fired through kit.ts imageT2I).
 export const PACK_FATE: Record<string, "fired" | "refused" | "mounted"> = {
   loras: "fired",
+  controlnet: "fired",
   qvoice: "fired",
   lanpaint: "refused",
   mask: "refused",

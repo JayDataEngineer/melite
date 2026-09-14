@@ -17,7 +17,18 @@
  *    deferred to Run): onEdit rides the caller's values map AND
  *    onPatch (when present) persists to the domain on the spot.
  *  - apply order = array order; the drag rewrites the bag.
- *  - TWO kind shapes, both first-class:
+ *  - THREE kind shapes, all first-class (the leaf switches on the
+ *    SERVED entry mode, never the kind name):
+ *      OPTION kinds (lora): served catalog rows + strength; the
+ *        entry is { id, strength } — the row's own defaults seed the
+ *        strength.
+ *      HYBRID kinds (controlnet): served catalog rows AND entry
+ *        fields; the entry is the bag element keyed by its option_key
+ *        (type) — the leaf stamps the row's resolved facts (model +
+ *        preprocessor) onto new entries so the run record carries the
+ *        retired wire shape; the lane re-validates them, never trusts
+ *        them. Pack-level scalars (the strength floor) render as the
+ *        section's own rows above the tiles.
  *      OPTION kinds (lora): served catalog rows + strength; the
  *        entry is { id, strength } — the row's own defaults seed the
  *        strength.
@@ -31,7 +42,7 @@ import { Button, IconPlusOutline16, Input, Menu, Modal } from '@deepseek-ai/dsh-
 import css from './card.module.css'
 import { SpecAtom } from './form.tsx'
 import { useSquareProvider } from './form.tsx'
-import { isOptionKind, titleCaseId, type ModifierKind, type SpecField, type SpecValues } from './spec.ts'
+import { coerceFieldEdit, isHybridKind, isOptionKind, optionKeyOf, titleCaseId, type ModifierKind, type ModifierOption, type SpecField, type SpecValues } from './spec.ts'
 
 export interface ModifiersSectionProps {
   kinds: ModifierKind[]
@@ -69,8 +80,26 @@ export function ModifiersSection(props: ModifiersSectionProps): ReturnType<typeo
     const v = values[k.param_key]
     return Array.isArray(v) ? v.filter((e): e is Record<string, unknown> => typeof e === 'object' && e !== null) : []
   }
-  const optionOf = (k: ModifierKind, value: string): { value: string; label: string; tooltip?: string; defaults?: { strength?: number } } | null =>
+  const optionOf = (k: ModifierKind, value: string): ModifierOption | null =>
     (k.options ?? []).find((o) => o.value === value) ?? null
+  /** THE HYBRID ENTRY FIELDS (the bag element minus its two bound
+   *  rows — the option_key select and the strength row own those). */
+  const hybridFields = (k: ModifierKind, hidden?: ReadonlySet<string>): SpecField[] => {
+    const key = optionKeyOf(k)
+    return (k.fields ?? []).filter((f) => f.name !== key && f.name !== 'strength' && !(hidden?.has(f.name) ?? false))
+  }
+  /** The strength seed (the row's own default wins; the contract
+   *  field default is the backstop — 0.7, the retired leaf). */
+  const strengthSeedOf = (k: ModifierKind, option: ModifierOption | null): number => {
+    if (option?.defaults?.strength !== undefined) return option.defaults.strength
+    const field = (k.fields ?? []).find((f) => f.name === 'strength')
+    return typeof field?.default === 'number' ? field.default : 0.7
+  }
+  const commitScalar = (f: SpecField, name: string, v: unknown): void => {
+    const coerced = coerceFieldEdit(f, v)
+    onEdit(name, coerced)
+    onPatch?.({ [name]: coerced })
+  }
   const commit = (k: ModifierKind, next: Array<Record<string, unknown>>): void => {
     onEdit(k.param_key, next)
     onPatch?.({ [k.param_key]: next })
@@ -104,7 +133,17 @@ export function ModifiersSection(props: ModifiersSectionProps): ReturnType<typeo
   const openEdit = (k: ModifierKind, index: number): void => {
     const entry = entriesOf(k)[index]
     if (entry === undefined) return
-    if (isOptionKind(k)) {
+    if (isHybridKind(k)) {
+      const key = optionKeyOf(k)
+      setDraftOption(typeof entry[key] === 'string' ? entry[key] as string : '')
+      const strength = typeof entry['strength'] === 'number' ? entry['strength'] as number : undefined
+      setDraftStrength(strength !== undefined ? String(strength) : '')
+      const params: SpecValues = {}
+      for (const f of hybridFields(k, seated)) {
+        if (entry[f.name] !== undefined) params[f.name] = entry[f.name]
+      }
+      setDraftParams(params)
+    } else if (isOptionKind(k)) {
       const strength = typeof entry['strength'] === 'number' ? entry['strength'] as number : undefined
       setDraftStrength(strength !== undefined ? String(strength) : '')
     } else {
@@ -122,7 +161,31 @@ export function ModifiersSection(props: ModifiersSectionProps): ReturnType<typeo
     if (leaf === null) return
     const k = leaf.kind
     const entries = entriesOf(k)
-    if (isOptionKind(k)) {
+    if (isHybridKind(k)) {
+      // HYBRID kind: the catalog select binds option_key; the row's
+      // resolved facts stamp onto the entry (the retired wire shape);
+      // the remaining fields ride verbatim. A type the catalog no
+      // longer serves refuses LOUD (never a silent drifted save).
+      const key = optionKeyOf(k)
+      if (draftOption === '') { setLeafError('Pick one from the served rows.'); return }
+      const option = optionOf(k, draftOption)
+      if (option === null) { setLeafError('\u2018' + draftOption + '\u2019 is not a served ' + k.label + ' row — pick from the catalog, never hand-spell.'); return }
+      const seed = strengthSeedOf(k, option)
+      const strength = draftStrength.trim() === '' ? seed : Number(draftStrength)
+      if (!Number.isFinite(strength)) { setLeafError('Strength must be a number.'); return }
+      const stamped: Record<string, unknown> = { [key]: draftOption }
+      if (typeof option.model === 'string') stamped['model'] = option.model
+      if (typeof option.preprocessor === 'string') stamped['preprocessor'] = option.preprocessor
+      if (leaf.mode === 'create') {
+        commit(k, [...entries, { ...stamped, ...draftParams, strength }])
+      } else {
+        const entry = entries[leaf.index]
+        if (entry === undefined) { setLeaf(null); return }
+        const next = [...entries]
+        next[leaf.index] = { ...entry, ...stamped, ...draftParams, strength }
+        commit(k, next)
+      }
+    } else if (isOptionKind(k)) {
       if (leaf.mode === 'create') {
         if (draftOption === '') { setLeafError('Pick one from the served rows.'); return }
         const option = optionOf(k, draftOption)
@@ -180,6 +243,24 @@ export function ModifiersSection(props: ModifiersSectionProps): ReturnType<typeo
     leafError !== null && leaf === null
       ? h('p', { className: css.modLeafError }, leafError)
       : null,
+    // THE PACK-LEVEL ROWS (the hybrid section's own scalars — the
+    // controlnet strength floor): served kindFields above the tiles,
+    // committed + persisted like any card scalar (never flat in the
+    // card form — mod-owned names stay in the section).
+    ...kinds.filter((k) => (k.kindFields ?? []).length > 0).map((k) =>
+      h('div', { key: k.param_key + ':kind', className: css.modLeafFields },
+        (k.kindFields ?? []).map((f) =>
+          h('label', { key: f.name, className: css.modField },
+            f.label ?? f.name,
+            h(SpecAtom, {
+              f,
+              value: values[f.name] ?? f.default,
+              onEdit: (name: string, v: unknown) => { commitScalar(f, name, v) },
+            }),
+          ),
+        ),
+      ),
+    ),
     // ONE flowing row (the old law: the + tile rides right after
     // the last tile, never on its own vertical row); per-kind
     // DndContexts are renderless — layout stays one flex-wrap line.
@@ -189,7 +270,10 @@ export function ModifiersSection(props: ModifiersSectionProps): ReturnType<typeo
         if (entries.length === 0) return null
         return [
           ...entries.map((entry, i) => {
-              const id = typeof entry['id'] === 'string' ? entry['id'] as string : ''
+              // THE CATALOG KEY (the served option_key — the hybrid
+              // type, the option id; field kinds carry none and fall
+              // to the kind label, as before).
+              const id = typeof entry[optionKeyOf(k)] === 'string' ? entry[optionKeyOf(k)] as string : ''
               const option = optionOf(k, id)
               const strength = typeof entry['strength'] === 'number'
                 ? entry['strength'] as number
@@ -248,8 +332,10 @@ export function ModifiersSection(props: ModifiersSectionProps): ReturnType<typeo
     }) : null,
     // THE LEAF MODAL (DSH) — the ONLY subcard editor. OPTION kinds:
     // pick a served row (strength seeded from the row's own default).
-    // FIELD kinds: the kind's OWN fields through the constructor's
-    // atoms (image fields get the square — the construction law).
+    // HYBRID kinds: the served row PLUS the bag element's fields
+    // (the row's resolved facts stamp on save). FIELD kinds: the
+    // kind's OWN fields through the constructor's atoms (image
+    // fields get the square — the construction law).
     leaf !== null ? h(Modal, {
       open: true,
       onClose: () => { setLeaf(null) },
@@ -293,7 +379,53 @@ function ModLeaf(props: {
   )
   return h('div', { className: css.modLeaf },
     leafError !== null ? h('p', { className: css.modLeafError }, leafError) : null,
-    isOptionKind(k)
+    isHybridKind(k)
+      ? h('div', { className: css.modLeafFields },
+          // THE HYBRID LEAF (the retired subcard, 1:1): the catalog
+          // select binds option_key in BOTH modes (a type switch
+          // re-stamps model/preprocessor on save); the bag element's
+          // remaining fields render through the constructor's atoms
+          // (the conditioning image gets the square — the
+          // construction law). A drifted type stays VISIBLE, marked
+          // unregistered, and refuses at save — never a silent blank.
+          h('label', { className: css.modField },
+            k.label,
+            h('select', {
+              className: css.modSelect,
+              value: onDraft.draftOption,
+              onChange: (e: { target: { value: string } }) => { onDraft.setDraftOption(e.target.value) },
+            },
+              h('option', { value: '' }, '— pick —'),
+              (k.options ?? []).map((o) =>
+                h('option', { key: o.value, value: o.value, title: o.tooltip ?? o.label }, o.label)),
+              onDraft.draftOption !== '' && (k.options ?? []).every((o) => o.value !== onDraft.draftOption)
+                ? h('option', { value: onDraft.draftOption }, titleCaseId(onDraft.draftOption) + ' (unregistered)')
+                : null,
+            ),
+          ),
+          h('label', { className: css.modField },
+            'Strength',
+            h(Input, {
+              type: 'number',
+              step: '0.05',
+              value: onDraft.draftStrength,
+              placeholder: 'the row default',
+              onChange: (e: { target: { value: string } }) => { onDraft.setDraftStrength(e.target.value) },
+            }),
+          ),
+          (k.fields ?? []).filter((f) => f.name !== optionKeyOf(k) && f.name !== 'strength' && !(hidden?.has(f.name) ?? false))
+            .map((f) => h('label', { key: f.name, className: css.modField },
+              h('span', { title: f.tooltip ?? f.label ?? f.name }, f.label ?? f.name),
+              h(SpecAtom, {
+                f,
+                value: onDraft.draftParams[f.name] ?? f.default,
+                onEdit: (name: string, v: unknown) => { onDraft.setDraftParams({ ...onDraft.draftParams, [name]: v }) },
+                square: own.square(f),
+              }),
+            )),
+          own.wireMenu,
+        )
+      : isOptionKind(k)
       ? h('div', { className: css.modLeafFields },
           leaf.mode === 'create'
             ? h('label', { className: css.modField },

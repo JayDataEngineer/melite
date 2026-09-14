@@ -85,13 +85,14 @@ describe("the resurrected model registry (families/variants/cells/links)", () =>
     assert.equal(art.dest_sub, "diffusion_models");
   });
 
-  it("the mods set survived (5 families declare capability packs)", (): void => {
+  it("the mods set survived (6 families declare capability packs — z-image boards loras + controlnet)", (): void => {
     const withMods = registryIds().filter((id) => (registryModel(id).mods ?? []).length > 0);
     assert.deepEqual(withMods, [
       "anny",
       "krea-2",
       "qwen-img-edit-2511",
       "qwen3-tts",
+      "z-image",
     ]);
   });
 

@@ -31,14 +31,44 @@ const LorasFields = z.object({
     .extra('extra', { wtype: 'loras', group: 'loras_controlnet', zone: 'mods', default: null, order: 0 }),
 })
 
-// ── CONTROLNET (the py ControlNetMod): registered UNBOARDED, the
-// py truth — "no model declares it yet; the entry waits in the
-// menu until one truthfully does." No flavor boards it; it serves
-// no surface until one does (the phantom-capability gate). ──
+// ── CONTROLNET (the py ControlNetMod + the z-image flavor's
+// controlnets/mod.yaml, 1:1): the ControlNet stack. ONE entry per
+// conditioning map: the catalog TYPE (the family's served rows —
+// the union file for z-image), the map itself (caller-supplied —
+// no preprocessor executes in this plane), the pipeline artifact
+// name when a brick feeds it (artifact wins over image_b64 at run
+// time, the retired precedence), strength, the full-schedule step
+// range (the live ZImageFunControlnet node carries NO schedule
+// inputs — a non-default range refuses LOUD at fire time, never a
+// silent full-strength run), and the enabled toggle. The pack-level
+// floor clamps weak entries UP (with a log line). Max stack rides
+// the discovery table per pack (z-image: 5, the declaration). ──
+const ControlNetEntryFields = z.object({
+  type: z.string().description('Type')
+    .extra('extra', { wtype: 'text', group: 'controlnet', zone: 'mods', order: 0, width: 1 }),
+  image_b64: z.string().description('Conditioning')
+    .extra('extra', {
+      wtype: 'image', group: 'controlnet', zone: 'mods', order: 1, width: 2,
+      tooltip: 'The conditioning map image (uploaded — the square stages it; a pipeline artifact name wins when set below).',
+    }),
+  artifact: z.string().default('').description('Artifact')
+    .extra('extra', {
+      wtype: 'text', group: 'controlnet', zone: 'mods', order: 2, width: 2,
+      tooltip: 'Pipeline-wired conditioning source — the ctx artifact name (e.g. front_pose) produced by an upstream brick. Takes precedence over the Conditioning image at run time: when the artifact is present in ctx, the brick uploads THAT file as the conditioning image.',
+    }),
+  strength: z.number().min(0).max(2).step(0.05).default(0.7).description('Strength')
+    .extra('extra', { wtype: 'slider', group: 'controlnet', zone: 'mods', order: 3, width: 1 }),
+  start_percent: z.number().min(0).max(1).step(0.05).default(0).description('Start')
+    .extra('extra', { wtype: 'slider', group: 'controlnet', zone: 'mods', order: 4, width: 1 }),
+  end_percent: z.number().min(0).max(1).step(0.05).default(1).description('End')
+    .extra('extra', { wtype: 'slider', group: 'controlnet', zone: 'mods', order: 5, width: 1 }),
+  enabled: z.boolean().default(true).description('Enabled')
+    .extra('extra', { wtype: 'boolean', group: 'controlnet', zone: 'mods', order: 6, width: 1 }),
+})
 const ControlNetFields = z.object({
-  controlnet: z.array(z.object({ name: z.string(), strength: z.number() }))
+  controlnets: z.array(ControlNetEntryFields)
     .description('ControlNet')
-    .extra('extra', { wtype: 'loras', group: 'loras_controlnet', zone: 'mods', default: null, order: 1 }),
+    .extra('extra', { wtype: 'controlnets', group: 'loras_controlnet', zone: 'mods', default: null, order: 1 }),
   controlnet_strength_floor: z.number().min(0).max(1).step(0.05).default(0).description('ControlNet Strength Floor')
     .extra('extra', {
       wtype: 'slider', group: 'loras_controlnet', zone: 'mods', order: 2, width: 1,

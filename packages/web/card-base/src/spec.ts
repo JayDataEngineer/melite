@@ -144,10 +144,14 @@ export interface InputEdge {
  *  subcard grid in the drill) renders from THIS; the flat card
  *  fields never carry a mod's param_key (the SubcardGrid law).
  *
- *  TWO KIND SHAPES (the wire, lane-read 2026-09-12 — operator: "the
+ *  THREE KIND SHAPES (the wire, lane-read 2026-09-12 — operator: "the
  *  mod system is core, never hardcoded"):
  *   - OPTION kinds (lora): a served options catalog + strength; the
  *     entry is { id, strength }.
+ *   - HYBRID kinds (controlnet): a served options catalog AND entry
+ *     fields (the catalog TYPE plus per-entry conditioning image,
+ *     strength, step range); the entry is the params object keyed by
+ *     its catalog type.
  *   - FIELD kinds (mask): the kind's OWN fields (full spec fields —
  *     image squares, selects, sliders); the entry IS the params
  *     object. The leaf editor renders kind.fields through the same
@@ -156,10 +160,24 @@ export interface ModifierKind {
   kind: string
   label: string
   param_key: string
+  /** THE ENVELOPE KEY (the wire/envelope split: the bag lives at
+   *  param_key, the absorbed contract's envelope at schema_key —
+   *  identical for loras, split for controlnet). Absent = param_key. */
+  schema_key?: string
   cardinality: string
   max_stack?: number
+  /** THE ENTRY MODE (served pack vocabulary — the leaf switches on
+   *  THIS, never the kind name): 'option' (lora), 'hybrid'
+   *  (controlnet), absent = 'field' (mask). option_key names the
+   *  catalog-bound field (the hybrid type / the option id). */
+  entry?: string
+  option_key?: string
   fields?: SpecField[]
-  options?: Array<{ value: string; label: string; tooltip?: string; defaults?: { strength?: number } }>
+  /** Pack-level scalar rows (the controlnet strength floor — envelope
+   *  root fields OUTSIDE the bag array). The section renders these
+   *  above the tiles; they never ride the flat form (mod-owned). */
+  kindFields?: SpecField[]
+  options?: ModifierOption[]
 }
 
 /** THE MOD-OWNED NAMES (the SubcardGrid law, enforced): every name a
@@ -181,6 +199,30 @@ export function modOwnedFields(spec: FormSpecDoc): Set<string> {
  *  as opposed to a FIELD kind (mask-shaped: its own param fields)? */
 export function isOptionKind(k: ModifierKind): boolean {
   return (k.options ?? []).length > 0
+}
+
+/** THE HYBRID TEST (the served entry mode — never the kind name):
+ *  catalog rows AND bag-element entry fields. */
+export function isHybridKind(k: ModifierKind): boolean {
+  return k.entry === 'hybrid'
+}
+
+/** The catalog-bound field (the hybrid type / the option id) —
+ *  'id' when the door serves no key (the lora backstop). */
+export function optionKeyOf(k: ModifierKind): string {
+  return typeof k.option_key === 'string' && k.option_key !== '' ? k.option_key : 'id'
+}
+
+/** One served catalog row (the discovery options projection — the
+ *  row's resolved facts ride along so the hybrid leaf can stamp
+ *  them; the lane re-validates, never trusts). */
+export interface ModifierOption {
+  value: string
+  label: string
+  tooltip?: string
+  defaults?: { strength?: number }
+  model?: string
+  preprocessor?: string
 }
 
 /** One variant-matrix row (the spec ROOT's `variants` — the flattened
@@ -338,7 +380,55 @@ export function fieldsOfEnvelope(
 ): SpecField[] {
   if (env == null) return []
   const root = env.refs[env.uid]
-  const dict = root?.dict ?? {}
+  return projectDict(env, root?.dict ?? {}, family)
+}
+
+/** THE HYBRID PROJECTION (the controlnet restoration): the envelope
+ *  root's bag array (param_key) holds entry OBJECTS — project the
+ *  ELEMENT's dict as the kind's entry fields (the catalog select
+ *  joins them in the leaf). Empty when the bag is absent or its
+ *  element is not an object (a pure OPTION kind like lora). */
+export function entryFieldsOfEnvelope(
+  env: SchemaEnvelope | null | undefined,
+  paramKey: string,
+  family?: string,
+): SpecField[] {
+  if (env == null) return []
+  const root = env.refs[env.uid]
+  const at = root?.dict?.[paramKey]
+  const node = at === undefined ? undefined : env.refs[at]
+  const innerId = (node as { inner?: unknown } | undefined)?.inner
+  const inner = typeof innerId === 'number' ? env.refs[innerId] : undefined
+  if (node?.type !== 'array' || inner?.type !== 'object') return []
+  return projectDict(env, inner.dict ?? {}, family)
+}
+
+/** THE PACK-LEVEL PROJECTION (the controlnet strength floor): the
+ *  envelope root's fields OUTSIDE the bag array — the section's own
+ *  rows above the tiles. Bag-external arrays are not section rows
+ *  (no atom renders a bag) — scalars only. */
+export function kindScalarFieldsOfEnvelope(
+  env: SchemaEnvelope | null | undefined,
+  paramKey: string,
+  family?: string,
+): SpecField[] {
+  if (env == null) return []
+  const root = env.refs[env.uid]
+  const dict = { ...(root?.dict ?? {}) }
+  delete dict[paramKey]
+  for (const [name, id] of Object.entries(dict)) {
+    if (env.refs[id]?.type === 'array') delete dict[name]
+  }
+  return projectDict(env, dict, family)
+}
+
+/** The dict projector (the walker's body — one meta path for the
+ *  root, the hybrid element, and the pack-level rows). */
+function projectDict(
+  env: SchemaEnvelope,
+  dict: Record<string, number>,
+  family?: string,
+): SpecField[] {
   const out: SpecField[] = []
   for (const [name, id] of Object.entries(dict)) {
     let node: SchemaRef | undefined = env.refs[id]

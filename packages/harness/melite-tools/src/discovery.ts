@@ -226,19 +226,39 @@ function groupContract(decl: ModelDecl | null): Record<string, unknown> {
  *  anchor (the client half); this row offers the knobs. */
 const MODIFIER_PACKS: Record<
   string,
-  { kind: string; label: string; cardinality: string; max_stack?: number }
+  {
+    kind: string
+    label: string
+    cardinality: string
+    max_stack?: number
+    param_key?: string
+    /** THE ENTRY MODE (pack vocabulary, same status as kind/label:
+     *  option = the entry is { id, strength } against the served
+     *  catalog; hybrid = the entry is the bag element object with
+     *  its option_key field bound to the catalog; field = the entry
+     *  IS the contract object, no catalog. The leaf switches on the
+     *  SERVED value, never the kind name). */
+    entry?: string
+    option_key?: string
+  }
 > = {
-  loras: { kind: 'lora', label: 'LoRAs', cardinality: 'list' },
-  controlnet: { kind: 'controlnet', label: 'ControlNet', cardinality: 'list' },
+  loras: { kind: 'lora', label: 'LoRAs', cardinality: 'list', entry: 'option', option_key: 'id' },
+  // THE WIRE IS PLURAL (the retired bag: params.controlnets[] —
+  // the kind stays singular, the storage stays plural; schema_key
+  // names the pack envelope for the client's field walk).
+  controlnet: { kind: 'controlnet', label: 'ControlNet', cardinality: 'list', max_stack: 5, param_key: 'controlnets', entry: 'hybrid', option_key: 'type' },
   mask: { kind: 'mask', label: 'Region Mask', cardinality: 'list', max_stack: 1 },
   lanpaint: { kind: 'brick', label: 'Lanpaint', cardinality: 'list', max_stack: 1 },
 }
 
 function optionTooltip(
-  row: { category?: string; filename: string },
+  row: { category?: string; filename: string; tooltip?: string },
   shared: boolean,
 ): string {
-  const base = row.category ? `${row.category} — ${row.filename}` : row.filename
+  // A row-served tooltip wins (the controlnet catalog's own prose —
+  // the retired options' tooltip, 1:1); otherwise the category —
+  // filename face lora rows have always worn.
+  const base = row.tooltip ?? (row.category ? `${row.category} — ${row.filename}` : row.filename)
   return shared ? `${base} — runtime catalog` : base
 }
 
@@ -266,10 +286,18 @@ function specModifiers(
     const entry: Record<string, unknown> = {
       kind: meta.kind,
       label: meta.label,
-      param_key: pack,
+      param_key: meta.param_key ?? pack,
+      // THE ENVELOPE KEY (the wire/envelope split: the bag lives at
+      // param_key, the absorbed contract's envelope at the pack name —
+      // identical for loras, split for controlnet).
+      schema_key: pack,
       cardinality: meta.cardinality,
     }
     if (meta.max_stack !== undefined) entry.max_stack = meta.max_stack
+    // THE ENTRY MODE rides verbatim (the leaf's switch — served,
+    // never client-switched on the kind name).
+    if (meta.entry !== undefined) entry.entry = meta.entry
+    if (meta.option_key !== undefined) entry.option_key = meta.option_key
     entry.options = cat.rows.map((r) => ({
       value: r.id,
       label: r.label ?? r.id,
@@ -278,6 +306,12 @@ function specModifiers(
         r.default_strength === undefined
           ? {}
           : { strength: r.default_strength },
+      // THE RESOLVED FACTS (the hybrid leaf stamps these onto new
+      // entries so the run record carries the retired wire shape —
+      // model + upstream-map note; the lane re-validates them
+      // against the row, never trusts them).
+      model: r.filename,
+      ...(r.preprocessor !== undefined ? { preprocessor: r.preprocessor } : {}),
     }))
     out.push(entry)
   }

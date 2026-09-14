@@ -42,3 +42,36 @@ export function stackLoras(g: GraphBuilder, unet: OutputHandle, picks: Array<{ n
   }
   return cur
 }
+
+/** The controlnet chain (the z-image restoration: empty picks →
+ *  the bare model, byte-stable). Every link loads the union patch
+ *  and wraps the running model in ZImageFunControlnet — the live
+ *  ComfyUI nodes (ModelPatchLoader + comfy_extras'
+ *  ZImageFunControlnet), array order = apply order. The conditioning
+ *  source rides LoadImage exactly like the image-edit lane's slots
+ *  (staged at submit by the upload walk — paths, estate asset URLs,
+ *  and data URLs all stage there, never here).
+ *
+ *  THE SEAM (the packs.ts lanpaint precedent): the node pair is
+ *  z-image's — a second controlnet family re-opens the node-selection
+ *  seam here, never a silent node swap. */
+export function stackControlNets(
+  g: GraphBuilder,
+  model: OutputHandle,
+  vae: OutputHandle,
+  picks: Array<{ type: string; model: string; image: string; strength: number }>,
+): OutputHandle {
+  let cur = model
+  for (const p of picks) {
+    const image = g.node('LoadImage', { image: p.image, upload: 'image' }).out(0)
+    const patch = g.node('ModelPatchLoader', { name: p.model }).out()
+    cur = g.node('ZImageFunControlnet', {
+      model: cur,
+      model_patch: patch,
+      vae,
+      strength: p.strength,
+      image,
+    }).out()
+  }
+  return cur
+}

@@ -63,7 +63,8 @@ test("mods registered through the service as plugins (PORT LAW: Schemastery cont
     assert.ok(a.fields.dict !== undefined, `pack ${a.pack} carries a Schemastery object contract`);
   }
   const gen = svc.cardModFields("image-gen");
-  assert.deepEqual(gen.flatMap(names), ["loras"], "image-gen absorbs exactly loras");
+  assert.deepEqual(gen.flatMap(names), ["controlnets", "controlnet_strength_floor", "loras"],
+    "image-gen absorbs loras + the controlnet stack (the z-image restoration)");
   const tts = svc.cardModFields("tts");
   assert.deepEqual(tts.flatMap(names).sort(), ["qvoice", "voice_pca_strengths"], "tts absorbs the qvoice pack");
 });
@@ -110,14 +111,21 @@ test("absorption parity: image-gen/krea-2 byte-exact vs the golden referee", () 
 });
 
 test("family scoping: krea-2's loras never leak", () => {
-  for (const fam of ["z-image", "flux-schnell", "sd-35-large"]) {
+  // z-image boards loras too since the restoration — the leak test
+  // covers families boarding NEITHER pack.
+  for (const fam of ["flux-schnell", "sd-35-large"]) {
     const out = svc.formSchemas("image-gen", fam);
     if (out === null) continue;
     assert.ok(!("loras" in out.mods), `${fam} must not carry krea-2's loras contract`);
+    assert.ok(!("controlnet" in out.mods), `${fam} must not carry z-image's controlnet contract`);
   }
-  // the boarded family DOES see it (the scoping half)
+  // the boarded families DO see them (the scoping half)
   const krea = svc.formSchemas("image-gen", "krea-2")!;
   assert.ok("loras" in krea.mods, "krea-2's own family sees the loras contract");
+  assert.ok(!("controlnet" in krea.mods), "krea-2 boards no controlnet — the stack never leaks");
+  const zim = svc.formSchemas("image-gen", "z-image")!;
+  assert.ok("loras" in zim.mods, "z-image boards loras since the restoration");
+  assert.ok("controlnet" in zim.mods, "z-image's own family sees the controlnet contract");
 });
 
 test("krea lora rows: byte-truth vs the golden referee", () => {
@@ -139,7 +147,9 @@ test("krea lora rows: byte-truth vs the golden referee", () => {
 
 test("THE RUNTIME CATALOG LAW: qwen serves the union; family rows win", () => {
   const union = svc.modRows("loras", "qwen-img-edit-2511");
-  assert.equal(union.length, 12, "the union of every family's rows");
+  // 12 krea rows + z-image's 7 (the restoration boards loras — the
+  // union is every family's rows, never a frozen count)
+  assert.equal(union.length, 19, "the union of every family's rows");
   assert.ok(union.some((r) => r.id === "krea2_realism_lora"));
   const own = svc.modRows("loras", "krea-2");
   assert.equal(own.length, 12, "family rows unchanged (they ARE the union source)");
@@ -237,12 +247,12 @@ test("the correction stroke: flavors are family-owned and the boarding is bidire
       );
     }
   }
-  // the pack taxonomy is the distinct category (controlnet rides
-  // registered-but-unboarded — the py truth, it waits for a
-  // truthful boarder)
+  // the pack taxonomy is the distinct category (controlnet LANDED
+  // its boarder with the z-image restoration — seven union types)
   assert.deepEqual(svc.packNames(), ["controlnet", "lanpaint", "loras", "mask", "qvoice"]);
   const boarded = new Set(svc.flavorRegistrations().flatMap((f) => [f.pack]));
-  assert.ok(!boarded.has("controlnet"), "controlnet serves nothing until a family truthfully boards it");
+  assert.ok(boarded.has("controlnet"), "z-image boards controlnet — the pack serves its seven union types");
+  assert.equal(svc.modRows("controlnet", "z-image").length, 7);
   // krea-2's rows are FAMILY-OWNED (the flavor file, not the DECL)
   const krea = getModel("krea-2") as unknown as Record<string, unknown>;
   assert.ok(!("loras" in krea), "the DECL carries no loras data — rows live in the family's mods/ file");
@@ -265,34 +275,58 @@ test("the correction stroke: a flavor disposal retracts the mutation", async () 
 });
 
 test("THE CONSUMPTION GATE (paper §3.2.2): a smuggled mutation on a non-boarding atom refuses LOUD", async () => {
-  // the z-image violation: absorption is family-scoped (no loras
-  // knob — walled above) but compose stacked p.loras onto
-  // WHATEVER atom resolved. The gate fires the mutation only
-  // where the atom boarded the pack (ModelFacts.mods ≡ DECL.mods,
-  // pinned by the flows wall).
+  // the z-image history: absorption is family-scoped but compose
+  // stacked p.loras onto WHATEVER atom resolved. The gate fires
+  // the mutation only where the atom boarded the pack
+  // (ModelFacts.mods ≡ DECL.mods, pinned by the flows wall).
+  // z-image boards loras + controlnet since the restoration — the
+  // refusal atom is the z-image row with its boarding retracted
+  // (the qvoice leg's counterfactual shape).
   const kit = await import("../../../../packages/engines/comfyui-card-kit/src/kit.ts");
   const { GraphBuilder } = await import("../../../../packages/engines/comfyui-cordis/src/index.ts");
   const facts = loadFacts(
     new URL("../../../../packages/engines/comfyui-cordis/data/model-facts.json", import.meta.url).pathname,
     reads,
   );
+  const zim = facts.models["z-image"];
+  const bare = { ...zim, mods: [] };
   const base = { seed: 1, width: 1024, height: 1024, steps: 8, cfg: 4.5, prompt: "x", negative_prompt: "" };
   const smuggled = { ...base, loras: [{ name: "foo.safetensors", strength: 0.8 }] };
 
-  // z-image boards NOTHING — smuggled loras refuse, naming atom + pack
+  // z-image boards loras — the mutation fires (LoraLoader in graph)
+  const gb = new GraphBuilder({});
+  kit.imageT2I(smuggled, zim, gb, "wall");
+  assert.ok(JSON.stringify(gb.toJSON()).includes("LoraLoaderModelOnly"), "boarding atom must fire the mutation");
+  // the retracted atom refuses, naming atom + pack
   assert.throws(
-    () => kit.imageT2I(smuggled, facts.models["z-image"], new GraphBuilder({}), "wall"),
+    () => kit.imageT2I(smuggled, bare, new GraphBuilder({}), "wall"),
     (err: unknown): boolean =>
       err instanceof Error &&
       String(err.message).includes("model 'z-image' does not board the 'loras' pack"),
   );
-  // krea-2 boards loras — the mutation fires (LoraLoader in graph)
-  const gb = new GraphBuilder({});
-  kit.imageT2I(smuggled, facts.models["krea-2"], gb, "wall");
-  assert.ok(JSON.stringify(gb.toJSON()).includes("LoraLoaderModelOnly"), "boarding atom must fire the mutation");
+  // THE CONTROLNET LEG (the restoration): the resolved pick fires
+  // the union chain on the boarding atom, refuses on the retracted
+  // one — a smuggled stack is drift, not a skip.
+  const cn = {
+    type: "depth",
+    model: "z-image-fun-union-2.1/Z-Image-Turbo-Fun-Controlnet-Union-2.1-2602-8steps.safetensors",
+    image_b64: "map.png",
+    strength: 1.0,
+  };
+  const wired = new GraphBuilder({});
+  kit.imageT2I({ ...base, controlnets: [cn] }, zim, wired, "wall");
+  const graph = JSON.stringify(wired.toJSON());
+  assert.ok(graph.includes("ZImageFunControlnet"), "boarding atom must fire the controlnet node");
+  assert.ok(graph.includes("ModelPatchLoader"), "boarding atom must load the union patch");
+  assert.throws(
+    () => kit.imageT2I({ ...base, controlnets: [cn] }, bare, new GraphBuilder({}), "wall"),
+    (err: unknown): boolean =>
+      err instanceof Error &&
+      String(err.message).includes("model 'z-image' does not board the 'controlnet' pack"),
+  );
   // empty picks = no mutation = no gate (both planes pass through)
-  kit.imageT2I(base, facts.models["z-image"], new GraphBuilder({}), "wall");
-  kit.imageT2I(base, facts.models["krea-2"], new GraphBuilder({}), "wall");
+  kit.imageT2I(base, bare, new GraphBuilder({}), "wall");
+  kit.imageT2I(base, zim, new GraphBuilder({}), "wall");
 });
 
 test("THE CONSUMPTION GATE, qvoice leg: voice_file fires only on boarding atoms", async () => {
@@ -405,13 +439,12 @@ test("§3.1 REVERTIBLE, every registration: card/pack/verb disposers retract (no
 });
 
 test("gate (d), the pack fate: every boarded pack is fired or refused-loud", async () => {
-  // controlnet is registered but fateless (waiting, unboarded) —
-  // boarding it refuses; the four landed packs pass. Live pin:
-  // every DECL pack entry has a fate (the boot refuses otherwise,
-  // so this wall and the boot read one table).
+  // controlnet LANDED its fate with the z-image restoration (the
+  // ModelPatchLoader → ZImageFunControlnet lane) — all five packs
+  // pass. Live pin: every DECL pack entry has a fate (the boot
+  // refuses otherwise, so this wall and the boot read one table).
   const guard = await import("../../../../packages/engines/comfyui-card-kit/src/mods/guard.ts");
-  for (const p of ["loras", "qvoice", "lanpaint", "mask"]) guard.assertPackFate(p);
-  assert.throws(() => guard.assertPackFate("controlnet"), /no fate in this plane/);
+  for (const p of ["loras", "controlnet", "qvoice", "lanpaint", "mask"]) guard.assertPackFate(p);
   const { registryIds, registryModel } = await import("../../../../packages/engines/comfyui-cordis/src/models/models.ts");
   const verbs = new Set(svc.verbIds());
   for (const id of registryIds()) {

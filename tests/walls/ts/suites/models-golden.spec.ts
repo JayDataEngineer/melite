@@ -65,7 +65,11 @@ describe("the served catalog vs the tree golden (A1)", () => {
     const goldenServed = new Set(
       Object.keys(golden.models).filter((id) => !RETIRED_IN_GOLDEN.includes(id as never)),
     );
-    assert.equal(Object.keys(cat.models).length, 53);
+    // 55 = the golden's 53 + the stroke-46h z-image base routes
+    // (z-image-base, z-image-base-int8 — regolded with cause: the
+    // variant landed without its golden rows, and this session's
+    // battery surfaced the stale count)
+    assert.equal(Object.keys(cat.models).length, 55);
     for (const id of goldenServed) {
       const g = golden.models[id];
       const mine = cat.models[id];
@@ -104,11 +108,15 @@ describe("the served catalog vs the tree golden (A1)", () => {
       assert.ok(decl.engine !== "comfyui" && decl.engine !== "", `${id} must carry its retired engine marker (got '${decl.engine}')`);
       assert.equal(isServedFamily(decl), false, `${id} must never serve (LAW 0)`);
     }
-    assert.equal(modelIds().length, 91);
+    // 93 = 91 + the stroke-46h z-image base routes (same regold
+    // cause as the served count above)
+    assert.equal(modelIds().length, 93);
   });
 
   it("families section matches the golden on all served ids", (): void => {
-    assert.equal(Object.keys(cat.families).length, 53);
+    // 55 = the golden's 53 + the stroke-46h z-image base routes
+    // (same regold cause as the served models count above)
+    assert.equal(Object.keys(cat.families).length, 55);
     for (const [id, fam] of Object.entries(cat.families)) {
       assert.deepEqual(fam, golden.families[id], `family ${id} diverges`);
     }

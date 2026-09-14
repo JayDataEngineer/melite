@@ -80,6 +80,46 @@ describe("the discovery door arms (live /v1 derivation)", () => {
     assert.ok("input_vocabulary" in cat, "the slot SSOT rides the catalog");
   });
 
+  it("serves the z-image envelope with the hybrid controlnet entry (THE HYBRID LAW)", async () => {
+    // THE WIRE IS PLURAL (the retired bag params.controlnets[]):
+    // kind stays singular, param_key is plural, schema_key names
+    // the pack envelope; the entry mode is served (never
+    // client-switched); every option stamps the row's resolved
+    // facts (model + preprocessor) with its own tooltip and
+    // strength default.
+    const spec = await formSpecArm("z-image");
+    assert.notEqual(spec, null, "z-image must resolve");
+    const modifiers = ((spec as { features: { modifiers: Record<string, unknown>[] } })
+      .features.modifiers);
+    const cn = modifiers.find((m) => m.kind === "controlnet");
+    assert.notEqual(cn, undefined, "the controlnet modifier pack rides the spec");
+    assert.equal(cn!.param_key, "controlnets");
+    assert.equal(cn!.schema_key, "controlnet");
+    assert.equal(cn!.entry, "hybrid");
+    assert.equal(cn!.option_key, "type");
+    assert.equal(cn!.max_stack, 5);
+    const cat = theService().modCatalog("controlnet", "z-image");
+    const want = cat.rows.map((r) => r.id).sort();
+    const options = cn!.options as Array<{
+      value: string; label: string; tooltip: string; defaults: { strength?: number };
+      model: string; preprocessor?: string;
+    }>;
+    assert.deepEqual(options.map((o) => o.value).sort(), want, "option values == the union type ids");
+    assert.equal(options.length, 7);
+    for (const row of cat.rows) {
+      const opt = options.find((o) => o.value === row.id)!;
+      assert.equal(opt.model, row.filename, `${row.id} stamps the union file`);
+      assert.equal(opt.preprocessor, row.preprocessor, `${row.id} stamps the upstream-map note`);
+      assert.equal(opt.defaults.strength, row.default_strength, `${row.id} seeds its declared strength`);
+      assert.ok((opt.tooltip ?? "").length > 0, `${row.id} serves its tooltip`);
+    }
+    // the pack envelope rides mod_schemas under the pack name (the
+    // schema_key), carrying the bag + the floor — the client's
+    // hybrid walk reads THIS, never the card envelope.
+    const schemas = (spec as { mod_schemas: Record<string, unknown> }).mod_schemas;
+    assert.ok("controlnet" in schemas, "the controlnet pack envelope rides mod_schemas");
+  });
+
   it("serves the forms table with the sidebar shape", async () => {
     const forms = await formsArm();
     assert.ok(Object.keys(forms as Record<string, unknown>).length > 0);

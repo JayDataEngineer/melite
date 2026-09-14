@@ -9851,6 +9851,10 @@
       "cfg": 1
     },
     "genre": "image",
+    "mods": [
+      "loras",
+      "controlnet"
+    ],
     "variants": [
       {
         "id": "turbo",
@@ -9942,6 +9946,10 @@
       "cfg": 1
     },
     "genre": "image",
+    "mods": [
+      "loras",
+      "controlnet"
+    ],
     "variants": [
       {
         "id": "turbo",
@@ -10033,6 +10041,10 @@
       "cfg": 1
     },
     "genre": "image",
+    "mods": [
+      "loras",
+      "controlnet"
+    ],
     "variants": [
       {
         "id": "turbo",
@@ -10124,6 +10136,10 @@
       "cfg": 1
     },
     "genre": "image",
+    "mods": [
+      "loras",
+      "controlnet"
+    ],
     "variants": [
       {
         "id": "turbo",

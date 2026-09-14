@@ -69,6 +69,9 @@ interface StubCfg {
   trackUpgrades?: boolean;
   seen: { queue: number; interrupt: number; uploads: number; frees: number; prompts: string[]; upgrades: number };
   calls?: Map<string, number>;
+  /** raw multipart bodies per /upload/image POST (the data-URL
+   *  byte-identity pin reads these). */
+  uploadBodies?: Buffer[];
 }
 
 const doneEntry = (outputs: Record<string, unknown> = {}): Record<string, unknown> => ({
@@ -126,6 +129,7 @@ const startStub = async (cfg: StubCfg): Promise<{ url: string; close: () => Prom
         respond(v.status, v.body);
       } else if (method === "POST" && url === "/upload/image") {
         cfg.seen.uploads += 1;
+        (cfg.uploadBodies ??= []).push(raw);
         if ((cfg.uploadStatus ?? 200) !== 200) respond(cfg.uploadStatus!, { error: "nope" });
         else if (cfg.uploadBody !== undefined) respond(200, cfg.uploadBody);
         else respond(200, { name: cfg.uploadName ?? "staged.png" });
@@ -637,6 +641,39 @@ describe("uploadReferenced (the staging walk)", () => {
       writeFileSync(f, Buffer.from("X"));
       await assert.rejects(uploadReferenced(ns.url, { "1": { class_type: "L", inputs: { image: f } } } as never), /upload failed/);
     } finally { await ns.close(); }
+  });
+  it("data-URL maps stage byte-identical; non-image/empty payloads ride to the engine's loud refusal", async () => {
+    // THE RUN-RECORD RESTORATION: a retired conditioning map arrives
+    // as image_b64 verbatim — it stages like a local file (decode
+    // EXACTLY, never re-encode), never rides verbatim into LoadImage.
+    const cfg = stub();
+    const s = await startStub(cfg);
+    try {
+      const bytes = Buffer.from("MAP-BYTES-EXACT");
+      const url = "data:image/png;base64," + bytes.toString("base64");
+      const { graph, uploaded } = await uploadReferenced(s.url, {
+        "1": { class_type: "LoadImage", inputs: { image: url, second: url } },
+        "2": { class_type: "L", inputs: { image: "data:text/plain;base64,aGk=" } },
+        "3": { class_type: "L", inputs: { image: "data:image/png;base64," } },
+        "4": { class_type: "L", inputs: { image: "data:image/png,not-base64" } },
+      } as never);
+      const ins = (graph["1"] as Record<string, EngineJson>)["inputs"] as Record<string, EngineJson>;
+      assert.equal(ins["image"], "staged.png");
+      assert.equal(ins["second"], "staged.png", "the seen map dedupes data URLs too");
+      assert.equal(cfg.seen.uploads, 1);
+      assert.equal(Object.keys(uploaded).length, 1);
+      assert.ok(
+        (cfg.uploadBodies ?? []).some((b) => b.includes(bytes)),
+        "the staged bytes ride the wire byte-identical (no re-encode)",
+      );
+      // a non-image mime, an empty payload, and a non-base64 shape
+      // are not stageable maps — they ride through untouched for the
+      // engine's loud refusal, never a silent empty stage.
+      for (const nid of ["2", "3", "4"]) {
+        const peer = (graph[nid] as Record<string, EngineJson>)["inputs"] as Record<string, EngineJson>;
+        assert.ok(typeof peer["image"] === "string" && (peer["image"] as string).startsWith("data:"));
+      }
+    } finally { await s.close(); }
   });
 });
 

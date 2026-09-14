@@ -86,6 +86,7 @@ import {
   existsSync,
   mkdirSync,
   readFileSync,
+  rmSync,
   statSync,
   writeFileSync,
 } from "node:fs";
@@ -421,6 +422,19 @@ export const UPLOAD_EXTS: readonly string[] = [
   ".webp",
 ];
 
+/** The data-URL mime table (the DATA-URL ARM's allowlist — image
+ *  mimes only, each onto its UPLOAD_EXTS member; a mime outside
+ *  this table is not a stageable map). */
+export const DATA_URL_IMAGE_EXT: Record<string, string> = {
+  "image/png": ".png",
+  "image/jpeg": ".jpg",
+  "image/webp": ".webp",
+  "image/gif": ".gif",
+  "image/bmp": ".bmp",
+  "image/avif": ".avif",
+  "image/tiff": ".tiff",
+};
+
 /** params['workflow'] + params['inject'] -> the final graph.
  *  Byte-identical refusals to native._splice_workflow (239-271). */
 export function spliceWorkflow(
@@ -584,6 +598,33 @@ export async function uploadReferenced(
     if (typeof v !== "string") return v;
     const p: string = v.trim();
     const lower: string = p.toLowerCase();
+    // DATA-URL ARM (the run-record restoration): a retired
+    // conditioning map arrives as a data: URL (image_b64 verbatim —
+    // the old leaf wrote data URLs into the bag). Decode it EXACTLY
+    // (no re-encode, no resize) to a tmp file and upload like a
+    // local file. A non-image mime or an empty payload rides through
+    // untouched — the engine refuses it loud downstream, never a
+    // silent empty map.
+    if (lower.startsWith("data:")) {
+      // the parse is case-insensitive on the scheme/mime (the
+      // payload stays verbatim — base64 is case-SENSITIVE).
+      const m = /^data:([^;,]+);base64,(.*)$/is.exec(p);
+      const ext = m !== null ? DATA_URL_IMAGE_EXT[m[1].toLowerCase()] : undefined;
+      if (m !== null && ext !== undefined && m[2] !== "") {
+        if (!(p in seen)) {
+          const tmp = join(tmpdir(), "melite-data-" + randomBytes(8).toString("hex") + ext);
+          writeFileSync(tmp, Buffer.from(m[2], "base64"));
+          try {
+            seen[p] = (await uploadFile(server, tmp)).name;
+          } finally {
+            // the bytes rode the wire — the tmp file never lingers.
+            rmSync(tmp, { force: true });
+          }
+        }
+        return seen[p] as string;
+      }
+      return v;
+    }
     if (!UPLOAD_EXTS.some((e: string): boolean => lower.endsWith(e))) return v;
     // LINKED-INPUT ARM (2026-09-10 — the chaining fix): a stage wired
     // to an upstream card's output arrives as that output's asset URL
