@@ -1589,6 +1589,28 @@ function BenchView({ bench, sessionKey, onRun, onRunStage, onStopStage, onRemove
       .catch((err: unknown) => { setReloadError(err instanceof Error ? err.message : 'attach refused') })
   }, [live, reload])
   const benchRev = live.rev
+  // SAVE (operator, stroke 46): mint the bench's stages as a NAMED
+  // doc on the drafts domain — it lists in the gallery's Flows face
+  // and restores onto any conversation's bench by click. The same
+  // ensure door every bench write rides; the name slugs to the key.
+  const [saving, setSaving] = useState(false)
+  const [saveName, setSaveName] = useState('')
+  const [saveError, setSaveError] = useState<string | null>(null)
+  const onSave = useCallback((): void => {
+    const name = saveName.trim()
+    if (bench.kind !== 'bench' || name === '') return
+    const slug = 'saved-' + name.toLowerCase().replace(/[^a-z0-9_-]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 40)
+    setSaveError(null)
+    fetch('/v1/bench/ensure', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ session: slug, author: 'user', intent: name, stages: bench.stages.map((st) => ({ ...st, result: undefined, runStatus: undefined, resolved: undefined })) }),
+    }).then(async (res) => {
+      if (!res.ok) { setSaveError('save refused (' + (await res.json().catch(() => null) as { error?: string } | null)?.error + ')'); return }
+      setSaving(false); setSaveName('')
+    }).catch((e: unknown) => { setSaveError('save failed — ' + (e instanceof Error ? e.message : String(e))) })
+  }, [bench, saveName])
+
   return h('section', { className: css.cardsBench, 'data-cards-bench': benchRev },
     h('header', { className: css.benchHead },
       h('span', { className: css.revTag }, 'rev ' + benchRev),
@@ -1600,7 +1622,15 @@ function BenchView({ bench, sessionKey, onRun, onRunStage, onStopStage, onRemove
               title: running ? 'the pass is running' : 'run every card in bench order — one run per card, stop on failure',
               onClick: onRun,
             }, running ? h(IconLoadingOutline16, { size: 14 }) : h(IconPlayOutline16, { size: 14 }), ' Play'),
+            saving
+              ? h('span', { className: css.groupBar },
+                  h(Input, { value: saveName, placeholder: 'flow name', onChange: (e: { target: { value: string } }) => { setSaveName(e.target.value) } }),
+                  h('button', { className: css.runBtn, type: 'button', disabled: saveName.trim() === '', onClick: onSave }, 'Save'),
+                  h('button', { className: css.back, type: 'button', onClick: () => { setSaving(false); setSaveError(null) } }, 'Cancel'),
+                )
+              : h('button', { className: css.back, type: 'button', disabled: live.stages.length === 0, title: 'mint this bench as a named flow (restores from the Flows face)', onClick: () => { setSaving(true) } }, 'Save'),
           ),
+    saveError !== null ? h('p', { className: css.runError }, saveError) : null,
     ),
     reloadError !== null ? h('p', { className: css.runError }, reloadError) : null,
     // ONE SURFACE, NO STATES (operator, 2026-09-12: "Why is there an
