@@ -44937,6 +44937,39 @@ void main() {
 				});
 			}, [live, reload]);
 			const benchRev = live.rev;
+			const [saving, setSaving] = (0, react.useState)(false);
+			const [saveName, setSaveName] = (0, react.useState)("");
+			const [saveError, setSaveError] = (0, react.useState)(null);
+			const onSave = (0, react.useCallback)(() => {
+				const name = saveName.trim();
+				if (bench.kind !== "bench" || name === "") return;
+				const slug = "saved-" + name.toLowerCase().replace(/[^a-z0-9_-]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 40);
+				setSaveError(null);
+				fetch("/v1/bench/ensure", {
+					method: "POST",
+					headers: { "content-type": "application/json" },
+					body: JSON.stringify({
+						session: slug,
+						author: "user",
+						intent: name,
+						stages: bench.stages.map((st) => ({
+							...st,
+							result: void 0,
+							runStatus: void 0,
+							resolved: void 0
+						}))
+					})
+				}).then(async (res) => {
+					if (!res.ok) {
+						setSaveError("save refused (" + (await res.json().catch(() => null))?.error + ")");
+						return;
+					}
+					setSaving(false);
+					setSaveName("");
+				}).catch((e) => {
+					setSaveError("save failed — " + (e instanceof Error ? e.message : String(e)));
+				});
+			}, [bench, saveName]);
 			return (0, react.createElement)("section", {
 				className: card_module_css_default$1.cardsBench,
 				"data-cards-bench": benchRev
@@ -44946,7 +44979,33 @@ void main() {
 				disabled: running || live.stages.length === 0,
 				title: running ? "the pass is running" : "run every card in bench order — one run per card, stop on failure",
 				onClick: onRun
-			}, running ? (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.IconLoadingOutline16, { size: 14 }) : (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.IconPlayOutline16, { size: 14 }), " Play"))), reloadError !== null ? (0, react.createElement)("p", { className: card_module_css_default$1.runError }, reloadError) : null, (0, react.createElement)("ol", {
+			}, running ? (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.IconLoadingOutline16, { size: 14 }) : (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.IconPlayOutline16, { size: 14 }), " Play"), saving ? (0, react.createElement)("span", { className: card_module_css_default$1.groupBar }, (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Input, {
+				value: saveName,
+				placeholder: "flow name",
+				onChange: (e) => {
+					setSaveName(e.target.value);
+				}
+			}), (0, react.createElement)("button", {
+				className: card_module_css_default$1.runBtn,
+				type: "button",
+				disabled: saveName.trim() === "",
+				onClick: onSave
+			}, "Save"), (0, react.createElement)("button", {
+				className: card_module_css_default$1.back,
+				type: "button",
+				onClick: () => {
+					setSaving(false);
+					setSaveError(null);
+				}
+			}, "Cancel")) : (0, react.createElement)("button", {
+				className: card_module_css_default$1.back,
+				type: "button",
+				disabled: live.stages.length === 0,
+				title: "mint this bench as a named flow (restores from the Flows face)",
+				onClick: () => {
+					setSaving(true);
+				}
+			}, "Save")), saveError !== null ? (0, react.createElement)("p", { className: card_module_css_default$1.runError }, saveError) : null), reloadError !== null ? (0, react.createElement)("p", { className: card_module_css_default$1.runError }, reloadError) : null, (0, react.createElement)("ol", {
 				className: card_module_css_default$1.tileGrid + (capOver ? " " + card_module_css_default$1.capOver : ""),
 				onDragOver: onGridDragOver,
 				onDragLeave: onGridDragLeave,
