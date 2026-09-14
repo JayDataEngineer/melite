@@ -158,7 +158,13 @@ test("a bench doc without a bench block reads as rev 0 and gains its block on fi
 test("getBench refuses bad sessions and unknown benches with their voices", async () => {
   const drafts = await boot();
   assert.match(syncCodeOf((): unknown => getBench(drafts, "no!")), /^bench\/bad-session/);
+  // STROKE 46g: the READ door keeps its honest not-found; the WRITE
+// door (loadBench) BIRTHS — a conversation's bench is born at its
+// first write, never refused (the forever fix).
   assert.match(syncCodeOf((): unknown => getBench(drafts, "ghost")), /^bench\/not-found/);
+  const born = await addStageBench(drafts, "session-born-1", { card: "image-gen", author: "user", expect_rev: 0 });
+  assert.equal(born.rev, 1);
+  assert.equal((getBench(drafts, "session-born-1") as { stages: unknown[] }).stages.length, 1);
 });
 
 // ── patch: the full arm set ─────────────────────────────────────
@@ -566,9 +572,12 @@ test("mutation arms carry the bad-session/not-found/missing-expect_rev voices", 
     await codeOf(patchBench(drafts, "no!", { stage: "a", params: {}, expect_rev: 0 })),
     /^bench\/bad-session/,
   );
+  // STROKE 46g: writes on an unborn bench BIRTH it (rev 0 doc) — the
+  // forever fix; "ghost" now exists, so patch on a MISSING STAGE
+  // refuses in the stage's own voice.
   assert.match(
     await codeOf(patchBench(drafts, "ghost", { stage: "a", params: {}, expect_rev: 0 })),
-    /^bench\/not-found/,
+    /^bench\/stage-not-found/,
   );
   assert.match(
     await codeOf(patchBench(drafts, "s", { stage: "a", params: { x: 1 } })),

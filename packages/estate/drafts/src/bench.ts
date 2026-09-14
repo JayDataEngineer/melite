@@ -341,10 +341,10 @@ interface LoadedBench {
   readonly block: BenchBlock;
 }
 
-function loadBench(
+async function loadBench(
   drafts: Domain<DraftsDomainSpec>,
   session: string,
-): LoadedBench {
+): Promise<LoadedBench> {
   if (!SESSION_RE.test(session)) {
     throw new RemoteError(
       "bench/bad-session",
@@ -353,11 +353,20 @@ function loadBench(
     );
   }
   const draftId: string = benchIdOf(session);
-  const rec: DraftRecord | undefined = drafts.table("docs").get(draftId);
+  let rec: DraftRecord | undefined = drafts.table("docs").get(draftId);
   if (rec === undefined) {
-    throw new RemoteError("bench/not-found", "no such bench: " + session, {
-      session,
+    // THE BIRTH (stroke 46g, the operator's "is this a forever fix?"):
+    // a conversation's bench is born at its FIRST write — never a
+    // refusal. rev 0, empty stages, the session's own id.
+    const doc0: Record<string, unknown> = { draft_id: draftId, intent: "", stages: [], bench: { rev: 0, log: [] } };
+    await drafts.table("docs").put(draftId, {
+      updated_at: Math.floor(Date.now() / 1000),
+      doc: doc0 as unknown as DraftRecord["doc"],
     });
+    rec = drafts.table("docs").get(draftId);
+    if (rec === undefined) {
+      throw new RemoteError("bench/not-found", "could not birth bench: " + session, { session });
+    }
   }
   const doc: Record<string, unknown> = rec.doc as unknown as Record<string, unknown>;
   return { draftId, doc, block: benchBlockOf(doc) };
@@ -441,7 +450,7 @@ export async function patchBench(
   admit?: StageAdmission,
 ): Promise<BenchPatchRow> {
   refuseUnknown(body, PATCH_KEYS);
-  const loaded: LoadedBench = loadBench(drafts, session);
+  const loaded: LoadedBench = await loadBench(drafts, session);
   casCheck(loaded.block, body["expect_rev"], session);
   const stageId: unknown = body["stage"];
   if (typeof stageId !== "string") {
@@ -568,7 +577,7 @@ export async function addStageBench(
 ): Promise<BenchStageRow> {
   refuseUnknown(body, ADD_KEYS);
   admitStage(admit, body["card"], body["params"]);
-  const loaded: LoadedBench = loadBench(drafts, session);
+  const loaded: LoadedBench = await loadBench(drafts, session);
   casCheck(loaded.block, body["expect_rev"], session);
   const card: unknown = body["card"];
   if (typeof card !== "string" || card === "") {
@@ -646,7 +655,7 @@ export async function reorderBench(
   body: Record<string, unknown>,
 ): Promise<BenchReorderRow> {
   refuseUnknown(body, REORDER_KEYS);
-  const loaded: LoadedBench = loadBench(drafts, session);
+  const loaded: LoadedBench = await loadBench(drafts, session);
   casCheck(loaded.block, body["expect_rev"], session);
   const stageId: unknown = body["stage"];
   if (typeof stageId !== "string") {
@@ -713,7 +722,7 @@ export async function groupBench(
   body: Record<string, unknown>,
 ): Promise<BenchStageRow> {
   refuseUnknown(body, GROUP_KEYS);
-  const loaded: LoadedBench = loadBench(drafts, session);
+  const loaded: LoadedBench = await loadBench(drafts, session);
   casCheck(loaded.block, body["expect_rev"], session);
   const idsRaw: unknown = body["stages"];
   if (!Array.isArray(idsRaw) || idsRaw.length < 2
@@ -780,7 +789,7 @@ export async function ungroupBench(
   body: Record<string, unknown>,
 ): Promise<BenchStageRow> {
   refuseUnknown(body, UNGROUP_KEYS);
-  const loaded: LoadedBench = loadBench(drafts, session);
+  const loaded: LoadedBench = await loadBench(drafts, session);
   casCheck(loaded.block, body["expect_rev"], session);
   const stageId: unknown = body["stage"];
   if (typeof stageId !== "string") {
@@ -826,7 +835,7 @@ export async function removeStageBench(
   body: Record<string, unknown>,
 ): Promise<BenchStageRow> {
   refuseUnknown(body, REMOVE_KEYS);
-  const loaded: LoadedBench = loadBench(drafts, session);
+  const loaded: LoadedBench = await loadBench(drafts, session);
   casCheck(loaded.block, body["expect_rev"], session);
   const stageId: unknown = body["stage"];
   if (typeof stageId !== "string") {
@@ -878,7 +887,7 @@ export async function rewireBench(
   body: Record<string, unknown>,
 ): Promise<BenchRewireRow> {
   refuseUnknown(body, REWIRE_KEYS);
-  const loaded: LoadedBench = loadBench(drafts, session);
+  const loaded: LoadedBench = await loadBench(drafts, session);
   casCheck(loaded.block, body["expect_rev"], session);
   const stageId: unknown = body["stage"];
   const input: unknown = body["input"];
@@ -958,7 +967,7 @@ export async function undoBench(
   body: Record<string, unknown>,
 ): Promise<BenchUndoRow> {
   refuseUnknown(body, UNDO_KEYS);
-  const loaded: LoadedBench = loadBench(drafts, session);
+  const loaded: LoadedBench = await loadBench(drafts, session);
   if (body["expect_rev"] !== undefined) {
     casCheck(loaded.block, body["expect_rev"], session);
   }

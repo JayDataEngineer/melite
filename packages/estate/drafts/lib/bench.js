@@ -198,16 +198,25 @@ export function getBench(drafts, session) {
         })),
     };
 }
-function loadBench(drafts, session) {
+async function loadBench(drafts, session) {
     if (!SESSION_RE.test(session)) {
         throw new RemoteError("bench/bad-session", "bad session key (want [A-Za-z0-9_-]{1,64})", {});
     }
     const draftId = benchIdOf(session);
-    const rec = drafts.table("docs").get(draftId);
+    let rec = drafts.table("docs").get(draftId);
     if (rec === undefined) {
-        throw new RemoteError("bench/not-found", "no such bench: " + session, {
-            session,
+        // THE BIRTH (stroke 46g, the operator's "is this a forever fix?"):
+        // a conversation's bench is born at its FIRST write — never a
+        // refusal. rev 0, empty stages, the session's own id.
+        const doc0 = { draft_id: draftId, intent: "", stages: [], bench: { rev: 0, log: [] } };
+        await drafts.table("docs").put(draftId, {
+            updated_at: Math.floor(Date.now() / 1000),
+            doc: doc0,
         });
+        rec = drafts.table("docs").get(draftId);
+        if (rec === undefined) {
+            throw new RemoteError("bench/not-found", "could not birth bench: " + session, { session });
+        }
     }
     const doc = rec.doc;
     return { draftId, doc, block: benchBlockOf(doc) };
@@ -253,7 +262,7 @@ const PATCH_KEYS = ["stage", "params", "result", "runStatus", "expect_rev", "aut
  *  run-status writes from the tab land here, authored "user"). */
 export async function patchBench(drafts, session, body, admit) {
     refuseUnknown(body, PATCH_KEYS);
-    const loaded = loadBench(drafts, session);
+    const loaded = await loadBench(drafts, session);
     casCheck(loaded.block, body["expect_rev"], session);
     const stageId = body["stage"];
     if (typeof stageId !== "string") {
@@ -345,7 +354,7 @@ function admitStages(admit, stages) {
 export async function addStageBench(drafts, session, body, admit) {
     refuseUnknown(body, ADD_KEYS);
     admitStage(admit, body["card"], body["params"]);
-    const loaded = loadBench(drafts, session);
+    const loaded = await loadBench(drafts, session);
     casCheck(loaded.block, body["expect_rev"], session);
     const card = body["card"];
     if (typeof card !== "string" || card === "") {
@@ -407,7 +416,7 @@ const REORDER_KEYS = ["stage", "to", "expect_rev", "author"];
  *  semantics, not an error. */
 export async function reorderBench(drafts, session, body) {
     refuseUnknown(body, REORDER_KEYS);
-    const loaded = loadBench(drafts, session);
+    const loaded = await loadBench(drafts, session);
     casCheck(loaded.block, body["expect_rev"], session);
     const stageId = body["stage"];
     if (typeof stageId !== "string") {
@@ -447,7 +456,7 @@ const GROUP_KEYS = ["stages", "expect_rev", "author"];
  *  members at the compound's index. The inverse carries both halves. */
 export async function groupBench(drafts, session, body) {
     refuseUnknown(body, GROUP_KEYS);
-    const loaded = loadBench(drafts, session);
+    const loaded = await loadBench(drafts, session);
     casCheck(loaded.block, body["expect_rev"], session);
     const idsRaw = body["stages"];
     if (!Array.isArray(idsRaw) || idsRaw.length < 2
@@ -500,7 +509,7 @@ const UNGROUP_KEYS = ["stage", "expect_rev", "author"];
  *  compound's index, in their stored order. */
 export async function ungroupBench(drafts, session, body) {
     refuseUnknown(body, UNGROUP_KEYS);
-    const loaded = loadBench(drafts, session);
+    const loaded = await loadBench(drafts, session);
     casCheck(loaded.block, body["expect_rev"], session);
     const stageId = body["stage"];
     if (typeof stageId !== "string") {
@@ -535,7 +544,7 @@ export async function ungroupBench(drafts, session, body) {
  *  index for undo). */
 export async function removeStageBench(drafts, session, body) {
     refuseUnknown(body, REMOVE_KEYS);
-    const loaded = loadBench(drafts, session);
+    const loaded = await loadBench(drafts, session);
     casCheck(loaded.block, body["expect_rev"], session);
     const stageId = body["stage"];
     if (typeof stageId !== "string") {
@@ -566,7 +575,7 @@ const REWIRE_KEYS = ["stage", "input", "from", "expect_rev", "author"];
  *  {stage, output} | {initial: "image"} | absent → clear. */
 export async function rewireBench(drafts, session, body) {
     refuseUnknown(body, REWIRE_KEYS);
-    const loaded = loadBench(drafts, session);
+    const loaded = await loadBench(drafts, session);
     casCheck(loaded.block, body["expect_rev"], session);
     const stageId = body["stage"];
     const input = body["input"];
@@ -623,7 +632,7 @@ const UNDO_KEYS = ["n", "author", "expect_rev"];
  *  walks ACTIONS (targeting them would ping-pong). */
 export async function undoBench(drafts, session, body) {
     refuseUnknown(body, UNDO_KEYS);
-    const loaded = loadBench(drafts, session);
+    const loaded = await loadBench(drafts, session);
     if (body["expect_rev"] !== undefined) {
         casCheck(loaded.block, body["expect_rev"], session);
     }
