@@ -1021,6 +1021,78 @@ window.__ModuleLoader__.load({
 		async function fetchBench(signal) {
 			return readBench(await wireCall("bench/get", { sessionKey: "main" }, signal));
 		}
+		/** The cards surface's live marker (set by CardsTab's mount effect —
+		*  the only seat that renders the bench). The spotlight skips the
+		*  reveal while the surface is mounted AND the column is expanded:
+		*  re-placing an address the user is already reading would reset
+		*  their scroll/selection for nothing. */
+		let cardsSurfaceLive = false;
+		/** CardsTab's visibility contract: true while the bench surface is
+		*  the mounted tab body, false the moment it unmounts (another tab
+		*  took the pane, or the column collapsed its body away). */
+		function markCardsSurface(live) {
+			cardsSurfaceLive = live;
+		}
+		/** Whether the spotlight should reveal given the seat's own state
+		*  (exported for the wall battery: the flag + the column's expanded
+		*  face decide together — a collapsed column shows the rail, not the
+		*  flow, so it still reveals). */
+		function shouldSpotlight(isExpanded) {
+			return !cardsSurfaceLive || !isExpanded;
+		}
+		/** THE SPOTLIGHT WATCHER: poll the shared bench's rev on a heartbeat
+		*  (the same honest HTTP degrade the resource tail rides — the
+		*  estate's stream face lands later, then the source swaps); on a rev
+		*  drift whose fresh log entries carry author "agent", fire
+		*  onAgentLand once. The FIRST read is hydration — history never
+		*  yanks the user forward on page load. A dead wire keeps trying
+		*  (restarts recover — proven live): the watcher owns no rendered
+		*  truth, the tab tail does, so its swallow can hide nothing. Returns
+		*  the stop function (the plugin's effect disposer). */
+		function watchBenchLands(onAgentLand, signal) {
+			let stopped = false;
+			const ctrl = new AbortController();
+			const halt = () => {
+				if (stopped) return;
+				stopped = true;
+				ctrl.abort();
+			};
+			signal?.addEventListener("abort", halt, { once: true });
+			if (signal?.aborted === true) halt();
+			const sleep = (ms) => new Promise((resolve) => {
+				const t = setTimeout(() => {
+					ctrl.signal.removeEventListener("abort", onAbort);
+					resolve();
+				}, ms);
+				const onAbort = () => {
+					clearTimeout(t);
+					resolve();
+				};
+				ctrl.signal.addEventListener("abort", onAbort, { once: true });
+				if (ctrl.signal.aborted) {
+					clearTimeout(t);
+					resolve();
+				}
+			});
+			let lastRev = null;
+			const loop = async () => {
+				while (!stopped) {
+					try {
+						const bench = await fetchBench(ctrl.signal);
+						if (lastRev === null) lastRev = bench.rev;
+						else if (bench.rev > lastRev) {
+							const seen = lastRev;
+							lastRev = bench.rev;
+							if (bench.log.filter((e) => e.rev > seen).some((e) => e.author === "agent")) onAgentLand();
+						} else lastRev = bench.rev;
+					} catch {}
+					if (stopped) return;
+					await sleep(2e3);
+				}
+			};
+			loop();
+			return halt;
+		}
 		/** THE OUTCOME OBSERVER (the attribution half): poll the run to
 		*  terminal on the run-wire cadence, then write runStatus + result
 		*  onto the bench row through the shared-state door. Both run paths
@@ -45037,6 +45109,12 @@ void main() {
 		}
 		/** The tab body component. */
 		function CardsTab(props) {
+			(0, react.useEffect)(() => {
+				markCardsSurface(true);
+				return () => {
+					markCardsSurface(false);
+				};
+			}, []);
 			const renderStageView = (owner, fallback) => {
 				if (props.renderSlot === void 0) return fallback;
 				return props.renderSlot("cards.stage.view", owner, {
@@ -45374,6 +45452,17 @@ void main() {
 				}), "melite-card-view: cards resource provider");
 			} catch (error) {
 				console.error("[melite-card-view] cards resource provider registration failed:", error);
+			}
+			try {
+				ctx.effect(() => watchBenchLands(() => {
+					try {
+						if (shouldSpotlight(ctx.sidebarRight.isExpanded())) ctx.sidebarRight.openResource(CARDS_BENCH_ADDRESS);
+					} catch (error) {
+						console.error("[melite-card-view] bench spotlight reveal failed:", error);
+					}
+				}), "melite-card-view: bench spotlight");
+			} catch (error) {
+				console.error("[melite-card-view] bench spotlight registration failed:", error);
 			}
 		}
 		//#endregion
