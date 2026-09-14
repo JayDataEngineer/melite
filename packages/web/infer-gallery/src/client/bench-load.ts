@@ -187,6 +187,32 @@ export async function loadRunOntoBench(runId: string, deps: BenchLoadDeps): Prom
     const snap = typeof flow === 'object' && flow !== null
       ? (flow as Record<string, unknown>)['card_snapshot']
       : undefined
+    // THE FULL WORKFLOW FIRST (stroke 45d): bench_snapshot is the
+    // bench doc read at the Run press — every stage + intent as they
+    // stood. The ran card (card_snapshot.card) carries the preview;
+    // stale run state is stripped from every stage.
+    const benchSnap = typeof flow === 'object' && flow !== null
+      ? (flow as Record<string, unknown>)['bench_snapshot']
+      : undefined
+    if (typeof benchSnap === 'object' && benchSnap !== null) {
+      const bs = benchSnap as Record<string, unknown>
+      const bsStages = Array.isArray(bs['stages'])
+        ? (bs['stages'] as unknown[]).map((st) => ({ ...(st as Record<string, unknown>) }))
+        : []
+      if (bsStages.length > 1) {
+        const ranCard = typeof snap === 'object' && snap !== null
+          ? (snap as Record<string, unknown>)['card'] : undefined
+        const result = resultOfRun(flow as Record<string, unknown> | null, String((side as Record<string, unknown>)['run_id'] ?? ''))
+        for (const st of bsStages as Record<string, unknown>[]) {
+          delete st['result']; delete st['runStatus']; delete st['resolved']
+          if (ranCard !== undefined && st['card'] === ranCard && result !== undefined) st['result'] = result
+          st['provenance'] = 'restored'
+        }
+        const bsIntent = typeof bs['intent'] === 'string' && (bs['intent'] as string) !== '' ? bs['intent'] as string : 'restored run'
+        await loadStagesOntoBench(bsStages, bsIntent.slice(0, 77), deps)
+        return
+      }
+    }
     if (typeof snap === 'object' && snap !== null
       && typeof (snap as Record<string, unknown>)['card'] === 'string') {
       const card = (snap as Record<string, unknown>)['card'] as string

@@ -306,6 +306,10 @@ export function registerCompiledRun(args: {
     pipeline: string;
     cardId: string;
     requestBody: Record<string, unknown>;
+    /** The bench doc read at submit (stroke 45d) — the FULL workflow
+     *  the run was born from (all stages + intent), stamped verbatim
+     *  so the wand restores the whole flow, not just the ran card. */
+    benchDoc?: Record<string, unknown>;
   };
 }): { run: RunRecord; queuePosition: number } {
   const { compiled, testFlag, draftId, stateRoot, enqueue, door } = args;
@@ -367,6 +371,17 @@ export function registerCompiledRun(args: {
       card: door.cardId,
       params: door.requestBody,
     };
+    const benchStages = Array.isArray(door.benchDoc?.["stages"])
+      ? door.benchDoc?.["stages"]
+      : undefined;
+    if (benchStages !== undefined && (benchStages as unknown[]).length > 0) {
+      (run as { benchSnapshot?: unknown }).benchSnapshot = {
+        stages: benchStages,
+        intent: typeof door.benchDoc?.["intent"] === "string"
+          ? door.benchDoc?.["intent"]
+          : "",
+      };
+    }
   }
   // R3 durable queue (submit 1317-1351): the verbatim request
   // rides _request.json, the compiled document rides _flow.json,
@@ -407,6 +422,7 @@ function sidecarDocFor(run: RunRecord): Record<string, unknown> {
     testFlag: run.testFlag,
     draftId: run.draftId,
     card_snapshot: (run as { cardSnapshot?: unknown }).cardSnapshot,
+    bench_snapshot: (run as { benchSnapshot?: unknown }).benchSnapshot,
     pipeline: run.pipeline,
     graph: run.graphRows,
   });

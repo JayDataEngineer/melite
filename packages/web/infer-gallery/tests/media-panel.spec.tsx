@@ -542,6 +542,52 @@ describe('MediaPanel — the wand restores the run onto the bench', () => {
     ])
   })
 
+  it('stroke 45d — a run WITH a bench_snapshot restores the FULL workflow; the ran card carries the preview', async () => {
+    const opened: string[] = []
+    const ensures: Record<string, unknown>[] = []
+    vi.stubGlobal('fetch', (url: string, init?: RequestInit) => {
+      const u = String(url)
+      if (u === '/infer-gallery/runs') return runsFeed([run({ draft_id: 'bench-main', artifacts: [{ url: '/v/one.png', type: 'image' }] })])
+      if (u === '/infer-gallery/drafts') return draftsFeed([])
+      if (u.startsWith('/infer-gallery/flow?run_id=')) {
+        return Promise.resolve(new Response(JSON.stringify({
+          run_id: 'r1',
+          flow: {
+            draft_id: 'bench-main',
+            card_snapshot: { card: 'image-edit', params: { prompt: 'red hair' } },
+            bench_snapshot: { intent: 'the beach flow', stages: [
+              { id: 's_0', card: 'image-gen', engine: 'comfyui', params: { prompt: 'beach girl' }, result: { url: '/old.png' } },
+              { id: 's_1', card: 'image-edit', engine: 'comfyui', params: { prompt: 'red hair' }, runStatus: 'done' },
+            ] },
+            artifacts: ['/x/runs/output/run-r1/edit/out.png'],
+          },
+          request: null,
+        }), { status: 200 }))
+      }
+      if (u === '/v1/bench/main') return Promise.resolve(new Response(JSON.stringify({ rev: 2 }), { status: 200 }))
+      if (u === '/v1/bench/ensure') {
+        ensures.push(JSON.parse(String(init?.body ?? '{}')) as Record<string, unknown>)
+        return Promise.resolve(new Response(JSON.stringify({ draft_id: 'bench-main', rev: 3 }), { status: 200 }))
+      }
+      return Promise.resolve(new Response('{}', { status: 200 }))
+    })
+    render(<MediaPanel useTabInfo={() => ({
+      tab: { navigation: { address: 'dsh-resource://media' },
+        actions: { openResource: (a: string) => { opened.push(a) } } },
+    }) as never} />)
+    fireEvent.click(await waitFor(() => screen.getByText('✦ CARDS') as HTMLElement))
+    await waitFor(() => { expect(opened).toEqual(['dsh-resource://cards/bench/main']) })
+    const stages = ensures[0]?.['stages'] as Record<string, unknown>[]
+    expect(stages).toHaveLength(2)
+    expect(ensures[0]?.['intent']).toBe('the beach flow')
+    // stale run state stripped; provenance restored
+    expect(stages?.[0]).not.toHaveProperty('result')
+    expect(stages?.[0]?.['provenance']).toBe('restored')
+    // THE RAN CARD carries the run's preview
+    expect(stages?.[1]?.['result']).toEqual({ run_id: 'r1', url: '/melite-media/runs/run-r1/edit/out.png' })
+    expect(stages?.[1]).not.toHaveProperty('runStatus')
+  })
+
   it('a run whose sidecar names no draft states it honestly — no bench write, no open', async () => {
     const opened: string[] = []
     let ensured = 0
