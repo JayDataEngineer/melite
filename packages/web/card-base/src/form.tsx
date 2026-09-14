@@ -28,7 +28,7 @@ import { ModifiersSection } from './mods.tsx'
 import { uploadInputFile } from './wire.ts'
 import {
   activeRowId, activeVariantId, axisGroups, axisKey, axisPickPatch, composingRows, groupFields, modelChoices,
-  modOwnedFields, rowsFor, seedAxisValues, variantRows, quantRowsFor,
+  modOwnedFields, modelSwitchPatch, rowsFor, seedAxisValues, variantRows, quantRowsFor,
   type FormSpecDoc, type SpecField, type SpecValues, type VariantRow,
 } from './spec.ts'
 import { fetchFormSpec } from './wire.ts'
@@ -534,7 +534,15 @@ export function ModelAxes({ spec, values, onEdit }: {
         'aria-label': 'Model',
         value: typeof values['model'] === 'string' && values['model'] !== '' ? values['model'] as string
           : (typeof spec.model === 'string' && spec.model !== '' ? spec.model : models[0] ?? ''),
-        onChange: (e: unknown) => { onEdit('model', (e as { target: { value: string } }).target.value) },
+        // THE STALE-VARIANT CURE (operator 2026-09-14): a model
+        // switch re-seeds EVERY axis (variant/quant/…) to the new
+        // family's rows — keeping turbo while pointing at anima is
+        // a compose refusal, never a carried-over default.
+        onChange: (e: unknown) => {
+          const m = (e as { target: { value: string } }).target.value
+          const patch = modelSwitchPatch(spec, m)
+          for (const [k, v] of Object.entries(patch)) onEdit(k, v)
+        },
       }, models.map((m) => h('option', { key: m, value: m }, m)))),
     groups.map((g) => {
       const rows = composingRows(spec, g, active)

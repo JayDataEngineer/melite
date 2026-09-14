@@ -160,7 +160,10 @@ export function meliteConstruct(
       engine: { type: 'string', description: 'add_stage: engine id (default comfyui).' },
       params: {
         type: 'object', additionalProperties: true,
-        description: 'patch (merge onto the stage) | add_stage | load single-stage shorthand.',
+        description: 'patch (merge onto the stage) | add_stage | load single-stage shorthand. '
+          + 'MODEL SWITCH LAW: a stage\'s variant/quant belong to its model — switching params.model without '
+          + 'co-stating the new family\'s variant (melite_load names each family\'s variants) composes a refusal '
+          + '(unknown variant for the new model). State model + variant (+ quant) together, or leave the model alone.',
       },
       inputs: {
         type: 'object', additionalProperties: true,

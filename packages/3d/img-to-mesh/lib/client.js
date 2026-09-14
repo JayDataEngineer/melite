@@ -9,8 +9,8 @@ window.__ModuleLoader__.load({
 		let react_jsx_runtime = require("react/jsx-runtime");
 		let react_dom = require("react-dom");
 		//#region \0dsh-css:/home/user/Documents/programs/active/inference.cpp/packages/3d/img-to-mesh/src/client/client.module.css.mjs
-		const css$4 = ".xjw8Uq_runRow{justify-content:flex-end;align-items:center;gap:10px;width:100%;display:flex}.xjw8Uq_zoomDetail{min-height:0;padding:14px;display:block;overflow-y:auto}.xjw8Uq_groupNote{color:var(--dsw-alias-label-secondary,#61666b);margin:0 0 10px;font-size:12px;line-height:20px}.xjw8Uq_studioGroup{flex-direction:column;gap:6px;display:flex}.xjw8Uq_studioRail{flex-direction:column;gap:10px;min-width:0;display:flex}.xjw8Uq_runError{color:var(--dsw-alias-label-error,#e05656);overflow-wrap:anywhere;font-size:11px}.xjw8Uq_viewport{background:var(--dsw-alias-bg-canvas,#fff);border:.5px solid var(--dsw-alias-border-l2,#00000024);border-radius:10px;min-height:320px;display:flex;position:relative;overflow:hidden}.xjw8Uq_viewportEmpty{color:var(--dsw-alias-label-tertiary,#00000073);align-self:center;margin:auto;font-size:12px;line-height:20px}.xjw8Uq_viewport canvas{display:block}.xjw8Uq_viewportCanvas{width:100%;height:380px}.xjw8Uq_viewport:only-child{min-height:380px}.xjw8Uq_drillRunRow{background:linear-gradient(to top, var(--dsw-alias-bg-base) 30%, color-mix(in srgb, var(--dsw-alias-bg-base) 60%, transparent));z-index:1;justify-content:flex-end;align-items:center;gap:8px;margin-top:4px;padding:8px 0 2px;display:flex;position:sticky;bottom:0}.xjw8Uq_drillRunBtn{background:color-mix(in srgb, var(--dsw-alias-bg-base) 72%, transparent);border:1px solid var(--dsw-alias-border-l2);color:var(--dsw-alias-label-secondary);cursor:pointer;height:28px;transition:color var(--ds-transition-duration,.12s) var(--ds-ease-in-out,ease), border-color var(--ds-transition-duration,.12s) var(--ds-ease-in-out,ease);border-radius:999px;justify-content:center;align-items:center;width:28px;padding:0;display:inline-flex}.xjw8Uq_drillRunBtn:hover{border-color:var(--dsw-alias-border-l4);color:var(--dsw-alias-brand-primary)}.xjw8Uq_drillRunBtn:focus-visible{border-color:var(--dsw-alias-brand-primary);color:var(--dsw-alias-brand-primary)}.xjw8Uq_studioProgress{color:var(--dsw-alias-label-secondary);font-variant-numeric:tabular-nums;align-items:center;gap:6px;font-size:11px;display:inline-flex}.xjw8Uq_studioProgress>svg{animation:1s linear infinite xjw8Uq_studioProgressTurn}@keyframes xjw8Uq_studioProgressTurn{to{transform:rotate(360deg)}}";
-		const tagId$4 = "@melite/3d-img-to-mesh/client.module.css@cd32dd3";
+		const css$4 = ".xjw8Uq_runRow{justify-content:flex-end;align-items:center;gap:10px;width:100%;display:flex}.xjw8Uq_zoomDetail{min-height:0;padding:14px;display:block;overflow-y:auto}.xjw8Uq_groupNote{color:var(--dsw-alias-label-secondary,#61666b);margin:0 0 10px;font-size:12px;line-height:20px}.xjw8Uq_studioGroup{flex-direction:column;gap:6px;display:flex}.xjw8Uq_studioRail{flex-direction:column;gap:10px;min-width:0;display:flex}.xjw8Uq_runError{color:var(--dsw-alias-label-error,#e05656);overflow-wrap:anywhere;font-size:11px}.xjw8Uq_viewport{background:var(--dsw-alias-bg-canvas,#fff);border:.5px solid var(--dsw-alias-border-l2,#00000024);border-radius:10px;min-height:320px;display:flex;position:relative;overflow:hidden}.xjw8Uq_viewportEmpty{color:var(--dsw-alias-label-tertiary,#00000073);align-self:center;margin:auto;font-size:12px;line-height:20px}.xjw8Uq_viewport canvas{display:block}.xjw8Uq_viewportCanvas{width:100%;height:380px}.xjw8Uq_viewport:only-child{min-height:380px}.xjw8Uq_drillRunRow{background:var(--dsw-alias-bg-base);border-top:1px solid var(--dsw-alias-border-l2);z-index:1;justify-content:flex-end;align-items:center;gap:8px;margin-top:8px;padding:10px 0 4px;display:flex;position:sticky;bottom:0}.xjw8Uq_drillRunBtn{background:color-mix(in srgb, var(--dsw-alias-bg-base) 72%, transparent);border:1px solid var(--dsw-alias-border-l2);color:var(--dsw-alias-label-secondary);cursor:pointer;height:36px;transition:color var(--ds-transition-duration,.12s) var(--ds-ease-in-out,ease), border-color var(--ds-transition-duration,.12s) var(--ds-ease-in-out,ease);border-radius:8px;justify-content:center;align-items:center;gap:8px;padding:0 16px;font-size:13px;font-weight:600;display:inline-flex}.xjw8Uq_drillRunBtn:hover{border-color:var(--dsw-alias-border-l4);color:var(--dsw-alias-brand-primary)}.xjw8Uq_drillRunBtn:focus-visible{border-color:var(--dsw-alias-brand-primary);color:var(--dsw-alias-brand-primary)}.xjw8Uq_studioProgress{color:var(--dsw-alias-label-secondary);font-variant-numeric:tabular-nums;align-items:center;gap:6px;font-size:11px;display:inline-flex}.xjw8Uq_studioProgress>svg{animation:1s linear infinite xjw8Uq_studioProgressTurn}@keyframes xjw8Uq_studioProgressTurn{to{transform:rotate(360deg)}}";
+		const tagId$4 = "@melite/3d-img-to-mesh/client.module.css@ea750de7";
 		if (typeof document !== "undefined" && document.querySelector("style[data-plugin-css=" + JSON.stringify(tagId$4) + "]") === null) {
 			const tag = document.createElement("style");
 			tag.dataset.plugin = "@melite/3d-img-to-mesh";
@@ -89,9 +89,22 @@ window.__ModuleLoader__.load({
 			}
 			return out;
 		}
+		/** THE RECIPE-YIELD LAW (operator, 2026-09-14: "IMG GEN UI CARD
+		*  HAS TWO RECIPES"): the card's own `recipe` schema field and the
+		*  family matrix's `Recipe` axis group share the `recipe` values key
+		*  — two selects writing one key (the family's pick clobbers the
+		*  card's, and the axis seed stamps `default` where the card catalog
+		*  only knows `standard/...`). When the card declares its own recipe
+		*  field, the card OWNS the name: the family axis yields (hidden,
+		*  never seeded). PURE. */
+		function cardOwnsRecipe(spec) {
+			return (spec.fields ?? []).some((f) => f.name === "recipe");
+		}
 		/** The axis groups in declaration order: features.variant_groups'
 		*  key order when the door serves it, else the rows' distinct groups
-		*  in first-seen order. Empty group names never ride. */
+		*  in first-seen order. Empty group names never ride. The Recipe
+		*  group yields when the card owns its own recipe field (the
+		*  recipe-yield law above). */
 		function axisGroups(spec) {
 			const rows = spec.variants ?? [];
 			const groups = [];
@@ -100,6 +113,7 @@ window.__ModuleLoader__.load({
 				for (const g of declared) if (g !== "" && !groups.includes(g)) groups.push(g);
 			}
 			for (const v of rows) if (v.group !== "" && !groups.includes(v.group)) groups.push(v.group);
+			if (cardOwnsRecipe(spec)) return groups.filter((g) => g !== "Recipe");
 			return groups;
 		}
 		/** The variant_groups contract's keys, in served order (the door
@@ -185,6 +199,35 @@ window.__ModuleLoader__.load({
 				if (composing.length > 0) patch[axisKey(g)] = composing[0].id;
 				else patch[axisKey(g)] = "";
 			}
+			return patch;
+		}
+		/** A model switch's full value patch (the stale-variant cure,
+		*  operator 2026-09-14: model anima + variant turbo refused at
+		*  compose — a switch that keeps the old family's axes is a broken
+		*  stage). Every axis re-seeds to its FIRST row re-pointing at the
+		*  new model (else its first composing row), and the picked rows'
+		*  defaults overlay rides (raw → {model, steps, cfg} — the pick
+		*  law, same as axisPickPatch). The caller writes every key through
+		*  onEdit. PURE. */
+		function modelSwitchPatch(spec, model) {
+			const patch = { model };
+			const groups = axisGroups(spec);
+			const active = {};
+			for (const g of groups) {
+				const composing = composingRows(spec, g, active);
+				if (composing.length === 0) {
+					patch[axisKey(g)] = "";
+					active[g] = "";
+					continue;
+				}
+				const row = composing.find((r) => {
+					return (typeof r.defaults["model"] === "string" && r.defaults["model"] !== "" ? r.defaults["model"] : r.route) === model;
+				}) ?? composing[0];
+				Object.assign(patch, row.defaults);
+				patch[axisKey(g)] = row.id;
+				active[g] = row.id;
+			}
+			patch["model"] = model;
 			return patch;
 		}
 		/** Seed the axis keys for a fresh stage (the catalog's first-declared
@@ -1167,7 +1210,9 @@ window.__ModuleLoader__.load({
 				"aria-label": "Model",
 				value: typeof values["model"] === "string" && values["model"] !== "" ? values["model"] : typeof spec.model === "string" && spec.model !== "" ? spec.model : models[0] ?? "",
 				onChange: (e) => {
-					onEdit("model", e.target.value);
+					const m = e.target.value;
+					const patch = modelSwitchPatch(spec, m);
+					for (const [k, v] of Object.entries(patch)) onEdit(k, v);
 				}
 			}, models.map((m) => (0, react.createElement)("option", {
 				key: m,
@@ -41230,13 +41275,13 @@ void main() {
 					"aria-label": "Stop run",
 					"data-testid": "studio-stop",
 					onClick: onStop
-				}, (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.IconStopFill16, { size: 16 })) : (0, react.createElement)("button", {
+				}, (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.IconStopFill16, { size: 16 }), (0, react.createElement)("span", null, "Stop")) : (0, react.createElement)("button", {
 					className: client_module_css_default.drillRunBtn,
 					type: "button",
 					"aria-label": "Run stage",
 					"data-testid": "studio-run",
 					onClick: run
-				}, (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.IconPlayOutline16, { size: 16 })))),
+				}, (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.IconPlayOutline16, { size: 16 }), (0, react.createElement)("span", null, "Run")))),
 				preview: (0, react.createElement)(GlbStagePreview, {
 					assets: meshUrl === null ? [] : [{
 						id: "mesh",

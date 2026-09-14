@@ -206,6 +206,31 @@ describe("prepareCardParams", () => {
     assert.equal(over.fam, "anima");
     assert.equal(over.card, "image-gen");
   });
+
+  // THE 2026-09-14 BENCH POISON (operator: model anima + variant
+  // turbo refused at Gen press, "you said proof"): krea-2's turbo
+  // riding anima refuses LOUD at the compose gate — the operator's
+  // verbatim error, reproduced here — while the repaired coordinates
+  // (anima's own standard, no cellar, card recipe) compose.
+  it("turbo-on-anima refuses; the repaired bench composes", () => {
+    const s = primed();
+    assert.throws(
+      () => s.prepareCardParams({ variant: "turbo", quant: "int8" }, "anima", "1"),
+      /unknown variant 'turbo' for model 'anima' \(known: standard, default\)/,
+    );
+    const prep = s.prepareCardParams(
+      {
+        variant: "standard", quant: null, recipe: "standard",
+        prompt: "a cheerful anime girl at the beach",
+      },
+      "anima",
+      "1",
+    );
+    assert.equal(prep.mid, "anima");
+    assert.equal(prep.fam, "anima");
+    assert.equal(prep.card, "image-gen");
+    assert.ok(!("variant" in prep.params) && !("quant" in prep.params));
+  });
 });
 
 describe("selectCardVariant", () => {

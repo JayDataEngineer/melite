@@ -140,3 +140,79 @@ test('a healthy row never renders an error face (absent ≡ clean)', async () =>
   const tile = tileButton()
   expect(within(tile).queryByTestId('tile-run-error')).toBeNull()
 })
+
+// THE REFUSAL CARRY (operator 2026-09-14: the turbo-for-anima compose
+// refusal "needs to be in drill down card as well, it is not yet"):
+// pressing Run in the drill on a stage the estate refuses writes the
+// row FAILED with the reason — the open drill's failure face reads
+// the why where the Run was pressed, not just the tab top.
+const TURBO_REFUSAL = "card_compose phase 1: unknown variant 'turbo' for model 'anima' (known: standard, default)"
+
+test('a refused start lands on the row — the open drill reads the why', async () => {
+  let failed = false
+  vi.stubGlobal('fetch', async (url: unknown, init?: RequestInit): Promise<Response> => {
+    const path = String(url)
+    if (path.includes('/v1/form-spec')) {
+      return new Response(JSON.stringify({
+        form: 'image-gen', genre: 'image', engine: 'comfyui',
+        fields: [{ name: 'prompt', label: 'Prompt', type: 'textarea' }],
+      }), { status: 200, headers: { 'content-type': 'application/json' } })
+    }
+    if (path.includes('/v1/model-catalog')) {
+      return new Response(JSON.stringify({ cards: {
+        'image-gen': { label: 'Image Gen', description: 'generate an image', genre: 'image', families: ['image-gen'] },
+      } }), { status: 200, headers: { 'content-type': 'application/json' } })
+    }
+    const frame = JSON.parse(String(init?.body)) as { rpcId: string; method: string; payload: { args: Record<string, unknown> } }
+    let value: Record<string, unknown> = { ok: true }
+    if (frame.method === 'bench/get') {
+      value = failed
+        ? {
+            draft_id: 'bench-s1', rev: 8,
+            stages: [{ id: 's_0', card: 'image-gen', title: 'hero frame', engine: 'comfyui', status: 'failed', runStatus: 'failed', params: { prompt: 'a red cube' }, result: { error: TURBO_REFUSAL } }],
+            log: [],
+          }
+        : {
+            draft_id: 'bench-s1', rev: 7,
+            stages: [{ id: 's_0', card: 'image-gen', title: 'hero frame', engine: 'comfyui', status: 'idle', params: { prompt: 'a red cube' } }],
+            log: [],
+          }
+    }
+    if (frame.method === 'drafts/get') {
+      value = { draft_id: 'bench-s1', rev: 7, intent: '', stages: [{ id: 's_0', card: 'image-gen', title: 'hero frame', engine: 'comfyui', params: { prompt: 'a red cube' } }] }
+    }
+    if (frame.method === 'runs/start') {
+      return new Response(JSON.stringify({ type: 'server-response', rpcId: frame.rpcId, result: { ok: false, error: { message: TURBO_REFUSAL } } }), { status: 200 })
+    }
+    if (frame.method === 'drafts/patch') {
+      failed = true
+      value = { draftId: 'bench-s1', stageId: 's_0', delivered: true, patched: ['runStatus'] }
+    }
+    return new Response(JSON.stringify({ type: 'server-response', rpcId: frame.rpcId, result: { ok: true, value } }), { status: 200 })
+  })
+  const user = userEvent.setup()
+  render(createElement(CardsTab, {
+    useTabInfo: () => ({
+      tab: {
+        kind: 'sidebar.right.pane.tab', contentId: undefined,
+        navigation: { address: 'dsh-resource://cards/bench' },
+        actions: { openResource: () => {} },
+      },
+    }),
+    useResource: () => ({
+      status: 'live',
+      value: {
+        kind: 'bench', draftId: 'bench-s1', rev: 7, log: [],
+        stages: [{ id: 's_0', card: 'image-gen', title: 'hero frame', engine: 'comfyui', status: 'idle', params: { prompt: 'a red cube' } }],
+      } as unknown as CardsBenchValue,
+    }),
+  }))
+  // open the drill, press its labeled Run
+  await user.click(tileButton())
+  await screen.findByText('Prompt', {}, { timeout: 4000 })
+  const drill = document.querySelector('div[class*="zoomDetail"]') as HTMLElement
+  await user.click(within(drill).getByRole('button', { name: 'Run stage' }))
+  // the refusal lands IN the drill — the full compose text
+  const drillErr = await screen.findByTestId('drill-run-error', undefined, { timeout: 4000 })
+  expect(drillErr.textContent).toContain("unknown variant 'turbo'")
+})

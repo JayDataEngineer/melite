@@ -84,9 +84,22 @@ function specPatch(fields, values, held) {
 	}
 	return out;
 }
+/** THE RECIPE-YIELD LAW (operator, 2026-09-14: "IMG GEN UI CARD
+*  HAS TWO RECIPES"): the card's own `recipe` schema field and the
+*  family matrix's `Recipe` axis group share the `recipe` values key
+*  — two selects writing one key (the family's pick clobbers the
+*  card's, and the axis seed stamps `default` where the card catalog
+*  only knows `standard/...`). When the card declares its own recipe
+*  field, the card OWNS the name: the family axis yields (hidden,
+*  never seeded). PURE. */
+function cardOwnsRecipe(spec) {
+	return (spec.fields ?? []).some((f) => f.name === "recipe");
+}
 /** The axis groups in declaration order: features.variant_groups'
 *  key order when the door serves it, else the rows' distinct groups
-*  in first-seen order. Empty group names never ride. */
+*  in first-seen order. Empty group names never ride. The Recipe
+*  group yields when the card owns its own recipe field (the
+*  recipe-yield law above). */
 function axisGroups(spec) {
 	const rows = spec.variants ?? [];
 	const groups = [];
@@ -95,6 +108,7 @@ function axisGroups(spec) {
 		for (const g of declared) if (g !== "" && !groups.includes(g)) groups.push(g);
 	}
 	for (const v of rows) if (v.group !== "" && !groups.includes(v.group)) groups.push(v.group);
+	if (cardOwnsRecipe(spec)) return groups.filter((g) => g !== "Recipe");
 	return groups;
 }
 /** The variant_groups contract's keys, in served order (the door
@@ -199,6 +213,57 @@ function axisPickPatch(spec, row) {
 		if (composing.length > 0) patch[axisKey(g)] = composing[0].id;
 		else patch[axisKey(g)] = "";
 	}
+	return patch;
+}
+/** Heal a bench POISONED by the double-recipe era (the recipe-yield
+*  law's migration half): when the card owns its recipe field, a held
+*  `recipe` value naming a FAMILY recipe row (`default`, `realism` —
+*  stamped by the old axis seed) is not a card recipe. Fall it back
+*  to the field default so the next Run patches the healed value and
+*  the bench converges. Judged against the field's own options when
+*  the emission carries them; option-less emissions pass through
+*  untouched (never refuse on a guess). PURE. */
+function healOwnedRecipe(spec, values) {
+	if (!cardOwnsRecipe(spec)) return values;
+	const field = (spec.fields ?? []).find((f) => f.name === "recipe");
+	const cur = values["recipe"];
+	if (typeof cur !== "string" || cur === "") return values;
+	const opts = (field?.options ?? []).map((o) => typeof o === "string" ? o : o.value);
+	if (opts.length > 0 && !opts.includes(cur)) {
+		const next = { ...values };
+		if (field?.default !== void 0 && field.default !== null) next["recipe"] = field.default;
+		else delete next["recipe"];
+		return next;
+	}
+	return values;
+}
+/** A model switch's full value patch (the stale-variant cure,
+*  operator 2026-09-14: model anima + variant turbo refused at
+*  compose — a switch that keeps the old family's axes is a broken
+*  stage). Every axis re-seeds to its FIRST row re-pointing at the
+*  new model (else its first composing row), and the picked rows'
+*  defaults overlay rides (raw → {model, steps, cfg} — the pick
+*  law, same as axisPickPatch). The caller writes every key through
+*  onEdit. PURE. */
+function modelSwitchPatch(spec, model) {
+	const patch = { model };
+	const groups = axisGroups(spec);
+	const active = {};
+	for (const g of groups) {
+		const composing = composingRows(spec, g, active);
+		if (composing.length === 0) {
+			patch[axisKey(g)] = "";
+			active[g] = "";
+			continue;
+		}
+		const row = composing.find((r) => {
+			return (typeof r.defaults["model"] === "string" && r.defaults["model"] !== "" ? r.defaults["model"] : r.route) === model;
+		}) ?? composing[0];
+		Object.assign(patch, row.defaults);
+		patch[axisKey(g)] = row.id;
+		active[g] = row.id;
+	}
+	patch["model"] = model;
 	return patch;
 }
 /** Seed the axis keys for a fresh stage (the catalog's first-declared
@@ -1086,7 +1151,9 @@ function ModelAxes({ spec, values, onEdit }) {
 		"aria-label": "Model",
 		value: typeof values["model"] === "string" && values["model"] !== "" ? values["model"] : typeof spec.model === "string" && spec.model !== "" ? spec.model : models[0] ?? "",
 		onChange: (e) => {
-			onEdit("model", e.target.value);
+			const m = e.target.value;
+			const patch = modelSwitchPatch(spec, m);
+			for (const [k, v] of Object.entries(patch)) onEdit(k, v);
 		}
 	}, models.map((m) => createElement("option", {
 		key: m,
@@ -1826,4 +1893,4 @@ function makeLabelSprite(text, color, worldHeight) {
 	return sprite;
 }
 //#endregion
-export { ASSET_DRAG_MIME, CARD_SLOTS, CardForm, InputSquare, ModelAxes, ModifiersSection, SourceRow, SpecAtom, SpecFieldRow, SpecSliderAtom, TriStateAtom, WirePickerModal, activeRowId, activeVariantId, axisGroups, axisKey, axisPickPatch, composingRows, fetchCardCatalog, fetchFormSpec, fetchFormsTable, fieldVisible, groupFields, inputEdgeOf, isImageUrl, isOptionKind, makeLabelSprite, modOwnedFields, modelChoices, mountStage3D, quantRowsFor, readAsDataUrl, rowsFor, seedAxisValues, specDefaults, specPatch, uploadInputFile, useFormSpec, useSquareProvider, variantGroupsContract, variantRows };
+export { ASSET_DRAG_MIME, CARD_SLOTS, CardForm, InputSquare, ModelAxes, ModifiersSection, SourceRow, SpecAtom, SpecFieldRow, SpecSliderAtom, TriStateAtom, WirePickerModal, activeRowId, activeVariantId, axisGroups, axisKey, axisPickPatch, cardOwnsRecipe, composingRows, fetchCardCatalog, fetchFormSpec, fetchFormsTable, fieldVisible, groupFields, healOwnedRecipe, inputEdgeOf, isImageUrl, isOptionKind, makeLabelSprite, modOwnedFields, modelChoices, modelSwitchPatch, mountStage3D, quantRowsFor, readAsDataUrl, rowsFor, seedAxisValues, specDefaults, specPatch, uploadInputFile, useFormSpec, useSquareProvider, variantGroupsContract, variantRows };

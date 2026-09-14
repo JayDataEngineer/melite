@@ -247,9 +247,23 @@ export function specPatch(fields: SpecField[], values: SpecValues, held: SpecVal
 //    list dropping seedvr2's and qwen's Recipe/Precision axes). PURE
 //    projections only; the selects render in form.tsx's ModelAxes. ───
 
+/** THE RECIPE-YIELD LAW (operator, 2026-09-14: "IMG GEN UI CARD
+ *  HAS TWO RECIPES"): the card's own `recipe` schema field and the
+ *  family matrix's `Recipe` axis group share the `recipe` values key
+ *  — two selects writing one key (the family's pick clobbers the
+ *  card's, and the axis seed stamps `default` where the card catalog
+ *  only knows `standard/...`). When the card declares its own recipe
+ *  field, the card OWNS the name: the family axis yields (hidden,
+ *  never seeded). PURE. */
+export function cardOwnsRecipe(spec: FormSpecDoc): boolean {
+  return (spec.fields ?? []).some((f) => f.name === 'recipe')
+}
+
 /** The axis groups in declaration order: features.variant_groups'
  *  key order when the door serves it, else the rows' distinct groups
- *  in first-seen order. Empty group names never ride. */
+ *  in first-seen order. Empty group names never ride. The Recipe
+ *  group yields when the card owns its own recipe field (the
+ *  recipe-yield law above). */
 export function axisGroups(spec: FormSpecDoc): string[] {
   const rows = spec.variants ?? []
   const groups: string[] = []
@@ -260,6 +274,7 @@ export function axisGroups(spec: FormSpecDoc): string[] {
   for (const v of rows) {
     if (v.group !== '' && !groups.includes(v.group)) groups.push(v.group)
   }
+  if (cardOwnsRecipe(spec)) return groups.filter((g) => g !== 'Recipe')
   return groups
 }
 
@@ -387,6 +402,64 @@ export function axisPickPatch(spec: FormSpecDoc, row: VariantRow): SpecValues {
   return patch
 }
 
+/** Heal a bench POISONED by the double-recipe era (the recipe-yield
+ *  law's migration half): when the card owns its recipe field, a held
+ *  `recipe` value naming a FAMILY recipe row (`default`, `realism` —
+ *  stamped by the old axis seed) is not a card recipe. Fall it back
+ *  to the field default so the next Run patches the healed value and
+ *  the bench converges. Judged against the field's own options when
+ *  the emission carries them; option-less emissions pass through
+ *  untouched (never refuse on a guess). PURE. */
+export function healOwnedRecipe(spec: FormSpecDoc, values: SpecValues): SpecValues {
+  if (!cardOwnsRecipe(spec)) return values
+  const field = (spec.fields ?? []).find((f) => f.name === 'recipe')
+  const cur = values['recipe']
+  if (typeof cur !== 'string' || cur === '') return values
+  const opts = (field?.options ?? []).map((o) => typeof o === 'string' ? o : o.value)
+  if (opts.length > 0 && !opts.includes(cur)) {
+    const next = { ...values }
+    if (field?.default !== undefined && field.default !== null) next['recipe'] = field.default
+    else delete next['recipe']
+    return next
+  }
+  return values
+}
+/** A model switch's full value patch (the stale-variant cure,
+ *  operator 2026-09-14: model anima + variant turbo refused at
+ *  compose — a switch that keeps the old family's axes is a broken
+ *  stage). Every axis re-seeds to its FIRST row re-pointing at the
+ *  new model (else its first composing row), and the picked rows'
+ *  defaults overlay rides (raw → {model, steps, cfg} — the pick
+ *  law, same as axisPickPatch). The caller writes every key through
+ *  onEdit. PURE. */
+export function modelSwitchPatch(spec: FormSpecDoc, model: string): SpecValues {
+  const patch: SpecValues = { model }
+  const groups = axisGroups(spec)
+  const active: Record<string, string | undefined> = {}
+  for (const g of groups) {
+    // THE CHAIN (one direction, the activeRowId law): only composing
+    // rows are pickable — when nothing composes (raw owns no quant
+    // cells) the axis rests EMPTY, never a foreign row (int8 belongs
+    // to turbo; seating it under raw is turbo-for-anima again).
+    const composing = composingRows(spec, g, active)
+    if (composing.length === 0) {
+      patch[axisKey(g)] = ''
+      active[g] = ''
+      continue
+    }
+    const match = composing.find((r) => {
+      const rePoint = typeof r.defaults['model'] === 'string' && r.defaults['model'] !== ''
+        ? r.defaults['model'] as string : r.route
+      return rePoint === model
+    })
+    const row = match ?? composing[0]
+    Object.assign(patch, row.defaults)
+    patch[axisKey(g)] = row.id
+    active[g] = row.id
+  }
+  patch['model'] = model
+  return patch
+}
 /** Seed the axis keys for a fresh stage (the catalog's first-declared
  *  law: each axis defaults to its FIRST composing row). Held values
  *  win (a reopened stage never re-seeds). */

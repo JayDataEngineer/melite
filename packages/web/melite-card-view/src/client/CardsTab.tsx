@@ -35,7 +35,7 @@ import { Button, IconLoadingOutline16, IconPlayOutline16, IconStopFill16, IconTr
 import { CardDrill } from './card-drill.tsx'
 import { MediaDrilldown, type MediaDrilldownItem } from '@melite-plugin/dsh-gallery/drilldown'
 import type { StageViewOwnerProps } from './types.ts'
-import { fetchCardCatalog, fetchFormSpec, seedAxisValues, specDefaults, specPatch, SpecForm, useSquareProvider } from './spec-form.tsx'
+import { fetchCardCatalog, fetchFormSpec, healOwnedRecipe, seedAxisValues, specDefaults, specPatch, SpecForm, useSquareProvider } from './spec-form.tsx'
 import { fetchFormsTable } from '@melite/card-base/wire'
 import { StudioShell } from '@melite/card-base/shell'
 
@@ -56,7 +56,7 @@ function loadFormsEdgeMeta(): Promise<Record<string, { inputs?: Record<string, s
   return formsEdgeMetaPromise
 }
 import type { CatalogCard, FormSpecDoc, ModifierKind, SpecValues } from './spec-form.tsx'
-import { paramFields, patchStageParams } from './draft.ts'
+import { paramFields, patchStageOutcome, patchStageParams } from './draft.ts'
 import css from './card.module.css'
 import type { CardsBenchValue, CardsDraftValue, CardsRunValue, BenchStageRow } from './cards-resource.ts'
 import { CARDS_BENCH_ADDRESS, cardsRunAddress, fetchBench, fetchLatestRunForDraft, freshStageRow, observeRunOutcome, openCardsResource, parseCardsAddress, reconcileBenchRuns, restoreRunToBench, uploadInputFile } from './cards-resource.ts'
@@ -769,8 +769,10 @@ function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRemoved, 
         // THE AXIS SEED (the pass-along law): a reopened stage holds
         // its keys (held wins); a fresh stage gets the first-declared
         // law (variant = first row, quant = its first cell, model =
-        // the row's re-point ?? the spec family).
-        setValues({ ...specDefaults(doc.fields), ...seedAxisValues(doc, held), ...held })
+        // the row's re-point ?? the spec family). healOwnedRecipe
+        // migrates double-recipe-era benches (family `default` held
+        // where the card catalog knows standard/…).
+        setValues(healOwnedRecipe(doc, { ...specDefaults(doc.fields), ...seedAxisValues(doc, held), ...held }))
         setLoaded(true)
         reportSurface(doc.size === 'huge' ? 'huge' : '')
       })
@@ -1022,12 +1024,12 @@ function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRemoved, 
                 className: css.drillRunBtn, type: 'button',
                 'aria-label': 'Stop run', 'data-testid': 'drill-stop',
                 onClick: () => { onStop() },
-              }, h(IconStopFill16, { size: 16 }))
+              }, h(IconStopFill16, { size: 16 }), h('span', null, 'Stop'))
             : h('button', {
                 className: css.drillRunBtn, type: 'button',
                 'aria-label': 'Run stage', 'data-testid': 'drill-run',
                 onClick: () => { void run() },
-              }, h(IconPlayOutline16, { size: 16 })),
+              }, h(IconPlayOutline16, { size: 16 }), h('span', null, 'Run')),
         ),
       ),
       preview: h('div', { className: css.outputs },
@@ -1894,9 +1896,20 @@ export function CardsTab(props: CardsTabProps): ReturnType<typeof h> {
       else {
         setRunning(false)
         setLocalRunError(res.refused)
+        // THE REFUSAL CARRY (operator 2026-09-14: the compose refusal
+        // "needs to be in drill down card as well"): a refused start
+        // writes the row FAILED with the reason — the tile AND the
+        // open drill's failure face read the same row, so the why
+        // lands where the Run was pressed, not just the tab top.
+        const draftId = snapshot.value.draftId
+        const stageId = stage.id
+        const error = res.refused
+        void patchStageOutcome(draftId, stageId, { runStatus: 'failed', result: { error } })
+          .then(() => { touchBench() })
+          .catch(() => {})
       }
     })
-  }, [snapshot, onStarted])
+  }, [snapshot, onStarted, touchBench])
   // THE TILE CHROME'S STOP + REMOVE (the chat-input law's verbs):
   // stop rides the run-wire's cancel door for the row's live run;
   // remove rides the bench's CAS door (the drill's own verb, lifted
@@ -1942,6 +1955,14 @@ export function CardsTab(props: CardsTabProps): ReturnType<typeof h> {
       else {
         setRunning(false)
         setLocalRunError(res.refused)
+        // THE REFUSAL CARRY (same law as the bench drill): the
+        // refused draft-stage start lands on its row, so the open
+        // drill's failure face reads the why.
+        const draftId = value.draftId
+        const stageId = target.id
+        const error = res.refused
+        void patchStageOutcome(draftId, stageId, { runStatus: 'failed', result: { error } })
+          .catch(() => {})
       }
     })
   }, [snapshot, onStarted])

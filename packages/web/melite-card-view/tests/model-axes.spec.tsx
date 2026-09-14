@@ -315,3 +315,96 @@ test('seedAxisValues seeds EVERY axis key (variant/quant/recipe — the group id
   expect(seedQ['recipe']).toBe('default')
   expect(seedQ['model']).toBe('qwen-img-edit-2511-lightning4')
 })
+
+// ── the recipe-yield law (operator 2026-09-14: "IMG GEN UI CARD HAS
+//    TWO RECIPES") — the card's own `recipe` field and the family
+//    Recipe axis share one values key; the card owns the name. ─────
+
+// image-gen serves BOTH: the card recipe field (standard/…) AND the
+// krea-2 family Recipe rows (realism/default) — the double select.
+const IMGGEN: FormSpecDoc = {
+  ...KREA,
+  fields: [
+    ...KREA.fields,
+    { name: 'recipe', label: 'Recipe', type: 'select', default: 'standard', group: 'sampling', options: ['standard', 'fast_draft', 'cinematic'] },
+  ],
+  features: {
+    variant_groups: {
+      Variant: { label: 'Variant' },
+      Quant: { label: 'Quant' },
+      Recipe: { label: 'Recipe', default: 'default' },
+    },
+  },
+  variants: [
+    ...(KREA.variants ?? []),
+    { id: 'realism', label: 'Realism', group: 'Recipe', defaults: {}, route: '', hint: 'the realism one-click' },
+    { id: 'default', label: 'Default', group: 'Recipe', defaults: {}, route: '', hint: 'no extra stamps' },
+  ],
+}
+
+test('recipe-yield: the family Recipe axis hides when the card owns a recipe field', async () => {
+  const { axisGroups, cardOwnsRecipe } = await import('../src/client/spec-form.tsx')
+  expect(cardOwnsRecipe(IMGGEN)).toBe(true)
+  expect(cardOwnsRecipe(KREA)).toBe(false)
+  // the family axis is gone — ONE recipe (the card's own field)
+  expect(axisGroups(IMGGEN)).toEqual(['Variant', 'Quant'])
+  // …and never seeded (the old seed stamped family `default` where
+  // the card catalog only knows standard/fast_draft/cinematic)
+  const seed = seedAxisValues(IMGGEN, {})
+  expect(seed['recipe']).toBeUndefined()
+  expect(seed['variant']).toBe('turbo')
+  // cards without their own recipe field keep the family axis
+  expect(axisGroups(QWEN)).toEqual(['Variant', 'Quant', 'Recipe'])
+})
+
+test('recipe-yield: the drill renders ONE Recipe — the card field, never the family axis', async () => {
+  const state = { values: { ...seedAxisValues(IMGGEN, {}), recipe: 'standard' } as SpecValues }
+  const onEdit = (name: string, v: unknown): void => { state.values = { ...state.values, [name]: v } }
+  render(createElement(SpecForm, {
+    spec: IMGGEN,
+    fields: IMGGEN.fields,
+    values: state.values,
+    onEdit,
+  }))
+  // exactly one Recipe combobox — the card's own field
+  expect(screen.getAllByLabelText('Recipe')).toHaveLength(1)
+  expect((screen.getByLabelText('Recipe') as HTMLSelectElement).value).toBe('standard')
+})
+
+test('healOwnedRecipe: double-recipe-era benches converge (family `default` → card default)', async () => {
+  const { healOwnedRecipe } = await import('../src/client/spec-form.tsx')
+  // a bench holding the family's `default` heals to the card default
+  expect(healOwnedRecipe(IMGGEN, { recipe: 'default' })['recipe']).toBe('standard')
+  // a lawful card recipe passes through untouched
+  expect(healOwnedRecipe(IMGGEN, { recipe: 'cinematic' })['recipe']).toBe('cinematic')
+  // cards without their own recipe field never heal
+  expect(healOwnedRecipe(QWEN, { recipe: 'default' })['recipe']).toBe('default')
+})
+
+// ── the stale-variant cure (operator 2026-09-14: model anima +
+//    variant turbo refused at compose) ─────────────────────────────
+
+test('modelSwitchPatch: a model switch re-seeds every axis (never the old family\'s variant)', async () => {
+  const { modelSwitchPatch } = await import('../src/client/spec-form.tsx')
+  // krea-2 → krea-2-raw: variant/quant follow + the overlay rides
+  expect(modelSwitchPatch(KREA, 'krea-2-raw')).toEqual({
+    model: 'krea-2-raw', steps: 52, cfg: 3.5, variant: 'raw', quant: '',
+  })
+  // …and back: turbo re-seats with its cell
+  expect(modelSwitchPatch(KREA, 'krea-2')).toMatchObject({ model: 'krea-2', variant: 'turbo', quant: 'int8' })
+})
+
+test('switching the Model select resets the Variant axis (the drill never holds turbo-for-anima)', async () => {
+  const state = { values: { prompt: 'a cat', model: 'krea-2', variant: 'turbo', quant: 'int8' } as SpecValues }
+  const onEdit = (name: string, v: unknown): void => { state.values = { ...state.values, [name]: v } }
+  render(createElement(SpecForm, {
+    spec: KREA,
+    fields: KREA.fields,
+    values: state.values,
+    onEdit,
+  }))
+  fireEvent.change(screen.getByLabelText('Model'), { target: { value: 'krea-2-raw' } })
+  await waitFor(() => { expect(state.values['model']).toBe('krea-2-raw') })
+  expect(state.values['variant']).toBe('raw')
+  expect(state.values['quant']).toBe('')
+})

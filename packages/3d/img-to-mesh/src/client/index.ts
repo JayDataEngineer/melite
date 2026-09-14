@@ -183,12 +183,12 @@ export function ImgToMeshStudio(props: StageViewOwnerProps): ReturnType<typeof h
                   className: css.drillRunBtn, type: 'button',
                   'aria-label': 'Stop run', 'data-testid': 'studio-stop',
                   onClick: onStop,
-                }, h(IconStopFill16, { size: 16 }))
+                }, h(IconStopFill16, { size: 16 }), h('span', null, 'Stop'))
               : h('button', {
                   className: css.drillRunBtn, type: 'button',
                   'aria-label': 'Run stage', 'data-testid': 'studio-run',
                   onClick: run,
-                }, h(IconPlayOutline16, { size: 16 })),
+                }, h(IconPlayOutline16, { size: 16 }), h('span', null, 'Run')),
           ),
           ),
           // RIGHT — the mesh stage (the shared viewport, the old Stage law)

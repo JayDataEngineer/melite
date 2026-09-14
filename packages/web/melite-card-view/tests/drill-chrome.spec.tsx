@@ -6,10 +6,12 @@
  * button… forward the comfyui progress webhooks like before"). Three
  * pins:
  *
- *   1. the drill's run gesture is the TILE's icon affordance — play
- *      at rest (aria 'Run stage', testid drill-run), stop mid-run
- *      (aria 'Stop run', drill-stop); the wide text Button and the
- *      'Remove stage' row are RETIRED (removal rides the tile trash).
+ *   1. the drill's run gesture is a LABELED button at the params
+ *      rail's sticky footer — play glyph + 'Run' at rest (aria 'Run
+ *      stage', testid drill-run), stop glyph + 'Stop' mid-run (aria
+ *      'Stop run', drill-stop); the operator retired the 28px
+ *      icon-only ghost circle as too small. The 'Remove stage' row
+ *      stays retired (removal rides the tile trash).
  *   2. the tile carries the live percent beside its spinner while
  *      the row runs (the tap fold, observer carry).
  *   3. the drill carries the activity line + percent while running.
@@ -97,7 +99,7 @@ afterEach(() => {
   vi.unstubAllGlobals()
 })
 
-test('the drill runs on the icon gesture; the remove row is retired', async () => {
+test('the drill runs on the labeled gesture; the remove row is retired', async () => {
   stubWire()
   const user = userEvent.setup()
   mount()
@@ -106,10 +108,10 @@ test('the drill runs on the icon gesture; the remove row is retired', async () =
   await screen.findByText('Prompt', {}, { timeout: 4000 })
   const drill = document.querySelector('div[class*="zoomDetail"]') as HTMLElement
   expect(drill).toBeTruthy()
-  // the icon gesture: aria-named play button, NO text 'Run' button
+  // the labeled gesture: aria-named play button carrying the word 'Run'
   const run = within(drill).getByRole('button', { name: 'Run stage' })
   expect(run.getAttribute('data-testid')).toBe('drill-run')
-  expect(within(drill).queryByRole('button', { name: 'Run' })).toBeNull()
+  expect(run.textContent).toContain('Run')
   // the RETIRED remove row: no button anywhere in the drill
   expect(within(drill).queryByRole('button', { name: 'Remove stage' })).toBeNull()
 })

@@ -147,25 +147,24 @@
 
 /* THE DRILL RUN GESTURE (2026-09-13, hour-25 follow-up — the
  * operator: "the run button should be at the bottom right of
- * parameters. Also, it's pure white and not a play button"): the
- * first cut invented a filled brand circle — wrong twice (seat +
- * face). The button now rides the params rail's sticky bottom-right
- * and wears the TILE's own ghost affordance (bg-mix + border +
- * secondary icon, brand on hover) — one gesture language, every
- * face, no invented fills. */
+ * parameters. Also, it's pure white and not a play button"; then:
+ * "it is small, and it has a weird background for the whole row"):
+ * the ghost circle (28px icon-only) was too small and its gradient
+ * fade read as a dirty stripe. The row is now a clean sticky footer
+ * (solid base + hairline top border, no fade) and the button a
+ * LABELED gesture (play/stop glyph + Run/Stop word, 36px) — still
+ * the tile's ghost face (bg-mix + border + secondary label, brand
+ * on hover), no invented fills. */
 .drillRunRow {
   align-items: center;
-  background: linear-gradient(
-    to top,
-    var(--dsw-alias-bg-base) 30%,
-    color-mix(in srgb, var(--dsw-alias-bg-base) 60%, transparent)
-  );
+  background: var(--dsw-alias-bg-base);
+  border-top: 1px solid var(--dsw-alias-border-l2);
   bottom: 0;
   display: flex;
   gap: 8px;
   justify-content: flex-end;
-  margin-top: 4px;
-  padding: 8px 0 2px;
+  margin-top: 8px;
+  padding: 10px 0 4px;
   position: sticky;
   z-index: 1;
 }
@@ -173,16 +172,18 @@
   align-items: center;
   background: color-mix(in srgb, var(--dsw-alias-bg-base) 72%, transparent);
   border: 1px solid var(--dsw-alias-border-l2);
-  border-radius: 999px;
+  border-radius: 8px;
   color: var(--dsw-alias-label-secondary);
   cursor: pointer;
   display: inline-flex;
-  height: 28px;
+  font-size: 13px;
+  font-weight: 600;
+  gap: 8px;
+  height: 36px;
   justify-content: center;
-  padding: 0;
+  padding: 0 16px;
   transition: color var(--ds-transition-duration, 120ms) var(--ds-ease-in-out, ease),
     border-color var(--ds-transition-duration, 120ms) var(--ds-ease-in-out, ease);
-  width: 28px;
 }
 .drillRunBtn:hover {
   border-color: var(--dsw-alias-border-l4);
