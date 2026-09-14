@@ -9,7 +9,7 @@ import { describe, it, beforeAll } from "vitest";
 import assert from "node:assert/strict";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { mkdtempSync, writeFileSync } from "node:fs";
+import { writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { GraphBuilder } from "../src/graph.ts";
 import {
@@ -23,6 +23,7 @@ import { loadFacts } from "../src/facts.ts";
 import { deriveDefaults } from "../src/graph.ts";
 import { vocabulary } from "../src/vocab.ts";
 import {
+
   getModel, registryIds, registryModel,
 } from "../../comfyui-cordis/src/models/models.ts";
 

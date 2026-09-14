@@ -286,12 +286,17 @@ describe("cardVerbs (the family-scoped mount)", () => {
 });
 
 describe("formSpec (the wire row battery)", () => {
+  // THE ENVELOPE FIXTURE (the parameter audit, 2026-09-14): the
+  // carrier mimics schemastery's own wire form — .dict for the
+  // registry walls, .toJSON() for the envelope the spec door serves.
   const carrier = (dict: Record<string, Record<string, unknown>>): ModFields => {
     const f = ((v: unknown): Record<string, unknown> => v as Record<string, unknown>) as unknown as {
       (v: unknown): Record<string, unknown>;
       dict: Record<string, Record<string, unknown>>;
+      toJSON: () => unknown;
     };
     f.dict = dict;
+    f.toJSON = () => ({ uid: 0, refs: { 0: { type: "object", dict } } });
     return f as unknown as ModFields;
   };
   const cu = (value: unknown): Record<string, unknown> => ({ type: "const", value });
@@ -328,94 +333,58 @@ describe("formSpec (the wire row battery)", () => {
     return svc;
   };
 
+  // THE ENVELOPE (the parameter audit, 2026-09-14): formSchemas is
+  //  the one serving seam — the card's own toJSON plus the family-
+  //  scoped mod contracts' toJSONs. The flat row walk, the frozen
+  //  15-key shape, and the server-side presentation derivation are
+  //  GONE: fieldsOf derives presentation client-side (pinned in
+  //  card-base). The server pins: passthrough verbatim, family
+  //  scoping on mods only, and the carrier ?? schema walk.
   it("an unknown card serves null", async () => {
-    assert.equal((await boot()).formSpec("ghost", "fam1"), null);
+    assert.equal((await boot()).formSchemas("ghost", "fam1"), null);
   });
 
-  it("a dict-less schema serves the empty form (the carrier ?? walk)", async () => {
+  it("a toJSON-less carrier serves schema null (the carrier ?? walk)", async () => {
     const svc = await boot();
     svc.registerCard(card());
-    const out = svc.formSpec("card1", "fam1")!;
-    assert.deepEqual(out.fields, []);
-    assert.equal(out.form, "card1");
-    assert.equal(out.service, "fam1");
+    const out = svc.formSchemas("card1", "fam1")!;
+    assert.equal(out.schema, null, "a plain function schema carries no envelope");
+    assert.deepEqual(out.mods, {});
   });
 
-  it("rows carry the frozen shape; the other-family knob never rides", async () => {
+  it("the envelope rides the carrier's own toJSON, verbatim", async () => {
     const svc = await bootForm();
-    const out = svc.formSpec("card1", "fam1")!;
-    const byName = Object.fromEntries((out.fields as Record<string, unknown>[]).map((f) => [(f as Record<string, unknown>)["name"], f]));
-    assert.ok(!("otherfam" in byName), "the families filter skips");
-    const prompt = byName["prompt"] as Record<string, unknown>;
-    assert.equal(prompt["label"], "the prompt");
-    assert.equal(prompt["default"], "hi");
-    assert.equal(prompt["group"], "gen");
-    assert.equal(prompt["zone"], "", "zone never wires (lives in schema_groups)");
-    assert.equal(prompt["order"], 2);
-    assert.equal(prompt["required"], true);
-    assert.equal(prompt["columns"], 2);
-    assert.equal(prompt["width"], 30);
-    assert.equal(prompt["placeholder"], "p");
-    assert.equal(prompt["tooltip"], "t");
-    assert.equal(prompt["visible_when"], "x>1");
-    const groups = out.schema_groups as Record<string, unknown>[];
-    assert.equal(groups.length, 2, "the groupless knobs form the '' group");
-    const gen = groups.find((g) => g["id"] === "gen")!;
-    assert.equal(gen["id"], "gen");
-    assert.equal(gen["label"], "Gen", "group labels capitalize");
-    assert.equal(gen["zone"], "zone-a", "the FIRST declaration wins the zone");
-    const members = gen["fields"] as Record<string, unknown>[];
-    assert.equal(members.length, 2, "prompt + second ride the gen group");
-    assert.ok(!("group" in members[0]!) && !("zone" in members[0]!), "members drop the flat keys");
+    const out = svc.formSchemas("card1", "fam1")!;
+    const env = out.schema as { uid: number; refs: Record<string, { type: string; dict: Record<string, Record<string, unknown>> }> };
+    assert.equal(env.uid, 0);
+    const dict = env.refs["0"]!.dict;
+    // the authored nodes ride as-authored — every node the client
+    // battery (card-base fieldsOf) derives from:
+    // wtype hints under meta.extra, unions with their lists, meta
+    // defaults, min/max/step facts
+    assert.equal(dict["textarea"]!.meta!["extra"]!["wtype"], "textarea");
+    assert.deepEqual(dict["mode"]!.list!.map((c: { value: unknown }) => c.value), ["a", "b"]);
+    assert.equal(dict["steps"]!.meta!["min"], 1);
+    assert.equal(dict["steps"]!.meta!["max"], 8);
+    assert.equal(dict["seed"]!.meta!["step"], 1);
+    assert.equal(dict["prompt"]!.meta!["default"], "hi");
+    assert.equal(dict["prompt"]!.meta!["description"], "the prompt");
+    assert.equal(dict["prompt"]!.meta!["extra"]!["required"], true);
+    assert.deepEqual(dict["picked"]!.meta!["extra"]!["options"], ["x", "y"]);
+    // the whole card dict serves — no families filter on the card's
+    // own envelope (family scoping is the MOD contracts' law)
+    assert.ok("otherfam" in dict);
   });
 
-  it("the wire-type battery (declared, select, seed, slider, atoms, fallback)", async () => {
-    const svc = await bootForm();
-    const out = svc.formSpec("card1", "fam1")!;
-    const byName = Object.fromEntries((out.fields as Record<string, unknown>[]).map((f) => [(f as Record<string, unknown>)["name"], f])) as Record<string, Record<string, unknown>>;
-    assert.equal(byName["textarea"]!["type"], "textarea", "declared wtype wins");
-    assert.equal(byName["plain"]!["type"], "text", "an empty wtype falls through");
-    assert.equal(byName["mode"]!["type"], "select");
-    assert.deepEqual(byName["mode"]!["options"], ["a", "b"]);
-    assert.equal(byName["seed"]!["type"], "seed");
-    assert.equal(byName["seed"]!["step"], null, "the seed identity wires through the type");
-    assert.equal(byName["slider"]!["type"], "slider");
-    assert.equal(byName["flag"]!["type"], "boolean");
-    assert.equal(byName["files"]!["type"], "loras");
-    assert.equal(byName["blob"]!["type"], "text", "unknown atoms fall back to text");
-    assert.equal(byName["bareunion"]!["type"], "text", "a list-less union is no vocabulary");
-    assert.equal(byName["typeless"]!["type"], "text", "a typeless node reads as a string");
-    assert.equal(byName["rawnull"]!["type"], "text", "a metaless nullable unwraps to its inner");
-    assert.equal(byName["rawnull"]!["label"], "rawnull", "no outer meta, no outer label — the name stands");
-    assert.equal(byName["strange"]!["type"], "text", "a valueless union is no vocabulary");
-    assert.deepEqual(byName["nullpair"]!["options"], [], "an all-null union serves no options");
-    assert.equal(byName["steps"]!["min"], 1);
-    assert.equal(byName["steps"]!["max"], 8);
-  });
-
-  it("nullable unwraps (outer meta wins); defaults condition honestly", async () => {
-    const svc = await bootForm();
-    const out = svc.formSpec("card1", "fam1")!;
-    const byName = Object.fromEntries((out.fields as Record<string, unknown>[]).map((f) => [(f as Record<string, unknown>)["name"], f])) as Record<string, Record<string, unknown>>;
-    assert.equal(byName["nullable"]!["type"], "text");
-    assert.equal(byName["nullable"]!["label"], "outer", "the outer description wins the wrap");
-    assert.equal(byName["metaflag"]!["required"], true, "meta.required mounts too");
-    assert.equal(byName["emptydef"]!["default"], null, "an empty default wires null");
-    assert.equal(byName["nulled"]!["default"], null, "the [] + null-default arm wires null");
-    assert.deepEqual(byName["picked"]!["options"], ["x", "y"], "declared options win");
-    assert.deepEqual(byName["prompt"]!["options"], [], "optionless rows wire the empty list");
-  });
-
-  it("absorbed mod fields ride after the card's own (family-scoped)", async () => {
+  it("absorbed mod contracts ride their own envelopes, family-scoped", async () => {
     const svc = await bootForm();
     svc.registerPack({ pack: "loras", fields: fields({ strength: { type: "number", meta: { min: 0, max: 2 } } }) });
     svc.registerFlavor({ pack: "loras", families: ["fam1"] });
     svc.registerFlavor({ pack: "loras", families: ["other"] });
-    const out = svc.formSpec("card1", "fam1")!;
-    const names = (out.fields as Record<string, unknown>[]).map((f) => (f as Record<string, unknown>)["name"]);
-    assert.equal(names[names.length - 1], "strength", "absorbed rows ride last");
-    const other = svc.formSpec("card1", "unboarded")!;
-    assert.ok(!(other.fields as Record<string, unknown>[]).some((f) => (f as Record<string, unknown>)["name"] === "strength"));
+    const out = svc.formSchemas("card1", "fam1")!;
+    assert.deepEqual(Object.keys(out.mods), ["loras"], "the family-boarded pack rides");
+    const unboarded = svc.formSchemas("card1", "unboarded")!;
+    assert.ok(!("loras" in unboarded.mods), "the other family never sees the pack");
   });
 });
 

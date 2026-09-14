@@ -18,6 +18,7 @@ import { afterEach, expect, test, vi } from 'vitest'
 import { createElement } from 'react'
 
 import { CardsTab } from '../src/client/CardsTab.tsx'
+import { schemaEnvelope } from '../src/client/spec-form.tsx'
 import type { CardsBenchValue } from '../src/client/cards-resource.ts'
 
 const BENCH: CardsBenchValue = {
@@ -62,11 +63,11 @@ function stubWire(opts?: StubOpts): { calls: Call[] } {
     if (path.includes('/v1/form-spec')) {
       const doc = {
         form: 'image-gen', genre: 'image', engine: 'comfyui',
-        fields: [
-          { name: 'prompt', label: 'Prompt', type: 'textarea' },
-          { name: 'steps', label: 'Steps', type: 'number', default: 8, min: 1, max: 150 },
-          { name: 'turbo', label: 'Turbo', type: 'switch', default: false },
-        ],
+        schema: schemaEnvelope({
+          prompt: { type: 'string', meta: { description: 'Prompt', extra: { wtype: 'textarea' } } },
+          steps: { type: 'number', meta: { description: 'Steps', default: 8, min: 1, max: 150, step: 1, extra: { wtype: 'number' } } },
+          turbo: { type: 'boolean', meta: { description: 'Turbo', default: false } },
+        }),
       }
       return new Response(JSON.stringify(doc), { status: 200, headers: { 'content-type': 'application/json' } })
     }
@@ -196,10 +197,10 @@ test('a patch refusal names itself and the run never fires', async () => {
   const { calls } = stubWire()
   vi.stubGlobal('fetch', async (u: unknown, init?: RequestInit): Promise<Response> => {
     if (String(u).includes('/v1/form-spec')) {
-      const doc = { form: 'image-gen', fields: [
-        { name: 'prompt', label: 'Prompt', type: 'textarea' },
-        { name: 'steps', label: 'Steps', type: 'number', default: 8, min: 1, max: 150 },
-      ] }
+      const doc = { form: 'image-gen', schema: schemaEnvelope({
+        prompt: { type: 'string', meta: { description: 'Prompt', extra: { wtype: 'textarea' } } },
+        steps: { type: 'number', meta: { description: 'Steps', default: 8, min: 1, max: 150, step: 1, extra: { wtype: 'number' } } },
+      }) }
       return new Response(JSON.stringify(doc), { status: 200, headers: { 'content-type': 'application/json' } })
     }
     const frame = JSON.parse(String(init?.body)) as { rpcId: string; method: string }
@@ -262,8 +263,8 @@ test('clicking the preview seat opens the SHARED media drilldown (1:1)', async (
   vi.stubGlobal('fetch', async (url: unknown, init?: RequestInit): Promise<Response> => {
     const path = String(url)
     if (path.includes('/v1/form-spec')) {
-      return new Response(JSON.stringify({ form: 'image-gen', model: 'krea-2', fields: [
-        { name: 'prompt', label: 'Prompt', type: 'textarea' }], variants: [] }), { status: 200, headers: { 'content-type': 'application/json' } })
+      return new Response(JSON.stringify({ form: 'image-gen', model: 'krea-2', schema: schemaEnvelope({
+        prompt: { type: 'string', meta: { description: 'Prompt', extra: { wtype: 'textarea' } } } }), variants: [] }), { status: 200, headers: { 'content-type': 'application/json' } })
     }
     if (path.includes('/v1/model-catalog')) {
       return new Response(JSON.stringify({ cards: { 'image-gen': { label: 'Image Gen', genre: 'image', families: ['krea-2'] } } }), { status: 200, headers: { 'content-type': 'application/json' } })
@@ -317,10 +318,10 @@ test('✦ Agent Enhance sweeps the declared fields and writes back through the v
       }), { status: 200, headers: { 'content-type': 'application/json' } })
     }
     if (path.includes('/v1/form-spec')) {
-      return new Response(JSON.stringify({ form: 'image-gen', model: 'krea-2', fields: [
-        { name: 'prompt', label: 'Prompt', type: 'textarea' },
-        { name: 'negative_prompt', label: 'Negative Prompt', type: 'textarea' },
-      ], variants: [] }), { status: 200, headers: { 'content-type': 'application/json' } })
+      return new Response(JSON.stringify({ form: 'image-gen', model: 'krea-2', schema: schemaEnvelope({
+        prompt: { type: 'string', meta: { description: 'Prompt', extra: { wtype: 'textarea' } } },
+        negative_prompt: { type: 'string', meta: { description: 'Negative Prompt', extra: { wtype: 'textarea' } } },
+      }), variants: [] }), { status: 200, headers: { 'content-type': 'application/json' } })
     }
     if (path.includes('/v1/model-catalog')) {
       return new Response(JSON.stringify({ cards: { 'image-gen': { label: 'Image Gen', genre: 'image', families: ['krea-2'] } } }), { status: 200, headers: { 'content-type': 'application/json' } })
@@ -383,10 +384,10 @@ test('the no-clobber law: an empty negative never wipes the card\'s own', async 
       }), { status: 200, headers: { 'content-type': 'application/json' } })
     }
     if (path.includes('/v1/form-spec')) {
-      return new Response(JSON.stringify({ form: 'image-gen', model: 'krea-2', fields: [
-        { name: 'prompt', label: 'Prompt', type: 'textarea' },
-        { name: 'negative_prompt', label: 'Negative Prompt', type: 'textarea' },
-      ], variants: [] }), { status: 200, headers: { 'content-type': 'application/json' } })
+      return new Response(JSON.stringify({ form: 'image-gen', model: 'krea-2', schema: schemaEnvelope({
+        prompt: { type: 'string', meta: { description: 'Prompt', extra: { wtype: 'textarea' } } },
+        negative_prompt: { type: 'string', meta: { description: 'Negative Prompt', extra: { wtype: 'textarea' } } },
+      }), variants: [] }), { status: 200, headers: { 'content-type': 'application/json' } })
     }
     if (path.includes('/v1/model-catalog')) {
       return new Response(JSON.stringify({ cards: { 'image-gen': { label: 'Image Gen', genre: 'image', families: ['krea-2'] } } }), { status: 200, headers: { 'content-type': 'application/json' } })

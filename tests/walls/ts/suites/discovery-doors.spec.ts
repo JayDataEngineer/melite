@@ -31,13 +31,20 @@ describe("the discovery door arms (live /v1 derivation)", () => {
   it("serves the krea-2 envelope with the family-owned lora options (LORA LAW)", async () => {
     const spec = await formSpecArm("krea-2");
     assert.notEqual(spec, null, "krea-2 must resolve");
-    // The envelope shape (the frozen key set, alphabetical).
+    // The envelope shape (the parameter audit, 2026-09-14): the
+    // flat rows are gone — the schema envelope + mod_schemas +
+    // model_defaults replace fields/schema_groups/defaults.
     for (const key of [
-      "defaults", "engine", "features", "fields", "form", "genre",
-      "label", "model", "schema_groups", "service", "variants",
+      "engine", "features", "form", "genre", "label", "mod_schemas",
+      "model", "model_defaults", "schema", "service", "variants",
     ]) {
       assert.ok(key in (spec as object), `envelope key '${key}'`);
     }
+    for (const gone of ["fields", "schema_groups", "defaults"]) {
+      assert.ok(!(gone in (spec as object)), `the dead key '${gone}' never rides`);
+    }
+    const env = (spec as { schema: { uid: number; refs: object } }).schema;
+    assert.equal(typeof env.uid, "number", "the card's own toJSON rides");
     assert.equal((spec as { model: string }).model, "krea-2");
     assert.equal((spec as { engine: string }).engine, "comfyui");
     // THE LORA LAW: features.modifiers carries the lora pack whose

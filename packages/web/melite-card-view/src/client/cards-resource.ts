@@ -132,6 +132,9 @@ export interface CardsDraftValue {
   stageId: string
   intent: string
   stages: BenchStageRow[]
+  /** the draft doc's bench revision (0 when the doc carries no bench
+   *  block) — the CAS fence's expect handle for param writes. */
+  rev: number
 }
 
 declare module '@deepseek-ai/dsh-client-ui-slots' {
@@ -461,12 +464,17 @@ export function readDraft(draftId: string, stageId: string, doc: Record<string, 
     ? (doc['stages'] as unknown[]).filter((s): s is BenchStageRow =>
         typeof s === 'object' && s !== null && typeof (s as BenchStageRow)['id'] === 'string')
     : []
+  const bench = doc['bench']
+  const rev = typeof bench === 'object' && bench !== null
+    && typeof (bench as { rev?: unknown })['rev'] === 'number'
+    ? (bench as { rev: number })['rev'] : 0
   return {
     kind: 'draft',
     draftId,
     stageId,
     intent: typeof doc['intent'] === 'string' ? (doc['intent'] as string) : '',
     stages,
+    rev,
   }
 }
 

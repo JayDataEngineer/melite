@@ -303,50 +303,6 @@ function validateVerb(v: VerbRegistration): void {
  *  order; null when the node is not a closed vocabulary). The
  *  alternatives live at .list, each const carrying .value; a null
  *  const is the nullable marker, never an enum option. */
-function unionOptions(node: Record<string, unknown>): readonly string[] | null {
-  const t = String(node.type ?? '')
-  if (t !== 'union') return null
-  const list = node.list
-  if (!Array.isArray(list)) return null
-  const opts: string[] = []
-  for (const sub of list as Array<{ value?: unknown }>) {
-    if (sub?.value !== undefined && sub?.value !== null) opts.push(String(sub.value))
-  }
-  return opts.length > 0 ? opts : null
-}
-
-/** nullable(X) — a union of exactly [X, const(null)] — WIRES as X
- *  (type/label/bounds/default off the inner row; null stays a legal
- *  value at the parse level, invisible on the wire row). */
-function unwrapNullable(node: Record<string, unknown>): Record<string, unknown> {
-  if (String(node.type ?? '') !== 'union') return node
-  const list = node.list
-  if (!Array.isArray(list) || list.length !== 2) return node
-  const inner = list.find((s) => !(s && s.type === 'const' && (s as { value?: unknown }).value === null))
-  const nullArm = list.find((s) => s && s.type === 'const' && (s as { value?: unknown }).value === null)
-  if (!inner || !nullArm) return node
-  // the outer's own meta (description/default applied after the
-  // wrap) wins over the inner's
-  const outer = { ...(inner as Record<string, unknown>) }
-  const outerMeta = (node.meta ?? {}) as Record<string, unknown>
-  const innerMeta = (outer.meta ?? {}) as Record<string, unknown>
-  outer.meta = { ...innerMeta, ...outerMeta }
-  return outer
-}
-
-function wireType(node: Record<string, unknown>): string {
-  // declared wire type wins (mod contracts carry the py's exact
-  // type: image/mask/file/select/number/slider/textarea/loras)
-  const extra = ((node.meta as Record<string, unknown> | undefined)?.extra ?? {}) as Record<string, unknown>
-  if (typeof extra.wtype === 'string' && extra.wtype !== '') return extra.wtype
-  const t = String(node.type ?? 'string')
-  if (t === 'union' && unionOptions(node) !== null) return 'select'
-  if (t === 'number') return String((node.meta as Record<string, unknown> | undefined)?.step ?? '') === '1' ? 'seed' : 'slider'
-  if (t === 'string') return 'text'
-  if (t === 'boolean') return 'boolean'
-  if (t === 'array') return 'loras'
-  return 'text'
-}
 
 export class ComfyUIService extends Service {
   private readonly cards = new Map<string, CardDefinition>()
@@ -525,124 +481,27 @@ export class ComfyUIService extends Service {
     return [...this.verbs.values()].filter((v) => v.families.some((fam) => def.boarded.includes(fam)))
   }
 
-  /** The wire form fragment for one card + family (serialize.py
-   *  field_spec, 1:1): card schema meta fields + absorbed mod
-   *  fields, grouped first-seen, zone from members, capitalized
-   *  group labels. Binary types included (NO DROPS — 2026-09-05).
-   *  ONE meta path walks both planes (cards' schemas and mods'
-   *  contracts are the same Schemastery shape — the dual-decl
-   *  pattern; group/zone/visible_when ride .extra on both). */
-  formSpec(cardId: string, family: string): Record<string, unknown> | null {
+  /** THE SCHEMA ENVELOPE FACE (the parameter audit, 2026-09-14:
+   *  the frozen 15-key wire row and its re-derivation helpers died —
+   *  the card's own schemastery toJSON() IS the served form, the
+   *  SSOT one serializer). Returns the card schema's serialized
+   *  envelope plus the family-absorbed mod contracts' envelopes
+   *  keyed by pack; null when the card is unknown. Families-scoped
+   *  card fields and every presentation fact derive CLIENT-side off
+   *  the envelope (fieldsOf in card-base) — the server invents no
+   *  intermediate row anymore. */
+  formSchemas(cardId: string, family: string): { schema: unknown, mods: Record<string, unknown> } | null {
     const def = this.cards.get(cardId)
     if (def === undefined) return null
-    const fields: Record<string, unknown>[] = []
-    // group -> zone (rows wire zone '' — the frozen row shape — but
-    // schema_groups carry the zone; first declaration wins)
-    const groupZones = new Map<string, string>()
-    const walk = (schema: object, scoped: boolean): void => {
-      // Both call sites pass defined contracts (schemaCarrier ??
-      // schema, absorbed.fields — both required keys); the param
-      // types object so no nullish toll rides the seam. A
-      // contract WITHOUT .dict still returns below (covered).
-      const carrier = schema as { dict?: Record<string, Record<string, unknown>> }
-      const dict = carrier.dict
-      if (dict === undefined) return
-      // FROZEN ROW SHAPE (the py emitter's, referee-pinned): every
-      // row carries the SAME 15 keys in the SAME order — absent
-      // values ride as null/''. The order number is the frozen
-      // group-local ordinal (extra.order; group counter as the
-      // fallback) — gaps are referee truth (py declared, spec
-      // filtered). zone is ALWAYS '' on the wire (the py never set
-      // it; zone lives in schema_groups).
-      for (const [name, node0] of Object.entries(dict)) {
-        const node = unwrapNullable(node0 as Record<string, unknown>)
-        const meta = (node as { meta?: Record<string, unknown> }).meta ?? {}
-        const extra = (meta.extra ?? {}) as Record<string, unknown>
-        const fams = extra.families as readonly string[] | undefined
-        if (fams !== undefined && !fams.includes(family)) continue
-        const wtype = wireType(node as Record<string, unknown>)
-        const group = (extra.group as string) ?? ''
-        if (!groupZones.has(group)) groupZones.set(group, (extra.zone as string | undefined) ?? 'params')
-        const order = typeof extra.order === 'number' ? extra.order : null
-        // SEED SHAPE (referee-faithful): the seed identity wires
-        // through the TYPE — its step never keys the row (bounds
-        // stay whatever the declaration carries).
-        const step = wtype === 'seed' ? null : (((meta.step ?? extra.step) as number | undefined) ?? null)
-        const noDefault = Array.isArray(meta.default) && (meta.default as unknown[]).length === 0 && extra.default === null
-        fields.push({
-          name,
-          type: wtype,
-          label: (meta.description as string) ?? name,
-          default: noDefault || meta.default === undefined || meta.default === '' ? null : (meta.default as unknown),
-          // options ALWAYS keys the row: declared x-options win,
-          // else the union-of-consts row, else the empty list.
-          options: extra.options ?? unionOptions(node as Record<string, unknown>) ?? [],
-          group,
-          zone: '',
-          order,
-          required: extra.required === true || meta.required === true ? true : null,
-          columns: (extra.columns as number | undefined) ?? null,
-          width: (extra.width as number | undefined) ?? null,
-          min: (meta.min as number | undefined) ?? null,
-          max: (meta.max as number | undefined) ?? null,
-          step,
-          placeholder: (extra.placeholder as string | undefined) ?? '',
-          tooltip: (extra.tooltip as string | undefined) ?? '',
-          visible_when: (extra.visible_when as string | null | undefined) ?? null,
-        })
-      }
-    }
-    walk(def.schemaCarrier ?? def.schema, false)
-    // absorbed mod contracts (family-scoped) ride AFTER the card's own
+    const carrier = (def.schemaCarrier ?? def.schema) as { toJSON?: () => unknown }
+    const schema = typeof carrier.toJSON === 'function' ? carrier.toJSON() : null
+    const mods: Record<string, unknown> = {}
     for (const absorbed of this.cardModFields(cardId)) {
       if (!absorbed.families.includes(family)) continue
-      walk(absorbed.fields, false)
+      const c = absorbed.fields as { toJSON?: () => unknown }
+      mods[absorbed.pack] = typeof c.toJSON === 'function' ? c.toJSON() : null
     }
-    // groups: first-seen order, capitalized labels, zone from the
-    // group's first declaration (the frozen schema_groups shape:
-    // {id, label, fields, order, zone}; member rows drop the flat
-    // row's group/zone/options and the null/''-valued keys).
-    const groups: string[] = []
-    for (const f of fields) {
-      // group is always a string by construction (the walk pushes
-      // the `(extra.group as string) ?? ''` const) — the read
-      // casts, no toll.
-      const g = f.group as string
-      if (!groups.includes(g)) groups.push(g)
-    }
-    // member rows: the frozen member order (name,type,label,order,
-    // width,columns,required,min,max,step,default,visible_when,
-    // tooltip,placeholder) with null/'' values dropped
-    const MEMBER_KEYS = ['name', 'type', 'label', 'order', 'width', 'columns', 'required', 'min', 'max', 'step', 'default', 'visible_when', 'placeholder', 'tooltip', 'options']
-    const memberRow = (f: Record<string, unknown>): Record<string, unknown> => {
-      const out: Record<string, unknown> = {}
-      for (const k of MEMBER_KEYS) {
-        const v = f[k]
-        if (v === null || v === '' || v === undefined) continue
-        // options ride members only when NON-EMPTY (the py emitter's
-        // member shape — closed vocabularies announce, empties drop)
-        if (k === 'options' && Array.isArray(v) && v.length === 0) continue
-        out[k] = v
-      }
-      return out
-    }
-    const schemaGroups = groups.map((g, k) => ({
-      id: g,
-      label: g === '' ? 'Parameters' : (g[0].toUpperCase() + g.slice(1)),
-      fields: fields.filter((f) => (f.group as string) === g).map((f) => memberRow(f as Record<string, unknown>)),
-      order: k,
-      // groupZones is set for every pushed field before the push
-      // (same tick, same walk) — the get never misses; the ??
-      // 'params' toll is untestable-by-construction (2026-09-12).
-      /* v8 ignore next */
-      zone: groupZones.get(g) ?? 'params',
-    }))
-    return {
-      form: cardId,
-      service: family,
-      fields,
-      schema_groups: schemaGroups,
-    }
+    return { schema, mods }
   }
 
 

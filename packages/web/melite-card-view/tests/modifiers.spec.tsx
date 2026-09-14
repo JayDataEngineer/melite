@@ -15,7 +15,7 @@ import { afterEach, expect, test, vi } from 'vitest'
 import { createElement } from 'react'
 
 import { ModifiersSection } from '../src/client/spec-form.tsx'
-import type { ModifierKind, SpecValues } from '../src/client/spec-form.tsx'
+import { schemaEnvelope, type ModifierKind, type SpecValues } from '../src/client/spec-form.tsx'
 
 const loraKind = (): ModifierKind => ({
   kind: 'lora',
@@ -141,31 +141,34 @@ test('max_stack refuses a second tile LOUD (the mask cap law)', async () => {
 //    HARDCODED. Region masking is a mod. The LORAs should not be on
 //    cards, the MOD SYSTEM SHOULD") ──────────────────────────────────
 
-/** The qwen wire shape (lane-read 2026-09-12): BOTH kind shapes —
- *  lora (options + strength) and mask (its OWN 7 fields, entry IS the
- *  params object). The doc's top-level fields ALSO serve the mask
- *  params; the law: they NEVER render flat. */
+/** The qwen wire shape (the parameter audit): BOTH kind shapes —
+ *  lora (option kind: served rows + strength) and mask (FIELD kind:
+ *  its param rows derive from mod_schemas, entry IS the params
+ *  object). input_mask ALSO sits on the card schema — a legacy-
+ *  shaped emission — to pin the hide filter; the law: mod-owned
+ *  names NEVER render flat. */
 const QWEN_MOD_SPEC = {
   form: 'image-edit',
   model: 'qwen-img-edit-2511',
-  fields: [
-    { name: 'image1', label: 'Image 1', type: 'image', required: true, group: 'input' },
-    { name: 'input_mask', label: 'Region Mask', type: 'image', group: 'mask' },
-    { name: 'mask_mode', label: 'Region Mode', type: 'select', options: ['auto', 'crop_stitch', 'full_frame'], default: 'auto', group: 'mask' },
-    { name: 'mask_feather', label: 'Feather', type: 'slider', default: 8, group: 'mask' },
-    { name: 'prompt', label: 'Prompt', type: 'textarea', group: 'prompt' },
-  ],
+  schema: schemaEnvelope({
+    image1: { type: 'string', meta: { description: 'Image 1', extra: { wtype: 'image', required: true, group: 'input' } } },
+    input_mask: { type: 'string', meta: { description: 'Region Mask', extra: { wtype: 'image', group: 'mask' } } },
+    prompt: { type: 'string', meta: { description: 'Prompt', extra: { wtype: 'textarea', group: 'prompt' } } },
+  }),
+  mod_schemas: {
+    mask: schemaEnvelope({
+      input_mask: { type: 'string', meta: { description: 'Region Mask', extra: { wtype: 'image' } } },
+      mask_mode: { consts: ['auto', 'crop_stitch', 'full_frame'], meta: { description: 'Region Mode', default: 'auto' } },
+      mask_feather: { type: 'number', meta: { description: 'Feather', default: 8, step: 1, extra: { wtype: 'number' } } },
+    }),
+  },
   variants: [],
   features: {
     modifiers: [
       { kind: 'lora', label: 'LoRAs', param_key: 'loras', cardinality: 'list', options: [
         { value: 'krea2_realism_lora', label: 'Realism', defaults: { strength: 0.7 } },
       ] },
-      { kind: 'mask', label: 'Region Mask', param_key: 'mask', cardinality: 'list', fields: [
-        { name: 'input_mask', label: 'Region Mask', type: 'image' },
-        { name: 'mask_mode', label: 'Region Mode', type: 'select', options: ['auto', 'crop_stitch', 'full_frame'], default: 'auto' },
-        { name: 'mask_feather', label: 'Feather', type: 'slider', default: 8 },
-      ] },
+      { kind: 'mask', label: 'Region Mask', param_key: 'mask', cardinality: 'list' },
     ],
   },
 } as never as import('../src/client/spec-form.tsx').FormSpecDoc
@@ -179,9 +182,8 @@ test('THE LAW: mod-owned fields NEVER render flat on the card form — the secti
   const values: SpecValues = {}
   render(createElement(SpecForm, {
     spec: QWEN_MOD_SPEC,
-    fields: (QWEN_MOD_SPEC as unknown as { fields: unknown[] }).fields as never,
-    values,
-    onEdit: () => {},
+    user: values,
+    onSet: () => {},
   }))
   expect(screen.queryByLabelText('Region Mode')).toBeNull()
   expect(screen.queryByLabelText('Feather')).toBeNull()
@@ -199,9 +201,8 @@ test('FIELD kinds: + Mod → Region Mask → the leaf renders the kind\'s OWN fi
   const onEdit = (name: string, v: unknown): void => { values[name] = v }
   render(createElement(SpecForm, {
     spec: QWEN_MOD_SPEC,
-    fields: (QWEN_MOD_SPEC as unknown as { fields: unknown[] }).fields as never,
-    values,
-    onEdit,
+    user: values,
+    onSet: onEdit,
   }))
   // open the kind picker, pick the mask kind
   fireEvent.click(screen.getByRole('button', { name: 'Add modifier' }))
@@ -230,9 +231,8 @@ test('OPTION kinds still ride the served rows: lora create seeds the row default
   const onEdit = (name: string, v: unknown): void => { values[name] = v }
   render(createElement(SpecForm, {
     spec: QWEN_MOD_SPEC,
-    fields: (QWEN_MOD_SPEC as unknown as { fields: unknown[] }).fields as never,
-    values,
-    onEdit,
+    user: values,
+    onSet: onEdit,
   }))
   fireEvent.click(screen.getByRole('button', { name: 'Add modifier' }))
   fireEvent.click(await screen.findByText('LoRAs', undefined, { timeout: 2000 }))

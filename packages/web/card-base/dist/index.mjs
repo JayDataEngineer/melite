@@ -6,15 +6,64 @@ import { fetchMediaLibrary } from "@melite-plugin/melite-run-wire";
 import * as THREE from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 //#region src/spec.ts
+/** Build an envelope from raw dict nodes — the TEST-side and
+*  migration-side constructor; the served envelopes come from
+*  schemastery's own toJSON. Ids assign in insertion order; a node
+*  carrying `consts` (string labels or {value,label} rows) expands
+*  into minted const refs with the union's `list` wired to them —
+*  the shape schemastery's union-of-consts serializes to. */
+function schemaEnvelope(dict) {
+	const refs = { 0: {
+		type: "object",
+		dict: {}
+	} };
+	let uid = 0;
+	for (const [name, raw] of Object.entries(dict)) {
+		uid += 1;
+		const nodeId = uid;
+		const node = { ...raw };
+		const consts = node["consts"];
+		delete node["consts"];
+		if (Array.isArray(consts)) {
+			const list = [];
+			for (const c of consts) {
+				uid += 1;
+				if (typeof c === "string") refs[uid] = {
+					type: "const",
+					value: c
+				};
+				else if (typeof c === "object" && c !== null) {
+					const row = c;
+					refs[uid] = {
+						type: "const",
+						value: row.value,
+						...row.label !== void 0 ? { meta: { description: String(row.label) } } : {}
+					};
+				}
+				list.push(uid);
+			}
+			node.list = list;
+			if (node.type === void 0) node.type = "union";
+		}
+		refs[nodeId] = node;
+		refs[0].dict[name] = nodeId;
+	}
+	return {
+		uid: 0,
+		refs
+	};
+}
 /** THE MOD-OWNED NAMES (the SubcardGrid law, enforced): every name a
 *  served modifier kind owns — its fields' names plus its param_key
 *  (the bag storage). CardForm EXCLUDES these from the flat param
 *  groups: mod params render ONLY inside the mod system. PURE. */
 function modOwnedFields(spec) {
 	const owned = /* @__PURE__ */ new Set();
-	for (const k of spec.features?.modifiers ?? []) {
-		owned.add(k.param_key);
-		for (const f of k.fields ?? []) owned.add(f.name);
+	for (const k of spec.features?.modifiers ?? []) owned.add(k.param_key);
+	for (const env of Object.values(spec.mod_schemas ?? {})) {
+		if (env == null) continue;
+		const root = env.refs[env.uid];
+		for (const name of Object.keys(root?.dict ?? {})) owned.add(name);
 	}
 	return owned;
 }
@@ -23,12 +72,146 @@ function modOwnedFields(spec) {
 function isOptionKind(k) {
 	return (k.options ?? []).length > 0;
 }
-/** Seed the editable values from the spec's declared defaults (the old
-*  picker's law: pick → defaults seeded → the user edits from there).
-*  DEFAULTS PROPAGATE FROM THE EMISSION — the base never invents one. */
+/** THE SCHEMA LAYER's declared defaults (fieldsOfEnvelope's output —
+*  resolveValue's first layer; the base never invents one). */
 function specDefaults(fields) {
 	const out = {};
 	for (const f of fields) if (f.default !== void 0 && f.default !== null) out[f.name] = f.default;
+	return out;
+}
+/** ── THE ENVELOPE WALKER ─────────────────────────────────────────
+*
+* One pure projection: serialized schemastery schema -> derived
+* SpecFields. Every presentation fact lives in the nodes' meta (the
+* declaration IS the UI contract — the py Field.emit law); this
+* walk reads, never invents. THE ORDER: dict insertion order with
+* the declared `order` hint as tie-break (a stable sort — equal
+* keys keep insertion order).
+*
+* Families scoping: a node whose extra.families names families the
+* spec does NOT serve skips (the absorption is family-scoped —
+* the card serves only the boarded plane).
+*
+* Nullable pairs: a union of [X, const(null)] wires as X — the
+* OUTER meta wins (schemastery's nullable() shape, probed live on
+* image-gen 2026-09-14).
+*
+* Presentation types (the audit's client-side derivation — a view
+* choice over typed meta, never a server row): extra.wtype wins
+* (declared presentation); union-of-consts -> select; number ->
+* step 1 -> seed, any other step -> slider, no step -> slider;
+* string -> text; boolean -> boolean; array -> loras.
+*
+* Option labels: a union's const members carry their own
+* meta.description (the py emitter's label law) — the declared
+* extra.options override when present. */
+function fieldsOfEnvelope(env, family) {
+	if (env == null) return [];
+	const dict = env.refs[env.uid]?.dict ?? {};
+	const out = [];
+	for (const [name, id] of Object.entries(dict)) {
+		let node = env.refs[id];
+		if (node === void 0) continue;
+		if (node.type === "union" && Array.isArray(node.list) && node.list.length === 2) {
+			const a = env.refs[node.list[0]];
+			const b = env.refs[node.list[1]];
+			const nullConst = (r) => r?.type === "const" && r.value === null;
+			if (a !== void 0 && b !== void 0 && (nullConst(a) && b.type !== "const" || nullConst(b) && a.type !== "const")) node = nullConst(a) ? b : a;
+		}
+		const meta = node.meta ?? {};
+		const extra = typeof meta["extra"] === "object" && meta["extra"] !== null && !Array.isArray(meta["extra"]) ? meta["extra"] : {};
+		const families = Array.isArray(extra["families"]) ? extra["families"] : null;
+		if (families !== null && family !== void 0 && !families.includes(family)) continue;
+		let options;
+		if (node.type === "union" && Array.isArray(node.list)) {
+			const opts = [];
+			for (const mid of node.list) {
+				const m = env.refs[mid];
+				if (m?.type !== "const") continue;
+				const v = m.value;
+				if (v === null || v === void 0) continue;
+				const label = typeof m.meta?.["description"] === "string" ? m.meta["description"] : String(v);
+				if (label === String(v)) opts.push(String(v));
+				else opts.push({
+					value: String(v),
+					label
+				});
+			}
+			if (opts.length > 0) options = opts;
+		}
+		if (Array.isArray(extra["options"])) options = extra["options"].map((o) => typeof o === "string" ? o : typeof o === "object" && o !== null && "value" in o && "label" in o ? {
+			value: String(o["value"]),
+			label: String(o["label"])
+		} : String(o));
+		const hint = typeof extra["wtype"] === "string" ? extra["wtype"] : "";
+		let type;
+		if (hint !== "") type = hint;
+		else if (options !== void 0 && node.type === "union") type = "select";
+		else if (node.type === "number") type = String(meta["step"] ?? "") === "1" ? "seed" : "slider";
+		else if (node.type === "string") type = "text";
+		else if (node.type === "boolean") type = "boolean";
+		else if (node.type === "array") type = "loras";
+		else type = node.type ?? "string";
+		const num = (k) => typeof meta[k] === "number" ? meta[k] : void 0;
+		const str = (k) => typeof extra[k] === "string" ? extra[k] : typeof meta[k] === "string" ? meta[k] : void 0;
+		out.push({
+			name,
+			label: typeof meta["description"] === "string" && meta["description"] !== "" ? meta["description"] : name,
+			order: typeof extra["order"] === "number" ? extra["order"] : void 0,
+			type,
+			default: meta["default"] === void 0 ? void 0 : meta["default"],
+			min: num("min"),
+			max: num("max"),
+			step: type === "seed" ? void 0 : num("step"),
+			options,
+			group: str("group") ?? "",
+			zone: str("zone"),
+			required: extra["required"] === true || meta["required"] === true,
+			placeholder: str("placeholder"),
+			tooltip: str("tooltip"),
+			visible_when: str("visible_when")
+		});
+	}
+	return out.map((f, i) => [f, i]).sort((a, b) => (a[0].order ?? 0) - (b[0].order ?? 0) || a[1] - b[1]).map((x) => x[0]);
+}
+/** THE EDIT COERCION (the one specPatch duty that survives, moved
+* to the edit boundary): atoms emit raw strings while typing; a
+* numeric field's edit rides the user layer as a NUMBER. An
+* unparseable/empty numeric string rides VERBATIM (the run's schema
+* parse refuses loud, naming the field — never a silent 0). `v ===
+* undefined` stays undefined (the tri-state's inherit — the caller's
+* unset signal). PURE. */
+function coerceFieldEdit(f, v) {
+	if (v === void 0) return void 0;
+	if (f !== void 0 && (f.type === "number" || f.type === "seed" || f.type === "slider") && typeof v === "string" && v.trim() !== "" && Number.isFinite(Number(v))) return Number(v);
+	return v;
+}
+/** The card's own derived fields (the schema envelope walked,
+* families-scoped to the served family). Memoize at the caller for
+* hot loops — the walk is pure. */
+function fieldsOf(spec) {
+	return fieldsOfEnvelope(spec.schema, typeof spec.model === "string" ? spec.model : void 0);
+}
+/** THE LAYERED RESOLUTION — the engine's compose cascade (applyRecipe
+* in the card's service plane) mirrored client-side: schema
+* defaults <- model defaults <- card-recipe params <- user. The form
+* SHOWS exactly what a run composes; `user` rides verbatim by key
+* presence (a PRESENCE is the override mark, never its value — the
+* settings law). Arrays (lora bags) and nulls in model_defaults
+* skip, matching the engine's overlay filter. */
+function resolveValue(spec, user) {
+	const out = specDefaults(fieldsOf(spec));
+	for (const [k, v] of Object.entries(spec.model_defaults ?? {})) {
+		if (v === null || Array.isArray(v)) continue;
+		out[k] = v;
+	}
+	const fields = fieldsOf(spec);
+	const rkey = typeof user["recipe"] === "string" && user["recipe"] !== "" ? user["recipe"] : fields.find((f) => f.name === "recipe")?.default;
+	if (typeof rkey === "string" && rkey !== "") {
+		const overlay = spec.recipes?.[rkey]?.params;
+		if (overlay !== void 0) Object.assign(out, overlay);
+	}
+	Object.assign(out, user);
 	return out;
 }
 /** evalVisibleWhen's serving shape: "key=value" (a field shows when its
@@ -66,24 +249,6 @@ function groupFields(fields, values) {
 function inputEdgeOf(spec, paramName) {
 	return (spec.inputs ?? []).find((e) => e.name === paramName);
 }
-/** Coerce the raw edit strings to the spec's declared types — ONCE, at
-*  patch time (the editPatch law). Only keys that CHANGED from the
-*  stage's held params ride the patch. */
-function specPatch(fields, values, held) {
-	const out = {};
-	for (const f of fields) {
-		const v = values[f.name];
-		if (v === void 0) continue;
-		const before = held[f.name] ?? f.default;
-		if (String(v) === String(before ?? "")) continue;
-		if (f.type === "number" || f.type === "seed" || f.type === "slider") {
-			const n = Number(v);
-			out[f.name] = Number.isFinite(n) ? n : v;
-		} else if (f.type === "switch" || f.type === "boolean") out[f.name] = v === true || v === "true";
-		else out[f.name] = v;
-	}
-	return out;
-}
 /** THE RECIPE-YIELD LAW (operator, 2026-09-14: "IMG GEN UI CARD
 *  HAS TWO RECIPES"): the card's own `recipe` schema field and the
 *  family matrix's `Recipe` axis group share the `recipe` values key
@@ -93,7 +258,7 @@ function specPatch(fields, values, held) {
 *  field, the card OWNS the name: the family axis yields (hidden,
 *  never seeded). PURE. */
 function cardOwnsRecipe(spec) {
-	return (spec.fields ?? []).some((f) => f.name === "recipe");
+	return fieldsOf(spec).some((f) => f.name === "recipe");
 }
 /** The axis groups in declaration order: features.variant_groups'
 *  key order when the door serves it, else the rows' distinct groups
@@ -215,28 +380,6 @@ function axisPickPatch(spec, row) {
 	}
 	return patch;
 }
-/** Heal a bench POISONED by the double-recipe era (the recipe-yield
-*  law's migration half): when the card owns its recipe field, a held
-*  `recipe` value naming a FAMILY recipe row (`default`, `realism` —
-*  stamped by the old axis seed) is not a card recipe. Fall it back
-*  to the field default so the next Run patches the healed value and
-*  the bench converges. Judged against the field's own options when
-*  the emission carries them; option-less emissions pass through
-*  untouched (never refuse on a guess). PURE. */
-function healOwnedRecipe(spec, values) {
-	if (!cardOwnsRecipe(spec)) return values;
-	const field = (spec.fields ?? []).find((f) => f.name === "recipe");
-	const cur = values["recipe"];
-	if (typeof cur !== "string" || cur === "") return values;
-	const opts = (field?.options ?? []).map((o) => typeof o === "string" ? o : o.value);
-	if (opts.length > 0 && !opts.includes(cur)) {
-		const next = { ...values };
-		if (field?.default !== void 0 && field.default !== null) next["recipe"] = field.default;
-		else delete next["recipe"];
-		return next;
-	}
-	return values;
-}
 /** A model switch's full value patch (the stale-variant cure,
 *  operator 2026-09-14: model anima + variant turbo refused at
 *  compose — a switch that keeps the old family's axes is a broken
@@ -265,41 +408,6 @@ function modelSwitchPatch(spec, model) {
 	}
 	patch["model"] = model;
 	return patch;
-}
-/** A recipe pick's full write (THE VISIBLE RECIPE LAW, operator
-*  2026-09-14: "when I do dropdown there, it should change
-*  parameters"): picking the card's recipe dropdown stamps the
-*  catalog params into the values — the SAME cascade the engine
-*  enforces at compose (recipe under explicit), mirrored visibly.
-*  `owned` is the session's stamp ledger (key → recipe key): a
-*  recipe fills a param when it is recipe-owned (re-stamp moves it),
-*  missing, or still at the field default (untouched) — a value the
-*  user set wins and is never clobbered. Keys owned by a PREVIOUS
-*  recipe that the new one does not define fall back to the field
-*  default ('' when the field declares none) so stale stamps lift
-*  instead of accumulating. The recipe key itself always rides the
-*  patch. PURE — the caller writes every patch entry through
-*  onEdit and keeps the returned ledger. */
-function recipePickPatch(spec, key, values, owned) {
-	const patch = { recipe: key };
-	const nextOwned = { ...owned };
-	const overlay = spec.recipes?.[key]?.params ?? {};
-	const defaults = specDefaults(spec.fields);
-	for (const [k, r] of Object.entries(owned)) if (r !== key && !(k in overlay)) {
-		patch[k] = k in defaults ? defaults[k] : "";
-		delete nextOwned[k];
-	}
-	for (const [k, v] of Object.entries(overlay)) {
-		const cur = values[k];
-		if (nextOwned[k] !== void 0 || cur === void 0 || k in defaults && cur === defaults[k]) {
-			patch[k] = v;
-			nextOwned[k] = key;
-		}
-	}
-	return {
-		patch,
-		owned: nextOwned
-	};
 }
 /** Seed the axis keys for a fresh stage (the catalog's first-declared
 *  law: each axis defaults to its FIRST composing row). Held values
@@ -330,6 +438,36 @@ function seedAxisValues(spec, held) {
 			}
 		}
 		if (model !== "") out["model"] = model;
+	}
+	return out;
+}
+/** Seed a stage's USER layer from its held params (the bench's
+* stage.params — the only migration seam). Presence-based, per the
+* settings law: every HELD key rides verbatim (the override marks
+* survived the reopen), the absent axis keys seed per the axis law
+* (seedAxisValues above — first composing row, one direction).
+*
+* THE ONE VALIDATION CLAUSE (the double-recipe migration, kept from
+* the heal walk but expressed as validation — never value-compare):
+* when the card's schema owns the `recipe` field, a held `recipe`
+* the card's own option list does not know is a stale family-axis
+* stamp — it falls back to the field's declared default (dropped
+* when none). Everything else rides untouched.
+*
+* PURE — the caller owns the write (onSet per fresh key). */
+function seedUser(spec, held) {
+	const out = {
+		...held,
+		...seedAxisValues(spec, held)
+	};
+	const field = fieldsOf(spec).find((f) => f.name === "recipe");
+	if (field === void 0) return out;
+	const cur = out["recipe"];
+	if (typeof cur !== "string" || cur === "") return out;
+	const opts = (field.options ?? []).map((o) => typeof o === "string" ? o : o.value);
+	if (opts.length > 0 && !opts.includes(cur)) {
+		if (field.default !== void 0 && field.default !== null) out["recipe"] = field.default;
+		else delete out["recipe"];
 	}
 	return out;
 }
@@ -689,11 +827,13 @@ async function fetchCardCatalog(signal) {
 	}
 	return out.sort((a, b) => a.label.localeCompare(b.label));
 }
-/** /v1/form-spec?model=<family> — the card family's emission (fields
-*  + the declared edges + the mod kinds). */
+/** /v1/form-spec?model=<family> — the card family's emission (the
+*  serialized schema envelope + model defaults + the declared edges
+*  + the mod kinds and their envelopes). */
 async function fetchFormSpec(model, signal) {
 	const doc = await v1Get("/v1/form-spec?model=" + encodeURIComponent(model), signal);
-	if (!Array.isArray(doc["fields"])) throw new Error("form-spec: no fields array");
+	const env = doc["schema"];
+	if (env !== null && (typeof env !== "object" || typeof env.uid !== "number" || typeof env.refs !== "object")) throw new Error("form-spec: no schema envelope");
 	return doc;
 }
 /** /v1/forms — every card's meta row (the edge emission included). */
@@ -745,9 +885,10 @@ async function uploadInputFile(file) {
 * construct the card ui should see that the card package emits an
 * image input, then constructs the input component automatically"):
 * the base reads the card package's EMISSION — the served form-spec
-* (fields, declared input/output edges, mod kinds) — and constructs
-* the surface. Defaults propagate from the emission (specDefaults);
-* every image/file field gets THE ONE square (square.tsx) with the
+* (the schema envelope, declared input/output edges, mod kinds) —
+* and constructs the surface. The resolved value derives per render
+* (resolveValue — the engine's compose cascade mirrored); every
+* image/file field gets THE ONE square (square.tsx) with the
 * three source verbs; no card ever hand-rolls an input component.
 *
 * THE SEAM (slots.ts): each field renders through the field-atom seam
@@ -1162,21 +1303,21 @@ function SpecAtom({ f, value, onEdit, square, wireCandidates }) {
 *  values (model + every axis key + overlay keys) ride the caller's
 *  map and pass along at Run. Renders nothing when the spec declares
 *  no matrix. */
-function ModelAxes({ spec, values, onEdit }) {
+function ModelAxes({ spec, value, onSet }) {
 	const groups = axisGroups(spec);
 	if (groups.length === 0) return null;
 	const models = modelChoices(spec);
 	const contract = spec.features?.variant_groups ?? {};
 	const pick = (row) => {
 		const patch = axisPickPatch(spec, row);
-		for (const [k, v] of Object.entries(patch)) onEdit(k, v);
+		for (const [k, v] of Object.entries(patch)) onSet(k, v);
 	};
 	const active = {};
 	for (const g of groups) {
-		const held = values[axisKey(g)];
+		const held = value[axisKey(g)];
 		const rows = composingRows(spec, g, active);
 		if (typeof held === "string" && held !== "" && rows.some((r) => r.id === held)) active[g] = held;
-		else active[g] = activeRowId(spec, values, g, active) ?? (rows.length > 0 ? rows[0].id : "");
+		else active[g] = activeRowId(spec, value, g, active) ?? (rows.length > 0 ? rows[0].id : "");
 	}
 	return createElement("section", {
 		className: `${card_module_default.specGroup} ${card_module_default.modelAxes}`,
@@ -1184,11 +1325,11 @@ function ModelAxes({ spec, values, onEdit }) {
 	}, createElement("h4", { className: card_module_default.specGroupTitle }, "Model"), createElement("label", { className: card_module_default.specField }, createElement("span", { className: card_module_default.specFieldKey }, "Model"), createElement("select", {
 		className: card_module_default.specSelect,
 		"aria-label": "Model",
-		value: typeof values["model"] === "string" && values["model"] !== "" ? values["model"] : typeof spec.model === "string" && spec.model !== "" ? spec.model : models[0] ?? "",
+		value: typeof value["model"] === "string" && value["model"] !== "" ? value["model"] : typeof spec.model === "string" && spec.model !== "" ? spec.model : models[0] ?? "",
 		onChange: (e) => {
 			const m = e.target.value;
 			const patch = modelSwitchPatch(spec, m);
-			for (const [k, v] of Object.entries(patch)) onEdit(k, v);
+			for (const [k, v] of Object.entries(patch)) onSet(k, v);
 		}
 	}, models.map((m) => createElement("option", {
 		key: m,
@@ -1216,12 +1357,14 @@ function ModelAxes({ spec, values, onEdit }) {
 		}, v.label + (typeof v.hint === "string" && v.hint !== "" ? ` — ${v.hint}` : "")))));
 	}));
 }
-/** THE CARD FORM (the constructor's surface half) — the spec's
-*  fields, grouped, visible-when honored, defaults seeded by the
-*  caller (specDefaults — propagated from the emission). Edits ride
-*  the caller's values map. Each field renders through the claimed
-*  atom for its emitted type when the caller passes one; the base's
-*  built-in atom is the default.
+/** THE CARD FORM (the constructor's surface half) — the emission's
+*  fields walked off the schema envelope, grouped, visible-when
+*  honored; the RESOLVED value derives per render (resolveValue —
+*  the engine's compose cascade mirrored), edits are set/unset ops
+*  over the USER layer (the settings law: presence IS the override
+*  mark, the reset chip removes it). Each field renders through the
+*  claimed atom for its emitted type when the caller passes one;
+*  the base's built-in atom is the default.
 *
 *  THE CONSTRUCTION LAW IS NOT OPTIONAL (operator, 2026-09-12: "the
 *  img-to-mesh input component — you are not using it around — you
@@ -1236,8 +1379,17 @@ function ModelAxes({ spec, values, onEdit }) {
 *  to rail sections that render served fields outside a whole form
 *  (mask's TuneSection). The claim seam stays CardForm's; this row
 *  takes the resolved atom inputs. */
-function SpecFieldRow({ f, value, onEdit, square, wireCandidates }) {
-	return createElement("label", { className: card_module_default.specField }, createElement("span", { className: card_module_default.specFieldKey }, f.label, f.required === true ? createElement("span", { className: card_module_default.specRequired }, " *") : null), createElement(SpecAtom, {
+function SpecFieldRow({ f, value, onEdit, square, wireCandidates, overridden, onUnset }) {
+	return createElement("div", { className: card_module_default.specField }, createElement("span", { className: card_module_default.specFieldKey }, f.label, f.required === true ? createElement("span", { className: card_module_default.specRequired }, " *") : null, overridden === true && onUnset !== void 0 ? createElement("button", {
+		type: "button",
+		className: card_module_default.specUnset,
+		title: "Reset to default",
+		"aria-label": "Reset " + f.label + " to default",
+		onClick: (e) => {
+			e.preventDefault();
+			onUnset(f.name);
+		}
+	}, "reset") : null), createElement(SpecAtom, {
 		f,
 		value,
 		onEdit,
@@ -1245,15 +1397,25 @@ function SpecFieldRow({ f, value, onEdit, square, wireCandidates }) {
 		...wireCandidates !== void 0 ? { wireCandidates } : {}
 	}), f.tooltip !== void 0 && f.tooltip !== "" ? createElement("span", { className: card_module_default.specHint }, f.tooltip) : null);
 }
-function CardForm({ spec, fields, values, onEdit, wire, square, atoms, onPatch }) {
-	const modKinds = spec?.features?.modifiers ?? [];
-	const owned = modOwnedFields(spec ?? {
-		form: "",
-		fields: [],
-		variants: []
-	});
+function CardForm({ spec, user, onSet, onUnset, wire, square, atoms, onPatch }) {
+	const fields = fieldsOf(spec);
+	const value = resolveValue(spec, user);
+	const fieldByName = new Map(fields.map((f) => [f.name, f]));
+	const edit = (name, v) => {
+		if (v === void 0) {
+			onUnset?.(name);
+			return;
+		}
+		onSet(name, coerceFieldEdit(fieldByName.get(name), v));
+	};
+	const family = typeof spec.model === "string" ? spec.model : void 0;
+	const modKinds = (spec.features?.modifiers ?? []).map((k) => ({
+		...k,
+		fields: fieldsOfEnvelope(spec.mod_schemas?.[k.param_key], family)
+	}));
+	const owned = modOwnedFields(spec);
 	const flatFields = owned.size > 0 ? fields.filter((f) => !owned.has(f.name)) : fields;
-	const signature = spec !== void 0 && Array.isArray(spec.inputs) ? spec.inputs : [];
+	const signature = Array.isArray(spec.inputs) ? spec.inputs : [];
 	const railOf = (inp) => {
 		const f = flatFields.find((x) => x.name === inp.name);
 		if (f === void 0) return void 0;
@@ -1262,35 +1424,15 @@ function CardForm({ spec, fields, values, onEdit, wire, square, atoms, onPatch }
 	const railFields = signature.map((inp) => typeof inp?.name === "string" ? railOf(inp) : void 0).filter((f) => f !== void 0);
 	const railNames = new Set(railFields.map((f) => f.name));
 	const visible = (f) => f.type !== "image_list" && !railNames.has(f.name);
-	const groups = groupFields(flatFields.filter(visible), values);
+	const groups = groupFields(flatFields.filter(visible), value);
 	const atomOf = (f) => atoms?.[f.type];
-	const recipeOwned = useRef({});
-	const valuesRef = useRef(values);
-	valuesRef.current = values;
-	const edit = (name, v) => {
-		if (name === "recipe" && spec !== void 0 && typeof v === "string" && spec.recipes?.[v] !== void 0) {
-			const { patch, owned } = recipePickPatch(spec, v, valuesRef.current, recipeOwned.current);
-			recipeOwned.current = owned;
-			for (const [k, pv] of Object.entries(patch)) onEdit(k, pv);
-			return;
-		}
-		if (name !== "recipe") delete recipeOwned.current[name];
-		onEdit(name, v);
-	};
-	const own = useSquareProvider(onEdit, wire ?? { candidates: [] });
+	const own = useSquareProvider(edit, wire ?? { candidates: [] });
 	const squareFor = square ?? own.square;
-	const seeded = useRef(false);
-	useEffect(() => {
-		if (spec === void 0 || seeded.current) return;
-		seeded.current = true;
-		const seed = seedAxisValues(spec, valuesRef.current);
-		for (const [k, v] of Object.entries(seed)) onEdit(k, v);
-	}, [spec, onEdit]);
-	return createElement("div", { className: card_module_default.specForm }, spec !== void 0 ? createElement(ModelAxes, {
+	return createElement("div", { className: card_module_default.specForm }, createElement(ModelAxes, {
 		spec,
-		values,
-		onEdit: edit
-	}) : null, railFields.length > 0 ? createElement("section", {
+		value,
+		onSet: edit
+	}), railFields.length > 0 ? createElement("section", {
 		className: card_module_default.specGroup + " " + card_module_default.inputRail,
 		"data-input-rail": "1"
 	}, createElement("div", { className: card_module_default.specSlotRow }, railFields.map((f) => {
@@ -1301,7 +1443,7 @@ function CardForm({ spec, fields, values, onEdit, wire, square, atoms, onPatch }
 			title: f.tooltip !== void 0 && f.tooltip !== "" ? f.tooltip : void 0
 		}, createElement(SpecAtom, {
 			f,
-			value: values[f.name],
+			value: value[f.name],
 			onEdit: edit,
 			square: squareFor(f),
 			...wire?.candidates !== void 0 ? { wireCandidates: wire.candidates } : {}
@@ -1322,14 +1464,24 @@ function CardForm({ spec, fields, values, onEdit, wire, square, atoms, onPatch }
 			const claim = atomOf(f);
 			const sq = squareFor(f);
 			const wireCandidates = wire?.candidates;
+			const overridden = onUnset !== void 0 && Object.prototype.hasOwnProperty.call(user, f.name);
 			if (claim !== void 0) {
 				flush();
-				children.push(createElement("label", {
+				children.push(createElement("div", {
 					key: f.name,
 					className: card_module_default.specField
-				}, createElement("span", { className: card_module_default.specFieldKey }, f.label, f.required === true ? createElement("span", { className: card_module_default.specRequired }, " *") : null), claim({
+				}, createElement("span", { className: card_module_default.specFieldKey }, f.label, f.required === true ? createElement("span", { className: card_module_default.specRequired }, " *") : null, overridden ? createElement("button", {
+					type: "button",
+					className: card_module_default.specUnset,
+					title: "Reset to default",
+					"aria-label": "Reset " + f.label + " to default",
+					onClick: (e) => {
+						e.preventDefault();
+						onUnset(f.name);
+					}
+				}, "reset") : null), claim({
 					f,
-					value: values[f.name],
+					value: value[f.name],
 					onEdit: edit,
 					square: sq
 				}), f.tooltip !== void 0 && f.tooltip !== "" ? createElement("span", { className: card_module_default.specHint }, f.tooltip) : null));
@@ -1342,7 +1494,7 @@ function CardForm({ spec, fields, values, onEdit, wire, square, atoms, onPatch }
 					title: f.tooltip !== void 0 && f.tooltip !== "" ? f.tooltip : void 0
 				}, createElement(SpecAtom, {
 					f,
-					value: values[f.name],
+					value: value[f.name],
 					onEdit: edit,
 					square: sq,
 					...wireCandidates !== void 0 ? { wireCandidates } : {}
@@ -1353,10 +1505,12 @@ function CardForm({ spec, fields, values, onEdit, wire, square, atoms, onPatch }
 			children.push(createElement(SpecFieldRow, {
 				key: f.name,
 				f,
-				value: values[f.name],
+				value: value[f.name],
 				onEdit: edit,
-				square: sq,
-				...wireCandidates !== void 0 ? { wireCandidates } : {}
+				...sq !== void 0 ? { square: sq } : {},
+				...wireCandidates !== void 0 ? { wireCandidates } : {},
+				...overridden ? { overridden } : {},
+				...onUnset !== void 0 ? { onUnset } : {}
 			}));
 		}
 		flush();
@@ -1366,8 +1520,8 @@ function CardForm({ spec, fields, values, onEdit, wire, square, atoms, onPatch }
 		}, g.group !== null ? createElement("h4", { className: card_module_default.specGroupTitle }, g.group) : null, children);
 	}), modKinds.length > 0 ? createElement(ModifiersSection, {
 		kinds: modKinds,
-		values,
-		onEdit,
+		values: value,
+		onEdit: edit,
 		...onPatch !== void 0 ? { onPatch } : {}
 	}) : null, own.wireMenu);
 }
@@ -1939,4 +2093,4 @@ function makeLabelSprite(text, color, worldHeight) {
 	return sprite;
 }
 //#endregion
-export { ASSET_DRAG_MIME, CARD_SLOTS, CardForm, InputSquare, ModelAxes, ModifiersSection, SourceRow, SpecAtom, SpecFieldRow, SpecSliderAtom, TriStateAtom, WirePickerModal, activeRowId, activeVariantId, axisGroups, axisKey, axisPickPatch, cardOwnsRecipe, composingRows, fetchCardCatalog, fetchFormSpec, fetchFormsTable, fieldVisible, groupFields, healOwnedRecipe, inputEdgeOf, isImageUrl, isOptionKind, makeLabelSprite, modOwnedFields, modelChoices, modelSwitchPatch, mountStage3D, quantRowsFor, readAsDataUrl, recipePickPatch, rowsFor, seedAxisValues, specDefaults, specPatch, uploadInputFile, useFormSpec, useSquareProvider, variantGroupsContract, variantRows };
+export { ASSET_DRAG_MIME, CARD_SLOTS, CardForm, InputSquare, ModelAxes, ModifiersSection, SourceRow, SpecAtom, SpecFieldRow, SpecSliderAtom, TriStateAtom, WirePickerModal, activeRowId, activeVariantId, axisGroups, axisKey, axisPickPatch, cardOwnsRecipe, coerceFieldEdit, composingRows, fetchCardCatalog, fetchFormSpec, fetchFormsTable, fieldVisible, fieldsOf, fieldsOfEnvelope, groupFields, inputEdgeOf, isImageUrl, isOptionKind, makeLabelSprite, modOwnedFields, modelChoices, modelSwitchPatch, mountStage3D, quantRowsFor, readAsDataUrl, resolveValue, rowsFor, schemaEnvelope, seedAxisValues, seedUser, specDefaults, uploadInputFile, useFormSpec, useSquareProvider, variantGroupsContract, variantRows };

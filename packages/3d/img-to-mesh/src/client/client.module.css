@@ -28,6 +28,14 @@
 /* .studioBody died with the shell port — StudioShell owns the body. */
 
 .studioGroup { display: flex; flex-direction: column; gap: 6px; }
+.studioGroupTitle {
+  margin: 0;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  opacity: 0.65;
+}
 
 
 /* the studio split: the 3D space + the knob rail (the old rail↔Stage law) */

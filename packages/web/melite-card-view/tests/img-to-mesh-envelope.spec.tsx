@@ -12,20 +12,20 @@ import { afterEach } from 'vitest'
 import { createElement, useEffect } from 'react'
 import { CardZoomOverlay, zoomWidthFor } from '../src/client/zoom.tsx'
 import type { BenchStageRow, CardsBenchValue } from '../src/client/cards-resource.ts'
-import { fetchFormSpec } from '../src/client/spec-form.tsx'
+import { fetchFormSpec, schemaEnvelope } from '../src/client/spec-form.tsx'
 
 const SPEC = {
   form: 'img-to-mesh',
   layout: 'studio',
   size: 'huge',
-  fields: [
-    { name: 'input_image', label: 'Input image', type: 'image', group: 'input' },
-    { name: 'seed', label: 'Seed', type: 'seed', group: 'input' },
-    { name: 'resolution', label: 'Resolution', type: 'select', default: '1024', options: ['1024', '2048'], group: 'generation' },
-    { name: 'steps', label: 'Steps', type: 'number', default: 12, group: 'generation' },
-    { name: 'shape_steps', label: 'Shape steps', type: 'number', default: 8, group: 'stage' },
-    { name: 'atlas_size', label: 'Atlas size', type: 'select', default: '2048', options: ['1024', '2048', '4096'], group: 'bake' },
-  ],
+  schema: schemaEnvelope({
+    input_image: { type: 'string', meta: { description: 'Input image', extra: { wtype: 'image', group: 'input' } } },
+    seed: { type: 'number', meta: { description: 'Seed', extra: { wtype: 'seed', group: 'input' } } },
+    resolution: { consts: ['1024', '2048'], meta: { description: 'Resolution', default: '1024', extra: { group: 'generation' } } },
+    steps: { type: 'number', meta: { description: 'Steps', default: 12, step: 1, extra: { wtype: 'number', group: 'generation' } } },
+    shape_steps: { type: 'number', meta: { description: 'Shape steps', default: 8, step: 1, extra: { wtype: 'number', group: 'stage' } } },
+    atlas_size: { consts: ['1024', '2048', '4096'], meta: { description: 'Atlas size', default: '2048', extra: { group: 'bake' } } },
+  }),
 }
 
 function stubWire(): void {

@@ -39,11 +39,17 @@ export async function fetchCardCatalog(signal?: AbortSignal): Promise<CatalogCar
   return out.sort((a, b) => a.label.localeCompare(b.label))
 }
 
-/** /v1/form-spec?model=<family> — the card family's emission (fields
- *  + the declared edges + the mod kinds). */
+/** /v1/form-spec?model=<family> — the card family's emission (the
+ *  serialized schema envelope + model defaults + the declared edges
+ *  + the mod kinds and their envelopes). */
 export async function fetchFormSpec(model: string, signal?: AbortSignal): Promise<FormSpecDoc> {
   const doc = await v1Get<FormSpecDoc>('/v1/form-spec?model=' + encodeURIComponent(model), signal)
-  if (!Array.isArray(doc['fields'])) throw new Error('form-spec: no fields array')
+  const env = doc['schema']
+  if (env !== null && (typeof env !== 'object'
+      || typeof (env as { uid?: unknown }).uid !== 'number'
+      || typeof (env as { refs?: unknown }).refs !== 'object')) {
+    throw new Error('form-spec: no schema envelope')
+  }
   return doc
 }
 

@@ -15,6 +15,7 @@ import { afterEach, expect, test, vi } from 'vitest'
 import { createElement } from 'react'
 
 import { CardsTab } from '../src/client/CardsTab.tsx'
+import { schemaEnvelope } from '../src/client/spec-form.tsx'
 import type { CardsBenchValue } from '../src/client/cards-resource.ts'
 
 const noop = (): void => {}
@@ -48,7 +49,9 @@ function stubWire(opts: { card: string; outputs: Record<string, string>; artifac
     if (path.includes('/v1/form-spec')) {
       return new Response(JSON.stringify({
         form: opts.card, genre: 'x', engine: 'comfyui',
-        fields: [{ name: 'prompt', label: 'Prompt', type: 'textarea' }],
+        schema: schemaEnvelope({
+          prompt: { type: 'string', meta: { description: 'Prompt', extra: { wtype: 'textarea' } } },
+        }),
         outputs: opts.outputs,
       }), { status: 200, headers: { 'content-type': 'application/json' } })
     }

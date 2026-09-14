@@ -5,9 +5,10 @@
  * construct the card ui should see that the card package emits an
  * image input, then constructs the input component automatically"):
  * the base reads the card package's EMISSION — the served form-spec
- * (fields, declared input/output edges, mod kinds) — and constructs
- * the surface. Defaults propagate from the emission (specDefaults);
- * every image/file field gets THE ONE square (square.tsx) with the
+ * (the schema envelope, declared input/output edges, mod kinds) —
+ * and constructs the surface. The resolved value derives per render
+ * (resolveValue — the engine's compose cascade mirrored); every
+ * image/file field gets THE ONE square (square.tsx) with the
  * three source verbs; no card ever hand-rolls an input component.
  *
  * THE SEAM (slots.ts): each field renders through the field-atom seam
@@ -27,8 +28,9 @@ import { InputSquare, isImageUrl, readAsDataUrl, type InputSquareVerbs } from '.
 import { ModifiersSection } from './mods.tsx'
 import { uploadInputFile } from './wire.ts'
 import {
-  activeRowId, activeVariantId, axisGroups, axisKey, axisPickPatch, composingRows, groupFields, modelChoices,
-  modOwnedFields, modelSwitchPatch, recipePickPatch, rowsFor, seedAxisValues, variantRows, quantRowsFor,
+  activeRowId, activeVariantId, axisGroups, axisKey, axisPickPatch, coerceFieldEdit, composingRows, fieldsOf,
+  fieldsOfEnvelope, groupFields, modelChoices, modOwnedFields, modelSwitchPatch, resolveValue, rowsFor, variantRows,
+  quantRowsFor,
   type FormSpecDoc, type SpecField, type SpecValues, type VariantRow,
 } from './spec.ts'
 import { fetchFormSpec } from './wire.ts'
@@ -500,10 +502,10 @@ export function SpecAtom({ f, value, onEdit, square, wireCandidates }: {
  *  values (model + every axis key + overlay keys) ride the caller's
  *  map and pass along at Run. Renders nothing when the spec declares
  *  no matrix. */
-export function ModelAxes({ spec, values, onEdit }: {
+export function ModelAxes({ spec, value, onSet }: {
   spec: FormSpecDoc
-  values: SpecValues
-  onEdit(name: string, v: unknown): void
+  value: SpecValues
+  onSet(name: string, v: unknown): void
 }): ReturnType<typeof h> | null {
   const groups = axisGroups(spec)
   if (groups.length === 0) return null
@@ -511,17 +513,17 @@ export function ModelAxes({ spec, values, onEdit }: {
   const contract = spec.features?.variant_groups ?? {}
   const pick = (row: VariantRow): void => {
     const patch = axisPickPatch(spec, row)
-    for (const [k, v] of Object.entries(patch)) onEdit(k, v)
+    for (const [k, v] of Object.entries(patch)) onSet(k, v)
   }
   // resolve actives down the chain (Variant first, then chained groups)
   const active: Record<string, string | undefined> = {}
   for (const g of groups) {
-    const held = values[axisKey(g)]
+    const held = value[axisKey(g)]
     const rows = composingRows(spec, g, active)
     if (typeof held === 'string' && held !== '' && rows.some((r) => r.id === held)) {
       active[g] = held
     } else {
-      const byRoute = activeRowId(spec, values, g, active)
+      const byRoute = activeRowId(spec, value, g, active)
       active[g] = byRoute ?? (rows.length > 0 ? rows[0].id : '')
     }
   }
@@ -532,7 +534,7 @@ export function ModelAxes({ spec, values, onEdit }: {
       h('select', {
         className: css.specSelect,
         'aria-label': 'Model',
-        value: typeof values['model'] === 'string' && values['model'] !== '' ? values['model'] as string
+        value: typeof value['model'] === 'string' && value['model'] !== '' ? value['model'] as string
           : (typeof spec.model === 'string' && spec.model !== '' ? spec.model : models[0] ?? ''),
         // THE STALE-VARIANT CURE (operator 2026-09-14): a model
         // switch re-seeds EVERY axis (variant/quant/…) to the new
@@ -541,7 +543,7 @@ export function ModelAxes({ spec, values, onEdit }: {
         onChange: (e: unknown) => {
           const m = (e as { target: { value: string } }).target.value
           const patch = modelSwitchPatch(spec, m)
-          for (const [k, v] of Object.entries(patch)) onEdit(k, v)
+          for (const [k, v] of Object.entries(patch)) onSet(k, v)
         },
       }, models.map((m) => h('option', { key: m, value: m }, m)))),
     groups.map((g) => {
@@ -566,12 +568,14 @@ export function ModelAxes({ spec, values, onEdit }: {
   )
 }
 
-/** THE CARD FORM (the constructor's surface half) — the spec's
- *  fields, grouped, visible-when honored, defaults seeded by the
- *  caller (specDefaults — propagated from the emission). Edits ride
- *  the caller's values map. Each field renders through the claimed
- *  atom for its emitted type when the caller passes one; the base's
- *  built-in atom is the default.
+/** THE CARD FORM (the constructor's surface half) — the emission's
+ *  fields walked off the schema envelope, grouped, visible-when
+ *  honored; the RESOLVED value derives per render (resolveValue —
+ *  the engine's compose cascade mirrored), edits are set/unset ops
+ *  over the USER layer (the settings law: presence IS the override
+ *  mark, the reset chip removes it). Each field renders through the
+ *  claimed atom for its emitted type when the caller passes one;
+ *  the base's built-in atom is the default.
  *
  *  THE CONSTRUCTION LAW IS NOT OPTIONAL (operator, 2026-09-12: "the
  *  img-to-mesh input component — you are not using it around — you
@@ -586,30 +590,59 @@ export function ModelAxes({ spec, values, onEdit }: {
  *  to rail sections that render served fields outside a whole form
  *  (mask's TuneSection). The claim seam stays CardForm's; this row
  *  takes the resolved atom inputs. */
-export function SpecFieldRow({ f, value, onEdit, square, wireCandidates }: {
+export function SpecFieldRow({ f, value, onEdit, square, wireCandidates, overridden, onUnset }: {
   f: SpecField
   value: unknown
   onEdit(name: string, v: unknown): void
   square?: SquareHost
   wireCandidates?: Array<{ id: string; label: string; url: string }>
+  /** THE OVERRIDE MARK (the settings law): the field's key is
+   *  present in the user layer — the row shows the reset chip, and
+   *  onUnset (when the host wires it) removes the presence. */
+  overridden?: boolean
+  onUnset?(name: string): void
 }): ReturnType<typeof h> {
-  return h('label', { className: css.specField },
+  // the row is a DIV, not a wrapper label: the atoms self-label
+  // (aria-label) and the reset chip is a button — a button inside a
+  // <label> steals the label association (getByLabelText matched the
+  // chip next to the control; interactive-in-label is the discouraged
+  // shape anyway)
+  return h('div', { className: css.specField },
     h('span', { className: css.specFieldKey },
       f.label,
       f.required === true ? h('span', { className: css.specRequired }, ' *') : null,
+      overridden === true && onUnset !== undefined
+        ? h('button', {
+            type: 'button',
+            className: css.specUnset,
+            title: 'Reset to default',
+            'aria-label': 'Reset ' + f.label + ' to default',
+            onClick: (e: unknown) => {
+              (e as { preventDefault(): void }).preventDefault()
+              onUnset(f.name)
+            },
+          }, 'reset')
+        : null,
     ),
     h(SpecAtom, { f, value, onEdit, square, ...(wireCandidates !== undefined ? { wireCandidates } : {}) }),
     f.tooltip !== undefined && f.tooltip !== '' ? h('span', { className: css.specHint }, f.tooltip) : null,
   )
 }
 
-export function CardForm({ spec, fields, values, onEdit, wire, square, atoms, onPatch }: {
-  /** the WHOLE emission (fields + model/variants) — present whenever
-   *  the host fetched the doc; the axes render from THIS. */
-  spec?: FormSpecDoc
-  fields: SpecField[]
-  values: SpecValues
-  onEdit(name: string, v: unknown): void
+export function CardForm({ spec, user, onSet, onUnset, wire, square, atoms, onPatch }: {
+  /** the WHOLE emission (the schema envelope + model/variants) —
+   *  REQUIRED now: the fields, the axes, and the mod param rows all
+   *  derive from THIS (useFormSpec fetches it). */
+  spec: FormSpecDoc
+  /** THE USER LAYER (the settings model): the stage's explicit
+   *  params. A key's PRESENCE is the override mark — the resolved
+   *  value derives (resolveValue: schema defaults <- model defaults
+   *  <- card recipe <- user), never a seeded values map. */
+  user: SpecValues
+  onSet(name: string, v: unknown): void
+  /** Remove an override (the reset path): the host patches the key
+   *  out of the user layer; the row re-derives to its base. */
+  onUnset?(name: string): void
   /** the picker wire (the other stages' latest outputs) — data, never
    *  components. The constructor builds the provider from THIS. */
   wire?: SquareWire
@@ -619,15 +652,40 @@ export function CardForm({ spec, fields, values, onEdit, wire, square, atoms, on
    *  a card's takeover of its own atoms (undefined = built-ins). */
   atoms?: Record<string, FieldAtomClaim>
   /** immediate persistence for mod commits (the onSaveParams law).
-   *  Absent (the add drill): commits ride the values map. */
+   *  Absent (the add drill): commits ride the user map. */
   onPatch?: (patch: Record<string, unknown>) => void
 }): ReturnType<typeof h> {
+  // DERIVED, ALWAYS FRESH (the layered law): fields walk the schema
+  // envelope (families-scoped); the resolved value layers defaults
+  // <- model defaults <- recipe <- user — exactly what a run
+  // composes. No seeding, no mirrors, no stamp ledger: one source,
+  // re-derived every render.
+  const fields = fieldsOf(spec)
+  const value = resolveValue(spec, user)
+  const fieldByName = new Map(fields.map((f) => [f.name, f] as const))
+  // THE EDIT COERCION (the one specPatch duty that survives, moved
+  // to the edit boundary where it always belonged): atoms emit raw
+  // strings while typing; a numeric field's edit rides the user
+  // layer as a NUMBER. An unparseable/empty numeric string rides
+  // VERBATIM (the run's schema parse refuses loud, naming the field
+  // — never a silent 0). The tri-state's `undefined` (inherit) is an
+  // UNSET, not a value: the settings' unset path op, natively.
+  const edit = (name: string, v: unknown): void => {
+    if (v === undefined) { onUnset?.(name); return }
+    onSet(name, coerceFieldEdit(fieldByName.get(name), v))
+  }
   // THE MOD SYSTEM IS CORE (operator, 2026-09-12: "MOD SYSTEM IS
   // CORE. NEVER HARDCODED"): mod-owned names NEVER render as flat
   // card fields — the section owns them. The exclusion is derived
   // from the served kinds alone, in EVERY surface, automatically.
-  const modKinds = spec?.features?.modifiers ?? []
-  const owned = modOwnedFields(spec ?? { form: '', fields: [], variants: [] })
+  // The FIELD kinds' param rows derive off the mod contracts' own
+  // envelopes (mod_schemas — the same walker as the card fields).
+  const family = typeof spec.model === 'string' ? spec.model : undefined
+  const modKinds = (spec.features?.modifiers ?? []).map((k) => ({
+    ...k,
+    fields: fieldsOfEnvelope(spec.mod_schemas?.[k.param_key], family),
+  }))
+  const owned = modOwnedFields(spec)
   const flatFields = owned.size > 0 ? fields.filter((f) => !owned.has(f.name)) : fields
   // THE INPUT RAIL (the operator's law, 2026-09-13: "CARDS EMIT INPUT
   // SIGNATURES, SO IT'S CLEAN DATA THE UI PACKAGE RECEIVES"): when the
@@ -638,7 +696,7 @@ export function CardForm({ spec, fields, values, onEdit, wire, square, atoms, on
   // absorbed flavor, group ids, emission order — never shapes the
   // input surface again). Text-kind edges stay params; fields whose
   // wtype has no slot atom yet stay in the groups.
-  const signature = spec !== undefined && Array.isArray(spec.inputs) ? spec.inputs : []
+  const signature = Array.isArray(spec.inputs) ? spec.inputs : []
   const railOf = (inp: { name: string; kind?: string }): SpecField | undefined => {
     const f = flatFields.find((x) => x.name === inp.name)
     if (f === undefined) return undefined
@@ -652,50 +710,16 @@ export function CardForm({ spec, fields, values, onEdit, wire, square, atoms, on
   const visible = (f: SpecField): boolean =>
     f.type !== 'image_list' && !railNames.has(f.name)
   const groupFieldsAll = flatFields.filter(visible)
-  const groups = groupFields(groupFieldsAll, values)
+  const groups = groupFields(groupFieldsAll, value)
   const atomOf = (f: SpecField): FieldAtomClaim | undefined => atoms?.[f.type]
-  // THE RECIPE STAMP LEDGER (the visible-recipe law, operator
-  // 2026-09-14): which value keys this session's recipe picks wrote
-  // (key → recipe key). A manual edit un-owns its key (the user's
-  // value wins, forever); a model/axis switch writes through the
-  // same wrapper so its reseeds un-own too. The mount seed writes
-  // raw (nothing is recipe-owned at open — held values are explicit
-  // server-side, exactly as the compose cascade reads them).
-  const recipeOwned = useRef<Record<string, string>>({})
-  const valuesRef = useRef(values)
-  valuesRef.current = values
-  const edit = (name: string, v: unknown): void => {
-    if (name === 'recipe' && spec !== undefined && typeof v === 'string'
-        && spec.recipes?.[v] !== undefined) {
-      const { patch, owned } = recipePickPatch(spec, v, valuesRef.current, recipeOwned.current)
-      recipeOwned.current = owned
-      for (const [k, pv] of Object.entries(patch)) onEdit(k, pv)
-      return
-    }
-    if (name !== 'recipe') delete recipeOwned.current[name]
-    onEdit(name, v)
-  }
   // THE CONSTRUCTOR'S OWN PROVIDER — always built (hook law), used
   // unless the host claimed the square seam itself.
-  const own = useSquareProvider(onEdit, wire ?? { candidates: [] })
+  const own = useSquareProvider(edit, wire ?? { candidates: [] })
   const squareFor = square ?? own.square
-  // ONE-TIME axis seeding (a reopened stage holds its keys; a fresh
-  // stage gets the first-declared law) — an effect, never render-time.
-  const seeded = useRef(false)
-  useEffect(() => {
-    if (spec === undefined || seeded.current) return
-    seeded.current = true
-    const seed = seedAxisValues(spec, valuesRef.current)
-    for (const [k, v] of Object.entries(seed)) onEdit(k, v)
-    // one-shot by the ref guard; spec identity is the trigger
-  }, [spec, onEdit])
   return h('div', { className: css.specForm },
-    // THE RECIPE WRAP (the visible-recipe law): axis picks reseed
-    // stamped keys (un-owning them) and the recipe field's own edits
-    // stamp the overlay — every field edit rides `edit`; the mount
-    // seed, the square provider, and the mod section keep raw onEdit
-    // (different key namespaces — never recipe-stamped).
-    spec !== undefined ? h(ModelAxes, { spec, values, onEdit: edit }) : null,
+    // THE AXES ride the user layer through the same edit seam (their
+    // picks are ordinary sets; the resolved value passes along).
+    h(ModelAxes, { spec, value, onSet: edit }),
     railFields.length > 0
       ? h('section', { className: css.specGroup + ' ' + css.inputRail, 'data-input-rail': '1' },
           h('div', { className: css.specSlotRow },
@@ -706,7 +730,7 @@ export function CardForm({ spec, fields, values, onEdit, wire, square, atoms, on
                 className: css.specSlotCell,
                 title: f.tooltip !== undefined && f.tooltip !== '' ? f.tooltip : undefined,
               },
-                h(SpecAtom, { f, value: values[f.name], onEdit: edit, square: squareFor(f), ...(wire?.candidates !== undefined ? { wireCandidates: wire.candidates } : {}) }),
+                h(SpecAtom, { f, value: value[f.name], onEdit: edit, square: squareFor(f), ...(wire?.candidates !== undefined ? { wireCandidates: wire.candidates } : {}) }),
               )
             }),
           ),
@@ -728,14 +752,26 @@ export function CardForm({ spec, fields, values, onEdit, wire, square, atoms, on
         const claim = atomOf(f)
         const sq = squareFor(f)
         const wireCandidates = wire?.candidates
+        const overridden = onUnset !== undefined && Object.prototype.hasOwnProperty.call(user, f.name)
         if (claim !== undefined) {
           flush()
-          children.push(h('label', { key: f.name, className: css.specField },
+          // div, not label — the reset chip is a button (see SpecFieldRow)
+          children.push(h('div', { key: f.name, className: css.specField },
             h('span', { className: css.specFieldKey },
               f.label,
               f.required === true ? h('span', { className: css.specRequired }, ' *') : null,
+              overridden ? h('button', {
+                type: 'button',
+                className: css.specUnset,
+                title: 'Reset to default',
+                'aria-label': 'Reset ' + f.label + ' to default',
+                onClick: (e: unknown) => {
+                  (e as { preventDefault(): void }).preventDefault()
+                  onUnset(f.name)
+                },
+              }, 'reset') : null,
             ),
-            claim({ f, value: values[f.name], onEdit: edit, square: sq }),
+            claim({ f, value: value[f.name], onEdit: edit, square: sq }),
             f.tooltip !== undefined && f.tooltip !== '' ? h('span', { className: css.specHint }, f.tooltip) : null,
           ))
           continue
@@ -746,12 +782,17 @@ export function CardForm({ spec, fields, values, onEdit, wire, square, atoms, on
             className: css.specSlotCell,
             title: f.tooltip !== undefined && f.tooltip !== '' ? f.tooltip : undefined,
           },
-            h(SpecAtom, { f, value: values[f.name], onEdit: edit, square: sq, ...(wireCandidates !== undefined ? { wireCandidates } : {}) }),
+            h(SpecAtom, { f, value: value[f.name], onEdit: edit, square: sq, ...(wireCandidates !== undefined ? { wireCandidates } : {}) }),
           ))
           continue
         }
         flush()
-        children.push(h(SpecFieldRow, { key: f.name, f, value: values[f.name], onEdit: edit, square: sq, ...(wireCandidates !== undefined ? { wireCandidates } : {}) }))
+        children.push(h(SpecFieldRow, {
+          key: f.name, f, value: value[f.name], onEdit: edit,
+          ...(sq !== undefined ? { square: sq } : {}),
+          ...(wireCandidates !== undefined ? { wireCandidates } : {}),
+          ...(overridden ? { overridden } : {}), ...(onUnset !== undefined ? { onUnset } : {}),
+        }))
       }
       flush()
       return h('section', { key: g.group ?? '', className: css.specGroup },
@@ -762,7 +803,7 @@ export function CardForm({ spec, fields, values, onEdit, wire, square, atoms, on
     // THE MOD SYSTEM — rendered by the constructor itself: every
     // surface (stage drill, add drill, studios) obeys, none wires it.
     modKinds.length > 0
-      ? h(ModifiersSection, { kinds: modKinds, values, onEdit, ...(onPatch !== undefined ? { onPatch } : {}) })
+      ? h(ModifiersSection, { kinds: modKinds, values: value, onEdit: edit, ...(onPatch !== undefined ? { onPatch } : {}) })
       : null,
     own.wireMenu,
   )

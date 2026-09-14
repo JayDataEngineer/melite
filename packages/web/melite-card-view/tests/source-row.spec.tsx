@@ -14,34 +14,38 @@ import userEvent from '@testing-library/user-event'
 import { afterEach, expect, test, vi } from 'vitest'
 import { createElement } from 'react'
 
-import { SpecForm, type SpecField, type SpecValues } from '../src/client/spec-form.tsx'
+import { schemaEnvelope, SpecForm, type FormSpecDoc, type SpecValues } from '../src/client/spec-form.tsx'
 
 afterEach(cleanup)
 
-const imgFields: SpecField[] = [
-  { name: 'image2', label: 'Image 2', type: 'image' },
-  { name: 'image3', label: 'Image 3', type: 'image' },
-]
-const listField: SpecField = { name: 'reference_images', label: 'Reference Images', type: 'image_list' }
+// THE ENVELOPE FIXTURES (the parameter audit): the served schema,
+// walked by fieldsOf — the flat field row is gone.
+const imgSpec: FormSpecDoc = {
+  form: 'source-row-fixture',
+  schema: schemaEnvelope({
+    image2: { type: 'string', meta: { description: 'Image 2', extra: { wtype: 'image' } } },
+    image3: { type: 'string', meta: { description: 'Image 3', extra: { wtype: 'image' } } },
+  }),
+}
 
-function Host({ fields, values, onEdit }: {
-  fields: SpecField[]
-  values: SpecValues
-  onEdit: ReturnType<typeof vi.fn>
+function Host({ spec, user, onSet }: {
+  spec: FormSpecDoc
+  user: SpecValues
+  onSet: ReturnType<typeof vi.fn>
 }): ReturnType<typeof createElement> {
   return createElement(SpecForm, {
-    fields,
-    values,
-    onEdit,
+    spec,
+    user,
+    onSet,
     square: undefined,
   })
 }
 
 test('THE SLOT ROW: one group\'s image squares sit side-by-side in ONE row container', () => {
   const { container } = render(createElement(Host, {
-    fields: imgFields,
-    values: {},
-    onEdit: vi.fn(),
+    spec: imgSpec,
+    user: {},
+    onSet: vi.fn(),
   }))
   const rows = container.querySelectorAll('[class*="specSlotRow"]')
   expect(rows.length).toBe(1) // both squares share ONE row
@@ -54,27 +58,26 @@ test('THE SLOT ROW: one group\'s image squares sit side-by-side in ONE row conta
 // ── THE INPUT RAIL (the operator's second lane report: "an input rail
 //    with images 2 and 3, then ANOTHER rail for reference images and
 //    image 1 stacked vertically") — the signature builds ONE rail ──
-const railSpec = {
+const railSpec: FormSpecDoc = {
+  form: 'rail-fixture',
   // = the old yaml's input_slots, VERBATIM — reference_images is not a slot
   inputs: [
     { name: 'image1', kind: 'image', required: true },
     { name: 'image2', kind: 'image' },
     { name: 'image3', kind: 'image' },
   ],
-} as never
-
-const railFields: SpecField[] = [
-  { name: 'image2', label: 'Image 2', type: 'image' },
-  { name: 'image3', label: 'Image 3', type: 'image' },
-  { name: 'reference_images', label: 'Reference Images', type: 'image_list' },
-  { name: 'image1', label: 'Image 1', type: 'image' },
-]
+  schema: schemaEnvelope({
+    image2: { type: 'string', meta: { description: 'Image 2', extra: { wtype: 'image' } } },
+    image3: { type: 'string', meta: { description: 'Image 3', extra: { wtype: 'image' } } },
+    reference_images: { type: 'array', meta: { description: 'Reference Images', extra: { wtype: 'image_list' } } },
+    image1: { type: 'string', meta: { description: 'Image 1', extra: { wtype: 'image' } } },
+  }),
+}
 
 test('THE INPUT RAIL: the declared signature renders ONE rail in signature order — image1 first, no second input group', () => {
   const { container } = render(createElement(SpecForm, {
-    fields: railFields,
-    values: { reference_images: ['a.png'] },
-    onEdit: vi.fn(),
+    user: { reference_images: ['a.png'] },
+    onSet: vi.fn(),
     spec: railSpec,
   }))
   const rail = container.querySelector('[data-input-rail]') as HTMLElement
@@ -92,9 +95,9 @@ test('THE INPUT RAIL: the declared signature renders ONE rail in signature order
 
 test('without a signature the group grammar still holds (backward face)', () => {
   const { container } = render(createElement(Host, {
-    fields: railFields,
-    values: {},
-    onEdit: vi.fn(),
+    spec: { ...railSpec, inputs: undefined },
+    user: {},
+    onSet: vi.fn(),
   }))
   expect(container.querySelector('[data-input-rail]')).toBeNull()
   expect(container.querySelectorAll('[class*="specSlotRow"]').length).toBeGreaterThan(0)

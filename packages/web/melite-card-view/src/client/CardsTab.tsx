@@ -35,7 +35,7 @@ import { Button, IconLoadingOutline16, IconPlayOutline16, IconStopFill16, IconTr
 import { CardDrill } from './card-drill.tsx'
 import { MediaDrilldown, type MediaDrilldownItem } from '@melite-plugin/dsh-gallery/drilldown'
 import type { StageViewOwnerProps } from './types.ts'
-import { fetchCardCatalog, fetchFormSpec, healOwnedRecipe, seedAxisValues, specDefaults, specPatch, SpecForm, useSquareProvider } from './spec-form.tsx'
+import { fetchCardCatalog, fetchFormSpec, fieldsOf, resolveValue, seedUser, SpecForm } from './spec-form.tsx'
 import { fetchFormsTable } from '@melite/card-base/wire'
 import { StudioShell } from '@melite/card-base/shell'
 
@@ -169,7 +169,7 @@ export async function runCardStage(
   let doc = params
   try {
     const spec = await fetchFormSpec(card)
-    const selects = spec.fields.filter((f) => f.type === 'select' && Array.isArray(f.options))
+    const selects = fieldsOf(spec).filter((f) => f.type === 'select' && Array.isArray(f.options))
     if (selects.length > 0) {
       doc = { ...params }
       for (const f of selects) {
@@ -719,7 +719,11 @@ function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRemoved, 
   const title = String(stage.title ?? stage.card ?? stage.id)
   const held: SpecValues = typeof stage.params === 'object' && stage.params !== null ? stage.params : {}
   const [spec, setSpec] = useState<FormSpecDoc | null>(null)
-  const [values, setValues] = useState<SpecValues>({})
+  // THE USER LAYER (the settings law, 2026-09-14): the stage's
+  //  explicit params, presence IS the override mark. The resolved
+  //  value derives per render (resolveValue — the engine's compose
+  //  cascade mirrored); edits are set/unset ops over THIS map.
+  const [user, setUser] = useState<SpecValues>({})
   // THE MEDIA DRILLDOWN SEAT (hour 24: clicking the preview mirrors
   // the media drilldown 1:1 — the SAME shared component the gallery
   // rides; the click maps the stage's primary artifact onto it).
@@ -766,13 +770,15 @@ function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRemoved, 
       .then((doc) => {
         if (!alive) return
         setSpec(doc)
-        // THE AXIS SEED (the pass-along law): a reopened stage holds
-        // its keys (held wins); a fresh stage gets the first-declared
-        // law (variant = first row, quant = its first cell, model =
-        // the row's re-point ?? the spec family). healOwnedRecipe
-        // migrates double-recipe-era benches (family `default` held
-        // where the card catalog knows standard/…).
-        setValues(healOwnedRecipe(doc, { ...specDefaults(doc.fields), ...seedAxisValues(doc, held), ...held }))
+        // THE USER-LAYER SEED (the pass-along law under the settings
+        // model): every HELD key rides verbatim (presence survived
+        // the reopen — never re-derived, never value-compared); the
+        // absent axis keys seed per the axis law (first-declared
+        // composing row, one direction); a stale family-recipe stamp
+        // the card's catalog does not know falls back to the field
+        // default (seedUser's one validation clause — the
+        // double-recipe migration).
+        setUser(seedUser(doc, held))
         setLoaded(true)
         reportSurface(doc.size === 'huge' ? 'huge' : '')
       })
@@ -803,9 +809,26 @@ function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRemoved, 
       return outs !== undefined && Object.values(outs).includes(kind)
     })
   }, [spec, edgeMeta, candidates, others])
-  const onEdit = useCallback((name: string, v: unknown): void => {
-    setValues((m) => ({ ...m, [name]: v }))
+  const onSet = useCallback((name: string, v: unknown): void => {
+    setUser((m) => ({ ...m, [name]: v }))
   }, [])
+  // THE UNSET PATH (the settings law): removing an override is a
+  // first-class edit — the key leaves the user map and the row
+  // re-derives to its base (defaults <- model defaults <- recipe).
+  // The domain write rides the Run press with the rest (a null
+  // value under JSON Merge Patch semantics deletes the key).
+  const onUnset = useCallback((name: string): void => {
+    setUser((m) => {
+      if (!Object.prototype.hasOwnProperty.call(m, name)) return m
+      const next: SpecValues = {}
+      for (const [k, v] of Object.entries(m)) if (k !== name) next[k] = v
+      return next
+    })
+  }, [])
+  // THE RESOLVED VALUE — derived per render (never state): exactly
+  // what a Run composes, what the prompt tile and the enhance sweep
+  // read, what the form shows.
+  const value: SpecValues = resolveValue(spec ?? { form: '' }, user)
   // ✦ AGENT ENHANCE (hour 24 stroke 10 — the operator's one-shot
   // order): one press gathers the card's prompt text, the sweep door
   // (/melite-tools/enhance {model, prompt}) enhances EVERY declared
@@ -818,7 +841,7 @@ function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRemoved, 
   // ignore negatives).
   const enhance = async (): Promise<void> => {
     if (enhancing) return
-    const current = String(values['prompt'] ?? '').trim()
+    const current = String(value['prompt'] ?? '').trim()
     if (current === '') return
     const model = String(spec?.model ?? held['model'] ?? '')
     if (model === '') return
@@ -838,8 +861,8 @@ function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRemoved, 
         throw new Error(typeof doc.error === 'string' ? doc.error : 'enhance failed (' + res.status + ')')
       }
       const results = doc.results ?? {}
-      const declared = new Set((spec?.fields ?? []).map((f) => String(f['name'] ?? '')))
-      setValues((m) => {
+      const declared = new Set(spec !== null ? fieldsOf(spec).map((f) => f.name) : [])
+      setUser((m) => {
         const next: SpecValues = { ...m }
         for (const [field, r] of Object.entries(results)) {
           if (typeof r?.positive !== 'string' || r.positive === '') continue
@@ -867,18 +890,22 @@ function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRemoved, 
   const run = async (): Promise<void> => {
     setError(null)
     try {
-      const patch = spec !== null ? specPatch(spec.fields, values, held) : {}
-      // THE AXIS PASS-ALONG: model/variant/quant are not SpecFields —
-      // specPatch never sees them — so the changed axis keys ride the
-      // patch HERE (the run reads them: runCardStage composes the
-      // held model as the {model:} door's family).
-      for (const k of ['model', 'variant', 'quant']) {
-        if (values[k] !== undefined && String(values[k] ?? '') !== String(held[k] ?? '')) {
-          patch[k] = values[k]
-        }
-      }
-      if (Object.keys(patch).length > 0) {
-        await patchStageParams(bench.draftId, stage.id, patch)
+      // THE USER LAYER RIDES VERBATIM (the parameter audit): the
+      // whole explicit map — params, axis keys, recipe — presence
+      // IS the truth the engine composes. Keys the stage HELD that
+      // left the user map ride as nulls (JSON Merge Patch: null
+      // deletes — the unset's domain half). An identical map skips
+      // the write (a noise guard, never a semantic — marking is by
+      // presence, this only avoids re-writing the same bench).
+      const patch: SpecValues = {}
+      const userKeys = new Set(Object.keys(user))
+      const heldKeys = new Set(Object.keys(held))
+      for (const k of userKeys) patch[k] = user[k]
+      for (const k of heldKeys) if (!userKeys.has(k)) patch[k] = null
+      const sameAsHeld = userKeys.size === heldKeys.size
+        && [...userKeys].every((k) => Object.is(user[k], held[k]))
+      if (Object.keys(patch).length > 0 && !sameAsHeld) {
+        await patchStageParams(bench.draftId, stage.id, patch, bench.rev)
       }
       onRun()
     } catch (e: unknown) {
@@ -981,7 +1008,7 @@ function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRemoved, 
         h('div', { className: css.enhanceRow },
           h(Button, {
             variant: 'outline',
-            disabled: enhancing || String(values['prompt'] ?? '').trim() === '',
+            disabled: enhancing || String(value['prompt'] ?? '').trim() === '',
             onClick: () => { void enhance() },
             'aria-label': 'Agent Enhance',
           }, enhancing ? 'enhancing…' : '✦ Agent Enhance'),
@@ -992,7 +1019,7 @@ function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRemoved, 
         h('div', { className: css.params },
         !loaded ? h('div', { className: css.load }, 'form…')
         : spec !== null
-          ? h(SpecForm, { spec, fields: spec.fields, values, onEdit, wire, onPatch: onPatchParams })
+          ? h(SpecForm, { spec, user, onSet, onUnset, wire, onPatch: onPatchParams })
         : h('pre', { className: css.mono }, JSON.stringify(held, null, 2)),
         ),
         // THE RUN SEAT (hour-25 follow-up, the operator: "the run
@@ -1131,7 +1158,9 @@ function AddCardDoor({ bench, onAdded, onClose, onAddedRow }: {
   const [query, setQuery] = useState('')
   const [picked, setPicked] = useState<CatalogCard | null>(null)
   const [spec, setSpec] = useState<FormSpecDoc | null>(null)
-  const [values, setValues] = useState<SpecValues>({})
+  // the add drill's USER layer (the settings law): axis seeds at
+  // pick, edits on top; the resolved value derives in the form.
+  const [user, setUser] = useState<SpecValues>({})
   const [formError, setFormError] = useState<string | null>(null)
   const [adding, setAdding] = useState(false)
   useEffect(() => {
@@ -1150,13 +1179,28 @@ function AddCardDoor({ bench, onAdded, onClose, onAddedRow }: {
       .then((doc) => {
         setSpec(doc)
         // THE AXIS SEED rides the add too: a new card is born with its
-        // declared variant/quant/model (the first-declared law).
-        setValues({ ...specDefaults(doc.fields), ...seedAxisValues(doc, {}) })
+        // declared variant/quant/model (the first-declared law). The
+        // user layer carries ONLY the seeds — defaults derive at
+        // compose, never ride the bench as fake overrides.
+        setUser(seedUser(doc, {}))
       })
       .catch((e: unknown) => setFormError(e instanceof Error ? e.message : 'form-spec unavailable'))
   }
-  const onEdit = useCallback((name: string, v: unknown): void => {
-    setValues((m) => ({ ...m, [name]: v }))
+  const onSet = useCallback((name: string, v: unknown): void => {
+    setUser((m) => ({ ...m, [name]: v }))
+  }, [])
+  // THE UNSET PATH (the settings law): removing an override is a
+  // first-class edit — the key leaves the user map and the row
+  // re-derives to its base (defaults <- model defaults <- recipe).
+  // The domain write rides the Run press with the rest (a null
+  // value under JSON Merge Patch semantics deletes the key).
+  const onUnset = useCallback((name: string): void => {
+    setUser((m) => {
+      if (!Object.prototype.hasOwnProperty.call(m, name)) return m
+      const next: SpecValues = {}
+      for (const [k, v] of Object.entries(m)) if (k !== name) next[k] = v
+      return next
+    })
   }, [])
   // THE PICKER WIRE for the add drill too (the constructor owns the
   //  square — the SAME input component everywhere, operator law
@@ -1180,12 +1224,11 @@ function AddCardDoor({ bench, onAdded, onClose, onAddedRow }: {
         engine: spec?.engine ?? 'comfyui',
         expect_rev: bench.rev,
       }
-      const params = spec !== null ? specPatch(spec.fields, values, specDefaults(spec.fields)) : {}
-      if (Object.keys(params).length > 0) {
-        // defaults the user never touched ride too — a new card is born
-        // with its declared shape, not an empty bag
-        doc['params'] = { ...specDefaults(spec?.fields ?? []), ...values }
-      }
+      // THE USER LAYER RIDES (the settings law): a new card is born
+      // with its axis seeds + explicit edits — the declared defaults
+      // DERIVE at compose (the engine's own cascade), never ride the
+      // bench as fake overrides.
+      if (Object.keys(user).length > 0) doc['params'] = { ...user }
       await addStageWire(doc)
       setAdding(false)
       // THE OPEN-ON-ADD LAW (the operator's hour-7): after the door
@@ -1256,7 +1299,7 @@ function AddCardDoor({ bench, onAdded, onClose, onAddedRow }: {
             h('button', { type: 'button', className: css.back, onClick: () => { setPicked(null); setSpec(null) } }, '← ' + (cards?.length ?? 0) + ' cards'),
             formError !== null ? h('p', { className: css.runError }, formError) : null,
             spec === null && formError === null ? h('div', { className: css.load }, 'form…') : null,
-            spec !== null ? h(SpecForm, { spec, fields: spec.fields, values, onEdit, wire }) : null,
+            spec !== null ? h(SpecForm, { spec, user, onSet, wire }) : null,
           ),
         preview: h('div', { className: css.outputs },
           h('div', { className: css.runRow },
@@ -1496,7 +1539,7 @@ function BenchView({ bench, onRun, onRunStage, onStopStage, onRemoveStage, stage
     if (row === undefined) return
     void fetchFormSpec(String(row.card))
       .then((spec) => {
-        const field = spec.fields.find((f) => f.type === kind)
+        const field = fieldsOf(spec).find((f) => f.type === kind)
         if (field === undefined) throw new Error('the ' + String(row.card) + ' card has no ' + kind + ' slot')
         return field.name
       })
@@ -1933,12 +1976,17 @@ export function CardsTab(props: CardsTabProps): ReturnType<typeof h> {
   // the same drafts/patch door the drill's own editor rides.
   const onPatchParamsStage = useCallback((stage: BenchStageRow, patch: Record<string, unknown>): void => {
     if (snapshot?.value?.kind !== 'bench' && snapshot?.value?.kind !== 'draft') return
-    void patchStageParams(snapshot.value.draftId, stage.id, patch)
-      .then(() => { setLocalRunError(null) })
+    // THE CAS FENCE RIDES EVERY AUTHOR (the parameter audit): the
+    // surface-params patch joins the bench revision law — a bench
+    // that moved under the write refuses loud (the snapshot's rev
+    // is the expect; the observer refreshes the doc on the refusal).
+    void patchStageParams(snapshot.value.draftId, stage.id, patch, snapshot.value.rev)
+      .then(() => { setLocalRunError(null); touchBench() })
       .catch((e: unknown) => {
         setLocalRunError(e instanceof Error ? e.message : 'patch failed')
+        touchBench()
       })
-  }, [snapshot])
+  }, [snapshot, touchBench])
   // DRAFT-STAGE RUN (the draft view's Run): the same composing door —
   // patch happens in the drill, this starts the stage's run and arms
   // the same outcome observer (the observer writes the draft's stage
@@ -1971,7 +2019,10 @@ export function CardsTab(props: CardsTabProps): ReturnType<typeof h> {
   const onPatchParamsDraft = useCallback((patch: Record<string, unknown>): void => {
     const value = snapshot?.value
     if (value?.kind !== 'draft') return
-    void patchStageParams(value.draftId, value.stageId, patch)
+    // THE CAS FENCE RIDES EVERY AUTHOR (the parameter audit): the
+    // draft's own bench revision fences the write; a moved draft
+    // refuses loud, never merges under the earlier author.
+    void patchStageParams(value.draftId, value.stageId, patch, value.rev)
       .then(() => { setLocalRunError(null) })
       .catch((e: unknown) => {
         setLocalRunError(e instanceof Error ? e.message : 'patch failed')

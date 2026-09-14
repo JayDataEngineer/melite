@@ -13,7 +13,7 @@ import { useMemo, useState, type ReactElement } from "react"
 import { Button, Tooltip } from "@deepseek-ai/dsh-client-ui-primitives"
 import { clsx } from "clsx"
 import { ChevronDown, Focus, X } from "@melite/card-base/icons"
-import { SpecFieldRow, useFormSpec, type FormSpecDoc, type SpecField } from "@melite/card-base"
+import { SpecFieldRow, fieldsOf, useFormSpec, type FormSpecDoc, type SpecField } from "@melite/card-base"
 import styles from "./mask.module.css"
 import type { MaskSource } from "./constants"
 
@@ -24,7 +24,9 @@ const TUNE_KEYS = ["detection_threshold", "sam_threshold", "sam_dilation"] as co
 
 function tuneFields(spec: FormSpecDoc | null): SpecField[] {
   if (spec === null) return []
-  const byName = new Map(spec.fields.map((f) => [f.name, f]))
+  // the fields derive off the served schema envelope (the parameter
+  // audit: the flat row died — the walk is the one truth)
+  const byName = new Map(fieldsOf(spec).map((f) => [f.name, f]))
   return TUNE_KEYS.flatMap((k) => {
     const f = byName.get(k)
     return f === undefined ? [] : [f]

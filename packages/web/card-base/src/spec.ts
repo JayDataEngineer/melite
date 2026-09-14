@@ -6,9 +6,21 @@
  * the card package emits an image input, then constructs the input
  * component automatically"). This module is the emission's client-side
  * shape — the served form-spec document as the base consumes it —
- * plus the PURE projections (defaults seeding, visibility, grouping,
- * patch coercion). No fetchers here (wire.ts), no components
- * (form.tsx): types and derivations only.
+ * plus the PURE projections. No fetchers here (wire.ts), no
+ * components (form.tsx): types and derivations only.
+ *
+ * THE LAYERED-PARAMS LAW (the parameter audit, 2026-09-14 — the
+ * DSH settings model, subsystems/settings.md): the form-spec serves
+ * the card's own SERIALIZED SCHEMA (schemastery toJSON — the SSOT,
+ * one serializer server-side) and the bench's stage params ARE the
+ * USER layer: a key's PRESENCE is the override mark, never its
+ * value. resolveValue layers schema defaults <- model defaults <-
+ * card-recipe params <- user — the engine's compose cascade
+ * (applyRecipe) verbatim, resolved client-side so the form shows
+ * exactly what a run composes. Edits are set/unset ops over the
+ * user layer; a recipe pick is an ordinary set of `recipe` whose
+ * base re-derives — no stamp ledger, no value-compare heuristics,
+ * no heal walk (seedUser's one validation clause aside).
  *
  * THE EDGE LAW (operator order, 2026-09-12: "whenever a card emits
  * via the package system, it needs to have 'input' 'required=True',
@@ -20,13 +32,77 @@
  * THESE, never from result-URL sniffing.
  */
 
-/** One served form-spec field (/v1/form-spec — the params_emit contract:
- *  type/format/enum/default/minimum/maximum/description + the editor's
- *  own serving keys: group, zone, order, placeholder, tooltip,
- *  visible_when, options, step, required). */
+/** One node of a serialized schemastery schema (toJSON's refs entry):
+ *  `type` discriminates, `meta` carries the declaration's facts
+ *  (description/min/max/step/default + the UI bag under meta.extra),
+ *  `value` a const's value, `list` a union's member ref ids, `dict`
+ *  an object's field-name -> ref-id map. */
+export interface SchemaRef {
+  type?: string
+  meta?: Record<string, unknown>
+  value?: unknown
+  list?: number[]
+  dict?: Record<string, number>
+}
+
+/** A serialized schemastery schema (toJSON's envelope): the root
+ *  object's ref id plus the ref table. The served form's SSOT — the
+ *  walker (fieldsOfEnvelope) derives every field fact from it. */
+export interface SchemaEnvelope {
+  uid: number
+  refs: Record<number, SchemaRef>
+}
+
+/** Build an envelope from raw dict nodes — the TEST-side and
+ *  migration-side constructor; the served envelopes come from
+ *  schemastery's own toJSON. Ids assign in insertion order; a node
+ *  carrying `consts` (string labels or {value,label} rows) expands
+ *  into minted const refs with the union's `list` wired to them —
+ *  the shape schemastery's union-of-consts serializes to. */
+export function schemaEnvelope(dict: Record<string, SchemaRef & { consts?: unknown }>): SchemaEnvelope {
+  const refs: Record<number, SchemaRef> = { 0: { type: 'object', dict: {} } }
+  let uid = 0
+  for (const [name, raw] of Object.entries(dict)) {
+    uid += 1
+    const nodeId = uid
+    const node: SchemaRef = { ...raw }
+    const consts = (node as Record<string, unknown>)['consts']
+    delete (node as Record<string, unknown>)['consts']
+    if (Array.isArray(consts)) {
+      const list: number[] = []
+      for (const c of consts) {
+        uid += 1
+        if (typeof c === 'string') {
+          refs[uid] = { type: 'const', value: c }
+        } else if (typeof c === 'object' && c !== null) {
+          const row = c as { value: unknown; label?: unknown }
+          refs[uid] = {
+            type: 'const', value: row.value,
+            ...(row.label !== undefined ? { meta: { description: String(row.label) } } : {}),
+          }
+        }
+        list.push(uid)
+      }
+      node.list = list
+      if (node.type === undefined) node.type = 'union'
+    }
+    refs[nodeId] = node
+    refs[0].dict![name] = nodeId
+  }
+  return { uid: 0, refs }
+}
+
+
+/** One DERIVED form field (fieldsOfEnvelope's output — the client's
+ *  presentation descriptor, never a wire row): every fact reads off
+ *  the schema node's meta (native wins, the extra bag fills), the
+ *  presentation type derives from the node type + declared hint. */
 export interface SpecField {
   name: string
   label: string
+  /** The declaration's extra.order (0 when undeclared) — row order
+   *  within the group; dict insertion order is the tie-break. */
+  order?: number
   type: string
   default?: unknown
   min?: number
@@ -84,9 +160,11 @@ export interface ModifierKind {
  *  groups: mod params render ONLY inside the mod system. PURE. */
 export function modOwnedFields(spec: FormSpecDoc): Set<string> {
   const owned = new Set<string>()
-  for (const k of spec.features?.modifiers ?? []) {
-    owned.add(k.param_key)
-    for (const f of k.fields ?? []) owned.add(f.name)
+  for (const k of spec.features?.modifiers ?? []) owned.add(k.param_key)
+  for (const env of Object.values(spec.mod_schemas ?? {})) {
+    if (env == null) continue
+    const root = env.refs[env.uid]
+    for (const name of Object.keys(root?.dict ?? {})) owned.add(name)
   }
   return owned
 }
@@ -135,7 +213,21 @@ export interface FormSpecDoc {
   form: string
   genre?: string
   engine?: string
-  fields: SpecField[]
+  /** THE CARD'S SERIALIZED SCHEMA (schemastery toJSON — the served
+   *  form's SSOT; null only for a carrier that cannot serialize).
+   *  fieldsOf derives the field list; every layering fact reads off
+   *  the envelope. THE FLAT FIELD ROW IS GONE (the parameter
+   *  audit): no parallel serialization survives. */
+  schema?: SchemaEnvelope | null
+  /** THE ABSORBED MOD CONTRACTS' envelopes, keyed by pack (the
+   *  family-scoped absorption server-side). The modifier surface
+   *  derives its param rows from THESE — same walker, one meta
+   *  path. */
+  mod_schemas?: Record<string, SchemaEnvelope | null>
+  /** THE BASE LAYER INPUT (the family row's own defaults —
+   *  resolveValue layers it over the schema defaults, under the
+   *  recipe, under user). */
+  model_defaults?: Record<string, unknown>
   /** THE FAMILY the spec serves (?model=<key> resolution) — the Model
    *  axis' resting value and the run's family when no variant re-point
    *  has ridden (the pass-along law, 2026-09-12). */
@@ -161,8 +253,8 @@ export interface FormSpecDoc {
   }
   /** THE CARD-RECIPE CATALOG (the card's own `recipes` emission —
    *  null when the card declares none). The constructor stamps the
-   *  picked recipe's params into the visible fields (recipePickPatch
-   *  below); the engine layers the same params at compose. */
+   *  key — a set re-derives every visible layer); the engine layers
+   *  the same params at compose. */
   recipes?: Record<string, CardRecipeRow> | null
   /** The estate's surface envelope (served TOP-LEVEL by the door —
    *  2026-09-12 lane read): layout='studio' means a registered view
@@ -184,14 +276,178 @@ export interface CatalogCard {
 
 export type SpecValues = Record<string, unknown>
 
-/** Seed the editable values from the spec's declared defaults (the old
- *  picker's law: pick → defaults seeded → the user edits from there).
- *  DEFAULTS PROPAGATE FROM THE EMISSION — the base never invents one. */
+/** THE SCHEMA LAYER's declared defaults (fieldsOfEnvelope's output —
+ *  resolveValue's first layer; the base never invents one). */
 export function specDefaults(fields: SpecField[]): SpecValues {
   const out: SpecValues = {}
   for (const f of fields) {
     if (f.default !== undefined && f.default !== null) out[f.name] = f.default
   }
+  return out
+}
+
+/** ── THE ENVELOPE WALKER ─────────────────────────────────────────
+ *
+ * One pure projection: serialized schemastery schema -> derived
+ * SpecFields. Every presentation fact lives in the nodes' meta (the
+ * declaration IS the UI contract — the py Field.emit law); this
+ * walk reads, never invents. THE ORDER: dict insertion order with
+ * the declared `order` hint as tie-break (a stable sort — equal
+ * keys keep insertion order).
+ *
+ * Families scoping: a node whose extra.families names families the
+ * spec does NOT serve skips (the absorption is family-scoped —
+ * the card serves only the boarded plane).
+ *
+ * Nullable pairs: a union of [X, const(null)] wires as X — the
+ * OUTER meta wins (schemastery's nullable() shape, probed live on
+ * image-gen 2026-09-14).
+ *
+ * Presentation types (the audit's client-side derivation — a view
+ * choice over typed meta, never a server row): extra.wtype wins
+ * (declared presentation); union-of-consts -> select; number ->
+ * step 1 -> seed, any other step -> slider, no step -> slider;
+ * string -> text; boolean -> boolean; array -> loras.
+ *
+ * Option labels: a union's const members carry their own
+ * meta.description (the py emitter's label law) — the declared
+ * extra.options override when present. */
+export function fieldsOfEnvelope(
+  env: SchemaEnvelope | null | undefined,
+  family?: string,
+): SpecField[] {
+  if (env == null) return []
+  const root = env.refs[env.uid]
+  const dict = root?.dict ?? {}
+  const out: SpecField[] = []
+  for (const [name, id] of Object.entries(dict)) {
+    let node: SchemaRef | undefined = env.refs[id]
+    if (node === undefined) continue
+    // nullable unwrap: union [inner, const(null)] -> inner, outer meta wins
+    if (node.type === 'union' && Array.isArray(node.list) && node.list.length === 2) {
+      const a = env.refs[node.list[0]]
+      const b = env.refs[node.list[1]]
+      const nullConst = (r: SchemaRef | undefined): boolean =>
+        r?.type === 'const' && r.value === null
+      if (a !== undefined && b !== undefined
+          && ((nullConst(a) && b.type !== 'const') || (nullConst(b) && a.type !== 'const'))) {
+        node = nullConst(a) ? b : a
+      }
+    }
+    const meta: Record<string, unknown> = node.meta ?? {}
+    const extra: Record<string, unknown> =
+      typeof meta['extra'] === 'object' && meta['extra'] !== null && !Array.isArray(meta['extra'])
+        ? meta['extra'] as Record<string, unknown> : {}
+    const families = Array.isArray(extra['families'])
+      ? extra['families'] as unknown[] : null
+    if (families !== null && family !== undefined
+        && !families.includes(family)) continue
+    // union options: const members, labels from their meta.description
+    let options: Array<string | { value: string; label: string }> | undefined
+    if (node.type === 'union' && Array.isArray(node.list)) {
+      const opts: Array<string | { value: string; label: string }> = []
+      for (const mid of node.list) {
+        const m = env.refs[mid]
+        if (m?.type !== 'const') continue
+        const v = m.value
+        if (v === null || v === undefined) continue
+        const label = typeof m.meta?.['description'] === 'string'
+          ? m.meta['description'] as string : String(v)
+        if (label === String(v)) opts.push(String(v))
+        else opts.push({ value: String(v), label })
+      }
+      if (opts.length > 0) options = opts
+    }
+    if (Array.isArray(extra['options'])) {
+      options = (extra['options'] as unknown[]).map((o) =>
+        typeof o === 'string' ? o
+          : typeof o === 'object' && o !== null && 'value' in (o as Record<string, unknown>) && 'label' in (o as Record<string, unknown>)
+            ? { value: String((o as Record<string, unknown>)['value']), label: String((o as Record<string, unknown>)['label']) }
+            : String(o))
+    }
+    // presentation type: declared hint wins, else derive
+    const hint = typeof extra['wtype'] === 'string' ? extra['wtype'] : ''
+    let type: string
+    if (hint !== '') type = hint
+    else if (options !== undefined && node.type === 'union') type = 'select'
+    else if (node.type === 'number') type = String(meta['step'] ?? '') === '1' ? 'seed' : 'slider'
+    else if (node.type === 'string') type = 'text'
+    else if (node.type === 'boolean') type = 'boolean'
+    else if (node.type === 'array') type = 'loras'
+    else type = node.type ?? 'string'
+    const num = (k: string): number | undefined =>
+      typeof meta[k] === 'number' ? meta[k] as number : undefined
+    const str = (k: string): string | undefined =>
+      typeof extra[k] === 'string' ? extra[k] as string
+        : typeof meta[k] === 'string' ? meta[k] as string : undefined
+    out.push({
+      name,
+      label: typeof meta['description'] === 'string' && meta['description'] !== ''
+        ? meta['description'] as string : name,
+      order: typeof extra['order'] === 'number' ? extra['order'] : undefined,
+      type,
+      default: meta['default'] === undefined ? undefined : meta['default'],
+      min: num('min'), max: num('max'),
+      step: type === 'seed' ? undefined : num('step'),
+      options,
+      group: str('group') ?? '',
+      zone: str('zone'),
+      required: extra['required'] === true || meta['required'] === true,
+      placeholder: str('placeholder'),
+      tooltip: str('tooltip'),
+      visible_when: str('visible_when'),
+    })
+  }
+  // declared order first, dict insertion order as tie-break (stable)
+  return out.map((f, i) => [f, i] as const).sort((a, b) =>
+    (a[0].order ?? 0) - (b[0].order ?? 0) || a[1] - b[1]).map((x) => x[0])
+}
+
+/** THE EDIT COERCION (the one specPatch duty that survives, moved
+ * to the edit boundary): atoms emit raw strings while typing; a
+ * numeric field's edit rides the user layer as a NUMBER. An
+ * unparseable/empty numeric string rides VERBATIM (the run's schema
+ * parse refuses loud, naming the field — never a silent 0). `v ===
+ * undefined` stays undefined (the tri-state's inherit — the caller's
+ * unset signal). PURE. */
+export function coerceFieldEdit(f: SpecField | undefined, v: unknown): unknown {
+  if (v === undefined) return undefined
+  if (f !== undefined && (f.type === 'number' || f.type === 'seed' || f.type === 'slider')
+      && typeof v === 'string' && v.trim() !== '' && Number.isFinite(Number(v))) {
+    return Number(v)
+  }
+  return v
+}
+
+/** The card's own derived fields (the schema envelope walked,
+ * families-scoped to the served family). Memoize at the caller for
+ * hot loops — the walk is pure. */
+export function fieldsOf(spec: FormSpecDoc): SpecField[] {
+  return fieldsOfEnvelope(spec.schema, typeof spec.model === 'string' ? spec.model : undefined)
+}
+
+/** THE LAYERED RESOLUTION — the engine's compose cascade (applyRecipe
+ * in the card's service plane) mirrored client-side: schema
+ * defaults <- model defaults <- card-recipe params <- user. The form
+ * SHOWS exactly what a run composes; `user` rides verbatim by key
+ * presence (a PRESENCE is the override mark, never its value — the
+ * settings law). Arrays (lora bags) and nulls in model_defaults
+ * skip, matching the engine's overlay filter. */
+export function resolveValue(spec: FormSpecDoc, user: SpecValues): SpecValues {
+  const out: SpecValues = specDefaults(fieldsOf(spec))
+  for (const [k, v] of Object.entries(spec.model_defaults ?? {})) {
+    if (v === null || Array.isArray(v)) continue
+    out[k] = v
+  }
+  const fields = fieldsOf(spec)
+  const rkey = typeof user['recipe'] === 'string' && user['recipe'] !== ''
+    ? user['recipe'] as string
+    : (fields.find((f) => f.name === 'recipe')?.default)
+  if (typeof rkey === 'string' && rkey !== '') {
+    const overlay = spec.recipes?.[rkey]?.params
+    if (overlay !== undefined) Object.assign(out, overlay)
+  }
+  Object.assign(out, user)
   return out
 }
 
@@ -230,40 +486,6 @@ export function inputEdgeOf(spec: FormSpecDoc, paramName: string): InputEdge | u
   return (spec.inputs ?? []).find((e) => e.name === paramName)
 }
 
-/** Coerce the raw edit strings to the spec's declared types — ONCE, at
- *  patch time (the editPatch law). Only keys that CHANGED from the
- *  stage's held params ride the patch. */
-export function specPatch(fields: SpecField[], values: SpecValues, held: SpecValues): SpecValues {
-  const out: SpecValues = {}
-  for (const f of fields) {
-    const v = values[f.name]
-    if (v === undefined) continue
-    const before = held[f.name] ?? f.default
-    const same = String(v) === String(before ?? '')
-    if (same) continue
-    if (f.type === 'number' || f.type === 'seed' || f.type === 'slider') {
-      const n = Number(v)
-      out[f.name] = Number.isFinite(n) ? n : v
-    } else if (f.type === 'switch' || f.type === 'boolean') {
-      out[f.name] = v === true || v === 'true'
-    } else {
-      out[f.name] = v
-    }
-  }
-  return out
-}
-
-// ── the variant axes (the pass-along law, 2026-09-12: "the card-ui
-//    package is supposed to pass along the model, variant, and quant
-//    fields") — the old flowCardAxes/flowAxisRows law, translated to
-//    the SERVED shape alone: the flattened rows carry the whole chain
-//    (a cell's `owner` IS its filter — one direction). The axes are
-//    the SERVED GROUPS, ALL of them (Variant, Quant, Recipe, Precision,
-//    … — the declaration's vocabulary, never a hardcoded list; the
-//    operator's lane proof 2026-09-12 caught the hardcoded Quant-only
-//    list dropping seedvr2's and qwen's Recipe/Precision axes). PURE
-//    projections only; the selects render in form.tsx's ModelAxes. ───
-
 /** THE RECIPE-YIELD LAW (operator, 2026-09-14: "IMG GEN UI CARD
  *  HAS TWO RECIPES"): the card's own `recipe` schema field and the
  *  family matrix's `Recipe` axis group share the `recipe` values key
@@ -273,7 +495,7 @@ export function specPatch(fields: SpecField[], values: SpecValues, held: SpecVal
  *  field, the card OWNS the name: the family axis yields (hidden,
  *  never seeded). PURE. */
 export function cardOwnsRecipe(spec: FormSpecDoc): boolean {
-  return (spec.fields ?? []).some((f) => f.name === 'recipe')
+  return fieldsOf(spec).some((f) => f.name === 'recipe')
 }
 
 /** The axis groups in declaration order: features.variant_groups'
@@ -419,28 +641,6 @@ export function axisPickPatch(spec: FormSpecDoc, row: VariantRow): SpecValues {
   return patch
 }
 
-/** Heal a bench POISONED by the double-recipe era (the recipe-yield
- *  law's migration half): when the card owns its recipe field, a held
- *  `recipe` value naming a FAMILY recipe row (`default`, `realism` —
- *  stamped by the old axis seed) is not a card recipe. Fall it back
- *  to the field default so the next Run patches the healed value and
- *  the bench converges. Judged against the field's own options when
- *  the emission carries them; option-less emissions pass through
- *  untouched (never refuse on a guess). PURE. */
-export function healOwnedRecipe(spec: FormSpecDoc, values: SpecValues): SpecValues {
-  if (!cardOwnsRecipe(spec)) return values
-  const field = (spec.fields ?? []).find((f) => f.name === 'recipe')
-  const cur = values['recipe']
-  if (typeof cur !== 'string' || cur === '') return values
-  const opts = (field?.options ?? []).map((o) => typeof o === 'string' ? o : o.value)
-  if (opts.length > 0 && !opts.includes(cur)) {
-    const next = { ...values }
-    if (field?.default !== undefined && field.default !== null) next['recipe'] = field.default
-    else delete next['recipe']
-    return next
-  }
-  return values
-}
 /** A model switch's full value patch (the stale-variant cure,
  *  operator 2026-09-14: model anima + variant turbo refused at
  *  compose — a switch that keeps the old family's axes is a broken
@@ -477,46 +677,6 @@ export function modelSwitchPatch(spec: FormSpecDoc, model: string): SpecValues {
   patch['model'] = model
   return patch
 }
-/** A recipe pick's full write (THE VISIBLE RECIPE LAW, operator
- *  2026-09-14: "when I do dropdown there, it should change
- *  parameters"): picking the card's recipe dropdown stamps the
- *  catalog params into the values — the SAME cascade the engine
- *  enforces at compose (recipe under explicit), mirrored visibly.
- *  `owned` is the session's stamp ledger (key → recipe key): a
- *  recipe fills a param when it is recipe-owned (re-stamp moves it),
- *  missing, or still at the field default (untouched) — a value the
- *  user set wins and is never clobbered. Keys owned by a PREVIOUS
- *  recipe that the new one does not define fall back to the field
- *  default ('' when the field declares none) so stale stamps lift
- *  instead of accumulating. The recipe key itself always rides the
- *  patch. PURE — the caller writes every patch entry through
- *  onEdit and keeps the returned ledger. */
-export function recipePickPatch(
-  spec: FormSpecDoc,
-  key: string,
-  values: SpecValues,
-  owned: Record<string, string>,
-): { patch: SpecValues, owned: Record<string, string> } {
-  const patch: SpecValues = { recipe: key }
-  const nextOwned: Record<string, string> = { ...owned }
-  const overlay: Record<string, unknown> = spec.recipes?.[key]?.params ?? {}
-  const defaults = specDefaults(spec.fields)
-  for (const [k, r] of Object.entries(owned)) {
-    if (r !== key && !(k in overlay)) {
-      patch[k] = k in defaults ? defaults[k] : ''
-      delete nextOwned[k]
-    }
-  }
-  for (const [k, v] of Object.entries(overlay)) {
-    const cur = values[k]
-    if (nextOwned[k] !== undefined || cur === undefined
-        || (k in defaults && cur === defaults[k])) {
-      patch[k] = v
-      nextOwned[k] = key
-    }
-  }
-  return { patch, owned: nextOwned }
-}
 /** Seed the axis keys for a fresh stage (the catalog's first-declared
  *  law: each axis defaults to its FIRST composing row). Held values
  *  win (a reopened stage never re-seeds). */
@@ -551,6 +711,34 @@ export function seedAxisValues(spec: FormSpecDoc, held: SpecValues): SpecValues 
       }
     }
     if (model !== '') out['model'] = model
+  }
+  return out
+}
+
+/** Seed a stage's USER layer from its held params (the bench's
+ * stage.params — the only migration seam). Presence-based, per the
+ * settings law: every HELD key rides verbatim (the override marks
+ * survived the reopen), the absent axis keys seed per the axis law
+ * (seedAxisValues above — first composing row, one direction).
+ *
+ * THE ONE VALIDATION CLAUSE (the double-recipe migration, kept from
+ * the heal walk but expressed as validation — never value-compare):
+ * when the card's schema owns the `recipe` field, a held `recipe`
+ * the card's own option list does not know is a stale family-axis
+ * stamp — it falls back to the field's declared default (dropped
+ * when none). Everything else rides untouched.
+ *
+ * PURE — the caller owns the write (onSet per fresh key). */
+export function seedUser(spec: FormSpecDoc, held: SpecValues): SpecValues {
+  const out: SpecValues = { ...held, ...seedAxisValues(spec, held) }
+  const field = fieldsOf(spec).find((f) => f.name === 'recipe')
+  if (field === undefined) return out
+  const cur = out['recipe']
+  if (typeof cur !== 'string' || cur === '') return out
+  const opts = (field.options ?? []).map((o) => typeof o === 'string' ? o : o.value)
+  if (opts.length > 0 && !opts.includes(cur)) {
+    if (field.default !== undefined && field.default !== null) out['recipe'] = field.default
+    else delete out['recipe']
   }
   return out
 }

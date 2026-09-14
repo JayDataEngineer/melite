@@ -734,30 +734,35 @@ describe('/v1 prefix discovery arms', () => {
   })
 
   // THE MOD SYSTEM OWNS MODS (the SubcardGrid law, ported 2026-09-12):
-  // a mod kind's param_key NEVER rides the flat fields or the schema
-  // groups — mods ride features.modifiers only. ControlNet proves the
-  // law by absence (the pack waits unboarded; no field names it).
+  // a mod kind's param_key rides features.modifiers and mod_schemas
+  // ONLY — mod params never join the card schema envelope's own
+  // field nodes. ControlNet proves the law by absence (the pack
+  // waits unboarded; no envelope, no entry, nothing names it).
   test('form-spec keeps mod param_keys off the card fields (the mod system owns mods)', async () => {
     const h = boot({})
     const r = await call(h.routes, '/v1', { method: 'GET', url: 'http://localhost/v1/form-spec?model=image-gen' })
     assert.equal(r.status, 200)
     const body = r.body as {
-      fields: Array<{ name: string; group?: string }>
-      schema_groups: Array<{ id: string; fields: unknown[] }>
+      schema: { uid: number; refs: Record<string, { dict?: Record<string, unknown> }> }
+      mod_schemas: Record<string, unknown>
       features: { modifiers: Array<{ kind: string; param_key: string; options?: Array<{ value: string }> }> }
     }
-    // no mod field on the form — loras is the mod bag, not a knob
-    assert.ok(!body.fields.some((f) => f.name === 'loras'), 'fields must not carry the loras mod bag')
-    // no emptied mod group survives in schema_groups
-    assert.ok(!body.schema_groups.some((g) => g.id === 'loras_controlnet' && g.fields.length === 0), 'an emptied mod group must drop')
+    // THE ENVELOPE (the parameter audit): the schema rides as the
+    // card's own toJSON — flat rows are gone
+    assert.equal(typeof body.schema.uid, 'number')
+    // the card envelope's own dict never carries the mod param keys
+    const dictNames = Object.values(body.schema.refs).flatMap((n) => Object.keys(n.dict ?? {}))
+    assert.ok(!dictNames.some((n) => n === 'loras' || n === 'controlnet'), 'the card envelope must not carry the mod bags')
+    // the lora mod contract rides its OWN envelope, keyed by pack
+    assert.ok('loras' in body.mod_schemas, 'the loras mod contract rides mod_schemas')
     // the kind vocabulary still serves — the mod surface's own offer
     const lora = body.features.modifiers.find((m) => m.kind === 'lora')
     assert.ok(lora !== undefined, 'the lora kind serves in features.modifiers')
     assert.equal(lora.param_key, 'loras')
     assert.ok((lora.options ?? []).some((o) => o.value === 'krea2_realism_lora'), 'krea-2 flavor rows serve as options')
-    // controlnet: unboarded — no kind, no field, nothing
+    // controlnet: unboarded — no kind, no envelope, nothing
     assert.ok(!body.features.modifiers.some((m) => m.kind === 'controlnet'))
-    assert.ok(!body.fields.some((f) => f.name === 'controlnet'))
+    assert.ok(!('controlnet' in body.mod_schemas))
   })
 
   test('form-spec emits the declared edges — inputs join the required fact, outputs serve verbatim', async () => {
@@ -768,15 +773,24 @@ describe('/v1 prefix discovery arms', () => {
       inputs: Array<{ name: string; kind: string; required?: boolean }>
       outputs: Record<string, string>
     }
-    // THE EDGE EMISSION (operator order, 2026-09-12): a card emits
-    // 'input' (required=True where the edge must exist) or 'output'
-    // so the edges are defined — the base constructs from THIS,
-    // never from result sniffing.
+    // THE EDGE EMISSION (operator order, 2026-09-12; the required
+    // join moved client-side with the envelope, 2026-09-14): a card
+    // emits 'input'/'output' rows as DECLARED (flowKinds verbatim);
+    // the required facts ride the schema envelope's own nodes —
+    // fieldsOf walks them client-side, the py law verbatim.
     assert.deepEqual(body.inputs, [
-      { name: 'input_image', kind: 'image', required: true },
-    ], 'the input edge names the schema param, joins the required fact (True emits, False omits)')
+      { name: 'input_image', kind: 'image' },
+    ], 'the input edge names the schema param, serves the declared kind')
     assert.deepEqual(body.outputs, { default: 'image' }, 'outputs serve as declared (flowKinds)')
-    // a card whose input is not required omits the flag
+    // the required fact rides the envelope: upscale-tools declares
+    // input_image required=True in its schema — the node says so
+    const dict = Object.values((body as { schema: { refs: Record<string, { dict?: Record<string, unknown> }> } }).schema.refs)
+      .flatMap((n) => Object.entries(n.dict ?? {}))
+      .find(([n]) => n === 'input_image')
+    assert.ok(dict !== undefined, 'input_image rides the card envelope')
+    // the required law is client-side — pin the flag lane exists:
+    // the json form is {'type':'image'} (no required) when False;
+    // the client requires via the declared edge walk
     const g = await call(h.routes, '/v1', { method: 'GET', url: 'http://localhost/v1/form-spec?model=image-gen' })
     assert.equal(g.status, 200)
     const gb = g.body as { inputs: Array<{ name: string; kind: string; required?: boolean }> }

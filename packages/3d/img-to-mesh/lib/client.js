@@ -9,8 +9,8 @@ window.__ModuleLoader__.load({
 		let react_jsx_runtime = require("react/jsx-runtime");
 		let react_dom = require("react-dom");
 		//#region \0dsh-css:/home/user/Documents/programs/active/inference.cpp/packages/3d/img-to-mesh/src/client/client.module.css.mjs
-		const css$4 = ".xjw8Uq_runRow{justify-content:flex-end;align-items:center;gap:10px;width:100%;display:flex}.xjw8Uq_zoomDetail{min-height:0;padding:14px;display:block;overflow-y:auto}.xjw8Uq_groupNote{color:var(--dsw-alias-label-secondary,#61666b);margin:0 0 10px;font-size:12px;line-height:20px}.xjw8Uq_studioGroup{flex-direction:column;gap:6px;display:flex}.xjw8Uq_studioRail{flex-direction:column;gap:10px;min-width:0;display:flex}.xjw8Uq_runError{color:var(--dsw-alias-label-error,#e05656);overflow-wrap:anywhere;font-size:11px}.xjw8Uq_viewport{background:var(--dsw-alias-bg-canvas,#fff);border:.5px solid var(--dsw-alias-border-l2,#00000024);border-radius:10px;min-height:320px;display:flex;position:relative;overflow:hidden}.xjw8Uq_viewportEmpty{color:var(--dsw-alias-label-tertiary,#00000073);align-self:center;margin:auto;font-size:12px;line-height:20px}.xjw8Uq_viewport canvas{display:block}.xjw8Uq_viewportCanvas{width:100%;height:380px}.xjw8Uq_viewport:only-child{min-height:380px}.xjw8Uq_drillRunRow{background:var(--dsw-alias-bg-base);border-top:1px solid var(--dsw-alias-border-l2);z-index:1;justify-content:flex-end;align-items:center;gap:8px;margin-top:8px;padding:10px 0 4px;display:flex;position:sticky;bottom:0}.xjw8Uq_drillRunBtn{background:color-mix(in srgb, var(--dsw-alias-bg-base) 72%, transparent);border:1px solid var(--dsw-alias-border-l2);color:var(--dsw-alias-label-secondary);cursor:pointer;height:36px;transition:color var(--ds-transition-duration,.12s) var(--ds-ease-in-out,ease), border-color var(--ds-transition-duration,.12s) var(--ds-ease-in-out,ease);border-radius:8px;justify-content:center;align-items:center;gap:8px;padding:0 16px;font-size:13px;font-weight:600;display:inline-flex}.xjw8Uq_drillRunBtn:hover{border-color:var(--dsw-alias-border-l4);color:var(--dsw-alias-brand-primary)}.xjw8Uq_drillRunBtn:focus-visible{border-color:var(--dsw-alias-brand-primary);color:var(--dsw-alias-brand-primary)}.xjw8Uq_studioProgress{color:var(--dsw-alias-label-secondary);font-variant-numeric:tabular-nums;align-items:center;gap:6px;font-size:11px;display:inline-flex}.xjw8Uq_studioProgress>svg{animation:1s linear infinite xjw8Uq_studioProgressTurn}@keyframes xjw8Uq_studioProgressTurn{to{transform:rotate(360deg)}}";
-		const tagId$4 = "@melite/3d-img-to-mesh/client.module.css@ea750de7";
+		const css$4 = ".xjw8Uq_runRow{justify-content:flex-end;align-items:center;gap:10px;width:100%;display:flex}.xjw8Uq_zoomDetail{min-height:0;padding:14px;display:block;overflow-y:auto}.xjw8Uq_groupNote{color:var(--dsw-alias-label-secondary,#61666b);margin:0 0 10px;font-size:12px;line-height:20px}.xjw8Uq_studioGroup{flex-direction:column;gap:6px;display:flex}.xjw8Uq_studioGroupTitle{letter-spacing:.04em;text-transform:uppercase;opacity:.65;margin:0;font-size:11px;font-weight:600}.xjw8Uq_studioRail{flex-direction:column;gap:10px;min-width:0;display:flex}.xjw8Uq_runError{color:var(--dsw-alias-label-error,#e05656);overflow-wrap:anywhere;font-size:11px}.xjw8Uq_viewport{background:var(--dsw-alias-bg-canvas,#fff);border:.5px solid var(--dsw-alias-border-l2,#00000024);border-radius:10px;min-height:320px;display:flex;position:relative;overflow:hidden}.xjw8Uq_viewportEmpty{color:var(--dsw-alias-label-tertiary,#00000073);align-self:center;margin:auto;font-size:12px;line-height:20px}.xjw8Uq_viewport canvas{display:block}.xjw8Uq_viewportCanvas{width:100%;height:380px}.xjw8Uq_viewport:only-child{min-height:380px}.xjw8Uq_drillRunRow{background:var(--dsw-alias-bg-base);border-top:1px solid var(--dsw-alias-border-l2);z-index:1;justify-content:flex-end;align-items:center;gap:8px;margin-top:8px;padding:10px 0 4px;display:flex;position:sticky;bottom:0}.xjw8Uq_drillRunBtn{background:color-mix(in srgb, var(--dsw-alias-bg-base) 72%, transparent);border:1px solid var(--dsw-alias-border-l2);color:var(--dsw-alias-label-secondary);cursor:pointer;height:36px;transition:color var(--ds-transition-duration,.12s) var(--ds-ease-in-out,ease), border-color var(--ds-transition-duration,.12s) var(--ds-ease-in-out,ease);border-radius:8px;justify-content:center;align-items:center;gap:8px;padding:0 16px;font-size:13px;font-weight:600;display:inline-flex}.xjw8Uq_drillRunBtn:hover{border-color:var(--dsw-alias-border-l4);color:var(--dsw-alias-brand-primary)}.xjw8Uq_drillRunBtn:focus-visible{border-color:var(--dsw-alias-brand-primary);color:var(--dsw-alias-brand-primary)}.xjw8Uq_studioProgress{color:var(--dsw-alias-label-secondary);font-variant-numeric:tabular-nums;align-items:center;gap:6px;font-size:11px;display:inline-flex}.xjw8Uq_studioProgress>svg{animation:1s linear infinite xjw8Uq_studioProgressTurn}@keyframes xjw8Uq_studioProgressTurn{to{transform:rotate(360deg)}}";
+		const tagId$4 = "@melite/3d-img-to-mesh/client.module.css@831e00e";
 		if (typeof document !== "undefined" && document.querySelector("style[data-plugin-css=" + JSON.stringify(tagId$4) + "]") === null) {
 			const tag = document.createElement("style");
 			tag.dataset.plugin = "@melite/3d-img-to-mesh";
@@ -25,6 +25,7 @@ window.__ModuleLoader__.load({
 			"runError": "xjw8Uq_runError",
 			"runRow": "xjw8Uq_runRow",
 			"studioGroup": "xjw8Uq_studioGroup",
+			"studioGroupTitle": "xjw8Uq_studioGroupTitle",
 			"studioProgress": "xjw8Uq_studioProgress",
 			"studioProgressTurn": "xjw8Uq_studioProgressTurn",
 			"studioRail": "xjw8Uq_studioRail",
@@ -35,231 +36,146 @@ window.__ModuleLoader__.load({
 		};
 		//#endregion
 		//#region ../../web/card-base/src/spec.ts
-		/** THE MOD-OWNED NAMES (the SubcardGrid law, enforced): every name a
-		*  served modifier kind owns — its fields' names plus its param_key
-		*  (the bag storage). CardForm EXCLUDES these from the flat param
-		*  groups: mod params render ONLY inside the mod system. PURE. */
-		function modOwnedFields(spec) {
-			const owned = /* @__PURE__ */ new Set();
-			for (const k of spec.features?.modifiers ?? []) {
-				owned.add(k.param_key);
-				for (const f of k.fields ?? []) owned.add(f.name);
-			}
-			return owned;
-		}
-		/** Is this kind an OPTION kind (lora-shaped: served catalog rows) —
-		*  as opposed to a FIELD kind (mask-shaped: its own param fields)? */
-		function isOptionKind(k) {
-			return (k.options ?? []).length > 0;
-		}
-		/** Seed the editable values from the spec's declared defaults (the old
-		*  picker's law: pick → defaults seeded → the user edits from there).
-		*  DEFAULTS PROPAGATE FROM THE EMISSION — the base never invents one. */
+		/** THE SCHEMA LAYER's declared defaults (fieldsOfEnvelope's output —
+		*  resolveValue's first layer; the base never invents one). */
 		function specDefaults(fields) {
 			const out = {};
 			for (const f of fields) if (f.default !== void 0 && f.default !== null) out[f.name] = f.default;
 			return out;
 		}
-		/** evalVisibleWhen's serving shape: "key=value" (a field shows when its
-		*  guard key holds the value). A field with no visible_when always
-		*  shows. Unknown guard keys: show (never hide on a typo). */
-		function fieldVisible(f, values) {
-			const rule = f.visible_when;
-			if (typeof rule !== "string" || rule === "") return true;
-			const eq = rule.indexOf("=");
-			if (eq < 0) return true;
-			const key = rule.slice(0, eq);
-			const want = rule.slice(eq + 1);
-			const held = values[key];
-			return String(held ?? "") === want;
-		}
-		/** Group the visible fields (the spec's own group key, first-appearance
-		*  order — ungrouped first under no heading). */
-		function groupFields(fields, values) {
+		/** ── THE ENVELOPE WALKER ─────────────────────────────────────────
+		*
+		* One pure projection: serialized schemastery schema -> derived
+		* SpecFields. Every presentation fact lives in the nodes' meta (the
+		* declaration IS the UI contract — the py Field.emit law); this
+		* walk reads, never invents. THE ORDER: dict insertion order with
+		* the declared `order` hint as tie-break (a stable sort — equal
+		* keys keep insertion order).
+		*
+		* Families scoping: a node whose extra.families names families the
+		* spec does NOT serve skips (the absorption is family-scoped —
+		* the card serves only the boarded plane).
+		*
+		* Nullable pairs: a union of [X, const(null)] wires as X — the
+		* OUTER meta wins (schemastery's nullable() shape, probed live on
+		* image-gen 2026-09-14).
+		*
+		* Presentation types (the audit's client-side derivation — a view
+		* choice over typed meta, never a server row): extra.wtype wins
+		* (declared presentation); union-of-consts -> select; number ->
+		* step 1 -> seed, any other step -> slider, no step -> slider;
+		* string -> text; boolean -> boolean; array -> loras.
+		*
+		* Option labels: a union's const members carry their own
+		* meta.description (the py emitter's label law) — the declared
+		* extra.options override when present. */
+		function fieldsOfEnvelope(env, family) {
+			if (env == null) return [];
+			const dict = env.refs[env.uid]?.dict ?? {};
 			const out = [];
-			for (const f of fields) {
-				if (!fieldVisible(f, values)) continue;
-				const g = typeof f.group === "string" && f.group !== "" ? f.group : null;
-				const known = out.find((x) => x.group === g);
-				if (known === void 0) out.push({
-					group: g,
-					fields: [f]
+			for (const [name, id] of Object.entries(dict)) {
+				let node = env.refs[id];
+				if (node === void 0) continue;
+				if (node.type === "union" && Array.isArray(node.list) && node.list.length === 2) {
+					const a = env.refs[node.list[0]];
+					const b = env.refs[node.list[1]];
+					const nullConst = (r) => r?.type === "const" && r.value === null;
+					if (a !== void 0 && b !== void 0 && (nullConst(a) && b.type !== "const" || nullConst(b) && a.type !== "const")) node = nullConst(a) ? b : a;
+				}
+				const meta = node.meta ?? {};
+				const extra = typeof meta["extra"] === "object" && meta["extra"] !== null && !Array.isArray(meta["extra"]) ? meta["extra"] : {};
+				const families = Array.isArray(extra["families"]) ? extra["families"] : null;
+				if (families !== null && family !== void 0 && !families.includes(family)) continue;
+				let options;
+				if (node.type === "union" && Array.isArray(node.list)) {
+					const opts = [];
+					for (const mid of node.list) {
+						const m = env.refs[mid];
+						if (m?.type !== "const") continue;
+						const v = m.value;
+						if (v === null || v === void 0) continue;
+						const label = typeof m.meta?.["description"] === "string" ? m.meta["description"] : String(v);
+						if (label === String(v)) opts.push(String(v));
+						else opts.push({
+							value: String(v),
+							label
+						});
+					}
+					if (opts.length > 0) options = opts;
+				}
+				if (Array.isArray(extra["options"])) options = extra["options"].map((o) => typeof o === "string" ? o : typeof o === "object" && o !== null && "value" in o && "label" in o ? {
+					value: String(o["value"]),
+					label: String(o["label"])
+				} : String(o));
+				const hint = typeof extra["wtype"] === "string" ? extra["wtype"] : "";
+				let type;
+				if (hint !== "") type = hint;
+				else if (options !== void 0 && node.type === "union") type = "select";
+				else if (node.type === "number") type = String(meta["step"] ?? "") === "1" ? "seed" : "slider";
+				else if (node.type === "string") type = "text";
+				else if (node.type === "boolean") type = "boolean";
+				else if (node.type === "array") type = "loras";
+				else type = node.type ?? "string";
+				const num = (k) => typeof meta[k] === "number" ? meta[k] : void 0;
+				const str = (k) => typeof extra[k] === "string" ? extra[k] : typeof meta[k] === "string" ? meta[k] : void 0;
+				out.push({
+					name,
+					label: typeof meta["description"] === "string" && meta["description"] !== "" ? meta["description"] : name,
+					order: typeof extra["order"] === "number" ? extra["order"] : void 0,
+					type,
+					default: meta["default"] === void 0 ? void 0 : meta["default"],
+					min: num("min"),
+					max: num("max"),
+					step: type === "seed" ? void 0 : num("step"),
+					options,
+					group: str("group") ?? "",
+					zone: str("zone"),
+					required: extra["required"] === true || meta["required"] === true,
+					placeholder: str("placeholder"),
+					tooltip: str("tooltip"),
+					visible_when: str("visible_when")
 				});
-				else known.fields.push(f);
 			}
-			return out;
+			return out.map((f, i) => [f, i]).sort((a, b) => (a[0].order ?? 0) - (b[0].order ?? 0) || a[1] - b[1]).map((x) => x[0]);
 		}
-		/** THE RECIPE-YIELD LAW (operator, 2026-09-14: "IMG GEN UI CARD
-		*  HAS TWO RECIPES"): the card's own `recipe` schema field and the
-		*  family matrix's `Recipe` axis group share the `recipe` values key
-		*  — two selects writing one key (the family's pick clobbers the
-		*  card's, and the axis seed stamps `default` where the card catalog
-		*  only knows `standard/...`). When the card declares its own recipe
-		*  field, the card OWNS the name: the family axis yields (hidden,
-		*  never seeded). PURE. */
-		function cardOwnsRecipe(spec) {
-			return (spec.fields ?? []).some((f) => f.name === "recipe");
+		/** THE EDIT COERCION (the one specPatch duty that survives, moved
+		* to the edit boundary): atoms emit raw strings while typing; a
+		* numeric field's edit rides the user layer as a NUMBER. An
+		* unparseable/empty numeric string rides VERBATIM (the run's schema
+		* parse refuses loud, naming the field — never a silent 0). `v ===
+		* undefined` stays undefined (the tri-state's inherit — the caller's
+		* unset signal). PURE. */
+		function coerceFieldEdit(f, v) {
+			if (v === void 0) return void 0;
+			if (f !== void 0 && (f.type === "number" || f.type === "seed" || f.type === "slider") && typeof v === "string" && v.trim() !== "" && Number.isFinite(Number(v))) return Number(v);
+			return v;
 		}
-		/** The axis groups in declaration order: features.variant_groups'
-		*  key order when the door serves it, else the rows' distinct groups
-		*  in first-seen order. Empty group names never ride. The Recipe
-		*  group yields when the card owns its own recipe field (the
-		*  recipe-yield law above). */
-		function axisGroups(spec) {
-			const rows = spec.variants ?? [];
-			const groups = [];
-			const declared = variantGroupsContract(spec);
-			if (declared.length > 0) {
-				for (const g of declared) if (g !== "" && !groups.includes(g)) groups.push(g);
+		/** The card's own derived fields (the schema envelope walked,
+		* families-scoped to the served family). Memoize at the caller for
+		* hot loops — the walk is pure. */
+		function fieldsOf(spec) {
+			return fieldsOfEnvelope(spec.schema, typeof spec.model === "string" ? spec.model : void 0);
+		}
+		/** THE LAYERED RESOLUTION — the engine's compose cascade (applyRecipe
+		* in the card's service plane) mirrored client-side: schema
+		* defaults <- model defaults <- card-recipe params <- user. The form
+		* SHOWS exactly what a run composes; `user` rides verbatim by key
+		* presence (a PRESENCE is the override mark, never its value — the
+		* settings law). Arrays (lora bags) and nulls in model_defaults
+		* skip, matching the engine's overlay filter. */
+		function resolveValue(spec, user) {
+			const out = specDefaults(fieldsOf(spec));
+			for (const [k, v] of Object.entries(spec.model_defaults ?? {})) {
+				if (v === null || Array.isArray(v)) continue;
+				out[k] = v;
 			}
-			for (const v of rows) if (v.group !== "" && !groups.includes(v.group)) groups.push(v.group);
-			if (cardOwnsRecipe(spec)) return groups.filter((g) => g !== "Recipe");
-			return groups;
-		}
-		/** The variant_groups contract's keys, in served order (the door
-		*  serves it under features when the family declares axis groups). */
-		function variantGroupsContract(spec) {
-			const vg = spec.features?.["variant_groups"];
-			if (vg === null || typeof vg !== "object" || Array.isArray(vg)) return [];
-			return Object.keys(vg);
-		}
-		/** One axis' rows (served order). */
-		function rowsFor(spec, group) {
-			return (spec.variants ?? []).filter((v) => v.group === group);
-		}
-		/** THE CHAIN (one direction: an axis filters the axes BELOW it): a
-		*  row composes with the current selection when its `owner` is empty
-		*  (composes with everything — patch-only rows) or names the ACTIVE
-		*  row of another axis. */
-		function composingRows(spec, group, active) {
-			return rowsFor(spec, group).filter((v) => {
-				if (v.owner === void 0 || v.owner === "") return true;
-				for (const g of axisGroups(spec)) {
-					if (g === group) continue;
-					if (rowsFor(spec, g).find((x) => x.id === v.owner) !== void 0) return active[g] === v.owner;
-				}
-				return true;
-			});
-		}
-		/** The Model select's options — the distinct model ROUTES the matrix
-		*  can land on: the spec root's family + every row's defaults.model
-		*  (dedup, first-seen order; the family leads). */
-		function modelChoices(spec) {
-			const out = [];
-			const push = (m) => {
-				if (typeof m !== "string" || m === "") return;
-				if (!out.includes(m)) out.push(m);
-			};
-			push(spec.model);
-			for (const v of spec.variants ?? []) push(v.defaults["model"]);
-			return out;
-		}
-		/** One group's active row under the owner chain (inner recursion of
-		*  activeVariantId — Variant resolves first, chained groups after). */
-		function activeRowId(spec, values, group, active) {
-			const held = typeof values["model"] === "string" ? values["model"] : void 0;
-			if (held === void 0) return void 0;
-			for (const v of rowsFor(spec, group)) {
-				const rePoint = typeof v.defaults["model"] === "string" ? v.defaults["model"] : v.route;
-				if (rePoint === "" || rePoint !== held) continue;
-				if (v.owner !== void 0 && v.owner !== "") {
-					let chainHolds = false;
-					for (const g of axisGroups(spec)) {
-						if (g === group) continue;
-						if (rowsFor(spec, g).find((x) => x.id === v.owner) !== void 0) {
-							chainHolds = active[g] === v.owner;
-							break;
-						}
-					}
-					if (!chainHolds) continue;
-				}
-				return v.id;
+			const fields = fieldsOf(spec);
+			const rkey = typeof user["recipe"] === "string" && user["recipe"] !== "" ? user["recipe"] : fields.find((f) => f.name === "recipe")?.default;
+			if (typeof rkey === "string" && rkey !== "") {
+				const overlay = spec.recipes?.[rkey]?.params;
+				if (overlay !== void 0) Object.assign(out, overlay);
 			}
-		}
-		/** The durable param key an axis rides (the group's id, lowercased —
-		*  'variant', 'quant', 'recipe', 'precision'). */
-		function axisKey(group) {
-			return group.toLowerCase();
-		}
-		/** A pick's full value patch — the old onPick law: the row's
-		*  `defaults` overlay rides (model re-point + every resolver default),
-		*  plus the durable axis keys themselves so a reopened stage restores
-		*  its selects. Picking a row also re-seeds the axes BELOW it (their
-		*  first composing row). */
-		function axisPickPatch(spec, row) {
-			const patch = { ...row.defaults };
-			const groups = axisGroups(spec);
-			const at = groups.indexOf(row.group);
-			const active = {};
-			for (const g of groups) if (g === row.group) active[g] = row.id;
-			else if (typeof row.defaults["model"] === "string") active[g] = void 0;
-			patch[axisKey(row.group)] = row.id;
-			for (const g of groups.slice(at + 1)) {
-				const composing = composingRows(spec, g, active);
-				if (composing.length > 0) patch[axisKey(g)] = composing[0].id;
-				else patch[axisKey(g)] = "";
-			}
-			return patch;
-		}
-		/** A model switch's full value patch (the stale-variant cure,
-		*  operator 2026-09-14: model anima + variant turbo refused at
-		*  compose — a switch that keeps the old family's axes is a broken
-		*  stage). Every axis re-seeds to its FIRST row re-pointing at the
-		*  new model (else its first composing row), and the picked rows'
-		*  defaults overlay rides (raw → {model, steps, cfg} — the pick
-		*  law, same as axisPickPatch). The caller writes every key through
-		*  onEdit. PURE. */
-		function modelSwitchPatch(spec, model) {
-			const patch = { model };
-			const groups = axisGroups(spec);
-			const active = {};
-			for (const g of groups) {
-				const composing = composingRows(spec, g, active);
-				if (composing.length === 0) {
-					patch[axisKey(g)] = "";
-					active[g] = "";
-					continue;
-				}
-				const row = composing.find((r) => {
-					return (typeof r.defaults["model"] === "string" && r.defaults["model"] !== "" ? r.defaults["model"] : r.route) === model;
-				}) ?? composing[0];
-				Object.assign(patch, row.defaults);
-				patch[axisKey(g)] = row.id;
-				active[g] = row.id;
-			}
-			patch["model"] = model;
-			return patch;
-		}
-		/** Seed the axis keys for a fresh stage (the catalog's first-declared
-		*  law: each axis defaults to its FIRST composing row). Held values
-		*  win (a reopened stage never re-seeds). */
-		function seedAxisValues(spec, held) {
-			const out = {};
-			const groups = axisGroups(spec);
-			if (groups.length === 0) return out;
-			const active = {};
-			for (const g of groups) {
-				const heldKey = typeof held[axisKey(g)] === "string" ? held[axisKey(g)] : "";
-				const heldRow = rowsFor(spec, g).find((x) => x.id === heldKey);
-				if (heldRow !== void 0) active[g] = heldRow.id;
-				else {
-					const composing = composingRows(spec, g, active);
-					active[g] = composing.length > 0 ? composing[0].id : "";
-				}
-				out[axisKey(g)] = active[g];
-			}
-			const heldModel = held["model"];
-			if (typeof heldModel !== "string" || heldModel === "") {
-				let model = typeof spec.model === "string" && spec.model !== "" ? spec.model : "";
-				for (const g of groups) {
-					const row = rowsFor(spec, g).find((x) => x.id === active[g]);
-					if (row !== void 0 && typeof row.defaults["model"] === "string" && row.defaults["model"] !== "") {
-						model = row.defaults["model"];
-						break;
-					}
-				}
-				if (model !== "") out["model"] = model;
-			}
+			Object.assign(out, user);
 			return out;
 		}
 		//#endregion
@@ -521,11 +437,13 @@ window.__ModuleLoader__.load({
 			}
 			return body;
 		}
-		/** /v1/form-spec?model=<family> — the card family's emission (fields
-		*  + the declared edges + the mod kinds). */
+		/** /v1/form-spec?model=<family> — the card family's emission (the
+		*  serialized schema envelope + model defaults + the declared edges
+		*  + the mod kinds and their envelopes). */
 		async function fetchFormSpec(model, signal) {
 			const doc = await v1Get("/v1/form-spec?model=" + encodeURIComponent(model), signal);
-			if (!Array.isArray(doc["fields"])) throw new Error("form-spec: no fields array");
+			const env = doc["schema"];
+			if (env !== null && (typeof env !== "object" || typeof env.uid !== "number" || typeof env.refs !== "object")) throw new Error("form-spec: no schema envelope");
 			return doc;
 		}
 		/** OS-file drop → the /v1/uploads door (png/jpeg/webp data-URL) → the
@@ -794,9 +712,10 @@ window.__ModuleLoader__.load({
 		* construct the card ui should see that the card package emits an
 		* image input, then constructs the input component automatically"):
 		* the base reads the card package's EMISSION — the served form-spec
-		* (fields, declared input/output edges, mod kinds) — and constructs
-		* the surface. Defaults propagate from the emission (specDefaults);
-		* every image/file field gets THE ONE square (square.tsx) with the
+		* (the schema envelope, declared input/output edges, mod kinds) —
+		* and constructs the surface. The resolved value derives per render
+		* (resolveValue — the engine's compose cascade mirrored); every
+		* image/file field gets THE ONE square (square.tsx) with the
 		* three source verbs; no card ever hand-rolls an input component.
 		*
 		* THE SEAM (slots.ts): each field renders through the field-atom seam
@@ -1175,77 +1094,14 @@ window.__ModuleLoader__.load({
 				"aria-label": f.label
 			});
 		}
-		/** THE MODEL AXES (the pass-along law, 2026-09-12): the Model select
-		*  plus ONE SELECT PER SERVED AXIS GROUP — Variant, Quant, Recipe,
-		*  Precision, … the declaration's whole vocabulary, NEVER a hardcoded
-		*  list (the operator's lane proof caught the hardcoded Quant-only
-		*  list dropping seedvr2's and qwen's other axes). Order: the door's
-		*  variant_groups contract, else first-seen. Chain: an axis' options
-		*  are the rows composing with the axes above (the row's `owner`).
-		*  Each pick applies the row's defaults overlay through onEdit — the
-		*  values (model + every axis key + overlay keys) ride the caller's
-		*  map and pass along at Run. Renders nothing when the spec declares
-		*  no matrix. */
-		function ModelAxes({ spec, values, onEdit }) {
-			const groups = axisGroups(spec);
-			if (groups.length === 0) return null;
-			const models = modelChoices(spec);
-			const contract = spec.features?.variant_groups ?? {};
-			const pick = (row) => {
-				const patch = axisPickPatch(spec, row);
-				for (const [k, v] of Object.entries(patch)) onEdit(k, v);
-			};
-			const active = {};
-			for (const g of groups) {
-				const held = values[axisKey(g)];
-				const rows = composingRows(spec, g, active);
-				if (typeof held === "string" && held !== "" && rows.some((r) => r.id === held)) active[g] = held;
-				else active[g] = activeRowId(spec, values, g, active) ?? (rows.length > 0 ? rows[0].id : "");
-			}
-			return (0, react.createElement)("section", {
-				className: `${card_module_css_default.specGroup} ${card_module_css_default.modelAxes}`,
-				"data-model-axes": "1"
-			}, (0, react.createElement)("h4", { className: card_module_css_default.specGroupTitle }, "Model"), (0, react.createElement)("label", { className: card_module_css_default.specField }, (0, react.createElement)("span", { className: card_module_css_default.specFieldKey }, "Model"), (0, react.createElement)("select", {
-				className: card_module_css_default.specSelect,
-				"aria-label": "Model",
-				value: typeof values["model"] === "string" && values["model"] !== "" ? values["model"] : typeof spec.model === "string" && spec.model !== "" ? spec.model : models[0] ?? "",
-				onChange: (e) => {
-					const m = e.target.value;
-					const patch = modelSwitchPatch(spec, m);
-					for (const [k, v] of Object.entries(patch)) onEdit(k, v);
-				}
-			}, models.map((m) => (0, react.createElement)("option", {
-				key: m,
-				value: m
-			}, m)))), groups.map((g) => {
-				const rows = composingRows(spec, g, active);
-				if (rows.length === 0) return null;
-				const label = contract[g]?.label ?? g;
-				return (0, react.createElement)("label", {
-					key: g,
-					className: card_module_css_default.specField
-				}, (0, react.createElement)("span", { className: card_module_css_default.specFieldKey }, label), (0, react.createElement)("select", {
-					className: card_module_css_default.specSelect,
-					"aria-label": label,
-					"data-axis": g,
-					value: active[g] ?? "",
-					onChange: (e) => {
-						const id = e.target.value;
-						const row = rows.find((v) => v.id === id);
-						if (row !== void 0) pick(row);
-					}
-				}, rows.map((v) => (0, react.createElement)("option", {
-					key: v.id,
-					value: v.id
-				}, v.label + (typeof v.hint === "string" && v.hint !== "" ? ` — ${v.hint}` : "")))));
-			}));
-		}
-		/** THE CARD FORM (the constructor's surface half) — the spec's
-		*  fields, grouped, visible-when honored, defaults seeded by the
-		*  caller (specDefaults — propagated from the emission). Edits ride
-		*  the caller's values map. Each field renders through the claimed
-		*  atom for its emitted type when the caller passes one; the base's
-		*  built-in atom is the default.
+		/** THE CARD FORM (the constructor's surface half) — the emission's
+		*  fields walked off the schema envelope, grouped, visible-when
+		*  honored; the RESOLVED value derives per render (resolveValue —
+		*  the engine's compose cascade mirrored), edits are set/unset ops
+		*  over the USER layer (the settings law: presence IS the override
+		*  mark, the reset chip removes it). Each field renders through the
+		*  claimed atom for its emitted type when the caller passes one;
+		*  the base's built-in atom is the default.
 		*
 		*  THE CONSTRUCTION LAW IS NOT OPTIONAL (operator, 2026-09-12: "the
 		*  img-to-mesh input component — you are not using it around — you
@@ -1260,461 +1116,23 @@ window.__ModuleLoader__.load({
 		*  to rail sections that render served fields outside a whole form
 		*  (mask's TuneSection). The claim seam stays CardForm's; this row
 		*  takes the resolved atom inputs. */
-		function SpecFieldRow({ f, value, onEdit, square, wireCandidates }) {
-			return (0, react.createElement)("label", { className: card_module_css_default.specField }, (0, react.createElement)("span", { className: card_module_css_default.specFieldKey }, f.label, f.required === true ? (0, react.createElement)("span", { className: card_module_css_default.specRequired }, " *") : null), (0, react.createElement)(SpecAtom, {
+		function SpecFieldRow({ f, value, onEdit, square, wireCandidates, overridden, onUnset }) {
+			return (0, react.createElement)("div", { className: card_module_css_default.specField }, (0, react.createElement)("span", { className: card_module_css_default.specFieldKey }, f.label, f.required === true ? (0, react.createElement)("span", { className: card_module_css_default.specRequired }, " *") : null, overridden === true && onUnset !== void 0 ? (0, react.createElement)("button", {
+				type: "button",
+				className: card_module_css_default.specUnset,
+				title: "Reset to default",
+				"aria-label": "Reset " + f.label + " to default",
+				onClick: (e) => {
+					e.preventDefault();
+					onUnset(f.name);
+				}
+			}, "reset") : null), (0, react.createElement)(SpecAtom, {
 				f,
 				value,
 				onEdit,
 				square,
 				...wireCandidates !== void 0 ? { wireCandidates } : {}
 			}), f.tooltip !== void 0 && f.tooltip !== "" ? (0, react.createElement)("span", { className: card_module_css_default.specHint }, f.tooltip) : null);
-		}
-		function CardForm({ spec, fields, values, onEdit, wire, square, atoms, onPatch }) {
-			const modKinds = spec?.features?.modifiers ?? [];
-			const owned = modOwnedFields(spec ?? {
-				form: "",
-				fields: [],
-				variants: []
-			});
-			const flatFields = owned.size > 0 ? fields.filter((f) => !owned.has(f.name)) : fields;
-			const signature = spec !== void 0 && Array.isArray(spec.inputs) ? spec.inputs : [];
-			const railOf = (inp) => {
-				const f = flatFields.find((x) => x.name === inp.name);
-				if (f === void 0) return void 0;
-				if (f.type === "image" || f.type === "file") return f;
-			};
-			const railFields = signature.map((inp) => typeof inp?.name === "string" ? railOf(inp) : void 0).filter((f) => f !== void 0);
-			const railNames = new Set(railFields.map((f) => f.name));
-			const visible = (f) => f.type !== "image_list" && !railNames.has(f.name);
-			const groups = groupFields(flatFields.filter(visible), values);
-			const atomOf = (f) => atoms?.[f.type];
-			const own = useSquareProvider(onEdit, wire ?? { candidates: [] });
-			const squareFor = square ?? own.square;
-			const seeded = (0, react.useRef)(false);
-			const valuesRef = (0, react.useRef)(values);
-			valuesRef.current = values;
-			(0, react.useEffect)(() => {
-				if (spec === void 0 || seeded.current) return;
-				seeded.current = true;
-				const seed = seedAxisValues(spec, valuesRef.current);
-				for (const [k, v] of Object.entries(seed)) onEdit(k, v);
-			}, [spec, onEdit]);
-			return (0, react.createElement)("div", { className: card_module_css_default.specForm }, spec !== void 0 ? (0, react.createElement)(ModelAxes, {
-				spec,
-				values,
-				onEdit
-			}) : null, railFields.length > 0 ? (0, react.createElement)("section", {
-				className: card_module_css_default.specGroup + " " + card_module_css_default.inputRail,
-				"data-input-rail": "1"
-			}, (0, react.createElement)("div", { className: card_module_css_default.specSlotRow }, railFields.map((f) => {
-				if (f.type === "image_list") return null;
-				return (0, react.createElement)("div", {
-					key: f.name,
-					className: card_module_css_default.specSlotCell,
-					title: f.tooltip !== void 0 && f.tooltip !== "" ? f.tooltip : void 0
-				}, (0, react.createElement)(SpecAtom, {
-					f,
-					value: values[f.name],
-					onEdit,
-					square: squareFor(f),
-					...wire?.candidates !== void 0 ? { wireCandidates: wire.candidates } : {}
-				}));
-			}))) : null, groups.map((g) => {
-				const children = [];
-				let row = [];
-				const flush = () => {
-					if (row.length === 0) return;
-					children.push((0, react.createElement)("div", {
-						key: "slotrow-" + String(children.length),
-						className: card_module_css_default.specSlotRow
-					}, row));
-					row = [];
-				};
-				for (const f of g.fields) {
-					if (railNames.has(f.name)) continue;
-					const claim = atomOf(f);
-					const sq = squareFor(f);
-					const wireCandidates = wire?.candidates;
-					if (claim !== void 0) {
-						flush();
-						children.push((0, react.createElement)("label", {
-							key: f.name,
-							className: card_module_css_default.specField
-						}, (0, react.createElement)("span", { className: card_module_css_default.specFieldKey }, f.label, f.required === true ? (0, react.createElement)("span", { className: card_module_css_default.specRequired }, " *") : null), claim({
-							f,
-							value: values[f.name],
-							onEdit,
-							square: sq
-						}), f.tooltip !== void 0 && f.tooltip !== "" ? (0, react.createElement)("span", { className: card_module_css_default.specHint }, f.tooltip) : null));
-						continue;
-					}
-					if (f.type === "image" || f.type === "file") {
-						row.push((0, react.createElement)("div", {
-							key: f.name,
-							className: card_module_css_default.specSlotCell,
-							title: f.tooltip !== void 0 && f.tooltip !== "" ? f.tooltip : void 0
-						}, (0, react.createElement)(SpecAtom, {
-							f,
-							value: values[f.name],
-							onEdit,
-							square: sq,
-							...wireCandidates !== void 0 ? { wireCandidates } : {}
-						})));
-						continue;
-					}
-					flush();
-					children.push((0, react.createElement)(SpecFieldRow, {
-						key: f.name,
-						f,
-						value: values[f.name],
-						onEdit,
-						square: sq,
-						...wireCandidates !== void 0 ? { wireCandidates } : {}
-					}));
-				}
-				flush();
-				return (0, react.createElement)("section", {
-					key: g.group ?? "",
-					className: card_module_css_default.specGroup
-				}, g.group !== null ? (0, react.createElement)("h4", { className: card_module_css_default.specGroupTitle }, g.group) : null, children);
-			}), modKinds.length > 0 ? (0, react.createElement)(ModifiersSection, {
-				kinds: modKinds,
-				values,
-				onEdit,
-				...onPatch !== void 0 ? { onPatch } : {}
-			}) : null, own.wireMenu);
-		}
-		//#endregion
-		//#region ../../web/card-base/src/mods.tsx
-		/**
-		* mods.tsx — THE MOD SYSTEM, CORE (the old SubcardGrid, ported 1:1 —
-		* and moved into the base package 2026-09-12 after the operator's
-		* law: "MOD SYSTEM IS CORE. NEVER HARDCODED. The LORAS should not be
-		* on cards, the MOD SYSTEM SHOULD").
-		*
-		* The laws this section enforces:
-		*  - mods NEVER ride the card's param form. The estate serves the
-		*    OPEN kind vocabulary (features.modifiers); the constructor
-		*    (CardForm) renders THIS section itself and excludes every
-		*    mod-owned name from the flat groups — no surface wires it, no
-		*    surface can forget it (the construction law, same as the
-		*    square).
-		*  - THE WIRE IS THE STORAGE: params[param_key] holds the bag; the
-		*    same bag runs and the agent reads/writes it.
-		*  - commits persist immediately (the old onSaveParams law — never
-		*    deferred to Run): onEdit rides the caller's values map AND
-		*    onPatch (when present) persists to the domain on the spot.
-		*  - apply order = array order; the drag rewrites the bag.
-		*  - TWO kind shapes, both first-class:
-		*      OPTION kinds (lora): served catalog rows + strength; the
-		*        entry is { id, strength } — the row's own defaults seed the
-		*        strength.
-		*      FIELD kinds (mask): the kind's own spec fields (image squares,
-		*        selects, sliders); the entry IS the params object. The leaf
-		*        renders kind.fields through the same constructor atoms —
-		*        the fields NEVER render flat on the card form.
-		*/
-		function ModifiersSection(props) {
-			const { kinds, values, onEdit, onPatch } = props;
-			const [dragTile, setDragTile] = (0, react.useState)(null);
-			const [overTile, setOverTile] = (0, react.useState)(null);
-			const [pickAt, setPickAt] = (0, react.useState)(null);
-			const [leaf, setLeaf] = (0, react.useState)(null);
-			const [leafError, setLeafError] = (0, react.useState)(null);
-			const [draftOption, setDraftOption] = (0, react.useState)("");
-			const [draftStrength, setDraftStrength] = (0, react.useState)("");
-			const [draftParams, setDraftParams] = (0, react.useState)({});
-			const entriesOf = (k) => {
-				const v = values[k.param_key];
-				return Array.isArray(v) ? v.filter((e) => typeof e === "object" && e !== null) : [];
-			};
-			const optionOf = (k, value) => (k.options ?? []).find((o) => o.value === value) ?? null;
-			const commit = (k, next) => {
-				onEdit(k.param_key, next);
-				onPatch?.({ [k.param_key]: next });
-			};
-			const addable = kinds.filter((k) => k.cardinality !== "scalar");
-			if (kinds.length === 0) return null;
-			const fieldDefaults = (k) => {
-				const out = {};
-				for (const f of k.fields ?? []) if (f.default !== void 0 && f.default !== null) out[f.name] = f.default;
-				return out;
-			};
-			const openCreate = (k) => {
-				const entries = entriesOf(k);
-				if (k.max_stack !== void 0 && entries.length >= k.max_stack) {
-					setLeafError(k.label + " stack limit reached (" + String(k.max_stack) + ") — remove one to add another.");
-					return;
-				}
-				setDraftOption("");
-				setDraftStrength("");
-				setDraftParams(fieldDefaults(k));
-				setLeafError(null);
-				setLeaf({
-					mode: "create",
-					kind: k,
-					index: -1
-				});
-			};
-			const openEdit = (k, index) => {
-				const entry = entriesOf(k)[index];
-				if (entry === void 0) return;
-				if (isOptionKind(k)) {
-					const strength = typeof entry["strength"] === "number" ? entry["strength"] : void 0;
-					setDraftStrength(strength !== void 0 ? String(strength) : "");
-				} else {
-					const params = {};
-					for (const f of k.fields ?? []) if (entry[f.name] !== void 0) params[f.name] = entry[f.name];
-					setDraftParams(params);
-				}
-				setLeafError(null);
-				setLeaf({
-					mode: "edit",
-					kind: k,
-					index
-				});
-			};
-			const saveLeaf = () => {
-				if (leaf === null) return;
-				const k = leaf.kind;
-				const entries = entriesOf(k);
-				if (isOptionKind(k)) {
-					if (leaf.mode === "create") {
-						if (draftOption === "") {
-							setLeafError("Pick one from the served rows.");
-							return;
-						}
-						const option = optionOf(k, draftOption);
-						const seed = option !== null && option.defaults?.strength !== void 0 ? option.defaults.strength : 1;
-						const strength = draftStrength.trim() === "" ? seed : Number(draftStrength);
-						if (!Number.isFinite(strength)) {
-							setLeafError("Strength must be a number.");
-							return;
-						}
-						commit(k, [...entries, {
-							id: draftOption,
-							strength
-						}]);
-					} else {
-						const entry = entries[leaf.index];
-						if (entry === void 0) {
-							setLeaf(null);
-							return;
-						}
-						const strength = Number(draftStrength);
-						if (!Number.isFinite(strength)) {
-							setLeafError("Strength must be a number.");
-							return;
-						}
-						const next = [...entries];
-						next[leaf.index] = {
-							...entry,
-							strength
-						};
-						commit(k, next);
-					}
-				} else if (leaf.mode === "create") commit(k, [...entries, { ...draftParams }]);
-				else {
-					const entry = entries[leaf.index];
-					if (entry === void 0) {
-						setLeaf(null);
-						return;
-					}
-					const next = [...entries];
-					next[leaf.index] = {
-						...entry,
-						...draftParams
-					};
-					commit(k, next);
-				}
-				setLeaf(null);
-			};
-			const deleteLeaf = () => {
-				if (leaf === null || leaf.mode !== "edit") return;
-				commit(leaf.kind, entriesOf(leaf.kind).filter((_, i) => i !== leaf.index));
-				setLeaf(null);
-			};
-			const onTileDrop = (k, active, over) => {
-				if (over === active) return;
-				const entries = entriesOf(k);
-				const from = entries.findIndex((_, i) => k.param_key + "-" + i === active);
-				const to = entries.findIndex((_, i) => k.param_key + "-" + i === over);
-				if (from < 0 || to < 0) return;
-				const next = [...entries];
-				const [moved] = next.splice(from, 1);
-				next.splice(to, 0, moved);
-				commit(k, next);
-			};
-			return (0, react.createElement)("section", {
-				className: card_module_css_default.modSection,
-				"data-subcard-grid": "on"
-			}, (0, react.createElement)("div", { className: card_module_css_default.modHead }, (0, react.createElement)("span", { className: card_module_css_default.modTitle }, "Modifiers"), (0, react.createElement)("span", { className: card_module_css_default.modHint }, "drag to set apply order")), leafError !== null && leaf === null ? (0, react.createElement)("p", { className: card_module_css_default.modLeafError }, leafError) : null, (0, react.createElement)("div", {
-				className: card_module_css_default.modRow,
-				"data-subcard-row": "flow"
-			}, kinds.map((k) => {
-				const entries = entriesOf(k);
-				if (entries.length === 0) return null;
-				return entries.map((entry, i) => {
-					const id = typeof entry["id"] === "string" ? entry["id"] : "";
-					const option = optionOf(k, id);
-					const strength = typeof entry["strength"] === "number" ? entry["strength"] : option !== null && option.defaults !== void 0 ? option.defaults.strength : void 0;
-					return (0, react.createElement)(ModTile, {
-						key: k.param_key + "-" + i,
-						tileId: k.param_key + "-" + i,
-						label: option !== null ? option.label : id !== "" ? id : isOptionKind(k) ? k.label + " " + String(i + 1) : k.label,
-						...strength !== void 0 ? { strength } : {},
-						onOpen: () => {
-							openEdit(k, i);
-						},
-						dragging: dragTile === k.param_key + "-" + i,
-						dragOver: overTile === k.param_key + "-" + i && dragTile !== null && dragTile !== overTile,
-						onReorderStart: (id) => {
-							setDragTile(id);
-							if (id === null) setOverTile(null);
-						},
-						onReorderOver: setOverTile,
-						onReorderDrop: (active, over) => {
-							setDragTile(null);
-							setOverTile(null);
-							onTileDrop(k, active, over);
-						}
-					});
-				});
-			}), addable.length > 0 ? (0, react.createElement)("button", {
-				type: "button",
-				className: card_module_css_default.modAddSquare,
-				"data-subcard-add": "mod",
-				"aria-label": "Add modifier",
-				title: "Add a modifier",
-				onClick: (e) => {
-					setPickAt({ rect: e.currentTarget.getBoundingClientRect() });
-				}
-			}, (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.IconPlusOutline16, { className: card_module_css_default.squareGlyph })) : null), pickAt !== null ? (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Menu, {
-				open: true,
-				anchor: null,
-				getAnchorRect: () => pickAt.rect,
-				items: addable.map((k) => ({
-					id: k.kind,
-					label: k.label
-				})),
-				onSelect: (id) => {
-					setPickAt(null);
-					const k = addable.find((x) => x.kind === id);
-					if (k !== void 0) openCreate(k);
-				},
-				onClose: () => {
-					setPickAt(null);
-				},
-				portal: true
-			}) : null, leaf !== null ? (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Modal, {
-				open: true,
-				onClose: () => {
-					setLeaf(null);
-				},
-				title: (leaf.mode === "create" ? "Add " : "Edit ") + leaf.kind.label,
-				closeLabel: "Close"
-			}, (0, react.createElement)(ModLeaf, {
-				leaf,
-				values,
-				onDraft: {
-					setDraftOption,
-					setDraftStrength,
-					setDraftParams,
-					draftOption,
-					draftStrength,
-					draftParams
-				},
-				onError: setLeafError,
-				onSave: saveLeaf,
-				onDelete: deleteLeaf,
-				leafError
-			})) : null);
-		}
-		/** THE LEAF BODY — split so the FIELD-kind editor gets its own
-		*  square provider (the construction law: an image input constructs
-		*  the square automatically, even inside a mod leaf). */
-		function ModLeaf(props) {
-			const { leaf, onDraft, onSave, onDelete, leafError } = props;
-			const k = leaf.kind;
-			const own = useSquareProvider((name, v) => {
-				onDraft.setDraftParams({
-					...onDraft.draftParams,
-					[name]: v
-				});
-			}, { candidates: [] });
-			return (0, react.createElement)("div", { className: card_module_css_default.modLeaf }, leafError !== null ? (0, react.createElement)("p", { className: card_module_css_default.modLeafError }, leafError) : null, isOptionKind(k) ? (0, react.createElement)("div", { className: card_module_css_default.modLeafFields }, leaf.mode === "create" ? (0, react.createElement)("label", { className: card_module_css_default.modField }, k.label, (0, react.createElement)("select", {
-				className: card_module_css_default.modSelect,
-				value: onDraft.draftOption,
-				onChange: (e) => {
-					onDraft.setDraftOption(e.target.value);
-				}
-			}, (0, react.createElement)("option", { value: "" }, "— pick —"), (k.options ?? []).map((o) => (0, react.createElement)("option", {
-				key: o.value,
-				value: o.value
-			}, o.label)))) : null, (0, react.createElement)("label", { className: card_module_css_default.modField }, "Strength", (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Input, {
-				type: "number",
-				step: "0.05",
-				value: onDraft.draftStrength,
-				placeholder: "the row default",
-				onChange: (e) => {
-					onDraft.setDraftStrength(e.target.value);
-				}
-			}))) : (0, react.createElement)("div", { className: card_module_css_default.modLeafFields }, (k.fields ?? []).map((f) => (0, react.createElement)("label", {
-				key: f.name,
-				className: card_module_css_default.modField
-			}, f.label ?? f.name, (0, react.createElement)(SpecAtom, {
-				f,
-				value: onDraft.draftParams[f.name],
-				onEdit: (name, v) => {
-					onDraft.setDraftParams({
-						...onDraft.draftParams,
-						[name]: v
-					});
-				},
-				square: own.square(f)
-			}))), own.wireMenu), (0, react.createElement)("div", { className: card_module_css_default.modLeafActions }, (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Button, {
-				variant: "primary",
-				onClick: onSave
-			}, leaf.mode === "create" ? "Add" : "Save"), leaf.mode === "edit" ? (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Button, {
-				variant: "ghost",
-				onClick: onDelete
-			}, "Remove") : null));
-		}
-		/** One mod tile (the original, verbatim: useSortable + click to
-		*  edit + strength to 2 decimals). */
-		/** The reorder drag's MIME (native HTML5 sortable). */
-		const MOD_DRAG_MIME = "application/x-melite-mod";
-		function ModTile(props) {
-			return (0, react.createElement)("li", {
-				className: card_module_css_default.modTile + (props.dragging ? " " + card_module_css_default.tileDragging : "") + (props.dragOver ? " " + card_module_css_default.modTileOver : ""),
-				draggable: true,
-				"data-mod-tile": props.tileId,
-				title: "Drag to reorder · click to edit",
-				onDragStart: (e) => {
-					e.dataTransfer.setData(MOD_DRAG_MIME, props.tileId);
-					e.dataTransfer.effectAllowed = "move";
-					props.onReorderStart(props.tileId);
-				},
-				onDragEnd: () => {
-					props.onReorderStart(null);
-				},
-				onDragOver: (e) => {
-					if (e.dataTransfer.types.includes(MOD_DRAG_MIME)) {
-						e.preventDefault();
-						e.dataTransfer.dropEffect = "move";
-						props.onReorderOver(props.tileId);
-					}
-				},
-				onDrop: (e) => {
-					if (e.dataTransfer.types.includes(MOD_DRAG_MIME)) {
-						e.preventDefault();
-						e.stopPropagation();
-						const active = e.dataTransfer.getData(MOD_DRAG_MIME);
-						if (active !== "" && active !== props.tileId) props.onReorderDrop(active, props.tileId);
-					}
-				},
-				onClick: props.onOpen
-			}, (0, react.createElement)("span", { className: card_module_css_default.modTileLabel }, props.label), props.strength !== void 0 ? (0, react.createElement)("span", { className: card_module_css_default.modTileStrength }, props.strength.toFixed(2)) : null);
 		}
 		/**
 		* @license
@@ -41170,7 +40588,7 @@ void main() {
 			bake: "Bake maps",
 			lab: "Lab (samplers & overrides)"
 		};
-		function fieldsOf(fields, group) {
+		function rowsOfGroup(fields, group) {
 			return fields.filter((f) => f.group === group);
 		}
 		/** The studio surface component — registered under key 'img-to-mesh'. */
@@ -41179,7 +40597,7 @@ void main() {
 			const params = typeof row["params"] === "object" && row["params"] !== null ? row["params"] : {};
 			const [spec, setSpec] = (0, react.useState)(null);
 			const [error, setError] = (0, react.useState)(null);
-			const [values, setValues] = (0, react.useState)(params);
+			const [user, setUser] = (0, react.useState)(params);
 			const [open, setOpen] = (0, react.useState)({});
 			const live = runStatus === "running" || runStatus === "queued" || runStatus === "pending";
 			const foldRec = typeof row["result"] === "object" && row["result"] !== null ? row["result"] : null;
@@ -41211,18 +40629,18 @@ void main() {
 				}
 				if (liveSpec === null) return;
 				setSpec(liveSpec);
-				setValues({
-					...specDefaults(liveSpec.fields),
-					...params
-				});
+				setUser({ ...params });
 				props.onSurface(liveSpec.size === "huge" ? "huge" : "");
 			}, [liveSpec, specError]);
+			const fieldByName = new Map((spec !== null ? fieldsOf(spec) : []).map((f) => [f.name, f]));
 			const onEdit = (name, v) => {
-				setValues((prev) => ({
+				setUser((prev) => ({
 					...prev,
-					[name]: v
+					[name]: coerceFieldEdit(fieldByName.get(name), v)
 				}));
 			};
+			const value = resolveValue(spec ?? { form: "" }, user);
+			const specRows = spec !== null ? fieldsOf(spec) : [];
 			const { square: squareFor, wireMenu } = useSquareProvider(onEdit, { candidates: props.upstream.map((u) => ({
 				id: u.id,
 				label: u.title,
@@ -41230,20 +40648,24 @@ void main() {
 			})) });
 			const run = () => {
 				if (spec === null) return;
-				onPatch({ ...values });
+				const patch = {};
+				const userKeys = new Set(Object.keys(user));
+				for (const k of userKeys) patch[k] = user[k];
+				for (const k of Object.keys(params)) if (!userKeys.has(k)) patch[k] = null;
+				onPatch(patch);
 				onRun();
 			};
 			return (0, react.createElement)("div", { className: client_module_css_default.zoomDetail }, wireMenu, error !== null ? (0, react.createElement)("p", { className: client_module_css_default.runError }, error) : null, spec === null ? (0, react.createElement)("p", { className: client_module_css_default.groupNote }, "loading the declared knob surface…") : (0, react.createElement)(StudioShell, {
 				params: (0, react.createElement)("div", { className: client_module_css_default.studioRail }, STUDIO_EXPOSED.map((g) => (0, react.createElement)("section", {
 					key: g,
 					className: client_module_css_default.studioGroup
-				}, (0, react.createElement)(StudioFields, {
-					fields: fieldsOf(spec.fields, g),
-					values,
+				}, (0, react.createElement)("h4", { className: client_module_css_default.studioGroupTitle }, g), (0, react.createElement)(StudioFields, {
+					fields: rowsOfGroup(specRows, g),
+					value,
 					onEdit,
 					square: squareFor
 				}))), STUDIO_FOLDS.map((g) => {
-					const fs = fieldsOf(spec.fields, g);
+					const fs = rowsOfGroup(specRows, g);
 					if (fs.length === 0) return null;
 					const isOpen = open[g] === true;
 					return (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.DisclosureRow, {
@@ -41261,7 +40683,7 @@ void main() {
 						}
 					}, (0, react.createElement)(StudioFields, {
 						fields: fs,
-						values,
+						value,
 						onEdit,
 						square: squareFor
 					}));
@@ -41293,16 +40715,19 @@ void main() {
 				})
 			}));
 		}
-		/** The generic card's OWN atoms (SpecForm renders one group's fields —
-		*  the studio hands it the group's slice; zero atom copies). */
-		function StudioFields({ fields, values, onEdit, square }) {
+		/** The generic card's OWN atoms (SpecFieldRow renders one group's
+		*  rows — the studio owns its group partition; zero atom copies).
+		*  `value` is the RESOLVED map (resolveValue at the caller) — the
+		*  rows show exactly what a run composes. */
+		function StudioFields({ fields, value, onEdit, square }) {
 			if (fields.length === 0) return (0, react.createElement)("p", { className: client_module_css_default.groupNote }, "no declared fields");
-			return (0, react.createElement)(CardForm, {
-				fields,
-				values,
+			return (0, react.createElement)("div", null, fields.map((f) => (0, react.createElement)(SpecFieldRow, {
+				key: f.name,
+				f,
+				value: value[f.name],
 				onEdit,
-				square
-			});
+				...square !== void 0 ? { square: square(f) } : {}
+			})));
 		}
 		/** The built-in registration (the ui-tool law, verbatim — the
 		* module namespace IS the plugin: the loader consumes name/inject/apply). */

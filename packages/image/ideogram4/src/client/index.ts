@@ -29,7 +29,7 @@ import { Button } from '@deepseek-ai/dsh-client-ui-primitives'
 import css from './client.module.css'
 import type { StageViewOwnerProps } from '@melite/contracts'
 import type { SpecValues } from '@melite/card-base'
-import { specDefaults, specPatch, CardForm as SpecForm, useFormSpec, type FormSpecDoc } from '@melite/card-base'
+import { SpecFieldRow, coerceFieldEdit, fieldsOf, resolveValue, useFormSpec, type FormSpecDoc, type SpecField } from '@melite/card-base'
 
 // ── The types (ideoHelpers.ts verbatim) ─────────────────────────────────────
 
@@ -456,10 +456,26 @@ export function Ideogram4Studio(props: StageViewOwnerProps): ReturnType<typeof h
   const [spec, setSpec] = useState<FormSpecDoc | null>(null)
   useEffect(() => {
     if (servedSpec === null) return
-    const rest = servedSpec.fields.filter((f) => !SPEC_EXCLUDED.has(f.name))
-    setSpec({ ...servedSpec, fields: rest })
-    setValues((prev) => ({ ...specDefaults(rest), ...params, ...prev }))
+    // THE USER LAYER (the settings law): the frozen row's params
+    // verbatim (presence IS the override mark), any live edits on
+    // top; the studio's field slice derives per render (fieldsOf —
+    // the envelope is the SSOT, defaults derive, never seed).
+    // `prompt` is DERIVED (the caption bridge reassembles it at run)
+    // — it never rides the user layer, or the overlay would clobber
+    // the bridge.
+    setSpec(servedSpec)
+    setValues((prev) => {
+      const seeded: Record<string, unknown> = { ...params }
+      delete seeded['prompt']
+      return { ...seeded, ...prev }
+    })
   }, [servedSpec])
+  // derived per render: the studio's field slice (prompt/width/height
+  // are the canvas's own state — excluded from the generic rows) and
+  // the RESOLVED value (resolveValue — what a run composes).
+  const specRows: SpecField[] = spec !== null
+    ? fieldsOf(spec).filter((f) => !SPEC_EXCLUDED.has(f.name)) : []
+  const value: Record<string, unknown> = resolveValue(spec ?? { form: '' }, values)
 
   // ── The elements document (the echo-guard law, verbatim) ──
   const [elements, setElementsInternal] = useState<IdeoElement[]>(() => parseElementsJSON(String(values['elements'] ?? '[]')) ?? [])
@@ -825,16 +841,20 @@ export function Ideogram4Studio(props: StageViewOwnerProps): ReturnType<typeof h
 
   // ── The verbs ──
   const run = (): void => {
-    // THE SLOT BRIDGE (Run law): caption reassembles into prompt; width/
-    // height ride their own params; the generic fields ride coerced
-    // (specPatch — ONCE, at patch time); every other frozen param passes.
+    // THE SLOT BRIDGE (Run law): the caption bridge reassembles
+    // prompt; width/height ride their own params. THE USER LAYER
+    // RIDES VERBATIM (already coerced at the edit boundary); keys the
+    // frozen row held that left the map ride as nulls (JSON Merge
+    // Patch deletes).
+    const userKeys = new Set(Object.keys(values))
     const patch: Record<string, unknown> = {
       ...params,
-      ...(spec !== null ? specPatch(spec.fields, values, params) : {}),
       prompt: JSON.stringify(assembleCaption(values)),
       width,
       height,
     }
+    for (const k of userKeys) if (k !== 'prompt') patch[k] = values[k]
+    for (const k of Object.keys(params)) if (!userKeys.has(k) && k !== 'prompt' && k !== 'width' && k !== 'height' && k !== 'elements') patch[k] = null
     delete patch['elements']
     onPatch(patch)
     onRun()
@@ -845,10 +865,12 @@ export function Ideogram4Studio(props: StageViewOwnerProps): ReturnType<typeof h
   const drawMode = mode.kind === 'idle' ? false : mode.kind === 'draw'
   const primaryId = selectedIds.length > 0 ? selectedIds[selectedIds.length - 1] : null
 
-  // the shared edit verb (the generic fields ride the same values map)
+  // the shared edit verb (the generic fields ride the same values map;
+  // numeric edits coerce at the boundary — the layer holds numbers)
+  const fieldByName = new Map(specRows.map((f) => [f.name, f] as const))
   const onEdit = useCallback((name: string, v: unknown): void => {
-    setValues((prev) => ({ ...prev, [name]: v }))
-  }, [])
+    setValues((prev) => ({ ...prev, [name]: coerceFieldEdit(fieldByName.get(name), v) }))
+  }, [fieldByName])
 
   const styleInput = (key: string, label: string): ReturnType<typeof h> =>
     h('label', { className: css.ideoField },
@@ -1076,8 +1098,9 @@ export function Ideogram4Studio(props: StageViewOwnerProps): ReturnType<typeof h
       tab === 'json' ? jsonTab : null,
       // the generic drill's fields (seed/steps/cfg/… — the studio owns
       // prompt/width/height; the rest serve as plain spec fields)
-      spec !== null && spec.fields.length > 0
-        ? h(SpecForm, { spec, fields: spec.fields, values, onEdit })
+      specRows.length > 0
+        ? h('div', null, specRows.map((f) =>
+            h(SpecFieldRow, { key: f.name, f, value: value[f.name], onEdit })))
         : null),
     // ── THE CANVAS (the viewport belongs to the layout) ──
     h('div', { className: css.ideoCanvasWrap },

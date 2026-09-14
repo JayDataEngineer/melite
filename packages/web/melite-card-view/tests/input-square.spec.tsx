@@ -10,7 +10,7 @@ import { afterEach, expect, test, vi } from 'vitest'
 import { createElement, useRef } from 'react'
 
 import { InputSquare, isImageUrl, readAsDataUrl } from '../src/client/input-square.tsx'
-import { SpecForm, useSquareProvider, type SpecField, type SpecValues } from '../src/client/spec-form.tsx'
+import { schemaEnvelope, SpecForm, useSquareProvider, type FormSpecDoc, type SpecValues } from '../src/client/spec-form.tsx'
 
 afterEach(() => {
   cleanup()
@@ -18,15 +18,28 @@ afterEach(() => {
   vi.clearAllMocks()
 })
 
+// THE ONE-ENVELOPE FIXTURE (three mounts share it)
+const IMAGE_DOC: FormSpecDoc = {
+  form: 'square-fixture',
+  schema: schemaEnvelope({
+    input_image: { type: 'string', meta: { description: 'Input image', extra: { wtype: 'image' } } },
+  }),
+}
+
 // ── the options normalization (the door serves BOTH shapes) ──────────
 
 test('select options render text for BOTH door shapes', () => {
-  const fields: SpecField[] = [
-    { name: 'resolution', label: 'Resolution', type: 'select', options: ['512', '1024'] },
-    { name: 'bg', label: 'BG', type: 'select', options: [{ value: 'auto', label: 'Auto removal' }] },
-  ]
-  const values: SpecValues = { resolution: '512', bg: 'auto' }
-  render(createElement(SpecForm, { fields, values, onEdit: () => {} }))
+  // the walker's option law: plain strings label themselves; const
+  // members with meta.description carry their labels
+  const doc: FormSpecDoc = {
+    form: 'options-fixture',
+    schema: schemaEnvelope({
+      resolution: { consts: ['512', '1024'], meta: { description: 'Resolution' } },
+      bg: { consts: [{ value: 'auto', label: 'Auto removal' }], meta: { description: 'BG' } },
+    }),
+  }
+  const user: SpecValues = { resolution: '512', bg: 'auto' }
+  render(createElement(SpecForm, { spec: doc, user, onSet: () => {} }))
   const s1 = screen.getByLabelText('Resolution') as HTMLSelectElement
   expect([...s1.options].map((o) => o.textContent)).toEqual(['512', '1024'])
   const s2 = screen.getByLabelText('BG') as HTMLSelectElement
@@ -119,9 +132,9 @@ function HostSquare(): ReturnType<typeof createElement> {
   return createElement('div', null,
     wireMenu,
     createElement(SpecForm, {
-      fields: [{ name: 'input_image', label: 'Input image', type: 'image' }],
-      values,
-      onEdit,
+      spec: IMAGE_DOC,
+      user: values,
+      onSet: onEdit,
       square,
     }),
   )
@@ -195,9 +208,9 @@ test('the seam: renderSourcePick claims the picker face — the host override be
     return createElement('div', null,
       wireMenu,
       createElement(SpecForm, {
-        fields: [{ name: 'input_image', label: 'Input image', type: 'image' }],
-        values: {},
-        onEdit: vi.fn(),
+        spec: IMAGE_DOC,
+        user: {},
+        onSet: vi.fn(),
         square,
       }),
     )

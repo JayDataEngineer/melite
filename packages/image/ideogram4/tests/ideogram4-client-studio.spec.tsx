@@ -20,16 +20,17 @@ import { afterEach, expect, test, vi } from 'vitest'
 import { createElement } from 'react'
 
 import { apply as ideogram4Apply, Ideogram4Studio, name as studioName } from '../src/client/index.ts'
+import { schemaEnvelope } from '@melite/card-base'
 
 const SPEC = {
   form: 'ideogram4',
-  fields: [
-    { name: 'prompt', label: 'Prompt', type: 'textarea', group: 'prompt' },
-    { name: 'width', label: 'Width', type: 'number', default: 1024, group: 'resolution' },
-    { name: 'height', label: 'Height', type: 'number', default: 1024, group: 'resolution' },
-    { name: 'seed', label: 'Seed', type: 'seed', group: 'resolution' },
-    { name: 'steps', label: 'Steps', type: 'number', default: 8, group: 'sampling' },
-  ],
+  schema: schemaEnvelope({
+    prompt: { type: 'string', meta: { description: 'Prompt', extra: { wtype: 'textarea', group: 'prompt' } } },
+    width: { type: 'number', meta: { description: 'Width', default: 1024, step: 1, extra: { wtype: 'number', group: 'resolution' } } },
+    height: { type: 'number', meta: { description: 'Height', default: 1024, step: 1, extra: { wtype: 'number', group: 'resolution' } } },
+    seed: { type: 'number', meta: { description: 'Seed', extra: { wtype: 'seed', group: 'resolution' } } },
+    steps: { type: 'number', meta: { description: 'Steps', default: 8, step: 1, extra: { wtype: 'number', group: 'sampling' } } },
+  }),
   model: 'ideogram',
   variants: [],
   size: 'huge',

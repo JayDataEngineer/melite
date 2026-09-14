@@ -15,26 +15,32 @@
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { createElement } from 'react'
-import { CardForm } from '@melite/card-base'
+import { CardForm, schemaEnvelope } from '@melite/card-base'
 import type { FormSpecDoc, SpecField } from '@melite/card-base'
 import { CardsTab } from '../src/client/CardsTab.tsx'
 import type { CardsBenchValue } from '../src/client/CardsTab.tsx'
 
 afterEach(() => { cleanup(); vi.unstubAllGlobals() })
 
-const IMAGE_FIELDS: SpecField[] = [
-  { name: 'image', label: 'Input image', type: 'image', required: true, group: 'input' },
-  { name: 'prompt', label: 'Prompt', type: 'textarea', group: 'input' },
-]
+// THE ENVELOPE FIXTURE (the parameter audit): tests build the
+// served schema (serialized schemastery shape) — the flat field row
+// is gone; fieldsOf derives. Same declaration facts, one walker.
+const IMAGE_SPEC: FormSpecDoc = {
+  form: 'construction-fixture',
+  schema: schemaEnvelope({
+    image: { type: 'string', meta: { description: 'Input image', extra: { wtype: 'image', required: true, group: 'input' } } },
+    prompt: { type: 'string', meta: { description: 'Prompt', extra: { wtype: 'textarea', group: 'input' } } },
+  }),
+}
 
 // ── 1. THE LAW ITSELF: a bare CardForm (no wire, no square) renders
 //      THE SQUARE for an image field — never a bare input. ────────────
 describe('the construction law (bare CardForm)', () => {
   it('renders THE ONE SQUARE for an image field with no caller wiring at all', () => {
     render(createElement(CardForm, {
-      fields: IMAGE_FIELDS,
-      values: {},
-      onEdit: () => {},
+      spec: IMAGE_SPEC,
+      user: {},
+      onSet: () => {},
     }))
     // the square's own DOM: role=button, aria-label "<label> source"
     const square = screen.getByRole('button', { name: 'Input image source' })
@@ -46,9 +52,9 @@ describe('the construction law (bare CardForm)', () => {
 
   it('the square still renders when the caller hands a wire (picker candidates)', () => {
     render(createElement(CardForm, {
-      fields: IMAGE_FIELDS,
-      values: {},
-      onEdit: () => {},
+      spec: IMAGE_SPEC,
+      user: {},
+      onSet: () => {},
       wire: { candidates: [{ id: 's_0', label: 'a red cube', url: '/media/out.png' }] },
     }))
     expect(screen.getByRole('button', { name: 'Input image source' })).toBeTruthy()
@@ -57,9 +63,9 @@ describe('the construction law (bare CardForm)', () => {
   it('a wire pick writes the param through the constructor-owned provider', async () => {
     const edits: Record<string, unknown> = {}
     render(createElement(CardForm, {
-      fields: IMAGE_FIELDS,
-      values: {},
-      onEdit: (name, v) => { edits[name] = v },
+      spec: IMAGE_SPEC,
+      user: {},
+      onSet: (name: string, v: unknown) => { edits[name] = v },
       wire: { candidates: [{ id: 's_0', label: 'a red cube', url: '/media/out.png' }] },
     }))
     // the wire verbs live on the square: onPick opens the
@@ -95,10 +101,9 @@ describe('the construction law (add-a-card drill)', () => {
         const model = path.split('model=')[1] ?? ''
         const doc: Record<string, unknown> = model.includes('image-edit')
           ? { form: 'image-edit', model: 'qwen-img-edit-2511-lightning4',
-              fields: IMAGE_FIELDS.map((f) => ({ ...f })),
-              variants: [] }
-          : { form: 'image-gen', model: 'krea-2', fields: [
-              { name: 'prompt', label: 'Prompt', type: 'textarea' }], variants: [] }
+              schema: IMAGE_SPEC.schema, variants: [] }
+          : { form: 'image-gen', model: 'krea-2', schema: schemaEnvelope({
+              prompt: { type: 'string', meta: { description: 'Prompt', extra: { wtype: 'textarea' } } } }), variants: [] }
         return new Response(JSON.stringify(doc), { status: 200, headers: { 'content-type': 'application/json' } })
       }
       if (path.includes('/v1/model-catalog')) {
@@ -148,12 +153,11 @@ describe('the construction law (add-a-card drill)', () => {
 // ── 3. DRY: the provider is constructed ONCE, in the constructor. ────
 describe('the construction law (DRY)', () => {
   it('CardForm renders the wire menu itself (no caller-side menu)', () => {
-    const doc: FormSpecDoc = { form: 'x', model: 'm', fields: IMAGE_FIELDS, variants: [] }
+    const doc: FormSpecDoc = { form: 'x', model: 'm', schema: IMAGE_SPEC.schema, variants: [] }
     const { container } = render(createElement(CardForm, {
       spec: doc,
-      fields: IMAGE_FIELDS,
-      values: {},
-      onEdit: () => {},
+      user: {},
+      onSet: () => {},
       wire: { candidates: [{ id: 's_0', label: 'a red cube', url: '/media/out.png' }] },
     }))
     // the form owns the menu mount point (empty when no pick is open)
@@ -180,7 +184,7 @@ describe('the construction law (the plain add door)', () => {
     vi.stubGlobal('fetch', async (url: unknown, init?: RequestInit): Promise<Response> => {
       const path = String(url)
       if (path.includes('/v1/form-spec')) {
-        return new Response(JSON.stringify({ form: 'mask-studio', model: 'm', fields: IMAGE_FIELDS.map((f) => ({ ...f })), variants: [] }), { status: 200, headers: { 'content-type': 'application/json' } })
+        return new Response(JSON.stringify({ form: 'mask-studio', model: 'm', schema: IMAGE_SPEC.schema, variants: [] }), { status: 200, headers: { 'content-type': 'application/json' } })
       }
       if (path.includes('/v1/model-catalog')) {
         return new Response(JSON.stringify({ cards: { 'mask-studio': { label: 'Mask Studio', genre: 'image', families: ['mask-studio'] } } }), { status: 200, headers: { 'content-type': 'application/json' } })

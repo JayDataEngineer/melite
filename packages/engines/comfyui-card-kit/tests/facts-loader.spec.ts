@@ -4,12 +4,17 @@
 // drive every arm: frozen rows, derived rows, route re-addressing,
 // artifact basenames, the optional mods/accepts/studio/requires,
 // the owners map.
-import { describe, it } from "vitest";
+import { describe, it, onTestFinished } from "vitest";
 import assert from "node:assert/strict";
-import { mkdtempSync, writeFileSync } from "node:fs";
+import { mkdtempSync, writeFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { loadFacts } from "../src/facts.ts";
+
+// TMP NOTE (stroke 13): this tree mints at MODULE scope (before any
+// test exists — onTestFinished can't own it); the global sweep
+// (tests/global-sweep.ts) reclaims it at run teardown instead.
+
 
 const reads = {
   registryIds: (): string[] => ["base-model", "routed-model", "bare-id"],

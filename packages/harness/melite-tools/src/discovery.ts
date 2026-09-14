@@ -238,37 +238,16 @@ function specModifiers(
   card: string,
   key: string,
   decl: ModelDecl | null,
-  schemaGroups: Array<{ id: string; fields: unknown[] }>,
 ): Record<string, unknown>[] {
   const out: Record<string, unknown>[] = []
   for (const pack of decl?.mods ?? []) {
     const meta = MODIFIER_PACKS[pack]
     if (meta === undefined) continue
     const cat = svc.modCatalog(pack, key)
-    // The pack's groups (walked off its contract — never hardcoded):
-    // the absorbed pack fields on this card, scoped to the key.
-    const groups = new Set<string>()
-    for (const absorbed of svc.cardModFields(card)) {
-      if (absorbed.pack !== pack) continue
-      if (!absorbed.families.includes(key)) continue
-      const dict = (absorbed.fields as { dict?: Record<string, unknown> })
-        ?.dict
-      for (const node of Object.values(dict ?? {})) {
-        const extra = (
-          ((node as { meta?: { extra?: Record<string, unknown> } }).meta
-            ?.extra ?? {}) as Record<string, unknown>
-        )
-        if (typeof extra.group === 'string') groups.add(extra.group)
-      }
-    }
-    const fields: unknown[] = []
-    for (const g of schemaGroups) {
-      if (!groups.has(g.id)) continue
-      for (const f of g.fields) {
-        if ((f as { name?: unknown }).name === pack) continue
-        fields.push(f)
-      }
-    }
+    // THE PARAM FIELDS ARE THE ENVELOPE'S (the parameter audit): the
+    // entry carries the pack's catalog facts; its param rows derive
+    // client-side off mod_schemas[pack] (the absorbed contract's own
+    // toJSON — same walker as the card fields, one meta path).
     const entry: Record<string, unknown> = {
       kind: meta.kind,
       label: meta.label,
@@ -276,7 +255,6 @@ function specModifiers(
       cardinality: meta.cardinality,
     }
     if (meta.max_stack !== undefined) entry.max_stack = meta.max_stack
-    entry.fields = fields
     entry.options = cat.rows.map((r) => ({
       value: r.id,
       label: r.label ?? r.id,
@@ -287,23 +265,6 @@ function specModifiers(
           : { strength: r.default_strength },
     }))
     out.push(entry)
-  }
-  return out
-}
-
-/** Card schema defaults for card-only keys (mask-studio declares no
- *  DECL — its envelope defaults ride the schema's declared
- *  defaults, native JSON types). DECL keys ride the DECL defaults
- *  verbatim. */
-function schemaDefaults(def: CardDefinition): Record<string, unknown> {
-  const out: Record<string, unknown> = {}
-  const carrier = (def as { schemaCarrier?: unknown }).schemaCarrier ??
-    def.schema
-  const dict = (carrier as { dict?: Record<string, { meta?: { default?: unknown } }> })
-    ?.dict
-  for (const [name, node] of Object.entries(dict ?? {})) {
-    const dflt = node?.meta?.default
-    if (dflt !== undefined) out[name] = dflt as unknown
   }
   return out
 }
@@ -334,33 +295,23 @@ export function specBody(
   } catch {
     decl = null
   }
-  const fs = svc.formSpec(res.card, key) as {
-    fields: unknown[]
-    schema_groups: Array<{ id: string; fields: unknown[] }>
-  } | null
-  if (fs === null) {
+  // THE SCHEMA ENVELOPE (the parameter audit, 2026-09-14): the
+  //  card's own toJSON IS the served form — the flat field walk and
+  //  its frozen 15-key row are gone. The client derives fields,
+  //  groups, defaults, and presentation off the envelope
+  //  (card-base fieldsOf); this body projects card meta only.
+  const schemas = svc.formSchemas(res.card, key)
+  if (schemas === null) {
     throw new Error(`form-spec: card '${res.card}' unknown`)
   }
   // THE MOD SYSTEM OWNS MODS (the old SubcardGrid law, 2026-08-09:
   // "LoRA is a MOD, never a standalone addition — the free-text
   // grid must not render the mod bags as raw JSON rows; the
-  // SubcardGrid owns them"). The flat fields and the schema groups
-  // EXCLUDE every mod kind's param_key — mods ride features.
-  // modifiers (the kind vocabulary + the flavor catalog options)
-  // and land ONLY through the mod surface. ControlNet proves the
-  // law by absence: the pack waits unboarded and no field, no
-  // group, no endpoint ever names it.
-  const modifiers = specModifiers(svc, res.card, key, decl, fs.schema_groups)
-  const modKeys = new Set(
-    modifiers.map((m) => String(m['param_key'])).filter((k) => k !== ''),
-  )
-  const fieldOf = (f: unknown): string =>
-    typeof (f as { name?: unknown })?.name === 'string'
-      ? (f as { name: string }).name : ''
-  const fields = fs.fields.filter((f) => !modKeys.has(fieldOf(f)))
-  const schema_groups = fs.schema_groups
-    .map((g) => ({ ...g, fields: g.fields.filter((f) => !modKeys.has(fieldOf(f))) }))
-    .filter((g) => g.fields.length > 0)
+  // SubcardGrid owns them"). Mod params ride mod_schemas (keyed by
+  // pack) and render ONLY through the mod surface. ControlNet
+  // proves the law by absence: the pack waits unboarded and no
+  // envelope, no entry, no endpoint ever names it.
+  const modifiers = specModifiers(svc, res.card, key, decl)
   const surface = def.surface ?? {}
   const boarded = def.boarded ?? []
   const primary = (boarded.length > 0 ? boarded[0] : res.card) === key
@@ -370,22 +321,20 @@ export function specBody(
   // declaration lives on every card (flowKinds — the py card.py
   // stage half); the emission serves it so the card-UI BASE
   // constructs input components and wires pickers from DECLARED
-  // edges, never from result-URL sniffing. Each input row joins the
-  // schema field's required fact — the py law verbatim (dsl.py
-  // Field.emit: `required: True emits, False omits`).
-  const reqOf = new Map<string, boolean>()
-  for (const f of fs.fields) {
-    const name = fieldOf(f)
-    if (name !== '') reqOf.set(name, (f as { required?: unknown }).required === true)
-  }
+  // edges, never from result-URL sniffing. The required join moved
+  // client-side with the envelope (fieldsOf owns the schema's
+  // required facts now — the py law verbatim: required:True emits,
+  // False omits).
   const inputs = Object.entries(def.flowKinds.inputs).map(([name, kind]) => ({
     name,
     kind,
-    ...(reqOf.get(name) === true ? { required: true } : {}),
   }))
   return {
     contract: null,
-    defaults: decl?.defaults ?? schemaDefaults(def),
+    // THE BASE LAYER INPUT (the parameter audit): the family row's
+    // own defaults — resolveValue layers schema defaults <- this <-
+    // recipe params <- user, the engine's compose order verbatim.
+    model_defaults: decl?.defaults ?? {},
     engine: decl?.engine ?? 'comfyui',
     enhance_prompt: null,
     // THE RECIPE SEAT (hour 24 stroke 10): the model's prompt-enhance
@@ -400,7 +349,6 @@ export function specBody(
       modifiers,
       variant_groups: groupContract(decl),
     },
-    fields,
     form: res.card,
     genre: ident.genre,
     guide: null,
@@ -408,6 +356,10 @@ export function specBody(
     label: ident.label,
     layout: surface.layout === 'studio' ? 'studio' : null,
     loader_info: null,
+    // THE MOD CONTRACT ENVELOPES (keyed by pack — the absorbed
+    //  contracts' own toJSON; the modifier surface walks these for
+    //  its param rows, the same walker as the card fields).
+    mod_schemas: schemas.mods,
     model: res.model,
     outputs: def.flowKinds.outputs,
     // THE CARD-RECIPE EMISSION (operator, 2026-09-14: "when I do
@@ -427,7 +379,8 @@ export function specBody(
         params: { ...r.params },
       }]),
     ),
-    schema_groups,
+    // THE CARD'S OWN SERIALIZED SCHEMA — the served form's SSOT.
+    schema: schemas.schema,
     service: res.service,
     size: surface.size === 'huge' ? 'huge' : null,
     variants: decl ? specVariants(decl, key, res.service, primary) : [],

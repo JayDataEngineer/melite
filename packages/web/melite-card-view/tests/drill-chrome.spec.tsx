@@ -22,6 +22,7 @@ import { afterEach, expect, test, vi } from 'vitest'
 import { createElement } from 'react'
 
 import { CardsTab } from '../src/client/CardsTab.tsx'
+import { schemaEnvelope } from '../src/client/spec-form.tsx'
 import type { CardsBenchValue } from '../src/client/cards-resource.ts'
 
 // the running row's result carries the tap fold — the observer
@@ -59,7 +60,9 @@ function stubWire(): void {
     if (path.includes('/v1/form-spec')) {
       return new Response(JSON.stringify({
         form: 'image-gen', genre: 'image', engine: 'comfyui',
-        fields: [{ name: 'prompt', label: 'Prompt', type: 'textarea' }],
+        schema: schemaEnvelope({
+          prompt: { type: 'string', meta: { description: 'Prompt', extra: { wtype: 'textarea' } } },
+        }),
       }), { status: 200, headers: { 'content-type': 'application/json' } })
     }
     if (path.includes('/v1/model-catalog')) {

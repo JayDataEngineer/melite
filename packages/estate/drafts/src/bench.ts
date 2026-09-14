@@ -82,12 +82,12 @@ interface BenchEntry {
   reverted?: number[];
 }
 
-interface BenchBlock {
+export interface BenchBlock {
   rev: number;
   log: BenchEntry[];
 }
 
-function benchBlockOf(doc: Record<string, unknown>): BenchBlock {
+export function benchBlockOf(doc: Record<string, unknown>): BenchBlock {
   const raw: unknown = doc["bench"];
   if (
     isRecord(raw) &&

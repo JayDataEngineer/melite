@@ -5,9 +5,9 @@
 // shapes, and the WHOLE undo-inverse table — including crafted log
 // entries whose inverse payloads miss optional fields (the log is
 // data; the applier is robust to older/hand-written entries).
-import { describe, expect, test } from "vitest";
+import { describe, expect, onTestFinished, test } from "vitest";
 import assert from "node:assert/strict";
-import { mkdtempSync, mkdirSync } from "node:fs";
+import { mkdtempSync, mkdirSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { Context } from "@deepseek-ai/cordis";
@@ -26,12 +26,22 @@ import {
   rewireBench, reorderBench, groupBench, ungroupBench, undoBench,
   onBenchChange, notifyBenchChange, notifyBenchDocWrite,
 } from "../src/bench.ts";
-import { BenchRemoteService } from "../src/remote.ts";
+import { BenchRemoteService, DraftsRemoteService } from "../src/remote.ts";
 
 const sig = new AbortController().signal;
 
-async function bootCtx(): Promise<{ ctx: Context; domain: Domain<DraftsDomainSpec> }> {
+// TMP OWNERSHIP (stroke 13): every bootCtx tree is owned — the
+// disposer runs through onTestFinished so a leaked tree can never
+// outlive its test (the suite once minted ~a million /tmp inodes
+// across iterate-run-fix loops).
+function mintRoot(): string {
   const root = mkdtempSync(join(tmpdir(), "bench-spec-"));
+  onTestFinished(() => rmSync(root, { recursive: true, force: true }));
+  return root;
+}
+
+async function bootCtx(): Promise<{ ctx: Context; domain: Domain<DraftsDomainSpec> }> {
+  const root = mintRoot();
   mkdirSync(join(root, "storage"), { recursive: true });
   process.env["MELITE_STATE_ROOT"] = root;
   process.env["MELITE_STORAGE_ROOT"] = "";
@@ -910,4 +920,75 @@ test("a row id outside the s_N shape never feeds the mint (max stays, s_0 rides 
   });
   // hero-1/note are INVISIBLE to the mint; s_7 is the max — s_8 next
   assert.equal(added.stage, "s_8");
+});
+
+// ── the drafts/patch door (the layered-params law, 2026-09-14) ────
+
+describe("the drafts/patch door: null-unset, CAS fence, rev+log", () => {
+  /** Boot a real DraftsRemoteService over the json+domain stack. */
+  async function bootRemote(): Promise<{ svc: DraftsRemoteService; drafts: Domain<DraftsDomainSpec> }> {
+    const { ctx, domain } = await bootCtx();
+    const svc = new DraftsRemoteService(ctx);
+    return { svc, drafts: domain };
+  }
+
+  test("a params patch merges per-key, bumps rev, and logs kind:patch", async () => {
+    const { svc, drafts } = await bootRemote();
+    await ensureBench(drafts, { session: "main", stages: [{ id: "s_0", params: { steps: 8 } }] });
+    const answer = await svc.patch("bench-main", "s_0", { params: { cfg: 3.5 } }, 0, sig);
+    // the answer carries the new rev (the client's CAS currency)
+    expect(answer.rev).toBe(1);
+    expect(answer.patched).toEqual(["params"]);
+    const doc = await svc.get("bench-main", sig);
+    const stage = (doc["stages"] as Array<Record<string, unknown>>)[0]!;
+    // merge per-key: steps SURVIVES, cfg rides
+    expect(stage["params"]).toEqual({ steps: 8, cfg: 3.5 });
+    const bench = (doc["bench"] as Record<string, unknown>);
+    expect(bench["rev"]).toBe(1);
+    const log = bench["log"] as Array<Record<string, unknown>>;
+    const last = log[log.length - 1]!;
+    expect(last["kind"]).toBe("patch");
+    expect(last["stage"]).toBe("s_0");
+  });
+
+  test("a null param DELETES the key (JSON Merge Patch — the unset wire form)", async () => {
+    const { svc, drafts } = await bootRemote();
+    await ensureBench(drafts, { session: "main", stages: [{ id: "s_0", params: { steps: 8, cfg: 3.5 } }] });
+    await svc.patch("bench-main", "s_0", { params: { cfg: null } }, 0, sig);
+    const doc = await svc.get("bench-main", sig);
+    const stage = (doc["stages"] as Array<Record<string, unknown>>)[0]!;
+    expect(stage["params"]).toEqual({ steps: 8 });
+  });
+
+  test("a stale expectRev refuses loud with bench/cas-conflict carrying current_rev", async () => {
+    const { svc, drafts } = await bootRemote();
+    await ensureBench(drafts, { session: "main", stages: [{ id: "s_0", params: { steps: 8 } }] });
+    await svc.patch("bench-main", "s_0", { params: { cfg: 3 } }, 0, sig);
+    // the bench moved to rev 1; a writer holding rev 0 refuses —
+    // never merges under the earlier author
+    const err = await svc.patch("bench-main", "s_0", { params: { steps: 20 } }, 0, sig).then(
+      () => null,
+      (e: unknown) => e,
+    );
+    expect(err).not.toBeNull();
+    expect(String((err as { code?: string }).code)).toBe("bench/cas-conflict");
+    const details = (err as { details?: Record<string, unknown> }).details ?? {};
+    expect(details["current_rev"]).toBe(1);
+    expect(details["expect_rev"]).toBe(0);
+    // the doc never moved
+    const doc = await svc.get("bench-main", sig);
+    const stage = (doc["stages"] as Array<Record<string, unknown>>)[0]!;
+    expect(stage["params"]).toEqual({ steps: 8, cfg: 3 });
+    expect((doc["bench"] as Record<string, unknown>)["rev"]).toBe(1);
+  });
+
+  test("expectRev null rides unfenced (the last-writer-wins recovery path)", async () => {
+    const { svc, drafts } = await bootRemote();
+    await ensureBench(drafts, { session: "main", stages: [{ id: "s_0", params: { steps: 8 } }] });
+    await svc.patch("bench-main", "s_0", { params: { steps: 20 } }, null, sig);
+    const doc = await svc.get("bench-main", sig);
+    const stage = (doc["stages"] as Array<Record<string, unknown>>)[0]!;
+    expect(stage["params"]).toEqual({ steps: 20 });
+    expect((doc["bench"] as Record<string, unknown>)["rev"]).toBe(1);
+  });
 });

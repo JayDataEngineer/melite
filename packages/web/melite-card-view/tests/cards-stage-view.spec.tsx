@@ -16,6 +16,7 @@ import { afterEach, expect, test, vi } from 'vitest'
 import { createElement } from 'react'
 
 import { CardsTab } from '../src/client/CardsTab.tsx'
+import { schemaEnvelope } from '../src/client/spec-form.tsx'
 import type { CardsBenchValue } from '../src/client/cards-resource.ts'
 import type { StageViewOwnerProps } from '../src/client/types.ts'
 
@@ -36,12 +37,12 @@ function stubWire(): void {
     if (path.includes('/v1/form-spec')) {
       const model = path.split('model=')[1] ?? ''
       const doc = model.includes('image-gen')
-        ? { form: 'image-gen', fields: [
-            { name: 'prompt', label: 'Prompt', type: 'textarea' },
-          ] }
-        : { form: 'tagger', fields: [
-            { name: 'threshold', label: 'Threshold', type: 'slider', default: 0.5 },
-          ] }
+        ? { form: 'image-gen', schema: schemaEnvelope({
+            prompt: { type: 'string', meta: { description: 'Prompt', extra: { wtype: 'textarea' } } },
+          }) }
+        : { form: 'tagger', schema: schemaEnvelope({
+            threshold: { type: 'number', meta: { description: 'Threshold', default: 0.5, step: 0.1 } },
+          }) }
       return new Response(JSON.stringify(doc), { status: 200, headers: { 'content-type': 'application/json' } })
     }
     if (path.includes('/v1/model-catalog')) {

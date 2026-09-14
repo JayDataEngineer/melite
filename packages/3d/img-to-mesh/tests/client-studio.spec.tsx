@@ -12,19 +12,20 @@ import { afterEach, expect, test, vi } from 'vitest'
 import { createElement, useEffect } from 'react'
 
 import { apply as imgToMeshApply, ImgToMeshStudio } from '../src/client/index.ts'
+import { schemaEnvelope } from '@melite/card-base'
 
 const SPEC = {
   form: 'img-to-mesh',
   layout: 'studio',
   size: 'huge',
-  fields: [
-    { name: 'input_image', label: 'Input image', type: 'image', group: 'input' },
-    { name: 'seed', label: 'Seed', type: 'seed', group: 'input' },
-    { name: 'resolution', label: 'Resolution', type: 'select', default: '1024', options: ['1024', '2048'], group: 'generation' },
-    { name: 'steps', label: 'Steps', type: 'number', default: 12, group: 'generation' },
-    { name: 'shape_steps', label: 'Shape steps', type: 'number', default: 8, group: 'stage' },
-    { name: 'atlas_size', label: 'Atlas size', type: 'select', default: '2048', options: ['1024', '2048', '4096'], group: 'bake' },
-  ],
+  schema: schemaEnvelope({
+    input_image: { type: 'string', meta: { description: 'Input image', extra: { wtype: 'image', group: 'input' } } },
+    seed: { type: 'number', meta: { description: 'Seed', extra: { wtype: 'seed', group: 'input' } } },
+    resolution: { consts: ['1024', '2048'], meta: { description: 'Resolution', default: '1024', extra: { group: 'generation' } } },
+    steps: { type: 'number', meta: { description: 'Steps', default: 12, step: 1, extra: { wtype: 'number', group: 'generation' } } },
+    shape_steps: { type: 'number', meta: { description: 'Shape steps', default: 8, step: 1, extra: { wtype: 'number', group: 'stage' } } },
+    atlas_size: { consts: ['1024', '2048', '4096'], meta: { description: 'Atlas size', default: '2048', extra: { group: 'bake' } } },
+  }),
 }
 
 const OWNER = {
@@ -100,7 +101,9 @@ test('the icon run gesture patches the domain FIRST, then starts (the drill law,
   // the seeded values: spec defaults UNDER the frozen row params
   const patch = onPatch.mock.calls[0][0] as Record<string, unknown>
   expect(patch['steps']).toBe(20) // frozen row wins
-  expect(patch['resolution']).toBe('1024') // spec default seeds the rest
+  // THE SETTINGS LAW: spec defaults DERIVE at compose — they never
+  // ride the explicit map (presence IS the override mark)
+  expect(patch['resolution']).toBeUndefined()
 })
 
 test('a live row shows stop + the tap fold (the restored bench face)', async () => {

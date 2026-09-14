@@ -42,6 +42,10 @@ function svc(partial: Record<string, unknown>): ComfyUIService {
   return partial as unknown as ComfyUIService
 }
 
+/** A schema-envelope stand-in (the served shape — schemastery's own
+ *  toJSON in production; the synth tests only need the wire form). */
+const ENVELOPE = { uid: 0, refs: { 0: { type: 'object', dict: {} } } }
+
 function decl(partial: Record<string, unknown>): Record<string, unknown> {
   return { id: 'syn', genre: 'image', label: 'Syn', ...partial }
 }
@@ -113,7 +117,7 @@ describe('formSpecArm synthetic boarding', () => {
       ['card-b', card({ boarded: ['syn-fam'], identity: { label: 'B', description: 'b', genre: 'image' } })],
       ['card-c', card({ identity: { label: 'C', description: 'c', genre: 'image' } })],
     ])
-    mockState.svc = svc({ formSpec: () => ({ fields: [], schema_groups: [] }) })
+    mockState.svc = svc({ formSchemas: () => ({ schema: ENVELOPE, mods: {} }) })
     const spec = (await formSpecArm('syn-fam')) as Record<string, unknown>
     assert.equal(spec['form'], 'card-a')
     assert.equal(spec['service'], 'syn-fam')
@@ -178,12 +182,16 @@ describe('specBody primary envelope', () => {
       })],
     ])
     mockState.svc = svc({
-      formSpec: () => ({
-        fields: [{ name: 'prompt' }],
-        schema_groups: [
-          { id: 'g-lora', fields: [{ name: 'loras' }, { name: 'strength' }] },
-          { id: 'g-other', fields: [{ name: 'x' }] },
-        ],
+      // THE NEW SEAM (the parameter audit): one call serves the card
+      // schema envelope + the mod contracts' own envelopes, family-
+      // filtered (the real service folds cardModFields here — the
+      // synth mirrors the fold: syn-a boards loras + controlnet)
+      formSchemas: () => ({
+        schema: { uid: 0, refs: { 0: { type: 'object', dict: { prompt: 1 } }, 1: { type: 'string' } } },
+        mods: {
+          loras: { uid: 0, refs: { 0: { type: 'object', dict: { f1: 1, f2: 2, f3: 3, f4: 4 } } } },
+          controlnet: { uid: 0, refs: { 0: { type: 'object', dict: {} } } },
+        },
       }),
       modCatalog: (pack: string) => {
         if (pack === 'loras') {
@@ -225,7 +233,9 @@ describe('specBody primary envelope', () => {
     const { defs, res } = mega()
     const spec = specBody(mockState.svc as ComfyUIService, defs, res) as Record<string, unknown>
     assert.equal(spec['engine'], 'custom-engine')
-    assert.deepEqual(spec['defaults'], { strength: 3 })
+    // THE BASE LAYER INPUT: the family row's own defaults (the schema
+    // envelope carries the rest — defaults derive client-side now)
+    assert.deepEqual(spec['model_defaults'], { strength: 3 })
     assert.equal(spec['layout'], 'studio')
     assert.equal(spec['size'], 'huge')
     const variants = spec['variants'] as Array<Record<string, unknown>>
@@ -275,16 +285,21 @@ describe('specBody primary envelope', () => {
     const loras = modifiers[0]!
     assert.equal(loras['kind'], 'lora')
     assert.equal('max_stack' in loras, false)
-    assert.deepEqual(loras['fields'], [{ name: 'strength' }])
+    // THE PARAM FIELDS ARE THE ENVELOPE'S: the entry carries catalog
+    // facts only — its param rows derive client-side off mod_schemas
+    assert.equal('fields' in loras, false)
     assert.deepEqual(loras['options'], [
       { value: 'l1', label: 'L1', tooltip: 'cat — f.safetensors — runtime catalog', defaults: { strength: 0.8 } },
       { value: 'l2', label: 'l2', tooltip: 'g.safetensors — runtime catalog', defaults: {} },
     ])
-    assert.deepEqual(modifiers[1]!['fields'], [])
+    assert.equal('fields' in modifiers[1]!, false)
     assert.equal(modifiers[2]!['max_stack'], 1)
     assert.deepEqual(modifiers[2]!['options'], [
       { value: 'm1', label: 'M1', tooltip: 'm.safetensors', defaults: {} },
     ])
+    // THE MOD CONTRACT ENVELOPES ride keyed by pack; mask (family
+    // 'other') never boards syn-a — the law by absence
+    assert.deepEqual(Object.keys(spec['mod_schemas'] as object), ['loras', 'controlnet'])
     const groups = (spec['features'] as { variant_groups: Record<string, unknown> }).variant_groups
     assert.deepEqual(groups, {
       Variant: { label: 'Variant', tooltip: 't', default: 'turbo' },
@@ -319,7 +334,7 @@ describe('specBody non-primary envelope', () => {
         identity: { label: 'Syn', description: 's', genre: 'image' },
       })],
     ])
-    mockState.svc = svc({ formSpec: () => ({ fields: [], schema_groups: [] }) })
+    mockState.svc = svc({ formSchemas: () => ({ schema: ENVELOPE, mods: {} }) })
     const spec = specBody(mockState.svc as ComfyUIService, defs, {
       card: 'syn-card',
       service: 'syn-a',
@@ -347,20 +362,26 @@ describe('specBody declaration-absent arms', () => {
         schemaCarrier: { dict: { d: { meta: { default: 2 } } } },
       })],
     ])
-    mockState.svc = svc({ formSpec: () => ({ fields: [], schema_groups: [] }) })
+    // the fake seam serves the carrier's own envelope (the real
+    // service toJSONs it — schemaCarrier ?? schema)
+    const carrier = { uid: 0, refs: { 0: { type: 'object', dict: { d: { meta: { default: 2 } } } } } }
+    mockState.svc = svc({ formSchemas: () => ({ schema: carrier, mods: {} }) })
     const spec = specBody(mockState.svc as ComfyUIService, defs, {
       card: 'syn-card',
       service: 'syn-n',
       model: 'syn-n',
     }) as Record<string, unknown>
     assert.equal(spec['engine'], 'comfyui')
-    assert.deepEqual(spec['defaults'], { d: 2 })
+    // schema defaults ride the ENVELOPE (client derives); the family
+    // row declares none — model_defaults serves the empty object
+    assert.deepEqual(spec['model_defaults'], {})
+    assert.equal(spec['schema'], carrier)
     assert.deepEqual(spec['variants'], [])
     assert.deepEqual((spec['features'] as { modifiers: unknown[] }).modifiers, [])
     assert.deepEqual((spec['features'] as { variant_groups: unknown }).variant_groups, {})
   })
 
-  test('a declaration-less key rides schema defaults, all node shapes', () => {
+  test('a declaration-less key rides the envelope verbatim (defaults derive client-side)', () => {
     reset()
     const defs = new Map<string, CardDefinition>([
       ['syn-nodecl', card({
@@ -376,13 +397,18 @@ describe('specBody declaration-absent arms', () => {
         },
       })],
     ])
-    mockState.svc = svc({ formSpec: () => ({ fields: [], schema_groups: [] }) })
+    const carrier = { uid: 0, refs: { 0: { type: 'object', dict: { keep: { meta: { default: 1 } } } } } }
+    mockState.svc = svc({ formSchemas: () => ({ schema: carrier, mods: {} }) })
     const spec = specBody(mockState.svc as ComfyUIService, defs, {
       card: 'syn-nodecl',
       service: 'syn-nodecl',
       model: '__no_decl__',
     }) as Record<string, unknown>
-    assert.deepEqual(spec['defaults'], { keep: 1, falsy: false })
+    // THE LAW (the parameter audit): the body NEVER flattens schema
+    // defaults — the envelope rides verbatim and fieldsOf walks the
+    // node shapes client-side (pinned in card-base)
+    assert.equal(spec['schema'], carrier)
+    assert.deepEqual(spec['model_defaults'], {})
     assert.deepEqual((spec['features'] as { variant_groups: unknown }).variant_groups, {})
   })
 
@@ -394,12 +420,14 @@ describe('specBody declaration-absent arms', () => {
         schema: (() => ({})) as never,
       })],
     ])
-    mockState.svc = svc({ formSpec: () => ({ fields: [], schema_groups: [] }) })
+    mockState.svc = svc({ formSchemas: () => ({ schema: ENVELOPE, mods: {} }) })
     const spec = specBody(mockState.svc as ComfyUIService, defs, {
       card: 'syn-fn',
       service: 'syn-fn',
       model: '__no_decl__',
     }) as Record<string, unknown>
-    assert.deepEqual(spec['defaults'], {})
+    // the seam's own toJSON answers ({} for the function-schema
+    // fixture); the body adds no walk of its own
+    assert.deepEqual(spec['model_defaults'], {})
   })
 })

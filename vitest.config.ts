@@ -99,6 +99,12 @@ const DECK_SPEC_TREES = [
 ]
 const DOM19_SPEC_TREES = DOM_SPEC_TREES.filter((t) => !GALLERY_SPEC_TREES.includes(t))
 
+// THE /TMP OWNERSHIP NET (stroke 13, 2026-09-14): suites mkdtemp
+// under tmpdir(); the global sweep reclaims pre-run trees at teardown
+// so iterate-run-fix loops can never accumulate a million inodes
+// again (tests/global-sweep.ts owns the prefix table).
+const TMP_SWEEP = path.join('tests', 'global-sweep.ts')
+
 export default defineConfig({
   test: {
     projects: [
@@ -109,6 +115,7 @@ export default defineConfig({
         },
         test: {
           name: 'node',
+          globalSetup: [TMP_SWEEP],
           environment: 'node',
           pool: 'forks',
           execArgv: vitestExecArgv,
@@ -198,6 +205,7 @@ export default defineConfig({
         },
         test: {
           name: 'dom',
+          globalSetup: [TMP_SWEEP],
           environment: 'happy-dom',
           pool: 'forks',
           execArgv: vitestExecArgv,
@@ -272,6 +280,7 @@ export default defineConfig({
         },
         test: {
           name: 'dom18',
+          globalSetup: [TMP_SWEEP],
           environment: 'jsdom',
           pool: 'forks',
           execArgv: vitestExecArgv,
@@ -298,6 +307,7 @@ export default defineConfig({
         },
         test: {
           name: 'deck',
+          globalSetup: [TMP_SWEEP],
           environment: 'jsdom',
           pool: 'forks',
           execArgv: vitestExecArgv,

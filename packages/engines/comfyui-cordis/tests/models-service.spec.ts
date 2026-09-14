@@ -5,9 +5,9 @@
 // override, so the schema leg only fires when the test means it).
 // The boot's happy path rides one real bootModels() at the end;
 // the interlock halves are pure units over synthetic sets.
-import { describe, it } from "vitest";
+import { describe, it, onTestFinished } from "vitest";
 import assert from "node:assert/strict";
-import { mkdtempSync, writeFileSync } from "node:fs";
+import { mkdtempSync, writeFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { Context } from "@deepseek-ai/cordis";
@@ -19,6 +19,14 @@ import { resetCatalogCache } from "../src/catalog.ts";
 import { ModelError } from "../src/models/families/contract.ts";
 import type { ModelDecl } from "../src/models/families/contract.ts";
 import { DECL as KREA } from "../../../models/krea-2/src/index.ts";
+
+/** Mint a tree owned by the CURRENT test (disposed with it). */
+function mintRoot(): string {
+  const root = mkdtempSync(join(tmpdir(), "models-svc-"));
+  onTestFinished(() => rmSync(root, { recursive: true, force: true }));
+  return root;
+}
+
 
 const clone = (over: Record<string, unknown> = {}): ModelDecl =>
   // routeless variants by default (the base's real routes would
@@ -439,7 +447,7 @@ describe("servedModels + catalogModels (the serving halves)", () => {
 
   it("checkModelPresent delegates (unparseable config collapses the mount leg)", () => {
     const svc = fresh();
-    const root = mkdtempSync(join(tmpdir(), "models-svc-"));
+    const root = mintRoot();
     assert.equal(svc.checkModelPresent("models/checkpoints", "nope.safetensors", root), null);
     const bad = join(root, "endpoint.json");
     writeFileSync(bad, "{nope");

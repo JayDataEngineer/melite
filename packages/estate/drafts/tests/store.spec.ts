@@ -10,14 +10,23 @@
 // seam) — NOT a Service subclass: cordis exposes Service subclasses
 // through per-access scoped proxies (unstable identity), while provided
 // objects keep theirs, and the store's WeakMap keys on that identity.
-import { test } from "vitest";
+import { onTestFinished, test } from "vitest";
 import assert from "node:assert/strict";
-import { mkdtempSync, mkdirSync, writeFileSync } from "node:fs";
+import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { Context } from "@deepseek-ai/cordis";
 import type { Domain } from "@deepseek-ai/dsh-storage-domain";
 import { openDraftsDomain } from "../src/store.ts";
+
+// TMP OWNERSHIP (stroke 13): every minted tree is disposed with its
+// test — see tests/global-sweep.ts for the tree-wide net.
+/** Mint a tree owned by the CURRENT test (disposed with it). */
+function mintRoot(): string {
+  const root = mkdtempSync(join(tmpdir(), "drafts-store-"));
+  onTestFinished(() => rmSync(root, { recursive: true, force: true }));
+  return root;
+}
 
 /** The minimal domain face the store touches: the epoch marker + the
  * docs table (the spec's own shape — no more, no fake extra). */
@@ -75,7 +84,7 @@ function mountFacility(ctx: Context): FakeFacility {
 }
 
 function legacyRoot(files: Record<string, string>): string {
-  const root = mkdtempSync(join(tmpdir(), "drafts-store-"));
+  const root = mintRoot();
   mkdirSync(join(root, "drafts"), { recursive: true });
   mkdirSync(join(root, "storage"), { recursive: true });
   for (const [name, body] of Object.entries(files)) {
@@ -174,7 +183,7 @@ test("a pre-stamped epoch skips the import entirely (a wiped unit never re-impor
 });
 
 test("a root with no legacy drafts dir imports nothing, cleanly", async () => {
-  const root = mkdtempSync(join(tmpdir(), "drafts-store-"));
+  const root = mintRoot();
   mkdirSync(join(root, "storage"), { recursive: true });
   env(root);
   const ctx = new Context();

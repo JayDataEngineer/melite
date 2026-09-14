@@ -343,30 +343,12 @@ function optionTooltip(row, shared) {
 *  pack rows (union-served rows carry the shared suffix); fields
 *  ride the pack's schema_groups member rows minus the pack's own
 *  stack knob. */
-function specModifiers(svc, card, key, decl, schemaGroups) {
+function specModifiers(svc, card, key, decl) {
 	const out = [];
 	for (const pack of decl?.mods ?? []) {
 		const meta = MODIFIER_PACKS[pack];
 		if (meta === void 0) continue;
 		const cat = svc.modCatalog(pack, key);
-		const groups = /* @__PURE__ */ new Set();
-		for (const absorbed of svc.cardModFields(card)) {
-			if (absorbed.pack !== pack) continue;
-			if (!absorbed.families.includes(key)) continue;
-			const dict = absorbed.fields?.dict;
-			for (const node of Object.values(dict ?? {})) {
-				const extra = node.meta?.extra ?? {};
-				if (typeof extra.group === "string") groups.add(extra.group);
-			}
-		}
-		const fields = [];
-		for (const g of schemaGroups) {
-			if (!groups.has(g.id)) continue;
-			for (const f of g.fields) {
-				if (f.name === pack) continue;
-				fields.push(f);
-			}
-		}
 		const entry = {
 			kind: meta.kind,
 			label: meta.label,
@@ -374,7 +356,6 @@ function specModifiers(svc, card, key, decl, schemaGroups) {
 			cardinality: meta.cardinality
 		};
 		if (meta.max_stack !== void 0) entry.max_stack = meta.max_stack;
-		entry.fields = fields;
 		entry.options = cat.rows.map((r) => ({
 			value: r.id,
 			label: r.label ?? r.id,
@@ -382,19 +363,6 @@ function specModifiers(svc, card, key, decl, schemaGroups) {
 			defaults: r.default_strength === void 0 ? {} : { strength: r.default_strength }
 		}));
 		out.push(entry);
-	}
-	return out;
-}
-/** Card schema defaults for card-only keys (mask-studio declares no
-*  DECL — its envelope defaults ride the schema's declared
-*  defaults, native JSON types). DECL keys ride the DECL defaults
-*  verbatim. */
-function schemaDefaults(def) {
-	const out = {};
-	const dict = (def.schemaCarrier ?? def.schema)?.dict;
-	for (const [name, node] of Object.entries(dict ?? {})) {
-		const dflt = node?.meta?.default;
-		if (dflt !== void 0) out[name] = dflt;
 	}
 	return out;
 }
@@ -414,32 +382,19 @@ function specBody(svc, defs, res) {
 	} catch {
 		decl = null;
 	}
-	const fs = svc.formSpec(res.card, key);
-	if (fs === null) throw new Error(`form-spec: card '${res.card}' unknown`);
-	const modifiers = specModifiers(svc, res.card, key, decl, fs.schema_groups);
-	const modKeys = new Set(modifiers.map((m) => String(m["param_key"])).filter((k) => k !== ""));
-	const fieldOf = (f) => typeof f?.name === "string" ? f.name : "";
-	const fields = fs.fields.filter((f) => !modKeys.has(fieldOf(f)));
-	const schema_groups = fs.schema_groups.map((g) => ({
-		...g,
-		fields: g.fields.filter((f) => !modKeys.has(fieldOf(f)))
-	})).filter((g) => g.fields.length > 0);
+	const schemas = svc.formSchemas(res.card, key);
+	if (schemas === null) throw new Error(`form-spec: card '${res.card}' unknown`);
+	const modifiers = specModifiers(svc, res.card, key, decl);
 	const surface = def.surface ?? {};
 	const boarded = def.boarded ?? [];
 	const primary = (boarded.length > 0 ? boarded[0] : res.card) === key;
-	const reqOf = /* @__PURE__ */ new Map();
-	for (const f of fs.fields) {
-		const name = fieldOf(f);
-		if (name !== "") reqOf.set(name, f.required === true);
-	}
 	const inputs = Object.entries(def.flowKinds.inputs).map(([name, kind]) => ({
 		name,
-		kind,
-		...reqOf.get(name) === true ? { required: true } : {}
+		kind
 	}));
 	return {
 		contract: null,
-		defaults: decl?.defaults ?? schemaDefaults(def),
+		model_defaults: decl?.defaults ?? {},
 		engine: decl?.engine ?? "comfyui",
 		enhance_prompt: null,
 		enhance_prompts: enhanceRecipeFor(key, res.service) !== null ? { prompt: enhanceRecipeFor(key, res.service) } : {
@@ -450,7 +405,6 @@ function specBody(svc, defs, res) {
 			modifiers,
 			variant_groups: groupContract(decl)
 		},
-		fields,
 		form: res.card,
 		genre: ident.genre,
 		guide: null,
@@ -458,6 +412,7 @@ function specBody(svc, defs, res) {
 		label: ident.label,
 		layout: surface.layout === "studio" ? "studio" : null,
 		loader_info: null,
+		mod_schemas: schemas.mods,
 		model: res.model,
 		outputs: def.flowKinds.outputs,
 		recipes: def.recipes === void 0 ? null : Object.fromEntries(Object.entries(def.recipes).map(([key, r]) => [key, {
@@ -465,7 +420,7 @@ function specBody(svc, defs, res) {
 			description: r.description,
 			params: { ...r.params }
 		}])),
-		schema_groups,
+		schema: schemas.schema,
 		service: res.service,
 		size: surface.size === "huge" ? "huge" : null,
 		variants: decl ? specVariants(decl, key, res.service, primary) : []

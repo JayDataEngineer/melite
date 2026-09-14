@@ -2,9 +2,9 @@
 // (TEST-2 breadth, 2026-09-12). The catalog is pure: DECL rows in,
 // artifact rows out — miss texts ARE the wire (the manage door maps
 // CatalogMiss -> 404), so every text pins here.
-import { describe, it, beforeEach } from "vitest";
+import { describe, it, beforeEach, onTestFinished, beforeAll } from "vitest";
 import assert from "node:assert/strict";
-import { mkdtempSync, mkdirSync, writeFileSync } from "node:fs";
+import { mkdtempSync, mkdirSync, writeFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
@@ -13,6 +13,14 @@ import {
   runtimeModelsRoot, checkModelPresent, findModelPresent,
 } from "../src/catalog.ts";
 import type { ModelDecl } from "../src/models/families/contract.ts";
+
+/** Mint a tree owned by the CURRENT test (disposed with it). */
+function mintRoot(): string {
+  const root = mkdtempSync(join(tmpdir(), "catalog-"));
+  onTestFinished(() => rmSync(root, { recursive: true, force: true }));
+  return root;
+}
+
 
 const decl = (over: Record<string, unknown> = {}): ModelDecl => ({
   id: "krea-2",
@@ -134,7 +142,10 @@ describe("resolveCatalogArtifact (the legacy texts ARE the wire)", () => {
 });
 
 describe("findModelPresent (runtime first, then the mount leg)", () => {
-  const root = mkdtempSync(join(tmpdir(), "catalog-"));
+  // mints inside a TEST context (beforeEach) — onTestFinished can
+  // register neither at collection time nor in beforeAll
+  let root = "";
+  beforeEach(() => { root = mintRoot(); });
 
   it("the runtime tree hits first", () => {
     const dir = join(runtimeModelsRoot(root), "checkpoints");

@@ -232,12 +232,10 @@ describe('live door arms', () => {
     assert.equal(spec['model'], 'qwen3-tts')
     assert.deepEqual(Object.keys(spec).sort(), [
       'contract',
-      'defaults',
       'engine',
       'enhance_prompt',
       'enhance_prompts',
       'features',
-      'fields',
       'form',
       'genre',
       'guide',
@@ -245,14 +243,24 @@ describe('live door arms', () => {
       'label',
       'layout',
       'loader_info',
+      'mod_schemas',
       'model',
+      'model_defaults',
       'outputs',
       'recipes',
-      'schema_groups',
+      'schema',
       'service',
       'size',
       'variants',
     ])
+    // THE ENVELOPE (the parameter audit): the schema is the card's
+    // own toJSON — uid + refs; flat rows never ride
+    const env = spec['schema'] as { uid?: unknown; refs?: unknown }
+    assert.equal(typeof env['uid'], 'number')
+    assert.equal(typeof env['refs'], 'object')
+    assert.equal('fields' in spec, false)
+    assert.equal('schema_groups' in spec, false)
+    assert.equal('defaults' in spec, false)
   })
 
   test('formSpecArm serves the card-only mask-studio envelope', async () => {
@@ -291,34 +299,49 @@ describe('live door arms', () => {
       identity: { label: 'Solo', description: 'solo card', genre: 'image' },
       flowKinds: { inputs: { frame: 'image', seed: 'int' }, outputs: { default: 'image' }, requiresModel: false },
     })]])
-    const realFormSpec = svc.formSpec.bind(svc)
+    const realFormSchemas = svc.formSchemas.bind(svc)
     const fakeSvc = {
-      formSpec: (c: string, key: string): unknown => {
-        if (c !== '__solo2__') return realFormSpec(c, key)
+      // THE NEW SEAM: one call carries the card schema + mod
+      // envelopes; the solo fixture serves a dict whose nodes carry
+      // junk shapes — the reqOf walk is client-side now (fieldsOf),
+      // so the junk rides verbatim and never names an input row
+      formSchemas: (c: string, key: string): unknown => {
+        if (c !== '__solo2__') return realFormSchemas(c, key)
         return {
-          fields: [
-            { name: 'frame', required: true },
-            { name: 7, required: true }, // nameless junk — skipped
-            'not-even-an-object',
-          ],
-          schema_groups: [],
+          schema: {
+            uid: 0,
+            refs: {
+              0: { type: 'object', dict: {
+                frame: 1,
+                7: 2, // nameless junk key — rides verbatim
+                junk: 'not-even-a-node',
+              } },
+              1: { type: 'image' },
+              2: { type: 'int' },
+            },
+          },
+          mods: {},
         }
       },
-      modCatalog: (pack: string, key: string): unknown => realFormSpec('__solo2__', key) === null ? [] : [],
+      modCatalog: (pack: string, key: string): unknown => realFormSchemas('__solo2__', key) === null ? { shared: false, rows: [] } : { shared: false, rows: [] },
       cardModFields: (): unknown[] => [],
     } as unknown as ReturnType<typeof theService>
     const body = specBody(fakeSvc, defs, { card: '__solo2__', service: '__solo2__', model: '__solo2__' })
     // PRIMARY via the card arm (boarded empty — res.card === key):
     // no decl → no variants (empty, never null)
     assert.equal(JSON.stringify(body['variants']), '[]')
-    // the named field joined reqOf; the nameless never did
+    // THE REQUIRED JOIN MOVED CLIENT-SIDE (the parameter audit): the
+    // edge rows serve the DECLARED edges only — required facts ride
+    // the schema envelope's own nodes (fieldsOf walks them)
     const inputs = body['inputs'] as Array<Record<string, unknown>>
-    assert.equal(JSON.stringify(inputs.find((i) => i['name'] === 'frame')), '{"name":"frame","kind":"image","required":true}')
+    assert.equal(JSON.stringify(inputs.find((i) => i['name'] === 'frame')), '{"name":"frame","kind":"image"}')
     assert.equal(JSON.stringify(inputs.find((i) => i['name'] === 'seed')), '{"name":"seed","kind":"int"}')
-    // nameless junk rides the flat fields verbatim (only MOD keys
-    // drop) — but it can never join reqOf, so no input row names it
-    assert.equal(JSON.stringify((body['fields'] as Array<{ name: unknown }>).map((f) => f['name'])), '["frame",7,null]')
+    // nameless junk rides the ENVELOPE verbatim (nothing drops) — but
+    // no input row ever names it
+    const dict = ((body['schema'] as { refs: Record<string, { dict?: Record<string, unknown> }> }).refs['0']!.dict)
+    assert.deepEqual(Object.keys(dict!).sort(), ['7', 'frame', 'junk'])
     assert.equal(inputs.some((i) => i['name'] === 7 || i['name'] === undefined), false)
+    assert.equal('fields' in body, false)
   })
 
   test('specBody refuses unknown cards, identity-less cards, and null fragments', async () => {
@@ -335,7 +358,7 @@ describe('live door arms', () => {
     )
     assert.throws(
       () =>
-        specBody({ formSpec: () => null } as never, defs, res),
+        specBody({ formSchemas: () => null } as never, defs, res),
       /form-spec: card 'tts' unknown/,
     )
   })

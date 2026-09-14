@@ -24,7 +24,9 @@ import {
   axisPickPatch,
   modelChoices,
   quantRowsFor,
+  schemaEnvelope,
   seedAxisValues,
+  seedUser,
   SpecForm,
   variantRows,
   type FormSpecDoc,
@@ -35,11 +37,11 @@ import {
  *  raw Variant rows, int8 Quant cell OWNED by turbo. */
 const KREA: FormSpecDoc = {
   form: 'image-gen',
-  fields: [
-    { name: 'prompt', label: 'Prompt', type: 'textarea', group: 'prompt' },
-    { name: 'steps', label: 'Steps', type: 'number', default: 8, group: 'sampling' },
-    { name: 'cfg', label: 'CFG', type: 'slider', default: 1.5, group: 'sampling' },
-  ],
+  schema: schemaEnvelope({
+    prompt: { type: 'string', meta: { description: 'Prompt', extra: { wtype: 'textarea', group: 'prompt' } } },
+    steps: { type: 'number', meta: { description: 'Steps', default: 8, extra: { group: 'sampling' } } },
+    cfg: { type: 'number', meta: { description: 'CFG', default: 1.5, step: 0.1, extra: { group: 'sampling' } } },
+  }),
   model: 'krea-2',
   variants: [
     { id: 'turbo', label: 'Turbo', group: 'Variant', defaults: { model: 'krea-2' }, route: 'krea-2', hint: '8-step distilled — fast, photorealistic (DEFAULT)' },
@@ -89,20 +91,25 @@ test('seedAxisValues: the first-declared law; held values win on reopen', () => 
   expect(seedAxisValues({ ...KREA, variants: [] }, {})).toEqual({})
 })
 
+test('seedUser: the user-layer seed is the axis seed over held params (presence law)', () => {
+  // a fresh stage: axis seeds only — defaults derive, never ride
+  expect(seedUser(KREA, {})).toEqual({ variant: 'turbo', quant: 'int8', model: 'krea-2' })
+  // a reopened stage holds EVERY key verbatim (presence survived)
+  expect(seedUser(KREA, { steps: 52, variant: 'raw', quant: '', model: 'krea-2-raw' }))
+    .toEqual({ steps: 52, variant: 'raw', quant: '', model: 'krea-2-raw' })
+})
+
 // ── the rendered axes ───────────────────────────────────────────────────────
 
 test('CardForm renders Model, Variant, and Quant selects ABOVE the parameters', async () => {
-  const edits: Record<string, unknown> = {}
+  // THE HOST SEEDS (the settings law): seedUser at open — the form
+  // never seeds; it renders the resolved value of the user layer.
   const comp = createElement(function Host() {
-    const [values, setValues] = useState<SpecValues>({ prompt: 'a cat', steps: 8, cfg: 1.5 })
+    const [user, setUser] = useState<SpecValues>(seedUser(KREA, { prompt: 'a cat' }))
     return createElement(SpecForm, {
       spec: KREA,
-      fields: KREA.fields,
-      values,
-      onEdit: (name: string, v: unknown) => {
-        edits[name] = v
-        setValues((m) => ({ ...m, [name]: v }))
-      },
+      user,
+      onSet: (name: string, v: unknown) => { setUser((m) => ({ ...m, [name]: v })) },
     })
   })
   render(comp)
@@ -119,26 +126,19 @@ test('CardForm renders Model, Variant, and Quant selects ABOVE the parameters', 
   // the axes sit ABOVE the parameter groups in the DOM
   const form = model.closest('div')
   expect(form?.firstElementChild?.getAttribute('data-model-axes')).toBe('1')
-  // the one-time seed lands (first-declared law) through onEdit
-  await waitFor(() => {
-    expect(edits['variant']).toBe('turbo')
-    expect(edits['quant']).toBe('int8')
-    expect(edits['model']).toBe('krea-2')
-  })
 })
 
 test('picking Raw applies the overlay: model re-points, steps/cfg ride, quant clears', async () => {
   const edits: Record<string, unknown> = {}
   const user = userEvent.setup()
   const comp = createElement(function Host() {
-    const [values, setValues] = useState<SpecValues>({ prompt: 'a cat', steps: 8, cfg: 1.5, variant: 'turbo', quant: 'int8', model: 'krea-2' })
+    const [user, setUser] = useState<SpecValues>({ prompt: 'a cat', steps: 8, cfg: 1.5, variant: 'turbo', quant: 'int8', model: 'krea-2' })
     return createElement(SpecForm, {
       spec: KREA,
-      fields: KREA.fields,
-      values,
-      onEdit: (name: string, v: unknown) => {
+      user,
+      onSet: (name: string, v: unknown) => {
         edits[name] = v
-        setValues((m) => ({ ...m, [name]: v }))
+        setUser((m) => ({ ...m, [name]: v }))
       },
     })
   })
@@ -154,9 +154,8 @@ test('picking Raw applies the overlay: model re-points, steps/cfg ride, quant cl
 test('no matrix, no axes — the plain form is unchanged', () => {
   const comp = createElement(SpecForm, {
     spec: { ...KREA, variants: [] },
-    fields: KREA.fields,
-    values: { prompt: 'x' },
-    onEdit: () => {},
+    user: { prompt: 'x' },
+    onSet: () => {},
   })
   render(comp)
   expect(screen.queryByLabelText('Model')).toBeNull()
@@ -208,10 +207,10 @@ test('runCardStage composes the HELD model; the default family is only the resti
  *  patch-only Recipe rows (owner '' — compose with everything). */
 const SEEDVR: FormSpecDoc = {
   form: 'upscale-tools',
-  fields: [
-    { name: 'image', label: 'Input image', type: 'image', required: true, group: 'input' },
-    { name: 'target', label: 'Target short side', type: 'number', default: 1080, group: 'resolution' },
-  ],
+  schema: schemaEnvelope({
+    image: { type: 'string', meta: { description: 'Input image', extra: { wtype: 'image', required: true, group: 'input' } } },
+    target: { type: 'number', meta: { description: 'Target short side', default: 1080, extra: { group: 'resolution' } } },
+  }),
   model: 'seedvr2_ema',
   features: {
     variant_groups: {
@@ -230,9 +229,9 @@ const SEEDVR: FormSpecDoc = {
  *  Recipe — three axes, Quant owned by Variant. */
 const QWEN: FormSpecDoc = {
   form: 'image-edit',
-  fields: [
-    { name: 'image', label: 'Input image', type: 'image', required: true, group: 'input' },
-  ],
+  schema: schemaEnvelope({
+    image: { type: 'string', meta: { description: 'Input image', extra: { wtype: 'image', required: true, group: 'input' } } },
+  }),
   model: 'qwen-img-edit-2511',
   features: {
     variant_groups: {
@@ -261,13 +260,12 @@ test('axisGroups: every served group is an axis — no hardcoded Quant-only list
 })
 
 test('the seedvr2 drill renders Model + Variant + Recipe axes — the Recipe axis the hardcoded list dropped', async () => {
-  const state = { values: seedAxisValues(SEEDVR, {}) as SpecValues }
-  const onEdit = (name: string, v: unknown): void => { state.values = { ...state.values, [name]: v } }
+  const state = { user: seedUser(SEEDVR, {}) as SpecValues }
+  const onSet = (name: string, v: unknown): void => { state.user = { ...state.user, [name]: v } }
   render(createElement(SpecForm, {
     spec: SEEDVR,
-    fields: SEEDVR.fields,
-    values: state.values,
-    onEdit,
+    user: state.user,
+    onSet,
   }))
   const model = screen.getByLabelText('Model')
   expect(model.value).toBe('seedvr2_ema')
@@ -278,17 +276,16 @@ test('the seedvr2 drill renders Model + Variant + Recipe axes — the Recipe axi
   expect(recipe.value).toBe('default')
   // picking 7B re-points the model
   fireEvent.change(screen.getByLabelText('Variant'), { target: { value: '7b' } })
-  await waitFor(() => { expect(state.values['model']).toBe('seedvr2_ema_7b') })
+  await waitFor(() => { expect(state.user['model']).toBe('seedvr2_ema_7b') })
 })
 
 test('the qwen drill chains Quant by owner and keeps Recipe composing with both variants', async () => {
-  const state = { values: seedAxisValues(QWEN, {}) as SpecValues }
-  const onEdit = (name: string, v: unknown): void => { state.values = { ...state.values, [name]: v } }
+  const state = { user: seedUser(QWEN, {}) as SpecValues }
+  const onSet = (name: string, v: unknown): void => { state.user = { ...state.user, [name]: v } }
   render(createElement(SpecForm, {
     spec: QWEN,
-    fields: QWEN.fields,
-    values: state.values,
-    onEdit,
+    user: state.user,
+    onSet,
   }))
   expect(screen.getByLabelText('Variant').value).toBe('lightning')
   expect(screen.getByLabelText('Quant').value).toBe('lightning4')
@@ -296,9 +293,9 @@ test('the qwen drill chains Quant by owner and keeps Recipe composing with both 
   // switch to Standard: the Quant axis re-seeds to int8 (the standard
   // chain), the Recipe axis is untouched (owner '' composes always)
   fireEvent.change(screen.getByLabelText('Variant'), { target: { value: 'standard' } })
-  await waitFor(() => { expect(state.values['model']).toBe('qwen-img-edit-2511') })
-  expect(state.values['quant']).toBe('int8')
-  expect(state.values['recipe']).toBe('default')
+  await waitFor(() => { expect(state.user['model']).toBe('qwen-img-edit-2511') })
+  expect(state.user['quant']).toBe('int8')
+  expect(state.user['recipe']).toBe('default')
 })
 
 test('a Recipe pick stamps its overlay WITHOUT re-pointing the model (patch-only law)', async () => {
@@ -324,10 +321,17 @@ test('seedAxisValues seeds EVERY axis key (variant/quant/recipe — the group id
 // krea-2 family Recipe rows (realism/default) — the double select.
 const IMGGEN: FormSpecDoc = {
   ...KREA,
-  fields: [
-    ...KREA.fields,
-    { name: 'recipe', label: 'Recipe', type: 'select', default: 'standard', group: 'sampling', options: ['standard', 'fast_draft', 'cinematic'] },
-  ],
+  schema: schemaEnvelope({
+    prompt: { type: 'string', meta: { description: 'Prompt', extra: { wtype: 'textarea', group: 'prompt' } } },
+    steps: { type: 'number', meta: { description: 'Steps', default: 8, extra: { group: 'sampling' } } },
+    cfg: { type: 'number', meta: { description: 'CFG', default: 1.5, step: 0.1, extra: { group: 'sampling' } } },
+    // the card's own recipe field: a union of consts (labels ride the
+    // const members' meta.description — the walker's option law)
+    recipe: {
+      consts: ['standard', 'fast_draft', 'cinematic'],
+      meta: { description: 'Recipe', default: 'standard', extra: { group: 'sampling' } },
+    },
+  }),
   features: {
     variant_groups: {
       Variant: { label: 'Variant' },
@@ -358,27 +362,27 @@ test('recipe-yield: the family Recipe axis hides when the card owns a recipe fie
 })
 
 test('recipe-yield: the drill renders ONE Recipe — the card field, never the family axis', async () => {
-  const state = { values: { ...seedAxisValues(IMGGEN, {}), recipe: 'standard' } as SpecValues }
-  const onEdit = (name: string, v: unknown): void => { state.values = { ...state.values, [name]: v } }
+  const state = { user: { ...seedUser(IMGGEN, { recipe: 'standard' }) } as SpecValues }
+  const onSet = (name: string, v: unknown): void => { state.user = { ...state.user, [name]: v } }
   render(createElement(SpecForm, {
     spec: IMGGEN,
-    fields: IMGGEN.fields,
-    values: state.values,
-    onEdit,
+    user: state.user,
+    onSet,
   }))
   // exactly one Recipe combobox — the card's own field
   expect(screen.getAllByLabelText('Recipe')).toHaveLength(1)
   expect((screen.getByLabelText('Recipe') as HTMLSelectElement).value).toBe('standard')
 })
 
-test('healOwnedRecipe: double-recipe-era benches converge (family `default` → card default)', async () => {
-  const { healOwnedRecipe } = await import('../src/client/spec-form.tsx')
+test('seedUser heals double-recipe-era benches (family `default` → card default)', async () => {
   // a bench holding the family's `default` heals to the card default
-  expect(healOwnedRecipe(IMGGEN, { recipe: 'default' })['recipe']).toBe('standard')
+  // (the one validation clause — the option list judges, presence
+  // rides verbatim otherwise)
+  expect(seedUser(IMGGEN, { recipe: 'default' })['recipe']).toBe('standard')
   // a lawful card recipe passes through untouched
-  expect(healOwnedRecipe(IMGGEN, { recipe: 'cinematic' })['recipe']).toBe('cinematic')
+  expect(seedUser(IMGGEN, { recipe: 'cinematic' })['recipe']).toBe('cinematic')
   // cards without their own recipe field never heal
-  expect(healOwnedRecipe(QWEN, { recipe: 'default' })['recipe']).toBe('default')
+  expect(seedUser(QWEN, { recipe: 'default' })['recipe']).toBe('default')
 })
 
 // ── the stale-variant cure (operator 2026-09-14: model anima +
@@ -395,16 +399,15 @@ test('modelSwitchPatch: a model switch re-seeds every axis (never the old family
 })
 
 test('switching the Model select resets the Variant axis (the drill never holds turbo-for-anima)', async () => {
-  const state = { values: { prompt: 'a cat', model: 'krea-2', variant: 'turbo', quant: 'int8' } as SpecValues }
-  const onEdit = (name: string, v: unknown): void => { state.values = { ...state.values, [name]: v } }
+  const state = { user: { prompt: 'a cat', model: 'krea-2', variant: 'turbo', quant: 'int8' } as SpecValues }
+  const onSet = (name: string, v: unknown): void => { state.user = { ...state.user, [name]: v } }
   render(createElement(SpecForm, {
     spec: KREA,
-    fields: KREA.fields,
-    values: state.values,
-    onEdit,
+    user: state.user,
+    onSet,
   }))
   fireEvent.change(screen.getByLabelText('Model'), { target: { value: 'krea-2-raw' } })
-  await waitFor(() => { expect(state.values['model']).toBe('krea-2-raw') })
-  expect(state.values['variant']).toBe('raw')
-  expect(state.values['quant']).toBe('')
+  await waitFor(() => { expect(state.user['model']).toBe('krea-2-raw') })
+  expect(state.user['variant']).toBe('raw')
+  expect(state.user['quant']).toBe('')
 })

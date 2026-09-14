@@ -29,7 +29,7 @@ import type {} from '@melite/card-base/slots'
 import { DisclosureRow, IconArchiveOutline20, IconLoadingOutline16, IconPlayOutline16, IconStopFill16 } from '@deepseek-ai/dsh-client-ui-primitives'
 import css from './client.module.css'
 import type { StageViewOwnerProps } from '@melite/contracts'
-import { CardForm as SpecForm, specDefaults, useFormSpec, useSquareProvider, type FormSpecDoc, type SpecField, type SpecValues, type SquareHost } from '@melite/card-base'
+import { SpecFieldRow, coerceFieldEdit, fieldsOf, resolveValue, useFormSpec, useSquareProvider, type FormSpecDoc, type SpecField, type SpecValues, type SquareHost } from '@melite/card-base'
 import { pollRunStageUrl } from '@melite-plugin/melite-run-wire'
 // THE MESH STAGE (hour 14): the shared raw-three preview from
 // card-base — the SAME stage anny rides (one preview-port interaction
@@ -52,7 +52,7 @@ const STUDIO_TITLE: Record<string, string> = {
   lab: 'Lab (samplers & overrides)',
 }
 
-function fieldsOf(fields: SpecField[], group: string): SpecField[] {
+function rowsOfGroup(fields: SpecField[], group: string): SpecField[] {
   return fields.filter((f) => f.group === group)
 }
 
@@ -62,7 +62,7 @@ export function ImgToMeshStudio(props: StageViewOwnerProps): ReturnType<typeof h
   const params = typeof row['params'] === 'object' && row['params'] !== null ? row['params'] as SpecValues : {}
   const [spec, setSpec] = useState<FormSpecDoc | null>(null)
   const [error, setError] = useState<string | null>(null)
-  const [values, setValues] = useState<SpecValues>(params)
+  const [user, setUser] = useState<SpecValues>(params)
   const [open, setOpen] = useState<Record<string, boolean>>({})
   // THE LIVE GESTURE STATE + THE TAP FOLD (2026-09-13): the row's own
   // run state drives the gesture (play at rest, stop mid-run) and the
@@ -107,14 +107,20 @@ export function ImgToMeshStudio(props: StageViewOwnerProps): ReturnType<typeof h
     if (specError !== null) { setError(specError); return }
     if (liveSpec === null) return
     setSpec(liveSpec)
-    // seed: the spec's defaults UNDER the frozen bench params
-    setValues({ ...specDefaults(liveSpec.fields), ...params })
+    // THE USER LAYER IS THE FROZEN BENCH ROW VERBATIM (the settings
+    // law): presence IS the override mark; defaults derive per
+    // render — never seeded into the explicit map.
+    setUser({ ...params })
     // the envelope lift: report the estate's declared size class
     props.onSurface(liveSpec.size === 'huge' ? 'huge' : '')
   }, [liveSpec, specError])
+  const fieldByName = new Map((spec !== null ? fieldsOf(spec) : []).map((f) => [f.name, f] as const))
   const onEdit = (name: string, v: unknown): void => {
-    setValues((prev) => ({ ...prev, [name]: v }))
+    setUser((prev) => ({ ...prev, [name]: coerceFieldEdit(fieldByName.get(name), v) }))
   }
+  // the resolved value — derived per render (what a run composes)
+  const value: SpecValues = resolveValue(spec ?? { form: '' }, user)
+  const specRows: SpecField[] = spec !== null ? fieldsOf(spec) : []
   // the SAME shared square provider the generic drill rides — one
   // definition, every surface (the operator's DRY law)
   const { square: squareFor, wireMenu } = useSquareProvider(onEdit, {
@@ -123,9 +129,14 @@ export function ImgToMeshStudio(props: StageViewOwnerProps): ReturnType<typeof h
   const run = (): void => {
     if (spec === null) return
     // PATCH FIRST (the generic drill's law, kept): the run reads what
-    // the user SEES. (The live face keys on the ROW's run state — no
-    // client-side running flag to forget to clear.)
-    onPatch({ ...values } as Record<string, unknown>)
+    // the user SEES — the USER layer verbatim, plus nulls for keys
+    // the frozen row held that left the map (JSON Merge Patch
+    // deletes them; the unset path's domain half).
+    const patch: SpecValues = {}
+    const userKeys = new Set(Object.keys(user))
+    for (const k of userKeys) patch[k] = user[k]
+    for (const k of Object.keys(params)) if (!userKeys.has(k)) patch[k] = null
+    onPatch(patch as Record<string, unknown>)
     onRun()
   }
   return h('div', { className: css.zoomDetail },
@@ -143,10 +154,13 @@ export function ImgToMeshStudio(props: StageViewOwnerProps): ReturnType<typeof h
           params: h('div', { className: css.studioRail },
         // SpecForm renders each group's title itself — no duplicate.
         STUDIO_EXPOSED.map((g) => h('section', { key: g, className: css.studioGroup },
-          h(StudioFields, { fields: fieldsOf(spec.fields, g), values, onEdit, square: squareFor }),
+          // the group title the old SpecForm delegation rendered — the
+          // studio owns its partition now, so it owns the heading too
+          h('h4', { className: css.studioGroupTitle }, g),
+          h(StudioFields, { fields: rowsOfGroup(specRows, g), value, onEdit, square: squareFor }),
         )),
         STUDIO_FOLDS.map((g) => {
-          const fs = fieldsOf(spec.fields, g)
+          const fs = rowsOfGroup(specRows, g)
           if (fs.length === 0) return null
           const isOpen = open[g] === true
           return h(DisclosureRow, {
@@ -159,7 +173,7 @@ export function ImgToMeshStudio(props: StageViewOwnerProps): ReturnType<typeof h
             // all pass it): the whole title row is the toggle target.
             expandOnRowClick: true,
             onToggle: () => { setOpen((prev) => ({ ...prev, [g]: !prev[g] })) },
-          }, h(StudioFields, { fields: fs, values, onEdit, square: squareFor }))
+          }, h(StudioFields, { fields: fs, value, onEdit, square: squareFor }))
         }),
           // THE RUN SEAT (hour-25 follow-up, the operator: "the run
           // button should be at the bottom right of parameters"): the
@@ -201,16 +215,22 @@ export function ImgToMeshStudio(props: StageViewOwnerProps): ReturnType<typeof h
   )
 }
 
-/** The generic card's OWN atoms (SpecForm renders one group's fields —
- *  the studio hands it the group's slice; zero atom copies). */
-function StudioFields({ fields, values, onEdit, square }: {
+/** The generic card's OWN atoms (SpecFieldRow renders one group's
+ *  rows — the studio owns its group partition; zero atom copies).
+ *  `value` is the RESOLVED map (resolveValue at the caller) — the
+ *  rows show exactly what a run composes. */
+function StudioFields({ fields, value, onEdit, square }: {
   fields: SpecField[]
-  values: SpecValues
+  value: SpecValues
   onEdit(name: string, v: unknown): void
   square?: (f: SpecField) => SquareHost | undefined
 }): ReturnType<typeof h> {
   if (fields.length === 0) return h('p', { className: css.groupNote }, 'no declared fields')
-  return h(SpecForm, { fields, values, onEdit, square })
+  return h('div', null, fields.map((f) =>
+    h(SpecFieldRow, {
+      key: f.name, f, value: value[f.name], onEdit,
+      ...(square !== undefined ? { square: square(f) } : {}),
+    })))
 }
 
 /** The built-in registration (the ui-tool law, verbatim — the

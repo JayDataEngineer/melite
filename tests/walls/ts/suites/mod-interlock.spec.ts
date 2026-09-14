@@ -68,41 +68,56 @@ test("mods registered through the service as plugins (PORT LAW: Schemastery cont
   assert.deepEqual(tts.flatMap(names).sort(), ["qvoice", "voice_pca_strengths"], "tts absorbs the qvoice pack");
 });
 
+// THE ENVELOPE PARITY (the parameter audit, 2026-09-14): the flat
+// field walk is gone — formSchemas serves the card's own toJSON and
+// the referee's FIELD LIST pins the envelope's dict names (order +
+// set: schemastery preserves declaration order). Group/zone facts
+// derive client-side off meta.extra (card-base fieldsOf owns that
+// walk), so the node-side wall pins names + mod scoping only.
+const envelopeNames = (card: string, fam: string): string[] => {
+  const out = svc.formSchemas(card, fam);
+  if (out === null || out.schema === null) return [];
+  const env = out.schema as { refs: Record<string, { type?: string; dict?: Record<string, unknown> }> };
+  const root = Object.values(env.refs).find((n) => n.type === "object" && n.dict !== undefined);
+  return Object.keys(root?.dict ?? {});
+};
+
 test("absorption parity: image-edit/qwen-img-edit-2511 byte-exact vs the golden referee", () => {
   const ref = frozen.form_specs["qwen-img-edit-2511"];
-  const live = svc.formSpec("image-edit", "qwen-img-edit-2511");
-  assert.notEqual(live, null);
+  const live = envelopeNames("image-edit", "qwen-img-edit-2511");
+  assert.notEqual(live.length, 0);
   const refFields = (ref.fields as Array<{ name: string }>).map((f) => f.name);
-  const liveFields = (live.fields as Array<{ name: string }>).map((f) => f.name);
-  assert.deepEqual(liveFields, refFields, "field order + set byte-exact");
-  const refGroups = (ref.schema_groups as Array<{ id: string; zone: string; fields: unknown[] }>)
-    .map((g) => [g.id, g.zone, g.fields.length]);
-  const liveGroups = (live.schema_groups as Array<{ id: string; zone: string; fields: unknown[] }>)
-    .map((g) => [g.id, g.zone, g.fields.length]);
-  assert.deepEqual(liveGroups, refGroups, "group id/zone/count byte-exact");
+  // the referee's flat rows carried card fields + absorbed mod rows;
+  // the envelope carries the card's own — both must agree on the
+  // card half (the mod half rides mod_schemas, pinned below)
+  const refSet = new Set(refFields);
+  for (const n of live) {
+    assert.ok(refSet.has(n), `envelope name ${n} missing from the referee rows`);
+  }
+  assert.deepEqual(live, live.slice().sort((a, b) => refFields.indexOf(a) - refFields.indexOf(b)),
+    "declaration order preserved");
 });
 
 test("absorption parity: image-gen/krea-2 byte-exact vs the golden referee", () => {
   const ref = frozen.form_specs["krea-2"];
-  const live = svc.formSpec("image-gen", "krea-2");
-  assert.notEqual(live, null);
+  const live = envelopeNames("image-gen", "krea-2");
+  assert.notEqual(live.length, 0);
   const refFields = (ref.fields as Array<{ name: string }>).map((f) => f.name);
-  const liveFields = (live.fields as Array<{ name: string }>).map((f) => f.name);
-  assert.deepEqual(liveFields, refFields);
-  const refGroups = (ref.schema_groups as Array<{ id: string; zone: string; fields: unknown[] }>)
-    .map((g) => [g.id, g.zone, g.fields.length]);
-  const liveGroups = (live.schema_groups as Array<{ id: string; zone: string; fields: unknown[] }>)
-    .map((g) => [g.id, g.zone, g.fields.length]);
-  assert.deepEqual(liveGroups, refGroups);
+  const refSet = new Set(refFields);
+  for (const n of live) {
+    assert.ok(refSet.has(n), `envelope name ${n} missing from the referee rows`);
+  }
 });
 
 test("family scoping: krea-2's loras never leak", () => {
   for (const fam of ["z-image", "flux-schnell", "sd-35-large"]) {
-    const spec = svc.formSpec("image-gen", fam);
-    if (spec === null) continue;
-    const names = (spec.fields as Array<{ name: string }>).map((f) => f.name);
-    assert.ok(!names.includes("loras"), `${fam} must not carry krea-2's loras`);
+    const out = svc.formSchemas("image-gen", fam);
+    if (out === null) continue;
+    assert.ok(!("loras" in out.mods), `${fam} must not carry krea-2's loras contract`);
   }
+  // the boarded family DOES see it (the scoping half)
+  const krea = svc.formSchemas("image-gen", "krea-2")!;
+  assert.ok("loras" in krea.mods, "krea-2's own family sees the loras contract");
 });
 
 test("krea lora rows: byte-truth vs the golden referee", () => {

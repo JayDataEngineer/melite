@@ -39,6 +39,10 @@ export interface DraftDoc {
   stages: DraftStage[]
   status?: string
   createdAt?: number
+  /** THE BENCH BLOCK (the domain's own revision law — the draft doc
+   *  carries it; the patch door bumps it on every write). The CAS
+   *  fence's expect handle. */
+  bench?: { rev: number; log: unknown[] }
 }
 
 /** Per-stage status from the run-status door. */
@@ -97,8 +101,18 @@ export async function fetchDraft(draftId: string): Promise<DraftDoc> {
  *  (never a lying success). */
 export async function patchStageParams(
   draftId: string, stageId: string, params: Record<string, unknown>,
+  expectRev?: number,
 ): Promise<void> {
-  const row = await wireCall('drafts/patch', { draftId, stageId, patch: { params } })
+  // THE CAS FENCE (the parameter audit, 2026-09-14): the caller
+  // hands the bench revision it composed against; the door refuses
+  // bench/cas-conflict loud when the bench moved (never merges
+  // under the earlier author). Null params values ride VERBATIM —
+  // the door's JSON Merge Patch arm deletes those keys (the unset
+  // path's domain half).
+  const row = await wireCall('drafts/patch', {
+    draftId, stageId, patch: { params },
+    ...(expectRev !== undefined ? { expectRev } : {}),
+  })
   if (row['delivered'] !== true) {
     const reason = typeof row['reason'] === 'string' ? row['reason'] : 'undelivered'
     throw new Error('drafts/patch: ' + reason + ' (draft ' + draftId + ', stage ' + stageId + ')')

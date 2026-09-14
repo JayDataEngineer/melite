@@ -4,12 +4,12 @@
 // port — no engine, no fixtures). Env keys are snapshotted per
 // test (this file owns COMFYUI_URL/COMFYUI_ENDPOINT_CONFIG/
 // INFERENCE_TEST_SANDBOX/MELITE_REPO_ROOT while it runs).
-import { afterEach, beforeEach, describe, it } from "vitest";
+import { afterEach, beforeEach, describe, it, onTestFinished } from "vitest";
 import assert from "node:assert/strict";
 import { createServer } from "node:http";
 import { createHash } from "node:crypto";
 import type { IncomingMessage, Server, ServerResponse } from "node:http";
-import { mkdtempSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { mkdtempSync, mkdirSync, readFileSync, writeFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { Context } from "@deepseek-ai/cordis";
@@ -24,6 +24,14 @@ import {
 } from "../src/comfyui.ts";
 import type { EngineJson, MergeRow } from "../src/comfyui.ts";
 import { ComfyUIService } from "../src/service.ts";
+
+/** Mint a tree owned by the CURRENT test (disposed with it). */
+function mintRoot(): string {
+  const root = mkdtempSync(join(tmpdir(), "comfyui-t-"));
+  onTestFinished(() => rmSync(root, { recursive: true, force: true }));
+  return root;
+}
+
 
 const ENV_KEYS = ["COMFYUI_URL", "COMFYUI_ENDPOINT_CONFIG", "INFERENCE_TEST_SANDBOX", "MELITE_REPO_ROOT"];
 let envSnap: Record<string, string | undefined> = {};
@@ -231,7 +239,7 @@ const startWsStub = async (
   };
 };
 
-const tmpRoot = (): string => mkdtempSync(join(tmpdir(), "comfyui-t-"));
+const tmpRoot = (): string => mintRoot();
 const wfParams = (over: Record<string, EngineJson> = {}): Record<string, EngineJson> => ({
   workflow: { "1": { class_type: "KSampler", inputs: { seed: 1 } } },
   ...over,

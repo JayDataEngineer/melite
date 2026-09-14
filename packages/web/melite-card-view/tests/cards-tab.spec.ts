@@ -18,6 +18,7 @@
 import { describe, expect, test, afterEach } from "vitest";
 import { resetCardFamiliesCache } from "@melite-plugin/melite-run-wire";
 import { resolveCardsAddress, groupStagesByCard, runCardStage, runBenchSequential } from "../src/client/CardsTab.tsx";
+import { schemaEnvelope } from "../src/client/spec-form.tsx";
 import { readRun, restoreRunToBench } from "../src/client/cards-resource.ts";
 import type { BenchStageRow, CardsBenchValue, CardsRunValue } from "../src/client/cards-resource.ts";
 
@@ -86,10 +87,10 @@ function stubWire(): void {
     }
     // the form-spec arm (the declared surface — GET /v1/form-spec?model=<card>)
     if (String(url).startsWith("/v1/form-spec")) {
-      return { ok: true, json: async () => ({ form: "img-to-mesh", fields: [
-        { name: "input_image", label: "Source image", type: "image" },
-        { name: "resolution", label: "Resolution", type: "select", options: ["512", "1024", "1536"] },
-      ] }) };
+      return { ok: true, json: async () => ({ form: "img-to-mesh", schema: schemaEnvelope({
+        input_image: { type: "string", meta: { description: "Source image", extra: { wtype: "image" } } },
+        resolution: { consts: ["512", "1024", "1536"], meta: { description: "Resolution" } },
+      }) }) };
     }
     const frame = JSON.parse(String(init?.body)) as { rpcId: string; method: string; payload: { args: Record<string, unknown> } };
     calls.push({ method: frame.method, args: frame.payload.args });

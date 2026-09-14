@@ -11,7 +11,7 @@ import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/re
 import { createElement, useRef } from 'react'
 import { afterEach, expect, test, vi } from 'vitest'
 import userEvent from '@testing-library/user-event'
-import { SpecForm, useSquareProvider, type SpecField, type SpecValues } from '../src/client/spec-form.tsx'
+import { schemaEnvelope, SpecForm, useSquareProvider, type FormSpecDoc, type SpecValues } from '../src/client/spec-form.tsx'
 
 afterEach(() => {
   cleanup()
@@ -70,14 +70,17 @@ test('THE EDGE LAW: the picker offers only kind-matching outputs — a text-outp
       candidates: rows.map(({ id, label, url }) => ({ id, label, url })),
       candidatesFor,
     })
-    const fields: SpecField[] = [
-      { name: 'input_image', label: 'Input image', type: 'image' },
-      { name: 'notes', label: 'Notes', type: 'textarea' },
-    ]
-    const values: SpecValues = {}
+    const doc: FormSpecDoc = {
+      form: 'edges-fixture',
+      inputs: spec.inputs as FormSpecDoc['inputs'],
+      schema: schemaEnvelope({
+        input_image: { type: 'string', meta: { description: 'Input image', extra: { wtype: 'image' } } },
+        notes: { type: 'string', meta: { description: 'Notes', extra: { wtype: 'textarea' } } },
+      }),
+    }
     return createElement('div', null,
       wireMenu,
-      createElement(SpecForm, { fields, values, onEdit: editRef.current, square }),
+      createElement(SpecForm, { spec: doc, user: {}, onSet: editRef.current, square }),
     )
   }
   render(createElement(Host))
@@ -114,10 +117,16 @@ test('THE EDGE LAW: a field with no declared edge falls to the full list (the pi
       candidates: rows.map(({ id, label, url }) => ({ id, label, url })),
       candidatesFor,
     })
-    const fields: SpecField[] = [{ name: 'extra', label: 'Extra', type: 'image' }]
+    const doc: FormSpecDoc = {
+      form: 'edges-fixture-2',
+      inputs: spec.inputs as FormSpecDoc['inputs'],
+      schema: schemaEnvelope({
+        extra: { type: 'string', meta: { description: 'Extra', extra: { wtype: 'image' } } },
+      }),
+    }
     return createElement('div', null,
       wireMenu,
-      createElement(SpecForm, { fields, values: {}, onEdit: () => {}, square }),
+      createElement(SpecForm, { spec: doc, user: {}, onSet: () => {}, square }),
     )
   }
   render(createElement(Host))
