@@ -56,6 +56,25 @@ export interface BenchLoadDeps {
   sessionId?: string
 }
 
+/** The run's own preview, stamped onto the restored stage (stroke
+ *  45b, the operator's catch: the flow loaded but the card showed no
+ *  image — a ran stage's result {run_id, url} IS the preview the
+ *  cards tile renders). _flow.json.artifacts are absolute paths;
+ *  the melite-media URL is the run-relative tail. */
+function resultOfRun(
+  flow: Record<string, unknown> | null,
+  runId: string,
+): Record<string, unknown> | undefined {
+  const arts = flow?.['artifacts']
+  if (!Array.isArray(arts)) return undefined
+  const first = arts.find((a: unknown): a is string =>
+    typeof a === 'string' && /\.(png|jpe?g|webp)$/i.test(a))
+  if (first === undefined) return undefined
+  const m = /\/(run-[A-Za-z0-9_-]+\/.+)$/.exec(first)
+  if (m === null) return undefined
+  return { run_id: runId, url: '/melite-media/runs/' + (m[1] ?? '') }
+}
+
 /** The error message an !ok JSON response carries, else HTTP n. */
 async function refusalOf(res: Response, answer: unknown): Promise<string> {
   const err = (answer as Record<string, unknown> | null)?.['error']
@@ -176,7 +195,8 @@ export async function loadRunOntoBench(runId: string, deps: BenchLoadDeps): Prom
         ? { ...(rawParams as Record<string, unknown>) } : {}
       delete params['draft_id']; delete params['test']
       const intentSrc = typeof params['prompt'] === 'string' ? params['prompt'] as string : 'restored run'
-      const stages = [{ id: 's_0', engine: 'comfyui', card, params, provenance: 'restored' }]
+      const result = resultOfRun(flow as Record<string, unknown> | null, String((side as Record<string, unknown>)['run_id'] ?? ''))
+      const stages = [{ id: 's_0', engine: 'comfyui', card, params, provenance: 'restored', ...(result !== undefined ? { result } : {}) }]
       await loadStagesOntoBench(stages, intentSrc.slice(0, 77), deps)
       return
     }
@@ -185,7 +205,8 @@ export async function loadRunOntoBench(runId: string, deps: BenchLoadDeps): Prom
       const params = { ...(request as Record<string, unknown>) }
       delete params['draft_id']; delete params['test']
       const intentSrc = typeof params['prompt'] === 'string' ? params['prompt'] as string : 'restored run'
-      const stages = [{ id: 's_0', engine: 'comfyui', params, provenance: 'restored' }]
+      const result = resultOfRun(flow as Record<string, unknown> | null, String((side as Record<string, unknown>)['run_id'] ?? ''))
+      const stages = [{ id: 's_0', engine: 'comfyui', params, provenance: 'restored', ...(result !== undefined ? { result } : {}) }]
       await loadStagesOntoBench(stages, intentSrc.slice(0, 77), deps)
       return
     }
