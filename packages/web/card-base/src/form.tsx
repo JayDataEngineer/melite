@@ -972,8 +972,11 @@ export function CardForm({ spec, user, base, onSet, onUnset, wire, square, atoms
         if (gridCols === undefined) return undefined
         // THE TEXTAREA LAW: prompts never sit side by side — a
         // textarea spans the full row however the group grids
-        if (f.type === 'textarea') return { gridColumn: '1 / -1' }
-        return { gridColumn: `span ${Math.max(1, Math.floor(f.width ?? 1))}` }
+        // THE OVERFLOW LAW (stroke 24): minWidth 0 lets the ITEM
+        // shrink inside its track — an input's ~185px intrinsic min
+        // must never grow the card a horizontal scrollbar.
+        if (f.type === 'textarea') return { gridColumn: '1 / -1', minWidth: '0' }
+        return { gridColumn: `span ${Math.max(1, Math.floor(f.width ?? 1))}`, minWidth: '0' }
       }
       // THE SLOT ROW partition: image/image_list fields of one group
       // share a horizontal row (their labels live under their squares);
@@ -984,7 +987,7 @@ export function CardForm({ spec, user, base, onSet, onUnset, wire, square, atoms
         if (row.length === 0) return
         children.push(h('div', {
           key: 'slotrow-' + String(children.length), className: css.specSlotRow,
-          ...(gridCols !== undefined ? { style: { gridColumn: '1 / -1' } } : {}),
+          ...(gridCols !== undefined ? { style: { gridColumn: '1 / -1', minWidth: '0' } } : {}),
         }, row))
         row = []
       }
@@ -1028,7 +1031,7 @@ export function CardForm({ spec, user, base, onSet, onUnset, wire, square, atoms
       return h('section', { key: g.group ?? '', className: css.specGroup },
         g.group !== null ? h('h4', { className: css.specGroupTitle }, g.group) : null,
         gridCols === undefined ? children
-          : h('div', { className: css.specGrid, style: { gridTemplateColumns: `repeat(${gridCols}, 1fr)` } }, children),
+          : h('div', { className: css.specGrid, style: { gridTemplateColumns: `repeat(${gridCols}, minmax(0, 1fr))` } }, children),
       )
     }),
     // THE MOD SYSTEM — rendered by the constructor itself: every

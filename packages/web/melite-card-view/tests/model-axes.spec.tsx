@@ -719,7 +719,14 @@ test('a DECLared columns group grids its fields — Width and Height share ONE r
   const grid = res.parentElement?.querySelector('div[class*="specGrid"]') as HTMLElement
   expect(grid).not.toBeNull()
   // the DECL's grid: 3 columns (width/height/seed-shaped thirds)
-  expect(grid.style.gridTemplateColumns).toBe('repeat(3, 1fr)')
+  // STROKE 24 — THE OVERFLOW LAW: tracks are minmax(0,1fr) so a
+  // columns:3 group in a narrow card SHRINKS (1fr alone carries an
+  // auto min-content floor ~185px/cell → horizontal scroll) and
+  // every cell wrapper carries minWidth 0.
+  expect(grid.style.gridTemplateColumns).toBe('repeat(3, minmax(0, 1fr))')
+  for (const c of Array.from(grid.children)) {
+    expect((c as HTMLElement).style.minWidth).toBe('0')
+  }
   // Width + Height are grid SIBLINGS on one row (spans declared 1)
   const cells = [...grid.children]
   const labels = cells.map((c) => c.textContent ?? '')

@@ -332,3 +332,12 @@
   color: var(--melite-muted, #8a8f98);
   text-decoration: none;
 }
+/* THE OVERFLOW LAW (stroke 24, the operator's burn): a gridded
+ * group's cells FILL their tracks — inputs/selects take the track
+ * width (never their ~185px intrinsic min), so a columns:3 group
+ * in a narrow drill card never grows a horizontal scrollbar. The
+ * tracks shrink via minmax(0,1fr) (form.tsx); this makes the atoms
+ * follow. */
+.specGrid :where(input, select) {
+  width: 100%;
+}
