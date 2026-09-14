@@ -33,6 +33,7 @@ var __esDecorate = (this && this.__esDecorate) || function (ctor, descriptorIn, 
     done = true;
 };
 import { Remote, RemoteError, TypertRemoteService, } from "@deepseek-ai/dsh-typert-protocol";
+import { benchBlockOf } from "./bench.js";
 import { openDraftsDomain } from "./store.js";
 import { DRAFT_ID_RE } from "./spec.js";
 import { addStageBench, ensureBench, notifyBenchChange, notifyBenchDocWrite, onBenchChange, getBench, groupBench, patchBench, removeStageBench, reorderBench, rewireBench, undoBench, ungroupBench, } from "./bench.js";
@@ -173,12 +174,24 @@ let DraftsRemoteService = (() => {
          *  bumps the recency column, and the answer is the delivered
          *  envelope. THE SHARED STATE DOOR: the agent (bench verbs) and
          *  the user (the card drilldowns) author the SAME domain records
-         *  through it — one truth, two authors. */
-        async remoteExportPatch(draftId, stageId, patch, signal) {
-            return await this.patch(draftId, stageId, patch, signal);
+         *  through it — one truth, two authors.
+         *
+         *  THE LAYERED-PARAMS LAW (2026-09-14, the parameter audit): the
+         *  params map is the stage's USER layer — a key's PRESENCE is the
+         *  override mark (never its value). Two additions make the door
+         *  speak it: (1) JSON Merge Patch semantics for params — a null
+         *  value DELETES the key (the reset/unset path; RFC 7386's
+         *  convention, the wire form of the settings system's unset path
+         *  op); (2) the door JOINS the bench CAS law — every write bumps
+         *  bench.rev and appends a kind:'patch' log entry, and expectRev
+         *  (nullable) fences the write: a bench that moved refuses loud
+         *  with bench/cas-conflict carrying current_rev, never merges
+         *  under the earlier author. */
+        async remoteExportPatch(draftId, stageId, patch, expectRev, signal) {
+            return await this.patch(draftId, stageId, patch, expectRev, signal);
         }
         /** The patch arm the adapter above delegates to. */
-        async patch(draftId, stageId, patch, signal) {
+        async patch(draftId, stageId, patch, expectRev, signal) {
             signal.throwIfAborted();
             if (!DRAFT_ID_RE.test(draftId)) {
                 throw new RemoteError("draft/bad-id", `bad draft id ${JSON.stringify(draftId)}`, {
@@ -220,24 +233,51 @@ let DraftsRemoteService = (() => {
             if (stage === null) {
                 return { draftId, stageId, delivered: false, reason: "stage not found" };
             }
+            // THE CAS WALK (the layered-params law): the patch door is a
+            // bench author and joins the revision law every other author
+            // walks — fence on expectRev BEFORE any mutation (the record is
+            // the domain's cached object; a refusal must leave no trace),
+            // then bump and log below. A bench that moved under the caller
+            // refuses loud, never merges under it.
+            const bench = benchBlockOf(doc);
+            if (expectRev !== null && bench.rev !== expectRev) {
+                throw new RemoteError("bench/cas-conflict", `bench moved under the patch (expect_rev ${expectRev}, current ${bench.rev}) — re-read and re-apply`, { current_rev: bench.rev, expect_rev: expectRev });
+            }
             if ("result" in patch)
                 stage["result"] = patch["result"];
             if ("runStatus" in patch)
                 stage["runStatus"] = patch["runStatus"];
             if ("params" in patch && patch["params"] !== null && typeof patch["params"] === "object" && !Array.isArray(patch["params"])) {
-                // PER-KEY merge (never replace) — the old door's law.
+                // PER-KEY merge (never replace) — the old door's law, now with
+                // JSON Merge Patch null semantics: a null value DELETES the
+                // key (the layered-params unset path — presence IS the override
+                // mark, so removal is a first-class write, never a value trick).
                 const merged = stage["params"] !== null && typeof stage["params"] === "object" && !Array.isArray(stage["params"])
                     ? { ...stage["params"] }
                     : {};
                 const incoming = patch["params"];
-                for (const k of Object.keys(incoming))
-                    merged[k] = incoming[k];
+                for (const k of Object.keys(incoming)) {
+                    if (incoming[k] === null)
+                        delete merged[k];
+                    else
+                        merged[k] = incoming[k];
+                }
                 stage["params"] = merged;
             }
             for (const key of ["inputs", "inputOutputs"]) {
                 if (key in patch)
                     stage[key] = patch[key];
             }
+            const rev = bench.rev + 1;
+            const log = [...bench.log, {
+                    rev,
+                    at: Math.floor(Date.now() / 1000),
+                    author: "user",
+                    kind: "patch",
+                    stage: stageId,
+                    summary: Object.keys(patch).sort().join(","),
+                }];
+            doc["bench"] = { rev, log };
             try {
                 await drafts.table("docs").put(draftId, {
                     updated_at: Math.floor(Date.now() / 1000),
@@ -256,6 +296,7 @@ let DraftsRemoteService = (() => {
                 stageId,
                 delivered: true,
                 patched: Object.keys(patch).sort(),
+                rev,
             };
         }
     };
@@ -338,12 +379,11 @@ let BenchRemoteService = (() => {
                         resolve();
                         return;
                     }
-                    let settled = false;
+                    // One finish arm, no re-entry guard needed: finish detaches
+                    // BOTH listeners before resolving, so it can never run twice
+                    // (the old settled-guard was unreachable by construction).
                     const offAbort = () => { signal.removeEventListener("abort", onAbort); };
                     const finish = () => {
-                        if (settled)
-                            return;
-                        settled = true;
                         offChange();
                         offAbort();
                         resolve();
@@ -392,7 +432,9 @@ let BenchRemoteService = (() => {
                 throw new RemoteError("bench/store-failed", thrownMessage(error), {}, { cause: error });
             }
             const row = await ensureBench(drafts, doc);
-            notifyBenchChange(String(doc["session"] ?? row.session));
+            // ensureBench gates doc.session as a valid key before this line —
+            // the row's own session can never differ here (no dead fallback).
+            notifyBenchChange(String(doc["session"]));
             return row;
         }
         /** Endpoint `bench/patch` — params merge (+result/runStatus) with

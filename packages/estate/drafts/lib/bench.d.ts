@@ -34,6 +34,26 @@ declare module "@deepseek-ai/dsh-typert-protocol" {
         "bench/store-failed": Record<string, never>;
     }
 }
+declare const AUTHORS: readonly ["agent", "user"];
+type Author = (typeof AUTHORS)[number];
+interface BenchEntry {
+    /** Filled by the persister (rev/at are the domain's, not the caller's). */
+    rev: number;
+    at: number;
+    author: Author;
+    kind: "patch" | "add_stage" | "remove_stage" | "rewire" | "reorder" | "group" | "ungroup" | "load" | "undo";
+    stage?: string;
+    summary?: string;
+    /** Kind-specific inverse payload (undo applies it). */
+    inverse?: Record<string, unknown>;
+    /** Filled on undo entries: the revs this entry reverted. */
+    reverted?: number[];
+}
+export interface BenchBlock {
+    rev: number;
+    log: BenchEntry[];
+}
+export declare function benchBlockOf(doc: Record<string, unknown>): BenchBlock;
 /** The ensure row: create marker, rev, intent, stages. */
 export interface BenchEnsureRow {
     readonly draft_id: string;

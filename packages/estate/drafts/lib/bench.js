@@ -26,7 +26,7 @@ function authorOk(v) {
 function isRecord(v) {
     return typeof v === "object" && v !== null && !Array.isArray(v);
 }
-function benchBlockOf(doc) {
+export function benchBlockOf(doc) {
     const raw = doc["bench"];
     if (isRecord(raw) &&
         typeof raw["rev"] === "number" &&

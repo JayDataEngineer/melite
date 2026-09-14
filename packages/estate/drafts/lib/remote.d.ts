@@ -9,13 +9,15 @@ export declare const STAGE_PATCH_KEYS: readonly ["params", "result", "runStatus"
 export type StagePatchKey = (typeof STAGE_PATCH_KEYS)[number];
 /** Endpoint `drafts/patch` answer — the old door's delivered envelope:
  *  a missing doc/stage is delivered:false + reason (a DOMAIN outcome,
- *  never an error); a landing patch reports the patched key set. */
+ *  never an error); a landing patch reports the patched key set and
+ *  the bench revision it landed at (the CAS law's re-read handle). */
 export interface DraftPatchRow {
     draftId: string;
     stageId: string;
     delivered: boolean;
     reason?: string;
     patched?: string[];
+    rev?: number;
 }
 /** draft_id_ok: 1..96 chars of [A-Za-z0-9_-] (the composer mint). */
 /** One listed draft — the index row (recency-ordered by the caller). */
@@ -86,10 +88,22 @@ export declare class DraftsRemoteService extends TypertRemoteService {
      *  bumps the recency column, and the answer is the delivered
      *  envelope. THE SHARED STATE DOOR: the agent (bench verbs) and
      *  the user (the card drilldowns) author the SAME domain records
-     *  through it — one truth, two authors. */
-    remoteExportPatch(draftId: string, stageId: string, patch: Record<string, unknown>, signal: AbortSignal): Promise<DraftPatchRow>;
+     *  through it — one truth, two authors.
+     *
+     *  THE LAYERED-PARAMS LAW (2026-09-14, the parameter audit): the
+     *  params map is the stage's USER layer — a key's PRESENCE is the
+     *  override mark (never its value). Two additions make the door
+     *  speak it: (1) JSON Merge Patch semantics for params — a null
+     *  value DELETES the key (the reset/unset path; RFC 7386's
+     *  convention, the wire form of the settings system's unset path
+     *  op); (2) the door JOINS the bench CAS law — every write bumps
+     *  bench.rev and appends a kind:'patch' log entry, and expectRev
+     *  (nullable) fences the write: a bench that moved refuses loud
+     *  with bench/cas-conflict carrying current_rev, never merges
+     *  under the earlier author. */
+    remoteExportPatch(draftId: string, stageId: string, patch: Record<string, unknown>, expectRev: number | null, signal: AbortSignal): Promise<DraftPatchRow>;
     /** The patch arm the adapter above delegates to. */
-    patch(draftId: string, stageId: string, patch: Record<string, unknown>, signal: AbortSignal): Promise<DraftPatchRow>;
+    patch(draftId: string, stageId: string, patch: Record<string, unknown>, expectRev: number | null, signal: AbortSignal): Promise<DraftPatchRow>;
 }
 /** The bench Remote owner: ensure/get over the same drafts domain
  *  (the bench doc IS a draft doc, id "bench-<session>"). */
