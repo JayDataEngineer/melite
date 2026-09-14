@@ -292,6 +292,23 @@ window.__ModuleLoader__.load({
 		function cardsRunAddress(runId) {
 			return "dsh-resource://cards/run/" + encodeURIComponent(runId);
 		}
+		/** The run's own preview, stamped onto the restored stage (stroke
+		*  45b, the operator's catch: the flow loaded but the card showed no
+		*  image — a ran stage's result {run_id, url} IS the preview the
+		*  cards tile renders). _flow.json.artifacts are absolute paths;
+		*  the melite-media URL is the run-relative tail. */
+		function resultOfRun(flow, runId) {
+			const arts = flow?.["artifacts"];
+			if (!Array.isArray(arts)) return void 0;
+			const first = arts.find((a) => typeof a === "string" && /\.(png|jpe?g|webp)$/i.test(a));
+			if (first === void 0) return void 0;
+			const m = /\/(run-[A-Za-z0-9_-]+\/.+)$/.exec(first);
+			if (m === null) return void 0;
+			return {
+				run_id: runId,
+				url: "/melite-media/runs/" + (m[1] ?? "")
+			};
+		}
 		/** The error message an !ok JSON response carries, else HTTP n. */
 		async function refusalOf(res, answer) {
 			const err = answer?.["error"];
@@ -381,12 +398,14 @@ window.__ModuleLoader__.load({
 					delete params["draft_id"];
 					delete params["test"];
 					const intentSrc = typeof params["prompt"] === "string" ? params["prompt"] : "restored run";
+					const result = resultOfRun(flow, String(side["run_id"] ?? ""));
 					await loadStagesOntoBench([{
 						id: "s_0",
 						engine: "comfyui",
 						card,
 						params,
-						provenance: "restored"
+						provenance: "restored",
+						...result !== void 0 ? { result } : {}
 					}], intentSrc.slice(0, 77), deps);
 					return;
 				}
@@ -396,11 +415,13 @@ window.__ModuleLoader__.load({
 					delete params["draft_id"];
 					delete params["test"];
 					const intentSrc = typeof params["prompt"] === "string" ? params["prompt"] : "restored run";
+					const result = resultOfRun(flow, String(side["run_id"] ?? ""));
 					await loadStagesOntoBench([{
 						id: "s_0",
 						engine: "comfyui",
 						params,
-						provenance: "restored"
+						provenance: "restored",
+						...result !== void 0 ? { result } : {}
 					}], intentSrc.slice(0, 77), deps);
 					return;
 				}
