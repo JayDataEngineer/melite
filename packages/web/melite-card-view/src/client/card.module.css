@@ -588,6 +588,15 @@
   grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
   gap: 6px;
 }
+.pickerGenreTitle {
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--dsh-text-primary, inherit);
+  margin: 10px 0 0;
+}
+.pickerCardLabel { font-size: 12px; font-weight: 500; }
 .pickerCard {
   display: flex;
   align-items: center;

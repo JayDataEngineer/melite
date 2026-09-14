@@ -1346,12 +1346,11 @@ function AddCardDoor({ bench, sessionKey, onAdded, onClose, onAddedRow }: {
       catalogError !== null ? h('p', { className: css.runError }, catalogError) : null,
       addError !== null ? h('p', { className: css.runError }, addError) : null,
       cards === null && catalogError === null ? h('div', { className: css.load }, 'cards…') : null,
+      // SECTIONS KEPT (operator, stroke 46d fix): the genre titles
+      // STAY — the complaint was their SIZE, not their existence.
+      // The titles now dominate the card labels (the css owns it).
       genres.map(([g, list]) => h('section', { key: g, className: css.pickerGenre },
-        h('h4', { className: css.specGroupTitle }, titleCaseId(g)),
-        // THE COMPACT FACE (operator, stroke 46c): rectangles with
-        // the NAME only, several per row — the description and the
-        // family pill took the room; the title attribute keeps the
-        // description one hover away, never in the layout.
+        h('h4', { className: css.pickerGenreTitle }, titleCaseId(g)),
         list.map((c) => h('button', {
           key: c.id,
           type: 'button',
@@ -1362,8 +1361,7 @@ function AddCardDoor({ bench, sessionKey, onAdded, onClose, onAddedRow }: {
         },
           h('span', { className: css.pickerCardLabel }, busyId === c.id ? 'adding…' : c.label),
         )),
-      )),
-    ),
+      )),    ),
   )
 }
 
