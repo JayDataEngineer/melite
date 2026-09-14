@@ -460,6 +460,11 @@ function specBody(svc, defs, res) {
 		loader_info: null,
 		model: res.model,
 		outputs: def.flowKinds.outputs,
+		recipes: def.recipes === void 0 ? null : Object.fromEntries(Object.entries(def.recipes).map(([key, r]) => [key, {
+			label: r.label,
+			description: r.description,
+			params: { ...r.params }
+		}])),
 		schema_groups,
 		service: res.service,
 		size: surface.size === "huge" ? "huge" : null,

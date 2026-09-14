@@ -28,7 +28,7 @@ import { ModifiersSection } from './mods.tsx'
 import { uploadInputFile } from './wire.ts'
 import {
   activeRowId, activeVariantId, axisGroups, axisKey, axisPickPatch, composingRows, groupFields, modelChoices,
-  modOwnedFields, modelSwitchPatch, rowsFor, seedAxisValues, variantRows, quantRowsFor,
+  modOwnedFields, modelSwitchPatch, recipePickPatch, rowsFor, seedAxisValues, variantRows, quantRowsFor,
   type FormSpecDoc, type SpecField, type SpecValues, type VariantRow,
 } from './spec.ts'
 import { fetchFormSpec } from './wire.ts'
@@ -654,6 +654,27 @@ export function CardForm({ spec, fields, values, onEdit, wire, square, atoms, on
   const groupFieldsAll = flatFields.filter(visible)
   const groups = groupFields(groupFieldsAll, values)
   const atomOf = (f: SpecField): FieldAtomClaim | undefined => atoms?.[f.type]
+  // THE RECIPE STAMP LEDGER (the visible-recipe law, operator
+  // 2026-09-14): which value keys this session's recipe picks wrote
+  // (key → recipe key). A manual edit un-owns its key (the user's
+  // value wins, forever); a model/axis switch writes through the
+  // same wrapper so its reseeds un-own too. The mount seed writes
+  // raw (nothing is recipe-owned at open — held values are explicit
+  // server-side, exactly as the compose cascade reads them).
+  const recipeOwned = useRef<Record<string, string>>({})
+  const valuesRef = useRef(values)
+  valuesRef.current = values
+  const edit = (name: string, v: unknown): void => {
+    if (name === 'recipe' && spec !== undefined && typeof v === 'string'
+        && spec.recipes?.[v] !== undefined) {
+      const { patch, owned } = recipePickPatch(spec, v, valuesRef.current, recipeOwned.current)
+      recipeOwned.current = owned
+      for (const [k, pv] of Object.entries(patch)) onEdit(k, pv)
+      return
+    }
+    if (name !== 'recipe') delete recipeOwned.current[name]
+    onEdit(name, v)
+  }
   // THE CONSTRUCTOR'S OWN PROVIDER — always built (hook law), used
   // unless the host claimed the square seam itself.
   const own = useSquareProvider(onEdit, wire ?? { candidates: [] })
@@ -661,8 +682,6 @@ export function CardForm({ spec, fields, values, onEdit, wire, square, atoms, on
   // ONE-TIME axis seeding (a reopened stage holds its keys; a fresh
   // stage gets the first-declared law) — an effect, never render-time.
   const seeded = useRef(false)
-  const valuesRef = useRef(values)
-  valuesRef.current = values
   useEffect(() => {
     if (spec === undefined || seeded.current) return
     seeded.current = true
@@ -671,7 +690,12 @@ export function CardForm({ spec, fields, values, onEdit, wire, square, atoms, on
     // one-shot by the ref guard; spec identity is the trigger
   }, [spec, onEdit])
   return h('div', { className: css.specForm },
-    spec !== undefined ? h(ModelAxes, { spec, values, onEdit }) : null,
+    // THE RECIPE WRAP (the visible-recipe law): axis picks reseed
+    // stamped keys (un-owning them) and the recipe field's own edits
+    // stamp the overlay — every field edit rides `edit`; the mount
+    // seed, the square provider, and the mod section keep raw onEdit
+    // (different key namespaces — never recipe-stamped).
+    spec !== undefined ? h(ModelAxes, { spec, values, onEdit: edit }) : null,
     railFields.length > 0
       ? h('section', { className: css.specGroup + ' ' + css.inputRail, 'data-input-rail': '1' },
           h('div', { className: css.specSlotRow },
@@ -682,7 +706,7 @@ export function CardForm({ spec, fields, values, onEdit, wire, square, atoms, on
                 className: css.specSlotCell,
                 title: f.tooltip !== undefined && f.tooltip !== '' ? f.tooltip : undefined,
               },
-                h(SpecAtom, { f, value: values[f.name], onEdit, square: squareFor(f), ...(wire?.candidates !== undefined ? { wireCandidates: wire.candidates } : {}) }),
+                h(SpecAtom, { f, value: values[f.name], onEdit: edit, square: squareFor(f), ...(wire?.candidates !== undefined ? { wireCandidates: wire.candidates } : {}) }),
               )
             }),
           ),
@@ -711,7 +735,7 @@ export function CardForm({ spec, fields, values, onEdit, wire, square, atoms, on
               f.label,
               f.required === true ? h('span', { className: css.specRequired }, ' *') : null,
             ),
-            claim({ f, value: values[f.name], onEdit, square: sq }),
+            claim({ f, value: values[f.name], onEdit: edit, square: sq }),
             f.tooltip !== undefined && f.tooltip !== '' ? h('span', { className: css.specHint }, f.tooltip) : null,
           ))
           continue
@@ -722,12 +746,12 @@ export function CardForm({ spec, fields, values, onEdit, wire, square, atoms, on
             className: css.specSlotCell,
             title: f.tooltip !== undefined && f.tooltip !== '' ? f.tooltip : undefined,
           },
-            h(SpecAtom, { f, value: values[f.name], onEdit, square: sq, ...(wireCandidates !== undefined ? { wireCandidates } : {}) }),
+            h(SpecAtom, { f, value: values[f.name], onEdit: edit, square: sq, ...(wireCandidates !== undefined ? { wireCandidates } : {}) }),
           ))
           continue
         }
         flush()
-        children.push(h(SpecFieldRow, { key: f.name, f, value: values[f.name], onEdit, square: sq, ...(wireCandidates !== undefined ? { wireCandidates } : {}) }))
+        children.push(h(SpecFieldRow, { key: f.name, f, value: values[f.name], onEdit: edit, square: sq, ...(wireCandidates !== undefined ? { wireCandidates } : {}) }))
       }
       flush()
       return h('section', { key: g.group ?? '', className: css.specGroup },

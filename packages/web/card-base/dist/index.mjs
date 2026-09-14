@@ -266,6 +266,41 @@ function modelSwitchPatch(spec, model) {
 	patch["model"] = model;
 	return patch;
 }
+/** A recipe pick's full write (THE VISIBLE RECIPE LAW, operator
+*  2026-09-14: "when I do dropdown there, it should change
+*  parameters"): picking the card's recipe dropdown stamps the
+*  catalog params into the values — the SAME cascade the engine
+*  enforces at compose (recipe under explicit), mirrored visibly.
+*  `owned` is the session's stamp ledger (key → recipe key): a
+*  recipe fills a param when it is recipe-owned (re-stamp moves it),
+*  missing, or still at the field default (untouched) — a value the
+*  user set wins and is never clobbered. Keys owned by a PREVIOUS
+*  recipe that the new one does not define fall back to the field
+*  default ('' when the field declares none) so stale stamps lift
+*  instead of accumulating. The recipe key itself always rides the
+*  patch. PURE — the caller writes every patch entry through
+*  onEdit and keeps the returned ledger. */
+function recipePickPatch(spec, key, values, owned) {
+	const patch = { recipe: key };
+	const nextOwned = { ...owned };
+	const overlay = spec.recipes?.[key]?.params ?? {};
+	const defaults = specDefaults(spec.fields);
+	for (const [k, r] of Object.entries(owned)) if (r !== key && !(k in overlay)) {
+		patch[k] = k in defaults ? defaults[k] : "";
+		delete nextOwned[k];
+	}
+	for (const [k, v] of Object.entries(overlay)) {
+		const cur = values[k];
+		if (nextOwned[k] !== void 0 || cur === void 0 || k in defaults && cur === defaults[k]) {
+			patch[k] = v;
+			nextOwned[k] = key;
+		}
+	}
+	return {
+		patch,
+		owned: nextOwned
+	};
+}
 /** Seed the axis keys for a fresh stage (the catalog's first-declared
 *  law: each axis defaults to its FIRST composing row). Held values
 *  win (a reopened stage never re-seeds). */
@@ -1229,11 +1264,22 @@ function CardForm({ spec, fields, values, onEdit, wire, square, atoms, onPatch }
 	const visible = (f) => f.type !== "image_list" && !railNames.has(f.name);
 	const groups = groupFields(flatFields.filter(visible), values);
 	const atomOf = (f) => atoms?.[f.type];
+	const recipeOwned = useRef({});
+	const valuesRef = useRef(values);
+	valuesRef.current = values;
+	const edit = (name, v) => {
+		if (name === "recipe" && spec !== void 0 && typeof v === "string" && spec.recipes?.[v] !== void 0) {
+			const { patch, owned } = recipePickPatch(spec, v, valuesRef.current, recipeOwned.current);
+			recipeOwned.current = owned;
+			for (const [k, pv] of Object.entries(patch)) onEdit(k, pv);
+			return;
+		}
+		if (name !== "recipe") delete recipeOwned.current[name];
+		onEdit(name, v);
+	};
 	const own = useSquareProvider(onEdit, wire ?? { candidates: [] });
 	const squareFor = square ?? own.square;
 	const seeded = useRef(false);
-	const valuesRef = useRef(values);
-	valuesRef.current = values;
 	useEffect(() => {
 		if (spec === void 0 || seeded.current) return;
 		seeded.current = true;
@@ -1243,7 +1289,7 @@ function CardForm({ spec, fields, values, onEdit, wire, square, atoms, onPatch }
 	return createElement("div", { className: card_module_default.specForm }, spec !== void 0 ? createElement(ModelAxes, {
 		spec,
 		values,
-		onEdit
+		onEdit: edit
 	}) : null, railFields.length > 0 ? createElement("section", {
 		className: card_module_default.specGroup + " " + card_module_default.inputRail,
 		"data-input-rail": "1"
@@ -1256,7 +1302,7 @@ function CardForm({ spec, fields, values, onEdit, wire, square, atoms, onPatch }
 		}, createElement(SpecAtom, {
 			f,
 			value: values[f.name],
-			onEdit,
+			onEdit: edit,
 			square: squareFor(f),
 			...wire?.candidates !== void 0 ? { wireCandidates: wire.candidates } : {}
 		}));
@@ -1284,7 +1330,7 @@ function CardForm({ spec, fields, values, onEdit, wire, square, atoms, onPatch }
 				}, createElement("span", { className: card_module_default.specFieldKey }, f.label, f.required === true ? createElement("span", { className: card_module_default.specRequired }, " *") : null), claim({
 					f,
 					value: values[f.name],
-					onEdit,
+					onEdit: edit,
 					square: sq
 				}), f.tooltip !== void 0 && f.tooltip !== "" ? createElement("span", { className: card_module_default.specHint }, f.tooltip) : null));
 				continue;
@@ -1297,7 +1343,7 @@ function CardForm({ spec, fields, values, onEdit, wire, square, atoms, onPatch }
 				}, createElement(SpecAtom, {
 					f,
 					value: values[f.name],
-					onEdit,
+					onEdit: edit,
 					square: sq,
 					...wireCandidates !== void 0 ? { wireCandidates } : {}
 				})));
@@ -1308,7 +1354,7 @@ function CardForm({ spec, fields, values, onEdit, wire, square, atoms, onPatch }
 				key: f.name,
 				f,
 				value: values[f.name],
-				onEdit,
+				onEdit: edit,
 				square: sq,
 				...wireCandidates !== void 0 ? { wireCandidates } : {}
 			}));
@@ -1893,4 +1939,4 @@ function makeLabelSprite(text, color, worldHeight) {
 	return sprite;
 }
 //#endregion
-export { ASSET_DRAG_MIME, CARD_SLOTS, CardForm, InputSquare, ModelAxes, ModifiersSection, SourceRow, SpecAtom, SpecFieldRow, SpecSliderAtom, TriStateAtom, WirePickerModal, activeRowId, activeVariantId, axisGroups, axisKey, axisPickPatch, cardOwnsRecipe, composingRows, fetchCardCatalog, fetchFormSpec, fetchFormsTable, fieldVisible, groupFields, healOwnedRecipe, inputEdgeOf, isImageUrl, isOptionKind, makeLabelSprite, modOwnedFields, modelChoices, modelSwitchPatch, mountStage3D, quantRowsFor, readAsDataUrl, rowsFor, seedAxisValues, specDefaults, specPatch, uploadInputFile, useFormSpec, useSquareProvider, variantGroupsContract, variantRows };
+export { ASSET_DRAG_MIME, CARD_SLOTS, CardForm, InputSquare, ModelAxes, ModifiersSection, SourceRow, SpecAtom, SpecFieldRow, SpecSliderAtom, TriStateAtom, WirePickerModal, activeRowId, activeVariantId, axisGroups, axisKey, axisPickPatch, cardOwnsRecipe, composingRows, fetchCardCatalog, fetchFormSpec, fetchFormsTable, fieldVisible, groupFields, healOwnedRecipe, inputEdgeOf, isImageUrl, isOptionKind, makeLabelSprite, modOwnedFields, modelChoices, modelSwitchPatch, mountStage3D, quantRowsFor, readAsDataUrl, recipePickPatch, rowsFor, seedAxisValues, specDefaults, specPatch, uploadInputFile, useFormSpec, useSquareProvider, variantGroupsContract, variantRows };

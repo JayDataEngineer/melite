@@ -1,4 +1,4 @@
-import { a as boardedMap, d as resolveSpecKey, f as asEstateCall, i as routeName, n as matchHarnessRoute, p as makeEstateRequest, r as resolveHarnessRoutes, t as harnessEnhance } from "./llm-complete-y1SqpVMx.mjs";
+import { a as boardedMap, d as resolveSpecKey, f as asEstateCall, i as routeName, n as matchHarnessRoute, p as makeEstateRequest, r as resolveHarnessRoutes, t as harnessEnhance } from "./llm-complete-CXx8Yui1.mjs";
 import { buildMusicTool } from "@melite/audio-music/tool";
 import { buildTtsTool } from "@melite/audio-tts/tool";
 import { buildVoiceLockTool } from "@melite/audio-voice-lock/tool";
@@ -260,7 +260,7 @@ function meliteConstruct(request, opts = {}) {
 			params: {
 				type: "object",
 				additionalProperties: true,
-				description: "patch (merge onto the stage) | add_stage | load single-stage shorthand."
+				description: "patch (merge onto the stage) | add_stage | load single-stage shorthand. MODEL SWITCH LAW: a stage's variant/quant belong to its model — switching params.model without co-stating the new family's variant (melite_load names each family's variants) composes a refusal (unknown variant for the new model). State model + variant (+ quant) together, or leave the model alone."
 			},
 			inputs: {
 				type: "object",

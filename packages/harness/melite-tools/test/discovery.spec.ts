@@ -247,6 +247,7 @@ describe('live door arms', () => {
       'loader_info',
       'model',
       'outputs',
+      'recipes',
       'schema_groups',
       'service',
       'size',
@@ -260,6 +261,21 @@ describe('live door arms', () => {
     assert.equal(spec['service'], 'mask-studio')
     assert.deepEqual(spec['variants'], [])
     assert.deepEqual((spec['features'] as { modifiers: unknown[] }).modifiers, [])
+    // a recipe-less card serves the absent-shape (null, never a
+    // missing key — the constructor reads one spelling)
+    assert.equal(spec['recipes'], null)
+  })
+
+  test('formSpecArm serves image-gen\'s card-recipe catalog (the visible-recipe law)', async () => {
+    const spec = (await formSpecArm('image-gen')) as Record<string, unknown>
+    const recipes = spec['recipes'] as Record<string, { label: string, description: string, params: Record<string, unknown> }>
+    assert.deepEqual(Object.keys(recipes).sort(), ['cinematic', 'fast_draft', 'standard'])
+    // the dropdown's stamp source: fast_draft moves steps + cfg…
+    assert.deepEqual(recipes['fast_draft'].params, { steps: 6, cfg: 3.5 })
+    // …cinematic deepens the negative prompt; standard is the bare base
+    assert.deepEqual(recipes['cinematic'].params,
+      { steps: 12, cfg: 6, negative_prompt: 'flat lighting, low contrast, snapshot' })
+    assert.deepEqual(recipes['standard'].params, {})
   })
 
   test('formSpecArm 404s unknown keys as null', async () => {

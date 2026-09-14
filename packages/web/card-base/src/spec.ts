@@ -117,6 +117,18 @@ export interface VariantRow {
   owner?: string
 }
 
+/** One served card recipe (the form-spec `recipes` map — the card's
+ *  own catalog projected: label/description/params. The engine
+ *  layers params under explicit values at compose (applyRecipe);
+ *  the constructor stamps the same overlay into the VISIBLE fields
+ *  so the dropdown's effect reads on the card, not just in the run.
+ *  Lora stacks stay server-applied (they render in the mod
+ *  surface, never as flat params). */
+export interface CardRecipeRow {
+  label?: string
+  description?: string
+  params?: Record<string, unknown>
+}
 /** The served form-spec document — the card package's emission as the
  *  base consumes it. */
 export interface FormSpecDoc {
@@ -147,6 +159,11 @@ export interface FormSpecDoc {
     modifiers?: ModifierKind[]
     variant_groups?: Record<string, { label?: string, tooltip?: string, filters_on?: string | null, default?: string }>
   }
+  /** THE CARD-RECIPE CATALOG (the card's own `recipes` emission —
+   *  null when the card declares none). The constructor stamps the
+   *  picked recipe's params into the visible fields (recipePickPatch
+   *  below); the engine layers the same params at compose. */
+  recipes?: Record<string, CardRecipeRow> | null
   /** The estate's surface envelope (served TOP-LEVEL by the door —
    *  2026-09-12 lane read): layout='studio' means a registered view
    *  exists (the client's business is the keyed slot, not this flag);
@@ -459,6 +476,46 @@ export function modelSwitchPatch(spec: FormSpecDoc, model: string): SpecValues {
   }
   patch['model'] = model
   return patch
+}
+/** A recipe pick's full write (THE VISIBLE RECIPE LAW, operator
+ *  2026-09-14: "when I do dropdown there, it should change
+ *  parameters"): picking the card's recipe dropdown stamps the
+ *  catalog params into the values — the SAME cascade the engine
+ *  enforces at compose (recipe under explicit), mirrored visibly.
+ *  `owned` is the session's stamp ledger (key → recipe key): a
+ *  recipe fills a param when it is recipe-owned (re-stamp moves it),
+ *  missing, or still at the field default (untouched) — a value the
+ *  user set wins and is never clobbered. Keys owned by a PREVIOUS
+ *  recipe that the new one does not define fall back to the field
+ *  default ('' when the field declares none) so stale stamps lift
+ *  instead of accumulating. The recipe key itself always rides the
+ *  patch. PURE — the caller writes every patch entry through
+ *  onEdit and keeps the returned ledger. */
+export function recipePickPatch(
+  spec: FormSpecDoc,
+  key: string,
+  values: SpecValues,
+  owned: Record<string, string>,
+): { patch: SpecValues, owned: Record<string, string> } {
+  const patch: SpecValues = { recipe: key }
+  const nextOwned: Record<string, string> = { ...owned }
+  const overlay: Record<string, unknown> = spec.recipes?.[key]?.params ?? {}
+  const defaults = specDefaults(spec.fields)
+  for (const [k, r] of Object.entries(owned)) {
+    if (r !== key && !(k in overlay)) {
+      patch[k] = k in defaults ? defaults[k] : ''
+      delete nextOwned[k]
+    }
+  }
+  for (const [k, v] of Object.entries(overlay)) {
+    const cur = values[k]
+    if (nextOwned[k] !== undefined || cur === undefined
+        || (k in defaults && cur === defaults[k])) {
+      patch[k] = v
+      nextOwned[k] = key
+    }
+  }
+  return { patch, owned: nextOwned }
 }
 /** Seed the axis keys for a fresh stage (the catalog's first-declared
  *  law: each axis defaults to its FIRST composing row). Held values

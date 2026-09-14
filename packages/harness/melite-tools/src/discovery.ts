@@ -410,6 +410,23 @@ export function specBody(
     loader_info: null,
     model: res.model,
     outputs: def.flowKinds.outputs,
+    // THE CARD-RECIPE EMISSION (operator, 2026-09-14: "when I do
+    // dropdown there, it should change parameters"): the run-time
+    // cascade already layers the card recipe under explicit values
+    // (the engine's applyRecipe), but the client never SAW the
+    // catalog — the dropdown stored a key with no visible effect.
+    // The card DECLARES these (recipes.ts, data not invention); the
+    // emission projects label/description/params so the constructor
+    // can stamp the overlay into the visible fields (untouched-only
+    // — the user's explicit values still win, same cascade). Null
+    // when the card declares no recipes (the house absent-shape).
+    recipes: def.recipes === undefined ? null : Object.fromEntries(
+      Object.entries(def.recipes).map(([key, r]) => [key, {
+        label: r.label,
+        description: r.description,
+        params: { ...r.params },
+      }]),
+    ),
     schema_groups,
     service: res.service,
     size: surface.size === 'huge' ? 'huge' : null,
