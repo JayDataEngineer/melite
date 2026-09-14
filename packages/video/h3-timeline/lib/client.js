@@ -5960,6 +5960,8 @@ window.__ModuleLoader__.load({
 				calls: stage.params?.calls,
 				beats: stage.params?.beats
 			}));
+			const rawList = Array.isArray(stage.params?.calls) && (stage.params?.calls).length > 0 ? stage.params?.calls : Array.isArray(stage.params?.beats) && (stage.params?.beats).length > 0 ? stage.params?.beats : null;
+			const lastCallsRef = (0, react.useRef)(rawList !== null ? JSON.stringify(calls) : "");
 			const [keyframes, setKeyframes] = (0, react.useState)(() => hydrateKeyframes(stage.params?.keyframes));
 			const [layerA, setLayerA] = (0, react.useState)(() => hydrateLayerA(stage.params));
 			const stageModel = typeof stage.model === "string" ? String(stage.model) : "";
@@ -5974,7 +5976,7 @@ window.__ModuleLoader__.load({
 				stageModel,
 				routeKey,
 				isRef2va: routeKey === "h3-timeline-ref" || routeKey.includes("ref2va"),
-				lastCallsRef: (0, react.useRef)(JSON.stringify(calls)),
+				lastCallsRef,
 				lastKeyframesRef: (0, react.useRef)(JSON.stringify(keyframes)),
 				lastLayerARef: (0, react.useRef)(JSON.stringify(serializeLayerA(layerA)))
 			};
