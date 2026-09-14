@@ -65,6 +65,16 @@ declare module "@deepseek-ai/cordis" {
         benchRemote: BenchRemoteService;
     }
 }
+/** ── THE OUTPUT HISTORY HELPERS (stroke 40) ──────────────────────
+ * A result's OUTPUT urls, one spelling: the artifacts name→url map
+ * first, the flat assetUrls list second, the lone url third (the
+ * same harvest order the client's preview reads — the history and
+ * the hero can never disagree about what a run produced). */
+export declare function resultOutputUrls(result: unknown): string[];
+/** Same OUTPUTS (the uniqueness key): two results match when their
+ * url sets are equal — a re-run landing the same urls is not a new
+ * history entry (the operator's "when it is unique"). */
+export declare function sameResultOutputs(a: unknown, b: unknown): boolean;
 /** The drafts Remote owner: list/get over the storage domain. */
 export declare class DraftsRemoteService extends TypertRemoteService {
     constructor(ctx: Context);
