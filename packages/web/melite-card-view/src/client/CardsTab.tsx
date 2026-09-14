@@ -1592,31 +1592,14 @@ function BenchView({ bench, sessionKey, onRun, onRunStage, onStopStage, onRemove
   return h('section', { className: css.cardsBench, 'data-cards-bench': benchRev },
     h('header', { className: css.benchHead },
       h('span', { className: css.revTag }, 'rev ' + benchRev),
-      grouping
-        ? h('span', { className: css.groupBar },
-            h('button', {
-              className: css.runBtn,
-              type: 'button',
-              disabled: selectedIds.size < 2,
-              title: selectedIds.size < 2 ? 'select 2+ tiles to group' : 'collapse the selected stages into one compound',
-              onClick: onGroup,
-            }, 'Group ' + String(selectedIds.size) + ' cards'),
-            h('button', { className: css.back, type: 'button', onClick: exitGrouping }, 'Cancel'),
-          )
-        : h('span', { className: css.groupBar },
-            h('button', {
-              className: css.back,
-              type: 'button',
-              disabled: live.stages.length < 2,
-              title: live.stages.length < 2 ? 'grouping needs 2+ stages' : 'enter the selection sub-view',
-              onClick: () => { setGrouping(true) },
-            }, 'Group Cards'),
+      h('span', { className: css.groupBar },
             h('button', {
               className: css.runBtn,
               type: 'button',
               disabled: running || live.stages.length === 0,
+              title: running ? 'the pass is running' : 'run every card in bench order — one run per card, stop on failure',
               onClick: onRun,
-            }, 'Run'),
+            }, running ? h(IconLoadingOutline16, { size: 14 }) : h(IconPlayOutline16, { size: 14 }), ' Play'),
           ),
     ),
     reloadError !== null ? h('p', { className: css.runError }, reloadError) : null,
@@ -1656,9 +1639,6 @@ function BenchView({ bench, sessionKey, onRun, onRunStage, onStopStage, onRemove
                 ),
               ),
             ),
-    live.log.length > 0
-      ? h('p', { className: css.logHead }, live.log.length + ' log entr' + (live.log.length === 1 ? 'y' : 'ies'))
-      : null,
     // THE ZOOM (2026-09-11): the drill is the shared-element morph —
     // the tile GROWS into the zoom card (spring 300/30), the modal is
     // dead (the old tree's own law: "the modal was a second surface;
