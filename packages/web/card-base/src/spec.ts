@@ -206,6 +206,13 @@ export interface CardRecipeRow {
   label?: string
   description?: string
   params?: Record<string, unknown>
+  /** The recipe's MOD PAYLOAD (the V4 closure, hour-26 stroke 16):
+   *  the lora stack — LORAS ARE A MOD TYPE, not a standalone flat
+   *  thing. Name-keyed rows, served verbatim from the card's recipe
+   *  DECL; applyRecipe concats them ahead of the caller's at
+   *  compose. The flat resolver never layers these — the mod plane
+   *  renders them as read-only recipe-owned rows (recipeModStacks). */
+  loras?: ReadonlyArray<Record<string, unknown>>
 }
 /** The served form-spec document — the card package's emission as the
  *  base consumes it. */
@@ -456,20 +463,46 @@ export function resolveValue(spec: FormSpecDoc, user: SpecValues, base?: SpecVal
       out[k] = v
     }
   }
-  const fields = fieldsOf(spec)
-  const userRecipe = user['recipe']
-  const baseRecipe = base?.['recipe']
-  const rkey = typeof userRecipe === 'string' && userRecipe !== ''
-    ? userRecipe as string
-    : (typeof baseRecipe === 'string' && baseRecipe !== ''
-      ? baseRecipe as string
-      : (fields.find((f) => f.name === 'recipe')?.default))
-  if (typeof rkey === 'string' && rkey !== '') {
+  const rkey = recipeKeyOf(spec, user, base)
+  if (rkey !== undefined) {
     const overlay = spec.recipes?.[rkey]?.params
     if (overlay !== undefined) Object.assign(out, overlay)
   }
   Object.assign(out, user)
   return out
+}
+
+/** THE EFFECTIVE RECIPE KEY — one law, one seat: user.recipe (the
+ *  pick) ?? the served base's stamped recipe ?? the field's declared
+ *  default. resolveValue and the mod plane's recipe-stack derivation
+ *  both read THIS (never two spellings of the recipe-key law). */
+export function recipeKeyOf(spec: FormSpecDoc, user: SpecValues, base?: SpecValues): string | undefined {
+  const userRecipe = user['recipe']
+  if (typeof userRecipe === 'string' && userRecipe !== '') return userRecipe
+  const baseRecipe = base?.['recipe']
+  if (typeof baseRecipe === 'string' && baseRecipe !== '') return baseRecipe
+  const dflt = fieldsOf(spec).find((f) => f.name === 'recipe')?.default
+  return typeof dflt === 'string' && dflt !== '' ? dflt : undefined
+}
+
+/** THE RECIPE'S MOD PAYLOAD (hour-26 stroke 16, the V4 closure —
+ * loras are a MOD TYPE, never a standalone flat thing): the stacks
+ * the engine's applyRecipe will concat AHEAD of the caller's at
+ * compose, keyed by the mod kind's param_key. The flat resolver
+ * NEVER layers these (a flat concat would feed the bag's editable
+ * entries and a bag edit would commit the merged rows back — the
+ * engine would stack them AGAIN); the mod plane renders them as
+ * read-only recipe-owned rows ahead of the user's. */
+export function recipeModStacks(
+  spec: FormSpecDoc,
+  user: SpecValues,
+  base?: SpecValues,
+): Record<string, ReadonlyArray<Record<string, unknown>>> {
+  const rkey = recipeKeyOf(spec, user, base)
+  if (rkey === undefined) return {}
+  const recipe = spec.recipes?.[rkey]
+  if (recipe?.loras === undefined || recipe.loras.length === 0) return {}
+  return { loras: recipe.loras }
 }
 
 /** evalVisibleWhen's serving shape: "key=value" (a field shows when its

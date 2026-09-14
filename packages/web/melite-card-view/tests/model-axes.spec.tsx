@@ -411,3 +411,103 @@ test('switching the Model select resets the Variant axis (the drill never holds 
   expect(state.user['variant']).toBe('raw')
   expect(state.user['quant']).toBe('')
 })
+
+// ── THE NO-FALLBACK LAW (operator, hour 26: "NO. MORE. FALLBACKS.
+//    You don't understand the difference between error and
+//    fallback") — the lane proof wall ────────────────────────────
+// A stage held model=anima + variant=turbo + quant=int8 on the
+// image-gen card; the form painted krea-2 (first <option> over the
+// unmatched value) and krea's turbo blurb (the held id matched
+// ANOTHER family's row in the ungated union) while the run shot
+// anima and the engine refused. A held value that cannot be honored
+// is an ERROR and renders AS ITSELF — never a plausible neighbor.
+
+test('THE LANE PROOF: the Model select renders the HELD model as itself, refused — never paints krea-2 over it', async () => {
+  const comp = createElement(function Host() {
+    const [user, setUser] = useState<SpecValues>({
+      model: 'anima', variant: 'turbo', quant: 'int8', prompt: 'beach',
+    })
+    return createElement(SpecForm, {
+      spec: KREA,
+      user,
+      onSet: (name: string, v: unknown) => { setUser((m) => ({ ...m, [name]: v })) },
+    })
+  })
+  render(comp)
+  const model = (await screen.findByLabelText('Model')) as HTMLSelectElement
+  const variant = screen.getByLabelText('Variant') as HTMLSelectElement
+  const quant = screen.getByLabelText('Quant') as HTMLSelectElement
+  // the Model select renders the HELD model — anima, refused — the
+  // run shoots anima and the engine refuses; the visual says the
+  // same. NEVER the first <option> (krea-2) painted over it.
+  expect(model.value).toBe('anima')
+  expect(model.getAttribute('data-refused')).toBe('model')
+  expect(model.selectedOptions[0]?.textContent).toContain('anima — REFUSED: not offered by this card')
+  // the held coords are REAL rows of the card's matrix — they render
+  // grounded, their own values (the run composes variant=turbo,
+  // quant=int8; the visual shows exactly that). The PAIR's
+  // incoherence lives visibly in the refused Model row.
+  expect(variant.value).toBe('turbo')
+  expect(variant.getAttribute('data-refused')).toBe(null)
+  expect(quant.value).toBe('int8')
+  expect(quant.getAttribute('data-refused')).toBe(null)
+})
+
+test('a held INVALID axis on a VALID model refuses too — the ungated union no longer lends rows', async () => {
+  const comp = createElement(function Host() {
+    const [user, setUser] = useState<SpecValues>({ model: 'krea-2', variant: 'nonsense' })
+    return createElement(SpecForm, {
+      spec: KREA,
+      user,
+      onSet: (name: string, v: unknown) => { setUser((m) => ({ ...m, [name]: v })) },
+    })
+  })
+  render(comp)
+  const model = (await screen.findByLabelText('Model')) as HTMLSelectElement
+  const variant = screen.getByLabelText('Variant') as HTMLSelectElement
+  expect(model.value).toBe('krea-2')
+  expect(model.getAttribute('data-refused')).toBe(null)
+  // nonsense is not a krea-2 variant row → refused AS ITSELF; the
+  // raw row (another model's face) never paints over it
+  expect(variant.value).toBe('nonsense')
+  expect(variant.getAttribute('data-refused')).toBe('Variant')
+})
+
+test('a held coord that breaks the OWNER CHAIN refuses as itself — the first-row substitution is dead', async () => {
+  // int8 is owned by turbo; holding it under raw never composed —
+  // the old form silently painted the first quant row over it
+  const comp = createElement(function Host() {
+    const [user, setUser] = useState<SpecValues>({ model: 'krea-2', variant: 'raw', quant: 'int8' })
+    return createElement(SpecForm, {
+      spec: KREA,
+      user,
+      onSet: (name: string, v: unknown) => { setUser((m) => ({ ...m, [name]: v })) },
+    })
+  })
+  render(comp)
+  const quant = (await screen.findByLabelText('Quant')) as HTMLSelectElement
+  expect(quant.value).toBe('int8')
+  expect(quant.getAttribute('data-refused')).toBe('Quant')
+  expect(quant.selectedOptions[0]?.textContent).toContain('int8 — REFUSED')
+})
+
+test('one pick repairs a refused stage — the pick\'s overlay re-points the model coherently', async () => {
+  const edits: Record<string, unknown> = {}
+  const comp = createElement(function Host() {
+    return createElement(SpecForm, {
+      spec: KREA,
+      user: { model: 'anima', variant: 'turbo', quant: 'int8' },
+      onSet: (name: string, v: unknown) => { edits[name] = v },
+    })
+  })
+  render(comp)
+  const model = (await screen.findByLabelText('Model')) as HTMLSelectElement
+  // the refused model select still offers the card's real models —
+  // the repair is one gesture, never a rewrite of the held state
+  fireEvent.change(model, { target: { value: 'krea-2' } })
+  await waitFor(() => {
+    expect(edits['model']).toBe('krea-2')
+    // the stale-variant cure rides the same patch: axes re-seed
+    expect(edits['variant']).toBe('turbo')
+  })
+})

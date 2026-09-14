@@ -378,6 +378,13 @@ export function specBody(
         label: r.label,
         description: r.description,
         params: { ...r.params },
+        // THE V4 CLOSURE (hour-26 stroke 16, the 1:1 run law): the
+        // recipe's lora stack rides the emission — applyRecipe
+        // concats it ahead of the caller's at compose (stacking
+        // semantics); the visual needs the same rows to show what
+        // the run will stack. Verbatim (name-keyed rows; the
+        // engine's wire resolution resolves names natively).
+        ...(r.loras !== undefined ? { loras: r.loras.map((e) => ({ ...e })) } : {}),
       }]),
     ),
     // THE CARD'S OWN SERIALIZED SCHEMA — the served form's SSOT.

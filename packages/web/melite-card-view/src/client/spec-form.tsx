@@ -23,6 +23,8 @@ export {
   fieldsOf,
   fieldsOfEnvelope,
   resolveValue,
+  recipeKeyOf,
+  recipeModStacks,
   seedUser,
   specDefaults,
   fieldVisible,

@@ -22,7 +22,6 @@ describe("pure-type GATE files import cleanly", () => {
     assert.equal(typeof barrel.isProvenance, "function");
     assert.equal(typeof barrel.normalizeSegmentStatus, "function");
     assert.equal(typeof barrel.dataUrlToObjectUrl, "function");
-    assert.equal(typeof barrel.optionValue, "function");
     assert.equal(typeof barrel.subcardId, "function");
   });
 

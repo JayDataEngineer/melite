@@ -139,6 +139,11 @@
   opacity: 1;
 }
 .tileDragging { opacity: .5; }
+/* RECIPE-OWNED MOD ROWS (hour-26 stroke 16): the card recipe's mod
+ * payload — read-only, never dragged, never edited (the user layer
+ * never carries them; compose concats ahead of the caller's). */
+.modTileRecipe { border-style: dashed; cursor: default; }
+.modTileRecipe .modTileStrength::after { content: " · recipe"; }
 .modLeaf { display: flex; flex-direction: column; gap: 10px; min-width: 260px; }
 .modLeafFields { display: grid; gap: 8px; }
 .modLeafActions { display: flex; gap: 8px; }

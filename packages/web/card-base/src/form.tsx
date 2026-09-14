@@ -29,7 +29,7 @@ import { ModifiersSection } from './mods.tsx'
 import { uploadInputFile } from './wire.ts'
 import {
   activeRowId, activeVariantId, axisGroups, axisKey, axisPickPatch, coerceFieldEdit, composingRows, fieldsOf,
-  fieldsOfEnvelope, groupFields, modelChoices, modOwnedFields, modelSwitchPatch, resolveValue, rowsFor, variantRows,
+  fieldsOfEnvelope, groupFields, modelChoices, modOwnedFields, modelSwitchPatch, recipeModStacks, resolveValue, rowsFor, variantRows,
   quantRowsFor,
   type FormSpecDoc, type SpecField, type SpecValues, type VariantRow,
 } from './spec.ts'
@@ -372,12 +372,17 @@ export function TriStateAtom({ label, value, onEdit, name, disabled }: {
  *  carrier): local owns the bubble while dragging; an external move
  *  of the backing value (agent write, revive, another card opened)
  *  reclaims the display. */
-function useLocalSliderValue(value: unknown, def: unknown): { value: number, set(n: number): void } {
+function useLocalSliderValue(value: unknown): { value: number | null, set(n: number): void } {
   const num = typeof value === 'number' ? value : Number(value)
   const [local, setLocal] = useState<number | null>(null)
   useEffect(() => { setLocal(null) }, [num]) // eslint-disable-line react-hooks/exhaustive-deps
+  // NO FALLBACK (operator, hour 26): a HELD value that is not a
+  // finite number is an ERROR, surfaced by the atom (null = the
+  // refused face) — NEVER the field default painted over it while
+  // the run composes the poison. ABSENT alone may seed (the
+  // initial-value law, resolved upstream by resolveValue).
   return {
-    value: local !== null ? local : (Number.isFinite(num) ? num : Number(def ?? 0)),
+    value: local !== null ? local : (Number.isFinite(num) ? num : null),
     set: setLocal,
   }
 }
@@ -395,7 +400,16 @@ export function SpecSliderAtom({ f, value, onEdit }: {
   value: unknown
   onEdit(name: string, v: unknown): void
 }): ReturnType<typeof h> {
-  const shown = useLocalSliderValue(value, f.default)
+  const shown = useLocalSliderValue(value)
+  // the refused face: the held value is not a number the run can
+  // compose — it renders AS ITSELF (raw), the slider refuses to
+  // imply a healthy number it does not hold
+  if (shown.value === null) {
+    return h('span', { className: css.specSliderRow, 'data-refused': f.name },
+      h('span', { className: css.specSliderValue },
+        String(value) + ' — REFUSED: not a number'),
+    )
+  }
   return h('span', { className: css.specSliderRow },
     h('input', {
       className: css.specSlider,
@@ -403,7 +417,7 @@ export function SpecSliderAtom({ f, value, onEdit }: {
       min: f.min ?? 0,
       max: f.max ?? 10,
       step: f.step ?? 0.1,
-      value: shown,
+      value: shown.value,
       onInput: (e: unknown) => { shown.set(Number((e as { target: { value: string } }).target.value)) },
       onChange: (e: unknown) => { onEdit(f.name, (e as { target: { value: string } }).target.value) },
       'aria-label': f.label,
@@ -463,6 +477,16 @@ export function SpecAtom({ f, value, onEdit, square, wireCandidates }: {
     })
   }
   if (f.type === 'switch' || f.type === 'boolean') {
+    // NO FALLBACK (operator, hour 26): a HELD value that is neither
+    // boolean nor their wire strings is an ERROR — rendered as
+    // itself, refused. Painting OFF over a poison truthy (while the
+    // run composes it) was a 1:1 lie.
+    if (value !== undefined && value !== null
+      && typeof value !== 'boolean' && value !== 'true' && value !== 'false') {
+      return h('span', { className: css.specField, 'data-refused': f.name },
+        f.label + ': ' + String(value) + ' — REFUSED: not a boolean',
+      )
+    }
     // the primitives catalog owns the two-state toggle — Switch, with
     // its required label (the control cannot ship unnamed)
     const on = value === true || value === 'true'
@@ -515,13 +539,43 @@ export function ModelAxes({ spec, value, onSet }: {
     const patch = axisPickPatch(spec, row)
     for (const [k, v] of Object.entries(patch)) onSet(k, v)
   }
-  // resolve actives down the chain (Variant first, then chained groups)
+  // ── THE NO-FALLBACK LAW (operator, hour 26: "NO. MORE.
+  //    FALLBACKS.") ───────────────────────────────────────────────
+  // A HELD value that cannot be honored is an ERROR and renders AS
+  // ITSELF, refused — NEVER substituted with a plausible neighbor.
+  // The lane proof: a stage holding model=anima (not offered by its
+  // card's matrix) rendered krea-2 (first <option> painted over the
+  // unmatched value) and krea's turbo blurb (the held id matched
+  // ANOTHER family's row in the ungated union) while the run shot
+  // anima and the engine refused. Every one of those soft landings
+  // was a 1:1 lie. Seeding stays legal for ABSENT keys only (the
+  // initial-value law); a HELD key renders its own truth.
+  const heldModelRaw = value['model']
+  const heldModel = typeof heldModelRaw === 'string' && heldModelRaw !== '' ? heldModelRaw : undefined
+  const refusedModel = heldModel !== undefined && !models.includes(heldModel) ? heldModel : undefined
+  // absent alone seeds (spec.model, the declared initial model)
+  const shownModel = heldModel ?? (typeof spec.model === 'string' && spec.model !== '' ? spec.model : models[0] ?? '')
+  // rows compose with the axes above (the owner chain — the
+  // declared matrix law: the Variant axis is the family's OWN
+  // cross-model map, so its offers stay the full served list; the
+  // groups below chain by owner)
+  const rowsOf = (g: string, active: Record<string, string | undefined>): VariantRow[] =>
+    composingRows(spec, g, active)
+  // resolve actives down the chain (Variant first, then chained
+  // groups): a HELD id that composes renders grounded; a held id
+  // that does NOT renders AS ITSELF, refused (never the first row
+  // painted over it — that substitution was the 1:1 lie); an ABSENT
+  // id alone seeds (activeRowId's model-aware lookup, else the
+  // first-declared composing row — the initial-value law).
   const active: Record<string, string | undefined> = {}
   for (const g of groups) {
-    const held = value[axisKey(g)]
-    const rows = composingRows(spec, g, active)
-    if (typeof held === 'string' && held !== '' && rows.some((r) => r.id === held)) {
-      active[g] = held
+    const heldRaw = value[axisKey(g)]
+    const heldId = typeof heldRaw === 'string' && heldRaw !== '' ? heldRaw : undefined
+    const rows = rowsOf(g, active)
+    if (heldId !== undefined && rows.some((r) => r.id === heldId)) {
+      active[g] = heldId
+    } else if (heldId !== undefined) {
+      active[g] = heldId // refused — rendered as itself below
     } else {
       const byRoute = activeRowId(spec, value, g, active)
       active[g] = byRoute ?? (rows.length > 0 ? rows[0].id : '')
@@ -534,8 +588,8 @@ export function ModelAxes({ spec, value, onSet }: {
       h('select', {
         className: css.specSelect,
         'aria-label': 'Model',
-        value: typeof value['model'] === 'string' && value['model'] !== '' ? value['model'] as string
-          : (typeof spec.model === 'string' && spec.model !== '' ? spec.model : models[0] ?? ''),
+        ...(refusedModel !== undefined ? { 'data-refused': 'model' } : {}),
+        value: shownModel,
         // THE STALE-VARIANT CURE (operator 2026-09-14): a model
         // switch re-seeds EVERY axis (variant/quant/…) to the new
         // family's rows — keeping turbo while pointing at anima is
@@ -545,10 +599,20 @@ export function ModelAxes({ spec, value, onSet }: {
           const patch = modelSwitchPatch(spec, m)
           for (const [k, v] of Object.entries(patch)) onSet(k, v)
         },
-      }, models.map((m) => h('option', { key: m, value: m }, m)))),
+      },
+        // the refused model renders AS ITSELF — the run will shoot
+        // it and the engine will refuse; the visual says the same
+        refusedModel !== undefined
+          ? h('option', { key: refusedModel, value: refusedModel },
+              refusedModel + ' — REFUSED: not offered by this card')
+          : null,
+        models.map((m) => h('option', { key: m, value: m }, m)))),
     groups.map((g) => {
-      const rows = composingRows(spec, g, active)
-      if (rows.length === 0) return null
+      const rows = rowsOf(g, active)
+      const heldRaw = value[axisKey(g)]
+      const heldId = typeof heldRaw === 'string' && heldRaw !== '' ? heldRaw : undefined
+      const refusedId = heldId !== undefined && !rows.some((r) => r.id === heldId) ? heldId : undefined
+      if (rows.length === 0 && refusedId === undefined) return null
       const label = contract[g]?.label ?? g
       return h('label', { key: g, className: css.specField },
         h('span', { className: css.specFieldKey }, label),
@@ -556,14 +620,23 @@ export function ModelAxes({ spec, value, onSet }: {
           className: css.specSelect,
           'aria-label': label,
           'data-axis': g,
+          ...(refusedId !== undefined ? { 'data-refused': g } : {}),
           value: active[g] ?? '',
           onChange: (e: unknown) => {
             const id = (e as { target: { value: string } }).target.value
             const row = rows.find((v) => v.id === id)
             if (row !== undefined) pick(row)
           },
-        }, rows.map((v) => h('option', { key: v.id, value: v.id },
-          v.label + (typeof v.hint === 'string' && v.hint !== '' ? ` — ${v.hint}` : '')))))
+        },
+          // the refused coord renders AS ITSELF (never another
+          // family's row face) — the run refuses it, so does the
+          // visual; the grounded rows stay one pick away as repair
+          refusedId !== undefined
+            ? h('option', { key: refusedId, value: refusedId },
+                refusedId + ' — REFUSED: not a ' + label.toLowerCase() + ' of ' + (heldModel ?? shownModel))
+            : null,
+          rows.map((v) => h('option', { key: v.id, value: v.id },
+            v.label + (typeof v.hint === 'string' && v.hint !== '' ? ` — ${v.hint}` : '')))))
     }),
   )
 }
@@ -780,7 +853,13 @@ export function CardForm({ spec, user, base, onSet, onUnset, wire, square, atoms
     // THE MOD SYSTEM — rendered by the constructor itself: every
     // surface (stage drill, add drill, studios) obeys, none wires it.
     modKinds.length > 0
-      ? h(ModifiersSection, { kinds: modKinds, values: value, onEdit: edit, ...(onPatch !== undefined ? { onPatch } : {}) })
+      ? h(ModifiersSection, {
+          kinds: modKinds, values: value, onEdit: edit,
+          ...(onPatch !== undefined ? { onPatch } : {}),
+          // the recipe's mod payload — read-only rows ahead of the
+          // user's (the mod plane owns them; loras are a mod type)
+          base: recipeModStacks(spec, user, base),
+        })
       : null,
     own.wireMenu,
   )

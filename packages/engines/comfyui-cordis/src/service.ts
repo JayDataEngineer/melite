@@ -633,7 +633,11 @@ export class ComfyUIService extends Service {
     if (Array.isArray(merged.loras)) {
       const cat = this.modCatalog('loras', modelId)
       merged.loras = (merged.loras as Array<Record<string, unknown>>).map((e) => {
-        const strength = typeof e?.strength === 'number' ? (e.strength as number) : 1.0
+        // strength first (the UI bag's wire shape); CardRecipe rows
+        // carry `weight` (service.ts' own type) — honor it, never
+        // stack a declared weight at silent full strength.
+        const strength = typeof e?.strength === 'number' ? (e.strength as number)
+          : typeof e?.weight === 'number' ? (e.weight as number) : 1.0
         if (typeof e?.name === 'string' && (e.name as string) !== '') return { name: e.name as string, strength }
         const id = typeof e?.id === 'string' ? (e.id as string) : ''
         const row = cat.rows.find((r) => r.id === id)

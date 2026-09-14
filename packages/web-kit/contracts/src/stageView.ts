@@ -14,7 +14,11 @@ export interface StageViewOwnerProps {
   stageId: string
   /** Wire card name — the keyed dispatch value. */
   cardName: string
-  /** Frozen bench row (params/inputs/outputs as the SSOT holds them). */
+  /** Frozen bench row (params/inputs/outputs as the SSOT holds them).
+   *  `resolved` (when present) is the estate's SERVED compose input —
+   *  prepareCardParams' own stamps, what the next run will see — the
+   *  1:1 run law's served truth; the studio layers it under its user
+   *  state (resolveValue's base arm). */
   row: Record<string, unknown>
   /** The estate's own runStatus field ('' when never run). */
   runStatus: string
