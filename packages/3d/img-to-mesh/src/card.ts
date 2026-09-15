@@ -115,7 +115,11 @@ export function apply(ctx: Context): void {
     id: 'img-to-mesh',
     // stage-row id the compose emits (retired skeleton= verbatim; TS owns the truth post-flip).
     skeleton: 'img-to-mesh',
-    boarded: ['trellis2-native', 'pixal3d', 'transfer_rig'],
+    // boarded order IS the default order (2026-09-15: Pixal3D
+    // first — the operator's standing pick; the discovery arms
+    // derive the default family/service from boarded[0], the picker
+    // lists in this order).
+    boarded: ['pixal3d', 'trellis2-native', 'transfer_rig'],
     tags: ['3d', 'image', 'generate'],
     identity,
     // THE DISCOVERY ROWS (migrated 2026-09-10 from the frozen
