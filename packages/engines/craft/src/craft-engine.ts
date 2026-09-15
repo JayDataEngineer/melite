@@ -227,7 +227,7 @@ export async function resolveImageCapableRoute(
 
 export interface CraftAttachmentsSeam {
   // The face COPIED from the real seat (dsh-attachment's
-  // AttachmentStore.saveImage — the 2026-09-16 live-fire caught
+  // AttachmentStore.saveImage — the 2026-09-15 live-fire caught
   // this seam inventing a positional (data, mediaType) shape the
   // seat never had: the seat read input.data.byteLength off the
   // Buffer we passed as `input` and died). One object in, a ref out.
@@ -279,14 +279,14 @@ export const llmCritic = (
       // Dispatch under the PREPARED config (never a rebuilt
       // {provider, model}: prepareCall materializes adapter defaults
       // into it, and the dispatch contract rejects anything unequal
-      // — the 2026-09-16 live-fire caught the rebuilt shape dying
+      // — the 2026-09-15 live-fire caught the rebuilt shape dying
       // INVALID_PREPARED_CALL on deepseek-flash's defaultMaxTokens).
       const callOptions = { ...prepared.config, messages: [{ role: "user" as const, content }] };
       // Adapters vary: text may ride text-delta chunks, a whole
       // block-end text block, or (reasoning routes) reasoning-delta
       // before the answer. Accumulate every text carrier and keep a
       // chunk-type histogram — the no-JSON refusal names it, so the
-      // next empty answer diagnoses itself (the 2026-09-16 drive
+      // next empty answer diagnoses itself (the 2026-09-15 drive
       // caught deepseek-flash answering with zero text-deltas).
       const seen: Record<string, number> = {};
       let finishReason = "none";
@@ -299,25 +299,55 @@ export const llmCritic = (
         // The stream protocol's terminal error channel (dsh-llm's
         // adapterFailureChunk): an adapter throw arrives as a
         // finish chunk with an OBJECT reason carrying the failure —
-        // never silently end the loop on it (the 2026-09-16 drive
+        // never silently end the loop on it (the 2026-09-15 drive
         // stared at a bare {"finish":1} hiding the real refusal).
+        // Surface the WHOLE reason as JSON (sliced): adapters shape
+        // their failures differently (the 2026-09-15 spark drive
+        // printed "[object Object]" for a guessed .message that was
+        // itself an object) — never guess fields, print the object.
+        // But only ERROR-shaped reasons throw: a clean stop can also
+        // ride an object (pi-ai reports {"kind":"stop"}), which ends
+        // accumulation normally and lets the no-JSON refusal below
+        // name the chunk histogram.
         else if (c.type === "finish" && typeof c.reason === "object" && c.reason !== null) {
-          const failure = (c.reason as { kind?: unknown; failure?: { message?: unknown; code?: unknown; status?: unknown } }).failure;
-          throw new Error(
-            `craft critic call failed: ${String(failure?.message ?? c.reason)}` +
-            ` (code ${String(failure?.code ?? "?")}${failure?.status === undefined ? "" : `, status ${String(failure.status)}`})`,
-          );
+          const r = c.reason as { kind?: unknown; failure?: unknown; error?: unknown };
+          if (r.kind === "error" || r.failure !== undefined || r.error !== undefined) {
+            throw new Error(
+              `craft critic call failed: ${JSON.stringify(c.reason).slice(0, 600)}`,
+            );
+          }
+          finishReason = typeof r.kind === "string" ? r.kind : "object-stop";
         }
       }
       const start = text.indexOf("{");
-      const end = text.lastIndexOf("}");
-      if (start === -1 || end === -1) {
+      if (start === -1) {
         throw new Error(
           `craft critic answered no JSON (got ${JSON.stringify(text.slice(0, 200))}, ` +
           `chunks ${JSON.stringify(seen)}, finish ${JSON.stringify(finishReason)})`,
         );
       }
-      const parsed = JSON.parse(text.slice(start, end + 1)) as CraftCritique;
+      // Critics trail commentary after the object (and quote braces
+      // inside strings) — the 2026-09-15 spark drive died on a single
+      // lastIndexOf slice ("Unexpected non-whitespace character after
+      // JSON"). Walk the closing braces back until one parses; refuse
+      // only when none does.
+      let parsed: CraftCritique | undefined;
+      let end = text.length;
+      while (parsed === undefined && end > start) {
+        end = text.lastIndexOf("}", end - 1);
+        if (end === -1 || end < start) break;
+        try {
+          parsed = JSON.parse(text.slice(start, end + 1)) as CraftCritique;
+        } catch {
+          parsed = undefined;
+        }
+      }
+      if (parsed === undefined) {
+        throw new Error(
+          `craft critic answered no JSON (got ${JSON.stringify(text.slice(0, 200))}, ` +
+          `chunks ${JSON.stringify(seen)}, finish ${JSON.stringify(finishReason)})`,
+        );
+      }
       if (parsed.verdict !== "done" && parsed.verdict !== "refine") {
         throw new Error(`craft critic verdict ${JSON.stringify(parsed.verdict)} — 'done' or 'refine' only`);
       }
@@ -370,26 +400,59 @@ export const craftCallId = (): string => `melite-craft-${randomUUID()}`;
  *  (the route law above) and seat engine 'craft'; a lane with no
  *  image-capable route seats NO critic (the loud log line, never
  *  a dead lane — craft stages then refuse at the door's membership
- *  arm with the registered list). */
+ *  arm with the registered list). A NAMED preference (the estate's
+ *  MELITE_CRITIC_ROUTE "provider/model") beats the enumeration —
+ *  explicit > implicit — but it is still verified image-capable
+ *  before seating (a blind preference seats nothing, LOUD, never a
+ *  silent substitution). Returns whether the seat landed, so the
+ *  composition site can retry late (adapters register on settings
+ *  arrival, AFTER early rows apply). */
 export async function craftEngineAutoRoute(
   ctx: Context,
   log: (line: string) => void,
-): Promise<void> {
+  prefer?: { provider: string; model: string },
+): Promise<boolean> {
   const llm = ctx.get("llm") as CraftLlmSeam | undefined;
   if (llm === undefined) {
     log("craft engine: no llm seat mounted — engine 'craft' NOT seated");
-    return;
+    return false;
   }
   const attachments = ctx.get("attachments") as CraftAttachmentsSeam | undefined;
   if (attachments === undefined) {
     log("craft engine: no attachments seat mounted — engine 'craft' NOT seated");
-    return;
+    return false;
+  }
+  if (prefer !== undefined) {
+    // The refusal names WHAT the seat said (unresolvable vs the
+    // resolved modality list) — the 2026-09-15 spark wiring died on
+    // this line and the bare verdict hid which arm fired. The
+    // resolve error rides the line (a missing credential names
+    // itself — never swallow it into bare "does not resolve").
+    let info: { inputModalities?: readonly string[] } | undefined;
+    let resolveError = "";
+    try {
+      info = await llm.resolveModelInfo(prefer.provider, prefer.model);
+    } catch (e: unknown) {
+      resolveError = String((e as { message?: unknown })?.message ?? e).slice(0, 300);
+    }
+    if (info === undefined) {
+      log(`craft engine: named critic route ${prefer.provider}/${prefer.model} does not resolve (${resolveError}) — engine 'craft' NOT seated (explicit means explicit: no silent substitution)`);
+      return false;
+    }
+    if (!(info.inputModalities ?? []).includes("image")) {
+      log(`craft engine: named critic route ${prefer.provider}/${prefer.model} resolves with modalities [${(info.inputModalities ?? []).join(", ")}] (no image) — engine 'craft' NOT seated (explicit means explicit: no silent substitution)`);
+      return false;
+    }
+    log(`craft engine: critic route ${prefer.provider}/${prefer.model} (named) — engine 'craft' seated`);
+    new CraftEngineService(ctx, { provider: prefer.provider, model: prefer.model });
+    return true;
   }
   const route = await resolveImageCapableRoute(llm);
   if (route === null) {
     log("craft engine: no image-capable route this boot — engine 'craft' NOT seated (craft stages will refuse at the door)");
-    return;
+    return false;
   }
   log(`craft engine: critic route ${route.provider}/${route.model} — engine 'craft' seated`);
   new CraftEngineService(ctx, { provider: route.provider, model: route.model });
+  return true;
 }

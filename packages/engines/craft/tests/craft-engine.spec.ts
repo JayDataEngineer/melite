@@ -371,7 +371,27 @@ describe("llmCritic (the real critic's law, against seam fakes)", () => {
     assert.deepEqual(verdict, { verdict: "done", note: "blocky" });
   });
 
-  it("surfaces the stream protocol's failure finish LOUD (never an empty no-JSON)", async () => {    const failing = makeLlm([]);
+  it("walks closing braces back past trailing commentary (spark's verdict + chatter)", async () => {
+    const chatty = makeLlm([]);
+    const origPrepare = chatty.prepareCall;
+    chatty.prepareCall = (async (config: { provider: string; model: string }) => {
+      const prepared = await origPrepare(config);
+      return {
+        ...prepared,
+        stream: async function* (): AsyncIterable<{ type: string; text?: string }> {
+          yield { type: "text-delta", text: 'Here is my verdict: {"verdict":"refine","note":"fix the } hinge"} Let me know!' } as unknown as { type: string; text?: string };
+          yield { type: "finish", reason: { kind: "stop" } } as unknown as { type: string; text?: string };
+        },
+      };
+    }) as typeof chatty.prepareCall;
+    const verdict = await llmCritic(chatty, { saveImage: async () => ({ attachmentId: "", mediaType: "", bytes: 0, width: 0, height: 0 }) }, { provider: "p", model: "m" }).critique({
+      iteration: 0, prompt: "p", command: { engine: "e", params: {} }, artifacts: [], runDir: tmp(), signal: new AbortController().signal,
+    });
+    assert.deepEqual(verdict, { verdict: "refine", note: "fix the } hinge" });
+  });
+
+  it("surfaces the stream protocol's failure finish LOUD (never an empty no-JSON)", async () => {
+    const failing = makeLlm([]);
     const origPrepare = failing.prepareCall;
     failing.prepareCall = (async (config: { provider: string; model: string }) => {
       const prepared = await origPrepare(config);
@@ -386,7 +406,34 @@ describe("llmCritic (the real critic's law, against seam fakes)", () => {
       llmCritic(failing, { saveImage: async () => ({ attachmentId: "", mediaType: "", bytes: 0, width: 0, height: 0 }) }, { provider: "p", model: "m" }).critique({
         iteration: 0, prompt: "p", command: { engine: "e", params: {} }, artifacts: [], runDir: tmp(), signal: new AbortController().signal,
       }),
-      /craft critic call failed: adapter blew up \(code PROVIDER_500, status 500\)/,
+      // The WHOLE reason object rides the message (never a guessed
+      // .message — adapters nest it differently per provider).
+      /craft critic call failed: \{.*adapter blew up.*PROVIDER_500/s,
+    );
+  });
+
+  it("treats an object stop reason as a normal finish (the histogram refusal diagnoses the text)", async () => {
+    // pi-ai reports a clean stop as {"kind":"stop"} with no text
+    // carrier the critic accumulates — the loop must reach the
+    // no-JSON refusal (which names the chunk histogram), never throw
+    // a phantom call failure.
+    const stopping = makeLlm([]);
+    const origPrepare = stopping.prepareCall;
+    stopping.prepareCall = (async (config: { provider: string; model: string }) => {
+      const prepared = await origPrepare(config);
+      return {
+        ...prepared,
+        stream: async function* (): AsyncIterable<{ type: string; text?: string }> {
+          yield { type: "thinking-delta", text: "hmm" } as unknown as { type: string; text?: string };
+          yield { type: "finish", reason: { kind: "stop" } } as unknown as { type: string; text?: string };
+        },
+      };
+    }) as typeof stopping.prepareCall;
+    await assert.rejects(
+      llmCritic(stopping, { saveImage: async () => ({ attachmentId: "", mediaType: "", bytes: 0, width: 0, height: 0 }) }, { provider: "p", model: "m" }).critique({
+        iteration: 0, prompt: "p", command: { engine: "e", params: {} }, artifacts: [], runDir: tmp(), signal: new AbortController().signal,
+      }),
+      /craft critic answered no JSON \(got "", chunks \{"thinking-delta":1,"finish":1\}, finish "stop"\)/,
     );
   });
 });
@@ -438,5 +485,65 @@ describe("the provider (seat row)", () => {
       new FakeAttachmentsService(c);
       assert.throws(() => new CraftEngineService(c, cfg as { provider?: string; model?: string }), want, label);
     }
+  });
+
+  describe("the named preference (MELITE_CRITIC_ROUTE)", () => {
+    // The AutoRoute reads the llm seat through the seam — a fake
+    // with a scripted modality table per route.
+    class ScriptedLlm extends Service {
+      constructor(ctx: Context, readonly table: Record<string, string[] | Error>) {
+        super(ctx, "llm");
+      }
+      listProviders(): { id: string }[] {
+        return [{ id: "b" }, { id: "s" }];
+      }
+      async listModels(provider: string): Promise<{ id: string }[]> {
+        return provider === "b" ? [{ id: "v1" }] : [{ id: "spark" }];
+      }
+      async resolveModelInfo(provider: string, model: string): Promise<{ inputModalities?: readonly string[] }> {
+        const entry = this.table[`${provider}/${model}`];
+        if (entry instanceof Error) throw entry;
+        return { inputModalities: entry ?? ["text"] };
+      }
+    }
+    const bootSeated = async (table: Record<string, string[] | Error>, prefer?: { provider: string; model: string }) => {
+      const ctx = new Context();
+      await ctx.plugin(enginesContract);
+      new ScriptedLlm(ctx, table);
+      new FakeAttachmentsService(ctx);
+      const lines: string[] = [];
+      const seatedReturn = await craftEngineAutoRoute(ctx, (line) => lines.push(line), prefer);
+      const seat = ctx.get("engines") as EnginesService;
+      assert.equal(seatedReturn, seat.has("craft"));
+      return { lines, seated: seat.has("craft") };
+    };
+
+    it("seats the NAMED image-capable route (explicit beats the enumeration)", async () => {
+      // enumeration would pick b/v1 (first); the named s/spark wins.
+      const { lines, seated } = await bootSeated(
+        { "b/v1": ["text", "image"], "s/spark": ["text", "image"] },
+        { provider: "s", model: "spark" },
+      );
+      assert.equal(seated, true);
+      assert.ok(lines.some((l) => l.includes("s/spark (named)")), lines.join(" | "));
+    });
+
+    it("seats NOTHING loud when the named route is blind (no silent substitution)", async () => {
+      const { lines, seated } = await bootSeated(
+        { "b/v1": ["text", "image"], "s/spark": ["text"] },
+        { provider: "s", model: "spark" },
+      );
+      assert.equal(seated, false);
+      assert.ok(lines.some((l) => l.includes("NOT seated") && l.includes("modalities [text]") && l.includes("no silent substitution")), lines.join(" | "));
+    });
+
+    it("seats NOTHING loud when the named route is unresolvable", async () => {
+      const { lines, seated } = await bootSeated(
+        { "b/v1": ["text", "image"], "s/ghost": new Error("no such route") },
+        { provider: "s", model: "ghost" },
+      );
+      assert.equal(seated, false);
+      assert.ok(lines.some((l) => l.includes("NOT seated") && l.includes("does not resolve") && l.includes("no such route")), lines.join(" | "));
+    });
   });
 });

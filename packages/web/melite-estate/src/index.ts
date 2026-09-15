@@ -93,7 +93,7 @@ const rows: readonly Plugin[] = [
     inject: mcpClientPlugin.inject,
     Config: mcpClientPlugin.Config,
     // The bridge's own apply, witnessed: cordis buries per-fiber
-    // apply rejections (both 2026-09-16 postmortems), so the
+    // apply rejections (both 2026-09-15 postmortems), so the
     // settled/rejected voice lives HERE — a rejection logs its
     // cause chain (the bridge wraps firstAttemptError) before it
     // vanishes, then rethrows to keep fiber semantics identical.
@@ -140,7 +140,7 @@ const rows: readonly Plugin[] = [
   // ...and the same server on the RUNS plane: mcp:blender stages
   // execute as mcp__blender__* tool calls through the runtime.
   // inject gates the APPLY on both seats (the comfyui adapter's
-  // `inject: ["engines"]` precedent): the 2026-09-16 live-fire
+  // `inject: ["engines"]` precedent): the 2026-09-15 live-fire
   // caught this row dying SILENTLY — the tools runtime mounts
   // after the estate row, the constructor's loud guard threw, and
   // cordis buried the per-fiber throw while the boot marched on
@@ -158,15 +158,57 @@ const rows: readonly Plugin[] = [
   } as unknown as Plugin,
   // The craft loop engine (async apply: the route resolution rides
   // listModels — the seat lands after the enumeration).
+  // MELITE_CRITIC_ROUTE "provider/model" names the critic
+  // explicitly (the smoke drive pins the operator's spark route;
+  // the lane default is the auto-route's first image-capable
+  // enumeration) — explicit > implicit, verified before seating.
+  // Late adapters (the pi-ai settings race — the adapter registers
+  // on settings arrival, AFTER early rows apply): a missed first
+  // attempt resubscribes on the registry's own llm/adapters-updated
+  // announcement (root-side, like tools/change — a row fork never
+  // sees it) and seats then, unsubscribing on success. The boot
+  // line already said NOT seated LOUD; the seating line closes it.
   {
     name: "melite-engine-craft-row",
     apply: async (ctx: Context): Promise<void> => {
-      await craftEngineAutoRoute(ctx, (line) => {
+      const say = (line: string): void => {
         // console, not ctx.logger: the lane log owns stdout and the
         // optional-chained logger call swallowed the boot truth once
-        // (2026-09-16) — never quiet-resolve a seat decision
+        // (2026-09-15) — never quiet-resolve a seat decision
         console.log("[melite-estate] " + line);
-      });
+      };
+      const named = /^([^/\s]+)\/(.+)$/.exec(process.env["MELITE_CRITIC_ROUTE"] ?? "");
+      const prefer = named === null ? undefined : { provider: named[1] as string, model: named[2] as string };
+      // Serialized attempts: adapters-updated fires per registration
+      // (deepseek, pi-ai, …) and two concurrent attempts both pass
+      // the resolve and collide in the service construction (the
+      // 2026-09-15 drive killed its own child this way — an uncaught
+      // duplicate-seat throw wedged boot and initialize timed out).
+      // Never void without catch; a failed attempt logs LOUD and
+      // releases for the next event, success unsubscribes.
+      let done = false;
+      let busy = false;
+      let off: (() => void) | undefined;
+      ctx.effect(() => () => off?.());
+      const attempt = (): void => {
+        if (done || busy) return;
+        busy = true;
+        void craftEngineAutoRoute(ctx, say, prefer).then(
+          (seated) => {
+            busy = false;
+            if (seated) {
+              done = true;
+              off?.();
+            }
+          },
+          (e: unknown) => {
+            busy = false;
+            say(`craft engine: late seat attempt failed (${String((e as { message?: unknown })?.message ?? e).slice(0, 200)}) — waiting for the next adapters-updated`);
+          },
+        );
+      };
+      off = ctx.root.on("llm/adapters-updated", attempt);
+      attempt();
     },
   } as unknown as Plugin,
   modelsProvider,

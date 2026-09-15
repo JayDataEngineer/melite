@@ -174,7 +174,7 @@ export const mcpEngines = (ctx: Context, config: { engines?: string[] }): void =
 };
 
 export class McpEnginesService extends Service {
-  // NO static inject here (the 2026-09-16 swallowed-throw lesson):
+  // NO static inject here (the 2026-09-15 swallowed-throw lesson):
   // inject gates NOTHING on a directly-constructed Service (the
   // cordis Service base ignores it — service.ts carries no inject
   // handling); the gate belongs on the ROW object (the comfyui
