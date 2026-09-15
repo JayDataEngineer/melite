@@ -1,0 +1,81 @@
+// types.ts — the engine Service Definition's pure types (stroke 53,
+// the engine-generics seam: docs/design/engine-generics-mcp.md).
+// One contract covers every run-path engine — ComfyUI today, MCP
+// servers next — with the runs lane as the sole Consumer. Engine
+// ids are NAMED vocabulary (like tool names), grammar-pinned in
+// engines.ts, never opaque (no Branded carrier: the id crosses the
+// stage-row JSON the door already validates).
+
+/** A JSON value as the runs plane already carries it (the
+ * stage-row params/outputs element type — EngineJson's structural
+ * twin, declared here so the contract depends on no engine
+ * package). */
+export type EngineParamValue =
+  | null
+  | boolean
+  | number
+  | string
+  | EngineParamValue[]
+  | { [key: string]: EngineParamValue };
+
+/** One stage of a run, engine-agnostic: the door-validated id, the
+ * stage's declared outputs, and the stage's raw params. Graph
+ * surgery (ComfyUI's spliceWorkflow) belongs to the owning
+ * engine's executor — never to the consumer. */
+export interface EngineStageRow {
+  readonly stageId: string;
+  readonly outputs: Readonly<Record<string, EngineParamValue>>;
+  readonly params: Readonly<Record<string, EngineParamValue>>;
+}
+
+/** One stage's outcome: the harvested outputs plus the run-dir
+ * relative artifact paths the engine wrote (the collect arm — the
+ * runs tree is the estate's artifact law, viewable by melite_view). */
+export interface EngineStageOutcome {
+  readonly stageId: string;
+  readonly outputs: Readonly<Record<string, EngineParamValue>>;
+  readonly artifacts: readonly string[];
+}
+
+/** A whole submit's outcome. `engineRef` is the engine's own
+ * handle for the submitted work (ComfyUI's promptId) — opaque to
+ * the consumer, carried for the ledger. */
+export interface EngineRunOutcome {
+  readonly stages: readonly EngineStageOutcome[];
+  readonly engineRef?: string;
+}
+
+/** The run-path's signals into the executor: the stop flag (the
+ * user's stop press) and the progress tap (stage activity /
+ * progress folds — the same callback shape the ComfyUI progress
+ * webhooks ride today). */
+export interface EngineRunOptions {
+  shouldStop(): boolean;
+  report(updates: Record<string, unknown>): void;
+}
+
+/** The control arm: execute stages of one run. The ComfyUI
+ * executor keeps the MERGED single-graph law internally (rows
+ * splice + merge into ONE prompt); an MCP executor executes
+ * per-stage wire commands. `inputNames` is the run's stage-input
+ * wiring (stage-local name -> upstream artifact ref), identical in
+ * shape to the merged path's. */
+export interface EngineExecutor {
+  executeStages(
+    rows: readonly EngineStageRow[],
+    runDir: string,
+    inputNames: Readonly<Record<string, Readonly<Record<string, string>>>>,
+    options: EngineRunOptions,
+  ): Promise<EngineRunOutcome>;
+}
+
+/** One registered engine: the executor plus an optional
+ * reachability probe (the supervisor face — ComfyUI's
+ * /system_stats probe; an MCP engine's cheap tool health call).
+ * Connection lifecycle is NOT here: the MCP client plugin owns
+ * connect/reconnect (the DSH pattern), ComfyUI's supervisor owns
+ * its own — the probe only reports. */
+export interface EngineRecord {
+  readonly executor: EngineExecutor;
+  readonly probe?: () => Promise<void>;
+}

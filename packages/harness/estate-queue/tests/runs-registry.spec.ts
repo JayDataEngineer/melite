@@ -15,6 +15,7 @@ import { RemoteError } from "@deepseek-ai/dsh-typert-protocol";
 import { ComfyUIHostService } from "@melite/comfyui-cordis";
 import type { FlowResult, MergeRow, EngineJson } from "@melite/comfyui-cordis";
 import { RunsRuntimeService } from "../src/runsRegistry.ts";
+import { EnginesService } from "@melite/engine-contract";
 import { QueueCore } from "../src/queue.ts";
 import { CardArmError } from "../src/cardsRegistry.ts";
 import type { RunRecord } from "../src/runsTypes.ts";
@@ -202,6 +203,59 @@ describe("start inline arm", () => {
     const err = await remote(() => s.svc.start(inlineBody({ flow_inline: two }), sig()));
     assert.equal(err.code, "runs/preview-scope");
     assert.match(err.message, /single-stage/);
+  });
+
+  it("runEngine: pre-seam rows (no engine stamp) read comfyui; stamped rows read their engine", async () => {
+    const preSeam = { stages: [{ id: "s", name: "s", index: 0, status: "pending", outputs: {}, expected: {} }] } as unknown as RunRecord;
+    const stamped = { stages: [{ id: "s", name: "s", index: 0, status: "pending", engine: "mcp:blender", outputs: {}, expected: {} }] } as unknown as RunRecord;
+    const empty = { stages: [{ id: "s", name: "s", index: 0, status: "pending", engine: "", outputs: {}, expected: {} }] } as unknown as RunRecord;
+    const read = (r: RunRecord): string =>
+      (RunsRuntimeService as unknown as { runEngine(x: RunRecord): string }).runEngine(r);
+    assert.equal(read(preSeam), "comfyui");
+    assert.equal(read(stamped), "mcp:blender");
+    assert.equal(read(empty), "comfyui");
+  });
+
+  it("THE ENGINE SEAT DISPATCH (stroke 53): a mounted engines seat routes the run through its executor", async () => {
+    const s = seat();
+    // The engines seat + a fake executor registered as 'comfyui'.
+    const ctx = (s.svc as unknown as { ctx: Context }).ctx;
+    const engines = new EnginesService(ctx);
+    const seen: {
+      rows: { stageId: string; params: Record<string, EngineJson> }[];
+      runDir: string;
+      reported: Record<string, unknown>[];
+    } = { rows: [], runDir: "", reported: [] };
+    engines.register("comfyui", {
+      executor: {
+        executeStages: async (rows, runDir, _inputNames, options) => {
+          seen.rows = rows.map((r) => ({ stageId: r.stageId, params: r.params as Record<string, EngineJson> }));
+          seen.runDir = runDir;
+          options.report({ activity: "seat tap alive" });
+          return {
+            stages: [
+              { stageId: "s", outputs: { default: "img.png" }, artifacts: ["img.png"] },
+            ],
+            engineRef: "seat-prompt-1",
+          };
+        },
+      },
+    });
+    const ans = await s.svc.start(inlineBody(), sig());
+    const row = await settleWait(s, ans.run_id);
+    assert.equal(row.status, "completed");
+    // Generic rows: params UNSPLICED (the executor owns graph
+    // surgery), the stage id carried, the run dir threaded.
+    assert.equal(seen.rows.length, 1);
+    assert.equal(seen.rows[0]?.stageId, "s");
+    assert.deepEqual(seen.rows[0]?.params, {}, "params ride verbatim (unspliced — this inline stage carries none)");
+    assert.ok(seen.runDir.includes(ans.run_id));
+    // The harvest: artifacts + outputs land on the stage row, the
+    // tap's activity fold wrote through before completion cleared it.
+    const stage = row.stages[0] as Record<string, unknown>;
+    assert.equal(stage["status"], "completed");
+    assert.equal(stage["url"], "img.png");
+    assert.deepEqual(row.artifacts, ["img.png"]);
   });
 
   it("a valid run registers, queues at 0, and the pump settles it failed (no engine seat)", async () => {

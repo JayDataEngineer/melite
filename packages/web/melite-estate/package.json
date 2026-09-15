@@ -20,7 +20,8 @@
     "@melite/estate-manage": "workspace:*",
     "@melite/estate-runs": "workspace:*",
     "@melite/estate-media": "workspace:*",
-    "@melite/estate-models": "workspace:*"
+    "@melite/estate-models": "workspace:*",
+    "@melite/engine-contract": "workspace:*"
   },
   "scripts": {
     "typecheck": "tsc --noEmit"

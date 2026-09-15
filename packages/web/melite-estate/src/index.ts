@@ -20,6 +20,13 @@ import type { Plugin } from "@deepseek-ai/cordis";
 
 import modelsProvider from "@melite/comfyui-cordis/catalog-registry";
 import comfyuiHost from "@melite/comfyui-cordis/comfyui-host";
+// The engine-generics seam (stroke 53): the 'engines' seat first
+// (one registry every engine provider registers into), then the
+// ComfyUI adapter (engine id 'comfyui' — merged-submit law inside;
+// the runs lane resolves through the seat). MCP engines register
+// as 'mcp:<server>' rows next (docs/design/engine-generics-mcp.md).
+import enginesContract from "@melite/engine-contract";
+import comfyuiEngine from "@melite/comfyui-cordis/comfyui-engine";
 // The drafts service only — the storage PROVIDERS (hub, json
 // backend, domain form) belong to the composition site: dsh-base
 // mounts them in profiles (bundle/base/cordis.patch.yml's
@@ -56,8 +63,12 @@ import modelsPlugin from "@melite/estate-models";
  *  probe boots mount it themselves. The queue takes no row
  *  config: its state root is MELITE_STATE_ROOT else <cwd>/data/runs. */
 const rows: readonly Plugin[] = [
+  // The engines seat BEFORE every adapter + consumer (mount order
+  // is load order — the adapters' inject gates on it).
+  enginesContract,
   modelsProvider,
   comfyuiHost,
+  comfyuiEngine,
   draftsPlugin,
   queuePlugin,
   // The card registry (REBUILD-9: the primed defs + facts + the

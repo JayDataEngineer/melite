@@ -179,8 +179,14 @@ test("the refusal chain, byte-pinned and in py order", async () => {
   const noEngine = { test: true, draft_id: "d_ok", flow_inline: { id: "f", stages: [{ id: "s" }] } };
   assert.equal(await code(noEngine), "runs/invalid-request");
   assert.match(await msg(noEngine), /no engine named/);
+  // Stroke 53 (the engine-generics seam): "blender" is an
+  // ungrammatical id (grammar refusal, invalid_request); a
+  // grammatical-but-unregistered mcp id keeps preview_scope.
   const otherEngine = { test: true, draft_id: "d_ok", flow_inline: { id: "f", stages: [{ id: "s", engine: "blender" }] } };
-  assert.equal(await code(otherEngine), "runs/preview-scope");
+  assert.equal(await code(otherEngine), "runs/invalid-request");
+  assert.match(await msg(otherEngine), /engine ids are 'comfyui' or 'mcp:<server>'/);
+  const unregistered = { test: true, draft_id: "d_ok", flow_inline: { id: "f", stages: [{ id: "s", engine: "mcp:blender" }] } };
+  assert.equal(await code(unregistered), "runs/preview-scope");
   await fiber.dispose();
 });
 

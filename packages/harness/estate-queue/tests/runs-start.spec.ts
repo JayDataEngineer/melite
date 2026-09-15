@@ -71,7 +71,7 @@ describe("compileFlowInline", () => {
     assert.match(noIdExtra.payload.error, /<no id>/);
   });
 
-  it("gates the engine policy (named, comfyui-only, no skip, no card)", () => {
+  it("gates the engine policy (named, grammar + registry, no skip, no card)", () => {
     const unnamed = compileFlowInline(doc([{ id: "s" }])) as { payload: { error: string } };
     assert.match(unnamed.payload.error, /no engine named/);
     const foreign = compileFlowInline(doc([stage({ engine: "unity" })])) as {
@@ -79,8 +79,29 @@ describe("compileFlowInline", () => {
       payload: { error: string; code: string };
     };
     assert.equal(foreign.status, 400);
-    assert.equal(foreign.payload.code, "preview_scope");
-    assert.match(foreign.payload.error, /comfyui stages only/);
+    assert.equal(foreign.payload.code, "invalid_request");
+    assert.match(foreign.payload.error, /engine ids are 'comfyui' or 'mcp:<server>'/);
+    // Grammatical but unregistered: the membership refusal
+    // (preview_scope, the seat-less default registry = comfyui).
+    const unregistered = compileFlowInline(doc([stage({ engine: "mcp:blender" })])) as {
+      status: number;
+      payload: { error: string; code: string };
+    };
+    assert.equal(unregistered.status, 400);
+    assert.equal(unregistered.payload.code, "preview_scope");
+    assert.match(unregistered.payload.error, /registered engines only \(comfyui\)/);
+    // Empty registry list: the "none registered" arm.
+    const noneReg = compileFlowInline(doc([stage({ engine: "mcp:unity" })]), []) as {
+      payload: { error: string };
+    };
+    assert.match(noneReg.payload.error, /registered engines only \(none registered\)/);
+    // Registered on the caller's list: ADMITTED (the seam's law —
+    // the door serves what the engines seat knows).
+    const admitted = compileFlowInline(
+      doc([stage({ engine: "mcp:blender" })]),
+      ["comfyui", "mcp:blender"],
+    ) as { stages: unknown[] };
+    assert.equal(admitted.stages.length, 1);
     assert.match(
       (compileFlowInline(doc([stage({ skip_when: { x: 1 } })])) as { payload: { error: string } }).payload.error,
       /skip_when is unported/,

@@ -15,6 +15,7 @@ import { mkdirSync } from "node:fs";
 import { join } from "node:path";
 import type { EngineJson } from "@melite/comfyui-cordis";
 import { pyReprStr, pyReprStrList } from "@melite/comfyui-cordis";
+import { engineIdOk } from "@melite/engine-contract";
 import {
   FLOW_INLINE_TOP_VOICE,
   INLINE_TOP_KEYS,
@@ -34,6 +35,10 @@ export type StartRefusal = QueueRefusal;
 /** One compiled stage (the rim the worker splices). */
 export interface CompiledStage {
   readonly id: string;
+  /** The stage's engine id (stroke 53): 'comfyui' or 'mcp:<server>'
+   *  — the door's engine gate admits exactly these; carried through
+   *  to the run rows so the worker dispatches by it. */
+  readonly engine: string;
   readonly params: Record<string, EngineJson>;
   readonly outputs: Record<string, EngineJson>;
   readonly expected: Record<string, EngineJson>;
@@ -43,9 +48,17 @@ export interface CompiledStage {
 
 /** flow_inline structural compile — door-verbatim (structure via
  *  the admission verdicts, voice here; the engine policy +
- *  default-fills below are value-domain, not type structure). */
+ *  default-fills below are value-domain, not type structure).
+ *
+ *  THE ENGINE GATE (stroke 53, the engine-generics seam): the
+ *  engine id must be GRAMMATICAL ('comfyui' or 'mcp:<server>',
+ *  engine-contract's engineIdOk) AND known to the caller. The
+ *  caller passes the live registry ids (the 'engines' seat when
+ *  mounted); the default ['comfyui'] keeps every seat-less boot
+ *  (fixtures, walls) on the pre-seam voice. */
 export function compileFlowInline(
   inline: unknown,
+  knownEngines: readonly string[] = ["comfyui"],
 ): { stages: CompiledStage[] } | StartRefusal {
   const top = checkFlowInlineTop(inline);
   if (top.kind === "not-object" || top.kind === "bad-stages") {
@@ -118,15 +131,36 @@ export function compileFlowInline(
       );
     }
     if (engine !== "comfyui") {
-      return refusal(
-        400,
-        "flow_inline stage " +
-          pyReprStr(sid) +
-          " names engine " +
-          pyReprStr(engine) +
-          " — this gateway serves comfyui stages only (other engines are unported)",
-        "preview_scope",
-      );
+      // Grammar first (drift in the id itself), then membership
+      // (an id the gateway cannot serve). Both refuse with the
+      // engine named — never a silent skip. The seat-less default
+      // (['comfyui']) keeps the pre-seam refusal for foreign ids.
+      if (!engineIdOk(engine)) {
+        return refusal(
+          400,
+          "flow_inline stage " +
+            pyReprStr(sid) +
+            " names engine " +
+            pyReprStr(engine) +
+            " — engine ids are 'comfyui' or 'mcp:<server>' ([A-Za-z0-9_-]{1,32})",
+          "invalid_request",
+        );
+      }
+      if (!knownEngines.includes(engine)) {
+        return refusal(
+          400,
+          "flow_inline stage " +
+            pyReprStr(sid) +
+            " names engine " +
+            pyReprStr(engine) +
+            " — this gateway serves registered engines only (" +
+            (knownEngines.length === 0
+              ? "none registered"
+              : knownEngines.slice().sort().join(", ")) +
+            ")",
+          "preview_scope",
+        );
+      }
     }
     // No branch pruning on this gateway: skip_when is unported.
     if (st["skip_when"] !== undefined && st["skip_when"] !== null) {
@@ -181,7 +215,7 @@ export function compileFlowInline(
         }
       }
     }
-    stages.push({ id: sid, params, outputs, expected, outputNodes, inputNames });
+    stages.push({ id: sid, engine, params, outputs, expected, outputNodes, inputNames });
   }
   return { stages };
 }
@@ -321,7 +355,7 @@ export function registerCompiledRun(args: {
   const graphRows: GraphRow[] = [
     {
       id: st.id,
-      type: "comfyui",
+      type: st.engine,
       input_from: [],
       input_names: {},
       outputs: { ...st.outputs },
@@ -337,6 +371,7 @@ export function registerCompiledRun(args: {
         name: st.id,
         index: 0,
         status: "pending",
+        engine: st.engine,
         outputs: { ...st.outputs },
         expected: { ...st.expected },
       },

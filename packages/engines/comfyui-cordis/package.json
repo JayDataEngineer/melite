@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "The comfyui engine's Cordis compose plane + models registry (merged 2026-09-08: the models plane folds in \u2014 one package, two services ctx.models + ctx.comfyui). Runtime is node --experimental-strip-types (erasable-syntax TS); no build step. Cards are one-folder units (card-folder-shape design record): card.ts (host face) + ui/ (browser face \u2014 deps below exist for the studios' module resolution; the editor's vite/vitest compiles them, the engine tsc program excludes ui/) + agents/ (model context, served by the planes door).",
+  "description": "The comfyui engine's Cordis compose plane + models registry (merged 2026-09-08: the models plane folds in — one package, two services ctx.models + ctx.comfyui). Runtime is node --experimental-strip-types (erasable-syntax TS); no build step. Cards are one-folder units (card-folder-shape design record): card.ts (host face) + ui/ (browser face — deps below exist for the studios' module resolution; the editor's vite/vitest compiles them, the engine tsc program excludes ui/) + agents/ (model context, served by the planes door).",
   "main": "./src/index.ts",
   "exports": {
     ".": "./src/index.ts",
@@ -14,6 +14,7 @@
     "./cli": "./src/cli.ts",
     "./catalog-registry": "./src/entries/catalog-registry.ts",
     "./comfyui-host": "./src/entries/comfyui-host.ts",
+    "./comfyui-engine": "./src/entries/comfyui-engine.ts",
     "./package.json": "./package.json",
     "./model-contract": "./src/models/families/contract.ts",
     "./models-service": "./src/models/service.ts"
@@ -104,7 +105,8 @@
     "@melite/video-h3-timeline": "workspace:*",
     "@melite/video-video-gen": "workspace:*",
     "lucide-react": "*",
-    "react": "*"
+    "react": "*",
+    "@melite/engine-contract": "workspace:*"
   },
   "devDependencies": {
     "@types/node": "^22.20.0",

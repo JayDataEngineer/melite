@@ -19,8 +19,9 @@ import {
   needComfyUI,
   spliceWorkflow,
 } from "@melite/comfyui-cordis";
-import type { EngineJson, MergeRow } from "@melite/comfyui-cordis";
+import type { EngineJson, MergeRow, MergeStageResult } from "@melite/comfyui-cordis";
 import { pyReprStr } from "@melite/comfyui-cordis";
+import type { EngineExecutor, EngineStageRow } from "@melite/engine-contract";
 import {
   expandRegistryFlow,
   getRegistryFlow,
@@ -52,6 +53,7 @@ import {
   unknownDraftRefusal,
 } from "./runsStart.ts";
 import type { CompiledStage } from "./runsStart.ts";
+import type { StageRow } from "./runsTypes.ts";
 import { listRuns, parseIntPy } from "./runsList.ts";
 import { inlineArm } from "./runsValidate.ts";
 import type { FlowsValidateAnswer } from "./runsValidate.ts";
@@ -274,6 +276,9 @@ export class RunsRuntimeService extends Service {
       const skeleton: string = p1.skeleton;
       const cardStage: CompiledStage = {
         id: skeleton,
+        // The {model:} card door's engine (the compose plane is
+        // ComfyUI's — the card arm rides it by construction).
+        engine: "comfyui",
         params: { workflow: graph as unknown as EngineJson },
         outputs: {},
         expected: {},
@@ -341,9 +346,17 @@ export class RunsRuntimeService extends Service {
       body = { ...rest, flow_inline: inlineDoc };
     }
     const inline: unknown = body["flow_inline"];
+    // The engines seat when mounted (stroke 53): the door consults
+    // the live registry ids. Absent (fixture/wall boots) the pure
+    // default ['comfyui'] governs — the pre-seam voice.
+    const enginesSeat: unknown = this.ctx.get("engines");
+    const knownEngines: readonly string[] =
+      enginesSeat !== undefined && typeof (enginesSeat as { ids?: unknown }).ids === "function"
+        ? (enginesSeat as { ids(): string[] }).ids()
+        : ["comfyui"];
     const compiled:
       | { stages: CompiledStage[] }
-      | QueueRefusal = compileFlowInline(inline);
+      | QueueRefusal = compileFlowInline(inline, knownEngines);
     if ("payload" in compiled) throw toRemoteError(compiled);
     if (compiled.stages.length !== 1) {
       throw toRemoteError(
@@ -790,6 +803,15 @@ export class RunsRuntimeService extends Service {
     }
   }
 
+  /** The run's engine id (stroke 53): the first stage's engine,
+   *  defaulting to 'comfyui' for pre-seam rows (the only engine
+   *  that ever was). Single-stage gateway = one engine per run. */
+  private static runEngine(run: RunRecord): string {
+    const first: StageRow | undefined = run.stages[0];
+    const engine: unknown = first?.["engine"];
+    return typeof engine === "string" && engine !== "" ? engine : "comfyui";
+  }
+
   /** One run through the merged path (door-verbatim: stages ->
    *  running + merged:true, splice rows, ONE executeFlow submit,
    *  per-stage harvest + result_outputs, the stop-gated terminal
@@ -802,9 +824,25 @@ export class RunsRuntimeService extends Service {
     }
     const inputNames: Record<string, Record<string, string>> =
       run.inputNames ?? {};
+    // THE ENGINE-GENERICS DISPATCH (stroke 53): the 'engines' seat
+    // governs when mounted — the executor owns graph surgery
+    // (splice inside the adapter), the tap, and the merged submit.
+    // Seat-less boots (fixtures, walls) keep the pre-seam direct
+    // path byte-for-byte. Runs stay single-engine today: the
+    // single-stage gateway constraint means one run names one
+    // engine; mixed-engine grouping arrives with the MCP executor
+    // (docs/design/engine-generics-mcp.md).
+    const enginesSeat: unknown = this.ctx.get("engines");
+    const seatExecutor: EngineExecutor | null =
+      enginesSeat !== undefined &&
+      typeof (enginesSeat as { resolve?: unknown }).resolve === "function"
+        ? (enginesSeat as unknown as { resolve(id: string): { executor: EngineExecutor } }).resolve(
+            RunsRuntimeService.runEngine(run),
+          ).executor
+        : null;
     let rows: MergeRow[];
     try {
-      rows = run.stages.map(
+      rows = seatExecutor !== null ? [] : run.stages.map(
         (stage, i: number): MergeRow => ({
           stageId: stage.id,
           workflow: spliceWorkflow(run.params[i] as Record<string, EngineJson>),
@@ -833,43 +871,75 @@ export class RunsRuntimeService extends Service {
       return;
     }
     try {
-      const engine = needComfyUI(this.ctx as unknown as EngineCtx, "runsRemote worker");
-      const nodeCount: number = rows.reduce(
-        (n: number, r: MergeRow): number =>
-          n + Object.keys(r.workflow).length,
-        0,
-      );
-      for (const stage of run.stages) {
-        stage["activity"] =
-          "merged submit (" + rows.length + " stages, " + nodeCount + " nodes)";
-      }
-      const result = await engine.executeFlow(rows, run.dir, inputNames, {}, {
-        shouldStop: (): boolean => run.stopFlag,
-        // THE PROGRESS TAP FOLD (2026-09-13, the operator's "forward
-        // the comfyui progress webhooks like before"): the engine
-        // drains its /ws tap into this callback; the merged submit
-        // mints ONE prompt, so every stage row shares the same live
-        // fold (status serves stages VERBATIM — the poll rides the
-        // existing door, no new wire verb).
-        report: (updates: Record<string, unknown>): void => {
-          const act: unknown = updates["activity"];
-          const prog: unknown = updates["progress"];
-          const pRec: Record<string, unknown> | null =
-            typeof prog === "object" && prog !== null && !Array.isArray(prog)
-              ? (prog as Record<string, unknown>)
-              : null;
-          for (const stage of run.stages) {
-            if (typeof act === "string" && act !== "") stage["activity"] = act;
-            if (
-              pRec !== null &&
-              typeof pRec["value"] === "number" &&
-              typeof pRec["max"] === "number"
-            ) {
-              stage["progress"] = { value: pRec["value"], max: pRec["max"] };
-            }
+      // THE PROGRESS TAP FOLD (2026-09-13, the operator's "forward
+      // the comfyui progress webhooks like before"): the engine
+      // drains its tap into this callback; the merged submit mints
+      // ONE prompt, so every stage row shares the same live fold
+      // (status serves stages VERBATIM — the poll rides the
+      // existing door, no new wire verb). Hoisted for both paths.
+      const report = (updates: Record<string, unknown>): void => {
+        const act: unknown = updates["activity"];
+        const prog: unknown = updates["progress"];
+        const pRec: Record<string, unknown> | null =
+          typeof prog === "object" && prog !== null && !Array.isArray(prog)
+            ? (prog as Record<string, unknown>)
+            : null;
+        for (const stage of run.stages) {
+          if (typeof act === "string" && act !== "") stage["activity"] = act;
+          if (
+            pRec !== null &&
+            typeof pRec["value"] === "number" &&
+            typeof pRec["max"] === "number"
+          ) {
+            stage["progress"] = { value: pRec["value"], max: pRec["max"] };
           }
-        },
-      });
+        }
+      };
+      const shouldStop = (): boolean => run.stopFlag;
+      let result: { stages: Record<string, MergeStageResult> };
+      if (seatExecutor !== null) {
+        // The seat path: engine-agnostic rows — the adapter splices
+        // (its splice refusal lands in this same catch: the run
+        // fails with the planner's text, stages failed, settled).
+        const genericRows = run.stages.map(
+          (stage, i: number): EngineStageRow => ({
+            stageId: stage.id,
+            outputs: { ...(stage.outputs as Record<string, EngineJson>) },
+            params: { ...(run.params[i] as Record<string, EngineJson>) },
+          }),
+        );
+        const outcome = await seatExecutor.executeStages(
+          genericRows,
+          run.dir,
+          inputNames,
+          { shouldStop, report },
+        );
+        result = {
+          stages: Object.fromEntries(
+            outcome.stages.map(
+              (s): [string, MergeStageResult] => [
+                s.stageId,
+                { outputs: s.outputs, artifacts: [...s.artifacts] },
+              ],
+            ),
+          ),
+        };
+      } else {
+        const engine = needComfyUI(this.ctx as unknown as EngineCtx, "runsRemote worker");
+        const nodeCount: number = rows.reduce(
+          (n: number, r: MergeRow): number =>
+            n + Object.keys(r.workflow).length,
+          0,
+        );
+        for (const stage of run.stages) {
+          stage["activity"] =
+            "merged submit (" + rows.length + " stages, " + nodeCount + " nodes)";
+        }
+        result = await engine.executeFlow(rows, run.dir, inputNames, {}, {
+          shouldStop,
+          report,
+        });
+      }
       for (const stage of run.stages) {
         const row = result.stages[stage.id] ?? { outputs: {}, artifacts: [] };
         const arts: string[] = row.artifacts.filter(

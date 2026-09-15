@@ -1,0 +1,24 @@
+{
+  "name": "@melite/engine-contract",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "The engine Service Definition (stroke 53, the engine-generics seam): one registry seat every engine provider registers into and every run-path consumer resolves through — ComfyUI today, MCP servers (blender/unity/godot) next. Stage rows are engine-agnostic; graph surgery (spliceWorkflow) stays inside the owning engine's executor. Source-plane TS (erasable syntax, no build step).",
+  "main": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts",
+    "./engines": "./src/engines.ts",
+    "./types": "./src/types.ts",
+    "./package.json": "./package.json"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@deepseek-ai/cordis": "^4.0.2"
+  },
+  "devDependencies": {
+    "@types/node": "^22.20.0",
+    "typescript": "^5.9.3"
+  }
+}

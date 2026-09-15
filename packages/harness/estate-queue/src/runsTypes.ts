@@ -33,6 +33,11 @@ export interface StageRow {
   name: string;
   index: number;
   status: string;
+  /** The stage's engine id ('comfyui' | 'mcp:<server>', stroke 53) —
+   *  stamped at registration from the compiled stage; the worker
+   *  dispatches by it. Legacy rows (pre-seam sidecars) carry none,
+   *  which reads as 'comfyui' (the only engine that ever was). */
+  engine?: string;
   outputs: Record<string, EngineJson>;
   expected: Record<string, EngineJson>;
   [key: string]: EngineJson | string | number | undefined;
