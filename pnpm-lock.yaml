@@ -951,6 +951,9 @@ importers:
       '@deepseek-ai/cordis':
         specifier: ^4.0.2
         version: 4.0.2(@deepseek-ai/cordis-plugin-loader@1.0.3)
+      '@deepseek-ai/schemastery':
+        specifier: ^3.18.2
+        version: 3.18.2
       '@melite/engine-contract':
         specifier: workspace:*
         version: link:../contract
@@ -1181,6 +1184,9 @@ importers:
       '@melite/engine-agent':
         specifier: workspace:*
         version: link:../../engines/agent
+      '@melite/engine-craft':
+        specifier: workspace:*
+        version: link:../../engines/craft
       '@melite/estate-call':
         specifier: workspace:*
         version: link:../estate-call

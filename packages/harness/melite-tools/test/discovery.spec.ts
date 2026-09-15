@@ -3,6 +3,8 @@
 // formsTable/cardSections, which take their defs as an argument):
 // key resolution, the forms table law, section shapes, and the live
 // door arms.
+import { agentFormDoc } from '@melite/engine-agent'
+import { craftFormDoc } from '@melite/engine-craft'
 import { readFileSync } from 'node:fs'
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -438,10 +440,11 @@ describe('live door arms', () => {
   })
 
   test("formSpecArm serves the AGENT ENGINE doc from the declared contract (stroke 66 — the census rides LIVE)", async () => {
-    const doc = await formSpecArm('agent', () => ({
+    const docs = new Map([['agent', () => agentFormDoc({
       mcps: [{ value: 'blender', label: 'blender' }],
       skills: [{ value: 'card:mask-form', label: 'Mask Form' }],
-    }))
+    })]])
+    const doc = await formSpecArm('agent', docs)
     assert.ok(doc !== null, 'the engine id resolves')
     assert.equal(doc['form'], 'agent')
     assert.equal(doc['engine'], 'agent')
@@ -454,8 +457,19 @@ describe('live door arms', () => {
   })
 
   test('formSpecArm refuses unknown keys as before (the engine arm does not widen resolution)', async () => {
-    const doc = await formSpecArm('__no_such_engine__', undefined)
+    const doc = await formSpecArm('__no_such_engine__', new Map())
     assert.equal(doc, null)
+  })
+
+  test('formSpecArm serves the CRAFT ENGINE doc from its declared contract (stroke 69 — the card-seam completion)', async () => {
+    const docs = new Map([['craft', () => craftFormDoc()]])
+    const doc = await formSpecArm('craft', docs)
+    assert.ok(doc !== null, 'the engine id resolves')
+    assert.equal(doc['form'], 'craft')
+    assert.deepEqual((doc['features'] as { modifiers: unknown[] }).modifiers, [], 'craft has no bags — the four fields ride flat')
+    const env = doc['schema'] as { uid: number; refs: Record<string, { type: string; dict?: Record<string, number> }> }
+    const root = env.refs[String(env.uid)]!
+    assert.deepEqual(Object.keys(root.dict!).sort(), ['agent_prompt', 'command', 'max_iterations', 'model'])
   })
 
   test('specBody refuses unknown cards, identity-less cards, and null fragments', async () => {

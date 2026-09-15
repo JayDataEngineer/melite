@@ -1,5 +1,4 @@
 import { CARD_KINDS, SLOT_VOCABULARY, buildCatalog, emitParamsSchema, enhanceRecipeFor, getModel, isServedFamily, liveScanOrder, loadCardDefs, modelIds, theService } from "@melite/comfyui-cordis";
-import { agentFormDoc } from "@melite/engine-agent";
 import { createUserMessage } from "@deepseek-ai/dsh-llm";
 //#region src/estate.ts
 /** Narrow the seat-bound request to the canonical EstateCall the card
@@ -639,8 +638,9 @@ async function kindsDoorArm() {
 }
 /** /v1/form-spec?model=<key> — the envelope, or null when the key
 *  does not resolve (the door 404s, same body as ever). */
-async function formSpecArm(model, engineCensus) {
-	if (model === "agent" && engineCensus !== void 0) return agentFormDoc(engineCensus());
+async function formSpecArm(model, engineDocs) {
+	const buildEngine = engineDocs?.get(model);
+	if (buildEngine !== void 0) return buildEngine();
 	const defs = await loadCardDefs();
 	const res = resolveSpecKey(model, defs, boardedMap(defs));
 	if (res === null) return null;

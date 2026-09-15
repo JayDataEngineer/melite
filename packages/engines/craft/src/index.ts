@@ -17,3 +17,5 @@ export type {
   CraftLlmSeam,
   CraftAttachmentsSeam,
 } from "./craft-engine.ts";
+export { craftParams, craftFormDoc, normalizeCraftStageParams, normalizeCraftCommand } from "./params.ts";
+export type { CraftStageParams } from "./params.ts";

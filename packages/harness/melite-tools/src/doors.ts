@@ -37,6 +37,8 @@ import {
 } from './discovery.ts'
 import { makeEstateRequest, type EstateMethod } from './estate.ts'
 import { buildSkillIndex, disclosureRoot } from '@melite/estate-queue'
+import { agentFormDoc } from '@melite/engine-agent'
+import { craftFormDoc } from '@melite/engine-craft'
 
 export const inject = ['webServer', 'llm', 'tools']
 
@@ -406,22 +408,28 @@ export function apply(c: CtxView, config: Config = {}): void {
             if (model.length === 0) {
               return fail(400, { error: 'form-spec: the model query parameter is required' })
             }
-            // THE LIVE CENSUS (stroke 66): built per request off the
-            // tools seat's CURRENT schemas (the seated MCP servers)
-            // and the skill index — the form enumerates what is
-            // seated NOW, never a static list.
-            return void formSpecArm(model, model === 'agent' ? () => {
-              const servers = new Set<string>()
-              for (const t of c.tools.schemas()) {
-                const parts = t.name.split('__')
-                if (parts.length === 3 && parts[0] === 'mcp') servers.add(parts[1]!)
-              }
-              const idx = buildSkillIndex(disclosureRoot()) as { skills: Array<{ id: string; name: string }> }
-              return {
-                mcps: [...servers].sort().map((v) => ({ value: v, label: v })),
-                skills: idx.skills.map((r) => ({ value: r.id, label: r.name })),
-              }
-            } : undefined).then((spec) => {
+            // THE ENGINE DOCS (stroke 66/69 — the card-seam
+            // generalization): each seated engine serves its own
+            // form doc from its DECLARED contract. AGENT's census is
+            // built per request off the tools seat's CURRENT schemas
+            // (the seated MCP servers) and the skill index — LIVE,
+            // never static.
+            const engineDocs = new Map<string, () => Record<string, unknown>>([
+              ['agent', () => {
+                const servers = new Set<string>()
+                for (const t of c.tools.schemas()) {
+                  const parts = t.name.split('__')
+                  if (parts.length === 3 && parts[0] === 'mcp') servers.add(parts[1]!)
+                }
+                const idx = buildSkillIndex(disclosureRoot()) as { skills: Array<{ id: string; name: string }> }
+                return agentFormDoc({
+                  mcps: [...servers].sort().map((v) => ({ value: v, label: v })),
+                  skills: idx.skills.map((r) => ({ value: r.id, label: r.name })),
+                })
+              }],
+              ['craft', () => craftFormDoc()],
+            ])
+            return void formSpecArm(model, engineDocs).then((spec) => {
               if (spec === null) {
                 return fail(404, { error: `form-spec: '${model}' does not resolve (unknown, unoffered, or retired)` })
               }

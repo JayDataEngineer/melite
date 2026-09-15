@@ -58,24 +58,14 @@ export interface CraftEngines {
 }
 
 /** The hard circuit breaker (never a tunable — a law). */
-export const CRAFT_MAX_ITERATIONS_HARD_CAP = 1000;
+import { normalizeCraftStageParams, normalizeCraftCommand, CRAFT_MAX_ITERATIONS_HARD_CAP } from "./params.ts";
+
+export { CRAFT_MAX_ITERATIONS_HARD_CAP };
 
 const plainObject = (v: unknown): v is Record<string, unknown> =>
   typeof v === "object" && v !== null && !Array.isArray(v);
 
-/** Validate one act command (LOUD, before anything runs). */
-const commandOk = (v: unknown, where: string): CraftCommand => {
-  if (!plainObject(v)) {
-    throw new Error(`${where}: command must be a JSON object {engine, params}`);
-  }
-  if (typeof v.engine !== "string" || v.engine.length === 0) {
-    throw new Error(`${where}: command needs a non-empty 'engine' id`);
-  }
-  if (v.params !== undefined && !plainObject(v.params)) {
-    throw new Error(`${where}: command 'params' must be a JSON object`);
-  }
-  return { engine: v.engine, params: (v.params ?? {}) as Record<string, EngineParamValue> };
-};
+
 
 export const craftLoopExecutor = (
   engines: CraftEngines,
@@ -86,32 +76,12 @@ export const craftLoopExecutor = (
       const outcomes: EngineStageOutcome[] = [];
       for (const row of rows) {
         const p = row.params as Record<string, unknown>;
-        // THE CARD'S FOUR FIELDS (the sketch, verbatim)
-        const prompt = p.agent_prompt;
-        if (typeof prompt !== "string" || prompt.length === 0) {
-          throw new Error(`craft stage ${JSON.stringify(row.stageId)}: 'agent_prompt' (the brief) is required`);
-        }
-        const inputs = p.inputs;
-        if (!plainObject(inputs)) {
-          throw new Error(`craft stage ${JSON.stringify(row.stageId)}: 'inputs' must be a JSON object carrying 'command'`);
-        }
-        let command = commandOk(inputs.command, `craft stage ${JSON.stringify(row.stageId)} inputs`);
-        const model = p.model;
-        if (model !== undefined && (typeof model !== "string" || model.length === 0)) {
-          throw new Error(`craft stage ${JSON.stringify(row.stageId)}: 'model' must be a non-empty route id`);
-        }
-        const maxIter = p.max_iterations;
-        if (
-          maxIter !== undefined &&
-          (typeof maxIter !== "number" || !Number.isInteger(maxIter) || maxIter < 1)
-        ) {
-          throw new Error(`craft stage ${JSON.stringify(row.stageId)}: 'max_iterations' must be a positive integer`);
-        }
-        if (maxIter !== undefined && maxIter > CRAFT_MAX_ITERATIONS_HARD_CAP) {
-          throw new Error(
-            `craft stage ${JSON.stringify(row.stageId)}: 'max_iterations' ${maxIter} exceeds the hard cap ${CRAFT_MAX_ITERATIONS_HARD_CAP}`,
-          );
-        }
+        // THE CONTRACT GATE (stroke 69): ONE declaration validates
+        // the wire (params.ts — the same object the served form
+        // serializes; the four fields' LOUD messages preserved).
+        const norm = normalizeCraftStageParams(p, `craft stage ${JSON.stringify(row.stageId)}`, CRAFT_MAX_ITERATIONS_HARD_CAP);
+        const { prompt, model, maxIterations: maxIter } = norm;
+        let command = norm.command as unknown as CraftCommand;
         // THE LOOP
         const artifacts = new Set<string>();
         let note = "";
@@ -127,7 +97,7 @@ export const craftLoopExecutor = (
           }
           // act: one nested engine stage, same run dir (captures land there)
           const act = await engines.resolve(command.engine).executor.executeStages(
-            [{ stageId: `${row.stageId}#${iteration}`, outputs: {}, params: command.params }],
+            [{ stageId: `${row.stageId}#${iteration}`, outputs: {}, params: command.params as Record<string, EngineParamValue> }],
             runDir,
             {},
             options,
@@ -154,7 +124,7 @@ export const craftLoopExecutor = (
               `craft critic answered verdict ${JSON.stringify(verdict.verdict)} — 'done' or 'refine' only`,
             );
           }
-          command = commandOk(verdict.command, `craft critic refine (iteration ${iteration})`);
+          command = normalizeCraftCommand(verdict.command, `craft critic refine (iteration ${iteration})`) as unknown as CraftCommand;
           iteration += 1;
         }
         outcomes.push({

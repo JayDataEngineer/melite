@@ -41,6 +41,7 @@
     "@melite/motion-motion": "workspace:*",
     "@melite/video-h3-timeline": "workspace:*",
     "unrun": "^0.3.1",
-    "@melite/engine-agent": "workspace:*"
+    "@melite/engine-agent": "workspace:*",
+    "@melite/engine-craft": "workspace:*"
   }
 }

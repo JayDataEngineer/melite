@@ -1,5 +1,7 @@
-import { c as formsArm, i as routeName, l as kindsDoorArm, o as cardToolsArm, p as makeEstateRequest, r as resolveHarnessRoutes, s as formSpecArm, t as harnessEnhance, u as modelCatalogArm } from "./llm-complete-DPMohRkc.mjs";
+import { c as formsArm, i as routeName, l as kindsDoorArm, o as cardToolsArm, p as makeEstateRequest, r as resolveHarnessRoutes, s as formSpecArm, t as harnessEnhance, u as modelCatalogArm } from "./llm-complete-p8YfLIES.mjs";
 import { buildSkillIndex, disclosureRoot } from "@melite/estate-queue";
+import { agentFormDoc } from "@melite/engine-agent";
+import { craftFormDoc } from "@melite/engine-craft";
 //#region src/enhance-agent.ts
 /** Map a form-spec envelope onto its declared recipes (the ONE
 *  spelling — the request lane and the in-process sweep share it). */
@@ -296,14 +298,14 @@ function apply(c, config = {}) {
 					if (method === "GET" && path === "/v1/form-spec") {
 						const model = url.searchParams.get("model") ?? "";
 						if (model.length === 0) return fail(400, { error: "form-spec: the model query parameter is required" });
-						formSpecArm(model, model === "agent" ? () => {
+						formSpecArm(model, /* @__PURE__ */ new Map([["agent", () => {
 							const servers = /* @__PURE__ */ new Set();
 							for (const t of c.tools.schemas()) {
 								const parts = t.name.split("__");
 								if (parts.length === 3 && parts[0] === "mcp") servers.add(parts[1]);
 							}
 							const idx = buildSkillIndex(disclosureRoot());
-							return {
+							return agentFormDoc({
 								mcps: [...servers].sort().map((v) => ({
 									value: v,
 									label: v
@@ -312,8 +314,8 @@ function apply(c, config = {}) {
 									value: r.id,
 									label: r.name
 								}))
-							};
-						} : void 0).then((spec) => {
+							});
+						}], ["craft", () => craftFormDoc()]])).then((spec) => {
 							if (spec === null) return fail(404, { error: `form-spec: '${model}' does not resolve (unknown, unoffered, or retired)` });
 							return ok(spec);
 						}, (e) => fail(500, { error: `discovery door: ${e instanceof Error ? e.message : String(e)}` }));

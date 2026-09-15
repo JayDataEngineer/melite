@@ -11,7 +11,7 @@ describe("the agent params contract (stroke 66 — anti-drift)", () => {
     // the envelope's ROOT object node (schemastery's toJSON: the
     // dict lives on the object-typed ref, not the envelope head).
     const env = JSON.parse(json) as { uid: number; refs: Record<string, { type: string; dict?: Record<string, { type: string }> }> };
-    const root = Object.values(env.refs).find((n) => n.type === "object" && n.dict !== undefined)!;
+    const root = env.refs[String(env.uid)]!;
     const dict = root.dict as Record<string, number>;
     assert.deepEqual(Object.keys(dict).sort(), ["inputs", "max_turns", "mcps", "model", "skills", "task"]);
     // THE WIRE TYPES (the ref-resolution read — dict values are ref ids):
@@ -98,8 +98,8 @@ describe("agentFormDoc (the served form IS the contract)", () => {
     const kinds = (doc["features"] as { modifiers: Array<Record<string, unknown>> }).modifiers;
     assert.deepEqual(kinds.map((k) => k["param_key"]), ["mcps", "skills", "inputs"]);
     // every mod-owned param_key is a schema dict key (the wire owns the bags)
-    const env = agentParams.toJSON() as unknown as { refs: Record<string, { type: string; dict?: Record<string, unknown> }> };
-    const dict = Object.values(env.refs).find((n) => n.type === "object" && n.dict !== undefined)!.dict!;
+    const env = agentParams.toJSON() as unknown as { uid: number; refs: Record<string, { type: string; dict?: Record<string, unknown> }> };
+    const dict = env.refs[String(env.uid)]!.dict!;
     for (const k of kinds) assert.ok(dict[k["param_key"] as string] !== undefined);
   });
 });

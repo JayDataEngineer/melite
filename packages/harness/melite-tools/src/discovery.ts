@@ -673,15 +673,17 @@ export async function kindsDoorArm(): Promise<Record<string, unknown>> {
  *  does not resolve (the door 404s, same body as ever). */
 export async function formSpecArm(
   model: string,
-  engineCensus?: (() => { mcps: ReadonlyArray<{ value: string; label: string }>; skills: ReadonlyArray<{ value: string; label: string }> }) | undefined,
+  engineDocs?: ReadonlyMap<string, () => Record<string, unknown>>,
 ): Promise<Record<string, unknown> | null> {
-  // THE ENGINE ARM (stroke 66 — the card-seam generalization): an
-  // engine id resolves to the ENGINE's own form doc (no card, no
-  // family); the census is the door's LIVE read (the seated MCP
-  // servers + the skill index — never a static list). Served from
-  // the same declared contract the executor's gate validates.
-  if (model === "agent" && engineCensus !== undefined) {
-    return agentFormDoc(engineCensus());
+  // THE ENGINE ARM (stroke 66, generalized stroke 69 — the
+  // card-seam completion): an engine id resolves to the ENGINE's
+  // own form doc (no card, no family) built by the door's LIVE
+  // factory (agent's census reads the tools seat + the skill index
+  // per request — never a static list). Every doc serializes the
+  // same declared contract its executor's gate validates.
+  const buildEngine = engineDocs?.get(model)
+  if (buildEngine !== undefined) {
+    return buildEngine()
   }
   const defs = await loadCardDefs()
   const res = resolveSpecKey(model, defs, boardedMap(defs))
