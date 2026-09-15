@@ -21,7 +21,9 @@
     "@melite/estate-runs": "workspace:*",
     "@melite/estate-media": "workspace:*",
     "@melite/estate-models": "workspace:*",
-    "@melite/engine-contract": "workspace:*"
+    "@melite/engine-contract": "workspace:*",
+    "@deepseek-ai/dsh-mcp-client": "0.1.5-rc.2",
+    "@melite/engine-mcp": "workspace:*"
   },
   "scripts": {
     "typecheck": "tsc --noEmit"

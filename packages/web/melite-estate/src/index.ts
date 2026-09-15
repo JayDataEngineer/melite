@@ -27,6 +27,13 @@ import comfyuiHost from "@melite/comfyui-cordis/comfyui-host";
 // as 'mcp:<server>' rows next (docs/design/engine-generics-mcp.md).
 import enginesContract from "@melite/engine-contract";
 import comfyuiEngine from "@melite/comfyui-cordis/comfyui-engine";
+// Stroke 54: the MCP lane. The dsh-mcp-client row (the official
+// protocol client — one instance per server; tools register as
+// mcp__blender__*) + the engine provider (mcp:<server> executors
+// riding the tools runtime). The blender server is the pack's
+// mcp_server.py face (Layer C, vendored): blender -b --python.
+import { apply as mcpClientApply, type Config as McpClientConfig } from "@deepseek-ai/dsh-mcp-client";
+import { mcpEngines } from "@melite/engine-mcp";
 // The drafts service only — the storage PROVIDERS (hub, json
 // backend, domain form) belong to the composition site: dsh-base
 // mounts them in profiles (bundle/base/cordis.patch.yml's
@@ -66,6 +73,31 @@ const rows: readonly Plugin[] = [
   // The engines seat BEFORE every adapter + consumer (mount order
   // is load order — the adapters' inject gates on it).
   enginesContract,
+  // The MCP control lane: the blender stdio server (official
+  // MCP protocol, idle-reaped at 1800s; the client owns
+  // reconnect). failOnStartupError false — a slow/absent blender
+  // never takes the lane down.
+  {
+    name: "mcp-client-blender",
+    apply: (ctx: Context, config: unknown) => mcpClientApply(ctx, config as McpClientConfig),
+    config: {
+      transport: "stdio",
+      serverName: "blender",
+      command: "/home/user/tools/blender-4.5.0-linux-x64/blender",
+      args: ["-b", "--python", "/home/user/Documents/programs/active/inference.cpp/vendor/comfyui_extensions/melite-blender-proxy-nodes/mcp_server.py"],
+      env: {},
+      cwd: "/home/user/Documents/programs/active/inference.cpp/vendor/comfyui_extensions/melite-blender-proxy-nodes",
+      toolCallTimeoutMs: 300000,
+      failOnStartupError: false,
+    },
+  } as unknown as Plugin,
+  // ...and the same server on the RUNS plane: mcp:blender stages
+  // execute as mcp__blender__* tool calls through the runtime.
+  {
+    name: "melite-engine-mcp-row",
+    apply: (ctx: Context, config: unknown) => mcpEngines(ctx, config as { engines?: string[] }),
+    config: { engines: ["mcp:blender"] },
+  } as unknown as Plugin,
   modelsProvider,
   comfyuiHost,
   comfyuiEngine,
@@ -120,6 +152,14 @@ export function apply(ctx: Context, config: Config = {}): void {
     // the queue row receives the pin (its QueueConfig.repoRoot)
     if (row === queuePlugin) {
       ctx.plugin(row, { repoRoot: config.repoRoot });
+      continue;
+    }
+    // rows may carry their own config face (the MCP lane's stdio
+    // server rows) — ctx.plugin's second argument is the row's
+    // declared config, passed through verbatim
+    const rowConfig = (row as { config?: unknown }).config;
+    if (rowConfig !== undefined) {
+      ctx.plugin(row, rowConfig);
       continue;
     }
     ctx.plugin(row);
