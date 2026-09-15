@@ -905,8 +905,43 @@ const SKIN_APPLY: RegistryFlow = {
   skillRefs: [],
 };
 
+/** The craft loop (stroke 55, plan §2.3): ONE engine stage on
+ *  'craft' — act (a nested engine command) → capture (run-dir
+ *  artifacts) → critique (the image-capable route, the capture
+ *  attached) → decide (done | refine-with-next-command), bounded
+ *  by max_iterations (default unlimited, hard cap 1000). The
+ *  operator's card sketch verbatim: model dropdown, inputs
+ *  (generic), prompt for the agent, optional max iterations. The
+ *  stage params carry those four fields at DRIVE time (the agent
+ *  composes them into the start doc; the registry row is the
+ *  template + the agent leaf). */
+const CRAFT_LOOP: RegistryFlow = {
+  id: "craft-loop",
+  description:
+    "The agentic craft loop: a named image-capable model route critiques " +
+    "each capture and decides the next act command until done (or the " +
+    "iteration cap). The act leg rides ANY registered engine (comfyui " +
+    "graphs, mcp:blender tool calls); captures land in the run dir and " +
+    "attach to the critique. Driven by the runs door with engine " +
+    "'craft' stages — see flows/craft-loop/agents/AGENT.md.",
+  stages: [
+    plainStage({
+      id: "loop",
+      engine: "craft",
+      description: "act → capture → critique → decide (the loop engine)",
+      inputs: {},
+      outputs: { default: "image" },
+      params: {},
+    }),
+  ],
+  initialValidators: {},
+  tool: null,
+  skillRefs: [],
+};
+
 const REGISTRY: Record<string, RegistryFlow> = {
   "anny-hmr": ANNY_HMR,
+  "craft-loop": CRAFT_LOOP,
   "anny-hmr-commercial": ANNY_HMR_COMMERCIAL,
   "anny-params": ANNY_PARAMS,
   "audio-native-tts": AUDIO_NATIVE_TTS,

@@ -212,7 +212,7 @@ describe("buildSkillIndex + findSkill", () => {
     mkEstate();
     const idx = buildSkillIndex(ROOT) as { count: number; skills: Array<{ id: string }> };
     assert.equal(idx.count, idx.skills.length);
-    assert.equal(idx.count, 11 + 8 + 6);
+    assert.equal(idx.count, 11 + 8 + 7); // craft-loop seated (stroke 55)
     const card = findSkill(ROOT, "card:c1");
     assert.ok(card !== null && card.bodyText === null);
     assert.ok(card.path.endsWith("AGENT.md"));

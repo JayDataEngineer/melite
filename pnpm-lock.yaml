@@ -918,6 +918,22 @@ importers:
         specifier: ^5.9.3
         version: 5.9.3
 
+  packages/engines/craft:
+    dependencies:
+      '@deepseek-ai/cordis':
+        specifier: ^4.0.2
+        version: 4.0.2(@deepseek-ai/cordis-plugin-loader@1.0.3)
+      '@melite/engine-contract':
+        specifier: workspace:*
+        version: link:../contract
+    devDependencies:
+      '@types/node':
+        specifier: ^22.20.0
+        version: 22.20.1
+      typescript:
+        specifier: ^5.9.3
+        version: 5.9.3
+
   packages/engines/mcp:
     dependencies:
       '@deepseek-ai/cordis':
@@ -2813,6 +2829,9 @@ importers:
       '@melite/engine-contract':
         specifier: workspace:*
         version: link:../../engines/contract
+      '@melite/engine-craft':
+        specifier: workspace:*
+        version: link:../../engines/craft
       '@melite/engine-mcp':
         specifier: workspace:*
         version: link:../../engines/mcp

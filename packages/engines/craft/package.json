@@ -1,0 +1,21 @@
+{
+  "name": "@melite/engine-craft",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./craft-engine": "./src/craft-engine.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@deepseek-ai/cordis": "^4.0.2",
+    "@melite/engine-contract": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "^22.20.0",
+    "typescript": "^5.9.3"
+  }
+}

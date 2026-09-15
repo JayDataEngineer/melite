@@ -34,6 +34,9 @@ import comfyuiEngine from "@melite/comfyui-cordis/comfyui-engine";
 // mcp_server.py face (Layer C, vendored): blender -b --python.
 import { apply as mcpClientApply, type Config as McpClientConfig } from "@deepseek-ai/dsh-mcp-client";
 import { mcpEngines } from "@melite/engine-mcp";
+// Stroke 55: the craft loop engine — the critic route resolves at
+// boot (first image-capable route; a blind lane seats no craft).
+import { craftEngineAutoRoute } from "@melite/engine-craft";
 // The drafts service only — the storage PROVIDERS (hub, json
 // backend, domain form) belong to the composition site: dsh-base
 // mounts them in profiles (bundle/base/cordis.patch.yml's
@@ -97,6 +100,16 @@ const rows: readonly Plugin[] = [
     name: "melite-engine-mcp-row",
     apply: (ctx: Context, config: unknown) => mcpEngines(ctx, config as { engines?: string[] }),
     config: { engines: ["mcp:blender"] },
+  } as unknown as Plugin,
+  // The craft loop engine (async apply: the route resolution rides
+  // listModels — the seat lands after the enumeration).
+  {
+    name: "melite-engine-craft-row",
+    apply: async (ctx: Context): Promise<void> => {
+      await craftEngineAutoRoute(ctx, (line) => {
+        ctx.logger?.info?.(line);
+      });
+    },
   } as unknown as Plugin,
   modelsProvider,
   comfyuiHost,

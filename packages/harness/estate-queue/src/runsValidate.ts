@@ -21,6 +21,7 @@
 // The tools' bench validate (wires/kinds/$channels/inputs — the
 // pure compile) is fully served.
 import { resolveRepoRoot } from "@melite/comfyui-cordis";
+import { engineIdOk } from "@melite/engine-contract";
 import { checkStrictBody, isRecord, isStringField } from "./runsGates.ts";
 import type { CardDefinition } from "@melite/comfyui-cordis";
 import {
@@ -57,6 +58,10 @@ export interface CardRegistryLike {
 // infra/python/plugins.py scan_engines(); the wall re-derives per run.
 const ENGINE_TABLE: Record<string, { plugin: string; def: string }> = {
   comfyui: { plugin: "comfyui", def: "image" },
+  // Stroke 55 (the engine-generics seam): the craft loop engine +
+  // the MCP grammar arm — any mcp:<server> id matching the seat's
+  // grammar admits (membership stays the runs door's registry arm).
+  craft: { plugin: "craft", def: "image" },
 };
 
 // ── closed vocabularies (infra/python/flow.py Kind / SkipWhen order) ──────
@@ -867,7 +872,10 @@ function kindsOk(
 function validateEngines(flow: Flow, cards?: CardRegistryLike | null): Flow {
   const engineDefaults: Record<string, string | null> = {};
   for (const st of flow.stages) {
-    const row: { plugin: string; def: string } | undefined = ENGINE_TABLE[st.engine];
+    const row: { plugin: string; def: string } | undefined =
+      st.engine.startsWith("mcp:") && engineIdOk(st.engine)
+        ? { plugin: "mcp-client", def: "image" }
+        : ENGINE_TABLE[st.engine];
     if (row === undefined) {
       throw new FlowError(
         "flow " +
@@ -1018,8 +1026,11 @@ function toGraph(flow: Flow): GraphNode[] {
       // table carries a default for every known one — the
       // try/except-unknown shape of to_graph collapses to the table.
       // validateEngines refused unknown engines upstream — the hit is proven.
-      const row: { plugin: string; def: string } = ENGINE_TABLE[st.engine] as { plugin: string; def: string };
-      outputs.push({ name: "default", kind: row.def });
+      const row: { plugin: string; def: string } | undefined =
+        st.engine.startsWith("mcp:") && engineIdOk(st.engine)
+          ? { plugin: "mcp-client", def: "image" }
+          : ENGINE_TABLE[st.engine];
+      outputs.push({ name: "default", kind: row?.def ?? "image" });
     }
     return {
       id: st.id,

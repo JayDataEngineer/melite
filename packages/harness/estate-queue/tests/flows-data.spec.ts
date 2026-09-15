@@ -37,9 +37,9 @@ const dropRoots = (): void => {
 };
 
 describe("registry", () => {
-  it("names eleven flows; the getter answers unknowns with undefined", () => {
+  it("names twelve flows (craft-loop seated, stroke 55); the getter answers unknowns with undefined", () => {
     const names = registryFlowNames();
-    assert.equal(names.length, 11);
+    assert.equal(names.length, 12);
     assert.deepEqual([...names].sort(), names);
     assert.ok(getRegistryFlow("character") !== undefined);
     assert.equal(getRegistryFlow("ghost"), undefined);

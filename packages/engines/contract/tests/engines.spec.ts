@@ -35,6 +35,10 @@ describe("engineIdOk (the pinned grammar)", () => {
     expect(engineIdOk("comfyui")).toBe(true);
   });
 
+  it("accepts the bare word craft (the loop engine, stroke 55)", async () => {
+    expect(engineIdOk("craft")).toBe(true);
+  });
+
   it("accepts mcp namespaced ids within the server-name rule", async () => {
     expect(engineIdOk("mcp:blender")).toBe(true);
     expect(engineIdOk("mcp:unity")).toBe(true);
