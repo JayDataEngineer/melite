@@ -31,6 +31,7 @@
     "@melite-plugin/timeline": "workspace:*",
     "@melite/3d-anny": "workspace:*",
     "@melite/3d-blender": "workspace:*",
+    "@melite/3d-blender-shot": "workspace:*",
     "@melite/3d-clothing-placement": "workspace:*",
     "@melite/3d-fit": "workspace:*",
     "@melite/3d-img-to-mesh": "workspace:*",

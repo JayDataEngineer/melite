@@ -72,6 +72,7 @@ export const cardPackages: string[] = [
     '@melite/3d-clothing-placement',
   '@melite/3d-unity',
   '@melite/3d-blender',
+  '@melite/3d-blender-shot',
   '@melite/image-image-gen',
 ]
 

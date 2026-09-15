@@ -1,0 +1,27 @@
+{
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "the blender-shot card (the 3d lane) — one card one package: card.ts host face over MeliteBlenderRenderShot, the observe arm of the agentic loop",
+  "main": "./src/card.ts",
+  "exports": {
+    ".": "./src/card.ts",
+    "./card": "./src/card.ts",
+    "./package.json": "./package.json"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@deepseek-ai/cordis": "^4.0.2",
+    "@deepseek-ai/schemastery": "*",
+    "@melite/comfyui-card-kit": "workspace:*",
+    "@melite/comfyui-cordis": "workspace:*",
+    "@melite/estate-call": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "^22.20.0",
+    "typescript": "^5.9.3"
+  },
+  "name": "@melite/3d-blender-shot"
+}
