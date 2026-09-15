@@ -2057,6 +2057,21 @@ window.__ModuleLoader__.load({
 		function isOptionKind(k) {
 			return (k.options ?? []).length > 0;
 		}
+		/** THE HYBRID TEST (the served entry mode — never the kind name):
+		*  catalog rows AND bag-element entry fields. */
+		function isHybridKind(k) {
+			return k.entry === "hybrid";
+		}
+		/** The catalog-bound field (the hybrid type / the option id) —
+		*  'id' when the door serves no key (the lora backstop). */
+		function optionKeyOf(k) {
+			return typeof k.option_key === "string" && k.option_key !== "" ? k.option_key : "id";
+		}
+		/** The scalar dial of a bag element (the pack's own name —
+		*  'strength' backstop when the door serves none). */
+		function scalarKeyOf(k) {
+			return typeof k.scalar_key === "string" && k.scalar_key !== "" ? k.scalar_key : "strength";
+		}
 		/** THE TITLE-CASE FACE (the operator's sweep law): machine ids
 		*  (krea-2, z-image, euler, comfyui…) render titled — never raw.
 		*  FACES ONLY: option values, param keys, and wire bodies keep the
@@ -2101,7 +2116,37 @@ window.__ModuleLoader__.load({
 		* extra.options override when present. */
 		function fieldsOfEnvelope(env, family) {
 			if (env == null) return [];
-			const dict = env.refs[env.uid]?.dict ?? {};
+			const root = env.refs[env.uid];
+			return projectDict(env, root?.dict ?? {}, family);
+		}
+		/** THE HYBRID PROJECTION (the controlnet restoration): the envelope
+		*  root's bag array (param_key) holds entry OBJECTS — project the
+		*  ELEMENT's dict as the kind's entry fields (the catalog select
+		*  joins them in the leaf). Empty when the bag is absent or its
+		*  element is not an object (a pure OPTION kind like lora). */
+		function entryFieldsOfEnvelope(env, paramKey, family) {
+			if (env == null) return [];
+			const at = env.refs[env.uid]?.dict?.[paramKey];
+			const node = at === void 0 ? void 0 : env.refs[at];
+			const innerId = node?.inner;
+			const inner = typeof innerId === "number" ? env.refs[innerId] : void 0;
+			if (node?.type !== "array" || inner?.type !== "object") return [];
+			return projectDict(env, inner.dict ?? {}, family);
+		}
+		/** THE PACK-LEVEL PROJECTION (the controlnet strength floor): the
+		*  envelope root's fields OUTSIDE the bag array — the section's own
+		*  rows above the tiles. Bag-external arrays are not section rows
+		*  (no atom renders a bag) — scalars only. */
+		function kindScalarFieldsOfEnvelope(env, paramKey, family) {
+			if (env == null) return [];
+			const dict = { ...env.refs[env.uid]?.dict ?? {} };
+			delete dict[paramKey];
+			for (const [name, id] of Object.entries(dict)) if (env.refs[id]?.type === "array") delete dict[name];
+			return projectDict(env, dict, family);
+		}
+		/** The dict projector (the walker's body — one meta path for the
+		*  root, the hybrid element, and the pack-level rows). */
+		function projectDict(env, dict, family) {
 			const out = [];
 			for (const [name, id] of Object.entries(dict)) {
 				let node = env.refs[id];
@@ -3363,10 +3408,15 @@ window.__ModuleLoader__.load({
 				onSet(name, coerceFieldEdit(fieldByName.get(name), v));
 			};
 			const family = typeof spec.model === "string" ? spec.model : void 0;
-			const modKinds = (spec.features?.modifiers ?? []).map((k) => ({
-				...k,
-				fields: fieldsOfEnvelope(spec.mod_schemas?.[k.param_key], family)
-			}));
+			const modKinds = (spec.features?.modifiers ?? []).map((k) => {
+				const env = spec.mod_schemas?.[k.schema_key ?? k.param_key];
+				const hybrid = k.entry === "hybrid";
+				return {
+					...k,
+					fields: hybrid ? entryFieldsOfEnvelope(env, k.param_key, family) : fieldsOfEnvelope(env, family),
+					kindFields: hybrid ? kindScalarFieldsOfEnvelope(env, k.param_key, family) : []
+				};
+			});
 			const owned = modOwnedFields(spec);
 			const flatFields = owned.size > 0 ? fields.filter((f) => !owned.has(f.name)) : fields;
 			const signature = Array.isArray(spec.inputs) ? spec.inputs : [];
@@ -3522,7 +3572,18 @@ window.__ModuleLoader__.load({
 		*    deferred to Run): onEdit rides the caller's values map AND
 		*    onPatch (when present) persists to the domain on the spot.
 		*  - apply order = array order; the drag rewrites the bag.
-		*  - TWO kind shapes, both first-class:
+		*  - THREE kind shapes, all first-class (the leaf switches on the
+		*    SERVED entry mode, never the kind name):
+		*      OPTION kinds (lora): served catalog rows + strength; the
+		*        entry is { id, strength } — the row's own defaults seed the
+		*        strength.
+		*      HYBRID kinds (controlnet): served catalog rows AND entry
+		*        fields; the entry is the bag element keyed by its option_key
+		*        (type) — the leaf stamps the row's resolved facts (model +
+		*        preprocessor) onto new entries so the run record carries the
+		*        retired wire shape; the lane re-validates them, never trusts
+		*        them. Pack-level scalars (the strength floor) render as the
+		*        section's own rows above the tiles.
 		*      OPTION kinds (lora): served catalog rows + strength; the
 		*        entry is { id, strength } — the row's own defaults seed the
 		*        strength.
@@ -3546,6 +3607,27 @@ window.__ModuleLoader__.load({
 				return Array.isArray(v) ? v.filter((e) => typeof e === "object" && e !== null) : [];
 			};
 			const optionOf = (k, value) => (k.options ?? []).find((o) => o.value === value) ?? null;
+			/** THE HYBRID ENTRY FIELDS (the bag element minus its two bound
+			*  rows — the option_key select and the scalar dial own those). */
+			const hybridFields = (k, hidden) => {
+				const key = optionKeyOf(k);
+				const scalar = scalarKeyOf(k);
+				return (k.fields ?? []).filter((f) => f.name !== key && f.name !== scalar && !(hidden?.has(f.name) ?? false));
+			};
+			/** The scalar seed (the row's own default wins; the contract
+			*  field default is the backstop — 0.7, the retired leaf). */
+			const strengthSeedOf = (k, option) => {
+				const scalar = scalarKeyOf(k);
+				const rowDefault = option?.defaults?.[scalar];
+				if (typeof rowDefault === "number") return rowDefault;
+				const field = (k.fields ?? []).find((f) => f.name === scalar);
+				return typeof field?.default === "number" ? field.default : .7;
+			};
+			const commitScalar = (f, name, v) => {
+				const coerced = coerceFieldEdit(f, v);
+				onEdit(name, coerced);
+				onPatch?.({ [name]: coerced });
+			};
 			const commit = (k, next) => {
 				onEdit(k.param_key, next);
 				onPatch?.({ [k.param_key]: next });
@@ -3580,7 +3662,16 @@ window.__ModuleLoader__.load({
 			const openEdit = (k, index) => {
 				const entry = entriesOf(k)[index];
 				if (entry === void 0) return;
-				if (isOptionKind(k)) {
+				if (isHybridKind(k)) {
+					const key = optionKeyOf(k);
+					setDraftOption(typeof entry[key] === "string" ? entry[key] : "");
+					const scalar = scalarKeyOf(k);
+					const strength = typeof entry[scalar] === "number" ? entry[scalar] : void 0;
+					setDraftStrength(strength !== void 0 ? String(strength) : "");
+					const params = {};
+					for (const f of hybridFields(k, seated)) if (entry[f.name] !== void 0) params[f.name] = entry[f.name];
+					setDraftParams(params);
+				} else if (isOptionKind(k)) {
 					const strength = typeof entry["strength"] === "number" ? entry["strength"] : void 0;
 					setDraftStrength(strength !== void 0 ? String(strength) : "");
 				} else {
@@ -3602,7 +3693,48 @@ window.__ModuleLoader__.load({
 				if (leaf === null) return;
 				const k = leaf.kind;
 				const entries = entriesOf(k);
-				if (isOptionKind(k)) {
+				if (isHybridKind(k)) {
+					const key = optionKeyOf(k);
+					if (draftOption === "") {
+						setLeafError("Pick one from the served rows.");
+						return;
+					}
+					const option = optionOf(k, draftOption);
+					if (option === null) {
+						setLeafError("‘" + draftOption + "’ is not a served " + k.label + " row — pick from the catalog, never hand-spell.");
+						return;
+					}
+					const seed = strengthSeedOf(k, option);
+					const strength = draftStrength.trim() === "" ? seed : Number(draftStrength);
+					if (!Number.isFinite(strength)) {
+						setLeafError("Strength must be a number.");
+						return;
+					}
+					const scalar = { [scalarKeyOf(k)]: strength };
+					const stamped = { [key]: draftOption };
+					if (typeof option.model === "string") stamped["model"] = option.model;
+					if (typeof option.preprocessor === "string") stamped["preprocessor"] = option.preprocessor;
+					if (leaf.mode === "create") commit(k, [...entries, {
+						...stamped,
+						...draftParams,
+						...scalar
+					}]);
+					else {
+						const entry = entries[leaf.index];
+						if (entry === void 0) {
+							setLeaf(null);
+							return;
+						}
+						const next = [...entries];
+						next[leaf.index] = {
+							...entry,
+							...stamped,
+							...draftParams,
+							...scalar
+						};
+						commit(k, next);
+					}
+				} else if (isOptionKind(k)) {
 					if (leaf.mode === "create") {
 						if (draftOption === "") {
 							setLeafError("Pick one from the served rows.");
@@ -3672,16 +3804,29 @@ window.__ModuleLoader__.load({
 			return (0, react.createElement)("section", {
 				className: card_module_css_default.modSection,
 				"data-subcard-grid": "on"
-			}, (0, react.createElement)("div", { className: card_module_css_default.modHead }, (0, react.createElement)("span", { className: card_module_css_default.modTitle }, "Modifiers"), (0, react.createElement)("span", { className: card_module_css_default.modHint }, "drag to set apply order")), leafError !== null && leaf === null ? (0, react.createElement)("p", { className: card_module_css_default.modLeafError }, leafError) : null, (0, react.createElement)("div", {
+			}, (0, react.createElement)("div", { className: card_module_css_default.modHead }, (0, react.createElement)("span", { className: card_module_css_default.modTitle }, "Modifiers"), (0, react.createElement)("span", { className: card_module_css_default.modHint }, "drag to set apply order")), leafError !== null && leaf === null ? (0, react.createElement)("p", { className: card_module_css_default.modLeafError }, leafError) : null, ...kinds.filter((k) => (k.kindFields ?? []).length > 0).map((k) => (0, react.createElement)("div", {
+				key: k.param_key + ":kind",
+				className: card_module_css_default.modLeafFields
+			}, (k.kindFields ?? []).map((f) => (0, react.createElement)("label", {
+				key: f.name,
+				className: card_module_css_default.modField
+			}, f.label ?? f.name, (0, react.createElement)(SpecAtom, {
+				f,
+				value: values[f.name] ?? f.default,
+				onEdit: (name, v) => {
+					commitScalar(f, name, v);
+				}
+			}))))), (0, react.createElement)("div", {
 				className: card_module_css_default.modRow,
 				"data-subcard-row": "flow"
 			}, kinds.map((k) => {
 				const entries = entriesOf(k);
 				if (entries.length === 0) return null;
 				return [...entries.map((entry, i) => {
-					const id = typeof entry["id"] === "string" ? entry["id"] : "";
+					const id = typeof entry[optionKeyOf(k)] === "string" ? entry[optionKeyOf(k)] : "";
 					const option = optionOf(k, id);
-					const strength = typeof entry["strength"] === "number" ? entry["strength"] : option !== null && option.defaults !== void 0 ? option.defaults.strength : void 0;
+					const scalar = scalarKeyOf(k);
+					const strength = typeof entry[scalar] === "number" ? entry[scalar] : option !== null && option.defaults !== void 0 && typeof option.defaults[scalar] === "number" ? option.defaults[scalar] : void 0;
 					return (0, react.createElement)(ModTile, {
 						key: k.param_key + "-" + i,
 						tileId: k.param_key + "-" + i,
@@ -3769,7 +3914,38 @@ window.__ModuleLoader__.load({
 					[name]: v
 				});
 			}, { candidates: [] });
-			return (0, react.createElement)("div", { className: card_module_css_default.modLeaf }, leafError !== null ? (0, react.createElement)("p", { className: card_module_css_default.modLeafError }, leafError) : null, isOptionKind(k) ? (0, react.createElement)("div", { className: card_module_css_default.modLeafFields }, leaf.mode === "create" ? (0, react.createElement)("label", { className: card_module_css_default.modField }, k.label, (0, react.createElement)("select", {
+			return (0, react.createElement)("div", { className: card_module_css_default.modLeaf }, leafError !== null ? (0, react.createElement)("p", { className: card_module_css_default.modLeafError }, leafError) : null, isHybridKind(k) ? (0, react.createElement)("div", { className: card_module_css_default.modLeafFields }, (0, react.createElement)("label", { className: card_module_css_default.modField }, k.label, (0, react.createElement)("select", {
+				className: card_module_css_default.modSelect,
+				value: onDraft.draftOption,
+				onChange: (e) => {
+					onDraft.setDraftOption(e.target.value);
+				}
+			}, (0, react.createElement)("option", { value: "" }, "— pick —"), (k.options ?? []).map((o) => (0, react.createElement)("option", {
+				key: o.value,
+				value: o.value,
+				title: o.tooltip ?? o.label
+			}, o.label)), onDraft.draftOption !== "" && (k.options ?? []).every((o) => o.value !== onDraft.draftOption) ? (0, react.createElement)("option", { value: onDraft.draftOption }, titleCaseId(onDraft.draftOption) + " (unregistered)") : null)), (0, react.createElement)("label", { className: card_module_css_default.modField }, (k.fields ?? []).find((f) => f.name === scalarKeyOf(k))?.label ?? "Strength", (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Input, {
+				type: "number",
+				step: "0.05",
+				value: onDraft.draftStrength,
+				placeholder: "the row default",
+				onChange: (e) => {
+					onDraft.setDraftStrength(e.target.value);
+				}
+			})), (k.fields ?? []).filter((f) => f.name !== optionKeyOf(k) && f.name !== scalarKeyOf(k) && !(hidden?.has(f.name) ?? false)).map((f) => (0, react.createElement)("label", {
+				key: f.name,
+				className: card_module_css_default.modField
+			}, (0, react.createElement)("span", { title: f.tooltip ?? f.label ?? f.name }, f.label ?? f.name), (0, react.createElement)(SpecAtom, {
+				f,
+				value: onDraft.draftParams[f.name] ?? f.default,
+				onEdit: (name, v) => {
+					onDraft.setDraftParams({
+						...onDraft.draftParams,
+						[name]: v
+					});
+				},
+				square: own.square(f)
+			}))), own.wireMenu) : isOptionKind(k) ? (0, react.createElement)("div", { className: card_module_css_default.modLeafFields }, leaf.mode === "create" ? (0, react.createElement)("label", { className: card_module_css_default.modField }, k.label, (0, react.createElement)("select", {
 				className: card_module_css_default.modSelect,
 				value: onDraft.draftOption,
 				onChange: (e) => {

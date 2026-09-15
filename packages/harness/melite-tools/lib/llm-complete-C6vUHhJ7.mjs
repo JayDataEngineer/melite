@@ -329,12 +329,18 @@ const MODIFIER_PACKS = {
 	loras: {
 		kind: "lora",
 		label: "LoRAs",
-		cardinality: "list"
+		cardinality: "list",
+		entry: "option",
+		option_key: "id"
 	},
 	controlnet: {
 		kind: "controlnet",
 		label: "ControlNet",
-		cardinality: "list"
+		cardinality: "list",
+		max_stack: 5,
+		param_key: "controlnets",
+		entry: "hybrid",
+		option_key: "type"
 	},
 	mask: {
 		kind: "mask",
@@ -347,10 +353,20 @@ const MODIFIER_PACKS = {
 		label: "Lanpaint",
 		cardinality: "list",
 		max_stack: 1
+	},
+	ip_adapter: {
+		kind: "ip_adapter",
+		label: "IP-Adapter",
+		cardinality: "list",
+		max_stack: 5,
+		param_key: "ip_adapters",
+		entry: "hybrid",
+		option_key: "kind",
+		scalar_key: "weight"
 	}
 };
 function optionTooltip(row, shared) {
-	const base = row.category ? `${row.category} — ${row.filename}` : row.filename;
+	const base = row.tooltip ?? (row.category ? `${row.category} — ${row.filename}` : row.filename);
 	return shared ? `${base} — runtime catalog` : base;
 }
 /** The modifiers offer: one entry per boarded modifier pack (the
@@ -368,15 +384,21 @@ function specModifiers(svc, card, key, decl) {
 		const entry = {
 			kind: meta.kind,
 			label: meta.label,
-			param_key: pack,
+			param_key: meta.param_key ?? pack,
+			schema_key: pack,
 			cardinality: meta.cardinality
 		};
 		if (meta.max_stack !== void 0) entry.max_stack = meta.max_stack;
+		if (meta.entry !== void 0) entry.entry = meta.entry;
+		if (meta.option_key !== void 0) entry.option_key = meta.option_key;
+		if (meta.scalar_key !== void 0) entry.scalar_key = meta.scalar_key;
 		entry.options = cat.rows.map((r) => ({
 			value: r.id,
 			label: r.label ?? r.id,
 			tooltip: optionTooltip(r, cat.shared),
-			defaults: r.default_strength === void 0 ? {} : { strength: r.default_strength }
+			defaults: r.default_strength === void 0 && r.default_weight === void 0 ? {} : { [meta.scalar_key ?? "strength"]: r.default_strength ?? r.default_weight },
+			model: r.filename,
+			...r.preprocessor !== void 0 ? { preprocessor: r.preprocessor } : {}
 		}));
 		out.push(entry);
 	}
