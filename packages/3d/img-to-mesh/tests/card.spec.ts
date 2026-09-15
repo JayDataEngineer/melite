@@ -60,6 +60,16 @@ beforeAll(async () => {
   assert.ok(trellis && pixal && rig, "all three family facts rows serve");
 });
 
+describe("the default family (boarded order)", () => {
+  it("Pixal3D boards first — the operator's standing pick", () => {
+    // Boarded order IS the default order (discovery derives the
+    // default family/service from boarded[0], the picker lists in
+    // this order) — a reorder re-defaults the card, so it is pinned.
+    assert.deepEqual((def as unknown as { boarded: string[] }).boarded,
+      ['pixal3d', 'trellis2-native', 'transfer_rig']);
+  });
+});
+
 describe("the transfer_rig arm (the rig copy)", () => {
   it("both GLBs missing refuse TOGETHER, named", () => {
     assert.throws(
