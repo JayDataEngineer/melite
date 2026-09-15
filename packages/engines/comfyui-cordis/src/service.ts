@@ -30,6 +30,23 @@ export class ComposeRefusal extends Error {
 export const cardWireName = (id: string): string =>
   id.replace(/-/g, "_") + "_card";
 
+/** One card-declared modifier kind (the declarer face of the served
+ *  ModifierKind — structural, the JSON wire shape). `entry` follows
+ *  the served vocabulary: 'option' | 'hybrid' | undefined = field. */
+export interface DeclaredModifierKind {
+  kind: string
+  label: string
+  param_key: string
+  entry?: string
+  option_key?: string
+  scalar_key?: string
+  cardinality: string
+  max_stack?: number
+  fields?: readonly Record<string, unknown>[]
+  kindFields?: readonly Record<string, unknown>[]
+  options?: readonly Record<string, unknown>[]
+}
+
 export interface CardDefinition {
   id: string
   /** Stage-row id the compose emits (retired compose.py skeleton=
@@ -64,6 +81,15 @@ export interface CardDefinition {
    *  below already read it; tagger.ts / img-to-mesh.ts module
    *  augmentations merge the identical shape. Type-level only.) */
   requiresByFamily?: Record<string, readonly string[]>
+  /** Card-declared modifier kinds (the MODs generalization, stroke
+   *  63 — docs/design/mods-contracts.md CONTRACT A): action kinds
+   *  the CARD owns (MASK's mask sources), served through the ONE
+   *  features.modifiers channel beside the family-DECL pack kinds.
+   *  fields/kindFields are the served spec rows (the JSON wire
+   *  shape SpecField projects); options carry static catalog rows —
+   *  the card IS the catalog for its action kinds. Served VERBATIM
+   *  by specModifiers; the leaf never learns the declarer. */
+  mods?: readonly DeclaredModifierKind[]
   /** Schemastery schema of the card params (validated before compose). */
   schema: (v: unknown) => Record<string, unknown>
   /** When the registered schema is a hand-written normalizer, the

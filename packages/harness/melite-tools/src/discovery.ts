@@ -30,6 +30,7 @@ import {
 import type {
   CardDefinition,
   ComfyUIService,
+  DeclaredModifierKind,
   ModelDecl,
 } from '@melite/comfyui-cordis'
 
@@ -284,6 +285,7 @@ function specModifiers(
   card: string,
   key: string,
   decl: ModelDecl | null,
+  def: CardDefinition | undefined,
 ): Record<string, unknown>[] {
   const out: Record<string, unknown>[] = []
   for (const pack of decl?.mods ?? []) {
@@ -327,8 +329,36 @@ function specModifiers(
     }))
     out.push(entry)
   }
+  // CARD-DECLARED KINDS (stroke 63 — docs/design/mods-contracts.md
+  // CONTRACT A): the card's own action kinds ride the SAME channel,
+  // VERBATIM (fields/kindFields/options are the served rows — the
+  // card IS the catalog; no mod_schemas envelope derives them, the
+  // entry IS the schema). Validated LOUD at serve: a malformed kind
+  // refuses the whole form-spec (never a silently half-rendered
+  // mod row).
+  for (const k of def?.mods ?? []) {
+    if (typeof k.kind !== 'string' || k.kind === '' || typeof k.label !== 'string' || k.label === '' || typeof k.param_key !== 'string' || k.param_key === '' || typeof k.cardinality !== 'string' || k.cardinality === '') {
+      throw new Error(`form-spec: card '${card}' declares a malformed mod kind (kind/label/param_key/cardinality required) — ${JSON.stringify(k).slice(0, 120)}`)
+    }
+    const entry: Record<string, unknown> = {
+      kind: k.kind,
+      label: k.label,
+      param_key: k.param_key,
+      cardinality: k.cardinality,
+    }
+    if (k.entry !== undefined) entry.entry = k.entry
+    if (k.option_key !== undefined) entry.option_key = k.option_key
+    if (k.scalar_key !== undefined) entry.scalar_key = k.scalar_key
+    if (k.max_stack !== undefined) entry.max_stack = k.max_stack
+    if (k.fields !== undefined) entry.fields = k.fields
+    if (k.kindFields !== undefined) entry.kindFields = k.kindFields
+    if (k.options !== undefined) entry.options = k.options
+    out.push(entry)
+  }
   return out
 }
+
+export type { DeclaredModifierKind }
 
 /** One form-spec envelope (the /v1/form-spec?model= body — the
  *  editor's render truth for one served key). Everything scopes to
@@ -372,7 +402,7 @@ export function specBody(
   // pack) and render ONLY through the mod surface. ControlNet
   // proves the law by absence: the pack waits unboarded and no
   // envelope, no entry, no endpoint ever names it.
-  const modifiers = specModifiers(svc, res.card, key, decl)
+  const modifiers = specModifiers(svc, res.card, key, decl, def)
   // the machine truth (one spelling: liveScanOrder, the registry's
   // own admission read) — presence marks ride the families block
   let liveMids: Set<string>

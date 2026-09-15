@@ -350,6 +350,83 @@ describe('live door arms', () => {
     assert.equal('fields' in body, false)
   })
 
+  test('specBody serves card-declared mod kinds VERBATIM on the one modifiers channel (stroke 63)', async () => {
+    const svc = theService()
+    // CONTRACT A (docs/design/mods-contracts.md): the card's own
+    // action kinds ride features.modifiers beside pack kinds — no
+    // family DECL, no mod_schemas envelope; fields/kindFields/
+    // options ARE the schema (the entry is the schema).
+    const defs = new Map([['__maskform__', card({
+      identity: { label: 'Mask Form', description: 'mask sources as mods', genre: 'image' },
+      flowKinds: { inputs: { input_image: 'image' }, outputs: { default: 'seg' }, requiresModel: false },
+      mods: [
+        { kind: 'mask_detect', label: 'Detect', param_key: 'mask_detect', cardinality: 'list', max_stack: 3,
+          fields: [
+            { name: 'primary_class', label: 'Class', type: 'string', default: 'person' },
+            { name: 'sam_threshold', label: 'Threshold', type: 'number', default: 0.93 },
+          ] },
+        { kind: 'mask_parts', label: 'Parts', param_key: 'mask_parts', cardinality: 'list', entry: 'option',
+          options: [{ value: 'face', label: 'Face' }, { value: 'hands', label: 'Hands' }] },
+      ],
+    })]])
+    const realFormSchemas = svc.formSchemas.bind(svc)
+    const fakeSvc = {
+      formSchemas: (c: string, key: string): unknown => {
+        if (c !== '__maskform__') return realFormSchemas(c, key)
+        return {
+          schema: { uid: 0, refs: { 0: { type: 'object', dict: { input_image: 1 } }, 1: { type: 'image' } } },
+          mods: {},
+        }
+      },
+      modCatalog: (): unknown => ({ shared: false, rows: [] }),
+      cardModFields: (): unknown[] => [],
+      packPresence: (packs: readonly string[]): Array<{ id: string, present: boolean | null }> =>
+        packs.map((id) => ({ id, present: null })),
+    } as unknown as ReturnType<typeof theService>
+    const body = specBody(fakeSvc, defs, { card: '__maskform__', service: '__maskform__', model: '__maskform__' })
+    const kinds = (body['features'] as { modifiers: Array<Record<string, unknown>> }).modifiers
+    assert.equal(kinds.length, 2, 'both card-declared kinds serve')
+    const detect = kinds.find((k) => k['kind'] === 'mask_detect')
+    assert.ok(detect !== undefined, 'the field kind serves')
+    assert.equal(detect['param_key'], 'mask_detect')
+    assert.equal(detect['max_stack'], 3)
+    assert.equal(detect['entry'], undefined, 'field mode is the absent-entry default')
+    assert.equal(JSON.stringify(detect['fields']), JSON.stringify([
+      { name: 'primary_class', label: 'Class', type: 'string', default: 'person' },
+      { name: 'sam_threshold', label: 'Threshold', type: 'number', default: 0.93 },
+    ]), 'fields ride VERBATIM — the entry is the schema')
+    const parts = kinds.find((k) => k['kind'] === 'mask_parts')
+    assert.ok(parts !== undefined, 'the option kind serves')
+    assert.equal(parts['entry'], 'option')
+    assert.equal(JSON.stringify(parts['options']), JSON.stringify([
+      { value: 'face', label: 'Face' }, { value: 'hands', label: 'Hands' },
+    ]), 'static catalog rows ride verbatim (the card IS the catalog)')
+  })
+
+  test('specBody refuses a malformed card-declared mod kind LOUD (never a half-rendered row)', async () => {
+    const svc = theService()
+    const defs = new Map([['__badmod__', card({
+      identity: { label: 'Bad', description: 'malformed kind', genre: 'image' },
+      flowKinds: { inputs: {}, outputs: {}, requiresModel: false },
+      mods: [{ kind: 'x', label: 'X', cardinality: 'list' }] as never,
+    })]])
+    const realFormSchemas = svc.formSchemas.bind(svc)
+    const fakeSvc = {
+      formSchemas: (c: string, key: string): unknown => {
+        if (c !== '__badmod__') return realFormSchemas(c, key)
+        return { schema: { uid: 0, refs: { 0: { type: 'object', dict: {} } } }, mods: {} }
+      },
+      modCatalog: (): unknown => ({ shared: false, rows: [] }),
+      cardModFields: (): unknown[] => [],
+      packPresence: (packs: readonly string[]): Array<{ id: string, present: boolean | null }> =>
+        packs.map((id) => ({ id, present: null })),
+    } as unknown as ReturnType<typeof theService>
+    assert.throws(
+      () => specBody(fakeSvc, defs, { card: '__badmod__', service: '__badmod__', model: '__badmod__' }),
+      /malformed mod kind/,
+    )
+  })
+
   test('specBody refuses unknown cards, identity-less cards, and null fragments', async () => {
     const svc = theService()
     const defs = await loadCardDefs()
