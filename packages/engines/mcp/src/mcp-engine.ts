@@ -113,7 +113,15 @@ export const mcpExecutor = (
           );
         }
         assertContained(args?.["out"], runDir);
-        calls.push({ stageId: row.stageId, name: `mcp__${server}__${tool}`, args: { ...(args ?? {}) } });
+        const wireArgs: Record<string, unknown> = { ...(args ?? {}) };
+        const out = wireArgs["out"];
+        // A RELATIVE out resolves against the run dir BEFORE the wire
+        // call — tools that abspath against their own cwd (the blender
+        // macro) would otherwise write outside the run tree silently.
+        if (typeof out === "string" && out.length > 0 && !isAbsolute(out)) {
+          wireArgs["out"] = resolve(runDir, out);
+        }
+        calls.push({ stageId: row.stageId, name: `mcp__${server}__${tool}`, args: wireArgs });
       }
       const outcomes: import("@melite/engine-contract").EngineStageOutcome[] = [];
       for (const call of calls) {
@@ -166,8 +174,13 @@ export const mcpEngines = (ctx: Context, config: { engines?: string[] }): void =
 };
 
 export class McpEnginesService extends Service {
-  static inject = ["engines", "tools"];
-
+  // NO static inject here (the 2026-09-16 swallowed-throw lesson):
+  // inject gates NOTHING on a directly-constructed Service (the
+  // cordis Service base ignores it — service.ts carries no inject
+  // handling); the gate belongs on the ROW object (the comfyui
+  // adapter's `inject: ["engines"]` precedent), and the loud guards
+  // row owns the gate now. The Config face stays: it documents
+  // the row's config shape (the bundle threads it verbatim).
   static Config = z.object({
     engines: z.array(z.string()).default([]),
   });
@@ -189,5 +202,8 @@ export class McpEnginesService extends Service {
     for (const id of config.engines ?? []) {
       ctx.effect(() => seat.register(id, { executor: mcpExecutor(tools, id) }));
     }
+    // LOUD seat decision (the craft row's law — the lane log owns
+    // stdout): a registered engine with no line is unverifiable.
+    console.log("[melite-engine-mcp] seated: " + (config.engines ?? []).join(", "));
   }
 }

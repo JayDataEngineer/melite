@@ -32,7 +32,14 @@ import comfyuiEngine from "@melite/comfyui-cordis/comfyui-engine";
 // mcp__blender__*) + the engine provider (mcp:<server> executors
 // riding the tools runtime). The blender server is the pack's
 // mcp_server.py face (Layer C, vendored): blender -b --python.
-import { apply as mcpClientApply, type Config as McpClientConfig } from "@deepseek-ai/dsh-mcp-client";
+// The row INHERITS the package namespace (never a hand-built
+// {name, apply}: the upstream load-path postmortem proves a bare
+// apply drops `inject: ["tools"]`, and cordis then refuses the
+// bridge's ctx.tools access — "cannot get property "tools"
+// without inject" — failing every sync invisibly). Only the
+// instance name is ours (one row per server: blender, godot…).
+import * as mcpClientPlugin from "@deepseek-ai/dsh-mcp-client";
+import { type Config as McpClientConfig } from "@deepseek-ai/dsh-mcp-client";
 import { mcpEngines } from "@melite/engine-mcp";
 // Stroke 55: the craft loop engine — the critic route resolves at
 // boot (first image-capable route; a blind lane seats no craft).
@@ -79,10 +86,46 @@ const rows: readonly Plugin[] = [
   // The MCP control lane: the blender stdio server (official
   // MCP protocol, idle-reaped at 1800s; the client owns
   // reconnect). failOnStartupError false — a slow/absent blender
-  // never takes the lane down.
+  // never takes the lane down (a failed start then rides the
+  // supervisor's reconnect loop AND the REJECTED witness above).
   {
     name: "mcp-client-blender",
-    apply: (ctx: Context, config: unknown) => mcpClientApply(ctx, config as McpClientConfig),
+    inject: mcpClientPlugin.inject,
+    Config: mcpClientPlugin.Config,
+    // The bridge's own apply, witnessed: cordis buries per-fiber
+    // apply rejections (both 2026-09-16 postmortems), so the
+    // settled/rejected voice lives HERE — a rejection logs its
+    // cause chain (the bridge wraps firstAttemptError) before it
+    // vanishes, then rethrows to keep fiber semantics identical.
+    // A settled apply censuses the blender namespace once (the
+    // executor seat ≠ published tools — proven distinct today).
+    apply: (ctx: Context, config: unknown) => {
+      const p = (mcpClientPlugin.apply as (ctx: Context, config: McpClientConfig) => unknown)(
+        ctx,
+        config as McpClientConfig,
+      ) as unknown;
+      if (p === undefined || typeof (p as Promise<unknown>).then !== "function") return p;
+      return (p as Promise<unknown>).then(
+        (v: unknown) => {
+          const t = ctx.get("tools") as unknown as { get(name: string): unknown } | undefined;
+          const seen = ["mcp__blender__scene_info", "mcp__blender__render_shot"]
+            .map((n) => n + "=" + (t?.get(n) === undefined ? "absent" : "PRESENT"))
+            .join(" ");
+          console.log("[melite-estate] mcp-client-blender ready: " + seen);
+          return v;
+        },
+        (e: unknown) => {
+          const chain = (x: unknown, depth: number): string => {
+            if (depth > 2 || x === null || (typeof x !== "object" && typeof x !== "string")) return "";
+            const err = x as { message?: unknown; cause?: unknown };
+            const head = typeof x === "string" ? x : String(err.message ?? x);
+            return head + (err.cause === undefined ? "" : " | caused by: " + chain(err.cause, depth + 1));
+          };
+          console.log("[melite-estate] mcp-client-blender REJECTED: " + chain(e, 0).slice(0, 900));
+          throw e;
+        },
+      );
+    },
     config: {
       transport: "stdio",
       serverName: "blender",
@@ -96,9 +139,21 @@ const rows: readonly Plugin[] = [
   } as unknown as Plugin,
   // ...and the same server on the RUNS plane: mcp:blender stages
   // execute as mcp__blender__* tool calls through the runtime.
+  // inject gates the APPLY on both seats (the comfyui adapter's
+  // `inject: ["engines"]` precedent): the 2026-09-16 live-fire
+  // caught this row dying SILENTLY — the tools runtime mounts
+  // after the estate row, the constructor's loud guard threw, and
+  // cordis buried the per-fiber throw while the boot marched on
+  // (seat: comfyui + craft only). Never an ungated seat read.
   {
     name: "melite-engine-mcp-row",
-    apply: (ctx: Context, config: unknown) => mcpEngines(ctx, config as { engines?: string[] }),
+    inject: ["engines", "tools"],
+    apply: (ctx: Context, config: unknown) => {
+      // LOUD seat decision (the craft row's law): a silent row
+      // hides a dead engine until a run fails at the door.
+      console.log("[melite-estate] mcp row applying with config " + JSON.stringify(config));
+      mcpEngines(ctx, config as { engines?: string[] });
+    },
     config: { engines: ["mcp:blender"] },
   } as unknown as Plugin,
   // The craft loop engine (async apply: the route resolution rides
@@ -107,7 +162,10 @@ const rows: readonly Plugin[] = [
     name: "melite-engine-craft-row",
     apply: async (ctx: Context): Promise<void> => {
       await craftEngineAutoRoute(ctx, (line) => {
-        ctx.logger?.info?.(line);
+        // console, not ctx.logger: the lane log owns stdout and the
+        // optional-chained logger call swallowed the boot truth once
+        // (2026-09-16) — never quiet-resolve a seat decision
+        console.log("[melite-estate] " + line);
       });
     },
   } as unknown as Plugin,

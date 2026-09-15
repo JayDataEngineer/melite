@@ -175,10 +175,14 @@ export interface CraftLlmSeam {
   listModels(provider: string): Promise<{ id: string }[]>;
   resolveModelInfo(provider: string, model: string, signal?: AbortSignal): Promise<{ inputModalities?: readonly string[] }>;
   prepareCall(config: { provider: string; model: string }, signal?: AbortSignal): Promise<{
+    /** The resolved config prepareCall materialized (defaults filled —
+     *  the dispatch contract compares stream options against it). */
+    config: { provider: string; model: string; [key: string]: unknown };
     stream(options: {
       provider: string;
       model: string;
       messages: { role: "user"; content: unknown[] }[];
+      [key: string]: unknown;
     }): AsyncIterable<{ type: string; text?: string }>;
   }>;
 }
@@ -222,7 +226,12 @@ export async function resolveImageCapableRoute(
 }
 
 export interface CraftAttachmentsSeam {
-  saveImage(data: string | Uint8Array, mediaType: string): Promise<{
+  // The face COPIED from the real seat (dsh-attachment's
+  // AttachmentStore.saveImage — the 2026-09-16 live-fire caught
+  // this seam inventing a positional (data, mediaType) shape the
+  // seat never had: the seat read input.data.byteLength off the
+  // Buffer we passed as `input` and died). One object in, a ref out.
+  saveImage(input: { data: Uint8Array; mediaType: string; name?: string }): Promise<{
     attachmentId: string;
     mediaType: string;
     bytes: number;
@@ -262,18 +271,51 @@ export const llmCritic = (
         const bytes = await readFile(`${input.runDir}/${newest}`);
         const ext = (newest.split(".").pop() ?? "png").toLowerCase();
         const mediaType = ext === "png" ? "image/png" : ext === "gif" ? "image/gif" : ext === "webp" ? "image/webp" : "image/jpeg";
-        const image = await attachments.saveImage(bytes, mediaType);
+        const image = await attachments.saveImage({ data: bytes, mediaType });
         content.push({ type: "image", attachment: { ...image, attachmentId: image.attachmentId } });
       }
       const prepared = await llm.prepareCall(route, input.signal);
       let text = "";
-      for await (const chunk of prepared.stream({ provider: route.provider, model: route.model, messages: [{ role: "user", content }] })) {
-        if (chunk.type === "text-delta" && typeof chunk.text === "string") text += chunk.text;
+      // Dispatch under the PREPARED config (never a rebuilt
+      // {provider, model}: prepareCall materializes adapter defaults
+      // into it, and the dispatch contract rejects anything unequal
+      // — the 2026-09-16 live-fire caught the rebuilt shape dying
+      // INVALID_PREPARED_CALL on deepseek-flash's defaultMaxTokens).
+      const callOptions = { ...prepared.config, messages: [{ role: "user" as const, content }] };
+      // Adapters vary: text may ride text-delta chunks, a whole
+      // block-end text block, or (reasoning routes) reasoning-delta
+      // before the answer. Accumulate every text carrier and keep a
+      // chunk-type histogram — the no-JSON refusal names it, so the
+      // next empty answer diagnoses itself (the 2026-09-16 drive
+      // caught deepseek-flash answering with zero text-deltas).
+      const seen: Record<string, number> = {};
+      let finishReason = "none";
+      for await (const chunk of prepared.stream(callOptions)) {
+        const c = chunk as { type: string; text?: unknown; block?: { type?: unknown; text?: unknown }; reason?: unknown };
+        seen[c.type] = (seen[c.type] ?? 0) + 1;
+        if (c.type === "text-delta" && typeof c.text === "string") text += c.text;
+        else if (c.type === "block-end" && (c.block?.type === "text") && typeof c.block.text === "string") text += c.block.text;
+        else if (c.type === "finish" && typeof c.reason === "string") finishReason = c.reason;
+        // The stream protocol's terminal error channel (dsh-llm's
+        // adapterFailureChunk): an adapter throw arrives as a
+        // finish chunk with an OBJECT reason carrying the failure —
+        // never silently end the loop on it (the 2026-09-16 drive
+        // stared at a bare {"finish":1} hiding the real refusal).
+        else if (c.type === "finish" && typeof c.reason === "object" && c.reason !== null) {
+          const failure = (c.reason as { kind?: unknown; failure?: { message?: unknown; code?: unknown; status?: unknown } }).failure;
+          throw new Error(
+            `craft critic call failed: ${String(failure?.message ?? c.reason)}` +
+            ` (code ${String(failure?.code ?? "?")}${failure?.status === undefined ? "" : `, status ${String(failure.status)}`})`,
+          );
+        }
       }
       const start = text.indexOf("{");
       const end = text.lastIndexOf("}");
       if (start === -1 || end === -1) {
-        throw new Error(`craft critic answered no JSON (got ${JSON.stringify(text.slice(0, 200))})`);
+        throw new Error(
+          `craft critic answered no JSON (got ${JSON.stringify(text.slice(0, 200))}, ` +
+          `chunks ${JSON.stringify(seen)}, finish ${JSON.stringify(finishReason)})`,
+        );
       }
       const parsed = JSON.parse(text.slice(start, end + 1)) as CraftCritique;
       if (parsed.verdict !== "done" && parsed.verdict !== "refine") {

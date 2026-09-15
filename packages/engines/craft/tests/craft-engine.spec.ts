@@ -284,13 +284,24 @@ describe("llmCritic (the real critic's law, against seam fakes)", () => {
       listProviders: () => [{ id: "p" }],
       listModels: async () => [{ id: "m" }],
       resolveModelInfo: async () => ({ inputModalities: imageCapable ? ["text", "image"] : ["text"] }),
-      prepareCall: async () => ({
-        stream: async function* (options: { messages: unknown[] }): AsyncIterable<{ type: string; text?: string }> {
-          seam.messages.push(options.messages);
-          for (const c of chunks) yield { type: "text-delta", text: c };
-          yield { type: "finish" };
-        },
-      }),
+      prepareCall: async (config: { provider: string; model: string }) => {
+        // The fake materializes a default the caller never named
+        // (the real seat fills defaultMaxTokens) and enforces the
+        // dispatch-equals-prepared law the live-fire caught us
+        // breaking — a rebuilt {provider, model} dies here.
+        const preparedConfig = { ...config, maxTokens: 1024 };
+        return {
+          config: preparedConfig,
+          stream: async function* (options: { provider: string; model: string; maxTokens?: unknown; messages: unknown[] }): AsyncIterable<{ type: string; text?: string }> {
+            assert.equal(options.provider, preparedConfig.provider, "dispatch rides the prepared config");
+            assert.equal(options.model, preparedConfig.model, "dispatch rides the prepared config");
+            assert.equal(options.maxTokens, 1024, "dispatch carries the prepared defaults");
+            seam.messages.push(options.messages);
+            for (const c of chunks) yield { type: "text-delta", text: c };
+            yield { type: "finish" };
+          },
+        };
+      },
     };
     return seam;
   };
@@ -301,9 +312,9 @@ describe("llmCritic (the real critic's law, against seam fakes)", () => {
     const llm = makeLlm(['{"verdict":"done","note":"ok"}']);
     const saved: unknown[] = [];
     const attachments: CraftAttachmentsSeam = {
-      saveImage: async (data, mediaType) => {
-        saved.push({ data, mediaType });
-        return { attachmentId: "att-1", mediaType, bytes: 3, width: 4, height: 4 };
+      saveImage: async (input) => {
+        saved.push(input);
+        return { attachmentId: "att-1", mediaType: input.mediaType, bytes: 3, width: 4, height: 4 };
       },
     };
     const verdict = await llmCritic(llm, attachments, { provider: "p", model: "m" }).critique({
@@ -338,6 +349,45 @@ describe("llmCritic (the real critic's law, against seam fakes)", () => {
       /answered no JSON/,
     );
     rmSync(dir, { recursive: true, force: true });
+  });
+
+  it("accumulates a whole block-end text block (adapters that never stream deltas)", async () => {
+    const blocky = makeLlm([]);
+    const origPrepare = blocky.prepareCall;
+    blocky.prepareCall = (async (config: { provider: string; model: string }) => {
+      const prepared = await origPrepare(config);
+      return {
+        ...prepared,
+        stream: async function* (): AsyncIterable<{ type: string; text?: string }> {
+          yield { type: "block-start", index: 0, blockType: "text" } as unknown as { type: string; text?: string };
+          yield { type: "block-end", index: 0, block: { type: "text", text: '{"verdict":"done","note":"blocky"}' } } as unknown as { type: string; text?: string };
+          yield { type: "finish", reason: "stop" } as unknown as { type: string; text?: string };
+        },
+      };
+    }) as typeof blocky.prepareCall;
+    const verdict = await llmCritic(blocky, { saveImage: async () => ({ attachmentId: "", mediaType: "", bytes: 0, width: 0, height: 0 }) }, { provider: "p", model: "m" }).critique({
+      iteration: 0, prompt: "p", command: { engine: "e", params: {} }, artifacts: [], runDir: tmp(), signal: new AbortController().signal,
+    });
+    assert.deepEqual(verdict, { verdict: "done", note: "blocky" });
+  });
+
+  it("surfaces the stream protocol's failure finish LOUD (never an empty no-JSON)", async () => {    const failing = makeLlm([]);
+    const origPrepare = failing.prepareCall;
+    failing.prepareCall = (async (config: { provider: string; model: string }) => {
+      const prepared = await origPrepare(config);
+      return {
+        ...prepared,
+        stream: async function* (): AsyncIterable<{ type: string; text?: string }> {
+          yield { type: "finish", reason: { kind: "error", failure: { message: "adapter blew up", code: "PROVIDER_500", status: 500 } } } as unknown as { type: string; text?: string };
+        },
+      };
+    }) as typeof failing.prepareCall;
+    await assert.rejects(
+      llmCritic(failing, { saveImage: async () => ({ attachmentId: "", mediaType: "", bytes: 0, width: 0, height: 0 }) }, { provider: "p", model: "m" }).critique({
+        iteration: 0, prompt: "p", command: { engine: "e", params: {} }, artifacts: [], runDir: tmp(), signal: new AbortController().signal,
+      }),
+      /craft critic call failed: adapter blew up \(code PROVIDER_500, status 500\)/,
+    );
   });
 });
 

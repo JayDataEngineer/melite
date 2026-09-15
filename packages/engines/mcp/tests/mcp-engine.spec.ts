@@ -76,6 +76,28 @@ describe("mcpExecutor (the wire law)", () => {
     rmSync(dir, { recursive: true, force: true });
   });
 
+  it("resolves a RELATIVE args.out against the run dir before the wire call", async () => {
+    const dir = tmp();
+    const tools = new FakeTools();
+    tools.execute = async (input) => {
+      tools.calls.push(input);
+      const out = (input.arguments as { out: string }).out;
+      // the "tool" honors the ABSOLUTE path it was handed
+      const abs = out.startsWith("/") ? out : "/not-the-run-dir/" + out;
+      writeFileSync(abs, "PNG");
+      return { isError: false, value: {}, content: [{ type: "text", text: "rendered" }] };
+    };
+    const out = await mcpExecutor(tools, "mcp:blender").executeStages(
+      [{ stageId: "r", outputs: {}, params: { tool: "render_shot", args: { out: "rel.png" } } }],
+      dir,
+      {},
+      opts,
+    );
+    assert.equal(tools.calls[0]?.arguments.out, join(dir, "rel.png"), "the wire saw the ABSOLUTE run-dir path");
+    assert.deepEqual(out.stages[0]?.artifacts, ["rel.png"], "the artifact collected");
+    rmSync(dir, { recursive: true, force: true });
+  });
+
   it("collects run-dir new files as artifacts; missing args default to {}", async () => {
     const dir = tmp();
     const tools = new FakeTools();
