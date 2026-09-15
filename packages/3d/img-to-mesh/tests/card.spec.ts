@@ -64,14 +64,14 @@ describe("the transfer_rig arm (the rig copy)", () => {
   it("both GLBs missing refuse TOGETHER, named", () => {
     assert.throws(
       () => def.compose(BASE, rig, new GraphBuilder(), "r1"),
-      /required param\(s\) 'rigged_glb', 'target_glb' missing on the transfer_rig lane/,
+      /required param\(s\) 'rigged_glb' \(Rigged source GLB\), 'target_glb' \(Target GLB\) missing on the transfer_rig lane/,
     );
   });
 
   it("the target alone refuses when the donor rides", () => {
     assert.throws(
       () => def.compose({ ...BASE, rigged_glb: "/m/r.glb" }, rig, new GraphBuilder(), "r1"),
-      /required param\(s\) 'target_glb' missing/,
+      /required param\(s\) 'target_glb' \(Target GLB\) missing/,
     );
   });
 

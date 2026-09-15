@@ -150,8 +150,13 @@ export function apply(ctx: Context): void {
         if (!String(p.rigged_glb || '').trim()) missing.push('rigged_glb')
         if (!String(p.target_glb || '').trim()) missing.push('target_glb')
         if (missing.length > 0) {
+          // (2026-09-15: same UI-label law as the lift refusal below —
+          // the surface paints "Rigged source GLB" / "Target GLB".)
+          const label: Record<string, string> = {
+            rigged_glb: 'Rigged source GLB', target_glb: 'Target GLB',
+          }
           throw new Error(
-            `required param(s) ${missing.map((m) => `'${m}'`).join(', ')} missing on the transfer_rig lane — the rig copy needs the donor rig AND the clothed target`)
+            `required param(s) ${missing.map((m) => `'${m}' (${label[m] ?? m})`).join(', ')} missing on the transfer_rig lane — the rig copy needs the donor rig AND the clothed target`)
         }
         transferRigArm(g, p)
         return

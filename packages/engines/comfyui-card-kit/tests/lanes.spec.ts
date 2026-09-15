@@ -373,7 +373,7 @@ describe("the mesh-lift admissions and the rig copy", () => {
     admitMeshLift(noFov, { ...trellis, id: "pixal3d" } as never);
     // whitespace input_image refuses (the trim arm)
     assert.throws(() => admitMeshLift({ ...liftBase, input_image: "   " }, trellis),
-      /required param 'input_image' missing/);
+      /required param 'input_image' \(Source image\) missing/);
   });
 
   it("the trellis arm builds (bg on AND off)", () => {

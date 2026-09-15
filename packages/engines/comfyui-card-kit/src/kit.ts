@@ -1610,7 +1610,10 @@ export function admitMeshLift(p: Record<string, unknown>, model: ModelFacts): vo
   const modelId = model.id
   if (!String(p.input_image || '').trim()) {
     throw new Error(
-      `required param 'input_image' missing on the ${modelId} card — the 3D lift is image-conditioned (no text prompt rides this lane)`)
+      // (2026-09-15: the refusal names the UI label too — the card
+      // paints this knob as "Source image"; a key-only refusal sent
+      // the operator hunting a param the surface never shows.)
+      `required param 'input_image' (Source image) missing on the ${modelId} card — the 3D lift is image-conditioned (no text prompt rides this lane)`)
   }
   if (!MESH_RESOLUTIONS.includes(String(p.resolution))) {
     throw new Error(
