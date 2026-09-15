@@ -420,8 +420,15 @@ details[open] > summary .chev { transform: rotate(180deg); }
 .kfIn > input::placeholder { color: color-mix(in srgb, var(--dsw-alias-state-warn-primary) 40%, transparent); }
 
 /* ── CallCard ───────────────────────────────────────────── */
-.callCard { padding: 6px 2px; transition: background-color 0.15s ease; }
-.callCardSel { background: color-mix(in srgb, var(--dsw-alias-brand-primary) 5%, transparent); outline: 1px solid color-mix(in srgb, var(--dsw-alias-brand-primary) 40%, transparent); }
+/* (2026-09-15, the THIRD report — the actual gray box) selection is
+ * NOT a box. The old .callCardSel painted a tinted background +
+ * outline around the ENTIRE card (the "gray highlighting box over
+ * the Model call"); the estate's parameter form boxes nothing. The
+ * selected call reads as a left accent bar + the id label in accent
+ * — visible, weightless, no rectangle. */
+.callCard { padding: 6px 2px 6px 8px; border-left: 2px solid transparent; transition: border-color 0.15s ease, color 0.15s ease; }
+.callCardSel { border-left-color: var(--dsw-alias-brand-primary); }
+.callCardSel .cardId { color: var(--dsw-alias-brand-primary); }
 .cardHead { display: flex; align-items: center; gap: 8px; padding-bottom: 4px; }
 .cardId { flex: none; font-size: 9px; font-weight: 600; text-transform: uppercase; font-variant-numeric: tabular-nums; color: var(--dsw-alias-label-tertiary); }
 .cardSpan { flex: none; font-size: 9px; font-variant-numeric: tabular-nums; color: var(--dsw-alias-label-tertiary); }
