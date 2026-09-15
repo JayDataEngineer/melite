@@ -60,6 +60,7 @@ export const cardPackages: string[] = [
     '@melite/image-ideogram4/card',
     '@melite/image-input-prep',
     '@melite/image-mask-studio/card',
+    '@melite/image-mask-form/card',
     '@melite/image-tagger',
     '@melite/image-upscale-tools',
     '@melite/video-video-gen',

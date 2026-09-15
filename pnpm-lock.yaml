@@ -618,6 +618,9 @@ importers:
       '@melite/image-input-prep':
         specifier: workspace:*
         version: link:../../image/input-prep
+      '@melite/image-mask-form':
+        specifier: workspace:*
+        version: link:../../image/mask-form
       '@melite/image-mask-studio':
         specifier: workspace:*
         version: link:../../image/mask-studio
@@ -1390,6 +1393,28 @@ importers:
       typescript:
         specifier: ^5.9.3
         version: 5.9.3
+
+  packages/image/mask-form:
+    dependencies:
+      '@deepseek-ai/cordis':
+        specifier: ^4.0.2
+        version: 4.0.2(@deepseek-ai/cordis-plugin-loader@1.0.3)
+      '@deepseek-ai/schemastery':
+        specifier: '*'
+        version: 3.18.2
+      '@melite/comfyui-card-kit':
+        specifier: workspace:*
+        version: link:../../engines/comfyui-card-kit
+      '@melite/comfyui-cordis':
+        specifier: workspace:*
+        version: link:../../engines/comfyui-cordis
+    devDependencies:
+      '@types/node':
+        specifier: ^22.20.0
+        version: 22.20.1
+      typescript:
+        specifier: ~6.0.3
+        version: 6.0.3
 
   packages/image/mask-studio:
     dependencies:

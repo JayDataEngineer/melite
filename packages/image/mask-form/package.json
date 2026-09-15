@@ -1,0 +1,26 @@
+{
+  "name": "@melite/image-mask-form",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "the mask-form card (the image lane) \u2014 MASK as a simple form card with MODs as ways to get different kinds of masks (docs/design/mods-contracts.md)",
+  "main": "./src/card.ts",
+  "exports": {
+    ".": "./src/index.ts",
+    "./card": "./src/card.ts",
+    "./package.json": "./package.json"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@deepseek-ai/cordis": "^4.0.2",
+    "@deepseek-ai/schemastery": "*",
+    "@melite/comfyui-card-kit": "workspace:*",
+    "@melite/comfyui-cordis": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "^22.20.0",
+    "typescript": "~6.0.3"
+  }
+}
