@@ -67,6 +67,10 @@ export interface ZoomDetailProps {
   onStop: () => void
   onClose: () => void
   onRemoved: () => void
+  /** THE RESYNC SEAT (2026-09-15, the stuck cure): a detail write
+   *  that refused after its rebase asks the view to re-read the
+   *  bench so the next gesture composes against fresh truth. */
+  onResync?: () => void
   /** params patch verb (the surface slot's onPatch currency). */
   onPatchParams: (patch: Record<string, unknown>) => void
   /** the envelope lift channel: the DETAIL reports surface.size; the

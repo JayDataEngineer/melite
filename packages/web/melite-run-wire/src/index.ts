@@ -121,7 +121,17 @@ export async function wireCall(
     }),
     ...(opts?.signal === undefined ? {} : { signal: opts.signal }),
   })
-  if (!res.ok) throw new Error(voice + ': HTTP ' + String(res.status))
+  if (!res.ok) {
+    // THE VOICE LAW (2026-09-15): a non-2xx answer still owns words —
+    // surface the body's error text when present (auth and proxy
+    // faults name themselves); the bare status is the fallback, never
+    // the first resort.
+    const fault: unknown = await res.json().catch(() => null)
+    const text = typeof fault === 'object' && fault !== null
+      && typeof Reflect.get(fault, 'error') === 'string'
+      ? Reflect.get(fault, 'error') as string : undefined
+    throw new Error(voice + ': ' + (text ?? 'HTTP ' + String(res.status)))
+  }
   const body: unknown = await res.json()
   if (typeof body !== 'object' || body === null
       || Reflect.get(body, 'type') !== 'server-response'

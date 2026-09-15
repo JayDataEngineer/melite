@@ -357,7 +357,11 @@ window.__ModuleLoader__.load({
 				}),
 				...opts?.signal === void 0 ? {} : { signal: opts.signal }
 			});
-			if (!res.ok) throw new Error(voice + ": HTTP " + String(res.status));
+			if (!res.ok) {
+				const fault = await res.json().catch(() => null);
+				const text = typeof fault === "object" && fault !== null && typeof Reflect.get(fault, "error") === "string" ? Reflect.get(fault, "error") : void 0;
+				throw new Error(voice + ": " + (text ?? "HTTP " + String(res.status)));
+			}
 			const body = await res.json();
 			if (typeof body !== "object" || body === null || Reflect.get(body, "type") !== "server-response" || Reflect.get(body, "rpcId") !== rpcId) throw new Error(voice + ": malformed response frame");
 			const result = Reflect.get(body, "result");
@@ -579,9 +583,9 @@ window.__ModuleLoader__.load({
 		*  expect_rev) — the ONLY refusal a rebase-and-retry may answer. Any
 		*  other refusal (admission, unknown stage, store failure) throws
 		*  through untouched: retrying those would be a fallback. */
-		function isCasConflict(e) {
+		function isCasConflict$1(e) {
 			const msg = e instanceof Error ? e.message : String(e);
-			return msg.includes("cas-conflict") || msg.includes("bench moved") || msg.includes("expect_rev");
+			return msg.includes("moved: rev is") || msg.includes("cas-conflict");
 		}
 		/** One drafts/patch round trip; throws the door's named refusal. */
 		async function patchOnce(draftId, stageId, patch, expectRev) {
@@ -610,7 +614,7 @@ window.__ModuleLoader__.load({
 			try {
 				await patchOnce(draftId, stageId, patch, rev);
 			} catch (e) {
-				if (!isCasConflict(e)) throw e;
+				if (!isCasConflict$1(e)) throw e;
 				const fresh = await fetchDraftRev(draftId) ?? void 0;
 				if (fresh === void 0) throw e;
 				await patchOnce(draftId, stageId, patch, fresh);
@@ -1438,7 +1442,7 @@ window.__ModuleLoader__.load({
 						ok: true,
 						value
 					};
-					yield* pollBenchFrames(value, benchKey, ctx.signal);
+					yield* pollBenchFrames(value, benchKey, address, ctx.signal);
 					return;
 				}
 				if (draftTarget !== null) {
@@ -1527,8 +1531,10 @@ window.__ModuleLoader__.load({
 		*  balances agent-write visibility against doc-read chatter; a
 		*  hidden document still receives frames (the shell decides whether
 		*  the tab renders — the provider never guesses visibility). */
-		async function* pollBenchFrames(hydrated, sessionKey, signal) {
+		async function* pollBenchFrames(hydrated, sessionKey, address, signal) {
 			let value = hydrated;
+			let failedPolls = 0;
+			let failureVoiced = false;
 			const sleep = (ms) => new Promise((resolve) => {
 				const t = setTimeout(() => {
 					signal.removeEventListener("abort", onAbort);
@@ -1549,9 +1555,16 @@ window.__ModuleLoader__.load({
 				let row;
 				try {
 					row = await wireCall("bench/get", { sessionKey }, signal);
-				} catch {
+				} catch (e) {
+					failedPolls++;
+					if (failedPolls >= 3 && !failureVoiced) {
+						failureVoiced = true;
+						yield failure(address, "bench live read failed three times — showing the last known state (" + (e instanceof Error ? e.message : String(e)) + ")");
+					}
 					continue;
 				}
+				failedPolls = 0;
+				failureVoiced = false;
 				const next = readBench(row);
 				if (next.rev === value.rev) continue;
 				value = next;
@@ -40402,60 +40415,87 @@ void main() {
 		* the doc carries the verb's own keys, and every doc rides expect_rev
 		* (the CAS law: the caller chains the bench rev it rendered, so a
 		* concurrent edit refuses instead of slicing wrong).
+		*
+		* THE REBASE LAW (2026-09-15, the operator's stuck: "bench main
+		* moved: rev is 429, caller held 35 — IT STUCK"): the bench is ONE
+		* shared doc the agent writes too, so a tab-rendered rev can be
+		* stale through no user fault. A door that refuses ONLY on CAS
+		* answers itself: re-read the rev, re-apply ONCE. A second conflict
+		* or any non-CAS refusal throws loud (the named truth, never a
+		* silent drop, never a blind write) — and the view reloads on that
+		* final failure so the NEXT gesture composes against fresh truth.
+		* The stuck is structurally impossible: a moved bench costs one
+		* silent rebase, never a bricked tab.
 		*/
+		/** The bench's CURRENT rev — the CAS handle for a re-apply. Returns
+		*  undefined when the read fails (the re-apply is then skipped; the
+		*  original refusal stands as the honest answer). */
+		async function benchRev(signal) {
+			try {
+				const rev = (await wireCall$2("bench/get", { sessionKey: "main" }, { signal })).rev;
+				return typeof rev === "number" ? rev : void 0;
+			} catch {
+				return;
+			}
+		}
+		/** True when the throw is the door's CAS verdict (stale expect_rev).
+		*  The server's own voice: "bench <session> moved: rev is N, caller
+		*  held M" (bench.ts casCheck; the drafts store's older arm says
+		*  "bench moved: rev is…"). THE MATCHER LAW (2026-09-15): match the
+		*  REAL words — the first cut matched 'bench moved' against 'bench
+		*  MAIN moved' and matched nothing; dead matchers make dead
+		*  rebases, and dead rebases make stuck tabs. */
+		function isCasConflict(e) {
+			const msg = e instanceof Error ? e.message : String(e);
+			return msg.includes("moved: rev is") || msg.includes("cas-conflict");
+		}
+		/** One door call with the rebase dance: try the held rev; on the
+		*  door's cas-conflict re-read the rev and re-apply ONCE with it. */
+		async function withRebase(method, doc, sessionKey, signal) {
+			const attempt = (expectRev) => wireCall$2(method, {
+				sessionKey,
+				doc: {
+					...doc,
+					expect_rev: expectRev
+				}
+			}, {
+				signal,
+				voice: method
+			});
+			const held = doc["expect_rev"];
+			try {
+				if (typeof held !== "number") throw new Error(method + ": no expect_rev to write against");
+				return await attempt(held);
+			} catch (e) {
+				if (!isCasConflict(e)) throw e;
+				const fresh = await benchRev(signal);
+				if (fresh === void 0) throw e;
+				return await attempt(fresh);
+			}
+		}
 		/** The bench add-stage wire door caller (the tab's add-card path).
 		*  The doc holds card/author/engine/params/expect_rev. */
 		async function addStageWire(doc, sessionKey = "main", signal) {
-			return await wireCall$2("bench/add-stage", {
-				sessionKey,
-				doc
-			}, {
-				signal,
-				voice: "bench/add-stage"
-			});
+			return await withRebase("bench/add-stage", doc, sessionKey, signal);
 		}
 		/** The bench remove-stage wire door caller (the drill's Remove path).
 		*  The doc holds stage/expect_rev. */
 		async function removeStageWire(doc, signal) {
-			return await wireCall$2("bench/remove-stage", {
-				sessionKey: "main",
-				doc
-			}, {
-				signal,
-				voice: "bench/remove-stage"
-			});
+			return await withRebase("bench/remove-stage", doc, "main", signal);
 		}
 		/** The bench reorder wire door caller (the drag-reorder path). Doc:
 		*  stage/to/expect_rev — `to` is the post-splice target index. */
 		async function reorderStageWire(doc, signal) {
-			return await wireCall$2("bench/reorder", {
-				sessionKey: "main",
-				doc
-			}, {
-				signal,
-				voice: "bench/reorder"
-			});
+			return await withRebase("bench/reorder", doc, "main", signal);
 		}
 		/** The bench group wire door caller (the Group Cards sub-view):
 		*  stages = 2+ ids (bench order applied server-side). */
 		async function groupStagesWire(doc, signal) {
-			return await wireCall$2("bench/group", {
-				sessionKey: "main",
-				doc
-			}, {
-				signal,
-				voice: "bench/group"
-			});
+			return await withRebase("bench/group", doc, "main", signal);
 		}
 		/** The bench ungroup wire door caller: spill a compound's children. */
 		async function ungroupStageWire(doc, signal) {
-			return await wireCall$2("bench/ungroup", {
-				sessionKey: "main",
-				doc
-			}, {
-				signal,
-				voice: "bench/ungroup"
-			});
+			return await withRebase("bench/ungroup", doc, "main", signal);
 		}
 		//#endregion
 		//#region ../../../node_modules/.pnpm/three@0.184.0/node_modules/three/examples/jsm/utils/BufferGeometryUtils.js
@@ -44484,7 +44524,7 @@ void main() {
 		*  dump. Params left, Run right; the patch carries only CHANGED keys
 		*  (coerced once, at patch time — the editPatch law); then the run
 		*  gesture (patch lands in the domain BEFORE the run reads it). */
-		function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRemoved, onPatchParams, renderStageView, renderPreview, onSurface, runId, canRemove, bindRun, bindEnhance }) {
+		function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRemoved, onResync, onPatchParams, renderStageView, renderPreview, onSurface, runId, canRemove, bindRun, bindEnhance }) {
 			String(stage.title ?? stage.card ?? stage.id);
 			const held = typeof stage.params === "object" && stage.params !== null ? stage.params : {};
 			const [spec, setSpec] = (0, react.useState)(null);
@@ -44689,6 +44729,7 @@ void main() {
 					onRun();
 				} catch (e) {
 					setError(e instanceof Error ? e.message : "run failed");
+					onResync?.();
 				}
 			};
 			const runRef = (0, react.useRef)(run);
@@ -44715,6 +44756,7 @@ void main() {
 				} catch (e) {
 					setError(e instanceof Error ? e.message : "remove failed");
 					setRemoving(false);
+					onResync?.();
 				}
 			};
 			if (stage.card === "group") {
@@ -44731,6 +44773,7 @@ void main() {
 					} catch (e) {
 						setError(e instanceof Error ? e.message : "ungroup failed");
 						setRemoving(false);
+						onResync?.();
 					}
 				};
 				return (0, react.createElement)("div", { className: card_module_css_default$1.zoomDetail }, (0, react.createElement)("p", { className: card_module_css_default$1.groupNote }, "A compound of " + String(members.length) + " stages. Ungroup restores them at this position."), (0, react.createElement)("ol", { className: card_module_css_default$1.memberList }, members.map((m, i) => (0, react.createElement)("li", {
@@ -45037,11 +45080,11 @@ void main() {
 				if (e.dataTransfer.types.includes(CAPABILITY_DRAG_MIME)) {
 					const cap = parseCapabilityDrop(e.dataTransfer.getData(CAPABILITY_DRAG_MIME));
 					if (cap === null) return;
-					addStageWire(sessionKey, {
+					addStageWire({
 						card: cap.service,
 						...cap.params !== void 0 && Object.keys(cap.params).length > 0 ? { params: cap.params } : {},
 						expect_rev: live.rev
-					}).then(() => {
+					}, sessionKey).then(() => {
 						reload();
 					}).catch((err) => {
 						setReloadError(err instanceof Error ? err.message : "add refused");
@@ -45056,11 +45099,11 @@ void main() {
 						setReloadError(t !== "" ? "Input cards don’t accept " + t + " assets" : "That asset isn’t supported — drop an image or audio asset");
 						return;
 					}
-					addStageWire(sessionKey, {
+					addStageWire({
 						card: "input-prep",
 						params: { source: payload.url },
 						expect_rev: live.rev
-					}).then(() => {
+					}, sessionKey).then(() => {
 						reload();
 					}).catch((err) => {
 						setReloadError(err instanceof Error ? err.message : "add refused");
@@ -45070,11 +45113,11 @@ void main() {
 				if (e.dataTransfer.files.length > 0) {
 					const file = e.dataTransfer.files[0];
 					if (file === void 0) return;
-					uploadInputFile(file).then(({ name }) => addStageWire(sessionKey, {
+					uploadInputFile(file).then(({ name }) => addStageWire({
 						card: "input-prep",
 						params: { source: name },
 						expect_rev: live.rev
-					})).then(() => {
+					}, sessionKey)).then(() => {
 						reload();
 					}).catch((err) => {
 						setReloadError(err instanceof Error ? err.message : "drop refused");
@@ -45266,6 +45309,9 @@ void main() {
 				onRemoved: () => {
 					setOpen(null);
 					reload();
+				},
+				onResync: () => {
+					reload({ keepOpen: true });
 				},
 				onPatchParams: (patch) => {
 					onPatchParams(open, patch);

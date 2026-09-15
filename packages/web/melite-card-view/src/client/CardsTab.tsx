@@ -705,7 +705,7 @@ export function benchRow(stage: BenchStageRow, bench?: CardsBenchValue): CardRow
  *  dump. Params left, Run right; the patch carries only CHANGED keys
  *  (coerced once, at patch time — the editPatch law); then the run
  *  gesture (patch lands in the domain BEFORE the run reads it). */
-function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRemoved, onPatchParams, renderStageView, renderPreview, onSurface, runId, canRemove, bindRun, bindEnhance }: {
+function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRemoved, onResync, onPatchParams, renderStageView, renderPreview, onSurface, runId, canRemove, bindRun, bindEnhance }: {
   stage: BenchStageRow
   bench: CardsBenchValue
   running: boolean
@@ -720,6 +720,12 @@ function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRemoved, 
   onStop: () => void
   onClose: () => void
   onRemoved: () => void
+  /** THE RESYNC SEAT (2026-09-15, the stuck cure): a write that
+   *  refused after its rebase leaves this drill composing against a
+   *  bench it can no longer see whole — the view re-reads and this
+   *  drill re-seeds from the fresh truth, so the NEXT gesture works.
+   *  A named error without a resync is how a tab bricks. */
+  onResync?: () => void
   onPatchParams: (patch: Record<string, unknown>) => void
   renderStageView: (owner: StageViewOwnerProps, fallback: ReturnType<typeof h>) => ReturnType<typeof h>
   /** the preview seam consult (hour-9): the shared video/image preview
@@ -1013,6 +1019,7 @@ function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRemoved, 
       onRun()
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : 'run failed')
+      onResync?.()
     }
   }
   // THE GESTURE BINDING (hour-26, the 1:1 law): the frame's top-bar
@@ -1042,6 +1049,10 @@ function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRemoved, 
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : 'remove failed')
       setRemoving(false)
+      // THE RESYNC LAW: a final refusal (even post-rebase) means this
+      // drill's bench view is stale truth — re-read so the next
+      // gesture composes against the world as it stands.
+      onResync?.()
     }
   }
   // THE GROUP FACE: a compound's drill is its member list + Ungroup
@@ -1060,6 +1071,7 @@ function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRemoved, 
       } catch (e: unknown) {
         setError(e instanceof Error ? e.message : 'ungroup failed')
         setRemoving(false)
+        onResync?.()
       }
     }
     return h('div', { className: css.zoomDetail },
@@ -1526,11 +1538,11 @@ function BenchView({ bench, sessionKey, onRun, onRunStage, onStopStage, onRemove
       // the door's ADD_KEYS carry no `title` — stages are named by
       // their card (benchRow: title ?? card ?? id); the payload's
       // title is diagnostics, not a stage field.
-      void addStageWire(sessionKey, {
+      void addStageWire({
         card: cap.service,
         ...(cap.params !== undefined && Object.keys(cap.params).length > 0 ? { params: cap.params } : {}),
         expect_rev: live.rev,
-      })
+      }, sessionKey)
         .then(() => { reload() })
         .catch((err: unknown) => { setReloadError(err instanceof Error ? err.message : 'add refused') })
       return
@@ -1544,11 +1556,11 @@ function BenchView({ bench, sessionKey, onRun, onRunStage, onStopStage, onRemove
         setReloadError(t !== '' ? 'Input cards don\u2019t accept ' + t + ' assets' : 'That asset isn\u2019t supported \u2014 drop an image or audio asset')
         return
       }
-      void addStageWire(sessionKey, {
+      void addStageWire({
         card: 'input-prep',
         params: { source: payload.url },
         expect_rev: live.rev,
-      })
+      }, sessionKey)
         .then(() => { reload() })
         .catch((err: unknown) => { setReloadError(err instanceof Error ? err.message : 'add refused') })
       return
@@ -1557,11 +1569,11 @@ function BenchView({ bench, sessionKey, onRun, onRunStage, onStopStage, onRemove
       const file = e.dataTransfer.files[0]
       if (file === undefined) return
       void uploadInputFile(file)
-        .then(({ name }) => addStageWire(sessionKey, {
+        .then(({ name }) => addStageWire({
           card: 'input-prep',
           params: { source: name },
           expect_rev: live.rev,
-        }))
+        }, sessionKey))
         .then(() => { reload() })
         .catch((err: unknown) => { setReloadError(err instanceof Error ? err.message : 'drop refused') })
     }
@@ -1732,6 +1744,7 @@ function BenchView({ bench, sessionKey, onRun, onRunStage, onStopStage, onRemove
       onStop: () => { onStopStage(open) },
       onClose,
       onRemoved: () => { setOpen(null); reload() },
+      onResync: () => { reload({ keepOpen: true }) },
       onPatchParams: (patch: Record<string, unknown>) => { onPatchParams(open, patch) },
       renderStageView,
       renderPreview,

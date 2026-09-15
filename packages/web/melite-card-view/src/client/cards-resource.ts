@@ -810,7 +810,7 @@ export function openCardsResource(
       // the browser wire is one-frame HTTP, so this heartbeat carries
       // the same law until the host's stream face lands — then the
       // source swaps with zero consumer changes. Abort ends the tail.
-      yield* pollBenchFrames(value, benchKey, ctx.signal)
+      yield* pollBenchFrames(value, benchKey, address, ctx.signal)
       return
     }
     // draft-stage view (the conversation card's studio target): one
@@ -905,9 +905,20 @@ async function* pollRunFrames(
 async function* pollBenchFrames(
   hydrated: CardsBenchValue,
   sessionKey: string,
+  address: string,
   signal: AbortSignal,
 ): AsyncGenerator<RemoteResult<CardsBenchValue>> {
   let value = hydrated
+  // THE SILENT-DEATH CURE (2026-09-15): the poll used to swallow
+  // every transport error forever ("the last ok value stays") — a
+  // dead poll froze the view at a stale rev with ZERO signal, and
+  // every write then CAS-refused with no recovery (the operator's
+  // stuck). Now three consecutive failures surface as ONE failure
+  // frame beside the last value (the resource law: 'failed' keeps
+  // the last ok frame); recovery clears it. The poll itself dies
+  // with the mux swap — until then it may not lie.
+  let failedPolls = 0
+  let failureVoiced = false
   const sleep = (ms: number): Promise<'slept' | 'abort'> =>
     new Promise((resolve) => {
       const t = setTimeout(() => { signal.removeEventListener('abort', onAbort); resolve('slept') }, ms)
@@ -921,9 +932,18 @@ async function* pollBenchFrames(
     let row: Record<string, unknown>
     try {
       row = await wireCall('bench/get', { sessionKey }, signal)
-    } catch {
+    } catch (e) {
+      failedPolls++
+      if (failedPolls >= 3 && !failureVoiced) {
+        failureVoiced = true
+        yield failure(address,
+          'bench live read failed three times — showing the last known state ('
+          + (e instanceof Error ? e.message : String(e)) + ')')
+      }
       continue // the last ok value stays; the next poll may recover
     }
+    failedPolls = 0
+    failureVoiced = false
     const next = readBench(row)
     if (next.rev === value.rev) continue
     value = next

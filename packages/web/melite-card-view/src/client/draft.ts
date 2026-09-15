@@ -112,7 +112,11 @@ export async function fetchDraftRev(draftId: string): Promise<number | null> {
  *  through untouched: retrying those would be a fallback. */
 function isCasConflict(e: unknown): boolean {
   const msg = e instanceof Error ? e.message : String(e)
-  return msg.includes('cas-conflict') || msg.includes('bench moved') || msg.includes('expect_rev')
+  // THE MATCHER LAW (2026-09-15): the server's real voice is
+  // "bench <session> moved: rev is N, caller held M" — 'bench moved'
+  // matched NOTHING against 'bench main moved' (a dead matcher made
+  // this rebase dead code; the operator's tab stuck on it).
+  return msg.includes('moved: rev is') || msg.includes('cas-conflict')
 }
 
 /** One drafts/patch round trip; throws the door's named refusal. */
