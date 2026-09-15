@@ -26,6 +26,7 @@
 // Dispatch rides `{...prepared.config, messages, tools}` (the
 // stroke-57 INVALID_PREPARED_CALL law).
 import { randomUUID } from "node:crypto";
+import { normalizeAgentStageParams } from "./params.ts";
 import { readdirSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { Context, Service } from "@deepseek-ai/cordis";
@@ -120,22 +121,6 @@ const treeOf = (dir: string): Set<string> => {
 const plainObject = (v: unknown): v is Record<string, unknown> =>
   typeof v === "object" && v !== null && !Array.isArray(v);
 
-/** Validate the string-array params (mcps, skills): an array of
- *  non-empty strings, nothing else. */
-const stringArrayOk = (v: unknown, where: string, field: string): string[] => {
-  if (!Array.isArray(v)) {
-    throw new Error(`${where}: '${field}' must be an array of strings`);
-  }
-  const out: string[] = [];
-  for (const e of v) {
-    if (typeof e !== "string" || e.length === 0) {
-      throw new Error(`${where}: '${field}' entries must be non-empty strings`);
-    }
-    out.push(e);
-  }
-  return out;
-};
-
 /** Render the plus-box inputs list into brief lines (slice §5.2:
  *  array-of-entries on the wire — structural, never stringified). */
 const renderInputs = (inputs: readonly { name: string; value: unknown }[]): string => {
@@ -172,46 +157,22 @@ export const agentLoopExecutor = (
       for (const row of rows) {
         const where = `agent stage ${JSON.stringify(row.stageId)}`;
         const p = row.params as Record<string, unknown>;
-        // ── THE FOUR PARAMS (validated loud, before anything runs) ──
-        const task = p.task;
-        if (typeof task !== "string" || task.length === 0) {
-          throw new Error(`${where}: 'task' (the brief) is required`);
-        }
-        const mcps = p.mcps === undefined ? [] : stringArrayOk(p.mcps, where, "mcps");
-        const skillIds = p.skills === undefined ? [] : stringArrayOk(p.skills, where, "skills");
+        // ── THE CONTRACT GATE (stroke 66): the declared params.ts SSOT
+        //    validates + folds BOTH grammars (canonical strings, form
+        //    bag entries) — the same file the served form serializes,
+        //    so the wire and the form cannot drift. ──
+        const norm = normalizeAgentStageParams(p, where, AGENT_MAX_TURNS_HARD_CAP);
+        const task = norm.task;
+        const mcps = norm.mcps;
+        const skillIds = norm.skills;
         if (skillIds.length > 0 && skills === undefined) {
           throw new Error(
             `${where}: 'skills' requested but this lane wires no skill reader (spawn-injection is a serving path the composition owns)`,
           );
         }
-        const inputsRaw = p.inputs;
-        const inputs: { name: string; value: unknown }[] = [];
-        if (inputsRaw !== undefined) {
-          if (!Array.isArray(inputsRaw)) {
-            throw new Error(`${where}: 'inputs' must be an array of {name, value} entries`);
-          }
-          for (const e of inputsRaw) {
-            if (!plainObject(e) || typeof e.name !== "string" || e.name.length === 0 || !("value" in e)) {
-              throw new Error(
-                `${where}: 'inputs' entries must be objects {name: string, value: any}`,
-              );
-            }
-            inputs.push({ name: e.name, value: e.value });
-          }
-        }
-        const maxTurns = p.max_turns;
-        if (
-          maxTurns !== undefined &&
-          (typeof maxTurns !== "number" || !Number.isInteger(maxTurns) || maxTurns < 1)
-        ) {
-          throw new Error(`${where}: 'max_turns' must be a positive integer (default unlimited)`);
-        }
-        if (maxTurns !== undefined && maxTurns > AGENT_MAX_TURNS_HARD_CAP) {
-          throw new Error(
-            `${where}: 'max_turns' ${maxTurns} exceeds the hard cap ${AGENT_MAX_TURNS_HARD_CAP}`,
-          );
-        }
-        const route = p.model === undefined ? undefined : parseRoute(p.model, where);
+        const inputs = norm.inputs;
+        const maxTurns = norm.max_turns;
+        const route = norm.model === undefined ? undefined : parseRoute(norm.model, where);
 
         // ── SPAWN-INJECTION: read the named leaves at stage start and
         //    inline them into the brief as operating instructions (the

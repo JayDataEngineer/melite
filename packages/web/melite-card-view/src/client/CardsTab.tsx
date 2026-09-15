@@ -828,7 +828,15 @@ function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRemoved, 
     let alive = true
     const freshOpen = lastStageRef.current !== stage.id
     lastStageRef.current = stage.id
-    const family = modelKey !== '' ? modelKey : String(stage.card ?? '')
+    // ENGINE STAGES (stroke 66, the card-seam generalization): a
+    // card-less stage resolves its form from the ENGINE id — the
+    // door serves engine docs from the same declared contract the
+    // executor validates. The model PARAM is a plain field there,
+    // never a family re-key (a brain route is not a family pick).
+    const cardId = String(stage.card ?? '')
+    const family = cardId !== ''
+      ? (modelKey !== '' ? modelKey : cardId)
+      : String(stage.engine ?? '')
     if (family === '') { setLoaded(true); return }
     fetchFormSpec(family)
       .then((doc) => {

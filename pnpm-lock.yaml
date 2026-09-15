@@ -508,6 +508,9 @@ importers:
       '@deepseek-ai/dsh-tools':
         specifier: 0.1.5-rc.2
         version: 0.1.5-rc.2(6c1de61afe47b0d69df46230a00574b7)
+      '@deepseek-ai/schemastery':
+        specifier: ^3.18.2
+        version: 3.18.2
       '@melite/engine-contract':
         specifier: workspace:*
         version: link:../contract
@@ -1175,6 +1178,9 @@ importers:
       '@melite/comfyui-cordis':
         specifier: workspace:*
         version: link:../../engines/comfyui-cordis
+      '@melite/engine-agent':
+        specifier: workspace:*
+        version: link:../../engines/agent
       '@melite/estate-call':
         specifier: workspace:*
         version: link:../estate-call

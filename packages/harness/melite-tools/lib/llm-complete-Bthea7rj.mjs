@@ -1,4 +1,5 @@
 import { CARD_KINDS, SLOT_VOCABULARY, buildCatalog, emitParamsSchema, enhanceRecipeFor, getModel, isServedFamily, liveScanOrder, loadCardDefs, modelIds, theService } from "@melite/comfyui-cordis";
+import { agentFormDoc } from "@melite/engine-agent";
 import { createUserMessage } from "@deepseek-ai/dsh-llm";
 //#region src/estate.ts
 /** Narrow the seat-bound request to the canonical EstateCall the card
@@ -375,7 +376,7 @@ function optionTooltip(row, shared) {
 *  entry's param rows derive client-side off `mod_schemas[pack]`
 *  (the absorbed contract's own toJSON — same walker as the card
 *  fields, one meta path). */
-function specModifiers(svc, card, key, decl) {
+function specModifiers(svc, card, key, decl, def) {
 	const out = [];
 	for (const pack of decl?.mods ?? []) {
 		const meta = MODIFIER_PACKS[pack];
@@ -402,6 +403,23 @@ function specModifiers(svc, card, key, decl) {
 		}));
 		out.push(entry);
 	}
+	for (const k of def?.mods ?? []) {
+		if (typeof k.kind !== "string" || k.kind === "" || typeof k.label !== "string" || k.label === "" || typeof k.param_key !== "string" || k.param_key === "" || typeof k.cardinality !== "string" || k.cardinality === "") throw new Error(`form-spec: card '${card}' declares a malformed mod kind (kind/label/param_key/cardinality required) — ${JSON.stringify(k).slice(0, 120)}`);
+		const entry = {
+			kind: k.kind,
+			label: k.label,
+			param_key: k.param_key,
+			cardinality: k.cardinality
+		};
+		if (k.entry !== void 0) entry.entry = k.entry;
+		if (k.option_key !== void 0) entry.option_key = k.option_key;
+		if (k.scalar_key !== void 0) entry.scalar_key = k.scalar_key;
+		if (k.max_stack !== void 0) entry.max_stack = k.max_stack;
+		if (k.fields !== void 0) entry.fields = k.fields;
+		if (k.kindFields !== void 0) entry.kindFields = k.kindFields;
+		if (k.options !== void 0) entry.options = k.options;
+		out.push(entry);
+	}
 	return out;
 }
 /** One form-spec envelope (the /v1/form-spec?model= body — the
@@ -422,7 +440,7 @@ function specBody(svc, defs, res) {
 	}
 	const schemas = svc.formSchemas(res.card, key);
 	if (schemas === null) throw new Error(`form-spec: card '${res.card}' unknown`);
-	const modifiers = specModifiers(svc, res.card, key, decl);
+	const modifiers = specModifiers(svc, res.card, key, decl, def);
 	let liveMids;
 	try {
 		liveMids = new Set(liveScanOrder());
@@ -620,7 +638,8 @@ async function kindsDoorArm() {
 }
 /** /v1/form-spec?model=<key> — the envelope, or null when the key
 *  does not resolve (the door 404s, same body as ever). */
-async function formSpecArm(model) {
+async function formSpecArm(model, engineCensus) {
+	if (model === "agent" && engineCensus !== void 0) return agentFormDoc(engineCensus());
 	const defs = await loadCardDefs();
 	const res = resolveSpecKey(model, defs, boardedMap(defs));
 	if (res === null) return null;

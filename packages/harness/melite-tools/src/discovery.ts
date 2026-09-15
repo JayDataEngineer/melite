@@ -33,6 +33,7 @@ import type {
   DeclaredModifierKind,
   ModelDecl,
 } from '@melite/comfyui-cordis'
+import { agentFormDoc } from '@melite/engine-agent'
 
 /** The boarded map (family -> the card that boards it, first-seen).
  *  Exported for the flow tool's bench pass (the card-id alias
@@ -668,7 +669,16 @@ export async function kindsDoorArm(): Promise<Record<string, unknown>> {
  *  does not resolve (the door 404s, same body as ever). */
 export async function formSpecArm(
   model: string,
+  engineCensus?: (() => { mcps: ReadonlyArray<{ value: string; label: string }>; skills: ReadonlyArray<{ value: string; label: string }> }) | undefined,
 ): Promise<Record<string, unknown> | null> {
+  // THE ENGINE ARM (stroke 66 — the card-seam generalization): an
+  // engine id resolves to the ENGINE's own form doc (no card, no
+  // family); the census is the door's LIVE read (the seated MCP
+  // servers + the skill index — never a static list). Served from
+  // the same declared contract the executor's gate validates.
+  if (model === "agent" && engineCensus !== undefined) {
+    return agentFormDoc(engineCensus());
+  }
   const defs = await loadCardDefs()
   const res = resolveSpecKey(model, defs, boardedMap(defs))
   if (res === null) return null

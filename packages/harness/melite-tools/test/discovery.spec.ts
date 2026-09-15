@@ -427,6 +427,27 @@ describe('live door arms', () => {
     )
   })
 
+  test("formSpecArm serves the AGENT ENGINE doc from the declared contract (stroke 66 — the census rides LIVE)", async () => {
+    const doc = await formSpecArm('agent', () => ({
+      mcps: [{ value: 'blender', label: 'blender' }],
+      skills: [{ value: 'card:mask-form', label: 'Mask Form' }],
+    }))
+    assert.ok(doc !== null, 'the engine id resolves')
+    assert.equal(doc['form'], 'agent')
+    assert.equal(doc['engine'], 'agent')
+    const kinds = (doc['features'] as { modifiers: Array<Record<string, unknown>> }).modifiers
+    assert.deepEqual(kinds.map((k) => k['param_key']), ['mcps', 'skills', 'inputs'])
+    const mcps = kinds[0]!['fields'] as Array<{ options: Array<{ value: string }> }>
+    assert.deepEqual(mcps[0]!.options, [{ value: 'blender', label: 'blender' }])
+    const skills = kinds[1]!['fields'] as Array<{ options: Array<{ value: string }> }>
+    assert.deepEqual(skills[0]!.options, [{ value: 'card:mask-form', label: 'Mask Form' }])
+  })
+
+  test('formSpecArm refuses unknown keys as before (the engine arm does not widen resolution)', async () => {
+    const doc = await formSpecArm('__no_such_engine__', undefined)
+    assert.equal(doc, null)
+  })
+
   test('specBody refuses unknown cards, identity-less cards, and null fragments', async () => {
     const svc = theService()
     const defs = await loadCardDefs()
