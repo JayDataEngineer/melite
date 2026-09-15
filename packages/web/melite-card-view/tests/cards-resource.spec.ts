@@ -8,6 +8,13 @@
 // package; here the bench tail gets its own pins).
 import { describe, expect, test, vi, afterEach } from 'vitest'
 import { benchAddressOf, benchSessionOfAddress, observeRunOutcome, openCardsResource, readBench } from '../src/client/cards-resource.ts'
+// The gateway's client face resolves to the tests/fixtures stand-in
+// (the real artifact is module-loader format — see the fixture's
+// header); RemoteStreamCarrierError here is the classification token
+// the fake supervisor below matches against, exactly like the
+// gateway's RemoteStream matches its own class.
+import { RemoteStreamCarrierError } from '@deepseek-ai/dsh-api-gateway/client'
+import type { ClientRemote, RemoteStreamItem } from '@deepseek-ai/dsh-api-gateway/client'
 
 /** A /api wire frame answer for one method. */
 function stubApi(methods: Record<string, Array<Record<string, unknown> | Error>>): void {
@@ -35,6 +42,194 @@ const benchDoc = (rev: number, titles: string[]): Record<string, unknown> => ({
   stages: titles.map((t, i) => ({ id: `s_${i}`, card: 'image-gen', title: t, engine: 'comfyui', params: {} })),
   log: [],
 })
+
+/** The zero state the generated subscribe generator serves for a
+ *  not-yet-born bench (the birth watch — pinned in the drafts package
+ *  where the generator lives; modeled here for the consumer laws). */
+const zeroDoc = (key: string): Record<string, unknown> => ({
+  draft_id: `bench-${key}`, rev: 0, intent: '', stages: [], log: [],
+})
+
+// ── THE FAKE REMOTE (the mux swap's test face, 2026-09-15) ────────
+// A minimal supervisor with the SAME classification laws as the
+// gateway's RemoteStream (read from dsh-api-gateway's stream-client):
+// an open()/iteration rejection that is NOT a carrier error is
+// TERMINAL (the iterator throws it); an iterable end calls
+// ended(accepted) and a returned carrier error fires carrierFailed
+// then retries. Items are RemoteStreamItem-shaped so the consumer's
+// accept() contract is exercised for real.
+//
+// THE CHANNEL MODEL: bench/subscribe is a LIVE channel per session
+// key — writes arrive out-of-band (`push`), a mux drop ends every
+// open channel (`drop`), and the next open can be poisoned
+// (`failOpen` — the supervisor's terminal arm). Nothing advances on
+// its own, so every test phase is explicit.
+
+/** One live bench/subscribe generation. */
+interface Channel {
+  key: string
+  open: boolean
+  queue: Array<Record<string, unknown>>
+  wake: (() => void) | undefined
+}
+
+/** The fake remote plus its out-of-band write controls. */
+interface FakeBench {
+  remote: ClientRemote
+  /** One estate write landing on the bench (delivered to the open
+   *  channel, or stashed for the next open). */
+  push: (key: string, doc: Record<string, unknown>) => void
+  /** The mux dropped: every open channel ends (carrier, retry). */
+  drop: () => void
+  /** The next open for this key rejects (terminal). */
+  failOpen: (key: string, error: Error) => void
+  /** Whether a live channel is open for the key. */
+  isOpen: (key: string) => boolean
+}
+
+function fakeRemote(): FakeBench {
+  const channels: Channel[] = []
+  const pending = new Map<string, Array<Record<string, unknown>>>()
+  const rejections = new Map<string, Error>()
+  const isOpen = (key: string): boolean => channels.some((c) => c.key === key && c.open)
+  const openChannel = (key: string): AsyncIterable<Record<string, unknown>> => {
+    const reject = rejections.get(key)
+    if (reject !== undefined) {
+      rejections.delete(key)
+      return {
+        [Symbol.asyncIterator]: () => ({
+          next: () => Promise.reject(reject),
+        }),
+      }
+    }
+    const channel: Channel = { key, open: true, queue: [...(pending.get(key) ?? [])], wake: undefined }
+    pending.delete(key)
+    channels.push(channel)
+    return {
+      [Symbol.asyncIterator]: () => ({
+        next: (): Promise<IteratorResult<Record<string, unknown>>> =>
+          new Promise((resolve) => {
+            const step = (): void => {
+              channel.wake = undefined
+              if (!channel.open) return resolve({ done: true, value: undefined as never })
+              const head = channel.queue.shift()
+              if (head === undefined) {
+                channel.wake = step
+                return
+              }
+              resolve({ done: false, value: head })
+            }
+            step()
+          }),
+      }),
+    }
+  }
+  const $stream = <T,>(options: {
+    name: string
+    open: (signal: AbortSignal) => AsyncIterable<T> | Promise<AsyncIterable<T>>
+    ended: (accepted: boolean) => Error
+    carrierFailed?: (error: RemoteStreamCarrierError) => void
+  }): { [Symbol.asyncIterator](): AsyncIterator<RemoteStreamItem<T>>; dispose(): Promise<void> } => {
+    const lifetime = new AbortController()
+    const queue: Array<RemoteStreamItem<T>> = []
+    const parked: Array<{
+      resolve: (result: IteratorResult<RemoteStreamItem<T>>) => void
+      reject: (error: Error) => void
+    }> = []
+    let failed: Error | undefined
+    let channel: Channel | undefined
+    const closeChannel = (): void => {
+      if (channel !== undefined && channel.open) {
+        channel.open = false
+        channel.wake?.()
+      }
+    }
+    const deliver = (): void => {
+      while (parked.length > 0 && queue.length > 0) {
+        const head = queue.shift()!
+        parked.shift()!.resolve({ done: false, value: head })
+      }
+    }
+    lifetime.signal.addEventListener('abort', () => {
+      closeChannel()
+      for (const waiter of parked.splice(0)) waiter.resolve({ done: true, value: undefined as never })
+    })
+    const run = async (): Promise<void> => {
+      while (!lifetime.signal.aborted && failed === undefined) {
+        try {
+          const iterable = await options.open(lifetime.signal)
+          channel = channels.at(-1)
+          let accepted = false
+          for await (const value of iterable) {
+            if (lifetime.signal.aborted || failed !== undefined) return
+            queue.push({ generation: 0, value, signal: lifetime.signal, accept: () => { accepted = true } })
+            deliver()
+          }
+          if (lifetime.signal.aborted) return
+          throw options.ended(accepted)
+        } catch (error) {
+          if (lifetime.signal.aborted || failed !== undefined) return
+          if (error instanceof RemoteStreamCarrierError) {
+            options.carrierFailed?.(error)
+            await Promise.resolve() // the supervisor's retry beat, microtask-scaled
+            continue
+          }
+          // TERMINAL (the RemoteStream law): the iterator throws it
+          failed = error instanceof Error ? error : new Error(String(error))
+          for (const waiter of parked.splice(0)) waiter.reject(failed)
+          return
+        }
+      }
+    }
+    void run()
+    return {
+      [Symbol.asyncIterator]: () => ({
+        next: (): Promise<IteratorResult<RemoteStreamItem<T>>> =>
+          new Promise((resolve, reject) => {
+            // abort may have fired while the consumer sat at a yield —
+            // resolve done immediately instead of parking forever
+            if (lifetime.signal.aborted) return resolve({ done: true, value: undefined as never })
+            const head = queue.shift()
+            if (head !== undefined) return resolve({ done: false, value: head })
+            if (failed !== undefined) return reject(failed)
+            parked.push({ resolve, reject })
+          }),
+      }),
+      dispose: async (): Promise<void> => { lifetime.abort() },
+    }
+  }
+  const bench = {
+    subscribe: (key: string, _signal?: AbortSignal): AsyncIterable<Record<string, unknown>> =>
+      openChannel(key),
+  }
+  const push = (key: string, doc: Record<string, unknown>): void => {
+    const live = channels.filter((c) => c.key === key && c.open).at(-1)
+    if (live === undefined) {
+      pending.set(key, [...(pending.get(key) ?? []), doc])
+      return
+    }
+    live.queue.push(doc)
+    live.wake?.()
+  }
+  return {
+    remote: { bench, $stream } as unknown as ClientRemote,
+    push,
+    drop: () => { for (const c of channels) { c.open = false; c.wake?.() } },
+    failOpen: (key, error) => { rejections.set(key, error) },
+    isOpen,
+  }
+}
+
+/** Flush the microtask chain (channel delivery rides microtasks). */
+const tick = async (n = 2): Promise<void> => {
+  for (let i = 0; i < n; i++) await new Promise((resolve) => { setTimeout(resolve, 0) })
+}
+
+/** Await an explicit test phase (nothing advances without a push). */
+const until = async (probe: () => boolean, turns = 200): Promise<void> => {
+  for (let i = 0; i < turns && !probe(); i++) await new Promise((resolve) => { setTimeout(resolve, 0) })
+  expect(probe()).toBe(true)
+}
 
 afterEach(() => {
   vi.unstubAllGlobals()
@@ -96,20 +291,19 @@ describe('the bench address law (stroke 44 — the key rides the address tail, t
 
 describe('stroke 44 — a fresh conversation\'s bench (missing = empty, never failure)', () => {
   test('the stream opens with the empty bench and the birth lands as a fresh frame', async () => {
-    vi.useFakeTimers()
-    stubApi({
-      'bench/get': [new Error('typert: no such bench: s_new'), benchDoc(1, ['first card'])],
-    })
+    // the channel: the zero doc (the birth watch), then the estate's
+    // first write — push, no cadence
+    const bench = fakeRemote()
+    bench.push('s_new', zeroDoc('s_new'))
+    bench.push('s_new', benchDoc(1, ['first card']))
     const controller = new AbortController()
     const frames: unknown[] = []
-    const stream = openCardsResource('dsh-resource://cards/bench/s_new', { signal: controller.signal })
     const done = (async (): Promise<void> => {
-      for await (const frame of stream) {
+      for await (const frame of openCardsResource('dsh-resource://cards/bench/s_new', { signal: controller.signal }, bench.remote)) {
         frames.push(frame)
         if (frames.length === 2) controller.abort()
       }
     })()
-    await vi.advanceTimersByTimeAsync(2600)
     await done
     const first = frames[0] as { ok: boolean; value: { rev: number; stages: unknown[] } }
     expect(first.ok).toBe(true) // NOT a failure frame — the honest empty bench
@@ -117,6 +311,20 @@ describe('stroke 44 — a fresh conversation\'s bench (missing = empty, never fa
     expect(first.value.stages).toEqual([])
     const second = frames[1] as { value: { rev: number } }
     expect(second.value.rev).toBe(1) // the birth is a fresh frame
+  })
+
+  test('the unmounted face degrades honestly: ONE HTTP snapshot, ONE failure frame, no poll', async () => {
+    stubApi({ 'bench/get': [benchDoc(7, ['hero frame'])] })
+    const frames: unknown[] = []
+    for await (const frame of openCardsResource('dsh-resource://cards/bench', { signal: AbortSignal.timeout(50) })) {
+      frames.push(frame)
+    }
+    expect(frames.length).toBe(2) // then the tail ENDS — a broken mount never fakes a watch
+    expect((frames[0] as { ok: boolean; value: { rev: number } }).ok).toBe(true)
+    expect((frames[0] as { value: { rev: number } }).value.rev).toBe(7)
+    const second = frames[1] as { ok: boolean; error: { message: string } }
+    expect(second.ok).toBe(false)
+    expect(second.error.message).toContain('bench stream unavailable')
   })
 
   test('other refusions are still failures — only the missing bench is the zero state', async () => {
@@ -130,36 +338,33 @@ describe('stroke 44 — a fresh conversation\'s bench (missing = empty, never fa
   })
 
   test('the watcher baselines a missing bench at rev 0 — the FIRST agent card in a new conversation reveals', async () => {
-    vi.useFakeTimers()
-    stubApi({
-      'bench/get': [new Error('typert: no such bench: s_new'), agentDoc(1, ['first agent card'])],
-    })
+    const bench = fakeRemote()
     const landed: string[] = []
-    const stop = watchBenchLands(() => 's_new', (key) => { landed.push(key) })
-    await vi.advanceTimersByTimeAsync(2200)
+    const stop = watchBenchLands(() => 's_new', (key) => { landed.push(key) }, undefined, bench.remote)
+    await until(() => bench.isOpen('s_new'))
+    bench.push('s_new', zeroDoc('s_new'))
+    bench.push('s_new', agentDoc(1, ['first agent card']))
+    await until(() => landed.length === 1)
     expect(landed).toEqual(['s_new'])
     stop()
   })
 })
 
-describe('the bench resource stream (live co-presence)', () => {
+describe('the bench resource stream (live co-presence, the mux tail)', () => {
   test('a foreign rev bump yields a fresh frame to every open consumer', async () => {
-    vi.useFakeTimers()
-    // the wire: the snapshot (rev 7, one row), then the AGENT's write
-    // (rev 8, the agent row) — the tab never touched the wire between
-    stubApi({
-      'bench/get': [benchDoc(7, ['hero frame']), benchDoc(8, ['hero frame', 'agent row'])],
-    })
+    // the channel: the snapshot (rev 7, one row), then the AGENT's
+    // write (rev 8, the agent row) — the tab never touched the wire
+    const bench = fakeRemote()
+    bench.push('main', benchDoc(7, ['hero frame']))
+    bench.push('main', benchDoc(8, ['hero frame', 'agent row']))
     const controller = new AbortController()
     const frames: unknown[] = []
-    const stream = openCardsResource('dsh-resource://cards/bench', { signal: controller.signal })
     const done = (async (): Promise<void> => {
-      for await (const frame of stream) {
+      for await (const frame of openCardsResource('dsh-resource://cards/bench', { signal: controller.signal }, bench.remote)) {
         frames.push(frame)
         if (frames.length === 2) controller.abort()
       }
     })()
-    await vi.advanceTimersByTimeAsync(2600)
     await done
     // frame 1: the mounted snapshot. frame 2: the agent's row landed —
     // NO user gesture, NO view watcher: the provider's own tail.
@@ -170,41 +375,74 @@ describe('the bench resource stream (live co-presence)', () => {
     expect(second.value.stages.map((s) => s.title)).toEqual(['hero frame', 'agent row'])
   })
 
-  test('no rev drift, no frame: the tail is quiet on a still bench', async () => {
-    vi.useFakeTimers()
-    stubApi({ 'bench/get': [benchDoc(7, ['hero frame'])] })
+  test('no rev drift, no frame: the tail is quiet on a still bench (a reconnect re-serves the same doc)', async () => {
+    // rev 7 arrives TWICE on the SAME live channel (the estate
+    // re-served the doc; no drift); same rev, no frame — the loss
+    // voice below proves the channel was still alive to serve it
+    const bench = fakeRemote()
+    bench.push('main', benchDoc(7, ['hero frame']))
     const controller = new AbortController()
     const frames: unknown[] = []
     const done = (async (): Promise<void> => {
-      for await (const frame of openCardsResource('dsh-resource://cards/bench', { signal: controller.signal })) {
+      for await (const frame of openCardsResource('dsh-resource://cards/bench', { signal: controller.signal }, bench.remote)) {
         frames.push(frame)
       }
     })()
-    await vi.advanceTimersByTimeAsync(8000)
+    await until(() => frames.length === 1)
+    bench.push('main', benchDoc(7, ['hero frame'])) // same doc again
+    await tick(3)
+    expect(frames.length).toBe(1) // still exactly the first frame
+    bench.drop() // liveness proof: the same channel CAN voice a change
+    await until(() => frames.length === 2)
+    const loss = frames[1] as { ok: boolean }
+    expect(loss.ok).toBe(false) // the drop voiced — so the quiet above was real quiet
     controller.abort()
     await done
-    expect(frames.length).toBe(1)
   })
 
-  test('a transport error mid-tail is not a failure frame — the last ok value stays', async () => {
-    vi.useFakeTimers()
-    stubApi({
-      'bench/get': [benchDoc(7, ['hero frame']), new Error('transport hiccup'), benchDoc(9, ['agent row'])],
-    })
+  test('a carrier drop mid-tail voices ONE loss frame, then the reconnect serves the fresh doc', async () => {
+    // the channel serves rev 7, then the mux drops mid-watch; the
+    // supervisor reconnects and the agent's rev-9 write lands — the
+    // visibility law: the loss is a frame, never a freeze
+    const bench = fakeRemote()
+    bench.push('main', benchDoc(7, ['hero frame']))
     const controller = new AbortController()
     const frames: unknown[] = []
     const done = (async (): Promise<void> => {
-      for await (const frame of openCardsResource('dsh-resource://cards/bench', { signal: controller.signal })) {
+      for await (const frame of openCardsResource('dsh-resource://cards/bench', { signal: controller.signal }, bench.remote)) {
         frames.push(frame)
-        if (frames.length === 2) controller.abort()
+        if (frames.length === 3) controller.abort()
       }
     })()
-    await vi.advanceTimersByTimeAsync(5200)
+    await until(() => frames.length === 1)
+    bench.drop()
+    await until(() => frames.length === 2) // the loss voice lands at the drop
+    await until(() => bench.isOpen('main')) // the reconnect
+    bench.push('main', benchDoc(9, ['agent row']))
     await done
-    expect(frames.length).toBe(2)
-    const second = frames[1] as { ok: boolean; value: { rev: number } }
-    expect(second.ok).toBe(true)
-    expect(second.value.rev).toBe(9)
+    expect(frames.length).toBe(3)
+    const loss = frames[1] as { ok: boolean; error: { message: string } }
+    expect(loss.ok).toBe(false)
+    expect(loss.error.message).toContain('bench live stream lost')
+    const third = frames[2] as { ok: boolean; value: { rev: number } }
+    expect(third.ok).toBe(true)
+    expect(third.value.rev).toBe(9)
+  })
+
+  test('a terminal stream failure is ONE final failure frame, then the tail ends', async () => {
+    // open() rejected with a non-carrier error — the supervisor gave
+    // up; the tail voices it once and ends (the holder can reopen)
+    const bench = fakeRemote()
+    bench.failOpen('main', new Error('the supervisor gave up'))
+    const frames: unknown[] = []
+    for await (const frame of openCardsResource('dsh-resource://cards/bench', { signal: AbortSignal.timeout(500) }, bench.remote)) {
+      frames.push(frame)
+    }
+    expect(frames.length).toBe(1)
+    const first = frames[0] as { ok: boolean; error: { message: string } }
+    expect(first.ok).toBe(false)
+    expect(first.error.message).toContain('bench stream failed')
+    expect(first.error.message).toContain('the supervisor gave up')
   })
 })
 
@@ -366,70 +604,79 @@ const userDoc = (rev: number, titles: string[]): Record<string, unknown> => ({
   log: [{ rev, at: 1, author: 'user', kind: 'patch' }],
 })
 
-describe('the bench spotlight (the one-flow reveal)', () => {
+describe('the bench spotlight (the one-flow reveal, stream edition)', () => {
   test('an agent-authored land fires the reveal — hydration history never does', async () => {
-    vi.useFakeTimers()
-    // the wire: hydration (rev 12 — its log may carry OLD agent rows;
-    // history never yanks), then the agent's write (rev 13)
-    stubApi({
-      'bench/get': [agentDoc(12, ['hero frame']), agentDoc(13, ['hero frame', 'agent row'])],
-    })
+    // the channel: hydration (rev 12 — its log may carry OLD agent
+    // rows; history never yanks), then the agent's write (rev 13)
+    const bench = fakeRemote()
     const lands: number[] = []
-    const stop = watchBenchLands(() => 'main', () => { lands.push(1) })
-    await vi.advanceTimersByTimeAsync(100)
-    expect(lands.length).toBe(0) // hydration: the first read is baseline
-    await vi.advanceTimersByTimeAsync(2100)
-    expect(lands.length).toBe(1) // the agent's row: the surface comes forward
+    const stop = watchBenchLands(() => 'main', () => { lands.push(1) }, undefined, bench.remote)
+    await until(() => bench.isOpen('main'))
+    bench.push('main', agentDoc(12, ['hero frame']))
+    await tick()
+    expect(lands.length).toBe(0) // hydration: the first doc is baseline
+    bench.push('main', agentDoc(13, ['hero frame', 'agent row']))
+    await until(() => lands.length === 1)
     stop()
-    await vi.advanceTimersByTimeAsync(2100)
+    await tick(2)
     expect(lands.length).toBe(1) // stopped: never fires again
   })
 
   test('a user-authored bump NEVER reveals — the human was the author', async () => {
-    vi.useFakeTimers()
-    stubApi({
-      'bench/get': [userDoc(12, ['hero frame']), userDoc(13, ['hero frame', 'user edit'])],
-    })
+    const bench = fakeRemote()
     const lands: number[] = []
-    const stop = watchBenchLands(() => 'main', () => { lands.push(1) })
-    await vi.advanceTimersByTimeAsync(4200)
+    const stop = watchBenchLands(() => 'main', () => { lands.push(1) }, undefined, bench.remote)
+    await until(() => bench.isOpen('main'))
+    bench.push('main', userDoc(12, ['hero frame']))
+    bench.push('main', userDoc(13, ['hero frame', 'user edit']))
+    await tick(2)
     expect(lands.length).toBe(0)
     stop()
   })
 
-  test('a dead wire keeps trying — the agent land after recovery still fires', async () => {
-    vi.useFakeTimers()
-    stubApi({
-      'bench/get': [userDoc(12, ['hero frame']), new Error('lane restarted'), agentDoc(14, ['agent row'])],
-    })
+  test('a dead wire keeps watching — the agent land after the reconnect still fires', async () => {
+    // the baseline generation ends with the mux drop; the supervisor
+    // reconnects — the agent's rev-14 write on the NEW generation fires
+    const bench = fakeRemote()
     const lands: number[] = []
-    const stop = watchBenchLands(() => 'main', () => { lands.push(1) })
-    await vi.advanceTimersByTimeAsync(6300)
-    expect(lands.length).toBe(1) // poll 1 baseline, poll 2 dead, poll 3 landed
+    const stop = watchBenchLands(() => 'main', () => { lands.push(1) }, undefined, bench.remote)
+    await until(() => bench.isOpen('main'))
+    bench.push('main', userDoc(12, ['hero frame']))
+    await tick()
+    bench.drop() // the wire dies
+    await until(() => bench.isOpen('main')) // and recovers
+    bench.push('main', agentDoc(14, ['agent row']))
+    await until(() => lands.length === 1)
     stop()
   })
 
   test('stroke 44 — switching sessions re-baselines: the new conversation\'s history never reveals, its fresh agent lands fire with the key', async () => {
-    vi.useFakeTimers()
     let current = 's_old'
     // s_old's bench: rev 12 hydration with OLD agent rows (history);
     // s_new's bench: rev 40 hydration (fresh conversation baseline),
     // then rev 41 — the new conversation's agent composing.
-    stubApi({
-      'bench/get': [
-        agentDoc(12, ['old conversation row']),
-        agentDoc(40, []),
-        agentDoc(41, ['new conversation row']),
-      ],
-    })
+    const bench = fakeRemote()
+    let sessionChanged: (() => void) | undefined
     const landed: string[] = []
-    const stop = watchBenchLands(() => current, (key) => { landed.push(key) })
-    await vi.advanceTimersByTimeAsync(100)
+    const stop = watchBenchLands(
+      () => current,
+      (key) => { landed.push(key) },
+      undefined,
+      bench.remote,
+      (fn: () => void) => { sessionChanged = fn; return () => {} },
+    )
+    await until(() => bench.isOpen('s_old'))
+    bench.push('s_old', agentDoc(12, ['old conversation row']))
+    await tick()
     expect(landed.length).toBe(0) // s_old hydration — baseline
     current = 's_new' // the operator starts a new conversation
-    await vi.advanceTimersByTimeAsync(2100)
+    sessionChanged!() // the session observable pushes the switch
+    await until(() => bench.isOpen('s_new'))
+    bench.push('s_new', agentDoc(40, []))
+    await tick()
     expect(landed.length).toBe(0) // s_new FIRST sight: hydration, never a reveal
-    await vi.advanceTimersByTimeAsync(2100)
+    bench.push('s_new', agentDoc(41, ['new conversation row']))
+    await until(() => landed.length === 1)
     expect(landed).toEqual(['s_new']) // the new conversation's agent: fires with ITS key
     stop()
   })

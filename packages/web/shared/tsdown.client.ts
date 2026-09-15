@@ -13,7 +13,7 @@
  * shell's seed table in `./web-platform.ts`.
  */
 import { readFile } from 'node:fs/promises'
-import { existsSync, realpathSync } from 'node:fs'
+import { existsSync, realpathSync, readFileSync } from 'node:fs'
 import { createRequire } from 'node:module'
 import { basename, dirname, isAbsolute, relative, resolve as resolvePath, sep } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -203,7 +203,34 @@ function clientLibraryConfig(
   }
 }
 
+/** Read one plugin's `dsh.client.external` manifest rows (DSH's
+ *  plugin-build law, references workspace-controller's dsh block):
+ *  modules the shell's runtime registry provides at plugin load —
+ *  shell-side assemblies (dsh-api-gateway's client service is a
+ *  loader-format artifact) a plugin bundle must NOT inline, only
+ *  require. The workspace-controller declares exactly this seam for
+ *  '@deepseek-ai/dsh-api-gateway/client' (RemoteStreamCarrierError +
+ *  ClientRemote); the estate's cards tab consumes the same seam for
+ *  the bench stream. A missing manifest or field externalizes
+ *  nothing.
+ * @param id - plugin package name whose manifest is read (cwd).
+ * @returns the declared external specifiers, in declaration order. */
+function manifestClientExternal(id: string): readonly string[] {
+  const manifestPath = resolvePath(process.cwd(), 'package.json')
+  if (!existsSync(manifestPath)) return []
+  const manifest = JSON.parse(readFileSync(manifestPath, 'utf8')) as {
+    name?: string
+    dsh?: { client?: { external?: unknown } }
+  }
+  if (manifest.name !== id || !Array.isArray(manifest.dsh?.client?.external)) return []
+  const rows = manifest.dsh.client.external.filter((row): row is string => typeof row === 'string')
+  return rows
+}
+
 function clientConfig(id: string, entry: string): UserConfig {
+  // MANIFEST EXTERNALS ride the browser bundle (see
+  // manifestClientExternal for the law).
+  const manifestExternal = manifestClientExternal(id)
   return {
     name: `${id}/client`,
     entry: { client: entry },
@@ -227,7 +254,7 @@ function clientConfig(id: string, entry: string): UserConfig {
     // must carry the TS/TSX mapping consumed by browser profiling tools.
     sourcemap: true,
     clean: false,
-    external: [...CLIENT_EXTERNALS],
+    external: [...CLIENT_EXTERNALS, ...manifestExternal],
     // Browser bundles inline node-idiom deps (zustand/immer read
     // process.env.NODE_ENV; zustand's esm build also probes
     // import.meta.env.MODE, which a CJS output cannot carry — rolldown flags

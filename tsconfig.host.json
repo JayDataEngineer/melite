@@ -6,12 +6,26 @@
   // package manifest to declare its ./typert export — the mirrored
   // shape is references/deepseek-harness/tsconfig.host.json. This
   // config exists for GENERATION ONLY (noEmit): the referenced
-  // tsconfigs still own typecheck and emit. The generator builds its
-  // program with THIS config's compilerOptions over the referenced
-  // roots, so the base's resolver must hold.
+  // tsconfigs still own typecheck and emit.
+  //
+  // THE SOURCE-PLANE ALIAS: DSH's own aggregates resolve workspace
+  // siblings to SRC (their checkProject comment: "Source-plane
+  // workspace aliases resolve referenced packages to source") — the
+  // cross-package reference check reads the sibling's SOURCE FILE
+  // from the program; a lib/.d.ts resolution is not in the program's
+  // sourceFiles map and crashes the analyzer. The vendored protocol
+  // rides the alias.
   "extends": "./tsconfig.base.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "paths": {
+      "@deepseek-ai/dsh-typert-protocol": ["./packages/vendor/typert-protocol/src/index.ts"],
+      "@deepseek-ai/dsh-typert-protocol/types": ["./packages/vendor/typert-protocol/src/types.ts"]
+    }
+  },
   "files": [],
   "references": [
+    { "path": "packages/vendor/typert-protocol" },
     { "path": "packages/estate/drafts" },
     { "path": "packages/harness/estate-queue" }
   ]

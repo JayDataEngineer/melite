@@ -37,6 +37,12 @@ import type { Context as ClientContext } from '@deepseek-ai/cordis'
 import type {} from '@deepseek-ai/dsh-client-ui-renderer/client'
 import type {} from '@deepseek-ai/dsh-client-ui-sidebar-right/client'
 import type {} from '@deepseek-ai/dsh-client-resources/client'
+// The gateway client's remote service seat (ctx.remote: $mount/$stream
+// + the mounted namespace face) and the estate's generated
+// contribution (TYPERT_REMOTE — the descriptor set the mount serves;
+// its declaration merge types ctx.remote.bench / ctx.remote.drafts).
+import type {} from '@deepseek-ai/dsh-api-gateway/client'
+import { TYPERT_REMOTE } from '@melite/estate-drafts/remote'
 import { FlowCards } from './FlowCards.tsx'
 import { CardsTab } from './CardsTab.tsx'
 import { CARDS_BENCH_ADDRESS, benchAddressOf, benchSessionKey, openCardsResource, shouldSpotlight, watchBenchLands } from './cards-resource.ts'
@@ -92,15 +98,33 @@ const CARDS_TAB_ID = '@melite-plugin/dsh-card-view'
 /** Required services (fiber inject waiting — the registries must be up
  *  first: the native sidebar subsystem + the resource model + the
  *  sidebar's navigation face, which the conversation card's rows ride
- *  to open the Cards tab at a draft stage — the old embed's law). */
-export const inject = ['slots', 'sidebarRightTabs', 'resources', 'sidebarRight']
+ *  to open the Cards tab at a draft stage — the old embed's law — and
+ *  the gateway client's remote service, which carries the mounted
+ *  estate namespaces the bench tail consumes). */
+export const inject = ['slots', 'sidebarRightTabs', 'resources', 'sidebarRight', 'remote']
 
 /**
  * Register both planes: the toolview keys for every card tool, and the
  * cards tab (type + body + resource provider).
  * @param ctx - client root context.
  */
-export function apply(ctx: ClientContext): void {
+export async function apply(ctx: ClientContext): Promise<void> {
+  // THE CONTRIBUTION MOUNT (the mux swap's client half, 2026-09-15):
+  // the generated bench/drafts descriptors mount onto ctx.remote —
+  // after this the browser speaks the estate's remotes natively
+  // (bench/subscribe pushes over the same-origin mux; the poll era's
+  // HTTP heartbeat is dead). The mount rides the plugin's effect
+  // lifetime (cordis disposes with the plugin); a failed mount is
+  // LOGGED, never thrown — the cards tab then serves one HTTP
+  // snapshot + one visible failure frame (the silent-death law), and
+  // the rest of the plugin keeps its seats.
+  try {
+    const dispose = await ctx.remote.$mount(TYPERT_REMOTE)
+    ctx.effect(() => dispose, 'melite-card-view: estate remote contribution')
+  } catch (error) {
+    console.error('[melite-card-view] estate remote contribution failed to mount:', error)
+  }
+
   // DOUBLE-APPLY LAW (client contract): registration conflicts fail at
   // load — "do not work around it; the conflict is the design
   // speaking." A stale-bundle second apply throws per registration;
@@ -186,11 +210,14 @@ export function apply(ctx: ClientContext): void {
   }
 
   // The resource provider — the values the body reads (and the wand's
-  // openResource targets, plan §5).
+  // openResource targets, plan §5). The LIVE remote face rides the
+  // open call (the bench tail subscribes through it; a failed mount
+  // leaves it absent and the provider degrades visibly).
   try {
     ctx.effect(() => ctx.resources.register({
       protocol: 'cards',
-      open: openCardsResource,
+      open: (address: string, rctx: { signal: AbortSignal }) =>
+        openCardsResource(address, rctx, ctx.remote),
     }), 'melite-card-view: cards resource provider')
   } catch (error) {
     console.error('[melite-card-view] cards resource provider registration failed:', error)
@@ -212,9 +239,10 @@ export function apply(ctx: ClientContext): void {
     // THE SESSION SOURCE (stroke 44): uiSession's scope adapter
     // follows the current selection — getSnapshot().props.sessionId
     // (the ui-session merge's SessionStandardProps) is the active
-    // conversation. The watcher re-reads it on EVERY poll, so a
-    // conversation switch re-baselines onto the new bench at the next
-    // tick without any subscription bookkeeping.
+    // conversation. The watcher reads it on every wake and subscribes
+    // to the adapter's observable for push-driven re-keys (a
+    // conversation switch re-keys the bench stream at switch time —
+    // HostObservable.subscribe, no timer).
     const activeBenchSession = (): string => {
       try {
         const uiSession = (ctx as unknown as { uiSession?: { adapter?: { current?: { getSnapshot?: () => { props?: Record<string, unknown> } } } } }).uiSession
@@ -225,6 +253,15 @@ export function apply(ctx: ClientContext): void {
         return 'main'
       }
     }
+    const subscribeBenchSession = (fn: () => void): (() => void) => {
+      try {
+        const uiSession = (ctx as unknown as { uiSession?: { adapter?: { current?: { subscribe?: (listener: () => void) => () => void } } } }).uiSession
+        const off = uiSession?.adapter?.current?.subscribe?.(fn)
+        return typeof off === 'function' ? off : () => {}
+      } catch {
+        return () => {}
+      }
+    }
     ctx.effect(() => watchBenchLands(activeBenchSession, (sessionKey) => {
       try {
         if (shouldSpotlight(ctx.sidebarRight.isExpanded())) {
@@ -233,7 +270,7 @@ export function apply(ctx: ClientContext): void {
       } catch (error) {
         console.error('[melite-card-view] bench spotlight reveal failed:', error)
       }
-    }), 'melite-card-view: bench spotlight')
+    }, undefined, ctx.remote, subscribeBenchSession), 'melite-card-view: bench spotlight')
   } catch (error) {
     console.error('[melite-card-view] bench spotlight registration failed:', error)
   }

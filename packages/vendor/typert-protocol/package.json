@@ -1,0 +1,38 @@
+{
+  "name": "@deepseek-ai/dsh-typert-protocol",
+  "description": "VENDORED (2026-09-15): @deepseek-ai/dsh-typert-protocol 0.1.5-rc.2, copied verbatim from this repo's references/deepseek-harness checkout (packages/typert/protocol/src — version-identical to the registry artifact the estate links). WHY A VENDOR COPY: the DSH Typert generator's identity law (generator/src/analyzer.ts isTypeMetaSymbol) recognizes @Remote decorators only when the protocol's declaration files sit inside a registered workspace package — the generator is a monorepo tool by construction, so the workspace must carry the protocol as a sibling (DSH's own aggregate references packages/typert/protocol; their tsconfig.host.json:169). Same name + same version means pnpm links every range-matching consumer onto THIS copy with no override. DO NOT EDIT the src files — re-vendor from references on upgrade (the copy-don't-invent law, AGENTS.md LAW 1).",
+  "version": "0.1.5-rc.2",
+  "private": true,
+  "type": "module",
+  "main": "lib/index.js",
+  "types": "lib/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./lib/index.d.ts",
+      "default": "./lib/index.js"
+    },
+    "./types": {
+      "types": "./lib/types.d.ts",
+      "default": "./lib/types.js"
+    },
+    "./src/*": "./src/*",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "lib/*.js",
+    "lib/*.d.ts"
+  ],
+  "license": "MIT",
+  "peerDependencies": {
+    "@deepseek-ai/cordis": "^4.0.2"
+  },
+  "devDependencies": {
+    "@deepseek-ai/cordis": "^4.0.2",
+    "@types/node": "^22.20.1",
+    "typescript": "^5.9.3"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc --noEmit"
+  }
+}

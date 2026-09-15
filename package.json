@@ -1,5 +1,10 @@
 {
   "type": "module",
+  "pnpm": {
+    "overrides": {
+      "@deepseek-ai/dsh-typert-protocol": "workspace:*"
+    }
+  },
   "dependencies": {
     "lightningcss": "^1.33.0"
   },

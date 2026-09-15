@@ -5,10 +5,25 @@
   "type": "module",
   "description": "REBUILD-1 (2026-09-10): the drafts domain as a DSH-native Typert Remote owner. Draft list/get over the host's storageDomain facility — no routes, no lanes, no second process. Follows references/deepseek-harness/docs/cookbook/adding-a-remote-api.md.",
   "main": "./lib/index.js",
+  "files": [
+    "lib/typert.host.js",
+    "lib/typert.host.d.ts",
+    "lib/typert.remote-client.js",
+    "lib/typert.remote-client.d.ts",
+    "lib/typert.remote-client.d.ts.map",
+    "lib/index.js",
+    "lib/index.d.ts",
+    "lib/**/*.js",
+    "lib/**/*.d.ts"
+  ],
   "exports": {
     ".": {
       "types": "./lib/index.d.ts",
       "default": "./lib/index.js"
+    },
+    "./types": {
+      "types": "./lib/types.d.ts",
+      "default": "./lib/types.js"
     },
     "./typert": {
       "types": "./lib/typert.host.d.ts",
@@ -30,7 +45,7 @@
     "zod": "4.5.4"
   },
   "devDependencies": {
-    "@deepseek-ai/dsh-typert-generator": "0.0.1-rc.1",
+    "@deepseek-ai/dsh-typert-generator": "0.1.5-rc.2",
     "@types/node": "^22.20.0",
     "typescript": "^5.9.3"
   },

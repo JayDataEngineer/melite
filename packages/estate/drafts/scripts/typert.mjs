@@ -19,7 +19,7 @@ import { join, resolve } from 'node:path'
 import { WorkspaceTypertGenerator } from '@deepseek-ai/dsh-typert-generator'
 
 const pkgRoot = resolve(import.meta.dirname, '..')
-const repoRoot = resolve(pkgRoot, '../..')
+const repoRoot = resolve(pkgRoot, '../../..')
 
 const generator = new WorkspaceTypertGenerator(repoRoot, {
   hostConfig: 'tsconfig.host.json',

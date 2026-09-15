@@ -872,7 +872,7 @@ describe("the bench/subscribe stream remote", () => {
     ];
     // the receiver: a bare object with the get arm the generator calls
     const fake = { get: async (): Promise<Row> => rows.shift() ?? rows[0]! };
-    const gen = BenchRemoteService.prototype.remoteExportSubscribe.call(
+    const gen = BenchRemoteService.prototype.subscribe.call(
       fake as never,
       "main",
       controller.signal,
@@ -896,7 +896,7 @@ describe("the bench/subscribe stream remote", () => {
     const fake = {
       get: async (): Promise<Row> => ({ draft_id: "bench-main", session: "main", rev: 2, intent: null, stages: [], log: [] }),
     };
-    const gen = BenchRemoteService.prototype.remoteExportSubscribe.call(
+    const gen = BenchRemoteService.prototype.subscribe.call(
       fake as never,
       "main",
       controller.signal,
@@ -915,7 +915,7 @@ describe("the bench/subscribe stream remote", () => {
     const fake = {
       get: async (): Promise<Row> => ({ draft_id: "bench-main", session: "main", rev: 5, intent: null, stages: [], log: [] }),
     };
-    const gen = BenchRemoteService.prototype.remoteExportSubscribe.call(
+    const gen = BenchRemoteService.prototype.subscribe.call(
       fake as never,
       "main",
       controller.signal,
@@ -940,7 +940,7 @@ describe("the bench/subscribe stream remote", () => {
     const fake = {
       get: async (): Promise<Row> => ({ draft_id: "bench-main", session: "main", rev: 1, intent: null, stages: [], log: [] }),
     };
-    const gen = BenchRemoteService.prototype.remoteExportSubscribe.call(
+    const gen = BenchRemoteService.prototype.subscribe.call(
       fake as never,
       "main",
       controller.signal,

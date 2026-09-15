@@ -200,6 +200,14 @@ export default defineConfig({
             'micromark-util-classify-character': rootPath('node_modules/micromark-util-classify-character'),
             'micromark-util-sanitize-uri': rootPath('node_modules/micromark-util-sanitize-uri'),
             'micromark-util-symbol': rootPath('node_modules/micromark-util-symbol'),
+            // The gateway's client face is a module-loader artifact
+            // (window.__ModuleLoader__.load — it only executes inside
+            // the DSH web shell). The browser bundle externalizes it
+            // through the manifest dsh.client.external seam; specs
+            // resolve this stand-in carrying the one runtime value
+            // cards-resource.ts imports (RemoteStreamCarrierError).
+            // Types come from the real package at typecheck time.
+            '@deepseek-ai/dsh-api-gateway/client': rootPath('packages/web/melite-card-view/tests/fixtures/gateway-client.ts'),
             'lucide-react': path.join(CARD_VIEW, 'node_modules/lucide-react'),
             'three/addons': path.join(CARD_VIEW, 'node_modules/three/examples/jsm'),
             'three/examples': path.join(CARD_VIEW, 'node_modules/three/examples'),

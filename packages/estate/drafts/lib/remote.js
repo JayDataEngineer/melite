@@ -213,7 +213,7 @@ let DraftsRemoteService = (() => {
         }
         /** Endpoint `drafts/get` — one doc by id. */
         async remoteExportGet(draftId, signal) {
-            return await this.get(draftId, signal);
+            return (await this.get(draftId, signal));
         }
         /** The in-process API the adapters above delegate to. */
         async list(signal) {
@@ -429,7 +429,7 @@ let BenchRemoteService = (() => {
     let _classSuper = TypertRemoteService;
     let _instanceExtraInitializers = [];
     let _remoteExportGet_decorators;
-    let _remoteExportSubscribe_decorators;
+    let _subscribe_decorators;
     let _remoteExportEnsure_decorators;
     let _remoteExportPatch_decorators;
     let _remoteExportAddStage_decorators;
@@ -443,7 +443,7 @@ let BenchRemoteService = (() => {
         static {
             const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(_classSuper[Symbol.metadata] ?? null) : void 0;
             _remoteExportGet_decorators = [Remote("get")];
-            _remoteExportSubscribe_decorators = [Remote({ mode: "stream" })];
+            _subscribe_decorators = [Remote({ mode: "stream" })];
             _remoteExportEnsure_decorators = [Remote("ensure")];
             _remoteExportPatch_decorators = [Remote("patch")];
             _remoteExportAddStage_decorators = [Remote("add-stage")];
@@ -454,7 +454,7 @@ let BenchRemoteService = (() => {
             _remoteExportUngroup_decorators = [Remote("ungroup")];
             _remoteExportUndo_decorators = [Remote("undo")];
             __esDecorate(this, null, _remoteExportGet_decorators, { kind: "method", name: "remoteExportGet", static: false, private: false, access: { has: obj => "remoteExportGet" in obj, get: obj => obj.remoteExportGet }, metadata: _metadata }, null, _instanceExtraInitializers);
-            __esDecorate(this, null, _remoteExportSubscribe_decorators, { kind: "method", name: "remoteExportSubscribe", static: false, private: false, access: { has: obj => "remoteExportSubscribe" in obj, get: obj => obj.remoteExportSubscribe }, metadata: _metadata }, null, _instanceExtraInitializers);
+            __esDecorate(this, null, _subscribe_decorators, { kind: "method", name: "subscribe", static: false, private: false, access: { has: obj => "subscribe" in obj, get: obj => obj.subscribe }, metadata: _metadata }, null, _instanceExtraInitializers);
             __esDecorate(this, null, _remoteExportEnsure_decorators, { kind: "method", name: "remoteExportEnsure", static: false, private: false, access: { has: obj => "remoteExportEnsure" in obj, get: obj => obj.remoteExportEnsure }, metadata: _metadata }, null, _instanceExtraInitializers);
             __esDecorate(this, null, _remoteExportPatch_decorators, { kind: "method", name: "remoteExportPatch", static: false, private: false, access: { has: obj => "remoteExportPatch" in obj, get: obj => obj.remoteExportPatch }, metadata: _metadata }, null, _instanceExtraInitializers);
             __esDecorate(this, null, _remoteExportAddStage_decorators, { kind: "method", name: "remoteExportAddStage", static: false, private: false, access: { has: obj => "remoteExportAddStage" in obj, get: obj => obj.remoteExportAddStage }, metadata: _metadata }, null, _instanceExtraInitializers);
@@ -484,10 +484,41 @@ let BenchRemoteService = (() => {
          *  with zero consumer changes. Abort ends the stream; a write's
          *  listener fault never breaks the stream (the next write re-wakes
          *  it). */
-        async *remoteExportSubscribe(sessionKey, signal) {
+        async *subscribe(sessionKey, signal) {
             signal.throwIfAborted();
             for (;;) {
-                yield await this.get(sessionKey, signal);
+                // THE ZERO-STATE LAW (the stream tail's birth watch): a fresh
+                // conversation's bench does not exist until its first write.
+                // The gateway's RemoteStream classifies a REJECTED open as
+                // TERMINAL (no retry — terminalStreamFailure), so a throwing
+                // first read here would kill the browser's whole bench stream
+                // the moment a conversation starts. The watch instead serves
+                // the ZERO STATE (rev 0, empty stages — the same row shape the
+                // client's emptyBench served in the poll era) and stays open:
+                // the birth (ensure's notifyBenchChange) wakes the park and the
+                // next read serves the born bench. `bench/get` still refuses
+                // not-found for direct unary callers — only the WATCH degrades.
+                let row;
+                try {
+                    row = await this.get(sessionKey, signal);
+                }
+                catch (error) {
+                    if (error instanceof RemoteError &&
+                        error.code === "bench/not-found") {
+                        row = {
+                            draft_id: "bench-" + sessionKey,
+                            session: sessionKey,
+                            rev: 0,
+                            intent: "",
+                            stages: [],
+                            log: [],
+                        };
+                    }
+                    else {
+                        throw error;
+                    }
+                }
+                yield row;
                 // wake on the session's next write (or abort). An abort that
                 // landed while the generator was suspended AT A YIELD has no
                 // listener attached — the executor re-checks signal.aborted so

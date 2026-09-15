@@ -86,6 +86,41 @@ export interface DraftListResult {
   readonly drafts: readonly DraftListRow[];
 }
 
+/** JSON at the wire — the constrained face of every open doc. The
+ *  Typert generator's boundary law refuses unconstrained `unknown`
+ *  data in @Remote signatures (assertRemoteJsonType: "Remote
+ *  boundary contains unconstrained unknown data"); open card
+ *  payloads (stage params, results, history) are honestly JSON all
+ *  the way down, so the wire face says exactly that. */
+export type JsonValue =
+  | string
+  | number
+  | boolean
+  | null
+  | JsonValue[]
+  | { readonly [key: string]: JsonValue };
+
+/** Endpoint `drafts/get` answer — the stored draft doc (open,
+ *  card-authored) with its stages resolved for the wire. */
+export type DraftGetRow = { readonly [key: string]: JsonValue };
+
+/** Endpoint `drafts/patch` body — the door's FIXED key set (unknown
+ *  keys refuse at admission with the old door's voice; STAGE_PATCH_KEYS).
+ *  Optional: presence IS the write; a null params value is the
+ *  merge-patch DELETE (the layered-params law). */
+export type DraftStagePatch = {
+  params?: JsonValue;
+  result?: JsonValue;
+  runStatus?: JsonValue;
+  inputs?: JsonValue;
+  inputOutputs?: JsonValue;
+};
+
+/** The bench verbs' wire body — an open JSON doc (each verb's
+ *  admission law constrains its own keys at the door: stage,
+ *  expect_rev, index, binding, …). */
+export type BenchDoc = { readonly [key: string]: JsonValue };
+
 /** The drafts' Remote failure codes, merged into the protocol's one
  *  vocabulary (cookbook §2: declaration merging, next to the throw). */
 declare module "@deepseek-ai/dsh-typert-protocol" {
@@ -288,8 +323,8 @@ export class DraftsRemoteService extends TypertRemoteService {
   async remoteExportGet(
     draftId: string,
     signal: AbortSignal,
-  ): Promise<Record<string, unknown>> {
-    return await this.get(draftId, signal);
+  ): Promise<DraftGetRow> {
+    return (await this.get(draftId, signal)) as DraftGetRow;
   }
 
   /** The in-process API the adapters above delegate to. */
@@ -378,7 +413,7 @@ export class DraftsRemoteService extends TypertRemoteService {
   async remoteExportPatch(
     draftId: string,
     stageId: string,
-    patch: Record<string, unknown>,
+    patch: DraftStagePatch,
     expectRev: number | null,
     signal: AbortSignal,
   ): Promise<DraftPatchRow> {
@@ -574,13 +609,44 @@ export class BenchRemoteService extends TypertRemoteService {
    *  listener fault never breaks the stream (the next write re-wakes
    *  it). */
   @Remote({ mode: "stream" })
-  async *remoteExportSubscribe(
+  async *subscribe(
     sessionKey: string,
     signal: AbortSignal,
-  ): AsyncGenerator<BenchGetRow> {
+  ): AsyncIterable<BenchGetRow> {
     signal.throwIfAborted();
     for (;;) {
-      yield await this.get(sessionKey, signal);
+      // THE ZERO-STATE LAW (the stream tail's birth watch): a fresh
+      // conversation's bench does not exist until its first write.
+      // The gateway's RemoteStream classifies a REJECTED open as
+      // TERMINAL (no retry — terminalStreamFailure), so a throwing
+      // first read here would kill the browser's whole bench stream
+      // the moment a conversation starts. The watch instead serves
+      // the ZERO STATE (rev 0, empty stages — the same row shape the
+      // client's emptyBench served in the poll era) and stays open:
+      // the birth (ensure's notifyBenchChange) wakes the park and the
+      // next read serves the born bench. `bench/get` still refuses
+      // not-found for direct unary callers — only the WATCH degrades.
+      let row: BenchGetRow;
+      try {
+        row = await this.get(sessionKey, signal);
+      } catch (error) {
+        if (
+          error instanceof RemoteError &&
+          error.code === "bench/not-found"
+        ) {
+          row = {
+            draft_id: "bench-" + sessionKey,
+            session: sessionKey,
+            rev: 0,
+            intent: "",
+            stages: [],
+            log: [],
+          };
+        } else {
+          throw error;
+        }
+      }
+      yield row;
       // wake on the session's next write (or abort). An abort that
       // landed while the generator was suspended AT A YIELD has no
       // listener attached — the executor re-checks signal.aborted so
@@ -616,7 +682,7 @@ export class BenchRemoteService extends TypertRemoteService {
   /** Endpoint `bench/ensure` — birth or load (the only creating arm). */
   @Remote("ensure")
   async remoteExportEnsure(
-    doc: Record<string, unknown>,
+    doc: BenchDoc,
     signal: AbortSignal,
   ): Promise<BenchEnsureRow> {
     return await this.ensure(doc, signal);
@@ -639,12 +705,12 @@ export class BenchRemoteService extends TypertRemoteService {
       );
     }
     const row = getBench(drafts, session);
-    return { ...row, stages: withResolvedStages(this.ctx, row.stages) };
+    return { ...row, stages: withResolvedStages(this.ctx, row.stages) as JsonValue };
   }
 
   /** The in-process API the adapter above delegates to. */
   async ensure(
-    doc: Record<string, unknown>,
+    doc: BenchDoc,
     signal: AbortSignal,
   ): Promise<BenchEnsureRow> {
     signal.throwIfAborted();
@@ -674,7 +740,7 @@ export class BenchRemoteService extends TypertRemoteService {
   @Remote("patch")
   async remoteExportPatch(
     sessionKey: string,
-    doc: Record<string, unknown>,
+    doc: BenchDoc,
     signal: AbortSignal,
   ): Promise<BenchPatchRow> {
     return await this.patch(sessionKey, doc, signal);
@@ -684,7 +750,7 @@ export class BenchRemoteService extends TypertRemoteService {
   @Remote("add-stage")
   async remoteExportAddStage(
     sessionKey: string,
-    doc: Record<string, unknown>,
+    doc: BenchDoc,
     signal: AbortSignal,
   ): Promise<BenchStageRow> {
     return await this.addStage(sessionKey, doc, signal);
@@ -694,7 +760,7 @@ export class BenchRemoteService extends TypertRemoteService {
   @Remote("remove-stage")
   async remoteExportRemoveStage(
     sessionKey: string,
-    doc: Record<string, unknown>,
+    doc: BenchDoc,
     signal: AbortSignal,
   ): Promise<BenchStageRow> {
     return await this.removeStage(sessionKey, doc, signal);
@@ -704,7 +770,7 @@ export class BenchRemoteService extends TypertRemoteService {
   @Remote("rewire")
   async remoteExportRewire(
     sessionKey: string,
-    doc: Record<string, unknown>,
+    doc: BenchDoc,
     signal: AbortSignal,
   ): Promise<BenchRewireRow> {
     return await this.rewire(sessionKey, doc, signal);
@@ -715,7 +781,7 @@ export class BenchRemoteService extends TypertRemoteService {
   @Remote("reorder")
   async remoteExportReorder(
     sessionKey: string,
-    doc: Record<string, unknown>,
+    doc: BenchDoc,
     signal: AbortSignal,
   ): Promise<BenchReorderRow> {
     signal.throwIfAborted();
@@ -730,7 +796,7 @@ export class BenchRemoteService extends TypertRemoteService {
   @Remote("group")
   async remoteExportGroup(
     sessionKey: string,
-    doc: Record<string, unknown>,
+    doc: BenchDoc,
     signal: AbortSignal,
   ): Promise<BenchStageRow> {
     signal.throwIfAborted();
@@ -744,7 +810,7 @@ export class BenchRemoteService extends TypertRemoteService {
   @Remote("ungroup")
   async remoteExportUngroup(
     sessionKey: string,
-    doc: Record<string, unknown>,
+    doc: BenchDoc,
     signal: AbortSignal,
   ): Promise<BenchStageRow> {
     signal.throwIfAborted();
@@ -758,7 +824,7 @@ export class BenchRemoteService extends TypertRemoteService {
   @Remote("undo")
   async remoteExportUndo(
     sessionKey: string,
-    doc: Record<string, unknown>,
+    doc: BenchDoc,
     signal: AbortSignal,
   ): Promise<BenchUndoRow> {
     return await this.undo(sessionKey, doc, signal);
@@ -785,7 +851,7 @@ export class BenchRemoteService extends TypertRemoteService {
 
   async patch(
     session: string,
-    doc: Record<string, unknown>,
+    doc: BenchDoc,
     signal: AbortSignal,
   ): Promise<BenchPatchRow> {
     signal.throwIfAborted();
@@ -797,7 +863,7 @@ export class BenchRemoteService extends TypertRemoteService {
 
   async addStage(
     session: string,
-    doc: Record<string, unknown>,
+    doc: BenchDoc,
     signal: AbortSignal,
   ): Promise<BenchStageRow> {
     signal.throwIfAborted();
@@ -809,7 +875,7 @@ export class BenchRemoteService extends TypertRemoteService {
 
   async removeStage(
     session: string,
-    doc: Record<string, unknown>,
+    doc: BenchDoc,
     signal: AbortSignal,
   ): Promise<BenchStageRow> {
     signal.throwIfAborted();
@@ -821,7 +887,7 @@ export class BenchRemoteService extends TypertRemoteService {
 
   async rewire(
     session: string,
-    doc: Record<string, unknown>,
+    doc: BenchDoc,
     signal: AbortSignal,
   ): Promise<BenchRewireRow> {
     signal.throwIfAborted();
@@ -833,7 +899,7 @@ export class BenchRemoteService extends TypertRemoteService {
 
   async undo(
     session: string,
-    doc: Record<string, unknown>,
+    doc: BenchDoc,
     signal: AbortSignal,
   ): Promise<BenchUndoRow> {
     signal.throwIfAborted();

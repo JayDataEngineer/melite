@@ -15,6 +15,7 @@
 import { RemoteError } from "@deepseek-ai/dsh-typert-protocol";
 import type { Domain } from "@deepseek-ai/dsh-storage-domain";
 import type { DraftRecord, DraftsDomainSpec } from "./spec.js";
+import type { JsonValue } from "./remote.js";
 
 /** The bench's Remote failure codes, merged into the protocol's one
  *  vocabulary (cookbook §2: declaration merging, next to the throw). */
@@ -182,8 +183,8 @@ export interface BenchEnsureRow {
   readonly draft_id: string;
   readonly session: string;
   readonly rev: number;
-  readonly intent: unknown;
-  readonly stages: unknown;
+  readonly intent: JsonValue;
+  readonly stages: JsonValue;
   readonly created: boolean;
 }
 
@@ -194,9 +195,9 @@ export interface BenchGetRow {
   readonly draft_id: string;
   readonly session: string;
   readonly rev: number;
-  readonly intent: unknown;
-  readonly stages: unknown;
-  readonly log: readonly Record<string, unknown>[];
+  readonly intent: JsonValue;
+  readonly stages: JsonValue;
+  readonly log: readonly { readonly [key: string]: JsonValue }[];
 }
 
 const ENSURE_KEYS = ["session", "stages", "intent", "author", "expect_rev", "overwrite"];
@@ -252,7 +253,7 @@ export async function ensureBench(
     const doc: Record<string, unknown> = {
       draft_id: draftId,
       intent: typeof body["intent"] === "string" ? body["intent"] : "bench",
-      stages: normalizeStages(stagesIn, author),
+      stages: normalizeStages(stagesIn, author) as JsonValue,
       status: "ready",
       createdAt: Date.now(),
       completedAt: null,
@@ -266,8 +267,8 @@ export async function ensureBench(
       draft_id: draftId,
       session,
       rev: 0,
-      intent: doc["intent"],
-      stages: doc["stages"],
+      intent: doc["intent"] as JsonValue,
+      stages: doc["stages"] as JsonValue,
       created: true,
     };
   }
@@ -279,8 +280,8 @@ export async function ensureBench(
       draft_id: draftId,
       session,
       rev: block.rev,
-      intent: doc["intent"],
-      stages: doc["stages"],
+      intent: doc["intent"] as JsonValue,
+      stages: doc["stages"] as JsonValue,
       created: false,
     };
   }
@@ -342,8 +343,8 @@ export async function ensureBench(
     draft_id: draftId,
     session,
     rev: block.rev,
-    intent: doc["intent"],
-    stages: doc["stages"],
+    intent: doc["intent"] as JsonValue,
+    stages: doc["stages"] as JsonValue,
     created: false,
   };
 }
@@ -373,10 +374,10 @@ export function getBench(
     draft_id: draftId,
     session,
     rev: block.rev,
-    intent: doc["intent"],
-    stages: doc["stages"],
+    intent: doc["intent"] as JsonValue,
+    stages: doc["stages"] as JsonValue,
     log: block.log.map(
-      (e: BenchEntry): Record<string, unknown> => ({
+      (e: BenchEntry): { readonly [key: string]: JsonValue } => ({
         rev: e.rev,
         at: e.at,
         author: e.author,
@@ -1175,7 +1176,7 @@ export interface BenchUndoRow {
   readonly session: string;
   readonly rev: number;
   readonly undone: readonly number[];
-  readonly stages: unknown;
+  readonly stages: JsonValue;
 }
 
 /** undo — walk the log tail, skip already-reverted entries and
@@ -1246,7 +1247,7 @@ export async function undoBench(
     session,
     rev: newRev,
     undone,
-    stages: loaded.doc["stages"],
+    stages: loaded.doc["stages"] as JsonValue,
   };
 }
 

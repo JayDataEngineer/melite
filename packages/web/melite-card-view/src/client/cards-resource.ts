@@ -33,6 +33,11 @@ export { uploadInputFile } from '@melite/card-base/wire'
 import type { ResourceProtocolMap } from '@deepseek-ai/dsh-client-ui-slots'
 import { RemoteError } from '@deepseek-ai/dsh-typert-protocol'
 import type { RemoteResult } from '@deepseek-ai/dsh-typert-protocol'
+import { RemoteStreamCarrierError, type ClientRemote, type RemoteStreamItem } from '@deepseek-ai/dsh-api-gateway/client'
+// The generated contribution's declaration merge (TypertRemoteMap
+// gains bench/* + drafts/*): with this, ClientRemote's namespace face
+// is TYPED — ctx.remote.bench.subscribe is the generated signature.
+import type {} from '@melite/estate-drafts/remote'
 import {
   WireRefusedError,
   fetchLatestRunForDraft,
@@ -328,19 +333,34 @@ export function shouldSpotlight(isExpanded: boolean): boolean {
   return !cardsSurfaceLive || !isExpanded
 }
 
-/** THE SPOTLIGHT WATCHER: poll the shared bench's rev on a heartbeat
- *  (the same honest HTTP degrade the resource tail rides — the
- *  estate's stream face lands later, then the source swaps); on a rev
- *  drift whose fresh log entries carry author "agent", fire
- *  onAgentLand once. The FIRST read is hydration — history never
- *  yanks the user forward on page load. A dead wire keeps trying
- *  (restarts recover — proven live): the watcher owns no rendered
- *  truth, the tab tail does, so its swallow can hide nothing. Returns
- *  the stop function (the plugin's effect disposer). */
+/** THE SPOTLIGHT WATCHER, STREAM EDITION (2026-09-15, the mux swap —
+ *  the heartbeat poll is DEAD): consume `bench/subscribe` for the
+ *  ACTIVE session key — every estate write pushes one item, so the
+ *  reveal fires at write time, not at the next tick. On a rev drift
+ *  whose fresh log entries carry author "agent", fire onAgentLand
+ *  once. The FIRST item of each key is hydration — history never
+ *  yanks the user forward on load or on a conversation switch (the
+ *  per-key baseline map survives re-keys, so returning to a key
+ *  never replays its past).
+ *
+ *  RE-KEY WITHOUT A TIMER: the session source's observable
+ *  (HostObservable.subscribe — push, no polling) trips a latch the
+ *  consumption loop races against the pending item; a key change
+ *  disposes the stream and reopens on the new key. Without the
+ *  subscription seam the watcher still re-keys on the next item (a
+ *  quiet switch delays only its own reveals, never the active
+ *  stream's).
+ *
+ *  A terminal stream failure ends the watcher best-effort (logged —
+ *  the watcher owns no rendered truth, the tab tail does; its
+ *  swallow can hide nothing). Returns the stop function (the
+ *  plugin's effect disposer). */
 export function watchBenchLands(
   getSession: () => string,
   onAgentLand: (sessionKey: string) => void,
   signal?: AbortSignal,
+  remote?: ClientRemote,
+  subscribeSession?: (fn: () => void) => () => void,
 ): () => void {
   let stopped = false
   const ctrl = new AbortController()
@@ -351,23 +371,55 @@ export function watchBenchLands(
   }
   signal?.addEventListener('abort', halt, { once: true })
   if (signal?.aborted === true) halt()
-  const sleep = (ms: number): Promise<void> =>
-    new Promise((resolve) => {
-      const t = setTimeout(() => { ctrl.signal.removeEventListener('abort', onAbort); resolve() }, ms)
-      const onAbort = (): void => { clearTimeout(t); resolve() }
-      ctrl.signal.addEventListener('abort', onAbort, { once: true })
-      if (ctrl.signal.aborted) { clearTimeout(t); resolve() }
-    })
-  // One baseline PER SESSION KEY: switching conversations re-reads a
-  // fresh key whose first poll is hydration (history never reveals),
-  // and the revealed key rides the callback so the reveal opens the
-  // right conversation's bench address.
+  if (remote === undefined) {
+    console.error('[melite-card-view] bench spotlight off: the remote face did not mount')
+    return halt
+  }
   const lastRevs = new Map<string, number>()
-  const loop = async (): Promise<void> => {
-    while (!stopped) {
-      try {
-        const key = benchSessionKey(getSession())
-        const bench = await fetchBench(key, ctrl.signal)
+  let activeKey = benchSessionKey(getSession())
+  let wakeRekey: (() => void) | undefined
+  let rekeyLatch: Promise<'rekey'> = new Promise(resolve => { wakeRekey = () => resolve('rekey') })
+  const offSubscribe = subscribeSession?.(() => {
+    const wanted = benchSessionKey(getSession())
+    if (wanted !== activeKey && !stopped) wakeRekey?.()
+  })
+  const openStream = (key: string) => remote!.$stream<Record<string, unknown>>({
+    name: 'cards bench spotlight',
+    open: openSignal => remote!.bench.subscribe(key, openSignal) as AsyncIterable<Record<string, unknown>>,
+    ended: accepted => new RemoteStreamCarrierError(
+      `bench spotlight stream ${accepted ? 'ended' : 'never opened'} (${key})`),
+  })
+  const run = async (): Promise<void> => {
+    let stream = openStream(activeKey)
+    let iterator = stream[Symbol.asyncIterator]()
+    let first = true
+    try {
+      while (!stopped) {
+        const raced: { item: IteratorResult<RemoteStreamItem<Record<string, unknown>>> } | 'rekey' =
+          await Promise.race([
+            iterator.next().then(item => ({ item })),
+            rekeyLatch,
+          ])
+        if (raced === 'rekey') {
+          rekeyLatch = new Promise(resolve => { wakeRekey = () => resolve('rekey') })
+          const wanted = benchSessionKey(getSession())
+          if (wanted !== activeKey) {
+            activeKey = wanted
+            void stream.dispose()
+            stream = openStream(wanted)
+            iterator = stream[Symbol.asyncIterator]()
+            first = true
+          }
+          continue
+        }
+        const result = raced.item
+        if (result.done) break
+        if (first) {
+          result.value.accept()
+          first = false
+        }
+        const key = activeKey
+        const bench = readBench(result.value.value)
         const lastRev = lastRevs.get(key) ?? null
         if (lastRev === null) {
           lastRevs.set(key, bench.rev) // first sight of this key: hydration
@@ -379,14 +431,16 @@ export function watchBenchLands(
         } else {
           lastRevs.set(key, bench.rev) // honesty on regression: resync, never fire
         }
-      } catch {
-        /* wire death: keep trying — the next poll may recover */
       }
-      if (stopped) return
-      await sleep(2000)
+    } catch (error) {
+      // terminal supervisor failure — best-effort seat, logged only
+      console.error('[melite-card-view] bench spotlight stream failed:', error)
+    } finally {
+      offSubscribe?.()
+      await stream.dispose()
     }
   }
-  void loop()
+  void run()
   return halt
 }
 
@@ -768,11 +822,13 @@ export function mergeRunFrame(value: CardsRunValue, frame: FlowEventFrame): Card
 }
 
 /** The provider registration body: `ctx.resources.register({ protocol:
- *  'cards', open })`. The estate remotes over the wire frame; abort
- *  ends the stream per the contract. */
+ *  'cards', open })`. The bench tail rides the mounted remote face
+ *  (bench/subscribe over the mux — the client entry passes the live
+ *  ctx.remote here); abort ends the stream per the contract. */
 export function openCardsResource(
   address: string,
   ctx: { signal: AbortSignal },
+  remote?: ClientRemote,
 ): AsyncIterable<RemoteResult<CardsValue>> {
   const target = parseCardsAddress(address)
   const benchKey = benchSessionOfAddress(address)
@@ -785,32 +841,33 @@ export function openCardsResource(
       return
     }
     if (bench) {
-      let value: CardsBenchValue
-      try {
-        value = readBench(await wireCall('bench/get', { sessionKey: benchKey }))
-      } catch (e) {
-        // a fresh conversation's bench does not exist until its first
-        // write — the empty bench is the honest first frame, and the
-        // tail keeps watching for the birth
-        if (!isMissingBench(e)) {
-          yield failure(address, e instanceof Error ? e.message : String(e))
-          return
+      if (remote === undefined) {
+        // THE UNMOUNTED FACE (honest degrade, no poll — 2026-09-15):
+        // one HTTP snapshot, then ONE failure frame — an absent
+        // stream face is a broken mount, and the silent-death law
+        // says surface it, never freeze the view pretending to watch.
+        let value: CardsBenchValue
+        try {
+          value = readBench(await wireCall('bench/get', { sessionKey: benchKey }))
+        } catch (e) {
+          if (!isMissingBench(e)) {
+            yield failure(address, e instanceof Error ? e.message : String(e))
+            return
+          }
+          value = emptyBench(benchKey)
         }
-        value = emptyBench(benchKey)
+        yield { ok: true, value }
+        yield failure(address, 'bench stream unavailable — the remote face did not mount (showing one snapshot)')
+        return
       }
-      yield { ok: true, value }
-      // THE BENCH TAIL (live co-presence, 2026-09-12: "fix the [REDACTED 2026-11-05]
-      // gaps"): the bench is ONE shared doc — the agent (construct
-      // verbs, bench-mode passes) and out-of-band sessions write it
-      // too, and every write bumps the rev. The provider polls the rev
-      // on a cadence and yields a fresh frame ONLY on drift — every
-      // consumer of the resource sees the agent's rows land, with no
-      // view-level watchers and no manual refresh. The estate's change
-      // events + bench/subscribe stream remote (the push source) exist;
-      // the browser wire is one-frame HTTP, so this heartbeat carries
-      // the same law until the host's stream face lands — then the
-      // source swaps with zero consumer changes. Abort ends the tail.
-      yield* pollBenchFrames(value, benchKey, address, ctx.signal)
+      // THE BENCH TAIL (live co-presence, 2026-09-12 → the mux swap
+      // 2026-09-15): the bench is ONE shared doc — the agent
+      // (construct verbs, bench-mode passes) and out-of-band sessions
+      // write it too, and every write bumps the rev. bench/subscribe
+      // pushes a fresh doc per write over the same-origin mux; the
+      // tail yields on rev drift with reconnect supervision. THE
+      // POLL IS DEAD.
+      yield* streamBenchFrames(remote, benchKey, address, ctx.signal)
       return
     }
     // draft-stage view (the conversation card's studio target): one
@@ -894,60 +951,98 @@ async function* pollRunFrames(
 }
 
 
-/** THE BENCH TAIL (the provider's live half — pollRunFrames' law,
- *  applied to the shared doc): poll `bench/get` on a cadence and
- *  yield a value ONLY when the rev moved (no frame spam) until the
- *  holder aborts. A poll error is not a failure frame — the last ok
- *  value stays; the next poll may recover. The cadence (2500ms)
- *  balances agent-write visibility against doc-read chatter; a
- *  hidden document still receives frames (the shell decides whether
- *  the tab renders — the provider never guesses visibility). */
-async function* pollBenchFrames(
-  hydrated: CardsBenchValue,
+/** THE BENCH TAIL, STREAM EDITION (2026-09-15, the mux swap — the
+ *  poll is DEAD): consume `bench/subscribe` through the gateway's
+ *  reconnecting RemoteStream — one item per estate write, push on the
+ *  same-origin mux, zero cadence chatter. The laws the poll held,
+ *  kept one-for-one:
+ *
+ *  - FIRST FRAME: the stream's opening doc (the subscribe generator
+ *    serves the zero state for a not-yet-born bench — the birth watch).
+ *  - NO FRAME SPAM: later items yield ONLY on rev drift (a reconnect
+ *    re-serves the same doc; same rev, no frame).
+ *  - THE VISIBILITY LAW (the silent-death cure): a carrier loss —
+ *    the wire dropped, the supervisor is reconnecting — surfaces as
+ *    ONE failure frame beside the last ok value, cleared by the next
+ *    frame. A TERMINAL stream failure (the supervisor gave up) is one
+ *    final failure frame, then the tail ends; the holder can reopen.
+ *  - ABORT: the holder's signal disposes the stream and ends the
+ *    tail clean.
+ *
+ * The loss race: the carrierFailed callback cannot yield from inside
+ * the generator, so it trips a latch the consumption loop races
+ * against the pending iterator step — the voice lands the moment the
+ * loss is noticed, not at recovery. */
+async function* streamBenchFrames(
+  remote: ClientRemote,
   sessionKey: string,
   address: string,
   signal: AbortSignal,
 ): AsyncGenerator<RemoteResult<CardsBenchValue>> {
-  let value = hydrated
-  // THE SILENT-DEATH CURE (2026-09-15): the poll used to swallow
-  // every transport error forever ("the last ok value stays") — a
-  // dead poll froze the view at a stale rev with ZERO signal, and
-  // every write then CAS-refused with no recovery (the operator's
-  // stuck). Now three consecutive failures surface as ONE failure
-  // frame beside the last value (the resource law: 'failed' keeps
-  // the last ok frame); recovery clears it. The poll itself dies
-  // with the mux swap — until then it may not lie.
-  let failedPolls = 0
-  let failureVoiced = false
-  const sleep = (ms: number): Promise<'slept' | 'abort'> =>
-    new Promise((resolve) => {
-      const t = setTimeout(() => { signal.removeEventListener('abort', onAbort); resolve('slept') }, ms)
-      const onAbort = (): void => { clearTimeout(t); resolve('abort') }
-      if (signal.aborted) { onAbort(); return }
-      signal.addEventListener('abort', onAbort, { once: true })
-    })
-  while (!signal.aborted) {
-    const woke = await sleep(2500)
-    if (woke === 'abort' || signal.aborted) return
-    let row: Record<string, unknown>
-    try {
-      row = await wireCall('bench/get', { sessionKey }, signal)
-    } catch (e) {
-      failedPolls++
-      if (failedPolls >= 3 && !failureVoiced) {
-        failureVoiced = true
-        yield failure(address,
-          'bench live read failed three times — showing the last known state ('
-          + (e instanceof Error ? e.message : String(e)) + ')')
+  let wake: (() => void) | undefined
+  let latch: Promise<'loss'> = new Promise(resolve => { wake = () => resolve('loss') })
+  const stream = remote.$stream<Record<string, unknown>>({
+    name: 'cards bench stream',
+    // A generation END (mux drop, host restart) is CARRIER — retry
+    // through the supervisor; the subscribe generator itself only
+    // ends on abort, so an end before abort is always the carrier.
+    open: openSignal => remote.bench.subscribe(sessionKey, openSignal) as AsyncIterable<Record<string, unknown>>,
+    ended: accepted => new RemoteStreamCarrierError(
+      accepted
+        ? `bench stream ended after its snapshot (${address})`
+        : `bench stream ended before its first frame (${address})`),
+    // ONE VOICE PER EPISODE: the latch re-arms when the loss frame is
+    // yielded; a drop between items trips it and the always-race
+    // above voices it before the reconnect's first item arrives
+    carrierFailed: () => { wake?.() },
+  })
+  const onAbort = (): void => { void stream.dispose() }
+  if (signal.aborted) { onAbort(); return }
+  signal.addEventListener('abort', onAbort, { once: true })
+  const iterator = stream[Symbol.asyncIterator]()
+  let first = true
+  let lastRev: number | null = null
+  try {
+    for (;;) {
+      const step = iterator.next()
+      // ALWAYS race the loss latch: a carrier drop fires while the
+      // consumer is parked on the pending item — the voice must land
+      // at the moment of loss, not at recovery (a parked plain await
+      // would swallow the episode entirely)
+      const raced: { item: IteratorResult<RemoteStreamItem<Record<string, unknown>>> } | 'loss' =
+        await Promise.race([
+          step.then(item => ({ item })),
+          latch,
+        ])
+      let result: IteratorResult<RemoteStreamItem<Record<string, unknown>>>
+      if (raced === 'loss') {
+        yield failure(address, 'bench live stream lost — reconnecting (showing the last known state)')
+        latch = new Promise(resolve => { wake = () => resolve('loss') })
+        result = await step
+      } else {
+        result = raced.item
       }
-      continue // the last ok value stays; the next poll may recover
+      if (result.done) return
+      const item = result.value
+      if (first) {
+        // mark the opening baseline accepted — a later generation end
+        // classifies as after-snapshot (carrier, retry)
+        item.accept()
+        first = false
+      }
+      const value = readBench(item.value)
+      if (lastRev === value.rev) continue // same-doc reconnect: no frame
+      lastRev = value.rev
+      yield { ok: true, value }
     }
-    failedPolls = 0
-    failureVoiced = false
-    const next = readBench(row)
-    if (next.rev === value.rev) continue
-    value = next
-    yield { ok: true, value }
+  } catch (e) {
+    // terminal supervisor failure — one final voice, then the tail
+    // ends; the holder (the resource seat) can reopen the address
+    yield failure(address, 'bench stream failed: ' + (e instanceof Error ? e.message : String(e)))
+    return
+  } finally {
+    signal.removeEventListener('abort', onAbort)
+    await stream.dispose()
   }
 }
 

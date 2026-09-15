@@ -3,14 +3,14 @@ import { onBenchChange, notifyBenchChange } from '../src/bench.ts'
 import { BenchRemoteService } from '../src/remote.ts'
 
 test('decorated probe with logs', async () => {
-  console.log('TYPE of proto method:', typeof (BenchRemoteService.prototype as never as Record<string, unknown>)['remoteExportSubscribe'])
+  console.log('TYPE of proto method:', typeof (BenchRemoteService.prototype as never as Record<string, unknown>)['subscribe'])
   const controller = new AbortController()
   const rows = [
     { draft_id: 'bench-main', session: 'main', rev: 3, intent: null, stages: [], log: [] },
     { draft_id: 'bench-main', session: 'main', rev: 4, intent: null, stages: [], log: [] },
   ]
   const fake = { get: async (): Promise<unknown> => { console.log('GET called'); return rows.shift() ?? rows[0] } }
-  const gen = (BenchRemoteService.prototype as never as { remoteExportSubscribe: (this: unknown, s: string, sig: AbortSignal) => AsyncGenerator<unknown> }).remoteExportSubscribe.call(
+  const gen = (BenchRemoteService.prototype as never as { subscribe: (this: unknown, s: string, sig: AbortSignal) => AsyncGenerator<unknown> }).subscribe.call(
     fake, 'main', controller.signal)
   const first = await gen.next()
   console.log('TEST first:', JSON.stringify(first))

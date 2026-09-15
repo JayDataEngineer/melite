@@ -31,6 +31,37 @@ export interface DraftListResult {
     readonly count: number;
     readonly drafts: readonly DraftListRow[];
 }
+/** JSON at the wire — the constrained face of every open doc. The
+ *  Typert generator's boundary law refuses unconstrained `unknown`
+ *  data in @Remote signatures (assertRemoteJsonType: "Remote
+ *  boundary contains unconstrained unknown data"); open card
+ *  payloads (stage params, results, history) are honestly JSON all
+ *  the way down, so the wire face says exactly that. */
+export type JsonValue = string | number | boolean | null | JsonValue[] | {
+    readonly [key: string]: JsonValue;
+};
+/** Endpoint `drafts/get` answer — the stored draft doc (open,
+ *  card-authored) with its stages resolved for the wire. */
+export type DraftGetRow = {
+    readonly [key: string]: JsonValue;
+};
+/** Endpoint `drafts/patch` body — the door's FIXED key set (unknown
+ *  keys refuse at admission with the old door's voice; STAGE_PATCH_KEYS).
+ *  Optional: presence IS the write; a null params value is the
+ *  merge-patch DELETE (the layered-params law). */
+export type DraftStagePatch = {
+    params?: JsonValue;
+    result?: JsonValue;
+    runStatus?: JsonValue;
+    inputs?: JsonValue;
+    inputOutputs?: JsonValue;
+};
+/** The bench verbs' wire body — an open JSON doc (each verb's
+ *  admission law constrains its own keys at the door: stage,
+ *  expect_rev, index, binding, …). */
+export type BenchDoc = {
+    readonly [key: string]: JsonValue;
+};
 /** The drafts' Remote failure codes, merged into the protocol's one
  *  vocabulary (cookbook §2: declaration merging, next to the throw). */
 declare module "@deepseek-ai/dsh-typert-protocol" {
@@ -81,7 +112,7 @@ export declare class DraftsRemoteService extends TypertRemoteService {
     /** Endpoint `drafts/list` — the domain index, recency DESC. */
     remoteExportList(signal: AbortSignal): Promise<DraftListResult>;
     /** Endpoint `drafts/get` — one doc by id. */
-    remoteExportGet(draftId: string, signal: AbortSignal): Promise<Record<string, unknown>>;
+    remoteExportGet(draftId: string, signal: AbortSignal): Promise<DraftGetRow>;
     /** The in-process API the adapters above delegate to. */
     list(signal: AbortSignal): Promise<DraftListResult>;
     /** The in-process API the adapter above delegates to. */
@@ -111,7 +142,7 @@ export declare class DraftsRemoteService extends TypertRemoteService {
      *  (nullable) fences the write: a bench that moved refuses loud
      *  with bench/cas-conflict carrying current_rev, never merges
      *  under the earlier author. */
-    remoteExportPatch(draftId: string, stageId: string, patch: Record<string, unknown>, expectRev: number | null, signal: AbortSignal): Promise<DraftPatchRow>;
+    remoteExportPatch(draftId: string, stageId: string, patch: DraftStagePatch, expectRev: number | null, signal: AbortSignal): Promise<DraftPatchRow>;
     /** The patch arm the adapter above delegates to. */
     patch(draftId: string, stageId: string, patch: Record<string, unknown>, expectRev: number | null, signal: AbortSignal): Promise<DraftPatchRow>;
 }
@@ -131,42 +162,42 @@ export declare class BenchRemoteService extends TypertRemoteService {
      *  with zero consumer changes. Abort ends the stream; a write's
      *  listener fault never breaks the stream (the next write re-wakes
      *  it). */
-    remoteExportSubscribe(sessionKey: string, signal: AbortSignal): AsyncGenerator<BenchGetRow>;
+    subscribe(sessionKey: string, signal: AbortSignal): AsyncIterable<BenchGetRow>;
     /** Endpoint `bench/ensure` — birth or load (the only creating arm). */
-    remoteExportEnsure(doc: Record<string, unknown>, signal: AbortSignal): Promise<BenchEnsureRow>;
+    remoteExportEnsure(doc: BenchDoc, signal: AbortSignal): Promise<BenchEnsureRow>;
     /** The in-process API the adapters above delegate to. Classified
      *  bench failures pass through untouched; only the open itself
      *  wraps as bench/store-failed. */
     get(session: string, signal: AbortSignal): Promise<BenchGetRow>;
     /** The in-process API the adapter above delegates to. */
-    ensure(doc: Record<string, unknown>, signal: AbortSignal): Promise<BenchEnsureRow>;
+    ensure(doc: BenchDoc, signal: AbortSignal): Promise<BenchEnsureRow>;
     /** Endpoint `bench/patch` — params merge (+result/runStatus) with
      *  CAS + log. */
-    remoteExportPatch(sessionKey: string, doc: Record<string, unknown>, signal: AbortSignal): Promise<BenchPatchRow>;
+    remoteExportPatch(sessionKey: string, doc: BenchDoc, signal: AbortSignal): Promise<BenchPatchRow>;
     /** Endpoint `bench/add-stage` — append a card stage. */
-    remoteExportAddStage(sessionKey: string, doc: Record<string, unknown>, signal: AbortSignal): Promise<BenchStageRow>;
+    remoteExportAddStage(sessionKey: string, doc: BenchDoc, signal: AbortSignal): Promise<BenchStageRow>;
     /** Endpoint `bench/remove-stage` — splice one stage out. */
-    remoteExportRemoveStage(sessionKey: string, doc: Record<string, unknown>, signal: AbortSignal): Promise<BenchStageRow>;
+    remoteExportRemoveStage(sessionKey: string, doc: BenchDoc, signal: AbortSignal): Promise<BenchStageRow>;
     /** Endpoint `bench/rewire` — set or clear one input binding. */
-    remoteExportRewire(sessionKey: string, doc: Record<string, unknown>, signal: AbortSignal): Promise<BenchRewireRow>;
+    remoteExportRewire(sessionKey: string, doc: BenchDoc, signal: AbortSignal): Promise<BenchRewireRow>;
     /** Endpoint `bench/reorder` — move one stage to a new index (the
      *  drag-reorder door, 2026-09-11). */
-    remoteExportReorder(sessionKey: string, doc: Record<string, unknown>, signal: AbortSignal): Promise<BenchReorderRow>;
+    remoteExportReorder(sessionKey: string, doc: BenchDoc, signal: AbortSignal): Promise<BenchReorderRow>;
     /** Endpoint `bench/group` — collapse 2+ stages into a compound row
      *  (the Group Cards sub-view's door, 2026-09-11). */
-    remoteExportGroup(sessionKey: string, doc: Record<string, unknown>, signal: AbortSignal): Promise<BenchStageRow>;
+    remoteExportGroup(sessionKey: string, doc: BenchDoc, signal: AbortSignal): Promise<BenchStageRow>;
     /** Endpoint `bench/ungroup` — spill a compound's children back. */
-    remoteExportUngroup(sessionKey: string, doc: Record<string, unknown>, signal: AbortSignal): Promise<BenchStageRow>;
+    remoteExportUngroup(sessionKey: string, doc: BenchDoc, signal: AbortSignal): Promise<BenchStageRow>;
     /** Endpoint `bench/undo` — walk the log tail, apply inverses. */
-    remoteExportUndo(sessionKey: string, doc: Record<string, unknown>, signal: AbortSignal): Promise<BenchUndoRow>;
+    remoteExportUndo(sessionKey: string, doc: BenchDoc, signal: AbortSignal): Promise<BenchUndoRow>;
     /** The in-process APIs the adapters above delegate to. The
      *  domain's classified failures pass through untouched; only the
      *  open itself wraps as bench/store-failed. */
     private open;
-    patch(session: string, doc: Record<string, unknown>, signal: AbortSignal): Promise<BenchPatchRow>;
-    addStage(session: string, doc: Record<string, unknown>, signal: AbortSignal): Promise<BenchStageRow>;
-    removeStage(session: string, doc: Record<string, unknown>, signal: AbortSignal): Promise<BenchStageRow>;
-    rewire(session: string, doc: Record<string, unknown>, signal: AbortSignal): Promise<BenchRewireRow>;
-    undo(session: string, doc: Record<string, unknown>, signal: AbortSignal): Promise<BenchUndoRow>;
+    patch(session: string, doc: BenchDoc, signal: AbortSignal): Promise<BenchPatchRow>;
+    addStage(session: string, doc: BenchDoc, signal: AbortSignal): Promise<BenchStageRow>;
+    removeStage(session: string, doc: BenchDoc, signal: AbortSignal): Promise<BenchStageRow>;
+    rewire(session: string, doc: BenchDoc, signal: AbortSignal): Promise<BenchRewireRow>;
+    undo(session: string, doc: BenchDoc, signal: AbortSignal): Promise<BenchUndoRow>;
 }
 //# sourceMappingURL=remote.d.ts.map
