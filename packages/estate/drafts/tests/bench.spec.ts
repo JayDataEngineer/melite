@@ -1081,6 +1081,26 @@ describe("the drafts/patch door: the output history archive", () => {
     await svc.patch("bench-main", "s_0", { runStatus: "running", result: { run_id: "a", progress: { value: 2, max: 4 } } }, 1, sig);
     expect((await historyOf(svc)).length).toBe(0);
   });
+
+  test("THE PARAMS SNAPSHOT (output-component stroke): the archive entry carries the params that MADE the run — captured at landing, immune to later edits", async () => {
+    const { svc, drafts } = await bootRemote();
+    await ensureBench(drafts, { session: "main", stages: [{ id: "s_0" }] });
+    // run A lands under params {seed: 1}
+    await svc.patch("bench-main", "s_0", { params: { seed: 1 } }, 0, sig);
+    await svc.patch("bench-main", "s_0", { runStatus: "completed", result: { run_id: "a", url: "/runs/a/out.png" } }, 1, sig);
+    // the operator edits params to {seed: 2}, then re-runs
+    await svc.patch("bench-main", "s_0", { params: { seed: 2 } }, 2, sig);
+    await svc.patch("bench-main", "s_0", { runStatus: "completed", result: { run_id: "b", url: "/runs/b/out.png" } }, 3, sig);
+    const hist = await historyOf(svc);
+    expect(hist.length).toBe(1);
+    // the archived generation is tagged with ITS OWN params, not the
+    // current ones (the edit between runs never re-labels history)
+    expect((hist[0] as Record<string, unknown>)["params"]).toEqual({ seed: 1 });
+    // a params-only patch never disturbs the live resultParams
+    const doc = await svc.get("bench-main", sig);
+    const stage = (doc["stages"] as Array<Record<string, unknown>>)[0]!;
+    expect(stage["resultParams"]).toEqual({ seed: 2 });
+  });
 });
 
 // ── the drafts/patch door (the layered-params law, 2026-09-14) ────

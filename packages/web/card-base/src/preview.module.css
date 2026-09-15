@@ -83,6 +83,19 @@
 }
 .historyTile:hover { border-color: var(--dsw-alias-border-l2); }
 
+/* THE NOT-CURRENT BADGE (the output-component stroke): while an
+ *   explicit history pick owns the hero, the "not current" tag
+ *   rides above it — tokens bare (the hour-8 name law). */
+.staleBadge {
+  flex: none;
+  align-self: flex-start;
+  color: var(--dsw-alias-label-secondary);
+  font-size: 10px;
+  border: 1px solid var(--dsw-alias-border-l2);
+  border-radius: 6px;
+  padding: 2px 6px;
+}
+
 /* THE MESH STAGE canvas — the raw-three viewport fills the preview
  * pane (the shell's preview column owns the overflow, hour-13). */
 .stageCanvas {

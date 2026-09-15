@@ -42,4 +42,12 @@ export interface PreviewOwnerProps {
    *  the hero's own run is NOT in it. Absent on lanes/rows without
    *  history. */
   history?: PreviewArtifact[][]
+  /** THE PARAMS CHIP (the output-component stroke — "old
+   *  generations that had different parameters"): index-aligned
+   *  with `history`; entry i carries the comma-joined KEYS whose
+   *  values differ between history[i]'s params snapshot and the
+   *  live params (the estate snapshots at result landing —
+   *  remote.ts; undefined when the entry predates snapshots or
+   *  nothing differs). Rendered beside the not-current badge. */
+  historyNotes?: string[]
 }

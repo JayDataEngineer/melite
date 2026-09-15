@@ -88,7 +88,11 @@ export interface BenchStageRow {
   /** THE OUTPUT HISTORY (stroke 40): the stage's PREVIOUS results,
    *  newest first, estate-capped at 12 — archived server-side at
    *  every result overwrite (the live poll's progress faces never
-   *  destroy a run's outputs; entries are unique by url set). */
+   *  destroy a run's outputs; entries are unique by url set).
+   *  Each entry may carry `params` — the snapshot of the params
+   *  that MADE that generation, taken at result landing (the
+   *  output-component stroke; entries archived before it carry
+   *  none). */
   history?: unknown[]
   [key: string]: unknown
 }

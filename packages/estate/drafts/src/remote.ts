@@ -509,11 +509,22 @@ export class DraftsRemoteService extends TypertRemoteService {
       // re-run landing the same urls never double-lists). The
       // history is DERIVED here, never patched in — the estate owns
       // the trail; the client reads it.
+      //
+      // THE PARAMS SNAPSHOT (the output-component stroke — "old
+      // generations that had different parameters"): the params that
+      // MADE a result are captured at ITS LANDING (a parallel
+      // server-derived key), never at overwrite time — params
+      // edited between runs must not retroactively re-label the old
+      // generation. The archive entry carries the snapshot; the
+      // client diffs it against the live params for the chip.
       const prev = stage["result"];
       const next = patch["result"];
       if (resultOutputUrls(prev).length > 0 && !sameResultOutputs(prev, next)) {
         const urls = resultOutputUrls(prev);
-        const entry = { ...(prev as Record<string, unknown>) };
+        const entry = {
+          ...(prev as Record<string, unknown>),
+          ...(stage["resultParams"] === undefined ? {} : { params: stage["resultParams"] }),
+        };
         const hist = Array.isArray(stage["history"]) ? [...(stage["history"] as unknown[])] : [];
         const alreadyHead = hist.some(
           (e): boolean => sameUrlSet(resultOutputUrls(e), urls),
@@ -524,6 +535,7 @@ export class DraftsRemoteService extends TypertRemoteService {
         }
       }
       stage["result"] = patch["result"];
+      stage["resultParams"] = stage["params"];
     }
     if ("runStatus" in patch) stage["runStatus"] = patch["runStatus"];
     if ("params" in patch && patch["params"] !== null && typeof patch["params"] === "object" && !Array.isArray(patch["params"])) {

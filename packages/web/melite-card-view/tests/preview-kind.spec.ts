@@ -3,7 +3,7 @@
 // form-spec's outputs.default), never a url sniff; the sniff stands
 // in only when the declaration is absent or non-previewable.
 import { expect, test } from 'vitest'
-import { previewKindFor, primaryKindFor } from '../src/client/CardsTab.tsx'
+import { paramsDiffKeys, previewKindFor, primaryKindFor } from '../src/client/CardsTab.tsx'
 import type { FormSpecDoc } from '@melite/card-base'
 
 const spec = (outputs?: Record<string, string>): FormSpecDoc =>
@@ -40,4 +40,26 @@ test('previewKindFor stays the pure url sniff (the fallback, pinned)', () => {
   expect(previewKindFor('/a/loop.wav')).toBe('audio')
   expect(previewKindFor('/a/model.gltf')).toBe('mesh')
   expect(previewKindFor('')).toBe(null)
+})
+
+// ── THE PARAMS CHIP (output-component stroke — "old generations
+//    that had different parameters") ─────────────────────────────
+
+test('the chip names the KEYS that differ between the snapshot and the live params', () => {
+  expect(paramsDiffKeys({ seed: 1, steps: 20 }, { seed: 2, steps: 20 })).toBe('seed')
+  expect(paramsDiffKeys({ seed: 1 }, { seed: 1, lora: 'x' })).toBe('lora')
+  expect(paramsDiffKeys({ a: 1, b: 2 }, { a: 9, b: 8 })).toBe('a, b')
+})
+
+test('same params, no chip — and absent snapshots (pre-stroke archives) never lie', () => {
+  expect(paramsDiffKeys({ seed: 1 }, { seed: 1 })).toBeUndefined()
+  expect(paramsDiffKeys(undefined, { seed: 1 })).toBeUndefined()
+  expect(paramsDiffKeys(null, { seed: 1 })).toBeUndefined()
+  expect(paramsDiffKeys({ seed: 1 }, undefined)).toBeUndefined()
+  // arrays are not params maps — no chip, never a crash
+  expect(paramsDiffKeys([1, 2], { seed: 1 })).toBeUndefined()
+})
+
+test('long diffs cap at four keys with an ellipsis (the compact chip)', () => {
+  expect(paramsDiffKeys({ a: 1, b: 1, c: 1, d: 1, e: 1, f: 1 }, {})).toBe('a, b, c, d…')
 })

@@ -228,6 +228,25 @@ export function primaryKindFor(spec: FormSpecDoc | null | undefined, url: string
   return previewKindFor(url)
 }
 
+/** THE PARAMS CHIP (the output-component stroke — the operator's
+ *  law: old generations are tagged by the parameters that differ):
+ *  the comma-joined KEYS whose values differ between an archived
+ *  generation's params snapshot and the live params. undefined when
+ *  the snapshot is absent (an entry archived before the stroke) or
+ *  nothing differs — same params, same picture, no noise. */
+export function paramsDiffKeys(a: unknown, b: unknown): string | undefined {
+  const ok = (v: unknown): v is Record<string, unknown> =>
+    typeof v === 'object' && v !== null && !Array.isArray(v)
+  if (!ok(a) || !ok(b)) return undefined
+  const keys = new Set([...Object.keys(a), ...Object.keys(b)])
+  const diff: string[] = []
+  for (const k of keys) {
+    if (JSON.stringify(a[k]) !== JSON.stringify(b[k])) diff.push(k)
+  }
+  if (diff.length === 0) return undefined
+  return diff.slice(0, 4).join(', ') + (diff.length > 4 ? '…' : '')
+}
+
 /** The stage row's preview artifacts, harvested from the estate's
  *  result shape (artifacts name→url map first, the flat assetUrls
  *  list second — the harvest law the h3 adapter states). */
@@ -1126,14 +1145,28 @@ function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRemoved, 
     const historyRaw = Array.isArray((stage as Record<string, unknown>)['history'])
       ? ((stage as Record<string, unknown>)['history'] as unknown[])
       : []
-    const history = historyRaw
-      .map((e) => previewArtifactsFor({ result: e }))
-      .filter((arts) => arts.length > 0)
+    // THE PARAMS CHIP: each archived generation may carry its params
+    // snapshot (taken at ITS landing) — the note names the keys that
+    // differ from the live params. One pass harvests artifacts AND
+    // note together, so the arrays stay index-aligned by construction
+    // (an entry without a snapshot keeps an EMPTY slot — alignment
+    // over density; the owner omits the field when no entry differs).
+    const liveParams = stage.params
+    const pairs = historyRaw
+      .map((e) => ({
+        arts: previewArtifactsFor({ result: e }),
+        note: paramsDiffKeys((e as Record<string, unknown>)['params'], liveParams) ?? '',
+      }))
+      .filter((p) => p.arts.length > 0)
+    const history = pairs.map((p) => p.arts)
+    const noteList = pairs.map((p) => p.note)
+    const historyNotes = noteList.some((n) => n !== '') ? noteList : undefined
     const owner = {
       kind, artifacts,
       runStatus: typeof stage.runStatus === 'string' ? stage.runStatus : '',
       stageId: stage.id,
       ...(history.length > 0 ? { history } : {}),
+      ...(historyNotes !== undefined ? { historyNotes } : {}),
     }
     const fallback = kind === 'video'
       ? h(VideoStagePreview, owner)
