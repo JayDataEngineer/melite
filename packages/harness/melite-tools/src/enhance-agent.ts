@@ -67,6 +67,7 @@ export function enhanceOneField(
   signal: AbortSignal,
   llmWant?: string,
   defaultLlm?: string,
+  preference?: string,
 ): Promise<FieldResult> {
   return harnessEnhance(llm, {
     system: recipe,
@@ -74,7 +75,7 @@ export function enhanceOneField(
     temperature,
     signal,
     ...(llmWant !== undefined && llmWant.length > 0 ? { llm: llmWant } : {}),
-  }, defaultLlm)
+  }, defaultLlm, preference)
 }
 
 /** Structural re-export so callers do not import llm-complete for the type. */
@@ -102,7 +103,7 @@ export const GENERIC_ENHANCE_RECIPE: string =
 export async function agenticSweep(
   ctx: unknown,
   llm: LlmSeam,
-  opts: { model: string; prompt: string; temperature?: number; signal: AbortSignal; llmWant?: string; defaultLlm?: string },
+  opts: { model: string; prompt: string; temperature?: number; signal: AbortSignal; llmWant?: string; defaultLlm?: string; preference?: string },
 ): Promise<{ model: string; results: Record<string, FieldResult> }> {
   // The sweep reads the form-spec SSOT IN-PROCESS (2026-09-12 fix:
   // the old makeEstateRequest lane served no GET /v1/form-spec seat,
@@ -124,7 +125,7 @@ export async function agenticSweep(
   const results: Record<string, FieldResult> = {}
   for (const name of names) {
     results[name] = await enhanceOneField(
-      llm, fields[name]!, opts.prompt, opts.temperature, opts.signal, opts.llmWant, opts.defaultLlm,
+      llm, fields[name]!, opts.prompt, opts.temperature, opts.signal, opts.llmWant, opts.defaultLlm, opts.preference,
     )
   }
   return { model: opts.model, results }

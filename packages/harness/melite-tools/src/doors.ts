@@ -41,12 +41,19 @@ export const inject = ['webServer', 'llm', 'tools']
 
 /** Door config — same spelling as the tool plane's. */
 export interface Config {
-  /** Estate wire origin override. UNSET by default — the doors ride
-   *  THIS host's own webServer (the melite-estate bundle mounts them
-   *  in-process; the estate collapse, docs/plans/
-   *  estate-collapse-2026-09-10.md). Set only for an external estate
-   *  lane (another machine's DSH host). */
+  /**
+   * The card LLM preference (operator order: "muse-spark-1.3-contributor
+   * i want to use over glm-5v-turbo"): the route the ✦ enhance door
+   * prefers BETWEEN the caller's explicit llm and the host default
+   * model. An ordered candidate, never a contract — a name absent
+   * from the live list falls to the default arm (llm-complete's
+   * resolution law). An explicit empty string disables the arm.
+   */
+  enhancePreference?: string
 }
+
+/** The shipped default: the operator's named card model. */
+export const DEFAULT_ENHANCE_PREFERENCE = 'muse-spark-1.3-contributor'
 
 /** Minimal structural view of the services the doors touch. */
 interface CtxView {
@@ -87,6 +94,17 @@ export function apply(c: CtxView, config: Config = {}): void {
       }
     } catch { /* no default service — loud refusal downstream, never a walk */ }
     return undefined
+  }
+
+  /** The card LLM preference as configured, else the shipped default.
+   *  An explicit empty string DISABLES the preference arm (the
+   *  profile pins pure host-default behavior); unset rides the
+   *  operator's default. */
+  const preferenceOf = (cfg: Config): string | undefined => {
+    if (cfg.enhancePreference !== undefined) {
+      return cfg.enhancePreference.length > 0 ? cfg.enhancePreference : undefined
+    }
+    return DEFAULT_ENHANCE_PREFERENCE
   }
 
   /** A signal that fires when the HTTP caller goes away (aborts or
@@ -203,6 +221,7 @@ export function apply(c: CtxView, config: Config = {}): void {
             signal: sweepSignal,
             ...(llmWant !== undefined ? { llmWant } : {}),
             defaultLlm: readDefaultLlm(),
+            preference: preferenceOf(config),
           })
             .then((result) => respond(200, result))
             .catch(mapEnhanceError)
@@ -218,7 +237,7 @@ export function apply(c: CtxView, config: Config = {}): void {
           prompt: body.prompt,
           temperature,
           ...(llmWant !== undefined ? { llm: llmWant } : {}),
-        }, readDefaultLlm())
+        }, readDefaultLlm(), preferenceOf(config))
           .then((result) => respond(200, result))
           .catch(mapEnhanceError)
       }).catch((err: unknown) => respond(400, { error: `body read failed: ${err instanceof Error ? err.message : String(err)}` }))

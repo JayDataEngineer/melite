@@ -23,8 +23,8 @@
  * via harnessEnhance.)
  *
  * BASE toolset (both interfaces): melite_discover, melite_construct,
- * melite_load, comfy_manage, skill_index, skill_read, ledger_tail
- * (+ melite_flow + run_status headless).
+ * melite_load, melite_view, comfy_manage, skill_index, skill_read,
+ * ledger_tail (+ melite_flow + run_status headless).
  * Card tools compose from their card packages (named imports above
  * — the fetch registrar retired with its last row).
  *
@@ -51,6 +51,7 @@ import { comfyManage } from './tools/comfy-manage.ts'
 import { meliteDiscover } from './tools/melite-discover.ts'
 import { meliteConstruct } from './tools/melite-construct.ts'
 import { meliteLoad } from './tools/melite-load.ts'
+import { meliteView } from './tools/melite-view.ts'
 import { skillIndex } from './tools/skill-index.ts'
 import { skillRead } from './tools/skill-read.ts'
 import { ledgerTail } from './tools/ledger-tail.ts'
@@ -72,6 +73,7 @@ export { meliteConstruct, DEFAULT_BENCH } from './tools/melite-construct.ts'
 export { meliteFlow } from './tools/melite-flow.ts'
 export { comfyManage } from './tools/comfy-manage.ts'
 export { meliteLoad } from './tools/melite-load.ts'
+export { meliteView } from './tools/melite-view.ts'
 export { skillIndex } from './tools/skill-index.ts'
 export { skillRead } from './tools/skill-read.ts'
 export { ledgerTail } from './tools/ledger-tail.ts'
@@ -108,9 +110,11 @@ export interface Config {
   adhocTools?: string | string[]
 }
 
-/** BASE tool names — both interfaces (discovery, compose, management, audit). */
+/** BASE tool names — both interfaces (discovery, compose, view,
+ * management, audit). melite_view is the observe arm (viewing an
+ * artifact is not a run press — the interface law holds). */
 export const BASE_TOOL_NAMES = [
-  'melite_discover', 'melite_construct', 'melite_load',
+  'melite_discover', 'melite_construct', 'melite_load', 'melite_view',
   'comfy_manage', 'skill_index', 'skill_read', 'ledger_tail',
 ] as const
 
@@ -181,6 +185,13 @@ export async function apply(ctx: Context, config: Config = {}): Promise<void> {
   c.tools.register(meliteDiscover(request))
   c.tools.register(meliteConstruct(request, { headless }))
   c.tools.register(meliteLoad(request, { headless }))
+  // THE OBSERVE ARM (2026-09-14): view a run's image artifact — the
+  // attachment store commits it, the model sees it. BASE on purpose
+  // (browser sessions may look; runs still start at the user's
+  // press). Seats probe at call time: a store-less lane refuses
+  // loudly, never a phantom verb (the tool-fs inject law's spirit —
+  // core hosts always mount the store).
+  c.tools.register(meliteView(ctx))
   c.tools.register(comfyManage(request))
   c.tools.register(skillIndex(request))
   c.tools.register(skillRead(request))

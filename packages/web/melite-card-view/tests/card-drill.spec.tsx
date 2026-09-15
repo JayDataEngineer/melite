@@ -408,6 +408,93 @@ test('✦ Agent Enhance sweeps the declared fields and writes back through the v
   expect(screen.getByText('enhanced via dsh/default (1 field)')).toBeTruthy()
 })
 
+// ── THE CARD LLM DROPDOWN (operator order: "the cards need a model
+//    dropdown to select the models we want. muse-spark-1.3-contributor
+//    i want to use over glm-5v-turbo"): the ✦ rail's select lists the
+//    LIVE routes off the catalog door; a pick threads `llm` through
+//    every enhance press; Auto sends nothing (the door's preference
+//    chain serves) ──────────────────────────────────────────────────
+test('the ✦ rail model dropdown picks the enhancer route and threads it', async () => {
+  const user = userEvent.setup()
+  const enhanceCalls: Array<Record<string, unknown>> = []
+  window.localStorage.clear()
+  vi.stubGlobal('fetch', async (url: unknown, init?: RequestInit): Promise<Response> => {
+    const path = String(url)
+    if (path.includes('/melite-tools/catalog')) {
+      return new Response(JSON.stringify({
+        tools: [],
+        llmRoutes: ['opencode-go/muse-spark-1.3-contributor', 'zai/glm-5v-turbo'],
+      }), { status: 200, headers: { 'content-type': 'application/json' } })
+    }
+    if (path.includes('/melite-tools/enhance')) {
+      enhanceCalls.push(JSON.parse(String(init?.body)) as Record<string, unknown>)
+      return new Response(JSON.stringify({
+        model: 'krea-2',
+        results: { prompt: { positive: 'enhanced prose', negative: '', via: 'opencode-go/muse-spark-1.3-contributor' } },
+      }), { status: 200, headers: { 'content-type': 'application/json' } })
+    }
+    if (path.includes('/v1/form-spec')) {
+      return new Response(JSON.stringify({ form: 'image-gen', model: 'krea-2', schema: schemaEnvelope({
+        prompt: { type: 'string', meta: { description: 'Prompt', extra: { wtype: 'textarea' } } },
+      }), variants: [] }), { status: 200, headers: { 'content-type': 'application/json' } })
+    }
+    if (path.includes('/v1/model-catalog')) {
+      return new Response(JSON.stringify({ cards: { 'image-gen': { label: 'Image Gen', genre: 'image', families: ['krea-2'] } } }), { status: 200, headers: { 'content-type': 'application/json' } })
+    }
+    const frame = JSON.parse(String(init?.body)) as { rpcId: string, method: string }
+    let value: Record<string, unknown> = { ok: true }
+    if (frame.method === 'bench/get') value = {
+      draft_id: 'bench-llm', rev: 3,
+      stages: [{ id: 's_0', card: 'image-gen', title: 'hero frame', engine: 'comfyui',
+        params: { prompt: 'a red cube', steps: 8 } }],
+      log: [],
+    }
+    return new Response(JSON.stringify({ type: 'server-response', rpcId: frame.rpcId, result: { ok: true, value } }), { status: 200 })
+  })
+  render(createElement(CardsTab, {
+    useTabInfo: () => ({
+      tab: {
+        kind: 'sidebar.right.pane.tab', contentId: undefined,
+        navigation: { address: 'dsh-resource://cards/bench' },
+        actions: { openResource: () => {} },
+      },
+    }),
+    useResource: () => ({
+      status: 'live',
+      value: {
+        kind: 'bench', draftId: 'bench-llm', rev: 3,
+        stages: [{ id: 's_0', card: 'image-gen', title: 'hero frame', engine: 'comfyui',
+          params: { prompt: 'a red cube', steps: 8 } }],
+        log: [],
+      } as CardsBenchValue,
+    }),
+  } as Parameters<typeof CardsTab>[0]))
+  await user.click(await screen.findByText('hero frame', {}, { timeout: 4000 }))
+  // the dropdown rides the ✦ rail: Auto + the LIVE route list
+  const sel = await screen.findByRole('combobox', { name: 'Enhance model' }, { timeout: 4000 })
+  expect(sel.getAttribute('data-testid')).toBe('drill-llm')
+  const options = [...sel.querySelectorAll('option')].map((o) => o.value)
+  expect(options).toEqual(['', 'opencode-go/muse-spark-1.3-contributor', 'zai/glm-5v-turbo'])
+  // Auto first: no llm on the wire (the door's chain serves)
+  await user.click(await screen.findByRole('button', { name: 'Agent Enhance' }, { timeout: 4000 }))
+  await waitFor(() => { expect(enhanceCalls.length).toBe(1) }, { timeout: 4000 })
+  expect(enhanceCalls[0]!['llm']).toBeUndefined()
+  // the pick: muse-spark over glm-5v — the press names it explicitly
+  await user.selectOptions(sel, 'opencode-go/muse-spark-1.3-contributor')
+  await user.click(await screen.findByRole('button', { name: 'Agent Enhance' }, { timeout: 4000 }))
+  await waitFor(() => { expect(enhanceCalls.length).toBe(2) }, { timeout: 4000 })
+  expect(enhanceCalls[1]!['llm']).toBe('opencode-go/muse-spark-1.3-contributor')
+  // the choice PERSISTS (the shared card-LLM store)
+  expect(window.localStorage.getItem('melite:card-llm:v1')).toBe('opencode-go/muse-spark-1.3-contributor')
+  // back to Auto clears the store and the wire param
+  await user.selectOptions(sel, '')
+  await user.click(await screen.findByRole('button', { name: 'Agent Enhance' }, { timeout: 4000 }))
+  await waitFor(() => { expect(enhanceCalls.length).toBe(3) }, { timeout: 4000 })
+  expect(enhanceCalls[2]!['llm']).toBeUndefined()
+  expect(window.localStorage.getItem('melite:card-llm:v1')).toBeNull()
+  window.localStorage.clear()
+})
+
 test('the no-clobber law: an empty negative never wipes the card\'s own', async () => {
   const user = userEvent.setup()
   vi.stubGlobal('fetch', async (url: unknown, init?: RequestInit): Promise<Response> => {

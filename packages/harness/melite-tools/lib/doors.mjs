@@ -1,4 +1,4 @@
-import { c as formsArm, i as routeName, l as kindsDoorArm, o as cardToolsArm, p as makeEstateRequest, r as resolveHarnessRoutes, s as formSpecArm, t as harnessEnhance, u as modelCatalogArm } from "./llm-complete-C6vUHhJ7.mjs";
+import { c as formsArm, i as routeName, l as kindsDoorArm, o as cardToolsArm, p as makeEstateRequest, r as resolveHarnessRoutes, s as formSpecArm, t as harnessEnhance, u as modelCatalogArm } from "./llm-complete-BKP7-Uq_.mjs";
 //#region src/enhance-agent.ts
 /** Map a form-spec envelope onto its declared recipes (the ONE
 *  spelling — the request lane and the in-process sweep share it). */
@@ -13,14 +13,14 @@ function declaredFieldsFromSpec(spec) {
 	};
 }
 /** One field's enhancement through the harness model. */
-function enhanceOneField(llm, recipe, prompt, temperature, signal, llmWant, defaultLlm) {
+function enhanceOneField(llm, recipe, prompt, temperature, signal, llmWant, defaultLlm, preference) {
 	return harnessEnhance(llm, {
 		system: recipe,
 		prompt,
 		temperature,
 		signal,
 		...llmWant !== void 0 && llmWant.length > 0 ? { llm: llmWant } : {}
-	}, defaultLlm);
+	}, defaultLlm, preference);
 }
 /**
 * GENERIC FALLBACK RECIPE — BACK HOME (the gateway kill,
@@ -43,7 +43,7 @@ async function agenticSweep(ctx, llm, opts) {
 	if (names.length === 0) names = ["prompt"];
 	if (names.length === 1 && fields[names[0]] === void 0) fields[names[0]] = GENERIC_ENHANCE_RECIPE;
 	const results = {};
-	for (const name of names) results[name] = await enhanceOneField(llm, fields[name], opts.prompt, opts.temperature, opts.signal, opts.llmWant, opts.defaultLlm);
+	for (const name of names) results[name] = await enhanceOneField(llm, fields[name], opts.prompt, opts.temperature, opts.signal, opts.llmWant, opts.defaultLlm, opts.preference);
 	return {
 		model: opts.model,
 		results
@@ -56,12 +56,22 @@ const inject = [
 	"llm",
 	"tools"
 ];
+/** The shipped default: the operator's named card model. */
+const DEFAULT_ENHANCE_PREFERENCE = "muse-spark-1.3-contributor";
 function apply(c, config = {}) {
 	const readDefaultLlm = () => {
 		try {
 			const sel = c.get("agentDefaultModel")?.currentSelection?.();
 			if (typeof sel?.provider === "string" && typeof sel?.model === "string") return sel.provider + "/" + sel.model;
 		} catch {}
+	};
+	/** The card LLM preference as configured, else the shipped default.
+	*  An explicit empty string DISABLES the preference arm (the
+	*  profile pins pure host-default behavior); unset rides the
+	*  operator's default. */
+	const preferenceOf = (cfg) => {
+		if (cfg.enhancePreference !== void 0) return cfg.enhancePreference.length > 0 ? cfg.enhancePreference : void 0;
+		return DEFAULT_ENHANCE_PREFERENCE;
 	};
 	/** A signal that fires when the HTTP caller goes away (aborts or
 	*  closes) — the fuse leg for long LLM sweeps (row 13). */
@@ -134,7 +144,8 @@ function apply(c, config = {}) {
 					temperature,
 					signal: sweepSignal,
 					...llmWant !== void 0 ? { llmWant } : {},
-					defaultLlm: readDefaultLlm()
+					defaultLlm: readDefaultLlm(),
+					preference: preferenceOf(config)
 				}).then((result) => respond(200, result)).catch(mapEnhanceError);
 			}
 			if (typeof body.system_prompt !== "string" || body.system_prompt.length === 0) return respond(400, { error: "either model (agent sweep) or system_prompt (one-shot) is required" });
@@ -143,7 +154,7 @@ function apply(c, config = {}) {
 				prompt: body.prompt,
 				temperature,
 				...llmWant !== void 0 ? { llm: llmWant } : {}
-			}, readDefaultLlm()).then((result) => respond(200, result)).catch(mapEnhanceError);
+			}, readDefaultLlm(), preferenceOf(config)).then((result) => respond(200, result)).catch(mapEnhanceError);
 		}).catch((err) => respond(400, { error: `body read failed: ${err instanceof Error ? err.message : String(err)}` }));
 	};
 	c.effect(() => c.webServer.register({
@@ -313,4 +324,4 @@ function apply(c, config = {}) {
 	}), "melite-tools: /v1 prefix door");
 }
 //#endregion
-export { apply, inject };
+export { DEFAULT_ENHANCE_PREFERENCE, apply, inject };

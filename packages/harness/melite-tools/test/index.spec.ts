@@ -78,7 +78,7 @@ describe('plugin surface', () => {
     assert.equal(name, 'melite-tools')
     assert.deepEqual(inject, ['tools'])
     assert.deepEqual(BASE, [
-      'melite_discover', 'melite_construct', 'melite_load',
+      'melite_discover', 'melite_construct', 'melite_load', 'melite_view',
       'comfy_manage', 'skill_index', 'skill_read', 'ledger_tail',
     ])
     assert.deepEqual(HEADLESS, ['melite_flow', 'run_status'])

@@ -717,6 +717,11 @@ const OUTPUT_CONTRACT = "\n\nOutput contract: reply with ONLY a JSON object {\"p
 * providers is how silent-DeepSeek happens). Unknown → throw with
 * the live list (the route turns it into a 400, never a walk).
 *
+* `{ quiet: true }` (the preference arm): an unresolvable or
+* ambiguous name returns undefined instead of throwing — a
+* preference is an ordered candidate, so the caller skips to its
+* next arm; every resolve rule above is unchanged.
+*
 * Version-tail tolerance (2026-09-06, live-caught): the settings
 * default names glm-5.3 while the provider advertises glm-4.7 —
 * a newer default than the live provider list carries. The named
@@ -726,12 +731,15 @@ const OUTPUT_CONTRACT = "\n\nOutput contract: reply with ONLY a JSON object {\"p
 * loud with the live list. This is resolution of the user's own
 * default, not a fallback to a DIFFERENT provider's model.
 */
-function matchHarnessRoute(routes, want) {
+function matchHarnessRoute(routes, want, opts) {
 	const exact = routes.find((r) => routeName(r) === want);
 	if (exact) return exact;
 	const bare = routes.filter((r) => r.model === want);
 	if (bare.length === 1) return bare[0];
-	if (bare.length > 1) throw new Error("enhance: ambiguous llm \"" + want + "\" — advertised by " + bare.map(routeName).join(", ") + "; name provider/model");
+	if (bare.length > 1) {
+		if (opts?.quiet === true) return void 0;
+		throw new Error("enhance: ambiguous llm \"" + want + "\" — advertised by " + bare.map(routeName).join(", ") + "; name provider/model");
+	}
 	const provider = want.split("/")[0];
 	const stem = (want.split("/")[1] ?? "").replace(/[-.][0-9]+.*$/, "").toLowerCase();
 	if (stem !== "") {
@@ -745,6 +753,7 @@ function matchHarnessRoute(routes, want) {
 		}
 	}
 	const live = routes.map(routeName).join(", ");
+	if (opts?.quiet === true) return void 0;
 	throw new Error("enhance: unknown llm route \"" + want + "\" — live routes: " + live);
 }
 /**
@@ -757,6 +766,13 @@ function matchHarnessRoute(routes, want) {
 *   - explicit req.llm names the route, else defaultLlm (the
 *     agentDefaultModel service's live selection — the user's own
 *     default) names it. Explicit wins; NEITHER walks.
+*   - preference (operator order, "muse-spark-1.3-contributor i
+*     want to use over glm-5v-turbo"): a route name the door
+*     prefers BETWEEN explicit and the host default. An ordered
+*     candidate, not a contract — a name that does not resolve
+*     against the live list is SKIPPED (the default arm serves);
+*     a named-live preference that fails to complete is still the
+*     honest 502 (no step-past, ever).
 *   - unresolvable name → throw naming the live routes (the route
 *     maps explicit→400, stale default→502).
 *   - the ONE route completes; its failure is the honest error
@@ -766,15 +782,31 @@ function matchHarnessRoute(routes, want) {
 * (one configured model, loud otherwise) with the model resolved
 * from the host default instead of the retired keystore.
 */
-async function harnessEnhance(llm, req, defaultLlm) {
+async function harnessEnhance(llm, req, defaultLlm, preference) {
 	const routes = await resolveHarnessRoutes(llm);
-	const want = typeof req.llm === "string" && req.llm.length > 0 ? req.llm : typeof defaultLlm === "string" && defaultLlm.length > 0 ? defaultLlm : void 0;
-	if (want === void 0) throw new Error("enhance: no llm named and no host default configured — name llm (\"provider/model\") or set the host default model");
-	const route = matchHarnessRoute(routes, want);
-	return {
-		...parseEnhanceJson(await harnessCompleteOnRoute(llm, route, req)),
-		via: routeName(route)
-	};
+	const explicit = typeof req.llm === "string" && req.llm.length > 0 ? req.llm : void 0;
+	if (explicit !== void 0) {
+		const route = matchHarnessRoute(routes, explicit);
+		return {
+			...parseEnhanceJson(await harnessCompleteOnRoute(llm, route, req)),
+			via: routeName(route)
+		};
+	}
+	if (typeof preference === "string" && preference.length > 0) {
+		const preferred = matchHarnessRoute(routes, preference, { quiet: true });
+		if (preferred !== void 0) return {
+			...parseEnhanceJson(await harnessCompleteOnRoute(llm, preferred, req)),
+			via: routeName(preferred)
+		};
+	}
+	if (typeof defaultLlm === "string" && defaultLlm.length > 0) {
+		const route = matchHarnessRoute(routes, defaultLlm);
+		return {
+			...parseEnhanceJson(await harnessCompleteOnRoute(llm, route, req)),
+			via: routeName(route)
+		};
+	}
+	throw new Error("enhance: no llm named and no host default configured — name llm (\"provider/model\") or set the host default model");
 }
 /**
 * Parse the recipe's STRICT JSON reply ({positive, negative}) out of model

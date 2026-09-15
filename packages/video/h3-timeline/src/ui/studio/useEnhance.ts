@@ -18,16 +18,19 @@ export function useEnhance() {
 
   /** ✨ Enhance ONE prompt (call text or beat segment) into H3 style.
    * Zero-setup path first (the DSH harness model), keystore LLM second —
-   * same enhancePrompt the host's ✨ buttons use. Never silent: errors
-   * render inline; the previous text is kept for one-click undo. */
+   * same enhancePrompt the host's ✨ buttons use. The card LLM
+   * preference (the ✦ rail's dropdown, @melite/catalog's store)
+   * threads through: unset = Auto (the estate's preference chain,
+   * muse-spark over glm-5v). Never silent: errors render inline; the
+   * previous text is kept for one-click undo. */
   const enhanceOne = async (key: string, text: string, apply: (t: string) => void) => {
     const cur = text.trim()
     if (!cur || enhancing[key]) return
     setEnhancingKey(key, true)
     setEnhanceErr((m) => ({ ...m, [key]: null }))
     try {
-      const { enhancePrompt } = await import("@melite/catalog")
-      const result = await enhancePrompt(H3_ENHANCE_SYSTEM, cur)
+      const { enhancePrompt, cardLlmArg } = await import("@melite/catalog")
+      const result = await enhancePrompt(H3_ENHANCE_SYSTEM, cur, cardLlmArg())
       if (!result?.positive) throw new Error("empty enhancement result")
       setEnhanceUndo((m) => ({ ...m, [key]: text }))
       apply(result.positive)

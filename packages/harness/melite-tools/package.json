@@ -23,6 +23,7 @@
     "typescript": "^5.9.3"
   },
   "dependencies": {
+    "@deepseek-ai/dsh-attachment": "0.1.5-rc.2",
     "@deepseek-ai/dsh-llm": "0.1.5-rc.2",
     "@deepseek-ai/dsh-tools": "0.1.5-rc.2",
     "@deepseek-ai/dsh-typert-protocol": "0.1.5-rc.2",
@@ -34,6 +35,7 @@
     "@melite/comfyui-cordis": "workspace:*",
     "@melite/estate-call": "workspace:*",
     "@melite/estate-drafts": "workspace:*",
+    "@melite/estate-media": "workspace:*",
     "@melite/estate-queue": "workspace:*",
     "@melite/image-image-edit": "workspace:*",
     "@melite/motion-motion": "workspace:*",

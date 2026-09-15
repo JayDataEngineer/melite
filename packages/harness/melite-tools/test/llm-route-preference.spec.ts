@@ -27,6 +27,8 @@ interface SeenCall {
 
 function fakeSeam(opts?: {
   dead?: Set<string>
+  zai?: boolean
+  ambiguous?: boolean
 }): LlmStreamSeam & { seen: SeenCall[]; systems: string[] } {
   const seen: SeenCall[] = []
   const systems: string[] = []
@@ -34,6 +36,12 @@ function fakeSeam(opts?: {
   const providers = [
     { id: 'deepseek-official', models: ['deepseek-chat'] },
     { id: 'opencode-go', models: ['muse-spark'] },
+    // The operator's vision session model (the host default when the
+    // lane runs vision loops) — the preference pins ride this pair.
+    ...(opts?.zai === true ? [{ id: 'zai', models: ['glm-5v-turbo'] }] : []),
+    // A second advertiser of the preference's bare name — the
+    // ambiguity the quiet arm must skip, never guess between.
+    ...(opts?.ambiguous === true ? [{ id: 'other', models: ['muse-spark'] }] : []),
   ]
   return {
     seen,
@@ -127,6 +135,61 @@ describe('llm route preference', () => {
       msg = e instanceof Error ? e.message : String(e)
     }
     assert.ok(msg.includes('ambiguous llm'))
+  })
+
+  // ── THE CARD PREFERENCE ARM (operator order: "muse-spark-1.3-
+  //  contributor i want to use over glm-5v-turbo") ──────────────────
+  describe('card llm preference', () => {
+    const PREF = 'muse-spark'
+    const HOST_DEFAULT = 'zai/glm-5v-turbo'
+
+    test('preference serves over the host default (muse over glm-5v); via echoes', async () => {
+      const llm = fakeSeam({ zai: true })
+      const out = await harnessEnhance(llm, { ...REQ }, HOST_DEFAULT, PREF)
+      assert.equal(out.via, DEFAULT)
+      assert.deepEqual(llm.seen, [{ provider: 'opencode-go', model: 'muse-spark' }])
+    })
+
+    test('explicit caller llm still beats the preference', async () => {
+      const llm = fakeSeam({ zai: true })
+      const out = await harnessEnhance(llm, { ...REQ, llm: HOST_DEFAULT }, HOST_DEFAULT, PREF)
+      assert.equal(out.via, HOST_DEFAULT)
+      assert.deepEqual(llm.seen, [{ provider: 'zai', model: 'glm-5v-turbo' }])
+    })
+
+    test('stale preference falls to the host default (ordered candidate, not a contract)', async () => {
+      const llm = fakeSeam({ zai: true })
+      const out = await harnessEnhance(llm, { ...REQ }, HOST_DEFAULT, 'gone/nothing')
+      assert.equal(out.via, HOST_DEFAULT)
+    })
+
+    test('named-live preference that dies throws LOUDLY — no step-past to the default', async () => {
+      const llm = fakeSeam({ zai: true, dead: new Set([DEFAULT]) })
+      const msg = await throwsMsg(() => harnessEnhance(llm, { ...REQ }, HOST_DEFAULT, PREF))
+      assert.ok(msg.includes('quota dead'))
+      assert.deepEqual(llm.seen, [{ provider: 'opencode-go', model: 'muse-spark' }])
+    })
+
+    test('ambiguous preference name skips quietly to the default', async () => {
+      const llm = fakeSeam({ zai: true, ambiguous: true })
+      const routes = await resolveHarnessRoutes(llm)
+      assert.equal(matchHarnessRoute(routes, 'muse-spark', { quiet: true }), undefined)
+      let strict = ''
+      try {
+        matchHarnessRoute(routes, 'muse-spark')
+      } catch (e) {
+        strict = e instanceof Error ? e.message : String(e)
+      }
+      assert.ok(strict.includes('ambiguous llm'))
+      const out = await harnessEnhance(llm, { ...REQ }, HOST_DEFAULT, 'muse-spark')
+      assert.equal(out.via, HOST_DEFAULT)
+    })
+
+    test('no default + stale preference still throws loud (never a blind walk)', async () => {
+      const llm = fakeSeam()
+      const msg = await throwsMsg(() => harnessEnhance(llm, { ...REQ }, undefined, 'gone/nothing'))
+      assert.ok(msg.includes('no llm named and no host default'))
+    })
   })
 
   test('output contract rides EVERY recipe, even one with no format word (live-caught 1:1)', async () => {

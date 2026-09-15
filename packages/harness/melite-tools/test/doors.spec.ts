@@ -22,12 +22,15 @@ interface SeenLlm {
   temps: unknown[]
 }
 
-function fakeLlm(opts?: { dead?: boolean; explode?: boolean }): LlmStreamSeam & SeenLlm {
+function fakeLlm(opts?: { dead?: boolean; explode?: boolean; zai?: boolean }): LlmStreamSeam & SeenLlm {
   const systems: string[] = []
   const temps: unknown[] = []
   const providers = [
-    { id: 'opencode-go', models: ['muse-spark'] },
+    { id: 'opencode-go', models: ['muse-spark', 'muse-spark-1.3-contributor'] },
     { id: 'deepseek-official', models: ['deepseek-chat'] },
+    // The operator's vision route (the host default under vision
+    // sessions) — the door preference pins ride this pair.
+    ...(opts?.zai === true ? [{ id: 'zai', models: ['glm-5v-turbo'] }] : []),
   ]
   return {
     systems,
@@ -109,6 +112,13 @@ function boot(opts?: Parameters<typeof fakeHost>[0]): Host & { host: unknown } {
   const h = fakeHost(opts)
   apply(h.host as never, {})
   return h as Host & { host: unknown }
+}
+
+/** boot with a door CONFIG (the preference arm's carrier). */
+function bootCfg(config: Record<string, unknown>, opts?: Parameters<typeof fakeHost>[0]): Host {
+  const h = fakeHost(opts)
+  apply(h.host as never, config)
+  return h as Host
 }
 
 interface ReqOpts {
@@ -287,7 +297,7 @@ describe('enhance one-shot', () => {
     assert.deepEqual(llm.temps, [0.5])
   })
 
-  test('absent llm serves the host default; non-number temperature drops', async () => {
+  test('absent llm serves the door preference over the host default; non-number temperature drops', async () => {
     const llm = fakeLlm()
     const h = boot({ llm, defaultModel: DEFAULT_MODEL })
     const { status, body } = await call(h.routes, '/melite-tools/enhance', {
@@ -296,8 +306,42 @@ describe('enhance one-shot', () => {
       body: { system_prompt: 's', prompt: 'p', temperature: 'hot' },
     })
     assert.equal(status, 200)
-    assert.equal((body as { via: string }).via, 'opencode-go/muse-spark')
+    assert.equal((body as { via: string }).via, 'opencode-go/muse-spark-1.3-contributor')
     assert.deepEqual(llm.temps, [undefined])
+  })
+
+  // ── the CARD PREFERENCE ARM (operator order: "muse-spark-1.3-
+  //    contributor i want to use over glm-5v-turbo") — the door
+  //    config's ordered candidate, between the explicit wire and the
+  //    host default ─────────────────────────────────────────────────
+  test('unset config rides the operator default: muse-spark-1.3-contributor over the glm-5v host default', async () => {
+    const VISION_DEFAULT = { currentSelection: () => ({ provider: 'zai', model: 'glm-5v-turbo' }) }
+    const h = bootCfg({}, { llm: fakeLlm({ zai: true }), defaultModel: VISION_DEFAULT })
+    const { status, body } = await call(h.routes, '/melite-tools/enhance', {
+      method: 'POST', url: '/', body: { system_prompt: 's', prompt: 'p' },
+    })
+    assert.equal(status, 200)
+    assert.equal((body as { via: string }).via, 'opencode-go/muse-spark-1.3-contributor')
+  })
+
+  test('an explicit empty string DISABLES the arm — the host default serves', async () => {
+    const VISION_DEFAULT = { currentSelection: () => ({ provider: 'zai', model: 'glm-5v-turbo' }) }
+    const h = bootCfg({ enhancePreference: '' }, { llm: fakeLlm({ zai: true }), defaultModel: VISION_DEFAULT })
+    const { status, body } = await call(h.routes, '/melite-tools/enhance', {
+      method: 'POST', url: '/', body: { system_prompt: 's', prompt: 'p' },
+    })
+    assert.equal(status, 200)
+    assert.equal((body as { via: string }).via, 'zai/glm-5v-turbo')
+  })
+
+  test('a named preference overrides the operator default; a stale one skips to the host default', async () => {
+    const VISION_DEFAULT = { currentSelection: () => ({ provider: 'zai', model: 'glm-5v-turbo' }) }
+    const named = bootCfg({ enhancePreference: 'deepseek-official/deepseek-chat' }, { llm: fakeLlm({ zai: true }), defaultModel: VISION_DEFAULT })
+    const n = await call(named.routes, '/melite-tools/enhance', { method: 'POST', url: '/', body: { system_prompt: 's', prompt: 'p' } })
+    assert.equal((n.body as { via: string }).via, 'deepseek-official/deepseek-chat')
+    const stale = bootCfg({ enhancePreference: 'gone/nothing' }, { llm: fakeLlm({ zai: true }), defaultModel: VISION_DEFAULT })
+    const s = await call(stale.routes, '/melite-tools/enhance', { method: 'POST', url: '/', body: { system_prompt: 's', prompt: 'p' } })
+    assert.equal((s.body as { via: string }).via, 'zai/glm-5v-turbo')
   })
 
   test('a non-string llm is ignored like an absent one', async () => {
@@ -359,8 +403,8 @@ describe('enhance one-shot', () => {
     assert.ok(String((r.body as { error: string }).error).includes('unknown llm route'))
   })
 
-  test('a stale host default is a 502 naming the live routes', async () => {
-    const h = boot({ defaultModel: { currentSelection: () => ({ provider: 'gone', model: 'model' }) } })
+  test('a stale host default is a 502 naming the live routes (preference disabled)', async () => {
+    const h = bootCfg({ enhancePreference: '' }, { defaultModel: { currentSelection: () => ({ provider: 'gone', model: 'model' }) } })
     const r = await call(h.routes, '/melite-tools/enhance', {
       method: 'POST',
       url: '/',
@@ -381,11 +425,11 @@ describe('enhance one-shot', () => {
     assert.ok(String((r.body as { error: string }).error).includes('quota dead'))
   })
 
-  test('no llm and no host default is a 502, never a walk', async () => {
+  test('no llm and no host default is a 502, never a walk (preference disabled)', async () => {
     for (const opts of [{ getThrows: true }, { defaultModel: null }, { defaultModel: {} },
       { defaultModel: { currentSelection: () => ({ provider: 'x', model: 7 }) } },
       { defaultModel: { currentSelection: () => null } }]) {
-      const h = boot(opts as Parameters<typeof fakeHost>[0])
+      const h = bootCfg({ enhancePreference: '' }, opts as Parameters<typeof fakeHost>[0])
       const r = await call(h.routes, '/melite-tools/enhance', {
         method: 'POST',
         url: '/',
@@ -451,7 +495,7 @@ describe('enhance one-shot', () => {
 // ── enhance sweep ─────────────────────────────────────────────────
 
 describe('enhance sweep', () => {
-  test('a recipe-less model sweeps ONE generic field through the default', async () => {
+  test('a recipe-less model sweeps ONE generic field through the door preference', async () => {
     const h = boot({ defaultModel: DEFAULT_MODEL })
     const { status, body } = await call(h.routes, '/melite-tools/enhance', {
       method: 'POST',
@@ -462,7 +506,8 @@ describe('enhance sweep', () => {
     const b = body as { model: string; results: Record<string, { via: string }> }
     assert.equal(b.model, 'tts')
     assert.deepEqual(Object.keys(b.results), ['prompt'])
-    assert.equal(b.results['prompt']!.via, 'opencode-go/muse-spark')
+    // the door preference serves over the host default (the arm's law)
+    assert.equal(b.results['prompt']!.via, 'opencode-go/muse-spark-1.3-contributor')
   })
 
   test('an explicit llm rides the sweep legs', async () => {
@@ -498,8 +543,8 @@ describe('enhance sweep', () => {
     assert.equal(r.status, 200)
   })
 
-  test('a sweep with no llm anywhere is a 502, never a walk', async () => {
-    const h = boot({})
+  test('a sweep with no llm anywhere is a 502, never a walk (preference disabled)', async () => {
+    const h = bootCfg({ enhancePreference: '' }, {})
     const r = await call(h.routes, '/melite-tools/enhance', {
       method: 'POST',
       url: '/',

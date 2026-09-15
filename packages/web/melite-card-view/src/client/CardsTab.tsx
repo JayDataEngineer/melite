@@ -40,6 +40,7 @@ import { titleCaseId } from '@melite/card-base/spec'
 import { fetchFormsTable, postManageAction } from '@melite/card-base/wire'
 import { ToastViewport } from '@melite/card-base/toast'
 import { StudioShell } from '@melite/card-base/shell'
+import { cardLlmArg } from '@melite/catalog'
 
 /** The /v1/forms edge-meta cache (card id → declared input/output
  *  kinds) — ONE fetch per browser session; the picker's kind
@@ -941,10 +942,14 @@ function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRemoved, 
     setEnhancing(true)
     setEnhanceNote(null)
     try {
+      // THE CARD LLM PREFERENCE (the ✦ rail's dropdown): unset =
+      // Auto — the door's preference chain (muse-spark over glm-5v)
+      // serves; a picked route names the enhancer explicitly.
+      const llm = cardLlmArg()
       const res = await fetch('/melite-tools/enhance', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ model, prompt: current }),
+        body: JSON.stringify({ model, prompt: current, ...(llm !== undefined ? { llm } : {}) }),
       })
       // read TEXT first — a non-JSON error body must surface its own
       // words, never a JSON parse stack trace

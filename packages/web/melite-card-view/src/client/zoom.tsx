@@ -18,6 +18,7 @@
 import { createElement as h, useCallback, useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { IconLoadingOutline16, IconPlayOutline16, IconStopFill16 } from '@deepseek-ai/dsh-client-ui-primitives'
+import { fetchEnhanceRoutes, getCardLlm, setCardLlm } from '@melite/catalog'
 import css from './card.module.css'
 import { BenchStageRow, CardsBenchValue } from './cards-resource.ts'
 import type { StageViewOwnerProps } from './types.ts'
@@ -141,6 +142,26 @@ function ZoomMount(props: ZoomDetailProps & { detail: (p: ZoomDetailProps) => Re
     setEnhancingBar(true)
     void Promise.resolve(enhanceVerb()).finally(() => { setEnhancingBar(false) })
   }
+  // THE CARD LLM DROPDOWN (operator order: "the cards need a model
+  // dropdown to select the models we want"): the ✦ verb's model
+  // selector — the LIVE route list off the catalog door, the choice
+  // persisted per browser (the ✦ rail reads it at call time; Auto =
+  // the estate's preference chain server-side). Renders only when
+  // routes answer (standalone mounts keep the verb, lose the pick).
+  const [llmRoutes, setLlmRoutes] = useState<string[] | null>(null)
+  const [cardLlm, setCardLlmSel] = useState('')
+  useEffect(() => {
+    let alive = true
+    setCardLlmSel(getCardLlm() ?? '')
+    void fetchEnhanceRoutes().then((routes): void => {
+      if (alive) setLlmRoutes(routes)
+    })
+    return () => { alive = false }
+  }, [])
+  const pickLlm = (route: string): void => {
+    setCardLlm(route)
+    setCardLlmSel(route)
+  }
   // THE ENVELOPE LIFT: the detail reports the estate's surface.size;
   // the frame grows for 'huge' (the card listens, the view talks).
   const [surfaceSize, setSurfaceSize] = useState<string | null>(null)
@@ -202,14 +223,30 @@ function ZoomMount(props: ZoomDetailProps & { detail: (p: ZoomDetailProps) => Re
             // face, glyph + word, Stop mid-run — the drill/studio
             // bottom seats retired with it.
             // THE ✦ CAPSULE (stroke 23): beside Run, frame-rendered —
-            // the detail bound the verb; the promise owns the busy face
+            // the detail bound the verb; the promise owns the busy face.
+            // THE MODEL DROPDOWN rides its left edge (the ✦ verb's own
+            // selector — one seat, the choice threads every enhance
+            // press through the shared card-LLM preference).
             enhanceVerb !== null
-              ? h('button', {
-                className: css.drillRunBtn, type: 'button',
-                'aria-label': 'Agent Enhance', 'data-testid': 'drill-enhance',
-                disabled: enhancingBar,
-                onClick: fireEnhance,
-              }, h('span', null, enhancingBar ? '✦ enhancing…' : '✦ Enhance'))
+              ? [
+                llmRoutes !== null
+                  ? h('select', {
+                    className: css.drillLlm,
+                    'aria-label': 'Enhance model', 'data-testid': 'drill-llm',
+                    value: cardLlm,
+                    onChange: (e: unknown) => { pickLlm((e as { target: { value: string } }).target.value) },
+                  },
+                  h('option', { value: '' }, 'Auto'),
+                  ...llmRoutes.map((r) => h('option', { value: r, key: r }, r)),
+                  )
+                  : null,
+                h('button', {
+                  className: css.drillRunBtn, type: 'button',
+                  'aria-label': 'Agent Enhance', 'data-testid': 'drill-enhance',
+                  disabled: enhancingBar,
+                  onClick: fireEnhance,
+                }, h('span', null, enhancingBar ? '✦ enhancing…' : '✦ Enhance')),
+              ]
               : null,
             live
               ? h('button', {

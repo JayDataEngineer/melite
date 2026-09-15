@@ -1,5 +1,6 @@
-import { a as routeName, i as resolveHarnessRoutes, n as harnessEnhance, r as matchHarnessRoute } from "./llm-complete-CXD7-zEN.mjs";
+import { a as routeName, i as resolveHarnessRoutes, n as harnessEnhance, r as matchHarnessRoute } from "./llm-complete-BR2qfbp4.mjs";
 import { ToolDefinition } from "@deepseek-ai/dsh-tools";
+import "@deepseek-ai/dsh-attachment";
 import "@deepseek-ai/dsh-llm";
 import "@melite/estate-call";
 import "@deepseek-ai/dsh-util-values";
@@ -1178,6 +1179,13 @@ declare function meliteLoad(request: EstateRequest, opts?: {
   headless?: boolean;
 }): ToolDefinition;
 //#endregion
+//#region src/tools/melite-view.d.ts
+/** Build the melite_view tool against the live cordis context (the
+ * seats: `attachments` — the durable store, `queue` — the runs tree
+ * root owner, `llm` — the route gate; all optional probes, the
+ * tool-fs inject law). */
+declare function meliteView(ctx: Context): ToolDefinition;
+//#endregion
 //#region src/tools/skill-index.d.ts
 declare function skillIndex(request: EstateRequest): ToolDefinition;
 //#endregion
@@ -1211,8 +1219,10 @@ interface Config {
    *  Accepts a single string or a list. */
   adhocTools?: string | string[];
 }
-/** BASE tool names — both interfaces (discovery, compose, management, audit). */
-declare const BASE_TOOL_NAMES: readonly ["melite_discover", "melite_construct", "melite_load", "comfy_manage", "skill_index", "skill_read", "ledger_tail"];
+/** BASE tool names — both interfaces (discovery, compose, view,
+ * management, audit). melite_view is the observe arm (viewing an
+ * artifact is not a run press — the interface law holds). */
+declare const BASE_TOOL_NAMES: readonly ["melite_discover", "melite_construct", "melite_load", "melite_view", "comfy_manage", "skill_index", "skill_read", "ledger_tail"];
 /** HEADLESS-only run doors (MELITE_HEADLESS=1) — the delegated operator. */
 declare const HEADLESS_TOOL_NAMES: readonly ["melite_flow", "run_status"];
 /** AD HOC names (MELITE_ADHOC) — never in a base toolset.
@@ -1220,8 +1230,8 @@ declare const HEADLESS_TOOL_NAMES: readonly ["melite_flow", "run_status"];
  *  the editor ✦ door below keeps the user surface via harnessEnhance.) */
 declare const ADHOC_TOOL_NAMES: readonly [];
 /** Every tool name this plugin can own (registration log + smoke filter). */
-declare const MELITE_TOOL_NAMES: readonly ["melite_discover", "melite_construct", "melite_load", "comfy_manage", "skill_index", "skill_read", "ledger_tail", "melite_flow", "run_status"];
+declare const MELITE_TOOL_NAMES: readonly ["melite_discover", "melite_construct", "melite_load", "melite_view", "comfy_manage", "skill_index", "skill_read", "ledger_tail", "melite_flow", "run_status"];
 /** Register the Melite tools against the live estate gateway. */
 declare function apply(ctx: Context, config?: Config): Promise<void>;
 //#endregion
-export { ADHOC_TOOL_NAMES, BASE_TOOL_NAMES, Config, DEFAULT_BENCH, type EstateRequest, HEADLESS_TOOL_NAMES, MELITE_TOOL_NAMES, apply, comfyManage, harnessEnhance, inject, ledgerTail, makeEstateRequest, matchHarnessRoute, meliteConstruct, meliteDiscover, meliteFlow, meliteLoad, name, resolveHarnessRoutes, routeName, runStatus, skillIndex, skillRead };
+export { ADHOC_TOOL_NAMES, BASE_TOOL_NAMES, Config, DEFAULT_BENCH, type EstateRequest, HEADLESS_TOOL_NAMES, MELITE_TOOL_NAMES, apply, comfyManage, harnessEnhance, inject, ledgerTail, makeEstateRequest, matchHarnessRoute, meliteConstruct, meliteDiscover, meliteFlow, meliteLoad, meliteView, name, resolveHarnessRoutes, routeName, runStatus, skillIndex, skillRead };
