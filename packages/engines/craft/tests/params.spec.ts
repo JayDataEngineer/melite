@@ -40,6 +40,11 @@ describe("normalizeCraftStageParams (both grammars fold into one wire)", () => {
     assert.deepEqual(b.command, a.command, "legacy row and form fold agree");
   });
 
+  it("a non-object params row refuses LOUD (the gate's own first word)", () => {
+    assert.throws(() => normalizeCraftStageParams("junk", W, CRAFT_MAX_ITERATIONS_HARD_CAP), /params must be a JSON object/);
+    assert.throws(() => normalizeCraftStageParams(null, W, CRAFT_MAX_ITERATIONS_HARD_CAP), /params must be a JSON object/);
+  });
+
   it("malformed values refuse LOUD with the pinned messages (the wire's own words)", () => {
     assert.throws(() => normalizeCraftStageParams({}, W, CRAFT_MAX_ITERATIONS_HARD_CAP), /'agent_prompt' \(the brief\) is required/);
     assert.throws(() => normalizeCraftStageParams({ agent_prompt: "p" }, W, CRAFT_MAX_ITERATIONS_HARD_CAP), /'inputs' must be a JSON object carrying 'command'/);
