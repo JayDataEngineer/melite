@@ -1262,3 +1262,22 @@ test("a model-less stage passes admission untouched (model-less cards compose on
   assert.equal(row.stage, "s_0");
   assert.deepEqual(seen, ["mask-studio:"]);
 });
+
+test("a param-less row still reaches admission (the card check runs on {} — no silent sail-through)", async () => {
+  const drafts = await boot();
+  await ensureBench(drafts, { session: "s" });
+  const seen: Array<{ card: string; params: Record<string, unknown> }> = [];
+  const admit = (card: string, params: Record<string, unknown>): void => {
+    seen.push({ card, params });
+  };
+  // add_stage with no params key at all.
+  await addStageBench(drafts, "s", { card: "image-gen", expect_rev: 0 }, admit);
+  // a wholesale load whose row carries no params.
+  await ensureBench(drafts, {
+    session: "empty", stages: [{ id: "a", card: "hero" }],
+  }, admit);
+  assert.deepEqual(seen, [
+    { card: "image-gen", params: {} },
+    { card: "hero", params: {} },
+  ]);
+});

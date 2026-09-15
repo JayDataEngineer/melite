@@ -22,6 +22,13 @@ declare module "@deepseek-ai/dsh-typert-protocol" {
             readonly current_rev: number;
             readonly expect_rev?: number;
         };
+        /** The overwrite law (2026-09-15): a wholesale load onto a
+         *  non-empty bench without overwrite: true — stages is how
+         *  many would have been discarded. */
+        "bench/overwrite-required": {
+            readonly current_rev: number;
+            readonly stages: number;
+        };
         /** No bench doc carries that session. */
         "bench/not-found": {
             readonly session: string;
@@ -83,7 +90,8 @@ export interface BenchGetRow {
     readonly log: readonly Record<string, unknown>[];
 }
 /** ensure — create the bench (birth: rev 0, empty log) or LOAD onto
- *  it (replace stages, snapshot inverse). The only arm that may
+ *  it (replace stages, snapshot inverse; a non-empty bench demands
+ *  overwrite: true — the overwrite law). The only arm that may
  *  create; everything else refuses a missing bench. */
 export declare function ensureBench(drafts: Domain<DraftsDomainSpec>, body: Record<string, unknown>, admit?: StageAdmission): Promise<BenchEnsureRow>;
 /** get — one session's bench block as the served row. */

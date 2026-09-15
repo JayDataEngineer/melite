@@ -577,8 +577,11 @@ function admitStage(
 ): void {
   if (admit === undefined) return;
   if (typeof card !== "string" || card === "") return;
-  if (!isRecord(params)) return;
-  admit(card, params);
+  // A param-less row still names its card (2026-09-15: a stageless
+  // add sailed past admission entirely) — admit the card against
+  // empty params; the model check passes vacuous, the card check
+  // still bites.
+  admit(card, isRecord(params) ? params : {});
 }
 
 /** Admission over a wholesale stage list (the load arm — every row

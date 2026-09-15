@@ -69,7 +69,7 @@ function normalizeStages(stagesIn, author) {
         return row;
     });
 }
-const ENSURE_KEYS = ["session", "stages", "intent", "author", "expect_rev"];
+const ENSURE_KEYS = ["session", "stages", "intent", "author", "expect_rev", "overwrite"];
 function refuseUnknown(body, allowed) {
     const unknown = Object.keys(body).filter((k) => !allowed.includes(k));
     if (unknown.length > 0) {
@@ -81,7 +81,8 @@ function refuseUnknown(body, allowed) {
     }
 }
 /** ensure — create the bench (birth: rev 0, empty log) or LOAD onto
- *  it (replace stages, snapshot inverse). The only arm that may
+ *  it (replace stages, snapshot inverse; a non-empty bench demands
+ *  overwrite: true — the overwrite law). The only arm that may
  *  create; everything else refuses a missing bench. */
 export async function ensureBench(drafts, body, admit) {
     refuseUnknown(body, ENSURE_KEYS);
@@ -139,6 +140,18 @@ export async function ensureBench(drafts, body, admit) {
         throw new RemoteError("bench/cas-conflict", "bench moved: rev is " + block.rev + ", caller held " + expect, { current_rev: block.rev, expect_rev: expect });
     }
     const before = stagesOf(doc);
+    // THE OVERWRITE LAW (2026-09-15 — a compose agent wiped a live
+    // image card with a wholesale load): replacing a NON-EMPTY bench
+    // is a destructive act and must say so. expect_rev proves the
+    // caller read the bench, not that the user agreed to lose it —
+    // pass overwrite: true to confirm (flow landings and the
+    // gallery's draft-click already do; the undo log still records
+    // stages_before either way).
+    if (before.length > 0 && body["overwrite"] !== true) {
+        throw new RemoteError("bench/overwrite-required", "bench holds " + before.length + " stage(s) at rev " + block.rev +
+            " — a wholesale load would discard them; confirm with overwrite: true, " +
+            "or grow the bench with add_stage / patch, or undo if this was a mistake", { current_rev: block.rev, stages: before.length });
+    }
     admitStages(admit, body["stages"]);
     doc["stages"] = normalizeStages(body["stages"], author);
     if (typeof body["intent"] === "string")
@@ -334,9 +347,11 @@ function admitStage(admit, card, params) {
         return;
     if (typeof card !== "string" || card === "")
         return;
-    if (!isRecord(params))
-        return;
-    admit(card, params);
+    // A param-less row still names its card (2026-09-15: a stageless
+    // add sailed past admission entirely) — admit the card against
+    // empty params; the model check passes vacuous, the card check
+    // still bites.
+    admit(card, isRecord(params) ? params : {});
 }
 /** Admission over a wholesale stage list (the load arm — every row
  *  passes the same door an add passes). */
