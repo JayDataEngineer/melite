@@ -62,6 +62,11 @@ const ENGINE_TABLE: Record<string, { plugin: string; def: string }> = {
   // the MCP grammar arm — any mcp:<server> id matching the seat's
   // grammar admits (membership stays the runs door's registry arm).
   craft: { plugin: "craft", def: "image" },
+  // Stroke 60 (plan §5): the agent engine — the spawner loop. Its
+  // stage is validated like any engine stage (params carry the four
+  // pinned fields); outputs are arbitrary (artifacts land in the
+  // run dir).
+  agent: { plugin: "agent", def: "text" },
 };
 
 // ── closed vocabularies (infra/python/flow.py Kind / SkipWhen order) ──────

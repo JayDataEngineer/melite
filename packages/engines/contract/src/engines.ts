@@ -8,8 +8,9 @@
 // refuse LOUD, unknown ids resolve LOUD with the registered list,
 // and misconfiguration never silently skips a referent.
 //
-// ENGINE ID GRAMMAR (pinned): the bare words 'comfyui' and
-// 'craft' (the loop engine — stroke 55), or 'mcp:<serverName>'
+// ENGINE ID GRAMMAR (pinned): the bare words 'comfyui', 'craft'
+// (the loop engine — stroke 55) and 'agent' (the spawner — stroke
+// 60, plan §5), or 'mcp:<serverName>'
 // where serverName matches dsh-mcp-client's namespace rule
 // [A-Za-z0-9_-]{1,32} — the MCP engine ids are the MCP server
 // namespaces verbatim, so a stage row's engine and the tool
@@ -27,7 +28,7 @@ const MCP_SERVER_NAME = /^[A-Za-z0-9_-]{1,32}$/;
  * door refuses ungrammatical ids with its own voice BEFORE the
  * registry is consulted. */
 export function engineIdOk(id: string): boolean {
-  return id === "comfyui" || id === "craft" || (id.startsWith("mcp:") && MCP_SERVER_NAME.test(id.slice(4)));
+  return id === "comfyui" || id === "craft" || id === "agent" || (id.startsWith("mcp:") && MCP_SERVER_NAME.test(id.slice(4)));
 }
 
 export class EnginesService extends Service {
@@ -47,7 +48,7 @@ export class EnginesService extends Service {
   register(id: string, record: EngineRecord): () => void {
     if (!engineIdOk(id)) {
       throw new Error(
-        "[engines] engine id '" + id + "' is not grammatical — 'comfyui', 'craft' or 'mcp:<server>' ([A-Za-z0-9_-]{1,32})",
+        "[engines] engine id '" + id + "' is not grammatical — 'comfyui', 'craft', 'agent' or 'mcp:<server>' ([A-Za-z0-9_-]{1,32})",
       );
     }
     if (this.engines.has(id)) {
