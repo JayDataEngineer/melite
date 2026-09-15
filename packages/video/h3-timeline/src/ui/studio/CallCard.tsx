@@ -3,7 +3,7 @@
  * ui/studio/component.tsx. No behavior change: headers/footers are new,
  * every logic line is verbatim from the monolith (source range noted).
  */
-import { Button, Input } from "@deepseek-ai/dsh-client-ui-primitives"
+import { Button } from "@deepseek-ai/dsh-client-ui-primitives"
 import { NumberControl, Tip } from "./kit"
 import { cn } from "@melite/card-base/chrome"
 import { ChevronDown, X } from "@melite/card-base/icons"
@@ -110,7 +110,7 @@ export function CallCard({
         value={c.start_frame}
         onChange={(v) => { if (v !== undefined) setCallSpan(i, "start", Math.round(v)) }}
         min={0} step={1}
-        align="center"
+        align="right"
         width="w-16"
         placeholder=""
       />
@@ -120,7 +120,7 @@ export function CallCard({
         value={c.end_frame}
         onChange={(v) => { if (v !== undefined) setCallSpan(i, "end", Math.round(v)) }}
         min={0} step={1}
-        align="center"
+        align="right"
         width="w-16"
         placeholder=""
       />
@@ -210,14 +210,18 @@ export function CallCard({
               style={{ background: src.trim() ? color : "transparent", border: `1px solid ${color}77` }}
               aria-hidden
             />
-            <Input
+            {/* RAW INPUT, not the DSH Input primitive — the primitive's
+                own wrap/input styling out-cascades any override on it
+                (reported twice: the gray highlight box would not die).
+                A native input with the studio skin owns every pixel. */}
+            <input
               list="tl-kf-sources"
               value={src}
               placeholder={kind}
               aria-label={`Call ${i} ${kind} guide`}
               data-testid="tl-call-guide"
               onChange={(e) => setCallGuide(i, kind, e.target.value)}
-              className={cn(s.guideIn, !src.trim() && s.guideInEmpty)}
+              className={cn(s.guideRaw, !src.trim() && s.guideInEmpty)}
             />
           </span>
         )

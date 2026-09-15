@@ -1,22 +1,37 @@
 /**
- * h3-timeline studio split (2026-09-06) — PURE MOVE from
- * ui/studio/component.tsx. 2026-09-15 revision (the operator's
- * "inherit" wall): every control's empty state now SHOWS THE VALUE
- * IT INHERITS from Layer A (ghosted number / "← value" select
- * face) instead of the bare word "inherit" thirty times down the
- * fold. REPLACE semantics unchanged (§10.3: absent = inherit,
- * present = override).
+ * BeatKnobControl — THE SCHEMA-DRIVEN KNOB FOLD (2026-09-15, the
+ * operator's DOM conviction: three 'inherit' stylings, number knobs
+ * as on/off selects, booleans as number inputs, two skins in one
+ * grid). The fold now renders from THE CARD'S OWN CARRIER — the
+ * same schemastery declaration the estate's served params-spec
+ * walks (emitParamsSpec). No hand option lists, no name-prefix type
+ * switches, no second skin: label = the schema's description,
+ * control type = the schema's type/enum, options = the schema's
+ * enum. ONE truth, the card's.
+ *
+ * REPLACE semantics unchanged (§10.3): unset → the key is absent
+ * from the serialized call → the window inherits the Layer A value;
+ * the ghost shows what it inherits (never a bare "inherit" wall).
  */
-import { ControlRow, NumberControl, SelectControl, TextControl, TriControl } from "./kit"
-import { KNOB_LABELS, SAMPLER_OPTIONS, SCHEDULER_OPTIONS } from "./docModel"
+import { ControlRow, NumberControl, SelectControl, TextControl } from "./kit"
 import type { KnobKey, LayerA } from "./docModel"
+import { KNOB_SPEC, type KnobFace } from "./knob-spec.gen"
 
-/** One per-call knob control (the "Call knobs" fold). Every control has
- * an explicit inherit empty state: unset → the key is absent from the
- * serialized call → the window inherits the Layer A value (REPLACE
- * semantics, §10.3: absent = inherit, present = override). The
- * `layerA` prop feeds the GHOST — the value the knob inherits today,
- * read off the same key the run fold writes (one vocabulary). */
+/**
+ * THE GENERATED SCHEMA FACE (2026-09-15, the operator's freehand
+ * conviction: three 'inherit' stylings, number knobs as on/off
+ * selects, booleans as number inputs, two skins in one grid). The
+ * fold renders from knob-spec.gen — the BUILD-TIME walk of the
+ * card's own carrier (scripts/gen-knob-spec.ts; freshness-gated by
+ * tests/knob-spec-freshness.spec.ts; the client purity gate rightly
+ * refuses runtime schemastery, so the walk ships as pure data).
+ * label/type/options are the schema's. The five carrier-absent knobs
+ * ride the generator's NAMED CARRIER_GAP — declared debt, not a
+ * silent hand list. REPLACE semantics unchanged (§10.3): unset →
+ * key absent from the serialized call → the window inherits Layer A;
+ * the ghost shows what it inherits (never a bare "inherit" wall).
+ */
+
 export function BeatKnobControl({
   callIndex,
   knob,
@@ -30,76 +45,71 @@ export function BeatKnobControl({
   layerA?: LayerA
   onChange: (key: string, v: number | string | boolean | undefined) => void
 }) {
-  const label = `Call ${callIndex} knob: ${knob}`
-  // The inherited face: the Layer A value under the SAME key (the
-  // knob vocabulary mirrors the run fold's — one spelling). Absent
-  // from Layer A too → no ghost (the engine default applies).
+  const meta: KnobFace | undefined = KNOB_SPEC[knob]
+  const enumVals = meta?.enum
+  const aria = `Call ${callIndex} knob: ${knob}`
+  const rowLabel = meta?.label ?? knob
+  // The inherited face: the Layer A value under the SAME key.
   const inheritedRaw = layerA ? (layerA as unknown as Record<string, unknown>)[knob] : undefined
-  const inherited =
-    inheritedRaw === undefined || inheritedRaw === null || inheritedRaw === "" ? undefined : inheritedRaw
-  const ghost = inherited === undefined ? undefined : String(inherited)
-  // Enum knobs — the fixed option lists (same lists the engine fold
-  // serves; one vocabulary, two surfaces).
-  const KNOB_OPTIONS: Partial<Record<KnobKey, readonly string[]>> = {
-    sampler: SAMPLER_OPTIONS,
-    scheduler: SCHEDULER_OPTIONS,
-    h3_sla_block_size: ["64", "128"],
-    h3_sla_reference_protection: ["Off", "Light", "True"],
-    h3_sla_dense_backend: ["comfy_kitchen", "pytorch", "auto"],
-    sharpen_method: ["rcas", "adaptive_usm", "high_pass", "deconvolution"],
-    // (2026-09-02 truth) film_net_fp32.pt is the ONLY FILM ckpt on
-    // this machine (object_info-verified) — rife47.pth belongs to the
-    // RIFE VFI node class, not FILMVFI.
-    interpolate_model: ["film_net_fp32.pt"],
-  }
-  const opts = KNOB_OPTIONS[knob]
-  if (opts) {
+  const ghost =
+    inheritedRaw === undefined || inheritedRaw === null || inheritedRaw === "" ? undefined : String(inheritedRaw)
+  if (meta?.type === "boolean" || (Array.isArray(enumVals) && enumVals.length === 2
+      && String(enumVals[0]) === "true" && String(enumVals[1]) === "false")) {
     return (
-      <ControlRow label={KNOB_LABELS[knob]} density="sm">
+      <ControlRow label={rowLabel} density="sm">
         <SelectControl
-          ariaLabel={label}
-          value={typeof value === "string" ? value : undefined}
+          ariaLabel={aria}
+          value={value === true ? "true" : value === false ? "false" : undefined}
+          onChange={(v) => onChange(knob, v === undefined ? undefined : v === "true")}
+          options={[{ value: "true", label: "on" }, { value: "false", label: "off" }]}
+          emptyLabel={ghost === undefined ? "inherit" : `← ${ghost === "true" ? "on" : "off"}`}
+          title={ghost === undefined ? "unset — the engine default applies" : `unset — inherits ${ghost === "true" ? "on" : "off"} from the run`}
+        />
+      </ControlRow>
+    )
+  }
+
+  // ENUM FACE — options ARE the schema's enum (declaration order).
+  if (Array.isArray(enumVals) && enumVals.length > 0) {
+    return (
+      <ControlRow label={rowLabel} density="sm">
+        <SelectControl
+          ariaLabel={aria}
+          value={typeof value === "string" ? value : typeof value === "number" ? String(value) : undefined}
           onChange={(v) => onChange(knob, v)}
-          options={opts}
+          options={enumVals.map((v) => ({ value: String(v), label: String(v) }))}
           emptyLabel={ghost === undefined ? "inherit" : `← ${ghost}`}
           title={ghost === undefined ? "unset — the engine default applies" : `unset — inherits ${ghost} from the run`}
         />
       </ControlRow>
     )
   }
-  if (knob === "h3_sla_dense_steps") {
+
+  // NUMBER FACE — integer steps 1, reals step 0.1; the card gate
+  // owns the validating floors (never client-side re-law).
+  if (meta?.type === "number" || meta?.type === "integer") {
     return (
-      <ControlRow label={KNOB_LABELS[knob]} density="sm">
-        <TextControl
-          ariaLabel={label}
-          value={typeof value === "string" ? value : undefined}
+      <ControlRow label={rowLabel} density="sm">
+        <NumberControl
+          ariaLabel={aria}
+          value={typeof value === "number" ? value : undefined}
           onChange={(v) => onChange(knob, v)}
-          placeholder={ghost === undefined ? "inherit (0,1)" : ghost}
+          step={meta.type === "integer" ? 1 : 0.1}
+          placeholder={ghost === undefined ? "inherit" : ghost}
+          title={ghost === undefined ? "unset — the engine default applies" : `unset — inherits ${ghost} from the run`}
         />
       </ControlRow>
     )
   }
-  if (knob.startsWith("h3_")) {
-    return (
-      <ControlRow label={KNOB_LABELS[knob]} density="sm">
-        <TriControl
-          ariaLabel={label}
-          value={typeof value === "boolean" ? value : undefined}
-          onChange={(v) => onChange(knob, v)}
-        />
-      </ControlRow>
-    )
-  }
+
+  // STRING FACE — free-text knobs (e.g. dense-steps interval).
   return (
-    <ControlRow label={KNOB_LABELS[knob]} density="sm">
-      <NumberControl
-        ariaLabel={label}
-        value={typeof value === "number" ? value : undefined}
+    <ControlRow label={rowLabel} density="sm">
+      <TextControl
+        ariaLabel={aria}
+        value={typeof value === "string" ? value : undefined}
         onChange={(v) => onChange(knob, v)}
-        step={knob === "sampling_steps" ? 1 : 0.1}
-        min={knob === "sampling_steps" ? 1 : 0.01}
         placeholder={ghost === undefined ? "inherit" : ghost}
-        title={ghost === undefined ? "unset — the engine default applies" : `unset — inherits ${ghost} from the run`}
       />
     </ControlRow>
   )

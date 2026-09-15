@@ -62,6 +62,10 @@ details[open] > summary .chev { transform: rotate(180deg); }
  * old 9px sm-variant was the "nothing is the same size" chaos; the
  * knob fold's rows now read exactly like the rail's rows. */
 .ctlRow, .ctlRowSm { font-size: 10px; }
+/* ONE SKIN, ONE SIZE in the rail rows (2026-09-15): every select
+ * inside a row rides the studio skin's size — a card-base atom
+ * leaking its 13px face into the grid is a law break, not a look. */
+.ctlRow select, .ctlRowSm select { font-size: 10px; }
 .ctlGap3 { gap: 12px; }
 
 .sectionLabel {
@@ -391,7 +395,7 @@ details[open] > summary .chev { transform: rotate(180deg); }
    so each wrapper carries the layout role and styles its inner
    native input to fill it. */
 .textIn { min-width: 0; flex: 1; display: inline-flex; }
-.textIn > input, .guideIn > input, .srcIn > input, .prevNum > input, .kfIn > input {
+.textIn > input, .srcIn > input, .prevNum > input, .kfIn > input {
   width: 100%;
   border-radius: 6px;
   border: 1px solid var(--dsw-alias-border-l2);
@@ -403,7 +407,7 @@ details[open] > summary .chev { transform: rotate(180deg); }
   color: var(--dsw-alias-label-primary);
   outline: none;
 }
-.textIn > input:focus, .guideIn > input:focus, .srcIn > input:focus, .prevNum > input:focus, .kfIn > input:focus {
+.textIn > input:focus, .srcIn > input:focus, .prevNum > input:focus, .kfIn > input:focus {
   border-color: var(--dsw-alias-brand-primary);
 }
 .textInEmpty > input, .guideInEmpty > input {
@@ -482,19 +486,26 @@ details[open] > summary .chev { transform: rotate(180deg); }
   width: 6px;
   transform: translateY(-50%) rotate(45deg);
 }
-.guideIn { flex: none; width: 7rem; display: inline-flex; }
-.guideIn > input { padding-left: 16px; padding-right: 6px; }
-/* (2026-09-15, the operator's gray-box catch) the guide words ride
- * UNBOXED at rest — transparent face + transparent border; the box
- * reveals on hover and owns its background only while focused. The
- * track-color dot stays as the row's anchor. */
-.guideIn > input { background: transparent; border-color: transparent; }
-.guideIn > input:hover { border-color: var(--dsw-alias-border-l2); }
-.guideIn > input:focus { background: var(--dsw-alias-interactive-bg-hover); }
-.guideInEmpty > input { border-color: transparent; }
-.guideIn > input::placeholder { color: var(--dsw-alias-label-tertiary); }
-.guideInEmpty > input { border-color: var(--dsw-alias-border-l1); color: var(--dsw-alias-label-secondary); }
-.guideInEmpty > input:focus { border-color: color-mix(in srgb, var(--dsw-alias-brand-primary) 40%, transparent); }
+/* (2026-09-15, the operator's gray-box catch, SECOND report) the
+ * guide slots are RAW inputs with the studio's own skin — the DSH
+ * Input primitive's wrap/input styling out-cascaded every override,
+ * so the gray highlight box would not die. A native input, owned
+ * pixels: unboxed at rest, hover reveals, focus owns it. */
+.guideRaw {
+  flex: none; width: 7rem;
+  padding: 2px 6px 2px 16px;
+  font-family: inherit; font-size: 10px;
+  color: var(--dsw-alias-label-primary);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  outline: none;
+}
+.guideRaw::placeholder { color: var(--dsw-alias-label-tertiary); }
+.guideRaw:hover { border-color: var(--dsw-alias-border-l2); }
+.guideRaw:focus { border-color: var(--dsw-alias-brand-primary); background: var(--dsw-alias-interactive-bg-hover); }
+.guideInEmpty { color: var(--dsw-alias-label-tertiary); }
+.guideInEmpty::placeholder { color: var(--dsw-alias-label-tertiary); }
 .callRefs { border-radius: 6px; border: 1px solid var(--dsw-alias-border-l1); background: var(--dsw-alias-bg-layer-1); padding: 6px; }
 .callRefsHead { display: flex; align-items: baseline; justify-content: space-between; }
 .callRefsTitle { font-size: 9px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: var(--dsw-alias-label-tertiary); }
