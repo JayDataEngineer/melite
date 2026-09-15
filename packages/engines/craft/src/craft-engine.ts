@@ -236,7 +236,10 @@ export const llmCritic = (
       if (newest !== undefined && /\.(png|jpe?g|webp|gif)$/i.test(newest)) {
         const { readFile } = await import("node:fs/promises");
         const bytes = await readFile(`${input.runDir}/${newest}`);
-        const ext = (newest.split(".").pop() ?? "png").toLowerCase();
+        // the image regex above guarantees a dot — split().pop() is
+        // always the extension here (a `?? default` arm would be
+        // unreachable defensive code; the coverage gate is right).
+        const ext = newest.split(".").pop()!.toLowerCase();
         const mediaType = ext === "png" ? "image/png" : ext === "gif" ? "image/gif" : ext === "webp" ? "image/webp" : "image/jpeg";
         const image = await attachments.saveImage({ data: bytes, mediaType });
         content.push({ type: "image", attachment: { ...image, attachmentId: image.attachmentId } });

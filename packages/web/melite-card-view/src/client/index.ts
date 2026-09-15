@@ -45,7 +45,7 @@ import type {} from '@deepseek-ai/dsh-api-gateway/client'
 import { TYPERT_REMOTE } from '@melite/estate-drafts/remote'
 import { FlowCards } from './FlowCards.tsx'
 import { CardsTab } from './CardsTab.tsx'
-import { CARDS_BENCH_ADDRESS, benchAddressOf, benchSessionKey, openCardsResource, shouldSpotlight, watchBenchLands } from './cards-resource.ts'
+import { CARDS_BENCH_ADDRESS, benchAddressOf, benchSessionKey, openCardsResource, shouldSpotlight, watchBenchLands, type BenchNamespace } from './cards-resource.ts'
 import { resolveCardsAddress } from './CardsTab.tsx'
 import type { StageViewOwnerProps, ToolCallBlockView, ToolCallOwnerProps } from './types.ts'
 
@@ -130,6 +130,33 @@ export async function apply(ctx: ClientContext): Promise<void> {
   // speaking." A stale-bundle second apply throws per registration;
   // the per-site catch logs it and the FIRST registration keeps the
   // seat. No cross-instance guard, no module/global flag.
+
+  // THE BENCH NAMESPACE SEAT (the inject fix): stream-supervisor
+  // callbacks run detached from any inject-declaring fiber, and
+  // `remote.bench` is a NESTED SERVICE whose access requires the
+  // dotted inject ('remote.bench') on the accessing fiber — the
+  // 2026-09-15 live lane died with "cannot get property
+  // \"remote.bench\" without inject". A static inject on THIS plugin
+  // would deadlock (the namespace exists only after our own $mount
+  // lands), so the capture rides a CHILD PLUGIN started after the
+  // mount: its fiber declares the inject, resolves the namespace
+  // service once, and the captured object is a plain service —
+  // later `.subscribe` calls at callback time carry no access
+  // checks. The child disposes with this plugin (the namespace dies
+  // with the mount anyway).
+  let benchNs: BenchNamespace | undefined
+  try {
+    const fiber = ctx.plugin({
+      name: 'melite-card-view: bench namespace',
+      inject: ['remote.bench'],
+      apply: (child: ClientContext): void => {
+        benchNs = child.remote.bench
+      },
+    })
+    await fiber
+  } catch (error) {
+    console.error('[melite-card-view] bench namespace fiber failed:', error)
+  }
 
   for (const tool of CARD_TOOLS) {
     try {
@@ -217,7 +244,7 @@ export async function apply(ctx: ClientContext): Promise<void> {
     ctx.effect(() => ctx.resources.register({
       protocol: 'cards',
       open: (address: string, rctx: { signal: AbortSignal }) =>
-        openCardsResource(address, rctx, ctx.remote),
+        openCardsResource(address, rctx, ctx.remote, benchNs),
     }), 'melite-card-view: cards resource provider')
   } catch (error) {
     console.error('[melite-card-view] cards resource provider registration failed:', error)
@@ -270,7 +297,7 @@ export async function apply(ctx: ClientContext): Promise<void> {
       } catch (error) {
         console.error('[melite-card-view] bench spotlight reveal failed:', error)
       }
-    }, undefined, ctx.remote, subscribeBenchSession), 'melite-card-view: bench spotlight')
+    }, undefined, ctx.remote, benchNs, subscribeBenchSession), 'melite-card-view: bench spotlight')
   } catch (error) {
     console.error('[melite-card-view] bench spotlight registration failed:', error)
   }

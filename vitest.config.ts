@@ -365,10 +365,6 @@ export default defineConfig({
         'packages/engines/comfyui-cordis/src/comfyui.ts',
         'packages/engines/comfyui-cordis/src/service.ts',
         'packages/engines/comfyui-cordis/src/models/enhanceRecipes.ts',
-        // engine service-class seams (executor pins cover the loops;
-        // the class factories + critic-parse fallbacks are unpinned):
-        'packages/engines/craft/src/craft-engine.ts',
-        'packages/engines/mcp/src/mcp-engine.ts',
         // the estate HTTP plane's rare-error arms:
         'packages/estate/drafts/src/bench.ts',
         'packages/estate/drafts/src/remote.ts',

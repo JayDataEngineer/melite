@@ -34,6 +34,12 @@ import type { ResourceProtocolMap } from '@deepseek-ai/dsh-client-ui-slots'
 import { RemoteError } from '@deepseek-ai/dsh-typert-protocol'
 import type { RemoteResult } from '@deepseek-ai/dsh-typert-protocol'
 import { RemoteStreamCarrierError, type ClientRemote, type RemoteStreamItem } from '@deepseek-ai/dsh-api-gateway/client'
+
+/** The bench namespace service (the nested `remote.bench` service,
+ *  typed off the generated merge). Captured ONCE under a fiber that
+ *  declares the dotted inject — later `.subscribe` calls at stream
+ *  callback time carry no access checks (the 2026-09-15 inject fix). */
+export type BenchNamespace = ClientRemote['bench']
 // The generated contribution's declaration merge (TypertRemoteMap
 // gains bench/* + drafts/*): with this, ClientRemote's namespace face
 // is TYPED — ctx.remote.bench.subscribe is the generated signature.
@@ -362,9 +368,10 @@ export function shouldSpotlight(isExpanded: boolean): boolean {
 export function watchBenchLands(
   getSession: () => string,
   onAgentLand: (sessionKey: string) => void,
-  signal?: AbortSignal,
-  remote?: ClientRemote,
-  subscribeSession?: (fn: () => void) => () => void,
+  signal: AbortSignal | undefined,
+  remote: ClientRemote | undefined,
+  benchNs: BenchNamespace | undefined,
+  subscribeSession: ((fn: () => void) => () => void) | undefined,
 ): () => void {
   let stopped = false
   const ctrl = new AbortController()
@@ -375,8 +382,8 @@ export function watchBenchLands(
   }
   signal?.addEventListener('abort', halt, { once: true })
   if (signal?.aborted === true) halt()
-  if (remote === undefined) {
-    console.error('[melite-card-view] bench spotlight off: the remote face did not mount')
+  if (remote === undefined || benchNs === undefined) {
+    console.error('[melite-card-view] bench spotlight off: the remote face or bench namespace did not mount')
     return halt
   }
   const lastRevs = new Map<string, number>()
@@ -389,7 +396,7 @@ export function watchBenchLands(
   })
   const openStream = (key: string) => remote!.$stream<Record<string, unknown>>({
     name: 'cards bench spotlight',
-    open: openSignal => remote!.bench.subscribe(key, openSignal) as AsyncIterable<Record<string, unknown>>,
+    open: openSignal => benchNs.subscribe(key, openSignal) as AsyncIterable<Record<string, unknown>>,
     ended: accepted => new RemoteStreamCarrierError(
       `bench spotlight stream ${accepted ? 'ended' : 'never opened'} (${key})`),
   })
@@ -832,7 +839,8 @@ export function mergeRunFrame(value: CardsRunValue, frame: FlowEventFrame): Card
 export function openCardsResource(
   address: string,
   ctx: { signal: AbortSignal },
-  remote?: ClientRemote,
+  remote: ClientRemote | undefined,
+  benchNs: BenchNamespace | undefined,
 ): AsyncIterable<RemoteResult<CardsValue>> {
   const target = parseCardsAddress(address)
   const benchKey = benchSessionOfAddress(address)
@@ -871,7 +879,15 @@ export function openCardsResource(
       // pushes a fresh doc per write over the same-origin mux; the
       // tail yields on rev drift with reconnect supervision. THE
       // POLL IS DEAD.
-      yield* streamBenchFrames(remote, benchKey, address, ctx.signal)
+      if (remote === undefined) {
+        yield failure(address, 'bench stream failed: the remote face did not mount')
+        return
+      }
+      if (benchNs === undefined) {
+        yield failure(address, 'bench stream failed: the bench namespace did not mount (the inject seat is absent)')
+        return
+      }
+      yield* streamBenchFrames(remote, benchNs, benchKey, address, ctx.signal)
       return
     }
     // draft-stage view (the conversation card's studio target): one
@@ -979,6 +995,7 @@ async function* pollRunFrames(
  * loss is noticed, not at recovery. */
 async function* streamBenchFrames(
   remote: ClientRemote,
+  benchNs: BenchNamespace,
   sessionKey: string,
   address: string,
   signal: AbortSignal,
@@ -990,7 +1007,7 @@ async function* streamBenchFrames(
     // A generation END (mux drop, host restart) is CARRIER — retry
     // through the supervisor; the subscribe generator itself only
     // ends on abort, so an end before abort is always the carrier.
-    open: openSignal => remote.bench.subscribe(sessionKey, openSignal) as AsyncIterable<Record<string, unknown>>,
+    open: openSignal => benchNs.subscribe(sessionKey, openSignal) as AsyncIterable<Record<string, unknown>>,
     ended: accepted => new RemoteStreamCarrierError(
       accepted
         ? `bench stream ended after its snapshot (${address})`

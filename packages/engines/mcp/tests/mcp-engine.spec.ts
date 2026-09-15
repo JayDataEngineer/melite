@@ -7,7 +7,7 @@
 // isError refusals, stop threading, and the plugin's seat rows.
 import { describe, it } from "vitest";
 import assert from "node:assert/strict";
-import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
+import { mkdtempSync, mkdirSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { Context, Service } from "@deepseek-ai/cordis";
@@ -16,6 +16,7 @@ import {
   mcpExecutor,
   mcpServerOf,
   McpEnginesService,
+  mcpEngines,
   type McpToolCaller,
 } from "../src/mcp-engine.ts";
 import type { ToolExecutionInput, ToolExecutionResult } from "@deepseek-ai/dsh-tools";
@@ -209,6 +210,73 @@ describe("mcpExecutor (the wire law)", () => {
   });
 });
 
+describe("treeOf + the ticker's quiet arm (per-file 100 restoration)", () => {
+  it("walks NESTED trees (the prefix branch) and skips vanished entries (the stat catch)", async () => {
+    const dir = tmp();
+    mkdirSync(join(dir, "sub"));
+    mkdirSync(join(dir, "sub", "deep"));
+    writeFileSync(join(dir, "a.txt"), "A");
+    writeFileSync(join(dir, "sub", "b.txt"), "B");
+    writeFileSync(join(dir, "sub", "deep", "c.txt"), "C");
+    symlinkSync(join(dir, "vanished"), join(dir, "dangling"));
+    const tools = new FakeTools();
+    // the tool writes NOTHING new; the collected artifacts are the
+    // after-minus-before diff = empty — the walk itself exercised
+    tools.answer = () => ({ isError: false as const, value: {}, content: [{ type: "text" as const, text: "{}" }] });
+    const out = await mcpExecutor(tools, "mcp:blender").executeStages(
+      [{ stageId: "s", outputs: {}, params: { tool: "noop" } }],
+      dir,
+      {},
+      { shouldStop: () => false, report: () => {} },
+    );
+    assert.deepEqual(out.stages[0]?.artifacts, []);
+    rmSync(dir, { recursive: true, force: true });
+  });
+
+  it("an ABSOLUTE args.out INSIDE the run dir rides verbatim (no re-resolution)", async () => {
+    const dir = tmp();
+    const tools = new FakeTools();
+    const absolute = join(dir, "abs-out.png");
+    await mcpExecutor(tools, "mcp:blender").executeStages(
+      [{ stageId: "s", outputs: {}, params: { tool: "noop", args: { out: absolute } } }],
+      dir,
+      {},
+      { shouldStop: () => false, report: () => {} },
+    );
+    assert.equal(tools.calls[0]?.arguments["out"], absolute, "absolute out rides verbatim");
+    rmSync(dir, { recursive: true, force: true });
+  });
+
+  it("a MISSING run dir reads as the empty set (the readdir catch)", async () => {
+    const missing = join(tmp(), "never-created");
+    const tools = new FakeTools();
+    const out = await mcpExecutor(tools, "mcp:blender").executeStages(
+      [{ stageId: "s", outputs: {}, params: { tool: "noop" } }],
+      missing,
+      {},
+      { shouldStop: () => false, report: () => {} },
+    );
+    assert.deepEqual(out.stages[0]?.artifacts, []);
+    rmSync(missing, { recursive: true, force: true });
+  });
+
+  it("a slow call with NO stop press ticks the quiet arm (shouldStop false inside the ticker)", async () => {
+    const dir = tmp();
+    const tools = new FakeTools();
+    tools.execute = async () => {
+      await new Promise((r) => setTimeout(r, 320));
+      return { isError: false as const, value: {}, content: [] };
+    };
+    await mcpExecutor(tools, "mcp:blender").executeStages(
+      [{ stageId: "s", outputs: {}, params: { tool: "slow" } }],
+      dir,
+      {},
+      { shouldStop: () => false, report: () => {} },
+    );
+    rmSync(dir, { recursive: true, force: true });
+  });
+});
+
 describe("the provider (seat rows)", () => {
   /** The fake tools runtime as a real cordis Service named 'tools'
    *  (the name ToolRuntime itself registers under). */
@@ -262,6 +330,14 @@ describe("the provider (seat rows)", () => {
       () => new McpEnginesService(ctx2, { engines: [] }),
       /tools runtime is not mounted/,
     );
+  });
+
+  it("the mcpEngines FACTORY mounts the service row (the composition-site entry)", async () => {
+    const ctx = new Context();
+    await ctx.plugin(enginesContract);
+    new FakeToolsService(ctx);
+    mcpEngines(ctx, { engines: ["mcp:t"] });
+    assert.ok((ctx.get("engines") as EnginesService).has("mcp:t"), "factory seats the row");
   });
 
   it("default config registers NOTHING (explicit > implicit)", async () => {

@@ -7498,7 +7498,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 		*  the watcher owns no rendered truth, the tab tail does; its
 		*  swallow can hide nothing). Returns the stop function (the
 		*  plugin's effect disposer). */
-		function watchBenchLands(getSession, onAgentLand, signal, remote, subscribeSession) {
+		function watchBenchLands(getSession, onAgentLand, signal, remote, benchNs, subscribeSession) {
 			let stopped = false;
 			const ctrl = new AbortController();
 			const halt = () => {
@@ -7508,8 +7508,8 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 			};
 			signal?.addEventListener("abort", halt, { once: true });
 			if (signal?.aborted === true) halt();
-			if (remote === void 0) {
-				console.error("[melite-card-view] bench spotlight off: the remote face did not mount");
+			if (remote === void 0 || benchNs === void 0) {
+				console.error("[melite-card-view] bench spotlight off: the remote face or bench namespace did not mount");
 				return halt;
 			}
 			const lastRevs = /* @__PURE__ */ new Map();
@@ -7523,7 +7523,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 			});
 			const openStream = (key) => remote.$stream({
 				name: "cards bench spotlight",
-				open: (openSignal) => remote.bench.subscribe(key, openSignal),
+				open: (openSignal) => benchNs.subscribe(key, openSignal),
 				ended: (accepted) => new _deepseek_ai_dsh_api_gateway_client.RemoteStreamCarrierError(`bench spotlight stream ${accepted ? "ended" : "never opened"} (${key})`)
 			});
 			const run = async () => {
@@ -7849,7 +7849,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 		*  'cards', open })`. The bench tail rides the mounted remote face
 		*  (bench/subscribe over the mux — the client entry passes the live
 		*  ctx.remote here); abort ends the stream per the contract. */
-		function openCardsResource(address, ctx, remote) {
+		function openCardsResource(address, ctx, remote, benchNs) {
 			const target = parseCardsAddress(address);
 			const benchKey = benchSessionOfAddress(address);
 			const bench = target !== null && "bench" in target;
@@ -7879,7 +7879,15 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 						yield failure(address, "bench stream unavailable — the remote face did not mount (showing one snapshot)");
 						return;
 					}
-					yield* streamBenchFrames(remote, benchKey, address, ctx.signal);
+					if (remote === void 0) {
+						yield failure(address, "bench stream failed: the remote face did not mount");
+						return;
+					}
+					if (benchNs === void 0) {
+						yield failure(address, "bench stream failed: the bench namespace did not mount (the inject seat is absent)");
+						return;
+					}
+					yield* streamBenchFrames(remote, benchNs, benchKey, address, ctx.signal);
 					return;
 				}
 				if (draftTarget !== null) {
@@ -7982,14 +7990,14 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 		* the generator, so it trips a latch the consumption loop races
 		* against the pending iterator step — the voice lands the moment the
 		* loss is noticed, not at recovery. */
-		async function* streamBenchFrames(remote, sessionKey, address, signal) {
+		async function* streamBenchFrames(remote, benchNs, sessionKey, address, signal) {
 			let wake;
 			let latch = new Promise((resolve) => {
 				wake = () => resolve("loss");
 			});
 			const stream = remote.$stream({
 				name: "cards bench stream",
-				open: (openSignal) => remote.bench.subscribe(sessionKey, openSignal),
+				open: (openSignal) => benchNs.subscribe(sessionKey, openSignal),
 				ended: (accepted) => new _deepseek_ai_dsh_api_gateway_client.RemoteStreamCarrierError(accepted ? `bench stream ended after its snapshot (${address})` : `bench stream ended before its first frame (${address})`),
 				carrierFailed: () => {
 					wake?.();
@@ -53068,8 +53076,8 @@ void main() {
 		}
 		//#endregion
 		//#region \0dsh-css:card-base/src/preview.module.css.mjs
-		const css$1 = ".ClEuBa_stagePreview{flex-direction:column;flex:1;gap:8px;min-height:0;display:flex;overflow:hidden}.ClEuBa_hero,.ClEuBa_heroImg{object-fit:contain;background:var(--dsw-alias-bg-base);border:1px solid var(--dsw-alias-border-l2);border-radius:6px;flex:1;width:100%;min-height:0}.ClEuBa_heroAudio{flex:1;align-self:center;width:100%;min-height:48px}.ClEuBa_empty{color:var(--dsw-alias-label-dimmed);border:1px dashed var(--dsw-alias-border-l2);border-radius:6px;flex:1;justify-content:center;align-items:center;font-size:11px;display:flex}.ClEuBa_strip{flex:none;gap:6px;display:flex;overflow-x:auto}.ClEuBa_stripLink{color:var(--dsw-alias-brand-primary);white-space:nowrap;border:1px solid var(--dsw-alias-border-l2);border-radius:6px;padding:2px 6px;font-size:10px;text-decoration:none}.ClEuBa_thumbRow{flex:none;gap:6px;display:flex;overflow-x:auto}.ClEuBa_thumb{border:1px solid var(--dsw-alias-border-l2);border-radius:4px;height:48px}.ClEuBa_historyBlock{flex-direction:column;flex:none;gap:4px;padding-top:4px;display:flex}.ClEuBa_historyTitle{color:var(--dsw-alias-label-secondary,#61666b);font-size:11px}.ClEuBa_historyTile{cursor:pointer;background:0 0;border:1px solid #0000;border-radius:4px;padding:0;display:inline-flex}.ClEuBa_historyTile:hover{border-color:var(--dsw-alias-border-l2)}.ClEuBa_stageCanvas{touch-action:none;width:100%;height:100%;min-height:320px;display:block}";
-		const tagId$1 = "@melite-plugin/dsh-card-view/preview.module.css@35ca175e";
+		const css$1 = ".ClEuBa_stagePreview{flex-direction:column;flex:1;gap:8px;min-height:0;display:flex;overflow:hidden}.ClEuBa_hero,.ClEuBa_heroImg{object-fit:contain;background:var(--dsw-alias-bg-base);border:1px solid var(--dsw-alias-border-l2);border-radius:6px;flex:1;width:100%;min-height:0}.ClEuBa_heroAudio{flex:1;align-self:center;width:100%;min-height:48px}.ClEuBa_empty{color:var(--dsw-alias-label-dimmed);border:1px dashed var(--dsw-alias-border-l2);border-radius:6px;flex:1;justify-content:center;align-items:center;font-size:11px;display:flex}.ClEuBa_strip{flex:none;gap:6px;display:flex;overflow-x:auto}.ClEuBa_stripLink{color:var(--dsw-alias-brand-primary);white-space:nowrap;border:1px solid var(--dsw-alias-border-l2);border-radius:6px;padding:2px 6px;font-size:10px;text-decoration:none}.ClEuBa_thumbRow{flex:none;gap:6px;display:flex;overflow-x:auto}.ClEuBa_thumb{border:1px solid var(--dsw-alias-border-l2);border-radius:4px;height:48px}.ClEuBa_historyBlock{flex-direction:column;flex:none;gap:4px;padding-top:4px;display:flex}.ClEuBa_historyTitle{color:var(--dsw-alias-label-secondary,#61666b);font-size:11px}.ClEuBa_historyTile{cursor:pointer;background:0 0;border:1px solid #0000;border-radius:4px;padding:0;display:inline-flex}.ClEuBa_historyTile:hover{border-color:var(--dsw-alias-border-l2)}.ClEuBa_staleBadge{color:var(--dsw-alias-label-secondary);border:1px solid var(--dsw-alias-border-l2);border-radius:6px;flex:none;align-self:flex-start;padding:2px 6px;font-size:10px}.ClEuBa_stageCanvas{touch-action:none;width:100%;height:100%;min-height:320px;display:block}";
+		const tagId$1 = "@melite-plugin/dsh-card-view/preview.module.css@de83a883";
 		if (typeof document !== "undefined" && document.querySelector("style[data-plugin-css=" + JSON.stringify(tagId$1) + "]") === null) {
 			const tag = document.createElement("style");
 			tag.dataset.plugin = "@melite-plugin/dsh-card-view";
@@ -53087,6 +53095,7 @@ void main() {
 			"historyTitle": "ClEuBa_historyTitle",
 			"stageCanvas": "ClEuBa_stageCanvas",
 			"stagePreview": "ClEuBa_stagePreview",
+			"staleBadge": "ClEuBa_staleBadge",
 			"strip": "ClEuBa_strip",
 			"stripLink": "ClEuBa_stripLink",
 			"thumb": "ClEuBa_thumb",
@@ -53346,13 +53355,15 @@ void main() {
 		* to specialize — the h3 studio rides the shared VIDEO preview for
 		* its hero, exactly as an image-gen card rides the IMAGE one.
 		*/
-		/** THE HISTORY STRIP (stroke 40 — the operator's QOL law): the mini
-		*  row under the main preview is a CARD OUTPUT HISTORY — the stage's
-		*  previous UNIQUE outputs, newest first, estate-capped at 12. The
-		*  hero defaults to the CURRENT run; clicking a history entry
-		*  promotes it to the hero (viewing an older output never rewrites
-		*  the stage — the selection is a view state, and a NEW result
-		*  resets it to the current run). Shared by every media preview. */
+		/** THE HISTORY HERO (stroke 40 + the output-component stroke): one
+		* hook, three faces — the hero artifact, the REST of whatever set
+		* the hero belongs to (the current run's other outputs, or a picked
+		* history entry's other outputs — a multi-output card shows its
+		* full set either way, never the current row under an old hero),
+		* and THE STALENESS FACT (an explicitly picked entry is NOT the
+		* current generation — the badge law; the between-runs fallback
+		* hero gets NO badge: with no current run, the newest archive is
+		* the closest thing to current, not a stale one). */
 		function useHistoryHero(props) {
 			const flat = props.artifacts.length > 0 ? props.artifacts : (props.history ?? []).flat();
 			const [picked, setPicked] = (0, react.useState)(-1);
@@ -53364,15 +53375,32 @@ void main() {
 			const promote = (i) => {
 				setPicked(i);
 			};
+			const entry = picked >= 0 && history[picked] !== void 0 && history[picked].length > 0 ? history[picked] : null;
+			const source = entry ?? flat;
 			return {
-				hero: picked >= 0 && history[picked] !== void 0 && history[picked].length > 0 ? history[picked][0] : flat[0],
-				viewingHistory: picked >= 0,
+				hero: source[0],
+				rest: source.slice(1, 12),
+				viewingHistory: entry !== null,
+				note: entry === null ? void 0 : (props.historyNotes ?? [])[picked] || void 0,
 				promote
 			};
 		}
+		/** THE NOT-CURRENT BADGE (the output-component stroke — the
+		* operator's law: "a tag or indicator to show they are not
+		* current"). Rendered while an explicit history pick owns the hero;
+		* when the entry's params snapshot differs from the live params the
+		* chip names the keys (shared by every presenter). */
+		function StaleBadge(props) {
+			return (0, react.createElement)("div", {
+				className: preview_module_css_default.staleBadge,
+				"data-testid": "history-stale-badge"
+			}, "Not current — earlier generation", props.note === void 0 ? null : ` · differs: ${props.note}`);
+		}
 		function HistoryStrip(props, promote, testid) {
+			if (props.historyStrip === false) return null;
 			const history = props.history ?? [];
 			if (history.length === 0) return null;
+			const notes = props.historyNotes ?? [];
 			return (0, react.createElement)("div", {
 				className: preview_module_css_default.historyBlock,
 				"data-testid": testid
@@ -53380,7 +53408,7 @@ void main() {
 				key: entry[0]?.url ?? String(i),
 				type: "button",
 				className: preview_module_css_default.historyTile,
-				title: entry.map((a) => a.name).join(", "),
+				title: entry.map((a) => a.name).join(", ") + (notes[i] ? ` (differs: ${notes[i]})` : ""),
 				onClick: () => {
 					promote(i);
 				}
@@ -53394,21 +53422,23 @@ void main() {
 		}
 		/** THE VIDEO PREVIEW — one hero film, one native player (the kit's
 		*  FilmPlayer law: native <video controls>; no library, no kit). The
-		*  stitch/hero is artifacts[0]; named windows follow in the strip
-		*  row. Honest empty state while no artifact has landed. */
+		*  stitch/hero is the active set's first; the set's named windows
+		*  follow in the strip row (the CURRENT run's, or the picked
+		*  history entry's — never mixed). Honest empty state while no
+		*  artifact has landed. */
 		function VideoStagePreview(props) {
-			const { hero, promote } = useHistoryHero(props);
+			const { hero, rest, viewingHistory, note, promote } = useHistoryHero(props);
 			return (0, react.createElement)("div", {
 				className: preview_module_css_default.stagePreview,
 				"data-testid": "stage-preview-video"
-			}, hero === void 0 ? (0, react.createElement)("div", { className: preview_module_css_default.empty }, props.runStatus === "running" ? "rendering… the film lands here" : "No render yet — run lands the film here") : (0, react.createElement)("video", {
+			}, viewingHistory ? (0, react.createElement)(StaleBadge, { note }) : null, hero === void 0 ? (0, react.createElement)("div", { className: preview_module_css_default.empty }, props.runStatus === "running" ? "rendering… the film lands here" : "No render yet — run lands the film here") : (0, react.createElement)("video", {
 				className: preview_module_css_default.hero,
 				controls: true,
 				playsInline: true,
 				key: hero.url,
 				src: hero.url,
 				"data-testid": "stage-preview-video-hero"
-			}), props.artifacts.length > 1 ? (0, react.createElement)("div", { className: preview_module_css_default.strip }, props.artifacts.slice(1, 12).map((a) => (0, react.createElement)("a", {
+			}), rest.length > 0 ? (0, react.createElement)("div", { className: preview_module_css_default.strip }, rest.map((a) => (0, react.createElement)("a", {
 				key: a.url + a.name,
 				className: preview_module_css_default.stripLink,
 				href: a.url,
@@ -53418,21 +53448,23 @@ void main() {
 			}, a.name))) : null, HistoryStrip(props, promote, "stage-output-history"));
 		}
 		/** THE IMAGE PREVIEW — the latest render hero (native <img>), the
-		*  current run's gallery thumbs beneath, then THE OUTPUT HISTORY
+		*  active set's thumbs beneath (the CURRENT run's gallery, or the
+		*  picked history entry's full set — a multi-output card never shows
+		*  the current row under an old hero), then THE OUTPUT HISTORY
 		*  (stroke 40): the stage's previous unique outputs, newest first —
 		*  click one to view it in the hero. Same chrome, same law. */
 		function ImageStagePreview(props) {
-			const { hero, promote } = useHistoryHero(props);
+			const { hero, rest, viewingHistory, note, promote } = useHistoryHero(props);
 			return (0, react.createElement)("div", {
 				className: cn(preview_module_css_default.stagePreview),
 				"data-testid": "stage-preview-image"
-			}, hero === void 0 ? (0, react.createElement)("div", { className: preview_module_css_default.empty }, props.runStatus === "running" ? "rendering… the image lands here" : "No render yet — run lands the image here") : (0, react.createElement)("img", {
+			}, viewingHistory ? (0, react.createElement)(StaleBadge, { note }) : null, hero === void 0 ? (0, react.createElement)("div", { className: preview_module_css_default.empty }, props.runStatus === "running" ? "rendering… the image lands here" : "No render yet — run lands the image here") : (0, react.createElement)("img", {
 				className: preview_module_css_default.heroImg,
 				key: hero.url,
 				src: hero.url,
 				alt: hero.name,
 				"data-testid": "stage-preview-image-hero"
-			}), props.artifacts.length > 1 ? (0, react.createElement)("div", { className: preview_module_css_default.thumbRow }, props.artifacts.slice(1, 12).map((a) => (0, react.createElement)("img", {
+			}), rest.length > 0 ? (0, react.createElement)("div", { className: preview_module_css_default.thumbRow }, rest.map((a) => (0, react.createElement)("img", {
 				key: a.url,
 				className: preview_module_css_default.thumb,
 				src: a.url,
@@ -53442,19 +53474,19 @@ void main() {
 		}
 		/** THE AUDIO PREVIEW — one hero track, one native player (the same
 		*  law as the video preview: native <audio controls>; no library).
-		*  Named clips follow in the strip row. */
+		*  The active set's named clips follow in the strip row. */
 		function AudioStagePreview(props) {
-			const { hero, promote } = useHistoryHero(props);
+			const { hero, rest, viewingHistory, note, promote } = useHistoryHero(props);
 			return (0, react.createElement)("div", {
 				className: preview_module_css_default.stagePreview,
 				"data-testid": "stage-preview-audio"
-			}, hero === void 0 ? (0, react.createElement)("div", { className: preview_module_css_default.empty }, props.runStatus === "running" ? "rendering… the track lands here" : "No render yet — run lands the track here") : (0, react.createElement)("audio", {
+			}, viewingHistory ? (0, react.createElement)(StaleBadge, { note }) : null, hero === void 0 ? (0, react.createElement)("div", { className: preview_module_css_default.empty }, props.runStatus === "running" ? "rendering… the track lands here" : "No render yet — run lands the track here") : (0, react.createElement)("audio", {
 				className: preview_module_css_default.heroAudio,
 				controls: true,
 				key: hero.url,
 				src: hero.url,
 				"data-testid": "stage-preview-audio-hero"
-			}), props.artifacts.length > 1 ? (0, react.createElement)("div", { className: preview_module_css_default.strip }, props.artifacts.slice(1, 12).map((a) => (0, react.createElement)("a", {
+			}), rest.length > 0 ? (0, react.createElement)("div", { className: preview_module_css_default.strip }, rest.map((a) => (0, react.createElement)("a", {
 				key: a.url + a.name,
 				className: preview_module_css_default.stripLink,
 				href: a.url,
@@ -53465,20 +53497,24 @@ void main() {
 		}
 		/** THE MESH PREVIEW — the seam's adapter onto the raw-three
 		*  multi-asset stage (GlbStagePreview, the substrate law: NO
-		*  @react-three in any client bundle). Artifacts become stage
-		*  assets; the empty hint honors the live-run flag. */
+		*  @react-three in any client bundle). The ACTIVE set becomes
+		*  stage assets (the current run's, or a picked history entry's —
+		*  mesh gains the full history law every other kind already had);
+		*  the empty hint honors the live-run flag. */
 		function MeshStagePreview(props) {
+			const { hero, rest, viewingHistory, note, promote } = useHistoryHero(props);
+			const active = hero === void 0 ? [] : [hero, ...rest];
 			return (0, react.createElement)("div", {
 				className: preview_module_css_default.stagePreview,
 				"data-testid": "stage-preview-mesh"
-			}, (0, react.createElement)(GlbStagePreview, {
-				assets: props.artifacts.map((a, i) => ({
+			}, viewingHistory ? (0, react.createElement)(StaleBadge, { note }) : null, (0, react.createElement)(GlbStagePreview, {
+				assets: active.map((a, i) => ({
 					id: `${props.stageId}:${a.name || i}`,
 					url: a.url,
 					name: a.name
 				})),
 				emptyHint: props.runStatus === "running" ? "rendering… the mesh lands here" : "No render yet — run lands the mesh here"
-			}));
+			}), HistoryStrip(props, promote, "stage-output-history"));
 		}
 		//#endregion
 		//#region src/client/zoom.tsx
@@ -53819,6 +53855,21 @@ void main() {
 			const declared = spec?.outputs?.["default"];
 			if (typeof declared === "string" && PREVIEWABLE_KINDS.has(declared)) return declared;
 			return previewKindFor(url);
+		}
+		/** THE PARAMS CHIP (the output-component stroke — the operator's
+		*  law: old generations are tagged by the parameters that differ):
+		*  the comma-joined KEYS whose values differ between an archived
+		*  generation's params snapshot and the live params. undefined when
+		*  the snapshot is absent (an entry archived before the stroke) or
+		*  nothing differs — same params, same picture, no noise. */
+		function paramsDiffKeys(a, b) {
+			const ok = (v) => typeof v === "object" && v !== null && !Array.isArray(v);
+			if (!ok(a) || !ok(b)) return void 0;
+			const keys = /* @__PURE__ */ new Set([...Object.keys(a), ...Object.keys(b)]);
+			const diff = [];
+			for (const k of keys) if (JSON.stringify(a[k]) !== JSON.stringify(b[k])) diff.push(k);
+			if (diff.length === 0) return void 0;
+			return diff.slice(0, 4).join(", ") + (diff.length > 4 ? "…" : "");
 		}
 		/** The stage row's preview artifacts, harvested from the estate's
 		*  result shape (artifacts name→url map first, the flat assetUrls
@@ -54201,7 +54252,8 @@ void main() {
 				let alive = true;
 				const freshOpen = lastStageRef.current !== stage.id;
 				lastStageRef.current = stage.id;
-				const family = modelKey !== "" ? modelKey : String(stage.card ?? "");
+				const cardId = String(stage.card ?? "");
+				const family = cardId !== "" ? modelKey !== "" ? modelKey : cardId : String(stage.engine ?? "");
 				if (family === "") {
 					setLoaded(true);
 					return;
@@ -54439,13 +54491,23 @@ void main() {
 				const heroUrl = artifacts[0]?.url ?? "";
 				const kind = primaryKindFor(spec, heroUrl);
 				if (kind === null) return null;
-				const history = (Array.isArray(stage["history"]) ? stage["history"] : []).map((e) => previewArtifactsFor({ result: e })).filter((arts) => arts.length > 0);
+				const historyRaw = Array.isArray(stage["history"]) ? stage["history"] : [];
+				const liveParams = stage.params;
+				const pairs = historyRaw.map((e) => ({
+					arts: previewArtifactsFor({ result: e }),
+					note: paramsDiffKeys(e["params"], liveParams) ?? ""
+				})).filter((p) => p.arts.length > 0);
+				const history = pairs.map((p) => p.arts);
+				const noteList = pairs.map((p) => p.note);
+				const historyNotes = noteList.some((n) => n !== "") ? noteList : void 0;
 				const owner = {
 					kind,
 					artifacts,
 					runStatus: typeof stage.runStatus === "string" ? stage.runStatus : "",
 					stageId: stage.id,
-					...history.length > 0 ? { history } : {}
+					...history.length > 0 ? { history } : {},
+					...historyNotes !== void 0 ? { historyNotes } : {},
+					...spec?.preview?.historyStrip === false ? { historyStrip: false } : {}
 				};
 				return renderPreview(owner, kind === "video" ? (0, react.createElement)(VideoStagePreview, owner) : kind === "audio" ? (0, react.createElement)(AudioStagePreview, owner) : kind === "mesh" ? (0, react.createElement)(MeshStagePreview, owner) : (0, react.createElement)(ImageStagePreview, owner));
 			};
@@ -55413,6 +55475,18 @@ void main() {
 			} catch (error) {
 				console.error("[melite-card-view] estate remote contribution failed to mount:", error);
 			}
+			let benchNs;
+			try {
+				await ctx.plugin({
+					name: "melite-card-view: bench namespace",
+					inject: ["remote.bench"],
+					apply: (child) => {
+						benchNs = child.remote.bench;
+					}
+				});
+			} catch (error) {
+				console.error("[melite-card-view] bench namespace fiber failed:", error);
+			}
 			for (const tool of CARD_TOOLS) try {
 				ctx.slots.inject("tool.call.toolview", () => ctx.slots.register({
 					name: "tool.call.toolview",
@@ -55465,7 +55539,7 @@ void main() {
 			try {
 				ctx.effect(() => ctx.resources.register({
 					protocol: "cards",
-					open: (address, rctx) => openCardsResource(address, rctx, ctx.remote)
+					open: (address, rctx) => openCardsResource(address, rctx, ctx.remote, benchNs)
 				}), "melite-card-view: cards resource provider");
 			} catch (error) {
 				console.error("[melite-card-view] cards resource provider registration failed:", error);
@@ -55493,7 +55567,7 @@ void main() {
 					} catch (error) {
 						console.error("[melite-card-view] bench spotlight reveal failed:", error);
 					}
-				}, void 0, ctx.remote, subscribeBenchSession), "melite-card-view: bench spotlight");
+				}, void 0, ctx.remote, benchNs, subscribeBenchSession), "melite-card-view: bench spotlight");
 			} catch (error) {
 				console.error("[melite-card-view] bench spotlight registration failed:", error);
 			}
