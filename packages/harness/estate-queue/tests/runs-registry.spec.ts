@@ -225,6 +225,28 @@ describe("start inline arm", () => {
     await settleWait(s, a.run_id);
     await settleWait(s, b.run_id);
   });
+
+  it("a dying bench read stamps nothing (the run still registers — the snapshot is best-effort)", async () => {
+    const s = seat();
+    // the transport dies BETWEEN the envelope probe and the bench
+    // snapshot read: the probe passes, the snapshot read throws, the
+    // run registers with no bench stamp (never a refusal, never a
+    // zombie slot).
+    let calls = 0;
+    const ctx = (s.svc as unknown as { ctx: Context }).ctx;
+    (ctx as unknown as { draftsRemote: unknown }).draftsRemote = {
+      get: async (id: string): Promise<unknown> => {
+        calls += 1;
+        if (id === "d1" && calls === 1) return { stages: [{ id: "s" }], intent: "i" };
+        throw new Error("transport died mid-submit");
+      },
+    };
+    const ans = await s.svc.start(inlineBody(), sig());
+    assert.equal(ans.status, "queued");
+    const row = await settleWait(s, ans.run_id);
+    assert.equal(row.benchSnapshot, undefined);
+    assert.ok(calls >= 2, "the probe passed and the snapshot read died");
+  });
 });
 
 describe("start flow arm", () => {
@@ -377,6 +399,10 @@ describe("pump + engine", () => {
     const s = seat();
     const engine = engineSeat(s);
     engine.onFlow = async (_rows, _runDir, _in, _init, opts) => {
+      // the degenerate fold first (a bare number progress + empty
+      // activity stamp nothing — the fold's false arms), then the
+      // real report the asserts below read.
+      opts.report?.({ progress: 5, activity: "" } as never);
       opts.report?.({
         progress: { value: 7, max: 20, node: "10" },
         activity: "sampling 7/20",

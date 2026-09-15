@@ -313,6 +313,31 @@ importers:
         specifier: ^5.9.3
         version: 5.9.3
 
+  packages/3d/unity:
+    dependencies:
+      '@deepseek-ai/cordis':
+        specifier: ^4.0.2
+        version: 4.0.2(@deepseek-ai/cordis-plugin-loader@1.0.3)
+      '@deepseek-ai/schemastery':
+        specifier: '*'
+        version: 3.18.2
+      '@melite/comfyui-card-kit':
+        specifier: workspace:*
+        version: link:../../engines/comfyui-card-kit
+      '@melite/comfyui-cordis':
+        specifier: workspace:*
+        version: link:../../engines/comfyui-cordis
+      '@melite/estate-call':
+        specifier: workspace:*
+        version: link:../../harness/estate-call
+    devDependencies:
+      '@types/node':
+        specifier: ^22.20.0
+        version: 22.20.1
+      typescript:
+        specifier: ^5.9.3
+        version: 5.9.3
+
   packages/audio/music:
     dependencies:
       '@deepseek-ai/cordis':
@@ -476,6 +501,9 @@ importers:
       '@melite/3d-skin':
         specifier: workspace:*
         version: link:../../3d/skin
+      '@melite/3d-unity':
+        specifier: workspace:*
+        version: link:../../3d/unity
       '@melite/audio-music':
         specifier: workspace:*
         version: link:../../audio/music

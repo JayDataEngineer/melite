@@ -111,9 +111,13 @@ details[open] > summary .chev { transform: rotate(180deg); }
  * but not this, so every studio dropdown regressed to invisible
  * options on a light popup. Pinned LIGHT popup + dark text —
  * deterministic on every theme; the closed select keeps the
- * card's own face.) */
+ * card's own face. COLOR-LAW form (stroke 49): the popup is UA
+ * chrome, not app chrome — no DSH token can paint it, so the
+ * rule speaks the platform's own system colors (Canvas/CanvasText
+ * follow the color-scheme: light above — a light popup and dark
+ * text on every theme, zero literal palette, zero fallback). */
 .ctlSelect, .selMenuBox { color-scheme: light; }
-.ctlSelect option, .selMenuBox option { background: #fff; color: #0f1115; }
+.ctlSelect option, .selMenuBox option { background: Canvas; color: CanvasText; }
 .ctlInput::placeholder { color: var(--dsw-alias-label-tertiary); }
 .ctlInput:focus, .ctlSelect:focus { border-color: var(--dsw-alias-brand-primary); }
 .ctlSelect { font-family: inherit; }

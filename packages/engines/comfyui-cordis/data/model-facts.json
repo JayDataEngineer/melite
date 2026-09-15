@@ -371,6 +371,9 @@
       "MultiHMR2ImageToAnny",
       "Sam3dBodyImageToAnny"
     ],
+    "melite-unity-nodes": [
+      "MeliteUnityBatch"
+    ],
     "qweneditutils": [
       "TextEncodeQwenImageEditPlus"
     ],

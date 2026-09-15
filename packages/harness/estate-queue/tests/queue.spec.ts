@@ -372,6 +372,26 @@ describe("sidecar", () => {
     assert.ok(long.length <= 20000 && long.startsWith('"'));
   });
 
+  it("stamps the snapshots only when stamped (the settle carry)", () => {
+    const base = {
+      runId: "r", status: "ok", error: "", stages: [],
+      skippedStages: [], artifacts: [], createdAt: 0, testFlag: false,
+      draftId: "", pipeline: "", graph: [],
+    };
+    const bare = sidecarDoc(base);
+    assert.equal("card_snapshot" in bare, false, "unstamped runs keep the pinned shape");
+    assert.equal("bench_snapshot" in bare, false, "unstamped runs keep the pinned shape");
+    const card = { card: "c", params: { a: 1 } };
+    const bench = { stages: [{ id: "s" }], intent: "i" };
+    const stamped = sidecarDoc({ ...base, cardSnapshot: card, benchSnapshot: bench });
+    assert.deepEqual(stamped["card_snapshot"], card);
+    assert.deepEqual(stamped["bench_snapshot"], bench);
+    assert.deepEqual(Object.keys(stamped).slice(-2), ["card_snapshot", "bench_snapshot"]);
+    const half = sidecarDoc({ ...base, benchSnapshot: bench });
+    assert.equal("card_snapshot" in half, false, "each snapshot rides alone");
+    assert.deepEqual(half["bench_snapshot"], bench);
+  });
+
   it("names the door pipeline", () => {
     assert.equal(pipelineOf({ flow: "f" }), "f");
     assert.equal(pipelineOf({ flow: "", model: "m" }), "m");

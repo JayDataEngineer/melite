@@ -356,7 +356,7 @@ export function registerCompiledRun(args: {
   };
   run.inputNames = { [st.id]: st.inputNames };
   if (door !== undefined) {
-    (run as { cardId?: string }).cardId = door.cardId;
+    run.cardId = door.cardId;
     run.pipeline = door.pipeline;
   }
   // THE CARD SNAPSHOT LAW (stroke 45, the operator's wand complaint):
@@ -367,7 +367,7 @@ export function registerCompiledRun(args: {
   // the exact card + body here; they ride the sidecar verbatim. The
   // wand reconstructs from THIS, never from the living bench.
   if (door !== undefined) {
-    (run as { cardSnapshot?: unknown }).cardSnapshot = {
+    run.cardSnapshot = {
       card: door.cardId,
       params: door.requestBody,
     };
@@ -375,7 +375,7 @@ export function registerCompiledRun(args: {
       ? door.benchDoc?.["stages"]
       : undefined;
     if (benchStages !== undefined && (benchStages as unknown[]).length > 0) {
-      (run as { benchSnapshot?: unknown }).benchSnapshot = {
+      run.benchSnapshot = {
         stages: benchStages,
         intent: typeof door.benchDoc?.["intent"] === "string"
           ? door.benchDoc?.["intent"]
@@ -421,9 +421,9 @@ function sidecarDocFor(run: RunRecord): Record<string, unknown> {
     createdAt: run.createdAt,
     testFlag: run.testFlag,
     draftId: run.draftId,
-    card_snapshot: (run as { cardSnapshot?: unknown }).cardSnapshot,
-    bench_snapshot: (run as { benchSnapshot?: unknown }).benchSnapshot,
     pipeline: run.pipeline,
     graph: run.graphRows,
+    cardSnapshot: run.cardSnapshot,
+    benchSnapshot: run.benchSnapshot,
   });
 }

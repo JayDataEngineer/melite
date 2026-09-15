@@ -245,4 +245,51 @@ describe("registerCompiledRun", () => {
     assert.deepEqual(JSON.parse(readFileSync(join(run.dir, "_request.json"), "utf8")), body);
     assert.ok(existsSync(join(run.dir, "_flow.json")));
   });
+
+  it("the card door stamps the snapshots (the wand restores from these, never the living bench)", () => {
+    const root = tmp();
+    const body = { model: "m" };
+    const benchDoc = { stages: [{ id: "s", card: "c" }], intent: "the beach flow" };
+    const { run } = registerCompiledRun({
+      compiled: compiled([one]),
+      testFlag: false,
+      draftId: "d1",
+      stateRoot: root,
+      enqueue: () => 3,
+      door: { runId: "run-snap", pipeline: "m", cardId: "c", requestBody: body, benchDoc },
+    });
+    assert.deepEqual(run.cardSnapshot, { card: "c", params: body });
+    assert.deepEqual(run.benchSnapshot, { stages: benchDoc.stages, intent: "the beach flow" });
+    const flow = JSON.parse(readFileSync(join(run.dir, "_flow.json"), "utf8")) as Record<string, unknown>;
+    assert.deepEqual(flow["card_snapshot"], { card: "c", params: body });
+    assert.deepEqual(flow["bench_snapshot"], { stages: benchDoc.stages, intent: "the beach flow" });
+  });
+
+  it("an empty bench stamps no bench snapshot (the key stays absent, never null)", () => {
+    const root = tmp();
+    const doorBase = { runId: "run-nobench", pipeline: "m", cardId: "c", requestBody: {} };
+    const { run } = registerCompiledRun({
+      compiled: compiled([one]),
+      testFlag: false,
+      draftId: "d1",
+      stateRoot: root,
+      enqueue: () => 3,
+      door: { ...doorBase, benchDoc: { stages: [] } },
+    });
+    assert.equal(run.benchSnapshot, undefined);
+    const flow = JSON.parse(readFileSync(join(run.dir, "_flow.json"), "utf8")) as Record<string, unknown>;
+    assert.equal("bench_snapshot" in flow, false);
+    assert.deepEqual(flow["card_snapshot"], { card: "c", params: {} });
+    // a non-string intent stamps "" (the wand reads a string, never a guess)
+    const stages = [{ id: "s" }];
+    const { run: run2 } = registerCompiledRun({
+      compiled: compiled([one]),
+      testFlag: false,
+      draftId: "d1",
+      stateRoot: root,
+      enqueue: () => 3,
+      door: { ...doorBase, runId: "run-nointent", benchDoc: { stages, intent: 7 } },
+    });
+    assert.deepEqual(run2.benchSnapshot, { stages, intent: "" });
+  });
 });

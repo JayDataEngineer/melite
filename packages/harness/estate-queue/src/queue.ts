@@ -920,6 +920,11 @@ export function sidecarDoc(args: {
   draftId: string;
   pipeline: string;
   graph: GraphRow[];
+  /** THE SNAPSHOT KEYS (strokes 45/45d, carried stroke 48): the exact
+   *  card + bench that ran. Absent when unstamped (inline runs) —
+   *  the pinned py-parity prefix above never shifts. */
+  cardSnapshot?: unknown;
+  benchSnapshot?: unknown;
 }): Record<string, unknown> {
   return {
     run_id: args.runId,
@@ -934,6 +939,8 @@ export function sidecarDoc(args: {
     draft_id: args.draftId,
     pipeline: args.pipeline,
     graph: args.graph,
+    ...(args.cardSnapshot !== undefined ? { card_snapshot: args.cardSnapshot } : {}),
+    ...(args.benchSnapshot !== undefined ? { bench_snapshot: args.benchSnapshot } : {}),
   };
 }
 

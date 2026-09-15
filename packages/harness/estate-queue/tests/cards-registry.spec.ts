@@ -4,7 +4,7 @@
 // and the compose phases (spell/admission/happy).
 import { describe, it, beforeAll, afterEach } from "vitest";
 import assert from "node:assert/strict";
-import { mkdtempSync, mkdirSync, rmSync, utimesSync, writeFileSync } from "node:fs";
+import { mkdtempSync, mkdirSync, rmSync, symlinkSync, utimesSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { Context } from "@deepseek-ai/cordis";
@@ -545,11 +545,32 @@ describe("phases", () => {
 describe("the lane presence gate", () => {
   const withGateEnv = (): { base: string } => {
     const root = tmpRoot();
-    // NO MELITE_REPO_ROOT here: phase-1 reads facts/defs from the
-    // REAL repo root — only the store is fixture-driven. The
-    // runtime-tree leg probes the real data/runtime (placeholder
-    // files only — a deterministic miss for every lane file, CI and
-    // dev alike), so the fixture base below is the only hit source.
+    const realRoot = resolveRepoRoot();
+    // THE RUNTIME SHADOW (stroke 48 fix): phase-1 reads facts/defs
+    // from the PRIMED registry (cached at beforeAll — the real root),
+    // but the presence gate's runtime leg probes resolveRepoRoot() per
+    // call. The real data/runtime tree is provision-populated now
+    // (2026-09-14: the qwen text_encoder the test below names LANDED
+    // there — the old "placeholder files only" comment lied and the
+    // gate, correctly, stopped refusing). Pointing MELITE_REPO_ROOT at
+    // the empty fixture shadows ONLY the store probes (runtime leg +
+    // the fixture endpoint's mount leg); the voice under test
+    // (family/key/file/fetch URL from cached facts) is unchanged.
+    // afterEach deletes the override — no other test sees it.
+    process.env.MELITE_REPO_ROOT = root;
+    // THE DATA SHADOW: the happy-path tests below compose FOR REAL
+    // through the primed registry — compose re-reads the cordis data
+    // dir per call (object_info pin, model-facts), so the shadow
+    // symlinks the WHOLE real data dir (captured before the override
+    // above; the refusal test never reaches compose; the seed tests
+    // ride the live files exactly as before). The STORE stays
+    // fixture: the runtime tree (data/runtime) and the endpoint
+    // mount leg both point at the empty fixture below.
+    mkdirSync(join(root, "packages", "engines", "comfyui-cordis"), { recursive: true });
+    symlinkSync(
+      join(realRoot, "packages", "engines", "comfyui-cordis", "data"),
+      join(root, "packages", "engines", "comfyui-cordis", "data"),
+    );
     const base = join(root, "store");
     mkdirSync(base, { recursive: true });
     const endpoint = join(root, "endpoint.json");

@@ -64,6 +64,18 @@ export interface RunRecord {
   /** Per-stage input names (the rim): stage-input -> "stage.output"
    *  / "__initial__.name". Stamped at registration. */
   inputNames?: Record<string, Record<string, string>>;
+  /** The card door's id (stamped at registration; inline runs leave
+   *  it absent — never a guessed card). */
+  cardId?: string;
+  /** THE CARD SNAPSHOT (stroke 45): the exact card + body that ran
+   *  ({card, params}) — the wand restores from this, never from the
+   *  living bench. Stamped at registration, carried through settle
+   *  (the settle rewrite must not wipe it). */
+  cardSnapshot?: unknown;
+  /** THE BENCH SNAPSHOT (stroke 45d): the full workflow as it stood
+   *  at Run press ({stages, intent}) — same carry law as the card
+   *  snapshot. */
+  benchSnapshot?: unknown;
 }
 
 /** The engine's path relative to the run dir (runRel, door-verbatim). */
@@ -124,6 +136,11 @@ export function settlePersist(
         draftId: run.draftId,
         pipeline: run.pipeline,
         graph: run.graphRows,
+        // THE SNAPSHOT CARRY (stroke 48 fix): the settle rewrite
+        // re-renders the sidecar from the row — the snapshots stamped
+        // at registration ride along, never wiped.
+        cardSnapshot: run.cardSnapshot,
+        benchSnapshot: run.benchSnapshot,
       }),
     );
   } catch {

@@ -346,7 +346,7 @@ describe('MediaPanel — the flows face + the bench CAS load', () => {
     expect(bodies).toHaveLength(1)
     expect(bodies[0]).toEqual({
       session: 'main', author: 'user', stages: draftDoc.stages,
-      intent: 'the card', expect_rev: 3,
+      intent: 'the card', expect_rev: 3, overwrite: true,
     })
   })
 
@@ -438,7 +438,7 @@ describe('MediaPanel — the wand restores the run onto the bench', () => {
     expect(bodies).toHaveLength(1)
     expect(bodies[0]).toEqual({
       session: 'main', author: 'user', stages: draftDoc.stages,
-      intent: 'walking card', expect_rev: 3,
+      intent: 'walking card', expect_rev: 3, overwrite: true,
     })
   })
 

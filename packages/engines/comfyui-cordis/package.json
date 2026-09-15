@@ -35,6 +35,7 @@
     "@melite/3d-img-to-mesh": "workspace:*",
     "@melite/3d-quad-remesh": "workspace:*",
     "@melite/3d-skin": "workspace:*",
+    "@melite/3d-unity": "workspace:*",
     "@melite/audio-music": "workspace:*",
     "@melite/audio-sfx": "workspace:*",
     "@melite/audio-tts": "workspace:*",

@@ -225,6 +225,10 @@ export class RunsRuntimeService extends Service {
     // validateSubmitEnvelope) because the draft probe is an
     // AWAITED seat hop — the py ORDER is preserved exactly.
     const checked = await this.walkEnvelope(doc, draftExists);
+    // THE REFUSAL FIRST (stroke 48: the bench read below needs
+    // checked.draftId, which only the ok arm carries — refusing here
+    // is the same throw, minus the wasted draft probe).
+    if (checked.kind === "refusal") throw toRemoteError(checked.refusal);
     // THE BENCH SNAPSHOT (stroke 45d, the operator's question: "the
     // FULL workflow, or just the card that ran?"): the run is born
     // from the bench doc (CARD BIRTH LAW — draft_id = the bench);
@@ -235,7 +239,6 @@ export class RunsRuntimeService extends Service {
     try {
       benchDoc = (await this.ctx.draftsRemote.get(checked.draftId, signal)) as Record<string, unknown>;
     } catch { benchDoc = undefined; }
-    if (checked.kind === "refusal") throw toRemoteError(checked.refusal);
     let body: Record<string, unknown> = checked.body;
     const strict = strictBodyCheck(body);
     if (strict !== null) throw toRemoteError(strict);

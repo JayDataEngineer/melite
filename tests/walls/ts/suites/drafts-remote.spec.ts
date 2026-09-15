@@ -183,7 +183,9 @@ test("bench/ensure load with a stale expect_rev refuses as bench/cas-conflict", 
     sig,
   );
   await ctx.benchRemote.ensure(
-    { session: "s1", stages: [{ id: "y" }], expect_rev: 0 },
+    // THE OVERWRITE LAW (2026-09-15): a wholesale load onto a live
+    // bench confirms the discard — CAS alone is not consent.
+    { session: "s1", stages: [{ id: "y" }], expect_rev: 0, overwrite: true },
     sig,
   );
   const failure = await failureOf(
@@ -201,7 +203,8 @@ test("bench/get serves the row with log HEADS only", async () => {
   const ctx = await boot();
   await ctx.benchRemote.ensure({ session: "s1", stages: [{ id: "x" }] }, sig);
   await ctx.benchRemote.ensure(
-    { session: "s1", stages: [{ id: "y" }], expect_rev: 0 },
+    // THE OVERWRITE LAW (2026-09-15): wholesale loads confirm.
+    { session: "s1", stages: [{ id: "y" }], expect_rev: 0, overwrite: true },
     sig,
   );
   const row = await ctx.benchRemote.get("s1", sig);
@@ -291,7 +294,10 @@ test("bench/add-stage appends a normalized row; duplicate ids refuse", async () 
 test("bench/remove-stage splices; rewire binds inputs", async () => {
   const ctx = await boot();
   await ctx.benchRemote.ensure(
-    { session: "s1", stages: [{ id: "a" }, { id: "b" }] },
+    // THE PHANTOM-WIRE CURE (2026-09-15): rewire admits the channel
+    // against the row's params — stage b is born spelling $image so
+    // the bind below feeds something.
+    { session: "s1", stages: [{ id: "a" }, { id: "b", params: { image: "$image" } }] },
     sig,
   );
   const removed = await ctx.benchRemote.removeStage(
@@ -496,7 +502,9 @@ test("the wire arms speak: every remoteExportX delegates verbatim", async () => 
   // The bench chain, rev-exact: birth (rev 0) → patch → addStage →
   // rewire → reorder → group → ungroup → removeStage → undo.
   const ensured = await ctx.benchRemote.remoteExportEnsure(
-    { session: "s1", stages: [{ id: "a" }, { id: "b" }, { id: "c" }] },
+    // THE PHANTOM-WIRE CURE (2026-09-15): the rewire below binds
+    // b.image — stage b is born spelling $image.
+    { session: "s1", stages: [{ id: "a" }, { id: "b", params: { image: "$image" } }, { id: "c" }] },
     sig,
   );
   assert.ok(ensured, "birth");

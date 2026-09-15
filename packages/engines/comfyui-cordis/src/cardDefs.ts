@@ -70,6 +70,7 @@ export const cardPackages: string[] = [
     '@melite/motion-motion/card',
     '@melite/video-h3-timeline/card',
     '@melite/3d-clothing-placement',
+  '@melite/3d-unity',
   '@melite/image-image-gen',
 ]
 

@@ -595,7 +595,9 @@
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: var(--dsh-text-primary, inherit);
+  /* COLOR-LAW form (stroke 49): the file's own primary-label token —
+     the token IS the value, no fallback back door. */
+  color: var(--dsw-alias-label-primary);
   margin: 12px 0 10px;
 }
 /* (a,c,d): the dialog's own title — bold and bigger, and pull the
