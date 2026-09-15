@@ -337,6 +337,7 @@ window.__ModuleLoader__.load({
 						author: "user",
 						stages: Array.isArray(stages) ? stages : [],
 						intent,
+						overwrite: true,
 						...expectRev !== void 0 ? { expect_rev: expectRev } : {}
 					})
 				});

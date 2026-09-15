@@ -244,7 +244,7 @@ function meliteConstruct(request, opts = {}) {
 	};
 	const def = defineTool({
 		name: "melite_construct",
-		description: "Author THE shared bench — one working flow the user sees live in the cards tab and edits alongside you. " + (opts.headless === true ? "This never executes (melite_flow runs what is here; the user presses Run). " : "You compose the flow and edit its state here, live with the user — runs start at the user's Run press, never yours. ") + "Verbs: read (the state — always start here) | load (replace stages wholesale) | patch {stage, params} | add_stage {card, params?, inputs?} | remove_stage {stage} | rewire {stage, input, from?} | undo {n?, author?} | validate (compile check, no GPU). Mutations take expect_rev from your last read — a moved bench refuses 409 with current_rev; re-read, re-apply. No ids anywhere: the bench is the one shared state.",
+		description: "Author THE shared bench — one working flow the user sees live in the cards tab and edits alongside you. " + (opts.headless === true ? "This never executes (melite_flow runs what is here; the user presses Run). " : "You compose the flow and edit its state here, live with the user — runs start at the user's Run press, never yours. ") + "Verbs: read (the state — always start here) | load (replace stages wholesale — DESTRUCTIVE: refused on a non-empty bench unless overwrite:true confirms it; prefer add_stage to grow the bench) | patch {stage, params} | add_stage {card, params?, inputs?} | remove_stage {stage} | rewire {stage, input, from?} | undo {n?, author?} | validate (compile check, no GPU). Mutations take expect_rev from your last read — a moved bench refuses 409 with current_rev; re-read, re-apply. No ids anywhere: the bench is the one shared state.",
 		parameters: {
 			verb: {
 				type: "string",
@@ -292,6 +292,10 @@ function meliteConstruct(request, opts = {}) {
 			intent: {
 				type: "string",
 				description: "load: what this bench produces."
+			},
+			overwrite: {
+				type: "boolean",
+				description: "load: confirm wholesale replacement of a non-empty bench (required — the overwrite law refuses without it)."
 			},
 			n: {
 				type: "number",
@@ -391,6 +395,7 @@ function meliteConstruct(request, opts = {}) {
 						session: bench,
 						stages: Array.isArray(a.stages) ? a.stages : [],
 						...typeof a.intent === "string" && a.intent !== "" ? { intent: a.intent } : {},
+						...a.overwrite === true ? { overwrite: true } : {},
 						expect_rev: a.expect_rev
 					}, signal, 15e3);
 					return out({
@@ -582,6 +587,7 @@ async function loadBench(request, body, signal) {
 	}
 	const b = await request("POST", "/v1/bench/ensure", {
 		...body,
+		overwrite: true,
 		...expectRev !== void 0 ? { expect_rev: expectRev } : {}
 	}, signal, DRAFT_TIMEOUT_MS);
 	if (b && typeof b.error === "string" && b.error) throw new Error(b.error);
