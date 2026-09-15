@@ -127,6 +127,12 @@ export const DECL: ModelDecl = {
       "sha256": "30eb3c2cc7fb6b470d9717ff840d359313ac27cd64b705e32da1baa10f72d6a8"
     },
     {
+      "name": "minimax_h3_latent_upscaler_3d_bf16.safetensors",
+      "url": "https://huggingface.co/LBH-123-AI/Minimax_h3_latent_Upscaler/resolve/main/minimax_h3_latent_upscaler_3d_bf16.safetensors",
+      "folder": "diffusion_models",
+      "sha256": "4f57821f5837f32f7142b67d815606dbd7550f194e5c769f7d6c3f83b146a5e6"
+    },
+    {
       "name": "film_net_fp16.safetensors",
       "url": "https://huggingface.co/Comfy-Org/frame_interpolation/resolve/main/frame_interpolation/film_net_fp16.safetensors",
       "folder": "frame_interpolation",

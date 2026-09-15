@@ -139,7 +139,7 @@ const paramSchema = z.object({
   // studio's LayerA spelling (docModel), never the card's.
   sla_sparsity: z.number().description("SLA sparsity").min(0).max(0.95).step(0.05).default(0.9).extra('extra', { order: null, group: "sla", wtype: 'slider', tooltip: "Block-sparse attention density. 0.90 ≈ 1.75x speedup, no quality loss." }),
   sla_block_size: z.string().description("SLA block size").default("32").extra('extra', { order: null, group: "sla", options: ["32", "64", "128"], wtype: 'select', tooltip: "64 = clean audio; 128 = faster, robotic." }),
-  sla_min_seq_len: z.number().description("SLA min seq length").min(512).step(512).default(8192).extra('extra', { order: null, group: "sla", wtype: 'number', tooltip: "Sequences shorter than this skip sparsity." }),
+  sla_min_seq_len: z.number().description("SLA min seq length").min(512).step(512).default(12288).extra('extra', { order: null, group: "sla", wtype: 'number', tooltip: "Sequences shorter than this skip sparsity." }),
   sla_dense_last_steps: z.number().description("SLA dense last steps").min(0).max(10).step(1).default(1).extra('extra', { order: null, group: "sla", wtype: 'number', tooltip: "Final steps run dense for convergence." }),
   sla_dense_steps: z.string().description("SLA dense steps (explicit)").default("0").extra('extra', { order: null, group: "sla", tooltip: "e.g. 0,1 or 0-2 — explicit dense step indices." }),
   sla_dense_backend: z.string().description("SLA dense backend").default("comfy_kitchen").extra('extra', { order: null, group: "sla", options: ["comfy_kitchen", "pytorch", "auto"], wtype: 'select' }),
@@ -316,7 +316,7 @@ function renderH3Window(p: Record<string, unknown>, g: GraphBuilder): void {
     model: unet,
     sparsity_ratio: (p.sla_sparsity ?? 0.9) as number,
     block_size: (p.sla_block_size ?? '32') as string,
-    min_seq_len: (p.sla_min_seq_len ?? 8192) as number,
+    min_seq_len: (p.sla_min_seq_len ?? 12288) as number,
     dense_last_steps: (p.sla_dense_last_steps ?? 1) as number,
     protect_audio: (p.sla_protect_audio ?? true) as boolean,
     enabled: true,
@@ -537,21 +537,20 @@ function renderH3Window(p: Record<string, unknown>, g: GraphBuilder): void {
       const val = p[src]
       if (val !== null && val !== undefined) method[dst] = val as string | number
     }
-    const sharpened = g.node('ImageSharpenKJ', { image: vdec, method }).out()
-    // sharpen switch: false agrees with py card.py AND the frozen t4
-    // graphs (resolved zero-regold 2026-09-07). Renderer alias second.
-    const sharpSw = g.node('ComfySwitchNode', {
-      switch: (p.sharpen_enabled ?? p.sharpen_switch ?? false) as boolean, on_true: sharpened, on_false: vdec,
-    }).out()
+    // ── V9 tail order (regolded 2026-09-15, the operator's cause) ──
+    // upstream moved sharpen LAST: interp → VSR → sharpen → CreateVideo
+    // (V7/ours sharpened FIRST — before the upscaler could soften the
+    // detail away). Sharpen rcas 0.3 after upscale "looks natural"
+    // (his V9 notes). The switches stay ours; the ORDER is his.
     const film = g.node('FrameInterpolationModelLoader', {
       model_name: (p.interp_model ?? 'film_net_fp16.safetensors') as string,
     }).out()
     const interp = g.node('FrameInterpolate', {
-      interp_model: film, images: sharpSw, multiplier: (p.interp_multiplier ?? 2) as number,
+      interp_model: film, images: vdec, multiplier: (p.interp_multiplier ?? 2) as number,
     }).out()
     // py card knob first (card.py interpolate_enabled), alias second.
     const interpSw = g.node('ComfySwitchNode', {
-      switch: (p.interpolate_enabled ?? p.interp_switch ?? false) as boolean, on_true: interp, on_false: sharpSw,
+      switch: (p.interpolate_enabled ?? p.interp_switch ?? false) as boolean, on_true: interp, on_false: vdec,
     }).out()
     const sr = g.node('SeedVR2VideoUpscaler', {
       image: interpSw,
@@ -568,6 +567,12 @@ function renderH3Window(p: Record<string, unknown>, g: GraphBuilder): void {
     const srSw = g.node('ComfySwitchNode', {
       switch: (p.sr_switch ?? false) as boolean, on_true: sr, on_false: interpSw,
     }).out()
+    // sharpen LAST (V9): the upscaler softens; rcas after it restores.
+    // Renderer alias second (sharpen_* leaves above build the method).
+    const sharpened = g.node('ImageSharpenKJ', { image: srSw, method }).out()
+    const sharpSw = g.node('ComfySwitchNode', {
+      switch: (p.sharpen_enabled ?? p.sharpen_switch ?? false) as boolean, on_true: sharpened, on_false: srSw,
+    }).out()
     // fps compensation (V9 parity, 2026-09-15): upstream wires
     // CreateVideo.fps = base × interp multiplier (his Enhancements:
     // PrimitiveFloat 24 → ComfyMathExpression "a * 2" → fps). Without
@@ -577,7 +582,7 @@ function renderH3Window(p: Record<string, unknown>, g: GraphBuilder): void {
     const interpOn = (p.interpolate_enabled ?? p.interp_switch ?? false) as boolean
     const interpMult = (p.interp_multiplier ?? 2) as number
     const created = g.node('CreateVideo', {
-      images: srSw, audio: vadec, fps: interpOn ? 24 * interpMult : 24, bit_depth: 8,
+      images: sharpSw, audio: vadec, fps: interpOn ? 24 * interpMult : 24, bit_depth: 8,
       // color_space: pin autofill "sRGB"
     })
     g.node('SaveVideo', {

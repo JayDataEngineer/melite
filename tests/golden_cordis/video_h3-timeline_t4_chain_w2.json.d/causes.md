@@ -16,3 +16,27 @@ becomes the pre-namespaced cross-window link
 post-serialization rewrite, carried as a raw JSON link in the TS port
 (a foreign node id no builder can wire). SaveVideo prefix "h3_t4_w2"
 (k rides the prefix law).
+
+## 2026-09-15 — V9 parity regold (the operator's cause)
+
+Status: landed
+
+The operator dropped PlagueKind h3V9 and sanctioned the translation
+("yes do it there, I don't care, just copy them"). Three deltas land
+in these bytes:
+
+1. **SLA min_seq_len 8192 → 12288** — upstream's V9 instance value
+   (loader subgraph #5603). Carrier default + body literal moved
+   together.
+2. **Tail order: sharpen LAST** — V7 sharpened first (sharpen →
+   interp → VSR); V9 runs interp → VSR → sharpen (rcas after the
+   upscaler, "0.3 strength looks natural" per his notes). The three
+   switches stay estate knobs; the ORDER is upstream's.
+3. **fps compensation** (same day, landed byte-stable first): fps =
+   24 × interp multiplier when interp is on — upstream's
+   ComfyMathExpression "a * 2". Byte-neutral at these cases' defaults
+   (interp off → literal 24).
+
+Also: the latent upscaler model (minimax_h3_latent_upscaler_3d_bf16,
+LBH-123-AI, sha 4f57821f…) is now an IaC provision row; the MMH3
+ultimate-upscale compose arm is the follow-up stroke.
