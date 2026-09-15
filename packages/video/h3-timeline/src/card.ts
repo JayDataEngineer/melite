@@ -568,8 +568,16 @@ function renderH3Window(p: Record<string, unknown>, g: GraphBuilder): void {
     const srSw = g.node('ComfySwitchNode', {
       switch: (p.sr_switch ?? false) as boolean, on_true: sr, on_false: interpSw,
     }).out()
+    // fps compensation (V9 parity, 2026-09-15): upstream wires
+    // CreateVideo.fps = base × interp multiplier (his Enhancements:
+    // PrimitiveFloat 24 → ComfyMathExpression "a * 2" → fps). Without
+    // it every interp-on window plays at HALF speed — the frames
+    // double, the fps doesn't. Byte-stable at defaults (interp off →
+    // the literal 24 the frozen goldens pin).
+    const interpOn = (p.interpolate_enabled ?? p.interp_switch ?? false) as boolean
+    const interpMult = (p.interp_multiplier ?? 2) as number
     const created = g.node('CreateVideo', {
-      images: srSw, audio: vadec, fps: 24, bit_depth: 8,
+      images: srSw, audio: vadec, fps: interpOn ? 24 * interpMult : 24, bit_depth: 8,
       // color_space: pin autofill "sRGB"
     })
     g.node('SaveVideo', {
