@@ -9,8 +9,8 @@ import { cn } from "@melite/card-base/chrome"
 import { ChevronLeft } from "@melite/card-base/icons"
 import s from "./studio.module.css"
 import { VIDEO_TIMELINE_TRACKS } from "./docModel"
+import type { DocCall, DocKeyframe, LayerA } from "./docModel"
 import { CallCard } from "./CallCard"
-import type { DocBeatSegment, DocCall, DocKeyframe, LayerA } from "./docModel"
 import type { LinkArtifact } from "./refUtils"
 import type { TimelineSelection } from "./useViewSelection"
 
@@ -23,16 +23,12 @@ export interface CallCardDeps {
    *  it inherits from the run, never the bare word "inherit"). */
   layerA?: LayerA
   callCardRefs: { current: (HTMLDivElement | null)[] }
-  beatRowRefs: { current: (HTMLDivElement | null)[][] }
   artifactIndex: { byName: Map<string, string>; byUrl: Map<string, string> }
   linkGroups: LinkArtifact[]
   isRef2va: boolean
   refArtifacts: Array<{ name: string; url: string }>
   handlePromptDelete: (id: string) => void
   handlePromptUpdate: (id: string, text: string) => void
-  setBeatSegment: (i: number, j: number, patch: Partial<DocBeatSegment>) => void
-  addBeatSegment: (i: number) => void
-  deleteBeatSegment: (i: number, j: number) => void
   enhanceOne: (key: string, text: string, apply: (t: string) => void) => void
   undoEnhance: (key: string, apply: (t: string) => void) => void
   enhancing: Record<string, boolean>
@@ -120,11 +116,8 @@ export function CallCardsPanel({
     {selected == null && (
       <div className={s.compactList}>
         {calls.map((c, i) => {
-          const segCount = c.beats?.length ?? 0
           const activeKnobs = c.knobs ? Object.keys(c.knobs).length : 0
-          const excerpt = segCount
-            ? c.beats!.map((s) => s.text || "(empty)").join(" · ")
-            : c.text ?? ""
+          const excerpt = c.text ?? ""
           return (
             <Button variant="ghost"
               key={i}
@@ -141,11 +134,6 @@ export function CallCardsPanel({
               >
                 {excerpt.trim() || "(empty — needs a prompt)"}
               </span>
-              {segCount > 0 && (
-                <span className={s.beatCount}>
-                  {segCount} beat{segCount === 1 ? "" : "s"}
-                </span>
-              )}
               {activeKnobs > 0 && (
                 <span className={s.knobBadge}>
                   {activeKnobs}

@@ -4,7 +4,7 @@
  * every logic line is verbatim from the monolith (source range noted).
  */
 import { MotionTimelineBar } from "@melite-plugin/timeline/ui/timeline"
-import type { TimelineBeat, TimelineKeyframe, TimelinePrompt } from "@melite-plugin/timeline/ui/timeline"
+import type { TimelineKeyframe, TimelinePrompt } from "@melite-plugin/timeline/ui/timeline"
 import { PaneHeader, PaneShell } from "./kit"
 import { VIDEO_TIMELINE_TRACKS } from "./docModel"
 import type { DocCall, DocKeyframe, LayerA, SetLayerAKey } from "./docModel"
@@ -17,12 +17,12 @@ import type { DocCall, DocKeyframe, LayerA, SetLayerAKey } from "./docModel"
  *  the one strip). */
 export function StudioStripPane({
   calls, totalFrames, fps, seconds,
-  barPrompts, barLanes, barBeats, barAudioClips, barTotal, frameIdx,
+  barPrompts, barLanes, barAudioClips, barTotal, frameIdx,
   callPreviews, selectedBarId, filmMap,
   handleBarFrame, handleScrubStart, handleScrubEnd,
   handleKeyframeAdd, handleKeyframeMove, handleKeyframeDelete,
   handlePromptUpdate, handlePromptMove, handlePromptResize, handlePromptDelete,
-  handleExtend, handleBeatAdd, addCallAt, handleTimelineSelect,
+  handleExtend, addCallAt, handleTimelineSelect,
   layerA, addAudioClip, takeAudioFile, moveAudioClip, deleteAudioClip,
   setLayerAKey, artifactIndex, docFromFilm, keyframes,
 }: {
@@ -32,7 +32,6 @@ export function StudioStripPane({
   seconds: string
   barPrompts: TimelinePrompt[]
   barLanes: TimelineKeyframe[]
-  barBeats: TimelineBeat[]
   barAudioClips: Array<{ id: string; name: string; start_frame: number; dur_frames: number; gain?: number }>
   barTotal: number
   frameIdx: number
@@ -50,7 +49,6 @@ export function StudioStripPane({
   handlePromptResize: (id: string, s: number, e: number) => void
   handlePromptDelete: (id: string) => void
   handleExtend: (newTotal: number) => void
-  handleBeatAdd: (frame: number) => void
   addCallAt: (frame: number) => void
   handleTimelineSelect: (id: string | null) => void
   layerA: LayerA
@@ -74,7 +72,7 @@ export function StudioStripPane({
       }
       hint={
         <>
-          one card = one model call · drag an edge = move the cut · double-click = edit · pull the tail = extend · cyan dot = knobs override · click a call or beat = edit it in the left panel · double-click the beats row = add a beat
+          one card = one model call · drag an edge = move the cut · double-click = edit · pull the tail = extend · cyan dot = knobs override · click a call = edit it in the left panel
         </>
       }
     />
@@ -102,10 +100,6 @@ export function StudioStripPane({
       laneHint="frame-exact legacy keyframes — guides attach to their call in the panel above"
       emptyPromptsHint="No calls — double-click the timeline to add one"
       promptsHeight={64}
-      beats={barBeats}
-      beatsLabel="Beats"
-      beatsHint="no beats yet — DOUBLE-CLICK a call's span to add one (or + prompt segments in its card) · beats may cross a call boundary; the compiler slices them at cuts"
-      onBeatAdd={(frame) => handleBeatAdd(docFromFilm(frame))}
       onPromptAdd={(frame) => addCallAt(docFromFilm(frame))}
       previews={callPreviews}
       selectedId={selectedBarId}

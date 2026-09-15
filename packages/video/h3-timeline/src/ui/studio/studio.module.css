@@ -338,15 +338,6 @@ details[open] > summary .chev { transform: rotate(180deg); }
 .excerpt { min-width: 0; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 10px; }
 .excerptFull { color: var(--dsw-alias-label-primary); }
 .excerptEmpty { color: var(--dsw-alias-label-tertiary); font-style: italic; }
-.beatCount {
-  flex: none;
-  border-radius: 6px;
-  border: 1px solid var(--dsw-alias-border-l2);
-  padding: 0 4px;
-  font-size: 8px;
-  font-variant-numeric: tabular-nums;
-  color: var(--dsw-alias-label-tertiary);
-}
 .knobBadge {
   flex: none;
   border-radius: 6px;
@@ -553,29 +544,6 @@ details[open] > summary .chev { transform: rotate(180deg); }
 
 /* ── CallCardPrompt ─────────────────────────────────────── */
 .beatsWrap { display: flex; flex-direction: column; gap: 4px; }
-.beatsHead { display: flex; align-items: center; gap: 6px; }
-.beatsTitle { font-size: 9px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--dsw-alias-label-tertiary); }
-.beatsNote { font-size: 9px; color: var(--dsw-alias-label-tertiary); }
-.addSeg {
-  margin-left: auto;
-  display: flex;
-  height: 16px;
-  width: 16px;
-  flex: none;
-  align-items: center;
-  justify-content: center;
-  border-radius: 6px;
-  border: 1px solid var(--dsw-alias-border-l3);
-  background: none;
-  font-size: 10px;
-  line-height: 1;
-  color: var(--dsw-alias-label-secondary);
-  cursor: pointer;
-  transition: border-color 0.15s ease, color 0.15s ease;
-}
-.addSeg:hover { border-color: var(--dsw-alias-brand-primary); color: var(--dsw-alias-brand-primary); }
-.beatRow { display: flex; align-items: center; gap: 6px; border-radius: 6px; transition: background-color 0.15s ease; }
-.beatRowSel { background: color-mix(in srgb, var(--dsw-alias-brand-primary) 8%, transparent); outline: 1px solid color-mix(in srgb, var(--dsw-alias-brand-primary) 50%, transparent); }
 .iconMini {
   display: flex;
   height: 16px;
@@ -597,22 +565,6 @@ details[open] > summary .chev { transform: rotate(180deg); }
 .iconMiniMut { color: var(--dsw-alias-label-tertiary); }
 .iconMiniMut:hover { background: var(--dsw-alias-interactive-bg-hover); color: var(--dsw-alias-label-primary); }
 .beatErr { font-size: 8px; line-height: 1.25; color: var(--dsw-alias-state-error-primary); }
-.beatDash { font-size: 9px; color: var(--dsw-alias-label-tertiary); }
-.beatDel {
-  display: flex;
-  height: 16px;
-  width: 16px;
-  flex: none;
-  align-items: center;
-  justify-content: center;
-  border-radius: 6px;
-  border: none;
-  background: none;
-  color: var(--dsw-alias-label-tertiary);
-  cursor: pointer;
-  padding: 0;
-  transition: background-color 0.15s ease, color 0.15s ease;
-}
 .beatDel:hover { background: var(--dsw-alias-state-error-primary); color: var(--dsw-alias-label-primary); }
 .textHead { display: flex; align-items: center; justify-content: space-between; }
 .textLabel { font-size: 9px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--dsw-alias-label-tertiary); }
@@ -662,19 +614,6 @@ details[open] > summary .chev { transform: rotate(180deg); }
 .promptBoxEmpty { border-color: color-mix(in srgb, var(--dsw-alias-state-warn-primary) 40%, transparent); color: var(--dsw-alias-state-warn-primary); }
 .promptBoxEmpty::placeholder { color: color-mix(in srgb, var(--dsw-alias-state-warn-primary) 40%, transparent); }
 .promptBoxEmpty:focus { border-color: color-mix(in srgb, var(--dsw-alias-state-warn-primary) 70%, transparent); }
-.addSegText {
-  border: none;
-  background: none;
-  padding: 0;
-  font-size: 9px;
-  font-weight: 500;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--dsw-alias-label-tertiary);
-  cursor: pointer;
-  transition: color 0.15s ease;
-}
-.addSegText:hover { color: var(--dsw-alias-brand-primary); }
 
 /* ── CallFrameSubcard ───────────────────────────────────── */
 .sub { display: flex; min-width: 0; flex: 1; flex-direction: column; gap: 4px; }

@@ -123,7 +123,7 @@ export function VideoTimelineStudio({
   const pr = usePromptMutations(doc.setCalls)
   const enh = useEnhance()
   const mut = useCallMutations(doc.setCalls, fps)
-  const beat = useBeatMutations(calls, doc.setCalls, view.setSelected, keyframes, doc.setKeyframes)
+  const kf = useBeatMutations(keyframes, doc.setKeyframes)
   const derived = useDerivedView({
     upstreams, stage, calls, layerA, keyframes,
     filmMap: audio.filmMap, filmFromDoc: audio.filmFromDoc, selected, fps, totalFrames,
@@ -188,18 +188,16 @@ export function VideoTimelineStudio({
             fps={fps}
             sourceOptions={derived.sourceOptions}
             keyframes={keyframes}
-            handleKeyframeMove={beat.handleKeyframeMove}
-            handleKeyframeDelete={beat.handleKeyframeDelete}
-            setKeyframeSource={beat.setKeyframeSource}
+            handleKeyframeMove={kf.handleKeyframeMove}
+            handleKeyframeDelete={kf.handleKeyframeDelete}
+            setKeyframeSource={kf.setKeyframeSource}
             deps={{
               selected, fps, layerA,
-              callCardRefs: view.callCardRefs, beatRowRefs: view.beatRowRefs,
+              callCardRefs: view.callCardRefs,
               artifactIndex: audio.artifactIndex, linkGroups: derived.linkGroups,
               isRef2va: doc.isRef2va, refArtifacts: audio.refArtifacts,
               handlePromptDelete: pr.handlePromptDelete,
               handlePromptUpdate: pr.handlePromptUpdate,
-              setBeatSegment: beat.setBeatSegment, addBeatSegment: beat.addBeatSegment,
-              deleteBeatSegment: beat.deleteBeatSegment,
               enhanceOne: enh.enhanceOne, undoEnhance: enh.undoEnhance,
               enhancing: enh.enhancing, enhanceErr: enh.enhanceErr,
               enhanceUndo: enh.enhanceUndo,
@@ -245,18 +243,16 @@ export function VideoTimelineStudio({
             fps={fps}
             sourceOptions={derived.sourceOptions}
             keyframes={keyframes}
-            handleKeyframeMove={beat.handleKeyframeMove}
-            handleKeyframeDelete={beat.handleKeyframeDelete}
-            setKeyframeSource={beat.setKeyframeSource}
+            handleKeyframeMove={kf.handleKeyframeMove}
+            handleKeyframeDelete={kf.handleKeyframeDelete}
+            setKeyframeSource={kf.setKeyframeSource}
             deps={{
               selected, fps, layerA,
-              callCardRefs: view.callCardRefs, beatRowRefs: view.beatRowRefs,
+              callCardRefs: view.callCardRefs,
               artifactIndex: audio.artifactIndex, linkGroups: derived.linkGroups,
               isRef2va: doc.isRef2va, refArtifacts: audio.refArtifacts,
               handlePromptDelete: pr.handlePromptDelete,
               handlePromptUpdate: pr.handlePromptUpdate,
-              setBeatSegment: beat.setBeatSegment, addBeatSegment: beat.addBeatSegment,
-              deleteBeatSegment: beat.deleteBeatSegment,
               enhanceOne: enh.enhanceOne, undoEnhance: enh.undoEnhance,
               enhancing: enh.enhancing, enhanceErr: enh.enhanceErr,
               enhanceUndo: enh.enhanceUndo,
@@ -295,9 +291,8 @@ export function VideoTimelineStudio({
           window render previews INSIDE the clip (first frame at rest,
           plays on hover). The BEATS row under the calls is Layer C —
           the prompt segments, clickable. A click on ANY clip (call or
-          beat) selects it: the rail's call panel scrolls that card /
-          segment row into view with its ring (brand on a call, cyan on
-          a segment). */
+          call) selects it: the rail's call panel scrolls that card /
+          into view with its ring. */
       bottom={
           <StudioStripPane
             calls={calls}
@@ -306,7 +301,6 @@ export function VideoTimelineStudio({
             seconds={seconds}
             barPrompts={derived.barPrompts}
             barLanes={derived.barLanes}
-            barBeats={derived.barBeats}
             barAudioClips={derived.barAudioClips}
             barTotal={derived.barTotal}
             frameIdx={view.frameIdx}
@@ -316,15 +310,14 @@ export function VideoTimelineStudio({
             handleBarFrame={film.handleBarFrame}
             handleScrubStart={film.handleScrubStart}
             handleScrubEnd={film.handleScrubEnd}
-            handleKeyframeAdd={beat.handleKeyframeAdd}
-            handleKeyframeMove={beat.handleKeyframeMove}
-            handleKeyframeDelete={beat.handleKeyframeDelete}
+            handleKeyframeAdd={kf.handleKeyframeAdd}
+            handleKeyframeMove={kf.handleKeyframeMove}
+            handleKeyframeDelete={kf.handleKeyframeDelete}
             handlePromptUpdate={pr.handlePromptUpdate}
             handlePromptMove={pr.handlePromptMove}
             handlePromptResize={pr.handlePromptResize}
             handlePromptDelete={pr.handlePromptDelete}
             handleExtend={mut.handleExtend}
-            handleBeatAdd={beat.handleBeatAdd}
             addCallAt={mut.addCallAt}
             handleTimelineSelect={view.handleTimelineSelect}
             layerA={layerA}

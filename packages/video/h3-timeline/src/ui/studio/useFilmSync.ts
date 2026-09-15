@@ -86,12 +86,9 @@ export function useFilmSync(args: {
   const [filmPlaying, setFilmPlaying] = useState(false)
   const seconds = (totalFrames / fps).toFixed(1)
   const unwired = keyframes.filter((k) => !k.source.trim()).length
-  // A call's prompt is `text` XOR `beats`: empty = no prompt at all
+  // A call's prompt is its ONE text: empty = no prompt at all
   // (the plan refuses it before any GPU work).
-  const emptyText = calls.filter(
-    (c) => !(c.text ?? "").trim()
-      && !(c.beats ?? []).some((s) => s.text.trim()),
-  ).length
+  const emptyText = calls.filter((c) => !(c.text ?? "").trim()).length
   const guideCount = calls.reduce(
     (n, c) => n + GUIDE_KINDS.filter((k) => (c[k] ?? "").trim()).length,
     0,

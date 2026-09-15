@@ -84,21 +84,9 @@ export function usePromptMutations(setCalls: Dispatch<SetStateAction<DocCall[]>>
     // Empty text is a VISIBLE TODO (amber card + the rail warning + the
     // plan gate naming the call) — the card shows exactly what the
     // compiler would refuse, so the state to fix is the state on screen.
-    // A segment-mode call (beats) has no own text — the bar's edit
-    // targets segment 0 (the strip shows the joined segments; the card
-    // is the full segment surface).
     setCalls((prev) => {
       if (i < 0 || i >= prev.length) return prev
       const cur = prev[i]!
-      if (cur.beats?.length) {
-        if (cur.beats[0]!.text === text) return prev
-        const next = [...prev]
-        next[i] = {
-          ...cur,
-          beats: cur.beats.map((s, j) => (j === 0 ? { ...s, text } : s)),
-        }
-        return next
-      }
       if ((cur.text ?? "") === text) return prev
       const next = [...prev]
       next[i] = { ...cur, text }

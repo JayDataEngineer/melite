@@ -53,9 +53,7 @@ export function useDocEffects(args: {
   // segments clears the selection — never ring a ghost.
   useEffect(() => {
     if (!selected) return
-    if (selected.callIdx >= calls.length
-        || (selected.beatIdx != null
-            && selected.beatIdx >= (calls[selected.callIdx]?.beats?.length ?? 0))) {
+    if (selected.callIdx >= calls.length) {
       setSelected(null)
     }
   }, [calls, selected])

@@ -72,7 +72,9 @@ export interface InputSquareVerbs {
 }
 
 export interface InputSquareProps extends InputSquareVerbs {
-  /** Short field key shown under the square (e.g. "input_image"). */
+  /** Short field key shown under the square (e.g. "input_image").
+   *  Empty string = NO caption (the owning section already names it
+   *  — the 2026-09-15 duplicate-label fix). */
   label: string
   /** Attached value → thumbnail when it passes isImageUrl. */
   value?: string | null
@@ -112,7 +114,7 @@ export function InputSquare(props: InputSquareProps): ReturnType<typeof h> {
       className: css.squareBox + (over ? ' ' + css.squareOver : ''),
       role: 'button',
       tabIndex: 0,
-      'aria-label': label + ' source',
+      'aria-label': (label || 'source') + (label ? ' source' : ''),
       onClick: pick,
       onKeyDown: (e: unknown) => { if ((e as KeyboardEvent).key === 'Enter') pick() },
       onDragOver: (e: DragEvent) => {
@@ -139,12 +141,12 @@ export function InputSquare(props: InputSquareProps): ReturnType<typeof h> {
             className: css.squareX,
             type: 'button',
             title: 'Detach',
-            'aria-label': 'Detach ' + label,
+            'aria-label': 'Detach ' + (label || 'source'),
             onClick: (e: MouseEvent) => { e.stopPropagation(); props.onClear?.() },
           }, '✕')
         : null,
     ),
-    h('span', { className: css.squareLabel }, label),
+    label !== '' ? h('span', { className: css.squareLabel }, label) : null,
     metric !== undefined ? h('span', { className: css.squareMetric }, metric) : null,
     props.onFile !== undefined && !disabled
       ? h('input', {

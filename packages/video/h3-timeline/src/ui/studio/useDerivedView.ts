@@ -7,7 +7,6 @@ import { useMemo, useState } from "react"
 import type { CardStage } from "@melite/contracts"
 import { isImageUrl } from "./kit"
 import { PROMPT_COLORS } from "@melite-plugin/timeline/ui/timeline"
-import type { TimelineBeat } from "@melite-plugin/timeline/ui/timeline"
 import type { DocCall, DocKeyframe, LayerA } from "./docModel"
 import { callsToPrompts, keyframesToLanes } from "./docCalls"
 import type { LinkArtifact } from "./refUtils"
@@ -137,24 +136,8 @@ export function useDerivedView(args: {
    * calls): id `beat-i-j`, end_frame translated to the bar's INCLUSIVE
    * vocabulary (the doc's end is exclusive), color = the call's prompt
    * color so a segment reads as belonging to its call. */
-  const barBeats = useMemo(
-    () => calls.flatMap((c, i) =>
-      (c.beats ?? []).map((s, j): TimelineBeat => ({
-        id: `beat-${i}-${j}`,
-        callId: `call-${i}`,
-        text: s.text,
-        start_frame: filmFromDoc(s.start_frame),
-        // Convert doc-exclusive end to inclusive FIRST, then map through
-        // the film map — matching the call clip's mapping pattern
-        // (callsToPrompts does end_frame - 1, then barPrompts maps).
-        // The old filmFromDoc(exclusive) - 1 diverged at trim boundaries
-        // where the film map is non-linear, causing beats to render at
-        // wrong positions relative to their parent call.
-        end_frame: filmFromDoc(s.end_frame - 1),
-        color: PROMPT_COLORS[i % PROMPT_COLORS.length]!,
-      }))),
-    [calls, filmFromDoc],
-  )
+  // (2026-09-15) barBeats removed - no prompt beats row on the strip.
+
 
   /** (Layer A NLE) the Music row's clips in BAR space: both endpoints
    * through filmFromDoc (identity with no film map), width = the mapped
@@ -193,6 +176,6 @@ export function useDerivedView(args: {
   return {
     sourceOptions, linkGroups, filmstrip, prompts, lanes,
     filmDurSec, setFilmDurSec, barTotal,
-    barPrompts, barLanes, barBeats, barAudioClips, callPreviews, selectedBarId,
+    barPrompts, barLanes, barAudioClips, callPreviews, selectedBarId,
   }
 }

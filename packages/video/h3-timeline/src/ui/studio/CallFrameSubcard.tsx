@@ -33,7 +33,6 @@ import type { LinkArtifact } from "./refUtils"
  *     ("use the last X seconds of the previous video", rule 3b). */
 export function CallFrameSubcard({
   label,
-  hint,
   testId,
   callIndex,
   value,
@@ -49,7 +48,6 @@ export function CallFrameSubcard({
   prevNote,
 }: {
   label: string
-  hint: string
   testId: string
   callIndex: number
   value: string | undefined
@@ -99,13 +97,13 @@ export function CallFrameSubcard({
         <span className={s.subTitle}>
           {label}
         </span>
-        <span className={cn(s.truncate, s.subHint)} title={hint}>{hint}</span>
       </div>
       {/* THE SOURCE ROW — one grammar with every input in the system
           (the operator's law); the studio's vocabulary adapters ride
           the props, not a second face. */}
       <SourceRow
         label={label}
+        hideLabel
         kind="image"
         value={v === "" ? null : v.startsWith("data:") ? v : nameToUrl.get(v) ?? v}
         candidates={(links ?? []).map((a) => ({ id: a.name, label: a.name, url: a.url }))}

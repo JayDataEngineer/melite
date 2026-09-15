@@ -4,7 +4,7 @@
  * every logic line is verbatim from the monolith (source range noted).
  */
 import type { TimelineKeyframe, TimelinePrompt } from "@melite-plugin/timeline/ui/timeline"
-import type { BeatKnobs, CallRefs, DocBeatSegment, DocCall, DocKeyframe } from "./docModel"
+import type { BeatKnobs, CallRefs, DocCall, DocKeyframe } from "./docModel"
 import { CALL_KNOB_KEYS, GUIDE_KINDS, KIND_OF_TRACK, STARTER_CALLS } from "./docModel"
 import { splitRefList } from "./refUtils"
 
@@ -49,47 +49,28 @@ export function hydrateCalls(raw: { calls?: unknown; beats?: unknown }): DocCall
     const end = Number(r.end_frame)
     if (!Number.isFinite(start) || !Number.isFinite(end) || end <= start) continue
     const call: DocCall = { text: "", start_frame: Math.round(start), end_frame: Math.round(end) }
-    // The prompt: `text` XOR `beats` (Layer C segments within the call).
-    // A doc carrying BOTH is already refused by the compiler — the
-    // studio renders the segments (the richer surface) and drops the
-    // text with a warning: the surface IS the resolution, never a
-    // re-send of an invalid doc.
+    // The prompt: ONE textarea. (2026-09-15, the operator's cut: no
+    // prompt segments, no prompt beats.) Old docs carrying per-call
+    // `beats` hydrate by JOINING their texts into the prompt — no
+    // word ever lost, one console warn; the wire still admits beats
+    // (the compiler's vocabulary), the studio never authors them.
     const rawSegs = r.beats
     if (Array.isArray(rawSegs) && rawSegs.length > 0) {
-      const segs: DocBeatSegment[] = []
-      for (const s of rawSegs) {
-        if (typeof s !== "object" || s === null) continue
-        const sr = s as Record<string, unknown>
-        const sText = typeof sr.text === "string" ? sr.text : ""
-        const sStart = Number(sr.start_frame)
-        const sEnd = Number(sr.end_frame)
-        if (!Number.isFinite(sStart) || !Number.isFinite(sEnd) || sEnd <= sStart) continue
-        segs.push({ text: sText, start_frame: Math.round(sStart), end_frame: Math.round(sEnd) })
+      const joined: string[] = []
+      for (const sg of rawSegs) {
+        if (typeof sg === "object" && sg !== null) {
+          const t = (sg as Record<string, unknown>).text
+          if (typeof t === "string" && t.trim()) joined.push(t.trim())
+        }
       }
-      if (segs.length) {
-        // CROSSING stays (a bar overlapping the call may run into a
-        // neighbor — the compiler slices it); a bar wholly OUTSIDE its
-        // call is an orphan the compiler refuses — drop it with a warn
-        // (forgiving hydration, never a re-send of an invalid doc).
-        const kept = segs.filter(
-          (s) => s.start_frame < call.end_frame && s.end_frame > call.start_frame,
+      if (joined.length) {
+        console.warn(
+          `VideoTimelineStudio: call ${calls.length} carried prompt segments — their texts joined into the one prompt (segments were cut 2026-09-15; no words lost)`,
         )
-        if (kept.length < segs.length) {
-          console.warn(
-            `VideoTimelineStudio: call ${calls.length} carries beats wholly outside its span ` +
-            `[${call.start_frame},${call.end_frame}) — dropping them (a segment must overlap ` +
-            `its call; CROSSING a boundary is fine, orphaning is not)`,
-          )
-        }
-        if (kept.length) {
-          call.beats = kept
-          if (typeof r.text === "string" && r.text.trim()) {
-            console.warn("VideoTimelineStudio: call carries BOTH `text` and `beats` — rendering the segments; the compiler refuses both")
-          }
-        }
+        call.text = joined.join(" ")
       }
     }
-    if (!call.beats && typeof r.text === "string") call.text = r.text
+    if (!(call.text ?? "").trim() && typeof r.text === "string") call.text = r.text
     // Call-attached guides: string sources only, blank trimmed away.
     for (const kind of GUIDE_KINDS) {
       const src = r[kind]
@@ -237,16 +218,14 @@ export const hasKnobs = (c: DocCall): boolean =>
  * (index-derived ids are stable for the life of a gesture — no gesture
  * spans a structural change, and every render re-derives consistently).
  * `override` = the call carries per-call knobs → the cyan dot (Layer C
- * shows where a call departs from the run's globals). A segment-mode
- * call's strip text is its segments joined — the narrative the call
- * renders (the bar's dblclick edit targets segment 0's text). */
+ * shows where a call departs from the run's globals). */
 export function callsToPrompts(calls: DocCall[], fps: number): TimelinePrompt[] {
   return calls.map((c, i): TimelinePrompt => ({
     uuid: `call-${i}`,
     // Compact clip header: index + duration scan before the prompt text
     // (the strip truncates long prompts — the prefix survives the cut).
     text: `C${i + 1} · ${((c.end_frame - c.start_frame) / Math.max(1, fps)).toFixed(1)}s — ` +
-      (c.beats?.length ? c.beats.map((s) => s.text).join(" · ") : (c.text ?? "")),
+      (c.text ?? ""),
     start_frame: c.start_frame,
     end_frame: c.end_frame - 1,
     color: null,
@@ -288,24 +267,15 @@ export function keyframesToLanes(kfs: DocKeyframe[]): TimelineKeyframe[] {
  * contract, kept here so the saved doc never carries "" noise); knobs
  * ride only when non-empty, and every knob value is written VERBATIM
  * (undefined was never stored — the setter deletes the key, so absent
- * IS inherit, never null). Layer C: a lone full-span segment collapses
- * back to `text` (lossless — the join of one segment is the segment
- * itself); multi-segment calls keep `beats` and drop the text key. */
+ * IS inherit, never null). The prompt is ONE `text` — segments were
+ * cut 2026-09-15 (hydration joins old beats' texts; the serializer
+ * never writes beats). */
 export function serializeCalls(calls: DocCall[]): DocCall[] {
   return calls.map((c) => {
     const out: DocCall = {
       text: c.text ?? "",
       start_frame: c.start_frame,
       end_frame: c.end_frame,
-    }
-    const segs = c.beats ?? []
-    if (segs.length === 1
-        && segs[0]!.start_frame === c.start_frame
-        && segs[0]!.end_frame === c.end_frame) {
-      out.text = segs[0]!.text
-    } else if (segs.length > 0) {
-      out.beats = segs.map((s) => ({ ...s }))
-      delete out.text
     }
     for (const kind of GUIDE_KINDS) {
       const src = c[kind]

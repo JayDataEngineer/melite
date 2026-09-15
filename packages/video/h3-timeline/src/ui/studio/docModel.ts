@@ -7,37 +7,29 @@ import type { TimelineTrack } from "@melite-plugin/timeline/ui/timeline"
 
 // ── The document types (the builder SCHEMA's shapes, client-side) ─────────
 
-/** One Layer C prompt segment WITHIN a call (2026-08-16, the B/C
- * conflation fix: a beat is a SUBSET of a model call, never the
- * timeline entity). Frames are ABSOLUTE (same coordinate space as the
- * calls — the planner validates them inside the call's span, ordered,
- * non-overlapping; gaps allowed). Segments join into the call's ONE
- * prompt with time markers and NEVER cut — cuts land on call
- * boundaries (MiniMaxH3TextOnly scheduling was deleted from core in
- * v0.33.0, so the join is the honest form). */
-export interface DocBeatSegment {
-  text: string
-  start_frame: number
-  end_frame: number
-}
+// (2026-09-15, the operator's cut: NO prompt segments, NO prompt
+// beats — the call's prompt is ONE textarea, full stop. Old docs
+// carrying per-call `beats` hydrate by JOINING their texts into the
+// prompt — no word ever lost, one console warn; the wire still
+// admits beats (the compiler's vocabulary), the studio just never
+// authors or renders them again.)
 
 /** One contiguous model call — ONE video generation invocation (the
  * timeline's Layer B entity: the strip card, the window, the render).
- * `end_frame` is EXCLUSIVE; the prompt is `text` XOR `beats` (Layer C
- * segments — exactly one composes the call's prompt; both/neither
- * refuse the plan). The optional guide sources anchor at `start_frame`
- * (the cut); `image` IS the first-frame source (a seam image becomes
- * that window's first_frame). The frame-conditioning subcards (2026-08-
- * 16): `last_frame` = the call's CLOSING still (pinned at its final
- * frame), `first_frame_prev_sec` = open from the last X seconds of the
- * PREVIOUS window's rendered video (a motion continuation; coherent
- * WITH `image` — the still anchors frame 0, the tail clip carries the
- * motion). The optional `knobs` dict is the per-call REPLACE
- * (CALL_KNOB_KEYS = the run's RENDER_KNOB_KEYS minus audio_mode — that
- * one is recipe-level); absent key = inherit the Layer A value. */
+ * `end_frame` is EXCLUSIVE; the prompt is `text` (one textarea —
+ * empty refuses the plan at the door). The optional guide sources
+ * anchor at `start_frame` (the cut); `image` IS the first-frame
+ * source (a seam image becomes that window's first_frame). The
+ * frame-conditioning subcards (2026-08-16): `last_frame` = the call's
+ * CLOSING still (pinned at its final frame), `first_frame_prev_sec`
+ * = open from the last X seconds of the PREVIOUS window's rendered
+ * video (a motion continuation; coherent WITH `image` — the still
+ * anchors frame 0, the tail clip carries the motion). The optional
+ * `knobs` dict is the per-call REPLACE (CALL_KNOB_KEYS = the run's
+ * RENDER_KNOB_KEYS minus audio_mode — that one is recipe-level);
+ * absent key = inherit the Layer A value. */
 export interface DocCall {
   text?: string
-  beats?: DocBeatSegment[]
   start_frame: number
   end_frame: number
   image?: string

@@ -297,6 +297,10 @@ export type FieldAtomClaim = (props: {
 export interface SourceRowProps {
   /** Short key shown under the square. */
   label: string
+  /** Hide the caption under the square — the owning section already
+   *  names it (2026-09-15: the studio's First/Last frame subcards
+   *  rendered the label TWICE). Default shows it. */
+  hideLabel?: boolean
   /** 'image' narrows the media modal to image; anything else lists
    *  the whole library (the file face). */
   kind?: 'image' | 'file'
@@ -332,7 +336,7 @@ export function SourceRow(props: SourceRowProps): ReturnType<typeof h> {
   return h('div', { className: css.sourceRow, 'data-source-row': props.label },
     wireMenu,
     h(InputSquare, {
-      label: props.label,
+      label: props.hideLabel === true ? '' : props.label,
       value: shown !== null && isImageUrl(shown) ? shown : null,
       metric: typeof props.value === 'string' && props.value !== '' && !isImageUrl(props.value)
         ? props.value

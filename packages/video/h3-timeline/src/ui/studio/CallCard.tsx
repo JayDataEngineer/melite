@@ -28,10 +28,9 @@ export function CallCard({
   deps: CallCardDeps
 }) {
   const {
-    selected, fps, layerA, callCardRefs, beatRowRefs, artifactIndex, linkGroups,
+    selected, fps, layerA, callCardRefs, artifactIndex, linkGroups,
     isRef2va, refArtifacts,
     handlePromptDelete, handlePromptUpdate,
-    setBeatSegment, addBeatSegment, deleteBeatSegment,
     enhanceOne, undoEnhance, enhancing, enhanceErr, enhanceUndo,
     setCallSpan, setCallGuide, setCallPrevSec, setCallTransition,
     setCallRefs, setCallKnob,
@@ -41,7 +40,6 @@ export function CallCard({
   // via their bar clips / the back button).
   if (selected != null && i !== selected.callIdx) return null
   const activeKnobs = c.knobs ? Object.keys(c.knobs).length : 0
-  const segmentMode = !!c.beats?.length
   const callSelected = selected?.callIdx === i
   return (
     <div
@@ -85,19 +83,12 @@ export function CallCard({
           <CallCardPrompt
             c={c}
             i={i}
-            callSelected={callSelected}
-            segmentMode={segmentMode}
-            selected={selected}
             handlePromptUpdate={handlePromptUpdate}
-            setBeatSegment={setBeatSegment}
-            addBeatSegment={addBeatSegment}
-            deleteBeatSegment={deleteBeatSegment}
             enhanceOne={enhanceOne}
             undoEnhance={undoEnhance}
             enhancing={enhancing}
             enhanceErr={enhanceErr}
             enhanceUndo={enhanceUndo}
-            beatRowRefs={beatRowRefs}
           />
 
     {/* The span — editable frames, synced both ways with the
@@ -139,7 +130,6 @@ export function CallCard({
     <div className={s.framesRow}>
       <CallFrameSubcard
         label="First frame"
-        hint="the opening still — anchors frame 0 of the window"
         testId="tl-first-frame"
         callIndex={i}
         value={c.image}
@@ -158,7 +148,6 @@ export function CallCard({
       />
       <CallFrameSubcard
         label="Last frame"
-        hint="the closing still — pinned at the call's final frame"
         testId="tl-last-frame"
         callIndex={i}
         value={c.last_frame}
