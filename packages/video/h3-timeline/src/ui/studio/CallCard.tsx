@@ -28,7 +28,7 @@ export function CallCard({
   deps: CallCardDeps
 }) {
   const {
-    selected, fps, callCardRefs, beatRowRefs, artifactIndex, linkGroups,
+    selected, fps, layerA, callCardRefs, beatRowRefs, artifactIndex, linkGroups,
     isRef2va, refArtifacts,
     handlePromptDelete, handlePromptUpdate,
     setBeatSegment, addBeatSegment, deleteBeatSegment,
@@ -289,6 +289,7 @@ export function CallCard({
             callIndex={i}
             knob={knob}
             value={c.knobs?.[knob]}
+            layerA={layerA}
             onChange={(key, v) => setCallKnob(i, key, v)}
           />
         ))}

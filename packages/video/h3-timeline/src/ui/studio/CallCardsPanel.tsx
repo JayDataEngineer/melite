@@ -10,7 +10,7 @@ import { ChevronLeft } from "@melite/card-base/icons"
 import s from "./studio.module.css"
 import { VIDEO_TIMELINE_TRACKS } from "./docModel"
 import { CallCard } from "./CallCard"
-import type { DocBeatSegment, DocCall, DocKeyframe } from "./docModel"
+import type { DocBeatSegment, DocCall, DocKeyframe, LayerA } from "./docModel"
 import type { LinkArtifact } from "./refUtils"
 import type { TimelineSelection } from "./useViewSelection"
 
@@ -18,6 +18,10 @@ import type { TimelineSelection } from "./useViewSelection"
 export interface CallCardDeps {
   selected: TimelineSelection | null
   fps: number
+  /** The run's Layer A — feeds the knob fold's inherited ghosts
+   *  (the 2026-09-15 "inherit" wall: an unset knob shows the value
+   *  it inherits from the run, never the bare word "inherit"). */
+  layerA?: LayerA
   callCardRefs: { current: (HTMLDivElement | null)[] }
   beatRowRefs: { current: (HTMLDivElement | null)[][] }
   artifactIndex: { byName: Map<string, string>; byUrl: Map<string, string> }

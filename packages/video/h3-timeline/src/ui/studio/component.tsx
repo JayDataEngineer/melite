@@ -194,7 +194,7 @@ export function VideoTimelineStudio({
             handleKeyframeDelete={beat.handleKeyframeDelete}
             setKeyframeSource={beat.setKeyframeSource}
             deps={{
-              selected, fps,
+              selected, fps, layerA,
               callCardRefs: view.callCardRefs, beatRowRefs: view.beatRowRefs,
               artifactIndex: audio.artifactIndex, linkGroups: derived.linkGroups,
               isRef2va: doc.isRef2va, refArtifacts: audio.refArtifacts,
@@ -251,7 +251,7 @@ export function VideoTimelineStudio({
             handleKeyframeDelete={beat.handleKeyframeDelete}
             setKeyframeSource={beat.setKeyframeSource}
             deps={{
-              selected, fps,
+              selected, fps, layerA,
               callCardRefs: view.callCardRefs, beatRowRefs: view.beatRowRefs,
               artifactIndex: audio.artifactIndex, linkGroups: derived.linkGroups,
               isRef2va: doc.isRef2va, refArtifacts: audio.refArtifacts,

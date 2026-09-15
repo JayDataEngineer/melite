@@ -58,8 +58,10 @@ details[open] > summary .chev { transform: rotate(180deg); }
   gap: 8px;
   color: var(--dsw-alias-label-secondary);
 }
-.ctlRow { font-size: 10px; }
-.ctlRowSm { font-size: 9px; }
+/* (2026-09-15, the operator's type-scale catch) ONE row size — the
+ * old 9px sm-variant was the "nothing is the same size" chaos; the
+ * knob fold's rows now read exactly like the rail's rows. */
+.ctlRow, .ctlRowSm { font-size: 10px; }
 .ctlGap3 { gap: 12px; }
 
 .sectionLabel {
@@ -99,10 +101,19 @@ details[open] > summary .chev { transform: rotate(180deg); }
   outline: none;
   font-variant-numeric: tabular-nums;
 }
+/* THE POPUP FACE (hour-24 stroke-13 law — the white-on-white fix
+ * card-base's .specSelect has carried since the operator first
+ * caught it; the 2026-09-13 uniform skin copied the CLOSED face
+ * but not this, so every studio dropdown regressed to invisible
+ * options on a light popup. Pinned LIGHT popup + dark text —
+ * deterministic on every theme; the closed select keeps the
+ * card's own face.) */
+.ctlSelect, .selMenuBox { color-scheme: light; }
+.ctlSelect option, .selMenuBox option { background: #fff; color: #0f1115; }
 .ctlInput::placeholder { color: var(--dsw-alias-label-tertiary); }
 .ctlInput:focus, .ctlSelect:focus { border-color: var(--dsw-alias-brand-primary); }
 .ctlSelect { font-family: inherit; }
-.ctlInputSm { padding: 2px 4px; font-size: 9px; }
+.ctlInputSm { padding: 2px 4px; font-size: 10px; }
 
 /* ── kit: slider ────────────────────────────────────────── */
 .sliderWrap { display: flex; align-items: center; gap: 8px; }
@@ -473,6 +484,14 @@ details[open] > summary .chev { transform: rotate(180deg); }
 }
 .guideIn { flex: none; width: 7rem; display: inline-flex; }
 .guideIn > input { padding-left: 16px; padding-right: 6px; }
+/* (2026-09-15, the operator's gray-box catch) the guide words ride
+ * UNBOXED at rest — transparent face + transparent border; the box
+ * reveals on hover and owns its background only while focused. The
+ * track-color dot stays as the row's anchor. */
+.guideIn > input { background: transparent; border-color: transparent; }
+.guideIn > input:hover { border-color: var(--dsw-alias-border-l2); }
+.guideIn > input:focus { background: var(--dsw-alias-interactive-bg-hover); }
+.guideInEmpty > input { border-color: transparent; }
 .guideIn > input::placeholder { color: var(--dsw-alias-label-tertiary); }
 .guideInEmpty > input { border-color: var(--dsw-alias-border-l1); color: var(--dsw-alias-label-secondary); }
 .guideInEmpty > input:focus { border-color: color-mix(in srgb, var(--dsw-alias-brand-primary) 40%, transparent); }
@@ -645,7 +664,7 @@ details[open] > summary .chev { transform: rotate(180deg); }
 .sub { display: flex; min-width: 0; flex: 1; flex-direction: column; gap: 4px; }
 .subHead { display: flex; align-items: baseline; gap: 6px; }
 .subTitle { flex: none; font-size: 9px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: var(--dsw-alias-label-tertiary); }
-.subHint { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 8px; color: var(--dsw-alias-label-tertiary); }
+.subHint { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 9px; color: var(--dsw-alias-label-tertiary); }
 .subRow { display: flex; align-items: center; gap: 6px; }
 .linkBtn {
   display: flex;
