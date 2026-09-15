@@ -1,0 +1,20 @@
+{
+  "name": "agent_spawn",
+  "version": 1,
+  "kind": "flow",
+  "model": "agent-spawn",
+  "stage_title": "Agent Spawn",
+  "description": "Spawn a subagent with a task: a general tool-calling loop on the runs plane (engine 'agent'). The allow-listed MCP servers become its tools, the named skills are spawn-injected into its brief, and it works until the task is done (max_turns default unlimited, hard cap 1000; the stop door is always live). Artifacts land in the run dir. Drive it by starting a run with an engine 'agent' stage: params carry task (the brief, required), mcps (the allow-list of MCP server names), skills (leaf ids to inline), inputs (a list of {name, value} entries), model (a provider/model route id) and max_turns.",
+  "params_schema": {
+    "type": "object",
+    "properties": {
+      "task": { "type": "string", "description": "The brief — what the subagent must get done. Required." },
+      "mcps": { "type": "array", "items": { "type": "string" }, "description": "Allow-list of MCP server namespaces (blender, unity, ...) — the agent's tools become mcp__<server>__*. Empty or omitted = a pure text agent." },
+      "skills": { "type": "array", "items": { "type": "string" }, "description": "Skill leaf ids spawn-injected into the brief as operating instructions (read at stage start)." },
+      "inputs": { "type": "array", "items": { "type": "object" }, "description": "The plus-box list: entries {name, value} rendered into the brief." },
+      "model": { "type": "string", "description": "The brain route id \"provider/model\" (overrides the engine's boot-seated route)." },
+      "max_turns": { "type": "integer", "description": "Optional turn bound (default unlimited; hard circuit breaker 1000)." }
+    },
+    "required": ["task"]
+  }
+}

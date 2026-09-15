@@ -939,9 +939,41 @@ const CRAFT_LOOP: RegistryFlow = {
   skillRefs: [],
 };
 
+/** The agent spawner (stroke 61, plan §5): ONE engine stage on
+ *  'agent' — a general tool-calling loop with the task as its brief
+ *  (packages/engines/agent). The operator's card sketch verbatim:
+ *  MCPs (blender, unity, custom), skills (dreamshot…), max turns
+ *  (default unlimited), inputs (the plus-box list). The stage
+ *  params carry those fields at DRIVE time; the registry row is
+ *  the template + the agent leaf. */
+const AGENT_SPAWN: RegistryFlow = {
+  id: "agent-spawn",
+  description:
+    "Spawn a subagent with a task: a general tool-calling loop on the runs plane " +
+    "(engine 'agent'). The allow-listed MCP servers become its tools (mcp__<server>__*), " +
+    "the named skills are spawn-injected into its brief as operating instructions, and " +
+    "it works until the task is done — max_turns default unlimited, hard circuit breaker " +
+    "1000, the stop door always live. Artifacts land in the run dir. Driven by the runs " +
+    "door — see flows/agent-spawn/agents/AGENT.md.",
+  stages: [
+    plainStage({
+      id: "agent",
+      engine: "agent",
+      description: "task → tool calls → answer (the agent engine)",
+      inputs: {},
+      outputs: { default: "text" },
+      params: {},
+    }),
+  ],
+  initialValidators: {},
+  tool: null,
+  skillRefs: [],
+};
+
 const REGISTRY: Record<string, RegistryFlow> = {
   "anny-hmr": ANNY_HMR,
   "craft-loop": CRAFT_LOOP,
+  "agent-spawn": AGENT_SPAWN,
   "anny-hmr-commercial": ANNY_HMR_COMMERCIAL,
   "anny-params": ANNY_PARAMS,
   "audio-native-tts": AUDIO_NATIVE_TTS,
