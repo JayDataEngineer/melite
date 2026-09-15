@@ -26,9 +26,12 @@ beforeAll(async () => {
 });
 
 describe("the mask-form card declaration (stroke 64)", () => {
-  it("declares the three mask-source kinds (the card IS the catalog)", () => {
+  it("declares the four mask-source kinds (the card IS the catalog; parts is the closed vocabulary)", () => {
     const mods = def.mods ?? [];
-    assert.deepEqual(mods.map((k) => k.kind), ["mask_detect", "mask_subject", "mask_paint"]);
+    assert.deepEqual(mods.map((k) => k.kind), ["mask_detect", "mask_subject", "mask_parts", "mask_paint"]);
+    const parts = mods.find((k) => k.kind === "mask_parts")!;
+    const f = (parts.fields ?? [])[0]! as { options: Array<{ value: string }> };
+    assert.deepEqual(f.options.map((o) => o.value), ["face", "hands", "body"], "the parts vocabulary is a closed set");
     const detect = mods[0]!;
     assert.equal(detect.param_key, "mask_detect");
     assert.deepEqual((detect.kindFields ?? []).map((f) => f["name"]), ["sam_threshold", "sam_dilation"]);
@@ -37,7 +40,7 @@ describe("the mask-form card declaration (stroke 64)", () => {
   });
 
   it("admits the mod-owned names past the flat schema (bags + section scalars)", () => {
-    assert.deepEqual([...def.admits ?? []], ["mask_detect", "mask_subject", "mask_paint", "sam_threshold", "sam_dilation"]);
+    assert.deepEqual([...def.admits ?? []], ["mask_detect", "mask_subject", "mask_parts", "mask_paint", "sam_threshold", "sam_dilation"]);
   });
 });
 
@@ -53,6 +56,22 @@ describe("the mask-form compose gate (the bag is the recipe)", () => {
     assert.throws(
       () => def.compose(def.schema({ input_image: "/m/pic.png" }), DUMMY, new GraphBuilder(), "r1"),
       /no mask sources on the mask-form card/,
+    );
+  });
+
+  it("the parts lane: closed vocabulary through the CLIP text lane; off-vocabulary refuses LOUD", () => {
+    const g = new GraphBuilder();
+    def.compose(def.schema({ input_image: "/m/pic.png", mask_parts: [{ part: "face" }, { part: "hands" }] }), DUMMY, g, "run_p");
+    const json = JSON.stringify(g.toJSON());
+    assert.ok(json.includes("CLIPTextEncode"), "the parts ride the text lane");
+    assert.ok(json.includes("face") && json.includes("hands"), "the class words ride verbatim");
+    assert.throws(
+      () => def.compose(def.schema({ input_image: "/m/pic.png", mask_parts: [{ part: "torso" }] }), DUMMY, new GraphBuilder(), "r1"),
+      /mask_parts entry 0 needs a 'part' of face \| hands \| body/,
+    );
+    assert.throws(
+      () => def.compose(def.schema({ input_image: "/m/pic.png", mask_parts: [{}] }), DUMMY, new GraphBuilder(), "r1"),
+      /mask_parts entry 0 needs a 'part'/,
     );
   });
 

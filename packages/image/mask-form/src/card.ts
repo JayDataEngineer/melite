@@ -17,15 +17,22 @@
 // the SAME maskT1 lane the studio rides (exports/export_kind zip,
 // paint union, box manifest) — one lane, two faces.
 //
-// The parts kind (face/hands/body) is DEFERRED WITH ITS NAME: its
-// recipe semantics live in the studio's client recipe builder, not
-// yet ported — it lands when that builder's law is read and moved.
+// The parts kind (face/hands/body) rides the CLIP text lane with a
+// CLOSED VOCABULARY (stroke 68 — the file-read finding: the studio's
+// export_face/hands/body booleans are declared knobs no lane arm
+// consumes; parts have always been class words through SAM3's CLIP
+// leg. The vocabulary is a TYPE, not a str a wall validates — the
+// SAMPLERS law).
 import type { Context } from '@deepseek-ai/cordis'
 import z from '@deepseek-ai/schemastery'
 import { maskT1 } from '@melite/comfyui-card-kit'
 import type { ModelFacts } from '@melite/comfyui-cordis'
 import { vocabulary } from '@melite/comfyui-card-kit/vocab'
 import type { DeclaredModifierKind } from '@melite/comfyui-cordis'
+
+/** The person-part vocabulary (the closed set — face | hands |
+ *  body; SAM3's CLIP leg segments the class word). */
+const MASK_PARTS = ['face', 'hands', 'body'] as const
 
 // THE ACTION CARD OWNS ITS PINS (the studio's law, shared — the
 // same weights, the same lane).
@@ -70,6 +77,16 @@ const MODS: readonly DeclaredModifierKind[] = [
     fields: [
       { name: 'name', label: 'Export name', type: 'string', default: 'subject', tooltip: 'The saved mask\'s name (mask_<name>).' },
       { name: 'prompt', label: 'Prompt', type: 'string', default: '', tooltip: 'The SAM3 CLIP text selection — what to segment.' },
+    ],
+  },
+  {
+    kind: 'mask_parts',
+    label: 'Parts',
+    param_key: 'mask_parts',
+    cardinality: 'list',
+    max_stack: 3,
+    fields: [
+      { name: 'part', label: 'Part', type: 'select', default: 'face', tooltip: 'The person part to segment (its own mask export).', options: MASK_PARTS.map((p) => ({ value: p, label: p[0]!.toUpperCase()! + p.slice(1) })) },
     ],
   },
   {
@@ -136,7 +153,7 @@ export function apply(ctx: Context): void {
     // THE MOD-OWNED NAMES ride admits (the compose door's explicit-
     // params overlay — the bags + the section's kindFields scalars
     // never touch the flat schema).
-    admits: ['mask_detect', 'mask_subject', 'mask_paint', 'sam_threshold', 'sam_dilation'],
+    admits: ['mask_detect', 'mask_subject', 'mask_parts', 'mask_paint', 'sam_threshold', 'sam_dilation'],
     mods: MODS,
     schema: schema as unknown as (v: unknown) => Record<string, unknown>,
     compose(p, _model, g, runId) {
@@ -146,8 +163,9 @@ export function apply(ctx: Context): void {
       const detect = bagOf(p, 'mask_detect', 'mask-form')
       const subject = bagOf(p, 'mask_subject', 'mask-form')
       const paint = bagOf(p, 'mask_paint', 'mask-form')
-      if (detect.length === 0 && subject.length === 0 && paint.length === 0) {
-        throw new Error('no mask sources on the mask-form card — add at least one modifier (detect, subject, or paint)')
+      const parts = bagOf(p, 'mask_parts', 'mask-form')
+      if (detect.length === 0 && subject.length === 0 && paint.length === 0 && parts.length === 0) {
+        throw new Error('no mask sources on the mask-form card — add at least one modifier (detect, subject, parts, or paint)')
       }
       // THE BAG WALK (CONTRACT B): apply order = array order — the
       // first detect entry is the PRIMARY; every further entry is a
@@ -186,6 +204,16 @@ export function apply(ctx: Context): void {
         }
         const name = typeof subject[i]['name'] === 'string' && (subject[i]['name'] as string) !== '' ? subject[i]['name'] as string : `subject_${i + 1}`
         exports.push([name, prompt])
+        exportKind.push('text')
+      }
+      // THE PARTS LANE (stroke 68): a closed vocabulary through the
+      // CLIP text lane — each entry is its own mask export.
+      for (let i = 0; i < parts.length; i++) {
+        const part = parts[i]['part']
+        if (typeof part !== 'string' || !(MASK_PARTS as readonly string[]).includes(part)) {
+          throw new Error(`mask_parts entry ${i} needs a 'part' of ${MASK_PARTS.join(' | ')} — got ${JSON.stringify(part)}`)
+        }
+        exports.push([`part_${part}`, part])
         exportKind.push('text')
       }
       for (let i = 0; i < paint.length; i++) {
