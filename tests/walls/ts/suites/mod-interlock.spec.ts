@@ -364,43 +364,45 @@ test("THE CONSUMPTION GATE, qvoice leg: voice_file fires only on boarding atoms"
   kit.ttsT1(base, { ...qwen, mods: [] }, new GraphBuilder({}), "wall");
 });
 
-test("THE REFUSED FATE, lanpaint/mask legs: stated knobs refuse LOUD on the image-edit lane", async () => {
-  // lanpaint + mask board qwen-img-edit-2511 but this plane builds
-  // the stock plain-edit graph only — the firing gate refuses
-  // every stated knob instead of silently plain-editing (the
-  // retired MOD FIRING LAW, now wall-pinned: 'refused' is a fate,
-  // not an accident).
+test("THE REVIVED LANPAINT, refused remainder: what the arm cannot carry refuses LOUD on the image-edit lane", async () => {
+  // lanpaint + mask board qwen-img-edit-2511 and this plane BUILDS
+  // the arm now (revived 2026-09-15, operator order "bring them
+  // back") — the firing gate refuses only what no graph carries:
+  // forcing with no region, the upstream-retired knobs, malformed
+  // bags, and the unbuilt chains. Everything the arm wires rides
+  // inert through the gate (never a silent plain run that drops a
+  // stated knob — the law that never changed).
   const kit = await import("../../../../packages/engines/comfyui-card-kit/src/kit.ts");
-  // every lanpaint knob off its lane promise refuses field-named
+  // the refused remainder refuses field-named
   for (const [key, val] of [
     ["lanpaint_enabled", true],
-    ["lanpaint_num_steps", 99],
-    ["lanpaint_step_size", 2.5],
-    ["lanpaint_lambda", 0.1],
     ["lanpaint_beta", 0.1],
     ["lanpaint_friction", 0.1],
-    ["lanpaint_prompt_mode", "positive"],
+    ["mask", "some.png"],
+    ["mask", [{ input_mask: "a.png" }, { input_mask: "b.png" }]],
+    ["mask_mode", "bbox"],
+    ["mask_context_pad", 1],
+    ["mask_threshold", 1],
   ] as Array<[string, unknown]>) {
     assert.throws(
       () => kit.refuseImageEditFiring({ [key]: val }),
       (err: unknown): boolean => err instanceof Error && String(err.message).includes(`'${key}' fires on the image-edit card`),
     );
   }
-  // every mask knob off its lane promise refuses field-named
-  for (const [key, val] of [
-    ["mask", "some.png"],
-    ["input_mask", "region.png"],
-    ["mask_mode", "bbox"],
-    ["mask_context_pad", 1],
-    ["mask_grow", 1],
-    ["mask_feather", 1],
-    ["mask_threshold", 1],
-    ["mask_invert", true],
-  ] as Array<[string, unknown]>) {
-    assert.throws(
-      () => kit.refuseImageEditFiring({ [key]: val }),
-      (err: unknown): boolean => err instanceof Error && String(err.message).includes(`'${key}' fires on the image-edit card`),
-    );
+  // the revived set rides inert — the arm (not the gate) owns it
+  for (const params of [
+    { lanpaint_num_steps: 99 },
+    { lanpaint_step_size: 2.5 },
+    { lanpaint_lambda: 0.1 },
+    { lanpaint_prompt_mode: "positive" },
+    { input_mask: "region.png" },
+    { mask: [{ input_mask: "region.png" }] },
+    { mask_grow: 1 },
+    { mask_feather: 1 },
+    { mask_invert: true },
+    { lanpaint_enabled: true, input_mask: "region.png" },
+  ] as Array<Record<string, unknown>>) {
+    kit.refuseImageEditFiring(params);
   }
   // lane promises ride inert (the stock plain-edit run)
   kit.refuseImageEditFiring({});

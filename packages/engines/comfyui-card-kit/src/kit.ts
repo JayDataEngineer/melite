@@ -159,26 +159,34 @@ export function refuseImageEditFiring(p: Record<string, unknown>): void {
   }
   fire('reference_images', !blank(p.reference_images), 'multi-image lists need slot mapping the stock image1/2/3 node has no rule for')
   fire('double_reference', p.double_reference === true, 'the second encode needs nodes this plane does not build')
-  fire('lanpaint_enabled', p.lanpaint_enabled === true, 'the lanpaint sampler is not in this plane')
-  fire('lanpaint_num_steps', ((p.lanpaint_num_steps ?? 20) as number) !== 20, 'lanpaint knob off its lane promise with no lanpaint sampler to carry it')
-  fire('lanpaint_step_size', ((p.lanpaint_step_size ?? 1.0) as number) !== 1.0, 'lanpaint knob off its lane promise with no lanpaint sampler to carry it')
-  fire('lanpaint_lambda', ((p.lanpaint_lambda ?? 0.5) as number) !== 0.5, 'lanpaint knob off its lane promise with no lanpaint sampler to carry it')
-  fire('lanpaint_beta', ((p.lanpaint_beta ?? 0.5) as number) !== 0.5, 'lanpaint knob off its lane promise with no lanpaint sampler to carry it')
-  fire('lanpaint_friction', ((p.lanpaint_friction ?? 0.5) as number) !== 0.5, 'lanpaint knob off its lane promise with no lanpaint sampler to carry it')
-  fire('lanpaint_prompt_mode', ((p.lanpaint_prompt_mode ?? 'negative') as string) !== 'negative', 'lanpaint knob off its lane promise with no lanpaint sampler to carry it')
+  // THE LANPAINT LAW (revived 2026-09-15 — the arm above builds it):
+  // a stated region switches to the lanpaint sampler; forcing it
+  // with no region stated refuses (nothing to regenerate). The
+  // retired knobs (beta/friction — upstream fixed them 1/15) refuse
+  // off-default LOUD: the fields stay declared for form-spec parity
+  // but wire to no input, and this plane never drops a stated knob
+  // quietly.
+  const bagN = Array.isArray(p.mask) ? (p.mask as unknown[]).length : 0
+  const bagMask = bagN === 1
+    ? (((p.mask as Array<Record<string, unknown>>)[0]?.input_mask ?? '') as string)
+    : ''
+  // a single-entry bag's region counts (the arm merges it); an empty
+  // bag states nothing — the force flag must not pass on an empty bag
+  // and then silently plain-edit.
+  const maskStated = !blank(p.input_mask) || !blank(bagMask)
+  fire('lanpaint_enabled', p.lanpaint_enabled === true && !maskStated, 'force LanPaint with no region stated — state input_mask (the region to regenerate)')
+  fire('lanpaint_beta', ((p.lanpaint_beta ?? 0.5) as number) !== 0.5, 'retired upstream — scraed/LanPaint fixes Beta 1.0, the pack knob wires to no input; back it to 0.5 or order a pack change')
+  fire('lanpaint_friction', ((p.lanpaint_friction ?? 0.5) as number) !== 0.5, 'retired upstream — scraed/LanPaint fixes Friction 15, the pack knob wires to no input; back it to 0.5 or order a pack change')
   fire('outpaint_top', ((p.outpaint_top ?? 0) as number) !== 0, 'canvas expansion needs the outpaint pad chain this plane does not build')
   fire('outpaint_right', ((p.outpaint_right ?? 0) as number) !== 0, 'canvas expansion needs the outpaint pad chain this plane does not build')
   fire('outpaint_bottom', ((p.outpaint_bottom ?? 0) as number) !== 0, 'canvas expansion needs the outpaint pad chain this plane does not build')
   fire('outpaint_left', ((p.outpaint_left ?? 0) as number) !== 0, 'canvas expansion needs the outpaint pad chain this plane does not build')
   fire('outpaint_overlap', ((p.outpaint_overlap ?? 16) as number) !== 16, 'outpaint knob off its lane promise with no outpaint chain to carry it')
-  fire('mask', !blank(p.mask), 'the mask flow needs the host-side prep chain + region wiring this plane does not build')
-  fire('input_mask', !blank(p.input_mask), 'the attached region switches to the lanpaint sampler this plane does not build')
-  fire('mask_mode', ((p.mask_mode ?? 'auto') as string) !== 'auto', 'mask knob off its lane promise with no mask flow to carry it')
-  fire('mask_context_pad', ((p.mask_context_pad ?? 64) as number) !== 64, 'mask knob off its lane promise with no mask flow to carry it')
-  fire('mask_grow', ((p.mask_grow ?? 8) as number) !== 8, 'mask knob off its lane promise with no mask flow to carry it')
-  fire('mask_feather', ((p.mask_feather ?? 8) as number) !== 8, 'mask knob off its lane promise with no mask flow to carry it')
-  fire('mask_threshold', ((p.mask_threshold ?? 0) as number) !== 0, 'mask knob off its lane promise with no mask flow to carry it')
-  fire('mask_invert', p.mask_invert === true, 'mask knob off its lane promise with no mask flow to carry it')
+  fire('mask', bagN > 1, 'one region per run — the lanpaint sampler takes a single mask')
+  fire('mask', !blank(p.mask) && !Array.isArray(p.mask), 'the mask bag is a list — state one entry ([{input_mask, ...}]) or use the flat input_mask')
+  fire('mask_mode', ((p.mask_mode ?? 'auto') as string) !== 'auto', 'only auto rides — crop_stitch/full_frame need chains this plane does not build; the lanpaint arm inpaints the region inline')
+  fire('mask_context_pad', ((p.mask_context_pad ?? 64) as number) !== 64, 'context padding belongs to the unbuilt crop_stitch chain — the lanpaint arm needs none')
+  fire('mask_threshold', ((p.mask_threshold ?? 0) as number) !== 0, 'no core node re-binarizes — the soft feathered falloff rides as-is')
 }
 
 /** The image_edit block — the anchored instruction-edit lane (moved
@@ -211,6 +219,81 @@ export function imageEdit(p: Record<string, unknown>, model: ModelFacts, g: Grap
   // wire, never li.sampling_shift; see the python doc's 2026-09-06
   // audit note on ImageEditDoc).
   const shifted = g.node('ModelSamplingAuraFlow', { model: unet, shift: 1.0 }).out()
+  // ── THE LANPAINT ARM (revived 2026-09-15, operator order "bring
+  // them back") ──
+  // input_mask stated (+ image1) switches the builder to the
+  // lanpaint sampler — the py LanPaintMod SLOT LAW. Upstream's node
+  // API moved since the pack was written (scraed/LanPaint, engine
+  // commit 32cf848): step_size/lambda/beta/friction retired as live
+  // inputs — LanPaint_KSamplerAdvanced keeps NumSteps + Lambda +
+  // StepSize and FIXES Beta 1.0 / Friction 15 (hidden DEFAULT; old
+  // prompts passing them are accepted and ignored — the extension's
+  // own comment). The mapping, every drift named:
+  //   steps <- lanpaint_num_steps (20 = their z-image example's 20)
+  //   LanPaint_NumSteps <- 5 (upstream default; no pack knob exists)
+  //   LanPaint_Lambda <- lanpaint_lambda (PACK 0.5 vs upstream 5.0:
+  //     a lighter known-region pull than their example — raise the
+  //     slider to taste, ceiling 2)
+  //   LanPaint_StepSize <- lanpaint_step_size (pack 1.0 vs upstream
+  //     0.2; 0.2 is reachable, floor 0.1)
+  //   Beta/Friction <- 1 / 15 explicit (their example-canonical
+  //     fixed values; the pack knobs stay declared for form-spec
+  //     parity and refuse off-default LOUD — never a silent drop)
+  //   PromptMode: negative -> "Image First", positive ->
+  //     "Prompt First" (their README: image context vs prompt
+  //     emphasis at the cost of image quality)
+  //   Inpainting_mode: the image literal. add_noise enable,
+  //     noise_seed = the minted seed, start 0 / end 10000,
+  //     leftover-noise disable (their example wiring).
+  // Mask prep in-graph (the py host-side chain, node form):
+  // LoadImageMask alpha -> GrowMask -> FeatherMask -> InvertMask.
+  // No core node re-binarizes — non-zero mask_threshold still
+  // refuses. Polarity: LanPaint 1 = regenerate; mask-studio white
+  // region = regenerate. Consistent.
+  // The bag merges UNDER flat params (explicit flat keys win; the
+  // py flattened bag -> flat the same way). One region per run.
+  const bag = Array.isArray(p.mask) ? (p.mask as Array<Record<string, unknown>>) : []
+  const merged: Record<string, unknown> = { ...p }
+  const bagObj = bag.length === 1 && typeof bag[0] === 'object' && bag[0] !== null ? bag[0] : null
+  if (bagObj) {
+    for (const [k, v] of Object.entries(bagObj)) {
+      if (merged[k] === undefined) merged[k] = v
+    }
+  }
+  const maskPath = ((merged.input_mask ?? '') as string).trim()
+  if (maskPath) {
+    let m = g.node('LoadImageMask', { image: maskPath, channel: 'alpha' }).out()
+    const grow = (merged.mask_grow ?? 8) as number
+    if (grow !== 0) m = g.node('GrowMask', { mask: m, expand: grow, tapered_corners: true }).out()
+    const feather = (merged.mask_feather ?? 8) as number
+    if (feather > 0) {
+      m = g.node('FeatherMask', { mask: m, left: feather, top: feather, right: feather, bottom: feather }).out()
+    }
+    if ((merged.mask_invert ?? false) === true) m = g.node('InvertMask', { mask: m }).out()
+    const lpLatent = g.node('LanPaint_ImageEncode', { image, vae, mask: m }).out()
+    const promptMode = ((p.lanpaint_prompt_mode ?? 'negative') as string) === 'positive'
+      ? 'Prompt First'
+      : 'Image First'
+    const lpSampled = g.node('LanPaint_KSamplerAdvanced', {
+      model: shifted, add_noise: 'enable', noise_seed: seed,
+      steps: (p.lanpaint_num_steps ?? 20) as number, cfg: p.cfg,
+      sampler_name: p.sampler || 'euler', scheduler: p.scheduler || 'simple',
+      positive: pos.out(), negative: neg.out(), latent_image: lpLatent,
+      start_at_step: 0, end_at_step: 10000, return_with_leftover_noise: 'disable',
+      LanPaint_NumSteps: 5,
+      LanPaint_Lambda: (p.lanpaint_lambda ?? 0.5) as number,
+      LanPaint_StepSize: (p.lanpaint_step_size ?? 1.0) as number,
+      LanPaint_Beta: 1, LanPaint_Friction: 15,
+      LanPaint_EarlyStop: 1, LanPaint_InnerThreshold: 0, LanPaint_InnerPatience: 1, LanPaint_MinStepFrac: 1.0,
+      LanPaint_PromptMode: promptMode, LanPaint_Info: 'LanPaint KSampler Adv.',
+      Inpainting_mode: '🖼️ Image Inpainting',
+    })
+    const lpDecoded = g.node('LanPaint_ImageDecode', {
+      samples: lpSampled.out(), vae, image, mask: m, blend_overlap: 9,
+    })
+    g.node('SaveImage', { images: lpDecoded.out(), filename_prefix: `${runId}/edit` })
+    return
+  }
   const encoded = g.node('VAEEncode', { pixels: image, vae }).out()
   const sampled = g.node('KSampler', {
     seed,

@@ -1,9 +1,11 @@
 // Tier 3 — the image-edit card (the image_edit renderer port).
 // The anchored edit lane: loaders → lora stack → text pair → per
 // -slot LoadImage anchors → TextEncodeQwenImageEditPlus pair →
-// VAEEncode (the anchor itself) → KSampler → VAEDecode → SaveImage
-// under "<runId>/edit" (the lane-local prefix — NOT image-gen's
-// /gen). Creation order IS node-id order (pinned by
+// EITHER VAEEncode (the anchor itself) → KSampler → VAEDecode →
+// SaveImage, OR — with input_mask stated — the lanpaint arm
+// (mask prep → LanPaint_ImageEncode → LanPaint_KSamplerAdvanced →
+// LanPaint_ImageDecode → SaveImage), both under "<runId>/edit"
+// (the lane-local prefix — NOT image-gen's /gen). Creation order IS node-id order (pinned by
 // tests/golden_cordis/image_qwen-img-edit_*).
 //
 // SURFACE (34 keys — card.py core + Lanpaint/Loras/MaskMod absorption;
@@ -74,9 +76,9 @@ export const identity = {
   principles: [
     'image1 is required — the edit is anchored on it (the lanpaint flavor declares it; slots image1..image3, input_image is the retired alias)',
     'Qwen-Image-Edit uses low CFG (flow-matching) — the Guidance Scale slider tops out at 10.0',
-    'A lanpaint_mask alongside input_image patches the model with the DiffSynth inpaint ControlNet',
-    'Region Mode controls how the mask is honored: auto / crop_stitch / full_frame',
-    'Mask prep (grow/feather/threshold/invert) uses the same host-side chain the Inpaint card uses',
+    'An input_mask alongside image1 switches the builder to the LanPaint inpaint sampler (LanPaint_KSamplerAdvanced — the masked region regenerates, the rest is preserved)',
+    'Region Mode stays auto — crop_stitch/full_frame need chains this plane does not build',
+    'Mask prep (grow/feather/invert) rides in-graph ahead of the sampler; re-threshold has no node and refuses non-zero',
     'Iterate HERE, not in video — an edit costs seconds, a render minutes; name what changes, state the rest as unchanged',
     'Previous card outputs ride as artifact URLs (/v1/assets/runs/<run>/<file>); the compose resolves them to data/runs/output/<run>/<file> and stages into the comfy input dir (phase 1 validates on the mounts BEFORE registration)',
   ],

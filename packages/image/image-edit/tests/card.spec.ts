@@ -1,8 +1,10 @@
 // @melite/image-edit — the card's compose gate (TEST-2 breadth,
 // 2026-09-12). TWO admissions (prompt + the anchor image1) plus the
-// FIRING REFUSALS (refuseImageEditFiring — every knob whose graph
-// this plane does not build refuses loud instead of silently
-// plain-editing).
+// FIRING REFUSALS (refuseImageEditFiring — knobs whose graph this
+// plane does not build refuse loud instead of silently
+// plain-editing) plus the REVIVED LANPAINT ARM (2026-09-15 — a
+// stated region switches to LanPaint_KSamplerAdvanced; the arm's
+// exact wiring is pinned below).
 import { describe, it, beforeAll } from "vitest";
 import assert from "node:assert/strict";
 import { dirname, join } from "node:path";
@@ -52,23 +54,21 @@ describe("the image-edit compose gate", () => {
     const arms: Array<[Record<string, unknown>, RegExp]> = [
       [{ reference_images: ["/m/a.png"] }, /'reference_images' fires .*\(multi-image lists/],
       [{ double_reference: true }, /'double_reference' fires .*\(the second encode/],
-      [{ lanpaint_enabled: true }, /'lanpaint_enabled' fires/],
-      [{ lanpaint_num_steps: 30 }, /'lanpaint_num_steps' fires .*off its lane promise/],
-      [{ lanpaint_step_size: 2 }, /'lanpaint_step_size' fires .*off its lane promise/],
-      [{ lanpaint_lambda: 0.9 }, /'lanpaint_lambda' fires .*off its lane promise/],
-      [{ lanpaint_beta: 0.9 }, /'lanpaint_beta' fires .*off its lane promise/],
-      [{ lanpaint_friction: 0.9 }, /'lanpaint_friction' fires .*off its lane promise/],
-      [{ lanpaint_prompt_mode: "positive" }, /'lanpaint_prompt_mode' fires .*off its lane promise/],
+      // forcing the sampler with no region stated refuses —
+      // there is nothing to regenerate.
+      [{ lanpaint_enabled: true }, /'lanpaint_enabled' fires .*\(force LanPaint with no region/],
+      // retired upstream (fixed 1/15 on the new node) — the fields
+      // stay declared for form-spec parity and refuse off-default.
+      [{ lanpaint_beta: 0.9 }, /'lanpaint_beta' fires .*\(retired upstream/],
+      [{ lanpaint_friction: 0.9 }, /'lanpaint_friction' fires .*\(retired upstream/],
       [{ outpaint_top: 64 }, /'outpaint_top' fires .*\(canvas expansion/],
       [{ outpaint_overlap: 32 }, /'outpaint_overlap' fires .*off its lane promise/],
-      [{ mask: "/m/mask.png" }, /'mask' fires .*\(the mask flow/],
-      [{ input_mask: "/m/m.png" }, /'input_mask' fires .*\(the attached region/],
-      [{ mask_mode: "hard" }, /'mask_mode' fires .*off its lane promise/],
-      [{ mask_context_pad: 128 }, /'mask_context_pad' fires .*off its lane promise/],
-      [{ mask_grow: 16 }, /'mask_grow' fires .*off its lane promise/],
-      [{ mask_feather: 16 }, /'mask_feather' fires .*off its lane promise/],
-      [{ mask_threshold: 0.5 }, /'mask_threshold' fires .*off its lane promise/],
-      [{ mask_invert: true }, /'mask_invert' fires .*off its lane promise/],
+      // a bare-string mask states nothing the arm can read.
+      [{ mask: "/m/mask.png" }, /'mask' fires .*\(the mask bag is a list/],
+      [{ mask: [{ input_mask: "/m/a.png" }, { input_mask: "/m/b.png" }] }, /'mask' fires .*\(one region per run/],
+      [{ mask_mode: "hard" }, /'mask_mode' fires .*\(only auto rides/],
+      [{ mask_context_pad: 128 }, /'mask_context_pad' fires .*\(context padding belongs to the unbuilt crop_stitch/],
+      [{ mask_threshold: 0.5 }, /'mask_threshold' fires .*\(no core node re-binarizes/],
     ];
     for (const [over, voice] of arms) {
       assert.throws(
@@ -78,6 +78,67 @@ describe("the image-edit compose gate", () => {
     }
   });
 
+  it("a stated region switches to the lanpaint sampler (the revived arm)", () => {
+    const g = new GraphBuilder();
+    def.compose(
+      def.schema({
+        prompt: "remove the watermark", image1: "/m/i.png", seed: 42,
+        input_mask: "/m/region.png", lanpaint_enabled: true,
+        lanpaint_num_steps: 20, lanpaint_lambda: 0.5, lanpaint_step_size: 1.0,
+        mask_grow: 8, mask_feather: 8,
+      }),
+      model, g, "run_lp",
+    );
+    const graph = g.toJSON() as Record<string, { inputs: Record<string, unknown> }>;
+    // the mask prep chain (the py host-side chain, node form).
+    assert.equal(graph["LoadImageMask.0"].inputs.channel, "alpha", "alpha marks the region");
+    assert.equal(graph["GrowMask.0"].inputs.expand, 8, "grow rides");
+    assert.deepEqual(
+      [graph["FeatherMask.0"].inputs.left, graph["FeatherMask.0"].inputs.top,
+       graph["FeatherMask.0"].inputs.right, graph["FeatherMask.0"].inputs.bottom],
+      [8, 8, 8, 8], "one feather radius, all four sides",
+    );
+    assert.ok(graph["LanPaint_ImageEncode.0"], "masked encode rides");
+    // the sampler — every drift from the pack pinned.
+    const ks = graph["LanPaint_KSamplerAdvanced.0"].inputs;
+    assert.equal(ks.steps, 20, "steps <- lanpaint_num_steps");
+    assert.equal(ks.noise_seed, 42, "the minted seed rides");
+    assert.equal(ks.add_noise, "enable", "their example wiring");
+    assert.equal(ks.LanPaint_NumSteps, 5, "upstream default, no pack knob");
+    assert.equal(ks.LanPaint_Lambda, 0.5, "pack default (lighter pull than their 5.0)");
+    assert.equal(ks.LanPaint_StepSize, 1.0, "pack default (theirs is 0.2)");
+    assert.equal(ks.LanPaint_Beta, 1, "retired-upstream fixed value, explicit");
+    assert.equal(ks.LanPaint_Friction, 15, "retired-upstream fixed value, explicit");
+    assert.equal(ks.LanPaint_PromptMode, "Image First", "negative maps image-first");
+    assert.equal(ks.start_at_step, 0, "their example wiring");
+    assert.equal(ks.end_at_step, 10000, "their example wiring");
+    assert.equal(ks.return_with_leftover_noise, "disable", "their example wiring");
+    // the decode merges back inside the mask.
+    assert.equal(graph["LanPaint_ImageDecode.0"].inputs.blend_overlap, 9, "MaskBlend-style boundary");
+    assert.ok(graph["SaveImage.0"], "the edit saves");
+    assert.ok(!graph["KSampler.0"], "no plain sampler beside the arm");
+    assert.ok(!graph["VAEEncode.0"], "no plain encode beside the arm");
+  });
+
+  it("positive prompt mode rides Prompt First, the bag feeds the arm", () => {
+    const g = new GraphBuilder();
+    def.compose(
+      def.schema({
+        prompt: "x", image1: "/m/i.png",
+        mask: [{ input_mask: "/m/bag.png", mask_grow: 0, mask_feather: 0 }],
+        lanpaint_prompt_mode: "positive",
+      }),
+      model, g, "r1",
+    );
+    const graph = g.toJSON() as Record<string, { inputs: Record<string, unknown> }>;
+    assert.equal(
+      graph["LanPaint_KSamplerAdvanced.0"].inputs.LanPaint_PromptMode,
+      "Prompt First", "positive maps prompt-first",
+    );
+    assert.ok(graph["LoadImageMask.0"], "the bag's region feeds the arm");
+    assert.ok(!graph["GrowMask.0"], "grow 0 builds no node");
+    assert.ok(!graph["FeatherMask.0"], "feather 0 builds no node");
+  });
   it("the firing refusals pass the DEFAULT lanes (the blank() law)", () => {
     // the lanpaint/outpaint/mask knobs at their declared defaults
     // do NOT fire — the plain-edit graph builds.
@@ -89,5 +150,7 @@ describe("the image-edit compose gate", () => {
     const graph = g.toJSON();
     assert.ok(graph["TextEncodeQwenImageEditPlus.0"], "the family edit encoder rides");
     assert.ok(graph["LoadImage.0"], "the anchor loads");
+    assert.ok(graph["KSampler.0"], "the stock sampler rides when no region is stated");
+    assert.ok(!graph["LanPaint_KSamplerAdvanced.0"], "no lanpaint arm without a region");
   });
 });
