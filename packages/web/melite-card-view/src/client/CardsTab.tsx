@@ -853,12 +853,30 @@ function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRemoved, 
   }, [spec, edgeMeta, candidates, others])
   const onSet = useCallback((name: string, v: unknown): void => {
     setUser((m) => ({ ...m, [name]: v }))
-  }, [])
+    // THE SLOT FLUSH LAW (2026-09-15 — the operator's burn: "when I
+    // wire an image from the previous flow, it doesn't stay after I
+    // close the card"): a slot-shaped pick (image/file) is a
+    // DISCRETE GESTURE, not typing — it writes the bench row NOW,
+    // not at Run. Before this, the pick lived only in this modal's
+    // React state; close without Run and it evaporated — the reopen
+    // reseeded from a bench row that never heard it.
+    const shape: string | undefined = spec !== null
+      ? fieldsOf(spec).find((f) => f.name === name)?.type : undefined
+    if (shape === 'image' || shape === 'file') {
+      void patchStageParams(bench.draftId, stage.id,
+        v === '' ? { [name]: null } : { [name]: v }, bench.rev)
+        .catch((e: unknown) => {
+          setError(e instanceof Error ? e.message : 'slot write failed')
+        })
+    }
+  }, [spec, bench.draftId, bench.rev, stage.id])
   // THE UNSET PATH (the settings law): removing an override is a
   // first-class edit — the key leaves the user map and the row
   // re-derives to its base (defaults <- model defaults <- base).
   // The domain write rides the Run press with the rest (a null
-  // value under JSON Merge Patch semantics deletes the key).
+  // value under JSON Merge Patch semantics deletes the key) — EXCEPT
+  // slots (the flush law above): an unwired slot leaves the bench
+  // NOW, same gesture, same door.
   const onUnset = useCallback((name: string): void => {
     setUser((m) => {
       if (!Object.prototype.hasOwnProperty.call(m, name)) return m
@@ -866,7 +884,15 @@ function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRemoved, 
       for (const [k, v] of Object.entries(m)) if (k !== name) next[k] = v
       return next
     })
-  }, [])
+    const shape: string | undefined = spec !== null
+      ? fieldsOf(spec).find((f) => f.name === name)?.type : undefined
+    if (shape === 'image' || shape === 'file') {
+      void patchStageParams(bench.draftId, stage.id, { [name]: null }, bench.rev)
+        .catch((e: unknown) => {
+          setError(e instanceof Error ? e.message : 'slot write failed')
+        })
+    }
+  }, [spec, bench.draftId, bench.rev, stage.id])
   // THE RESOLVED VALUE — derived per render (never state): exactly
   // what a Run composes, what the prompt tile and the enhance sweep
   // read, what the form shows. THE SERVED BASE (hour-26 stroke 15,

@@ -382,7 +382,15 @@ test("remove_stage refuses non-string and unknown stages", async () => {
 
 test("rewire refuses missing input, unknown stages, non-record from; clear and rebind round-trip", async () => {
   const drafts = await boot();
-  await ensureBench(drafts, { session: "s", stages: [{ id: "a" }] });
+  // (2026-09-15 wiring law: the wired channel must be spelled —
+  // params carry $image; the upstream 'b' must sit on the bench.)
+  await ensureBench(drafts, {
+    session: "s",
+    stages: [
+      { id: "a", params: { image: "$image" } },
+      { id: "b" },
+    ],
+  });
   assert.match(
     await codeOf(rewireBench(drafts, "s", { stage: "a", expect_rev: 0 })),
     /^bench\/bad-body\|stage and input are required/,
@@ -478,7 +486,15 @@ test("undo(group) spills the children back; undo(ungroup) re-groups; undo(reorde
 
 test("undo(rewire) restores the before-binding, then removes an added one", async () => {
   const drafts = await boot();
-  await ensureBench(drafts, { session: "s", stages: [{ id: "a" }] });
+  // (2026-09-15 wiring law: 'a' spells the channel, 'b' is the
+  // live upstream.)
+  await ensureBench(drafts, {
+    session: "s",
+    stages: [
+      { id: "a", params: { image: "$image" } },
+      { id: "b" },
+    ],
+  });
   await rewireBench(drafts, "s", { stage: "a", input: "image", from: { stage: "b", output: "default" }, expect_rev: 0 });
   await rewireBench(drafts, "s", { stage: "a", input: "image", from: { initial: "image" }, expect_rev: 1 });
   // Undo the rebind: the before-binding returns.
@@ -644,7 +660,7 @@ test("normalizeStages: non-string ids mint s_<i>; every explicit field is kept; 
       { id: 5 },
       {
         id: "full", engine: "blender", inputs: { i: { initial: "image" } },
-        params: { steps: 2 }, outputs: { default: "mask" }, provenance: "user",
+        params: { steps: 2, i: "$i" }, outputs: { default: "mask" }, provenance: "user",
       },
     ],
   });
@@ -665,7 +681,11 @@ test("normalizeStages: non-string ids mint s_<i>; every explicit field is kept; 
 
 test("every mutation arm honors author user (the log names them)", async () => {
   const drafts = await boot();
-  await ensureBench(drafts, { session: "s", stages: [{ id: "a" }, { id: "b" }] });
+  // (2026-09-15 wiring law: 'b' spells the channel it wires.)
+  await ensureBench(drafts, {
+    session: "s",
+    stages: [{ id: "a" }, { id: "b", params: { image: "$image" } }],
+  });
   await patchBench(drafts, "s", { stage: "a", params: { x: 1 }, expect_rev: 0, author: "user" });
   const grouped = await groupBench(drafts, "s", { stages: ["a", "b"], expect_rev: 1, author: "user" });
   await ungroupBench(drafts, "s", { stage: grouped.stage, expect_rev: 2, author: "user" });
@@ -683,14 +703,14 @@ test("add_stage keeps explicit params/inputs/outputs records", async () => {
   await ensureBench(drafts, { session: "s" });
   const added = await addStageBench(drafts, "s", {
     card: "hero",
-    params: { steps: 4 },
+    params: { steps: 4, seed: "$seed" },
     inputs: { seed: { initial: "text" } },
     outputs: { default: "mask" },
     expect_rev: 0,
   });
   const doc = getBench(drafts, "s");
   const row = (doc.stages as Array<Record<string, unknown>>).find((x) => x["id"] === added.stage)!;
-  assert.deepEqual(row["params"], { steps: 4 });
+  assert.deepEqual(row["params"], { steps: 4, seed: "$seed" });
   assert.deepEqual(row["inputs"], { seed: { initial: "text" } });
   assert.deepEqual(row["outputs"], { default: "mask" });
 });
@@ -724,9 +744,10 @@ test("ungroup on a junk-children compound removes it and spills nothing", async 
 
 test("rewire on a stage with no inputs record births one", async () => {
   const drafts = await boot();
-  // Seeded raw (past normalize): the stage carries NO inputs field.
+  // Seeded raw (past normalize): the stage carries NO inputs field
+  // (but spells the channel — the 2026-09-15 wiring law).
   await seed(drafts, "bare", {
-    stages: [{ id: "bare" }],
+    stages: [{ id: "bare", params: { image: "$image" } }],
     bench: { rev: 0, log: [] },
   });
   const wired = await rewireBench(drafts, "bare", {
@@ -1280,4 +1301,146 @@ test("a param-less row still reaches admission (the card check runs on {} — no
     { card: "image-gen", params: {} },
     { card: "hero", params: {} },
   ]);
+});
+
+// ── the wiring admission (2026-09-15, the phantom-wire cure) ─────
+// The burn: an agent wired inputs:{image:{stage:"stage-1"}} on an
+// image-edit row — 'stage-1' never existed (the mint mints s_N),
+// no param spelled $image, and every gate passed. The error surfaced
+// at card-open, three cards deep: 'required param image1 missing'.
+// Construction-invalid wiring now refuses AT WRITE TIME, named.
+
+describe("the wiring admission (phantom wires refuse at write time)", () => {
+  test("the exact burn: a wire to a nonexistent stage with no spell refuses named", async () => {
+    const drafts = await boot();
+    await ensureBench(drafts, { session: "s" });
+    await addStageBench(drafts, "s", { card: "image-gen", expect_rev: 0 });
+    const refusal = await codeOf(addStageBench(drafts, "s", {
+      card: "image-edit", expect_rev: 1,
+      params: { prompt: "zoom out" },
+      inputs: { image: { stage: "stage-1", output: "image" } },
+    }));
+    // stage-1 is checked FIRST (wire-stage-not-found) — the channel
+    // is also dead, but one named refusal is the door's voice.
+    assert.match(refusal, /bench\/wire-stage-not-found/);
+    assert.match(refusal, /no such stage on the bench/);
+    assert.match(refusal, /s_0/);
+  });
+
+  test("a dead channel (wire without a $spell) refuses with the fix hint", async () => {
+    const drafts = await boot();
+    await ensureBench(drafts, { session: "s" });
+    await addStageBench(drafts, "s", { card: "image-gen", expect_rev: 0 });
+    const refusal = await codeOf(addStageBench(drafts, "s", {
+      card: "image-edit", expect_rev: 1,
+      params: { prompt: "zoom out" },
+      inputs: { image1: { stage: "s_0", output: "image" } },
+    }));
+    assert.match(refusal, /bench\/dead-wire/);
+    assert.match(refusal, /bound by no '\$image1' spell/);
+  });
+
+  test("a stray spell (param wires $chan with no channel yet) is a legal intermediate — the run owns its refusal", async () => {
+    const drafts = await boot();
+    await ensureBench(drafts, { session: "s" });
+    // spell first, wire second — the two-step construction must not
+    // deadlock at the door (rewriteSpells refuses strays at merge).
+    const row = await addStageBench(drafts, "s", {
+      card: "image-edit", expect_rev: 0,
+      params: { prompt: "zoom out", image1: "$image" },
+    });
+    assert.equal(row.stage, "s_0");
+  });
+
+  test("the LEGIT shape lands: channel spelled, upstream live", async () => {
+    const drafts = await boot();
+    await ensureBench(drafts, { session: "s" });
+    await addStageBench(drafts, "s", { card: "image-gen", expect_rev: 0 });
+    const row = await addStageBench(drafts, "s", {
+      card: "image-edit", expect_rev: 1,
+      params: { prompt: "zoom out", image1: "$image" },
+      inputs: { image: { stage: "s_0", output: "image" } },
+    });
+    assert.equal(row.stage, "s_1");
+  });
+
+  test("self-wiring refuses (a cycle composes nothing)", async () => {
+    const drafts = await boot();
+    await ensureBench(drafts, { session: "s" });
+    await addStageBench(drafts, "s", { card: "image-gen", expect_rev: 0 });
+    const refusal = await codeOf(addStageBench(drafts, "s", {
+      card: "image-edit", id: "self", expect_rev: 1,
+      params: { image1: "$image" },
+      inputs: { image: { stage: "self", output: "image" } },
+    }));
+    assert.match(refusal, /bench\/self-wire/);
+  });
+
+  test("rewire admits the MERGED wiring (a phantom rewires in, it refuses)", async () => {
+    const drafts = await boot();
+    await ensureBench(drafts, { session: "s" });
+    await addStageBench(drafts, "s", { card: "image-gen", expect_rev: 0 });
+    await addStageBench(drafts, "s", {
+      card: "image-edit", expect_rev: 1,
+      params: { prompt: "zoom out", image1: "$image" },
+    });
+    const refusal = await codeOf(rewireBench(drafts, "s", {
+      stage: "s_1", input: "image", expect_rev: 2,
+      from: { stage: "stage-9", output: "image" },
+    }));
+    assert.match(refusal, /bench\/wire-stage-not-found/);
+    // and the good rewire lands
+    const ok = await rewireBench(drafts, "s", {
+      stage: "s_1", input: "image", expect_rev: 2,
+      from: { stage: "s_0", output: "image" },
+    });
+    assert.equal(ok.input, "image");
+  });
+
+  test("patch cannot orphan a spell (drop the $binding, the wire refuses)", async () => {
+    const drafts = await boot();
+    await ensureBench(drafts, { session: "s" });
+    await addStageBench(drafts, "s", { card: "image-gen", expect_rev: 0 });
+    await addStageBench(drafts, "s", {
+      card: "image-edit", expect_rev: 1,
+      params: { prompt: "zoom out", image1: "$image" },
+      inputs: { image: { stage: "s_0", output: "image" } },
+    });
+    const refusal = await codeOf(patchBench(drafts, "s", {
+      stage: "s_1", params: { image1: "/tmp/photo.png" }, expect_rev: 2,
+    }));
+    assert.match(refusal, /bench\/dead-wire/);
+  });
+
+  test("a wholesale load admits every row against the list it lands in", async () => {
+    const drafts = await boot();
+    const refusal = await codeOf(ensureBench(drafts, {
+      session: "s", stages: [
+        { id: "a", card: "image-gen" },
+        { id: "b", card: "image-edit", params: { image1: "$image" },
+          inputs: { image: { stage: "zzz", output: "image" } } },
+      ],
+    }));
+    assert.match(refusal, /bench\/wire-stage-not-found/);
+    // the registry-flow shape (initial-bound prompt channel) passes
+    await ensureBench(drafts, {
+      session: "ok", stages: [
+        { id: "make", card: "image-gen", params: { prompt: "$prompt" },
+          inputs: { prompt: { initial: "prompt" } } },
+      ],
+    });
+    const got = getBench(drafts, "ok");
+    assert.equal((got.stages as Array<{ id: string }>).length, 1);
+  });
+
+  test("garbage binding shapes refuse (neither stage nor initial)", async () => {
+    const drafts = await boot();
+    const refusal = await codeOf(ensureBench(drafts, {
+      session: "s", stages: [
+        { id: "a", card: "image-edit", params: { image1: "$weird" },
+          inputs: { weird: "just-a-string" } },
+      ],
+    }));
+    assert.match(refusal, /bench\/bad-wire/);
+  });
 });

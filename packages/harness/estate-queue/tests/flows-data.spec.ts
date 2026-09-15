@@ -269,3 +269,59 @@ describe("registrySkillBody", () => {
     assert.ok(up.includes("stage "));
   });
 });
+
+// ── THE FLOW CONSTRUCTION WALL (2026-09-15) ─────────────────────
+// The operator's burn: an agent wired inputs:{image:{stage:"stage-1"}}
+// onto an image-edit bench row — no such stage, no $image spell, and
+// every gate passed; the error surfaced at card-open on a DIFFERENT
+// card. The bench now refuses construction-invalid wiring at write
+// time (admitWiring). THIS wall holds the registry's own flows to
+// the identical law: every registered flow's stages must wire only
+// channels their params spell, against stages that exist in the
+// flow — a flow that violates its own wiring vocabulary is dead on
+// arrival, and no test ever noticed.
+describe("the flow construction wall (flows wire what they spell)", () => {
+  const spellsOf = (v: unknown, out: Set<string> = new Set()): Set<string> => {
+    if (typeof v === "string") {
+      if (v.startsWith("$")) out.add(v.slice(1));
+    } else if (Array.isArray(v)) {
+      for (const x of v) spellsOf(x, out);
+    } else if (typeof v === "object" && v !== null) {
+      for (const x of Object.values(v as Record<string, unknown>)) spellsOf(x, out);
+    }
+    return out;
+  };
+
+  it("every flow: each wired channel is spelled by its stage's params; every FromStage upstream exists in the flow", () => {
+    const names = registryFlowNames();
+    assert.ok(names.length > 0, "the registry serves flows");
+    for (const name of names) {
+      const decl = getRegistryFlow(name);
+      assert.ok(decl !== undefined, name + " resolves");
+      const flow = expandRegistryFlow(decl);
+      const ids = flow.stages.map((s) => s.id);
+      for (const st of flow.stages) {
+        const spells = spellsOf(st.params);
+        for (const [chan, edge] of Object.entries(st.inputs)) {
+          const e = edge as { stage?: string; initial?: string };
+          if (e.stage !== undefined) {
+            assert.ok(
+              ids.includes(e.stage),
+              name + "/" + st.id + " wires '" + chan + "' from '" + e.stage + "' — no such stage in the flow",
+            );
+            assert.ok(e.stage !== st.id, name + "/" + st.id + " wires itself");
+          } else {
+            assert.ok(
+              typeof e.initial === "string",
+              name + "/" + st.id + " input '" + chan + "' is neither {stage} nor {initial}",
+            );
+          }
+          assert.ok(
+            spells.has(chan),
+            name + "/" + st.id + " wires '" + chan + "' but no param spells '$" + chan + "' — the wiring feeds nothing",
+          );
+        }
+      }
+    }
+  });
+});

@@ -38,6 +38,36 @@ declare module "@deepseek-ai/dsh-typert-protocol" {
             readonly session: string;
             readonly stage: string;
         };
+        /** A wiring input whose binding is neither {stage, output} nor
+         *  {initial} — the run maps only those two shapes (silent drop
+         *  before the 2026-09-15 wiring admission). */
+        "bench/bad-wire": {
+            readonly session: string;
+            readonly stage: string;
+            readonly input: string;
+        };
+        /** A stage wired to itself — a cycle composes nothing. */
+        "bench/self-wire": {
+            readonly session: string;
+            readonly stage: string;
+            readonly input: string;
+        };
+        /** A wiring input pointing at a stage id not on the bench (the
+         *  phantom-upstream cure: 'stage-1' never existed; the mint
+         *  mints s_N). */
+        "bench/wire-stage-not-found": {
+            readonly session: string;
+            readonly stage: string;
+            readonly input: string;
+            readonly live: readonly string[];
+        };
+        /** A wiring channel no param spells ($channel) — the wiring
+         *  feeds nothing and the run would silently ignore it. */
+        "bench/dead-wire": {
+            readonly session: string;
+            readonly stage: string;
+            readonly input: string;
+        };
         /** A stage of that id is already on the bench. */
         "bench/duplicate-stage": {
             readonly session: string;

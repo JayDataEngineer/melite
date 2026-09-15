@@ -2686,7 +2686,7 @@ window.__ModuleLoader__.load({
 				className: card_module_css_default.squareBox + (over ? " " + card_module_css_default.squareOver : ""),
 				role: "button",
 				tabIndex: 0,
-				"aria-label": label + " source",
+				"aria-label": (label || "source") + (label ? " source" : ""),
 				onClick: pick,
 				onKeyDown: (e) => {
 					if (e.key === "Enter") pick();
@@ -2719,12 +2719,12 @@ window.__ModuleLoader__.load({
 				className: card_module_css_default.squareX,
 				type: "button",
 				title: "Detach",
-				"aria-label": "Detach " + label,
+				"aria-label": "Detach " + (label || "source"),
 				onClick: (e) => {
 					e.stopPropagation();
 					props.onClear?.();
 				}
-			}, "✕") : null), (0, react.createElement)("span", { className: card_module_css_default.squareLabel }, label), metric !== void 0 ? (0, react.createElement)("span", { className: card_module_css_default.squareMetric }, metric) : null, props.onFile !== void 0 && !disabled ? (0, react.createElement)("input", {
+			}, "✕") : null), label !== "" ? (0, react.createElement)("span", { className: card_module_css_default.squareLabel }, label) : null, metric !== void 0 ? (0, react.createElement)("span", { className: card_module_css_default.squareMetric }, metric) : null, props.onFile !== void 0 && !disabled ? (0, react.createElement)("input", {
 				ref: fileRef,
 				type: "file",
 				accept: "image/png,image/jpeg,image/webp",
@@ -44570,7 +44570,16 @@ void main() {
 					...m,
 					[name]: v
 				}));
-			}, []);
+				const shape = spec !== null ? fieldsOf(spec).find((f) => f.name === name)?.type : void 0;
+				if (shape === "image" || shape === "file") patchStageParams(bench.draftId, stage.id, v === "" ? { [name]: null } : { [name]: v }, bench.rev).catch((e) => {
+					setError(e instanceof Error ? e.message : "slot write failed");
+				});
+			}, [
+				spec,
+				bench.draftId,
+				bench.rev,
+				stage.id
+			]);
 			const onUnset = (0, react.useCallback)((name) => {
 				setUser((m) => {
 					if (!Object.prototype.hasOwnProperty.call(m, name)) return m;
@@ -44578,7 +44587,16 @@ void main() {
 					for (const [k, v] of Object.entries(m)) if (k !== name) next[k] = v;
 					return next;
 				});
-			}, []);
+				const shape = spec !== null ? fieldsOf(spec).find((f) => f.name === name)?.type : void 0;
+				if (shape === "image" || shape === "file") patchStageParams(bench.draftId, stage.id, { [name]: null }, bench.rev).catch((e) => {
+					setError(e instanceof Error ? e.message : "slot write failed");
+				});
+			}, [
+				spec,
+				bench.draftId,
+				bench.rev,
+				stage.id
+			]);
 			const servedBase = typeof stage.resolved === "object" && stage.resolved !== null && !Array.isArray(stage.resolved) ? stage.resolved : void 0;
 			const value = resolveValue(spec ?? { form: "" }, user, servedBase);
 			const enhance = async () => {

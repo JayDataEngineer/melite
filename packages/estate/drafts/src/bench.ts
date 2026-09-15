@@ -52,6 +52,36 @@ declare module "@deepseek-ai/dsh-typert-protocol" {
       readonly session: string;
       readonly stage: string;
     };
+    /** A wiring input whose binding is neither {stage, output} nor
+     *  {initial} — the run maps only those two shapes (silent drop
+     *  before the 2026-09-15 wiring admission). */
+    "bench/bad-wire": {
+      readonly session: string;
+      readonly stage: string;
+      readonly input: string;
+    };
+    /** A stage wired to itself — a cycle composes nothing. */
+    "bench/self-wire": {
+      readonly session: string;
+      readonly stage: string;
+      readonly input: string;
+    };
+    /** A wiring input pointing at a stage id not on the bench (the
+     *  phantom-upstream cure: 'stage-1' never existed; the mint
+     *  mints s_N). */
+    "bench/wire-stage-not-found": {
+      readonly session: string;
+      readonly stage: string;
+      readonly input: string;
+      readonly live: readonly string[];
+    };
+    /** A wiring channel no param spells ($channel) — the wiring
+     *  feeds nothing and the run would silently ignore it. */
+    "bench/dead-wire": {
+      readonly session: string;
+      readonly stage: string;
+      readonly input: string;
+    };
     /** A stage of that id is already on the bench. */
     "bench/duplicate-stage": {
       readonly session: string;
@@ -218,6 +248,7 @@ export async function ensureBench(
   if (rec === undefined) {
     const stagesIn: unknown = Array.isArray(body["stages"]) ? body["stages"] : [];
     admitStages(admit, stagesIn);
+    admitWiringList(normalizeStages(stagesIn, author), session);
     const doc: Record<string, unknown> = {
       draft_id: draftId,
       intent: typeof body["intent"] === "string" ? body["intent"] : "bench",
@@ -287,6 +318,7 @@ export async function ensureBench(
   }
   admitStages(admit, body["stages"]);
   doc["stages"] = normalizeStages(body["stages"], author);
+  admitWiringList(doc["stages"], session);
   if (typeof body["intent"] === "string") doc["intent"] = body["intent"];
   const entry: BenchEntry = {
     author,
@@ -510,6 +542,18 @@ export async function patchBench(
     // NEXT run would compose — a patch that lands poison is as bad
     // as an add that lands it)
     admitStage(admit, st["card"], cur);
+    // THE WIRING ADMISSION (phantom-wire cure): a params patch can
+    // orphan a spell (drop the $image binding while the wire stays)
+    // or strand a wire (introduce $image with no channel) — the
+    // merged pair admits together, exactly as the run consumes them.
+    admitWiring(
+      st,
+      cur,
+      isRecord(st["inputs"]) ? (st["inputs"] as Record<string, unknown>) : {},
+      stagesOf(loaded.doc).map((r: Record<string, unknown>): string => String(r["id"] ?? "")),
+      stageId,
+      session,
+    );
     st["params"] = cur;
   }
   let touched = 0;
@@ -594,6 +638,120 @@ function admitStages(admit: StageAdmission | undefined, stages: unknown): void {
   }
 }
 
+// ── THE WIRING ADMISSION (2026-09-15, the phantom-wire cure) ───────
+// The bench's wiring vocabulary is the RUN's: `inputs` name channels,
+// params bind them via `$channel` spells (rewriteSpells is the
+// consumer — a string param starting with "$" IS a spell). Three
+// construction violations used to land silent and starve compose at
+// run time, far from the write that caused them:
+//   a) a channel no param spells (dead wire — the agent's
+//      inputs:{image:{stage,...}} with no $image anywhere);
+//   b) a spell no channel binds (runs refuse at rewriteSpells);
+//   c) an upstream stage id that is not on the bench (the mint
+//      mints s_N; "stage-1" never existed).
+// All three now refuse AT WRITE TIME, named.
+
+/** Collect the `$channel` spell names a params body carries
+ *  (rewriteSpells semantics verbatim: a string STARTING with "$" is
+ *  one spell named slice(1) — "costs $5" is text, "$image" is a
+ *  spell). */
+function spellsOf(params: unknown, out: Set<string> = new Set()): Set<string> {
+  if (typeof params === "string") {
+    if (params.startsWith("$")) out.add(params.slice(1));
+  } else if (Array.isArray(params)) {
+    for (const v of params) spellsOf(v, out);
+  } else if (typeof params === "object" && params !== null) {
+    for (const v of Object.values(params as Record<string, unknown>)) spellsOf(v, out);
+  }
+  return out;
+}
+
+/** One wiring binding's declared shape: {stage, output} (FromStage),
+ *  {initial} (the request's initial), or anything else (garbage —
+ *  the run maps only these two). */
+function wireUpstreamOf(ref: unknown): { stage?: string; initial?: boolean } {
+  if (typeof ref !== "object" || ref === null || Array.isArray(ref)) return {};
+  const r: Record<string, unknown> = ref as Record<string, unknown>;
+  if (typeof r["stage"] === "string") return { stage: r["stage"] };
+  if (typeof r["initial"] === "string") return { initial: true };
+  return {};
+}
+
+/** The wiring admission over ONE row (params = the MERGED view the
+ *  next run composes; inputs = the MERGED wiring; liveIds = the
+ *  bench's stage ids after the write; selfId = the row's own id —
+ *  self-wiring is a cycle, refused). Throws bench/* named. */
+function admitWiring(
+  row: Record<string, unknown>,
+  params: Record<string, unknown>,
+  inputs: Record<string, unknown>,
+  liveIds: readonly string[],
+  selfId: string,
+  session: string,
+): void {
+  const spells: Set<string> = spellsOf(params);
+  for (const [chan, ref] of Object.entries(inputs)) {
+    const up: { stage?: string; initial?: boolean } = wireUpstreamOf(ref);
+    if (up.stage === undefined && up.initial !== true) {
+      throw new RemoteError(
+        "bench/bad-wire",
+        "input '" + chan + "' is neither {stage, output} nor {initial} — the run maps only those two shapes",
+        { session, stage: selfId, input: chan },
+      );
+    }
+    if (up.stage !== undefined) {
+      if (up.stage === selfId) {
+        throw new RemoteError(
+          "bench/self-wire",
+          "input '" + chan + "' wires its own stage '" + selfId + "' — a cycle composes nothing",
+          { session, stage: selfId, input: chan },
+        );
+      }
+      if (!liveIds.includes(up.stage)) {
+        throw new RemoteError(
+          "bench/wire-stage-not-found",
+          "input '" + chan + "' wires stage '" + up.stage + "' — no such stage on the bench (live: " +
+            (liveIds.join(", ") || "none") + ")",
+          { session, stage: selfId, input: chan, live: liveIds },
+        );
+      }
+    }
+    if (!spells.has(chan)) {
+      throw new RemoteError(
+        "bench/dead-wire",
+        "input '" + chan + "' is bound by no '$" + chan + "' spell in params — the wiring would feed nothing " +
+          "(bind it, e.g. params: {image: \"$" + chan + "\"}, or drop the wire)",
+        { session, stage: selfId, input: chan },
+      );
+    }
+  }
+  // NOTE: the reverse (a $spell with no channel) is NOT a write-time
+  // refusal — it is a legal INTERMEDIATE state (spell first, wire
+  // second; the two-step construction). The run refuses a stray
+  // spell LOUD at merge (rewriteSpells' own voice), so nothing is
+  // silent either way.
+}
+
+/** Wiring admission over a wholesale stage list (the load arm —
+ *  every row checks against the list it lands in). */
+function admitWiringList(stages: unknown, session: string): void {
+  if (!Array.isArray(stages)) return;
+  const rows: Record<string, unknown>[] = stages.filter(isRecord);
+  const liveIds: string[] = rows
+    .map((r: Record<string, unknown>): unknown => r["id"])
+    .filter((id: unknown): boolean => typeof id === "string") as string[];
+  for (const r of rows) {
+    admitWiring(
+      r,
+      isRecord(r["params"]) ? (r["params"] as Record<string, unknown>) : {},
+      isRecord(r["inputs"]) ? (r["inputs"] as Record<string, unknown>) : {},
+      liveIds,
+      typeof r["id"] === "string" ? r["id"] : "",
+      session,
+    );
+  }
+}
+
 /** add_stage — append a card stage with optional wiring (the
  *  runner's input convention rides the row). */
 export async function addStageBench(
@@ -655,6 +813,18 @@ export async function addStageBench(
   if (isRecord(body["expected"])) row["expected"] = body["expected"];
   stages.push(row);
   loaded.doc["stages"] = stages;
+  // THE WIRING ADMISSION (phantom-wire cure): after the push, the
+  // live id set includes this row — its own wiring admits against
+  // the bench AS IT WILL STAND (upstream must exist, channels must
+  // be spelled, spells must be channeled).
+  admitWiring(
+    row,
+    row["params"] as Record<string, unknown>,
+    row["inputs"] as Record<string, unknown>,
+    stages.map((r: Record<string, unknown>): string => String(r["id"] ?? "")),
+    stageId,
+    session,
+  );
   const newRev: number = await appendAndSave(drafts, loaded, {
     author,
     kind: "add_stage",
@@ -952,6 +1122,19 @@ export async function rewireBench(
     : undefined;
   if (from === undefined) delete inputs[input];
   else inputs[input] = from;
+  // THE PHANTOM-WIRE CURE (2026-09-15): rewire is THE wiring door —
+  // the merged wiring admits against the row's params and the live
+  // bench BEFORE the write lands (a channel nothing spells, a spell
+  // nothing channels, an upstream that doesn't exist — all refuse
+  // here, named, instead of starving compose at run time).
+  admitWiring(
+    st,
+    isRecord(st["params"]) ? (st["params"] as Record<string, unknown>) : {},
+    inputs,
+    stagesOf(loaded.doc).map((r: Record<string, unknown>): string => String(r["id"] ?? "")),
+    stageId,
+    session,
+  );
   st["inputs"] = inputs;
   const inverse: Record<string, unknown> = { stage: stageId, input };
   if (before !== undefined) inverse["before"] = before;
