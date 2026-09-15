@@ -161,7 +161,8 @@ export function meliteConstruct(
         ? 'This never executes (melite_flow runs what is here; the user presses Run). '
         : 'You compose the flow and edit its state here, live with the user — runs start at the user\'s Run press, never yours. ')
       + 'Verbs: read (the state — '
-      + 'always start here) | load (replace stages wholesale) | patch {stage, params} | add_stage {card, params?, '
+      + 'always start here) | load (replace stages wholesale — DESTRUCTIVE: refused on a non-empty bench unless '
+      + 'overwrite:true confirms it; prefer add_stage to grow the bench) | patch {stage, params} | add_stage {card, params?, '
       + 'inputs?} | remove_stage {stage} | rewire {stage, input, from?} | undo {n?, author?} | validate (compile '
       + 'check, no GPU). Mutations take expect_rev from your last read — a moved bench refuses 409 with '
       + 'current_rev; re-read, re-apply. No ids anywhere: the bench is the one shared state.',
@@ -194,6 +195,10 @@ export function meliteConstruct(
         description: 'load: the full replacement [{id?, engine?, card?, params?, inputs?, outputs?}].',
       },
       intent: { type: 'string', description: 'load: what this bench produces.' },
+      overwrite: {
+        type: 'boolean',
+        description: 'load: confirm wholesale replacement of a non-empty bench (required — the overwrite law refuses without it).',
+      },
       n: { type: 'number', description: 'undo: how many entries (default 1).' },
       author: { type: 'string', description: 'undo: "agent" (default) | "user" — whose entries to revert.' },
       expect_rev: { type: 'number', description: 'CAS: the rev from your last read (required on mutations).' },
@@ -258,6 +263,7 @@ export function meliteConstruct(
             {
               session: bench, stages,
               ...(typeof a.intent === 'string' && a.intent !== '' ? { intent: a.intent } : {}),
+              ...(a.overwrite === true ? { overwrite: true } : {}),
               expect_rev: a.expect_rev,
             }, signal, 15000) as Record<string, unknown>
           return out({ rev: r.rev, stages: r.stages })

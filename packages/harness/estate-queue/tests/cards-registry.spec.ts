@@ -656,6 +656,23 @@ describe("admitStageModel (the write-time door)", () => {
     if (!v.ok) assert.match(v.error, /no registered card definition/);
   });
 
+  it("refuses a model-less row whose card is unknown (the wipe's own hole: model-less used to pass unchecked)", () => {
+    const s = primed();
+    const v = s.admitStageModel("__nope__", undefined);
+    assert.equal(v.ok, false);
+    if (!v.ok) assert.match(v.error, /no registered card definition/);
+  });
+
+  it("refuses a flow id staged as a card, naming the flow's cards", () => {
+    const s = primed();
+    const v = s.admitStageModel("image-upscale", undefined);
+    assert.equal(v.ok, false);
+    if (!v.ok) {
+      assert.match(v.error, /'image-upscale' is a flow, not a card/);
+      assert.match(v.error, /image-gen/);
+      assert.match(v.error, /upscale-tools/);
+    }
+  });
   it("admits a present boarded model; a variant route resolves to its family; model-less passes", () => {
     const s = primed();
     assert.deepEqual(s.admitStageModel("image-gen", "krea-2"), { ok: true });

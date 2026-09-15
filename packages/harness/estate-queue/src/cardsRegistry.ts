@@ -100,6 +100,7 @@ import { join, relative, resolve, sep } from "node:path";
 import { pathToFileURL } from "node:url";
 import { DOOR_KEYS } from "./runsGates.ts";
 import { FLOW_ID_RE } from "./runsGates.ts";
+import { getRegistryFlow } from "./flowsData.ts";
 import { pyReprStr, resolveRepoRoot } from "@melite/comfyui-cordis";
 /** The card-envelope keys (gateway.py:360 CARD_ENVELOPE_KEYS =
  *  DOOR_KEYS + draft/test/service): select the graph, never ride it. */
@@ -672,15 +673,37 @@ export class CardRegistryService extends Service {
     card: string,
     model: unknown,
   ): { ok: true } | { ok: false; error: string; offered: string[] } {
-    if (typeof model !== "string" || model === "") return { ok: true };
+    // THE CARD ITSELF IS ADMITTED FIRST (2026-09-15 — a compose
+    // agent loaded flow 'image-upscale' as a card stage and wiped
+    // the live bench): model-less rows used to pass unchecked, so a
+    // flow id (or a typo) sailed onto the bench unquestioned. An
+    // unknown card refuses AT WRITE TIME with the flow hint when
+    // the id names a flow.
     const def: CardDefinition | undefined = this.defsSync().get(card);
     if (def === undefined) {
+      const flow = getRegistryFlow(card);
+      if (flow !== undefined) {
+        const cards: string[] = [...new Set(
+          flow.stages
+            .map((s) => (s as { card?: unknown }).card)
+            .filter((c): c is string => typeof c === "string" && c !== ""),
+        )];
+        return {
+          ok: false,
+          error:
+            "'" + card + "' is a flow, not a card — stages take card ids; " +
+            "compose its cards (" + (cards.join(", ") || "none listed") + ") " +
+            "with add_stage (melite_load names the flow's stages and wiring)",
+          offered: [],
+        };
+      }
       return {
         ok: false,
         error: "card '" + card + "' has no registered card definition",
         offered: [],
       };
     }
+    if (typeof model !== "string" || model === "") return { ok: true };
     const boarded: readonly string[] = def.boarded ?? [];
     const mids: Set<string> = this.modelMids();
     const downloaded: string[] = boarded.filter((fam) => mids.has(fam));

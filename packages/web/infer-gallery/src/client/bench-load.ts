@@ -105,7 +105,9 @@ async function loadStagesOntoBench(
       const rev = (cur as Record<string, unknown> | null)?.['rev']
       if (typeof rev === 'number') expectRev = rev
     }
-    // THE LOAD — stages replace; expect_rev carries the CAS.
+    // THE LOAD — stages replace; expect_rev carries the CAS, and
+    // the click IS the confirmation (the overwrite law, 2026-09-15:
+    // a user gesture declares what a composing agent must confirm).
     const ensureRes = await fetch('/v1/bench/ensure', {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
@@ -114,6 +116,7 @@ async function loadStagesOntoBench(
         author: 'user',
         stages: Array.isArray(stages) ? stages : [],
         intent,
+        overwrite: true,
         ...(expectRev !== undefined ? { expect_rev: expectRev } : {}),
       }),
     })

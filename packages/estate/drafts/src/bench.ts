@@ -38,6 +38,13 @@ declare module "@deepseek-ai/dsh-typert-protocol" {
       readonly current_rev: number;
       readonly expect_rev?: number;
     };
+    /** The overwrite law (2026-09-15): a wholesale load onto a
+     *  non-empty bench without overwrite: true — stages is how
+     *  many would have been discarded. */
+    "bench/overwrite-required": {
+      readonly current_rev: number;
+      readonly stages: number;
+    };
     /** No bench doc carries that session. */
     "bench/not-found": { readonly session: string };
     /** No stage of that id sits on the bench. */
@@ -162,7 +169,7 @@ export interface BenchGetRow {
   readonly log: readonly Record<string, unknown>[];
 }
 
-const ENSURE_KEYS = ["session", "stages", "intent", "author", "expect_rev"];
+const ENSURE_KEYS = ["session", "stages", "intent", "author", "expect_rev", "overwrite"];
 
 function refuseUnknown(
   body: Record<string, unknown>,
@@ -185,7 +192,8 @@ function refuseUnknown(
 }
 
 /** ensure — create the bench (birth: rev 0, empty log) or LOAD onto
- *  it (replace stages, snapshot inverse). The only arm that may
+ *  it (replace stages, snapshot inverse; a non-empty bench demands
+ *  overwrite: true — the overwrite law). The only arm that may
  *  create; everything else refuses a missing bench. */
 export async function ensureBench(
   drafts: Domain<DraftsDomainSpec>,
@@ -261,6 +269,22 @@ export async function ensureBench(
     );
   }
   const before: Record<string, unknown>[] = stagesOf(doc);
+  // THE OVERWRITE LAW (2026-09-15 — a compose agent wiped a live
+  // image card with a wholesale load): replacing a NON-EMPTY bench
+  // is a destructive act and must say so. expect_rev proves the
+  // caller read the bench, not that the user agreed to lose it —
+  // pass overwrite: true to confirm (flow landings and the
+  // gallery's draft-click already do; the undo log still records
+  // stages_before either way).
+  if (before.length > 0 && body["overwrite"] !== true) {
+    throw new RemoteError(
+      "bench/overwrite-required",
+      "bench holds " + before.length + " stage(s) at rev " + block.rev +
+      " — a wholesale load would discard them; confirm with overwrite: true, " +
+      "or grow the bench with add_stage / patch, or undo if this was a mistake",
+      { current_rev: block.rev, stages: before.length },
+    );
+  }
   admitStages(admit, body["stages"]);
   doc["stages"] = normalizeStages(body["stages"], author);
   if (typeof body["intent"] === "string") doc["intent"] = body["intent"];

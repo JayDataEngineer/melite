@@ -246,6 +246,12 @@ async function loadBench(
   }
   const b = await request( 'POST', '/v1/bench/ensure', {
     ...body,
+    // THE LANDING DECLARES ITSELF (the overwrite law, 2026-09-15):
+    // a run landing replaces the shared bench by design (the
+    // one-shared-state law) — so it passes overwrite: true up
+    // front. The composing agent's melite_construct load gets no
+    // such pass; it must confirm each wipe itself.
+    overwrite: true,
     ...(expectRev !== undefined ? { expect_rev: expectRev } : {}),
   }, signal, DRAFT_TIMEOUT_MS,
   ) as { draft_id?: unknown; error?: string }
