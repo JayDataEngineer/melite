@@ -37,6 +37,10 @@ const plugin: Plugin = { name, inject, apply };
 
 export default plugin;
 export * from "./runsGates.ts";
+// The skill-serving path (stroke 62): findSkill + disclosureRoot —
+// the agent engine's spawn-injection reader rides these over the
+// SAME storage melite_load serves (never a second skill tree).
+export { findSkill, disclosureRoot } from "./skillPlane.ts";
 export * from "./runsList.ts";
 export * from "./mediaKinds.ts";
 export * from "./runsTypes.ts";

@@ -68,7 +68,7 @@ export interface AgentLlmSeam {
       provider: string;
       model: string;
       system?: string;
-      messages: { role: "user" | "assistant"; content: unknown[] }[];
+      messages: { id: string; role: "user" | "assistant"; content: unknown[]; source: Record<string, unknown> }[];
       tools?: { name: string; description: string; parameters: Record<string, unknown> }[];
       [key: string]: unknown;
     }): AsyncIterable<{ type: string; text?: string; block?: { type?: unknown; text?: unknown } }>;
@@ -253,8 +253,22 @@ export const agentLoopExecutor = (
             ? "\nYou have no tools this run: answer in text."
             : `\nTOOLS: the mcp tools offered below. Call them as needed; when the task is done, answer in text.`);
 
-        const messages: { role: "user" | "assistant"; content: unknown[] }[] = [
-          { role: "user", content: [{ type: "text", text: brief }] },
+        // The loop-built history (dsh-agent-loop's derived-history
+        // shape): a leading user brief, assistant turns sourced as
+        // model output, and one user message per tool result.
+        const runKey: string = randomUUID().slice(0, 8);
+        const messages: {
+          id: string;
+          role: "user" | "assistant";
+          content: unknown[];
+          source: Record<string, unknown>;
+        }[] = [
+          {
+            id: `agent-${runKey}-brief`,
+            role: "user",
+            content: [{ type: "text", text: brief }],
+            source: { kind: "user" },
+          },
         ];
 
         // ── THE LOOP (turn = one model dispatch + its tool calls) ──
@@ -322,13 +336,19 @@ export const agentLoopExecutor = (
           }
           turns += 1;
           // The assistant turn rides the history (text + its tool
-          // calls — exactly what the model produced).
+          // calls — exactly what the model produced). MESSAGE
+          // CONTRACT (the adapters read it — the live fire caught
+          // the pi-ai arm reading message.source.kind): an
+          // assistant message carries source {kind:'model'} with
+          // its route (createAssistantMessage's law, dsh-llm).
           messages.push({
-            role: "assistant",
+            id: `agent-${runKey}-t${turns}`,
+            role: "assistant" as const,
             content: [
               ...(text === "" ? [] : [{ type: "text", text }]),
               ...calls.map((c) => ({ type: "tool-call", id: c.id, name: c.name, arguments: c.arguments })),
             ],
+            source: { kind: "model", provider: dispatchRoute.provider, model: dispatchRoute.model },
           });
           if (calls.length === 0) {
             finalText = text;
@@ -339,7 +359,6 @@ export const agentLoopExecutor = (
           //    parse failure or tool error goes back to the MODEL as
           //    an isError tool-result (the loop's discipline), never
           //    a silent drop. ──
-          const results: unknown[] = [];
           for (const call of calls) {
             let args: Record<string, unknown>;
             try {
@@ -347,11 +366,16 @@ export const agentLoopExecutor = (
               if (!plainObject(parsed)) throw new Error("arguments must be a JSON object");
               args = parsed;
             } catch (e: unknown) {
-              results.push({
-                type: "tool-result",
-                toolCallId: call.id,
-                content: [{ type: "text", text: `argument parse failed: ${String(e)}` }],
-                isError: true,
+              messages.push({
+                id: `agent-${runKey}-t${turns}-r${messages.length}`,
+                role: "user" as const,
+                content: [{
+                  type: "tool-result",
+                  toolCallId: call.id,
+                  content: [{ type: "text", text: `argument parse failed: ${String(e)}` }],
+                  isError: true,
+                }],
+                source: { kind: "tool", callId: call.id },
               });
               continue;
             }
@@ -374,26 +398,34 @@ export const agentLoopExecutor = (
               clearInterval(ticker);
             }
             const textBlock = result.content.find((b) => (b as { type?: string }).type === "text");
-            results.push({
-              type: "tool-result",
-              toolCallId: call.id,
-              content: [
-                {
-                  type: "text",
-                  text: result.isError
-                    ? `tool error: ${result.error.message}`
-                    : typeof (textBlock as { text?: unknown } | undefined)?.text === "string"
-                      ? (textBlock as { text: string }).text
-                      : JSON.stringify(result.value),
-                },
-              ],
-              ...(result.isError ? { isError: true } : {}),
+            // ONE USER MESSAGE PER RESULT (createToolResultMessage's
+            // law, dsh-llm): a user-role message carrying one tool
+            // result, sourced {kind:'tool', callId} — the adapters
+            // read this shape; a batched array breaks them.
+            messages.push({
+              id: `agent-${runKey}-t${turns}-r${messages.length}`,
+              role: "user" as const,
+              content: [{
+                type: "tool-result",
+                toolCallId: call.id,
+                content: [
+                  {
+                    type: "text",
+                    text: result.isError
+                      ? `tool error: ${result.error.message}`
+                      : typeof (textBlock as { text?: unknown } | undefined)?.text === "string"
+                        ? (textBlock as { text: string }).text
+                        : JSON.stringify(result.value),
+                  },
+                ],
+                ...(result.isError ? { isError: true } : {}),
+              }],
+              source: { kind: "tool", callId: call.id },
             });
             options.report({
               activity: `agent turn ${turns}: ${call.name} ${result.isError ? "ERROR" : "ok"}`,
             });
           }
-          messages.push({ role: "user", content: results });
         }
         const artifacts = [...treeOf(runDir)].filter((f) => !before.has(f)).sort();
         options.report({
@@ -449,7 +481,7 @@ export class AgentEngineService extends Service {
       }),
     );
     console.log(
-      `[melite-engine-agent] seated: brain ${config.provider}/${config.model}${config.skills === undefined ? "" : " + skill reader"}`,
+      `[melite-engine-agent] engine 'agent' seated: brain ${config.provider}/${config.model}${config.skills === undefined ? "" : " + skill reader"}`,
     );
   }
 }

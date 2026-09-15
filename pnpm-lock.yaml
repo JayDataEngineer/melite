@@ -2848,6 +2848,9 @@ importers:
       '@melite/comfyui-cordis':
         specifier: workspace:*
         version: link:../../engines/comfyui-cordis
+      '@melite/engine-agent':
+        specifier: workspace:*
+        version: link:../../engines/agent
       '@melite/engine-contract':
         specifier: workspace:*
         version: link:../../engines/contract
@@ -7112,7 +7115,7 @@ snapshots:
       lightningcss: 1.33.0
       postcss-load-config: 6.0.1(jiti@2.7.0)(postcss@8.5.26)(yaml@2.9.0)
       rolldown: 1.2.7
-      tsdown: 0.22.14(@tsdown/css@0.22.14)(oxc-resolver@11.24.2)(typescript@5.7.3)(unrun@0.3.1)
+      tsdown: 0.22.14(@tsdown/css@0.22.14)(oxc-resolver@11.24.2)(typescript@6.0.3)(unrun@0.3.1)
     optionalDependencies:
       postcss: 8.5.26
     transitivePeerDependencies:

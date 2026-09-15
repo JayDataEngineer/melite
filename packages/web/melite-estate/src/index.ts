@@ -44,6 +44,14 @@ import { mcpEngines } from "@melite/engine-mcp";
 // Stroke 55: the craft loop engine — the critic route resolves at
 // boot (first image-capable route; a blind lane seats no craft).
 import { craftEngineAutoRoute } from "@melite/engine-craft";
+// Stroke 62: the agent engine — the spawner loop. The brain route
+// is NAMED (MELITE_AGENT_ROUTE "provider/model", explicit >
+// implicit — the critic route's law); skills spawn-inject through
+// findSkill over the disclosure root (the same leaves melite_load
+// serves — one storage, a new serving path).
+import { agentEngine } from "@melite/engine-agent";
+import { findSkill, disclosureRoot } from "@melite/estate-queue";
+import { readFile } from "node:fs/promises";
 // The drafts service only — the storage PROVIDERS (hub, json
 // backend, domain form) belong to the composition site: dsh-base
 // mounts them in profiles (bundle/base/cordis.patch.yml's
@@ -209,6 +217,46 @@ const rows: readonly Plugin[] = [
       };
       off = ctx.root.on("llm/adapters-updated", attempt);
       attempt();
+    },
+  } as unknown as Plugin,
+  // The agent engine (stroke 62, plan §5): engine id 'agent' on the
+  // seat. Unlike the craft row there is NO boot-time route
+  // enumeration to race — prepareCall happens per RUN, after the
+  // adapters have long registered; the row needs only the SEATS
+  // (gated by inject — the mcp-row lesson: never an ungated seat
+  // read). The brain is named or the row refuses LOUD (a default
+  // brain is a silent substitution the operator never asked for).
+  {
+    name: "melite-engine-agent-row",
+    inject: ["engines", "tools", "llm"],
+    apply: (ctx: Context): void => {
+      const say = (line: string): void => {
+        // console, not ctx.logger: the lane log owns stdout (the
+        // craft row's law — never quiet-resolve a seat decision)
+        console.log("[melite-estate] " + line);
+      };
+      const named = /^([^/\s]+)\/(.+)$/.exec(process.env["MELITE_AGENT_ROUTE"] ?? "");
+      if (named === null) {
+        say("agent engine: MELITE_AGENT_ROUTE \"provider/model\" not set — engine 'agent' NOT seated (agent stages will refuse at the door)");
+        return;
+      }
+      // The spawn-injection reader: findSkill over the disclosure
+      // root (MELITE_REPO_ROOT else file-anchored), body text or
+      // leaf file; a read that fails answers null and the engine
+      // refuses the skill LOUD at stage start.
+      const skills = {
+        read: async (id: string): Promise<string | null> => {
+          const found = findSkill(disclosureRoot(), id);
+          if (found === null) return null;
+          if (found.bodyText !== null) return found.bodyText;
+          try {
+            return await readFile(found.path, "utf8");
+          } catch {
+            return null;
+          }
+        },
+      };
+      agentEngine(ctx, { provider: named[1] as string, model: named[2] as string, skills });
     },
   } as unknown as Plugin,
   modelsProvider,
