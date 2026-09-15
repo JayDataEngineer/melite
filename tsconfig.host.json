@@ -1,0 +1,18 @@
+{
+  // Host aggregate — the Typert generator's program face. The
+  // generator's discovery law (generator/src/analyzer.ts
+  // loadRegistrations) walks projectReferences into each package's
+  // own tsconfig, keeps roots under packages/, and requires the
+  // package manifest to declare its ./typert export — the mirrored
+  // shape is references/deepseek-harness/tsconfig.host.json. This
+  // config exists for GENERATION ONLY (noEmit): the referenced
+  // tsconfigs still own typecheck and emit. The generator builds its
+  // program with THIS config's compilerOptions over the referenced
+  // roots, so the base's resolver must hold.
+  "extends": "./tsconfig.base.json",
+  "files": [],
+  "references": [
+    { "path": "packages/estate/drafts" },
+    { "path": "packages/harness/estate-queue" }
+  ]
+}

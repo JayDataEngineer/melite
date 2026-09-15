@@ -10,6 +10,14 @@
       "types": "./lib/index.d.ts",
       "default": "./lib/index.js"
     },
+    "./typert": {
+      "types": "./lib/typert.host.d.ts",
+      "default": "./lib/typert.host.js"
+    },
+    "./remote": {
+      "types": "./lib/typert.remote-client.d.ts",
+      "default": "./lib/typert.remote-client.js"
+    },
     "./package.json": "./package.json"
   },
   "dependencies": {
@@ -22,11 +30,13 @@
     "zod": "4.5.4"
   },
   "devDependencies": {
+    "@deepseek-ai/dsh-typert-generator": "0.0.1-rc.1",
     "@types/node": "^22.20.0",
     "typescript": "^5.9.3"
   },
   "scripts": {
     "build": "tsc -p tsconfig.json",
+    "typert": "node scripts/typert.mjs",
     "typecheck": "tsc --noEmit"
   }
 }
