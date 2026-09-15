@@ -1136,15 +1136,21 @@ async function pollToTerminal(
   exceededText: () => string,
   shouldStop: () => boolean,
   tap: TapHandle | null = null,
-  report: (updates: Record<string, EngineJson>) => void = (): void => {},
+  // Possibly undefined: both callers pass opts.report straight through,
+  // and report is only invoked under `tap !== null` below — which holds
+  // exactly when a report was passed (both callers derive the tap from
+  // `opts.report !== undefined`), so the cast at the fold is total.
+  report: ((updates: Record<string, EngineJson>) => void) | undefined,
 ): Promise<Record<string, EngineJson>> {
   for (;;) {
     await sleep(250); // the py-identical cadence (native 378)
     if (tap !== null) {
       // the tap fold (native 379): progress/activity ride report;
       // execution_error is recorded but the history verdict below
-      // owns the failure voice (a dropped tap never kills the run)
-      drainRelevant(tap.drain(), promptId, report);
+      // owns the failure voice (a dropped tap never kills the run).
+      // The cast voices the construction invariant (see the report
+      // param): tap is non-null exactly when a report was passed.
+      drainRelevant(tap.drain(), promptId, report as (updates: Record<string, EngineJson>) => void);
     }
     if (shouldStop()) {
       await interrupt(server, promptId);
@@ -1236,7 +1242,7 @@ async function executeSingleInner(
         "ComfyUI run exceeded " + formatTimeout0f(timeoutS) + "s (interrupt delivered)",
       opts.shouldStop ?? ((): boolean => false),
       tap,
-      opts.report ?? ((): void => {}),
+      opts.report,
     );
     const arts: string[] = await fetchOutputs(server, String(runDir), entry);
     const outputs: Record<string, EngineJson> = { prompt_id: promptId };
@@ -1617,7 +1623,7 @@ async function executeFlowInner(
         "merged run exceeded " + formatTimeout0f(floor) + "s (interrupt delivered)",
       opts.shouldStop ?? ((): boolean => false),
       tap,
-      opts.report ?? ((): void => {}),
+      opts.report,
     );
     const allOutputs = entry["outputs"];
     const allRec: Record<string, EngineJson> =

@@ -80,6 +80,55 @@ describe("the h3-timeline tool face", () => {
     assert.ok(Array.isArray(stage?.params?.calls), "the draft stage carried the array too");
   });
 
+  it("a calls STRING parsing to a non-array rides on — the estate refuses, never coerced", async () => {
+    // tool.ts:134 — Array.isArray(parsed) false: a well-formed JSON
+    // string that is NOT a list (an object, a number) is not a shot
+    // list, so this face does not invent one — the string rides to
+    // the estate and the card gate refuses with its own text.
+    const posts: Array<{ path: string; body: Record<string, unknown> }> = [];
+    const transport = buildH3TimelineTool(async (_m, path, body) => {
+      posts.push({ path, body: (body ?? {}) as Record<string, unknown> });
+      if (path === "/v1/flows/drafts") return { draftId: "d-obj" };
+      const start = (body ?? {}) as Record<string, unknown>;
+      if (!Array.isArray(start["calls"])) return { error: "h3-timeline: no calls to compose" };
+      return { run_id: "r-obj", status: "queued" };
+    });
+    const raw = JSON.stringify({ text: "not a shot list" });
+    const out = await transport.execute?.(
+      { prompt: "p", model: "h3-timeline", calls: raw } as never,
+      { signal: undefined } as never,
+    );
+    assert.deepEqual(out, {
+      flow: "h3-timeline", model: "h3-timeline", error: "h3-timeline: no calls to compose",
+    });
+    const start = posts.find((p) => p.path === "/v1/flows/start");
+    assert.equal(start?.body["calls"], raw, "the non-array string rides untouched — this face never invents a verdict");
+  });
+
+  it("a MALFORMED calls string rides on — the card gate refuses with its own text", async () => {
+    // the JSON.parse throw (the catch arm): a malformed string is
+    // not unwrapped, not dropped — it rides to the estate, whose
+    // gate reads it as "no calls to compose".
+    const posts: Array<{ path: string; body: Record<string, unknown> }> = [];
+    const transport = buildH3TimelineTool(async (_m, path, body) => {
+      posts.push({ path, body: (body ?? {}) as Record<string, unknown> });
+      if (path === "/v1/flows/drafts") return { draftId: "d-bad" };
+      const start = (body ?? {}) as Record<string, unknown>;
+      if (!Array.isArray(start["calls"])) return { error: "h3-timeline: no calls to compose" };
+      return { run_id: "r-bad", status: "queued" };
+    });
+    const raw = '[{"text":';
+    const out = await transport.execute?.(
+      { prompt: "p", model: "h3-timeline", calls: raw } as never,
+      { signal: undefined } as never,
+    );
+    assert.deepEqual(out, {
+      flow: "h3-timeline", model: "h3-timeline", error: "h3-timeline: no calls to compose",
+    });
+    const start = posts.find((p) => p.path === "/v1/flows/start");
+    assert.equal(start?.body["calls"], raw, "the malformed string rides untouched");
+  });
+
   it("a native ARRAY calls passes through untouched", async () => {
     const posts: Array<{ path: string; body: Record<string, unknown> }> = [];
     const transport = buildH3TimelineTool(async (_m, path, body) => {

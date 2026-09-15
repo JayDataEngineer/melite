@@ -881,6 +881,19 @@ describe('melite_flow card — compose inside', () => {
     assert.equal(out.status, 'queued')
     assert.equal(out.draft_id, 'd9')
   })
+
+  test('an 80+ char card id truncates the bench intent (the receipt stays readable)', async () => {
+    const seen = mockFetch([ensureOk('d_long'), benchAlive, startOk('r_long')])
+    const tool = meliteFlow(seen.request)
+    const card = 'c'.repeat(81)
+    const out = await tool.execute({ card, model: 'm' }, { signal: AbortSignal.timeout(2000) }) as Record<string, unknown>
+    assert.equal(out.run_id, 'r_long')
+    assert.equal(out.draft_id, 'd_long')
+    const ensureBody = decodeJsonBody(seen.calls.find((c) => c.url.endsWith('/v1/bench/ensure'))!.init) as { intent: string }
+    assert.equal(ensureBody.intent, 'c'.repeat(77) + '…')
+    const startBody = decodeJsonBody(seen.calls.find((c) => c.url.endsWith('/v1/flows/start'))!.init)
+    assert.equal(startBody.model, 'm')
+  })
 })
 
 describe('melite_flow template — the birth arm + compose refusals', () => {

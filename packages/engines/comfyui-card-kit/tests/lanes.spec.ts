@@ -17,7 +17,7 @@ import {
   ideogramLane, inputPrepLane, maskT1, taggerLane,
   annyLane, fitModelStem, skinLane,
   admitMeshLift, transferRigArm, trellisArm, pixalArm, type StripTable,
-  quadRemeshLane, musicT1, fitLane, imageEdit, finalizeAnny, finalizeMotion,
+  quadRemeshLane, musicT1, fitLane, imageEdit, refuseImageEditFiring, finalizeAnny, finalizeMotion,
 } from "../src/kit.ts";
 import { loadFacts } from "../src/facts.ts";
 import { deriveDefaults } from "../src/graph.ts";
@@ -560,6 +560,63 @@ describe("the residual lane arms", () => {
     const enc = Object.values(row).filter((n) => n.class_type === "TextEncodeQwenImageEditPlus");
     assert.ok(enc.length >= 2, "pos + neg encode");
     assert.ok("image2" in enc[0]!.inputs && "image3" in enc[0]!.inputs, "the reference slots wire");
+  });
+});
+
+// ── the lanpaint merge arms (kit.ts 171/260/266/268/272) ─────────
+// The card spec drives the happy region arm through the compose
+// door; THESE arms own the merge-law branches the door never
+// reaches (kit-direct, hand-rolled params — no schema defaults to
+// hide behind).
+describe("the lanpaint merge arms (the bag/flat law)", () => {
+  const editModel = (): import("../src/facts.ts").ModelFacts => facts.models["qwen-img-edit-2511"]!;
+
+  it("a region-less single-entry bag states nothing (the ?? '' arm)", () => {
+    // bagN === 1 but the entry carries no input_mask — bagMask falls
+    // back to '' (kit.ts:171), so no region is stated and the gate
+    // passes the run through to the plain-edit lane.
+    assert.doesNotThrow(
+      () => refuseImageEditFiring({ mask: [{ mask_grow: 4 }] }),
+      "a single bag entry without input_mask states no region — the gate passes",
+    );
+  });
+
+  it("an explicit flat region wins over the single-entry bag (the merge's skip arm)", () => {
+    const g = new GraphBuilder();
+    imageEdit({
+      prompt: "x", image1: "/m/i.png", seed: 7,
+      input_mask: "/m/flat.png",
+      mask: [{ input_mask: "/m/bag.png", mask_grow: 0, mask_feather: 0 }],
+      mask_grow: 0, mask_feather: 0,
+    }, editModel(), g, "run_flat");
+    const load = Object.values(dump(g)).find((n) => n.class_type === "LoadImageMask")!;
+    assert.equal(load.inputs.image, "/m/flat.png", "the explicit flat key wins; the bag value drops");
+  });
+
+  it("unstated grow/feather ride the 8px pins (the ?? 8 arms)", () => {
+    const g = new GraphBuilder();
+    imageEdit({ prompt: "x", image1: "/m/i.png", seed: 7, input_mask: "/m/r.png" }, editModel(), g, "run_pins");
+    const row = dump(g);
+    const grow = Object.values(row).find((n) => n.class_type === "GrowMask")!;
+    assert.equal(grow.inputs.expand, 8, "unstated mask_grow rides the 8 pin");
+    const feather = Object.values(row).find((n) => n.class_type === "FeatherMask")!;
+    assert.deepEqual(
+      [feather.inputs.left, feather.inputs.top, feather.inputs.right, feather.inputs.bottom],
+      [8, 8, 8, 8], "unstated mask_feather rides the 8 pin on all four sides",
+    );
+  });
+
+  it("mask_invert splices the InvertMask into the prep chain (the === true arm)", () => {
+    const g = new GraphBuilder();
+    imageEdit({
+      prompt: "x", image1: "/m/i.png", seed: 7, input_mask: "/m/r.png",
+      mask_grow: 0, mask_feather: 0, mask_invert: true,
+    }, editModel(), g, "run_inv");
+    const row = dump(g);
+    const inv = Object.values(row).find((n) => n.class_type === "InvertMask")!;
+    assert.deepEqual(inv.inputs.mask, ["LoadImageMask.0", 0], "the invert reads the loaded mask (grow/feather both 0)");
+    const enc = Object.values(row).find((n) => n.class_type === "LanPaint_ImageEncode")!;
+    assert.deepEqual(enc.inputs.mask, ["InvertMask.0", 0], "the encode reads the INVERTED mask");
   });
 });
 

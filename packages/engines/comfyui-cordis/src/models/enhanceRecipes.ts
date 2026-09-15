@@ -76,7 +76,10 @@ function parseSkillFile(text: string, file: string): ParsedFile {
   }
   const lines = body.split("\n");
   let i = 0;
-  const n = () => lines[i] ?? "";
+  // Every n() read below is guarded by `i < lines.length` (loop
+  // conditions or && short-circuit) and split() always yields ≥1
+  // element — the index can never miss, so no fallback rides here.
+  const n = (): string => lines[i];
   while (i < lines.length) {
     const line = n();
     if (line.trim() === "" || line.trimStart().startsWith("#")) {

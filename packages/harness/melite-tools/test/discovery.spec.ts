@@ -405,6 +405,44 @@ describe('live door arms', () => {
     ]), 'static catalog rows ride verbatim (the card IS the catalog)')
   })
 
+  test('specBody serves the full card-kind face VERBATIM (option_key + scalar_key + kindFields)', async () => {
+    const svc = theService()
+    // The stroke-63 entry arms the __maskform__ wall never takes: a
+    // card-declared kind naming its option contract, its scalar, and
+    // its per-kind fields — every field rides verbatim.
+    const defs = new Map([['__kindfull__', card({
+      identity: { label: 'Full', description: 'the full kind face', genre: 'image' },
+      flowKinds: { inputs: {}, outputs: {}, requiresModel: false },
+      mods: [{
+        kind: 'pick', label: 'Pick', param_key: 'pick', cardinality: 'single',
+        entry: 'option', option_key: 'id', scalar_key: 'strength', max_stack: 2,
+        kindFields: { id: { type: 'string' } },
+        fields: [{ name: 'x' }],
+        options: [{ value: 'a', label: 'A' }],
+      }],
+    })]])
+    const fakeSvc = {
+      formSchemas: (): unknown => ({
+        schema: { uid: 0, refs: { 0: { type: 'object', dict: {} } } },
+        mods: {},
+      }),
+      modCatalog: (): unknown => ({ shared: false, rows: [] }),
+      cardModFields: (): unknown[] => [],
+      packPresence: (packs: readonly string[]): Array<{ id: string, present: boolean | null }> =>
+        packs.map((id) => ({ id, present: null })),
+    } as unknown as ReturnType<typeof theService>
+    const body = specBody(fakeSvc, defs, { card: '__kindfull__', service: '__kindfull__', model: '__kindfull__' })
+    const kinds = (body['features'] as { modifiers: Array<Record<string, unknown>> }).modifiers
+    assert.equal(kinds.length, 1)
+    assert.deepEqual(kinds[0], {
+      kind: 'pick', label: 'Pick', param_key: 'pick', cardinality: 'single',
+      entry: 'option', option_key: 'id', scalar_key: 'strength', max_stack: 2,
+      fields: [{ name: 'x' }],
+      kindFields: { id: { type: 'string' } },
+      options: [{ value: 'a', label: 'A' }],
+    })
+  })
+
   test('specBody refuses a malformed card-declared mod kind LOUD (never a half-rendered row)', async () => {
     const svc = theService()
     const defs = new Map([['__badmod__', card({
@@ -512,4 +550,29 @@ describe('live door arms', () => {
     assert.equal(typeof aliased.enhance_prompts?.['prompt'], 'string')
     const none = (await formSpecArm('joytag')) as { enhance_prompts?: Record<string, unknown> }
     assert.equal(none.enhance_prompts?.['prompt'], null) // the no-file law: sweep → generic
+  })
+
+  test('formSpecArm serves z-image with the scalar + preprocessor modifier rows (the ip_adapter/controlnet face)', async () => {
+    // z-image is the ONE live family boarding ip_adapter (scalar_key
+    // 'weight') AND controlnet (preprocessor-carrying rows) — the two
+    // pack-row arms no krea-2 form ever takes.
+    const spec = (await formSpecArm('z-image')) as Record<string, unknown>
+    assert.equal(spec['form'], 'image-gen')
+    assert.equal(spec['service'], 'z-image')
+    const modifiers = (spec['features'] as { modifiers: Array<Record<string, unknown>> }).modifiers
+    const ip = modifiers.find((m) => m['kind'] === 'ip_adapter')
+    assert.ok(ip !== undefined, 'the scalar pack serves')
+    assert.equal(ip['scalar_key'], 'weight')
+    assert.equal(ip['entry'], 'hybrid')
+    assert.equal(ip['option_key'], 'kind')
+    const ipOpts = ip['options'] as Array<Record<string, unknown>>
+    assert.ok(ipOpts.length > 0, 'the retired vocabulary still serves')
+    assert.deepEqual(ipOpts[0]!['defaults'], { weight: 1.0 }, 'the default rides the scalar key, never strength')
+    const cn = modifiers.find((m) => m['kind'] === 'controlnet')!
+    const cnOpts = cn['options'] as Array<Record<string, unknown>>
+    assert.ok(cnOpts.length > 0, 'the union rows serve')
+    assert.ok(
+      cnOpts.some((o) => 'preprocessor' in o),
+      'the upstream map rides the resolved facts: ' + JSON.stringify(cnOpts[0]),
+    )
   })

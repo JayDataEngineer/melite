@@ -353,133 +353,15 @@ export default defineConfig({
         // vendored (Layer C law: not ours to test):
         'packages/vendor/typert-protocol/src/index.ts',
         'packages/vendor/typert-protocol/src/remote-error.ts',
-        // the anny client barrel (no spec has ever pinned it):
-        'packages/3d/anny/src/index.ts',
-        // card compose/kit fallback branches:
-        'packages/3d/img-to-mesh/src/card.ts',
-        'packages/engines/comfyui-card-kit/src/kit.ts',
-        'packages/engines/comfyui-card-kit/src/mods/guard.ts',
-        'packages/video/h3-timeline/src/tool.ts',
-        // cordis service-plane error arms (api failures, enhance
-        // fallbacks, spec sweeps):
-        'packages/engines/comfyui-cordis/src/comfyui.ts',
-        'packages/engines/comfyui-cordis/src/service.ts',
-        'packages/engines/comfyui-cordis/src/models/enhanceRecipes.ts',
-        // the estate HTTP plane's rare-error arms:
-        'packages/estate/drafts/src/bench.ts',
+        // §TEST-20 in flight (stroke 73, the estate plane — restored
+        // here so each committed tree passes its own gate; removed
+        // as the per-file 100s land):
         'packages/estate/drafts/src/remote.ts',
+        'packages/estate/drafts/src/bench.ts',
         'packages/estate/media/src/index.ts',
-        // registry/sweep branches:
         'packages/harness/estate-queue/src/cardsRegistry.ts',
         'packages/harness/estate-queue/src/loadPlane.ts',
         'packages/harness/estate-queue/src/runsValidate.ts',
-        // the door sweep's rare failure paths (form-spec/doors arms
-        // added strokes 66-69 are pinned; the pre-existing arms ride
-        // this triage):
-        'packages/harness/melite-tools/src/discovery.ts',
-        'packages/harness/melite-tools/src/doors.ts',
-        'packages/harness/melite-tools/src/tools/melite-construct.ts',
-        'packages/harness/melite-tools/src/tools/melite-discover.ts',
-        'packages/harness/melite-tools/src/tools/melite-flow.ts',
-        'packages/harness/melite-tools/src/tools/melite-load.ts',
-        'packages/harness/melite-tools/src/tools/skill-index.ts',
-        'packages/harness/melite-tools/src/tools/skill-read.ts',
-        // web-kit closed (2026-09-12, §TEST-17): every gateable file
-        // at per-file 100 — catalog/contracts/formats/slots/timeline
-        // planes + the five node-safe ui helpers. GUI-debt stays
-        // named (the dom project's territory, same carve-out as the
-        // 3d/image/motion/video studios): the 44 ui .tsx components,
-        // 8 DOM/store/hook ui modules + the ui barrel, the slots
-        // rail + react shim, 4 timeline React/canvas modules, the
-        // WebGL snapshot renderer — plus the 2 generated carriers
-        // (exempt-by-kind).
-        'packages/web-kit/ui/src/*.tsx',
-        'packages/web-kit/ui/src/clipboard.ts',
-        'packages/web-kit/ui/src/listFilter.ts',
-        'packages/web-kit/ui/src/motionThumbStore.ts',
-        'packages/web-kit/ui/src/posterStore.ts',
-        'packages/web-kit/ui/src/toast.ts',
-        'packages/web-kit/ui/src/use-hover-scrub.ts',
-        'packages/web-kit/ui/src/use-mobile.ts',
-        'packages/web-kit/ui/src/index.ts',
-        'packages/web-kit/**/src/generated/*',
-        'packages/web-kit/slots/src/studioRail.tsx',
-        'packages/web-kit/slots/src/vendored/react.tsx',
-        'packages/web-kit/timeline/playback/useAudioPlayback.ts',
-        'packages/web-kit/timeline/timeline/MotionTimelineBar.tsx',
-        'packages/web-kit/timeline/timeline/viser-timeline/Timeline.tsx',
-        'packages/web-kit/timeline/timeline/viser-timeline/viewerContext.ts',
-        'packages/web-kit/formats/src/renderSnapshot.ts',
-        // engines closed (2026-09-12, §TEST-15): every file at
-        // per-file 100 — the card/pack/flavor/verb plane, the models
-        // DECL service (interlock/facts/addresses/cascade), the
-        // engine-IO transport (stub-server battery), catalog/params/
-        // supervisor/carddefs. TWO files stay exempt, named: cli.ts +
-        // dump-registry.ts — process-boundary modules (self-execute
-        // on load AND call process.exit) covered by green subprocess
-        // batteries, invisible to the v8 provider by construction
-        // (same named-file precedent as mask-studio's agents/tools).
-        'packages/engines/comfyui-cordis/src/cli.ts',
-        'packages/engines/comfyui-cordis/src/dump-registry.ts',
-        // harness closed (2026-09-12, §TEST-16): every file at
-        // per-file 100 — the queue core + runs registry/validate/
-        // start/list planes + cards/flows/skill/load/manage planes +
-        // registries + rails + service/index/resurrect seams. No
-        // process-boundary files in the tree: the exemption row is
-        // GONE, nothing replaces it.
-        // The estate tree is FULLY gated (2026-09-11, §TEST-8 grew it
-        // to manage/media/runs + drafts index/spec/store/remote; §TEST-9
-        // closed the last file-exempt — the drafts bench engine — at
-        // per-file 100 via its package-local spec). No estate rows
-        // remain here.
-        // 3d closed (2026-09-12, §TEST-10): every TS logic file at
-        // per-file 100 (card compose gates + the clothing-placement
-        // tool face). The STUDIOS (src/ui/**/*.tsx — anny's two,
-        // img-to-mesh's one) stay GUI-debt: DOM components, the dom
-        // project's territory, same carve-out as the web tree.
-        'packages/3d/**/src/ui/**/*.{ts,tsx}',
-        // audio closed (2026-09-12, §TEST-11): every file at per-file
-        // 100x4 — the four card compose gates + the three tool faces
-        // (executor batteries) + the index apply arms. No studios in
-        // the tree: the exemption row is GONE, nothing replaces it.
-        // image closed (2026-09-12, §TEST-14): seven card compose
-        // gates (incl. image-edit's 19 firing refusals + the
-        // upscale estate-file contract), the image-gen and image-edit
-        // tool batteries, the dead-lane agents bundle. ONE file stays
-        // exempt, named: mask-studio's agents/tools.ts — the
-        // gateway-kill transitional carrier (every lane refuses loud
-        // until the Typert remote migration; the draft-mint body is
-        // dead-until-live by design, documented at the site).
-        'packages/image/mask-studio/src/agents/tools.ts',
-        // + the studios (src/ui/** — 28 files) stay GUI-debt: DOM,
-        // the dom project's territory, same carve-out as the web tree.
-        'packages/image/**/src/ui/**/*.{ts,tsx}',
-        // motion closed (2026-09-12, §TEST-12): card compose gate +
-        // the tool face's full battery at per-file 100x4. The studio
-        // (src/ui/** — MotionExportDialog + the 2.1k-line component)
-        // stays GUI-debt: DOM components, the dom project's
-        // territory, same carve-out as the web tree.
-        'packages/motion/**/src/ui/**/*.{ts,tsx}',
-        // + the card packages' CLIENT faces (src/client/** — the
-        // ported studio registration + tenants, 2026-09-12): DOM
-        // territory, the dom project's specs exercise them; per-file
-        // 100 is the HOST plane's gate (card.ts/index.ts stay gated —
-        // the seat-probe + lane-gate laws are pinned by unit tests).
-        // glb-viewport's WebGL mount is jsdom-impossible by nature.
-        'packages/*/*/src/client/**/*.{ts,tsx}',
-        // video closed (2026-09-12, §TEST-13): h3-timeline (the four
-        // frozen goldens replay byte-level + schema gates + overlay
-        // arms) + video-gen (two-family admission) + the tool face's
-        // full battery at per-file 100x4. The studio (src/ui/** —
-        // 21 files, the timeline editor) stays GUI-debt: DOM, the
-        // dom project's territory, same carve-out as the web tree.
-        'packages/video/**/src/ui/**/*.{ts,tsx}',
-        // Types-only files carry no executable code.
-        'packages/*/*/src/types.ts',
-        // The z-image family has no mods dir (absent ≡ empty) — its
-        // index.ts carries the same DECL + family shape as every other
-        // family and is covered by the same HMR spec; keep it gated
-        // (do NOT exempt). This comment records the deliberate non-exempt.
       ],
       thresholds: {
         perFile: true,

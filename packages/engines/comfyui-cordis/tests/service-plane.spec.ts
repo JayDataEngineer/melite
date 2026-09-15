@@ -230,6 +230,22 @@ describe("cardModFields (the absorption)", () => {
     assert.equal(out[0]!.pack, "a-pack");
     assert.deepEqual(out[0]!.families, ["fam1", "fam2"]);
   });
+
+  it("packs serve sorted when registered ascending (the comparator's else arm)", async () => {
+    const svc = await boot();
+    svc.registerCard(card({ boarded: ["fam1"] }));
+    svc.registerPack({ pack: "a-pack", fields: fields({}) });
+    svc.registerPack({ pack: "b-pack", fields: fields({}) });
+    svc.registerPack({ pack: "c-pack", fields: fields({}) });
+    svc.registerFlavor({ pack: "c-pack", families: ["fam1"] });
+    svc.registerFlavor({ pack: "b-pack", families: ["fam1"] });
+    svc.registerFlavor({ pack: "a-pack", families: ["fam1"] });
+    assert.deepEqual(
+      svc.cardModFields("card1").map((m) => m.pack),
+      ["a-pack", "b-pack", "c-pack"],
+      "insertion order never voices — the sort owns the emission order",
+    );
+  });
 });
 
 describe("modCatalog (the runtime catalog law)", () => {
@@ -386,6 +402,18 @@ describe("formSpec (the wire row battery)", () => {
     const unboarded = svc.formSchemas("card1", "unboarded")!;
     assert.ok(!("loras" in unboarded.mods), "the other family never sees the pack");
   });
+
+  it("an absorbed pack with its own toJSON rides the envelope verbatim", async () => {
+    const svc = await bootForm();
+    svc.registerPack({ pack: "loras", fields: carrier({ strength: { type: "number", meta: { min: 0, max: 2 } } }) });
+    svc.registerFlavor({ pack: "loras", families: ["fam1"] });
+    const out = svc.formSchemas("card1", "fam1")!;
+    assert.deepEqual(
+      out.mods["loras"],
+      { uid: 0, refs: { 0: { type: "object", dict: { strength: { type: "number", meta: { min: 0, max: 2 } } } } } },
+      "the pack's own serializer voices the mod envelope (never the null arm)",
+    );
+  });
 });
 
 describe("setObjectInfo (the gate arming)", () => {
@@ -537,6 +565,23 @@ describe("compose (the model path)", () => {
     );
     svc.compose("card1", "fam1", { loras: "not-a-list" }, "r4", );
     assert.equal(seen[2]!["loras"], "not-a-list", "non-list loras pass through");
+  });
+
+  it("hand-authored weight rows honor the weight (strength-first, never silent full)", async () => {
+    const seen: Record<string, unknown>[] = [];
+    const svc = await bootModel({ compose: (params) => { seen.push({ ...params }); } });
+    svc.registerPack({ pack: "loras", fields: fields({}) });
+    svc.registerFlavor({
+      pack: "loras",
+      families: ["fam1"],
+      rows: [{ id: "cool", filename: "cool.safetensors", source_url: "https://h/cool" }],
+    });
+    svc.compose("card1", "fam1", { loras: [{ name: "raw.safetensors", weight: 0.5 }] }, "r1");
+    assert.deepEqual(seen[0]!["loras"], [{ name: "raw.safetensors", strength: 0.5 }]);
+    svc.compose("card1", "fam1", { loras: [{ id: "cool", weight: 0.25 }] }, "r2");
+    assert.deepEqual(seen[1]!["loras"], [{ name: "cool.safetensors", strength: 0.25 }]);
+    svc.compose("card1", "fam1", { loras: [{ name: "raw.safetensors", strength: 0.8, weight: 0.1 }] }, "r3");
+    assert.deepEqual(seen[2]!["loras"], [{ name: "raw.safetensors", strength: 0.8 }], "a stated strength wins over the weight");
   });
 
   it("the family extension slice wins over the flat union", async () => {

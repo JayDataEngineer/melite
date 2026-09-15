@@ -9,6 +9,7 @@ import * as fs from 'node:fs/promises'
 import * as path from 'node:path'
 import * as os from 'node:os'
 import { apply, inject } from '../src/doors.ts'
+import { buildSkillIndex, disclosureRoot } from '@melite/estate-queue'
 import { resolveRepoRoot } from '@melite/comfyui-cordis'
 import type { LlmStreamSeam } from '../src/llm-complete.ts'
 
@@ -72,6 +73,7 @@ function fakeHost(opts?: {
   llm?: LlmStreamSeam
   defaultModel?: unknown
   getThrows?: boolean
+  schemas?: Array<{ name: string; description?: string }>
 }): { host: unknown; routes: Route[]; labels: string[] } {
   const routes: Route[] = []
   const labels: string[] = []
@@ -83,7 +85,7 @@ function fakeHost(opts?: {
     },
     llm: opts?.llm ?? fakeLlm(),
     tools: {
-      schemas: () => [
+      schemas: () => opts?.schemas ?? [
         { name: 'melite_discover', description: 'discover things' },
         { name: 'melite_flow' },
       ],
@@ -848,6 +850,51 @@ describe('/v1 prefix discovery arms', () => {
     const r = await call(h.routes, '/v1', { method: 'GET', url: 'http://[' })
     assert.equal(r.status, 500)
     assert.ok(String((r.body as { error: string }).error).includes('discovery door'))
+  })
+
+  test('form-spec serves the agent engine doc off the LIVE census (tools seat + skill index)', async () => {
+    // The door's LIVE factory (stroke 66/69): mcp__<server>__<tool>
+    // names fold to servers; every other shape is ignored. The
+    // three-part non-mcp name + the bare names pin the skip arms.
+    const h = boot({
+      schemas: [
+        { name: 'melite_flow', description: 'run things' },
+        { name: 'a__b__c', description: 'three parts, not mcp' },
+        { name: 'mcp__github__search', description: 'github search' },
+        { name: 'mcp__github__repos', description: 'github repos' },
+      ],
+    })
+    const r = await call(h.routes, '/v1', { method: 'GET', url: 'http://localhost/v1/form-spec?model=agent' })
+    assert.equal(r.status, 200)
+    const body = r.body as {
+      form: string
+      engine: string
+      features: { modifiers: Array<{ param_key: string; fields?: Array<{ options?: Array<{ value: string; label: string }> }> }> }
+    }
+    assert.equal(body.form, 'agent')
+    assert.equal(body.engine, 'agent')
+    const mods = body.features.modifiers
+    assert.deepEqual(mods.map((m) => m.param_key), ['mcps', 'skills', 'inputs'])
+    assert.deepEqual(
+      mods[0]!.fields![0]!.options,
+      [{ value: 'github', label: 'github' }],
+      'the census reads the tools seat live (one server per mcp__<server>__* family)',
+    )
+    const idx = buildSkillIndex(disclosureRoot()) as { skills: Array<{ id: string; name: string }> }
+    assert.ok(idx.skills.length > 0, 'the live index is non-empty')
+    assert.deepEqual(
+      mods[1]!.fields![0]!.options,
+      idx.skills.map((s) => ({ value: s.id, label: s.name })),
+      'the doc serves the LIVE skill index, never a static list',
+    )
+  })
+
+  test('form-spec serves the craft engine doc (no card, no family)', async () => {
+    const h = boot({})
+    const r = await call(h.routes, '/v1', { method: 'GET', url: 'http://localhost/v1/form-spec?model=craft' })
+    assert.equal(r.status, 200)
+    assert.equal((r.body as { form: string }).form, 'craft')
+    assert.equal((r.body as { engine: string }).engine, 'craft')
   })
 })
 

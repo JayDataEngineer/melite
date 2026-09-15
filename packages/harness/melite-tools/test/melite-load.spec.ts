@@ -92,6 +92,16 @@ describe('melite_load execute — the load lane', () => {
     assert.equal((out.bundle as { kind: string }).kind, 'flow')
     assert.equal(seen[0]!.path, '/v1/load?name=f&inference_type=flow')
   })
+
+  test('a nullish seat answer echoes the args (never a crash)', async () => {
+    const { seen, request } = mockRequest(() => null)
+    const tool = meliteLoad(request)
+    const out = await tool.execute({ name: 'c', inference_type: 'card' }, exec()) as Record<string, unknown>
+    assert.equal(out.name, 'c')
+    assert.equal(out.inference_type, 'card')
+    assert.equal(out.bundle, undefined)
+    assert.equal(seen.length, 1)
+  })
 })
 
 describe('melite_load execute — refusals ride the value', () => {
@@ -162,6 +172,53 @@ describe('melite_load render — the loaded line', () => {
       + 'agents md:\n'
       + 'craft doc',
     )
+  })
+
+  test('THE EDGE CELLS RIDE (label-less hints, junk required rows, ref-fallback skills, the 9-row clamp, stages, signature model)', () => {
+    const tool = meliteLoad((async () => ({})) as unknown as EstateRequest)
+    const skills = [{ id: 'a' }, { ref: 'r-only' }, { id: 'b' }, { id: 'c' }, { id: 'd' }, { id: 'e' }, { id: 'f' }, { id: 'g' }, { id: 'h' }]
+    const parts = tool.output.render(
+      { name: 'c', inference_type: 'card' },
+      {
+        name: 'c', inference_type: 'card',
+        bundle: {
+          kind: 'card', name: 'c',
+          model_hints: [{ id: 'm1' }],
+          signature: {
+            model: 'fam-x',
+            params_schema: { properties: { prompt: {}, seed: {} }, required: ['prompt', 7] },
+          },
+          stages: [{ id: 's1', card: 'c1' }],
+          skills,
+          digest: 'abc123',
+          agents: [{ path: 'AGENT.md', text: 'craft doc' }],
+        },
+      } as never,
+    ) as Array<{ text?: string }>
+    assert.equal(
+      parts.map((p) => p?.text ?? '').join('\n'),
+      'loaded card c — compose it with melite_construct (add_stage) — the flow state is live in the user\'s cards tab; keep editing it there; runs start at the user\'s Run press\n'
+      + 'models: m1\n'
+      + 'params: prompt*, seed (* required)\n'
+      + 'signature model: fam-x\n'
+      + 'stages: s1:c1\n'
+      + 'skills: 9 — read one with skill_read: a, r-only, b, c, d, e, f, g …\n'
+      + 'digest: abc123 (quote it to skip a reload)\n'
+      + 'agents md:\n'
+      + 'craft doc',
+    )
+  })
+
+  test('a null-properties signature renders no params and no model line', () => {
+    const tool = meliteLoad((async () => ({})) as unknown as EstateRequest)
+    const parts = tool.output.render(
+      { name: 'c', inference_type: 'card' },
+      {
+        name: 'c', inference_type: 'card',
+        bundle: { kind: 'card', name: 'c', signature: { params_schema: { properties: null } } },
+      } as never,
+    ) as Array<{ text?: string }>
+    assert.equal(parts.map((p) => p?.text ?? '').join('\n'), 'loaded card c — compose it with melite_construct (add_stage) — the flow state is live in the user\'s cards tab; keep editing it there; runs start at the user\'s Run press')
   })
 
   test('a bundless value renders the header alone', () => {

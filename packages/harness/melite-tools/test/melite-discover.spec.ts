@@ -259,4 +259,27 @@ describe('melite_discover render — the counts line', () => {
       'discover: 0 flows, 0 cards — open one with melite_load',
     )
   })
+
+  test('non-string flow cells render honest placeholders (never a crash)', () => {
+    const tool = meliteDiscover(stubRequest())
+    const parts = tool.output.render(
+      {},
+      { flows: [{ name: 7, title: 'T', stages: 'many' }], cards: [] } as never,
+    ) as Array<{ text?: string }>
+    assert.equal(
+      parts.map((p) => p?.text ?? '').join('\n'),
+      'discover: 1 flows, 0 cards — open one with melite_load\n'
+      + 'flows:\n'
+      + '   — T (? stages)',
+    )
+  })
+
+  test('an empty tag vocabulary renders no vocabulary line', () => {
+    const tool = meliteDiscover(stubRequest())
+    const parts = tool.output.render({}, { flows: [], cards: [], tag_vocabulary: [] } as never) as Array<{ text?: string }>
+    assert.equal(
+      parts.map((p) => p?.text ?? '').join('\n'),
+      'discover: 0 flows, 0 cards — open one with melite_load',
+    )
+  })
 })

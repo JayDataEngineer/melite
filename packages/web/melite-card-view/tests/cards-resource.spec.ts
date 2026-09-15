@@ -299,7 +299,7 @@ describe('stroke 44 — a fresh conversation\'s bench (missing = empty, never fa
     const controller = new AbortController()
     const frames: unknown[] = []
     const done = (async (): Promise<void> => {
-      for await (const frame of openCardsResource('dsh-resource://cards/bench/s_new', { signal: controller.signal }, bench.remote)) {
+      for await (const frame of openCardsResource('dsh-resource://cards/bench/s_new', { signal: controller.signal }, bench.remote, bench.remote.bench)) {
         frames.push(frame)
         if (frames.length === 2) controller.abort()
       }
@@ -340,7 +340,7 @@ describe('stroke 44 — a fresh conversation\'s bench (missing = empty, never fa
   test('the watcher baselines a missing bench at rev 0 — the FIRST agent card in a new conversation reveals', async () => {
     const bench = fakeRemote()
     const landed: string[] = []
-    const stop = watchBenchLands(() => 's_new', (key) => { landed.push(key) }, undefined, bench.remote)
+    const stop = watchBenchLands(() => 's_new', (key) => { landed.push(key) }, undefined, bench.remote, bench.remote.bench)
     await until(() => bench.isOpen('s_new'))
     bench.push('s_new', zeroDoc('s_new'))
     bench.push('s_new', agentDoc(1, ['first agent card']))
@@ -360,7 +360,7 @@ describe('the bench resource stream (live co-presence, the mux tail)', () => {
     const controller = new AbortController()
     const frames: unknown[] = []
     const done = (async (): Promise<void> => {
-      for await (const frame of openCardsResource('dsh-resource://cards/bench', { signal: controller.signal }, bench.remote)) {
+      for await (const frame of openCardsResource('dsh-resource://cards/bench', { signal: controller.signal }, bench.remote, bench.remote.bench)) {
         frames.push(frame)
         if (frames.length === 2) controller.abort()
       }
@@ -384,7 +384,7 @@ describe('the bench resource stream (live co-presence, the mux tail)', () => {
     const controller = new AbortController()
     const frames: unknown[] = []
     const done = (async (): Promise<void> => {
-      for await (const frame of openCardsResource('dsh-resource://cards/bench', { signal: controller.signal }, bench.remote)) {
+      for await (const frame of openCardsResource('dsh-resource://cards/bench', { signal: controller.signal }, bench.remote, bench.remote.bench)) {
         frames.push(frame)
       }
     })()
@@ -409,7 +409,7 @@ describe('the bench resource stream (live co-presence, the mux tail)', () => {
     const controller = new AbortController()
     const frames: unknown[] = []
     const done = (async (): Promise<void> => {
-      for await (const frame of openCardsResource('dsh-resource://cards/bench', { signal: controller.signal }, bench.remote)) {
+      for await (const frame of openCardsResource('dsh-resource://cards/bench', { signal: controller.signal }, bench.remote, bench.remote.bench)) {
         frames.push(frame)
         if (frames.length === 3) controller.abort()
       }
@@ -435,7 +435,7 @@ describe('the bench resource stream (live co-presence, the mux tail)', () => {
     const bench = fakeRemote()
     bench.failOpen('main', new Error('the supervisor gave up'))
     const frames: unknown[] = []
-    for await (const frame of openCardsResource('dsh-resource://cards/bench', { signal: AbortSignal.timeout(500) }, bench.remote)) {
+    for await (const frame of openCardsResource('dsh-resource://cards/bench', { signal: AbortSignal.timeout(500) }, bench.remote, bench.remote.bench)) {
       frames.push(frame)
     }
     expect(frames.length).toBe(1)
@@ -610,7 +610,7 @@ describe('the bench spotlight (the one-flow reveal, stream edition)', () => {
     // rows; history never yanks), then the agent's write (rev 13)
     const bench = fakeRemote()
     const lands: number[] = []
-    const stop = watchBenchLands(() => 'main', () => { lands.push(1) }, undefined, bench.remote)
+    const stop = watchBenchLands(() => 'main', () => { lands.push(1) }, undefined, bench.remote, bench.remote.bench)
     await until(() => bench.isOpen('main'))
     bench.push('main', agentDoc(12, ['hero frame']))
     await tick()
@@ -625,7 +625,7 @@ describe('the bench spotlight (the one-flow reveal, stream edition)', () => {
   test('a user-authored bump NEVER reveals — the human was the author', async () => {
     const bench = fakeRemote()
     const lands: number[] = []
-    const stop = watchBenchLands(() => 'main', () => { lands.push(1) }, undefined, bench.remote)
+    const stop = watchBenchLands(() => 'main', () => { lands.push(1) }, undefined, bench.remote, bench.remote.bench)
     await until(() => bench.isOpen('main'))
     bench.push('main', userDoc(12, ['hero frame']))
     bench.push('main', userDoc(13, ['hero frame', 'user edit']))
@@ -639,7 +639,7 @@ describe('the bench spotlight (the one-flow reveal, stream edition)', () => {
     // reconnects — the agent's rev-14 write on the NEW generation fires
     const bench = fakeRemote()
     const lands: number[] = []
-    const stop = watchBenchLands(() => 'main', () => { lands.push(1) }, undefined, bench.remote)
+    const stop = watchBenchLands(() => 'main', () => { lands.push(1) }, undefined, bench.remote, bench.remote.bench)
     await until(() => bench.isOpen('main'))
     bench.push('main', userDoc(12, ['hero frame']))
     await tick()
@@ -663,6 +663,7 @@ describe('the bench spotlight (the one-flow reveal, stream edition)', () => {
       (key) => { landed.push(key) },
       undefined,
       bench.remote,
+      bench.remote.bench,
       (fn: () => void) => { sessionChanged = fn; return () => {} },
     )
     await until(() => bench.isOpen('s_old'))

@@ -90,4 +90,11 @@ describe('skill_read render — the body rides (tier 2)', () => {
     assert.equal(text({}, {}), 'skill_read ?: loaded\n(no body)')
     assert.equal(text(null, { id: 'b', name: 'N', content: '' }), 'skill_read b: N\n(no body)')
   })
+
+  test('a refused read renders REFUSED (the refusal is the honest answer)', () => {
+    assert.equal(
+      text({ id: 'run-recovery' }, { id: 'run-recovery', content: '', error: 'no such skill' }),
+      'skill_read REFUSED: no such skill',
+    )
+  })
 })

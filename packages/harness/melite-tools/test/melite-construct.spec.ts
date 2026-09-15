@@ -309,6 +309,22 @@ describe('melite_construct mutations — every verb', () => {
     assert.deepEqual(seen[0]!.body, { session: 'main', stages: [], expect_rev: 0 })
   })
 
+  test('load with overwrite:true confirms wholesale replacement (the overwrite law)', async () => {
+    const stages = [{ id: 's1', engine: 'comfyui' }]
+    const { seen, request } = mockRequest((method, path) => {
+      if (method === 'POST' && path === '/v1/bench/ensure') return { rev: 6, stages }
+      throw new Error('unmocked ' + method + ' ' + path)
+    })
+    const tool = meliteConstruct(request)
+    const out = await tool.execute(
+      { verb: 'load', stages, intent: 'make art', overwrite: true, expect_rev: 4 },
+      exec(),
+    ) as Record<string, unknown>
+    assert.equal(out.rev, 6)
+    assert.deepEqual(out.stages, stages)
+    assert.deepEqual(seen[0]!.body, { session: 'main', stages, intent: 'make art', overwrite: true, expect_rev: 4 })
+  })
+
   test('patch merges params onto one stage', async () => {
     const { seen, request } = mockRequest((method, path) => {
       if (method === 'POST' && path === '/v1/bench/main/patch') return { rev: 6, stage: 's1', patched: ['p'] }

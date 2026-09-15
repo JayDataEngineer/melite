@@ -91,4 +91,16 @@ describe('skill_index render — the model-facing ids', () => {
     assert.ok(!out.includes('  s40'), 'past the clamp nothing rides')
     assert.ok(out.endsWith('+5 more'), 'the tail counts the rest')
   })
+
+  test('a refused scan renders REFUSED (the refusal is the honest answer)', () => {
+    assert.equal(text({ error: 'seat says no' }), 'skill_index REFUSED: seat says no')
+  })
+
+  test('rows without a string id never render a line (no phantom entries)', () => {
+    assert.equal(
+      text({ count: 2, skills: [{ id: 7 }, { id: 'ok', name: 'Fine' }] }),
+      'skill_index: 2 skills — read one with skill_read\n'
+      + '  ok — Fine',
+    )
+  })
 })

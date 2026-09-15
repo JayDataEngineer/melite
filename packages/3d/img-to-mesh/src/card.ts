@@ -160,7 +160,7 @@ export function apply(ctx: Context): void {
             rigged_glb: 'Rigged source GLB', target_glb: 'Target GLB',
           }
           throw new Error(
-            `required param(s) ${missing.map((m) => `'${m}' (${label[m] ?? m})`).join(', ')} missing on the transfer_rig lane — the rig copy needs the donor rig AND the clothed target`)
+            `required param(s) ${missing.map((m) => `'${m}' (${label[m]})`).join(', ')} missing on the transfer_rig lane — the rig copy needs the donor rig AND the clothed target`)
         }
         transferRigArm(g, p)
         return

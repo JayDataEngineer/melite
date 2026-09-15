@@ -210,9 +210,18 @@ const wsTextFrame = (payload: string): Buffer => {
   head[0] = 0x81; head[1] = 126; head.writeUInt16BE(data.length, 2);
   return Buffer.concat([head, data]);
 };
+/** Binary server→client frames (the preview-image arm): FIN + binary
+ *  opcode 0x82, unmasked — the tap must skip these (text only). */
+const wsBinaryFrame = (payload: Buffer): Buffer => {
+  if (payload.length < 126) return Buffer.concat([Buffer.from([0x82, payload.length]), payload]);
+  const head = Buffer.alloc(4);
+  head[0] = 0x82; head[1] = 126; head.writeUInt16BE(payload.length, 2);
+  return Buffer.concat([head, payload]);
+};
 const startWsStub = async (
   frames: string[],
   delayMs = 60,
+  binary: Buffer[] = [],
 ): Promise<{ url: string; close: () => Promise<void> }> => {
   const sockets: import("node:net").Socket[] = [];
   const srv: Server = createServer();
@@ -229,6 +238,7 @@ const startWsStub = async (
     sockets.push(socket);
     setTimeout(() => {
       for (const f of frames) socket.write(wsTextFrame(f));
+      for (const b of binary) socket.write(wsBinaryFrame(b));
     }, delayMs);
   });
   await new Promise<void>((r) => srv.listen(0, "127.0.0.1", r));
@@ -803,6 +813,27 @@ describe("executeSingle (the per-stage run)", () => {
       assert.ok(typeof sent["prompt_id"] === "string" && typeof sent["client_id"] === "string");
     } finally { await s.close(); }
   });
+  it("a report consumer opens the tap while /history stays terminal (the per-stage fold)", async () => {
+    const cfg = stub({
+      history: [pendingEntry(), doneEntry()],
+      wsFrames: ['{"type":"progress","data":{"value":1,"max":4,"node":"1"}}'],
+    });
+    const s = await startStub(cfg);
+    try {
+      const updates: Record<string, EngineJson>[] = [];
+      const out = await executeSingle(tmpRoot(), wfParams(), {}, {
+        report: (u) => { updates.push(u); },
+      }, s.url);
+      assert.ok(out.promptId.length > 0);
+      const progress = updates.filter((u) => u["progress"] !== undefined);
+      assert.equal(progress.length, 1, "the tap frame reached the fold");
+      assert.deepEqual(progress[0], {
+        progress: { value: 1, max: 4, node: "1" },
+        activity: "sampling 1/4",
+      });
+      assert.equal(activeCount(), 0, "the finally always deregisters");
+    } finally { await s.close(); }
+  });
   it("the node_errors matrix (absent/null/empty ride; shapes refuse)", async () => {
     for (const body of [undefined, null, [], {}]) {
       const cfg = stub({ history: [doneEntry()] });
@@ -1337,6 +1368,69 @@ describe("openProgressTap + drainRelevant (the tap fold)", () => {
       });
       assert.match(String(err), /execution_error/, "the executor's failure is recorded");
     } finally { await s.close(); }
+  });
+  it("binary preview frames are skipped (text only, py parity)", async () => {
+    const s = await startWsStub(
+      ['{"type":"progress","data":{"value":1,"max":2,"prompt_id":"p1"}}'],
+      60,
+      [Buffer.from([0x89, 0x50, 0x4e, 0x47])],
+    );
+    try {
+      const tap = openProgressTap(s.url, "melite-bin-1");
+      await sleep(400); // frames land at ~60ms
+      const events = tap.drain();
+      tap.close();
+      assert.deepEqual(events, [
+        { type: "progress", data: { value: 1, max: 2, prompt_id: "p1" } },
+      ], "the binary preview never queues — only the text frame rides");
+    } finally { await s.close(); }
+  });
+  it("non-object data queues as the empty map (never the raw scalar)", async () => {
+    const s = await startWsStub([
+      '{"type":"custom","data":7}',
+      '{"type":"custom2","data":null}',
+      '{"type":"custom3","data":[1,2]}',
+    ]);
+    try {
+      const tap = openProgressTap(s.url, "melite-raw-1");
+      await sleep(400); // frames land at ~60ms
+      const events = tap.drain();
+      tap.close();
+      assert.deepEqual(events, [
+        { type: "custom", data: {} },
+        { type: "custom2", data: {} },
+        { type: "custom3", data: {} },
+      ], "scalar, null, and array data all fold to the empty map");
+    } finally { await s.close(); }
+  });
+  it("a max-less progress folds max 0 with the unknown-budget voice", () => {
+    const seen: Record<string, EngineJson>[] = [];
+    const err = drainRelevant(
+      [
+        { type: "progress", data: { value: 2, node: "7", prompt_id: "p1" } },
+        { type: "progress", data: { value: 3, max: "many", node: "7", prompt_id: "p1" } },
+      ],
+      "p1",
+      (u) => { seen.push(u); },
+    );
+    assert.deepEqual(seen, [
+      { progress: { value: 2, max: 0, node: "7" }, activity: "sampling 2/?" },
+      { progress: { value: 3, max: 0, node: "7" }, activity: "sampling 3/?" },
+    ], "a missing or unshaped max seeds 0 and voices '?' — never NaN, never a throw");
+    assert.equal(err, null);
+  });
+  it("foreign event types fold to nothing (the tap never voices what it does not know)", () => {
+    const seen: Record<string, EngineJson>[] = [];
+    const err = drainRelevant(
+      [
+        { type: "status", data: { prompt_id: "p1", queue_remaining: 2 } },
+        { type: "executing", data: { prompt_id: "p1" } },
+      ],
+      "p1",
+      (u) => { seen.push(u); },
+    );
+    assert.deepEqual(seen, [], "an unknown type and a nodeless executing fold to silence");
+    assert.equal(err, null);
   });
   it("a refused socket yields no events and never throws (progress is additive)", async () => {
     const tap = openProgressTap("http://127.0.0.1:1", "melite-dead");
