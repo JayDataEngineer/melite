@@ -451,6 +451,10 @@ export function specBody(
       modifiers,
       variant_groups: groupContract(decl),
     },
+    // THE PREVIEW CLAIMS (gap 4, stroke 67): the card's own
+    // preview arm, served verbatim (historyStrip: false claims the
+    // bottom bar); absent = the strip is ON (the default).
+    ...(def.preview !== undefined ? { preview: def.preview } : {}),
     form: res.card,
     genre: ident.genre,
     guide: null,

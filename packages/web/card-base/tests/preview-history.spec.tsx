@@ -32,6 +32,16 @@ const CURRENT: PreviewOwnerProps = {
   ],
 }
 
+test('THE STRIP OPT-OUT (gap 4): historyStrip false kills the strip — the card claims its own bottom bar', () => {
+  const owner: PreviewOwnerProps = {
+    ...CURRENT,
+    historyStrip: false,
+  }
+  const r = render(h(ImageStagePreview, owner))
+  expect(r.container.querySelector('[data-testid="stage-output-history"]')).toBe(null)
+  expect(r.container.querySelector('[data-testid="stage-preview-image-hero"]')).not.toBe(null)
+})
+
 test('THE SECTION: the history renders under the hero, titled, newest first, capped by the estate', () => {
   const { container } = render(h(ImageStagePreview, CURRENT))
   const block = container.querySelector('[data-testid="stage-output-history"]')

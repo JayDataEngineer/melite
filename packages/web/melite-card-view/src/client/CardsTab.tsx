@@ -1175,6 +1175,12 @@ function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRemoved, 
       stageId: stage.id,
       ...(history.length > 0 ? { history } : {}),
       ...(historyNotes !== undefined ? { historyNotes } : {}),
+      // THE STRIP OPT-OUT (gap 4, stroke 67): the SERVED doc's
+      // preview.historyStrip — door-served off the card's own
+      // declaration, never a client-side guess per card id.
+      ...((spec as { preview?: { historyStrip?: boolean } } | null)?.preview?.historyStrip === false
+        ? { historyStrip: false }
+        : {}),
     }
     const fallback = kind === 'video'
       ? h(VideoStagePreview, owner)

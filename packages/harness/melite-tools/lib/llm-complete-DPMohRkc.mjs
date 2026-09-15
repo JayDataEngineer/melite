@@ -469,6 +469,7 @@ function specBody(svc, defs, res) {
 			modifiers,
 			variant_groups: groupContract(decl)
 		},
+		...def.preview !== void 0 ? { preview: def.preview } : {},
 		form: res.card,
 		genre: ident.genre,
 		guide: null,

@@ -427,6 +427,16 @@ describe('live door arms', () => {
     )
   })
 
+  test('specBody serves the preview claims verbatim (gap 4 — h3-timeline claims the bar; others serve nothing)', async () => {
+    const defs = await loadCardDefs()
+    const h3 = await formSpecArm('h3-timeline')
+    assert.ok(h3 !== null)
+    assert.deepEqual(h3['preview'], { historyStrip: false }, 'the claim serves verbatim')
+    const gen = await formSpecArm('image-gen')
+    assert.ok(gen !== null)
+    assert.equal(gen['preview'], undefined, 'absent claim = strip ON (the default, no key served)')
+  })
+
   test("formSpecArm serves the AGENT ENGINE doc from the declared contract (stroke 66 — the census rides LIVE)", async () => {
     const doc = await formSpecArm('agent', () => ({
       mcps: [{ value: 'blender', label: 'blender' }],

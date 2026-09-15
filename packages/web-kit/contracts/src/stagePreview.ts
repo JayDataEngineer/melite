@@ -42,6 +42,14 @@ export interface PreviewOwnerProps {
    *  the hero's own run is NOT in it. Absent on lanes/rows without
    *  history. */
   history?: PreviewArtifact[][]
+  /** THE STRIP OPT-OUT (output-component gap 4, stroke 67 — the
+   *  operator's sketch: "advanced cards can flip the bottom bar
+   *  off"): SERVED by the card's declaration (CardDefinition.preview
+   *  → the form-spec doc's `preview.historyStrip`), read here by the
+   *  owner build. Absent/true = ON (the default — the strip is the
+   *  QOL law); false = the card claims its own bottom bar (the
+   *  h3-timeline law: an advanced card's timeline IS the history). */
+  historyStrip?: boolean
   /** THE PARAMS CHIP (the output-component stroke — "old
    *  generations that had different parameters"): index-aligned
    *  with `history`; entry i carries the comma-joined KEYS whose

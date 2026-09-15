@@ -1,4 +1,4 @@
-import { c as formsArm, i as routeName, l as kindsDoorArm, o as cardToolsArm, p as makeEstateRequest, r as resolveHarnessRoutes, s as formSpecArm, t as harnessEnhance, u as modelCatalogArm } from "./llm-complete-Bthea7rj.mjs";
+import { c as formsArm, i as routeName, l as kindsDoorArm, o as cardToolsArm, p as makeEstateRequest, r as resolveHarnessRoutes, s as formSpecArm, t as harnessEnhance, u as modelCatalogArm } from "./llm-complete-DPMohRkc.mjs";
 import { buildSkillIndex, disclosureRoot } from "@melite/estate-queue";
 //#region src/enhance-agent.ts
 /** Map a form-spec envelope onto its declared recipes (the ONE

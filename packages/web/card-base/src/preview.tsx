@@ -66,6 +66,11 @@ function StaleBadge(props: { note?: string }): ReturnType<typeof h> {
 }
 
 function HistoryStrip(props: PreviewOwnerProps, promote: (i: number) => void, testid: string): ReturnType<typeof h> | null {
+  // THE OPT-OUT (gap 4): a card that claims its own bottom bar
+  // serves historyStrip: false — the strip is OFF, the history data
+  // still rides the owner (the promote seam stays armed for a
+  // future face; nothing is deleted, the bar is claimed).
+  if (props.historyStrip === false) return null
   const history = props.history ?? []
   if (history.length === 0) return null
   const notes = props.historyNotes ?? []

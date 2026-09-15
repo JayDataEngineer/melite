@@ -624,6 +624,9 @@ export function registerCard(ctx: Context, comfy: ComfyUIService): void {
     // discovery export — the card owns its sidebar, surface, and
     // flow-stage declarations; the discovery arms derive from here).
     sidebar: { key: 'video', order: 6 },
+    // THE BAR CLAIM (gap 4, stroke 67): the timeline IS this card's
+    // output history — the shared history strip would duplicate it.
+    preview: { historyStrip: false },
     surface: { size: 'huge', layout: 'studio' },
     flowKinds: {
       inputs: { image: 'image' },

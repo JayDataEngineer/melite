@@ -81,6 +81,12 @@ export interface CardDefinition {
    *  below already read it; tagger.ts / img-to-mesh.ts module
    *  augmentations merge the identical shape. Type-level only.) */
   requiresByFamily?: Record<string, readonly string[]>
+  /** The card's preview claims (output-component gap 4, stroke 67):
+   *  `historyStrip: false` claims the bottom bar — an advanced card
+   *  whose own face IS the history (h3-timeline's timeline). Served
+   *  verbatim on the form-spec doc's `preview` arm; absent = the
+   *  strip is ON (the QOL default). */
+  preview?: { historyStrip?: boolean }
   /** Card-declared modifier kinds (the MODs generalization, stroke
    *  63 — docs/design/mods-contracts.md CONTRACT A): action kinds
    *  the CARD owns (MASK's mask sources), served through the ONE
