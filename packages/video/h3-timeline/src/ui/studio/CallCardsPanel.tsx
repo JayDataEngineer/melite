@@ -35,7 +35,7 @@ export interface CallCardDeps {
   enhanceErr: Record<string, string | null>
   enhanceUndo: Record<string, string>
   setCallSpan: (i: number, which: "start" | "end", frame: number) => void
-  setCallGuide: (i: number, kind: "image" | "clip" | "audio" | "last_frame", source: string) => void
+  setCallGuide: (i: number, kind: "image" | "clip" | "audio", source: string) => void
   setCallPrevSec: (i: number, sec: number | null) => void
   setCallTransition: (i: number, t: "extend" | "cut") => void
   setCallRefs: (i: number, key: "images" | "videos" | "audios" | "video_audios", value: string) => void

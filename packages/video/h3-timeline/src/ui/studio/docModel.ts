@@ -20,8 +20,9 @@ import type { TimelineTrack } from "@melite-plugin/timeline/ui/timeline"
  * empty refuses the plan at the door). The optional guide sources
  * anchor at `start_frame` (the cut); `image` IS the first-frame
  * source (a seam image becomes that window's first_frame). The
- * frame-conditioning subcards (2026-08-16): `last_frame` = the call's
- * CLOSING still (pinned at its final frame), `first_frame_prev_sec`
+ * frame-conditioning subcards: `last_frame` was CUT 2026-09-15 — the
+ * PlagueKind gen lane (ReferenceToVideo) owns no last-frame input, so
+ * the control wrote wire nothing reads. `first_frame_prev_sec`
  * = open from the last X seconds of the PREVIOUS window's rendered
  * video (a motion continuation; coherent WITH `image` — the still
  * anchors frame 0, the tail clip carries the motion). The optional
@@ -35,7 +36,6 @@ export interface DocCall {
   image?: string
   clip?: string
   audio?: string
-  last_frame?: string
   first_frame_prev_sec?: number
   /** Seam mode into this call: 'cut' (fresh window; prev-sec re-feeds the
    * previous VIDEO tail as an opener clip) or 'extend' (seamless latent

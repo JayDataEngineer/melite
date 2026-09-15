@@ -118,15 +118,17 @@ export function CallCard({
       <span className={s.spanNote}>end exclusive · edit ripples the cut into the neighbor</span>
     </div>
 
-    {/* ── The frame conditioners — the SUBCARDS (the
+    {/* ── The frame conditioner — the SUBCARD (the
         qwen-img-edit-2511 input pattern, upgraded 2026-08-24
         to FULL image inputs — upload / OS drop / tray drop /
         LINK TO PREVIOUS OUTPUT, the same affordances every
         other image slot has): FIRST frame (the opening still
         — `image`, which a seam turns into the window's
         first_frame — plus the prev-video continuation
-        option) and LAST frame (the closing still, pinned at
-        the call's final frame). */}
+        option). The LAST frame subcard was CUT 2026-09-15:
+        the PlagueKind gen lane (ReferenceToVideo) owns no
+        last-frame input, so the control wrote wire nothing
+        reads. */}
     <div className={s.framesRow}>
       <CallFrameSubcard
         label="First frame"
@@ -145,16 +147,6 @@ export function CallCard({
         prevNote={i === 0
           ? "the first call has no previous video to continue from"
           : undefined}
-      />
-      <CallFrameSubcard
-        label="Last frame"
-        testId="tl-last-frame"
-        callIndex={i}
-        value={c.last_frame}
-        onChange={(source) => setCallGuide(i, "last_frame", source)}
-        nameToUrl={artifactIndex.byName}
-        urlToName={artifactIndex.byUrl}
-        links={linkGroups}
       />
     </div>
 

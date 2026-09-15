@@ -76,11 +76,16 @@ export function hydrateCalls(raw: { calls?: unknown; beats?: unknown }): DocCall
       const src = r[kind]
       if (typeof src === "string" && src.trim()) call[kind] = src
     }
-    // Frame-conditioning subcards: the closing still + the prev-video
-    // opener (string / positive-number sources; foreign types drop —
-    // forgiving hydration, never a re-send of an invalid doc).
+    // Frame-conditioning: the prev-video opener survives (positive
+    // number; foreign types drop — forgiving hydration, never a
+    // re-send of an invalid doc). last_frame was CUT 2026-09-15 (the
+    // PlagueKind gen lane owns no last-frame input — the control
+    // wrote wire nothing reads): a legacy doc carrying it drops with
+    // a LOUD warn, never a silent loss.
     if (typeof r.last_frame === "string" && r.last_frame.trim()) {
-      call.last_frame = r.last_frame
+      console.warn(
+        `VideoTimelineStudio: call ${calls.length} carried last_frame (${r.last_frame}) — dropped; the closing-still control was cut 2026-09-15 (the reference lane owns no last-frame input)`,
+      )
     }
     const ps = r.first_frame_prev_sec
     if (typeof ps === "number" && Number.isFinite(ps) && ps > 0) {
@@ -281,10 +286,8 @@ export function serializeCalls(calls: DocCall[]): DocCall[] {
       const src = c[kind]
       if (src && src.trim()) out[kind] = src
     }
-    // The frame-conditioning subcards ride the same blank-never rule:
-    // a cleared subcard deletes its key (last_frame "" = no closing
-    // still; first_frame_prev_sec null = no prev-video opener).
-    if (c.last_frame && c.last_frame.trim()) out.last_frame = c.last_frame
+    // The prev-video opener rides the blank-never rule (null = no
+    // opener). last_frame is never written — cut 2026-09-15.
     if (c.first_frame_prev_sec != null) out.first_frame_prev_sec = c.first_frame_prev_sec
     if (c.transition === "extend" || c.transition === "cut") out.transition = c.transition
     // Per-call refs: the wire form is the COMMA STRING — same as the

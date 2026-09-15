@@ -5274,9 +5274,9 @@ window.__ModuleLoader__.load({
 							})
 						]
 					}),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
 						className: studio_module_css_default.framesRow,
-						children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(CallFrameSubcard, {
+						children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(CallFrameSubcard, {
 							label: "First frame",
 							testId: "tl-first-frame",
 							callIndex: i,
@@ -5291,16 +5291,7 @@ window.__ModuleLoader__.load({
 							onTransition: (t) => setCallTransition(i, t),
 							prevDisabled: i === 0,
 							prevNote: i === 0 ? "the first call has no previous video to continue from" : void 0
-						}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)(CallFrameSubcard, {
-							label: "Last frame",
-							testId: "tl-last-frame",
-							callIndex: i,
-							value: c.last_frame,
-							onChange: (source) => setCallGuide(i, "last_frame", source),
-							nameToUrl: artifactIndex.byName,
-							urlToName: artifactIndex.byUrl,
-							links: linkGroups
-						})]
+						})
 					}),
 					(() => {
 						const total = splitRefList(c.refs?.images).length + (!!(c.image ?? "").trim() ? 1 : 0);
@@ -5760,7 +5751,7 @@ window.__ModuleLoader__.load({
 					const src = r[kind];
 					if (typeof src === "string" && src.trim()) call[kind] = src;
 				}
-				if (typeof r.last_frame === "string" && r.last_frame.trim()) call.last_frame = r.last_frame;
+				if (typeof r.last_frame === "string" && r.last_frame.trim()) console.warn(`VideoTimelineStudio: call ${calls.length} carried last_frame (${r.last_frame}) — dropped; the closing-still control was cut 2026-09-15 (the reference lane owns no last-frame input)`);
 				const ps = r.first_frame_prev_sec;
 				if (typeof ps === "number" && Number.isFinite(ps) && ps > 0) call.first_frame_prev_sec = ps;
 				if (r.transition === "extend" || r.transition === "cut") call.transition = r.transition;
@@ -5916,7 +5907,6 @@ window.__ModuleLoader__.load({
 					const src = c[kind];
 					if (src && src.trim()) out[kind] = src;
 				}
-				if (c.last_frame && c.last_frame.trim()) out.last_frame = c.last_frame;
 				if (c.first_frame_prev_sec != null) out.first_frame_prev_sec = c.first_frame_prev_sec;
 				if (c.transition === "extend" || c.transition === "cut") out.transition = c.transition;
 				if (c.refs) {
@@ -11754,22 +11744,19 @@ window.__ModuleLoader__.load({
 					}];
 				});
 			};
-			/** Wire a call's guide source (the guide kinds + the last-frame
-			* subcard — the closing still rides the identical blank-never rule).
-			* Empty = none (the planner's contract: blank guide keys never
-			* materialize — clearing the input detaches the guide; there is no
-			* "wired-but-unwired" TODO state for calls, sources are typed, not
-			* dropped-then-wired like lane keyframes). */
+			/** Wire a call's guide source. Empty = none (the planner's
+			* contract: blank guide keys never materialize — clearing the input
+			* detaches the guide; sources are typed, not dropped-then-wired
+			* like lane keyframes). The last-frame subcard was CUT 2026-09-15 —
+			* the PlagueKind gen lane owns no last-frame input, so the control
+			* wrote wire nothing reads. */
 			const setCallGuide = (i, kind, source) => {
 				setCalls((prev) => {
 					if (i < 0 || i >= prev.length) return prev;
-					if ((kind === "last_frame" ? prev[i].last_frame ?? "" : prev[i][kind] ?? "") === source) return prev;
+					if ((prev[i][kind] ?? "") === source) return prev;
 					const next = [...prev];
 					const call = { ...prev[i] };
-					if (kind === "last_frame") {
-						if (source.trim()) call.last_frame = source;
-						else delete call.last_frame;
-					} else if (source.trim()) call[kind] = source;
+					if (source.trim()) call[kind] = source;
 					else delete call[kind];
 					next[i] = call;
 					return next;

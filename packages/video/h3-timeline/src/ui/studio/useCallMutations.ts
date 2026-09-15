@@ -45,26 +45,21 @@ export function useCallMutations(setCalls: Dispatch<SetStateAction<DocCall[]>>, 
     })
   }
 
-  /** Wire a call's guide source (the guide kinds + the last-frame
-   * subcard — the closing still rides the identical blank-never rule).
-   * Empty = none (the planner's contract: blank guide keys never
-   * materialize — clearing the input detaches the guide; there is no
-   * "wired-but-unwired" TODO state for calls, sources are typed, not
-   * dropped-then-wired like lane keyframes). */
-  const setCallGuide = (i: number, kind: GuideKind | "last_frame", source: string) => {
+  /** Wire a call's guide source. Empty = none (the planner's
+   * contract: blank guide keys never materialize — clearing the input
+   * detaches the guide; sources are typed, not dropped-then-wired
+   * like lane keyframes). The last-frame subcard was CUT 2026-09-15 —
+   * the PlagueKind gen lane owns no last-frame input, so the control
+   * wrote wire nothing reads. */
+  const setCallGuide = (i: number, kind: GuideKind, source: string) => {
     setCalls((prev) => {
       if (i < 0 || i >= prev.length) return prev
-      const cur = kind === "last_frame" ? (prev[i]!.last_frame ?? "") : (prev[i]![kind] ?? "")
+      const cur = prev[i]![kind] ?? ""
       if (cur === source) return prev
       const next = [...prev]
       const call = { ...prev[i]! }
-      if (kind === "last_frame") {
-        if (source.trim()) call.last_frame = source
-        else delete call.last_frame
-      } else {
-        if (source.trim()) call[kind] = source
-        else delete call[kind]
-      }
+      if (source.trim()) call[kind] = source
+      else delete call[kind]
       next[i] = call
       return next
     })
