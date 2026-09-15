@@ -240,6 +240,10 @@ const MODIFIER_PACKS: Record<
      *  SERVED value, never the kind name). */
     entry?: string
     option_key?: string
+    /** THE SCALAR DIAL (the bag element's weight field): strength
+     *  for lora/controlnet, weight for ip_adapter — served so the
+     *  leaf never guesses off the kind name. */
+    scalar_key?: string
   }
 > = {
   loras: { kind: 'lora', label: 'LoRAs', cardinality: 'list', entry: 'option', option_key: 'id' },
@@ -249,6 +253,13 @@ const MODIFIER_PACKS: Record<
   controlnet: { kind: 'controlnet', label: 'ControlNet', cardinality: 'list', max_stack: 5, param_key: 'controlnets', entry: 'hybrid', option_key: 'type' },
   mask: { kind: 'mask', label: 'Region Mask', cardinality: 'list', max_stack: 1 },
   lanpaint: { kind: 'brick', label: 'Lanpaint', cardinality: 'list', max_stack: 1 },
+  // THE SAME PLURAL LAW (the retired bag: params.ip_adapters[] —
+  // kind singular, storage plural, schema_key names the pack
+  // envelope). Hybrid like controlnet: the entry binds its option
+  // field (kind) to the served rows; the rows are vocabulary only
+  // — the firing gate refuses every stated entry loud (fate
+  // 'refused', the ray receipt in guard.ts).
+  ip_adapter: { kind: 'ip_adapter', label: 'IP-Adapter', cardinality: 'list', max_stack: 5, param_key: 'ip_adapters', entry: 'hybrid', option_key: 'kind', scalar_key: 'weight' },
 }
 
 function optionTooltip(
@@ -298,14 +309,15 @@ function specModifiers(
     // never client-switched on the kind name).
     if (meta.entry !== undefined) entry.entry = meta.entry
     if (meta.option_key !== undefined) entry.option_key = meta.option_key
+    if (meta.scalar_key !== undefined) entry.scalar_key = meta.scalar_key
     entry.options = cat.rows.map((r) => ({
       value: r.id,
       label: r.label ?? r.id,
       tooltip: optionTooltip(r, cat.shared),
       defaults:
-        r.default_strength === undefined
+        r.default_strength === undefined && r.default_weight === undefined
           ? {}
-          : { strength: r.default_strength },
+          : { [meta.scalar_key ?? 'strength']: r.default_strength ?? r.default_weight },
       // THE RESOLVED FACTS (the hybrid leaf stamps these onto new
       // entries so the run record carries the retired wire shape —
       // model + upstream-map note; the lane re-validates them

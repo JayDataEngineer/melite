@@ -42,7 +42,7 @@ import { Button, IconPlusOutline16, Input, Menu, Modal } from '@deepseek-ai/dsh-
 import css from './card.module.css'
 import { SpecAtom } from './form.tsx'
 import { useSquareProvider } from './form.tsx'
-import { coerceFieldEdit, isHybridKind, isOptionKind, optionKeyOf, titleCaseId, type ModifierKind, type ModifierOption, type SpecField, type SpecValues } from './spec.ts'
+import { coerceFieldEdit, isHybridKind, isOptionKind, optionKeyOf, scalarKeyOf, titleCaseId, type ModifierKind, type ModifierOption, type SpecField, type SpecValues } from './spec.ts'
 
 export interface ModifiersSectionProps {
   kinds: ModifierKind[]
@@ -83,16 +83,19 @@ export function ModifiersSection(props: ModifiersSectionProps): ReturnType<typeo
   const optionOf = (k: ModifierKind, value: string): ModifierOption | null =>
     (k.options ?? []).find((o) => o.value === value) ?? null
   /** THE HYBRID ENTRY FIELDS (the bag element minus its two bound
-   *  rows — the option_key select and the strength row own those). */
+   *  rows — the option_key select and the scalar dial own those). */
   const hybridFields = (k: ModifierKind, hidden?: ReadonlySet<string>): SpecField[] => {
     const key = optionKeyOf(k)
-    return (k.fields ?? []).filter((f) => f.name !== key && f.name !== 'strength' && !(hidden?.has(f.name) ?? false))
+    const scalar = scalarKeyOf(k)
+    return (k.fields ?? []).filter((f) => f.name !== key && f.name !== scalar && !(hidden?.has(f.name) ?? false))
   }
-  /** The strength seed (the row's own default wins; the contract
+  /** The scalar seed (the row's own default wins; the contract
    *  field default is the backstop — 0.7, the retired leaf). */
   const strengthSeedOf = (k: ModifierKind, option: ModifierOption | null): number => {
-    if (option?.defaults?.strength !== undefined) return option.defaults.strength
-    const field = (k.fields ?? []).find((f) => f.name === 'strength')
+    const scalar = scalarKeyOf(k)
+    const rowDefault = option?.defaults?.[scalar]
+    if (typeof rowDefault === 'number') return rowDefault
+    const field = (k.fields ?? []).find((f) => f.name === scalar)
     return typeof field?.default === 'number' ? field.default : 0.7
   }
   const commitScalar = (f: SpecField, name: string, v: unknown): void => {
@@ -136,7 +139,8 @@ export function ModifiersSection(props: ModifiersSectionProps): ReturnType<typeo
     if (isHybridKind(k)) {
       const key = optionKeyOf(k)
       setDraftOption(typeof entry[key] === 'string' ? entry[key] as string : '')
-      const strength = typeof entry['strength'] === 'number' ? entry['strength'] as number : undefined
+      const scalar = scalarKeyOf(k)
+      const strength = typeof entry[scalar] === 'number' ? entry[scalar] as number : undefined
       setDraftStrength(strength !== undefined ? String(strength) : '')
       const params: SpecValues = {}
       for (const f of hybridFields(k, seated)) {
@@ -173,16 +177,17 @@ export function ModifiersSection(props: ModifiersSectionProps): ReturnType<typeo
       const seed = strengthSeedOf(k, option)
       const strength = draftStrength.trim() === '' ? seed : Number(draftStrength)
       if (!Number.isFinite(strength)) { setLeafError('Strength must be a number.'); return }
+      const scalar = { [scalarKeyOf(k)]: strength }
       const stamped: Record<string, unknown> = { [key]: draftOption }
       if (typeof option.model === 'string') stamped['model'] = option.model
       if (typeof option.preprocessor === 'string') stamped['preprocessor'] = option.preprocessor
       if (leaf.mode === 'create') {
-        commit(k, [...entries, { ...stamped, ...draftParams, strength }])
+        commit(k, [...entries, { ...stamped, ...draftParams, ...scalar }])
       } else {
         const entry = entries[leaf.index]
         if (entry === undefined) { setLeaf(null); return }
         const next = [...entries]
-        next[leaf.index] = { ...entry, ...stamped, ...draftParams, strength }
+        next[leaf.index] = { ...entry, ...stamped, ...draftParams, ...scalar }
         commit(k, next)
       }
     } else if (isOptionKind(k)) {
@@ -275,9 +280,10 @@ export function ModifiersSection(props: ModifiersSectionProps): ReturnType<typeo
               // to the kind label, as before).
               const id = typeof entry[optionKeyOf(k)] === 'string' ? entry[optionKeyOf(k)] as string : ''
               const option = optionOf(k, id)
-              const strength = typeof entry['strength'] === 'number'
-                ? entry['strength'] as number
-                : option !== null && option.defaults !== undefined ? option.defaults.strength : undefined
+              const scalar = scalarKeyOf(k)
+              const strength = typeof entry[scalar] === 'number'
+                ? entry[scalar] as number
+                : option !== null && option.defaults !== undefined && typeof option.defaults[scalar] === 'number' ? option.defaults[scalar] as number : undefined
           return h(ModTile, {
             key: k.param_key + '-' + i,
             tileId: k.param_key + '-' + i,
@@ -404,7 +410,7 @@ function ModLeaf(props: {
             ),
           ),
           h('label', { className: css.modField },
-            'Strength',
+            (k.fields ?? []).find((f) => f.name === scalarKeyOf(k))?.label ?? 'Strength',
             h(Input, {
               type: 'number',
               step: '0.05',
@@ -413,7 +419,7 @@ function ModLeaf(props: {
               onChange: (e: { target: { value: string } }) => { onDraft.setDraftStrength(e.target.value) },
             }),
           ),
-          (k.fields ?? []).filter((f) => f.name !== optionKeyOf(k) && f.name !== 'strength' && !(hidden?.has(f.name) ?? false))
+          (k.fields ?? []).filter((f) => f.name !== optionKeyOf(k) && f.name !== scalarKeyOf(k) && !(hidden?.has(f.name) ?? false))
             .map((f) => h('label', { key: f.name, className: css.modField },
               h('span', { title: f.tooltip ?? f.label ?? f.name }, f.label ?? f.name),
               h(SpecAtom, {

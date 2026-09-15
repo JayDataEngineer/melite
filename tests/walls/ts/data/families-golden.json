@@ -9853,7 +9853,8 @@
     "genre": "image",
     "mods": [
       "loras",
-      "controlnet"
+      "controlnet",
+      "ip_adapter"
     ],
     "variants": [
       {
@@ -9948,7 +9949,8 @@
     "genre": "image",
     "mods": [
       "loras",
-      "controlnet"
+      "controlnet",
+      "ip_adapter"
     ],
     "variants": [
       {
@@ -10043,7 +10045,8 @@
     "genre": "image",
     "mods": [
       "loras",
-      "controlnet"
+      "controlnet",
+      "ip_adapter"
     ],
     "variants": [
       {
@@ -10138,7 +10141,8 @@
     "genre": "image",
     "mods": [
       "loras",
-      "controlnet"
+      "controlnet",
+      "ip_adapter"
     ],
     "variants": [
       {

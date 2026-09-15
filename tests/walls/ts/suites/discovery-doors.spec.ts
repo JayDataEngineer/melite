@@ -120,6 +120,46 @@ describe("the discovery door arms (live /v1 derivation)", () => {
     assert.ok("controlnet" in schemas, "the controlnet pack envelope rides mod_schemas");
   });
 
+  it("serves the z-image envelope with the hybrid ip_adapter entry (THE REFUSED-FATE OFFER)", async () => {
+    // The same hybrid law, vocabulary-only arm: param_key plural
+    // (ip_adapters), schema_key the pack name, option_key 'kind',
+    // scalar_key 'weight' (the pack's own dial — the leaf never
+    // guesses). Four options stamp the retired filenames + weight
+    // defaults; NO source is claimed (none exists). The firing
+    // gate refuses every stated entry loud — the offer is truth,
+    // not a promise of execution.
+    const spec = await formSpecArm("z-image");
+    const modifiers = ((spec as { features: { modifiers: Record<string, unknown>[] } })
+      .features.modifiers);
+    const ipa = modifiers.find((m) => m.kind === "ip_adapter");
+    assert.notEqual(ipa, undefined, "the ip_adapter modifier pack rides the spec");
+    assert.equal(ipa!.param_key, "ip_adapters");
+    assert.equal(ipa!.schema_key, "ip_adapter");
+    assert.equal(ipa!.entry, "hybrid");
+    assert.equal(ipa!.option_key, "kind");
+    assert.equal(ipa!.scalar_key, "weight");
+    assert.equal(ipa!.max_stack, 5);
+    const options = ipa!.options as Array<{
+      value: string; label: string; tooltip: string;
+      defaults: { weight?: number }; model: string;
+    }>;
+    assert.deepEqual(options.map((o) => o.value), ["style", "composition", "face", "generic"]);
+    const weights: Record<string, number> = { style: 1, composition: 1, face: 0.85, generic: 1 };
+    const files: Record<string, string> = {
+      style: "ip-adapter-light_v11.safetensors",
+      composition: "ip-adapter-plus_sd15.safetensors",
+      face: "ip-adapter-faceid-plusv2_sd15.safetensors",
+      generic: "ip-adapter_sd15.safetensors",
+    };
+    for (const o of options) {
+      assert.equal(o.defaults.weight, weights[o.value], `${o.value} seeds its declared weight`);
+      assert.equal(o.model, files[o.value], `${o.value} stamps the retired filename as a catalog note`);
+      assert.ok((o.tooltip ?? "").length > 0, `${o.value} serves its tooltip`);
+    }
+    const schemas = (spec as { mod_schemas: Record<string, unknown> }).mod_schemas;
+    assert.ok("ip_adapter" in schemas, "the ip_adapter pack envelope rides mod_schemas");
+  });
+
   it("serves the forms table with the sidebar shape", async () => {
     const forms = await formsArm();
     assert.ok(Object.keys(forms as Record<string, unknown>).length > 0);

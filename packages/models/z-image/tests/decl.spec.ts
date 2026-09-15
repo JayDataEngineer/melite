@@ -8,13 +8,14 @@ import assert from "node:assert/strict";
 import { DECL, family } from "../src/index.ts";
 import { ZIMAGE_ROWS, inject, apply } from "../mods/loras.ts";
 import { ZIMAGE_CONTROLNET_ROWS } from "../mods/controlnet.ts";
+import { ZIMAGE_IPADAPTER_ROWS } from "../mods/ip_adapter.ts";
 
 describe("the z-image model plugin", () => {
-  it("is a plugin boarding its loras + controlnet packs (rows live in the flavor files)", () => {
+  it("is a plugin boarding its loras + controlnet + ip_adapter packs (rows live in the flavor files)", () => {
     assert.equal(family.name, "family-z-image");
     assert.deepEqual(family.inject, ["models"]);
     assert.equal(typeof family.apply, "function");
-    assert.deepEqual(DECL.mods, ["loras", "controlnet"]);
+    assert.deepEqual(DECL.mods, ["loras", "controlnet", "ip_adapter"]);
     assert.equal(inject.join(","), "comfyui");
     assert.equal(typeof apply, "function");
     assert.equal(ZIMAGE_ROWS.length, 7, "the seven Turbo adapters on disk");
@@ -64,6 +65,24 @@ describe("the z-image model plugin", () => {
       assert.equal(r.default_strength, strengths[r.id], `${r.id} keeps its declared default strength`);
       assert.equal(r.preprocessor, preprocessors[r.id], `${r.id} keeps its upstream-map note`);
       assert.ok((r.tooltip ?? "").length > 0, `${r.id} serves its tooltip`);
+    }
+  });
+
+  it("boards the four IP-Adapter modes as VOCABULARY ONLY (the ray receipt — fate refused)", () => {
+    // the retired ip_adapters/mod.yaml, 1:1: ids, labels, weights,
+    // filenames. NO source_url pins: none exists (installed:null,
+    // source:null in every retired served spec — the SD1.5 files
+    // never stood on disk and cannot patch S3-DiT). The firing
+    // gate (card-kit guard.ts) refuses every stated entry LOUD.
+    assert.deepEqual(ZIMAGE_IPADAPTER_ROWS.map((r) => r.id), [
+      "style", "composition", "face", "generic",
+    ]);
+    const weights: Record<string, number> = { style: 1.0, composition: 1.0, face: 0.85, generic: 1.0 };
+    for (const r of ZIMAGE_IPADAPTER_ROWS) {
+      assert.equal(r.default_weight, weights[r.id], `${r.id} keeps its declared default weight`);
+      assert.equal((r as { source_url?: string }).source_url, undefined, `${r.id} claims NO source — no fetchable artifact exists, none is invented`);
+      assert.ok((r.tooltip ?? "").length > 0, `${r.id} serves its tooltip`);
+      assert.ok(r.filename.endsWith(".safetensors"), `${r.id} keeps the retired filename as a catalog note`);
     }
   });
 });

@@ -76,6 +76,34 @@ const ControlNetFields = z.object({
     }),
 })
 
+// ── IP-ADAPTER (the py IpAdapterMod, the ray ip_adapters/mod.yaml,
+// 1:1 field set): the reference-image stack. ONE entry per
+// reference: the image itself, the MODE (the family's served rows
+// — style/composition/face/generic on z-image), and the weight.
+// FATE 'refused' (guard.ts PACK_FATE): no lane builds this pack in
+// this plane — ray's apply_ipadapters lane silently degraded
+// (except-break) on weights that never stood on disk (SD1.5 files,
+// no Z-Image-compatible artifact exists upstream), so the firing
+// gate refuses every stated entry LOUD instead of skipping it.
+// The row filenames are catalog vocabulary (the retired
+// declaration, byte-1:1) — never fetch targets. ──
+const IPAdapterEntryFields = z.object({
+  image: z.string().description('Reference Image')
+    .extra('extra', {
+      wtype: 'image', group: 'ip_adapter', zone: 'mods', order: 0, width: 2,
+      tooltip: 'The reference image. The IP-Adapter lane is not executable in this plane — any stated entry refuses loud at run time.',
+    }),
+  kind: z.string().default('style').description('Mode')
+    .extra('extra', { wtype: 'text', group: 'ip_adapter', zone: 'mods', order: 1, width: 1 }),
+  weight: z.number().min(0).max(2).step(0.05).default(1).description('Weight')
+    .extra('extra', { wtype: 'slider', group: 'ip_adapter', zone: 'mods', order: 2, width: 1 }),
+})
+const IPAdapterFields = z.object({
+  ip_adapters: z.array(IPAdapterEntryFields)
+    .description('IP-Adapter')
+    .extra('extra', { wtype: 'ip_adapters', group: 'ip_adapter', zone: 'mods', default: null, order: 3 }),
+})
+
 // ── LAN-INPAINT (the py LanPaintMod + the qwen flavor's image1
 // override, inlined — see the seam note above) ──
 const LanpaintFields = z.object({
@@ -157,6 +185,7 @@ export function apply(ctx: Context): void {
   // destructured method loses its receiver; registry.ts:92)
   ctx.effect(() => ctx.comfyui.registerPack({ pack: 'loras', fields: LorasFields as never }))
   ctx.effect(() => ctx.comfyui.registerPack({ pack: 'controlnet', fields: ControlNetFields as never }))
+  ctx.effect(() => ctx.comfyui.registerPack({ pack: 'ip_adapter', fields: IPAdapterFields as never }))
   ctx.effect(() => ctx.comfyui.registerPack({ pack: 'lanpaint', fields: LanpaintFields as never }))
   ctx.effect(() => ctx.comfyui.registerPack({ pack: 'mask', fields: MaskFields as never }))
   ctx.effect(() => ctx.comfyui.registerPack({ pack: 'qvoice', fields: QvoiceFields as never }))

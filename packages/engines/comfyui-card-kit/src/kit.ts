@@ -36,7 +36,7 @@ import { loadTextPair, decodeSave, stackLoras, stackControlNets } from './blocks
 // subtree-top-index mechanism: consumers name the package, never a
 // path inside it — P46).
 export { loadTextPair, decodeSave, stackLoras, stackControlNets }
-import { fireLoras, fireControlNets, fireKnob } from './mods/guard.ts'
+import { fireLoras, fireControlNets, fireKnob, refuseIPAdapterFiring } from './mods/guard.ts'
 import {
   AUDIACORE_TTS_AUTOFILL,
   AUDIACORE_STUDIO_AUTOFILL,
@@ -98,6 +98,12 @@ export function imageT2I(p: Record<string, unknown>, model: ModelFacts, g: Graph
     unet = g.node('ModelSamplingAuraFlow', { model: unet, shift: li.sampling_shift }).out()
   }
   unet = stackLoras(g, unet, fireLoras(model, p))
+  // THE IP-ADAPTER FIRING GATE (fate 'refused', the ray receipt):
+  // no lane builds it in this plane — every stated entry refuses
+  // LOUD here, before any node renders (ray's lane silently
+  // skipped used entries; this plane never drops a reference
+  // image quietly).
+  refuseIPAdapterFiring(model, p)
   const { clip, vae } = loadTextPair(g, li)
   // THE CONTROLNET STACK (the z-image restoration): the fired picks
   // wrap the LoRA'd model — ModelPatchLoader → ZImageFunControlnet

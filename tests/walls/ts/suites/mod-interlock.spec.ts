@@ -63,8 +63,8 @@ test("mods registered through the service as plugins (PORT LAW: Schemastery cont
     assert.ok(a.fields.dict !== undefined, `pack ${a.pack} carries a Schemastery object contract`);
   }
   const gen = svc.cardModFields("image-gen");
-  assert.deepEqual(gen.flatMap(names), ["controlnets", "controlnet_strength_floor", "loras"],
-    "image-gen absorbs loras + the controlnet stack (the z-image restoration)");
+  assert.deepEqual(gen.flatMap(names), ["controlnets", "controlnet_strength_floor", "ip_adapters", "loras"],
+    "image-gen absorbs loras + the controlnet stack (the z-image restoration) + the ip_adapter bag (the refused-fate restoration: vocabulary served, entries refuse loud)");
   const tts = svc.cardModFields("tts");
   assert.deepEqual(tts.flatMap(names).sort(), ["qvoice", "voice_pca_strengths"], "tts absorbs the qvoice pack");
 });
@@ -248,11 +248,15 @@ test("the correction stroke: flavors are family-owned and the boarding is bidire
     }
   }
   // the pack taxonomy is the distinct category (controlnet LANDED
-  // its boarder with the z-image restoration — seven union types)
-  assert.deepEqual(svc.packNames(), ["controlnet", "lanpaint", "loras", "mask", "qvoice"]);
+  // its boarder with the z-image restoration — seven union types;
+  // ip_adapter boards refused — the ray receipt, four vocabulary
+  // rows, every stated entry refuses loud at fire time)
+  assert.deepEqual(svc.packNames(), ["controlnet", "ip_adapter", "lanpaint", "loras", "mask", "qvoice"]);
   const boarded = new Set(svc.flavorRegistrations().flatMap((f) => [f.pack]));
   assert.ok(boarded.has("controlnet"), "z-image boards controlnet — the pack serves its seven union types");
   assert.equal(svc.modRows("controlnet", "z-image").length, 7);
+  assert.ok(boarded.has("ip_adapter"), "z-image boards ip_adapter — vocabulary only, fate refused");
+  assert.equal(svc.modRows("ip_adapter", "z-image").length, 4);
   // krea-2's rows are FAMILY-OWNED (the flavor file, not the DECL)
   const krea = getModel("krea-2") as unknown as Record<string, unknown>;
   assert.ok(!("loras" in krea), "the DECL carries no loras data — rows live in the family's mods/ file");
@@ -400,6 +404,35 @@ test("THE REFUSED FATE, lanpaint/mask legs: stated knobs refuse LOUD on the imag
   }
   // lane promises ride inert (the stock plain-edit run)
   kit.refuseImageEditFiring({});
+});
+
+test("THE REFUSED FATE, ip_adapter leg: stated entries refuse LOUD on the image-gen lane (the ray receipt)", async () => {
+  // ip_adapter boards z-image but NO lane builds it in this plane —
+  // ray's apply_ipadapters silently skipped used entries (except-
+  // break, no-image skip, weight<=0 skip) on SD1.5 weights that
+  // never stood on disk. This plane refuses every stated entry
+  // LOUD, before any node renders — never a silent plain run that
+  // drops the reference image.
+  const guard = await import("../../../../packages/engines/comfyui-card-kit/src/mods/guard.ts");
+  const zimage = { id: "z-image", mods: ["loras", "controlnet", "ip_adapter"] };
+  // the gate direct: a stated bag refuses with the receipt
+  assert.throws(
+    () => guard.refuseIPAdapterFiring(zimage, { ip_adapters: [{ kind: "style", weight: 1 }] }),
+    (err: unknown): boolean => err instanceof Error
+      && /ip_adapters \[style\] refuses: no executable IP-Adapter lane/.test(String(err.message))
+      && /SD1\.5-era files that never stood on disk/.test(String(err.message))
+      && /ray lane silently skipped/.test(String(err.message)),
+  );
+  // an empty bag is the lane promise — rides inert (the plain run)
+  guard.refuseIPAdapterFiring(zimage, {});
+  guard.refuseIPAdapterFiring(zimage, { ip_adapters: [] });
+  // a smuggled bag on a NON-boarding atom is drift, not a skip
+  assert.throws(
+    () => guard.refuseIPAdapterFiring({ id: "krea-2", mods: ["loras"] }, { ip_adapters: [{ kind: "face" }] }),
+    (err: unknown): boolean => err instanceof Error && /does not board the 'ip_adapter' pack/.test(String(err.message)),
+  );
+  // the fate table row (boot gate (d) reads it)
+  assert.equal(guard.PACK_FATE["ip_adapter"], "refused");
 });
 
 test("§3.1 REVERTIBLE, every registration: card/pack/verb disposers retract (no residue)", () => {

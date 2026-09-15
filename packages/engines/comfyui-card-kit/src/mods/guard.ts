@@ -179,6 +179,33 @@ export function fireControlNets(model: ModBoarding, p: Record<string, unknown>):
 }
 
 /**
+ * The ip_adapter firing gate (fate 'refused' — the ray receipt):
+ * ray's apply_ipadapters lane wired CLIPVisionLoader → Encode →
+ * IPAdapterModelLoader → Apply, but silently degraded (except-break,
+ * no-image skip, weight<=0 skip) on SD1.5 weights that never stood
+ * on disk — the vocabulary never executed once, on any family. No
+ * Z-Image-compatible IP-Adapter exists upstream (HF api: 0 results;
+ * S3-DiT has no recipe in any installed pack). So the surface rides
+ * (the family's four rows, discovery, the hybrid UI) and EVERY
+ * stated entry refuses LOUD with this receipt — never ray's silent
+ * skip, never a plain run that drops your reference image.
+ */
+export function refuseIPAdapterFiring(model: ModBoarding, p: Record<string, unknown>): void {
+  const entries = p.ip_adapters;
+  if (!Array.isArray(entries) || entries.length === 0) return;
+  assertModUse(model, "ip_adapter");
+  const kinds = entries
+    .map((e) => (typeof (e as { kind?: unknown })?.kind === "string" ? (e as { kind: string }).kind : "?"))
+    .join(", ");
+  throw new Error(
+    `ip_adapters [${kinds}] refuses: no executable IP-Adapter lane exists in this plane — ` +
+      `the declared rows are SD1.5-era files that never stood on disk and cannot patch Z-Image's S3-DiT, ` +
+      `and no Z-Image IP-Adapter ships upstream. The ray lane silently skipped used entries; this gate ` +
+      `refuses instead. Drop the entries to run plain, or wait for a real Z-Image IP-Adapter + loader lane`,
+  );
+}
+
+/**
  * The scalar-knob firing gate (the qvoice shape): returns the raw
  * knob value, asserting the boarding FIRST when the knob is
  * stated (non-blank). Blank = no mutation = the lane's absent
@@ -205,13 +232,17 @@ export function fireKnob(model: ModBoarding, pack: string, key: string, raw: unk
 // it is a dead declaration, and the boot refuses it until a lane
 // lands the fate. controlnet LANDED its fate with the z-image
 // restoration (the ModelPatchLoader → ZImageFunControlnet lane in
-// render-kit.ts, fired through kit.ts imageT2I).
+// render-kit.ts, fired through kit.ts imageT2I). ip_adapter boards
+// REFUSED (the ray receipt, refuseIPAdapterFiring below): the lane
+// never executed anywhere — silent-skip code on weights that never
+// existed; the surface serves vocabulary, the gate serves truth.
 export const PACK_FATE: Record<string, "fired" | "refused" | "mounted"> = {
   loras: "fired",
   controlnet: "fired",
   qvoice: "fired",
   lanpaint: "refused",
   mask: "refused",
+  ip_adapter: "refused",
 };
 
 /** Verb ids mount; they never take a pack fate (gate (d) skips them). */

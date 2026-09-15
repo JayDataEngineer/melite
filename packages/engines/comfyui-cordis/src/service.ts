@@ -169,10 +169,18 @@ export type ModFields = {
 export interface LoraRowDecl {
   readonly id: string
   readonly filename: string
-  readonly source_url: string
+  /** The upstream fetch source — REQUIRED on executable rows
+   *  (the CN/LoRA law: no link, no row). A vocabulary-only row
+   *  (ip_adapter's refused-fate catalog) carries NONE: no source
+   *  exists, so none is claimed — nothing fetches, nothing lies. */
+  readonly source_url?: string
   readonly label?: string
   readonly category?: string
   readonly default_strength?: number
+  /** The scalar default under a pack whose dial is 'weight'
+   *  (ip_adapter's retired wire) — discovery stamps it into the
+   *  option defaults under the pack's scalar_key. */
+  readonly default_weight?: number
   readonly tooltip?: string
   readonly preprocessor?: string
 }

@@ -172,6 +172,10 @@ export interface ModifierKind {
    *  catalog-bound field (the hybrid type / the option id). */
   entry?: string
   option_key?: string
+  /** THE SCALAR FIELD (the bag element's weight dial): 'strength'
+   *  for lora/controlnet, 'weight' for ip_adapter — served by the
+   *  pack, never client-guessed off the kind name. */
+  scalar_key?: string
   fields?: SpecField[]
   /** Pack-level scalar rows (the controlnet strength floor — envelope
    *  root fields OUTSIDE the bag array). The section renders these
@@ -213,6 +217,12 @@ export function optionKeyOf(k: ModifierKind): string {
   return typeof k.option_key === 'string' && k.option_key !== '' ? k.option_key : 'id'
 }
 
+/** The scalar dial of a bag element (the pack's own name —
+ *  'strength' backstop when the door serves none). */
+export function scalarKeyOf(k: ModifierKind): string {
+  return typeof k.scalar_key === 'string' && k.scalar_key !== '' ? k.scalar_key : 'strength'
+}
+
 /** One served catalog row (the discovery options projection — the
  *  row's resolved facts ride along so the hybrid leaf can stamp
  *  them; the lane re-validates, never trusts). */
@@ -220,7 +230,9 @@ export interface ModifierOption {
   value: string
   label: string
   tooltip?: string
-  defaults?: { strength?: number }
+  /** The row's scalar default, keyed by the pack's scalar field
+   *  (strength for lora/controlnet, weight for ip_adapter). */
+  defaults?: { [scalar: string]: number | undefined }
   model?: string
   preprocessor?: string
 }

@@ -7,7 +7,8 @@
     ".": "./src/index.ts",
     "./package.json": "./package.json",
     "./mods/loras": "./mods/loras.ts",
-    "./mods/controlnet": "./mods/controlnet.ts"
+    "./mods/controlnet": "./mods/controlnet.ts",
+    "./mods/ip_adapter": "./mods/ip_adapter.ts"
   },
   "dependencies": {
     "@deepseek-ai/cordis": "^4.0.2",

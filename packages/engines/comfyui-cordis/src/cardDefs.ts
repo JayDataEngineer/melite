@@ -133,6 +133,7 @@ export const composeModPlane = async (ctx: Context): Promise<void> => {
     ['@melite/models-krea-2/mods/loras', 'krea-2 loras'],
     ['@melite/models-z-image/mods/loras', 'z-image loras'],
     ['@melite/models-z-image/mods/controlnet', 'z-image controlnet'],
+    ['@melite/models-z-image/mods/ip_adapter', 'z-image ip_adapter'],
     ['@melite/models-anny/mods/verbs', 'anny verbs'],
     ['@melite/models-qwen3-tts/mods/qvoice', 'qwen3-tts qvoice'],
     ['@melite/models-qwen-img-edit-2511/mods/lanpaint', 'qwen-img-edit-2511 lanpaint'],
