@@ -1444,3 +1444,62 @@ describe("the wiring admission (phantom wires refuse at write time)", () => {
     assert.match(refusal, /bench\/bad-wire/);
   });
 });
+
+  test("THE NO-LEAK LAW: a refused add_stage leaves the bench untouched (no phantom rows persist)", async () => {
+    const drafts = await boot();
+    await ensureBench(drafts, { session: "s" });
+    await addStageBench(drafts, "s", { card: "image-gen", expect_rev: 0 });
+    // two refused adds (phantom upstream, dead wire)
+    await codeOf(addStageBench(drafts, "s", {
+      card: "image-edit", expect_rev: 1,
+      params: { prompt: "a" },
+      inputs: { image: { stage: "stage-1", output: "image" } },
+    }));
+    await codeOf(addStageBench(drafts, "s", {
+      card: "image-edit", expect_rev: 1,
+      params: { prompt: "b" },
+      inputs: { image1: { stage: "s_0", output: "image" } },
+    }));
+    let doc = getBench(drafts, "s");
+    assert.equal((doc.stages as unknown[]).length, 1, "no refused row leaked");
+    // the good write lands clean — and drags NO leaked rows with it
+    const ok = await addStageBench(drafts, "s", {
+      card: "image-edit", expect_rev: 1,
+      params: { prompt: "c", image1: "$image" },
+      inputs: { image: { stage: "s_0", output: "image" } },
+    });
+    assert.equal(ok.stage, "s_1", "minted fresh against the clean bench");
+    doc = getBench(drafts, "s");
+    assert.equal((doc.stages as unknown[]).length, 2);
+  });
+
+  test("THE NO-LEAK LAW: a refused rewire and a refused patch leave the row untouched", async () => {
+    const drafts = await boot();
+    await ensureBench(drafts, {
+      session: "s",
+      stages: [
+        { id: "a", card: "image-gen" },
+        { id: "b", card: "image-edit", params: { prompt: "p", image1: "$image" } },
+      ],
+    });
+    await rewireBench(drafts, "s", {
+      stage: "b", input: "image", expect_rev: 0,
+      from: { stage: "a", output: "image" },
+    });
+    // refused rewire (phantom upstream) — the binding must NOT move
+    await codeOf(rewireBench(drafts, "s", {
+      stage: "b", input: "image", expect_rev: 1,
+      from: { stage: "zzz", output: "image" },
+    }));
+    let doc = getBench(drafts, "s");
+    let b = (doc.stages as Array<{ id: string; inputs: Record<string, unknown> }>).find((x) => x.id === "b")!;
+    assert.deepEqual(b.inputs.image, { stage: "a", output: "image" }, "binding unchanged");
+    // refused patch (orphans the spell) — params must NOT move
+    await codeOf(patchBench(drafts, "s", {
+      stage: "b", params: { image1: "/tmp/x.png" }, expect_rev: 1,
+    }));
+    doc = getBench(drafts, "s");
+    b = doc.stages.find((x) => x.id === "b")!;
+    const params = (b as unknown as { params: Record<string, unknown> }).params;
+    assert.equal(params.image1, "$image", "spell unchanged");
+  });

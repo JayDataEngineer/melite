@@ -154,8 +154,11 @@ export async function ensureBench(drafts, body, admit) {
             "or grow the bench with add_stage / patch, or undo if this was a mistake", { current_rev: block.rev, stages: before.length });
     }
     admitStages(admit, body["stages"]);
-    doc["stages"] = normalizeStages(body["stages"], author);
-    admitWiringList(doc["stages"], session);
+    // (the no-leak law: admit on the LOCAL normalized list, assign to
+    // the cached doc only after the gates pass.)
+    const staged = normalizeStages(body["stages"], author);
+    admitWiringList(staged, session);
+    doc["stages"] = staged;
     if (typeof body["intent"] === "string")
         doc["intent"] = body["intent"];
     const entry = {
@@ -297,8 +300,12 @@ export async function patchBench(drafts, session, body, admit) {
         if (!isRecord(paramsIn)) {
             throw new RemoteError("bench/bad-body", "params must be an object", {});
         }
+        // THE MERGE IS A COPY (2026-09-15, the no-leak law): the merged
+        // view is a NEW object — a refused admission must not leave the
+        // patch's writes on the domain's cached doc (the live record is
+        // assigned only after every gate passes).
         const cur = isRecord(st["params"])
-            ? st["params"]
+            ? { ...st["params"] }
             : {};
         for (const k of Object.keys(paramsIn)) {
             if (Object.prototype.hasOwnProperty.call(cur, k))
@@ -504,13 +511,16 @@ export async function addStageBench(drafts, session, body, admit) {
     };
     if (isRecord(body["expected"]))
         row["expected"] = body["expected"];
+    // THE WIRING ADMISSION (phantom-wire cure) — BEFORE the push: the
+    // row's wiring admits against a PROJECTED live set (current ids +
+    // this row's). Never push-then-check: the loaded doc is the
+    // domain's cached object, and a refusal after the push LEAKS the
+    // refused row into the cache (live-fired 2026-09-15: two refused
+    // adds persisted as s_1/s_2 on the next good write — a refusal
+    // that lies). Mutate only after every gate passes.
+    admitWiring(row, row["params"], row["inputs"], [...stages.map((r) => String(r["id"] ?? "")), stageId], stageId, session);
     stages.push(row);
     loaded.doc["stages"] = stages;
-    // THE WIRING ADMISSION (phantom-wire cure): after the push, the
-    // live id set includes this row — its own wiring admits against
-    // the bench AS IT WILL STAND (upstream must exist, channels must
-    // be spelled, spells must be channeled).
-    admitWiring(row, row["params"], row["inputs"], stages.map((r) => String(r["id"] ?? "")), stageId, session);
     const newRev = await appendAndSave(drafts, loaded, {
         author,
         kind: "add_stage",
@@ -709,20 +719,22 @@ export async function rewireBench(drafts, session, body) {
         throw new RemoteError("bench/bad-body", "from must be {stage,output} | {initial} | absent", {});
     }
     const inputs = isRecord(st["inputs"])
-        ? st["inputs"]
+        ? { ...st["inputs"] }
         : {};
-    const before = Object.prototype.hasOwnProperty.call(inputs, input)
-        ? inputs[input]
+    const before = Object.prototype.hasOwnProperty.call(st["inputs"] === undefined ? {} : st["inputs"], input)
+        ? st["inputs"][input]
         : undefined;
     if (from === undefined)
         delete inputs[input];
     else
         inputs[input] = from;
     // THE PHANTOM-WIRE CURE (2026-09-15): rewire is THE wiring door —
-    // the merged wiring admits against the row's params and the live
-    // bench BEFORE the write lands (a channel nothing spells, a spell
-    // nothing channels, an upstream that doesn't exist — all refuse
-    // here, named, instead of starving compose at run time).
+    // the CANDIDATE wiring (a copy, never the live record: a refusal
+    // must not leak the write into the domain's cached doc) admits
+    // against the row's params and the live bench BEFORE anything
+    // moves (a channel nothing spells, an upstream that doesn't
+    // exist — all refuse here, named, instead of starving compose at
+    // run time).
     admitWiring(st, isRecord(st["params"]) ? st["params"] : {}, inputs, stagesOf(loaded.doc).map((r) => String(r["id"] ?? "")), stageId, session);
     st["inputs"] = inputs;
     const inverse = { stage: stageId, input };
