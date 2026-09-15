@@ -108,7 +108,7 @@ export function VideoTimelineStudio({
   const view = useViewSelection(calls, layerA)
   const { selected, fps, totalFrames } = view
   const film = useFilmSync({ fps, totalFrames, keyframes, calls, setFrameIdx: view.setFrameIdx })
-  const { seconds, unwired, emptyText, guideCount, knobOverrides } = film
+  const { seconds, unwired, guideCount, knobOverrides } = film
   const fx = useDocEffects({
     totalFrames, setFrameIdx: view.setFrameIdx, selected, setSelected: view.setSelected, calls, keyframes,
     layerA, setLayerA: doc.setLayerA, onSave,
@@ -148,15 +148,13 @@ export function VideoTimelineStudio({
                 <> · {knobOverrides} call{knobOverrides === 1 ? "" : "s"} with knobs</>
               )}
             </div>
-            {emptyText > 0 && (
-              <div className={s.warnRow}>
-                <TriangleAlert className={cn(s.warnIcon, s.sz12)} />
-                <span>
-                  {emptyText} call{emptyText === 1 ? " needs" : "s need"} a prompt — the plan
-                  refuses empty prompts before any GPU work.
-                </span>
-              </div>
-            )}
+            {/* NO empty-prompt banner (2026-09-15, the operator's
+                catch): the plan's own gate refuses empty prompts at
+                the door with a typed receipt, and the empty
+                textarea's placeholder already says it at the exact
+                point of entry — a rail banner is a third voice for
+                a law already spoken twice. The gate itself is
+                untouched (card.ts compose refusal). */}
             {unwired > 0 && (
               <div className={s.warnRow}>
                 <TriangleAlert className={cn(s.warnIcon, s.sz12)} />

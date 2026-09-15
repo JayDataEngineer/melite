@@ -12473,7 +12473,7 @@ window.__ModuleLoader__.load({
 				calls,
 				setFrameIdx: view.setFrameIdx
 			});
-			const { seconds, unwired, emptyText, guideCount, knobOverrides } = film;
+			const { seconds, unwired, guideCount, knobOverrides } = film;
 			const fx = useDocEffects({
 				totalFrames,
 				setFrameIdx: view.setFrameIdx,
@@ -12527,49 +12527,37 @@ window.__ModuleLoader__.load({
 							className: studio_module_css_default.docBlock,
 							children: /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
 								className: studio_module_css_default.docLines,
-								children: [
-									/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-										"data-testid": "tl-doc-readout",
-										className: studio_module_css_default.tabular,
-										children: [
-											calls.length,
-											" call",
-											calls.length === 1 ? "" : "s",
+								children: [/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+									"data-testid": "tl-doc-readout",
+									className: studio_module_css_default.tabular,
+									children: [
+										calls.length,
+										" call",
+										calls.length === 1 ? "" : "s",
+										" · ",
+										seconds,
+										"s ·",
+										" ",
+										guideCount,
+										" guide",
+										guideCount === 1 ? "" : "s",
+										knobOverrides > 0 && /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(react_jsx_runtime.Fragment, { children: [
 											" · ",
-											seconds,
-											"s ·",
-											" ",
-											guideCount,
-											" guide",
-											guideCount === 1 ? "" : "s",
-											knobOverrides > 0 && /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(react_jsx_runtime.Fragment, { children: [
-												" · ",
-												knobOverrides,
-												" call",
-												knobOverrides === 1 ? "" : "s",
-												" with knobs"
-											] })
-										]
-									}),
-									emptyText > 0 && /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-										className: studio_module_css_default.warnRow,
-										children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(TriangleAlert, { className: cn(studio_module_css_default.warnIcon, studio_module_css_default.sz12) }), /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", { children: [
-											emptyText,
+											knobOverrides,
 											" call",
-											emptyText === 1 ? " needs" : "s need",
-											" a prompt — the plan refuses empty prompts before any GPU work."
-										] })]
-									}),
-									unwired > 0 && /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-										className: studio_module_css_default.warnRow,
-										children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(TriangleAlert, { className: cn(studio_module_css_default.warnIcon, studio_module_css_default.sz12) }), /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", { children: [
-											unwired,
-											" keyframe source",
-											unwired === 1 ? "" : "s",
-											" unwired — wire them below or the run door names them as TODOs."
-										] })]
-									})
-								]
+											knobOverrides === 1 ? "" : "s",
+											" with knobs"
+										] })
+									]
+								}), unwired > 0 && /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+									className: studio_module_css_default.warnRow,
+									children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(TriangleAlert, { className: cn(studio_module_css_default.warnIcon, studio_module_css_default.sz12) }), /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", { children: [
+										unwired,
+										" keyframe source",
+										unwired === 1 ? "" : "s",
+										" unwired — wire them below or the run door names them as TODOs."
+									] })]
+								})]
 							})
 						}),
 						selected == null && /* @__PURE__ */ (0, react_jsx_runtime.jsx)(CallCardsPanel, {
