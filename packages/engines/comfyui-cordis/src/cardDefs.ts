@@ -71,6 +71,7 @@ export const cardPackages: string[] = [
     '@melite/video-h3-timeline/card',
     '@melite/3d-clothing-placement',
   '@melite/3d-unity',
+  '@melite/3d-blender',
   '@melite/image-image-gen',
 ]
 
