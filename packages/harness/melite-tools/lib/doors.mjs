@@ -1,7 +1,8 @@
-import { c as formsArm, i as routeName, l as kindsDoorArm, o as cardToolsArm, p as makeEstateRequest, r as resolveHarnessRoutes, s as formSpecArm, t as harnessEnhance, u as modelCatalogArm } from "./llm-complete-p8YfLIES.mjs";
+import { c as formsArm, i as routeName, l as kindsDoorArm, o as cardToolsArm, p as makeEstateRequest, r as resolveHarnessRoutes, s as formSpecArm, t as harnessEnhance, u as modelCatalogArm } from "./llm-complete-PDrr13eD.mjs";
 import { buildSkillIndex, disclosureRoot } from "@melite/estate-queue";
 import { agentFormDoc } from "@melite/engine-agent";
 import { craftFormDoc } from "@melite/engine-craft";
+import { mcpFormDoc } from "@melite/engine-mcp/formDoc";
 //#region src/enhance-agent.ts
 /** Map a form-spec envelope onto its declared recipes (the ONE
 *  spelling — the request lane and the in-process sweep share it). */
@@ -61,6 +62,29 @@ const inject = [
 ];
 /** The shipped default: the operator's named card model. */
 const DEFAULT_ENHANCE_PREFERENCE = "muse-spark-1.3-contributor";
+/** The seated MCP servers (folded LIVE from the tools seat's
+*  schemas: every mcp__<server>__<tool> name contributes its
+*  server; sorted for deterministic serving). Empty when none are
+*  seated — the census IS the truth, never a config copy. */
+function seatedMcpServers(c) {
+	const servers = /* @__PURE__ */ new Set();
+	for (const t of c.tools.schemas()) {
+		const parts = t.name.split("__");
+		if (parts.length === 3 && parts[0] === "mcp") servers.add(parts[1]);
+	}
+	return [...servers].sort();
+}
+/** One server's tool rows (the LIVE census for its form's options:
+*  bare tool names — the executor composes mcp__<server>__<tool>
+*  on the wire). */
+function mcpToolsOf(c, server) {
+	const prefix = `mcp__${server}__`;
+	return c.tools.schemas().filter((t) => t.name.startsWith(prefix)).map((t) => ({
+		value: t.name.slice(prefix.length),
+		label: t.name.slice(prefix.length),
+		tooltip: t.description
+	}));
+}
 function apply(c, config = {}) {
 	const readDefaultLlm = () => {
 		try {
@@ -288,7 +312,7 @@ function apply(c, config = {}) {
 						return;
 					}
 					if (method === "GET" && path === "/v1/forms") {
-						formsArm().then(ok, (e) => fail(500, { error: `discovery door: ${e instanceof Error ? e.message : String(e)}` }));
+						formsArm(seatedMcpServers(c)).then(ok, (e) => fail(500, { error: `discovery door: ${e instanceof Error ? e.message : String(e)}` }));
 						return;
 					}
 					if (method === "GET" && path === "/v1/kinds") {
@@ -298,15 +322,11 @@ function apply(c, config = {}) {
 					if (method === "GET" && path === "/v1/form-spec") {
 						const model = url.searchParams.get("model") ?? "";
 						if (model.length === 0) return fail(400, { error: "form-spec: the model query parameter is required" });
-						formSpecArm(model, /* @__PURE__ */ new Map([["agent", () => {
-							const servers = /* @__PURE__ */ new Set();
-							for (const t of c.tools.schemas()) {
-								const parts = t.name.split("__");
-								if (parts.length === 3 && parts[0] === "mcp") servers.add(parts[1]);
-							}
+						const servers = [...seatedMcpServers(c)];
+						const engineDocs = /* @__PURE__ */ new Map([["agent", () => {
 							const idx = buildSkillIndex(disclosureRoot());
 							return agentFormDoc({
-								mcps: [...servers].sort().map((v) => ({
+								mcps: servers.map((v) => ({
 									value: v,
 									label: v
 								})),
@@ -315,7 +335,13 @@ function apply(c, config = {}) {
 									label: r.name
 								}))
 							});
-						}], ["craft", () => craftFormDoc()]])).then((spec) => {
+						}], ["craft", () => craftFormDoc()]]);
+						for (const server of servers) engineDocs.set(`mcp:${server}`, () => mcpFormDoc({
+							server,
+							tools: mcpToolsOf(c, server),
+							servers
+						}));
+						formSpecArm(model, engineDocs).then((spec) => {
 							if (spec === null) return fail(404, { error: `form-spec: '${model}' does not resolve (unknown, unoffered, or retired)` });
 							return ok(spec);
 						}, (e) => fail(500, { error: `discovery door: ${e instanceof Error ? e.message : String(e)}` }));
@@ -344,4 +370,4 @@ function apply(c, config = {}) {
 	}), "melite-tools: /v1 prefix door");
 }
 //#endregion
-export { DEFAULT_ENHANCE_PREFERENCE, apply, inject };
+export { DEFAULT_ENHANCE_PREFERENCE, apply, inject, mcpToolsOf, seatedMcpServers };

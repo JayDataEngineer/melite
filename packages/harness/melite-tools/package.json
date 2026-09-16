@@ -33,6 +33,9 @@
     "@melite/audio-tts": "workspace:*",
     "@melite/audio-voice-lock": "workspace:*",
     "@melite/comfyui-cordis": "workspace:*",
+    "@melite/engine-agent": "workspace:*",
+    "@melite/engine-craft": "workspace:*",
+    "@melite/engine-mcp": "workspace:*",
     "@melite/estate-call": "workspace:*",
     "@melite/estate-drafts": "workspace:*",
     "@melite/estate-media": "workspace:*",
@@ -40,8 +43,6 @@
     "@melite/image-image-edit": "workspace:*",
     "@melite/motion-motion": "workspace:*",
     "@melite/video-h3-timeline": "workspace:*",
-    "unrun": "^0.3.1",
-    "@melite/engine-agent": "workspace:*",
-    "@melite/engine-craft": "workspace:*"
+    "unrun": "^0.3.1"
   }
 }

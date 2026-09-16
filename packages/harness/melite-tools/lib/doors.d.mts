@@ -1,5 +1,11 @@
 import { t as LlmStreamSeam } from "./llm-complete-BR2qfbp4.mjs";
+import { mcpFormDoc } from "@melite/engine-mcp/formDoc";
 //#region src/doors.d.ts
+/** The tool-row shape, DERIVED from the contract's own signature
+ *  (rolldown's dts emit chokes on cross-package type-only imports —
+ *  the agent/craft precedent is value-only imports; this keeps the
+ *  single-source law without a second declaration). */
+type McpToolRows = Parameters<typeof mcpFormDoc>[0]['tools'];
 declare const inject: string[];
 /** Door config — same spelling as the tool plane's. */
 interface Config {
@@ -15,6 +21,15 @@ interface Config {
 }
 /** The shipped default: the operator's named card model. */
 declare const DEFAULT_ENHANCE_PREFERENCE = "muse-spark-1.3-contributor";
+/** The seated MCP servers (folded LIVE from the tools seat's
+ *  schemas: every mcp__<server>__<tool> name contributes its
+ *  server; sorted for deterministic serving). Empty when none are
+ *  seated — the census IS the truth, never a config copy. */
+declare function seatedMcpServers(c: CtxView): string[];
+/** One server's tool rows (the LIVE census for its form's options:
+ *  bare tool names — the executor composes mcp__<server>__<tool>
+ *  on the wire). */
+declare function mcpToolsOf(c: CtxView, server: string): McpToolRows;
 /** Minimal structural view of the services the doors touch. */
 interface CtxView {
   effect(effect: () => void, label?: string): unknown;
@@ -38,4 +53,4 @@ interface CtxView {
 }
 declare function apply(c: CtxView, config?: Config): void;
 //#endregion
-export { Config, DEFAULT_ENHANCE_PREFERENCE, apply, inject };
+export { Config, DEFAULT_ENHANCE_PREFERENCE, apply, inject, mcpToolsOf, seatedMcpServers };

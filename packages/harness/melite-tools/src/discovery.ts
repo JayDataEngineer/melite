@@ -659,9 +659,35 @@ export async function modelCatalogArm(): Promise<Record<string, unknown>> {
   return catalogSection(await loadCardDefs())
 }
 
+/** /v1/forms — the forms table (card rows + the MCP INSTANCE rows:
+ *  one descriptor row per seated server, §1.5 — the engine-served
+ *  surface the cards tab lists; the census is the caller's LIVE
+ *  fold, never static). */
+export function formsWithEngines(
+  cardRows: Record<string, unknown>,
+  mcpServers: readonly string[],
+): Record<string, unknown> {
+  const out: Record<string, unknown> = { ...cardRows }
+  for (const [i, server] of [...mcpServers].sort().entries()) {
+    out[`mcp:${server}`] = {
+      label: `MCP · ${server}`,
+      genre: '3d',
+      order: 23 + i,
+      plugin: 'mcp',
+      sidebar_key: '3d',
+      default_service: `mcp:${server}`,
+      hidden: false,
+      covers: [`mcp:${server}`],
+      inputs: {},
+      outputs: { default: 'text' },
+    }
+  }
+  return out
+}
+
 /** /v1/forms — the forms table. */
-export async function formsArm(): Promise<Record<string, unknown>> {
-  return formsTable(await loadCardDefs())
+export async function formsArm(mcpServers: readonly string[] = []): Promise<Record<string, unknown>> {
+  return formsWithEngines(formsTable(await loadCardDefs()), mcpServers)
 }
 
 /** /v1/kinds — the kinds arm. */

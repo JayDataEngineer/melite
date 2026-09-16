@@ -258,6 +258,43 @@ describe('doors apply', () => {
 // ── catalog ───────────────────────────────────────────────────────
 
 describe('catalog route', () => {
+  test('THE MCP CARD (stroke 74): seated mcp servers serve form rows + per-instance form-specs; the CLI-era unity/blender rows are RETIRED', async () => {
+    const h = fakeHost({ schemas: [
+      { name: 'melite_discover', description: 'discover things' },
+      { name: 'mcp__blender__scene_info', description: 'Scene contents' },
+      { name: 'mcp__blender__render', description: 'Render the viewport' },
+    ] })
+    apply(h.host as never)
+    // the forms table: the mcp INSTANCE row is served; the retired
+    // CLI-era card rows are GONE (superseded — operator order)
+    const forms = await call(h.routes, '/v1', { method: 'GET', url: 'http://localhost/v1/forms' })
+    assert.equal(forms.status, 200)
+    const rows = forms.body as Record<string, Record<string, unknown>>
+    assert.ok(rows['mcp:blender'] !== undefined, 'the mcp:blender row serves')
+    assert.equal(rows['mcp:blender']!['label'], 'MCP · blender')
+    assert.equal(rows['mcp:blender']!['sidebar_key'], '3d')
+    assert.equal(rows['mcp:blender']!['plugin'], 'mcp')
+    assert.equal(rows['unity'], undefined, 'unity retired')
+    assert.equal(rows['blender'], undefined, 'blender retired')
+    assert.equal(rows['blender-shot'], undefined, 'blender-shot retired')
+    // the per-instance form-spec: the LIVE tool census folds into
+    // the select options (bare names — the executor composes the
+    // wire name)
+    const spec = await call(h.routes, '/v1', { method: 'GET', url: 'http://localhost/v1/form-spec?model=mcp:blender' })
+    assert.equal(spec.status, 200)
+    const doc = spec.body as Record<string, unknown>
+    assert.equal(doc['engine'], 'mcp:blender')
+    assert.equal(doc['label'], 'MCP · blender')
+    const opt = JSON.stringify(doc['schema'])
+    assert.match(opt, /"value":"scene_info"/)
+    assert.match(opt, /"value":"render"/)
+    assert.equal(opt.includes('mcp__blender__scene_info'), false, 'options carry bare tool names')
+    // an UNSEATED instance refuses 404 (the census is the truth)
+    const absent = await call(h.routes, '/v1', { method: 'GET', url: 'http://localhost/v1/form-spec?model=mcp:unity' })
+    assert.equal(absent.status, 404)
+    assert.match(String((absent.body as { error: string }).error), /does not resolve/)
+  })
+
   test('serves live tool schemas plus the live llm routes', async () => {
     const h = boot({ defaultModel: DEFAULT_MODEL })
     const { status, body } = await call(h.routes, '/melite-tools/catalog', { method: 'GET', url: '/melite-tools/catalog' })

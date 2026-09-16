@@ -39,6 +39,16 @@ import { makeEstateRequest, type EstateMethod } from './estate.ts'
 import { buildSkillIndex, disclosureRoot } from '@melite/estate-queue'
 import { agentFormDoc } from '@melite/engine-agent'
 import { craftFormDoc } from '@melite/engine-craft'
+// the SUBPATH import (not the bare barrel): formDoc's graph is
+// schemastery-only — the barrel pulls mcp-engine's dsh-llm/dsh-tools
+// d.ts into rolldown's declaration walk and the emit dies.
+import { mcpFormDoc } from '@melite/engine-mcp/formDoc'
+
+/** The tool-row shape, DERIVED from the contract's own signature
+ *  (rolldown's dts emit chokes on cross-package type-only imports —
+ *  the agent/craft precedent is value-only imports; this keeps the
+ *  single-source law without a second declaration). */
+type McpToolRows = Parameters<typeof mcpFormDoc>[0]['tools']
 
 export const inject = ['webServer', 'llm', 'tools']
 
@@ -57,6 +67,33 @@ export interface Config {
 
 /** The shipped default: the operator's named card model. */
 export const DEFAULT_ENHANCE_PREFERENCE = 'muse-spark-1.3-contributor'
+
+/** The seated MCP servers (folded LIVE from the tools seat's
+ *  schemas: every mcp__<server>__<tool> name contributes its
+ *  server; sorted for deterministic serving). Empty when none are
+ *  seated — the census IS the truth, never a config copy. */
+export function seatedMcpServers(c: CtxView): string[] {
+  const servers = new Set<string>()
+  for (const t of c.tools.schemas()) {
+    const parts = t.name.split('__')
+    if (parts.length === 3 && parts[0] === 'mcp') servers.add(parts[1]!)
+  }
+  return [...servers].sort()
+}
+
+/** One server's tool rows (the LIVE census for its form's options:
+ *  bare tool names — the executor composes mcp__<server>__<tool>
+ *  on the wire). */
+export function mcpToolsOf(c: CtxView, server: string): McpToolRows {
+  const prefix = `mcp__${server}__`
+  return c.tools.schemas()
+    .filter((t) => t.name.startsWith(prefix))
+    .map((t) => ({
+      value: t.name.slice(prefix.length),
+      label: t.name.slice(prefix.length),
+      tooltip: t.description,
+    }))
+}
 
 /** Minimal structural view of the services the doors touch. */
 interface CtxView {
@@ -398,7 +435,7 @@ export function apply(c: CtxView, config: Config = {}): void {
             return void modelCatalogArm().then(ok, (e: unknown) => fail(500, { error: `discovery door: ${e instanceof Error ? e.message : String(e)}` }))
           }
           if (method === 'GET' && path === '/v1/forms') {
-            return void formsArm().then(ok, (e: unknown) => fail(500, { error: `discovery door: ${e instanceof Error ? e.message : String(e)}` }))
+            return void formsArm(seatedMcpServers(c)).then(ok, (e: unknown) => fail(500, { error: `discovery door: ${e instanceof Error ? e.message : String(e)}` }))
           }
           if (method === 'GET' && path === '/v1/kinds') {
             return void kindsDoorArm().then(ok, (e: unknown) => fail(500, { error: `discovery door: ${e instanceof Error ? e.message : String(e)}` }))
@@ -414,21 +451,29 @@ export function apply(c: CtxView, config: Config = {}): void {
             // built per request off the tools seat's CURRENT schemas
             // (the seated MCP servers) and the skill index — LIVE,
             // never static.
+            const servers = [...seatedMcpServers(c)]
             const engineDocs = new Map<string, () => Record<string, unknown>>([
               ['agent', () => {
-                const servers = new Set<string>()
-                for (const t of c.tools.schemas()) {
-                  const parts = t.name.split('__')
-                  if (parts.length === 3 && parts[0] === 'mcp') servers.add(parts[1]!)
-                }
                 const idx = buildSkillIndex(disclosureRoot()) as { skills: Array<{ id: string; name: string }> }
                 return agentFormDoc({
-                  mcps: [...servers].sort().map((v) => ({ value: v, label: v })),
+                  mcps: servers.map((v) => ({ value: v, label: v })),
                   skills: idx.skills.map((r) => ({ value: r.id, label: r.name })),
                 })
               }],
               ['craft', () => craftFormDoc()],
             ])
+            // THE MCP CARD (the instance rows — one descriptor row
+            // per seated server, §1.5): mcp:<server> serves its OWN
+            // doc with its OWN live tool census; the Model rail
+            // (families) switches instances and the client's
+            // model-key refetch re-specs to the new server's tools.
+            for (const server of servers) {
+              engineDocs.set(`mcp:${server}`, () => mcpFormDoc({
+                server,
+                tools: mcpToolsOf(c, server),
+                servers,
+              }))
+            }
             return void formSpecArm(model, engineDocs).then((spec) => {
               if (spec === null) {
                 return fail(404, { error: `form-spec: '${model}' does not resolve (unknown, unoffered, or retired)` })

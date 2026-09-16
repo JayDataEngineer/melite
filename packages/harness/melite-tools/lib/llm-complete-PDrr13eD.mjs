@@ -628,9 +628,29 @@ function catalogSection(defs) {
 async function modelCatalogArm() {
 	return catalogSection(await loadCardDefs());
 }
+/** /v1/forms — the forms table (card rows + the MCP INSTANCE rows:
+*  one descriptor row per seated server, §1.5 — the engine-served
+*  surface the cards tab lists; the census is the caller's LIVE
+*  fold, never static). */
+function formsWithEngines(cardRows, mcpServers) {
+	const out = { ...cardRows };
+	for (const [i, server] of [...mcpServers].sort().entries()) out[`mcp:${server}`] = {
+		label: `MCP · ${server}`,
+		genre: "3d",
+		order: 23 + i,
+		plugin: "mcp",
+		sidebar_key: "3d",
+		default_service: `mcp:${server}`,
+		hidden: false,
+		covers: [`mcp:${server}`],
+		inputs: {},
+		outputs: { default: "text" }
+	};
+	return out;
+}
 /** /v1/forms — the forms table. */
-async function formsArm() {
-	return formsTable(await loadCardDefs());
+async function formsArm(mcpServers = []) {
+	return formsWithEngines(formsTable(await loadCardDefs()), mcpServers);
 }
 /** /v1/kinds — the kinds arm. */
 async function kindsDoorArm() {

@@ -5,7 +5,8 @@
   "type": "module",
   "exports": {
     ".": "./src/index.ts",
-    "./mcp-engine": "./src/mcp-engine.ts"
+    "./mcp-engine": "./src/mcp-engine.ts",
+    "./formDoc": "./src/formDoc.ts"
   },
   "dependencies": {
     "@deepseek-ai/cordis": "^4.0.2",

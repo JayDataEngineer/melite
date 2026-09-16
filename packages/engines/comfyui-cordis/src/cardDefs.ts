@@ -71,9 +71,10 @@ export const cardPackages: string[] = [
     '@melite/motion-motion/card',
     '@melite/video-h3-timeline/card',
     '@melite/3d-clothing-placement',
-  '@melite/3d-unity',
-  '@melite/3d-blender',
-  '@melite/3d-blender-shot',
+  // RETIRED 2026-09-15 (superseded by the MCP card, operator
+  // order): 3d-unity, 3d-blender, 3d-blender-shot — the CLI-era
+  // proxy-node cards. The MCP lane (mcp:<server>) owns the 3d
+  // compose surface now; the vendored node packs stay (Layer C).
   '@melite/image-image-gen',
 ]
 
