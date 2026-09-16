@@ -11,6 +11,8 @@ import type { ModifierKind } from '../src/spec.ts'
 
 import { ModifiersSection } from '../src/mods.tsx'
 
+const MOD_DRAG_MIME = 'application/x-melite-mod'
+
 afterEach(cleanup)
 
 const MIME = 'application/x-melite-mod'
@@ -201,4 +203,67 @@ test('THE REORDER: a foreign drag passes through (never swallowed — preventDef
   expect(fireEvent.dragOver(over, { dataTransfer: { types: ['Files'], dropEffect: '' } })).toBe(true)
   expect(fireEvent.drop(over, { dataTransfer: { types: ['Files'], getData: () => 'x' } })).toBe(true)
   expect(onEdit).not.toHaveBeenCalled()
+})
+
+// ── THE CATEGORY LAW (stroke 78 — the mods-abstraction law) ──
+
+const SAM3K = {
+  kind: 'sam3', label: 'SAM3', param_key: 'sam3', cardinality: 'list',
+  category: 'standalone', leaf_face: 'bbox-canvas',
+  fields: [
+    { name: 'name', type: 'string', label: 'Name', default: 'sam3' },
+    { name: 'bbox_x', type: 'number', label: 'Box x', default: -1 },
+  ],
+} as unknown as ModifierKind
+
+const DRAWK = {
+  kind: 'draw', label: 'Draw', param_key: 'draw', cardinality: 'list',
+  category: 'ordered', leaf_face: 'paint-canvas',
+  fields: [{ name: 'payload', type: 'path', wtype: 'image', label: 'Payload', default: '' }],
+} as unknown as ModifierKind
+
+test('STANDALONE TILES ARE NOT DRAGGABLE (order is void — each entry is its own output)', () => {
+  openSection({ kinds: [SAM3K], values: { sam3: [{ name: 'a' }, { name: 'b' }] } })
+  const first = tile('sam3-0')
+  expect(first.getAttribute('draggable')).not.toBe('true')
+  // a stray drop on a standalone tile commits nothing (no reorder arm)
+  dragDrop(first, 'sam3-1')
+  expect(document.querySelector('[data-mod-tile="sam3-1"]')).not.toBeNull()
+})
+
+test('ORDERED TILES STAY DRAGGABLE (the stacking law — loras, draw)', () => {
+  openSection({ kinds: [DRAWK], values: { draw: [{ payload: '/a.png' }, { payload: '/b.png' }] } })
+  expect(tile('draw-0').getAttribute('draggable')).toBe('true')
+})
+
+test('THE HINT NAMES THE CATEGORY (all-standalone = own-output hint; any ordered = the drag hint)', () => {
+  const a = openSection({ kinds: [SAM3K], values: { sam3: [{ name: 'a' }] } })
+  expect(screen.getByText('each entry is its own output (standalone)')).not.toBeNull()
+  a.unmount()
+  openSection({ kinds: [SAM3K, DRAWK], values: { sam3: [{ name: 'a' }], draw: [{ payload: '/a.png' }] } })
+  expect(screen.getByText('drag to set apply order')).not.toBeNull()
+})
+
+test('A CATEGORY-LESS KIND DEFAULTS ORDERED (no served row changes shape)', () => {
+  openSection({ kinds: [LORA], values: { loras: [{ id: 'detail' }] } })
+  expect(tile('loras-0').getAttribute('draggable')).toBe('true')
+})
+
+test('a standalone tile FIRES no drag start (the onDragStart guard)', () => {
+  openSection({ kinds: [SAM3K], values: { sam3: [{ name: 'a' }] } })
+  const tile = document.querySelector('[data-mod-tile="sam3-0"]') as HTMLElement
+  const dt = { setData: vi.fn(), effectAllowed: '' }
+  fireEvent.dragStart(tile, { dataTransfer: dt as never })
+  expect(dt.setData).not.toHaveBeenCalled()
+})
+
+test('an ordered tile FIRES the drag start (the MIME + reorder wake)', () => {
+  openSection({ kinds: [DRAWK], values: { draw: [{ payload: 'p1' }, { payload: 'p2' }] } })
+  const tile = document.querySelector('[data-mod-tile="draw-0"]') as HTMLElement
+  const dt = { setData: vi.fn(), effectAllowed: '', types: [MOD_DRAG_MIME] }
+  fireEvent.dragStart(tile, { dataTransfer: dt as never })
+  expect(dt.setData).toHaveBeenCalledWith(MOD_DRAG_MIME, 'draw-0')
+  const dtEnd = { ...dt, dropEffect: '' }
+  fireEvent.dragOver(document.querySelector('[data-mod-tile="draw-1"]') as HTMLElement, { dataTransfer: dtEnd as never })
+  fireEvent.dragEnd(tile, { dataTransfer: dtEnd as never })
 })

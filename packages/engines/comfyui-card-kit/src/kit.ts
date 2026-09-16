@@ -924,22 +924,54 @@ export function maskT1(p: Record<string, unknown>, pins: { checkpoint: string; u
   }
 
   // ── per-name exports ──
-  const exports = (p.exports as Array<[string, string]>) ?? []
+  // the third arm (optional) = the per-entry bbox [x, y, w, h]
+  const exports = (p.exports as Array<[string, string, unknown?]>) ?? []
   const kinds = (p.export_kind as string[]) ?? []
   const scopeBbox = p.scope_bbox as [number, number, number, number] | undefined
   if (scopeBbox && scopeBbox.length !== 4) {
     throw new Error(`scope_bbox refused on the mask-studio card: needs exactly [x, y, w, h] pixels (got ${scopeBbox.length} values)`)
   }
-  let paintMasked: OutputHandle | null = null
+  // PER-ENTRY PAINT PAYLOADS (the ordered-draw law, stroke 78): each
+  // draw owns its PNG — cached by path (two draws on one payload
+  // render ONE LoadImageMask; two payloads render two).
+  const paintByPath = new Map<string, OutputHandle>()
+  const loadPaint = (path: string): OutputHandle => {
+    let m = paintByPath.get(path)
+    if (m === undefined) {
+      m = g.node('LoadImageMask', { image: path, channel: 'alpha' }).out(0)
+      paintByPath.set(path, m)
+    }
+    return m
+  }
+  // THE PER-ENTRY BBOX (stroke 78): the export's THIRD arm —
+  // [x, y, w, h] pixels, the bbox-canvas leaf's drawn rectangle.
+  // Malformed refuses LOUD (a drifted bag is drift, never a skip);
+  // absent falls to the scope, then the renderer default.
+  const entryBbox = (raw: unknown): { x: number; y: number; width: number; height: number } | undefined => {
+    if (raw === undefined || raw === null) return undefined
+    if (!Array.isArray(raw) || raw.length !== 4) {
+      throw new Error(`maskT1: an export bbox must be [x, y, w, h] pixels — got ${JSON.stringify(raw).slice(0, 60)}`)
+    }
+    const quad = raw.map(Number)
+    if (quad.some((v) => !Number.isFinite(v))) {
+      throw new Error(`maskT1: an export bbox needs four finite numbers — got ${JSON.stringify(raw).slice(0, 60)}`)
+    }
+    return { x: quad[0]!, y: quad[1]!, width: quad[2]!, height: quad[3]! }
+  }
   const n = Math.min(exports.length, kinds.length)   // python zip(): the shorter arm wins
   for (let i = 0; i < n; i++) {
-    const [name, payload] = exports[i]
+    const trip = exports[i]
+    const name = trip[0]
+    const payload = trip[1]
     const kind = kinds[i]
     if (kind === 'paint') {
-      if (!paintMasked) {
-        paintMasked = g.node('LoadImageMask', { image: ((p.paint_mask ?? '') as string), channel: 'alpha' }).out(0)
+      // per-entry first (the draw's own PNG), the lane-global paint
+      // second (the studio flat-mode contract stays)
+      const path = typeof payload === 'string' && payload !== '' ? payload : ((p.paint_mask ?? '') as string)
+      if (path === '') {
+        throw new Error(`maskT1: paint export '${name}' needs a payload — the drawn PNG is the mask`)
       }
-      save(paintMasked, `mask_${name}`)
+      save(loadPaint(path), `mask_${name}`)
       continue
     }
     let conditioning: OutputHandle | undefined
@@ -948,23 +980,56 @@ export function maskT1(p: Record<string, unknown>, pins: { checkpoint: string; u
       // + the vocabulary) — a scope never silently drops the prompt
       conditioning = clipCond(payload)
     }
-    const bboxes = scopeBbox
+    const bboxes = entryBbox(trip[2]) ?? (scopeBbox
       ? { x: scopeBbox[0], y: scopeBbox[1], width: scopeBbox[2], height: scopeBbox[3] }
-      : undefined
+      : undefined)
     const sel = detect(conditioning, bboxes)
     save(sel, `mask_${name}`)
   }
 
-  // paint unions into combined (flat-mode export_paint contract)
-  if ((p.union_paint_into_combined as boolean) && paintMasked && primaryMask) {
-    const combined = g.node('MaskComposite', {
-      destination: dilate(primaryMask),   // a SECOND GrowMask on the primary under union
-      source: paintMasked,
-      x: 0,
-      y: 0,
-      operation: 'add',
-    }).out(0)
-    save(combined, 'mask_combined_union')
+  // THE ORDERED UNION CHAIN (stroke 78 — the ordered-draw law): a
+  // draw STACKS — each payload unions onto the running mask (the
+  // previous outputs), in array order, one composite per hop; the
+  // terminal mask saves as combined_union. Replaces nothing — the
+  // single-payload boolean arm below keeps the flat-mode contract.
+  const paintChain = p.paint_masks as string[] | undefined
+  if (paintChain !== undefined) {
+    if (!Array.isArray(paintChain) || paintChain.some((e) => typeof e !== 'string')) {
+      throw new Error('maskT1: paint_masks must be an array of payload paths (the ordered draw stack)')
+    }
+    if (primaryMask === null && paintChain.length > 0) {
+      throw new Error('maskT1: paint_masks stacks ONTO a mask — add a standalone source (sam2/sam3) first')
+    }
+    if (paintChain.length > 0 && primaryMask !== null) {
+      let acc: OutputHandle = dilate(primaryMask)
+      for (const path of paintChain) {
+        if (path === '') continue
+        acc = g.node('MaskComposite', {
+          destination: acc,
+          source: loadPaint(path),
+          x: 0,
+          y: 0,
+          operation: 'add',
+        }).out(0)
+      }
+      save(acc, 'mask_combined_union')
+    }
+  }
+
+  // paint unions into combined (flat-mode export_paint contract —
+  // the global payload's mask, ONE hop)
+  if ((p.union_paint_into_combined as boolean) && primaryMask) {
+    const globalPath = ((p.paint_mask ?? '') as string)
+    if (globalPath !== '') {
+      const combined = g.node('MaskComposite', {
+        destination: dilate(primaryMask),   // a SECOND GrowMask on the primary under union
+        source: loadPaint(globalPath),
+        x: 0,
+        y: 0,
+        operation: 'add',
+      }).out(0)
+      save(combined, 'mask_combined_union')
+    }
   }
 
   // ── the box manifest (drawn) — the instance readback ──

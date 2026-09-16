@@ -153,13 +153,61 @@ describe("maskT1 (the selection lane's arms)", () => {
     assert.equal(loads.length, 1, "the second paint export reuses the masked node");
   });
 
-  it("a paint export with an unstated paint_mask rides the '' fallback", () => {
+  it("a paint export with NO payload refuses loud (stroke 78: never a silent empty mask)", () => {
+    assert.throws(
+      () => maskT1({ ...maskBase, exports: [["ghost", ""]], export_kind: ["paint"] }, MASK_PINS, new GraphBuilder(), "r5f"),
+      /paint export 'ghost' needs a payload — the drawn PNG is the mask/,
+    );
+  });
+
+  it("per-entry paint payloads render one LoadImageMask each (the ordered-draw law)", () => {
     const g = new GraphBuilder();
     maskT1({
-      ...maskBase, exports: [["ghost", ""]], export_kind: ["paint"],
-    }, MASK_PINS, g, "r5f");
-    const load = Object.values(dump(g)).find((n) => n.class_type === "LoadImageMask")!;
-    assert.equal(load.inputs.image, "");
+      ...maskBase, primary_class: "person",
+      exports: [["a", "/m/one.png"], ["b", "/m/one.png"], ["c", "/m/two.png"]],
+      export_kind: ["paint", "paint", "paint"],
+    }, MASK_PINS, g, "r5g");
+    const loads = Object.values(dump(g)).filter((n) => n.class_type === "LoadImageMask");
+    assert.equal(loads.length, 2, "two distinct paths = two nodes (the shared path memoizes)");
+  });
+
+  it("a per-entry bbox rides the export's third arm (the bbox-canvas leaf's rectangle)", () => {
+    const g = new GraphBuilder();
+    maskT1({
+      ...maskBase, primary_class: "person",
+      exports: [["spot", "the dog", [12, 34, 120, 90]]], export_kind: ["text"],
+    }, MASK_PINS, g, "r5h");
+    const detect = Object.values(dump(g)).filter((n) => n.class_type === "SAM3_Detect");
+    const scoped = detect.find((d) => (d.inputs.bboxes as { x?: number }).x === 12);
+    assert.ok(scoped, "the per-entry bbox reaches the detect");
+    assert.deepEqual(scoped!.inputs.bboxes, { x: 12, y: 34, width: 120, height: 90 });
+  });
+
+  it("a malformed per-entry bbox refuses loud (never a silent skip)", () => {
+    assert.throws(
+      () => maskT1({ ...maskBase, exports: [["x", "dog", [1, 2]]], export_kind: ["text"] }, MASK_PINS, new GraphBuilder(), "r5i"),
+      /export bbox must be \[x, y, w, h\] pixels/,
+    );
+  });
+
+  it("paint_masks chains the ordered union (one composite per hop, terminal combined_union)", () => {
+    const g = new GraphBuilder();
+    maskT1({
+      ...maskBase, primary_class: "person", sam_dilation: 0,
+      paint_masks: ["/m/a.png", "/m/b.png"],
+      exports: [["a", "/m/a.png"], ["b", "/m/b.png"]], export_kind: ["paint", "paint"],
+    }, MASK_PINS, g, "r5j");
+    const row = dump(g);
+    const composites = Object.values(row).filter((n) => n.class_type === "MaskComposite");
+    assert.equal(composites.length, 2, "two draws = two union hops");
+    assert.ok(Object.values(row).some((n) => n.class_type === "SaveImage" && String(n.inputs.filename_prefix).endsWith("mask_combined_union")));
+  });
+
+  it("paint_masks without a primary refuses loud (an ordered draw needs a standalone source)", () => {
+    assert.throws(
+      () => maskT1({ ...maskBase, paint_masks: ["/m/a.png"], exports: [["a", "/m/a.png"]], export_kind: ["paint"] }, MASK_PINS, new GraphBuilder(), "r5k"),
+      /paint_masks stacks ONTO a mask — add a standalone source/,
+    );
   });
 
   it("a malformed scope_bbox refuses loud (never silently dropped)", () => {
@@ -624,5 +672,40 @@ describe("the lanpaint merge arms (the bag/flat law)", () => {
 describe("vocabulary (the one-row law)", () => {
   it("an empty closed set refuses (not a type)", () => {
     assert.throws(() => vocabulary([]), /a closed set with no members is not a type/);
+  });
+});
+
+// ── the stroke-78 arm sweep (coverage: every new loud arm fires) ──
+
+describe("maskT1 (the stroke-78 arms)", () => {
+  it("a NaN-coercing bbox quad refuses loud (finite numbers only)", () => {
+    assert.throws(
+      () => maskT1({ ...maskBase, exports: [["x", "dog", [1, "wide", 3, 4]]], export_kind: ["text"] }, MASK_PINS, new GraphBuilder(), "r8a"),
+      /export bbox needs four finite numbers/,
+    );
+  });
+
+  it("a non-array paint_masks refuses loud", () => {
+    assert.throws(
+      () => maskT1({ ...maskBase, paint_masks: "nope" as never }, MASK_PINS, new GraphBuilder(), "r8b"),
+      /paint_masks must be an array of payload paths/,
+    );
+  });
+
+  it("an empty paint_masks with no primary stays silent (nothing to union)", () => {
+    const g = new GraphBuilder();
+    maskT1({ ...maskBase, paint_masks: [] }, MASK_PINS, g, "r8c");
+    assert.ok(!classes(dump(g)).includes("MaskComposite"), "an empty chain unions nothing");
+  });
+
+  it("an empty-path hop SKIPS (the '' continue arm) yet the terminal still saves", () => {
+    const g = new GraphBuilder();
+    maskT1({
+      ...maskBase, primary_class: "person", paint_masks: [""],
+      exports: [["only", "/m/a.png"]], export_kind: ["paint"],
+    }, MASK_PINS, g, "r8d");
+    const row = dump(g);
+    assert.ok(!classes(row).includes("MaskComposite"), "the empty hop composites nothing");
+    assert.ok(Object.values(row).some((n) => n.class_type === "SaveImage" && String(n.inputs.filename_prefix).endsWith("mask_combined_union")), "the terminal save still rides");
   });
 });

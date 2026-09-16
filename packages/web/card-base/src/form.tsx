@@ -26,7 +26,7 @@ import { createElement as h, Fragment, useCallback, useEffect, useRef, useState 
 import { Menu, Input, Modal, Switch } from '@deepseek-ai/dsh-client-ui-primitives'
 import { InputSquare, isImageUrl, readAsDataUrl, type InputSquareVerbs } from './square.tsx'
 import { ModifiersSection } from './mods.tsx'
-import type { PaintFaceComponent } from './mods.tsx'
+import type { BboxFaceComponent, PaintFaceComponent } from './mods.tsx'
 import { uploadInputFile } from './wire.ts'
 import {
   activeRowId, activeVariantId, axisGroups, axisKey, axisPickPatch, coerceFieldEdit, composingRows, fieldsOf,
@@ -946,7 +946,7 @@ export function SpecFieldRow({ f, value, onEdit, square, wireCandidates }: {
   )
 }
 
-export function CardForm({ spec, user, base, onSet, onUnset, wire, square, atoms, onPatch, onDownloadModel, onInstallPack, paintFace, paintReference }: {
+export function CardForm({ spec, user, base, onSet, onUnset, wire, square, atoms, onPatch, onDownloadModel, onInstallPack, paintFace, bboxFace, paintReference }: {
   /** the WHOLE emission (the schema envelope + model/variants) —
    *  REQUIRED now: the fields, the axes, and the mod param rows all
    *  derive from THIS (useFormSpec fetches it). */
@@ -981,6 +981,9 @@ export function CardForm({ spec, user, base, onSet, onUnset, wire, square, atoms
    *  for leaf_face kinds. Absent host = no verb (the square holds).
    *  Threaded verbatim into the mod section. */
   paintFace?: PaintFaceComponent
+  /** THE BBOX FACE (stroke 78): the host's selection modal for
+   *  bbox-canvas kinds. Absent host = the four inputs hold. */
+  bboxFace?: BboxFaceComponent
   /** the card-level image field feeding the brush reference
    *  (mask-form: 'input_image'). Absent = no verb. */
   paintReference?: string
@@ -1194,6 +1197,7 @@ export function CardForm({ spec, user, base, onSet, onUnset, wire, square, atoms
           kinds: modKinds, values: value, onEdit: edit, railSeated: railNames,
           ...(onPatch !== undefined ? { onPatch } : {}),
           ...(paintFace !== undefined ? { paintFace } : {}),
+          ...(bboxFace !== undefined ? { bboxFace } : {}),
           ...(paintReference !== undefined ? { paintReference } : {}),
         })
       : null,

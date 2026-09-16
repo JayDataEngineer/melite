@@ -273,15 +273,23 @@ describe('live door arms', () => {
     assert.equal(spec['service'], 'mask-form')
     assert.deepEqual(spec['variants'], [])
     // the card-declared kinds serve on the ONE modifiers channel
+    // (stroke 78: the three-kind reshape — sam3/sam2/draw)
     assert.deepEqual(
       ((spec['features'] as { modifiers: unknown[] }).modifiers as Array<{ kind: string }>).map((m) => m.kind),
-      ['mask_detect', 'mask_subject', 'mask_parts', 'mask_paint'],
+      ['sam3', 'sam2', 'draw'],
     )
+    // stroke 78: the CATEGORY serves VERBATIM (standalone vs
+    // ordered — the section's drag law reads it, never the kind
+    // name)
+    const mods = (spec['features'] as { modifiers: Array<Record<string, unknown>> }).modifiers
+    assert.deepEqual(mods.map((m) => m['category']), ['standalone', 'standalone', 'ordered'])
     // stroke 76: the paint leaf face serves VERBATIM on the
     // declared kind — the section offers the brush only on this row
-    const paint = ((spec['features'] as { modifiers: Array<Record<string, unknown>> }).modifiers)
-      .find((m) => m.kind === 'mask_paint')
+    const paint = mods.find((m) => m.kind === 'draw')
     assert.equal(paint?.['leaf_face'], 'paint-canvas')
+    // stroke 78: the bbox face rides both standalone kinds
+    assert.equal(mods.find((m) => m.kind === 'sam3')?.['leaf_face'], 'bbox-canvas')
+    assert.equal(mods.find((m) => m.kind === 'sam2')?.['leaf_face'], 'bbox-canvas')
     // stroke 34: the recipes key never rides — the layer is dead
     assert.equal('recipes' in spec, false)
   })
@@ -372,7 +380,7 @@ describe('live door arms', () => {
       identity: { label: 'Mask Form', description: 'mask sources as mods', genre: 'image' },
       flowKinds: { inputs: { input_image: 'image' }, outputs: { default: 'seg' }, requiresModel: false },
       mods: [
-        { kind: 'mask_detect', label: 'Detect', param_key: 'mask_detect', cardinality: 'list', max_stack: 3,
+        { kind: 'mask_detect', label: 'Detect', param_key: 'mask_detect', cardinality: 'list', max_stack: 3, category: 'standalone',
           fields: [
             { name: 'primary_class', label: 'Class', type: 'string', default: 'person' },
             { name: 'sam_threshold', label: 'Threshold', type: 'number', default: 0.93 },
@@ -403,6 +411,7 @@ describe('live door arms', () => {
     assert.equal(detect['param_key'], 'mask_detect')
     assert.equal(detect['max_stack'], 3)
     assert.equal(detect['entry'], undefined, 'field mode is the absent-entry default')
+    assert.equal(detect['category'], 'standalone', 'stroke 78: the category serves VERBATIM (absent = ordered default)')
     assert.equal(JSON.stringify(detect['fields']), JSON.stringify([
       { name: 'primary_class', label: 'Class', type: 'string', default: 'person' },
       { name: 'sam_threshold', label: 'Threshold', type: 'number', default: 0.93 },
@@ -410,6 +419,7 @@ describe('live door arms', () => {
     const parts = kinds.find((k) => k['kind'] === 'mask_parts')
     assert.ok(parts !== undefined, 'the option kind serves')
     assert.equal(parts['entry'], 'option')
+    assert.equal(parts['category'], undefined, 'a category-less kind serves NO category row (ordered is the default, never spelled)')
     assert.equal(JSON.stringify(parts['options']), JSON.stringify([
       { value: 'face', label: 'Face' }, { value: 'hands', label: 'Hands' },
     ]), 'static catalog rows ride verbatim (the card IS the catalog)')

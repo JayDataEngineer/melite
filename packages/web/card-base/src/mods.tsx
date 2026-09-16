@@ -56,6 +56,23 @@ export interface PaintFaceComponentProps {
   onCancel: () => void
 }
 
+/** THE BBOX FACE (stroke 78 — the bbox-canvas leaf): the host's
+ *  selection modal — an image preview the user drags a rectangle
+ *  on. Same delivery law as the paint face: a component from the
+ *  client plane, never an import; absent host = the four number
+ *  inputs hold (the degrade is graceful). */
+export interface BboxFaceComponentProps {
+  /** the image the rectangle selects ON (the card's input field) */
+  referenceUrl: string
+  /** the entry's current rectangle (null = unset) */
+  bbox: { x: number; y: number; width: number; height: number } | null
+  /** SAVE: write the rectangle (already image-pixel coordinates) */
+  onSave: (bbox: { x: number; y: number; width: number; height: number }) => void
+  onCancel: () => void
+}
+
+export type BboxFaceComponent = (props: BboxFaceComponentProps) => ReactElement
+
 /** THE LEAF FACE (paint-leaf-canvas.md): the host's brush modal —
  *  a component, not an import (card-base stays atom-generic; the
  *  custom face is the CARD's UI, delivered by the client plane).
@@ -77,8 +94,13 @@ export interface ModifiersSectionProps {
   /** THE PAINT FACE (leaf_face kinds): the host's brush modal.
    *  Together with paintReference — absent either = no verb. */
   paintFace?: PaintFaceComponent
-  /** the card-level image field whose value is the brush's
-   *  reference (mask-form: 'input_image'). */
+  /** THE BBOX FACE (stroke 78): the host's selection modal, for
+   *  bbox-canvas kinds — shares paintReference (the card's ONE
+   *  image field is both faces' reference). */
+  bboxFace?: BboxFaceComponent
+  /** the card-level image field whose value is the leaf faces'
+   *  reference — the brush paints OVER it, the rectangle selects
+   *  ON it (mask-form: 'input_image'). */
   paintReference?: string
 }
 
@@ -274,10 +296,17 @@ export function ModifiersSection(props: ModifiersSectionProps): ReturnType<typeo
     commit(k, next)
   }
 
+  // THE CATEGORY LAW (stroke 78): a kind is ordered unless it
+  // declares standalone — the drag stack seats ONLY on ordered kinds
+  // (standalone entries each own their output; order is void).
+  const isOrdered = (k: ModifierKind): boolean => k.category !== 'standalone'
+  const anyOrdered = kinds.some(isOrdered)
+
   return h('section', { className: css.modSection, 'data-subcard-grid': 'on' },
     h('div', { className: css.modHead },
       h('span', { className: css.modTitle }, 'Modifiers'),
-      h('span', { className: css.modHint }, 'drag to set apply order'),
+      h('span', { className: css.modHint },
+        anyOrdered ? 'drag to set apply order' : 'each entry is its own output (standalone)'),
     ),
     leafError !== null && leaf === null
       ? h('p', { className: css.modLeafError }, leafError)
@@ -309,6 +338,7 @@ export function ModifiersSection(props: ModifiersSectionProps): ReturnType<typeo
       kinds.map((k) => {
         const entries = entriesOf(k)
         if (entries.length === 0) return null
+        const ordered = isOrdered(k)
         return [
           ...entries.map((entry, i) => {
               // THE CATALOG KEY (the served option_key — the hybrid
@@ -328,11 +358,13 @@ export function ModifiersSection(props: ModifiersSectionProps): ReturnType<typeo
             onOpen: () => { openEdit(k, i) },
             dragging: dragTile === k.param_key + '-' + i,
             dragOver: overTile === k.param_key + '-' + i && dragTile !== null && dragTile !== overTile,
-            onReorderStart: (id: string | null) => { setDragTile(id); if (id === null) setOverTile(null) },
-            onReorderOver: setOverTile,
-            onReorderDrop: (active: string, over: string) => {
-              setDragTile(null); setOverTile(null); onTileDrop(k, active, over)
-            },
+            ...(ordered ? {
+              onReorderStart: (id: string | null) => { setDragTile(id); if (id === null) setOverTile(null) },
+              onReorderOver: setOverTile,
+              onReorderDrop: (active: string, over: string) => {
+                setDragTile(null); setOverTile(null); onTileDrop(k, active, over)
+              },
+            } : {}),
           })
           }),
         ]
@@ -385,7 +417,7 @@ export function ModifiersSection(props: ModifiersSectionProps): ReturnType<typeo
       title: (leaf.mode === 'create' ? 'Add ' : 'Edit ') + leaf.kind.label,
       closeLabel: 'Close',
     },
-      h(ModLeaf, { leaf, values, hideFields: seated, onDraft: { setDraftOption, setDraftStrength, setDraftParams, draftOption, draftStrength, draftParams }, onError: setLeafError, onSave: saveLeaf, onDelete: deleteLeaf, leafError, paintFace: props.paintFace, paintReferenceValue: typeof props.paintReference === 'string' ? String(values[props.paintReference] ?? '') : '' }),
+      h(ModLeaf, { leaf, values, hideFields: seated, onDraft: { setDraftOption, setDraftStrength, setDraftParams, draftOption, draftStrength, draftParams }, onError: setLeafError, onSave: saveLeaf, onDelete: deleteLeaf, leafError, paintFace: props.paintFace, bboxFace: props.bboxFace, paintReferenceValue: typeof props.paintReference === 'string' ? String(values[props.paintReference] ?? '') : '' }),
     ) : null,
   )
 }
@@ -412,6 +444,9 @@ function ModLeaf(props: {
   /** THE PAINT FACE (leaf_face kinds): the host modal + the card's
    *  reference field value (absent host = no verb, graceful). */
   paintFace?: PaintFaceComponent
+  /** THE BBOX FACE (stroke 78): same law — absent host = the four
+   *  number inputs hold. */
+  bboxFace?: BboxFaceComponent
   paintReferenceValue: string
 }): ReturnType<typeof h> {
   const { leaf, onDraft, onSave, onDelete, leafError } = props
@@ -528,6 +563,23 @@ function ModLeaf(props: {
                 })
               : null,
           )),
+          // THE BBOX VERB (stroke 78): on a declared bbox-canvas face,
+          // ONE verb per entry (the rectangle is the entry's, not a
+          // field's) — it opens the preview, fills the four inputs.
+          props.bboxFace !== undefined && k.leaf_face === 'bbox-canvas'
+            ? h(BboxVerb, {
+                Face: props.bboxFace,
+                referenceUrl: props.paintReferenceValue,
+                draft: onDraft.draftParams,
+                onSaved: (bbox) => {
+                  onDraft.setDraftParams({
+                    ...onDraft.draftParams,
+                    bbox_x: Math.round(bbox.x), bbox_y: Math.round(bbox.y),
+                    bbox_w: Math.round(bbox.width), bbox_h: Math.round(bbox.height),
+                  })
+                },
+              })
+            : null,
           own.wireMenu,
         ),
     h('div', { className: css.modLeafActions },
@@ -561,6 +613,34 @@ function PaintVerb(props: {
   )
 }
 
+/** THE BBOX VERB (stroke 78) — the selection button + modal mount:
+ *  reads the entry's current rectangle (all four present and finite
+ *  = set; anything else = null, a fresh draw), writes the four
+ *  bbox_* inputs on save. Same delivery law as the paint verb. */
+function BboxVerb(props: {
+  Face: BboxFaceComponent
+  referenceUrl: string
+  draft: SpecValues
+  onSaved: (bbox: { x: number; y: number; width: number; height: number }) => void
+}): ReturnType<typeof h> {
+  const [open, setOpen] = useState(false)
+  const quad = [props.draft['bbox_x'], props.draft['bbox_y'], props.draft['bbox_w'], props.draft['bbox_h']]
+  const set = quad.length === 4 && quad.every((v) => typeof v === 'number' && Number.isFinite(v) && (v as number) >= 0)
+    ? { x: quad[0] as number, y: quad[1] as number, width: quad[2] as number, height: quad[3] as number }
+    : null
+  return h('div', { className: css.modField },
+    h(Button, { variant: 'ghost', onClick: () => { setOpen(true) } }, set === null ? 'Draw box' : 'Redraw box'),
+    open
+      ? h(props.Face, {
+          referenceUrl: props.referenceUrl,
+          bbox: set,
+          onSave: (bbox) => { props.onSaved(bbox); setOpen(false) },
+          onCancel: () => { setOpen(false) },
+        })
+      : null,
+  )
+}
+
 /** One mod tile (the original, verbatim: useSortable + click to
  *  edit + strength to 2 decimals). */
 /** The reorder drag's MIME (native HTML5 sortable). */
@@ -573,36 +653,43 @@ function ModTile(props: {
   onOpen: () => void
   dragging: boolean
   dragOver: boolean
-  onReorderStart: (id: string | null) => void
-  onReorderOver: (id: string) => void
-  onReorderDrop: (active: string, over: string) => void
+  /** THE CATEGORY GATE (stroke 78): absent reorder handlers = a
+   *  STANDALONE tile — not draggable (each entry is its own output;
+   *  array order is semantically void). */
+  onReorderStart?: (id: string | null) => void
+  onReorderOver?: (id: string) => void
+  onReorderDrop?: (active: string, over: string) => void
 }): ReturnType<typeof h> {
+  const ordered = props.onReorderStart !== undefined
   return h('li', {
     className: css.modTile
       + (props.dragging ? ' ' + css.tileDragging : '')
       + (props.dragOver ? ' ' + css.modTileOver : ''),
-    draggable: true,
+    draggable: ordered,
     'data-mod-tile': props.tileId,
-    title: 'Drag to reorder · click to edit',
+    title: ordered ? 'Drag to reorder · click to edit' : 'Click to edit (standalone — own output)',
     onDragStart: (e: React.DragEvent) => {
+      if (!ordered) return
       e.dataTransfer.setData(MOD_DRAG_MIME, props.tileId)
       e.dataTransfer.effectAllowed = 'move'
-      props.onReorderStart(props.tileId)
+      props.onReorderStart!(props.tileId)
     },
-    onDragEnd: () => { props.onReorderStart(null) },
+    onDragEnd: () => { if (ordered) props.onReorderStart!(null) },
     onDragOver: (e: React.DragEvent) => {
+      if (!ordered) return
       if (e.dataTransfer.types.includes(MOD_DRAG_MIME)) {
         e.preventDefault()
         e.dataTransfer.dropEffect = 'move'
-        props.onReorderOver(props.tileId)
+        props.onReorderOver!(props.tileId)
       }
     },
     onDrop: (e: React.DragEvent) => {
+      if (!ordered) return
       if (e.dataTransfer.types.includes(MOD_DRAG_MIME)) {
         e.preventDefault()
         e.stopPropagation()
         const active = e.dataTransfer.getData(MOD_DRAG_MIME)
-        if (active !== '' && active !== props.tileId) props.onReorderDrop(active, props.tileId)
+        if (active !== '' && active !== props.tileId) props.onReorderDrop!(active, props.tileId)
       }
     },
     onClick: props.onOpen,

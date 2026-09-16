@@ -1,37 +1,38 @@
-// card.ts — the mask FORM card (stroke 64, docs/design/mods-contracts.md
-// CONTRACTS B+C): MASK as a simple form card with MODs as ways to get
-// different kinds of masks — action oriented (the operator's words).
-//
-// THE SHAPE (vs the studio): no takeover UI, no canvas — the flat
-// form carries ONLY what is not a mask source (input_image,
-// output_mode, refine_iterations); every WAY TO GET A MASK is a
-// card-declared mod kind (CONTRACT A, stroke 63) on the mod row:
-//   mask_detect[]  — { primary_class, via_rtdetr? }  the RT-DETR +
-//                    SAM3 source (first entry = the primary)
-//   mask_subject[] — { name, prompt }                the SAM3 CLIP
-//                    text selection
-//   mask_paint[]   — { name, payload }               the painted
-//                    payload (alpha = strokes)
-// THE BAG IS THE RECIPE (CONTRACT B): apply order = array order
-// (the mod system's existing law); compose() walks the bags into
-// the SAME maskT1 lane the studio rides (exports/export_kind zip,
-// paint union, box manifest) — one lane, two faces.
-//
-// The parts kind (face/hands/body) rides the CLIP text lane with a
-// CLOSED VOCABULARY (stroke 68 — the file-read finding: the studio's
-// export_face/hands/body booleans are declared knobs no lane arm
-// consumes; parts have always been class words through SAM3's CLIP
-// leg. The vocabulary is a TYPE, not a str a wall validates — the
-// SAMPLERS law).
+// card.ts — the mask FORM card, RESHAPED (stroke 78, the operator's
+// mods-abstraction law): MASK as a SIMPLE form card whose entire
+// complexity lives in MODS. The flat form carries ONLY the lane
+// scalars (input_image + the SAM knobs); every WAY TO GET A MASK is
+// a card-declared mod kind — and every kind now declares its
+// CATEGORY (the stroke-78 law):
+//   sam3[] — standalone: SAM3 selection. A CLIP text prompt (what
+//            to segment), or RT-DETR person boxes refined by SAM3
+//            (via_rtdetr). Optional bbox — a drawn rectangle the
+//            selection locks to (the bbox-canvas leaf face: an
+//            image preview the user drags a selection on).
+//   sam2[] — standalone: the person-parts segmenter (face | hands
+//            | body — the closed CLIP vocabulary; the retired
+//            studio labeled this arm "sam2"). Optional bbox, same
+//            face.
+//   draw[] — ORDERED: the painted payload (alpha = strokes). A
+//            draw STACKS — it receives the previous outputs and
+//            unions onto the combined mask (the ordered chain:
+//            each payload composites in bag order), modifying the
+//            mask call, never running its own inference. A draw
+//            without a standalone source refuses LOUD.
+// STANDALONE = applies to the same base image, provides its OWN
+// output (each entry is its own mask export; order is void).
+// ORDERED = stacks in bag order on the previous outputs. The FIRST
+// standalone entry is the primary (saves mask_combined — the union
+// anchor); every further entry is a per-name export. The paint face
+// is the demoted studio's canvas (stroke 76); the bbox face is new.
 import type { Context } from '@deepseek-ai/cordis'
 import z from '@deepseek-ai/schemastery'
 import { maskT1 } from '@melite/comfyui-card-kit'
-import type { ModelFacts } from '@melite/comfyui-cordis'
 import { vocabulary } from '@melite/comfyui-card-kit/vocab'
 import type { DeclaredModifierKind } from '@melite/comfyui-cordis'
 
 /** The person-part vocabulary (the closed set — face | hands |
- *  body; SAM3's CLIP leg segments the class word). */
+ * body; SAM3's CLIP leg segments the class word). */
 const MASK_PARTS = ['face', 'hands', 'body'] as const
 
 // THE ACTION CARD OWNS ITS PINS (the studio's law, shared — the
@@ -41,73 +42,99 @@ const PINS = {
   unet: 'rt_detr_v4-x-hgnet_fp32.safetensors',
 }
 
+// THE SIMPLE FORM (the operator's law: the card IS simple — the
+// complexity lives in mods): the input image + the SAM lane's own
+// knobs. Every source knob (thresholds, instances, the manifest,
+// RT-DETR, payloads, boxes) is mod-owned.
 const schema = z.object({
-  input_image: z.string().role('path').description('Input').extra('extra', { order: 1, group: 'input', width: 2, tooltip: 'The image the mask selects FROM.', wtype: 'image' }),
-  output_mode: vocabulary(['segm', 'bbox']).description('Output').default('segm').extra('extra', { order: 2, group: 'input', width: 1, tooltip: 'segm saves masks; bbox saves the drawn-box manifest.', wtype: 'select' }),
+  input_image: z.string().role('path').description('Input').extra('extra', { order: 1, group: 'input', width: 2, tooltip: 'The image every mask selects FROM.', wtype: 'image' }),
   refine_iterations: z.number().description('Refine iterations').min(0).max(8).step(1).default(2).extra('extra', { order: 1, group: 'advanced', width: 1, tooltip: 'SAM3 refine rounds.' }),
-  // PARITY (CONTRACT D): the manifest decoupled from output_mode —
-  // the studio drew RT-DETR boxes by default; bbox stays the
-  // manifest-ONLY mode, segm + true draws both.
-  export_boxes: z.boolean().description('Export box manifest').default(true).extra('extra', { order: 2, group: 'input', width: 1, tooltip: 'Draw RT-DETR boxes on the image — the instance manifest.' }),
+  sam_threshold: z.number().description('Mask threshold').min(0.5).max(1).step(0.01).default(0.93).extra('extra', { order: 2, group: 'advanced', width: 1, tooltip: 'SAM3 mask confidence (every source shares it).' }),
+  sam_dilation: z.number().description('Dilation').min(0).max(64).step(1).default(0).extra('extra', { order: 3, group: 'advanced', width: 1, tooltip: 'Grow every mask N pixels.' }),
 })
 
+// The optional bbox's four entry fields (the bbox-canvas leaf
+// writes them; -1 = unset, the selection runs unscoped).
+const BBOX_FIELDS = ([
+  ['bbox_x', 'Box x', 'Left edge, image pixels.'],
+  ['bbox_y', 'Box y', 'Top edge, image pixels.'],
+  ['bbox_w', 'Box width', 'Rectangle width, image pixels.'],
+  ['bbox_h', 'Box height', 'Rectangle height, image pixels.'],
+] as const).map(([name, label, tooltip]) => ({
+  name,
+  label,
+  type: 'number',
+  default: -1,
+  min: -1,
+  step: 1,
+  tooltip: `${tooltip} (-1 = no box; use Draw box on the image.)`,
+}))
+
+/** Reads an entry's bbox (null when unset; a PRESENT non-number
+ * refuses LOUD — never silently skipped, even when the siblings
+ * are absent). */
+const bboxOf = (e: Record<string, unknown>, key: string): [number, number, number, number] | null => {
+  const quad = [e['bbox_x'], e['bbox_y'], e['bbox_w'], e['bbox_h']]
+  if (quad.some((v) => v !== undefined && v !== null && (typeof v !== 'number' || !Number.isFinite(v)))) {
+    throw new Error(`${key} entry's bbox must be four numbers (bbox_x/y/w/h) — got ${JSON.stringify(quad).slice(0, 60)}`)
+  }
+  if (quad.some((v) => v === undefined || v === null)) return null
+  if (quad.some((v) => (v as number) < 0)) return null
+  return quad as [number, number, number, number]
+}
+
 // THE CARD-DECLARED KINDS (CONTRACT A — served VERBATIM on the one
-// features.modifiers channel; the mod section renders them, the
-// leaf never learns the declarer). kindFields are the section's own
-// scalars (sam_threshold / sam_dilation — committed FLAT by the
-// section, admitted past the schema via `admits` below).
+// features.modifiers channel) with their CATEGORIES (stroke 78).
 const MODS: readonly DeclaredModifierKind[] = [
   {
-    kind: 'mask_detect',
-    label: 'Detect',
-    param_key: 'mask_detect',
+    kind: 'sam3',
+    label: 'SAM3',
+    param_key: 'sam3',
+    category: 'standalone',
     cardinality: 'list',
     max_stack: 8,
+    // THE BBOX FACE (stroke 78): the selection preview — the Draw
+    // box verb fills the entry's four bbox fields.
+    leaf_face: 'bbox-canvas',
     kindFields: [
-      { name: 'sam_threshold', label: 'Threshold', type: 'number', default: 0.93, min: 0.5, max: 1, step: 0.01, tooltip: 'SAM3 mask confidence.' },
-      { name: 'sam_dilation', label: 'Dilation', type: 'number', default: 0, min: 0, max: 64, step: 1, tooltip: 'Grow the final mask N pixels.' },
-      // PARITY (CONTRACT D): the studio's detect-lane scalars, verbatim
-      // defaults — RT-DETR confidence + the instance cap the kit reads.
+      // RT-DETR is SAM3's own arm (person boxes + the manifest)
       { name: 'detection_threshold', label: 'Detection threshold', type: 'number', default: 0.35, min: 0.05, max: 0.95, step: 0.05, tooltip: 'RT-DETR box confidence. Lower catches more instances, noisier boxes.' },
       { name: 'max_instances', label: 'Max instances', type: 'number', default: 0, min: 0, max: 100, step: 1, tooltip: 'Cap detected instances (0 = no cap). Read the manifest first, then narrow.' },
+      { name: 'export_boxes', label: 'Export box manifest', type: 'boolean', default: true, tooltip: 'Draw RT-DETR boxes on the image — the instance manifest.' },
     ],
     fields: [
-      { name: 'primary_class', label: 'Class', type: 'string', default: 'person', tooltip: 'The class the detector locks (first entry is the primary).' },
+      { name: 'name', label: 'Export name', type: 'string', default: 'sam3', tooltip: "The saved mask's name (mask_<name>)." },
+      { name: 'prompt', label: 'Prompt', type: 'string', default: '', tooltip: 'The SAM3 CLIP text selection — what to segment (empty + RT-DETR = the person-box lane).' },
       { name: 'via_rtdetr', label: 'Via RT-DETR boxes', type: 'boolean', default: false, tooltip: 'Propose person boxes with RT-DETR, refine with SAM3 (the box-manifest lane).' },
+      ...BBOX_FIELDS,
     ],
   },
   {
-    kind: 'mask_subject',
-    label: 'Subject',
-    param_key: 'mask_subject',
-    cardinality: 'list',
-    max_stack: 8,
-    fields: [
-      { name: 'name', label: 'Export name', type: 'string', default: 'subject', tooltip: 'The saved mask\'s name (mask_<name>).' },
-      { name: 'prompt', label: 'Prompt', type: 'string', default: '', tooltip: 'The SAM3 CLIP text selection — what to segment.' },
-    ],
-  },
-  {
-    kind: 'mask_parts',
-    label: 'Parts',
-    param_key: 'mask_parts',
+    kind: 'sam2',
+    label: 'SAM2',
+    param_key: 'sam2',
+    category: 'standalone',
     cardinality: 'list',
     max_stack: 3,
+    leaf_face: 'bbox-canvas',
     fields: [
+      { name: 'name', label: 'Export name', type: 'string', default: 'sam2', tooltip: "The saved mask's name (mask_<name>)." },
       { name: 'part', label: 'Part', type: 'select', default: 'face', tooltip: 'The person part to segment (its own mask export).', options: MASK_PARTS.map((p) => ({ value: p, label: p[0]!.toUpperCase()! + p.slice(1) })) },
+      ...BBOX_FIELDS,
     ],
   },
   {
-    kind: 'mask_paint',
-    label: 'Paint',
-    param_key: 'mask_paint',
+    kind: 'draw',
+    label: 'Draw',
+    param_key: 'draw',
+    category: 'ordered',
     cardinality: 'list',
     max_stack: 4,
-    // THE LEAF FACE (paint-leaf-canvas.md): the brush verb rides
+    // THE PAINT FACE (paint-leaf-canvas.md): the brush verb rides
     // the payload field — the demoted studio's canvas, ported.
     leaf_face: 'paint-canvas',
     fields: [
-      { name: 'name', label: 'Export name', type: 'string', default: 'paint', tooltip: 'The saved mask\'s name (mask_<name>).' },
+      { name: 'name', label: 'Export name', type: 'string', default: 'draw', tooltip: "The saved mask's name (mask_<name>)." },
       { name: 'payload', label: 'Paint payload', type: 'path', wtype: 'image', default: '', tooltip: 'The painted PNG (alpha channel = strokes).' },
     ],
   },
@@ -115,7 +142,7 @@ const MODS: readonly DeclaredModifierKind[] = [
 
 export const identity = {
   label: 'Mask Form',
-  description: 'Action form card: pick the input, then ADD ways to get a mask — detect (RT-DETR + SAM3), subject (text selection), paint (payload). Drag to set apply order.',
+  description: 'Simple mask form: pick the input, then ADD sources — sam3 (text selection, optional box), sam2 (person parts, optional box), draw (painted, stacks onto the rest).',
   genre: 'image',
   icon: 'mask',
   ability: 'tool',
@@ -154,8 +181,7 @@ export function apply(ctx: Context): void {
     identity,
     provisions: [],
     sidebar: { key: 'image', order: 9 },
-    // no surface row — a FORM card (layout serves null; the studio
-    // keeps its takeover until parity retires it, CONTRACT D)
+    // no surface row — a FORM card (layout serves null)
     flowKinds: {
       inputs: { input_image: 'image' },
       outputs: { default: 'seg' },
@@ -164,93 +190,121 @@ export function apply(ctx: Context): void {
     // THE MOD-OWNED NAMES ride admits (the compose door's explicit-
     // params overlay — the bags + the section's kindFields scalars
     // never touch the flat schema).
-    admits: ['mask_detect', 'mask_subject', 'mask_parts', 'mask_paint', 'sam_threshold', 'sam_dilation', 'detection_threshold', 'max_instances'],
+    admits: ['sam3', 'sam2', 'draw', 'detection_threshold', 'max_instances', 'export_boxes'],
     mods: MODS,
     schema: schema as unknown as (v: unknown) => Record<string, unknown>,
     compose(p, _model, g, runId) {
       if (typeof p.input_image !== 'string' || !p.input_image.trim()) {
         throw new Error("required param 'input_image' missing on the mask-form card — the mask lane selects FROM an image")
       }
-      const detect = bagOf(p, 'mask_detect', 'mask-form')
-      const subject = bagOf(p, 'mask_subject', 'mask-form')
-      const paint = bagOf(p, 'mask_paint', 'mask-form')
-      const parts = bagOf(p, 'mask_parts', 'mask-form')
-      if (detect.length === 0 && subject.length === 0 && paint.length === 0 && parts.length === 0) {
-        throw new Error('no mask sources on the mask-form card — add at least one modifier (detect, subject, parts, or paint)')
+      const sam3 = bagOf(p, 'sam3', 'mask-form')
+      const sam2 = bagOf(p, 'sam2', 'mask-form')
+      const draw = bagOf(p, 'draw', 'mask-form')
+      if (sam3.length === 0 && sam2.length === 0 && draw.length === 0) {
+        throw new Error('no mask sources on the mask-form card — add at least one modifier (sam3, sam2, or draw)')
       }
-      // THE BAG WALK (CONTRACT B): apply order = array order — the
-      // first detect entry is the PRIMARY; every further entry is a
-      // per-name export; subject entries are text-lane exports;
-      // paint entries are paint exports (payload → paint_mask, the
-      // first unions into combined when a primary exists).
+      if (draw.length > 0 && sam3.length === 0 && sam2.length === 0) {
+        throw new Error('a draw stacks ONTO a mask — add a standalone source first (sam3 or sam2), then the draw')
+      }
+
+      // THE STANDALONE WALK: sources in bag order — the FIRST
+      // standalone entry is the primary (mask_combined, the union
+      // anchor); every entry after it is a per-name export.
       const lane: Record<string, unknown> = {
         input_image: p.input_image,
         sam_threshold: p.sam_threshold,
         sam_dilation: p.sam_dilation,
         refine_iterations: p.refine_iterations,
-        // PARITY: the manifest on by default (bbox = manifest-only;
-        // segm + export_boxes draws both — the studio's law)
-        export_boxes: p.output_mode === 'bbox' || p.export_boxes !== false,
-        // PARITY: the detect-lane scalars thread only when the
-        // section committed them (absent rides the kit fallbacks)
+        // RT-DETR knobs (sam3's kindFields) thread when committed
+        // (absent rides the kit fallbacks); the manifest defaults ON
         detection_threshold: p.detection_threshold,
         max_instances: p.max_instances,
+        export_boxes: p.export_boxes !== false,
       }
-      const exports: Array<[string, string]> = []
+
+      // the unified standalone source stream: [kind, index] in
+      // cross-bag order (sam3's bag first — the declared MODS order)
+      type Src = { kind: 'sam3' | 'sam2'; entry: Record<string, unknown>; i: number }
+      const sources: Src[] = [
+        ...sam3.map((entry, i) => ({ kind: 'sam3' as const, entry, i })),
+        ...sam2.map((entry, i) => ({ kind: 'sam2' as const, entry, i })),
+      ]
+      const nameOf = (s: Src, fallback: string): string => {
+        const n = s.entry['name']
+        return typeof n === 'string' && n !== '' ? n : fallback
+      }
+
+      const exports: Array<[string, string, unknown?]> = []
       const exportKind: string[] = []
-      if (detect.length > 0) {
-        const first = detect[0]
-        if (typeof first['primary_class'] !== 'string' || (first['primary_class'] as string) === '') {
-          throw new Error("mask_detect entry 0 needs a 'primary_class' — the detector locks a class")
-        }
-        lane['primary_class'] = first['primary_class'] as string
-        if (first['via_rtdetr'] === true) lane['primary_via_rtdetr'] = true
-        for (let i = 1; i < detect.length; i++) {
-          const cls = detect[i]['primary_class']
-          if (typeof cls !== 'string' || cls === '') {
-            throw new Error(`mask_detect entry ${i} needs a 'primary_class'`)
+
+      // ── the primary (the first standalone source) ──
+      const primary = sources[0]
+      if (primary.kind === 'sam3') {
+        if (primary.entry['via_rtdetr'] === true) {
+          lane['primary_via_rtdetr'] = true
+        } else {
+          const prompt = primary.entry['prompt']
+          if (typeof prompt !== 'string' || prompt === '') {
+            throw new Error("sam3 entry 0 needs a 'prompt' (or 'Via RT-DETR boxes') — the first source anchors mask_combined")
           }
-          exports.push([`detect_${i}`, cls])
+          lane['primary_prompt'] = prompt
+        }
+      } else {
+        // sam2 parts ride the CLIP text lane (the class word)
+        const part = primary.entry['part']
+        if (typeof part !== 'string' || !MASK_PARTS.includes(part as (typeof MASK_PARTS)[number])) {
+          throw new Error(`sam2 entry 0 needs a 'part' (face | hands | body) — got ${JSON.stringify(part)}`)
+        }
+        lane['primary_prompt'] = part
+      }
+
+      // ── every source after the primary: its own export ──
+      for (let s = 1; s < sources.length; s++) {
+        const src = sources[s]
+        if (src.kind === 'sam3') {
+          const prompt = src.entry['prompt']
+          if (typeof prompt !== 'string') {
+            throw new Error(`sam3 entry ${src.i} needs a 'prompt' (a string) — got ${String(JSON.stringify(prompt)).slice(0, 40)}`)
+          }
+          const bbox = bboxOf(src.entry, 'sam3')
+          exports.push([nameOf(src, `sam3_${src.i + 1}`), prompt, bbox ?? undefined])
           exportKind.push('text')
-        }
-      }
-      for (let i = 0; i < subject.length; i++) {
-        const prompt = subject[i]['prompt']
-        if (typeof prompt !== 'string' || prompt === '') {
-          throw new Error(`mask_subject entry ${i} needs a 'prompt' — the text selection is the source`)
-        }
-        const name = typeof subject[i]['name'] === 'string' && (subject[i]['name'] as string) !== '' ? subject[i]['name'] as string : `subject_${i + 1}`
-        exports.push([name, prompt])
-        exportKind.push('text')
-      }
-      // THE PARTS LANE (stroke 68): a closed vocabulary through the
-      // CLIP text lane — each entry is its own mask export.
-      for (let i = 0; i < parts.length; i++) {
-        const part = parts[i]['part']
-        if (typeof part !== 'string' || !(MASK_PARTS as readonly string[]).includes(part)) {
-          throw new Error(`mask_parts entry ${i} needs a 'part' of ${MASK_PARTS.join(' | ')} — got ${JSON.stringify(part)}`)
-        }
-        exports.push([`part_${part}`, part])
-        exportKind.push('text')
-      }
-      for (let i = 0; i < paint.length; i++) {
-        const payload = paint[i]['payload']
-        if (typeof payload !== 'string' || payload === '') {
-          throw new Error(`mask_paint entry ${i} needs a 'payload' — the painted PNG is the source`)
-        }
-        const name = typeof paint[i]['name'] === 'string' && (paint[i]['name'] as string) !== '' ? paint[i]['name'] as string : `paint_${i + 1}`
-        exports.push([name, ''])
-        exportKind.push('paint')
-        if (lane['paint_mask'] === undefined) {
-          lane['paint_mask'] = payload
-          // the first paint unions into combined when a primary exists
-          if (detect.length > 0) lane['union_paint_into_combined'] = true
+        } else {
+          const part = src.entry['part']
+          if (typeof part !== 'string' || !MASK_PARTS.includes(part as (typeof MASK_PARTS)[number])) {
+            throw new Error(`sam2 entry ${src.i} needs a 'part' (face | hands | body) — got ${JSON.stringify(part)}`)
+          }
+          const bbox = bboxOf(src.entry, 'sam2')
+          exports.push([nameOf(src, `sam2_${src.i + 1}`), part, bbox ?? undefined])
+          exportKind.push('text')
         }
       }
       if (exports.length > 0) {
         lane['exports'] = exports
         lane['export_kind'] = exportKind
       }
+
+      // ── THE ORDERED DRAW STACK (bag order): each payload is its
+      // own paint export AND one hop in the union chain onto
+      // mask_combined (the kit composites them in array order —
+      // the previous outputs flow into the next). ──
+      const paintMasks: string[] = []
+      for (let i = 0; i < draw.length; i++) {
+        const payload = draw[i]['payload']
+        if (typeof payload !== 'string' || payload === '') {
+          throw new Error(`draw entry ${i} needs a 'payload' — the painted PNG is the mask`)
+        }
+        const name = typeof draw[i]['name'] === 'string' && (draw[i]['name'] as string) !== '' ? draw[i]['name'] as string : `draw_${i + 1}`
+        exports.push([name, payload])
+        exportKind.push('paint')
+        paintMasks.push(payload)
+      }
+      if (exports.length > 0) {
+        lane['exports'] = exports
+        lane['export_kind'] = exportKind
+      }
+      if (paintMasks.length > 0) lane['paint_masks'] = paintMasks
+
       maskT1(lane, PINS, g, runId)
     },
   }))

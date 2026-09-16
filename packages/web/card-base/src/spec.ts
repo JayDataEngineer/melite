@@ -185,10 +185,20 @@ export interface ModifierKind {
    *  above the tiles; they never ride the flat form (mod-owned). */
   kindFields?: SpecField[]
   options?: ModifierOption[]
+  /** THE CATEGORY (the mods-abstraction law, stroke 78): 'standalone'
+   *  = every entry applies to the same base image with its OWN
+   *  output (order void — no drag stack); 'ordered' (default, the
+   *  loras/controlnet stacking law) = entries stack in array order,
+   *  each receiving the previous outputs — modifying the model call,
+   *  never independent inference. Served verbatim. */
+  category?: 'standalone' | 'ordered'
   /** THE LEAF FACE (paint-leaf-canvas.md): 'paint-canvas' = the
    *  payload image field offers the brush verb (the host's modal;
-   *  absent host degrades to the three-source square). */
-  leaf_face?: 'paint-canvas'
+   *  absent host degrades to the three-source square).
+   *  'bbox-canvas' (stroke 78) = the entry's bbox_x/y/w/h fields
+   *  offer the rectangle verb — the image preview the user drags a
+   *  selection on (absent host degrades to the four inputs). */
+  leaf_face?: 'paint-canvas' | 'bbox-canvas'
 }
 
 /** THE MOD-OWNED NAMES (the SubcardGrid law, enforced): every name a

@@ -351,6 +351,11 @@ function specModifiers(
     if (k.option_key !== undefined) entry.option_key = k.option_key
     if (k.scalar_key !== undefined) entry.scalar_key = k.scalar_key
     if (k.max_stack !== undefined) entry.max_stack = k.max_stack
+    // THE CATEGORY (stroke 78 — the mods-abstraction law): standalone
+    // (same base image, own output) vs ordered (the stacking law).
+    // Served verbatim; absent = ordered (the default every pack kind
+    // already follows — no served row changes shape).
+    if (k.category !== undefined) entry.category = k.category
     if (k.fields !== undefined) entry.fields = k.fields
     if (k.kindFields !== undefined) entry.kindFields = k.kindFields
     if (k.options !== undefined) entry.options = k.options

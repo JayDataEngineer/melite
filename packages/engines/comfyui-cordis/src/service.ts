@@ -45,12 +45,24 @@ export interface DeclaredModifierKind {
   fields?: readonly Record<string, unknown>[]
   kindFields?: readonly Record<string, unknown>[]
   options?: readonly Record<string, unknown>[]
+  /** THE CATEGORY (the mods-abstraction law, stroke 78):
+   *  'standalone' = every entry applies to the SAME base image and
+   *  provides its OWN output (sam2/sam3 mask sources — order is
+   *  semantically void); 'ordered' (default, the stacking law every
+   *  pack kind follows — loras/controlnet) = entries STACK in array
+   *  order, each receiving the previous outputs, modifying the
+   *  model call — no independent inference. Served verbatim; the
+   *  section renders the drag stack ONLY on ordered kinds. */
+  category?: 'standalone' | 'ordered'
   /** THE LEAF FACE (paint-leaf-canvas.md): 'paint-canvas' = the
    *  kind's payload field offers the brush verb beside the square
    *  (the modal arrives from the host; absent host degrades to the
    *  three-source square — the payload PNG is the contract either
-   *  way). Served verbatim like every declared row. */
-  leaf_face?: 'paint-canvas'
+   *  way). 'bbox-canvas' (stroke 78) = the entry's bbox_x/y/w/h
+   *  fields offer the rectangle verb — an image preview the user
+   *  drags a selection on (absent host degrades to the four number
+   *  inputs). Served verbatim like every declared row. */
+  leaf_face?: 'paint-canvas' | 'bbox-canvas'
 }
 
 export interface CardDefinition {

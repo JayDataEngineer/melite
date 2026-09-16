@@ -2,10 +2,11 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "the mask-studio carrier, DEMOTED (CONTRACT D \u2014 the card retired at parity): ui/ survives as the paint leaf-face carrier; the takeover client is gone",
+  "description": "the mask-studio carrier, DEMOTED (CONTRACT D \u2014 the card retired at parity): ui/ survives as the leaf-face carrier (paint + bbox); the takeover client is gone",
   "exports": {
     "./package.json": "./package.json",
-    "./paint-leaf": "./src/ui/PaintLeafModal.tsx"
+    "./paint-leaf": "./src/ui/PaintLeafModal.tsx",
+    "./bbox-leaf": "./src/ui/BboxLeafModal.tsx"
   },
   "scripts": {
     "typecheck": "tsc --noEmit"

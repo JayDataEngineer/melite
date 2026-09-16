@@ -541,3 +541,67 @@ test('THE LEAF SQUARE: dropping a file uploads through the door and the name lan
     globalThis.fetch = realFetch
   }
 })
+
+// ── THE BBOX VERB (stroke 78 — the bbox-canvas leaf face) ──
+
+const SAM3_BOX = {
+  kind: 'sam3', label: 'SAM3', param_key: 'sam3', cardinality: 'list',
+  category: 'standalone', leaf_face: 'bbox-canvas',
+  fields: [
+    { name: 'name', type: 'string', label: 'Name', default: 'sam3' },
+    { name: 'prompt', type: 'string', label: 'Prompt', default: '' },
+    { name: 'bbox_x', type: 'number', label: 'Box x', default: -1 },
+    { name: 'bbox_y', type: 'number', label: 'Box y', default: -1 },
+    { name: 'bbox_w', type: 'number', label: 'Box w', default: -1 },
+    { name: 'bbox_h', type: 'number', label: 'Box h', default: -1 },
+  ],
+} as unknown as ModifierKind
+
+function FakeBboxFace(props: { referenceUrl: string; bbox: { x: number; y: number; width: number; height: number } | null; onSave: (b: { x: number; y: number; width: number; height: number }) => void; onCancel: () => void }) {
+  return h('div', { 'data-testid': 'bbox-face' },
+    h('span', { 'data-testid': 'bbox-ref' }, props.referenceUrl),
+    h('span', { 'data-testid': 'bbox-seed' }, props.bbox === null ? 'null' : `${props.bbox.x},${props.bbox.y},${props.bbox.width},${props.bbox.height}`),
+    h('button', { type: 'button', onClick: () => { props.onSave({ x: 12.6, y: 34.2, width: 120.9, height: 90.4 }) } }, 'Box save'),
+    h('button', { type: 'button', onClick: props.onCancel }, 'Box cancel'),
+  )
+}
+
+test('THE BBOX VERB: the verb mounts the host face ONCE per entry; its save writes the four inputs (rounded)', () => {
+  const { onEdit } = openLeaf({
+    kinds: [SAM3_BOX], values: { input_image: 'ref-url' },
+    bboxFace: FakeBboxFace, paintReference: 'input_image',
+  })
+  openCreate('SAM3')
+  fireEvent.click(screen.getByRole('button', { name: 'Draw box' }))
+  expect(screen.getByTestId('bbox-ref').textContent).toBe('ref-url')
+  expect(screen.getByTestId('bbox-seed').textContent).toBe('null')
+  fireEvent.click(screen.getByRole('button', { name: 'Box save' }))
+  expect(screen.queryByTestId('bbox-face')).toBeNull()
+  fireEvent.click(screen.getByRole('button', { name: 'Add' }))
+  expect(onEdit).toHaveBeenCalledWith('sam3', [{
+    name: 'sam3', prompt: '',
+    bbox_x: 13, bbox_y: 34, bbox_w: 121, bbox_h: 90,
+  }])
+})
+
+test('THE BBOX VERB: editing a boxed entry seeds the face with the current rectangle', () => {
+  openLeaf({
+    kinds: [SAM3_BOX],
+    values: { input_image: 'r', sam3: [{ name: 'a', prompt: 'p', bbox_x: 10, bbox_y: 20, bbox_w: 30, bbox_h: 40 }] },
+    bboxFace: FakeBboxFace, paintReference: 'input_image',
+  })
+  openEditTile('sam3-0')
+  fireEvent.click(screen.getByRole('button', { name: 'Redraw box' }))
+  expect(screen.getByTestId('bbox-seed').textContent).toBe('10,20,30,40')
+})
+
+test('THE BBOX VERB: host-less or faceless kinds offer no verb (the four inputs hold)', () => {
+  const hostless = openLeaf({ kinds: [SAM3_BOX], values: {} })
+  openCreate('SAM3')
+  expect(screen.queryByRole('button', { name: 'Draw box' })).toBeNull()
+  hostless.unmount()
+  const faceless = openLeaf({ kinds: [MASK_PAINT], values: {}, bboxFace: FakeBboxFace, paintReference: 'input_image' })
+  openCreate('Mask')
+  expect(screen.queryByRole('button', { name: 'Draw box' })).toBeNull()
+  faceless.unmount()
+})

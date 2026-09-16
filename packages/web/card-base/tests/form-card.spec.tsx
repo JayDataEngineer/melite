@@ -260,3 +260,27 @@ test('VALUE: the resolved map feeds every face (base under user, user wins)', ()
   form({ spec: doc(), user, base })
   expect((screen.getByLabelText('Prompt') as HTMLInputElement).value).toBe('user-wins')
 })
+
+test('BBOX THREAD: CardForm seats the host bbox face down to the section (the defined arm of the seam)', () => {
+  const spec = doc({
+    features: {
+      modifiers: [{
+        param_key: 'sam3', label: 'SAM3', entry: 'field', leaf_face: 'bbox-canvas',
+        fields: [
+          { name: 'img', label: 'Img', type: 'image' },
+          { name: 'bbox_x', label: 'Bx', type: 'number', default: -1 },
+          { name: 'bbox_y', label: 'By', type: 'number', default: -1 },
+          { name: 'bbox_w', label: 'Bw', type: 'number', default: -1 },
+          { name: 'bbox_h', label: 'Bh', type: 'number', default: -1 },
+        ],
+      }],
+    },
+  })
+  const Face = (): ReturnType<typeof h> => h('div', { 'data-testid': 'seated-bbox-face' }, 'seated')
+  form({ spec, bboxFace: Face as never })
+  // open the kind's create leaf — the bbox verb renders the seated face
+  fireEvent.click(document.querySelector('[data-subcard-add="mod"]') as HTMLElement)
+  fireEvent.click(screen.getByRole('menuitem', { name: 'SAM3' }))
+  fireEvent.click(screen.getByRole('button', { name: 'Draw box' }))
+  expect(screen.getByTestId('seated-bbox-face')).not.toBeNull()
+})
