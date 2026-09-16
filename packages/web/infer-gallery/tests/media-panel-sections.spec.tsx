@@ -120,9 +120,9 @@ describe('MediaPanel — the wand keys and the headless caption', () => {
     render(<MediaPanel />)
     const wand = await waitFor(() => screen.getByText('✦ CARDS') as HTMLElement)
     fireEvent.keyDown(wand, { key: 'Tab' })
-    expect(screen.queryByText(/Cards view unavailable/)).toBeNull()
+    expect(screen.queryByText(/Media Flow view unavailable/)).toBeNull()
     fireEvent.keyDown(wand, { key: 'Enter' })
-    expect(await screen.findByText(/Cards view unavailable/)).toBeTruthy()
+    expect(await screen.findByText(/Media Flow view unavailable/)).toBeTruthy()
   })
 
   it('a flow-less run captions without a head (no dangling dash)', async () => {

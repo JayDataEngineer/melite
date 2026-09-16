@@ -225,17 +225,19 @@ export async function apply(ctx: ClientContext): Promise<void> {
         // THE ADDRESS LAW (the 'sidebar://cards' title bug, 2026-09-11:
         // the operator's own DOM paste): any address the shell opens
         // resolves through the SAME law the body rides — the bench page
-        // is titled 'Cards' no matter which address form reached it
-        // (guide clicks arrive as sidebar://cards, openTab as the
-        // dsh-resource form).
+        // is titled 'Media Flow' no matter which address form reached
+        // it (guide clicks arrive as sidebar://cards, openTab as the
+        // dsh-resource form). Renamed from 'Cards' 2026-09-16 (the
+        // operator's clarity order — the tab shows the FLOW, not a
+        // deck of cards).
         const resolved = resolveCardsAddress(address)
-        if (resolved.startsWith(CARDS_BENCH_ADDRESS)) return 'Cards'
+        if (resolved.startsWith(CARDS_BENCH_ADDRESS)) return 'Media Flow'
         return resolved.replace(/^dsh-resource:\/\/cards\//, '')
       },
       guide: [{
         order: 50,
-        title: (): string => 'Cards',
-        description: (): string => 'The working flow — the shared bench and its runs.',
+        title: (): string => 'Media Flow',
+        description: (): string => 'The media flow — the shared bench and its runs.',
       }],
     }), 'melite-card-view: cards tab type')
   } catch (error) {

@@ -117,7 +117,7 @@ test('served-lib byte proofs: the built client carries the ported machinery', ()
     ['FINAL FILM badge', 'FINAL FILM'],
     ['3D badge', '3D'],
     ['honest 3D absence copy', '3D view unavailable'],
-    ['honest cards absence copy', 'Cards view unavailable'],
+    ['honest media-flow absence copy', 'Media Flow view unavailable'],
   ]
   for (const [name, needle] of probes) {
     assert.ok(bundle.includes(needle), `built lib/client.js lost: ${name} (${needle}) — did the build run after the edit?`)

@@ -2115,7 +2115,7 @@ export function CardsTab(props: CardsTabProps): ReturnType<typeof h> {
     // never a quiet return — the operator pressed Run and got
     // nothing.
     if (snapshot?.value?.kind !== 'bench') {
-      setLocalRunError('the bench is not ready to run from — reopen the Cards tab (snapshot kind: ' + String(snapshot?.value?.kind ?? 'none') + ')')
+      setLocalRunError('the bench is not ready to run from — reopen the Media Flow tab (snapshot kind: ' + String(snapshot?.value?.kind ?? 'none') + ')')
       return
     }
     setRunning(true)

@@ -197,13 +197,13 @@ describe("apply() — the happy path registers both planes", () => {
     }
   });
 
-  test("the tab title rides the address law (every bench form reads Cards)", async () => {
+  test("the tab title rides the address law (every bench form reads Media Flow)", async () => {
     const fake = fakeCtx();
     try {
       await apply(fake.ctx as never);
       const title = fake.regs.tabTypes[0]!["title"] as (address: string) => string;
-      expect(title("dsh-resource://cards/bench")).toBe("Cards");
-      expect(title("dsh-resource://cards/bench/main")).toBe("Cards");
+      expect(title("dsh-resource://cards/bench")).toBe("Media Flow");
+      expect(title("dsh-resource://cards/bench/main")).toBe("Media Flow");
       expect(title("dsh-resource://cards/run/run-1")).toBe("run/run-1");
     } finally {
       restore(fake);
@@ -356,7 +356,7 @@ describe("apply() — the session source (stroke 44)", () => {
       // the tab type's GUIDE callbacks answer (the shell reads them
       // when it renders the tab's help rows)
       const guide = (fake.regs.tabTypes[0]! as { guide: Array<{ title: () => string; description: () => string }> }).guide;
-      expect(guide[0]!.title()).toBe("Cards");
+      expect(guide[0]!.title()).toBe("Media Flow");
       expect(guide[0]!.description()).toContain("shared bench");
       // the PROVIDER's open callback fires openCardsResource (sync
       // up to the returned async generator — consuming it is the

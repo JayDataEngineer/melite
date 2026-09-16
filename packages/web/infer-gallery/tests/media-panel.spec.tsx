@@ -396,7 +396,7 @@ describe('MediaPanel — the flows face + the bench CAS load', () => {
     fireEvent.click(await screen.findByText(/Flows 1/))
     fireEvent.click(await waitFor(() => screen.getByText('card one').closest('button') as HTMLElement))
     fireEvent.click(screen.getByText(/Artifacts/))
-    expect(await screen.findByText(/Cards view unavailable/)).toBeTruthy()
+    expect(await screen.findByText(/Media Flow view unavailable/)).toBeTruthy()
   })
 })
 
@@ -628,7 +628,7 @@ describe('MediaPanel — the wand restores the run onto the bench', () => {
       return el as HTMLElement
     })
     fireEvent.click(wand)
-    expect(await screen.findByText(/Cards view unavailable/)).toBeTruthy()
+    expect(await screen.findByText(/Media Flow view unavailable/)).toBeTruthy()
   })
 })
 

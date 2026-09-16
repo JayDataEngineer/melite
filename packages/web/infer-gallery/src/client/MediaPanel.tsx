@@ -396,7 +396,7 @@ export function MediaPanel({ useTabInfo, sessionId }: { useTabInfo?: () => TabIn
   const openCards = (item: MediaItem): void => {
     const open = tabInfo?.tab.actions.openResource
     if (open === undefined) {
-      setError('Cards view unavailable — the sidebar tab service is not loaded.')
+      setError('Media Flow view unavailable — the sidebar tab service is not loaded.')
       return
     }
     const deps = { openResource: open, onError: setError, sessionId }
@@ -418,7 +418,7 @@ export function MediaPanel({ useTabInfo, sessionId }: { useTabInfo?: () => TabIn
     if (draftId === '') return
     const open = tabInfo?.tab.actions.openResource
     if (open === undefined) {
-      setError('Cards view unavailable — the sidebar tab service is not loaded.')
+      setError('Media Flow view unavailable — the sidebar tab service is not loaded.')
       return
     }
     void loadDraftOntoBench(draftId, { openResource: open, onError: setError, sessionId })
