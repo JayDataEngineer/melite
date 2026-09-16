@@ -18,6 +18,9 @@
 // registry, codes declared next to the throws in estate-queue) —
 // the adapters add nothing, never catch, never wrap.
 import type { Context } from "@deepseek-ai/cordis";
+export type { JsonValue, RunStartDoc, RunRow } from "./types.ts";
+import type { RunStartDoc, RunRow } from "./types.ts";
+
 import {
   Remote,
   TypertRemoteService,
@@ -59,6 +62,7 @@ declare module "@deepseek-ai/cordis" {
   }
 }
 
+
 /** The runs remote: start/status/stop over the registry seat. */
 export class RunsRemoteService extends TypertRemoteService {
   static inject = ["runs"];
@@ -70,7 +74,7 @@ export class RunsRemoteService extends TypertRemoteService {
   /** Endpoint `runs/start` — the submit chain (registry seat). */
   @Remote("start")
   async remoteExportStart(
-    doc: unknown,
+    doc: RunStartDoc,
     signal: AbortSignal,
   ): Promise<{ run_id: string; status: string; queue_position: number }> {
     return await this.ctx.runs.start(doc, signal);
@@ -81,8 +85,8 @@ export class RunsRemoteService extends TypertRemoteService {
   async remoteExportStatus(
     runId: string,
     signal: AbortSignal,
-  ): Promise<Record<string, unknown>> {
-    return await this.ctx.runs.status(runId, signal);
+  ): Promise<RunRow> {
+    return (await this.ctx.runs.status(runId, signal)) as RunRow;
   }
 
   /** Endpoint `runs/stop` — the flag + interrupt (registry seat). */
@@ -90,8 +94,8 @@ export class RunsRemoteService extends TypertRemoteService {
   async remoteExportStop(
     runId: string,
     signal: AbortSignal,
-  ): Promise<Record<string, unknown>> {
-    return await this.ctx.runs.stop(runId, signal);
+  ): Promise<RunRow> {
+    return (await this.ctx.runs.stop(runId, signal)) as RunRow;
   }
 
   /** Endpoint `runs/list` — the restore-port envelope (registry
@@ -100,17 +104,17 @@ export class RunsRemoteService extends TypertRemoteService {
   async remoteExportList(
     rawLimit: string,
     signal: AbortSignal,
-  ): Promise<{ count: number; runs: Record<string, unknown>[] }> {
-    return await this.ctx.runs.list(rawLimit, signal);
+  ): Promise<{ count: number; runs: RunRow[] }> {
+    return (await this.ctx.runs.list(rawLimit, signal)) as { count: number; runs: RunRow[] };
   }
 
   /** Endpoint `runs/validate` — the pure compile (registry seat). */
   @Remote("validate")
   async remoteExportValidate(
-    doc: unknown,
+    doc: RunStartDoc,
     signal: AbortSignal,
-  ): Promise<Record<string, unknown>> {
-    return await this.ctx.runs.validate(doc, signal);
+  ): Promise<RunRow> {
+    return (await this.ctx.runs.validate(doc, signal)) as RunRow;
   }
 }
 

@@ -3,26 +3,29 @@
 // installment 3g): the tile trash (remove + refusal voice), the slot
 // patch currency on bench and draft drills (ok / refusal / thrown),
 // the draft run verb (start + refusal carry), and the picker close.
-import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+// Estate verbs ride mountEstateFakes (the one-lane seam); fetch
+// answers ONLY the /v1 discovery doors + the /api/manage/act
+// non-estate door.
+import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { createElement as h } from "react";
 import { CardsTab } from "../src/client/CardsTab.tsx";
 import type { BenchStageRow } from "../src/client/cards-resource.ts";
+import { mountEstateFakes } from "./estate-harness.ts";
+import { unbindEstateRemote } from "@melite/card-base/estate-remote";
 
-afterEach(() => {
-  cleanup();
-  vi.unstubAllGlobals();
-});
+interface Call { method: string; args: Record<string, unknown> }
 
-interface FrameAnswer { value?: unknown; refuse?: string; thrown?: unknown }
+let fakes: { calls: Call[]; unmount: () => void } | null = null;
+let posted: Call[] = [];
 
-const doors: {
-  posted: Array<{ method: string; args: Record<string, unknown> }>;
-  frames: Record<string, (args: Record<string, unknown>) => FrameAnswer>;
+// form-spec faces (fetch-level, kept): field overrides, packs flag,
+// absent-family flag.
+const specCtl: {
   specFields: Record<string, unknown> | null;
   specPacks: boolean;
   specAbsentFamily: boolean;
-} = { posted: [], frames: {}, specFields: null, specPacks: false, specAbsentFamily: false };
+} = { specFields: null, specPacks: false, specAbsentFamily: false };
 
 // the slot harness — the studio claims and exposes the owner verbs
 const slot: {
@@ -51,15 +54,25 @@ function renderSlot(slotName: string, owner: Record<string, unknown>): React.Rea
   return h(SlotFace, null);
 }
 
-function stubFetch(): void {
-  doors.posted = [];
-  doors.frames = {};
-  doors.specFields = null;
+function stubDoors(estateOpts: Parameters<typeof mountEstateFakes>[0] = {}): void {
+  fakes?.unmount();
+  const benchStages = (estateOpts.draftStages as Array<Record<string, unknown>> | undefined) ?? [
+    { id: "s_0", card: "image-gen", title: "s_0", engine: "comfyui", params: { prompt: "a barn" } },
+  ];
+  const estate = mountEstateFakes({
+    benchDoc: { draft_id: "bench-p", rev: 1, log: [], stages: benchStages.map((s) => ({ ...s })) },
+    draftStages: benchStages,
+    draftBenchRev: 1,
+    ...estateOpts,
+  });
+  fakes = estate;
+  posted = estate.calls;
   slot.owner = null;
   slot.manageResults = [];
   slot.manageCalls = [];
-  doors.specPacks = false;
-  doors.specAbsentFamily = false;
+  specCtl.specPacks = false;
+  specCtl.specAbsentFamily = false;
+  specCtl.specFields = null;
   vi.stubGlobal("fetch", async (url: unknown, init?: RequestInit): Promise<Response> => {
     const path = String(url);
     if (path === "/api/manage/act") {
@@ -73,7 +86,7 @@ function stubFetch(): void {
       const refs: Record<string, unknown> = {};
       const order: string[] = [];
       let uid = 1;
-      const fields = doors.specFields ?? {
+      const fields = specCtl.specFields ?? {
         prompt: { type: "string", meta: { description: "Prompt", extra: { wtype: "textarea" } } },
       };
       for (const [name, field] of Object.entries(fields)) {
@@ -82,14 +95,14 @@ function stubFetch(): void {
       }
       return new Response(JSON.stringify({
         form: "image-gen", genre: "image", engine: "comfyui",
-        ...(doors.specAbsentFamily === true ? {
+        ...(specCtl.specAbsentFamily === true ? {
           families: [{ id: "image-gen", present: false }, { id: "tts", present: true }],
           variants: [
             { id: "v-img", label: "Img", group: "Variant", defaults: { model: "image-gen" }, route: "image-gen" },
             { id: "v-tts", label: "Tts", group: "Variant", defaults: { model: "tts" }, route: "tts" },
           ],
         } : {}),
-        ...(doors.specPacks === true ? {
+        ...(specCtl.specPacks === true ? {
           packs: [{ id: "p-1", present: false }],
         } : {}),
         schema: { uid: 0, refs, order },
@@ -105,49 +118,29 @@ function stubFetch(): void {
         status: 200, headers: { "content-type": "application/json" },
       });
     }
-    if (path.startsWith("/api/")) {
-      const frame = JSON.parse(String(init?.body)) as { rpcId: string; method: string; payload: { args: Record<string, unknown> } };
-      doors.posted.push({ method: frame.method, args: frame.payload.args });
-      const route = doors.frames[frame.method];
-      if (route !== undefined) {
-        const answer = route(frame.payload.args);
-        if (answer.thrown !== undefined) throw answer.thrown;
-        if (answer.refuse !== undefined) {
-          return new Response(JSON.stringify({
-            type: "server-response", rpcId: frame.rpcId,
-            result: { ok: false, error: { message: answer.refuse } },
-          }), { status: 200, headers: { "content-type": "application/json" } });
-        }
-        return new Response(JSON.stringify({
-          type: "server-response", rpcId: frame.rpcId,
-          result: { ok: true, value: answer.value ?? {} },
-        }), { status: 200, headers: { "content-type": "application/json" } });
-      }
-      return new Response(JSON.stringify({
-        type: "server-response", rpcId: frame.rpcId, result: { ok: true, value: {} },
-      }), { status: 200, headers: { "content-type": "application/json" } });
-    }
-    return new Response("no", { status: 500 });
+    throw new Error("estate door on the fetch lane: " + path);
   });
 }
+
+afterEach(() => {
+  cleanup();
+  fakes?.unmount();
+  fakes = null;
+  unbindEstateRemote();
+  vi.unstubAllGlobals();
+});
 
 const STAGES: BenchStageRow[] = [
   { id: "s_0", card: "image-gen", engine: "comfyui", params: { prompt: "a barn" } },
 ];
 
-function mountBench(prestage?: () => void, stages: BenchStageRow[] = STAGES): void {
-  stubFetch();
-  doors.frames["bench/get"] = () => ({
-    value: {
-      draft_id: "bench-p", rev: 1, log: [],
-      stages: stages.map((s) => ({ ...s, run_status: s.runStatus })),
-    },
+function mountBench(estateOpts: Parameters<typeof mountEstateFakes>[0] = {}, stages: BenchStageRow[] = STAGES, spec: { absentFamily?: boolean; packs?: boolean } = {}): void {
+  stubDoors({
+    draftStages: stages.map((s) => ({ ...s }) as unknown as Record<string, unknown>),
+    ...estateOpts,
   });
-  doors.frames["drafts/get"] = () => ({
-    value: { draft_id: "bench-p", bench: { rev: 1 }, stages },
-  });
-  doors.frames["drafts/patch"] = () => ({ value: { delivered: true } });
-  if (prestage !== undefined) prestage();
+  if (spec.absentFamily === true) specCtl.specAbsentFamily = true;
+  if (spec.packs === true) specCtl.specPacks = true;
   render(h(CardsTab, {
     renderSlot,
     useTabInfo: () => ({ tab: {
@@ -162,13 +155,13 @@ function mountBench(prestage?: () => void, stages: BenchStageRow[] = STAGES): vo
   } as never));
 }
 
-function mountDraft(prestage?: () => void, stages: BenchStageRow[] = STAGES): void {
-  stubFetch();
-  doors.frames["drafts/get"] = () => ({
-    value: { draft_id: "draft-1", bench: { rev: 1 }, stages },
+function mountDraft(estateOpts: Parameters<typeof mountEstateFakes>[0] = {}, stages: BenchStageRow[] = STAGES, spec: { absentFamily?: boolean; packs?: boolean } = {}): void {
+  stubDoors({
+    draftStages: stages.map((s) => ({ ...s }) as unknown as Record<string, unknown>),
+    ...estateOpts,
   });
-  doors.frames["drafts/patch"] = () => ({ value: { delivered: true } });
-  if (prestage !== undefined) prestage();
+  if (spec.absentFamily === true) specCtl.specAbsentFamily = true;
+  if (spec.packs === true) specCtl.specPacks = true;
   render(h(CardsTab, {
     renderSlot,
     useTabInfo: () => ({ tab: {
@@ -200,25 +193,23 @@ describe("the tile trash — remove rides the revision fence", () => {
     const trash = await screen.findByTestId("tile-remove", {}, { timeout: 5000 });
     fireEvent.click(trash);
     await waitFor(() => {
-      expect(doors.posted.some((p) => p.method === "bench/remove-stage")).toBe(true);
+      expect(posted.some((p) => p.method === "bench/remove-stage")).toBe(true);
     });
-    const post = doors.posted.find((p) => p.method === "bench/remove-stage");
+    const post = posted.find((p) => p.method === "bench/remove-stage");
     expect((post?.args as { doc: unknown }).doc).toMatchObject({ stage: "s_0" });
   });
 
   test("a refused trash voices the refusal at bench level (never silent)", async () => {
-    mountBench(() => {
-      doors.frames["bench/remove-stage"] = () => ({ refuse: "rev moved under you" });
-    });
+    mountBench({ refusals: [{ method: "bench/remove-stage", message: "rev moved under you" }] });
     const trash = await screen.findByTestId("tile-remove", {}, { timeout: 5000 });
     fireEvent.click(trash);
     expect(await screen.findByText("rev moved under you", {}, { timeout: 5000 })).toBeTruthy();
   });
 
   test("a throwing trash voices the fallback (never empty)", async () => {
-    mountBench(() => {
-      doors.frames["bench/remove-stage"] = () => ({ thrown: "gone" });
-    });
+    // the door throws the foreign string "gone" verbatim (the old
+    // envelope stub's shape) — the client voices "remove failed".
+    mountBench({ throws: [{ method: "bench/remove-stage", value: "gone" }] });
     const trash = await screen.findByTestId("tile-remove", {}, { timeout: 5000 });
     fireEvent.click(trash);
     expect(await screen.findByText("remove failed", {}, { timeout: 5000 })).toBeTruthy();
@@ -233,16 +224,14 @@ describe("the bench slot patch currency — the zoom's onPatchParams ride", () =
     await openZoom();
     fireEvent.click(screen.getByText("slot patch"));
     await waitFor(() => {
-      expect(doors.posted.some((p) => p.method === "drafts/patch")).toBe(true);
+      expect(posted.some((p) => p.method === "drafts/patch")).toBe(true);
     });
-    const post = doors.posted.find((p) => p.method === "drafts/patch");
+    const post = posted.find((p) => p.method === "drafts/patch");
     expect(post?.args).toMatchObject({ draftId: "bench-p", stageId: "s_0", patch: { params: { prompt: "slot words" } } });
   });
 
   test("a refused slot patch voices the refusal (the drill stays open)", async () => {
-    mountBench(() => {
-      doors.frames["drafts/patch"] = () => ({ refuse: "rev moved under you" });
-    });
+    mountBench({ refusals: [{ method: "drafts/patch", message: "rev moved under you" }] });
     await openZoom();
     fireEvent.click(screen.getByText("slot patch"));
     // the voice lands twice (bench rail + zoom startError) — either proves it
@@ -250,9 +239,9 @@ describe("the bench slot patch currency — the zoom's onPatchParams ride", () =
   });
 
   test("a throwing slot patch voices the fallback (never empty)", async () => {
-    mountBench(() => {
-      doors.frames["drafts/patch"] = () => ({ thrown: "gone" });
-    });
+    // the foreign string "gone" rides verbatim — the "patch failed"
+    // fallback voices (the old stub's shape, verbatim).
+    mountBench({ throws: [{ method: "drafts/patch", value: "gone" }] });
     await openZoom();
     fireEvent.click(screen.getByText("slot patch"));
     expect(await screen.findAllByText(/patch failed/, {}, { timeout: 5000 })).not.toHaveLength(0);
@@ -267,45 +256,39 @@ describe("the draft slot currency — patch and run ride the draft's own rev", (
     await screen.findByText("slot patch", {}, { timeout: 5000 });
     fireEvent.click(screen.getByText("slot patch"));
     await waitFor(() => {
-      expect(doors.posted.some((p) => p.method === "drafts/patch")).toBe(true);
+      expect(posted.some((p) => p.method === "drafts/patch")).toBe(true);
     });
-    const post = doors.posted.find((p) => p.method === "drafts/patch");
+    const post = posted.find((p) => p.method === "drafts/patch");
     expect(post?.args).toMatchObject({ draftId: "draft-1", stageId: "s_0", patch: { params: { prompt: "slot words" } } });
   });
 
   test("a refused draft patch voices the refusal (the draft stays put)", async () => {
-    mountDraft(() => {
-      doors.frames["drafts/patch"] = () => ({ refuse: "draft moved" });
-    });
+    mountDraft({ refusals: [{ method: "drafts/patch", message: "draft moved" }] });
     await screen.findByText("slot patch", {}, { timeout: 5000 });
     fireEvent.click(screen.getByText("slot patch"));
     expect(await screen.findByText("draft moved", {}, { timeout: 5000 })).toBeTruthy();
   });
 
   test("a throwing draft patch voices the fallback (never empty)", async () => {
-    mountDraft(() => {
-      doors.frames["drafts/patch"] = () => ({ thrown: 42 });
-    });
+    // the foreign number 42 rides verbatim (the old stub's shape) —
+    // the "patch failed" fallback voices.
+    mountDraft({ throws: [{ method: "drafts/patch", value: 42 }] });
     await screen.findByText("slot patch", {}, { timeout: 5000 });
     fireEvent.click(screen.getByText("slot patch"));
     expect(await screen.findByText("patch failed", {}, { timeout: 5000 })).toBeTruthy();
   });
 
   test("a draft slot run starts the pass (runs/start carries the draft)", async () => {
-    mountDraft(() => {
-      doors.frames["runs/start"] = () => ({ value: { run_id: "r_7" } });
-    });
+    mountDraft({ startDocs: [{ run_id: "r_7" }] });
     await screen.findByText("slot run", {}, { timeout: 5000 });
     fireEvent.click(screen.getByText("slot run"));
     await waitFor(() => {
-      expect(doors.posted.some((p) => p.method === "runs/start")).toBe(true);
+      expect(posted.some((p) => p.method === "runs/start")).toBe(true);
     });
   });
 
   test("a refused draft run carries the refusal (the draft never spins)", async () => {
-    mountDraft(() => {
-      doors.frames["runs/start"] = () => ({ refuse: "no engine today" });
-    });
+    mountDraft({ refusals: [{ method: "runs/start", message: "no engine today" }] });
     await screen.findByText("slot run", {}, { timeout: 5000 });
     fireEvent.click(screen.getByText("slot run"));
     expect(await screen.findByText("no engine today", {}, { timeout: 5000 })).toBeTruthy();
@@ -321,7 +304,7 @@ describe("the slot manage verbs — provision and pack ride the manage door", ()
   ];
 
   test("a boarded-but-absent held model offers its download (queued, then true)", async () => {
-    mountDraft(() => { doors.specAbsentFamily = true; }, ABSENT);
+    mountDraft({}, ABSENT, { absentFamily: true });
     const dl = await screen.findByText("Download Image Gen", {}, { timeout: 5000 });
     fireEvent.click(dl);
     await waitFor(() => {
@@ -331,7 +314,7 @@ describe("the slot manage verbs — provision and pack ride the manage door", ()
   });
 
   test("a missing pack offers its install (the id rides as nodes)", async () => {
-    mountDraft(() => { doors.specPacks = true; });
+    mountDraft({}, STAGES, { packs: true });
     const inst = await screen.findByRole("button", { name: /Install/, }, { timeout: 5000 });
     fireEvent.click(inst);
     await waitFor(() => {
@@ -355,6 +338,6 @@ describe("the picker close — the door dismisses without landing", () => {
     await waitFor(() => {
       expect(screen.queryByRole("button", { name: "Close picker" })).toBeNull();
     });
-    expect(doors.posted.some((p) => p.method === "bench/add-stage")).toBe(false);
+    expect(posted.some((p) => p.method === "bench/add-stage")).toBe(false);
   });
 });

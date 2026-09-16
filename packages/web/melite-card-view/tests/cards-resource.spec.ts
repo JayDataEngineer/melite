@@ -7,6 +7,8 @@
 // until terminal (pollRunFrames' law, already pinned in the run-wire
 // package; here the bench tail gets its own pins).
 import { describe, expect, test, vi, afterEach } from 'vitest'
+import { unbindEstateRemote } from '@melite/card-base/estate-remote'
+import { mountEstateFakes } from './estate-harness.ts'
 import { benchAddressOf, benchSessionOfAddress, observeRunOutcome, openCardsResource, readBench } from '../src/client/cards-resource.ts'
 // The gateway's client face resolves to the tests/fixtures stand-in
 // (the real artifact is module-loader format — see the fixture's
@@ -16,25 +18,15 @@ import { benchAddressOf, benchSessionOfAddress, observeRunOutcome, openCardsReso
 import { RemoteStreamCarrierError } from '@deepseek-ai/dsh-api-gateway/client'
 import type { ClientRemote, RemoteStreamItem } from '@deepseek-ai/dsh-api-gateway/client'
 
-/** A /api wire frame answer for one method. */
-function stubApi(methods: Record<string, Array<Record<string, unknown> | Error>>): void {
-  const impl = async (url: unknown, init?: RequestInit): Promise<Response> => {
-    const path = String(url)
-    for (const [method, queue] of Object.entries(methods)) {
-      if (!path.includes('/api/' + method)) continue
-      const next = queue.length > 1 ? queue.shift() : queue[0]!
-      if (next instanceof Error) throw next
-      // the wire's frame law: the answer echoes the request's rpcId
-      const rpcId = (JSON.parse(String(init?.body)) as { rpcId: string }).rpcId
-      return new Response(JSON.stringify({
-        type: 'server-response', rpcId, result: { ok: true, value: next },
-      }), { status: 200, headers: { 'content-type': 'application/json' } })
-    }
-    return new Response(JSON.stringify({
-      type: 'server-response', rpcId: 'r', result: { ok: true, value: {} },
-    }), { status: 200, headers: { 'content-type': 'application/json' } })
-  }
-  vi.stubGlobal('fetch', impl)
+/** A bench/get doc served through the mounted namespaces (the
+ *  unmounted face's one HTTP snapshot rides the live lane now —
+ *  mountEstateFakes, never a fetch stub). */
+function stubBenchGet(doc: Record<string, unknown>): ReturnType<typeof mountEstateFakes> {
+  return mountEstateFakes({ benchDoc: doc })
+}
+
+function stubBenchThrow(error: Error): ReturnType<typeof mountEstateFakes> {
+  return mountEstateFakes({ throws: [{ method: 'bench/get', message: error.message }] })
 }
 
 const benchDoc = (rev: number, titles: string[]): Record<string, unknown> => ({
@@ -232,6 +224,7 @@ const until = async (probe: () => boolean, turns = 200): Promise<void> => {
 }
 
 afterEach(() => {
+  unbindEstateRemote()
   vi.unstubAllGlobals()
   vi.useRealTimers()
 })
@@ -314,27 +307,35 @@ describe('stroke 44 — a fresh conversation\'s bench (missing = empty, never fa
   })
 
   test('the unmounted face degrades honestly: ONE HTTP snapshot, ONE failure frame, no poll', async () => {
-    stubApi({ 'bench/get': [benchDoc(7, ['hero frame'])] })
-    const frames: unknown[] = []
-    for await (const frame of openCardsResource('dsh-resource://cards/bench', { signal: AbortSignal.timeout(50) })) {
-      frames.push(frame)
+    const fakes = stubBenchGet(benchDoc(7, ['hero frame']))
+    try {
+      const frames: unknown[] = []
+      for await (const frame of openCardsResource('dsh-resource://cards/bench', { signal: AbortSignal.timeout(50) })) {
+        frames.push(frame)
+      }
+      expect(frames.length).toBe(2) // then the tail ENDS — a broken mount never fakes a watch
+      expect((frames[0] as { ok: boolean; value: { rev: number } }).ok).toBe(true)
+      expect((frames[0] as { value: { rev: number } }).value.rev).toBe(7)
+      const second = frames[1] as { ok: boolean; error: { message: string } }
+      expect(second.ok).toBe(false)
+      expect(second.error.message).toContain('bench stream unavailable')
+    } finally {
+      fakes.unmount()
     }
-    expect(frames.length).toBe(2) // then the tail ENDS — a broken mount never fakes a watch
-    expect((frames[0] as { ok: boolean; value: { rev: number } }).ok).toBe(true)
-    expect((frames[0] as { value: { rev: number } }).value.rev).toBe(7)
-    const second = frames[1] as { ok: boolean; error: { message: string } }
-    expect(second.ok).toBe(false)
-    expect(second.error.message).toContain('bench stream unavailable')
   })
 
   test('other refusions are still failures — only the missing bench is the zero state', async () => {
-    stubApi({ 'bench/get': [new Error('gateway exploded')] })
-    const frames: unknown[] = []
-    for await (const frame of openCardsResource('dsh-resource://cards/bench/s_x', { signal: AbortSignal.timeout(50) })) {
-      frames.push(frame)
-      break
+    const fakes = stubBenchThrow(new Error('gateway exploded'))
+    try {
+      const frames: unknown[] = []
+      for await (const frame of openCardsResource('dsh-resource://cards/bench/s_x', { signal: AbortSignal.timeout(50) })) {
+        frames.push(frame)
+        break
+      }
+      expect((frames[0] as { ok: boolean }).ok).toBe(false)
+    } finally {
+      fakes.unmount()
     }
-    expect((frames[0] as { ok: boolean }).ok).toBe(false)
   })
 
   test('the watcher baselines a missing bench at rev 0 — the FIRST agent card in a new conversation reveals', async () => {
@@ -458,90 +459,76 @@ describe('observeRunOutcome — the failure carry', () => {
     ...(error !== undefined ? { error } : {}),
     stages: [{ id: 's_0', status: 'error', url: '', error: "clip_name 'qwen_2.5_vl_7b_fp8_scaled.safetensors' not in [14 clips]" }],
   })
-  const patches: Array<Record<string, unknown>> = []
-  const stubRunWire = (doc: Record<string, unknown>): void => {
-    vi.stubGlobal('fetch', async (url: unknown, init?: RequestInit): Promise<Response> => {
-      const path = String(url)
-      const rpcId = (JSON.parse(String(init?.body)) as { rpcId: string }).rpcId
-      if (path.includes('/api/runs/status')) {
-        return new Response(JSON.stringify({ type: 'server-response', rpcId, result: { ok: true, value: doc } }), { status: 200, headers: { 'content-type': 'application/json' } })
-      }
-      if (path.includes('/api/drafts/patch')) {
-        patches.push((JSON.parse(String(init?.body)) as { payload: { args: Record<string, unknown> } }).payload.args)
-        return new Response(JSON.stringify({ type: 'server-response', rpcId, result: { ok: true, value: { delivered: true } } }), { status: 200, headers: { 'content-type': 'application/json' } })
-      }
-      if (path.includes('/api/drafts/get')) {
-        return new Response(JSON.stringify({ type: 'server-response', rpcId, result: { ok: true, value: { draft_id: 'bench-main', stages: [], bench: { rev: 3, log: [] } } } }), { status: 200, headers: { 'content-type': 'application/json' } })
-      }
-      return new Response(JSON.stringify({ type: 'server-response', rpcId, result: { ok: true, value: {} } }), { status: 200, headers: { 'content-type': 'application/json' } })
-    })
-  }
+  const patchesOf = (fakes: ReturnType<typeof mountEstateFakes>): Array<Record<string, unknown>> =>
+    fakes.calls.filter((c) => c.method === 'drafts/patch').map((c) => c.args)
+  // THE ONE-LANE LAW (stroke 81): the status doc rides runDocs (the
+  // single doc lingers — the start read and the poll both see the
+  // terminal); outcome writes land in fakes.calls as drafts/patch.
+  const stubRunWire = (doc: Record<string, unknown>): ReturnType<typeof mountEstateFakes> =>
+    mountEstateFakes({ runDocs: [doc] })
 
   test('a failed run patches the row with the stage error (the ComfyUI refusal verbatim)', async () => {
     vi.useFakeTimers()
-    stubRunWire(statusDoc(undefined))
-    const verdict = await observeRunOutcome('bench-main', 's_0', 'run-1')
-    expect(verdict).toBe('failed')
-    const terminal = patches.at(-1)
-    expect(terminal?.['patch']).toMatchObject({
-      runStatus: 'failed',
-      result: {
-        run_id: 'run-1',
-        error: "clip_name 'qwen_2.5_vl_7b_fp8_scaled.safetensors' not in [14 clips]",
-      },
-    })
+    const fakes = stubRunWire(statusDoc(undefined))
+    try {
+      const verdict = await observeRunOutcome('bench-main', 's_0', 'run-1')
+      expect(verdict).toBe('failed')
+      const terminal = patchesOf(fakes).at(-1)
+      expect(terminal?.['patch']).toMatchObject({
+        runStatus: 'failed',
+        result: {
+          run_id: 'run-1',
+          error: "clip_name 'qwen_2.5_vl_7b_fp8_scaled.safetensors' not in [14 clips]",
+        },
+      })
+    } finally {
+      fakes.unmount()
+    }
   })
 
   test('a stage without its own text falls back to the run-level error', async () => {
     vi.useFakeTimers()
     const doc = statusDoc('ComfyError: POST /prompt 400 (run-level)')
     delete (doc.stages as Array<Record<string, unknown>>)[0]!['error']
-    stubRunWire(doc)
-    const verdict = await observeRunOutcome('bench-main', 's_0', 'run-1')
-    expect(verdict).toBe('failed')
-    const terminal = patches.at(-1)
-    expect((terminal?.['patch'] as { result: { error?: string } }).result.error).toBe('ComfyError: POST /prompt 400 (run-level)')
+    const fakes = stubRunWire(doc)
+    try {
+      const verdict = await observeRunOutcome('bench-main', 's_0', 'run-1')
+      expect(verdict).toBe('failed')
+      const terminal = patchesOf(fakes).at(-1)
+      expect((terminal?.['patch'] as { result: { error?: string } }).result.error).toBe('ComfyError: POST /prompt 400 (run-level)')
+    } finally {
+      fakes.unmount()
+    }
   })
 
   test('a completed run never carries an error (absent ≡ clean)', async () => {
     vi.useFakeTimers()
-    stubRunWire({
+    const fakes = stubRunWire({
       run_id: 'run-1', status: 'completed', draft_id: 'bench-main',
       stages: [{ id: 's_0', status: 'done', url: 'out/flat.png', error: '' }],
     })
-    const verdict = await observeRunOutcome('bench-main', 's_0', 'run-1')
-    expect(verdict).toBe('done')
-    const terminal = patches.at(-1)
-    expect((terminal?.['patch'] as { result: Record<string, unknown> }).result).not.toHaveProperty('error')
+    try {
+      const verdict = await observeRunOutcome('bench-main', 's_0', 'run-1')
+      expect(verdict).toBe('done')
+      const terminal = patchesOf(fakes).at(-1)
+      expect((terminal?.['patch'] as { result: Record<string, unknown> }).result).not.toHaveProperty('error')
+    } finally {
+      fakes.unmount()
+    }
   })
 })
 
 describe('observeRunOutcome — the progress carry', () => {
-  const patches: Array<Record<string, unknown>> = []
-  const stubProgressWire = (docs: Array<Record<string, unknown>>): void => {
-    let i = 0
-    vi.stubGlobal('fetch', async (url: unknown, init?: RequestInit): Promise<Response> => {
-      const path = String(url)
-      const rpcId = (JSON.parse(String(init?.body)) as { rpcId: string }).rpcId
-      if (path.includes('/api/runs/status')) {
-        const doc = docs[Math.min(i, docs.length - 1)]
-        i += 1
-        return new Response(JSON.stringify({ type: 'server-response', rpcId, result: { ok: true, value: doc } }), { status: 200, headers: { 'content-type': 'application/json' } })
-      }
-      if (path.includes('/api/drafts/patch')) {
-        patches.push((JSON.parse(String(init?.body)) as { payload: { args: Record<string, unknown> } }).payload.args)
-        return new Response(JSON.stringify({ type: 'server-response', rpcId, result: { ok: true, value: { delivered: true } } }), { status: 200, headers: { 'content-type': 'application/json' } })
-      }
-      if (path.includes('/api/drafts/get')) {
-        return new Response(JSON.stringify({ type: 'server-response', rpcId, result: { ok: true, value: { draft_id: 'bench-main', stages: [], bench: { rev: 3, log: [] } } } }), { status: 200, headers: { 'content-type': 'application/json' } })
-      }
-      return new Response(JSON.stringify({ type: 'server-response', rpcId, result: { ok: true, value: {} } }), { status: 200, headers: { 'content-type': 'application/json' } })
-    })
-  }
+  const patchesOf = (fakes: ReturnType<typeof mountEstateFakes>): Array<Record<string, unknown>> =>
+    fakes.calls.filter((c) => c.method === 'drafts/patch').map((c) => c.args)
+  // THE ONE-LANE LAW (stroke 81): the poll script rides runDocs
+  // (served in order, the last lingering).
+  const stubProgressWire = (docs: Array<Record<string, unknown>>): ReturnType<typeof mountEstateFakes> =>
+    mountEstateFakes({ runDocs: docs })
 
   test('a moved percent patches the row; a still percent never re-patches (the CAS churn law)', async () => {
     vi.useFakeTimers()
-    stubProgressWire([
+    const fakes = stubProgressWire([
       // first poll: 7/20 = 35%
       { run_id: 'run-1', status: 'running', draft_id: 'bench-main',
         stages: [{ id: 's_0', status: 'running', progress: { value: 7, max: 20 }, activity: 'sampling 7/20' }] },
@@ -556,33 +543,38 @@ describe('observeRunOutcome — the progress carry', () => {
       { run_id: 'run-1', status: 'completed', draft_id: 'bench-main',
         stages: [{ id: 's_0', status: 'done', url: 'out/flat.png' }] },
     ])
-    const verdict = observeRunOutcome('bench-main', 's_0', 'run-1')
-    // the loop's 1500ms sleeps: advance the fake clock until the
-    // observer settles (each tick fires one poll)
-    for (let i = 0; i < 8; i++) await vi.advanceTimersByTimeAsync(1600)
-    expect(await verdict).toBe('done')
-    const live = patches.find((p) => (p['patch'] as { runStatus?: string }).runStatus === 'running'
-      && (p['patch'] as { result?: { progress?: unknown } }).result?.progress !== undefined)
-    expect(live?.['patch']).toMatchObject({
-      runStatus: 'running',
-      result: {
-        run_id: 'run-1',
-        progress: { value: 7, max: 20 },
-        activity: 'sampling 7/20',
-      },
-    })
-    // the CHURN LAW: the 35% fold patched ONCE — the still-percent
-    // poll never re-patched (the next live carry is the 50% one)
-    const livePatches = patches.filter((p) => {
-      const r = (p['patch'] as { result?: { progress?: { value?: unknown } } }).result
-      return r?.progress !== undefined
-    })
-    expect(livePatches.length).toBe(2)
-    const last = livePatches.at(-1)
-    expect((last?.['patch'] as { result: { progress: { value: number } } }).result.progress.value).toBe(10)
-    // the terminal patch REPLACES the fold — no stale percent
-    const terminal = patches.at(-1)
-    expect((terminal?.['patch'] as { result: Record<string, unknown> }).result).not.toHaveProperty('progress')
+    try {
+      const verdict = observeRunOutcome('bench-main', 's_0', 'run-1')
+      // the loop's 1500ms sleeps: advance the fake clock until the
+      // observer settles (each tick fires one poll)
+      for (let i = 0; i < 8; i++) await vi.advanceTimersByTimeAsync(1600)
+      expect(await verdict).toBe('done')
+      const patches = patchesOf(fakes)
+      const live = patches.find((p) => (p['patch'] as { runStatus?: string }).runStatus === 'running'
+        && (p['patch'] as { result?: { progress?: unknown } }).result?.progress !== undefined)
+      expect(live?.['patch']).toMatchObject({
+        runStatus: 'running',
+        result: {
+          run_id: 'run-1',
+          progress: { value: 7, max: 20 },
+          activity: 'sampling 7/20',
+        },
+      })
+      // the CHURN LAW: the 35% fold patched ONCE — the still-percent
+      // poll never re-patched (the next live carry is the 50% one)
+      const livePatches = patches.filter((p) => {
+        const r = (p['patch'] as { result?: { progress?: { value?: unknown } } }).result
+        return r?.progress !== undefined
+      })
+      expect(livePatches.length).toBe(2)
+      const last = livePatches.at(-1)
+      expect((last?.['patch'] as { result: { progress: { value: number } } }).result.progress.value).toBe(10)
+      // the terminal patch REPLACES the fold — no stale percent
+      const terminal = patches.at(-1)
+      expect((terminal?.['patch'] as { result: Record<string, unknown> }).result).not.toHaveProperty('progress')
+    } finally {
+      fakes.unmount()
+    }
   })
 })
 

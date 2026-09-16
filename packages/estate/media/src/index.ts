@@ -208,15 +208,10 @@ export function mediaUrl(runId: string, name: string): string {
     .join("/")}`;
 }
 
-/** One listed media item — the source row's picker row. `url` is
- *  the SAME /melite-media/runs grammar the byte route serves (one
- *  spelling, minted at the tree, never restated client-side). */
-export interface MediaListRow {
-  readonly url: string;
-  readonly name: string;
-  readonly kind: string;
-  readonly runId: string;
-}
+// MediaListRow lives in ./types.ts (the typert generator's law:
+// remote boundary types export from a public non-root type subpath).
+export type { MediaListRow } from "./types.js";
+import type { MediaListRow } from "./types.js";
 
 /** The kinds the list door names (mediaVocab's families + all). */
 const LIST_KINDS = ["image", "audio", "video", "model", "all"] as const;

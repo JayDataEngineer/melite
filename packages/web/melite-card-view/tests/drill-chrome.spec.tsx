@@ -22,6 +22,8 @@ import { cleanup, render, screen, waitFor, within } from '@testing-library/react
 import userEvent from '@testing-library/user-event'
 import { afterEach, expect, test, vi } from 'vitest'
 import { createElement } from 'react'
+import { mountEstateFakes } from './estate-harness.ts'
+import { unbindEstateRemote } from '@melite/card-base/estate-remote'
 
 import { CardsTab } from '../src/client/CardsTab.tsx'
 import { schemaEnvelope } from '../src/client/spec-form.tsx'
@@ -57,7 +59,16 @@ const RUNNING_BENCH: CardsBenchValue = {
 }
 
 function stubWire(): void {
-  vi.stubGlobal('fetch', async (url: unknown, init?: RequestInit): Promise<Response> => {
+  // THE ONE-FAKE LAW (stroke 81): bench/get rides the bound bench
+  // namespace; fetch answers ONLY the /v1 discovery doors.
+  mountEstateFakes({
+    benchDoc: {
+      draft_id: 'bench-chrome', rev: 4,
+      stages: RUNNING_BENCH.stages.map((s) => ({ ...s })),
+      log: [],
+    },
+  })
+  vi.stubGlobal('fetch', async (url: unknown): Promise<Response> => {
     const path = String(url)
     if (path.includes('/v1/form-spec')) {
       return new Response(JSON.stringify({
@@ -70,16 +81,7 @@ function stubWire(): void {
     if (path.includes('/v1/model-catalog')) {
       return new Response(JSON.stringify({ cards: {} }), { status: 200, headers: { 'content-type': 'application/json' } })
     }
-    const frame = JSON.parse(String(init?.body)) as { rpcId: string; method: string }
-    let value: Record<string, unknown> = { ok: true }
-    if (frame.method === 'bench/get') {
-      value = {
-        draft_id: 'bench-chrome', rev: 4,
-        stages: RUNNING_BENCH.stages.map((s) => ({ ...s })),
-        log: [],
-      }
-    }
-    return new Response(JSON.stringify({ type: 'server-response', rpcId: frame.rpcId, result: { ok: true, value } }), { status: 200 })
+    throw new Error('estate door on the fetch lane: ' + path)
   })
 }
 
@@ -101,6 +103,7 @@ const mount = (): ReturnType<typeof render> =>
 
 afterEach(() => {
   cleanup()
+  unbindEstateRemote()
   vi.unstubAllGlobals()
 })
 

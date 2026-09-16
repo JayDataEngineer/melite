@@ -8,6 +8,7 @@ import { Input, Switch } from "@deepseek-ai/dsh-client-ui-primitives"
 import { SelectMenu } from "./kit"
 import { cn, readAsDataURL } from "@melite/card-base/chrome"
 import { SourceRow } from "@melite/card-base/form"
+import { fetchMediaLibrary } from "@melite/card-base/media-library"
 import s from "./studio.module.css"
 import type { LinkArtifact } from "./refUtils"
 
@@ -103,6 +104,7 @@ export function CallFrameSubcard({
         kind="image"
         value={v === "" ? null : v.startsWith("data:") ? v : nameToUrl.get(v) ?? v}
         candidates={(links ?? []).map((a) => ({ id: a.name, label: a.name, url: a.url }))}
+        loadMedia={fetchMediaLibrary}
         onFile={(f) => { void takeFile(f) }}
         onEdit={(src) => {
           if (src === "") { onChange(""); return }

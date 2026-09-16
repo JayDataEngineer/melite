@@ -17,10 +17,12 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { createElement } from 'react'
 import { CardForm, schemaEnvelope } from '@melite/card-base'
 import type { FormSpecDoc, SpecField } from '@melite/card-base'
+import { mountEstateFakes } from './estate-harness.ts'
+import { unbindEstateRemote } from '@melite/card-base/estate-remote'
 import { CardsTab } from '../src/client/CardsTab.tsx'
 import type { CardsBenchValue } from '../src/client/CardsTab.tsx'
 
-afterEach(() => { cleanup(); vi.unstubAllGlobals() })
+afterEach(() => { cleanup(); unbindEstateRemote(); vi.unstubAllGlobals() })
 
 // THE ENVELOPE FIXTURE (the parameter audit): tests build the
 // served schema (serialized schemastery shape) — the flat field row
@@ -95,7 +97,13 @@ describe('the construction law (add-a-card drill)', () => {
   }
 
   function stubWire(): void {
-    vi.stubGlobal('fetch', async (url: unknown, init?: RequestInit): Promise<Response> => {
+    // THE ONE-FAKE LAW (stroke 81): the add lands through the bound
+    // bench namespace (add-stage appends, bench/get diffs the fresh
+    // row); fetch answers ONLY the /v1 discovery doors.
+    mountEstateFakes({
+      benchDoc: { kind: 'bench', draftId: 'bench-cl', rev: 3, stages: BENCH.stages.map((s) => ({ ...s })), log: [] },
+    })
+    vi.stubGlobal('fetch', async (url: unknown): Promise<Response> => {
       const path = String(url)
       if (path.includes('/v1/form-spec')) {
         const model = path.split('model=')[1] ?? ''
@@ -111,18 +119,7 @@ describe('the construction law (add-a-card drill)', () => {
           'image-edit': { label: 'Image Edit', genre: 'image', families: ['image-edit'] },
         } }), { status: 200, headers: { 'content-type': 'application/json' } })
       }
-      const frame = JSON.parse(String(init?.body)) as { rpcId: string, method: string }
-      let value: Record<string, unknown> = { ok: true }
-      if (frame.method === 'drafts/patch') value = { delivered: true }
-      // the pick IS the add: the door lands bench/add-stage, re-reads
-      // bench/get, diffs the fresh row, and opens its drill
-      if (frame.method === 'bench/add-stage') {
-        value = { ok: true, stage: { id: 'fresh_1', card: 'image-edit', engine: 'comfyui', params: {} } }
-      }
-      if (frame.method === 'bench/get') {
-        value = { kind: 'bench', draftId: 'bench-cl', rev: 4, stages: [...BENCH.stages, { id: 'fresh_1', card: 'image-edit', title: 'image edit', engine: 'comfyui', params: {} }], log: [] }
-      }
-      return new Response(JSON.stringify({ type: 'server-response', rpcId: frame.rpcId, result: { ok: true, value } }), { status: 200 })
+      throw new Error('estate door on the fetch lane: ' + path)
     })
   }
 
@@ -194,7 +191,10 @@ describe('the construction law (the plain add door)', () => {
     const BENCH: CardsBenchValue = {
       kind: 'bench', draftId: 'bench-plain', rev: 1, stages: [], log: [],
     }
-    vi.stubGlobal('fetch', async (url: unknown, init?: RequestInit): Promise<Response> => {
+    mountEstateFakes({
+      benchDoc: { kind: 'bench', draftId: 'bench-plain', rev: 1, stages: [], log: [] },
+    })
+    vi.stubGlobal('fetch', async (url: unknown): Promise<Response> => {
       const path = String(url)
       if (path.includes('/v1/form-spec')) {
         return new Response(JSON.stringify({ form: 'mask-studio', model: 'm', schema: IMAGE_SPEC.schema, variants: [] }), { status: 200, headers: { 'content-type': 'application/json' } })
@@ -202,15 +202,7 @@ describe('the construction law (the plain add door)', () => {
       if (path.includes('/v1/model-catalog')) {
         return new Response(JSON.stringify({ cards: { 'mask-studio': { label: 'Mask Studio', genre: 'image', families: ['mask-studio'] } } }), { status: 200, headers: { 'content-type': 'application/json' } })
       }
-      const frame = JSON.parse(String(init?.body)) as { rpcId: string, method: string }
-      let value: Record<string, unknown> = { ok: true }
-      if (frame.method === 'bench/add-stage') {
-        value = { ok: true, stage: { id: 'fresh_1', card: 'mask-studio', engine: 'comfyui', params: {} } }
-      }
-      if (frame.method === 'bench/get') {
-        value = { kind: 'bench', draftId: 'bench-plain', rev: 2, stages: [{ id: 'fresh_1', card: 'mask-studio', engine: 'comfyui', params: {} }], log: [] }
-      }
-      return new Response(JSON.stringify({ type: 'server-response', rpcId: frame.rpcId, result: { ok: true, value } }), { status: 200 })
+      throw new Error('estate door on the fetch lane: ' + path)
     })
     render(createElement(CardsTab, {
       useTabInfo: () => ({

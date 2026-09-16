@@ -7,37 +7,39 @@
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, describe, expect, test, vi } from "vitest";
 import { createElement as h } from "react";
+import { mountEstateFakes, type EstateFakes, type EstateRefusal } from "./estate-harness.ts";
+import { unbindEstateRemote } from "@melite/card-base/estate-remote";
 import { CardsTab } from "../src/client/CardsTab.tsx";
 import { schemaEnvelope } from "../src/client/spec-form.tsx";
 import type { BenchStageRow } from "../src/client/cards-resource.ts";
 
 afterEach(() => {
   cleanup();
+  unbindEstateRemote();
   vi.unstubAllGlobals();
 });
 
-interface FrameAnswer { value?: unknown; refuse?: string; thrown?: unknown }
-
 const doors: {
-  posted: Array<{ method: string; args: Record<string, unknown> }>;
-  frames: Record<string, (args: Record<string, unknown>) => FrameAnswer>;
   specFields: Record<string, unknown> | null;
   catalog: Record<string, Record<string, unknown>>;
-  benchThrown: unknown;
-  servedStages: BenchStageRow[];
 } = {
-  posted: [], frames: {}, specFields: null, catalog: {},
-  benchThrown: undefined, servedStages: [],
+  specFields: null, catalog: {},
 };
 
+// THE ONE-FAKE LAW (stroke 81): estate verbs ride the bound
+// namespaces (mountEstateFakes); fetch answers ONLY the /v1
+// discovery doors.
+let fakes: EstateFakes | null = null;
+
+function calls(): Array<{ method: string; args: Record<string, unknown> }> {
+  if (fakes === null) throw new Error("estate fakes not mounted");
+  return fakes.calls;
+}
+
 function stubFetch(): void {
-  doors.posted = [];
-  doors.frames = {};
   doors.specFields = null;
   doors.catalog = {};
-  doors.benchThrown = undefined;
-  doors.servedStages = [];
-  vi.stubGlobal("fetch", async (url: unknown, init?: RequestInit): Promise<Response> => {
+  vi.stubGlobal("fetch", async (url: unknown): Promise<Response> => {
     const path = String(url);
     if (path.includes("/v1/form-spec")) {
       return new Response(JSON.stringify({
@@ -57,36 +59,7 @@ function stubFetch(): void {
         status: 200, headers: { "content-type": "application/json" },
       });
     }
-    if (path.startsWith("/api/")) {
-      const frame = JSON.parse(String(init?.body)) as { rpcId: string; method: string; payload: { args: Record<string, unknown> } };
-      doors.posted.push({ method: frame.method, args: frame.payload.args });
-      if (frame.method === "bench/get") {
-        if (doors.benchThrown !== undefined) throw doors.benchThrown;
-        return new Response(JSON.stringify({
-          type: "server-response", rpcId: frame.rpcId,
-          result: { ok: true, value: { draft_id: "bench-p", rev: 2, log: [], stages: doors.servedStages } },
-        }), { status: 200, headers: { "content-type": "application/json" } });
-      }
-      const route = doors.frames[frame.method];
-      if (route !== undefined) {
-        const answer = route(frame.payload.args);
-        if (answer.thrown !== undefined) throw answer.thrown;
-        if (answer.refuse !== undefined) {
-          return new Response(JSON.stringify({
-            type: "server-response", rpcId: frame.rpcId,
-            result: { ok: false, error: { message: answer.refuse } },
-          }), { status: 200, headers: { "content-type": "application/json" } });
-        }
-        return new Response(JSON.stringify({
-          type: "server-response", rpcId: frame.rpcId,
-          result: { ok: true, value: answer.value ?? {} },
-        }), { status: 200, headers: { "content-type": "application/json" } });
-      }
-      return new Response(JSON.stringify({
-        type: "server-response", rpcId: frame.rpcId, result: { ok: true, value: {} },
-      }), { status: 200, headers: { "content-type": "application/json" } });
-    }
-    return new Response("no", { status: 500 });
+    throw new Error("estate door on the fetch lane: " + path);
   });
 }
 
@@ -94,10 +67,31 @@ const STAGES: BenchStageRow[] = [
   { id: "s_0", card: "image-gen", engine: "comfyui", params: { prompt: "a barn" } },
 ];
 
-function mount(stages: BenchStageRow[] = STAGES): void {
+interface EstateOpts {
+  refusals?: EstateRefusal[];
+  throws?: EstateRefusal[];
+}
+
+function estateOpts(stages: BenchStageRow[], estate?: EstateOpts): Parameters<typeof mountEstateFakes>[0] {
+  // ROW COPIES: the seam mutates its rows in place (add pushes,
+  // remove splices, patch merges) — handing it the snapshot's own
+  // array aliases the render snapshot, and the add's before/after
+  // diff then sees no fresh row (no auto-open). Copies keep the
+  // snapshot pristine; the served truth still matches row-for-row.
+  const benchRows = stages.map((s) => ({ ...s }));
+  const draftRows = stages.map((s) => ({ ...s }));
+  return {
+    benchDoc: { draft_id: "bench-p", rev: 1, log: [], stages: benchRows },
+    draftStages: draftRows as Array<Record<string, unknown>>,
+    draftBenchRev: 1,
+    refusals: estate?.refusals,
+    throws: estate?.throws,
+  };
+}
+
+function mount(stages: BenchStageRow[] = STAGES, estate?: EstateOpts): void {
   stubFetch();
-  doors.servedStages = stages;
-  doors.frames["drafts/patch"] = () => ({ value: { delivered: true } });
+  fakes = mountEstateFakes(estateOpts(stages, estate));
   render(h(CardsTab, {
     useTabInfo: () => ({ tab: {
       kind: "sidebar.right.pane.tab", contentId: undefined,
@@ -135,16 +129,15 @@ describe("the picker busy guard — one pick in flight, never two adds", () => {
     // the drill's `busyId !== null` guard is defense-in-depth for an
     // unreachable UI state (exempt with proof). What rides here is
     // the reachable law: one flight, one add, whatever the presses.
+    //
+    // The old stub hand-served s_9 on re-read so the add auto-opened
+    // its zoom; the live seam appends its own fresh row on add (rev
+    // bump included), so the same zoom opens with no hand staging.
     mount();
     doors.catalog = {
       lone: { label: "Lone", genre: "image", families: ["lone"] },
       duo: { label: "Duo", genre: "image", families: ["duo"] },
     };
-    doors.frames["bench/add-stage"] = () => ({ value: { rev: 2 } });
-    doors.servedStages = [
-      ...STAGES,
-      { id: "s_9", card: "lone", engine: "comfyui", params: {} },
-    ];
     await openPicker();
     fireEvent.click(await screen.findByRole("button", { name: "Lone" }, { timeout: 5000 }));
     // the first pick owns the flight — the second returns at the guard
@@ -152,7 +145,7 @@ describe("the picker busy guard — one pick in flight, never two adds", () => {
     await waitFor(() => {
       if (document.querySelector('div[class*="zoomCard"]') === null) throw new Error("no fresh zoom");
     }, { timeout: 5000 });
-    const adds = doors.posted.filter((p) => p.method === "bench/add-stage");
+    const adds = calls().filter((p) => p.method === "bench/add-stage");
     expect(adds).toHaveLength(1);
     expect(JSON.stringify(adds[0]?.args)).toContain("lone");
   });
@@ -160,11 +153,26 @@ describe("the picker busy guard — one pick in flight, never two adds", () => {
 
 describe("the add re-read catch — a dead bench after a live add still lands", () => {
   test("a throwing re-read falls to the plain add (never a stuck picker)", async () => {
+    // the old stub threw the bare string "gone" on EVERY bench/get
+    // (a non-Error, so the client voiced its 'bench reload failed'
+    // fallback); the live seam throws Errors and its throw queue is
+    // one-shot per call — so the dead read is armed AFTER the live
+    // mount-time reads by rebinding mid-test (no re-render; the
+    // remote binding is read at call time, the fetch stub untouched).
+    // TWO throws: the harness queue is one-shot per call while the
+    // old flag threw on every read — the add's re-read eats the
+    // first, the plain onAdded's reload eats the second and voices
+    // the fallback.
     mount();
     doors.catalog = { lone: { label: "Lone", genre: "image", families: ["lone"] } };
-    doors.frames["bench/add-stage"] = () => ({ value: { rev: 2 } });
-    doors.benchThrown = "gone";
     await openPicker();
+    fakes?.unmount();
+    fakes = mountEstateFakes(estateOpts(STAGES, {
+      throws: [
+        { method: "bench/get", message: "bench reload failed" },
+        { method: "bench/get", message: "bench reload failed" },
+      ],
+    }));
     fireEvent.click(await screen.findByRole("button", { name: "Lone" }, { timeout: 5000 }));
     // the picker closes (the add landed) and the fallback voices —
     // no auto-open (the re-read never named a fresh row)

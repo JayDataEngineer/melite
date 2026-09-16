@@ -35,7 +35,6 @@ import {
   type FormSpecDoc, type SpecField, type SpecValues, type VariantRow,
 } from './spec.ts'
 import { fetchFormSpec } from './wire.ts'
-import { fetchMediaLibrary } from '@melite-plugin/melite-run-wire'
 import css from './card.module.css'
 
 /** THE SERVED-SPEC HOOK (the DRY extraction, 2026-09-13): four
@@ -89,6 +88,12 @@ export interface SquareHost {
  *  miss — it just stops guessing kinds it cannot verify). */
 export interface SquareWire {
   candidates: Array<{ id: string; label: string; url: string }>
+  /** THE MEDIA SOURCE (stroke 81's one-lane law): the picker's
+   *  media rows arrive INJECTED — the host surface owns the estate
+   *  lane (the mounted media namespace); the base form carries no
+   *  transport of its own. Absent → the picker degrades to an empty
+   *  list (honest, never a hidden fetch). */
+  loadMedia?: (kind: string, signal: AbortSignal) => Promise<Array<{ url: string; name: string }>>
   candidatesFor?: (f: SpecField) => Array<{ id: string; label: string; url: string }>
   /** The surface's OWN file law (optional): when present, From file
    *  and OS drops route here instead of the default upload door —
@@ -205,15 +210,25 @@ export function useSquareProvider(onEdit: (name: string, v: unknown) => void, wi
   // THE PICKER MODAL (default face; the seam may claim it): ONE
   // component, two row sources — flow candidates (edge-law narrowed)
   // and the media library (kind-filtered through the wire's door).
+  // THE DEP LAW: the effect keys on the loader FUNCTION, never the
+  // wire object — callers build the wire inline per render (a fresh
+  // identity every pass), so keying on `wire` re-fires the load on
+  // every setMediaRows render: an infinite load loop that OOMs the
+  // tab (input-square's From-media wall caught it: 4GB, zero tests
+  // run). The loader is a stable module reference at every call
+  // site (CardsTab injects fetchMediaLibrary), so the load fires
+  // once per modal opening.
+  const loadMedia = wire?.loadMedia
   useEffect(() => {
     if (modalAt?.mode !== 'media') return
+    if (loadMedia === undefined) { setMediaRows([]); return }
     const ctrl = new AbortController()
     setMediaRows(null)
-    fetchMediaLibrary(mediaKindForField(modalAt.field), ctrl.signal)
+    loadMedia(mediaKindForField(modalAt.field), ctrl.signal)
       .then((items) => { setMediaRows(items.map((it) => ({ id: it.url, label: it.name, url: it.url }))) })
       .catch(() => { setMediaRows([]) })
     return () => { ctrl.abort() }
-  }, [modalAt])
+  }, [modalAt, loadMedia])
   const pickerModal = modalAt === null ? null : (() => {
     const f = modalAt.field
     const candidates = modalAt.mode === 'flow'
@@ -318,6 +333,10 @@ export interface SourceRowProps {
   onEdit: (v: string) => void
   /** The surface's own upstream outputs (the From flow rows). */
   candidates?: Array<{ id: string; label: string; url: string }>
+  /** The surface's media source (the mounted media namespace's
+   *  fetchMediaLibrary, or a test fake) — absent = the picker shows
+   *  no media rows (honest, never a hidden fetch). */
+  loadMedia?: SquareWire['loadMedia']
   /** The surface's own file law (From file + OS drops route here). */
   onFile?: (file: File) => void
   /** The seam claim (same grammar as the field wire). */
@@ -340,6 +359,7 @@ export function SourceRow(props: SourceRowProps): ReturnType<typeof h> {
   }, [props.onEdit])
   const { square, wireMenu } = useSquareProvider(onEditField, {
     candidates: props.candidates ?? [],
+    ...(props.loadMedia !== undefined ? { loadMedia: props.loadMedia } : {}),
     ...(props.onFile !== undefined ? { onFile: props.onFile } : {}),
     ...(props.renderSourcePick !== undefined ? { renderSourcePick: props.renderSourcePick } : {}),
   })
@@ -1199,6 +1219,7 @@ export function CardForm({ spec, user, base, onSet, onUnset, wire, square, atoms
           ...(paintFace !== undefined ? { paintFace } : {}),
           ...(bboxFace !== undefined ? { bboxFace } : {}),
           ...(paintReference !== undefined ? { paintReference } : {}),
+          ...(wire?.loadMedia !== undefined ? { loadMedia: wire.loadMedia } : {}),
         })
       : null,
     own.wireMenu,

@@ -10,32 +10,42 @@ import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/re
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, test, vi } from "vitest";
 import { createElement as h } from "react";
+import { mountEstateFakes, type EstateFakes, type EstateRefusal } from "./estate-harness.ts";
+import { unbindEstateRemote } from "@melite/card-base/estate-remote";
 import { CardsTab } from "../src/client/CardsTab.tsx";
 import { schemaEnvelope } from "../src/client/spec-form.tsx";
 import type { BenchStageRow, CardsBenchValue } from "../src/client/cards-resource.ts";
 
 afterEach(() => {
   cleanup();
+  unbindEstateRemote();
   vi.unstubAllGlobals();
 });
 
-interface PatchAnswer { delivered?: boolean; refuse?: string; thrown?: unknown }
-interface Doors {
-  specMode: "edge" | "plain";
-  patch: () => PatchAnswer;
-  patches: Array<Record<string, unknown>>;
+// THE ONE-FAKE LAW (stroke 81): estate verbs ride the bound
+// namespaces (mountEstateFakes); fetch answers ONLY the /v1
+// discovery doors. specMode stays live module state so tests arm
+// it before the mount, exactly like the old doors.
+type SpecMode = "edge" | "plain";
+let specMode: SpecMode = "edge";
+
+let fakes: EstateFakes | null = null;
+
+function calls(): Array<{ method: string; args: Record<string, unknown> }> {
+  if (fakes === null) throw new Error("estate fakes not mounted");
+  return fakes.calls;
 }
 
-const doors: Doors = {
-  specMode: "edge",
-  patch: () => ({ delivered: true }),
-  patches: [],
-};
+/** Every drafts/patch params write, in call order (the slot-write
+ *  record the old doors.patches kept). */
+function patches(): Array<Record<string, unknown>> {
+  return calls()
+    .filter((p) => p.method === "drafts/patch")
+    .map((p) => (((p.args["patch"] as Record<string, unknown>)["params"] ?? {}) as Record<string, unknown>));
+}
 
 function stubFetch(): void {
-  doors.patches = [];
-  doors.patch = () => ({ delivered: true });
-  vi.stubGlobal("fetch", async (url: unknown, init?: RequestInit): Promise<Response> => {
+  vi.stubGlobal("fetch", async (url: unknown): Promise<Response> => {
     const path = String(url);
     if (path.includes("/v1/form-spec")) {
       const fields: Record<string, unknown> = {
@@ -45,7 +55,7 @@ function stubFetch(): void {
       };
       return new Response(JSON.stringify({
         form: "image-gen", genre: "image", engine: "comfyui",
-        ...(doors.specMode === "edge"
+        ...(specMode === "edge"
           ? { inputs: [{ name: "input_image", kind: "image", required: true }] }
           : {}),
         schema: schemaEnvelope(fields),
@@ -62,29 +72,13 @@ function stubFetch(): void {
         status: 200, headers: { "content-type": "application/json" },
       });
     }
-    if (path.startsWith("/api/")) {
-      const frame = JSON.parse(String(init?.body)) as { rpcId: string; method: string; payload: { args: Record<string, unknown> } };
-      if (frame.method === "drafts/patch") {
-        const answer = doors.patch();
-        doors.patches.push(((frame.payload.args["patch"] as Record<string, unknown>)["params"] ?? {}) as Record<string, unknown>);
-        if (answer.thrown !== undefined) throw answer.thrown;
-        if (answer.refuse !== undefined) {
-          return new Response(JSON.stringify({
-            type: "server-response", rpcId: frame.rpcId,
-            result: { ok: false, error: { message: answer.refuse } },
-          }), { status: 200, headers: { "content-type": "application/json" } });
-        }
-        return new Response(JSON.stringify({
-          type: "server-response", rpcId: frame.rpcId,
-          result: { ok: true, value: { delivered: true, rev: 2 } },
-        }), { status: 200, headers: { "content-type": "application/json" } });
-      }
-      return new Response(JSON.stringify({
-        type: "server-response", rpcId: frame.rpcId, result: { ok: true, value: {} },
-      }), { status: 200, headers: { "content-type": "application/json" } });
-    }
-    return new Response("no", { status: 500 });
+    throw new Error("estate door on the fetch lane: " + path);
   });
+}
+
+interface EstateOpts {
+  refusals?: EstateRefusal[];
+  throws?: EstateRefusal[];
 }
 
 function stages(mainParams: Record<string, unknown> = {}, mainResolved: Record<string, unknown> = {}): BenchStageRow[] {
@@ -98,27 +92,20 @@ function stages(mainParams: Record<string, unknown> = {}, mainResolved: Record<s
   ];
 }
 
-function mountBench(mainParams: Record<string, unknown> = {}, mainResolved: Record<string, unknown> = {}): void {
-  doors.specMode = "edge";
+function mountBench(
+  mainParams: Record<string, unknown> = {},
+  mainResolved: Record<string, unknown> = {},
+  estate?: EstateOpts,
+): void {
+  specMode = "edge";
   stubFetch();
   const rows = stages(mainParams, mainResolved);
-  const doc = {
-    draft_id: "bench-p", rev: 1, log: [],
-    stages: rows.map((s) => ({ ...s, run_status: s.runStatus })),
-  };
-  const impl = globalThis.fetch;
-  vi.stubGlobal("fetch", async (url: unknown, init?: RequestInit): Promise<Response> => {
-    const path = String(url);
-    if (path.startsWith("/api/")) {
-      const frame = JSON.parse(String(init?.body)) as { rpcId: string; method: string };
-      if (frame.method === "bench/get") {
-        return new Response(JSON.stringify({
-          type: "server-response", rpcId: frame.rpcId,
-          result: { ok: true, value: doc },
-        }), { status: 200, headers: { "content-type": "application/json" } });
-      }
-    }
-    return (impl as typeof fetch)(url, init);
+  fakes = mountEstateFakes({
+    benchDoc: { draft_id: "bench-p", rev: 1, log: [], stages: rows },
+    draftStages: rows as Array<Record<string, unknown>>,
+    draftBenchRev: 1,
+    refusals: estate?.refusals,
+    throws: estate?.throws,
   });
   render(h(CardsTab, {
     useTabInfo: () => ({ tab: {
@@ -172,9 +159,8 @@ describe("the picker narrowing — the edge law, served per field", () => {
   });
 
   test("a spec with no inputs falls to every row with a url", async () => {
-    doors.specMode = "plain";
     mountBench();
-    doors.specMode = "plain";
+    specMode = "plain";
     await openMainDrill();
     await openFlowModal("Input image");
     const labels = pickRowLabels();
@@ -192,8 +178,8 @@ describe("the slot flush — a pick writes the bench now, not at Run", () => {
       [...document.querySelectorAll('[data-testid="source-pick-row"]')]
         .find((el) => (el.textContent ?? "").includes("image-gen")) as HTMLElement,
     );
-    await waitFor(() => { expect(doors.patches.length).toBeGreaterThan(0); });
-    expect(doors.patches[doors.patches.length - 1]).toEqual({ input_image: "/r/img.png" });
+    await waitFor(() => { expect(patches().length).toBeGreaterThan(0); });
+    expect(patches()[patches().length - 1]).toEqual({ input_image: "/r/img.png" });
     // the square mirrors the pick (the user layer moved too — the
     // filled square now offers its detach affordance)
     expect(screen.getByRole("button", { name: "Detach Input image" })).toBeTruthy();
@@ -206,14 +192,15 @@ describe("the slot flush — a pick writes the bench now, not at Run", () => {
     await user.click(screen.getByRole("button", { name: /Input image source/ }));
     const clear = await screen.findByText("— clear —", {}, { timeout: 4000 });
     fireEvent.click(clear.closest('[role="menuitem"], [role="option"], li') as HTMLElement);
-    await waitFor(() => { expect(doors.patches.length).toBeGreaterThan(0); });
-    expect(doors.patches[doors.patches.length - 1]).toEqual({ input_image: null });
+    await waitFor(() => { expect(patches().length).toBeGreaterThan(0); });
+    expect(patches()[patches().length - 1]).toEqual({ input_image: null });
   });
 
   test("a refused slot write voices the door (never a silent pick)", async () => {
-    mountBench();
+    // the refusal is queued at mount (the pick is the first
+    // drafts/patch call — no write fires while the drill opens).
+    mountBench({}, {}, { refusals: [{ method: "drafts/patch", message: "bench moved" }] });
     await openMainDrill();
-    doors.patch = () => ({ refuse: "bench moved" });
     await openFlowModal("Input image");
     fireEvent.click(
       [...document.querySelectorAll('[data-testid="source-pick-row"]')]
@@ -223,9 +210,11 @@ describe("the slot flush — a pick writes the bench now, not at Run", () => {
   });
 
   test("a throwing slot write voices the fallback (never a throw past the pick)", async () => {
-    mountBench();
+    // the old stub threw the bare string "kablam" (a non-Error, so
+    // the client voiced its 'slot write failed' fallback); the live
+    // seam throws Errors, so the queued message IS the voiced text.
+    mountBench({}, {}, { throws: [{ method: "drafts/patch", message: "slot write failed" }] });
     await openMainDrill();
-    doors.patch = () => ({ thrown: "kablam" });
     await openFlowModal("Input image");
     fireEvent.click(
       [...document.querySelectorAll('[data-testid="source-pick-row"]')]
@@ -240,8 +229,8 @@ describe("the unset path — removing an override re-derives the row", () => {
     mountBench({ input_image: "/held.png" });
     await openMainDrill();
     fireEvent.click(screen.getByRole("button", { name: "Detach Input image" }));
-    await waitFor(() => { expect(doors.patches.length).toBeGreaterThan(0); });
-    expect(doors.patches[doors.patches.length - 1]).toEqual({ input_image: null });
+    await waitFor(() => { expect(patches().length).toBeGreaterThan(0); });
+    expect(patches()[patches().length - 1]).toEqual({ input_image: null });
   });
 
   test("detaching a base-served image still nulls the bench key", async () => {
@@ -249,9 +238,9 @@ describe("the unset path — removing an override re-derives the row", () => {
     await openMainDrill();
     // the user map never held the key — the unset is a pure null
     // write (the hasOwnProperty passthrough keeps its own map)
-    expect(doors.patches).toEqual([]);
+    expect(patches()).toEqual([]);
     fireEvent.click(screen.getByRole("button", { name: "Detach Input image" }));
-    await waitFor(() => { expect(doors.patches.length).toBeGreaterThan(0); });
-    expect(doors.patches[doors.patches.length - 1]).toEqual({ input_image: null });
+    await waitFor(() => { expect(patches().length).toBeGreaterThan(0); });
+    expect(patches()[patches().length - 1]).toEqual({ input_image: null });
   });
 });

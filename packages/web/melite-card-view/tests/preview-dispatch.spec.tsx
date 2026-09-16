@@ -13,13 +13,15 @@ import { cleanup, render, screen, waitFor, within } from '@testing-library/react
 import userEvent from '@testing-library/user-event'
 import { afterEach, expect, test, vi } from 'vitest'
 import { createElement } from 'react'
+import { mountEstateFakes } from './estate-harness.ts'
+import { unbindEstateRemote } from '@melite/card-base/estate-remote'
 
 import { CardsTab } from '../src/client/CardsTab.tsx'
 import { schemaEnvelope } from '../src/client/spec-form.tsx'
 import type { CardsBenchValue } from '../src/client/cards-resource.ts'
 
 const noop = (): void => {}
-afterEach(() => { cleanup(); vi.unstubAllGlobals() })
+afterEach(() => { cleanup(); unbindEstateRemote(); vi.unstubAllGlobals() })
 
 function tileButton(): HTMLElement {
   const el = document.querySelector('button[class*="tileInner"]')
@@ -44,7 +46,13 @@ function stubWire(opts: { card: string; outputs: Record<string, string>; artifac
     stages: [{ id: 's_0', card: opts.card, title: 'the stage', engine: 'comfyui', params: {}, run_status: 'done', result: { artifacts: opts.artifacts } }],
     log: [],
   }
-  const impl = async (url: unknown, init?: RequestInit): Promise<Response> => {
+  // THE ONE-FAKE LAW (stroke 81): bench/get + runs/status ride the
+  // bound namespaces; fetch answers ONLY the /v1 discovery doors.
+  mountEstateFakes({
+    benchDoc,
+    runDocs: [{ run_id: 'run-1', status: 'done', draft_id: 'bench-p', stages: [] }],
+  })
+  const impl = async (url: unknown): Promise<Response> => {
     const path = String(url)
     if (path.includes('/v1/form-spec')) {
       return new Response(JSON.stringify({
@@ -58,11 +66,7 @@ function stubWire(opts: { card: string; outputs: Record<string, string>; artifac
     if (path.includes('/v1/model-catalog')) {
       return new Response(JSON.stringify({ cards: {} }), { status: 200, headers: { 'content-type': 'application/json' } })
     }
-    const frame = JSON.parse(String(init?.body)) as { rpcId: string; method: string; payload: { args: Record<string, unknown> } }
-    let value: Record<string, unknown> = { ok: true }
-    if (frame.method === 'bench/get') value = benchDoc
-    if (frame.method === 'runs/status') value = { run_id: 'run-1', status: 'done', draft_id: 'bench-p', stages: [] }
-    return new Response(JSON.stringify({ type: 'server-response', rpcId: frame.rpcId, result: { ok: true, value } }), { status: 200 })
+    throw new Error('estate door on the fetch lane: ' + path)
   }
   vi.stubGlobal('fetch', impl)
   return bench

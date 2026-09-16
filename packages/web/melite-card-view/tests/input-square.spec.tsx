@@ -11,9 +11,13 @@ import { createElement, useRef } from 'react'
 
 import { InputSquare, isImageUrl, readAsDataUrl } from '../src/client/input-square.tsx'
 import { schemaEnvelope, SpecForm, useSquareProvider, type FormSpecDoc, type SpecValues } from '../src/client/spec-form.tsx'
+import { estateRemote, unwrapRemote } from '@melite/card-base/estate-remote'
+import { mountEstateFakes } from './estate-harness.ts'
+import { unbindEstateRemote } from '@melite/card-base/estate-remote'
 
 afterEach(() => {
   cleanup()
+  unbindEstateRemote()
   vi.unstubAllGlobals()
   vi.clearAllMocks()
 })
@@ -117,6 +121,16 @@ function stubUpload(path: string): void {
 }
 
 let hostEdit: ReturnType<typeof vi.fn>
+/** The media library over the mounted media namespace (stroke 81:
+ *  the square carries no transport — the host injects this loader,
+ *  the same verb CardsTab injects into the form wire). */
+async function loadMedia(kind: string, signal: AbortSignal): Promise<Array<{ url: string; name: string }>> {
+  const v = await unwrapRemote(estateRemote().media.list(kind, signal), 'media/list') as unknown as {
+    items?: Array<{ url?: unknown; name?: unknown }>
+  }
+  if (!Array.isArray(v.items)) return []
+  return v.items.filter((it) => typeof it?.url === 'string' && typeof it?.name === 'string') as Array<{ url: string; name: string }>
+}
 function HostSquare(): ReturnType<typeof createElement> {
   const values: SpecValues = { input_image: 'mesh.png' }
   // ONE edit fn across renders (a fresh vi.fn() per render would
@@ -130,6 +144,10 @@ function HostSquare(): ReturnType<typeof createElement> {
       { id: 's_img', label: 'image-gen', url: '/melite-media/runs/r8/img/gen_00001_.png' },
       { id: 's_tag', label: 'tagger', url: '/melite-media/runs/r7/tag/tag_00001_.png' },
     ],
+    // THE MEDIA SOURCE (stroke 81): the picker's library rows arrive
+    // INJECTED over the mounted media namespace — the square carries
+    // no transport of its own.
+    loadMedia,
   }
   const { square, wireMenu } = useSquareProvider(onEdit, wire)
   return createElement('div', null,
@@ -168,20 +186,13 @@ test("the provider: THE THREE-ENTRY SOURCE MENU — flat pick is dead, From flow
 })
 
 test('the provider: From media lists the runs library and writes the picked url', async () => {
-  vi.stubGlobal('fetch', async (input: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
-    const url = String(input)
-    if (url.endsWith('/api/media/list')) {
-      // the frame law: the response ECHOES the minted rpcId
-      const sent = JSON.parse(String(init?.body ?? '{}')) as { rpcId?: string }
-      return new Response(JSON.stringify({
-        type: 'server-response', rpcId: sent.rpcId ?? '',
-        result: { ok: true, value: { count: 2, items: [
-          { url: '/melite-media/runs/r9/gen_00002_.png', name: 'gen_00002_.png', kind: 'image', runId: 'r9' },
-          { url: '/melite-media/runs/r9/out.mp4', name: 'out.mp4', kind: 'video', runId: 'r9' },
-        ] } },
-      }), { status: 200, headers: { 'content-type': 'application/json' } })
-    }
-    throw new Error('unexpected fetch ' + url)
+  // the library rides the bound media namespace (media/list) —
+  // kind-filtered by the injected loader, never a fetch envelope.
+  mountEstateFakes({
+    mediaItems: [
+      { url: '/melite-media/runs/r9/gen_00002_.png', name: 'gen_00002_.png', kind: 'image', runId: 'r9' },
+      { url: '/melite-media/runs/r9/out.mp4', name: 'out.mp4', kind: 'video', runId: 'r9' },
+    ],
   })
   const user = userEvent.setup()
   render(createElement(HostSquare))
@@ -199,11 +210,8 @@ test('the provider: From media lists the runs library and writes the picked url'
 })
 
 test('the seam: renderSourcePick claims the picker face — the host override beats the default', async () => {
-  vi.stubGlobal('fetch', async (): Promise<Response> =>
-    new Response(JSON.stringify({
-      type: 'server-response', rpcId: 'r2',
-      result: { ok: true, value: { count: 0, items: [] } },
-    }), { status: 200, headers: { 'content-type': 'application/json' } }))
+  // no media source is injected here — the seam claims the face
+  // before the default modal ever renders, so no fetch fires.
   const seam = vi.fn((req: { mode: string; kind: string }, fallback: unknown) =>
     req.mode === 'media' ? createElement('div', { 'data-testid': 'host-picker' }, 'host face ' + req.kind) : fallback)
   function SeamHost(): ReturnType<typeof createElement> {

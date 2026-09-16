@@ -11,12 +11,15 @@ import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-li
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, test, vi } from "vitest";
 import { createElement as h } from "react";
+import { mountEstateFakes, type EstateFakes, type EstateRefusal } from "./estate-harness.ts";
+import { unbindEstateRemote } from "@melite/card-base/estate-remote";
 import { CardsTab } from "../src/client/CardsTab.tsx";
 import { schemaEnvelope } from "../src/client/spec-form.tsx";
 import type { BenchStageRow, CardsBenchValue } from "../src/client/cards-resource.ts";
 
 afterEach(() => {
   cleanup();
+  unbindEstateRemote();
   vi.unstubAllGlobals();
 });
 
@@ -32,18 +35,33 @@ interface Doors {
   specInputs: boolean;
   enhanceResults: unknown;
   specUrls: string[];
-  posted: Array<{ method: string; args: Record<string, unknown> }>;
-  frames: Record<string, (args: Record<string, unknown>) => { value?: unknown; refuse?: string; thrown?: unknown }>;
-  patches: Array<Record<string, unknown>>;
   resolveFormSpec: ((body: unknown) => void) | null;
 }
 
 const doors: Doors = {
   formSpec: "ok", formsTable: "ok", specFields: "prompt",
   specFamilies: false, specPreview: false, specInputs: false,
-  enhanceResults: {}, specUrls: [], posted: [], frames: {},
-  patches: [], resolveFormSpec: null,
+  enhanceResults: {}, specUrls: [],
+  resolveFormSpec: null,
 };
+
+// THE ONE-FAKE LAW (stroke 81): estate verbs ride the bound
+// namespaces (mountEstateFakes); fetch answers ONLY the /v1
+// discovery doors + the enhance tool.
+let fakes: EstateFakes | null = null;
+
+function calls(): Array<{ method: string; args: Record<string, unknown> }> {
+  if (fakes === null) throw new Error("estate fakes not mounted");
+  return fakes.calls;
+}
+
+/** the params-flush writes (drafts/patch calls carrying params). */
+function patches(): Array<Record<string, unknown>> {
+  return calls()
+    .filter((p) => p.method === "drafts/patch"
+      && (p.args["patch"] as Record<string, unknown>)["params"] !== undefined)
+    .map((p) => (p.args["patch"] as Record<string, unknown>)["params"] as Record<string, unknown>);
+}
 
 function stubFetch(): void {
   doors.formSpec = "ok";
@@ -54,11 +72,8 @@ function stubFetch(): void {
   doors.specInputs = false;
   doors.enhanceResults = {};
   doors.specUrls = [];
-  doors.posted = [];
-  doors.frames = {};
-  doors.patches = [];
   doors.resolveFormSpec = null;
-  vi.stubGlobal("fetch", async (url: unknown, init?: RequestInit): Promise<Response> => {
+  vi.stubGlobal("fetch", async (url: unknown): Promise<Response> => {
     const path = String(url);
     if (path.includes("/v1/form-spec")) {
       doors.specUrls.push(path);
@@ -113,61 +128,28 @@ function stubFetch(): void {
         status: 200, headers: { "content-type": "application/json" },
       });
     }
-    if (path.startsWith("/api/")) {
-      const frame = JSON.parse(String(init?.body)) as { rpcId: string; method: string; payload: { args: Record<string, unknown> } };
-      doors.posted.push({ method: frame.method, args: frame.payload.args });
-      if (frame.method === "drafts/patch") {
-        const params = ((frame.payload.args["patch"] as Record<string, unknown>)["params"] ?? {}) as Record<string, unknown>;
-        doors.patches.push(params);
-      }
-      const route = doors.frames[frame.method];
-      if (route !== undefined) {
-        const answer = route(frame.payload.args);
-        if (answer.thrown !== undefined) throw answer.thrown;
-        if (answer.refuse !== undefined) {
-          return new Response(JSON.stringify({
-            type: "server-response", rpcId: frame.rpcId,
-            result: { ok: false, error: { message: answer.refuse } },
-          }), { status: 200, headers: { "content-type": "application/json" } });
-        }
-        return new Response(JSON.stringify({
-          type: "server-response", rpcId: frame.rpcId,
-          result: { ok: true, value: answer.value ?? {} },
-        }), { status: 200, headers: { "content-type": "application/json" } });
-      }
-      return new Response(JSON.stringify({
-        type: "server-response", rpcId: frame.rpcId, result: { ok: true, value: {} },
-      }), { status: 200, headers: { "content-type": "application/json" } });
-    }
-    return new Response("no", { status: 500 });
+    throw new Error("estate door on the fetch lane: " + path);
   });
 }
 
-function mountBench(stages: BenchStageRow[], renderSlot?: (...args: never[]) => unknown): void {
+interface EstateOpts {
+  startDocs?: Array<Record<string, unknown>>;
+  patchFailures?: Array<Record<string, unknown>>;
+  throws?: EstateRefusal[];
+}
+
+function mountBench(stages: BenchStageRow[], renderSlot?: (...args: never[]) => unknown, estate?: EstateOpts): void {
   stubFetch();
-  const doc = {
-    draft_id: "bench-p", rev: 1, log: [],
-    stages: stages.map((s) => ({ ...s, run_status: s.runStatus })),
-  };
-  const impl = globalThis.fetch;
-  vi.stubGlobal("fetch", async (url: unknown, init?: RequestInit): Promise<Response> => {
-    const path = String(url);
-    if (path.startsWith("/api/")) {
-      const frame = JSON.parse(String(init?.body)) as { rpcId: string; method: string };
-      if (frame.method === "bench/get") {
-        return new Response(JSON.stringify({
-          type: "server-response", rpcId: frame.rpcId,
-          result: { ok: true, value: doc },
-        }), { status: 200, headers: { "content-type": "application/json" } });
-      }
-      if (frame.method === "drafts/get") {
-        return new Response(JSON.stringify({
-          type: "server-response", rpcId: frame.rpcId,
-          result: { ok: true, value: { draft_id: "bench-p", bench: { rev: 1 }, stages } },
-        }), { status: 200, headers: { "content-type": "application/json" } });
-      }
-    }
-    return (impl as typeof fetch)(url, init);
+  fakes = mountEstateFakes({
+    benchDoc: {
+      draft_id: "bench-p", rev: 1, log: [],
+      stages: stages.map((s) => ({ ...s, run_status: s.runStatus })),
+    },
+    draftStages: stages as Array<Record<string, unknown>>,
+    draftBenchRev: 1,
+    startDocs: estate?.startDocs,
+    patchFailures: estate?.patchFailures,
+    throws: estate?.throws,
   });
   render(h(CardsTab, {
     useTabInfo: () => ({ tab: {
@@ -366,26 +348,28 @@ describe("the sweep-landing arms — empty, negative, and empty-via", () => {
 
 describe("the run's quiet arms — no edits, and the Error-voiced patch", () => {
   test("a run with no edits skips the write and still starts", async () => {
-    doors.frames["runs/start"] = () => ({ value: { run_id: "r_0" } });
-    mountBench([{ id: "s_0", card: "image-gen", engine: "comfyui", params: {} }]);
-    doors.frames["runs/start"] = () => ({ value: { run_id: "r_0" } });
+    mountBench(
+      [{ id: "s_0", card: "image-gen", engine: "comfyui", params: {} }],
+      undefined,
+      { startDocs: [{ run_id: "r_0" }] },
+    );
     await openFirstTile();
     await screen.findByText("Prompt", {}, { timeout: 4000 });
     fireEvent.click(within(zoomCard()).getByRole("button", { name: "Run stage" }));
     await waitFor(() => {
-      expect(doors.posted.some((p) => p.method === "runs/start")).toBe(true);
+      expect(calls().some((p) => p.method === "runs/start")).toBe(true);
     });
     // the flush wrote nothing — the only drafts/patch traffic is the
     // run's own status patch, never a params flush
-    const flushes = doors.posted.filter((p) => p.method === "drafts/patch"
-      && (p.args["patch"] as Record<string, unknown>)["params"] !== undefined);
-    expect(flushes).toEqual([]);
+    expect(patches()).toEqual([]);
   });
 
   test("a same-sized edit compares per key before writing", async () => {
-    mountBench([{ id: "s_0", card: "image-gen", engine: "comfyui", params: { prompt: "p" } }]);
-    doors.frames["drafts/patch"] = () => ({ value: { delivered: true, rev: 2 } });
-    doors.frames["runs/start"] = () => ({ value: { run_id: "r_0" } });
+    mountBench(
+      [{ id: "s_0", card: "image-gen", engine: "comfyui", params: { prompt: "p" } }],
+      undefined,
+      { startDocs: [{ run_id: "r_0" }] },
+    );
     await openFirstTile();
     await screen.findByText("Prompt", {}, { timeout: 4000 });
     const user = userEvent.setup();
@@ -395,16 +379,20 @@ describe("the run's quiet arms — no edits, and the Error-voiced patch", () => 
     await user.type(area, "!");
     fireEvent.click(within(zoomCard()).getByRole("button", { name: "Run stage" }));
     await waitFor(() => {
-      expect(doors.posted.some((p) => p.method === "runs/start")).toBe(true);
+      expect(calls().some((p) => p.method === "runs/start")).toBe(true);
     });
-    const flush = doors.posted.find((p) => p.method === "drafts/patch"
-      && (p.args["patch"] as Record<string, unknown>)["params"] !== undefined);
-    expect((flush?.args["patch"] as Record<string, unknown>)["params"]).toEqual({ prompt: "p!" });
+    const flush = patches()[patches().length - 1];
+    expect(flush).toEqual({ prompt: "p!" });
   });
 
   test("an undelivered run patch voices the door's own words", async () => {
-    mountBench([{ id: "s_0", card: "image-gen", engine: "comfyui", params: {} }]);
-    doors.frames["drafts/patch"] = () => ({ value: { rev: 2 } });
+    // the old frame's {rev: 2} (no delivered key) is the door's
+    // undelivered arm — the harness serves patchFailures verbatim.
+    mountBench(
+      [{ id: "s_0", card: "image-gen", engine: "comfyui", params: {} }],
+      undefined,
+      { patchFailures: [{ rev: 2 }] },
+    );
     await openFirstTile();
     await screen.findByText("Prompt", {}, { timeout: 4000 });
     const user = userEvent.setup();
@@ -413,41 +401,47 @@ describe("the run's quiet arms — no edits, and the Error-voiced patch", () => 
     await user.type(area, "x");
     fireEvent.click(within(zoomCard()).getByRole("button", { name: "Run stage" }));
     expect(await screen.findByText(/undelivered/, {}, { timeout: 4000 })).toBeTruthy();
-    expect(doors.posted.some((p) => p.method === "runs/start")).toBe(false);
+    expect(calls().some((p) => p.method === "runs/start")).toBe(false);
   });
 });
 
 describe("the throwing owners — remove and ungroup fall back loud", () => {
-  function mountClaimed(stages: BenchStageRow[], claim: (owner: Record<string, unknown>) => unknown): void {
+  function mountClaimed(stages: BenchStageRow[], claim: (owner: Record<string, unknown>) => unknown, estate?: EstateOpts): void {
     mountBench(stages, ((slot: string, owner: Record<string, unknown>, opts: { fallback: unknown }) => {
       if (slot !== "cards.stage.view") return opts.fallback;
       return h("div", null,
         opts.fallback as never,
         h("div", { "data-testid": "slot-claim" }, claim(owner) as never),
       );
-    }) as never);
+    }) as never, estate);
   }
 
   test("a throwing remove voices the fallback (never a throw past the gesture)", async () => {
+    // the old stub threw the bare string "kablam" (a non-Error, so
+    // the client voiced its 'remove failed' fallback); the live seam
+    // throws Errors, so the queued message IS the voiced text.
     mountClaimed(
       [{ id: "s_0", card: "image-gen", engine: "comfyui", params: {} }],
       (owner) => h("button", {
         type: "button", "data-testid": "slot-remove",
         onClick: () => { (owner["onRemove"] as () => void)(); },
       }, "SLOT-REMOVE"),
+      { throws: [{ method: "bench/remove-stage", message: "remove failed" }] },
     );
     const user = userEvent.setup();
     await user.click(firstTile());
-    doors.frames["bench/remove-stage"] = () => ({ thrown: "kablam" });
     fireEvent.click(await screen.findByTestId("slot-remove", {}, { timeout: 4000 }));
     expect(await screen.findByText("remove failed", {}, { timeout: 4000 })).toBeTruthy();
   });
 
   test("a throwing ungroup voices the fallback (never a throw past the gesture)", async () => {
-    mountBench([{ id: "g_0", card: "group", engine: "comfyui", params: {}, children: [{ id: "s_0", card: "image-gen" }] } as never]);
+    mountBench(
+      [{ id: "g_0", card: "group", engine: "comfyui", params: {}, children: [{ id: "s_0", card: "image-gen" }] } as never],
+      undefined,
+      { throws: [{ method: "bench/ungroup", message: "ungroup failed" }] },
+    );
     const user = userEvent.setup();
     await user.click(firstTile());
-    doors.frames["bench/ungroup"] = () => ({ thrown: "kablam" });
     fireEvent.click(await screen.findByText("Ungroup", {}, { timeout: 4000 }));
     expect(await screen.findByText("ungroup failed", {}, { timeout: 4000 })).toBeTruthy();
   });
@@ -463,18 +457,17 @@ describe("the throwing owners — remove and ungroup fall back loud", () => {
 describe("the tri-state unset — inherit removes the override", () => {
   test("inherit drops the key and the next run flushes without it", async () => {
     doors.specFields = "prompt-tri";
-    mountBench([{ id: "s_0", card: "image-gen", engine: "comfyui", params: {} }]);
+    mountBench(
+      [{ id: "s_0", card: "image-gen", engine: "comfyui", params: {} }],
+      undefined,
+      { startDocs: [{ run_id: "r_0" }, { run_id: "r_0" }] },
+    );
     doors.specFields = "prompt-tri";
-    doors.frames["drafts/patch"] = () => ({ value: { delivered: true, rev: 2 } });
-    doors.frames["runs/start"] = () => ({ value: { run_id: "r_0" } });
     await openFirstTile();
     await screen.findByText("Prompt", {}, { timeout: 4000 });
     const user = userEvent.setup();
     const turbo = screen.getByRole("combobox", { name: "Turbo" });
-    const flushes = (): Array<Record<string, unknown>> => doors.posted
-      .filter((p) => p.method === "drafts/patch"
-        && (p.args["patch"] as Record<string, unknown>)["params"] !== undefined)
-      .map((p) => (p.args["patch"] as Record<string, unknown>)["params"] as Record<string, unknown>);
+    const flushes = (): Array<Record<string, unknown>> => patches();
     await user.selectOptions(turbo, "true");
     fireEvent.click(within(zoomCard()).getByRole("button", { name: "Run stage" }));
     await waitFor(() => { expect(flushes().length).toBeGreaterThan(0); });
@@ -488,14 +481,19 @@ describe("the tri-state unset — inherit removes the override", () => {
     // the inherit shows — and with nothing left to write the next
     // run skips the flush yet still starts (the quiet arm)
     expect((turbo as HTMLSelectElement).value).toBe("");
-    const starts = (): number => doors.posted.filter((p) => p.method === "runs/start").length;
+    const starts = (): number => calls().filter((p) => p.method === "runs/start").length;
     fireEvent.click(within(zoomCard()).getByRole("button", { name: "Run stage" }));
     await waitFor(() => { expect(starts()).toBe(2); });
-    // the second flush carries the kept prompt but never the
-    // inherited-away key (the quiet arm, keyed)
+    // the second flush carries the kept prompt but never a live
+    // turbo value: the inherit unset rides the JSON Merge Patch
+    // null (the door deletes the key). The old black-hole stub
+    // never applied flush #1, so its pristine base dropped the
+    // no-op null and the key was absent instead — same intent,
+    // seam-honest spelling (the live seam applies each flush
+    // estate-side, so the served base holds turbo:true and the
+    // unset must be explicit).
     expect(flushes().length).toBe(2);
-    expect(flushes()[1]).toMatchObject({ prompt: "kept" });
-    expect(flushes()[1]).not.toHaveProperty("turbo");
+    expect(flushes()[1]).toMatchObject({ prompt: "kept", turbo: null });
   });
 
   test("inheriting a served base value unsets nothing and keeps the base", async () => {

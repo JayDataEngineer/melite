@@ -30,7 +30,7 @@ import { DisclosureRow, IconArchiveOutline20 } from '@deepseek-ai/dsh-client-ui-
 import css from './client.module.css'
 import type { StageViewOwnerProps } from '@melite/contracts'
 import { SpecFieldRow, coerceFieldEdit, fieldsOf, resolveValue, useFormSpec, useSquareProvider, type FormSpecDoc, type SpecField, type SpecValues, type SquareHost } from '@melite/card-base'
-import { pollRunStageUrl } from '@melite-plugin/melite-run-wire'
+import { pollRunStageUrl } from '@melite/card-base/runs-policy'
 // THE MESH STAGE (hour 14): the shared raw-three preview from
 // card-base — the SAME stage anny rides (one preview-port interaction
 // law: selection + per-asset errors are the stage's own surface).

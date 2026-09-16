@@ -11,20 +11,19 @@ import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-li
 import { afterEach, describe, expect, test, vi } from "vitest";
 import { createElement as h } from "react";
 import type { ReactElement } from "react";
+import { mountEstateFakes, type EstateFakes, type EstateRefusal } from "./estate-harness.ts";
+import { unbindEstateRemote } from "@melite/card-base/estate-remote";
 import { CardsTab } from "../src/client/CardsTab.tsx";
 import { schemaEnvelope } from "../src/client/spec-form.tsx";
 import type { BenchStageRow } from "../src/client/cards-resource.ts";
 
 afterEach(() => {
   cleanup();
+  unbindEstateRemote();
   vi.unstubAllGlobals();
 });
 
-interface FrameAnswer { value?: unknown; refuse?: string; thrown?: unknown }
-
 const doors: {
-  posted: Array<{ method: string; args: Record<string, unknown> }>;
-  frames: Record<string, (args: Record<string, unknown>) => FrameAnswer>;
   specFields: Record<string, unknown> | null;
   specStatus?: number;
   specThrown?: unknown;
@@ -34,24 +33,33 @@ const doors: {
   ensureAnswer: { status: number; body: unknown } | { thrown: unknown };
   enhanceBody: unknown;
   enhanceStatus: number;
-  benchGets: number;
-  benchThrown: unknown;
-  servedStages: BenchStageRow[];
   opened: string[];
 } = {
-  posted: [], frames: {}, specFields: null, catalog: null, catalogDeferred: null,
+  specFields: null, catalog: null, catalogDeferred: null,
   ensureBodies: [], ensureAnswer: { status: 200, body: { ok: true } },
   enhanceBody: { results: {} }, enhanceStatus: 200,
-  benchGets: 0, benchThrown: undefined, servedStages: [], opened: [],
+  opened: [],
 };
+
+// THE ONE-FAKE LAW (stroke 81): estate verbs ride the bound
+// namespaces (mountEstateFakes); fetch answers ONLY the /v1
+// bench-ensure/enhance/discovery doors.
+let fakes: EstateFakes | null = null;
+
+function calls(): Array<{ method: string; args: Record<string, unknown> }> {
+  if (fakes === null) throw new Error("estate fakes not mounted");
+  return fakes.calls;
+}
+
+function patchCalls(): Array<{ method: string; args: Record<string, unknown> }> {
+  return calls().filter((p) => p.method === "drafts/patch");
+}
 
 function envelope(fields: Record<string, unknown>): unknown {
   return schemaEnvelope(fields as Parameters<typeof schemaEnvelope>[0]);
 }
 
 function stubFetch(): void {
-  doors.posted = [];
-  doors.frames = {};
   slot.claim = false;
   slot.owner = null;
   doors.specFields = null;
@@ -63,9 +71,6 @@ function stubFetch(): void {
   doors.ensureAnswer = { status: 200, body: { ok: true } };
   doors.enhanceBody = { results: {} };
   doors.enhanceStatus = 200;
-  doors.benchGets = 0;
-  doors.benchThrown = undefined;
-  doors.servedStages = [];
   doors.opened = [];
   vi.stubGlobal("fetch", async (url: unknown, init?: RequestInit): Promise<Response> => {
     const path = String(url);
@@ -109,37 +114,7 @@ function stubFetch(): void {
         status: 200, headers: { "content-type": "application/json" },
       });
     }
-    if (path.startsWith("/api/")) {
-      const frame = JSON.parse(String(init?.body)) as { rpcId: string; method: string; payload: { args: Record<string, unknown> } };
-      doors.posted.push({ method: frame.method, args: frame.payload.args });
-      if (frame.method === "bench/get") {
-        doors.benchGets += 1;
-        if (doors.benchThrown !== undefined) throw doors.benchThrown;
-        return new Response(JSON.stringify({
-          type: "server-response", rpcId: frame.rpcId,
-          result: { ok: true, value: { draft_id: "bench-p", rev: 2, log: [], stages: doors.servedStages } },
-        }), { status: 200, headers: { "content-type": "application/json" } });
-      }
-      const route = doors.frames[frame.method];
-      if (route !== undefined) {
-        const answer = route(frame.payload.args);
-        if (answer.thrown !== undefined) throw answer.thrown;
-        if (answer.refuse !== undefined) {
-          return new Response(JSON.stringify({
-            type: "server-response", rpcId: frame.rpcId,
-            result: { ok: false, error: { message: answer.refuse } },
-          }), { status: 200, headers: { "content-type": "application/json" } });
-        }
-        return new Response(JSON.stringify({
-          type: "server-response", rpcId: frame.rpcId,
-          result: { ok: true, value: answer.value ?? {} },
-        }), { status: 200, headers: { "content-type": "application/json" } });
-      }
-      return new Response(JSON.stringify({
-        type: "server-response", rpcId: frame.rpcId, result: { ok: true, value: {} },
-      }), { status: 200, headers: { "content-type": "application/json" } });
-    }
-    return new Response("no", { status: 500 });
+    throw new Error("estate door on the fetch lane: " + path);
   });
 }
 
@@ -147,10 +122,32 @@ const STAGES: BenchStageRow[] = [
   { id: "s_0", card: "image-gen", engine: "comfyui", params: { prompt: "a barn" } },
 ];
 
-function mount(stages: BenchStageRow[] = STAGES): void {
+interface EstateOpts {
+  startDocs?: Array<Record<string, unknown>>;
+  refusals?: EstateRefusal[];
+  throws?: EstateRefusal[];
+}
+
+function estateOpts(stages: BenchStageRow[], estate?: EstateOpts): Parameters<typeof mountEstateFakes>[0] {
+  // ROW COPIES (the sweep2 receipt): the seam mutates its rows in
+  // place — handing it the snapshot's own array aliases the render
+  // snapshot, and the add's before/after diff then sees no fresh
+  // row (no auto-open, no pop).
+  const benchRows = stages.map((s) => ({ ...s }));
+  const draftRows = stages.map((s) => ({ ...s }));
+  return {
+    benchDoc: { draft_id: "bench-p", rev: 1, log: [], stages: benchRows },
+    draftStages: draftRows as Array<Record<string, unknown>>,
+    draftBenchRev: 1,
+    startDocs: estate?.startDocs,
+    refusals: estate?.refusals,
+    throws: estate?.throws,
+  };
+}
+
+function mount(stages: BenchStageRow[] = STAGES, estate?: EstateOpts): void {
   stubFetch();
-  doors.servedStages = stages;
-  doors.frames["drafts/patch"] = () => ({ value: { delivered: true } });
+  fakes = mountEstateFakes(estateOpts(stages, estate));
   render(h(CardsTab, {
     useTabInfo: () => ({ tab: {
       kind: "sidebar.right.pane.tab", contentId: undefined,
@@ -164,11 +161,11 @@ function mount(stages: BenchStageRow[] = STAGES): void {
   } as never));
 }
 
-function mountDraft(stages: BenchStageRow[] = STAGES): void {
+function mountDraft(stages: BenchStageRow[] = STAGES, estate?: EstateOpts): void {
   stubFetch();
   slot.claim = true;
   slot.owner = null;
-  doors.frames["drafts/patch"] = () => ({ value: { delivered: true } });
+  fakes = mountEstateFakes(estateOpts(stages, estate));
   render(h(CardsTab, {
     renderSlot,
     useTabInfo: () => ({ tab: {
@@ -233,13 +230,11 @@ async function openPicker(): Promise<void> {
 
 describe("the landing — fresh ids pop and open", () => {
   test("a fresh id lands with the pop and opens its zoom (never a cold tile)", async () => {
+    // the old stub hand-served s_9 on re-read; the live seam mints
+    // its own fresh row on add (rev bump included) and the same
+    // zoom opens with no hand staging.
     mount();
     doors.catalog = { lone: { label: "Lone", genre: "image", families: ["lone"] } };
-    doors.frames["bench/add-stage"] = () => ({ value: { rev: 2 } });
-    doors.servedStages = [
-      ...STAGES,
-      { id: "s_9", card: "lone", engine: "comfyui", params: {} },
-    ];
     await openPicker();
     fireEvent.click(await screen.findByRole("button", { name: "Lone" }, { timeout: 5000 }));
     // the door closes and the fresh row's zoom opens (open-on-add —
@@ -250,19 +245,16 @@ describe("the landing — fresh ids pop and open", () => {
   });
 
   test("a post-add reload pops the fresh tile (reloads never pop old ids)", async () => {
-    mount();
+    mount(STAGES, { refusals: [{ method: "runs/start", message: "queue full" }] });
     doors.catalog = { lone: { label: "Lone", genre: "image", families: ["lone"] } };
-    doors.frames["bench/add-stage"] = () => ({ value: { rev: 2 } });
-    doors.frames["runs/start"] = () => ({ refuse: "queue full" });
-    doors.servedStages = [
-      ...STAGES,
-      { id: "s_9", card: "lone", engine: "comfyui", params: {} },
-    ];
     await openPicker();
     fireEvent.click(await screen.findByRole("button", { name: "Lone" }, { timeout: 5000 }));
     await waitFor(() => {
       if (document.querySelector('div[class*="zoomCard"]') === null) throw new Error("no fresh zoom");
     }, { timeout: 5000 });
+    // the seam mints the fresh id (fresh_N) — read it off the rail
+    // after the carry seats it (the old hand-served s_9 is the same
+    // intent: the fresh tile pops, the old tile stays cold).
     // dirty the fresh drill and press Run — the refusal carries to
     // the row and the touch re-reads the bench, seating the fresh
     // row with the entered pop (old ids reload cold)
@@ -271,24 +263,39 @@ describe("the landing — fresh ids pop and open", () => {
     fireEvent.change(area, { target: { value: "fresh words" } });
     const zoom = document.querySelector('div[class*="zoomCard"]') as HTMLElement;
     fireEvent.click(within(zoom).getByTestId("drill-run"));
+    // the seam mints the fresh id (fresh_N) — the rail seats it on
+    // the carry's touch re-read (the old hand-served s_9 is the
+    // same intent: the fresh tile pops, the old tile stays cold).
+    let freshId = "";
     await waitFor(() => {
-      if (document.querySelector('li[data-stage-id="s_9"]') === null) throw new Error("no fresh tile");
+      const ids = [...document.querySelectorAll('li[data-stage-id]')]
+        .map((li) => li.getAttribute("data-stage-id") ?? "")
+        .filter((id) => id !== "" && id !== "s_0");
+      if (ids.length === 0) throw new Error("no fresh tile yet");
+      freshId = ids[0] as string;
     }, { timeout: 5000 });
     // the pop lands a beat after the tile (the entered effect's own
     // commit) — poll the class, never the existence alone
     await waitFor(() => {
-      expect(tileLi("s_9").className).toContain("tileEnter");
+      expect(tileLi(freshId).className).toContain("tileEnter");
     }, { timeout: 5000 });
     expect(tileLi("s_0").className).not.toContain("tileEnter");
   });
 
   test("a re-read that drops the open stage closes the zoom (never a ghost drill)", async () => {
+    // the old stub re-served an emptied stage list mid-test; the
+    // seam serves its rows for the whole mount — so the emptied
+    // read is armed by rebinding mid-test (no re-render; the fetch
+    // stub untouched). The runs/start refusal rides the rebind
+    // (the press lands after it).
     mount();
-    doors.frames["runs/start"] = () => ({ refuse: "queue full" });
     await openZoom();
+    fakes?.unmount();
+    fakes = mountEstateFakes(estateOpts([], {
+      refusals: [{ method: "runs/start", message: "queue full" }],
+    }));
     // the run refuses, the carry touches, and the re-read lost the
     // stage — keepOpen finds nothing and the drill closes
-    doors.servedStages = [];
     const zoom = document.querySelector('div[class*="zoomCard"]') as HTMLElement;
     fireEvent.click(within(zoom).getByTestId("drill-run"));
     await waitFor(() => {
@@ -299,20 +306,26 @@ describe("the landing — fresh ids pop and open", () => {
   });
 
   test("a re-read that throws voices the fallback (never a stuck drill)", async () => {
+    // same rebind law as the ghost-drill arm above: the old stub
+    // threw the bare string "gone" (a non-Error, so the client
+    // voiced its 'bench reload failed' fallback); the live seam
+    // throws Errors, so the queued message IS the voiced text.
     mount();
-    doors.frames["runs/start"] = () => ({ refuse: "queue full" });
     await openZoom();
-    // the run refuses and the touch's re-read throws a bare string —
-    // the drill stays (nothing re-seated it) with the fallback face
-    doors.benchThrown = "gone";
+    fakes?.unmount();
+    fakes = mountEstateFakes(estateOpts(STAGES, {
+      refusals: [{ method: "runs/start", message: "queue full" }],
+      throws: [{ method: "bench/get", message: "bench reload failed" }],
+    }));
+    // the run refuses and the touch's re-read throws — the drill
+    // stays (nothing re-seated it) with the fallback face
     const zoom = document.querySelector('div[class*="zoomCard"]') as HTMLElement;
     fireEvent.click(within(zoom).getByTestId("drill-run"));
     expect(await screen.findByText("bench reload failed", {}, { timeout: 5000 })).toBeTruthy();
   });
 
   test("an asset add that throws an Error voices its message (never empty)", async () => {
-    mount();
-    doors.frames["bench/add-stage"] = () => ({ thrown: new Error("add down") });
+    mount(STAGES, { throws: [{ method: "bench/add-stage", message: "add down" }] });
     await screen.findByText("rev 1");
     fireEvent.drop(document.querySelector('ol[data-drop-surface="cards"]') as HTMLElement, {
       dataTransfer: {
@@ -442,14 +455,14 @@ describe("the preview seat — space opens, names caption", () => {
 
 describe("the carry swallows — outcome writes fail silent after voicing", () => {
   test("a refused bench run with a dead outcome door still voices (never a hang)", async () => {
-    mount();
-    let patches = 0;
-    doors.frames["drafts/patch"] = () => {
-      patches += 1;
-      if (patches >= 2) throw new Error("outcome gone");
-      return { value: { delivered: true } };
-    };
-    doors.frames["runs/start"] = () => ({ refuse: "queue full" });
+    // the harness scripts the Nth call per verb (onCall) — the
+    // pre-patch lands (call 1, default OK) and only the outcome
+    // write (call 2) hits the dead door, exactly the old
+    // count-the-calls shape.
+    mount(STAGES, {
+      refusals: [{ method: "runs/start", message: "queue full" }],
+      throws: [{ method: "drafts/patch", message: "outcome gone", onCall: 2 }],
+    });
     await openZoom();
     await screen.findByText("Prompt", {}, { timeout: 5000 });
     // dirty the prompt so the drill's pre-patch fires first (call 1),
@@ -460,19 +473,18 @@ describe("the carry swallows — outcome writes fail silent after voicing", () =
     fireEvent.click(within(zoom).getByTestId("drill-run"));
     expect(await screen.findAllByText("queue full", {}, { timeout: 5000 })).not.toHaveLength(0);
     await waitFor(() => {
-      expect(patches).toBeGreaterThanOrEqual(2);
+      expect(patchCalls().length).toBeGreaterThanOrEqual(2);
     }, { timeout: 5000 });
   });
 
   test("a refused draft run with a dead outcome door still voices (never a hang)", async () => {
-    mountDraft();
-    let patches = 0;
-    doors.frames["drafts/patch"] = () => {
-      patches += 1;
-      if (patches >= 2) throw new Error("outcome gone");
-      return { value: { delivered: true } };
-    };
-    doors.frames["runs/start"] = () => ({ refuse: "queue full" });
+    // same onCall shape through the claimed slot: the slot patch
+    // lands (call 1), the outcome write (call 2) hits the dead
+    // door and the refusal still voices.
+    mountDraft(STAGES, {
+      refusals: [{ method: "runs/start", message: "queue full" }],
+      throws: [{ method: "drafts/patch", message: "outcome gone", onCall: 2 }],
+    });
     // the claimed slot replaces the detail — dirty through its own
     // patch (the pre-patch rides first, leaving the outcome write
     // to hit the dead door)
@@ -480,19 +492,18 @@ describe("the carry swallows — outcome writes fail silent after voicing", () =
     fireEvent.click(screen.getByText("slot run"));
     expect(await screen.findByText("queue full", {}, { timeout: 5000 })).toBeTruthy();
     await waitFor(() => {
-      expect(patches).toBeGreaterThanOrEqual(2);
+      expect(patchCalls().length).toBeGreaterThanOrEqual(2);
     }, { timeout: 5000 });
   });
 });
 
 describe("the Play start — the first card mints and the pass rides", () => {
   test("a live first card posts runs/start (the pass is in flight)", async () => {
-    mount();
-    doors.frames["runs/start"] = () => ({ value: { run_id: "r_1" } });
+    mount(STAGES, { startDocs: [{ run_id: "r_1" }] });
     await screen.findByText("rev 1");
     fireEvent.click(screen.getByRole("button", { name: /Play/ }));
     await waitFor(() => {
-      expect(doors.posted.some((p) => p.method === "runs/start")).toBe(true);
+      expect(calls().some((p) => p.method === "runs/start")).toBe(true);
     }, { timeout: 5000 });
     // the pass is in flight (Play disarms while a card runs)
     await waitFor(() => {
@@ -504,10 +515,12 @@ describe("the Play start — the first card mints and the pass rides", () => {
 describe("the door-less restore — the note lands with nowhere to go", () => {
   test("a restore without a door still notes (never a back crash)", async () => {
     stubFetch();
-    doors.frames["bench/add-stage"] = () => ({ value: { rev: 6 } });
-    doors.frames["drafts/get"] = () => ({
-      value: { draft_id: "d-1", bench: { rev: 1 }, stages: [{ id: "s_9", card: "image-gen" }] },
-    });
+    // the old drafts/get served d-1's stages by hand; the seam
+    // serves its honest draft row (the fixed draft_id rides along
+    // untroubled — the restore reads the stages, never the id).
+    fakes = mountEstateFakes(estateOpts(
+      [{ id: "s_9", card: "image-gen" } as BenchStageRow],
+    ));
     // NOTE: an EMPTY actions object (the tab reads .openResource off
     // it — the door-less seat, nowhere to return to)
     render(h(CardsTab, {

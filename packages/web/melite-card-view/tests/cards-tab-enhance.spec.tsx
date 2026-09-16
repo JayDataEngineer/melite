@@ -104,11 +104,12 @@ function stubFetch(): void {
           });
       }
     }
+    // ONE-LANE TRIPWIRE (stroke 81): no estate verb may ride fetch —
+    // the bench arrives via useResource below, writes ride the
+    // mounted namespace (unmounted here: enhance never writes). Any
+    // /api/ frame is a regression against the law — fail LOUD.
     if (path.startsWith("/api/")) {
-      const frame = JSON.parse(String(init?.body)) as { rpcId: string };
-      return new Response(JSON.stringify({
-        type: "server-response", rpcId: frame.rpcId, result: { ok: true, value: {} },
-      }), { status: 200, headers: { "content-type": "application/json" } });
+      throw new Error("estate door on the fetch lane: " + path);
     }
     return new Response("no", { status: 500 });
   });
@@ -116,24 +117,6 @@ function stubFetch(): void {
 
 function mountBench(stages: BenchStageRow[]): void {
   stubFetch();
-  const doc = {
-    draft_id: "bench-p", rev: 1, log: [],
-    stages: stages.map((s) => ({ ...s, run_status: s.runStatus })),
-  };
-  const impl = globalThis.fetch;
-  vi.stubGlobal("fetch", async (url: unknown, init?: RequestInit): Promise<Response> => {
-    const path = String(url);
-    if (path.startsWith("/api/")) {
-      const frame = JSON.parse(String(init?.body)) as { rpcId: string; method: string };
-      if (frame.method === "bench/get") {
-        return new Response(JSON.stringify({
-          type: "server-response", rpcId: frame.rpcId,
-          result: { ok: true, value: doc },
-        }), { status: 200, headers: { "content-type": "application/json" } });
-      }
-    }
-    return (impl as typeof fetch)(url, init);
-  });
   render(h(CardsTab, {
     useTabInfo: () => ({ tab: {
       kind: "sidebar.right.pane.tab", contentId: undefined,

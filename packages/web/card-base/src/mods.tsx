@@ -83,6 +83,9 @@ export interface ModifiersSectionProps {
    *  reference — the brush paints OVER it, the rectangle selects
    *  ON it (mask-form: 'input_image'). */
   paintReference?: string
+  /** The host's media source (threaded from the constructor's wire)
+   *  — the leaf's image inputs pick from the library like a card's. */
+  loadMedia?: (kind: string, signal: AbortSignal) => Promise<Array<{ url: string; name: string }>>
 }
 
 export function ModifiersSection(props: ModifiersSectionProps): ReturnType<typeof h> | null {
@@ -398,7 +401,7 @@ export function ModifiersSection(props: ModifiersSectionProps): ReturnType<typeo
       title: (leaf.mode === 'create' ? 'Add ' : 'Edit ') + leaf.kind.label,
       closeLabel: 'Close',
     },
-      h(ModLeaf, { leaf, values, hideFields: seated, onDraft: { setDraftOption, setDraftStrength, setDraftParams, draftOption, draftStrength, draftParams }, onError: setLeafError, onSave: saveLeaf, onDelete: deleteLeaf, leafError, paintFace: props.paintFace, bboxFace: props.bboxFace, paintReferenceValue: typeof props.paintReference === 'string' ? String(values[props.paintReference] ?? '') : '' }),
+      h(ModLeaf, { leaf, values, hideFields: seated, onDraft: { setDraftOption, setDraftStrength, setDraftParams, draftOption, draftStrength, draftParams }, onError: setLeafError, onSave: saveLeaf, onDelete: deleteLeaf, leafError, paintFace: props.paintFace, bboxFace: props.bboxFace, paintReferenceValue: typeof props.paintReference === 'string' ? String(values[props.paintReference] ?? '') : '', ...(props.loadMedia !== undefined ? { loadMedia: props.loadMedia } : {}) }),
     ) : null,
   )
 }
@@ -429,6 +432,9 @@ function ModLeaf(props: {
    *  number inputs hold. */
   bboxFace?: BboxFaceComponent
   paintReferenceValue: string
+  /** The host's media source — the leaf's image inputs pick from
+   *  the library like a card's. */
+  loadMedia?: (kind: string, signal: AbortSignal) => Promise<Array<{ url: string; name: string }>>
 }): ReturnType<typeof h> {
   const { leaf, onDraft, onSave, onDelete, leafError } = props
   const k = leaf.kind
@@ -438,7 +444,7 @@ function ModLeaf(props: {
   // the three verbs (upload/drop/pick) exactly like a card's
   const own = useSquareProvider(
     (name: string, v: unknown) => { onDraft.setDraftParams({ ...onDraft.draftParams, [name]: v }) },
-    { candidates: [] },
+    { candidates: [], ...(props.loadMedia !== undefined ? { loadMedia: props.loadMedia } : {}) },
   )
   return h('div', { className: css.modLeaf },
     leafError !== null ? h('p', { className: css.modLeafError }, leafError) : null,

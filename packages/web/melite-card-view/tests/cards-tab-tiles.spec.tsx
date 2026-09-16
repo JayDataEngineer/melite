@@ -9,6 +9,8 @@
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, describe, expect, test, vi } from "vitest";
 import { createElement as h } from "react";
+import { mountEstateFakes, type EstateFakes } from "./estate-harness.ts";
+import { unbindEstateRemote } from "@melite/card-base/estate-remote";
 import { CardsTab } from "../src/client/CardsTab.tsx";
 import type { BenchStageRow, CardsBenchValue } from "../src/client/cards-resource.ts";
 
@@ -17,17 +19,23 @@ const ASSET_MIME = "application/tech-noir-asset";
 
 afterEach(() => {
   cleanup();
+  unbindEstateRemote();
   vi.unstubAllGlobals();
 });
 
-interface FrameAnswer { value?: unknown; refuse?: string; thrown?: unknown }
+// THE ONE-FAKE LAW (stroke 81): estate verbs ride the bound
+// namespaces (mountEstateFakes); fetch answers ONLY the /v1
+// discovery doors. The harness's managed bench rows serve the
+// mounted stages, so the rail reads the doc seats live.
+let fakes: EstateFakes | null = null;
 
-const doors: { posted: Array<{ method: string; args: Record<string, unknown> }>; frames: Record<string, (args: Record<string, unknown>) => FrameAnswer> } = { posted: [], frames: {} };
+function calls(): Array<{ method: string; args: Record<string, unknown> }> {
+  if (fakes === null) throw new Error("estate fakes not mounted");
+  return fakes.calls;
+}
 
 function stubFetch(): void {
-  doors.posted = [];
-  doors.frames = {};
-  vi.stubGlobal("fetch", async (url: unknown, init?: RequestInit): Promise<Response> => {
+  vi.stubGlobal("fetch", async (url: unknown): Promise<Response> => {
     const path = String(url);
     if (path.includes("/v1/form-spec")) {
       return new Response(JSON.stringify({
@@ -45,29 +53,7 @@ function stubFetch(): void {
         status: 200, headers: { "content-type": "application/json" },
       });
     }
-    if (path.startsWith("/api/")) {
-      const frame = JSON.parse(String(init?.body)) as { rpcId: string; method: string; payload: { args: Record<string, unknown> } };
-      doors.posted.push({ method: frame.method, args: frame.payload.args });
-      const route = doors.frames[frame.method];
-      if (route !== undefined) {
-        const answer = route(frame.payload.args);
-        if (answer.thrown !== undefined) throw answer.thrown;
-        if (answer.refuse !== undefined) {
-          return new Response(JSON.stringify({
-            type: "server-response", rpcId: frame.rpcId,
-            result: { ok: false, error: { message: answer.refuse } },
-          }), { status: 200, headers: { "content-type": "application/json" } });
-        }
-        return new Response(JSON.stringify({
-          type: "server-response", rpcId: frame.rpcId,
-          result: { ok: true, value: answer.value ?? {} },
-        }), { status: 200, headers: { "content-type": "application/json" } });
-      }
-      return new Response(JSON.stringify({
-        type: "server-response", rpcId: frame.rpcId, result: { ok: true, value: {} },
-      }), { status: 200, headers: { "content-type": "application/json" } });
-    }
-    return new Response("no", { status: 500 });
+    throw new Error("estate door on the fetch lane: " + path);
   });
 }
 
@@ -75,29 +61,10 @@ function stubFetch(): void {
 // faces ride the doc seats
 function mountTiles(docStages: BenchStageRow[]): void {
   stubFetch();
-  const doc = {
-    draft_id: "bench-p", rev: 1, log: [],
-    stages: docStages.map((s) => ({ ...s, run_status: s.runStatus })),
-  };
-  const impl = globalThis.fetch;
-  vi.stubGlobal("fetch", async (url: unknown, init?: RequestInit): Promise<Response> => {
-    const path = String(url);
-    if (path.startsWith("/api/")) {
-      const frame = JSON.parse(String(init?.body)) as { rpcId: string; method: string };
-      if (frame.method === "bench/get") {
-        return new Response(JSON.stringify({
-          type: "server-response", rpcId: frame.rpcId,
-          result: { ok: true, value: doc },
-        }), { status: 200, headers: { "content-type": "application/json" } });
-      }
-      if (frame.method === "drafts/get") {
-        return new Response(JSON.stringify({
-          type: "server-response", rpcId: frame.rpcId,
-          result: { ok: true, value: { draft_id: "bench-p", bench: { rev: 1 }, stages: docStages } },
-        }), { status: 200, headers: { "content-type": "application/json" } });
-      }
-    }
-    return (impl as typeof fetch)(url, init);
+  fakes = mountEstateFakes({
+    benchDoc: { draft_id: "bench-p", rev: 1, log: [], stages: docStages },
+    draftStages: docStages as Array<Record<string, unknown>>,
+    draftBenchRev: 1,
   });
   const value: CardsBenchValue = { kind: "bench", draftId: "bench-p", rev: 1, log: [], stages: docStages };
   render(h(CardsTab, {
@@ -286,7 +253,7 @@ describe("the tile drop guards — malformed and typeless payloads drop silent",
     await tileReady();
     fireEvent.drop(tileLi("s_0"), { dataTransfer: assetTransfer("{not json") });
     await new Promise((r) => setTimeout(r, 100));
-    expect(doors.posted.some((p) => p.method === "drafts/patch")).toBe(false);
+    expect(calls().some((p) => p.method === "drafts/patch")).toBe(false);
   });
 
   test("a typeless asset never attaches (the kind gate holds)", async () => {
@@ -294,11 +261,10 @@ describe("the tile drop guards — malformed and typeless payloads drop silent",
     await tileReady();
     fireEvent.drop(tileLi("s_0"), { dataTransfer: assetTransfer(JSON.stringify({ url: "/a.png" })) });
     await new Promise((r) => setTimeout(r, 100));
-    expect(doors.posted.some((p) => p.method === "drafts/patch")).toBe(false);
+    expect(calls().some((p) => p.method === "drafts/patch")).toBe(false);
   });
 
   test("dropping on the add seat never reorders (the tail guard holds)", async () => {
-    doors.frames["bench/reorder"] = () => ({ value: { rev: 2 } });
     mountTiles([
       { id: "add", card: "image-gen", engine: "comfyui", params: {} },
       { id: "s_0", card: "image-gen", engine: "comfyui", params: {} },
@@ -307,21 +273,19 @@ describe("the tile drop guards — malformed and typeless payloads drop silent",
     fireEvent.dragStart(tileLi("s_0"), { dataTransfer: cardDrag("s_0") });
     fireEvent.drop(tileLi("add"), { dataTransfer: cardDrag("s_0") });
     await new Promise((r) => setTimeout(r, 100));
-    expect(doors.posted.some((p) => p.method === "bench/reorder")).toBe(false);
+    expect(calls().some((p) => p.method === "bench/reorder")).toBe(false);
   });
 
   test("a ghost id never splices (the index guard holds)", async () => {
-    doors.frames["bench/reorder"] = () => ({ value: { rev: 2 } });
     mountTiles([{ id: "s_0", card: "image-gen", engine: "comfyui", params: {} }]);
     await tileReady();
     fireEvent.dragStart(tileLi("s_0"), { dataTransfer: cardDrag("s_gone") });
     fireEvent.drop(tileLi("s_0"), { dataTransfer: cardDrag("s_gone") });
     await new Promise((r) => setTimeout(r, 100));
-    expect(doors.posted.some((p) => p.method === "bench/reorder")).toBe(false);
+    expect(calls().some((p) => p.method === "bench/reorder")).toBe(false);
   });
 
   test("a revless reorder still lands (the estate's rev is a hint, never a lock)", async () => {
-    doors.frames["bench/reorder"] = () => ({ value: {} });
     mountTiles([
       { id: "s_0", card: "image-gen", engine: "comfyui", params: {} },
       { id: "s_1", card: "image-gen", engine: "comfyui", params: {} },
@@ -330,7 +294,7 @@ describe("the tile drop guards — malformed and typeless payloads drop silent",
     fireEvent.dragStart(tileLi("s_0"), { dataTransfer: cardDrag("s_0") });
     fireEvent.drop(tileLi("s_1"), { dataTransfer: cardDrag("s_0") });
     await waitFor(() => {
-      expect(doors.posted.some((p) => p.method === "bench/reorder")).toBe(true);
+      expect(calls().some((p) => p.method === "bench/reorder")).toBe(true);
     });
   });
 });

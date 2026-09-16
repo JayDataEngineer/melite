@@ -1,137 +1,171 @@
 // add-stage-doors.spec.ts — add-stage.ts's three unwired verbs
 // (reorder/group/ungroup) + the rebase-law arms rebase-law.spec.ts
 // leaves uncovered (the no-expect_rev throw, the non-numeric-rev
-// re-read, the non-Error throw voice). Same REAL wire law as the
-// rebase wall: POST /api/<method>, client-request frame, typert
-// server-response envelopes; the verb's doc rides expect_rev (the
-// CAS law), bench/get re-reads the CURRENT rev on conflict.
-import { describe, expect, test, afterEach } from "vitest";
+// re-read, the non-Error throw voice).
+//
+// THE ONE-LANE LAW (stroke 81): the verbs ride the mounted bench
+// namespace through mountEstateFakes — no fetch stub answers an
+// estate verb. The verb's doc rides expect_rev (the CAS law);
+// bench/get re-reads the CURRENT rev on conflict. Call records are
+// {method, args} with the namespace positional params ({sessionKey,
+// doc}); the bench/get entry carries no doc.
+import { describe, expect, test, afterEach, vi } from "vitest";
+import { unbindEstateRemote } from "@melite/card-base/estate-remote";
+import { mountEstateFakes } from "./estate-harness.ts";
 import {
   addStageWire, groupStagesWire, removeStageWire, reorderStageWire, ungroupStageWire,
 } from "../src/client/add-stage.ts";
 
-interface Call { method: string; sessionKey: unknown; doc: Record<string, unknown> }
-type Answer = { refuse?: string; value?: unknown; thrown?: unknown };
+afterEach(() => { unbindEstateRemote(); vi.unstubAllGlobals(); });
 
-function stubWire(route: (call: Call) => Answer): Call[] {
-  const seen: Call[] = [];
-  const realFetch = globalThis.fetch;
-  globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
-    const url = String(input);
-    const method = url.startsWith("/api/") ? url.slice("/api/".length) : url;
-    let frame: Record<string, unknown> = {};
-    if (typeof init?.body === "string") frame = JSON.parse(init.body) as Record<string, unknown>;
-    const rpcId = frame["rpcId"];
-    const args = ((frame["payload"] as { args?: Record<string, unknown> } | undefined)?.args ?? {}) as Record<string, unknown>;
-    const call: Call = {
-      method,
-      sessionKey: args["sessionKey"],
-      doc: (args["doc"] as Record<string, unknown> | undefined) ?? {},
-    };
-    seen.push(call);
-    const answer = route(call);
-    if (answer.thrown !== undefined) throw answer.thrown;
-    const result = answer.refuse === undefined
-      ? { ok: true, value: answer.value ?? {} }
-      : { ok: false, error: { message: answer.refuse } };
-    return new Response(JSON.stringify({ type: "server-response", rpcId, result }), {
-      status: 200,
-      headers: { "content-type": "application/json" },
-    });
-  }) as typeof fetch;
-  afterEach(() => { globalThis.fetch = realFetch; });
-  return seen;
+interface Seen { method: string; sessionKey: unknown; doc: Record<string, unknown> }
+function seenCalls(calls: Array<{ method: string; args: Record<string, unknown> }>): Seen[] {
+  return calls.map((c) => ({
+    method: c.method,
+    sessionKey: c.args["sessionKey"],
+    doc: (c.args["doc"] as Record<string, unknown> | undefined) ?? {},
+  }));
 }
 
 describe("the unwired verbs — reorder / group / ungroup", () => {
   test("reorderStageWire posts stage/to/expect_rev to bench/reorder", async () => {
-    const seen = stubWire(() => ({ value: { rev: 8 } }));
-    const row = await reorderStageWire({ stage: "s_1", to: 0, expect_rev: 7 });
-    expect(row).toEqual({ rev: 8 });
-    expect(seen).toHaveLength(1);
-    expect(seen[0]?.method).toBe("bench/reorder");
-    expect(seen[0]?.sessionKey).toBe("main");
-    expect(seen[0]?.doc).toEqual({ stage: "s_1", to: 0, expect_rev: 7 });
+    const fakes = mountEstateFakes();
+    try {
+      // MEANING ADAPTED (dead-transport shape): the old envelope
+      // stub answered a scripted {rev: 8}; the live lane echoes the
+      // verb doc back ({ok: true} + the doc) — the pinned law is the
+      // door address + the doc shape.
+      const row = await reorderStageWire({ stage: "s_1", to: 0, expect_rev: 7 }, "main");
+      expect(row).toMatchObject({ stage: "s_1", to: 0, expect_rev: 7 });
+      const seen = seenCalls(fakes.calls);
+      expect(seen).toHaveLength(1);
+      expect(seen[0]?.method).toBe("bench/reorder");
+      expect(seen[0]?.sessionKey).toBe("main");
+      expect(seen[0]?.doc).toEqual({ stage: "s_1", to: 0, expect_rev: 7 });
+    } finally {
+      fakes.unmount();
+    }
   });
 
   test("groupStagesWire posts stages to bench/group", async () => {
-    const seen = stubWire(() => ({ value: { rev: 9, group: "g_1" } }));
-    const row = await groupStagesWire({ stages: ["s_0", "s_1"], expect_rev: 8 });
-    expect(row).toEqual({ rev: 9, group: "g_1" });
-    expect(seen[0]?.method).toBe("bench/group");
-    expect(seen[0]?.doc).toEqual({ stages: ["s_0", "s_1"], expect_rev: 8 });
+    const fakes = mountEstateFakes();
+    try {
+      // MEANING ADAPTED (dead-transport shape): {rev: 9, group:
+      // 'g_1'} was the scripted envelope answer; the live lane
+      // echoes the doc.
+      const row = await groupStagesWire({ stages: ["s_0", "s_1"], expect_rev: 8 }, "main");
+      expect(row).toMatchObject({ stages: ["s_0", "s_1"], expect_rev: 8 });
+      const seen = seenCalls(fakes.calls);
+      expect(seen[0]?.method).toBe("bench/group");
+      expect(seen[0]?.doc).toEqual({ stages: ["s_0", "s_1"], expect_rev: 8 });
+    } finally {
+      fakes.unmount();
+    }
   });
 
   test("ungroupStageWire posts stage to bench/ungroup", async () => {
-    const seen = stubWire(() => ({ value: { rev: 10 } }));
-    await ungroupStageWire({ stage: "g_1", expect_rev: 9 });
-    expect(seen[0]?.method).toBe("bench/ungroup");
-    expect(seen[0]?.doc).toEqual({ stage: "g_1", expect_rev: 9 });
+    const fakes = mountEstateFakes();
+    try {
+      await ungroupStageWire({ stage: "g_1", expect_rev: 9 }, "main");
+      const seen = seenCalls(fakes.calls);
+      expect(seen[0]?.method).toBe("bench/ungroup");
+      expect(seen[0]?.doc).toEqual({ stage: "g_1", expect_rev: 9 });
+    } finally {
+      fakes.unmount();
+    }
   });
 
-  test("removeStageWire rides the default session key (the drill's Remove path)", async () => {
-    const seen = stubWire(() => ({ value: { rev: 11 } }));
-    await removeStageWire({ stage: "s_2", expect_rev: 10 });
-    expect(seen[0]?.method).toBe("bench/remove-stage");
-    expect(seen[0]?.sessionKey).toBe("main");
+  test("removeStageWire rides the caller's session key (the drill's Remove path)", async () => {
+    const fakes = mountEstateFakes();
+    try {
+      await removeStageWire({ stage: "s_2", expect_rev: 10 }, "main");
+      const seen = seenCalls(fakes.calls);
+      expect(seen[0]?.method).toBe("bench/remove-stage");
+      expect(seen[0]?.sessionKey).toBe("main");
+    } finally {
+      fakes.unmount();
+    }
   });
 
   test("addStageWire rides the caller's session key (per-conversation benches)", async () => {
-    const seen = stubWire(() => ({ value: { rev: 2 } }));
-    await addStageWire({ card: "tts", expect_rev: 1 }, "conv-9");
-    expect(seen[0]?.method).toBe("bench/add-stage");
-    expect(seen[0]?.sessionKey).toBe("conv-9");
+    const fakes = mountEstateFakes();
+    try {
+      await addStageWire({ card: "tts", expect_rev: 1 }, "conv-9");
+      const seen = seenCalls(fakes.calls);
+      expect(seen[0]?.method).toBe("bench/add-stage");
+      expect(seen[0]?.sessionKey).toBe("conv-9");
+    } finally {
+      fakes.unmount();
+    }
   });
 
   test("every verb rebases once on a CAS refusal (the stuck cure is per-verb)", async () => {
-    const seen = stubWire((c) => {
-      if (c.method === "bench/get") return { value: { rev: 100 } };
-      return c.doc["expect_rev"] === 3
-        ? { refuse: "bench main moved: rev is 100, caller held 3" }
-        : { value: { rev: 101 } };
+    const fakes = mountEstateFakes({
+      refusals: [{ method: "bench/reorder", message: "bench main moved: rev is 100, caller held 3" }],
+      benchDoc: { rev: 100, stages: [{ id: "s_0" }], log: [] },
     });
-    await reorderStageWire({ stage: "s_0", to: 1, expect_rev: 3 });
-    expect(seen.map((c) => [c.method, c.doc["expect_rev"]])).toEqual([
-      ["bench/reorder", 3],
-      ["bench/get", undefined],
-      ["bench/reorder", 100],
-    ]);
+    try {
+      await reorderStageWire({ stage: "s_0", to: 1, expect_rev: 3 }, "main");
+      expect(seenCalls(fakes.calls).map((c) => [c.method, c.doc["expect_rev"]])).toEqual([
+        ["bench/reorder", 3],
+        ["bench/get", undefined],
+        ["bench/reorder", 100],
+      ]);
+    } finally {
+      fakes.unmount();
+    }
   });
 });
 
 describe("the rebase arms — no rev, bad rev, foreign throws", () => {
   test("a doc with no expect_rev throws the verb's own name (never a blind write)", async () => {
-    const seen = stubWire(() => ({ value: { rev: 1 } }));
-    await expect(groupStagesWire({ stages: ["s_0", "s_1"] }))
-      .rejects.toThrow(/bench\/group: no expect_rev to write against/);
-    expect(seen).toHaveLength(0);
+    const fakes = mountEstateFakes();
+    try {
+      await expect(groupStagesWire({ stages: ["s_0", "s_1"] }, "main"))
+        .rejects.toThrow(/bench\/group: no expect_rev to write against/);
+      expect(fakes.calls).toHaveLength(0);
+    } finally {
+      fakes.unmount();
+    }
   });
 
   test("a non-numeric re-read rev leaves the original refusal standing", async () => {
-    const seen = stubWire((c) => {
-      if (c.method === "bench/get") return { value: { rev: "not-a-number" } };
-      return { refuse: "bench main moved: rev is 429, caller held 35" };
+    const fakes = mountEstateFakes({
+      refusals: [{ method: "bench/ungroup", message: "bench main moved: rev is 429, caller held 35" }],
+      benchDoc: { rev: "not-a-number", stages: [{ id: "g_1" }], log: [] },
     });
-    await expect(ungroupStageWire({ stage: "g_1", expect_rev: 35 }))
-      .rejects.toThrow(/rev is 429, caller held 35/);
-    expect(seen.map((c) => c.method)).toEqual(["bench/ungroup", "bench/get"]);
+    try {
+      await expect(ungroupStageWire({ stage: "g_1", expect_rev: 35 }, "main"))
+        .rejects.toThrow(/rev is 429, caller held 35/);
+      expect(fakes.calls.map((c) => c.method)).toEqual(["bench/ungroup", "bench/get"]);
+    } finally {
+      fakes.unmount();
+    }
   });
 
-  test("a non-Error throw is never a conflict (propagates verbatim)", async () => {
-    stubWire((c) => {
-      if (c.method === "bench/get") return { value: { rev: 1 } };
-      return { thrown: "kablam" };
+  test("a foreign throw propagates verbatim (never a conflict)", async () => {
+    const fakes = mountEstateFakes({
+      throws: [{ method: "bench/add-stage", value: "kablam" }],
+      benchDoc: { rev: 1, stages: [], log: [] },
     });
-    await expect(addStageWire({ card: "image-gen", expect_rev: 1 }, "main"))
-      .rejects.toBe("kablam");
+    try {
+      await expect(addStageWire({ card: "image-gen", expect_rev: 1 }, "main"))
+        .rejects.toBe("kablam");
+    } finally {
+      fakes.unmount();
+    }
   });
 
-  test("a dead re-read (fetch throws) leaves the original refusal standing", async () => {
-    stubWire((c) => {
-      if (c.method === "bench/get") return { thrown: new Error("network gone") };
-      return { refuse: "bench cas-conflict: stale" };
+  test("a dead re-read (transport down) leaves the original refusal standing", async () => {
+    const fakes = mountEstateFakes({
+      refusals: [{ method: "bench/remove-stage", message: "bench cas-conflict: stale" }],
+      throws: [{ method: "bench/get", message: "network gone" }],
     });
-    await expect(removeStageWire({ stage: "s_1", expect_rev: 5 }))
-      .rejects.toThrow(/cas-conflict/);
+    try {
+      await expect(removeStageWire({ stage: "s_1", expect_rev: 5 }, "main"))
+        .rejects.toThrow(/cas-conflict/);
+    } finally {
+      fakes.unmount();
+    }
   });
 });

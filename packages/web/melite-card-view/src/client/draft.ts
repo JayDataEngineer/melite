@@ -1,21 +1,14 @@
 /**
  * draft.ts — the native card surface's data layer. The model half is
  * PURE (tests import it directly); the fetch half rides the estate's
- * Typert remotes over the wire frame — same-origin POST
- * /api/<ns>/<method> carrying the client-request frame (api-gateway.md,
- * the sanctioned caller for plugins outside the DSH web kernel; the
- * parameter names ARE the wire fields):
- *   drafts/get {draftId}   → the draft doc (createdAt IS the version —
- *                            bumped on every server-side rewrite)
- *   runs/start {doc}       → {run_id} | RemoteError (doc carries the
- *                            draft_id the caller wants started)
- *   runs/status {runId}    → per-stage status + artifact urls
- *
- * The gateway-era /v1 paths this layer once fetched died with the
- * gateway app (nothing serves them — by design). The draft
- * stage-PARAM EDIT has no serving plane yet (the drafts remote is
- * read-only: list/get; the bench patch owns bench sessions only) —
- * patchStageParams refuses LOUD at the seam, never lies a success.
+ * mounted Typert namespaces (stroke 81's one-lane law — the
+ * generated client through ctx.remote, never a hand-written
+ * envelope; the parameter names ARE the wire fields):
+ *   drafts.get(draftId)     → the draft doc (createdAt IS the version —
+ *                             bumped on every server-side rewrite)
+ *   runs.start({draft_id})  → {run_id} | RemoteError (doc carries the
+ *                             draft_id the caller wants started)
+ *   runs.status(runId)      → per-stage status + artifact urls
  *
  * Every function narrows untrusted JSON defensively — a malformed doc
  * throws with its own name at the call site, never in the render tree.
@@ -63,17 +56,8 @@ export interface RunStatusDoc {
 import type { FlowEventFrame } from '@melite/catalog/FlowEvents'
 export type { FlowEventFrame }
 
-import { toRunMediaUrl, wireCall as runWireCall } from '@melite-plugin/melite-run-wire'
-
-/** The remotes this layer rides (the wire method table). */
-type WireMethod = 'drafts/get' | 'drafts/patch' | 'runs/start' | 'runs/status'
-
-/** One wire call — the run-wire package's ONE frame definition (the
- *  DRY law; this module's spelling died with it). The method rides
- *  as the transport voice so diagnostics name their door. */
-async function wireCall(method: WireMethod, args: Record<string, unknown>): Promise<Record<string, unknown>> {
-  return await runWireCall(method, args, { voice: method })
-}
+import { toRunMediaUrl } from '@melite-plugin/melite-run-wire'
+import { estateRemote, unwrapRemote, type DraftsNamespace } from '@melite/card-base/estate-remote'
 
 /** The media URL seam — the run-wire package's ONE rewrite
  *  (toRunMediaUrl, the browser twin of @melite/estate-media's
@@ -85,7 +69,7 @@ export { toRunMediaUrl as mediaUrl }
 
 /** The draft doc; throws the door's own named refusal on failure. */
 export async function fetchDraft(draftId: string): Promise<DraftDoc> {
-  const doc = await wireCall('drafts/get', { draftId })
+  const doc = await unwrapRemote(estateRemote().drafts.get(draftId), 'drafts/get') as unknown as Record<string, unknown>
   if (typeof doc['draft_id'] !== 'string' || !Array.isArray(doc['stages'])) {
     throw new Error('drafts/get: not a draft doc')
   }
@@ -119,15 +103,19 @@ function isCasConflict(e: unknown): boolean {
   return msg.includes('moved: rev is') || msg.includes('cas-conflict')
 }
 
-/** One drafts/patch round trip; throws the door's named refusal. */
+/** One drafts/patch round trip; throws the door's named refusal. The
+ *  generated signature is (draftId, stageId, patch, expectRev:
+ *  number | null) — the open local patch shape rides as the wire's
+ *  own open JSON record (honestly JSON all the way down). */
 async function patchOnce(
   draftId: string, stageId: string, patch: Record<string, unknown>,
   expectRev: number | undefined,
 ): Promise<void> {
-  const row = await wireCall('drafts/patch', {
-    draftId, stageId, patch,
-    ...(expectRev !== undefined ? { expectRev } : {}),
-  })
+  const ns: DraftsNamespace = estateRemote().drafts
+  const row = await unwrapRemote(
+    ns.patch(draftId, stageId, patch as Parameters<DraftsNamespace['patch']>[2], expectRev ?? null),
+    'drafts/patch',
+  ) as unknown as Record<string, unknown>
   if (row['delivered'] !== true) {
     const reason = typeof row['reason'] === 'string' ? row['reason'] : 'undelivered'
     throw new Error('drafts/patch: ' + reason + ' (draft ' + draftId + ', stage ' + stageId + ')')
@@ -205,7 +193,7 @@ export async function patchStageOutcome(
 
 /** Start the run; returns the run_id or throws the door's named refusal. */
 export async function startDraft(draftId: string): Promise<string> {
-  const row = await wireCall('runs/start', { doc: { draft_id: draftId } })
+  const row = await unwrapRemote(estateRemote().runs.start({ draft_id: draftId }), 'runs/start') as unknown as Record<string, unknown>
   if (typeof row['run_id'] !== 'string') {
     throw new Error('runs/start: no run_id in the answer')
   }
@@ -214,7 +202,7 @@ export async function startDraft(draftId: string): Promise<string> {
 
 /** The run status (poll target). Throws on transport failure only. */
 export async function runStatus(runId: string): Promise<RunStatusDoc> {
-  const doc = await wireCall('runs/status', { runId })
+  const doc = await unwrapRemote(estateRemote().runs.status(runId), 'runs/status') as unknown as Record<string, unknown>
   if (typeof doc['status'] !== 'string') {
     throw new Error('runs/status: not a status doc')
   }

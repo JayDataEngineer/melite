@@ -70,13 +70,17 @@
   "dependencies": {
     "@deepseek-ai/dsh-api-gateway": "0.1.5-rc.2",
     "@deepseek-ai/dsh-client-ui-primitives": "0.1.5-rc.2",
+    "@deepseek-ai/dsh-typert-protocol": "0.1.5-rc.2",
     "@melite-plugin/dsh-gallery": "workspace:*",
     "@melite-plugin/melite-run-wire": "workspace:*",
     "@melite/contracts": "workspace:*",
     "@melite/estate-drafts": "workspace:*",
+    "@melite/estate-media": "workspace:*",
+    "@melite/estate-runs": "workspace:*",
     "@melite/video-h3-timeline": "workspace:*",
     "@react-three/drei": "^10.7.8",
     "@react-three/fiber": "^9.7.0",
-    "three": "^0.184.0"
+    "three": "^0.184.0",
+    "zod": "4.5.4"
   }
 }

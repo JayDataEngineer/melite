@@ -35,28 +35,26 @@ import { RemoteError } from '@deepseek-ai/dsh-typert-protocol'
 import type { RemoteResult } from '@deepseek-ai/dsh-typert-protocol'
 import { RemoteStreamCarrierError, type ClientRemote, type RemoteStreamItem } from '@deepseek-ai/dsh-api-gateway/client'
 
-/** The bench namespace service (the nested `remote.bench` service,
- *  typed off the generated merge). Captured ONCE under a fiber that
- *  declares the dotted inject — later `.subscribe` calls at stream
- *  callback time carry no access checks (the 2026-09-15 inject fix). */
-export type BenchNamespace = ClientRemote['bench']
-// The generated contribution's declaration merge (TypertRemoteMap
-// gains bench/* + drafts/*): with this, ClientRemote's namespace face
-// is TYPED — ctx.remote.bench.subscribe is the generated signature.
-import type {} from '@melite/estate-drafts/remote'
+// BenchNamespace's definition + the generated contribution's
+// declaration merge now live in estate-remote.ts (the one-lane
+// module — all four namespaces typed off the generated clients).
+// The run-wire package keeps the PURE laws (readRunStatus,
+// toRunMediaUrl, the terminal vocabulary — their ONE definition);
+// every transport verb rides the mounted namespaces (stroke 81).
 import {
-  WireRefusedError,
+  isTerminalRun,
+  readRunStatus,
+  toRunMediaUrl,
+} from '@melite-plugin/melite-run-wire'
+import {
   fetchLatestRunForDraft,
   fetchRunStageUrl,
   fetchRunStatus,
   fetchRunTerminal,
-  isTerminalRun,
-  nextRpcId,
   probeRunGone,
-  readRunStatus,
-  toRunMediaUrl,
-  wireCall as runWireCall,
-} from '@melite-plugin/melite-run-wire'
+} from '@melite/card-base/runs-policy'
+import { estateRemote, isEstateRefusal, unwrapRemote, type BenchNamespace } from '@melite/card-base/estate-remote'
+export type { BenchNamespace }
 import type { FlowEventFrame } from './draft.ts'
 import { patchStageOutcome } from './draft.ts'
 
@@ -197,6 +195,10 @@ export const BENCH_SESSION_RE = /^[A-Za-z0-9_-]{1,64}$/
 /** Sanitize one candidate id onto a legal bench session key ('main'
  *  for anything the bench would refuse — the estate's own SESSION_RE). */
 export function benchSessionKey(id: string | undefined): string {
+  // THE ONE SPELLING of the unattributed bench (the address
+  // grammar's root — the bare bench address IS the shared bench).
+  // No verb, no fetch, no component defaults its own 'main': they
+  // all fall here (stroke 81's sessionkey law).
   return typeof id === 'string' && BENCH_SESSION_RE.test(id) ? id : 'main'
 }
 
@@ -258,7 +260,7 @@ function failure(address: string, message: string): RemoteResult<never> {
 }
 
 /** Defensive row readers — the door's wire is untyped at this seam. */
-export function readBench(doc: Record<string, unknown>, sessionKey: string = 'main'): CardsBenchValue {
+export function readBench(doc: Record<string, unknown>, sessionKey: string): CardsBenchValue {
   let stages = Array.isArray(doc['stages'])
     ? (doc['stages'] as unknown[]).filter((s): s is BenchStageRow =>
         typeof s === 'object' && s !== null && typeof (s as BenchStageRow)['id'] === 'string')
@@ -312,15 +314,20 @@ function isMissingBench(e: unknown): boolean {
 /** Re-read one conversation's bench — the consumer's reload
  *  after its own edits (the provider's bench stream is a single
  *  snapshot; same-address navigation does not re-run it). */
-export async function fetchBench(sessionKey: string = 'main', signal?: AbortSignal): Promise<CardsBenchValue> {
+export async function fetchBench(sessionKey: string, signal?: AbortSignal): Promise<CardsBenchValue> {
   const key = benchSessionKey(sessionKey)
   try {
-    return readBench(await wireCall('bench/get', { sessionKey: key }, signal), key)
+    return readBench(await unwrapRemote(estateRemote().bench.get(key, signal), 'bench/get') as unknown as Record<string, unknown>, key)
   } catch (e) {
     if (isMissingBench(e)) return emptyBench(key)
     throw e
   }
 }
+
+/** media/list — the runs-tree library (moved beside the bind it
+ *  rides: @melite/card-base/media-library — re-exported here so the
+ *  tab's existing import keeps working). */
+export { fetchMediaLibrary } from '@melite/card-base/media-library'
 
 // ── THE BENCH SPOTLIGHT (stroke 42, the operator's law 2026-09-14:
 // "AI CONVERSATION AND HUMAN SHARE 1 FLOW — there is no other flow
@@ -506,7 +513,7 @@ export async function observeRunOutcome(
     try {
       row = await fetchRunStatus(runId, signal)
     } catch (e: unknown) {
-      if (e instanceof WireRefusedError) {
+      if (isEstateRefusal(e)) {
         // THE PHANTOM CURE (2026-09-13): the estate ANSWERED — the
         // run is not in the live map (the registry restarted since
         // the start). Never poll forever: the file-era list may still
@@ -689,7 +696,7 @@ export async function freshStageRow(
   signal?: AbortSignal,
 ): Promise<BenchStageRow | null> {
   try {
-    const doc = await wireCall('drafts/get', { draftId }, signal)
+    const doc = await unwrapRemote(estateRemote().drafts.get(draftId, signal), 'drafts/get') as unknown as Record<string, unknown>
     const stages = Array.isArray(doc['stages'])
       ? (doc['stages'] as unknown[]).filter((s): s is BenchStageRow =>
           typeof s === 'object' && s !== null && typeof (s as BenchStageRow)['id'] === 'string')
@@ -719,22 +726,9 @@ export function readDraft(draftId: string, stageId: string, doc: Record<string, 
   }
 }
 
-/** The bench/drafts verbs this module rides (the RUN verbs live in
- *  the run-wire package — the DRY law; this union narrows the frame
- *  call to the doors this file owns). */
-type BenchMethod = 'bench/get' | 'bench/add-stage' | 'drafts/get' | 'runs/status' | 'runs/list'
-
-/** The frame is the run-wire package's ONE definition; this wrapper
- *  narrows the method set for the cards protocol's own verbs. */
-async function wireCall(
-  nsMethod: BenchMethod,
-  args: Record<string, unknown>,
-  signal?: AbortSignal,
-): Promise<Record<string, unknown>> {
-  return await runWireCall(nsMethod, args, { signal })
-}
-
-export { nextRpcId }
+// The estate verb calls in this file ride the mounted namespaces
+// directly (estateRemote() — the one-lane law); the old
+// envelope-frame wrapper died with the hand-written lane.
 
 /** The card-back-into-flow report — counts, never throws for
  *  per-stage skips (a refusal STOPS the restore and throws: a half
@@ -756,7 +750,7 @@ export interface RestoreReport {
  *  keeps whatever landed before it, and the report says so. */
 export async function restoreRunToBench(
   run: CardsRunValue,
-  sessionKey: string = 'main',
+  sessionKey: string,
   signal?: AbortSignal,
 ): Promise<RestoreReport> {
   if (run.draftId === null || run.draftId === '') {
@@ -765,7 +759,7 @@ export async function restoreRunToBench(
   const key = benchSessionKey(sessionKey)
   let draft: Record<string, unknown>
   try {
-    draft = await wireCall('drafts/get', { draftId: run.draftId }, signal)
+    draft = await unwrapRemote(estateRemote().drafts.get(run.draftId, signal), 'drafts/get') as unknown as Record<string, unknown>
   } catch (e) {
     throw new Error('the producing draft is unreadable: ' + (e instanceof Error ? e.message : String(e)))
   }
@@ -778,7 +772,7 @@ export async function restoreRunToBench(
   }
   let bench: Record<string, unknown>
   try {
-    bench = await wireCall('bench/get', { sessionKey: key }, signal)
+    bench = await unwrapRemote(estateRemote().bench.get(key, signal), 'bench/get') as unknown as Record<string, unknown>
   } catch (e) {
     throw new Error('the bench is unreadable: ' + (e instanceof Error ? e.message : String(e)))
   }
@@ -799,7 +793,7 @@ export async function restoreRunToBench(
     const id = typeof st['id'] === 'string' && (st['id'] as string) !== '' ? (st['id'] as string) : null
     if (id !== null) doc['id'] = id
     try {
-      const row = await wireCall('bench/add-stage', { sessionKey: key, doc }, signal)
+      const row = await unwrapRemote(estateRemote().bench['add-stage'](key, doc as Parameters<BenchNamespace['add-stage']>[1], signal), 'bench/add-stage') as unknown as Record<string, unknown>
       if (typeof row['rev'] === 'number') rev = row['rev'] as number
       report.added += 1
     } catch (e) {
@@ -810,7 +804,7 @@ export async function restoreRunToBench(
         const retry: Record<string, unknown> = { ...doc }
         delete retry['id']
         try {
-          const row = await wireCall('bench/add-stage', { sessionKey: key, doc: retry }, signal)
+          const row = await unwrapRemote(estateRemote().bench['add-stage'](key, retry as Parameters<BenchNamespace['add-stage']>[1], signal), 'bench/add-stage') as unknown as Record<string, unknown>
           if (typeof row['rev'] === 'number') rev = row['rev'] as number
           report.added += 1
           report.notes.push(id + ' was already on the bench — added under a fresh id')
@@ -876,7 +870,7 @@ export function openCardsResource(
         // says surface it, never freeze the view pretending to watch.
         let value: CardsBenchValue
         try {
-          value = readBench(await wireCall('bench/get', { sessionKey: benchKey }), benchKey)
+          value = readBench(await unwrapRemote(estateRemote().bench.get(benchKey), 'bench/get') as unknown as Record<string, unknown>, benchKey)
         } catch (e) {
           if (!isMissingBench(e)) {
             yield failure(address, e instanceof Error ? e.message : String(e))
@@ -912,7 +906,7 @@ export function openCardsResource(
     if (draftTarget !== null) {
       let value: CardsDraftValue
       try {
-        value = readDraft(draftTarget.draft, draftTarget.stage, await wireCall('drafts/get', { draftId: draftTarget.draft }))
+        value = readDraft(draftTarget.draft, draftTarget.stage, await unwrapRemote(estateRemote().drafts.get(draftTarget.draft), 'drafts/get') as unknown as Record<string, unknown>)
       } catch (e) {
         yield failure(address, e instanceof Error ? e.message : String(e))
         return
@@ -925,7 +919,7 @@ export function openCardsResource(
     // replaces the poll when the plane exists).
     let value: CardsRunValue
     try {
-      value = readRun(runId, await wireCall('runs/status', { runId }))
+      value = readRun(runId, await unwrapRemote(estateRemote().runs.status(runId), 'runs/status') as unknown as Record<string, unknown>)
     } catch (e) {
       yield failure(address, e instanceof Error ? e.message : String(e))
       return
@@ -972,7 +966,7 @@ async function* pollRunFrames(
     if (woke === 'abort' || signal.aborted) return
     let row: Record<string, unknown>
     try {
-      row = await wireCall('runs/status', { runId }, signal)
+      row = await unwrapRemote(estateRemote().runs.status(runId, signal), 'runs/status') as unknown as Record<string, unknown>
     } catch {
       continue // the last ok value stays; the next poll may recover
     }
@@ -1087,7 +1081,7 @@ async function* streamBenchFrames(
  *  — the run-wire package's verb, re-exported (public face stable).
  *  Carries the SINGLE-STAGE FALLBACK: a one-stage run's stage IS the
  *  asked stage ({model:} runs name stages by the card's skeleton). */
-export { fetchRunStageUrl, fetchRunTerminal, fetchLatestRunForDraft }
+export { fetchRunStageUrl, fetchRunTerminal, fetchLatestRunForDraft } // re-exports: definitions in runs-policy.ts
 
 /** isTerminalRun re-export (the run-view stream's terminal law). */
 export { isTerminalRun as isTerminal }

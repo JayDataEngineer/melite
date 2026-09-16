@@ -1,4 +1,6 @@
 import type { Context } from "@deepseek-ai/cordis";
+export type { JsonValue, RunStartDoc, RunRow } from "./types.ts";
+import type { RunStartDoc, RunRow } from "./types.ts";
 import { TypertRemoteService } from "@deepseek-ai/dsh-typert-protocol";
 /** The registry seat's adapter-facing surface (structural — the
  *  implementation is RunsRegistryService in @melite/estate-queue;
@@ -30,23 +32,23 @@ export declare class RunsRemoteService extends TypertRemoteService {
     static inject: string[];
     constructor(ctx: Context);
     /** Endpoint `runs/start` — the submit chain (registry seat). */
-    remoteExportStart(doc: unknown, signal: AbortSignal): Promise<{
+    remoteExportStart(doc: RunStartDoc, signal: AbortSignal): Promise<{
         run_id: string;
         status: string;
         queue_position: number;
     }>;
     /** Endpoint `runs/status` — the live row (registry seat). */
-    remoteExportStatus(runId: string, signal: AbortSignal): Promise<Record<string, unknown>>;
+    remoteExportStatus(runId: string, signal: AbortSignal): Promise<RunRow>;
     /** Endpoint `runs/stop` — the flag + interrupt (registry seat). */
-    remoteExportStop(runId: string, signal: AbortSignal): Promise<Record<string, unknown>>;
+    remoteExportStop(runId: string, signal: AbortSignal): Promise<RunRow>;
     /** Endpoint `runs/list` — the restore-port envelope (registry
      *  seat; the raw limit string keeps py int() semantics). */
     remoteExportList(rawLimit: string, signal: AbortSignal): Promise<{
         count: number;
-        runs: Record<string, unknown>[];
+        runs: RunRow[];
     }>;
     /** Endpoint `runs/validate` — the pure compile (registry seat). */
-    remoteExportValidate(doc: unknown, signal: AbortSignal): Promise<Record<string, unknown>>;
+    remoteExportValidate(doc: RunStartDoc, signal: AbortSignal): Promise<RunRow>;
 }
 /** The runs remote row (the estate mounts it after the registry). */
 export declare const runsRemotePlugin: {
@@ -54,5 +56,4 @@ export declare const runsRemotePlugin: {
     inject: readonly ["runs"];
     apply(ctx: Context): void;
 };
-export {};
 //# sourceMappingURL=index.d.ts.map

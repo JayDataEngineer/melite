@@ -18,6 +18,7 @@ import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/re
 import userEvent from '@testing-library/user-event'
 import { afterEach, expect, test, vi } from 'vitest'
 import { createElement, useState } from 'react'
+import { unbindEstateRemote } from '@melite/card-base/estate-remote'
 
 import {
   activeVariantId,
@@ -51,7 +52,11 @@ const KREA: FormSpecDoc = {
   ],
 }
 
-afterEach(cleanup)
+afterEach(() => {
+  cleanup()
+  unbindEstateRemote()
+  vi.unstubAllGlobals()
+})
 
 // ── the pure projections ────────────────────────────────────────────────────
 
@@ -178,18 +183,19 @@ test('no matrix, no axes — the plain form is unchanged', () => {
 test('runCardStage composes the HELD model; the default family is only the resting value', async () => {
   // local import: the door-contract seam under test
   const { runCardStage } = await import('../src/client/CardsTab.tsx')
-  const calls: Array<{ method: string; args: Record<string, unknown> }> = []
+  // THE ONE-FAKE LAW (stroke 81): estate verbs ride the bound
+  // namespaces; fetch answers ONLY the /v1 discovery doors.
+  const { mountEstateFakes } = await import('./estate-harness.ts')
+  const fakes = mountEstateFakes()
   const realFetch = globalThis.fetch
-  ;(globalThis as Record<string, unknown>)['fetch'] = async (url: unknown, init?: { body?: unknown }): Promise<unknown> => {
+  ;(globalThis as Record<string, unknown>)['fetch'] = async (url: unknown): Promise<unknown> => {
     if (String(url) === '/v1/model-catalog') {
       return { ok: true, json: async () => ({ cards: { 'image-gen': { id: 'image-gen', families: ['krea-2'] } } }) }
     }
     if (String(url).includes('/v1/form-spec')) {
       return { ok: true, json: async () => KREA }
     }
-    const frame = JSON.parse(String(init?.body)) as { rpcId: string; method: string; payload: { args: Record<string, unknown> } }
-    calls.push({ method: frame.method, args: frame.payload.args })
-    return { ok: true, json: async () => ({ type: 'server-response', rpcId: frame.rpcId, result: { ok: true, value: { run_id: 'run-77', status: 'queued', queue_position: 0 } } }) }
+    throw new Error('estate door on the fetch lane: ' + String(url))
   }
   try {
     const res = await runCardStage('bench-main', {
@@ -197,15 +203,19 @@ test('runCardStage composes the HELD model; the default family is only the resti
       params: { prompt: 'a cat', model: 'krea-2-raw', variant: 'raw', quant: '', steps: 52, cfg: 3.5 },
       result: null,
     })
-    expect(res).toEqual({ runId: 'run-77' })
+    // ADAPTED (reported): the old lane's stub minted run-77; the live
+    // seam's default start mints run-1 — the pinned law is the pass
+    // along, not the id value.
+    expect(res).toEqual({ runId: 'run-1' })
     // THE FRESH-READ FIRST (2026-09-13 drop law): the composing door
     // reads the estate row before starting — find the START call.
-    const start = calls.find((c) => c.method === 'runs/start')
+    const start = fakes.calls.find((c) => c.method === 'runs/start')
     // THE PASS-ALONG: the door's model arm is the HELD krea-2-raw —
     // the raw variant's re-point — never the default family
     expect((start?.args['doc'] as Record<string, unknown>)['model']).toBe('krea-2-raw')
   } finally {
     ;(globalThis as Record<string, unknown>)['fetch'] = realFetch
+    fakes.unmount()
   }
 })
 

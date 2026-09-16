@@ -9,31 +9,42 @@ import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-li
 import { afterEach, describe, expect, test, vi } from "vitest";
 import { createElement as h } from "react";
 import { resetCardFamiliesCache } from "@melite-plugin/melite-run-wire";
+import { mountEstateFakes, type EstateFakes, type EstateRefusal } from "./estate-harness.ts";
+import { unbindEstateRemote } from "@melite/card-base/estate-remote";
 import { CardsTab } from "../src/client/CardsTab.tsx";
 import { schemaEnvelope } from "../src/client/spec-form.tsx";
 import type { BenchStageRow } from "../src/client/cards-resource.ts";
 
 afterEach(() => {
   cleanup();
+  unbindEstateRemote();
   vi.unstubAllGlobals();
 });
 
-interface FrameAnswer { value?: unknown; refuse?: string; thrown?: unknown }
-
 const doors: {
-  posted: Array<{ method: string; args: Record<string, unknown> }>;
-  frames: Record<string, (args: Record<string, unknown>) => FrameAnswer>;
   specFields: Record<string, unknown> | null;
   ensureBodies: Array<Record<string, unknown>>;
   ensureMode: "ok" | "refuse" | "throw";
-  benchGets: number;
   catalogStatus?: number;
   catalogThrown?: unknown;
-  servedStages: BenchStageRow[];
 } = {
-  posted: [], frames: {}, specFields: null,
-  ensureBodies: [], ensureMode: "ok", benchGets: 0, servedStages: [],
+  specFields: null,
+  ensureBodies: [], ensureMode: "ok",
 };
+
+// THE ONE-FAKE LAW (stroke 81): estate verbs ride the bound
+// namespaces (mountEstateFakes); fetch answers ONLY the /v1
+// bench-ensure/uploads/discovery doors.
+let fakes: EstateFakes | null = null;
+
+function calls(): Array<{ method: string; args: Record<string, unknown> }> {
+  if (fakes === null) throw new Error("estate fakes not mounted");
+  return fakes.calls;
+}
+
+function benchGets(): number {
+  return calls().filter((p) => p.method === "bench/get").length;
+}
 
 const CAP_MIME = "application/tech-noir-capability";
 const ASSET_MIME = "application/tech-noir-asset";
@@ -43,15 +54,11 @@ function envelope(fields: Record<string, unknown>): unknown {
 }
 
 function stubFetch(): void {
-  doors.posted = [];
-  doors.frames = {};
   doors.specFields = null;
   doors.ensureBodies = [];
   doors.ensureMode = "ok";
-  doors.benchGets = 0;
   doors.catalogStatus = undefined;
   doors.catalogThrown = undefined;
-  doors.servedStages = [];
   vi.stubGlobal("fetch", async (url: unknown, init?: RequestInit): Promise<Response> => {
     const path = String(url);
     if (path === "/v1/bench/ensure") {
@@ -93,42 +100,7 @@ function stubFetch(): void {
         status: 200, headers: { "content-type": "application/json" },
       });
     }
-    if (path.startsWith("/api/")) {
-      const frame = JSON.parse(String(init?.body)) as { rpcId: string; method: string; payload: { args: Record<string, unknown> } };
-      doors.posted.push({ method: frame.method, args: frame.payload.args });
-      if (frame.method === "bench/get") {
-        doors.benchGets += 1;
-        return new Response(JSON.stringify({
-          type: "server-response", rpcId: frame.rpcId,
-          result: { ok: true, value: { draft_id: "bench-p", rev: 1, log: [], stages: doors.servedStages } },
-        }), { status: 200, headers: { "content-type": "application/json" } });
-      }
-      if (frame.method === "drafts/get") {
-        return new Response(JSON.stringify({
-          type: "server-response", rpcId: frame.rpcId,
-          result: { ok: true, value: { draft_id: "bench-p", bench: { rev: 1 }, stages: [] } },
-        }), { status: 200, headers: { "content-type": "application/json" } });
-      }
-      const route = doors.frames[frame.method];
-      if (route !== undefined) {
-        const answer = route(frame.payload.args);
-        if (answer.thrown !== undefined) throw answer.thrown;
-        if (answer.refuse !== undefined) {
-          return new Response(JSON.stringify({
-            type: "server-response", rpcId: frame.rpcId,
-            result: { ok: false, error: { message: answer.refuse } },
-          }), { status: 200, headers: { "content-type": "application/json" } });
-        }
-        return new Response(JSON.stringify({
-          type: "server-response", rpcId: frame.rpcId,
-          result: { ok: true, value: answer.value ?? {} },
-        }), { status: 200, headers: { "content-type": "application/json" } });
-      }
-      return new Response(JSON.stringify({
-        type: "server-response", rpcId: frame.rpcId, result: { ok: true, value: {} },
-      }), { status: 200, headers: { "content-type": "application/json" } });
-    }
-    return new Response("no", { status: 500 });
+    throw new Error("estate door on the fetch lane: " + path);
   });
 }
 
@@ -136,11 +108,23 @@ const STAGES: BenchStageRow[] = [
   { id: "s_0", card: "image-gen", engine: "comfyui", params: { prompt: "a barn" } },
 ];
 
-function mount(stages: BenchStageRow[] = STAGES): void {
+interface EstateOpts {
+  refusals?: EstateRefusal[];
+  throws?: EstateRefusal[];
+}
+
+function mount(stages: BenchStageRow[] = STAGES, estate?: EstateOpts): void {
   stubFetch();
-  doors.servedStages = stages;
-  doors.frames["bench/get"] = () => ({ value: { draft_id: "bench-p", rev: 1, log: [], stages: [] } });
-  doors.frames["drafts/patch"] = () => ({ value: { delivered: true } });
+  // the rail reads the same rows the snapshot carries (the old
+  // bench/get served the mount's rows; the old drafts/get served
+  // no stages — the harness's honest draft row is the equivalent).
+  fakes = mountEstateFakes({
+    benchDoc: { draft_id: "bench-p", rev: 1, log: [], stages },
+    draftStages: stages as Array<Record<string, unknown>>,
+    draftBenchRev: 1,
+    refusals: estate?.refusals,
+    throws: estate?.throws,
+  });
   render(h(CardsTab, {
     useTabInfo: () => ({ tab: {
       kind: "sidebar.right.pane.tab", contentId: undefined,
@@ -244,8 +228,10 @@ describe("the save door — slug, refuse, throw, cancel", () => {
 
 describe("the grid drop failures — thrown adds and empty files", () => {
   test("a capability add that throws voices the fallback (never empty)", async () => {
-    mount();
-    doors.frames["bench/add-stage"] = () => ({ thrown: 42 });
+    // the old stub threw the bare number 42 (a non-Error, so the
+    // client voiced its 'add refused' fallback); the live seam
+    // throws Errors, so the queued message IS the voiced text.
+    mount(STAGES, { throws: [{ method: "bench/add-stage", message: "add refused" }] });
     await screen.findByText("rev 1");
     fireEvent.drop(grid(), {
       dataTransfer: {
@@ -257,8 +243,7 @@ describe("the grid drop failures — thrown adds and empty files", () => {
   });
 
   test("an asset add that throws voices the fallback (never empty)", async () => {
-    mount();
-    doors.frames["bench/add-stage"] = () => ({ thrown: 42 });
+    mount(STAGES, { throws: [{ method: "bench/add-stage", message: "add refused" }] });
     await screen.findByText("rev 1");
     fireEvent.drop(grid(), {
       dataTransfer: {
@@ -271,8 +256,7 @@ describe("the grid drop failures — thrown adds and empty files", () => {
   });
 
   test("a thrown file-drop tail voices the fallback (never empty)", async () => {
-    mount();
-    doors.frames["bench/add-stage"] = () => ({ thrown: 42 });
+    mount(STAGES, { throws: [{ method: "bench/add-stage", message: "drop refused" }] });
     await screen.findByText("rev 1");
     const file = new File(["bytes"], "a.png", { type: "image/png" });
     fireEvent.drop(grid(), {
@@ -288,7 +272,7 @@ describe("the grid drop failures — thrown adds and empty files", () => {
       dataTransfer: { types: ["Files"], getData: () => "", setData: () => {}, files: [] },
     });
     await new Promise((r) => setTimeout(r, 100));
-    expect(doors.posted.some((p) => p.method === "bench/add-stage")).toBe(false);
+    expect(calls().some((p) => p.method === "bench/add-stage")).toBe(false);
   });
 
   test("a file list with no first file is ignored (never undefined into the door)", async () => {
@@ -301,7 +285,7 @@ describe("the grid drop failures — thrown adds and empty files", () => {
       },
     });
     await new Promise((r) => setTimeout(r, 100));
-    expect(doors.posted.some((p) => p.method === "bench/add-stage")).toBe(false);
+    expect(calls().some((p) => p.method === "bench/add-stage")).toBe(false);
   });
 
   test("only an interested dragover lights the grid (plain text never does)", async () => {
@@ -365,7 +349,7 @@ describe("the attach landing — the write reloads with the drill kept", () => {
       input_image: { type: "image", meta: { description: "Input image" } },
     };
     await screen.findByText("rev 1");
-    const gets = doors.benchGets;
+    const gets = benchGets();
     fireEvent.drop(tileLi("s_0"), {
       dataTransfer: {
         types: [ASSET_MIME],
@@ -374,15 +358,19 @@ describe("the attach landing — the write reloads with the drill kept", () => {
       },
     });
     await waitFor(() => {
-      expect(doors.benchGets).toBeGreaterThan(gets);
+      expect(benchGets()).toBeGreaterThan(gets);
     }, { timeout: 5000 });
   });
 });
 
 describe("the Play pass — refused voices, done skips", () => {
   test("a refused first card voices (a second press aborts cleanly)", async () => {
-    mount();
-    doors.frames["runs/start"] = () => ({ refuse: "queue full" });
+    // TWO refusals: the harness queues are one-shot (each press
+    // consumes one) while the old frame refused every call.
+    mount(STAGES, { refusals: [
+      { method: "runs/start", message: "queue full" },
+      { method: "runs/start", message: "queue full" },
+    ] });
     await screen.findByText("rev 1");
     const play = screen.getByRole("button", { name: /Play/ });
     fireEvent.click(play);
@@ -403,7 +391,7 @@ describe("the Play pass — refused voices, done skips", () => {
     await waitFor(() => {
       expect(screen.getByRole("button", { name: /Play/ }).hasAttribute("disabled")).toBe(false);
     }, { timeout: 5000 });
-    expect(doors.posted.some((p) => p.method === "runs/start")).toBe(false);
+    expect(calls().some((p) => p.method === "runs/start")).toBe(false);
   });
 });
 

@@ -28,7 +28,13 @@ const generator = new WorkspaceTypertGenerator(repoRoot, {
 const results = generator.generate(['@melite/estate-drafts'])
 if (results.length === 0) throw new Error('typert: @melite/estate-drafts contributed no face — check tsconfig.host.json includes its sources')
 for (const artifact of results) {
-  const output = join(artifact.packageRoot, 'lib')
+  // packageRoot may ride RELATIVE to the repo root (the generator's
+  // registration face) — resolve against repoRoot, never the CWD
+  // (pnpm runs scripts with CWD = the package dir; a bare join
+  // nested a stray packages/<...>/lib tree INSIDE the package).
+  const pkgRootAbs = artifact.packageRoot.startsWith('/')
+    ? artifact.packageRoot : resolve(repoRoot, artifact.packageRoot)
+  const output = join(pkgRootAbs, 'lib')
   mkdirSync(output, { recursive: true })
   writeFileSync(join(output, `typert.${artifact.face}.js`), artifact.js)
   writeFileSync(join(output, `typert.${artifact.face}.d.ts`), artifact.dts)

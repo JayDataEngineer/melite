@@ -10,27 +10,30 @@ import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-li
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, test, vi } from "vitest";
 import { createElement as h } from "react";
+import { mountEstateFakes, type EstateFakes, type EstateRefusal } from "./estate-harness.ts";
+import { unbindEstateRemote } from "@melite/card-base/estate-remote";
 import { CardsTab } from "../src/client/CardsTab.tsx";
 import { schemaEnvelope } from "../src/client/spec-form.tsx";
 import type { BenchStageRow, CardsBenchValue } from "../src/client/cards-resource.ts";
 
 afterEach(() => {
   cleanup();
+  unbindEstateRemote();
   vi.unstubAllGlobals();
 });
 
-interface FrameAnswer { value?: unknown; refuse?: string; thrown?: unknown }
-interface Doors {
-  posted: Array<{ method: string; args: Record<string, unknown> }>;
-  frames: Record<string, (args: Record<string, unknown>) => FrameAnswer>;
+// THE ONE-FAKE LAW (stroke 81): estate verbs ride the bound
+// namespaces (mountEstateFakes); fetch answers ONLY the /v1
+// discovery doors.
+let fakes: EstateFakes | null = null;
+
+function calls(): Array<{ method: string; args: Record<string, unknown> }> {
+  if (fakes === null) throw new Error("estate fakes not mounted");
+  return fakes.calls;
 }
 
-const doors: Doors = { posted: [], frames: {} };
-
 function stubFetch(): void {
-  doors.posted = [];
-  doors.frames = {};
-  vi.stubGlobal("fetch", async (url: unknown, init?: RequestInit): Promise<Response> => {
+  vi.stubGlobal("fetch", async (url: unknown): Promise<Response> => {
     const path = String(url);
     if (path.includes("/v1/form-spec")) {
       return new Response(JSON.stringify({
@@ -51,29 +54,7 @@ function stubFetch(): void {
         status: 200, headers: { "content-type": "application/json" },
       });
     }
-    if (path.startsWith("/api/")) {
-      const frame = JSON.parse(String(init?.body)) as { rpcId: string; method: string; payload: { args: Record<string, unknown> } };
-      doors.posted.push({ method: frame.method, args: frame.payload.args });
-      const route = doors.frames[frame.method];
-      if (route !== undefined) {
-        const answer = route(frame.payload.args);
-        if (answer.thrown !== undefined) throw answer.thrown;
-        if (answer.refuse !== undefined) {
-          return new Response(JSON.stringify({
-            type: "server-response", rpcId: frame.rpcId,
-            result: { ok: false, error: { message: answer.refuse } },
-          }), { status: 200, headers: { "content-type": "application/json" } });
-        }
-        return new Response(JSON.stringify({
-          type: "server-response", rpcId: frame.rpcId,
-          result: { ok: true, value: answer.value ?? {} },
-        }), { status: 200, headers: { "content-type": "application/json" } });
-      }
-      return new Response(JSON.stringify({
-        type: "server-response", rpcId: frame.rpcId, result: { ok: true, value: {} },
-      }), { status: 200, headers: { "content-type": "application/json" } });
-    }
-    return new Response("no", { status: 500 });
+    throw new Error("estate door on the fetch lane: " + path);
   });
 }
 
@@ -89,10 +70,16 @@ function tabInfo(address?: string): () => unknown {
 }
 
 function benchDoc(stages: BenchStageRow[], draftId = "bench-p"): Record<string, unknown> {
-  return {
-    draft_id: draftId, rev: 1, log: [],
-    stages: stages.map((s) => ({ ...s, run_status: s.runStatus })),
-  };
+  // rows ride verbatim (readBench passes them through) — the rail
+  // reads the same runStatus seat the snapshot carries.
+  return { draft_id: draftId, rev: 1, log: [], stages };
+}
+
+interface EstateOpts {
+  listRows?: Array<Record<string, unknown>>;
+  startDocs?: Array<Record<string, unknown>>;
+  refusals?: EstateRefusal[];
+  throws?: EstateRefusal[];
 }
 
 interface MountOpts {
@@ -102,38 +89,25 @@ interface MountOpts {
   stages?: BenchStageRow[];
   docStages?: BenchStageRow[];
   draftId?: string;
-  prestage?: Record<string, (args: Record<string, unknown>) => FrameAnswer>;
+  /** Prestaged estate answers — land BEFORE the render, so
+   *  mount-time calls (the adoption effect) read them on call. */
+  estate?: EstateOpts;
 }
 
 function mount(opts: MountOpts = {}): void {
   stubFetch();
-  // prestaged doors land BEFORE the render — mount-time fetches
-  // (the adoption effect) read them on call, never after
-  if (opts.prestage !== undefined) Object.assign(doors.frames, opts.prestage);
   // the rail reads the served doc, the drill reads the live snapshot
   // (two seats, two stage lists — split only when the faces disagree)
   const snapStages = opts.stages ?? STAGES;
   const docStages = opts.docStages ?? snapStages;
-  const doc = benchDoc(docStages, opts.draftId);
-  const impl = globalThis.fetch;
-  vi.stubGlobal("fetch", async (url: unknown, init?: RequestInit): Promise<Response> => {
-    const path = String(url);
-    if (path.startsWith("/api/")) {
-      const frame = JSON.parse(String(init?.body)) as { rpcId: string; method: string };
-      if (frame.method === "bench/get") {
-        return new Response(JSON.stringify({
-          type: "server-response", rpcId: frame.rpcId,
-          result: { ok: true, value: doc },
-        }), { status: 200, headers: { "content-type": "application/json" } });
-      }
-      if (frame.method === "drafts/get") {
-        return new Response(JSON.stringify({
-          type: "server-response", rpcId: frame.rpcId,
-          result: { ok: true, value: { draft_id: "bench-p", bench: { rev: 1 }, stages: docStages } },
-        }), { status: 200, headers: { "content-type": "application/json" } });
-      }
-    }
-    return (impl as typeof fetch)(url, init);
+  fakes = mountEstateFakes({
+    benchDoc: benchDoc(docStages, opts.draftId),
+    draftStages: docStages as Array<Record<string, unknown>>,
+    draftBenchRev: 1,
+    listRows: opts.estate?.listRows,
+    startDocs: opts.estate?.startDocs,
+    refusals: opts.estate?.refusals,
+    throws: opts.estate?.throws,
   });
   const props: Record<string, unknown> = {};
   if (opts.useTabInfo !== undefined) props["useTabInfo"] = opts.useTabInfo;
@@ -203,7 +177,7 @@ describe("the mount guards — hooks and snapshots", () => {
     // adoption's source — the live snapshot is)
     mount({ useResource: () => ({ status: "live", value: { ...BENCH, draftId: "" } }) });
     await waitFor(() => { expect(firstTile()).toBeTruthy(); });
-    expect(doors.posted.some((p) => p.method === "runs/list")).toBe(false);
+    expect(calls().some((p) => p.method === "runs/list")).toBe(false);
   });
 });
 
@@ -234,10 +208,20 @@ describe("the slot consult fallbacks — a nullish claim keeps the fallback", ()
   });
 });
 
+/** The draft-tab wire: discovery fetch + the bound estate fakes
+ *  (the harness's default draft row is the s_0 the snapshots open). */
+function mountDraftWire(estate?: EstateOpts): void {
+  stubFetch();
+  fakes = mountEstateFakes({
+    listRows: estate?.listRows,
+    refusals: estate?.refusals,
+    throws: estate?.throws,
+  });
+}
+
 describe("the latest-run adoption — the estate's newest run arms Stop", () => {
   test("a runless draft keeps the stop noop (the press drops silent)", async () => {
-    stubFetch();
-    doors.frames["runs/list"] = () => ({ value: { runs: [] } });
+    mountDraftWire();
     render(h(CardsTab, {
       useTabInfo: () => ({ tab: {
         kind: "sidebar.right.pane.tab", contentId: undefined,
@@ -266,12 +250,12 @@ describe("the latest-run adoption — the estate's newest run arms Stop", () => 
     // never a throw past the gesture)
     fireEvent.click(screen.getByTestId("slot-stop"));
     await new Promise((r) => setTimeout(r, 200));
-    expect(doors.posted.some((p) => p.method === "runs/stop")).toBe(false);
+    expect(calls().some((p) => p.method === "runs/stop")).toBe(false);
     expect(await screen.findByText("Prompt", {}, { timeout: 4000 })).toBeTruthy();
   });
 
   test("a departed stage voices its absence and the back noop lands silent", async () => {
-    stubFetch();
+    mountDraftWire();
     render(h(CardsTab, {
       useTabInfo: () => ({ tab: {
         kind: "sidebar.right.pane.tab", contentId: undefined,
@@ -292,8 +276,7 @@ describe("the latest-run adoption — the estate's newest run arms Stop", () => 
   });
 
   test("a draft's adopted run arms the slot's stop and the press rides runs/stop", async () => {
-    stubFetch();
-    doors.frames["runs/list"] = () => ({ value: { runs: [{ run_id: "r_9", draft_id: "draft-1", created_at: 7 }] } });
+    mountDraftWire({ listRows: [{ run_id: "r_9", draft_id: "draft-1", created_at: 7 }] });
     const seen: Array<unknown> = [];
     render(h(CardsTab, {
       useTabInfo: () => ({ tab: {
@@ -323,15 +306,16 @@ describe("the latest-run adoption — the estate's newest run arms Stop", () => 
     await waitFor(() => { expect(seen).toContain("r_9"); }, { timeout: 4000 });
     fireEvent.click(await screen.findByTestId("slot-stop", {}, { timeout: 4000 }));
     await waitFor(() => {
-      expect(doors.posted.some((p) => p.method === "runs/stop"
+      expect(calls().some((p) => p.method === "runs/stop"
         && (p.args as Record<string, unknown>)["runId"] === "r_9")).toBe(true);
     });
   });
 
   test("a refused draft cancel voices the refusal (never a silent drop)", async () => {
-    stubFetch();
-    doors.frames["runs/list"] = () => ({ value: { runs: [{ run_id: "r_9", draft_id: "draft-1", created_at: 7 }] } });
-    doors.frames["runs/stop"] = () => ({ refuse: "already gone" });
+    mountDraftWire({
+      listRows: [{ run_id: "r_9", draft_id: "draft-1", created_at: 7 }],
+      refusals: [{ method: "runs/stop", message: "already gone" }],
+    });
     const seen: Array<unknown> = [];
     render(h(CardsTab, {
       useTabInfo: () => ({ tab: {
@@ -363,9 +347,13 @@ describe("the latest-run adoption — the estate's newest run arms Stop", () => 
   });
 
   test("a throwing draft cancel falls back loud (never a throw past the gesture)", async () => {
-    stubFetch();
-    doors.frames["runs/list"] = () => ({ value: { runs: [{ run_id: "r_9", draft_id: "draft-1", created_at: 7 }] } });
-    doors.frames["runs/stop"] = () => ({ thrown: "kablam" });
+    // the old stub threw the bare string "kablam" (a non-Error, so
+    // the client voiced its 'cancel failed' fallback); the live seam
+    // throws Errors, so the queued message IS the voiced text.
+    mountDraftWire({
+      listRows: [{ run_id: "r_9", draft_id: "draft-1", created_at: 7 }],
+      throws: [{ method: "runs/stop", message: "cancel failed" }],
+    });
     const seen: Array<unknown> = [];
     render(h(CardsTab, {
       useTabInfo: () => ({ tab: {
@@ -415,42 +403,46 @@ describe("the latest-run adoption — the estate's newest run arms Stop", () => 
     await screen.findByTestId("stage-preview-seat", {}, { timeout: 4000 });
     fireEvent.click(await screen.findByTestId("slot-stop", {}, { timeout: 4000 }));
     await new Promise((r) => setTimeout(r, 200));
-    expect(doors.posted.some((p) => p.method === "runs/stop")).toBe(false);
+    expect(calls().some((p) => p.method === "runs/stop")).toBe(false);
   });
 
   test("a session run arms the tile stop and the press rides runs/stop", async () => {
-    mount({ docStages: [{ id: "s_0", card: "image-gen", engine: "comfyui", params: {}, runStatus: "running" }] });
-    doors.frames["drafts/patch"] = () => ({ value: { delivered: true, rev: 2 } });
-    doors.frames["runs/start"] = () => ({ value: { run_id: "r_1" } });
+    mount({
+      docStages: [{ id: "s_0", card: "image-gen", engine: "comfyui", params: {}, runStatus: "running" }],
+      estate: { startDocs: [{ run_id: "r_1" }] },
+    });
     const user = userEvent.setup();
     await waitFor(() => { expect(firstTile()).toBeTruthy(); });
     await user.click(firstTile());
     await screen.findByText("Prompt", {}, { timeout: 4000 });
     fireEvent.click(within(zoomCard()).getByRole("button", { name: "Run stage" }));
     await waitFor(() => {
-      expect(doors.posted.some((p) => p.method === "runs/start")).toBe(true);
+      expect(calls().some((p) => p.method === "runs/start")).toBe(true);
     });
     const stop = await screen.findByTestId("tile-stop", {}, { timeout: 4000 });
     expect((stop as HTMLButtonElement).disabled).toBe(false);
     fireEvent.click(stop);
     await waitFor(() => {
-      expect(doors.posted.some((p) => p.method === "runs/stop"
+      expect(calls().some((p) => p.method === "runs/stop"
         && (p.args as Record<string, unknown>)["runId"] === "r_1")).toBe(true);
     });
   });
 
   test("a refused tile stop voices the refusal in the zoom (never silent)", async () => {
-    mount({ docStages: [{ id: "s_0", card: "image-gen", engine: "comfyui", params: {}, runStatus: "running" }] });
-    doors.frames["drafts/patch"] = () => ({ value: { delivered: true, rev: 2 } });
-    doors.frames["runs/start"] = () => ({ value: { run_id: "r_1" } });
-    doors.frames["runs/stop"] = () => ({ refuse: "too late" });
+    mount({
+      docStages: [{ id: "s_0", card: "image-gen", engine: "comfyui", params: {}, runStatus: "running" }],
+      estate: {
+        startDocs: [{ run_id: "r_1" }],
+        refusals: [{ method: "runs/stop", message: "too late" }],
+      },
+    });
     const user = userEvent.setup();
     await waitFor(() => { expect(firstTile()).toBeTruthy(); });
     await user.click(firstTile());
     await screen.findByText("Prompt", {}, { timeout: 4000 });
     fireEvent.click(within(zoomCard()).getByRole("button", { name: "Run stage" }));
     await waitFor(() => {
-      expect(doors.posted.some((p) => p.method === "runs/start")).toBe(true);
+      expect(calls().some((p) => p.method === "runs/start")).toBe(true);
     });
     fireEvent.click(await screen.findByTestId("tile-stop", {}, { timeout: 4000 }));
     // the bench voices the refusal at its own level (above the rail)
@@ -458,17 +450,23 @@ describe("the latest-run adoption — the estate's newest run arms Stop", () => 
   });
 
   test("a throwing tile stop falls back loud in the zoom (never a throw)", async () => {
-    mount({ docStages: [{ id: "s_0", card: "image-gen", engine: "comfyui", params: {}, runStatus: "running" }] });
-    doors.frames["drafts/patch"] = () => ({ value: { delivered: true, rev: 2 } });
-    doors.frames["runs/start"] = () => ({ value: { run_id: "r_1" } });
-    doors.frames["runs/stop"] = () => ({ thrown: "kablam" });
+    // the old stub threw the bare string "kablam" (a non-Error, so
+    // the client voiced its 'stop failed' fallback); the live seam
+    // throws Errors, so the queued message IS the voiced text.
+    mount({
+      docStages: [{ id: "s_0", card: "image-gen", engine: "comfyui", params: {}, runStatus: "running" }],
+      estate: {
+        startDocs: [{ run_id: "r_1" }],
+        throws: [{ method: "runs/stop", message: "stop failed" }],
+      },
+    });
     const user = userEvent.setup();
     await waitFor(() => { expect(firstTile()).toBeTruthy(); });
     await user.click(firstTile());
     await screen.findByText("Prompt", {}, { timeout: 4000 });
     fireEvent.click(within(zoomCard()).getByRole("button", { name: "Run stage" }));
     await waitFor(() => {
-      expect(doors.posted.some((p) => p.method === "runs/start")).toBe(true);
+      expect(calls().some((p) => p.method === "runs/start")).toBe(true);
     });
     fireEvent.click(await screen.findByTestId("tile-stop", {}, { timeout: 4000 }));
     expect(await screen.findByText("stop failed", {}, { timeout: 4000 })).toBeTruthy();

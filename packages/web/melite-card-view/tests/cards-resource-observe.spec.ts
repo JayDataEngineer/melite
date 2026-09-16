@@ -1,9 +1,14 @@
 // cards-resource-observe.spec.ts — observeRunOutcome's poll law and
-// reconcileBenchRuns' attribution (2026-09-16 burn-down). fetch is
-// stubbed whole per test: runs/status answers the poll script,
-// runs/list answers the file-era fallback, drafts/get + drafts/patch
-// serve the outcome writes (the CAS rev rides). Refusals are ok:false
-// (WireRefusedError — the phantom path); throws are transport.
+// reconcileBenchRuns' attribution (2026-09-16 burn-down).
+//
+// THE ONE-LANE LAW (stroke 81): the poll rides the mounted
+// namespaces through mountEstateFakes — no fetch stub answers an
+// estate verb. runs/status scripts ride `runDocs` (served in order,
+// the last lingering for poll loops); the file-era fallback rides
+// `listRows`; refusals queue in `refusals` (one entry per refused
+// call — the start read AND the poll each take one); transport
+// deaths queue in `throws`. Outcome writes are the drafts/patch
+// entries of fakes.calls ({draftId, stageId, patch, expectRev}).
 //
 // NOTE (deleted arm, type-level proof — was the trailing `return
 // null`): observeRunOutcome's settle path is entered only when
@@ -13,311 +18,332 @@
 // exhaustive — the null arm could never fire and is gone (the `as`
 // narrows what the compiler cannot see).
 import { afterEach, describe, expect, test, vi } from "vitest";
+import { unbindEstateRemote } from "@melite/card-base/estate-remote";
+import { mountEstateFakes } from "./estate-harness.ts";
+import type { EstateFakesOptions } from "./estate-harness.ts";
 import {
   observeRunOutcome,
   reconcileBenchRuns,
 } from "../src/client/cards-resource.ts";
 
 afterEach(() => {
+  unbindEstateRemote();
   vi.unstubAllGlobals();
 });
 
-interface Answer { refuse?: string; value?: unknown; boom?: unknown }
+type Fakes = ReturnType<typeof mountEstateFakes>;
 
-function stubEstate(route: (method: string, args: Record<string, unknown>, call: number) => Answer): {
-  patches: Array<Record<string, unknown>>
-  touches: () => number
-} {
-  const patches: Array<Record<string, unknown>> = [];
-  let touched = 0;
-  let calls = 0;
-  vi.stubGlobal("fetch", async (_url: unknown, init?: RequestInit) => {
-    const frame = JSON.parse(String(init?.body)) as {
-      rpcId: string; method: string; payload: { args: Record<string, unknown> };
-    };
-    calls++;
-    const answer = route(frame.method, frame.payload.args, calls);
-    if (answer.boom !== undefined) throw answer.boom;
-    if (frame.method === "drafts/patch") patches.push(frame.payload.args);
-    const result = answer.refuse === undefined
-      ? { ok: true, value: answer.value ?? {} }
-      : { ok: false, error: { message: answer.refuse } };
-    return new Response(JSON.stringify({ type: "server-response", rpcId: frame.rpcId, result }), {
-      status: 200, headers: { "content-type": "application/json" },
-    });
-  });
-  return { patches, touches: () => touched };
+/** Mount the live-lane fakes for one poll test (unmounted by the caller). */
+function stubEstate(opts: EstateFakesOptions = {}): Fakes {
+  return mountEstateFakes(opts);
 }
 
-const DRAFT_DOC = {
-  draft_id: "d_1", intent: "the film", bench: { rev: 9, log: [] },
-  stages: [{ id: "s_0", card: "image-gen", params: {} }],
-};
-
-/** The estate baseline: drafts/* serve the outcome writes. */
-function withDrafts(route: (method: string, args: Record<string, unknown>, call: number) => Answer) {
-  return stubEstate((method, args, call) => {
-    if (method === "drafts/get") return { value: DRAFT_DOC };
-    if (method === "drafts/patch") return { value: { delivered: true } };
-    return route(method, args, call);
-  });
+/** The drafts/patch arg bodies the observer wrote, in order. */
+function patchesOf(fakes: Fakes): Array<Record<string, unknown>> {
+  return fakes.calls
+    .filter((c) => c.method === "drafts/patch")
+    .map((c) => c.args);
 }
 
 const RUNNING = { run_id: "r_1", status: "running", stages: [] };
 
 describe("observeRunOutcome — the start read binds the row first", () => {
   test("a queued start shows queued (never a lie about running)", async () => {
-    const { patches } = withDrafts((method) => {
-      if (method === "runs/status") return { value: { ...RUNNING, status: "queued" } };
-      return { value: {} };
+    // the script answers queued forever (the last doc lingers) —
+    // abort to end the watch.
+    const fakes = stubEstate({
+      runDocs: [{ ...RUNNING, status: "queued" }],
     });
-    // the second poll is terminal — the watch ends on it
-    const ctrl = new AbortController();
-    const done = observeRunOutcome("d_1", "s_0", "r_1", ctrl.signal, () => {});
-    // NOTE: this script answers queued forever — abort to end the watch.
-    await new Promise((r) => setTimeout(r, 100));
-    ctrl.abort();
-    await expect(done).resolves.toBeNull();
-    expect(patches[0]).toMatchObject({
-      draftId: "d_1", stageId: "s_0",
-      patch: { runStatus: "queued", result: { run_id: "r_1" } },
-    });
+    try {
+      const ctrl = new AbortController();
+      const done = observeRunOutcome("d_1", "s_0", "r_1", ctrl.signal, () => {});
+      await new Promise((r) => setTimeout(r, 100));
+      ctrl.abort();
+      await expect(done).resolves.toBeNull();
+      expect(patchesOf(fakes)[0]).toMatchObject({
+        draftId: "d_1", stageId: "s_0",
+        patch: { runStatus: "queued", result: { run_id: "r_1" } },
+      });
+    } finally {
+      fakes.unmount();
+    }
   });
 
   test("a running start through terminal done returns done", async () => {
-    let polls = 0;
-    const { patches } = withDrafts((method) => {
-      if (method === "runs/status") {
-        polls++;
-        return polls === 1
-          ? { value: RUNNING }
-          : { value: { run_id: "r_1", status: "completed", stages: [] } };
-      }
-      return { value: {} };
+    const fakes = stubEstate({
+      runDocs: [RUNNING, { run_id: "r_1", status: "completed", stages: [] }],
     });
-    let touched = 0;
-    await expect(observeRunOutcome("d_1", "s_0", "r_1", undefined, () => { touched++; }))
-      .resolves.toBe("done");
-    expect(polls).toBe(2);
-    expect(patches).toHaveLength(2);
-    expect(patches[0]).toMatchObject({ patch: { runStatus: "running", result: { run_id: "r_1" } } });
-    expect(patches[1]).toMatchObject({ patch: { runStatus: "done", result: { run_id: "r_1" } } });
-    expect(touched).toBe(2);
+    try {
+      let touched = 0;
+      await expect(observeRunOutcome("d_1", "s_0", "r_1", undefined, () => { touched++; }))
+        .resolves.toBe("done");
+      expect(fakes.calls.filter((c) => c.method === "runs/status")).toHaveLength(2);
+      const patches = patchesOf(fakes);
+      expect(patches).toHaveLength(2);
+      expect(patches[0]).toMatchObject({ patch: { runStatus: "running", result: { run_id: "r_1" } } });
+      expect(patches[1]).toMatchObject({ patch: { runStatus: "done", result: { run_id: "r_1" } } });
+      expect(touched).toBe(2);
+    } finally {
+      fakes.unmount();
+    }
   });
 
   test("a dead start read still binds running (transport is not a verdict)", async () => {
-    const { patches } = withDrafts((method) => {
-      if (method === "runs/status") return { boom: new Error("door down") };
-      return { value: {} };
+    const fakes = stubEstate({
+      throws: [{ method: "runs/status", message: "door down" }],
     });
-    const ctrl = new AbortController();
-    ctrl.abort();
-    await expect(observeRunOutcome("d_1", "s_0", "r_1", ctrl.signal)).resolves.toBeNull();
-    expect(patches[0]).toMatchObject({ patch: { runStatus: "running" } });
+    try {
+      const ctrl = new AbortController();
+      ctrl.abort();
+      await expect(observeRunOutcome("d_1", "s_0", "r_1", ctrl.signal)).resolves.toBeNull();
+      expect(patchesOf(fakes)[0]).toMatchObject({ patch: { runStatus: "running" } });
+    } finally {
+      fakes.unmount();
+    }
   });
 });
 
 describe("observeRunOutcome — THE PHANTOM CURE (refused status, file-era verdict)", () => {
-  function phantom(listValue: unknown) {
-    return withDrafts((method) => {
-      if (method === "runs/status") return { refuse: "no such run" };
-      if (method === "runs/list") return { value: listValue };
-      return { value: {} };
+  function phantom(listRows: Array<Record<string, unknown>>): Fakes {
+    return stubEstate({
+      // the start read, the poll, AND probeRunGone's internal read
+      // each burn one refusal — the cure runs on the poll's refusal
+      // and the verdict reads the list.
+      refusals: [
+        { method: "runs/status", message: "no such run" },
+        { method: "runs/status", message: "no such run" },
+        { method: "runs/status", message: "no such run" },
+      ],
+      listRows,
     });
   }
 
   test("absent from both maps: gone → stopped", async () => {
-    const { patches } = phantom({ runs: [] });
-    let touched = 0;
-    await expect(observeRunOutcome("d_1", "s_0", "r_1", undefined, () => { touched++; }))
-      .resolves.toBe("stopped");
-    // [0] is the start binding (a refused start still binds running);
-    // [1] is the phantom verdict.
-    expect(patches[0]).toMatchObject({ patch: { runStatus: "running" } });
-    expect(patches[1]).toMatchObject({ patch: { runStatus: "stopped", result: { run_id: "r_1" } } });
-    expect(touched).toBe(2);
+    const fakes = phantom([]);
+    try {
+      let touched = 0;
+      await expect(observeRunOutcome("d_1", "s_0", "r_1", undefined, () => { touched++; }))
+        .resolves.toBe("stopped");
+      const patches = patchesOf(fakes);
+      // [0] is the start binding (a refused start still binds running);
+      // [1] is the phantom verdict.
+      expect(patches[0]).toMatchObject({ patch: { runStatus: "running" } });
+      expect(patches[1]).toMatchObject({ patch: { runStatus: "stopped", result: { run_id: "r_1" } } });
+      expect(touched).toBe(2);
+    } finally {
+      fakes.unmount();
+    }
   });
 
   test("the list's completed answer: done", async () => {
-    const { patches } = phantom({ runs: [{ run_id: "r_1", status: "completed" }] });
-    await expect(observeRunOutcome("d_1", "s_0", "r_1")).resolves.toBe("done");
-    expect(patches[1]).toMatchObject({ patch: { runStatus: "done" } });
+    const fakes = phantom([{ run_id: "r_1", status: "completed" }]);
+    try {
+      await expect(observeRunOutcome("d_1", "s_0", "r_1")).resolves.toBe("done");
+      expect(patchesOf(fakes)[1]).toMatchObject({ patch: { runStatus: "done" } });
+    } finally {
+      fakes.unmount();
+    }
   });
 
   test("a live verdict from the list keeps watching (returns null, never a fake terminal)", async () => {
-    const { patches } = phantom({ runs: [{ run_id: "r_1", status: "running" }] });
-    await expect(observeRunOutcome("d_1", "s_0", "r_1")).resolves.toBeNull();
-    expect(patches[1]).toMatchObject({ patch: { runStatus: "running" } });
+    const fakes = phantom([{ run_id: "r_1", status: "running" }]);
+    try {
+      await expect(observeRunOutcome("d_1", "s_0", "r_1")).resolves.toBeNull();
+      expect(patchesOf(fakes)[1]).toMatchObject({ patch: { runStatus: "running" } });
+    } finally {
+      fakes.unmount();
+    }
   });
 
   test("a foreign list verdict rides verbatim (the phantom map's word is law)", async () => {
-    const { patches } = phantom({ runs: [{ run_id: "r_1", status: "failed" }] });
-    await expect(observeRunOutcome("d_1", "s_0", "r_1")).resolves.toBe("failed");
-    expect(patches[1]).toMatchObject({ patch: { runStatus: "failed", result: { run_id: "r_1" } } });
+    const fakes = phantom([{ run_id: "r_1", status: "failed" }]);
+    try {
+      await expect(observeRunOutcome("d_1", "s_0", "r_1")).resolves.toBe("failed");
+      expect(patchesOf(fakes)[1]).toMatchObject({ patch: { runStatus: "failed", result: { run_id: "r_1" } } });
+    } finally {
+      fakes.unmount();
+    }
   });
 });
 
 describe("observeRunOutcome — the live fold (progress rides the row)", () => {
   test("percent + activity patch only when they move (no CAS churn)", async () => {
-    let polls = 0;
     const stage = (extra: Record<string, unknown> = {}) => ({
       id: "other", status: "running", url: "",
       ...extra,
     });
-    const { patches } = withDrafts((method) => {
-      if (method === "runs/status") {
-        polls++;
-        if (polls === 1) return { value: RUNNING };
+    const fakes = stubEstate({
+      runDocs: [
+        RUNNING,
         // single-stage fallback: the id never matches, the one stage answers
-        if (polls === 2) return { value: { run_id: "r_1", status: "running", stages: [stage({ activity: "sampling" })] } };
-        if (polls === 3) return { value: { run_id: "r_1", status: "running", stages: [stage({ activity: "sampling" })] } };
-        return { value: { run_id: "r_1", status: "completed", stages: [stage()] } };
-      }
-      return { value: {} };
+        { run_id: "r_1", status: "running", stages: [stage({ activity: "sampling" })] },
+        { run_id: "r_1", status: "running", stages: [stage({ activity: "sampling" })] },
+        { run_id: "r_1", status: "completed", stages: [stage()] },
+      ],
     });
-    await expect(observeRunOutcome("d_1", "s_0", "r_1")).resolves.toBe("done");
-    // start + activity-only + terminal (the repeat poll patches NOTHING)
-    expect(patches.map((p) => p["patch"])).toEqual([
-      { runStatus: "running", result: { run_id: "r_1" } },
-      { runStatus: "running", result: { run_id: "r_1", activity: "sampling" } },
-      { runStatus: "done", result: { run_id: "r_1" } },
-    ]);
+    try {
+      await expect(observeRunOutcome("d_1", "s_0", "r_1")).resolves.toBe("done");
+      // start + activity-only + terminal (the repeat poll patches NOTHING)
+      expect(patchesOf(fakes).map((p) => p["patch"])).toEqual([
+        { runStatus: "running", result: { run_id: "r_1" } },
+        { runStatus: "running", result: { run_id: "r_1", activity: "sampling" } },
+        { runStatus: "done", result: { run_id: "r_1" } },
+      ]);
+    } finally {
+      fakes.unmount();
+    }
   });
 
   test("integer percent rides with the progress body", async () => {
-    let polls = 0;
-    const { patches } = withDrafts((method) => {
-      if (method === "runs/status") {
-        polls++;
-        if (polls === 1) return { value: RUNNING };
-        if (polls === 2) return {
-          value: { run_id: "r_1", status: "running", stages: [
-            { id: "s_0", progress: { value: 1, max: 4 }, activity: "" },
-          ] },
-        };
-        return { value: { run_id: "r_1", status: "completed", stages: [] } };
-      }
-      return { value: {} };
+    const fakes = stubEstate({
+      runDocs: [
+        RUNNING,
+        { run_id: "r_1", status: "running", stages: [
+          { id: "s_0", progress: { value: 1, max: 4 }, activity: "" },
+        ] },
+        { run_id: "r_1", status: "completed", stages: [] },
+      ],
     });
-    await expect(observeRunOutcome("d_1", "s_0", "r_1")).resolves.toBe("done");
-    expect(patches[1]).toMatchObject({
-      patch: { runStatus: "running", result: { run_id: "r_1", progress: { value: 1, max: 4 } } },
-    });
+    try {
+      await expect(observeRunOutcome("d_1", "s_0", "r_1")).resolves.toBe("done");
+      expect(patchesOf(fakes)[1]).toMatchObject({
+        patch: { runStatus: "running", result: { run_id: "r_1", progress: { value: 1, max: 4 } } },
+      });
+    } finally {
+      fakes.unmount();
+    }
   });
 
   test("a resultless live flip patches bare (never a padded result)", async () => {
-    let polls = 0;
-    const { patches } = withDrafts((method) => {
-      if (method === "runs/status") {
-        polls++;
-        if (polls === 1) return { value: RUNNING };
+    const fakes = stubEstate({
+      runDocs: [
+        RUNNING,
         // queued with progress-less, activity-less rows: the move
         // patches, but the result stays off
-        if (polls === 2) return { value: { run_id: "r_1", status: "queued", stages: [{ id: "s_0" }] } };
-        return { value: { run_id: "r_1", status: "completed", stages: [] } };
-      }
-      return { value: {} };
+        { run_id: "r_1", status: "queued", stages: [{ id: "s_0" }] },
+        { run_id: "r_1", status: "completed", stages: [] },
+      ],
     });
-    await expect(observeRunOutcome("d_1", "s_0", "r_1")).resolves.toBe("done");
-    expect(patches.map((p) => p["patch"])).toEqual([
-      { runStatus: "running", result: { run_id: "r_1" } },
-      { runStatus: "queued" },
-      { runStatus: "done", result: { run_id: "r_1" } },
-    ]);
+    try {
+      await expect(observeRunOutcome("d_1", "s_0", "r_1")).resolves.toBe("done");
+      expect(patchesOf(fakes).map((p) => p["patch"])).toEqual([
+        { runStatus: "running", result: { run_id: "r_1" } },
+        { runStatus: "queued" },
+        { runStatus: "done", result: { run_id: "r_1" } },
+      ]);
+    } finally {
+      fakes.unmount();
+    }
   });
-    let polls = 0;
+
   test("a transport blip mid-poll sleeps and recovers (the last ok value stays)", async () => {
-    let polls = 0;
-    const { patches } = withDrafts((method) => {
-      if (method === "runs/status") {
-        polls++;
-        if (polls === 1) return { value: RUNNING };
-        if (polls === 2) return { boom: new Error("blip") };
-        return { value: { run_id: "r_1", status: "completed", stages: [] } };
-      }
-      return { value: {} };
+    const fakes = stubEstate({
+      runDocs: [RUNNING, { run_id: "r_1", status: "completed", stages: [] }],
+      // the blip lands mid-poll (the 2nd status call): the start read
+      // ok'd, the blip sleeps through one cadence with the last ok
+      // value staying, the next poll recovers to terminal.
+      throws: [{ method: "runs/status", message: "blip", onCall: 2 }],
     });
-    await expect(observeRunOutcome("d_1", "s_0", "r_1")).resolves.toBe("done");
-    expect(polls).toBe(3);
-    expect(patches).toHaveLength(2);
+    try {
+      await expect(observeRunOutcome("d_1", "s_0", "r_1")).resolves.toBe("done");
+      expect(fakes.calls.filter((c) => c.method === "runs/status")).toHaveLength(3);
+      expect(patchesOf(fakes)).toHaveLength(2);
+    } finally {
+      fakes.unmount();
+    }
   });
 });
 
 describe("observeRunOutcome — the terminal carry", () => {
-  async function terminal(status: string, doc: Record<string, unknown>): Promise<Record<string, unknown>[]> {
-    let polls = 0;
-    const { patches } = withDrafts((method) => {
-      if (method === "runs/status") {
-        polls++;
-        return polls === 1 ? { value: RUNNING } : { value: { run_id: "r_1", status, ...doc } };
-      }
-      return { value: {} };
+  async function terminal(status: string, doc: Record<string, unknown>): Promise<{ patches: Array<Record<string, unknown>>; fakes: Fakes }> {
+    const fakes = stubEstate({
+      runDocs: [RUNNING, { run_id: "r_1", status, ...doc }],
     });
-    return observeRunOutcome("d_1", "s_0", "r_1").then(() => patches.map((p) => p["patch"] as Record<string, unknown>));
+    await observeRunOutcome("d_1", "s_0", "r_1");
+    return { patches: patchesOf(fakes).map((p) => p["patch"] as Record<string, unknown>), fakes };
   }
 
   test("the stage's own error rides a failed run", async () => {
-    const patches = await terminal("failed", { stages: [{ id: "s_0", error: "node 3 blew up" }] });
-    expect(patches[1]).toMatchObject({
-      runStatus: "failed", result: { run_id: "r_1", error: "node 3 blew up" },
-    });
+    const { patches, fakes } = await terminal("failed", { stages: [{ id: "s_0", error: "node 3 blew up" }] });
+    try {
+      expect(patches[1]).toMatchObject({
+        runStatus: "failed", result: { run_id: "r_1", error: "node 3 blew up" },
+      });
+    } finally {
+      fakes.unmount();
+    }
   });
 
   test("the run-level text is the fallback reason", async () => {
-    const patches = await terminal("failed", { error: "gpu gone", stages: [] });
-    expect(patches[1]).toMatchObject({
-      runStatus: "failed", result: { run_id: "r_1", error: "gpu gone" },
-    });
+    const { patches, fakes } = await terminal("failed", { error: "gpu gone", stages: [] });
+    try {
+      expect(patches[1]).toMatchObject({
+        runStatus: "failed", result: { run_id: "r_1", error: "gpu gone" },
+      });
+    } finally {
+      fakes.unmount();
+    }
   });
 
   test("no reason anywhere carries no error key (never an empty lie)", async () => {
-    const patches = await terminal("failed", { stages: [] });
-    expect(patches[1]).toEqual({ runStatus: "failed", result: { run_id: "r_1" } });
+    const { patches, fakes } = await terminal("failed", { stages: [] });
+    try {
+      expect(patches[1]).toEqual({ runStatus: "failed", result: { run_id: "r_1" } });
+    } finally {
+      fakes.unmount();
+    }
   });
 
   test("gallery names rewrite onto the media route (empties filter out)", async () => {
-    const patches = await terminal("completed", {
+    const { patches, fakes } = await terminal("completed", {
       stages: [{ id: "s_0", status: "succeeded", url: "out/flat.mp4", gallery: [{ name: "" }, { name: "a.png" }] }],
     });
-    expect(patches[1]).toEqual({
-      runStatus: "done",
-      result: {
-        run_id: "r_1",
-        url: "/melite-media/runs/r_1/out/flat.mp4",
-        artifacts: {
-          video: "/melite-media/runs/r_1/out/flat.mp4",
-          "a.png": "/melite-media/runs/r_1/a.png",
+    try {
+      expect(patches[1]).toEqual({
+        runStatus: "done",
+        result: {
+          run_id: "r_1",
+          url: "/melite-media/runs/r_1/out/flat.mp4",
+          artifacts: {
+            video: "/melite-media/runs/r_1/out/flat.mp4",
+            "a.png": "/melite-media/runs/r_1/a.png",
+          },
+          assetUrls: ["/melite-media/runs/r_1/out/flat.mp4", "/melite-media/runs/r_1/a.png"],
         },
-        assetUrls: ["/melite-media/runs/r_1/out/flat.mp4", "/melite-media/runs/r_1/a.png"],
-      },
-    });
+      });
+    } finally {
+      fakes.unmount();
+    }
   });
 
   test("a bare stage url carries no video key (never an empty artifact)", async () => {
-    const patches = await terminal("completed", {
+    const { patches, fakes } = await terminal("completed", {
       stages: [{ id: "s_0", status: "succeeded", url: "", gallery: [{ name: "a.png" }] }],
     });
-    expect(patches[1]).toEqual({
-      runStatus: "done",
-      result: {
-        run_id: "r_1",
-        artifacts: { "a.png": "/melite-media/runs/r_1/a.png" },
-        assetUrls: ["/melite-media/runs/r_1/a.png"],
-      },
-    });
+    try {
+      expect(patches[1]).toEqual({
+        runStatus: "done",
+        result: {
+          run_id: "r_1",
+          artifacts: { "a.png": "/melite-media/runs/r_1/a.png" },
+          assetUrls: ["/melite-media/runs/r_1/a.png"],
+        },
+      });
+    } finally {
+      fakes.unmount();
+    }
   });
 
   test("stopped returns stopped", async () => {
-    let polls = 0;
-    const { patches } = withDrafts((method) => {
-      if (method === "runs/status") {
-        polls++;
-        return polls === 1 ? { value: RUNNING } : { value: { run_id: "r_1", status: "stopped", stages: [] } };
-      }
-      return { value: {} };
+    const fakes = stubEstate({
+      runDocs: [RUNNING, { run_id: "r_1", status: "stopped", stages: [] }],
     });
-    await expect(observeRunOutcome("d_1", "s_0", "r_1")).resolves.toBe("stopped");
-    expect(patches[1]).toMatchObject({ patch: { runStatus: "stopped" } });
+    try {
+      await expect(observeRunOutcome("d_1", "s_0", "r_1")).resolves.toBe("stopped");
+      expect(patchesOf(fakes)[1]).toMatchObject({ patch: { runStatus: "stopped" } });
+    } finally {
+      fakes.unmount();
+    }
   });
 });
 
@@ -327,86 +353,108 @@ describe("reconcileBenchRuns — the attribution half", () => {
   });
 
   test("idle rows and runless rows are skipped silently", async () => {
-    const { patches } = withDrafts(() => ({ value: {} }));
-    await reconcileBenchRuns(bench([
-      { id: "s_0", runStatus: "done", result: { run_id: "r_1" } },
-      { id: "s_1", runStatus: "running" },
-      { id: "s_2", runStatus: "running", result: null },
-    ]));
-    expect(patches).toEqual([]);
+    const fakes = stubEstate();
+    try {
+      await reconcileBenchRuns(bench([
+        { id: "s_0", runStatus: "done", result: { run_id: "r_1" } },
+        { id: "s_1", runStatus: "running" },
+        { id: "s_2", runStatus: "running", result: null },
+      ]));
+      expect(patchesOf(fakes)).toEqual([]);
+    } finally {
+      fakes.unmount();
+    }
   });
 
   test("an already-armed key is skipped (the set is the caller's)", async () => {
-    const { patches } = withDrafts(() => ({ value: {} }));
-    await reconcileBenchRuns(bench([
-      { id: "s_0", runStatus: "running", result: { run_id: "r_1" } },
-    ]), { armed: new Set(["s_0:r_1"]) });
-    expect(patches).toEqual([]);
+    const fakes = stubEstate();
+    try {
+      await reconcileBenchRuns(bench([
+        { id: "s_0", runStatus: "running", result: { run_id: "r_1" } },
+      ]), { armed: new Set(["s_0:r_1"]) });
+      expect(patchesOf(fakes)).toEqual([]);
+    } finally {
+      fakes.unmount();
+    }
   });
 
   test("a transport verdict disarms (a later refresh retries)", async () => {
-    const armed = new Set<string>();
-    const { patches } = withDrafts((method) => {
-      if (method === "runs/status") return { boom: new Error("blip") };
-      return { value: {} };
+    const fakes = stubEstate({
+      throws: [{ method: "runs/status", message: "blip" }],
     });
-    await reconcileBenchRuns(bench([
-      { id: "s_0", runStatus: "running", result: { run_id: "r_1" } },
-    ]), { armed });
-    expect(armed.has("s_0:r_1")).toBe(false);
-    expect(patches).toEqual([]);
+    try {
+      const armed = new Set<string>();
+      await reconcileBenchRuns(bench([
+        { id: "s_0", runStatus: "running", result: { run_id: "r_1" } },
+      ]), { armed });
+      expect(armed.has("s_0:r_1")).toBe(false);
+      expect(patchesOf(fakes)).toEqual([]);
+    } finally {
+      fakes.unmount();
+    }
   });
 
   test("a live row arms an observer (the start binds running first)", async () => {
-    const { patches } = withDrafts((method) => {
-      if (method === "runs/status") return { value: RUNNING };
-      return { value: {} };
+    const fakes = stubEstate({
+      runDocs: [RUNNING],
     });
-    const ctrl = new AbortController();
-    ctrl.abort();
-    await reconcileBenchRuns(bench([
-      { id: "s_0", runStatus: "running", result: { run_id: "r_1" } },
-    ]), { signal: ctrl.signal });
-    // the observer floats (void) — flush it before reading the writes
-    await new Promise((r) => setTimeout(r, 100));
-    expect(patches[0]).toMatchObject({ patch: { runStatus: "running" } });
+    try {
+      const ctrl = new AbortController();
+      ctrl.abort();
+      await reconcileBenchRuns(bench([
+        { id: "s_0", runStatus: "running", result: { run_id: "r_1" } },
+      ]), { signal: ctrl.signal });
+      // the observer floats (void) — flush it before reading the writes
+      await new Promise((r) => setTimeout(r, 100));
+      expect(patchesOf(fakes)[0]).toMatchObject({ patch: { runStatus: "running" } });
+    } finally {
+      fakes.unmount();
+    }
   });
 
   test("a gone row flips stopped", async () => {
-    const { patches } = withDrafts((method) => {
-      if (method === "runs/status") return { refuse: "no such run" };
-      if (method === "runs/list") return { value: { runs: [] } };
-      return { value: {} };
+    const fakes = stubEstate({
+      refusals: [{ method: "runs/status", message: "no such run" }],
     });
-    let touched = 0;
-    await reconcileBenchRuns(bench([
-      { id: "s_0", runStatus: "queued", result: { run_id: "r_1" } },
-    ]), { onTouched: () => { touched++; } });
-    expect(patches[0]).toMatchObject({ patch: { runStatus: "stopped" } });
-    expect(touched).toBe(1);
+    try {
+      let touched = 0;
+      await reconcileBenchRuns(bench([
+        { id: "s_0", runStatus: "queued", result: { run_id: "r_1" } },
+      ]), { onTouched: () => { touched++; } });
+      expect(patchesOf(fakes)[0]).toMatchObject({ patch: { runStatus: "stopped" } });
+      expect(touched).toBe(1);
+    } finally {
+      fakes.unmount();
+    }
   });
 
   test("a listed completed row flips done", async () => {
-    const { patches } = withDrafts((method) => {
-      if (method === "runs/status") return { refuse: "no such run" };
-      if (method === "runs/list") return { value: { runs: [{ run_id: "r_1", status: "completed" }] } };
-      return { value: {} };
+    const fakes = stubEstate({
+      refusals: [{ method: "runs/status", message: "no such run" }],
+      listRows: [{ run_id: "r_1", status: "completed" }],
     });
-    await reconcileBenchRuns(bench([
-      { id: "s_0", runStatus: "running", result: { run_id: "r_1" } },
-    ]));
-    expect(patches[0]).toMatchObject({ patch: { runStatus: "done" } });
+    try {
+      await reconcileBenchRuns(bench([
+        { id: "s_0", runStatus: "running", result: { run_id: "r_1" } },
+      ]));
+      expect(patchesOf(fakes)[0]).toMatchObject({ patch: { runStatus: "done" } });
+    } finally {
+      fakes.unmount();
+    }
   });
 
   test("a listed foreign verdict rides verbatim (never paraphrased)", async () => {
-    const { patches } = withDrafts((method) => {
-      if (method === "runs/status") return { refuse: "no such run" };
-      if (method === "runs/list") return { value: { runs: [{ run_id: "r_1", status: "failed" }] } };
-      return { value: {} };
+    const fakes = stubEstate({
+      refusals: [{ method: "runs/status", message: "no such run" }],
+      listRows: [{ run_id: "r_1", status: "failed" }],
     });
-    await reconcileBenchRuns(bench([
-      { id: "s_0", runStatus: "running", result: { run_id: "r_1" } },
-    ]));
-    expect(patches[0]).toMatchObject({ patch: { runStatus: "failed" } });
+    try {
+      await reconcileBenchRuns(bench([
+        { id: "s_0", runStatus: "running", result: { run_id: "r_1" } },
+      ]));
+      expect(patchesOf(fakes)[0]).toMatchObject({ patch: { runStatus: "failed" } });
+    } finally {
+      fakes.unmount();
+    }
   });
 });

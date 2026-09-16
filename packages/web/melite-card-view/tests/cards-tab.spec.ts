@@ -11,16 +11,18 @@
 //                (drafts/get → bench/get rev → per-stage
 //                bench/add-stage as the user, CAS-chained).
 //
-// fetch is stubbed whole per method — the wire frame the tab posts
-// is asserted, the canned server-response frames answer. React
+// Estate verbs ride mountEstateFakes (the one-lane seam); fetch
+// answers ONLY the /v1 discovery doors (catalog, form-spec). React
 // rendering (Modal drilldown, buttons) rides the live shell, not
 // jsdom — the pure laws above are what pinned the regressions.
-import { describe, expect, test, afterEach } from "vitest";
+import { describe, expect, test, afterEach, vi } from "vitest";
 import { resetCardFamiliesCache } from "@melite-plugin/melite-run-wire";
 import { resolveCardsAddress, groupStagesByCard, runCardStage, runBenchSequential } from "../src/client/CardsTab.tsx";
 import { schemaEnvelope } from "../src/client/spec-form.tsx";
 import { readRun, restoreRunToBench } from "../src/client/cards-resource.ts";
 import type { BenchStageRow, CardsBenchValue, CardsRunValue } from "../src/client/cards-resource.ts";
+import { mountEstateFakes } from "./estate-harness.ts";
+import { unbindEstateRemote } from "@melite/card-base/estate-remote";
 
 function stage(over: Partial<BenchStageRow> & { id: string }): BenchStageRow {
   return { engine: "comfyui", ...over };
@@ -71,48 +73,42 @@ describe("readRun — the draft key rides the value", () => {
 
 interface Call { method: string; args: Record<string, unknown> }
 
-let calls: Call[] = [];
-let routes: Record<string, (args: Record<string, unknown>, n: number) => { ok: boolean; value?: unknown; error?: string }> = {};
-let seen: Record<string, number> = {};
-let catalog: Record<string, unknown> = { cards: { "img-to-mesh": { families: ["trellis2-native"] } } };
+let fakes: { calls: Call[]; unmount: () => void } | null = null;
 
-function stubWire(): void {
-  calls = [];
-  seen = {};
-  routes = {};
-  (globalThis as Record<string, unknown>)["fetch"] = async (url: unknown, init?: { body?: unknown }): Promise<unknown> => {
-    // the catalog arm (the family currency door — a GET, no frame)
-    if (String(url) === "/v1/model-catalog") {
-      return { ok: true, json: async () => catalog };
+function stubCatalogFetch(catalog: Record<string, unknown> = { cards: { "img-to-mesh": { families: ["trellis2-native"] } } }): void {
+  vi.stubGlobal("fetch", async (url: unknown): Promise<Response> => {
+    const path = String(url);
+    if (path === "/v1/model-catalog") {
+      return new Response(JSON.stringify(catalog), {
+        status: 200, headers: { "content-type": "application/json" },
+      });
     }
-    // the form-spec arm (the declared surface — GET /v1/form-spec?model=<card>)
-    if (String(url).startsWith("/v1/form-spec")) {
-      return { ok: true, json: async () => ({ form: "img-to-mesh", schema: schemaEnvelope({
+    if (path.startsWith("/v1/form-spec")) {
+      return new Response(JSON.stringify({ form: "img-to-mesh", schema: schemaEnvelope({
         input_image: { type: "string", meta: { description: "Source image", extra: { wtype: "image" } } },
         resolution: { consts: ["512", "1024", "1536"], meta: { description: "Resolution" } },
-      }) }) };
+      }) }), {
+        status: 200, headers: { "content-type": "application/json" },
+      });
     }
-    const frame = JSON.parse(String(init?.body)) as { rpcId: string; method: string; payload: { args: Record<string, unknown> } };
-    calls.push({ method: frame.method, args: frame.payload.args });
-    const n = (seen[frame.method] ?? 0) + 1;
-    seen[frame.method] = n;
-    const route = routes[frame.method];
-    const out = route !== undefined
-      ? route(frame.payload.args, n)
-      : { ok: false as const, error: "unstubbed " + frame.method };
-    return {
-      ok: true,
-      json: async () => ({
-        type: "server-response",
-        rpcId: frame.rpcId,
-        result: out.ok ? { ok: true, value: out.value } : { ok: false, error: { message: out.error } },
-      }),
-    };
-  };
+    throw new Error("estate door on the fetch lane: " + path);
+  });
 }
 
-const realFetch = globalThis.fetch;
-afterEach(() => { (globalThis as Record<string, unknown>)["fetch"] = realFetch; });
+function mountFakes(opts: Parameters<typeof mountEstateFakes>[0] = {}): { calls: Call[] } {
+  fakes?.unmount();
+  const estate = mountEstateFakes(opts);
+  fakes = estate;
+  return { calls: estate.calls };
+}
+
+afterEach(() => {
+  fakes?.unmount();
+  fakes = null;
+  unbindEstateRemote();
+  vi.unstubAllGlobals();
+  resetCardFamiliesCache();
+});
 
 function run(over: Partial<CardsRunValue> = {}): CardsRunValue {
   return { kind: "run", runId: "r1", status: "completed", draftId: "bench-main", stages: [], lastFrame: undefined, ...over };
@@ -120,13 +116,16 @@ function run(over: Partial<CardsRunValue> = {}): CardsRunValue {
 
 describe("restoreRunToBench — the card back into a flow", () => {
   test("drafts/get → bench/get rev → per-stage add-stage as the user, rev chained", async () => {
-    stubWire();
-    routes["drafts/get"] = () => ({ ok: true, value: { stages: [
-      { id: "s_0", card: "image-gen", engine: "comfyui", params: { prompt: "a sailboat" } },
-      { id: "s_1", card: "tts", params: { text: "hi" } },
-    ] } });
-    routes["bench/get"] = () => ({ ok: true, value: { draft_id: "bench-main", rev: 21, stages: [], log: [] } });
-    routes["bench/add-stage"] = (_args, n) => ({ ok: true, value: { draft_id: "bench-main", session: "main", rev: 21 + n, stage: "s" } });
+    const { calls } = mountFakes({
+      draftStages: [
+        { id: "s_0", card: "image-gen", engine: "comfyui", params: { prompt: "a sailboat" } },
+        { id: "s_1", card: "tts", params: { text: "hi" } },
+      ],
+      benchDoc: { draft_id: "bench-main", rev: 21, stages: [], log: [] },
+      // the estate stamps 22 on the first add (the old {rev: 21+n}
+      // answers verbatim) — the second add chains it.
+      addStageRevs: [22, 23],
+    });
     const report = await restoreRunToBench(run());
     expect(report).toEqual({ added: 2, skipped: 0, notes: [] });
     expect(calls.map((c) => c.method)).toEqual(["drafts/get", "bench/get", "bench/add-stage", "bench/add-stage"]);
@@ -142,23 +141,24 @@ describe("restoreRunToBench — the card back into a flow", () => {
   });
 
   test("a run naming no draft throws before any fetch", async () => {
-    stubWire();
+    const { calls } = mountFakes();
     await expect(restoreRunToBench(run({ draftId: null }))).rejects.toThrow("names no draft");
     expect(calls).toEqual([]);
   });
 
   test("an unreadable draft throws with the door's text, bench untouched", async () => {
-    stubWire();
-    routes["drafts/get"] = () => ({ ok: false, error: "draft/gone: bench-main retired" });
+    const { calls } = mountFakes({
+      refusals: [{ method: "drafts/get", message: "draft/gone: bench-main retired" }],
+    });
     await expect(restoreRunToBench(run())).rejects.toThrow("producing draft is unreadable: draft/gone: bench-main retired");
     expect(calls.map((c) => c.method)).toEqual(["drafts/get"]);
   });
 
   test("cardless stages skip and count, the rest land", async () => {
-    stubWire();
-    routes["drafts/get"] = () => ({ ok: true, value: { stages: [{ id: "s_0" }, { id: "s_1", card: "image-gen" }] } });
-    routes["bench/get"] = () => ({ ok: true, value: { rev: 3 } });
-    routes["bench/add-stage"] = () => ({ ok: true, value: { rev: 4 } });
+    const { calls } = mountFakes({
+      draftStages: [{ id: "s_0" }, { id: "s_1", card: "image-gen" }],
+      benchDoc: { draft_id: "bench-main", rev: 3, stages: [], log: [] },
+    });
     const report = await restoreRunToBench(run());
     expect(report.added).toBe(1);
     expect(report.skipped).toBe(1);
@@ -166,15 +166,11 @@ describe("restoreRunToBench — the card back into a flow", () => {
   });
 
   test("an id collision retries once without the id and notes it", async () => {
-    stubWire();
-    routes["drafts/get"] = () => ({ ok: true, value: { stages: [{ id: "s_0", card: "image-gen" }] } });
-    routes["bench/get"] = () => ({ ok: true, value: { rev: 7 } });
-    routes["bench/add-stage"] = (args) => {
-      const doc = (args["doc"] ?? {}) as Record<string, unknown>;
-      return doc["id"] === undefined
-        ? { ok: true, value: { rev: 8 } }
-        : { ok: false, error: "stage id already on the bench: s_0" };
-    };
+    const { calls } = mountFakes({
+      draftStages: [{ id: "s_0", card: "image-gen" }],
+      benchDoc: { draft_id: "bench-main", rev: 7, stages: [], log: [] },
+      refusals: [{ method: "bench/add-stage", message: "stage id already on the bench: s_0" }],
+    });
     const report = await restoreRunToBench(run());
     expect(report.added).toBe(1);
     expect(report.notes).toEqual(["s_0 was already on the bench — added under a fresh id"]);
@@ -186,16 +182,17 @@ describe("restoreRunToBench — the card back into a flow", () => {
   });
 
   test("a real refusal stops the restore and names what landed", async () => {
-    stubWire();
-    routes["drafts/get"] = () => ({ ok: true, value: { stages: [
-      { id: "s_0", card: "image-gen" },
-      { id: "s_1", card: "tts" },
-    ] } });
-    routes["bench/get"] = () => ({ ok: true, value: { rev: 1 } });
-    routes["bench/add-stage"] = (_args, n) => n === 1
-      ? { ok: true, value: { rev: 2 } }
-      : { ok: false, error: "bench/cas-conflict: stale rev" };
+    const { calls } = mountFakes({
+      draftStages: [
+        { id: "s_0", card: "image-gen" },
+        { id: "s_1", card: "tts" },
+      ],
+      benchDoc: { draft_id: "bench-main", rev: 1, stages: [], log: [] },
+      addStageRevs: [2],
+      refusals: [{ method: "bench/add-stage", message: "bench/cas-conflict: stale rev", onCall: 2 }],
+    });
     await expect(restoreRunToBench(run())).rejects.toThrow("restore stopped after 1 stage(s): bench/cas-conflict: stale rev");
+    expect(calls.filter((c) => c.method === "bench/add-stage")).toHaveLength(2);
   });
 });
 
@@ -205,24 +202,15 @@ describe("restoreRunToBench — the card back into a flow", () => {
 
 describe("runCardStage / runBenchSequential — the door contract", () => {
   test("one card stage starts through the composing {model:} door", async () => {
-    stubWire();
+    const { calls } = mountFakes({
+      startDocs: [{ run_id: "run-9", status: "queued", queue_position: 0 }],
+    });
+    stubCatalogFetch({ cards: { "img-to-mesh": { id: "img-to-mesh", families: ["trellis2-native", "pixal3d", "transfer_rig"] } } });
     resetCardFamiliesCache();
-    const realFetchRef = globalThis.fetch;
-    // the catalog arm (families currency) + the wire arm in one stub
-    (globalThis as Record<string, unknown>)["fetch"] = async (url: unknown, init?: { body?: unknown }): Promise<unknown> => {
-      if (String(url) === "/v1/model-catalog") {
-        return { ok: true, json: async () => ({ cards: { "img-to-mesh": { id: "img-to-mesh", families: ["trellis2-native", "pixal3d", "transfer_rig"] } } }) };
-      }
-      const frame = JSON.parse(String(init?.body)) as { rpcId: string; method: string; payload: { args: Record<string, unknown> } };
-      calls.push({ method: frame.method, args: frame.payload.args });
-      return { ok: true, json: async () => ({ type: "server-response", rpcId: frame.rpcId, result: { ok: true, value: { run_id: "run-9", status: "queued", queue_position: 0 } } }) };
-    };
     const res = await runCardStage("bench-main", stage({
       card: "img-to-mesh",
       params: { input_image: "drop.png", resolution: "1024" },
     }));
-    (globalThis as Record<string, unknown>)["fetch"] = realFetchRef;
-    resetCardFamiliesCache();
     expect(res).toEqual({ runId: "run-9" });
     // THE FRESH-READ FIRST (2026-09-13): the composing door reads the
     // estate's row before starting (the drop law) — the read precedes
@@ -242,28 +230,21 @@ describe("runCardStage / runBenchSequential — the door contract", () => {
   });
 
   test("a stage naming no card refuses before the wire", async () => {
-    stubWire();
+    const { calls } = mountFakes();
+    stubCatalogFetch();
     resetCardFamiliesCache();
     const res = await runCardStage("bench-main", stage({ params: {} }));
     expect(res).toEqual({ refused: "this stage names no card — nothing to compose" });
     expect(calls).toEqual([]);
-    resetCardFamiliesCache();
   });
 
   test("a compose refusal rides the estate's own text, never a throw", async () => {
-    stubWire();
+    mountFakes({
+      refusals: [{ method: "runs/start", message: "required param 'input_image' missing on the trellis2-native card — the 3D lift is image-conditioned (no text prompt rides this lane)" }],
+    });
+    stubCatalogFetch({ cards: { "img-to-mesh": { families: ["trellis2-native"] } } });
     resetCardFamiliesCache();
-    const realFetchRef = globalThis.fetch;
-    (globalThis as Record<string, unknown>)["fetch"] = async (url: unknown, init?: { body?: unknown }): Promise<unknown> => {
-      if (String(url) === "/v1/model-catalog") {
-        return { ok: true, json: async () => ({ cards: { "img-to-mesh": { families: ["trellis2-native"] } } }) };
-      }
-      const frame = JSON.parse(String(init?.body)) as { rpcId: string; method: string; payload: { args: Record<string, unknown> } };
-      return { ok: true, json: async () => ({ type: "server-response", rpcId: frame.rpcId, result: { ok: false, error: { message: "required param 'input_image' missing on the trellis2-native card — the 3D lift is image-conditioned (no text prompt rides this lane)" } } }) };
-    };
     const res = await runCardStage("bench-main", stage({ card: "img-to-mesh", params: {} }));
-    (globalThis as Record<string, unknown>)["fetch"] = realFetchRef;
-    resetCardFamiliesCache();
     expect(res).toEqual({ refused: "required param 'input_image' missing on the trellis2-native card — the 3D lift is image-conditioned (no text prompt rides this lane)" });
   });
 
@@ -271,15 +252,15 @@ describe("runCardStage / runBenchSequential — the door contract", () => {
   //  per card IN ORDER, skip done, stop on failure — never one flow
   //  run (the flow_inline door serves the chain/graph surface).
   test("Run ALL runs each card in order, one runs/start per card", async () => {
-    stubWire();
+    const completed = (rid: string): Record<string, unknown> => ({
+      run_id: rid, status: "completed",
+      stages: [{ id: "default", url: "/melite-media/runs/" + rid + "/out.png" }],
+    });
+    const { calls } = mountFakes({
+      runDocs: [completed("run-1")],
+    });
+    stubCatalogFetch();
     resetCardFamiliesCache();
-    let n = 0;
-    routes["runs/start"] = () => { n += 1; return { ok: true, value: { run_id: "run-" + n, status: "queued", queue_position: 0 } }; };
-    routes["runs/status"] = (a: Record<string, unknown>) => {
-      const rid = String(a["run_id"] ?? "");
-      return { ok: true, value: { run_id: rid, status: "completed", stages: [{ id: "default", url: "/melite-media/runs/" + rid + "/out.png" }] } };
-    };
-    routes["drafts/patch"] = (a: Record<string, unknown>) => ({ ok: true, value: { draftId: a["draftId"], stageId: a["stageId"], delivered: true, patched: ["runStatus"] } });
     const bench: CardsBenchValue = { kind: "bench", draftId: "bench-main", rev: 5, log: [], stages: [
       stage({ id: "s_1", card: "image-gen", params: { prompt: "x" } }),
       stage({ id: "s_2", card: "img-to-mesh", params: { input_image: "/melite-media/runs/run-1/out.png" } }),
@@ -288,21 +269,22 @@ describe("runCardStage / runBenchSequential — the door contract", () => {
     expect(res).toEqual({ ran: ["s_1", "s_2"], stoppedAt: null, refused: null });
     // ONE run per card, in bench order
     const starts = calls.filter((c) => c.method === "runs/start");
-    expect(starts.map((c) => c.args["doc"]["input_image"] ?? c.args["doc"]["prompt"])).toEqual(["x", "/melite-media/runs/run-1/out.png"]);
-    resetCardFamiliesCache();
+    expect(starts.map((c) => (c.args["doc"] as Record<string, unknown>)["input_image"] ?? (c.args["doc"] as Record<string, unknown>)["prompt"])).toEqual(["x", "/melite-media/runs/run-1/out.png"]);
   });
 
   test("Run ALL skips done cards (the cache-hit skip) and stops at a failure", async () => {
-    stubWire();
+    const completed = (rid: string): Record<string, unknown> => ({
+      run_id: rid, status: "completed",
+      stages: [{ id: "default", url: "/melite-media/runs/" + rid + "/out.png" }],
+    });
+    const failed = (rid: string): Record<string, unknown> => ({ run_id: rid, status: "failed", stages: [] });
+    const { calls } = mountFakes({
+      // two reads per run (open + poll): the first run burns two
+      // completed docs, the second lingers on failed.
+      runDocs: [completed("run-1"), completed("run-1"), failed("run-2")],
+    });
+    stubCatalogFetch();
     resetCardFamiliesCache();
-    let n = 0;
-    routes["runs/start"] = () => { n += 1; return { ok: true, value: { run_id: "run-" + n, status: "queued", queue_position: 0 } }; };
-    routes["runs/status"] = (a: Record<string, unknown>) => {
-      const rid = String(a["runId"] ?? "");
-      const failed = rid === "run-2";
-      return { ok: true, value: { run_id: rid, status: failed ? "failed" : "completed", stages: failed ? [] : [{ id: "default", url: "/melite-media/runs/" + rid + "/out.png" }] } };
-    };
-    routes["drafts/patch"] = (a: Record<string, unknown>) => ({ ok: true, value: { draftId: a["draftId"], stageId: a["stageId"], delivered: true, patched: ["runStatus"] } });
     const bench: CardsBenchValue = { kind: "bench", draftId: "bench-main", rev: 5, log: [], stages: [
       stage({ id: "s_0", card: "image-gen", params: { prompt: "done already" }, runStatus: "done" }),
       stage({ id: "s_1", card: "image-gen", params: { prompt: "fails" } }),
@@ -313,13 +295,14 @@ describe("runCardStage / runBenchSequential — the door contract", () => {
     // pass stops there (a stopped card still RAN — it's in the list)
     expect(res).toEqual({ ran: ["s_1", "s_2"], stoppedAt: "s_2", refused: null });
     expect(calls.filter((c) => c.method === "runs/start").length).toBe(2); // s_0 never started
-    resetCardFamiliesCache();
   });
 
   test("Run ALL surfaces a typed refusal and stops the pass there", async () => {
-    stubWire();
+    const { calls } = mountFakes({
+      refusals: [{ method: "runs/start", message: "required param 'input_image' missing on the trellis2-native card — the 3D lift is image-conditioned" }],
+    });
+    stubCatalogFetch();
     resetCardFamiliesCache();
-    routes["runs/start"] = () => ({ ok: false, error: "required param 'input_image' missing on the trellis2-native card — the 3D lift is image-conditioned" });
     const bench: CardsBenchValue = { kind: "bench", draftId: "bench-main", rev: 5, log: [], stages: [
       stage({ id: "s_1", card: "img-to-mesh", params: {} }),
       stage({ id: "s_2", card: "image-gen", params: { prompt: "never reached" } }),
@@ -328,7 +311,6 @@ describe("runCardStage / runBenchSequential — the door contract", () => {
     expect(res.stoppedAt).toBe("s_1");
     expect(String(res.refused)).toContain("input_image");
     expect(calls.filter((c) => c.method === "runs/start").length).toBe(1);
-    resetCardFamiliesCache();
   });
 
   // ── THE PARAM IS THE WIRE (2026-09-12, the two-month law
@@ -336,9 +318,11 @@ describe("runCardStage / runBenchSequential — the door contract", () => {
   //  an upstream output's media-route url — rides the start doc
   //  VERBATIM; no client-side edge resolution exists.
   test("a picked upstream output rides the start doc verbatim", async () => {
-    stubWire();
+    const { calls } = mountFakes({
+      startDocs: [{ run_id: "run-9", status: "queued", queue_position: 0 }],
+    });
+    stubCatalogFetch();
     resetCardFamiliesCache();
-    routes["runs/start"] = () => ({ ok: true, value: { run_id: "run-9", status: "queued", queue_position: 0 } });
     const res = await runCardStage("bench-main", stage({
       id: "s_1",
       card: "img-to-mesh",
@@ -348,13 +332,14 @@ describe("runCardStage / runBenchSequential — the door contract", () => {
     const doc = (calls.find((c) => c.method === "runs/start")?.args["doc"] ?? {}) as Record<string, unknown>;
     expect(doc["input_image"]).toBe("/melite-media/runs/run-8/img/gen_00001_.png");
     expect(doc["model"]).toBe("trellis2-native");
-    resetCardFamiliesCache();
   });
 
   test("a legacy numeric select value rides the spec's declared option spelling", async () => {
-    stubWire();
+    const { calls } = mountFakes({
+      startDocs: [{ run_id: "run-9", status: "queued", queue_position: 0 }],
+    });
+    stubCatalogFetch();
     resetCardFamiliesCache();
-    routes["runs/start"] = () => ({ ok: true, value: { run_id: "run-9", status: "queued", queue_position: 0 } });
     await runCardStage("bench-main", stage({
       id: "s_1",
       card: "img-to-mesh",
@@ -362,13 +347,14 @@ describe("runCardStage / runBenchSequential — the door contract", () => {
     }));
     const doc = (calls.find((c) => c.method === "runs/start")?.args["doc"] ?? {}) as Record<string, unknown>;
     expect(doc["resolution"]).toBe("1024");
-    resetCardFamiliesCache();
   });
 
   test("an upload's estate path rides verbatim too — no rewriting at the seam", async () => {
-    stubWire();
+    const { calls } = mountFakes({
+      startDocs: [{ run_id: "run-9", status: "queued", queue_position: 0 }],
+    });
+    stubCatalogFetch();
     resetCardFamiliesCache();
-    routes["runs/start"] = () => ({ ok: true, value: { run_id: "run-9", status: "queued", queue_position: 0 } });
     const res = await runCardStage("bench-main", stage({
       id: "s_1",
       card: "img-to-mesh",
@@ -377,6 +363,5 @@ describe("runCardStage / runBenchSequential — the door contract", () => {
     expect(res).toEqual({ runId: "run-9" });
     const doc = (calls.find((c) => c.method === "runs/start")?.args["doc"] ?? {}) as Record<string, unknown>;
     expect(doc["input_image"]).toBe("data/input/36039.jpg");
-    resetCardFamiliesCache();
   });
 });

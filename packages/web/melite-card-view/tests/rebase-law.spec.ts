@@ -7,91 +7,93 @@
 // silent rebase, never a bricked tab. A second conflict or a
 // non-CAS refusal throws loud (the named truth).
 //
-// The stub speaks the REAL wire law: POST /api/<method> carrying a
-// client-request frame; answers are typert server-response envelopes
-// (rpcId echoed; domain refusals arrive at HTTP 200 with ok:false —
-// the gateway's envelope, not a status code).
-import { describe, expect, test, afterEach } from 'vitest'
+// THE ONE-LANE LAW (stroke 81): the verbs ride the mounted bench
+// namespace through mountEstateFakes — no fetch stub answers an
+// estate verb. CAS refusals queue in `refusals` (the door's own
+// voice, matched by the client's CAS matcher); the re-read serves
+// the CURRENT rev from benchDoc; transport deaths queue in `throws`.
+import { describe, expect, test, afterEach, vi } from 'vitest'
+import { unbindEstateRemote } from '@melite/card-base/estate-remote'
+import { mountEstateFakes } from './estate-harness.ts'
 import { addStageWire, removeStageWire } from '../src/client/add-stage.ts'
 
-/** One stubbed /api round trip, routed by method + expect_rev. */
-interface Call { method: string; expectRev: number | undefined }
-function stubFetch(script: Array<(call: Call) => { refuse?: string; value?: Record<string, unknown> }>): Call[] {
-  const seen: Call[] = []
-  let i = 0
-  const realFetch = globalThis.fetch
-  globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
-    const url = String(input)
-    const method = url.replace('/api/', '')
-    let frame: Record<string, unknown> = {}
-    if (typeof init?.body === 'string') frame = JSON.parse(init.body) as Record<string, unknown>
-    const rpcId = frame['rpcId']
-    const args = ((frame['payload'] as { args?: Record<string, unknown> } | undefined)?.args ?? {}) as Record<string, unknown>
-    const doc = (args['doc'] as Record<string, unknown> | undefined) ?? {}
-    const call: Call = {
-      method,
-      expectRev: typeof doc['expect_rev'] === 'number' ? doc['expect_rev'] as number : undefined,
-    }
-    seen.push(call)
-    const step = script[Math.min(i, script.length - 1)]
-    i++
-    const answer = step(call)
-    const result = answer.refuse === undefined
-      ? { ok: true, value: answer.value ?? {} }
-      : { ok: false, error: { message: answer.refuse } }
-    return new Response(JSON.stringify({ type: 'server-response', rpcId, result }), {
-      status: 200,
-      headers: { 'content-type': 'application/json' },
-    })
-  }) as typeof fetch
-  afterEach(() => { globalThis.fetch = realFetch })
-  return seen
+afterEach(() => { unbindEstateRemote(); vi.unstubAllGlobals() })
+
+/** One live-lane round trip log: [method, expect_rev]. */
+interface Seen { method: string; expectRev: number | undefined }
+function seenCalls(calls: Array<{ method: string; args: Record<string, unknown> }>): Seen[] {
+  return calls.map((c) => ({
+    method: c.method,
+    expectRev: typeof (c.args['doc'] as Record<string, unknown> | undefined)?.['expect_rev'] === 'number'
+      ? ((c.args['doc'] as Record<string, unknown>)['expect_rev'] as number)
+      : undefined,
+  }))
 }
 
 describe('the rebase law (a moved bench costs one silent rebase, never a stuck tab)', () => {
   test('THE EXACT BURN: held 35 vs rev 429 — the door rebases once and lands', async () => {
-    const seen = stubFetch([
-      // attempt 1: the held rev refuses (the door's own voice)
-      () => ({ refuse: 'bench main moved: rev is 429, caller held 35' }),
-      // the re-read: fresh truth
-      () => ({ value: { rev: 429 } }),
-      // attempt 2 with the fresh rev: lands
-      () => ({ value: { rev: 430, stage: 's_9' } }),
-    ])
-    const row = await addStageWire({ card: 'image-edit', expect_rev: 35 }, 'main')
-    expect(row['stage']).toBe('s_9')
-    expect(seen.map((c) => [c.method, c.expectRev])).toEqual([
-      ['bench/add-stage', 35],
-      ['bench/get', undefined],
-      ['bench/add-stage', 429],
-    ])
+    const fakes = mountEstateFakes({
+      // attempt 1 with the held rev refuses (the door's own voice);
+      // the re-read serves the fresh truth (rev 429).
+      refusals: [{ method: 'bench/add-stage', message: 'bench main moved: rev is 429, caller held 35' }],
+      benchDoc: { rev: 429, stages: [{ id: 's_0' }], log: [] },
+    })
+    try {
+      const row = await addStageWire({ card: 'image-edit', expect_rev: 35 }, 'main')
+      // MEANING ADAPTED (dead-transport shape): the old envelope
+      // stub answered {rev: 430, stage: 's_9'}; the live lane mints
+      // the row itself — the landed stage is the fresh object, not a
+      // scripted id. The law pinned is the rebase sequence + landing.
+      expect(row['stage']).toMatchObject({ id: 'fresh_1', card: 'image-edit' })
+      expect(seenCalls(fakes.calls)).toEqual([
+        { method: 'bench/add-stage', expectRev: 35 },
+        { method: 'bench/get', expectRev: undefined },
+        { method: 'bench/add-stage', expectRev: 429 },
+      ])
+    } finally {
+      fakes.unmount()
+    }
   })
 
   test('a SECOND conflict throws loud — never a blind write, never a loop', async () => {
-    stubFetch([
-      () => ({ refuse: 'bench main moved: rev is 430, caller held 429' }),
-      () => ({ value: { rev: 430 } }),
-      () => ({ refuse: 'bench main moved: rev is 431, caller held 430' }),
-    ])
-    await expect(removeStageWire({ stage: 's_1', expect_rev: 429 }))
-      .rejects.toThrow(/rev is 431, caller held 430/)
+    const fakes = mountEstateFakes({
+      refusals: [
+        { method: 'bench/remove-stage', message: 'bench main moved: rev is 430, caller held 429' },
+        { method: 'bench/remove-stage', message: 'bench main moved: rev is 431, caller held 430' },
+      ],
+      benchDoc: { rev: 430, stages: [{ id: 's_1' }], log: [] },
+    })
+    try {
+      await expect(removeStageWire({ stage: 's_1', expect_rev: 429 }, 'main'))
+        .rejects.toThrow(/rev is 431, caller held 430/)
+    } finally {
+      fakes.unmount()
+    }
   })
 
   test('a non-CAS refusal is the named truth — no rebase, no retry', async () => {
-    const seen = stubFetch([
-      () => ({ refuse: "input 'image' wires stage 'stage-1' — no such stage on the bench" }),
-    ])
-    await expect(addStageWire({ card: 'image-edit', expect_rev: 7, inputs: { image: { stage: 'stage-1' } } }, 'main'))
-      .rejects.toThrow(/no such stage on the bench/)
-    expect(seen).toHaveLength(1)
+    const fakes = mountEstateFakes({
+      refusals: [{ method: 'bench/add-stage', message: "input 'image' wires stage 'stage-1' — no such stage on the bench" }],
+    })
+    try {
+      await expect(addStageWire({ card: 'image-edit', expect_rev: 7, inputs: { image: { stage: 'stage-1' } } }, 'main'))
+        .rejects.toThrow(/no such stage on the bench/)
+      expect(fakes.calls).toHaveLength(1)
+    } finally {
+      fakes.unmount()
+    }
   })
 
   test('a dead re-read leaves the original refusal standing', async () => {
-    stubFetch([
-      () => ({ refuse: 'bench main moved: rev is 429, caller held 35' }),
-      () => { throw new Error('network gone') },
-    ])
-    await expect(removeStageWire({ stage: 's_1', expect_rev: 35 }))
-      .rejects.toThrow(/rev is 429, caller held 35/)
+    const fakes = mountEstateFakes({
+      refusals: [{ method: 'bench/remove-stage', message: 'bench main moved: rev is 429, caller held 35' }],
+      throws: [{ method: 'bench/get', message: 'network gone' }],
+    })
+    try {
+      await expect(removeStageWire({ stage: 's_1', expect_rev: 35 }, 'main'))
+        .rejects.toThrow(/rev is 429, caller held 35/)
+    } finally {
+      fakes.unmount()
+    }
   })
 })

@@ -17,15 +17,8 @@ export declare function apply(ctx: Context): void;
  *  (http(s) or a rooted path) passes VERBATIM — the rewrite only
  *  claims bare run-relative names (the runs rows' post-kill shape). */
 export declare function mediaUrl(runId: string, name: string): string;
-/** One listed media item — the source row's picker row. `url` is
- *  the SAME /melite-media/runs grammar the byte route serves (one
- *  spelling, minted at the tree, never restated client-side). */
-export interface MediaListRow {
-    readonly url: string;
-    readonly name: string;
-    readonly kind: string;
-    readonly runId: string;
-}
+export type { MediaListRow } from "./types.js";
+import type { MediaListRow } from "./types.js";
 /** THE LIST ARM — walk the runs output tree (run dirs by mtime,
  *  newest first), collect files of the asked kind, mint the route
  *  URL for each. Bounded: depth 3 (run/stage/file), cap LIST_CAP.

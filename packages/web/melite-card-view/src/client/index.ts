@@ -42,10 +42,16 @@ import type {} from '@deepseek-ai/dsh-client-resources/client'
 // contribution (TYPERT_REMOTE — the descriptor set the mount serves;
 // its declaration merge types ctx.remote.bench / ctx.remote.drafts).
 import type {} from '@deepseek-ai/dsh-api-gateway/client'
+// All four estate contributions (bench/drafts from estate-drafts,
+// runs, media) — the one-lane law: every estate verb the tab speaks
+// rides these mounted namespaces.
 import { TYPERT_REMOTE } from '@melite/estate-drafts/remote'
+import { TYPERT_REMOTE as RUNS_TYPERT_REMOTE } from '@melite/estate-runs/remote'
+import { TYPERT_REMOTE as MEDIA_TYPERT_REMOTE } from '@melite/estate-media/remote'
 import { FlowCards } from './FlowCards.tsx'
 import { CardsTab } from './CardsTab.tsx'
 import { CARDS_BENCH_ADDRESS, benchAddressOf, benchSessionKey, openCardsResource, shouldSpotlight, watchBenchLands, type BenchNamespace } from './cards-resource.ts'
+import { bindEstateRemote } from '@melite/card-base/estate-remote'
 import { resolveCardsAddress } from './CardsTab.tsx'
 import type { StageViewOwnerProps, ToolCallBlockView, ToolCallOwnerProps } from './types.ts'
 
@@ -124,6 +130,21 @@ export async function apply(ctx: ClientContext): Promise<void> {
   } catch (error) {
     console.error('[melite-card-view] estate remote contribution failed to mount:', error)
   }
+  // The runs + media contributions ride the same mount seam (stroke
+  // 81 — the one estate lane; a failed mount logs, never throws the
+  // boot: the verbs then refuse loudly at the bind seam).
+  try {
+    const disposeRuns = await ctx.remote.$mount(RUNS_TYPERT_REMOTE)
+    ctx.effect(() => disposeRuns, 'melite-card-view: runs remote contribution')
+  } catch (error) {
+    console.error('[melite-card-view] runs remote contribution failed to mount:', error)
+  }
+  try {
+    const disposeMedia = await ctx.remote.$mount(MEDIA_TYPERT_REMOTE)
+    ctx.effect(() => disposeMedia, 'melite-card-view: media remote contribution')
+  } catch (error) {
+    console.error('[melite-card-view] media remote contribution failed to mount:', error)
+  }
 
   // DOUBLE-APPLY LAW (client contract): registration conflicts fail at
   // load — "do not work around it; the conflict is the design
@@ -131,31 +152,38 @@ export async function apply(ctx: ClientContext): Promise<void> {
   // the per-site catch logs it and the FIRST registration keeps the
   // seat. No cross-instance guard, no module/global flag.
 
-  // THE BENCH NAMESPACE SEAT (the inject fix): stream-supervisor
-  // callbacks run detached from any inject-declaring fiber, and
-  // `remote.bench` is a NESTED SERVICE whose access requires the
-  // dotted inject ('remote.bench') on the accessing fiber — the
-  // 2026-09-15 live lane died with "cannot get property
-  // \"remote.bench\" without inject". A static inject on THIS plugin
-  // would deadlock (the namespace exists only after our own $mount
-  // lands), so the capture rides a CHILD PLUGIN started after the
-  // mount: its fiber declares the inject, resolves the namespace
-  // service once, and the captured object is a plain service —
-  // later `.subscribe` calls at callback time carry no access
-  // checks. The child disposes with this plugin (the namespace dies
-  // with the mount anyway).
+  // THE NAMESPACE SEATS (the inject fix, extended stroke 81): stream
+  // callbacks run detached from any inject-declaring fiber, and each
+  // namespace is a NESTED SERVICE whose access requires the dotted
+  // inject on the accessing fiber — the 2026-09-15 live lane died
+  // with "cannot get property \"remote.bench\" without inject". A
+  // static inject on THIS plugin would deadlock (the namespaces
+  // exist only after our own $mount lands), so the capture rides a
+  // CHILD PLUGIN started after the mounts: its fiber declares the
+  // four injects, resolves the namespace services once, and the
+  // captured objects are plain services — later calls at callback
+  // time carry no access checks. The bind ALSO seats the one-lane
+  // verb module (@melite/card-base/estate-remote): every
+  // bench/drafts/runs/media verb in the tab rides these namespaces. The child disposes with
+  // this plugin (the namespaces die with the mounts anyway).
   let benchNs: BenchNamespace | undefined
   try {
     const fiber = ctx.plugin({
-      name: 'melite-card-view: bench namespace',
-      inject: ['remote.bench'],
+      name: 'melite-card-view: estate namespaces',
+      inject: ['remote.bench', 'remote.drafts', 'remote.runs', 'remote.media'],
       apply: (child: ClientContext): void => {
         benchNs = child.remote.bench
+        bindEstateRemote({
+          bench: child.remote.bench,
+          drafts: child.remote.drafts,
+          runs: child.remote.runs,
+          media: child.remote.media,
+        })
       },
     })
     await fiber
   } catch (error) {
-    console.error('[melite-card-view] bench namespace fiber failed:', error)
+    console.error('[melite-card-view] estate namespace fiber failed:', error)
   }
 
   for (const tool of CARD_TOOLS) {
@@ -277,7 +305,9 @@ export async function apply(ctx: ClientContext): Promise<void> {
         const sid = snap?.props?.['sessionId']
         return benchSessionKey(typeof sid === 'string' ? sid : undefined)
       } catch {
-        return 'main'
+        // the address-grammar root spells the unattributed bench —
+        // never a local literal (the sessionkey law)
+        return benchSessionKey(undefined)
       }
     }
     const subscribeBenchSession = (fn: () => void): (() => void) => {

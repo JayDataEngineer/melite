@@ -11,8 +11,21 @@ import { createElement as h } from "react"
 import { openCardsResource, readDraft } from "../src/client/cards-resource.ts"
 import { CardsTab } from "../src/client/CardsTab.tsx"
 import type { CardsDraftValue } from "../src/client/cards-resource.ts"
+import { mountEstateFakes, type EstateFakesOptions } from "./estate-harness.ts"
+
+type Fakes = ReturnType<typeof mountEstateFakes>;
+let active: Fakes | null = null;
+
+/** Mount the one-lane fakes for one test (drained in afterEach). */
+function wire(opts: EstateFakesOptions = {}): Fakes {
+  active?.unmount();
+  active = mountEstateFakes(opts);
+  return active;
+}
 
 afterEach(() => {
+  active?.unmount();
+  active = null;
   cleanup()
   vi.unstubAllGlobals()
 })
@@ -27,15 +40,10 @@ const DRAFT_DOC = {
   ],
 }
 
-function stubWire(value: unknown): void {
-  vi.stubGlobal("fetch", vi.fn(async (_url: unknown, init?: RequestInit) => {
-    const rpcId = (JSON.parse(String(init?.body)) as { rpcId: string }).rpcId
-    return new Response(JSON.stringify({
-      type: "server-response",
-      rpcId,
-      result: { ok: true, value },
-    }), { status: 200, headers: { "content-type": "application/json" } })
-  }))
+/** The provider's draft arm rides the live one-lane seam: drafts/get
+ *  serves the doc's stages (readDraft drops the malformed row). */
+function stubDraftStages(): void {
+  wire({ draftStages: DRAFT_DOC.stages as unknown as Array<Record<string, unknown>> });
 }
 
 describe("readDraft", () => {
@@ -56,7 +64,7 @@ describe("readDraft", () => {
 
 describe("the provider's draft arm", () => {
   test("yields one snapshot frame for a draft address", async () => {
-    stubWire(DRAFT_DOC)
+    stubDraftStages()
     const frames: unknown[] = []
     for await (const frame of openCardsResource("dsh-resource://cards/draft/draft-1/s_0", { signal: AbortSignal.timeout(4000) })) {
       frames.push(frame)
@@ -69,14 +77,7 @@ describe("the provider's draft arm", () => {
   })
 
   test("a refused drafts/get is a failure frame, never a throw", async () => {
-    vi.stubGlobal("fetch", vi.fn(async (_url: unknown, init?: RequestInit) => {
-      const rpcId = (JSON.parse(String(init?.body)) as { rpcId: string }).rpcId
-      return new Response(JSON.stringify({
-        type: "server-response",
-        rpcId,
-        result: { ok: false, error: { code: "drafts/not-found", message: "no such draft" } },
-      }), { status: 200, headers: { "content-type": "application/json" } })
-    }))
+    wire({ refusals: [{ method: "drafts/get", message: "no such draft" }] })
     const frames: unknown[] = []
     for await (const frame of openCardsResource("dsh-resource://cards/draft/nope/s_0", { signal: AbortSignal.timeout(4000) })) {
       frames.push(frame)
@@ -89,12 +90,18 @@ describe("the provider's draft arm", () => {
 })
 
 /** The tab body over a live draft value — the renderSlot consult rides.
- *  (fetch is stubbed: the generic fallback's form-spec read must never
- *  reach a real network.) */
+ *  (fetch answers ONLY the /v1 discovery doors; an estate verb on the
+ *  fetch lane is a wiring bug and throws loud.) */
 function stubFormSpec(): void {
-  vi.stubGlobal("fetch", vi.fn(async (url: unknown) => new Response(JSON.stringify({
-    form: "h3-timeline", fields: [{ name: "prompt", label: "Prompt", type: "textarea" }],
-  }), { status: 200, headers: { "content-type": "application/json" } }), ))
+  vi.stubGlobal("fetch", vi.fn(async (url: unknown) => {
+    const path = String(url)
+    if (path.includes("/v1/form-spec") || path.includes("/v1/model-catalog")) {
+      return new Response(JSON.stringify({
+        form: "h3-timeline", fields: [{ name: "prompt", label: "Prompt", type: "textarea" }],
+      }), { status: 200, headers: { "content-type": "application/json" } })
+    }
+    throw new Error("estate door on the fetch lane: " + path)
+  }))
 }
 
 function renderDraftTab(value: CardsDraftValue, renderSlot?: (owner: Record<string, unknown>) => unknown): void {

@@ -68,20 +68,20 @@ let RunsRemoteService = (() => {
         }
         /** Endpoint `runs/status` — the live row (registry seat). */
         async remoteExportStatus(runId, signal) {
-            return await this.ctx.runs.status(runId, signal);
+            return (await this.ctx.runs.status(runId, signal));
         }
         /** Endpoint `runs/stop` — the flag + interrupt (registry seat). */
         async remoteExportStop(runId, signal) {
-            return await this.ctx.runs.stop(runId, signal);
+            return (await this.ctx.runs.stop(runId, signal));
         }
         /** Endpoint `runs/list` — the restore-port envelope (registry
          *  seat; the raw limit string keeps py int() semantics). */
         async remoteExportList(rawLimit, signal) {
-            return await this.ctx.runs.list(rawLimit, signal);
+            return (await this.ctx.runs.list(rawLimit, signal));
         }
         /** Endpoint `runs/validate` — the pure compile (registry seat). */
         async remoteExportValidate(doc, signal) {
-            return await this.ctx.runs.validate(doc, signal);
+            return (await this.ctx.runs.validate(doc, signal));
         }
     };
 })();

@@ -67,8 +67,9 @@ import type { CatalogCard, FormSpecDoc, ModifierKind, SpecValues } from './spec-
 import { paramFields, patchStageOutcome, patchStageParams } from './draft.ts'
 import css from './card.module.css'
 import type { CardsBenchValue, CardsDraftValue, CardsRunValue, BenchStageRow } from './cards-resource.ts'
-import { CARDS_BENCH_ADDRESS, benchAddressOf, benchSessionKey, benchSessionOfAddress, cardsRunAddress, fetchBench, fetchLatestRunForDraft, freshStageRow, markCardsSurface, observeRunOutcome, openCardsResource, parseCardsAddress, reconcileBenchRuns, restoreRunToBench, uploadInputFile } from './cards-resource.ts'
-import { defaultFamilyForCard, startCardRun, stopRun } from '@melite-plugin/melite-run-wire'
+import { fetchMediaLibrary, CARDS_BENCH_ADDRESS, benchAddressOf, benchSessionKey, benchSessionOfAddress, cardsRunAddress, fetchBench, fetchLatestRunForDraft, freshStageRow, markCardsSurface, observeRunOutcome, openCardsResource, parseCardsAddress, reconcileBenchRuns, restoreRunToBench, uploadInputFile } from './cards-resource.ts'
+import { defaultFamilyForCard } from '@melite-plugin/melite-run-wire'
+import { startCardRun, stopRun } from '@melite/card-base/runs-policy'
 import { addStageWire, groupStagesWire, removeStageWire, reorderStageWire, ungroupStageWire } from './add-stage.ts'
 import { AudioStagePreview, ImageStagePreview, MeshStagePreview, VideoStagePreview } from '@melite/card-base/preview'
 import { CardZoomOverlay } from './zoom.tsx'
@@ -1003,7 +1004,10 @@ function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRemoved, 
   //  the operator's law: an emitted image input constructs the input
   //  component automatically, no surface wires it). candidatesFor
   //  narrows the picker per the DECLARED input-edge kind (THE EDGE LAW).
-  const wire = { candidates, candidatesFor }
+  // loadMedia rides the mounted media namespace (the one-lane law —
+  // the form's picker receives its rows INJECTED, never a fetch of
+  // its own).
+  const wire = { candidates, candidatesFor, loadMedia: fetchMediaLibrary }
   const run = async (): Promise<void> => {
     setError(null)
     try {
@@ -1853,10 +1857,12 @@ function DraftView({ value, running, onRun, onStop, onBack, onPatchParams, rende
   // slot-is-the-wire law), the draft id for the patch door. rev -1 is
   // the no-CAS marker — removal is absent (canRemove false), so the
   // marker is never spent.
-  // sessionKey 'main': this synthetic bench's remove never fires
-  // (canRemove false below — rev -1 is the no-CAS marker), so the
-  // key is carried for the type, never spent.
-  const bench: CardsBenchValue = { kind: 'bench', draftId: value.draftId, rev: -1, stages: value.stages, log: [], sessionKey: 'main' }
+  // sessionKey: the chat-plane owner props carry no session id
+  // (the slot contract's face — the scope is session-keyed but the
+  // props don't spell it), so the synthetic bench carries the
+  // address-grammar root's unattributed spelling. The key is never
+  // spent (canRemove false below — rev -1 is the no-CAS marker).
+  const bench: CardsBenchValue = { kind: 'bench', draftId: value.draftId, rev: -1, stages: value.stages, log: [], sessionKey: benchSessionKey(undefined) }
   return h(StageDrill, {
     stage,
     bench,

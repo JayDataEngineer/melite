@@ -1,15 +1,7 @@
-// client-apply.spec.ts — PARKED 2026-09-16 (resolution wall, NOT a
-// test failure): src/client/index.ts imports
-// '@melite/estate-drafts/remote', which vitest cannot resolve —
-// SOURCE_PLANE_ALIAS maps '@melite/estate-drafts' to
-// packages/estate/drafts/src/index.ts and the prefix rewrite turns
-// the subpath into 'src/index.ts/remote' (probe: a direct spec
-// import fails identically). Unblocks with one alias line in
-// vitest.shared.ts: '@melite/estate-drafts/remote' →
-// packages/estate/drafts/src/remote.ts. Restore this file's name
-// (drop '.pending') once that lands — the battery below is written
-// and ready (fake ctx, both planes, every failure logged never
-// thrown).
+// client-apply.spec.ts — UNPARKED stroke 81 (the alias rows landed:
+// SOURCE_PLANE_ALIAS serves every generated client's built truth —
+// drafts, runs, media — plus zod on each estate manifest). The
+// battery: fake ctx, both planes, every failure logged never thrown.
 // Fakes, not mocks: a plain object ctx with recording seats.
 import { afterEach, describe, expect, test, vi } from "vitest";
 import { apply, CARD_TOOLS, inject } from "../src/client/index.ts";
@@ -174,6 +166,8 @@ describe("apply() — the happy path registers both planes", () => {
       expect(fake.regs.providers[0]).toMatchObject({ protocol: "cards" });
       expect(fake.regs.effects).toEqual([
         "melite-card-view: estate remote contribution",
+        "melite-card-view: runs remote contribution",
+        "melite-card-view: media remote contribution",
         "melite-card-view: cards tab type",
         "melite-card-view: cards resource provider",
         "melite-card-view: bench spotlight",
@@ -223,7 +217,9 @@ describe("apply() — failures log, never throw (the boot survives)", () => {
     fake.failMount = true;
     try {
       await apply(fake.ctx as never);
-      expect(fake.errors).toHaveLength(1);
+      // all three contributions fail on the dead mount — each logs,
+      // none throws (the boot survives)
+      expect(fake.errors).toHaveLength(3);
       expect(fake.errors[0]!.join(" ")).toContain("estate remote contribution failed to mount");
       expect(fake.regs.toolviews).toHaveLength(CARD_TOOLS.length);
       expect(fake.regs.providers).toHaveLength(1);
@@ -238,7 +234,7 @@ describe("apply() — failures log, never throw (the boot survives)", () => {
     try {
       await apply(fake.ctx as never);
       expect(fake.errors).toHaveLength(2);
-      expect(fake.errors[0]!.join(" ")).toContain("bench namespace fiber failed");
+      expect(fake.errors[0]!.join(" ")).toContain("estate namespace fiber failed");
       // the spotlight's own honest degrade (cards-resource.ts: the
       // namespace never mounted — the watcher reports off, loud)
       expect(fake.errors[1]!.join(" ")).toContain("bench spotlight off");

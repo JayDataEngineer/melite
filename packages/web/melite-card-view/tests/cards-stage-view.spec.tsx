@@ -14,6 +14,8 @@ import { cleanup, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, expect, test, vi } from 'vitest'
 import { createElement } from 'react'
+import { mountEstateFakes } from './estate-harness.ts'
+import { unbindEstateRemote } from '@melite/card-base/estate-remote'
 
 import { CardsTab } from '../src/client/CardsTab.tsx'
 import { schemaEnvelope } from '../src/client/spec-form.tsx'
@@ -32,7 +34,10 @@ const BENCH: CardsBenchValue = {
 }
 
 function stubWire(): void {
-  vi.stubGlobal('fetch', async (url: unknown, init?: RequestInit): Promise<Response> => {
+  // THE ONE-FAKE LAW (stroke 81): estate verbs ride the bound
+  // namespaces; fetch answers ONLY the /v1 discovery doors.
+  mountEstateFakes()
+  vi.stubGlobal('fetch', async (url: unknown): Promise<Response> => {
     const path = String(url)
     if (path.includes('/v1/form-spec')) {
       const model = path.split('model=')[1] ?? ''
@@ -48,11 +53,7 @@ function stubWire(): void {
     if (path.includes('/v1/model-catalog')) {
       return new Response(JSON.stringify({ cards: {} }), { status: 200, headers: { 'content-type': 'application/json' } })
     }
-    const frame = JSON.parse(String(init?.body)) as { rpcId: string; method: string }
-    let value: Record<string, unknown> = { ok: true }
-    if (frame.method === 'runs/start') value = { run_id: 'run-sv', status: 'queued' }
-    if (frame.method === 'drafts/patch') value = { delivered: true }
-    return new Response(JSON.stringify({ type: 'server-response', rpcId: frame.rpcId, result: { ok: true, value } }), { status: 200 })
+    throw new Error('estate door on the fetch lane: ' + path)
   })
 }
 
@@ -81,6 +82,7 @@ function tileButton(): HTMLElement {
 
 afterEach(() => {
   cleanup()
+  unbindEstateRemote()
   vi.unstubAllGlobals()
 })
 

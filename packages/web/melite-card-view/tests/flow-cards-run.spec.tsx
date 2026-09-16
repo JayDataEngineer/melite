@@ -14,20 +14,34 @@
  *              no-edit Run (patch null → straight to start, never a
  *              lying patch).
  *
- * fetch is stubbed whole per test (vi.stubGlobal, the row-law
- * pattern); the wire frame the card posts is recorded and
- * deep-equaled. KNOWN UNREACHABLES (exemption candidates, the
- * live-null induction — see the file header note in the final
- * report): the poll effect (live is never set), the thumb img
- * (thumbUrl is null whenever live is), the draftId-gone throw.
+ * The doors ride the live one-lane seam (stroke 81): mountEstateFakes
+ * binds fakes over the mounted Typert namespaces; the recorded
+ * {method, args} call log is asserted (order, count, arg values). No
+ * fetch stub answers an estate verb. KNOWN UNREACHABLES (exemption
+ * candidates, the live-null induction — see the file header note in
+ * the final report): the poll effect (live is never set), the thumb
+ * img (thumbUrl is null whenever live is), the draftId-gone throw.
  */
 import { afterEach, describe, expect, test, vi } from "vitest";
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { createElement as h } from "react";
 import { FlowCards } from "../src/client/FlowCards.tsx";
 import type { ToolCallBlockView } from "../src/client/types.ts";
+import { mountEstateFakes, type EstateFakesOptions } from "./estate-harness.ts";
+
+type Fakes = ReturnType<typeof mountEstateFakes>;
+let active: Fakes | null = null;
+
+/** Mount the one-lane fakes for one test (drained in afterEach). */
+function wire(opts: EstateFakesOptions = {}): Fakes {
+  active?.unmount();
+  active = mountEstateFakes(opts);
+  return active;
+}
 
 afterEach(() => {
+  active?.unmount();
+  active = null;
   cleanup();
   vi.unstubAllGlobals();
 });
@@ -40,8 +54,6 @@ function settled(over: Partial<ToolCallBlockView> = {}): ToolCallBlockView {
     ...over,
   } as unknown as ToolCallBlockView;
 }
-
-interface Seen { method: string; args: Record<string, unknown> }
 
 const DOC = {
   draft_id: "draft-1",
@@ -56,31 +68,17 @@ const DOC = {
   ],
 };
 
-/** The wire stub: routes per method; records every frame posted. */
-function stubWire(route: (method: string, args: Record<string, unknown>) => { refuse?: string; value?: unknown }): Seen[] {
-  const seen: Seen[] = [];
-  vi.stubGlobal("fetch", async (_url: unknown, init?: RequestInit) => {
-    const frame = JSON.parse(String(init?.body)) as { rpcId: string; method: string; payload: { args: Record<string, unknown> } };
-    seen.push({ method: frame.method, args: frame.payload.args });
-    const answer = route(frame.method, frame.payload.args);
-    const result = answer.refuse === undefined
-      ? { ok: true, value: answer.value ?? {} }
-      : { ok: false, error: { message: answer.refuse } };
-    return new Response(JSON.stringify({ type: "server-response", rpcId: frame.rpcId, result }), {
-      status: 200, headers: { "content-type": "application/json" },
-    });
-  });
-  return seen;
+/** A fresh copy of the doc's stages per mount — the drafts/patch fake
+ *  applies patches into the served rows, and sharing one object across
+ *  tests would leak one gesture's edit into the next test's drill. */
+function freshStages(): Array<Record<string, unknown>> {
+  return DOC.stages.map((s) => ({ ...s, params: { ...(s.params as Record<string, unknown>) } }));
 }
 
-function stubDraftDoc(): Seen[] {
-  return stubWire((method) => {
-    if (method === "drafts/get") return { value: DOC };
-    if (method === "drafts/patch") return { value: { delivered: true } };
-    if (method === "runs/start") return { value: { run_id: "r_1" } };
-    if (method === "runs/status") return { value: { run_id: "r_1", status: "completed", stages: [] } };
-    return { value: {} };
-  });
+/** The standard doc over the live one-lane seam (bench rev 3, the
+ *  start door minting r_1); extra harness options ride per test. */
+function stubDraftDoc(extra: EstateFakesOptions = {}): Fakes {
+  return wire({ draftStages: freshStages(), draftBenchRev: 3, draftIntent: DOC.intent, startDocs: [{ run_id: "r_1" }], ...extra });
 }
 
 describe("the waiting faces — composing, failed, legacy", () => {
@@ -144,54 +142,48 @@ describe("the row faces — status precedence, service, prompt", () => {
 
 describe("the error face — named refusal + retry", () => {
   test("a dead hydration renders the refusal; retry re-reads and lands the rows", async () => {
-    let gets = 0;
-    stubWire((method) => {
-      if (method === "drafts/get") {
-        gets++;
-        return gets === 1 ? { refuse: "no_such_draft" } : { value: DOC };
-      }
-      return { value: {} };
-    });
+    // The refusal is one-shot: the first drafts/get refuses, the
+    // retry's re-read serves the doc.
+    const fakes = stubDraftDoc({ refusals: [{ method: "drafts/get", message: "no_such_draft" }] });
     render(h(FlowCards, { block: settled() }));
     const retry = await screen.findByText(/retry/, {}, { timeout: 4000 });
     expect(retry.textContent).toContain("no_such_draft");
     fireEvent.click(retry);
     expect(await screen.findByText("gen", {}, { timeout: 4000 })).toBeTruthy();
-    expect(gets).toBe(2);
+    expect(fakes.calls.filter((c) => c.method === "drafts/get")).toHaveLength(2);
   });
 
   test("a foreign hydration failure renders the default face (never a blank death)", async () => {
-    vi.stubGlobal("fetch", async () => { throw "kablam"; });
+    // ADAPTED (reported): the old lane threw the bare string "kablam"
+    // (rendered as 'draft hydration failed'); the live seam rejects
+    // with an Error carrying the text, which the face renders verbatim.
+    wire({
+      draftStages: freshStages(), draftBenchRev: 3,
+      throws: [{ method: "drafts/get", message: "kablam" }],
+    });
     render(h(FlowCards, { block: settled() }));
     const face = await screen.findByText(/retry/, {}, { timeout: 4000 });
-    expect(face.textContent).toContain("draft hydration failed");
+    expect(face.textContent).toContain("kablam");
   });
 });
 
 describe("unmount before resolve — the late answer lands nowhere", () => {
+  // ADAPTED (reported): the old lane gated the answer behind a
+  // deferred fetch; the live seam answers immediately, so the race is
+  // built by unmounting synchronously — before the in-flight
+  // hydration promise lands.
   test("no state lands on the unmounted card; the next mount hydrates clean", async () => {
-    let release!: (value: unknown) => void;
-    const gate = new Promise<unknown>((resolve) => { release = resolve; });
+    stubDraftDoc();
     const errs: unknown[][] = [];
     const orig = console.error;
     console.error = (...args: unknown[]): void => { errs.push(args); };
     try {
-      vi.stubGlobal("fetch", async (_url: unknown, init?: RequestInit) => {
-        const frame = JSON.parse(String(init?.body)) as { rpcId: string };
-        const value = await gate;
-        return new Response(JSON.stringify({
-          type: "server-response", rpcId: frame.rpcId, result: { ok: true, value },
-        }), { status: 200, headers: { "content-type": "application/json" } });
-      });
       const mounted = render(h(FlowCards, { block: settled() }));
       mounted.unmount();
-      release(DOC);
-      await gate;
       await new Promise((resolve) => setTimeout(resolve, 50));
       expect(errs.filter((a) => String(a[0]).includes("not wrapped in act"))).toEqual([]);
       // the door still serves: a fresh mount hydrates
       render(h(FlowCards, { block: settled() }));
-      release(DOC);
       expect(await screen.findByText("gen", {}, { timeout: 4000 })).toBeTruthy();
     } finally {
       console.error = orig;
@@ -199,21 +191,16 @@ describe("unmount before resolve — the late answer lands nowhere", () => {
   });
 
   test("a rejection after unmount sets nothing (the catch degrades, never warns)", async () => {
-    let reject!: (reason: unknown) => void;
-    const gate = new Promise<unknown>((_resolve, rej) => { reject = rej; });
+    wire({
+      draftStages: freshStages(), draftBenchRev: 3,
+      throws: [{ method: "drafts/get", message: "door died late" }],
+    });
     const errs: unknown[][] = [];
     const orig = console.error;
     console.error = (...args: unknown[]): void => { errs.push(args); };
     try {
-      vi.stubGlobal("fetch", async (_url: unknown, init?: RequestInit) => {
-        JSON.parse(String(init?.body)) as { rpcId: string };
-        await gate;
-        throw new Error("unreachable");
-      });
       const mounted = render(h(FlowCards, { block: settled() }));
       mounted.unmount();
-      reject(new Error("door died late"));
-      await gate.catch(() => {});
       await new Promise((resolve) => setTimeout(resolve, 50));
       expect(errs.filter((a) => String(a[0]).includes("not wrapped in act"))).toEqual([]);
     } finally {
@@ -224,7 +211,7 @@ describe("unmount before resolve — the late answer lands nowhere", () => {
 
 describe("THE GESTURE — open drill, edit, Run = patch FIRST, then start", () => {
   test("an edit Runs what the user SEES (CAS rev + coerced patch, changed keys only)", async () => {
-    const seen = stubDraftDoc();
+    const seen = stubDraftDoc().calls;
     const { container } = render(h(FlowCards, { block: settled() }));
     await screen.findByText("gen", {}, { timeout: 4000 });
     // open the in-card drill (no shell face in this harness)
@@ -250,7 +237,7 @@ describe("THE GESTURE — open drill, edit, Run = patch FIRST, then start", () =
   });
 
   test("a no-edit Run patches nothing (never a lying patch)", async () => {
-    const seen = stubDraftDoc();
+    const seen = stubDraftDoc().calls;
     const { container } = render(h(FlowCards, { block: settled() }));
     await screen.findByText("gen", {}, { timeout: 4000 });
     (container.querySelector('[data-stage="s_1"]') as HTMLElement).click();
@@ -262,11 +249,7 @@ describe("THE GESTURE — open drill, edit, Run = patch FIRST, then start", () =
   });
 
   test("a refused Run renders its name in the drill (never a silent death)", async () => {
-    stubWire((method) => {
-      if (method === "drafts/get") return { value: DOC };
-      if (method === "drafts/patch") return { refuse: "admission: unknown stage" };
-      return { value: {} };
-    });
+    stubDraftDoc({ refusals: [{ method: "drafts/patch", message: "admission: unknown stage" }] });
     const { container } = render(h(FlowCards, { block: settled() }));
     await screen.findByText("gen", {}, { timeout: 4000 });
     (container.querySelector('[data-stage="s_0"]') as HTMLElement).click();
@@ -278,7 +261,7 @@ describe("THE GESTURE — open drill, edit, Run = patch FIRST, then start", () =
   });
 
   test("closing the drill unrunned refreshes behind it (never a stale card)", async () => {
-    const seen = stubDraftDoc();
+    const seen = stubDraftDoc().calls;
     const { container } = render(h(FlowCards, { block: settled() }));
     await screen.findByText("gen", {}, { timeout: 4000 });
     (container.querySelector('[data-stage="s_0"]') as HTMLElement).click();

@@ -10,7 +10,27 @@
 import { describe, expect, it, vi } from "vitest"
 import assert from "node:assert/strict"
 import { fireEvent, render, screen, waitFor, within } from "@testing-library/react"
+import { bindEstateRemote, unbindEstateRemote } from "@melite/card-base/estate-remote"
 import { CallFrameSubcard } from "../src/ui/studio/CallFrameSubcard.tsx"
+
+/** THE MEDIA BIND (the one-lane law): the subcard's From-media rows
+ *  ride the mounted media namespace — a local fake serving one
+ *  foreign row (the vocabulary-refusal wall below). Unused
+ *  namespaces throw (never silently serve). */
+function bindForeignMedia(): void {
+  const dead = (method: string) => async (): Promise<never> => { throw new Error("unused namespace in this wall: " + method) }
+  bindEstateRemote({
+    bench: { get: dead("bench/get"), "add-stage": dead("bench/add-stage"), "remove-stage": dead("bench/remove-stage") },
+    drafts: { get: dead("drafts/get"), patch: dead("drafts/patch") },
+    runs: {
+      list: dead("runs/list"), start: dead("runs/start"), status: dead("runs/status"),
+      stop: dead("runs/stop"), validate: dead("runs/validate"),
+    },
+    media: {
+      list: async () => ({ ok: true, value: { items: [{ url: "https://foreign/x.png", name: "x" }] } }),
+    },
+  } as unknown as Parameters<typeof bindEstateRemote>[0])
+}
 
 const NAME_TO_URL = new Map([
   ["still-a", "https://u/a.png"],
@@ -81,14 +101,7 @@ describe("the source row (URL→NAME honesty)", () => {
   })
 
   it("a foreign URL refuses VISIBLY (never a silent unresolved pass)", async () => {
-    vi.stubGlobal("fetch", async (url: unknown, init?: { body?: string }) => {
-      const rpcId = (JSON.parse(String(init?.body)) as { rpcId: number }).rpcId
-      return new Response(JSON.stringify({
-        type: "server-response",
-        rpcId,
-        result: { ok: true, value: { items: [{ url: "https://foreign/x.png", name: "x", kind: "image", runId: "r1" }] } },
-      }), { status: 200 })
-    })
+    bindForeignMedia()
     try {
       const { p, changed } = sub()
       render(<CallFrameSubcard {...p} />)
@@ -103,7 +116,7 @@ describe("the source row (URL→NAME honesty)", () => {
       assert.deepEqual(changed, ["still-a"])
       assert.equal(screen.queryByTestId("tl-frame-first-file-error"), null)
     } finally {
-      vi.unstubAllGlobals()
+      unbindEstateRemote()
     }
   })
 

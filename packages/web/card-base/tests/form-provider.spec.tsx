@@ -9,11 +9,15 @@ import { createElement as h } from 'react'
 import { afterEach, expect, test, vi } from 'vitest'
 import type { SpecField } from '../src/spec.ts'
 import type { SquareWire } from '../src/form.tsx'
+import { RemoteError } from '@deepseek-ai/dsh-typert-protocol'
+import { bindEstateRemote, unbindEstateRemote } from '../src/estate-remote.ts'
+import { fetchMediaLibrary } from '../src/media-library.ts'
 
 import { InputSquare } from '../src/square.tsx'
 import { SourceRow, useSquareProvider } from '../src/form.tsx'
 
 afterEach(cleanup)
+afterEach(unbindEstateRemote)
 
 const IMG = { name: 'img', label: 'Image', type: 'image' } as SpecField
 const DOC = { name: 'doc', label: 'Doc', type: 'file' } as SpecField
@@ -54,10 +58,34 @@ function fakeReader(dataUrl = 'data:image/png;base64,AAA'): typeof FileReader {
   } as unknown as typeof FileReader
 }
 
-/** fetch fake routing the three doors this file's tests touch. */
+/** THE MEDIA BIND (the one-lane law): the picker's rows ride the
+ *  mounted media namespace — this spec binds a local fake (the
+ *  card-view harness is that surface's own fixture) and injects the
+ *  REAL fetchMediaLibrary, so the kind threading + row shaping run
+ *  for real. Unused namespaces throw (never silently serve). */
+function bindMedia(items?: Array<{ url: string; name: string }>, refuse?: string): void {
+  const dead = (method: string) => async (): Promise<never> => { throw new Error('unused namespace in this wall: ' + method) }
+  bindEstateRemote({
+    bench: { get: dead('bench/get'), 'add-stage': dead('bench/add-stage'), 'remove-stage': dead('bench/remove-stage') },
+    drafts: { get: dead('drafts/get'), patch: dead('drafts/patch') },
+    runs: {
+      list: dead('runs/list'), start: dead('runs/start'), status: dead('runs/status'),
+      stop: dead('runs/stop'), validate: dead('runs/validate'),
+    },
+    media: {
+      list: async (kind: string) => {
+        void kind
+        return refuse !== undefined
+          ? { ok: false, error: new RemoteError('gateway/bad-request', refuse, {}) }
+          : { ok: true, value: { items: items ?? [] } }
+      },
+    },
+  } as unknown as Parameters<typeof bindEstateRemote>[0])
+}
+
+/** fetch fake routing the two doors this file's tests still touch
+ *  (uploads + the flow-face tripwire — media rides the bind above). */
 function fakeFetch(opts: {
-  mediaItems?: Array<Record<string, unknown>>
-  mediaStatus?: number
   uploadPath?: string
   uploadStatus?: number
   uploadThrow?: unknown
@@ -66,11 +94,6 @@ function fakeFetch(opts: {
   return (async (input: unknown, init?: { body?: unknown }) => {
     const url = String(input)
     opts.seen?.push({ url, body: String((init as { body?: unknown } | undefined)?.body ?? '') })
-    if (url.startsWith('/api/media/list')) {
-      const rpcId = (JSON.parse(String((init as { body?: string }).body)) as { rpcId: number }).rpcId
-      if ((opts.mediaStatus ?? 200) !== 200) return new Response('nope', { status: opts.mediaStatus })
-      return Response.json({ type: 'server-response', rpcId, result: { ok: true, value: { items: opts.mediaItems ?? [] } } })
-    }
     if (url === '/v1/uploads') {
       if (opts.uploadThrow !== undefined) throw opts.uploadThrow
       if ((opts.uploadStatus ?? 200) !== 200) return new Response('no', { status: opts.uploadStatus })
@@ -178,16 +201,13 @@ test('FROM FLOW: the seam claim receives the whole request (mode, kind, field, r
 })
 
 test('FROM MEDIA: the library rows — thumbs for images, glyphs for the rest; the pick writes', async () => {
-  const realFetch = globalThis.fetch
-  globalThis.fetch = fakeFetch({
-    mediaItems: [
-      { url: 'https://host/a.png', name: 'a', kind: 'image', runId: 'r1' },
-      { url: 'data/input/b.txt', name: 'b', kind: 'file', runId: 'r2' },
-    ],
-  })
+  bindMedia([
+    { url: 'https://host/a.png', name: 'a' },
+    { url: 'data/input/b.txt', name: 'b' },
+  ])
   try {
     const onEdit = vi.fn()
-    render(h(SourceRow, { label: 'Input', kind: 'image', value: null, onEdit }))
+    render(h(SourceRow, { label: 'Input', kind: 'image', value: null, onEdit, loadMedia: fetchMediaLibrary }))
     fireEvent.click(screen.getByRole('button', { name: 'Input source' }))
     fireEvent.click(screen.getByRole('menuitem', { name: 'From media' }))
     expect(screen.getByText('loading…')).not.toBeNull()
@@ -200,35 +220,50 @@ test('FROM MEDIA: the library rows — thumbs for images, glyphs for the rest; t
     expect(onEdit).toHaveBeenCalledWith('https://host/a.png')
     expect(screen.queryByText('From media')).toBeNull()
   } finally {
-    globalThis.fetch = realFetch
+    unbindEstateRemote()
   }
 })
 
 test('FROM MEDIA: a refused door lists nothing (never a stuck spinner)', async () => {
+  bindMedia(undefined, 'media/list refused')
+  try {
+    render(h(SourceRow, { label: 'Input', kind: 'image', value: null, onEdit: () => {}, loadMedia: fetchMediaLibrary }))
+    fireEvent.click(screen.getByRole('button', { name: 'Input source' }))
+    fireEvent.click(screen.getByRole('menuitem', { name: 'From media' }))
+    await screen.findByText('nothing to pick yet')
+  } finally {
+    unbindEstateRemote()
+  }
+})
+
+test('FROM MEDIA: no injected source degrades to the honest empty (never a hidden fetch)', async () => {
   const realFetch = globalThis.fetch
-  globalThis.fetch = fakeFetch({ mediaStatus: 500 })
+  const seen: string[] = []
+  globalThis.fetch = (async (input: unknown) => { seen.push(String(input)); return Response.json({}) }) as typeof fetch
   try {
     render(h(SourceRow, { label: 'Input', kind: 'image', value: null, onEdit: () => {} }))
     fireEvent.click(screen.getByRole('button', { name: 'Input source' }))
     fireEvent.click(screen.getByRole('menuitem', { name: 'From media' }))
-    await screen.findByText('nothing to pick yet')
+    // the degrade law: absent loadMedia = empty rows immediately (no
+    // loading spinner, no transport of the base's own)
+    expect(screen.getByText('nothing to pick yet')).not.toBeNull()
+    expect(seen.length).toBe(0)
   } finally {
     globalThis.fetch = realFetch
   }
 })
 
 test('FROM MEDIA: the picker closes without writing (never a stray pick)', async () => {
-  const realFetch = globalThis.fetch
-  globalThis.fetch = fakeFetch({ mediaItems: [] })
+  bindMedia([])
   try {
-    render(h(SourceRow, { label: 'Input', kind: 'image', value: null, onEdit: () => {} }))
+    render(h(SourceRow, { label: 'Input', kind: 'image', value: null, onEdit: () => {}, loadMedia: fetchMediaLibrary }))
     fireEvent.click(screen.getByRole('button', { name: 'Input source' }))
     fireEvent.click(screen.getByRole('menuitem', { name: 'From media' }))
     await screen.findByText('nothing to pick yet')
     fireEvent.click(screen.getByRole('button', { name: 'Close picker' }))
     expect(screen.queryByText('From media')).toBeNull()
   } finally {
-    globalThis.fetch = realFetch
+    unbindEstateRemote()
   }
 })
 
@@ -406,22 +441,15 @@ test('THE ASSET DROP: a bench-row drag writes its url verbatim (the slot is the 
   expect(onEdit).toHaveBeenCalledWith('https://host/bench.png')
 })
 
-test('FROM MEDIA: a file field fetches the whole library (accept narrows client-side per row)', async () => {
-  const realFetch = globalThis.fetch
+test('FROM MEDIA: a file field asks for the whole library (accept narrows client-side per row)', async () => {
   const seen: string[] = []
-  globalThis.fetch = (async (input: unknown, init?: { body?: unknown }) => {
-    const url = String(input)
-    seen.push(url + ' :: ' + String((init as { body?: string } | undefined)?.body ?? ''))
-    const rpcId = (JSON.parse(String((init as { body?: string }).body)) as { rpcId: number }).rpcId
-    return Response.json({ type: 'server-response', rpcId, result: { ok: true, value: { items: [] } } })
-  }) as typeof fetch
-  try {
-    render(h(SourceRow, { label: 'Doc', kind: 'file', value: null, onEdit: () => {} }))
-    fireEvent.click(screen.getByRole('button', { name: 'Doc source' }))
-    fireEvent.click(screen.getByRole('menuitem', { name: 'From media' }))
-    await screen.findByText('The runs library')
-    expect(seen.some((s) => s.includes('"kind":"all"'))).toBe(true)
-  } finally {
-    globalThis.fetch = realFetch
+  const loadMedia = async (kind: string, _signal: AbortSignal): Promise<Array<{ url: string; name: string }>> => {
+    seen.push(kind)
+    return []
   }
+  render(h(SourceRow, { label: 'Doc', kind: 'file', value: null, onEdit: () => {}, loadMedia }))
+  fireEvent.click(screen.getByRole('button', { name: 'Doc source' }))
+  fireEvent.click(screen.getByRole('menuitem', { name: 'From media' }))
+  await screen.findByText('The runs library')
+  expect(seen).toEqual(['all'])
 })

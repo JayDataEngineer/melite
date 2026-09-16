@@ -5,6 +5,9 @@
 // candidate arm, the reject-after-unmount guard, and the run verb's
 // flush-then-start law (held-only keys ride as null-deletes; a dead
 // patch voices instead of starting).
+// Estate verbs ride mountEstateFakes (the one-lane seam); the
+// deferred-reject formSpec half stays on fetch verbatim (/v1/* are
+// still fetch in prod).
 import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, test, vi } from "vitest";
@@ -12,22 +15,20 @@ import { createElement as h } from "react";
 import { CardsTab } from "../src/client/CardsTab.tsx";
 import { schemaEnvelope } from "../src/client/spec-form.tsx";
 import type { BenchStageRow, CardsBenchValue } from "../src/client/cards-resource.ts";
+import { mountEstateFakes } from "./estate-harness.ts";
+import { unbindEstateRemote } from "@melite/card-base/estate-remote";
 
-afterEach(() => {
-  cleanup();
-  vi.unstubAllGlobals();
-});
+interface Call { method: string; args: Record<string, unknown> }
 
-interface FrameAnswer { value?: unknown; refuse?: string; thrown?: unknown }
-interface Doors {
+let fakes: { calls: Call[]; unmount: () => void } | null = null;
+let posted: Call[] = [];
+
+// the fetch half (kept verbatim): the form-spec mode + the deferred
+// reject capture. /v1/form-spec stays on fetch by design.
+const formCtl: {
   formSpec: "ok" | "deferred-reject";
-  formsTable: "ok";
-  frames: Record<string, (args: Record<string, unknown>) => FrameAnswer>;
-  posted: Array<{ method: string; args: Record<string, unknown> }>;
   rejectFormSpec: ((reason: unknown) => void) | null;
-}
-
-const doors: Doors = { formSpec: "ok", formsTable: "ok", frames: {}, posted: [], rejectFormSpec: null };
+} = { formSpec: "ok", rejectFormSpec: null };
 
 function specBody(): Record<string, unknown> {
   return {
@@ -38,15 +39,17 @@ function specBody(): Record<string, unknown> {
   };
 }
 
-function stubFetch(): void {
-  doors.posted = [];
-  doors.frames = {};
-  doors.rejectFormSpec = null;
-  vi.stubGlobal("fetch", async (url: unknown, init?: RequestInit): Promise<Response> => {
+function stubDoors(estateOpts: Parameters<typeof mountEstateFakes>[0] = {}): void {
+  fakes?.unmount();
+  const estate = mountEstateFakes(estateOpts);
+  fakes = estate;
+  posted = estate.calls;
+  formCtl.rejectFormSpec = null;
+  vi.stubGlobal("fetch", async (url: unknown): Promise<Response> => {
     const path = String(url);
     if (path.includes("/v1/form-spec")) {
-      if (doors.formSpec === "deferred-reject") {
-        return new Promise<Response>((_resolve, reject) => { doors.rejectFormSpec = reject; });
+      if (formCtl.formSpec === "deferred-reject") {
+        return new Promise<Response>((_resolve, reject) => { formCtl.rejectFormSpec = reject; });
       }
       return new Response(JSON.stringify(specBody()), {
         status: 200, headers: { "content-type": "application/json" },
@@ -62,50 +65,25 @@ function stubFetch(): void {
         status: 200, headers: { "content-type": "application/json" },
       });
     }
-    if (path.startsWith("/api/")) {
-      const frame = JSON.parse(String(init?.body)) as { rpcId: string; method: string; payload: { args: Record<string, unknown> } };
-      doors.posted.push({ method: frame.method, args: frame.payload.args });
-      const route = doors.frames[frame.method];
-      const answer = route !== undefined ? route(frame.payload.args) : { value: {} };
-      if (answer.thrown !== undefined) throw answer.thrown;
-      const result = answer.refuse === undefined
-        ? { ok: true, value: answer.value ?? {} }
-        : { ok: false, error: { message: answer.refuse } };
-      return new Response(JSON.stringify({ type: "server-response", rpcId: frame.rpcId, result }), {
-        status: 200, headers: { "content-type": "application/json" },
-      });
-    }
-    return new Response("no", { status: 500 });
+    throw new Error("estate door on the fetch lane: " + path);
   });
 }
 
-function mountBench(stages: BenchStageRow[]): void {
-  doors.formSpec = "ok";
-  stubFetch();
-  const doc = {
-    draft_id: "bench-p", rev: 1, log: [],
-    stages: stages.map((s) => ({ ...s, run_status: s.runStatus })),
-  };
-  const impl = globalThis.fetch;
-  vi.stubGlobal("fetch", async (url: unknown, init?: RequestInit): Promise<Response> => {
-    const path = String(url);
-    if (path.startsWith("/api/")) {
-      const frame = JSON.parse(String(init?.body)) as { rpcId: string; method: string };
-      if (frame.method === "bench/get") {
-        return new Response(JSON.stringify({
-          type: "server-response", rpcId: frame.rpcId,
-          result: { ok: true, value: doc },
-        }), { status: 200, headers: { "content-type": "application/json" } });
-      }
-      // the run verb's fresh-read law composes the estate's row
-      if (frame.method === "drafts/get") {
-        return new Response(JSON.stringify({
-          type: "server-response", rpcId: frame.rpcId,
-          result: { ok: true, value: { draft_id: "bench-p", stages } },
-        }), { status: 200, headers: { "content-type": "application/json" } });
-      }
-    }
-    return (impl as typeof fetch)(url, init);
+afterEach(() => {
+  cleanup();
+  fakes?.unmount();
+  fakes = null;
+  unbindEstateRemote();
+  vi.unstubAllGlobals();
+});
+
+function mountBench(stages: BenchStageRow[], estateOpts: Parameters<typeof mountEstateFakes>[0] = {}): void {
+  formCtl.formSpec = "ok";
+  stubDoors({
+    benchDoc: { draft_id: "bench-p", rev: 1, log: [], stages: stages.map((s) => ({ ...s })) },
+    draftStages: stages.map((s) => ({ ...s }) as unknown as Record<string, unknown>),
+    draftBenchRev: 1,
+    ...estateOpts,
   });
   render(h(CardsTab, {
     useTabInfo: () => ({ tab: {
@@ -166,22 +144,17 @@ describe("the drill's model key — the spec follows the effective model", () =>
 
 describe("the drill's reject-after-unmount guard — a late failure stays silent", () => {
   test("closing before the spec fails drops the failure (no crash)", async () => {
-    doors.formSpec = "deferred-reject";
     mountBench([{ id: "s_0", card: "image-gen", engine: "comfyui", params: {} }]);
-    doors.formSpec = "deferred-reject";
-    const impl = globalThis.fetch;
-    vi.stubGlobal("fetch", async (url: unknown, init?: RequestInit): Promise<Response> => {
-      if (String(url).includes("/v1/form-spec")) {
-        return new Promise<Response>((_resolve, reject) => { doors.rejectFormSpec = reject; });
-      }
-      return (impl as typeof fetch)(url, init);
-    });
+    // re-arm the deferred reject AFTER the mount (the mount's own
+    // spec fetch already resolved ok — this second stub answers the
+    // drill's fetch, which fires on open below).
+    formCtl.formSpec = "deferred-reject";
     const user = userEvent.setup();
     await user.click(firstTile());
     await screen.findByText("form…", {}, { timeout: 4000 });
     fireEvent.click(screen.getByLabelText("Collapse card"));
     expect(document.querySelector('[data-testid="stage-preview-seat"]')).toBeNull();
-    doors.rejectFormSpec!(new Error("gone"));
+    formCtl.rejectFormSpec!(new Error("gone"));
     await new Promise((r) => setTimeout(r, 50));
     expect(document.querySelector('[data-testid="stage-preview-seat"]')).toBeNull();
     expect(firstTile()).toBeTruthy();
@@ -190,49 +163,45 @@ describe("the drill's reject-after-unmount guard — a late failure stays silent
 
 describe("the run verb — the flush-then-start law", () => {
   test("held-only keys flush as null-deletes before the start", async () => {
-    mountBench([{ id: "s_0", card: "image-gen", engine: "comfyui", params: { prompt: "p", recipe: "old", model: "image-gen" } }]);
+    mountBench(
+      [{ id: "s_0", card: "image-gen", engine: "comfyui", params: { prompt: "p", recipe: "old", model: "image-gen" } }],
+      { refusals: [{ method: "runs/start", message: "no engine today" }] },
+    );
     await openFirstTile();
     await screen.findByText("Prompt", {}, { timeout: 4000 });
     const user = userEvent.setup();
     const area = document.querySelector("textarea");
     if (area === null) throw new Error("prompt field not found");
     await user.type(area, "!!!");
-    doors.frames["drafts/patch"] = () => ({ value: { delivered: true, rev: 2 } });
-    doors.frames["runs/start"] = () => ({ refuse: "no engine today" });
     fireEvent.click(within(zoomCard()).getByRole("button", { name: "Run stage" }));
     await waitFor(() => {
-      const patch = doors.posted.find((p) => JSON.stringify(p.args).includes('"recipe":null'));
+      const patch = posted.find((p) => JSON.stringify(p.args).includes('"recipe":null'));
       expect(patch).toBeTruthy();
     });
-    const patch = doors.posted.find((p) => JSON.stringify(p.args).includes('"recipe":null'))!;
+    const patch = posted.find((p) => JSON.stringify(p.args).includes('"recipe":null'))!;
     expect(JSON.stringify(patch.args)).toContain('"prompt":"p!!!"');
     // the start still fired after the flush
     await waitFor(() => {
-      expect(doors.posted.some((p) => p.method === "runs/start")).toBe(true);
+      expect(posted.some((p) => p.method === "runs/start")).toBe(true);
     });
   });
 
   test("a dead patch voices instead of starting (never a silent drop)", async () => {
-    mountBench([{ id: "s_0", card: "image-gen", engine: "comfyui", params: { prompt: "p", recipe: "old" } }]);
+    // only the patch door throws the foreign string "kablam" verbatim
+    // (the old stub's shape) — the "run failed" fallback voices and
+    // the start never fires.
+    mountBench(
+      [{ id: "s_0", card: "image-gen", engine: "comfyui", params: { prompt: "p", recipe: "old" } }],
+      { throws: [{ method: "drafts/patch", value: "kablam" }] },
+    );
     await openFirstTile();
     await screen.findByText("Prompt", {}, { timeout: 4000 });
     const user = userEvent.setup();
     const area = document.querySelector("textarea");
     if (area === null) throw new Error("prompt field not found");
     await user.type(area, "!!!");
-    // only the patch door throws a non-Error — the patch dies first
-    const impl = globalThis.fetch;
-    vi.stubGlobal("fetch", async (url: unknown, init?: RequestInit): Promise<Response> => {
-      const path = String(url);
-      if (path.startsWith("/api/")) {
-        const frame = JSON.parse(String(init?.body)) as { rpcId: string; method: string; payload: { args: Record<string, unknown> } };
-        doors.posted.push({ method: frame.method, args: frame.payload.args });
-        if (frame.method === "drafts/patch") throw "kablam";
-      }
-      return (impl as typeof fetch)(url, init);
-    });
     fireEvent.click(within(zoomCard()).getByRole("button", { name: "Run stage" }));
     expect(await screen.findByText("run failed", {}, { timeout: 4000 })).toBeTruthy();
-    expect(doors.posted.some((p) => p.method === "runs/start")).toBe(false);
+    expect(posted.some((p) => p.method === "runs/start")).toBe(false);
   });
 });

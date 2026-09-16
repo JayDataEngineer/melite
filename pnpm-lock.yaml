@@ -973,7 +973,13 @@ importers:
       '@melite/contracts':
         specifier: workspace:*
         version: link:../../web-kit/contracts
+      zod:
+        specifier: 4.5.4
+        version: 4.5.4
     devDependencies:
+      '@deepseek-ai/dsh-typert-generator':
+        specifier: 0.1.5-rc.2
+        version: 0.1.5-rc.2(@deepseek-ai/cordis@4.0.2)
       '@types/node':
         specifier: ^22.20.0
         version: 22.20.1
@@ -1014,7 +1020,13 @@ importers:
       '@melite/estate-queue':
         specifier: workspace:*
         version: link:../../harness/estate-queue
+      zod:
+        specifier: 4.5.4
+        version: 4.5.4
     devDependencies:
+      '@deepseek-ai/dsh-typert-generator':
+        specifier: 0.1.5-rc.2
+        version: 0.1.5-rc.2(@deepseek-ai/cordis@4.0.2)
       '@types/node':
         specifier: ^22.20.0
         version: 22.20.1
@@ -2680,6 +2692,9 @@ importers:
       '@deepseek-ai/dsh-client-ui-primitives':
         specifier: 0.1.5-rc.2
         version: 0.1.5-rc.2(@deepseek-ai/cordis@4.0.2)
+      '@deepseek-ai/dsh-typert-protocol':
+        specifier: workspace:*
+        version: link:../../vendor/typert-protocol
       '@melite-plugin/dsh-gallery':
         specifier: workspace:*
         version: link:../infer-gallery
@@ -2692,6 +2707,12 @@ importers:
       '@melite/estate-drafts':
         specifier: workspace:*
         version: link:../../estate/drafts
+      '@melite/estate-media':
+        specifier: workspace:*
+        version: link:../../estate/media
+      '@melite/estate-runs':
+        specifier: workspace:*
+        version: link:../../estate/runs
       '@melite/video-h3-timeline':
         specifier: workspace:*
         version: link:../../video/h3-timeline
@@ -2704,6 +2725,9 @@ importers:
       three:
         specifier: ^0.184.0
         version: 0.184.0
+      zod:
+        specifier: 4.5.4
+        version: 4.5.4
     devDependencies:
       '@deepseek-ai/cordis':
         specifier: ^4.0.1
@@ -2726,9 +2750,6 @@ importers:
       '@deepseek-ai/dsh-host-webserver':
         specifier: 0.1.5-rc.2
         version: 0.1.5-rc.2(@deepseek-ai/cordis@4.0.2)
-      '@deepseek-ai/dsh-typert-protocol':
-        specifier: workspace:*
-        version: link:../../vendor/typert-protocol
       '@melite/card-base':
         specifier: workspace:*
         version: link:../card-base

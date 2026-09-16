@@ -15,8 +15,14 @@ import { createElement as h } from "react"
 import { cardsDraftStageAddress, parseCardsAddress } from "../src/client/cards-resource.ts"
 import { FlowCards } from "../src/client/FlowCards.tsx"
 import type { ToolCallBlockView } from "../src/client/types.ts"
+import { mountEstateFakes } from "./estate-harness.ts"
+
+type Fakes = ReturnType<typeof mountEstateFakes>;
+let active: Fakes | null = null;
 
 afterEach(() => {
+  active?.unmount();
+  active = null;
   cleanup()
   vi.unstubAllGlobals()
 })
@@ -57,29 +63,22 @@ function flowBlock(draftId: string): ToolCallBlockView {
   } as unknown as ToolCallBlockView
 }
 
-/** drafts/get serves the doc the rows hydrate from (the wire's frame
- *  law: the answer echoes the request's rpcId). */
-function stubDraftDoc(draftId: string): void {
-  vi.stubGlobal("fetch", vi.fn(async (_url: unknown, init?: RequestInit) => {
-    const rpcId = (JSON.parse(String(init?.body)) as { rpcId: string }).rpcId
-    return new Response(JSON.stringify({
-      type: "server-response",
-      rpcId,
-      result: { ok: true, value: {
-        draft_id: draftId,
-        intent: "the film",
-        stages: [
-          { id: "s_0", card: "h3-timeline", engine: "comfyui", params: { seed: 1 } },
-          { id: "s_1", card: "image-gen", params: {} },
-        ],
-      } },
-    }), { status: 200, headers: { "content-type": "application/json" } })
-  }))
+/** drafts/get serves the doc the rows hydrate from — over the live
+ *  one-lane seam (the row address rides the block's draft id, never
+ *  the served doc's, so the harness's canonical draft id is fine). */
+function stubDraftDoc(): void {
+  active?.unmount();
+  active = mountEstateFakes({
+    draftStages: [
+      { id: "s_0", card: "h3-timeline", engine: "comfyui", params: { seed: 1 } },
+      { id: "s_1", card: "image-gen", params: {} },
+    ],
+  });
 }
 
 describe("the row law (FlowCards × the inject share)", () => {
   test("a row click with the injected face opens the draft-stage address", async () => {
-    stubDraftDoc("draft-1")
+    stubDraftDoc()
     const seen: string[] = []
     render(h(FlowCards, {
       block: flowBlock("draft-1"),
@@ -94,7 +93,7 @@ describe("the row law (FlowCards × the inject share)", () => {
   })
 
   test("a face that answers false falls back to the in-card drill", async () => {
-    stubDraftDoc("draft-1")
+    stubDraftDoc()
     render(h(FlowCards, {
       block: flowBlock("draft-1"),
       openSurface: () => false,
@@ -105,7 +104,7 @@ describe("the row law (FlowCards × the inject share)", () => {
   })
 
   test("without the face the row falls back to the in-card drill", async () => {
-    stubDraftDoc("draft-1")
+    stubDraftDoc()
     render(h(FlowCards, { block: flowBlock("draft-1") }))
     const row = await screen.findByText("s_0", {}, { timeout: 4000 })
     row.click()

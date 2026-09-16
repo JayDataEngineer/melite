@@ -9,19 +9,41 @@
       "types": "./lib/index.d.ts",
       "default": "./lib/index.js"
     },
-    "./package.json": "./package.json"
+    "./package.json": "./package.json",
+    "./typert": {
+      "types": "./lib/typert.host.d.ts",
+      "default": "./lib/typert.host.js"
+    },
+    "./remote": {
+      "types": "./lib/typert.remote-client.d.ts",
+      "default": "./lib/typert.remote-client.js"
+    },
+    "./types": {
+      "types": "./lib/types.d.ts",
+      "default": "./lib/types.js"
+    }
   },
   "scripts": {
     "build": "tsc -p tsconfig.json",
-    "typecheck": "tsc -p tsconfig.json --noEmit"
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "typert": "node scripts/typert.mjs"
   },
   "dependencies": {
     "@deepseek-ai/cordis": "^4.0.2",
     "@deepseek-ai/dsh-typert-protocol": "0.1.5-rc.2",
-    "@melite/estate-queue": "workspace:*"
+    "@melite/estate-queue": "workspace:*",
+    "zod": "4.5.4"
   },
   "devDependencies": {
     "@types/node": "^22.20.0",
-    "typescript": "^5.9.3"
-  }
+    "typescript": "^5.9.3",
+    "@deepseek-ai/dsh-typert-generator": "0.1.5-rc.2"
+  },
+  "files": [
+    "lib/typert.host.d.ts",
+    "lib/typert.host.js",
+    "lib/typert.remote-client.d.ts",
+    "lib/typert.remote-client.d.ts.map",
+    "lib/typert.remote-client.js"
+  ]
 }

@@ -1,14 +1,32 @@
 // draft-model.spec.ts — the native card surface's PURE layer walled:
 // row distillation (status precedence), the param field projection,
 // and the edit→PATCH coercion (raw-typed strings, coerced once).
-// The fetch doors are exercised live by smoke; here they are stubbed
-// to their wire shapes only where narrowing behavior is the contract
-// (named refusal propagation, malformed-doc refusal).
-import { describe, expect, test } from "vitest";
+// The doors ride the live one-lane seam (stroke 81): mountEstateFakes
+// binds fakes over the mounted Typert namespaces; the recorded
+// {method, args} call log is asserted. No fetch stub answers an
+// estate verb, no module mocks.
+import { afterEach, describe, expect, test, vi } from "vitest";
 import {
   cardRows, coerceEdit, editPatch, fetchDraft, foldFrame, paramFields, patchStageParams, runFinished,
 } from "../src/client/draft.ts";
 import type { DraftDoc, RunStatusDoc } from "../src/client/draft.ts";
+import { mountEstateFakes, type EstateFakesOptions } from "./estate-harness.ts";
+
+type Fakes = ReturnType<typeof mountEstateFakes>;
+let active: Fakes | null = null;
+
+/** Mount the one-lane fakes for one test (drained in afterEach). */
+function wire(opts: EstateFakesOptions = {}): Fakes {
+  active?.unmount();
+  active = mountEstateFakes(opts);
+  return active;
+}
+
+afterEach(() => {
+  active?.unmount();
+  active = null;
+  vi.unstubAllGlobals();
+});
 
 const DOC: DraftDoc = {
   draft_id: "draft-1",
@@ -20,10 +38,6 @@ const DOC: DraftDoc = {
   status: "ready",
   createdAt: 1,
 };
-
-function res(status: number, body: unknown): Response {
-  return new Response(JSON.stringify(body), { status, headers: { "content-type": "application/json" } });
-}
 
 describe("cardRows — status precedence and distillation", () => {
   test("no live run: draft stage status, else ready", () => {
@@ -94,63 +108,39 @@ describe("foldFrame — the events-bus idempotent patch", () => {
   });
 });
 
-// The wire stub: fetch is replaced whole; the canned RemoteResult
-// answers inside the server-response frame the wire caller expects
-// (fetchDraft self-fetches — the gateway-era fetch injection died
-// with the app; tests stub globalThis.fetch per call).
-function stubWire(result: { ok: true; value: unknown } | { ok: false; error: { message: string } }): void {
-  (globalThis as { fetch: unknown }).fetch = async (_input: unknown, init?: RequestInit): Promise<Response> => {
-    const frame = JSON.parse(String(init?.body)) as { rpcId?: string; method?: string };
-    return new Response(JSON.stringify({
-      type: "server-response", rpcId: frame.rpcId, result,
-    }), { status: 200, headers: { "content-type": "application/json" } });
-  };
-}
-
+// The doors ride the live seam — the narrowing contract (named
+// refusal propagation, malformed-doc refusal) pins against the bound
+// namespaces, never a hand-written envelope.
 describe("door narrowing — named refusals, malformed docs", () => {
   test("fetchDraft propagates the remote's named error", async () => {
-    stubWire({ ok: false, error: { message: "no_such_draft" } });
+    wire({ refusals: [{ method: "drafts/get", message: "no_such_draft" }] });
     expect((await fetchDraft("d").catch((e: Error) => e.message))).toBe("no_such_draft");
   });
 
   test("fetchDraft refuses a non-doc payload with its own name", async () => {
-    stubWire({ ok: true, value: { hello: "world" } });
+    wire({ draftStages: { hello: "world" } as unknown as Array<Record<string, unknown>> });
     expect((await fetchDraft("d").catch((e: Error) => e.message))).toBe("drafts/get: not a draft doc");
   });
 
-  test("patchStageParams rides the drafts/patch wire door (reborn 2026-09-11)", async () => {
-    // The REAL door: the write arm over the drafts domain. The frame
+  test("patchStageParams rides the drafts/patch door (reborn 2026-09-11)", async () => {
+    // The REAL door: the write arm over the drafts domain. The call
     // carries the named args + the {params} patch body + the CAS
     // expectRev (the revless-write cure: the door requires a rev, so
     // the write reads the served doc's bench block first); delivered
     // false lands as a named throw (never a lying success).
-    const sent: Array<Record<string, unknown>> = [];
-    (globalThis as { fetch: unknown }).fetch = async (_i: unknown, init?: RequestInit): Promise<Response> => {
-      const frame = JSON.parse(String(init?.body)) as { rpcId: string; method: string };
-      sent.push(frame as unknown as Record<string, unknown>);
-      const value = frame.method === "drafts/get"
-        ? { draft_id: "d", stages: [], bench: { rev: 9, log: [] } }
-        : { draftId: "d", stageId: "s_0", delivered: true, patched: ["params"] };
-      return new Response(JSON.stringify({
-        type: "server-response", rpcId: frame.rpcId,
-        result: { ok: true, value },
-      }), { status: 200, headers: { "content-type": "application/json" } });
-    };
+    const fakes = wire({ draftBenchRev: 9 });
     await patchStageParams("d", "s_0", { steps: 12 });
-    const write = sent.find((f) => (f as { method: string }).method === "drafts/patch") as unknown as { method: string; payload: { args: Record<string, unknown> } };
-    expect(write.method).toBe("drafts/patch");
-    expect(write.payload.args).toEqual({ draftId: "d", stageId: "s_0", patch: { params: { steps: 12 } }, expectRev: 9 });
+    // ADAPTED (reported): the old lane asserted the envelope frame
+    // ({method, payload:{args}}); the live seam records {method, args}
+    // directly — same intent (verb, arg names, rev), no wrapper.
+    const write = fakes.calls.find((c) => c.method === "drafts/patch");
+    expect(write?.method).toBe("drafts/patch");
+    expect(write?.args).toEqual({ draftId: "d", stageId: "s_0", patch: { params: { steps: 12 } }, expectRev: 9 });
 
-    (globalThis as { fetch: unknown }).fetch = async (_i: unknown, init?: RequestInit): Promise<Response> => {
-      const frame = JSON.parse(String(init?.body)) as { rpcId: string; method: string };
-      const value = frame.method === "drafts/get"
-        ? { draft_id: "d", stages: [], bench: { rev: 9, log: [] } }
-        : { draftId: "d", stageId: "s_x", delivered: false, reason: "stage not found" };
-      return new Response(JSON.stringify({
-        type: "server-response", rpcId: frame.rpcId,
-        result: { ok: true, value },
-      }), { status: 200, headers: { "content-type": "application/json" } });
-    };
+    wire({
+      draftBenchRev: 9,
+      patchFailures: [{ draftId: "d", stageId: "s_x", delivered: false, reason: "stage not found" }],
+    });
     const message = await patchStageParams("d", "s_x", { steps: 1 }).catch((e: Error) => e.message);
     expect(message).toContain("stage not found");
   });

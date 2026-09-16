@@ -1,8 +1,8 @@
 // draft-doors.spec.ts — draft.ts's wire-door + distillation arms the
 // model spec leaves uncovered (2026-09-16 burn-down):
 //
-//   fetchDraftRev  — the served bench block read (rev number / missing
-//                    block → null / door throws → null, never a throw).
+//   fetchDraftRev  — the served bench block read (rev number / dead
+//                    door → null, never a throw).
 //   patch rebase   — held-rev write; revless write reads then writes;
 //                    revless with a dead door throws loud; CAS conflict
 //                    re-reads and re-applies ONCE (both matcher voices);
@@ -17,145 +17,136 @@
 //                    narrowing, foldFrame's empty-status keep + null-prev
 //                    run frame.
 //
-// The stub speaks the REAL wire law (rebase-law.spec.ts): POST
-// /api/<method> with the client-request frame; typert server-response
-// envelopes (rpcId echoed; domain refusals at HTTP 200 ok:false).
-// Fakes-not-mocks: fetch is replaced whole per test, the wire frame
-// the door posts is asserted, deep-equal on the recorded output.
-import { describe, expect, test, afterEach } from "vitest";
+// The doors ride the live one-lane seam (stroke 81): mountEstateFakes
+// binds fakes over the mounted Typert namespaces; the recorded
+// {method, args} call log is asserted (order, count, arg values).
+// Fakes-not-mocks: no fetch stub answers an estate verb, no module
+// mocks. Pure distillation (cardRows, foldFrame) needs no wire.
+import { afterEach, describe, expect, test, vi } from "vitest";
 import {
   cardRows, fetchDraft, fetchDraftRev, foldFrame, patchStageOutcome,
   patchStageParams, runStatus, startDraft,
 } from "../src/client/draft.ts";
 import type { DraftDoc, RunStatusDoc } from "../src/client/draft.ts";
+import { mountEstateFakes, type EstateFakesOptions } from "./estate-harness.ts";
 
-type Answer = { refuse?: string; value?: unknown; boom?: string; thrown?: unknown };
+type Fakes = ReturnType<typeof mountEstateFakes>;
+let active: Fakes | null = null;
 
-function stubWire(route: (method: string, args: Record<string, unknown>) => Answer): Array<{ method: string; args: Record<string, unknown> }> {
-  const seen: Array<{ method: string; args: Record<string, unknown> }> = [];
-  const realFetch = globalThis.fetch;
-  globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
-    const url = String(input);
-    const method = url.startsWith("/api/") ? url.slice("/api/".length) : url;
-    let frame: Record<string, unknown> = {};
-    if (typeof init?.body === "string") frame = JSON.parse(init.body) as Record<string, unknown>;
-    const rpcId = frame["rpcId"];
-    const args = ((frame["payload"] as { args?: Record<string, unknown> } | undefined)?.args ?? {}) as Record<string, unknown>;
-    seen.push({ method, args });
-    const answer = route(method, args);
-    if (answer.boom !== undefined) throw new Error(answer.boom);
-    if (answer.thrown !== undefined) throw answer.thrown;
-    const result = answer.refuse === undefined
-      ? { ok: true, value: answer.value ?? {} }
-      : { ok: false, error: { message: answer.refuse } };
-    return new Response(JSON.stringify({ type: "server-response", rpcId, result }), {
-      status: 200,
-      headers: { "content-type": "application/json" },
-    });
-  }) as typeof fetch;
-  afterEach(() => { globalThis.fetch = realFetch; });
-  return seen;
+/** Mount the one-lane fakes for one test (drained in afterEach). */
+function wire(opts: EstateFakesOptions = {}): Fakes {
+  active?.unmount();
+  active = mountEstateFakes(opts);
+  return active;
 }
 
-const DRAFT = (bench: unknown): Record<string, unknown> => ({
-  draft_id: "d", stages: [{ id: "s_0" }], bench,
+afterEach(() => {
+  active?.unmount();
+  active = null;
+  vi.unstubAllGlobals();
 });
 
 describe("fetchDraftRev — the served bench block read", () => {
   test("a numeric rev rides through", async () => {
-    stubWire((m) => m === "drafts/get" ? { value: DRAFT({ rev: 41, log: [] }) } : {});
+    wire({ draftBenchRev: 41 });
     expect(await fetchDraftRev("d")).toBe(41);
   });
   test("a missing bench block reads null (never a throw)", async () => {
-    stubWire((m) => m === "drafts/get" ? { value: { draft_id: "d", stages: [] } } : {});
+    wire({ draftOmitBench: true });
     expect(await fetchDraftRev("d")).toBeNull();
   });
   test("a non-numeric rev reads null", async () => {
-    stubWire((m) => m === "drafts/get" ? { value: DRAFT({ rev: "41", log: [] }) } : {});
+    wire({ draftBenchRev: "41" as unknown as number });
     expect(await fetchDraftRev("d")).toBeNull();
   });
   test("a dead door reads null (the caller then throws loud)", async () => {
-    stubWire(() => ({ boom: "network gone" }));
+    wire({ throws: [{ method: "drafts/get", message: "network gone" }] });
     expect(await fetchDraftRev("d")).toBeNull();
   });
   test("a malformed doc reads null", async () => {
-    stubWire((m) => m === "drafts/get" ? { value: { hello: "world" } } : {});
+    // The harness always serves a well-formed envelope; the malformed
+    // shape rides as non-array stages (served verbatim) — fetchDraft
+    // refuses it, so the rev read still lands null.
+    wire({ draftStages: { hello: "world" } as unknown as Array<Record<string, unknown>> });
     expect(await fetchDraftRev("d")).toBeNull();
   });
 });
 
 describe("patchStageParams — the CAS dance arms", () => {
   test("a held rev writes without a re-read", async () => {
-    const seen = stubWire((m) => m === "drafts/patch"
-      ? { value: { delivered: true } }
-      : { value: DRAFT({ rev: 1, log: [] }) });
+    const fakes = wire();
     await patchStageParams("d", "s_0", { steps: 3 }, 7);
-    expect(seen.map((c) => c.method)).toEqual(["drafts/patch"]);
-    expect(seen[0]?.args).toEqual({ draftId: "d", stageId: "s_0", patch: { params: { steps: 3 } }, expectRev: 7 });
+    expect(fakes.calls.map((c) => c.method)).toEqual(["drafts/patch"]);
+    expect(fakes.calls[0]?.args).toEqual({ draftId: "d", stageId: "s_0", patch: { params: { steps: 3 } }, expectRev: 7 });
   });
   test("the 'cas-conflict' voice rebases too (the matcher's second arm)", async () => {
-    const seen = stubWire((m, a) => {
-      if (m === "drafts/get") return { value: DRAFT({ rev: 10, log: [] }) };
-      const doc = a["doc"] as Record<string, unknown> | undefined;
-      void doc;
-      return (a["expectRev"] as number) === 7
-        ? { refuse: "bench/cas-conflict: stale expect_rev" }
-        : { value: { delivered: true } };
+    const fakes = wire({
+      draftBenchRev: 10,
+      refusals: [{ method: "drafts/patch", message: "bench/cas-conflict: stale expect_rev" }],
     });
     await patchStageParams("d", "s_0", { steps: 3 }, 7);
-    expect(seen.filter((c) => c.method === "drafts/patch")).toHaveLength(2);
-    expect(seen[seen.length - 1]?.args).toMatchObject({ expectRev: 10 });
+    expect(fakes.calls.filter((c) => c.method === "drafts/patch")).toHaveLength(2);
+    expect(fakes.calls[fakes.calls.length - 1]?.args).toMatchObject({ expectRev: 10 });
   });
   test("the 'moved: rev is' voice rebases (the server's real words)", async () => {
-    const seen = stubWire((m, a) => {
-      if (m === "drafts/get") return { value: DRAFT({ rev: 429, log: [] }) };
-      return (a["expectRev"] as number) === 35
-        ? { refuse: "bench main moved: rev is 429, caller held 35" }
-        : { value: { delivered: true } };
+    const fakes = wire({
+      draftBenchRev: 429,
+      refusals: [{ method: "drafts/patch", message: "bench main moved: rev is 429, caller held 35" }],
     });
     await patchStageParams("d", "s_0", { steps: 3 }, 35);
-    expect(seen[seen.length - 1]?.args).toMatchObject({ expectRev: 429 });
+    expect(fakes.calls[fakes.calls.length - 1]?.args).toMatchObject({ expectRev: 429 });
   });
   test("a revless write with a dead door throws loud (never a blind write)", async () => {
-    stubWire(() => ({ boom: "network gone" }));
+    wire({ throws: [{ method: "drafts/get", message: "network gone" }] });
     await expect(patchStageParams("d", "s_0", { steps: 3 }))
       .rejects.toThrow(/no bench rev to write against \(draft d\)/);
   });
   test("a second conflict throws loud", async () => {
-    stubWire((m) => m === "drafts/get"
-      ? { value: DRAFT({ rev: 430, log: [] }) }
-      : { refuse: "bench main moved: rev is 431, caller held 430" });
+    wire({
+      draftBenchRev: 430,
+      refusals: [
+        { method: "drafts/patch", message: "bench main moved: rev is 431, caller held 430" },
+        { method: "drafts/patch", message: "bench main moved: rev is 431, caller held 430" },
+      ],
+    });
     await expect(patchStageParams("d", "s_0", { steps: 3 }, 429))
       .rejects.toThrow(/rev is 431, caller held 430/);
   });
   test("a dead re-read leaves the original refusal standing", async () => {
-    stubWire((m) => {
-      if (m === "drafts/patch") return { refuse: "bench main moved: rev is 429, caller held 35" };
+    wire({
+      refusals: [{ method: "drafts/patch", message: "bench main moved: rev is 429, caller held 35" }],
       // the re-read dies: the ORIGINAL refusal is the honest answer
-      throw new Error("network gone");
+      throws: [{ method: "drafts/get", message: "network gone" }],
     });
     // NOTE: fetchDraftRev catches the door death → null → original refusal
     await expect(patchStageParams("d", "s_0", { steps: 3 }, 35))
       .rejects.toThrow(/rev is 429, caller held 35/);
   });
   test("a non-CAS refusal throws through untouched", async () => {
-    const seen = stubWire((m) => m === "drafts/get"
-      ? { value: DRAFT({ rev: 9, log: [] }) }
-      : { refuse: "admission: unknown stage s_x" });
+    const fakes = wire({
+      draftBenchRev: 9,
+      refusals: [{ method: "drafts/patch", message: "admission: unknown stage s_x" }],
+    });
     await expect(patchStageParams("d", "s_x", { steps: 1 }))
       .rejects.toThrow(/admission: unknown stage/);
-    expect(seen.filter((c) => c.method === "drafts/patch")).toHaveLength(1);
+    expect(fakes.calls.filter((c) => c.method === "drafts/patch")).toHaveLength(1);
   });
-  test("a non-Error throw propagates verbatim (never a conflict, never wrapped)", async () => {
-    stubWire((m) => m === "drafts/get"
-      ? { value: DRAFT({ rev: 9, log: [] }) }
-      : { thrown: "kablam" });
-    await expect(patchStageParams("d", "s_0", { steps: 1 })).rejects.toBe("kablam");
+  test("a transport throw propagates (never a conflict, never wrapped)", async () => {
+    // ADAPTED (reported): the old lane rejected with the bare string
+    // "kablam"; the live seam rejects with an Error carrying the text
+    // (the harness throw queue), so the assertion pins the text, not
+    // the string identity.
+    wire({
+      draftBenchRev: 9,
+      throws: [{ method: "drafts/patch", message: "kablam" }],
+    });
+    await expect(patchStageParams("d", "s_0", { steps: 1 })).rejects.toThrow("kablam");
   });
   test("delivered:false with a non-string reason lands as 'undelivered'", async () => {
-    stubWire((m) => m === "drafts/get"
-      ? { value: DRAFT({ rev: 9, log: [] }) }
-      : { value: { delivered: false, reason: 42 } });
+    wire({
+      draftBenchRev: 9,
+      patchFailures: [{ delivered: false, reason: 42 }],
+    });
     await expect(patchStageParams("d", "s_0", { steps: 1 }))
       .rejects.toThrow(/drafts\/patch: undelivered \(draft d, stage s_0\)/);
   });
@@ -163,46 +154,42 @@ describe("patchStageParams — the CAS dance arms", () => {
 
 describe("patchStageOutcome — the attribution write", () => {
   test("the outcome frame carries runStatus + result + the held rev", async () => {
-    const seen = stubWire((m) => m === "drafts/patch"
-      ? { value: { delivered: true } }
-      : { value: DRAFT({ rev: 1, log: [] }) });
+    const fakes = wire();
     await patchStageOutcome("d", "s_0", { runStatus: "completed", result: { url: "out.png" } }, 12);
-    expect(seen).toHaveLength(1);
-    expect(seen[0]?.args).toEqual({
+    expect(fakes.calls).toHaveLength(1);
+    expect(fakes.calls[0]?.args).toEqual({
       draftId: "d", stageId: "s_0",
       patch: { runStatus: "completed", result: { url: "out.png" } },
       expectRev: 12,
     });
   });
   test("a revless outcome write reads the rev first", async () => {
-    const seen = stubWire((m) => m === "drafts/get"
-      ? { value: DRAFT({ rev: 5, log: [] }) }
-      : { value: { delivered: true } });
+    const fakes = wire({ draftBenchRev: 5 });
     await patchStageOutcome("d", "s_0", { runStatus: "running" });
-    expect(seen.map((c) => c.method)).toEqual(["drafts/get", "drafts/patch"]);
-    expect(seen[1]?.args).toMatchObject({ expectRev: 5 });
+    expect(fakes.calls.map((c) => c.method)).toEqual(["drafts/get", "drafts/patch"]);
+    expect(fakes.calls[1]?.args).toMatchObject({ expectRev: 5 });
   });
 });
 
 describe("startDraft / runStatus — the run doors", () => {
   test("startDraft returns the run_id", async () => {
-    stubWire((m) => m === "runs/start" ? { value: { run_id: "r_7" } } : {});
+    wire({ startDocs: [{ run_id: "r_7" }] });
     expect(await startDraft("d")).toBe("r_7");
   });
   test("startDraft refuses loud when the answer names no run", async () => {
-    stubWire(() => ({ value: { nope: true } }));
+    wire({ startDocs: [{ nope: true }] });
     await expect(startDraft("d")).rejects.toThrow(/runs\/start: no run_id in the answer/);
   });
   test("runStatus returns the status doc", async () => {
-    stubWire((m) => m === "runs/status" ? { value: { run_id: "r", status: "running", stages: [] } } : {});
+    wire({ runDocs: [{ run_id: "r", status: "running", stages: [] }] });
     expect(await runStatus("r")).toEqual({ run_id: "r", status: "running", stages: [] });
   });
   test("runStatus refuses a non-doc payload", async () => {
-    stubWire(() => ({ value: { run_id: "r" } }));
+    wire({ runDocs: [{ run_id: "r" }] });
     await expect(runStatus("r")).rejects.toThrow(/runs\/status: not a status doc/);
   });
   test("fetchDraft with a string draft_id but non-array stages refuses", async () => {
-    stubWire(() => ({ value: { draft_id: "d", stages: {} } }));
+    wire({ draftStages: { draft_id: "d", stages: {} } as unknown as Array<Record<string, unknown>> });
     await expect(fetchDraft("d")).rejects.toThrow(/drafts\/get: not a draft doc/);
   });
 });

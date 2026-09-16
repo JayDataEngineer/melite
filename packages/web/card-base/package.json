@@ -18,7 +18,10 @@
     "./chrome": "./src/chrome.ts",
     "./toast": "./src/toast.tsx",
     "./preview": "./src/preview.tsx",
-    "./toast-store": "./src/toastStore.ts"
+    "./toast-store": "./src/toastStore.ts",
+    "./estate-remote": "./src/estate-remote.ts",
+    "./runs-policy": "./src/runs-policy.ts",
+    "./media-library": "./src/media-library.ts"
   },
   "peerDependencies": {
     "@deepseek-ai/dsh-client-ui-slots": "0.1.5-rc.2",
@@ -45,8 +48,13 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@deepseek-ai/dsh-api-gateway": "0.1.5-rc.2",
     "@deepseek-ai/dsh-client-ui-primitives": "0.1.5-rc.2",
+    "@deepseek-ai/dsh-typert-protocol": "0.1.5-rc.2",
     "@melite/contracts": "workspace:*",
+    "@melite/estate-drafts": "workspace:*",
+    "@melite/estate-media": "workspace:*",
+    "@melite/estate-runs": "workspace:*",
     "clsx": "*",
     "three": "^0.184.0",
     "@melite-plugin/melite-run-wire": "workspace:*"

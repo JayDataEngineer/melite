@@ -18,6 +18,8 @@ import { cleanup, render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, expect, test, vi } from 'vitest'
 import { createElement } from 'react'
+import { mountEstateFakes } from './estate-harness.ts'
+import { unbindEstateRemote } from '@melite/card-base/estate-remote'
 
 import { CardsTab } from '../src/client/CardsTab.tsx'
 import { schemaEnvelope } from '../src/client/spec-form.tsx'
@@ -47,7 +49,17 @@ const BENCH: CardsBenchValue = {
 }
 
 function stubWire(): void {
-  vi.stubGlobal('fetch', async (url: unknown, init?: RequestInit): Promise<Response> => {
+  // THE ONE-FAKE LAW (stroke 81): the failed bench/run rows ride the
+  // bound namespaces; fetch answers ONLY the /v1 discovery doors.
+  mountEstateFakes({
+    benchDoc: {
+      draft_id: 'bench-s1', rev: 7,
+      stages: [{ id: 's_0', card: 'image-gen', title: 'hero frame', engine: 'comfyui', status: 'failed', runStatus: 'failed', params: { prompt: 'a red cube' }, result: { error: REFUSAL } }],
+      log: [],
+    },
+    runDocs: [{ run_id: 'run-1', status: 'failed', draft_id: 'bench-s1', error: REFUSAL, stages: [{ id: 's_0', status: 'error', url: '', error: REFUSAL }] }],
+  })
+  vi.stubGlobal('fetch', async (url: unknown): Promise<Response> => {
     const path = String(url)
     if (path.includes('/v1/form-spec')) {
       return new Response(JSON.stringify({
@@ -62,19 +74,7 @@ function stubWire(): void {
         'image-gen': { label: 'Image Gen', description: 'generate an image', genre: 'image', families: ['image-gen'] },
       } }), { status: 200, headers: { 'content-type': 'application/json' } })
     }
-    const frame = JSON.parse(String(init?.body)) as { rpcId: string; method: string }
-    let value: Record<string, unknown> = { ok: true }
-    if (frame.method === 'bench/get') {
-      value = {
-        draft_id: 'bench-s1', rev: 7,
-        stages: [{ id: 's_0', card: 'image-gen', title: 'hero frame', engine: 'comfyui', status: 'failed', runStatus: 'failed', params: { prompt: 'a red cube' }, result: { error: REFUSAL } }],
-        log: [],
-      }
-    }
-    if (frame.method === 'runs/status') {
-      value = { run_id: 'run-1', status: 'failed', draft_id: 'bench-s1', error: REFUSAL, stages: [{ id: 's_0', status: 'error', url: '', error: REFUSAL }] }
-    }
-    return new Response(JSON.stringify({ type: 'server-response', rpcId: frame.rpcId, result: { ok: true, value } }), { status: 200 })
+    throw new Error('estate door on the fetch lane: ' + path)
   })
 }
 
@@ -86,6 +86,7 @@ function tileButton(): HTMLElement {
 
 afterEach(() => {
   cleanup()
+  unbindEstateRemote()
   vi.unstubAllGlobals()
 })
 
@@ -152,8 +153,17 @@ test('a healthy row never renders an error face (absent ≡ clean)', async () =>
 const TURBO_REFUSAL = "card_compose phase 1: unknown variant 'turbo' for model 'anima' (known: standard, default)"
 
 test('a refused start lands on the row — the open drill reads the why', async () => {
-  let failed = false
-  vi.stubGlobal('fetch', async (url: unknown, init?: RequestInit): Promise<Response> => {
+  // THE REFUSAL RIDES THE ERROR BRANCH (stroke 81): runs/start
+  // refuses with the compose text; the outcome patch applies into
+  // the SAME stage object bench/get serves, so the refetch carries
+  // the failure without a second fixture.
+  const stage: Record<string, unknown> = { id: 's_0', card: 'image-gen', title: 'hero frame', engine: 'comfyui', status: 'idle', params: { prompt: 'a red cube' } }
+  mountEstateFakes({
+    benchDoc: { draft_id: 'bench-s1', rev: 7, stages: [stage], log: [] },
+    draftStages: [stage],
+    refusals: [{ method: 'runs/start', message: TURBO_REFUSAL }],
+  })
+  vi.stubGlobal('fetch', async (url: unknown): Promise<Response> => {
     const path = String(url)
     if (path.includes('/v1/form-spec')) {
       return new Response(JSON.stringify({
@@ -168,32 +178,7 @@ test('a refused start lands on the row — the open drill reads the why', async 
         'image-gen': { label: 'Image Gen', description: 'generate an image', genre: 'image', families: ['image-gen'] },
       } }), { status: 200, headers: { 'content-type': 'application/json' } })
     }
-    const frame = JSON.parse(String(init?.body)) as { rpcId: string; method: string; payload: { args: Record<string, unknown> } }
-    let value: Record<string, unknown> = { ok: true }
-    if (frame.method === 'bench/get') {
-      value = failed
-        ? {
-            draft_id: 'bench-s1', rev: 8,
-            stages: [{ id: 's_0', card: 'image-gen', title: 'hero frame', engine: 'comfyui', status: 'failed', runStatus: 'failed', params: { prompt: 'a red cube' }, result: { error: TURBO_REFUSAL } }],
-            log: [],
-          }
-        : {
-            draft_id: 'bench-s1', rev: 7,
-            stages: [{ id: 's_0', card: 'image-gen', title: 'hero frame', engine: 'comfyui', status: 'idle', params: { prompt: 'a red cube' } }],
-            log: [],
-          }
-    }
-    if (frame.method === 'drafts/get') {
-      value = { draft_id: 'bench-s1', rev: 7, intent: '', stages: [{ id: 's_0', card: 'image-gen', title: 'hero frame', engine: 'comfyui', params: { prompt: 'a red cube' } }] }
-    }
-    if (frame.method === 'runs/start') {
-      return new Response(JSON.stringify({ type: 'server-response', rpcId: frame.rpcId, result: { ok: false, error: { message: TURBO_REFUSAL } } }), { status: 200 })
-    }
-    if (frame.method === 'drafts/patch') {
-      failed = true
-      value = { draftId: 'bench-s1', stageId: 's_0', delivered: true, patched: ['runStatus'] }
-    }
-    return new Response(JSON.stringify({ type: 'server-response', rpcId: frame.rpcId, result: { ok: true, value } }), { status: 200 })
+    throw new Error('estate door on the fetch lane: ' + path)
   })
   const user = userEvent.setup()
   render(createElement(CardsTab, {

@@ -1,33 +1,50 @@
 /**
- * add-stage.ts — the bench's mutation wire door callers (the tab's
- * add/remove/reorder/rewire/group/ungroup paths). Every verb is ONE
- * wireCall over the run-wire package's frame (the DRY law — the frame
- * lived here six times before the package existed); the remote's
- * signature is (sessionKey, doc) — the args frame carries BOTH named,
- * the doc carries the verb's own keys, and every doc rides expect_rev
- * (the CAS law: the caller chains the bench rev it rendered, so a
- * concurrent edit refuses instead of slicing wrong).
+ * add-stage.ts — the bench's mutation verb callers (the tab's
+ * add/remove/reorder/group/ungroup paths). Every verb is ONE typed
+ * call on the mounted bench namespace (stroke 81's one-lane law —
+ * the generated client, never a hand-written envelope); the remote
+ * signature is (sessionKey, doc) — sessionKey is a TYPED first
+ * parameter, so a misaddressed bench is a type error, not a runtime
+ * refusal. The doc carries the verb's own keys and every doc rides
+ * expect_rev (the CAS law: the caller chains the bench rev it
+ * rendered, so a concurrent edit refuses instead of slicing wrong).
  *
  * THE REBASE LAW (2026-09-15, the operator's stuck: "bench main
  * moved: rev is 429, caller held 35 — IT STUCK"): the bench is ONE
  * shared doc the agent writes too, so a tab-rendered rev can be
  * stale through no user fault. A door that refuses ONLY on CAS
- * answers itself: re-read the rev, re-apply ONCE. A second conflict
- * or any non-CAS refusal throws loud (the named truth, never a
- * silent drop, never a blind write) — and the view reloads on that
- * final failure so the NEXT gesture composes against fresh truth.
- * The stuck is structurally impossible: a moved bench costs one
- * silent rebase, never a bricked tab.
+ * answers itself: re-read the rev (from the SAME session the verb
+ * addresses — the 2026-09-16 fix; the old arm hard-coded 'main' and
+ * rebased non-main verbs against the wrong bench's rev), re-apply
+ * ONCE. A second conflict or any non-CAS refusal throws loud (the
+ * named truth, never a silent drop, never a blind write) — and the
+ * view reloads on that final failure so the NEXT gesture composes
+ * against fresh truth. The stuck is structurally impossible: a
+ * moved bench costs one silent rebase, never a bricked tab.
  */
-import { wireCall } from '@melite-plugin/melite-run-wire'
+import { estateRemote, unwrapRemote, type BenchNamespace } from '@melite/card-base/estate-remote'
 
-/** The bench's CURRENT rev — the CAS handle for a re-apply. Returns
- *  undefined when the read fails (the re-apply is then skipped; the
- *  original refusal stands as the honest answer). */
-async function benchRev(signal?: AbortSignal): Promise<number | undefined> {
+// THE SESSIONKEY LAW (stroke 81, the operator's burn): no verb may
+// default its session — a defaulted key is a latent misaddress (the
+// stroke-80 class: a forgotten argument silently mutates the WRONG
+// bench). Every caller THREADS the key of the bench it renders;
+// the one 'main' spelling lives at the address-grammar root
+// (benchSessionKey), never at a verb.
+
+/** The bench verbs this module rides (the namespace's method names —
+ * typed keys on the generated client, so a typo is a compile error). */
+type BenchVerb = 'add-stage' | 'remove-stage' | 'reorder' | 'group' | 'ungroup'
+
+/** The bench's CURRENT rev for one session — the CAS handle for a
+ *  re-apply. Returns undefined when the read fails (the re-apply is
+ *  then skipped; the original refusal stands as the honest answer). */
+async function benchRev(sessionKey: string, signal?: AbortSignal): Promise<number | undefined> {
   try {
-    const row = await wireCall('bench/get', { sessionKey: 'main' }, { signal })
-    const rev = (row as { rev?: unknown }).rev
+    const row = await unwrapRemote(
+      estateRemote().bench.get(sessionKey, signal),
+      'bench/get',
+    ) as unknown as { rev?: unknown }
+    const rev = row.rev
     return typeof rev === 'number' ? rev : undefined
   } catch {
     return undefined
@@ -46,55 +63,60 @@ function isCasConflict(e: unknown): boolean {
   return msg.includes('moved: rev is') || msg.includes('cas-conflict')
 }
 
-/** One door call with the rebase dance: try the held rev; on the
- *  door's cas-conflict re-read the rev and re-apply ONCE with it. */
+/** One typed bench verb with the rebase dance: try the held rev; on
+ *  the door's cas-conflict re-read the rev (the SAME session) and
+ *  re-apply ONCE with it. */
 async function withRebase(
-  method: string,
+  verb: BenchVerb,
   doc: Record<string, unknown>,
   sessionKey: string,
   signal?: AbortSignal,
 ): Promise<Record<string, unknown>> {
+  const ns: BenchNamespace = estateRemote().bench
   const attempt = (expectRev: number): Promise<Record<string, unknown>> =>
-    wireCall(method, { sessionKey, doc: { ...doc, expect_rev: expectRev } }, { signal, voice: method })
+    unwrapRemote(
+      ns[verb](sessionKey, { ...doc, expect_rev: expectRev }, signal),
+      'bench/' + verb,
+    ).then((row) => row as unknown as Record<string, unknown>)
   const held = doc['expect_rev']
   try {
-    if (typeof held !== 'number') throw new Error(method + ': no expect_rev to write against')
+    if (typeof held !== 'number') throw new Error('bench/' + verb + ': no expect_rev to write against')
     return await attempt(held)
   } catch (e: unknown) {
     if (!isCasConflict(e)) throw e
-    const fresh = await benchRev(signal)
+    const fresh = await benchRev(sessionKey, signal)
     if (fresh === undefined) throw e
     return await attempt(fresh)
   }
 }
 
-/** The bench add-stage wire door caller (the tab's add-card path).
- *  The doc holds card/author/engine/params/expect_rev. */
-export async function addStageWire(doc: Record<string, unknown>, sessionKey = 'main', signal?: AbortSignal): Promise<Record<string, unknown>> {
-  return await withRebase('bench/add-stage', doc, sessionKey, signal)
+/** The bench add-stage verb caller (the tab's add-card path). The
+ *  doc holds card/author/engine/params/expect_rev. */
+export async function addStageWire(doc: Record<string, unknown>, sessionKey: string, signal?: AbortSignal): Promise<Record<string, unknown>> {
+  return await withRebase('add-stage', doc, sessionKey, signal)
 }
 
-/** The bench remove-stage wire door caller (the drill's Remove path).
- *  The doc holds stage/expect_rev; the session key addresses the doc
- *  the bar RENDERS (stroke 80 — 'main' hardcoding deleted against
- *  the wrong bench and refused 'stage not found'). */
-export async function removeStageWire(doc: Record<string, unknown>, sessionKey: string = 'main', signal?: AbortSignal): Promise<Record<string, unknown>> {
-  return await withRebase('bench/remove-stage', doc, sessionKey, signal)
+/** The bench remove-stage verb caller (the drill's Remove path). The
+ *  doc holds stage/expect_rev; the session key addresses the doc the
+ *  bar RENDERS (stroke 80 — 'main' hardcoding deleted against the
+ *  wrong bench and refused 'stage not found'). */
+export async function removeStageWire(doc: Record<string, unknown>, sessionKey: string, signal?: AbortSignal): Promise<Record<string, unknown>> {
+  return await withRebase('remove-stage', doc, sessionKey, signal)
 }
 
-/** The bench reorder wire door caller (the drag-reorder path). Doc:
+/** The bench reorder verb caller (the drag-reorder path). Doc:
  *  stage/to/expect_rev — `to` is the post-splice target index. */
-export async function reorderStageWire(doc: Record<string, unknown>, sessionKey: string = 'main', signal?: AbortSignal): Promise<Record<string, unknown>> {
-  return await withRebase('bench/reorder', doc, sessionKey, signal)
+export async function reorderStageWire(doc: Record<string, unknown>, sessionKey: string, signal?: AbortSignal): Promise<Record<string, unknown>> {
+  return await withRebase('reorder', doc, sessionKey, signal)
 }
 
-/** The bench group wire door caller (the Group Cards sub-view):
+/** The bench group verb caller (the Group Cards sub-view):
  *  stages = 2+ ids (bench order applied server-side). */
-export async function groupStagesWire(doc: Record<string, unknown>, sessionKey: string = 'main', signal?: AbortSignal): Promise<Record<string, unknown>> {
-  return await withRebase('bench/group', doc, sessionKey, signal)
+export async function groupStagesWire(doc: Record<string, unknown>, sessionKey: string, signal?: AbortSignal): Promise<Record<string, unknown>> {
+  return await withRebase('group', doc, sessionKey, signal)
 }
 
-/** The bench ungroup wire door caller: spill a compound's children. */
-export async function ungroupStageWire(doc: Record<string, unknown>, sessionKey: string = 'main', signal?: AbortSignal): Promise<Record<string, unknown>> {
-  return await withRebase('bench/ungroup', doc, sessionKey, signal)
+/** The bench ungroup verb caller: spill a compound's children. */
+export async function ungroupStageWire(doc: Record<string, unknown>, sessionKey: string, signal?: AbortSignal): Promise<Record<string, unknown>> {
+  return await withRebase('ungroup', doc, sessionKey, signal)
 }

@@ -13,6 +13,8 @@ import { cleanup, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, expect, test, vi } from 'vitest'
 import { createElement } from 'react'
+import { mountEstateFakes } from './estate-harness.ts'
+import { unbindEstateRemote } from '@melite/card-base/estate-remote'
 
 import { CardsTab } from '../src/client/CardsTab.tsx'
 import type { CardsBenchValue } from '../src/client/cards-resource.ts'
@@ -42,14 +44,15 @@ interface Call { method: string; args: Record<string, unknown> }
  * read-back law, or the harness lies).
  */
 function stubWire(): { calls: Call[] } {
-  const calls: Call[] = []
   const stage: Record<string, unknown> = {
     id: 's_0', card: 'image-gen', title: 'hero frame', engine: 'comfyui',
     params: { prompt: 'a red cube', steps: 8, turbo: false },
   }
   const benchDoc: Record<string, unknown> = { draft_id: 'bench-s1', rev: 7, stages: [stage], log: [] }
-  let runStatus = 'queued'
-  const impl = async (url: unknown, init?: RequestInit): Promise<Response> => {
+  // THE ONE-FAKE LAW (stroke 81): estate verbs ride the bound
+  // namespaces; fetch answers ONLY the /v1 discovery doors.
+  const estate = mountEstateFakes({ benchDoc, draftStages: [stage] })
+  const impl = async (url: unknown): Promise<Response> => {
     const path = String(url)
     if (path.includes('/v1/form-spec')) {
       const doc = {
@@ -66,28 +69,10 @@ function stubWire(): { calls: Call[] } {
       const doc = { cards: { 'image-gen': { label: 'Image Gen', description: 'generate an image', genre: 'image', families: ['image-gen'] } } }
       return new Response(JSON.stringify(doc), { status: 200, headers: { 'content-type': 'application/json' } })
     }
-    const frame = JSON.parse(String(init?.body)) as {
-      rpcId: string; method: string; payload: { args: Record<string, unknown> }
-    }
-    calls.push({ method: frame.method, args: frame.payload.args })
-    let value: Record<string, unknown> = { ok: true }
-    if (frame.method === 'bench/get') value = benchDoc
-    if (frame.method === 'drafts/get') value = { draft_id: 'bench-s1', rev: 7, intent: '', bench: { rev: 7, log: [] }, stages: [stage] }
-    if (frame.method === 'runs/status') value = { run_id: 'run-1', status: runStatus, draft_id: 'bench-s1', stages: [] }
-    if (frame.method === 'runs/list') value = { runs: [] }
-    if (frame.method === 'runs/start') value = { run_id: 'run-1', status: 'queued' }
-    if (frame.method === 'runs/stop') { runStatus = 'stopped'; value = { ok: true } }
-    if (frame.method === 'drafts/patch') {
-      const patch = (frame.payload.args as { patch?: Record<string, unknown> }).patch ?? {}
-      if (patch['params'] !== undefined) Object.assign((stage as { params: Record<string, unknown> })['params'], patch['params'])
-      if (patch['runStatus'] !== undefined) stage['runStatus'] = patch['runStatus']
-      if (patch['result'] !== undefined) stage['result'] = patch['result']
-      value = { draftId: 'bench-s1', stageId: 's_0', delivered: true, patched: Object.keys(patch) }
-    }
-    return new Response(JSON.stringify({ type: 'server-response', rpcId: frame.rpcId, result: { ok: true, value } }), { status: 200 })
+    throw new Error('estate door on the fetch lane: ' + path)
   }
   vi.stubGlobal('fetch', impl)
-  return { calls }
+  return { calls: estate.calls }
 }
 
 const noop = (): void => {}
@@ -107,6 +92,7 @@ function mount(): void {
 
 afterEach(() => {
   cleanup()
+  unbindEstateRemote()
   vi.unstubAllGlobals()
 })
 

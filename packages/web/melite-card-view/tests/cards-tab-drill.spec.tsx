@@ -12,24 +12,24 @@ import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/re
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, test, vi } from "vitest";
 import { createElement as h } from "react";
+import { mountEstateFakes, type EstateFakes, type EstateRefusal } from "./estate-harness.ts";
+import { unbindEstateRemote } from "@melite/card-base/estate-remote";
 import { CardsTab } from "../src/client/CardsTab.tsx";
 import { schemaEnvelope } from "../src/client/spec-form.tsx";
 import type { BenchStageRow, CardsBenchValue, CardsDraftValue } from "../src/client/cards-resource.ts";
 
 afterEach(() => {
   cleanup();
+  unbindEstateRemote();
   vi.unstubAllGlobals();
 });
 
 type FormSpecMode = "ok" | "huge" | "reject-string" | "deferred";
 type FormsMode = "ok" | "deferred";
 
-interface FrameAnswer { ok?: boolean; value?: unknown; refuse?: string }
 interface Controller {
   formSpec: FormSpecMode;
   formsTable: FormsMode;
-  frames: Record<string, (args: Record<string, unknown>) => FrameAnswer>;
-  posted: Array<{ method: string; args: Record<string, unknown> }>;
   resolveFormSpec: ((body: unknown) => void) | null;
   resolveFormsTable: ((body: unknown) => void) | null;
 }
@@ -37,11 +37,19 @@ interface Controller {
 const doors: Controller = {
   formSpec: "ok",
   formsTable: "ok",
-  frames: {},
-  posted: [],
   resolveFormSpec: null,
   resolveFormsTable: null,
 };
+
+// THE ONE-FAKE LAW (stroke 81): estate verbs ride the bound
+// namespaces (mountEstateFakes); fetch answers ONLY the /v1
+// discovery doors.
+let fakes: EstateFakes | null = null;
+
+function calls(): Array<{ method: string; args: Record<string, unknown> }> {
+  if (fakes === null) throw new Error("estate fakes not mounted");
+  return fakes.calls;
+}
 
 function specBody(): Record<string, unknown> {
   return {
@@ -54,11 +62,9 @@ function specBody(): Record<string, unknown> {
 }
 
 function stubFetch(): void {
-  doors.posted = [];
-  doors.frames = {};
   doors.resolveFormSpec = null;
   doors.resolveFormsTable = null;
-  vi.stubGlobal("fetch", async (url: unknown, init?: RequestInit): Promise<Response> => {
+  vi.stubGlobal("fetch", async (url: unknown): Promise<Response> => {
     const path = String(url);
     if (path.includes("/v1/form-spec")) {
       if (doors.formSpec === "reject-string") throw "kablam";
@@ -90,19 +96,7 @@ function stubFetch(): void {
         status: 200, headers: { "content-type": "application/json" },
       });
     }
-    if (path.startsWith("/api/")) {
-      const frame = JSON.parse(String(init?.body)) as { rpcId: string; method: string; payload: { args: Record<string, unknown> } };
-      doors.posted.push({ method: frame.method, args: frame.payload.args });
-      const route = doors.frames[frame.method];
-      const answer = route !== undefined ? route(frame.payload.args) : { value: {} };
-      const result = answer.refuse === undefined
-        ? { ok: true, value: answer.value ?? {} }
-        : { ok: false, error: { message: answer.refuse } };
-      return new Response(JSON.stringify({ type: "server-response", rpcId: frame.rpcId, result }), {
-        status: 200, headers: { "content-type": "application/json" },
-      });
-    }
-    return new Response("no", { status: 500 });
+    throw new Error("estate door on the fetch lane: " + path);
   });
 }
 
@@ -111,37 +105,26 @@ function benchValue(stages: BenchStageRow[]): CardsBenchValue {
 }
 
 function benchDoc(stages: BenchStageRow[]): Record<string, unknown> {
-  return {
-    draft_id: "bench-p", rev: 1, log: [],
-    stages: stages.map((s) => ({
-      id: s.id, card: s.card, title: s.title, engine: s.engine,
-      params: s.params, run_status: s.runStatus, result: s.result,
-      children: (s as { children?: unknown }).children,
-      inputs: s.inputs,
-      activity: (s as { activity?: unknown }).activity,
-      history: (s as { history?: unknown }).history,
-    })),
-  };
+  // rows ride verbatim (readBench passes them through) — the rail
+  // reads the same seats the snapshot carries.
+  return { draft_id: "bench-p", rev: 1, log: [], stages };
 }
 
-function mountBench(stages: BenchStageRow[], renderSlot?: (...args: never[]) => unknown): void {
+interface EstateOpts {
+  refusals?: EstateRefusal[];
+  throws?: EstateRefusal[];
+}
+
+function mountBench(stages: BenchStageRow[], renderSlot?: (...args: never[]) => unknown, estate?: EstateOpts): void {
   doors.formSpec = "ok";
   doors.formsTable = "ok";
   stubFetch();
-  (globalThis as { __benchDoc?: unknown }).__benchDoc = benchDoc(stages);
-  const impl = globalThis.fetch;
-  vi.stubGlobal("fetch", async (url: unknown, init?: RequestInit): Promise<Response> => {
-    const path = String(url);
-    if (path.startsWith("/api/")) {
-      const frame = JSON.parse(String(init?.body)) as { rpcId: string; method: string; payload: { args: Record<string, unknown> } };
-      if (frame.method === "bench/get") {
-        return new Response(JSON.stringify({
-          type: "server-response", rpcId: frame.rpcId,
-          result: { ok: true, value: (globalThis as { __benchDoc?: unknown }).__benchDoc },
-        }), { status: 200, headers: { "content-type": "application/json" } });
-      }
-    }
-    return (impl as typeof fetch)(url, init);
+  fakes = mountEstateFakes({
+    benchDoc: benchDoc(stages),
+    draftStages: stages as Array<Record<string, unknown>>,
+    draftBenchRev: 1,
+    refusals: estate?.refusals,
+    throws: estate?.throws,
   });
   render(h(CardsTab, {
     useTabInfo: () => ({ tab: {
@@ -343,23 +326,25 @@ describe("the group compound — members, ungroup, and its honesty", () => {
   });
 
   test("Ungroup spills the compound and closes (the wire's rev rides)", async () => {
+    // the harness's bench/ungroup answers OK by default (the old
+    // {rev: 2} frame's intent: success closes the drill).
     mountBench([group([{ id: "s_0", card: "image-gen" }])]);
-    doors.frames["bench/ungroup"] = () => ({ value: { rev: 2 } });
-    // re-arm AFTER the mount's reset (frames clear per mount)
     const user = userEvent.setup();
     await user.click(firstTile());
-    doors.frames["bench/ungroup"] = () => ({ value: { rev: 2 } });
     fireEvent.click(await screen.findByText("Ungroup", {}, { timeout: 4000 }));
     await waitFor(() => { expect(document.querySelector('[data-testid="stage-preview-seat"]')).toBeNull(); });
-    const call = doors.posted.find((p) => p.method === "bench/ungroup");
+    const call = calls().find((p) => p.method === "bench/ungroup");
     expect((call?.args["doc"] as Record<string, unknown>)["stage"]).toBe("g_0");
   });
 
   test("a refused Ungroup keeps the drill and says why (the button frees)", async () => {
-    mountBench([group([{ id: "s_0", card: "image-gen" }])]);
+    mountBench(
+      [group([{ id: "s_0", card: "image-gen" }])],
+      undefined,
+      { refusals: [{ method: "bench/ungroup", message: "stale rev" }] },
+    );
     const user = userEvent.setup();
     await user.click(firstTile());
-    doors.frames["bench/ungroup"] = () => ({ refuse: "stale rev" });
     fireEvent.click(await screen.findByText("Ungroup", {}, { timeout: 4000 }));
     expect(await screen.findByText("stale rev", {}, { timeout: 4000 })).toBeTruthy();
     expect(screen.getByText("Ungroup")).toBeTruthy();
@@ -367,7 +352,7 @@ describe("the group compound — members, ungroup, and its honesty", () => {
 });
 
 describe("the slot-claimed drill — remove and bindRun ride the owner", () => {
-  function mountClaimed(stages: BenchStageRow[], claim: (owner: Record<string, unknown>) => unknown): void {
+  function mountClaimed(stages: BenchStageRow[], claim: (owner: Record<string, unknown>) => unknown, estate?: EstateOpts): void {
     mountBench(stages, ((slot: string, owner: Record<string, unknown>, opts: { fallback: unknown }) => {
       if (slot !== "cards.stage.view") return opts.fallback;
       // the claim WRAPS the generic body (the error faces still
@@ -376,7 +361,7 @@ describe("the slot-claimed drill — remove and bindRun ride the owner", () => {
         opts.fallback as never,
         h("div", { "data-testid": "slot-claim" }, claim(owner) as never),
       );
-    }) as never);
+    }) as never, estate);
   }
 
   test("the owner's remove spills through the wire and closes", async () => {
@@ -389,10 +374,9 @@ describe("the slot-claimed drill — remove and bindRun ride the owner", () => {
     );
     const user = userEvent.setup();
     await user.click(firstTile());
-    doors.frames["bench/remove-stage"] = () => ({ value: { rev: 2 } });
     fireEvent.click(await screen.findByTestId("slot-remove", {}, { timeout: 4000 }));
     await waitFor(() => { expect(document.querySelector('[data-testid="stage-preview-seat"]')).toBeNull(); });
-    expect(doors.posted.some((p) => p.method === "bench/remove-stage")).toBe(true);
+    expect(calls().some((p) => p.method === "bench/remove-stage")).toBe(true);
   });
 
   test("a refused remove keeps the drill and says why", async () => {
@@ -402,10 +386,10 @@ describe("the slot-claimed drill — remove and bindRun ride the owner", () => {
         type: "button", "data-testid": "slot-remove",
         onClick: () => { (owner["onRemove"] as () => void)(); },
       }, "SLOT-REMOVE"),
+      { refusals: [{ method: "bench/remove-stage", message: "ghost rev" }] },
     );
     const user = userEvent.setup();
     await user.click(firstTile());
-    doors.frames["bench/remove-stage"] = () => ({ refuse: "ghost rev" });
     fireEvent.click(await screen.findByTestId("slot-remove", {}, { timeout: 4000 }));
     expect(await screen.findByText("ghost rev", {}, { timeout: 4000 })).toBeTruthy();
     expect(document.querySelector('[data-testid="stage-preview-seat"]')).not.toBeNull();
@@ -453,6 +437,9 @@ describe("the output history — the slot sees hero and archive aligned", () => 
 describe("the draft view's drill — the noop surface stays silent", () => {
   test("an unclaimed draft stage drills without a surface host", async () => {
     stubFetch();
+    // the drill still reads through the bound namespaces (the old
+    // default-{} drafts/get is now the harness's honest draft row).
+    fakes = mountEstateFakes();
     const value: CardsDraftValue = {
       kind: "draft", draftId: "draft-1", stageId: "s_0",
       intent: "the film", rev: 1,

@@ -99,7 +99,12 @@ export const SOURCE_PLANE_ALIAS: Record<string, string> = {
   '@melite/estate-drafts/remote': path.join(import.meta.dirname, 'packages/estate/drafts/lib/typert.remote-client.js'),
   '@melite/estate-drafts': path.join(import.meta.dirname, 'packages/estate/drafts/src/index.ts'),
   '@melite/estate-manage': path.join(import.meta.dirname, 'packages/estate/manage/src/index.ts'),
+  // the media + runs REMOTE subpaths — the same built-truth law as
+  // the drafts row above (the generated Typert clients; each MUST
+  // sit BEFORE its parent row or the parent swallows the subpath).
+  '@melite/estate-media/remote': path.join(import.meta.dirname, 'packages/estate/media/lib/typert.remote-client.js'),
   '@melite/estate-media': path.join(import.meta.dirname, 'packages/estate/media/src/index.ts'),
+  '@melite/estate-runs/remote': path.join(import.meta.dirname, 'packages/estate/runs/lib/typert.remote-client.js'),
   '@melite/estate-runs': path.join(import.meta.dirname, 'packages/estate/runs/src/index.ts'),
   '@infer-media/dsh-gallery': path.join(import.meta.dirname, 'packages/web/infer-gallery/src/index.ts'),
 }

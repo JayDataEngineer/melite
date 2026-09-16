@@ -15,6 +15,8 @@
 import { cleanup, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, expect, test, vi } from 'vitest'
+import { mountEstateFakes } from './estate-harness.ts'
+import { unbindEstateRemote } from '@melite/card-base/estate-remote'
 import { createElement } from 'react'
 
 import { resetCardFamiliesCache } from '@melite-plugin/melite-run-wire'
@@ -63,19 +65,18 @@ interface StubOpts {
   draftBenchRev?: number
 }
 function stubWire(opts?: StubOpts): { calls: Call[] } {
-  const calls: Call[] = []
-  const benchDoc: Record<string, unknown> = opts?.bench ?? {
-    draft_id: 'bench-s1', rev: 7,
-    stages: [{ id: 's_0', card: 'image-gen', title: 'hero frame', engine: 'comfyui', params: { prompt: 'a red cube', steps: 8, turbo: false } }],
-    log: [],
-  }
-  const runDocs = [...(opts?.runDocs ?? [{ run_id: 'run-1', status: 'queued', draft_id: 'bench-s1', stages: [] }])]
-  // THE ESTATE MODEL (2026-09-13 incident): drafts/patch APPLIES into
-  // the served draft — the fresh read (drafts/get) must see what the
-  // patch wrote, or the harness lies about the read-back law.
-  const liveParams: Record<string, unknown> = { prompt: '', steps: 8, turbo: false }
-  const impl = async (url: unknown, init?: RequestInit): Promise<Response> => {
-    // the /v1 discovery doors (same-origin): the card form spec + catalog
+  // THE ONE-FAKE LAW (stroke 81): estate verbs ride bindEstateRemote
+  // fakes (mountEstateFakes); fetch answers ONLY the /v1 discovery
+  // doors (form-spec, model-catalog) — no fetch stub may carry an
+  // estate envelope.
+  const estate = mountEstateFakes({
+    benchDoc: opts?.bench,
+    draftStages: opts?.draftStages,
+    draftBenchRev: opts?.draftBenchRev,
+    runDocs: opts?.runDocs,
+    patchFailures: opts?.patchFailures,
+  })
+  const impl = async (url: unknown): Promise<Response> => {
     const path = String(url)
     if (path.includes('/v1/form-spec')) {
       const qm = path.includes('model=') ? path.split('model=')[1]?.split('&')[0] : undefined
@@ -97,28 +98,10 @@ function stubWire(opts?: StubOpts): { calls: Call[] } {
       const doc = { cards: { 'image-gen': { label: 'Image Gen', description: 'generate an image', genre: 'image', families: ['image-gen'] } } }
       return new Response(JSON.stringify(doc), { status: 200, headers: { 'content-type': 'application/json' } })
     }
-    const frame = JSON.parse(String(init?.body)) as {
-      rpcId: string; method: string; payload: { args: Record<string, unknown> }
-    }
-    calls.push({ method: frame.method, args: frame.payload.args })
-    let value: Record<string, unknown> = { ok: true }
-    if (frame.method === 'bench/get') value = benchDoc
-    if (frame.method === 'drafts/get') value = { draft_id: 'bench-s1', rev: 7, intent: '', bench: { rev: opts?.draftBenchRev ?? 7, log: [] }, stages: opts?.draftStages ?? [{ id: 's_0', card: 'image-gen', title: 'hero frame', engine: 'comfyui', params: liveParams }] }
-    if (frame.method === 'runs/status') value = runDocs.length > 1 ? runDocs.shift()! : runDocs[0]!
-    if (frame.method === 'runs/start') value = { run_id: 'run-1', status: 'queued' }
-    if (frame.method === 'drafts/patch') {
-      if (opts?.patchFailures !== undefined && opts.patchFailures.length > 0) {
-        value = opts.patchFailures.shift()!
-      } else {
-        const patch = (frame.payload.args as { patch?: { params?: Record<string, unknown> } }).patch
-        if (patch?.params !== undefined) Object.assign(liveParams, patch.params)
-        value = { draftId: 'bench-s1', stageId: 's_0', delivered: true, patched: ['params'] }
-      }
-    }
-    return new Response(JSON.stringify({ type: 'server-response', rpcId: frame.rpcId, result: { ok: true, value } }), { status: 200 })
+    throw new Error('estate door on the fetch lane: ' + path)
   }
   vi.stubGlobal('fetch', impl)
-  return { calls }
+  return { calls: estate.calls }
 }
 
 const noop = (): void => {}
@@ -138,6 +121,7 @@ function tileButton(): HTMLElement {
 }
 
 afterEach(() => {
+  unbindEstateRemote()
   cleanup()
   vi.unstubAllGlobals()
 })
@@ -226,22 +210,10 @@ test('Run in the drill patches the domain FIRST, then starts the run', async () 
 })
 
 test('a patch refusal names itself and the run never fires', async () => {
-  const { calls } = stubWire()
-  vi.stubGlobal('fetch', async (u: unknown, init?: RequestInit): Promise<Response> => {
-    if (String(u).includes('/v1/form-spec')) {
-      const doc = { form: 'image-gen', schema: schemaEnvelope({
-        prompt: { type: 'string', meta: { description: 'Prompt', extra: { wtype: 'textarea' } } },
-        steps: { type: 'number', meta: { description: 'Steps', default: 8, min: 1, max: 150, step: 1, extra: { wtype: 'number' } } },
-      }) }
-      return new Response(JSON.stringify(doc), { status: 200, headers: { 'content-type': 'application/json' } })
-    }
-    const frame = JSON.parse(String(init?.body)) as { rpcId: string; method: string }
-    calls.push({ method: frame.method, args: {} })
-    const value = frame.method === 'drafts/patch'
-      ? { draftId: 'bench-s1', stageId: 's_0', delivered: false, reason: 'stage not found' }
-      : { run_id: 'run-1' }
-    return new Response(JSON.stringify({ type: 'server-response', rpcId: frame.rpcId, result: { ok: true, value } }), { status: 200 })
-  })
+  // the refusal rides the namespace fake's OK-arm value carrying
+  // `reason` (the client's CAS-refusal reader — same shape the real
+  // door serves); runs/start NEVER fires after it.
+  const { calls } = stubWire({ patchFailures: [{ draftId: 'bench-s1', stageId: 's_0', delivered: false, reason: 'stage not found' }] })
   const user = userEvent.setup()
   render(createElement(CardsTab, {
     useTabInfo: () => ({

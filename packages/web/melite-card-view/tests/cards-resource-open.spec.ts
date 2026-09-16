@@ -5,6 +5,13 @@
 // run view (refusal, terminal hydrate, live poll to terminal, poll
 // transport recovery, mid-poll abort).
 //
+// THE ONE-LANE LAW (stroke 81): the views ride the mounted
+// namespaces through mountEstateFakes — no fetch stub answers an
+// estate verb. Refusals queue in `refusals` (the door's own text on
+// the error branch); transport deaths queue in `throws` (the promise
+// itself rejects); poll scripts ride `runDocs` (served in order, the
+// last lingering for poll loops).
+//
 // NOTE (exemption, same-tick proof): pollRunFrames' sleepExecutor's
 // `if (signal.aborted)` true arm (cards-resource.ts:952) is
 // unreachable — sleep is invoked synchronously in the loop body's
@@ -12,29 +19,20 @@
 // differ between guard and entry; an aborted signal skips the loop
 // and never enters sleep.
 import { afterEach, describe, expect, test, vi } from "vitest";
+import { unbindEstateRemote } from "@melite/card-base/estate-remote";
+import { mountEstateFakes } from "./estate-harness.ts";
+import type { EstateFakesOptions } from "./estate-harness.ts";
 import { openCardsResource } from "../src/client/cards-resource.ts";
 import type { RemoteResult } from "@deepseek-ai/dsh-typert-protocol";
 
 afterEach(() => {
+  unbindEstateRemote();
   vi.unstubAllGlobals();
 });
 
-interface Answer { refuse?: string; value?: unknown; boom?: unknown }
-
-function stubWire(route: (method: string, args: Record<string, unknown>) => Answer): void {
-  vi.stubGlobal("fetch", async (_url: unknown, init?: RequestInit) => {
-    const frame = JSON.parse(String(init?.body)) as {
-      rpcId: string; method: string; payload: { args: Record<string, unknown> };
-    };
-    const answer = route(frame.method, frame.payload.args);
-    if (answer.boom !== undefined) throw answer.boom;
-    const result = answer.refuse === undefined
-      ? { ok: true, value: answer.value ?? {} }
-      : { ok: false, error: { message: answer.refuse } };
-    return new Response(JSON.stringify({ type: "server-response", rpcId: frame.rpcId, result }), {
-      status: 200, headers: { "content-type": "application/json" },
-    });
-  });
+/** Mount the live-lane fakes for one view test (unmounted by the caller). */
+function stubWire(opts: EstateFakesOptions = {}): ReturnType<typeof mountEstateFakes> {
+  return mountEstateFakes(opts);
 }
 
 function ctx(): { signal: AbortSignal } {
@@ -62,10 +60,14 @@ function failureText(frame: RemoteResult<never>): string {
 
 describe("the not-ours refusal — failures are frames, never throws", () => {
   test("a foreign address yields one failure frame", async () => {
-    stubWire(() => ({ value: {} }));
-    const frames = await collect("dsh-resource://flows/bench", ctx());
-    expect(frames).toHaveLength(1);
-    expect(failureText(frames[0]!)).toContain("not a cards address");
+    const fakes = stubWire();
+    try {
+      const frames = await collect("dsh-resource://flows/bench", ctx());
+      expect(frames).toHaveLength(1);
+      expect(failureText(frames[0]!)).toContain("not a cards address");
+    } finally {
+      fakes.unmount();
+    }
   });
 });
 
@@ -73,39 +75,61 @@ describe("the unmounted bench face — one snapshot, then the honest voice", () 
   const BENCH = "dsh-resource://cards/bench";
 
   test("a served bench snapshots, then the stream-unavailable voice", async () => {
-    stubWire((method) => method === "bench/get"
-      ? { value: { draft_id: "bench-main", rev: 4, stages: [{ id: "s_0" }], log: [] } }
-      : { value: {} });
-    const frames = await collect(BENCH, ctx());
-    expect(frames).toHaveLength(2);
-    expect(frames[0]).toMatchObject({ ok: true, value: { rev: 4 } });
-    expect(failureText(frames[1]!)).toContain("bench stream unavailable");
+    const fakes = stubWire({
+      benchDoc: { draft_id: "bench-main", rev: 4, stages: [{ id: "s_0" }], log: [] },
+    });
+    try {
+      const frames = await collect(BENCH, ctx());
+      expect(frames).toHaveLength(2);
+      expect(frames[0]).toMatchObject({ ok: true, value: { rev: 4 } });
+      expect(failureText(frames[1]!)).toContain("bench stream unavailable");
+    } finally {
+      fakes.unmount();
+    }
   });
 
   test("a not-yet-born bench snapshots empty (the zero state, not a failure)", async () => {
-    stubWire((method) => method === "bench/get" ? { refuse: "no such bench" } : { value: {} });
-    const frames = await collect(BENCH, ctx());
-    expect(frames).toHaveLength(2);
-    expect(frames[0]).toMatchObject({ ok: true, value: { rev: 0, stages: [] } });
-    expect(failureText(frames[1]!)).toContain("bench stream unavailable");
+    const fakes = stubWire({
+      refusals: [{ method: "bench/get", message: "no such bench" }],
+    });
+    try {
+      const frames = await collect(BENCH, ctx());
+      expect(frames).toHaveLength(2);
+      expect(frames[0]).toMatchObject({ ok: true, value: { rev: 0, stages: [] } });
+      expect(failureText(frames[1]!)).toContain("bench stream unavailable");
+    } finally {
+      fakes.unmount();
+    }
   });
 
   test("a hard bench refusal yields only the failure (the door's own text)", async () => {
-    stubWire((method) => method === "bench/get" ? { refuse: "admission: nope" } : { value: {} });
-    const frames = await collect(BENCH, ctx());
-    expect(frames).toHaveLength(1);
-    expect(failureText(frames[0]!)).toContain("admission: nope");
+    const fakes = stubWire({
+      refusals: [{ method: "bench/get", message: "admission: nope" }],
+    });
+    try {
+      const frames = await collect(BENCH, ctx());
+      expect(frames).toHaveLength(1);
+      expect(failureText(frames[0]!)).toContain("admission: nope");
+    } finally {
+      fakes.unmount();
+    }
   });
 
-  test("a foreign bench throw voices verbatim (never a blank frame)", async () => {
-    stubWire((method) => method === "bench/get" ? { boom: "kablam" } : { value: {} });
-    const frames = await collect(BENCH, ctx());
-    expect(frames).toHaveLength(1);
-    expect(failureText(frames[0]!)).toContain("kablam");
+  test("a transport bench throw voices verbatim (never a blank frame)", async () => {
+    const fakes = stubWire({
+      throws: [{ method: "bench/get", value: "kablam" }],
+    });
+    try {
+      const frames = await collect(BENCH, ctx());
+      expect(frames).toHaveLength(1);
+      expect(failureText(frames[0]!)).toContain("kablam");
+    } finally {
+      fakes.unmount();
+    }
   });
 
   test("a mounted remote without the bench namespace names the missing seat", async () => {
-    stubWire(() => ({ value: {} }));
+    // no wire at all — the injected remote face answers directly.
     const frames: Array<unknown> = [];
     for await (const frame of openCardsResource(BENCH, ctx(), {} as never, undefined)) {
       frames.push(frame);
@@ -119,29 +143,47 @@ describe("the draft view — one snapshot per open", () => {
   const ADDR = "dsh-resource://cards/draft/draft-1/s_0";
 
   test("a served draft snapshots the draft value", async () => {
-    stubWire((method) => method === "drafts/get"
-      ? { value: { intent: "the film", bench: { rev: 3, log: [] }, stages: [{ id: "s_0" }] } }
-      : { value: {} });
-    const frames = await collect(ADDR, ctx());
-    expect(frames).toHaveLength(1);
-    expect(frames[0]).toMatchObject({
-      ok: true,
-      value: { kind: "draft", draftId: "draft-1", stageId: "s_0", intent: "the film", rev: 3 },
+    const fakes = stubWire({
+      draftStages: [{ id: "s_0" }],
+      draftBenchRev: 3,
+      draftIntent: "the film",
     });
+    try {
+      const frames = await collect(ADDR, ctx());
+      expect(frames).toHaveLength(1);
+      expect(frames[0]).toMatchObject({
+        ok: true,
+        value: { kind: "draft", draftId: "draft-1", stageId: "s_0", intent: "the film", rev: 3 },
+      });
+    } finally {
+      fakes.unmount();
+    }
   });
 
   test("an unreadable draft yields the failure (the door's own text)", async () => {
-    stubWire((method) => method === "drafts/get" ? { refuse: "no_such_draft" } : { value: {} });
-    const frames = await collect(ADDR, ctx());
-    expect(frames).toHaveLength(1);
-    expect(failureText(frames[0]!)).toContain("no_such_draft");
+    const fakes = stubWire({
+      refusals: [{ method: "drafts/get", message: "no_such_draft" }],
+    });
+    try {
+      const frames = await collect(ADDR, ctx());
+      expect(frames).toHaveLength(1);
+      expect(failureText(frames[0]!)).toContain("no_such_draft");
+    } finally {
+      fakes.unmount();
+    }
   });
 
-  test("a foreign draft throw voices verbatim (never a blank frame)", async () => {
-    stubWire((method) => method === "drafts/get" ? { boom: "kablam" } : { value: {} });
-    const frames = await collect(ADDR, ctx());
-    expect(frames).toHaveLength(1);
-    expect(failureText(frames[0]!)).toContain("kablam");
+  test("a transport draft throw voices verbatim (never a blank frame)", async () => {
+    const fakes = stubWire({
+      throws: [{ method: "drafts/get", value: "kablam" }],
+    });
+    try {
+      const frames = await collect(ADDR, ctx());
+      expect(frames).toHaveLength(1);
+      expect(failureText(frames[0]!)).toContain("kablam");
+    } finally {
+      fakes.unmount();
+    }
   });
 });
 
@@ -149,100 +191,120 @@ describe("the run view — hydrate, then poll to terminal", () => {
   const ADDR = "dsh-resource://cards/run/run-1";
 
   test("a refused hydrate yields the failure", async () => {
-    stubWire((method) => method === "runs/status" ? { refuse: "no such run" } : { value: {} });
-    const frames = await collect(ADDR, ctx());
-    expect(frames).toHaveLength(1);
-    expect(failureText(frames[0]!)).toContain("no such run");
+    const fakes = stubWire({
+      refusals: [{ method: "runs/status", message: "no such run" }],
+    });
+    try {
+      const frames = await collect(ADDR, ctx());
+      expect(frames).toHaveLength(1);
+      expect(failureText(frames[0]!)).toContain("no such run");
+    } finally {
+      fakes.unmount();
+    }
   });
 
-  test("a foreign hydrate throw voices verbatim (never a blank frame)", async () => {
-    stubWire((method) => method === "runs/status" ? { boom: "kablam" } : { value: {} });
-    const frames = await collect(ADDR, ctx());
-    expect(frames).toHaveLength(1);
-    expect(failureText(frames[0]!)).toContain("kablam");
+  test("a transport hydrate throw voices verbatim (never a blank frame)", async () => {
+    const fakes = stubWire({
+      throws: [{ method: "runs/status", value: "kablam" }],
+    });
+    try {
+      const frames = await collect(ADDR, ctx());
+      expect(frames).toHaveLength(1);
+      expect(failureText(frames[0]!)).toContain("kablam");
+    } finally {
+      fakes.unmount();
+    }
   });
 
   test("a terminal hydrate yields once and never polls", async () => {
-    let statuses = 0;
-    stubWire((method) => {
-      if (method === "runs/status") {
-        statuses++;
-        return { value: { run_id: "run-1", status: "completed", stages: [] } };
-      }
-      return { value: {} };
+    const fakes = stubWire({
+      runDocs: [{ run_id: "run-1", status: "completed", stages: [] }],
     });
-    const frames = await collect(ADDR, ctx());
-    expect(frames).toHaveLength(1);
-    expect(frames[0]).toMatchObject({ ok: true, value: { kind: "run", status: "completed" } });
-    expect(statuses).toBe(1);
+    try {
+      const frames = await collect(ADDR, ctx());
+      expect(frames).toHaveLength(1);
+      expect(frames[0]).toMatchObject({ ok: true, value: { kind: "run", status: "completed" } });
+      expect(fakes.calls.filter((c) => c.method === "runs/status")).toHaveLength(1);
+    } finally {
+      fakes.unmount();
+    }
   });
 
   test("a pre-aborted holder takes the hydrate and ends (never a poll)", async () => {
-    let statuses = 0;
-    stubWire((method) => {
-      if (method === "runs/status") {
-        statuses++;
-        return { value: { run_id: "run-1", status: "running", stages: [] } };
-      }
-      return { value: {} };
+    const fakes = stubWire({
+      runDocs: [{ run_id: "run-1", status: "running", stages: [] }],
     });
-    const ctrl = new AbortController();
-    ctrl.abort();
-    const frames = await collect(ADDR, { signal: ctrl.signal });
-    expect(frames).toHaveLength(1);
-    expect(frames[0]).toMatchObject({ ok: true, value: { status: "running" } });
-    expect(statuses).toBe(1);
+    try {
+      const ctrl = new AbortController();
+      ctrl.abort();
+      const frames = await collect(ADDR, { signal: ctrl.signal });
+      expect(frames).toHaveLength(1);
+      expect(frames[0]).toMatchObject({ ok: true, value: { status: "running" } });
+      expect(fakes.calls.filter((c) => c.method === "runs/status")).toHaveLength(1);
+    } finally {
+      fakes.unmount();
+    }
   });
 
   test("a live run polls: silence on same-doc, a frame on movement, end at terminal", async () => {
-    let polls = 0;
-    stubWire((method) => {
-      if (method === "runs/status") {
-        polls++;
-        if (polls <= 2) return { value: { run_id: "run-1", status: "running", stages: [] } };
-        return { value: { run_id: "run-1", status: "completed", stages: [{ id: "s_0", status: "succeeded" }] } };
-      }
-      return { value: {} };
+    const fakes = stubWire({
+      runDocs: [
+        { run_id: "run-1", status: "running", stages: [] },
+        { run_id: "run-1", status: "running", stages: [] },
+        { run_id: "run-1", status: "completed", stages: [{ id: "s_0", status: "succeeded" }] },
+      ],
     });
-    const frames = await collect(ADDR, ctx());
-    expect(polls).toBe(3);
-    expect(frames).toHaveLength(2);
-    expect(frames[0]).toMatchObject({ ok: true, value: { status: "running" } });
-    expect(frames[1]).toMatchObject({ ok: true, value: { status: "completed" } });
+    try {
+      const frames = await collect(ADDR, ctx());
+      expect(fakes.calls.filter((c) => c.method === "runs/status")).toHaveLength(3);
+      expect(frames).toHaveLength(2);
+      expect(frames[0]).toMatchObject({ ok: true, value: { status: "running" } });
+      expect(frames[1]).toMatchObject({ ok: true, value: { status: "completed" } });
+    } finally {
+      fakes.unmount();
+    }
   });
 
   test("a poll blip keeps the last ok value and recovers", async () => {
-    let polls = 0;
-    stubWire((method) => {
-      if (method === "runs/status") {
-        polls++;
-        if (polls === 1) return { value: { run_id: "run-1", status: "running", stages: [] } };
-        if (polls === 2) return { boom: new Error("blip") };
-        return { value: { run_id: "run-1", status: "failed", error: "gpu gone", stages: [] } };
-      }
-      return { value: {} };
+    const fakes = stubWire({
+      runDocs: [
+        { run_id: "run-1", status: "running", stages: [] },
+        { run_id: "run-1", status: "failed", error: "gpu gone", stages: [] },
+      ],
+      // the blip lands mid-poll (the 2nd status call): the hydrate
+      // ok'd, the blip is swallowed with the last ok value staying,
+      // the next poll recovers to terminal.
+      throws: [{ method: "runs/status", message: "blip", onCall: 2 }],
     });
-    const frames = await collect(ADDR, ctx());
-    expect(polls).toBe(3);
-    expect(frames).toHaveLength(2);
-    expect(frames[1]).toMatchObject({ ok: true, value: { status: "failed" } });
+    try {
+      const frames = await collect(ADDR, ctx());
+      expect(fakes.calls.filter((c) => c.method === "runs/status")).toHaveLength(3);
+      expect(frames).toHaveLength(2);
+      expect(frames[1]).toMatchObject({ ok: true, value: { status: "failed" } });
+    } finally {
+      fakes.unmount();
+    }
   });
 
   test("an abort mid-poll ends the tail (the hydrate stays the last frame)", async () => {
-    stubWire((method) => method === "runs/status"
-      ? { value: { run_id: "run-1", status: "running", stages: [] } }
-      : { value: {} });
-    const ctrl = new AbortController();
-    const frames: Array<RemoteResult<never>> = [];
-    const consuming = (async () => {
-      for await (const frame of openCardsResource(ADDR, { signal: ctrl.signal }, undefined, undefined)) {
-        frames.push(frame as RemoteResult<never>);
-      }
-    })();
-    await new Promise((r) => setTimeout(r, 200));
-    ctrl.abort();
-    await consuming;
-    expect(frames).toHaveLength(1);
-    expect(frames[0]).toMatchObject({ ok: true, value: { status: "running" } });
+    const fakes = stubWire({
+      runDocs: [{ run_id: "run-1", status: "running", stages: [] }],
+    });
+    try {
+      const ctrl = new AbortController();
+      const frames: Array<RemoteResult<never>> = [];
+      const consuming = (async () => {
+        for await (const frame of openCardsResource(ADDR, { signal: ctrl.signal }, undefined, undefined)) {
+          frames.push(frame as RemoteResult<never>);
+        }
+      })();
+      await new Promise((r) => setTimeout(r, 200));
+      ctrl.abort();
+      await consuming;
+      expect(frames).toHaveLength(1);
+      expect(frames[0]).toMatchObject({ ok: true, value: { status: "running" } });
+    } finally {
+      fakes.unmount();
+    }
   });
 });

@@ -8,10 +8,30 @@ import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { createElement as h } from 'react'
 import { afterEach, expect, test, vi } from 'vitest'
 import type { ModifierKind } from '../src/spec.ts'
+import { bindEstateRemote, unbindEstateRemote } from '../src/estate-remote.ts'
+import { fetchMediaLibrary } from '../src/media-library.ts'
 
 import { ModifiersSection } from '../src/mods.tsx'
 
 afterEach(cleanup)
+
+/** THE MEDIA BIND (the leaf's pick rides the one lane, like a
+ *  card's): a local fake over the mounted media namespace serving
+ *  one row; unused namespaces throw. */
+function bindLeafMedia(): void {
+  const dead = (method: string) => async (): Promise<never> => { throw new Error('unused namespace in this wall: ' + method) }
+  bindEstateRemote({
+    bench: { get: dead('bench/get'), 'add-stage': dead('bench/add-stage'), 'remove-stage': dead('bench/remove-stage') },
+    drafts: { get: dead('drafts/get'), patch: dead('drafts/patch') },
+    runs: {
+      list: dead('runs/list'), start: dead('runs/start'), status: dead('runs/status'),
+      stop: dead('runs/stop'), validate: dead('runs/validate'),
+    },
+    media: {
+      list: async () => ({ ok: true, value: { items: [{ url: 'https://host/m.png', name: 'the mask' }] } }),
+    },
+  } as unknown as Parameters<typeof bindEstateRemote>[0])
+}
 
 const LORA = {
   kind: 'lora', label: 'LoRA', param_key: 'loras', cardinality: 'multi',
@@ -616,4 +636,26 @@ test('THE SEAM CONTRACTS LIVE IN @melite/contracts (stroke 79): the face props c
   const paint: mod.PaintFaceComponent = (props) => { void props; return null as never }
   const box: mod.BboxFaceComponent = (props) => { void props; return null as never }
   paint(a); box(b)
+})
+
+test('THE LEAF PICK: an injected media source serves the library rows (the leaf rides the one lane, like a card)', async () => {
+  bindLeafMedia()
+  try {
+    const r = openLeaf({ kinds: [MASK], values: {}, loadMedia: fetchMediaLibrary })
+    openCreate('Mask')
+    // the FIELD-kind leaf renders the image input as the square (the
+    // construction law); its plus opens the three-entry menu
+    fireEvent.click(screen.getByRole('button', { name: 'Image source' }))
+    fireEvent.click(await screen.findByRole('menuitem', { name: 'From media' }))
+    const pick = await screen.findByTestId('source-pick-row')
+    expect(pick.textContent).toContain('the mask')
+    fireEvent.click(pick)
+    fireEvent.click(screen.getByRole('button', { name: 'Add' }))
+    expect(r.onEdit).toHaveBeenCalledWith('masks', [
+      expect.objectContaining({ image: 'https://host/m.png' }),
+    ])
+    r.unmount()
+  } finally {
+    unbindEstateRemote()
+  }
 })

@@ -27,6 +27,8 @@
   "references": [
     { "path": "packages/vendor/typert-protocol" },
     { "path": "packages/estate/drafts" },
+    { "path": "packages/estate/runs" },
+    { "path": "packages/estate/media" },
     { "path": "packages/harness/estate-queue" }
   ]
 }

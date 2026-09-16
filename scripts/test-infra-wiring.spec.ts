@@ -49,13 +49,16 @@ const pluginNamed = (plugins: unknown[] | undefined, name: string): boolean =>
 const FACADE_KEYS = Object.keys(SOURCE_PLANE_ALIAS)
 
 /** CODEGEN FACADE EXCEPTIONS (stroke 77): subpath keys whose only
- *  plane is a BUILD artifact — the drafts Typert remote client is
- *  GENERATED from src/remote.ts's @Remote adapters (pnpm typert);
+ *  plane is a BUILD artifact — the drafts/media/runs Typert remote
+ *  clients are GENERATED from src/remote.ts's @Remote adapters
+ *  (pnpm typert);
  *  no src file exports TYPERT_REMOTE and hand-writing a src shim
  *  would be a redirect stub, not source. The wall demands these
  *  resolve to the artifact path, never src — named, never blanket. */
 const CODEGEN_FACADE: Record<string, string> = {
   '@melite/estate-drafts/remote': 'packages/estate/drafts/lib/typert.remote-client.js',
+  '@melite/estate-media/remote': 'packages/estate/media/lib/typert.remote-client.js',
+  '@melite/estate-runs/remote': 'packages/estate/runs/lib/typert.remote-client.js',
 }
 
 describe('vitest tier wiring', () => {

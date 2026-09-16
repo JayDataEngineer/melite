@@ -5410,59 +5410,59 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 		}
 		//#endregion
 		//#region ../../estate/drafts/lib/typert.remote-client.js
-		const JsonValueRemoteCodec$schema = union([
+		const JsonValueRemoteCodec$schema$1 = union([
 			literal(null),
 			string(),
 			number(),
 			literal(false),
 			literal(true),
-			array(lazy(() => JsonValueRemoteCodec$schema)),
-			record(string(), lazy(() => JsonValueRemoteCodec$schema)).readonly()
+			array(lazy(() => JsonValueRemoteCodec$schema$1)),
+			record(string(), lazy(() => JsonValueRemoteCodec$schema$1)).readonly()
 		]);
-		const JsonValueRemoteCodec$schema2 = union([
+		const JsonValueRemoteCodec$schema2$1 = union([
 			literal(null),
 			string(),
 			number(),
 			literal(false),
 			literal(true),
-			array(lazy(() => JsonValueRemoteCodec$schema2)),
-			record(string(), lazy(() => JsonValueRemoteCodec$schema2)).readonly()
+			array(lazy(() => JsonValueRemoteCodec$schema2$1)),
+			record(string(), lazy(() => JsonValueRemoteCodec$schema2$1)).readonly()
 		]);
-		const JsonValueRemoteCodec$schema3 = union([
+		const JsonValueRemoteCodec$schema3$1 = union([
 			literal(null),
 			string(),
 			number(),
 			literal(false),
 			literal(true),
-			array(lazy(() => JsonValueRemoteCodec$schema3)),
-			record(string(), lazy(() => JsonValueRemoteCodec$schema3)).readonly()
+			array(lazy(() => JsonValueRemoteCodec$schema3$1)),
+			record(string(), lazy(() => JsonValueRemoteCodec$schema3$1)).readonly()
 		]);
-		const JsonValueRemoteCodec$schema4 = union([
+		const JsonValueRemoteCodec$schema4$1 = union([
 			literal(null),
 			string(),
 			number(),
 			literal(false),
 			literal(true),
-			array(lazy(() => JsonValueRemoteCodec$schema4)),
-			record(string(), lazy(() => JsonValueRemoteCodec$schema4)).readonly()
+			array(lazy(() => JsonValueRemoteCodec$schema4$1)),
+			record(string(), lazy(() => JsonValueRemoteCodec$schema4$1)).readonly()
 		]);
-		const JsonValueRemoteCodec$schema5 = union([
+		const JsonValueRemoteCodec$schema5$1 = union([
 			literal(null),
 			string(),
 			number(),
 			literal(false),
 			literal(true),
-			array(lazy(() => JsonValueRemoteCodec$schema5)),
-			record(string(), lazy(() => JsonValueRemoteCodec$schema5)).readonly()
+			array(lazy(() => JsonValueRemoteCodec$schema5$1)),
+			record(string(), lazy(() => JsonValueRemoteCodec$schema5$1)).readonly()
 		]);
-		const JsonValueRemoteCodec$schema6 = union([
+		const JsonValueRemoteCodec$schema6$1 = union([
 			literal(null),
 			string(),
 			number(),
 			literal(false),
 			literal(true),
-			array(lazy(() => JsonValueRemoteCodec$schema6)),
-			record(string(), lazy(() => JsonValueRemoteCodec$schema6)).readonly()
+			array(lazy(() => JsonValueRemoteCodec$schema6$1)),
+			record(string(), lazy(() => JsonValueRemoteCodec$schema6$1)).readonly()
 		]);
 		const JsonValueRemoteCodec$schema7 = union([
 			literal(null),
@@ -5567,8 +5567,8 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 			number(),
 			literal(false),
 			literal(true),
-			array(lazy(() => JsonValueRemoteCodec$schema5)),
-			record(string(), lazy(() => JsonValueRemoteCodec$schema5)).readonly()
+			array(lazy(() => JsonValueRemoteCodec$schema5$1)),
+			record(string(), lazy(() => JsonValueRemoteCodec$schema5$1)).readonly()
 		])).readonly();
 		const _melite_estate_drafts_bench_ensure_result$schema = object({
 			"draft_id": string().readonly(),
@@ -5580,8 +5580,8 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 				number(),
 				literal(false),
 				literal(true),
-				array(lazy(() => JsonValueRemoteCodec$schema6)),
-				record(string(), lazy(() => JsonValueRemoteCodec$schema6)).readonly()
+				array(lazy(() => JsonValueRemoteCodec$schema6$1)),
+				record(string(), lazy(() => JsonValueRemoteCodec$schema6$1)).readonly()
 			]).readonly(),
 			"stages": union([
 				literal(null),
@@ -5589,8 +5589,8 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 				number(),
 				literal(false),
 				literal(true),
-				array(lazy(() => JsonValueRemoteCodec$schema6)),
-				record(string(), lazy(() => JsonValueRemoteCodec$schema6)).readonly()
+				array(lazy(() => JsonValueRemoteCodec$schema6$1)),
+				record(string(), lazy(() => JsonValueRemoteCodec$schema6$1)).readonly()
 			]).readonly(),
 			"created": boolean().readonly()
 		});
@@ -5605,8 +5605,8 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 				number(),
 				literal(false),
 				literal(true),
-				array(lazy(() => JsonValueRemoteCodec$schema3)),
-				record(string(), lazy(() => JsonValueRemoteCodec$schema3)).readonly()
+				array(lazy(() => JsonValueRemoteCodec$schema3$1)),
+				record(string(), lazy(() => JsonValueRemoteCodec$schema3$1)).readonly()
 			]).readonly(),
 			"stages": union([
 				literal(null),
@@ -5614,8 +5614,8 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 				number(),
 				literal(false),
 				literal(true),
-				array(lazy(() => JsonValueRemoteCodec$schema3)),
-				record(string(), lazy(() => JsonValueRemoteCodec$schema3)).readonly()
+				array(lazy(() => JsonValueRemoteCodec$schema3$1)),
+				record(string(), lazy(() => JsonValueRemoteCodec$schema3$1)).readonly()
 			]).readonly(),
 			"log": array(record(string(), union([
 				literal(null),
@@ -5623,8 +5623,8 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 				number(),
 				literal(false),
 				literal(true),
-				array(lazy(() => JsonValueRemoteCodec$schema3)),
-				record(string(), lazy(() => JsonValueRemoteCodec$schema3)).readonly()
+				array(lazy(() => JsonValueRemoteCodec$schema3$1)),
+				record(string(), lazy(() => JsonValueRemoteCodec$schema3$1)).readonly()
 			])).readonly()).readonly()
 		});
 		const _melite_estate_drafts_bench_group_parameter_0$schema = string();
@@ -5722,8 +5722,8 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 				number(),
 				literal(false),
 				literal(true),
-				array(lazy(() => JsonValueRemoteCodec$schema4)),
-				record(string(), lazy(() => JsonValueRemoteCodec$schema4)).readonly()
+				array(lazy(() => JsonValueRemoteCodec$schema4$1)),
+				record(string(), lazy(() => JsonValueRemoteCodec$schema4$1)).readonly()
 			]).readonly(),
 			"stages": union([
 				literal(null),
@@ -5731,8 +5731,8 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 				number(),
 				literal(false),
 				literal(true),
-				array(lazy(() => JsonValueRemoteCodec$schema4)),
-				record(string(), lazy(() => JsonValueRemoteCodec$schema4)).readonly()
+				array(lazy(() => JsonValueRemoteCodec$schema4$1)),
+				record(string(), lazy(() => JsonValueRemoteCodec$schema4$1)).readonly()
 			]).readonly(),
 			"log": array(record(string(), union([
 				literal(null),
@@ -5740,8 +5740,8 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 				number(),
 				literal(false),
 				literal(true),
-				array(lazy(() => JsonValueRemoteCodec$schema4)),
-				record(string(), lazy(() => JsonValueRemoteCodec$schema4)).readonly()
+				array(lazy(() => JsonValueRemoteCodec$schema4$1)),
+				record(string(), lazy(() => JsonValueRemoteCodec$schema4$1)).readonly()
 			])).readonly()).readonly()
 		});
 		const _melite_estate_drafts_bench_undo_parameter_0$schema = string();
@@ -5792,8 +5792,8 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 			number(),
 			literal(false),
 			literal(true),
-			array(lazy(() => JsonValueRemoteCodec$schema)),
-			record(string(), lazy(() => JsonValueRemoteCodec$schema)).readonly()
+			array(lazy(() => JsonValueRemoteCodec$schema$1)),
+			record(string(), lazy(() => JsonValueRemoteCodec$schema$1)).readonly()
 		])).readonly();
 		const _melite_estate_drafts_drafts_list_result$schema = object({
 			"count": number().readonly(),
@@ -5819,10 +5819,10 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 					number(),
 					literal(false),
 					literal(true),
-					array(lazy(() => JsonValueRemoteCodec$schema2)),
-					record(string(), lazy(() => JsonValueRemoteCodec$schema2)).readonly()
+					array(lazy(() => JsonValueRemoteCodec$schema2$1)),
+					record(string(), lazy(() => JsonValueRemoteCodec$schema2$1)).readonly()
 				])),
-				record(string(), lazy(() => JsonValueRemoteCodec$schema2)).readonly()
+				record(string(), lazy(() => JsonValueRemoteCodec$schema2$1)).readonly()
 			]).optional(),
 			"result": union([
 				_undefined(),
@@ -5837,10 +5837,10 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 					number(),
 					literal(false),
 					literal(true),
-					array(lazy(() => JsonValueRemoteCodec$schema2)),
-					record(string(), lazy(() => JsonValueRemoteCodec$schema2)).readonly()
+					array(lazy(() => JsonValueRemoteCodec$schema2$1)),
+					record(string(), lazy(() => JsonValueRemoteCodec$schema2$1)).readonly()
 				])),
-				record(string(), lazy(() => JsonValueRemoteCodec$schema2)).readonly()
+				record(string(), lazy(() => JsonValueRemoteCodec$schema2$1)).readonly()
 			]).optional(),
 			"runStatus": union([
 				_undefined(),
@@ -5855,10 +5855,10 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 					number(),
 					literal(false),
 					literal(true),
-					array(lazy(() => JsonValueRemoteCodec$schema2)),
-					record(string(), lazy(() => JsonValueRemoteCodec$schema2)).readonly()
+					array(lazy(() => JsonValueRemoteCodec$schema2$1)),
+					record(string(), lazy(() => JsonValueRemoteCodec$schema2$1)).readonly()
 				])),
-				record(string(), lazy(() => JsonValueRemoteCodec$schema2)).readonly()
+				record(string(), lazy(() => JsonValueRemoteCodec$schema2$1)).readonly()
 			]).optional(),
 			"inputs": union([
 				_undefined(),
@@ -5873,10 +5873,10 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 					number(),
 					literal(false),
 					literal(true),
-					array(lazy(() => JsonValueRemoteCodec$schema2)),
-					record(string(), lazy(() => JsonValueRemoteCodec$schema2)).readonly()
+					array(lazy(() => JsonValueRemoteCodec$schema2$1)),
+					record(string(), lazy(() => JsonValueRemoteCodec$schema2$1)).readonly()
 				])),
-				record(string(), lazy(() => JsonValueRemoteCodec$schema2)).readonly()
+				record(string(), lazy(() => JsonValueRemoteCodec$schema2$1)).readonly()
 			]).optional(),
 			"inputOutputs": union([
 				_undefined(),
@@ -5891,10 +5891,10 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 					number(),
 					literal(false),
 					literal(true),
-					array(lazy(() => JsonValueRemoteCodec$schema2)),
-					record(string(), lazy(() => JsonValueRemoteCodec$schema2)).readonly()
+					array(lazy(() => JsonValueRemoteCodec$schema2$1)),
+					record(string(), lazy(() => JsonValueRemoteCodec$schema2$1)).readonly()
 				])),
-				record(string(), lazy(() => JsonValueRemoteCodec$schema2)).readonly()
+				record(string(), lazy(() => JsonValueRemoteCodec$schema2$1)).readonly()
 			]).optional()
 		});
 		const _melite_estate_drafts_drafts_patch_parameter_3$schema = union([literal(null), number()]);
@@ -5906,7 +5906,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 			"patched": union([_undefined(), array(string())]).optional(),
 			"rev": union([_undefined(), number()]).optional()
 		});
-		const TYPERT_REMOTE = {
+		const TYPERT_REMOTE$2 = {
 			package: "@melite/estate-drafts",
 			descriptors: [
 				{
@@ -5943,7 +5943,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 					},
 					sourceLocation: {
 						"file": "packages/estate/drafts/src/remote.ts",
-						"line": 751,
+						"line": 763,
 						"column": 9
 					}
 				},
@@ -5972,7 +5972,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 					},
 					sourceLocation: {
 						"file": "packages/estate/drafts/src/remote.ts",
-						"line": 684,
+						"line": 696,
 						"column": 9
 					}
 				},
@@ -6001,7 +6001,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 					},
 					sourceLocation: {
 						"file": "packages/estate/drafts/src/remote.ts",
-						"line": 594,
+						"line": 606,
 						"column": 9
 					}
 				},
@@ -6039,7 +6039,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 					},
 					sourceLocation: {
 						"file": "packages/estate/drafts/src/remote.ts",
-						"line": 797,
+						"line": 809,
 						"column": 9
 					}
 				},
@@ -6077,7 +6077,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 					},
 					sourceLocation: {
 						"file": "packages/estate/drafts/src/remote.ts",
-						"line": 741,
+						"line": 753,
 						"column": 9
 					}
 				},
@@ -6115,7 +6115,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 					},
 					sourceLocation: {
 						"file": "packages/estate/drafts/src/remote.ts",
-						"line": 761,
+						"line": 773,
 						"column": 9
 					}
 				},
@@ -6153,7 +6153,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 					},
 					sourceLocation: {
 						"file": "packages/estate/drafts/src/remote.ts",
-						"line": 782,
+						"line": 794,
 						"column": 9
 					}
 				},
@@ -6191,7 +6191,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 					},
 					sourceLocation: {
 						"file": "packages/estate/drafts/src/remote.ts",
-						"line": 771,
+						"line": 783,
 						"column": 9
 					}
 				},
@@ -6220,7 +6220,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 					},
 					sourceLocation: {
 						"file": "packages/estate/drafts/src/remote.ts",
-						"line": 612,
+						"line": 624,
 						"column": 10
 					}
 				},
@@ -6258,7 +6258,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 					},
 					sourceLocation: {
 						"file": "packages/estate/drafts/src/remote.ts",
-						"line": 825,
+						"line": 837,
 						"column": 9
 					}
 				},
@@ -6296,7 +6296,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 					},
 					sourceLocation: {
 						"file": "packages/estate/drafts/src/remote.ts",
-						"line": 811,
+						"line": 823,
 						"column": 9
 					}
 				},
@@ -6411,6 +6411,321 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 					}
 				}
 			]
+		};
+		//#endregion
+		//#region ../../estate/runs/lib/typert.remote-client.js
+		const JsonValueRemoteCodec$schema = union([
+			literal(null),
+			string(),
+			number(),
+			literal(false),
+			literal(true),
+			array(lazy(() => JsonValueRemoteCodec$schema)),
+			record(string(), lazy(() => JsonValueRemoteCodec$schema)).readonly()
+		]);
+		const JsonValueRemoteCodec$schema2 = union([
+			literal(null),
+			string(),
+			number(),
+			literal(false),
+			literal(true),
+			array(lazy(() => JsonValueRemoteCodec$schema2)),
+			record(string(), lazy(() => JsonValueRemoteCodec$schema2)).readonly()
+		]);
+		const JsonValueRemoteCodec$schema3 = union([
+			literal(null),
+			string(),
+			number(),
+			literal(false),
+			literal(true),
+			array(lazy(() => JsonValueRemoteCodec$schema3)),
+			record(string(), lazy(() => JsonValueRemoteCodec$schema3)).readonly()
+		]);
+		const JsonValueRemoteCodec$schema4 = union([
+			literal(null),
+			string(),
+			number(),
+			literal(false),
+			literal(true),
+			array(lazy(() => JsonValueRemoteCodec$schema4)),
+			record(string(), lazy(() => JsonValueRemoteCodec$schema4)).readonly()
+		]);
+		const JsonValueRemoteCodec$schema5 = union([
+			literal(null),
+			string(),
+			number(),
+			literal(false),
+			literal(true),
+			array(lazy(() => JsonValueRemoteCodec$schema5)),
+			record(string(), lazy(() => JsonValueRemoteCodec$schema5)).readonly()
+		]);
+		const JsonValueRemoteCodec$schema6 = union([
+			literal(null),
+			string(),
+			number(),
+			literal(false),
+			literal(true),
+			array(lazy(() => JsonValueRemoteCodec$schema6)),
+			record(string(), lazy(() => JsonValueRemoteCodec$schema6)).readonly()
+		]);
+		const _melite_estate_runs_runs_list_parameter_0$schema = string();
+		const _melite_estate_runs_runs_list_result$schema = object({
+			"count": number(),
+			"runs": array(record(string(), union([
+				literal(null),
+				string(),
+				number(),
+				literal(false),
+				literal(true),
+				array(lazy(() => JsonValueRemoteCodec$schema)),
+				record(string(), lazy(() => JsonValueRemoteCodec$schema)).readonly()
+			])).readonly())
+		});
+		const _melite_estate_runs_runs_start_parameter_0$schema = record(string(), union([
+			literal(null),
+			string(),
+			number(),
+			literal(false),
+			literal(true),
+			array(lazy(() => JsonValueRemoteCodec$schema4)),
+			record(string(), lazy(() => JsonValueRemoteCodec$schema4)).readonly()
+		])).readonly();
+		const _melite_estate_runs_runs_start_result$schema = object({
+			"run_id": string(),
+			"status": string(),
+			"queue_position": number()
+		});
+		const _melite_estate_runs_runs_status_parameter_0$schema = string();
+		const _melite_estate_runs_runs_status_result$schema = record(string(), union([
+			literal(null),
+			string(),
+			number(),
+			literal(false),
+			literal(true),
+			array(lazy(() => JsonValueRemoteCodec$schema5)),
+			record(string(), lazy(() => JsonValueRemoteCodec$schema5)).readonly()
+		])).readonly();
+		const _melite_estate_runs_runs_stop_parameter_0$schema = string();
+		const _melite_estate_runs_runs_stop_result$schema = record(string(), union([
+			literal(null),
+			string(),
+			number(),
+			literal(false),
+			literal(true),
+			array(lazy(() => JsonValueRemoteCodec$schema6)),
+			record(string(), lazy(() => JsonValueRemoteCodec$schema6)).readonly()
+		])).readonly();
+		const _melite_estate_runs_runs_validate_parameter_0$schema = record(string(), union([
+			literal(null),
+			string(),
+			number(),
+			literal(false),
+			literal(true),
+			array(lazy(() => JsonValueRemoteCodec$schema2)),
+			record(string(), lazy(() => JsonValueRemoteCodec$schema2)).readonly()
+		])).readonly();
+		const _melite_estate_runs_runs_validate_result$schema = record(string(), union([
+			literal(null),
+			string(),
+			number(),
+			literal(false),
+			literal(true),
+			array(lazy(() => JsonValueRemoteCodec$schema3)),
+			record(string(), lazy(() => JsonValueRemoteCodec$schema3)).readonly()
+		])).readonly();
+		const TYPERT_REMOTE$1 = {
+			package: "@melite/estate-runs",
+			descriptors: [
+				{
+					id: "@melite/estate-runs#runs/list",
+					service: "runsRemote",
+					namespace: "runs",
+					method: "list",
+					implementation: "remoteExportList",
+					invocation: { kind: "direct" },
+					parameters: [{
+						name: "rawLimit",
+						wire: "rawLimit",
+						source: "json",
+						codec: {
+							mode: "strict",
+							typeSymbol: "@melite/estate-runs#runs/list:rawLimit",
+							schema: _melite_estate_runs_runs_list_parameter_0$schema
+						}
+					}],
+					cancellation: { parameter: "signal" },
+					result: {
+						mode: "strict",
+						typeSymbol: "@melite/estate-runs#runs/list:result",
+						schema: _melite_estate_runs_runs_list_result$schema
+					},
+					sourceLocation: {
+						"file": "packages/estate/runs/src/index.ts",
+						"line": 104,
+						"column": 9
+					}
+				},
+				{
+					id: "@melite/estate-runs#runs/start",
+					service: "runsRemote",
+					namespace: "runs",
+					method: "start",
+					implementation: "remoteExportStart",
+					invocation: { kind: "direct" },
+					parameters: [{
+						name: "doc",
+						wire: "doc",
+						source: "json",
+						codec: {
+							mode: "strict",
+							typeSymbol: "@melite/estate-runs/types#RunStartDoc",
+							schema: _melite_estate_runs_runs_start_parameter_0$schema
+						}
+					}],
+					cancellation: { parameter: "signal" },
+					result: {
+						mode: "strict",
+						typeSymbol: "@melite/estate-runs#runs/start:result",
+						schema: _melite_estate_runs_runs_start_result$schema
+					},
+					sourceLocation: {
+						"file": "packages/estate/runs/src/index.ts",
+						"line": 76,
+						"column": 9
+					}
+				},
+				{
+					id: "@melite/estate-runs#runs/status",
+					service: "runsRemote",
+					namespace: "runs",
+					method: "status",
+					implementation: "remoteExportStatus",
+					invocation: { kind: "direct" },
+					parameters: [{
+						name: "runId",
+						wire: "runId",
+						source: "json",
+						codec: {
+							mode: "strict",
+							typeSymbol: "@melite/estate-runs#runs/status:runId",
+							schema: _melite_estate_runs_runs_status_parameter_0$schema
+						}
+					}],
+					cancellation: { parameter: "signal" },
+					result: {
+						mode: "strict",
+						typeSymbol: "@melite/estate-runs/types#RunRow",
+						schema: _melite_estate_runs_runs_status_result$schema
+					},
+					sourceLocation: {
+						"file": "packages/estate/runs/src/index.ts",
+						"line": 85,
+						"column": 9
+					}
+				},
+				{
+					id: "@melite/estate-runs#runs/stop",
+					service: "runsRemote",
+					namespace: "runs",
+					method: "stop",
+					implementation: "remoteExportStop",
+					invocation: { kind: "direct" },
+					parameters: [{
+						name: "runId",
+						wire: "runId",
+						source: "json",
+						codec: {
+							mode: "strict",
+							typeSymbol: "@melite/estate-runs#runs/stop:runId",
+							schema: _melite_estate_runs_runs_stop_parameter_0$schema
+						}
+					}],
+					cancellation: { parameter: "signal" },
+					result: {
+						mode: "strict",
+						typeSymbol: "@melite/estate-runs/types#RunRow",
+						schema: _melite_estate_runs_runs_stop_result$schema
+					},
+					sourceLocation: {
+						"file": "packages/estate/runs/src/index.ts",
+						"line": 94,
+						"column": 9
+					}
+				},
+				{
+					id: "@melite/estate-runs#runs/validate",
+					service: "runsRemote",
+					namespace: "runs",
+					method: "validate",
+					implementation: "remoteExportValidate",
+					invocation: { kind: "direct" },
+					parameters: [{
+						name: "doc",
+						wire: "doc",
+						source: "json",
+						codec: {
+							mode: "strict",
+							typeSymbol: "@melite/estate-runs/types#RunStartDoc",
+							schema: _melite_estate_runs_runs_validate_parameter_0$schema
+						}
+					}],
+					cancellation: { parameter: "signal" },
+					result: {
+						mode: "strict",
+						typeSymbol: "@melite/estate-runs/types#RunRow",
+						schema: _melite_estate_runs_runs_validate_result$schema
+					},
+					sourceLocation: {
+						"file": "packages/estate/runs/src/index.ts",
+						"line": 113,
+						"column": 9
+					}
+				}
+			]
+		};
+		//#endregion
+		//#region ../../estate/media/lib/typert.remote-client.js
+		const _melite_estate_media_media_list_parameter_0$schema = string();
+		const _melite_estate_media_media_list_result$schema = object({
+			"count": number(),
+			"items": array(object({
+				"url": string().readonly(),
+				"name": string().readonly(),
+				"kind": string().readonly(),
+				"runId": string().readonly()
+			}))
+		});
+		const TYPERT_REMOTE = {
+			package: "@melite/estate-media",
+			descriptors: [{
+				id: "@melite/estate-media#media/list",
+				service: "mediaRemote",
+				namespace: "media",
+				method: "list",
+				implementation: "remoteExportList",
+				invocation: { kind: "direct" },
+				parameters: [{
+					name: "kind",
+					wire: "kind",
+					source: "json",
+					codec: {
+						mode: "strict",
+						typeSymbol: "@melite/estate-media#media/list:kind",
+						schema: _melite_estate_media_media_list_parameter_0$schema
+					}
+				}],
+				cancellation: { parameter: "signal" },
+				result: {
+					mode: "strict",
+					typeSymbol: "@melite/estate-media#media/list:result",
+					schema: _melite_estate_media_media_list_result$schema
+				},
+				sourceLocation: {
+					"file": "packages/estate/media/src/index.ts",
+					"line": 315,
+					"column": 9
+				}
+			}]
 		};
 		//#endregion
 		//#region \0dsh-css:melite-card-view/src/client/card.module.css.mjs
@@ -6704,58 +7019,6 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 		};
 		//#endregion
 		//#region ../melite-run-wire/src/index.ts
-		/** Correlation id for one client-request frame (crypto.randomUUID is
-		*  the browser standard; the hand-rolled arm covers non-secure
-		*  contexts where the standard is absent). */
-		function nextRpcId$1() {
-			const cryptoApi = globalThis.crypto;
-			if (cryptoApi?.randomUUID !== void 0) return cryptoApi.randomUUID();
-			return "rpc-" + Math.random().toString(36).slice(2) + "-" + Date.now().toString(36);
-		}
-		/** The estate's domain refusal (result.ok !== true): the message
-		*  rides verbatim (the door's own law — the client never
-		*  paraphrases); the class separates DOMAIN verdicts from transport
-		*  failures, which carry the caller's voice prefix instead. */
-		var WireRefusedError = class extends Error {
-			constructor(message) {
-				super(message);
-				this.name = "WireRefusedError";
-			}
-		};
-		/** One client-request round trip: POST /api/<method> with the frame,
-		*  narrow the server-response envelope. Non-ok results throw the
-		*  estate's message; channel surprises throw honestly. */
-		async function wireCall$2(method, args, opts) {
-			const voice = opts?.voice ?? "wire";
-			const rpcId = nextRpcId$1();
-			const res = await fetch("/api/" + method, {
-				method: "POST",
-				headers: { "content-type": "application/json" },
-				body: JSON.stringify({
-					type: "client-request",
-					rpcId,
-					method,
-					payload: { args }
-				}),
-				...opts?.signal === void 0 ? {} : { signal: opts.signal }
-			});
-			if (!res.ok) {
-				const fault = await res.json().catch(() => null);
-				const text = typeof fault === "object" && fault !== null && typeof Reflect.get(fault, "error") === "string" ? Reflect.get(fault, "error") : void 0;
-				throw new Error(voice + ": " + (text ?? "HTTP " + String(res.status)));
-			}
-			const body = await res.json();
-			if (typeof body !== "object" || body === null || Reflect.get(body, "type") !== "server-response" || Reflect.get(body, "rpcId") !== rpcId) throw new Error(voice + ": malformed response frame");
-			const result = Reflect.get(body, "result");
-			if (typeof result !== "object" || result === null) throw new Error(voice + ": malformed result");
-			if (Reflect.get(result, "ok") !== true) {
-				const error = Reflect.get(result, "error");
-				throw new WireRefusedError(typeof error === "object" && error !== null && typeof Reflect.get(error, "message") === "string" ? Reflect.get(error, "message") : voice + ": refused");
-			}
-			const value = Reflect.get(result, "value");
-			if (typeof value !== "object" || value === null || Array.isArray(value)) throw new Error(voice + ": not a JSON object");
-			return value;
-		}
 		/** The terminal statuses — the runs seat's own vocabulary (the settle
 		*  path stamps 'completed' or 'failed'; runs/stop stamps 'stopped'). */
 		function isTerminalRun(status) {
@@ -6790,129 +7053,11 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 				...typeof doc["error"] === "string" && doc["error"] !== "" ? { error: doc["error"] } : {}
 			};
 		}
-		/** One runs/status read. */
-		async function fetchRunStatus(runId, signal) {
-			return readRunStatus(runId, await wireCall$2("runs/status", { runId }, { signal }));
-		}
-		/** The runs/list rows as loose records (the restore port's own
-		*  shape — run_id, draft_id, created_at, status, artifacts). */
-		async function listRunRows(signal) {
-			const row = await wireCall$2("runs/list", { rawLimit: "500" }, { signal });
-			return (Array.isArray(row["runs"]) ? row["runs"] : []).filter((r) => typeof r === "object" && r !== null);
-		}
-		/** THE GONE-VERDICT (2026-09-13 phantom-running incident): for a run
-		*  the live registry no longer knows (an estate restart wiped the
-		*  in-memory map). The file-era law: a refused id may still answer
-		*  from runs/list (the completed runs' SSOT); absent from both, the
-		*  run is GONE — nothing will ever write its terminal, so the caller
-		*  stamps 'stopped'. Transport errors rethrow (not a verdict — the
-		*  caller retries or leaves the row alone). */
-		async function probeRunGone(runId, signal) {
-			try {
-				await fetchRunStatus(runId, signal);
-				return "live";
-			} catch (e) {
-				if (!(e instanceof WireRefusedError)) throw e;
-				const listed = await fetchListRow(runId, signal).catch(() => null);
-				if (listed === null) return "gone";
-				const status = listed["status"];
-				return typeof status === "string" && status !== "" ? status : "completed";
-			}
-		}
-		/** One runs/list row by run_id (the file-era face — runs/status only
-		*  knows live runs; the list is the completed runs' SSOT). */
-		async function fetchListRow(runId, signal) {
-			for (const r of await listRunRows(signal)) {
-				const rid = r["run_id"] ?? r["id"];
-				if (typeof rid === "string" && rid !== "" && rid === runId) return r;
-			}
-			return null;
-		}
-		/** The draft's newest run (runs/list adoption — the reload-proof
-		*  bridge: the estate is the SSOT, never the client's memory).
-		*  NOTE the list's C-parity ordering: media-bearing runs first, then
-		*  newest-first — scan the wide tail, newest by created_at. (An older
-		*  note blamed the hasDraft filter for dropping bench-draft runs;
-		*  the actual nulling gate was the row gate refusing "model"
-		*  artifact rows — fixed estate-side, pinned by runs-list.spec.ts.) */
-		async function fetchLatestRunForDraft(draftId, signal) {
-			let newest = null;
-			for (const r of await listRunRows(signal)) {
-				const rid = r["run_id"] ?? r["id"];
-				const did = r["draft_id"];
-				if (typeof rid !== "string" || rid === "" || did !== draftId) continue;
-				const created = r["created_at"];
-				const at = typeof created === "number" ? created : 0;
-				if (newest === null || at > newest.created) newest = {
-					rid,
-					created: at
-				};
-			}
-			return newest !== null ? newest.rid : null;
-		}
-		/** media/list — the runs-tree library, kind-filtered (image | audio |
-		*  video | model | all). The url is the SAME /melite-media/runs
-		*  grammar the byte route serves; picking one writes it verbatim. */
-		async function fetchMediaLibrary(kind, signal) {
-			const items = (await wireCall$2("media/list", { kind }, {
-				signal,
-				voice: "media/list"
-			}))["items"];
-			if (!Array.isArray(items)) return [];
-			const out = [];
-			for (const it of items) {
-				if (typeof it !== "object" || it === null) continue;
-				const url = Reflect.get(it, "url");
-				const name = Reflect.get(it, "name");
-				const k = Reflect.get(it, "kind");
-				const runId = Reflect.get(it, "runId");
-				if (typeof url === "string" && typeof name === "string" && typeof k === "string" && typeof runId === "string") out.push({
-					url,
-					name,
-					kind: k,
-					runId
-				});
-			}
-			return out;
-		}
-		/** runs/stop — the cancel door (the registry seat's flag + interrupt).
-		*  Refusals throw the estate's text. */
-		async function stopRun(runId, signal) {
-			await wireCall$2("runs/stop", { runId }, {
-				signal,
-				voice: "runs/stop"
-			});
-		}
-		/** The shared start core — ONE envelope walk for both doors (the
-		*  registry demands draft_id + an explicit test boolean; the flow
-		*  body needs its id — the bench runs under its own draft_id). */
-		async function startRun(doc, signal) {
-			try {
-				const runId = (await wireCall$2("runs/start", { doc }, {
-					signal,
-					voice: "run refused"
-				}))["run_id"];
-				if (typeof runId === "string" && runId !== "") return { runId };
-				return { refused: "run refused: no run_id in the answer" };
-			} catch (e) {
-				return { refused: e instanceof Error ? e.message : "run request failed" };
-			}
-		}
-		/** Start ONE card through the composing door (the bench drill's Run,
-		*  a studio's Run — every single-card gesture rides this). */
-		async function startCardRun(input, signal) {
-			return await startRun({
-				...input.params,
-				model: input.model,
-				draft_id: input.draftId,
-				test: input.test ?? false
-			}, signal);
-		}
 		/** The catalog's cards section (GET /v1/model-catalog — the
 		*  discovery door, same-origin, bearer-free from the page): card id
 		*  → its boarded families, first = the DEFAULT family (form-spec's
 		*  card-id alias law parity: boarded[0]). The runs door resolves
-		*  NEITHER card ids nor aliases — callers hand startCardRun the
+		*  NEITHER card ids nor aliases — callers hand the start verb the
 		*  family from HERE. Cached per session (the catalog is static per
 		*  boot; one door round trip, every consumer shares it). */
 		async function fetchCardFamilies(signal) {
@@ -6935,16 +7080,50 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 			return (await fetchCardFamilies(signal))[cardId]?.[0] ?? cardId;
 		}
 		//#endregion
-		//#region src/client/draft.ts
-		/** One wire call — the run-wire package's ONE frame definition (the
-		*  DRY law; this module's spelling died with it). The method rides
-		*  as the transport voice so diagnostics name their door. */
-		async function wireCall$1(method, args) {
-			return await wireCall$2(method, args, { voice: method });
+		//#region ../card-base/src/estate-remote.ts
+		/** The estate's domain refusal ({ok:false} answers): the message
+		* rides verbatim; the class separates DOMAIN verdicts from transport
+		* failures so policy code (the gone-verdict, the poll, the CAS
+		* rebase) can discriminate. */
+		var EstateRefusedError = class extends Error {
+			constructor(message) {
+				super(message);
+				this.name = "EstateRefusedError";
+			}
+		};
+		let bound;
+		/** Capture the namespaces (apply()'s child fiber — or a test's honest
+		* fake). Idempotent; the last bind wins. */
+		function bindEstateRemote(namespaces) {
+			bound = namespaces;
 		}
+		/** The bound namespaces — LOUD when unbound: a verb call before the
+		* mount (or after unload) is a wiring bug, never a silent fallback. */
+		function estateRemote() {
+			if (bound === void 0) throw new Error("estate remote not mounted — the verbs ride ctx.remote (the TYPERT_REMOTE contributions must mount before any call)");
+			return bound;
+		}
+		/** Await one namespace method's RemoteResult and unwrap it: the
+		*  value on ok, the estate's refusal text (verbatim) on the error
+		*  branch. Accepts the promise directly so call sites stay one
+		*  expression. */
+		async function unwrapRemote(result, voice) {
+			const settled = await result;
+			if (settled.ok === true) return settled.value;
+			const { error } = settled;
+			const failure = error;
+			throw new EstateRefusedError(typeof failure === "object" && failure !== null && typeof failure.message === "string" && failure.message !== "" ? failure.message : voice + ": refused");
+		}
+		/** Refusal discrimination for policy code (the CAS rebase, the
+		* gone-verdict, the poll's file-era arms). */
+		function isEstateRefusal(error) {
+			return error instanceof EstateRefusedError;
+		}
+		//#endregion
+		//#region src/client/draft.ts
 		/** The draft doc; throws the door's own named refusal on failure. */
 		async function fetchDraft(draftId) {
-			const doc = await wireCall$1("drafts/get", { draftId });
+			const doc = await unwrapRemote(estateRemote().drafts.get(draftId), "drafts/get");
 			if (typeof doc["draft_id"] !== "string" || !Array.isArray(doc["stages"])) throw new Error("drafts/get: not a draft doc");
 			return doc;
 		}
@@ -6969,14 +7148,13 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 			const msg = e instanceof Error ? e.message : String(e);
 			return msg.includes("moved: rev is") || msg.includes("cas-conflict");
 		}
-		/** One drafts/patch round trip; throws the door's named refusal. */
+		/** One drafts/patch round trip; throws the door's named refusal. The
+		*  generated signature is (draftId, stageId, patch, expectRev:
+		*  number | null) — the open local patch shape rides as the wire's
+		*  own open JSON record (honestly JSON all the way down). */
 		async function patchOnce(draftId, stageId, patch, expectRev) {
-			const row = await wireCall$1("drafts/patch", {
-				draftId,
-				stageId,
-				patch,
-				...expectRev !== void 0 ? { expectRev } : {}
-			});
+			const ns = estateRemote().drafts;
+			const row = await unwrapRemote(ns.patch(draftId, stageId, patch, expectRev ?? null), "drafts/patch");
 			if (row["delivered"] !== true) {
 				const reason = typeof row["reason"] === "string" ? row["reason"] : "undelivered";
 				throw new Error("drafts/patch: " + reason + " (draft " + draftId + ", stage " + stageId + ")");
@@ -7027,13 +7205,13 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 		}
 		/** Start the run; returns the run_id or throws the door's named refusal. */
 		async function startDraft(draftId) {
-			const row = await wireCall$1("runs/start", { doc: { draft_id: draftId } });
+			const row = await unwrapRemote(estateRemote().runs.start({ draft_id: draftId }), "runs/start");
 			if (typeof row["run_id"] !== "string") throw new Error("runs/start: no run_id in the answer");
 			return row["run_id"];
 		}
 		/** The run status (poll target). Throws on transport failure only. */
 		async function runStatus(runId) {
-			const doc = await wireCall$1("runs/status", { runId });
+			const doc = await unwrapRemote(estateRemote().runs.status(runId), "runs/status");
 			if (typeof doc["status"] !== "string") throw new Error("runs/status: not a status doc");
 			return doc;
 		}
@@ -7313,7 +7491,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 			if (path === "") throw new Error("upload answered without a path");
 			return {
 				name: path,
-				file: path.split("/").pop() ?? file.name
+				file: path.split("/").pop()
 			};
 		}
 		//#endregion
@@ -7353,6 +7531,127 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 		* @module @deepseek-ai/dsh-typert-protocol
 		*/
 		//#endregion
+		//#region ../card-base/src/runs-policy.ts
+		/**
+		* runs-policy.ts — the run verbs over THE ONE LANE (stroke 81; the
+		* shared home, stroke 81b — beside estate-remote, for the same
+		* singleton reason: sibling studio clients poll runs here).
+		*
+		* The run-wire package's policy laws, moved verbatim onto the
+		* mounted runs namespace: status/list/start/stop are typed calls
+		* through ctx.remote (the generated client — the Connection owns
+		* transport, RPC ids, envelopes, cancellation; the hand-written
+		* envelope lane is dead). Refusals resolve as RemoteResult error
+		* branches and throw EstateRefusedError carrying the estate's
+		* message verbatim (WireRefusedError's discrimination role — the
+		* gone-verdict, the poll's file-era arms key on the CLASS, not the
+		* words). The PURE laws (readRunStatus's normalize, toRunMediaUrl's
+		* one rewrite, the terminal vocabulary, the list-row url law) stay
+		* in the run-wire package — their ONE definition; only the
+		* transport moved.
+		*/
+		/** One runs/status read (normalized once — readRunStatus's law). */
+		async function fetchRunStatus(runId, signal) {
+			return readRunStatus(runId, await unwrapRemote(estateRemote().runs.status(runId, signal), "runs/status"));
+		}
+		/** The runs/list rows as loose records (the restore port's own
+		*  shape — run_id, draft_id, created_at, status, artifacts). */
+		async function listRunRows(signal) {
+			const row = await unwrapRemote(estateRemote().runs.list("500", signal), "runs/list");
+			return (Array.isArray(row["runs"]) ? row["runs"] : []).filter((r) => typeof r === "object" && r !== null);
+		}
+		/** One runs/list row by run_id (the file-era face — runs/status only
+		*  knows live runs; the list is the completed runs' SSOT). */
+		async function fetchListRow(runId, signal) {
+			for (const r of await listRunRows(signal)) {
+				const rid = r["run_id"] ?? r["id"];
+				if (typeof rid === "string" && rid !== "" && rid === runId) return r;
+			}
+			return null;
+		}
+		/** THE GONE-VERDICT (2026-09-13 phantom-running incident): for a run
+		*  the live registry no longer knows (an estate restart wiped the
+		*  in-memory map). The file-era law: a refused id may still answer
+		*  from runs/list (the completed runs' SSOT); absent from both, the
+		*  run is GONE — nothing will ever write its terminal, so the caller
+		*  stamps 'stopped'. Transport errors rethrow (not a verdict — the
+		*  caller retries or leaves the row alone). */
+		async function probeRunGone(runId, signal) {
+			try {
+				await fetchRunStatus(runId, signal);
+				return "live";
+			} catch (e) {
+				if (!(e instanceof Error && e.name === "EstateRefusedError")) throw e;
+				const listed = await fetchListRow(runId, signal).catch(() => null);
+				if (listed === null) return "gone";
+				const status = listed["status"];
+				return typeof status === "string" && status !== "" ? status : "completed";
+			}
+		}
+		/** The draft's newest run (runs/list adoption — the reload-proof
+		*  bridge: the estate is the SSOT, never the client's memory).
+		*  NOTE the list's C-parity ordering: media-bearing runs first, then
+		*  newest-first — scan the wide tail, newest by created_at. */
+		async function fetchLatestRunForDraft(draftId, signal) {
+			let newest = null;
+			for (const r of await listRunRows(signal)) {
+				const rid = r["run_id"] ?? r["id"];
+				const did = r["draft_id"];
+				if (typeof rid !== "string" || rid === "" || did !== draftId) continue;
+				const created = r["created_at"];
+				const at = typeof created === "number" ? created : 0;
+				if (newest === null || at > newest.created) newest = {
+					rid,
+					created: at
+				};
+			}
+			return newest !== null ? newest.rid : null;
+		}
+		/** runs/stop — the cancel door (the registry seat's flag +
+		*  interrupt). Refusals throw the estate's text. */
+		async function stopRun(runId, signal) {
+			await unwrapRemote(estateRemote().runs.stop(runId, signal), "runs/stop");
+		}
+		/** The shared start core — ONE envelope walk for both doors (the
+		*  registry demands draft_id + an explicit test boolean; the flow
+		*  body needs its id — the bench runs under its own draft_id). */
+		async function startRun(doc, signal) {
+			try {
+				const runId = (await unwrapRemote(estateRemote().runs.start(doc, signal), "runs/start"))["run_id"];
+				if (typeof runId === "string" && runId !== "") return { runId };
+				return { refused: "run refused: no run_id in the answer" };
+			} catch (e) {
+				return { refused: e instanceof Error ? e.message : "run request failed" };
+			}
+		}
+		/** Start ONE card through the composing door (the bench drill's
+		*  Run, a studio's Run — every single-card gesture rides this). */
+		async function startCardRun(input, signal) {
+			return await startRun({
+				...input.params,
+				model: input.model,
+				draft_id: input.draftId,
+				test: input.test ?? false
+			}, signal);
+		}
+		//#endregion
+		//#region ../card-base/src/media-library.ts
+		/**
+		* media-library.ts — the runs-tree library over the mounted media
+		* namespace (stroke 81b: moved beside the bind it rides).
+		*
+		* The picker's injected source (SquareWire.loadMedia): kind-filtered
+		* media/list rows, shaped to {url, name}. Every surface — the bench
+		* drill, the mod leaf, the studio SourceRows — injects THIS function
+		* (or a test fake); the base form carries no transport of its own.
+		*/
+		/** media/list — the runs-tree library (the picker's injected
+		*  source; kind-filtered). */
+		async function fetchMediaLibrary(kind, signal) {
+			const v = await unwrapRemote(estateRemote().media.list(kind, signal), "media/list");
+			return Array.isArray(v.items) ? v.items.filter((it) => typeof it?.url === "string" && typeof it?.name === "string") : [];
+		}
+		//#endregion
 		//#region src/client/cards-resource.ts
 		/** The bench address (the legacy bare form serves 'main' — the
 		*  pre-session key records resolve unchanged). */
@@ -7391,14 +7690,10 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 			if (rest.startsWith("draft/")) {
 				const body = rest.slice(6);
 				const slash = body.indexOf("/");
-				if (slash > 0 && slash < body.length - 1) {
-					const draftId = decodeURIComponent(body.slice(0, slash));
-					const stageId = decodeURIComponent(body.slice(slash + 1));
-					if (draftId !== "" && stageId !== "") return {
-						draft: draftId,
-						stage: stageId
-					};
-				}
+				if (slash > 0 && slash < body.length - 1) return {
+					draft: decodeURIComponent(body.slice(0, slash)),
+					stage: decodeURIComponent(body.slice(slash + 1))
+				};
 			}
 			return null;
 		}
@@ -7411,7 +7706,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 			};
 		}
 		/** Defensive row readers — the door's wire is untyped at this seam. */
-		function readBench(doc) {
+		function readBench(doc, sessionKey) {
 			let stages = Array.isArray(doc["stages"]) ? doc["stages"].filter((s) => typeof s === "object" && s !== null && typeof s["id"] === "string") : [];
 			const intent = typeof doc["intent"] === "string" ? doc["intent"] : "";
 			if (intent !== "" && stages.length === 1 && (stages[0]["card"] === void 0 || stages[0]["card"] === "")) stages = [{
@@ -7424,7 +7719,8 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 				draftId: typeof doc["draft_id"] === "string" ? doc["draft_id"] : "bench-main",
 				rev: typeof doc["rev"] === "number" ? doc["rev"] : 0,
 				stages,
-				log
+				log,
+				sessionKey: benchSessionKey(sessionKey)
 			};
 		}
 		/** A missing bench is a FRESH conversation's honest zero state, not a
@@ -7436,11 +7732,10 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 			const key = benchSessionKey(sessionKey);
 			return readBench({
 				draft_id: "bench-" + key,
-				session: key,
 				rev: 0,
 				intent: "",
 				stages: []
-			});
+			}, key);
 		}
 		function isMissingBench(e) {
 			return (e instanceof Error ? e.message : String(e)).includes("no such bench");
@@ -7448,10 +7743,10 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 		/** Re-read one conversation's bench — the consumer's reload
 		*  after its own edits (the provider's bench stream is a single
 		*  snapshot; same-address navigation does not re-run it). */
-		async function fetchBench(sessionKey = "main", signal) {
+		async function fetchBench(sessionKey, signal) {
 			const key = benchSessionKey(sessionKey);
 			try {
-				return readBench(await wireCall("bench/get", { sessionKey: key }, signal));
+				return readBench(await unwrapRemote(estateRemote().bench.get(key, signal), "bench/get"), key);
 			} catch (e) {
 				if (isMissingBench(e)) return emptyBench(key);
 				throw e;
@@ -7554,7 +7849,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 							first = false;
 						}
 						const key = activeKey;
-						const bench = readBench(result.value.value);
+						const bench = readBench(result.value.value, key);
 						const lastRev = lastRevs.get(key) ?? null;
 						if (lastRev === null) lastRevs.set(key, bench.rev);
 						else if (bench.rev > lastRev) {
@@ -7604,7 +7899,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 				try {
 					row = await fetchRunStatus(runId, signal);
 				} catch (e) {
-					if (e instanceof WireRefusedError) {
+					if (isEstateRefusal(e)) {
 						const verdict = await probeRunGone(runId, signal);
 						const terminal = verdict === "gone" ? "stopped" : verdict === "completed" ? "done" : verdict === "live" || verdict === "running" ? "running" : verdict;
 						try {
@@ -7673,8 +7968,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 					});
 					onTouched?.();
 				} catch {}
-				if (terminal === "done" || terminal === "failed" || terminal === "stopped") return terminal;
-				return null;
+				return terminal;
 			}
 			return null;
 		}
@@ -7744,7 +8038,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 		*  refuses honestly. */
 		async function freshStageRow(draftId, stageId, signal) {
 			try {
-				const doc = await wireCall("drafts/get", { draftId }, signal);
+				const doc = await unwrapRemote(estateRemote().drafts.get(draftId, signal), "drafts/get");
 				return (Array.isArray(doc["stages"]) ? doc["stages"].filter((s) => typeof s === "object" && s !== null && typeof s["id"] === "string") : []).find((s) => s.id === stageId) ?? null;
 			} catch {
 				return null;
@@ -7763,11 +8057,6 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 				rev
 			};
 		}
-		/** The frame is the run-wire package's ONE definition; this wrapper
-		*  narrows the method set for the cards protocol's own verbs. */
-		async function wireCall(nsMethod, args, signal) {
-			return await wireCall$2(nsMethod, args, { signal });
-		}
 		/** Card-back-into-flow: restore a run's producing draft onto the
 		*  shared bench — drafts/get (the draft holds the full
 		*  card/engine/params stages) then per-stage bench/add-stage as the
@@ -7777,12 +8066,12 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 		*  retries once without the id (the bench auto-ids s_<n>) and notes
 		*  it. Any other refusal throws with the door's own text — the bench
 		*  keeps whatever landed before it, and the report says so. */
-		async function restoreRunToBench(run, sessionKey = "main", signal) {
+		async function restoreRunToBench(run, sessionKey, signal) {
 			if (run.draftId === null || run.draftId === "") throw new Error("this run names no draft — nothing to restore");
 			const key = benchSessionKey(sessionKey);
 			let draft;
 			try {
-				draft = await wireCall("drafts/get", { draftId: run.draftId }, signal);
+				draft = await unwrapRemote(estateRemote().drafts.get(run.draftId, signal), "drafts/get");
 			} catch (e) {
 				throw new Error("the producing draft is unreadable: " + (e instanceof Error ? e.message : String(e)));
 			}
@@ -7791,7 +8080,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 			if (stages.length === 0) throw new Error("the producing draft holds no stages — nothing to restore");
 			let bench;
 			try {
-				bench = await wireCall("bench/get", { sessionKey: key }, signal);
+				bench = await unwrapRemote(estateRemote().bench.get(key, signal), "bench/get");
 			} catch (e) {
 				throw new Error("the bench is unreadable: " + (e instanceof Error ? e.message : String(e)));
 			}
@@ -7818,10 +8107,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 				const id = typeof st["id"] === "string" && st["id"] !== "" ? st["id"] : null;
 				if (id !== null) doc["id"] = id;
 				try {
-					const row = await wireCall("bench/add-stage", {
-						sessionKey: key,
-						doc
-					}, signal);
+					const row = await unwrapRemote(estateRemote().bench["add-stage"](key, doc, signal), "bench/add-stage");
 					if (typeof row["rev"] === "number") rev = row["rev"];
 					report.added += 1;
 				} catch (e) {
@@ -7830,10 +8116,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 						const retry = { ...doc };
 						delete retry["id"];
 						try {
-							const row = await wireCall("bench/add-stage", {
-								sessionKey: key,
-								doc: retry
-							}, signal);
+							const row = await unwrapRemote(estateRemote().bench["add-stage"](key, retry, signal), "bench/add-stage");
 							if (typeof row["rev"] === "number") rev = row["rev"];
 							report.added += 1;
 							report.notes.push(id + " was already on the bench — added under a fresh id");
@@ -7864,7 +8147,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 					if (remote === void 0) {
 						let value;
 						try {
-							value = readBench(await wireCall("bench/get", { sessionKey: benchKey }));
+							value = readBench(await unwrapRemote(estateRemote().bench.get(benchKey), "bench/get"), benchKey);
 						} catch (e) {
 							if (!isMissingBench(e)) {
 								yield failure(address, e instanceof Error ? e.message : String(e));
@@ -7879,10 +8162,6 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 						yield failure(address, "bench stream unavailable — the remote face did not mount (showing one snapshot)");
 						return;
 					}
-					if (remote === void 0) {
-						yield failure(address, "bench stream failed: the remote face did not mount");
-						return;
-					}
 					if (benchNs === void 0) {
 						yield failure(address, "bench stream failed: the bench namespace did not mount (the inject seat is absent)");
 						return;
@@ -7893,7 +8172,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 				if (draftTarget !== null) {
 					let value;
 					try {
-						value = readDraft(draftTarget.draft, draftTarget.stage, await wireCall("drafts/get", { draftId: draftTarget.draft }));
+						value = readDraft(draftTarget.draft, draftTarget.stage, await unwrapRemote(estateRemote().drafts.get(draftTarget.draft), "drafts/get"));
 					} catch (e) {
 						yield failure(address, e instanceof Error ? e.message : String(e));
 						return;
@@ -7906,7 +8185,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 				}
 				let value;
 				try {
-					value = readRun(runId, await wireCall("runs/status", { runId }));
+					value = readRun(runId, await unwrapRemote(estateRemote().runs.status(runId), "runs/status"));
 				} catch (e) {
 					yield failure(address, e instanceof Error ? e.message : String(e));
 					return;
@@ -7945,17 +8224,13 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 					clearTimeout(t);
 					resolve("abort");
 				};
-				if (signal.aborted) {
-					onAbort();
-					return;
-				}
 				signal.addEventListener("abort", onAbort, { once: true });
 			});
 			while (!signal.aborted && !isTerminal(value.status)) {
 				if (await sleep(1500) === "abort" || signal.aborted) return;
 				let row;
 				try {
-					row = await wireCall("runs/status", { runId }, signal);
+					row = await unwrapRemote(estateRemote().runs.status(runId, signal), "runs/status");
 				} catch {
 					continue;
 				}
@@ -8032,7 +8307,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 						item.accept();
 						first = false;
 					}
-					const value = readBench(item.value);
+					const value = readBench(item.value, sessionKey);
 					if (lastRev === value.rev) continue;
 					lastRev = value.rev;
 					yield {
@@ -9209,7 +9484,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 				"aria-label": "Detach " + (label || "source"),
 				onClick: (e) => {
 					e.stopPropagation();
-					props.onClear?.();
+					props.onClear();
 				}
 			}, "✕") : null), label !== "" ? (0, react.createElement)("span", { className: card_module_css_default.squareLabel }, label) : null, metric !== void 0 ? (0, react.createElement)("span", { className: card_module_css_default.squareMetric }, metric) : null, props.onFile !== void 0 && !disabled ? (0, react.createElement)("input", {
 				ref: fileRef,
@@ -9221,7 +9496,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 				onChange: (e) => {
 					const f = e.target.files?.[0];
 					if (f !== void 0 && f !== null) props.onFile?.(f);
-					if (fileRef.current !== null) fileRef.current.value = "";
+					fileRef.current.value = "";
 				}
 			}) : null);
 		}
@@ -9370,26 +9645,28 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 						fileRef.current?.click();
 						return;
 					}
-					if (id === "__none__") {
-						setMirror((m) => {
-							const n = { ...m };
-							delete n[f.name];
-							return n;
-						});
-						onEdit(f.name, "");
-						return;
-					}
+					setMirror((m) => {
+						const n = { ...m };
+						delete n[f.name];
+						return n;
+					});
+					onEdit(f.name, "");
 				},
 				onClose: () => {
 					setPickAt(null);
 				},
 				portal: true
 			});
+			const loadMedia = wire?.loadMedia;
 			(0, react.useEffect)(() => {
 				if (modalAt?.mode !== "media") return;
+				if (loadMedia === void 0) {
+					setMediaRows([]);
+					return;
+				}
 				const ctrl = new AbortController();
 				setMediaRows(null);
-				fetchMediaLibrary(mediaKindForField(modalAt.field), ctrl.signal).then((items) => {
+				loadMedia(mediaKindForField(modalAt.field), ctrl.signal).then((items) => {
 					setMediaRows(items.map((it) => ({
 						id: it.url,
 						label: it.name,
@@ -9401,7 +9678,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 				return () => {
 					ctrl.abort();
 				};
-			}, [modalAt]);
+			}, [modalAt, loadMedia]);
 			const pickerModal = modalAt === null ? null : (() => {
 				const f = modalAt.field;
 				const candidates = modalAt.mode === "flow" ? wire.candidatesFor !== void 0 ? wire.candidatesFor(f) : wire.candidates : mediaRows ?? [];
@@ -9455,7 +9732,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 						fieldRef.current = null;
 						onFile(f, file);
 					}
-					if (fileRef.current !== null) fileRef.current.value = "";
+					fileRef.current.value = "";
 				}
 			});
 			return {
@@ -9738,7 +10015,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 					"aria-label": label,
 					"data-axis": g,
 					...refusedId !== void 0 ? { "data-refused": g } : {},
-					value: active[g] ?? "",
+					value: active[g],
 					onChange: (e) => {
 						const id = e.target.value;
 						const row = rows.find((v) => v.id === id);
@@ -9883,7 +10160,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 				...wireCandidates !== void 0 ? { wireCandidates } : {}
 			}), f.tooltip !== void 0 && f.tooltip !== "" ? (0, react.createElement)("span", { className: card_module_css_default.specHint }, f.tooltip) : null);
 		}
-		function CardForm({ spec, user, base, onSet, onUnset, wire, square, atoms, onPatch, onDownloadModel, onInstallPack, paintFace, paintReference }) {
+		function CardForm({ spec, user, base, onSet, onUnset, wire, square, atoms, onPatch, onDownloadModel, onInstallPack, paintFace, bboxFace, paintReference }) {
 			const fields = fieldsOf(spec);
 			const value = resolveValue(spec, user, base);
 			const fieldByName = new Map(fields.map((f) => [f.name, f]));
@@ -9912,7 +10189,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 			const flatFields = owned.size > 0 ? fields.filter((f) => !owned.has(f.name)) : fields;
 			const signature = Array.isArray(spec.inputs) ? spec.inputs : [];
 			const modFieldByName = /* @__PURE__ */ new Map();
-			for (const k of modKinds) for (const f of k.fields ?? []) if (!modFieldByName.has(f.name)) modFieldByName.set(f.name, f);
+			for (const k of modKinds) for (const f of k.fields) if (!modFieldByName.has(f.name)) modFieldByName.set(f.name, f);
 			const railOf = (inp) => {
 				const f = flatFields.find((x) => x.name === inp.name) ?? modFieldByName.get(inp.name);
 				if (f === void 0) return void 0;
@@ -9937,7 +10214,6 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 				className: card_module_css_default.specGroup + " " + card_module_css_default.inputRail,
 				"data-input-rail": "1"
 			}, (0, react.createElement)("div", { className: card_module_css_default.specSlotRow }, railFields.map((f) => {
-				if (f.type === "image_list") return null;
 				return (0, react.createElement)("div", {
 					key: f.name,
 					className: card_module_css_default.specSlotCell,
@@ -9952,7 +10228,6 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 			}))) : null, groups.map((g) => {
 				const gridCols = g.fields.find((f) => typeof f.columns === "number" && f.columns >= 2)?.columns;
 				const cellStyle = (f) => {
-					if (gridCols === void 0) return void 0;
 					if (f.type === "textarea") return {
 						gridColumn: "1 / -1",
 						minWidth: "0"
@@ -9977,7 +10252,6 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 					row = [];
 				};
 				for (const f of g.fields) {
-					if (railNames.has(f.name)) continue;
 					const claim = atomOf(f);
 					const sq = squareFor(f);
 					const wireCandidates = wire?.candidates;
@@ -10041,7 +10315,9 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 				railSeated: railNames,
 				...onPatch !== void 0 ? { onPatch } : {},
 				...paintFace !== void 0 ? { paintFace } : {},
-				...paintReference !== void 0 ? { paintReference } : {}
+				...bboxFace !== void 0 ? { bboxFace } : {},
+				...paintReference !== void 0 ? { paintReference } : {},
+				...wire?.loadMedia !== void 0 ? { loadMedia: wire.loadMedia } : {}
 			}) : null, own.wireMenu);
 		}
 		//#endregion
@@ -10154,7 +10430,6 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 			};
 			const openEdit = (k, index) => {
 				const entry = entriesOf(k)[index];
-				if (entry === void 0) return;
 				if (isHybridKind(k)) {
 					const key = optionKeyOf(k);
 					setDraftOption(typeof entry[key] === "string" ? entry[key] : "");
@@ -10183,8 +10458,8 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 				});
 			};
 			const saveLeaf = () => {
-				if (leaf === null) return;
-				const k = leaf.kind;
+				const open = leaf;
+				const k = open.kind;
 				const entries = entriesOf(k);
 				if (isHybridKind(k)) {
 					const key = optionKeyOf(k);
@@ -10207,19 +10482,19 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 					const stamped = { [key]: draftOption };
 					if (typeof option.model === "string") stamped["model"] = option.model;
 					if (typeof option.preprocessor === "string") stamped["preprocessor"] = option.preprocessor;
-					if (leaf.mode === "create") commit(k, [...entries, {
+					if (open.mode === "create") commit(k, [...entries, {
 						...stamped,
 						...draftParams,
 						...scalar
 					}]);
 					else {
-						const entry = entries[leaf.index];
+						const entry = entries[open.index];
 						if (entry === void 0) {
 							setLeaf(null);
 							return;
 						}
 						const next = [...entries];
-						next[leaf.index] = {
+						next[open.index] = {
 							...entry,
 							...stamped,
 							...draftParams,
@@ -10228,7 +10503,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 						commit(k, next);
 					}
 				} else if (isOptionKind(k)) {
-					if (leaf.mode === "create") {
+					if (open.mode === "create") {
 						if (draftOption === "") {
 							setLeafError("Pick one from the served rows.");
 							return;
@@ -10245,7 +10520,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 							strength
 						}]);
 					} else {
-						const entry = entries[leaf.index];
+						const entry = entries[open.index];
 						if (entry === void 0) {
 							setLeaf(null);
 							return;
@@ -10256,21 +10531,21 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 							return;
 						}
 						const next = [...entries];
-						next[leaf.index] = {
+						next[open.index] = {
 							...entry,
 							strength
 						};
 						commit(k, next);
 					}
-				} else if (leaf.mode === "create") commit(k, [...entries, { ...draftParams }]);
+				} else if (open.mode === "create") commit(k, [...entries, { ...draftParams }]);
 				else {
-					const entry = entries[leaf.index];
+					const entry = entries[open.index];
 					if (entry === void 0) {
 						setLeaf(null);
 						return;
 					}
 					const next = [...entries];
-					next[leaf.index] = {
+					next[open.index] = {
 						...entry,
 						...draftParams
 					};
@@ -10279,12 +10554,10 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 				setLeaf(null);
 			};
 			const deleteLeaf = () => {
-				if (leaf === null || leaf.mode !== "edit") return;
 				commit(leaf.kind, entriesOf(leaf.kind).filter((_, i) => i !== leaf.index));
 				setLeaf(null);
 			};
 			const onTileDrop = (k, active, over) => {
-				if (over === active) return;
 				const entries = entriesOf(k);
 				const from = entries.findIndex((_, i) => k.param_key + "-" + i === active);
 				const to = entries.findIndex((_, i) => k.param_key + "-" + i === over);
@@ -10294,13 +10567,15 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 				next.splice(to, 0, moved);
 				commit(k, next);
 			};
+			const isOrdered = (k) => k.category !== "standalone";
+			const anyOrdered = kinds.some(isOrdered);
 			return (0, react.createElement)("section", {
 				className: card_module_css_default.modSection,
 				"data-subcard-grid": "on"
-			}, (0, react.createElement)("div", { className: card_module_css_default.modHead }, (0, react.createElement)("span", { className: card_module_css_default.modTitle }, "Modifiers"), (0, react.createElement)("span", { className: card_module_css_default.modHint }, "drag to set apply order")), leafError !== null && leaf === null ? (0, react.createElement)("p", { className: card_module_css_default.modLeafError }, leafError) : null, ...kinds.filter((k) => (k.kindFields ?? []).length > 0).map((k) => (0, react.createElement)("div", {
+			}, (0, react.createElement)("div", { className: card_module_css_default.modHead }, (0, react.createElement)("span", { className: card_module_css_default.modTitle }, "Modifiers"), (0, react.createElement)("span", { className: card_module_css_default.modHint }, anyOrdered ? "drag to set apply order" : "each entry is its own output (standalone)")), leafError !== null && leaf === null ? (0, react.createElement)("p", { className: card_module_css_default.modLeafError }, leafError) : null, ...kinds.filter((k) => (k.kindFields ?? []).length > 0).map((k) => (0, react.createElement)("div", {
 				key: k.param_key + ":kind",
 				className: card_module_css_default.modLeafFields
-			}, (k.kindFields ?? []).map((f) => (0, react.createElement)("label", {
+			}, k.kindFields.map((f) => (0, react.createElement)("label", {
 				key: f.name,
 				className: card_module_css_default.modField
 			}, f.label ?? f.name, (0, react.createElement)(SpecAtom, {
@@ -10315,6 +10590,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 			}, kinds.map((k) => {
 				const entries = entriesOf(k);
 				if (entries.length === 0) return null;
+				const ordered = isOrdered(k);
 				return [...entries.map((entry, i) => {
 					const id = typeof entry[optionKeyOf(k)] === "string" ? entry[optionKeyOf(k)] : "";
 					const option = optionOf(k, id);
@@ -10330,16 +10606,18 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 						},
 						dragging: dragTile === k.param_key + "-" + i,
 						dragOver: overTile === k.param_key + "-" + i && dragTile !== null && dragTile !== overTile,
-						onReorderStart: (id) => {
-							setDragTile(id);
-							if (id === null) setOverTile(null);
-						},
-						onReorderOver: setOverTile,
-						onReorderDrop: (active, over) => {
-							setDragTile(null);
-							setOverTile(null);
-							onTileDrop(k, active, over);
-						}
+						...ordered ? {
+							onReorderStart: (id) => {
+								setDragTile(id);
+								if (id === null) setOverTile(null);
+							},
+							onReorderOver: setOverTile,
+							onReorderDrop: (active, over) => {
+								setDragTile(null);
+								setOverTile(null);
+								onTileDrop(k, active, over);
+							}
+						} : {}
 					});
 				})];
 			}), addable.length > 0 ? (0, react.createElement)("button", {
@@ -10361,8 +10639,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 				})),
 				onSelect: (id) => {
 					setPickAt(null);
-					const k = addable.find((x) => x.kind === id);
-					if (k !== void 0) openCreate(k);
+					openCreate(addable.find((x) => x.kind === id));
 				},
 				onClose: () => {
 					setPickAt(null);
@@ -10392,7 +10669,9 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 				onDelete: deleteLeaf,
 				leafError,
 				paintFace: props.paintFace,
-				paintReferenceValue: typeof props.paintReference === "string" ? String(values[props.paintReference] ?? "") : ""
+				bboxFace: props.bboxFace,
+				paintReferenceValue: typeof props.paintReference === "string" ? String(values[props.paintReference] ?? "") : "",
+				...props.loadMedia !== void 0 ? { loadMedia: props.loadMedia } : {}
 			})) : null);
 		}
 		/** THE LEAF BODY — split so the FIELD-kind editor gets its own
@@ -10408,7 +10687,10 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 					...onDraft.draftParams,
 					[name]: v
 				});
-			}, { candidates: [] });
+			}, {
+				candidates: [],
+				...props.loadMedia !== void 0 ? { loadMedia: props.loadMedia } : {}
+			});
 			return (0, react.createElement)("div", { className: card_module_css_default.modLeaf }, leafError !== null ? (0, react.createElement)("p", { className: card_module_css_default.modLeafError }, leafError) : null, isHybridKind(k) ? (0, react.createElement)("div", { className: card_module_css_default.modLeafFields }, (0, react.createElement)("label", { className: card_module_css_default.modField }, k.label, (0, react.createElement)("select", {
 				className: card_module_css_default.modSelect,
 				value: onDraft.draftOption,
@@ -10446,7 +10728,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 				onChange: (e) => {
 					onDraft.setDraftOption(e.target.value);
 				}
-			}, (0, react.createElement)("option", { value: "" }, "— pick —"), (k.options ?? []).map((o) => (0, react.createElement)("option", {
+			}, (0, react.createElement)("option", { value: "" }, "— pick —"), k.options.map((o) => (0, react.createElement)("option", {
 				key: o.value,
 				value: o.value
 			}, o.label)))) : null, (0, react.createElement)("label", { className: card_module_css_default.modField }, "Strength", (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Input, {
@@ -10477,7 +10759,20 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 						[f.name]: dataUrl
 					});
 				}
-			}) : null)), own.wireMenu), (0, react.createElement)("div", { className: card_module_css_default.modLeafActions }, (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+			}) : null)), props.bboxFace !== void 0 && k.leaf_face === "bbox-canvas" ? (0, react.createElement)(BboxVerb, {
+				Face: props.bboxFace,
+				referenceUrl: props.paintReferenceValue,
+				draft: onDraft.draftParams,
+				onSaved: (bbox) => {
+					onDraft.setDraftParams({
+						...onDraft.draftParams,
+						bbox_x: Math.round(bbox.x),
+						bbox_y: Math.round(bbox.y),
+						bbox_w: Math.round(bbox.width),
+						bbox_h: Math.round(bbox.height)
+					});
+				}
+			}) : null, own.wireMenu), (0, react.createElement)("div", { className: card_module_css_default.modLeafActions }, (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Button, {
 				variant: "primary",
 				onClick: onSave
 			}, leaf.mode === "create" ? "Add" : "Save"), leaf.mode === "edit" ? (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Button, {
@@ -10506,25 +10801,63 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 				}
 			}) : null);
 		}
+		/** THE BBOX VERB (stroke 78) — the selection button + modal mount:
+		*  reads the entry's current rectangle (all four present and finite
+		*  = set; anything else = null, a fresh draw), writes the four
+		*  bbox_* inputs on save. Same delivery law as the paint verb. */
+		function BboxVerb(props) {
+			const [open, setOpen] = (0, react.useState)(false);
+			const quad = [
+				props.draft["bbox_x"],
+				props.draft["bbox_y"],
+				props.draft["bbox_w"],
+				props.draft["bbox_h"]
+			];
+			const set = quad.length === 4 && quad.every((v) => typeof v === "number" && Number.isFinite(v) && v >= 0) ? {
+				x: quad[0],
+				y: quad[1],
+				width: quad[2],
+				height: quad[3]
+			} : null;
+			return (0, react.createElement)("div", { className: card_module_css_default.modField }, (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+				variant: "ghost",
+				onClick: () => {
+					setOpen(true);
+				}
+			}, set === null ? "Draw box" : "Redraw box"), open ? (0, react.createElement)(props.Face, {
+				referenceUrl: props.referenceUrl,
+				bbox: set,
+				onSave: (bbox) => {
+					props.onSaved(bbox);
+					setOpen(false);
+				},
+				onCancel: () => {
+					setOpen(false);
+				}
+			}) : null);
+		}
 		/** One mod tile (the original, verbatim: useSortable + click to
 		*  edit + strength to 2 decimals). */
 		/** The reorder drag's MIME (native HTML5 sortable). */
 		const MOD_DRAG_MIME = "application/x-melite-mod";
 		function ModTile(props) {
+			const ordered = props.onReorderStart !== void 0;
 			return (0, react.createElement)("li", {
 				className: card_module_css_default.modTile + (props.dragging ? " " + card_module_css_default.tileDragging : "") + (props.dragOver ? " " + card_module_css_default.modTileOver : ""),
-				draggable: true,
+				draggable: ordered,
 				"data-mod-tile": props.tileId,
-				title: "Drag to reorder · click to edit",
+				title: ordered ? "Drag to reorder · click to edit" : "Click to edit (standalone — own output)",
 				onDragStart: (e) => {
+					if (!ordered) return;
 					e.dataTransfer.setData(MOD_DRAG_MIME, props.tileId);
 					e.dataTransfer.effectAllowed = "move";
 					props.onReorderStart(props.tileId);
 				},
 				onDragEnd: () => {
-					props.onReorderStart(null);
+					if (ordered) props.onReorderStart(null);
 				},
 				onDragOver: (e) => {
+					if (!ordered) return;
 					if (e.dataTransfer.types.includes(MOD_DRAG_MIME)) {
 						e.preventDefault();
 						e.dataTransfer.dropEffect = "move";
@@ -10532,6 +10865,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 					}
 				},
 				onDrop: (e) => {
+					if (!ordered) return;
 					if (e.dataTransfer.types.includes(MOD_DRAG_MIME)) {
 						e.preventDefault();
 						e.stopPropagation();
@@ -45040,11 +45374,14 @@ void main() {
 			});
 		}
 		//#endregion
+		//#region ../../image/mask-studio/src/paintInk.ts
+		const PAINT_STROKE_INK = "rgba(255, 255, 255, 1)";
+		//#endregion
 		//#region ../../image/mask-studio/src/ui/PaintLeafModal.tsx
-		const FIT = 640;
+		const FIT$1 = 640;
 		/** Load an image element from a URL (null while loading/failed —
 		*  the modal degrades to the blank canvas, never a crash). */
-		const loadImage = (url) => new Promise((resolve) => {
+		const loadImage$1 = (url) => new Promise((resolve) => {
 			if (url === "") {
 				resolve(null);
 				return;
@@ -45073,13 +45410,13 @@ void main() {
 			(0, react.useEffect)(() => {
 				let alive = true;
 				(async () => {
-					const img = await loadImage(referenceUrl);
-					const pay = payloadUrl ? await loadImage(payloadUrl) : null;
+					const img = await loadImage$1(referenceUrl);
+					const pay = payloadUrl ? await loadImage$1(payloadUrl) : null;
 					if (!alive) return;
 					imgRef.current = img;
 					const w = img?.naturalWidth ?? pay?.naturalWidth ?? 1024;
 					const h = img?.naturalHeight ?? pay?.naturalHeight ?? 1024;
-					const scale = Math.min(FIT / w, FIT / h, 1);
+					const scale = Math.min(FIT$1 / w, FIT$1 / h, 1);
 					setViewSize({
 						w: Math.max(1, Math.round(w * scale)),
 						h: Math.max(1, Math.round(h * scale))
@@ -45139,7 +45476,6 @@ void main() {
 			const strokeTo = (a, b) => {
 				const paint = paintRef.current;
 				const img = imgRef.current;
-				if (!paint) return;
 				const w = img?.naturalWidth ?? paint.width;
 				const h = img?.naturalHeight ?? paint.height;
 				if (paint.width !== w || paint.height !== h) {
@@ -45157,7 +45493,7 @@ void main() {
 				const ctx = paint.getContext("2d");
 				if (!ctx) return;
 				const scale = Math.max(w, h) / 1024;
-				ctx.strokeStyle = "rgba(255, 255, 255, 1)";
+				ctx.strokeStyle = PAINT_STROKE_INK;
 				ctx.lineWidth = brushSize * Math.max(scale, .25);
 				ctx.lineCap = "round";
 				ctx.lineJoin = "round";
@@ -45184,7 +45520,6 @@ void main() {
 				if (!drawingRef.current) return;
 				const p = toPoint(e);
 				const last = lastPtRef.current;
-				if (!p || !last) return;
 				strokeTo(last, p);
 				lastPtRef.current = p;
 			};
@@ -45194,16 +45529,13 @@ void main() {
 			};
 			const clearPaint = () => {
 				const paint = paintRef.current;
-				if (!paint) return;
 				const ctx = paint.getContext("2d");
 				if (ctx) ctx.clearRect(0, 0, paint.width, paint.height);
 				setHasStrokes(false);
 				redraw();
 			};
 			const save = () => {
-				const paint = paintRef.current;
-				if (!paint || !hasStrokes) return;
-				onSave(paint.toDataURL("image/png"));
+				onSave(paintRef.current.toDataURL("image/png"));
 			};
 			return /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
 				ref: wrapRef,
@@ -45216,14 +45548,16 @@ void main() {
 					display: "flex",
 					alignItems: "center",
 					justifyContent: "center",
-					background: "rgba(0,0,0,0.5)"
+					background: "color-mix(in srgb, var(--dsw-alias-bg-base) 60%, transparent)"
 				},
 				onPointerDown: (e) => {
 					if (e.target === e.currentTarget) onCancel();
 				},
 				children: /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
 					style: {
-						background: "var(--bg-2, #1b1d21)",
+						background: "var(--dsw-alias-bg-layer-1)",
+						color: "var(--dsw-alias-label-primary)",
+						border: "1px solid var(--dsw-alias-border-l2)",
 						borderRadius: 8,
 						padding: 16,
 						display: "flex",
@@ -45274,11 +45608,12 @@ void main() {
 								display: viewSize === null ? "none" : "block",
 								maxWidth: "84vw",
 								maxHeight: "70vh",
-								border: "1px solid var(--border-1, #333)",
+								border: "1px solid var(--dsw-alias-border-l2)",
 								borderRadius: 4,
 								cursor: "crosshair",
 								touchAction: "none",
-								background: "repeating-conic-gradient(#2a2d33 0% 25%, #232629 0% 50%) 50% / 24px 24px"
+								backgroundColor: "var(--dsw-alias-bg-base)",
+								background: "repeating-conic-gradient(color-mix(in srgb, var(--dsw-alias-label-secondary) 30%, transparent) 0% 25%, transparent 0% 50%) 50% / 24px 24px"
 							},
 							onPointerDown,
 							onPointerMove,
@@ -45312,6 +45647,238 @@ void main() {
 									disabled: !hasStrokes,
 									onClick: save,
 									children: "Save payload"
+								})
+							]
+						})
+					]
+				})
+			});
+		}
+		//#endregion
+		//#region ../../image/mask-studio/src/ui/BboxLeafModal.tsx
+		const FIT = 640;
+		const loadImage = (url) => new Promise((resolve) => {
+			if (url === "") {
+				resolve(null);
+				return;
+			}
+			const img = new Image();
+			img.onload = () => {
+				resolve(img);
+			};
+			img.onerror = () => {
+				resolve(null);
+			};
+			img.src = url;
+		});
+		function BboxLeafModal(props) {
+			const { referenceUrl, bbox, onSave, onCancel } = props;
+			const viewRef = (0, react.useRef)(null);
+			const imgRef = (0, react.useRef)(null);
+			const drawingRef = (0, react.useRef)(false);
+			const anchorRef = (0, react.useRef)(null);
+			const [rect, setRect] = (0, react.useState)(null);
+			const [ready, setReady] = (0, react.useState)(false);
+			const [viewSize, setViewSize] = (0, react.useState)(null);
+			(0, react.useEffect)(() => {
+				let alive = true;
+				(async () => {
+					const img = await loadImage(referenceUrl);
+					if (!alive) return;
+					imgRef.current = img;
+					const w = img?.naturalWidth ?? 1024;
+					const h = img?.naturalHeight ?? 1024;
+					const scale = Math.min(FIT / w, FIT / h, 1);
+					setViewSize({
+						w: Math.max(1, Math.round(w * scale)),
+						h: Math.max(1, Math.round(h * scale))
+					});
+					setReady(true);
+				})();
+				return () => {
+					alive = false;
+				};
+			}, [referenceUrl]);
+			const imgDims = (0, react.useCallback)(() => {
+				const img = imgRef.current;
+				return {
+					w: img?.naturalWidth ?? 1024,
+					h: img?.naturalHeight ?? 1024
+				};
+			}, []);
+			const viewToImage = (0, react.useCallback)(() => {
+				const vs = viewSize;
+				const d = imgDims();
+				return {
+					sx: d.w / vs.w,
+					sy: d.h / vs.h
+				};
+			}, [viewSize, imgDims]);
+			const seededRef = (0, react.useRef)(false);
+			(0, react.useEffect)(() => {
+				if (seededRef.current || !ready || !bbox) return;
+				seededRef.current = true;
+				const { sx, sy } = viewToImage();
+				setRect({
+					x: bbox.x / sx,
+					y: bbox.y / sy,
+					w: bbox.width / sx,
+					h: bbox.height / sy
+				});
+			}, [
+				ready,
+				bbox,
+				viewToImage
+			]);
+			const redraw = (0, react.useCallback)(() => {
+				const view = viewRef.current;
+				const vs = viewSize;
+				if (!view || !vs) return;
+				view.width = vs.w;
+				view.height = vs.h;
+				const ctx = view.getContext("2d");
+				if (!ctx) return;
+				ctx.clearRect(0, 0, vs.w, vs.h);
+				const img = imgRef.current;
+				if (img) ctx.drawImage(img, 0, 0, vs.w, vs.h);
+				if (rect !== null) {
+					ctx.strokeStyle = PAINT_STROKE_INK;
+					ctx.lineWidth = 2;
+					ctx.setLineDash([6, 4]);
+					ctx.strokeRect(rect.x, rect.y, rect.w, rect.h);
+					ctx.setLineDash([]);
+				}
+			}, [viewSize, rect]);
+			(0, react.useEffect)(() => {
+				if (ready) redraw();
+			}, [ready, redraw]);
+			const toView = (e) => {
+				const view = viewRef.current;
+				if (!view || !viewSize) return null;
+				const rect = view.getBoundingClientRect();
+				return {
+					x: (e.clientX - rect.left) * (view.width / Math.max(1, rect.width)),
+					y: (e.clientY - rect.top) * (view.height / Math.max(1, rect.height))
+				};
+			};
+			const onDown = (e) => {
+				const p = toView(e);
+				if (!p) return;
+				drawingRef.current = true;
+				anchorRef.current = p;
+				setRect({
+					x: p.x,
+					y: p.y,
+					w: 0,
+					h: 0
+				});
+				e.target.setPointerCapture?.(e.pointerId);
+			};
+			const onMove = (e) => {
+				if (!drawingRef.current) return;
+				const p = toView(e);
+				const a = anchorRef.current;
+				setRect({
+					x: Math.min(a.x, p.x),
+					y: Math.min(a.y, p.y),
+					w: Math.abs(p.x - a.x),
+					h: Math.abs(p.y - a.y)
+				});
+			};
+			const onUp = () => {
+				drawingRef.current = false;
+			};
+			const save = () => {
+				const box = rect;
+				const { sx, sy } = viewToImage();
+				onSave({
+					x: Math.round(box.x * sx),
+					y: Math.round(box.y * sy),
+					width: Math.round(box.w * sx),
+					height: Math.round(box.h * sy)
+				});
+			};
+			return /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
+				role: "dialog",
+				"aria-modal": "true",
+				"data-bbox-leaf": "backdrop",
+				style: {
+					position: "fixed",
+					inset: 0,
+					display: "flex",
+					alignItems: "center",
+					justifyContent: "center",
+					background: "rgba(0,0,0,0.6)",
+					zIndex: 1e3
+				},
+				onPointerDown: (e) => {
+					if (e.target === e.currentTarget) onCancel();
+				},
+				children: /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+					style: {
+						background: "var(--dsh-bg, #1b1b1f)",
+						borderRadius: 8,
+						padding: 16,
+						maxWidth: "92vw",
+						maxHeight: "92vh",
+						display: "flex",
+						flexDirection: "column",
+						gap: 12
+					},
+					children: [
+						/* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
+							style: { fontWeight: 600 },
+							children: props.title ?? "Draw the selection box"
+						}),
+						/* @__PURE__ */ (0, react_jsx_runtime.jsx)("canvas", {
+							ref: viewRef,
+							"data-testid": "bbox-leaf-view",
+							"data-bbox-canvas": "view",
+							style: {
+								maxWidth: "100%",
+								cursor: "crosshair",
+								touchAction: "none",
+								borderRadius: 4,
+								display: "block"
+							},
+							onPointerDown: onDown,
+							onPointerMove: onMove,
+							onPointerUp: onUp,
+							onPointerCancel: onUp
+						}),
+						/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+							style: {
+								display: "flex",
+								gap: 8,
+								alignItems: "center"
+							},
+							children: [
+								/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+									style: {
+										opacity: .7,
+										fontSize: 12
+									},
+									children: rect !== null && rect.w >= 1 && rect.h >= 1 ? `box ${Math.round(rect.w)}×${Math.round(rect.h)} (view px)` : "drag on the image to draw the box"
+								}),
+								/* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", { style: { flex: 1 } }),
+								/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+									variant: "ghost",
+									onClick: () => {
+										setRect(null);
+										redraw();
+									},
+									children: "Clear"
+								}),
+								/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+									variant: "ghost",
+									onClick: onCancel,
+									children: "Cancel"
+								}),
+								/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+									variant: "primary",
+									onClick: save,
+									disabled: rect === null || rect.w < 1 || rect.h < 1,
+									children: "Save box"
 								})
 							]
 						})
@@ -46884,6 +47451,9 @@ void main() {
 		//#region ../../web-kit/contracts/src/stagePreview.ts
 		var init_stagePreview = __esmMin((() => {}));
 		//#endregion
+		//#region ../../web-kit/contracts/src/modifierFaces.ts
+		var init_modifierFaces = __esmMin((() => {}));
+		//#endregion
 		//#region ../../web-kit/contracts/src/vocab.ts
 		/** Is the value a valid Provenance? Gate untrusted JSON (a past run's
 		* metadata, a drag payload) before rendering. */
@@ -47522,6 +48092,7 @@ void main() {
 			init_studio();
 			init_stageView();
 			init_stagePreview();
+			init_modifierFaces();
 			init_vocab();
 			init_wire();
 			init_regions();
@@ -53300,32 +53871,35 @@ void main() {
 		//#endregion
 		//#region src/client/add-stage.ts
 		/**
-		* add-stage.ts — the bench's mutation wire door callers (the tab's
-		* add/remove/reorder/rewire/group/ungroup paths). Every verb is ONE
-		* wireCall over the run-wire package's frame (the DRY law — the frame
-		* lived here six times before the package existed); the remote's
-		* signature is (sessionKey, doc) — the args frame carries BOTH named,
-		* the doc carries the verb's own keys, and every doc rides expect_rev
-		* (the CAS law: the caller chains the bench rev it rendered, so a
-		* concurrent edit refuses instead of slicing wrong).
+		* add-stage.ts — the bench's mutation verb callers (the tab's
+		* add/remove/reorder/group/ungroup paths). Every verb is ONE typed
+		* call on the mounted bench namespace (stroke 81's one-lane law —
+		* the generated client, never a hand-written envelope); the remote
+		* signature is (sessionKey, doc) — sessionKey is a TYPED first
+		* parameter, so a misaddressed bench is a type error, not a runtime
+		* refusal. The doc carries the verb's own keys and every doc rides
+		* expect_rev (the CAS law: the caller chains the bench rev it
+		* rendered, so a concurrent edit refuses instead of slicing wrong).
 		*
 		* THE REBASE LAW (2026-09-15, the operator's stuck: "bench main
 		* moved: rev is 429, caller held 35 — IT STUCK"): the bench is ONE
 		* shared doc the agent writes too, so a tab-rendered rev can be
 		* stale through no user fault. A door that refuses ONLY on CAS
-		* answers itself: re-read the rev, re-apply ONCE. A second conflict
-		* or any non-CAS refusal throws loud (the named truth, never a
-		* silent drop, never a blind write) — and the view reloads on that
-		* final failure so the NEXT gesture composes against fresh truth.
-		* The stuck is structurally impossible: a moved bench costs one
-		* silent rebase, never a bricked tab.
+		* answers itself: re-read the rev (from the SAME session the verb
+		* addresses — the 2026-09-16 fix; the old arm hard-coded 'main' and
+		* rebased non-main verbs against the wrong bench's rev), re-apply
+		* ONCE. A second conflict or any non-CAS refusal throws loud (the
+		* named truth, never a silent drop, never a blind write) — and the
+		* view reloads on that final failure so the NEXT gesture composes
+		* against fresh truth. The stuck is structurally impossible: a
+		* moved bench costs one silent rebase, never a bricked tab.
 		*/
-		/** The bench's CURRENT rev — the CAS handle for a re-apply. Returns
-		*  undefined when the read fails (the re-apply is then skipped; the
-		*  original refusal stands as the honest answer). */
-		async function benchRev(signal) {
+		/** The bench's CURRENT rev for one session — the CAS handle for a
+		*  re-apply. Returns undefined when the read fails (the re-apply is
+		*  then skipped; the original refusal stands as the honest answer). */
+		async function benchRev(sessionKey, signal) {
 			try {
-				const rev = (await wireCall$2("bench/get", { sessionKey: "main" }, { signal })).rev;
+				const rev = (await unwrapRemote(estateRemote().bench.get(sessionKey, signal), "bench/get")).rev;
 				return typeof rev === "number" ? rev : void 0;
 			} catch {
 				return;
@@ -53342,53 +53916,51 @@ void main() {
 			const msg = e instanceof Error ? e.message : String(e);
 			return msg.includes("moved: rev is") || msg.includes("cas-conflict");
 		}
-		/** One door call with the rebase dance: try the held rev; on the
-		*  door's cas-conflict re-read the rev and re-apply ONCE with it. */
-		async function withRebase(method, doc, sessionKey, signal) {
-			const attempt = (expectRev) => wireCall$2(method, {
-				sessionKey,
-				doc: {
-					...doc,
-					expect_rev: expectRev
-				}
-			}, {
-				signal,
-				voice: method
-			});
+		/** One typed bench verb with the rebase dance: try the held rev; on
+		*  the door's cas-conflict re-read the rev (the SAME session) and
+		*  re-apply ONCE with it. */
+		async function withRebase(verb, doc, sessionKey, signal) {
+			const ns = estateRemote().bench;
+			const attempt = (expectRev) => unwrapRemote(ns[verb](sessionKey, {
+				...doc,
+				expect_rev: expectRev
+			}, signal), "bench/" + verb).then((row) => row);
 			const held = doc["expect_rev"];
 			try {
-				if (typeof held !== "number") throw new Error(method + ": no expect_rev to write against");
+				if (typeof held !== "number") throw new Error("bench/" + verb + ": no expect_rev to write against");
 				return await attempt(held);
 			} catch (e) {
 				if (!isCasConflict(e)) throw e;
-				const fresh = await benchRev(signal);
+				const fresh = await benchRev(sessionKey, signal);
 				if (fresh === void 0) throw e;
 				return await attempt(fresh);
 			}
 		}
-		/** The bench add-stage wire door caller (the tab's add-card path).
-		*  The doc holds card/author/engine/params/expect_rev. */
-		async function addStageWire(doc, sessionKey = "main", signal) {
-			return await withRebase("bench/add-stage", doc, sessionKey, signal);
+		/** The bench add-stage verb caller (the tab's add-card path). The
+		*  doc holds card/author/engine/params/expect_rev. */
+		async function addStageWire(doc, sessionKey, signal) {
+			return await withRebase("add-stage", doc, sessionKey, signal);
 		}
-		/** The bench remove-stage wire door caller (the drill's Remove path).
-		*  The doc holds stage/expect_rev. */
-		async function removeStageWire(doc, signal) {
-			return await withRebase("bench/remove-stage", doc, "main", signal);
+		/** The bench remove-stage verb caller (the drill's Remove path). The
+		*  doc holds stage/expect_rev; the session key addresses the doc the
+		*  bar RENDERS (stroke 80 — 'main' hardcoding deleted against the
+		*  wrong bench and refused 'stage not found'). */
+		async function removeStageWire(doc, sessionKey, signal) {
+			return await withRebase("remove-stage", doc, sessionKey, signal);
 		}
-		/** The bench reorder wire door caller (the drag-reorder path). Doc:
+		/** The bench reorder verb caller (the drag-reorder path). Doc:
 		*  stage/to/expect_rev — `to` is the post-splice target index. */
-		async function reorderStageWire(doc, signal) {
-			return await withRebase("bench/reorder", doc, "main", signal);
+		async function reorderStageWire(doc, sessionKey, signal) {
+			return await withRebase("reorder", doc, sessionKey, signal);
 		}
-		/** The bench group wire door caller (the Group Cards sub-view):
+		/** The bench group verb caller (the Group Cards sub-view):
 		*  stages = 2+ ids (bench order applied server-side). */
-		async function groupStagesWire(doc, signal) {
-			return await withRebase("bench/group", doc, "main", signal);
+		async function groupStagesWire(doc, sessionKey, signal) {
+			return await withRebase("group", doc, sessionKey, signal);
 		}
-		/** The bench ungroup wire door caller: spill a compound's children. */
-		async function ungroupStageWire(doc, signal) {
-			return await withRebase("bench/ungroup", doc, "main", signal);
+		/** The bench ungroup verb caller: spill a compound's children. */
+		async function ungroupStageWire(doc, sessionKey, signal) {
+			return await withRebase("ungroup", doc, sessionKey, signal);
 		}
 		//#endregion
 		//#region \0dsh-css:card-base/src/preview.module.css.mjs
@@ -53536,9 +54108,7 @@ void main() {
 		function tint(root, on) {
 			root.traverse((o) => {
 				const m = o.material;
-				if (Array.isArray(m)) {
-					for (const mm of m) if ("emissive" in mm) mm.emissive.setHex(on ? 3159626 : 0);
-				} else if (m !== void 0 && m !== null && "emissive" in m) m.emissive.setHex(on ? 3159626 : 0);
+				if (m !== void 0 && m !== null && "emissive" in m) m.emissive.setHex(on ? 3159626 : 0);
 			});
 		}
 		/** THE MESH STAGE PREVIEW — the multi-asset GLB viewport (assets in a
@@ -53596,7 +54166,6 @@ void main() {
 			(0, react.useEffect)(() => {
 				if (!ready || loaded.length === 0) return;
 				const canvas = canvasRef.current;
-				if (canvas === null) return;
 				const mounted = mountScene(canvas, (m) => setFailed(m));
 				if (mounted === null) return;
 				sceneRef.current = mounted;
@@ -54367,7 +54936,7 @@ void main() {
 						e.stopPropagation();
 						const t = asset.type ?? "";
 						if (!t.startsWith("image/") && !t.startsWith("audio/")) return;
-						onAssetAttach(row.id, asset.url, (asset.type ?? "").startsWith("audio/") ? "audio" : "image");
+						onAssetAttach(row.id, asset.url, t.startsWith("audio/") ? "audio" : "image");
 						return;
 					}
 					const file = e.dataTransfer.files[0];
@@ -54692,7 +55261,7 @@ void main() {
 					try {
 						doc = JSON.parse(raw);
 					} catch {}
-					if (!res.ok || typeof doc.error === "string") throw new Error(typeof doc.error === "string" ? doc.error : res.ok ? "enhance failed: unexpected payload" : "enhance failed (" + res.status + (raw.length > 0 && raw.length < 200 ? ": " + raw : "") + ")");
+					if (!res.ok || typeof doc.error === "string") throw new Error(typeof doc.error === "string" ? doc.error : "enhance failed (" + res.status + (raw.length > 0 && raw.length < 200 ? ": " + raw : "") + ")");
 					const results = doc.results ?? {};
 					const declared = new Set(spec !== null ? fieldsOf(spec).map((f) => f.name) : []);
 					setUser((m) => {
@@ -54727,7 +55296,8 @@ void main() {
 			};
 			const wire = {
 				candidates,
-				candidatesFor
+				candidatesFor,
+				loadMedia: fetchMediaLibrary
 			};
 			const run = async () => {
 				setError(null);
@@ -54764,7 +55334,7 @@ void main() {
 					await removeStageWire({
 						stage: stage.id,
 						expect_rev: bench.rev
-					});
+					}, bench.sessionKey);
 					onRemoved();
 				} catch (e) {
 					setError(e instanceof Error ? e.message : "remove failed");
@@ -54781,7 +55351,7 @@ void main() {
 						await ungroupStageWire({
 							stage: stage.id,
 							expect_rev: bench.rev
-						});
+						}, bench.sessionKey);
 						onRemoved();
 					} catch (e) {
 						setError(e instanceof Error ? e.message : "ungroup failed");
@@ -54856,6 +55426,7 @@ void main() {
 					onDownloadModel: (id) => postManageAction("provision_model", { model: id }).then((r) => r.ok),
 					onInstallPack: (id) => postManageAction("install_extension", { nodes: [id] }).then((r) => r.ok),
 					paintFace: PaintLeafModal,
+					bboxFace: BboxLeafModal,
 					paintReference: "input_image"
 				}) : (0, react.createElement)("pre", { className: card_module_css_default$1.mono }, JSON.stringify(held, null, 2))), error !== null ? (0, react.createElement)("div", { className: card_module_css_default$1.drillRunRow }, (0, react.createElement)("span", { className: card_module_css_default$1.runError }, error)) : null),
 				preview: (0, react.createElement)("div", { className: card_module_css_default$1.outputs }, (0, react.createElement)("div", {
@@ -55076,7 +55647,7 @@ void main() {
 					stage: active,
 					to,
 					expect_rev: beforeRev
-				}).then((row) => {
+				}, sessionKey).then((row) => {
 					const rev = typeof row["rev"] === "number" ? row["rev"] : beforeRev + 1;
 					setLive((cur) => ({
 						...cur,
@@ -55193,7 +55764,7 @@ void main() {
 				groupStagesWire({
 					stages: ordered,
 					expect_rev: live.rev
-				}).then(() => {
+				}, sessionKey).then(() => {
 					exitGrouping();
 					reload();
 				}).catch((err) => {
@@ -55335,9 +55906,6 @@ void main() {
 					setOpen(null);
 					reload();
 				},
-				onResync: () => {
-					reload({ keepOpen: true });
-				},
 				onPatchParams: (patch) => {
 					onPatchParams(open, patch);
 				},
@@ -55388,7 +55956,8 @@ void main() {
 				draftId: value.draftId,
 				rev: -1,
 				stages: value.stages,
-				log: []
+				log: [],
+				sessionKey: benchSessionKey(void 0)
 			};
 			return (0, react.createElement)(StageDrill, {
 				stage,
@@ -55643,7 +56212,7 @@ void main() {
 				removeStageWire({
 					stage: stage.id,
 					expect_rev: snapshot.value.rev
-				}).then(() => {
+				}, snapshot.value.sessionKey).then(() => {
 					touchBench();
 				}).catch((e) => {
 					setLocalRunError(e instanceof Error ? e.message : "remove failed");
@@ -55788,22 +56357,45 @@ void main() {
 		*/
 		async function apply(ctx) {
 			try {
-				const dispose = await ctx.remote.$mount(TYPERT_REMOTE);
+				const dispose = await ctx.remote.$mount(TYPERT_REMOTE$2);
 				ctx.effect(() => dispose, "melite-card-view: estate remote contribution");
 			} catch (error) {
 				console.error("[melite-card-view] estate remote contribution failed to mount:", error);
 			}
+			try {
+				const disposeRuns = await ctx.remote.$mount(TYPERT_REMOTE$1);
+				ctx.effect(() => disposeRuns, "melite-card-view: runs remote contribution");
+			} catch (error) {
+				console.error("[melite-card-view] runs remote contribution failed to mount:", error);
+			}
+			try {
+				const disposeMedia = await ctx.remote.$mount(TYPERT_REMOTE);
+				ctx.effect(() => disposeMedia, "melite-card-view: media remote contribution");
+			} catch (error) {
+				console.error("[melite-card-view] media remote contribution failed to mount:", error);
+			}
 			let benchNs;
 			try {
 				await ctx.plugin({
-					name: "melite-card-view: bench namespace",
-					inject: ["remote.bench"],
+					name: "melite-card-view: estate namespaces",
+					inject: [
+						"remote.bench",
+						"remote.drafts",
+						"remote.runs",
+						"remote.media"
+					],
 					apply: (child) => {
 						benchNs = child.remote.bench;
+						bindEstateRemote({
+							bench: child.remote.bench,
+							drafts: child.remote.drafts,
+							runs: child.remote.runs,
+							media: child.remote.media
+						});
 					}
 				});
 			} catch (error) {
-				console.error("[melite-card-view] bench namespace fiber failed:", error);
+				console.error("[melite-card-view] estate namespace fiber failed:", error);
 			}
 			for (const tool of CARD_TOOLS) try {
 				ctx.slots.inject("tool.call.toolview", () => ctx.slots.register({
@@ -55868,7 +56460,7 @@ void main() {
 						const sid = (ctx.uiSession?.adapter?.current?.getSnapshot?.())?.props?.["sessionId"];
 						return benchSessionKey(typeof sid === "string" ? sid : void 0);
 					} catch {
-						return "main";
+						return benchSessionKey(void 0);
 					}
 				};
 				const subscribeBenchSession = (fn) => {
