@@ -9,10 +9,8 @@ import type { Plugin } from "@deepseek-ai/cordis";
 import { family as anny } from "@melite/models-anny";
 import { family as anycreature } from "@melite/models-anycreature";
 import { family as autoremesher } from "@melite/models-autoremesher";
-import { family as fit } from "@melite/models-fit";
 import { family as mesh_refine } from "@melite/models-mesh_refine";
 import { family as pixal3d } from "@melite/models-pixal3d";
-import { family as skin } from "@melite/models-skin";
 import { family as skintokens } from "@melite/models-skintokens";
 import { family as somax } from "@melite/models-somax";
 import { family as step1x_texture } from "@melite/models-step1x_texture";
@@ -59,10 +57,8 @@ export const FAMILY_PLUGINS: Plugin[] = [
   anny,
   anycreature,
   autoremesher,
-  fit,
   mesh_refine,
   pixal3d,
-  skin,
   skintokens,
   somax,
   step1x_texture,

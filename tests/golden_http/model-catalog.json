@@ -59,21 +59,6 @@
       "has_inference": false,
       "has_rubric": false
     },
-    "fit": {
-      "id": "fit",
-      "family": "fit",
-      "genre": "3d",
-      "label": "Fit Standard Native",
-      "description": "Seat a static prop onto a SOMAX body (socket/fit/grip placement laws) and render the proof turnaround.",
-      "form": "form_3d_fit",
-      "source": {
-        "type": ""
-      },
-      "defaults": {},
-      "engine": "comfyui",
-      "has_inference": false,
-      "has_rubric": false
-    },
     "florence2": {
       "id": "florence2",
       "family": "florence2",
@@ -1018,21 +1003,6 @@
       "has_inference": false,
       "has_rubric": false
     },
-    "skin": {
-      "id": "skin",
-      "family": "skin",
-      "genre": "3d",
-      "label": "Skin Standard Native",
-      "description": "Deterministic skin detail maps onto a SOMAX body (albedo + normal + kind sidecar) and the proof turnaround.",
-      "form": "form_3d_skin",
-      "source": {
-        "type": ""
-      },
-      "defaults": {},
-      "engine": "comfyui",
-      "has_inference": false,
-      "has_rubric": false
-    },
     "transfer_rig": {
       "id": "transfer_rig",
       "family": "transfer_rig",
@@ -1627,10 +1597,6 @@
       "label": "AutoRemesher Standard Native",
       "genre": "3d"
     },
-    "fit": {
-      "label": "Fit Standard Native",
-      "genre": "3d"
-    },
     "florence2": {
       "label": "Florence-2 Standard F32",
       "genre": "image"
@@ -1918,10 +1884,6 @@
     "seedvr2_ema_vae_fp16": {
       "label": "SeedVR2 Upscaler VAE FP16",
       "genre": "image"
-    },
-    "skin": {
-      "label": "Skin Standard Native",
-      "genre": "3d"
     },
     "transfer_rig": {
       "label": "Transfer Rig Standard Native",

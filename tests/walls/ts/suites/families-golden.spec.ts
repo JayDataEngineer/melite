@@ -28,7 +28,8 @@ describe("the family table ≡ golden (the godfile retirement wall)", () => {
     // variants × native/bf16 quants; qwen3-tts ONE model with the
     // base variant) + the derived route view (every flat id the
     // runtime addresses). The golden pins the full derived view.
-    assert.equal(registryIds().length, 48);
+    // 46 since stroke 87 (fit + skin families retired with their cards)
+    assert.equal(registryIds().length, 46);
     assert.equal(Object.keys(GOLDEN).length, modelIds().length);
   });
 
@@ -50,8 +51,9 @@ describe("the family table ≡ golden (the godfile retirement wall)", () => {
     // 8 whose lane table was an EMPTY dict (conformance stroke
     // 2026-09-08: absent ≡ empty, nothing reads them) = 19; their
     // routes inherit the lane table at the derived read.
+    // 17 since stroke 87 (fit + skin carried lane tables; retired).
     const withLanes = registryIds().filter((id) => getModel(id).lane_inputs !== undefined);
-    assert.equal(withLanes.length, 19);
+    assert.equal(withLanes.length, 17);
     assert.ok(modelIds().filter((id) => getModel(id).lane_inputs !== undefined).length > withLanes.length,
       "the derived route view inherits lane_inputs (the cascade)");
   });

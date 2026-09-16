@@ -410,6 +410,39 @@ function readDoc(
   return { row: gated, path };
 }
 
+/** THE SPAWN PLANE (operator pin, stroke 87): leaves under
+ *  `agents/spawn/` (dir/SKILL.md, same shape as agents/skills/)
+ *  are SUBAGENT-ONLY — findSkill resolves their refs for the
+ *  agent-stage spawn injection (skills[] inlined into the spawned
+ *  brief at stage start), but buildSkillIndex NEVER lists them:
+ *  the constructor agent (the main chat session) does not see
+ *  skills that belong to the spawned doer. The scope suffix
+ *  `-spawn` is the structural mark; the index filter is the law. */
+function spawnRows(
+  cdir: string,
+  prefix: string,
+  scope: "card-spawn" | "model-spawn",
+  genre: string | null,
+  card: string | null,
+  model: string | null,
+): DocRow[] {
+  const out: DocRow[] = [];
+  let sks: string[];
+  try {
+    sks = readdirSync(join(cdir, "agents", "spawn")).sort();
+  } catch {
+    return out;
+  }
+  for (const sk of sks) {
+    const skp: string = join(cdir, "agents", "spawn", sk);
+    const doc: string = isDir(skp) ? join(skp, "SKILL.md") : skp;
+    if (!isDir(skp) && !doc.endsWith(".md")) continue;
+    const r: DocRow | null = readDoc(doc, prefix + ":" + sk, scope, genre, card, model);
+    if (r !== null) out.push(r);
+  }
+  return out;
+}
+
 /** Every plugin dir owning action cards (lane_disclosure._engine_dirs
  *  158-176 over plugins.iter_plugin_dirs_under: depth-2 + depth-3
  *  with package.json/plugin.yaml/engines/ marker, sorted —
@@ -476,6 +509,14 @@ export function modelRows(engine: string): DocRow[] {
         mid,
       );
       if (agent !== null) rows.push(agent);
+      // THE SPAWN PLANE (subagent-only; the index filters, the
+      // spawn reader resolves — never listed to the constructor).
+      // Walked BEFORE the skills loop: a spawn-only model dir (no
+      // agents/skills — the blender-door shape) must not be skipped
+      // by that loop's readdir catch.
+      for (const r of spawnRows(mdir, "model:" + mid, "model-spawn", genre, null, mid)) {
+        rows.push(r);
+      }
       let sks: string[];
       try {
         sks = readdirSync(join(mdir, "agents", "skills")).sort();
@@ -625,6 +666,11 @@ export function cardRows(engine: string, repo: string): CardWalk {
           );
           if (r !== null) got.push(r);
         }
+        // THE SPAWN PLANE (subagent-only; the index filters, the
+        // spawn reader resolves — never listed to the constructor).
+        for (const r of spawnRows(cdir, "card:" + cname, "card-spawn", genre, cname, null)) {
+          got.push(r);
+        }
         for (const g of got) rows.push(g);
         buckets.set(cname, { dir: cdir, rows: got });
       }
@@ -704,14 +750,24 @@ export function flowRows(repo: string): FlowRow[] {
   return out;
 }
 
-/** GET /v1/skills body (lane_disclosure.skill_index 633-649). */
+/** GET /v1/skills body (lane_disclosure.skill_index 633-649). The
+ *  SPAWN PLANE filter: `-spawn` scoped rows NEVER ride the index —
+ *  they are the spawned subagent's private leaves (findSkill
+ *  resolves them for stage-start injection; the constructor's
+ *  index/listing never sees them — the operator's pin). */
 export function buildSkillIndex(repo: string): Record<string, unknown> {
   const engines: string[] = engineDirs(join(repo, "packages", "engines"));
   const rows: Record<string, unknown>[] = [];
   try {
     for (const engine of engines) {
-      for (const r of modelRows(engine)) rows.push(wireSkill(r.row));
-      for (const r of cardRows(engine, repo).rows) rows.push(wireSkill(r.row));
+      for (const r of modelRows(engine)) {
+        if (r.row.scope.endsWith("-spawn")) continue;
+        rows.push(wireSkill(r.row));
+      }
+      for (const r of cardRows(engine, repo).rows) {
+        if (r.row.scope.endsWith("-spawn")) continue;
+        rows.push(wireSkill(r.row));
+      }
     }
     for (const fr of flowRows(repo)) rows.push(wireSkill(fr.row));
   } catch (e) {
@@ -772,6 +828,14 @@ export function hSkillRead(
     const found: { row: SkillRow; path: string; bodyText: string | null } | null =
       findSkill(repo, sid);
     if (found === null) {
+      return { status: 404, payload: { error: fmt("no such skill: %r", sid) } };
+    }
+    // THE SPAWN PLANE DOOR LAW: `-spawn` scoped leaves are the
+    // spawned subagent's private briefs — the HTTP read door
+    // (skill_read, the constructor's tool) refuses them by id; the
+    // spawn injection reads them through findSkill directly, never
+    // through this door.
+    if (found.row.scope.endsWith("-spawn")) {
       return { status: 404, payload: { error: fmt("no such skill: %r", sid) } };
     }
     let body: string;

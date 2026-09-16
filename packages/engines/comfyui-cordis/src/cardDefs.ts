@@ -52,13 +52,23 @@ export const theService = (): ComfyUIService => {
  *  retired with their rows). */
 export const cardPackages: string[] = [
     '@melite/3d-anny/card',
-    '@melite/3d-fit',
     '@melite/3d-img-to-mesh/card',
     '@melite/3d-quad-remesh',
-    '@melite/3d-skin',
     '@melite/audio-sfx',
     '@melite/image-ideogram4/card',
     '@melite/image-input-prep',
+  // RETIRED 2026-09-16 (operator order, stroke 87): 3d-skin + 3d-fit —
+  // DCC surgery masquerading as cards. Verified at source: skin's
+  // GLB attach refuses un-UV'd meshes (NO unwrap — it packs noise
+  // PNGs and mutes the normal map to 0; the real shading is Unity's
+  // SetFloat at runtime) and fit is a hand-rolled numpy rigging
+  // kernel (bone matrices, quaternions) — Blender work in the wrong
+  // layer. Both surfaces moved to the MCP door as SKILLS, not cards:
+  // packages/engines/mcp/models/3d/blender/agents/skills/ (skin
+  // unwrap + rigging), served by the skills plane as
+  // model:blender:<skill>. The vendored poser node packs stay
+  // (Layer C) — the py-era flows that compose them via raw
+  // workflows (skin-apply, fit-seat, character) still resolve.
     // RETIRED 2026-09-16 (CONTRACT D — parity reached, stroke 75):
     // mask-studio's card row. The FORM card (mask-form) owns the
     // mask surface — its bag covers every wire knob the studio

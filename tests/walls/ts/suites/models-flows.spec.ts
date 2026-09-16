@@ -63,8 +63,9 @@ const facts = loadFacts(FACTS_PATH, reads);
 describe("the models plane feeds the compose/flows plane (A2)", () => {
   it("every compose-plane family exists in the registry", async (): Promise<void> => {
     const factIds = Object.keys(facts.models).sort();
-    // 29 since stroke 75 (the studio family retired at parity — CONTRACT D)
-    assert.ok(factIds.length >= 29, `expected ≥29 fact families, got ${factIds.length}`);
+    // 27 since stroke 87 (fit + skin facts rows retired with
+    // their cards — the DCC surface moved to the blender MCP skills)
+    assert.ok(factIds.length >= 27, `expected ≥27 fact families, got ${factIds.length}`);
     const actions = await actionCardLanes();
     for (const id of factIds) {
       if (actions.has(id)) continue;

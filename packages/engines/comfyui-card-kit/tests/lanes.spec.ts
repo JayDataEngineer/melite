@@ -15,9 +15,9 @@ import { GraphBuilder } from "../src/graph.ts";
 import {
   finalizeIdeogram, finalizeImageEdit, finalizeTagger,
   ideogramLane, inputPrepLane, maskT1, taggerLane,
-  annyLane, fitModelStem, skinLane,
+  annyLane,
   admitMeshLift, transferRigArm, trellisArm, pixalArm, type StripTable,
-  quadRemeshLane, musicT1, fitLane, imageEdit, refuseImageEditFiring, finalizeAnny, finalizeMotion,
+  quadRemeshLane, musicT1, imageEdit, refuseImageEditFiring, finalizeAnny, finalizeMotion,
 } from "../src/kit.ts";
 import { loadFacts } from "../src/facts.ts";
 import { deriveDefaults } from "../src/graph.ts";
@@ -359,37 +359,7 @@ describe("the exported helpers", () => {
     assert.ok(!classes(dump(g2)).includes("LoadImage"), "no source, no load");
   });
 
-  it("fitModelStem edge arms (empty, backslash, spaces)", () => {
-    assert.equal(fitModelStem(""), "prop", "no stem falls back to prop");
-    assert.equal(fitModelStem("/a/b\\c d.glb"), "c d", "the last path segment wins on both separators");
-    assert.equal(fitModelStem("  x  "), "x", "the stem trims");
-  });
 
-  it("skinLane refuses unknown kinds and off-vocab map sizes", () => {
-    assert.throws(
-      () => skinLane({ body_glb: "b", map_size: 512, seed: 1, kind: "not_a_kind", resolution: 2, framing: 2, focal_length: 2, samples: 2, transparent: true }, new GraphBuilder(), "r"),
-      /"not_a_kind" is not a meld kind/,
-    );
-    assert.throws(
-      () => skinLane({ body_glb: "b", map_size: 513, seed: 1, kind: "keeper" }, new GraphBuilder(), "r"),
-      /map_size = 513 not in \[256, 512, 1024, 2048\]/,
-    );
-    assert.throws(
-      () => skinLane({ body_glb: "b", map_size: " 512x ", seed: 1, kind: "keeper" }, new GraphBuilder(), "r"),
-      /map_size = " 512x " not in/,
-    );
-    // an UNSTATED kind falls back to '' — skinRowFor refuses the
-    // empty (the requires stay on the card)
-    assert.throws(
-      () => skinLane({ map_size: 512, seed: 1, resolution: 2, framing: 2, focal_length: 2, samples: 2, transparent: true }, new GraphBuilder(), "r"),
-      /"" is not a meld kind/,
-    );
-    // a non-string, non-number map size refuses (the typeof arm)
-    assert.throws(
-      () => skinLane({ body_glb: "b", map_size: null, seed: 1, kind: "keeper" }, new GraphBuilder(), "r"),
-      /map_size = null not in/,
-    );
-  });
 });
 
 // ── the mesh-lift admission throws + the rig arm ──────────────────
@@ -490,7 +460,8 @@ describe("the mesh-lift admissions and the rig copy", () => {
 describe("ideogramLane (the happy lane, kit-direct)", () => {
   it("stripEmptyAutofill drops empties and keeps the rest (both ==='' arms)", () => {
     // finalizeMotion is the stripEmptyAutofill face WITH entries
-    // (MOTION_STRIP — ANNY_STRIP/FIT_STRIP are empty tables).
+    // (MOTION_STRIP — ANNY_STRIP; the fit/skin strips
+    // retired stroke 87 with their cards).
     const out = finalizeMotion({
       M: { class_type: "KimodoTextToPose", inputs: { prev_motion_npz: "", motion_prompts: "a walk" } },
       N: { class_type: "LoadImage", inputs: { image: "kept.png" } },
@@ -564,37 +535,6 @@ describe("the residual lane arms", () => {
     assert.equal(enc2.inputs.lyrics, "", "unstated lyrics ride the lane's empty pin, never undefined");
   });
 
-  it("fitLane's optional bone/ref arms ride both ways", () => {
-    const g1 = new GraphBuilder();
-    fitLane({
-      body_glb: "/m/b.glb", prop_glb: "/m/p.glb", bone: "hand.r",
-      align: "grip", position: "0,1,0", rotation: "0,0,0",
-      fit_ratio: 0.5, seat_ratio: 0.3, target_width: 2,
-      resolution: 2, framing: 2, focal_length: 2, samples: 2, transparent: true,
-      fit_ref_bone: "a", fit_ref_bone2: "b", finger_bone: "f",
-    }, g1, "run_3");
-    assert.ok(classes(dump(g1)).includes("FitRow"));
-    const g2 = new GraphBuilder();
-    fitLane({
-      body_glb: "/m/b.glb", prop_glb: "/m/p.glb",
-      align: "grip", position: "0,1,0", rotation: "0,0,0",
-      fit_ratio: 0.5, seat_ratio: 0.3, target_width: 2,
-      resolution: 2, framing: 2, focal_length: 2, samples: 2, transparent: true,
-    }, g2, "run_4");
-    const row = Object.values(dump(g2)).find((n) => n.class_type === "FitRow")!;
-    assert.equal(row.inputs.fit_ref_bone, "", "the unstated refs ride empty");
-
-    // no body/prop/bone at all: the ?? '' fallbacks ride (the
-    // admissions stay on the card; the lane never sees undefined).
-    const g3 = new GraphBuilder();
-    fitLane({
-      align: "grip", position: "0,1,0", rotation: "0,0,0",
-      fit_ratio: 0.5, seat_ratio: 0.3, target_width: 2,
-      resolution: 2, framing: 2, focal_length: 2, samples: 2, transparent: true,
-    }, g3, "run_4b");
-    const prims = Object.values(dump(g3)).filter((n) => n.class_type === "PrimitiveString");
-    assert.ok(prims.every((n) => n.inputs.value === ""), "the unstated paths ride empty");
-  });
 
   it("imageEdit wires the image2/image3 reference slots", () => {
     const model = facts.models["qwen-img-edit-2511"]!;

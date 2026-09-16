@@ -1,10 +1,12 @@
 // cards-registration.spec.ts — the card-only packages' registration
-// contract (2026-09-11: twelve genre packages ship card.ts with NO
-// tool.ts and NO test — anny, fit, img-to-mesh, quad-remesh, skin,
-// sfx, ideogram4, input-prep, mask-studio, tagger, upscale-tools,
-// video-gen. Nothing pinned their registerCard rows: a renamed id,
+// contract (2026-09-11: the genre packages shipping card.ts with NO
+// tool.ts and NO test — anny, img-to-mesh, quad-remesh, sfx,
+// ideogram4, input-prep, tagger, upscale-tools, video-gen.
+// Nothing pinned their registerCard rows: a renamed id,
 // a dropped skeleton, or a gutted identity would boot clean and
 // surface only as a missing card in the UI).
+// (fit + skin RETIRED stroke 87, operator order — DCC surgery
+// moved to the blender MCP skills; mask-studio retired stroke 75.)
 //
 // The wall mounts each card's apply against a fake comfyui seat
 // (effect runs inline, registerCard captures) and pins the row laws
@@ -62,10 +64,11 @@ interface CardModule {
 
 const CARDS: Array<{ pkg: string; genre: string; path: string }> = [
   { pkg: "anny", genre: "3d", path: "../../../../packages/3d/anny/src/card.ts" },
-  { pkg: "fit", genre: "3d", path: "../../../../packages/3d/fit/src/card.ts" },
+  // fit + skin RETIRED (stroke 87, operator order): DCC surgery —
+  // unwrap and bone math — belongs to the blender MCP door
+  // (packages/engines/mcp/models/3d/blender/agents/skills/).
   { pkg: "img-to-mesh", genre: "3d", path: "../../../../packages/3d/img-to-mesh/src/card.ts" },
   { pkg: "quad-remesh", genre: "3d", path: "../../../../packages/3d/quad-remesh/src/card.ts" },
-  { pkg: "skin", genre: "3d", path: "../../../../packages/3d/skin/src/card.ts" },
   { pkg: "sfx", genre: "audio", path: "../../../../packages/audio/sfx/src/card.ts" },
   { pkg: "ideogram4", genre: "image", path: "../../../../packages/image/ideogram4/src/card.ts" },
   { pkg: "input-prep", genre: "image", path: "../../../../packages/image/input-prep/src/card.ts" },
@@ -107,14 +110,14 @@ describe("card-only packages register exactly one honest row", () => {
     });
   }
 
-  it("eleven cards on one seat: eleven unique ids (one card, one plugin; the studio retired at parity, stroke 75)", async () => {
+  it("nine cards on one seat: nine unique ids (one card, one plugin; the studio retired stroke 75, fit+skin stroke 87)", async () => {
     const { ctx, seat } = fakeCtx();
     for (const card of CARDS) {
       const mod: CardModule = (await import(card.path)) as CardModule;
       mod.apply(ctx);
     }
-    assert.equal(seat.rows.length, 11);
+    assert.equal(seat.rows.length, 9);
     const ids: string[] = seat.rows.map((r) => r.id);
-    assert.equal(new Set(ids).size, 11, `ids unique (got ${JSON.stringify(ids)})`);
+    assert.equal(new Set(ids).size, 9, `ids unique (got ${JSON.stringify(ids)})`);
   });
 });

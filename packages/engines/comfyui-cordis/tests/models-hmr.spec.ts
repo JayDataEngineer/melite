@@ -31,7 +31,6 @@ import { DECL as declAutoremesher, family as familyAutoremesher } from '../../..
 import { DECL as declBasicResize, family as familyBasicResize } from '../../../models/basic_resize/src/index.ts'
 import { DECL as declConcat, family as familyConcat } from '../../../models/concat/src/index.ts'
 import { DECL as declDwpose, family as familyDwpose } from '../../../models/dwpose/src/index.ts'
-import { DECL as declFit, family as familyFit } from '../../../models/fit/src/index.ts'
 import { DECL as declFlorence2, family as familyFlorence2 } from '../../../models/florence2/src/index.ts'
 import { DECL as declFluxFillDev, family as familyFluxFillDev } from '../../../models/flux-fill-dev/src/index.ts'
 import { DECL as declGemSoma, family as familyGemSoma } from '../../../models/gem_soma/src/index.ts'
@@ -59,7 +58,6 @@ import { DECL as declRtxVsr, family as familyRtxVsr } from '../../../models/rtx-
 import { DECL as declScail2Animate, family as familyScail2Animate } from '../../../models/scail2-animate/src/index.ts'
 import { DECL as declSeedvr2Ema, family as familySeedvr2Ema } from '../../../models/seedvr2_ema/src/index.ts'
 import { DECL as declSeeThrough, family as familySeeThrough } from '../../../models/see-through/src/index.ts'
-import { DECL as declSkin, family as familySkin } from '../../../models/skin/src/index.ts'
 import { DECL as declSkintokens, family as familySkintokens } from '../../../models/skintokens/src/index.ts'
 import { DECL as declSomax, family as familySomax } from '../../../models/somax/src/index.ts'
 import { DECL as declStep1xTexture, family as familyStep1xTexture } from '../../../models/step1x_texture/src/index.ts'
@@ -81,7 +79,6 @@ const FAMILIES: Array<{ id: string; decl: { id: string }; family: { name: string
   { id: 'basic_resize', decl: declBasicResize as never, family: familyBasicResize as never },
   { id: 'concat', decl: declConcat as never, family: familyConcat as never },
   { id: 'dwpose', decl: declDwpose as never, family: familyDwpose as never },
-  { id: 'fit', decl: declFit as never, family: familyFit as never },
   { id: 'florence2', decl: declFlorence2 as never, family: familyFlorence2 as never },
   { id: 'flux-fill-dev', decl: declFluxFillDev as never, family: familyFluxFillDev as never },
   { id: 'gem_soma', decl: declGemSoma as never, family: familyGemSoma as never },
@@ -109,7 +106,6 @@ const FAMILIES: Array<{ id: string; decl: { id: string }; family: { name: string
   { id: 'scail2-animate', decl: declScail2Animate as never, family: familyScail2Animate as never },
   { id: 'seedvr2_ema', decl: declSeedvr2Ema as never, family: familySeedvr2Ema as never },
   { id: 'see-through', decl: declSeeThrough as never, family: familySeeThrough as never },
-  { id: 'skin', decl: declSkin as never, family: familySkin as never },
   { id: 'skintokens', decl: declSkintokens as never, family: familySkintokens as never },
   { id: 'somax', decl: declSomax as never, family: familySomax as never },
   { id: 'step1x_texture', decl: declStep1xTexture as never, family: familyStep1xTexture as never },

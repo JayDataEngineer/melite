@@ -11,24 +11,6 @@
         }
       ]
     },
-    "fit": {
-      "outputs": [
-        {
-          "label": "Fitted prop-in-hand mesh",
-          "many": false,
-          "patterns": [
-            ".glb"
-          ]
-        },
-        {
-          "label": "Fit record",
-          "many": false,
-          "patterns": [
-            ".json"
-          ]
-        }
-      ]
-    },
     "h3-timeline": {
       "outputs": [
         {
@@ -157,24 +139,6 @@
           "patterns": [
             ".flac",
             ".wav"
-          ]
-        }
-      ]
-    },
-    "skin": {
-      "outputs": [
-        {
-          "label": "Skin textures (albedo + normal)",
-          "many": false,
-          "patterns": [
-            ".png"
-          ]
-        },
-        {
-          "label": "Skin-kind sidecar",
-          "many": false,
-          "patterns": [
-            ".json"
           ]
         }
       ]
@@ -372,7 +336,7 @@
     ]
   },
   "meta": {
-    "status": "CARD-OWNED SLICES (merged 2026-09-08, package-boundary extermination): model-owned keys (defaults/lane_inputs/variants/variant_groups/mods/accepts/studio) DERIVE from the registry at load (facts.ts) \u2014 this file keeps ONLY what the registry cannot carry: per-card outputs/requires_by_family, per-address card_knobs, the row roster, extension_node_types. mask-studio RETIRED 2026-09-16 (CONTRACT D at parity, stroke 75): mask-form owns the mask surface; the studio rows left with the card.",
+    "status": "CARD-OWNED SLICES (merged 2026-09-08, package-boundary extermination): model-owned keys (defaults/lane_inputs/variants/variant_groups/mods/accepts/studio) DERIVE from the registry at load (facts.ts) — this file keeps ONLY what the registry cannot carry: per-card outputs/requires_by_family, per-address card_knobs, the row roster, extension_node_types. mask-studio RETIRED 2026-09-16 (CONTRACT D at parity, stroke 75): mask-form owns the mask surface; the studio rows left with the card.",
     "wall": "tests/walls/ts/suites/models-flows.test.ts (AGREE + derivation)"
   },
   "rows": {
@@ -503,101 +467,6 @@
           "card": "anisotropy",
           "inject": "AutoRemesher.0.anisotropy",
           "kind": "n"
-        }
-      ]
-    },
-    "fit": {
-      "card": "fit",
-      "card_knobs": [
-        {
-          "card": "body_glb",
-          "inject": "PrimitiveString.0.value",
-          "kind": "s"
-        },
-        {
-          "card": "prop_glb",
-          "inject": "PrimitiveString.1.value",
-          "kind": "s"
-        },
-        {
-          "card": "bone",
-          "inject": "FitRow.0.bone",
-          "kind": "s"
-        },
-        {
-          "card": "align",
-          "inject": "FitRow.0.align",
-          "kind": "s"
-        },
-        {
-          "card": "position",
-          "inject": "FitRow.0.position",
-          "kind": "s"
-        },
-        {
-          "card": "rotation",
-          "inject": "FitRow.0.rotation",
-          "kind": "s"
-        },
-        {
-          "card": "fit_ratio",
-          "inject": "FitRow.0.fit_ratio",
-          "kind": "n"
-        },
-        {
-          "card": "fit_ref_bone",
-          "inject": "FitRow.0.fit_ref_bone",
-          "kind": "s"
-        },
-        {
-          "card": "fit_ref_bone2",
-          "inject": "FitRow.0.fit_ref_bone2",
-          "kind": "s"
-        },
-        {
-          "card": "seat_ratio",
-          "inject": "FitRow.0.seat_ratio",
-          "kind": "n"
-        },
-        {
-          "card": "finger_bone",
-          "inject": "FitRow.0.finger_bone",
-          "kind": "s"
-        },
-        {
-          "card": "thumb_bone",
-          "inject": "FitRow.0.thumb_bone",
-          "kind": "s"
-        },
-        {
-          "card": "target_width",
-          "inject": "FitRow.0.target_width",
-          "kind": "n"
-        },
-        {
-          "card": "resolution",
-          "inject": "RayRenderGLBViews.0.resolution",
-          "kind": "n"
-        },
-        {
-          "card": "framing",
-          "inject": "RayRenderGLBViews.0.framing",
-          "kind": "n"
-        },
-        {
-          "card": "focal_length",
-          "inject": "RayRenderGLBViews.0.focal_length",
-          "kind": "n"
-        },
-        {
-          "card": "samples",
-          "inject": "RayRenderGLBViews.0.samples",
-          "kind": "n"
-        },
-        {
-          "card": "transparent",
-          "inject": "RayRenderGLBViews.0.transparent",
-          "kind": "b"
         }
       ]
     },
@@ -1903,56 +1772,6 @@
           "card": "batch_size",
           "inject": "SeedVR2VideoUpscaler.0.batch_size",
           "kind": "n"
-        }
-      ]
-    },
-    "skin": {
-      "card": "skin",
-      "card_knobs": [
-        {
-          "card": "body_glb",
-          "inject": "PrimitiveString.0.value",
-          "kind": "s"
-        },
-        {
-          "card": "kind",
-          "inject": "",
-          "kind": "s"
-        },
-        {
-          "card": "map_size",
-          "inject": "SkinPack.0.size",
-          "kind": "n"
-        },
-        {
-          "card": "seed",
-          "inject": "SkinPack.0.seed",
-          "kind": "n"
-        },
-        {
-          "card": "resolution",
-          "inject": "RayRenderGLBViews.0.resolution",
-          "kind": "n"
-        },
-        {
-          "card": "framing",
-          "inject": "RayRenderGLBViews.0.framing",
-          "kind": "n"
-        },
-        {
-          "card": "focal_length",
-          "inject": "RayRenderGLBViews.0.focal_length",
-          "kind": "n"
-        },
-        {
-          "card": "samples",
-          "inject": "RayRenderGLBViews.0.samples",
-          "kind": "n"
-        },
-        {
-          "card": "transparent",
-          "inject": "RayRenderGLBViews.0.transparent",
-          "kind": "b"
         }
       ]
     },

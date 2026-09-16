@@ -184,6 +184,52 @@ describe("cardRows domains", () => {
   });
 });
 
+describe("the spawn plane (subagent-only leaves — the operator's pin)", () => {
+  it("spawn rows resolve via findSkill but NEVER ride the index (card + model)", () => {
+    ROOT = mkdtempSync(join(tmpdir(), "skills-"));
+    const w2 = (rel: string, text: string): void => {
+      const f = join(ROOT, rel);
+      mkdirSync(join(f, ".."), { recursive: true });
+      writeFileSync(f, text);
+    };
+    w2("packages/engines/comfyui-cordis/package.json", "{}");
+    // a card with one PUBLIC skill and one SPAWN leaf
+    w2("packages/image/acard/src/card.ts", "export {};");
+    w2("packages/image/acard/src/agents/AGENT.md", "# A Card\n");
+    w2("packages/image/acard/src/agents/skills/public-doc/SKILL.md", "# Public\n");
+    w2("packages/image/acard/src/agents/spawn/private-doc/SKILL.md", "# Private\n");
+    // a model dir with one SPAWN leaf (the blender-door shape)
+    w2("packages/engines/mcp/package.json", "{}");
+    w2("packages/engines/mcp/models/3d/blender/agents/AGENT.md", "# Blender\n");
+    w2("packages/engines/mcp/models/3d/blender/agents/spawn/rigging/SKILL.md", "# Rigging\n");
+    mkdirSync(join(ROOT, "flows"), { recursive: true });
+    // the constructor's index: public rows only — no spawn id anywhere
+    const idx = buildSkillIndex(ROOT) as { count: number; skills: Array<{ id: string; scope: string }> };
+    assert.ok(idx.skills.some((sk) => sk.id === "card:acard"));
+    assert.ok(idx.skills.some((sk) => sk.id === "card:acard:public-doc"));
+    assert.ok(idx.skills.some((sk) => sk.id === "model:blender"));
+    assert.equal(idx.skills.some((sk) => sk.id === "card:acard:private-doc"), false);
+    assert.equal(idx.skills.some((sk) => sk.id === "model:blender:rigging"), false);
+    assert.equal(idx.count, idx.skills.length);
+    // the spawn reader (findSkill): every spawn ref resolves
+    const priv = findSkill(ROOT, "card:acard:private-doc");
+    assert.ok(priv !== null && priv.row.scope === "card-spawn");
+    const rig = findSkill(ROOT, "model:blender:rigging");
+    assert.ok(rig !== null && rig.row.scope === "model-spawn");
+    assert.equal(findSkill(ROOT, "ghost-spawn"), null);
+    // the leaf-shape arms: a BARE .md spawn file resolves with its
+    // extension; a non-md file is skipped; a dir with no SKILL.md
+    // reads null (the leaf never rides).
+    w2("packages/engines/mcp/models/3d/blender/agents/spawn/bare.md", "# Bare\n");
+    w2("packages/engines/mcp/models/3d/blender/agents/spawn/rogue.txt", "junk");
+    w2("packages/engines/mcp/models/3d/blender/agents/spawn/empty-dir/README.md", "# n/a");
+    const bare = findSkill(ROOT, "model:blender:bare.md");
+    assert.ok(bare !== null && bare.row.scope === "model-spawn");
+    assert.equal(findSkill(ROOT, "model:blender:rogue.txt"), null);
+    assert.equal(findSkill(ROOT, "model:blender:empty-dir"), null);
+  });
+});
+
 describe("flowRows", () => {
   it("renders one gated row per declaration (SKILL.md wins, else registry)", () => {
     mkEstate();
@@ -266,6 +312,30 @@ describe("hSkillRead", () => {
       const f = hSkillRead(ROOT, state, "card:c1");
       assert.equal(f.status, 500);
       assert.match((f.payload as { error: string }).error, /has no registry mapping/);
+    } finally {
+      rmSync(state, { recursive: true, force: true });
+    }
+  });
+
+  it("the read DOOR refuses -spawn leaves by id (subagent-only, even on a guess)", () => {
+    ROOT = mkdtempSync(join(tmpdir(), "skills-"));
+    const w2 = (rel: string, text: string): void => {
+      const f = join(ROOT, rel);
+      mkdirSync(join(f, ".."), { recursive: true });
+      writeFileSync(f, text);
+    };
+    w2("packages/engines/mcp/package.json", "{}");
+    w2("packages/engines/mcp/models/3d/blender/agents/AGENT.md", "# Blender\n");
+    w2("packages/engines/mcp/models/3d/blender/agents/spawn/rigging/SKILL.md", "# Rigging\n");
+    mkdirSync(join(ROOT, "flows"), { recursive: true });
+    const state = mkdtempSync(join(tmpdir(), "state-"));
+    try {
+      // the spawn reader resolves it…
+      assert.ok(findSkill(ROOT, "model:blender:rigging") !== null);
+      // …but the constructor's read door 404s the id
+      const r = hSkillRead(ROOT, state, "model:blender:rigging");
+      assert.equal(r.status, 404);
+      assert.deepEqual(r.payload, { error: "no such skill: 'model:blender:rigging'" });
     } finally {
       rmSync(state, { recursive: true, force: true });
     }

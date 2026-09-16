@@ -146,31 +146,6 @@ importers:
         specifier: ~6.0.3
         version: 6.0.3
 
-  packages/3d/fit:
-    dependencies:
-      '@deepseek-ai/cordis':
-        specifier: ^4.0.2
-        version: 4.0.2(@deepseek-ai/cordis-plugin-loader@1.0.3)
-      '@deepseek-ai/schemastery':
-        specifier: '*'
-        version: 3.18.2
-      '@melite/comfyui-card-kit':
-        specifier: workspace:*
-        version: link:../../engines/comfyui-card-kit
-      '@melite/comfyui-cordis':
-        specifier: workspace:*
-        version: link:../../engines/comfyui-cordis
-      '@melite/estate-call':
-        specifier: workspace:*
-        version: link:../../harness/estate-call
-    devDependencies:
-      '@types/node':
-        specifier: ^22.20.0
-        version: 22.20.1
-      typescript:
-        specifier: ^5.9.3
-        version: 5.9.3
-
   packages/3d/img-to-mesh:
     dependencies:
       '@deepseek-ai/cordis':
@@ -242,31 +217,6 @@ importers:
         version: 6.0.3
 
   packages/3d/quad-remesh:
-    dependencies:
-      '@deepseek-ai/cordis':
-        specifier: ^4.0.2
-        version: 4.0.2(@deepseek-ai/cordis-plugin-loader@1.0.3)
-      '@deepseek-ai/schemastery':
-        specifier: '*'
-        version: 3.18.2
-      '@melite/comfyui-card-kit':
-        specifier: workspace:*
-        version: link:../../engines/comfyui-card-kit
-      '@melite/comfyui-cordis':
-        specifier: workspace:*
-        version: link:../../engines/comfyui-cordis
-      '@melite/estate-call':
-        specifier: workspace:*
-        version: link:../../harness/estate-call
-    devDependencies:
-      '@types/node':
-        specifier: ^22.20.0
-        version: 22.20.1
-      typescript:
-        specifier: ^5.9.3
-        version: 5.9.3
-
-  packages/3d/skin:
     dependencies:
       '@deepseek-ai/cordis':
         specifier: ^4.0.2
@@ -464,18 +414,12 @@ importers:
       '@melite/3d-anny':
         specifier: workspace:*
         version: link:../../3d/anny
-      '@melite/3d-fit':
-        specifier: workspace:*
-        version: link:../../3d/fit
       '@melite/3d-img-to-mesh':
         specifier: workspace:*
         version: link:../../3d/img-to-mesh
       '@melite/3d-quad-remesh':
         specifier: workspace:*
         version: link:../../3d/quad-remesh
-      '@melite/3d-skin':
-        specifier: workspace:*
-        version: link:../../3d/skin
       '@melite/audio-music':
         specifier: workspace:*
         version: link:../../audio/music
@@ -548,9 +492,6 @@ importers:
       '@melite/models-dwpose':
         specifier: workspace:*
         version: link:../../models/dwpose
-      '@melite/models-fit':
-        specifier: workspace:*
-        version: link:../../models/fit
       '@melite/models-florence2':
         specifier: workspace:*
         version: link:../../models/florence2
@@ -632,9 +573,6 @@ importers:
       '@melite/models-seedvr2_ema':
         specifier: workspace:*
         version: link:../../models/seedvr2_ema
-      '@melite/models-skin':
-        specifier: workspace:*
-        version: link:../../models/skin
       '@melite/models-skintokens':
         specifier: workspace:*
         version: link:../../models/skintokens
@@ -1592,22 +1530,6 @@ importers:
         specifier: ^5.9.3
         version: 5.9.3
 
-  packages/models/fit:
-    dependencies:
-      '@deepseek-ai/cordis':
-        specifier: ^4.0.2
-        version: 4.0.2(@deepseek-ai/cordis-plugin-loader@1.0.3)
-      '@melite/comfyui-cordis':
-        specifier: workspace:*
-        version: link:../../engines/comfyui-cordis
-    devDependencies:
-      '@types/node':
-        specifier: ^22.20.0
-        version: 22.20.1
-      typescript:
-        specifier: ^5.9.3
-        version: 5.9.3
-
   packages/models/florence2:
     dependencies:
       '@deepseek-ai/cordis':
@@ -2031,22 +1953,6 @@ importers:
         version: 5.9.3
 
   packages/models/seedvr2_ema:
-    dependencies:
-      '@deepseek-ai/cordis':
-        specifier: ^4.0.2
-        version: 4.0.2(@deepseek-ai/cordis-plugin-loader@1.0.3)
-      '@melite/comfyui-cordis':
-        specifier: workspace:*
-        version: link:../../engines/comfyui-cordis
-    devDependencies:
-      '@types/node':
-        specifier: ^22.20.0
-        version: 22.20.1
-      typescript:
-        specifier: ^5.9.3
-        version: 5.9.3
-
-  packages/models/skin:
     dependencies:
       '@deepseek-ai/cordis':
         specifier: ^4.0.2
