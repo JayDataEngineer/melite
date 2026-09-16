@@ -21,6 +21,13 @@
 .fieldLabel { font-size: 10.5px; font-weight: 550; opacity: .7; }
 .input { background: var(--dsw-alias-bg-base); border: 1px solid var(--dsw-alias-border-l2); color: inherit; border-radius: 7px; padding: 5px 8px; font-size: 12px; font-family: inherit; width: 100%; box-sizing: border-box; }
 .input:focus { outline: 1px solid var(--dsw-alias-state-business-primary); border-color: transparent; }
+/* stroke 84 — the popup-face law (the operator's white-on-white
+ * reports): the update-target select shares .input with text inputs;
+ * its OPEN popup pins light with dark text — Canvas/CanvasText
+ * follow the select's own color-scheme (UA chrome no DSW token
+ * reliably paints on the dark theme). */
+select.input { color-scheme: light; }
+select.input option { background: Canvas; color: CanvasText; }
 .mono { font-family: ui-monospace, monospace; font-size: 11px; }
 
 .btn { background: var(--dsw-alias-bg-layer-2); border: 1px solid var(--dsw-alias-border-l2); color: inherit; border-radius: 7px; padding: 5px 10px; font-size: 12px; cursor: pointer; white-space: nowrap; }

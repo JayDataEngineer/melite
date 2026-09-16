@@ -43,6 +43,15 @@
 .specFieldKey {
   color: var(--dsw-alias-label-secondary, #61666b);
   font-size: 12px;
+  /* STROKE 84 (the operator's row law): the key line is a HEADER
+   * seat — the seed's dice makes its line 20px tall with the label
+   * centered, while diceless fields (Width/Height beside Seed)
+   * rendered a bare ~14px text line: same-row labels sat at
+   * different heights. ONE key-line height everywhere — labels
+   * center in the same 20px band, dice or no dice. */
+  align-items: center;
+  display: flex;
+  min-height: 20px;
 }
 .specRequired { color: var(--dsw-alias-state-critical, #e5484d); }
 .specHint {
@@ -80,10 +89,15 @@
  * browser's dropdown popup defaults to a white list: every option
  * invisible until highlighted). The option rows pin a LIGHT popup
  * with dark text — deterministic on every theme (the closed select
- * keeps the card's own inherited face). */
+ * keeps the card's own inherited face).
+ * STROKE 84: Canvas/CanvasText system colors (they follow the
+ * select's own color-scheme — UA chrome no DSW token can paint;
+ * the earlier var(--dsw-alias-*) form RE-INTRODUCED theme variance
+ * and white-on-white returned on the dark theme). ONE LAW at every
+ * select site: this exact pair + color-scheme: light. */
 .specSelect option {
-  background: #fff;
-  color: #0f1115;
+  background: Canvas;
+  color: CanvasText;
 }
 .specSelect { color-scheme: light; }
 .specSelect {
@@ -174,6 +188,11 @@
 .modLeafActions { display: flex; gap: 8px; }
 .modField { display: flex; flex-direction: column; gap: 4px; font-size: 11px; }
 .modSelect { padding: 6px 8px; border: 1px solid var(--border, rgba(128,128,128,.3)); border-radius: 6px; background: var(--bg-elevated, rgba(128,128,128,.06)); color: inherit; font-size: 12px; }
+/* STROKE 84 (the operator's 5th white-on-white report — the lora
+ * picker): the mod leaf's selects never carried the popup-face law.
+ * Same one law as .specSelect above. */
+.modSelect { color-scheme: light; }
+.modSelect option { background: Canvas; color: CanvasText; }
 .modLeafError { margin: 0; font-size: 11px; color: #e06c5f; }
 
 /* THE PICKER MODAL (2026-09-13, the source-row stroke) — the default

@@ -41,6 +41,11 @@
   padding: 6px 8px;
   width: 100%;
 }
+/* stroke 84 — the popup-face law (the operator's white-on-white
+ * reports): the OPEN popup is UA chrome no DSW token reliably
+ * paints; Canvas/CanvasText follow the select's own pinned scheme. */
+.ideoField select { color-scheme: light; }
+.ideoField select option { background: Canvas; color: CanvasText; }
 
 .ideoToolbar {
   align-items: center;

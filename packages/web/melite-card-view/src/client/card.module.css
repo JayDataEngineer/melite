@@ -214,6 +214,11 @@
   border-color: var(--dsw-alias-border-l4);
   color: var(--dsw-alias-brand-primary);
 }
+/* stroke 84: this select's popup never carried the law (the comment
+ * above claimed the specForm rule covered it — it covers only the
+ * .specSelect class). Same one law. */
+.drillLlm { color-scheme: light; }
+.drillLlm option { background: Canvas; color: CanvasText; }
 .drillLlm:focus-visible {
   border-color: var(--dsw-alias-brand-primary);
   color: var(--dsw-alias-brand-primary);
@@ -706,6 +711,13 @@
 .specFieldKey {
   color: var(--dsw-alias-label-secondary);
   font-size: 12px;
+  /* stroke 84 — the key-line height law (same fix as card-base):
+   * dice-bearing lines (the seed) center their label in 20px while
+   * bare text lines sat higher; one height band aligns every label
+   * in a shared row. */
+  align-items: center;
+  display: flex;
+  min-height: 20px;
 }
 
 .specRequired { color: var(--dsw-alias-state-error-primary); }
@@ -721,10 +733,15 @@
  * browser's dropdown popup defaults to a white list: every option
  * invisible until highlighted). The option rows pin a LIGHT popup
  * with dark text — deterministic on every theme (the closed select
- * keeps the card's own inherited face). */
+ * keeps the card's own inherited face).
+ * STROKE 84: the tokenified var(--dsw-alias-*) form RE-INTRODUCED
+ * theme variance (white-on-white returned on the dark theme — the
+ * popup is UA chrome no DSW token reliably paints). Canvas/CanvasText
+ * follow the select's own color-scheme: light. ONE LAW at every
+ * select site in this file. */
 .specSelect option {
-  background: var(--dsw-alias-bg-module);
-  color: var(--dsw-alias-label-primary);
+  background: Canvas;
+  color: CanvasText;
 }
 .specSelect { color-scheme: light; }
 .specSelect {
@@ -1156,8 +1173,9 @@
   padding: 4px 8px;
   width: 110px;
 }
-/* the popup face (the white-on-white law, stroke 13 — same fix) */
-.h3RecipeRow select option { background: var(--dsw-alias-bg-module); color: var(--dsw-alias-label-primary); }
+/* the popup face (the white-on-white law, stroke 13 — same fix;
+ * stroke 84: Canvas/CanvasText, the var() form re-minted it) */
+.h3RecipeRow select option { background: Canvas; color: CanvasText; }
 .h3RecipeRow select { color-scheme: light; }
 .h3CallList { display: flex; flex-direction: column; gap: 4px; }
 .h3CallRow {
@@ -1355,8 +1373,12 @@
   padding: 6px 8px;
   width: 100%;
 }
-.ideoField select option { background: var(--dsw-alias-bg-module); color: var(--dsw-alias-label-primary); }
+.ideoField select option { background: Canvas; color: CanvasText; }
 .ideoField select { color-scheme: light; }
+/* stroke 84: the aspect select rides the TOOLBAR (outside .ideoField)
+ * — same popup law, and the toolbar's own select face */
+.ideoToolbar select option { background: Canvas; color: CanvasText; }
+.ideoToolbar select { color-scheme: light; }
 
 .ideoToolbar {
   align-items: center;
