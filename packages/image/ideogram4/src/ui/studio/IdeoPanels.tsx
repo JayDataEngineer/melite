@@ -57,13 +57,18 @@ export function ColorPaletteInput({
   const update = (i: number, v: string) => {
     const norm = normalizeHex(v)
     const next = [...safe]
-    next[i] = norm ?? v
+    // Sole caller is the <input type="color"> swatch, which always yields a
+    // valid #rrggbb (browsers + happy-dom sanitize anything else), so norm
+    // is non-null here (deleted the ?? v fallback, 2026-09-16).
+    next[i] = norm!
     onChange(next)
   }
   const remove = (i: number) => onChange(safe.filter((_, idx) => idx !== i))
   const add = (c = "#CCCCCC") => {
-    if (safe.length >= max) return
-    onChange([...safe, normalizeHex(c) ?? c])
+    // Sole caller is the add button, rendered only when safe.length < max,
+    // and it passes no arg (so c is the always-valid literal default) —
+    // both guards deleted as unreachable (2026-09-16).
+    onChange([...safe, normalizeHex(c)!])
   }
 
   return (
@@ -242,7 +247,9 @@ export function ElementInspector({
         <div className={styles.field}>
           <MicroLabel tooltip="The literal text this element should render">Text content</MicroLabel>
           <Input
-            value={element.text ?? ""}
+            // text/logo elements always carry a string (same four-producer
+            // proof as the caption memo) — deleted the ?? "" (2026-09-16).
+            value={element.text!}
             onChange={(e) => onUpdate({ text: e.target.value })}
             placeholder="COFFEE TIME"
             
@@ -649,8 +656,12 @@ export function JsonPanel({
       </div>
 
       {tab === "caption" ? (
+        // UNREACHABLE-ARM (deleted the `|| "// fill in fields…"`
+        // fallback, 2026-09-16): the sole call site seats the
+        // editor's caption memo, which is a JSON.stringify emission
+        // — always a non-empty string — so the fallback never fired.
         <pre className={styles.captionPre}>
-          {caption || "// fill in fields to see the assembled caption"}
+          {caption}
         </pre>
       ) : (
         <>

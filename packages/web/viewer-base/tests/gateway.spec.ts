@@ -59,3 +59,42 @@ test('a 404 run door raises RunDoorError carrying the named refusal', async () =
     await new Promise<void>((resolve) => srv.close(() => resolve()))
   }
 })
+
+test('a bare 500 raises RunDoorError with an empty name (message without a colon tail)', async () => {
+  const srv = createServer((_req, res) => {
+    res.statusCode = 500
+    res.setHeader('content-type', 'text/plain')
+    res.end('boom')
+  })
+  await new Promise<void>((r) => srv.listen(0, '127.0.0.1', r))
+  const { port } = srv.address() as AddressInfo
+  try {
+    await assert.rejects(
+      fetchRunStatus(`http://127.0.0.1:${port}`, 'r_9'),
+      (e: unknown) => e instanceof RunDoorError && e.status === 500 && e.named === '' && e.message === 'run door 500',
+    )
+    const named = new RunDoorError(404, 'unknown run_id')
+    assert.equal(named.message, 'run door 404: unknown run_id')
+    assert.equal(named.status, 404)
+  } finally {
+    await new Promise<void>((resolve) => srv.close(() => resolve()))
+  }
+})
+
+test('a nameless JSON refusal still raises (the absent error rides empty)', async () => {
+  const srv = createServer((_req, res) => {
+    res.statusCode = 403
+    res.setHeader('content-type', 'application/json')
+    res.end(JSON.stringify({}))
+  })
+  await new Promise<void>((r) => srv.listen(0, '127.0.0.1', r))
+  const { port } = srv.address() as AddressInfo
+  try {
+    await assert.rejects(
+      fetchRunStatus(`http://127.0.0.1:${port}`, 'r_9'),
+      (e: unknown) => e instanceof RunDoorError && e.status === 403 && e.named === '',
+    )
+  } finally {
+    await new Promise<void>((resolve) => srv.close(() => resolve()))
+  }
+})

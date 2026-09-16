@@ -189,11 +189,14 @@ export function useSquareProvider(onEdit: (name: string, v: unknown) => void, wi
       if (id === '__flow__') { setModalAt({ mode: 'flow', field: f }); return }
       if (id === '__media__') { setModalAt({ mode: 'media', field: f }); return }
       if (id === '__file__') { fieldRef.current = f; fileRef.current?.click(); return }
-      if (id === '__none__') {
-        setMirror((m) => { const n = { ...m }; delete n[f.name]; return n })
-        onEdit(f.name, '')
-        return
-      }
+      // NO __none__ GUARD (the exhaustive-menu proof): this closure's
+      // items are the four literal ids above and the three arms above
+      // return — reaching here MEANS __none__ (the danger row). A
+      // fourth guard would be untestable dead code (v8 cannot count a
+      // block-end implicit else) guarding an impossible state.
+      setMirror((m) => { const n = { ...m }; delete n[f.name]; return n })
+      onEdit(f.name, '')
+      return
     },
     onClose: () => { setPickAt(null) },
     portal: true,
@@ -269,7 +272,11 @@ export function useSquareProvider(onEdit: (name: string, v: unknown) => void, wi
         fieldRef.current = null
         void onFile(f, file)
       }
-      if (fileRef.current !== null) fileRef.current.value = ''
+      // NO NULL GUARD (the always-mounted proof): this handler fires
+      // only while the provider fragment is mounted and the ref rides
+      // its always-rendered hidden input (same shape as square.tsx's
+      // retired guard) — unmounts deliver no change events.
+      fileRef.current!.value = ''
     },
   })
 
@@ -325,15 +332,23 @@ export function SourceRow(props: SourceRowProps): ReturnType<typeof h> {
   }
   const onEditField = useCallback((name: string, v: unknown): void => {
     void name
-    props.onEdit(typeof v === 'string' ? v : String(v ?? ''))
+    // NO COERCION (the string-verbs proof): the provider's four
+    // onEdit call sites all pass strings — pick/onAsset are
+    // string-typed, clear is the '' literal, upload passes the estate
+    // name or its refusal message — so a non-string can never arrive.
+    props.onEdit(v as string)
   }, [props.onEdit])
   const { square, wireMenu } = useSquareProvider(onEditField, {
     candidates: props.candidates ?? [],
     ...(props.onFile !== undefined ? { onFile: props.onFile } : {}),
     ...(props.renderSourcePick !== undefined ? { renderSourcePick: props.renderSourcePick } : {}),
   })
-  const host = square(field)
-  const shown = host !== undefined ? host.display ?? props.value ?? null : props.value ?? null
+  // NO HOST GUARD (the slot-shape proof): field.type is image|file
+  // by construction (line 324) and square() returns undefined only
+  // for non-slot types — host is ALWAYS defined here, so both the
+  // shown pick and the verbs spread below ride it directly.
+  const host = square(field)!
+  const shown = host.display ?? props.value ?? null
   return h('div', { className: css.sourceRow, 'data-source-row': props.label },
     wireMenu,
     h(InputSquare, {
@@ -342,7 +357,7 @@ export function SourceRow(props: SourceRowProps): ReturnType<typeof h> {
       metric: typeof props.value === 'string' && props.value !== '' && !isImageUrl(props.value)
         ? props.value
         : undefined,
-      ...(host !== undefined ? host.verbs : {}),
+      ...(host.verbs),
     }),
   )
 }
@@ -772,7 +787,11 @@ export function ModelAxes({ spec, value, onSet, onDownloadModel }: {
           'aria-label': label,
           'data-axis': g,
           ...(refusedId !== undefined ? { 'data-refused': g } : {}),
-          value: active[g] ?? '',
+          // NO ?? '' (the assigned-every-path proof): the loop above
+          // writes active[g] on ALL three arms (grounded / refused /
+          // seeded) for every group before this map runs — the right
+          // side could never fire.
+          value: active[g]!,
           onChange: (e: unknown) => {
             const id = (e as { target: { value: string } }).target.value
             const row = rows.find((v) => v.id === id)
@@ -1044,7 +1063,11 @@ export function CardForm({ spec, user, base, onSet, onUnset, wire, square, atoms
   // leaf skips rail-seated fields (no double face) — the signature
   // is the seat, the brick keeps its knobs.
   const modFieldByName = new Map<string, SpecField>()
-  for (const k of modKinds) for (const f of k.fields ?? []) {
+  // NO ?? [] (the always-assigned proof): the modKinds map above
+  // overwrites fields on EVERY arm (hybrid → entryFieldsOfEnvelope,
+  // else declared ?? fieldsOfEnvelope — all arrays), so k.fields is
+  // never undefined here.
+  for (const k of modKinds) for (const f of k.fields) {
     if (!modFieldByName.has(f.name)) modFieldByName.set(f.name, f)
   }
   const railOf = (inp: { name: string; kind?: string }): SpecField | undefined => {
@@ -1075,7 +1098,9 @@ export function CardForm({ spec, user, base, onSet, onUnset, wire, square, atoms
       ? h('section', { className: css.specGroup + ' ' + css.inputRail, 'data-input-rail': '1' },
           h('div', { className: css.specSlotRow },
             railFields.map((f) => {
-              if (f.type === 'image_list') return null
+              // NO image_list ARM (the rail-gate proof): railOf returns
+              // a field ONLY for type image|file, so railFields can
+              // never carry an image_list row.
               return h('div', {
                 key: f.name,
                 className: css.specSlotCell,
@@ -1092,8 +1117,10 @@ export function CardForm({ spec, user, base, onSet, onUnset, wire, square, atoms
       // its fields — first-seen wins) grids the section; each field
       // spans its declared `width`. Undeclared → the stacked face.
       const gridCols = g.fields.find((f) => typeof f.columns === 'number' && f.columns >= 2)?.columns
-      const cellStyle = (f: SpecField): Record<string, string> | undefined => {
-        if (gridCols === undefined) return undefined
+      const cellStyle = (f: SpecField): Record<string, string> => {
+        // NO gridCols-undefined ARM (the guarded-call-site proof):
+        // the sole call below runs only in the gridded branch, so
+        // gridCols is ALWAYS defined here.
         // THE TEXTAREA LAW: prompts never sit side by side — a
         // textarea spans the full row however the group grids
         // THE OVERFLOW LAW (stroke 24): minWidth 0 lets the ITEM
@@ -1116,7 +1143,9 @@ export function CardForm({ spec, user, base, onSet, onUnset, wire, square, atoms
         row = []
       }
       for (const f of g.fields) {
-        if (railNames.has(f.name)) continue
+        // NO railNames SKIP (the visible-filter proof): groups derive
+        // from groupFieldsAll, which visible() already stripped of
+        // rail-seated names — a rail field can never arrive here.
         const claim = atomOf(f)
         const sq = squareFor(f)
         const wireCandidates = wire?.candidates

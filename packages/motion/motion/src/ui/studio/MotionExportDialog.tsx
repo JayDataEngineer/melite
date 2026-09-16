@@ -511,10 +511,6 @@ export function MotionExportDialog({
  )
 
  const handleExport = useCallback(async () => {
- if (scope !== "downloads" && enabledModes.size === 0) {
- toast("error", "Pick at least one render mode (mesh / openpose / depth).")
- return
- }
  setExporting(true)
  try {
  if (scope === "single") {

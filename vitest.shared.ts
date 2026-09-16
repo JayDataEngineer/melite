@@ -89,6 +89,14 @@ export const PROXY_SETUP = './scripts/test-proxy-environment.ts'
 export const SOURCE_PLANE_ALIAS: Record<string, string> = {
   '@melite-plugin/dsh-tools': path.join(import.meta.dirname, 'packages/harness/melite-tools/src/index.ts'),
   '@melite-plugin/melite-run-wire': path.join(import.meta.dirname, 'packages/web/melite-run-wire/src/index.ts'),
+  // the drafts REMOTE subpath — MUST sit BEFORE the parent row
+  // (rollup alias matches boundary-prefixes in iteration order; the
+  // parent would swallow the subpath into src/index.ts/remote):
+  // the generated Typert client, built from src/remote.ts's @Remote
+  // adapters — no src-plane file exports TYPERT_REMOTE. Aliased to
+  // the package's own built truth, the same artifact its exports
+  // map serves at runtime.
+  '@melite/estate-drafts/remote': path.join(import.meta.dirname, 'packages/estate/drafts/lib/typert.remote-client.js'),
   '@melite/estate-drafts': path.join(import.meta.dirname, 'packages/estate/drafts/src/index.ts'),
   '@melite/estate-manage': path.join(import.meta.dirname, 'packages/estate/manage/src/index.ts'),
   '@melite/estate-media': path.join(import.meta.dirname, 'packages/estate/media/src/index.ts'),

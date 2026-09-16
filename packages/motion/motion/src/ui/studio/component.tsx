@@ -669,8 +669,7 @@ export function MotionCardEditor({
  // File → data URL → the body param (the ONE read path every slot-shaped
  // attach uses). Validates the extension FIRST — a dropped .png is a bg
  // candidate, not a body.
- const handleBodyFile = useCallback((file: File | null) => {
-   if (!file) return
+ const handleBodyFile = useCallback((file: File) => {
    if (!/\.glb$/i.test(file.name) && file.type !== "model/gltf-binary") {
      toast("error", "Preview body must be a .glb (SOMAX-rigged character).")
      return
@@ -722,10 +721,7 @@ export function MotionCardEditor({
  () => tlPrompts.find((p) => p.text.trim())?.text ?? "",
  [tlPrompts],
  )
- const lastPromptMirrorRef = useRef<string>("__init__")
  useEffect(() => {
- if (firstNonEmptyCardText === lastPromptMirrorRef.current) return
- lastPromptMirrorRef.current = firstNonEmptyCardText
  onSave({ prompt: firstNonEmptyCardText })
  // eslint-disable-next-line react-hooks/exhaustive-deps
  }, [firstNonEmptyCardText])
@@ -1218,7 +1214,6 @@ export function MotionCardEditor({
  useEffect(() => { setTlExtendT(0) }, [baseT])
  const onTimelineExtend = useCallback((newTotal: number) => {
  const t = Math.max(1, Math.floor(newTotal))
- if (t <= targetT) return
  // Mark the new envelope as seeded so the [targetT] effect below does NOT
  // proportionally rescale the prompt cards (that effect is for envelope
  // CHANGES from outside — a new run's T — not for a tail the user pulled).
@@ -1241,7 +1236,6 @@ export function MotionCardEditor({
  const lastSeededT = useRef<number>(-1)
  const didHydratePrompts = useRef(false)
  useEffect(() => {
- if (targetT <= 0) return
  // First mount: try to hydrate from persisted params.
  if (!didHydratePrompts.current) {
  didHydratePrompts.current = true

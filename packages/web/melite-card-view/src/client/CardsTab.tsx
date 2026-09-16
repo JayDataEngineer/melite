@@ -116,16 +116,6 @@ export interface StageViewRenderSlot {
 }
 
 
-/** The flow_inline projection — the SAME wire shape melite_flow's bench
- *  verb sends (runner-owned keys strip; ids/engines/params stay). */
-function projectStage(s: BenchStageRow): Record<string, unknown> {
-  const row: Record<string, unknown> = { id: s.id, engine: s.engine ?? 'comfyui' }
-  if (s.params !== undefined && Object.keys(s.params).length > 0) row['params'] = s.params
-  if (Array.isArray(s.inputs) && s.inputs.length > 0) row['inputs'] = s.inputs
-  if (Array.isArray(s.outputs) && s.outputs.length > 0) row['outputs'] = s.outputs
-  return row
-}
-
 /** Correlation id — the run-wire package's ONE definition (re-exported
  *  by cards-resource for the tab's legacy importers). */
 
@@ -473,7 +463,7 @@ function SortableTile({ row, entered, onOpen, grouping, selected, onToggleSelect
         e.stopPropagation()
         const t = asset.type ?? ''
         if (!t.startsWith('image/') && !t.startsWith('audio/')) return
-        onAssetAttach(row.id, asset.url as string, (asset.type ?? '').startsWith('audio/') ? 'audio' : 'image')
+        onAssetAttach(row.id, asset.url as string, t.startsWith('audio/') ? 'audio' : 'image')
         return
       }
       const file = e.dataTransfer.files[0]
@@ -570,27 +560,6 @@ function SortableTile({ row, entered, onOpen, grouping, selected, onToggleSelect
  *  patches it terminal the moment the run lands). */
 function rowRunning(row: CardRowLineTabRow): boolean {
   return row.status === 'running' || row.status === 'queued' || row.status === 'pending'
-}
-
-function UnusedCardRowLineTab({ row, onOpen }: {
-  row: CardRowLineTabRow
-  onOpen: (row: CardRowLineTabRow) => void
-}): ReturnType<typeof h> {
-  return h('li', { className: css.tile, 'data-stage-id': row.id, 'data-stage-status': row.status },
-    h('button', { className: css.row, type: 'button', 'data-status': row.status, onClick: () => onOpen(row) },
-      row.face === 'audio'
-        ? AudioBarsFace({ stageId: row.id })
-        : row.videoUrl !== null
-        ? h('video', { className: css.thumb, src: row.videoUrl, muted: true, playsInline: true, preload: 'metadata' })
-        : row.thumbUrl !== null
-        ? h('img', { className: css.thumb, src: row.thumbUrl, alt: row.title, loading: 'lazy' })
-        : h(Pill, null, titleCaseId(row.kind)),
-      h('span', { className: css.rowTitle }, row.title),
-      row.service !== null ? h(Pill, null, titleCaseId(row.service)) : null,
-      row.dot !== null ? h(StateDot, { state: row.dot }) : null,
-      row.prompt !== null ? h('span', { className: css.prompt }, row.prompt) : null,
-    ),
-  )
 }
 
 /** The bench stage as a card row (the same distillation cardRows()
@@ -991,8 +960,10 @@ function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRemoved, 
       } = {}
       try { doc = JSON.parse(raw) as typeof doc } catch { /* handled below */ }
       if (!res.ok || typeof doc.error === 'string') {
+        // NO res.ok-true MIDDLE ARM (the entry condition's ok path
+        // requires error-is-string, which voices doc.error above — a
+        // middle 'unexpected payload' would be untestable dead code).
         throw new Error(typeof doc.error === 'string' ? doc.error
-          : res.ok ? 'enhance failed: unexpected payload'
           : 'enhance failed (' + res.status + (raw.length > 0 && raw.length < 200 ? ': ' + raw : '') + ')')
       }
       const results = doc.results ?? {}
@@ -1805,7 +1776,6 @@ function BenchView({ bench, sessionKey, onRun, onRunStage, onStopStage, onRemove
       onStop: () => { onStopStage(open) },
       onClose,
       onRemoved: () => { setOpen(null); reload() },
-      onResync: () => { reload({ keepOpen: true }) },
       onPatchParams: (patch: Record<string, unknown>) => { onPatchParams(open, patch) },
       renderStageView,
       renderPreview,

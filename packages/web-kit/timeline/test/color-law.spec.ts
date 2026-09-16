@@ -29,13 +29,17 @@ const GUARDED: Array<{ file: string, why: string, min?: number }> = [
   // them where it lives. Canvas-DATA colors (SAM overlays, brush
   // inks, checkerboards in mask-studio's ts constants) are bitmap
   // content the engine reads, not chrome — outside the wall's law.
-  { file: join(here, '../../../image/mask-studio/src/ui/studio/mask.module.css'), why: 'the mask studio skin' },
   { file: join(here, '../../../image/ideogram4/src/client/client.module.css'), why: 'the ideogram card skin' },
   { file: join(here, '../../../image/ideogram4/src/ui/studio/component.module.css'), why: 'the ideogram studio skin' },
   { file: join(here, '../../../image/ideogram4/src/ui/studio/IdeoPanels.module.css'), why: 'the ideogram panels skin' },
   { file: join(here, '../../../image/ideogram4/src/ui/studio/IdeogramCanvas.module.css'), why: 'the ideogram canvas skin' },
   { file: join(here, '../../../image/ideogram4/src/ui/studio/controls.module.css'), why: 'the ideogram controls skin', min: 3 },
   { file: join(here, '../../../web/melite-card-view/src/client/card.module.css'), why: 'the card view skin' },
+  // stroke 77: the retired studio's skin left with the editor — the
+  // paint leaf-face modal joins the guarded set in its place (token
+  // scrim/panel/checkerboard; stroke ink stays bitmap-white, the
+  // wall's canvas-data exemption).
+  { file: join(here, '../../../image/mask-studio/src/ui/PaintLeafModal.tsx'), why: 'the paint leaf modal' },
   { file: join(here, '../../../engines/comfyui/action_cards/3d/body/ui/studio/BodyShapePanel.module.css'), why: 'the body studio skin' },
   { file: join(here, '../../../engines/comfyui/action_cards/3d/body/ui/studio/component.module.css'), why: 'the body studio chrome' },
   { file: join(here, '../../../engines/comfyui/action_cards/3d/body/ui/studio/MeshPreviewCanvas.module.css'), why: 'the body mesh preview skin', min: 0 },

@@ -39,7 +39,9 @@ export function RunRecipeEngine({
           ariaLabel="Model route"
           testId="tl-route-select"
           value={isRef2va ? "h3-timeline-ref" : "h3-timeline"}
-          onChange={(v) => setLayerAKey("model", v ?? "h3-timeline")}
+          // Dead-arm cut: emptyLabel={false} means the native select
+          // only yields listed options — v is never undefined here.
+          onChange={(v) => setLayerAKey("model", v!)}
           title={isRef2va ? "Ref2VA — identity refs (per-call override windows)" : "FL2VA — first/last-frame conditioning"}
           options={[
             { value: "h3-timeline", label: "FL2VA · first/last" },
@@ -53,7 +55,8 @@ export function RunRecipeEngine({
         <SelectControl
           ariaLabel="Preset"
           value={layerA.preset}
-          onChange={(v) => setLayerAKey("preset", v ?? "draft_02mp")}
+          // Dead-arm cut: emptyLabel={false} — v is always a preset.
+          onChange={(v) => setLayerAKey("preset", v!)}
           options={["draft_02mp", "final_hd"]}
           emptyLabel={false}
           width="w-32"
@@ -73,7 +76,8 @@ export function RunRecipeEngine({
         <SelectControl
           ariaLabel="Audio mode"
           value={layerA.audio_mode}
-          onChange={(v) => { if (v) setLayerAKey("audio_mode", v as LayerA["audio_mode"]) }}
+          // Dead-arm cut: emptyLabel={false} — v is always a mode.
+          onChange={(v) => setLayerAKey("audio_mode", v as LayerA["audio_mode"])}
           options={AUDIO_MODES}
           emptyLabel={false}
           width="w-32"

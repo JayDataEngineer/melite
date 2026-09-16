@@ -1,0 +1,312 @@
+// @vitest-environment happy-dom
+/**
+ * flow-cards-run.spec.tsx — FlowCards' rendered faces the row-law
+ * spec leaves uncovered (2026-09-16 burn-down):
+ *
+ *   faces    — composing / draft-failed / legacy-note / error+retry /
+ *              the status-precedence row faces (data-status deep-equal
+ *              over the whole dot map, service/prompt present+absent).
+ *   unmount  — resolving after unmount sets nothing (no act warning,
+ *              the door still serves the next mount).
+ *   run      — THE GESTURE: open drill → edit → Run = drafts/patch
+ *              FIRST (the CAS rev + the coerced patch, changed keys
+ *              only), then runs/start, then close + refresh. And the
+ *              no-edit Run (patch null → straight to start, never a
+ *              lying patch).
+ *
+ * fetch is stubbed whole per test (vi.stubGlobal, the row-law
+ * pattern); the wire frame the card posts is recorded and
+ * deep-equaled. KNOWN UNREACHABLES (exemption candidates, the
+ * live-null induction — see the file header note in the final
+ * report): the poll effect (live is never set), the thumb img
+ * (thumbUrl is null whenever live is), the draftId-gone throw.
+ */
+import { afterEach, describe, expect, test, vi } from "vitest";
+import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { createElement as h } from "react";
+import { FlowCards } from "../src/client/FlowCards.tsx";
+import type { ToolCallBlockView } from "../src/client/types.ts";
+
+afterEach(() => {
+  cleanup();
+  vi.unstubAllGlobals();
+});
+
+function settled(over: Partial<ToolCallBlockView> = {}): ToolCallBlockView {
+  return {
+    kind: "tool-result", callId: "c1", toolName: "melite_flow",
+    argsRaw: JSON.stringify({ model: "krea-2" }),
+    isError: false, meta: { draft_id: "draft-1" }, content: [],
+    ...over,
+  } as unknown as ToolCallBlockView;
+}
+
+interface Seen { method: string; args: Record<string, unknown> }
+
+const DOC = {
+  draft_id: "draft-1",
+  intent: "the film",
+  bench: { rev: 3, log: [] },
+  stages: [
+    { id: "s_0", title: "gen", kind: "generation", service: "krea-2", status: "running", params: { prompt: "a green cone", steps: 8, turbo: false } },
+    { id: "s_1", title: "up", kind: "post", status: "cached", params: {} },
+    { id: "s_2", title: "wait", kind: "post", status: "pending", params: {} },
+    { id: "s_3", title: "bad", kind: "post", status: "error", params: {} },
+    { id: "s_4", title: "fresh", kind: "post", params: {} },
+  ],
+};
+
+/** The wire stub: routes per method; records every frame posted. */
+function stubWire(route: (method: string, args: Record<string, unknown>) => { refuse?: string; value?: unknown }): Seen[] {
+  const seen: Seen[] = [];
+  vi.stubGlobal("fetch", async (_url: unknown, init?: RequestInit) => {
+    const frame = JSON.parse(String(init?.body)) as { rpcId: string; method: string; payload: { args: Record<string, unknown> } };
+    seen.push({ method: frame.method, args: frame.payload.args });
+    const answer = route(frame.method, frame.payload.args);
+    const result = answer.refuse === undefined
+      ? { ok: true, value: answer.value ?? {} }
+      : { ok: false, error: { message: answer.refuse } };
+    return new Response(JSON.stringify({ type: "server-response", rpcId: frame.rpcId, result }), {
+      status: 200, headers: { "content-type": "application/json" },
+    });
+  });
+  return seen;
+}
+
+function stubDraftDoc(): Seen[] {
+  return stubWire((method) => {
+    if (method === "drafts/get") return { value: DOC };
+    if (method === "drafts/patch") return { value: { delivered: true } };
+    if (method === "runs/start") return { value: { run_id: "r_1" } };
+    if (method === "runs/status") return { value: { run_id: "r_1", status: "completed", stages: [] } };
+    return { value: {} };
+  });
+}
+
+describe("the waiting faces — composing, failed, legacy", () => {
+  test("an unsettled call with no draft composes (never a hang)", async () => {
+    stubDraftDoc();
+    render(h(FlowCards, { block: { callId: "c1", toolName: "melite_flow" } as unknown as ToolCallBlockView }));
+    expect(await screen.findByText("composing…", {}, { timeout: 4000 })).toBeTruthy();
+  });
+
+  test("a settled error renders the failed face (never a hang)", async () => {
+    stubDraftDoc();
+    render(h(FlowCards, { block: settled({ isError: true }) }));
+    expect(await screen.findByText("draft failed", {}, { timeout: 4000 })).toBeTruthy();
+  });
+
+  test("a settled success that predates the draft contract renders the superseded note", async () => {
+    stubDraftDoc();
+    const { container } = render(h(FlowCards, {
+      block: settled({ meta: null, content: [{ text: "nothing to see" }] }),
+    }));
+    const note = await screen.findByText("cards · earlier draft", {}, { timeout: 4000 });
+    expect(note).toBeTruthy();
+    expect(container.querySelector('[data-legacy="1"]')).toBeTruthy();
+  });
+});
+
+describe("the row faces — status precedence, service, prompt", () => {
+  test("every status distills onto the row (the dot map's domain)", async () => {
+    stubDraftDoc();
+    const { container } = render(h(FlowCards, { block: settled() }));
+    await screen.findByText("gen", {}, { timeout: 4000 });
+    const rows = [...container.querySelectorAll("[data-stage]")];
+    expect(rows.map((r) => [r.getAttribute("data-stage"), r.getAttribute("data-status")])).toEqual([
+      ["s_0", "running"], // live draft status rides (running)
+      ["s_1", "done"], // cached → done
+      ["s_2", "queued"], // pending → queued
+      ["s_3", "failed"], // error → failed
+      ["s_4", "ready"], // no status → ready (no dot, never a fake state)
+    ]);
+  });
+
+  test("service + prompt pills render when present, vanish when absent", async () => {
+    stubDraftDoc();
+    const { container } = render(h(FlowCards, { block: settled() }));
+    await screen.findByText("gen", {}, { timeout: 4000 });
+    // the serviced, prompted row carries both pills
+    expect(await screen.findByText("krea-2", {}, { timeout: 4000 })).toBeTruthy();
+    expect(await screen.findByText("a green cone", {}, { timeout: 4000 })).toBeTruthy();
+    // the bare row carries only its kind pill (no service, no prompt)
+    const bare = container.querySelector('[data-stage="s_4"]');
+    expect(bare?.textContent).toContain("post");
+    expect(bare?.textContent).not.toContain("krea-2");
+  });
+
+  test("the header names the draft's intent (the model's header loses)", async () => {
+    stubDraftDoc();
+    render(h(FlowCards, { block: settled() }));
+    expect(await screen.findByText("the film", {}, { timeout: 4000 })).toBeTruthy();
+  });
+});
+
+describe("the error face — named refusal + retry", () => {
+  test("a dead hydration renders the refusal; retry re-reads and lands the rows", async () => {
+    let gets = 0;
+    stubWire((method) => {
+      if (method === "drafts/get") {
+        gets++;
+        return gets === 1 ? { refuse: "no_such_draft" } : { value: DOC };
+      }
+      return { value: {} };
+    });
+    render(h(FlowCards, { block: settled() }));
+    const retry = await screen.findByText(/retry/, {}, { timeout: 4000 });
+    expect(retry.textContent).toContain("no_such_draft");
+    fireEvent.click(retry);
+    expect(await screen.findByText("gen", {}, { timeout: 4000 })).toBeTruthy();
+    expect(gets).toBe(2);
+  });
+
+  test("a foreign hydration failure renders the default face (never a blank death)", async () => {
+    vi.stubGlobal("fetch", async () => { throw "kablam"; });
+    render(h(FlowCards, { block: settled() }));
+    const face = await screen.findByText(/retry/, {}, { timeout: 4000 });
+    expect(face.textContent).toContain("draft hydration failed");
+  });
+});
+
+describe("unmount before resolve — the late answer lands nowhere", () => {
+  test("no state lands on the unmounted card; the next mount hydrates clean", async () => {
+    let release!: (value: unknown) => void;
+    const gate = new Promise<unknown>((resolve) => { release = resolve; });
+    const errs: unknown[][] = [];
+    const orig = console.error;
+    console.error = (...args: unknown[]): void => { errs.push(args); };
+    try {
+      vi.stubGlobal("fetch", async (_url: unknown, init?: RequestInit) => {
+        const frame = JSON.parse(String(init?.body)) as { rpcId: string };
+        const value = await gate;
+        return new Response(JSON.stringify({
+          type: "server-response", rpcId: frame.rpcId, result: { ok: true, value },
+        }), { status: 200, headers: { "content-type": "application/json" } });
+      });
+      const mounted = render(h(FlowCards, { block: settled() }));
+      mounted.unmount();
+      release(DOC);
+      await gate;
+      await new Promise((resolve) => setTimeout(resolve, 50));
+      expect(errs.filter((a) => String(a[0]).includes("not wrapped in act"))).toEqual([]);
+      // the door still serves: a fresh mount hydrates
+      render(h(FlowCards, { block: settled() }));
+      release(DOC);
+      expect(await screen.findByText("gen", {}, { timeout: 4000 })).toBeTruthy();
+    } finally {
+      console.error = orig;
+    }
+  });
+
+  test("a rejection after unmount sets nothing (the catch degrades, never warns)", async () => {
+    let reject!: (reason: unknown) => void;
+    const gate = new Promise<unknown>((_resolve, rej) => { reject = rej; });
+    const errs: unknown[][] = [];
+    const orig = console.error;
+    console.error = (...args: unknown[]): void => { errs.push(args); };
+    try {
+      vi.stubGlobal("fetch", async (_url: unknown, init?: RequestInit) => {
+        JSON.parse(String(init?.body)) as { rpcId: string };
+        await gate;
+        throw new Error("unreachable");
+      });
+      const mounted = render(h(FlowCards, { block: settled() }));
+      mounted.unmount();
+      reject(new Error("door died late"));
+      await gate.catch(() => {});
+      await new Promise((resolve) => setTimeout(resolve, 50));
+      expect(errs.filter((a) => String(a[0]).includes("not wrapped in act"))).toEqual([]);
+    } finally {
+      console.error = orig;
+    }
+  });
+});
+
+describe("THE GESTURE — open drill, edit, Run = patch FIRST, then start", () => {
+  test("an edit Runs what the user SEES (CAS rev + coerced patch, changed keys only)", async () => {
+    const seen = stubDraftDoc();
+    const { container } = render(h(FlowCards, { block: settled() }));
+    await screen.findByText("gen", {}, { timeout: 4000 });
+    // open the in-card drill (no shell face in this harness)
+    (container.querySelector('[data-stage="s_0"]') as HTMLElement).click();
+    expect(await screen.findByText("Card gen", {}, { timeout: 4000 })).toBeTruthy();
+    // retype steps 8 → 9 (the raw string coerces once, at patch time;
+    // the drill rides a body portal — portal-safe display-value query)
+    fireEvent.change(screen.getByDisplayValue("8"), { target: { value: "9" } });
+    fireEvent.click(await screen.findByText("Run", {}, { timeout: 4000 }));
+    // the drill closes and the card refreshes behind it
+    await waitFor(() => { expect(screen.queryByText("Card gen")).toBeNull(); }, { timeout: 4000 });
+    const patch = seen.find((c) => c.method === "drafts/patch");
+    expect(patch?.args).toEqual({
+      draftId: "draft-1", stageId: "s_0",
+      patch: { params: { steps: 9 } },
+      expectRev: 3,
+    });
+    const start = seen.find((c) => c.method === "runs/start");
+    expect(start?.args).toEqual({ doc: { draft_id: "draft-1" } });
+    // the patch LANDED BEFORE the start read it (the shared-state law)
+    expect(seen.map((c) => c.method).indexOf("drafts/patch"))
+      .toBeLessThan(seen.map((c) => c.method).indexOf("runs/start"));
+  });
+
+  test("a no-edit Run patches nothing (never a lying patch)", async () => {
+    const seen = stubDraftDoc();
+    const { container } = render(h(FlowCards, { block: settled() }));
+    await screen.findByText("gen", {}, { timeout: 4000 });
+    (container.querySelector('[data-stage="s_1"]') as HTMLElement).click();
+    expect(await screen.findByText("Card up", {}, { timeout: 4000 })).toBeTruthy();
+    fireEvent.click(await screen.findByText("Run", {}, { timeout: 4000 }));
+    await waitFor(() => { expect(screen.queryByText("Card up")).toBeNull(); }, { timeout: 4000 });
+    expect(seen.map((c) => c.method)).not.toContain("drafts/patch");
+    expect(seen.map((c) => c.method)).toContain("runs/start");
+  });
+
+  test("a refused Run renders its name in the drill (never a silent death)", async () => {
+    stubWire((method) => {
+      if (method === "drafts/get") return { value: DOC };
+      if (method === "drafts/patch") return { refuse: "admission: unknown stage" };
+      return { value: {} };
+    });
+    const { container } = render(h(FlowCards, { block: settled() }));
+    await screen.findByText("gen", {}, { timeout: 4000 });
+    (container.querySelector('[data-stage="s_0"]') as HTMLElement).click();
+    expect(await screen.findByText("Card gen", {}, { timeout: 4000 })).toBeTruthy();
+    fireEvent.change(screen.getByDisplayValue("8"), { target: { value: "11" } });
+    fireEvent.click(await screen.findByText("Run", {}, { timeout: 4000 }));
+    // the drill STAYS OPEN with the named refusal (the run never started)
+    expect(await screen.findByText(/admission: unknown stage/, {}, { timeout: 4000 })).toBeTruthy();
+  });
+
+  test("closing the drill unrunned refreshes behind it (never a stale card)", async () => {
+    const seen = stubDraftDoc();
+    const { container } = render(h(FlowCards, { block: settled() }));
+    await screen.findByText("gen", {}, { timeout: 4000 });
+    (container.querySelector('[data-stage="s_0"]') as HTMLElement).click();
+    expect(await screen.findByText("Card gen", {}, { timeout: 4000 })).toBeTruthy();
+    expect(seen.filter((c) => c.method === "drafts/get")).toHaveLength(1);
+    // the drill's own close (no Run): the card re-reads behind it
+    fireEvent.click(await screen.findByRole("button", { name: "Close card" }, { timeout: 4000 }));
+    await waitFor(() => { expect(screen.queryByText("Card gen")).toBeNull(); }, { timeout: 4000 });
+    expect(seen.filter((c) => c.method === "drafts/get")).toHaveLength(2);
+    expect(seen.map((c) => c.method)).not.toContain("runs/start");
+  });
+});
+
+describe("THE SHELL CLAIM — a claimed surface opens, never the drill", () => {
+  test("openSurface true carries the stage address (the in-card drill stays shut)", async () => {
+    stubDraftDoc();
+    const claimed: string[] = [];
+    const { container } = render(h(FlowCards, {
+      block: settled(),
+      openSurface: (address: string) => { claimed.push(address); return true; },
+    }));
+    await screen.findByText("gen", {}, { timeout: 4000 });
+    (container.querySelector('[data-stage="s_0"]') as HTMLElement).click();
+    await new Promise((r) => setTimeout(r, 300));
+    // the shell took it: the stage address rode out, no drill opened
+    expect(claimed).toHaveLength(1);
+    expect(claimed[0]).toContain("draft-1");
+    expect(claimed[0]).toContain("s_0");
+    expect(screen.queryByText("Card gen")).toBeNull();
+  });
+});

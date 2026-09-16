@@ -249,15 +249,21 @@ export function parseElementsJSON(raw: string): IdeoElement[] | null {
     const color_palette = Array.isArray(paletteSrc)
       ? paletteSrc.map((c) => normalizeHex(String(c))).filter((c): c is string => !!c).slice(0, 5)
       : []
-    const rawDesc = (el.desc ?? el.description ?? "") as unknown
+    // UNREACHABLE-ARMS (deleted three `?? ""` nullish defaults,
+    // 2026-09-16): the mapper runs only for valid arrays, and valid
+    // ⟹ desc-string ∨ description-string — so rawDesc is never
+    // nullish here (both nullish ⟹ invalid ⟹ parse returned null
+    // above); and rawText/rawFont were already defaulted
+    // nullish→'' at their bindings, so re-defaulting is dead.
+    const rawDesc = (el.desc ?? el.description) as unknown
     const rawText = (el.text ?? "") as unknown
     const rawFont = (el.font ?? "") as unknown
     const hasText = type === "text" || type === "logo"
     return {
       id: genId(`imp${idx}`),
       type,
-      desc: typeof rawDesc === "string" ? rawDesc : String(rawDesc ?? ""),
-      text: hasText ? (typeof rawText === "string" ? rawText : String(rawText ?? "")) : undefined,
+      desc: typeof rawDesc === "string" ? rawDesc : String(rawDesc),
+      text: hasText ? (typeof rawText === "string" ? rawText : String(rawText)) : undefined,
       font: hasText && typeof rawFont === "string" && rawFont ? rawFont : undefined,
       bbox,
       color_palette,

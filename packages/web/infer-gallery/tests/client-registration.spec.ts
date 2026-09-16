@@ -131,7 +131,9 @@ describe('the gallery client registration (the full port)', () => {
       effect(fn: () => unknown) { return fn() },
       sidebarRightTabs: { register(): never { throw new Error('registry down') } },
       slots: {
-        inject(): unknown { return undefined },
+        // The real seat runs the declaration synchronously — the
+        // declare throws (the seat is down), stage two logs it.
+        inject(_name: string, declare: () => unknown): unknown { return declare() },
         register(): never { throw new Error('seat down') },
       },
     }

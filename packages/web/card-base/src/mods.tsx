@@ -159,8 +159,10 @@ export function ModifiersSection(props: ModifiersSectionProps): ReturnType<typeo
     setLeaf({ mode: 'create', kind: k, index: -1 })
   }
   const openEdit = (k: ModifierKind, index: number): void => {
+    // (the entry-undefined guard was deleted: tiles map 1:1 over this
+    // same entriesOf(k) array in the same render — the clicked index
+    // is always in range. No caller can observe the undefined state.)
     const entry = entriesOf(k)[index]
-    if (entry === undefined) return
     if (isHybridKind(k)) {
       const key = optionKeyOf(k)
       setDraftOption(typeof entry[key] === 'string' ? entry[key] as string : '')
@@ -187,8 +189,11 @@ export function ModifiersSection(props: ModifiersSectionProps): ReturnType<typeo
     setLeaf({ mode: 'edit', kind: k, index })
   }
   const saveLeaf = (): void => {
-    if (leaf === null) return
-    const k = leaf.kind
+    // (the leaf-null guard was deleted: saveLeaf is wired only to the
+    // leaf modal's Add/Save button, rendered iff leaf !== null — no
+    // caller can observe the null state.)
+    const open = leaf!
+    const k = open.kind
     const entries = entriesOf(k)
     if (isHybridKind(k)) {
       // HYBRID kind: the catalog select binds option_key; the row's
@@ -206,17 +211,17 @@ export function ModifiersSection(props: ModifiersSectionProps): ReturnType<typeo
       const stamped: Record<string, unknown> = { [key]: draftOption }
       if (typeof option.model === 'string') stamped['model'] = option.model
       if (typeof option.preprocessor === 'string') stamped['preprocessor'] = option.preprocessor
-      if (leaf.mode === 'create') {
+      if (open.mode === 'create') {
         commit(k, [...entries, { ...stamped, ...draftParams, ...scalar }])
       } else {
-        const entry = entries[leaf.index]
+        const entry = entries[open.index]
         if (entry === undefined) { setLeaf(null); return }
         const next = [...entries]
-        next[leaf.index] = { ...entry, ...stamped, ...draftParams, ...scalar }
+        next[open.index] = { ...entry, ...stamped, ...draftParams, ...scalar }
         commit(k, next)
       }
     } else if (isOptionKind(k)) {
-      if (leaf.mode === 'create') {
+      if (open.mode === 'create') {
         if (draftOption === '') { setLeafError('Pick one from the served rows.'); return }
         const option = optionOf(k, draftOption)
         const seed = option !== null && option.defaults?.strength !== undefined ? option.defaults.strength : 1.0
@@ -224,37 +229,41 @@ export function ModifiersSection(props: ModifiersSectionProps): ReturnType<typeo
         if (!Number.isFinite(strength)) { setLeafError('Strength must be a number.'); return }
         commit(k, [...entries, { id: draftOption, strength }])
       } else {
-        const entry = entries[leaf.index]
+        const entry = entries[open.index]
         if (entry === undefined) { setLeaf(null); return }
         const strength = Number(draftStrength)
         if (!Number.isFinite(strength)) { setLeafError('Strength must be a number.'); return }
         const next = [...entries]
-        next[leaf.index] = { ...entry, strength }
+        next[open.index] = { ...entry, strength }
         commit(k, next)
       }
     } else {
       // FIELD kind: the draft params object IS the entry
-      if (leaf.mode === 'create') commit(k, [...entries, { ...draftParams }])
+      if (open.mode === 'create') commit(k, [...entries, { ...draftParams }])
       else {
-        const entry = entries[leaf.index]
+        const entry = entries[open.index]
         if (entry === undefined) { setLeaf(null); return }
         const next = [...entries]
-        next[leaf.index] = { ...entry, ...draftParams }
+        next[open.index] = { ...entry, ...draftParams }
         commit(k, next)
       }
     }
     setLeaf(null)
   }
   const deleteLeaf = (): void => {
-    if (leaf === null || leaf.mode !== 'edit') return
-    commit(leaf.kind, entriesOf(leaf.kind).filter((_, i) => i !== leaf.index))
+    // (the null/create guard was deleted: deleteLeaf is wired only to
+    // the Remove button, rendered iff leaf.mode === 'edit' — no caller
+    // can observe the guarded states.)
+    commit(leaf!.kind, entriesOf(leaf!.kind).filter((_, i) => i !== leaf!.index))
     setLeaf(null)
   }
   // apply order = array order: the drop rewrites the bag; the
   // composed graph follows (the old rule-2 parity). Same splice verb,
   // native drag ids (the dnd-kit purge).
   const onTileDrop = (k: ModifierKind, active: string, over: string): void => {
-    if (over === active) return
+    // (the over===active guard was deleted: the sole caller is the
+    // tile-drop closure, and ModTile's onDrop gates active !== tileId
+    // before invoking — equal ids never arrive.)
     const entries = entriesOf(k)
     const from = entries.findIndex((_, i) => k.param_key + '-' + i === active)
     const to = entries.findIndex((_, i) => k.param_key + '-' + i === over)
@@ -279,7 +288,9 @@ export function ModifiersSection(props: ModifiersSectionProps): ReturnType<typeo
     // card form — mod-owned names stay in the section).
     ...kinds.filter((k) => (k.kindFields ?? []).length > 0).map((k) =>
       h('div', { key: k.param_key + ':kind', className: css.modLeafFields },
-        (k.kindFields ?? []).map((f) =>
+        // (kindFields! — the filter above passes only kinds with a
+        // defined non-empty kindFields; TS cannot see through it.)
+        k.kindFields!.map((f) =>
           h('label', { key: f.name, className: css.modField },
             f.label ?? f.name,
             h(SpecAtom, {
@@ -355,8 +366,9 @@ export function ModifiersSection(props: ModifiersSectionProps): ReturnType<typeo
       items: addable.map((k) => ({ id: k.kind, label: k.label })),
       onSelect: (id: string) => {
         setPickAt(null)
-        const k = addable.find((x) => x.kind === id)
-        if (k !== undefined) openCreate(k)
+        // (find! — the menu items derive 1:1 from addable in the same
+        // render; onSelect fires only for a rendered item id.)
+        openCreate(addable.find((x) => x.kind === id)!)
       },
       onClose: () => { setPickAt(null) },
       portal: true,
@@ -471,7 +483,9 @@ function ModLeaf(props: {
                   onChange: (e: { target: { value: string } }) => { onDraft.setDraftOption(e.target.value) },
                 },
                   h('option', { value: '' }, '— pick —'),
-                  (k.options ?? []).map((o) =>
+                  // (options! — this branch renders only when
+                  // isOptionKind(k): options defined and non-empty.)
+                  k.options!.map((o) =>
                     h('option', { key: o.value, value: o.value }, o.label)),
                 ),
               )

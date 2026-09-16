@@ -13,6 +13,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { ReactElement } from "react";
 import { Button, Input } from "@deepseek-ai/dsh-client-ui-primitives";
+import { PAINT_STROKE_INK } from "../paintInk.ts";
 
 export interface PaintLeafModalProps {
   /** The reference image (an http/data/artifact URL — the card's
@@ -119,9 +120,14 @@ export function PaintLeafModal(props: PaintLeafModalProps): ReactElement {
   };
 
   const strokeTo = (a: { x: number; y: number }, b: { x: number; y: number }): void => {
-    const paint = paintRef.current;
+    // UNREACHABLE-ARM (deleted the `if (!paint) return` guard,
+    // 2026-09-16): both callers seat paint on the same tick —
+    // onPointerDown only calls after toPoint() (which itself returns
+    // null when paint is null), onPointerMove only while a draw
+    // started by such a down is active — and the paint canvas never
+    // unmounts mid-mount, so paintRef.current is non-null here.
+    const paint = paintRef.current as HTMLCanvasElement;
     const img = imgRef.current;
-    if (!paint) return;
     const w = img?.naturalWidth ?? paint.width;
     const h = img?.naturalHeight ?? paint.height;
     if (paint.width !== w || paint.height !== h) {
@@ -142,7 +148,7 @@ export function PaintLeafModal(props: PaintLeafModalProps): ReactElement {
     // the brush scales with the image so a stroke reads the same at
     // any source resolution (the studio's brush law)
     const scale = Math.max(w, h) / 1024;
-    ctx.strokeStyle = "rgba(255, 255, 255, 1)";
+    ctx.strokeStyle = PAINT_STROKE_INK;
     ctx.lineWidth = brushSize * Math.max(scale, 0.25);
     ctx.lineCap = "round";
     ctx.lineJoin = "round";
@@ -165,9 +171,14 @@ export function PaintLeafModal(props: PaintLeafModalProps): ReactElement {
   };
   const onPointerMove = (e: React.PointerEvent): void => {
     if (!drawingRef.current) return;
-    const p = toPoint(e);
-    const last = lastPtRef.current;
-    if (!p || !last) return;
+    // UNREACHABLE-ARM (deleted the `if (!p || !last) return` guard,
+    // 2026-09-16): drawing is set only by onPointerDown after
+    // toPoint() seated p AND last together, and neither the canvas
+    // refs nor viewSize can null again before the matching pointer-up
+    // (viewSize never resets to null; refs never detach mid-mount) —
+    // so p and last are non-null on every move of an active draw.
+    const p = toPoint(e) as { x: number; y: number };
+    const last = lastPtRef.current as { x: number; y: number };
     strokeTo(last, p);
     lastPtRef.current = p;
   };
@@ -177,8 +188,11 @@ export function PaintLeafModal(props: PaintLeafModalProps): ReactElement {
   };
 
   const clearPaint = (): void => {
-    const paint = paintRef.current;
-    if (!paint) return;
+    // UNREACHABLE-ARM (deleted the `if (!paint) return` guard,
+    // 2026-09-16): Clear only fires from the mounted dialog's button
+    // and the paint canvas renders unconditionally beside it, so the
+    // ref is seated on every reachable call.
+    const paint = paintRef.current as HTMLCanvasElement;
     const ctx = paint.getContext("2d");
     if (ctx) ctx.clearRect(0, 0, paint.width, paint.height);
     setHasStrokes(false);
@@ -186,9 +200,14 @@ export function PaintLeafModal(props: PaintLeafModalProps): ReactElement {
   };
 
   const save = (): void => {
-    const paint = paintRef.current;
-    if (!paint || !hasStrokes) return;
-    onSave(paint.toDataURL("image/png"));
+    // UNREACHABLE-ARM (deleted the `if (!paint || !hasStrokes)
+    // return` guard, 2026-09-16): save has exactly one caller — the
+    // Save button, which carries `disabled={!hasStrokes}` (a disabled
+    // button never dispatches click: probed in happy-dom, and
+    // activation behavior is suppressed in browsers too) — so
+    // !hasStrokes is unreachable here; and the paint canvas renders
+    // unconditionally beside the button, so paint is non-null.
+    onSave((paintRef.current as HTMLCanvasElement).toDataURL("image/png"));
   };
 
   return (
@@ -199,11 +218,14 @@ export function PaintLeafModal(props: PaintLeafModalProps): ReactElement {
       style={{
         position: "fixed", inset: 0, zIndex: 1000,
         display: "flex", alignItems: "center", justifyContent: "center",
-        background: "rgba(0,0,0,0.5)",
+        // THE COLOR LAW (the timeline wall guards this file): the
+        // scrim is a token mix, never a literal — the shell's tokens
+        // ARE the values.
+        background: "color-mix(in srgb, var(--dsw-alias-bg-base) 60%, transparent)",
       }}
       onPointerDown={(e) => { if (e.target === e.currentTarget) onCancel(); }}
     >
-      <div style={{ background: "var(--bg-2, #1b1d21)", borderRadius: 8, padding: 16, display: "flex", flexDirection: "column", gap: 12, maxHeight: "92vh" }}>
+      <div style={{ background: "var(--dsw-alias-bg-layer-1)", color: "var(--dsw-alias-label-primary)", border: "1px solid var(--dsw-alias-border-l2)", borderRadius: 8, padding: 16, display: "flex", flexDirection: "column", gap: 12, maxHeight: "92vh" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
           <strong>{props.title ?? "Paint payload"}</strong>
           <label style={{ display: "flex", alignItems: "center", gap: 6, marginLeft: "auto" }}>
@@ -225,9 +247,13 @@ export function PaintLeafModal(props: PaintLeafModalProps): ReactElement {
           style={{
             display: viewSize === null ? "none" : "block",
             maxWidth: "84vw", maxHeight: "70vh",
-            border: "1px solid var(--border-1, #333)",
+            border: "1px solid var(--dsw-alias-border-l2)",
             borderRadius: 4, cursor: "crosshair", touchAction: "none",
-            background: "repeating-conic-gradient(#2a2d33 0% 25%, #232629 0% 50%) 50% / 24px 24px",
+            // the transparency preview is a token mix (the law holds
+            // for chrome; the STROKE ink stays bitmap-white — canvas
+            // data the lane reads, per the wall's exemption note).
+            backgroundColor: "var(--dsw-alias-bg-base)",
+            background: "repeating-conic-gradient(color-mix(in srgb, var(--dsw-alias-label-secondary) 30%, transparent) 0% 25%, transparent 0% 50%) 50% / 24px 24px",
           }}
           onPointerDown={onPointerDown}
           onPointerMove={onPointerMove}

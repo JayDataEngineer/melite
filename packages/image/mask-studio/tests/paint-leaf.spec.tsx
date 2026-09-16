@@ -14,6 +14,7 @@ import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/re
 import { afterEach, expect, test, vi } from 'vitest'
 import { createElement } from 'react'
 
+import { PAINT_STROKE_INK } from '../src/paintInk.ts'
 import { PaintLeafModal } from '../src/ui/PaintLeafModal.tsx'
 
 afterEach(() => {
@@ -62,7 +63,7 @@ test('a stroke without a 2d context degrades silent — no crash, Save stays dis
   mountModal()
   const view = await screen.findByTestId('paint-leaf-view')
   // happy-dom supplies no canvas 2d context: the guards hold
-  expect(view.getContext('2d')).toBeNull()
+  expect((view as HTMLCanvasElement).getContext('2d')).toBeNull()
   fireEvent.pointerDown(view, { button: 0, clientX: 50, clientY: 50 })
   fireEvent.pointerMove(view, { clientX: 60, clientY: 60 })
   fireEvent.pointerUp(view)
@@ -90,7 +91,7 @@ test('stroke → Save delivers the payload PNG data URL (the field contract)', a
   fireEvent.pointerUp(view)
   // the brush touched the overlay (white strokes, round caps)
   expect(ctx.stroke).toHaveBeenCalled()
-  expect(ctx.strokeStyle).toBe('rgba(255, 255, 255, 1)')
+  expect(ctx.strokeStyle).toBe(PAINT_STROKE_INK)
   await waitFor(() => {
     expect(screen.getByRole('button', { name: 'Save payload' }).hasAttribute('disabled')).toBe(false)
   })
@@ -111,4 +112,189 @@ test('Clear wipes the strokes and re-disarms Save', async () => {
   await waitFor(() => {
     expect(screen.getByRole('button', { name: 'Save payload' }).hasAttribute('disabled')).toBe(true)
   })
+})
+
+/* ── the reference/payload arms (the fitted-size + seed laws) ── */
+
+/** A controllable Image fake (happy-dom never loads images): sizes keyed by src. */
+class FakeImage {
+  onload: (() => void) | null = null
+  onerror: (() => void) | null = null
+  naturalWidth = 0
+  naturalHeight = 0
+  constructor() { FakeImage.live.push(this) }
+  set src(v: string) {
+    if (v.includes('FAIL')) { queueMicrotask(() => { this.onerror?.() }); return }
+    const m = /(\d+)x(\d+)/.exec(v)
+    this.naturalWidth = m ? Number(m[1]) : 800
+    this.naturalHeight = m ? Number(m[2]) : 600
+    // HOLD = the load lands only when the test fires it (the unmount race)
+    if (v.includes('HOLD')) { FakeImage.held.push(() => { this.onload?.() }); return }
+    queueMicrotask(() => { this.onload?.() })
+  }
+  static live: FakeImage[] = []
+  static held: Array<() => void> = []
+}
+
+function stubImages(): void {
+  FakeImage.live = []
+  FakeImage.held = []
+  vi.stubGlobal('Image', FakeImage)
+}
+
+function modalProps(over: Record<string, unknown> = {}) {
+  return { referenceUrl: '', onSave: () => {}, onCancel: () => {}, ...over }
+}
+
+test('a reference image seats the fitted view and redraws under the strokes', async () => {
+  stubImages()
+  const ctx = stubContext()
+  mountModal({ referenceUrl: 'img:800x600' })
+  const view = await screen.findByTestId('paint-leaf-view')
+  // FIT 640: 800x600 → scale 0.8 → the 640x480 view
+  await waitFor(() => { expect((view as HTMLCanvasElement).width).toBe(640) })
+  expect((view as HTMLCanvasElement).height).toBe(480)
+  expect(view.style.display).toBe('block')
+  fireEvent.pointerDown(view, { button: 0, clientX: 50, clientY: 50 })
+  fireEvent.pointerUp(view)
+  // the view ctx drew the reference under the overlay (the redraw path)
+  expect(ctx.drawImage).toHaveBeenCalled()
+  await waitFor(() => {
+    expect(screen.getByRole('button', { name: 'Save payload' }).hasAttribute('disabled')).toBe(false)
+  })
+})
+
+test('payload-only (no reference) seeds the strokes from the payload size', async () => {
+  stubImages()
+  const ctx = stubContext()
+  mountModal({ referenceUrl: '', payloadUrl: 'pay:400x400' })
+  // the seed drew the payload onto the layer and armed Save at once
+  await waitFor(() => {
+    expect(screen.getByRole('button', { name: 'Save payload' }).hasAttribute('disabled')).toBe(false)
+  })
+  expect(ctx.drawImage).toHaveBeenCalled()
+  expect((screen.getByTestId('paint-leaf-layer') as HTMLCanvasElement).width).toBe(400)
+})
+
+test('payload seed without a 2d context degrades silent — Save stays disarmed', async () => {
+  stubImages()
+  mountModal({ referenceUrl: '', payloadUrl: 'pay:400x400' })
+  const view = await screen.findByTestId('paint-leaf-view')
+  await waitFor(() => { expect(view.style.display).toBe('block') })
+  expect(screen.getByRole('button', { name: 'Save payload' }).hasAttribute('disabled')).toBe(true)
+})
+
+test('a failed reference degrades to the blank 1024 canvas', async () => {
+  stubImages()
+  mountModal({ referenceUrl: 'img:FAIL' })
+  const view = await screen.findByTestId('paint-leaf-view')
+  // blank 1024 → FIT scale 0.625 → the 640x640 view (redraw set it pre-context)
+  await waitFor(() => { expect((view as HTMLCanvasElement).width).toBe(640) })
+  expect((view as HTMLCanvasElement).height).toBe(640)
+  expect(screen.getByRole('button', { name: 'Save payload' }).hasAttribute('disabled')).toBe(true)
+})
+
+test('unmount before the reference lands never resolves state (no crash)', async () => {
+  stubImages()
+  const { unmount } = render(createElement(PaintLeafModal, modalProps({ referenceUrl: 'img:HOLD800x600' })))
+  expect(FakeImage.live.length).toBe(1)
+  unmount()
+  FakeImage.held.forEach((fire) => { fire() })
+  await Promise.resolve()
+})
+
+test('a zero-size reference returns from redraw without crashing', async () => {
+  stubImages()
+  mountModal({ referenceUrl: 'img:0x600' })
+  const view = await screen.findByTestId('paint-leaf-view')
+  await waitFor(() => { expect(view.style.display).toBe('block') })
+  expect(screen.getByRole('button', { name: 'Save payload' }).hasAttribute('disabled')).toBe(true)
+})
+
+test('a non-left button never starts a stroke', async () => {
+  stubImages()
+  const ctx = stubContext()
+  mountModal()
+  const view = await screen.findByTestId('paint-leaf-view')
+  await waitFor(() => { expect(view.style.display).toBe('block') })
+  fireEvent.pointerDown(view, { button: 2, clientX: 50, clientY: 50 })
+  fireEvent.pointerMove(view, { clientX: 60, clientY: 60 })
+  fireEvent.pointerUp(view)
+  expect(ctx.stroke).not.toHaveBeenCalled()
+  expect(screen.getByRole('button', { name: 'Save payload' }).hasAttribute('disabled')).toBe(true)
+})
+
+test('pointer input before ready degrades silent (the pre-fit window)', () => {
+  stubImages()
+  mountModal({ referenceUrl: 'img:HOLD800x600' })
+  // the fit has not landed: the point guards hold, never a crash
+  const view = screen.getByTestId('paint-leaf-view')
+  fireEvent.pointerDown(view, { button: 0, clientX: 50, clientY: 50 })
+  fireEvent.pointerMove(view, { clientX: 60, clientY: 60 })
+  fireEvent.pointerUp(view)
+  expect(screen.getByRole('button', { name: 'Save payload' }).hasAttribute('disabled')).toBe(true)
+})
+
+test('Clear before ready still runs (the early-redraw guard holds)', () => {
+  stubImages()
+  mountModal({ referenceUrl: 'img:HOLD800x600' })
+  fireEvent.click(screen.getByRole('button', { name: 'Clear' }))
+  expect(screen.getByRole('button', { name: 'Save payload' }).hasAttribute('disabled')).toBe(true)
+})
+
+test('Save with no strokes never calls onSave (the disarmed click)', async () => {
+  stubImages()
+  const { onSave } = mountModal()
+  await screen.findByTestId('paint-leaf-view')
+  fireEvent.click(screen.getByRole('button', { name: 'Save payload' }))
+  expect(onSave).not.toHaveBeenCalled()
+})
+
+test('the brush slider reseats the size readout (the brush law input)', async () => {
+  stubImages()
+  mountModal()
+  await screen.findByTestId('paint-leaf-view')
+  fireEvent.change(screen.getByRole('slider'), { target: { value: '64' } })
+  expect(screen.getByText('64')).toBeTruthy()
+})
+
+test('a late reference adopt preserves prior strokes across the resize', async () => {
+  stubImages()
+  stubContext()
+  const { rerender } = render(createElement(PaintLeafModal, modalProps()))
+  const view = await screen.findByTestId('paint-leaf-view')
+  await waitFor(() => { expect(view.style.display).toBe('block') })
+  fireEvent.pointerDown(view, { button: 0, clientX: 50, clientY: 50 })
+  fireEvent.pointerUp(view)
+  await waitFor(() => {
+    expect(screen.getByRole('button', { name: 'Save payload' }).hasAttribute('disabled')).toBe(false)
+  })
+  // the reference lands late at a new size: the layer adopts it
+  rerender(createElement(PaintLeafModal, modalProps({ referenceUrl: 'img:800x600' })))
+  await waitFor(() => { expect((view as HTMLCanvasElement).height).toBe(480) })
+  fireEvent.pointerDown(view, { button: 0, clientX: 50, clientY: 50 })
+  fireEvent.pointerUp(view)
+  // the adopt resized the layer to the reference (prior strokes restored)
+  await waitFor(() => { expect((screen.getByTestId('paint-leaf-layer') as HTMLCanvasElement).width).toBe(800) })
+})
+
+test('an adopt over an emptied layer skips the restore (no phantom strokes)', async () => {
+  stubImages()
+  stubContext()
+  const { rerender } = render(createElement(PaintLeafModal, modalProps({ referenceUrl: 'img:0x600' })))
+  const view = await screen.findByTestId('paint-leaf-view')
+  await waitFor(() => { expect(view.style.display).toBe('block') })
+  // the zero-width adopt empties the layer (300-wide prior restored aside)
+  fireEvent.pointerDown(view, { button: 0, clientX: 50, clientY: 50 })
+  fireEvent.pointerUp(view)
+  await waitFor(() => { expect((screen.getByTestId('paint-leaf-layer') as HTMLCanvasElement).width).toBe(0) })
+  // a second size lands: the empty prior skips the restore, strokes continue
+  rerender(createElement(PaintLeafModal, modalProps({ referenceUrl: 'img:800x600' })))
+  await waitFor(() => { expect((view as HTMLCanvasElement).height).toBe(480) })
+  fireEvent.pointerDown(view, { button: 0, clientX: 50, clientY: 50 })
+  fireEvent.pointerUp(view)
+  await waitFor(() => {
+    expect(screen.getByRole('button', { name: 'Save payload' }).hasAttribute('disabled')).toBe(false)
+  })
+  expect((screen.getByTestId('paint-leaf-layer') as HTMLCanvasElement).width).toBe(800)
 })

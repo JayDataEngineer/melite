@@ -111,39 +111,31 @@ export function StudioStripPane({
         // rendering stays for stem-only docs (byte-identical).
         clips: barAudioClips,
       }]}
-      onAudioDrop={(id, url) => {
-        if (id !== "music") return
-        // Drop honesty as everywhere: a tray URL wires only as a
-        // known upstream artifact NAME; a foreign URL writes nothing.
-        // NOW routed as a clip (Layer A NLE: all music is clips).
-        const name = artifactIndex.byUrl.get(url)
-        if (name) addAudioClip(name, name, 0)
-      }}
-      onAudioDropAt={(id, url, frame) => {
-        if (id !== "music") return
+      // (no onAudioDrop: the bar only calls it when onAudioDropAt is
+      // absent — this pane always passes it. Dead-arm cut.)
+      // Dead-arm cut on every door below: the single literal "music"
+      // layer means the bar always passes id === "music".
+      onAudioDropAt={(_id, url, frame) => {
         // POSITIONED drop (NLE): a known artifact lands as a CLIP at
         // the drop frame; a foreign URL writes nothing.
         const name = artifactIndex.byUrl.get(url)
         if (name) addAudioClip(name, name, docFromFilm(frame))
       }}
-      onAudioFileDrop={(id, file, frame) => {
-        if (id !== "music") return
+      onAudioFileDrop={(_id, file, frame) => {
         takeAudioFile(file, docFromFilm(frame))
       }}
-      onAudioClipMove={(id, clipId, frame) => {
-        if (id === "music") moveAudioClip(clipId, docFromFilm(frame))
+      onAudioClipMove={(_id, clipId, frame) => {
+        moveAudioClip(clipId, docFromFilm(frame))
       }}
-      onAudioClipDelete={(id, clipId) => {
-        if (id === "music") deleteAudioClip(clipId)
+      onAudioClipDelete={(_id, clipId) => {
+        deleteAudioClip(clipId)
       }}
-      onAudioDetach={(id) => {
-        if (id === "music") {
-          // Clear all clips (Layer A NLE: clips are the ONLY audio UI).
-          setLayerAKey("audio_clips", undefined)
-          // Also clear legacy stem if present (old docs round-trip
-          // clean after detach — stem won't re-convert on next load).
-          setLayerAKey("audio_stem", undefined)
-        }
+      onAudioDetach={() => {
+        // Clear all clips (Layer A NLE: clips are the ONLY audio UI).
+        setLayerAKey("audio_clips", undefined)
+        // Also clear legacy stem if present (old docs round-trip
+        // clean after detach — stem won't re-convert on next load).
+        setLayerAKey("audio_stem", undefined)
       }}
     />
   </PaneShell>

@@ -56,7 +56,9 @@ export function useFilmSync(args: {
   // (temporal dead zone), so its fps rides a live ref mirrored right
   // after the memo (the filmRef pattern).
   const filmFpsRef = useRef<number | null>(null)
-  const axisFps = useCallback(() => filmFpsRef.current ?? fps ?? 24, [fps])
+  // (fps is always a number — the doc rail's Layer A fps — so the
+  // trailing `?? 24` default would be a dead arm.)
+  const axisFps = useCallback(() => filmFpsRef.current ?? fps, [fps])
   const handleFilmTime = useCallback(
     (sec: number) => {
       if (isScrubbingRef.current) return
@@ -87,8 +89,10 @@ export function useFilmSync(args: {
   const seconds = (totalFrames / fps).toFixed(1)
   const unwired = keyframes.filter((k) => !k.source.trim()).length
   // A call's prompt is its ONE text: empty = no prompt at all
-  // (the plan refuses it before any GPU work).
-  const emptyText = calls.filter((c) => !(c.text ?? "").trim()).length
+  // (the plan refuses it before any GPU work). (text is always a
+  // string post-hydration — the `!` records that proof, no dead
+  // `?? ""` arm.)
+  const emptyText = calls.filter((c) => !c.text!.trim()).length
   const guideCount = calls.reduce(
     (n, c) => n + GUIDE_KINDS.filter((k) => (c[k] ?? "").trim()).length,
     0,

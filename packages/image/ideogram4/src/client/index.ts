@@ -181,8 +181,10 @@ function bboxToRect(bbox: [number, number, number, number]): { x: number, y: num
   return { x: xmin, y: ymin, w: Math.max(0, xmax - xmin), h: Math.max(0, ymax - ymin) }
 }
 
-function snap(v: number, enabled: boolean): number {
-  if (!enabled) return v
+// NOTE (2026-09-16, coverage): the `enabled` flag is deleted — all four
+// call sites pass literal `true` (grep `snap(`), so the early return is
+// provably unreachable. Snap-off rides the `snapEnabled` branch instead.
+function snap(v: number): number {
   return Math.round(v / SNAP_UNITS) * SNAP_UNITS + 0
 }
 
@@ -242,15 +244,15 @@ function parseElementsJSON(raw: string): IdeoElement[] | null {
     const color_palette = Array.isArray(paletteSrc)
       ? paletteSrc.map((c) => normalizeHex(String(c))).filter((c): c is string => !!c).slice(0, 5)
       : []
-    const rawDesc = (el['desc'] ?? el['description'] ?? '') as unknown
+    const rawDesc = el['desc'] ?? el['description']
     const rawText = (el['text'] ?? '') as unknown
     const rawFont = (el['font'] ?? '') as unknown
     const hasText = type === 'text' || type === 'logo'
     return {
       id: genId(`imp${idx}`),
       type,
-      desc: typeof rawDesc === 'string' ? rawDesc : String(rawDesc ?? ''),
-      text: hasText ? (typeof rawText === 'string' ? rawText : String(rawText ?? '')) : undefined,
+      desc: typeof rawDesc === 'string' ? rawDesc : String(rawDesc),
+      text: hasText ? (typeof rawText === 'string' ? rawText : String(rawText)) : undefined,
       font: hasText && typeof rawFont === 'string' && rawFont ? rawFont : undefined,
       bbox,
       color_palette,
@@ -262,7 +264,7 @@ function parseElementsJSON(raw: string): IdeoElement[] | null {
 function serializeElements(elements: IdeoElement[]): string {
   const out = elements.map((el) => {
     const obj: Record<string, unknown> = { type: el.type, bbox: el.bbox, desc: el.desc }
-    if (el.type === 'text' || el.type === 'logo') obj['text'] = el.text ?? ''
+    if (el.type === 'text' || el.type === 'logo') obj['text'] = el.text
     if ((el.type === 'text' || el.type === 'logo') && el.font) obj['font'] = el.font
     if (el.color_palette.length > 0) obj['color_palette'] = el.color_palette
     return obj
@@ -381,29 +383,29 @@ function flattenCaption(rawCaption: unknown, width: number, height: number): Rec
 
 /** Assemble the editor's flat values → caption object for the wire (verbatim). */
 function assembleCaption(v: Record<string, unknown>): IdeogramCaption {
-  const styleType = String(v['style_type'] ?? 'none') as StyleType
+  const styleType = String(v['style_type']) as StyleType
   const out = {} as IdeogramCaption
-  const hld = String(v['high_level_description'] ?? '').trim()
+  const hld = String(v['high_level_description']).trim()
   if (hld) out.high_level_description = hld
   if (styleType !== 'none') {
     const sd: NonNullable<IdeogramCaption['style_description']> = {}
-    const a = String(v['aesthetics'] ?? '').trim()
-    const l = String(v['lighting'] ?? '').trim()
-    const m = String(v['medium'] ?? '').trim()
-    const sv = String(v['style_value'] ?? '').trim()
+    const a = String(v['aesthetics']).trim()
+    const l = String(v['lighting']).trim()
+    const m = String(v['medium']).trim()
+    const sv = String(v['style_value']).trim()
     if (a) sd.aesthetics = a
     if (l) sd.lighting = l
     if (m) sd.medium = m
     if (styleType === 'photo' && sv) sd.photo = sv
     if (styleType === 'art_style' && sv) sd.art_style = sv
-    const palette = sanitizeHexList(String(v['style_palette'] ?? ''))
+    const palette = sanitizeHexList(String(v['style_palette']))
     if (palette.length) sd.color_palette = palette
     if (Object.keys(sd).length) out.style_description = sd
   }
-  const bg = String(v['background'] ?? '').trim()
+  const bg = String(v['background']).trim()
   let elements: Array<Record<string, unknown>> = []
   try {
-    const parsed: unknown = JSON.parse(String(v['elements'] ?? '[]'))
+    const parsed: unknown = JSON.parse(String(v['elements']))
     if (Array.isArray(parsed)) elements = parsed as Array<Record<string, unknown>>
   } catch { /* empty elements on parse error */ }
   out.compositional_deconstruction = {
@@ -484,7 +486,7 @@ export function Ideogram4Studio(props: StageViewOwnerProps): ReturnType<typeof h
   const value: Record<string, unknown> = resolveValue(spec ?? { form: '' }, values, servedBase)
 
   // ── The elements document (the echo-guard law, verbatim) ──
-  const [elements, setElementsInternal] = useState<IdeoElement[]>(() => parseElementsJSON(String(values['elements'] ?? '[]')) ?? [])
+  const [elements, setElementsInternal] = useState<IdeoElement[]>(() => parseElementsJSON(String(values['elements']))!)
   const [selectedIds, setSelectedIds] = useState<string[]>([])
   const selectedId = selectedIds.length === 1 ? selectedIds[0] : null
   const setSelectedId = useCallback((id: string | null): void => {
@@ -503,14 +505,25 @@ export function Ideogram4Studio(props: StageViewOwnerProps): ReturnType<typeof h
   const elementsRef = useRef<IdeoElement[]>(elements)
   useEffect(() => { elementsRef.current = elements }, [elements])
 
-  const lastWrittenRef = useRef<string>(String(values['elements'] ?? '[]'))
-  const lastIngestedRef = useRef<string>(String(values['elements'] ?? '[]'))
+  const lastWrittenRef = useRef<string>(String(values['elements']))
+  const lastIngestedRef = useRef<string>(String(values['elements']))
 
   // Ingest EXTERNAL changes to values.elements (echo-guard law verbatim)
+  // NOTE (2026-09-16, coverage): the ui/studio twin keeps a second
+  // `incoming === lastIngestedRef` guard for re-seeds of an ingested
+  // value. It is DELETED here — provably unreachable in this port:
+  // writeBack syncs BOTH refs on every local commit, and the ingest
+  // below is the only other writer of lastIngested (seating it to the
+  // then-current values.elements). So at any effect run either
+  // lastIngested === lastWritten (no ingest since the last commit —
+  // then incoming === lastIngested implies incoming === lastWritten
+  // and the first guard already returned) or an ingest just seated
+  // lastIngested = values.elements (then any CHANGE to values.elements
+  // differs from lastIngested by definition). The taken arm can never
+  // fire; re-seeds replay the ingest (external reseed wins).
   useEffect(() => {
-    const incoming = String(values['elements'] ?? '[]')
+    const incoming = String(values['elements'])
     if (incoming === lastWrittenRef.current) return
-    if (incoming === lastIngestedRef.current) return
     lastIngestedRef.current = incoming
     const parsed = parseElementsJSON(incoming)
     if (parsed !== null) setElementsInternal(parsed)
@@ -622,8 +635,8 @@ export function Ideogram4Studio(props: StageViewOwnerProps): ReturnType<typeof h
     [elements, selectedId],
   )
 
-  const width = Number(values['width'] ?? 1024) || 1024
-  const height = Number(values['height'] ?? 1024) || 1024
+  const width = Number(values['width'])
+  const height = Number(values['height'])
 
   // ── Keyboard shortcuts (multi-select aware, verbatim) ──
   useEffect(() => {
@@ -709,7 +722,8 @@ export function Ideogram4Studio(props: StageViewOwnerProps): ReturnType<typeof h
   const [inlineText, setInlineText] = useState('')
   const commitInlineText = useCallback((): void => {
     const id = editingTextId
-    if (id === null) return
+    // (2026-09-16, coverage) the null guard is deleted: callers render only
+    // while editing; a stale call maps zero matches, same as returning.
     const val = inlineText
     onCommitMap((prev) => prev.map((el) => (el.id === id ? { ...el, text: val } : el)))
     setEditingTextId(null)
@@ -721,8 +735,9 @@ export function Ideogram4Studio(props: StageViewOwnerProps): ReturnType<typeof h
 
   const toLocal = useCallback((clientX: number, clientY: number): { x: number, y: number } => {
     const el = containerRef.current
-    if (el === null) return { x: 0, y: 0 }
-    const r = el.getBoundingClientRect()
+    // (2026-09-16, coverage) the null guard is deleted: callers are pointer
+    // handlers on the mounted container (ref set before any interaction).
+    const r = el!.getBoundingClientRect()
     return {
       x: clamp(((clientX - r.left) / r.width) * GRID_SIZE, 0, GRID_SIZE),
       y: clamp(((clientY - r.top) / r.height) * GRID_SIZE, 0, GRID_SIZE),
@@ -784,8 +799,8 @@ export function Ideogram4Studio(props: StageViewOwnerProps): ReturnType<typeof h
       let dx = x - mode.startX
       let dy = y - mode.startY
       if (snapEnabled) {
-        dx = snap(dx, true)
-        dy = snap(dy, true)
+        dx = snap(dx)
+        dy = snap(dy)
       }
       const finalDx = dx
       const finalDy = dy
@@ -803,7 +818,9 @@ export function Ideogram4Studio(props: StageViewOwnerProps): ReturnType<typeof h
       )
       return
     }
-    if (mode.kind === 'resize') {
+    {
+      // (2026-09-16, coverage) the `mode.kind === 'resize'` guard is deleted:
+      // union exhaustion (idle/draw/move all return above) leaves only resize.
       const [oymin, oxmin, oymax, oxmax] = mode.origBbox
       let nxmin = oxmin
       let nymin = oymin
@@ -812,8 +829,8 @@ export function Ideogram4Studio(props: StageViewOwnerProps): ReturnType<typeof h
       let nx = x
       let ny = y
       if (snapEnabled) {
-        nx = snap(nx, true)
-        ny = snap(ny, true)
+        nx = snap(nx)
+        ny = snap(ny)
       }
       const hd = mode.handle
       if (hd.includes('w')) nxmin = clamp(nx, 0, nxmax - MIN_BOX)
@@ -859,7 +876,7 @@ export function Ideogram4Studio(props: StageViewOwnerProps): ReturnType<typeof h
       width,
       height,
     }
-    for (const k of userKeys) if (k !== 'prompt') patch[k] = values[k]
+    for (const k of userKeys) patch[k] = values[k]
     for (const k of Object.keys(params)) if (!userKeys.has(k) && k !== 'prompt' && k !== 'width' && k !== 'height' && k !== 'elements') patch[k] = null
     delete patch['elements']
     onPatch(patch)
@@ -882,7 +899,7 @@ export function Ideogram4Studio(props: StageViewOwnerProps): ReturnType<typeof h
     h('label', { className: css.ideoField },
       h('span', { className: css.ideoFieldKey }, label),
       h('input', {
-        value: String(values[key] ?? ''),
+        value: String(values[key]),
         onChange: (e: Event) => { setValues((prev) => ({ ...prev, [key]: (e.target as HTMLInputElement).value })) },
       }))
 
@@ -908,7 +925,7 @@ export function Ideogram4Studio(props: StageViewOwnerProps): ReturnType<typeof h
         selected.type !== 'obj' ? h('label', { className: css.ideoField },
           h('span', { className: css.ideoFieldKey }, 'Text content'),
           h('input', {
-            value: selected.text ?? '',
+            value: selected.text!,
             onChange: (e: Event) => { updateElement(selected.id, { text: (e.target as HTMLInputElement).value }) },
           })) : null,
         selected.type !== 'obj' ? h('label', { className: css.ideoField },
@@ -1013,7 +1030,7 @@ export function Ideogram4Studio(props: StageViewOwnerProps): ReturnType<typeof h
     h('label', { className: css.ideoField },
       h('span', { className: css.ideoFieldKey }, 'High-level description'),
       h('input', {
-        value: String(values['high_level_description'] ?? ''),
+        value: String(values['high_level_description']),
         onChange: (e: Event) => { setValues((prev) => ({ ...prev, high_level_description: (e.target as HTMLInputElement).value })) },
       })),
     h('div', { className: css.ideoBboxRow },
@@ -1029,11 +1046,11 @@ export function Ideogram4Studio(props: StageViewOwnerProps): ReturnType<typeof h
     h('label', { className: css.ideoField },
       h('span', { className: css.ideoFieldKey }, 'Style palette'),
       h('input', {
-        value: String(values['style_palette'] ?? ''), placeholder: '#FF6B35, #F7B801',
+        value: String(values['style_palette']), placeholder: '#FF6B35, #F7B801',
         onChange: (e: Event) => { setValues((prev) => ({ ...prev, style_palette: (e.target as HTMLInputElement).value })) },
       }),
       h('div', { className: css.ideoSwatches },
-        sanitizeHexList(String(values['style_palette'] ?? '')).slice(0, 8).map((c, i) =>
+        sanitizeHexList(String(values['style_palette'])).slice(0, 8).map((c, i) =>
           h('span', { key: i, className: css.ideoSwatch, style: { background: c } })))))
 
   const jsonTab = h('div', { className: css.ideoJsonPanel },
@@ -1052,10 +1069,11 @@ export function Ideogram4Studio(props: StageViewOwnerProps): ReturnType<typeof h
         variant: 'outline', size: 'sm', disabled: jsonParseError !== null || jsonDraft.trim() === '',
         onClick: () => {
           const parsed = parseElementsJSON(jsonDraft)
-          if (parsed !== null) {
-            handleImportElements(parsed, 'JSON paste')
-            setJsonDraft('')
-          }
+          // (2026-09-16, coverage) the null check is deleted: Apply is
+          // disabled unless this same-render parse succeeds (see `disabled`
+          // above), and disabled buttons fire zero listeners.
+          handleImportElements(parsed!, 'JSON paste')
+          setJsonDraft('')
         },
       }, 'Apply elements'),
       h(Button, {
@@ -1069,7 +1087,7 @@ export function Ideogram4Studio(props: StageViewOwnerProps): ReturnType<typeof h
       h('label', { className: css.ideoField },
         h('span', { className: css.ideoFieldKey }, 'Background — the scene everything exists in'),
         h('textarea', {
-          rows: 2, value: String(values['background'] ?? ''),
+          rows: 2, value: String(values['background']),
           placeholder: 'A natural wood desk against a white wall.',
           onChange: (e: Event) => { setValues((prev) => ({ ...prev, background: (e.target as HTMLTextAreaElement).value })) },
         })),
@@ -1120,7 +1138,7 @@ export function Ideogram4Studio(props: StageViewOwnerProps): ReturnType<typeof h
         onPointerCancel: finishInteraction,
       },
         h('div', { 'data-canvas-bg': '1', className: css.ideoCanvasBg }),
-        String(values['background'] ?? '') !== '' ? h('div', { className: css.ideoBgText }, String(values['background'])) : null,
+        String(values['background']) !== '' ? h('div', { className: css.ideoBgText }, String(values['background'])) : null,
         showGrid ? h('div', { 'data-grid': '1', className: css.ideoGridMinor }) : null,
         showGrid ? h('div', { 'data-grid': '1', className: css.ideoGridMajor }) : null,
         elements.map((el) => {
@@ -1129,7 +1147,7 @@ export function Ideogram4Studio(props: StageViewOwnerProps): ReturnType<typeof h
           const isPrimary = el.id === primaryId
           return h('div', {
             key: el.id,
-            className: `${css.ideoBox} ${css[`ideoBox_${el.type}`] ?? ''}`,
+            className: `${css.ideoBox} ${css[`ideoBox_${el.type}`]}`,
             style: { left: `${r.x / 10}%`, top: `${r.y / 10}%`, width: `${r.w / 10}%`, height: `${r.h / 10}%` },
           },
             isSel ? h('div', { className: `${css.ideoHalo} ${css[`ideoHalo_${el.type}`] ?? ''}` }) : null,
@@ -1137,7 +1155,7 @@ export function Ideogram4Studio(props: StageViewOwnerProps): ReturnType<typeof h
               className: css.ideoBoxMain,
               onPointerDown: (e: React.PointerEvent<HTMLDivElement>) => { handleBoxPointerDown(e, el) },
               onDoubleClick: el.type !== 'obj'
-                ? () => { setEditingTextId(el.id); setInlineText(el.text ?? '') }
+                ? () => { setEditingTextId(el.id); setInlineText(el.text!) }
                 : undefined,
             },
               h('span', { className: `${css.ideoTag} ${css[`ideoTag_${el.type}`] ?? ''}` }, el.type === 'obj' ? 'obj' : el.type),
@@ -1156,7 +1174,7 @@ export function Ideogram4Studio(props: StageViewOwnerProps): ReturnType<typeof h
               }) : null),
             isPrimary ? HANDLE_DEFS.map((hd) => h('div', {
               key: hd.id,
-              className: `${css.ideoHandle} ${css[`ideoHandle_${hd.id}`] ?? ''}`,
+              className: `${css.ideoHandle} ${css[`ideoHandle_${hd.id}`]}`,
               style: hd.pos,
               onPointerDown: (e: React.PointerEvent<HTMLDivElement>) => { handleHandlePointerDown(e, el, hd.id) },
             })) : null)

@@ -75,8 +75,10 @@ export function IdeogramCanvas({
   const [editingTextId, setEditingTextId] = useState<string | null>(null)
   const [inlineText, setInlineText] = useState("")
   const commitInlineText = useCallback(() => {
-    const id = editingTextId
-    if (!id) return
+    // The only callers are the inline textarea's onBlur/onKeyDown, and the
+    // textarea renders only when editingTextId matches an element — so the
+    // id is non-null here (deleted the !id guard, 2026-09-16).
+    const id = editingTextId!
     const val = inlineText
     onCommit((prev) =>
       prev.map((el) => (el.id === id ? { ...el, text: val } : el)),
@@ -87,8 +89,10 @@ export function IdeogramCanvas({
   /** Convert client pointer coords → ideogram 0–1000 space using the
    *  container's bounding rect. Cheap and correct for any aspect ratio. */
   const toLocal = useCallback((clientX: number, clientY: number) => {
-    const el = containerRef.current
-    if (!el) return { x: 0, y: 0 }
+    // The container div renders unconditionally and every caller is a pointer
+    // event on mounted DOM, so the ref is always set here (deleted the null
+    // guard, 2026-09-16).
+    const el = containerRef.current!
     const r = el.getBoundingClientRect()
     return {
       x: clamp(((clientX - r.left) / r.width) * GRID_SIZE, 0, GRID_SIZE),
@@ -102,14 +106,15 @@ export function IdeogramCanvas({
   const canDropPng = !!onImportElements
   const handleDragOver = useCallback(
     (e: React.DragEvent<HTMLDivElement>) => {
-      if (!canDropPng) return
+      // No canDropPng guard: the handler is attached only when canDropPng
+      // holds (deleted the dead inner check, 2026-09-16).
       // A drag only counts if it carries files (not text/elements from elsewhere)
       if (!e.dataTransfer.types.includes("Files")) return
       e.preventDefault() // REQUIRED — otherwise the drop event never fires
       e.dataTransfer.dropEffect = "copy"
       if (!pngDragOver) setPngDragOver(true)
     },
-    [canDropPng, pngDragOver],
+    [pngDragOver],
   )
   const handleDragLeave = useCallback(
     (e: React.DragEvent<HTMLDivElement>) => {
@@ -120,7 +125,7 @@ export function IdeogramCanvas({
   )
   const handleDrop = useCallback(
     async (e: React.DragEvent<HTMLDivElement>) => {
-      if (!canDropPng) return
+      // No canDropPng guard: attached only when it holds (see above).
       const file = e.dataTransfer.files?.[0]
       // Always clear the overlay + prevent the browser from opening the file
       setPngDragOver(false)
@@ -136,13 +141,15 @@ export function IdeogramCanvas({
           toast("info", "No Ideogram caption found in PNG metadata")
           return
         }
-        onImportElements(parsed, `PNG metadata (${file.name})`)
+        // Attached only when canDropPng holds, i.e. onImportElements is
+        // defined in this render's closure (same proof as the handler).
+        onImportElements!(parsed, `PNG metadata (${file.name})`)
         toast("success", `Restored ${parsed.length} element${parsed.length === 1 ? "" : "s"} from PNG`)
       } catch (err) {
         toast("error", err instanceof Error ? err.message : "Failed to read PNG")
       }
     },
-    [canDropPng, onImportElements],
+    [onImportElements],
   )
 
   const patchBbox = useCallback(
@@ -279,25 +286,25 @@ export function IdeogramCanvas({
         return
       }
 
-      if (mode.kind === "resize") {
-        const [oymin, oxmin, oymax, oxmax] = mode.origBbox
-        let nxmin = oxmin
-        let nymin = oymin
-        let nxmax = oxmax
-        let nymax = oymax
-        let nx = x
-        let ny = y
-        if (snapEnabled) {
-          nx = snap(nx, true)
-          ny = snap(ny, true)
-        }
-        const h = mode.handle
-        if (h.includes("w")) nxmin = clamp(nx, 0, nxmax - MIN_BOX)
-        if (h.includes("e")) nxmax = clamp(nx, nxmin + MIN_BOX, GRID_SIZE)
-        if (h.includes("n")) nymin = clamp(ny, 0, nymax - MIN_BOX)
-        if (h.includes("s")) nymax = clamp(ny, nymin + MIN_BOX, GRID_SIZE)
-        patchBbox(mode.id, [nymin, nxmin, nymax, nxmax])
+      // No kind check: idle returned above and draw/move return in their
+      // arms, so only resize reaches here (deleted the dead if, 2026-09-16).
+      const [oymin, oxmin, oymax, oxmax] = mode.origBbox
+      let nxmin = oxmin
+      let nymin = oymin
+      let nxmax = oxmax
+      let nymax = oymax
+      let nx = x
+      let ny = y
+      if (snapEnabled) {
+        nx = snap(nx, true)
+        ny = snap(ny, true)
       }
+      const h = mode.handle
+      if (h.includes("w")) nxmin = clamp(nx, 0, nxmax - MIN_BOX)
+      if (h.includes("e")) nxmax = clamp(nx, nxmin + MIN_BOX, GRID_SIZE)
+      if (h.includes("n")) nymin = clamp(ny, 0, nymax - MIN_BOX)
+      if (h.includes("s")) nymax = clamp(ny, nymin + MIN_BOX, GRID_SIZE)
+      patchBbox(mode.id, [nymin, nxmin, nymax, nxmax])
     },
     [mode, toLocal, snapEnabled, patchBbox],
   )
@@ -459,7 +466,9 @@ export function IdeogramCanvas({
                     (isText || isLogo)
                       ? () => {
                           setEditingTextId(el.id)
-                          setInlineText(el.text ?? "")
+                          // text/logo elements always carry a string (same
+                          // four-producer proof as the caption memo's o.text).
+                          setInlineText(el.text!)
                         }
                       : undefined
                   }
@@ -576,8 +585,11 @@ export function IdeogramCanvas({
             )}
             {mode.kind === "move" &&
               (() => {
-                const sid = mode.subjects[0]?.id
-                const el = sid ? elements.find((e) => e.id === sid) : undefined
+                // subjects is never empty: dragIds always contains the live
+                // pressed id, so it survives the filter (deleted the ?.
+                // and : undefined guard, 2026-09-16).
+                const sid = mode.subjects[0].id
+                const el = elements.find((e) => e.id === sid)
                 return el
                   ? `${mode.subjects.length > 1 ? `${mode.subjects.length} els · ` : ""}bbox = [${el.bbox.map((v) => Math.round(v)).join(", ")}]`
                   : null

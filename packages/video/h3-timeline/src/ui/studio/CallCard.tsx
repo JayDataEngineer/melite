@@ -182,7 +182,10 @@ export function CallCard({
     <div className={s.guidesRow}>
       {(["clip", "audio"] as GuideKind[]).map((kind) => {
         const track = VIDEO_TIMELINE_TRACKS.find((t) => t.uuid === kind)!
-        const color = `rgb(${track.color?.[0] ?? 176}, ${track.color?.[1] ?? 180}, ${track.color?.[2] ?? 186})`
+        // Dead-arm cut: every VIDEO_TIMELINE_TRACKS entry carries a
+        // color triple (docModel.ts literal) and both map keys exist —
+        // color is never null, so ?. / ?? never fire.
+        const color = `rgb(${track.color![0]}, ${track.color![1]}, ${track.color![2]})`
         const src = c[kind] ?? ""
         return (
           <span key={kind} className={s.guideWrap}>

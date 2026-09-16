@@ -267,20 +267,32 @@ export function useAnnyShapeBridge(stage: CardStage, onSave: (p: Record<string, 
       return
     }
     pendingRef.current = draft
-    if (timerRef.current) clearTimeout(timerRef.current)
+    // (2026-09-16: no reschedule-clear here — React runs this effect's
+    // cleanup before every re-run body, and that cleanup clears +
+    // nulls any live timer, so timerRef is always null at this line;
+    // the clear arm never ran. The cleanup below stays the one clearer.)
     timerRef.current = setTimeout(() => {
       timerRef.current = null
+      // (2026-09-16: the `if (pending)` guard died here — pendingRef is
+      // nulled only beside a timer clear (the !draft/echo returns run
+      // after the cleanup below clears any live timer, or on a first
+      // mount with no timer), and set non-null only adjacent to the
+      // timer creation above; single-threaded, a firing timer always
+      // finds its draft. The reachable path is unchanged.)
       const pending = pendingRef.current
       pendingRef.current = null
-      if (pending) saveRef.current({ sculpt: pending })
+      saveRef.current({ sculpt: pending! })
     }, 400)
     return () => {
       if (timerRef.current) {
         clearTimeout(timerRef.current)
         timerRef.current = null
+        // (2026-09-16: same proof as the timeout above — a live timer
+        // implies a non-null pending, so the `if (pending)` guard's
+        // else never ran; the flush below is unconditional now.)
         const pending = pendingRef.current
         pendingRef.current = null
-        if (pending) saveRef.current({ sculpt: pending }) // flush on switch/unmount
+        saveRef.current({ sculpt: pending! }) // flush on switch/unmount
       }
     }
   }, [editing, stage.id])

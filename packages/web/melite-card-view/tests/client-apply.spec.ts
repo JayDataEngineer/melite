@@ -1,0 +1,603 @@
+// client-apply.spec.ts — PARKED 2026-09-16 (resolution wall, NOT a
+// test failure): src/client/index.ts imports
+// '@melite/estate-drafts/remote', which vitest cannot resolve —
+// SOURCE_PLANE_ALIAS maps '@melite/estate-drafts' to
+// packages/estate/drafts/src/index.ts and the prefix rewrite turns
+// the subpath into 'src/index.ts/remote' (probe: a direct spec
+// import fails identically). Unblocks with one alias line in
+// vitest.shared.ts: '@melite/estate-drafts/remote' →
+// packages/estate/drafts/src/remote.ts. Restore this file's name
+// (drop '.pending') once that lands — the battery below is written
+// and ready (fake ctx, both planes, every failure logged never
+// thrown).
+// Fakes, not mocks: a plain object ctx with recording seats.
+import { afterEach, describe, expect, test, vi } from "vitest";
+import { apply, CARD_TOOLS, inject } from "../src/client/index.ts";
+import { markCardsSurface } from "../src/client/cards-resource.ts";
+
+afterEach(() => {
+  vi.unstubAllGlobals();
+});
+
+interface ToolDef {
+  name: string;
+  key?: string;
+  inject?: () => { openSurface: (address: string) => boolean };
+}
+
+interface FakeCtx {
+  regs: {
+    toolviews: Array<{ def: ToolDef; comp: unknown }>;
+    tabTypes: Array<Record<string, unknown>>;
+    bodies: Array<{ def: ToolDef; comp: unknown }>;
+    providers: Array<Record<string, unknown>>;
+    effects: string[];
+  };
+  opened: string[];
+  errors: string[][];
+  remote: {
+    $mount: () => Promise<() => void>;
+    bench: { subscribe: () => AsyncIterable<Record<string, unknown>> };
+    $stream?: unknown;
+  };
+  failMount: boolean;
+  failFiber: boolean;
+  failRegisterKeys: Set<string>;
+  uiSession?: unknown;
+  sawSessionSubscribe?: boolean;
+  failSpotlightEffect?: boolean;
+  ctx: Record<string, unknown>;
+}
+
+function fakeCtx(): FakeCtx {
+  const fake: FakeCtx = {
+    regs: { toolviews: [], tabTypes: [], bodies: [], providers: [], effects: [] },
+    opened: [],
+    errors: [],
+    remote: {
+      $mount: async () => async () => {},
+      $stream: () => ({
+        [Symbol.asyncIterator]: () => ({
+          next: async () => ({ done: true as const, value: undefined as never }),
+        }),
+        dispose: async () => {},
+      }),
+      bench: {
+        subscribe: () => ({
+          [Symbol.asyncIterator]: () => ({
+            next: async () => ({ done: true as const, value: undefined as never }),
+          }),
+        }),
+      },
+    },
+    failMount: false,
+    failFiber: false,
+    failRegisterKeys: new Set(),
+    ctx: {},
+  };
+  const origError = console.error;
+  console.error = (...args: unknown[]): void => {
+    fake.errors.push(args.map(String));
+  };
+  (fake as unknown as { restore: () => void }).restore = () => { console.error = origError; };
+  const maybeThrow = (key: string): void => {
+    if (fake.failRegisterKeys.has(key)) throw new Error(`conflict: ${key}`);
+  };
+  fake.ctx = {
+    remote: new Proxy(fake.remote, {
+      get: (target, prop: string) => {
+        if (prop === "$mount" && fake.failMount) {
+          return async (): Promise<never> => { throw new Error("mux down"); };
+        }
+        return (target as unknown as Record<string, unknown>)[prop];
+      },
+    }),
+    plugin: async (def: {
+      name: string;
+      inject: string[];
+      apply: (child: unknown) => void;
+    }): Promise<unknown> => {
+      if (fake.failFiber) throw new Error("fiber down");
+      def.apply({ remote: fake.remote });
+      return {};
+    },
+    slots: {
+      inject: (_name: string, fn: () => unknown): unknown => fn(),
+      register: (def: ToolDef, comp: unknown): (() => void) => {
+        maybeThrow(def.key ?? def.name);
+        if (def.name === "tool.call.toolview") fake.regs.toolviews.push({ def, comp });
+        else fake.regs.bodies.push({ def, comp });
+        return () => {};
+      },
+    },
+    effect: (fn: () => unknown, name: string): (() => void) => {
+      fake.regs.effects.push(name);
+      // the spotlight effect's REGISTRATION failure arm (line ~302):
+      // a throwing effect seat logs per site, never escapes apply
+      if (fake.failSpotlightEffect && name === "melite-card-view: bench spotlight") {
+        throw new Error("effect seat down");
+      }
+      fn();
+      return () => {};
+    },
+    sidebarRightTabs: {
+      register: (def: Record<string, unknown>): (() => void) => {
+        maybeThrow("tab-type");
+        fake.regs.tabTypes.push(def);
+        return () => {};
+      },
+    },
+    resources: {
+      register: (def: Record<string, unknown>): (() => void) => {
+        maybeThrow("provider");
+        fake.regs.providers.push(def);
+        return () => {};
+      },
+    },
+    sidebarRight: {
+      isExpanded: (): boolean => true,
+      openResource: (address: string): void => { fake.opened.push(address); },
+    },
+    get uiSession(): unknown {
+      return fake.uiSession;
+    },
+  };
+  return fake;
+}
+
+function restore(fake: FakeCtx): void {
+  (fake as unknown as { restore: () => void }).restore();
+}
+
+describe("the entry exports — the client contract", () => {
+  test("inject names the five seats (registries before bodies)", () => {
+    expect(inject).toEqual(["slots", "sidebarRightTabs", "resources", "sidebarRight", "remote"]);
+  });
+
+  test("CARD_TOOLS claims every producing tool (the tile renders for all)", () => {
+    expect(CARD_TOOLS).toContain("melite_flow");
+    expect(CARD_TOOLS).toContain("h3_timeline");
+    expect(CARD_TOOLS).toContain("image_card");
+  });
+});
+
+describe("apply() — the happy path registers both planes", () => {
+  test("every card tool gets a toolview key, plus tab type, body, provider, spotlight", async () => {
+    const fake = fakeCtx();
+    try {
+      await apply(fake.ctx as never);
+      expect(fake.regs.toolviews.map((r) => r.def.key).sort()).toEqual([...CARD_TOOLS].sort());
+      expect(fake.regs.tabTypes).toHaveLength(1);
+      expect(fake.regs.tabTypes[0]).toMatchObject({ kind: "cards", patterns: ["dsh-resource://cards/**"] });
+      expect(fake.regs.bodies).toHaveLength(1);
+      expect(fake.regs.providers).toHaveLength(1);
+      expect(fake.regs.providers[0]).toMatchObject({ protocol: "cards" });
+      expect(fake.regs.effects).toEqual([
+        "melite-card-view: estate remote contribution",
+        "melite-card-view: cards tab type",
+        "melite-card-view: cards resource provider",
+        "melite-card-view: bench spotlight",
+      ]);
+      // THE TAB BODY registers through the SLOT (lazy — the shell
+      // mounts it when the tab opens), never as an apply-time effect
+      expect(fake.regs.bodies).toHaveLength(1);
+      expect(fake.errors).toEqual([]);
+      // settle: the watcher's async tail (stream done → finally →
+      // the session-subscription disposer) runs after apply resolves
+      await new Promise((resolve) => setTimeout(resolve, 25));
+    } finally {
+      restore(fake);
+    }
+  });
+
+  test("the toolview inject opens the surface (one step: claim, place, reveal)", async () => {
+    const fake = fakeCtx();
+    try {
+      await apply(fake.ctx as never);
+      const row = fake.regs.toolviews.find((r) => r.def.key === "image_card")!;
+      const face = row.def.inject!();
+      expect(face.openSurface("dsh-resource://cards/bench")).toBe(true);
+      expect(fake.opened).toEqual(["dsh-resource://cards/bench"]);
+    } finally {
+      restore(fake);
+    }
+  });
+
+  test("the tab title rides the address law (every bench form reads Cards)", async () => {
+    const fake = fakeCtx();
+    try {
+      await apply(fake.ctx as never);
+      const title = fake.regs.tabTypes[0]!["title"] as (address: string) => string;
+      expect(title("dsh-resource://cards/bench")).toBe("Cards");
+      expect(title("dsh-resource://cards/bench/main")).toBe("Cards");
+      expect(title("dsh-resource://cards/run/run-1")).toBe("run/run-1");
+    } finally {
+      restore(fake);
+    }
+  });
+});
+
+describe("apply() — failures log, never throw (the boot survives)", () => {
+  test("a dead mount keeps every other seat", async () => {
+    const fake = fakeCtx();
+    fake.failMount = true;
+    try {
+      await apply(fake.ctx as never);
+      expect(fake.errors).toHaveLength(1);
+      expect(fake.errors[0]!.join(" ")).toContain("estate remote contribution failed to mount");
+      expect(fake.regs.toolviews).toHaveLength(CARD_TOOLS.length);
+      expect(fake.regs.providers).toHaveLength(1);
+    } finally {
+      restore(fake);
+    }
+  });
+
+  test("a dead namespace fiber degrades the provider (benchNs stays absent)", async () => {
+    const fake = fakeCtx();
+    fake.failFiber = true;
+    try {
+      await apply(fake.ctx as never);
+      expect(fake.errors).toHaveLength(2);
+      expect(fake.errors[0]!.join(" ")).toContain("bench namespace fiber failed");
+      // the spotlight's own honest degrade (cards-resource.ts: the
+      // namespace never mounted — the watcher reports off, loud)
+      expect(fake.errors[1]!.join(" ")).toContain("bench spotlight off");
+      expect(fake.regs.providers).toHaveLength(1);
+    } finally {
+      restore(fake);
+    }
+  });
+
+  test("a double-apply conflict logs per site (the first registration keeps the seat)", async () => {
+    const fake = fakeCtx();
+    fake.failRegisterKeys.add("image_card");
+    fake.failRegisterKeys.add("tab-type");
+    fake.failRegisterKeys.add("provider");
+    // + the tab BODY's slot registration (the lazy seat): the catch
+    // logs per site, the rest of the boot keeps its seats
+    fake.failRegisterKeys.add("@melite-plugin/dsh-card-view");
+    try {
+      await apply(fake.ctx as never);
+      expect(fake.regs.toolviews.map((r) => r.def.key)).not.toContain("image_card");
+      expect(fake.regs.toolviews).toHaveLength(CARD_TOOLS.length - 1);
+      const voices = fake.errors.map((args) => args.join(" "));
+      expect(voices.some((v) => v.includes("toolview registration failed for image_card"))).toBe(true);
+      expect(voices.some((v) => v.includes("cards tab type registration failed"))).toBe(true);
+      expect(voices.some((v) => v.includes("cards resource provider registration failed"))).toBe(true);
+      expect(voices.some((v) => v.includes("cards tab body registration failed"))).toBe(true);
+    } finally {
+      restore(fake);
+    }
+  });
+});
+
+describe("apply() — the session source (stroke 44)", () => {
+  test("the spotlight follows the selected conversation (no session: main)", async () => {
+    const fake = fakeCtx();
+    // the uiSession adapter answers a conversation; the provider's
+    // open is the observable seam — here the mount holds no bench
+    // namespace (fiber off), so the watcher degrades honestly
+    fake.failFiber = true;
+    fake.uiSession = {
+      adapter: {
+        current: {
+          getSnapshot: () => ({ props: { sessionId: "s_chat7" } }),
+          subscribe: (_fn: () => void) => () => {},
+        },
+      },
+    };
+    try {
+      await apply(fake.ctx as never);
+      expect(fake.errors.some((args) => args.join(" ").includes("spotlight off"))).toBe(true);
+    } finally {
+      restore(fake);
+    }
+  });
+
+  test("a live session watcher: agent lands reveal, user lands never (the stream edition)", async () => {
+    const fake = fakeCtx();
+    // fiber UP (a healthy mount), the uiSession answers a session,
+    // and the bench stream delivers two revs — the second carries an
+    // AGENT-authored row: the watcher must reveal the bench address
+    // exactly once for that land.
+    const lands: Array<Record<string, unknown>> = [];
+    // $stream honors the real seam: its iterator proxies the
+    // iterable def.open(signal) returns (benchNs.subscribe's
+    // states) — the watcher pulls through remote.$stream, never
+    // bench.subscribe directly.
+    (fake.remote as { $stream?: unknown }).$stream = (def: {
+      open: (signal: AbortSignal) => AsyncIterable<Record<string, unknown>>;
+    }): unknown => ({
+      [Symbol.asyncIterator]: () => def.open(new AbortController().signal)[Symbol.asyncIterator](),
+      dispose: async (): Promise<void> => {},
+    });
+    fake.remote.bench = {
+      subscribe: () => ({
+        [Symbol.asyncIterator]: () => {
+          let step = 0;
+          const states = [
+            { rev: 3, log: [{ rev: 1, author: "user" }] },
+            { rev: 7, log: [{ rev: 4, author: "agent" }, { rev: 5, author: "user" }] },
+          ];
+          return {
+            next: async () => {
+              if (step >= states.length) return { done: true as const, value: undefined as never };
+              const doc = states[step]!;
+              step += 1;
+              return {
+                done: false as const,
+                value: { value: doc, accept: (): void => { lands.push(doc); } },
+              };
+            },
+          };
+        },
+      }),
+    } as never;
+    fake.uiSession = {
+      adapter: {
+        current: {
+          getSnapshot: () => ({ props: { sessionId: "s_chat7" } }),
+          subscribe: (fn: () => void): (() => void) => {
+            fake.sawSessionSubscribe = true;
+            fn();
+            return () => {};
+          },
+        },
+      },
+    };
+    try {
+      await apply(fake.ctx as never);
+      await vi.waitFor(() => {
+        if (!fake.opened.includes("dsh-resource://cards/bench/s_chat7")) {
+          throw new Error("agent land never revealed the bench");
+        }
+      }, { timeout: 10000 });
+      // the session adapter was subscribed (push-driven re-keys) and
+      // the first stream state was accepted exactly once
+      expect(fake.sawSessionSubscribe).toBe(true);
+      expect(lands).toHaveLength(1);
+      expect(fake.errors).toEqual([]);
+      // the tab type's GUIDE callbacks answer (the shell reads them
+      // when it renders the tab's help rows)
+      const guide = (fake.regs.tabTypes[0]! as { guide: Array<{ title: () => string; description: () => string }> }).guide;
+      expect(guide[0]!.title()).toBe("Cards");
+      expect(guide[0]!.description()).toContain("shared bench");
+      // the PROVIDER's open callback fires openCardsResource (sync
+      // up to the returned async generator — consuming it is the
+      // sweep specs' territory, not this battery's)
+      void (fake.regs.providers[0]! as { open: (a: string, c: { signal: AbortSignal }) => unknown }).open(
+        "dsh-resource://cards/bench/main",
+        { signal: new AbortController().signal },
+      );
+    } finally {
+      restore(fake);
+    }
+  }, 20000);
+
+  test("a session switch re-keys the stream mid-flight (the watcher follows the selection)", async () => {
+    const fake = fakeCtx();
+    // mutable session: s_chat7 first, then s_chat8, then a THROWING
+    // snapshot (getSession's catch reads main — the watcher re-keys
+    // to main, never dies)
+    let current: string = "s_chat7";
+    let snapshotThrows = false;
+    let fireSession: (() => void) | undefined;
+    const statesFor = (key: string): Array<Record<string, unknown>> => [
+      { rev: 3, log: [{ rev: 1, author: "user" }] },
+      { rev: 7, log: [{ rev: 4, author: "agent" }] },
+    ];
+    const seenKeys: string[] = [];
+    (fake.remote as { $stream?: unknown }).$stream = (def: {
+      open: (signal: AbortSignal) => AsyncIterable<Record<string, unknown>>;
+    }): unknown => {
+      const it = def.open(new AbortController().signal) as AsyncIterable<Record<string, unknown>> & { key?: string };
+      return {
+        [Symbol.asyncIterator]: () => it[Symbol.asyncIterator](),
+        dispose: async (): Promise<void> => {},
+      };
+    };
+    fake.remote.bench = {
+      subscribe: (key: string) => {
+        seenKeys.push(key);
+        const states = statesFor(key);
+        let step = 0;
+        return {
+          [Symbol.asyncIterator]: () => ({
+            next: async () => {
+              if (step >= states.length) {
+                // a LIVE stream never ends: after its states it PENDS
+                // (done:true would break the watcher's loop and kill
+                // the re-key under probe)
+                return new Promise<never>(() => {});
+              }
+              const doc = states[step]!;
+              step += 1;
+              return { done: false as const, value: { value: doc, accept: (): void => {} } };
+            },
+          }),
+        };
+      },
+    } as never;
+    fake.uiSession = {
+      adapter: {
+        current: {
+          getSnapshot: () => {
+            if (snapshotThrows) throw new Error("seat down");
+            return { props: { sessionId: current } };
+          },
+          subscribe: (fn: () => void): (() => void) => {
+            fireSession = fn;
+            return () => {};
+          },
+        },
+      },
+    };
+    try {
+      await apply(fake.ctx as never);
+      // land on s_chat7 first (hydration, then the agent reveal)
+      await vi.waitFor(() => {
+        if (!fake.opened.includes("dsh-resource://cards/bench/s_chat7")) {
+          throw new Error("first key never revealed");
+        }
+      }, { timeout: 10000 });
+      // SWITCH: the selection moves to s_chat8; the listener fires
+      // and the watcher re-keys — the next agent land reveals s_chat8
+      current = "s_chat8";
+      fireSession?.();
+      await vi.waitFor(() => {
+        if (!fake.opened.includes("dsh-resource://cards/bench/s_chat8")) {
+          throw new Error("re-key never revealed the new session");
+        }
+      }, { timeout: 10000 });
+      // a THROWING snapshot reads main (getSession's catch): the
+      // re-key lands on main and its agent row reveals the main bench
+      snapshotThrows = true;
+      fireSession?.();
+      await vi.waitFor(() => {
+        if (!fake.opened.includes("dsh-resource://cards/bench/main")) {
+          throw new Error("main re-key never revealed");
+        }
+      }, { timeout: 10000 });
+      expect(fake.errors).toEqual([]);
+      expect(seenKeys).toContain("s_chat8");
+      expect(seenKeys).toContain("main");
+    } finally {
+      restore(fake);
+    }
+  }, 20000);
+
+  test("a failing reveal logs, a dead spotlight seat logs (never a throw out of apply or the watcher)", async () => {
+    const fake = fakeCtx();
+    fake.failSpotlightEffect = false;
+    const states = [
+      { rev: 3, log: [{ rev: 1, author: "user" }] },
+      { rev: 7, log: [{ rev: 4, author: "agent" }] },
+    ];
+    let step = 0;
+    (fake.remote as { $stream?: unknown }).$stream = (def: {
+      open: (signal: AbortSignal) => AsyncIterable<Record<string, unknown>>;
+    }): unknown => ({
+      [Symbol.asyncIterator]: () => def.open(new AbortController().signal)[Symbol.asyncIterator](),
+      dispose: async (): Promise<void> => {},
+    });
+    fake.remote.bench = {
+      subscribe: () => ({
+        [Symbol.asyncIterator]: () => ({
+          next: async () => {
+            if (step >= states.length) return { done: true as const, value: undefined as never };
+            const doc = states[step]!;
+            step += 1;
+            return { done: false as const, value: { value: doc, accept: (): void => {} } };
+          },
+        }),
+      }),
+    } as never;
+    // the reveal step FAILS: openResource throws — the watcher's
+    // callback catch logs and the loop survives
+    (fake.ctx.sidebarRight as { openResource: () => void }).openResource = (): void => {
+      throw new Error("sidebar down");
+    };
+    try {
+      await apply(fake.ctx as never);
+      await vi.waitFor(() => {
+        if (!fake.errors.some((args) => args.join(" ").includes("bench spotlight reveal failed"))) {
+          throw new Error("the failing reveal never logged");
+        }
+      }, { timeout: 10000 });
+    } finally {
+      restore(fake);
+    }
+    // the REGISTRATION seat itself dying: apply still lands every
+    // other seat and logs the site
+    const fake2 = fakeCtx();
+    fake2.failSpotlightEffect = true;
+    try {
+      await apply(fake2.ctx as never);
+      expect(fake2.errors.some((args) => args.join(" ").includes("bench spotlight registration failed"))).toBe(true);
+      expect(fake2.regs.providers).toHaveLength(1);
+      expect(fake2.regs.tabTypes).toHaveLength(1);
+    } finally {
+      restore(fake2);
+    }
+  }, 20000);
+
+  test("a live-and-open surface suppresses the reveal (the watcher still consumes)", async () => {
+    const fake = fakeCtx();
+    // cardsSurfaceLive=true + isExpanded=true: shouldSpotlight is
+    // FALSE — the agent land is consumed (accept fires) but the
+    // sidebar is NEVER re-opened (the user is already looking)
+    markCardsSurface(true);
+    const accepted: Array<Record<string, unknown>> = [];
+    const states = [
+      { rev: 3, log: [{ rev: 1, author: "user" }] },
+      { rev: 7, log: [{ rev: 4, author: "agent" }] },
+    ];
+    let step = 0;
+    (fake.remote as { $stream?: unknown }).$stream = (def: {
+      open: (signal: AbortSignal) => AsyncIterable<Record<string, unknown>>;
+    }): unknown => ({
+      [Symbol.asyncIterator]: () => def.open(new AbortController().signal)[Symbol.asyncIterator](),
+      dispose: async (): Promise<void> => {},
+    });
+    let delivered = 0;
+    fake.remote.bench = {
+      subscribe: () => ({
+        [Symbol.asyncIterator]: () => ({
+          next: async () => {
+            if (step >= states.length) return new Promise<never>(() => {});
+            const doc = states[step]!;
+            step += 1;
+            delivered += 1;
+            return { done: false as const, value: { value: doc, accept: (): void => { accepted.push(doc); } } };
+          },
+        }),
+      }),
+    } as never;
+    fake.uiSession = {
+      adapter: {
+        current: {
+          getSnapshot: () => ({ props: { sessionId: "s_chat7" } }),
+          subscribe: (_fn: () => void): (() => void) => () => {},
+        },
+      },
+    };
+    try {
+      await apply(fake.ctx as never);
+      await vi.waitFor(() => {
+        if (delivered < 2) throw new Error("the watcher never consumed both states");
+      }, { timeout: 10000 });
+      expect(fake.opened).toEqual([]);
+      expect(fake.errors).toEqual([]);
+      // only the stream's FIRST item takes accept (the loop's
+      // handshake) — both states still delivered, zero reveals
+      expect(accepted).toHaveLength(1);
+    } finally {
+      markCardsSurface(false);
+      restore(fake);
+    }
+  }, 20000);
+
+  test("a throwing session subscription is swallowed (never a throw out of apply)", async () => {
+    const fake = fakeCtx();
+    // fiber UP: the watcher boots and the subscribeSession catch is
+    // the arm under probe — a dead observable degrades to the noop
+    // disposer, silently (the stream still runs on the same key)
+    fake.uiSession = {
+      adapter: {
+        current: {
+          getSnapshot: () => ({ props: {} }),
+          subscribe: (): (() => void) => { throw new Error("seat down"); },
+        },
+      },
+    };
+    try {
+      await apply(fake.ctx as never);
+      // settle the watcher's async tail (done-stream → finally →
+      // the CATCH-RETURNED noop disposer fires)
+      await new Promise((resolve) => setTimeout(resolve, 25));
+      expect(fake.errors).toEqual([]);
+    } finally {
+      restore(fake);
+    }
+  });
+});

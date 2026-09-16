@@ -70,7 +70,10 @@ export function hydrateCalls(raw: { calls?: unknown; beats?: unknown }): DocCall
         call.text = joined.join(" ")
       }
     }
-    if (!(call.text ?? "").trim() && typeof r.text === "string") call.text = r.text
+    // (call.text is always a string here: initialized "" above, only
+    // ever reassigned the joined string — the `!` records the
+    // definite-assignment proof; a `?? ""` default would be dead.)
+    if (!call.text!.trim() && typeof r.text === "string") call.text = r.text
     // Call-attached guides: string sources only, blank trimmed away.
     for (const kind of GUIDE_KINDS) {
       const src = r[kind]
@@ -131,22 +134,21 @@ export function hydrateCalls(raw: { calls?: unknown; beats?: unknown }): DocCall
           if (Number.isFinite(n)) knobs.sampling_steps = n
         } else if (k === "sampling_steps" || k === "denoise"
                    || k === "shift_video" || k === "shift_audio"
-                   || k === "cfg" || k === "h3_context_steps" || k === "h3_audio_context_steps"
                    || k === "h3_sla_sparsity" || k === "h3_sla_min_seq_len"
                    || k === "h3_sla_dense_last_steps" || k === "sharpen_strength"
                    || k === "sharpen_radius" || k === "sharpen_threshold"
                    || k === "sharpen_iterations" || k === "interpolate_multiplier") {
           // the NUMBER-valued keys - per-literal writes so TS checks
-          // each against the exact property type.
+          // each against the exact property type. (cfg /
+          // h3_context_steps / h3_audio_context_steps are NOT here:
+          // absent from CALL_KNOB_KEYS, the gate above drops them —
+          // comparing would be dead.)
           const n = Number(v)
           if (Number.isFinite(n)) {
             if (k === "sampling_steps") knobs.sampling_steps = n
             else if (k === "denoise") knobs.denoise = n
             else if (k === "shift_video") knobs.shift_video = n
             else if (k === "shift_audio") knobs.shift_audio = n
-            else if (k === "cfg") knobs.cfg = n
-            else if (k === "h3_context_steps") knobs.h3_context_steps = n
-            else if (k === "h3_audio_context_steps") knobs.h3_audio_context_steps = n
             else if (k === "h3_sla_sparsity") knobs.h3_sla_sparsity = n
             else if (k === "h3_sla_min_seq_len") knobs.h3_sla_min_seq_len = n
             else if (k === "h3_sla_dense_last_steps") knobs.h3_sla_dense_last_steps = n
@@ -154,7 +156,10 @@ export function hydrateCalls(raw: { calls?: unknown; beats?: unknown }): DocCall
             else if (k === "sharpen_radius") knobs.sharpen_radius = n
             else if (k === "sharpen_threshold") knobs.sharpen_threshold = n
             else if (k === "sharpen_iterations") knobs.sharpen_iterations = n
-            else if (k === "interpolate_multiplier") knobs.interpolate_multiplier = n
+            // Terminal else (exhaustion: the outer gate lists exactly
+            // these twelve number keys and every earlier arm missed —
+            // k IS interpolate_multiplier; the comparison would be dead).
+            else knobs.interpolate_multiplier = n
           }
         } else if (k === "sampler" || k === "scheduler") {
           if (typeof v === "string" && v.trim()) knobs[k] = v
@@ -174,20 +179,22 @@ export function hydrateCalls(raw: { calls?: unknown; beats?: unknown }): DocCall
           }
         } else if (k === "interpolate_model") {
           if (v === "film_net_fp16.safetensors" || v === "rife47.pth") knobs.interpolate_model = v
-        } else if (k === "h3_fp16_accumulation" || k === "h3_torch_compile"
-                   || k === "h3_sla_protect_audio" || k === "h3_sla_stabilize_motion"
-                   || k === "h3_sla_disable_fp16_accum" || k === "sharpen_enabled"
-                   || k === "interpolate_enabled") {
+        } else {
+          // Terminal else (exhaustion: CALL_KNOB_KEYS minus every arm
+          // above is exactly the five boolean keys; the disjunction
+          // would be dead — the inner dispatch still narrows per key).
           // the boolean-valued keys + stringified forms.
+          // (h3_fp16_accumulation / h3_torch_compile are NOT here:
+          // Layer-A-only, absent from CALL_KNOB_KEYS — dead.)
           const b = typeof v === "boolean" ? v : v === "true" ? true : v === "false" ? false : undefined
           if (b !== undefined) {
-            if (k === "h3_fp16_accumulation") knobs.h3_fp16_accumulation = b
-            else if (k === "h3_torch_compile") knobs.h3_torch_compile = b
-            else if (k === "h3_sla_protect_audio") knobs.h3_sla_protect_audio = b
+            if (k === "h3_sla_protect_audio") knobs.h3_sla_protect_audio = b
             else if (k === "h3_sla_stabilize_motion") knobs.h3_sla_stabilize_motion = b
             else if (k === "h3_sla_disable_fp16_accum") knobs.h3_sla_disable_fp16_accum = b
             else if (k === "sharpen_enabled") knobs.sharpen_enabled = b
-            else if (k === "interpolate_enabled") knobs.interpolate_enabled = b
+            // Terminal else (exhaustion: four earlier arms missed — k
+            // IS interpolate_enabled).
+            else knobs.interpolate_enabled = b
           }
         }
       }

@@ -163,9 +163,9 @@ export function callsTextOf(params: unknown): string {
 }
 
 function baseName(u: string): string {
-  const clean = u.split('?')[0] ?? u
+  const clean = u.split('?')[0]
   const parts = clean.split('/')
-  return parts[parts.length - 1] ?? clean
+  return parts[parts.length - 1]
 }
 
 function timeLabel(sec: unknown): string {
@@ -191,7 +191,7 @@ export function flatten(runs: RunRow[]): MediaItem[] {
     for (const a of arts) {
       const n = a.name ?? baseName(a.url ?? '')
       const m = POSTER_STEMS.map((re) => n.match(re)).find((x): x is RegExpMatchArray => x !== null)
-      if (m !== undefined && a.url) posters.set(m[1] ?? '', a.url)
+      if (m !== undefined && a.url) posters.set(m[1], a.url)
     }
     // Image-flood guard: runs that dump every frame would drown the grid —
     // when a run has >20 images, drop numbered frame dumps, keep the rest.
@@ -200,7 +200,6 @@ export function flatten(runs: RunRow[]): MediaItem[] {
     // flags it via the run-row `truncated` marker — see media-kinds.ts.)
     const imageCount = arts.reduce((n, a) => (kindOf(a) === 'image' ? n + 1 : n), 0)
     const dropFrames = imageCount > 20
-    let lastWindowPoster = ''
     for (const a of arts) {
       const kind = kindOf(a)
       const url = a.url ?? ''
@@ -223,11 +222,6 @@ export function flatten(runs: RunRow[]): MediaItem[] {
       let poster = ''
       if (kind === 'video') {
         poster = posters.get(stem) ?? (isFinal ? url : '')
-        if (poster === '' && isFinal) poster = lastWindowPoster
-        if (WINDOW_FILM.test(file)) {
-          const wf = posters.get(stem)
-          if (wf !== undefined && wf !== '') lastWindowPoster = wf
-        }
         if (poster === '') poster = run.thumbnail ?? ''
       } else if (kind === 'image') {
         poster = url
@@ -323,34 +317,6 @@ function tileBgFor(kind: Kind): string {
 }
 
 /**
- * 3D artifact view — hands the artifact to the sidebar as a RESOURCE
- * (estate-artifact address, claimed by a viewer tab type; the mesh
- * renders in the right panel, orbitable beside the run list).
- * The download link stays: when the viewer plugin is absent no tab type
- * claims the address and openResource is a no-op — the artifact must
- * still be reachable.
- */
-function ModelView({ item, openArtifact }: { item: MediaItem; openArtifact: (item: MediaItem) => void }): React.JSX.Element {
-  return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 10, alignItems: 'center' }}>
-      <a
-        role="button"
-        tabIndex={0}
-        style={{ color: stateBusinessPrimary, fontSize: 14, cursor: 'pointer' }}
-        onClick={(e) => { e.stopPropagation(); openArtifact(item) }}
-        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.stopPropagation(); openArtifact(item) } }}
-      >open 3D view in sidebar</a>
-      <a
-        href={item.url}
-        download={item.file}
-        style={{ color: textTertiary3, fontSize: 13, cursor: 'pointer' }}
-        onClick={(e) => { e.stopPropagation() }}
-      >download {item.file}</a>
-    </div>
-  )
-}
-
-/**
  * The centered preview — DSH's Modal (headless), the FlowCards drilldown
  * ride verbatim: body portal, mask, Escape, aria-modal, and focus
  * handling are the primitive's, never ours. The 2026-09-10 operator
@@ -443,7 +409,6 @@ export function MediaPanel({ useTabInfo, sessionId }: { useTabInfo?: () => TabIn
       void loadDraftOntoBench(item.draftId, deps)
       return
     }
-    if (item.runId === '') return
     void loadRunOntoBench(item.runId, deps)
   }
 
@@ -597,37 +562,35 @@ export function MediaPanel({ useTabInfo, sessionId }: { useTabInfo?: () => TabIn
                           )
                         : null}
                       <TileBadge item={it} />
-                      {it.runId !== ''
-                        ? (
-                            /* The wand stays a SPAN, not a DSH Button: the
-                             * tile itself is a <button> and button-in-button
-                             * is invalid DOM (the span+role predates this
-                             * port for exactly that reason). What DSH owns
-                             * here is the bubble — Tooltip replaces the
-                             * native `title` (same copy), aria-label names
-                             * the action. The wand restores the run's
-                             * workflow onto the bench and opens the cards
-                             * tab on it, so it is always live. */
-                            <Tooltip label="Open as cards — this run, live in the cards tab">
-                              <span
-                                role="button"
-                                tabIndex={0}
-                                className={css.wand}
-                                aria-label="Open as cards — this run"
-                                onClick={(e) => {
-                                  e.stopPropagation()
-                                  openCards(it)
-                                }}
-                                onKeyDown={(e) => {
-                                  if (e.key === 'Enter') {
-                                    e.stopPropagation()
-                                    openCards(it)
-                                  }
-                                }}
-                              >✦ CARDS</span>
-                            </Tooltip>
-                          )
-                        : null}
+                      {/* The wand stays a SPAN, not a DSH Button: the
+                        * tile itself is a <button> and button-in-button
+                        * is invalid DOM (the span+role predates this
+                        * port for exactly that reason). What DSH owns
+                        * here is the bubble — Tooltip replaces the
+                        * native `title` (same copy), aria-label names
+                        * the action. The wand restores the run's
+                        * workflow onto the bench and opens the cards
+                        * tab on it, so it is always live. Every tile
+                        * carries its run id (decode drops id-less rows),
+                        * so the wand rides every tile. */}
+                      <Tooltip label="Open as cards — this run, live in the cards tab">
+                        <span
+                          role="button"
+                          tabIndex={0}
+                          className={css.wand}
+                          aria-label="Open as cards — this run"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            openCards(it)
+                          }}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                              e.stopPropagation()
+                              openCards(it)
+                            }
+                          }}
+                        >✦ CARDS</span>
+                      </Tooltip>
                       {it.poster === ''
                         ? <span style={{ color: textTertiary1 }}><Glyph kind={it.kind} /></span>
                         : null}

@@ -48,6 +48,16 @@ const pluginNamed = (plugins: unknown[] | undefined, name: string): boolean =>
 
 const FACADE_KEYS = Object.keys(SOURCE_PLANE_ALIAS)
 
+/** CODEGEN FACADE EXCEPTIONS (stroke 77): subpath keys whose only
+ *  plane is a BUILD artifact — the drafts Typert remote client is
+ *  GENERATED from src/remote.ts's @Remote adapters (pnpm typert);
+ *  no src file exports TYPERT_REMOTE and hand-writing a src shim
+ *  would be a redirect stub, not source. The wall demands these
+ *  resolve to the artifact path, never src — named, never blanket. */
+const CODEGEN_FACADE: Record<string, string> = {
+  '@melite/estate-drafts/remote': 'packages/estate/drafts/lib/typert.remote-client.js',
+}
+
 describe('vitest tier wiring', () => {
   it('finds the six tier configs (root partition + five tiers)', () => {
     assert.deepEqual(
@@ -70,9 +80,12 @@ describe('vitest tier wiring', () => {
         for (const key of FACADE_KEYS) {
           const target = lane.resolve?.alias?.[key]
           assert.ok(typeof target === 'string', `${file}: facade key ${key} missing from a lane`)
+          const artifact = CODEGEN_FACADE[key]
           assert.ok(
-            (target as string).endsWith('/src/index.ts'),
-            `${file}: facade key ${key} must resolve to src, got ${target}`,
+            artifact !== undefined
+              ? (target as string).endsWith(artifact)
+              : (target as string).endsWith('/src/index.ts'),
+            `${file}: facade key ${key} must resolve to ${artifact ?? 'src'}, got ${target}`,
           )
         }
         assert.ok(pluginNamed(lane.plugins, 'melite-standard-decorators'), `${file}: decorator plugin missing from a lane`)

@@ -72,7 +72,7 @@ function resultOfRun(
   if (first === undefined) return undefined
   const m = /\/(run-[A-Za-z0-9_-]+\/.+)$/.exec(first)
   if (m === null) return undefined
-  return { run_id: runId, url: '/melite-media/runs/' + (m[1] ?? '') }
+  return { run_id: runId, url: '/melite-media/runs/' + m[1] }
 }
 
 /** The error message an !ok JSON response carries, else HTTP n. */
@@ -114,7 +114,7 @@ async function loadStagesOntoBench(
       body: JSON.stringify({
         session: BENCH_SESSION,
         author: 'user',
-        stages: Array.isArray(stages) ? stages : [],
+        stages,
         intent,
         overwrite: true,
         ...(expectRev !== undefined ? { expect_rev: expectRev } : {}),

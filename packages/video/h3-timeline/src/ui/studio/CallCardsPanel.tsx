@@ -173,7 +173,10 @@ export function CallCardsPanel({
         <div className={s.compactList}>
           {keyframes.map((k, i) => {
             const track = VIDEO_TIMELINE_TRACKS.find((t) => t.uuid === k.kind)!
-            const color = `rgb(${track.color?.[0] ?? 176}, ${track.color?.[1] ?? 180}, ${track.color?.[2] ?? 186})`
+            // Dead-arm cut: DocKeyframe.kind ∈ image|clip|audio, all
+            // three tracks exist with color triples (docModel.ts) —
+            // color is never null, so ?. / ?? never fire.
+            const color = `rgb(${track.color![0]}, ${track.color![1]}, ${track.color![2]})`
             return (
               <div
                 key={i}

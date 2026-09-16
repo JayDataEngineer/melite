@@ -30,8 +30,9 @@ export function useEnhance() {
     setEnhanceErr((m) => ({ ...m, [key]: null }))
     try {
       const { enhancePrompt, cardLlmArg } = await import("@melite/catalog")
+      // (enhancePrompt resolves { positive } non-empty or throws — the
+      // contract in enhance.ts — so no empty-result guard here.)
       const result = await enhancePrompt(H3_ENHANCE_SYSTEM, cur, cardLlmArg())
-      if (!result?.positive) throw new Error("empty enhancement result")
       setEnhanceUndo((m) => ({ ...m, [key]: text }))
       apply(result.positive)
     } catch (e) {

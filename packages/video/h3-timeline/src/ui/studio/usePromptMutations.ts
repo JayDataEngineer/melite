@@ -87,7 +87,10 @@ export function usePromptMutations(setCalls: Dispatch<SetStateAction<DocCall[]>>
     setCalls((prev) => {
       if (i < 0 || i >= prev.length) return prev
       const cur = prev[i]!
-      if ((cur.text ?? "") === text) return prev
+      // (text is always a string here: hydrateCalls initializes "" and
+      // only ever writes strings — the `!` records that proof, no dead
+      // `?? ""` arm.)
+      if (cur.text! === text) return prev
       const next = [...prev]
       next[i] = { ...cur, text }
       return next

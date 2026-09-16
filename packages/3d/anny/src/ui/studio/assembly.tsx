@@ -236,11 +236,18 @@ export function AssemblyStudio({
   const { assets, mountNotes } = useStudioAssets(stage, slots)
   // Placeholders yield to real content: the mannequin shows only
   // when nothing else is on the stage (empty slot + no run outputs).
-  const shownAssets = assets.length > 0 ? assets : (placeholderAssets ?? [])
+  // (2026-09-16: the `?? []` died here — placeholderAssets carries a
+  // destructured `= []` default, so it is never undefined inside; the
+  // fallback's right arm never ran. Placeholders still yield the same.)
+  const shownAssets = assets.length > 0 ? assets : placeholderAssets
 
+  // (2026-09-16: the `?? a.id` fallback died here — useStudioAssets
+  // sets `name` on EVERY derived asset (part: the slot label, run:
+  // `Run · …`), and liveErrors maps those same assets, so `a.name`
+  // is never nullish; the right arm never ran.)
   const liveErrors = assets
     .filter((a) => assetErrors[a.id])
-    .map((a) => ({ id: a.name ?? a.id, message: assetErrors[a.id]! }))
+    .map((a) => ({ id: a.name!, message: assetErrors[a.id]! }))
 
   return (
     <StudioShell

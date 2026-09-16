@@ -54,6 +54,14 @@ export { framedCameraPos }
 const NUM_VERTS = 18056
 const ALT_NUM_VERTS = 18056
 
+/** The altSamples default (stroke 77 bug fix): a hoisted shared
+ *  empty — a per-render `= []` default gave every omitting render a
+ *  NEW array identity, so the [altSamples] decode effect refired
+ *  each render and its setState seeded an async render loop (proven
+ *  by the motion burn-down's effect census). One stable identity,
+ *  never mutated. */
+const NO_ALT_SAMPLES: { sample_idx: number; deformed_vertices_b64: string }[] = []
+
 export interface PoseViewer3DProps {
   /** Pre-computed deformed vertices — base64-encoded float32 binary (T, V, 3). */
   deformedVerticesB64?: string | null
@@ -210,7 +218,7 @@ function PoseViewer3DImpl({
   footContacts = null,
   showFootContacts = false,
   showStartingDirection = false,
-  altSamples = [],
+  altSamples = NO_ALT_SAMPLES,
   onCommitSample = () => {},
   root2dPoints = [],
   endEffectorPoints = [],

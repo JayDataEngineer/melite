@@ -352,11 +352,22 @@ let DraftsRemoteService = (() => {
                 // re-run landing the same urls never double-lists). The
                 // history is DERIVED here, never patched in — the estate owns
                 // the trail; the client reads it.
+                //
+                // THE PARAMS SNAPSHOT (the output-component stroke — "old
+                // generations that had different parameters"): the params that
+                // MADE a result are captured at ITS LANDING (a parallel
+                // server-derived key), never at overwrite time — params
+                // edited between runs must not retroactively re-label the old
+                // generation. The archive entry carries the snapshot; the
+                // client diffs it against the live params for the chip.
                 const prev = stage["result"];
                 const next = patch["result"];
                 if (resultOutputUrls(prev).length > 0 && !sameResultOutputs(prev, next)) {
                     const urls = resultOutputUrls(prev);
-                    const entry = { ...prev };
+                    const entry = {
+                        ...prev,
+                        ...(stage["resultParams"] === undefined ? {} : { params: stage["resultParams"] }),
+                    };
                     const hist = Array.isArray(stage["history"]) ? [...stage["history"]] : [];
                     const alreadyHead = hist.some((e) => sameUrlSet(resultOutputUrls(e), urls));
                     if (!alreadyHead) {
@@ -365,6 +376,7 @@ let DraftsRemoteService = (() => {
                     }
                 }
                 stage["result"] = patch["result"];
+                stage["resultParams"] = stage["params"];
             }
             if ("runStatus" in patch)
                 stage["runStatus"] = patch["runStatus"];

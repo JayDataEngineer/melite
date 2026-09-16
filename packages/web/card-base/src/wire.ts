@@ -170,5 +170,7 @@ export async function uploadInputFile(file: File): Promise<{ name: string; file:
   // paths into ComfyUI's input dir (a bare name is not a file the
   // estate can read — the run dies on the engine with 'Invalid image
   // file'). The display face is the data-URL mirror, never this.
-  return { name: path, file: path.split('/').pop() ?? file.name }
+  // (pop() is total here: split yields >= 1 element for every input,
+  //  so the basename is always a string — no fallback to invent.)
+  return { name: path, file: path.split('/').pop()! }
 }

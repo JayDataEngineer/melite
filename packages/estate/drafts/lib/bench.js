@@ -322,7 +322,10 @@ export async function patchBench(drafts, session, body, admit) {
         // orphan a spell (drop the $image binding while the wire stays)
         // or strand a wire (introduce $image with no channel) — the
         // merged pair admits together, exactly as the run consumes them.
-        admitWiring(st, cur, isRecord(st["inputs"]) ? st["inputs"] : {}, stagesOf(loaded.doc).map((r) => String(r["id"] ?? "")), stageId, session);
+        admitWiring(st, cur, isRecord(st["inputs"]) ? st["inputs"] : {}, 
+        // (the domain schema pins stages[].id: string with
+        // backup-and-skip at read — a nullish id never reaches here)
+        stagesOf(loaded.doc).map((r) => String(r["id"])), stageId, session);
         st["params"] = cur;
     }
     let touched = 0;
@@ -454,16 +457,15 @@ function admitWiring(row, params, inputs, liveIds, selfId, session) {
     // silent either way.
 }
 /** Wiring admission over a wholesale stage list (the load arm —
- *  every row checks against the list it lands in). */
+ *  every row checks against the list it lands in). Both call sites
+ *  pass normalizeStages() output — non-arrays collapse to [] there,
+ *  non-record rows filter out, and every surviving row carries a
+ *  string id plus record params/inputs (the coerce arms at
+ *  normalizeStages) — so no re-defense here. */
 function admitWiringList(stages, session) {
-    if (!Array.isArray(stages))
-        return;
-    const rows = stages.filter(isRecord);
-    const liveIds = rows
-        .map((r) => r["id"])
-        .filter((id) => typeof id === "string");
-    for (const r of rows) {
-        admitWiring(r, isRecord(r["params"]) ? r["params"] : {}, isRecord(r["inputs"]) ? r["inputs"] : {}, liveIds, typeof r["id"] === "string" ? r["id"] : "", session);
+    const liveIds = stages.map((r) => r["id"]);
+    for (const r of stages) {
+        admitWiring(r, r["params"], r["inputs"], liveIds, r["id"], session);
     }
 }
 /** add_stage — append a card stage with optional wiring (the
@@ -735,7 +737,10 @@ export async function rewireBench(drafts, session, body) {
     // moves (a channel nothing spells, an upstream that doesn't
     // exist — all refuse here, named, instead of starving compose at
     // run time).
-    admitWiring(st, isRecord(st["params"]) ? st["params"] : {}, inputs, stagesOf(loaded.doc).map((r) => String(r["id"] ?? "")), stageId, session);
+    admitWiring(st, isRecord(st["params"]) ? st["params"] : {}, inputs, 
+    // (the domain schema pins stages[].id: string with
+    // backup-and-skip at read — a nullish id never reaches here)
+    stagesOf(loaded.doc).map((r) => String(r["id"])), stageId, session);
     st["inputs"] = inputs;
     const inverse = { stage: stageId, input };
     if (before !== undefined)

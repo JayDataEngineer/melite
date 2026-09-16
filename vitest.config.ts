@@ -80,6 +80,15 @@ const DOM_SPEC_TREES = [
   `${rootPath('packages/image/ideogram4')}/tests/**/*.spec.{ts,tsx}`,
   `${rootPath('packages/image/mask-studio')}/tests/**/*.spec.{ts,tsx}`,
   `${rootPath('packages/3d/img-to-mesh')}/tests/**/*.spec.{ts,tsx}`,
+  // the anny studio + client specs (2026-09-16): the 3d studio row —
+  // same composition-root correction as the trees above (React 19,
+  // the store-pinned pair); the node lane keeps anny's *.spec.ts
+  // compose/index gates (include patterns are extension-split).
+  `${rootPath('packages/3d/anny')}/tests/**/*.spec.{ts,tsx}`,
+  // the motion studio + client specs (2026-09-16): the motion lane row —
+  // same composition-root correction as the trees above (the studio
+  // specs ride dom; the node lane keeps motion's *.spec.ts gates).
+  `${rootPath('packages/motion/motion')}/tests/**/*.spec.{ts,tsx}`,
   // card-base's own spec tree (hour 14: the mesh stage's decision
   // layer moved here with the component — the preview seam's claim)
   `${rootPath('packages/web/card-base')}/tests/**/*.spec.{ts,tsx}`,
@@ -149,6 +158,14 @@ export default defineConfig({
             // and three ride the card-view client's resolution.
             react: rootPath('node_modules/.pnpm/react@19.2.8/node_modules/react'),
             'react-dom': rootPath('node_modules/.pnpm/react-dom@19.2.8_react@19.2.8/node_modules/react-dom'),
+            // the react-dom CLIENT subpath (2026-09-16): motion-motion
+            // pins its own React 18 tree, so a bare react-dom/client
+            // import escapes the exact-match alias and lands on the
+            // nested 18 copy (dual-React trap). The studio host
+            // (card-view) is React 19 — the lane pins it at the same
+            // 19 copy as its parent (motion specs render through the
+            // aliased copy directly; see the motion tests harness).
+            'react-dom/client': rootPath('node_modules/.pnpm/react-dom@19.2.8_react@19.2.8/node_modules/react-dom/client'),
             'react/jsx-runtime': rootPath('node_modules/.pnpm/react@19.2.8/node_modules/react/jsx-runtime'),
             // anser: the atoms' rc.2 dist imports this undeclared
             // transitive (editor's tree used to supply it). Pinned at
@@ -343,7 +360,24 @@ export default defineConfig({
         // under root vitest now but are not yet at per-file 100%, so
         // they stay exempt while the gate expands incrementally. The
         // gated set (models DECL index.ts) stays under the gate below.
-        'packages/web/**/src/**/*.{ts,tsx}',
+        // web (stroke 77 — the GUI-debt gate expansion): the blanket
+        // row is GONE; the burn-down restored every web file to
+        // per-file 100 except these NAMED residuals (proofs at the
+        // sites / in the burn-down reports): the two WebGL stage
+        // mounts, the view tree's induction/timing arms, the
+        // gallery/deck drift arms, the one type-required ?? branch,
+        // and the vacuous invariant (zero statements).
+        'packages/web/card-base/src/glb-stage.tsx',
+        'packages/web/card-base/src/stage3d.ts',
+        'packages/web/melite-card-view/src/client/CardsTab.tsx',
+        'packages/web/melite-card-view/src/client/FlowCards.tsx',
+        'packages/web/melite-card-view/src/client/zoom.tsx',
+        'packages/web/melite-card-view/src/client/draft.ts',
+        'packages/web/melite-card-view/src/invariant.ts',
+        'packages/web/infer-gallery/src/client/MediaPanel.tsx',
+        'packages/web/infer-gallery/src/index.ts',
+        'packages/web/melite-card-deck/src/client/assets-tab.tsx',
+        'packages/web/viewer-base/src/runCard.tsx',
         // §TEST-20 CLOSED (2026-09-15, strokes 70-73): the 26-file
         // estate-plane triage is BURNED DOWN — every file restored
         // to per-file 100x4 with honest behavioral arms (the ledger
@@ -373,29 +407,11 @@ export default defineConfig({
         // this triage):
                                                                         // web-kit closed (2026-09-12, §TEST-17): every gateable file
         // at per-file 100 — catalog/contracts/formats/slots/timeline
-        // planes + the five node-safe ui helpers. GUI-debt stays
-        // named (the dom project's territory, same carve-out as the
-        // 3d/image/motion/video studios): the 44 ui .tsx components,
-        // 8 DOM/store/hook ui modules + the ui barrel, the slots
-        // rail + react shim, 4 timeline React/canvas modules, the
-        // WebGL snapshot renderer — plus the 2 generated carriers
-        // (exempt-by-kind).
-        'packages/web-kit/ui/src/*.tsx',
-        'packages/web-kit/ui/src/clipboard.ts',
-        'packages/web-kit/ui/src/listFilter.ts',
-        'packages/web-kit/ui/src/motionThumbStore.ts',
-        'packages/web-kit/ui/src/posterStore.ts',
-        'packages/web-kit/ui/src/toast.ts',
-        'packages/web-kit/ui/src/use-hover-scrub.ts',
-        'packages/web-kit/ui/src/use-mobile.ts',
-        'packages/web-kit/ui/src/index.ts',
-        'packages/web-kit/**/src/generated/*',
-        'packages/web-kit/slots/src/studioRail.tsx',
-        'packages/web-kit/slots/src/vendored/react.tsx',
-        'packages/web-kit/timeline/playback/useAudioPlayback.ts',
-        'packages/web-kit/timeline/timeline/MotionTimelineBar.tsx',
-        'packages/web-kit/timeline/timeline/viser-timeline/Timeline.tsx',
-        'packages/web-kit/timeline/timeline/viser-timeline/viewerContext.ts',
+        // planes + the five node-safe ui helpers. The ui/slots/
+        // timeline trees measured 100x4 in the stroke-77 lifted
+        // census (the dom specs already cover them) — their rows are
+        // TRIMMED, the gate owns them now. ONE file stays named:
+        // the WebGL snapshot renderer (renderSnapshot.ts).
         'packages/web-kit/formats/src/renderSnapshot.ts',
         // engines closed (2026-09-12, §TEST-15): every file at
         // per-file 100 — the card/pack/flavor/verb plane, the models
@@ -424,7 +440,9 @@ export default defineConfig({
         // tool face). The STUDIOS (src/ui/**/*.tsx — anny's two,
         // img-to-mesh's one) stay GUI-debt: DOM components, the dom
         // project's territory, same carve-out as the web tree.
-        'packages/3d/**/src/ui/**/*.{ts,tsx}',
+        // 3d (stroke 77): anny's studio + client ride the gate at
+        // 100; ONE residual stays named.
+        'packages/3d/anny/src/ui/studio/component.tsx',
         // audio closed (2026-09-12, §TEST-11): every file at per-file
         // 100x4 — the four card compose gates + the three tool faces
         // (executor batteries) + the index apply arms. No studios in
@@ -440,27 +458,32 @@ export default defineConfig({
         'packages/image/mask-studio/src/agents/tools.ts',
         // + the studios (src/ui/** — 28 files) stay GUI-debt: DOM,
         // the dom project's territory, same carve-out as the web tree.
-        'packages/image/**/src/ui/**/*.{ts,tsx}',
-        // motion closed (2026-09-12, §TEST-12): card compose gate +
-        // the tool face's full battery at per-file 100x4. The studio
-        // (src/ui/** — MotionExportDialog + the 2.1k-line component)
-        // stays GUI-debt: DOM components, the dom project's
-        // territory, same carve-out as the web tree.
-        'packages/motion/**/src/ui/**/*.{ts,tsx}',
+        // image (stroke 77): mask-studio's paint-leaf face +
+        // paintInk and ideogram4's panels/canvas/controls/helpers/
+        // slot ride the gate at 100; ONE residual stays named.
+        'packages/image/ideogram4/src/ui/studio/component.tsx',
+        // motion studio CLOSED (2026-09-16, motion lane): the studio
+        // (src/ui/** — kit + every helper ride the gate at 100; the
+        // 2.1k-line component + the export dialog stay NAMED below
+        // — WebGL live-ctx / rigged-GLB / unmount-timing arms, the
+        // per-arm proofs live in the stroke-77 burn-down report).
         // + the card packages' CLIENT faces (src/client/** — the
         // ported studio registration + tenants, 2026-09-12): DOM
         // territory, the dom project's specs exercise them; per-file
         // 100 is the HOST plane's gate (card.ts/index.ts stay gated —
         // the seat-probe + lane-gate laws are pinned by unit tests).
         // glb-viewport's WebGL mount is jsdom-impossible by nature.
-        'packages/*/*/src/client/**/*.{ts,tsx}',
-        // video closed (2026-09-12, §TEST-13): h3-timeline (the four
-        // frozen goldens replay byte-level + schema gates + overlay
-        // arms) + video-gen (two-family admission) + the tool face's
-        // full battery at per-file 100x4. The studio (src/ui/** —
-        // 21 files, the timeline editor) stays GUI-debt: DOM, the
-        // dom project's territory, same carve-out as the web tree.
-        'packages/video/**/src/ui/**/*.{ts,tsx}',
+        // the card packages' CLIENT faces (stroke 77): h3/anny/
+        // img-to-mesh/card-view clients ride the gate at 100 (the
+        // view client unblocked by the drafts remote-subpath alias);
+        // TWO residuals stay named.
+        'packages/image/ideogram4/src/client/index.ts',
+        'packages/motion/motion/src/client/index.ts',
+        // video CLOSED (stroke 77): the h3 studio tree rides the
+        // gate at per-file 100 (342 tests, h3-timeline/tests/studio-*)
+        // — the blanket row is GONE, nothing replaces it.
+        'packages/motion/motion/src/ui/studio/component.tsx',
+        'packages/motion/motion/src/ui/studio/MotionExportDialog.tsx',
         // Types-only files carry no executable code.
         'packages/*/*/src/types.ts',
         // The z-image family has no mods dir (absent ≡ empty) — its

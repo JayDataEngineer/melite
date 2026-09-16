@@ -1,0 +1,526 @@
+/**
+ * bench-load — the media plane's restore gestures (the Flows face's
+ * click + every wand), pinned WITHOUT the panel (unit level,
+ * fakes-not-mocks: fetch is replaced whole per test and answers the
+ * same-origin doors; the recorded calls + the deps' open/error
+ * surfaces are asserted by deep-equal):
+ *
+ *   addresses — the cross-plugin bench/run address codecs;
+ *   draft     — the CAS read-modify-write (rev rides, birth on miss,
+ *               refusals surface honestly, never a throw past React);
+ *   run       — the run's OWN record wins (bench_snapshot first, then
+ *               card_snapshot, then the verbatim request, then the
+ *               draft link; a draftless run errors honestly).
+ */
+import { afterEach, describe, expect, it, vi } from 'vitest'
+
+import {
+  cardsBenchAddress,
+  cardsRunAddress,
+  loadDraftOntoBench,
+  loadRunOntoBench,
+  type BenchLoadDeps,
+} from '../src/client/bench-load.ts'
+
+interface Deps extends BenchLoadDeps {
+  opened: string[]
+  errors: string[]
+}
+
+function deps(sessionId?: string): Deps {
+  const opened: string[] = []
+  const errors: string[] = []
+  return {
+    opened,
+    errors,
+    sessionId,
+    openResource(address: string) {
+      opened.push(address)
+    },
+    onError(message: string) {
+      errors.push(message)
+    },
+  }
+}
+
+type Route = (url: string, init?: RequestInit) => Response | Promise<Response> | never
+
+function stubFetch(route: Route): { calls: Array<{ url: string; init?: RequestInit }> } {
+  const calls: Array<{ url: string; init?: RequestInit }> = []
+  vi.stubGlobal('fetch', vi.fn(async (input: unknown, init?: RequestInit): Promise<Response> => {
+    const url = String(input)
+    calls.push({ url, init })
+    return route(url, init)
+  }))
+  return { calls }
+}
+
+const json = (body: unknown, status = 200): Response =>
+  new Response(JSON.stringify(body), { status, headers: { 'content-type': 'application/json' } })
+
+/** The CAS birth + load tail, canned per test. */
+function benchRoutes(get: Route, ensure: Route): Route {
+  return (url, init) => {
+    if (url.startsWith('/v1/bench/ensure')) return ensure(url, init)
+    if (url.startsWith('/v1/bench/')) return get(url, init)
+    throw new Error('unstubbed door ' + url)
+  }
+}
+
+afterEach(() => {
+  vi.unstubAllGlobals()
+})
+
+describe('the bench/run address codecs', () => {
+  it('names the conversation bench, main for unattributed seats', () => {
+    expect(cardsBenchAddress('s1')).toBe('dsh-resource://cards/bench/s1')
+    expect(cardsBenchAddress(undefined)).toBe('dsh-resource://cards/bench/main')
+    expect(cardsBenchAddress('bad id!')).toBe('dsh-resource://cards/bench/main')
+    expect(cardsBenchAddress('')).toBe('dsh-resource://cards/bench/main')
+  })
+
+  it('encodes the run address', () => {
+    expect(cardsRunAddress('r 9')).toBe('dsh-resource://cards/run/r%209')
+  })
+})
+
+describe('loadDraftOntoBench — the CAS load', () => {
+  const DRAFT = { stages: [{ id: 's_0', engine: 'comfyui' }], intent: 'a red cube' }
+
+  it('reads the rev, ensures with expect_rev, and opens the bench', async () => {
+    const routed: Route = (url, init) => {
+      if (url.startsWith('/v1/flows/drafts/')) return json(DRAFT)
+      return benchRoutes(
+        () => json({ rev: 3 }),
+        () => json({ ok: true }),
+      )(url, init)
+    }
+    stubFetch(routed)
+    const d = deps('s1')
+    await loadDraftOntoBench('d1', d)
+    expect(d.errors).toEqual([])
+    expect(d.opened).toEqual(['dsh-resource://cards/bench/s1'])
+  })
+
+  it('carries the CAS rev into the ensure body', async () => {
+    const { calls } = stubFetch((url) => {
+      if (url.startsWith('/v1/flows/drafts/')) return json(DRAFT)
+      if (url.startsWith('/v1/bench/ensure')) return json({ ok: true })
+      return json({ rev: 7 })
+    })
+    const d = deps('s1')
+    await loadDraftOntoBench('d1', d)
+    expect(d.errors).toEqual([])
+    const ensure = calls.find((c) => c.url === '/v1/bench/ensure')
+    const body = JSON.parse(String(ensure?.init?.body)) as Record<string, unknown>
+    expect(body).toMatchObject({ session: 's1', author: 'user', overwrite: true, expect_rev: 7, intent: 'a red cube' })
+  })
+
+  it('births on any miss (no bench, unparsable rev, unreadable row)', async () => {
+    for (const get of [
+      () => json({ error: 'no bench' }, 404),
+      () => json({ rev: 'three' }),
+      () => new Response('not json', { status: 200 }),
+    ] as Route[]) {
+      const { calls } = stubFetch((url) => {
+        if (url.startsWith('/v1/flows/drafts/')) return json(DRAFT)
+        if (url.startsWith('/v1/bench/ensure')) return json({ ok: true })
+        return get(url)
+      })
+      const d = deps('s1')
+      await loadDraftOntoBench('d1', d)
+      expect(d.errors).toEqual([])
+      expect(d.opened).toEqual(['dsh-resource://cards/bench/s1'])
+      const body = JSON.parse(String(calls.find((c) => c.url === '/v1/bench/ensure')?.init?.body)) as Record<string, unknown>
+      expect('expect_rev' in body).toBe(false)
+    }
+  })
+
+  it('an unreadable draft errors honestly (refusal voice, then HTTP n)', async () => {
+    stubFetch((url) => {
+      if (url.startsWith('/v1/flows/drafts/')) return json({ error: 'unknown draft' }, 404)
+      return json({ rev: 1 })
+    })
+    const d = deps('s1')
+    await loadDraftOntoBench('nope', d)
+    expect(d.opened).toEqual([])
+    expect(d.errors).toEqual(['could not read that card (unknown draft)'])
+
+    stubFetch((url) => {
+      if (url.startsWith('/v1/flows/drafts/')) return json({}, 500)
+      return json({ rev: 1 })
+    })
+    const e = deps('s1')
+    await loadDraftOntoBench('nope', e)
+    expect(e.errors).toEqual(['could not read that card (HTTP 500)'])
+
+    stubFetch((url) => {
+      if (url.startsWith('/v1/flows/drafts/')) return json('just a string')
+      return json({ rev: 1 })
+    })
+    const f = deps('s1')
+    await loadDraftOntoBench('d1', f)
+    expect(f.errors).toEqual(['could not read that card (HTTP 200)'])
+  })
+
+  it('a shapeless draft loads empty stages with the default intent', async () => {
+    const { calls } = stubFetch((url) => {
+      if (url.startsWith('/v1/flows/drafts/')) return json({ stages: 'nope', intent: 42 })
+      if (url.startsWith('/v1/bench/ensure')) return json({ ok: true })
+      return json({ error: 'no bench' }, 404)
+    })
+    const d = deps(undefined)
+    await loadDraftOntoBench('d1', d)
+    expect(d.errors).toEqual([])
+    expect(d.opened).toEqual(['dsh-resource://cards/bench/main'])
+    const body = JSON.parse(String(calls.find((c) => c.url === '/v1/bench/ensure')?.init?.body)) as Record<string, unknown>
+    expect(body).toMatchObject({ stages: [], intent: 'restored draft' })
+  })
+
+  it('a refused ensure surfaces the refusal; a bare one surfaces HTTP n', async () => {
+    stubFetch((url) => {
+      if (url.startsWith('/v1/flows/drafts/')) return json(DRAFT)
+      if (url.startsWith('/v1/bench/ensure')) return json({ error: 'bench/cas-conflict' }, 409)
+      return json({ rev: 1 })
+    })
+    const d = deps('s1')
+    await loadDraftOntoBench('d1', d)
+    expect(d.opened).toEqual([])
+    expect(d.errors).toEqual(['the bench refused the load (bench/cas-conflict)'])
+
+    stubFetch((url) => {
+      if (url.startsWith('/v1/flows/drafts/')) return json(DRAFT)
+      if (url.startsWith('/v1/bench/ensure')) return new Response('not json', { status: 409 })
+      return json({ rev: 1 })
+    })
+    const e = deps('s1')
+    await loadDraftOntoBench('d1', e)
+    expect(e.errors).toEqual(['the bench refused the load (HTTP 409)'])
+  })
+
+  it('transport failures surface caller-side (Errors and bare throws alike)', async () => {
+    stubFetch(() => {
+      throw new Error('socket reset')
+    })
+    const d = deps('s1')
+    await loadDraftOntoBench('d1', d)
+    expect(d.errors).toEqual(['bench load failed — socket reset'])
+
+    stubFetch(() => {
+      throw 'bare string failure'
+    })
+    const e = deps('s1')
+    await loadDraftOntoBench('d1', e)
+    expect(e.errors).toEqual(['bench load failed — bare string failure'])
+  })
+
+  it('a bench-read failure surfaces through the load tail (Errors and bare throws)', async () => {
+    for (const thrown of [new Error('rev unreadable'), 'bare rev failure'] as const) {
+      stubFetch((url) => {
+        if (url.startsWith('/v1/flows/drafts/')) return json(DRAFT)
+        throw thrown
+      })
+      const d = deps('s1')
+      await loadDraftOntoBench('d1', d)
+      expect(d.opened).toEqual([])
+      expect(d.errors).toEqual(['bench load failed — ' + String(thrown instanceof Error ? thrown.message : thrown)])
+    }
+  })
+
+  it('an unparsable draft body errors honestly', async () => {
+    stubFetch((url) => {
+      if (url.startsWith('/v1/flows/drafts/')) return new Response('not json', { status: 200 })
+      return json({ rev: 1 })
+    })
+    const d = deps('s1')
+    await loadDraftOntoBench('d1', d)
+    expect(d.opened).toEqual([])
+    expect(d.errors).toEqual(['could not read that card (HTTP 200)'])
+  })
+})
+
+describe('loadRunOntoBench — the run record wins', () => {
+  function runWith(side: unknown, draft: unknown = { stages: [], intent: 'x' }): Route {
+    return (url) => {
+      if (url.startsWith('/infer-gallery/flow')) {
+        return typeof side === 'string' ? new Response(side, { status: 200 }) : json(side)
+      }
+      if (url.startsWith('/v1/flows/drafts/')) return json(draft)
+      if (url.startsWith('/v1/bench/ensure')) return json({ ok: true })
+      return json({ error: 'no bench' }, 404)
+    }
+  }
+
+  function ensuredBody(calls: Array<{ url: string; init?: RequestInit }>): Record<string, unknown> {
+    return JSON.parse(String(calls.find((c) => c.url === '/v1/bench/ensure')?.init?.body)) as Record<string, unknown>
+  }
+
+  it('an unreadable sidecar errors honestly', async () => {
+    stubFetch((url) => {
+      if (url.startsWith('/infer-gallery/flow')) return json({ error: 'gone' }, 404)
+      return json({ rev: 1 })
+    })
+    const d = deps('s1')
+    await loadRunOntoBench('r1', d)
+    expect(d.opened).toEqual([])
+    expect(d.errors).toEqual(['that run keeps no readable sidecar (gone)'])
+
+    stubFetch((url) => {
+      if (url.startsWith('/infer-gallery/flow')) return json('just a string')
+      return json({ rev: 1 })
+    })
+    const e = deps('s1')
+    await loadRunOntoBench('r1', e)
+    expect(e.errors).toEqual(['that run keeps no readable sidecar (HTTP 200)'])
+  })
+
+  it('an unparsable sidecar errors honestly', async () => {
+    stubFetch((url) => {
+      if (url.startsWith('/infer-gallery/flow')) return new Response('not json', { status: 200 })
+      return json({ rev: 1 })
+    })
+    const d = deps('s1')
+    await loadRunOntoBench('r1', d)
+    expect(d.opened).toEqual([])
+    expect(d.errors).toEqual(['that run keeps no readable sidecar (HTTP 200)'])
+  })
+
+  it('the bench_snapshot restores every stage (stale state stripped, the ran card keeps its preview)', async () => {
+    const side = {
+      run_id: 'r1',
+      flow: {
+        artifacts: ['/data/run-r1/out.png'],
+        card_snapshot: { card: 'image-gen', params: { prompt: 'ran prompt', draft_id: 'd9', test: 1 } },
+        bench_snapshot: {
+          stages: [
+            { id: 's_0', card: 'image-gen', result: { old: true }, runStatus: 'x', resolved: true },
+            { id: 's_1', card: 'other' },
+          ],
+          intent: 'the full workflow intent from the run press, kept verbatim here for the restore',
+        },
+      },
+    }
+    const { calls } = stubFetch(runWith(side))
+    const d = deps('s1')
+    await loadRunOntoBench('r1', d)
+    expect(d.errors).toEqual([])
+    expect(d.opened).toEqual(['dsh-resource://cards/bench/s1'])
+    const stages = ensuredBody(calls).stages as Array<Record<string, unknown>>
+    expect(stages).toHaveLength(2)
+    expect(stages[0]).toMatchObject({
+      id: 's_0',
+      card: 'image-gen',
+      provenance: 'restored',
+      result: { run_id: 'r1', url: '/melite-media/runs/run-r1/out.png' },
+    })
+    expect('runStatus' in stages[0]!).toBe(false)
+    expect(stages[1]).toEqual({ id: 's_1', card: 'other', provenance: 'restored' })
+    expect(String(ensuredBody(calls).intent).length).toBeLessThanOrEqual(77)
+  })
+
+  it('a single-stage snapshot falls through to the card arm', async () => {
+    const side = {
+      run_id: 'r2',
+      flow: {
+        artifacts: ['/data/run-r2/out.png'],
+        card_snapshot: { card: 'image-gen', params: { prompt: 'solo' } },
+        bench_snapshot: { stages: [{ id: 's_0', card: 'image-gen' }], intent: '' },
+      },
+    }
+    const { calls } = stubFetch(runWith(side))
+    const d = deps('s1')
+    await loadRunOntoBench('r2', d)
+    expect(d.errors).toEqual([])
+    const stages = ensuredBody(calls).stages as Array<Record<string, unknown>>
+    expect(stages).toHaveLength(1)
+    expect(stages[0]).toMatchObject({ id: 's_0', engine: 'comfyui', card: 'image-gen', provenance: 'restored' })
+    expect(ensuredBody(calls).intent).toBe('solo')
+  })
+
+  it('a snapshot without a preview or prompt restores bare (no result key, default intent)', async () => {
+    const side = {
+      run_id: 'r3',
+      flow: {
+        artifacts: ['notes.txt'],
+        card_snapshot: { card: 'image-gen', params: 'not-an-object' },
+      },
+    }
+    const { calls } = stubFetch(runWith(side))
+    const d = deps('s1')
+    await loadRunOntoBench('r3', d)
+    expect(d.errors).toEqual([])
+    const stages = ensuredBody(calls).stages as Array<Record<string, unknown>>
+    expect(stages[0]).toEqual({ id: 's_0', engine: 'comfyui', card: 'image-gen', params: {}, provenance: 'restored' })
+    expect(ensuredBody(calls).intent).toBe('restored run')
+  })
+
+  it('a non-image artifact list restores without a preview', async () => {
+    const side = {
+      run_id: 'r4',
+      flow: { card_snapshot: { card: 'image-gen', params: { prompt: 'p' } } },
+    }
+    const { calls } = stubFetch(runWith(side))
+    const d = deps('s1')
+    await loadRunOntoBench('r4', d)
+    expect(d.errors).toEqual([])
+    const stages = ensuredBody(calls).stages as Array<Record<string, unknown>>
+    expect('result' in stages[0]!).toBe(false)
+  })
+
+  it('an image outside any run dir restores without a preview', async () => {
+    const side = {
+      run_id: 'r5',
+      flow: {
+        artifacts: ['/absolute/elsewhere/img.png'],
+        card_snapshot: { card: 'image-gen', params: { prompt: 'p' } },
+      },
+    }
+    const { calls } = stubFetch(runWith(side))
+    const d = deps('s1')
+    await loadRunOntoBench('r5', d)
+    expect(d.errors).toEqual([])
+    const stages = ensuredBody(calls).stages as Array<Record<string, unknown>>
+    expect('result' in stages[0]!).toBe(false)
+  })
+
+  it('a shapeless bench_snapshot falls through to the card arm', async () => {
+    const side = {
+      run_id: 'r10',
+      flow: {
+        card_snapshot: { card: 'image-gen', params: { prompt: 'shapeless' } },
+        bench_snapshot: { stages: 'nope', intent: 'ignored' },
+      },
+    }
+    const { calls } = stubFetch(runWith(side))
+    const d = deps('s1')
+    await loadRunOntoBench('r10', d)
+    expect(d.errors).toEqual([])
+    const stages = ensuredBody(calls).stages as Array<Record<string, unknown>>
+    expect(stages).toHaveLength(1)
+    expect(stages[0]).toMatchObject({ id: 's_0', engine: 'comfyui', card: 'image-gen' })
+  })
+
+  it('a run_id-less sidecar still restores (the id defaults empty)', async () => {
+    const snapSide = {
+      flow: { card_snapshot: { card: 'image-gen', params: { prompt: 'no id' } } },
+    }
+    const snapCalls = stubFetch(runWith(snapSide))
+    const a = deps('s1')
+    await loadRunOntoBench('rx', a)
+    expect(a.errors).toEqual([])
+    expect(ensuredBody(snapCalls.calls).intent).toBe('no id')
+
+    const reqSide = {
+      flow: {},
+      request: { model: 'image-gen' },
+    }
+    const reqCalls = stubFetch(runWith(reqSide))
+    const b = deps('s1')
+    await loadRunOntoBench('ry', b)
+    expect(b.errors).toEqual([])
+    const reqStages = ensuredBody(reqCalls.calls).stages as Array<Record<string, unknown>>
+    expect(reqStages[0]).toEqual({
+      id: 's_0',
+      engine: 'comfyui',
+      params: { model: 'image-gen' },
+      provenance: 'restored',
+    })
+    expect(ensuredBody(reqCalls.calls).intent).toBe('restored run')
+
+    const fullSide = {
+      flow: {
+        artifacts: ['/data/run-rz/out.png'],
+        card_snapshot: { card: 'a' },
+        bench_snapshot: { stages: [{ id: 's_0', card: 'a' }, { id: 's_1', card: 'b' }], intent: '' },
+      },
+    }
+    const fullCalls = stubFetch(runWith(fullSide))
+    const c = deps('s1')
+    await loadRunOntoBench('rz', c)
+    expect(c.errors).toEqual([])
+    const fullStages = ensuredBody(fullCalls.calls).stages as Array<Record<string, unknown>>
+    expect(fullStages[0]).toMatchObject({ result: { run_id: '', url: '/melite-media/runs/run-rz/out.png' } })
+    expect(ensuredBody(fullCalls.calls).intent).toBe('restored run')
+  })
+
+  it('a multi-stage snapshot without the ran card stamps nothing', async () => {
+    const side = {
+      run_id: 'r6',
+      flow: {
+        artifacts: ['/data/run-r6/out.png'],
+        bench_snapshot: {
+          stages: [{ id: 's_0', card: 'a' }, { id: 's_1', card: 'b' }],
+          intent: 'two stages, no snapshot card',
+        },
+      },
+    }
+    const { calls } = stubFetch(runWith(side))
+    const d = deps('s1')
+    await loadRunOntoBench('r6', d)
+    expect(d.errors).toEqual([])
+    const stages = ensuredBody(calls).stages as Array<Record<string, unknown>>
+    expect(stages.every((st) => !('result' in st))).toBe(true)
+    expect(ensuredBody(calls).intent).toBe('two stages, no snapshot card')
+  })
+
+  it('the verbatim request restores older runs (draft/test keys stripped)', async () => {
+    const side = {
+      run_id: 'r7',
+      flow: { artifacts: [] },
+      request: { model: 'image-gen', prompt: 'old prompt', draft_id: 'd9', test: 1 },
+    }
+    const { calls } = stubFetch(runWith(side))
+    const d = deps('s1')
+    await loadRunOntoBench('r7', d)
+    expect(d.errors).toEqual([])
+    const stages = ensuredBody(calls).stages as Array<Record<string, unknown>>
+    expect(stages[0]).toEqual({
+      id: 's_0',
+      engine: 'comfyui',
+      params: { model: 'image-gen', prompt: 'old prompt' },
+      provenance: 'restored',
+    })
+    expect(ensuredBody(calls).intent).toBe('old prompt')
+  })
+
+  it('the flow draft link restores through the draft door', async () => {
+    const { calls } = stubFetch(runWith({ run_id: 'r8', flow: { draft_id: 'd8' } }, { stages: [{ id: 's_9' }], intent: 'linked' }))
+    const d = deps('s1')
+    await loadRunOntoBench('r8', d)
+    expect(d.errors).toEqual([])
+    expect(calls.some((c) => c.url === '/v1/flows/drafts/d8')).toBe(true)
+    expect(ensuredBody(calls).intent).toBe('linked')
+  })
+
+  it('the top-level draft link restores when the flow names none', async () => {
+    const { calls } = stubFetch(runWith({ run_id: 'r9', flow: null, draft_id: 'd2' }, { stages: [], intent: 'top' }))
+    const d = deps('s1')
+    await loadRunOntoBench('r9', d)
+    expect(d.errors).toEqual([])
+    expect(calls.some((c) => c.url === '/v1/flows/drafts/d2')).toBe(true)
+  })
+
+  it('a draftless run errors honestly (nothing to restore)', async () => {
+    stubFetch(runWith({ run_id: 'rx', flow: { draft_id: '' } }))
+    const d = deps('s1')
+    await loadRunOntoBench('rx', d)
+    expect(d.opened).toEqual([])
+    expect(d.errors).toEqual(['this run keeps no card record — nothing to restore'])
+  })
+
+  it('a run transport failure surfaces caller-side', async () => {
+    stubFetch(() => {
+      throw new Error('sidecar unreadable')
+    })
+    const d = deps('s1')
+    await loadRunOntoBench('r1', d)
+    expect(d.errors).toEqual(['bench load failed — sidecar unreadable'])
+
+    stubFetch(() => {
+      throw 'bare string failure'
+    })
+    const e = deps('s1')
+    await loadRunOntoBench('r1', e)
+    expect(e.errors).toEqual(['bench load failed — bare string failure'])
+  })
+})

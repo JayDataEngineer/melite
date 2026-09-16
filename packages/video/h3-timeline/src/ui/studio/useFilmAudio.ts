@@ -141,7 +141,8 @@ export function useFilmAudio(args: {
    * by the probe's completion. */
   const addAudioClip = useCallback((name: string, src: string, startFrame: number) => {
     const id = `aclip-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`
-    const f = layerA.fps || 24
+    // (fps is always >0 post-hydration — the num() proof — no `|| 24`.)
+    const f = layerA.fps
     setLayerAKey("audio_clips", [
       ...(layerA.audio_clips ?? []),
       { id, name, src, start_frame: Math.max(0, Math.round(startFrame)), dur_frames: Math.round(4 * f) },
@@ -160,8 +161,11 @@ export function useFilmAudio(args: {
       }
     }
     probe.addEventListener("loadedmetadata", done, { once: true })
+    // (No sourceless-unhook guard: assigning "" to a URL-reflecting IDL
+    // attribute reads back as the resolved document base URL — truthy —
+    // so `!probe.src` could never fire. The once-listener on a
+    // sourceless probe simply never runs and dies with the probe.)
     probe.src = url ?? (artifactIndex.byName.get(src) ?? "")
-    if (!probe.src) probe.removeEventListener("loadedmetadata", done)
     return id
   }, [layerA.audio_clips, layerA.fps, artifactIndex.byName, setLayerAKey])
 
@@ -213,7 +217,8 @@ export function useFilmAudio(args: {
   // the sync itself — runs on every playhead tick while playing
   useEffect(() => {
     if (!layerA.audio_clips?.length) return
-    const fpsEff = filmMap?.fps ?? fps ?? 24
+    // (fps is always a number — the doc rail's Layer A fps — no `?? 24`.)
+    const fpsEff = filmMap?.fps ?? fps
     const t = frameIdx / fpsEff   // film seconds at the playhead
     for (const c of layerA.audio_clips) {
       const el = clipElsRef.current.get(c.id)
@@ -223,7 +228,7 @@ export function useFilmAudio(args: {
       el.volume = c.gain != null ? Math.max(0, Math.min(1, c.gain)) : 1
       // doc start → film seconds (identity when no film map)
       const startSec = (filmMap ? filmFromDoc(c.start_frame) : c.start_frame) / fpsEff
-      const mediaSec = c.dur_frames / (fps || 24)   // wall-clock media length
+      const mediaSec = c.dur_frames / fps   // wall-clock media length
       const local = t - startSec
       if (filmPlaying && local >= 0 && local < mediaSec) {
         if (el.paused) {

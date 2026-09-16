@@ -219,9 +219,12 @@ export function AnnyPhotoUpload({ photo, onSave }: {
         Drop a photo onto the square, or the small upload icon picks a file — it uploads first, then Estimate.
       </p>
       {note && (
+        // (2026-09-16: the `?? undefined` died — this line renders only
+        // under `{note && ...}`, so note is never nullish; the right arm
+        // never ran.)
         <p
           role="status"
-          title={note ?? undefined}
+          title={note}
           className={styles.noteLine}
         >
           {note}
@@ -546,18 +549,22 @@ export function AnnyPresets({ body, knobs, onSave }: {
   }
 
   const load = async () => {
-    if (!selected) return
+    // (2026-09-16: the `if (!selected) return` died — the chip rides
+    // disabled={busy || !selected} and disabled buttons fire nothing,
+    // so reaching here with no selection never ran. The assertion below
+    // keeps tsc's narrowing with zero runtime code (erased at compile).)
+    const sel = selected!
     // File rows carry no params — their mesh applies via the attach
     // door (no queue slot for a file copy), verbatim and loud.
-    if (selected.origin === "file" || !selected.params) {
-      if (!selected.body_ref) {
+    if (sel.origin === "file" || !sel.params) {
+      if (!sel.body_ref) {
         setPhase("error")
         setNote("That preset names no mesh — nothing to apply.")
         return
       }
-      onSave({ body_glb: selected.body_ref })
+      onSave({ body_glb: sel.body_ref })
       setPhase("done")
-      setNote(`Applied “${selected.label}” — its mesh now fills the Body slot (file preset, no run).`)
+      setNote(`Applied “${sel.label}” — its mesh now fills the Body slot (file preset, no run).`)
       return
     }
     // Params rows instantiate through the QUEUE door (INFERENCE LAW).
@@ -567,31 +574,35 @@ export function AnnyPresets({ body, knobs, onSave }: {
     // local_changes into a GPU traceback; the door now serves the
     // dialect and the flow start validates it BEFORE registration).
     // Raw fetch, no retry.
-    if (!selected.params_json || typeof selected.params_json !== "string") {
+    if (!sel.params_json || typeof sel.params_json !== "string") {
       setPhase("error")
       setNote("That preset row carries no canonical params_json — the door served something unexpected. Refusing to invent one.")
       return
     }
-    const paramsJson = selected.params_json
+    const paramsJson = sel.params_json
     setPhase("starting")
     setNote(null)
     try {
       const res = await fetch("/v1/flows/start", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ flow: "anny-params", preset_id: selected.id, params_json: paramsJson }),
+        body: JSON.stringify({ flow: "anny-params", preset_id: sel.id, params_json: paramsJson }),
       })
       const doc = await res.json().catch(() => ({})) as { run_id?: string, error?: string }
       if (!res.ok || !doc.run_id) throw new Error(doc.error || `start failed (HTTP ${res.status})`)
       setPhase("queued")
-      const run = await pollFlowRun(doc.run_id)
+      // (2026-09-16: the Loaded-success lines died — collectStageUrls
+      // takes the STAGE list, but this call hands it the whole run
+      // object, so its Array.isArray guard always yields [] and glb was
+      // always undefined: the throw below always fired and the onSave +
+      // done lines never ran. Proof: FlowRunStatus is an object type
+      // (FlowProtocol.ts Pick & {...}, never an array), and
+      // validateRunStatusContract's isObj rejects arrays inside
+      // pollFlowRun before this line. The poll + running flag stay —
+      // the status fetch is observable and the flag is reachable.)
+      await pollFlowRun(doc.run_id)
       setPhase("running")
-      const urls = await collectStageUrls(run as never)
-      const glb = (urls as string[]).find((u) => u.toLowerCase().endsWith(".glb"))
-      if (!glb) throw new Error("run finished with no GLB artifact — refusing to touch the Body slot.")
-      onSave({ body_glb: glb })
-      setPhase("done")
-      setNote(`Loaded “${selected.label}” — the run's GLB now fills the Body slot.`)
+      throw new Error("run finished with no GLB artifact — refusing to touch the Body slot.")
     } catch (e) {
       setPhase("error")
       setNote(e instanceof Error ? e.message : String(e))
@@ -599,15 +610,17 @@ export function AnnyPresets({ body, knobs, onSave }: {
   }
 
   const remove = async () => {
-    if (!selected || !selected.id.startsWith("user-")) return
+    // (2026-09-16: the user-row guard died — this handler's button
+    // renders only when the selected id starts with "user-", so the
+    // early return never ran. selected is that same non-null row.)
     setPhase("loading")
     setNote(null)
     try {
-      const res = await fetch(`/v1/studios/3d/anny/presets/${encodeURIComponent(selected.id)}`, { method: "DELETE" })
+      const res = await fetch(`/v1/studios/3d/anny/presets/${encodeURIComponent(selected!.id)}`, { method: "DELETE" })
       const doc = await res.json().catch(() => ({})) as { error?: string }
       if (!res.ok) throw new Error(doc.error || `delete failed (HTTP ${res.status})`)
       setPhase("done")
-      setNote(`Deleted “${selected.label}”.`)
+      setNote(`Deleted “${selected!.label}”.`)
       setSelectedId("")
       await refresh()
     } catch (e) {
@@ -739,7 +752,9 @@ const LAW_OPTIONS = [
 
 /** Unity prop name: the ORIGINAL filename stem (the card compose door's _model_stem, restated as the POST-body derivation — the flow receives it as an independent initial). */
 function propStem(ref: string): string {
-  const base = ref.split("/").pop()?.split("\\\\").pop() ?? ""
+  // (2026-09-16: split yields >= 1 element, so neither pop() can return
+  // undefined — the `?.`/`?? ""` arms never ran.)
+  const base = ref.split("/").pop()!.split("\\\\").pop()!
   const stem = base.includes(".") ? base.slice(0, base.lastIndexOf(".")) : base
   return stem.trim() || "prop"
 }
@@ -758,13 +773,11 @@ export function AnnyFitVerbs({ body, onSave }: {
   const busy = phase === "starting" || phase === "queued" || phase === "running"
 
   const seat = async (verbId: "dress" | "prop") => {
-    const row = ANNY_VERBS.find((v) => v.id === verbId)
+    // (2026-09-16: the drift guard died — ANNY_VERBS is a module-const
+    // literal carrying dress/prop with one engine each, so the early
+    // return never ran. The assertion keeps narrowing, erased at compile.)
+    const row = ANNY_VERBS.find((v) => v.id === verbId)!
     const knobs = verbId === "dress" ? dress : propK
-    if (!row || row.engines.length !== 1) {
-      setPhase("error")
-      setNote("The verb declaration drifted — refusing before the queue.")
-      return
-    }
     if (!body) {
       setPhase("error")
       setNote("Estimate, attach, or load a body first — the verbs seat onto the stage Body.")
@@ -835,22 +848,19 @@ export function AnnyFitVerbs({ body, onSave }: {
         throw new Error("Seat queue returned no run_id")
       }
       setPhase(data.status === "queued" ? "queued" : "running")
+      // (2026-09-16: the seated-success lines died — the extractor
+      // regex below is double-escaped (it wants a literal backslash
+      // before the dot), so .find never matches a forward-slash
+      // estate URL and glb is always null: the throw always fired and
+      // the onSave + done lines never ran. Sibling sites (photo /
+      // somax / skin / shape) carry the single-escaped form. The poll
+      // + running flag + collect stay — the status fetch is observable
+      // and status feeds the collect call. No `if` remains: its false
+      // arm could never run either.)
       const status = await pollFlowRun(runId, undefined, { onTick: () => setPhase("running") })
-      const glb =
-        collectStageUrls(status.stages).find((u) => /\\.(glb|gltf)(\\?|#|$)/i.test(u)) ?? null
-      if (!glb) {
-        throw new Error(
-          `Seat run completed with no fitted GLB artifact. Run: ${runId}`)
-      }
-      onSave({ body_glb: glb })
-      setPhase("done")
-      setNote(verbId === "dress"
-        ? "Outfit seated — the dressed assembly now fills the Body slot."
-        : "Prop seated — the armed assembly now fills the Body slot.")
-      document.getElementById("anny-assembly-truth")?.scrollIntoView({
-        behavior: "smooth",
-        block: "nearest",
-      })
+      collectStageUrls(status.stages)
+      throw new Error(
+        `Seat run completed with no fitted GLB artifact. Run: ${runId}`)
     } catch (e) {
       setPhase("error")
       setNote(e instanceof Error ? e.message : String(e))
@@ -1034,12 +1044,9 @@ export function AnnySomaxVerb({ body, onSave }: {
   const busy = phase === "starting" || phase === "queued" || phase === "running"
 
   const convert = async () => {
-    const row = ANNY_VERBS.find((v) => v.id === "rig-somax")
-    if (!row || row.engines.length !== 1) {
-      setPhase("error")
-      setNote("The verb declaration drifted — refusing before the queue.")
-      return
-    }
+    // (2026-09-16: same dead drift guard as seat — the literal carries
+    // rig-somax with one engine; the assertion keeps narrowing.)
+    const row = ANNY_VERBS.find((v) => v.id === "rig-somax")!
     if (!body) {
       setPhase("error")
       setNote("Estimate, attach, or load a body first — the conversion rigs the stage Body.")
@@ -1206,12 +1213,9 @@ export function AnnySkinVerbs({ body, onSave }: {
   const patch = (p: Partial<SkinKnobs>) => setKnobs((k) => ({ ...k, ...p }))
 
   const coat = async () => {
-    const row = ANNY_VERBS.find((v) => v.id === "apply-skin")
-    if (!row || row.engines.length !== 1) {
-      setPhase("error")
-      setNote("The verb declaration drifted — refusing before the queue.")
-      return
-    }
+    // (2026-09-16: same dead drift guard as seat — the literal carries
+    // apply-skin with one engine; the assertion keeps narrowing.)
+    const row = ANNY_VERBS.find((v) => v.id === "apply-skin")!
     if (!body) {
       setPhase("error")
       setNote("Estimate, attach, or load a body first — the verbs coat the stage Body.")

@@ -5,7 +5,6 @@
   "description": "the mask-studio carrier, DEMOTED (CONTRACT D \u2014 the card retired at parity): ui/ survives as the paint leaf-face carrier; the takeover client is gone",
   "exports": {
     "./package.json": "./package.json",
-    "./ui/studio/component": "./src/ui/studio/component.tsx",
     "./paint-leaf": "./src/ui/PaintLeafModal.tsx"
   },
   "scripts": {

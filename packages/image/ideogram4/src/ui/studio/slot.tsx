@@ -35,15 +35,17 @@ export const IdeoCanvasSlot = memo(function IdeoCanvasSlot({
     [value, width, height],
   )
 
-  // Bridge editor setValues → draft commit. The editor accepts plain
-  // objects AND functional updaters (React.Dispatch signature). Caption
-  // keys reassemble into the prompt param; width/height propagate to their
-  // own separate form fields.
+  // Bridge editor setValues → draft commit. The seat keeps the
+  // React.Dispatch signature (plain objects AND updaters), but every
+  // producer seats a functional updater — never a plain object —
+  // so the seat calls it directly (the plain-object alternate was
+  // deleted as unreachable, 2026-09-16). Producers, all functional:
+  // component writeBack / applyAspect / background field (fn
+  // literals), setStyle (typed updater-fed, sole feeder StylePanel
+  // seats fn literals), IdeoPanels StylePanel set + applyPreset.
   const setValues = useCallback(
     (source: Record<string, unknown> | ((prev: Record<string, unknown>) => Record<string, unknown>)) => {
-      const next = typeof source === "function"
-        ? (source as (p: Record<string, unknown>) => Record<string, unknown>)(flatValues)
-        : source
+      const next = (source as (p: Record<string, unknown>) => Record<string, unknown>)(flatValues)
       const patch: Record<string, unknown> = {}
       // Width/height are separate form fields, not part of the caption.
       if (typeof next.width === "number" && next.width !== width) patch.width = next.width

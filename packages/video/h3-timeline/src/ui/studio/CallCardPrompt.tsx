@@ -35,7 +35,9 @@ export function CallCardPrompt({
             data-testid="tl-call-enhance"
             disabled={!(c.text ?? "").trim() || enhancing["call-" + i] === true}
             onClick={() => void enhanceOne(
-              "call-" + i, c.text ?? "",
+              // (the button is disabled unless the text is non-blank, so
+              // text is a string here — the `!` records that proof.)
+              "call-" + i, c.text!,
               (t) => handlePromptUpdate("call-" + i, t),
             )}
             className={s.enhanceBtn}

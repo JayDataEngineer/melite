@@ -1,0 +1,405 @@
+/**
+ * docCalls — hydrate ⇄ serialize for the call document (BEHAVIORAL).
+ *
+ * PINS (fakes-not-mocks: plain objects in, deep-equal out):
+ *  - hydrateCalls: string-encoded arrays, legacy beats, per-call
+ *    segment joining (no word lost), guide/prev-sec/transition/refs
+ *    hydration, vocabulary-gated knob hydration, sorting, STARTER
+ *    fallbacks, malformed-row skips.
+ *  - hydrateKeyframes / hasKnobs / callsToPrompts / keyframesToLanes
+ *    / serializeCalls / callIndexOf / kfIndexOf.
+ */
+import { describe, expect, it } from "vitest"
+import assert from "node:assert/strict"
+import {
+  callIndexOf,
+  callsToPrompts,
+  hasKnobs,
+  hydrateCalls,
+  hydrateKeyframes,
+  keyframesToLanes,
+  kfIndexOf,
+  serializeCalls,
+} from "../src/ui/studio/docCalls.ts"
+import { STARTER_CALLS } from "../src/ui/studio/docModel.ts"
+
+const CALL = { text: "a dolly shot", start_frame: 0, end_frame: 48 }
+
+describe("hydrateCalls (params → document)", () => {
+  it("no calls and no beats = the starter (never an empty doc)", () => {
+    assert.deepEqual(hydrateCalls({}), STARTER_CALLS)
+    assert.deepEqual(hydrateCalls({ calls: [], beats: [] }), STARTER_CALLS)
+    assert.deepEqual(hydrateCalls({ calls: "not-json", beats: 42 }), STARTER_CALLS)
+  })
+
+  it("the happy lane hydrates verbatim", () => {
+    assert.deepEqual(hydrateCalls({ calls: [CALL] }), [CALL])
+  })
+
+  it("string-encoded calls parse before the Array check (the 2026-08-30 loss)", () => {
+    const raw = JSON.stringify([CALL, { ...CALL, start_frame: 48, end_frame: 96 }])
+    const out = hydrateCalls({ calls: raw })
+    assert.equal(out.length, 2)
+    assert.equal(out[1]!.start_frame, 48)
+  })
+
+  it("a string-encoded NON-array falls through to beats, then the starter", () => {
+    assert.deepEqual(hydrateCalls({ calls: '{"a":1}', beats: [CALL] }), [CALL])
+    assert.deepEqual(hydrateCalls({ calls: '{"a":1}' }), STARTER_CALLS)
+  })
+
+  it("unparseable strings fall through (never throw)", () => {
+    assert.deepEqual(hydrateCalls({ calls: "[{broken", beats: [CALL] }), [CALL])
+    assert.deepEqual(hydrateCalls({ beats: "[{broken" }), STARTER_CALLS)
+  })
+
+  it("legacy beats map 1:1 when calls are absent", () => {
+    assert.deepEqual(hydrateCalls({ beats: [CALL] }), [CALL])
+  })
+
+  it("string-encoded beats parse too", () => {
+    assert.deepEqual(hydrateCalls({ beats: JSON.stringify([CALL]) }), [CALL])
+  })
+
+  it("malformed rows skip — non-objects, bad spans, reversals", () => {
+    assert.deepEqual(hydrateCalls({ calls: [null, 42, "x", CALL] }), [CALL])
+    assert.deepEqual(
+      hydrateCalls({ calls: [{ ...CALL, start_frame: "a" }, { ...CALL, end_frame: NaN }] }),
+      STARTER_CALLS,
+    )
+    assert.deepEqual(hydrateCalls({ calls: [{ ...CALL, start_frame: 10, end_frame: 10 }] }), STARTER_CALLS)
+    assert.deepEqual(hydrateCalls({ calls: [{ ...CALL, start_frame: 20, end_frame: 10 }] }), STARTER_CALLS)
+  })
+
+  it("fractional spans round (the doc is integer frames)", () => {
+    const [c] = hydrateCalls({ calls: [{ ...CALL, start_frame: 0.4, end_frame: 47.6 }] })
+    assert.equal(c!.start_frame, 0)
+    assert.equal(c!.end_frame, 48)
+  })
+
+  it("old per-call beats JOIN into the one prompt (no word lost, one warn)", () => {
+    const warns: unknown[][] = []
+    const orig = console.warn
+    console.warn = (...a: unknown[]) => { warns.push(a) }
+    try {
+      const [c] = hydrateCalls({
+        calls: [{ ...CALL, text: "", beats: [{ text: "  first  " }, { text: "second" }, { nope: 1 }, null, { text: "   " }] }],
+      })
+      assert.equal(c!.text, "first second")
+      assert.equal(warns.length, 1)
+    } finally {
+      console.warn = orig
+    }
+  })
+
+  it("empty segment lists leave the text lane alone", () => {
+    const [a] = hydrateCalls({ calls: [{ ...CALL, beats: [] }] })
+    assert.equal(a!.text, CALL.text)
+    const [b] = hydrateCalls({ calls: [{ ...CALL, beats: "nope" }] })
+    assert.equal(b!.text, CALL.text)
+    // segments that carry no words keep the text field
+    const [c] = hydrateCalls({ calls: [{ ...CALL, text: "", beats: [{ nope: 1 }] }] })
+    assert.equal(c!.text, "")
+    // wordless segments with NO text key at all: nothing to fall back to
+    const { text: _t, ...notext } = CALL
+    void _t
+    const [d] = hydrateCalls({ calls: [{ ...notext, beats: [{ nope: 1 }] }] })
+    assert.equal(d!.text, "")
+  })
+
+  it("guides hydrate as trimmed non-blank strings only", () => {
+    const [c] = hydrateCalls({
+      calls: [{ ...CALL, image: "  still-a ", clip: "", audio: "stem-a", bogus: "x" }],
+    })
+    assert.equal(c!.image, "  still-a ")
+    assert.ok(!("clip" in c!))
+    assert.equal(c!.audio, "stem-a")
+    assert.ok(!("bogus" in c!))
+  })
+
+  it("legacy last_frame drops LOUD (never silent loss)", () => {
+    const warns: unknown[][] = []
+    const orig = console.warn
+    console.warn = (...a: unknown[]) => { warns.push(a) }
+    try {
+      const [c] = hydrateCalls({ calls: [{ ...CALL, last_frame: "still-z" }] })
+      assert.ok(!("last_frame" in c!))
+      assert.equal(warns.length, 1)
+      // blank last_frame = no warn, no key
+      warns.length = 0
+      hydrateCalls({ calls: [{ ...CALL, last_frame: "   " }] })
+      hydrateCalls({ calls: [{ ...CALL, last_frame: 42 }] })
+      assert.equal(warns.length, 0)
+    } finally {
+      console.warn = orig
+    }
+  })
+
+  it("the prev-video opener survives only as a positive finite number", () => {
+    assert.equal(hydrateCalls({ calls: [{ ...CALL, first_frame_prev_sec: 2 }] })[0]!.first_frame_prev_sec, 2)
+    for (const bad of [0, -1, NaN, Infinity, "2", null]) {
+      assert.ok(!("first_frame_prev_sec" in hydrateCalls({ calls: [{ ...CALL, first_frame_prev_sec: bad }] })[0]!))
+    }
+  })
+
+  it("transition hydrates only the two seam modes", () => {
+    assert.equal(hydrateCalls({ calls: [{ ...CALL, transition: "extend" }] })[0]!.transition, "extend")
+    assert.equal(hydrateCalls({ calls: [{ ...CALL, transition: "cut" }] })[0]!.transition, "cut")
+    assert.ok(!("transition" in hydrateCalls({ calls: [{ ...CALL, transition: "wipe" }] })[0]!))
+  })
+
+  it("per-call refs: arrays join, strings trim, empties vanish", () => {
+    const [c] = hydrateCalls({
+      calls: [{ ...CALL, refs: { images: ["a", " b ", ""], videos: "x, y", audios: "", video_audios: [""] } }],
+    })
+    assert.deepEqual(c!.refs, { images: "a, b", videos: "x, y" })
+    // audios + video_audios ride the same join law
+    const [c2] = hydrateCalls({
+      calls: [{ ...CALL, refs: { audios: " s1 ", video_audios: ["v1", " v2 "] } }],
+    })
+    assert.deepEqual(c2!.refs, { audios: "s1", video_audios: "v1, v2" })
+    assert.ok(!("refs" in hydrateCalls({ calls: [{ ...CALL, refs: { images: [] } }] })[0]!))
+    assert.ok(!("refs" in hydrateCalls({ calls: [{ ...CALL, refs: ["a"] }] })[0]!))
+    assert.ok(!("refs" in hydrateCalls({ calls: [{ ...CALL, refs: null }] })[0]!))
+    assert.ok(!("refs" in hydrateCalls({ calls: [{ ...CALL }] })[0]!))
+  })
+
+  it("foreign knob keys drop with a warning (never re-sent)", () => {
+    const warns: unknown[][] = []
+    const orig = console.warn
+    console.warn = (...a: unknown[]) => { warns.push(a) }
+    try {
+      const [c] = hydrateCalls({ calls: [{ ...CALL, knobs: { sampling_steps: 20, h3_attention: "sla", nope: 1 } }] })
+      assert.deepEqual(c!.knobs, { sampling_steps: 20 })
+      assert.ok(warns.some((w) => String(w[0]).includes("nope")))
+      assert.ok(warns.some((w) => String(w[0]).includes("h3_attention")))
+    } finally {
+      console.warn = orig
+    }
+  })
+
+  it("null/blank knob values skip (absent = inherit)", () => {
+    const [c] = hydrateCalls({
+      calls: [{ ...CALL, knobs: { sampling_steps: null, denoise: undefined, sampler: "" } }],
+    })
+    assert.ok(!("knobs" in c!))
+  })
+
+  it("the canonical steps pair lands on sampling_steps", () => {
+    const [a] = hydrateCalls({ calls: [{ ...CALL, knobs: { steps: "30" } }] })
+    assert.deepEqual(a!.knobs, { sampling_steps: 30 })
+    const [b] = hydrateCalls({ calls: [{ ...CALL, knobs: { steps: "junk" } }] })
+    assert.ok(!("knobs" in b!))
+  })
+
+  it("every number knob hydrates finite values and drops junk", () => {
+    const [c] = hydrateCalls({
+      calls: [{
+        ...CALL,
+        knobs: {
+          sampling_steps: 20, denoise: 0.8, shift_video: "12", shift_audio: 3,
+          h3_sla_sparsity: 0.9, h3_sla_min_seq_len: 64, h3_sla_dense_last_steps: 4,
+          sharpen_strength: 0.5, sharpen_radius: 2, sharpen_threshold: 0.1,
+          sharpen_iterations: 3, interpolate_multiplier: 2,
+        },
+      }],
+    })
+    assert.equal((c!.knobs as Record<string, number>).sampling_steps, 20)
+    assert.equal((c!.knobs as Record<string, number>).denoise, 0.8)
+    assert.equal((c!.knobs as Record<string, number>).interpolate_multiplier, 2)
+    const [d] = hydrateCalls({ calls: [{ ...CALL, knobs: { sampling_steps: "junk", cfg: NaN } }] })
+    assert.ok(!("knobs" in d!))
+  })
+
+  it("string knobs hydrate trimmed values only", () => {
+    const [c] = hydrateCalls({ calls: [{ ...CALL, knobs: { sampler: "euler", scheduler: "  " } }] })
+    assert.deepEqual(c!.knobs, { sampler: "euler" })
+  })
+
+  it("enum knobs hydrate only legal members", () => {
+    const [c] = hydrateCalls({
+      calls: [{
+        ...CALL,
+        knobs: {
+          h3_sla_block_size: "64", h3_sla_reference_protection: "Heavy Enforcement",
+          h3_sla_dense_backend: "pytorch", sharpen_method: "rcas", interpolate_model: "rife47.pth",
+        },
+      }],
+    })
+    assert.equal(c!.knobs!.h3_sla_block_size, "64")
+    const [d] = hydrateCalls({
+      calls: [{ ...CALL, knobs: { h3_sla_block_size: "32", h3_sla_reference_protection: "max", h3_sla_dense_backend: "x", sharpen_method: "x", interpolate_model: "x" } }],
+    })
+    // "32" IS in CALL_KNOB_KEYS' vocabulary but the per-call hydrate
+    // admits only 64/128 (the 32 default rides Layer A)
+    assert.ok(!("knobs" in d!) || d!.knobs!.h3_sla_block_size === undefined)
+  })
+
+  it("dense-steps hydrate only interval-list strings", () => {
+    const [c] = hydrateCalls({ calls: [{ ...CALL, knobs: { h3_sla_dense_steps: " 1-3,5 " } }] })
+    assert.equal(c!.knobs!.h3_sla_dense_steps, "1-3,5")
+    const [d] = hydrateCalls({ calls: [{ ...CALL, knobs: { h3_sla_dense_steps: "soon" } }] })
+    assert.ok(!("knobs" in d!))
+  })
+
+  it("boolean knobs ride booleans and their stringified forms", () => {
+    const [c] = hydrateCalls({
+      calls: [{
+        ...CALL,
+        knobs: {
+          h3_sla_protect_audio: "false", h3_sla_stabilize_motion: false,
+          h3_sla_disable_fp16_accum: "yes", sharpen_enabled: 1, interpolate_enabled: true,
+        },
+      }],
+    })
+    assert.equal(c!.knobs!.h3_sla_protect_audio, false)
+    assert.equal(c!.knobs!.h3_sla_stabilize_motion, false)
+    assert.equal(c!.knobs!.interpolate_enabled, true)
+    assert.ok(!("h3_sla_disable_fp16_accum" in c!.knobs!))
+    assert.ok(!("sharpen_enabled" in c!.knobs!))
+  })
+
+  it("boolean true-forms hydrate (true + \"true\")", () => {
+    const [c] = hydrateCalls({
+      calls: [{ ...CALL, knobs: { h3_sla_protect_audio: true, sharpen_enabled: "true", h3_sla_disable_fp16_accum: true } }],
+    })
+    assert.equal(c!.knobs!.h3_sla_protect_audio, true)
+    assert.equal(c!.knobs!.sharpen_enabled, true)
+    assert.equal(c!.knobs!.h3_sla_disable_fp16_accum, true)
+  })
+
+  it("calls sort by start (the compiler's vocabulary) without re-tiling", () => {
+    const b = { ...CALL, text: "b", start_frame: 48, end_frame: 96 }
+    const out = hydrateCalls({ calls: [b, CALL] })
+    assert.deepEqual(out.map((c) => c.text), ["a dolly shot", "b"])
+  })
+
+  it("uses expect at least once", () => {
+    expect(hydrateCalls({})).toEqual(STARTER_CALLS)
+  })
+})
+
+describe("hydrateKeyframes", () => {
+  it("non-arrays are no keyframes", () => {
+    assert.deepEqual(hydrateKeyframes(undefined), [])
+    assert.deepEqual(hydrateKeyframes({}), [])
+  })
+
+  it("rows hydrate with rounded frames; junk rows skip", () => {
+    assert.deepEqual(
+      hydrateKeyframes([
+        { frame: 10.6, kind: "image", source: "a" },
+        { frame: 5, kind: "nope", source: "b" },
+        { frame: NaN, kind: "clip", source: "c" },
+        null,
+        42,
+        { frame: 7, kind: "audio" },
+      ]),
+      [
+        { frame: 11, kind: "image", source: "a" },
+        { frame: 7, kind: "audio", source: "" },
+      ],
+    )
+  })
+})
+
+describe("hasKnobs / callsToPrompts / keyframesToLanes", () => {
+  it("hasKnobs is true only for a non-empty dict", () => {
+    assert.equal(hasKnobs({ ...CALL }), false)
+    assert.equal(hasKnobs({ ...CALL, knobs: {} }), false)
+    assert.equal(hasKnobs({ ...CALL, knobs: { denoise: 0.5 } }), true)
+  })
+
+  it("callsToPrompts: the bar vocabulary (inclusive end, index uuids)", () => {
+    const [p] = callsToPrompts([{ ...CALL, knobs: { denoise: 0.5 }, audio: "stem" }], 24)
+    assert.equal(p!.uuid, "call-0")
+    assert.equal(p!.start_frame, 0)
+    assert.equal(p!.end_frame, 47)
+    assert.equal(p!.override, true)
+    assert.equal(p!.audio, true)
+    assert.ok(p!.text.startsWith("C1 · 2.0s — "))
+  })
+
+  it("callsToPrompts: missing text, no audio, ref-image counting, seam glyph", () => {
+    const ps = callsToPrompts([
+      { start_frame: 0, end_frame: 24, image: "still-a", refs: { images: "x, y" }, transition: "extend" },
+      { start_frame: 24, end_frame: 48, audio: "  " },
+    ], 24)
+    assert.equal(ps[0]!.audio, false)
+    assert.equal(ps[0]!.refImages, 3)
+    assert.equal(ps[0]!.seam, "extend")
+    assert.equal(ps[1]!.refImages, 0)
+    assert.equal(ps[1]!.seam, "cut")
+    assert.ok(ps[1]!.text.includes("C2"))
+  })
+
+  it("callsToPrompts: zero fps never divides by zero", () => {
+    const [p] = callsToPrompts([{ ...CALL }], 0)
+    assert.ok(p!.text.includes("C1"))
+  })
+
+  it("keyframesToLanes: flat diamonds, negatives clamp to 0", () => {
+    assert.deepEqual(keyframesToLanes([
+      { frame: -5, kind: "clip", source: "x" },
+      { frame: 9, kind: "audio", source: "" },
+    ]), [
+      { uuid: "kf-0", track_id: "clip", frame: 0, value: null },
+      { uuid: "kf-1", track_id: "audio", frame: 9, value: null },
+    ])
+  })
+})
+
+describe("serializeCalls (document → persisted shape)", () => {
+  it("the happy lane round-trips; undefined text becomes empty", () => {
+    assert.deepEqual(serializeCalls([{ start_frame: 0, end_frame: 8 }]), [
+      { text: "", start_frame: 0, end_frame: 8 },
+    ])
+  })
+
+  it("blank guides never ride (blank = none)", () => {
+    const [c] = serializeCalls([{ ...CALL, image: "  ", clip: "clip-a", audio: "" }])
+    assert.equal(c!.clip, "clip-a")
+    assert.ok(!("image" in c!))
+    assert.ok(!("audio" in c!))
+  })
+
+  it("prev-sec + transition ride only when set (never null noise)", () => {
+    const [a] = serializeCalls([{ ...CALL, first_frame_prev_sec: 2, transition: "cut" }])
+    assert.equal(a!.first_frame_prev_sec, 2)
+    assert.equal(a!.transition, "cut")
+    const [b] = serializeCalls([{ ...CALL, transition: "wipe" as never }])
+    assert.ok(!("transition" in b!))
+    assert.ok(!("first_frame_prev_sec" in b!))
+  })
+
+  it("per-call refs serialize as the COMMA STRING (never arrays)", () => {
+    const [c] = serializeCalls([{ ...CALL, refs: { images: "a, b" } }])
+    assert.deepEqual(c!.refs, { images: "a, b" })
+    // videos/audios/video_audios do NOT ride per-call (the image bus only)
+    const [d] = serializeCalls([{ ...CALL, refs: { videos: "v" } }])
+    assert.ok(!("refs" in d!))
+    const [e] = serializeCalls([{ ...CALL, refs: { images: "  " } }])
+    assert.ok(!("refs" in e!))
+    const [f] = serializeCalls([{ ...CALL }])
+    assert.ok(!("refs" in f!))
+  })
+
+  it("knobs ride verbatim only when non-empty", () => {
+    const knobs = { denoise: 0.5 }
+    const [c] = serializeCalls([{ ...CALL, knobs }])
+    assert.deepEqual(c!.knobs, { denoise: 0.5 })
+    assert.ok(c!.knobs !== knobs, "a copy, not the live dict")
+    const [d] = serializeCalls([{ ...CALL, knobs: {} }])
+    assert.ok(!("knobs" in d!))
+  })
+})
+
+describe("callIndexOf / kfIndexOf", () => {
+  it("index-derived ids parse; junk is -1", () => {
+    assert.equal(callIndexOf("call-3"), 3)
+    assert.equal(callIndexOf("call-x"), -1)
+    assert.equal(kfIndexOf("kf-2"), 2)
+    assert.equal(kfIndexOf("kf-x"), -1)
+    expect(callIndexOf("call-0")).toBe(0)
+  })
+})

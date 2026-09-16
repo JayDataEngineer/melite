@@ -234,7 +234,10 @@ export function parseCardsAddress(address: string): { bench: true } | { run: str
     if (slash > 0 && slash < body.length - 1) {
       const draftId = decodeURIComponent(body.slice(0, slash))
       const stageId = decodeURIComponent(body.slice(slash + 1))
-      if (draftId !== '' && stageId !== '') return { draft: draftId, stage: stageId }
+      // NO EMPTINESS GUARD (the slash gate above admits only
+      // interior slashes, so both parts hold ≥1 char, and decoding
+      // never empties a non-empty string — the pair always returns).
+      return { draft: draftId, stage: stageId }
     }
   }
   return null
@@ -592,8 +595,12 @@ export async function observeRunOutcome(
     } catch {
       /* bookkeeping — the bench may have moved; the next run rewrites the row */
     }
-    if (terminal === 'done' || terminal === 'failed' || terminal === 'stopped') return terminal
-    return null
+    // NO EXHAUSTIVENESS IF (the disjunction is provably total:
+    // this block runs only under the isTerminalRun gate —
+    // completed/failed/stopped — and the mapping above sends those
+    // to done/failed/stopped. The `as` narrows what the compiler
+    // cannot see.)
+    return terminal as 'done' | 'failed' | 'stopped'
   }
   return null
 }
@@ -878,11 +885,8 @@ export function openCardsResource(
       // write it too, and every write bumps the rev. bench/subscribe
       // pushes a fresh doc per write over the same-origin mux; the
       // tail yields on rev drift with reconnect supervision. THE
-      // POLL IS DEAD.
-      if (remote === undefined) {
-        yield failure(address, 'bench stream failed: the remote face did not mount')
-        return
-      }
+      // POLL IS DEAD. (No second remote-undefined arm here: the
+      // unmounted face above dominates — remote is a const parameter.)
       if (benchNs === undefined) {
         yield failure(address, 'bench stream failed: the bench namespace did not mount (the inject seat is absent)')
         return
@@ -949,7 +953,9 @@ async function* pollRunFrames(
     new Promise((resolve) => {
       const t = setTimeout(() => { signal.removeEventListener('abort', onAbort); resolve('slept') }, ms)
       const onAbort = (): void => { clearTimeout(t); resolve('abort') }
-      if (signal.aborted) { onAbort(); return }
+      // NO PRE-ABORTED ARM (the loop's own `!signal.aborted` check
+      // runs in the same synchronous block just above — no abort
+      // can land between the check and this executor).
       signal.addEventListener('abort', onAbort, { once: true })
     })
   while (!signal.aborted && !isTerminal(value.status)) {

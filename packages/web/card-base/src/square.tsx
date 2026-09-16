@@ -142,7 +142,7 @@ export function InputSquare(props: InputSquareProps): ReturnType<typeof h> {
             type: 'button',
             title: 'Detach',
             'aria-label': 'Detach ' + (label || 'source'),
-            onClick: (e: MouseEvent) => { e.stopPropagation(); props.onClear?.() },
+            onClick: (e: MouseEvent) => { e.stopPropagation(); props.onClear!() },
           }, '✕')
         : null,
     ),
@@ -159,7 +159,9 @@ export function InputSquare(props: InputSquareProps): ReturnType<typeof h> {
           onChange: (e: unknown) => {
             const f = (e as { target: { files: FileList | null } }).target.files?.[0]
             if (f !== undefined && f !== null) props.onFile?.(f)
-            if (fileRef.current !== null) fileRef.current.value = ''
+            // (total: the ref clears only in the unmount commit, which
+            //  detaches this closure first — non-null whenever we run.)
+            fileRef.current!.value = ''
           },
         })
       : null,

@@ -49,7 +49,9 @@ export function RefPickerRow({
   artifacts: { name: string; url: string }[]
 }) {
   const chips = splitRefList(value)
-  const candidates = artifacts.filter((a) => refGenreOf(a.name, a.url) === genre && !chips.includes(a.name) && !chips.some((c) => c === a.name))
+  // (The `!chips.includes` check already excludes picked names — an
+  // identical `some` twin would be short-circuit-dead.)
+  const candidates = artifacts.filter((a) => refGenreOf(a.name, a.url) === genre && !chips.includes(a.name))
   const over = chips.length > cap
   const setChips = (next: string[]) => onChange(next.length ? next.join(", ") : undefined)
   const up = REF_UPLOAD_SPEC[genre]

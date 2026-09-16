@@ -81,8 +81,10 @@ export function useDerivedView(args: {
       // broken video player. Absence of a url = absence of a window.
       .filter((n) => typeof arts[n] === "string" && arts[n] !== "")
       .sort((a, b) => {
-        const ai = Number(/_w(\d+)_/.exec(a)?.[1] ?? 0)
-        const bi = Number(/_w(\d+)_/.exec(b)?.[1] ?? 0)
+        // (every window name matched /^video_w\d+_/ above, so the
+        // index always parses — no fallback arms.)
+        const ai = Number(/_w(\d+)_/.exec(a)![1])
+        const bi = Number(/_w(\d+)_/.exec(b)![1])
         return ai - bi
       })
       .map((name) => ({ name, url: arts[name]! }))
@@ -101,13 +103,16 @@ export function useDerivedView(args: {
         if (!u || have.has(u)) continue
         have.add(u)
         const m = /window(\d+)_video/.exec(u)
-        windows.push({ name: m ? `video_w${m[1]}_main` : (u.split("/").pop() ?? `clip-${i}`), url: u })
+        // (u is truthy here, so split("/") is non-empty and pop() is
+        // defined — no `??` fallback arm.)
+        windows.push({ name: m ? `video_w${m[1]}_main` : u.split("/").pop()!, url: u })
       }
     }
     return { windows, final: arts.video ?? urls[0] ?? null }
   }, [stage.result])
 
-  const prompts = useMemo(() => callsToPrompts(calls, layerA.fps || 24), [calls, layerA.fps])
+  // (fps is always >0 post-hydration — the num() proof — no `|| 24`.)
+  const prompts = useMemo(() => callsToPrompts(calls, layerA.fps), [calls, layerA.fps])
   const lanes = useMemo(() => keyframesToLanes(keyframes), [keyframes])
 
   /** The film's OWN duration off the player (master-axis fallback): a
@@ -117,8 +122,9 @@ export function useDerivedView(args: {
   // (audit F2) the no-map fallback sizes the axis from the FILM's own
   // probed duration — multiply by the film's fps, not the doc rail's
   // (they diverge the moment fps is edited after a run).
+  // (fps is always a number — the doc rail's Layer A fps — no `?? 24`.)
   const barTotal = filmMap?.totalFrames
-    ?? (filmDurSec > 0 ? Math.round(filmDurSec * (filmMap?.fps ?? fps ?? 24)) : totalFrames)
+    ?? (filmDurSec > 0 ? Math.round(filmDurSec * (filmMap?.fps ?? fps)) : totalFrames)
   const barPrompts = useMemo(() => filmMap
     ? prompts.map((p) => ({ ...p, start_frame: filmFromDoc(p.start_frame), end_frame: filmFromDoc(p.end_frame) }))
     : prompts, [prompts, filmMap, filmFromDoc])

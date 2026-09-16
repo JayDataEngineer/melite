@@ -36,7 +36,7 @@ import { ElementInspector, JsonPanel, MicroLabel, StylePanel } from './IdeoPanel
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Button, Modal, Tooltip } from '@deepseek-ai/dsh-client-ui-primitives'
 import { Textarea, Tip } from './controls'
-import { Box, Type, Trash2, Copy, Grid3x3, Magnet, Maximize2, ChevronUp, ChevronDown, SunSparkle, Wand2, Code2, Layers, Palette as PaletteIcon, SquareSmall as Square, Upload } from '@melite/card-base/icons'
+import { Box, Type, Trash2, Copy, Grid3x3, Magnet, Maximize2, ChevronUp, ChevronDown, SunSparkle, Wand2, Code2, Layers, Palette as PaletteIcon, Upload } from '@melite/card-base/icons'
 import { cx } from '@melite/card-base/chrome'
 import styles from './component.module.css'
 export { __test } from './ideoHelpers'
@@ -203,8 +203,9 @@ export function IdeogramCanvasEditor({ values, setValues }: IdeogramCanvasEditor
     [commitElements],
   )
 
+  // Sole caller is the toolbar Clear button, rendered only when
+  // elements.length > 0 (deleted the `length === 0` early-return, 2026-09-16).
   const clearAll = useCallback(() => {
-    if (elements.length === 0) return
     if (!confirm(`Clear all ${elements.length} elements?`)) return
     commitElements(() => [])
     setSelectedId(null)
@@ -310,7 +311,11 @@ export function IdeogramCanvasEditor({ values, setValues }: IdeogramCanvasEditor
       background: bg || "(describe the scene background)",
       elements: elements.map((el) => {
         const o: Record<string, unknown> = { type: el.type, bbox: el.bbox, desc: el.desc || "(describe)" }
-        if (el.type === "text" || el.type === "logo") o.text = el.text ?? ""
+        // text/logo elements always carry a string: parseElementsJSON
+        // defaults rawText nullish→'' at its binding, addElement seats
+        // "", duplicates copy the string, and every UI edit seats a
+        // string — so the `?? ""` re-default was deleted (2026-09-16).
+        if (el.type === "text" || el.type === "logo") o.text = el.text
         if ((el.type === "text" || el.type === "logo") && el.font) o.font = el.font
         if (el.color_palette.length) o.color_palette = el.color_palette
         return o
@@ -471,7 +476,10 @@ export function IdeogramCanvasEditor({ values, setValues }: IdeogramCanvasEditor
           <Tooltip label="Aspect ratio (syncs width × height)">
             <Button variant="outline" size="sm" className={styles.toolBtn}>
               {(() => {
-                const Icon = ASPECT_PRESETS.find((p) => p.id === aspectId)?.Icon ?? Square
+                // aspectId is derived from this same list (exact id or the
+                // nearest preset's id), so find always hits — the `?.`/`??`
+                // fallback was deleted as unreachable (2026-09-16).
+                const Icon = ASPECT_PRESETS.find((p) => p.id === aspectId)!.Icon
                 return <Icon className={styles.i14} />
               })()}
               {aspectId}

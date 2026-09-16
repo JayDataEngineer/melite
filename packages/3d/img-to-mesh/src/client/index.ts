@@ -170,7 +170,12 @@ export function ImgToMeshStudio(props: StageViewOwnerProps): ReturnType<typeof h
           return h(DisclosureRow, {
             key: g,
             icon: h(IconArchiveOutline20),
-            title: STUDIO_TITLE[g] ?? g,
+            // UNREACHABLE-ARM (deleted the `?? g` fallback,
+            // 2026-09-16): g ranges only over STUDIO_FOLDS (stage,
+            // mesh, bake, lab — the map two lines up) and STUDIO_TITLE
+            // carries an entry for every one of the four, so the
+            // lookup is never undefined.
+            title: STUDIO_TITLE[g],
             open: isOpen,
             expandable: true,
             // the reference law (ToolRow/ReasoningRow/GenericCommandCard
@@ -182,11 +187,13 @@ export function ImgToMeshStudio(props: StageViewOwnerProps): ReturnType<typeof h
           // (THE RUN SEAT RETIRED (hour-26): the frame's top-bar Run
           //  pill + the webhook strip under it own the gesture and
           //  the live fold for EVERY face — the studio rail keeps
-          //  only its groups; a client-side error still lands at the
-          //  rail's bottom.)
-          error !== null ? h('div', { className: css.drillRunRow },
-            h('span', { className: css.runError }, error),
-          ) : null,
+          //  only its groups. The rail-bottom error arm died with it
+          //  (deleted 2026-09-16): error seats only from specError
+          //  while the shell renders only on liveSpec, and the hook
+          //  produces them mutually exclusively (one fetch — success
+          //  seats spec, refusal seats error; the id here is constant
+          //  so no refetch can interleave them) — the head error face
+          //  above owns the refusal.)
           ),
           // RIGHT — the mesh stage (the shared viewport, the old Stage law)
           preview: h(GlbStagePreview, {
@@ -206,13 +213,17 @@ function StudioFields({ fields, value, onEdit, square }: {
   fields: SpecField[]
   value: SpecValues
   onEdit(name: string, v: unknown): void
-  square?: (f: SpecField) => SquareHost | undefined
+  // UNREACHABLE-ARM (deleted the `square !== undefined` spread guard,
+  // 2026-09-16): StudioFields is module-local with exactly two call
+  // sites (the exposed + fold rails above), both passing the square
+  // provider's `square` — useSquareProvider returns it
+  // unconditionally, so the prop is never undefined here.
+  square: (f: SpecField) => SquareHost | undefined
 }): ReturnType<typeof h> {
   if (fields.length === 0) return h('p', { className: css.groupNote }, 'no declared fields')
   return h('div', null, fields.map((f) =>
     h(SpecFieldRow, {
-      key: f.name, f, value: value[f.name], onEdit,
-      ...(square !== undefined ? { square: square(f) } : {}),
+      key: f.name, f, value: value[f.name], onEdit, square: square(f),
     })))
 }
 

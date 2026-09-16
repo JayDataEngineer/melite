@@ -30,7 +30,8 @@ export function refGenreOf(name: string, url?: string): "image" | "video" | "aud
     return "video"
   }
   const src = `${n} ${url ? url.toLowerCase().split("?")[0] : ""}`
-  const e = (src.split(".").pop() ?? "").split(/[^a-z0-9]/)[0] ?? ""
+  // (split never returns [] — .pop()/[0] are always strings; no `?? ""`.)
+  const e = (src.split(".").pop() as string).split(/[^a-z0-9]/)[0] as string
   if (["png", "jpg", "jpeg", "webp", "gif", "bmp", "avif"].includes(e)) return "image"
   if (["mp4", "webm", "mov", "mkv", "avi", "m4v"].includes(e)) return "video"
   if (["mp3", "wav", "flac", "ogg", "m4a", "aac", "opus"].includes(e)) return "audio"
@@ -61,7 +62,10 @@ export function splitRefList(v: string | undefined): string[] {
     }
     let end = i
     while (end > start && (v[end - 1] === " " || v[end - 1] === "\t")) end--
-    if (end > start) out.push(v.slice(start, end))
+    // (end > start always holds: the separator skip guarantees v[start]
+    // is not a separator, so the token keeps at least its first char —
+    // no empty-push guard.)
+    out.push(v.slice(start, end))
   }
   return out
 }

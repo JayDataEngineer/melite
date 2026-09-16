@@ -415,8 +415,8 @@ export function ComfyManagerPanel(): React.ReactElement {
         <section className={css.section} data-testid="manage-result">
           <div className={css.resultHead}>
             <span className={result.ok === true ? css.resultOk : css.resultBad}>{result.ok === true ? 'OK' : 'REFUSED'}</span>
-            <span className={css.mono}>{result.action ?? '?'}</span>
-            <span className={css.sub}>{result.detail ?? ''}</span>
+            <span className={css.mono}>{result.action}</span>
+            <span className={css.sub}>{result.detail}</span>
           </div>
           {result.data !== undefined && result.data !== null && (
             <details className={css.details}>

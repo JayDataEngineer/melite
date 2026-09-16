@@ -53,8 +53,10 @@ export function BeatKnobControl({
   const inheritedRaw = layerA ? (layerA as unknown as Record<string, unknown>)[knob] : undefined
   const ghost =
     inheritedRaw === undefined || inheritedRaw === null || inheritedRaw === "" ? undefined : String(inheritedRaw)
-  if (meta?.type === "boolean" || (Array.isArray(enumVals) && enumVals.length === 2
-      && String(enumVals[0]) === "true" && String(enumVals[1]) === "false")) {
+  // BOOLEAN FACE — on/off selects. (Only type:"boolean" routes here:
+  // no KNOB_SPEC entry carries a ["true","false"] enum — all 25 enums
+  // are multi-string or absent — so there is no second disjunct.)
+  if (meta?.type === "boolean") {
     return (
       <ControlRow label={rowLabel} density="sm">
         <SelectControl

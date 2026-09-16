@@ -134,7 +134,11 @@ export function SlotGrid({ stage, upstreams, onSaveParams, onWireSlot }: SlotGri
               // onWireSlot), so these handlers are unconditional (2026-09-12).
               onPickFile={(f) => void handleFile(f, slot)}
               onDropFile={(f) => void handleFile(f, slot)}
-              onDropAsset={onWireSlot !== undefined || onSaveParams ? (url) => { onSaveParams({ [slot]: url }); onWireSlot?.(slot, null, null) } : undefined}
+              // (2026-09-16: the onDropAsset gate below it collapsed for the
+              // same reason — onSaveParams is a REQUIRED prop, always a
+              // function (truthy), so the `|| onSaveParams` else was
+              // unreachable in every render; drops stay unconditional.)
+              onDropAsset={(url) => { onSaveParams({ [slot]: url }); onWireSlot?.(slot, null, null) }}
               onClear={
                 wired || attached
                   ? () => { onSaveParams({ [slot]: null }); onWireSlot?.(slot, null, null) }

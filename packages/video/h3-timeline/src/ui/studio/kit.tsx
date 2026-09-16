@@ -62,8 +62,10 @@ const WIDTHS: Record<string, string> = {
   "w-full": s.wFull,
 }
 
-function widthClass(width: string | undefined): string | undefined {
-  return width === undefined ? undefined : WIDTHS[width]
+function widthClass(width: string): string | undefined {
+  // (Every caller defaults its width prop — undefined never arrives;
+  // an unknown token misses the map to undefined, which cn skips.)
+  return WIDTHS[width]
 }
 
 // ── helpers (verbatim from the kit's single definitions) ────────────
@@ -501,10 +503,13 @@ export const FilmPlayer = forwardRef<FilmPlayerHandle, FilmPlayerProps>(
       if (seekRafRef.current != null) return
       seekRafRef.current = requestAnimationFrame(() => {
         seekRafRef.current = null
-        const target = pendingSeekRef.current
+        // (pendingSeek is always a number here: seekTo sets it before
+        // scheduling and this callback is its only reader — the `as`
+        // records the single-writer proof, no dead null arm.)
+        const target = pendingSeekRef.current as number
         pendingSeekRef.current = null
         const el = videoRef.current
-        if (target == null || !el) return
+        if (!el) return
         const d = el.duration
         const t = Math.max(0, Number.isFinite(d) && d > 0 ? Math.min(target, d) : target)
         el.currentTime = t
@@ -521,17 +526,19 @@ export const FilmPlayer = forwardRef<FilmPlayerHandle, FilmPlayerProps>(
     useImperativeHandle(
       ref,
       (): FilmPlayerHandle => ({
+        // (The handle is callable only while mounted — React nulls the
+        // imperative ref on unmount — and the <video> always renders,
+        // so videoRef is non-null here; `!` records that proof.)
         seekTo,
-        current: () => videoRef.current?.currentTime ?? 0,
+        current: () => videoRef.current!.currentTime,
         duration: () => {
-          const d = videoRef.current?.duration
-          return Number.isFinite(d) ? (d ?? 0) : 0
+          const d = videoRef.current!.duration
+          return Number.isFinite(d) ? d : 0
         },
         play: () => void videoRef.current?.play(),
         pause: () => void videoRef.current?.pause(),
         toggle: () => {
-          const el = videoRef.current
-          if (!el) return
+          const el = videoRef.current!
           if (el.paused) void el.play()
           else el.pause()
         },
@@ -546,8 +553,10 @@ export const FilmPlayer = forwardRef<FilmPlayerHandle, FilmPlayerProps>(
     }, [])
     useEffect(() => {
       const id = window.setInterval(() => {
-        const el = videoRef.current
-        if (!el || el.paused || el.ended) return
+        // (The interval is cleared on unmount — videoRef is non-null on
+        // every tick; `!` records that proof.)
+        const el = videoRef.current!
+        if (el.paused || el.ended) return
         const t = el.currentTime
         if (Number.isFinite(t) && t >= 0) onTimeRef.current?.(t)
       }, 250)

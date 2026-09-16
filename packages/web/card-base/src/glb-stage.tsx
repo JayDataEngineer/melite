@@ -133,11 +133,13 @@ function mountScene(canvas: HTMLCanvasElement, onFail: (msg: string) => void): {
  *  (the old Stage's highlight, the DOM-free way; lifted meshes read
  *  at any theme because emissive adds, never replaces). */
 function tint(root: THREE.Object3D, on: boolean): void {
+  // (the material-ARRAY arm was deleted: the sole caller feeds
+  // GLTFLoader-produced scenes, and three r184's loadMesh builds one
+  // Mesh per primitive with a SINGLE material each — arrays never
+  // reach this walk. Behavior is identical for every reachable input.)
   root.traverse((o) => {
     const m = (o as THREE.Mesh).material
-    if (Array.isArray(m)) {
-      for (const mm of m) if ('emissive' in mm) (mm as THREE.MeshStandardMaterial).emissive.setHex(on ? 0x30364a : 0x000000)
-    } else if (m !== undefined && m !== null && 'emissive' in m) {
+    if (m !== undefined && m !== null && 'emissive' in m) {
       (m as THREE.MeshStandardMaterial).emissive.setHex(on ? 0x30364a : 0x000000)
     }
   })
@@ -213,8 +215,13 @@ export function GlbStagePreview({ assets, selectedId, onSelect, onAssetError, em
   // exists then); the row layout rides the same effect
   useEffect(() => {
     if (!ready || loaded.length === 0) return
-    const canvas = canvasRef.current
-    if (canvas === null) return
+    // (the canvas-null guard was deleted: this body runs only when
+    // ready && loaded-nonempty, and every such commit renders the
+    // canvas face — ready flips true only in settle(), while the key
+    // change (the sole ready-clearer) always precedes it with
+    // setFailed(null) + setReady(false) in one batch; the canvas is
+    // therefore always committed before this effect can observe ready.)
+    const canvas = canvasRef.current!
     const mounted = mountScene(canvas, (m) => setFailed(m))
     if (mounted === null) return
     sceneRef.current = mounted

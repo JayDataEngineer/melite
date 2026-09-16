@@ -67,10 +67,6 @@ export function CallFrameSubcard({
 }) {
   const [fileError, setFileError] = useState<string | null>(null)
   const v = value?.trim() ?? ""
-  // Thumbnails resolve like everywhere: a known artifact NAME → its URL;
-  // an uploaded data: URL IS its own preview.
-  const thumb = v.startsWith("data:") ? v : v ? nameToUrl.get(v) : undefined
-
   /** File upload / OS drop → data: URL into the source. Image-only with
    * a size cap (the doc stores the payload inline — keep it sane); a
    * rejection is VISIBLE (the inline error line), never a silent drop. */
