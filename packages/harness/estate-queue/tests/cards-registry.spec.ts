@@ -95,7 +95,8 @@ describe("facts + decls", () => {
   it("serves strict facts, cached decls, and explicit-facts decls", () => {
     const s = primed();
     const facts = s.modelFacts();
-    assert.ok(Object.keys(facts).length >= 30);
+    // 29 since stroke 75 (the studio family retired at parity — CONTRACT D)
+    assert.ok(Object.keys(facts).length >= 29);
     assert.equal(s.cardDecls(), s.cardDecls());
     const decls = s.cardDecls();
     assert.ok(decls["image-gen"] !== undefined);
@@ -817,12 +818,14 @@ describe("cardFamilies (the presence-marked serve)", () => {
 describe("admission + families coverage arms", () => {
   it("a pure-tool card boards nothing: the refusal names both nones", () => {
     const s = primed();
-    // mask-studio boards [] — the model is not offered (boards:
+    // mask-form boards [] — the model is not offered (boards:
     // none) and nothing is downloaded (downloaded here: none).
-    const v = s.admitStageModel("mask-studio", "krea-2");
+    // (The studio card retired at parity, stroke 75 — the FORM
+    // card is the pure-tool exemplar now.)
+    const v = s.admitStageModel("mask-form", "krea-2");
     assert.equal(v.ok, false);
     if (!v.ok) {
-      assert.match(v.error, /not offered by card 'mask-studio'/);
+      assert.match(v.error, /not offered by card 'mask-form'/);
       assert.match(v.error, /boards: none/);
       assert.match(v.error, /downloaded here: none/);
     }

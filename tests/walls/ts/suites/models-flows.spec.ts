@@ -63,7 +63,8 @@ const facts = loadFacts(FACTS_PATH, reads);
 describe("the models plane feeds the compose/flows plane (A2)", () => {
   it("every compose-plane family exists in the registry", async (): Promise<void> => {
     const factIds = Object.keys(facts.models).sort();
-    assert.ok(factIds.length >= 30, `expected ≥30 fact families, got ${factIds.length}`);
+    // 29 since stroke 75 (the studio family retired at parity — CONTRACT D)
+    assert.ok(factIds.length >= 29, `expected ≥29 fact families, got ${factIds.length}`);
     const actions = await actionCardLanes();
     for (const id of factIds) {
       if (actions.has(id)) continue;

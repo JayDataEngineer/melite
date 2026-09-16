@@ -2,16 +2,11 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "the mask-studio card (the image lane) \u2014 one card one package: card.ts host face + ui/ studio + agents/ context",
-  "main": "./src/card.ts",
+  "description": "the mask-studio carrier, DEMOTED (CONTRACT D \u2014 the card retired at parity): ui/ survives as the paint leaf-face carrier; the takeover client is gone",
   "exports": {
-    ".": "./src/index.ts",
-    "./card": "./src/card.ts",
-    "./client": "./lib/client.js",
     "./package.json": "./package.json",
     "./ui/studio/component": "./src/ui/studio/component.tsx"
   },
-  "dsh": { "client": { "platform": "web" } },
   "scripts": {
     "typecheck": "tsc --noEmit"
   },

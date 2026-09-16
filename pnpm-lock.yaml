@@ -540,9 +540,6 @@ importers:
       '@melite/image-mask-form':
         specifier: workspace:*
         version: link:../../image/mask-form
-      '@melite/image-mask-studio':
-        specifier: workspace:*
-        version: link:../../image/mask-studio
       '@melite/image-tagger':
         specifier: workspace:*
         version: link:../../image/tagger

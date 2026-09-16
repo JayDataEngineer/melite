@@ -211,7 +211,8 @@ describe('live door arms', () => {
   test('formsArm serves the live table (sort law pinned synthetically)', async () => {
     const table = (await formsArm()) as Record<string, Record<string, unknown>>
     assert.ok('tts' in table)
-    assert.ok('mask-studio' in table)
+    assert.ok('mask-form' in table, 'the mask surface serves (the studio retired at parity, stroke 75)')
+    assert.equal('mask-studio' in table, false, 'the studio row is GONE (CONTRACT D)')
     assert.equal(table['tts']!['plugin'], 'comfyui')
     assert.equal(typeof table['tts']!['order'], 'number')
   })
@@ -266,12 +267,16 @@ describe('live door arms', () => {
     assert.equal('defaults' in spec, false)
   })
 
-  test('formSpecArm serves the card-only mask-studio envelope', async () => {
-    const spec = (await formSpecArm('mask-studio')) as Record<string, unknown>
-    assert.equal(spec['form'], 'mask-studio')
-    assert.equal(spec['service'], 'mask-studio')
+  test('formSpecArm serves the card-only mask-form envelope (the studio retired at parity, stroke 75)', async () => {
+    const spec = (await formSpecArm('mask-form')) as Record<string, unknown>
+    assert.equal(spec['form'], 'mask-form')
+    assert.equal(spec['service'], 'mask-form')
     assert.deepEqual(spec['variants'], [])
-    assert.deepEqual((spec['features'] as { modifiers: unknown[] }).modifiers, [])
+    // the card-declared kinds serve on the ONE modifiers channel
+    assert.deepEqual(
+      ((spec['features'] as { modifiers: unknown[] }).modifiers as Array<{ kind: string }>).map((m) => m.kind),
+      ['mask_detect', 'mask_subject', 'mask_parts', 'mask_paint'],
+    )
     // stroke 34: the recipes key never rides — the layer is dead
     assert.equal('recipes' in spec, false)
   })

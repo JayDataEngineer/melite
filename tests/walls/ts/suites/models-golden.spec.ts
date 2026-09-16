@@ -163,7 +163,10 @@ describe("the identity rung rides the live card defs (phase 2 start)", () => {
       assert.ok(typeof def.identity.label === "string" && def.identity.label !== "", `${id} identity label empty`);
       carried++;
     }
-    assert.equal(carried, 19);
+    // 18 since stroke 75: mask-studio retired at parity (CONTRACT D) —
+    // the ring row stays as frozen py truth, a named divergence like
+    // the 3 deleted + the TS-added.
+    assert.equal(carried, 18);
     // the TS-added card (clothing-placement) has no py identity —
     // the named divergence; it declares its own or carries none
     assert.equal(defs.size >= 20, true);

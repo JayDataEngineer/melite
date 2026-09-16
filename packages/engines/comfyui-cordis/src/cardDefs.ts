@@ -59,7 +59,14 @@ export const cardPackages: string[] = [
     '@melite/audio-sfx',
     '@melite/image-ideogram4/card',
     '@melite/image-input-prep',
-    '@melite/image-mask-studio/card',
+    // RETIRED 2026-09-16 (CONTRACT D — parity reached, stroke 75):
+    // mask-studio's card row. The FORM card (mask-form) owns the
+    // mask surface — its bag covers every wire knob the studio
+    // declared (detect/subject/parts/paint + the parity scalars).
+    // The studio PACKAGE survives demoted: ui/ (PaintCanvas2D + the
+    // studio internals) is the paint leaf-face carrier (its own
+    // stroke); the runs-plane mask_studio mappings stay (historical
+    // runs resolve their engine).
     '@melite/image-mask-form/card',
     '@melite/image-tagger',
     '@melite/image-upscale-tools',

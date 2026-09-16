@@ -97,8 +97,10 @@
     - id: card-studio-img-to-mesh
       name: '@melite/3d-img-to-mesh'
 
-    - id: card-studio-mask-studio
-      name: '@melite/image-mask-studio'
+    # mask-studio RETIRED at parity (stroke 75, CONTRACT D): the
+    # loader entry and the row are gone — mask-form owns the mask
+    # surface; the package survives as the paint leaf-face carrier
+    # (ui/), unmounted.
 
     - id: card-studio-motion
       name: '@melite/motion-motion'

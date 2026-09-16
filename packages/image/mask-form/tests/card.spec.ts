@@ -34,13 +34,13 @@ describe("the mask-form card declaration (stroke 64)", () => {
     assert.deepEqual(f.options.map((o) => o.value), ["face", "hands", "body"], "the parts vocabulary is a closed set");
     const detect = mods[0]!;
     assert.equal(detect.param_key, "mask_detect");
-    assert.deepEqual((detect.kindFields ?? []).map((f) => f["name"]), ["sam_threshold", "sam_dilation"]);
+    assert.deepEqual((detect.kindFields ?? []).map((f) => f["name"]), ["sam_threshold", "sam_dilation", "detection_threshold", "max_instances"], "PARITY (CONTRACT D): the studio's detect-lane scalars ride the section");
     assert.deepEqual((detect.fields ?? []).map((f) => f["name"]), ["primary_class", "via_rtdetr"]);
     assert.equal(detect.max_stack, 8);
   });
 
   it("admits the mod-owned names past the flat schema (bags + section scalars)", () => {
-    assert.deepEqual([...def.admits ?? []], ["mask_detect", "mask_subject", "mask_parts", "mask_paint", "sam_threshold", "sam_dilation"]);
+    assert.deepEqual([...def.admits ?? []], ["mask_detect", "mask_subject", "mask_parts", "mask_paint", "sam_threshold", "sam_dilation", "detection_threshold", "max_instances"]);
   });
 });
 
@@ -145,6 +145,31 @@ describe("the mask-form compose gate (the bag is the recipe)", () => {
     assert.ok(json.includes("mask_paint_1"), "a non-string name falls back to paint_1");
     assert.ok(json.includes("mask_paint_2"), "an empty name falls back to paint_2");
     assert.ok(json.includes("mask_fixed"), "a real name rides verbatim");
+  });
+
+  it("PARITY (CONTRACT D): the manifest decouples from output_mode and the detect-lane scalars thread to the kit", () => {
+    // segm + export_boxes default TRUE → the RT-DETR manifest arm draws
+    const g = new GraphBuilder();
+    def.compose(def.schema({ input_image: "/in.png", mask_detect: [{ primary_class: "person" }] }), DUMMY, g, "r1");
+    let rtdetr = Object.values(g.toJSON()).find((n: { class_type?: string }) => n["class_type"] === "RTDETR_detect");
+    assert.ok(rtdetr, "segm + default draws the manifest (the studio's law)");
+    // segm + export_boxes:false → the manifest arm stays OFF
+    const g2 = new GraphBuilder();
+    def.compose(def.schema({ input_image: "/in.png", export_boxes: false, mask_detect: [{ primary_class: "person" }] }), DUMMY, g2, "r1");
+    rtdetr = Object.values(g2.toJSON()).find((n: { class_type?: string }) => n["class_type"] === "RTDETR_detect");
+    assert.equal(rtdetr, undefined, "an explicit false refuses the manifest in segm mode");
+    // bbox always forces the manifest (the manifest-only mode)
+    const g3 = new GraphBuilder();
+    def.compose(def.schema({ input_image: "/in.png", output_mode: "bbox", export_boxes: false, mask_detect: [{ primary_class: "person" }] }), DUMMY, g3, "r1");
+    rtdetr = Object.values(g3.toJSON()).find((n: { class_type?: string }) => n["class_type"] === "RTDETR_detect");
+    assert.ok(rtdetr, "bbox is the manifest-only mode — export_boxes cannot turn it off");
+    // the section's committed scalars thread VERBATIM (RT-DETR inputs)
+    const g4 = new GraphBuilder();
+    def.compose(def.schema({ input_image: "/in.png", detection_threshold: 0.6, max_instances: 4, mask_detect: [{ primary_class: "person" }] }), DUMMY, g4, "r1");
+    const node = Object.values(g4.toJSON()).find((n: { class_type?: string }) => n["class_type"] === "RTDETR_detect") as { inputs?: Record<string, unknown> };
+    assert.ok(node, "the default manifest draws the box lane");
+    assert.equal(node!["inputs"]!["threshold"], 0.6, "detection_threshold threads verbatim");
+    assert.equal(node!["inputs"]!["max_detections"], 4, "max_instances threads verbatim");
   });
 
   it("the subject lane renders a CLIP text conditioning (the SAM3 CLIP leg)", () => {

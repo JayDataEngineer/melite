@@ -11,7 +11,7 @@
 // the discovery arms derive from: one card per apply, id/skeleton/
 // boarded/schema present, the identity ring's four strings
 // non-empty. A final cross-card pass mounts ALL twelve on one seat
-// and asserts twelve unique ids (one card, one plugin — a collision
+// and asserts eleven unique ids (one card, one plugin — a collision
 // is the duplicate-card refusal in production).
 //
 // Run: npx vitest run tests/walls/ts/suites/cards-registration.spec.ts
@@ -69,7 +69,9 @@ const CARDS: Array<{ pkg: string; genre: string; path: string }> = [
   { pkg: "sfx", genre: "audio", path: "../../../../packages/audio/sfx/src/card.ts" },
   { pkg: "ideogram4", genre: "image", path: "../../../../packages/image/ideogram4/src/card.ts" },
   { pkg: "input-prep", genre: "image", path: "../../../../packages/image/input-prep/src/card.ts" },
-  { pkg: "mask-studio", genre: "image", path: "../../../../packages/image/mask-studio/src/card.ts" },
+  // mask-studio RETIRED (stroke 75, CONTRACT D at parity): the
+  // card face is gone — mask-form owns the mask surface. The
+  // package survives demoted (ui/ = the paint leaf-face carrier).
   { pkg: "tagger", genre: "image", path: "../../../../packages/image/tagger/src/card.ts" },
   { pkg: "upscale-tools", genre: "image", path: "../../../../packages/image/upscale-tools/src/card.ts" },
   { pkg: "video-gen", genre: "video", path: "../../../../packages/video/video-gen/src/card.ts" },
@@ -105,14 +107,14 @@ describe("card-only packages register exactly one honest row", () => {
     });
   }
 
-  it("twelve cards on one seat: twelve unique ids (one card, one plugin)", async () => {
+  it("eleven cards on one seat: eleven unique ids (one card, one plugin; the studio retired at parity, stroke 75)", async () => {
     const { ctx, seat } = fakeCtx();
     for (const card of CARDS) {
       const mod: CardModule = (await import(card.path)) as CardModule;
       mod.apply(ctx);
     }
-    assert.equal(seat.rows.length, 12);
+    assert.equal(seat.rows.length, 11);
     const ids: string[] = seat.rows.map((r) => r.id);
-    assert.equal(new Set(ids).size, 12, `ids unique (got ${JSON.stringify(ids)})`);
+    assert.equal(new Set(ids).size, 11, `ids unique (got ${JSON.stringify(ids)})`);
   });
 });

@@ -45,6 +45,10 @@ const schema = z.object({
   input_image: z.string().role('path').description('Input').extra('extra', { order: 1, group: 'input', width: 2, tooltip: 'The image the mask selects FROM.', wtype: 'image' }),
   output_mode: vocabulary(['segm', 'bbox']).description('Output').default('segm').extra('extra', { order: 2, group: 'input', width: 1, tooltip: 'segm saves masks; bbox saves the drawn-box manifest.', wtype: 'select' }),
   refine_iterations: z.number().description('Refine iterations').min(0).max(8).step(1).default(2).extra('extra', { order: 1, group: 'advanced', width: 1, tooltip: 'SAM3 refine rounds.' }),
+  // PARITY (CONTRACT D): the manifest decoupled from output_mode —
+  // the studio drew RT-DETR boxes by default; bbox stays the
+  // manifest-ONLY mode, segm + true draws both.
+  export_boxes: z.boolean().description('Export box manifest').default(true).extra('extra', { order: 2, group: 'input', width: 1, tooltip: 'Draw RT-DETR boxes on the image — the instance manifest.' }),
 })
 
 // THE CARD-DECLARED KINDS (CONTRACT A — served VERBATIM on the one
@@ -62,6 +66,10 @@ const MODS: readonly DeclaredModifierKind[] = [
     kindFields: [
       { name: 'sam_threshold', label: 'Threshold', type: 'number', default: 0.93, min: 0.5, max: 1, step: 0.01, tooltip: 'SAM3 mask confidence.' },
       { name: 'sam_dilation', label: 'Dilation', type: 'number', default: 0, min: 0, max: 64, step: 1, tooltip: 'Grow the final mask N pixels.' },
+      // PARITY (CONTRACT D): the studio's detect-lane scalars, verbatim
+      // defaults — RT-DETR confidence + the instance cap the kit reads.
+      { name: 'detection_threshold', label: 'Detection threshold', type: 'number', default: 0.35, min: 0.05, max: 0.95, step: 0.05, tooltip: 'RT-DETR box confidence. Lower catches more instances, noisier boxes.' },
+      { name: 'max_instances', label: 'Max instances', type: 'number', default: 0, min: 0, max: 100, step: 1, tooltip: 'Cap detected instances (0 = no cap). Read the manifest first, then narrow.' },
     ],
     fields: [
       { name: 'primary_class', label: 'Class', type: 'string', default: 'person', tooltip: 'The class the detector locks (first entry is the primary).' },
@@ -153,7 +161,7 @@ export function apply(ctx: Context): void {
     // THE MOD-OWNED NAMES ride admits (the compose door's explicit-
     // params overlay — the bags + the section's kindFields scalars
     // never touch the flat schema).
-    admits: ['mask_detect', 'mask_subject', 'mask_parts', 'mask_paint', 'sam_threshold', 'sam_dilation'],
+    admits: ['mask_detect', 'mask_subject', 'mask_parts', 'mask_paint', 'sam_threshold', 'sam_dilation', 'detection_threshold', 'max_instances'],
     mods: MODS,
     schema: schema as unknown as (v: unknown) => Record<string, unknown>,
     compose(p, _model, g, runId) {
@@ -177,7 +185,13 @@ export function apply(ctx: Context): void {
         sam_threshold: p.sam_threshold,
         sam_dilation: p.sam_dilation,
         refine_iterations: p.refine_iterations,
-        export_boxes: p.output_mode === 'bbox',
+        // PARITY: the manifest on by default (bbox = manifest-only;
+        // segm + export_boxes draws both — the studio's law)
+        export_boxes: p.output_mode === 'bbox' || p.export_boxes !== false,
+        // PARITY: the detect-lane scalars thread only when the
+        // section committed them (absent rides the kit fallbacks)
+        detection_threshold: p.detection_threshold,
+        max_instances: p.max_instances,
       }
       const exports: Array<[string, string]> = []
       const exportKind: string[] = []

@@ -49,7 +49,6 @@
     "@melite/image-image-gen": "workspace:*",
     "@melite/image-input-prep": "workspace:*",
     "@melite/image-mask-form": "workspace:*",
-    "@melite/image-mask-studio": "workspace:*",
     "@melite/image-tagger": "workspace:*",
     "@melite/image-upscale-tools": "workspace:*",
     "@melite/models-ace-step": "workspace:*",

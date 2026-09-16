@@ -54,6 +54,8 @@ stringified JSON blob):
 - The user asks for the box manifest instead of segmentations
   (`output_mode: "bbox"`).
 
-Use **mask-studio** instead when the user wants to interactively
-paint/inspect on a canvas takeover; this card composes, that card
-edits.
+The interactive paint canvas rides this card's `mask_paint` leaf
+(stroke-following); until it lands, paint entries take a payload
+PNG through the three-source square. The studio card RETIRED at
+parity (2026-09-16, CONTRACT D) — this card composes AND owns the
+mask surface.
