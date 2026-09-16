@@ -54,7 +54,7 @@ describe("fetchBench — a missing bench is a zero state, not a failure", () => 
   test("a not-yet-born bench serves empty (rev 0 — the birth lands fresh)", async () => {
     stubDoors((method) => method === "bench/get" ? { refuse: "no such bench" } : { value: {} });
     await expect(fetchBench()).resolves.toEqual({
-      kind: "bench", draftId: "bench-main", rev: 0, stages: [], log: [],
+      kind: "bench", draftId: "bench-main", rev: 0, stages: [], log: [], sessionKey: "main",
     });
   });
 

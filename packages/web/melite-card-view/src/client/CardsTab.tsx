@@ -1052,7 +1052,7 @@ function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRemoved, 
     setError(null)
     setRemoving(true)
     try {
-      await removeStageWire({ stage: stage.id, expect_rev: bench.rev })
+      await removeStageWire({ stage: stage.id, expect_rev: bench.rev }, bench.sessionKey)
       onRemoved()
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : 'remove failed')
@@ -1074,7 +1074,7 @@ function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRemoved, 
       setError(null)
       setRemoving(true)
       try {
-        await ungroupStageWire({ stage: stage.id, expect_rev: bench.rev })
+        await ungroupStageWire({ stage: stage.id, expect_rev: bench.rev }, bench.sessionKey)
         onRemoved()
       } catch (e: unknown) {
         setError(e instanceof Error ? e.message : 'ungroup failed')
@@ -1535,7 +1535,7 @@ function BenchView({ bench, sessionKey, onRun, onRunStage, onStopStage, onRemove
     next.splice(to, 0, moved)
     const beforeRev = live.rev
     setLive((cur) => ({ ...cur, stages: next }))
-    void reorderStageWire({ stage: active, to, expect_rev: beforeRev })
+    void reorderStageWire({ stage: active, to, expect_rev: beforeRev }, sessionKey)
       .then((row) => {
         const rev = typeof row['rev'] === 'number' ? row['rev'] as number : beforeRev + 1
         setLive((cur) => ({ ...cur, rev }))
@@ -1660,7 +1660,7 @@ function BenchView({ bench, sessionKey, onRun, onRunStage, onStopStage, onRemove
   const onGroup = useCallback((): void => {
     const ordered = live.stages.map((s) => s.id).filter((id) => selectedIds.has(id))
     if (ordered.length < 2) return
-    void groupStagesWire({ stages: ordered, expect_rev: live.rev })
+    void groupStagesWire({ stages: ordered, expect_rev: live.rev }, sessionKey)
       .then(() => { exitGrouping(); reload() })
       .catch((err: unknown) => { setReloadError(err instanceof Error ? err.message : 'group refused') })
   }, [live, selectedIds, exitGrouping, reload])
@@ -1853,7 +1853,10 @@ function DraftView({ value, running, onRun, onStop, onBack, onPatchParams, rende
   // slot-is-the-wire law), the draft id for the patch door. rev -1 is
   // the no-CAS marker — removal is absent (canRemove false), so the
   // marker is never spent.
-  const bench: CardsBenchValue = { kind: 'bench', draftId: value.draftId, rev: -1, stages: value.stages, log: [] }
+  // sessionKey 'main': this synthetic bench's remove never fires
+  // (canRemove false below — rev -1 is the no-CAS marker), so the
+  // key is carried for the type, never spent.
+  const bench: CardsBenchValue = { kind: 'bench', draftId: value.draftId, rev: -1, stages: value.stages, log: [], sessionKey: 'main' }
   return h(StageDrill, {
     stage,
     bench,
@@ -2151,7 +2154,7 @@ export function CardsTab(props: CardsTabProps): ReturnType<typeof h> {
   }, [stageRuns])
   const onRemoveStage = useCallback((stage: BenchStageRow): void => {
     if (snapshot?.value?.kind !== 'bench') return
-    void removeStageWire({ stage: stage.id, expect_rev: snapshot.value.rev })
+    void removeStageWire({ stage: stage.id, expect_rev: snapshot.value.rev }, snapshot.value.sessionKey)
       .then(() => { touchBench() })
       .catch((e: unknown) => {
         setLocalRunError(e instanceof Error ? e.message : 'remove failed')

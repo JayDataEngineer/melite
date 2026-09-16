@@ -118,6 +118,14 @@ export interface CardsBenchValue {
   rev: number
   stages: BenchStageRow[]
   log: BenchLogHead[]
+  /** THE SESSION KEY (stroke 80 — the misaddressed-delete fix): the
+   *  bench's own conversation key, carried ON the value so every
+   *  mutation verb (remove/reorder/group/ungroup) addresses the doc
+   *  the bar RENDERS. Before this, the wires hardcoded 'main' — a
+   *  non-main bench's adds landed in its own draft (addStageWire
+   *  already carried the key) while its deletes hit MAIN's doc and
+   *  refused 'stage not found' against rows main never held. */
+  sessionKey: string
 }
 
 /** One run stage as the status door serves it — the run-wire
@@ -250,7 +258,7 @@ function failure(address: string, message: string): RemoteResult<never> {
 }
 
 /** Defensive row readers — the door's wire is untyped at this seam. */
-export function readBench(doc: Record<string, unknown>): CardsBenchValue {
+export function readBench(doc: Record<string, unknown>, sessionKey: string = 'main'): CardsBenchValue {
   let stages = Array.isArray(doc['stages'])
     ? (doc['stages'] as unknown[]).filter((s): s is BenchStageRow =>
         typeof s === 'object' && s !== null && typeof (s as BenchStageRow)['id'] === 'string')
@@ -282,6 +290,7 @@ export function readBench(doc: Record<string, unknown>): CardsBenchValue {
     rev: typeof doc['rev'] === 'number' ? (doc['rev'] as number) : 0,
     stages,
     log,
+    sessionKey: benchSessionKey(sessionKey),
   }
 }
 
@@ -292,7 +301,7 @@ export function readBench(doc: Record<string, unknown>): CardsBenchValue {
  *  the very first card. */
 export function emptyBench(sessionKey: string): CardsBenchValue {
   const key = benchSessionKey(sessionKey)
-  return readBench({ draft_id: 'bench-' + key, session: key, rev: 0, intent: '', stages: [] })
+  return readBench({ draft_id: 'bench-' + key, rev: 0, intent: '', stages: [] }, key)
 }
 
 function isMissingBench(e: unknown): boolean {
@@ -306,7 +315,7 @@ function isMissingBench(e: unknown): boolean {
 export async function fetchBench(sessionKey: string = 'main', signal?: AbortSignal): Promise<CardsBenchValue> {
   const key = benchSessionKey(sessionKey)
   try {
-    return readBench(await wireCall('bench/get', { sessionKey: key }, signal))
+    return readBench(await wireCall('bench/get', { sessionKey: key }, signal), key)
   } catch (e) {
     if (isMissingBench(e)) return emptyBench(key)
     throw e
@@ -433,7 +442,7 @@ export function watchBenchLands(
           first = false
         }
         const key = activeKey
-        const bench = readBench(result.value.value)
+        const bench = readBench(result.value.value, key)
         const lastRev = lastRevs.get(key) ?? null
         if (lastRev === null) {
           lastRevs.set(key, bench.rev) // first sight of this key: hydration
@@ -867,7 +876,7 @@ export function openCardsResource(
         // says surface it, never freeze the view pretending to watch.
         let value: CardsBenchValue
         try {
-          value = readBench(await wireCall('bench/get', { sessionKey: benchKey }))
+          value = readBench(await wireCall('bench/get', { sessionKey: benchKey }), benchKey)
         } catch (e) {
           if (!isMissingBench(e)) {
             yield failure(address, e instanceof Error ? e.message : String(e))
@@ -1057,7 +1066,7 @@ async function* streamBenchFrames(
         item.accept()
         first = false
       }
-      const value = readBench(item.value)
+      const value = readBench(item.value, sessionKey)
       if (lastRev === value.rev) continue // same-doc reconnect: no frame
       lastRev = value.rev
       yield { ok: true, value }

@@ -75,24 +75,26 @@ export async function addStageWire(doc: Record<string, unknown>, sessionKey = 'm
 }
 
 /** The bench remove-stage wire door caller (the drill's Remove path).
- *  The doc holds stage/expect_rev. */
-export async function removeStageWire(doc: Record<string, unknown>, signal?: AbortSignal): Promise<Record<string, unknown>> {
-  return await withRebase('bench/remove-stage', doc, 'main', signal)
+ *  The doc holds stage/expect_rev; the session key addresses the doc
+ *  the bar RENDERS (stroke 80 — 'main' hardcoding deleted against
+ *  the wrong bench and refused 'stage not found'). */
+export async function removeStageWire(doc: Record<string, unknown>, sessionKey: string = 'main', signal?: AbortSignal): Promise<Record<string, unknown>> {
+  return await withRebase('bench/remove-stage', doc, sessionKey, signal)
 }
 
 /** The bench reorder wire door caller (the drag-reorder path). Doc:
  *  stage/to/expect_rev — `to` is the post-splice target index. */
-export async function reorderStageWire(doc: Record<string, unknown>, signal?: AbortSignal): Promise<Record<string, unknown>> {
-  return await withRebase('bench/reorder', doc, 'main', signal)
+export async function reorderStageWire(doc: Record<string, unknown>, sessionKey: string = 'main', signal?: AbortSignal): Promise<Record<string, unknown>> {
+  return await withRebase('bench/reorder', doc, sessionKey, signal)
 }
 
 /** The bench group wire door caller (the Group Cards sub-view):
  *  stages = 2+ ids (bench order applied server-side). */
-export async function groupStagesWire(doc: Record<string, unknown>, signal?: AbortSignal): Promise<Record<string, unknown>> {
-  return await withRebase('bench/group', doc, 'main', signal)
+export async function groupStagesWire(doc: Record<string, unknown>, sessionKey: string = 'main', signal?: AbortSignal): Promise<Record<string, unknown>> {
+  return await withRebase('bench/group', doc, sessionKey, signal)
 }
 
 /** The bench ungroup wire door caller: spill a compound's children. */
-export async function ungroupStageWire(doc: Record<string, unknown>, signal?: AbortSignal): Promise<Record<string, unknown>> {
-  return await withRebase('bench/ungroup', doc, 'main', signal)
+export async function ungroupStageWire(doc: Record<string, unknown>, sessionKey: string = 'main', signal?: AbortSignal): Promise<Record<string, unknown>> {
+  return await withRebase('bench/ungroup', doc, sessionKey, signal)
 }

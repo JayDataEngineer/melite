@@ -92,7 +92,7 @@ describe("readBench — the door's wire is untyped at this seam", () => {
   });
   test("emptyBench is the fresh conversation's zero state (rev 0)", () => {
     expect(emptyBench("conv-9")).toEqual({
-      kind: "bench", draftId: "bench-conv-9", rev: 0, stages: [], log: [],
+      kind: "bench", draftId: "bench-conv-9", rev: 0, stages: [], log: [], sessionKey: "conv-9",
     });
   });
   test("emptyBench sanitizes its key (never a forged draft id)", () => {
