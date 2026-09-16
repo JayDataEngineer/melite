@@ -1,4 +1,4 @@
-import { a as boardedMap, d as resolveSpecKey, f as asEstateCall, i as routeName, n as matchHarnessRoute, p as makeEstateRequest, r as resolveHarnessRoutes, t as harnessEnhance } from "./llm-complete-WfDZkN-o.mjs";
+import { a as boardedMap, d as resolveSpecKey, f as asEstateCall, i as routeName, n as matchHarnessRoute, p as makeEstateRequest, r as resolveHarnessRoutes, t as harnessEnhance } from "./llm-complete-DQHXIBbn.mjs";
 import { buildMusicTool } from "@melite/audio-music/tool";
 import { buildTtsTool } from "@melite/audio-tts/tool";
 import { buildVoiceLockTool } from "@melite/audio-voice-lock/tool";
@@ -1544,6 +1544,12 @@ function meliteLoad(request, opts = {}) {
 						const marked = keys.map((k) => req.includes(k) ? k + "*" : k);
 						out.push("params: " + marked.join(", ") + " (* required)");
 					}
+					const mods = Array.isArray(sig?.modifiers) ? sig.modifiers : [];
+					if (mods.length > 0) out.push("mods: " + mods.map((m) => {
+						const kind = str(m?.kind) || "?";
+						const cat = str(m?.category) || "ordered";
+						return kind + "[] (" + cat + ")";
+					}).join(", ") + " — pass arrays under these keys; ordered kinds stack in array order, standalone kinds each provide their own output");
 					const model = str(sig.model);
 					if (model !== "") out.push("signature model: " + model);
 				}

@@ -1,4 +1,4 @@
-import { CARD_KINDS, SLOT_VOCABULARY, buildCatalog, emitParamsSchema, enhanceRecipeFor, getModel, isServedFamily, liveScanOrder, loadCardDefs, modelIds, theService } from "@melite/comfyui-cordis";
+import { CARD_KINDS, SLOT_VOCABULARY, buildCatalog, emitModifierKinds, emitParamsSchema, enhanceRecipeFor, getModel, isServedFamily, liveScanOrder, loadCardDefs, modelIds, theService } from "@melite/comfyui-cordis";
 import { createUserMessage } from "@deepseek-ai/dsh-llm";
 //#region src/estate.ts
 /** Narrow the seat-bound request to the canonical EstateCall the card
@@ -598,6 +598,7 @@ async function cardToolsArm() {
 		const fams = boarded.length > 0 ? boarded : [id];
 		const carrier = def.schemaCarrier ?? def.schema;
 		const schema = emitParamsSchema(carrier, fams);
+		const mods = emitModifierKinds(def.mods);
 		out.push({
 			name: id,
 			version: 1,
@@ -607,7 +608,8 @@ async function cardToolsArm() {
 			description: ident.description,
 			genre: ident.genre,
 			families: fams,
-			params_schema: schema
+			params_schema: schema,
+			...mods.length > 0 ? { modifiers: mods } : {}
 		});
 	}
 	return out;

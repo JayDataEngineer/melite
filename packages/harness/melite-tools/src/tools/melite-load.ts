@@ -97,6 +97,7 @@ export function meliteLoad(
             signature?: {
               name?: unknown; model?: unknown; card?: unknown
               params_schema?: { properties?: Record<string, unknown>; required?: unknown }
+              modifiers?: Array<{ kind?: unknown; category?: unknown; fields?: unknown[] }>
             } | null
             agents?: Array<{ path?: unknown; text?: unknown }>
             skills?: Array<Record<string, unknown>>
@@ -143,6 +144,20 @@ export function meliteLoad(
           if (keys.length > 0) {
             const marked = keys.map((k) => req.includes(k) ? k + '*' : k)
             out.push('params: ' + marked.join(', ') + ' (* required)')
+          }
+          // THE MODS LINE (stroke 79 — the seam-law unification): the
+          // same kinds the UI form-spec serves, one line for the
+          // agent — the bags are compose-required on mod-owned cards,
+          // and params alone leave the agent blind to them. The
+          // category names the stacking law (ordered = array order
+          // matters; standalone = own output).
+          const mods = Array.isArray(sig?.modifiers) ? sig.modifiers : []
+          if (mods.length > 0) {
+            out.push('mods: ' + mods.map((m) => {
+              const kind = str(m?.kind) || '?'
+              const cat = str(m?.category) || 'ordered'
+              return kind + '[] (' + cat + ')'
+            }).join(', ') + ' — pass arrays under these keys; ordered kinds stack in array order, standalone kinds each provide their own output')
           }
           const model = str(sig.model)
           if (model !== '') out.push('signature model: ' + model)

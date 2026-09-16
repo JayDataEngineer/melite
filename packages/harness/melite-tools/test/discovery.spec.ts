@@ -228,6 +228,25 @@ describe('live door arms', () => {
     assert.ok(typeof tts['params_schema'] === 'object')
   })
 
+  test('cardToolsArm serves the MODS beside params_schema (stroke 79 — the agent contract)', async () => {
+    const tools = (await cardToolsArm()) as Array<Record<string, unknown>>
+    const mask = tools.find((t) => t['name'] === 'mask-form')!
+    // the same kinds the UI form-spec serves — kind + category +
+    // field names; leaf_face never rides (agents compose values,
+    // never faces)
+    assert.deepEqual((mask['modifiers'] as Array<Record<string, unknown>>).map((m) => [m['kind'], m['category']]), [
+      ['sam3', 'standalone'],
+      ['sam2', 'standalone'],
+      ['draw', 'ordered'],
+    ])
+    const sam3 = (mask['modifiers'] as Array<Record<string, unknown>>)[0]!
+    assert.ok((sam3['fields'] as string[]).includes('prompt'), 'the field names ride')
+    assert.equal('leaf_face' in sam3, false, 'leaf_face is a UI concern — never rides')
+    // kindless cards serve NO modifiers key (never an empty array)
+    const tts = tools.find((t) => t['name'] === 'tts')!
+    assert.equal('modifiers' in tts, false)
+  })
+
   test('formSpecArm serves the tts envelope for its default family', async () => {
     const spec = (await formSpecArm('tts')) as Record<string, unknown>
     assert.equal(spec['form'], 'tts')

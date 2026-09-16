@@ -312,3 +312,42 @@ describe("loadFlow", () => {
     assert.throws(() => loadFlow(REPO, "ghost-flow"), /unknown flow 'ghost-flow'/);
   });
 });
+
+describe("toolRowFor — the mods projection (stroke 79)", () => {
+  it("serves the declared kinds beside params_schema (the agent contract — verbatim, leaf_face never rides)", () => {
+    const def = DEF({
+      mods: [
+        { kind: "sam3", label: "SAM3", param_key: "sam3", cardinality: "list", category: "standalone", leaf_face: "bbox-canvas",
+          fields: [{ name: "prompt" }, { name: "bbox_x" }] },
+        { kind: "draw", label: "Draw", param_key: "draw", cardinality: "list", category: "ordered", leaf_face: "paint-canvas",
+          fields: [{ name: "payload" }] },
+      ] as never,
+    });
+    const out = toolRowFor("c", def, toolBaseRows(new Map([["c", def]])));
+    assert.deepEqual(out["modifiers"], [
+      { kind: "sam3", category: "standalone", cardinality: "list", fields: ["prompt", "bbox_x"] },
+      { kind: "draw", category: "ordered", cardinality: "list", fields: ["payload"] },
+    ], "verbatim kinds; leaf_face stays a UI concern (never rides)");
+  });
+
+  it("a kindless card serves NO modifiers key (never an empty array)", () => {
+    const out = toolRowFor("c", DEF(), toolBaseRows(new Map([["c", DEF()]])));
+    assert.equal("modifiers" in out, false);
+  });
+
+  it("a category-less kind omits the category (ordered is the default, never spelled)", () => {
+    const def = DEF({
+      mods: [{ kind: "loras", label: "L", param_key: "loras", cardinality: "list" }] as never,
+    });
+    const out = toolRowFor("c", def, toolBaseRows(new Map([["c", def]])));
+    const nameless = DEF({
+      mods: [{ kind: "loras", label: "L", param_key: "loras", cardinality: "list", fields: [{}, { name: "strength" }] }] as never,
+    });
+    assert.deepEqual(out["modifiers"], [{ kind: "loras", cardinality: "list", fields: [] }]);
+    assert.deepEqual(
+      (toolRowFor("c", nameless, toolBaseRows(new Map([["c", nameless]])))["modifiers"] as Array<{ fields: string[] }>)[0]["fields"],
+      ["", "strength"],
+      "a nameless field row degrades to '' (never a crash, never a drop)",
+    );
+  });
+});

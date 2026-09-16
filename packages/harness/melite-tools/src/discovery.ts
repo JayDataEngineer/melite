@@ -26,6 +26,7 @@ import {
   modelIds,
   SLOT_VOCABULARY,
   theService,
+  emitModifierKinds,
 } from '@melite/comfyui-cordis'
 import type {
   CardDefinition,
@@ -626,6 +627,15 @@ export async function cardToolsArm(): Promise<unknown[]> {
     const fams = boarded.length > 0 ? boarded : [id]
     const carrier = (def as { schemaCarrier?: unknown }).schemaCarrier ?? def.schema
     const schema = emitParamsSchema(carrier as never, fams) as Record<string, unknown>
+    // THE MODS CONTRACT (stroke 79 — the seam-law unification): the
+    // declared kinds ride beside params_schema so the AGENT plane
+    // sees the same contract the UI form-spec serves — the mod bags
+    // are NOT flat-schema keys, and an agent that never learns the
+    // kinds hits compose's loud refusals blind (params alone cannot
+    // compose a card whose complexity lives in mods). Verbatim off
+    // the card's own rows; leaf_face stays a UI concern and never
+    // rides (the agent composes VALUES, never faces).
+    const mods = emitModifierKinds(def.mods)
     out.push({
       name: id,
       version: 1,
@@ -636,6 +646,7 @@ export async function cardToolsArm(): Promise<unknown[]> {
       genre: ident.genre,
       families: fams,
       params_schema: schema,
+      ...(mods.length > 0 ? { modifiers: mods } : {}),
     })
   }
   return out

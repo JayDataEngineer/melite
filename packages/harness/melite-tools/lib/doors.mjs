@@ -1,4 +1,4 @@
-import { c as formsArm, i as routeName, l as kindsDoorArm, o as cardToolsArm, p as makeEstateRequest, r as resolveHarnessRoutes, s as formSpecArm, t as harnessEnhance, u as modelCatalogArm } from "./llm-complete-WfDZkN-o.mjs";
+import { c as formsArm, i as routeName, l as kindsDoorArm, o as cardToolsArm, p as makeEstateRequest, r as resolveHarnessRoutes, s as formSpecArm, t as harnessEnhance, u as modelCatalogArm } from "./llm-complete-DQHXIBbn.mjs";
 import { buildSkillIndex, disclosureRoot } from "@melite/estate-queue";
 import { agentFormDoc } from "@melite/engine-agent";
 import { craftFormDoc } from "@melite/engine-craft";
@@ -351,6 +351,7 @@ function apply(c, config = {}) {
 					return fail(500, { error: `discovery door: ${error instanceof Error ? error.message : /* v8 ignore next -- the try body throws Errors only (URL/arms are sync-Error sites, 2026-09-12) */ String(error)}` });
 				}
 				const request = makeEstateRequest(c);
+				const pathWithQuery = url.pathname + url.search;
 				if (method === "POST") {
 					readBody(req).then((buf) => {
 						let body;
@@ -359,11 +360,11 @@ function apply(c, config = {}) {
 						} catch {
 							return fail(400, { error: "body must be JSON" });
 						}
-						request(method, path, body, signal, 12e4).then((value) => ok(value)).catch((error) => fail(502, { error: error instanceof Error ? error.message : String(error) }));
+						request(method, pathWithQuery, body, signal, 12e4).then((value) => ok(value)).catch((error) => fail(502, { error: error instanceof Error ? error.message : String(error) }));
 					}).catch((error) => fail(400, { error: `body read failed: ${error instanceof Error ? error.message : String(error)}` }));
 					return;
 				}
-				request(method, path, void 0, signal, 12e4).then((value) => ok(value)).catch((error) => fail(502, { error: error instanceof Error ? error.message : String(error) }));
+				request(method, pathWithQuery, void 0, signal, 12e4).then((value) => ok(value)).catch((error) => fail(502, { error: error instanceof Error ? error.message : String(error) }));
 			};
 			return serve();
 		}

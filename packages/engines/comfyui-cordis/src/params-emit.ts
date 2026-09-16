@@ -36,6 +36,7 @@
 //    knob from the card's boarded array: enum boarded, default
 //    boarded[0] — one source, two projections.
 import type z from '@deepseek-ai/schemastery'
+import type { DeclaredModifierKind } from './service.ts'
 
 type Schema = {
   type: string
@@ -255,3 +256,22 @@ export const emitParamsSchema = (
   if (required.length > 0) out.required = required
   return out
 }
+
+/** THE MODS PROJECTION (stroke 79 — the seam-law unification): the
+ *  declared kinds as the AGENT plane consumes them. ONE emitter,
+ *  TWO doors (the /v1/tools manifest row and the /v1/load bundle's
+ *  signature — never a re-derivation in either). The mod bags are
+ *  NOT flat-schema keys: params_schema alone cannot compose a card
+ *  whose complexity lives in mods, and an agent that never learns
+ *  the kinds hits compose's loud refusals blind. Verbatim off the
+ *  card's own declared rows; leaf_face is a UI concern and never
+ *  rides (the agent composes VALUES, never faces). */
+export const emitModifierKinds = (
+  mods: readonly DeclaredModifierKind[] | undefined,
+): Array<Record<string, unknown>> =>
+  (mods ?? []).map((k) => ({
+    kind: k.kind,
+    ...(k.category !== undefined ? { category: k.category } : {}),
+    cardinality: k.cardinality,
+    fields: (k.fields ?? []).map((f) => String(f['name'] ?? '')),
+  }))

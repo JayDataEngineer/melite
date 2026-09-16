@@ -1091,3 +1091,29 @@ describe('/v1 prefix seat lanes', () => {
     assert.equal(status, 200)
   })
 })
+
+test('THE QUERY RIDES THE SEAT LANE (stroke 79): GET /v1/load?inference_type=card&name=… reaches the seat with its params (pathname-only forwarding dropped them — the tools never noticed, they call seats in-process)', async () => {
+  const seen: unknown[] = []
+  const h = fakeHost({})
+  const host = h.host as { get(name: string): unknown }
+  const origGet = host.get.bind(host)
+  host.get = (serviceName: string) => {
+    if (serviceName === 'load') {
+      return {
+        load: (t: string, n: string) => {
+          seen.push([t, n])
+          return { bundle: { kind: 'card', name: n } }
+        },
+      }
+    }
+    return origGet(serviceName)
+  }
+  apply(host as never, {})
+  const r = await call(h.routes, '/v1', {
+    method: 'GET',
+    url: 'http://localhost/v1/load?inference_type=card&name=mask-form',
+  })
+  assert.equal(r.status, 200)
+  assert.deepEqual(seen, [['card', 'mask-form']])
+  assert.deepEqual(r.body, { bundle: { kind: 'card', name: 'mask-form' } })
+})

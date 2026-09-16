@@ -605,3 +605,15 @@ test('THE BBOX VERB: host-less or faceless kinds offer no verb (the four inputs 
   expect(screen.queryByRole('button', { name: 'Draw box' })).toBeNull()
   faceless.unmount()
 })
+
+test('THE SEAM CONTRACTS LIVE IN @melite/contracts (stroke 79): the face props construct against the re-exports (type-only seams prove at compile; construction proves the wiring)', async () => {
+  // the owner props ride the shared contracts package beside their
+  // siblings (PreviewOwnerProps, StageViewOwnerProps); card-base
+  // re-exports for its component-level types and existing importers
+  const mod = await import('../src/mods.tsx')
+  const a: mod.PaintFaceComponentProps = { referenceUrl: 'r', payloadUrl: 'p', onSave: () => {}, onCancel: () => {} }
+  const b: mod.BboxFaceComponentProps = { referenceUrl: 'r', bbox: null, onSave: () => {}, onCancel: () => {} }
+  const paint: mod.PaintFaceComponent = (props) => { void props; return null as never }
+  const box: mod.BboxFaceComponent = (props) => { void props; return null as never }
+  paint(a); box(b)
+})

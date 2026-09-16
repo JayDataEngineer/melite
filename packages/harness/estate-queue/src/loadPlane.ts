@@ -10,7 +10,7 @@
 import { createHash } from "node:crypto";
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
-import {cardPackages, cardWireName, emitParamsSchema, resolveRepoRoot, theService} from "@melite/comfyui-cordis";
+import {cardPackages, cardWireName, emitModifierKinds, emitParamsSchema, resolveRepoRoot, theService} from "@melite/comfyui-cordis";
 import type { ModelsService } from "@melite/comfyui-cordis";
 import type { CardRegistryService } from "./cardsRegistry.ts";
 import { getRegistryFlow } from "./flowsData.ts";
@@ -101,7 +101,12 @@ export function cardSkillDocs(pkgDir: string): Array<{ path: string; text: strin
  *  emitter imported, the envelope shared by construction). */
 export function toolRowFor(
   id: string,
-  def: { schemaCarrier?: unknown; schema: unknown; boarded: readonly string[] },
+  def: {
+    schemaCarrier?: unknown;
+    schema: unknown;
+    boarded: readonly string[];
+    mods?: Parameters<typeof emitModifierKinds>[0];
+  },
   rows: ReturnType<typeof toolBaseRows>,
 ): Record<string, unknown> {
   const base = rows.get(id);
@@ -110,7 +115,13 @@ export function toolRowFor(
     ((def as { schemaCarrier?: unknown }).schemaCarrier ?? def.schema) as Parameters<typeof emitParamsSchema>[0],
     def.boarded,
   );
+  // THE MODS PROJECTION (stroke 79): one emitter (emitModifierKinds
+  // — the same SSOT the /v1/tools manifest row serves), so the load
+  // bundle's signature and the manifest never drift. leaf_face never
+  // rides (the agent composes VALUES, never faces).
+  const modifiers = emitModifierKinds(def.mods);
   return {
+    ...(modifiers.length > 0 ? { modifiers } : {}),
     name: base.name,
     version: base.version,
     kind: base.kind,
@@ -299,7 +310,11 @@ export function loadCard(
   const bundle: Record<string, unknown> = {
     name: cardId,
     kind: "card",
-    signature: toolRowFor(cardId, def as { schemaCarrier?: unknown; schema: unknown; boarded: readonly string[] }, rows),
+    signature: toolRowFor(
+      cardId,
+      def as Parameters<typeof toolRowFor>[1],
+      rows,
+    ),
     agents: cardSkillDocs(pkgDir),
     skills: skillLinesForCard(repo, cardId),
     model_hints: hints,

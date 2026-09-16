@@ -487,7 +487,14 @@ export function apply(c: CtxView, config: Config = {}): void {
 
         // Seat lanes — makeEstateRequest's law (a lane with no seat
         // is a hard error naming the migration, never a silent empty).
+        // THE QUERY RIDES (stroke 79): `path` above is pathname-only
+        // (the door's own route matching) — the seat lane needs the
+        // FULL target, query included (/v1/load?inference_type=card
+        // arrived at the registry as '' — the params dropped at this
+        // seam, the tools never noticed because they call the seats
+        // in-process).
         const request = makeEstateRequest(c)
+        const pathWithQuery = url.pathname + url.search
         if (method === 'POST') {
           readBody(req).then((buf) => {
             let body: unknown
@@ -496,13 +503,13 @@ export function apply(c: CtxView, config: Config = {}): void {
             } catch {
               return fail(400, { error: 'body must be JSON' })
             }
-            request(method, path, body, signal, 120_000)
+            request(method, pathWithQuery, body, signal, 120_000)
               .then((value) => ok(value))
               .catch((error: unknown) => fail(502, { error: error instanceof Error ? error.message : String(error) }))
           }).catch((error: unknown) => fail(400, { error: `body read failed: ${error instanceof Error ? error.message : String(error)}` }))
           return
         }
-        request(method, path, undefined, signal, 120_000)
+        request(method, pathWithQuery, undefined, signal, 120_000)
           .then((value) => ok(value))
           .catch((error: unknown) => fail(502, { error: error instanceof Error ? error.message : String(error) }))
       }

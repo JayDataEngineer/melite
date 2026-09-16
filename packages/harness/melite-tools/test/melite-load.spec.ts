@@ -265,3 +265,34 @@ describe('melite_load render — THE INTERFACE LAW (the agent-mode breakdown, 20
     assert.ok(text.startsWith('loaded card c — open with melite_flow'), text)
   })
 })
+
+test('THE MODS LINE RIDES (stroke 79 — the agent sees the kinds beside params)', () => {
+  const tool = meliteLoad((async () => ({})) as unknown as EstateRequest)
+  const parts = tool.output.render(
+    { name: 'mask-form', inference_type: 'card' },
+    {
+      name: 'mask-form', inference_type: 'card',
+      bundle: {
+        kind: 'card', name: 'mask-form',
+        signature: {
+          params_schema: { properties: { input_image: {} }, required: ['input_image'] },
+          modifiers: [
+            { kind: 'sam3', category: 'standalone', fields: ['prompt'] },
+            { kind: 'draw', category: 'ordered', fields: ['payload'] },
+            null,
+          ],
+        },
+      },
+    } as never,
+  ) as Array<{ text?: string }>
+  const text = parts.map((p) => p?.text ?? '').join('\n')
+  assert.ok(text.includes('params: input_image* (* required)'), 'params still ride')
+  assert.ok(text.includes('mods: sam3[] (standalone), draw[] (ordered)'), 'the kinds + categories ride')
+  assert.ok(text.includes('ordered kinds stack in array order, standalone kinds each provide their own output'), 'the stacking law names itself')
+  // kindless cards stay line-less (never an empty mods line)
+  const plain = tool.output.render(
+    { name: 'c', inference_type: 'card' },
+    { name: 'c', inference_type: 'card', bundle: { kind: 'card', name: 'c', signature: { params_schema: { properties: { p: {} } } } } },
+  ) as Array<{ text?: string }>
+  assert.ok(!(plain.map((p) => p?.text ?? '').join('\n').includes('mods:')), 'no mods line without kinds')
+})

@@ -45,31 +45,12 @@ import { SpecAtom } from './form.tsx'
 import { useSquareProvider } from './form.tsx'
 import { coerceFieldEdit, isHybridKind, isOptionKind, optionKeyOf, scalarKeyOf, titleCaseId, type ModifierKind, type ModifierOption, type SpecField, type SpecValues } from './spec.ts'
 
-export interface PaintFaceComponentProps {
-  /** the reference image URL (the card's input field value, when
-   *  the host can name one — else the empty string rides) */
-  referenceUrl: string
-  /** the payload field's current value (paint-over seeds) */
-  payloadUrl: string
-  /** SAVE: write the PNG data URL into the payload field */
-  onSave: (dataUrl: string) => void
-  onCancel: () => void
-}
-
-/** THE BBOX FACE (stroke 78 — the bbox-canvas leaf): the host's
- *  selection modal — an image preview the user drags a rectangle
- *  on. Same delivery law as the paint face: a component from the
- *  client plane, never an import; absent host = the four number
- *  inputs hold (the degrade is graceful). */
-export interface BboxFaceComponentProps {
-  /** the image the rectangle selects ON (the card's input field) */
-  referenceUrl: string
-  /** the entry's current rectangle (null = unset) */
-  bbox: { x: number; y: number; width: number; height: number } | null
-  /** SAVE: write the rectangle (already image-pixel coordinates) */
-  onSave: (bbox: { x: number; y: number; width: number; height: number }) => void
-  onCancel: () => void
-}
+// THE FACE CONTRACTS (stroke 79 — the seam-law unification): the
+// owner props live in @melite/contracts (modifierFaces.ts) beside
+// their sibling seam contracts; re-exported here for the
+// component-level types below and every existing importer.
+export type { PaintFaceComponentProps, BboxFaceComponentProps } from '@melite/contracts'
+import type { BboxFaceComponentProps, PaintFaceComponentProps } from '@melite/contracts'
 
 export type BboxFaceComponent = (props: BboxFaceComponentProps) => ReactElement
 

@@ -28,7 +28,7 @@ export type { CardDefinition, DeclaredModifierKind } from "./service.ts";
 export { loadFacts } from "@melite/comfyui-card-kit/facts";
 export type { FactsFile, FactsReads, ModelFacts, LaneInputsFacts } from "@melite/comfyui-card-kit/facts";
 export { loadTextPair, decodeSave, stackLoras } from '@melite/comfyui-card-kit';
-export { emitKnob, emitParamsSchema, emitParamsSpec } from "./params-emit.ts";
+export { emitKnob, emitParamsSchema, emitParamsSpec, emitModifierKinds } from "./params-emit.ts";
 export type { ParamsSchema, ParamsSpec, ParamSpecNode } from "./params-emit.ts";
 export { assertCardIdentity, cardPackages, composeCards, composeModPlane, loadCardDefs, pluginPackage, provisionsByFamily, theService } from "./cardDefs.ts";
 export { ASSET_RUNS_PREFIX, resolveLinkedInput, runsRoot } from "./linked.ts";
