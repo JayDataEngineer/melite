@@ -650,13 +650,20 @@ export class CardRegistryService extends Service {
    *  downloaded is SERVED, marked absent — never silently dropped
    *  from any surface). Present = the live catalog offer
    *  (buildCatalog's served keys, route-id-as-model). */
-  cardFamilies(card: string): Array<{ id: string; present: boolean }> {
+  cardFamilies(card: string): Array<{ id: string; present: boolean; label: string }> {
     const def: CardDefinition | undefined = this.defsSync().get(card);
     const mids: Set<string> = this.modelMids();
-    // ids + presence ONLY (stroke 19): the DECL label is prose
-    // describing a variant+quant config, never a model name — no
-    // serving surface may render it as one
-    return (def?.boarded ?? []).map((fam) => ({ id: fam, present: mids.has(fam) }));
+    // Label = the family DECL's own face (registryModel —
+    // "MOSS-SFX v2", never the composed variant+quant row):
+    // SUPERSEDES the stroke-19 ids-only law (the operator,
+    // 2026-09-16: an id-only face drops the VERSION — "Moss Sfx"
+    // is ambiguous between v1 and v2; the family label is the
+    // model's face, the variant axes stay the axes).
+    return (def?.boarded ?? []).map((fam) => ({
+      id: fam,
+      present: mids.has(fam),
+      label: registryModel(fam)?.label ?? fam,
+    }));
   }
 
   /** ADMISSION (the door half of the no-silent-drop law, re-cut

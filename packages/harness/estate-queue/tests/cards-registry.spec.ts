@@ -803,10 +803,22 @@ describe("cardFamilies (the presence-marked serve)", () => {
     assert.ok(ids.includes("anima"));
     for (const r of rows) {
       assert.equal(typeof r.present, "boolean");
-      // ids only (stroke 19): the DECL label is prose describing a
-      // variant+quant config — it never serves here
       assert.equal(typeof r.id, "string");
+      // THE FAMILY FACE (operator, 2026-09-16 — supersedes the
+      // stroke-19 ids-only law): every row serves the family DECL's
+      // own label, version included — an id-only face ("Moss Sfx")
+      // is ambiguous between versions; the DECL label ("MOSS-SFX
+      // v2") is the model's face. Never the composed variant+quant
+      // row — the axes carry those.
+      assert.equal(typeof r.label, "string");
+      assert.ok(r.label.length > 0);
     }
+    // the operator's reported case, pinned: sfx boards MOSS-SFX v2
+    const sfx = s.cardFamilies("sfx");
+    assert.deepEqual(
+      sfx.map((r) => [r.id, r.label]),
+      [["moss-sfx", "MOSS-SFX v2"]],
+    );
     // presence is per-row and MIRRORS the live catalog offer (the
     // machine truth, one spelling) — whatever this world says, the
     // mark matches it exactly

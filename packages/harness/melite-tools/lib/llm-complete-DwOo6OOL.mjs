@@ -1,4 +1,4 @@
-import { CARD_KINDS, SLOT_VOCABULARY, buildCatalog, emitModifierKinds, emitParamsSchema, enhanceRecipeFor, getModel, isServedFamily, liveScanOrder, loadCardDefs, modelIds, theService } from "@melite/comfyui-cordis";
+import { CARD_KINDS, SLOT_VOCABULARY, buildCatalog, emitModifierKinds, emitParamsSchema, enhanceRecipeFor, getModel, isServedFamily, liveScanOrder, loadCardDefs, modelIds, registryModel, theService } from "@melite/comfyui-cordis";
 import { createUserMessage } from "@deepseek-ai/dsh-llm";
 //#region src/estate.ts
 /** Narrow the seat-bound request to the canonical EstateCall the card
@@ -427,6 +427,17 @@ function specModifiers(svc, card, key, decl, def) {
 *  editor's render truth for one served key). Everything scopes to
 *  the KEY family; the owner supplies only the service
 *  attribution. Keys insert alphabetically (the frozen shape). */
+/** The family's DECL face ("MOSS-SFX v2") — registryModel in a
+* guard, degrading to the id (the module singleton's law: a read
+* that can miss never throws — same shape as the getModel guard
+* above). Never the composed variant+quant row. */
+function familyFace(fam) {
+	try {
+		return registryModel(fam).label;
+	} catch {
+		return fam;
+	}
+}
 function specBody(svc, defs, res) {
 	const def = defs.get(res.card);
 	if (def === void 0) throw new Error(`form-spec: unknown card '${res.card}'`);
@@ -488,7 +499,8 @@ function specBody(svc, defs, res) {
 		packs: svc.packPresence(def.requiresByFamily?.[key] ?? def.requires ?? []),
 		families: (def.boarded ?? []).map((fam) => ({
 			id: fam,
-			present: liveMids.has(fam)
+			present: liveMids.has(fam),
+			label: familyFace(fam)
 		}))
 	};
 }

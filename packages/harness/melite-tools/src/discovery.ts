@@ -22,6 +22,7 @@ import {
   getModel,
   isServedFamily,
   liveScanOrder,
+  registryModel,
   loadCardDefs,
   modelIds,
   SLOT_VOCABULARY,
@@ -375,6 +376,18 @@ export type { DeclaredModifierKind }
  *  editor's render truth for one served key). Everything scopes to
  *  the KEY family; the owner supplies only the service
  *  attribution. Keys insert alphabetically (the frozen shape). */
+/** The family's DECL face ("MOSS-SFX v2") — registryModel in a
+ * guard, degrading to the id (the module singleton's law: a read
+ * that can miss never throws — same shape as the getModel guard
+ * above). Never the composed variant+quant row. */
+function familyFace(fam: string): string {
+  try {
+    return registryModel(fam).label
+  } catch {
+    return fam
+  }
+}
+
 export function specBody(
   svc: ComfyUIService,
   defs: Map<string, CardDefinition>,
@@ -499,12 +512,18 @@ export function specBody(
     // modifier bag or a run-time surprise. null = unknown (engine
     // facts not loaded; the gate cannot see it either).
     packs: svc.packPresence(def.requiresByFamily?.[key] ?? def.requires ?? []),
-    // ids + presence ONLY (the operator's burn, stroke 19: the DECL
-    // label is PROSE describing a variant+quant config — "Krea 2
-    // Turbo INT8 ConvRot" is NOT a model name; it must never render
-    // as a Model option). The rail speaks ids; descriptions live on
-    // the load surface where they have context.
-    families: (def.boarded ?? []).map((fam) => ({ id: fam, present: liveMids.has(fam) })),
+    // THE FAMILY FACE (operator, 2026-09-16 — supersedes the
+    // stroke-19 ids-only law): every family row serves the DECL's
+    // own label (registryModel — "MOSS-SFX v2"), version included;
+    // an id-only face drops the version ("Moss Sfx" is ambiguous
+    // between v1 and v2). The COMPOSED variant+quant row ("Krea 2
+    // Turbo INT8 ConvRot") still never serves — the DECL face is
+    // the model's face; the variant axes stay the axes.
+    families: (def.boarded ?? []).map((fam) => ({
+      id: fam,
+      present: liveMids.has(fam),
+      label: familyFace(fam),
+    })),
   }
 }
 

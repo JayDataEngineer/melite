@@ -663,6 +663,14 @@ export function ModelAxes({ spec, value, onSet, onDownloadModel }: {
     ...f,
     inMatrix: matrixSet.has(f.id),
   }))
+  // THE FAMILY FACE MAP: a matrix route that IS a family route
+  // (route-id-as-model, the family-routed cards — sfx, mask-form)
+  // renders the family's DECL label, version included; variant and
+  // quant routes keep their own faces (the axes carry those).
+  const familyFace = new Map<string, string>()
+  for (const f of spec.families ?? []) {
+    if (f.label !== undefined && f.label !== '') familyFace.set(f.id, f.label)
+  }
   const contract = spec.features?.variant_groups ?? {}
   const pick = (row: VariantRow): void => {
     const patch = axisPickPatch(spec, row)
@@ -768,8 +776,12 @@ export function ModelAxes({ spec, value, onSet, onDownloadModel }: {
         // variant+quant config — never a model option's face.
         familyRows.map((f) => f.inMatrix ? null : h('option', {
           key: 'fam-' + f.id, value: f.id,
-        }, titleCaseId(f.id) + (f.present ? '' : ' — not downloaded on this machine'))),
-        models.map((m) => h('option', { key: m, value: m }, titleCaseId(m)))),
+          // THE FAMILY FACE (operator, 2026-09-16): the DECL label
+          // carries the version ("MOSS-SFX v2") — an id-only face is
+          // ambiguous between versions; titleCaseId stays the
+          // label-less fallback.
+        }, (f.label ?? titleCaseId(f.id)) + (f.present ? '' : ' — not downloaded on this machine'))),
+        models.map((m) => h('option', { key: m, value: m }, familyFace.get(m) ?? titleCaseId(m)))),
     // THE DOWNLOAD PROMPT (stroke 18): the held model is boarded
     // but its weights are not on the machine — ask the user, never
     // block the pick. The button is the gesture; the manage door
@@ -788,7 +800,7 @@ export function ModelAxes({ spec, value, onSet, onDownloadModel }: {
                 .then((ok: boolean) => setDlState(ok ? 'queued' : 'failed'))
                 .catch(() => setDlState('failed'))
             },
-          }, dlState === 'idle' ? 'Download ' + titleCaseId(heldFam.id)
+          }, dlState === 'idle' ? 'Download ' + (heldFam.label ?? titleCaseId(heldFam.id))
             : dlState === 'busy' ? 'Requesting…'
             : dlState === 'queued' ? 'Download queued ✓ (run when it lands)'
             : 'Download request failed — retry from the assets tab'))

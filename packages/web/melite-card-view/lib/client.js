@@ -9935,6 +9935,8 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 				...f,
 				inMatrix: matrixSet.has(f.id)
 			}));
+			const familyFace = /* @__PURE__ */ new Map();
+			for (const f of spec.families ?? []) if (f.label !== void 0 && f.label !== "") familyFace.set(f.id, f.label);
 			const contract = spec.features?.variant_groups ?? {};
 			const pick = (row) => {
 				const patch = axisPickPatch(spec, row);
@@ -9986,10 +9988,10 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 			}, titleCaseId(refusedModel) + " — not an offered model of this card") : null, familyRows.map((f) => f.inMatrix ? null : (0, react.createElement)("option", {
 				key: "fam-" + f.id,
 				value: f.id
-			}, titleCaseId(f.id) + (f.present ? "" : " — not downloaded on this machine"))), models.map((m) => (0, react.createElement)("option", {
+			}, (f.label ?? titleCaseId(f.id)) + (f.present ? "" : " — not downloaded on this machine"))), models.map((m) => (0, react.createElement)("option", {
 				key: m,
 				value: m
-			}, titleCaseId(m)))), heldFam !== void 0 && onDownloadModel !== void 0 ? (0, react.createElement)("div", {
+			}, familyFace.get(m) ?? titleCaseId(m)))), heldFam !== void 0 && onDownloadModel !== void 0 ? (0, react.createElement)("div", {
 				className: card_module_css_default.specHint,
 				"data-download-prompt": heldFam.id
 			}, titleCaseId(heldFam.id) + " is offered by this card but not downloaded on this machine.", " ", (0, react.createElement)("button", {
@@ -10000,7 +10002,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 					setDlState("busy");
 					onDownloadModel(heldFam.id).then((ok) => setDlState(ok ? "queued" : "failed")).catch(() => setDlState("failed"));
 				}
-			}, dlState === "idle" ? "Download " + titleCaseId(heldFam.id) : dlState === "busy" ? "Requesting…" : dlState === "queued" ? "Download queued ✓ (run when it lands)" : "Download request failed — retry from the assets tab")) : null), groups.map((g) => {
+			}, dlState === "idle" ? "Download " + (heldFam.label ?? titleCaseId(heldFam.id)) : dlState === "busy" ? "Requesting…" : dlState === "queued" ? "Download queued ✓ (run when it lands)" : "Download request failed — retry from the assets tab")) : null), groups.map((g) => {
 				const rows = rowsOf(g, active);
 				const heldRaw = value[axisKey(g)];
 				const heldId = typeof heldRaw === "string" && heldRaw !== "" ? heldRaw : void 0;

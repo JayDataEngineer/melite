@@ -306,7 +306,7 @@ export interface FormSpecDoc {
    *  it disabled with its reason instead of silently dropping it
    *  (the bench doors refuse it loudly at write time with the same
    *  list). */
-  families?: ReadonlyArray<{ id: string; present: boolean }>
+  families?: ReadonlyArray<{ id: string; present: boolean; label?: string }>
   /** THE PACKS BLOCK (the no-silent-drop law's extension half,
    *  stroke 18): the card's declared extension packs for this
    *  family, presence-marked by the EXTENSION-LAW gate's own read.
