@@ -510,6 +510,73 @@ describe('melite_construct render — refused or revved', () => {
     assert.equal(parts.map((p) => p?.text ?? '').join('\n'), 'bench read → rev 5')
   })
 
+  // STROKE 85 (the blind read that wrecked the operator's bench):
+  // the render MUST disclose the stages the payload carries — a
+  // model that cannot see the bench probes it destructively.
+  test('read discloses its stages one line each', () => {
+    const tool = meliteConstruct(stubRequest())
+    const parts = tool.output.render(
+      { verb: 'read' },
+      {
+        verb: 'read', bench: 'main', ok: true, rev: 47,
+        intent: 'the working set',
+        hint: 'mutate with expect_rev=47',
+        stages: [
+          { id: 's_1', card: 'image-gen', engine: 'comfyui' },
+          { id: 's_2', card: 'image-edit', engine: 'comfyui' },
+        ],
+      } as never,
+    ) as Array<{ text?: string }>
+    assert.equal(
+      parts.map((p) => p?.text ?? '').join('\n'),
+      'bench read → rev 47\nstages: 2\n  s_1 — image-gen [comfyui]\n  s_2 — image-edit [comfyui]\nintent: the working set\nhint: mutate with expect_rev=47',
+    )
+  })
+
+  test('an empty bench says so — never silence', () => {
+    const tool = meliteConstruct(stubRequest())
+    const parts = tool.output.render(
+      { verb: 'load' },
+      { verb: 'load', bench: 'main', ok: true, rev: 41, stages: [] } as never,
+    ) as Array<{ text?: string }>
+    assert.equal(
+      parts.map((p) => p?.text ?? '').join('\n'),
+      'bench load → rev 41\nstages: (bench is empty)',
+    )
+  })
+
+  test('undo/load disclose the restored stages (the probing cure)', () => {
+    const tool = meliteConstruct(stubRequest())
+    const parts = tool.output.render(
+      { verb: 'undo' },
+      { verb: 'undo', bench: 'main', ok: true, rev: 48, stages: [{ id: 's_1', card: 'image-gen', engine: 'comfyui' }] } as never,
+    ) as Array<{ text?: string }>
+    assert.equal(
+      parts.map((p) => p?.text ?? '').join('\n'),
+      'bench undo → rev 48\nstages: 1\n  s_1 — image-gen [comfyui]',
+    )
+  })
+
+  // the placeholder arms: a malformed stage row renders honest '?'
+  // cells, never a crash and never silence (the render wall's law)
+  test('malformed stage rows render placeholders, never crash', () => {
+    const tool = meliteConstruct(stubRequest())
+    const parts = tool.output.render(
+      { verb: 'read' },
+      {
+        verb: 'read', bench: 'main', ok: true, rev: 3,
+        stages: [
+          { engine: 'mcp:blender' },
+          { id: 's_9', card_id: 'image-gen' },
+        ],
+      } as never,
+    ) as Array<{ text?: string }>
+    assert.equal(
+      parts.map((p) => p?.text ?? '').join('\n'),
+      'bench read → rev 3\nstages: 2\n  ? — ? [mcp:blender]\n  s_9 — image-gen [?]',
+    )
+  })
+
   test('missing verb/rev fall back to ?', () => {
     const tool = meliteConstruct(stubRequest())
     const parts = tool.output.render({ verb: 'read' }, { bench: 'main', ok: true } as never) as Array<{ text?: string }>

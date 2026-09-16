@@ -216,14 +216,36 @@ export function meliteConstruct(
         },
       },
       render: (_args, value) => {
-        const v = value as { verb?: string; rev?: number; ok?: boolean; error?: string }
+        const v = value as { verb?: string; rev?: number; ok?: boolean; error?: string; intent?: string; hint?: string; stages?: unknown }
         if (v && typeof v.error === 'string' && v.error !== '') {
           return [{ type: 'text', text: 'melite_construct REFUSED: ' + v.error }]
         }
-        return [{
-          type: 'text',
-          text: 'bench ' + String(v.verb ?? '?') + ' → rev ' + String(v.rev ?? '?'),
-        }]
+        // STROKE 85 (the operator's report — the blind read that
+        // wrecked a bench): read/undo/load RETURN the stages, but
+        // the render collapsed every verb to "bench X → rev N" —
+        // the model could not see what was staged, so it PROBED
+        // destructively (load overwrite, undos) to find out. The
+        // render now discloses the stages it already holds: one
+        // line each (id, card, engine), plus the intent. A model
+        // that can read never probes.
+        const lines: string[] = ['bench ' + String(v.verb ?? '?') + ' → rev ' + String(v.rev ?? '?')]
+        if (Array.isArray(v.stages)) {
+          const stages = v.stages as Array<Record<string, unknown>>
+          if (stages.length === 0) {
+            lines.push('stages: (bench is empty)')
+          } else {
+            lines.push(`stages: ${stages.length}`)
+            for (const s of stages) {
+              const id = typeof s.id === 'string' ? s.id : '?'
+              const card = typeof s.card === 'string' ? s.card : (typeof s.card_id === 'string' ? s.card_id : '?')
+              const engine = typeof s.engine === 'string' ? s.engine : '?'
+              lines.push(`  ${id} — ${card} [${engine}]`)
+            }
+          }
+        }
+        if (typeof v.intent === 'string' && v.intent !== '') lines.push('intent: ' + v.intent)
+        if (typeof v.hint === 'string' && v.hint !== '') lines.push('hint: ' + v.hint)
+        return [{ type: 'text', text: lines.join('\n') }]
       },
     },
     async execute(args, exec): Promise<ConstructResult> {

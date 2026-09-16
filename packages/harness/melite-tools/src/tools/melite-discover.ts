@@ -136,7 +136,12 @@ export function meliteDiscover(request: EstateRequest): ToolDefinition {
         const nc = typeof v?.counts?.cards === 'number' ? v.counts.cards : cards.length
         const line = (x: unknown): string => typeof x === 'string' ? x : ''
         const num = (x: unknown): string => typeof x === 'number' ? String(x) : '?'
-        const out: string[] = [`discover: ${nf} flows, ${nc} cards — open one with melite_load`]
+        // STROKE 85 (the operator's report: an agent read this list as
+        // "cards on the bench" and wrecked the bench probing it):
+        // discover walks THE ESTATE CATALOG — every card/flow that
+        // exists — never the bench's staged working set. The line
+        // says so, and names the bench's read door.
+        const out: string[] = [`discover: ${nf} flows, ${nc} cards in the estate CATALOG (not your bench — read the bench's staged cards with melite_construct verb=read) — open one with melite_load`]
         if (flows.length > 0) {
           out.push('flows:')
           for (const f of flows.slice(0, RENDER_CLAMP)) {

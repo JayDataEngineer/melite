@@ -204,7 +204,7 @@ describe('melite_discover render — the counts line', () => {
     ) as Array<{ text?: string }>
     assert.equal(
       parts.map((p) => p?.text ?? '').join('\n'),
-      'discover: 2 flows, 1 cards — open one with melite_load\n'
+      "discover: 2 flows, 1 cards in the estate CATALOG (not your bench — read the bench's staged cards with melite_construct verb=read) — open one with melite_load\n"
       + 'flows:\n'
       + '  flow-0 — Flow 0 (2 stages)\n'
       + '  flow-1 — Flow 1 (2 stages)\n'
@@ -226,7 +226,7 @@ describe('melite_discover render — the counts line', () => {
       } as never,
     ) as Array<{ text?: string }>
     const out = parts.map((p) => p?.text ?? '').join('\n')
-    assert.ok(out.startsWith('discover: 0 flows, 20 cards — open one with melite_load'), 'counts come from counts (not the truncated array)')
+    assert.ok(out.startsWith("discover: 0 flows, 20 cards in the estate CATALOG (not your bench — read the bench's staged cards with melite_construct verb=read) — open one with melite_load"), 'counts come from counts (not the truncated array)')
     assert.ok(out.includes('+12 more — narrow with tags/q, or detail=true'), 'the clamp tail counts the rest')
     assert.ok(out.includes('tag vocabulary: image, video'), 'the vocabulary rides')
     assert.ok(out.includes('hint: clamped — narrow with tags/q, or detail=true for every line'), 'the hint rides')
@@ -247,7 +247,7 @@ describe('melite_discover render — the counts line', () => {
     const parts = tool.output.render({}, {} as never) as Array<{ text?: string }>
     assert.equal(
       parts.map((p) => p?.text ?? '').join('\n'),
-      'discover: 0 flows, 0 cards — open one with melite_load',
+      "discover: 0 flows, 0 cards in the estate CATALOG (not your bench — read the bench's staged cards with melite_construct verb=read) — open one with melite_load",
     )
   })
 
@@ -256,7 +256,7 @@ describe('melite_discover render — the counts line', () => {
     const parts = tool.output.render({}, null as never) as Array<{ text?: string }>
     assert.equal(
       parts.map((p) => p?.text ?? '').join('\n'),
-      'discover: 0 flows, 0 cards — open one with melite_load',
+      "discover: 0 flows, 0 cards in the estate CATALOG (not your bench — read the bench's staged cards with melite_construct verb=read) — open one with melite_load",
     )
   })
 
@@ -268,7 +268,7 @@ describe('melite_discover render — the counts line', () => {
     ) as Array<{ text?: string }>
     assert.equal(
       parts.map((p) => p?.text ?? '').join('\n'),
-      'discover: 1 flows, 0 cards — open one with melite_load\n'
+      "discover: 1 flows, 0 cards in the estate CATALOG (not your bench — read the bench's staged cards with melite_construct verb=read) — open one with melite_load\n"
       + 'flows:\n'
       + '   — T (? stages)',
     )
@@ -279,7 +279,7 @@ describe('melite_discover render — the counts line', () => {
     const parts = tool.output.render({}, { flows: [], cards: [], tag_vocabulary: [] } as never) as Array<{ text?: string }>
     assert.equal(
       parts.map((p) => p?.text ?? '').join('\n'),
-      'discover: 0 flows, 0 cards — open one with melite_load',
+      "discover: 0 flows, 0 cards in the estate CATALOG (not your bench — read the bench's staged cards with melite_construct verb=read) — open one with melite_load",
     )
   })
 })
