@@ -277,6 +277,11 @@ describe('live door arms', () => {
       ((spec['features'] as { modifiers: unknown[] }).modifiers as Array<{ kind: string }>).map((m) => m.kind),
       ['mask_detect', 'mask_subject', 'mask_parts', 'mask_paint'],
     )
+    // stroke 76: the paint leaf face serves VERBATIM on the
+    // declared kind — the section offers the brush only on this row
+    const paint = ((spec['features'] as { modifiers: Array<Record<string, unknown>> }).modifiers)
+      .find((m) => m.kind === 'mask_paint')
+    assert.equal(paint?.['leaf_face'], 'paint-canvas')
     // stroke 34: the recipes key never rides — the layer is dead
     assert.equal('recipes' in spec, false)
   })

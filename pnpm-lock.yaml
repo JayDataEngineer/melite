@@ -2732,6 +2732,9 @@ importers:
       '@melite/formats':
         specifier: workspace:*
         version: link:../../web-kit/formats
+      '@melite/image-mask-studio':
+        specifier: workspace:*
+        version: link:../../image/mask-studio
       '@playwright/test':
         specifier: ^1.62.1
         version: 1.62.1

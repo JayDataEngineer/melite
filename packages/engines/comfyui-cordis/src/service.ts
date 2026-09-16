@@ -45,6 +45,12 @@ export interface DeclaredModifierKind {
   fields?: readonly Record<string, unknown>[]
   kindFields?: readonly Record<string, unknown>[]
   options?: readonly Record<string, unknown>[]
+  /** THE LEAF FACE (paint-leaf-canvas.md): 'paint-canvas' = the
+   *  kind's payload field offers the brush verb beside the square
+   *  (the modal arrives from the host; absent host degrades to the
+   *  three-source square — the payload PNG is the contract either
+   *  way). Served verbatim like every declared row. */
+  leaf_face?: 'paint-canvas'
 }
 
 export interface CardDefinition {

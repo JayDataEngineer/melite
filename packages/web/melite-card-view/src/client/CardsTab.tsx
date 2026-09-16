@@ -40,6 +40,10 @@ import { titleCaseId } from '@melite/card-base/spec'
 import { fetchFormsTable, postManageAction } from '@melite/card-base/wire'
 import { ToastViewport } from '@melite/card-base/toast'
 import { StudioShell } from '@melite/card-base/shell'
+// THE PAINT FACE (paint-leaf-canvas.md): the demoted studio's
+// brush modal, threaded into CardForm for leaf_face kinds — the
+// host delivers the face, card-base stays atom-generic.
+import { PaintLeafModal } from '@melite/image-mask-studio/paint-leaf'
 import { cardLlmArg } from '@melite/catalog'
 
 /** The /v1/forms edge-meta cache (card id → declared input/output
@@ -1238,6 +1242,11 @@ function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRemoved, 
               .then((r) => r.ok),
             onInstallPack: (id: string) => postManageAction('install_extension', { nodes: [id] })
               .then((r) => r.ok),
+            // THE PAINT FACE: the brush modal + the reference field
+            // (mask-form's input_image — the kind declaration gates
+            // the verb; other cards never see it).
+            paintFace: PaintLeafModal,
+            paintReference: 'input_image',
           })
         : h('pre', { className: css.mono }, JSON.stringify(held, null, 2)),
         ),

@@ -39,6 +39,15 @@ describe("the mask-form card declaration (stroke 64)", () => {
     assert.equal(detect.max_stack, 8);
   });
 
+  it("declares the paint leaf face ONLY on mask_paint (paint-leaf-canvas.md — the verb is declared, never sniffed)", () => {
+    const mods = def.mods ?? [];
+    const paint = mods.find((k) => k.kind === "mask_paint")!;
+    assert.equal(paint.leaf_face, "paint-canvas");
+    for (const k of mods.filter((k) => k.kind !== "mask_paint")) {
+      assert.equal(k.leaf_face, undefined, `${k.kind} carries no leaf face`);
+    }
+  });
+
   it("admits the mod-owned names past the flat schema (bags + section scalars)", () => {
     assert.deepEqual([...def.admits ?? []], ["mask_detect", "mask_subject", "mask_parts", "mask_paint", "sam_threshold", "sam_dilation", "detection_threshold", "max_instances"]);
   });

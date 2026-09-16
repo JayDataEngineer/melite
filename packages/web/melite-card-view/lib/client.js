@@ -9883,7 +9883,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 				...wireCandidates !== void 0 ? { wireCandidates } : {}
 			}), f.tooltip !== void 0 && f.tooltip !== "" ? (0, react.createElement)("span", { className: card_module_css_default.specHint }, f.tooltip) : null);
 		}
-		function CardForm({ spec, user, base, onSet, onUnset, wire, square, atoms, onPatch, onDownloadModel, onInstallPack }) {
+		function CardForm({ spec, user, base, onSet, onUnset, wire, square, atoms, onPatch, onDownloadModel, onInstallPack, paintFace, paintReference }) {
 			const fields = fieldsOf(spec);
 			const value = resolveValue(spec, user, base);
 			const fieldByName = new Map(fields.map((f) => [f.name, f]));
@@ -9898,10 +9898,14 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 			const modKinds = (spec.features?.modifiers ?? []).map((k) => {
 				const env = spec.mod_schemas?.[k.schema_key ?? k.param_key];
 				const hybrid = k.entry === "hybrid";
+				const declared = (rows) => rows?.map((f) => typeof f.wtype === "string" && f.wtype !== "" ? {
+					...f,
+					type: f.wtype
+				} : f);
 				return {
 					...k,
-					fields: hybrid ? entryFieldsOfEnvelope(env, k.param_key, family) : fieldsOfEnvelope(env, family),
-					kindFields: hybrid ? kindScalarFieldsOfEnvelope(env, k.param_key, family) : []
+					fields: hybrid ? entryFieldsOfEnvelope(env, k.param_key, family) : declared(k.fields) ?? fieldsOfEnvelope(env, family),
+					kindFields: hybrid ? kindScalarFieldsOfEnvelope(env, k.param_key, family) : declared(k.kindFields) ?? []
 				};
 			});
 			const owned = modOwnedFields(spec);
@@ -10035,7 +10039,9 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 				values: value,
 				onEdit: edit,
 				railSeated: railNames,
-				...onPatch !== void 0 ? { onPatch } : {}
+				...onPatch !== void 0 ? { onPatch } : {},
+				...paintFace !== void 0 ? { paintFace } : {},
+				...paintReference !== void 0 ? { paintReference } : {}
 			}) : null, own.wireMenu);
 		}
 		//#endregion
@@ -10384,7 +10390,9 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 				onError: setLeafError,
 				onSave: saveLeaf,
 				onDelete: deleteLeaf,
-				leafError
+				leafError,
+				paintFace: props.paintFace,
+				paintReferenceValue: typeof props.paintReference === "string" ? String(values[props.paintReference] ?? "") : ""
 			})) : null);
 		}
 		/** THE LEAF BODY — split so the FIELD-kind editor gets its own
@@ -10449,10 +10457,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 				onChange: (e) => {
 					onDraft.setDraftStrength(e.target.value);
 				}
-			}))) : (0, react.createElement)("div", { className: card_module_css_default.modLeafFields }, leafFields.map((f) => (0, react.createElement)("label", {
-				key: f.name,
-				className: card_module_css_default.modField
-			}, f.label ?? f.name, (0, react.createElement)(SpecAtom, {
+			}))) : (0, react.createElement)("div", { className: card_module_css_default.modLeafFields }, leafFields.map((f) => (0, react.createElement)("div", { key: f.name }, (0, react.createElement)("label", { className: card_module_css_default.modField }, f.label ?? f.name, (0, react.createElement)(SpecAtom, {
 				f,
 				value: onDraft.draftParams[f.name],
 				onEdit: (name, v) => {
@@ -10462,13 +10467,44 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 					});
 				},
 				square: own.square(f)
-			}))), own.wireMenu), (0, react.createElement)("div", { className: card_module_css_default.modLeafActions }, (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+			})), props.paintFace !== void 0 && k.leaf_face === "paint-canvas" && (f.type === "image" || f.wtype === "image") ? (0, react.createElement)(PaintVerb, {
+				Face: props.paintFace,
+				referenceUrl: props.paintReferenceValue,
+				payloadUrl: typeof onDraft.draftParams[f.name] === "string" ? onDraft.draftParams[f.name] : "",
+				onSaved: (dataUrl) => {
+					onDraft.setDraftParams({
+						...onDraft.draftParams,
+						[f.name]: dataUrl
+					});
+				}
+			}) : null)), own.wireMenu), (0, react.createElement)("div", { className: card_module_css_default.modLeafActions }, (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Button, {
 				variant: "primary",
 				onClick: onSave
 			}, leaf.mode === "create" ? "Add" : "Save"), leaf.mode === "edit" ? (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Button, {
 				variant: "ghost",
 				onClick: onDelete
 			}, "Remove") : null));
+		}
+		/** THE PAINT VERB — the brush button + modal mount (the face
+		*  component arrives from the host; this is the wiring only). */
+		function PaintVerb(props) {
+			const [open, setOpen] = (0, react.useState)(false);
+			return (0, react.createElement)("div", { className: card_module_css_default.modField }, (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+				variant: "ghost",
+				onClick: () => {
+					setOpen(true);
+				}
+			}, "Paint"), open ? (0, react.createElement)(props.Face, {
+				referenceUrl: props.referenceUrl,
+				payloadUrl: props.payloadUrl,
+				onSave: (dataUrl) => {
+					props.onSaved(dataUrl);
+					setOpen(false);
+				},
+				onCancel: () => {
+					setOpen(false);
+				}
+			}) : null);
 		}
 		/** One mod tile (the original, verbatim: useSortable + click to
 		*  edit + strength to 2 decimals). */
@@ -45004,6 +45040,286 @@ void main() {
 			});
 		}
 		//#endregion
+		//#region ../../image/mask-studio/src/ui/PaintLeafModal.tsx
+		const FIT = 640;
+		/** Load an image element from a URL (null while loading/failed —
+		*  the modal degrades to the blank canvas, never a crash). */
+		const loadImage = (url) => new Promise((resolve) => {
+			if (url === "") {
+				resolve(null);
+				return;
+			}
+			const img = new Image();
+			img.onload = () => {
+				resolve(img);
+			};
+			img.onerror = () => {
+				resolve(null);
+			};
+			img.src = url;
+		});
+		function PaintLeafModal(props) {
+			const { referenceUrl, payloadUrl, onSave, onCancel } = props;
+			const wrapRef = (0, react.useRef)(null);
+			const viewRef = (0, react.useRef)(null);
+			const paintRef = (0, react.useRef)(null);
+			const imgRef = (0, react.useRef)(null);
+			const drawingRef = (0, react.useRef)(false);
+			const lastPtRef = (0, react.useRef)(null);
+			const [brushSize, setBrushSize] = (0, react.useState)(28);
+			const [hasStrokes, setHasStrokes] = (0, react.useState)(false);
+			const [ready, setReady] = (0, react.useState)(false);
+			const [viewSize, setViewSize] = (0, react.useState)(null);
+			(0, react.useEffect)(() => {
+				let alive = true;
+				(async () => {
+					const img = await loadImage(referenceUrl);
+					const pay = payloadUrl ? await loadImage(payloadUrl) : null;
+					if (!alive) return;
+					imgRef.current = img;
+					const w = img?.naturalWidth ?? pay?.naturalWidth ?? 1024;
+					const h = img?.naturalHeight ?? pay?.naturalHeight ?? 1024;
+					const scale = Math.min(FIT / w, FIT / h, 1);
+					setViewSize({
+						w: Math.max(1, Math.round(w * scale)),
+						h: Math.max(1, Math.round(h * scale))
+					});
+					setReady(true);
+					if (pay && paintRef.current) {
+						const c = paintRef.current;
+						c.width = w;
+						c.height = h;
+						const ctx = c.getContext("2d");
+						if (ctx) {
+							ctx.drawImage(pay, 0, 0);
+							setHasStrokes(true);
+						}
+					}
+				})();
+				return () => {
+					alive = false;
+				};
+			}, [referenceUrl, payloadUrl]);
+			const redraw = (0, react.useCallback)(() => {
+				const view = viewRef.current;
+				const paint = paintRef.current;
+				const vs = viewSize;
+				if (!view || !paint || !vs) return;
+				const img = imgRef.current;
+				const w = img?.naturalWidth ?? paint.width;
+				const h = img?.naturalHeight ?? paint.height;
+				if (w === 0 || h === 0) return;
+				view.width = vs.w;
+				view.height = vs.h;
+				const ctx = view.getContext("2d");
+				if (!ctx) return;
+				ctx.clearRect(0, 0, vs.w, vs.h);
+				if (img) ctx.drawImage(img, 0, 0, vs.w, vs.h);
+				ctx.drawImage(paint, 0, 0, vs.w, vs.h);
+			}, [viewSize]);
+			(0, react.useEffect)(() => {
+				if (ready) redraw();
+			}, [ready, redraw]);
+			const toPoint = (e) => {
+				const view = viewRef.current;
+				const paint = paintRef.current;
+				const vs = viewSize;
+				if (!view || !paint || !vs) return null;
+				const rect = view.getBoundingClientRect();
+				const sx = vs.w / Math.max(1, rect.width);
+				const sy = vs.h / Math.max(1, rect.height);
+				const img = imgRef.current;
+				const w = img?.naturalWidth ?? paint.width;
+				const h = img?.naturalHeight ?? paint.height;
+				return {
+					x: (e.clientX - rect.left) * sx * (w / vs.w),
+					y: (e.clientY - rect.top) * sy * (h / vs.h)
+				};
+			};
+			const strokeTo = (a, b) => {
+				const paint = paintRef.current;
+				const img = imgRef.current;
+				if (!paint) return;
+				const w = img?.naturalWidth ?? paint.width;
+				const h = img?.naturalHeight ?? paint.height;
+				if (paint.width !== w || paint.height !== h) {
+					const prior = paint.width > 0 ? paint.toDataURL() : "";
+					paint.width = w;
+					paint.height = h;
+					if (prior !== "") {
+						const restore = new Image();
+						restore.onload = () => {
+							paint.getContext("2d")?.drawImage(restore, 0, 0);
+						};
+						restore.src = prior;
+					}
+				}
+				const ctx = paint.getContext("2d");
+				if (!ctx) return;
+				const scale = Math.max(w, h) / 1024;
+				ctx.strokeStyle = "rgba(255, 255, 255, 1)";
+				ctx.lineWidth = brushSize * Math.max(scale, .25);
+				ctx.lineCap = "round";
+				ctx.lineJoin = "round";
+				ctx.beginPath();
+				ctx.moveTo(a.x, a.y);
+				ctx.lineTo(b.x, b.y);
+				ctx.stroke();
+				setHasStrokes(true);
+				redraw();
+			};
+			const onPointerDown = (e) => {
+				if (e.button !== 0) return;
+				const p = toPoint(e);
+				if (!p) return;
+				drawingRef.current = true;
+				lastPtRef.current = p;
+				e.target.setPointerCapture?.(e.pointerId);
+				strokeTo(p, {
+					x: p.x + .01,
+					y: p.y + .01
+				});
+			};
+			const onPointerMove = (e) => {
+				if (!drawingRef.current) return;
+				const p = toPoint(e);
+				const last = lastPtRef.current;
+				if (!p || !last) return;
+				strokeTo(last, p);
+				lastPtRef.current = p;
+			};
+			const onPointerUp = () => {
+				drawingRef.current = false;
+				lastPtRef.current = null;
+			};
+			const clearPaint = () => {
+				const paint = paintRef.current;
+				if (!paint) return;
+				const ctx = paint.getContext("2d");
+				if (ctx) ctx.clearRect(0, 0, paint.width, paint.height);
+				setHasStrokes(false);
+				redraw();
+			};
+			const save = () => {
+				const paint = paintRef.current;
+				if (!paint || !hasStrokes) return;
+				onSave(paint.toDataURL("image/png"));
+			};
+			return /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
+				ref: wrapRef,
+				role: "dialog",
+				"aria-label": props.title ?? "Paint payload",
+				style: {
+					position: "fixed",
+					inset: 0,
+					zIndex: 1e3,
+					display: "flex",
+					alignItems: "center",
+					justifyContent: "center",
+					background: "rgba(0,0,0,0.5)"
+				},
+				onPointerDown: (e) => {
+					if (e.target === e.currentTarget) onCancel();
+				},
+				children: /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+					style: {
+						background: "var(--bg-2, #1b1d21)",
+						borderRadius: 8,
+						padding: 16,
+						display: "flex",
+						flexDirection: "column",
+						gap: 12,
+						maxHeight: "92vh"
+					},
+					children: [
+						/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+							style: {
+								display: "flex",
+								alignItems: "center",
+								gap: 12
+							},
+							children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("strong", { children: props.title ?? "Paint payload" }), /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("label", {
+								style: {
+									display: "flex",
+									alignItems: "center",
+									gap: 6,
+									marginLeft: "auto"
+								},
+								children: [
+									"Brush",
+									/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Input, {
+										type: "range",
+										min: 4,
+										max: 128,
+										step: 2,
+										value: String(brushSize),
+										onChange: (e) => {
+											setBrushSize(Number(e.target.value));
+										}
+									}),
+									/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+										style: {
+											width: 28,
+											textAlign: "right"
+										},
+										children: brushSize
+									})
+								]
+							})]
+						}),
+						/* @__PURE__ */ (0, react_jsx_runtime.jsx)("canvas", {
+							ref: viewRef,
+							"data-testid": "paint-leaf-view",
+							style: {
+								display: viewSize === null ? "none" : "block",
+								maxWidth: "84vw",
+								maxHeight: "70vh",
+								border: "1px solid var(--border-1, #333)",
+								borderRadius: 4,
+								cursor: "crosshair",
+								touchAction: "none",
+								background: "repeating-conic-gradient(#2a2d33 0% 25%, #232629 0% 50%) 50% / 24px 24px"
+							},
+							onPointerDown,
+							onPointerMove,
+							onPointerUp,
+							onPointerLeave: onPointerUp
+						}),
+						/* @__PURE__ */ (0, react_jsx_runtime.jsx)("canvas", {
+							ref: paintRef,
+							style: { display: "none" },
+							"data-testid": "paint-leaf-layer"
+						}),
+						/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+							style: {
+								display: "flex",
+								gap: 8,
+								justifyContent: "flex-end"
+							},
+							children: [
+								/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+									variant: "ghost",
+									onClick: clearPaint,
+									children: "Clear"
+								}),
+								/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+									variant: "ghost",
+									onClick: onCancel,
+									children: "Cancel"
+								}),
+								/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+									variant: "primary",
+									disabled: !hasStrokes,
+									onClick: save,
+									children: "Save payload"
+								})
+							]
+						})
+					]
+				})
+			});
+		}
+		//#endregion
 		//#region ../../web-kit/formats/src/readFile.ts
 		/**
 		* readFile — THE one read path for every slot-shaped attach, ported
@@ -54538,7 +54854,9 @@ void main() {
 					wire,
 					onPatch: onPatchParams,
 					onDownloadModel: (id) => postManageAction("provision_model", { model: id }).then((r) => r.ok),
-					onInstallPack: (id) => postManageAction("install_extension", { nodes: [id] }).then((r) => r.ok)
+					onInstallPack: (id) => postManageAction("install_extension", { nodes: [id] }).then((r) => r.ok),
+					paintFace: PaintLeafModal,
+					paintReference: "input_image"
 				}) : (0, react.createElement)("pre", { className: card_module_css_default$1.mono }, JSON.stringify(held, null, 2))), error !== null ? (0, react.createElement)("div", { className: card_module_css_default$1.drillRunRow }, (0, react.createElement)("span", { className: card_module_css_default$1.runError }, error)) : null),
 				preview: (0, react.createElement)("div", { className: card_module_css_default$1.outputs }, (0, react.createElement)("div", {
 					className: card_module_css_default$1.outputsPreview + " " + card_module_css_default$1.previewClickable,

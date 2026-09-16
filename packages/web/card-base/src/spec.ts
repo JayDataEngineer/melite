@@ -126,6 +126,9 @@ export interface SpecField {
    *  without columns stacks one-per-row (today's face). */
   columns?: number
   width?: number
+  /** The declared layout verb (card-declared kind fields carry it
+   *  verbatim — 'image' = the square; the paint verb rides it). */
+  wtype?: string
 }
 
 /** One DECLARED input edge: `name` is the schema param the edge feeds
@@ -182,6 +185,10 @@ export interface ModifierKind {
    *  above the tiles; they never ride the flat form (mod-owned). */
   kindFields?: SpecField[]
   options?: ModifierOption[]
+  /** THE LEAF FACE (paint-leaf-canvas.md): 'paint-canvas' = the
+   *  payload image field offers the brush verb (the host's modal;
+   *  absent host degrades to the three-source square). */
+  leaf_face?: 'paint-canvas'
 }
 
 /** THE MOD-OWNED NAMES (the SubcardGrid law, enforced): every name a

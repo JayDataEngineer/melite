@@ -268,3 +268,116 @@ test('removing a macro-stamped row commits the plain bag — no guard needed, on
   fireEvent.click(screen.getByRole('button', { name: 'Remove' }))
   expect(onEdit).toHaveBeenCalledWith('loras', [{ id: 'krea2_darkbrush', strength: 0.5 }])
 })
+
+// ── STROKE 76: THE PAINT LEAF FACE (docs/design/paint-leaf-canvas.md)
+//    The `mask_paint` kind declares leaf_face; the host (CardsTab)
+//    delivers the brush modal. The verb is declared + hosted —
+//    never sniffed, never crashing host-less. ──────────────────────
+
+/** The mask-form-shaped spec: an input_image card field + the
+ *  declared paint kind (leaf_face on the row, payload wtype image —
+ *  the served verbatim shape the lane proves). */
+const PAINT_SPEC = {
+  form: 'mask-form',
+  model: 'mask-form',
+  schema: schemaEnvelope({
+    input_image: { type: 'string', meta: { description: 'Input image', extra: { wtype: 'image', required: true, group: 'input' } } },
+  }),
+  variants: [],
+  features: {
+    modifiers: [
+      { kind: 'mask_detect', label: 'Detect', param_key: 'mask_detect', cardinality: 'list', max_stack: 8,
+        kindFields: [
+          { name: 'detection_threshold', label: 'Detection threshold', type: 'number', default: 0.35 },
+        ],
+        fields: [
+          { name: 'primary_class', label: 'Primary class', type: 'string', default: 'person' },
+        ] },
+      { kind: 'mask_paint', label: 'Paint', param_key: 'mask_paint', cardinality: 'list', max_stack: 4,
+        leaf_face: 'paint-canvas',
+        fields: [
+          { name: 'name', label: 'Export name', type: 'string', default: 'paint' },
+          { name: 'payload', label: 'Paint payload', type: 'path', wtype: 'image', default: '' },
+        ] },
+    ],
+  },
+} as never as import('../src/client/spec-form.tsx').FormSpecDoc
+
+/** The hosted face (the CardsTab role in miniature): opens with the
+ *  reference + payload, saves a stroke PNG back into the draft. */
+function FakeFace(p: { referenceUrl: string; payloadUrl: string; onSave: (u: string) => void; onCancel: () => void }) {
+  return createElement('div', { 'data-testid': 'fake-paint-face', 'data-ref': p.referenceUrl, 'data-payload': p.payloadUrl },
+    createElement('button', { type: 'button', onClick: () => { p.onSave('data:image/png;base64,STROKE') } }, 'Fake save'),
+    createElement('button', { type: 'button', onClick: p.onCancel }, 'Fake cancel'),
+  )
+}
+
+async function openPaintLeaf(values: SpecValues, extra?: Record<string, unknown>) {
+  const { SpecForm } = await import('../src/client/spec-form.tsx')
+  render(createElement(SpecForm, {
+    spec: PAINT_SPEC,
+    user: values,
+    onSet: (name: string, v: unknown) => { values[name] = v },
+    ...(extra ?? {}),
+  }))
+  fireEvent.click(screen.getByRole('button', { name: 'Add modifier' }))
+  fireEvent.click(await screen.findByText('Paint', undefined, { timeout: 2000 }))
+}
+
+test('declared face + hosted face: the leaf offers Paint; the modal saves the stroke PNG into the entry', async () => {
+  const values: SpecValues = { input_image: 'http://x/in.png' }
+  await openPaintLeaf(values, { paintFace: FakeFace, paintReference: 'input_image' })
+  // the verb rides beside the square on the payload field
+  fireEvent.click(await screen.findByRole('button', { name: 'Paint' }, undefined, { timeout: 2000 }))
+  const face = await screen.findByTestId('fake-paint-face')
+  // the reference is the card's input_image value (resolved, not the field name)
+  expect(face.getAttribute('data-ref')).toBe('http://x/in.png')
+  fireEvent.click(screen.getByRole('button', { name: 'Fake save' }))
+  // Add commits the entry — the payload IS the modal's data URL
+  fireEvent.click(screen.getByText('Add'))
+  await waitFor(() => {
+    const bag = values['mask_paint'] as Array<Record<string, unknown>>
+    expect(Array.isArray(bag)).toBe(true)
+    expect(bag[0]?.['payload']).toBe('data:image/png;base64,STROKE')
+  })
+})
+
+test('CONTRACT A: declared kindFields ride verbatim — the section owns the served scalar row', async () => {
+  const values: SpecValues = { input_image: 'http://x/in.png' }
+  await openPaintLeaf(values, { paintFace: FakeFace, paintReference: 'input_image' })
+  // the detect kind's served kindFields render as the section's own
+  // row (never re-derived from a mod_schemas envelope it has none of)
+  expect(screen.getByLabelText('Detection threshold')).toBeTruthy()
+})
+
+test('declared face + NO hosted face: no verb — the square holds (graceful by design)', async () => {
+  const values: SpecValues = { input_image: 'http://x/in.png' }
+  await openPaintLeaf(values, { paintReference: 'input_image' })
+  // the leaf opened with the three-source square and nothing else
+  await screen.findByRole('button', { name: 'Paint payload source' }, undefined, { timeout: 2000 })
+  expect(screen.queryByRole('button', { name: 'Paint' })).toBeNull()
+})
+
+test('undeclared kind + hosted face: no verb — the face is declared, never sniffed', async () => {
+  const { SpecForm } = await import('../src/client/spec-form.tsx')
+  const plain = {
+    ...PAINT_SPEC,
+    features: { modifiers: [{ kind: 'mask_paint', label: 'Paint', param_key: 'mask_paint', cardinality: 'list',
+      fields: [
+        { name: 'name', label: 'Export name', type: 'string', default: 'paint' },
+        { name: 'payload', label: 'Paint payload', type: 'path', wtype: 'image', default: '' },
+      ] }] },
+  } as never as import('../src/client/spec-form.tsx').FormSpecDoc
+  const values: SpecValues = { input_image: 'http://x/in.png' }
+  render(createElement(SpecForm, {
+    spec: plain,
+    user: values,
+    onSet: (name: string, v: unknown) => { values[name] = v },
+    paintFace: FakeFace,
+    paintReference: 'input_image',
+  }))
+  fireEvent.click(screen.getByRole('button', { name: 'Add modifier' }))
+  fireEvent.click(await screen.findByText('Paint', undefined, { timeout: 2000 }))
+  await screen.findByRole('button', { name: 'Paint payload source' }, undefined, { timeout: 2000 })
+  expect(screen.queryByRole('button', { name: 'Paint' })).toBeNull()
+})

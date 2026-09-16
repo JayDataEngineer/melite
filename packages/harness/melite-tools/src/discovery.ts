@@ -354,6 +354,10 @@ function specModifiers(
     if (k.fields !== undefined) entry.fields = k.fields
     if (k.kindFields !== undefined) entry.kindFields = k.kindFields
     if (k.options !== undefined) entry.options = k.options
+    // THE LEAF FACE (paint-leaf-canvas.md): served verbatim — the
+    // section renderer offers the brush verb only on a declared
+    // face; never sniffed from the kind name.
+    if (k.leaf_face !== undefined) entry.leaf_face = k.leaf_face
     out.push(entry)
   }
   return out

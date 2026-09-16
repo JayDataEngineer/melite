@@ -417,6 +417,7 @@ function specModifiers(svc, card, key, decl, def) {
 		if (k.fields !== void 0) entry.fields = k.fields;
 		if (k.kindFields !== void 0) entry.kindFields = k.kindFields;
 		if (k.options !== void 0) entry.options = k.options;
+		if (k.leaf_face !== void 0) entry.leaf_face = k.leaf_face;
 		out.push(entry);
 	}
 	return out;

@@ -26,6 +26,7 @@ import { createElement as h, Fragment, useCallback, useEffect, useRef, useState 
 import { Menu, Input, Modal, Switch } from '@deepseek-ai/dsh-client-ui-primitives'
 import { InputSquare, isImageUrl, readAsDataUrl, type InputSquareVerbs } from './square.tsx'
 import { ModifiersSection } from './mods.tsx'
+import type { PaintFaceComponent } from './mods.tsx'
 import { uploadInputFile } from './wire.ts'
 import {
   activeRowId, activeVariantId, axisGroups, axisKey, axisPickPatch, coerceFieldEdit, composingRows, fieldsOf,
@@ -926,7 +927,7 @@ export function SpecFieldRow({ f, value, onEdit, square, wireCandidates }: {
   )
 }
 
-export function CardForm({ spec, user, base, onSet, onUnset, wire, square, atoms, onPatch, onDownloadModel, onInstallPack }: {
+export function CardForm({ spec, user, base, onSet, onUnset, wire, square, atoms, onPatch, onDownloadModel, onInstallPack, paintFace, paintReference }: {
   /** the WHOLE emission (the schema envelope + model/variants) —
    *  REQUIRED now: the fields, the axes, and the mod param rows all
    *  derive from THIS (useFormSpec fetches it). */
@@ -957,6 +958,13 @@ export function CardForm({ spec, user, base, onSet, onUnset, wire, square, atoms
   /** immediate persistence for mod commits (the onSaveParams law).
    *  Absent (the add drill): commits ride the user map. */
   onPatch?: (patch: Record<string, unknown>) => void
+  /** THE PAINT FACE (paint-leaf-canvas.md): the host's brush modal
+   *  for leaf_face kinds. Absent host = no verb (the square holds).
+   *  Threaded verbatim into the mod section. */
+  paintFace?: PaintFaceComponent
+  /** the card-level image field feeding the brush reference
+   *  (mask-form: 'input_image'). Absent = no verb. */
+  paintReference?: string
   /** THE DOWNLOAD PROMPT's arm (stroke 18): a boarded-but-absent
    *  model prompts download; the host supplies the manage wire. See
    *  ModelAxes. */
@@ -999,10 +1007,21 @@ export function CardForm({ spec, user, base, onSet, onUnset, wire, square, atoms
   const modKinds = (spec.features?.modifiers ?? []).map((k) => {
     const env = spec.mod_schemas?.[k.schema_key ?? k.param_key]
     const hybrid = k.entry === 'hybrid'
+    // CONTRACT A (stroke 76 wall — the paint leaf proved it): a
+    // card-declared kind IS the catalog — its served fields/
+    // kindFields ride VERBATIM, never re-derived from a mod_schemas
+    // envelope it doesn't have (derivation would wipe the leaf).
+    // Pack kinds (no declared rows) still derive from the envelope.
+    // The declared rows normalize through the walker's own rule
+    // (presentation type: the wtype hint wins — a declared
+    // {type:'path',wtype:'image'} constructs the square like the
+    // envelope's extra.wtype does).
+    const declared = (rows: SpecField[] | undefined): SpecField[] | undefined =>
+      rows?.map((f) => (typeof f.wtype === 'string' && f.wtype !== '' ? { ...f, type: f.wtype } : f))
     return {
       ...k,
-      fields: hybrid ? entryFieldsOfEnvelope(env, k.param_key, family) : fieldsOfEnvelope(env, family),
-      kindFields: hybrid ? kindScalarFieldsOfEnvelope(env, k.param_key, family) : [],
+      fields: hybrid ? entryFieldsOfEnvelope(env, k.param_key, family) : (declared(k.fields) ?? fieldsOfEnvelope(env, family)),
+      kindFields: hybrid ? kindScalarFieldsOfEnvelope(env, k.param_key, family) : (declared(k.kindFields) ?? []),
     }
   })
   const owned = modOwnedFields(spec)
@@ -1145,6 +1164,8 @@ export function CardForm({ spec, user, base, onSet, onUnset, wire, square, atoms
       ? h(ModifiersSection, {
           kinds: modKinds, values: value, onEdit: edit, railSeated: railNames,
           ...(onPatch !== undefined ? { onPatch } : {}),
+          ...(paintFace !== undefined ? { paintFace } : {}),
+          ...(paintReference !== undefined ? { paintReference } : {}),
         })
       : null,
     own.wireMenu,

@@ -38,11 +38,30 @@
  *        the fields NEVER render flat on the card form.
  */
 import { createElement as h, useState } from 'react'
+import type { ReactElement } from 'react'
 import { Button, IconPlusOutline16, Input, Menu, Modal } from '@deepseek-ai/dsh-client-ui-primitives'
 import css from './card.module.css'
 import { SpecAtom } from './form.tsx'
 import { useSquareProvider } from './form.tsx'
 import { coerceFieldEdit, isHybridKind, isOptionKind, optionKeyOf, scalarKeyOf, titleCaseId, type ModifierKind, type ModifierOption, type SpecField, type SpecValues } from './spec.ts'
+
+export interface PaintFaceComponentProps {
+  /** the reference image URL (the card's input field value, when
+   *  the host can name one — else the empty string rides) */
+  referenceUrl: string
+  /** the payload field's current value (paint-over seeds) */
+  payloadUrl: string
+  /** SAVE: write the PNG data URL into the payload field */
+  onSave: (dataUrl: string) => void
+  onCancel: () => void
+}
+
+/** THE LEAF FACE (paint-leaf-canvas.md): the host's brush modal —
+ *  a component, not an import (card-base stays atom-generic; the
+ *  custom face is the CARD's UI, delivered by the client plane).
+ *  Absent host = the verb never renders (the square is the
+ *  contract; the degrade is graceful by design). */
+export type PaintFaceComponent = (props: PaintFaceComponentProps) => ReactElement
 
 export interface ModifiersSectionProps {
   kinds: ModifierKind[]
@@ -55,6 +74,12 @@ export interface ModifiersSectionProps {
   /** immediate persistence (the onSaveParams law) — optional: an
    *  add-drill without a stage commits through its values map. */
   onPatch?: (patch: Record<string, unknown>) => void
+  /** THE PAINT FACE (leaf_face kinds): the host's brush modal.
+   *  Together with paintReference — absent either = no verb. */
+  paintFace?: PaintFaceComponent
+  /** the card-level image field whose value is the brush's
+   *  reference (mask-form: 'input_image'). */
+  paintReference?: string
 }
 
 export function ModifiersSection(props: ModifiersSectionProps): ReturnType<typeof h> | null {
@@ -348,7 +373,7 @@ export function ModifiersSection(props: ModifiersSectionProps): ReturnType<typeo
       title: (leaf.mode === 'create' ? 'Add ' : 'Edit ') + leaf.kind.label,
       closeLabel: 'Close',
     },
-      h(ModLeaf, { leaf, values, hideFields: seated, onDraft: { setDraftOption, setDraftStrength, setDraftParams, draftOption, draftStrength, draftParams }, onError: setLeafError, onSave: saveLeaf, onDelete: deleteLeaf, leafError }),
+      h(ModLeaf, { leaf, values, hideFields: seated, onDraft: { setDraftOption, setDraftStrength, setDraftParams, draftOption, draftStrength, draftParams }, onError: setLeafError, onSave: saveLeaf, onDelete: deleteLeaf, leafError, paintFace: props.paintFace, paintReferenceValue: typeof props.paintReference === 'string' ? String(values[props.paintReference] ?? '') : '' }),
     ) : null,
   )
 }
@@ -372,6 +397,10 @@ function ModLeaf(props: {
   onSave: () => void
   onDelete: () => void
   leafError: string | null
+  /** THE PAINT FACE (leaf_face kinds): the host modal + the card's
+   *  reference field value (absent host = no verb, graceful). */
+  paintFace?: PaintFaceComponent
+  paintReferenceValue: string
 }): ReturnType<typeof h> {
   const { leaf, onDraft, onSave, onDelete, leafError } = props
   const k = leaf.kind
@@ -459,14 +488,31 @@ function ModLeaf(props: {
           ),
         )
       : h('div', { className: css.modLeafFields },
-          leafFields.map((f) => h('label', { key: f.name, className: css.modField },
-            f.label ?? f.name,
-            h(SpecAtom, {
-              f,
-              value: onDraft.draftParams[f.name],
-              onEdit: (name: string, v: unknown) => { onDraft.setDraftParams({ ...onDraft.draftParams, [name]: v }) },
-              square: own.square(f),
-            }),
+          leafFields.map((f) => h('div', { key: f.name },
+            h('label', { className: css.modField },
+              f.label ?? f.name,
+              h(SpecAtom, {
+                f,
+                value: onDraft.draftParams[f.name],
+                onEdit: (name: string, v: unknown) => { onDraft.setDraftParams({ ...onDraft.draftParams, [name]: v }) },
+                square: own.square(f),
+              }),
+            ),
+            // THE PAINT VERB (paint-leaf-canvas.md): on a declared
+            // face, each image field gains the brush beside the
+            // square — the modal writes the same payload the
+            // square reads. Host-less = nothing renders (the
+            // square holds). The verb is the label's SIBLING, never
+            // nested inside it (a button in a label corrupts both
+            // accessible names — the wall caught it).
+            props.paintFace !== undefined && k.leaf_face === 'paint-canvas' && (f.type === 'image' || f.wtype === 'image')
+              ? h(PaintVerb, {
+                  Face: props.paintFace,
+                  referenceUrl: props.paintReferenceValue,
+                  payloadUrl: typeof onDraft.draftParams[f.name] === 'string' ? onDraft.draftParams[f.name] as string : '',
+                  onSaved: (dataUrl: string) => { onDraft.setDraftParams({ ...onDraft.draftParams, [f.name]: dataUrl }) },
+                })
+              : null,
           )),
           own.wireMenu,
         ),
@@ -476,6 +522,28 @@ function ModLeaf(props: {
         ? h(Button, { variant: 'ghost', onClick: onDelete }, 'Remove')
         : null,
     ),
+  )
+}
+
+/** THE PAINT VERB — the brush button + modal mount (the face
+ *  component arrives from the host; this is the wiring only). */
+function PaintVerb(props: {
+  Face: PaintFaceComponent
+  referenceUrl: string
+  payloadUrl: string
+  onSaved: (dataUrl: string) => void
+}): ReturnType<typeof h> {
+  const [open, setOpen] = useState(false)
+  return h('div', { className: css.modField },
+    h(Button, { variant: 'ghost', onClick: () => { setOpen(true) } }, 'Paint'),
+    open
+      ? h(props.Face, {
+          referenceUrl: props.referenceUrl,
+          payloadUrl: props.payloadUrl,
+          onSave: (dataUrl: string) => { props.onSaved(dataUrl); setOpen(false) },
+          onCancel: () => { setOpen(false) },
+        })
+      : null,
   )
 }
 

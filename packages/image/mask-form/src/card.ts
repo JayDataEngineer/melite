@@ -103,6 +103,9 @@ const MODS: readonly DeclaredModifierKind[] = [
     param_key: 'mask_paint',
     cardinality: 'list',
     max_stack: 4,
+    // THE LEAF FACE (paint-leaf-canvas.md): the brush verb rides
+    // the payload field — the demoted studio's canvas, ported.
+    leaf_face: 'paint-canvas',
     fields: [
       { name: 'name', label: 'Export name', type: 'string', default: 'paint', tooltip: 'The saved mask\'s name (mask_<name>).' },
       { name: 'payload', label: 'Paint payload', type: 'path', wtype: 'image', default: '', tooltip: 'The painted PNG (alpha channel = strokes).' },
