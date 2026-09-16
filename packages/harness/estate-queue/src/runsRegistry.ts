@@ -9,7 +9,7 @@
 // delegating to this seat. Failures throw the protocol's ONE
 // RemoteError with the runs/* codes declared HERE (the producing
 // package, next to the throws).
-import { join } from "node:path";
+import { join, relative } from "node:path";
 import { Service } from "@deepseek-ai/cordis";
 import type { Context } from "@deepseek-ai/cordis";
 import { RemoteError } from "@deepseek-ai/dsh-typert-protocol";
@@ -29,7 +29,7 @@ import {
   registryInitialsError,
 } from "./flowsData.ts";
 import { resolveRepoRoot } from "@melite/comfyui-cordis";
-import { newRunId, pipelineOf, pyStr, strictBodyCheck, draftIdOk } from "./queue.ts";
+import { newRunId, outRootFor, pipelineOf, pyStr, strictBodyCheck, draftIdOk } from "./queue.ts";
 import {
   CardArmError,
   pyStrMid,
@@ -687,7 +687,17 @@ export class RunsRuntimeService extends Service {
       draft_id: run.draftId,
       stages: run.stages,
       skipped_stages: [...run.skippedStages],
-      artifacts: [...run.artifacts],
+      // Route-relative (audit #11, proven live by the stroke-82 e2e):
+      // the executor's artifacts are ABSOLUTE DISK PATHS — serving
+      // them raw hands the browser strings the media route cannot
+      // answer (a leading-/ path rides toRunMediaUrl verbatim). The
+      // stage rows' `url` spelling is the truth: <run-id>/<rel>,
+      // computed from the same outRoot the record lives under.
+      artifacts: [...run.artifacts].map((a: string): string =>
+        a.startsWith("/")
+          ? [run.runId, relative(outRootFor(this.ctx.queue.stateRoot, run.testFlag), a)].join("/")
+          : a,
+      ),
       error: run.error,
       queue_position: this.core.queuePosition(run.runId),
     };
@@ -833,13 +843,36 @@ export class RunsRuntimeService extends Service {
     // engine; mixed-engine grouping arrives with the MCP executor
     // (docs/design/engine-generics-mcp.md).
     const enginesSeat: unknown = this.ctx.get("engines");
-    const seatExecutor: EngineExecutor | null =
+    let seatExecutor: EngineExecutor | null = null;
+    if (
       enginesSeat !== undefined &&
       typeof (enginesSeat as { resolve?: unknown }).resolve === "function"
-        ? (enginesSeat as unknown as { resolve(id: string): { executor: EngineExecutor } }).resolve(
-            RunsRuntimeService.runEngine(run),
-          ).executor
-        : null;
+    ) {
+      // resolve() throws LOUD on an unknown id (the contract's
+      // miswire voice) — INSIDE the splice-catch scope so the run
+      // settles failed and the pump SURVIVES: outside it, the throw
+      // escaped runOne with activeId still held, and every future
+      // tryDequeue returned null — all inference bricked until
+      // restart (audit R1, stroke 82).
+      try {
+        seatExecutor = (enginesSeat as unknown as { resolve(id: string): { executor: EngineExecutor } }).resolve(
+          RunsRuntimeService.runEngine(run),
+        ).executor;
+      } catch (exc: unknown) {
+        const text: string = errText(exc);
+        for (const stage of run.stages) {
+          /* v8 ignore next */
+          if (stage["status"] === "running") {
+            stage["status"] = "failed";
+            stage["error"] = text;
+          }
+        }
+        run.status = "failed";
+        run.error = text;
+        this.settle(run);
+        return;
+      }
+    }
     let rows: MergeRow[];
     try {
       rows = seatExecutor !== null ? [] : run.stages.map(

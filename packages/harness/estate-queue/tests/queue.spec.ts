@@ -63,7 +63,6 @@ import {
   sweepSidecar,
   terminalFrame,
   validateSubmitEnvelope,
-  writeRegistration,
 } from "../src/queue.ts";
 import type { QueueRunRow } from "../src/queue.ts";
 
@@ -349,17 +348,21 @@ describe("sidecar", () => {
       pipeline: "model",
       graph: [],
     });
+    // stroke 82: identity scalars FIRST (the 8191-byte sidecar slice
+    // in buildRunCard/listRuns must always read them — a bulky
+    // stages/error/graph prefix used to push created_at/draft_id/
+    // pipeline past the window and zombie the row).
     assert.deepEqual(Object.keys(doc), [
       "run_id",
       "status",
-      "error",
-      "stages",
-      "skipped_stages",
-      "artifacts",
       "created_at",
       "test",
       "draft_id",
       "pipeline",
+      "error",
+      "stages",
+      "skipped_stages",
+      "artifacts",
       "graph",
     ]);
     assert.equal(doc["error"], '"boom"');
@@ -400,12 +403,6 @@ describe("sidecar", () => {
     assert.equal(pipelineOf({}), "");
   });
 
-  it("registers the write pair", () => {
-    const root = tmp();
-    const dir = writeRegistration(root, "run-w", false, { a: 1 }, { g: 1 });
-    assert.deepEqual(JSON.parse(readFileSync(join(dir, "_request.json"), "utf8")), { a: 1 });
-    assert.deepEqual(JSON.parse(readFileSync(join(dir, "_flow.json"), "utf8")), { g: 1 });
-  });
 });
 
 describe("sweepSidecar", () => {

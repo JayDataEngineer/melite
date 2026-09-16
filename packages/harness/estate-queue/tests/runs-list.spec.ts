@@ -25,6 +25,9 @@ import {
   sidecarStrFound,
   strtolPy,
 } from "../src/runsList.ts";
+// The picker half of the depth wall (wall 8): listMedia is the media
+// package's own door — imported from source, never the built lib.
+import { listMedia } from "../../../estate/media/src/index.ts";
 
 let TMP = "";
 afterEach(() => {
@@ -252,14 +255,16 @@ describe("runArtifacts", () => {
     assert.equal(img["bytes"], 3);
   });
 
-  it("the literal without a slash rides whole; dangling links read -1", () => {
+  it("the literal without a slash rides whole; dangling links DROP (a dead artifact never kills the row)", () => {
     const root = tmp();
     writeFileSync(join(root, "b.png"), "bb");
     symlinkSync(join(root, "ghost.png"), join(root, "link.png"));
     const arts = runArtifacts(root, "run-x") as Record<string, unknown>[];
-    assert.equal(arts.length, 2);
+    // stroke 82: a -1 bytes row fed artifactRowOk's row-refusal —
+    // one dangling link erased the WHOLE run from runs/list. The
+    // dead candidate drops instead; the row survives.
+    assert.equal(arts.length, 1);
     assert.equal(arts[0]!["url"], "run-x/b.png");
-    assert.equal(arts[1]!["bytes"], -1);
   });
 });
 
@@ -408,6 +413,38 @@ describe("listRuns envelope", () => {
     put("run-BAD!", sidecar(), false);
     mkdirSync(join(out, "notes"), { recursive: true });
   };
+  it("stroke-82: a bulky sidecar payload never zombies the identity keys (the 8191 slice)", async () => {
+    // The sidecar's key order puts the identity scalars FIRST
+    // (stroke 82); a stages/error payload past 8K used to push
+    // pipeline/draft_id/created_at past the slice window and the
+    // row listed degraded (empty pipeline, draft cleared, 0 age).
+    const state = tmp();
+    const out = join(state, "output");
+    mkdirSync(join(out, "run-fat"), { recursive: true });
+    writeFileSync(
+      join(out, "run-fat", "_flow.json"),
+      JSON.stringify({
+        run_id: "run-fat",
+        status: "completed",
+        created_at: 1234567890,
+        test: false,
+        draft_id: "d-fat",
+        pipeline: "flow_inline",
+        error: "",
+        stages: [{ id: "s", blob: "x".repeat(9000) }],
+        skipped_stages: [],
+        artifacts: [],
+        graph: [],
+      }),
+    );
+    const { count, runs } = await listRuns(state, 10, async () => true);
+    assert.equal(count, 1);
+    const row = runs[0] as Record<string, unknown>;
+    assert.equal(row["flow"], "flow_inline");
+    assert.equal(row["draft_id"], "d-fat");
+    assert.equal(row["created_at"], 1234567890);
+  });
+
   it("a missing root lists nothing", async () => {
     assert.deepEqual(await listRuns(join(tmp(), "missing"), 10, async () => true), {
       count: 0,
@@ -486,4 +523,73 @@ describe("listRuns envelope", () => {
     assert.equal(count, 8192);
     assert.equal(runs.length, 3);
   }, 240000);
+
+  it("a dangling symlink drops its candidate, never the row (the listRuns half)", async () => {
+    // The runArtifacts half rides the "dangling links DROP" wall
+    // above; this is the envelope half: a finished run whose dir
+    // holds one good png plus one dangling png link still lists,
+    // carrying exactly the good artifact.
+    const state = tmp();
+    const dir = join(state, "output", "run-dangle");
+    mkdirSync(dir, { recursive: true });
+    writeFileSync(
+      join(dir, "_flow.json"),
+      JSON.stringify({
+        status: "completed",
+        pipeline: "flow_inline",
+        prompt: "hi",
+        draft_id: "d1",
+        seed: 7,
+        created_at: 100,
+      }),
+    );
+    writeFileSync(join(dir, "good.png"), "img");
+    symlinkSync(join(dir, "ghost.png"), join(dir, "link.png"));
+    const { count, runs } = await listRuns(state, 10, async () => true);
+    assert.equal(count, 1);
+    assert.equal(runs.length, 1);
+    const arts = (runs[0] as Record<string, unknown>)["artifacts"] as Record<string, unknown>[];
+    assert.equal(arts.length, 1);
+    assert.equal(arts[0]!["name"], "good.png");
+    assert.ok((arts[0]!["bytes"] as number) >= 0, "no dead -1 candidate rides the row");
+  });
+
+  it("the depth law diverges on purpose: listMedia browses depth 3, rows state depth 2", async () => {
+    // DELIBERATE DIVERGENCE (stroke 82): the picker browses every
+    // file the byte route can SERVE (listMedia walks run/stage/file
+    // — depth 3, and parseTarget has no depth cap, so l1/l2/deep.png
+    // serves), while the restore-port rows state the artifact
+    // CONVENTION (mediaCandidates walks top + one level only — depth
+    // 2, the editor_runs.py one-level law). A 2-deep file is browsed
+    // but never rowed.
+    const state = tmp();
+    const dir = join(state, "output", "run-aaa1-deep");
+    mkdirSync(join(dir, "l1", "l2"), { recursive: true });
+    writeFileSync(join(dir, "l1", "l2", "deep.png"), "d");
+    writeFileSync(
+      join(dir, "_flow.json"),
+      JSON.stringify({
+        status: "completed",
+        pipeline: "flow_inline",
+        prompt: "hi",
+        draft_id: "d1",
+        seed: 7,
+        created_at: 100,
+      }),
+    );
+    // Half one: the picker advertises the 2-deep file.
+    const { count, items } = await listMedia(state, "all");
+    assert.equal(count, 1);
+    assert.deepEqual(
+      items.map((i) => i.name),
+      ["l1/l2/deep.png"],
+    );
+    assert.equal(items[0]?.runId, "run-aaa1-deep");
+    // Half two: the row convention never carries it.
+    assert.deepEqual(mediaCandidates(dir).map((c) => c.rel), []);
+    assert.deepEqual(runArtifacts(dir, "./output/run-aaa1-deep"), []);
+    const { runs } = await listRuns(state, 10, async () => true);
+    assert.equal(runs.length, 1);
+    assert.deepEqual((runs[0] as Record<string, unknown>)["artifacts"], []);
+  });
 });

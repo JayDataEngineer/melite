@@ -20,8 +20,13 @@
  *    created_at wins.
  */
 import { afterEach, expect, test } from "vitest";
+import { RemoteError } from "@deepseek-ai/dsh-typert-protocol";
+import type { RemoteResult } from "@deepseek-ai/dsh-typert-protocol";
+import { bindEstateRemote, estateRemote, unbindEstateRemote, unwrapRemote } from "@melite/card-base/estate-remote";
+import { fetchMediaLibrary } from "@melite/card-base/media-library";
 import {
   fetchLatestRunForDraft,
+  fetchListRow,
   fetchRunStageUrl,
   fetchRunStatus,
   fetchRunTerminal,
@@ -384,6 +389,226 @@ test("pollRunStageUrl honors a pre-aborted signal — no calls, no fire", async 
     await pollRunStageUrl("run-1", "s_0", { onUrl: () => { fired += 1; }, intervalMs: 1 }, ctrl.signal);
     expect(fired).toBe(0);
     expect(fakes.calls).toHaveLength(0);
+  } finally {
+    fakes.unmount();
+  }
+});
+
+// ── the stroke-81 burn-down (2026-09-16): the residual arms the
+//    migration's vacuously-green gate run left uncovered ──────────
+
+// THE UNBOUND LAW (estate-remote): a verb call before the mount is a
+// wiring bug — LOUD, never a silent fallback.
+test("estateRemote throws loud when unbound (never a silent fallback)", () => {
+  unbindEstateRemote();
+  expect(() => estateRemote()).toThrow("estate remote not mounted");
+});
+
+// THE UNWRAP VOICE LAW (estate-remote): a refusal that carries no
+// words falls back to the caller's voice (never an empty throw).
+test("unwrapRemote falls back to the caller's voice when the refusal carries no words", async () => {
+  const empty = { ok: false, error: new RemoteError("gateway/bad-request", "", {}) } as unknown as RemoteResult<Record<string, unknown>>;
+  await expect(unwrapRemote(empty, "runs/status")).rejects.toThrow("runs/status: refused");
+  const wordless = { ok: false, error: {} } as unknown as RemoteResult<Record<string, unknown>>;
+  await expect(unwrapRemote(wordless, "runs/status")).rejects.toThrow("runs/status: refused");
+});
+
+// THE MALFORMED-LIBRARY LAW (media-library): a non-array items shape
+// reads as empty — the picker's source never throws on estate drift.
+test("fetchMediaLibrary reads a malformed items shape as empty (never a throw on the picker's source)", async () => {
+  const fakes = mountEstateFakes({ mediaItems: "nope" as unknown as Array<Record<string, unknown>> });
+  try {
+    await expect(fetchMediaLibrary("image")).resolves.toEqual([]);
+  } finally {
+    fakes.unmount();
+  }
+});
+
+/** Bind ONLY runs/list over dead namespaces (the malformed-tail arm
+ *  the shared harness cannot serve — it always wraps an array). */
+function bindRunsListDoc(doc: unknown): void {
+  const dead = (method: string) => async (): Promise<never> => { throw new Error("unused namespace in this wall: " + method) };
+  bindEstateRemote({
+    bench: { get: dead("bench/get") },
+    drafts: { get: dead("drafts/get") },
+    runs: { list: async () => ({ ok: true, value: doc }) },
+    media: { list: dead("media/list") },
+  } as unknown as Parameters<typeof bindEstateRemote>[0]);
+}
+
+// THE MALFORMED-TAIL LAW (runs-policy): a non-array runs tail reads
+// as empty — the bridge and the row read null, never throw.
+test("a malformed runs tail reads empty — the newest-run bridge and the row read null, never throw", async () => {
+  bindRunsListDoc({ runs: "nope" });
+  try {
+    await expect(fetchLatestRunForDraft(DRAFT)).resolves.toBeNull();
+    await expect(fetchListRow("run-1")).resolves.toBeNull();
+  } finally {
+    unbindEstateRemote();
+  }
+});
+
+// THE ID-CURRENCY LAW (fetchListRow): rows keyed by bare id answer
+// too, and a miss after live rows reads null (never a throw).
+test("fetchListRow matches the id fallback and reads a miss as null", async () => {
+  const fakes = mountEstateFakes({
+    listRows: [
+      { run_id: "run-7", draft_id: DRAFT, created_at: 3, artifacts: [] },
+      { id: "run-8", draft_id: DRAFT, created_at: 4, artifacts: [] },
+    ],
+  });
+  try {
+    await expect(fetchListRow("run-7")).resolves.toMatchObject({ run_id: "run-7" });
+    await expect(fetchListRow("run-8")).resolves.toMatchObject({ id: "run-8" });
+    await expect(fetchListRow("run-9")).resolves.toBeNull();
+  } finally {
+    fakes.unmount();
+  }
+});
+
+// THE FILE-ERA DEAD-LIST ARM (fetchRunStageUrl): the list read dies
+// on transport — settle null (the answer may land next poll).
+test("fetchRunStageUrl file-era arm: a dead list read settles null", async () => {
+  const fakes = mountEstateFakes({
+    refusals: [{ method: "runs/status", message: "no such run" }],
+    throws: [{ method: "runs/list", message: "wire blip" }],
+  });
+  try {
+    await expect(fetchRunStageUrl("run-7", "s_0")).resolves.toBeNull();
+  } finally {
+    fakes.unmount();
+  }
+});
+
+// THE SINGLE-STAGE BOUNDARY (fetchRunStageUrl): no match on a
+// multi-stage run is null — the fallback never reaches past one stage.
+test("fetchRunStageUrl with no matching stage on a multi-stage run is null", async () => {
+  const fakes = mountEstateFakes({
+    runDocs: [{
+      run_id: "run-1", status: "running", draft_id: DRAFT,
+      stages: [{ id: "a", url: "" }, { id: "b", url: "" }],
+    }],
+  });
+  try {
+    await expect(fetchRunStageUrl("run-1", "s_9")).resolves.toBeNull();
+  } finally {
+    fakes.unmount();
+  }
+});
+
+// THE GONE-VERDICT DEAD-LIST ARM (probeRunGone): the list read dies
+// on transport — settle gone (nothing answered).
+test("probeRunGone: a dead list read settles gone", async () => {
+  const fakes = mountEstateFakes({
+    refusals: [{ method: "runs/status", message: "no such run" }],
+    throws: [{ method: "runs/list", message: "wire blip" }],
+  });
+  try {
+    await expect(probeRunGone("run-9")).resolves.toBe("gone");
+  } finally {
+    fakes.unmount();
+  }
+});
+
+// THE FOREIGN-THROW LAW (startRun): a non-Error throw lands as the
+// fallback refusal (never the value past the gesture).
+test("startCardRun converts a foreign throw to the fallback refusal", async () => {
+  const fakes = mountEstateFakes({ throws: [{ method: "runs/start", value: "kablam" }] });
+  try {
+    await expect(startCardRun({ model: "anima", params: {}, draftId: DRAFT }))
+      .resolves.toEqual({ refused: "run request failed" });
+  } finally {
+    fakes.unmount();
+  }
+});
+
+// THE STATUS-TRANSPORT ARM (pollRunStageUrl): the status read dies
+// on transport — the poll stays alive on the unknown row and the
+// answer lands next cadence (transport never settles the poll).
+test("pollRunStageUrl survives a transport-blip status read — the answer lands next cadence", async () => {
+  const fakes = mountEstateFakes({
+    throws: [{ method: "runs/status", message: "wire blip" }],
+    runDocs: [
+      { run_id: "run-1", status: "running", draft_id: DRAFT, stages: [{ id: "s_0", url: "" }] },
+      { run_id: "run-1", status: "completed", draft_id: DRAFT, stages: [{ id: "s_0", url: "mesh.glb" }] },
+    ],
+  });
+  try {
+    const seen: string[] = [];
+    await pollRunStageUrl("run-1", "s_0", { onUrl: (u) => { seen.push(u); }, intervalMs: 1 });
+    expect(seen).toEqual(["/melite-media/runs/run-1/mesh.glb"]);
+  } finally {
+    fakes.unmount();
+  }
+});
+
+// THE DEFAULT CADENCE (pollRunStageUrl): no intervalMs rides the
+// 1500ms cadence — an abort still settles promptly (never the full wait).
+test("pollRunStageUrl without knobs rides the default cadence and still settles on abort", async () => {
+  const fakes = mountEstateFakes({
+    runDocs: [{ run_id: "run-1", status: "running", draft_id: DRAFT, stages: [{ id: "s_0", url: "" }] }],
+  });
+  try {
+    const ctrl = new AbortController();
+    let fired = 0;
+    const polled = pollRunStageUrl("run-1", "s_0", { onUrl: () => { fired += 1; } }, ctrl.signal);
+    ctrl.abort();
+    await polled;
+    expect(fired).toBe(0);
+  } finally {
+    fakes.unmount();
+  }
+});
+// THE MID-FLIGHT ABORT (pollRunStageUrl): the abort lands while the
+// status read is in flight — the sleep opens already-aborted and
+// settles 'abort' instead of waiting out the cadence.
+test("pollRunStageUrl settles on an abort that lands mid-flight — no fire, no hang", async () => {
+  const fakes = mountEstateFakes({
+    runDocs: [{ run_id: "run-1", status: "running", draft_id: DRAFT, stages: [{ id: "s_0", url: "" }] }],
+  });
+  try {
+    const ctrl = new AbortController();
+    let fired = 0;
+    const polled = pollRunStageUrl("run-1", "s_0", { onUrl: () => { fired += 1; }, intervalMs: 5 }, ctrl.signal);
+    ctrl.abort();
+    await polled;
+    expect(fired).toBe(0);
+  } finally {
+    fakes.unmount();
+  }
+});
+
+// THE REFUSING-LIST ARM (pollRunStageUrl): the list refuses — no such
+// row, nothing will ever land — settle silent.
+test("pollRunStageUrl file-era arm: a refusing list settles silent", async () => {
+  const fakes = mountEstateFakes({
+    refusals: [
+      { method: "runs/status", message: "no such run" },
+      { method: "runs/list", message: "no such row" },
+    ],
+  });
+  try {
+    let fired = 0;
+    await pollRunStageUrl("run-9", "s_0", { onUrl: () => { fired += 1; }, intervalMs: 1 });
+    expect(fired).toBe(0);
+  } finally {
+    fakes.unmount();
+  }
+});
+
+// THE POLL SINGLE-STAGE FALLBACK (pollRunStageUrl): a one-stage run's
+// only stage IS the asked stage — it fires under any label.
+test("pollRunStageUrl single-stage fallback: the only stage fires under any label", async () => {
+  const fakes = mountEstateFakes({
+    runDocs: [{
+      run_id: "run-1", status: "running", draft_id: DRAFT,
+      stages: [{ id: "img-to-mesh", url: "mesh.glb" }],
+    }],
+  });
+  try {
+    const seen: string[] = [];
+    await pollRunStageUrl("run-1", "s_1", { onUrl: (u) => { seen.push(u); }, intervalMs: 1 });
+    expect(seen).toEqual(["/melite-media/runs/run-1/mesh.glb"]);
   } finally {
     fakes.unmount();
   }

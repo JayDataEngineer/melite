@@ -49,3 +49,29 @@ test('empty tree answers an empty page, not an error', async () => {
     await rm(empty, { recursive: true, force: true })
   }
 })
+
+// stroke-82 wall: kind filters name exactly their family, and the
+// extension case washes ('A.PNG' is image — the media package's
+// kindForExt lowercases before the vocab lookup).
+test('kind filters: wav names audio, mp4 video, glb model, A.PNG image', async () => {
+  const root = await mkdtemp(join(tmpdir(), 'melite-media-kinds-'))
+  try {
+    await mkdir(join(root, 'output', 'run-aaa1-mix'), { recursive: true })
+    await writeFile(join(root, 'output', 'run-aaa1-mix', 'clip.wav'), 'a')
+    await writeFile(join(root, 'output', 'run-aaa1-mix', 'clip.mp4'), 'v')
+    await writeFile(join(root, 'output', 'run-aaa1-mix', 'mesh.glb'), 'm')
+    await writeFile(join(root, 'output', 'run-aaa1-mix', 'A.PNG'), 'i')
+    const names = async (kind: string): Promise<string[]> =>
+      (await listMedia(root, kind)).items.map((i) => i.name)
+    expect(await names('audio')).toEqual(['clip.wav'])
+    expect(await names('video')).toEqual(['clip.mp4'])
+    expect(await names('model')).toEqual(['mesh.glb'])
+    const images = await listMedia(root, 'image')
+    expect(images.items.map((i) => i.name)).toEqual(['A.PNG'])
+    expect(images.items[0]?.kind).toBe('image')
+    const all = await listMedia(root, 'all')
+    expect(all.count).toBe(4)
+  } finally {
+    await rm(root, { recursive: true, force: true })
+  }
+})

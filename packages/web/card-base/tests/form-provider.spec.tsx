@@ -8,13 +8,14 @@ import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-libra
 import { createElement as h } from 'react'
 import { afterEach, expect, test, vi } from 'vitest'
 import type { SpecField } from '../src/spec.ts'
+import type { FormSpecDoc } from '../src/spec.ts'
 import type { SquareWire } from '../src/form.tsx'
 import { RemoteError } from '@deepseek-ai/dsh-typert-protocol'
 import { bindEstateRemote, unbindEstateRemote } from '../src/estate-remote.ts'
 import { fetchMediaLibrary } from '../src/media-library.ts'
 
 import { InputSquare } from '../src/square.tsx'
-import { SourceRow, useSquareProvider } from '../src/form.tsx'
+import { CardForm, SourceRow, useSquareProvider } from '../src/form.tsx'
 
 afterEach(cleanup)
 afterEach(unbindEstateRemote)
@@ -452,4 +453,43 @@ test('FROM MEDIA: a file field asks for the whole library (accept narrows client
   fireEvent.click(screen.getByRole('menuitem', { name: 'From media' }))
   await screen.findByText('The runs library')
   expect(seen).toEqual(['all'])
+})
+
+// THE CONSTRUCTOR THREAD (form.tsx — the loadMedia seam): a wire
+// carrying loadMedia seats it through the constructor into the mod
+// section's leaves (the defined arm) — the leaf's media pick rides
+// the one lane end to end.
+test('CARDFORM THREAD: wire.loadMedia seats into the mod leaf — the served row lands on save', async () => {
+  bindMedia([{ url: 'https://host/m.png', name: 'the mask' }])
+  try {
+    const spec = {
+      form: 'masker', model: 'k', schema: { uid: 0, refs: { 0: { type: 'object', dict: {} } } },
+      inputs: [], packs: [],
+      features: {
+        modifiers: [{
+          kind: 'mask', label: 'Mask', param_key: 'masks', cardinality: 'multi',
+          fields: [
+            { name: 'image', type: 'image', label: 'Image' },
+            { name: 'feather', type: 'number', label: 'Feather', default: 5 },
+          ],
+        }],
+      },
+    } as unknown as FormSpecDoc
+    const onSet = vi.fn()
+    render(h(CardForm, {
+      spec, user: {}, onSet, onUnset: () => {},
+      wire: { candidates: [], loadMedia: fetchMediaLibrary },
+    }))
+    fireEvent.click(document.querySelector('[data-subcard-add="mod"]') as HTMLElement)
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Mask' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Image source' }))
+    fireEvent.click(await screen.findByRole('menuitem', { name: 'From media' }))
+    const pick = await screen.findByTestId('source-pick-row')
+    expect(pick.textContent).toContain('the mask')
+    fireEvent.click(pick)
+    fireEvent.click(screen.getByRole('button', { name: 'Add' }))
+    expect(onSet).toHaveBeenCalledWith('masks', [expect.objectContaining({ image: 'https://host/m.png' })])
+  } finally {
+    unbindEstateRemote()
+  }
 })

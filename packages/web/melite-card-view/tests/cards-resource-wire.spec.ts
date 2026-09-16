@@ -296,6 +296,28 @@ describe("restoreRunToBench — the refusal arms", () => {
       fakes.unmount();
     }
   });
+
+  test("a rev-carrying retry answer moves the chain (the next write rides the fresh rev)", async () => {
+    const fakes = mountEstateFakes({
+      draftStages: [
+        { id: "s_0", card: "a" },
+        { id: "s_1", card: "b" },
+      ],
+      benchDoc: { rev: 4, stages: [], log: [] },
+      // the retry's answer stamps rev 9 (the bench re-seated under
+      // the restore) — the chain moves with it.
+      addStageRevs: [9],
+      refusals: [{ method: "bench/add-stage", message: "already on the bench: s_0" }],
+    });
+    try {
+      const report = await restoreRunToBench(run(), "main");
+      expect(report).toMatchObject({ added: 2, skipped: 0 });
+      expect(report.notes).toEqual(["s_0 was already on the bench — added under a fresh id"]);
+      expect(addedDocs(fakes.calls).map((d) => (d as Record<string, unknown>)["expect_rev"])).toEqual([4, 4, 9]);
+    } finally {
+      fakes.unmount();
+    }
+  });
 });
 
 describe("freshStageRow — the drill's fresh read (null when gone, never a throw)", () => {
@@ -344,6 +366,17 @@ describe("freshStageRow — the drill's fresh read (null when gone, never a thro
   test("a dead door reads null (the refusal stays honest upstream)", async () => {
     const fakes = mountEstateFakes({
       refusals: [{ method: "drafts/get", message: "admission: nope" }],
+    });
+    try {
+      await expect(freshStageRow("d_1", "s_0")).resolves.toBeNull();
+    } finally {
+      fakes.unmount();
+    }
+  });
+
+  test("a non-array stage list reads null (estate drift — never a throw on the drill's fresh read)", async () => {
+    const fakes = mountEstateFakes({
+      draftStages: "nope" as unknown as Array<Record<string, unknown>>,
     });
     try {
       await expect(freshStageRow("d_1", "s_0")).resolves.toBeNull();

@@ -1090,6 +1090,17 @@ export interface ExecuteResult {
   readonly promptId: string;
 }
 
+/** Normalize a stage timeout_s to a finite positive budget (seconds).
+ *  Garbage (0, negatives, NaN, Infinity, non-numeric strings) rides
+ *  the 2400 default — the single path's old `Number(...) || 2400`
+ *  kept truthy Infinity/negatives, and the flow path's isFinite-only
+ *  guard kept negatives (audit finding, stroke 82). One spelling for
+ *  both paths now. */
+function normalizeTimeoutS(v: EngineJson | undefined): number {
+  const n: number = Number(v ?? 2400);
+  return Number.isFinite(n) && n > 0 ? n : 2400;
+}
+
 async function submitPrompt(
   server: string,
   graph: Record<string, EngineJson>,
@@ -1113,6 +1124,17 @@ async function submitPrompt(
     typeof body === "object" && body !== null && !Buffer.isBuffer(body)
       ? (body as Record<string, EngineJson>)
       : null;
+  if (out === null) {
+    // A 200 body that is not an object (a proxy's scalar/empty
+    // page, `42`, `true`) carries no prompt acceptance — proceed
+    // would poll a never-queued random promptId to the deadline.
+    // Refuse LOUD now (audit finding, stroke 82).
+    throw new ComfyError(
+      "POST /prompt 200 returned a non-object body (" +
+        (Buffer.isBuffer(body) ? "bytes" : JSON.stringify(body).slice(0, 120)) +
+        ") — no prompt acceptance",
+    );
+  }
   const nodeErrors: EngineJson | undefined = out?.["node_errors"];
   const hasErrors: boolean =
     nodeErrors !== undefined &&
@@ -1150,19 +1172,36 @@ async function pollToTerminal(
       // owns the failure voice (a dropped tap never kills the run).
       // The cast voices the construction invariant (see the report
       // param): tap is non-null exactly when a report was passed.
-      drainRelevant(tap.drain(), promptId, report as (updates: Record<string, EngineJson>) => void);
+      // A THROWING report (a consumer bug) interrupts the prompt
+      // before propagating — the engine slot is never orphaned on a
+      // dead consumer (audit finding, stroke 82).
+      try {
+        drainRelevant(tap.drain(), promptId, report as (updates: Record<string, EngineJson>) => void);
+      } catch (exc: unknown) {
+        await interrupt(server, promptId);
+        throw exc;
+      }
     }
     if (shouldStop()) {
       await interrupt(server, promptId);
       throw new ComfyError("stopped (interrupt delivered)");
     }
-    const { body: hist } = await httpCall(
+    const { status: histStatus, body: hist } = await httpCall(
       "GET",
       server + "/history/" + promptId,
       null,
       "application/json",
       30000,
     );
+    if (histStatus !== 200) {
+      // A non-200 history answer (proxy 502, an error page) is not
+      // "pending" — reading it as pending polls to the 40-minute
+      // deadline and then interrupts a finished run. Fail fast
+      // with the wire's own voice (audit finding, stroke 82).
+      throw new ComfyError(
+        "GET /history/" + promptId + " " + histStatus + ": " + pyStr(hist).slice(0, 200),
+      );
+    }
     const entry: EngineJson | undefined =
       typeof hist === "object" && hist !== null && !Buffer.isBuffer(hist)
         ? (hist as Record<string, EngineJson>)[promptId]
@@ -1221,7 +1260,7 @@ async function executeSingleInner(
   const params: Record<string, EngineJson> = { ...nodeParams };
   const wf: Record<string, EngineJson> = spliceWorkflow(params);
   const staged = await uploadReferenced(server, wf, { runsRoot: dirname(String(runDir)) });
-  const timeoutS: number = Number(params["timeout_s"] ?? 2400) || 2400;
+  const timeoutS: number = normalizeTimeoutS(params["timeout_s"]);
   const deadline: number = Date.now() + timeoutS * 1000;
   const { promptId, clientId } = await submitPrompt(server, staged.graph, false);
   active.set(String(runDir), {
@@ -1250,7 +1289,12 @@ async function executeSingleInner(
     return { outputs, artifacts: arts, promptId };
   } finally {
     tap?.close();
-    ACTIVE.delete(String(runDir));
+    // THE STOP-HANDLE MAP IS THE PARAM, not the module ACTIVE (the
+    // service face passes its own prompts map — deleting ACTIVE
+    // here leaked the service's handle forever, and a later
+    // stopForRunDir for this runDir phantom-interrupted whatever
+    // innocent run was live; audit finding, stroke 82).
+    active.delete(String(runDir));
   }
 }
 
@@ -1604,8 +1648,7 @@ async function executeFlowInner(
   // (mergegraph 318-327); per-stage floors apply.
   let budget: number = 0;
   for (const r of rows) {
-    const t: number = Number(r.params["timeout_s"] ?? 2400) || 2400;
-    budget += Number.isFinite(t) ? t : 2400;
+    budget += normalizeTimeoutS(r.params["timeout_s"]);
   }
   const floor: number = Math.max(budget, 2400);
   const deadline: number = Date.now() + floor * 1000;

@@ -56,8 +56,39 @@ export const MEDIA_PREFIX = "/melite-media/runs";
 /** The run-dir basename grammar (run-<hex>-<hex>, the mint law). */
 const RUN_ID = /^run-[0-9a-f]+-[A-Za-z0-9_-]+$/;
 
-/** One confined relative segment: [A-Za-z0-9._-]+, no dots-only. */
-const SEGMENT = /^(?!\.{1,2}$)[A-Za-z0-9._-]+$/;
+/** One confined relative segment AFTER percent-decoding: the engines
+ *  mint raw names (`out 1.png`, unicode, parens) and mediaUrl
+ *  percent-encodes them — the grammar must accept what both halves
+ *  produce (the mint→serve round-trip law, stroke 82). The lock is:
+ *  not empty, not `.`/`..` (traversal), no NUL; every other byte is
+ *  a legal filename the realpath containment below re-checks. */
+function segmentOk(decoded: string): boolean {
+  /* v8 ignore next -- defense-in-depth dot/empty fence, unreachable
+   * via the HTTP handler by construction (2026-09-16): "" never
+   * arrives (parseTarget filters empties before decode — only ""
+   * decodes to ""); "." / ".." never arrive (WHATWG URL
+   * dot-normalizes every single/double-dot spelling — literal,
+   * %2e/%2E, .%2e, %2e., %2e%2e in any case — to a short path
+   * before the segment loop runs; probed: all such forms refuse via
+   * the parts.length<2 arm, never here — see the single/double-dot
+   * walls). The fence stays for non-URL callers; the NUL arm below
+   * carries the behavioral wall. */
+  if (decoded === "" || decoded === "." || decoded === "..") return false;
+  if (decoded.includes("\0")) return false;
+  return true;
+}
+
+/** The servable-media law: run STATE lives beside the artifacts
+ *  (_flow.json, _request.json carry drafts and graphs — the run's
+ *  private record, never gallery bytes). `_poster.jpg` is the ONE
+ *  underscore exception (the runThumbnail mint law). */
+const UNDERSCORE_SERVABLE: ReadonlySet<string> = new Set(["_poster.jpg"]);
+
+function relServable(relParts: readonly string[]): boolean {
+  const base = relParts[relParts.length - 1] as string;
+  if (!base.startsWith("_")) return true;
+  return UNDERSCORE_SERVABLE.has(base);
+}
 
 /** The content-type map for the extensions the engines emit. */
 const CONTENT_TYPES: Readonly<Record<string, string>> = {
@@ -79,16 +110,26 @@ function contentTypeFor(name: string): string {
 }
 
 /** Parse /<runId>/<rel...> after the prefix; null when the shape or
- *  a segment violates the confinement grammar. */
+ *  a segment violates the confinement grammar. Each rel segment is
+ *  percent-DECODED first (malformed escapes refuse; %2e%2e decodes
+ *  to `..` and refuses) — the grammar holds on the decoded name. */
 function parseTarget(sub: string): { runId: string; rel: string } | null {
   const parts = sub.split("/").filter((p) => p !== "");
   if (parts.length < 2) return null;
-  const runId = parts[0];
-  const relParts = parts.slice(1);
+  const runId = parts[0] as string;
   if (!RUN_ID.test(runId)) return null;
-  for (const seg of relParts) {
-    if (!SEGMENT.test(seg)) return null;
+  const relParts: string[] = [];
+  for (const seg of parts.slice(1)) {
+    let decoded: string;
+    try {
+      decoded = decodeURIComponent(seg);
+    } catch {
+      return null;
+    }
+    if (!segmentOk(decoded)) return null;
+    relParts.push(decoded);
   }
+  if (!relServable(relParts)) return null;
   return { runId, rel: relParts.join("/") };
 }
 
@@ -164,8 +205,27 @@ export function apply(ctx: Context): void {
           res.end(NOT_FOUND_BODY);
           return;
         }
-        const stat = await fs.stat(realFile);
-        if (!stat.isFile()) {
+        // Byte-truth reads (stat + readFile) sit inside the refusal
+        // scope and BEFORE the committed head: a file deleted,
+        // locked, or unreadable between realpath and read answers
+        // 404 — NEVER a rejected promise that leaves the socket
+        // hung, and never a 200 head with no body (audit finding,
+        // stroke 82; artifacts are buffered engine outputs — the
+        // known-length law holds, the failure window moved ahead of
+        // the commitment).
+        let stat: import("node:fs").Stats;
+        let bytes: Buffer;
+        try {
+          stat = await fs.stat(realFile);
+          if (!stat.isFile()) {
+            res.writeHead(404, { "content-type": "application/json", "cache-control": "no-store" });
+            res.end(NOT_FOUND_BODY);
+            return;
+          }
+          bytes = req.method === "HEAD"
+            ? Buffer.alloc(0)
+            : await fs.readFile(realFile);
+        } catch {
           res.writeHead(404, { "content-type": "application/json", "cache-control": "no-store" });
           res.end(NOT_FOUND_BODY);
           return;
@@ -175,17 +235,6 @@ export function apply(ctx: Context): void {
           "content-length": String(stat.size),
           "cache-control": "no-store",
         });
-        if (req.method === "HEAD") {
-          res.end();
-          return;
-        }
-        // Buffered with an explicit length (the gallery's own law:
-        // a known length lets remote proxies buffer instead of
-        // mishandling chunked framing on lossy links). Artifacts are
-        // engine outputs — image/video files, not streams of unbounded
-        // size; a read failure past the committed head destroys the
-        // socket loudly.
-        const bytes = await fs.readFile(realFile);
         res.end(bytes);
       },
     }),

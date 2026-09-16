@@ -209,6 +209,14 @@ export function runArtifacts(
   let listed = 0;
   let imgs = 0;
   for (const cand of mediaCandidates(runDir)) {
+    // A dead candidate (dangling symlink, vanished file — partial
+    // cleanup, pruned output) drops from the LIST, never the ROW:
+    // one unreadable artifact must not erase a finished run from
+    // the restore port (the -1 → artifactRowOk row-refusal path,
+    // audit finding, stroke 82 — the bytes gate now holds on what
+    // is actually listed).
+    const size: number = fileSize(cand.full);
+    if (size < 0) continue;
     const base: string = cand.rel.includes("/")
       ? (cand.rel.slice(cand.rel.lastIndexOf("/") + 1) as string)
       : cand.rel;
@@ -223,7 +231,6 @@ export function runArtifacts(
       continue;
     }
     listed++;
-    const size: number = fileSize(cand.full);
     arts.push({
       name: base,
       path: outDirLiteral + "/" + cand.rel,

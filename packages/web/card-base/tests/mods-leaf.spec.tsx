@@ -615,6 +615,23 @@ test('THE BBOX VERB: editing a boxed entry seeds the face with the current recta
   expect(screen.getByTestId('bbox-seed').textContent).toBe('10,20,30,40')
 })
 
+test('THE BBOX VERB: cancel drops the face without seeding (never a stray write)', () => {
+  const { onEdit } = openLeaf({
+    kinds: [SAM3_BOX], values: { input_image: 'ref-url' },
+    bboxFace: FakeBboxFace, paintReference: 'input_image',
+  })
+  openCreate('SAM3')
+  fireEvent.click(screen.getByRole('button', { name: 'Draw box' }))
+  expect(screen.getByTestId('bbox-face')).not.toBeNull()
+  fireEvent.click(screen.getByRole('button', { name: 'Box cancel' }))
+  expect(screen.queryByTestId('bbox-face')).toBeNull()
+  fireEvent.click(screen.getByRole('button', { name: 'Add' }))
+  expect(onEdit).toHaveBeenCalledWith('sam3', [{
+    name: 'sam3', prompt: '',
+    bbox_x: -1, bbox_y: -1, bbox_w: -1, bbox_h: -1,
+  }])
+})
+
 test('THE BBOX VERB: host-less or faceless kinds offer no verb (the four inputs hold)', () => {
   const hostless = openLeaf({ kinds: [SAM3_BOX], values: {} })
   openCreate('SAM3')

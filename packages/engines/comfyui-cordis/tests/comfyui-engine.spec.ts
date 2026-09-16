@@ -135,4 +135,75 @@ describe("the comfyui adapter (engine id 'comfyui' on the seat)", () => {
     expect(seen.shouldStop?.()).toBe(true);
     void ctx;
   });
+
+  it("forwards non-empty inputNames, report identity, across two stages", async () => {
+    const flow = vi.fn(async (): Promise<FlowResult> => ({
+      stages: {
+        s0: { outputs: { default: "run-x/a.png" }, artifacts: ["a.png"] },
+        s1: { outputs: { default: "run-x/b.png" }, artifacts: ["b.png"] },
+      },
+      promptId: "prompt-2",
+    }));
+    const { seat } = await boot(flow);
+    const record = seat.resolve("comfyui");
+    const report = vi.fn();
+    const row1: EngineStageRow = {
+      stageId: "s1",
+      outputs: { default: "image" },
+      params: {
+        workflow: {
+          "1": { class_type: "EmptyLatentImage", inputs: { width: 8, height: 8 } },
+        },
+        output_nodes: { default: "3" },
+      },
+    };
+    const inputNames = { s1: { pic: "s0.default" } };
+    const outcome = await record.executor.executeStages(
+      [stageRow(), row1],
+      "/tmp/run-x",
+      inputNames,
+      { shouldStop: (): boolean => false, report },
+    );
+    expect(flow).toHaveBeenCalledTimes(1);
+    const [rows, runDir, gotNames, initials, opts] = flow.mock.calls[0] as [
+      Array<{ stageId: string; workflow: Record<string, unknown>; outputNodes: Record<string, unknown> }>,
+      string,
+      Record<string, Record<string, string>>,
+      Record<string, unknown>,
+      { shouldStop: () => boolean; report: unknown },
+    ];
+    expect(rows.length).toBe(2);
+    expect(rows[0]?.stageId).toBe("s0");
+    expect(rows[1]?.stageId).toBe("s1");
+    expect(rows[1]?.outputNodes).toEqual({ default: "3" });
+    expect(runDir).toBe("/tmp/run-x");
+    expect(gotNames).toEqual(inputNames);
+    expect(initials).toEqual({});
+    expect(opts.report).toBe(report);
+    expect(report).toHaveBeenCalledWith({
+      activity: "merged submit (2 stages, 2 nodes)",
+    });
+    expect(outcome.stages).toEqual([
+      { stageId: "s0", outputs: { default: "run-x/a.png" }, artifacts: ["a.png"] },
+      { stageId: "s1", outputs: { default: "run-x/b.png" }, artifacts: ["b.png"] },
+    ]);
+    expect(outcome.engineRef).toBe("prompt-2");
+  });
+
+  it("host-rejects → executeStages rejects", async () => {
+    const flow = vi.fn(async (): Promise<FlowResult> => {
+      throw new Error("host down");
+    });
+    const { seat } = await boot(flow);
+    const record = seat.resolve("comfyui");
+    await expect(
+      record.executor.executeStages(
+        [stageRow()],
+        "/tmp/run-x",
+        {},
+        { shouldStop: (): boolean => false, report: vi.fn() },
+      ),
+    ).rejects.toThrow(/host down/);
+    expect(flow).toHaveBeenCalledTimes(1);
+  });
 });

@@ -7,7 +7,7 @@
 import { describe, it, afterEach } from "vitest";
 import { spawnSync } from "node:child_process";
 import assert from "node:assert/strict";
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync, readFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { Context } from "@deepseek-ai/cordis";
@@ -17,6 +17,8 @@ import type { FlowResult, MergeRow, EngineJson } from "@melite/comfyui-cordis";
 import { RunsRuntimeService } from "../src/runsRegistry.ts";
 import { EnginesService } from "@melite/engine-contract";
 import { QueueCore } from "../src/queue.ts";
+import { planResurrect, buildRebuiltRun } from "../src/queue.ts";
+import type { RebuiltRun } from "../src/queue.ts";
 import { CardArmError } from "../src/cardsRegistry.ts";
 import type { RunRecord } from "../src/runsTypes.ts";
 
@@ -899,6 +901,53 @@ describe("status + stop", () => {
     assert.match(String(logged["log_tail"]), /run: queued/);
   });
 
+  it("status rewrites absolute artifact paths to route-relative (never a leading /)", async () => {
+    // Stroke-82 fix (e): the executor harvests ABSOLUTE disk paths
+    // into run.artifacts — serving them raw hands the browser
+    // strings the media route cannot answer (a leading-/ path rides
+    // toRunMediaUrl verbatim). status() rewrites each absolute path
+    // against the run's out root; bare relatives pass through.
+    const s = seat();
+    const runId = "run-abcdef123456-7890abcd";
+    const dir = join(s.state, "output", runId);
+    mkdirSync(join(dir, "stage"), { recursive: true });
+    const absTop = join(dir, "o.png");
+    const absNested = join(dir, "stage", "v.mp4");
+    writeFileSync(absTop, "img");
+    writeFileSync(absNested, "vid");
+    (s.core.runs as Map<string, RunRecord>).set(runId, {
+      runId,
+      status: "completed",
+      stages: [{ id: "s", name: "s", index: 0, status: "completed", outputs: {}, expected: {} }],
+      skippedStages: [],
+      artifacts: [absTop, absNested, "note.png"],
+      error: "",
+      draftId: "d1",
+      dir,
+      testFlag: false,
+      stopFlag: false,
+      params: [],
+      createdAt: 1,
+      pipeline: "flow_inline",
+      graphRows: [],
+      outputNodes: [],
+    } as RunRecord);
+    const got = await s.svc.status(runId, sig());
+    const arts = got["artifacts"] as string[];
+    assert.equal(arts.length, 3);
+    for (const a of arts) {
+      assert.equal(typeof a, "string");
+      assert.ok(a !== "", "no empty artifact rides the payload");
+      assert.ok(!a.startsWith("/"), "route-relative, never absolute: " + a);
+      assert.ok(!a.includes("/tmp"), "no disk root leaks: " + a);
+    }
+    // The strict branch: in-tree absolute paths rewrite under the run id.
+    assert.match(arts[0] as string, /^run-[0-9a-f]+-[A-Za-z0-9_-]+\//);
+    assert.ok((arts[1] as string).startsWith(runId + "/"), arts[1] as string);
+    // The bare relative passes through verbatim.
+    assert.equal(arts[2], "note.png");
+  });
+
   it("stop flags live runs (no seat: the flag is the authority); terminal rows refuse", async () => {
     const s = seat();
     const id = live(s);
@@ -909,5 +958,430 @@ describe("status + stop", () => {
     assert.deepEqual(await s.svc.stop(done, sig()), {
       error: "cannot stop run in state completed",
     });
+  });
+});
+
+// ── stroke-82 queue/pump walls ─────────────────────────────────────
+// Shared smalls for the walls below (the file's own rig shape:
+// seat(), inlineBody, settleWait, FakeEngine via engineSeat).
+
+/** One single-stage comfyui inline body WITH a splicible workflow. */
+const wfBody82 = (): Record<string, unknown> =>
+  inlineBody({
+    flow_inline: {
+      id: "x",
+      stages: [{ id: "s", engine: "comfyui", params: WF }],
+    },
+  });
+
+const waitRunning82 = async (s: Seat, runId: string): Promise<void> => {
+  for (let i = 0; i < 200; i++) {
+    if ((s.core.runs.get(runId) as RunRecord).status === "running") return;
+    await new Promise((r) => setTimeout(r, 10));
+  }
+  throw new Error("never claimed " + runId);
+};
+
+/** Mount the engines seat and register one fake executor for comfyui. */
+const mountSeat82 = (
+  s: Seat,
+  executor: {
+    executeStages: (...args: never[]) => Promise<unknown>;
+  },
+): void => {
+  const ctx = (s.svc as unknown as { ctx: Context }).ctx;
+  const engines = new EnginesService(ctx);
+  engines.register("comfyui", { executor } as never);
+};
+
+// 1. REGRESSION for the pump-wedge fix (stroke 82): enginesSeat
+// resolve() throwing used to escape runOne with activeId held,
+// wedging the pump forever. Now the resolve sits in the
+// settle-on-catch scope: the run settles failed and the pump lives.
+describe("stroke-82 pump-wedge regression", () => {
+  it("a resolve throw settles failed, then the pump serves the next run", async () => {
+    const s = seat();
+    const ctx = (s.svc as unknown as { ctx: Context }).ctx;
+    // The seat mounted with NOTHING registered: resolve('comfyui')
+    // throws LOUD ("no engine ... — registered: none ...").
+    const engines = new EnginesService(ctx);
+    assert.deepEqual(engines.ids(), []);
+    const bad = await settleWait(s, (await s.svc.start(inlineBody(), sig())).run_id);
+    assert.equal(bad.status, "failed");
+    assert.match(bad.error, /no engine/);
+    // Register a working executor AFTER the wedge: the pump survived.
+    engines.register("comfyui", {
+      executor: {
+        executeStages: async () => ({
+          stages: [{ stageId: "s", outputs: {}, artifacts: [] }],
+        }),
+      },
+    } as never);
+    const good = await settleWait(s, (await s.svc.start(inlineBody(), sig())).run_id);
+    assert.equal(good.status, "completed");
+  });
+});
+
+// 2. Resurrect→pump joint: a canned queued pair on disk, through
+// planResurrect/buildRebuiltRun, adapted into a live QueueCore,
+// pumped with a FakeEngine aboard.
+describe("stroke-82 resurrect→pump joint", () => {
+  it("the canned pair revives through the pump to terminal statuses", async () => {
+    // The on-disk shape resurrect expects (queue.spec's durable
+    // shape): output/<id>/_flow.json queued + a parseable
+    // _request.json.
+    const canned = tmp();
+    const put = (id: string, created: number): void => {
+      const dir = join(canned, "output", id);
+      mkdirSync(dir, { recursive: true });
+      writeFileSync(
+        join(dir, "_flow.json"),
+        JSON.stringify({
+          status: "queued",
+          draft_id: "d1",
+          created_at: created,
+          graph: [],
+          stages: [{ id: "s", name: "s", index: 0, status: "queued", outputs: {}, expected: {} }],
+          skipped_stages: [],
+          artifacts: [],
+        }),
+      );
+      writeFileSync(join(dir, "_request.json"), "{}");
+    };
+    put("run-aaa", 1);
+    put("run-bbb", 2);
+    const plan = planResurrect(canned, undefined, undefined, () => true);
+    assert.deepEqual(plan.order, ["run-aaa", "run-bbb"]);
+    assert.deepEqual(plan.orphans, []);
+    const s = seat();
+    engineSeat(s);
+    for (const id of plan.order) {
+      const rebuilt: RebuiltRun = buildRebuiltRun(canned, id);
+      const dir = join(s.state, "output", rebuilt.runId);
+      mkdirSync(dir, { recursive: true });
+      const faces = (rebuilt.stages as Record<string, unknown>[]).map((st, i) => ({
+        id: String(st["id"] ?? "s" + i),
+        name: String(st["name"] ?? st["id"] ?? "s"),
+        index: i,
+        status: "pending",
+        outputs: {},
+        expected: {},
+      }));
+      s.core.enqueue({
+        runId: rebuilt.runId,
+        status: "queued",
+        stages: faces,
+        skippedStages: [],
+        artifacts: [...rebuilt.artifacts],
+        error: "",
+        draftId: rebuilt.draftId,
+        dir,
+        testFlag: false,
+        stopFlag: false,
+        // THE JOINT'S GAP (current truth, pinned): the durable
+        // sidecar stages are HOLLOW — no params/outputNodes survive
+        // the record, and nothing replays _request.json back into
+        // the row — so the pump's splice refuses and BOTH runs
+        // settle failed (terminal). A params-rehydration seam would
+        // turn these completed; it does not exist yet.
+        params: faces.map(() => ({})),
+        createdAt: 1,
+        pipeline: "flow_inline",
+        graphRows: [],
+        outputNodes: faces.map(() => ({})),
+      } as never);
+    }
+    // Kick the pump with a live trigger run (the pump moves on kick).
+    const trig = await s.svc.start(wfBody82(), sig());
+    const a = await settleWait(s, "run-aaa");
+    const b = await settleWait(s, "run-bbb");
+    assert.equal(a.status, "failed");
+    assert.match(a.error, /no inline workflow/);
+    assert.equal(b.status, "failed");
+    assert.match(b.error, /no inline workflow/);
+    assert.equal((await settleWait(s, trig.run_id)).status, "completed");
+  });
+});
+
+// 3. Terminal settle read-back: the rich row's snapshots survive the
+// settle rewrite verbatim, and the terminal ledger row lands.
+describe("stroke-82 terminal settle read-back", () => {
+  it("card/bench snapshots survive the settle rewrite; the ledger rows run.<status>", async () => {
+    const benchDoc = { stages: [{ id: "s", card: "c" }], intent: "the beach flow" };
+    const s = seat({
+      phase1Card: async (): Promise<unknown> => ({
+        mid: "m",
+        fam: "f",
+        card: "c",
+        skeleton: "sk",
+        decl: {},
+        params: {},
+        spell: null,
+      }),
+      phase2Card: async (): Promise<unknown> => ({ graph: {} }),
+    });
+    const ctx = (s.svc as unknown as { ctx: Context }).ctx;
+    (ctx as unknown as { draftsRemote: unknown }).draftsRemote = {
+      get: async (): Promise<unknown> => benchDoc,
+    };
+    engineSeat(s);
+    const body = { draft_id: "d1", test: false, model: "m" };
+    const ans = await s.svc.start(body, sig());
+    const row = await settleWait(s, ans.run_id);
+    assert.equal(row.status, "completed");
+    const flow = JSON.parse(
+      readFileSync(join(s.state, "output", ans.run_id, "_flow.json"), "utf8"),
+    ) as Record<string, unknown>;
+    assert.equal(flow["status"], "completed");
+    assert.deepEqual(flow["card_snapshot"], { card: "c", params: body });
+    assert.deepEqual(flow["bench_snapshot"], { stages: benchDoc.stages, intent: "the beach flow" });
+    const ledger = readFileSync(join(s.state, "output", "_ledger.jsonl"), "utf8");
+    assert.ok(ledger.includes("run.completed"), "the terminal row lands in the ledger");
+    assert.ok(ledger.includes(ans.run_id), "the terminal row names the run");
+  });
+});
+
+// 4. Pre-seam splice refusal: params with no workflow key refuse at
+// splice, stages + run failed with the planner text, and the pump
+// still serves the next good run.
+describe("stroke-82 pre-seam splice refusal", () => {
+  it("a workflow-less run fails with the planner text; the next run completes", async () => {
+    const s = seat();
+    engineSeat(s);
+    const bad = await settleWait(s, (await s.svc.start(inlineBody(), sig())).run_id);
+    assert.equal(bad.status, "failed");
+    assert.match(bad.error, /no inline workflow/);
+    assert.equal(bad.stages[0]?.status, "failed");
+    assert.match(String((bad.stages[0] as unknown as Record<string, unknown>)["error"]), /no inline workflow/);
+    const good = await settleWait(s, (await s.svc.start(wfBody82(), sig())).run_id);
+    assert.equal(good.status, "completed");
+  });
+});
+
+// 5. Initials threading pin: the merged executeFlow seam's 4th arg.
+describe("stroke-82 initials threading", () => {
+  it("the worker threads {} initials into executeFlow", async () => {
+    const s = seat();
+    const engine = engineSeat(s);
+    let seen: unknown = "unreached";
+    engine.onFlow = async (_rows, _dir, _inputs, initials) => {
+      seen = initials;
+      return { stages: {}, promptId: "p" };
+    };
+    const row = await settleWait(s, (await s.svc.start(wfBody82(), sig())).run_id);
+    assert.equal(row.status, "completed");
+    // CURRENT LAW: the gateway passes no initials at execute time —
+    // present initials refuse at compile time upstream
+    // (registryInitialsError), so the worker always threads {}.
+    assert.deepEqual(seen, {});
+  });
+});
+
+// 6. Seat-path failure/stop/tap arms (the EnginesService executor
+// mirrors of the pre-seam FakeEngine arms above).
+describe("stroke-82 seat-path arms", () => {
+  it("executeStages rejections fail the run with the text verbatim", async () => {
+    const s = seat();
+    mountSeat82(s, {
+      executeStages: async (): Promise<never> => {
+        throw new Error("seat boom");
+      },
+    });
+    const row = await settleWait(s, (await s.svc.start(inlineBody(), sig())).run_id);
+    assert.equal(row.status, "failed");
+    assert.equal(row.error, "Error: seat boom");
+    assert.equal(row.stages[0]?.status, "failed");
+  });
+
+  it("a stop mid-execution converges stopped with an empty error", async () => {
+    const s = seat();
+    let release!: (v: { stages: never[] }) => void;
+    mountSeat82(s, {
+      executeStages: (): Promise<{ stages: never[] }> =>
+        new Promise((res) => void (release = res)),
+    });
+    const ans = await s.svc.start(inlineBody(), sig());
+    await waitRunning82(s, ans.run_id);
+    assert.deepEqual(await s.svc.stop(ans.run_id, sig()), {
+      run_id: ans.run_id,
+      status: "stopping",
+    });
+    release({ stages: [] });
+    const row = await settleWait(s, ans.run_id);
+    assert.equal(row.status, "stopped");
+    assert.equal(row.error, "");
+  });
+
+  it("the seat-path report tap folds progress then clears at completion", async () => {
+    const s = seat();
+    mountSeat82(s, {
+      executeStages: async (
+        ...args: never[]
+      ): Promise<{ stages: { stageId: string; outputs: Record<string, never>; artifacts: string[] }[] }> => {
+        const opts = args[3] as unknown as { report: (u: Record<string, unknown>) => void };
+        opts.report({ progress: 5, activity: "" } as never);
+        opts.report({
+          progress: { value: 7, max: 20, node: "10" },
+          activity: "sampling 7/20",
+        } as never);
+        await new Promise((r) => setTimeout(r, 120));
+        return { stages: [{ stageId: "s", outputs: {}, artifacts: [] }] };
+      },
+    });
+    const ans = await s.svc.start(inlineBody(), sig());
+    await waitRunning82(s, ans.run_id);
+    const mid = await s.svc.status(ans.run_id, sig());
+    const midStage = (mid["stages"] as Array<Record<string, unknown>>)[0]!;
+    assert.deepEqual(midStage["progress"], { value: 7, max: 20 });
+    assert.equal(midStage["activity"], "sampling 7/20");
+    const row = await settleWait(s, ans.run_id);
+    assert.equal(row.status, "completed");
+    const done = row.stages[0] as unknown as Record<string, unknown>;
+    assert.equal(done["progress"], undefined, "no stale percent on the completed face");
+    assert.equal(done["activity"], undefined);
+  });
+});
+
+// 7. FIFO serialization: a blocking first run holds the second queued.
+describe("stroke-82 FIFO serialization", () => {
+  it("B waits queued while A runs; A settles before B starts; order held", async () => {
+    const s = seat();
+    const engine = engineSeat(s);
+    const started: string[] = [];
+    let seenAStatusAtBStart: unknown = "unreached";
+    let releaseA!: (v: FlowResult) => void;
+    let calls = 0;
+    let aId = "";
+    engine.onFlow = (rows, runDir, _inputs, _initials, _opts) => {
+      void rows;
+      calls += 1;
+      started.push(runDir);
+      if (calls === 1) return new Promise<FlowResult>((res) => void (releaseA = res));
+      seenAStatusAtBStart = (s.core.runs.get(aId) as RunRecord).status;
+      return Promise.resolve({ stages: {}, promptId: "p" });
+    };
+    aId = (await s.svc.start(wfBody82(), sig())).run_id;
+    await waitRunning82(s, aId);
+    const bId = (await s.svc.start(wfBody82(), sig())).run_id;
+    // B stayed queued while A ran (head-of-line holds the pump).
+    assert.equal((s.core.runs.get(bId) as RunRecord).status, "queued");
+    assert.equal(s.core.queuePosition(bId), 0);
+    assert.equal((s.core.runs.get(aId) as RunRecord).status, "running");
+    releaseA({ stages: {}, promptId: "p" });
+    assert.equal((await settleWait(s, aId)).status, "completed");
+    assert.equal((await settleWait(s, bId)).status, "completed");
+    assert.equal(started.length, 2);
+    assert.ok(started[0]!.includes(aId) && started[1]!.includes(bId), "started in order");
+    assert.equal(seenAStatusAtBStart, "completed", "A was terminal before B started");
+  });
+});
+
+// 8. Ghost-row strand: the stroke-82 wall exposed a REAL BUG (tryDequeue
+// consumed a ghost id and returned null; the pump read a NON-empty queue
+// as idle and stranded every run behind the ghost). FIXED in queue.ts the
+// same stroke: the claim SKIPS ghost heads. The wall:
+describe("stroke-82 ghost-head strand", () => {
+  it("a ghost id at the head is skipped — the real run behind it still pumps", async () => {
+    const s = seat();
+    const ctx = (s.svc as unknown as { ctx: Context }).ctx;
+    const engines = new EnginesService(ctx);
+    engines.register("comfyui", {
+      executor: {
+        executeStages: async () => ({ stages: [], engineRef: "p" }),
+      },
+    });
+    const ghost = "run-ghost";
+    s.core.order.push(ghost);
+    const ans = await s.svc.start(inlineBody(), sig());
+    const row = await settleWait(s, ans.run_id);
+    assert.equal(row.status, "completed");
+    assert.ok(!s.core.order.includes(ghost), "the ghost was consumed, not stranded");
+  });
+});
+
+// 9. Stop-flag + non-stop error: the flag must not mask a real failure.
+describe("stroke-82 stop-flag masking", () => {
+  it("a stop followed by a non-stop failure settles failed with the text", async () => {
+    const s = seat();
+    const engine = engineSeat(s);
+    let release!: (e: Error) => void;
+    engine.onFlow = () => new Promise((_res, rej) => void (release = rej));
+    const ans = await s.svc.start(wfBody82(), sig());
+    await waitRunning82(s, ans.run_id);
+    assert.deepEqual(await s.svc.stop(ans.run_id, sig()), {
+      run_id: ans.run_id,
+      status: "stopping",
+    });
+    release(new Error("boom"));
+    const row = await settleWait(s, ans.run_id);
+    // Only a stop-voiced rejection converges stopped; 'boom'
+    // carries no stop text, so the real failure wins over the flag.
+    assert.equal(row.status, "failed");
+    assert.match(row.error, /boom/);
+  });
+});
+
+// 10. Variant-mid validate joint: the model id is NOT in facts, but
+// resolveCardFamily(mid) IS — the middle disjunct resolves.
+describe("stroke-82 variant-mid validate joint", () => {
+  it("the middle disjunct validates 200", async () => {
+    const s = seat({
+      modelFacts: (): unknown => ({ m1: {} }),
+      resolveCardFamily: (): unknown => "m1",
+      modelMids: (): unknown => new Set<string>(),
+      overlayCardParams: async (): Promise<unknown> => ({ fam: "m1", card: "c", params: {} }),
+    });
+    const ans = (await s.svc.validate({ model: "mx" }, sig())) as Record<string, unknown>;
+    assert.deepEqual(Object.keys(ans), ["ok", "model", "card", "cost"]);
+    assert.equal(ans["model"], "mx");
+  });
+});
+
+// 11. Cheap pins: merged:true on seat-path runs, the merged-submit
+// activity text on the pre-seam path, and the list limit clamp.
+describe("stroke-82 cheap pins", () => {
+  it("the seat path stamps merged:true on stage rows", async () => {
+    const s = seat();
+    mountSeat82(s, {
+      executeStages: async () => ({ stages: [{ stageId: "s", outputs: {}, artifacts: [] }] }),
+    });
+    const row = await settleWait(s, (await s.svc.start(inlineBody(), sig())).run_id);
+    assert.equal(row.status, "completed");
+    assert.equal((row.stages[0] as unknown as Record<string, unknown>)["merged"], true);
+  });
+
+  it("the pre-seam merged submit activity names stages and nodes", async () => {
+    const s = seat();
+    const engine = engineSeat(s);
+    engine.onFlow = async () => {
+      await new Promise((r) => setTimeout(r, 120));
+      return { stages: {}, promptId: "p" };
+    };
+    const ans = await s.svc.start(wfBody82(), sig());
+    await waitRunning82(s, ans.run_id);
+    const mid = await s.svc.status(ans.run_id, sig());
+    assert.equal(
+      (mid["stages"] as Array<Record<string, unknown>>)[0]!["activity"],
+      "merged submit (1 stages, 1 nodes)",
+    );
+    assert.equal((await settleWait(s, ans.run_id)).status, "completed");
+  });
+
+  it("list clamps the limit (0→1, >500→500)", async () => {
+    const s = seat();
+    for (const id of ["run-a", "run-b", "run-c"]) {
+      const dir = join(s.state, "output", id);
+      mkdirSync(dir, { recursive: true });
+      writeFileSync(
+        join(dir, "_flow.json"),
+        JSON.stringify({ status: "completed", pipeline: "x", created_at: 1 }),
+      );
+    }
+    const lo = await s.svc.list("0", sig());
+    assert.equal(lo.count, 3);
+    assert.equal(lo.runs.length, 1);
+    const hi = await s.svc.list("600", sig());
+    assert.equal(hi.count, 3);
+    assert.equal(hi.runs.length, 3);
   });
 });

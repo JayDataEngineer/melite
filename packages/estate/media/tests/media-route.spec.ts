@@ -17,10 +17,12 @@
 import { describe, onTestFinished, test } from "vitest";
 import assert from "node:assert/strict";
 import {
+  chmodSync,
   mkdirSync,
   mkdtempSync,
   rmSync,
   symlinkSync,
+  unlinkSync,
   utimesSync,
   writeFileSync,
 } from "node:fs";
@@ -666,5 +668,257 @@ describe("the media remote", () => {
     const want = await listMedia(root, "all");
     assert.deepEqual(got, want);
     assert.equal(got.count, 3);
+  });
+});
+
+/** Root bypasses permission bits, so chmod walls cannot bite there. */
+function isRoot(): boolean {
+  return (
+    typeof process.geteuid === "function" && process.geteuid() === 0
+  );
+}
+
+describe("stroke-82 walls: unreadable / raced files refuse 404 + ended", () => {
+  test("a file that exists but is unreadable (chmod 000) is a 404 with res ended", async () => {
+    if (isRoot()) {
+      console.warn("unreadable-file wall skipped: running as root");
+      return;
+    }
+    const root = mintRoot();
+    const dir = seedRun(root, "run-aaa1-x", { "locked.png": "SECRET" });
+    const file = join(dir, "locked.png");
+    chmodSync(file, 0o000);
+    try {
+      const { handler } = await mountWeb(root);
+      const seen = await drive(
+        handler,
+        "GET",
+        `${MEDIA_PREFIX}/run-aaa1-x/locked.png`,
+      );
+      assert.equal(seen.status, 404);
+      assert.deepEqual(seen.body.toString(), NOT_FOUND_BODY);
+      assert.equal(seen.ended, true);
+    } finally {
+      chmodSync(file, 0o644);
+    }
+  });
+
+  test("a file deleted between list and GET is a 404 with res ended", async () => {
+    const root = mintRoot();
+    const dir = seedRun(root, "run-aaa1-x", { "gone.png": "BYTES" });
+    const { handler } = await mountWeb(root);
+    const before = await drive(
+      handler,
+      "GET",
+      `${MEDIA_PREFIX}/run-aaa1-x/gone.png`,
+    );
+    assert.equal(before.status, 200);
+    unlinkSync(join(dir, "gone.png"));
+    const seen = await drive(
+      handler,
+      "GET",
+      `${MEDIA_PREFIX}/run-aaa1-x/gone.png`,
+    );
+    assert.equal(seen.status, 404);
+    assert.deepEqual(seen.body.toString(), NOT_FOUND_BODY);
+    assert.equal(seen.ended, true);
+  });
+});
+
+describe("stroke-82 walls: the mint→serve round trip", () => {
+  test("raw AND encoded names serve: 'out 1.png' and 'café.png'", async () => {
+    const root = mintRoot();
+    const runId = "run-aaa1-x";
+    const spaceBytes = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x01]);
+    const uniBytes = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x02]);
+    seedRun(root, runId, { "out 1.png": spaceBytes, "café.png": uniBytes });
+    const { handler } = await mountWeb(root);
+    // The picker's half: listMedia advertises the raw names — those
+    // advertised urls serve through the handler with the right bytes.
+    const listed = await listMedia(root, "all");
+    assert.equal(listed.count, 2);
+    for (const item of listed.items) {
+      const seen = await drive(handler, "GET", item.url);
+      assert.equal(seen.status, 200, item.url);
+      assert.deepEqual(
+        seen.body,
+        item.name === "out 1.png" ? spaceBytes : uniBytes,
+      );
+      assert.equal(seen.ended, true);
+    }
+    // The client seam's half: mediaUrl's per-segment encoding serves too.
+    for (const [name, want] of [
+      ["out 1.png", spaceBytes],
+      ["café.png", uniBytes],
+    ] as Array<[string, Buffer]>) {
+      const seen = await drive(handler, "GET", mediaUrl(runId, name));
+      assert.equal(seen.status, 200, mediaUrl(runId, name));
+      assert.deepEqual(seen.body, want);
+      assert.equal(seen.ended, true);
+    }
+  });
+
+  test("encoded dot segments still refuse: %2e%2e is a 404", async () => {
+    const root = mintRoot();
+    seedRun(root, "run-aaa1-x", { "a.png": "x" });
+    const { handler } = await mountWeb(root);
+    // Defense in depth, two locks: the WHATWG URL layer normalizes
+    // %2e to dot segments (collapsing the traversal before the
+    // route's own grammar runs), AND parseTarget decodes-then-
+    // validates (a decoded `..` refuses). Both roads end at 404.
+    for (const url of [
+      `${MEDIA_PREFIX}/run-aaa1-x/%2e%2e`,
+      `${MEDIA_PREFIX}/run-aaa1-x/%2e%2e/a.png`,
+      `${MEDIA_PREFIX}/run-aaa1-x/%2E%2E/a.png`,
+    ]) {
+      const seen = await drive(handler, "GET", url);
+      assert.equal(seen.status, 404, url);
+      assert.deepEqual(seen.body.toString(), NOT_FOUND_BODY);
+    }
+  });
+});
+
+describe("stroke-82 walls: underscore state files", () => {
+  test("_flow.json and _request.json refuse 404; _poster.jpg serves", async () => {
+    const root = mintRoot();
+    const runId = "run-aaa1-x";
+    const poster = Buffer.from([0xff, 0xd8, 0xff, 0x00]);
+    seedRun(root, runId, {
+      "_flow.json": '{"status":"completed"}',
+      "_request.json": "{}",
+      "_poster.jpg": poster,
+      "a.png": "x",
+    });
+    const { handler } = await mountWeb(root);
+    for (const rel of ["_flow.json", "_request.json"]) {
+      const seen = await drive(handler, "GET", `${MEDIA_PREFIX}/${runId}/${rel}`);
+      assert.equal(seen.status, 404, rel);
+      assert.deepEqual(seen.body.toString(), NOT_FOUND_BODY);
+      assert.equal(seen.ended, true);
+    }
+    const posterSeen = await drive(
+      handler,
+      "GET",
+      `${MEDIA_PREFIX}/${runId}/_poster.jpg`,
+    );
+    assert.equal(posterSeen.status, 200);
+    assert.deepEqual(posterSeen.headers["content-type"], "image/jpeg");
+    assert.deepEqual(posterSeen.body, poster);
+    assert.equal(posterSeen.ended, true);
+  });
+});
+
+describe("stroke-82 walls: the content-type table + query", () => {
+  test("one table-driven GET per extension asserts the mapped content type", async () => {
+    const root = mintRoot();
+    const runId = "run-aaa1-x";
+    const rows: Array<[string, string]> = [
+      ["f.jpg", "image/jpeg"],
+      ["f.jpeg", "image/jpeg"],
+      ["f.webp", "image/webp"],
+      ["f.gif", "image/gif"],
+      ["f.webm", "video/webm"],
+      ["f.json", "application/json; charset=utf-8"],
+      ["f.txt", "text/plain; charset=utf-8"],
+    ];
+    const files: Record<string, string> = {};
+    for (const [name] of rows) files[name] = `bytes-of-${name}`;
+    seedRun(root, runId, files);
+    const { handler } = await mountWeb(root);
+    for (const [name, contentType] of rows) {
+      const seen = await drive(handler, "GET", `${MEDIA_PREFIX}/${runId}/${name}`);
+      assert.equal(seen.status, 200, name);
+      assert.deepEqual(seen.headers["content-type"], contentType, name);
+      assert.deepEqual(seen.body, Buffer.from(`bytes-of-${name}`), name);
+    }
+  });
+
+  test("a cache-buster query serves 200: the query is stripped", async () => {
+    const root = mintRoot();
+    seedRun(root, "run-aaa1-x", { "a.png": "0123456789" });
+    const { handler } = await mountWeb(root);
+    const seen = await drive(
+      handler,
+      "GET",
+      `${MEDIA_PREFIX}/run-aaa1-x/a.png?v=1`,
+    );
+    assert.equal(seen.status, 200);
+    assert.deepEqual(seen.body, Buffer.from("0123456789"));
+    assert.equal(seen.ended, true);
+  });
+});
+
+describe("coverage walls: decode-validate refusals (NUL + malformed escape)", () => {
+  test("a NUL byte in a segment refuses 404 via the decode-validate lock", async () => {
+    // LOCK: decode-validate (segmentOk's NUL arm, index.ts:67 → the
+    // !segmentOk refuse at :119) — NOT URL-normalize (probed
+    // 2026-09-16: WHATWG URL preserves %00 verbatim in pathname, so
+    // "/run-aaa1-x/a%00b.png" reaches parseTarget intact) and NOT
+    // realpath (parseTarget nulls before any tree walk).
+    const root = mintRoot();
+    seedRun(root, "run-aaa1-x", { "a.png": "x" });
+    const { handler } = await mountWeb(root);
+    for (const url of [
+      `${MEDIA_PREFIX}/run-aaa1-x/a%00b.png`,
+      `${MEDIA_PREFIX}/run-aaa1-x/%00`,
+    ]) {
+      const seen = await drive(handler, "GET", url);
+      assert.equal(seen.status, 404, url);
+      assert.deepEqual(seen.headers, {
+        "content-type": "application/json",
+        "cache-control": "no-store",
+      });
+      assert.deepEqual(seen.body.toString(), NOT_FOUND_BODY);
+      assert.equal(seen.ended, true);
+    }
+  });
+
+  test("a malformed percent-escape refuses 404 via the decode-validate catch", async () => {
+    // LOCK: decode-validate catch (index.ts:117) — NOT URL-normalize
+    // (probed 2026-09-16: WHATWG URL preserves "%E0%A4%A" verbatim in
+    // pathname) and NOT realpath — decodeURIComponent throws URIError
+    // (a truncated 3-byte sequence ending in the lone "%A"), so
+    // parseTarget nulls before the segment loop.
+    const root = mintRoot();
+    seedRun(root, "run-aaa1-x", { "a.png": "x" });
+    const { handler } = await mountWeb(root);
+    const seen = await drive(
+      handler,
+      "GET",
+      `${MEDIA_PREFIX}/run-aaa1-x/%E0%A4%A`,
+    );
+    assert.equal(seen.status, 404);
+    assert.deepEqual(seen.headers, {
+      "content-type": "application/json",
+      "cache-control": "no-store",
+    });
+    assert.deepEqual(seen.body.toString(), NOT_FOUND_BODY);
+    assert.equal(seen.ended, true);
+  });
+
+  test("single-dot spellings refuse 404 via the URL-normalize lock, never segmentOk", async () => {
+    // DOCUMENTS the v8-ignore on segmentOk's dot/empty arm
+    // (index.ts:66): probed 2026-09-16 — WHATWG URL collapses every
+    // single-dot spelling ("%2e", ".") to the run-only short path
+    // BEFORE parseTarget's segment loop runs, so the refusal arrives
+    // via the parts.length<2 arm (walled above), never the
+    // decode-validate dot arm. The double-dot half already rides the
+    // "%2e%2e is a 404" wall; this pins the single-dot half.
+    const root = mintRoot();
+    seedRun(root, "run-aaa1-x", { "a.png": "x" });
+    const { handler } = await mountWeb(root);
+    for (const url of [
+      `${MEDIA_PREFIX}/run-aaa1-x/%2e`,
+      `${MEDIA_PREFIX}/run-aaa1-x/.`,
+    ]) {
+      const seen = await drive(handler, "GET", url);
+      assert.equal(seen.status, 404, url);
+      assert.deepEqual(seen.headers, {
+        "content-type": "application/json",
+        "cache-control": "no-store",
+      });
+      assert.deepEqual(seen.body.toString(), NOT_FOUND_BODY);
+      assert.equal(seen.ended, true);
+    }
   });
 });

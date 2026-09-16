@@ -55,6 +55,13 @@ describe('the list-row url law (pure)', () => {
       '/melite-media/runs/r1/a.png',
     )
   })
+
+  it('listRowMediaUrl skips object rows whose url is not a string (never a throw on drift)', () => {
+    expect(listRowMediaUrl({ artifacts: [{ url: 7 }, { noUrl: true }] })).toBeNull()
+    expect(listRowMediaUrl({ artifacts: [{ url: 7 }, { url: 'r1/a.png' }] })).toBe(
+      '/melite-media/runs/r1/a.png',
+    )
+  })
 })
 
 describe('the family currency — ragged catalogs', () => {

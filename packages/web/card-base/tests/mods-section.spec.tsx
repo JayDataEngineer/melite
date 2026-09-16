@@ -267,3 +267,18 @@ test('an ordered tile FIRES the drag start (the MIME + reorder wake)', () => {
   fireEvent.dragOver(document.querySelector('[data-mod-tile="draw-1"]') as HTMLElement, { dataTransfer: dtEnd as never })
   fireEvent.dragEnd(tile, { dataTransfer: dtEnd as never })
 })
+
+test('a standalone tile PASSES drag over through (the onDragOver guard — never a reorder wake)', () => {
+  const { onEdit } = openSection({ kinds: [SAM3K], values: { sam3: [{ name: 'a' }] } })
+  const t = document.querySelector('[data-mod-tile="sam3-0"]') as HTMLElement
+  expect(fireEvent.dragOver(t, { dataTransfer: { types: [MOD_DRAG_MIME], dropEffect: '' } as never })).toBe(true)
+  expect(onEdit).not.toHaveBeenCalled()
+})
+
+test('a standalone tile ENDS the drag with no wake (the onDragEnd guard — never a reorder reset)', () => {
+  const { onEdit } = openSection({ kinds: [SAM3K], values: { sam3: [{ name: 'a' }] } })
+  const t = document.querySelector('[data-mod-tile="sam3-0"]') as HTMLElement
+  fireEvent.dragEnd(t)
+  expect(onEdit).not.toHaveBeenCalled()
+  expect(document.querySelector('[data-mod-tile="sam3-0"]')).not.toBeNull()
+})

@@ -4,7 +4,7 @@
 // + durable writes + ledger).
 import { describe, it, afterEach } from "vitest";
 import assert from "node:assert/strict";
-import { mkdtempSync, rmSync, readFileSync, existsSync } from "node:fs";
+import { chmodSync, mkdtempSync, rmSync, readFileSync, existsSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
@@ -312,5 +312,33 @@ describe("registerCompiledRun", () => {
       door: { ...doorBase, runId: "run-nointent", benchDoc: { stages, intent: 7 } },
     });
     assert.deepEqual(run2.benchSnapshot, { stages, intent: "" });
+  });
+
+  it("an unwritable state root throws LOUD (a refusal contract, never a silent skip)", () => {
+    // registerCompiledRun raw-throws the node fs Error (mkdirSync on
+    // the 555 root raises EACCES) — the caller (the start arm) folds
+    // it; pinning the loud shape here so a future silent-skip can
+    // never slip in. Root bypasses permission bits: skip there.
+    if (typeof process.geteuid === "function" && process.geteuid() === 0) {
+      console.warn("unwritable-root wall skipped: running as root");
+      return;
+    }
+    const root = tmp();
+    chmodSync(root, 0o555);
+    try {
+      assert.throws(
+        () =>
+          registerCompiledRun({
+            compiled: compiled([one]),
+            testFlag: false,
+            draftId: "d1",
+            stateRoot: root,
+            enqueue: () => 0,
+          }),
+        /EACCES|EPERM|permission/i,
+      );
+    } finally {
+      chmodSync(root, 0o755);
+    }
   });
 });

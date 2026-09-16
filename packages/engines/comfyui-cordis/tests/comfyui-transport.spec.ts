@@ -792,6 +792,27 @@ describe("fetchOutputs (the harvest matrix)", () => {
       assert.deepEqual(await fetchOutputs(s.url, tmpRoot(), { outputs: "x" }), []);
     } finally { await s.close(); }
   });
+  it("pins CURRENT: same flat filename last-wins, artifacts carry the name twice (deliberate)", async () => {
+    // DELIBERATE last-wins: two nodes emitting the same flat
+    // filename land on the same path — the second overwrites the
+    // first, and the artifacts list carries the path twice
+    // (documented, never a dedupe).
+    const cfg = stub();
+    const s = await startStub(cfg);
+    try {
+      const runDir = tmpRoot();
+      const arts = await fetchOutputs(s.url, runDir, {
+        outputs: {
+          "1": { images: [{ filename: "a.png", subfolder: "", type: "output" }] },
+          "2": { images: [{ filename: "a.png", subfolder: "", type: "output" }] },
+        },
+      });
+      assert.equal(arts.length, 2);
+      assert.equal(arts[0], join(runDir, "a.png"));
+      assert.equal(arts[1], join(runDir, "a.png"));
+      assert.equal(readFileSync(join(runDir, "a.png"), "utf8"), "BYTES:a.png");
+    } finally { await s.close(); }
+  });
 });
 
 // ── executeSingle ──────────────────────────────────────────────
@@ -855,13 +876,19 @@ describe("executeSingle (the per-stage run)", () => {
       } finally { await srv.close(); }
     }
   });
-  it("200 Buffer/empty prompt bodies carry no node_errors", async () => {
-    for (const body of [Buffer.from("raw"), ""] as const) {
+  it("200 Buffer/empty/scalar prompt bodies refuse LOUD (no acceptance = no poll)", async () => {
+    // stroke 82: proceeding with the random promptId polled a
+    // never-queued prompt to the deadline. The audit's verdict:
+    // refuse at the door.
+    for (const body of [Buffer.from("raw"), "", 42] as const) {
       const cfg = stub({ history: [doneEntry()], promptBody: body });
       const srv = await startStub(cfg);
       try {
-        const out = await executeSingle(tmpRoot(), wfParams(), {}, {}, srv.url);
-        assert.ok(out.promptId.length > 0);
+        await assert.rejects(
+          executeSingle(tmpRoot(), wfParams(), {}, {}, srv.url),
+          /no prompt acceptance/,
+        );
+        assert.equal(cfg.calls?.size ?? 0, 0, "the never-queued prompt is never polled");
       } finally { await srv.close(); }
     }
   });
@@ -963,6 +990,95 @@ describe("executeSingle (the per-stage run)", () => {
       assert.equal(activeCount(), 0);
     } finally { await s.close(); }
   }, 30000);
+  it("a throwing report interrupts the prompt before rethrowing (stroke-82 fix d)", async () => {
+    const cfg = stub({
+      history: [pendingEntry(), doneEntry()],
+      wsFrames: ['{"type":"progress","data":{"value":1,"max":4,"node":"1"}}'],
+    });
+    const s = await startStub(cfg);
+    try {
+      await assert.rejects(
+        executeSingle(tmpRoot(), wfParams(), {}, { report: () => { throw new Error("report boom"); } }, s.url),
+        /report boom/,
+      );
+      assert.equal(cfg.seen.interrupt, 1, "the throwing consumer interrupts the live prompt");
+      assert.equal(activeCount(), 0);
+    } finally { await s.close(); }
+  });
+  it("non-200 history fails fast with the wire's voice (stroke-82 fix c)", async () => {
+    const cfg = stub({ historyRaw: { status: 500, body: '{"error":"boom"}' } });
+    const s = await startStub(cfg);
+    try {
+      await assert.rejects(
+        executeSingle(tmpRoot(), wfParams({ timeout_s: 2 }), {}, {}, s.url),
+        /GET \/history\/.* 500/,
+      );
+    } finally { await s.close(); }
+  });
+  it("mid-poll transport death rejects before the deadline (no hang)", async () => {
+    const cfg = stub({ history: [pendingEntry()] });
+    const s = await startStub(cfg);
+    const started = Date.now();
+    const p = executeSingle(tmpRoot(), wfParams({ timeout_s: 10 }), {}, {}, s.url);
+    await sleep(600);
+    await s.close();
+    await assert.rejects(p, (e: unknown) => {
+      assert.ok(e instanceof Error);
+      assert.ok(!/exceeded 10s/.test((e as Error).message), "the deadline must not be the exit");
+      return true;
+    });
+    const elapsed = Date.now() - started;
+    assert.ok(elapsed < 8000, "rejects fast, not at the 10s deadline (took " + elapsed + "ms)");
+    assert.equal(activeCount(), 0);
+  });
+  it("timeout_s garbage rides the 2400 fallback (stroke-82 normalization)", async () => {
+    // The single path's old `Number(...) || 2400` kept truthy
+    // Infinity/negatives; the shared normalizeTimeoutS (finite &&
+    // > 0 ? value : 2400) retires that. Each garbage value must
+    // complete a fast run — never an instant "exceeded -5s".
+    for (const bad of [0, Number.NaN, Number.POSITIVE_INFINITY, -5, "abc"]) {
+      const cfg = stub({ history: [pendingEntry(), doneEntry()] });
+      const srv = await startStub(cfg);
+      try {
+        const out = await executeSingle(tmpRoot(), wfParams({ timeout_s: bad as never }), {}, {}, srv.url);
+        assert.ok(out.promptId.length > 0, "timeout_s " + String(bad) + " completes (no instant exceeded)");
+        assert.equal(activeCount(), 0);
+      } finally { await srv.close(); }
+    }
+    const fast = stub({ history: [doneEntry()] });
+    const fs = await startStub(fast);
+    try {
+      const out = await executeSingle(tmpRoot(), wfParams({ timeout_s: 5 }), {}, {}, fs.url);
+      assert.ok(out.promptId.length > 0, "a short deadline still completes a fast run");
+    } finally { await fs.close(); }
+  });
+  it("pins CURRENT: {status:{status:'success'}} without completed reads as pending (deliberate)", async () => {
+    // DELIBERATE: only success+completed is terminal — a success
+    // status without the completed flag is still pending (the
+    // mapHistoryEntry law: completed !== true → pending). Do not
+    // "fix" this to treat status:'success' alone as terminal.
+    const cfg = stub({ history: [{ status: { status: "success" } } as unknown as Record<string, unknown>] });
+    const s = await startStub(cfg);
+    try {
+      await assert.rejects(
+        executeSingle(tmpRoot(), wfParams({ timeout_s: 1 }), {}, {}, s.url),
+        /ComfyUI run exceeded 1s/,
+      );
+    } finally { await s.close(); }
+  });
+  it("pins CURRENT: per-entry unshaped history reads as pending (deliberate)", async () => {
+    // DELIBERATE: a per-entry scalar ("weird") is not a shaped
+    // entry — the poll reads it as entry-absent/pending, never a
+    // crash (the shape gate's law).
+    const cfg = stub({ history: ["weird" as unknown as Record<string, unknown>] });
+    const s = await startStub(cfg);
+    try {
+      await assert.rejects(
+        executeSingle(tmpRoot(), wfParams({ timeout_s: 1 }), {}, {}, s.url),
+        /ComfyUI run exceeded 1s/,
+      );
+    } finally { await s.close(); }
+  });
 });
 
 // ── planMerge ──────────────────────────────────────────────────
@@ -1319,11 +1435,69 @@ describe("ComfyUIHostService (the plugin face)", () => {
     try {
       const { svc } = await boot({ url: bs.url });
       await assert.rejects(svc.executeSingle(tmpRoot(), wfParams(), {}, {}), (e: unknown) => e instanceof ComfyError);
+      const peekBad = svc as unknown as { supervisor: { state: string } | null };
+      assert.notEqual(peekBad.supervisor?.state, "down", "HTTP failures stay neutral (no down-mark — timeouts/statuses prove liveness)");
     } finally { await bs.close(); }
     const { svc: dark } = await boot({ url: "http://127.0.0.1:1" });
     await assert.rejects(dark.executeSingle(tmpRoot(), wfParams(), {}, {}), /ECONNREFUSED|EADDR/);
     (dark as unknown as { resetForTests: () => void }).resetForTests();
   }, 60000);
+  it("service executeSingle deregisters the fiber map (stroke-82 fix a)", async () => {
+    const cfg = stub({ history: [doneEntry()] });
+    const s = await startStub(cfg);
+    try {
+      const { svc } = await boot({ url: s.url });
+      const runDir = tmpRoot();
+      const out = await svc.executeSingle(runDir, wfParams(), {}, {});
+      assert.ok(out.promptId.length > 0);
+      assert.equal((svc as unknown as { prompts: Map<string, unknown> }).prompts.size, 0, "the finally deletes the service handle");
+      await svc.stopForRunDir(runDir);
+      assert.equal(cfg.seen.interrupt, 0, "no phantom interrupt after completion");
+    } finally { await s.close(); }
+  });
+  it("supervised fast-fail: known-down refuses without touching /prompt", async () => {
+    const cfg = stub({ history: [doneEntry()] });
+    const s = await startStub(cfg);
+    try {
+      const { svc } = await boot({ url: s.url });
+      svc.baseUrl();
+      const peek = svc as unknown as { supervisor: { state: string; lastError: unknown } | null };
+      for (let i = 0; i < 50 && peek.supervisor?.state !== "up"; i++) await sleep(100);
+      assert.equal(peek.supervisor?.state, "up");
+      peek.supervisor!.state = "down";
+      peek.supervisor!.lastError = new Error("ECONNREFUSED mock down");
+      await assert.rejects(
+        svc.executeSingle(tmpRoot(), wfParams(), {}, {}),
+        /unreachable|down|unavailable/,
+      );
+      assert.equal(cfg.seen.prompts.length, 0, "fast-fail never submits");
+    } finally { await s.close(); }
+  });
+  it("service live stop interrupts but the run still lands (interrupt ≠ cancel)", async () => {
+    const cfg = stub({ history: [pendingEntry(), pendingEntry(), pendingEntry(), pendingEntry(), doneEntry()] });
+    const s = await startStub(cfg);
+    try {
+      const { svc } = await boot({ url: s.url });
+      const runDir = tmpRoot();
+      const p = svc.executeSingle(runDir, wfParams(), {}, {});
+      while ((svc as unknown as { prompts: Map<string, unknown> }).prompts.size === 0) await sleep(50);
+      await svc.stopForRunDir(runDir);
+      const out = await p;
+      assert.ok(out.promptId.length > 0, "interrupt ≠ cancel — the terminal entry still resolves");
+      assert.ok(cfg.seen.interrupt >= 1, "the live stop posted the interrupt");
+      assert.equal((svc as unknown as { prompts: Map<string, unknown> }).prompts.size, 0);
+    } finally { await s.close(); }
+  }, 30000);
+  it("service unloadModels failure arms (500 → ComfyError; dead port → rejects)", async () => {
+    const bad = stub({ freeStatus: 500 });
+    const bs = await startStub(bad);
+    try {
+      const { svc } = await boot({ url: bs.url });
+      await assert.rejects(svc.unloadModels(), /\/free status 500/);
+    } finally { await bs.close(); }
+    const { svc: dark } = await boot({ url: "http://127.0.0.1:1" });
+    await assert.rejects(dark.unloadModels(), /ECONNREFUSED|EADDR|refused|timed out|failed/);
+  });
 });
 
 // ── the progress tap (the _ws_tap port, 2026-09-13 — the

@@ -734,15 +734,23 @@ export class QueueCore {
 
   /** The worker's claim (worker 1356-1360): while active is set the
    *  next pop BLOCKS (one GPU run machine-wide); else the head
-   *  leaves the order list and becomes active. Null = idle. */
+   *  leaves the order list and becomes active. Null = idle. A ghost
+   *  id at the head (row swept mid-queue — resurrect, bootSweep) is
+   *  SKIPPED, not treated as idle: returning null on a consumed
+   *  ghost made the pump read a NON-empty queue as idle and strand
+   *  every run behind the ghost until a later kick (audit R8,
+   *  stroke 82). */
   tryDequeue(): QueueRunRow | null {
-    if (this.activeId !== null || this.order.length === 0) return null;
-    const runId = this.order.shift() as string;
-    const run: QueueRunRow | undefined = this.runs.get(runId);
-    if (run === undefined) return null;
-    run.status = "running";
-    this.activeId = runId;
-    return run;
+    if (this.activeId !== null) return null;
+    while (this.order.length > 0) {
+      const runId = this.order.shift() as string;
+      const run: QueueRunRow | undefined = this.runs.get(runId);
+      if (run === undefined) continue;
+      run.status = "running";
+      this.activeId = runId;
+      return run;
+    }
+    return null;
   }
 
   /** Release the active claim (worker finally: active null). */
@@ -927,17 +935,24 @@ export function sidecarDoc(args: {
   benchSnapshot?: unknown;
 }): Record<string, unknown> {
   return {
+    // IDENTITY KEYS FIRST (stroke 82): buildRunCard and the listRuns
+    // scan slice(0, 8191) the sidecar — with stages/error/graph in
+    // the prefix, any bulky payload pushed created_at/draft_id/
+    // pipeline past the window and the row listed as a zombie
+    // (empty pipeline, draft cleared, created 0). The scalars ride
+    // ahead of every payload; a big error or graph can only
+    // truncate what follows it.
     run_id: args.runId,
     status: args.status,
+    created_at: args.createdAt,
+    test: args.testFlag,
+    draft_id: args.draftId,
+    pipeline: args.pipeline,
     error:
       args.error !== "" ? JSON.stringify(args.error).slice(0, 20000) : "",
     stages: args.stages,
     skipped_stages: [...args.skippedStages],
     artifacts: [...args.artifacts],
-    created_at: args.createdAt,
-    test: args.testFlag,
-    draft_id: args.draftId,
-    pipeline: args.pipeline,
     graph: args.graph,
     ...(args.cardSnapshot !== undefined ? { card_snapshot: args.cardSnapshot } : {}),
     ...(args.benchSnapshot !== undefined ? { bench_snapshot: args.benchSnapshot } : {}),
@@ -969,24 +984,6 @@ export function pipelineOf(request: {
     return inline.id;
   }
   return "";
-}
-
-/** Registration write pair (submit 1317-1339 + sidecar): the body
- *  verbatim to _request.json, the compiled document to _flow.json
- *  (both tmp+rename; the request write needs no lock — unique path
- *  per run). Returns the run dir. */
-export function writeRegistration(
-  stateRoot: string,
-  runId: string,
-  testFlag: boolean,
-  requestBody: unknown,
-  doc: Record<string, unknown>,
-): string {
-  const dir: string = join(outRootFor(stateRoot, testFlag), runId);
-  mkdirSync(dir, { recursive: true });
-  atomicWriteJson(join(dir, "_request.json"), requestBody);
-  atomicWriteJson(join(dir, "_flow.json"), doc);
-  return dir;
 }
 
 // ── sweeps (sweep_sidecar 2253-2291, sidecar_status 2412-2470) ────
