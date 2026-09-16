@@ -31,7 +31,6 @@
     "@melite-plugin/motion": "workspace:*",
     "@melite-plugin/timeline": "workspace:*",
     "@melite/3d-anny": "workspace:*",
-    "@melite/3d-clothing-placement": "workspace:*",
     "@melite/3d-fit": "workspace:*",
     "@melite/3d-img-to-mesh": "workspace:*",
     "@melite/3d-quad-remesh": "workspace:*",

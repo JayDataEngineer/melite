@@ -42,7 +42,6 @@ import { buildTtsTool } from '@melite/audio-tts/tool'
 import { buildVoiceLockTool } from '@melite/audio-voice-lock/tool'
 import { buildImageEditTool } from '@melite/image-image-edit/tool'
 import { buildMotionTool } from '@melite/motion-motion/tool'
-import { buildCardTool as buildClothingPlacementTool } from '@melite/3d-clothing-placement/tool'
 import { buildH3TimelineTool } from '@melite/video-h3-timeline/tool'
 import { makeEstateRequest, asEstateCall } from './estate.ts'
 import { runStatus } from './tools/run-status.ts'
@@ -218,7 +217,9 @@ export async function apply(ctx: Context, config: Config = {}): Promise<void> {
   // composition is the single owner in the harness lane. A
   // mis-composition mounting both throws LOUD at the tools
   // service's duplicate refusal — the designed guard, not a bug to
-  // paper over. clothing-placement joins the list — the "one tool
+  // paper over. clothing-placement retired 2026-09-16 (stroke 86,
+  // operator order — its surface moved to craft-loop + mcp:blender
+  // with the vision critic); the "one tool
   // per card manifest" promise now holds for every card package
   // with a tool face.
   //
@@ -233,6 +234,5 @@ export async function apply(ctx: Context, config: Config = {}): Promise<void> {
   c.tools.register(buildImageEditTool(call))
   c.tools.register(buildMotionTool(call))
   c.tools.register(buildH3TimelineTool(call))
-  c.tools.register(buildClothingPlacementTool(call))
 
 }

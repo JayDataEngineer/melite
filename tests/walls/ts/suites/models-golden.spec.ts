@@ -167,8 +167,10 @@ describe("the identity rung rides the live card defs (phase 2 start)", () => {
     // the ring row stays as frozen py truth, a named divergence like
     // the 3 deleted + the TS-added.
     assert.equal(carried, 18);
-    // the TS-added card (clothing-placement) has no py identity —
-    // the named divergence; it declares its own or carries none
-    assert.equal(defs.size >= 20, true);
+    // 19 since stroke 86: clothing-placement retired (operator
+    // order — its surface moved to craft-loop + mcp:blender with
+    // the vision critic); the TS plane's card count follows the
+    // live catalog, never the golden's frozen 22.
+    assert.equal(defs.size >= 19, true);
   });
 });

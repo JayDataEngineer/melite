@@ -10,7 +10,7 @@
 // + 19 capability tiles + the slot SSOT, ALL byte-equal to the
 // tree golden (tests/golden_http/model-catalog.json) on shared
 // ids. The 3 since-deleted cards (music-native/auto-rig/forge)
-// and the TS-added clothing-placement are NAMED divergences in
+// and the retired TS-added clothing-placement (stroke 86) are NAMED divergences in
 // the wall, not drift. Phase 2 (card DSL port) owns moving this
 // rung onto the TS cards natively; until then this is the wire's
 // identity truth — one copy, never restated.

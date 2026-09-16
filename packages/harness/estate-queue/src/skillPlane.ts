@@ -280,7 +280,7 @@ export interface ManifestRow {
   readonly kind: string;
   readonly card: string;
   readonly flow: string;
-  // PURGE S-snapshots: null rides (the clothing base row's model is
+  // PURGE S-snapshots: null rides (a model-less base row's model is
   // null — the /v1/tools door serves it verbatim, so the projection
   // preserves it and the doors agree; "" and null are both
   // model-less downstream).

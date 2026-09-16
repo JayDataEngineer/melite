@@ -40,7 +40,7 @@ export interface ToolBaseRow {
   readonly version: number;
   readonly kind: string;
   readonly card: string;
-  // null rides (clothing: model-less pure-tool — a boarded-less
+  // null rides (model-less pure-tool — a boarded-less
   // card serves null verbatim on /v1/tools, so the projection
   // preserves it and the doors agree byte-for-byte).
   readonly model: string | null;

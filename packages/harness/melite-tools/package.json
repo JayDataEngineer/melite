@@ -28,7 +28,6 @@
     "@deepseek-ai/dsh-tools": "0.1.5-rc.2",
     "@deepseek-ai/dsh-typert-protocol": "0.1.5-rc.2",
     "@deepseek-ai/dsh-util-values": "0.1.5-rc.2",
-    "@melite/3d-clothing-placement": "workspace:*",
     "@melite/audio-music": "workspace:*",
     "@melite/audio-tts": "workspace:*",
     "@melite/audio-voice-lock": "workspace:*",

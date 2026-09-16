@@ -70,7 +70,6 @@ const CARD_TOOLS = [
   'image_edit',
   'motion',
   'h3_timeline',
-  'clothing_placement',
 ]
 
 describe('plugin surface', () => {

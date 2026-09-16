@@ -77,7 +77,13 @@ export const cardPackages: string[] = [
     '@melite/image-image-edit',
     '@melite/motion-motion/card',
     '@melite/video-h3-timeline/card',
-    '@melite/3d-clothing-placement',
+  // RETIRED 2026-09-16 (operator order, stroke 86): 3d-clothing-
+  // placement — the LAST CLI-proxy-era card (it required
+  // melite-blender-proxy-nodes and carried mcp_addr/autoboot knobs).
+  // Its surface moved to the agent door the architecture already
+  // serves: craft-loop + mcp:blender — the agent loads the two GLBs,
+  // places, renders a capture, and the vision critic checks the fit
+  // (flows/craft-loop/agents/AGENT.md carries the garment example).
   // RETIRED 2026-09-15 (superseded by the MCP card, operator
   // order): 3d-unity, 3d-blender, 3d-blender-shot — the CLI-era
   // proxy-node cards. The MCP lane (mcp:<server>) owns the 3d

@@ -146,31 +146,6 @@ importers:
         specifier: ~6.0.3
         version: 6.0.3
 
-  packages/3d/clothing-placement:
-    dependencies:
-      '@deepseek-ai/cordis':
-        specifier: ^4.0.2
-        version: 4.0.2(@deepseek-ai/cordis-plugin-loader@1.0.3)
-      '@deepseek-ai/dsh-tools':
-        specifier: 0.1.5-rc.2
-        version: 0.1.5-rc.2(6c1de61afe47b0d69df46230a00574b7)
-      '@deepseek-ai/schemastery':
-        specifier: '*'
-        version: 3.18.2
-      '@melite/comfyui-cordis':
-        specifier: workspace:*
-        version: link:../../engines/comfyui-cordis
-      '@melite/estate-call':
-        specifier: workspace:*
-        version: link:../../harness/estate-call
-    devDependencies:
-      '@types/node':
-        specifier: ^22.20.0
-        version: 22.20.1
-      typescript:
-        specifier: ^5.9.3
-        version: 5.9.3
-
   packages/3d/fit:
     dependencies:
       '@deepseek-ai/cordis':
@@ -489,9 +464,6 @@ importers:
       '@melite/3d-anny':
         specifier: workspace:*
         version: link:../../3d/anny
-      '@melite/3d-clothing-placement':
-        specifier: workspace:*
-        version: link:../../3d/clothing-placement
       '@melite/3d-fit':
         specifier: workspace:*
         version: link:../../3d/fit
@@ -1094,9 +1066,6 @@ importers:
       '@deepseek-ai/dsh-util-values':
         specifier: 0.1.5-rc.2
         version: 0.1.5-rc.2(@deepseek-ai/cordis@4.0.2)
-      '@melite/3d-clothing-placement':
-        specifier: workspace:*
-        version: link:../../3d/clothing-placement
       '@melite/audio-music':
         specifier: workspace:*
         version: link:../../audio/music
@@ -2527,9 +2496,15 @@ importers:
 
   packages/web/card-base:
     dependencies:
+      '@deepseek-ai/dsh-api-gateway':
+        specifier: 0.1.5-rc.2
+        version: 0.1.5-rc.2(@deepseek-ai/cordis@4.0.2)
       '@deepseek-ai/dsh-client-ui-primitives':
         specifier: 0.1.5-rc.2
         version: 0.1.5-rc.2(@deepseek-ai/cordis@4.0.2)
+      '@deepseek-ai/dsh-typert-protocol':
+        specifier: workspace:*
+        version: link:../../vendor/typert-protocol
       '@dnd-kit/core':
         specifier: ^6.3.1
         version: 6.3.1(react-dom@19.2.8(react@18.3.1))(react@18.3.1)
@@ -2545,6 +2520,15 @@ importers:
       '@melite/contracts':
         specifier: workspace:*
         version: link:../../web-kit/contracts
+      '@melite/estate-drafts':
+        specifier: workspace:*
+        version: link:../../estate/drafts
+      '@melite/estate-media':
+        specifier: workspace:*
+        version: link:../../estate/media
+      '@melite/estate-runs':
+        specifier: workspace:*
+        version: link:../../estate/runs
       clsx:
         specifier: '*'
         version: 2.1.1

@@ -4,7 +4,6 @@ import { buildTtsTool } from "@melite/audio-tts/tool";
 import { buildVoiceLockTool } from "@melite/audio-voice-lock/tool";
 import { buildImageEditTool } from "@melite/image-image-edit/tool";
 import { buildMotionTool } from "@melite/motion-motion/tool";
-import { buildCardTool } from "@melite/3d-clothing-placement/tool";
 import { buildH3TimelineTool } from "@melite/video-h3-timeline/tool";
 import { defineTool } from "@deepseek-ai/dsh-tools";
 import { remoteErrorOf } from "@deepseek-ai/dsh-typert-protocol";
@@ -350,9 +349,25 @@ function meliteConstruct(request, opts = {}) {
 					type: "text",
 					text: "melite_construct REFUSED: " + v.error
 				}];
+				const lines = ["bench " + String(v.verb ?? "?") + " → rev " + String(v.rev ?? "?")];
+				if (Array.isArray(v.stages)) {
+					const stages = v.stages;
+					if (stages.length === 0) lines.push("stages: (bench is empty)");
+					else {
+						lines.push(`stages: ${stages.length}`);
+						for (const s of stages) {
+							const id = typeof s.id === "string" ? s.id : "?";
+							const card = typeof s.card === "string" ? s.card : typeof s.card_id === "string" ? s.card_id : "?";
+							const engine = typeof s.engine === "string" ? s.engine : "?";
+							lines.push(`  ${id} — ${card} [${engine}]`);
+						}
+					}
+				}
+				if (typeof v.intent === "string" && v.intent !== "") lines.push("intent: " + v.intent);
+				if (typeof v.hint === "string" && v.hint !== "") lines.push("hint: " + v.hint);
 				return [{
 					type: "text",
-					text: "bench " + String(v.verb ?? "?") + " → rev " + String(v.rev ?? "?")
+					text: lines.join("\n")
 				}];
 			}
 		},
@@ -1403,7 +1418,7 @@ function meliteDiscover(request) {
 				const nc = typeof v?.counts?.cards === "number" ? v.counts.cards : cards.length;
 				const line = (x) => typeof x === "string" ? x : "";
 				const num = (x) => typeof x === "number" ? String(x) : "?";
-				const out = [`discover: ${nf} flows, ${nc} cards — open one with melite_load`];
+				const out = [`discover: ${nf} flows, ${nc} cards in the estate CATALOG (not your bench — read the bench's staged cards with melite_construct verb=read) — open one with melite_load`];
 				if (flows.length > 0) {
 					out.push("flows:");
 					for (const f of flows.slice(0, RENDER_CLAMP)) out.push(`  ${line(f?.name)} — ${line(f?.title)} (${num(f?.stages)} stages)`);
@@ -2169,7 +2184,6 @@ async function apply(ctx, config = {}) {
 	c.tools.register(buildImageEditTool(call));
 	c.tools.register(buildMotionTool(call));
 	c.tools.register(buildH3TimelineTool(call));
-	c.tools.register(buildCardTool(call));
 }
 //#endregion
 export { ADHOC_TOOL_NAMES, BASE_TOOL_NAMES, DEFAULT_BENCH, HEADLESS_TOOL_NAMES, MELITE_TOOL_NAMES, apply, comfyManage, harnessEnhance, inject, ledgerTail, makeEstateRequest, matchHarnessRoute, meliteConstruct, meliteDiscover, meliteFlow, meliteLoad, meliteView, name, resolveHarnessRoutes, routeName, runStatus, skillIndex, skillRead };

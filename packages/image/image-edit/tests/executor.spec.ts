@@ -1,6 +1,6 @@
 
 // ── the executor battery (TEST-2 breadth, 2026-09-12; the
-// clothing-placement pattern): a recording seam drives BOTH doors,
+// recording-seam pattern, born on the now-retired clothing-placement card): a recording seam drives BOTH doors,
 // every canonical-value arm, the render channel, the tile channel,
 // and the completed-card presenter. The index face's apply arms
 // (comfy present / absent, tools present / absent) ride here too —

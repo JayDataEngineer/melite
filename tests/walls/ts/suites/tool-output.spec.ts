@@ -128,7 +128,7 @@ describe("the melite tool faces answer over the live composition", () => {
       "skill_index", "skill_read", "ledger_tail",
       "melite_flow", "run_status",
       "music", "tts", "voice_lock",
-      "image_edit", "motion", "h3_timeline", "clothing_placement",
+      "image_edit", "motion", "h3_timeline",
     ]) {
       assert.ok(names.includes(want), `${want} registered (got: ${names.join(", ")})`);
     }
