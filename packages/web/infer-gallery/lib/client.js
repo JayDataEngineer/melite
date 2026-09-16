@@ -306,7 +306,7 @@ window.__ModuleLoader__.load({
 			if (m === null) return void 0;
 			return {
 				run_id: runId,
-				url: "/melite-media/runs/" + (m[1] ?? "")
+				url: "/melite-media/runs/" + m[1]
 			};
 		}
 		/** The error message an !ok JSON response carries, else HTTP n. */
@@ -335,7 +335,7 @@ window.__ModuleLoader__.load({
 					body: JSON.stringify({
 						session: BENCH_SESSION,
 						author: "user",
-						stages: Array.isArray(stages) ? stages : [],
+						stages,
 						intent,
 						overwrite: true,
 						...expectRev !== void 0 ? { expect_rev: expectRev } : {}
@@ -783,9 +783,8 @@ window.__ModuleLoader__.load({
 			return typeof text === "string" ? text.replace(/\s+/g, " ").trim() : "";
 		}
 		function baseName(u) {
-			const clean = u.split("?")[0] ?? u;
-			const parts = clean.split("/");
-			return parts[parts.length - 1] ?? clean;
+			const parts = u.split("?")[0].split("/");
+			return parts[parts.length - 1];
 		}
 		function timeLabel(sec) {
 			if (typeof sec !== "number" || !Number.isFinite(sec) || sec <= 0) return "";
@@ -812,10 +811,9 @@ window.__ModuleLoader__.load({
 				for (const a of arts) {
 					const n = a.name ?? baseName(a.url ?? "");
 					const m = POSTER_STEMS.map((re) => n.match(re)).find((x) => x !== null);
-					if (m !== void 0 && a.url) posters.set(m[1] ?? "", a.url);
+					if (m !== void 0 && a.url) posters.set(m[1], a.url);
 				}
 				const dropFrames = arts.reduce((n, a) => kindOf(a) === "image" ? n + 1 : n, 0) > 20;
-				let lastWindowPoster = "";
 				for (const a of arts) {
 					const kind = kindOf(a);
 					const url = a.url ?? "";
@@ -832,11 +830,6 @@ window.__ModuleLoader__.load({
 					let poster = "";
 					if (kind === "video") {
 						poster = posters.get(stem) ?? (isFinal ? url : "");
-						if (poster === "" && isFinal) poster = lastWindowPoster;
-						if (WINDOW_FILM.test(file)) {
-							const wf = posters.get(stem);
-							if (wf !== void 0 && wf !== "") lastWindowPoster = wf;
-						}
 						if (poster === "") poster = run.thumbnail ?? "";
 					} else if (kind === "image") poster = url;
 					items.push({
@@ -1076,7 +1069,7 @@ window.__ModuleLoader__.load({
 			const openCards = (item) => {
 				const open = tabInfo?.tab.actions.openResource;
 				if (open === void 0) {
-					setError("Cards view unavailable — the sidebar tab service is not loaded.");
+					setError("Media Flow view unavailable — the sidebar tab service is not loaded.");
 					return;
 				}
 				const deps = {
@@ -1088,7 +1081,6 @@ window.__ModuleLoader__.load({
 					loadDraftOntoBench(item.draftId, deps);
 					return;
 				}
-				if (item.runId === "") return;
 				loadRunOntoBench(item.runId, deps);
 			};
 			/** FLOW OPEN (hunk 4): a draft row loads onto THE BENCH (the shared
@@ -1097,7 +1089,7 @@ window.__ModuleLoader__.load({
 				if (draftId === "") return;
 				const open = tabInfo?.tab.actions.openResource;
 				if (open === void 0) {
-					setError("Cards view unavailable — the sidebar tab service is not loaded.");
+					setError("Media Flow view unavailable — the sidebar tab service is not loaded.");
 					return;
 				}
 				loadDraftOntoBench(draftId, {
@@ -1338,7 +1330,7 @@ window.__ModuleLoader__.load({
 									})
 								}) : null,
 								/* @__PURE__ */ (0, react_jsx_runtime.jsx)(TileBadge, { item: it }),
-								it.runId !== "" ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Tooltip, {
+								/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Tooltip, {
 									label: "Open as cards — this run, live in the cards tab",
 									children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
 										role: "button",
@@ -1357,7 +1349,7 @@ window.__ModuleLoader__.load({
 										},
 										children: "✦ CARDS"
 									})
-								}) : null,
+								}),
 								it.poster === "" ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
 									style: { color: "var(--dsw-alias-text-tertiary, rgba(148,163,184,0.55))" },
 									children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Glyph, { kind: it.kind })
