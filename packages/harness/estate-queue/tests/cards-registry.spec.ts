@@ -640,6 +640,93 @@ describe("the lane presence gate", () => {
     assert.equal(p1.mid, "anima");
   }, 240000);
 
+  it("an unparseable endpoint config degrades to the stock lane (never a crash)", async () => {
+    withGateEnv();
+    const endpoint = process.env.COMFYUI_ENDPOINT_CONFIG as string;
+    // the pack-folders read throws inside lanePackFolders; the gate
+    // degrades to the stock folders and still names the missing lane.
+    writeFileSync(endpoint, "{ not json");
+    await assert.rejects(
+      primed().phase1Card(
+        { prompt: "x", model: "qwen-img-edit-2511@fp8" },
+        "qwen-img-edit-2511",
+      ),
+      (e: unknown) => {
+        assert.ok(e instanceof CardArmError);
+        assert.equal((e as CardArmError).code, "lane_input_missing");
+        assert.match((e as Error).message, /declares text_encoder 'qwen_2\.5_vl_7b_fp8_scaled\.safetensors'/);
+        return true;
+      },
+    );
+  }, 240000);
+
+  it("a non-object extra_model_folders degrades to the stock lane", async () => {
+    const { base } = withGateEnv();
+    const endpoint = process.env.COMFYUI_ENDPOINT_CONFIG as string;
+    // an array is an object that is not a folders map — the gate
+    // drops extras and still names the missing lane.
+    writeFileSync(
+      endpoint,
+      JSON.stringify({ model_base_path: base, extra_model_folders: ["SEEDVR2"] }),
+    );
+    await assert.rejects(
+      primed().phase1Card(
+        { prompt: "x", model: "qwen-img-edit-2511@fp8" },
+        "qwen-img-edit-2511",
+      ),
+      (e: unknown) => {
+        assert.ok(e instanceof CardArmError);
+        assert.equal((e as CardArmError).code, "lane_input_missing");
+        return true;
+      },
+    );
+    // a bare string degrades the same way.
+    writeFileSync(
+      endpoint,
+      JSON.stringify({ model_base_path: base, extra_model_folders: "junk" }),
+    );
+    await assert.rejects(
+      primed().phase1Card(
+        { prompt: "x", model: "qwen-img-edit-2511@fp8" },
+        "qwen-img-edit-2511",
+      ),
+      (e: unknown) => {
+        assert.ok(e instanceof CardArmError);
+        assert.equal((e as CardArmError).code, "lane_input_missing");
+        return true;
+      },
+    );
+  }, 240000);
+
+  it("a family with no lane_inputs walks past the gate (h3)", async () => {
+    withGateEnv();
+    // h3 declares no lane_inputs — every lane key continues and the
+    // gate returns null; compose settles in its own voice (never the
+    // lane's).
+    const settled = await primed().phase1Card({ ctx_foo: 1 }, "h3").then(
+      () => "composed",
+      (e: unknown) => "refused:" + (e as Error).message.slice(0, 60),
+    );
+    assert.doesNotMatch(settled, /lane presence/);
+  }, 240000);
+
+  it("a missing lane file with no provision names no fetch (anima, empty store)", async () => {
+    withGateEnv();
+    // anima's text_encoder is absent and anima declares no
+    // provisions — the refusal names family/key/file and stops (no
+    // fetch hint to give).
+    await assert.rejects(
+      primed().phase1Card({ prompt: "a red square" }, "anima"),
+      (e: unknown) => {
+        assert.ok(e instanceof CardArmError);
+        assert.equal((e as CardArmError).code, "lane_input_missing");
+        assert.match((e as Error).message, /family 'anima' declares text_encoder 'qwen_3_06b_base\.safetensors'/);
+        assert.doesNotMatch((e as Error).message, /fetch it/);
+        return true;
+      },
+    );
+  }, 240000);
+
   afterEach(() => {
     delete process.env.COMFYUI_ENDPOINT_CONFIG;
     // Restore the file's hermetic default for the describes above.
@@ -724,5 +811,36 @@ describe("cardFamilies (the presence-marked serve)", () => {
     for (const r of rows) {
       assert.equal(r.present, mids.has(r.id));
     }
+  });
+});
+
+describe("admission + families coverage arms", () => {
+  it("a pure-tool card boards nothing: the refusal names both nones", () => {
+    const s = primed();
+    // mask-studio boards [] — the model is not offered (boards:
+    // none) and nothing is downloaded (downloaded here: none).
+    const v = s.admitStageModel("mask-studio", "krea-2");
+    assert.equal(v.ok, false);
+    if (!v.ok) {
+      assert.match(v.error, /not offered by card 'mask-studio'/);
+      assert.match(v.error, /boards: none/);
+      assert.match(v.error, /downloaded here: none/);
+    }
+  });
+
+  it("a cardless flow stages as 'none listed'", () => {
+    const s = primed();
+    // the character flow's stages carry no card ids — the refusal
+    // says so instead of joining an empty list.
+    const v = s.admitStageModel("character", undefined);
+    assert.equal(v.ok, false);
+    if (!v.ok) {
+      assert.match(v.error, /'character' is a flow, not a card/);
+      assert.match(v.error, /none listed/);
+    }
+  });
+
+  it("families of an unknown card are the empty list", () => {
+    assert.deepEqual(primed().cardFamilies("__nope__"), []);
   });
 });

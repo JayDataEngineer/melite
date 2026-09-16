@@ -253,6 +253,25 @@ describe("loadCard", () => {
     }
   });
 
+  it("a pack named by both requires and a family slice serves once", () => {
+    // the union dedupes: pack-fam rides the flat requires AND
+    // fam-a's slice — one id, one presence mark (the skip arm).
+    const defDup = {
+      identity: { label: "L", description: "d" },
+      boarded: [],
+      schema: { dict: {} },
+      requires: ["pack-flat", "pack-fam"],
+      requiresByFamily: { "fam-a": ["pack-fam"] },
+    } as unknown as CardDefinition;
+    const cardsDup = {
+      defsSync: () => new Map([["anny", defDup]]),
+      modelMids: () => new Set(["fam-a"]),
+    };
+    const b = loadCard(REPO, cardsDup as never, models as never, "anny");
+    const hints = b["pack_hints"] as Array<{ id: string; present: boolean | null }>;
+    assert.deepEqual(hints.map((h) => h.id), ["pack-flat", "pack-fam"]);
+  });
+
   it("unknown cards refuse LOUD", () => {
     assert.throws(
       () => loadCard(REPO, cards as never, models as never, "ghost"),

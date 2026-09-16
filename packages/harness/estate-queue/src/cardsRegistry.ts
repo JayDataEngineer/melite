@@ -704,7 +704,9 @@ export class CardRegistryService extends Service {
       };
     }
     if (typeof model !== "string" || model === "") return { ok: true };
-    const boarded: readonly string[] = def.boarded ?? [];
+    // (CardDefinition pins boarded: readonly string[] — required, and
+    // every live def carries it — so no undefined fallback here.)
+    const boarded: readonly string[] = def.boarded;
     const mids: Set<string> = this.modelMids();
     const downloaded: string[] = boarded.filter((fam) => mids.has(fam));
     const fam: string = this.resolveCardFamily(model, this.modelFacts());
@@ -922,8 +924,10 @@ export class CardRegistryService extends Service {
     // THE LANE PRESENCE GATE (one pattern, every family): before any
     // graph composes, the family's declared lane files must stand on
     // disk. Img Gen vs Img Edit was luck, not law — this is the law.
-    const gate: CardArmError | null = lanePresenceRefusal(prep.fam);
-    if (gate !== null) throw gate;
+    // (The gate throws on a missing lane file and returns null when
+    // the lane stands — the refusal is a throw, never a value, so
+    // there is no return-value arm here.)
+    lanePresenceRefusal(prep.fam);
     const spells: readonly string[] = prep.decl.spells;
     const pool: Record<string, unknown> = {};
     for (const k of spells) {

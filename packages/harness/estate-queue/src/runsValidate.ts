@@ -1031,11 +1031,11 @@ function toGraph(flow: Flow): GraphNode[] {
       // table carries a default for every known one — the
       // try/except-unknown shape of to_graph collapses to the table.
       // validateEngines refused unknown engines upstream — the hit is proven.
-      const row: { plugin: string; def: string } | undefined =
+      const row: { plugin: string; def: string } =
         st.engine.startsWith("mcp:") && engineIdOk(st.engine)
           ? { plugin: "mcp-client", def: "image" }
           : ENGINE_TABLE[st.engine];
-      outputs.push({ name: "default", kind: row?.def ?? "image" });
+      outputs.push({ name: "default", kind: row.def });
     }
     return {
       id: st.id,

@@ -697,3 +697,25 @@ describe("findDanglingRefs", () => {
     assert.match(rows[0]?.[2] ?? "", /not found on disk/);
   });
 });
+
+describe("the mcp: engine grammar (stroke 55 seam)", () => {
+  it("a grammatical mcp: engine validates and defaults its outputs to image", () => {
+    // mcp:unity passes the seat grammar (engineIdOk) — the stage
+    // carries no outputs/card_io, so toGraph mints the default row
+    // from the mcp-client hit.
+    const a = answerOf(FLOW([S({ engine: "mcp:unity" })]));
+    assert.equal(a.status, 200);
+    assert.deepEqual(a.payload["stages"], [
+      { id: "s", engine: "mcp:unity", description: "", inputs: [], outputs: { default: "image" } },
+    ]);
+  });
+
+  it("an ungrammatical mcp: engine refuses with the unknown-engine voice", () => {
+    // "bad id!" breaks the server-name grammar — the mcp: arm
+    // evaluates false and the table misses, exactly like a wholly
+    // unknown engine.
+    const a = answerOf(FLOW([S({ engine: "mcp:bad id!" })]));
+    assert.equal(a.status, 400);
+    assert.match(String(a.payload["error"]), /no engine plugin for type 'mcp:bad id!'/);
+  });
+});

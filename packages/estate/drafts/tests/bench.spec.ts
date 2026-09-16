@@ -1523,3 +1523,182 @@ describe("the wiring admission (phantom wires refuse at write time)", () => {
     const params = (b as unknown as { params: Record<string, unknown> }).params;
     assert.equal(params.image1, "$image", "spell unchanged");
   });
+
+// ── coverage arms: the rare-error and default branches ──────────
+// One behavioral arm per reporter-named location (2026-09-15 gate
+// push): intent defaults, the stageless re-read, the stillborn
+// birth, the CAS mismatch on write verbs, junk-cell tolerance on
+// seeded rows (the loose schema rides extras verbatim), the
+// admission's junk-row skip + empty-card early return, array
+// spells, output-only bindings, the empty live set, the duplicate
+// mint, and rewire's junk-params tolerance.
+
+test("birth honors a string intent; loads keep the old intent on junk, take a new one", async () => {
+  const drafts = await boot();
+  const born = await ensureBench(drafts, { session: "i1", intent: "my intent" });
+  assert.equal(born.created, true);
+  assert.equal(born.intent, "my intent");
+  // a load with a junk intent keeps the standing one …
+  const kept = await ensureBench(drafts, {
+    session: "i1", stages: [{ id: "a" }], expect_rev: 0, intent: 5,
+  });
+  assert.equal(kept.intent, "my intent");
+  // … while a string intent replaces it.
+  const moved = await ensureBench(drafts, {
+    session: "i1", stages: [{ id: "b" }], expect_rev: 1, intent: "new", overwrite: true,
+  });
+  assert.equal(moved.intent, "new");
+});
+
+test("ensure on a live bench without stages re-reads (created:false)", async () => {
+  const drafts = await boot();
+  await ensureBench(drafts, { session: "r1", stages: [{ id: "a" }] });
+  const reread = await ensureBench(drafts, { session: "r1" });
+  assert.equal(reread.created, false);
+  assert.equal(reread.rev, 0);
+  assert.deepEqual(
+    (reread.stages as Array<{ id: string }>).map((x) => x.id),
+    ["a"],
+  );
+});
+
+test("a stillborn birth refuses bench/not-found (the storage dropped the put)", async () => {
+  // the hand-rolled stillborn facility: puts record, reads never
+  // land — the birth's re-read misses and the write refuses loud.
+  class StillbornDocs {
+    puts: Array<{ id: string; row: unknown }> = [];
+    table(name: string): StillbornDocs {
+      assert.equal(name, "docs", "the bench reads the docs table only");
+      return this;
+    }
+    get(_id: string): undefined {
+      return undefined;
+    }
+    put(id: string, row: unknown): Promise<void> {
+      this.puts.push({ id, row });
+      return Promise.resolve();
+    }
+  }
+  const docs = new StillbornDocs();
+  const drafts = { table: (name: string): StillbornDocs => docs.table(name) } as unknown as Domain<DraftsDomainSpec>;
+  const refusal = await codeOf(addStageBench(drafts, "s", { card: "c", expect_rev: 0 }));
+  assert.match(refusal, /^bench\/not-found\|could not birth bench: s/);
+  assert.equal(docs.puts.length, 1);
+  assert.equal(docs.puts[0]?.id, "bench-s");
+});
+
+test("casCheck names the moved bench on the write verbs", async () => {
+  const drafts = await boot();
+  await ensureBench(drafts, { session: "m1" });
+  const added = await addStageBench(drafts, "m1", { card: "c", expect_rev: 0 });
+  assert.equal(added.rev, 1);
+  assert.match(
+    await codeOf(patchBench(drafts, "m1", { stage: added.stage, params: { x: 1 }, expect_rev: 0 })),
+    /^bench\/cas-conflict\|bench m1 moved: rev is 1, caller held 0/,
+  );
+});
+
+test("patch tolerates a junk inputs cell on a seeded row (extras ride the loose schema)", async () => {
+  const drafts = await boot();
+  await seed(drafts, "j", {
+    stages: [{ id: "s_0", card: "c", params: { p: "$ch" }, inputs: "junk" }],
+  });
+  const row = await patchBench(drafts, "j", {
+    stage: "s_0", params: { q: 1 }, expect_rev: 0,
+  });
+  assert.equal(row.rev, 1);
+  assert.deepEqual(row.patched, ["q"]);
+  const after = getBench(drafts, "j");
+  assert.deepEqual(
+    (after.stages as Array<{ params: unknown }>)[0]?.params,
+    { p: "$ch", q: 1 },
+  );
+});
+
+test("the admission skips junk rows and returns early on empty cards (never a silent sail-through)", async () => {
+  const drafts = await boot();
+  const seen: Array<{ card: unknown; params: unknown }> = [];
+  const admit = (card: string, params: Record<string, unknown>): void => {
+    seen.push({ card, params });
+  };
+  const born = await ensureBench(drafts, {
+    session: "a1", stages: ["junk", { id: "a", card: "hero" }],
+  }, admit);
+  // the junk row never reached admission; the record row did, on {}.
+  assert.deepEqual(seen, [{ card: "hero", params: {} }]);
+  assert.deepEqual(
+    (born.stages as Array<{ id: string }>).map((x) => x.id),
+    ["a"],
+  );
+  // an empty card returns before admission — the recorder stands still —
+  // and the write still refuses its own voice.
+  assert.match(
+    await codeOf(addStageBench(drafts, "a1", { card: "", expect_rev: 0 }, admit)),
+    /^bench\/bad-body\|card is required/,
+  );
+  assert.deepEqual(seen, [{ card: "hero", params: {} }]);
+});
+
+test("array params spell through the wiring admission", async () => {
+  const drafts = await boot();
+  const row = await addStageBench(drafts, "arr", {
+    card: "c",
+    params: { gallery: ["$a", "plain"] },
+    inputs: { a: { initial: "f" } },
+    expect_rev: 0,
+  });
+  assert.equal(row.stage, "s_0");
+  const after = getBench(drafts, "arr");
+  assert.deepEqual(
+    (after.stages as Array<{ params: unknown }>)[0]?.params,
+    { gallery: ["$a", "plain"] },
+  );
+});
+
+test("a binding naming only an output refuses bench/bad-wire", async () => {
+  const drafts = await boot();
+  await ensureBench(drafts, { session: "bw" });
+  assert.match(
+    await codeOf(addStageBench(drafts, "bw", {
+      card: "c", params: { p: "$ch" }, inputs: { ch: { output: "x" } }, expect_rev: 0,
+    })),
+    /^bench\/bad-wire\|.*is neither \{stage, output\} nor \{initial\}/,
+  );
+});
+
+test("a wire to a ghost on an empty-id bench names the empty live set", async () => {
+  const drafts = await boot();
+  assert.match(
+    await codeOf(ensureBench(drafts, {
+      session: "n1",
+      stages: [{ id: "", params: { p: "$ghost" }, inputs: { ghost: { stage: "zzz", output: "o" } } }],
+    })),
+    /^bench\/wire-stage-not-found\|.*\(live: none\)/,
+  );
+  // the refused birth persisted nothing.
+  assert.match(syncCodeOf((): unknown => getBench(drafts, "n1")), /^bench\/not-found/);
+});
+
+test("an explicit duplicate id refuses bench/duplicate-stage", async () => {
+  const drafts = await boot();
+  const first = await addStageBench(drafts, "d1", { id: "dup", card: "c", expect_rev: 0 });
+  assert.equal(first.stage, "dup");
+  assert.match(
+    await codeOf(addStageBench(drafts, "d1", { id: "dup", card: "c", expect_rev: 1 })),
+    /^bench\/duplicate-stage\|stage id already on the bench: dup/,
+  );
+});
+
+test("rewire tolerates a junk params cell when the channel deletes (no spell left to strand)", async () => {
+  const drafts = await boot();
+  await seed(drafts, "rw", {
+    stages: [{ id: "a", card: "c", params: "junk", inputs: { ch: { initial: "f" } } }],
+  });
+  const row = await rewireBench(drafts, "rw", { stage: "a", input: "ch", expect_rev: 0 });
+  assert.equal(row.rev, 1);
+  const after = getBench(drafts, "rw");
+  assert.deepEqual(
+    (after.stages as Array<{ inputs: unknown }>)[0]?.inputs,
+    {},
+  );
+});

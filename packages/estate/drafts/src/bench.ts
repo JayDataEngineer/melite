@@ -558,7 +558,9 @@ export async function patchBench(
       st,
       cur,
       isRecord(st["inputs"]) ? (st["inputs"] as Record<string, unknown>) : {},
-      stagesOf(loaded.doc).map((r: Record<string, unknown>): string => String(r["id"] ?? "")),
+      // (the domain schema pins stages[].id: string with
+      // backup-and-skip at read — a nullish id never reaches here)
+      stagesOf(loaded.doc).map((r: Record<string, unknown>): string => String(r["id"])),
       stageId,
       session,
     );
@@ -741,20 +743,20 @@ function admitWiring(
 }
 
 /** Wiring admission over a wholesale stage list (the load arm —
- *  every row checks against the list it lands in). */
-function admitWiringList(stages: unknown, session: string): void {
-  if (!Array.isArray(stages)) return;
-  const rows: Record<string, unknown>[] = stages.filter(isRecord);
-  const liveIds: string[] = rows
-    .map((r: Record<string, unknown>): unknown => r["id"])
-    .filter((id: unknown): boolean => typeof id === "string") as string[];
-  for (const r of rows) {
+ *  every row checks against the list it lands in). Both call sites
+ *  pass normalizeStages() output — non-arrays collapse to [] there,
+ *  non-record rows filter out, and every surviving row carries a
+ *  string id plus record params/inputs (the coerce arms at
+ *  normalizeStages) — so no re-defense here. */
+function admitWiringList(stages: Array<Record<string, unknown>>, session: string): void {
+  const liveIds: string[] = stages.map((r: Record<string, unknown>): string => r["id"] as string);
+  for (const r of stages) {
     admitWiring(
       r,
-      isRecord(r["params"]) ? (r["params"] as Record<string, unknown>) : {},
-      isRecord(r["inputs"]) ? (r["inputs"] as Record<string, unknown>) : {},
+      r["params"] as Record<string, unknown>,
+      r["inputs"] as Record<string, unknown>,
       liveIds,
-      typeof r["id"] === "string" ? r["id"] : "",
+      r["id"] as string,
       session,
     );
   }
@@ -1144,7 +1146,9 @@ export async function rewireBench(
     st,
     isRecord(st["params"]) ? (st["params"] as Record<string, unknown>) : {},
     inputs,
-    stagesOf(loaded.doc).map((r: Record<string, unknown>): string => String(r["id"] ?? "")),
+    // (the domain schema pins stages[].id: string with
+    // backup-and-skip at read — a nullish id never reaches here)
+    stagesOf(loaded.doc).map((r: Record<string, unknown>): string => String(r["id"])),
     stageId,
     session,
   );
