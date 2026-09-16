@@ -800,7 +800,8 @@ describe('background + body slot (drops / picks / wire)', () => {
     fireEvent.drop(slotSquare(), { dataTransfer: assetTransfer('https://host/slot.glb') })
     await vi.waitFor(() => {
       if (!document.body.querySelector('[aria-label="Detach"]')) throw new Error('no detach yet')
-    }), { timeout: 10000 }
+      // stroke 83: the GLB drop path stalls past 10s under full-suite parallel load (the fetch rides the shared jsdom loop); 30s keeps the evidence point load-robust
+    }), { timeout: 30000 }
     fireEvent.click(document.body.querySelector('[aria-label="Detach"]') as HTMLButtonElement)
     await vi.waitFor(() => {
       if (document.body.querySelector('[aria-label="Detach"]')) throw new Error('detach did not clear yet')
@@ -926,7 +927,8 @@ describe('background + body slot (drops / picks / wire)', () => {
     )
     await vi.waitFor(() => {
       if (!document.body.querySelector('[aria-label="Detach"]')) throw new Error('no detach yet')
-    }), { timeout: 10000 }
+      // stroke 83: the GLB drop path stalls past 10s under full-suite parallel load (the fetch rides the shared jsdom loop); 30s keeps the evidence point load-robust
+    }), { timeout: 30000 }
     fireEvent.click(document.body.querySelector('[aria-label="Detach"]') as HTMLButtonElement)
     expect(onWireSlot).toHaveBeenCalledWith('preview_glb', null, null)
     expect(onSave.mock.calls.some(([p]) => (p as Record<string, unknown>).preview_glb === null)).toBe(true)

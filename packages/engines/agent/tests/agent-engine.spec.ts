@@ -698,4 +698,57 @@ describe("the agent engine provider", () => {
   });
 });
 
+describe("the keyless failure voice (MISSING_CREDENTIAL)", () => {
+  // THE SHAPE the real deepseek adapter yields with no key anywhere
+  // (llm-deepseek resolveApiKey → LlmError MISSING_CREDENTIAL naming
+  // the apiKeyEnv ref → the runtime's terminal finish chunk): the
+  // route SEATS key-blind (capability vs credential, the craft
+  // spec's law), so an agent STAGE on it dies HERE, at turn 0's
+  // stream. This arm pins that the death is LOUD (names the turn +
+  // the key env) — never a hang (the fake answers in one chunk; a
+  // hanging seam would hit the test timeout), never a silent end.
+  it("a keyless route fails the stage LOUD at turn 0", async () => {
+    const dir = tmp();
+    const llm = new (class extends FakeLlm {
+      async prepareCall(config: { provider: string; model: string }) {
+        return {
+          config: { ...config },
+          stream: async function* () {
+            yield {
+              type: "finish",
+              reason: {
+                kind: "error",
+                failure: {
+                  message:
+                    'llm-deepseek: no API key for provider route "deepseek-official"; ' +
+                    "store DEEPSEEK_API_KEY through the credentials service (the web Models page writes it), " +
+                    "or export DEEPSEEK_API_KEY in the launching environment",
+                  code: "MISSING_CREDENTIAL",
+                },
+              },
+            };
+          },
+        };
+      }
+    })([]);
+    await assert.rejects(
+      agentLoopExecutor(llm, new FakeTools(), undefined, { provider: "deepseek-official", model: "deepseek-flash" }).executeStages(
+        [{ stageId: "a", outputs: {}, params: { task: "x" } }],
+        dir,
+        {},
+        opts([]),
+      ),
+      (e: unknown) => {
+        const msg = String((e as { message?: unknown })?.message ?? e);
+        assert.match(msg, /model call failed at turn 0/);
+        assert.match(msg, /deepseek-official/);
+        assert.match(msg, /DEEPSEEK_API_KEY/);
+        assert.match(msg, /MISSING_CREDENTIAL/);
+        return true;
+      },
+    );
+    rmSync(dir, { recursive: true, force: true });
+  });
+});
+
 

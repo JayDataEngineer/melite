@@ -20,7 +20,7 @@ import {
   mapHistoryEntry, needComfyUI, openProgressTap, parseComfyUIHostConfig, planMerge,
   publishOutputChannels, pyDumps400, pyReprStr, pyReprStrList, pyStr,
   resolveEngineBaseUrl, resolveRepoRoot, spliceWorkflow, stopForRunDir,
-  unloadModels, uploadReferenced,
+  unloadModels, uploadReferenced, viewTimeoutMs,
 } from "../src/comfyui.ts";
 import type { EngineJson, MergeRow } from "../src/comfyui.ts";
 import { ComfyUIService } from "../src/service.ts";
@@ -811,6 +811,78 @@ describe("fetchOutputs (the harvest matrix)", () => {
       assert.equal(arts[0], join(runDir, "a.png"));
       assert.equal(arts[1], join(runDir, "a.png"));
       assert.equal(readFileSync(join(runDir, "a.png"), "utf8"), "BYTES:a.png");
+    } finally { await s.close(); }
+  });
+});
+
+// ── the /view budget (stroke 83: the harvest follows the run) ──
+
+describe("viewTimeoutMs + the threaded /view budget", () => {
+  it("pins the formula: the 180s py-parity floor holds, larger budgets follow", () => {
+    // A >180s /view delay would wall the follow arm end-to-end —
+    // too slow. The formula pins it here (exported seam); the slow
+    // /view below pins the floor threading end-to-end.
+    assert.equal(viewTimeoutMs(undefined), 2400000, "absent rides the 2400 default into the budget arm");
+    assert.equal(viewTimeoutMs(0), 2400000, "garbage rides the 2400 fallback");
+    assert.equal(viewTimeoutMs(-5), 2400000);
+    assert.equal(viewTimeoutMs(Number.NaN), 2400000);
+    assert.equal(viewTimeoutMs(Number.POSITIVE_INFINITY), 2400000);
+    assert.equal(viewTimeoutMs("abc"), 2400000);
+    assert.equal(viewTimeoutMs(5), 180000, "a 5s run keeps the py-parity floor");
+    assert.equal(viewTimeoutMs(180), 180000, "the boundary is the floor");
+    assert.equal(viewTimeoutMs(181), 181000);
+    assert.equal(viewTimeoutMs(300), 300000, "a 300s run harvests on its own budget");
+    assert.equal(viewTimeoutMs(2400), 2400000);
+  });
+  it("a small-budget harvest still serves a slow /view (the floor, not the raw budget)", async () => {
+    // timeout_s 2 with a 2.5s /view completes — a naive
+    // timeoutS*1000 threading (no Math.max floor) would fuse at 2s.
+    const cfg = stub({ delayMs: 2500 });
+    const s = await startStub(cfg);
+    try {
+      const runDir = tmpRoot();
+      const arts = await fetchOutputs(s.url, runDir, {
+        outputs: { "1": { images: [{ filename: "a.png", subfolder: "", type: "output" }] } },
+      }, 2);
+      assert.equal(arts.length, 1);
+      assert.equal(readFileSync(join(runDir, "a.png"), "utf8"), "BYTES:a.png");
+    } finally { await s.close(); }
+  });
+  it("the single path threads its params timeout into the harvest", async () => {
+    // timeout_s 5 with a 1s-per-hop stub (prompt + history + view)
+    // lands inside the 5s deadline on the threaded floor budget.
+    const cfg = stub({
+      delayMs: 1000,
+      history: [doneEntry({ "1": { images: [{ filename: "a.png", subfolder: "", type: "output" }] } })],
+    });
+    const s = await startStub(cfg);
+    try {
+      const runDir = tmpRoot();
+      const out = await executeSingle(runDir, wfParams({ timeout_s: 5 }), { image: "image" }, {}, s.url);
+      assert.equal(out.artifacts.length, 1);
+      assert.equal(out.outputs["image"], join(runDir, "a.png"));
+    } finally { await s.close(); }
+  });
+  it("the merged path threads each stage's params timeout into its harvest", async () => {
+    const cfg = stub({
+      delayMs: 1000,
+      history: [doneEntry({
+        "a::11": { images: [{ filename: "a.png", subfolder: "", type: "output" }] },
+      })],
+    });
+    const s = await startStub(cfg);
+    try {
+      const out = await executeFlow(
+        [{
+          stageId: "a",
+          workflow: { "11": { class_type: "SaveImage", inputs: {} } },
+          outputs: { image: "image" },
+          outputNodes: { image: "11" },
+          params: { timeout_s: 8 },
+        }],
+        tmpRoot(), {}, {}, {}, s.url,
+      );
+      assert.equal(out.stages["a"]!.artifacts.length, 1);
     } finally { await s.close(); }
   });
 });
@@ -1612,6 +1684,96 @@ describe("openProgressTap + drainRelevant (the tap fold)", () => {
     assert.deepEqual(tap.drain(), []);
     tap.close(); // idempotent
     tap.close();
+  });
+});
+
+// ── the tap's live-socket walls (stroke 83 — the first
+//    single-purpose pins; the mixed-shape battery above already
+//    exercises these arms together, these isolate each one) ──────
+
+describe("openProgressTap (live-socket walls)", () => {
+  it("queues text events; drain snapshots and clears", async () => {
+    const s = await startWsStub([
+      '{"type":"progress","data":{"value":1,"max":2,"prompt_id":"p1"}}',
+      '{"type":"executing","data":{"node":"5","prompt_id":"p1"}}',
+    ]);
+    try {
+      const tap = openProgressTap(s.url, "melite-snap-1");
+      await sleep(400); // frames land at ~60ms
+      const first = tap.drain();
+      assert.equal(first.length, 2, "both text frames queued");
+      assert.deepEqual(tap.drain(), [], "drain clears — the second snapshot is empty");
+      tap.close();
+      assert.deepEqual(tap.drain(), [], "still empty after close");
+    } finally { await s.close(); }
+  });
+  it("non-JSON text frames are skipped", async () => {
+    const s = await startWsStub(["not json {{{", "plain text"]);
+    try {
+      const tap = openProgressTap(s.url, "melite-nonjson-1");
+      await sleep(400);
+      assert.deepEqual(tap.drain(), [], "no JSON — nothing queues");
+      tap.close();
+    } finally { await s.close(); }
+  });
+  it("a binary-only server queues nothing (text only)", async () => {
+    const s = await startWsStub([], 60, [Buffer.from([0x89, 0x50, 0x4e, 0x47])]);
+    try {
+      const tap = openProgressTap(s.url, "melite-binonly-1");
+      await sleep(400);
+      assert.deepEqual(tap.drain(), [], "the binary preview never queues");
+      tap.close();
+    } finally { await s.close(); }
+  });
+  it("malformed JSON shapes are skipped (array, no-type, scalars, wrong-typed type)", async () => {
+    const s = await startWsStub([
+      "[1,2]",
+      '{"no_type":true}',
+      "null",
+      "42",
+      '"just a string"',
+      '{"type":42,"data":{}}',
+    ]);
+    try {
+      const tap = openProgressTap(s.url, "melite-malformed-1");
+      await sleep(400);
+      assert.deepEqual(tap.drain(), [], "no well-typed object frame — nothing queues");
+      tap.close();
+    } finally { await s.close(); }
+  });
+  it("close is idempotent; drain-after-close keeps what was queued", async () => {
+    const s = await startWsStub([
+      '{"type":"progress","data":{"value":2,"max":4,"prompt_id":"p1"}}',
+      '{"type":"executing","data":{"node":"9","prompt_id":"p1"}}',
+    ]);
+    try {
+      const tap = openProgressTap(s.url, "melite-close-1");
+      await sleep(400);
+      tap.close();
+      tap.close();
+      tap.close();
+      const after = tap.drain();
+      assert.equal(after.length, 2, "close never drops what was queued before it");
+      assert.deepEqual(after[0], { type: "progress", data: { value: 2, max: 4, prompt_id: "p1" } });
+      assert.deepEqual(tap.drain(), [], "drain still clears after close");
+    } finally { await s.close(); }
+  });
+  it("drainRelevant folds progress-with-node and records execution_error (direct)", () => {
+    // The mixed-shape battery pins these through the live tap;
+    // this pins the fold itself with no socket in the loop.
+    const seen: Record<string, EngineJson>[] = [];
+    const err = drainRelevant(
+      [
+        { type: "progress", data: { value: 7, max: 10, node: "3" } },
+        { type: "execution_error", data: { node_id: "3", prompt_id: "p1", exception_message: "boom" } },
+      ],
+      "p1",
+      (u) => { seen.push(u); },
+    );
+    assert.deepEqual(seen, [
+      { progress: { value: 7, max: 10, node: "3" }, activity: "sampling 7/10" },
+    ], "prompt-less progress passes the filter and voices sampling v/m");
+    assert.match(String(err), /execution_error/, "the executor's failure is recorded, never thrown");
   });
 });
 

@@ -33,6 +33,24 @@ import {
   specBody,
 } from '../src/discovery.ts'
 
+/** THE TRANSIENT-GENRE RACE (stroke 83): enhance-recipes.spec
+ * (comfyui-cordis) lays EPHEMERAL zz-cov-<pid> genres under the
+ * real models root — its error arms are INTENTIONALLY broken
+ * SKILL.md files, and a parallel worker's sweep here can catch one
+ * mid-flight (the fixture's finally owns the removal; only a
+ * CONCURRENT run can ever see it). Bounded retry on exactly that
+ * scratch signature; any real tree fault fails untouched. */
+const formSpecSweep = async (...args: Parameters<typeof formSpecArm>): Promise<ReturnType<typeof formSpecArm>> => {
+  for (let attempt = 0; ; attempt += 1) {
+    try {
+      return await formSpecArm(...args)
+    } catch (error) {
+      if (attempt >= 4 || !/zz-cov-\d+/.test(String(error))) throw error
+      await new Promise((r): void => setTimeout(r, 200))
+    }
+  }
+}
+
 function card(partial: Record<string, unknown>): CardDefinition {
   // THE EVERY-CARD-DECLARES LAW: real cards all carry flowKinds (the
   // loadCardDefs wall); fixtures mimic real cards — the edge emission
@@ -248,7 +266,7 @@ describe('live door arms', () => {
   })
 
   test('formSpecArm serves the tts envelope for its default family', async () => {
-    const spec = (await formSpecArm('tts')) as Record<string, unknown>
+    const spec = (await formSpecSweep('tts')) as Record<string, unknown>
     assert.equal(spec['form'], 'tts')
     assert.equal(spec['service'], 'qwen3-tts')
     assert.equal(spec['model'], 'qwen3-tts')
@@ -287,7 +305,7 @@ describe('live door arms', () => {
   })
 
   test('formSpecArm serves the card-only mask-form envelope (the studio retired at parity, stroke 75)', async () => {
-    const spec = (await formSpecArm('mask-form')) as Record<string, unknown>
+    const spec = (await formSpecSweep('mask-form')) as Record<string, unknown>
     assert.equal(spec['form'], 'mask-form')
     assert.equal(spec['service'], 'mask-form')
     assert.deepEqual(spec['variants'], [])
@@ -314,7 +332,7 @@ describe('live door arms', () => {
   })
 
   test('formSpecArm serves image-gen with NO recipe catalog (stroke 34 — the layer is dead)', async () => {
-    const spec = (await formSpecArm('image-gen')) as Record<string, unknown>
+    const spec = (await formSpecSweep('image-gen')) as Record<string, unknown>
     assert.equal('recipes' in spec, false)
     // the macro payload rides the FAMILY row instead: krea-2's
     // realism row serves its lora stamp in the variant defaults
@@ -328,7 +346,7 @@ describe('live door arms', () => {
   })
 
   test('formSpecArm 404s unknown keys as null', async () => {
-    assert.equal(await formSpecArm('__no_such_key__'), null)
+    assert.equal(await formSpecSweep('__no_such_key__'), null)
   })
 
   test('specBody primary falls to the card itself when no family boards (and nameless fields never join reqOf)', async () => {
@@ -508,10 +526,10 @@ describe('live door arms', () => {
 
   test('specBody serves the preview claims verbatim (gap 4 — h3-timeline claims the bar; others serve nothing)', async () => {
     const defs = await loadCardDefs()
-    const h3 = await formSpecArm('h3-timeline')
+    const h3 = await formSpecSweep('h3-timeline')
     assert.ok(h3 !== null)
     assert.deepEqual(h3['preview'], { historyStrip: false }, 'the claim serves verbatim')
-    const gen = await formSpecArm('image-gen')
+    const gen = await formSpecSweep('image-gen')
     assert.ok(gen !== null)
     assert.equal(gen['preview'], undefined, 'absent claim = strip ON (the default, no key served)')
   })
@@ -521,7 +539,7 @@ describe('live door arms', () => {
       mcps: [{ value: 'blender', label: 'blender' }],
       skills: [{ value: 'card:mask-form', label: 'Mask Form' }],
     })]])
-    const doc = await formSpecArm('agent', docs)
+    const doc = await formSpecSweep('agent', docs)
     assert.ok(doc !== null, 'the engine id resolves')
     assert.equal(doc['form'], 'agent')
     assert.equal(doc['engine'], 'agent')
@@ -534,13 +552,13 @@ describe('live door arms', () => {
   })
 
   test('formSpecArm refuses unknown keys as before (the engine arm does not widen resolution)', async () => {
-    const doc = await formSpecArm('__no_such_engine__', new Map())
+    const doc = await formSpecSweep('__no_such_engine__', new Map())
     assert.equal(doc, null)
   })
 
   test('formSpecArm serves the CRAFT ENGINE doc from its declared contract (stroke 69 — the card-seam completion)', async () => {
     const docs = new Map([['craft', () => craftFormDoc()]])
-    const doc = await formSpecArm('craft', docs)
+    const doc = await formSpecSweep('craft', docs)
     assert.ok(doc !== null, 'the engine id resolves')
     assert.equal(doc['form'], 'craft')
     assert.deepEqual((doc['features'] as { modifiers: unknown[] }).modifiers, [], 'craft has no bags — the four fields ride flat')
@@ -573,7 +591,7 @@ describe('live door arms', () => {
   //    model's prompt-enhance SKILL.md, composed with the old
   //    composer's grammar ─────────────────────────────────────────
   test('formSpecArm serves krea-2 the composed prompt-enhance recipe (byte referee: the old served fixture)', async () => {
-    const spec = (await formSpecArm('krea-2')) as { enhance_prompts?: Record<string, unknown> }
+    const spec = (await formSpecSweep('krea-2')) as { enhance_prompts?: Record<string, unknown> }
     const served = spec.enhance_prompts?.['prompt']
     assert.equal(typeof served, 'string')
     // the composition grammar is pinned by the OLD tree's served spec
@@ -585,9 +603,9 @@ describe('live door arms', () => {
   })
 
   test('formSpecArm serves the recipe for an aliased route key and the stub for a recipe-less model', async () => {
-    const aliased = (await formSpecArm('krea-2-raw')) as { enhance_prompts?: Record<string, unknown> }
+    const aliased = (await formSpecSweep('krea-2-raw')) as { enhance_prompts?: Record<string, unknown> }
     assert.equal(typeof aliased.enhance_prompts?.['prompt'], 'string')
-    const none = (await formSpecArm('joytag')) as { enhance_prompts?: Record<string, unknown> }
+    const none = (await formSpecSweep('joytag')) as { enhance_prompts?: Record<string, unknown> }
     assert.equal(none.enhance_prompts?.['prompt'], null) // the no-file law: sweep → generic
   })
 
@@ -595,7 +613,7 @@ describe('live door arms', () => {
     // z-image is the ONE live family boarding ip_adapter (scalar_key
     // 'weight') AND controlnet (preprocessor-carrying rows) — the two
     // pack-row arms no krea-2 form ever takes.
-    const spec = (await formSpecArm('z-image')) as Record<string, unknown>
+    const spec = (await formSpecSweep('z-image')) as Record<string, unknown>
     assert.equal(spec['form'], 'image-gen')
     assert.equal(spec['service'], 'z-image')
     const modifiers = (spec['features'] as { modifiers: Array<Record<string, unknown>> }).modifiers

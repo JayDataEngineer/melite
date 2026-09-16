@@ -547,3 +547,77 @@ describe("the provider (seat row)", () => {
     });
   });
 });
+
+describe("the keyless failure voice (MISSING_CREDENTIAL)", () => {
+  // THE SHAPE the real deepseek adapter yields with no key anywhere
+  // (llm-deepseek resolveApiKey → LlmError MISSING_CREDENTIAL naming
+  // the apiKeyEnv ref → the runtime's terminal finish chunk):
+  // resolveModelInfo/prepareCall are pure metadata (key-blind by DSH
+  // law — capability vs credential), so a seated route with no key
+  // dies HERE, at stream time. These arms pin that the death is
+  // LOUD (names the route + the key env) — never a hang (the fake
+  // answers in one chunk; a hanging seam would hit the test
+  // timeout), never a silent empty no-JSON.
+  const keylessReason = {
+    kind: "error",
+    failure: {
+      message:
+        'llm-deepseek: no API key for provider route "deepseek-official"; ' +
+        "store DEEPSEEK_API_KEY through the credentials service (the web Models page writes it), " +
+        "or export DEEPSEEK_API_KEY in the launching environment",
+      code: "MISSING_CREDENTIAL",
+    },
+  };
+  const keylessLlm = (): CraftLlmSeam => ({
+    listProviders: () => [{ id: "deepseek-official" }],
+    listModels: async () => [{ id: "deepseek-flash" }],
+    // image-capable: the route SEATS (key-blind) — the keylessness
+    // only surfaces at stream time below.
+    resolveModelInfo: async () => ({ inputModalities: ["text", "image"] }),
+    prepareCall: async (config: { provider: string; model: string }) => ({
+      config: { ...config },
+      stream: async function* (): AsyncIterable<{ type: string; text?: string }> {
+        yield { type: "finish", reason: keylessReason } as unknown as { type: string; text?: string };
+      },
+    }),
+  });
+  const noopAttachments: CraftAttachmentsSeam = {
+    saveImage: async (i) => ({ attachmentId: "a", mediaType: i.mediaType, bytes: 1, width: 1, height: 1 }),
+  };
+  const loud = (e: unknown): boolean => {
+    const msg = String((e as { message?: unknown })?.message ?? e);
+    assert.match(msg, /craft critic call failed/);
+    assert.match(msg, /deepseek-official/);
+    assert.match(msg, /DEEPSEEK_API_KEY/);
+    assert.match(msg, /MISSING_CREDENTIAL/);
+    return true;
+  };
+
+  it("the critic refuses LOUD naming the route's missing key", async () => {
+    const dir = tmp();
+    await assert.rejects(
+      llmCritic(keylessLlm(), noopAttachments, { provider: "deepseek-official", model: "deepseek-flash" }).critique({
+        iteration: 0, prompt: "p", command: { engine: "e", params: {} }, artifacts: [], runDir: dir, signal: new AbortController().signal,
+      }),
+      loud,
+    );
+    rmSync(dir, { recursive: true, force: true });
+  });
+
+  it("a craft STAGE on the keyless route fails LOUD at the first critique (the loop never spins)", async () => {
+    const dir = tmp();
+    const engines = new FakeEngines(dir);
+    const critic = llmCritic(keylessLlm(), noopAttachments, { provider: "deepseek-official", model: "deepseek-flash" });
+    await assert.rejects(
+      craftLoopExecutor(engines, critic).executeStages(
+        [stage({ agent_prompt: "p", inputs: { command: { engine: "fake", params: {} } } })],
+        dir,
+        {},
+        runOpts(),
+      ),
+      loud,
+    );
+    assert.equal(engines.acts.length, 1, "the act ran once; the loop died on the critique, never spinning");
+    rmSync(dir, { recursive: true, force: true });
+  });
+});

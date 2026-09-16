@@ -11,7 +11,7 @@ import { Context } from "@deepseek-ai/cordis";
 import { QueueCore } from "../src/queue.ts";
 import { QueueService } from "../src/service.ts";
 import { apply, runsRegistryPlugin } from "../src/index.ts";
-import { bootResurrect, bootSweep } from "../src/resurrect.ts";
+import { bootSweep } from "../src/resurrect.ts";
 
 let TMP = "";
 afterEach(() => {
@@ -91,7 +91,11 @@ describe("index plugin rows", () => {
 });
 
 describe("resurrect adapters", () => {
-  it("revives usable queued records; sweeps stale running ones", () => {
+  it("the QueueRoots sweep adapter retires stale running claims (the hollow bootResurrect is retired with it)", () => {
+    // stroke 83: bootResurrect is GONE — the service's bootReconcile
+    // replays _request.json through the start door (its walls live
+    // in runs-registry.spec). The adapter file still owns the
+    // QueueRoots sweep signature the estate seam rides.
     const root = tmp();
     const out = join(root, "output");
     mkdirSync(join(out, "run-old"), { recursive: true });
@@ -107,11 +111,10 @@ describe("resurrect adapters", () => {
     );
     writeFileSync(join(out, "run-stale", "_request.json"), "{}");
     const roots = { stateRoot: root };
-    const revived: string[] = [];
-    const ids = bootResurrect(roots, (run) => void revived.push(run.runId), () => true);
-    assert.deepEqual(ids, ["run-old"]);
-    assert.deepEqual(revived, ["run-old"]);
-    const swept = bootSweep(roots, []);
+    // the queued record is LIVE work (shielded); the stale running
+    // claim sweeps.
+    const swept = bootSweep(roots, ["run-old"]);
     assert.ok(swept.includes("run-stale"));
+    assert.ok(!swept.includes("run-old"));
   });
 });

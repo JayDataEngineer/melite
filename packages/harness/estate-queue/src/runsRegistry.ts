@@ -29,7 +29,8 @@ import {
   registryInitialsError,
 } from "./flowsData.ts";
 import { resolveRepoRoot } from "@melite/comfyui-cordis";
-import { newRunId, outRootFor, pipelineOf, pyStr, strictBodyCheck, draftIdOk } from "./queue.ts";
+import { newRunId, outRootFor, pipelineOf, pyStr, strictBodyCheck, draftIdOk, planResurrect, bootSweep, appendLedger } from "./queue.ts";
+import { readFileSync } from "node:fs";
 import {
   CardArmError,
   pyStrMid,
@@ -193,8 +194,131 @@ export class RunsRuntimeService extends Service {
    *  proxy). */
   pumping: boolean = false;
 
+  /** The boot-reconcile guard (once per boot; the constructor's
+   *  fire-and-forget burns it — walls re-arm this PUBLIC field and
+   *  await bootReconcile directly, the pumping-field precedent:
+   *  private #fields do not cross cordis proxies). */
+  reconciled = false;
+
   constructor(ctx: Context) {
     super(ctx, "runs");
+    // STROKE 83 — THE BOOT RECONCILE (resurrect is no longer
+    // tested-but-unwired): queued sidecars of a DEAD process are
+    // REPLAYED through the start door with their own run ids, then
+    // stale running claims sweep. Fire-and-forget with a dispose
+    // guard; the walls await bootReconcile() directly.
+    let disposed = false;
+    this.ctx.effect((): (() => void) => {
+      disposed = false;
+      return (): void => { disposed = true; };
+    }, "estate-runs.reconcile-guard");
+    /* v8 ignore next 3 -- defensive-only (the fire-and-forget
+     * law's unhandled-rejection guard): planResurrect swallows
+     * its own I/O (the readdir try road + per-record reads), so
+     * the swallow arms the constructor against FUTURE plan-level
+     * faults, never a today-reachable one. The per-run arms own
+     * their failure writes; a plan-level fault must never take
+     * the fiber down. */
+    const swallowPlanFault = (): void => { /* see the ignore above */ };
+    void this.bootReconcile((): boolean => disposed).catch(swallowPlanFault);
+  }
+
+  /** THE BOOT RECONCILE (stroke 83; boot_resurrect reborn as a
+   *  REPLAY, not a hollow requeue): every usable QUEUED record's
+   *  _request.json goes back through the START door under its own
+   *  run id — the recompiled row carries REAL params (the old
+   *  resurrectRuns requeued hollow stage faces and the pump's
+   *  splice refused them all: every revived run settled failed
+   *  "no inline workflow"). Replay = resubmit-with-same-id: the
+   *  draft probe, the strict body, the compile all re-run against
+   *  CURRENT truth; a refusal settles that run failed LOUD with
+   *  the door's own voice. FIFO holds (plan order = created_at).
+   *  After the replay, bootSweep retires stale RUNNING claims of
+   *  the dead process (the ledgered dispositions, row-28 law). */
+  async bootReconcile(disposed: () => boolean = () => false): Promise<string[]> {
+    if (this.reconciled) return [];
+    this.reconciled = true;
+    const stateRoot = this.ctx.queue.stateRoot;
+    // Permissive by intent: the start door owns the draft probe —
+    // a deleted draft settles failed LOUD here instead of riding
+    // the orphan list silently.
+    const plan = planResurrect(stateRoot, undefined, undefined, () => true);
+    const revived: string[] = [];
+    for (const runId of plan.order) {
+      if (disposed()) return revived;
+      let body: unknown = null;
+      try {
+        body = JSON.parse(
+          readFileSync(join(stateRoot, "output", runId, "_request.json"), "utf8"),
+        );
+      } catch {
+        /* v8 ignore next 2 -- TOCTOU-only (the settleReplayRefusal
+         * law): the request PARSED at plan time or planResurrect
+         * orphaned the record (durableRecordUsable's requestText
+         * parse); this re-read catches a torn filesystem between
+         * the plan read and the replay read. bootSweep owns the
+         * genuinely-corrupt case (walled). */
+        continue;
+      }
+      try {
+        await this.start(body, new AbortController().signal, { runId });
+        revived.push(runId);
+        appendLedger(stateRoot, "run.resurrected", {
+          run_id: runId,
+          note: "replayed _request.json through the start door (stroke 83)",
+        });
+      } catch (exc: unknown) {
+        // LOUD, in place: the sidecar moves to failed with the
+        // door's refusal text — a poison request can never haunt
+        // the next boot as "queued" forever.
+        this.settleReplayRefusal(stateRoot, runId, errText(exc));
+      }
+    }
+    bootSweep(stateRoot, revived);
+    if (revived.length > 0) this.kick();
+    return revived;
+  }
+
+  /** Settle a replay-refused resurrect id: rebuild the row's
+   *  identity from its own sidecar (the stage faces ride verbatim)
+   *  and persist failed through the canonical terminal writer. */
+  private settleReplayRefusal(stateRoot: string, runId: string, error: string): void {
+    const dir = join(outRootFor(stateRoot, false), runId);
+    let pre: Record<string, unknown> = {};
+    try {
+      pre = JSON.parse(readFileSync(join(dir, "_flow.json"), "utf8")) as Record<string, unknown>;
+    } catch {
+      /* v8 ignore next 3 -- TOCTOU-only (the agent-engine law):
+       * the record was readable+queued at plan time or it never
+       * entered the plan; this re-read catches a torn filesystem
+       * between the two reads. The zeroed identity below is the
+       * honest floor for a vanished sidecar. */
+      pre = {};
+    }
+    const faces: unknown[] = Array.isArray(pre["stages"]) ? pre["stages"] : [];
+    const row: RunRecord = {
+      runId,
+      status: "failed",
+      stages: faces as RunRecord["stages"],
+      skippedStages: Array.isArray(pre["skipped_stages"])
+        ? (pre["skipped_stages"] as unknown[]).map((x): string => typeof x === "string" ? x : "")
+        : [],
+      artifacts: [],
+      error,
+      /* v8 ignore next -- planResurrect admits only string sidecar
+       * draft_ids (durableRecordUsable's gate); the non-string arm
+       * is torn-state defense, unreachable in sequence. */
+      draftId: typeof pre["draft_id"] === "string" ? pre["draft_id"] as string : "",
+      dir,
+      testFlag: false,
+      stopFlag: false,
+      params: [],
+      createdAt: typeof pre["created_at"] === "number" ? pre["created_at"] as number : 0,
+      pipeline: typeof pre["pipeline"] === "string" ? pre["pipeline"] as string : "flow_inline",
+      graphRows: [],
+      outputNodes: [],
+    };
+    settlePersist(row, stateRoot);
   }
 
   /** The queue seat's registry (the FIFO SSOT). */
@@ -205,6 +329,10 @@ export class RunsRuntimeService extends Service {
   async start(
     doc: unknown,
     signal: AbortSignal,
+    /** INTERNAL (stroke 83 boot resurrect): reuse a dead process's
+     *  run id when replaying its _request.json — the remote surface
+     *  never passes this (two-arg wire calls only). */
+    reuse?: { runId: string },
   ): Promise<{ run_id: string; status: string; queue_position: number }> {
     signal.throwIfAborted();
     // The pre-registration chain, py order (queue.ts's envelope
@@ -265,7 +393,7 @@ export class RunsRuntimeService extends Service {
         if (e instanceof CardArmError) throw toRemoteError(cardRefusal(e));
         throw e;
       }
-      const runId: string = newRunId();
+      const runId: string = reuse?.runId ?? newRunId();
       let graph: Record<string, unknown>;
       try {
         graph = (await cards.phase2Card(p1, runId)).graph;
@@ -373,6 +501,12 @@ export class RunsRuntimeService extends Service {
       draftId: checked.draftId,
       stateRoot,
       enqueue: (row): number => this.core.enqueue(row as never),
+      // The replay arm (stroke 83): same id, no card identity —
+      // _request.json/_flow.json rewrite in place, the pump picks
+      // the rehydrated (REAL params) row up on the boot kick.
+      ...(reuse === undefined
+        ? {}
+        : { door: { runId: reuse.runId, pipeline: pipelineOf(body), requestBody: body } }),
     });
     void run;
     this.kick();
@@ -718,9 +852,16 @@ export class RunsRuntimeService extends Service {
         { runId },
       );
     }
-    if (run.status !== "queued" && run.status !== "running") {
+    if (run.status !== "queued" && run.status !== "running" && run.status !== "stopping") {
       return { error: "cannot stop run in state " + run.status };
     }
+    // THE STOPPING STAMP (stroke 83 — the state existed in the
+    // union but nothing ever set it): a stop press on a LIVE run
+    // moves the row to "stopping" immediately, so the status door
+    // reports the truth between the press and the settle (the
+    // settle's stopFlag branch overwrites with "stopped"). A
+    // re-press on an already-stopping row is idempotent.
+    if (run.status === "running") run.status = "stopping";
     run.stopFlag = true;
     // The interrupt rides the injected engine service when the
     // seat exists (best-effort — the flag is the authority).

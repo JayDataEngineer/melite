@@ -338,7 +338,11 @@ export function registerCompiledRun(args: {
   door?: {
     runId: string;
     pipeline: string;
-    cardId: string;
+    /** The card arm's identity (card snapshot law). The inline
+     *  REPLAY arm (stroke 83 boot resurrect) reuses a run id with
+     *  NO card identity — cardId undefined means no snapshot is
+     *  stamped and pipeline still rides the door. */
+    cardId?: string;
     requestBody: Record<string, unknown>;
     /** The bench doc read at submit (stroke 45d) — the FULL workflow
      *  the run was born from (all stages + intent), stamped verbatim
@@ -391,8 +395,8 @@ export function registerCompiledRun(args: {
   };
   run.inputNames = { [st.id]: st.inputNames };
   if (door !== undefined) {
-    run.cardId = door.cardId;
     run.pipeline = door.pipeline;
+    if (door.cardId !== undefined) run.cardId = door.cardId;
   }
   // THE CARD SNAPSHOT LAW (stroke 45, the operator's wand complaint):
   // _flow.json's stage faces are HOLLOW (ids/status only) — the card
@@ -401,7 +405,7 @@ export function registerCompiledRun(args: {
   // bench draft and serve whatever it holds NOW. The card arm knows
   // the exact card + body here; they ride the sidecar verbatim. The
   // wand reconstructs from THIS, never from the living bench.
-  if (door !== undefined) {
+  if (door !== undefined && door.cardId !== undefined) {
     run.cardSnapshot = {
       card: door.cardId,
       params: door.requestBody,

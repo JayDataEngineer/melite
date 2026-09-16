@@ -791,14 +791,30 @@ async function unloadModelsInner(server: string): Promise<void> {
 
 // ── harvest (native 459-522) ──
 
+/** The /view artifact-fetch budget (stroke 83): the run's own
+ *  timeout when it EXCEEDS the 180s py-parity floor, else the
+ *  floor. The harvest rides the run's budget — a long run may
+ *  serve large artifacts without the fetch fuse firing first —
+ *  while short runs keep the 180s floor (never a raw
+ *  timeoutS*1000 shrink). Exported for the formula wall. */
+export function viewTimeoutMs(timeoutS: EngineJson | undefined): number {
+  return Math.max(180_000, normalizeTimeoutS(timeoutS) * 1000);
+}
+
 /** history.outputs -> downloaded artifacts under runDir/.
  *  The full shape matrix: images/gifs/audio/video/3d/three_model/
  *  result/files, the flat tuple-row "result" arm, dict rows and
- *  list/tuple rows. */
+ *  list/tuple rows.
+ *
+ *  timeoutS threads the run's own params timeout through (the
+ *  callers pass the same value the deadline used) — the /view
+ *  fetch honors it via viewTimeoutMs. Absent = the formula's own
+ *  default (normalize undefined -> 2400 -> the budget arm). */
 export async function fetchOutputs(
   server: string,
   runDir: string,
   entry: Record<string, EngineJson>,
+  timeoutS?: EngineJson,
 ): Promise<string[]> {
   mkdirSync(runDir, { recursive: true });
   const arts: string[] = [];
@@ -806,6 +822,7 @@ export async function fetchOutputs(
   if (typeof outputs !== "object" || outputs === null || Array.isArray(outputs)) {
     return arts;
   }
+  const viewTimeout: number = viewTimeoutMs(timeoutS);
   for (const [nodeId, nodeOut] of Object.entries(
     outputs as Record<string, EngineJson>,
   )) {
@@ -862,7 +879,7 @@ export async function fetchOutputs(
             encodeURIComponent(ftype),
           null,
           "application/json",
-          180000,
+          viewTimeout,
         );
         let blob: Buffer | null = null;
         if (status === 200 && Buffer.isBuffer(body)) blob = body;
@@ -1283,7 +1300,7 @@ async function executeSingleInner(
       tap,
       opts.report,
     );
-    const arts: string[] = await fetchOutputs(server, String(runDir), entry);
+    const arts: string[] = await fetchOutputs(server, String(runDir), entry, params["timeout_s"]);
     const outputs: Record<string, EngineJson> = { prompt_id: promptId };
     Object.assign(outputs, publishOutputChannels(nodeOutputs, arts));
     return { outputs, artifacts: arts, promptId };
@@ -1683,7 +1700,7 @@ async function executeFlowInner(
       const stageDir: string = join(String(runDir), r.stageId);
       const arts: string[] = await fetchOutputs(server, stageDir, {
         outputs: subOutputs,
-      });
+      }, r.params["timeout_s"]);
       results[r.stageId] = {
         outputs: publishOutputChannels(r.outputs, arts),
         artifacts: arts,

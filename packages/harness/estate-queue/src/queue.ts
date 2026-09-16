@@ -1409,9 +1409,9 @@ export function durableRecordUsable(
   if (!graphRowsUsable(rec["graph"])) return false;
   // stages/skipped/artifacts listifiability: py's list()/iterate
   // sits OUTSIDE the rebuild try (TypeError on 5/True skips the
-  // record at boot). The predicate agrees with buildRebuiltRun
-  // (which throws the same road) so plan order never admits a row
-  // the build cannot carry.
+  // record at boot). The predicate agrees with the replay road
+  // (the service's bootReconcile re-reads through the start door)
+  // so plan order never admits a row the replay cannot carry.
   try {
     pyListItems(rec["stages"]);
     pyListItems(rec["skipped_stages"]);
@@ -1509,111 +1509,16 @@ export function planResurrect(
  *  is runsRoot == stateRoot/output and ledgerPath ==
  *  runsRoot/_ledger.jsonl — the core derives both from stateRoot,
  *  so a non-canonical triple is honored for READS and canonical
- *  for WRITES, documented at bootQueue). */
+ *  for WRITES, documented at the service's bootReconcile). */
 export interface QueueRoots {
   readonly stateRoot: string;
   readonly runsRoot: string;
   readonly ledgerPath: string;
 }
 
-/** One rebuilt queued run (py _rebuild_run_from_record 2294-2336:
- *  stages/skipped ride list(doc.get(...) or []) VERBATIM (strings
- *  split to chars, dicts to keys, mixed rows stay mixed), artifacts
- *  ride [str(a) for a if a] with py spellings, error restarts ""
- *  — the registry seam, not the record, owns it). */
-export interface RebuiltRun {
-  readonly runId: string;
-  readonly draftId: string;
-  readonly stages: unknown[];
-  readonly skippedStages: unknown[];
-  readonly artifacts: string[];
-}
+/** One rebuilt queued run — RETIRED (stroke 83): the hollow
+ *  requeue road is deleted; the service's bootReconcile REPLAYS _request.json
+ *  through the start door so revived rows carry REAL params. */
 
-/** Read one usable record back into registry shape (the plan
- *  already proved it usable — a TOCTOU read failure or a raise-road
- *  value here throws and the caller skips to the sweep, exactly the
- *  _rebuild raise road at boot). */
-export function buildRebuiltRun(
-  stateRoot: string,
-  runId: string,
-): RebuiltRun {
-  const doc = JSON.parse(
-    readFileSync(join(stateRoot, "output", runId, "_flow.json"), "utf8"),
-  ) as Record<string, unknown>;
-  return {
-    runId,
-    draftId: typeof doc["draft_id"] === "string" ? (doc["draft_id"] as string) : "",
-    stages: pyListItems(doc["stages"]),
-    skippedStages: pyListItems(doc["skipped_stages"]),
-    artifacts: pyArtifactStrings(doc["artifacts"]),
-  };
-}
 
-/** Resurrect half (boot_resurrect 2338-2376): every usable QUEUED
- *  record re-queues (same id, FIFO by created_at) + ledgers
- *  run.resurrected. NO sweep here — py's resurrect never sweeps;
- *  main() sweeps after (bootQueue below). Returns revived ids (==
- *  the live ids the sweep must shield). */
-export function resurrectRuns(
-  stateRoot: string,
-  enqueue: (run: RebuiltRun) => void,
-  draftExists: (draftId: string) => boolean,
-  nowS: number = Math.floor(Date.now() / 1000),
-): string[] {
-  const plan: ResurrectPlan = planResurrect(
-    stateRoot,
-    undefined,
-    undefined,
-    draftExists,
-  );
-  const revived: string[] = [];
-  for (const runId of plan.order) {
-    try {
-      const run: RebuiltRun = buildRebuiltRun(stateRoot, runId);
-      enqueue(run);
-      appendLedger(
-        stateRoot,
-        "run.resurrected",
-        { run_id: runId, draft_id: run.draftId },
-        nowS,
-      );
-      revived.push(runId);
-    } catch {
-      /* a half-written record sweeps below — LOUD there */
-    }
-  }
-  return revived;
-}
 
-/** Whole boot (main 4481-4489): the LOCK is the caller's (bootGate
- *  BEFORE any side effect — the lock proves single-writer, never
- *  this function). Resurrect FIRST, sweep SECOND (4485-4486), then
- *  ledger server.boot {port, swept, resurrected, engine}. Writes
- *  land on the canonical layout (stateRoot/output/..., ==
- *  roots.ledgerPath for every caller — defaultAssetRoots). Never
- *  throws: a poisoned root boots unreconciled (the sweep/scan
- *  guards every read; the server.ts seam swallows the rest). */
-export function bootQueue(
-  roots: QueueRoots,
-  enqueue: (run: RebuiltRun) => void,
-  port: number,
-  engine: string,
-  nowS: number = Math.floor(Date.now() / 1000),
-  draftExists: (draftId: string) => boolean = (): boolean => {
-    // LOUD default (see planResurrect): callers without a domain
-    // probe must fail loud, never silently orphan reviveable runs.
-    throw new Error(
-      "[gateway-ts] bootQueue needs the caller's draftExists probe (drafts domain)",
-    );
-  },
-): { resurrected: number; swept: number; live: string[] } {
-  const live: string[] = resurrectRuns(roots.stateRoot, enqueue, draftExists, nowS);
-  const sweptIds: string[] = bootSweep(roots.stateRoot, live, nowS);
-  appendLedger(
-    roots.stateRoot,
-    "server.boot",
-    { port: port, swept: sweptIds.length, resurrected: live.length, engine: engine },
-    nowS,
-  );
-  return { resurrected: live.length, swept: sweptIds.length, live };
-}

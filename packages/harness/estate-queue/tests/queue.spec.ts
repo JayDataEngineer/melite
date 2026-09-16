@@ -17,9 +17,7 @@ import {
   appendLedger,
   atomicWriteJson,
   bootGate,
-  bootQueue,
   bootSweep,
-  buildRebuiltRun,
   coerceCreatedAt,
   durableRecordUsable,
   dumpsLedgerData,
@@ -56,7 +54,6 @@ import {
   refusal,
   releaseLock,
   resolveStateRoot,
-  resurrectRuns,
   shouldRetry,
   sidecarDoc,
   strictBodyCheck,
@@ -65,6 +62,7 @@ import {
   validateSubmitEnvelope,
 } from "../src/queue.ts";
 import type { QueueRunRow } from "../src/queue.ts";
+import { bootSweep as bootSweepAdapter } from "../src/resurrect.ts";
 
 let TMP = "";
 afterEach(() => {
@@ -614,63 +612,46 @@ describe("durable + resurrect", () => {
     assert.throws(() => planResurrect(root), /draftExists probe/);
   });
 
-  it("rebuilds rows (draft falls back to empty) and revives the queue", () => {
+  it("py list/artifact roads ride the plan predicate (the hollow rebuild is retired)", () => {
+    // stroke 83: buildRebuiltRun/resurrectRuns/bootQueue are GONE —
+    // the service's bootReconcile replays _request.json through the
+    // start door. The py-compat VALUE roads they uniquely pinned
+    // stay pinned here, through the predicate that still consumes
+    // them (durableRecordUsable → pyListItems/pyArtifactStrings).
+    const doc = (over: Record<string, unknown> = {}): string =>
+      JSON.stringify({ draft_id: "d", stages: "ab", skipped_stages: [], artifacts: ["x", ""], ...over });
+    assert.equal(durableRecordUsable(doc(), "{}", true), true);
+    assert.equal(durableRecordUsable(doc({ stages: 5 }), "{}", true), false);
+    // the char-split road itself (pyListItems) and the truthy-string
+    // artifact filter (pyArtifactStrings) stay directly pinned:
+    assert.deepEqual(pyListItems("ab"), ["a", "b"]);
+    assert.deepEqual(pyArtifactStrings(["x", ""]), ["x"]);
+  });
+
+  it("boots the sweep half through the QueueRoots adapter; a poisoned root never throws", () => {
+    // stroke 83: the WHOLE-boot wrapper is retired with the hollow
+    // resurrect; the sweep half still serves through resurrect.ts's
+    // QueueRoots adapter (the compat signature the estate seam
+    // rides), and the never-throws law holds for a poisoned root.
     const root = tmp();
     const out = join(root, "output");
     mkdirSync(join(out, "run-a"), { recursive: true });
     writeFileSync(
       join(out, "run-a", "_flow.json"),
-      JSON.stringify({ draft_id: "d", stages: "ab", skipped_stages: [], artifacts: ["x", ""] }),
+      JSON.stringify({ status: "queued", draft_id: "d", created_at: 1, graph: [], stages: [], skipped_stages: [], artifacts: [] }),
     );
-    writeFileSync(join(out, "run-a", "_request.json"), "{}");
-    const rebuilt = buildRebuiltRun(root, "run-a");
-    assert.deepEqual(rebuilt.stages, ["a", "b"]);
-    assert.deepEqual(rebuilt.artifacts, ["x"]);
-    mkdirSync(join(out, "run-b"), { recursive: true });
-    writeFileSync(join(out, "run-b", "_flow.json"), JSON.stringify({ stages: [] }));
-    assert.equal(buildRebuiltRun(root, "run-b").draftId, "");
-    const seen: string[] = [];
-    const revived = resurrectRuns(root, (r) => void seen.push(r.runId), () => false, 3);
-    assert.deepEqual(revived, []);
-    assert.deepEqual(seen, []);
-  });
-
-  it("boots whole (resurrect, sweep, ledger) and never throws poisoned", () => {
-    const root = tmp();
-    const out = join(root, "output");
-    mkdirSync(join(out, "run-a"), { recursive: true });
-    const doc = { status: "queued", draft_id: "d", created_at: 1, graph: [], stages: [], skipped_stages: [], artifacts: [] };
-    writeFileSync(join(out, "run-a", "_flow.json"), JSON.stringify(doc));
     writeFileSync(join(out, "run-a", "_request.json"), "{}");
     mkdirSync(join(out, "run-z"), { recursive: true });
     writeFileSync(join(out, "run-z", "_flow.json"), JSON.stringify({ status: "running" }));
-    const seen: string[] = [];
-    const res = bootQueue(
-      { stateRoot: root, runsRoot: join(root, "output"), ledgerPath: join(root, "output", "_ledger.jsonl") },
-      (r) => void seen.push(r.runId),
-      8080,
-      "comfyui",
-      5,
-      () => true,
-    );
-    assert.deepEqual(res, { resurrected: 1, swept: 1, live: ["run-a"] });
-    assert.deepEqual(seen, ["run-a"]);
+    const roots = { stateRoot: root, runsRoot: out, ledgerPath: join(out, "_ledger.jsonl") };
+    // the queued record shields (it is replay work, not a zombie);
+    // the stale running claim sweeps.
+    assert.deepEqual(bootSweepAdapter(roots, ["run-a"]), ["run-z"]);
     const poison = join(tmp(), "file");
     writeFileSync(poison, "x");
     assert.deepEqual(
-      bootQueue({ stateRoot: poison, runsRoot: poison, ledgerPath: poison }, () => {}, 1, "e", 1, () => true),
-      { resurrected: 0, swept: 0, live: [] },
-    );
-    // without the caller's probe the LOUD default fires on queued records.
-    assert.throws(
-      () =>
-        bootQueue(
-          { stateRoot: root, runsRoot: join(root, "output"), ledgerPath: join(root, "output", "_ledger.jsonl") },
-          () => {},
-          8080,
-          "comfyui",
-        ),
-      /draftExists probe/,
+      bootSweepAdapter({ stateRoot: poison, runsRoot: poison, ledgerPath: poison }, []),
+      [],
     );
   });
 });

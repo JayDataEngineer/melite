@@ -17,36 +17,60 @@
  * (tests/unit/estate/test_manage_handlers.py) and the live-door
  * layer (tests/routes/control/test_manage_route.py).
  *
- * Run: pnpm exec playwright test --config=playwright.config.ts
- * (deck :3909 + the estate lanes are in-process infrastructure — already
- * up, never booted here).
+ * Run: E2E_DECK_URL='http://127.0.0.1:3909/?token=…' pnpm exec
+ *   playwright test --config=playwright.config.ts
+ * (deck :3909 is the dsh-deck.service systemd host — already up,
+ * never booted here).
  */
 import { expect, test, type Page } from '@playwright/test'
 
+/** The token-bearing deck URL (stroke 83): DSH's connection fence has
+ * NO empty-open arm (that was the retired estate gateway's E5 law) —
+ * every DSH process mints a random launch token. The tour rides the
+ * same gate the card-view tier rides: a full E2E_DECK_URL carrying
+ * the process token (the service prints it to its log), landing the
+ * auth cookie on first goto; later navigation reuses it.
+ * Self-skips without it — same law as E2E_STUDIO_URL. */
+const DECK_URL = process.env.E2E_DECK_URL ?? ''
+
+test.skip(!DECK_URL, 'E2E_DECK_URL (token-authenticated deck URL) is not set — the tour needs the live deck host (:3909, dsh-deck.service)')
+
 async function settleHost(page: Page): Promise<void> {
-  await page.goto('/', { waitUntil: 'domcontentloaded' })
-  // let the host settle so its OWN boot noise lands in the
-  // baseline, not the tour's ledger (see step 6).
+  await page.goto(DECK_URL, { waitUntil: 'domcontentloaded' })
+  // A FRESH deck home (dsh-harness-home carries no UI state) opens
+  // behind the first-run "Internal Testing Notice" dialog — its mask
+  // intercepts every pointer until Continue. It renders DURING the
+  // settle, so dismiss after the boot wait, not before.
   await page.waitForTimeout(8_000)
+  const notice = page.getByRole('dialog', { name: 'Internal Testing Notice' }).getByRole('button', { name: 'Continue' })
+  if (await notice.count() > 0) {
+    await notice.click({ timeout: 10_000 })
+    await page.waitForTimeout(1_000)
+  }
 }
 
 async function openManager(page: Page): Promise<void> {
-  await page
-    .getByRole('button', { name: 'Expand sidebar' })
-    .click({ timeout: 30_000 })
+  // The strip's toggle seat hides until a conversation is REALLY
+  // open (the card-view tier's law). A fresh host sits on the hero
+  // screen: START one — send one line through the hero input (the
+  // GUI's own door), then the header carries the expand seat.
+  const expandSeat = page.locator('[data-sidebar-right-expand]').first()
+  if ((await expandSeat.count()) === 0) {
+    // the HERO composer (its placeholder names it — the sessions
+    // search box is another textbox entirely)
+    const hero = page.getByRole('textbox', { name: /Describe what you want to build/ })
+    await hero.fill('browser tier: opening the shell for the manager tour', { timeout: 15_000 })
+    await hero.press('Enter')
+    await page.waitForTimeout(8_000)
+  }
+  await expandSeat.click({ timeout: 30_000 })
   await page.waitForTimeout(2_000)
-  await page.getByRole('button', { name: 'New tab' }).click()
-  // the shell keeps a SECOND, off-viewport ComfyUI Manager node (a
-  // collapsed overflow entry) — .first() grabs the WRONG one.
-  // Filter VISIBLE: the surviving node is either the open picker's
-  // item (opens the tab) or the strip tab itself (selects it) —
-  // both land the manager.
-  const entry = page
-    .getByText('ComfyUI Manager')
-    .filter({ visible: true })
-    .first()
-  await entry.waitFor({ state: 'visible', timeout: 15_000 })
-  await entry.dispatchEvent('click')
+  // The strip's START tab carries the registered tab types as GUIDE
+  // entries — the card-deck registers the manager there ("The
+  // estate's ComfyUI manager — packs, snapshots, status."). The
+  // guide entry IS the door; the picker never needs opening.
+  const guideEntry = page.getByRole('button', { name: /ComfyUI Manager/ }).first()
+  await guideEntry.click({ timeout: 30_000 })
   await page
     .locator('[data-comfy-manager]')
     .waitFor({ state: 'visible', timeout: 30_000 })
@@ -76,8 +100,10 @@ test('comfy manager tab tours the live manager without errors', async ({
 
   // 2. live status: the endpoint URL, a version, the runs chip.
   // (the endpoint probe can take 10s+ on a cold gateway — wait long).
+  // The estate collapse (2026-09-10) killed the :18466 gateway — the
+  // status now names the ENGINE's own endpoint (ComfyUI :8188).
   await expect(
-    manager.getByText('http://127.0.0.1:18466'),
+    manager.getByText('http://127.0.0.1:8188'),
   ).toBeVisible({ timeout: 60_000 })
   await expect(manager.getByText(/active runs: \d+/)).toBeVisible()
 

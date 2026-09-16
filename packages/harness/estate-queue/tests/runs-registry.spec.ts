@@ -17,8 +17,6 @@ import type { FlowResult, MergeRow, EngineJson } from "@melite/comfyui-cordis";
 import { RunsRuntimeService } from "../src/runsRegistry.ts";
 import { EnginesService } from "@melite/engine-contract";
 import { QueueCore } from "../src/queue.ts";
-import { planResurrect, buildRebuiltRun } from "../src/queue.ts";
-import type { RebuiltRun } from "../src/queue.ts";
 import { CardArmError } from "../src/cardsRegistry.ts";
 import type { RunRecord } from "../src/runsTypes.ts";
 
@@ -1022,17 +1020,98 @@ describe("stroke-82 pump-wedge regression", () => {
   });
 });
 
-// 2. Resurrect→pump joint: a canned queued pair on disk, through
-// planResurrect/buildRebuiltRun, adapted into a live QueueCore,
-// pumped with a FakeEngine aboard.
-describe("stroke-82 resurrect→pump joint", () => {
-  it("the canned pair revives through the pump to terminal statuses", async () => {
-    // The on-disk shape resurrect expects (queue.spec's durable
-    // shape): output/<id>/_flow.json queued + a parseable
-    // _request.json.
-    const canned = tmp();
+// 2. Resurrect→pump joint: a canned queued pair on disk, replayed
+// through the service's bootReconcile (stroke 83) with a FakeEngine
+// aboard.
+describe("stroke-83 boot reconcile (resurrect REBORN as a replay)", () => {
+  it("the constructor's OWN fire replays records that predate the service (the true reboot receipt)", async () => {
+    // The most real wall of the set: a DEAD process's queued pair
+    // on disk, the engine ALREADY aboard, then the service is
+    // BORN — the constructor's fire-and-forget bootReconcile runs
+    // with the real dispose probe, replays both through the start
+    // door, and the pump settles them. No manual re-arm anywhere.
+    const state = tmp();
+    const outRoot = join(state, "output");
     const put = (id: string, created: number): void => {
-      const dir = join(canned, "output", id);
+      const dir = join(outRoot, id);
+      mkdirSync(dir, { recursive: true });
+      writeFileSync(
+        join(dir, "_flow.json"),
+        JSON.stringify({ status: "queued", draft_id: "d1", created_at: created, graph: [], stages: [], skipped_stages: [], artifacts: [] }),
+      );
+      writeFileSync(join(dir, "_request.json"), JSON.stringify(wfBody82()));
+    };
+    put("run-reboot-a", 1);
+    put("run-reboot-b", 2);
+    const ctx = new Context();
+    const core = new QueueCore();
+    (ctx as unknown as { queue: unknown }).queue = { core, stateRoot: state };
+    (ctx as unknown as { draftsRemote: unknown }).draftsRemote = {
+      get: async (id: string): Promise<unknown> => {
+        if (id === "d1") return {};
+        throw new RemoteError("draft/not-found", "no doc", {});
+      },
+    };
+    const cards: Record<string, (...args: never[]) => unknown> = {
+      objectInfo: (): unknown => null,
+      defsSync: (): unknown => new Map(),
+    };
+    (ctx as unknown as { cardRegistry: unknown }).cardRegistry = cards;
+    new FakeEngine(ctx); // aboard BEFORE the service (the lane's row order)
+    const svc = new RunsRuntimeService(ctx);
+    const s: Seat = { svc, core, state, cards };
+    const a = await settleWait(s, "run-reboot-a");
+    const b = await settleWait(s, "run-reboot-b");
+    assert.equal(a.status, "completed");
+    assert.equal(a.error, "");
+    assert.equal(b.status, "completed");
+    assert.equal(b.error, "");
+    const side = JSON.parse(readFileSync(join(outRoot, "run-reboot-a", "_flow.json"), "utf8")) as Record<string, unknown>;
+    assert.equal(side["status"], "completed");
+    assert.equal(svc.reconciled, true, "the constructor's once-guard holds");
+  });
+
+  it("a plan-level I/O fault at construction never takes the fiber down (the fire-and-forget swallow)", async () => {
+    // The constructor's bootReconcile fires with a dispose guard;
+    // a fault BEFORE any per-run arm (here: a state root that is a
+    // FILE — the plan's directory read throws ENOTDIR) lands in the
+    // .catch swallower. The once-guard already tripped (reconciled
+    // true), so a later bootReconcile is a no-op — the service
+    // stays usable, the fiber stays alive.
+    const state = join(tmp(), "poison-root");
+    writeFileSync(state, "not a directory");
+    const ctx = new Context();
+    const core = new QueueCore();
+    (ctx as unknown as { queue: unknown }).queue = { core, stateRoot: state };
+    (ctx as unknown as { draftsRemote: unknown }).draftsRemote = {
+      get: async (): Promise<unknown> => { throw new RemoteError("draft/not-found", "no doc", {}); },
+    };
+    const cards: Record<string, (...args: never[]) => unknown> = {
+      objectInfo: (): unknown => null,
+      defsSync: (): unknown => new Map(),
+    };
+    (ctx as unknown as Record<string, unknown>)["cards"] = cards;
+    let svc: RunsRuntimeService | null = null;
+    assert.doesNotThrow((): void => { svc = new RunsRuntimeService(ctx); });
+    await new Promise((r): void => setTimeout(r, 30));
+    assert.ok(svc);
+    assert.equal(svc.reconciled, true, "the once-guard tripped before the fault");
+    assert.deepEqual(await svc.bootReconcile(), [], "the later call is a no-op");
+    await ctx.fiber.dispose();
+  });
+
+  it("the canned pair replays through the start door and settles COMPLETED (real params)", async () => {
+    // The on-disk shape a DEAD process leaves (queue.spec's durable
+    // shape): output/<id>/_flow.json queued + the verbatim
+    // _request.json the run was born from. Stroke 83: the service's
+    // bootReconcile replays each request through the START door
+    // under its own run id — the recompiled row carries REAL
+    // params (the old hollow requeue settled everything failed
+    // "no inline workflow"; that road is retired).
+    const s = seat();
+    engineSeat(s);
+    const put = (id: string, created: number, req: Record<string, unknown>): void => {
+      const dir = join(s.state, "output", id);
       mkdirSync(dir, { recursive: true });
       writeFileSync(
         join(dir, "_flow.json"),
@@ -1046,60 +1125,200 @@ describe("stroke-82 resurrect→pump joint", () => {
           artifacts: [],
         }),
       );
-      writeFileSync(join(dir, "_request.json"), "{}");
+      writeFileSync(join(dir, "_request.json"), JSON.stringify(req));
     };
-    put("run-aaa", 1);
-    put("run-bbb", 2);
-    const plan = planResurrect(canned, undefined, undefined, () => true);
-    assert.deepEqual(plan.order, ["run-aaa", "run-bbb"]);
-    assert.deepEqual(plan.orphans, []);
-    const s = seat();
-    engineSeat(s);
-    for (const id of plan.order) {
-      const rebuilt: RebuiltRun = buildRebuiltRun(canned, id);
-      const dir = join(s.state, "output", rebuilt.runId);
-      mkdirSync(dir, { recursive: true });
-      const faces = (rebuilt.stages as Record<string, unknown>[]).map((st, i) => ({
-        id: String(st["id"] ?? "s" + i),
-        name: String(st["name"] ?? st["id"] ?? "s"),
-        index: i,
-        status: "pending",
-        outputs: {},
-        expected: {},
-      }));
-      s.core.enqueue({
-        runId: rebuilt.runId,
-        status: "queued",
-        stages: faces,
-        skippedStages: [],
-        artifacts: [...rebuilt.artifacts],
-        error: "",
-        draftId: rebuilt.draftId,
-        dir,
-        testFlag: false,
-        stopFlag: false,
-        // THE JOINT'S GAP (current truth, pinned): the durable
-        // sidecar stages are HOLLOW — no params/outputNodes survive
-        // the record, and nothing replays _request.json back into
-        // the row — so the pump's splice refuses and BOTH runs
-        // settle failed (terminal). A params-rehydration seam would
-        // turn these completed; it does not exist yet.
-        params: faces.map(() => ({})),
-        createdAt: 1,
-        pipeline: "flow_inline",
-        graphRows: [],
-        outputNodes: faces.map(() => ({})),
-      } as never);
-    }
-    // Kick the pump with a live trigger run (the pump moves on kick).
-    const trig = await s.svc.start(wfBody82(), sig());
+    // REAL single-stage inline bodies (the door's own shape) — one
+    // good, one good; FIFO by created_at holds.
+    put("run-aaa", 1, wfBody82());
+    put("run-bbb", 2, wfBody82());
+    s.svc.reconciled = false; // re-arm the wall probe
+    const revived = await s.svc.bootReconcile();
+    assert.deepEqual(revived, ["run-aaa", "run-bbb"]);
     const a = await settleWait(s, "run-aaa");
     const b = await settleWait(s, "run-bbb");
-    assert.equal(a.status, "failed");
-    assert.match(a.error, /no inline workflow/);
-    assert.equal(b.status, "failed");
-    assert.match(b.error, /no inline workflow/);
-    assert.equal((await settleWait(s, trig.run_id)).status, "completed");
+    assert.equal(a.status, "completed");
+    assert.equal(b.status, "completed");
+    // the replay enqueued REAL params: no splice refusal anywhere
+    assert.equal(a.error, "");
+    assert.equal(b.error, "");
+    // the resurrect ledger row lands per revived id
+    const ledger = readFileSync(join(s.state, "output", "_ledger.jsonl"), "utf8");
+    assert.ok(ledger.includes("\"event\":\"run.resurrected\"") || ledger.includes("run.resurrected"));
+  });
+
+  it("a POISON request settles failed LOUD in place (never a haunting queued row)", async () => {
+    const s = seat();
+    engineSeat(s);
+    const dir = join(s.state, "output", "run-poison");
+    mkdirSync(dir, { recursive: true });
+    writeFileSync(
+      join(dir, "_flow.json"),
+      JSON.stringify({
+        status: "queued", draft_id: "d1", created_at: 1, graph: [], stages: [],
+        skipped_stages: [], artifacts: [],
+      }),
+    );
+    // a request the door refuses (unknown draft is the loudest arm)
+    writeFileSync(join(dir, "_request.json"), JSON.stringify({ draft_id: "nope", test: false }));
+    s.svc.reconciled = false;
+    const revived = await s.svc.bootReconcile();
+    assert.deepEqual(revived, []);
+    const side = JSON.parse(readFileSync(join(dir, "_flow.json"), "utf8")) as Record<string, unknown>;
+    assert.equal(side["status"], "failed");
+    assert.match(String(side["error"]), /draft/);
+  });
+
+  it("a dispose mid-reconcile stops the replay walk (the guard returns what it revived)", async () => {
+    // The dispose guard's mid-loop arm: the callback flips true
+    // after the first record, so the second queued claim never
+    // replays and bootReconcile returns the partial revival (the
+    // caller's law, not a throw).
+    const s = seat();
+    engineSeat(s);
+    const outRoot = join(s.state, "output");
+    const put = (id: string, created: number): void => {
+      const dir = join(outRoot, id);
+      mkdirSync(dir, { recursive: true });
+      writeFileSync(
+        join(dir, "_flow.json"),
+        JSON.stringify({ status: "queued", draft_id: "d1", created_at: created, graph: [], stages: [], skipped_stages: [], artifacts: [] }),
+      );
+      writeFileSync(join(dir, "_request.json"), JSON.stringify(wfBody82()));
+    };
+    put("run-first", 1);
+    put("run-second", 2);
+    s.svc.reconciled = false;
+    let seen = 0;
+    const revived = await s.svc.bootReconcile((): boolean => { seen += 1; return seen > 1; });
+    assert.deepEqual(revived, ["run-first"], "only the head replayed before the dispose");
+    assert.equal(s.core.runs.get("run-second"), undefined, "the tail never entered the registry");
+    // the tail's queued sidecar stays honest on disk (the NEXT
+    // boot's reconcile owns it)
+    const tail = JSON.parse(readFileSync(join(outRoot, "run-second", "_flow.json"), "utf8")) as Record<string, unknown>;
+    assert.equal(tail["status"], "queued");
+  });
+
+  it("a corrupt _request.json never replays — the sweep owns it (the orphan road)", async () => {
+    // Line 250's road: an unreadable request is NOT a replayable
+    // claim. bootReconcile skips it; bootSweep then sweeps the
+    // stale QUEUED sidecar failed with the never-executed note.
+    const s = seat();
+    const ctx = (s.svc as unknown as { ctx: Context }).ctx;
+    const engines = new EnginesService(ctx);
+    engines.register("comfyui", { executor: { executeStages: async () => ({ stages: [], engineRef: "" }) } });
+    const outRoot = join(s.state, "output");
+    mkdirSync(join(outRoot, "run-corruptreq"), { recursive: true });
+    writeFileSync(
+      join(outRoot, "run-corruptreq", "_flow.json"),
+      JSON.stringify({ status: "queued", error: "", stages: [], skipped_stages: [], created_at: "2026-01-01T00:00:00Z" }),
+    );
+    writeFileSync(join(outRoot, "run-corruptreq", "_request.json"), "{not json");
+    s.svc.reconciled = false;
+    const revived = await s.svc.bootReconcile();
+    assert.deepEqual(revived, [], "nothing revived — the corrupt request is not a claim");
+    await new Promise((r): void => setTimeout(r, 40));
+    const side = JSON.parse(readFileSync(join(outRoot, "run-corruptreq", "_flow.json"), "utf8")) as Record<string, unknown>;
+    assert.equal(side["status"], "failed");
+    assert.match(String(side["error"]), /never executed/);
+    assert.equal(s.core.runs.get("run-corruptreq"), undefined, "no in-memory row — it never replayed");
+  });
+
+  it("a refused replay settles loud in place carrying the old sidecar's identity", async () => {
+    // settleReplayRefusal's identity rebuild: the refusal row is
+    // rebuilt FROM the old sidecar (stage faces, skipped_stages,
+    // created_at, draft_id) and settled failed with the door's
+    // own refusal text — the disk row never haunts as queued.
+    const s = seat();
+    engineSeat(s);
+    const outRoot = join(s.state, "output");
+    mkdirSync(join(outRoot, "run-poison-noise"), { recursive: true });
+    writeFileSync(
+      join(outRoot, "run-poison-noise", "_flow.json"),
+      JSON.stringify({
+        status: "queued",
+        draft_id: "d1",
+        created_at: 1,
+        pipeline: "flow_card",
+        graph: [],
+        stages: [{ id: "s", name: "s", index: 0, status: "queued", outputs: {}, expected: {} }],
+        skipped_stages: [],
+        artifacts: [],
+      }),
+    );
+    writeFileSync(
+      join(outRoot, "run-poison-noise", "_request.json"),
+      JSON.stringify({ draft_id: "nope", test: false, flow_inline: wfBody82()["flow_inline"] }),
+    );
+    s.svc.reconciled = false;
+    const revived = await s.svc.bootReconcile();
+    assert.deepEqual(revived, [], "a refused replay revives nothing");
+    // the settle is IN PLACE — disk is the record (the registry row
+    // never births: the run never started; "never a haunting QUEUED
+    // row" is the whole point)
+    assert.equal(s.core.runs.get("run-poison-noise"), undefined, "no in-memory row");
+    const side = JSON.parse(readFileSync(join(outRoot, "run-poison-noise", "_flow.json"), "utf8")) as Record<string, unknown>;
+    assert.equal(side["status"], "failed");
+    assert.match(String(side["error"]), /draft/);
+    assert.equal((side["stages"] as unknown[]).length, 1, "the old sidecar's stage face carried into the refusal settle");
+    assert.equal(side["pipeline"], "flow_card", "a string pipeline carries through the identity rebuild");
+    // the skipped_stages map coerces non-strings to "" (the row
+    // identity never leaks untyped items)
+    mkdirSync(join(outRoot, "run-junkstages"), { recursive: true });
+    writeFileSync(
+      join(outRoot, "run-junkstages", "_flow.json"),
+      JSON.stringify({ status: "queued", draft_id: "d1", error: "", graph: [], stages: [], skipped_stages: [42, "s1"], artifacts: [], created_at: 2 }),
+    );
+    writeFileSync(
+      join(outRoot, "run-junkstages", "_request.json"),
+      JSON.stringify({ draft_id: "nope", test: false, flow_inline: wfBody82()["flow_inline"] }),
+    );
+    s.svc.reconciled = false;
+    await s.svc.bootReconcile();
+    // the wrong-typed identity fields (the settle's coercion floor):
+    // non-array stages, ABSENT skipped_stages, non-number created_at,
+    // non-string pipeline — every ternary's zero arm.
+    mkdirSync(join(outRoot, "run-junkidentity"), { recursive: true });
+    writeFileSync(
+      join(outRoot, "run-junkidentity", "_flow.json"),
+      JSON.stringify({ status: "queued", draft_id: "d1", created_at: "late", pipeline: 7, graph: [], stages: "s", artifacts: [] }),
+    );
+    writeFileSync(
+      join(outRoot, "run-junkidentity", "_request.json"),
+      JSON.stringify({ draft_id: "nope", test: false }),
+    );
+    s.svc.reconciled = false;
+    await s.svc.bootReconcile();
+    const side3 = JSON.parse(readFileSync(join(outRoot, "run-junkidentity", "_flow.json"), "utf8")) as Record<string, unknown>;
+    assert.equal(side3["status"], "failed");
+    assert.deepEqual(side3["stages"], [], "non-array stages coerce to the empty face list");
+    assert.deepEqual(side3["skipped_stages"], [], "absent skipped_stages coerce to []");
+    assert.equal(side3["created_at"], 0, "non-number created_at coerces to 0");
+    assert.equal(side3["pipeline"], "flow_inline", "non-string pipeline coerces to the inline default");
+    const side2 = JSON.parse(readFileSync(join(outRoot, "run-junkstages", "_flow.json"), "utf8")) as Record<string, unknown>;
+    assert.equal(side2["status"], "failed");
+    assert.equal(side2["sweep"], undefined, "not the sweep road: " + JSON.stringify(side2["sweep"]));
+    // the skipped_stages map coerces non-strings to "" (the row
+    // identity never leaks untyped items)
+    assert.deepEqual(side2["skipped_stages"], ["", "s1"]);
+  });
+
+  it("a stale RUNNING claim sweeps after the replay (the boot disposition is ledgered)", async () => {
+    const s = seat();
+    engineSeat(s);
+    const dir = join(s.state, "output", "run-ghosted");
+    mkdirSync(dir, { recursive: true });
+    writeFileSync(
+      join(dir, "_flow.json"),
+      JSON.stringify({ status: "running", draft_id: "d1", created_at: 1, graph: [], stages: [] }),
+    );
+    s.svc.reconciled = false;
+    await s.svc.bootReconcile();
+    const side = JSON.parse(readFileSync(join(dir, "_flow.json"), "utf8")) as Record<string, unknown>;
+    assert.equal(side["status"], "failed");
+    // the running-claim sweep note rides the `sweep` key (only
+    // never-executed QUEUED claims also carry `error` — the
+    // sweepSidecar law)
+    assert.match(String(side["sweep"]), /boot sweep/);
   });
 });
 
@@ -1174,6 +1393,39 @@ describe("stroke-82 initials threading", () => {
     // present initials refuse at compile time upstream
     // (registryInitialsError), so the worker always threads {}.
     assert.deepEqual(seen, {});
+  });
+});
+
+// 5b. THE STOPPING STAMP (stroke 83): the state existed in the
+// union but nothing ever set it.
+describe("stroke-83 stopping stamp", () => {
+  it("a stop press on a RUNNING row stamps stopping; the settle lands stopped; a re-press is idempotent", async () => {
+    const s = seat();
+    const ctx = (s.svc as unknown as { ctx: Context }).ctx;
+    const engines = new EnginesService(ctx);
+    let releaseStage: (() => void) | null = null;
+    const gate = new Promise<void>((rel): void => { releaseStage = rel; });
+    engines.register("comfyui", {
+      executor: {
+        executeStages: async (): Promise<{ stages: unknown[]; engineRef: string }> => {
+          await gate;
+          return { stages: [], engineRef: "p" };
+        },
+      },
+    });
+    const ans = await s.svc.start(wfBody82(), sig());
+    // wait until the run is live inside the executor
+    await new Promise((r): void => setTimeout(r, 60));
+    const first = await s.svc.stop(ans.run_id, sig());
+    assert.deepEqual(first, { run_id: ans.run_id, status: "stopping" });
+    const row = s.core.runs.get(ans.run_id);
+    assert.equal((row as unknown as { status: string }).status, "stopping");
+    // a re-press on an already-stopping row is idempotent
+    const again = await s.svc.stop(ans.run_id, sig());
+    assert.equal((again as { status: string }).status, "stopping");
+    releaseStage?.();
+    const settled = await settleWait(s, ans.run_id);
+    assert.equal(settled.status, "stopped");
   });
 });
 
