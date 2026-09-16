@@ -53966,8 +53966,8 @@ void main() {
 		}
 		//#endregion
 		//#region \0dsh-css:card-base/src/preview.module.css.mjs
-		const css$1 = ".ClEuBa_stagePreview{flex-direction:column;flex:1;gap:8px;min-height:0;display:flex;overflow:hidden}.ClEuBa_hero,.ClEuBa_heroImg{object-fit:contain;background:var(--dsw-alias-bg-base);border:1px solid var(--dsw-alias-border-l2);border-radius:6px;flex:1;width:100%;min-height:0}.ClEuBa_heroAudio{flex:1;align-self:center;width:100%;min-height:48px}.ClEuBa_empty{color:var(--dsw-alias-label-dimmed);border:1px dashed var(--dsw-alias-border-l2);border-radius:6px;flex:1;justify-content:center;align-items:center;font-size:11px;display:flex}.ClEuBa_strip{flex:none;gap:6px;display:flex;overflow-x:auto}.ClEuBa_stripLink{color:var(--dsw-alias-brand-primary);white-space:nowrap;border:1px solid var(--dsw-alias-border-l2);border-radius:6px;padding:2px 6px;font-size:10px;text-decoration:none}.ClEuBa_thumbRow{flex:none;gap:6px;display:flex;overflow-x:auto}.ClEuBa_thumb{border:1px solid var(--dsw-alias-border-l2);border-radius:4px;height:48px}.ClEuBa_historyBlock{flex-direction:column;flex:none;gap:4px;padding-top:4px;display:flex}.ClEuBa_historyTitle{color:var(--dsw-alias-label-secondary,#61666b);font-size:11px}.ClEuBa_historyTile{cursor:pointer;background:0 0;border:1px solid #0000;border-radius:4px;padding:0;display:inline-flex}.ClEuBa_historyTile:hover{border-color:var(--dsw-alias-border-l2)}.ClEuBa_staleBadge{color:var(--dsw-alias-label-secondary);border:1px solid var(--dsw-alias-border-l2);border-radius:6px;flex:none;align-self:flex-start;padding:2px 6px;font-size:10px}.ClEuBa_stageCanvas{touch-action:none;width:100%;height:100%;min-height:320px;display:block}";
-		const tagId$1 = "@melite-plugin/dsh-card-view/preview.module.css@de83a883";
+		const css$1 = ".ClEuBa_stagePreview{flex-direction:column;flex:1;gap:8px;min-height:0;display:flex;overflow:hidden}.ClEuBa_hero,.ClEuBa_heroImg{object-fit:contain;background:var(--dsw-alias-bg-base);border:1px solid var(--dsw-alias-border-l2);border-radius:6px;flex:1;width:100%;min-height:0}.ClEuBa_heroAudio{flex:1;align-self:center;width:100%;min-height:48px}.ClEuBa_empty{color:var(--dsw-alias-label-dimmed);border:1px dashed var(--dsw-alias-border-l2);border-radius:6px;flex:1;justify-content:center;align-items:center;font-size:11px;display:flex}.ClEuBa_strip{flex:none;gap:6px;display:flex;overflow-x:auto}.ClEuBa_stripLink{color:var(--dsw-alias-brand-primary);white-space:nowrap;border:1px solid var(--dsw-alias-border-l2);border-radius:6px;padding:2px 6px;font-size:10px;text-decoration:none}.ClEuBa_thumbRow{flex:none;gap:6px;display:flex;overflow-x:auto}.ClEuBa_thumb{border:1px solid var(--dsw-alias-border-l2);border-radius:4px;height:48px}.ClEuBa_historyBlock{flex-direction:column;flex:none;gap:4px;padding-top:4px;display:flex}.ClEuBa_historyTitle{color:var(--dsw-alias-label-secondary,#61666b);font-size:11px}.ClEuBa_historyTile{cursor:pointer;background:0 0;border:1px solid #0000;border-radius:4px;padding:0;display:inline-flex}.ClEuBa_historyTile:hover,.ClEuBa_historyTileActive{border-color:var(--dsw-alias-border-l2)}.ClEuBa_staleBadge{color:var(--dsw-alias-label-secondary);border:1px solid var(--dsw-alias-border-l2);cursor:pointer;background:0 0;border-radius:6px;flex:none;align-self:flex-start;padding:2px 6px;font-size:10px}.ClEuBa_staleBadge:hover{border-color:var(--dsw-alias-border-l2)}.ClEuBa_stageCanvas{touch-action:none;width:100%;height:100%;min-height:320px;display:block}";
+		const tagId$1 = "@melite-plugin/dsh-card-view/preview.module.css@81970b37";
 		if (typeof document !== "undefined" && document.querySelector("style[data-plugin-css=" + JSON.stringify(tagId$1) + "]") === null) {
 			const tag = document.createElement("style");
 			tag.dataset.plugin = "@melite-plugin/dsh-card-view";
@@ -53982,6 +53982,7 @@ void main() {
 			"heroImg": "ClEuBa_heroImg",
 			"historyBlock": "ClEuBa_historyBlock",
 			"historyTile": "ClEuBa_historyTile",
+			"historyTileActive": "ClEuBa_historyTileActive",
 			"historyTitle": "ClEuBa_historyTitle",
 			"stageCanvas": "ClEuBa_stageCanvas",
 			"stagePreview": "ClEuBa_stagePreview",
@@ -54260,7 +54261,10 @@ void main() {
 			}, [currentKey]);
 			const history = props.history ?? [];
 			const promote = (i) => {
-				setPicked(i);
+				setPicked(picked === i ? -1 : i);
+			};
+			const returnToCurrent = () => {
+				setPicked(-1);
 			};
 			const entry = picked >= 0 && history[picked] !== void 0 && history[picked].length > 0 ? history[picked] : null;
 			const source = entry ?? flat;
@@ -54269,7 +54273,9 @@ void main() {
 				rest: source.slice(1, 12),
 				viewingHistory: entry !== null,
 				note: entry === null ? void 0 : (props.historyNotes ?? [])[picked] || void 0,
-				promote
+				picked: entry !== null ? picked : -1,
+				promote,
+				returnToCurrent
 			};
 		}
 		/** THE NOT-CURRENT BADGE (the output-component stroke — the
@@ -54277,13 +54283,21 @@ void main() {
 		* current"). Rendered while an explicit history pick owns the hero;
 		* when the entry's params snapshot differs from the live params the
 		* chip names the keys (shared by every presenter). */
+		/** THE NOT-CURRENT BADGE (the output-component stroke — the
+		* operator's law: "a tag or indicator to show they are not
+		* current") — AND THE RETURN CONTROL (the toggle law, 2026-09-16):
+		* the badge is the visible way back to the current generation;
+		* clicking it restores the current hero. */
 		function StaleBadge(props) {
-			return (0, react.createElement)("div", {
+			return (0, react.createElement)("button", {
+				type: "button",
 				className: preview_module_css_default.staleBadge,
-				"data-testid": "history-stale-badge"
-			}, "Not current — earlier generation", props.note === void 0 ? null : ` · differs: ${props.note}`);
+				"data-testid": "history-stale-badge",
+				onClick: props.onReturn,
+				title: "Return to the current generation"
+			}, "Not current — earlier generation", props.note === void 0 ? null : ` · differs: ${props.note}`, " · Return to current");
 		}
-		function HistoryStrip(props, promote, testid) {
+		function HistoryStrip(props, promote, testid, picked) {
 			if (props.historyStrip === false) return null;
 			const history = props.history ?? [];
 			if (history.length === 0) return null;
@@ -54294,8 +54308,9 @@ void main() {
 			}, (0, react.createElement)("span", { className: preview_module_css_default.historyTitle }, "History"), (0, react.createElement)("div", { className: preview_module_css_default.thumbRow }, history.map((entry, i) => (0, react.createElement)("button", {
 				key: entry[0]?.url ?? String(i),
 				type: "button",
-				className: preview_module_css_default.historyTile,
-				title: entry.map((a) => a.name).join(", ") + (notes[i] ? ` (differs: ${notes[i]})` : ""),
+				className: cn(preview_module_css_default.historyTile, i === picked ? preview_module_css_default.historyTileActive : void 0),
+				"aria-pressed": i === picked,
+				title: entry.map((a) => a.name).join(", ") + (notes[i] ? ` (differs: ${notes[i]})` : "") + (i === picked ? " (viewing — click to return to current)" : ""),
 				onClick: () => {
 					promote(i);
 				}
@@ -54314,11 +54329,14 @@ void main() {
 		*  history entry's — never mixed). Honest empty state while no
 		*  artifact has landed. */
 		function VideoStagePreview(props) {
-			const { hero, rest, viewingHistory, note, promote } = useHistoryHero(props);
+			const { hero, rest, viewingHistory, note, picked, promote, returnToCurrent } = useHistoryHero(props);
 			return (0, react.createElement)("div", {
 				className: preview_module_css_default.stagePreview,
 				"data-testid": "stage-preview-video"
-			}, viewingHistory ? (0, react.createElement)(StaleBadge, { note }) : null, hero === void 0 ? (0, react.createElement)("div", { className: preview_module_css_default.empty }, props.runStatus === "running" ? "rendering… the film lands here" : "No render yet — run lands the film here") : (0, react.createElement)("video", {
+			}, viewingHistory ? (0, react.createElement)(StaleBadge, {
+				note,
+				onReturn: returnToCurrent
+			}) : null, hero === void 0 ? (0, react.createElement)("div", { className: preview_module_css_default.empty }, props.runStatus === "running" ? "rendering… the film lands here" : "No render yet — run lands the film here") : (0, react.createElement)("video", {
 				className: preview_module_css_default.hero,
 				controls: true,
 				playsInline: true,
@@ -54332,7 +54350,7 @@ void main() {
 				target: "_blank",
 				rel: "noreferrer",
 				title: a.name
-			}, a.name))) : null, HistoryStrip(props, promote, "stage-output-history"));
+			}, a.name))) : null, HistoryStrip(props, promote, "stage-output-history", picked));
 		}
 		/** THE IMAGE PREVIEW — the latest render hero (native <img>), the
 		*  active set's thumbs beneath (the CURRENT run's gallery, or the
@@ -54341,11 +54359,14 @@ void main() {
 		*  (stroke 40): the stage's previous unique outputs, newest first —
 		*  click one to view it in the hero. Same chrome, same law. */
 		function ImageStagePreview(props) {
-			const { hero, rest, viewingHistory, note, promote } = useHistoryHero(props);
+			const { hero, rest, viewingHistory, note, picked, promote, returnToCurrent } = useHistoryHero(props);
 			return (0, react.createElement)("div", {
 				className: cn(preview_module_css_default.stagePreview),
 				"data-testid": "stage-preview-image"
-			}, viewingHistory ? (0, react.createElement)(StaleBadge, { note }) : null, hero === void 0 ? (0, react.createElement)("div", { className: preview_module_css_default.empty }, props.runStatus === "running" ? "rendering… the image lands here" : "No render yet — run lands the image here") : (0, react.createElement)("img", {
+			}, viewingHistory ? (0, react.createElement)(StaleBadge, {
+				note,
+				onReturn: returnToCurrent
+			}) : null, hero === void 0 ? (0, react.createElement)("div", { className: preview_module_css_default.empty }, props.runStatus === "running" ? "rendering… the image lands here" : "No render yet — run lands the image here") : (0, react.createElement)("img", {
 				className: preview_module_css_default.heroImg,
 				key: hero.url,
 				src: hero.url,
@@ -54357,17 +54378,20 @@ void main() {
 				src: a.url,
 				alt: a.name,
 				loading: "lazy"
-			}))) : null, HistoryStrip(props, promote, "stage-output-history"));
+			}))) : null, HistoryStrip(props, promote, "stage-output-history", picked));
 		}
 		/** THE AUDIO PREVIEW — one hero track, one native player (the same
 		*  law as the video preview: native <audio controls>; no library).
 		*  The active set's named clips follow in the strip row. */
 		function AudioStagePreview(props) {
-			const { hero, rest, viewingHistory, note, promote } = useHistoryHero(props);
+			const { hero, rest, viewingHistory, note, picked, promote, returnToCurrent } = useHistoryHero(props);
 			return (0, react.createElement)("div", {
 				className: preview_module_css_default.stagePreview,
 				"data-testid": "stage-preview-audio"
-			}, viewingHistory ? (0, react.createElement)(StaleBadge, { note }) : null, hero === void 0 ? (0, react.createElement)("div", { className: preview_module_css_default.empty }, props.runStatus === "running" ? "rendering… the track lands here" : "No render yet — run lands the track here") : (0, react.createElement)("audio", {
+			}, viewingHistory ? (0, react.createElement)(StaleBadge, {
+				note,
+				onReturn: returnToCurrent
+			}) : null, hero === void 0 ? (0, react.createElement)("div", { className: preview_module_css_default.empty }, props.runStatus === "running" ? "rendering… the track lands here" : "No render yet — run lands the track here") : (0, react.createElement)("audio", {
 				className: preview_module_css_default.heroAudio,
 				controls: true,
 				key: hero.url,
@@ -54380,7 +54404,7 @@ void main() {
 				target: "_blank",
 				rel: "noreferrer",
 				title: a.name
-			}, a.name))) : null, HistoryStrip(props, promote, "stage-output-history"));
+			}, a.name))) : null, HistoryStrip(props, promote, "stage-output-history", picked));
 		}
 		/** THE MESH PREVIEW — the seam's adapter onto the raw-three
 		*  multi-asset stage (GlbStagePreview, the substrate law: NO
@@ -54389,19 +54413,22 @@ void main() {
 		*  mesh gains the full history law every other kind already had);
 		*  the empty hint honors the live-run flag. */
 		function MeshStagePreview(props) {
-			const { hero, rest, viewingHistory, note, promote } = useHistoryHero(props);
+			const { hero, rest, viewingHistory, note, picked, promote, returnToCurrent } = useHistoryHero(props);
 			const active = hero === void 0 ? [] : [hero, ...rest];
 			return (0, react.createElement)("div", {
 				className: preview_module_css_default.stagePreview,
 				"data-testid": "stage-preview-mesh"
-			}, viewingHistory ? (0, react.createElement)(StaleBadge, { note }) : null, (0, react.createElement)(GlbStagePreview, {
+			}, viewingHistory ? (0, react.createElement)(StaleBadge, {
+				note,
+				onReturn: returnToCurrent
+			}) : null, (0, react.createElement)(GlbStagePreview, {
 				assets: active.map((a, i) => ({
 					id: `${props.stageId}:${a.name || i}`,
 					url: a.url,
 					name: a.name
 				})),
 				emptyHint: props.runStatus === "running" ? "rendering… the mesh lands here" : "No render yet — run lands the mesh here"
-			}), HistoryStrip(props, promote, "stage-output-history"));
+			}), HistoryStrip(props, promote, "stage-output-history", picked));
 		}
 		//#endregion
 		//#region src/client/zoom.tsx

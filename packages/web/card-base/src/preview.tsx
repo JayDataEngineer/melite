@@ -26,7 +26,7 @@ import s from './preview.module.css'
  * current generation — the badge law; the between-runs fallback
  * hero gets NO badge: with no current run, the newest archive is
  * the closest thing to current, not a stale one). */
-function useHistoryHero(props: PreviewOwnerProps): { hero: PreviewArtifact | undefined, rest: PreviewArtifact[], viewingHistory: boolean, note: string | undefined, promote: (i: number) => void } {
+function useHistoryHero(props: PreviewOwnerProps): { hero: PreviewArtifact | undefined, rest: PreviewArtifact[], viewingHistory: boolean, note: string | undefined, picked: number, promote: (i: number) => void, returnToCurrent: () => void } {
   const flat: PreviewArtifact[] = props.artifacts.length > 0
     ? props.artifacts
     : (props.history ?? []).flat()
@@ -37,7 +37,15 @@ function useHistoryHero(props: PreviewOwnerProps): { hero: PreviewArtifact | und
   const currentKey = props.artifacts.map((a) => a.url).join('|')
   useEffect(() => { setPicked(-1) }, [currentKey])
   const history = props.history ?? []
-  const promote = (i: number): void => { setPicked(i) }
+  // THE TOGGLE LAW (the operator's bug report, 2026-09-16: "not
+  // respecting whether I click on historical preview or the image
+  // preview"): a history pick is a VIEW, not a one-way door —
+  // clicking the picked tile again returns to current, and the
+  // badge's return control rides the same seam. Before this, the
+  // ONLY reset was a brand-new run: every click on the current
+  // side was dead once a history entry owned the hero.
+  const promote = (i: number): void => { setPicked(picked === i ? -1 : i) }
+  const returnToCurrent = (): void => { setPicked(-1) }
   const entry = picked >= 0 && history[picked] !== undefined && history[picked].length > 0
     ? history[picked]
     : null
@@ -49,7 +57,9 @@ function useHistoryHero(props: PreviewOwnerProps): { hero: PreviewArtifact | und
     // ('' and undefined both mean no note — the owner builder sends
     // empty slots to keep historyNotes index-aligned with history)
     note: entry === null ? undefined : ((props.historyNotes ?? [])[picked] || undefined),
+    picked: entry !== null ? picked : -1,
     promote,
+    returnToCurrent,
   }
 }
 
@@ -58,14 +68,26 @@ function useHistoryHero(props: PreviewOwnerProps): { hero: PreviewArtifact | und
  * current"). Rendered while an explicit history pick owns the hero;
  * when the entry's params snapshot differs from the live params the
  * chip names the keys (shared by every presenter). */
-function StaleBadge(props: { note?: string }): ReturnType<typeof h> {
-  return h('div', { className: s.staleBadge, 'data-testid': 'history-stale-badge' },
+/** THE NOT-CURRENT BADGE (the output-component stroke — the
+ * operator's law: "a tag or indicator to show they are not
+ * current") — AND THE RETURN CONTROL (the toggle law, 2026-09-16):
+ * the badge is the visible way back to the current generation;
+ * clicking it restores the current hero. */
+function StaleBadge(props: { note?: string, onReturn: () => void }): ReturnType<typeof h> {
+  return h('button', {
+    type: 'button',
+    className: s.staleBadge,
+    'data-testid': 'history-stale-badge',
+    onClick: props.onReturn,
+    title: 'Return to the current generation',
+  },
     'Not current — earlier generation',
     props.note === undefined ? null : ` · differs: ${props.note}`,
+    ' · Return to current',
   )
 }
 
-function HistoryStrip(props: PreviewOwnerProps, promote: (i: number) => void, testid: string): ReturnType<typeof h> | null {
+function HistoryStrip(props: PreviewOwnerProps, promote: (i: number) => void, testid: string, picked: number): ReturnType<typeof h> | null {
   // THE OPT-OUT (gap 4): a card that claims its own bottom bar
   // serves historyStrip: false — the strip is OFF, the history data
   // still rides the owner (the promote seam stays armed for a
@@ -80,8 +102,12 @@ function HistoryStrip(props: PreviewOwnerProps, promote: (i: number) => void, te
       history.map((entry, i) => h('button', {
         key: entry[0]?.url ?? String(i),
         type: 'button',
-        className: s.historyTile,
-        title: entry.map((a) => a.name).join(', ') + (notes[i] ? ` (differs: ${notes[i]})` : ''),
+        // THE PICKED MARK (the toggle law): the tile that owns the
+        // hero says so — a picked tile with no mark reads as an
+        // ignored click (the operator's report).
+        className: cn(s.historyTile, i === picked ? s.historyTileActive : undefined),
+        'aria-pressed': i === picked,
+        title: entry.map((a) => a.name).join(', ') + (notes[i] ? ` (differs: ${notes[i]})` : '') + (i === picked ? ' (viewing — click to return to current)' : ''),
         onClick: () => { promote(i) },
       },
         entry.slice(0, 1).map((a) => h('img', {
@@ -97,9 +123,9 @@ function HistoryStrip(props: PreviewOwnerProps, promote: (i: number) => void, te
  *  history entry's — never mixed). Honest empty state while no
  *  artifact has landed. */
 export function VideoStagePreview(props: PreviewOwnerProps): ReturnType<typeof h> {
-  const { hero, rest, viewingHistory, note, promote } = useHistoryHero(props)
+  const { hero, rest, viewingHistory, note, picked, promote, returnToCurrent } = useHistoryHero(props)
   return h('div', { className: s.stagePreview, 'data-testid': 'stage-preview-video' },
-    viewingHistory ? h(StaleBadge, { note }) : null,
+    viewingHistory ? h(StaleBadge, { note, onReturn: returnToCurrent }) : null,
     hero === undefined
       ? h('div', { className: s.empty },
           props.runStatus === 'running' ? 'rendering… the film lands here' : 'No render yet — run lands the film here')
@@ -114,7 +140,7 @@ export function VideoStagePreview(props: PreviewOwnerProps): ReturnType<typeof h
             title: a.name,
           }, a.name)))
       : null,
-    HistoryStrip(props, promote, 'stage-output-history'),
+    HistoryStrip(props, promote, 'stage-output-history', picked),
   )
 }
 
@@ -125,9 +151,9 @@ export function VideoStagePreview(props: PreviewOwnerProps): ReturnType<typeof h
  *  (stroke 40): the stage's previous unique outputs, newest first —
  *  click one to view it in the hero. Same chrome, same law. */
 export function ImageStagePreview(props: PreviewOwnerProps): ReturnType<typeof h> {
-  const { hero, rest, viewingHistory, note, promote } = useHistoryHero(props)
+  const { hero, rest, viewingHistory, note, picked, promote, returnToCurrent } = useHistoryHero(props)
   return h('div', { className: cn(s.stagePreview), 'data-testid': 'stage-preview-image' },
-    viewingHistory ? h(StaleBadge, { note }) : null,
+    viewingHistory ? h(StaleBadge, { note, onReturn: returnToCurrent }) : null,
     hero === undefined
       ? h('div', { className: s.empty },
           props.runStatus === 'running' ? 'rendering… the image lands here' : 'No render yet — run lands the image here')
@@ -138,7 +164,7 @@ export function ImageStagePreview(props: PreviewOwnerProps): ReturnType<typeof h
             key: a.url, className: s.thumb, src: a.url, alt: a.name, loading: 'lazy',
           })))
       : null,
-    HistoryStrip(props, promote, 'stage-output-history'),
+    HistoryStrip(props, promote, 'stage-output-history', picked),
   )
 }
 
@@ -146,9 +172,9 @@ export function ImageStagePreview(props: PreviewOwnerProps): ReturnType<typeof h
  *  law as the video preview: native <audio controls>; no library).
  *  The active set's named clips follow in the strip row. */
 export function AudioStagePreview(props: PreviewOwnerProps): ReturnType<typeof h> {
-  const { hero, rest, viewingHistory, note, promote } = useHistoryHero(props)
+  const { hero, rest, viewingHistory, note, picked, promote, returnToCurrent } = useHistoryHero(props)
   return h('div', { className: s.stagePreview, 'data-testid': 'stage-preview-audio' },
-    viewingHistory ? h(StaleBadge, { note }) : null,
+    viewingHistory ? h(StaleBadge, { note, onReturn: returnToCurrent }) : null,
     hero === undefined
       ? h('div', { className: s.empty },
           props.runStatus === 'running' ? 'rendering… the track lands here' : 'No render yet — run lands the track here')
@@ -163,7 +189,7 @@ export function AudioStagePreview(props: PreviewOwnerProps): ReturnType<typeof h
             title: a.name,
           }, a.name)))
       : null,
-    HistoryStrip(props, promote, 'stage-output-history'),
+    HistoryStrip(props, promote, 'stage-output-history', picked),
   )
 }
 
@@ -174,15 +200,15 @@ export function AudioStagePreview(props: PreviewOwnerProps): ReturnType<typeof h
  *  mesh gains the full history law every other kind already had);
  *  the empty hint honors the live-run flag. */
 export function MeshStagePreview(props: PreviewOwnerProps): ReturnType<typeof h> {
-  const { hero, rest, viewingHistory, note, promote } = useHistoryHero(props)
+  const { hero, rest, viewingHistory, note, picked, promote, returnToCurrent } = useHistoryHero(props)
   const active = hero === undefined ? [] : [hero, ...rest]
   return h('div', { className: s.stagePreview, 'data-testid': 'stage-preview-mesh' },
-    viewingHistory ? h(StaleBadge, { note }) : null,
+    viewingHistory ? h(StaleBadge, { note, onReturn: returnToCurrent }) : null,
     h(GlbStagePreview, {
       assets: active.map((a, i) => ({ id: `${props.stageId}:${a.name || i}`, url: a.url, name: a.name })),
       emptyHint: props.runStatus === 'running' ? 'rendering… the mesh lands here' : 'No render yet — run lands the mesh here',
     }),
-    HistoryStrip(props, promote, 'stage-output-history'),
+    HistoryStrip(props, promote, 'stage-output-history', picked),
   )
 }
 

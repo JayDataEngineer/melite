@@ -114,6 +114,18 @@ export const CARD_ENVELOPE_KEYS: readonly string[] = [
 /** The card-lane refusal: status + the py _refusal envelope shape
  *  (error, code, then loc/expected/got) — the door maps it through
  *  the local refusal() + serializePy path (byte parity). */
+/** The family's DECL face ("MOSS-SFX v2") — registryModel in a
+ * guard (it THROWS on unknown ids); the id is the fallback.
+ * Exported for the wall (both arms pin: the face serves, the
+ * unknown degrades to the id — never a throw into a serve). */
+export function familyFace(fam: string): string {
+  try {
+    return registryModel(fam).label;
+  } catch {
+    return fam;
+  }
+}
+
 export class CardArmError extends Error {
   readonly status: number;
   readonly code: string;
@@ -662,7 +674,12 @@ export class CardRegistryService extends Service {
     return (def?.boarded ?? []).map((fam) => ({
       id: fam,
       present: mids.has(fam),
-      label: registryModel(fam)?.label ?? fam,
+      // registryModel THROWS on an unknown id (never returns
+      // undefined) — the guard catches, the id is the label-less
+      // fallback. The catch arm fires only on a boarded-but-
+      // unregistered family (no live caller boards one — the walls
+      // refuse it); it stays armed for the honest degrade.
+      label: familyFace(fam),
     }));
   }
 

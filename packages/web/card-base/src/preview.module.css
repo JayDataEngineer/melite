@@ -82,6 +82,10 @@
   cursor: pointer;
 }
 .historyTile:hover { border-color: var(--dsw-alias-border-l2); }
+/* THE PICKED MARK (the toggle law, 2026-09-16): the tile owning the
+ *   hero holds the same border the hover claims — the pick is
+ *   visible without the pointer. */
+.historyTileActive { border-color: var(--dsw-alias-border-l2); }
 
 /* THE NOT-CURRENT BADGE (the output-component stroke): while an
  *   explicit history pick owns the hero, the "not current" tag
@@ -94,7 +98,12 @@
   border: 1px solid var(--dsw-alias-border-l2);
   border-radius: 6px;
   padding: 2px 6px;
+  /* a BUTTON since the toggle law (the return control): no UA
+   * background/cursor — it paints as the chip it always was */
+  background: none;
+  cursor: pointer;
 }
+.staleBadge:hover { border-color: var(--dsw-alias-border-l2); }
 
 /* THE MESH STAGE canvas — the raw-three viewport fills the preview
  * pane (the shell's preview column owns the overflow, hour-13). */

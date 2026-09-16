@@ -175,3 +175,46 @@ test('THE PARAMS CHIP: a picked generation with differing params names the keys 
   const badge2 = container.querySelector('[data-testid="history-stale-badge"]')
   expect(badge2?.textContent).not.toContain('differs')
 })
+
+test('THE TOGGLE LAW (the operator\'s bug, 2026-09-16): clicking the PICKED tile again returns to the current hero', () => {
+  const { container } = render(h(ImageStagePreview, CURRENT))
+  const tiles = (): NodeListOf<HTMLButtonElement> => container.querySelectorAll('[data-testid="stage-output-history"] button')
+  fireEvent.click(tiles()[1] as HTMLElement)
+  let hero = container.querySelector('[data-testid="stage-preview-image-hero"]') as HTMLImageElement
+  expect(hero.getAttribute('src')).toBe('/runs/prev2/out.png')
+  // the picked tile marks itself (aria-pressed — the click that
+  // lands is visible; the click that returns says so)
+  expect((tiles()[1] as HTMLElement).getAttribute('aria-pressed')).toBe('true')
+  expect((tiles()[0] as HTMLElement).getAttribute('aria-pressed')).toBe('false')
+  // clicking the SAME tile again: back to current, badge gone
+  fireEvent.click(tiles()[1] as HTMLElement)
+  hero = container.querySelector('[data-testid="stage-preview-image-hero"]') as HTMLImageElement
+  expect(hero.getAttribute('src')).toBe('/runs/cur/out.png')
+  expect(container.querySelector('[data-testid="history-stale-badge"]')).toBeNull()
+  expect((tiles()[1] as HTMLElement).getAttribute('aria-pressed')).toBe('false')
+})
+
+test('THE RETURN CONTROL: the stale badge is the visible way back — clicking it restores the current hero', () => {
+  const { container } = render(h(ImageStagePreview, CURRENT))
+  const tiles = container.querySelectorAll('[data-testid="stage-output-history"] button')
+  fireEvent.click(tiles[0] as HTMLElement)
+  const badge = container.querySelector('[data-testid="history-stale-badge"]') as HTMLButtonElement
+  expect(badge.textContent).toContain('Return to current')
+  expect(badge.tagName).toBe('BUTTON')
+  fireEvent.click(badge)
+  const hero = container.querySelector('[data-testid="stage-preview-image-hero"]') as HTMLImageElement
+  expect(hero.getAttribute('src')).toBe('/runs/cur/out.png')
+  expect(container.querySelector('[data-testid="history-stale-badge"]')).toBeNull()
+})
+
+test('THE PICKED MARK: the tile owning the hero carries the active class (an unmarked pick reads as an ignored click)', () => {
+  const { container } = render(h(ImageStagePreview, CURRENT))
+  const tiles = container.querySelectorAll('[data-testid="stage-output-history"] button')
+  fireEvent.click(tiles[0] as HTMLElement)
+  expect((tiles[0] as HTMLElement).className).toContain('historyTileActive')
+  expect((tiles[1] as HTMLElement).className).not.toContain('historyTileActive')
+  // switching picks moves the mark
+  fireEvent.click(tiles[1] as HTMLElement)
+  expect((tiles[0] as HTMLElement).className).not.toContain('historyTileActive')
+  expect((tiles[1] as HTMLElement).className).toContain('historyTileActive')
+})

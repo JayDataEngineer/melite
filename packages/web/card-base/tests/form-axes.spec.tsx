@@ -105,6 +105,28 @@ test('MODEL: the served models pick; the switch reseeds every axis (the stale-va
   expect(onSet).toHaveBeenCalledWith('model', 'anima-x')
 })
 
+test('MODEL FACE: a family row with a DECL label paints the version (the operator\'s sfx report — never titleCaseId when the face serves)', () => {
+  const spec = {
+    ...doc(),
+    families: [{ id: 'krea-2', present: true, label: 'Krea 2 Turbo v9' }],
+  } as unknown as FormSpecDoc
+  axes({ spec })
+  const select = screen.getByLabelText('Model') as HTMLSelectElement
+  const opt = [...select.options].find((o) => o.value === 'krea-2')
+  expect(opt?.textContent).toBe('Krea 2 Turbo v9')
+})
+
+test('MODEL FACE: an EMPTY label degrades to the id face (never a blank option)', () => {
+  const spec = {
+    ...doc(),
+    families: [{ id: 'krea-2', present: true, label: '' }],
+  } as unknown as FormSpecDoc
+  axes({ spec })
+  const select = screen.getByLabelText('Model') as HTMLSelectElement
+  const opt = [...select.options].find((o) => o.value === 'krea-2')
+  expect(opt?.textContent).toBe('Krea 2')
+})
+
 test('MODEL: a held stranger renders AS ITSELF, refused (never a neighbor painted over it)', () => {
   axes({ value: { model: 'anima' } })
   const select = screen.getByLabelText('Model') as HTMLSelectElement

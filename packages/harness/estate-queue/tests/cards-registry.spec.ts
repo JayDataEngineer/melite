@@ -15,6 +15,7 @@ import {
   CardRegistryService,
   cardRegistryProvider,
   findCardDangling,
+  familyFace,
   liftCardParams,
   needCardRegistry,
   pyStrMid,
@@ -819,6 +820,10 @@ describe("cardFamilies (the presence-marked serve)", () => {
       sfx.map((r) => [r.id, r.label]),
       [["moss-sfx", "MOSS-SFX v2"]],
     );
+    // familyFace both arms: the DECL face serves; an unknown family
+    // degrades to its id (the serve never throws)
+    assert.equal(familyFace("moss-sfx"), "MOSS-SFX v2");
+    assert.equal(familyFace("__no_such_family__"), "__no_such_family__");
     // presence is per-row and MIRRORS the live catalog offer (the
     // machine truth, one spelling) — whatever this world says, the
     // mark matches it exactly
