@@ -108,11 +108,11 @@ describe("the vocabulary invariants (what the serializers assume)", () => {
     }
   })
 
-  it("the starter is ONE 168-frame window with a real prompt", () => {
+  it("the starter is ONE 90-frame window (the t4_open physics budget) with a real prompt", () => {
     assert.equal(STARTER_CALLS.length, 1)
     assert.equal(STARTER_CALLS[0]!.start_frame, 0)
-    assert.equal(STARTER_CALLS[0]!.end_frame, 168)
+    assert.equal(STARTER_CALLS[0]!.end_frame, 90) // the physics budget: the canvas IS the film (2026-09-17)
     assert.ok((STARTER_CALLS[0]!.text ?? "").trim().length > 0)
-    expect(STARTER_CALLS[0]!.end_frame - STARTER_CALLS[0]!.start_frame).toBe(168)
+    expect(STARTER_CALLS[0]!.end_frame - STARTER_CALLS[0]!.start_frame).toBe(90)
   })
 })

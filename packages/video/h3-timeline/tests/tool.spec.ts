@@ -180,8 +180,9 @@ describe("the shot laws (the card gate — py schema.py port)", () => {
 
   it("ABSENT calls composes the fresh-press starter; EXPLICIT empty refuses", () => {
     // the 2026-09-17 cure: absent calls = a fresh card (the bench
-    // tile's Run) — one full t4_open window composes. An explicit
-    // empty array names zero shots — garbage, the py refusal stands.
+    // tile's Run) — ONE window 0→90 composes (the t4_open physics
+    // budget, the widest a single window renders). An explicit empty
+    // array names zero shots — garbage, the py refusal stands.
     const out = schema({ ...BASE }) as Record<string, unknown>
     assert.deepEqual(out.calls, [{ start_frame: 0, end_frame: 90 }])
     assert.throws(() => schema({ ...BASE, calls: [] }), /no calls to compose/);

@@ -98,15 +98,32 @@ describe("the frozen goldens replay byte-level (the three families)", () => {
 describe("schema() gates (the py model_validator port)", () => {
   it("ABSENT calls composes the fresh-press starter (one full t4_open window)", () => {
     // the operator's 2026-09-17 instant-fail cure: a fresh card holds
-    // params {} — the gate composes ONE window 0→90 (grid-legal, the
-    // t4_open budget) instead of refusing before the studio persists.
+    // params {} — the gate composes the builder's starter VERBATIM
+    // (ONE window 0→175, ≈7.3s @ 24fps on the render grid — what the
+    // studio readout shows AND what renders)
+    // instead of refusing before the studio persists.
     const out = schema({ prompt: "x" }) as Record<string, unknown>
     assert.deepEqual(out.calls, [{ start_frame: 0, end_frame: 90 }])
     assert.equal(out.variant, "t4_open")
+    // the span rides as an EXPLICIT length — the compose door's
+    // cascade re-boards the schema default 56 over nulls, and the
+    // fresh press rendered 2.33s while promising 3.75s (live receipt
+    // 2026-09-17). Explicit survives the cascade.
+    assert.equal(out.length, 90)
   });
 
   it("an EXPLICIT empty calls array keeps the py refusal verbatim", () => {
     assert.throws(() => schema({ prompt: "x", calls: [] }), /h3-timeline: no calls to compose/);
+  });
+
+  it("a single window wider than 90 refuses at the gate with the split named", () => {
+    // two live receipts: 168 (the py canvas) and 175 (on-grid) both
+    // died inside SamplerCustomAdvanced. The gate refuses LOUD — the
+    // physics, the split, and the genre, in one sentence.
+    assert.throws(
+      () => schema({ prompt: "x", calls: [{ start_frame: 0, end_frame: 168 }] }),
+      /single window spans at most 90 frames .* split the timeline into windows/,
+    );
   });
 
   it("an unknown variant refuses with the known families", () => {
@@ -116,13 +133,17 @@ describe("schema() gates (the py model_validator port)", () => {
     );
   });
 
-  it("length: an omitted key normalizes to null so the family's frame budget computes (the walk-shadow fix)", () => {
+  it("length: omitted on a single-call doc serializes the span (the 2026-09-17 rider); multi-call keeps null (walk-shadow fix)", () => {
     // t4_open's body literal is 90 — the walk must NOT materialize the
     // declared 56 over it. Explicit keys ride untouched (the goldens
-    // carry length 90 explicitly and stay byte-identical).
+    // carry length 90 explicitly and stay byte-identical). The
+    // 2026-09-17 rider: a single-call doc's span rides as an EXPLICIT
+    // length (the compose door's cascade re-boards 56 over nulls —
+    // the said-3.75s-got-2.33s live receipt); chains keep null so
+    // their windows render at the family budgets / preset f values.
     const omitted = schema({ prompt: "x", calls: [{ start_frame: 0, end_frame: 90 }] });
     assert.equal(omitted.variant, "t4_open");
-    assert.equal(omitted.length, null);
+    assert.equal(omitted.length, 90);
     // (90: on both the 17k+5 frame grid and the declared step grid —
     // the step(5) vs 17k+5 incoherence is ledgered separately)
     const explicit = schema({ prompt: "x", length: 90, calls: [{ start_frame: 0, end_frame: 90 }] });
@@ -292,11 +313,10 @@ describe("the renderer-vocabulary overlay arms (explicit beats default)", () => 
 
   it("the void walk composes the fresh-press starter; a null row refuses at the shot laws", () => {
     // the void walk (schema(undefined)) rides the same starter as any
-    // absent-calls doc — the fresh card's own first compose.
-    assert.deepEqual(
-      (schema(undefined) as Record<string, unknown>).calls,
-      [{ start_frame: 0, end_frame: 90 }],
-    );
+    // absent-calls doc — the fresh card's own first compose (90f).
+    const voidOut = schema(undefined) as Record<string, unknown>
+    assert.deepEqual(voidOut.calls, [{ start_frame: 0, end_frame: 90 }])
+    assert.equal(voidOut.length, 90)
     // every row pins its own span — a null row is not a shot.
     assert.throws(
       () => schema({ prompt: "x", calls: [null, { start_frame: 0, end_frame: 56 }] as unknown[] }),

@@ -340,14 +340,18 @@ export interface DocKeyframe {
   source: string
 }
 
-/** The fresh-card document (mirrors the builder's _STARTER_CALLS — 168
- * frames @ 24 fps = 7 s, ONE window, no seam yet). Used only when params
- * carry no valid calls (never authored, or legacy malformed). */
+/** The fresh-card document: ONE window 0→90 — the t4_open physics
+ * budget, the widest span a single window renders (both the py canvas
+ * 168 and the on-grid 175 died live inside the sampler, receipts
+ * 2026-09-17; a longer film is TWO chained windows — this card's
+ * genre). The canvas IS the film: the readout shows 3.8 s and 3.8 s
+ * renders. Used only when params carry no valid calls (never
+ * authored, or legacy malformed). */
 export const STARTER_CALLS: DocCall[] = [
   {
     text: "A single shot — describe the action, camera, and mood.",
     start_frame: 0,
-    end_frame: 168,
+    end_frame: 90,
   },
 ]
 

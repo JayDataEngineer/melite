@@ -202,14 +202,18 @@ export function schema(v: unknown): Record<string, unknown> {
   // a freshly added card holds params {} — calls is NOT a form knob,
   // so the bench tile's Run composed no shots and the door refused
   // "no calls to compose" before the studio ever persisted its doc).
-  // ABSENT calls now compose the card's own fresh-card document —
-  // ONE window spanning the t4_open budget (90 frames, grid-legal:
-  // the frozen goldens' explicit 90 passes the same walk) — the
-  // same starter law the studio's docModel shows a fresh card
-  // (STARTER_CALLS). An EXPLICIT empty array keeps the retired
-  // compose refusal verbatim (compose/card.py:100 "%s: no calls to
-  // compose"): a caller naming zero shots is garbage; a caller
-  // naming none is a fresh card.
+  // ABSENT calls compose the card's own fresh-card document: ONE
+  // window 0→90 — the t4_open physics budget, the LARGEST span a
+  // single window renders (the py canvas 168 AND the on-grid 175
+  // both died live inside SamplerCustomAdvanced, receipts
+  // 2026-09-17: a 7s film is TWO chained windows, this card's genre).
+  // The follow-up catch the same day: the press
+  // said 7s (the studio readout rides totalFrames = last end_frame)
+  // and rendered 3 — the body's hard 90 t4_open budget. The span is
+  // the film now (see the length derivation in renderH3Window). An
+  // EXPLICIT empty array keeps the retired compose refusal verbatim
+  // (compose/card.py:100 "%s: no calls to compose"): a caller naming
+  // zero shots is garbage; a caller naming none is a fresh card.
   if (variant === undefined) {
     let calls: unknown[] = []
     if (Array.isArray(raw.calls)) {
@@ -241,6 +245,18 @@ export function schema(v: unknown): Record<string, unknown> {
           throw new Error(`calls[${i}]: ${name} is required (int frames — text alone is not a shot)`)
         }
       }
+      // THE WINDOW PHYSICS LAW (2026-09-17, two live receipts: the
+      // py canvas 168 AND the on-grid 175 both died inside
+      // SamplerCustomAdvanced — a single t4 window renders at most the
+      // t4_open budget, 90 frames). A single call spanning wider
+      // refuses at the GATE with the split named — never a cryptic
+      // engine death three minutes in. Multi-window films chain; that
+      // is this card's genre.
+      if (calls.length === 1 && (c.end_frame as number) - (c.start_frame as number) > 90) {
+        throw new Error(
+          `calls[${i}]: a single window spans at most 90 frames (engine physics) — ` +
+          `split the timeline into windows (this card's genre: multi-window chains)`)
+      }
       if ((c.end_frame as number) <= (c.start_frame as number)) {
         throw new Error(`calls[${i}]: end_frame ${c.end_frame} <= start_frame ${c.start_frame} — a reversed or empty span is not a shot`)
       }
@@ -270,7 +286,31 @@ export function schema(v: unknown): Record<string, unknown> {
   // Without this normalization the schemastery walk materializes 56 on
   // every doc that omits the key and the t4_open 90 branch is dead —
   // a hand-authored single text window silently rendered 56 frames.
-  if (!explicit.has('length')) out.length = null
+  // THE SPAN RIDER (2026-09-17, the said-7-got-3 catch): a null is
+  // NOT what the compose door receives — the door's cascade re-boards
+  // the schema default 56 over it, and the fresh press rendered 56
+  // (2.33s, live receipt) while the studio readout promised the
+  // window's span. A SINGLE-CALL doc now serializes its span as an
+  // EXPLICIT length (grid-snapped; ≤90 by the window physics law
+  // above), so the cascade carries it verbatim — the doc's span IS
+  // the film. Multi-call chains keep null: their windows render at
+  // the family budgets / the studio presets' own f values.
+  if (!explicit.has('length')) {
+    const rows = Array.isArray(out.calls) ? out.calls as Array<Record<string, unknown>> : []
+    if (rows.length === 1) {
+      const c0 = rows[0] ?? {}
+      const sf = typeof c0.start_frame === 'number' ? c0.start_frame : null
+      const ef = typeof c0.end_frame === 'number' ? c0.end_frame : null
+      if (sf !== null && ef !== null && ef > sf) {
+        const k = Math.round((ef - sf - 22) / 17)
+        out.length = Math.min(362, Math.max(22, 22 + 17 * k))
+      } else {
+        out.length = null
+      }
+    } else {
+      out.length = null
+    }
+  }
   const bad = (keys: readonly string[]) => keys.filter((kk) => explicit.has(kk)).sort()
   if (variant === 't4r') {
     const b = bad(T4_ONLY_KEYS)
@@ -454,7 +494,34 @@ function renderH3Window(p: Record<string, unknown>, g: GraphBuilder): void {
     sigmaModel = g.node('MiniMaxH3SigmaShift', {
       model: adaln, shift_video: shiftVideo, shift_audio: p.shift_audio as number,
     }).out()
-    const length = p.length ?? (family === 't4_open' ? 90 : 56)
+    // THE SPAN IS THE FILM (the operator's 2026-09-17 catch: the
+    // readout said 7s — the doc's totalFrames, last end_frame @24 —
+    // and the render came back 3, this hardcoded 90 budget). The
+    // window's render length derives from the TIMELINE the calls
+    // author: last end_frame − first start_frame, SNAPPED TO THE
+    // 17k+5 GRID the engine's latent math lawfully renders (22+17k,
+    // clamped [22,362] — the same set the length param's own
+    // min/step admits; the first 168-span probe died inside
+    // SamplerCustomAdvanced off-grid, live receipt 2026-09-17). The
+    // py-era 90/56 budgets remain the fallback ONLY for docs that
+    // carry no spans. An explicit `length` param still wins, verbatim.
+    const snapToGrid = (frames: number): number => {
+      const k = Math.round((frames - 22) / 17)
+      return Math.min(362, Math.max(22, 22 + 17 * k))
+    }
+    // single-call docs only: a chain's windows render per-window (the
+    // studio presets' own f values, 56/124), so a multi-call doc keeps
+    // the py family budgets; the single window's span IS its length.
+    const spanOf = (doc: Record<string, unknown>): number | null => {
+      const rows = Array.isArray(doc.calls) ? doc.calls as Array<Record<string, unknown>> : []
+      if (rows.length !== 1) return null
+      const starts = rows.map((r) => typeof r.start_frame === 'number' ? r.start_frame : null)
+      const ends = rows.map((r) => typeof r.end_frame === 'number' ? r.end_frame : null)
+      const first = starts.find((v) => v !== null)
+      const last = [...ends].reverse().find((v) => v !== null)
+      return first !== undefined && last !== undefined && last > first ? snapToGrid(last - first) : null
+    }
+    const length = p.length ?? spanOf(p) ?? (family === 't4_open' ? 90 : 56)
     const r2v = g.node('MiniMaxH3ReferenceToVideo', {
       prompt, width: p.width as number,
       height: p.height as number, length: length as number,
