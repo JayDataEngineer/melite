@@ -11,6 +11,7 @@
     "./facts": "./src/facts.ts",
     "./fields": "./src/fields.ts",
     "./vocab": "./src/vocab.ts",
+    "./morphs": "./src/morphs.ts",
     "./guard": "./src/mods/guard.ts",
     "./package.json": "./package.json"
   },

@@ -26,7 +26,7 @@
       "id": "anny",
       "family": "anny",
       "genre": "3d",
-      "label": "Anny (character assembly) Standard Native",
+      "label": "Anny (character assembly) Anny",
       "description": "Author a character body — 11 identity sliders (or attach a GLB, or load a preset), then render the 8-view turnaround sheet. Photo→body estimation rides the hmr-estimate verb (the MHR chain).",
       "form": "form_3d_anny",
       "source": {
@@ -1585,7 +1585,7 @@
       "genre": "image"
     },
     "anny": {
-      "label": "Anny (character assembly) Standard Native",
+      "label": "Anny (character assembly) Anny",
       "genre": "3d"
     },
     "autoremesher": {

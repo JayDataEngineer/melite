@@ -534,6 +534,2800 @@
         "width": 1
       },
       {
+        "name": "l-lowerarm-scale-depth-incr",
+        "label": "l-lowerarm-scale-depth-incr",
+        "order": 1000,
+        "type": "slider",
+        "group": "morph",
+        "required": false,
+        "tooltip": "Morph 1/254 \u2014 l-lowerarm-scale-depth-incr (-1..2, neutral 0; the poser's local-changes vocabulary).",
+        "columns": 2,
+        "width": 1
+      },
+      {
+        "name": "r-lowerarm-scale-depth-incr",
+        "label": "r-lowerarm-scale-depth-incr",
+        "order": 1001,
+        "type": "slider",
+        "group": "morph",
+        "required": false,
+        "tooltip": "Morph 2/254 \u2014 r-lowerarm-scale-depth-incr (-1..2, neutral 0; the poser's local-changes vocabulary).",
+        "columns": 2,
+        "width": 1
+      },
+      {
+        "name": "l-upperarm-scale-horiz-incr",
+        "label": "l-upperarm-scale-horiz-incr",
+        "order": 1002,
+        "type": "slider",
+        "group": "morph",
+        "required": false,
+        "tooltip": "Morph 3/254 \u2014 l-upperarm-scale-horiz-incr (-1..2, neutral 0; the poser's local-changes vocabulary).",
+        "columns": 2,
+        "width": 1
+      },
+      {
+        "name": "r-upperarm-scale-horiz-incr",
+        "label": "r-upperarm-scale-horiz-incr",
+        "order": 1003,
+        "type": "slider",
+        "group": "morph",
+        "required": false,
+        "tooltip": "Morph 4/254 \u2014 r-upperarm-scale-horiz-incr (-1..2, neutral 0; the poser's local-changes vocabulary).",
+        "columns": 2,
+        "width": 1
+      },
+      {
+        "name": "l-upperarm-fat-incr",
+        "label": "l-upperarm-fat-incr",
+        "order": 1004,
+        "type": "slider",
+        "group": "morph",
+        "required": false,
+        "tooltip": "Morph 5/254 \u2014 l-upperarm-fat-incr (-1..2, neutral 0; the poser's local-changes vocabulary).",
+        "columns": 2,
+        "width": 1
+      },
+      {
+        "name": "r-upperarm-fat-incr",
+        "label": "r-upperarm-fat-incr",
+        "order": 1005,
+        "type": "slider",
+        "group": "morph",
+        "required": false,
+        "tooltip": "Morph 6/254 \u2014 r-upperarm-fat-incr (-1..2, neutral 0; the poser's local-changes vocabulary).",
+        "columns": 2,
+        "width": 1
+      },
+      {
+        "name": "measure-upperarm-length-incr",
+        "label": "measure-upperarm-length-incr",
+        "order": 1006,
+        "type": "slider",
+        "group": "morph",
+        "required": false,
+        "tooltip": "Morph 7/254 \u2014 measure-upperarm-length-incr (-1..2, neutral 0; the poser's local-changes vocabulary).",
+        "columns": 2,
+        "width": 1
+      },
+      {
+        "name": "l-lowerarm-fat-incr",
+        "label": "l-lowerarm-fat-incr",
+        "order": 1007,
+        "type": "slider",
+        "group": "morph",
+        "required": false,
+        "tooltip": "Morph 8/254 \u2014 l-lowerarm-fat-incr (-1..2, neutral 0; the poser's local-changes vocabulary).",
+        "columns": 2,
+        "width": 1
+      },
+      {
+        "name": "r-lowerarm-fat-incr",
+        "label": "r-lowerarm-fat-incr",
+        "order": 1008,
+        "type": "slider",
+        "group": "morph",
+        "required": false,
+        "tooltip": "Morph 9/254 \u2014 r-lowerarm-fat-incr (-1..2, neutral 0; the poser's local-changes vocabulary).",
+        "columns": 2,
+        "width": 1
+      },
+      {
+        "name": "l-lowerarm-scale-horiz-incr",
+        "label": "l-lowerarm-scale-horiz-incr",
+        "order": 1009,
+        "type": "slider",
+        "group": "morph",
+        "required": false,
+        "tooltip": "Morph 10/254 \u2014 l-lowerarm-scale-horiz-incr (-1..2, neutral 0; the poser's local-changes vocabulary).",
+        "columns": 2,
+        "width": 1
+      },
+      {
+        "name": "r-lowerarm-scale-horiz-incr",
+        "label": "r-lowerarm-scale-horiz-incr",
+        "order": 1010,
+        "type": "slider",
+        "group": "morph",
+        "required": false,
+        "tooltip": "Morph 11/254 \u2014 r-lowerarm-scale-horiz-incr (-1..2, neutral 0; the poser's local-changes vocabulary).",
+        "columns": 2,
+        "width": 1
+      },
+      {
+        "name": "l-lowerarm-muscle-incr",
+        "label": "l-lowerarm-muscle-incr",
+        "order": 1011,
+        "type": "slider",
+        "group": "morph",
+        "required": false,
+        "tooltip": "Morph 12/254 \u2014 l-lowerarm-muscle-incr (-1..2, neutral 0; the poser's local-changes vocabulary).",
+        "columns": 2,
+        "width": 1
+      },
+      {
+        "name": "r-lowerarm-muscle-incr",
+        "label": "r-lowerarm-muscle-incr",
+        "order": 1012,
+        "type": "slider",
+        "group": "morph",
+        "required": false,
+        "tooltip": "Morph 13/254 \u2014 r-lowerarm-muscle-incr (-1..2, neutral 0; the poser's local-changes vocabulary).",
+        "columns": 2,
+        "width": 1
+      },
+      {
+        "name": "l-upperarm-shoulder-muscle-incr",
+        "label": "l-upperarm-shoulder-muscle-incr",
+        "order": 1013,
+        "type": "slider",
+        "group": "morph",
+        "required": false,
+        "tooltip": "Morph 14/254 \u2014 l-upperarm-shoulder-muscle-incr (-1..2, neutral 0; the poser's local-changes vocabulary).",
+        "columns": 2,
+        "width": 1
+      },
+      {
+        "name": "r-upperarm-shoulder-muscle-incr",
+        "label": "r-upperarm-shoulder-muscle-incr",
+        "order": 1014,
+        "type": "slider",
+        "group": "morph",
+        "required": false,
+        "tooltip": "Morph 15/254 \u2014 r-upperarm-shoulder-muscle-incr (-1..2, neutral 0; the poser's local-changes vocabulary).",
+        "columns": 2,
+        "width": 1
+      },
+      {
+        "name": "measure-upperarm-circ-incr",
+        "label": "measure-upperarm-circ-incr",
+        "order": 1015,
+        "type": "slider",
+        "group": "morph",
+        "required": false,
+        "tooltip": "Morph 16/254 \u2014 measure-upperarm-circ-incr (-1..2, neutral 0; the poser's local-changes vocabulary).",
+        "columns": 2,
+        "width": 1
+      },
+      {
+        "name": "l-upperarm-scale-depth-incr",
+        "label": "l-upperarm-scale-depth-incr",
+        "order": 1016,
+        "type": "slider",
+        "group": "morph",
+        "required": false,
+        "tooltip": "Morph 17/254 \u2014 l-upperarm-scale-depth-incr (-1..2, neutral 0; the poser's local-changes vocabulary).",
+        "columns": 2,
+        "width": 1
+      },
+      {
+        "name": "r-upperarm-scale-depth-incr",
+        "label": "r-upperarm-scale-depth-incr",
+        "order": 1017,
+        "type": "slider",
+        "group": "morph",
+        "required": false,
+        "tooltip": "Morph 18/254 \u2014 r-upperarm-scale-depth-incr (-1..2, neutral 0; the poser's local-changes vocabulary).",
+        "columns": 2,
+        "width": 1
+      },
+      {
+        "name": "l-lowerarm-scale-vert-incr",
+        "label": "l-lowerarm-scale-vert-incr",
+        "order": 1018,
+        "type": "slider",
+        "group": "morph",
+        "required": false,
+        "tooltip": "Morph 19/254 \u2014 l-lowerarm-scale-vert-incr (-1..2, neutral 0; the poser's local-changes vocabulary).",
+        "columns": 2,
+        "width": 1
+      },
+      {
+        "name": "r-lowerarm-scale-vert-incr",
+        "label": "r-lowerarm-scale-vert-incr",
+        "order": 1019,
+        "type": "slider",
+        "group": "morph",
+        "required": false,
+        "tooltip": "Morph 20/254 \u2014 r-lowerarm-scale-vert-incr (-1..2, neutral 0; the poser's local-changes vocabulary).",
+        "columns": 2,
+        "width": 1
+      },
+      {
+        "name": "measure-lowerarm-length-incr",
+        "label": "measure-lowerarm-length-incr",
+        "order": 1020,
+        "type": "slider",
+        "group": "morph",
+        "required": false,
+        "tooltip": "Morph 21/254 \u2014 measure-lowerarm-length-incr (-1..2, neutral 0; the poser's local-changes vocabulary).",
+        "columns": 2,
+        "width": 1
+      },
+      {
+        "name": "l-upperarm-muscle-incr",
+        "label": "l-upperarm-muscle-incr",
+        "order": 1021,
+        "type": "slider",
+        "group": "morph",
+        "required": false,
+        "tooltip": "Morph 22/254 \u2014 l-upperarm-muscle-incr (-1..2, neutral 0; the poser's local-changes vocabulary).",
+        "columns": 2,
+        "width": 1
+      },
+      {
+        "name": "r-upperarm-muscle-incr",
+        "label": "r-upperarm-muscle-incr",
+        "order": 1022,
+        "type": "slider",
+        "group": "morph",
+        "required": false,
+        "tooltip": "Morph 23/254 \u2014 r-upperarm-muscle-incr (-1..2, neutral 0; the poser's local-changes vocabulary).",
+        "columns": 2,
+        "width": 1
+      },
+      {
+        "name": "l-upperarm-scale-vert-incr",
+        "label": "l-upperarm-scale-vert-incr",
+        "order": 1023,
+        "type": "slider",
+        "group": "morph",
+        "required": false,
+        "tooltip": "Morph 24/254 \u2014 l-upperarm-scale-vert-incr (-1..2, neutral 0; the poser's local-changes vocabulary).",
+        "columns": 2,
+        "width": 1
+      },
+      {
+        "name": "r-upperarm-scale-vert-incr",
+        "label": "r-upperarm-scale-vert-incr",
+        "order": 1024,
+        "type": "slider",
+        "group": "morph",
+        "required": false,
+        "tooltip": "Morph 25/254 \u2014 r-upperarm-scale-vert-incr (-1..2, neutral 0; the poser's local-changes vocabulary).",
+        "columns": 2,
+        "width": 1
+      },
+      {
+        "name": "breast-point-incr",
+        "label": "breast-point-incr",
+        "order": 1025,
+        "type": "slider",
+        "group": "morph",
+        "required": false,
+        "tooltip": "Morph 26/254 \u2014 breast-point-incr (-1..2, neutral 0; the poser's local-changes vocabulary).",
+        "columns": 2,
+        "width": 1
+      },
+      {
+        "name": "breast-dist-incr",
+        "label": "breast-dist-incr",
+        "order": 1026,
+        "type": "slider",
+        "group": "morph",
+        "required": false,
+        "tooltip": "Morph 27/254 \u2014 breast-dist-incr (-1..2, neutral 0; the poser's local-changes vocabulary).",
+        "columns": 2,
+        "width": 1
+      },
+      {
+        "name": "breast-volume-vert-up",
+        "label": "breast-volume-vert-up",
+        "order": 1027,
+        "type": "slider",
+        "group": "morph",
+        "required": false,
+        "tooltip": "Morph 28/254 \u2014 breast-volume-vert-up (-1..2, neutral 0; the poser's local-changes vocabulary).",
+        "columns": 2,
+        "width": 1
+      },
+      {
+        "name": "breast-trans-up",
+        "label": "breast-trans-up",
+        "order": 1028,
+        "type": "slider",
+        "group": "morph",
+        "required": false,
+        "tooltip": "Morph 29/254 \u2014 breast-trans-up (-1..2, neutral 0; the poser's local-changes vocabulary).",
+        "columns": 2,
+        "width": 1
+      },
+      {
+        "name": "buttocks-volume-incr",
+        "label": "buttocks-volume-incr",
+        "order": 1029,
+        "type": "slider",
+        "group": "morph",
+        "required": false,
+        "tooltip": "Morph 30/254 \u2014 buttocks-volume-incr (-1..2, neutral 0; the poser's local-changes vocabulary).",
+        "columns": 2,
+        "width": 1
+      },
+      {
+        "name": "l-cheek-trans-up",
+        "label": "l-cheek-trans-up",
+        "order": 1030,
+        "type": "slider",
+        "group": "morph",
+        "required": false,
+        "tooltip": "Morph 31/254 \u2014 l-cheek-trans-up (-1..2, neutral 0; the poser's local-changes vocabulary).",
+        "columns": 2,
+        "width": 1
+      },
+      {
+        "name": "r-cheek-trans-up",
+        "label": "r-cheek-trans-up",
+        "order": 1031,
+        "type": "slider",
+        "group": "morph",
+        "required": false,
+        "tooltip": "Morph 32/254 \u2014 r-cheek-trans-up (-1..2, neutral 0; the poser's local-changes vocabulary).",
+        "columns": 2,
+        "width": 1
+      },
+      {
+        "name": "l-cheek-volume-incr",
+        "label": "l-cheek-volume-incr",
+        "order": 1032,
+        "type": "slider",
+        "group": "morph",
+        "required": false,
+        "tooltip": "Morph 33/254 \u2014 l-cheek-volume-incr (-1..2, neutral 0; the poser's local-changes vocabulary).",
+        "columns": 2,
+        "width": 1
+      },
+      {
+        "name": "r-cheek-volume-incr",
+        "label": "r-cheek-volume-incr",
+        "order": 1033,
+        "type": "slider",
+        "group": "morph",
+        "required": false,
+        "tooltip": "Morph 34/254 \u2014 r-cheek-volume-incr (-1..2, neutral 0; the poser's local-changes vocabulary).",
+        "columns": 2,
+        "width": 1
+      },
+      {
+        "name": "l-cheek-inner-incr",
+        "label": "l-cheek-inner-incr",
+        "order": 1034,
+        "type": "slider",
+        "group": "morph",
+        "required": false,
+        "tooltip": "Morph 35/254 \u2014 l-cheek-inner-incr (-1..2, neutral 0; the poser's local-changes vocabulary).",
+        "columns": 2,
+        "width": 1
+      },
+      {
+        "name": "r-cheek-inner-incr",
+        "label": "r-cheek-inner-incr",
+        "order": 1035,
+        "type": "slider",
+        "group": "morph",
+        "required": false,
+        "tooltip": "Morph 36/254 \u2014 r-cheek-inner-incr (-1..2, neutral 0; the poser's local-changes vocabulary).",
+        "columns": 2,
+        "width": 1
+      },
+      {
+        "name": "l-cheek-bones-incr",
+        "label": "l-cheek-bones-incr",
+        "order": 1036,
+        "type": "slider",
+        "group": "morph",
+        "required": false,
+        "tooltip": "Morph 37/254 \u2014 l-cheek-bones-incr (-1..2, neutral 0; the poser's local-changes vocabulary).",
+        "columns": 2,
+        "width": 1
+      },
+      {
+        "name": "r-cheek-bones-incr",
+        "label": "r-cheek-bones-incr",
+        "order": 1037,
+        "type": "slider",
+        "group": "morph",
+        "required": false,
+        "tooltip": "Morph 38/254 \u2014 r-cheek-bones-incr (-1..2, neutral 0; the poser's local-changes vocabulary).",
+        "columns": 2,
+        "width": 1
+      },
+      {
+        "name": "chin-jaw-drop-incr",
+        "label": "chin-jaw-drop-incr",
+        "order": 1038,
+        "type": "slider",
+        "group": "morph",
+        "required": false,
+        "tooltip": "Morph 39/254 \u2014 chin-jaw-drop-incr (-1..2, neutral 0; the poser's local-changes vocabulary).",
+        "columns": 2,
+        "width": 1
+      },
+      {
+        "name": "chin-height-incr",
+        "label": "chin-height-incr",
+        "order": 1039,
+        "type": "slider",
+        "group": "morph",
+        "required": false,
+        "tooltip": "Morph 40/254 \u2014 chin-height-incr (-1..2, neutral 0; the poser's local-changes vocabulary).",
+        "columns": 2,
+        "width": 1
+      },
+      {
+        "name": "chin-prominent-incr",
+        "label": "chin-prominent-incr",
+        "order": 1040,
+        "type": "slider",
+        "group": "morph",
+        "required": false,
+        "tooltip": "Morph 41/254 \u2014 chin-prominent-incr (-1..2, neutral 0; the poser's local-changes vocabulary).",
+        "columns": 2,
+        "width": 1
+      },
+      {
+        "name": "chin-bones-incr",
+        "label": "chin-bones-incr",
+        "order": 1041,
+        "type": "slider",
+        "group": "morph",
+        "required": false,
+        "tooltip": "Morph 42/254 \u2014 chin-bones-incr (-1..2, neutral 0; the poser's local-changes vocabulary).",
+        "columns": 2,
+        "width": 1
+      },
+      {
+        "name": "chin-width-incr",
+        "label": "chin-width-incr",
+        "order": 1042,
+        "type": "slider",
+        "group": "morph",
+        "required": false,
+        "tooltip": "Morph 43/254 \u2014 chin-width-incr (-1..2, neutral 0; the poser's local-changes vocabulary).",
+        "columns": 2,
+        "width": 1
+      },
+      {
+        "name": "chin-cleft-incr",
+        "label": "chin-cleft-incr",
+        "order": 1043,
+        "type": "slider",
+        "group": "morph",
+        "required": false,
+        "tooltip": "Morph 44/254 \u2014 chin-cleft-incr (-1..2, neutral 0; the poser's local-changes vocabulary).",
+        "columns": 2,
+        "width": 1
+      },
+      {
+        "name": "chin-prognathism-incr",
+        "label": "chin-prognathism-incr",
+        "order": 1044,
+        "type": "slider",
+        "group": "morph",
+        "required": false,
+        "tooltip": "Morph 45/254 \u2014 chin-prognathism-incr (-1..2, neutral 0; the poser's local-changes vocabulary).",
+        "columns": 2,
+        "width": 1
+      },
+      {
+        "name": "l-ear-lobe-incr",
+        "label": "l-ear-lobe-incr",
+        "order": 1045,
+        "type": "slider",
+        "group": "morph",
+        "required": false,
+        "tooltip": "Morph 46/254 \u2014 l-ear-lobe-incr (-1..2, neutral 0; the poser's local-changes vocabulary).",
+        "columns": 2,
+        "width": 1
+      },
+      {
+        "name": "r-ear-lobe-incr",
+        "label": "r-ear-lobe-incr",
+        "order": 1046,
+        "type": "slider",
+        "group": "morph",
+        "required": false,
+        "tooltip": "Morph 47/254 \u2014 r-ear-lobe-incr (-1..2, neutral 0; the poser's local-changes vocabulary).",
+        "columns": 2,
+        "width": 1
+      },
+      {
+        "name": "l-ear-shape-round",
+        "label": "l-ear-shape-round",
+        "order": 1047,
+        "type": "slider",
+        "group": "morph",
+        "required": false,
+        "tooltip": "Morph 48/254 \u2014 l-ear-shape-round (-1..2, neutral 0; the poser's local-changes vocabulary).",
+        "columns": 2,
+        "width": 1
+      },
+      {
+        "name": "r-ear-shape-round",
+        "label": "r-ear-shape-round",
+        "order": 1048,
+        "type": "slider",
+        "group": "morph",
+        "required": false,
+        "tooltip": "Morph 49/254 \u2014 r-ear-shape-round (-1..2, neutral 0; the poser's local-changes vocabulary).",
+        "columns": 2,
+        "width": 1
+      },
+      {
+        "name": "l-ear-trans-forward",
+        "label": "l-ear-trans-forward",
+        "order": 1049,
+        "type": "slider",
+        "group": "morph",
+        "required": false,
+        "tooltip": "Morph 50/254 \u2014 l-ear-trans-forward (-1..2, neutral 0; the poser's local-changes vocabulary).",
+        "columns": 2,
+        "width": 1
+      },
+      {
+        "name": "r-ear-trans-forward",
+        "label": "r-ear-trans-forward",
+        "order": 1050,
+        "type": "slider",
+        "group": "morph",
+        "required": false,
+        "tooltip": "Morph 51/254 \u2014 r-ear-trans-forward (-1..2, neutral 0; the poser's local-changes vocabulary).",
+        "columns": 2,
+        "width": 1
+      },
+      {
+        "name": "l-ear-rot-forward",
+        "label": "l-ear-rot-forward",
+        "order": 1051,
+        "type": "slider",
+        "group": "morph",
+        "required": false,
+        "tooltip": "Morph 52/254 \u2014 l-ear-rot-forward (-1..2, neutral 0; the poser's local-changes vocabulary).",
+        "columns": 2,
+        "width": 1
+      },
+      {
+        "name": "r-ear-rot-forward",
+        "label": "r-ear-rot-forward",
+        "order": 1052,
+        "type": "slider",
+        "group": "morph",
+        "required": false,
+        "tooltip": "Morph 53/254 \u2014 r-ear-rot-forward (-1..2, neutral 0; the poser's local-changes vocabulary).",
+        "columns": 2,
+        "width": 1
+      },
+      {
+        "name": "l-ear-trans-up",
+        "label": "l-ear-trans-up",
+        "order": 1053,
+        "type": "slider",
+        "group": "morph",
+        "required": false,
+        "tooltip": "Morph 54/254 \u2014 l-ear-trans-up (-1..2, neutral 0; the poser's local-changes vocabulary).",
+        "columns": 2,
+        "width": 1
+      },
+      {
+        "name": "r-ear-trans-up",
+        "label": "r-ear-trans-up",
+        "order": 1054,
+        "type": "slider",
+        "group": "morph",
+        "required": false,
+        "tooltip": "Morph 55/254 \u2014 r-ear-trans-up (-1..2, neutral 0; the poser's local-changes vocabulary).",
+        "columns": 2,
+        "width": 1
+      },
+      {
+        "name": "l-ear-scale-vert-incr",
+        "label": "l-ear-scale-vert-incr",
+        "order": 1055,
+        "type": "slider",
+        "group": "morph",
+        "required": false,
+        "tooltip": "Morph 56/254 \u2014 l-ear-scale-vert-incr (-1..2, neutral 0; the poser's local-changes vocabulary).",
+        "columns": 2,
+        "width": 1
+      },
+      {
+        "name": "r-ear-scale-vert-incr",
+        "label": "r-ear-scale-vert-incr",
+        "order": 1056,
+        "type": "slider",
+        "group": "morph",
+        "required": false,
+        "tooltip": "Morph 57/254 \u2014 r-ear-scale-vert-incr (-1..2, neutral 0; the poser's local-changes vocabulary).",
+        "columns": 2,
+        "width": 1
+      },
+      {
+        "name": "l-ear-flap-incr",
+        "label": "l-ear-flap-incr",
+        "order": 1057,
+        "type": "slider",
+        "group": "morph",
+        "required": false,
+        "tooltip": "Morph 58/254 \u2014 l-ear-flap-incr (-1..2, neutral 0; the poser's local-changes vocabulary).",
+        "columns": 2,
+        "width": 1
+      },
+      {
+        "name": "r-ear-flap-incr",
+        "label": "r-ear-flap-incr",
+        "order": 1058,
+        "type": "slider",
+        "group": "morph",
+        "required": false,
+        "tooltip": "Morph 59/254 \u2014 r-ear-flap-incr (-1..2, neutral 0; the poser's local-changes vocabulary).",
+        "columns": 2,
+        "width": 1
+      },
+      {
+        "name": "l-ear-shape-triangle",
+        "label": "l-ear-shape-triangle",
+        "order": 1059,
+        "type": "slider",
+        "group": "morph",
+        "required": false,
+        "tooltip": "Morph 60/254 \u2014 l-ear-shape-triangle (-1..2, neutral 0; the poser's local-changes vocabulary).",
+        "columns": 2,
+        "width": 1
+      },
+      {
+        "name": "r-ear-shape-triangle",
+        "label": "r-ear-shape-triangle",
+        "order": 1060,
+        "type": "slider",
+        "group": "morph",
+        "required": false,
+        "tooltip": "Morph 61/254 \u2014 r-ear-shape-triangle (-1..2, neutral 0; the poser's local-changes vocabulary).",
+        "columns": 2,
+        "width": 1
+      },
+      {
+        "name": "l-ear-scale-incr",
+        "label": "l-ear-scale-incr",
+        "order": 1061,
+        "type": "slider",
+        "group": "morph",
+        "required": false,
+        "tooltip": "Morph 62/254 \u2014 l-ear-scale-incr (-1..2, neutral 0; the poser's local-changes vocabulary).",
+        "columns": 2,
+        "width": 1
+      },
+      {
+        "name": "r-ear-scale-incr",
+        "label": "r-ear-scale-incr",
+        "order": 1062,
+        "type": "slider",
+        "group": "morph",
+        "required": false,
+        "tooltip": "Morph 63/254 \u2014 r-ear-scale-incr (-1..2, neutral 0; the poser's local-changes vocabulary).",
+        "columns": 2,
+        "width": 1
+      },
+      {
+        "name": "l-ear-scale-depth-incr",
+        "label": "l-ear-scale-depth-incr",
+        "order": 1063,
+        "type": "slider",
+        "group": "morph",
+        "required": false,
+        "tooltip": "Morph 64/254 \u2014 l-ear-scale-depth-incr (-1..2, neutral 0; the poser's local-changes vocabulary).",
+        "columns": 2,
+        "width": 1
+      },
+      {
+        "name": "r-ear-scale-depth-incr",
+        "label": "r-ear-scale-depth-incr",
+        "order": 1064,
+        "type": "slider",
+        "group": "morph",
+        "required": false,
+        "tooltip": "Morph 65/254 \u2014 r-ear-scale-depth-incr (-1..2, neutral 0; the poser's local-changes vocabulary).",
+        "columns": 2,
+        "width": 1
+      },
+      {
+        "name": "l-ear-wing-incr",
+        "label": "l-ear-wing-incr",
+        "order": 1065,
+        "type": "slider",
+        "group": "morph",
+        "required": false,
+        "tooltip": "Morph 66/254 \u2014 l-ear-wing-incr (-1..2, neutral 0; the poser's local-changes vocabulary).",
+        "columns": 2,
+        "width": 1
+      },
+      {
+        "name": "r-ear-wing-incr",
+        "label": "r-ear-wing-incr",
+        "order": 1066,
+        "type": "slider",
+        "group": "morph",
+        "required": false,
+        "tooltip": "Morph 67/254 \u2014 r-ear-wing-incr (-1..2, neutral 0; the poser's local-changes vocabulary).",
+        "columns": 2,
+        "width": 1
+      },
+      {
+        "name": "eyebrows-angle-up",
+        "label": "eyebrows-angle-up",
+        "order": 1067,
+        "type": "slider",
+        "group": "morph",
+        "required": false,
+        "tooltip": "Morph 68/254 \u2014 eyebrows-angle-up (-1..2, neutral 0; the poser's local-changes vocabulary).",
+        "columns": 2,
+        "width": 1
+      },
+      {
+        "name": "eyebrows-trans-up",
+        "label": "eyebrows-trans-up",
+        "order": 1068,
+        "type": "slider",
+        "group": "morph",
+        "required": false,
+        "tooltip": "Morph 69/254 \u2014 eyebrows-trans-up (-1..2, neutral 0; the poser's local-changes vocabulary).",
+        "columns": 2,
+        "width": 1
+      },
+      {
+        "name": "eyebrows-trans-forward",
+        "label": "eyebrows-trans-forward",
+        "order": 1069,
+        "type": "slider",
+        "group": "morph",
+        "required": false,
+        "tooltip": "Morph 70/254 \u2014 eyebrows-trans-forward (-1..2, neutral 0; the poser's local-changes vocabulary).",
+        "columns": 2,
+        "width": 1
+      },
+      {
+        "name": "l-eye-corner1-up",
+        "label": "l-eye-corner1-up",
+        "order": 1070,
+        "type": "slider",
+        "group": "morph",
+        "required": false,
+        "tooltip": "Morph 71/254 \u2014 l-eye-corner1-up (-1..2, neutral 0; the poser's local-changes vocabulary).",
+        "columns": 2,
+        "width": 1
+      },
+      {
+        "name": "r-eye-corner1-up",
+        "label": "r-eye-corner1-up",
+        "order": 1071,
+        "type": "slider",
+        "group": "morph",
+        "required": false,
+        "tooltip": "Morph 72/254 \u2014 r-eye-corner1-up (-1..2, neutral 0; the poser's local-changes vocabulary).",
+        "columns": 2,
+        "width": 1
+      },
+      {
+        "name": "l-eye-height1-incr",
+        "label": "l-eye-height1-incr",
+        "order": 1072,
+        "type": "slider",
+        "group": "morph",
+        "required": false,
+        "tooltip": "Morph 73/254 \u2014 l-eye-height1-incr (-1..2, neutral 0; the poser's local-changes vocabulary).",
+        "columns": 2,
+        "width": 1
+      },
+      {
+        "name": "r-eye-height1-incr",
+        "label": "r-eye-height1-incr",
+        "order": 1073,
+        "type": "slider",
+        "group": "morph",
+        "required": false,
+        "tooltip": "Morph 74/254 \u2014 r-eye-height1-incr (-1..2, neutral 0; the poser's local-changes vocabulary).",
+        "columns": 2,
+        "width": 1
+      },
+      {
+        "name": "l-eye-scale-incr",
+        "label": "l-eye-scale-incr",
+        "order": 1074,
+        "type": "slider",
+        "group": "morph",
+        "required": false,
+        "tooltip": "Morph 75/254 \u2014 l-eye-scale-incr (-1..2, neutral 0; the poser's local-changes vocabulary).",
+        "columns": 2,
+        "width": 1
+      },
+      {
+        "name": "r-eye-scale-incr",
+        "label": "r-eye-scale-incr",
+        "order": 1075,
+        "type": "slider",
+        "group": "morph",
+        "required": false,
+        "tooltip": "Morph 76/254 \u2014 r-eye-scale-incr (-1..2, neutral 0; the poser's local-changes vocabulary).",
+        "columns": 2,
+        "width": 1
+      },
+      {
+        "name": "l-eye-push1-out",
+        "label": "l-eye-push1-out",
+        "order": 1076,
+        "type": "slider",
+        "group": "morph",
+        "required": false,
+        "tooltip": "Morph 77/254 \u2014 l-eye-push1-out (-1..2, neutral 0; the poser's local-changes vocabulary).",
+        "columns": 2,
+        "width": 1
+      },
+      {
+        "name": "r-eye-push1-out",
+        "label": "r-eye-push1-out",
+        "order": 1077,
+        "type": "slider",
+        "group": "morph",
+        "required": false,
+        "tooltip": "Morph 78/254 \u2014 r-eye-push1-out (-1..2, neutral 0; the poser's local-changes vocabulary).",
+        "columns": 2,
+        "width": 1
+      },
+      {
+        "name": "l-eye-eyefold-up",
+        "label": "l-eye-eyefold-up",
+        "order": 1078,
+        "type": "slider",
+        "group": "morph",
+        "required": false,
+        "tooltip": "Morph 79/254 \u2014 l-eye-eyefold-up (-1..2, neutral 0; the poser's local-changes vocabulary).",
+        "columns": 2,
+        "width": 1
+      },
+      {
+        "name": "r-eye-eyefold-up",
+        "label": "r-eye-eyefold-up",
+        "order": 1079,
+        "type": "slider",
+        "group": "morph",
+        "required": false,
+        "tooltip": "Morph 80/254 \u2014 r-eye-eyefold-up (-1..2, neutral 0; the poser's local-changes vocabulary).",
+        "columns": 2,
+        "width": 1
+      },
+      {
+        "name": "l-eye-height3-incr",
+        "label": "l-eye-height3-incr",
+        "order": 1080,
+        "type": "slider",
+        "group": "morph",
+        "required": false,
+        "tooltip": "Morph 81/254 \u2014 l-eye-height3-incr (-1..2, neutral 0; the poser's local-changes vocabulary).",
+        "columns": 2,
+        "width": 1
+      },
+      {
+        "name": "r-eye-height3-incr",
+        "label": "r-eye-height3-incr",
+        "order": 1081,
+        "type": "slider",
+        "group": "morph",
+        "required": false,
+        "tooltip": "Morph 82/254 \u2014 r-eye-height3-incr (-1..2, neutral 0; the poser's local-changes vocabulary).",
+        "columns": 2,
+        "width": 1
+      },
+      {
+        "name": "l-eye-height2-incr",
+        "label": "l-eye-height2-incr",
+        "order": 1082,
+        "type": "slider",
+        "group": "morph",
+        "required": false,
+        "tooltip": "Morph 83/254 \u2014 l-eye-height2-incr (-1..2, neutral 0; the poser's local-changes vocabulary).",
+        "columns": 2,
+        "width": 1
+      },
+      {
+        "name": "r-eye-height2-incr",
+        "label": "r-eye-height2-incr",
+        "order": 1083,
+        "type": "slider",
+        "group": "morph",
+        "required": false,
+        "tooltip": "Morph 84/254 \u2014 r-eye-height2-incr (-1..2, neutral 0; the poser's local-changes vocabulary).",
+        "columns": 2,
+        "width": 1
+      },
+      {
+        "name": "l-eye-bag-incr",
+        "label": "l-eye-bag-incr",
+        "order": 1084,
+        "type": "slider",
+        "group": "morph",
+        "required": false,
+        "tooltip": "Morph 85/254 \u2014 l-eye-bag-incr (-1..2, neutral 0; the poser's local-changes vocabulary).",
+        "columns": 2,
+        "width": 1
+      },
+      {
+        "name": "r-eye-bag-incr",
+        "label": "r-eye-bag-incr",
+        "order": 1085,
+        "type": "slider",
+        "group": "morph",
+        "required": false,
+        "tooltip": "Morph 86/254 \u2014 r-eye-bag-incr (-1..2, neutral 0; the poser's local-changes vocabulary).",
+        "columns": 2,
+        "width": 1
+      },
+      {
+        "name": "l-eye-push2-out",
+        "label": "l-eye-push2-out",
+        "order": 1086,
+        "type": "slider",
+        "group": "morph",
+        "required": false,
+        "tooltip": "Morph 87/254 \u2014 l-eye-push2-out (-1..2, neutral 0; the poser's local-changes vocabulary).",
+        "columns": 2,
+        "width": 1
+      },
+      {
+        "name": "r-eye-push2-out",
+        "label": "r-eye-push2-out",
+        "order": 1087,
+        "type": "slider",
+        "group": "morph",
+        "required": false,
+        "tooltip": "Morph 88/254 \u2014 r-eye-push2-out (-1..2, neutral 0; the poser's local-changes vocabulary).",
+        "columns": 2,
+        "width": 1
+      },
+      {
+        "name": "l-eye-trans-up",
+        "label": "l-eye-trans-up",
+        "order": 1088,
+        "type": "slider",
+        "group": "morph",
+        "required": false,
+        "tooltip": "Morph 89/254 \u2014 l-eye-trans-up (-1..2, neutral 0; the poser's local-changes vocabulary).",
+        "columns": 2,
+        "width": 1
+      },
+      {
+        "name": "r-eye-trans-up",
+        "label": "r-eye-trans-up",
+        "order": 1089,
+        "type": "slider",
+        "group": "morph",
+        "required": false,
+        "tooltip": "Morph 90/254 \u2014 r-eye-trans-up (-1..2, neutral 0; the poser's local-changes vocabulary).",
+        "columns": 2,
+        "width": 1
+      },
+      {
+        "name": "l-eye-bag-height-incr",
+        "label": "l-eye-bag-height-incr",
+        "order": 1090,
+        "type": "slider",
+        "group": "morph",
+        "required": false,
+        "tooltip": "Morph 91/254 \u2014 l-eye-bag-height-incr (-1..2, neutral 0; the poser's local-changes vocabulary).",
+        "columns": 2,
+        "width": 1
+      },
+      {
+        "name": "r-eye-bag-height-incr",
+        "label": "r-eye-bag-height-incr",
+        "order": 1091,
+        "type": "slider",
+        "group": "morph",
+        "required": false,
+        "tooltip": "Morph 92/254 \u2014 r-eye-bag-height-incr (-1..2, neutral 0; the poser's local-changes vocabulary).",
+        "columns": 2,
+        "width": 1
+      },
+      {
+        "name": "l-eye-epicanthus-out",
+        "label": "l-eye-epicanthus-out",
+        "order": 1092,
+        "type": "slider",
+        "group": "morph",
+        "required": false,
+        "tooltip": "Morph 93/254 \u2014 l-eye-epicanthus-out (-1..2, neutral 0; the poser's local-changes vocabulary).",
+        "columns": 2,
+        "width": 1
+      },
+      {
+        "name": "r-eye-epicanthus-out",
+        "label": "r-eye-epicanthus-out",
+        "order": 1093,
+        "type": "slider",
+        "group": "morph",
+        "required": false,
+        "tooltip": "Morph 94/254 \u2014 r-eye-epicanthus-out (-1..2, neutral 0; the poser's local-changes vocabulary).",
+        "columns": 2,
+        "width": 1
+      },
+      {
+        "name": "l-eye-eyefold-angle-up",
+        "label": "l-eye-eyefold-angle-up",
+        "order": 1094,
+        "type": "slider",
+        "group": "morph",
+        "required": false,
+        "tooltip": "Morph 95/254 \u2014 l-eye-eyefold-angle-up (-1..2, neutral 0; the poser's local-changes vocabulary).",
+        "columns": 2,
+        "width": 1
+      },
+      {
+        "name": "r-eye-eyefold-angle-up",
+        "label": "r-eye-eyefold-angle-up",
+        "order": 1095,
+        "type": "slider",
+        "group": "morph",
+        "required": false,
+        "tooltip": "Morph 96/254 \u2014 r-eye-eyefold-angle-up (-1..2, neutral 0; the poser's local-changes vocabulary).",
+        "columns": 2,
+        "width": 1
+      },
+      {
+        "name": "l-eye-bag-out",
+        "label": "l-eye-bag-out",
+        "order": 1096,
+        "type": "slider",
+        "group": "morph",
+        "required": false,
+        "tooltip": "Morph 97/254 \u2014 l-eye-bag-out (-1..2, neutral 0; the poser's local-changes vocabulary).",
+        "columns": 2,
+        "width": 1
+      },
+      {
+        "name": "r-eye-bag-out",
+        "label": "r-eye-bag-out",
+        "order": 1097,
+        "type": "slider",
+        "group": "morph",
+        "required": false,
+        "tooltip": "Morph 98/254 \u2014 r-eye-bag-out (-1..2, neutral 0; the poser's local-changes vocabulary).",
+        "columns": 2,
+        "width": 1
+      },
+      {
+        "name": "l-eye-corner2-up",
+        "label": "l-eye-corner2-up",
+        "order": 1098,
+        "type": "slider",
+        "group": "morph",
+        "required": false,
+        "tooltip": "Morph 99/254 \u2014 l-eye-corner2-up (-1..2, neutral 0; the poser's local-changes vocabulary).",
+        "columns": 2,
+        "width": 1
+      },
+      {
+        "name": "r-eye-corner2-up",
+        "label": "r-eye-corner2-up",
+        "order": 1099,
+        "type": "slider",
+        "group": "morph",
+        "required": false,
+        "tooltip": "Morph 100/254 \u2014 r-eye-corner2-up (-1..2, neutral 0; the poser's local-changes vocabulary).",
+        "columns": 2,
+        "width": 1
+      },
+      {
+        "name": "l-eye-trans-out",
+        "label": "l-eye-trans-out",
+        "order": 1100,
+        "type": "slider",
+        "group": "morph",
+        "required": false,
+        "tooltip": "Morph 101/254 \u2014 l-eye-trans-out (-1..2, neutral 0; the poser's local-changes vocabulary).",
+        "columns": 2,
+        "width": 1
+      },
+      {
+        "name": "r-eye-trans-out",
+        "label": "r-eye-trans-out",
+        "order": 1101,
+        "type": "slider",
+        "group": "morph",
+        "required": false,
+        "tooltip": "Morph 102/254 \u2014 r-eye-trans-out (-1..2, neutral 0; the poser's local-changes vocabulary).",
+        "columns": 2,
+        "width": 1
+      },
+      {
+        "name": "l-foot-scale-horiz-incr",
+        "label": "l-foot-scale-horiz-incr",
+        "order": 1102,
+        "type": "slider",
+        "group": "morph",
+        "required": false,
+        "tooltip": "Morph 103/254 \u2014 l-foot-scale-horiz-incr (-1..2, neutral 0; the poser's local-changes vocabulary).",
+        "columns": 2,
+        "width": 1
+      },
+      {
+        "name": "r-foot-scale-horiz-incr",
+        "label": "r-foot-scale-horiz-incr",
+        "order": 1103,
+        "type": "slider",
+        "group": "morph",
+        "required": false,
+        "tooltip": "Morph 104/254 \u2014 r-foot-scale-horiz-incr (-1..2, neutral 0; the poser's local-changes vocabulary).",
+        "columns": 2,
+        "width": 1
+      },
+      {
+        "name": "l-foot-trans-out",
+        "label": "l-foot-trans-out",
+        "order": 1104,
+        "type": "slider",
+        "group": "morph",
+        "required": false,
+        "tooltip": "Morph 105/254 \u2014 l-foot-trans-out (-1..2, neutral 0; the poser's local-changes vocabulary).",
+        "columns": 2,
+        "width": 1
+      },
+      {
+        "name": "r-foot-trans-out",
+        "label": "r-foot-trans-out",
+        "order": 1105,
+        "type": "slider",
+        "group": "morph",
+        "required": false,
+        "tooltip": "Morph 106/254 \u2014 r-foot-trans-out (-1..2, neutral 0; the poser's local-changes vocabulary).",
+        "columns": 2,
+        "width": 1
+      },
+      {
+        "name": "l-foot-scale-vert-incr",
+        "label": "l-foot-scale-vert-incr",
+        "order": 1106,
+        "type": "slider",
+        "group": "morph",
+        "required": false,
+        "tooltip": "Morph 107/254 \u2014 l-foot-scale-vert-incr (-1..2, neutral 0; the poser's local-changes vocabulary).",
+        "columns": 2,
+        "width": 1
+      },
+      {
+        "name": "r-foot-scale-vert-incr",
+        "label": "r-foot-scale-vert-incr",
+        "order": 1107,
+        "type": "slider",
+        "group": "morph",
+        "required": false,
+        "tooltip": "Morph 108/254 \u2014 r-foot-scale-vert-incr (-1..2, neutral 0; the poser's local-changes vocabulary).",
+        "columns": 2,
+        "width": 1
+      },
+      {
+        "name": "l-foot-trans-forward",
+        "label": "l-foot-trans-forward",
+        "order": 1108,
+        "type": "slider",
+        "group": "morph",
+        "required": false,
+        "tooltip": "Morph 109/254 \u2014 l-foot-trans-forward (-1..2, neutral 0; the poser's local-changes vocabulary).",
+        "columns": 2,
+        "width": 1
+      },
+      {
+        "name": "r-foot-trans-forward",
+        "label": "r-foot-trans-forward",
+        "order": 1109,
+        "type": "slider",
+        "group": "morph",
+        "required": false,
+        "tooltip": "Morph 110/254 \u2014 r-foot-trans-forward (-1..2, neutral 0; the poser's local-changes vocabulary).",
+        "columns": 2,
+        "width": 1
+      },
+      {
+        "name": "l-foot-scale-depth-incr",
+        "label": "l-foot-scale-depth-incr",
+        "order": 1110,
+        "type": "slider",
+        "group": "morph",
+        "required": false,
+        "tooltip": "Morph 111/254 \u2014 l-foot-scale-depth-incr (-1..2, neutral 0; the poser's local-changes vocabulary).",
+        "columns": 2,
+        "width": 1
+      },
+      {
+        "name": "r-foot-scale-depth-incr",
+        "label": "r-foot-scale-depth-incr",
+        "order": 1111,
+        "type": "slider",
+        "group": "morph",
+        "required": false,
+        "tooltip": "Morph 112/254 \u2014 r-foot-scale-depth-incr (-1..2, neutral 0; the poser's local-changes vocabulary).",
+        "columns": 2,
+        "width": 1
+      },
+      {
+        "name": "l-foot-scale-incr",
+        "label": "l-foot-scale-incr",
+        "order": 1112,
+        "type": "slider",
+        "group": "morph",
+        "required": false,
+        "tooltip": "Morph 113/254 \u2014 l-foot-scale-incr (-1..2, neutral 0; the poser's local-changes vocabulary).",
+        "columns": 2,
+        "width": 1
+      },
+      {
+        "name": "r-foot-scale-incr",
+        "label": "r-foot-scale-incr",
+        "order": 1113,
+        "type": "slider",
+        "group": "morph",
+        "required": false,
+        "tooltip": "Morph 114/254 \u2014 r-foot-scale-incr (-1..2, neutral 0; the poser's local-changes vocabulary).",
+        "columns": 2,
+        "width": 1
+      },
+      {
+        "name": "l-foot-trans-up",
+        "label": "l-foot-trans-up",
+        "order": 1114,
+        "type": "slider",
+        "group": "morph",
+        "required": false,
+        "tooltip": "Morph 115/254 \u2014 l-foot-trans-up (-1..2, neutral 0; the poser's local-changes vocabulary).",
+        "columns": 2,
+        "width": 1
+      },
+      {
+        "name": "r-foot-trans-up",
+        "label": "r-foot-trans-up",
+        "order": 1115,
+        "type": "slider",
+        "group": "morph",
+        "required": false,
+        "tooltip": "Morph 116/254 \u2014 r-foot-trans-up (-1..2, neutral 0; the poser's local-changes vocabulary).",
+        "columns": 2,
+        "width": 1
+      },
+      {
+        "name": "measure-ankle-circ-incr",
+        "label": "measure-ankle-circ-incr",
+        "order": 1116,
+        "type": "slider",
+        "group": "morph",
+        "required": false,
+        "tooltip": "Morph 117/254 \u2014 measure-ankle-circ-incr (-1..2, neutral 0; the poser's local-changes vocabulary).",
+        "columns": 2,
+        "width": 1
+      },
+      {
+        "name": "forehead-temple-incr",
+        "label": "forehead-temple-incr",
+        "order": 1117,
+        "type": "slider",
+        "group": "morph",
+        "required": false,
+        "tooltip": "Morph 118/254 \u2014 forehead-temple-incr (-1..2, neutral 0; the poser's local-changes vocabulary).",
+        "columns": 2,
+        "width": 1
+      },
+      {
+        "name": "forehead-trans-forward",
+        "label": "forehead-trans-forward",
+        "order": 1118,
+        "type": "slider",
+        "group": "morph",
+        "required": false,
+        "tooltip": "Morph 119/254 \u2014 forehead-trans-forward (-1..2, neutral 0; the poser's local-changes vocabulary).",
+        "columns": 2,
+        "width": 1
+      },
+      {
+        "name": "forehead-scale-vert-incr",
+        "label": "forehead-scale-vert-incr",
+        "order": 1119,
+        "type": "slider",
+        "group": "morph",
+        "required": false,
+        "tooltip": "Morph 120/254 \u2014 forehead-scale-vert-incr (-1..2, neutral 0; the poser's local-changes vocabulary).",
+        "columns": 2,
+        "width": 1
+      },
+      {
+        "name": "forehead-nubian-incr",
+        "label": "forehead-nubian-incr",
+        "order": 1120,
+        "type": "slider",
+        "group": "morph",
+        "required": false,
+        "tooltip": "Morph 121/254 \u2014 forehead-nubian-incr (-1..2, neutral 0; the poser's local-changes vocabulary).",
+        "columns": 2,
+        "width": 1
+      },
+      {
+        "name": "l-hand-trans-out",
+        "label": "l-hand-trans-out",
+        "order": 1121,
+        "type": "slider",
+        "group": "morph",
+        "required": false,
+        "tooltip": "Morph 122/254 \u2014 l-hand-trans-out (-1..2, neutral 0; the poser's local-changes vocabulary).",
+        "columns": 2,
+        "width": 1
+      },
+      {
+        "name": "r-hand-trans-out",
+        "label": "r-hand-trans-out",
+        "order": 1122,
+        "type": "slider",
+        "group": "morph",
+        "required": false,
+        "tooltip": "Morph 123/254 \u2014 r-hand-trans-out (-1..2, neutral 0; the poser's local-changes vocabulary).",
+        "columns": 2,
+        "width": 1
+      },
+      {
+        "name": "l-hand-fingers-length-incr",
+        "label": "l-hand-fingers-length-incr",
+        "order": 1123,
+        "type": "slider",
+        "group": "morph",
+        "required": false,
+        "tooltip": "Morph 124/254 \u2014 l-hand-fingers-length-incr (-1..2, neutral 0; the poser's local-changes vocabulary).",
+        "columns": 2,
+        "width": 1
+      },
+      {
+        "name": "r-hand-fingers-length-incr",
+        "label": "r-hand-fingers-length-incr",
+        "order": 1124,
+        "type": "slider",
+        "group": "morph",
+        "required": false,
+        "tooltip": "Morph 125/254 \u2014 r-hand-fingers-length-incr (-1..2, neutral 0; the poser's local-changes vocabulary).",
+        "columns": 2,
+        "width": 1
+      },
+      {
+        "name": "l-hand-scale-incr",
+        "label": "l-hand-scale-incr",
+        "order": 1125,
+        "type": "slider",
+        "group": "morph",
+        "required": false,
+        "tooltip": "Morph 126/254 \u2014 l-hand-scale-incr (-1..2, neutral 0; the poser's local-changes vocabulary).",
+        "columns": 2,
+        "width": 1
+      },
+      {
+        "name": "r-hand-scale-incr",
+        "label": "r-hand-scale-incr",
+        "order": 1126,
+        "type": "slider",
+        "group": "morph",
+        "required": false,
+        "tooltip": "Morph 127/254 \u2014 r-hand-scale-incr (-1..2, neutral 0; the poser's local-changes vocabulary).",
+        "columns": 2,
+        "width": 1
+      },
+      {
+        "name": "l-hand-fingers-diameter-incr",
+        "label": "l-hand-fingers-diameter-incr",
+        "order": 1127,
+        "type": "slider",
+        "group": "morph",
+        "required": false,
+        "tooltip": "Morph 128/254 \u2014 l-hand-fingers-diameter-incr (-1..2, neutral 0; the poser's local-changes vocabulary).",
+        "columns": 2,
+        "width": 1
+      },
+      {
+        "name": "r-hand-fingers-diameter-incr",
+        "label": "r-hand-fingers-diameter-incr",
+        "order": 1128,
+        "type": "slider",
+        "group": "morph",
+        "required": false,
+        "tooltip": "Morph 129/254 \u2014 r-hand-fingers-diameter-incr (-1..2, neutral 0; the poser's local-changes vocabulary).",
+        "columns": 2,
+        "width": 1
+      },
+      {
+        "name": "l-hand-fingers-distance-incr",
+        "label": "l-hand-fingers-distance-incr",
+        "order": 1129,
+        "type": "slider",
+        "group": "morph",
+        "required": false,
+        "tooltip": "Morph 130/254 \u2014 l-hand-fingers-distance-incr (-1..2, neutral 0; the poser's local-changes vocabulary).",
+        "columns": 2,
+        "width": 1
+      },
+      {
+        "name": "r-hand-fingers-distance-incr",
+        "label": "r-hand-fingers-distance-incr",
+        "order": 1130,
+        "type": "slider",
+        "group": "morph",
+        "required": false,
+        "tooltip": "Morph 131/254 \u2014 r-hand-fingers-distance-incr (-1..2, neutral 0; the poser's local-changes vocabulary).",
+        "columns": 2,
+        "width": 1
+      },
+      {
+        "name": "measure-wrist-circ-incr",
+        "label": "measure-wrist-circ-incr",
+        "order": 1131,
+        "type": "slider",
+        "group": "morph",
+        "required": false,
+        "tooltip": "Morph 132/254 \u2014 measure-wrist-circ-incr (-1..2, neutral 0; the poser's local-changes vocabulary).",
+        "columns": 2,
+        "width": 1
+      },
+      {
+        "name": "head-angle-out",
+        "label": "head-angle-out",
+        "order": 1132,
+        "type": "slider",
+        "group": "morph",
+        "required": false,
+        "tooltip": "Morph 133/254 \u2014 head-angle-out (-1..2, neutral 0; the poser's local-changes vocabulary).",
+        "columns": 2,
+        "width": 1
+      },
+      {
+        "name": "head-scale-vert-incr",
+        "label": "head-scale-vert-incr",
+        "order": 1133,
+        "type": "slider",
+        "group": "morph",
+        "required": false,
+        "tooltip": "Morph 134/254 \u2014 head-scale-vert-incr (-1..2, neutral 0; the poser's local-changes vocabulary).",
+        "columns": 2,
+        "width": 1
+      },
+      {
+        "name": "head-trans-forward",
+        "label": "head-trans-forward",
+        "order": 1134,
+        "type": "slider",
+        "group": "morph",
+        "required": false,
+        "tooltip": "Morph 135/254 \u2014 head-trans-forward (-1..2, neutral 0; the poser's local-changes vocabulary).",
+        "columns": 2,
+        "width": 1
+      },
+      {
+        "name": "head-trans-up",
+        "label": "head-trans-up",
+        "order": 1135,
+        "type": "slider",
+        "group": "morph",
+        "required": false,
+        "tooltip": "Morph 136/254 \u2014 head-trans-up (-1..2, neutral 0; the poser's local-changes vocabulary).",
+        "columns": 2,
+        "width": 1
+      },
+      {
+        "name": "head-fat-incr",
+        "label": "head-fat-incr",
+        "order": 1136,
+        "type": "slider",
+        "group": "morph",
+        "required": false,
+        "tooltip": "Morph 137/254 \u2014 head-fat-incr (-1..2, neutral 0; the poser's local-changes vocabulary).",
+        "columns": 2,
+        "width": 1
+      },
+      {
+        "name": "head-trans-out",
+        "label": "head-trans-out",
+        "order": 1137,
+        "type": "slider",
+        "group": "morph",
+        "required": false,
+        "tooltip": "Morph 138/254 \u2014 head-trans-out (-1..2, neutral 0; the poser's local-changes vocabulary).",
+        "columns": 2,
+        "width": 1
+      },
+      {
+        "name": "head-back-scale-depth-incr",
+        "label": "head-back-scale-depth-incr",
+        "order": 1138,
+        "type": "slider",
+        "group": "morph",
+        "required": false,
+        "tooltip": "Morph 139/254 \u2014 head-back-scale-depth-incr (-1..2, neutral 0; the poser's local-changes vocabulary).",
+        "columns": 2,
+        "width": 1
+      },
+      {
+        "name": "head-age-incr",
+        "label": "head-age-incr",
+        "order": 1139,
+        "type": "slider",
+        "group": "morph",
+        "required": false,
+        "tooltip": "Morph 140/254 \u2014 head-age-incr (-1..2, neutral 0; the poser's local-changes vocabulary).",
+        "columns": 2,
+        "width": 1
+      },
+      {
+        "name": "head-scale-depth-incr",
+        "label": "head-scale-depth-incr",
+        "order": 1140,
+        "type": "slider",
+        "group": "morph",
+        "required": false,
+        "tooltip": "Morph 141/254 \u2014 head-scale-depth-incr (-1..2, neutral 0; the poser's local-changes vocabulary).",
+        "columns": 2,
+        "width": 1
+      },
+      {
+        "name": "head-scale-horiz-incr",
+        "label": "head-scale-horiz-incr",
+        "order": 1141,
+        "type": "slider",
+        "group": "morph",
+        "required": false,
+        "tooltip": "Morph 142/254 \u2014 head-scale-horiz-incr (-1..2, neutral 0; the poser's local-changes vocabulary).",
+        "columns": 2,
+        "width": 1
+      },
+      {
+        "name": "hip-trans-out",
+        "label": "hip-trans-out",
+        "order": 1142,
+        "type": "slider",
+        "group": "morph",
+        "required": false,
+        "tooltip": "Morph 143/254 \u2014 hip-trans-out (-1..2, neutral 0; the poser's local-changes vocabulary).",
+        "columns": 2,
+        "width": 1
+      },
+      {
+        "name": "hip-scale-horiz-incr",
+        "label": "hip-scale-horiz-incr",
+        "order": 1143,
+        "type": "slider",
+        "group": "morph",
+        "required": false,
+        "tooltip": "Morph 144/254 \u2014 hip-scale-horiz-incr (-1..2, neutral 0; the poser's local-changes vocabulary).",
+        "columns": 2,
+        "width": 1
+      },
+      {
+        "name": "hip-scale-depth-incr",
+        "label": "hip-scale-depth-incr",
+        "order": 1144,
+        "type": "slider",
+        "group": "morph",
+        "required": false,
+        "tooltip": "Morph 145/254 \u2014 hip-scale-depth-incr (-1..2, neutral 0; the poser's local-changes vocabulary).",
+        "columns": 2,
+        "width": 1
+      },
+      {
+        "name": "hip-waist-up",
+        "label": "hip-waist-up",
+        "order": 1145,
+        "type": "slider",
+        "group": "morph",
+        "required": false,
+        "tooltip": "Morph 146/254 \u2014 hip-waist-up (-1..2, neutral 0; the poser's local-changes vocabulary).",
+        "columns": 2,
+        "width": 1
+      },
+      {
+        "name": "hip-trans-forward",
+        "label": "hip-trans-forward",
+        "order": 1146,
+        "type": "slider",
+        "group": "morph",
+        "required": false,
+        "tooltip": "Morph 147/254 \u2014 hip-trans-forward (-1..2, neutral 0; the poser's local-changes vocabulary).",
+        "columns": 2,
+        "width": 1
+      },
+      {
+        "name": "hip-scale-vert-incr",
+        "label": "hip-scale-vert-incr",
+        "order": 1147,
+        "type": "slider",
+        "group": "morph",
+        "required": false,
+        "tooltip": "Morph 148/254 \u2014 hip-scale-vert-incr (-1..2, neutral 0; the poser's local-changes vocabulary).",
+        "columns": 2,
+        "width": 1
+      },
+      {
+        "name": "hip-trans-up",
+        "label": "hip-trans-up",
+        "order": 1148,
+        "type": "slider",
+        "group": "morph",
+        "required": false,
+        "tooltip": "Morph 149/254 \u2014 hip-trans-up (-1..2, neutral 0; the poser's local-changes vocabulary).",
+        "columns": 2,
+        "width": 1
+      },
+      {
+        "name": "measure-calf-circ-incr",
+        "label": "measure-calf-circ-incr",
+        "order": 1149,
+        "type": "slider",
+        "group": "morph",
+        "required": false,
+        "tooltip": "Morph 150/254 \u2014 measure-calf-circ-incr (-1..2, neutral 0; the poser's local-changes vocabulary).",
+        "columns": 2,
+        "width": 1
+      },
+      {
+        "name": "measure-lowerleg-height-incr",
+        "label": "measure-lowerleg-height-incr",
+        "order": 1150,
+        "type": "slider",
+        "group": "morph",
+        "required": false,
+        "tooltip": "Morph 151/254 \u2014 measure-lowerleg-height-incr (-1..2, neutral 0; the poser's local-changes vocabulary).",
+        "columns": 2,
+        "width": 1
+      },
+      {
+        "name": "l-upperleg-fat-incr",
+        "label": "l-upperleg-fat-incr",
+        "order": 1151,
+        "type": "slider",
+        "group": "morph",
+        "required": false,
+        "tooltip": "Morph 152/254 \u2014 l-upperleg-fat-incr (-1..2, neutral 0; the poser's local-changes vocabulary).",
+        "columns": 2,
+        "width": 1
+      },
+      {
+        "name": "r-upperleg-fat-incr",
+        "label": "r-upperleg-fat-incr",
+        "order": 1152,
+        "type": "slider",
+        "group": "morph",
+        "required": false,
+        "tooltip": "Morph 153/254 \u2014 r-upperleg-fat-incr (-1..2, neutral 0; the poser's local-changes vocabulary).",
+        "columns": 2,
+        "width": 1
+      },
+      {
+        "name": "l-lowerleg-muscle-incr",
+        "label": "l-lowerleg-muscle-incr",
+        "order": 1153,
+        "type": "slider",
+        "group": "morph",
+        "required": false,
+        "tooltip": "Morph 154/254 \u2014 l-lowerleg-muscle-incr (-1..2, neutral 0; the poser's local-changes vocabulary).",
+        "columns": 2,
+        "width": 1
+      },
+      {
+        "name": "r-lowerleg-muscle-incr",
+        "label": "r-lowerleg-muscle-incr",
+        "order": 1154,
+        "type": "slider",
+        "group": "morph",
+        "required": false,
+        "tooltip": "Morph 155/254 \u2014 r-lowerleg-muscle-incr (-1..2, neutral 0; the poser's local-changes vocabulary).",
+        "columns": 2,
+        "width": 1
+      },
+      {
+        "name": "l-leg-valgus-incr",
+        "label": "l-leg-valgus-incr",
+        "order": 1155,
+        "type": "slider",
+        "group": "morph",
+        "required": false,
+        "tooltip": "Morph 156/254 \u2014 l-leg-valgus-incr (-1..2, neutral 0; the poser's local-changes vocabulary).",
+        "columns": 2,
+        "width": 1
+      },
+      {
+        "name": "r-leg-valgus-incr",
+        "label": "r-leg-valgus-incr",
+        "order": 1156,
+        "type": "slider",
+        "group": "morph",
+        "required": false,
+        "tooltip": "Morph 157/254 \u2014 r-leg-valgus-incr (-1..2, neutral 0; the poser's local-changes vocabulary).",
+        "columns": 2,
+        "width": 1
+      },
+      {
+        "name": "l-lowerleg-scale-depth-incr",
+        "label": "l-lowerleg-scale-depth-incr",
+        "order": 1157,
+        "type": "slider",
+        "group": "morph",
+        "required": false,
+        "tooltip": "Morph 158/254 \u2014 l-lowerleg-scale-depth-incr (-1..2, neutral 0; the poser's local-changes vocabulary).",
+        "columns": 2,
+        "width": 1
+      },
+      {
+        "name": "r-lowerleg-scale-depth-incr",
+        "label": "r-lowerleg-scale-depth-incr",
+        "order": 1158,
+        "type": "slider",
+        "group": "morph",
+        "required": false,
+        "tooltip": "Morph 159/254 \u2014 r-lowerleg-scale-depth-incr (-1..2, neutral 0; the poser's local-changes vocabulary).",
+        "columns": 2,
+        "width": 1
+      },
+      {
+        "name": "l-lowerleg-scale-vert-incr",
+        "label": "l-lowerleg-scale-vert-incr",
+        "order": 1159,
+        "type": "slider",
+        "group": "morph",
+        "required": false,
+        "tooltip": "Morph 160/254 \u2014 l-lowerleg-scale-vert-incr (-1..2, neutral 0; the poser's local-changes vocabulary).",
+        "columns": 2,
+        "width": 1
+      },
+      {
+        "name": "r-lowerleg-scale-vert-incr",
+        "label": "r-lowerleg-scale-vert-incr",
+        "order": 1160,
+        "type": "slider",
+        "group": "morph",
+        "required": false,
+        "tooltip": "Morph 161/254 \u2014 r-lowerleg-scale-vert-incr (-1..2, neutral 0; the poser's local-changes vocabulary).",
+        "columns": 2,
+        "width": 1
+      },
+      {
+        "name": "l-upperleg-scale-depth-incr",
+        "label": "l-upperleg-scale-depth-incr",
+        "order": 1161,
+        "type": "slider",
+        "group": "morph",
+        "required": false,
+        "tooltip": "Morph 162/254 \u2014 l-upperleg-scale-depth-incr (-1..2, neutral 0; the poser's local-changes vocabulary).",
+        "columns": 2,
+        "width": 1
+      },
+      {
+        "name": "r-upperleg-scale-depth-incr",
+        "label": "r-upperleg-scale-depth-incr",
+        "order": 1162,
+        "type": "slider",
+        "group": "morph",
+        "required": false,
+        "tooltip": "Morph 163/254 \u2014 r-upperleg-scale-depth-incr (-1..2, neutral 0; the poser's local-changes vocabulary).",
+        "columns": 2,
+        "width": 1
+      },
+      {
+        "name": "l-upperleg-scale-horiz-incr",
+        "label": "l-upperleg-scale-horiz-incr",
+        "order": 1163,
+        "type": "slider",
+        "group": "morph",
+        "required": false,
+        "tooltip": "Morph 164/254 \u2014 l-upperleg-scale-horiz-incr (-1..2, neutral 0; the poser's local-changes vocabulary).",
+        "columns": 2,
+        "width": 1
+      },
+      {
+        "name": "r-upperleg-scale-horiz-incr",
+        "label": "r-upperleg-scale-horiz-incr",
+        "order": 1164,
+        "type": "slider",
+        "group": "morph",
+        "required": false,
+        "tooltip": "Morph 165/254 \u2014 r-upperleg-scale-horiz-incr (-1..2, neutral 0; the poser's local-changes vocabulary).",
+        "columns": 2,
+        "width": 1
+      },
+      {
+        "name": "upperlegs-height-incr",
+        "label": "upperlegs-height-incr",
+        "order": 1165,
+        "type": "slider",
+        "group": "morph",
+        "required": false,
+        "tooltip": "Morph 166/254 \u2014 upperlegs-height-incr (-1..2, neutral 0; the poser's local-changes vocabulary).",
+        "columns": 2,
+        "width": 1
+      },
+      {
+        "name": "l-lowerleg-fat-incr",
+        "label": "l-lowerleg-fat-incr",
+        "order": 1166,
+        "type": "slider",
+        "group": "morph",
+        "required": false,
+        "tooltip": "Morph 167/254 \u2014 l-lowerleg-fat-incr (-1..2, neutral 0; the poser's local-changes vocabulary).",
+        "columns": 2,
+        "width": 1
+      },
+      {
+        "name": "r-lowerleg-fat-incr",
+        "label": "r-lowerleg-fat-incr",
+        "order": 1167,
+        "type": "slider",
+        "group": "morph",
+        "required": false,
+        "tooltip": "Morph 168/254 \u2014 r-lowerleg-fat-incr (-1..2, neutral 0; the poser's local-changes vocabulary).",
+        "columns": 2,
+        "width": 1
+      },
+      {
+        "name": "l-lowerleg-scale-horiz-incr",
+        "label": "l-lowerleg-scale-horiz-incr",
+        "order": 1168,
+        "type": "slider",
+        "group": "morph",
+        "required": false,
+        "tooltip": "Morph 169/254 \u2014 l-lowerleg-scale-horiz-incr (-1..2, neutral 0; the poser's local-changes vocabulary).",
+        "columns": 2,
+        "width": 1
+      },
+      {
+        "name": "r-lowerleg-scale-horiz-incr",
+        "label": "r-lowerleg-scale-horiz-incr",
+        "order": 1169,
+        "type": "slider",
+        "group": "morph",
+        "required": false,
+        "tooltip": "Morph 170/254 \u2014 r-lowerleg-scale-horiz-incr (-1..2, neutral 0; the poser's local-changes vocabulary).",
+        "columns": 2,
+        "width": 1
+      },
+      {
+        "name": "lowerlegs-height-incr",
+        "label": "lowerlegs-height-incr",
+        "order": 1170,
+        "type": "slider",
+        "group": "morph",
+        "required": false,
+        "tooltip": "Morph 171/254 \u2014 lowerlegs-height-incr (-1..2, neutral 0; the poser's local-changes vocabulary).",
+        "columns": 2,
+        "width": 1
+      },
+      {
+        "name": "measure-upperleg-height-incr",
+        "label": "measure-upperleg-height-incr",
+        "order": 1171,
+        "type": "slider",
+        "group": "morph",
+        "required": false,
+        "tooltip": "Morph 172/254 \u2014 measure-upperleg-height-incr (-1..2, neutral 0; the poser's local-changes vocabulary).",
+        "columns": 2,
+        "width": 1
+      },
+      {
+        "name": "l-upperleg-muscle-incr",
+        "label": "l-upperleg-muscle-incr",
+        "order": 1172,
+        "type": "slider",
+        "group": "morph",
+        "required": false,
+        "tooltip": "Morph 173/254 \u2014 l-upperleg-muscle-incr (-1..2, neutral 0; the poser's local-changes vocabulary).",
+        "columns": 2,
+        "width": 1
+      },
+      {
+        "name": "r-upperleg-muscle-incr",
+        "label": "r-upperleg-muscle-incr",
+        "order": 1173,
+        "type": "slider",
+        "group": "morph",
+        "required": false,
+        "tooltip": "Morph 174/254 \u2014 r-upperleg-muscle-incr (-1..2, neutral 0; the poser's local-changes vocabulary).",
+        "columns": 2,
+        "width": 1
+      },
+      {
+        "name": "measure-knee-circ-incr",
+        "label": "measure-knee-circ-incr",
+        "order": 1174,
+        "type": "slider",
+        "group": "morph",
+        "required": false,
+        "tooltip": "Morph 175/254 \u2014 measure-knee-circ-incr (-1..2, neutral 0; the poser's local-changes vocabulary).",
+        "columns": 2,
+        "width": 1
+      },
+      {
+        "name": "measure-thigh-circ-incr",
+        "label": "measure-thigh-circ-incr",
+        "order": 1175,
+        "type": "slider",
+        "group": "morph",
+        "required": false,
+        "tooltip": "Morph 176/254 \u2014 measure-thigh-circ-incr (-1..2, neutral 0; the poser's local-changes vocabulary).",
+        "columns": 2,
+        "width": 1
+      },
+      {
+        "name": "l-upperleg-scale-vert-incr",
+        "label": "l-upperleg-scale-vert-incr",
+        "order": 1176,
+        "type": "slider",
+        "group": "morph",
+        "required": false,
+        "tooltip": "Morph 177/254 \u2014 l-upperleg-scale-vert-incr (-1..2, neutral 0; the poser's local-changes vocabulary).",
+        "columns": 2,
+        "width": 1
+      },
+      {
+        "name": "r-upperleg-scale-vert-incr",
+        "label": "r-upperleg-scale-vert-incr",
+        "order": 1177,
+        "type": "slider",
+        "group": "morph",
+        "required": false,
+        "tooltip": "Morph 178/254 \u2014 r-upperleg-scale-vert-incr (-1..2, neutral 0; the poser's local-changes vocabulary).",
+        "columns": 2,
+        "width": 1
+      },
+      {
+        "name": "mouth-lowerlip-height-incr",
+        "label": "mouth-lowerlip-height-incr",
+        "order": 1178,
+        "type": "slider",
+        "group": "morph",
+        "required": false,
+        "tooltip": "Morph 179/254 \u2014 mouth-lowerlip-height-incr (-1..2, neutral 0; the poser's local-changes vocabulary).",
+        "columns": 2,
+        "width": 1
+      },
+      {
+        "name": "mouth-scale-horiz-incr",
+        "label": "mouth-scale-horiz-incr",
+        "order": 1179,
+        "type": "slider",
+        "group": "morph",
+        "required": false,
+        "tooltip": "Morph 180/254 \u2014 mouth-scale-horiz-incr (-1..2, neutral 0; the poser's local-changes vocabulary).",
+        "columns": 2,
+        "width": 1
+      },
+      {
+        "name": "mouth-cupidsbow-incr",
+        "label": "mouth-cupidsbow-incr",
+        "order": 1180,
+        "type": "slider",
+        "group": "morph",
+        "required": false,
+        "tooltip": "Morph 181/254 \u2014 mouth-cupidsbow-incr (-1..2, neutral 0; the poser's local-changes vocabulary).",
+        "columns": 2,
+        "width": 1
+      },
+      {
+        "name": "mouth-laugh-lines-out",
+        "label": "mouth-laugh-lines-out",
+        "order": 1181,
+        "type": "slider",
+        "group": "morph",
+        "required": false,
+        "tooltip": "Morph 182/254 \u2014 mouth-laugh-lines-out (-1..2, neutral 0; the poser's local-changes vocabulary).",
+        "columns": 2,
+        "width": 1
+      },
+      {
+        "name": "mouth-scale-depth-incr",
+        "label": "mouth-scale-depth-incr",
+        "order": 1182,
+        "type": "slider",
+        "group": "morph",
+        "required": false,
+        "tooltip": "Morph 183/254 \u2014 mouth-scale-depth-incr (-1..2, neutral 0; the poser's local-changes vocabulary).",
+        "columns": 2,
+        "width": 1
+      },
+      {
+        "name": "mouth-lowerlip-volume-incr",
+        "label": "mouth-lowerlip-volume-incr",
+        "order": 1183,
+        "type": "slider",
+        "group": "morph",
+        "required": false,
+        "tooltip": "Morph 184/254 \u2014 mouth-lowerlip-volume-incr (-1..2, neutral 0; the poser's local-changes vocabulary).",
+        "columns": 2,
+        "width": 1
+      },
+      {
+        "name": "mouth-angles-up",
+        "label": "mouth-angles-up",
+        "order": 1184,
+        "type": "slider",
+        "group": "morph",
+        "required": false,
+        "tooltip": "Morph 185/254 \u2014 mouth-angles-up (-1..2, neutral 0; the poser's local-changes vocabulary).",
+        "columns": 2,
+        "width": 1
+      },
+      {
+        "name": "mouth-upperlip-ext-up",
+        "label": "mouth-upperlip-ext-up",
+        "order": 1185,
+        "type": "slider",
+        "group": "morph",
+        "required": false,
+        "tooltip": "Morph 186/254 \u2014 mouth-upperlip-ext-up (-1..2, neutral 0; the poser's local-changes vocabulary).",
+        "columns": 2,
+        "width": 1
+      },
+      {
+        "name": "mouth-lowerlip-width-incr",
+        "label": "mouth-lowerlip-width-incr",
+        "order": 1186,
+        "type": "slider",
+        "group": "morph",
+        "required": false,
+        "tooltip": "Morph 187/254 \u2014 mouth-lowerlip-width-incr (-1..2, neutral 0; the poser's local-changes vocabulary).",
+        "columns": 2,
+        "width": 1
+      },
+      {
+        "name": "mouth-trans-forward",
+        "label": "mouth-trans-forward",
+        "order": 1187,
+        "type": "slider",
+        "group": "morph",
+        "required": false,
+        "tooltip": "Morph 188/254 \u2014 mouth-trans-forward (-1..2, neutral 0; the poser's local-changes vocabulary).",
+        "columns": 2,
+        "width": 1
+      },
+      {
+        "name": "mouth-upperlip-width-incr",
+        "label": "mouth-upperlip-width-incr",
+        "order": 1188,
+        "type": "slider",
+        "group": "morph",
+        "required": false,
+        "tooltip": "Morph 189/254 \u2014 mouth-upperlip-width-incr (-1..2, neutral 0; the poser's local-changes vocabulary).",
+        "columns": 2,
+        "width": 1
+      },
+      {
+        "name": "mouth-scale-vert-incr",
+        "label": "mouth-scale-vert-incr",
+        "order": 1189,
+        "type": "slider",
+        "group": "morph",
+        "required": false,
+        "tooltip": "Morph 190/254 \u2014 mouth-scale-vert-incr (-1..2, neutral 0; the poser's local-changes vocabulary).",
+        "columns": 2,
+        "width": 1
+      },
+      {
+        "name": "mouth-dimples-out",
+        "label": "mouth-dimples-out",
+        "order": 1190,
+        "type": "slider",
+        "group": "morph",
+        "required": false,
+        "tooltip": "Morph 191/254 \u2014 mouth-dimples-out (-1..2, neutral 0; the poser's local-changes vocabulary).",
+        "columns": 2,
+        "width": 1
+      },
+      {
+        "name": "mouth-upperlip-height-incr",
+        "label": "mouth-upperlip-height-incr",
+        "order": 1191,
+        "type": "slider",
+        "group": "morph",
+        "required": false,
+        "tooltip": "Morph 192/254 \u2014 mouth-upperlip-height-incr (-1..2, neutral 0; the poser's local-changes vocabulary).",
+        "columns": 2,
+        "width": 1
+      },
+      {
+        "name": "mouth-upperlip-volume-incr",
+        "label": "mouth-upperlip-volume-incr",
+        "order": 1192,
+        "type": "slider",
+        "group": "morph",
+        "required": false,
+        "tooltip": "Morph 193/254 \u2014 mouth-upperlip-volume-incr (-1..2, neutral 0; the poser's local-changes vocabulary).",
+        "columns": 2,
+        "width": 1
+      },
+      {
+        "name": "mouth-cupidsbow-width-incr",
+        "label": "mouth-cupidsbow-width-incr",
+        "order": 1193,
+        "type": "slider",
+        "group": "morph",
+        "required": false,
+        "tooltip": "Morph 194/254 \u2014 mouth-cupidsbow-width-incr (-1..2, neutral 0; the poser's local-changes vocabulary).",
+        "columns": 2,
+        "width": 1
+      },
+      {
+        "name": "mouth-lowerlip-ext-up",
+        "label": "mouth-lowerlip-ext-up",
+        "order": 1194,
+        "type": "slider",
+        "group": "morph",
+        "required": false,
+        "tooltip": "Morph 195/254 \u2014 mouth-lowerlip-ext-up (-1..2, neutral 0; the poser's local-changes vocabulary).",
+        "columns": 2,
+        "width": 1
+      },
+      {
+        "name": "mouth-upperlip-middle-up",
+        "label": "mouth-upperlip-middle-up",
+        "order": 1195,
+        "type": "slider",
+        "group": "morph",
+        "required": false,
+        "tooltip": "Morph 196/254 \u2014 mouth-upperlip-middle-up (-1..2, neutral 0; the poser's local-changes vocabulary).",
+        "columns": 2,
+        "width": 1
+      },
+      {
+        "name": "mouth-trans-up",
+        "label": "mouth-trans-up",
+        "order": 1196,
+        "type": "slider",
+        "group": "morph",
+        "required": false,
+        "tooltip": "Morph 197/254 \u2014 mouth-trans-up (-1..2, neutral 0; the poser's local-changes vocabulary).",
+        "columns": 2,
+        "width": 1
+      },
+      {
+        "name": "mouth-trans-out",
+        "label": "mouth-trans-out",
+        "order": 1197,
+        "type": "slider",
+        "group": "morph",
+        "required": false,
+        "tooltip": "Morph 198/254 \u2014 mouth-trans-out (-1..2, neutral 0; the poser's local-changes vocabulary).",
+        "columns": 2,
+        "width": 1
+      },
+      {
+        "name": "mouth-lowerlip-middle-up",
+        "label": "mouth-lowerlip-middle-up",
+        "order": 1198,
+        "type": "slider",
+        "group": "morph",
+        "required": false,
+        "tooltip": "Morph 199/254 \u2014 mouth-lowerlip-middle-up (-1..2, neutral 0; the poser's local-changes vocabulary).",
+        "columns": 2,
+        "width": 1
+      },
+      {
+        "name": "mouth-philtrum-volume-incr",
+        "label": "mouth-philtrum-volume-incr",
+        "order": 1199,
+        "type": "slider",
+        "group": "morph",
+        "required": false,
+        "tooltip": "Morph 200/254 \u2014 mouth-philtrum-volume-incr (-1..2, neutral 0; the poser's local-changes vocabulary).",
+        "columns": 2,
+        "width": 1
+      },
+      {
+        "name": "measure-neck-circ-incr",
+        "label": "measure-neck-circ-incr",
+        "order": 1200,
+        "type": "slider",
+        "group": "morph",
+        "required": false,
+        "tooltip": "Morph 201/254 \u2014 measure-neck-circ-incr (-1..2, neutral 0; the poser's local-changes vocabulary).",
+        "columns": 2,
+        "width": 1
+      },
+      {
+        "name": "measure-neck-height-incr",
+        "label": "measure-neck-height-incr",
+        "order": 1201,
+        "type": "slider",
+        "group": "morph",
+        "required": false,
+        "tooltip": "Morph 202/254 \u2014 measure-neck-height-incr (-1..2, neutral 0; the poser's local-changes vocabulary).",
+        "columns": 2,
+        "width": 1
+      },
+      {
+        "name": "neck-scale-depth-incr",
+        "label": "neck-scale-depth-incr",
+        "order": 1202,
+        "type": "slider",
+        "group": "morph",
+        "required": false,
+        "tooltip": "Morph 203/254 \u2014 neck-scale-depth-incr (-1..2, neutral 0; the poser's local-changes vocabulary).",
+        "columns": 2,
+        "width": 1
+      },
+      {
+        "name": "neck-trans-forward",
+        "label": "neck-trans-forward",
+        "order": 1203,
+        "type": "slider",
+        "group": "morph",
+        "required": false,
+        "tooltip": "Morph 204/254 \u2014 neck-trans-forward (-1..2, neutral 0; the poser's local-changes vocabulary).",
+        "columns": 2,
+        "width": 1
+      },
+      {
+        "name": "neck-double-incr",
+        "label": "neck-double-incr",
+        "order": 1204,
+        "type": "slider",
+        "group": "morph",
+        "required": false,
+        "tooltip": "Morph 205/254 \u2014 neck-double-incr (-1..2, neutral 0; the poser's local-changes vocabulary).",
+        "columns": 2,
+        "width": 1
+      },
+      {
+        "name": "neck-trans-out",
+        "label": "neck-trans-out",
+        "order": 1205,
+        "type": "slider",
+        "group": "morph",
+        "required": false,
+        "tooltip": "Morph 206/254 \u2014 neck-trans-out (-1..2, neutral 0; the poser's local-changes vocabulary).",
+        "columns": 2,
+        "width": 1
+      },
+      {
+        "name": "neck-back-scale-depth-incr",
+        "label": "neck-back-scale-depth-incr",
+        "order": 1206,
+        "type": "slider",
+        "group": "morph",
+        "required": false,
+        "tooltip": "Morph 207/254 \u2014 neck-back-scale-depth-incr (-1..2, neutral 0; the poser's local-changes vocabulary).",
+        "columns": 2,
+        "width": 1
+      },
+      {
+        "name": "neck-scale-horiz-incr",
+        "label": "neck-scale-horiz-incr",
+        "order": 1207,
+        "type": "slider",
+        "group": "morph",
+        "required": false,
+        "tooltip": "Morph 208/254 \u2014 neck-scale-horiz-incr (-1..2, neutral 0; the poser's local-changes vocabulary).",
+        "columns": 2,
+        "width": 1
+      },
+      {
+        "name": "neck-scale-vert-incr",
+        "label": "neck-scale-vert-incr",
+        "order": 1208,
+        "type": "slider",
+        "group": "morph",
+        "required": false,
+        "tooltip": "Morph 209/254 \u2014 neck-scale-vert-incr (-1..2, neutral 0; the poser's local-changes vocabulary).",
+        "columns": 2,
+        "width": 1
+      },
+      {
+        "name": "neck-trans-up",
+        "label": "neck-trans-up",
+        "order": 1209,
+        "type": "slider",
+        "group": "morph",
+        "required": false,
+        "tooltip": "Morph 210/254 \u2014 neck-trans-up (-1..2, neutral 0; the poser's local-changes vocabulary).",
+        "columns": 2,
+        "width": 1
+      },
+      {
+        "name": "nose-nostrils-angle-up",
+        "label": "nose-nostrils-angle-up",
+        "order": 1210,
+        "type": "slider",
+        "group": "morph",
+        "required": false,
+        "tooltip": "Morph 211/254 \u2014 nose-nostrils-angle-up (-1..2, neutral 0; the poser's local-changes vocabulary).",
+        "columns": 2,
+        "width": 1
+      },
+      {
+        "name": "nose-flaring-incr",
+        "label": "nose-flaring-incr",
+        "order": 1211,
+        "type": "slider",
+        "group": "morph",
+        "required": false,
+        "tooltip": "Morph 212/254 \u2014 nose-flaring-incr (-1..2, neutral 0; the poser's local-changes vocabulary).",
+        "columns": 2,
+        "width": 1
+      },
+      {
+        "name": "nose-curve-convex",
+        "label": "nose-curve-convex",
+        "order": 1212,
+        "type": "slider",
+        "group": "morph",
+        "required": false,
+        "tooltip": "Morph 213/254 \u2014 nose-curve-convex (-1..2, neutral 0; the poser's local-changes vocabulary).",
+        "columns": 2,
+        "width": 1
+      },
+      {
+        "name": "nose-scale-depth-incr",
+        "label": "nose-scale-depth-incr",
+        "order": 1213,
+        "type": "slider",
+        "group": "morph",
+        "required": false,
+        "tooltip": "Morph 214/254 \u2014 nose-scale-depth-incr (-1..2, neutral 0; the poser's local-changes vocabulary).",
+        "columns": 2,
+        "width": 1
+      },
+      {
+        "name": "nose-scale-vert-incr",
+        "label": "nose-scale-vert-incr",
+        "order": 1214,
+        "type": "slider",
+        "group": "morph",
+        "required": false,
+        "tooltip": "Morph 215/254 \u2014 nose-scale-vert-incr (-1..2, neutral 0; the poser's local-changes vocabulary).",
+        "columns": 2,
+        "width": 1
+      },
+      {
+        "name": "nose-point-width-incr",
+        "label": "nose-point-width-incr",
+        "order": 1215,
+        "type": "slider",
+        "group": "morph",
+        "required": false,
+        "tooltip": "Morph 216/254 \u2014 nose-point-width-incr (-1..2, neutral 0; the poser's local-changes vocabulary).",
+        "columns": 2,
+        "width": 1
+      },
+      {
+        "name": "nose-scale-horiz-incr",
+        "label": "nose-scale-horiz-incr",
+        "order": 1216,
+        "type": "slider",
+        "group": "morph",
+        "required": false,
+        "tooltip": "Morph 217/254 \u2014 nose-scale-horiz-incr (-1..2, neutral 0; the poser's local-changes vocabulary).",
+        "columns": 2,
+        "width": 1
+      },
+      {
+        "name": "nose-width1-incr",
+        "label": "nose-width1-incr",
+        "order": 1217,
+        "type": "slider",
+        "group": "morph",
+        "required": false,
+        "tooltip": "Morph 218/254 \u2014 nose-width1-incr (-1..2, neutral 0; the poser's local-changes vocabulary).",
+        "columns": 2,
+        "width": 1
+      },
+      {
+        "name": "nose-trans-forward",
+        "label": "nose-trans-forward",
+        "order": 1218,
+        "type": "slider",
+        "group": "morph",
+        "required": false,
+        "tooltip": "Morph 219/254 \u2014 nose-trans-forward (-1..2, neutral 0; the poser's local-changes vocabulary).",
+        "columns": 2,
+        "width": 1
+      },
+      {
+        "name": "nose-trans-up",
+        "label": "nose-trans-up",
+        "order": 1219,
+        "type": "slider",
+        "group": "morph",
+        "required": false,
+        "tooltip": "Morph 220/254 \u2014 nose-trans-up (-1..2, neutral 0; the poser's local-changes vocabulary).",
+        "columns": 2,
+        "width": 1
+      },
+      {
+        "name": "nose-hump-incr",
+        "label": "nose-hump-incr",
+        "order": 1220,
+        "type": "slider",
+        "group": "morph",
+        "required": false,
+        "tooltip": "Morph 221/254 \u2014 nose-hump-incr (-1..2, neutral 0; the poser's local-changes vocabulary).",
+        "columns": 2,
+        "width": 1
+      },
+      {
+        "name": "nose-nostrils-width-incr",
+        "label": "nose-nostrils-width-incr",
+        "order": 1221,
+        "type": "slider",
+        "group": "morph",
+        "required": false,
+        "tooltip": "Morph 222/254 \u2014 nose-nostrils-width-incr (-1..2, neutral 0; the poser's local-changes vocabulary).",
+        "columns": 2,
+        "width": 1
+      },
+      {
+        "name": "nose-trans-out",
+        "label": "nose-trans-out",
+        "order": 1222,
+        "type": "slider",
+        "group": "morph",
+        "required": false,
+        "tooltip": "Morph 223/254 \u2014 nose-trans-out (-1..2, neutral 0; the poser's local-changes vocabulary).",
+        "columns": 2,
+        "width": 1
+      },
+      {
+        "name": "nose-greek-incr",
+        "label": "nose-greek-incr",
+        "order": 1223,
+        "type": "slider",
+        "group": "morph",
+        "required": false,
+        "tooltip": "Morph 224/254 \u2014 nose-greek-incr (-1..2, neutral 0; the poser's local-changes vocabulary).",
+        "columns": 2,
+        "width": 1
+      },
+      {
+        "name": "nose-point-up",
+        "label": "nose-point-up",
+        "order": 1224,
+        "type": "slider",
+        "group": "morph",
+        "required": false,
+        "tooltip": "Morph 225/254 \u2014 nose-point-up (-1..2, neutral 0; the poser's local-changes vocabulary).",
+        "columns": 2,
+        "width": 1
+      },
+      {
+        "name": "nose-width2-incr",
+        "label": "nose-width2-incr",
+        "order": 1225,
+        "type": "slider",
+        "group": "morph",
+        "required": false,
+        "tooltip": "Morph 226/254 \u2014 nose-width2-incr (-1..2, neutral 0; the poser's local-changes vocabulary).",
+        "columns": 2,
+        "width": 1
+      },
+      {
+        "name": "nose-width3-incr",
+        "label": "nose-width3-incr",
+        "order": 1226,
+        "type": "slider",
+        "group": "morph",
+        "required": false,
+        "tooltip": "Morph 227/254 \u2014 nose-width3-incr (-1..2, neutral 0; the poser's local-changes vocabulary).",
+        "columns": 2,
+        "width": 1
+      },
+      {
+        "name": "nose-septumangle-incr",
+        "label": "nose-septumangle-incr",
+        "order": 1227,
+        "type": "slider",
+        "group": "morph",
+        "required": false,
+        "tooltip": "Morph 228/254 \u2014 nose-septumangle-incr (-1..2, neutral 0; the poser's local-changes vocabulary).",
+        "columns": 2,
+        "width": 1
+      },
+      {
+        "name": "nose-base-up",
+        "label": "nose-base-up",
+        "order": 1228,
+        "type": "slider",
+        "group": "morph",
+        "required": false,
+        "tooltip": "Morph 229/254 \u2014 nose-base-up (-1..2, neutral 0; the poser's local-changes vocabulary).",
+        "columns": 2,
+        "width": 1
+      },
+      {
+        "name": "nose-compression-uncompress",
+        "label": "nose-compression-uncompress",
+        "order": 1229,
+        "type": "slider",
+        "group": "morph",
+        "required": false,
+        "tooltip": "Morph 230/254 \u2014 nose-compression-uncompress (-1..2, neutral 0; the poser's local-changes vocabulary).",
+        "columns": 2,
+        "width": 1
+      },
+      {
+        "name": "nose-volume-incr",
+        "label": "nose-volume-incr",
+        "order": 1230,
+        "type": "slider",
+        "group": "morph",
+        "required": false,
+        "tooltip": "Morph 231/254 \u2014 nose-volume-incr (-1..2, neutral 0; the poser's local-changes vocabulary).",
+        "columns": 2,
+        "width": 1
+      },
+      {
+        "name": "bulge-incr",
+        "label": "bulge-incr",
+        "order": 1231,
+        "type": "slider",
+        "group": "morph",
+        "required": false,
+        "tooltip": "Morph 232/254 \u2014 bulge-incr (-1..2, neutral 0; the poser's local-changes vocabulary).",
+        "columns": 2,
+        "width": 1
+      },
+      {
+        "name": "pelvis-tone-incr",
+        "label": "pelvis-tone-incr",
+        "order": 1232,
+        "type": "slider",
+        "group": "morph",
+        "required": false,
+        "tooltip": "Morph 233/254 \u2014 pelvis-tone-incr (-1..2, neutral 0; the poser's local-changes vocabulary).",
+        "columns": 2,
+        "width": 1
+      },
+      {
+        "name": "stomach-pregnant-incr",
+        "label": "stomach-pregnant-incr",
+        "order": 1233,
+        "type": "slider",
+        "group": "morph",
+        "required": false,
+        "tooltip": "Morph 234/254 \u2014 stomach-pregnant-incr (-1..2, neutral 0; the poser's local-changes vocabulary).",
+        "columns": 2,
+        "width": 1
+      },
+      {
+        "name": "stomach-navel-out",
+        "label": "stomach-navel-out",
+        "order": 1234,
+        "type": "slider",
+        "group": "morph",
+        "required": false,
+        "tooltip": "Morph 235/254 \u2014 stomach-navel-out (-1..2, neutral 0; the poser's local-changes vocabulary).",
+        "columns": 2,
+        "width": 1
+      },
+      {
+        "name": "stomach-navel-up",
+        "label": "stomach-navel-up",
+        "order": 1235,
+        "type": "slider",
+        "group": "morph",
+        "required": false,
+        "tooltip": "Morph 236/254 \u2014 stomach-navel-up (-1..2, neutral 0; the poser's local-changes vocabulary).",
+        "columns": 2,
+        "width": 1
+      },
+      {
+        "name": "stomach-tone-incr",
+        "label": "stomach-tone-incr",
+        "order": 1236,
+        "type": "slider",
+        "group": "morph",
+        "required": false,
+        "tooltip": "Morph 237/254 \u2014 stomach-tone-incr (-1..2, neutral 0; the poser's local-changes vocabulary).",
+        "columns": 2,
+        "width": 1
+      },
+      {
+        "name": "torso-trans-forward",
+        "label": "torso-trans-forward",
+        "order": 1237,
+        "type": "slider",
+        "group": "morph",
+        "required": false,
+        "tooltip": "Morph 238/254 \u2014 torso-trans-forward (-1..2, neutral 0; the poser's local-changes vocabulary).",
+        "columns": 2,
+        "width": 1
+      },
+      {
+        "name": "torso-muscle-pectoral-incr",
+        "label": "torso-muscle-pectoral-incr",
+        "order": 1238,
+        "type": "slider",
+        "group": "morph",
+        "required": false,
+        "tooltip": "Morph 239/254 \u2014 torso-muscle-pectoral-incr (-1..2, neutral 0; the poser's local-changes vocabulary).",
+        "columns": 2,
+        "width": 1
+      },
+      {
+        "name": "measure-underbust-circ-incr",
+        "label": "measure-underbust-circ-incr",
+        "order": 1239,
+        "type": "slider",
+        "group": "morph",
+        "required": false,
+        "tooltip": "Morph 240/254 \u2014 measure-underbust-circ-incr (-1..2, neutral 0; the poser's local-changes vocabulary).",
+        "columns": 2,
+        "width": 1
+      },
+      {
+        "name": "torso-scale-horiz-incr",
+        "label": "torso-scale-horiz-incr",
+        "order": 1240,
+        "type": "slider",
+        "group": "morph",
+        "required": false,
+        "tooltip": "Morph 241/254 \u2014 torso-scale-horiz-incr (-1..2, neutral 0; the poser's local-changes vocabulary).",
+        "columns": 2,
+        "width": 1
+      },
+      {
+        "name": "torso-scale-depth-incr",
+        "label": "torso-scale-depth-incr",
+        "order": 1241,
+        "type": "slider",
+        "group": "morph",
+        "required": false,
+        "tooltip": "Morph 242/254 \u2014 torso-scale-depth-incr (-1..2, neutral 0; the poser's local-changes vocabulary).",
+        "columns": 2,
+        "width": 1
+      },
+      {
+        "name": "measure-napetowaist-dist-incr",
+        "label": "measure-napetowaist-dist-incr",
+        "order": 1242,
+        "type": "slider",
+        "group": "morph",
+        "required": false,
+        "tooltip": "Morph 243/254 \u2014 measure-napetowaist-dist-incr (-1..2, neutral 0; the poser's local-changes vocabulary).",
+        "columns": 2,
+        "width": 1
+      },
+      {
+        "name": "measure-waisttohip-dist-incr",
+        "label": "measure-waisttohip-dist-incr",
+        "order": 1243,
+        "type": "slider",
+        "group": "morph",
+        "required": false,
+        "tooltip": "Morph 244/254 \u2014 measure-waisttohip-dist-incr (-1..2, neutral 0; the poser's local-changes vocabulary).",
+        "columns": 2,
+        "width": 1
+      },
+      {
+        "name": "measure-shoulder-dist-incr",
+        "label": "measure-shoulder-dist-incr",
+        "order": 1244,
+        "type": "slider",
+        "group": "morph",
+        "required": false,
+        "tooltip": "Morph 245/254 \u2014 measure-shoulder-dist-incr (-1..2, neutral 0; the poser's local-changes vocabulary).",
+        "columns": 2,
+        "width": 1
+      },
+      {
+        "name": "measure-hips-circ-incr",
+        "label": "measure-hips-circ-incr",
+        "order": 1245,
+        "type": "slider",
+        "group": "morph",
+        "required": false,
+        "tooltip": "Morph 246/254 \u2014 measure-hips-circ-incr (-1..2, neutral 0; the poser's local-changes vocabulary).",
+        "columns": 2,
+        "width": 1
+      },
+      {
+        "name": "torso-vshape-incr",
+        "label": "torso-vshape-incr",
+        "order": 1246,
+        "type": "slider",
+        "group": "morph",
+        "required": false,
+        "tooltip": "Morph 247/254 \u2014 torso-vshape-incr (-1..2, neutral 0; the poser's local-changes vocabulary).",
+        "columns": 2,
+        "width": 1
+      },
+      {
+        "name": "torso-trans-up",
+        "label": "torso-trans-up",
+        "order": 1247,
+        "type": "slider",
+        "group": "morph",
+        "required": false,
+        "tooltip": "Morph 248/254 \u2014 torso-trans-up (-1..2, neutral 0; the poser's local-changes vocabulary).",
+        "columns": 2,
+        "width": 1
+      },
+      {
+        "name": "torso-muscle-dorsi-incr",
+        "label": "torso-muscle-dorsi-incr",
+        "order": 1248,
+        "type": "slider",
+        "group": "morph",
+        "required": false,
+        "tooltip": "Morph 249/254 \u2014 torso-muscle-dorsi-incr (-1..2, neutral 0; the poser's local-changes vocabulary).",
+        "columns": 2,
+        "width": 1
+      },
+      {
+        "name": "measure-waist-circ-incr",
+        "label": "measure-waist-circ-incr",
+        "order": 1249,
+        "type": "slider",
+        "group": "morph",
+        "required": false,
+        "tooltip": "Morph 250/254 \u2014 measure-waist-circ-incr (-1..2, neutral 0; the poser's local-changes vocabulary).",
+        "columns": 2,
+        "width": 1
+      },
+      {
+        "name": "measure-frontchest-dist-incr",
+        "label": "measure-frontchest-dist-incr",
+        "order": 1250,
+        "type": "slider",
+        "group": "morph",
+        "required": false,
+        "tooltip": "Morph 251/254 \u2014 measure-frontchest-dist-incr (-1..2, neutral 0; the poser's local-changes vocabulary).",
+        "columns": 2,
+        "width": 1
+      },
+      {
+        "name": "torso-scale-vert-incr",
+        "label": "torso-scale-vert-incr",
+        "order": 1251,
+        "type": "slider",
+        "group": "morph",
+        "required": false,
+        "tooltip": "Morph 252/254 \u2014 torso-scale-vert-incr (-1..2, neutral 0; the poser's local-changes vocabulary).",
+        "columns": 2,
+        "width": 1
+      },
+      {
+        "name": "measure-bust-circ-incr",
+        "label": "measure-bust-circ-incr",
+        "order": 1252,
+        "type": "slider",
+        "group": "morph",
+        "required": false,
+        "tooltip": "Morph 253/254 \u2014 measure-bust-circ-incr (-1..2, neutral 0; the poser's local-changes vocabulary).",
+        "columns": 2,
+        "width": 1
+      },
+      {
+        "name": "torso-trans-out",
+        "label": "torso-trans-out",
+        "order": 1253,
+        "type": "slider",
+        "group": "morph",
+        "required": false,
+        "tooltip": "Morph 254/254 \u2014 torso-trans-out (-1..2, neutral 0; the poser's local-changes vocabulary).",
+        "columns": 2,
+        "width": 1
+      },
+      {
         "name": "resolution",
         "label": "View resolution",
         "order": 0,
@@ -649,6 +3443,773 @@
           },
           {
             "name": "caucasian"
+          }
+        ]
+      },
+      {
+        "id": "morph",
+        "fields": [
+          {
+            "name": "l-lowerarm-scale-depth-incr"
+          },
+          {
+            "name": "r-lowerarm-scale-depth-incr"
+          },
+          {
+            "name": "l-upperarm-scale-horiz-incr"
+          },
+          {
+            "name": "r-upperarm-scale-horiz-incr"
+          },
+          {
+            "name": "l-upperarm-fat-incr"
+          },
+          {
+            "name": "r-upperarm-fat-incr"
+          },
+          {
+            "name": "measure-upperarm-length-incr"
+          },
+          {
+            "name": "l-lowerarm-fat-incr"
+          },
+          {
+            "name": "r-lowerarm-fat-incr"
+          },
+          {
+            "name": "l-lowerarm-scale-horiz-incr"
+          },
+          {
+            "name": "r-lowerarm-scale-horiz-incr"
+          },
+          {
+            "name": "l-lowerarm-muscle-incr"
+          },
+          {
+            "name": "r-lowerarm-muscle-incr"
+          },
+          {
+            "name": "l-upperarm-shoulder-muscle-incr"
+          },
+          {
+            "name": "r-upperarm-shoulder-muscle-incr"
+          },
+          {
+            "name": "measure-upperarm-circ-incr"
+          },
+          {
+            "name": "l-upperarm-scale-depth-incr"
+          },
+          {
+            "name": "r-upperarm-scale-depth-incr"
+          },
+          {
+            "name": "l-lowerarm-scale-vert-incr"
+          },
+          {
+            "name": "r-lowerarm-scale-vert-incr"
+          },
+          {
+            "name": "measure-lowerarm-length-incr"
+          },
+          {
+            "name": "l-upperarm-muscle-incr"
+          },
+          {
+            "name": "r-upperarm-muscle-incr"
+          },
+          {
+            "name": "l-upperarm-scale-vert-incr"
+          },
+          {
+            "name": "r-upperarm-scale-vert-incr"
+          },
+          {
+            "name": "breast-point-incr"
+          },
+          {
+            "name": "breast-dist-incr"
+          },
+          {
+            "name": "breast-volume-vert-up"
+          },
+          {
+            "name": "breast-trans-up"
+          },
+          {
+            "name": "buttocks-volume-incr"
+          },
+          {
+            "name": "l-cheek-trans-up"
+          },
+          {
+            "name": "r-cheek-trans-up"
+          },
+          {
+            "name": "l-cheek-volume-incr"
+          },
+          {
+            "name": "r-cheek-volume-incr"
+          },
+          {
+            "name": "l-cheek-inner-incr"
+          },
+          {
+            "name": "r-cheek-inner-incr"
+          },
+          {
+            "name": "l-cheek-bones-incr"
+          },
+          {
+            "name": "r-cheek-bones-incr"
+          },
+          {
+            "name": "chin-jaw-drop-incr"
+          },
+          {
+            "name": "chin-height-incr"
+          },
+          {
+            "name": "chin-prominent-incr"
+          },
+          {
+            "name": "chin-bones-incr"
+          },
+          {
+            "name": "chin-width-incr"
+          },
+          {
+            "name": "chin-cleft-incr"
+          },
+          {
+            "name": "chin-prognathism-incr"
+          },
+          {
+            "name": "l-ear-lobe-incr"
+          },
+          {
+            "name": "r-ear-lobe-incr"
+          },
+          {
+            "name": "l-ear-shape-round"
+          },
+          {
+            "name": "r-ear-shape-round"
+          },
+          {
+            "name": "l-ear-trans-forward"
+          },
+          {
+            "name": "r-ear-trans-forward"
+          },
+          {
+            "name": "l-ear-rot-forward"
+          },
+          {
+            "name": "r-ear-rot-forward"
+          },
+          {
+            "name": "l-ear-trans-up"
+          },
+          {
+            "name": "r-ear-trans-up"
+          },
+          {
+            "name": "l-ear-scale-vert-incr"
+          },
+          {
+            "name": "r-ear-scale-vert-incr"
+          },
+          {
+            "name": "l-ear-flap-incr"
+          },
+          {
+            "name": "r-ear-flap-incr"
+          },
+          {
+            "name": "l-ear-shape-triangle"
+          },
+          {
+            "name": "r-ear-shape-triangle"
+          },
+          {
+            "name": "l-ear-scale-incr"
+          },
+          {
+            "name": "r-ear-scale-incr"
+          },
+          {
+            "name": "l-ear-scale-depth-incr"
+          },
+          {
+            "name": "r-ear-scale-depth-incr"
+          },
+          {
+            "name": "l-ear-wing-incr"
+          },
+          {
+            "name": "r-ear-wing-incr"
+          },
+          {
+            "name": "eyebrows-angle-up"
+          },
+          {
+            "name": "eyebrows-trans-up"
+          },
+          {
+            "name": "eyebrows-trans-forward"
+          },
+          {
+            "name": "l-eye-corner1-up"
+          },
+          {
+            "name": "r-eye-corner1-up"
+          },
+          {
+            "name": "l-eye-height1-incr"
+          },
+          {
+            "name": "r-eye-height1-incr"
+          },
+          {
+            "name": "l-eye-scale-incr"
+          },
+          {
+            "name": "r-eye-scale-incr"
+          },
+          {
+            "name": "l-eye-push1-out"
+          },
+          {
+            "name": "r-eye-push1-out"
+          },
+          {
+            "name": "l-eye-eyefold-up"
+          },
+          {
+            "name": "r-eye-eyefold-up"
+          },
+          {
+            "name": "l-eye-height3-incr"
+          },
+          {
+            "name": "r-eye-height3-incr"
+          },
+          {
+            "name": "l-eye-height2-incr"
+          },
+          {
+            "name": "r-eye-height2-incr"
+          },
+          {
+            "name": "l-eye-bag-incr"
+          },
+          {
+            "name": "r-eye-bag-incr"
+          },
+          {
+            "name": "l-eye-push2-out"
+          },
+          {
+            "name": "r-eye-push2-out"
+          },
+          {
+            "name": "l-eye-trans-up"
+          },
+          {
+            "name": "r-eye-trans-up"
+          },
+          {
+            "name": "l-eye-bag-height-incr"
+          },
+          {
+            "name": "r-eye-bag-height-incr"
+          },
+          {
+            "name": "l-eye-epicanthus-out"
+          },
+          {
+            "name": "r-eye-epicanthus-out"
+          },
+          {
+            "name": "l-eye-eyefold-angle-up"
+          },
+          {
+            "name": "r-eye-eyefold-angle-up"
+          },
+          {
+            "name": "l-eye-bag-out"
+          },
+          {
+            "name": "r-eye-bag-out"
+          },
+          {
+            "name": "l-eye-corner2-up"
+          },
+          {
+            "name": "r-eye-corner2-up"
+          },
+          {
+            "name": "l-eye-trans-out"
+          },
+          {
+            "name": "r-eye-trans-out"
+          },
+          {
+            "name": "l-foot-scale-horiz-incr"
+          },
+          {
+            "name": "r-foot-scale-horiz-incr"
+          },
+          {
+            "name": "l-foot-trans-out"
+          },
+          {
+            "name": "r-foot-trans-out"
+          },
+          {
+            "name": "l-foot-scale-vert-incr"
+          },
+          {
+            "name": "r-foot-scale-vert-incr"
+          },
+          {
+            "name": "l-foot-trans-forward"
+          },
+          {
+            "name": "r-foot-trans-forward"
+          },
+          {
+            "name": "l-foot-scale-depth-incr"
+          },
+          {
+            "name": "r-foot-scale-depth-incr"
+          },
+          {
+            "name": "l-foot-scale-incr"
+          },
+          {
+            "name": "r-foot-scale-incr"
+          },
+          {
+            "name": "l-foot-trans-up"
+          },
+          {
+            "name": "r-foot-trans-up"
+          },
+          {
+            "name": "measure-ankle-circ-incr"
+          },
+          {
+            "name": "forehead-temple-incr"
+          },
+          {
+            "name": "forehead-trans-forward"
+          },
+          {
+            "name": "forehead-scale-vert-incr"
+          },
+          {
+            "name": "forehead-nubian-incr"
+          },
+          {
+            "name": "l-hand-trans-out"
+          },
+          {
+            "name": "r-hand-trans-out"
+          },
+          {
+            "name": "l-hand-fingers-length-incr"
+          },
+          {
+            "name": "r-hand-fingers-length-incr"
+          },
+          {
+            "name": "l-hand-scale-incr"
+          },
+          {
+            "name": "r-hand-scale-incr"
+          },
+          {
+            "name": "l-hand-fingers-diameter-incr"
+          },
+          {
+            "name": "r-hand-fingers-diameter-incr"
+          },
+          {
+            "name": "l-hand-fingers-distance-incr"
+          },
+          {
+            "name": "r-hand-fingers-distance-incr"
+          },
+          {
+            "name": "measure-wrist-circ-incr"
+          },
+          {
+            "name": "head-angle-out"
+          },
+          {
+            "name": "head-scale-vert-incr"
+          },
+          {
+            "name": "head-trans-forward"
+          },
+          {
+            "name": "head-trans-up"
+          },
+          {
+            "name": "head-fat-incr"
+          },
+          {
+            "name": "head-trans-out"
+          },
+          {
+            "name": "head-back-scale-depth-incr"
+          },
+          {
+            "name": "head-age-incr"
+          },
+          {
+            "name": "head-scale-depth-incr"
+          },
+          {
+            "name": "head-scale-horiz-incr"
+          },
+          {
+            "name": "hip-trans-out"
+          },
+          {
+            "name": "hip-scale-horiz-incr"
+          },
+          {
+            "name": "hip-scale-depth-incr"
+          },
+          {
+            "name": "hip-waist-up"
+          },
+          {
+            "name": "hip-trans-forward"
+          },
+          {
+            "name": "hip-scale-vert-incr"
+          },
+          {
+            "name": "hip-trans-up"
+          },
+          {
+            "name": "measure-calf-circ-incr"
+          },
+          {
+            "name": "measure-lowerleg-height-incr"
+          },
+          {
+            "name": "l-upperleg-fat-incr"
+          },
+          {
+            "name": "r-upperleg-fat-incr"
+          },
+          {
+            "name": "l-lowerleg-muscle-incr"
+          },
+          {
+            "name": "r-lowerleg-muscle-incr"
+          },
+          {
+            "name": "l-leg-valgus-incr"
+          },
+          {
+            "name": "r-leg-valgus-incr"
+          },
+          {
+            "name": "l-lowerleg-scale-depth-incr"
+          },
+          {
+            "name": "r-lowerleg-scale-depth-incr"
+          },
+          {
+            "name": "l-lowerleg-scale-vert-incr"
+          },
+          {
+            "name": "r-lowerleg-scale-vert-incr"
+          },
+          {
+            "name": "l-upperleg-scale-depth-incr"
+          },
+          {
+            "name": "r-upperleg-scale-depth-incr"
+          },
+          {
+            "name": "l-upperleg-scale-horiz-incr"
+          },
+          {
+            "name": "r-upperleg-scale-horiz-incr"
+          },
+          {
+            "name": "upperlegs-height-incr"
+          },
+          {
+            "name": "l-lowerleg-fat-incr"
+          },
+          {
+            "name": "r-lowerleg-fat-incr"
+          },
+          {
+            "name": "l-lowerleg-scale-horiz-incr"
+          },
+          {
+            "name": "r-lowerleg-scale-horiz-incr"
+          },
+          {
+            "name": "lowerlegs-height-incr"
+          },
+          {
+            "name": "measure-upperleg-height-incr"
+          },
+          {
+            "name": "l-upperleg-muscle-incr"
+          },
+          {
+            "name": "r-upperleg-muscle-incr"
+          },
+          {
+            "name": "measure-knee-circ-incr"
+          },
+          {
+            "name": "measure-thigh-circ-incr"
+          },
+          {
+            "name": "l-upperleg-scale-vert-incr"
+          },
+          {
+            "name": "r-upperleg-scale-vert-incr"
+          },
+          {
+            "name": "mouth-lowerlip-height-incr"
+          },
+          {
+            "name": "mouth-scale-horiz-incr"
+          },
+          {
+            "name": "mouth-cupidsbow-incr"
+          },
+          {
+            "name": "mouth-laugh-lines-out"
+          },
+          {
+            "name": "mouth-scale-depth-incr"
+          },
+          {
+            "name": "mouth-lowerlip-volume-incr"
+          },
+          {
+            "name": "mouth-angles-up"
+          },
+          {
+            "name": "mouth-upperlip-ext-up"
+          },
+          {
+            "name": "mouth-lowerlip-width-incr"
+          },
+          {
+            "name": "mouth-trans-forward"
+          },
+          {
+            "name": "mouth-upperlip-width-incr"
+          },
+          {
+            "name": "mouth-scale-vert-incr"
+          },
+          {
+            "name": "mouth-dimples-out"
+          },
+          {
+            "name": "mouth-upperlip-height-incr"
+          },
+          {
+            "name": "mouth-upperlip-volume-incr"
+          },
+          {
+            "name": "mouth-cupidsbow-width-incr"
+          },
+          {
+            "name": "mouth-lowerlip-ext-up"
+          },
+          {
+            "name": "mouth-upperlip-middle-up"
+          },
+          {
+            "name": "mouth-trans-up"
+          },
+          {
+            "name": "mouth-trans-out"
+          },
+          {
+            "name": "mouth-lowerlip-middle-up"
+          },
+          {
+            "name": "mouth-philtrum-volume-incr"
+          },
+          {
+            "name": "measure-neck-circ-incr"
+          },
+          {
+            "name": "measure-neck-height-incr"
+          },
+          {
+            "name": "neck-scale-depth-incr"
+          },
+          {
+            "name": "neck-trans-forward"
+          },
+          {
+            "name": "neck-double-incr"
+          },
+          {
+            "name": "neck-trans-out"
+          },
+          {
+            "name": "neck-back-scale-depth-incr"
+          },
+          {
+            "name": "neck-scale-horiz-incr"
+          },
+          {
+            "name": "neck-scale-vert-incr"
+          },
+          {
+            "name": "neck-trans-up"
+          },
+          {
+            "name": "nose-nostrils-angle-up"
+          },
+          {
+            "name": "nose-flaring-incr"
+          },
+          {
+            "name": "nose-curve-convex"
+          },
+          {
+            "name": "nose-scale-depth-incr"
+          },
+          {
+            "name": "nose-scale-vert-incr"
+          },
+          {
+            "name": "nose-point-width-incr"
+          },
+          {
+            "name": "nose-scale-horiz-incr"
+          },
+          {
+            "name": "nose-width1-incr"
+          },
+          {
+            "name": "nose-trans-forward"
+          },
+          {
+            "name": "nose-trans-up"
+          },
+          {
+            "name": "nose-hump-incr"
+          },
+          {
+            "name": "nose-nostrils-width-incr"
+          },
+          {
+            "name": "nose-trans-out"
+          },
+          {
+            "name": "nose-greek-incr"
+          },
+          {
+            "name": "nose-point-up"
+          },
+          {
+            "name": "nose-width2-incr"
+          },
+          {
+            "name": "nose-width3-incr"
+          },
+          {
+            "name": "nose-septumangle-incr"
+          },
+          {
+            "name": "nose-base-up"
+          },
+          {
+            "name": "nose-compression-uncompress"
+          },
+          {
+            "name": "nose-volume-incr"
+          },
+          {
+            "name": "bulge-incr"
+          },
+          {
+            "name": "pelvis-tone-incr"
+          },
+          {
+            "name": "stomach-pregnant-incr"
+          },
+          {
+            "name": "stomach-navel-out"
+          },
+          {
+            "name": "stomach-navel-up"
+          },
+          {
+            "name": "stomach-tone-incr"
+          },
+          {
+            "name": "torso-trans-forward"
+          },
+          {
+            "name": "torso-muscle-pectoral-incr"
+          },
+          {
+            "name": "measure-underbust-circ-incr"
+          },
+          {
+            "name": "torso-scale-horiz-incr"
+          },
+          {
+            "name": "torso-scale-depth-incr"
+          },
+          {
+            "name": "measure-napetowaist-dist-incr"
+          },
+          {
+            "name": "measure-waisttohip-dist-incr"
+          },
+          {
+            "name": "measure-shoulder-dist-incr"
+          },
+          {
+            "name": "measure-hips-circ-incr"
+          },
+          {
+            "name": "torso-vshape-incr"
+          },
+          {
+            "name": "torso-trans-up"
+          },
+          {
+            "name": "torso-muscle-dorsi-incr"
+          },
+          {
+            "name": "measure-waist-circ-incr"
+          },
+          {
+            "name": "measure-frontchest-dist-incr"
+          },
+          {
+            "name": "torso-scale-vert-incr"
+          },
+          {
+            "name": "measure-bust-circ-incr"
+          },
+          {
+            "name": "torso-trans-out"
           }
         ]
       },

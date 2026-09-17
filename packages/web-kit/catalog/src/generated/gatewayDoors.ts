@@ -55,6 +55,7 @@ export type EstateDoorUrl =
   | `/v1/flows/drafts${DoorTail}`
   | `/v1/flows/drafts/${string}${DoorTail}`
   | `/v1/manage${DoorTail}`
+  | `/v1/poser/${string}${DoorTail}`
   | `/poser/${string}${DoorTail}`
   | `/v1/flows/reproduce/${string}${DoorTail}`
   | `/v1/agent/boot${DoorTail}`

@@ -1,5 +1,6 @@
-// Tier 3 — the anny card: author a body (11 identity sliders — or
-// attach a GLB — or load a preset) → the 8-view turnaround sheet.
+// Tier 3 — the anny card: author a body (11 identity sliders + the
+// 254-morph sculpt panel — or attach a GLB — or load a preset) → the
+// 8-view turnaround sheet.
 //
 // THE TRUTH PASS (stroke 89, operator order 2026-09-17): the old
 // schema documented a fiction — SAM hair/outfit sprites, a REQUIRED
@@ -11,14 +12,22 @@
 // identity dims are the SERVED space's own labels/range/defaults
 // (GET /v1/poser/identity-space: dims 11, range [0,1], defaults
 // 0.5 — the DECL carries the defaults, the schema carries hint-only
-// floors per the RANGE RULE). The 254 local-change morphs stay a
-// SERVED vocabulary (the estimator/advanced surface) — the ledger
-// names the follow-up; they never hardcode into a schema.
+// floors per the RANGE RULE).
+//
+// STROKE 90 (the keep-all-features order, 2026-09-17): the studio's
+// sculpt stages CONVERT, they don't die — the 254 local-change
+// morphs ("a [REDACTED 2026-11-05] ton of sliders") ride the same pin law as the 11
+// (kit morphs.ts, door-pinned: labels/range/defaults all 0; compose
+// ships only NON-ZERO entries — absent = the engine's own 0), and
+// the native figure viewport (the /poser shaped bind mesh — NEVER
+// the low-poly GLB export, the 2026-09-06 order) rides the served
+// preview.figure claim, rendered by the base form's mesh stage.
 import type { Context } from '@deepseek-ai/cordis'
 import z from '@deepseek-ai/schemastery'
 import { annyLane, finalizeAnny } from '@melite/comfyui-card-kit'
 import type { ComfyUIService } from '@melite/comfyui-cordis/service'
 import { vocabulary } from '@melite/comfyui-card-kit/vocab'
+import { ANNY_MORPH_LABELS, ANNY_MORPH_RANGE, ANNY_MORPH_DEFAULT } from '@melite/comfyui-card-kit/morphs'
 
 /** The served identity space's 11 dims, in its label order (the
  *  bake validator names the same eleven — gender/age/muscle/weight/
@@ -33,6 +42,10 @@ const schema = z.object({
   ...Object.fromEntries(PHENOTYPE_DIMS.map((dim, i) => [dim,
     z.number().description(dim.charAt(0).toUpperCase() + dim.slice(1))
       .extra('extra', { order: i, group: "identity", width: 1, wtype: 'slider', min: 0, max: 1, columns: 2, tooltip: `Identity dim ${i + 1}/11 — ${dim} (0..1, neutral 0.5; served by the poser's identity space).` }),
+  ])),
+  ...Object.fromEntries(ANNY_MORPH_LABELS.map((label, i) => [label,
+    z.number().description(label)
+      .extra('extra', { order: 1000 + i, group: "morph", width: 1, wtype: 'slider', min: ANNY_MORPH_RANGE[0], max: ANNY_MORPH_RANGE[1], columns: 2, tooltip: `Morph ${i + 1}/254 — ${label} (${ANNY_MORPH_RANGE[0]}..${ANNY_MORPH_RANGE[1]}, neutral 0; the poser's local-changes vocabulary).` }),
   ])),
   resolution: z.number().description("View resolution").min(256).max(2048).step(64).default(768).extra('extra', { order: 0, group: "turnaround", width: 1, tooltip: "Pixel size of each turnaround view." }),
   framing: z.number().description("Framing").min(1).max(3).step(0.05).default(1.2).extra('extra', { order: 1, group: "turnaround", width: 1, tooltip: "Camera distance factor — larger frames the whole body looser." }),
@@ -88,16 +101,31 @@ export function apply(ctx: Context): void {
       //    (AnnyParamsToGlb: params_json → glb_path — parametric
       //    end-to-end; untouched sliders = the neutral bake).
       const body = String(p.body_glb ?? '').trim()
+      // THE MORPHS (stroke 90): sparse local_changes — only NON-ZERO
+      // entries ride the wire (absent = the engine's own 0; the pin
+      // pins every default at 0, so untouched sliders never ship).
+      const localChanges: Record<string, number> = {}
+      for (const label of ANNY_MORPH_LABELS) {
+        const v = Number(p[label])
+        if (Number.isFinite(v) && v !== ANNY_MORPH_DEFAULT) localChanges[label] = v
+      }
       const bodyPath = body !== ''
         ? g.node('PrimitiveString', { value: body }).out()
         : g.node('AnnyParamsToGlb', {
             params_json: JSON.stringify({
               dialect: 'authored',
               phenotype: PHENOTYPE_DIMS.map((dim) => Number(p[dim] ?? 0.5)),
+              ...(Object.keys(localChanges).length > 0 ? { local_changes: localChanges } : {}),
             }),
           }).out()
       annyLane(p, g, bodyPath)
     },
     finalize: finalizeAnny,
+    // THE NATIVE FIGURE (stroke 90): before any run lands, the mesh
+    // stage shows the /poser shaped bind mesh (18k verts, smooth
+    // normals — NEVER the low-poly GLB export, the 2026-09-06
+    // "native ANNY not GLB" order). Served verbatim on the doc's
+    // preview arm; run outputs take the stage once they exist.
+    preview: { figure: { door: '/v1/poser/mesh', identityModel: 'anny' } },
   }))
 }

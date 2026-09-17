@@ -13,6 +13,7 @@
  */
 import { createElement as h, useEffect, useState } from 'react'
 import { GlbStagePreview } from './glb-stage.tsx'
+import { PoserFigureStage } from './poser-figure.tsx'
 import type { PreviewArtifact, PreviewOwnerProps } from '@melite/contracts'
 import { cn } from './chrome.ts'
 import s from './preview.module.css'
@@ -198,16 +199,27 @@ export function AudioStagePreview(props: PreviewOwnerProps): ReturnType<typeof h
  *  @react-three in any client bundle). The ACTIVE set becomes
  *  stage assets (the current run's, or a picked history entry's —
  *  mesh gains the full history law every other kind already had);
- *  the empty hint honors the live-run flag. */
+ *  the empty hint honors the live-run flag. THE LIVE FIGURE
+ *  (stroke 90): a card-declared preview.figure replaces the empty
+ *  tombstone with the native figure (the /poser bind mesh) — the
+ *  studio-viewport capability on the form card; run outputs still
+ *  take the stage the moment they exist. */
 export function MeshStagePreview(props: PreviewOwnerProps): ReturnType<typeof h> {
   const { hero, rest, viewingHistory, note, picked, promote, returnToCurrent } = useHistoryHero(props)
   const active = hero === undefined ? [] : [hero, ...rest]
   return h('div', { className: s.stagePreview, 'data-testid': 'stage-preview-mesh' },
     viewingHistory ? h(StaleBadge, { note, onReturn: returnToCurrent }) : null,
-    h(GlbStagePreview, {
-      assets: active.map((a, i) => ({ id: `${props.stageId}:${a.name || i}`, url: a.url, name: a.name })),
-      emptyHint: props.runStatus === 'running' ? 'rendering… the mesh lands here' : 'No render yet — run lands the mesh here',
-    }),
+    active.length > 0
+      ? h(GlbStagePreview, {
+          assets: active.map((a, i) => ({ id: `${props.stageId}:${a.name || i}`, url: a.url, name: a.name })),
+          emptyHint: props.runStatus === 'running' ? 'rendering… the mesh lands here' : 'No render yet — run lands the mesh here',
+        })
+      : props.figure !== undefined
+        ? h(PoserFigureStage, { door: props.figure.door, identityModel: props.figure.identityModel, label: `poser-figure:${props.stageId}` })
+        : h(GlbStagePreview, {
+            assets: [],
+            emptyHint: props.runStatus === 'running' ? 'rendering… the mesh lands here' : 'No render yet — run lands the mesh here',
+          }),
     HistoryStrip(props, promote, 'stage-output-history', picked),
   )
 }
@@ -217,5 +229,6 @@ export function MeshStagePreview(props: PreviewOwnerProps): ReturnType<typeof h>
  *  the preview seam stays ONE subpath: import { GlbStagePreview }
  *  from '@melite/card-base/preview'. */
 export { GlbStagePreview, autoFitToHeight, type StageAsset } from './glb-stage.tsx'
+export { PoserFigureStage, figureGeometry, type PoserMeshDoc } from './poser-figure.tsx'
 export { ViewportFrame, ViewportAnchor, ReferenceImageBadge } from './viewportChrome.tsx'
 export type { ViewportFrameProps, ViewportAnchorProps, ReferenceImageBadgeProps, ViewportAnchorDock } from './viewportChrome.tsx'

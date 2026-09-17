@@ -103,8 +103,15 @@ export interface CardDefinition {
    *  `historyStrip: false` claims the bottom bar — an advanced card
    *  whose own face IS the history (h3-timeline's timeline). Served
    *  verbatim on the form-spec doc's `preview` arm; absent = the
-   *  strip is ON (the QOL default). */
-  preview?: { historyStrip?: boolean }
+   *  strip is ON (the QOL default).
+   *
+   *  `figure` (stroke 90, the keep-all-features order): the LIVE
+   *  initial mesh — the door-served native figure the mesh stage
+   *  renders BEFORE any run output exists (anny's /poser shaped
+   *  bind mesh, never the low-poly GLB export). Run outputs take
+   *  the stage once they land; the figure is the empty state's
+   *  replacement, never a second hero. */
+  preview?: { historyStrip?: boolean; figure?: { door: string; identityModel: string } }
   /** Card-declared modifier kinds (the MODs generalization, stroke
    *  63 — docs/design/mods-contracts.md CONTRACT A): action kinds
    *  the CARD owns (MASK's mask sources), served through the ONE

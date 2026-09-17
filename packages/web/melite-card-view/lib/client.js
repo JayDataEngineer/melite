@@ -54227,6 +54227,124 @@ void main() {
 			}));
 		}
 		//#endregion
+		//#region ../card-base/src/poser-figure.tsx
+		/**
+		* poser-figure.tsx — THE NATIVE FIGURE STAGE (stroke 90, 2026-09-17:
+		* the keep-all-features order — "Where the [REDACTED 2026-11-05] is the 3js preview?"
+		* "CONVERT means DON'T LOSE FUNCTIONALITY"). The studio's viewport
+		* capability moves to the base form's preview seam: the /poser shaped
+		* bind mesh (18,056 verts, 36,108 tris, smooth normals — the
+		* 2026-09-06 law: NEVER the low-poly GLB export, which the operator
+		* rejected as "low quality — you are rendering GLB and not native
+		* ANNY").
+		*
+		* SUBSTRATE LAW (verbatim, glb-stage.tsx): RAW three.js — imperative
+		* scene in a useEffect, NO @react-three. three is a pure leaf
+		* library; mounts like any imperative canvas lib.
+		*
+		* THE WIRE SHAPE (the door, live-pinned): { vertices: number[][]
+		* (xyz, cm-scale, Y-up), faces: number[][] (index triplets),
+		* bind_joints: number[][], identity_model: string }.
+		*/
+		init_three_module();
+		/** Pure: the door's JSON → a three geometry (unit-testable without
+		* WebGL). Float32 positions, uint32 indices, computed smooth
+		* normals (the door ships unindexed soup; the weld-free normals are
+		* the poser's own smooth-shading intent — the design doc's word). */
+		function figureGeometry(doc) {
+			const g = new BufferGeometry();
+			g.setAttribute("position", new Float32BufferAttribute(doc.vertices.flat(), 3));
+			g.setIndex(doc.faces.flat());
+			g.computeVertexNormals();
+			return g;
+		}
+		/** THE NATIVE FIGURE — fetched from the estate door, rendered on the
+		* shared stage core (same light rig + floor grid as the GLB stage,
+		* the preview-port interaction law: ONE look across ports). The
+		* fetch failures voice themselves in the DOM (the loud-errors law);
+		* WebGL absence refuses loud, never a blank silent canvas. */
+		function PoserFigureStage({ door, identityModel, label }) {
+			const canvasRef = (0, react.useRef)(null);
+			const [doc, setDoc] = (0, react.useState)(null);
+			const [failed, setFailed] = (0, react.useState)(null);
+			(0, react.useEffect)(() => {
+				let alive = true;
+				setDoc(null);
+				setFailed(null);
+				fetch(`${door}?identity_model=${encodeURIComponent(identityModel)}`).then(async (r) => {
+					if (!r.ok) throw new Error(`figure door HTTP ${r.status}`);
+					return r.json();
+				}).then((d) => {
+					if (alive) setDoc(d);
+				}).catch((e) => {
+					if (alive) setFailed(e instanceof Error ? e.message : "figure fetch failed");
+				});
+				return () => {
+					alive = false;
+				};
+			}, [door, identityModel]);
+			(0, react.useEffect)(() => {
+				if (doc === null) return;
+				const canvas = canvasRef.current;
+				const stage = mountStage3D(canvas, {
+					fov: 40,
+					camera: [
+						2.2,
+						1.6,
+						2.6
+					],
+					target: [
+						0,
+						.8,
+						0
+					],
+					toneMapping: 0,
+					onContextFailure: (m) => setFailed(m)
+				});
+				if (stage === null) return;
+				const scene = stage.scene;
+				scene.add(new HemisphereLight(16777215, 9079434, 1.4));
+				const key = new DirectionalLight(16777215, 2.2);
+				key.position.set(3, 5, 2);
+				scene.add(key);
+				const fill = new DirectionalLight(16777215, .6);
+				fill.position.set(-3, 2, -2);
+				scene.add(fill);
+				const grid = new GridHelper(6, 24, 12303291, 14540253);
+				const gridMat = grid.material;
+				gridMat.transparent = true;
+				gridMat.opacity = .35;
+				scene.add(grid);
+				const mesh = new Mesh(figureGeometry(doc), new MeshStandardMaterial({
+					color: 13220008,
+					roughness: .72,
+					metalness: .04
+				}));
+				autoFitToHeight(mesh);
+				scene.add(mesh);
+				return () => {
+					mesh.geometry.dispose();
+					mesh.material.dispose();
+					grid.geometry.dispose();
+					stage.dispose();
+				};
+			}, [doc]);
+			return (0, react.createElement)("div", {
+				className: preview_module_css_default.stagePreview,
+				"data-viewport": label ?? "poser-figure"
+			}, failed !== null ? (0, react.createElement)("div", {
+				className: preview_module_css_default.empty,
+				"data-testid": "figure-failed"
+			}, "figure failed: " + failed) : doc === null ? (0, react.createElement)("div", {
+				className: preview_module_css_default.empty,
+				"data-testid": "figure-loading"
+			}, "loading figure…") : (0, react.createElement)("canvas", {
+				ref: canvasRef,
+				className: preview_module_css_default.stageCanvas,
+				"data-testid": "stage-preview-figure"
+			}));
+		}
+		//#endregion
 		//#region \0dsh-css:card-base/src/viewportChrome.module.css.mjs
 		const css = "._8t0iwG_frame{border:1px solid var(--dsw-alias-border,#e2e4e9);background:#0e0e1a;border-radius:8px;flex:1;min-height:340px;position:relative;overflow:hidden}._8t0iwG_dockTopRight{position:absolute;top:8px;right:8px}._8t0iwG_dockTopLeft{position:absolute;top:8px;left:8px}._8t0iwG_dockBottomRight{position:absolute;bottom:8px;right:8px}._8t0iwG_dockBottomLeft{position:absolute;bottom:8px;left:8px}._8t0iwG_dockBottomCenter{position:absolute;bottom:8px;left:50%;transform:translate(-50%)}._8t0iwG_dockBottom{position:absolute;bottom:10px;left:10px;right:10px}._8t0iwG_dockFill{position:absolute;inset:0}._8t0iwG_dockEdgeRight{position:absolute;top:0;bottom:0;right:0}._8t0iwG_dockEdgeLeft{position:absolute;top:0;bottom:0;left:0}._8t0iwG_badge{pointer-events:none;border:1px solid var(--dsw-alias-border,#e2e4e9);backdrop-filter:blur(4px);background:#0e0e1ae6;border-radius:6px;width:112px;margin:0;overflow:hidden;box-shadow:0 8px 24px #00000059}._8t0iwG_badgeImg{object-fit:contain;width:100%;height:112px}._8t0iwG_badgeCaption{text-align:center;text-transform:uppercase;letter-spacing:.12em;color:var(--dsw-alias-label-tertiary,#8a93a0);padding:2px 6px;font-size:8px;font-weight:500}";
 		const tagId = "@melite-plugin/dsh-card-view/viewportChrome.module.css@5b8532dc";
@@ -54436,7 +54554,11 @@ void main() {
 		*  @react-three in any client bundle). The ACTIVE set becomes
 		*  stage assets (the current run's, or a picked history entry's —
 		*  mesh gains the full history law every other kind already had);
-		*  the empty hint honors the live-run flag. */
+		*  the empty hint honors the live-run flag. THE LIVE FIGURE
+		*  (stroke 90): a card-declared preview.figure replaces the empty
+		*  tombstone with the native figure (the /poser bind mesh) — the
+		*  studio-viewport capability on the form card; run outputs still
+		*  take the stage the moment they exist. */
 		function MeshStagePreview(props) {
 			const { hero, rest, viewingHistory, note, picked, promote, returnToCurrent } = useHistoryHero(props);
 			const active = hero === void 0 ? [] : [hero, ...rest];
@@ -54446,12 +54568,19 @@ void main() {
 			}, viewingHistory ? (0, react.createElement)(StaleBadge, {
 				note,
 				onReturn: returnToCurrent
-			}) : null, (0, react.createElement)(GlbStagePreview, {
+			}) : null, active.length > 0 ? (0, react.createElement)(GlbStagePreview, {
 				assets: active.map((a, i) => ({
 					id: `${props.stageId}:${a.name || i}`,
 					url: a.url,
 					name: a.name
 				})),
+				emptyHint: props.runStatus === "running" ? "rendering… the mesh lands here" : "No render yet — run lands the mesh here"
+			}) : props.figure !== void 0 ? (0, react.createElement)(PoserFigureStage, {
+				door: props.figure.door,
+				identityModel: props.figure.identityModel,
+				label: `poser-figure:${props.stageId}`
+			}) : (0, react.createElement)(GlbStagePreview, {
+				assets: [],
 				emptyHint: props.runStatus === "running" ? "rendering… the mesh lands here" : "No render yet — run lands the mesh here"
 			}), HistoryStrip(props, promote, "stage-output-history", picked));
 		}
@@ -55447,7 +55576,8 @@ void main() {
 					stageId: stage.id,
 					...history.length > 0 ? { history } : {},
 					...historyNotes !== void 0 ? { historyNotes } : {},
-					...spec?.preview?.historyStrip === false ? { historyStrip: false } : {}
+					...spec?.preview?.historyStrip === false ? { historyStrip: false } : {},
+					...spec?.preview?.figure !== void 0 ? { figure: spec.preview?.figure } : {}
 				};
 				return renderPreview(owner, kind === "video" ? (0, react.createElement)(VideoStagePreview, owner) : kind === "audio" ? (0, react.createElement)(AudioStagePreview, owner) : kind === "mesh" ? (0, react.createElement)(MeshStagePreview, owner) : (0, react.createElement)(ImageStagePreview, owner));
 			};

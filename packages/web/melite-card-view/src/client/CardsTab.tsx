@@ -1161,6 +1161,13 @@ function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRemoved, 
       ...((spec as { preview?: { historyStrip?: boolean } } | null)?.preview?.historyStrip === false
         ? { historyStrip: false }
         : {}),
+      // THE LIVE FIGURE (stroke 90): the SERVED doc's preview.figure
+      // — the card's declared native mesh for the empty state (the
+      // studio-viewport capability on form cards), door-served the
+      // same way as historyStrip, never a client-side guess.
+      ...((spec as { preview?: { figure?: { door: string, identityModel: string } } } | null)?.preview?.figure !== undefined
+        ? { figure: (spec as { preview?: { figure?: { door: string, identityModel: string } } }).preview?.figure }
+        : {}),
     }
     const fallback = kind === 'video'
       ? h(VideoStagePreview, owner)

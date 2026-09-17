@@ -793,7 +793,7 @@
   "anny": {
     "id": "anny",
     "form": "form_3d_anny",
-    "label": "Anny (character assembly) Standard Native",
+    "label": "Anny (character assembly) Anny",
     "description": "Author a character body — 11 identity sliders (or attach a GLB, or load a preset), then render the 8-view turnaround sheet. Photo→body estimation rides the hmr-estimate verb (the MHR chain).",
     "engine": "comfyui",
     "defaults": {
@@ -832,42 +832,15 @@
     ],
     "variants": [
       {
-        "id": "standard",
-        "label": "Standard",
-        "group": "Variant",
+        "id": "anny",
+        "label": "Anny",
+        "group": "",
         "route": "anny",
-        "cells": [
-          {
-            "quant": "native",
-            "label": "Native",
-            "route": "anny"
-          }
-        ]
-      },
-      {
-        "id": "default",
-        "label": "Default",
-        "hint": "The family default — no extra stamps; a fresh card lands here.",
-        "group": "Recipe",
+        "order": 0,
         "cells": []
       }
     ],
-    "variant_groups": [
-      {
-        "id": "Variant",
-        "label": "Variant"
-      },
-      {
-        "id": "Quant",
-        "label": "Quant"
-      },
-      {
-        "id": "Recipe",
-        "label": "Recipe",
-        "tooltip": "One-click recipes — patch-only rows that stamp picks onto the draft; Default stamps nothing.",
-        "default": "default"
-      }
-    ],
+    "variant_groups": [],
     "provisions": [
       {
         "name": "anny-base-body.glb",

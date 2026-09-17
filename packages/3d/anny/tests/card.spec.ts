@@ -1,12 +1,16 @@
 // @melite/3d-anny — the card's compose gate (TEST-2 breadth,
-// 2026-09-12; REWRITTEN stroke 89 — the truth pass): a GLB is NEVER
-// required (the parametric bake owns the default body); photo→body
-// is the hmr-estimate VERB, so no SAM ingest arm exists; the 11
-// identity dims bake through AnnyParamsToGlb when no GLB rides.
+// 2026-09-12; REWRITTEN stroke 89 — the truth pass; EXTENDED stroke
+// 90 — keep-all-features): a GLB is NEVER required (the parametric
+// bake owns the default body); photo→body is the hmr-estimate
+// VERB, so no SAM ingest arm exists; the 11 identity dims bake
+// through AnnyParamsToGlb when no GLB rides; the 254-morph sculpt
+// panel rides the pin vocabulary as SPARSE local_changes; the
+// native figure rides the served preview.figure claim.
 import { describe, it, beforeAll } from "vitest";
 import assert from "node:assert/strict";
 import { loadCardDefs } from "@melite/comfyui-cordis";
 import { GraphBuilder } from "@melite/comfyui-card-kit/graph";
+import { ANNY_MORPH_LABELS } from "@melite/comfyui-card-kit/morphs";
 import type { CardDefinition } from "@melite/comfyui-cordis/service";
 
 const DUMMY_MODEL = { id: "", card: "", defaults: {}, lane_inputs: {}, card_knobs: [], variants: [], variant_groups: [], outputs: [] } as never;
@@ -76,5 +80,41 @@ describe("the anny compose gate", () => {
     const g = new GraphBuilder();
     def.compose(def.schema({ body_glb: "/m/body.glb" }), DUMMY_MODEL, g, "r1");
     assert.deepEqual(def.finalize?.(g.toJSON()), g.toJSON(), "nothing strips");
+  });
+
+  // ── stroke 90: the sculpt panel converts, it does not die ──────
+
+  it("the schema carries ALL 254 morph sliders in the morph group (the [REDACTED 2026-11-05]-ton law)", async () => {
+    const { theService } = await import("@melite/comfyui-cordis");
+    await loadCardDefs();
+    const live = theService().formSchemas("anny", "anny")!;
+    const env = live.schema as { refs: Record<string | number, { type?: string; dict?: Record<string, unknown> }>; uid: number };
+    const root = env.refs[env.uid];
+    const dict = root?.dict ?? {};
+    for (const label of ANNY_MORPH_LABELS) {
+      assert.ok(label in dict, `morph ${label} rides the card envelope`);
+    }
+    assert.equal(ANNY_MORPH_LABELS.length, 254);
+  });
+
+  it("changed morphs ride the bake as SPARSE local_changes; untouched ones never ship", () => {
+    const g = new GraphBuilder();
+    const label = ANNY_MORPH_LABELS[0];
+    def.compose(def.schema({ [label]: 1.5 } as Record<string, unknown>), DUMMY_MODEL, g, "r1");
+    const doc = JSON.parse(g.toJSON()["AnnyParamsToGlb.0"].inputs.params_json as string) as {
+      phenotype: number[]; local_changes?: Record<string, number>;
+    };
+    assert.deepEqual(doc.local_changes, { [label]: 1.5 }, "only the touched morph ships");
+  });
+
+  it("the neutral bake carries NO local_changes key (absent = the engine's own 0)", () => {
+    const g = new GraphBuilder();
+    def.compose(def.schema({}), DUMMY_MODEL, g, "r1");
+    const doc = JSON.parse(g.toJSON()["AnnyParamsToGlb.0"].inputs.params_json as string) as { local_changes?: unknown };
+    assert.equal(doc.local_changes, undefined);
+  });
+
+  it("the served preview claim names the native figure door (never the GLB export)", () => {
+    assert.deepEqual(def.preview, { figure: { door: "/v1/poser/mesh", identityModel: "anny" } });
   });
 });

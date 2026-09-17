@@ -119,7 +119,10 @@ describe("the resurrected model registry (families/variants/cells/links)", () =>
         cells += v.cells.length;
       }
     }
-    assert.equal(variants, 45); // fit + skin gone (stroke 87)
-    assert.equal(cells, 53); // fit + skin gone (stroke 87)
+    // 44 since stroke 90 (anny's Standard/Native row was template
+    // chrome — the family serves ONE identity_model through ONE
+    // route; the variant matrix was noise the operator named)
+    assert.equal(variants, 44);
+    assert.equal(cells, 52);
   });
 });

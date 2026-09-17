@@ -58,4 +58,13 @@ export interface PreviewOwnerProps {
    *  remote.ts; undefined when the entry predates snapshots or
    *  nothing differs). Rendered beside the not-current badge. */
   historyNotes?: string[]
+  /** THE LIVE FIGURE (stroke 90 — the keep-all-features order): the
+   *  door-served native mesh the stage renders BEFORE any run
+   *  output exists (anny's /poser shaped bind mesh). SERVED by the
+   *  card's declaration (CardDefinition.preview.figure → the
+   *  form-spec doc's `preview.figure`), read here by the owner
+   *  build; absent = the classic empty hint. Run artifacts take
+   *  the stage once they land — the figure never competes with a
+   *  real output. */
+  figure?: { door: string; identityModel: string }
 }
