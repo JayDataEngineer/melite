@@ -217,6 +217,13 @@ describe("the seam (first-frame continuation)", () => {
     assert.ok(screen.getByText("s of the previous video"))
   })
 
+  it("absent transition DISPLAYS extend — what the compose actually does (the wire-up law, 2026-09-17)", () => {
+    const { p } = seam({ transition: undefined })
+    render(<CallFrameSubcard {...p} />)
+    const mode = screen.getByLabelText("Call 0 seam mode") as HTMLSelectElement
+    assert.equal(mode.value, "extend")
+  });
+
   it("the toggle writes 2 (cut) / 3 (extend) / null (off)", () => {
     const cut = seam()
     const h1 = render(<CallFrameSubcard {...cut.p} />)

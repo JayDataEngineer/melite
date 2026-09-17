@@ -516,6 +516,82 @@ describe("pump + engine", () => {
     assert.ok(row.artifacts.some((a: string) => a.endsWith("film_video_mux.mp4")));
   });
 
+  it("THE ENGINE FILM LEADS (in-graph concat; the harness never muxes)", async () => {
+    const s = seat();
+    const engine = engineSeat(s);
+    engine.onFlow = async (_rows, runDir) => {
+      mkdirSync(join(runDir, "h3-film"), { recursive: true });
+      assert.ok(mkMp4(runDir, "h3-film/h3_t4_film_00012_.mp4", "1"));
+      assert.ok(mkMp4(runDir, "h3-film/h3_t4_w1_00010_.mp4", "1"));
+      assert.ok(mkMp4(runDir, "h3-film/h3_t4_w2_00011_.mp4", "1"));
+      return { stages: { s: { outputs: {}, artifacts: [
+        join(runDir, "h3-film/h3_t4_w1_00010_.mp4"),
+        join(runDir, "h3-film/h3_t4_w2_00011_.mp4"),
+        join(runDir, "h3-film/h3_t4_film_00012_.mp4"),
+      ] } }, promptId: "p" };
+    };
+    const ans = await s.svc.start(wfBody(), sig());
+    const row = await settleWait(s, ans.run_id);
+    assert.equal(row.status, "completed");
+    const stage = row.stages[0] as unknown as Record<string, unknown>;
+    // the film LEADS presentation — and no harness mux artifact exists
+    assert.equal(stage["url"], "h3-film/h3_t4_film_00012_.mp4");
+    const gallery = stage["gallery"] as Array<{ name: string }>;
+    assert.equal(gallery[0]!.name, "h3-film/h3_t4_film_00012_.mp4");
+    assert.ok(!row.artifacts.some((a: string) => a.endsWith("film_video_mux.mp4")));
+  });
+
+  it("THE MERGED FILM: no stitch at all — the windows concat unconditionally (the seam-wiring stroke)", async () => {
+    if (!ffmpegOk) { console.warn("runs-registry.spec: ffmpeg absent — film arm skipped"); return; }
+    const s = seat();
+    const engine = engineSeat(s);
+    engine.onFlow = async (_rows, runDir) => {
+      mkdirSync(join(runDir, "h3-film"), { recursive: true });
+      assert.ok(mkMp4(runDir, "h3-film/h3_t4_w1_00010_.mp4", "1"));
+      assert.ok(mkMp4(runDir, "h3-film/h3_t4_w2_00011_.mp4", "1"));
+      // absolute artifact paths — the real engine's convention (runRel
+      // keeps the h3-film/ stage-dir suffix only for run-dir-absolute)
+      return { stages: { s: { outputs: {}, artifacts: [
+        join(runDir, "h3-film/h3_t4_w1_00010_.mp4"),
+        join(runDir, "h3-film/h3_t4_w2_00011_.mp4"),
+      ] } }, promptId: "p" };
+    };
+    const ans = await s.svc.start(wfBody(), sig());
+    const row = await settleWait(s, ans.run_id);
+    assert.equal(row.status, "completed");
+    const stage = row.stages[0] as unknown as Record<string, unknown>;
+    assert.ok(typeof stage["url"] === "string" && (stage["url"] as string).endsWith("film_video_mux.mp4"));
+    const gallery = stage["gallery"] as Array<{ name: string }>;
+    assert.equal(gallery[0]!.name, "film_video_mux.mp4");
+    assert.ok(row.artifacts.some((a: string) => a.endsWith("film_video_mux.mp4")));
+  });
+
+  it("THE MERGED FILM: a failed concat keeps the windows themselves (loud, never a fake film)", async () => {
+    if (!ffmpegOk) { console.warn("runs-registry.spec: ffmpeg absent — film arm skipped"); return; }
+    const s = seat();
+    const engine = engineSeat(s);
+    engine.onFlow = async (_rows, runDir) => {
+      mkdirSync(join(runDir, "h3-film"), { recursive: true });
+      assert.ok(mkMp4(runDir, "h3-film/h3_t4_w1_00010_.mp4", "1"));
+      assert.ok(mkMp4(runDir, "h3-film/h3_t4_w2_00011_.mp4", "1"));
+      // the output path is a DIRECTORY: ffmpeg cannot write the film —
+      // the concat fails loudly, and the windows stay the truth
+      mkdirSync(join(runDir, "film_video_mux.mp4"), { recursive: true });
+      return { stages: { s: { outputs: {}, artifacts: [
+        join(runDir, "h3-film/h3_t4_w1_00010_.mp4"),
+        join(runDir, "h3-film/h3_t4_w2_00011_.mp4"),
+      ] } }, promptId: "p" };
+    };
+    const ans = await s.svc.start(wfBody(), sig());
+    const row = await settleWait(s, ans.run_id);
+    assert.equal(row.status, "completed");
+    const stage = row.stages[0] as unknown as Record<string, unknown>;
+    // the windows lead — no film artifact, no lie
+    const url = stage["url"] as string;
+    assert.ok(url.includes("h3_t4_w1"), `url was: ${url}`);
+    assert.ok(!row.artifacts.some((a: string) => a.endsWith("film_video_mux.mp4")));
+  });
+
   it("an undecided probe (missing stitch file) keeps the engine's own names", async () => {
     const s = seat();
     const engine = engineSeat(s);

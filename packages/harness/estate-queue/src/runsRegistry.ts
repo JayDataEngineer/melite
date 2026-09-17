@@ -44,7 +44,7 @@ import {
   strictBody,
 } from "./runsValidate.ts";
 import { FLOW_ID_RE } from "./runsGates.ts";
-import { filmMuxPlan, muxWindows, probeDurationSec, shouldMuxWindows } from "./filmMux.ts";
+import { engineFilmName, filmMuxPlan, muxWindows, probeDurationSec, shouldMuxWindows } from "./filmMux.ts";
 import type { QueueCore, QueueRefusal } from "./queue.ts";
 import {
   compileFlowInline,
@@ -1123,7 +1123,7 @@ export class RunsRuntimeService extends Service {
         if (arts.length > 0) {
           // DIVERGENCE-BY-ORDER: run-relative names, no /v1 prefix
           // (the asset HTTP face died with the app).
-          const names: string[] = arts.map((a: string): string =>
+          let names: string[] = arts.map((a: string): string =>
             runRel(run, a),
           );
           // THE FILM COMPLETION (2026-09-12, the 4s-stitch defect):
@@ -1132,18 +1132,38 @@ export class RunsRuntimeService extends Service {
           // the FILM leads the names — the hero never lies about the
           // timeline. Any probe/mux failure keeps the engine's own
           // stitch (loud, never a fake film).
+          // THE ENGINE FILM LEADS (2026-09-17): when the engine
+          // composed the film (h3_t4_film), presentation order is the
+          // harness's only job — film first, windows after. No mux:
+          // composition belongs to the engine, never a shell ffmpeg.
+          const engineFilm = engineFilmName(names);
+          if (engineFilm !== null) {
+            names = [engineFilm, ...names.filter((n): boolean => n !== engineFilm)];
+          }
           const plan = filmMuxPlan(names);
           if (plan !== null) {
-            const stitchSec = probeDurationSec(join(run.dir, plan.stitch));
-            const windowSecs = plan.windows.map((w): number | null =>
-              probeDurationSec(join(run.dir, w)));
-            const decidable = stitchSec !== null
-              && windowSecs.every((t): t is number => t !== null);
-            if (decidable && shouldMuxWindows(stitchSec, windowSecs)) {
+            if (plan.stitch === null) {
+              // THE MERGED FILM (2026-09-17, the seam-wiring stroke):
+              // no engine stitch exists — the TS card's windows ARE the
+              // film; concat unconditionally so ONE film leads the
+              // stage (loud on failure: the windows stay the truth).
               const muxed = muxWindows(run.dir, plan);
               if (muxed !== null) {
                 names.unshift(plan.out);
                 run.artifacts.push(muxed);
+              }
+            } else {
+              const stitchSec = probeDurationSec(join(run.dir, plan.stitch));
+              const windowSecs = plan.windows.map((w): number | null =>
+                probeDurationSec(join(run.dir, w)));
+              const decidable = stitchSec !== null
+                && windowSecs.every((t): t is number => t !== null);
+              if (decidable && shouldMuxWindows(stitchSec, windowSecs)) {
+                const muxed = muxWindows(run.dir, plan);
+                if (muxed !== null) {
+                  names.unshift(plan.out);
+                  run.artifacts.push(muxed);
+                }
               }
             }
           }

@@ -249,11 +249,15 @@ export function schema(v: unknown): Record<string, unknown> {
     }
     // (the shot-law loop above guarantees every row is a shaped
     // object with pinned int spans — no gap-arms needed here)
+    // variant is a WINDOW property: a single-call doc's guide makes the
+    // whole (one-window) graph t4r; a MULTI-call doc is a film — its
+    // variant is t4_chain and each window derives its own family in
+    // the merged renderer (a guide call renders as its own t4r window)
     const hasGuide = calls.some((c) => {
       const cc = c as Record<string, unknown>
       return Boolean(cc.ref_images) || Boolean(cc.ref_image) || Boolean(cc.image_name)
     })
-    variant = hasGuide ? 't4r' : calls.length > 1 ? 't4_chain' : 't4_open'
+    variant = calls.length > 1 ? 't4_chain' : hasGuide ? 't4r' : 't4_open'
     out.variant = variant
   }
   if (!(FAMILIES as readonly string[]).includes(variant)) {
@@ -288,12 +292,10 @@ export function schema(v: unknown): Record<string, unknown> {
       const c0 = rows[0] ?? {}
       const sf = typeof c0.start_frame === 'number' ? c0.start_frame : null
       const ef = typeof c0.end_frame === 'number' ? c0.end_frame : null
-      if (sf !== null && ef !== null && ef > sf) {
-        const k = Math.round((ef - sf - 22) / 17)
-        out.length = Math.min(362, Math.max(22, 22 + 17 * k))
-      } else {
-        out.length = null
-      }
+      // (the shot laws above guarantee valid int spans — every
+      // single-call doc rides the snap arm; no defensive else)
+      const k = Math.round((ef! - sf! - 22) / 17)
+      out.length = Math.min(362, Math.max(22, 22 + 17 * k))
     } else {
       out.length = null
     }
@@ -339,7 +341,110 @@ export const identity = {
 // it render exactly the frozen graphs. Card-knob reads use the schema
 // value directly (always defined post-schema) except the two bare
 // keys (prompt/image), which normalize absent.
-function renderH3Window(p: Record<string, unknown>, g: GraphBuilder): void {
+/** THE MERGED FILM (the mergegraph port, 2026-09-17): the py
+ *  execute-lane transport composed each window separately and merged
+ *  the graphs post-serialization (namespacing + rewiring the seam
+ *  links); the TS flip lost that half — a multi-call doc composed ONE
+ *  window and the seams never rode. This is the port: ONE prompt, N
+ *  windows under `window${k}_` scopes (GraphBuilder.scoped), REAL seam
+ *  edges between scopes (the executor orders windows off the graph),
+ *  per-window stanzas in the py vocabulary (k, ctx_save_clip_index,
+ *  the per-call knobs REPLACE, the span rider per window). The seam
+ *  itself is the studio's document law (docModel): transition
+ *  'extend' (absent = extend, the py-era chain default the frozen
+ *  goldens pin) chains the previous LATENT; 'cut' is a fresh window,
+ *  and 'cut' + first_frame_prev_sec opens from the previous VIDEO
+ *  tail (the node's context_frames arm). prev_sec scales the carry:
+ *  picture snapped to the node's legal context lengths (5/22/39/56
+ *  frames — only whole latent steps), audio at 24 frames/second. */
+function renderH3Film(p: Record<string, unknown>, g: GraphBuilder): void {
+  // (the compose dispatch guarantees calls is a non-empty array here)
+  const calls = p.calls as Array<Record<string, unknown>>
+  const CARRY_LEGAL = [5, 22, 39, 56]
+  const snapCarry = (frames: number): string => {
+    let best = CARRY_LEGAL[0] as number
+    for (const v of CARRY_LEGAL) {
+      if (Math.abs(v - frames) < Math.abs(best - frames)) best = v
+    }
+    return String(best)
+  }
+  const str = (v: unknown): string => (typeof v === 'string' ? v : '')
+  const num = (v: unknown): number | null => (typeof v === 'number' && Number.isFinite(v) ? v : null)
+
+  let prev: WindowHandles | undefined
+  // THE FILM RAIL (the operator's call, 2026-09-17: the film is media
+  // composition — the ENGINE'S job, never a harness-side ffmpeg): each
+  // window's DELIVERED streams butt through MiniMaxH3FilmConcat nodes
+  // at the prompt's top level (the film is the doc's, not a window's),
+  // and ONE CreateVideo + SaveVideo emits the film the timeline
+  // promised. The estate reorders artifacts so the film leads; it
+  // never concats.
+  let film: { images: OutputHandle, audio: OutputHandle } | undefined
+  calls.forEach((call, i) => {
+    const k = i + 1
+    const guide = str(call.image ?? call.ref_image ?? call.image_name)
+    const text = str(call.text).trim() || str(p.prompt)
+    const transition = call.transition === 'cut' ? 'cut' : 'extend'
+    const secs = num(call.first_frame_prev_sec)
+    const knobs = (call.knobs ?? {}) as Record<string, unknown>
+    const chainLike = i > 0 && (transition === 'extend' || secs !== null)
+    const sf = num(call.start_frame)
+    const ef = num(call.end_frame)
+
+    const stanza: Record<string, unknown> = { ...p, ...knobs, prompt: text, k, ctx_save_clip_index: k }
+    stanza.variant = guide ? 't4r' : chainLike ? 't4_chain' : 't4_open'
+    if (guide) stanza.image = guide
+    else delete stanza.image
+    // per-window length: the span rider law, unless the call's knobs pin one
+    if (sf !== null && ef !== null && ef > sf && knobs.length === undefined) {
+      const kk = Math.round((ef - sf - 22) / 17)
+      stanza.length = Math.min(362, Math.max(22, 22 + 17 * kk))
+    }
+    if (i > 0 && secs !== null) {
+      stanza.motion_context_length = snapCarry(secs * 24)
+      stanza.motion_audio_context_length = Math.min(240, Math.max(0, Math.round(secs * 24)))
+    }
+    if (chainLike) stanza.__seam = transition === 'cut' ? 'cut-frames' : 'extend'
+    if (prev !== undefined) stanza.__prev = prev
+
+    const h = g.scoped(`window${k}_`, (w): WindowHandles => renderH3Window(stanza, w))
+    prev = h
+    if (film === undefined) {
+      film = { images: h.filmImages, audio: h.filmAudio }
+    } else {
+      const c = g.node('MiniMaxH3FilmConcat', {
+        images_a: film.images, images_b: h.filmImages,
+        audio_a: film.audio, audio_b: h.filmAudio,
+      })
+      film = { images: c.out(0), audio: c.out(1) }
+    }
+  })
+  if (film !== undefined) {
+    const created = g.node('CreateVideo', {
+      images: film.images, audio: film.audio, fps: 24, bit_depth: 8,
+      // color_space: pin autofill "sRGB"
+    })
+    g.node('SaveVideo', {
+      video: created.out(), filename_prefix: 'h3_t4_film',
+      format: 'mp4', codec: 'h264',
+    })
+  }
+}
+
+/** The seam's cross-window wires: the RAW decode + sampler handles
+ *  of one rendered window (pre-trim, pre-sharpen — the true tail). */
+export interface WindowHandles {
+  latOut: OutputHandle
+  vdec: OutputHandle
+  vadec: OutputHandle
+  /** the DELIVERED clip — post-trim, post-sharpen: exactly the
+   *  streams that window's own SaveVideo plays; the film concat's
+   *  currency (the film must not differ from its windows). */
+  filmImages: OutputHandle
+  filmAudio: OutputHandle
+}
+
+function renderH3Window(p: Record<string, unknown>, g: GraphBuilder): WindowHandles {
   const family = p.variant as Family
   if (!(FAMILIES as readonly string[]).includes(family)) {
     throw new Error(`unknown window family '${String(p.variant)}' (known: ${[...FAMILIES].sort().join(', ')})`)
@@ -491,24 +596,11 @@ function renderH3Window(p: Record<string, unknown>, g: GraphBuilder): void {
     // min/step admits; the first 168-span probe died inside
     // SamplerCustomAdvanced off-grid, live receipt 2026-09-17). The
     // py-era 90/56 budgets remain the fallback ONLY for docs that
-    // carry no spans. An explicit `length` param still wins, verbatim.
-    const snapToGrid = (frames: number): number => {
-      const k = Math.round((frames - 22) / 17)
-      return Math.min(362, Math.max(22, 22 + 17 * k))
-    }
-    // single-call docs only: a chain's windows render per-window (the
-    // studio presets' own f values, 56/124), so a multi-call doc keeps
-    // the py family budgets; the single window's span IS its length.
-    const spanOf = (doc: Record<string, unknown>): number | null => {
-      const rows = Array.isArray(doc.calls) ? doc.calls as Array<Record<string, unknown>> : []
-      if (rows.length !== 1) return null
-      const starts = rows.map((r) => typeof r.start_frame === 'number' ? r.start_frame : null)
-      const ends = rows.map((r) => typeof r.end_frame === 'number' ? r.end_frame : null)
-      const first = starts.find((v) => v !== null)
-      const last = [...ends].reverse().find((v) => v !== null)
-      return first !== undefined && last !== undefined && last > first ? snapToGrid(last - first) : null
-    }
-    const length = p.length ?? spanOf(p) ?? (family === 't4_open' ? 90 : 56)
+    // (the length source of truth is UPSTREAM of this renderer: the
+    // schema's span rider serializes single-call spans as EXPLICIT
+    // length, and the merged film computes per-window lengths — this
+    // arm only falls back to the py family budgets)
+    const length = p.length ?? (family === 't4_open' ? 90 : 56)
     const r2v = g.node('MiniMaxH3ReferenceToVideo', {
       prompt, width: p.width as number,
       height: p.height as number, length: length as number,
@@ -541,26 +633,46 @@ function renderH3Window(p: Record<string, unknown>, g: GraphBuilder): void {
   const guider = g.node('BasicGuider', { model: sigmaModel, conditioning: cond }).out()
 
   if (isChain) {
-    // THE CHAIN (h3-motion-context pack): load the previous clip's
-    // sampler-output latent, pin its tail as never-denoised
-    // conditioning rows into this window, and report how many leading
-    // frames to trim off the delivered clip. The SAME-PROMPT seam
-    // (k>=2, no literal path) links the load to the PRIOR window's
-    // save output — a pre-namespaced foreign node id, wired as a raw
-    // JSON link exactly where the python rewrites it post-serialization.
-    const path = (p.ctx_load_latent_path ?? '') as string
-    const latentPath: string | (string | number)[] = (k >= 2 && !path)
-      ? [`window${k - 1}_MiniMaxH3MotionContextSaveLatent.0`, 0]
-      : path
-    const prevLatent = g.node('MiniMaxH3MotionContextLoadLatent', {
-      latent_path: latentPath, clip_index: (p.ctx_load_clip_index ?? 0) as number,
-    }).out()
-    const mc = g.node('MiniMaxH3MotionContext', {
+    // THE SEAM (h3-motion-context pack) — two REAL paths, the node's
+    // own vocabulary (1:1 with the vendored extension, 2026-09-17):
+    //   EXTEND — context_latent wired to the PREVIOUS window's
+    //   sampler-output latent: "sliced straight out, skipping the
+    //   decode and re-encode that cost a little quality at every
+    //   link of a chain" (the node's own tooltip). In the merged
+    //   film this is a live in-prompt wire; in a standalone
+    //   single-window stanza it is the py cross-prompt convention
+    //   (SaveLatent→LoadLatent by path, the frozen golden shape).
+    //   CUT+PREV_SEC — context_frames/context_audio wired to the
+    //   previous window's RAW decode: the video-tail opener (decoded
+    //   picture + sound, the node's context_frames arm).
+    // Both pin the carried tail as never-denoised rows and report
+    // trim_frames; CUT without prev_sec never mounts this block (a
+    // true fresh window, the opener's own shape).
+    const prev = p.__prev as WindowHandles | undefined
+    const mcInputs: Record<string, unknown> = {
       conditioning: cond, vae: vaeVideo, latent,
       context_length: (p.motion_context_length ?? '39') as string,
       audio_context_length: (p.motion_audio_context_length ?? 24) as number,
-      context_latent: prevLatent,
-    })
+    }
+    if (prev !== undefined && p.__seam === 'cut-frames') {
+      mcInputs.context_frames = prev.vdec
+      mcInputs.audio_vae = vaeAudio
+      mcInputs.context_audio = prev.vadec
+    } else if (prev !== undefined) {
+      mcInputs.context_latent = prev.latOut
+    } else {
+      // the standalone stanza (frozen golden shape): the py
+      // cross-prompt convention — Save/Load by filesystem path,
+      // the same-prompt seam as a pre-namespaced foreign link.
+      const path = (p.ctx_load_latent_path ?? '') as string
+      const latentPath: string | (string | number)[] = (k >= 2 && !path)
+        ? [`window${k - 1}_MiniMaxH3MotionContextSaveLatent.0`, 0]
+        : path
+      mcInputs.context_latent = g.node('MiniMaxH3MotionContextLoadLatent', {
+        latent_path: latentPath, clip_index: (p.ctx_load_clip_index ?? 0) as number,
+      }).out()
+    }
+    const mc = g.node('MiniMaxH3MotionContext', mcInputs)
     cond = mc.out(0)
     trimFrames = mc.out(1)
   }
@@ -572,6 +684,10 @@ function renderH3Window(p: Record<string, unknown>, g: GraphBuilder): void {
   // ── decode + save ──────────────────────────────────────────────────
   let vdec = g.node('VAEDecode', { samples: latOut, vae: vaeVideo }).out()
   let vadec = g.node('VAEDecodeAudio', { samples: latOut, vae: vaeAudio }).out()
+  // the RAW pair is the seam currency (trim/sharpen happen downstream);
+  // `delivered` fills at the save branches (both families save)
+  let delivered: { images: OutputHandle, audio: OutputHandle } | null = null
+  const rawHandles: WindowHandles = { latOut, vdec, vadec, filmImages: latOut, filmAudio: latOut }
   if (isChain) {
     // cut the pinned overlap off picture AND sound by the same
     // duration (the pack's Trim; fps must match CreateVideo)
@@ -592,6 +708,7 @@ function renderH3Window(p: Record<string, unknown>, g: GraphBuilder): void {
       format: 'auto', codec: 'h264',
       'codec.encoding': 're-encode', 'codec.encoding.crf': 10.0,
     })
+    delivered = { images: vdec, audio: vadec }
   } else {
     // sharpen leaves: only the EXPLICITLY-set ones patch the grouped
     // dict (absent leaves keep ImageSharpenKJ's own defaults). The py
@@ -659,6 +776,7 @@ function renderH3Window(p: Record<string, unknown>, g: GraphBuilder): void {
       video: created.out(), filename_prefix: `h3_t4_w${k}`,
       format: 'mp4', codec: 'h264',
     })
+    delivered = { images: sharpSw, audio: vadec }
   }
 
   // the chain rail's persistence: the context save lands after the
@@ -667,6 +785,10 @@ function renderH3Window(p: Record<string, unknown>, g: GraphBuilder): void {
     latent: latOut, filename_prefix: (p.ctx_save_prefix ?? 'h3_context/clip') as string,
     clip_index: p.ctx_save_clip_index ?? k,
   })
+  if (delivered === null) throw new Error('h3_window: neither save branch ran — a window must save its film')
+  rawHandles.filmImages = delivered.images
+  rawHandles.filmAudio = delivered.audio
+  return rawHandles
 }
 
 /** The CARD face's plugin apply (the dual-face law, 2026-09-12):
@@ -731,7 +853,18 @@ export function registerCard(ctx: Context, comfy: ComfyUIService): void {
           'h3_window(t4r): image-anchored window without a staged guide image — ' +
           'compose always injects LoadImage.0.image on this family')
       }
-      renderH3Window(p, g)
+      // THE FILM DISPATCH: a multi-call chain doc with no per-window
+      // stanza markers (k absent — the py stanza vocabulary) composes
+      // the MERGED film; everything else is the frozen single-window
+      // shape (the goldens replay byte-identical).
+      const docCalls = Array.isArray(p.calls) ? p.calls : null
+      const film = docCalls !== null && (docCalls as unknown[]).length > 1
+        && p.k === undefined && (p.variant === undefined || p.variant === 't4_chain')
+      if (film) {
+        renderH3Film(p, g)
+      } else {
+        renderH3Window(p, g)
+      }
     },
     // the t4-family strip pass rides the kit (python: `if not is_t4r`).
     finalize: finalizeH3,

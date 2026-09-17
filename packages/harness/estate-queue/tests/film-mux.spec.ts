@@ -10,6 +10,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { spawnSync } from "node:child_process";
 import {
+  engineFilmName,
   filmMuxPlan,
   muxWindows,
   probeDurationSec,
@@ -18,6 +19,44 @@ import {
 
 const hasFfmpeg = (): boolean =>
   spawnSync("ffmpeg", ["-version"], { encoding: "utf8" }).status === 0;
+
+describe("filmMuxPlan — the merged TS film (the seam-wiring stroke, 2026-09-17)", () => {
+  it("recognizes the TS card's h3_t4_wN window names under a stage dir", () => {
+    const plan = filmMuxPlan([
+      "h3-film/h3_t4_w2_00011_.mp4",
+      "h3-film/h3_t4_w1_00010_.mp4",
+    ]);
+    expect(plan).not.toBeNull();
+    expect(plan!.stitch).toBeNull();
+    expect(plan!.windows).toEqual([
+      "h3-film/h3_t4_w1_00010_.mp4",
+      "h3-film/h3_t4_w2_00011_.mp4",
+    ]);
+    expect(plan!.out).toBe("film_video_mux.mp4");
+  });
+
+  it("an ENGINE-COMPOSED film answers the question — no plan (the operator's law)", () => {
+    const film = "h3-film/h3_t4_film_00012_.mp4";
+    expect(engineFilmName([film, "h3-film/h3_t4_w1_00010_.mp4"])).toBe(film);
+    expect(filmMuxPlan([
+      film,
+      "h3-film/h3_t4_w1_00010_.mp4",
+      "h3-film/h3_t4_w2_00011_.mp4",
+    ])).toBeNull();
+    expect(engineFilmName(["h3-film/h3_t4_w1_00010_.mp4"])).toBeNull();
+  });
+
+  it("one window alone still needs no plan; ordinal 0 is not a window", () => {
+    expect(filmMuxPlan(["h3-film/h3_t4_w1_00010_.mp4"])).toBeNull();
+    // w0 / window0: not a window ordinal (windows are 1-based)
+    expect(filmMuxPlan(["h3-film/h3_t4_w0_00010_.mp4", "h3-film/h3_t4_w1_00011_.mp4"])).toBeNull();
+  });
+
+  it("the py shape keeps its stitch (the duration verdict stays the caller's)", () => {
+    const plan = filmMuxPlan(["window1_video_0.mp4", "window2_video_0.mp4", "stitch_video_0.mp4"]);
+    expect(plan!.stitch).toBe("stitch_video_0.mp4");
+  });
+});
 
 describe("filmMuxPlan (pure, name-driven)", () => {
   it("plans stitch + ordinal windows + the film output", () => {

@@ -37,10 +37,13 @@ export interface DocCall {
   clip?: string
   audio?: string
   first_frame_prev_sec?: number
-  /** Seam mode into this call: 'cut' (fresh window; prev-sec re-feeds the
-   * previous VIDEO tail as an opener clip) or 'extend' (seamless latent
-   * chain — prev-sec becomes SECONDS OF LATENT carried from the previous
-   * window's tail via the RayH3ChainLatentAV motion-context node). */
+  /** Seam mode into this call: 'extend' (ABSENT = extend — the
+   * py-era chain default the frozen goldens pin; the previous
+   * window's SAMPLER latent chains in, prev-sec = seconds of carry)
+   * or 'cut' (a fresh window; with prev-sec the previous VIDEO tail
+   * — decoded picture + sound — opens this window via the
+   * motion-context node's context_frames arm; without it, a true
+   * hard cut, no carry at all). */
   transition?: "extend" | "cut"
   knobs?: BeatKnobs
   /** Per-call identity refs (Ref2VA route): REPLACE the run-level refs

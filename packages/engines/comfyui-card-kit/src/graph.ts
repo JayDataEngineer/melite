@@ -81,6 +81,23 @@ export class GraphBuilder {
    *  `<ClassName>.<index>` (pinned by tests/golden_cordis/). */
   private readonly counters = new Map<string, number>()
   private readonly nodes: Record<string, { class_type: string; inputs: NodeInputs }> = {}
+  /** The active id prefix (empty at top level; scoped() sets it). */
+  private prefix = ''
+  /** THE FILM SCOPE (2026-09-17, the mergegraph port): N windows of
+   *  one film ride ONE prompt, each under a `window${k}_` namespace,
+   *  so seam edges between windows are REAL wires (the executor
+   *  orders windows off the graph, never a filesystem convention).
+   *  Counters stay global per class — ids never collide across
+   *  scopes; the prefix only namespaces. */
+  scoped<T>(prefix: string, fn: (b: GraphBuilder) => T): T {
+    const prev = this.prefix
+    this.prefix = prev + prefix
+    try {
+      return fn(this)
+    } finally {
+      this.prefix = prev
+    }
+  }
 
   /** Pin defaults (class → input → default value) from the live
    *  object_info snapshot. When present, unspecified inputs
@@ -97,7 +114,7 @@ export class GraphBuilder {
   node(classType: string, inputs: NodeInputsLoose = {}): NodeRef {
     const n = this.counters.get(classType) ?? 0
     this.counters.set(classType, n + 1)
-    const id = `${classType}.${n}`
+    const id = `${this.prefix}${classType}.${n}`
     const filled: NodeInputs = { ...this.autofill(classType), ...(inputs as NodeInputs) }
     this.nodes[id] = { class_type: classType, inputs: filled }
     return { id, out: (slot = 0) => new OutputHandle(id, slot) }

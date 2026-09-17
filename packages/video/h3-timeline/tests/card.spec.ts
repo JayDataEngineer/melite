@@ -116,6 +116,140 @@ describe("schema() gates (the py model_validator port)", () => {
     assert.throws(() => schema({ prompt: "x", calls: [] }), /h3-timeline: no calls to compose/);
   });
 
+  it("THE MERGED FILM: two calls, one prompt, window scopes, real seam edges (the mergegraph port)", () => {
+    // w1: extend default (absent transition) — chains nothing (the
+    // opener). w2: cut + 1.5s — opens from w1's decoded VIDEO tail
+    // (context_frames/context_audio wired to window1's raw decodes).
+    const doc = {
+      prompt: "run-level prompt",
+      calls: [
+        { text: "the lantern lifts off", start_frame: 0, end_frame: 90 },
+        { text: "the stall keeper waves", start_frame: 90, end_frame: 180, transition: "cut", first_frame_prev_sec: 1.5 },
+      ],
+    }
+    const out = schema(doc) as Record<string, unknown>
+    assert.equal(out.variant, "t4_chain")
+    const g = new GraphBuilder(PIN_DEFAULTS)
+    def.compose(out, model, g, "run-film-test")
+    const graph = def.finalize!(g.toJSON())
+    const ids = Object.keys(graph)
+    // scoped ids carry GLOBAL per-class counters — look up by prefix
+    const findId = (re: RegExp): string => {
+      const hit = ids.find((id) => re.test(id))
+      assert.ok(hit, `no node matches ${re}`)
+      return hit
+    }
+    assert.ok(ids.some((id) => id.startsWith("window1_")), "window1 scope")
+    assert.ok(ids.some((id) => id.startsWith("window2_")), "window2 scope")
+    assert.ok(!ids.some((id) => /^UNETLoader/.test(id)), "no unscoped strays")
+    // w2 cut+prev_sec: the motion context carries DECODED frames,
+    // not the latent — the context_frames arm, audio too
+    const mc2 = graph[findId(/^window2_MiniMaxH3MotionContext\./)]
+    const cf = mc2.inputs.context_frames as unknown[]
+    assert.deepEqual(cf, ["window1_VAEDecode.0", 0])
+    const ca = mc2.inputs.context_audio as unknown[]
+    assert.deepEqual(ca, ["window1_VAEDecodeAudio.0", 0])
+    // 1.5s: picture snaps to 39 (36 -> 39, the nearest legal carry),
+    // audio 36 frames (24/s)
+    assert.equal(mc2.inputs.context_length, "39")
+    assert.equal(mc2.inputs.audio_context_length, 36)
+    // per-window films save under their own prefixes
+    assert.equal(graph[findId(/^window1_SaveVideo\./)].inputs.filename_prefix, "h3_t4_w1")
+    assert.equal(graph[findId(/^window2_SaveVideo\./)].inputs.filename_prefix, "h3_t4_w2")
+    // per-window spans ride (90 each — on-grid)
+    assert.equal(graph[findId(/^window2_MiniMaxH3ReferenceToVideo\./)].inputs.length, 90)
+    // THE FILM RAIL (the engine-side concat — never a harness ffmpeg):
+    // one concat butts w1's delivered streams onto w2's, one CreateVideo
+    // + SaveVideo emits the film
+    const concatId = findId(/^MiniMaxH3FilmConcat\./);
+    const concat = graph[concatId];
+    // the DELIVERED streams: post-trim, post-sharpen — each window's
+    // own final switch outputs (index varies with the knob rails)
+    assert.match((concat.inputs.images_a as unknown[])[0] as string, /^window1_/);
+    assert.match((concat.inputs.images_b as unknown[])[0] as string, /^window2_/);
+    assert.deepEqual(concat.inputs.audio_b, ["window2_MiniMaxH3MotionContextTrim.0", 1]);
+    const filmSave = graph[findId(/^SaveVideo\./)];
+    assert.equal(filmSave.inputs.filename_prefix, "h3_t4_film");
+    // the film's CreateVideo drinks the concat's outputs
+    const filmCreate = graph[findId(/^CreateVideo\./)];
+    assert.deepEqual(filmCreate.inputs.images, [concatId, 0]);
+    assert.deepEqual(filmCreate.inputs.audio, [concatId, 1]);
+  });
+
+  it("THE MERGED FILM: extend chains the previous SAMPLER latent (the node's own preferred path)", () => {
+    const doc = {
+      prompt: "p",
+      calls: [
+        { text: "a", start_frame: 0, end_frame: 90 },
+        { text: "b", start_frame: 90, end_frame: 180, transition: "extend", first_frame_prev_sec: 2 },
+      ],
+    }
+    const out = schema(doc) as Record<string, unknown>
+    const g = new GraphBuilder(PIN_DEFAULTS)
+    def.compose(out, model, g, "run-film-extend")
+    const graph = def.finalize!(g.toJSON())
+    const ids = Object.keys(graph)
+    const mc2Id = ids.find((id) => /^window2_MiniMaxH3MotionContext\./.test(id))
+    assert.ok(mc2Id, "w2 motion context")
+    const mc2 = graph[mc2Id]
+    // 2s: picture snaps to 56 (48 -> 56), audio 48
+    assert.equal(mc2.inputs.context_length, "56")
+    assert.equal(mc2.inputs.audio_context_length, 48)
+    // the context_latent wire points at window1's SAMPLER output —
+    // sliced straight out, no Save/Load round-trip in the merged film
+    const cl = mc2.inputs.context_latent as unknown[]
+    assert.equal(cl[0], "window1_SamplerCustomAdvanced.0")
+    // the py cross-prompt LoadLatent convention does NOT ride here
+    assert.ok(!ids.some((id) => /^window2_MiniMaxH3MotionContextLoadLatent/.test(id)))
+  });
+
+  it("THE MERGED FILM: empty call text falls to the run prompt; a call's own guide image makes THAT window t4r", () => {
+    const doc = {
+      prompt: "the run-level prompt",
+      calls: [
+        { text: "", start_frame: 0, end_frame: 90 }, // falls to run prompt
+        { text: "the map unfurls", start_frame: 90, end_frame: 146, image_name: "/melite-media/guide.png", transition: "cut" },
+        { text: "into the alley", start_frame: 146, end_frame: 236, transition: "extend", first_frame_prev_sec: 1 },
+      ],
+    }
+    const out = schema(doc) as Record<string, unknown>
+    const g = new GraphBuilder(PIN_DEFAULTS)
+    def.compose(out, model, g, "run-film-mixed")
+    const graph = def.finalize!(g.toJSON())
+    const ids = Object.keys(graph)
+    // w1's text node carries the RUN prompt (the empty call fell back)
+    const t1 = graph[ids.find((id) => /^window1_MiniMaxH3ReferenceToVideo\./.test(id))!]
+    assert.equal(t1.inputs.prompt, "the run-level prompt")
+    // w2 is the guide window: its own image, t4r's loader chain
+    const li2 = ids.find((id) => /^window2_LoadImage\./.test(id))
+    assert.ok(li2, "w2 loads its own guide")
+    assert.equal(graph[li2].inputs.image, "/melite-media/guide.png")
+    // w3 chains from w2's SAMPLER latent (1s: 22 carry)
+    const mc3 = graph[ids.find((id) => /^window3_MiniMaxH3MotionContext\./.test(id))!]
+    assert.equal(mc3.inputs.context_length, "22")
+    // w2 is a t4r window (its own loader rail) — the sampler counter
+    // is global per class, so w2's sampler id carries the class index
+    assert.match((mc3.inputs.context_latent as unknown[])[0] as string, /^window2_SamplerCustomAdvanced\.\d+$/)
+  });
+
+  it("THE MERGED FILM: cut without prev-sec is a TRUE fresh window (no motion context at all)", () => {
+    const doc = {
+      prompt: "p",
+      calls: [
+        { text: "a", start_frame: 0, end_frame: 90 },
+        { text: "b", start_frame: 90, end_frame: 180, transition: "cut" },
+      ],
+    }
+    const out = schema(doc) as Record<string, unknown>
+    const g = new GraphBuilder(PIN_DEFAULTS)
+    def.compose(out, model, g, "run-film-cut")
+    const graph = def.finalize!(g.toJSON())
+    const ids = Object.keys(graph)
+    assert.ok(!ids.some((id) => /^window2_MiniMaxH3MotionContext\./.test(id)), "hard cut carries nothing")
+    assert.ok(!ids.some((id) => /^window2_MiniMaxH3MotionContextLoadLatent/.test(id)))
+    assert.ok(!ids.some((id) => /^window2_MiniMaxH3MotionContextTrim\./.test(id)), "nothing pinned, nothing trimmed")
+  });
+
   it("long windows compose UNGATED — the user's span is the user's span (operator's order 2026-09-17)", () => {
     // boundary knowledge (ledgered, never enforced): 90f and 124f
     // render; 141/158/168/175 died inside SamplerCustomAdvanced. No

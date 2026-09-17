@@ -4964,7 +4964,7 @@ window.__ModuleLoader__.load({
 							className: studio_module_css_default.seamLabel,
 							children: "seam"
 						}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)(SelectMenu, {
-							value: transition === "extend" ? "extend" : "cut",
+							value: transition === "cut" ? "cut" : "extend",
 							"aria-label": "Call " + callIndex + " seam mode",
 							options: [{
 								value: "cut",

@@ -129,7 +129,7 @@ export function CallFrameSubcard({
         >
           <span className={s.seamLabel}>seam</span>
           <SelectMenu
-            value={transition === "extend" ? "extend" : "cut"}
+            value={transition === "cut" ? "cut" : "extend"}
             aria-label={"Call " + callIndex + " seam mode"}
             options={[
               { value: "cut", label: "cut — prev video opener" },

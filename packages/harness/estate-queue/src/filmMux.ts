@@ -18,37 +18,64 @@ import { join } from "node:path";
 
 /** The stitch artifact name shape (the engine's own output stem). */
 const STITCH_RE = /^stitch_video_\d+\.mp4$/;
-/** The window artifact name shape, capture = ordinal. */
-const WINDOW_RE = /^window(\d+)_video_\d+\.mp4$/;
 
 /** The concat plan — pure, decided from run-relative names only. */
 export interface FilmMuxPlan {
-  /** The engine's stitch (run-relative). */
-  readonly stitch: string;
+  /** The engine's stitch (run-relative); null when NO stitch exists
+   *  (the merged TS film — the windows ARE the film, concat them). */
+  readonly stitch: string | null;
   /** The windows in ordinal order (run-relative). */
   readonly windows: string[];
   /** The mux output name (run-relative). */
   readonly out: string;
 }
 
-/** Decide the plan from a stage's artifact names: a plan exists only
- * when at least one stitch AND two or more windows are present (a
- * single window needs no mux — the stitch-vs-window check is the
- * caller's duration probe, not a name count). */
+/** The ENGINE FILM artifact — the TS card's in-graph concat
+ *  (MiniMaxH3FilmConcat + one CreateVideo, SaveVideo prefix
+ *  h3_t4_film). When the engine composed the film there is nothing
+ *  for the harness to mux: the film IS the timeline, assembled where
+ *  every other cut is made (the operator's law, 2026-09-17). */
+const ENGINE_FILM_RE = /(?:^|\/)h3_t4_film_\d+_\.mp4$/;
+
+/** The engine-composed film's name among a stage's artifacts, if any. */
+export function engineFilmName(names: readonly string[]): string | null {
+  return names.find((n): boolean => ENGINE_FILM_RE.test(n)) ?? null;
+}
+
+/** The window artifact shapes: the py engine's `windowN_video_M.mp4`
+ *  AND the TS card's `h3_t4_wN_000MM_.mp4` (SaveVideo prefix
+ *  `h3_t4_w${k}` + ComfyUI's counter suffix). Ordinal = window k. */
+const WINDOW_RE = /(?:window(\d+)_video_\d+|h3_t4_w(\d+)_\d+)_?\.mp4$/;
+
+/** One window's ordinal from its name (basename-level, stage-dir
+ *  agnostic); null when not a window artifact. */
+function windowOrdinal(name: string): number | null {
+  const base = name.slice(name.lastIndexOf("/") + 1);
+  const m = WINDOW_RE.exec(base);
+  if (m === null) return null;
+  const ord = Number(m[1] ?? m[2]);
+  return Number.isInteger(ord) && ord >= 1 ? ord : null;
+}
+
+/** Decide the plan from a stage's artifact names: a plan exists when
+ *  two or more windows are present — with the engine's stitch (the
+ *  py shape: the caller muxes only when the stitch lies short of the
+ *  windows' total, the duration probe) or with NO stitch at all (the
+ *  merged TS film: there is no engine stitch to keep — the windows
+ *  concat unconditionally so ONE film leads the stage). */
 export function filmMuxPlan(names: readonly string[]): FilmMuxPlan | null {
+  // an engine-composed film answers the question the mux existed to ask
+  if (engineFilmName(names) !== null) return null;
   const stitches = names.filter((n): boolean => STITCH_RE.test(n));
   const windows = new Map<number, string>();
   for (const n of names) {
-    const m = WINDOW_RE.exec(n);
-    if (m !== null) {
-      const ord = Number(m[1]);
-      // first name per ordinal wins (the _0 suffix is the only shape)
-      if (!windows.has(ord)) windows.set(ord, n);
-    }
+    const ord = windowOrdinal(n);
+    // first name per ordinal wins (the suffix shape is stable)
+    if (ord !== null && !windows.has(ord)) windows.set(ord, n);
   }
-  if (stitches.length === 0 || windows.size < 2) return null;
+  if (windows.size < 2) return null;
   const ordered = [...windows.entries()].sort((a, b): number => a[0] - b[0]).map(([, n]) => n);
-  return { stitch: stitches[0]!, windows: ordered, out: "film_video_mux.mp4" };
+  return { stitch: stitches.length > 0 ? stitches[0]! : null, windows: ordered, out: "film_video_mux.mp4" };
 }
 
 /** One file's duration in seconds (ffprobe json); null on any
