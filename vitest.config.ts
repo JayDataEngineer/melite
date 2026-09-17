@@ -91,6 +91,11 @@ const DOM_SPEC_TREES = [
   // card-base's own spec tree (hour 14: the mesh stage's decision
   // layer moved here with the component — the preview seam's claim)
   `${rootPath('packages/web/card-base')}/tests/**/*.spec.{ts,tsx}`,
+  // the shared timeline package's DOM specs (the generic-tools
+  // stroke 2026-09-17: FilmPlayer moved from h3's kit — its spec
+  // rides the dom lane beside it; the package's other specs are
+  // plain .ts and stay in the node lane via test/**/*.spec.ts).
+  `${rootPath('packages/web-kit/timeline')}/test/**/*.spec.tsx`,
 ]
 // The gallery's own tree — React 18, the universe the DSH shell hosts.
 const GALLERY_SPEC_TREES = [`${GALLERY}/tests/**/*.spec.{ts,tsx}`]
