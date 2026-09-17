@@ -14,7 +14,6 @@
     "@melite-plugin/melite-estate": "link:../../web/melite-estate",
     "@melite/3d-img-to-mesh": "link:../../3d/img-to-mesh",
     "@melite/harness-tools": "link:../melite-tools",
-    "@melite/image-ideogram4": "link:../../image/ideogram4",
     "@melite/motion-motion": "link:../../motion/motion",
     "@melite/video-h3-timeline": "link:../../video/h3-timeline"
   },

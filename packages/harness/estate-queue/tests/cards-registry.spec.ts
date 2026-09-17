@@ -96,10 +96,11 @@ describe("facts + decls", () => {
   it("serves strict facts, cached decls, and explicit-facts decls", () => {
     const s = primed();
     const facts = s.modelFacts();
-    // 27 since stroke 87 (fit + skin facts rows retired with their
+    // 26 since the form-seams stroke (ideogram's facts row retired
+    // with its card 2026-09-17; fit + skin went at stroke 87)
     // cards — the DCC surface moved to the blender MCP skills;
     // the studio family retired earlier, stroke 75)
-    assert.ok(Object.keys(facts).length >= 27);
+    assert.ok(Object.keys(facts).length >= 26);
     assert.equal(s.cardDecls(), s.cardDecls());
     const decls = s.cardDecls();
     assert.ok(decls["image-gen"] !== undefined);

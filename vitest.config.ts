@@ -77,7 +77,6 @@ const DOM_SPEC_TREES = [
   // adapter live in its package now — its spec rides the dom lane
   // (React 19, the store-pinned pair).
   `${rootPath('packages/video/h3-timeline')}/tests/**/*.spec.{ts,tsx}`,
-  `${rootPath('packages/image/ideogram4')}/tests/**/*.spec.{ts,tsx}`,
   `${rootPath('packages/image/mask-studio')}/tests/**/*.spec.{ts,tsx}`,
   `${rootPath('packages/3d/img-to-mesh')}/tests/**/*.spec.{ts,tsx}`,
   // anny's spec tree (stroke 89: the studio specs died with the
@@ -460,9 +459,8 @@ export default defineConfig({
         // + the studios (src/ui/** — 28 files) stay GUI-debt: DOM,
         // the dom project's territory, same carve-out as the web tree.
         // image (stroke 77): mask-studio's paint-leaf face +
-        // paintInk and ideogram4's panels/canvas/controls/helpers/
+        // paintInk's panels/canvas/controls/helpers/
         // slot ride the gate at 100; ONE residual stays named.
-        'packages/image/ideogram4/src/ui/studio/component.tsx',
         // motion studio CLOSED (2026-09-16, motion lane): the studio
         // (src/ui/** — kit + every helper ride the gate at 100; the
         // 2.1k-line component + the export dialog stay NAMED below
@@ -478,7 +476,6 @@ export default defineConfig({
         // img-to-mesh/card-view clients ride the gate at 100 (the
         // view client unblocked by the drafts remote-subpath alias);
         // TWO residuals stay named.
-        'packages/image/ideogram4/src/client/index.ts',
         'packages/motion/motion/src/client/index.ts',
         // video CLOSED (stroke 77): the h3 studio tree rides the
         // gate at per-file 100 (342 tests, h3-timeline/tests/studio-*)

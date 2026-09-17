@@ -73,9 +73,10 @@ function stylesSelect(css: string): boolean {
 const OPTION_DECL = /(?<![-a-z])option[^{]*\{[^}]*\}/g
 
 test('every option rule paints Canvas/CanvasText (no token, no literal)', () => {
-  // non-vacuity floor: the guarded roots carry 10+ css modules today
-  // (this sweep already caught real offenders at 15)
-  expect(cssModules.length).toBeGreaterThan(10)
+  // non-vacuity floor: the guarded roots carry 9+ css modules today
+  // (this sweep already caught real offenders at 15; the count fell
+  // 11 → 9 when ideogram4 retired with its card, 2026-09-17)
+  expect(cssModules.length).toBeGreaterThan(8)
   const offenders: string[] = []
   for (const file of cssModules) {
     const css = bare(readFileSync(file, 'utf8'))

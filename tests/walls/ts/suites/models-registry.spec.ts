@@ -22,24 +22,24 @@ import {
 } from "../../../../packages/engines/comfyui-cordis/src/models/models.ts";
 
 describe("the resurrected model registry (families/variants/cells/links)", () => {
-  it("carries the hierarchy: 46 registry models, 91 serving routes (fit + skin retired, stroke 87; z-image fold stroke 46h)", (): void => {
-    assert.equal(registryIds().length, 46);
-    assert.equal(modelIds().length, 91);
+  it("carries the hierarchy: 45 registry models, 90 serving routes (ideogram retired 2026-09-17; fit + skin stroke 87; z-image fold stroke 46h)", (): void => {
+    assert.equal(registryIds().length, 45);
+    assert.equal(modelIds().length, 90);
     const comfy = modelIds().filter((id) => {
       const e = getModel(id).engine ?? "";
       return (e ?? "") === "" || e === "comfyui";
     });
-    assert.equal(comfy.length, 79); // fit + skin gone (stroke 87)
+    assert.equal(comfy.length, 78); // ideogram gone (2026-09-17); fit + skin gone (stroke 87)
     const rcomfy = registryIds().filter((id) => {
       const e = registryModel(id).engine ?? "";
       return (e ?? "") === "" || e === "comfyui";
     });
-    assert.equal(rcomfy.length, 42); // fit + skin gone (stroke 87)
+    assert.equal(rcomfy.length, 41); // ideogram gone (2026-09-17); fit + skin gone (stroke 87)
   });
 
-  it("serves 53 offered routes; the unoffered are excluded loud-side (fit + skin retired, stroke 87)", (): void => {
+  it("serves 52 offered routes; the unoffered are excluded loud-side (ideogram retired 2026-09-17; fit + skin stroke 87)", (): void => {
     const cat = modelCatalog();
-    assert.equal(Object.keys(cat).length, 53);
+    assert.equal(Object.keys(cat).length, 52);
     // the 4 fragment/retired unoffered + the 13 hollow atoms
     // (2026-09-08: served but callerless and unrunnable — the
     // catalog offers only runnable atoms, walled in

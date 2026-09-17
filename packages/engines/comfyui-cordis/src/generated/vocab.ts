@@ -37,7 +37,7 @@ export const QuantValues = ["bf16", "f32", "fp8", "int8", "lightning4", "native"
 export type Quant = (typeof QuantValues)[number];
 
 /** CLIPLoader type vocabulary (grammar.py ClipType). */
-export const ClipTypeValues = ["ideogram4", "krea2", "lumina2", "minimax", "qwen_image", "stable_diffusion", "wan"] as const;
+export const ClipTypeValues = ["krea2", "lumina2", "minimax", "qwen_image", "stable_diffusion", "wan"] as const;
 export type ClipType = (typeof ClipTypeValues)[number];
 
 /** Empty-latent constructor vocabulary (grammar.py LatentNode). */

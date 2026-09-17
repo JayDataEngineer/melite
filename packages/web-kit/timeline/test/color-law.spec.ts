@@ -17,7 +17,7 @@ const here = dirname(fileURLToPath(import.meta.url))
 
 /** The guarded set: the shared timeline substrate (css + tsx) and the
  *  h3 studio skin — every consumer of the bar inherits the law. */
-/** min: the vacuity floor per file — small skins (the ideogram
+/** min: the vacuity floor per file — small skins (the retired
  *  controls file is 4 honest uses) get a calibrated floor; the
  *  no-literal and no-fallback walls above stay ABSOLUTE for all. */
 const GUARDED: Array<{ file: string, why: string, min?: number }> = [
@@ -29,11 +29,6 @@ const GUARDED: Array<{ file: string, why: string, min?: number }> = [
   // them where it lives. Canvas-DATA colors (SAM overlays, brush
   // inks, checkerboards in mask-studio's ts constants) are bitmap
   // content the engine reads, not chrome — outside the wall's law.
-  { file: join(here, '../../../image/ideogram4/src/client/client.module.css'), why: 'the ideogram card skin' },
-  { file: join(here, '../../../image/ideogram4/src/ui/studio/component.module.css'), why: 'the ideogram studio skin' },
-  { file: join(here, '../../../image/ideogram4/src/ui/studio/IdeoPanels.module.css'), why: 'the ideogram panels skin' },
-  { file: join(here, '../../../image/ideogram4/src/ui/studio/IdeogramCanvas.module.css'), why: 'the ideogram canvas skin' },
-  { file: join(here, '../../../image/ideogram4/src/ui/studio/controls.module.css'), why: 'the ideogram controls skin', min: 3 },
   { file: join(here, '../../../web/melite-card-view/src/client/card.module.css'), why: 'the card view skin' },
   // stroke 77: the retired studio's skin left with the editor — the
   // paint leaf-face modal joins the guarded set in its place (token

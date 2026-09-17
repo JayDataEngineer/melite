@@ -65,12 +65,14 @@ describe("the served catalog vs the tree golden (A1)", () => {
     const goldenServed = new Set(
       Object.keys(golden.models).filter((id) => !RETIRED_IN_GOLDEN.includes(id as never)),
     );
-    // 53 since stroke 87 (fit + skin model rows retired with
+    // 52 since the form-seams stroke (ideogram retired with its
+    // card 2026-09-17; fit + skin went at stroke 87)
+    // (previous: 53 since stroke 87 (fit + skin model rows retired with
     // their cards — 51 + the stroke-46h z-image base routes
     // (z-image-base, z-image-base-int8 — regolded with cause: the
     // variant landed without its golden rows, and this session's
     // battery surfaced the stale count)
-    assert.equal(Object.keys(cat.models).length, 53);
+    assert.equal(Object.keys(cat.models).length, 52);
     for (const id of goldenServed) {
       const g = golden.models[id];
       const mine = cat.models[id];
@@ -109,17 +111,21 @@ describe("the served catalog vs the tree golden (A1)", () => {
       assert.ok(decl.engine !== "comfyui" && decl.engine !== "", `${id} must carry its retired engine marker (got '${decl.engine}')`);
       assert.equal(isServedFamily(decl), false, `${id} must never serve (LAW 0)`);
     }
-    // 91 since stroke 87 (fit + skin retired — 89 + the stroke-46h
+    // 90 since the form-seams stroke (ideogram retired with its
+    // card 2026-09-17; fit + skin went at stroke 87)
+    // (previous: 91 since stroke 87 (fit + skin retired — 89 + the stroke-46h
     // z-image base routes (same regold
     // cause as the served count above)
-    assert.equal(modelIds().length, 91);
+    assert.equal(modelIds().length, 90);
   });
 
   it("families section matches the golden on all served ids", (): void => {
-    // 53 since stroke 87 (fit + skin model rows retired with
+    // 52 since the form-seams stroke (ideogram retired with its
+    // card 2026-09-17; fit + skin went at stroke 87)
+    // (previous: 53 since stroke 87 (fit + skin model rows retired with
     // their cards — 51 + the stroke-46h z-image base routes
     // (same regold cause as the served models count above)
-    assert.equal(Object.keys(cat.families).length, 53);
+    assert.equal(Object.keys(cat.families).length, 52);
     for (const [id, fam] of Object.entries(cat.families)) {
       assert.deepEqual(fam, golden.families[id], `family ${id} diverges`);
     }
@@ -170,10 +176,12 @@ describe("the identity rung rides the live card defs (phase 2 start)", () => {
     // surgery belongs to the blender MCP door as skills, not
     // cards); their ring rows stay as frozen py truth, named
     // divergences like the 3 deleted + mask-studio.
-    assert.equal(carried, 16);
+    assert.equal(carried, 15); // 15 since the form-seams stroke (ideogram4 retired with its card)
     // 17 since stroke 87 (skin + fit joined clothing-placement in
     // retirement); the TS plane's card count follows the live
     // catalog, never the golden's frozen 22.
-    assert.equal(defs.size >= 17, true);
+    // 16 live cards since the form-seams stroke (ideogram4 retired
+    // 2026-09-17; the ring keeps its frozen row)
+    assert.equal(defs.size >= 16, true);
   });
 });

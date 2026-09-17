@@ -66,14 +66,12 @@ test('THE TOAST LAW: a toast pushed from ANY seam renders INSIDE the shell — n
   expect(matches.length).toBe(1)
 })
 
-test('NO PER-STUDIO MOUNT: motion and ideogram4 hand-mounts are DELETED (the shell owns chrome)', () => {
+test('NO PER-STUDIO MOUNT: motion hand-mounts are DELETED (the shell owns chrome; ideogram4 retired 2026-09-17)', () => {
   // structural wall: the studios import the store, never the viewport
   // eslint-disable-next-line @typescript-eslint/no-require-imports
   const fs = require('node:fs') as typeof import('node:fs')
   const motion = fs.readFileSync('packages/motion/motion/src/ui/studio/component.tsx', 'utf8')
-  const ideo = fs.readFileSync('packages/image/ideogram4/src/ui/studio/component.tsx', 'utf8')
   expect(motion).not.toContain('<ToastViewport')
-  expect(ideo).not.toContain('<ToastViewport')
   // the shell is the one mount
   // eslint-disable-next-line @typescript-eslint/no-require-imports
   const shell = fs.readFileSync('packages/web/card-base/src/shell.tsx', 'utf8')

@@ -37,7 +37,6 @@ import { DECL as declGemSoma, family as familyGemSoma } from '../../../models/ge
 import { DECL as declH3, family as familyH3 } from '../../../models/h3/src/index.ts'
 import { DECL as declH3Keyframe, family as familyH3Keyframe } from '../../../models/h3-keyframe/src/index.ts'
 import { DECL as declH3Timeline, family as familyH3Timeline } from '../../../models/h3-timeline/src/index.ts'
-import { DECL as declIdeogram, family as familyIdeogram } from '../../../models/ideogram/src/index.ts'
 import { DECL as declInput, family as familyInput } from '../../../models/input/src/index.ts'
 import { DECL as declJoycaption, family as familyJoycaption } from '../../../models/joycaption/src/index.ts'
 import { DECL as declJoytag, family as familyJoytag } from '../../../models/joytag/src/index.ts'
@@ -85,7 +84,6 @@ const FAMILIES: Array<{ id: string; decl: { id: string }; family: { name: string
   { id: 'h3', decl: declH3 as never, family: familyH3 as never },
   { id: 'h3-keyframe', decl: declH3Keyframe as never, family: familyH3Keyframe as never },
   { id: 'h3-timeline', decl: declH3Timeline as never, family: familyH3Timeline as never },
-  { id: 'ideogram', decl: declIdeogram as never, family: familyIdeogram as never },
   { id: 'input', decl: declInput as never, family: familyInput as never },
   { id: 'joycaption', decl: declJoycaption as never, family: familyJoycaption as never },
   { id: 'joytag', decl: declJoytag as never, family: familyJoytag as never },

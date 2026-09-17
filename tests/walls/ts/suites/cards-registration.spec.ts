@@ -70,7 +70,8 @@ const CARDS: Array<{ pkg: string; genre: string; path: string }> = [
   { pkg: "img-to-mesh", genre: "3d", path: "../../../../packages/3d/img-to-mesh/src/card.ts" },
   { pkg: "quad-remesh", genre: "3d", path: "../../../../packages/3d/quad-remesh/src/card.ts" },
   { pkg: "sfx", genre: "audio", path: "../../../../packages/audio/sfx/src/card.ts" },
-  { pkg: "ideogram4", genre: "image", path: "../../../../packages/image/ideogram4/src/card.ts" },
+  // ideogram4 RETIRED (2026-09-17, operator order — the form-seams
+  // stroke): card + family both gone.
   { pkg: "input-prep", genre: "image", path: "../../../../packages/image/input-prep/src/card.ts" },
   // mask-studio RETIRED (stroke 75, CONTRACT D at parity): the
   // card face is gone — mask-form owns the mask surface. The
@@ -110,14 +111,14 @@ describe("card-only packages register exactly one honest row", () => {
     });
   }
 
-  it("nine cards on one seat: nine unique ids (one card, one plugin; the studio retired stroke 75, fit+skin stroke 87)", async () => {
+  it("eight cards on one seat: eight unique ids (one card, one plugin; the studio retired stroke 75, fit+skin stroke 87, ideogram4 the form-seams stroke)", async () => {
     const { ctx, seat } = fakeCtx();
     for (const card of CARDS) {
       const mod: CardModule = (await import(card.path)) as CardModule;
       mod.apply(ctx);
     }
-    assert.equal(seat.rows.length, 9);
+    assert.equal(seat.rows.length, 8);
     const ids: string[] = seat.rows.map((r) => r.id);
-    assert.equal(new Set(ids).size, 9, `ids unique (got ${JSON.stringify(ids)})`);
+    assert.equal(new Set(ids).size, 8, `ids unique (got ${JSON.stringify(ids)})`);
   });
 });

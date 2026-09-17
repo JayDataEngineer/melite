@@ -41,7 +41,6 @@ const ATOM_HOSTS = [
   "packages/web/card-base",
   "packages/video/h3-timeline",
   "packages/image/mask-studio",
-  "packages/image/ideogram4",
   // anny retired from this list (stroke 89): its studio died — a
   // form card owns no browser face, so it declares no atoms.
   // img-to-mesh excluded: its studio rides local shell + slots only,

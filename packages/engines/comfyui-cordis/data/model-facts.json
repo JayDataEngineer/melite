@@ -22,17 +22,6 @@
         }
       ]
     },
-    "ideogram4": {
-      "outputs": [
-        {
-          "label": "Generated image",
-          "many": false,
-          "patterns": [
-            ".png"
-          ]
-        }
-      ]
-    },
     "image-edit": {
       "outputs": [
         {
@@ -336,7 +325,7 @@
     ]
   },
   "meta": {
-    "status": "CARD-OWNED SLICES (merged 2026-09-08, package-boundary extermination): model-owned keys (defaults/lane_inputs/variants/variant_groups/mods/accepts/studio) DERIVE from the registry at load (facts.ts) — this file keeps ONLY what the registry cannot carry: per-card outputs/requires_by_family, per-address card_knobs, the row roster, extension_node_types. mask-studio RETIRED 2026-09-16 (CONTRACT D at parity, stroke 75): mask-form owns the mask surface; the studio rows left with the card.",
+    "status": "CARD-OWNED SLICES (merged 2026-09-08, package-boundary extermination): model-owned keys (defaults/lane_inputs/variants/variant_groups/mods/accepts/studio) DERIVE from the registry at load (facts.ts) \u2014 this file keeps ONLY what the registry cannot carry: per-card outputs/requires_by_family, per-address card_knobs, the row roster, extension_node_types. mask-studio RETIRED 2026-09-16 (CONTRACT D at parity, stroke 75): mask-form owns the mask surface; the studio rows left with the card.",
     "wall": "tests/walls/ts/suites/models-flows.test.ts (AGREE + derivation)"
   },
   "rows": {
@@ -1012,56 +1001,6 @@
           "card": "h3_ref_image_size",
           "inject": "MiniMaxH3ReferenceToVideo.0.ref_image_size",
           "kind": "s"
-        }
-      ]
-    },
-    "ideogram": {
-      "card": "ideogram4",
-      "card_knobs": [
-        {
-          "card": "prompt",
-          "inject": "CLIPTextEncode.0.text",
-          "kind": "s"
-        },
-        {
-          "card": "width",
-          "inject": "EmptyFlux2LatentImage.0.width",
-          "kind": "n"
-        },
-        {
-          "card": "height",
-          "inject": "EmptyFlux2LatentImage.0.height",
-          "kind": "n"
-        },
-        {
-          "card": "steps",
-          "inject": "Ideogram4Scheduler.0.steps",
-          "kind": "n"
-        },
-        {
-          "card": "cfg",
-          "inject": "DualModelGuider.0.cfg",
-          "kind": "n"
-        },
-        {
-          "card": "mu",
-          "inject": "Ideogram4Scheduler.0.mu",
-          "kind": "n"
-        },
-        {
-          "card": "std",
-          "inject": "Ideogram4Scheduler.0.std",
-          "kind": "n"
-        },
-        {
-          "card": "sampler",
-          "inject": "KSamplerSelect.0.sampler_name",
-          "kind": "s"
-        },
-        {
-          "card": "seed",
-          "inject": "RandomNoise.0.noise_seed",
-          "kind": "n"
         }
       ]
     },

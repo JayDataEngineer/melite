@@ -55,7 +55,11 @@ export const cardPackages: string[] = [
     '@melite/3d-img-to-mesh/card',
     '@melite/3d-quad-remesh',
     '@melite/audio-sfx',
-    '@melite/image-ideogram4/card',
+    // RETIRED 2026-09-17 (operator order, the form-seams stroke):
+    // ideogram4 — the card AND its model family are GONE (the
+    // family's tenant binding WAS this card; nothing else consumed
+    // it). The frozen identity ring (cardIdentity.generated.ts)
+    // keeps its historical row by that file's own law.
     '@melite/image-input-prep',
   // RETIRED 2026-09-16 (operator order, stroke 87): 3d-skin + 3d-fit —
   // DCC surgery masquerading as cards. Verified at source: skin's

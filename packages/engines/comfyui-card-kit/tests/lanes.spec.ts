@@ -13,8 +13,8 @@ import { writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { GraphBuilder } from "../src/graph.ts";
 import {
-  finalizeIdeogram, finalizeImageEdit, finalizeTagger,
-  ideogramLane, inputPrepLane, maskT1, taggerLane,
+  finalizeImageEdit, finalizeTagger,
+ inputPrepLane, maskT1, taggerLane,
   annyLane,
   admitMeshLift, transferRigArm, trellisArm, pixalArm, type StripTable,
   quadRemeshLane, musicT1, imageEdit, refuseImageEditFiring, finalizeAnny, finalizeMotion,
@@ -331,8 +331,6 @@ describe("the finalize strips", () => {
     const out2 = finalizeTagger(empty);
     assert.ok(!("upload" in out2.D.inputs), "the tagger strip drops the empty upload");
 
-    const ideo = finalizeIdeogram({} as never);
-    assert.deepEqual(Object.keys(ideo), [], "the ideogram strip passes an empty graph through");
   });
 });
 
@@ -455,8 +453,8 @@ describe("the mesh-lift admissions and the rig copy", () => {
   });
 });
 
-// ── the ideogram lane's arm (the card spec drives the gate) ───────
-describe("ideogramLane (the happy lane, kit-direct)", () => {
+// ── kit helpers (the ideogram lane + finalize retired with the card) ──
+describe("kit helpers (strip/defaults — the ideogram lane retired with its card)", () => {
   it("stripEmptyAutofill drops empties and keeps the rest (both ==='' arms)", () => {
     // finalizeMotion is the stripEmptyAutofill face WITH entries
     // (MOTION_STRIP — ANNY_STRIP; the fit/skin strips
@@ -481,12 +479,6 @@ describe("ideogramLane (the happy lane, kit-direct)", () => {
     assert.equal(out.Bare, undefined, "an input-less spec emits no row");
   });
 
-  it("the family scheduler rides", () => {
-    const model = facts.models["ideogram"]!;
-    const g = new GraphBuilder();
-    ideogramLane({ prompt: "a brass astrolabe", magic_prompt_option: "Auto", seed: 5 }, model, g, "run_1");
-    assert.ok(classes(dump(g)).includes("Ideogram4Scheduler"));
-  });
 });
 
 // ── graph.ts deriveDefaults (the object_info walker's arms) ───────

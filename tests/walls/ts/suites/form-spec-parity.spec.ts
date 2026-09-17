@@ -106,7 +106,8 @@ describe("live formSpec ≡ golden referee (the parity wall)", () => {
   it("boots the card plane and covers every card-carrying spec", async (): Promise<void> => {
     await loadCardDefs();
     const specs = comparedSpecs();
-    // 27 since stroke 87 (fit + skin specs retired with their
+    // 26 since the form-seams stroke (ideogram retired with its
+    // card 2026-09-17; fit + skin went at stroke 87)
     // cards): 26 registry models + the sfx card's boarded ROUTE
     // moss-sfx (the caller boards the address, not the model) +
     // the qwen3-tts-base fold (the tts card boards the route since
@@ -115,7 +116,7 @@ describe("live formSpec ≡ golden referee (the parity wall)", () => {
     // mask-studio boards nothing (pure action card) so it never
     // enters this wall — the door serves its envelope live with
     // variants [].
-    assert.equal(specs.length, 27, "the referee carries 27 card-carrying specs");
+    assert.equal(specs.length, 26, "the referee carries 26 card-carrying specs");
   });
 
   it("the union — card envelope + mod envelopes — is name-exact for every spec", async (): Promise<void> => {
@@ -195,11 +196,11 @@ describe("live formSpec ≡ golden referee (the parity wall)", () => {
     assert.ok(!opts.includes("not_a_sampler"));
   });
 
-  it("the hierarchy: 46 models (fit + skin retired stroke 87), every flat route still serves", (): void => {
+  it("the hierarchy: 45 models (ideogram retired with its card 2026-09-17; fit + skin stroke 87), every flat route still serves", (): void => {
     // THE HIERARCHY STROKE (2026-09-08): one model per engine-lane
     // unit (ace-step ×6 flat ids = ONE model: variants × quants);
     // every flat id the runtime has ever addressed still serves.
-    assert.equal(registryIds().length, 46);
+    assert.equal(registryIds().length, 45);
     for (const flat of ["ace-step", "ace-step-bf16", "ace-step-base", "ace-step-base-bf16", "ace-step-sft", "ace-step-xl", "qwen3-tts", "qwen3-tts-base"]) {
       assert.ok(modelIds().includes(flat), flat + " still serves (the flat ids survive as routes)");
     }

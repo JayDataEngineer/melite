@@ -309,65 +309,6 @@ export function imageEdit(p: Record<string, unknown>, model: ModelFacts, g: Grap
   decodeSave(g, sampled.out(), vae, `${runId}/edit`)
 }
 
-/** The official template's omission set — comfy-script autofills
- *  these from the pin; ComfyUI applies the same defaults live
- *  (moved verbatim from the ideogram4 card). */
-export const IDEOGRAM_STRIP: StripTable = {
-  CLIPLoader: ['device'],
-  RandomNoise: ['control_after_generate'],
-}
-
-export function finalizeIdeogram(graph: PromptGraph): PromptGraph {
-  return stripAutofill(graph, IDEOGRAM_STRIP)
-}
-
-/** The ideogram_t2i block — dual-guided (conditional +
- *  CFGOverride-trimmed unconditional) sampling (moved verbatim from
- *  the ideogram4 card; admission stays on the card). */
-export function ideogramLane(p: Record<string, unknown>, model: ModelFacts, g: GraphBuilder, runId: string): void {
-  const seed = mintSeed(p)
-  const li = model.lane_inputs as Record<string, any>
-  const clip = g.node('CLIPLoader', { clip_name: li.text_encoder, type: li.clip_type }).out()
-  const pos = g.node('CLIPTextEncode', { clip, text: p.prompt }).out()
-  const neg = g.node('ConditioningZeroOut', { conditioning: pos }).out()
-  const unetCond = g.node('UNETLoader', { unet_name: li.unet, weight_dtype: 'default' }).out()
-  const unetUncond = g.node('UNETLoader', { unet_name: li.unet_unconditional, weight_dtype: 'default' }).out()
-  // the official template's late-schedule guidance trim on the
-  // unconditional pass (constants of the family graph)
-  const uncondTrimmed = g.node('CFGOverride', {
-    model: unetUncond,
-    cfg: 3,
-    start_percent: 0.7,
-    end_percent: 1.0,
-  }).out()
-  const guider = g.node('DualModelGuider', {
-    model: unetCond,
-    model_negative: uncondTrimmed,
-    positive: pos,
-    negative: neg,
-    cfg: p.cfg,
-  }).out()
-  const noise = g.node('RandomNoise', { noise_seed: p.seed }).out()
-  const sigmas = g.node('Ideogram4Scheduler', {
-    steps: p.steps,
-    width: p.width,
-    height: p.height,
-    mu: p.mu,
-    std: p.std,
-  }).out()
-  const sampler = g.node('KSamplerSelect', { sampler_name: p.sampler }).out()
-  const latent = g.node(String(li.latent_node), { batch_size: 1, width: p.width, height: p.height }).out()
-  const sampled = g.node('SamplerCustomAdvanced', {
-    noise,
-    guider,
-    sampler,
-    sigmas,
-    latent_image: latent,
-  })
-  const vae = g.node('VAELoader', { vae_name: li.vae }).out()
-  const decoded = g.node('VAEDecode', { samples: sampled.out(0), vae }).out()
-  g.node('SaveImage', { filename_prefix: `${runId}/gen`, images: decoded })
-}
 
 /** The music_t1 block — the MiniMax Music 3 lane (moved verbatim
  *  from the music card; admission stays on the card). */

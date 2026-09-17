@@ -27,7 +27,6 @@ import { family as autoDetect } from "@melite/models-auto-detect";
 import { family as basic_resize } from "@melite/models-basic_resize";
 import { family as florence2 } from "@melite/models-florence2";
 import { family as fluxFillDev } from "@melite/models-flux-fill-dev";
-import { family as ideogram } from "@melite/models-ideogram";
 import { family as input } from "@melite/models-input";
 import { family as joycaption } from "@melite/models-joycaption";
 import { family as joytag } from "@melite/models-joytag";
@@ -75,7 +74,6 @@ export const FAMILY_PLUGINS: Plugin[] = [
   basic_resize,
   florence2,
   fluxFillDev,
-  ideogram,
   input,
   joycaption,
   joytag,

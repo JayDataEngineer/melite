@@ -27,7 +27,7 @@
       "family": "anny",
       "genre": "3d",
       "label": "Anny (character assembly) Anny",
-      "description": "Author a character body — 11 identity sliders (or attach a GLB, or load a preset), then render the 8-view turnaround sheet. Photo→body estimation rides the hmr-estimate verb (the MHR chain).",
+      "description": "Author a character body \u2014 11 identity sliders (or attach a GLB, or load a preset), then render the 8-view turnaround sheet. Photo\u2192body estimation rides the hmr-estimate verb (the MHR chain).",
       "form": "form_3d_anny",
       "source": {
         "type": "",
@@ -60,7 +60,7 @@
       "family": "autoremesher",
       "genre": "3d",
       "label": "AutoRemesher Standard Native",
-      "description": "AI triangle soup → clean quad topology (explicit budget, no silent defaults).",
+      "description": "AI triangle soup \u2192 clean quad topology (explicit budget, no silent defaults).",
       "form": "form_quad_remesh",
       "source": {
         "type": ""
@@ -75,7 +75,7 @@
       "family": "florence2",
       "genre": "image",
       "label": "Florence-2 Standard F32",
-      "description": "Natural-language image captioning (Florence-2 large, PromptGen-tuned) — dense descriptive prompts for recreating images in FLUX / Ideogram / image-edit.",
+      "description": "Natural-language image captioning (Florence-2 large, PromptGen-tuned) \u2014 dense descriptive prompts for recreating images in FLUX / Ideogram / image-edit.",
       "form": "form_tagger",
       "source": {
         "type": ""
@@ -92,8 +92,8 @@
       "id": "h3",
       "family": "h3",
       "genre": "video",
-      "label": "MiniMax H3 FL2VA ⚡ Turbo",
-      "description": "MiniMax H3 joint video + audio generation. Native AV output — describe both motion and",
+      "label": "MiniMax H3 FL2VA \u26a1 Turbo",
+      "description": "MiniMax H3 joint video + audio generation. Native AV output \u2014 describe both motion and",
       "form": "form_video_director",
       "source": {
         "type": ""
@@ -138,7 +138,7 @@
       "family": "h3-ref2va",
       "genre": "video",
       "label": "MiniMax H3 Ref2VA",
-      "description": "MiniMax H3 joint video + audio generation. Native AV output — describe both motion and",
+      "description": "MiniMax H3 joint video + audio generation. Native AV output \u2014 describe both motion and",
       "form": "form_video_director",
       "source": {
         "type": ""
@@ -180,7 +180,7 @@
       "family": "h3-timeline-ref",
       "genre": "video",
       "label": "MiniMax H3 Timeline Ref2VA (Legacy)",
-      "description": "MiniMax H3 joint video + audio generation. Native AV output — describe both motion and",
+      "description": "MiniMax H3 joint video + audio generation. Native AV output \u2014 describe both motion and",
       "form": "form_video_director",
       "source": {
         "type": ""
@@ -199,35 +199,12 @@
       "has_rubric": false,
       "has_agent": true
     },
-    "ideogram": {
-      "id": "ideogram",
-      "family": "ideogram",
-      "genre": "image",
-      "label": "Ideogram NF4",
-      "description": "Typography-aware text-to-image with clean, legible text rendering.",
-      "form": "form_generate",
-      "source": {
-        "type": ""
-      },
-      "defaults": {
-        "mu": 0.5,
-        "std": 1.75,
-        "width": 1024,
-        "height": 1024,
-        "steps": 20,
-        "sampler": "euler",
-        "cfg": 7
-      },
-      "engine": "comfyui",
-      "has_inference": false,
-      "has_rubric": false
-    },
     "input": {
       "id": "input",
       "family": "input",
       "genre": "image",
       "label": "Input Prep Standard Native (weightless)",
-      "description": "Source intake: attach an image or audio file (upload, asset drop, prior run) — staged, optionally transformed, emitted as a media artifact for downstream cards to wire.",
+      "description": "Source intake: attach an image or audio file (upload, asset drop, prior run) \u2014 staged, optionally transformed, emitted as a media artifact for downstream cards to wire.",
       "form": "form_input",
       "source": {
         "type": ""
@@ -242,7 +219,7 @@
       "family": "joycaption",
       "genre": "image",
       "label": "JoyCaption Standard F32",
-      "description": "Stylized natural-language image captioning (JoyCaption beta-one, 8B VLM) — descriptive / SD-prompt / MJ / booru-list templates for recreating images in FLUX / Ideogram / image-edit.",
+      "description": "Stylized natural-language image captioning (JoyCaption beta-one, 8B VLM) \u2014 descriptive / SD-prompt / MJ / booru-list templates for recreating images in FLUX / Ideogram / image-edit.",
       "form": "form_tagger",
       "source": {
         "type": ""
@@ -262,7 +239,7 @@
       "family": "joytag",
       "genre": "image",
       "label": "JoyTag Standard F32",
-      "description": "Booru keyword tagger (JoyTag lineage) — thresholded Danbooru tags with add/remove lists for recreation workflows. Torch lane, node-local checkpoint.",
+      "description": "Booru keyword tagger (JoyTag lineage) \u2014 thresholded Danbooru tags with add/remove lists for recreation workflows. Torch lane, node-local checkpoint.",
       "form": "form_tagger",
       "source": {
         "type": ""
@@ -280,8 +257,8 @@
       "id": "kimodo",
       "family": "kimodo",
       "genre": "motion",
-      "label": "Kimodo (text → motion) Standard Native",
-      "description": "Kinematic motion diffusion (NVIDIA Kimodo-SOMA): text → SOMA-77 pose NPZ, chainable, skinnable onto rigged GLBs.",
+      "label": "Kimodo (text \u2192 motion) Standard Native",
+      "description": "Kinematic motion diffusion (NVIDIA Kimodo-SOMA): text \u2192 SOMA-77 pose NPZ, chainable, skinnable onto rigged GLBs.",
       "form": "form_motion_kimodo",
       "source": {
         "type": "",
@@ -354,7 +331,7 @@
       "family": "moss-sfx",
       "genre": "audio",
       "label": "MOSS-SFX v2 Standard Native",
-      "description": "MOSS-SFX v2 sound-effect generation — describe the SOUND not the scene",
+      "description": "MOSS-SFX v2 sound-effect generation \u2014 describe the SOUND not the scene",
       "form": "form_sound",
       "source": {
         "type": ""
@@ -386,7 +363,7 @@
       "family": "pixal3d",
       "genre": "3d",
       "label": "Pixal3D 1024 BF16",
-      "description": "Pixel-aligned image → textured 3D mesh (native ComfyUI Pixal3D, MoGe camera conditioning → DINOv3+NAF pixel-aligned embeddings → shared TRELLIS.2 sampler chain → textured .glb). Hero-asset tier: nearest reconstruction fidelity, slower than TRELLIS.2.",
+      "description": "Pixel-aligned image \u2192 textured 3D mesh (native ComfyUI Pixal3D, MoGe camera conditioning \u2192 DINOv3+NAF pixel-aligned embeddings \u2192 shared TRELLIS.2 sampler chain \u2192 textured .glb). Hero-asset tier: nearest reconstruction fidelity, slower than TRELLIS.2.",
       "form": "form_img_to_mesh",
       "source": {
         "type": ""
@@ -433,7 +410,7 @@
       "family": "pixal3d-1536",
       "genre": "3d",
       "label": "Pixal3D 1536 BF16",
-      "description": "Pixel-aligned image → textured 3D mesh (native ComfyUI Pixal3D, MoGe camera conditioning → DINOv3+NAF pixel-aligned embeddings → shared TRELLIS.2 sampler chain → textured .glb). Hero-asset tier: nearest reconstruction fidelity, slower than TRELLIS.2.",
+      "description": "Pixel-aligned image \u2192 textured 3D mesh (native ComfyUI Pixal3D, MoGe camera conditioning \u2192 DINOv3+NAF pixel-aligned embeddings \u2192 shared TRELLIS.2 sampler chain \u2192 textured .glb). Hero-asset tier: nearest reconstruction fidelity, slower than TRELLIS.2.",
       "form": "form_img_to_mesh",
       "source": {
         "type": ""
@@ -480,7 +457,7 @@
       "family": "pixal3d-1536-bf16",
       "genre": "3d",
       "label": "Pixal3D 1536 BF16",
-      "description": "Pixel-aligned image → textured 3D mesh (native ComfyUI Pixal3D, MoGe camera conditioning → DINOv3+NAF pixel-aligned embeddings → shared TRELLIS.2 sampler chain → textured .glb). Hero-asset tier: nearest reconstruction fidelity, slower than TRELLIS.2.",
+      "description": "Pixel-aligned image \u2192 textured 3D mesh (native ComfyUI Pixal3D, MoGe camera conditioning \u2192 DINOv3+NAF pixel-aligned embeddings \u2192 shared TRELLIS.2 sampler chain \u2192 textured .glb). Hero-asset tier: nearest reconstruction fidelity, slower than TRELLIS.2.",
       "form": "form_img_to_mesh",
       "source": {
         "type": ""
@@ -527,7 +504,7 @@
       "family": "pixal3d-1536-int8",
       "genre": "3d",
       "label": "Pixal3D 1536 INT8 ConvRot",
-      "description": "Pixel-aligned image → textured 3D mesh (native ComfyUI Pixal3D, MoGe camera conditioning → DINOv3+NAF pixel-aligned embeddings → shared TRELLIS.2 sampler chain → textured .glb). Hero-asset tier: nearest reconstruction fidelity, slower than TRELLIS.2.",
+      "description": "Pixel-aligned image \u2192 textured 3D mesh (native ComfyUI Pixal3D, MoGe camera conditioning \u2192 DINOv3+NAF pixel-aligned embeddings \u2192 shared TRELLIS.2 sampler chain \u2192 textured .glb). Hero-asset tier: nearest reconstruction fidelity, slower than TRELLIS.2.",
       "form": "form_img_to_mesh",
       "source": {
         "type": ""
@@ -574,7 +551,7 @@
       "family": "pixal3d-512",
       "genre": "3d",
       "label": "Pixal3D 512 BF16",
-      "description": "Pixel-aligned image → textured 3D mesh (native ComfyUI Pixal3D, MoGe camera conditioning → DINOv3+NAF pixel-aligned embeddings → shared TRELLIS.2 sampler chain → textured .glb). Hero-asset tier: nearest reconstruction fidelity, slower than TRELLIS.2.",
+      "description": "Pixel-aligned image \u2192 textured 3D mesh (native ComfyUI Pixal3D, MoGe camera conditioning \u2192 DINOv3+NAF pixel-aligned embeddings \u2192 shared TRELLIS.2 sampler chain \u2192 textured .glb). Hero-asset tier: nearest reconstruction fidelity, slower than TRELLIS.2.",
       "form": "form_img_to_mesh",
       "source": {
         "type": ""
@@ -621,7 +598,7 @@
       "family": "pixal3d-512-bf16",
       "genre": "3d",
       "label": "Pixal3D 512 BF16",
-      "description": "Pixel-aligned image → textured 3D mesh (native ComfyUI Pixal3D, MoGe camera conditioning → DINOv3+NAF pixel-aligned embeddings → shared TRELLIS.2 sampler chain → textured .glb). Hero-asset tier: nearest reconstruction fidelity, slower than TRELLIS.2.",
+      "description": "Pixel-aligned image \u2192 textured 3D mesh (native ComfyUI Pixal3D, MoGe camera conditioning \u2192 DINOv3+NAF pixel-aligned embeddings \u2192 shared TRELLIS.2 sampler chain \u2192 textured .glb). Hero-asset tier: nearest reconstruction fidelity, slower than TRELLIS.2.",
       "form": "form_img_to_mesh",
       "source": {
         "type": ""
@@ -668,7 +645,7 @@
       "family": "pixal3d-512-int8",
       "genre": "3d",
       "label": "Pixal3D 512 INT8 ConvRot",
-      "description": "Pixel-aligned image → textured 3D mesh (native ComfyUI Pixal3D, MoGe camera conditioning → DINOv3+NAF pixel-aligned embeddings → shared TRELLIS.2 sampler chain → textured .glb). Hero-asset tier: nearest reconstruction fidelity, slower than TRELLIS.2.",
+      "description": "Pixel-aligned image \u2192 textured 3D mesh (native ComfyUI Pixal3D, MoGe camera conditioning \u2192 DINOv3+NAF pixel-aligned embeddings \u2192 shared TRELLIS.2 sampler chain \u2192 textured .glb). Hero-asset tier: nearest reconstruction fidelity, slower than TRELLIS.2.",
       "form": "form_img_to_mesh",
       "source": {
         "type": ""
@@ -715,7 +692,7 @@
       "family": "pixal3d-bf16",
       "genre": "3d",
       "label": "Pixal3D 1024 BF16",
-      "description": "Pixel-aligned image → textured 3D mesh (native ComfyUI Pixal3D, MoGe camera conditioning → DINOv3+NAF pixel-aligned embeddings → shared TRELLIS.2 sampler chain → textured .glb). Hero-asset tier: nearest reconstruction fidelity, slower than TRELLIS.2.",
+      "description": "Pixel-aligned image \u2192 textured 3D mesh (native ComfyUI Pixal3D, MoGe camera conditioning \u2192 DINOv3+NAF pixel-aligned embeddings \u2192 shared TRELLIS.2 sampler chain \u2192 textured .glb). Hero-asset tier: nearest reconstruction fidelity, slower than TRELLIS.2.",
       "form": "form_img_to_mesh",
       "source": {
         "type": ""
@@ -762,7 +739,7 @@
       "family": "pixal3d-int8",
       "genre": "3d",
       "label": "Pixal3D 1024 INT8 ConvRot",
-      "description": "Pixel-aligned image → textured 3D mesh (native ComfyUI Pixal3D, MoGe camera conditioning → DINOv3+NAF pixel-aligned embeddings → shared TRELLIS.2 sampler chain → textured .glb). Hero-asset tier: nearest reconstruction fidelity, slower than TRELLIS.2.",
+      "description": "Pixel-aligned image \u2192 textured 3D mesh (native ComfyUI Pixal3D, MoGe camera conditioning \u2192 DINOv3+NAF pixel-aligned embeddings \u2192 shared TRELLIS.2 sampler chain \u2192 textured .glb). Hero-asset tier: nearest reconstruction fidelity, slower than TRELLIS.2.",
       "form": "form_img_to_mesh",
       "source": {
         "type": ""
@@ -809,7 +786,7 @@
       "family": "qwen-img-edit-2511",
       "genre": "image",
       "label": "Image Edit Standard INT8 ConvRot",
-      "description": "Instruction-driven image editing and manipulation — the Qwen-Image-Edit 2511 lane (the image-edit card arms this family; the pre-flip img-edit head is retired, same physical lane, its assets merged here 2026-09-05).",
+      "description": "Instruction-driven image editing and manipulation \u2014 the Qwen-Image-Edit 2511 lane (the image-edit card arms this family; the pre-flip img-edit head is retired, same physical lane, its assets merged here 2026-09-05).",
       "form": "form_edit",
       "source": {
         "type": ""
@@ -832,7 +809,7 @@
       "family": "qwen-img-edit-2511-int8",
       "genre": "image",
       "label": "Image Edit Standard INT8 ConvRot",
-      "description": "Instruction-driven image editing and manipulation — the Qwen-Image-Edit 2511 lane (the image-edit card arms this family; the pre-flip img-edit head is retired, same physical lane, its assets merged here 2026-09-05).",
+      "description": "Instruction-driven image editing and manipulation \u2014 the Qwen-Image-Edit 2511 lane (the image-edit card arms this family; the pre-flip img-edit head is retired, same physical lane, its assets merged here 2026-09-05).",
       "form": "form_edit",
       "source": {
         "type": ""
@@ -855,7 +832,7 @@
       "family": "qwen-img-edit-2511-lightning4",
       "genre": "image",
       "label": "Image Edit Lightning FP8 Lightning",
-      "description": "Instruction-driven image editing and manipulation — the Qwen-Image-Edit 2511 lane (the image-edit card arms this family; the pre-flip img-edit head is retired, same physical lane, its assets merged here 2026-09-05).",
+      "description": "Instruction-driven image editing and manipulation \u2014 the Qwen-Image-Edit 2511 lane (the image-edit card arms this family; the pre-flip img-edit head is retired, same physical lane, its assets merged here 2026-09-05).",
       "form": "form_edit",
       "source": {
         "type": ""
@@ -933,7 +910,7 @@
       "family": "scail2-animate",
       "genre": "video",
       "label": "SCAIL-2 Standard FP8",
-      "description": "SCAIL-2 character animation — drives a reference character from a video and colored mask.",
+      "description": "SCAIL-2 character animation \u2014 drives a reference character from a video and colored mask.",
       "form": "form_video_director",
       "source": {
         "type": ""
@@ -1034,7 +1011,7 @@
       "family": "trellis2-native",
       "genre": "3d",
       "label": "TRELLIS.2 Native 1024 BF16",
-      "description": "Image to textured 3D mesh (native ComfyUI TRELLIS.2): background-removed conditioning → voxel structure → shape latent → texture atlas, saved as a .glb.",
+      "description": "Image to textured 3D mesh (native ComfyUI TRELLIS.2): background-removed conditioning \u2192 voxel structure \u2192 shape latent \u2192 texture atlas, saved as a .glb.",
       "form": "form_img_to_mesh",
       "source": {
         "type": ""
@@ -1080,7 +1057,7 @@
       "family": "trellis2-native-1536",
       "genre": "3d",
       "label": "TRELLIS.2 Native 1536 BF16",
-      "description": "Image to textured 3D mesh (native ComfyUI TRELLIS.2): background-removed conditioning → voxel structure → shape latent → texture atlas, saved as a .glb.",
+      "description": "Image to textured 3D mesh (native ComfyUI TRELLIS.2): background-removed conditioning \u2192 voxel structure \u2192 shape latent \u2192 texture atlas, saved as a .glb.",
       "form": "form_img_to_mesh",
       "source": {
         "type": ""
@@ -1126,7 +1103,7 @@
       "family": "trellis2-native-1536-bf16",
       "genre": "3d",
       "label": "TRELLIS.2 Native 1536 BF16",
-      "description": "Image to textured 3D mesh (native ComfyUI TRELLIS.2): background-removed conditioning → voxel structure → shape latent → texture atlas, saved as a .glb.",
+      "description": "Image to textured 3D mesh (native ComfyUI TRELLIS.2): background-removed conditioning \u2192 voxel structure \u2192 shape latent \u2192 texture atlas, saved as a .glb.",
       "form": "form_img_to_mesh",
       "source": {
         "type": ""
@@ -1172,7 +1149,7 @@
       "family": "trellis2-native-1536-int8",
       "genre": "3d",
       "label": "TRELLIS.2 Native 1536 INT8 ConvRot",
-      "description": "Image to textured 3D mesh (native ComfyUI TRELLIS.2): background-removed conditioning → voxel structure → shape latent → texture atlas, saved as a .glb.",
+      "description": "Image to textured 3D mesh (native ComfyUI TRELLIS.2): background-removed conditioning \u2192 voxel structure \u2192 shape latent \u2192 texture atlas, saved as a .glb.",
       "form": "form_img_to_mesh",
       "source": {
         "type": ""
@@ -1218,7 +1195,7 @@
       "family": "trellis2-native-512",
       "genre": "3d",
       "label": "TRELLIS.2 Native 512 BF16",
-      "description": "Image to textured 3D mesh (native ComfyUI TRELLIS.2): background-removed conditioning → voxel structure → shape latent → texture atlas, saved as a .glb.",
+      "description": "Image to textured 3D mesh (native ComfyUI TRELLIS.2): background-removed conditioning \u2192 voxel structure \u2192 shape latent \u2192 texture atlas, saved as a .glb.",
       "form": "form_img_to_mesh",
       "source": {
         "type": ""
@@ -1264,7 +1241,7 @@
       "family": "trellis2-native-512-bf16",
       "genre": "3d",
       "label": "TRELLIS.2 Native 512 BF16",
-      "description": "Image to textured 3D mesh (native ComfyUI TRELLIS.2): background-removed conditioning → voxel structure → shape latent → texture atlas, saved as a .glb.",
+      "description": "Image to textured 3D mesh (native ComfyUI TRELLIS.2): background-removed conditioning \u2192 voxel structure \u2192 shape latent \u2192 texture atlas, saved as a .glb.",
       "form": "form_img_to_mesh",
       "source": {
         "type": ""
@@ -1310,7 +1287,7 @@
       "family": "trellis2-native-512-int8",
       "genre": "3d",
       "label": "TRELLIS.2 Native 512 INT8 ConvRot",
-      "description": "Image to textured 3D mesh (native ComfyUI TRELLIS.2): background-removed conditioning → voxel structure → shape latent → texture atlas, saved as a .glb.",
+      "description": "Image to textured 3D mesh (native ComfyUI TRELLIS.2): background-removed conditioning \u2192 voxel structure \u2192 shape latent \u2192 texture atlas, saved as a .glb.",
       "form": "form_img_to_mesh",
       "source": {
         "type": ""
@@ -1356,7 +1333,7 @@
       "family": "trellis2-native-bf16",
       "genre": "3d",
       "label": "TRELLIS.2 Native 1024 BF16",
-      "description": "Image to textured 3D mesh (native ComfyUI TRELLIS.2): background-removed conditioning → voxel structure → shape latent → texture atlas, saved as a .glb.",
+      "description": "Image to textured 3D mesh (native ComfyUI TRELLIS.2): background-removed conditioning \u2192 voxel structure \u2192 shape latent \u2192 texture atlas, saved as a .glb.",
       "form": "form_img_to_mesh",
       "source": {
         "type": ""
@@ -1402,7 +1379,7 @@
       "family": "trellis2-native-int8",
       "genre": "3d",
       "label": "TRELLIS.2 Native 1024 INT8 ConvRot",
-      "description": "Image to textured 3D mesh (native ComfyUI TRELLIS.2): background-removed conditioning → voxel structure → shape latent → texture atlas, saved as a .glb.",
+      "description": "Image to textured 3D mesh (native ComfyUI TRELLIS.2): background-removed conditioning \u2192 voxel structure \u2192 shape latent \u2192 texture atlas, saved as a .glb.",
       "form": "form_img_to_mesh",
       "source": {
         "type": ""
@@ -1473,7 +1450,7 @@
       "family": "wd14",
       "genre": "image",
       "label": "WD14 Tagger Standard F32",
-      "description": "Booru keyword tagger (WaifuDiffusion v3 lineage) — comma-separated Danbooru tags for NovelAI / Pony / Illustrious recreation. Light ONNX lane, first run downloads weights.",
+      "description": "Booru keyword tagger (WaifuDiffusion v3 lineage) \u2014 comma-separated Danbooru tags for NovelAI / Pony / Illustrious recreation. Light ONNX lane, first run downloads weights.",
       "form": "form_tagger",
       "source": {
         "type": ""
@@ -1597,7 +1574,7 @@
       "genre": "image"
     },
     "h3": {
-      "label": "MiniMax H3 FL2VA ⚡ Turbo",
+      "label": "MiniMax H3 FL2VA \u26a1 Turbo",
       "genre": "video"
     },
     "h3-keyframe": {
@@ -1651,17 +1628,6 @@
       "label": "MiniMax H3 Timeline Ref2VA (Legacy)",
       "genre": "video"
     },
-    "ideogram": {
-      "label": "Ideogram NF4",
-      "genre": "image",
-      "studio": {
-        "tenant": "image/ideogram4",
-        "owns_params": false,
-        "writes": [],
-        "size": "normal",
-        "layout": "studio"
-      }
-    },
     "input": {
       "label": "Input Prep Standard Native (weightless)",
       "genre": "image",
@@ -1679,7 +1645,7 @@
       "genre": "image"
     },
     "kimodo": {
-      "label": "Kimodo (text → motion) Standard Native",
+      "label": "Kimodo (text \u2192 motion) Standard Native",
       "genre": "motion",
       "studio": {
         "tenant": "motion/motion",
@@ -2047,7 +2013,7 @@
   "capabilities": {
     "anny": {
       "label": "Anny",
-      "description": "Assemble a character — composite body/hair/outfit GLBs, render the 8-view turnaround, segment a source photo into part sprites.",
+      "description": "Assemble a character \u2014 composite body/hair/outfit GLBs, render the 8-view turnaround, segment a source photo into part sprites.",
       "default_family": "anny",
       "families": [
         "anny"
@@ -2076,8 +2042,8 @@
       }
     },
     "img-to-mesh": {
-      "label": "Image → 3D",
-      "description": "The 3D lane — lift one image into a textured mesh (.glb) on native TRELLIS.2 (DINOv3 conditioning) or native Pixal3D (pixel-aligned + MoGe camera FOV, hero tier), or copy a rig onto a target GLB (transfer_rig); one surface, one arm per family.",
+      "label": "Image \u2192 3D",
+      "description": "The 3D lane \u2014 lift one image into a textured mesh (.glb) on native TRELLIS.2 (DINOv3 conditioning) or native Pixal3D (pixel-aligned + MoGe camera FOV, hero tier), or copy a rig onto a target GLB (transfer_rig); one surface, one arm per family.",
       "default_family": "trellis2-native",
       "families": [
         "trellis2-native",
@@ -2094,7 +2060,7 @@
     },
     "quad-remesh": {
       "label": "Quad Remesh",
-      "description": "High-poly mesh → clean quad topology",
+      "description": "High-poly mesh \u2192 clean quad topology",
       "default_family": "autoremesher",
       "families": [
         "autoremesher"
@@ -2124,7 +2090,7 @@
     },
     "music": {
       "label": "Music",
-      "description": "Generate music — MiniMax Music 3, structured captions (Genre + Vocal Details + Arrangement) with tagged lyrics",
+      "description": "Generate music \u2014 MiniMax Music 3, structured captions (Genre + Vocal Details + Arrangement) with tagged lyrics",
       "default_family": "music3",
       "families": [
         "music3"
@@ -2139,7 +2105,7 @@
     },
     "sfx": {
       "label": "Sound Effects",
-      "description": "Generate sound effects — MOSS-SFX v2, describe the SOUND not the scene",
+      "description": "Generate sound effects \u2014 MOSS-SFX v2, describe the SOUND not the scene",
       "default_family": "moss-sfx",
       "families": [
         "moss-sfx"
@@ -2154,7 +2120,7 @@
     },
     "tts": {
       "label": "TTS",
-      "description": "Text-to-speech — Qwen3-TTS with CustomVoice personas and instruct-text emotion control",
+      "description": "Text-to-speech \u2014 Qwen3-TTS with CustomVoice personas and instruct-text emotion control",
       "default_family": "qwen3-tts",
       "families": [
         "qwen3-tts",
@@ -2170,7 +2136,7 @@
     },
     "voice-lock": {
       "label": "Voice Lock",
-      "description": "Lock a voice persona — design, export, and reuse .qvoice embeddings for consistent character voices",
+      "description": "Lock a voice persona \u2014 design, export, and reuse .qvoice embeddings for consistent character voices",
       "default_family": "qwen3-tts-voicedesign",
       "families": [
         "qwen3-tts-voicedesign"
@@ -2200,7 +2166,7 @@
     },
     "image-edit": {
       "label": "Image Edit",
-      "description": "Instruction-driven image editing — the edit_image interface card boarding the Qwen-Image-Edit 2511 lane; the family carries the lightning / standard cascade (variant/quant always shown) plus the lanpaint flavor (required anchor image). The surface scopes itself.",
+      "description": "Instruction-driven image editing \u2014 the edit_image interface card boarding the Qwen-Image-Edit 2511 lane; the family carries the lightning / standard cascade (variant/quant always shown) plus the lanpaint flavor (required anchor image). The surface scopes itself.",
       "default_family": "qwen-img-edit-2511",
       "families": [
         "qwen-img-edit-2511"
@@ -2215,7 +2181,7 @@
     },
     "image-gen": {
       "label": "Image",
-      "description": "Text-to-image generation — the generate_image interface card boarding krea-2; the family declares its mods (loras) and the surface scopes itself",
+      "description": "Text-to-image generation \u2014 the generate_image interface card boarding krea-2; the family declares its mods (loras) and the surface scopes itself",
       "default_family": "krea-2",
       "families": [
         "krea-2",
@@ -2232,7 +2198,7 @@
     },
     "input-prep": {
       "label": "Input Prep",
-      "description": "Source intake: attach an image or audio file (upload, asset drop, prior run) — staged, optionally transformed, emitted as a media artifact for downstream cards to wire.",
+      "description": "Source intake: attach an image or audio file (upload, asset drop, prior run) \u2014 staged, optionally transformed, emitted as a media artifact for downstream cards to wire.",
       "default_family": "input",
       "families": [
         "input"
@@ -2247,7 +2213,7 @@
     },
     "mask-studio": {
       "label": "Mask Studio",
-      "description": "Selection-only mask card: detect people/subjects, refine with SAM3, paint corrections → mask artifacts for inpaint flows.",
+      "description": "Selection-only mask card: detect people/subjects, refine with SAM3, paint corrections \u2192 mask artifacts for inpaint flows.",
       "default_family": "mask-studio",
       "families": [
         "mask-studio"
@@ -2262,7 +2228,7 @@
     },
     "tagger": {
       "label": "Tagger",
-      "description": "Image prompt inversion — booru keyword tags (WD14, JoyTag) and natural-language captions (Florence-2, JoyCaption) for recreating images in NovelAI / Pony / FLUX / Ideogram. Tags persist as a tags.txt run artifact.",
+      "description": "Image prompt inversion \u2014 booru keyword tags (WD14, JoyTag) and natural-language captions (Florence-2, JoyCaption) for recreating images in NovelAI / Pony / FLUX / Ideogram. Tags persist as a tags.txt run artifact.",
       "default_family": "wd14",
       "families": [
         "wd14",
@@ -2280,7 +2246,7 @@
     },
     "upscale-tools": {
       "label": "Upscale Tools",
-      "description": "Diffusion upscale (SeedVR2-3B fp16) — the hidden tool card; also home of the consumed tool fragments (resize, pixel-upscale, rtx-vsr, concat, input)",
+      "description": "Diffusion upscale (SeedVR2-3B fp16) \u2014 the hidden tool card; also home of the consumed tool fragments (resize, pixel-upscale, rtx-vsr, concat, input)",
       "default_family": "seedvr2_ema",
       "families": [
         "seedvr2_ema"
@@ -2295,7 +2261,7 @@
     },
     "motion": {
       "label": "Motion",
-      "description": "Text → 3D human motion (SOMA-77 pose NPZ). Chain segments, constrain joints, skin onto a rigged character GLB.",
+      "description": "Text \u2192 3D human motion (SOMA-77 pose NPZ). Chain segments, constrain joints, skin onto a rigged character GLB.",
       "default_family": "kimodo",
       "families": [
         "kimodo"
@@ -2310,7 +2276,7 @@
     },
     "h3-timeline": {
       "label": "H3 Timeline",
-      "description": "THE video interface — multi-window film with SLA sparse attention, joint video+audio per window, auto-stitched into one mp4. The calls document IS the timeline.",
+      "description": "THE video interface \u2014 multi-window film with SLA sparse attention, joint video+audio per window, auto-stitched into one mp4. The calls document IS the timeline.",
       "default_family": "h3-timeline",
       "families": [
         "h3-timeline",
@@ -2327,7 +2293,7 @@
     },
     "video-gen": {
       "label": "Video",
-      "description": "Text/reference-to-video — the generate_video interface card boarding wan-vace and scail2-animate; one surface, one arm per family",
+      "description": "Text/reference-to-video \u2014 the generate_video interface card boarding wan-vace and scail2-animate; one surface, one arm per family",
       "default_family": "wan-vace",
       "families": [
         "wan-vace",
@@ -2346,7 +2312,7 @@
     {
       "id": "anny",
       "label": "Anny",
-      "description": "Assemble a character — composite body/hair/outfit GLBs, render the 8-view turnaround, segment a source photo into part sprites.",
+      "description": "Assemble a character \u2014 composite body/hair/outfit GLBs, render the 8-view turnaround, segment a source photo into part sprites.",
       "genre": "3d",
       "families": [
         "anny"
@@ -2371,8 +2337,8 @@
     },
     {
       "id": "img-to-mesh",
-      "label": "Image → 3D",
-      "description": "The 3D lane — lift one image into a textured mesh (.glb) on native TRELLIS.2 (DINOv3 conditioning) or native Pixal3D (pixel-aligned + MoGe camera FOV, hero tier), or copy a rig onto a target GLB (transfer_rig); one surface, one arm per family.",
+      "label": "Image \u2192 3D",
+      "description": "The 3D lane \u2014 lift one image into a textured mesh (.glb) on native TRELLIS.2 (DINOv3 conditioning) or native Pixal3D (pixel-aligned + MoGe camera FOV, hero tier), or copy a rig onto a target GLB (transfer_rig); one surface, one arm per family.",
       "genre": "3d",
       "families": [
         "trellis2-native",
@@ -2387,13 +2353,13 @@
     {
       "id": "quad-remesh",
       "label": "Quad Remesh",
-      "description": "High-poly mesh → clean quad topology",
+      "description": "High-poly mesh \u2192 clean quad topology",
       "genre": "3d",
       "families": [
         "autoremesher"
       ],
       "principles": [
-        "target_quads is the budget — lower is cleaner, higher keeps detail",
+        "target_quads is the budget \u2014 lower is cleaner, higher keeps detail",
         "sharp_edge below 90 preserves creases; above smooths them",
         "adaptivity above 1 concentrates quads at curvature",
         "Feed it a dense scan or TRELLIS output; it returns clean quads"
@@ -2418,7 +2384,7 @@
     {
       "id": "music",
       "label": "Music",
-      "description": "Generate music — MiniMax Music 3, structured captions (Genre + Vocal Details + Arrangement) with tagged lyrics",
+      "description": "Generate music \u2014 MiniMax Music 3, structured captions (Genre + Vocal Details + Arrangement) with tagged lyrics",
       "genre": "audio",
       "families": [
         "music3"
@@ -2431,7 +2397,7 @@
     {
       "id": "sfx",
       "label": "Sound Effects",
-      "description": "Generate sound effects — MOSS-SFX v2, describe the SOUND not the scene",
+      "description": "Generate sound effects \u2014 MOSS-SFX v2, describe the SOUND not the scene",
       "genre": "audio",
       "families": [
         "moss-sfx"
@@ -2444,17 +2410,17 @@
     {
       "id": "tts",
       "label": "TTS",
-      "description": "Text-to-speech — Qwen3-TTS with CustomVoice personas and instruct-text emotion control",
+      "description": "Text-to-speech \u2014 Qwen3-TTS with CustomVoice personas and instruct-text emotion control",
       "genre": "audio",
       "families": [
         "qwen3-tts",
         "qwen3-tts-base"
       ],
       "principles": [
-        "text is required — empty text fails",
+        "text is required \u2014 empty text fails",
         "Use Voice Embedding (.qvoice) for consistent character voices",
         "Style Instruction controls emotion and delivery",
-        "One line per call — serial execution for multi-line sequences"
+        "One line per call \u2014 serial execution for multi-line sequences"
       ],
       "skills": [],
       "has_inference": false,
@@ -2463,7 +2429,7 @@
     {
       "id": "voice-lock",
       "label": "Voice Lock",
-      "description": "Lock a voice persona — design, export, and reuse .qvoice embeddings for consistent character voices",
+      "description": "Lock a voice persona \u2014 design, export, and reuse .qvoice embeddings for consistent character voices",
       "genre": "audio",
       "families": [
         "qwen3-tts-voicedesign"
@@ -2482,10 +2448,10 @@
         "ideogram"
       ],
       "principles": [
-        "prompt is required — an empty/whitespace prompt is rejected loud, never sampled with empty conditioning",
-        "The negative channel is the zeroed conditioning (ConditioningZeroOut) — the official family graph has no negative text input",
+        "prompt is required \u2014 an empty/whitespace prompt is rejected loud, never sampled with empty conditioning",
+        "The negative channel is the zeroed conditioning (ConditioningZeroOut) \u2014 the official family graph has no negative text input",
         "mu/std ride the model defaults (merged at serve time); the universal form does not carry them as fields",
-        "Sampler option lists resolve from the ONE vocabulary — never hand-copied"
+        "Sampler option lists resolve from the ONE vocabulary \u2014 never hand-copied"
       ],
       "skills": [],
       "has_inference": false,
@@ -2494,18 +2460,18 @@
     {
       "id": "image-edit",
       "label": "Image Edit",
-      "description": "Instruction-driven image editing — the edit_image interface card boarding the Qwen-Image-Edit 2511 lane; the family carries the lightning / standard cascade (variant/quant always shown) plus the lanpaint flavor (required anchor image). The surface scopes itself.",
+      "description": "Instruction-driven image editing \u2014 the edit_image interface card boarding the Qwen-Image-Edit 2511 lane; the family carries the lightning / standard cascade (variant/quant always shown) plus the lanpaint flavor (required anchor image). The surface scopes itself.",
       "genre": "image",
       "families": [
         "qwen-img-edit-2511"
       ],
       "principles": [
-        "image1 is required — the edit is anchored on it (the lanpaint flavor declares it; slots image1..image3, input_image is the retired alias)",
-        "Qwen-Image-Edit uses low CFG (flow-matching) — the Guidance Scale slider tops out at 10.0",
+        "image1 is required \u2014 the edit is anchored on it (the lanpaint flavor declares it; slots image1..image3, input_image is the retired alias)",
+        "Qwen-Image-Edit uses low CFG (flow-matching) \u2014 the Guidance Scale slider tops out at 10.0",
         "A lanpaint_mask alongside input_image patches the model with the DiffSynth inpaint ControlNet",
         "Region Mode controls how the mask is honored: auto / crop_stitch / full_frame",
         "Mask prep (grow/feather/threshold/invert) uses the same host-side chain the Inpaint card uses",
-        "Iterate HERE, not in video — an edit costs seconds, a render minutes; name what changes, state the rest as unchanged",
+        "Iterate HERE, not in video \u2014 an edit costs seconds, a render minutes; name what changes, state the rest as unchanged",
         "Previous card outputs ride as artifact URLs (/v1/assets/runs/<run>/<file>); the compose resolves them to data/runs/output/<run>/<file> and stages into the comfy input dir (phase 1 validates on the mounts BEFORE registration)"
       ],
       "skills": [],
@@ -2515,7 +2481,7 @@
     {
       "id": "image-gen",
       "label": "Image",
-      "description": "Text-to-image generation — the generate_image interface card boarding krea-2; the family declares its mods (loras) and the surface scopes itself",
+      "description": "Text-to-image generation \u2014 the generate_image interface card boarding krea-2; the family declares its mods (loras) and the surface scopes itself",
       "genre": "image",
       "families": [
         "krea-2",
@@ -2523,12 +2489,12 @@
         "anima"
       ],
       "principles": [
-        "prompt is required — an empty/whitespace prompt is rejected loud, never sampled with empty conditioning",
+        "prompt is required \u2014 an empty/whitespace prompt is rejected loud, never sampled with empty conditioning",
         "Defaults are shape, not value: resolution/steps/cfg come from the model folder (defaults:/presets), merged at serve time",
-        "Sampler and scheduler option lists resolve from the ONE vocabulary (media.comfyui.sampler_vocab) — never hand-copied",
+        "Sampler and scheduler option lists resolve from the ONE vocabulary (media.comfyui.sampler_vocab) \u2014 never hand-copied",
         "A preset fills untouched fields; values you have set win",
-        "Mods are model-level declarations: lanpaint rides the families that declare it (anima, z-image) — input_image + lanpaint_mask switch the builder to LanPaintKSampler; loras ride krea-2 (apply on Turbo, train on Raw)",
-        "Mask prep (grow/feather/threshold/invert) and outpaint pads are applied host-side before the run — no silent param drops"
+        "Mods are model-level declarations: lanpaint rides the families that declare it (anima, z-image) \u2014 input_image + lanpaint_mask switch the builder to LanPaintKSampler; loras ride krea-2 (apply on Turbo, train on Raw)",
+        "Mask prep (grow/feather/threshold/invert) and outpaint pads are applied host-side before the run \u2014 no silent param drops"
       ],
       "skills": [],
       "has_inference": false,
@@ -2537,15 +2503,15 @@
     {
       "id": "input-prep",
       "label": "Input Prep",
-      "description": "Source intake: attach an image or audio file (upload, asset drop, prior run) — staged, optionally transformed, emitted as a media artifact for downstream cards to wire.",
+      "description": "Source intake: attach an image or audio file (upload, asset drop, prior run) \u2014 staged, optionally transformed, emitted as a media artifact for downstream cards to wire.",
       "genre": "image",
       "families": [
         "input"
       ],
       "principles": [
-        "A source is data, not inference: the graph loads, optionally transforms, and saves — no model ever loads.",
+        "A source is data, not inference: the graph loads, optionally transforms, and saves \u2014 no model ever loads.",
         "Every source form the editor speaks validates at phase 1 (compile time): data: URLs, artifact URLs, input-dir names, absolute paths.",
-        "Transforms ride the declared applicability matrix (image: crop+scale) — anything else refuses loudly, never silently drops."
+        "Transforms ride the declared applicability matrix (image: crop+scale) \u2014 anything else refuses loudly, never silently drops."
       ],
       "skills": [],
       "has_inference": false,
@@ -2554,7 +2520,7 @@
     {
       "id": "mask-studio",
       "label": "Mask Studio",
-      "description": "Selection-only mask card: detect people/subjects, refine with SAM3, paint corrections → mask artifacts for inpaint flows.",
+      "description": "Selection-only mask card: detect people/subjects, refine with SAM3, paint corrections \u2192 mask artifacts for inpaint flows.",
       "genre": "image",
       "families": [
         "mask-studio"
@@ -2567,7 +2533,7 @@
     {
       "id": "tagger",
       "label": "Tagger",
-      "description": "Image prompt inversion — booru keyword tags (WD14, JoyTag) and natural-language captions (Florence-2, JoyCaption) for recreating images in NovelAI / Pony / FLUX / Ideogram. Tags persist as a tags.txt run artifact.",
+      "description": "Image prompt inversion \u2014 booru keyword tags (WD14, JoyTag) and natural-language captions (Florence-2, JoyCaption) for recreating images in NovelAI / Pony / FLUX / Ideogram. Tags persist as a tags.txt run artifact.",
       "genre": "image",
       "families": [
         "wd14",
@@ -2576,11 +2542,11 @@
         "joycaption"
       ],
       "principles": [
-        "input_image is required — the tag is anchored on it (absolute mount path or a prior-run artifact ref)",
-        "threshold is the general-tag confidence floor; character_threshold is the person-identity floor (higher — names are cheap to overclaim)",
-        "exclude_tags prunes what you already know is wrong — comma-separated, matched case-insensitively by the node",
-        "The lane outputs tags.txt (SaveText) — the queue trades in artifacts, not bare strings",
-        "First run downloads the WD14 weights (.onnx + .csv) — light ONNX lane, ~4 GB VRAM",
+        "input_image is required \u2014 the tag is anchored on it (absolute mount path or a prior-run artifact ref)",
+        "threshold is the general-tag confidence floor; character_threshold is the person-identity floor (higher \u2014 names are cheap to overclaim)",
+        "exclude_tags prunes what you already know is wrong \u2014 comma-separated, matched case-insensitively by the node",
+        "The lane outputs tags.txt (SaveText) \u2014 the queue trades in artifacts, not bare strings",
+        "First run downloads the WD14 weights (.onnx + .csv) \u2014 light ONNX lane, ~4 GB VRAM",
         "JoyTag reads a pack-local checkpoint (no auto-download) and takes add/remove tag lists instead of WD14's character floor"
       ],
       "skills": [],
@@ -2590,14 +2556,14 @@
     {
       "id": "upscale-tools",
       "label": "Upscale Tools",
-      "description": "Diffusion upscale (SeedVR2-3B fp16) — the hidden tool card; also home of the consumed tool fragments (resize, pixel-upscale, rtx-vsr, concat, input)",
+      "description": "Diffusion upscale (SeedVR2-3B fp16) \u2014 the hidden tool card; also home of the consumed tool fragments (resize, pixel-upscale, rtx-vsr, concat, input)",
       "genre": "image",
       "families": [
         "seedvr2_ema"
       ],
       "principles": [
-        "A tool lane boards only with real weight facts — the weightless fragments render as consumed arms, never as phantom submit options",
-        "SeedVR2 restores detail (diffusion); plain resize resamples pixels — pick by intent, not by size",
+        "A tool lane boards only with real weight facts \u2014 the weightless fragments render as consumed arms, never as phantom submit options",
+        "SeedVR2 restores detail (diffusion); plain resize resamples pixels \u2014 pick by intent, not by size",
         "resolution is the TARGET short side (1080 = FHD rail); max_resolution is the hard ceiling the lane refuses past",
         "Defaults are shape, not value: filenames and knobs come from the model folder, merged at serve time",
         "rtx-vsr is NVIDIA-SDK-only: the arm is compose-truth, execution needs the RTX stack"
@@ -2609,7 +2575,7 @@
     {
       "id": "motion",
       "label": "Motion",
-      "description": "Text → 3D human motion (SOMA-77 pose NPZ). Chain segments, constrain joints, skin onto a rigged character GLB.",
+      "description": "Text \u2192 3D human motion (SOMA-77 pose NPZ). Chain segments, constrain joints, skin onto a rigged character GLB.",
       "genre": "motion",
       "families": [
         "kimodo"
@@ -2622,7 +2588,7 @@
     {
       "id": "h3-timeline",
       "label": "H3 Timeline",
-      "description": "THE video interface — multi-window film with SLA sparse attention, joint video+audio per window, auto-stitched into one mp4. The calls document IS the timeline.",
+      "description": "THE video interface \u2014 multi-window film with SLA sparse attention, joint video+audio per window, auto-stitched into one mp4. The calls document IS the timeline.",
       "genre": "video",
       "families": [
         "h3-timeline",
@@ -2630,12 +2596,12 @@
         "h3-keyframe"
       ],
       "principles": [
-        "Describe MOTION and SOUND together — H3 generates both in one pass",
+        "Describe MOTION and SOUND together \u2014 H3 generates both in one pass",
         "Draft at 768x448x56f (~2.3s); produce at 1344x768x124f (~5.2s)",
         "Length snaps to the 17k+5 frame grid at 24fps",
         "For timelines: repeat the ambient soundscape verbatim in every window; add one new layer where the story needs it",
         "Same seed across a shot's re-rolls keeps the world texture",
-        "SLA at sparsity 0.90 gives ~1.75x speedup with no quality loss — use it by default"
+        "SLA at sparsity 0.90 gives ~1.75x speedup with no quality loss \u2014 use it by default"
       ],
       "skills": [],
       "has_inference": false,
@@ -2644,18 +2610,18 @@
     {
       "id": "video-gen",
       "label": "Video",
-      "description": "Text/reference-to-video — the generate_video interface card boarding wan-vace and scail2-animate; one surface, one arm per family",
+      "description": "Text/reference-to-video \u2014 the generate_video interface card boarding wan-vace and scail2-animate; one surface, one arm per family",
       "genre": "video",
       "families": [
         "wan-vace",
         "scail2-animate"
       ],
       "principles": [
-        "prompt is required — an empty/whitespace prompt is rejected loud, never sampled with empty conditioning",
-        "The reference image anchors identity/scene — prompt the MOTION, not the subject",
-        "Wan frames are 4n+1 (49 ≈ 2s at 24fps); SCAIL-2 drives a character from a pose video",
+        "prompt is required \u2014 an empty/whitespace prompt is rejected loud, never sampled with empty conditioning",
+        "The reference image anchors identity/scene \u2014 prompt the MOTION, not the subject",
+        "Wan frames are 4n+1 (49 \u2248 2s at 24fps); SCAIL-2 drives a character from a pose video",
         "Defaults are shape, not value: resolution/steps/cfg come from the model folder, merged at serve time",
-        "A family boards only when it can feed truthfully — lane facts + the arm template, no phantom options"
+        "A family boards only when it can feed truthfully \u2014 lane facts + the arm template, no phantom options"
       ],
       "skills": [],
       "has_inference": false,

@@ -65,7 +65,9 @@ describe("the models plane feeds the compose/flows plane (A2)", () => {
     const factIds = Object.keys(facts.models).sort();
     // 27 since stroke 87 (fit + skin facts rows retired with
     // their cards — the DCC surface moved to the blender MCP skills)
-    assert.ok(factIds.length >= 27, `expected ≥27 fact families, got ${factIds.length}`);
+    // ≥26 since the form-seams stroke (ideogram facts retired with
+    // its card 2026-09-17)
+    assert.ok(factIds.length >= 26, `expected ≥26 fact families, got ${factIds.length}`);
     const actions = await actionCardLanes();
     for (const id of factIds) {
       if (actions.has(id)) continue;
