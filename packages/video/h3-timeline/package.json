@@ -41,10 +41,14 @@
     "typescript": "~6.0.3"
   },
   "name": "@melite/video-h3-timeline",
-  "description": "the h3-timeline card (the video lane) \u2014 one card one package: card.ts host face + ui/ studio + agents/ context",
+  "description": "the h3-timeline card (the video lane) — one card one package: card.ts host face + ui/ studio + agents/ context",
   "dsh": {
     "client": {
       "platform": "web"
+    },
+    "bundle": {
+      "patch": "./cordis.patch.yml"
     }
-  }
+  },
+  "sideEffects": true
 }
