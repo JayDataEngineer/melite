@@ -71,7 +71,7 @@ import { fetchMediaLibrary, CARDS_BENCH_ADDRESS, benchAddressOf, benchSessionKey
 import { defaultFamilyForCard } from '@melite-plugin/melite-run-wire'
 import { startCardRun, stopRun } from '@melite/card-base/runs-policy'
 import { addStageWire, groupStagesWire, removeStageWire, reorderStageWire, ungroupStageWire } from './add-stage.ts'
-import { AudioStagePreview, ImageStagePreview, MeshStagePreview, VideoStagePreview, figureCoeffsOf, figureLocalChangesOf } from '@melite/card-base/preview'
+import { AudioStagePreview, ImageStagePreview, MeshStagePreview, VideoStagePreview, figureCoeffsOf, figureLocalChangesOf, figureCameraOf } from '@melite/card-base/preview'
 import { CardZoomOverlay } from './zoom.tsx'
 import { mediaUrl } from './draft.ts'
 
@@ -1174,6 +1174,7 @@ function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRemoved, 
               identityModel: spec.preview.figure.identityModel,
               ...(figureCoeffsOf(spec, value) !== null ? { identityCoeffs: figureCoeffsOf(spec, value) } : {}),
               ...(figureLocalChangesOf(spec, value) !== null ? { localChanges: figureLocalChangesOf(spec, value) } : {}),
+              ...figureCameraOf(spec, value),
             },
           }
         : {}),

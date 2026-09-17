@@ -19,7 +19,7 @@ import { createElement as h } from 'react'
 import * as THREE from 'three'
 import {
   MeshStagePreview, PoserFigureStage, figureGeometry,
-  figureCoeffsOf, figureLocalChangesOf, figureShapeSig,
+  figureCoeffsOf, figureLocalChangesOf, figureCameraOf, figureShapeSig,
   type PoserMeshDoc,
 } from '../src/preview.tsx'
 import type { PreviewOwnerProps } from '@melite/contracts'
@@ -124,6 +124,14 @@ describe('the live-arm derivations (pure: resolved params → fetch arms)', () =
     expect(figureLocalChangesOf(bare, { resolution: 768 })).toBeNull()
   })
 
+  test('the camera arms read the name-keyed poser verbs (framing / focal_length)', () => {
+    expect(figureCameraOf(spec, { framing: 2.15, focal_length: 156 })).toEqual({ framing: 2.15, focalLength: 156 })
+    // absent / non-finite / non-positive → omitted (the resting camera)
+    expect(figureCameraOf(spec, {})).toEqual({})
+    expect(figureCameraOf(spec, { framing: 0, focal_length: -3 })).toEqual({})
+    expect(figureCameraOf(null, { framing: 1.2 })).toEqual({})
+  })
+
   test('local changes ride SPARSE (non-zero morphs only, other groups ignored)', () => {
     const value: SpecValues = { brow_inner: 0.3, brow_outer: 0, resolution: 768, gender: 0.5 }
     expect(figureLocalChangesOf(spec, value)).toEqual({ brow_inner: 0.3 })
@@ -203,6 +211,66 @@ describe('PoserFigureStage (DOM states + LIVE reshaping)', () => {
     // the SCENE never remounted (no flicker) and the CANVAS survived
     expect(mountState.spy).toHaveBeenCalledTimes(1)
     expect(screen.getByTestId('stage-preview-figure')).toBe(canvas)
+  })
+
+  test('THE CAMERA RAIL: framing sets the distance, focal sets the lens — IN PLACE, no refetch', async () => {
+    const camera = new THREE.PerspectiveCamera(40, 1, 0.05, 60)
+    camera.position.set(2.2, 1.6, 2.6)
+    const updateProj = vi.spyOn(camera, 'updateProjectionMatrix')
+    const controlsUpdate = vi.fn()
+    mountState.spy.mockImplementation(() => ({
+      scene: new THREE.Scene(),
+      camera,
+      controls: { update: controlsUpdate },
+      dispose: vi.fn(),
+    } as unknown as { scene: { children: unknown[] }; dispose: () => void }))
+    bindState.spy.mockResolvedValue(DOC)
+    const { rerender } = render(h(PoserFigureStage, { identityModel: 'anny' }))
+    await waitFor(() => screen.getByTestId('stage-preview-figure'))
+    const fetchesAtMount = bindState.spy.mock.calls.length
+    // framing 2.5: the camera pulls back to BASE * 2.5 along its own direction
+    const baseRadius = Math.hypot(2.2, 1.6, 2.6)
+    rerender(h(PoserFigureStage, { identityModel: 'anny', framing: 2.5 }))
+    await waitFor(() => expect(camera.position.length()).toBeCloseTo(baseRadius * 2.5, 5))
+    expect(controlsUpdate).toHaveBeenCalled()
+    // focal 156mm: the 35mm-stills vertical fov
+    rerender(h(PoserFigureStage, { identityModel: 'anny', framing: 2.5, focalLength: 156 }))
+    await waitFor(() => expect(camera.fov).toBeCloseTo((2 * Math.atan(12 / 156) * 180) / Math.PI, 5))
+    expect(updateProj).toHaveBeenCalled()
+    // a camera fact NEVER refetches the mesh
+    expect(bindState.spy.mock.calls.length).toBe(fetchesAtMount)
+  })
+
+  test('the camera rail without controls (the bare stage) still frames — no crash', async () => {
+    const camera = new THREE.PerspectiveCamera(40, 1, 0.05, 60)
+    camera.position.set(1, 1, 1)
+    mountState.spy.mockImplementation(() => ({
+      scene: new THREE.Scene(),
+      camera,
+      dispose: vi.fn(),
+    } as unknown as { scene: { children: unknown[] }; dispose: () => void }))
+    bindState.spy.mockResolvedValue(DOC)
+    const { rerender } = render(h(PoserFigureStage, { identityModel: 'anny' }))
+    await waitFor(() => screen.getByTestId('stage-preview-figure'))
+    const baseRadius = Math.hypot(2.2, 1.6, 2.6)
+    rerender(h(PoserFigureStage, { identityModel: 'anny', framing: 3 }))
+    await waitFor(() => expect(camera.position.length()).toBeCloseTo(baseRadius * 3, 5))
+  })
+
+  test('a degenerate camera (at the origin, radius 0) never divides by zero', async () => {
+    const camera = new THREE.PerspectiveCamera(40, 1, 0.05, 60)
+    camera.position.set(0, 0, 0)
+    mountState.spy.mockImplementation(() => ({
+      scene: new THREE.Scene(),
+      camera,
+      dispose: vi.fn(),
+    } as unknown as { scene: { children: unknown[] }; dispose: () => void }))
+    bindState.spy.mockResolvedValue(DOC)
+    const { rerender } = render(h(PoserFigureStage, { identityModel: 'anny' }))
+    await waitFor(() => screen.getByTestId('stage-preview-figure'))
+    rerender(h(PoserFigureStage, { identityModel: 'anny', framing: 2 }))
+    await new Promise((r) => setTimeout(r, 30))
+    expect(camera.position.length()).toBe(0)
   })
 
   test('AN IDENTICAL SIGNATURE DOES NOT RE-FETCH (the drag settles, the cache law)', async () => {

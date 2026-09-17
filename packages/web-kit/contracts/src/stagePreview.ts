@@ -74,5 +74,10 @@ export interface PreviewOwnerProps {
     identityModel: string
     identityCoeffs?: number[] | null
     localChanges?: Record<string, number> | null
+    /** the LIVE camera arms (the turnaround rail): framing = the
+     *  distance factor, focalLength = the lens mm — camera facts
+     *  move the VIEWPORT camera, never the mesh. */
+    framing?: number | null
+    focalLength?: number | null
   }
 }

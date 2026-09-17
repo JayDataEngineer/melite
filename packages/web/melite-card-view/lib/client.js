@@ -54347,14 +54347,34 @@ void main() {
 		function figureShapeSig(identityCoeffs, localChanges) {
 			return `${identityCoeffs !== void 0 && identityCoeffs !== null && identityCoeffs.length > 0 ? identityCoeffs.map((v) => v.toFixed(2)).join(",") : ""}|${localChanges !== void 0 && localChanges !== null ? Object.entries(localChanges).sort(([a], [b]) => a < b ? -1 : 1).map(([k, v]) => `${k}=${v.toFixed(2)}`).join(",") : ""}`;
 		}
+		/** The resting camera radius (mount default [2.2, 1.6, 2.6]) —
+		* framing scales AGAINST this base, so framing 1.2 ≈ the resting
+		* view and 3.0 pulls the camera back to the factor's own word. */
+		const BASE_CAMERA_RADIUS = Math.hypot(2.2, 1.6, 2.6);
+		/** Pure: the resolved params → the figure camera arms. The poser's
+		* camera verbs are NAME-KEYED ('framing' = distance factor,
+		* 'focal_length' = lens mm): a card that declares them drives the
+		* figure viewport's camera LIVE (the studio's camera rail); a card
+		* that doesn't (or non-finite values) omits both — the stage's own
+		* resting camera stands. */
+		function figureCameraOf(spec, value) {
+			if (spec === null) return {};
+			const out = {};
+			const framing = value["framing"];
+			if (typeof framing === "number" && Number.isFinite(framing) && framing > 0) out.framing = framing;
+			const focal = value["focal_length"];
+			if (typeof focal === "number" && Number.isFinite(focal) && focal > 0) out.focalLength = focal;
+			return out;
+		}
 		/** THE NATIVE FIGURE — the /poser shaped bind mesh on the shared
 		* stage core (same light rig + floor grid as the GLB stage, the
 		* preview-port interaction law: ONE look across ports). Fetch
 		* failures voice themselves in the DOM (the loud-errors law);
 		* WebGL absence refuses loud, never a blank silent canvas. */
-		function PoserFigureStage({ identityModel, identityCoeffs, localChanges, label }) {
+		function PoserFigureStage({ identityModel, identityCoeffs, localChanges, framing, focalLength, label }) {
 			const canvasRef = (0, react.useRef)(null);
 			const meshRef = (0, react.useRef)(null);
+			const stageRef = (0, react.useRef)(null);
 			const [doc, setDoc] = (0, react.useState)(null);
 			const [failed, setFailed] = (0, react.useState)(null);
 			const sig = figureShapeSig(identityCoeffs, localChanges);
@@ -54398,6 +54418,7 @@ void main() {
 					onContextFailure: (m) => setFailed(m)
 				});
 				if (stage === null) return;
+				stageRef.current = stage;
 				const scene = stage.scene;
 				scene.add(new HemisphereLight(16777215, 9079434, 1.4));
 				const key = new DirectionalLight(16777215, 2.2);
@@ -54419,6 +54440,7 @@ void main() {
 				meshRef.current = mesh;
 				scene.add(mesh);
 				return () => {
+					stageRef.current = null;
 					meshRef.current = null;
 					mesh.geometry.dispose();
 					mesh.material.dispose();
@@ -54434,6 +54456,26 @@ void main() {
 				mesh.geometry = next;
 				autoFitToHeight(mesh);
 			}, [doc]);
+			(0, react.useEffect)(() => {
+				const stage = stageRef.current;
+				const camera = stage?.camera;
+				if (camera === void 0) return;
+				if (typeof framing === "number" && Number.isFinite(framing) && framing > 0) {
+					const radius = camera.position.length();
+					if (radius > 0) {
+						camera.position.multiplyScalar(BASE_CAMERA_RADIUS * framing / radius);
+						stage?.controls?.update();
+					}
+				}
+				if (typeof focalLength === "number" && Number.isFinite(focalLength) && focalLength > 0) {
+					camera.fov = 2 * Math.atan(12 / focalLength) * 180 / Math.PI;
+					camera.updateProjectionMatrix();
+				}
+			}, [
+				framing,
+				focalLength,
+				hasDoc
+			]);
 			return (0, react.createElement)("div", {
 				className: preview_module_css_default.stagePreview,
 				"data-viewport": label ?? "poser-figure"
@@ -54684,6 +54726,8 @@ void main() {
 				identityModel: props.figure.identityModel,
 				identityCoeffs: props.figure.identityCoeffs,
 				localChanges: props.figure.localChanges,
+				framing: props.figure.framing,
+				focalLength: props.figure.focalLength,
 				label: `poser-figure:${props.stageId}`
 			}) : (0, react.createElement)(GlbStagePreview, {
 				assets: [],
@@ -55686,7 +55730,8 @@ void main() {
 					...spec?.preview?.figure !== void 0 ? { figure: {
 						identityModel: spec.preview.figure.identityModel,
 						...figureCoeffsOf(spec, value) !== null ? { identityCoeffs: figureCoeffsOf(spec, value) } : {},
-						...figureLocalChangesOf(spec, value) !== null ? { localChanges: figureLocalChangesOf(spec, value) } : {}
+						...figureLocalChangesOf(spec, value) !== null ? { localChanges: figureLocalChangesOf(spec, value) } : {},
+						...figureCameraOf(spec, value)
 					} } : {}
 				};
 				return renderPreview(owner, kind === "video" ? (0, react.createElement)(VideoStagePreview, owner) : kind === "audio" ? (0, react.createElement)(AudioStagePreview, owner) : kind === "mesh" ? (0, react.createElement)(MeshStagePreview, owner) : (0, react.createElement)(ImageStagePreview, owner));

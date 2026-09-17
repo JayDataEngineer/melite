@@ -95,22 +95,48 @@ export function figureShapeSig(identityCoeffs?: number[] | null, localChanges?: 
   return `${c}|${l}`
 }
 
+/** The resting camera radius (mount default [2.2, 1.6, 2.6]) —
+ * framing scales AGAINST this base, so framing 1.2 ≈ the resting
+ * view and 3.0 pulls the camera back to the factor's own word. */
+const BASE_CAMERA_RADIUS = Math.hypot(2.2, 1.6, 2.6)
+
+/** Pure: the resolved params → the figure camera arms. The poser's
+ * camera verbs are NAME-KEYED ('framing' = distance factor,
+ * 'focal_length' = lens mm): a card that declares them drives the
+ * figure viewport's camera LIVE (the studio's camera rail); a card
+ * that doesn't (or non-finite values) omits both — the stage's own
+ * resting camera stands. */
+export function figureCameraOf(spec: FormSpecDoc | null, value: SpecValues): { framing?: number; focalLength?: number } {
+  if (spec === null) return {}
+  const out: { framing?: number; focalLength?: number } = {}
+  const framing = value['framing']
+  if (typeof framing === 'number' && Number.isFinite(framing) && framing > 0) out.framing = framing
+  const focal = value['focal_length']
+  if (typeof focal === 'number' && Number.isFinite(focal) && focal > 0) out.focalLength = focal
+  return out
+}
+
 /** THE NATIVE FIGURE — the /poser shaped bind mesh on the shared
  * stage core (same light rig + floor grid as the GLB stage, the
  * preview-port interaction law: ONE look across ports). Fetch
  * failures voice themselves in the DOM (the loud-errors law);
  * WebGL absence refuses loud, never a blank silent canvas. */
-export function PoserFigureStage({ identityModel, identityCoeffs, localChanges, label }: {
+export function PoserFigureStage({ identityModel, identityCoeffs, localChanges, framing, focalLength, label }: {
   /** the identity model the door shapes ('anny') */
   identityModel: string
   /** the card's LIVE identity dims (the 11 coeffs, label order) */
   identityCoeffs?: number[] | null
   /** the card's LIVE non-zero morph weights (label → weight) */
   localChanges?: Record<string, number> | null
+  /** the card's LIVE camera distance factor (the turnaround rail) */
+  framing?: number | null
+  /** the card's LIVE lens mm (the turnaround rail) */
+  focalLength?: number | null
   label?: string
 }): ReturnType<typeof h> {
   const canvasRef = useRef<HTMLCanvasElement | null>(null)
   const meshRef = useRef<THREE.Mesh | null>(null)
+  const stageRef = useRef<{ camera?: THREE.PerspectiveCamera; controls?: { update: () => void }; dispose: () => void } | null>(null)
   const [doc, setDoc] = useState<SkinMeshData | null>(null)
   const [failed, setFailed] = useState<string | null>(null)
   const sig = figureShapeSig(identityCoeffs, localChanges)
@@ -150,6 +176,7 @@ export function PoserFigureStage({ identityModel, identityCoeffs, localChanges, 
       onContextFailure: (m) => setFailed(m),
     })
     if (stage === null) return
+    stageRef.current = stage
     const scene = stage.scene
     scene.add(new THREE.HemisphereLight(0xffffff, 0x8a8a8a, 1.4))
     const key = new THREE.DirectionalLight(0xffffff, 2.2)
@@ -170,6 +197,7 @@ export function PoserFigureStage({ identityModel, identityCoeffs, localChanges, 
     meshRef.current = mesh
     scene.add(mesh)
     return () => {
+      stageRef.current = null
       meshRef.current = null
       mesh.geometry.dispose()
       ;(mesh.material as THREE.Material).dispose()
@@ -188,6 +216,31 @@ export function PoserFigureStage({ identityModel, identityCoeffs, localChanges, 
     mesh.geometry = next
     autoFitToHeight(mesh)
   }, [doc])
+  // THE CAMERA RAIL (the turnaround knobs' live arm): framing sets
+  // the camera DISTANCE (the current orbit direction preserved —
+  // the user's orbit survives a framing drag); focal_length sets
+  // the lens (35mm-stills vertical fov, 24mm gate). Both update IN
+  // PLACE — no remount, no refetch (a camera fact never touches
+  // the mesh).
+  useEffect(() => {
+    const stage = stageRef.current
+    const camera = stage?.camera
+    if (camera === undefined) return
+    if (typeof framing === 'number' && Number.isFinite(framing) && framing > 0) {
+      const radius = camera.position.length()
+      if (radius > 0) {
+        camera.position.multiplyScalar((BASE_CAMERA_RADIUS * framing) / radius)
+        stage?.controls?.update()
+      }
+    }
+    if (typeof focalLength === 'number' && Number.isFinite(focalLength) && focalLength > 0) {
+      camera.fov = (2 * Math.atan(12 / focalLength) * 180) / Math.PI
+      camera.updateProjectionMatrix()
+    }
+    // hasDoc rides the deps so a SAVED camera state (a card whose
+    // framing was dragged before the stage mounted) applies at
+    // mount — not only on the next drag.
+  }, [framing, focalLength, hasDoc])
   return h('div', { className: s.stagePreview, 'data-viewport': label ?? 'poser-figure' },
     failed !== null
       ? h('div', { className: s.empty, 'data-testid': 'figure-failed' }, 'figure failed: ' + failed)

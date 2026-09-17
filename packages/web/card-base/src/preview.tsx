@@ -219,6 +219,8 @@ export function MeshStagePreview(props: PreviewOwnerProps): ReturnType<typeof h>
             identityModel: props.figure.identityModel,
             identityCoeffs: props.figure.identityCoeffs,
             localChanges: props.figure.localChanges,
+            framing: props.figure.framing,
+            focalLength: props.figure.focalLength,
             label: `poser-figure:${props.stageId}`,
           })
         : h(GlbStagePreview, {
@@ -234,6 +236,6 @@ export function MeshStagePreview(props: PreviewOwnerProps): ReturnType<typeof h>
  *  the preview seam stays ONE subpath: import { GlbStagePreview }
  *  from '@melite/card-base/preview'. */
 export { GlbStagePreview, autoFitToHeight, type StageAsset } from './glb-stage.tsx'
-export { PoserFigureStage, figureGeometry, figureCoeffsOf, figureLocalChangesOf, figureShapeSig, type PoserMeshDoc } from './poser-figure.tsx'
+export { PoserFigureStage, figureGeometry, figureCoeffsOf, figureLocalChangesOf, figureCameraOf, figureShapeSig, type PoserMeshDoc } from './poser-figure.tsx'
 export { ViewportFrame, ViewportAnchor, ReferenceImageBadge } from './viewportChrome.tsx'
 export type { ViewportFrameProps, ViewportAnchorProps, ReferenceImageBadgeProps, ViewportAnchorDock } from './viewportChrome.tsx'
