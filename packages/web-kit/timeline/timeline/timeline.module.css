@@ -877,3 +877,51 @@
 .miniFitBtn:hover {
   background: color-mix(in srgb, var(--dsw-alias-brand-primary) 25%, transparent);
 }
+
+/* ── TimelineScrubBar (the form card's optional bottom seam) ─────── */
+.scrubBar {
+  align-items: center;
+  display: flex;
+  gap: 8px;
+  width: 100%;
+}
+.scrubToggle {
+  background: none;
+  border: none;
+  cursor: pointer;
+  flex: none;
+  font-size: 11px;
+  line-height: 1;
+  padding: 4px 2px;
+}
+.scrubTrack {
+  cursor: pointer;
+  flex: 1 1 0%;
+  height: 18px;
+  min-width: 0;
+  position: relative;
+  touch-action: none;
+}
+.scrubFill {
+  height: 4px;
+  top: 7px;
+  position: absolute;
+  left: 0;
+  background: var(--dsw-alias-interactive-bg-active);
+  border-radius: 2px;
+}
+.scrubHead {
+  position: absolute;
+  top: 4px;
+  width: 2px;
+  height: 10px;
+  margin-left: -1px;
+  background: var(--dsw-alias-label-primary);
+  border-radius: 1px;
+}
+.scrubReadout {
+  color: var(--dsw-alias-label-secondary);
+  flex: none;
+  font-size: 11px;
+  white-space: nowrap;
+}

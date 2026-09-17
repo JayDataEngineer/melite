@@ -84,6 +84,11 @@ export function apply(ctx: Context): void {
     // (VHS_LoadVideoPath + VHS_VideoCombine) — card-level, both
     // families ride the shared renderer.
     requires: ['comfyui-videohelpersuite'],
+    // THE OPTIONAL BOTTOM SEAM (the form-seams stroke 2026-09-17):
+    // the card claims a scrub timeline along the shell's bottom —
+    // wired to the shared FilmPlayer the preview seat renders once
+    // a video lands. Before any run there is nothing to scrub.
+    preview: { timeline: true },
     schema: schema as unknown as (v: unknown) => Record<string, unknown>,
     compose(p, model: ModelFacts, g: GraphBuilder, runId: string) {
       if (!p.prompt || !(p.prompt as string).trim()) {

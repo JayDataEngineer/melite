@@ -96,8 +96,9 @@
     - id: card-studio-h3-timeline
       name: '@melite/video-h3-timeline'
 
-    - id: card-studio-ideogram4
-      name: '@melite/image-ideogram4'
+    # card-studio-ideogram4 RETIRED with its card (the form-seams
+    # stroke 2026-09-17 — the operator's order; lane profiles drop
+    # the row at the next provision)
 
     - id: card-studio-img-to-mesh
       name: '@melite/3d-img-to-mesh'

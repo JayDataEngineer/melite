@@ -40,6 +40,7 @@ import { titleCaseId } from '@melite/card-base/spec'
 import { fetchFormsTable, postManageAction } from '@melite/card-base/wire'
 import { ToastViewport } from '@melite/card-base/toast'
 import { StudioShell } from '@melite/card-base/shell'
+import { createFilmSeam, FilmSeamBar, FilmSeamPlayer } from './filmSeam.tsx'
 // THE PAINT FACE (paint-leaf-canvas.md): the demoted studio's
 // brush modal, threaded into CardForm for leaf_face kinds — the
 // host delivers the face, card-base stays atom-generic.
@@ -751,6 +752,10 @@ function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRemoved, 
   // the media drilldown 1:1 — the SAME shared component the gallery
   // rides; the click maps the stage's primary artifact onto it).
   const [drillItem, setDrillItem] = useState<MediaDrilldownItem | null>(null)
+  // THE TIMELINE SEAM (the form-seams stroke 2026-09-17): the
+  // optional bottom-slot bridge — created once, wired only when the
+  // served spec claims preview.timeline AND a video face renders.
+  const filmSeamRef = useRef(createFilmSeam())
   // THE ✦ AGENT ENHANCE SEAT (hour 24 stroke 10): one press — the
   // sweep door enhances every declared field; the write-back rides
   // the SAME values seam the form's own edits ride (the next Run
@@ -1179,7 +1184,12 @@ function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRemoved, 
           }
         : {}),
     }
-    const fallback = kind === 'video'
+    // THE SEAM'S PREVIEW FACE: a claimed timeline + a landed video
+    // rides the shared FilmPlayer (handle-wired) instead of the
+    // plain video face — the bottom bar scrubs it.
+    const fallback = kind === 'video' && seamFilmUrl !== null
+      ? h(FilmSeamPlayer, { seam: filmSeamRef.current, src: seamFilmUrl })
+      : kind === 'video'
       ? h(VideoStagePreview, owner)
       : kind === 'audio'
         ? h(AudioStagePreview, owner)
@@ -1200,6 +1210,12 @@ function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRemoved, 
     activity !== '' ? h('span', { className: css.tilePct, 'aria-label': 'engine activity' }, activity) : null,
     pct !== null ? h('span', { className: css.tilePct, 'data-testid': 'drill-progress', 'aria-label': 'progress percent' }, pct + '% (' + String(progress.value) + '/' + String(progress.max) + ')') : null,
   )
+  // THE SEAM'S LANDED FILM (shared by both slots): the spec claims
+  // preview.timeline AND a video artifact exists — else no seam.
+  const seamFilmUrl = (spec as { preview?: { timeline?: boolean } } | null)?.preview?.timeline === true
+    ? (previewArtifactsFor(stage as unknown as Record<string, unknown>)
+        .find((a) => primaryKindFor(spec, a.url) === 'video')?.url ?? null)
+    : null
   const genericDetail = (): ReturnType<typeof h> => h('div', { className: css.zoomDetail },
     webhookFeed,
     // THE UNIFORM SHELL (hour 24 stroke 15 — the operator's sharing
@@ -1207,6 +1223,10 @@ function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRemoved, 
     // rides — one params-scroll law, one three-slot shape. The zoom's
     // outputs column claims the preview slot.
     h(StudioShell, {
+    bottom: seamFilmUrl !== null
+      ? h('div', { className: css.zoomDetail, 'data-testid': 'timeline-seam-bottom' },
+          h(FilmSeamBar, { seam: filmSeamRef.current }))
+      : undefined,
     params: h('div', { className: css.paramsCol },
         // the ✦ row is a HEADER ACTION, never scroll content (hour 24
         // stroke 12: flush at the params column's scroll top, the

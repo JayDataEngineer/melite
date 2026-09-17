@@ -81,7 +81,8 @@
     "@react-three/drei": "^10.7.8",
     "@react-three/fiber": "^9.7.0",
     "three": "^0.184.0",
-    "zod": "4.5.4"
+    "zod": "4.5.4",
+    "@melite-plugin/timeline": "workspace:*"
   },
   "sideEffects": true
 }

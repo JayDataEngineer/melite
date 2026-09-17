@@ -329,7 +329,7 @@ export interface FormSpecDoc {
    *  claims the bottom bar; `figure` claims the native shaped mesh
    *  for the empty state (the client derives the LIVE coeff arms
    *  from the resolved params — see poser-figure.tsx). */
-  preview?: { historyStrip?: boolean; figure?: { identityModel: string } }
+  preview?: { historyStrip?: boolean; figure?: { identityModel: string }; timeline?: boolean }
   /** The mod system's kind vocabulary — the dynamic mods offer
    *  (served when the family boards mod packs). Also carries the
    *  variant-axis GROUPS contract (variant_groups, the old wire law:

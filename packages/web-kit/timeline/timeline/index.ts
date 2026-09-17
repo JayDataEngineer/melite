@@ -12,6 +12,7 @@
  */
 export * from "./MotionTimelineBar";
 export * from "./FilmPlayer";
+export * from "./TimelineScrubBar";
 export * from "./viser-timeline";
 export { PROMPT_COLORS } from "./viser-timeline/styles";
 export type { TimelineTheme } from "./viser-timeline/styles";

@@ -114,7 +114,14 @@ export interface CardDefinition {
    *  fetchBindMesh surface). Run outputs take the stage once they
    *  land; the figure is the empty state's replacement, never a
    *  second hero. */
-  preview?: { historyStrip?: boolean; figure?: { identityModel: string } }
+  preview?: {
+    historyStrip?: boolean
+    figure?: { identityModel: string }
+    /** the OPTIONAL BOTTOM SEAM (the form-seams stroke 2026-09-17):
+     *  claim a scrub timeline along the shell's bottom slot, wired
+     *  to the video preview's shared player. Video-output cards. */
+    timeline?: boolean
+  }
   /** Card-declared modifier kinds (the MODs generalization, stroke
    *  63 — docs/design/mods-contracts.md CONTRACT A): action kinds
    *  the CARD owns (MASK's mask sources), served through the ONE
