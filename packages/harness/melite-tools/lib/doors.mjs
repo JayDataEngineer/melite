@@ -1,4 +1,5 @@
 import { c as formsArm, i as routeName, l as kindsDoorArm, o as cardToolsArm, p as makeEstateRequest, r as resolveHarnessRoutes, s as formSpecArm, t as harnessEnhance, u as modelCatalogArm } from "./llm-complete-DwOo6OOL.mjs";
+import { httpCall, resolveEngineBaseUrl } from "@melite/comfyui-cordis";
 import { buildSkillIndex, disclosureRoot } from "@melite/estate-queue";
 import { agentFormDoc } from "@melite/engine-agent";
 import { craftFormDoc } from "@melite/engine-craft";
@@ -85,6 +86,28 @@ function mcpToolsOf(c, server) {
 		tooltip: t.description
 	}));
 }
+const POSER_ARMS = [
+	{
+		path: "/poser/skin/mesh",
+		methods: ["GET", "POST"],
+		timeoutMs: 12e4
+	},
+	{
+		path: "/poser/skin/identity-space",
+		methods: ["GET"],
+		timeoutMs: 3e4
+	},
+	{
+		path: "/poser/presets",
+		methods: ["GET"],
+		timeoutMs: 3e4
+	},
+	{
+		path: "/poser/render",
+		methods: ["POST"],
+		timeoutMs: 12e4
+	}
+];
 function apply(c, config = {}) {
 	const readDefaultLlm = () => {
 		try {
@@ -369,6 +392,77 @@ function apply(c, config = {}) {
 			return serve();
 		}
 	}), "melite-tools: /v1 prefix door");
+	c.effect(() => c.webServer.register({
+		kind: "prefix",
+		path: "/poser",
+		handler: (req, res) => {
+			const json = (status, payload) => {
+				const body = JSON.stringify(payload);
+				res.writeHead(status, {
+					"content-type": "application/json",
+					"content-length": String(Buffer.byteLength(body))
+				});
+				res.end(Buffer.from(body));
+			};
+			let url;
+			try {
+				url = new URL(req.url ?? "/", "http://localhost");
+			} catch {
+				json(400, { error: "poser: unparseable url" });
+				return;
+			}
+			const method = (req.method ?? "GET").toUpperCase();
+			const arm = POSER_ARMS.find((a) => a.path === url.pathname);
+			if (arm === void 0) {
+				json(404, {
+					error: `poser: no arm at ${url.pathname}`,
+					arms: POSER_ARMS.map((a) => a.path)
+				});
+				return;
+			}
+			if (!arm.methods.includes(method)) {
+				json(405, {
+					error: `poser: ${method} not allowed on ${url.pathname}`,
+					allow: arm.methods.join(", ")
+				});
+				return;
+			}
+			let base;
+			try {
+				base = resolveEngineBaseUrl();
+			} catch (error) {
+				json(502, { error: `poser: no comfyui endpoint (${error instanceof Error ? error.message : /* v8 ignore next -- resolveEngineBaseUrl throws Errors only (2026-09-16) */ String(error)})` });
+				return;
+			}
+			const target = base + url.pathname + url.search;
+			const send = (body) => {
+				const contentType = body === null ? "application/json" : (Array.isArray(req.headers["content-type"]) ? req.headers["content-type"][0] : req.headers["content-type"]) ?? "application/json";
+				httpCall(method, target, body, contentType, arm.timeoutMs).then((r) => {
+					if (Buffer.isBuffer(r.body)) {
+						res.writeHead(r.status, {
+							"content-type": "application/octet-stream",
+							"content-length": String(r.body.byteLength)
+						});
+						res.end(r.body);
+						return;
+					}
+					const out = r.body === null ? "{}" : JSON.stringify(r.body);
+					res.writeHead(r.status, {
+						"content-type": "application/json",
+						"content-length": String(Buffer.byteLength(out))
+					});
+					res.end(Buffer.from(out));
+				}).catch((error) => json(502, { error: `poser: upstream unreachable (${error instanceof Error ? error.message : /* v8 ignore next -- httpCall rejects with Errors only (2026-09-16) */ String(error)})` }));
+			};
+			if (method === "POST") {
+				readBody(req).then((buf) => {
+					send(buf);
+				}).catch((error) => json(400, { error: `poser: body read failed (${error instanceof Error ? error.message : String(error)})` }));
+				return;
+			}
+			send(null);
+		}
+	}), "melite-tools: /poser door");
 }
 //#endregion
-export { DEFAULT_ENHANCE_PREFERENCE, apply, inject, mcpToolsOf, seatedMcpServers };
+export { DEFAULT_ENHANCE_PREFERENCE, POSER_ARMS, apply, inject, mcpToolsOf, seatedMcpServers };

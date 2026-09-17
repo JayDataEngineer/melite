@@ -36,6 +36,10 @@ import {
   cardToolsArm,
 } from './discovery.ts'
 import { makeEstateRequest, type EstateMethod } from './estate.ts'
+// The /poser door's outbound seam — cordis's own HTTP primitive +
+// engine base resolution (COMFYUI_URL / the endpoint config file):
+// the same seam every other Layer-A→B call resolves through.
+import { httpCall, resolveEngineBaseUrl } from '@melite/comfyui-cordis'
 import { buildSkillIndex, disclosureRoot } from '@melite/estate-queue'
 import { agentFormDoc } from '@melite/engine-agent'
 import { craftFormDoc } from '@melite/engine-craft'
@@ -112,6 +116,39 @@ interface CtxView {
     }): () => void
   }
 }
+
+// ── THE /POSER DOOR (2026-09-16 — the named restore) ───────────────
+//
+// HISTORY: the retired second-Loader gateway once TUNNELED /poser
+// (blind byte forwarding to another process); the estate collapse
+// (2026-09-10) deleted the tunnel — and with it, silently, the
+// browser's only path to the poser routes the anny/body-studio
+// mesh preview rides ("Failed to fetch mesh (anny): 404"). The
+// restore is NOT the tunnel back: this is a NAMED door — an
+// explicit allow-list of the vendor extension's routes
+// (vendor/comfyui_extensions/melite-poser-nodes/server.py, ComfyUI
+// PromptServer — Layer B), each arm called server-side through
+// cordis's httpCall with the estate's JSON error contract. The
+// browser never learns the engine origin; unknown paths and
+// methods refuse at the door.
+
+/** One allow-listed poser arm (path + admitted methods + the
+ *  outbound budget — mesh shaping renders geometry, render bakes
+ *  a PNG; both get the long tail). */
+interface PoserArm {
+  readonly path: string
+  readonly methods: readonly string[]
+  readonly timeoutMs: number
+}
+
+const POSER_ARMS: readonly PoserArm[] = [
+  { path: '/poser/skin/mesh', methods: ['GET', 'POST'], timeoutMs: 120_000 },
+  { path: '/poser/skin/identity-space', methods: ['GET'], timeoutMs: 30_000 },
+  { path: '/poser/presets', methods: ['GET'], timeoutMs: 30_000 },
+  { path: '/poser/render', methods: ['POST'], timeoutMs: 120_000 },
+]
+
+export { POSER_ARMS }
 
 export function apply(c: CtxView, config: Config = {}): void {
   // R2b: the sweep rides the in-process seam (seats + door
@@ -516,4 +553,67 @@ export function apply(c: CtxView, config: Config = {}): void {
       return serve()
     },
   }), 'melite-tools: /v1 prefix door')
+
+  // THE /POSER DOOR: named arms, server-side calls, estate errors
+  // (see the POSER_ARMS history above — never the tunnel back).
+  c.effect(() => c.webServer.register({
+    kind: 'prefix',
+    path: '/poser',
+    handler: (req, res) => {
+      const json = (status: number, payload: Record<string, unknown>): void => {
+        const body = JSON.stringify(payload)
+        res.writeHead(status, { 'content-type': 'application/json', 'content-length': String(Buffer.byteLength(body)) })
+        res.end(Buffer.from(body))
+      }
+      let url: URL
+      try {
+        url = new URL(req.url ?? '/', 'http://localhost')
+      } catch {
+        return void json(400, { error: 'poser: unparseable url' })
+      }
+      const method = (req.method ?? 'GET').toUpperCase()
+      const arm = POSER_ARMS.find((a) => a.path === url.pathname)
+      if (arm === undefined) {
+        return void json(404, { error: `poser: no arm at ${url.pathname}`, arms: POSER_ARMS.map((a) => a.path) })
+      }
+      if (!arm.methods.includes(method)) {
+        return void json(405, { error: `poser: ${method} not allowed on ${url.pathname}`, allow: arm.methods.join(', ') })
+      }
+      let base: string
+      try {
+        base = resolveEngineBaseUrl()
+      } catch (error: unknown) {
+        return void json(502, { error: `poser: no comfyui endpoint (${error instanceof Error ? error.message : /* v8 ignore next -- resolveEngineBaseUrl throws Errors only (2026-09-16) */ String(error)})` })
+      }
+      const target = base + url.pathname + url.search
+      const send = (body: Buffer | null): void => {
+        const contentType = body === null
+          ? 'application/json'
+          : (Array.isArray(req.headers['content-type']) ? req.headers['content-type'][0] : req.headers['content-type']) ?? 'application/json'
+        httpCall(method, target, body, contentType, arm.timeoutMs)
+          .then((r) => {
+            // JSON arms serve JSON; the render arm's PNG serves
+            // bytes. The upstream STATUS rides verbatim (the
+            // vendor route's own 404 for an unknown model is the
+            // honest answer, not a door-side rewrite).
+            if (Buffer.isBuffer(r.body)) {
+              res.writeHead(r.status, { 'content-type': 'application/octet-stream', 'content-length': String(r.body.byteLength) })
+              res.end(r.body)
+              return
+            }
+            const out = r.body === null ? '{}' : JSON.stringify(r.body)
+            res.writeHead(r.status, { 'content-type': 'application/json', 'content-length': String(Buffer.byteLength(out)) })
+            res.end(Buffer.from(out))
+          })
+          .catch((error: unknown) => json(502, { error: `poser: upstream unreachable (${error instanceof Error ? error.message : /* v8 ignore next -- httpCall rejects with Errors only (2026-09-16) */ String(error)})` }))
+      }
+      if (method === 'POST') {
+        readBody(req)
+          .then((buf) => { send(buf) })
+          .catch((error: unknown) => json(400, { error: `poser: body read failed (${error instanceof Error ? error.message : String(error)})` }))
+        return
+      }
+      send(null)
+    },
+  }), 'melite-tools: /poser door')
 }
