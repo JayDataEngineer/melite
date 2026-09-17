@@ -324,6 +324,12 @@ export interface FormSpecDoc {
   /** THE OUTPUT EDGES — declared on every card (flowKinds.outputs):
    *  what a completed run of this card delivers, keyed by slot. */
   outputs?: Record<string, string>
+  /** THE CARD'S PREVIEW CLAIMS (served verbatim off the card's own
+   *  declaration — CardDefinition.preview): `historyStrip: false`
+   *  claims the bottom bar; `figure` claims the native shaped mesh
+   *  for the empty state (the client derives the LIVE coeff arms
+   *  from the resolved params — see poser-figure.tsx). */
+  preview?: { historyStrip?: boolean; figure?: { identityModel: string } }
   /** The mod system's kind vocabulary — the dynamic mods offer
    *  (served when the family boards mod packs). Also carries the
    *  variant-axis GROUPS contract (variant_groups, the old wire law:

@@ -71,7 +71,7 @@ import { fetchMediaLibrary, CARDS_BENCH_ADDRESS, benchAddressOf, benchSessionKey
 import { defaultFamilyForCard } from '@melite-plugin/melite-run-wire'
 import { startCardRun, stopRun } from '@melite/card-base/runs-policy'
 import { addStageWire, groupStagesWire, removeStageWire, reorderStageWire, ungroupStageWire } from './add-stage.ts'
-import { AudioStagePreview, ImageStagePreview, MeshStagePreview, VideoStagePreview } from '@melite/card-base/preview'
+import { AudioStagePreview, ImageStagePreview, MeshStagePreview, VideoStagePreview, figureCoeffsOf, figureLocalChangesOf } from '@melite/card-base/preview'
 import { CardZoomOverlay } from './zoom.tsx'
 import { mediaUrl } from './draft.ts'
 
@@ -1161,12 +1161,21 @@ function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRemoved, 
       ...((spec as { preview?: { historyStrip?: boolean } } | null)?.preview?.historyStrip === false
         ? { historyStrip: false }
         : {}),
-      // THE LIVE FIGURE (stroke 90): the SERVED doc's preview.figure
-      // — the card's declared native mesh for the empty state (the
-      // studio-viewport capability on form cards), door-served the
-      // same way as historyStrip, never a client-side guess.
-      ...((spec as { preview?: { figure?: { door: string, identityModel: string } } } | null)?.preview?.figure !== undefined
-        ? { figure: (spec as { preview?: { figure?: { door: string, identityModel: string } } }).preview?.figure }
+      // THE LIVE FIGURE (stroke 90 + the live follow-up): the SERVED
+      // doc's preview.figure claim (identityModel) + the LIVE shape
+      // arms derived from the card's RESOLVED params — the identity
+      // group's fields (order-sorted) become the coeff vector; the
+      // morph group's non-zero values become local_changes. The
+      // figure RESHAPES as the user drags (the studio's live
+      // sculpt, on the shared fetchBindMesh surface).
+      ...(spec?.preview?.figure !== undefined
+        ? {
+            figure: {
+              identityModel: spec.preview.figure.identityModel,
+              ...(figureCoeffsOf(spec, value) !== null ? { identityCoeffs: figureCoeffsOf(spec, value) } : {}),
+              ...(figureLocalChangesOf(spec, value) !== null ? { localChanges: figureLocalChangesOf(spec, value) } : {}),
+            },
+          }
         : {}),
     }
     const fallback = kind === 'video'

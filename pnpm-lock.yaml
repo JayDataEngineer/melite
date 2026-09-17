@@ -87,61 +87,19 @@ importers:
       '@deepseek-ai/cordis':
         specifier: ^4.0.2
         version: 4.0.2(@deepseek-ai/cordis-plugin-loader@1.0.3)
-      '@deepseek-ai/dsh-client-ui-primitives':
-        specifier: 0.1.5-rc.2
-        version: 0.1.5-rc.2(@deepseek-ai/cordis@4.0.2)
-      '@deepseek-ai/dsh-client-ui-renderer':
-        specifier: 0.1.5-rc.2
-        version: 0.1.5-rc.2(@deepseek-ai/cordis@4.0.2)
       '@deepseek-ai/schemastery':
         specifier: '*'
         version: 3.18.2
-      '@melite/card-base':
-        specifier: workspace:*
-        version: link:../../web/card-base
-      '@melite/cards':
-        specifier: workspace:*
-        version: link:../../engines/comfyui/action_cards
-      '@melite/catalog':
-        specifier: workspace:*
-        version: link:../../web-kit/catalog
       '@melite/comfyui-card-kit':
         specifier: workspace:*
         version: link:../../engines/comfyui-card-kit
       '@melite/comfyui-cordis':
         specifier: workspace:*
         version: link:../../engines/comfyui-cordis
-      '@melite/contracts':
-        specifier: workspace:*
-        version: link:../../web-kit/contracts
-      '@melite/estate-call':
-        specifier: workspace:*
-        version: link:../../harness/estate-call
-      '@melite/formats':
-        specifier: workspace:*
-        version: link:../../web-kit/formats
-      react:
-        specifier: ^19.2.6
-        version: 19.2.8
     devDependencies:
-      '@testing-library/react':
-        specifier: '*'
-        version: 16.3.3(@testing-library/dom@10.4.1)(@types/react-dom@19.2.5(@types/react@19.2.18))(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
       '@types/node':
         specifier: ^22.20.0
         version: 22.20.1
-      '@types/react':
-        specifier: ^19.2.14
-        version: 19.2.18
-      '@types/react-dom':
-        specifier: ^19.2.2
-        version: 19.2.5(@types/react@19.2.18)
-      '@types/three':
-        specifier: ^0.184.1
-        version: 0.184.1
-      tsdown:
-        specifier: ^0.22.14
-        version: 0.22.14(@tsdown/css@0.22.14)(oxc-resolver@11.24.2)(typescript@6.0.3)(unrun@0.3.1)
       typescript:
         specifier: ~6.0.3
         version: 6.0.3
@@ -2435,6 +2393,9 @@ importers:
       '@melite/estate-runs':
         specifier: workspace:*
         version: link:../../estate/runs
+      '@melite/formats':
+        specifier: workspace:*
+        version: link:../../web-kit/formats
       clsx:
         specifier: '*'
         version: 2.1.1

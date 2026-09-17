@@ -54227,26 +54227,109 @@ void main() {
 			}));
 		}
 		//#endregion
+		//#region ../../web-kit/formats/src/poserSkin.ts
+		init_src();
+		const _meshCache = /* @__PURE__ */ new Map();
+		async function fetchBindMesh(query = {}) {
+			const { identityModel, identityCoeffs, localChanges, previewPose, customTargets } = query;
+			const key = identityModel || "anny";
+			const coeffsSig = identityCoeffs && identityCoeffs.length > 0 ? identityCoeffs.map((v) => v.toFixed(1)).join(",") : null;
+			const lcEntries = localChanges && Object.keys(localChanges).length > 0 ? Object.entries(localChanges).sort(([a], [b]) => a < b ? -1 : 1).map(([k, v]) => `${k}=${v.toFixed(2)}`).join(",") : null;
+			const ctEntries = customTargets && Object.keys(customTargets).length > 0 ? Object.entries(customTargets).sort(([a], [b]) => a < b ? -1 : 1).map(([k, v]) => `${k}=${v.toFixed(2)}`).join(",") : null;
+			const poseSig = previewPose && previewPose !== "tpose" ? previewPose : null;
+			const cacheKey = [
+				key,
+				coeffsSig,
+				lcEntries,
+				ctEntries,
+				poseSig
+			].filter(Boolean).join("|");
+			const cached = _meshCache.get(cacheKey);
+			if (cached) return cached;
+			const posePayload = poseSig ? { preview_pose: poseSig } : {};
+			let data;
+			if (coeffsSig || lcEntries || ctEntries) {
+				const res = await apiFetch("/v1/poser/mesh", {
+					method: "POST",
+					headers: { "Content-Type": "application/json" },
+					body: JSON.stringify({
+						identity_model: key,
+						...posePayload,
+						...coeffsSig ? { identity_coeffs: identityCoeffs } : {},
+						...lcEntries ? { local_changes: localChanges } : {},
+						...key === "anny" ? { custom_targets: customTargets ?? {} } : {}
+					})
+				});
+				if (!res.ok) throw new Error(`Failed to fetch shaped mesh (${key}): ${res.status}`);
+				data = await res.json();
+			} else {
+				const qs = new URLSearchParams({ identity_model: key });
+				if (poseSig) qs.set("preview_pose", poseSig);
+				const res = await apiFetch(`/v1/poser/mesh?${qs.toString()}`);
+				if (!res.ok) throw new Error(`Failed to fetch mesh (${key}): ${res.status}`);
+				data = await res.json();
+			}
+			_meshCache.set(cacheKey, data);
+			return data;
+		}
+		//#endregion
 		//#region ../card-base/src/poser-figure.tsx
 		/**
-		* poser-figure.tsx — THE NATIVE FIGURE STAGE (stroke 90, 2026-09-17:
-		* the keep-all-features order — "Where the [REDACTED 2026-11-05] is the 3js preview?"
-		* "CONVERT means DON'T LOSE FUNCTIONALITY"). The studio's viewport
-		* capability moves to the base form's preview seam: the /poser shaped
-		* bind mesh (18,056 verts, 36,108 tris, smooth normals — the
-		* 2026-09-06 law: NEVER the low-poly GLB export, which the operator
-		* rejected as "low quality — you are rendering GLB and not native
-		* ANNY").
+		* poser-figure.tsx — THE NATIVE FIGURE STAGE (stroke 90 + the live
+		* follow-up, 2026-09-17: "these knobs do LITERALLY NOTHING — they
+		* are supposed to CHANGE THE [REDACTED 2026-11-05] BODY"). The figure is not a
+		* static portrait: it is SHAPED BY THE CARD'S LIVE PARAMS — the 11
+		* identity coeffs and the non-zero local_changes ride the SAME
+		* shared bind-mesh module the body studios use
+		* (@melite/formats/poserSkin — ONE fetch surface, ONE per-signature
+		* cache across the estate; the module's own header records the
+		* dedup law: "the positional form is how the two pre-dedup copies
+		* drifted"). The 2026-09-06 law stands: NEVER the low-poly GLB
+		* export, always the /poser shaped bind mesh (18,056 verts, smooth
+		* normals).
 		*
 		* SUBSTRATE LAW (verbatim, glb-stage.tsx): RAW three.js — imperative
 		* scene in a useEffect, NO @react-three. three is a pure leaf
 		* library; mounts like any imperative canvas lib.
 		*
-		* THE WIRE SHAPE (the door, live-pinned): { vertices: number[][]
-		* (xyz, cm-scale, Y-up), faces: number[][] (index triplets),
-		* bind_joints: number[][], identity_model: string }.
+		* DRAG LAW: slider drags emit streams; the fetch debounces 120ms
+		* and the module's cache (coeffs rounded 0.1, local changes 0.02)
+		* collapses identical shapes. The SCENE mounts once per card; shape
+		* commits SWAP THE GEOMETRY in place — no canvas flicker per drag.
 		*/
 		init_three_module();
+		/** Pure: the resolved params → the identity coeff vector (the
+		* identity group's fields, order-sorted, values from the resolved
+		* map). null when the spec has no identity group OR any dim is not
+		* a finite number — a PARTIAL vector would mis-shape the body
+		* (every dim must ride or none do; the neutral GET is the
+		* fallback). */
+		function figureCoeffsOf(spec, value) {
+			if (spec === null) return null;
+			const fields = fieldsOf(spec).filter((f) => f.group === "identity").sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+			if (fields.length === 0) return null;
+			const coeffs = [];
+			for (const f of fields) {
+				const v = value[f.name];
+				if (typeof v !== "number" || !Number.isFinite(v)) return null;
+				coeffs.push(v);
+			}
+			return coeffs;
+		}
+		/** Pure: the resolved params → the local-changes map (the morph
+		* group's fields, NON-ZERO finite values only — the sparse law:
+		* absent = the engine's own 0). null when empty or no morph group
+		* (the caller omits the arm; the fetch rides the neutral GET). */
+		function figureLocalChangesOf(spec, value) {
+			if (spec === null) return null;
+			const out = {};
+			for (const f of fieldsOf(spec)) {
+				if (f.group !== "morph") continue;
+				const v = value[f.name];
+				if (typeof v === "number" && Number.isFinite(v) && v !== 0) out[f.name] = v;
+			}
+			return Object.keys(out).length > 0 ? out : null;
+		}
 		/** Pure: the door's JSON → a three geometry (unit-testable without
 		* WebGL). Float32 positions, uint32 indices, computed smooth
 		* normals (the door ships unindexed soup; the weld-free normals are
@@ -54258,33 +54341,46 @@ void main() {
 			g.computeVertexNormals();
 			return g;
 		}
-		/** THE NATIVE FIGURE — fetched from the estate door, rendered on the
-		* shared stage core (same light rig + floor grid as the GLB stage,
-		* the preview-port interaction law: ONE look across ports). The
-		* fetch failures voice themselves in the DOM (the loud-errors law);
+		/** The shape signature — identity coeffs + local changes as one
+		* stable string (the effect's dep; a new shape re-fetches, an
+		* identical one does not). */
+		function figureShapeSig(identityCoeffs, localChanges) {
+			return `${identityCoeffs !== void 0 && identityCoeffs !== null && identityCoeffs.length > 0 ? identityCoeffs.map((v) => v.toFixed(2)).join(",") : ""}|${localChanges !== void 0 && localChanges !== null ? Object.entries(localChanges).sort(([a], [b]) => a < b ? -1 : 1).map(([k, v]) => `${k}=${v.toFixed(2)}`).join(",") : ""}`;
+		}
+		/** THE NATIVE FIGURE — the /poser shaped bind mesh on the shared
+		* stage core (same light rig + floor grid as the GLB stage, the
+		* preview-port interaction law: ONE look across ports). Fetch
+		* failures voice themselves in the DOM (the loud-errors law);
 		* WebGL absence refuses loud, never a blank silent canvas. */
-		function PoserFigureStage({ door, identityModel, label }) {
+		function PoserFigureStage({ identityModel, identityCoeffs, localChanges, label }) {
 			const canvasRef = (0, react.useRef)(null);
+			const meshRef = (0, react.useRef)(null);
 			const [doc, setDoc] = (0, react.useState)(null);
 			const [failed, setFailed] = (0, react.useState)(null);
+			const sig = figureShapeSig(identityCoeffs, localChanges);
 			(0, react.useEffect)(() => {
 				let alive = true;
-				setDoc(null);
 				setFailed(null);
-				fetch(`${door}?identity_model=${encodeURIComponent(identityModel)}`).then(async (r) => {
-					if (!r.ok) throw new Error(`figure door HTTP ${r.status}`);
-					return r.json();
-				}).then((d) => {
-					if (alive) setDoc(d);
-				}).catch((e) => {
-					if (alive) setFailed(e instanceof Error ? e.message : "figure fetch failed");
-				});
+				const timer = setTimeout(() => {
+					setDoc(null);
+					fetchBindMesh({
+						identityModel,
+						...identityCoeffs !== void 0 && identityCoeffs !== null && identityCoeffs.length > 0 ? { identityCoeffs } : {},
+						...localChanges !== void 0 && localChanges !== null && Object.keys(localChanges).length > 0 ? { localChanges } : {}
+					}).then((d) => {
+						if (alive) setDoc(d);
+					}).catch((e) => {
+						if (alive) setFailed(e instanceof Error ? e.message : "figure fetch failed");
+					});
+				}, 120);
 				return () => {
 					alive = false;
+					clearTimeout(timer);
 				};
-			}, [door, identityModel]);
+			}, [identityModel, sig]);
+			const hasDoc = doc !== null;
 			(0, react.useEffect)(() => {
-				if (doc === null) return;
+				if (!hasDoc) return;
 				const canvas = canvasRef.current;
 				const stage = mountStage3D(canvas, {
 					fov: 40,
@@ -54315,19 +54411,28 @@ void main() {
 				gridMat.transparent = true;
 				gridMat.opacity = .35;
 				scene.add(grid);
-				const mesh = new Mesh(figureGeometry(doc), new MeshStandardMaterial({
+				const mesh = new Mesh(new BufferGeometry(), new MeshStandardMaterial({
 					color: 13220008,
 					roughness: .72,
 					metalness: .04
 				}));
-				autoFitToHeight(mesh);
+				meshRef.current = mesh;
 				scene.add(mesh);
 				return () => {
+					meshRef.current = null;
 					mesh.geometry.dispose();
 					mesh.material.dispose();
 					grid.geometry.dispose();
 					stage.dispose();
 				};
+			}, [hasDoc]);
+			(0, react.useEffect)(() => {
+				const mesh = meshRef.current;
+				if (mesh === null || doc === null) return;
+				const next = figureGeometry(doc);
+				mesh.geometry.dispose();
+				mesh.geometry = next;
+				autoFitToHeight(mesh);
 			}, [doc]);
 			return (0, react.createElement)("div", {
 				className: preview_module_css_default.stagePreview,
@@ -54576,8 +54681,9 @@ void main() {
 				})),
 				emptyHint: props.runStatus === "running" ? "rendering… the mesh lands here" : "No render yet — run lands the mesh here"
 			}) : props.figure !== void 0 ? (0, react.createElement)(PoserFigureStage, {
-				door: props.figure.door,
 				identityModel: props.figure.identityModel,
+				identityCoeffs: props.figure.identityCoeffs,
+				localChanges: props.figure.localChanges,
 				label: `poser-figure:${props.stageId}`
 			}) : (0, react.createElement)(GlbStagePreview, {
 				assets: [],
@@ -55577,7 +55683,11 @@ void main() {
 					...history.length > 0 ? { history } : {},
 					...historyNotes !== void 0 ? { historyNotes } : {},
 					...spec?.preview?.historyStrip === false ? { historyStrip: false } : {},
-					...spec?.preview?.figure !== void 0 ? { figure: spec.preview?.figure } : {}
+					...spec?.preview?.figure !== void 0 ? { figure: {
+						identityModel: spec.preview.figure.identityModel,
+						...figureCoeffsOf(spec, value) !== null ? { identityCoeffs: figureCoeffsOf(spec, value) } : {},
+						...figureLocalChangesOf(spec, value) !== null ? { localChanges: figureLocalChangesOf(spec, value) } : {}
+					} } : {}
 				};
 				return renderPreview(owner, kind === "video" ? (0, react.createElement)(VideoStagePreview, owner) : kind === "audio" ? (0, react.createElement)(AudioStagePreview, owner) : kind === "mesh" ? (0, react.createElement)(MeshStagePreview, owner) : (0, react.createElement)(ImageStagePreview, owner));
 			};

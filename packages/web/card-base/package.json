@@ -55,6 +55,7 @@
     "@melite/estate-drafts": "workspace:*",
     "@melite/estate-media": "workspace:*",
     "@melite/estate-runs": "workspace:*",
+    "@melite/formats": "workspace:*",
     "clsx": "*",
     "three": "^0.184.0",
     "@melite-plugin/melite-run-wire": "workspace:*"

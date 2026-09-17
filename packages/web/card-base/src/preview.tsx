@@ -215,7 +215,12 @@ export function MeshStagePreview(props: PreviewOwnerProps): ReturnType<typeof h>
           emptyHint: props.runStatus === 'running' ? 'rendering… the mesh lands here' : 'No render yet — run lands the mesh here',
         })
       : props.figure !== undefined
-        ? h(PoserFigureStage, { door: props.figure.door, identityModel: props.figure.identityModel, label: `poser-figure:${props.stageId}` })
+        ? h(PoserFigureStage, {
+            identityModel: props.figure.identityModel,
+            identityCoeffs: props.figure.identityCoeffs,
+            localChanges: props.figure.localChanges,
+            label: `poser-figure:${props.stageId}`,
+          })
         : h(GlbStagePreview, {
             assets: [],
             emptyHint: props.runStatus === 'running' ? 'rendering… the mesh lands here' : 'No render yet — run lands the mesh here',
@@ -229,6 +234,6 @@ export function MeshStagePreview(props: PreviewOwnerProps): ReturnType<typeof h>
  *  the preview seam stays ONE subpath: import { GlbStagePreview }
  *  from '@melite/card-base/preview'. */
 export { GlbStagePreview, autoFitToHeight, type StageAsset } from './glb-stage.tsx'
-export { PoserFigureStage, figureGeometry, type PoserMeshDoc } from './poser-figure.tsx'
+export { PoserFigureStage, figureGeometry, figureCoeffsOf, figureLocalChangesOf, figureShapeSig, type PoserMeshDoc } from './poser-figure.tsx'
 export { ViewportFrame, ViewportAnchor, ReferenceImageBadge } from './viewportChrome.tsx'
 export type { ViewportFrameProps, ViewportAnchorProps, ReferenceImageBadgeProps, ViewportAnchorDock } from './viewportChrome.tsx'

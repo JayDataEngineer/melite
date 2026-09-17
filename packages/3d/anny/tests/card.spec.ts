@@ -36,6 +36,17 @@ describe("the anny compose gate", () => {
     assert.ok(graph["CompositeCharacter.0"], "the composite rides the baked glb_path");
   });
 
+  it("THE FLOOR IS ON THE SCHEMA MASTER (the 'scaled wrong, some go to 10' bug): out-of-range values refuse", () => {
+    assert.throws(() => def.schema({ gender: 2 }), /gender/i, "identity dims cap at 1");
+    assert.throws(() => def.schema({ gender: -0.1 }), /gender/i, "identity dims floor at 0");
+    const aMorph = ANNY_MORPH_LABELS[0];
+    assert.throws(() => def.schema({ [aMorph]: 3 }), new RegExp(aMorph, "i"), "morphs cap at 2");
+    assert.throws(() => def.schema({ [aMorph]: -1.5 }), new RegExp(aMorph, "i"), "morphs floor at -1");
+    // the lawful ranges pass
+    const ok = def.schema({ gender: 1, [aMorph]: 2, [ANNY_MORPH_LABELS[1]]: -1 });
+    assert.equal(ok.gender, 1);
+  });
+
   it("authored sliders carry into the bake vector (dim order = the served labels)", () => {
     const g = new GraphBuilder();
     def.compose(def.schema({ muscle: 0.9, height: 0.2 }), DUMMY_MODEL, g, "r1");
@@ -114,7 +125,7 @@ describe("the anny compose gate", () => {
     assert.equal(doc.local_changes, undefined);
   });
 
-  it("the served preview claim names the native figure door (never the GLB export)", () => {
-    assert.deepEqual(def.preview, { figure: { door: "/v1/poser/mesh", identityModel: "anny" } });
+  it("the served preview claim names the identity model (the live arms derive client-side)", () => {
+    assert.deepEqual(def.preview, { figure: { identityModel: "anny" } });
   });
 });

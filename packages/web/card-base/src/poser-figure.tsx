@@ -1,33 +1,75 @@
 /**
- * poser-figure.tsx — THE NATIVE FIGURE STAGE (stroke 90, 2026-09-17:
- * the keep-all-features order — "Where the [REDACTED 2026-11-05] is the 3js preview?"
- * "CONVERT means DON'T LOSE FUNCTIONALITY"). The studio's viewport
- * capability moves to the base form's preview seam: the /poser shaped
- * bind mesh (18,056 verts, 36,108 tris, smooth normals — the
- * 2026-09-06 law: NEVER the low-poly GLB export, which the operator
- * rejected as "low quality — you are rendering GLB and not native
- * ANNY").
+ * poser-figure.tsx — THE NATIVE FIGURE STAGE (stroke 90 + the live
+ * follow-up, 2026-09-17: "these knobs do LITERALLY NOTHING — they
+ * are supposed to CHANGE THE [REDACTED 2026-11-05] BODY"). The figure is not a
+ * static portrait: it is SHAPED BY THE CARD'S LIVE PARAMS — the 11
+ * identity coeffs and the non-zero local_changes ride the SAME
+ * shared bind-mesh module the body studios use
+ * (@melite/formats/poserSkin — ONE fetch surface, ONE per-signature
+ * cache across the estate; the module's own header records the
+ * dedup law: "the positional form is how the two pre-dedup copies
+ * drifted"). The 2026-09-06 law stands: NEVER the low-poly GLB
+ * export, always the /poser shaped bind mesh (18,056 verts, smooth
+ * normals).
  *
  * SUBSTRATE LAW (verbatim, glb-stage.tsx): RAW three.js — imperative
  * scene in a useEffect, NO @react-three. three is a pure leaf
  * library; mounts like any imperative canvas lib.
  *
- * THE WIRE SHAPE (the door, live-pinned): { vertices: number[][]
- * (xyz, cm-scale, Y-up), faces: number[][] (index triplets),
- * bind_joints: number[][], identity_model: string }.
+ * DRAG LAW: slider drags emit streams; the fetch debounces 120ms
+ * and the module's cache (coeffs rounded 0.1, local changes 0.02)
+ * collapses identical shapes. The SCENE mounts once per card; shape
+ * commits SWAP THE GEOMETRY in place — no canvas flicker per drag.
  */
 import { createElement as h, useEffect, useRef, useState } from 'react'
 import * as THREE from 'three'
+import { fetchBindMesh, type SkinMeshData } from '@melite/formats/poserSkin'
 import { mountStage3D } from './stage3d.ts'
 import { autoFitToHeight } from './glb-stage.tsx'
+import { fieldsOf, type FormSpecDoc, type SpecValues } from './spec.ts'
 import s from './preview.module.css'
 
-/** The door's wire shape (the pinned subset the stage reads). */
+/** The bind-mesh doc the geometry builder reads (SkinMeshData's
+ * pinned subset: xyz verts, index-triplet faces). */
 export interface PoserMeshDoc {
   vertices: number[][]
   faces: number[][]
-  bind_joints?: number[][]
-  identity_model?: string
+}
+
+/** Pure: the resolved params → the identity coeff vector (the
+ * identity group's fields, order-sorted, values from the resolved
+ * map). null when the spec has no identity group OR any dim is not
+ * a finite number — a PARTIAL vector would mis-shape the body
+ * (every dim must ride or none do; the neutral GET is the
+ * fallback). */
+export function figureCoeffsOf(spec: FormSpecDoc | null, value: SpecValues): number[] | null {
+  if (spec === null) return null
+  const fields = fieldsOf(spec)
+    .filter((f) => f.group === 'identity')
+    .sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
+  if (fields.length === 0) return null
+  const coeffs: number[] = []
+  for (const f of fields) {
+    const v = value[f.name]
+    if (typeof v !== 'number' || !Number.isFinite(v)) return null
+    coeffs.push(v)
+  }
+  return coeffs
+}
+
+/** Pure: the resolved params → the local-changes map (the morph
+ * group's fields, NON-ZERO finite values only — the sparse law:
+ * absent = the engine's own 0). null when empty or no morph group
+ * (the caller omits the arm; the fetch rides the neutral GET). */
+export function figureLocalChangesOf(spec: FormSpecDoc | null, value: SpecValues): Record<string, number> | null {
+  if (spec === null) return null
+  const out: Record<string, number> = {}
+  for (const f of fieldsOf(spec)) {
+    if (f.group !== 'morph') continue
+    const v = value[f.name]
+    if (typeof v === 'number' && Number.isFinite(v) && v !== 0) out[f.name] = v
+  }
+  return Object.keys(out).length > 0 ? out : null
 }
 
 /** Pure: the door's JSON → a three geometry (unit-testable without
@@ -42,36 +84,59 @@ export function figureGeometry(doc: PoserMeshDoc): THREE.BufferGeometry {
   return g
 }
 
-/** THE NATIVE FIGURE — fetched from the estate door, rendered on the
- * shared stage core (same light rig + floor grid as the GLB stage,
- * the preview-port interaction law: ONE look across ports). The
- * fetch failures voice themselves in the DOM (the loud-errors law);
+/** The shape signature — identity coeffs + local changes as one
+ * stable string (the effect's dep; a new shape re-fetches, an
+ * identical one does not). */
+export function figureShapeSig(identityCoeffs?: number[] | null, localChanges?: Record<string, number> | null): string {
+  const c = identityCoeffs !== undefined && identityCoeffs !== null && identityCoeffs.length > 0
+    ? identityCoeffs.map((v) => v.toFixed(2)).join(',') : ''
+  const l = localChanges !== undefined && localChanges !== null
+    ? Object.entries(localChanges).sort(([a], [b]) => (a < b ? -1 : 1)).map(([k, v]) => `${k}=${v.toFixed(2)}`).join(',') : ''
+  return `${c}|${l}`
+}
+
+/** THE NATIVE FIGURE — the /poser shaped bind mesh on the shared
+ * stage core (same light rig + floor grid as the GLB stage, the
+ * preview-port interaction law: ONE look across ports). Fetch
+ * failures voice themselves in the DOM (the loud-errors law);
  * WebGL absence refuses loud, never a blank silent canvas. */
-export function PoserFigureStage({ door, identityModel, label }: {
-  /** the estate door path ('/v1/poser/mesh') */
-  door: string
+export function PoserFigureStage({ identityModel, identityCoeffs, localChanges, label }: {
   /** the identity model the door shapes ('anny') */
   identityModel: string
+  /** the card's LIVE identity dims (the 11 coeffs, label order) */
+  identityCoeffs?: number[] | null
+  /** the card's LIVE non-zero morph weights (label → weight) */
+  localChanges?: Record<string, number> | null
   label?: string
 }): ReturnType<typeof h> {
   const canvasRef = useRef<HTMLCanvasElement | null>(null)
-  const [doc, setDoc] = useState<PoserMeshDoc | null>(null)
+  const meshRef = useRef<THREE.Mesh | null>(null)
+  const [doc, setDoc] = useState<SkinMeshData | null>(null)
   const [failed, setFailed] = useState<string | null>(null)
+  const sig = figureShapeSig(identityCoeffs, localChanges)
   useEffect(() => {
     let alive = true
-    setDoc(null)
     setFailed(null)
-    fetch(`${door}?identity_model=${encodeURIComponent(identityModel)}`)
-      .then(async (r) => {
-        if (!r.ok) throw new Error(`figure door HTTP ${r.status}`)
-        return r.json() as Promise<PoserMeshDoc>
+    // THE DRAG LAW: debounce the stream; the module cache collapses
+    // identical signatures so a settled shape never re-fetches.
+    const timer = setTimeout(() => {
+      setDoc(null)
+      fetchBindMesh({
+        identityModel,
+        ...(identityCoeffs !== undefined && identityCoeffs !== null && identityCoeffs.length > 0 ? { identityCoeffs } : {}),
+        ...(localChanges !== undefined && localChanges !== null && Object.keys(localChanges).length > 0 ? { localChanges } : {}),
       })
-      .then((d) => { if (alive) setDoc(d) })
-      .catch((e: unknown) => { if (alive) setFailed(e instanceof Error ? e.message : 'figure fetch failed') })
-    return () => { alive = false }
-  }, [door, identityModel])
+        .then((d) => { if (alive) setDoc(d) })
+        .catch((e: unknown) => { if (alive) setFailed(e instanceof Error ? e.message : 'figure fetch failed') })
+    }, 120)
+    return () => { alive = false; clearTimeout(timer) }
+    // sig (not the arrays): a stable string dep — identityCoeffs and
+    // localChanges are re-derived objects per render; the signature
+    // is the shape identity (identityModel rides it via the fetch).
+  }, [identityModel, sig])
+  const hasDoc = doc !== null
   useEffect(() => {
-    if (doc === null) return
+    if (!hasDoc) return
     // (no canvas-null guard — the sibling's law, verbatim: this
     // body runs only when doc !== null, and every such commit
     // renders the canvas face; doc flips null→doc in one batch
@@ -99,18 +164,30 @@ export function PoserFigureStage({ door, identityModel, label }: {
     gridMat.opacity = 0.35
     scene.add(grid)
     const mesh = new THREE.Mesh(
-      figureGeometry(doc),
+      new THREE.BufferGeometry(),
       new THREE.MeshStandardMaterial({ color: 0xc9b8a8, roughness: 0.72, metalness: 0.04 }),
     )
-    autoFitToHeight(mesh)
+    meshRef.current = mesh
     scene.add(mesh)
     return () => {
+      meshRef.current = null
       mesh.geometry.dispose()
       ;(mesh.material as THREE.Material).dispose()
       grid.geometry.dispose()
       stage.dispose()
     }
-  }, [doc]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [hasDoc]) // eslint-disable-line react-hooks/exhaustive-deps
+  // THE GEOMETRY SWAP: each shape commit replaces the mesh's
+  // geometry in place — the scene, lights, and camera survive every
+  // drag (no flicker); autoFit re-anchors the new body's height.
+  useEffect(() => {
+    const mesh = meshRef.current
+    if (mesh === null || doc === null) return
+    const next = figureGeometry(doc)
+    mesh.geometry.dispose()
+    mesh.geometry = next
+    autoFitToHeight(mesh)
+  }, [doc])
   return h('div', { className: s.stagePreview, 'data-viewport': label ?? 'poser-figure' },
     failed !== null
       ? h('div', { className: s.empty, 'data-testid': 'figure-failed' }, 'figure failed: ' + failed)
