@@ -1,0 +1,14 @@
+# dsh-3d-anny bundle patch: inserts the anny card's browser face row
+# into a profile roster. Applied as a profile bundle layer (the
+# `dsh.bundle.patch` manifest field); the CHANNEL LAW (2026-09-09):
+# every web plugin owns its existence row in ITS OWN package — the
+# profile layer configures by id, never re-provides the row.
+#
+# The host half (exports ".") is the marker only — the anny card
+# itself registers through the estate's card SSOT (melite-tools'
+# tool faces); the browser half (exports "./client") claims the
+# `cards.stage.view` slot keyed 'anny' via the `dsh.client`
+# declaration in package.json.
+- insert:
+    - id: anny-studio
+      name: '@melite/3d-anny'
