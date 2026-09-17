@@ -60,21 +60,22 @@
     - id: infer-estate
       name: '@melite-plugin/melite-estate'
 
-    - id: infer-tools
-      name: '@melite/harness-tools'
-    # The host-route plane of the same package (split 2026-09-10): the
-    # ✦ doors need webServer+llm, which sdk/headless compositions do
-    # not have — infer-tools stays profile-agnostic, this row is
-    # web-profiles-only (the estate patch disables it).
-    - id: infer-tools-doors
-      name: '@melite/harness-tools/doors'
+    # infer-tools / infer-tools-doors: NO rows here (channel law,
+    # 2026-09-09: every web plugin owns its existence row in ITS OWN
+    # package — the melite-tools cordis.patch.yml inserts
+    # melite-tools + melite-tools-doors). Twin rows under different
+    # ids double-mounted the package and its tool registrations
+    # ("melite_discover already registered") killing every FRESH
+    # boot of profiles that bundle @melite/harness-tools, 2026-09-17.
+    # Profiles needing the tools WITHOUT bundling the package
+    # activate it with `dsh plugin --profile <name> add
+    # <path-to-melite-tools>`.
 
-    # ONE row now (the two-row host/client split with clientRowOnly
-    # is retired — the bundle's own dsh.client declaration loads the
-    # browser half; the host half is the bundle-row marker, the
-    # gateway-era proxy route died with the kill).
-    - id: infer-card-view
-      name: '@melite-plugin/dsh-card-view'
+    # infer-card-view: NO row here (channel law, 2026-09-09: every
+    # web plugin owns its existence row in ITS OWN package — the
+    # dsh-card-view cordis.patch.yml inserts it; a row in BOTH files
+    # duplicated the loader entry id and killed every FRESH boot of
+    # profiles mounting both patches, 2026-09-17).
 
     # THE CARD STUDIOS (2026-09-12, the composition-root correction):
     # each card package ships its OWN cards.stage.view registration —
@@ -85,8 +86,12 @@
     # seam, so a row-mount registers nothing node-side. The studios
     # ride the packages' dsh.client declarations (src/client ->
     # lib/client.js).
-    - id: card-studio-anny
-      name: '@melite/3d-anny'
+    #
+    # card-studio-anny: NO row here — @melite/3d-anny self-registers
+    # (anny-studio, its own cordis.patch.yml, 6a16cfc9); a twin row
+    # double-mounted the package in every profile bundling it
+    # (2026-09-17). Rows stay ONLY for studios not bundled by the
+    # profile (their self-patch never applies there).
 
     - id: card-studio-h3-timeline
       name: '@melite/video-h3-timeline'
@@ -105,12 +110,16 @@
     - id: card-studio-motion
       name: '@melite/motion-motion'
 
-    - id: infer-card-deck
-      name: '@melite-plugin/dsh-card-deck'
+    # infer-card-deck: NO row here (channel law, 2026-09-09) — the
+    # dsh-card-deck package self-registers (ray-card-deck, its own
+    # cordis.patch.yml); twin rows double-mounted the package in
+    # every profile bundling it (2026-09-17).
 
     # THE ESTATE COLLAPSE (R3): @infer-media/dsh-media DELETED - DSH's
     # own file/attachment/resource faces are the media system; the
     # estate's runs/drafts ride Typert remotes (gateway-wire).
 
-    - id: infer-gallery-host
-      name: '@melite-plugin/dsh-gallery'
+    # infer-gallery-host: NO row here (channel law, 2026-09-09) — the
+    # dsh-gallery package self-registers (infer-gallery, its own
+    # cordis.patch.yml); twin rows double-mounted the package in
+    # every profile bundling it (2026-09-17).

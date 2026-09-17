@@ -350,7 +350,7 @@ describe('disclose/manage/skills/load/ledger lanes', () => {
     await assert.rejects(req({})('GET', '/v1/load', undefined, SIG, 1000))
   })
 
-  test('ledger rides limit/event with door defaults; seatless refuses', async () => {
+  test('ledger rides limit/event with door defaults; seatless reads an empty tail', async () => {
     let seen: unknown[] = []
     const r = req({ queue: { ledger: (l: string, e: string) => { seen = [l, e]; return [l, e] } } })
     assert.deepEqual(
@@ -359,6 +359,10 @@ describe('disclose/manage/skills/load/ledger lanes', () => {
     )
     assert.deepEqual(await r('GET', '/v1/ledger', undefined, SIG, 1000), ['50', ''])
     assert.deepEqual(seen, ['50', ''])
-    await assert.rejects(req({})('GET', '/v1/ledger', undefined, SIG, 1000))
+    // A seatless queue is an ABSENT journal, not an impossible lane
+    // (the gateway lane fallback died 2026-09-10; the hard refusal
+    // surfaced as a crash-toast over seatless web profiles' card
+    // benches while the mesh viewport kept rendering).
+    assert.deepEqual(await req({})('GET', '/v1/ledger', undefined, SIG, 1000), [])
   })
 })

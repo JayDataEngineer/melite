@@ -47,14 +47,25 @@ const die = (msg) => { console.error('infer-provision: ' + msg); process.exit(1)
 
 // ── profile rendering ───────────────────────────────────────────────────
 const PROFILE_BASES = {
-  // inference = the studio: web app base + our rows (the GUI experience)
-  inference: ['@deepseek-ai/dsh-base', '@deepseek-ai/dsh-web-app', '@melite/harness-provisioner'],
-  // headless = the agent server: one-shot task runner + our tool rows
-  headless: ['@deepseek-ai/dsh-base', '@deepseek-ai/dsh-headless', '@melite/harness-provisioner'],
+  // inference = the studio: web app base + the SELF-REGISTERING
+  // direct bundles (channel law 2026-09-09: every web plugin owns
+  // its existence row in ITS OWN package — the provisioner stopped
+  // inserting twin rows 2026-09-17; a row in BOTH files killed
+  // every FRESH boot of profiles mounting both patches).
+  inference: ['@deepseek-ai/dsh-base', '@deepseek-ai/dsh-web-app', '@melite/harness-provisioner',
+    '@melite/harness-tools', '@melite-plugin/dsh-card-view', '@melite-plugin/dsh-card-deck',
+    '@melite-plugin/dsh-gallery', '@melite/3d-anny'],
+  // headless = the agent server: one-shot task runner + the tools
+  // plane (harness-tools self-registers its melite-tools row; the
+  // renderer disables the web-plane doors row in this mount).
+  headless: ['@deepseek-ai/dsh-base', '@deepseek-ai/dsh-headless', '@melite/harness-provisioner',
+    '@melite/harness-tools'],
   // estate = the job server: the SDK JSON-RPC base (estate-drive
   // spawns this profile; the estate row serves the runs lanes
-  // in-process — no second app, no HTTP)
-  estate: ['@deepseek-ai/dsh-base', '@deepseek-ai/dsh-sdk-app', '@melite/harness-provisioner'],
+  // in-process — no second app, no HTTP). The renderer pins the
+  // tools row's HEADLESS interface by its self-registration id.
+  estate: ['@deepseek-ai/dsh-base', '@deepseek-ai/dsh-sdk-app', '@melite/harness-provisioner',
+    '@melite/harness-tools'],
   // melite-test = THE TEST LANE, RE-COMPOSED (REBUILD-20, gateway
   // kill 2026-09-10): the historical TEST bake (:3088, the
   // melite-test profile mounting the estate API as a SECOND
@@ -62,7 +73,9 @@ const PROFILE_BASES = {
   // the SAME row set as the studio — web app base + the estate
   // rows in ONE process. Custom bakes serve from this name; the
   // :33081 wire never existed here.
-  'melite-test': ['@deepseek-ai/dsh-base', '@deepseek-ai/dsh-web-app', '@melite/harness-provisioner'],
+  'melite-test': ['@deepseek-ai/dsh-base', '@deepseek-ai/dsh-web-app', '@melite/harness-provisioner',
+    '@melite/harness-tools', '@melite-plugin/dsh-card-view', '@melite-plugin/dsh-card-deck',
+    '@melite-plugin/dsh-gallery', '@melite/3d-anny'],
 }
 
 function renderProfile(name) {
@@ -101,22 +114,14 @@ function renderProfile(name) {
   // on every render; user-added registry deps belong in the bundle, not
   // here.
   pkg.dependencies = { ...rowDeps, '@melite/harness-provisioner': link }
-  // SUPERSEDE (2026-09-10): the provisioner bundle owns every estate
-  // row now (infer-estate/tools/doors/card-view/deck/gallery) — a
-  // pre-reorg render that mounted the same packages as DIRECT bundles
-  // would apply their rows TWICE (the tools plane throws LOUD on the
-  // duplicate: tool "melite_discover" is already registered). The
-  // renderer drops the superseded direct bundles when the provisioner
-  // joins (same wholesale law as dependencies above — dsh-* in-box
-  // bases and third-party UI bundles are never touched).
-  const SUPERSEDED_BY_PROVISIONER = new Set([
-    '@melite/harness-tools',
-    '@melite-plugin/melite-estate',
-    '@melite-plugin/dsh-estate',
-    '@melite-plugin/dsh-card-view',
-    '@melite-plugin/dsh-card-deck',
-    '@melite-plugin/dsh-gallery',
-  ])
+  // SUPERSEDE RETIRED (2026-09-17): the provisioner no longer owns
+  // twin rows for the self-registering packages (channel law
+  // 2026-09-09 — the packages' own cordis.patch.yml files insert
+  // their rows; the twins double-mounted the tool plane and killed
+  // every FRESH boot: "tool melite_discover is already
+  // registered"). Direct bundles are THE mount now; nothing is
+  // dropped when the provisioner joins.
+  const SUPERSEDED_BY_PROVISIONER = new Set([])
   const merged = [...((pkg.dsh && pkg.dsh.profile && pkg.dsh.profile.bundles) || []), ...bundles]
   const withProvisioner = merged.includes('@melite/harness-provisioner')
   pkg.dsh = { profile: { bundles: [
@@ -124,21 +129,22 @@ function renderProfile(name) {
   ] } }
   writeFileSync(join(dst, 'package.json'), JSON.stringify(pkg, null, 2) + String.fromCharCode(10))
   // user layer stays EMPTY in web mounts — the bundle patch owns every
-  // row (no drift). NON-web mounts (headless/SDK) get the five web-
-  // surface rows mechanically DISABLED: no webServer service exists to
-  // activate them. The bundle owns the rows; the renderer owns the
-  // per-app mount shape.
+  // row (no drift). NON-web mounts (headless/SDK) get the web-surface
+  // rows mechanically DISABLED (by the packages' SELF-REGISTRATION
+  // ids, 2026-09-17): no webServer service exists to activate them.
+  // The bundle owns the rows; the renderer owns the per-app mount
+  // shape.
   const webMount = bundles.includes('@deepseek-ai/dsh-web-app')
-  // infer-tools-doors is web-profiles-only by its own contract (the
+  // melite-tools-doors is web-profiles-only by its own contract (the
   // ✦ doors need webServer+llm — absent in sdk/headless mounts); the
   // renderer disables it with the other web rows in non-web mounts.
-  const webRows = ['infer-tools-doors',
-                   'infer-card-view', 'infer-card-deck', 'infer-gallery-host']
+  const webRows = ['melite-tools-doors',
+                   'infer-card-view', 'ray-card-deck', 'infer-gallery']
   writeFileSync(join(dst, 'cordis.patch.yml'),
     webMount
       ? '# rendered by infer-provision - rows live in the bundle' + '\n' + '[]' + '\n'
       : '# rendered by infer-provision - rows live in the bundle.\n'
-        + '# No webServer service in this mount: the five web-surface rows\n'
+        + '# No webServer service in this mount: the four web-surface rows\n'
         + '# are disabled so activation cannot pend forever.\n'
         + webRows.map(id => '- id: ' + id + '\n  disabled: true\n').join('')
         // ESTATE JOB SERVER (name === 'estate'): this mount IS the
@@ -149,7 +155,7 @@ function renderProfile(name) {
         // executes. Every other mount keeps the browser default.
         + (name === 'estate'
           ? '# HEADLESS interface: the delegated operator runs jobs here.\n'
-            + '- id: infer-tools\n  config:\n    headless: true\n'
+            + '- id: melite-tools\n  config:\n    headless: true\n'
           : ''))
   writeFileSync(join(dst, 'cordis.yml'), '# rendered by infer-provision' + '\n' + '[]' + '\n')
   const ws = join(dst, 'pnpm-workspace.yaml')

@@ -163,7 +163,7 @@ async function trySeats(ctx, method, path, body, signal) {
 	}
 	m = /^\/v1\/ledger(?:\?([^/]*))?$/.exec(path);
 	if (method === "GET" && m !== null) {
-		if (seats.queue === void 0) return void 0;
+		if (seats.queue === void 0) return [];
 		const qs = new URLSearchParams(m[1] ?? "");
 		return seats.queue.ledger(qs.get("limit") ?? "50", qs.get("event") ?? "");
 	}

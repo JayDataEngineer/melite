@@ -315,10 +315,15 @@ async function trySeats(
   }
   // The ledger lane (REBUILD-19): the journal tail over the queue
   // seat — the door's parameter law rides (garbage limit -> 50,
-  // never a 400).
+  // never a 400). A SEATLESS queue reads as an EMPTY tail (the
+  // journal is optional infra for web profiles; the gateway lane
+  // fallback died 2026-09-10 and a hard refusal here surfaced as a
+  // crash-toast over every seatless profile's card bench while the
+  // mesh viewport itself kept rendering). A MOUNTED seat that
+  // throws still propagates — only absence degrades.
   m = /^\/v1\/ledger(?:\?([^/]*))?$/.exec(path)
   if (method === 'GET' && m !== null) {
-    if (seats.queue === undefined) return undefined
+    if (seats.queue === undefined) return []
     const qs = new URLSearchParams(m[1] ?? '')
     return seats.queue.ledger(qs.get('limit') ?? '50', qs.get('event') ?? '')
   }

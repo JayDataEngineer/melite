@@ -82,13 +82,28 @@ gate("headless renders with the web-surface rows disabled (no webServer in that 
   const dir: string = join(home, "profiles", "headless");
   assert.ok(existsSync(join(dir, "package.json")), "package.json renders");
   assert.ok(existsSync(join(dir, "cordis.yml")), "cordis.yml renders");
+  // SELF-REGISTRATION ids (stroke 88, 2026-09-17): the packages' own
+  // cordis.patch.yml files insert their rows; the renderer disables
+  // the web-plane ones by THOSE ids in non-web mounts (the retired
+  // provisioner twin rows — infer-tools-doors/infer-card-deck/
+  // infer-gallery-host — double-mounted the tool plane and killed
+  // every fresh boot).
   const patch: string = readFileSync(join(dir, "cordis.patch.yml"), "utf8");
-  for (const row of ["infer-tools-doors", "infer-card-view", "infer-card-deck", "infer-gallery-host"]) {
+  for (const row of ["melite-tools-doors", "infer-card-view", "ray-card-deck", "infer-gallery"]) {
     assert.ok(
       patch.includes("- id: " + row + "\n  disabled: true"),
       `${row} is disabled in the headless mount (got:\n${patch})`,
     );
   }
+  // the headless mount bundles the tools plane DIRECT (no twin rows
+  // anywhere — the crash law of stroke 88)
+  const pkg = JSON.parse(readFileSync(join(dir, "package.json"), "utf8")) as {
+    dsh?: { profile?: { bundles?: string[] } };
+  };
+  assert.ok(
+    pkg.dsh?.profile?.bundles?.includes("@melite/harness-tools") === true,
+    "the headless mount bundles @melite/harness-tools (got:\n" + JSON.stringify(pkg.dsh?.profile?.bundles),
+  );
 });
 
 gate("inference renders the empty user layer (the bundle patch owns every row)", () => {
