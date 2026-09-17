@@ -116,13 +116,18 @@ describe("schema() gates (the py model_validator port)", () => {
     assert.throws(() => schema({ prompt: "x", calls: [] }), /h3-timeline: no calls to compose/);
   });
 
-  it("a single window wider than 90 refuses at the gate with the split named", () => {
-    // two live receipts: 168 (the py canvas) and 175 (on-grid) both
-    // died inside SamplerCustomAdvanced. The gate refuses LOUD — the
-    // physics, the split, and the genre, in one sentence.
+  it("a single window wider than 124 refuses at the gate; 124 itself passes (the receipted edge)", () => {
+    // boundary pinned live 2026-09-17: 90f and 124f RENDER (124 = the
+    // py production window, run 500b613ee1b2); 141/158/168/175 all
+    // died inside SamplerCustomAdvanced. The first cut capped at 90
+    // and would have refused the lawful 124f window — the operator
+    // caught the extrapolation. The gate refuses LOUD beyond the edge.
+    const production = schema({ prompt: "x", calls: [{ start_frame: 0, end_frame: 124 }] }) as Record<string, unknown>
+    assert.equal(production.variant, "t4_open")
+    assert.equal(production.length, 124) // the span rider serializes it explicit
     assert.throws(
-      () => schema({ prompt: "x", calls: [{ start_frame: 0, end_frame: 168 }] }),
-      /single window spans at most 90 frames .* split the timeline into windows/,
+      () => schema({ prompt: "x", calls: [{ start_frame: 0, end_frame: 141 }] }),
+      /single window spans at most 124 frames .* split the timeline into windows/,
     );
   });
 

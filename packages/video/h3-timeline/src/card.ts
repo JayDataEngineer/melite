@@ -245,16 +245,21 @@ export function schema(v: unknown): Record<string, unknown> {
           throw new Error(`calls[${i}]: ${name} is required (int frames — text alone is not a shot)`)
         }
       }
-      // THE WINDOW PHYSICS LAW (2026-09-17, two live receipts: the
-      // py canvas 168 AND the on-grid 175 both died inside
-      // SamplerCustomAdvanced — a single t4 window renders at most the
-      // t4_open budget, 90 frames). A single call spanning wider
-      // refuses at the GATE with the split named — never a cryptic
-      // engine death three minutes in. Multi-window films chain; that
-      // is this card's genre.
-      if (calls.length === 1 && (c.end_frame as number) - (c.start_frame as number) > 90) {
+      // THE WINDOW PHYSICS LAW (boundary pinned by live receipts,
+      // 2026-09-17: 90f and 124f RENDER; 141f, 158f, 168f, 175f all
+      // died inside SamplerCustomAdvanced — runs 3d983151b05e,
+      // 7ff63f809e61, a115a9b43e6a, 89d9f04f6228; the 124f success is
+      // run 500b613ee1b2). The TRUE edge is 124 — the py card's own
+      // declared production window ("produce at 1344×768×124f"): the
+      // preset was the physics all along. The first cut of this law
+      // capped at 90 (the draft budget) and would have refused the
+      // lawful 124f production window — the operator caught it. A
+      // single call spanning wider than 124 refuses at the GATE with
+      // the split named — never a cryptic engine death minutes in.
+      // Longer films chain windows; that is this card's genre.
+      if (calls.length === 1 && (c.end_frame as number) - (c.start_frame as number) > 124) {
         throw new Error(
-          `calls[${i}]: a single window spans at most 90 frames (engine physics) — ` +
+          `calls[${i}]: a single window spans at most 124 frames (engine physics — the production window; receipts 2026-09-17) — ` +
           `split the timeline into windows (this card's genre: multi-window chains)`)
       }
       if ((c.end_frame as number) <= (c.start_frame as number)) {
