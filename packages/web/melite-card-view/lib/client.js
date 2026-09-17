@@ -53991,8 +53991,8 @@ void main() {
 		}
 		//#endregion
 		//#region \0dsh-css:card-base/src/preview.module.css.mjs
-		const css$1 = ".ClEuBa_stagePreview{flex-direction:column;flex:1;gap:8px;min-height:0;display:flex;overflow:hidden}.ClEuBa_hero,.ClEuBa_heroImg{object-fit:contain;background:var(--dsw-alias-bg-base);border:1px solid var(--dsw-alias-border-l2);border-radius:6px;flex:1;width:100%;min-height:0}.ClEuBa_heroAudio{flex:1;align-self:center;width:100%;min-height:48px}.ClEuBa_empty{color:var(--dsw-alias-label-dimmed);border:1px dashed var(--dsw-alias-border-l2);border-radius:6px;flex:1;justify-content:center;align-items:center;font-size:11px;display:flex}.ClEuBa_strip{flex:none;gap:6px;display:flex;overflow-x:auto}.ClEuBa_stripLink{color:var(--dsw-alias-brand-primary);white-space:nowrap;border:1px solid var(--dsw-alias-border-l2);border-radius:6px;padding:2px 6px;font-size:10px;text-decoration:none}.ClEuBa_thumbRow{flex:none;gap:6px;display:flex;overflow-x:auto}.ClEuBa_thumb{border:1px solid var(--dsw-alias-border-l2);border-radius:4px;height:48px}.ClEuBa_historyBlock{flex-direction:column;flex:none;gap:4px;padding-top:4px;display:flex}.ClEuBa_historyTitle{color:var(--dsw-alias-label-secondary,#61666b);font-size:11px}.ClEuBa_historyTile{cursor:pointer;background:0 0;border:1px solid #0000;border-radius:4px;padding:0;display:inline-flex}.ClEuBa_historyTile:hover,.ClEuBa_historyTileActive{border-color:var(--dsw-alias-border-l2)}.ClEuBa_staleBadge{color:var(--dsw-alias-label-secondary);border:1px solid var(--dsw-alias-border-l2);cursor:pointer;background:0 0;border-radius:6px;flex:none;align-self:flex-start;padding:2px 6px;font-size:10px}.ClEuBa_staleBadge:hover{border-color:var(--dsw-alias-border-l2)}.ClEuBa_stageCanvas{touch-action:none;width:100%;height:100%;min-height:320px;display:block}";
-		const tagId$1 = "@melite-plugin/dsh-card-view/preview.module.css@81970b37";
+		const css$1 = ".ClEuBa_stagePreview{flex-direction:column;flex:1;gap:8px;min-height:0;display:flex;position:relative;overflow:hidden}.ClEuBa_figureError{z-index:2;color:var(--dsw-alias-label-error);background:var(--dsw-alias-bg-solid);border:1px solid var(--dsw-alias-border-l2);border-radius:6px;padding:4px 8px;font-size:11px;position:absolute;top:8px;left:8px;right:8px}.ClEuBa_hero,.ClEuBa_heroImg{object-fit:contain;background:var(--dsw-alias-bg-base);border:1px solid var(--dsw-alias-border-l2);border-radius:6px;flex:1;width:100%;min-height:0}.ClEuBa_heroAudio{flex:1;align-self:center;width:100%;min-height:48px}.ClEuBa_empty{color:var(--dsw-alias-label-dimmed);border:1px dashed var(--dsw-alias-border-l2);border-radius:6px;flex:1;justify-content:center;align-items:center;font-size:11px;display:flex}.ClEuBa_strip{flex:none;gap:6px;display:flex;overflow-x:auto}.ClEuBa_stripLink{color:var(--dsw-alias-brand-primary);white-space:nowrap;border:1px solid var(--dsw-alias-border-l2);border-radius:6px;padding:2px 6px;font-size:10px;text-decoration:none}.ClEuBa_thumbRow{flex:none;gap:6px;display:flex;overflow-x:auto}.ClEuBa_thumb{border:1px solid var(--dsw-alias-border-l2);border-radius:4px;height:48px}.ClEuBa_historyBlock{flex-direction:column;flex:none;gap:4px;padding-top:4px;display:flex}.ClEuBa_historyTitle{color:var(--dsw-alias-label-secondary,#61666b);font-size:11px}.ClEuBa_historyTile{cursor:pointer;background:0 0;border:1px solid #0000;border-radius:4px;padding:0;display:inline-flex}.ClEuBa_historyTile:hover,.ClEuBa_historyTileActive{border-color:var(--dsw-alias-border-l2)}.ClEuBa_staleBadge{color:var(--dsw-alias-label-secondary);border:1px solid var(--dsw-alias-border-l2);cursor:pointer;background:0 0;border-radius:6px;flex:none;align-self:flex-start;padding:2px 6px;font-size:10px}.ClEuBa_staleBadge:hover{border-color:var(--dsw-alias-border-l2)}.ClEuBa_stageCanvas{touch-action:none;width:100%;height:100%;min-height:320px;max-height:46vh;display:block}";
+		const tagId$1 = "@melite-plugin/dsh-card-view/preview.module.css@d7eb1a43";
 		if (typeof document !== "undefined" && document.querySelector("style[data-plugin-css=" + JSON.stringify(tagId$1) + "]") === null) {
 			const tag = document.createElement("style");
 			tag.dataset.plugin = "@melite-plugin/dsh-card-view";
@@ -54002,6 +54002,7 @@ void main() {
 		}
 		var preview_module_css_default = {
 			"empty": "ClEuBa_empty",
+			"figureError": "ClEuBa_figureError",
 			"hero": "ClEuBa_hero",
 			"heroAudio": "ClEuBa_heroAudio",
 			"heroImg": "ClEuBa_heroImg",
@@ -54379,10 +54380,13 @@ void main() {
 			const [failed, setFailed] = (0, react.useState)(null);
 			const sig = figureShapeSig(identityCoeffs, localChanges);
 			(0, react.useEffect)(() => {
-				let alive = true;
+				setDoc(null);
 				setFailed(null);
+			}, [identityModel]);
+			(0, react.useEffect)(() => {
+				let alive = true;
 				const timer = setTimeout(() => {
-					setDoc(null);
+					setFailed(null);
 					fetchBindMesh({
 						identityModel,
 						...identityCoeffs !== void 0 && identityCoeffs !== null && identityCoeffs.length > 0 ? { identityCoeffs } : {},
@@ -54479,7 +54483,7 @@ void main() {
 			return (0, react.createElement)("div", {
 				className: preview_module_css_default.stagePreview,
 				"data-viewport": label ?? "poser-figure"
-			}, failed !== null ? (0, react.createElement)("div", {
+			}, failed !== null && doc === null ? (0, react.createElement)("div", {
 				className: preview_module_css_default.empty,
 				"data-testid": "figure-failed"
 			}, "figure failed: " + failed) : doc === null ? (0, react.createElement)("div", {
@@ -54489,7 +54493,10 @@ void main() {
 				ref: canvasRef,
 				className: preview_module_css_default.stageCanvas,
 				"data-testid": "stage-preview-figure"
-			}));
+			}), failed !== null && doc !== null ? (0, react.createElement)("div", {
+				className: preview_module_css_default.figureError,
+				"data-testid": "figure-failed"
+			}, "figure failed: " + failed) : null);
 		}
 		//#endregion
 		//#region \0dsh-css:card-base/src/viewportChrome.module.css.mjs

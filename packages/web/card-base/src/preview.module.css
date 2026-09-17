@@ -8,6 +8,27 @@
   gap: 8px;
   min-height: 0;
   overflow: hidden;
+  /* the figure's mid-drag failure banner anchors here (the
+   * morph-tab stroke: the body STAYS while the failure voices) */
+  position: relative;
+}
+/* THE FIGURE FAILURE BANNER (the loud-refusal law, kept alive
+ * without killing the body): a failed shape POST mid-drag overlays
+ * this chip on the STILL-MOUNTED canvas — the last body remains
+ * legible, the failure still voices. Full-face only when no doc
+ * exists at all. */
+.figureError {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  right: 8px;
+  z-index: 2;
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-size: 11px;
+  color: var(--dsw-alias-label-error);
+  background: var(--dsw-alias-bg-solid);
+  border: 1px solid var(--dsw-alias-border-l2);
 }
 .hero {
   flex: 1 1 0%;
@@ -106,11 +127,18 @@
 .staleBadge:hover { border-color: var(--dsw-alias-border-l2); }
 
 /* THE MESH STAGE canvas — the raw-three viewport fills the preview
- * pane (the shell's preview column owns the overflow, hour-13). */
+ * pane (the shell's preview column owns the overflow, hour-13).
+ * THE 46vh CAP (the morph-tab stroke): the preview cell rides the
+ * shell grid row, whose height = the params column's content — 254
+ * morph sliders stretch an uncapped height:100% canvas to ~14k px
+ * (a distorted sliver that reads as 'the preview vanished'). The
+ * estate's own outputImg caps at 46vh; the figure stage rides the
+ * SAME law. */
 .stageCanvas {
   width: 100%;
   height: 100%;
   min-height: 320px;
+  max-height: 46vh;
   display: block;
   touch-action: none;
 }

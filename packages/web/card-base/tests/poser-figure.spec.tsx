@@ -312,6 +312,36 @@ describe('PoserFigureStage (DOM states + LIVE reshaping)', () => {
     expect(bindState.spy).not.toHaveBeenCalled()
   })
 
+  test('THE BODY STAYS: a failure mid-drag overlays the banner, the canvas NEVER unmounts', async () => {
+    mountState.spy.mockImplementation(() => {
+      const scene = new THREE.Scene()
+      return { scene, dispose: vi.fn() }
+    })
+    bindState.spy.mockResolvedValueOnce(DOC)
+    const { rerender } = render(h(PoserFigureStage, { identityModel: 'anny' }))
+    await waitFor(() => screen.getByTestId('stage-preview-figure'))
+    const canvas = screen.getByTestId('stage-preview-figure')
+    // the drag settles and the POST REFUSES — the body stays, the failure voices
+    bindState.spy.mockRejectedValueOnce(new Error('shaped mesh HTTP 503'))
+    rerender(h(PoserFigureStage, { identityModel: 'anny', identityCoeffs: [0.9] }))
+    await settle()
+    await waitFor(() => screen.getByTestId('figure-failed'))
+    expect(screen.getByTestId('figure-failed').textContent).toContain('shaped mesh HTTP 503')
+    expect(screen.getByTestId('stage-preview-figure')).toBe(canvas)
+    // the scene never remounted
+    expect(mountState.spy).toHaveBeenCalledTimes(1)
+  })
+
+  test('a MODEL CHANGE retires the old doc honestly (the loading face returns)', async () => {
+    bindState.spy.mockResolvedValue(DOC)
+    const { rerender } = render(h(PoserFigureStage, { identityModel: 'anny' }))
+    await waitFor(() => screen.getByTestId('stage-preview-figure'))
+    bindState.spy.mockReturnValue(new Promise(() => {}))
+    rerender(h(PoserFigureStage, { identityModel: 'milo' }))
+    await waitFor(() => screen.getByTestId('figure-loading'))
+    expect(screen.queryByTestId('stage-preview-figure')).toBeNull()
+  })
+
   test('a settle after unmount is swallowed (no dead setState); a non-Error rejection takes the fallback voice', async () => {
     let resolveIt!: (v: unknown) => void
     bindState.spy.mockReturnValue(new Promise((res) => { resolveIt = res as typeof resolveIt }))

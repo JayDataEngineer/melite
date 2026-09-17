@@ -140,13 +140,24 @@ export function PoserFigureStage({ identityModel, identityCoeffs, localChanges, 
   const [doc, setDoc] = useState<SkinMeshData | null>(null)
   const [failed, setFailed] = useState<string | null>(null)
   const sig = figureShapeSig(identityCoeffs, localChanges)
+  // A MODEL CHANGE is a different body — the old doc retires (the
+  // loading face returns honestly). A SHAPE change is NOT: the doc
+  // survives the refetch (see the drag law below) so the scene and
+  // canvas STAY MOUNTED while the next shape is in flight.
+  useEffect(() => {
+    setDoc(null)
+    setFailed(null)
+  }, [identityModel])
   useEffect(() => {
     let alive = true
-    setFailed(null)
     // THE DRAG LAW: debounce the stream; the module cache collapses
-    // identical signatures so a settled shape never re-fetches.
+    // identical signatures so a settled shape never re-fetches. The
+    // current doc is KEPT while the next is in flight (never
+    // setDoc(null) here — a null mid-drag unmounts the canvas and
+    // the whole scene, and a slow POST reads as 'the preview
+    // vanished'; the body stays, then the geometry swaps).
     const timer = setTimeout(() => {
-      setDoc(null)
+      setFailed(null)
       fetchBindMesh({
         identityModel,
         ...(identityCoeffs !== undefined && identityCoeffs !== null && identityCoeffs.length > 0 ? { identityCoeffs } : {}),
@@ -242,10 +253,16 @@ export function PoserFigureStage({ identityModel, identityCoeffs, localChanges, 
     // mount — not only on the next drag.
   }, [framing, focalLength, hasDoc])
   return h('div', { className: s.stagePreview, 'data-viewport': label ?? 'poser-figure' },
-    failed !== null
+    // THE BODY-STAYS LAW: a failure with a doc in hand overlays the
+    // banner on the STILL-MOUNTED canvas (the drag never kills the
+    // body); the full failed face shows only when nothing renders.
+    failed !== null && doc === null
       ? h('div', { className: s.empty, 'data-testid': 'figure-failed' }, 'figure failed: ' + failed)
       : doc === null
         ? h('div', { className: s.empty, 'data-testid': 'figure-loading' }, 'loading figure…')
         : h('canvas', { ref: canvasRef, className: s.stageCanvas, 'data-testid': 'stage-preview-figure' }),
+    failed !== null && doc !== null
+      ? h('div', { className: s.figureError, 'data-testid': 'figure-failed' }, 'figure failed: ' + failed)
+      : null,
   )
 }
