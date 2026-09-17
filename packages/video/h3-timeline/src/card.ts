@@ -198,10 +198,26 @@ export function schema(v: unknown): Record<string, unknown> {
   // opener_family/chain_family): the studio calls shape carries no
   // variant; the card derives it. An image-anchored opener rides t4r;
   // a text-only single call is t4_open; multiple calls chain (t4_chain).
-  // No calls at all → the retired compose refusal verbatim
-  // (compose/card.py:100 "%s: no calls to compose").
+  // THE FRESH-PRESS STARTER (the operator's 2026-09-17 instant-fail:
+  // a freshly added card holds params {} — calls is NOT a form knob,
+  // so the bench tile's Run composed no shots and the door refused
+  // "no calls to compose" before the studio ever persisted its doc).
+  // ABSENT calls now compose the card's own fresh-card document —
+  // ONE window spanning the t4_open budget (90 frames, grid-legal:
+  // the frozen goldens' explicit 90 passes the same walk) — the
+  // same starter law the studio's docModel shows a fresh card
+  // (STARTER_CALLS). An EXPLICIT empty array keeps the retired
+  // compose refusal verbatim (compose/card.py:100 "%s: no calls to
+  // compose"): a caller naming zero shots is garbage; a caller
+  // naming none is a fresh card.
   if (variant === undefined) {
-    const calls = Array.isArray(raw.calls) ? raw.calls : []
+    let calls: unknown[] = []
+    if (Array.isArray(raw.calls)) {
+      calls = raw.calls
+    } else {
+      calls = [{ start_frame: 0, end_frame: 90 }]
+      out['calls'] = calls
+    }
     if (calls.length === 0) {
       throw new Error('h3-timeline: no calls to compose')
     }

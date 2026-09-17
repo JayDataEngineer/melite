@@ -178,8 +178,13 @@ describe("the shot laws (the card gate — py schema.py port)", () => {
     assert.equal(out.variant, "t4_chain");
   });
 
-  it("no calls at all refuses (a film needs at least one shot)", () => {
-    assert.throws(() => schema({ ...BASE }), /no calls to compose/);
+  it("ABSENT calls composes the fresh-press starter; EXPLICIT empty refuses", () => {
+    // the 2026-09-17 cure: absent calls = a fresh card (the bench
+    // tile's Run) — one full t4_open window composes. An explicit
+    // empty array names zero shots — garbage, the py refusal stands.
+    const out = schema({ ...BASE }) as Record<string, unknown>
+    assert.deepEqual(out.calls, [{ start_frame: 0, end_frame: 90 }])
+    assert.throws(() => schema({ ...BASE, calls: [] }), /no calls to compose/);
   });
 
   it("a missing span refuses (text alone is not a shot)", () => {

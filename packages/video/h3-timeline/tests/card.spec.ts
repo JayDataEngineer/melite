@@ -96,8 +96,17 @@ describe("the frozen goldens replay byte-level (the three families)", () => {
 });
 
 describe("schema() gates (the py model_validator port)", () => {
-  it("no calls and no variant refuses verbatim", () => {
-    assert.throws(() => schema({ prompt: "x" }), /h3-timeline: no calls to compose/);
+  it("ABSENT calls composes the fresh-press starter (one full t4_open window)", () => {
+    // the operator's 2026-09-17 instant-fail cure: a fresh card holds
+    // params {} — the gate composes ONE window 0→90 (grid-legal, the
+    // t4_open budget) instead of refusing before the studio persists.
+    const out = schema({ prompt: "x" }) as Record<string, unknown>
+    assert.deepEqual(out.calls, [{ start_frame: 0, end_frame: 90 }])
+    assert.equal(out.variant, "t4_open")
+  });
+
+  it("an EXPLICIT empty calls array keeps the py refusal verbatim", () => {
+    assert.throws(() => schema({ prompt: "x", calls: [] }), /h3-timeline: no calls to compose/);
   });
 
   it("an unknown variant refuses with the known families", () => {
@@ -281,8 +290,13 @@ describe("the renderer-vocabulary overlay arms (explicit beats default)", () => 
     assert.equal(graph["MiniMaxH3MotionContextSaveLatent.0"].inputs.clip_index, 4);
   });
 
-  it("the void walk refuses (no-calls); a null row refuses at the shot laws", () => {
-    assert.throws(() => schema(undefined), /h3-timeline: no calls to compose/);
+  it("the void walk composes the fresh-press starter; a null row refuses at the shot laws", () => {
+    // the void walk (schema(undefined)) rides the same starter as any
+    // absent-calls doc — the fresh card's own first compose.
+    assert.deepEqual(
+      (schema(undefined) as Record<string, unknown>).calls,
+      [{ start_frame: 0, end_frame: 90 }],
+    );
     // every row pins its own span — a null row is not a shot.
     assert.throws(
       () => schema({ prompt: "x", calls: [null, { start_frame: 0, end_frame: 56 }] as unknown[] }),
