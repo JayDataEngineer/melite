@@ -44,7 +44,7 @@ const schema = z.object({
       .extra('extra', { order: i, group: "identity", width: 1, wtype: 'slider', min: 0, max: 1, columns: 2, tooltip: `Identity dim ${i + 1}/11 — ${dim} (0..1, neutral 0.5; served by the poser's identity space).` }),
   ])),
   ...Object.fromEntries(ANNY_MORPH_LABELS.map((label, i) => [label,
-    z.number().description(label)
+    z.number().description(label).default(ANNY_MORPH_DEFAULT)
       .extra('extra', { order: 1000 + i, group: "morph", width: 1, wtype: 'slider', min: ANNY_MORPH_RANGE[0], max: ANNY_MORPH_RANGE[1], columns: 2, tooltip: `Morph ${i + 1}/254 — ${label} (${ANNY_MORPH_RANGE[0]}..${ANNY_MORPH_RANGE[1]}, neutral 0; the poser's local-changes vocabulary).` }),
   ])),
   resolution: z.number().description("View resolution").min(256).max(2048).step(64).default(768).extra('extra', { order: 0, group: "turnaround", width: 1, tooltip: "Pixel size of each turnaround view." }),
