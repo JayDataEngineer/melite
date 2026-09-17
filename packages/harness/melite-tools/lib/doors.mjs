@@ -88,26 +88,49 @@ function mcpToolsOf(c, server) {
 }
 const POSER_ARMS = [
 	{
-		path: "/poser/skin/mesh",
+		doorPath: "/v1/poser/mesh",
+		enginePath: "/poser/skin/mesh",
 		methods: ["GET", "POST"],
 		timeoutMs: 12e4
 	},
 	{
-		path: "/poser/skin/identity-space",
+		doorPath: "/v1/poser/identity-space",
+		enginePath: "/poser/skin/identity-space",
 		methods: ["GET"],
 		timeoutMs: 3e4
 	},
 	{
-		path: "/poser/presets",
+		doorPath: "/v1/poser/presets",
+		enginePath: "/poser/presets",
 		methods: ["GET"],
 		timeoutMs: 3e4
 	},
 	{
-		path: "/poser/render",
+		doorPath: "/v1/poser/render",
+		enginePath: "/poser/render",
 		methods: ["POST"],
 		timeoutMs: 12e4
 	}
 ];
+/** The poser arms' engine call: httpCall to the resolved engine
+*  base, the door's JSON contract on every refusal. A JSON result
+*  serves through ok(); the render arm's PNG serves bytes raw. */
+const poserEngineCall = (arm, search, body, contentType, ok, serveBytes, fail) => {
+	let base;
+	try {
+		base = resolveEngineBaseUrl();
+	} catch (error) {
+		fail(502, { error: `poser: no comfyui endpoint (${error instanceof Error ? error.message : /* v8 ignore next -- resolveEngineBaseUrl throws Errors only (2026-09-16) */ String(error)})` });
+		return;
+	}
+	httpCall(body === null ? "GET" : "POST", base + arm.enginePath + search, body, contentType, arm.timeoutMs).then((r) => {
+		if (Buffer.isBuffer(r.body)) {
+			serveBytes(r.status, r.body);
+			return;
+		}
+		ok(r.body === null ? {} : r.body);
+	}).catch((error) => fail(502, { error: `poser: engine unreachable (${error instanceof Error ? error.message : /* v8 ignore next -- httpCall rejects with Errors only (2026-09-16) */ String(error)})` }));
+};
 function apply(c, config = {}) {
 	const readDefaultLlm = () => {
 		try {
@@ -342,6 +365,49 @@ function apply(c, config = {}) {
 						kindsDoorArm().then(ok, (e) => fail(500, { error: `discovery door: ${e instanceof Error ? e.message : String(e)}` }));
 						return;
 					}
+					const poserArm = POSER_ARMS.find((a) => a.doorPath === path);
+					if (poserArm !== void 0) {
+						if (!poserArm.methods.includes(method)) {
+							fail(405, {
+								error: `poser: ${method} not allowed on ${path}`,
+								allow: poserArm.methods.join(", ")
+							});
+							return;
+						}
+						if (method === "GET" && poserArm.doorPath !== "/v1/poser/presets") {
+							if ((url.searchParams.get("identity_model") ?? "").length === 0) {
+								fail(400, { error: "poser: the identity_model query parameter is required" });
+								return;
+							}
+						}
+						const serveBytes = (status, bytes) => {
+							res.writeHead(status, {
+								"content-type": "application/octet-stream",
+								"content-length": String(bytes.byteLength)
+							});
+							res.end(bytes);
+						};
+						if (method === "POST") {
+							readBody(req).then((buf) => {
+								let parsed = {};
+								try {
+									parsed = buf.length > 0 ? JSON.parse(buf.toString("utf8")) : {};
+								} catch {
+									fail(400, { error: "poser: body must be JSON" });
+									return;
+								}
+								if (poserArm.doorPath === "/v1/poser/mesh" && (typeof parsed["identity_model"] !== "string" || parsed["identity_model"].length === 0)) {
+									fail(400, { error: "poser: identity_model (string) is required in the body" });
+									return;
+								}
+								const ct = (Array.isArray(req.headers["content-type"]) ? req.headers["content-type"][0] : req.headers["content-type"]) ?? "application/json";
+								poserEngineCall(poserArm, url.search, buf, ct, ok, serveBytes, fail);
+							}).catch((error) => fail(400, { error: `poser: body read failed (${error instanceof Error ? error.message : String(error)})` }));
+							return;
+						}
+						poserEngineCall(poserArm, url.search, null, "application/json", ok, serveBytes, fail);
+						return;
+					}
 					if (method === "GET" && path === "/v1/form-spec") {
 						const model = url.searchParams.get("model") ?? "";
 						if (model.length === 0) return fail(400, { error: "form-spec: the model query parameter is required" });
@@ -392,77 +458,6 @@ function apply(c, config = {}) {
 			return serve();
 		}
 	}), "melite-tools: /v1 prefix door");
-	c.effect(() => c.webServer.register({
-		kind: "prefix",
-		path: "/poser",
-		handler: (req, res) => {
-			const json = (status, payload) => {
-				const body = JSON.stringify(payload);
-				res.writeHead(status, {
-					"content-type": "application/json",
-					"content-length": String(Buffer.byteLength(body))
-				});
-				res.end(Buffer.from(body));
-			};
-			let url;
-			try {
-				url = new URL(req.url ?? "/", "http://localhost");
-			} catch {
-				json(400, { error: "poser: unparseable url" });
-				return;
-			}
-			const method = (req.method ?? "GET").toUpperCase();
-			const arm = POSER_ARMS.find((a) => a.path === url.pathname);
-			if (arm === void 0) {
-				json(404, {
-					error: `poser: no arm at ${url.pathname}`,
-					arms: POSER_ARMS.map((a) => a.path)
-				});
-				return;
-			}
-			if (!arm.methods.includes(method)) {
-				json(405, {
-					error: `poser: ${method} not allowed on ${url.pathname}`,
-					allow: arm.methods.join(", ")
-				});
-				return;
-			}
-			let base;
-			try {
-				base = resolveEngineBaseUrl();
-			} catch (error) {
-				json(502, { error: `poser: no comfyui endpoint (${error instanceof Error ? error.message : /* v8 ignore next -- resolveEngineBaseUrl throws Errors only (2026-09-16) */ String(error)})` });
-				return;
-			}
-			const target = base + url.pathname + url.search;
-			const send = (body) => {
-				const contentType = body === null ? "application/json" : (Array.isArray(req.headers["content-type"]) ? req.headers["content-type"][0] : req.headers["content-type"]) ?? "application/json";
-				httpCall(method, target, body, contentType, arm.timeoutMs).then((r) => {
-					if (Buffer.isBuffer(r.body)) {
-						res.writeHead(r.status, {
-							"content-type": "application/octet-stream",
-							"content-length": String(r.body.byteLength)
-						});
-						res.end(r.body);
-						return;
-					}
-					const out = r.body === null ? "{}" : JSON.stringify(r.body);
-					res.writeHead(r.status, {
-						"content-type": "application/json",
-						"content-length": String(Buffer.byteLength(out))
-					});
-					res.end(Buffer.from(out));
-				}).catch((error) => json(502, { error: `poser: upstream unreachable (${error instanceof Error ? error.message : /* v8 ignore next -- httpCall rejects with Errors only (2026-09-16) */ String(error)})` }));
-			};
-			if (method === "POST") {
-				readBody(req).then((buf) => {
-					send(buf);
-				}).catch((error) => json(400, { error: `poser: body read failed (${error instanceof Error ? error.message : String(error)})` }));
-				return;
-			}
-			send(null);
-		}
-	}), "melite-tools: /poser door");
 }
 //#endregion
-export { DEFAULT_ENHANCE_PREFERENCE, POSER_ARMS, apply, inject, mcpToolsOf, seatedMcpServers };
+export { DEFAULT_ENHANCE_PREFERENCE, apply, inject, mcpToolsOf, seatedMcpServers };

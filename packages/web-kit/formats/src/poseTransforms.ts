@@ -211,7 +211,7 @@ function bendElbow(
 // ── Preset fetch / render helpers ────────────────────────────────────────
 
 export async function fetchPosePresets(): Promise<PosePreset[]> {
-  const res = await apiFetch("/poser/presets")
+  const res = await apiFetch("/v1/poser/presets")
   if (!res.ok) throw new Error(`Failed to fetch pose presets: ${res.status}`)
   return res.json()
 }
@@ -224,7 +224,7 @@ export async function renderCustomPose(
   keypoints: Keypoints,
   opts: { width?: number; height?: number } = {},
 ): Promise<Blob> {
-  const res = await apiFetch("/poser/render", {
+  const res = await apiFetch("/v1/poser/render", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({

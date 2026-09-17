@@ -1699,6 +1699,9 @@ window.__ModuleLoader__.load({
 		//#region ../../web-kit/contracts/src/stagePreview.ts
 		var init_stagePreview = __esmMin((() => {}));
 		//#endregion
+		//#region ../../web-kit/contracts/src/modifierFaces.ts
+		var init_modifierFaces = __esmMin((() => {}));
+		//#endregion
 		//#region ../../web-kit/contracts/src/vocab.ts
 		/** Is the value a valid Provenance? Gate untrusted JSON (a past run's
 		* metadata, a drag payload) before rendering. */
@@ -2337,6 +2340,7 @@ window.__ModuleLoader__.load({
 			init_studio();
 			init_stageView();
 			init_stagePreview();
+			init_modifierFaces();
 			init_vocab();
 			init_wire();
 			init_regions();
@@ -40793,6 +40797,35 @@ void main() {
 			init_api();
 		}));
 		//#endregion
+		//#region ../../web-kit/catalog/src/cardLlm.ts
+		/** Read the preferred card LLM route ("provider/model"), if set. */
+		function getCardLlm() {
+			try {
+				const v = window.localStorage.getItem(CARD_LLM_KEY);
+				return typeof v === "string" && v.length > 0 ? v : null;
+			} catch {
+				return null;
+			}
+		}
+		/** Set (or clear, with null) the preferred card LLM route. */
+		function setCardLlm(route) {
+			try {
+				if (route === null || route.length === 0) window.localStorage.removeItem(CARD_LLM_KEY);
+				else window.localStorage.setItem(CARD_LLM_KEY, route);
+			} catch {}
+		}
+		/**
+		* The `llm` argument shape the enhance wire takes: undefined when
+		* unset (Auto — the server resolves its preference chain).
+		*/
+		function cardLlmArg() {
+			return getCardLlm() ?? void 0;
+		}
+		var CARD_LLM_KEY;
+		var init_cardLlm = __esmMin((() => {
+			CARD_LLM_KEY = "melite:card-llm:v1";
+		}));
+		//#endregion
 		//#region ../../web-kit/catalog/src/familyProvenance.ts
 		/** Fold runs into per-family provenance. Only status "done" runs count —
 		*  running / interrupted / stopped runs haven't produced anything yet.
@@ -40902,6 +40935,7 @@ void main() {
 		//#endregion
 		//#region ../../web-kit/catalog/src/index.ts
 		var src_exports = /* @__PURE__ */ __exportAll({
+			CARD_LLM_KEY: () => CARD_LLM_KEY,
 			CatalogContractError: () => CatalogContractError,
 			LOD_BUCKETS: () => LOD_BUCKETS,
 			LOD_ORDER: () => LOD_ORDER,
@@ -40921,6 +40955,7 @@ void main() {
 			canWireSlot: () => canWireSlot,
 			cancelJob: () => cancelJob,
 			canvasDefaultModel: () => canvasDefaultModel,
+			cardLlmArg: () => cardLlmArg,
 			cardSlotsFor: () => cardSlotsFor,
 			clearPoseCache: () => clearPoseCache,
 			coerceParamsToSchema: () => coerceParamsToSchema,
@@ -40977,6 +41012,7 @@ void main() {
 			getBackendState: () => getBackendState,
 			getCachedCatalog: () => getCachedCatalog,
 			getCachedForms: () => getCachedForms,
+			getCardLlm: () => getCardLlm,
 			getFamilySchema: () => getFamilySchema,
 			getPeaksForWidth: () => getPeaksForWidth,
 			hasInputSlots: () => hasInputSlots,
@@ -41035,6 +41071,7 @@ void main() {
 			saveConstraints: () => saveConstraints,
 			saveScene: () => saveScene,
 			selectLOD: () => selectLOD,
+			setCardLlm: () => setCardLlm,
 			setInputVocabulary: () => setInputVocabulary,
 			setRequiredEmptyResolver: () => setRequiredEmptyResolver,
 			sliceFrameAsB64: () => sliceFrameAsB64,
@@ -41077,6 +41114,7 @@ void main() {
 			init_comfyEvents();
 			init_cardBirth();
 			init_enhance();
+			init_cardLlm();
 			init_familyProvenance();
 			init_uploadToEstate();
 		}));
@@ -42830,8 +42868,8 @@ void main() {
 		}
 		//#endregion
 		//#region \0dsh-css:card-base/src/preview.module.css.mjs
-		const css$15 = ".ClEuBa_stagePreview{flex-direction:column;flex:1;gap:8px;min-height:0;display:flex;overflow:hidden}.ClEuBa_hero,.ClEuBa_heroImg{object-fit:contain;background:var(--dsw-alias-bg-base);border:1px solid var(--dsw-alias-border-l2);border-radius:6px;flex:1;width:100%;min-height:0}.ClEuBa_heroAudio{flex:1;align-self:center;width:100%;min-height:48px}.ClEuBa_empty{color:var(--dsw-alias-label-dimmed);border:1px dashed var(--dsw-alias-border-l2);border-radius:6px;flex:1;justify-content:center;align-items:center;font-size:11px;display:flex}.ClEuBa_strip{flex:none;gap:6px;display:flex;overflow-x:auto}.ClEuBa_stripLink{color:var(--dsw-alias-brand-primary);white-space:nowrap;border:1px solid var(--dsw-alias-border-l2);border-radius:6px;padding:2px 6px;font-size:10px;text-decoration:none}.ClEuBa_thumbRow{flex:none;gap:6px;display:flex;overflow-x:auto}.ClEuBa_thumb{border:1px solid var(--dsw-alias-border-l2);border-radius:4px;height:48px}.ClEuBa_historyBlock{flex-direction:column;flex:none;gap:4px;padding-top:4px;display:flex}.ClEuBa_historyTitle{color:var(--dsw-alias-label-secondary,#61666b);font-size:11px}.ClEuBa_historyTile{cursor:pointer;background:0 0;border:1px solid #0000;border-radius:4px;padding:0;display:inline-flex}.ClEuBa_historyTile:hover{border-color:var(--dsw-alias-border-l2)}.ClEuBa_stageCanvas{touch-action:none;width:100%;height:100%;min-height:320px;display:block}";
-		const tagId$15 = "@melite/3d-anny/preview.module.css@35ca175e";
+		const css$15 = ".ClEuBa_stagePreview{flex-direction:column;flex:1;gap:8px;min-height:0;display:flex;overflow:hidden}.ClEuBa_hero,.ClEuBa_heroImg{object-fit:contain;background:var(--dsw-alias-bg-base);border:1px solid var(--dsw-alias-border-l2);border-radius:6px;flex:1;width:100%;min-height:0}.ClEuBa_heroAudio{flex:1;align-self:center;width:100%;min-height:48px}.ClEuBa_empty{color:var(--dsw-alias-label-dimmed);border:1px dashed var(--dsw-alias-border-l2);border-radius:6px;flex:1;justify-content:center;align-items:center;font-size:11px;display:flex}.ClEuBa_strip{flex:none;gap:6px;display:flex;overflow-x:auto}.ClEuBa_stripLink{color:var(--dsw-alias-brand-primary);white-space:nowrap;border:1px solid var(--dsw-alias-border-l2);border-radius:6px;padding:2px 6px;font-size:10px;text-decoration:none}.ClEuBa_thumbRow{flex:none;gap:6px;display:flex;overflow-x:auto}.ClEuBa_thumb{border:1px solid var(--dsw-alias-border-l2);border-radius:4px;height:48px}.ClEuBa_historyBlock{flex-direction:column;flex:none;gap:4px;padding-top:4px;display:flex}.ClEuBa_historyTitle{color:var(--dsw-alias-label-secondary,#61666b);font-size:11px}.ClEuBa_historyTile{cursor:pointer;background:0 0;border:1px solid #0000;border-radius:4px;padding:0;display:inline-flex}.ClEuBa_historyTile:hover,.ClEuBa_historyTileActive{border-color:var(--dsw-alias-border-l2)}.ClEuBa_staleBadge{color:var(--dsw-alias-label-secondary);border:1px solid var(--dsw-alias-border-l2);cursor:pointer;background:0 0;border-radius:6px;flex:none;align-self:flex-start;padding:2px 6px;font-size:10px}.ClEuBa_staleBadge:hover{border-color:var(--dsw-alias-border-l2)}.ClEuBa_stageCanvas{touch-action:none;width:100%;height:100%;min-height:320px;display:block}";
+		const tagId$15 = "@melite/3d-anny/preview.module.css@81970b37";
 		if (typeof document !== "undefined" && document.querySelector("style[data-plugin-css=" + JSON.stringify(tagId$15) + "]") === null) {
 			const tag = document.createElement("style");
 			tag.dataset.plugin = "@melite/3d-anny";
@@ -42846,9 +42884,11 @@ void main() {
 			"heroImg": "ClEuBa_heroImg",
 			"historyBlock": "ClEuBa_historyBlock",
 			"historyTile": "ClEuBa_historyTile",
+			"historyTileActive": "ClEuBa_historyTileActive",
 			"historyTitle": "ClEuBa_historyTitle",
 			"stageCanvas": "ClEuBa_stageCanvas",
 			"stagePreview": "ClEuBa_stagePreview",
+			"staleBadge": "ClEuBa_staleBadge",
 			"strip": "ClEuBa_strip",
 			"stripLink": "ClEuBa_stripLink",
 			"thumb": "ClEuBa_thumb",
@@ -42973,9 +43013,7 @@ void main() {
 		function tint(root, on) {
 			root.traverse((o) => {
 				const m = o.material;
-				if (Array.isArray(m)) {
-					for (const mm of m) if ("emissive" in mm) mm.emissive.setHex(on ? 3159626 : 0);
-				} else if (m !== void 0 && m !== null && "emissive" in m) m.emissive.setHex(on ? 3159626 : 0);
+				if (m !== void 0 && m !== null && "emissive" in m) m.emissive.setHex(on ? 3159626 : 0);
 			});
 		}
 		/** THE MESH STAGE PREVIEW — the multi-asset GLB viewport (assets in a
@@ -43033,7 +43071,6 @@ void main() {
 			(0, react.useEffect)(() => {
 				if (!ready || loaded.length === 0) return;
 				const canvas = canvasRef.current;
-				if (canvas === null) return;
 				const mounted = mountScene(canvas, (m) => setFailed(m));
 				if (mounted === null) return;
 				sceneRef.current = mounted;
@@ -43577,10 +43614,10 @@ void main() {
 							}) : void 0,
 							onPickFile: (f) => void handleFile(f, slot),
 							onDropFile: (f) => void handleFile(f, slot),
-							onDropAsset: onWireSlot !== void 0 || onSaveParams ? (url) => {
+							onDropAsset: (url) => {
 								onSaveParams({ [slot]: url });
 								onWireSlot?.(slot, null, null);
-							} : void 0,
+							},
 							onClear: wired || attached ? () => {
 								onSaveParams({ [slot]: null });
 								onWireSlot?.(slot, null, null);
@@ -43782,9 +43819,9 @@ void main() {
 				});
 			}, []);
 			const { assets, mountNotes } = useStudioAssets(stage, slots);
-			const shownAssets = assets.length > 0 ? assets : placeholderAssets ?? [];
+			const shownAssets = assets.length > 0 ? assets : placeholderAssets;
 			const liveErrors = assets.filter((a) => assetErrors[a.id]).map((a) => ({
-				id: a.name ?? a.id,
+				id: a.name,
 				message: assetErrors[a.id]
 			}));
 			return /* @__PURE__ */ (0, react_jsx_runtime.jsx)(StudioShell, {
@@ -44388,7 +44425,7 @@ void main() {
 			const posePayload = poseSig ? { preview_pose: poseSig } : {};
 			let data;
 			if (coeffsSig || lcEntries || ctEntries) {
-				const res = await apiFetch("/poser/skin/mesh", {
+				const res = await apiFetch("/v1/poser/mesh", {
 					method: "POST",
 					headers: { "Content-Type": "application/json" },
 					body: JSON.stringify({
@@ -44404,7 +44441,7 @@ void main() {
 			} else {
 				const qs = new URLSearchParams({ identity_model: key });
 				if (poseSig) qs.set("preview_pose", poseSig);
-				const res = await apiFetch(`/poser/skin/mesh?${qs.toString()}`);
+				const res = await apiFetch(`/v1/poser/mesh?${qs.toString()}`);
 				if (!res.ok) throw new Error(`Failed to fetch mesh (${key}): ${res.status}`);
 				data = await res.json();
 			}
@@ -44412,7 +44449,7 @@ void main() {
 			return data;
 		}
 		async function fetchIdentitySpace(model) {
-			const res = await apiFetch(`/poser/skin/identity-space?identity_model=${encodeURIComponent(model)}`);
+			const res = await apiFetch(`/v1/poser/identity-space?identity_model=${encodeURIComponent(model)}`);
 			if (!res.ok) throw new Error(`Failed to fetch identity-space (${model}): ${res.status}`);
 			return await res.json();
 		}
@@ -45206,8 +45243,8 @@ void main() {
 		}
 		//#endregion
 		//#region \0dsh-css:card-base/src/card.module.css.mjs
-		const css$2 = ".FRpSCG_specForm :where(input,textarea,select,button){box-sizing:border-box}.FRpSCG_specForm{flex-direction:column;gap:12px;display:flex}.FRpSCG_specGroup{flex-direction:column;gap:8px;display:flex}.FRpSCG_modelAxes{grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;display:grid}.FRpSCG_modelAxes .FRpSCG_specGroupTitle{grid-column:1/-1;margin-bottom:0}.FRpSCG_specGroupTitle{color:var(--dsw-alias-label-secondary,#61666b);letter-spacing:.04em;text-transform:uppercase;margin:0 0 2px;font-size:11px;font-weight:600}.FRpSCG_specField{flex-direction:column;gap:6px;display:flex}.FRpSCG_specFieldKey{color:var(--dsw-alias-label-secondary,#61666b);font-size:12px}.FRpSCG_specRequired{color:var(--dsw-alias-state-critical,#e5484d)}.FRpSCG_specHint{color:var(--dsw-alias-label-secondary,#61666b);font-size:11px}.FRpSCG_specFieldHead{justify-content:space-between;align-items:center;gap:6px;display:flex}.FRpSCG_specDice{width:20px;height:20px;color:var(--dsw-alias-label-secondary,#61666b);cursor:pointer;opacity:.65;background:0 0;border:none;justify-content:center;align-items:center;padding:0;display:inline-flex}.FRpSCG_specDice:hover{opacity:1}.FRpSCG_specDiceOn{color:var(--dsw-alias-accent-primary,#4a7dbd);opacity:1}.FRpSCG_specSelect option{color:#0f1115;background:#fff}.FRpSCG_specSelect{color-scheme:light;background:var(--dsw-alias-interactive-bg-hover,#2631480f);border:.5px solid var(--dsw-alias-border-l2,#0000001a);color:inherit;font:inherit;border-radius:6px;width:100%;padding:5px 8px;font-size:13px}.FRpSCG_specSliderRow{align-items:center;gap:8px;display:flex}.FRpSCG_specSlider{flex:1}.FRpSCG_specSliderValue{color:var(--dsw-alias-label-secondary,#61666b);font-family:var(--dsw-alias-font-mono,ui-monospace, monospace);text-align:right;min-width:4ch;font-size:12px}.FRpSCG_specTextarea{background:var(--dsw-alias-interactive-bg-hover,#2631480f);border:.5px solid var(--dsw-alias-border-l2,#0000001a);color:inherit;font:inherit;resize:vertical;border-radius:6px;width:100%;padding:6px 8px;font-size:13px}.FRpSCG_squareWrap{flex-direction:column;align-items:center;gap:4px;width:84px;display:flex}.FRpSCG_squareOff{opacity:.5;pointer-events:none}.FRpSCG_squareBox{border:.5px solid var(--dsw-alias-border-l2,#00000024);cursor:pointer;height:80px;transition:border-color var(--ds-transition-duration,.12s) var(--ds-ease-in-out,ease);border-radius:8px;justify-content:center;align-items:center;width:80px;display:flex;position:relative;overflow:hidden}.FRpSCG_squareOver{border-color:var(--dsw-alias-border-l3,#00000047);box-shadow:0 0 0 2px var(--dsw-alias-border-l1,#00000014)}.FRpSCG_squareThumb{object-fit:cover;width:100%;height:100%}.FRpSCG_squareGlyph{color:var(--dsw-alias-label-tertiary,#00000073)}.FRpSCG_squareX{background:var(--dsw-alias-bg-module,#fff);border:.5px solid var(--dsw-alias-border-l2,#00000024);cursor:pointer;border-radius:999px;align-items:center;padding:0 4px;font-size:10px;line-height:17px;display:flex;position:absolute;top:4px;right:4px}.FRpSCG_squareLabel{color:var(--dsw-alias-label-primary,#0f1115);text-overflow:ellipsis;white-space:nowrap;width:100%;font-size:11px;line-height:17px;overflow:hidden}.FRpSCG_squareMetric{color:var(--dsw-alias-label-tertiary,#00000073);font-size:10px;line-height:17px}.FRpSCG_squareFileInput{display:none}.FRpSCG_modSection{border-top:1px dashed var(--border,#80808040);flex-direction:column;gap:6px;margin-top:10px;padding-top:8px;display:flex}.FRpSCG_modHead{align-items:baseline;gap:8px;display:flex}.FRpSCG_modTitle{letter-spacing:.06em;text-transform:uppercase;opacity:.7;font-size:10px;font-weight:600}.FRpSCG_modHint{opacity:.45;font-size:9px}.FRpSCG_modRow{flex-wrap:wrap;align-items:stretch;gap:6px;margin:0;padding:0;list-style:none;display:flex}.FRpSCG_modTile{border:1px solid var(--border,#8080804d);background:var(--bg-elevated,#80808014);cursor:grab;touch-action:none;border-radius:8px;flex-direction:column;justify-content:center;gap:2px;min-width:84px;max-width:132px;padding:6px 8px;display:flex}.FRpSCG_modTile:active{cursor:grabbing}.FRpSCG_modTileLabel{text-overflow:ellipsis;white-space:nowrap;font-size:11px;line-height:1.2;overflow:hidden}.FRpSCG_modTileStrength{opacity:.55;font-size:9px}.FRpSCG_modAddSquare{border:1px dashed var(--dsw-alias-border-l3,#00000047);cursor:pointer;opacity:.7;height:64px;transition:border-color var(--ds-transition-duration,.12s) var(--ds-ease-in-out,ease), background-color var(--ds-transition-duration,.12s) var(--ds-ease-in-out,ease);background:0 0;border-radius:8px;justify-content:center;align-items:center;width:64px;display:flex}.FRpSCG_modAddSquare:hover{background:var(--dsw-alias-interactive-bg-hover,#0000000d);border-color:var(--dsw-alias-border-l4,#0006);opacity:1}.FRpSCG_tileDragging{opacity:.5}.FRpSCG_modTileRecipe{cursor:default;border-style:dashed}.FRpSCG_modTileRecipe .FRpSCG_modTileStrength:after{content:\" · recipe\"}.FRpSCG_modLeaf{flex-direction:column;gap:10px;min-width:260px;display:flex}.FRpSCG_modLeafFields{gap:8px;display:grid}.FRpSCG_modLeafActions{gap:8px;display:flex}.FRpSCG_modField{flex-direction:column;gap:4px;font-size:11px;display:flex}.FRpSCG_modSelect{border:1px solid var(--border,#8080804d);background:var(--bg-elevated,#8080800f);color:inherit;border-radius:6px;padding:6px 8px;font-size:12px}.FRpSCG_modLeafError{color:#e06c5f;margin:0;font-size:11px}.FRpSCG_pickList{flex-direction:column;gap:4px;max-height:60vh;margin:0;padding:0;list-style:none;display:flex;overflow-y:auto}.FRpSCG_pickRow{display:block}.FRpSCG_pickBtn{border:1px solid var(--dsw-alias-border-l2);color:var(--dsw-alias-label-primary);cursor:pointer;text-align:left;transition:border-color var(--ds-transition-duration,.12s) var(--ds-ease-in-out,ease), background-color var(--ds-transition-duration,.12s) var(--ds-ease-in-out,ease);background:0 0;border-radius:6px;align-items:center;gap:10px;width:100%;padding:6px;display:flex}.FRpSCG_pickBtn:hover{background:var(--dsw-alias-interactive-bg-hover);border-color:var(--dsw-alias-border-l4)}.FRpSCG_pickThumb{object-fit:cover;border-radius:4px;flex:none;width:40px;height:40px}.FRpSCG_pickGlyph{background:var(--dsw-alias-interactive-bg-hover);color:var(--dsw-alias-label-secondary);border-radius:4px;flex:none;justify-content:center;align-items:center;width:40px;height:40px;font-size:15px;font-weight:600;display:inline-flex}.FRpSCG_pickLabel{text-overflow:ellipsis;white-space:nowrap;font-size:13px;overflow:hidden}.FRpSCG_pickEmpty{color:var(--dsw-alias-label-tertiary);margin:0;font-size:13px}.FRpSCG_sourceRow{flex-direction:column;display:flex}.FRpSCG_specSlotRow{flex-wrap:wrap;align-items:flex-start;gap:8px;display:flex}.FRpSCG_specGrid{align-items:start;gap:8px;display:grid}.FRpSCG_specSlotCell{flex-direction:column;gap:4px;display:flex}.FRpSCG_inputRail{gap:10px}.FRpSCG_sz14{flex:none;width:14px;height:14px}.FRpSCG_wireDialog{width:min(448px,100vw - 32px);max-height:60vh;overflow-y:auto}.FRpSCG_wireUnwire{text-align:left;cursor:pointer;border:0;border-bottom:1px solid color-mix(in srgb, var(--dsw-alias-label-primary) 12%, transparent);width:100%;color:var(--dsw-alias-state-error-primary);background:0 0;align-items:center;gap:8px;padding:8px 12px;font-size:11px;display:flex}.FRpSCG_wireUnwire:hover{background:color-mix(in srgb, var(--dsw-alias-bg-module-platform) 40%, transparent)}.FRpSCG_wireList{margin:0;padding:0;list-style:none}.FRpSCG_wireList>li+li{border-top:1px solid color-mix(in srgb, var(--dsw-alias-label-primary) 12%, transparent)}.FRpSCG_wireEmpty{color:color-mix(in srgb, var(--dsw-alias-label-primary) 48%, transparent);padding:12px;font-size:11px}.FRpSCG_wireOption{text-align:left;cursor:pointer;width:100%;color:var(--dsw-alias-label-primary);background:0 0;border:0;align-items:center;gap:8px;padding:8px 12px;display:flex}.FRpSCG_wireOption:hover{background:color-mix(in srgb, var(--dsw-alias-bg-module-platform) 40%, transparent)}.FRpSCG_wireSelected{background:color-mix(in srgb, var(--dsw-alias-brand-primary) 8%, transparent)}.FRpSCG_wireIdx{font-variant-numeric:tabular-nums;background:color-mix(in srgb, var(--dsw-alias-brand-primary) 60%, transparent);width:20px;height:20px;color:color-mix(in srgb, var(--dsw-alias-label-primary) 60%, transparent);border-radius:4px;flex:none;justify-content:center;align-items:center;font-size:9px;font-weight:700;display:flex}.FRpSCG_wireThumb{object-fit:cover;border:1px solid color-mix(in srgb, var(--dsw-alias-label-primary) 20%, transparent);border-radius:4px;flex:none;width:32px;height:32px}.FRpSCG_wireThumbFallback{border:1px solid color-mix(in srgb, var(--dsw-alias-label-primary) 20%, transparent);background:color-mix(in srgb, var(--dsw-alias-bg-module-platform) 40%, transparent);width:32px;height:32px;color:color-mix(in srgb, var(--dsw-alias-label-primary) 60%, transparent);border-radius:4px;flex:none;justify-content:center;align-items:center;display:flex}.FRpSCG_wireMeta{flex:1;min-width:0}.FRpSCG_wireTitle{text-overflow:ellipsis;white-space:nowrap;color:var(--dsw-alias-label-primary);font-size:11px;font-weight:500;overflow:hidden}.FRpSCG_wireOut{font-family:var(--dsw-alias-font-mono,ui-monospace, monospace);color:color-mix(in srgb, var(--dsw-alias-brand-primary) 80%, transparent);margin-left:4px;font-size:9px}.FRpSCG_wireSub{text-overflow:ellipsis;white-space:nowrap;font-family:var(--dsw-alias-font-mono,ui-monospace, monospace);color:color-mix(in srgb, var(--dsw-alias-label-primary) 48%, transparent);font-size:9px;overflow:hidden}.FRpSCG_wiredTag{background:color-mix(in srgb, var(--dsw-alias-brand-primary) 15%, transparent);color:var(--dsw-alias-brand-primary);border-radius:4px;flex:none;padding:2px 6px;font-size:9px;font-weight:600}.FRpSCG_specLinkBtn{all:unset;cursor:pointer;color:var(--melite-accent,#6ea8fe);font:inherit;text-decoration:underline}.FRpSCG_specLinkBtn:disabled{cursor:default;color:var(--melite-muted,#8a8f98);text-decoration:none}.FRpSCG_specGrid :where(input,select){width:100%}";
-		const tagId$2 = "@melite/3d-anny/card.module.css@7cb5a50d";
+		const css$2 = ".FRpSCG_specForm :where(input,textarea,select,button){box-sizing:border-box}.FRpSCG_specForm{flex-direction:column;gap:12px;display:flex}.FRpSCG_specGroup{flex-direction:column;gap:8px;display:flex}.FRpSCG_modelAxes{grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;display:grid}.FRpSCG_modelAxes .FRpSCG_specGroupTitle{grid-column:1/-1;margin-bottom:0}.FRpSCG_specGroupTitle{color:var(--dsw-alias-label-secondary,#61666b);letter-spacing:.04em;text-transform:uppercase;margin:0 0 2px;font-size:11px;font-weight:600}.FRpSCG_specField{flex-direction:column;gap:6px;display:flex}.FRpSCG_specFieldKey{color:var(--dsw-alias-label-secondary,#61666b);align-items:center;min-height:20px;font-size:12px;display:flex}.FRpSCG_specRequired{color:var(--dsw-alias-state-critical,#e5484d)}.FRpSCG_specHint{color:var(--dsw-alias-label-secondary,#61666b);font-size:11px}.FRpSCG_specFieldHead{justify-content:space-between;align-items:center;gap:6px;display:flex}.FRpSCG_specDice{width:20px;height:20px;color:var(--dsw-alias-label-secondary,#61666b);cursor:pointer;opacity:.65;background:0 0;border:none;justify-content:center;align-items:center;padding:0;display:inline-flex}.FRpSCG_specDice:hover{opacity:1}.FRpSCG_specDiceOn{color:var(--dsw-alias-accent-primary,#4a7dbd);opacity:1}.FRpSCG_specSelect option{color:canvastext;background:canvas}.FRpSCG_specSelect{color-scheme:light;background:var(--dsw-alias-interactive-bg-hover,#2631480f);border:.5px solid var(--dsw-alias-border-l2,#0000001a);color:inherit;font:inherit;border-radius:6px;width:100%;padding:5px 8px;font-size:13px}.FRpSCG_specSliderRow{align-items:center;gap:8px;display:flex}.FRpSCG_specSlider{flex:1}.FRpSCG_specSliderValue{color:var(--dsw-alias-label-secondary,#61666b);font-family:var(--dsw-alias-font-mono,ui-monospace, monospace);text-align:right;min-width:4ch;font-size:12px}.FRpSCG_specTextarea{background:var(--dsw-alias-interactive-bg-hover,#2631480f);border:.5px solid var(--dsw-alias-border-l2,#0000001a);color:inherit;font:inherit;resize:vertical;border-radius:6px;width:100%;padding:6px 8px;font-size:13px}.FRpSCG_squareWrap{flex-direction:column;align-items:center;gap:4px;width:84px;display:flex}.FRpSCG_squareOff{opacity:.5;pointer-events:none}.FRpSCG_squareBox{border:.5px solid var(--dsw-alias-border-l2,#00000024);cursor:pointer;height:80px;transition:border-color var(--ds-transition-duration,.12s) var(--ds-ease-in-out,ease);border-radius:8px;justify-content:center;align-items:center;width:80px;display:flex;position:relative;overflow:hidden}.FRpSCG_squareOver{border-color:var(--dsw-alias-border-l3,#00000047);box-shadow:0 0 0 2px var(--dsw-alias-border-l1,#00000014)}.FRpSCG_squareThumb{object-fit:cover;width:100%;height:100%}.FRpSCG_squareGlyph{color:var(--dsw-alias-label-tertiary,#00000073)}.FRpSCG_squareX{background:var(--dsw-alias-bg-module,#fff);border:.5px solid var(--dsw-alias-border-l2,#00000024);cursor:pointer;border-radius:999px;align-items:center;padding:0 4px;font-size:10px;line-height:17px;display:flex;position:absolute;top:4px;right:4px}.FRpSCG_squareLabel{color:var(--dsw-alias-label-primary,#0f1115);text-overflow:ellipsis;white-space:nowrap;width:100%;font-size:11px;line-height:17px;overflow:hidden}.FRpSCG_squareMetric{color:var(--dsw-alias-label-tertiary,#00000073);font-size:10px;line-height:17px}.FRpSCG_squareFileInput{display:none}.FRpSCG_modSection{border-top:1px dashed var(--border,#80808040);flex-direction:column;gap:6px;margin-top:10px;padding-top:8px;display:flex}.FRpSCG_modHead{align-items:baseline;gap:8px;display:flex}.FRpSCG_modTitle{letter-spacing:.06em;text-transform:uppercase;opacity:.7;font-size:10px;font-weight:600}.FRpSCG_modHint{opacity:.45;font-size:9px}.FRpSCG_modRow{flex-wrap:wrap;align-items:stretch;gap:6px;margin:0;padding:0;list-style:none;display:flex}.FRpSCG_modTile{border:1px solid var(--border,#8080804d);background:var(--bg-elevated,#80808014);cursor:grab;touch-action:none;border-radius:8px;flex-direction:column;justify-content:center;gap:2px;min-width:84px;max-width:132px;padding:6px 8px;display:flex}.FRpSCG_modTile:active{cursor:grabbing}.FRpSCG_modTileLabel{text-overflow:ellipsis;white-space:nowrap;font-size:11px;line-height:1.2;overflow:hidden}.FRpSCG_modTileStrength{opacity:.55;font-size:9px}.FRpSCG_modAddSquare{border:1px dashed var(--dsw-alias-border-l3,#00000047);cursor:pointer;opacity:.7;height:64px;transition:border-color var(--ds-transition-duration,.12s) var(--ds-ease-in-out,ease), background-color var(--ds-transition-duration,.12s) var(--ds-ease-in-out,ease);background:0 0;border-radius:8px;justify-content:center;align-items:center;width:64px;display:flex}.FRpSCG_modAddSquare:hover{background:var(--dsw-alias-interactive-bg-hover,#0000000d);border-color:var(--dsw-alias-border-l4,#0006);opacity:1}.FRpSCG_tileDragging{opacity:.5}.FRpSCG_modTileRecipe{cursor:default;border-style:dashed}.FRpSCG_modTileRecipe .FRpSCG_modTileStrength:after{content:\" · recipe\"}.FRpSCG_modLeaf{flex-direction:column;gap:10px;min-width:260px;display:flex}.FRpSCG_modLeafFields{gap:8px;display:grid}.FRpSCG_modLeafActions{gap:8px;display:flex}.FRpSCG_modField{flex-direction:column;gap:4px;font-size:11px;display:flex}.FRpSCG_modSelect{border:1px solid var(--border,#8080804d);background:var(--bg-elevated,#8080800f);color:inherit;color-scheme:light;border-radius:6px;padding:6px 8px;font-size:12px}.FRpSCG_modSelect option{color:canvastext;background:canvas}.FRpSCG_modLeafError{color:#e06c5f;margin:0;font-size:11px}.FRpSCG_pickList{flex-direction:column;gap:4px;max-height:60vh;margin:0;padding:0;list-style:none;display:flex;overflow-y:auto}.FRpSCG_pickRow{display:block}.FRpSCG_pickBtn{border:1px solid var(--dsw-alias-border-l2);color:var(--dsw-alias-label-primary);cursor:pointer;text-align:left;transition:border-color var(--ds-transition-duration,.12s) var(--ds-ease-in-out,ease), background-color var(--ds-transition-duration,.12s) var(--ds-ease-in-out,ease);background:0 0;border-radius:6px;align-items:center;gap:10px;width:100%;padding:6px;display:flex}.FRpSCG_pickBtn:hover{background:var(--dsw-alias-interactive-bg-hover);border-color:var(--dsw-alias-border-l4)}.FRpSCG_pickThumb{object-fit:cover;border-radius:4px;flex:none;width:40px;height:40px}.FRpSCG_pickGlyph{background:var(--dsw-alias-interactive-bg-hover);color:var(--dsw-alias-label-secondary);border-radius:4px;flex:none;justify-content:center;align-items:center;width:40px;height:40px;font-size:15px;font-weight:600;display:inline-flex}.FRpSCG_pickLabel{text-overflow:ellipsis;white-space:nowrap;font-size:13px;overflow:hidden}.FRpSCG_pickEmpty{color:var(--dsw-alias-label-tertiary);margin:0;font-size:13px}.FRpSCG_sourceRow{flex-direction:column;display:flex}.FRpSCG_specSlotRow{flex-wrap:wrap;align-items:flex-start;gap:8px;display:flex}.FRpSCG_specGrid{align-items:start;gap:8px;display:grid}.FRpSCG_specSlotCell{flex-direction:column;gap:4px;display:flex}.FRpSCG_inputRail{gap:10px}.FRpSCG_sz14{flex:none;width:14px;height:14px}.FRpSCG_wireDialog{width:min(448px,100vw - 32px);max-height:60vh;overflow-y:auto}.FRpSCG_wireUnwire{text-align:left;cursor:pointer;border:0;border-bottom:1px solid color-mix(in srgb, var(--dsw-alias-label-primary) 12%, transparent);width:100%;color:var(--dsw-alias-state-error-primary);background:0 0;align-items:center;gap:8px;padding:8px 12px;font-size:11px;display:flex}.FRpSCG_wireUnwire:hover{background:color-mix(in srgb, var(--dsw-alias-bg-module-platform) 40%, transparent)}.FRpSCG_wireList{margin:0;padding:0;list-style:none}.FRpSCG_wireList>li+li{border-top:1px solid color-mix(in srgb, var(--dsw-alias-label-primary) 12%, transparent)}.FRpSCG_wireEmpty{color:color-mix(in srgb, var(--dsw-alias-label-primary) 48%, transparent);padding:12px;font-size:11px}.FRpSCG_wireOption{text-align:left;cursor:pointer;width:100%;color:var(--dsw-alias-label-primary);background:0 0;border:0;align-items:center;gap:8px;padding:8px 12px;display:flex}.FRpSCG_wireOption:hover{background:color-mix(in srgb, var(--dsw-alias-bg-module-platform) 40%, transparent)}.FRpSCG_wireSelected{background:color-mix(in srgb, var(--dsw-alias-brand-primary) 8%, transparent)}.FRpSCG_wireIdx{font-variant-numeric:tabular-nums;background:color-mix(in srgb, var(--dsw-alias-brand-primary) 60%, transparent);width:20px;height:20px;color:color-mix(in srgb, var(--dsw-alias-label-primary) 60%, transparent);border-radius:4px;flex:none;justify-content:center;align-items:center;font-size:9px;font-weight:700;display:flex}.FRpSCG_wireThumb{object-fit:cover;border:1px solid color-mix(in srgb, var(--dsw-alias-label-primary) 20%, transparent);border-radius:4px;flex:none;width:32px;height:32px}.FRpSCG_wireThumbFallback{border:1px solid color-mix(in srgb, var(--dsw-alias-label-primary) 20%, transparent);background:color-mix(in srgb, var(--dsw-alias-bg-module-platform) 40%, transparent);width:32px;height:32px;color:color-mix(in srgb, var(--dsw-alias-label-primary) 60%, transparent);border-radius:4px;flex:none;justify-content:center;align-items:center;display:flex}.FRpSCG_wireMeta{flex:1;min-width:0}.FRpSCG_wireTitle{text-overflow:ellipsis;white-space:nowrap;color:var(--dsw-alias-label-primary);font-size:11px;font-weight:500;overflow:hidden}.FRpSCG_wireOut{font-family:var(--dsw-alias-font-mono,ui-monospace, monospace);color:color-mix(in srgb, var(--dsw-alias-brand-primary) 80%, transparent);margin-left:4px;font-size:9px}.FRpSCG_wireSub{text-overflow:ellipsis;white-space:nowrap;font-family:var(--dsw-alias-font-mono,ui-monospace, monospace);color:color-mix(in srgb, var(--dsw-alias-label-primary) 48%, transparent);font-size:9px;overflow:hidden}.FRpSCG_wiredTag{background:color-mix(in srgb, var(--dsw-alias-brand-primary) 15%, transparent);color:var(--dsw-alias-brand-primary);border-radius:4px;flex:none;padding:2px 6px;font-size:9px;font-weight:600}.FRpSCG_specLinkBtn{all:unset;cursor:pointer;color:var(--melite-accent,#6ea8fe);font:inherit;text-decoration:underline}.FRpSCG_specLinkBtn:disabled{cursor:default;color:var(--melite-muted,#8a8f98);text-decoration:none}.FRpSCG_specGrid :where(input,select){width:100%}";
+		const tagId$2 = "@melite/3d-anny/card.module.css@e8d78157";
 		if (typeof document !== "undefined" && document.querySelector("style[data-plugin-css=" + JSON.stringify(tagId$2) + "]") === null) {
 			const tag = document.createElement("style");
 			tag.dataset.plugin = "@melite/3d-anny";
@@ -45294,7 +45331,18 @@ void main() {
 		*    deferred to Run): onEdit rides the caller's values map AND
 		*    onPatch (when present) persists to the domain on the spot.
 		*  - apply order = array order; the drag rewrites the bag.
-		*  - TWO kind shapes, both first-class:
+		*  - THREE kind shapes, all first-class (the leaf switches on the
+		*    SERVED entry mode, never the kind name):
+		*      OPTION kinds (lora): served catalog rows + strength; the
+		*        entry is { id, strength } — the row's own defaults seed the
+		*        strength.
+		*      HYBRID kinds (controlnet): served catalog rows AND entry
+		*        fields; the entry is the bag element keyed by its option_key
+		*        (type) — the leaf stamps the row's resolved facts (model +
+		*        preprocessor) onto new entries so the run record carries the
+		*        retired wire shape; the lane re-validates them, never trusts
+		*        them. Pack-level scalars (the strength floor) render as the
+		*        section's own rows above the tiles.
 		*      OPTION kinds (lora): served catalog rows + strength; the
 		*        entry is { id, strength } — the row's own defaults seed the
 		*        strength.
@@ -45755,12 +45803,11 @@ void main() {
 					return;
 				}
 				pendingRef.current = draft;
-				if (timerRef.current) clearTimeout(timerRef.current);
 				timerRef.current = setTimeout(() => {
 					timerRef.current = null;
 					const pending = pendingRef.current;
 					pendingRef.current = null;
-					if (pending) saveRef.current({ sculpt: pending });
+					saveRef.current({ sculpt: pending });
 				}, 400);
 				return () => {
 					if (timerRef.current) {
@@ -45768,7 +45815,7 @@ void main() {
 						timerRef.current = null;
 						const pending = pendingRef.current;
 						pendingRef.current = null;
-						if (pending) saveRef.current({ sculpt: pending });
+						saveRef.current({ sculpt: pending });
 					}
 				};
 			}, [editing, stage.id]);
@@ -46080,7 +46127,7 @@ void main() {
 					}),
 					note && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
 						role: "status",
-						title: note ?? void 0,
+						title: note,
 						className: component_module_css_default.noteLine,
 						children: note
 					})
@@ -46290,24 +46337,24 @@ void main() {
 				}
 			};
 			const load = async () => {
-				if (!selected) return;
-				if (selected.origin === "file" || !selected.params) {
-					if (!selected.body_ref) {
+				const sel = selected;
+				if (sel.origin === "file" || !sel.params) {
+					if (!sel.body_ref) {
 						setPhase("error");
 						setNote("That preset names no mesh — nothing to apply.");
 						return;
 					}
-					onSave({ body_glb: selected.body_ref });
+					onSave({ body_glb: sel.body_ref });
 					setPhase("done");
-					setNote(`Applied “${selected.label}” — its mesh now fills the Body slot (file preset, no run).`);
+					setNote(`Applied “${sel.label}” — its mesh now fills the Body slot (file preset, no run).`);
 					return;
 				}
-				if (!selected.params_json || typeof selected.params_json !== "string") {
+				if (!sel.params_json || typeof sel.params_json !== "string") {
 					setPhase("error");
 					setNote("That preset row carries no canonical params_json — the door served something unexpected. Refusing to invent one.");
 					return;
 				}
-				const paramsJson = selected.params_json;
+				const paramsJson = sel.params_json;
 				setPhase("starting");
 				setNote(null);
 				try {
@@ -46316,27 +46363,22 @@ void main() {
 						headers: { "Content-Type": "application/json" },
 						body: JSON.stringify({
 							flow: "anny-params",
-							preset_id: selected.id,
+							preset_id: sel.id,
 							params_json: paramsJson
 						})
 					});
 					const doc = await res.json().catch(() => ({}));
 					if (!res.ok || !doc.run_id) throw new Error(doc.error || `start failed (HTTP ${res.status})`);
 					setPhase("queued");
-					const run = await pollFlowRun(doc.run_id);
+					await pollFlowRun(doc.run_id);
 					setPhase("running");
-					const glb = (await collectStageUrls(run)).find((u) => u.toLowerCase().endsWith(".glb"));
-					if (!glb) throw new Error("run finished with no GLB artifact — refusing to touch the Body slot.");
-					onSave({ body_glb: glb });
-					setPhase("done");
-					setNote(`Loaded “${selected.label}” — the run's GLB now fills the Body slot.`);
+					throw new Error("run finished with no GLB artifact — refusing to touch the Body slot.");
 				} catch (e) {
 					setPhase("error");
 					setNote(e instanceof Error ? e.message : String(e));
 				}
 			};
 			const remove = async () => {
-				if (!selected || !selected.id.startsWith("user-")) return;
 				setPhase("loading");
 				setNote(null);
 				try {
@@ -46454,7 +46496,7 @@ void main() {
 		];
 		/** Unity prop name: the ORIGINAL filename stem (the card compose door's _model_stem, restated as the POST-body derivation — the flow receives it as an independent initial). */
 		function propStem(ref) {
-			const base = ref.split("/").pop()?.split("\\\\").pop() ?? "";
+			const base = ref.split("/").pop().split("\\\\").pop();
 			return (base.includes(".") ? base.slice(0, base.lastIndexOf(".")) : base).trim() || "prop";
 		}
 		function AnnyFitVerbs({ body, onSave }) {
@@ -46467,11 +46509,6 @@ void main() {
 			const seat = async (verbId) => {
 				const row = ANNY_VERBS.find((v) => v.id === verbId);
 				const knobs = verbId === "dress" ? dress : propK;
-				if (!row || row.engines.length !== 1) {
-					setPhase("error");
-					setNote("The verb declaration drifted — refusing before the queue.");
-					return;
-				}
 				if (!body) {
 					setPhase("error");
 					setNote("Estimate, attach, or load a body first — the verbs seat onto the stage Body.");
@@ -46546,15 +46583,8 @@ void main() {
 					const runId = data.run_id;
 					if (typeof runId !== "string" || !runId) throw new Error("Seat queue returned no run_id");
 					setPhase(data.status === "queued" ? "queued" : "running");
-					const glb = collectStageUrls((await pollFlowRun(runId, void 0, { onTick: () => setPhase("running") })).stages).find((u) => /\\.(glb|gltf)(\\?|#|$)/i.test(u)) ?? null;
-					if (!glb) throw new Error(`Seat run completed with no fitted GLB artifact. Run: ${runId}`);
-					onSave({ body_glb: glb });
-					setPhase("done");
-					setNote(verbId === "dress" ? "Outfit seated — the dressed assembly now fills the Body slot." : "Prop seated — the armed assembly now fills the Body slot.");
-					document.getElementById("anny-assembly-truth")?.scrollIntoView({
-						behavior: "smooth",
-						block: "nearest"
-					});
+					collectStageUrls((await pollFlowRun(runId, void 0, { onTick: () => setPhase("running") })).stages);
+					throw new Error(`Seat run completed with no fitted GLB artifact. Run: ${runId}`);
 				} catch (e) {
 					setPhase("error");
 					setNote(e instanceof Error ? e.message : String(e));
@@ -46724,11 +46754,6 @@ void main() {
 			const busy = phase === "starting" || phase === "queued" || phase === "running";
 			const convert = async () => {
 				const row = ANNY_VERBS.find((v) => v.id === "rig-somax");
-				if (!row || row.engines.length !== 1) {
-					setPhase("error");
-					setNote("The verb declaration drifted — refusing before the queue.");
-					return;
-				}
 				if (!body) {
 					setPhase("error");
 					setNote("Estimate, attach, or load a body first — the conversion rigs the stage Body.");
@@ -46927,11 +46952,6 @@ void main() {
 			}));
 			const coat = async () => {
 				const row = ANNY_VERBS.find((v) => v.id === "apply-skin");
-				if (!row || row.engines.length !== 1) {
-					setPhase("error");
-					setNote("The verb declaration drifted — refusing before the queue.");
-					return;
-				}
 				if (!body) {
 					setPhase("error");
 					setNote("Estimate, attach, or load a body first — the verbs coat the stage Body.");

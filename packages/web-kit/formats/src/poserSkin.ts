@@ -141,7 +141,7 @@ export async function fetchBindMesh(
   const posePayload = poseSig ? { preview_pose: poseSig } : {}
   let data: SkinMeshData
   if (coeffsSig || lcEntries || ctEntries) {
-    const res = await apiFetch("/poser/skin/mesh", {
+    const res = await apiFetch("/v1/poser/mesh", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -164,7 +164,7 @@ export async function fetchBindMesh(
   } else {
     const qs = new URLSearchParams({ identity_model: key })
     if (poseSig) qs.set("preview_pose", poseSig)
-    const res = await apiFetch(`/poser/skin/mesh?${qs.toString()}`)
+    const res = await apiFetch(`/v1/poser/mesh?${qs.toString()}`)
     if (!res.ok) throw new Error(`Failed to fetch mesh (${key}): ${res.status}`)
     data = (await res.json()) as SkinMeshData
   }
@@ -173,7 +173,7 @@ export async function fetchBindMesh(
 }
 
 export async function fetchIdentitySpace(model: string): Promise<IdentitySpace> {
-  const res = await apiFetch(`/poser/skin/identity-space?identity_model=${encodeURIComponent(model)}`)
+  const res = await apiFetch(`/v1/poser/identity-space?identity_model=${encodeURIComponent(model)}`)
   if (!res.ok) throw new Error(`Failed to fetch identity-space (${model}): ${res.status}`)
   return (await res.json()) as IdentitySpace
 }

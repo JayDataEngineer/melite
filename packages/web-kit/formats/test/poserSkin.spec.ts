@@ -37,7 +37,7 @@ describe("fetchBindMesh", () => {
     const a = await fetchBindMesh({});
     assert.deepEqual(a, MESH);
     assert.equal(calls.length, 1);
-    assert.match(calls[0].url, /\/poser\/skin\/mesh\?identity_model=anny/);
+    assert.match(calls[0].url, /\/v1\/poser\/mesh\?identity_model=anny/);
     // Same signature hits the cache — no second fetch.
     const b = await fetchBindMesh({ identityModel: undefined });
     assert.deepEqual(b, MESH);

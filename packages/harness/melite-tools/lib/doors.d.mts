@@ -51,15 +51,6 @@ interface CtxView {
     }): () => void;
   };
 }
-/** One allow-listed poser arm (path + admitted methods + the
- *  outbound budget — mesh shaping renders geometry, render bakes
- *  a PNG; both get the long tail). */
-interface PoserArm {
-  readonly path: string;
-  readonly methods: readonly string[];
-  readonly timeoutMs: number;
-}
-declare const POSER_ARMS: readonly PoserArm[];
 declare function apply(c: CtxView, config?: Config): void;
 //#endregion
-export { Config, DEFAULT_ENHANCE_PREFERENCE, POSER_ARMS, apply, inject, mcpToolsOf, seatedMcpServers };
+export { Config, DEFAULT_ENHANCE_PREFERENCE, apply, inject, mcpToolsOf, seatedMcpServers };

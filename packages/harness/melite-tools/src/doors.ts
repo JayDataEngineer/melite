@@ -117,38 +117,67 @@ interface CtxView {
   }
 }
 
-// ── THE /POSER DOOR (2026-09-16 — the named restore) ───────────────
+// ── THE POSER ARMS (2026-09-16 — estate verbs, never a proxy) ─────
 //
-// HISTORY: the retired second-Loader gateway once TUNNELED /poser
-// (blind byte forwarding to another process); the estate collapse
-// (2026-09-10) deleted the tunnel — and with it, silently, the
-// browser's only path to the poser routes the anny/body-studio
-// mesh preview rides ("Failed to fetch mesh (anny): 404"). The
-// restore is NOT the tunnel back: this is a NAMED door — an
-// explicit allow-list of the vendor extension's routes
-// (vendor/comfyui_extensions/melite-poser-nodes/server.py, ComfyUI
-// PromptServer — Layer B), each arm called server-side through
-// cordis's httpCall with the estate's JSON error contract. The
-// browser never learns the engine origin; unknown paths and
-// methods refuse at the door.
+// HISTORY: the retired gateway once TUNNELED /poser to a second
+// process; the collapse (2026-09-10) deleted it silently and the
+// anny/body-studio mesh preview died with "Failed to fetch mesh
+// (anny): 404". A prefix mount that forwards another server's URL
+// space is a PROXY — the operator's law forbids it outright. What
+// stands instead: the mesh serves as ESTATE DATA through the /v1
+// door, exactly like form-spec and model-catalog — typed arms with
+// validated inputs, the engine called server-side through cordis
+// httpCall (the browser renders in three.js client-side; only the
+// data transits). The vendor routes (ComfyUI PromptServer, Layer
+// B): GET/POST /poser/skin/mesh, GET /poser/skin/identity-space,
+// GET /poser/presets, POST /poser/render.
 
-/** One allow-listed poser arm (path + admitted methods + the
- *  outbound budget — mesh shaping renders geometry, render bakes
- *  a PNG; both get the long tail). */
+/** One estate poser arm: the door path, the engine path, the
+ *  admitted methods, the outbound budget (mesh shaping and the
+ *  render bake get the long tail). */
 interface PoserArm {
-  readonly path: string
+  readonly doorPath: string
+  readonly enginePath: string
   readonly methods: readonly string[]
   readonly timeoutMs: number
 }
 
 const POSER_ARMS: readonly PoserArm[] = [
-  { path: '/poser/skin/mesh', methods: ['GET', 'POST'], timeoutMs: 120_000 },
-  { path: '/poser/skin/identity-space', methods: ['GET'], timeoutMs: 30_000 },
-  { path: '/poser/presets', methods: ['GET'], timeoutMs: 30_000 },
-  { path: '/poser/render', methods: ['POST'], timeoutMs: 120_000 },
+  { doorPath: '/v1/poser/mesh', enginePath: '/poser/skin/mesh', methods: ['GET', 'POST'], timeoutMs: 120_000 },
+  { doorPath: '/v1/poser/identity-space', enginePath: '/poser/skin/identity-space', methods: ['GET'], timeoutMs: 30_000 },
+  { doorPath: '/v1/poser/presets', enginePath: '/poser/presets', methods: ['GET'], timeoutMs: 30_000 },
+  { doorPath: '/v1/poser/render', enginePath: '/poser/render', methods: ['POST'], timeoutMs: 120_000 },
 ]
 
-export { POSER_ARMS }
+/** The poser arms' engine call: httpCall to the resolved engine
+ *  base, the door's JSON contract on every refusal. A JSON result
+ *  serves through ok(); the render arm's PNG serves bytes raw. */
+const poserEngineCall = (
+  arm: PoserArm,
+  search: string,
+  body: Buffer | null,
+  contentType: string,
+  ok: (payload: unknown) => void,
+  serveBytes: (status: number, bytes: Buffer) => void,
+  fail: (status: number, payload: Record<string, unknown>) => void,
+): void => {
+  let base: string
+  try {
+    base = resolveEngineBaseUrl()
+  } catch (error: unknown) {
+    fail(502, { error: `poser: no comfyui endpoint (${error instanceof Error ? error.message : /* v8 ignore next -- resolveEngineBaseUrl throws Errors only (2026-09-16) */ String(error)})` })
+    return
+  }
+  httpCall(body === null ? 'GET' : 'POST', base + arm.enginePath + search, body, contentType, arm.timeoutMs)
+    .then((r) => {
+      if (Buffer.isBuffer(r.body)) {
+        serveBytes(r.status, r.body)
+        return
+      }
+      ok(r.body === null ? {} : r.body)
+    })
+    .catch((error: unknown) => fail(502, { error: `poser: engine unreachable (${error instanceof Error ? error.message : /* v8 ignore next -- httpCall rejects with Errors only (2026-09-16) */ String(error)})` }))
+}
 
 export function apply(c: CtxView, config: Config = {}): void {
   // R2b: the sweep rides the in-process seam (seats + door
@@ -477,6 +506,47 @@ export function apply(c: CtxView, config: Config = {}): void {
           if (method === 'GET' && path === '/v1/kinds') {
             return void kindsDoorArm().then(ok, (e: unknown) => fail(500, { error: `discovery door: ${e instanceof Error ? e.message : String(e)}` }))
           }
+          // THE POSER ARMS (estate verbs — the mesh data the
+          // in-browser three.js viewers render; see the module
+          // block above for the never-a-proxy law)
+          const poserArm = POSER_ARMS.find((a) => a.doorPath === path)
+          if (poserArm !== undefined) {
+            if (!poserArm.methods.includes(method)) {
+              return void fail(405, { error: `poser: ${method} not allowed on ${path}`, allow: poserArm.methods.join(', ') })
+            }
+            // identity_model is the mesh arms' one required input
+            // (validated HERE — the arm owns its inputs, never a
+            // verbatim forward): GET arms carry it in the query,
+            // POST arms validate their parsed body below.
+            if (method === 'GET' && poserArm.doorPath !== '/v1/poser/presets') {
+              const model = url.searchParams.get('identity_model') ?? ''
+              if (model.length === 0) {
+                return void fail(400, { error: 'poser: the identity_model query parameter is required' })
+              }
+            }
+            const serveBytes = (status: number, bytes: Buffer): void => {
+              res.writeHead(status, { 'content-type': 'application/octet-stream', 'content-length': String(bytes.byteLength) })
+              res.end(bytes)
+            }
+            if (method === 'POST') {
+              readBody(req).then((buf) => {
+                let parsed: Record<string, unknown> = {}
+                try {
+                  parsed = buf.length > 0 ? JSON.parse(buf.toString('utf8')) as Record<string, unknown> : {}
+                } catch {
+                  return void fail(400, { error: 'poser: body must be JSON' })
+                }
+                if (poserArm.doorPath === '/v1/poser/mesh' && (typeof parsed['identity_model'] !== 'string' || parsed['identity_model'].length === 0)) {
+                  return void fail(400, { error: 'poser: identity_model (string) is required in the body' })
+                }
+                const ct = (Array.isArray(req.headers['content-type']) ? req.headers['content-type'][0] : req.headers['content-type']) ?? 'application/json'
+                poserEngineCall(poserArm, url.search, buf, ct, ok, serveBytes, fail)
+              }).catch((error: unknown) => fail(400, { error: `poser: body read failed (${error instanceof Error ? error.message : String(error)})` }))
+              return
+            }
+            poserEngineCall(poserArm, url.search, null, 'application/json', ok, serveBytes, fail)
+            return
+          }
           if (method === 'GET' && path === '/v1/form-spec') {
             const model = url.searchParams.get('model') ?? ''
             if (model.length === 0) {
@@ -554,66 +624,9 @@ export function apply(c: CtxView, config: Config = {}): void {
     },
   }), 'melite-tools: /v1 prefix door')
 
-  // THE /POSER DOOR: named arms, server-side calls, estate errors
-  // (see the POSER_ARMS history above — never the tunnel back).
-  c.effect(() => c.webServer.register({
-    kind: 'prefix',
-    path: '/poser',
-    handler: (req, res) => {
-      const json = (status: number, payload: Record<string, unknown>): void => {
-        const body = JSON.stringify(payload)
-        res.writeHead(status, { 'content-type': 'application/json', 'content-length': String(Buffer.byteLength(body)) })
-        res.end(Buffer.from(body))
-      }
-      let url: URL
-      try {
-        url = new URL(req.url ?? '/', 'http://localhost')
-      } catch {
-        return void json(400, { error: 'poser: unparseable url' })
-      }
-      const method = (req.method ?? 'GET').toUpperCase()
-      const arm = POSER_ARMS.find((a) => a.path === url.pathname)
-      if (arm === undefined) {
-        return void json(404, { error: `poser: no arm at ${url.pathname}`, arms: POSER_ARMS.map((a) => a.path) })
-      }
-      if (!arm.methods.includes(method)) {
-        return void json(405, { error: `poser: ${method} not allowed on ${url.pathname}`, allow: arm.methods.join(', ') })
-      }
-      let base: string
-      try {
-        base = resolveEngineBaseUrl()
-      } catch (error: unknown) {
-        return void json(502, { error: `poser: no comfyui endpoint (${error instanceof Error ? error.message : /* v8 ignore next -- resolveEngineBaseUrl throws Errors only (2026-09-16) */ String(error)})` })
-      }
-      const target = base + url.pathname + url.search
-      const send = (body: Buffer | null): void => {
-        const contentType = body === null
-          ? 'application/json'
-          : (Array.isArray(req.headers['content-type']) ? req.headers['content-type'][0] : req.headers['content-type']) ?? 'application/json'
-        httpCall(method, target, body, contentType, arm.timeoutMs)
-          .then((r) => {
-            // JSON arms serve JSON; the render arm's PNG serves
-            // bytes. The upstream STATUS rides verbatim (the
-            // vendor route's own 404 for an unknown model is the
-            // honest answer, not a door-side rewrite).
-            if (Buffer.isBuffer(r.body)) {
-              res.writeHead(r.status, { 'content-type': 'application/octet-stream', 'content-length': String(r.body.byteLength) })
-              res.end(r.body)
-              return
-            }
-            const out = r.body === null ? '{}' : JSON.stringify(r.body)
-            res.writeHead(r.status, { 'content-type': 'application/json', 'content-length': String(Buffer.byteLength(out)) })
-            res.end(Buffer.from(out))
-          })
-          .catch((error: unknown) => json(502, { error: `poser: upstream unreachable (${error instanceof Error ? error.message : /* v8 ignore next -- httpCall rejects with Errors only (2026-09-16) */ String(error)})` }))
-      }
-      if (method === 'POST') {
-        readBody(req)
-          .then((buf) => { send(buf) })
-          .catch((error: unknown) => json(400, { error: `poser: body read failed (${error instanceof Error ? error.message : String(error)})` }))
-        return
-      }
-      send(null)
-    },
-  }), 'melite-tools: /poser door')
+// THE /POSER PREFIX MOUNT IS DELETED (the operator's law, 2026-09-16:
+  // NO PROXIES — no prefix passthrough of another server's URL space.
+  // The poser routes serve as ESTATE ARMS under /v1 below, the same
+  // door every client verb rides.)
+
 }

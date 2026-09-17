@@ -866,7 +866,7 @@ describe('AnnyStudio', () => {
           scale: Array.from({ length: 139 }, () => 0.2),
         },
       },
-      '/poser/skin/identity-space': {
+      '/v1/poser/identity-space': {
         json: {
           identity_model: 'anny', dims: 11, labels: [],
           defaults: [0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5],

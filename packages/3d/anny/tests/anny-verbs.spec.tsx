@@ -206,7 +206,7 @@ describe('AnnyHmrVerb', () => {
     openDoors({
       '/v1/flows/status/': { json: doneDoc(['https://host/body.glb', 'https://host/anny_preset.json']) },
       'anny_preset.json': { json: RECIPE },
-      '/poser/skin/identity-space': { json: SPACE },
+      '/v1/poser/identity-space': { json: SPACE },
     })
     const { onSave } = mount('data/input/p.png')
     estimate()
@@ -230,7 +230,7 @@ describe('AnnyHmrVerb', () => {
         { json: doneDoc(['https://host/body.glb', 'https://host/anny_preset.json']) },
       ],
       'anny_preset.json': { json: { dialect: 'estimated', phenotype: [1, 2], scale: [] } },
-      '/poser/skin/identity-space': { json: SPACE },
+      '/v1/poser/identity-space': { json: SPACE },
     })
     const { onSave } = mount('data/input/p.png')
     estimate()
@@ -311,7 +311,7 @@ describe('AnnyHmrVerb', () => {
       openDoors({
         '/v1/flows/status/': { json: doneDoc(urls) },
         ...(recipe ? { 'anny_preset.json': recipe } : {}),
-        '/poser/skin/identity-space': { json: space },
+        '/v1/poser/identity-space': { json: space },
       }, faults)
       const { onSave } = mount('data/input/p.png')
       estimate()
@@ -331,7 +331,7 @@ describe('AnnyHmrVerb', () => {
     openDoors({
       '/v1/flows/status/': { json: doneDoc(['https://host/body.glb', 'https://host/anny_preset.json']) },
       'anny_preset.json': { json: { dialect: 'estimated', phenotype: PHENO, scale: [] } },
-      '/poser/skin/identity-space': { json: { ...SPACE, local_changes: null } },
+      '/v1/poser/identity-space': { json: { ...SPACE, local_changes: null } },
     })
     const { onSave } = mount('data/input/p.png')
     estimate()

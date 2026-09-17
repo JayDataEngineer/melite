@@ -337,7 +337,7 @@ export async function fetchBindMesh(
 
   let data: SkinMeshData
   if (coeffsSig || lcEntries || ctEntries) {
-    const res = await apiFetch("/poser/skin/mesh", {
+    const res = await apiFetch("/v1/poser/mesh", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -350,7 +350,7 @@ export async function fetchBindMesh(
     if (!res.ok) throw new Error(`Failed to fetch shaped mesh (${key}): ${res.status}`)
     data = (await res.json()) as SkinMeshData
   } else {
-    const res = await apiFetch(`/poser/skin/mesh?identity_model=${encodeURIComponent(key)}`)
+    const res = await apiFetch(`/v1/poser/mesh?identity_model=${encodeURIComponent(key)}`)
     if (!res.ok) throw new Error(`Failed to fetch mesh (${key}): ${res.status}`)
     data = (await res.json()) as SkinMeshData
   }

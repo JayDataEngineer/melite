@@ -232,7 +232,7 @@ void SIG
 // ── apply wiring ──────────────────────────────────────────────────
 
 describe('doors apply', () => {
-  test('inject names the web-only plane; seven routes mount with labels (the /poser door joined, 2026-09-16)', () => {
+  test('inject names the web-only plane; six routes mount with labels (the /poser prefix mount died with the no-proxy law, 2026-09-16)', () => {
     assert.deepEqual(inject, ['webServer', 'llm', 'tools'])
     const h = boot({ defaultModel: DEFAULT_MODEL })
     assert.deepEqual(
@@ -244,17 +244,16 @@ describe('doors apply', () => {
         'exact /v1/uploads',
         'prefix /v1/assets/inputs',
         'prefix /v1',
-        'prefix /poser',
       ],
     )
-    assert.equal(h.labels.length, 7)
+    assert.equal(h.labels.length, 6)
     assert.ok(h.labels[0].includes('catalog'))
   })
 
   test('config defaults when omitted', () => {
     const h = fakeHost({ defaultModel: DEFAULT_MODEL })
     apply(h.host as never)
-    assert.equal(h.routes.length, 7)
+    assert.equal(h.routes.length, 6)
   })
 })
 
@@ -1121,15 +1120,15 @@ test('THE QUERY RIDES THE SEAT LANE (stroke 79): GET /v1/load?inference_type=car
   assert.deepEqual(r.body, { bundle: { kind: 'card', name: 'mask-form' } })
 })
 
-// ── THE /POSER DOOR (2026-09-16 — the named restore) ───────────────
-// The collapse deleted the gateway tunnel and orphaned the browser's
-// poser traffic ("Failed to fetch mesh (anny): 404"). The door back
-// is NAMED: an allow-list of the vendor routes, called server-side
-// through cordis httpCall. These walls run a REAL upstream http
-// server (no module mocks — COMFYUI_URL points the door's own
-// resolution at it) and pin every arm of the door's contract.
+// ── THE POSER ARMS (2026-09-16 — estate verbs, never a proxy) ─────
+// The collapse deleted the old gateway tunnel and orphaned the
+// browser's mesh data ("Failed to fetch mesh (anny): 404"); the
+// operator's law then killed the prefix-mount restore too — NO
+// PROXIES. The arms ride the /v1 door like every client verb.
+// These walls run a REAL engine upstream (node:http, COMFYUI_URL
+// points the door's own resolution at it — no module mocks).
 
-describe('/poser door (the named restore)', () => {
+describe('the /v1 poser arms (estate verbs, never a proxy)', () => {
   const seen: Array<{ method: string; url: string; body: string }> = []
   let upstream: http.Server | null = null
   let upstreamPort = 0
@@ -1160,40 +1159,64 @@ describe('/poser door (the named restore)', () => {
     process.env.COMFYUI_URL = 'http://127.0.0.1:' + String(upstreamPort)
   }
 
-  test('THE MESH ARM (GET): query verbatim, JSON served, the status rides', async () => {
+  test('THE MESH ARM (GET): identity_model validated, the query rides to the engine path, JSON serves', async () => {
     await bootUpstream()
     const h = boot({})
-    const r = await call(h.routes, '/poser', { url: 'http://localhost/poser/skin/mesh?identity_model=anny&preview_pose=apose' })
+    const r = await call(h.routes, '/v1', { url: 'http://localhost/v1/poser/mesh?identity_model=anny&preview_pose=apose' })
     assert.equal(r.status, 200)
     assert.deepEqual(r.body, { vertices: [[1, 2, 3]] })
     assert.deepEqual(seen.at(-1), { method: 'GET', url: '/poser/skin/mesh?identity_model=anny&preview_pose=apose', body: '' })
   })
 
-  test('THE MESH ARM (POST): the shaping body forwards verbatim', async () => {
+  test('THE MESH ARM (GET) VALIDATION: no identity_model refuses 400 (the arm owns its inputs)', async () => {
     await bootUpstream()
     const h = boot({})
-    const r = await call(h.routes, '/poser', {
+    const r = await call(h.routes, '/v1', { url: 'http://localhost/v1/poser/mesh' })
+    assert.equal(r.status, 400)
+    assert.match((r.body as { error: string }).error, /identity_model query parameter is required/)
+    assert.equal(seen.length, 0)
+  })
+
+  test('THE MESH ARM (POST): the shaping body forwards verbatim to the engine path', async () => {
+    await bootUpstream()
+    const h = boot({})
+    const r = await call(h.routes, '/v1', {
       method: 'POST',
-      url: 'http://localhost/poser/skin/mesh',
+      url: 'http://localhost/v1/poser/mesh',
       body: { identity_model: 'anny', identity_coeffs: { height: 0.5 }, custom_targets: {} },
     })
     assert.equal(r.status, 200)
     assert.deepEqual(r.body, { vertices: [[9, 9, 9]] })
     const row = seen.at(-1)
-    assert.ok(row, 'upstream saw nothing')
+    assert.ok(row, 'engine saw nothing')
     assert.equal(row.method, 'POST')
     assert.equal(row.url, '/poser/skin/mesh')
     assert.deepEqual(JSON.parse(row.body), { identity_model: 'anny', identity_coeffs: { height: 0.5 }, custom_targets: {} })
   })
 
-  test('THE RENDER ARM: PNG bytes serve as octet-stream (never a JSON-wrapped image)', async () => {
+  test('THE MESH ARM (POST) VALIDATION: a body without identity_model refuses 400; a non-JSON body refuses 400', async () => {
     await bootUpstream()
     const h = boot({})
-    const route = h.routes.find((x) => x.path === '/poser')
-    assert.ok(route, 'poser route mounted')
-    const req = fakeReq({ method: 'POST', url: 'http://localhost/poser/render', body: { pose: 'tpose' } })
-    // a LOCAL res capture: the shared fakeRes decodes utf-8 (JSON
-    // arms); this arm pins BYTES, so the buffer rides whole
+    const noModel = await call(h.routes, '/v1', { method: 'POST', url: 'http://localhost/v1/poser/mesh', body: { coeffs: {} } })
+    assert.equal(noModel.status, 400)
+    assert.match((noModel.body as { error: string }).error, /identity_model \(string\) is required/)
+    const raw = await call(h.routes, '/v1', { method: 'POST', url: 'http://localhost/v1/poser/mesh', raw: 'not json' })
+    assert.equal(raw.status, 400)
+    assert.match((raw.body as { error: string }).error, /body must be JSON/)
+    // an EMPTY POST body parses as {} and rides the same 400 (the
+    // identity_model contract — never a JSON.parse arm miss)
+    const noBody = await call(h.routes, '/v1', { method: 'POST', url: 'http://localhost/v1/poser/mesh' })
+    assert.equal(noBody.status, 400)
+    assert.match((noBody.body as { error: string }).error, /identity_model \(string\) is required/)
+    assert.equal(seen.length, 0)
+  })
+
+  test('THE RENDER ARM: PNG bytes serve whole as octet-stream (never JSON-wrapped)', async () => {
+    await bootUpstream()
+    const h = boot({})
+    const route = h.routes.find((x) => x.path === '/v1')
+    assert.ok(route, 'v1 route mounted')
+    const req = fakeReq({ method: 'POST', url: 'http://localhost/v1/poser/render', body: { pose: 'tpose' } })
     let got: Buffer | undefined
     let status = 0
     const res = new EventEmitter() as (EventEmitter & {
@@ -1215,59 +1238,24 @@ describe('/poser door (the named restore)', () => {
     assert.equal(Buffer.compare(got, PNG), 0)
   })
 
-  test('THE CONTRACT EDGES: undefined url serves the door 404 (never a crash); a lone % refuses 400; an array content-type POST rides; an empty upstream body serves {}', async () => {
+  test('THE METHOD GATE: GET on the POST-only render arm refuses 405 with allow', async () => {
     await bootUpstream()
     const h = boot({})
-    // no url at all: the door parses '/' and refuses on the allow-list
-    const noUrl = await call(h.routes, '/poser', {})
-    assert.equal(noUrl.status, 404)
-    assert.match((noUrl.body as { error: string }).error, /no arm at \//)
-    // an unparseable url (a broken IPv6 literal never parses)
-    const bad = await call(h.routes, '/poser', { url: 'http://[' })
-    assert.equal(bad.status, 400)
-    assert.match((bad.body as { error: string }).error, /unparseable url/)
-    // node:http may deliver repeated headers as string[] — the
-    // content-type read takes the first
-    const arrReq = fakeReq({ method: 'POST', url: 'http://localhost/poser/skin/mesh', body: { identity_model: 'anny' } })
-    arrReq.headers['content-type'] = ['application/json', 'application/json']
-    const arrRes = fakeRes()
-    h.routes.find((x) => x.path === '/poser')?.handler(arrReq, arrRes.res)
-    const arrOut = await arrRes.done
-    assert.equal(arrOut.status, 200)
-    // an EMPTY upstream body: the JSON arm serves {} (never 'null'
-    // text, never a crash on stringify)
-    const emptyPort = upstreamPort
-    const second = http.createServer((q, a) => { a.writeHead(200, { 'content-type': 'application/json' }); a.end('') })
-    await new Promise<void>((r) => { second.listen(emptyPort + 1, '127.0.0.1', () => r()) })
-    process.env.COMFYUI_URL = 'http://127.0.0.1:' + String(emptyPort + 1)
-    const h2 = boot({})
-    const empty = await call(h2.routes, '/poser', { url: 'http://localhost/poser/presets' })
-    assert.equal(empty.status, 200)
-    assert.deepEqual(empty.body, {})
-    await new Promise<void>((r) => { second.close(() => r()) })
-  })
-
-  test('THE ALLOW-LIST: an unknown path refuses with the arms (never a blind tunnel)', async () => {
-    await bootUpstream()
-    const h = boot({})
-    const r = await call(h.routes, '/poser', { url: 'http://localhost/poser/systeminfo' })
-    assert.equal(r.status, 404)
-    assert.deepEqual((r.body as { arms: string[] }).arms, [
-      '/poser/skin/mesh',
-      '/poser/skin/identity-space',
-      '/poser/presets',
-      '/poser/render',
-    ])
-    assert.equal(seen.length, 0)
-  })
-
-  test('THE METHOD GATE: GET on a POST-only arm refuses 405 with allow', async () => {
-    await bootUpstream()
-    const h = boot({})
-    const r = await call(h.routes, '/poser', { method: 'GET', url: 'http://localhost/poser/render' })
+    const r = await call(h.routes, '/v1', { method: 'GET', url: 'http://localhost/v1/poser/render' })
     assert.equal(r.status, 405)
     assert.equal((r.body as { allow: string }).allow, 'POST')
     assert.equal(seen.length, 0)
+  })
+
+  test('THE OTHER ARMS: identity-space and presets serve (the mesh family whole)', async () => {
+    await bootUpstream()
+    const h = boot({})
+    const ids = await call(h.routes, '/v1', { url: 'http://localhost/v1/poser/identity-space?identity_model=anny' })
+    assert.equal(ids.status, 200)
+    assert.equal(seen.at(-1)?.url, '/poser/skin/identity-space?identity_model=anny')
+    const presets = await call(h.routes, '/v1', { url: 'http://localhost/v1/poser/presets' })
+    assert.equal(presets.status, 200)
+    assert.equal(seen.at(-1)?.url, '/poser/presets')
   })
 
   test('NO ENDPOINT: unset COMFYUI_URL under the sandbox gate refuses 502 honestly (never a default host)', async () => {
@@ -1278,7 +1266,7 @@ describe('/poser door (the named restore)', () => {
     delete process.env.COMFYUI_URL
     process.env.INFERENCE_TEST_SANDBOX = '1'
     try {
-      const r = await call(h.routes, '/poser', { url: 'http://localhost/poser/presets' })
+      const r = await call(h.routes, '/v1', { url: 'http://localhost/v1/poser/presets' })
       assert.equal(r.status, 502)
       assert.match((r.body as { error: string }).error, /no comfyui endpoint/)
     } finally {
@@ -1288,27 +1276,46 @@ describe('/poser door (the named restore)', () => {
     }
   })
 
-  test('UPSTREAM DOWN: a closed port refuses 502 (the door never hangs)', async () => {
+  test('ENGINE DOWN: a closed port refuses 502 (the arm never hangs)', async () => {
     await bootUpstream()
     const deadPort = upstreamPort
     await new Promise<void>((r) => { upstream?.close(() => r()) })
     upstream = null
     process.env.COMFYUI_URL = 'http://127.0.0.1:' + String(deadPort)
     const h = boot({})
-    const r = await call(h.routes, '/poser', { url: 'http://localhost/poser/skin/mesh?identity_model=anny' })
+    const r = await call(h.routes, '/v1', { url: 'http://localhost/v1/poser/mesh?identity_model=anny' })
     assert.equal(r.status, 502)
-    assert.match((r.body as { error: string }).error, /upstream unreachable/)
+    assert.match((r.body as { error: string }).error, /engine unreachable/)
   })
 
-  test('THE BODY-READ REFUSALS: a req that dies mid-body refuses 400 — an Error and a non-Error both voice (never a hang, never a crash)', async () => {
+  test('THE BODY-READ REFUSALS: a req that dies mid-body refuses 400 — Error and non-Error both voice', async () => {
     await bootUpstream()
     const h = boot({})
-    const died = await call(h.routes, '/poser', { method: 'POST', url: 'http://localhost/poser/skin/mesh', emitError: 'socket died' })
+    const died = await call(h.routes, '/v1', { method: 'POST', url: 'http://localhost/v1/poser/mesh', emitError: 'socket died' })
     assert.equal(died.status, 400)
     assert.match((died.body as { error: string }).error, /body read failed \(socket died\)/)
-    const raw = await call(h.routes, '/poser', { method: 'POST', url: 'http://localhost/poser/skin/mesh', emitRawError: 'a string boom' })
-    assert.equal(raw.status, 400)
-    assert.match((raw.body as { error: string }).error, /body read failed \(a string boom\)/)
+    const rawErr = await call(h.routes, '/v1', { method: 'POST', url: 'http://localhost/v1/poser/mesh', emitRawError: 'a string boom' })
+    assert.equal(rawErr.status, 400)
+    assert.match((rawErr.body as { error: string }).error, /body read failed \(a string boom\)/)
+  })
+
+  test('THE CONTRACT EDGES: an array content-type POST rides; an empty engine body serves {}', async () => {
+    await bootUpstream()
+    const h = boot({})
+    const arrReq = fakeReq({ method: 'POST', url: 'http://localhost/v1/poser/mesh', body: { identity_model: 'anny' } })
+    arrReq.headers['content-type'] = ['application/json', 'application/json']
+    const arrRes = fakeRes()
+    h.routes.find((x) => x.path === '/v1')?.handler(arrReq, arrRes.res)
+    const arrOut = await arrRes.done
+    assert.equal(arrOut.status, 200)
+    const second = http.createServer((q, a) => { a.writeHead(200, { 'content-type': 'application/json' }); a.end('') })
+    await new Promise<void>((r) => { second.listen(upstreamPort + 1, '127.0.0.1', () => r()) })
+    process.env.COMFYUI_URL = 'http://127.0.0.1:' + String(upstreamPort + 1)
+    const h2 = boot({})
+    const empty = await call(h2.routes, '/v1', { url: 'http://localhost/v1/poser/presets' })
+    assert.equal(empty.status, 200)
+    assert.deepEqual(empty.body, {})
+    await new Promise<void>((r) => { second.close(() => r()) })
   })
 
   afterEach(async () => {
