@@ -506,3 +506,188 @@ describe("the renderer-vocabulary overlay arms (explicit beats default)", () => 
     assert.equal(g.toJSON()["MiniMaxH3ReferenceToVideo.0"].inputs.prompt, "");
   });
 });
+
+describe("the loras mod bag + the per-call reference bundle (2026-09-17)", () => {
+  it("p.loras rows build the LTX stack verbatim (the mod plane's resolved wire shape)", () => {
+    const out = schema({ prompt: "p", calls: [{ text: "t", start_frame: 0, end_frame: 90 }] }) as Record<string, unknown>
+    const withBag = { ...out, loras: [
+      { name: "h3/alpha.safetensors", strength: 0.4 },
+      { name: "h3/beta.safetensors", strength: 0.6 },
+    ] }
+    const g = new GraphBuilder(PIN_DEFAULTS)
+    def.compose(withBag, model, g, "run-loras")
+    const graph = def.finalize!(g.toJSON()) as Record<string, { class_type: string, inputs: Record<string, unknown> }>
+    const ltx = Object.values(graph).find((n) => n.class_type === "LTX_lora_loader")!
+    assert.ok(ltx, "the LTX loader mounts")
+    assert.deepEqual(JSON.parse(ltx.inputs.stack_data as string), [
+      { on: true, lora: "h3/alpha.safetensors", str: 0.4, v: 1, a: 1, t: 1 },
+      { on: true, lora: "h3/beta.safetensors", str: 0.6, v: 1, a: 1, t: 1 },
+    ])
+  })
+
+  it("a refs-carrying call is t4r and wires the bundle: anchor input_1, ref images 2-9, video components 10/11, audio 16", () => {
+    const out = schema({ prompt: "p", calls: [
+      { text: "t", start_frame: 0, end_frame: 90 },
+      { text: "t2", start_frame: 90, end_frame: 180, image: "anchor.png",
+        refs: { images: "ref_a.png, ref_b.png", videos: ["clip.mp4"], audios: "voice.wav" } },
+    ] }) as Record<string, unknown>
+    const g = new GraphBuilder(PIN_DEFAULTS)
+    def.compose(out, model, g, "run-refs")
+    const graph = def.finalize!(g.toJSON()) as Record<string, { class_type: string, inputs: Record<string, unknown> }>
+    const ids = Object.keys(graph)
+    const findId = (re: RegExp): string => {
+      const hit = ids.find((id) => re.test(id))
+      assert.ok(hit, `no node matches ${re}`)
+      return hit
+    }
+    // w2 derives t4r (the anchor); w1 stays t4_open (no guide, no refs, the opener)
+    assert.ok(findId(/^window2_MiniMaxH3ReferenceToVideo\./))
+    const bundle = graph[findId(/^window2_PlagueKindBundleIn\./)]
+    const wire = (k: string): string => (bundle.inputs[k] as unknown[])[0] as string
+    assert.match(wire("input_1"), /^window2_UnifiedResizeImageMask\.\d+$/, "anchor rides input_1 through the ref resizer")
+    assert.match(wire("input_2"), /^window2_UnifiedResizeImageMask\.\d+$/, "ref image A rides input_2")
+    assert.match(wire("input_3"), /^window2_UnifiedResizeImageMask\.\d+$/, "ref image B rides input_3")
+    assert.equal(wire("input_10"), findId(/^window2_GetVideoComponents\./), "the video's IMAGE stream rides input_10")
+    assert.equal(wire("input_11"), findId(/^window2_GetVideoComponents\./), "the video's AUDIO stream rides input_11")
+    assert.equal(wire("input_16"), findId(/^window2_LoadAudio\./), "the audio ref rides input_16")
+    // the load lanes: 3 images (anchor + 2 refs), 1 video, 1 audio
+    assert.equal(ids.filter((id) => /^window2_LoadImage\./.test(id)).length, 3)
+    assert.equal(ids.filter((id) => /^window2_LoadVideo\./.test(id)).length, 1)
+    assert.equal(ids.filter((id) => /^window2_LoadAudio\./.test(id)).length, 1)
+  })
+
+  it("refs WITHOUT a guide still derive t4r (the bundle IS the r2v input)", () => {
+    const out = schema({ prompt: "p", calls: [
+      { text: "t", start_frame: 0, end_frame: 90, refs: { images: "ref_a.png" } },
+    ] }) as Record<string, unknown>
+    const g = new GraphBuilder(PIN_DEFAULTS)
+    def.compose(out, model, g, "run-refs-noguide")
+    const graph = def.finalize!(g.toJSON()) as Record<string, { class_type: string }>
+    // single-window graphs are UNSCOPED (scopes ride the film renderer only)
+    assert.ok(Object.keys(graph).some((id) => /^MiniMaxH3ReferenceToVideo\./.test(id)), "refs alone mount the r2v lane")
+    assert.ok(Object.keys(graph).some((id) => /^PlagueKindBundleIn\./.test(id)), "the reference bundle mounts")
+    // no ANCHOR: input_1 (the anchor slot) stays absent; the one
+    // LoadImage that mounts IS the ref image (input_2)
+    const bundleId = Object.keys(graph).find((id) => /^PlagueKindBundleIn\./.test(id))!
+    const inputs = (graph[bundleId] as unknown as { inputs: Record<string, unknown> }).inputs
+    assert.ok(!('input_1' in inputs), "no anchor — input_1 absent")
+    assert.ok('input_2' in inputs, "the ref image rides input_2")
+  })
+})
+
+describe("the wire-form arms (single-call lift, span knobs, seamless chains)", () => {
+  it("the single-call lift reads the anchor from every guide spelling and the knobs ride the stanza", () => {
+    const out = schema({ prompt: "p", calls: [
+      // fps_seconds: the knob the t4r length walk actually reads
+      // (the frozen golden pins r2v.length ← ComfyMath(seconds × 24)
+      // — the 17k+5 grid rider; a knobs.length override is honored on
+      // the t4_open/chain spans, not this branch)
+      { text: "t", start_frame: 0, end_frame: 90, image_name: "anchor.png", knobs: { fps_seconds: 5 } },
+    ] }) as Record<string, unknown>
+    const g = new GraphBuilder(PIN_DEFAULTS)
+    def.compose(out, model, g, "run-lift")
+    const graph = def.finalize!(g.toJSON()) as Record<string, { class_type: string, inputs: Record<string, unknown> }>
+    // image_name anchor → t4r lane + the i2v dead branch mounts
+    assert.ok(Object.keys(graph).some((id) => /^MiniMaxH3ImageToVideo\./.test(id)), "the anchor drives t4r")
+    // the knob-pinned length rides the r2v window through the grid
+    // walk's ComfyMath expression (the frozen family shape computes
+    // length, never a bare literal)
+    const r2v = graph[Object.keys(graph).find((id) => /^MiniMaxH3ReferenceToVideo\./.test(id))!]
+    const lenIn = r2v.inputs.length as unknown
+    assert.ok(Array.isArray(lenIn), "the length input rides a computed wire")
+    const mathNode = graph[(lenIn as unknown[])[0] as string] as { inputs: Record<string, unknown> }
+    const prim = mathNode.inputs["values.a"] as unknown[]
+    const primNode = graph[prim[0] as string] as { inputs: Record<string, unknown> }
+    assert.equal(primNode.inputs.value, 5, "the grid walk seeds from the knob-pinned seconds")
+  })
+
+  it("an extend call with NO prev-sec chains with the default carry (the seam arm without motion-context seconds)", () => {
+    const out = schema({ prompt: "p", calls: [
+      { text: "t", start_frame: 0, end_frame: 90 },
+      { text: "t2", start_frame: 90, end_frame: 180, transition: "extend" },
+    ] }) as Record<string, unknown>
+    const g = new GraphBuilder(PIN_DEFAULTS)
+    def.compose(out, model, g, "run-extend-nosecs")
+    const graph = def.finalize!(g.toJSON()) as Record<string, { class_type: string, inputs: Record<string, unknown> }>
+    // w2 chains (extend ⇒ chainLike) with NO motion_context_length —
+    // the latent seam rides the default carry
+    const mc2 = graph[Object.keys(graph).find((id) => /^window2_MiniMaxH3MotionContext\./.test(id))!]
+    assert.ok(mc2, "the motion context mounts for the seamless chain")
+    assert.equal(mc2.inputs.context_latent !== undefined || mc2.inputs.context_frames !== undefined, true,
+      "the seam rides a context wire")
+  })
+
+  it("a videos-only reference bundle pins the i2v geometry literals (no image lane mounts)", () => {
+    const out = schema({ prompt: "p", calls: [
+      { text: "t", start_frame: 0, end_frame: 90, refs: { videos: ["clip.mp4"] } },
+    ] }) as Record<string, unknown>
+    const g = new GraphBuilder(PIN_DEFAULTS)
+    def.compose(out, model, g, "run-videorefs")
+    const graph = def.finalize!(g.toJSON()) as Record<string, { class_type: string, inputs: Record<string, unknown> }>
+    const i2v = graph[Object.keys(graph).find((id) => /^MiniMaxH3ImageToVideo\./.test(id))!]
+    assert.equal(i2v.inputs.width, 768.0, "the geometry literals pin when no image feeds the resizer")
+    assert.equal(i2v.inputs.height, 1344.0)
+    assert.ok(!Object.keys(graph).some((id) => /^LoadImage\./.test(id)), "no image lane")
+  })
+
+  it("empty-string ref entries ride as absent (the wire tolerates trailing commas)", () => {
+    const out = schema({ prompt: "p", calls: [
+      { text: "t", start_frame: 0, end_frame: 90, refs: { images: " , ,", videos: [] } },
+    ] }) as Record<string, unknown>
+    const g = new GraphBuilder(PIN_DEFAULTS)
+    def.compose(out, model, g, "run-emptyrefs")
+    // empty refs imply nothing: the window stays t4_open — the family
+    // marker is the i2v dead branch / the bundle (r2v itself mounts on
+    // every family; the frozen goldens pin that shape)
+    const graph = def.finalize!(g.toJSON()) as Record<string, { class_type: string }>
+    assert.ok(!Object.keys(graph).some((id) => /^MiniMaxH3ImageToVideo\./.test(id)), "no anchor, no i2v dead branch")
+    assert.ok(!Object.keys(graph).some((id) => /^PlagueKindBundleIn\./.test(id)), "no refs, no bundle")
+  })
+})
+
+describe("the remaining wire arms (span rider override, t4r guard refusal)", () => {
+  it("a call whose knobs pin length skips the span rider (the studio preset shape)", () => {
+    const out = schema({ prompt: "p", calls: [
+      { text: "t", start_frame: 0, end_frame: 90 },
+      { text: "t2", start_frame: 90, end_frame: 180, knobs: { length: 56 } },
+    ] }) as Record<string, unknown>
+    const g = new GraphBuilder(PIN_DEFAULTS)
+    def.compose(out, model, g, "run-lenknob")
+    const graph = def.finalize!(g.toJSON()) as Record<string, { class_type: string, inputs: Record<string, unknown> }>
+    // w2 rides the knob-pinned 56 directly (no span walk), w1 snaps its span
+    for (const [id, n] of Object.entries(graph)) {
+      if (/^window2_MiniMaxH3ReferenceToVideo\.|^window2_MiniMaxH3TextToVideo\./.test(id) && typeof n.inputs.length === "number") {
+        assert.equal(n.inputs.length, 56, `w2 length pinned on ${id}`)
+      }
+    }
+  })
+
+  it("a hand-forced t4r variant with neither anchor nor refs refuses LOUD", () => {
+    const out = schema({ prompt: "p", variant: "t4r" }) as Record<string, unknown>
+    assert.throws(
+      () => {
+        const g = new GraphBuilder(PIN_DEFAULTS)
+        def.compose(out, model, g, "run-badt4r")
+      },
+      /image-anchored window without a staged guide image/,
+    )
+  })
+
+  it("ABSENT calls + an ABSENT single doc still walks the fresh-press starter (the undefined-film arm)", () => {
+    const out = schema({ prompt: "p" }) as Record<string, unknown>
+    const g = new GraphBuilder(PIN_DEFAULTS)
+    def.compose(out, model, g, "run-fresh")
+    const graph = def.finalize!(g.toJSON()) as Record<string, { class_type: string }>
+    assert.ok(Object.keys(graph).some((id) => /^SaveVideo\./.test(id)), "the starter window saves a film")
+  })
+})
+
+describe("the guard's refs admission (hand-authored t4r + refs)", () => {
+  it("an explicit t4r window with refs and NO anchor passes the guard (the bundle IS the r2v input)", () => {
+    const out = schema({ prompt: "p", variant: "t4r", refs: { images: "ref_a.png" } }) as Record<string, unknown>
+    const g = new GraphBuilder(PIN_DEFAULTS)
+    def.compose(out, model, g, "run-t4r-refs")
+    const graph = def.finalize!(g.toJSON()) as Record<string, { class_type: string }>
+    assert.ok(Object.keys(graph).some((id) => /^PlagueKindBundleIn\./.test(id)), "the reference bundle mounts")
+  })
+})

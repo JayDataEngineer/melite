@@ -147,9 +147,11 @@ test("krea lora rows: byte-truth vs the golden referee", () => {
 
 test("THE RUNTIME CATALOG LAW: qwen serves the union; family rows win", () => {
   const union = svc.modRows("loras", "qwen-img-edit-2511");
-  // 12 krea rows + z-image's 7 (the restoration boards loras — the
-  // union is every family's rows, never a frozen count)
-  assert.equal(union.length, 19, "the union of every family's rows");
+  // 12 krea rows + z-image's 7 + h3-timeline's 2 (the mod-plane
+  // stroke boards the h3 distill pair — the union is every family's
+  // rows, never a frozen count)
+  assert.equal(union.length, 21, "the union of every family's rows");
+  assert.ok(union.some((r) => r.id === "h3_lightx2v_dareties"), "the h3 gold distill row serves");
   assert.ok(union.some((r) => r.id === "krea2_realism_lora"));
   const own = svc.modRows("loras", "krea-2");
   assert.equal(own.length, 12, "family rows unchanged (they ARE the union source)");

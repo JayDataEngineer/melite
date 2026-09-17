@@ -289,9 +289,10 @@ export function schema(v: unknown): Record<string, unknown> {
   if (!explicit.has('length')) {
     const rows = Array.isArray(out.calls) ? out.calls as Array<Record<string, unknown>> : []
     if (rows.length === 1) {
-      const c0 = rows[0] ?? {}
-      const sf = typeof c0.start_frame === 'number' ? c0.start_frame : null
-      const ef = typeof c0.end_frame === 'number' ? c0.end_frame : null
+      // (the shot laws above guarantee valid int spans — direct
+      // reads, no defensive re-validation)
+      const sf = rows[0].start_frame as number
+      const ef = rows[0].end_frame as number
       // (the shot laws above guarantee valid int spans — every
       // single-call doc rides the snap arm; no defensive else)
       const k = Math.round((ef! - sf! - 22) / 17)
@@ -387,13 +388,19 @@ function renderH3Film(p: Record<string, unknown>, g: GraphBuilder): void {
     const transition = call.transition === 'cut' ? 'cut' : 'extend'
     const secs = num(call.first_frame_prev_sec)
     const knobs = (call.knobs ?? {}) as Record<string, unknown>
+    // refs are a LAYER B (per-call) property — the reference bundle
+    // rides the stanza; a refs-carrying call is t4r EVEN without a
+    // guide still (the bundle IS the r2v input).
+    const rb = (call.refs ?? {}) as Record<string, unknown>
+    const hasRefs = wireList(rb.images).length + wireList(rb.videos).length + wireList(rb.audios).length > 0
     const chainLike = i > 0 && (transition === 'extend' || secs !== null)
     const sf = num(call.start_frame)
     const ef = num(call.end_frame)
 
     const stanza: Record<string, unknown> = { ...p, ...knobs, prompt: text, k, ctx_save_clip_index: k }
-    stanza.variant = guide ? 't4r' : chainLike ? 't4_chain' : 't4_open'
-    if (guide) stanza.image = guide
+    stanza.variant = (guide !== '' || hasRefs) ? 't4r' : chainLike ? 't4_chain' : 't4_open'
+    if (hasRefs) stanza.refs = call.refs
+    if (guide !== '') stanza.image = guide
     else delete stanza.image
     // per-window length: the span rider law, unless the call's knobs pin one
     if (sf !== null && ef !== null && ef > sf && knobs.length === undefined) {
@@ -419,9 +426,12 @@ function renderH3Film(p: Record<string, unknown>, g: GraphBuilder): void {
       film = { images: c.out(0), audio: c.out(1) }
     }
   })
-  if (film !== undefined) {
+  // (calls.length >= 1 — the shot laws refuse the empty doc, so the
+  // forEach always binds film; no defensive undefined arm)
+  {
+    const f = film as { images: OutputHandle, audio: OutputHandle }
     const created = g.node('CreateVideo', {
-      images: film.images, audio: film.audio, fps: 24, bit_depth: 8,
+      images: f.images, audio: f.audio, fps: 24, bit_depth: 8,
       // color_space: pin autofill "sRGB"
     })
     g.node('SaveVideo', {
@@ -444,7 +454,24 @@ export interface WindowHandles {
   filmAudio: OutputHandle
 }
 
+// THE REF WIRE FORM (one law, three readers): refs ride as comma
+// strings (the stagers' IsString law) OR string arrays (hand-authored
+// JSON); entries are trimmed filenames, empties are absent. Never a
+// bespoke per-site reading.
+const wireList = (v: unknown): string[] =>
+  Array.isArray(v)
+    ? v.filter((x): x is string => typeof x === 'string' && x.trim() !== '')
+    : typeof v === 'string'
+      ? v.split(',').map((x) => x.trim()).filter((x) => x !== '')
+      : []
+
 function renderH3Window(p: Record<string, unknown>, g: GraphBuilder): WindowHandles {
+  // REFS IMPLY THE R2V LANE (the bundle IS the r2v input): a
+  // refs-carrying window is t4r even without a guide still — the
+  // same law the film renderer applies per call.
+  const rb0 = (p.refs ?? {}) as Record<string, unknown>
+  const hasRefs = wireList(rb0.images).length + wireList(rb0.videos).length + wireList(rb0.audios).length > 0
+  if (hasRefs && p.variant !== 't4r') p = { ...p, variant: 't4r' }
   const family = p.variant as Family
   if (!(FAMILIES as readonly string[]).includes(family)) {
     throw new Error(`unknown window family '${String(p.variant)}' (known: ${[...FAMILIES].sort().join(', ')})`)
@@ -478,7 +505,25 @@ function renderH3Window(p: Record<string, unknown>, g: GraphBuilder): WindowHand
     model: g.node('MiniMaxLowVRAMAttention', { model: sla, head_chunks: 4 }).out(),
     chunks: 2, seq_threshold: 4096,
   }).out()
-  const loraStack = p.lora_stack ?? LORA_STACK_GOLD
+  // THE LORAS MOD PLANE (the operator's law: "MOD SYSTEM IS CORE.
+  // NEVER HARDCODED"): the studio/agent surface writes the mod bag
+  // `loras` — [{id, strength}] rows the service resolves to
+  // {name, strength} filenames against the family's flavor catalog.
+  // Those rows build the upstream stack verbatim ({on, lora, str,
+  // v:1, a:1, t:1} — the golden rows' own shape); the raw
+  // `lora_stack` JSON string stays the 1:1 escape hatch; absent
+  // both, the frozen gold pair rides.
+  const loraStack = Array.isArray(p.loras) && (p.loras as unknown[]).length > 0
+    ? JSON.stringify((p.loras as Array<Record<string, unknown>>).map((r) => ({
+        // the service resolves every row against the family catalog
+        // (unknown ids refuse LOUD upstream) — {name, strength} is
+        // the guaranteed wire shape, read directly
+        on: true,
+        lora: r.name as string,
+        str: r.strength as number,
+        v: 1, a: 1, t: 1,
+      })))
+    : (p.lora_stack ?? LORA_STACK_GOLD)
   // t4r templates carry shift_video 8.0; the t4 family carries the INT
   // 8 — JSON-structural parity needs the family's literal. An omitted
   // key arrives null here (schema() normalizes the declared 8.0 back;
@@ -525,25 +570,72 @@ function renderH3Window(p: Record<string, unknown>, g: GraphBuilder): WindowHand
       model: adaln, shift_video: shiftVideo, shift_audio: p.shift_audio as number,
     }).out()
 
-    // guide geometry + reference bundle. RESIZER ORDER IS PINNED: the
-    // serialized walk reaches the reference resizer (bundle → r2v refs)
-    // before the geometry resizer (i2v) — creation mirrors the walk.
-    const img = g.node('LoadImage', { image: guideImage }).out()
-    const refR = g.node('UnifiedResizeImageMask', {
-      image: img, scale_mode: 'Shorter Side',
-      aspect_ratio: 'Auto (Input Image)', long_side_target: 1024.0,
-      short_side_target: 2048.0, width: 1024.0, height: 1024.0,
-      multiplier: 1.0, megapixels: 1.0, upscale_method: 'lanczos',
-      crop: 'center', divisible_by: 32.0, maintain_aspect: false,
-    }).out()
-    const geo = g.node('UnifiedResizeImageMask', {
-      image: img, scale_mode: 'Total Pixels (MP)',
-      aspect_ratio: '3:4 (Portrait Standard)', long_side_target: 1280.0,
-      short_side_target: 768.0, width: 768.0, height: 1344.0,
-      multiplier: 1.0, megapixels: 0.98, upscale_method: 'lanczos',
-      crop: 'center', divisible_by: 32.0, maintain_aspect: false,
+    // THE ANCHOR + THE REFERENCE BUNDLE (the operator's distinction,
+    // 2026-09-17): `image` is the call's FIRST FRAME anchor (input_1,
+    // the frozen golden shape); `refs` is the call's REFERENCE bundle
+    // — the upstream "Extra References" subgraph's own vocabulary
+    // (LoadImage → the ref resizer; LoadVideo → GetVideoComponents →
+    // the image+audio component pair; LoadAudio). Bundle layout (the
+    // golden slot map): inputs 1-9 images (anchor first), 10/12/14
+    // video image streams, 11/13/15 video audio streams, 16-18
+    // audios. RESIZER ORDER IS PINNED: the serialized walk reaches
+    // the reference resizer (bundle → r2v refs) before the geometry
+    // resizer (i2v) — creation mirrors the walk.
+    const refBag = (p.refs ?? {}) as Record<string, unknown>
+    const refImages = wireList(refBag.images).slice(0, 9)
+    const refVideos = wireList(refBag.videos).slice(0, 3)
+    const refAudios = wireList(refBag.audios).slice(0, 3)
+    const bundleInputs: Record<string, OutputHandle> = {}
+    let anchorRaw: OutputHandle | undefined
+    if (guideImage !== '') {
+      anchorRaw = g.node('LoadImage', { image: guideImage }).out()
+      bundleInputs.input_1 = g.node('UnifiedResizeImageMask', {
+        image: anchorRaw, scale_mode: 'Shorter Side',
+        aspect_ratio: 'Auto (Input Image)', long_side_target: 1024.0,
+        short_side_target: 2048.0, width: 1024.0, height: 1024.0,
+        multiplier: 1.0, megapixels: 1.0, upscale_method: 'lanczos',
+        crop: 'center', divisible_by: 32.0, maintain_aspect: false,
+      }).out()
+    }
+    refImages.forEach((src, i) => {
+      const img = g.node('LoadImage', { image: src }).out()
+      if (anchorRaw === undefined && i === 0) anchorRaw = img
+      bundleInputs[`input_${i + 2}`] = g.node('UnifiedResizeImageMask', {
+        image: img, scale_mode: 'Shorter Side',
+        aspect_ratio: 'Auto (Input Image)', long_side_target: 1024.0,
+        short_side_target: 2048.0, width: 1024.0, height: 1024.0,
+        multiplier: 1.0, megapixels: 1.0, upscale_method: 'lanczos',
+        crop: 'center', divisible_by: 32.0, maintain_aspect: false,
+      }).out()
     })
-    const bundle = g.node('PlagueKindBundleIn', { input_1: refR }).out()
+    refVideos.forEach((src, i) => {
+      const vid = g.node('LoadVideo', { file: src }).out()
+      const comp = g.node('GetVideoComponents', { video: vid })
+      bundleInputs[`input_${10 + 2 * i}`] = comp.out(0)
+      bundleInputs[`input_${11 + 2 * i}`] = comp.out(1)
+    })
+    refAudios.forEach((src, i) => {
+      bundleInputs[`input_${16 + i}`] = g.node('LoadAudio', { audio: src }).out()
+    })
+    // the geometry resizer (i2v's dead branch): fed by the anchor, or
+    // the first ref image, or — anchorless and imageless — pinned to
+    // the literals the geo node's own defaults produce (the branch is
+    // never selected; r2vBool pins true below).
+    const geoSrc = anchorRaw ?? bundleInputs.input_2
+    let geoW: OutputHandle | number = 768.0
+    let geoH: OutputHandle | number = 1344.0
+    if (geoSrc !== undefined) {
+      const geo = g.node('UnifiedResizeImageMask', {
+        image: geoSrc, scale_mode: 'Total Pixels (MP)',
+        aspect_ratio: '3:4 (Portrait Standard)', long_side_target: 1280.0,
+        short_side_target: 768.0, width: 768.0, height: 1344.0,
+        multiplier: 1.0, megapixels: 0.98, upscale_method: 'lanczos',
+        crop: 'center', divisible_by: 32.0, maintain_aspect: false,
+      })
+      geoW = geo.out(2)
+      geoH = geo.out(3)
+    }
+    const bundle = g.node('PlagueKindBundleIn', bundleInputs).out()
     const bout = g.node('PlagueKindBundleOut', { bundle })
     const r2vInputs: Record<string, OutputHandle | string | number> = {
       prompt, width: p.width as number, height: p.height as number,
@@ -560,7 +652,7 @@ function renderH3Window(p: Record<string, unknown>, g: GraphBuilder): WindowHand
     // the never-selected opener branch (R2VBool true) — the golden
     // dead-branch text and the geometry slots ride it verbatim
     const i2v = g.node('MiniMaxH3ImageToVideo', {
-      prompt: I2V_GOLD_PROMPT, width: geo.out(2), height: geo.out(3),
+      prompt: I2V_GOLD_PROMPT, width: geoW, height: geoH,
       length: lengthNode, context_steps: 1, audio_context_steps: 0,
       clip, vae: vaeVideo, first_frame: bout.out(0), last_frame: bout.out(1),
     })
@@ -785,9 +877,11 @@ function renderH3Window(p: Record<string, unknown>, g: GraphBuilder): WindowHand
     latent: latOut, filename_prefix: (p.ctx_save_prefix ?? 'h3_context/clip') as string,
     clip_index: p.ctx_save_clip_index ?? k,
   })
-  if (delivered === null) throw new Error('h3_window: neither save branch ran — a window must save its film')
-  rawHandles.filmImages = delivered.images
-  rawHandles.filmAudio = delivered.audio
+  // (every family path delivers — t4r/t4_open save the window film,
+  // t4_chain saves the context rail; no null arm: the family
+  // dispatch is exhaustive over FAMILIES)
+  rawHandles.filmImages = (delivered as { images: OutputHandle, audio: OutputHandle }).images
+  rawHandles.filmAudio = (delivered as { images: OutputHandle, audio: OutputHandle }).audio
   return rawHandles
 }
 
@@ -847,11 +941,33 @@ export function registerCard(ctx: Context, comfy: ComfyUIService): void {
     // normalizer — params_schema walks the declared object's .dict)
     schemaCarrier: paramSchema,
     compose(p, _model, g) {
+      // THE SINGLE-CALL LIFT runs FIRST (the guard below reads the
+      // lifted anchor): a one-call doc's row IS the window — its
+      // prompt, image (the anchor), refs (the reference bundle) and
+      // knobs ride the call, never a parallel run-level vocabulary.
+      {
+        const liftRows = Array.isArray(p.calls) ? p.calls as Array<Record<string, unknown>> : null
+        if (liftRows !== null && liftRows.length === 1 && !Array.isArray((liftRows[0] as { calls?: unknown }).calls)) {
+          const single = liftRows[0]
+          const knobs = (single.knobs ?? {}) as Record<string, unknown>
+          p = { ...p, ...knobs }
+          const img = (single.image ?? single.ref_image ?? single.image_name) as string | undefined
+          if (typeof img === 'string' && img !== '') p.image = img
+          if (single.refs !== undefined) p.refs = single.refs
+          if (typeof single.text === 'string' && single.text.trim() !== '') p.prompt = single.text.trim()
+        }
+      }
       const guideImage = (p.image ?? p.image_name ?? '') as string
       if (p.variant === 't4r' && !guideImage) {
-        throw new Error(
-          'h3_window(t4r): image-anchored window without a staged guide image — ' +
-          'compose always injects LoadImage.0.image on this family')
+        // (refs-implied t4r windows carry no anchor — the bundle IS
+        // the r2v input; the guard admits them via the refs law)
+        const rbRef = (p.refs ?? {}) as Record<string, unknown>
+        const refsCarry = wireList(rbRef.images).length + wireList(rbRef.videos).length + wireList(rbRef.audios).length > 0
+        if (!refsCarry) {
+          throw new Error(
+            'h3_window(t4r): image-anchored window without a staged guide image — ' +
+            'compose always injects LoadImage.0.image on this family')
+        }
       }
       // THE FILM DISPATCH: a multi-call chain doc with no per-window
       // stanza markers (k absent — the py stanza vocabulary) composes

@@ -3,7 +3,7 @@
     "id": "ace-step",
     "form": "form_music",
     "label": "ACE-Step 1.5 Turbo Q8",
-    "description": "the turbo distill \u2014 fast defaults",
+    "description": "the turbo distill — fast defaults",
     "engine": "audio_cpp",
     "defaults": {
       "backend": "cuda"
@@ -19,7 +19,7 @@
       {
         "id": "standard",
         "label": "Turbo",
-        "description": "the turbo distill \u2014 fast defaults",
+        "description": "the turbo distill — fast defaults",
         "group": "Variant",
         "route": "ace-step",
         "cells": [
@@ -44,7 +44,7 @@
       {
         "id": "base",
         "label": "Base",
-        "description": "the base checkpoint \u2014 no turbo distill",
+        "description": "the base checkpoint — no turbo distill",
         "group": "Variant",
         "route": "ace-step-base",
         "cells": [
@@ -111,7 +111,7 @@
       {
         "id": "default",
         "label": "Default",
-        "hint": "The family default \u2014 no extra stamps; a fresh card lands here.",
+        "hint": "The family default — no extra stamps; a fresh card lands here.",
         "group": "Recipe",
         "cells": []
       }
@@ -122,7 +122,7 @@
     "id": "ace-step-base",
     "form": "form_music",
     "label": "ACE-Step 1.5 Base Q8",
-    "description": "the base checkpoint \u2014 no turbo distill",
+    "description": "the base checkpoint — no turbo distill",
     "engine": "audio_cpp",
     "defaults": {
       "backend": "cuda"
@@ -138,7 +138,7 @@
       {
         "id": "standard",
         "label": "Turbo",
-        "description": "the turbo distill \u2014 fast defaults",
+        "description": "the turbo distill — fast defaults",
         "group": "Variant",
         "route": "ace-step",
         "cells": [
@@ -163,7 +163,7 @@
       {
         "id": "base",
         "label": "Base",
-        "description": "the base checkpoint \u2014 no turbo distill",
+        "description": "the base checkpoint — no turbo distill",
         "group": "Variant",
         "route": "ace-step-base",
         "cells": [
@@ -230,7 +230,7 @@
       {
         "id": "default",
         "label": "Default",
-        "hint": "The family default \u2014 no extra stamps; a fresh card lands here.",
+        "hint": "The family default — no extra stamps; a fresh card lands here.",
         "group": "Recipe",
         "cells": []
       }
@@ -241,7 +241,7 @@
     "id": "ace-step-base-bf16",
     "form": "form_music",
     "label": "ACE-Step 1.5 Base BF16",
-    "description": "the base checkpoint \u2014 no turbo distill",
+    "description": "the base checkpoint — no turbo distill",
     "engine": "audio_cpp",
     "defaults": {
       "backend": "cuda"
@@ -257,7 +257,7 @@
       {
         "id": "standard",
         "label": "Turbo",
-        "description": "the turbo distill \u2014 fast defaults",
+        "description": "the turbo distill — fast defaults",
         "group": "Variant",
         "route": "ace-step",
         "cells": [
@@ -282,7 +282,7 @@
       {
         "id": "base",
         "label": "Base",
-        "description": "the base checkpoint \u2014 no turbo distill",
+        "description": "the base checkpoint — no turbo distill",
         "group": "Variant",
         "route": "ace-step-base",
         "cells": [
@@ -349,7 +349,7 @@
       {
         "id": "default",
         "label": "Default",
-        "hint": "The family default \u2014 no extra stamps; a fresh card lands here.",
+        "hint": "The family default — no extra stamps; a fresh card lands here.",
         "group": "Recipe",
         "cells": []
       }
@@ -360,7 +360,7 @@
     "id": "ace-step-bf16",
     "form": "form_music",
     "label": "ACE-Step 1.5 Turbo BF16",
-    "description": "the turbo distill \u2014 fast defaults",
+    "description": "the turbo distill — fast defaults",
     "engine": "audio_cpp",
     "defaults": {
       "backend": "cuda"
@@ -376,7 +376,7 @@
       {
         "id": "standard",
         "label": "Turbo",
-        "description": "the turbo distill \u2014 fast defaults",
+        "description": "the turbo distill — fast defaults",
         "group": "Variant",
         "route": "ace-step",
         "cells": [
@@ -401,7 +401,7 @@
       {
         "id": "base",
         "label": "Base",
-        "description": "the base checkpoint \u2014 no turbo distill",
+        "description": "the base checkpoint — no turbo distill",
         "group": "Variant",
         "route": "ace-step-base",
         "cells": [
@@ -468,7 +468,7 @@
       {
         "id": "default",
         "label": "Default",
-        "hint": "The family default \u2014 no extra stamps; a fresh card lands here.",
+        "hint": "The family default — no extra stamps; a fresh card lands here.",
         "group": "Recipe",
         "cells": []
       }
@@ -497,7 +497,7 @@
       {
         "id": "standard",
         "label": "Turbo",
-        "description": "the turbo distill \u2014 fast defaults",
+        "description": "the turbo distill — fast defaults",
         "group": "Variant",
         "route": "ace-step",
         "cells": [
@@ -522,7 +522,7 @@
       {
         "id": "base",
         "label": "Base",
-        "description": "the base checkpoint \u2014 no turbo distill",
+        "description": "the base checkpoint — no turbo distill",
         "group": "Variant",
         "route": "ace-step-base",
         "cells": [
@@ -589,7 +589,7 @@
       {
         "id": "default",
         "label": "Default",
-        "hint": "The family default \u2014 no extra stamps; a fresh card lands here.",
+        "hint": "The family default — no extra stamps; a fresh card lands here.",
         "group": "Recipe",
         "cells": []
       }
@@ -618,7 +618,7 @@
       {
         "id": "standard",
         "label": "Turbo",
-        "description": "the turbo distill \u2014 fast defaults",
+        "description": "the turbo distill — fast defaults",
         "group": "Variant",
         "route": "ace-step",
         "cells": [
@@ -643,7 +643,7 @@
       {
         "id": "base",
         "label": "Base",
-        "description": "the base checkpoint \u2014 no turbo distill",
+        "description": "the base checkpoint — no turbo distill",
         "group": "Variant",
         "route": "ace-step-base",
         "cells": [
@@ -710,7 +710,7 @@
       {
         "id": "default",
         "label": "Default",
-        "hint": "The family default \u2014 no extra stamps; a fresh card lands here.",
+        "hint": "The family default — no extra stamps; a fresh card lands here.",
         "group": "Recipe",
         "cells": []
       }
@@ -750,7 +750,7 @@
       {
         "id": "default",
         "label": "Default",
-        "hint": "The family default \u2014 no extra stamps; a fresh card lands here.",
+        "hint": "The family default — no extra stamps; a fresh card lands here.",
         "group": "Recipe",
         "cells": []
       }
@@ -767,7 +767,7 @@
       {
         "id": "Recipe",
         "label": "Recipe",
-        "tooltip": "One-click recipes \u2014 patch-only rows that stamp picks onto the draft; Default stamps nothing.",
+        "tooltip": "One-click recipes — patch-only rows that stamp picks onto the draft; Default stamps nothing.",
         "default": "default"
       }
     ],
@@ -794,7 +794,7 @@
     "id": "anny",
     "form": "form_3d_anny",
     "label": "Anny (character assembly) Anny",
-    "description": "Author a character body \u2014 11 identity sliders (or attach a GLB, or load a preset), then render the 8-view turnaround sheet. Photo\u2192body estimation rides the hmr-estimate verb (the MHR chain).",
+    "description": "Author a character body — 11 identity sliders (or attach a GLB, or load a preset), then render the 8-view turnaround sheet. Photo→body estimation rides the hmr-estimate verb (the MHR chain).",
     "engine": "comfyui",
     "defaults": {
       "resolution": 768,
@@ -818,7 +818,7 @@
       "type": "",
       "repo_id": "melite-poser-nodes",
       "filename": null,
-      "note": "our own pack (vendor/comfyui_extensions/melite-poser-nodes) \u2014 the ray-era poser chain, stopgap arc 2026-09-04"
+      "note": "our own pack (vendor/comfyui_extensions/melite-poser-nodes) — the ray-era poser chain, stopgap arc 2026-09-04"
     },
     "studio": null,
     "base_body": "anny-base-body.glb",
@@ -873,7 +873,7 @@
     "id": "anycreature",
     "form": "form_forge",
     "label": "anyCreature Standard Native",
-    "description": "Text \u2192 game-ready 3D creature (JSON spec \u2192 skinned GLB)",
+    "description": "Text → game-ready 3D creature (JSON spec → skinned GLB)",
     "engine": "anycreature",
     "defaults": {
       "smooth_angle": 50,
@@ -899,7 +899,7 @@
       {
         "id": "default",
         "label": "Default",
-        "hint": "The family default \u2014 no extra stamps; a fresh card lands here.",
+        "hint": "The family default — no extra stamps; a fresh card lands here.",
         "group": "Recipe",
         "cells": []
       }
@@ -909,7 +909,7 @@
     "id": "auto-detect",
     "form": "form_detect",
     "label": "Auto Detect Standard Native (weightless)",
-    "description": "Auto Detect \u2014 automatically selects the best model and conditioning for a given input.",
+    "description": "Auto Detect — automatically selects the best model and conditioning for a given input.",
     "unoffered": true,
     "defaults": {
       "output_mode": "segm",
@@ -936,7 +936,7 @@
       {
         "id": "default",
         "label": "Default",
-        "hint": "The family default \u2014 no extra stamps; a fresh card lands here.",
+        "hint": "The family default — no extra stamps; a fresh card lands here.",
         "group": "Recipe",
         "cells": []
       }
@@ -953,7 +953,7 @@
       {
         "id": "Recipe",
         "label": "Recipe",
-        "tooltip": "One-click recipes \u2014 patch-only rows that stamp picks onto the draft; Default stamps nothing.",
+        "tooltip": "One-click recipes — patch-only rows that stamp picks onto the draft; Default stamps nothing.",
         "default": "default"
       }
     ]
@@ -962,7 +962,7 @@
     "id": "autoremesher",
     "form": "form_quad_remesh",
     "label": "AutoRemesher Standard Native",
-    "description": "AI triangle soup \u2192 clean quad topology (explicit budget, no silent defaults).",
+    "description": "AI triangle soup → clean quad topology (explicit budget, no silent defaults).",
     "engine": "comfyui",
     "genre": "3d",
     "variants": [
@@ -982,7 +982,7 @@
       {
         "id": "default",
         "label": "Default",
-        "hint": "The family default \u2014 no extra stamps; a fresh card lands here.",
+        "hint": "The family default — no extra stamps; a fresh card lands here.",
         "group": "Recipe",
         "cells": []
       }
@@ -999,7 +999,7 @@
       {
         "id": "Recipe",
         "label": "Recipe",
-        "tooltip": "One-click recipes \u2014 patch-only rows that stamp picks onto the draft; Default stamps nothing.",
+        "tooltip": "One-click recipes — patch-only rows that stamp picks onto the draft; Default stamps nothing.",
         "default": "default"
       }
     ],
@@ -1050,7 +1050,7 @@
       {
         "id": "default",
         "label": "Default",
-        "hint": "The family default \u2014 no extra stamps; a fresh card lands here.",
+        "hint": "The family default — no extra stamps; a fresh card lands here.",
         "group": "Recipe",
         "cells": []
       }
@@ -1067,7 +1067,7 @@
       {
         "id": "Recipe",
         "label": "Recipe",
-        "tooltip": "One-click recipes \u2014 patch-only rows that stamp picks onto the draft; Default stamps nothing.",
+        "tooltip": "One-click recipes — patch-only rows that stamp picks onto the draft; Default stamps nothing.",
         "default": "default"
       }
     ]
@@ -1100,7 +1100,7 @@
       {
         "id": "default",
         "label": "Default",
-        "hint": "The family default \u2014 no extra stamps; a fresh card lands here.",
+        "hint": "The family default — no extra stamps; a fresh card lands here.",
         "group": "Recipe",
         "cells": []
       }
@@ -1117,7 +1117,7 @@
       {
         "id": "Recipe",
         "label": "Recipe",
-        "tooltip": "One-click recipes \u2014 patch-only rows that stamp picks onto the draft; Default stamps nothing.",
+        "tooltip": "One-click recipes — patch-only rows that stamp picks onto the draft; Default stamps nothing.",
         "default": "default"
       }
     ]
@@ -1155,7 +1155,7 @@
       {
         "id": "default",
         "label": "Default",
-        "hint": "The family default \u2014 no extra stamps; a fresh card lands here.",
+        "hint": "The family default — no extra stamps; a fresh card lands here.",
         "group": "Recipe",
         "cells": []
       }
@@ -1172,7 +1172,7 @@
       {
         "id": "Recipe",
         "label": "Recipe",
-        "tooltip": "One-click recipes \u2014 patch-only rows that stamp picks onto the draft; Default stamps nothing.",
+        "tooltip": "One-click recipes — patch-only rows that stamp picks onto the draft; Default stamps nothing.",
         "default": "default"
       }
     ]
@@ -1181,7 +1181,7 @@
     "id": "florence2",
     "form": "form_tagger",
     "label": "Florence-2 Standard F32",
-    "description": "Natural-language image captioning (Florence-2 large, PromptGen-tuned) \u2014 dense descriptive prompts for recreating images in FLUX / Ideogram / image-edit.",
+    "description": "Natural-language image captioning (Florence-2 large, PromptGen-tuned) — dense descriptive prompts for recreating images in FLUX / Ideogram / image-edit.",
     "engine": "comfyui",
     "defaults": {
       "checkpoint": "MiaoshouAI/Florence-2-large-PromptGen-v2.0",
@@ -1206,7 +1206,7 @@
       {
         "id": "default",
         "label": "Default",
-        "hint": "The family default \u2014 no extra stamps; a fresh card lands here.",
+        "hint": "The family default — no extra stamps; a fresh card lands here.",
         "group": "Recipe",
         "cells": []
       }
@@ -1223,7 +1223,7 @@
       {
         "id": "Recipe",
         "label": "Recipe",
-        "tooltip": "One-click recipes \u2014 patch-only rows that stamp picks onto the draft; Default stamps nothing.",
+        "tooltip": "One-click recipes — patch-only rows that stamp picks onto the draft; Default stamps nothing.",
         "default": "default"
       }
     ]
@@ -1232,7 +1232,7 @@
     "id": "flux-fill-dev",
     "form": "form_inpaint",
     "label": "Inpaint OneReward",
-    "description": "Dual-engine masked region inpainting \u2014 FLUX.1-Fill (dedicated fill arch) or LanPaint on any base model.",
+    "description": "Dual-engine masked region inpainting — FLUX.1-Fill (dedicated fill arch) or LanPaint on any base model.",
     "unoffered": true,
     "defaults": {
       "inpaint_context_pad": 64,
@@ -1271,7 +1271,7 @@
       {
         "id": "default",
         "label": "Default",
-        "hint": "The family default \u2014 no extra stamps; a fresh card lands here.",
+        "hint": "The family default — no extra stamps; a fresh card lands here.",
         "group": "Recipe",
         "cells": []
       }
@@ -1288,7 +1288,7 @@
       {
         "id": "Recipe",
         "label": "Recipe",
-        "tooltip": "One-click recipes \u2014 patch-only rows that stamp picks onto the draft; Default stamps nothing.",
+        "tooltip": "One-click recipes — patch-only rows that stamp picks onto the draft; Default stamps nothing.",
         "default": "default"
       }
     ]
@@ -1297,7 +1297,7 @@
     "id": "flux-fill-onereward",
     "form": "form_inpaint",
     "label": "Inpaint OneReward",
-    "description": "Dual-engine masked region inpainting \u2014 FLUX.1-Fill (dedicated fill arch) or LanPaint on any base model.",
+    "description": "Dual-engine masked region inpainting — FLUX.1-Fill (dedicated fill arch) or LanPaint on any base model.",
     "unoffered": true,
     "defaults": {
       "inpaint_context_pad": 64,
@@ -1336,7 +1336,7 @@
       {
         "id": "default",
         "label": "Default",
-        "hint": "The family default \u2014 no extra stamps; a fresh card lands here.",
+        "hint": "The family default — no extra stamps; a fresh card lands here.",
         "group": "Recipe",
         "cells": []
       }
@@ -1353,7 +1353,7 @@
       {
         "id": "Recipe",
         "label": "Recipe",
-        "tooltip": "One-click recipes \u2014 patch-only rows that stamp picks onto the draft; Default stamps nothing.",
+        "tooltip": "One-click recipes — patch-only rows that stamp picks onto the draft; Default stamps nothing.",
         "default": "default"
       }
     ]
@@ -1397,7 +1397,7 @@
       {
         "id": "default",
         "label": "Default",
-        "hint": "The family default \u2014 no extra stamps; a fresh card lands here.",
+        "hint": "The family default — no extra stamps; a fresh card lands here.",
         "group": "Recipe",
         "cells": []
       }
@@ -1414,7 +1414,7 @@
       {
         "id": "Recipe",
         "label": "Recipe",
-        "tooltip": "One-click recipes \u2014 patch-only rows that stamp picks onto the draft; Default stamps nothing.",
+        "tooltip": "One-click recipes — patch-only rows that stamp picks onto the draft; Default stamps nothing.",
         "default": "default"
       }
     ]
@@ -1422,8 +1422,8 @@
   "h3": {
     "id": "h3",
     "form": "form_video_director",
-    "label": "MiniMax H3 FL2VA \u26a1 Turbo",
-    "description": "MiniMax H3 joint video + audio generation. Native AV output \u2014 describe both motion and",
+    "label": "MiniMax H3 FL2VA ⚡ Turbo",
+    "description": "MiniMax H3 joint video + audio generation. Native AV output — describe both motion and",
     "engine": "comfyui",
     "defaults": {
       "width": 1344,
@@ -1439,7 +1439,7 @@
       {
         "id": "fl2va",
         "label": "FL2VA",
-        "hint": "Text-to-video, first/last frame to video. 30-step standard pass \u2014 highest quality.",
+        "hint": "Text-to-video, first/last frame to video. 30-step standard pass — highest quality.",
         "group": "Variant",
         "route": "h3",
         "order": 0,
@@ -1447,7 +1447,7 @@
       },
       {
         "id": "fl2va-turbo",
-        "label": "FL2VA \u26a1 Turbo",
+        "label": "FL2VA ⚡ Turbo",
         "hint": "FL2VA with the Turbo LoRA + 10-step fast pass. Good for motion- composition iteration before a final",
         "group": "Variant",
         "route": "h3",
@@ -1465,7 +1465,7 @@
       },
       {
         "id": "ref2va-turbo",
-        "label": "Ref2VA \u26a1 Turbo",
+        "label": "Ref2VA ⚡ Turbo",
         "hint": "Ref2VA with the Turbo LoRA + 10-step fast pass for reference-based video iteration.",
         "group": "Variant",
         "route": "h3-ref2va",
@@ -1475,7 +1475,7 @@
       {
         "id": "timeline",
         "label": "Standard (Hybrid + SLA)",
-        "hint": "30-step windows, hybrid FL2VA/Ref2VA model, SLA sparse attention \u2014 fastest path.",
+        "hint": "30-step windows, hybrid FL2VA/Ref2VA model, SLA sparse attention — fastest path.",
         "group": "Variant",
         "route": "h3-timeline",
         "order": 0,
@@ -1484,7 +1484,7 @@
       {
         "id": "timeline-ref2va",
         "label": "Timeline Ref2VA (Legacy)",
-        "hint": "Identity-locked multi-beat \u2014 reference images condition every window. Standard variant now handles this automatically.",
+        "hint": "Identity-locked multi-beat — reference images condition every window. Standard variant now handles this automatically.",
         "group": "Variant",
         "route": "h3-timeline-ref",
         "order": 7,
@@ -1492,8 +1492,8 @@
       },
       {
         "id": "timeline-turbo",
-        "label": "\u26a1 Turbo",
-        "hint": "The managed Turbo LoRA + 10-step windows \u2014 the fast iteration loop (same LoRA/steps pair as the",
+        "label": "⚡ Turbo",
+        "hint": "The managed Turbo LoRA + 10-step windows — the fast iteration loop (same LoRA/steps pair as the",
         "group": "Variant",
         "route": "h3-timeline",
         "order": 1,
@@ -1502,7 +1502,7 @@
       {
         "id": "default",
         "label": "Default",
-        "hint": "The family default \u2014 no extra stamps; a fresh card lands here.",
+        "hint": "The family default — no extra stamps; a fresh card lands here.",
         "group": "Recipe",
         "cells": []
       }
@@ -1519,7 +1519,7 @@
       {
         "id": "Recipe",
         "label": "Recipe",
-        "tooltip": "One-click recipes \u2014 patch-only rows that stamp picks onto the draft; Default stamps nothing.",
+        "tooltip": "One-click recipes — patch-only rows that stamp picks onto the draft; Default stamps nothing.",
         "default": "default"
       }
     ],
@@ -1604,7 +1604,7 @@
       {
         "id": "default",
         "label": "Default",
-        "hint": "The family default \u2014 no extra stamps; a fresh card lands here.",
+        "hint": "The family default — no extra stamps; a fresh card lands here.",
         "group": "Recipe",
         "cells": []
       }
@@ -1621,7 +1621,7 @@
       {
         "id": "Recipe",
         "label": "Recipe",
-        "tooltip": "One-click recipes \u2014 patch-only rows that stamp picks onto the draft; Default stamps nothing.",
+        "tooltip": "One-click recipes — patch-only rows that stamp picks onto the draft; Default stamps nothing.",
         "default": "default"
       }
     ],
@@ -1631,7 +1631,7 @@
     "id": "h3-ref2va",
     "form": "form_video_director",
     "label": "MiniMax H3 Ref2VA",
-    "description": "MiniMax H3 joint video + audio generation. Native AV output \u2014 describe both motion and",
+    "description": "MiniMax H3 joint video + audio generation. Native AV output — describe both motion and",
     "engine": "comfyui",
     "defaults": {
       "width": 1344,
@@ -1647,7 +1647,7 @@
       {
         "id": "fl2va",
         "label": "FL2VA",
-        "hint": "Text-to-video, first/last frame to video. 30-step standard pass \u2014 highest quality.",
+        "hint": "Text-to-video, first/last frame to video. 30-step standard pass — highest quality.",
         "group": "Variant",
         "route": "h3",
         "order": 0,
@@ -1655,7 +1655,7 @@
       },
       {
         "id": "fl2va-turbo",
-        "label": "FL2VA \u26a1 Turbo",
+        "label": "FL2VA ⚡ Turbo",
         "hint": "FL2VA with the Turbo LoRA + 10-step fast pass. Good for motion- composition iteration before a final",
         "group": "Variant",
         "route": "h3",
@@ -1673,7 +1673,7 @@
       },
       {
         "id": "ref2va-turbo",
-        "label": "Ref2VA \u26a1 Turbo",
+        "label": "Ref2VA ⚡ Turbo",
         "hint": "Ref2VA with the Turbo LoRA + 10-step fast pass for reference-based video iteration.",
         "group": "Variant",
         "route": "h3-ref2va",
@@ -1683,7 +1683,7 @@
       {
         "id": "timeline",
         "label": "Standard (Hybrid + SLA)",
-        "hint": "30-step windows, hybrid FL2VA/Ref2VA model, SLA sparse attention \u2014 fastest path.",
+        "hint": "30-step windows, hybrid FL2VA/Ref2VA model, SLA sparse attention — fastest path.",
         "group": "Variant",
         "route": "h3-timeline",
         "order": 0,
@@ -1692,7 +1692,7 @@
       {
         "id": "timeline-ref2va",
         "label": "Timeline Ref2VA (Legacy)",
-        "hint": "Identity-locked multi-beat \u2014 reference images condition every window. Standard variant now handles this automatically.",
+        "hint": "Identity-locked multi-beat — reference images condition every window. Standard variant now handles this automatically.",
         "group": "Variant",
         "route": "h3-timeline-ref",
         "order": 7,
@@ -1700,8 +1700,8 @@
       },
       {
         "id": "timeline-turbo",
-        "label": "\u26a1 Turbo",
-        "hint": "The managed Turbo LoRA + 10-step windows \u2014 the fast iteration loop (same LoRA/steps pair as the",
+        "label": "⚡ Turbo",
+        "hint": "The managed Turbo LoRA + 10-step windows — the fast iteration loop (same LoRA/steps pair as the",
         "group": "Variant",
         "route": "h3-timeline",
         "order": 1,
@@ -1710,7 +1710,7 @@
       {
         "id": "default",
         "label": "Default",
-        "hint": "The family default \u2014 no extra stamps; a fresh card lands here.",
+        "hint": "The family default — no extra stamps; a fresh card lands here.",
         "group": "Recipe",
         "cells": []
       }
@@ -1727,7 +1727,7 @@
       {
         "id": "Recipe",
         "label": "Recipe",
-        "tooltip": "One-click recipes \u2014 patch-only rows that stamp picks onto the draft; Default stamps nothing.",
+        "tooltip": "One-click recipes — patch-only rows that stamp picks onto the draft; Default stamps nothing.",
         "default": "default"
       }
     ],
@@ -1828,6 +1828,9 @@
       "size": "huge",
       "layout": "studio"
     },
+    "mods": [
+      "loras"
+    ],
     "genre": "video",
     "variants": [
       {
@@ -1847,7 +1850,7 @@
       {
         "id": "default",
         "label": "Default",
-        "hint": "The family default \u2014 no extra stamps; a fresh card lands here.",
+        "hint": "The family default — no extra stamps; a fresh card lands here.",
         "group": "Recipe",
         "cells": []
       }
@@ -1864,7 +1867,7 @@
       {
         "id": "Recipe",
         "label": "Recipe",
-        "tooltip": "One-click recipes \u2014 patch-only rows that stamp picks onto the draft; Default stamps nothing.",
+        "tooltip": "One-click recipes — patch-only rows that stamp picks onto the draft; Default stamps nothing.",
         "default": "default"
       }
     ],
@@ -1937,7 +1940,7 @@
     "id": "h3-timeline-ref",
     "form": "form_video_director",
     "label": "MiniMax H3 Timeline Ref2VA (Legacy)",
-    "description": "MiniMax H3 joint video + audio generation. Native AV output \u2014 describe both motion and",
+    "description": "MiniMax H3 joint video + audio generation. Native AV output — describe both motion and",
     "engine": "comfyui",
     "defaults": {
       "width": 1344,
@@ -1953,7 +1956,7 @@
       {
         "id": "fl2va",
         "label": "FL2VA",
-        "hint": "Text-to-video, first/last frame to video. 30-step standard pass \u2014 highest quality.",
+        "hint": "Text-to-video, first/last frame to video. 30-step standard pass — highest quality.",
         "group": "Variant",
         "route": "h3",
         "order": 0,
@@ -1961,7 +1964,7 @@
       },
       {
         "id": "fl2va-turbo",
-        "label": "FL2VA \u26a1 Turbo",
+        "label": "FL2VA ⚡ Turbo",
         "hint": "FL2VA with the Turbo LoRA + 10-step fast pass. Good for motion- composition iteration before a final",
         "group": "Variant",
         "route": "h3",
@@ -1979,7 +1982,7 @@
       },
       {
         "id": "ref2va-turbo",
-        "label": "Ref2VA \u26a1 Turbo",
+        "label": "Ref2VA ⚡ Turbo",
         "hint": "Ref2VA with the Turbo LoRA + 10-step fast pass for reference-based video iteration.",
         "group": "Variant",
         "route": "h3-ref2va",
@@ -1989,7 +1992,7 @@
       {
         "id": "timeline",
         "label": "Standard (Hybrid + SLA)",
-        "hint": "30-step windows, hybrid FL2VA/Ref2VA model, SLA sparse attention \u2014 fastest path.",
+        "hint": "30-step windows, hybrid FL2VA/Ref2VA model, SLA sparse attention — fastest path.",
         "group": "Variant",
         "route": "h3-timeline",
         "order": 0,
@@ -1998,7 +2001,7 @@
       {
         "id": "timeline-ref2va",
         "label": "Timeline Ref2VA (Legacy)",
-        "hint": "Identity-locked multi-beat \u2014 reference images condition every window. Standard variant now handles this automatically.",
+        "hint": "Identity-locked multi-beat — reference images condition every window. Standard variant now handles this automatically.",
         "group": "Variant",
         "route": "h3-timeline-ref",
         "order": 7,
@@ -2006,8 +2009,8 @@
       },
       {
         "id": "timeline-turbo",
-        "label": "\u26a1 Turbo",
-        "hint": "The managed Turbo LoRA + 10-step windows \u2014 the fast iteration loop (same LoRA/steps pair as the",
+        "label": "⚡ Turbo",
+        "hint": "The managed Turbo LoRA + 10-step windows — the fast iteration loop (same LoRA/steps pair as the",
         "group": "Variant",
         "route": "h3-timeline",
         "order": 1,
@@ -2016,7 +2019,7 @@
       {
         "id": "default",
         "label": "Default",
-        "hint": "The family default \u2014 no extra stamps; a fresh card lands here.",
+        "hint": "The family default — no extra stamps; a fresh card lands here.",
         "group": "Recipe",
         "cells": []
       }
@@ -2033,7 +2036,7 @@
       {
         "id": "Recipe",
         "label": "Recipe",
-        "tooltip": "One-click recipes \u2014 patch-only rows that stamp picks onto the draft; Default stamps nothing.",
+        "tooltip": "One-click recipes — patch-only rows that stamp picks onto the draft; Default stamps nothing.",
         "default": "default"
       }
     ],
@@ -2093,7 +2096,7 @@
     "id": "input",
     "form": "form_input",
     "label": "Input Prep Standard Native (weightless)",
-    "description": "Source intake: attach an image or audio file (upload, asset drop, prior run) \u2014 staged, optionally transformed, emitted as a media artifact for downstream cards to wire.",
+    "description": "Source intake: attach an image or audio file (upload, asset drop, prior run) — staged, optionally transformed, emitted as a media artifact for downstream cards to wire.",
     "engine": "comfyui",
     "genre": "image",
     "variants": [
@@ -2113,7 +2116,7 @@
       {
         "id": "default",
         "label": "Default",
-        "hint": "The family default \u2014 no extra stamps; a fresh card lands here.",
+        "hint": "The family default — no extra stamps; a fresh card lands here.",
         "group": "Recipe",
         "cells": []
       }
@@ -2130,7 +2133,7 @@
       {
         "id": "Recipe",
         "label": "Recipe",
-        "tooltip": "One-click recipes \u2014 patch-only rows that stamp picks onto the draft; Default stamps nothing.",
+        "tooltip": "One-click recipes — patch-only rows that stamp picks onto the draft; Default stamps nothing.",
         "default": "default"
       }
     ],
@@ -2143,7 +2146,7 @@
     "id": "joycaption",
     "form": "form_tagger",
     "label": "JoyCaption Standard F32",
-    "description": "Stylized natural-language image captioning (JoyCaption beta-one, 8B VLM) \u2014 descriptive / SD-prompt / MJ / booru-list templates for recreating images in FLUX / Ideogram / image-edit.",
+    "description": "Stylized natural-language image captioning (JoyCaption beta-one, 8B VLM) — descriptive / SD-prompt / MJ / booru-list templates for recreating images in FLUX / Ideogram / image-edit.",
     "engine": "comfyui",
     "defaults": {
       "checkpoint": "fancyfeast/llama-joycaption-beta-one-hf-llava",
@@ -2170,7 +2173,7 @@
       {
         "id": "default",
         "label": "Default",
-        "hint": "The family default \u2014 no extra stamps; a fresh card lands here.",
+        "hint": "The family default — no extra stamps; a fresh card lands here.",
         "group": "Recipe",
         "cells": []
       }
@@ -2187,7 +2190,7 @@
       {
         "id": "Recipe",
         "label": "Recipe",
-        "tooltip": "One-click recipes \u2014 patch-only rows that stamp picks onto the draft; Default stamps nothing.",
+        "tooltip": "One-click recipes — patch-only rows that stamp picks onto the draft; Default stamps nothing.",
         "default": "default"
       }
     ]
@@ -2196,7 +2199,7 @@
     "id": "joytag",
     "form": "form_tagger",
     "label": "JoyTag Standard F32",
-    "description": "Booru keyword tagger (JoyTag lineage) \u2014 thresholded Danbooru tags with add/remove lists for recreation workflows. Torch lane, node-local checkpoint.",
+    "description": "Booru keyword tagger (JoyTag lineage) — thresholded Danbooru tags with add/remove lists for recreation workflows. Torch lane, node-local checkpoint.",
     "engine": "comfyui",
     "defaults": {
       "threshold": 0.2,
@@ -2222,7 +2225,7 @@
       {
         "id": "default",
         "label": "Default",
-        "hint": "The family default \u2014 no extra stamps; a fresh card lands here.",
+        "hint": "The family default — no extra stamps; a fresh card lands here.",
         "group": "Recipe",
         "cells": []
       }
@@ -2239,7 +2242,7 @@
       {
         "id": "Recipe",
         "label": "Recipe",
-        "tooltip": "One-click recipes \u2014 patch-only rows that stamp picks onto the draft; Default stamps nothing.",
+        "tooltip": "One-click recipes — patch-only rows that stamp picks onto the draft; Default stamps nothing.",
         "default": "default"
       }
     ]
@@ -2247,8 +2250,8 @@
   "kimodo": {
     "id": "kimodo",
     "form": "form_motion_kimodo",
-    "label": "Kimodo (text \u2192 motion) Standard Native",
-    "description": "Kinematic motion diffusion (NVIDIA Kimodo-SOMA): text \u2192 SOMA-77 pose NPZ, chainable, skinnable onto rigged GLBs.",
+    "label": "Kimodo (text → motion) Standard Native",
+    "description": "Kinematic motion diffusion (NVIDIA Kimodo-SOMA): text → SOMA-77 pose NPZ, chainable, skinnable onto rigged GLBs.",
     "engine": "comfyui",
     "defaults": {
       "cfg_type": "separated",
@@ -2292,7 +2295,7 @@
       {
         "id": "default",
         "label": "Default",
-        "hint": "The family default \u2014 no extra stamps; a fresh card lands here.",
+        "hint": "The family default — no extra stamps; a fresh card lands here.",
         "group": "Recipe",
         "cells": []
       }
@@ -2309,7 +2312,7 @@
       {
         "id": "Recipe",
         "label": "Recipe",
-        "tooltip": "One-click recipes \u2014 patch-only rows that stamp picks onto the draft; Default stamps nothing.",
+        "tooltip": "One-click recipes — patch-only rows that stamp picks onto the draft; Default stamps nothing.",
         "default": "default"
       }
     ],
@@ -2384,7 +2387,7 @@
       {
         "id": "turbo",
         "label": "Turbo",
-        "hint": "8-step distilled \u2014 fast, photorealistic (DEFAULT)",
+        "hint": "8-step distilled — fast, photorealistic (DEFAULT)",
         "group": "Variant",
         "route": "krea-2",
         "order": 0,
@@ -2410,7 +2413,7 @@
       {
         "id": "raw",
         "label": "Raw",
-        "hint": "52-step base checkpoint \u2014 the variant the loras train on (DEFAULT here)",
+        "hint": "52-step base checkpoint — the variant the loras train on (DEFAULT here)",
         "group": "Variant",
         "route": "krea-2-raw",
         "order": 1,
@@ -2439,7 +2442,7 @@
       {
         "id": "realism",
         "label": "Realism",
-        "hint": "The realism recipe \u2014 krea2_realism_lora at the catalog row's default strength (0.7)",
+        "hint": "The realism recipe — krea2_realism_lora at the catalog row's default strength (0.7)",
         "group": "Recipe",
         "order": 0,
         "cells": [],
@@ -2454,7 +2457,7 @@
       {
         "id": "default",
         "label": "Default",
-        "hint": "The family default \u2014 no extra stamps; a fresh card lands here.",
+        "hint": "The family default — no extra stamps; a fresh card lands here.",
         "group": "Recipe",
         "cells": []
       }
@@ -2463,18 +2466,18 @@
       {
         "id": "Recipe",
         "label": "Recipe",
-        "tooltip": "One-click recipes \u2014 patch-only rows that stamp picks onto the draft; Default stamps nothing.",
+        "tooltip": "One-click recipes — patch-only rows that stamp picks onto the draft; Default stamps nothing.",
         "default": "default"
       },
       {
         "id": "Variant",
         "label": "Variant",
-        "tooltip": "Base checkpoint \u2014 Turbo (8-step distilled, fast/photorealistic) or Raw (52-step base, for LoRA training)."
+        "tooltip": "Base checkpoint — Turbo (8-step distilled, fast/photorealistic) or Raw (52-step base, for LoRA training)."
       },
       {
         "id": "Quant",
         "label": "Quant",
-        "tooltip": "Quantization tier \u2014 INT8 ConvRot (the official Comfy-Org convrot artifact, DEFAULT)."
+        "tooltip": "Quantization tier — INT8 ConvRot (the official Comfy-Org convrot artifact, DEFAULT)."
       }
     ],
     "timeout_floor": 300,
@@ -2543,7 +2546,7 @@
       {
         "id": "turbo",
         "label": "Turbo",
-        "hint": "8-step distilled \u2014 fast, photorealistic (DEFAULT)",
+        "hint": "8-step distilled — fast, photorealistic (DEFAULT)",
         "group": "Variant",
         "route": "krea-2",
         "order": 0,
@@ -2569,7 +2572,7 @@
       {
         "id": "raw",
         "label": "Raw",
-        "hint": "52-step base checkpoint \u2014 the variant the loras train on (DEFAULT here)",
+        "hint": "52-step base checkpoint — the variant the loras train on (DEFAULT here)",
         "group": "Variant",
         "route": "krea-2-raw",
         "order": 1,
@@ -2598,7 +2601,7 @@
       {
         "id": "realism",
         "label": "Realism",
-        "hint": "The realism recipe \u2014 krea2_realism_lora at the catalog row's default strength (0.7)",
+        "hint": "The realism recipe — krea2_realism_lora at the catalog row's default strength (0.7)",
         "group": "Recipe",
         "order": 0,
         "cells": [],
@@ -2613,7 +2616,7 @@
       {
         "id": "default",
         "label": "Default",
-        "hint": "The family default \u2014 no extra stamps; a fresh card lands here.",
+        "hint": "The family default — no extra stamps; a fresh card lands here.",
         "group": "Recipe",
         "cells": []
       }
@@ -2622,18 +2625,18 @@
       {
         "id": "Recipe",
         "label": "Recipe",
-        "tooltip": "One-click recipes \u2014 patch-only rows that stamp picks onto the draft; Default stamps nothing.",
+        "tooltip": "One-click recipes — patch-only rows that stamp picks onto the draft; Default stamps nothing.",
         "default": "default"
       },
       {
         "id": "Variant",
         "label": "Variant",
-        "tooltip": "Base checkpoint \u2014 Turbo (8-step distilled, fast/photorealistic) or Raw (52-step base, for LoRA training)."
+        "tooltip": "Base checkpoint — Turbo (8-step distilled, fast/photorealistic) or Raw (52-step base, for LoRA training)."
       },
       {
         "id": "Quant",
         "label": "Quant",
-        "tooltip": "Quantization tier \u2014 INT8 ConvRot (the official Comfy-Org convrot artifact, DEFAULT)."
+        "tooltip": "Quantization tier — INT8 ConvRot (the official Comfy-Org convrot artifact, DEFAULT)."
       }
     ],
     "timeout_floor": 300,
@@ -2663,7 +2666,7 @@
     "id": "latentsync",
     "form": "form_edit",
     "label": "LatentSync Standard Native (weightless)",
-    "description": "LatentSync \u2014 local-only lip-sync that aligns mouth shapes to audio in a video.",
+    "description": "LatentSync — local-only lip-sync that aligns mouth shapes to audio in a video.",
     "engine": "comfyui",
     "unoffered": true,
     "defaults": {
@@ -2692,7 +2695,7 @@
       {
         "id": "default",
         "label": "Default",
-        "hint": "The family default \u2014 no extra stamps; a fresh card lands here.",
+        "hint": "The family default — no extra stamps; a fresh card lands here.",
         "group": "Recipe",
         "cells": []
       }
@@ -2709,7 +2712,7 @@
       {
         "id": "Recipe",
         "label": "Recipe",
-        "tooltip": "One-click recipes \u2014 patch-only rows that stamp picks onto the draft; Default stamps nothing.",
+        "tooltip": "One-click recipes — patch-only rows that stamp picks onto the draft; Default stamps nothing.",
         "default": "default"
       }
     ]
@@ -2735,7 +2738,7 @@
       {
         "id": "dev",
         "label": "Dev",
-        "hint": "30-step base \u2014 highest quality, supports LoRA",
+        "hint": "30-step base — highest quality, supports LoRA",
         "group": "Variant",
         "route": "ltx-2-3-dev",
         "order": 0,
@@ -2757,7 +2760,7 @@
       {
         "id": "distilled",
         "label": "Distilled",
-        "hint": "8-step distilled \u2014 fast, CFG=1",
+        "hint": "8-step distilled — fast, CFG=1",
         "group": "Variant",
         "route": "ltx-2-3-distilled",
         "order": 1,
@@ -2779,7 +2782,7 @@
       {
         "id": "default",
         "label": "Default",
-        "hint": "The family default \u2014 no extra stamps; a fresh card lands here.",
+        "hint": "The family default — no extra stamps; a fresh card lands here.",
         "group": "Recipe",
         "cells": []
       }
@@ -2796,7 +2799,7 @@
       {
         "id": "Recipe",
         "label": "Recipe",
-        "tooltip": "One-click recipes \u2014 patch-only rows that stamp picks onto the draft; Default stamps nothing.",
+        "tooltip": "One-click recipes — patch-only rows that stamp picks onto the draft; Default stamps nothing.",
         "default": "default"
       }
     ]
@@ -2822,7 +2825,7 @@
       {
         "id": "dev",
         "label": "Dev",
-        "hint": "30-step base \u2014 highest quality, supports LoRA",
+        "hint": "30-step base — highest quality, supports LoRA",
         "group": "Variant",
         "route": "ltx-2-3-dev",
         "order": 0,
@@ -2844,7 +2847,7 @@
       {
         "id": "distilled",
         "label": "Distilled",
-        "hint": "8-step distilled \u2014 fast, CFG=1",
+        "hint": "8-step distilled — fast, CFG=1",
         "group": "Variant",
         "route": "ltx-2-3-distilled",
         "order": 1,
@@ -2866,7 +2869,7 @@
       {
         "id": "default",
         "label": "Default",
-        "hint": "The family default \u2014 no extra stamps; a fresh card lands here.",
+        "hint": "The family default — no extra stamps; a fresh card lands here.",
         "group": "Recipe",
         "cells": []
       }
@@ -2883,7 +2886,7 @@
       {
         "id": "Recipe",
         "label": "Recipe",
-        "tooltip": "One-click recipes \u2014 patch-only rows that stamp picks onto the draft; Default stamps nothing.",
+        "tooltip": "One-click recipes — patch-only rows that stamp picks onto the draft; Default stamps nothing.",
         "default": "default"
       }
     ]
@@ -2909,7 +2912,7 @@
       {
         "id": "dev",
         "label": "Dev",
-        "hint": "30-step base \u2014 highest quality, supports LoRA",
+        "hint": "30-step base — highest quality, supports LoRA",
         "group": "Variant",
         "route": "ltx-2-3-dev",
         "order": 0,
@@ -2931,7 +2934,7 @@
       {
         "id": "distilled",
         "label": "Distilled",
-        "hint": "8-step distilled \u2014 fast, CFG=1",
+        "hint": "8-step distilled — fast, CFG=1",
         "group": "Variant",
         "route": "ltx-2-3-distilled",
         "order": 1,
@@ -2953,7 +2956,7 @@
       {
         "id": "default",
         "label": "Default",
-        "hint": "The family default \u2014 no extra stamps; a fresh card lands here.",
+        "hint": "The family default — no extra stamps; a fresh card lands here.",
         "group": "Recipe",
         "cells": []
       }
@@ -2970,7 +2973,7 @@
       {
         "id": "Recipe",
         "label": "Recipe",
-        "tooltip": "One-click recipes \u2014 patch-only rows that stamp picks onto the draft; Default stamps nothing.",
+        "tooltip": "One-click recipes — patch-only rows that stamp picks onto the draft; Default stamps nothing.",
         "default": "default"
       }
     ]
@@ -2996,7 +2999,7 @@
       {
         "id": "dev",
         "label": "Dev",
-        "hint": "30-step base \u2014 highest quality, supports LoRA",
+        "hint": "30-step base — highest quality, supports LoRA",
         "group": "Variant",
         "route": "ltx-2-3-dev",
         "order": 0,
@@ -3018,7 +3021,7 @@
       {
         "id": "distilled",
         "label": "Distilled",
-        "hint": "8-step distilled \u2014 fast, CFG=1",
+        "hint": "8-step distilled — fast, CFG=1",
         "group": "Variant",
         "route": "ltx-2-3-distilled",
         "order": 1,
@@ -3040,7 +3043,7 @@
       {
         "id": "default",
         "label": "Default",
-        "hint": "The family default \u2014 no extra stamps; a fresh card lands here.",
+        "hint": "The family default — no extra stamps; a fresh card lands here.",
         "group": "Recipe",
         "cells": []
       }
@@ -3057,7 +3060,7 @@
       {
         "id": "Recipe",
         "label": "Recipe",
-        "tooltip": "One-click recipes \u2014 patch-only rows that stamp picks onto the draft; Default stamps nothing.",
+        "tooltip": "One-click recipes — patch-only rows that stamp picks onto the draft; Default stamps nothing.",
         "default": "default"
       }
     ]
@@ -3083,7 +3086,7 @@
       {
         "id": "dev",
         "label": "Dev",
-        "hint": "30-step base \u2014 highest quality, supports LoRA",
+        "hint": "30-step base — highest quality, supports LoRA",
         "group": "Variant",
         "route": "ltx-2-3-dev",
         "order": 0,
@@ -3105,7 +3108,7 @@
       {
         "id": "distilled",
         "label": "Distilled",
-        "hint": "8-step distilled \u2014 fast, CFG=1",
+        "hint": "8-step distilled — fast, CFG=1",
         "group": "Variant",
         "route": "ltx-2-3-distilled",
         "order": 1,
@@ -3127,7 +3130,7 @@
       {
         "id": "default",
         "label": "Default",
-        "hint": "The family default \u2014 no extra stamps; a fresh card lands here.",
+        "hint": "The family default — no extra stamps; a fresh card lands here.",
         "group": "Recipe",
         "cells": []
       }
@@ -3144,7 +3147,7 @@
       {
         "id": "Recipe",
         "label": "Recipe",
-        "tooltip": "One-click recipes \u2014 patch-only rows that stamp picks onto the draft; Default stamps nothing.",
+        "tooltip": "One-click recipes — patch-only rows that stamp picks onto the draft; Default stamps nothing.",
         "default": "default"
       }
     ]
@@ -3211,7 +3214,7 @@
       {
         "id": "dev",
         "label": "Dev FP8",
-        "hint": "30+ step, max quality \u2014 different checkpoint",
+        "hint": "30+ step, max quality — different checkpoint",
         "group": "Variant",
         "route": "ltx-director-dev",
         "order": 1,
@@ -3220,7 +3223,7 @@
       {
         "id": "distilled",
         "label": "Distilled",
-        "hint": "8-step, ~3s/segment on a 4090 \u2014 fast preview tier",
+        "hint": "8-step, ~3s/segment on a 4090 — fast preview tier",
         "group": "Variant",
         "route": "ltx-director-distilled",
         "order": 0,
@@ -3229,7 +3232,7 @@
       {
         "id": "legacy",
         "label": "LTX-2 (legacy)",
-        "hint": "Legacy standard route \u2014 same distilled-1.1 checkpoint as the head; folded in from video/ltx2 (2026-08-16 combine), hidden",
+        "hint": "Legacy standard route — same distilled-1.1 checkpoint as the head; folded in from video/ltx2 (2026-08-16 combine), hidden",
         "group": "Variant",
         "route": "ltx2",
         "order": 3,
@@ -3238,7 +3241,7 @@
       {
         "id": "default",
         "label": "Default",
-        "hint": "The family default \u2014 no extra stamps; a fresh card lands here.",
+        "hint": "The family default — no extra stamps; a fresh card lands here.",
         "group": "Recipe",
         "cells": []
       }
@@ -3255,7 +3258,7 @@
       {
         "id": "Recipe",
         "label": "Recipe",
-        "tooltip": "One-click recipes \u2014 patch-only rows that stamp picks onto the draft; Default stamps nothing.",
+        "tooltip": "One-click recipes — patch-only rows that stamp picks onto the draft; Default stamps nothing.",
         "default": "default"
       }
     ]
@@ -3322,7 +3325,7 @@
       {
         "id": "dev",
         "label": "Dev FP8",
-        "hint": "30+ step, max quality \u2014 different checkpoint",
+        "hint": "30+ step, max quality — different checkpoint",
         "group": "Variant",
         "route": "ltx-director-dev",
         "order": 1,
@@ -3331,7 +3334,7 @@
       {
         "id": "distilled",
         "label": "Distilled",
-        "hint": "8-step, ~3s/segment on a 4090 \u2014 fast preview tier",
+        "hint": "8-step, ~3s/segment on a 4090 — fast preview tier",
         "group": "Variant",
         "route": "ltx-director-distilled",
         "order": 0,
@@ -3340,7 +3343,7 @@
       {
         "id": "legacy",
         "label": "LTX-2 (legacy)",
-        "hint": "Legacy standard route \u2014 same distilled-1.1 checkpoint as the head; folded in from video/ltx2 (2026-08-16 combine), hidden",
+        "hint": "Legacy standard route — same distilled-1.1 checkpoint as the head; folded in from video/ltx2 (2026-08-16 combine), hidden",
         "group": "Variant",
         "route": "ltx2",
         "order": 3,
@@ -3349,7 +3352,7 @@
       {
         "id": "default",
         "label": "Default",
-        "hint": "The family default \u2014 no extra stamps; a fresh card lands here.",
+        "hint": "The family default — no extra stamps; a fresh card lands here.",
         "group": "Recipe",
         "cells": []
       }
@@ -3366,7 +3369,7 @@
       {
         "id": "Recipe",
         "label": "Recipe",
-        "tooltip": "One-click recipes \u2014 patch-only rows that stamp picks onto the draft; Default stamps nothing.",
+        "tooltip": "One-click recipes — patch-only rows that stamp picks onto the draft; Default stamps nothing.",
         "default": "default"
       }
     ]
@@ -3433,7 +3436,7 @@
       {
         "id": "dev",
         "label": "Dev FP8",
-        "hint": "30+ step, max quality \u2014 different checkpoint",
+        "hint": "30+ step, max quality — different checkpoint",
         "group": "Variant",
         "route": "ltx-director-dev",
         "order": 1,
@@ -3442,7 +3445,7 @@
       {
         "id": "distilled",
         "label": "Distilled",
-        "hint": "8-step, ~3s/segment on a 4090 \u2014 fast preview tier",
+        "hint": "8-step, ~3s/segment on a 4090 — fast preview tier",
         "group": "Variant",
         "route": "ltx-director-distilled",
         "order": 0,
@@ -3451,7 +3454,7 @@
       {
         "id": "legacy",
         "label": "LTX-2 (legacy)",
-        "hint": "Legacy standard route \u2014 same distilled-1.1 checkpoint as the head; folded in from video/ltx2 (2026-08-16 combine), hidden",
+        "hint": "Legacy standard route — same distilled-1.1 checkpoint as the head; folded in from video/ltx2 (2026-08-16 combine), hidden",
         "group": "Variant",
         "route": "ltx2",
         "order": 3,
@@ -3460,7 +3463,7 @@
       {
         "id": "default",
         "label": "Default",
-        "hint": "The family default \u2014 no extra stamps; a fresh card lands here.",
+        "hint": "The family default — no extra stamps; a fresh card lands here.",
         "group": "Recipe",
         "cells": []
       }
@@ -3477,7 +3480,7 @@
       {
         "id": "Recipe",
         "label": "Recipe",
-        "tooltip": "One-click recipes \u2014 patch-only rows that stamp picks onto the draft; Default stamps nothing.",
+        "tooltip": "One-click recipes — patch-only rows that stamp picks onto the draft; Default stamps nothing.",
         "default": "default"
       }
     ]
@@ -3486,7 +3489,7 @@
     "id": "mesh_refine",
     "form": "form_3d_mesh_refine",
     "label": "UltraShape Mesh Refine Standard Native",
-    "description": "Image-guided coarse-mesh refinement (UltraShape 1.0 DiT) \u2014 carves sharp limb separation + hard-surface edges into blobby TRELLIS output using the SAME guide image the mesh was generated from. The pre-rig cleanup step: run BEFORE SOMAX so proximity-based weight transfer can't glue arm vertices to torso bones.",
+    "description": "Image-guided coarse-mesh refinement (UltraShape 1.0 DiT) — carves sharp limb separation + hard-surface edges into blobby TRELLIS output using the SAME guide image the mesh was generated from. The pre-rig cleanup step: run BEFORE SOMAX so proximity-based weight transfer can't glue arm vertices to torso bones.",
     "unoffered": true,
     "defaults": {
       "box_v": 1,
@@ -3525,7 +3528,7 @@
       {
         "id": "default",
         "label": "Default",
-        "hint": "The family default \u2014 no extra stamps; a fresh card lands here.",
+        "hint": "The family default — no extra stamps; a fresh card lands here.",
         "group": "Recipe",
         "cells": []
       }
@@ -3542,7 +3545,7 @@
       {
         "id": "Recipe",
         "label": "Recipe",
-        "tooltip": "One-click recipes \u2014 patch-only rows that stamp picks onto the draft; Default stamps nothing.",
+        "tooltip": "One-click recipes — patch-only rows that stamp picks onto the draft; Default stamps nothing.",
         "default": "default"
       }
     ]
@@ -3550,7 +3553,7 @@
   "moss": {
     "id": "moss",
     "label": "MOSS TTS Nano Native",
-    "description": "the Nano 100M checkpoint \u2014 plain text-to-speech",
+    "description": "the Nano 100M checkpoint — plain text-to-speech",
     "engine": "audio_cpp",
     "defaults": {
       "backend": "cuda"
@@ -3566,7 +3569,7 @@
       {
         "id": "tts",
         "label": "TTS Nano",
-        "description": "the Nano 100M checkpoint \u2014 plain text-to-speech",
+        "description": "the Nano 100M checkpoint — plain text-to-speech",
         "group": "Variant",
         "route": "moss-tts",
         "cells": [
@@ -3617,7 +3620,7 @@
       {
         "id": "default",
         "label": "Default",
-        "hint": "The family default \u2014 no extra stamps; a fresh card lands here.",
+        "hint": "The family default — no extra stamps; a fresh card lands here.",
         "group": "Recipe",
         "cells": []
       }
@@ -3634,7 +3637,7 @@
       {
         "id": "Recipe",
         "label": "Recipe",
-        "tooltip": "One-click recipes \u2014 patch-only rows that stamp picks onto the draft; Default stamps nothing.",
+        "tooltip": "One-click recipes — patch-only rows that stamp picks onto the draft; Default stamps nothing.",
         "default": "default"
       }
     ]
@@ -3643,7 +3646,7 @@
     "id": "moss-sfx",
     "form": "form_sound",
     "label": "MOSS-SFX v2 Standard Native",
-    "description": "MOSS-SFX v2 sound-effect generation \u2014 describe the SOUND not the scene",
+    "description": "MOSS-SFX v2 sound-effect generation — describe the SOUND not the scene",
     "engine": "comfyui",
     "genre": "audio",
     "variants": [
@@ -3663,7 +3666,7 @@
       {
         "id": "default",
         "label": "Default",
-        "hint": "The family default \u2014 no extra stamps; a fresh card lands here.",
+        "hint": "The family default — no extra stamps; a fresh card lands here.",
         "group": "Recipe",
         "cells": []
       }
@@ -3680,7 +3683,7 @@
       {
         "id": "Recipe",
         "label": "Recipe",
-        "tooltip": "One-click recipes \u2014 patch-only rows that stamp picks onto the draft; Default stamps nothing.",
+        "tooltip": "One-click recipes — patch-only rows that stamp picks onto the draft; Default stamps nothing.",
         "default": "default"
       }
     ],
@@ -3706,7 +3709,7 @@
   "moss-tts": {
     "id": "moss-tts",
     "label": "MOSS TTS Nano Native",
-    "description": "the Nano 100M checkpoint \u2014 plain text-to-speech",
+    "description": "the Nano 100M checkpoint — plain text-to-speech",
     "engine": "audio_cpp",
     "defaults": {
       "backend": "cuda"
@@ -3722,7 +3725,7 @@
       {
         "id": "tts",
         "label": "TTS Nano",
-        "description": "the Nano 100M checkpoint \u2014 plain text-to-speech",
+        "description": "the Nano 100M checkpoint — plain text-to-speech",
         "group": "Variant",
         "route": "moss-tts",
         "cells": [
@@ -3773,7 +3776,7 @@
       {
         "id": "default",
         "label": "Default",
-        "hint": "The family default \u2014 no extra stamps; a fresh card lands here.",
+        "hint": "The family default — no extra stamps; a fresh card lands here.",
         "group": "Recipe",
         "cells": []
       }
@@ -3790,7 +3793,7 @@
       {
         "id": "Recipe",
         "label": "Recipe",
-        "tooltip": "One-click recipes \u2014 patch-only rows that stamp picks onto the draft; Default stamps nothing.",
+        "tooltip": "One-click recipes — patch-only rows that stamp picks onto the draft; Default stamps nothing.",
         "default": "default"
       }
     ]
@@ -3814,7 +3817,7 @@
       {
         "id": "tts",
         "label": "TTS Nano",
-        "description": "the Nano 100M checkpoint \u2014 plain text-to-speech",
+        "description": "the Nano 100M checkpoint — plain text-to-speech",
         "group": "Variant",
         "route": "moss-tts",
         "cells": [
@@ -3865,7 +3868,7 @@
       {
         "id": "default",
         "label": "Default",
-        "hint": "The family default \u2014 no extra stamps; a fresh card lands here.",
+        "hint": "The family default — no extra stamps; a fresh card lands here.",
         "group": "Recipe",
         "cells": []
       }
@@ -3882,7 +3885,7 @@
       {
         "id": "Recipe",
         "label": "Recipe",
-        "tooltip": "One-click recipes \u2014 patch-only rows that stamp picks onto the draft; Default stamps nothing.",
+        "tooltip": "One-click recipes — patch-only rows that stamp picks onto the draft; Default stamps nothing.",
         "default": "default"
       }
     ]
@@ -3906,7 +3909,7 @@
       {
         "id": "tts",
         "label": "TTS Nano",
-        "description": "the Nano 100M checkpoint \u2014 plain text-to-speech",
+        "description": "the Nano 100M checkpoint — plain text-to-speech",
         "group": "Variant",
         "route": "moss-tts",
         "cells": [
@@ -3957,7 +3960,7 @@
       {
         "id": "default",
         "label": "Default",
-        "hint": "The family default \u2014 no extra stamps; a fresh card lands here.",
+        "hint": "The family default — no extra stamps; a fresh card lands here.",
         "group": "Recipe",
         "cells": []
       }
@@ -3974,7 +3977,7 @@
       {
         "id": "Recipe",
         "label": "Recipe",
-        "tooltip": "One-click recipes \u2014 patch-only rows that stamp picks onto the draft; Default stamps nothing.",
+        "tooltip": "One-click recipes — patch-only rows that stamp picks onto the draft; Default stamps nothing.",
         "default": "default"
       }
     ]
@@ -4013,7 +4016,7 @@
       {
         "id": "default",
         "label": "Default",
-        "hint": "The family default \u2014 no extra stamps; a fresh card lands here.",
+        "hint": "The family default — no extra stamps; a fresh card lands here.",
         "group": "Recipe",
         "cells": []
       }
@@ -4030,7 +4033,7 @@
       {
         "id": "Recipe",
         "label": "Recipe",
-        "tooltip": "One-click recipes \u2014 patch-only rows that stamp picks onto the draft; Default stamps nothing.",
+        "tooltip": "One-click recipes — patch-only rows that stamp picks onto the draft; Default stamps nothing.",
         "default": "default"
       }
     ],
@@ -4058,7 +4061,7 @@
     "id": "pixal3d",
     "form": "form_img_to_mesh",
     "label": "Pixal3D 1024 BF16",
-    "description": "Pixel-aligned image \u2192 textured 3D mesh (native ComfyUI Pixal3D, MoGe camera conditioning \u2192 DINOv3+NAF pixel-aligned embeddings \u2192 shared TRELLIS.2 sampler chain \u2192 textured .glb). Hero-asset tier: nearest reconstruction fidelity, slower than TRELLIS.2.",
+    "description": "Pixel-aligned image → textured 3D mesh (native ComfyUI Pixal3D, MoGe camera conditioning → DINOv3+NAF pixel-aligned embeddings → shared TRELLIS.2 sampler chain → textured .glb). Hero-asset tier: nearest reconstruction fidelity, slower than TRELLIS.2.",
     "engine": "comfyui",
     "defaults": {
       "resolution": "1024",
@@ -4110,7 +4113,7 @@
       {
         "id": "1024",
         "label": "1024",
-        "hint": "Standard resolution \u2014 DEFAULT",
+        "hint": "Standard resolution — DEFAULT",
         "group": "Variant",
         "route": "pixal3d",
         "order": 0,
@@ -4132,7 +4135,7 @@
       {
         "id": "1536",
         "label": "1536",
-        "hint": "Quality resolution \u2014 hero assets, final production",
+        "hint": "Quality resolution — hero assets, final production",
         "group": "Variant",
         "route": "pixal3d-1536",
         "order": 2,
@@ -4154,7 +4157,7 @@
       {
         "id": "512",
         "label": "512",
-        "hint": "Fast resolution \u2014 props, thumbnails, iteration",
+        "hint": "Fast resolution — props, thumbnails, iteration",
         "group": "Variant",
         "route": "pixal3d-512",
         "order": 1,
@@ -4176,7 +4179,7 @@
       {
         "id": "default",
         "label": "Default",
-        "hint": "The family default \u2014 no extra stamps; a fresh card lands here.",
+        "hint": "The family default — no extra stamps; a fresh card lands here.",
         "group": "Recipe",
         "cells": []
       }
@@ -4193,7 +4196,7 @@
       {
         "id": "Recipe",
         "label": "Recipe",
-        "tooltip": "One-click recipes \u2014 patch-only rows that stamp picks onto the draft; Default stamps nothing.",
+        "tooltip": "One-click recipes — patch-only rows that stamp picks onto the draft; Default stamps nothing.",
         "default": "default"
       }
     ],
@@ -4264,7 +4267,7 @@
     "id": "pixal3d-1536",
     "form": "form_img_to_mesh",
     "label": "Pixal3D 1536 BF16",
-    "description": "Pixel-aligned image \u2192 textured 3D mesh (native ComfyUI Pixal3D, MoGe camera conditioning \u2192 DINOv3+NAF pixel-aligned embeddings \u2192 shared TRELLIS.2 sampler chain \u2192 textured .glb). Hero-asset tier: nearest reconstruction fidelity, slower than TRELLIS.2.",
+    "description": "Pixel-aligned image → textured 3D mesh (native ComfyUI Pixal3D, MoGe camera conditioning → DINOv3+NAF pixel-aligned embeddings → shared TRELLIS.2 sampler chain → textured .glb). Hero-asset tier: nearest reconstruction fidelity, slower than TRELLIS.2.",
     "engine": "comfyui",
     "defaults": {
       "resolution": "1024",
@@ -4316,7 +4319,7 @@
       {
         "id": "1024",
         "label": "1024",
-        "hint": "Standard resolution \u2014 DEFAULT",
+        "hint": "Standard resolution — DEFAULT",
         "group": "Variant",
         "route": "pixal3d",
         "order": 0,
@@ -4338,7 +4341,7 @@
       {
         "id": "1536",
         "label": "1536",
-        "hint": "Quality resolution \u2014 hero assets, final production",
+        "hint": "Quality resolution — hero assets, final production",
         "group": "Variant",
         "route": "pixal3d-1536",
         "order": 2,
@@ -4360,7 +4363,7 @@
       {
         "id": "512",
         "label": "512",
-        "hint": "Fast resolution \u2014 props, thumbnails, iteration",
+        "hint": "Fast resolution — props, thumbnails, iteration",
         "group": "Variant",
         "route": "pixal3d-512",
         "order": 1,
@@ -4382,7 +4385,7 @@
       {
         "id": "default",
         "label": "Default",
-        "hint": "The family default \u2014 no extra stamps; a fresh card lands here.",
+        "hint": "The family default — no extra stamps; a fresh card lands here.",
         "group": "Recipe",
         "cells": []
       }
@@ -4399,7 +4402,7 @@
       {
         "id": "Recipe",
         "label": "Recipe",
-        "tooltip": "One-click recipes \u2014 patch-only rows that stamp picks onto the draft; Default stamps nothing.",
+        "tooltip": "One-click recipes — patch-only rows that stamp picks onto the draft; Default stamps nothing.",
         "default": "default"
       }
     ],
@@ -4470,7 +4473,7 @@
     "id": "pixal3d-1536-bf16",
     "form": "form_img_to_mesh",
     "label": "Pixal3D 1536 BF16",
-    "description": "Pixel-aligned image \u2192 textured 3D mesh (native ComfyUI Pixal3D, MoGe camera conditioning \u2192 DINOv3+NAF pixel-aligned embeddings \u2192 shared TRELLIS.2 sampler chain \u2192 textured .glb). Hero-asset tier: nearest reconstruction fidelity, slower than TRELLIS.2.",
+    "description": "Pixel-aligned image → textured 3D mesh (native ComfyUI Pixal3D, MoGe camera conditioning → DINOv3+NAF pixel-aligned embeddings → shared TRELLIS.2 sampler chain → textured .glb). Hero-asset tier: nearest reconstruction fidelity, slower than TRELLIS.2.",
     "engine": "comfyui",
     "defaults": {
       "resolution": "1024",
@@ -4522,7 +4525,7 @@
       {
         "id": "1024",
         "label": "1024",
-        "hint": "Standard resolution \u2014 DEFAULT",
+        "hint": "Standard resolution — DEFAULT",
         "group": "Variant",
         "route": "pixal3d",
         "order": 0,
@@ -4544,7 +4547,7 @@
       {
         "id": "1536",
         "label": "1536",
-        "hint": "Quality resolution \u2014 hero assets, final production",
+        "hint": "Quality resolution — hero assets, final production",
         "group": "Variant",
         "route": "pixal3d-1536",
         "order": 2,
@@ -4566,7 +4569,7 @@
       {
         "id": "512",
         "label": "512",
-        "hint": "Fast resolution \u2014 props, thumbnails, iteration",
+        "hint": "Fast resolution — props, thumbnails, iteration",
         "group": "Variant",
         "route": "pixal3d-512",
         "order": 1,
@@ -4588,7 +4591,7 @@
       {
         "id": "default",
         "label": "Default",
-        "hint": "The family default \u2014 no extra stamps; a fresh card lands here.",
+        "hint": "The family default — no extra stamps; a fresh card lands here.",
         "group": "Recipe",
         "cells": []
       }
@@ -4605,7 +4608,7 @@
       {
         "id": "Recipe",
         "label": "Recipe",
-        "tooltip": "One-click recipes \u2014 patch-only rows that stamp picks onto the draft; Default stamps nothing.",
+        "tooltip": "One-click recipes — patch-only rows that stamp picks onto the draft; Default stamps nothing.",
         "default": "default"
       }
     ],
@@ -4676,7 +4679,7 @@
     "id": "pixal3d-1536-int8",
     "form": "form_img_to_mesh",
     "label": "Pixal3D 1536 INT8 ConvRot",
-    "description": "Pixel-aligned image \u2192 textured 3D mesh (native ComfyUI Pixal3D, MoGe camera conditioning \u2192 DINOv3+NAF pixel-aligned embeddings \u2192 shared TRELLIS.2 sampler chain \u2192 textured .glb). Hero-asset tier: nearest reconstruction fidelity, slower than TRELLIS.2.",
+    "description": "Pixel-aligned image → textured 3D mesh (native ComfyUI Pixal3D, MoGe camera conditioning → DINOv3+NAF pixel-aligned embeddings → shared TRELLIS.2 sampler chain → textured .glb). Hero-asset tier: nearest reconstruction fidelity, slower than TRELLIS.2.",
     "engine": "comfyui",
     "defaults": {
       "resolution": "1024",
@@ -4728,7 +4731,7 @@
       {
         "id": "1024",
         "label": "1024",
-        "hint": "Standard resolution \u2014 DEFAULT",
+        "hint": "Standard resolution — DEFAULT",
         "group": "Variant",
         "route": "pixal3d",
         "order": 0,
@@ -4750,7 +4753,7 @@
       {
         "id": "1536",
         "label": "1536",
-        "hint": "Quality resolution \u2014 hero assets, final production",
+        "hint": "Quality resolution — hero assets, final production",
         "group": "Variant",
         "route": "pixal3d-1536",
         "order": 2,
@@ -4772,7 +4775,7 @@
       {
         "id": "512",
         "label": "512",
-        "hint": "Fast resolution \u2014 props, thumbnails, iteration",
+        "hint": "Fast resolution — props, thumbnails, iteration",
         "group": "Variant",
         "route": "pixal3d-512",
         "order": 1,
@@ -4794,7 +4797,7 @@
       {
         "id": "default",
         "label": "Default",
-        "hint": "The family default \u2014 no extra stamps; a fresh card lands here.",
+        "hint": "The family default — no extra stamps; a fresh card lands here.",
         "group": "Recipe",
         "cells": []
       }
@@ -4811,7 +4814,7 @@
       {
         "id": "Recipe",
         "label": "Recipe",
-        "tooltip": "One-click recipes \u2014 patch-only rows that stamp picks onto the draft; Default stamps nothing.",
+        "tooltip": "One-click recipes — patch-only rows that stamp picks onto the draft; Default stamps nothing.",
         "default": "default"
       }
     ],
@@ -4882,7 +4885,7 @@
     "id": "pixal3d-512",
     "form": "form_img_to_mesh",
     "label": "Pixal3D 512 BF16",
-    "description": "Pixel-aligned image \u2192 textured 3D mesh (native ComfyUI Pixal3D, MoGe camera conditioning \u2192 DINOv3+NAF pixel-aligned embeddings \u2192 shared TRELLIS.2 sampler chain \u2192 textured .glb). Hero-asset tier: nearest reconstruction fidelity, slower than TRELLIS.2.",
+    "description": "Pixel-aligned image → textured 3D mesh (native ComfyUI Pixal3D, MoGe camera conditioning → DINOv3+NAF pixel-aligned embeddings → shared TRELLIS.2 sampler chain → textured .glb). Hero-asset tier: nearest reconstruction fidelity, slower than TRELLIS.2.",
     "engine": "comfyui",
     "defaults": {
       "resolution": "1024",
@@ -4934,7 +4937,7 @@
       {
         "id": "1024",
         "label": "1024",
-        "hint": "Standard resolution \u2014 DEFAULT",
+        "hint": "Standard resolution — DEFAULT",
         "group": "Variant",
         "route": "pixal3d",
         "order": 0,
@@ -4956,7 +4959,7 @@
       {
         "id": "1536",
         "label": "1536",
-        "hint": "Quality resolution \u2014 hero assets, final production",
+        "hint": "Quality resolution — hero assets, final production",
         "group": "Variant",
         "route": "pixal3d-1536",
         "order": 2,
@@ -4978,7 +4981,7 @@
       {
         "id": "512",
         "label": "512",
-        "hint": "Fast resolution \u2014 props, thumbnails, iteration",
+        "hint": "Fast resolution — props, thumbnails, iteration",
         "group": "Variant",
         "route": "pixal3d-512",
         "order": 1,
@@ -5000,7 +5003,7 @@
       {
         "id": "default",
         "label": "Default",
-        "hint": "The family default \u2014 no extra stamps; a fresh card lands here.",
+        "hint": "The family default — no extra stamps; a fresh card lands here.",
         "group": "Recipe",
         "cells": []
       }
@@ -5017,7 +5020,7 @@
       {
         "id": "Recipe",
         "label": "Recipe",
-        "tooltip": "One-click recipes \u2014 patch-only rows that stamp picks onto the draft; Default stamps nothing.",
+        "tooltip": "One-click recipes — patch-only rows that stamp picks onto the draft; Default stamps nothing.",
         "default": "default"
       }
     ],
@@ -5088,7 +5091,7 @@
     "id": "pixal3d-512-bf16",
     "form": "form_img_to_mesh",
     "label": "Pixal3D 512 BF16",
-    "description": "Pixel-aligned image \u2192 textured 3D mesh (native ComfyUI Pixal3D, MoGe camera conditioning \u2192 DINOv3+NAF pixel-aligned embeddings \u2192 shared TRELLIS.2 sampler chain \u2192 textured .glb). Hero-asset tier: nearest reconstruction fidelity, slower than TRELLIS.2.",
+    "description": "Pixel-aligned image → textured 3D mesh (native ComfyUI Pixal3D, MoGe camera conditioning → DINOv3+NAF pixel-aligned embeddings → shared TRELLIS.2 sampler chain → textured .glb). Hero-asset tier: nearest reconstruction fidelity, slower than TRELLIS.2.",
     "engine": "comfyui",
     "defaults": {
       "resolution": "1024",
@@ -5140,7 +5143,7 @@
       {
         "id": "1024",
         "label": "1024",
-        "hint": "Standard resolution \u2014 DEFAULT",
+        "hint": "Standard resolution — DEFAULT",
         "group": "Variant",
         "route": "pixal3d",
         "order": 0,
@@ -5162,7 +5165,7 @@
       {
         "id": "1536",
         "label": "1536",
-        "hint": "Quality resolution \u2014 hero assets, final production",
+        "hint": "Quality resolution — hero assets, final production",
         "group": "Variant",
         "route": "pixal3d-1536",
         "order": 2,
@@ -5184,7 +5187,7 @@
       {
         "id": "512",
         "label": "512",
-        "hint": "Fast resolution \u2014 props, thumbnails, iteration",
+        "hint": "Fast resolution — props, thumbnails, iteration",
         "group": "Variant",
         "route": "pixal3d-512",
         "order": 1,
@@ -5206,7 +5209,7 @@
       {
         "id": "default",
         "label": "Default",
-        "hint": "The family default \u2014 no extra stamps; a fresh card lands here.",
+        "hint": "The family default — no extra stamps; a fresh card lands here.",
         "group": "Recipe",
         "cells": []
       }
@@ -5223,7 +5226,7 @@
       {
         "id": "Recipe",
         "label": "Recipe",
-        "tooltip": "One-click recipes \u2014 patch-only rows that stamp picks onto the draft; Default stamps nothing.",
+        "tooltip": "One-click recipes — patch-only rows that stamp picks onto the draft; Default stamps nothing.",
         "default": "default"
       }
     ],
@@ -5294,7 +5297,7 @@
     "id": "pixal3d-512-int8",
     "form": "form_img_to_mesh",
     "label": "Pixal3D 512 INT8 ConvRot",
-    "description": "Pixel-aligned image \u2192 textured 3D mesh (native ComfyUI Pixal3D, MoGe camera conditioning \u2192 DINOv3+NAF pixel-aligned embeddings \u2192 shared TRELLIS.2 sampler chain \u2192 textured .glb). Hero-asset tier: nearest reconstruction fidelity, slower than TRELLIS.2.",
+    "description": "Pixel-aligned image → textured 3D mesh (native ComfyUI Pixal3D, MoGe camera conditioning → DINOv3+NAF pixel-aligned embeddings → shared TRELLIS.2 sampler chain → textured .glb). Hero-asset tier: nearest reconstruction fidelity, slower than TRELLIS.2.",
     "engine": "comfyui",
     "defaults": {
       "resolution": "1024",
@@ -5346,7 +5349,7 @@
       {
         "id": "1024",
         "label": "1024",
-        "hint": "Standard resolution \u2014 DEFAULT",
+        "hint": "Standard resolution — DEFAULT",
         "group": "Variant",
         "route": "pixal3d",
         "order": 0,
@@ -5368,7 +5371,7 @@
       {
         "id": "1536",
         "label": "1536",
-        "hint": "Quality resolution \u2014 hero assets, final production",
+        "hint": "Quality resolution — hero assets, final production",
         "group": "Variant",
         "route": "pixal3d-1536",
         "order": 2,
@@ -5390,7 +5393,7 @@
       {
         "id": "512",
         "label": "512",
-        "hint": "Fast resolution \u2014 props, thumbnails, iteration",
+        "hint": "Fast resolution — props, thumbnails, iteration",
         "group": "Variant",
         "route": "pixal3d-512",
         "order": 1,
@@ -5412,7 +5415,7 @@
       {
         "id": "default",
         "label": "Default",
-        "hint": "The family default \u2014 no extra stamps; a fresh card lands here.",
+        "hint": "The family default — no extra stamps; a fresh card lands here.",
         "group": "Recipe",
         "cells": []
       }
@@ -5429,7 +5432,7 @@
       {
         "id": "Recipe",
         "label": "Recipe",
-        "tooltip": "One-click recipes \u2014 patch-only rows that stamp picks onto the draft; Default stamps nothing.",
+        "tooltip": "One-click recipes — patch-only rows that stamp picks onto the draft; Default stamps nothing.",
         "default": "default"
       }
     ],
@@ -5500,7 +5503,7 @@
     "id": "pixal3d-bf16",
     "form": "form_img_to_mesh",
     "label": "Pixal3D 1024 BF16",
-    "description": "Pixel-aligned image \u2192 textured 3D mesh (native ComfyUI Pixal3D, MoGe camera conditioning \u2192 DINOv3+NAF pixel-aligned embeddings \u2192 shared TRELLIS.2 sampler chain \u2192 textured .glb). Hero-asset tier: nearest reconstruction fidelity, slower than TRELLIS.2.",
+    "description": "Pixel-aligned image → textured 3D mesh (native ComfyUI Pixal3D, MoGe camera conditioning → DINOv3+NAF pixel-aligned embeddings → shared TRELLIS.2 sampler chain → textured .glb). Hero-asset tier: nearest reconstruction fidelity, slower than TRELLIS.2.",
     "engine": "comfyui",
     "defaults": {
       "resolution": "1024",
@@ -5552,7 +5555,7 @@
       {
         "id": "1024",
         "label": "1024",
-        "hint": "Standard resolution \u2014 DEFAULT",
+        "hint": "Standard resolution — DEFAULT",
         "group": "Variant",
         "route": "pixal3d",
         "order": 0,
@@ -5574,7 +5577,7 @@
       {
         "id": "1536",
         "label": "1536",
-        "hint": "Quality resolution \u2014 hero assets, final production",
+        "hint": "Quality resolution — hero assets, final production",
         "group": "Variant",
         "route": "pixal3d-1536",
         "order": 2,
@@ -5596,7 +5599,7 @@
       {
         "id": "512",
         "label": "512",
-        "hint": "Fast resolution \u2014 props, thumbnails, iteration",
+        "hint": "Fast resolution — props, thumbnails, iteration",
         "group": "Variant",
         "route": "pixal3d-512",
         "order": 1,
@@ -5618,7 +5621,7 @@
       {
         "id": "default",
         "label": "Default",
-        "hint": "The family default \u2014 no extra stamps; a fresh card lands here.",
+        "hint": "The family default — no extra stamps; a fresh card lands here.",
         "group": "Recipe",
         "cells": []
       }
@@ -5635,7 +5638,7 @@
       {
         "id": "Recipe",
         "label": "Recipe",
-        "tooltip": "One-click recipes \u2014 patch-only rows that stamp picks onto the draft; Default stamps nothing.",
+        "tooltip": "One-click recipes — patch-only rows that stamp picks onto the draft; Default stamps nothing.",
         "default": "default"
       }
     ],
@@ -5706,7 +5709,7 @@
     "id": "pixal3d-int8",
     "form": "form_img_to_mesh",
     "label": "Pixal3D 1024 INT8 ConvRot",
-    "description": "Pixel-aligned image \u2192 textured 3D mesh (native ComfyUI Pixal3D, MoGe camera conditioning \u2192 DINOv3+NAF pixel-aligned embeddings \u2192 shared TRELLIS.2 sampler chain \u2192 textured .glb). Hero-asset tier: nearest reconstruction fidelity, slower than TRELLIS.2.",
+    "description": "Pixel-aligned image → textured 3D mesh (native ComfyUI Pixal3D, MoGe camera conditioning → DINOv3+NAF pixel-aligned embeddings → shared TRELLIS.2 sampler chain → textured .glb). Hero-asset tier: nearest reconstruction fidelity, slower than TRELLIS.2.",
     "engine": "comfyui",
     "defaults": {
       "resolution": "1024",
@@ -5758,7 +5761,7 @@
       {
         "id": "1024",
         "label": "1024",
-        "hint": "Standard resolution \u2014 DEFAULT",
+        "hint": "Standard resolution — DEFAULT",
         "group": "Variant",
         "route": "pixal3d",
         "order": 0,
@@ -5780,7 +5783,7 @@
       {
         "id": "1536",
         "label": "1536",
-        "hint": "Quality resolution \u2014 hero assets, final production",
+        "hint": "Quality resolution — hero assets, final production",
         "group": "Variant",
         "route": "pixal3d-1536",
         "order": 2,
@@ -5802,7 +5805,7 @@
       {
         "id": "512",
         "label": "512",
-        "hint": "Fast resolution \u2014 props, thumbnails, iteration",
+        "hint": "Fast resolution — props, thumbnails, iteration",
         "group": "Variant",
         "route": "pixal3d-512",
         "order": 1,
@@ -5824,7 +5827,7 @@
       {
         "id": "default",
         "label": "Default",
-        "hint": "The family default \u2014 no extra stamps; a fresh card lands here.",
+        "hint": "The family default — no extra stamps; a fresh card lands here.",
         "group": "Recipe",
         "cells": []
       }
@@ -5841,7 +5844,7 @@
       {
         "id": "Recipe",
         "label": "Recipe",
-        "tooltip": "One-click recipes \u2014 patch-only rows that stamp picks onto the draft; Default stamps nothing.",
+        "tooltip": "One-click recipes — patch-only rows that stamp picks onto the draft; Default stamps nothing.",
         "default": "default"
       }
     ],
@@ -5948,7 +5951,7 @@
       {
         "id": "default",
         "label": "Default",
-        "hint": "The family default \u2014 no extra stamps; a fresh card lands here.",
+        "hint": "The family default — no extra stamps; a fresh card lands here.",
         "group": "Recipe",
         "cells": []
       }
@@ -5965,7 +5968,7 @@
       {
         "id": "Recipe",
         "label": "Recipe",
-        "tooltip": "One-click recipes \u2014 patch-only rows that stamp picks onto the draft; Default stamps nothing.",
+        "tooltip": "One-click recipes — patch-only rows that stamp picks onto the draft; Default stamps nothing.",
         "default": "default"
       }
     ]
@@ -6010,7 +6013,7 @@
       {
         "id": "default",
         "label": "Default",
-        "hint": "The family default \u2014 no extra stamps; a fresh card lands here.",
+        "hint": "The family default — no extra stamps; a fresh card lands here.",
         "group": "Recipe",
         "cells": []
       }
@@ -6027,7 +6030,7 @@
       {
         "id": "Recipe",
         "label": "Recipe",
-        "tooltip": "One-click recipes \u2014 patch-only rows that stamp picks onto the draft; Default stamps nothing.",
+        "tooltip": "One-click recipes — patch-only rows that stamp picks onto the draft; Default stamps nothing.",
         "default": "default"
       }
     ]
@@ -6072,7 +6075,7 @@
       {
         "id": "default",
         "label": "Default",
-        "hint": "The family default \u2014 no extra stamps; a fresh card lands here.",
+        "hint": "The family default — no extra stamps; a fresh card lands here.",
         "group": "Recipe",
         "cells": []
       }
@@ -6089,7 +6092,7 @@
       {
         "id": "Recipe",
         "label": "Recipe",
-        "tooltip": "One-click recipes \u2014 patch-only rows that stamp picks onto the draft; Default stamps nothing.",
+        "tooltip": "One-click recipes — patch-only rows that stamp picks onto the draft; Default stamps nothing.",
         "default": "default"
       }
     ]
@@ -6098,7 +6101,7 @@
     "id": "qwen-img-edit-2511",
     "form": "form_edit",
     "label": "Image Edit Standard INT8 ConvRot",
-    "description": "Instruction-driven image editing and manipulation \u2014 the Qwen-Image-Edit 2511 lane (the image-edit card arms this family; the pre-flip img-edit head is retired, same physical lane, its assets merged here 2026-09-05).",
+    "description": "Instruction-driven image editing and manipulation — the Qwen-Image-Edit 2511 lane (the image-edit card arms this family; the pre-flip img-edit head is retired, same physical lane, its assets merged here 2026-09-05).",
     "engine": "comfyui",
     "defaults": {
       "use_stock_nodes": false,
@@ -6147,7 +6150,7 @@
       {
         "id": "lightning",
         "label": "Lightning",
-        "hint": "4-step distilled checkpoint (lightx2v Lightning) \u2014 fast (DEFAULT)",
+        "hint": "4-step distilled checkpoint (lightx2v Lightning) — fast (DEFAULT)",
         "group": "Variant",
         "route": "qwen-img-edit-2511-lightning4",
         "order": 0,
@@ -6174,7 +6177,7 @@
       {
         "id": "standard",
         "label": "Standard",
-        "hint": "20 steps, cfg 2.5 \u2014 highest quality path, the INT8 ConvRot merge.",
+        "hint": "20 steps, cfg 2.5 — highest quality path, the INT8 ConvRot merge.",
         "group": "Variant",
         "route": "qwen-img-edit-2511",
         "order": 1,
@@ -6202,7 +6205,7 @@
       {
         "id": "default",
         "label": "Default",
-        "hint": "The family default \u2014 no extra stamps; a fresh card lands here.",
+        "hint": "The family default — no extra stamps; a fresh card lands here.",
         "group": "Recipe",
         "cells": []
       }
@@ -6211,17 +6214,17 @@
       {
         "id": "Variant",
         "label": "Variant",
-        "tooltip": "Base checkpoint \u2014 Lightning (4-step distilled, fast default) or Standard (20-step reference, highest quality)."
+        "tooltip": "Base checkpoint — Lightning (4-step distilled, fast default) or Standard (20-step reference, highest quality)."
       },
       {
         "id": "Quant",
         "label": "Quant",
-        "tooltip": "Quantization tier \u2014 FP8 Lightning (the distilled checkpoint) or INT8 ConvRot (the reference merge)."
+        "tooltip": "Quantization tier — FP8 Lightning (the distilled checkpoint) or INT8 ConvRot (the reference merge)."
       },
       {
         "id": "Recipe",
         "label": "Recipe",
-        "tooltip": "One-click recipes \u2014 patch-only rows that stamp picks onto the draft; Default stamps nothing.",
+        "tooltip": "One-click recipes — patch-only rows that stamp picks onto the draft; Default stamps nothing.",
         "default": "default"
       }
     ],
@@ -6250,7 +6253,7 @@
     "id": "qwen-img-edit-2511-int8",
     "form": "form_edit",
     "label": "Image Edit Standard INT8 ConvRot",
-    "description": "Instruction-driven image editing and manipulation \u2014 the Qwen-Image-Edit 2511 lane (the image-edit card arms this family; the pre-flip img-edit head is retired, same physical lane, its assets merged here 2026-09-05).",
+    "description": "Instruction-driven image editing and manipulation — the Qwen-Image-Edit 2511 lane (the image-edit card arms this family; the pre-flip img-edit head is retired, same physical lane, its assets merged here 2026-09-05).",
     "engine": "comfyui",
     "defaults": {
       "use_stock_nodes": false,
@@ -6299,7 +6302,7 @@
       {
         "id": "lightning",
         "label": "Lightning",
-        "hint": "4-step distilled checkpoint (lightx2v Lightning) \u2014 fast (DEFAULT)",
+        "hint": "4-step distilled checkpoint (lightx2v Lightning) — fast (DEFAULT)",
         "group": "Variant",
         "route": "qwen-img-edit-2511-lightning4",
         "order": 0,
@@ -6326,7 +6329,7 @@
       {
         "id": "standard",
         "label": "Standard",
-        "hint": "20 steps, cfg 2.5 \u2014 highest quality path, the INT8 ConvRot merge.",
+        "hint": "20 steps, cfg 2.5 — highest quality path, the INT8 ConvRot merge.",
         "group": "Variant",
         "route": "qwen-img-edit-2511",
         "order": 1,
@@ -6354,7 +6357,7 @@
       {
         "id": "default",
         "label": "Default",
-        "hint": "The family default \u2014 no extra stamps; a fresh card lands here.",
+        "hint": "The family default — no extra stamps; a fresh card lands here.",
         "group": "Recipe",
         "cells": []
       }
@@ -6363,17 +6366,17 @@
       {
         "id": "Variant",
         "label": "Variant",
-        "tooltip": "Base checkpoint \u2014 Lightning (4-step distilled, fast default) or Standard (20-step reference, highest quality)."
+        "tooltip": "Base checkpoint — Lightning (4-step distilled, fast default) or Standard (20-step reference, highest quality)."
       },
       {
         "id": "Quant",
         "label": "Quant",
-        "tooltip": "Quantization tier \u2014 FP8 Lightning (the distilled checkpoint) or INT8 ConvRot (the reference merge)."
+        "tooltip": "Quantization tier — FP8 Lightning (the distilled checkpoint) or INT8 ConvRot (the reference merge)."
       },
       {
         "id": "Recipe",
         "label": "Recipe",
-        "tooltip": "One-click recipes \u2014 patch-only rows that stamp picks onto the draft; Default stamps nothing.",
+        "tooltip": "One-click recipes — patch-only rows that stamp picks onto the draft; Default stamps nothing.",
         "default": "default"
       }
     ],
@@ -6402,7 +6405,7 @@
     "id": "qwen-img-edit-2511-lightning4",
     "form": "form_edit",
     "label": "Image Edit Lightning FP8 Lightning",
-    "description": "Instruction-driven image editing and manipulation \u2014 the Qwen-Image-Edit 2511 lane (the image-edit card arms this family; the pre-flip img-edit head is retired, same physical lane, its assets merged here 2026-09-05).",
+    "description": "Instruction-driven image editing and manipulation — the Qwen-Image-Edit 2511 lane (the image-edit card arms this family; the pre-flip img-edit head is retired, same physical lane, its assets merged here 2026-09-05).",
     "engine": "comfyui",
     "defaults": {
       "use_stock_nodes": false,
@@ -6451,7 +6454,7 @@
       {
         "id": "lightning",
         "label": "Lightning",
-        "hint": "4-step distilled checkpoint (lightx2v Lightning) \u2014 fast (DEFAULT)",
+        "hint": "4-step distilled checkpoint (lightx2v Lightning) — fast (DEFAULT)",
         "group": "Variant",
         "route": "qwen-img-edit-2511-lightning4",
         "order": 0,
@@ -6478,7 +6481,7 @@
       {
         "id": "standard",
         "label": "Standard",
-        "hint": "20 steps, cfg 2.5 \u2014 highest quality path, the INT8 ConvRot merge.",
+        "hint": "20 steps, cfg 2.5 — highest quality path, the INT8 ConvRot merge.",
         "group": "Variant",
         "route": "qwen-img-edit-2511",
         "order": 1,
@@ -6506,7 +6509,7 @@
       {
         "id": "default",
         "label": "Default",
-        "hint": "The family default \u2014 no extra stamps; a fresh card lands here.",
+        "hint": "The family default — no extra stamps; a fresh card lands here.",
         "group": "Recipe",
         "cells": []
       }
@@ -6515,17 +6518,17 @@
       {
         "id": "Variant",
         "label": "Variant",
-        "tooltip": "Base checkpoint \u2014 Lightning (4-step distilled, fast default) or Standard (20-step reference, highest quality)."
+        "tooltip": "Base checkpoint — Lightning (4-step distilled, fast default) or Standard (20-step reference, highest quality)."
       },
       {
         "id": "Quant",
         "label": "Quant",
-        "tooltip": "Quantization tier \u2014 FP8 Lightning (the distilled checkpoint) or INT8 ConvRot (the reference merge)."
+        "tooltip": "Quantization tier — FP8 Lightning (the distilled checkpoint) or INT8 ConvRot (the reference merge)."
       },
       {
         "id": "Recipe",
         "label": "Recipe",
-        "tooltip": "One-click recipes \u2014 patch-only rows that stamp picks onto the draft; Default stamps nothing.",
+        "tooltip": "One-click recipes — patch-only rows that stamp picks onto the draft; Default stamps nothing.",
         "default": "default"
       }
     ],
@@ -6621,7 +6624,7 @@
       {
         "id": "default",
         "label": "Default",
-        "hint": "The family default \u2014 no extra stamps; a fresh card lands here.",
+        "hint": "The family default — no extra stamps; a fresh card lands here.",
         "group": "Recipe",
         "cells": []
       }
@@ -6638,7 +6641,7 @@
       {
         "id": "Recipe",
         "label": "Recipe",
-        "tooltip": "One-click recipes \u2014 patch-only rows that stamp picks onto the draft; Default stamps nothing.",
+        "tooltip": "One-click recipes — patch-only rows that stamp picks onto the draft; Default stamps nothing.",
         "default": "default"
       }
     ],
@@ -6734,7 +6737,7 @@
       {
         "id": "default",
         "label": "Default",
-        "hint": "The family default \u2014 no extra stamps; a fresh card lands here.",
+        "hint": "The family default — no extra stamps; a fresh card lands here.",
         "group": "Recipe",
         "cells": []
       }
@@ -6751,7 +6754,7 @@
       {
         "id": "Recipe",
         "label": "Recipe",
-        "tooltip": "One-click recipes \u2014 patch-only rows that stamp picks onto the draft; Default stamps nothing.",
+        "tooltip": "One-click recipes — patch-only rows that stamp picks onto the draft; Default stamps nothing.",
         "default": "default"
       }
     ],
@@ -6846,7 +6849,7 @@
       {
         "id": "default",
         "label": "Default",
-        "hint": "The family default \u2014 no extra stamps; a fresh card lands here.",
+        "hint": "The family default — no extra stamps; a fresh card lands here.",
         "group": "Recipe",
         "cells": []
       }
@@ -6863,7 +6866,7 @@
       {
         "id": "Recipe",
         "label": "Recipe",
-        "tooltip": "One-click recipes \u2014 patch-only rows that stamp picks onto the draft; Default stamps nothing.",
+        "tooltip": "One-click recipes — patch-only rows that stamp picks onto the draft; Default stamps nothing.",
         "default": "default"
       }
     ],
@@ -6929,7 +6932,7 @@
       {
         "id": "default",
         "label": "Default",
-        "hint": "The family default \u2014 no extra stamps; a fresh card lands here.",
+        "hint": "The family default — no extra stamps; a fresh card lands here.",
         "group": "Recipe",
         "cells": []
       }
@@ -6946,7 +6949,7 @@
       {
         "id": "Recipe",
         "label": "Recipe",
-        "tooltip": "One-click recipes \u2014 patch-only rows that stamp picks onto the draft; Default stamps nothing.",
+        "tooltip": "One-click recipes — patch-only rows that stamp picks onto the draft; Default stamps nothing.",
         "default": "default"
       }
     ]
@@ -6955,7 +6958,7 @@
     "id": "scail2-animate",
     "form": "form_video_director",
     "label": "SCAIL-2 Standard FP8",
-    "description": "SCAIL-2 character animation \u2014 drives a reference character from a video and colored mask.",
+    "description": "SCAIL-2 character animation — drives a reference character from a video and colored mask.",
     "engine": "comfyui",
     "defaults": {
       "width": 480,
@@ -6988,7 +6991,7 @@
       {
         "id": "default",
         "label": "Default",
-        "hint": "The family default \u2014 no extra stamps; a fresh card lands here.",
+        "hint": "The family default — no extra stamps; a fresh card lands here.",
         "group": "Recipe",
         "cells": []
       }
@@ -7005,7 +7008,7 @@
       {
         "id": "Recipe",
         "label": "Recipe",
-        "tooltip": "One-click recipes \u2014 patch-only rows that stamp picks onto the draft; Default stamps nothing.",
+        "tooltip": "One-click recipes — patch-only rows that stamp picks onto the draft; Default stamps nothing.",
         "default": "default"
       }
     ],
@@ -7032,7 +7035,7 @@
     "id": "see-through",
     "form": "form_image_seethrough",
     "label": "See-Through Standard Native (weightless)",
-    "description": "See-Through anime layer decomposition \u2014 splits an image into character, clothing, and background layers.",
+    "description": "See-Through anime layer decomposition — splits an image into character, clothing, and background layers.",
     "unoffered": true,
     "defaults": {
       "resolution": 1280,
@@ -7065,7 +7068,7 @@
       {
         "id": "default",
         "label": "Default",
-        "hint": "The family default \u2014 no extra stamps; a fresh card lands here.",
+        "hint": "The family default — no extra stamps; a fresh card lands here.",
         "group": "Recipe",
         "cells": []
       }
@@ -7082,7 +7085,7 @@
       {
         "id": "Recipe",
         "label": "Recipe",
-        "tooltip": "One-click recipes \u2014 patch-only rows that stamp picks onto the draft; Default stamps nothing.",
+        "tooltip": "One-click recipes — patch-only rows that stamp picks onto the draft; Default stamps nothing.",
         "default": "default"
       }
     ]
@@ -7104,7 +7107,7 @@
       {
         "id": "3b",
         "label": "3B FP16",
-        "hint": "3B EMA fp16 \u2014 fast, ~7 GB VRAM (DEFAULT). Precision ships with this body.",
+        "hint": "3B EMA fp16 — fast, ~7 GB VRAM (DEFAULT). Precision ships with this body.",
         "group": "Variant",
         "route": "seedvr2_ema",
         "order": 0,
@@ -7113,7 +7116,7 @@
       {
         "id": "7b",
         "label": "7B FP8",
-        "hint": "7B EMA fp8_e4m3fn (mixed block-35 fp16) \u2014 beefier fine detail, ~3\u00d7 slower.",
+        "hint": "7B EMA fp8_e4m3fn (mixed block-35 fp16) — beefier fine detail, ~3× slower.",
         "group": "Variant",
         "route": "seedvr2_ema_7b",
         "order": 1,
@@ -7122,7 +7125,7 @@
       {
         "id": "vae-fp16",
         "label": "VAE FP16",
-        "hint": "EMA VAE helper weights \u2014 hidden (folded in 2026-08-16)",
+        "hint": "EMA VAE helper weights — hidden (folded in 2026-08-16)",
         "group": "Variant",
         "route": "seedvr2_ema_vae_fp16",
         "order": 4,
@@ -7131,7 +7134,7 @@
       {
         "id": "default",
         "label": "Default",
-        "hint": "The family default \u2014 no extra stamps; a fresh card lands here.",
+        "hint": "The family default — no extra stamps; a fresh card lands here.",
         "group": "Recipe",
         "cells": []
       }
@@ -7148,7 +7151,7 @@
       {
         "id": "Recipe",
         "label": "Recipe",
-        "tooltip": "One-click recipes \u2014 patch-only rows that stamp picks onto the draft; Default stamps nothing.",
+        "tooltip": "One-click recipes — patch-only rows that stamp picks onto the draft; Default stamps nothing.",
         "default": "default"
       }
     ],
@@ -7188,7 +7191,7 @@
       {
         "id": "3b",
         "label": "3B FP16",
-        "hint": "3B EMA fp16 \u2014 fast, ~7 GB VRAM (DEFAULT). Precision ships with this body.",
+        "hint": "3B EMA fp16 — fast, ~7 GB VRAM (DEFAULT). Precision ships with this body.",
         "group": "Variant",
         "route": "seedvr2_ema",
         "order": 0,
@@ -7197,7 +7200,7 @@
       {
         "id": "7b",
         "label": "7B FP8",
-        "hint": "7B EMA fp8_e4m3fn (mixed block-35 fp16) \u2014 beefier fine detail, ~3\u00d7 slower.",
+        "hint": "7B EMA fp8_e4m3fn (mixed block-35 fp16) — beefier fine detail, ~3× slower.",
         "group": "Variant",
         "route": "seedvr2_ema_7b",
         "order": 1,
@@ -7206,7 +7209,7 @@
       {
         "id": "vae-fp16",
         "label": "VAE FP16",
-        "hint": "EMA VAE helper weights \u2014 hidden (folded in 2026-08-16)",
+        "hint": "EMA VAE helper weights — hidden (folded in 2026-08-16)",
         "group": "Variant",
         "route": "seedvr2_ema_vae_fp16",
         "order": 4,
@@ -7215,7 +7218,7 @@
       {
         "id": "default",
         "label": "Default",
-        "hint": "The family default \u2014 no extra stamps; a fresh card lands here.",
+        "hint": "The family default — no extra stamps; a fresh card lands here.",
         "group": "Recipe",
         "cells": []
       }
@@ -7232,7 +7235,7 @@
       {
         "id": "Recipe",
         "label": "Recipe",
-        "tooltip": "One-click recipes \u2014 patch-only rows that stamp picks onto the draft; Default stamps nothing.",
+        "tooltip": "One-click recipes — patch-only rows that stamp picks onto the draft; Default stamps nothing.",
         "default": "default"
       }
     ],
@@ -7272,7 +7275,7 @@
       {
         "id": "3b",
         "label": "3B FP16",
-        "hint": "3B EMA fp16 \u2014 fast, ~7 GB VRAM (DEFAULT). Precision ships with this body.",
+        "hint": "3B EMA fp16 — fast, ~7 GB VRAM (DEFAULT). Precision ships with this body.",
         "group": "Variant",
         "route": "seedvr2_ema",
         "order": 0,
@@ -7281,7 +7284,7 @@
       {
         "id": "7b",
         "label": "7B FP8",
-        "hint": "7B EMA fp8_e4m3fn (mixed block-35 fp16) \u2014 beefier fine detail, ~3\u00d7 slower.",
+        "hint": "7B EMA fp8_e4m3fn (mixed block-35 fp16) — beefier fine detail, ~3× slower.",
         "group": "Variant",
         "route": "seedvr2_ema_7b",
         "order": 1,
@@ -7290,7 +7293,7 @@
       {
         "id": "vae-fp16",
         "label": "VAE FP16",
-        "hint": "EMA VAE helper weights \u2014 hidden (folded in 2026-08-16)",
+        "hint": "EMA VAE helper weights — hidden (folded in 2026-08-16)",
         "group": "Variant",
         "route": "seedvr2_ema_vae_fp16",
         "order": 4,
@@ -7299,7 +7302,7 @@
       {
         "id": "default",
         "label": "Default",
-        "hint": "The family default \u2014 no extra stamps; a fresh card lands here.",
+        "hint": "The family default — no extra stamps; a fresh card lands here.",
         "group": "Recipe",
         "cells": []
       }
@@ -7316,7 +7319,7 @@
       {
         "id": "Recipe",
         "label": "Recipe",
-        "tooltip": "One-click recipes \u2014 patch-only rows that stamp picks onto the draft; Default stamps nothing.",
+        "tooltip": "One-click recipes — patch-only rows that stamp picks onto the draft; Default stamps nothing.",
         "default": "default"
       }
     ],
@@ -7343,7 +7346,7 @@
     "id": "skintokens",
     "form": "form_auto_rig",
     "label": "SkinTokens Standard Native",
-    "description": "Static mesh GLB \u2192 generated skeleton + learned skin weights \u2192 rigged GLB (TokenRig on GGML, CPU)",
+    "description": "Static mesh GLB → generated skeleton + learned skin weights → rigged GLB (TokenRig on GGML, CPU)",
     "engine": "skintokens",
     "defaults": {
       "device": "cpu",
@@ -7367,7 +7370,7 @@
       {
         "id": "default",
         "label": "Default",
-        "hint": "The family default \u2014 no extra stamps; a fresh card lands here.",
+        "hint": "The family default — no extra stamps; a fresh card lands here.",
         "group": "Recipe",
         "cells": []
       }
@@ -7377,7 +7380,7 @@
     "id": "somax",
     "form": "form_3d_somax",
     "label": "SOMAX Standard Native",
-    "description": "TRELLIS \u2192 SOMA weight transfer \u2014 image to SOMAX rigged GLB with anatomically correct SOMA-77 skeleton weights.",
+    "description": "TRELLIS → SOMA weight transfer — image to SOMAX rigged GLB with anatomically correct SOMA-77 skeleton weights.",
     "unoffered": true,
     "defaults": {
       "filename_prefix": "KimodoAnimated",
@@ -7418,7 +7421,7 @@
       {
         "id": "default",
         "label": "Default",
-        "hint": "The family default \u2014 no extra stamps; a fresh card lands here.",
+        "hint": "The family default — no extra stamps; a fresh card lands here.",
         "group": "Recipe",
         "cells": []
       }
@@ -7435,7 +7438,7 @@
       {
         "id": "Recipe",
         "label": "Recipe",
-        "tooltip": "One-click recipes \u2014 patch-only rows that stamp picks onto the draft; Default stamps nothing.",
+        "tooltip": "One-click recipes — patch-only rows that stamp picks onto the draft; Default stamps nothing.",
         "default": "default"
       }
     ]
@@ -7444,7 +7447,7 @@
     "id": "step1x_texture",
     "form": "form_3d_step1x_texture",
     "label": "Step1X-3D Texture Standard Native",
-    "description": "Diffusion-based 3D texture synthesis \u2014 1 reference image \u2192 6 multi-view images via SDXL ig2mv flow \u2192 baked onto UV atlas. Fills ALL surfaces (no coverage gaps unlike camera projection). 3.5B model, ~15s on 4090.",
+    "description": "Diffusion-based 3D texture synthesis — 1 reference image → 6 multi-view images via SDXL ig2mv flow → baked onto UV atlas. Fills ALL surfaces (no coverage gaps unlike camera projection). 3.5B model, ~15s on 4090.",
     "unoffered": true,
     "defaults": {
       "preset": "standard",
@@ -7472,7 +7475,7 @@
       {
         "id": "default",
         "label": "Default",
-        "hint": "The family default \u2014 no extra stamps; a fresh card lands here.",
+        "hint": "The family default — no extra stamps; a fresh card lands here.",
         "group": "Recipe",
         "cells": []
       }
@@ -7489,7 +7492,7 @@
       {
         "id": "Recipe",
         "label": "Recipe",
-        "tooltip": "One-click recipes \u2014 patch-only rows that stamp picks onto the draft; Default stamps nothing.",
+        "tooltip": "One-click recipes — patch-only rows that stamp picks onto the draft; Default stamps nothing.",
         "default": "default"
       }
     ]
@@ -7498,7 +7501,7 @@
     "id": "stretchy-rig",
     "form": "form_image_stretchy_rig",
     "label": "Stretchy Rig Standard Native (weightless)",
-    "description": "Stretchy Studio auto-rig \u2014 DWPose TensorRT whole-body keypoints for 2D character animation.",
+    "description": "Stretchy Studio auto-rig — DWPose TensorRT whole-body keypoints for 2D character animation.",
     "unoffered": true,
     "defaults": {
       "yolox_precision": "fp16",
@@ -7522,7 +7525,7 @@
       {
         "id": "default",
         "label": "Default",
-        "hint": "The family default \u2014 no extra stamps; a fresh card lands here.",
+        "hint": "The family default — no extra stamps; a fresh card lands here.",
         "group": "Recipe",
         "cells": []
       }
@@ -7539,7 +7542,7 @@
       {
         "id": "Recipe",
         "label": "Recipe",
-        "tooltip": "One-click recipes \u2014 patch-only rows that stamp picks onto the draft; Default stamps nothing.",
+        "tooltip": "One-click recipes — patch-only rows that stamp picks onto the draft; Default stamps nothing.",
         "default": "default"
       }
     ]
@@ -7568,7 +7571,7 @@
       {
         "id": "default",
         "label": "Default",
-        "hint": "The family default \u2014 no extra stamps; a fresh card lands here.",
+        "hint": "The family default — no extra stamps; a fresh card lands here.",
         "group": "Recipe",
         "cells": []
       }
@@ -7585,7 +7588,7 @@
       {
         "id": "Recipe",
         "label": "Recipe",
-        "tooltip": "One-click recipes \u2014 patch-only rows that stamp picks onto the draft; Default stamps nothing.",
+        "tooltip": "One-click recipes — patch-only rows that stamp picks onto the draft; Default stamps nothing.",
         "default": "default"
       }
     ],
@@ -7612,7 +7615,7 @@
     "id": "trellis2-native",
     "form": "form_img_to_mesh",
     "label": "TRELLIS.2 Native 1024 BF16",
-    "description": "Image to textured 3D mesh (native ComfyUI TRELLIS.2): background-removed conditioning \u2192 voxel structure \u2192 shape latent \u2192 texture atlas, saved as a .glb.",
+    "description": "Image to textured 3D mesh (native ComfyUI TRELLIS.2): background-removed conditioning → voxel structure → shape latent → texture atlas, saved as a .glb.",
     "engine": "comfyui",
     "defaults": {
       "resolution": "1024",
@@ -7663,7 +7666,7 @@
       {
         "id": "1024",
         "label": "1024",
-        "hint": "Standard resolution \u2014 DEFAULT",
+        "hint": "Standard resolution — DEFAULT",
         "group": "Variant",
         "route": "trellis2-native",
         "order": 0,
@@ -7685,7 +7688,7 @@
       {
         "id": "1536",
         "label": "1536",
-        "hint": "Quality resolution \u2014 hero assets, final production",
+        "hint": "Quality resolution — hero assets, final production",
         "group": "Variant",
         "route": "trellis2-native-1536",
         "order": 2,
@@ -7707,7 +7710,7 @@
       {
         "id": "512",
         "label": "512",
-        "hint": "Fast resolution \u2014 props, thumbnails, iteration",
+        "hint": "Fast resolution — props, thumbnails, iteration",
         "group": "Variant",
         "route": "trellis2-native-512",
         "order": 1,
@@ -7729,7 +7732,7 @@
       {
         "id": "default",
         "label": "Default",
-        "hint": "The family default \u2014 no extra stamps; a fresh card lands here.",
+        "hint": "The family default — no extra stamps; a fresh card lands here.",
         "group": "Recipe",
         "cells": []
       }
@@ -7746,7 +7749,7 @@
       {
         "id": "Recipe",
         "label": "Recipe",
-        "tooltip": "One-click recipes \u2014 patch-only rows that stamp picks onto the draft; Default stamps nothing.",
+        "tooltip": "One-click recipes — patch-only rows that stamp picks onto the draft; Default stamps nothing.",
         "default": "default"
       }
     ],
@@ -7810,7 +7813,7 @@
     "id": "trellis2-native-1536",
     "form": "form_img_to_mesh",
     "label": "TRELLIS.2 Native 1536 BF16",
-    "description": "Image to textured 3D mesh (native ComfyUI TRELLIS.2): background-removed conditioning \u2192 voxel structure \u2192 shape latent \u2192 texture atlas, saved as a .glb.",
+    "description": "Image to textured 3D mesh (native ComfyUI TRELLIS.2): background-removed conditioning → voxel structure → shape latent → texture atlas, saved as a .glb.",
     "engine": "comfyui",
     "defaults": {
       "resolution": "1024",
@@ -7861,7 +7864,7 @@
       {
         "id": "1024",
         "label": "1024",
-        "hint": "Standard resolution \u2014 DEFAULT",
+        "hint": "Standard resolution — DEFAULT",
         "group": "Variant",
         "route": "trellis2-native",
         "order": 0,
@@ -7883,7 +7886,7 @@
       {
         "id": "1536",
         "label": "1536",
-        "hint": "Quality resolution \u2014 hero assets, final production",
+        "hint": "Quality resolution — hero assets, final production",
         "group": "Variant",
         "route": "trellis2-native-1536",
         "order": 2,
@@ -7905,7 +7908,7 @@
       {
         "id": "512",
         "label": "512",
-        "hint": "Fast resolution \u2014 props, thumbnails, iteration",
+        "hint": "Fast resolution — props, thumbnails, iteration",
         "group": "Variant",
         "route": "trellis2-native-512",
         "order": 1,
@@ -7927,7 +7930,7 @@
       {
         "id": "default",
         "label": "Default",
-        "hint": "The family default \u2014 no extra stamps; a fresh card lands here.",
+        "hint": "The family default — no extra stamps; a fresh card lands here.",
         "group": "Recipe",
         "cells": []
       }
@@ -7944,7 +7947,7 @@
       {
         "id": "Recipe",
         "label": "Recipe",
-        "tooltip": "One-click recipes \u2014 patch-only rows that stamp picks onto the draft; Default stamps nothing.",
+        "tooltip": "One-click recipes — patch-only rows that stamp picks onto the draft; Default stamps nothing.",
         "default": "default"
       }
     ],
@@ -8008,7 +8011,7 @@
     "id": "trellis2-native-1536-bf16",
     "form": "form_img_to_mesh",
     "label": "TRELLIS.2 Native 1536 BF16",
-    "description": "Image to textured 3D mesh (native ComfyUI TRELLIS.2): background-removed conditioning \u2192 voxel structure \u2192 shape latent \u2192 texture atlas, saved as a .glb.",
+    "description": "Image to textured 3D mesh (native ComfyUI TRELLIS.2): background-removed conditioning → voxel structure → shape latent → texture atlas, saved as a .glb.",
     "engine": "comfyui",
     "defaults": {
       "resolution": "1024",
@@ -8059,7 +8062,7 @@
       {
         "id": "1024",
         "label": "1024",
-        "hint": "Standard resolution \u2014 DEFAULT",
+        "hint": "Standard resolution — DEFAULT",
         "group": "Variant",
         "route": "trellis2-native",
         "order": 0,
@@ -8081,7 +8084,7 @@
       {
         "id": "1536",
         "label": "1536",
-        "hint": "Quality resolution \u2014 hero assets, final production",
+        "hint": "Quality resolution — hero assets, final production",
         "group": "Variant",
         "route": "trellis2-native-1536",
         "order": 2,
@@ -8103,7 +8106,7 @@
       {
         "id": "512",
         "label": "512",
-        "hint": "Fast resolution \u2014 props, thumbnails, iteration",
+        "hint": "Fast resolution — props, thumbnails, iteration",
         "group": "Variant",
         "route": "trellis2-native-512",
         "order": 1,
@@ -8125,7 +8128,7 @@
       {
         "id": "default",
         "label": "Default",
-        "hint": "The family default \u2014 no extra stamps; a fresh card lands here.",
+        "hint": "The family default — no extra stamps; a fresh card lands here.",
         "group": "Recipe",
         "cells": []
       }
@@ -8142,7 +8145,7 @@
       {
         "id": "Recipe",
         "label": "Recipe",
-        "tooltip": "One-click recipes \u2014 patch-only rows that stamp picks onto the draft; Default stamps nothing.",
+        "tooltip": "One-click recipes — patch-only rows that stamp picks onto the draft; Default stamps nothing.",
         "default": "default"
       }
     ],
@@ -8206,7 +8209,7 @@
     "id": "trellis2-native-1536-int8",
     "form": "form_img_to_mesh",
     "label": "TRELLIS.2 Native 1536 INT8 ConvRot",
-    "description": "Image to textured 3D mesh (native ComfyUI TRELLIS.2): background-removed conditioning \u2192 voxel structure \u2192 shape latent \u2192 texture atlas, saved as a .glb.",
+    "description": "Image to textured 3D mesh (native ComfyUI TRELLIS.2): background-removed conditioning → voxel structure → shape latent → texture atlas, saved as a .glb.",
     "engine": "comfyui",
     "defaults": {
       "resolution": "1024",
@@ -8257,7 +8260,7 @@
       {
         "id": "1024",
         "label": "1024",
-        "hint": "Standard resolution \u2014 DEFAULT",
+        "hint": "Standard resolution — DEFAULT",
         "group": "Variant",
         "route": "trellis2-native",
         "order": 0,
@@ -8279,7 +8282,7 @@
       {
         "id": "1536",
         "label": "1536",
-        "hint": "Quality resolution \u2014 hero assets, final production",
+        "hint": "Quality resolution — hero assets, final production",
         "group": "Variant",
         "route": "trellis2-native-1536",
         "order": 2,
@@ -8301,7 +8304,7 @@
       {
         "id": "512",
         "label": "512",
-        "hint": "Fast resolution \u2014 props, thumbnails, iteration",
+        "hint": "Fast resolution — props, thumbnails, iteration",
         "group": "Variant",
         "route": "trellis2-native-512",
         "order": 1,
@@ -8323,7 +8326,7 @@
       {
         "id": "default",
         "label": "Default",
-        "hint": "The family default \u2014 no extra stamps; a fresh card lands here.",
+        "hint": "The family default — no extra stamps; a fresh card lands here.",
         "group": "Recipe",
         "cells": []
       }
@@ -8340,7 +8343,7 @@
       {
         "id": "Recipe",
         "label": "Recipe",
-        "tooltip": "One-click recipes \u2014 patch-only rows that stamp picks onto the draft; Default stamps nothing.",
+        "tooltip": "One-click recipes — patch-only rows that stamp picks onto the draft; Default stamps nothing.",
         "default": "default"
       }
     ],
@@ -8404,7 +8407,7 @@
     "id": "trellis2-native-512",
     "form": "form_img_to_mesh",
     "label": "TRELLIS.2 Native 512 BF16",
-    "description": "Image to textured 3D mesh (native ComfyUI TRELLIS.2): background-removed conditioning \u2192 voxel structure \u2192 shape latent \u2192 texture atlas, saved as a .glb.",
+    "description": "Image to textured 3D mesh (native ComfyUI TRELLIS.2): background-removed conditioning → voxel structure → shape latent → texture atlas, saved as a .glb.",
     "engine": "comfyui",
     "defaults": {
       "resolution": "1024",
@@ -8455,7 +8458,7 @@
       {
         "id": "1024",
         "label": "1024",
-        "hint": "Standard resolution \u2014 DEFAULT",
+        "hint": "Standard resolution — DEFAULT",
         "group": "Variant",
         "route": "trellis2-native",
         "order": 0,
@@ -8477,7 +8480,7 @@
       {
         "id": "1536",
         "label": "1536",
-        "hint": "Quality resolution \u2014 hero assets, final production",
+        "hint": "Quality resolution — hero assets, final production",
         "group": "Variant",
         "route": "trellis2-native-1536",
         "order": 2,
@@ -8499,7 +8502,7 @@
       {
         "id": "512",
         "label": "512",
-        "hint": "Fast resolution \u2014 props, thumbnails, iteration",
+        "hint": "Fast resolution — props, thumbnails, iteration",
         "group": "Variant",
         "route": "trellis2-native-512",
         "order": 1,
@@ -8521,7 +8524,7 @@
       {
         "id": "default",
         "label": "Default",
-        "hint": "The family default \u2014 no extra stamps; a fresh card lands here.",
+        "hint": "The family default — no extra stamps; a fresh card lands here.",
         "group": "Recipe",
         "cells": []
       }
@@ -8538,7 +8541,7 @@
       {
         "id": "Recipe",
         "label": "Recipe",
-        "tooltip": "One-click recipes \u2014 patch-only rows that stamp picks onto the draft; Default stamps nothing.",
+        "tooltip": "One-click recipes — patch-only rows that stamp picks onto the draft; Default stamps nothing.",
         "default": "default"
       }
     ],
@@ -8602,7 +8605,7 @@
     "id": "trellis2-native-512-bf16",
     "form": "form_img_to_mesh",
     "label": "TRELLIS.2 Native 512 BF16",
-    "description": "Image to textured 3D mesh (native ComfyUI TRELLIS.2): background-removed conditioning \u2192 voxel structure \u2192 shape latent \u2192 texture atlas, saved as a .glb.",
+    "description": "Image to textured 3D mesh (native ComfyUI TRELLIS.2): background-removed conditioning → voxel structure → shape latent → texture atlas, saved as a .glb.",
     "engine": "comfyui",
     "defaults": {
       "resolution": "1024",
@@ -8653,7 +8656,7 @@
       {
         "id": "1024",
         "label": "1024",
-        "hint": "Standard resolution \u2014 DEFAULT",
+        "hint": "Standard resolution — DEFAULT",
         "group": "Variant",
         "route": "trellis2-native",
         "order": 0,
@@ -8675,7 +8678,7 @@
       {
         "id": "1536",
         "label": "1536",
-        "hint": "Quality resolution \u2014 hero assets, final production",
+        "hint": "Quality resolution — hero assets, final production",
         "group": "Variant",
         "route": "trellis2-native-1536",
         "order": 2,
@@ -8697,7 +8700,7 @@
       {
         "id": "512",
         "label": "512",
-        "hint": "Fast resolution \u2014 props, thumbnails, iteration",
+        "hint": "Fast resolution — props, thumbnails, iteration",
         "group": "Variant",
         "route": "trellis2-native-512",
         "order": 1,
@@ -8719,7 +8722,7 @@
       {
         "id": "default",
         "label": "Default",
-        "hint": "The family default \u2014 no extra stamps; a fresh card lands here.",
+        "hint": "The family default — no extra stamps; a fresh card lands here.",
         "group": "Recipe",
         "cells": []
       }
@@ -8736,7 +8739,7 @@
       {
         "id": "Recipe",
         "label": "Recipe",
-        "tooltip": "One-click recipes \u2014 patch-only rows that stamp picks onto the draft; Default stamps nothing.",
+        "tooltip": "One-click recipes — patch-only rows that stamp picks onto the draft; Default stamps nothing.",
         "default": "default"
       }
     ],
@@ -8800,7 +8803,7 @@
     "id": "trellis2-native-512-int8",
     "form": "form_img_to_mesh",
     "label": "TRELLIS.2 Native 512 INT8 ConvRot",
-    "description": "Image to textured 3D mesh (native ComfyUI TRELLIS.2): background-removed conditioning \u2192 voxel structure \u2192 shape latent \u2192 texture atlas, saved as a .glb.",
+    "description": "Image to textured 3D mesh (native ComfyUI TRELLIS.2): background-removed conditioning → voxel structure → shape latent → texture atlas, saved as a .glb.",
     "engine": "comfyui",
     "defaults": {
       "resolution": "1024",
@@ -8851,7 +8854,7 @@
       {
         "id": "1024",
         "label": "1024",
-        "hint": "Standard resolution \u2014 DEFAULT",
+        "hint": "Standard resolution — DEFAULT",
         "group": "Variant",
         "route": "trellis2-native",
         "order": 0,
@@ -8873,7 +8876,7 @@
       {
         "id": "1536",
         "label": "1536",
-        "hint": "Quality resolution \u2014 hero assets, final production",
+        "hint": "Quality resolution — hero assets, final production",
         "group": "Variant",
         "route": "trellis2-native-1536",
         "order": 2,
@@ -8895,7 +8898,7 @@
       {
         "id": "512",
         "label": "512",
-        "hint": "Fast resolution \u2014 props, thumbnails, iteration",
+        "hint": "Fast resolution — props, thumbnails, iteration",
         "group": "Variant",
         "route": "trellis2-native-512",
         "order": 1,
@@ -8917,7 +8920,7 @@
       {
         "id": "default",
         "label": "Default",
-        "hint": "The family default \u2014 no extra stamps; a fresh card lands here.",
+        "hint": "The family default — no extra stamps; a fresh card lands here.",
         "group": "Recipe",
         "cells": []
       }
@@ -8934,7 +8937,7 @@
       {
         "id": "Recipe",
         "label": "Recipe",
-        "tooltip": "One-click recipes \u2014 patch-only rows that stamp picks onto the draft; Default stamps nothing.",
+        "tooltip": "One-click recipes — patch-only rows that stamp picks onto the draft; Default stamps nothing.",
         "default": "default"
       }
     ],
@@ -8998,7 +9001,7 @@
     "id": "trellis2-native-bf16",
     "form": "form_img_to_mesh",
     "label": "TRELLIS.2 Native 1024 BF16",
-    "description": "Image to textured 3D mesh (native ComfyUI TRELLIS.2): background-removed conditioning \u2192 voxel structure \u2192 shape latent \u2192 texture atlas, saved as a .glb.",
+    "description": "Image to textured 3D mesh (native ComfyUI TRELLIS.2): background-removed conditioning → voxel structure → shape latent → texture atlas, saved as a .glb.",
     "engine": "comfyui",
     "defaults": {
       "resolution": "1024",
@@ -9049,7 +9052,7 @@
       {
         "id": "1024",
         "label": "1024",
-        "hint": "Standard resolution \u2014 DEFAULT",
+        "hint": "Standard resolution — DEFAULT",
         "group": "Variant",
         "route": "trellis2-native",
         "order": 0,
@@ -9071,7 +9074,7 @@
       {
         "id": "1536",
         "label": "1536",
-        "hint": "Quality resolution \u2014 hero assets, final production",
+        "hint": "Quality resolution — hero assets, final production",
         "group": "Variant",
         "route": "trellis2-native-1536",
         "order": 2,
@@ -9093,7 +9096,7 @@
       {
         "id": "512",
         "label": "512",
-        "hint": "Fast resolution \u2014 props, thumbnails, iteration",
+        "hint": "Fast resolution — props, thumbnails, iteration",
         "group": "Variant",
         "route": "trellis2-native-512",
         "order": 1,
@@ -9115,7 +9118,7 @@
       {
         "id": "default",
         "label": "Default",
-        "hint": "The family default \u2014 no extra stamps; a fresh card lands here.",
+        "hint": "The family default — no extra stamps; a fresh card lands here.",
         "group": "Recipe",
         "cells": []
       }
@@ -9132,7 +9135,7 @@
       {
         "id": "Recipe",
         "label": "Recipe",
-        "tooltip": "One-click recipes \u2014 patch-only rows that stamp picks onto the draft; Default stamps nothing.",
+        "tooltip": "One-click recipes — patch-only rows that stamp picks onto the draft; Default stamps nothing.",
         "default": "default"
       }
     ],
@@ -9196,7 +9199,7 @@
     "id": "trellis2-native-int8",
     "form": "form_img_to_mesh",
     "label": "TRELLIS.2 Native 1024 INT8 ConvRot",
-    "description": "Image to textured 3D mesh (native ComfyUI TRELLIS.2): background-removed conditioning \u2192 voxel structure \u2192 shape latent \u2192 texture atlas, saved as a .glb.",
+    "description": "Image to textured 3D mesh (native ComfyUI TRELLIS.2): background-removed conditioning → voxel structure → shape latent → texture atlas, saved as a .glb.",
     "engine": "comfyui",
     "defaults": {
       "resolution": "1024",
@@ -9247,7 +9250,7 @@
       {
         "id": "1024",
         "label": "1024",
-        "hint": "Standard resolution \u2014 DEFAULT",
+        "hint": "Standard resolution — DEFAULT",
         "group": "Variant",
         "route": "trellis2-native",
         "order": 0,
@@ -9269,7 +9272,7 @@
       {
         "id": "1536",
         "label": "1536",
-        "hint": "Quality resolution \u2014 hero assets, final production",
+        "hint": "Quality resolution — hero assets, final production",
         "group": "Variant",
         "route": "trellis2-native-1536",
         "order": 2,
@@ -9291,7 +9294,7 @@
       {
         "id": "512",
         "label": "512",
-        "hint": "Fast resolution \u2014 props, thumbnails, iteration",
+        "hint": "Fast resolution — props, thumbnails, iteration",
         "group": "Variant",
         "route": "trellis2-native-512",
         "order": 1,
@@ -9313,7 +9316,7 @@
       {
         "id": "default",
         "label": "Default",
-        "hint": "The family default \u2014 no extra stamps; a fresh card lands here.",
+        "hint": "The family default — no extra stamps; a fresh card lands here.",
         "group": "Recipe",
         "cells": []
       }
@@ -9330,7 +9333,7 @@
       {
         "id": "Recipe",
         "label": "Recipe",
-        "tooltip": "One-click recipes \u2014 patch-only rows that stamp picks onto the draft; Default stamps nothing.",
+        "tooltip": "One-click recipes — patch-only rows that stamp picks onto the draft; Default stamps nothing.",
         "default": "default"
       }
     ],
@@ -9394,7 +9397,7 @@
     "id": "trellis_native",
     "form": "form_3d_trellis_native",
     "label": "Trellis (Native) Standard Native",
-    "description": "Native trellis.cpp GGML engine \u2014 image to UV-textured GLB with the reference-parity C++ postprocess (weld, fill, DC remesh, CuMesh QEM, xatlas, trilinear PBR bake). 50s per asset on the 4090; no confetti.",
+    "description": "Native trellis.cpp GGML engine — image to UV-textured GLB with the reference-parity C++ postprocess (weld, fill, DC remesh, CuMesh QEM, xatlas, trilinear PBR bake). 50s per asset on the 4090; no confetti.",
     "unoffered": true,
     "defaults": {
       "resolution": "1024",
@@ -9430,7 +9433,7 @@
       {
         "id": "default",
         "label": "Default",
-        "hint": "The family default \u2014 no extra stamps; a fresh card lands here.",
+        "hint": "The family default — no extra stamps; a fresh card lands here.",
         "group": "Recipe",
         "cells": []
       }
@@ -9447,7 +9450,7 @@
       {
         "id": "Recipe",
         "label": "Recipe",
-        "tooltip": "One-click recipes \u2014 patch-only rows that stamp picks onto the draft; Default stamps nothing.",
+        "tooltip": "One-click recipes — patch-only rows that stamp picks onto the draft; Default stamps nothing.",
         "default": "default"
       }
     ]
@@ -9474,7 +9477,7 @@
       {
         "id": "base",
         "label": "Base",
-        "hint": "DEFAULT \u2014 25-step HIGH fp8 checkpoint, director-quality",
+        "hint": "DEFAULT — 25-step HIGH fp8 checkpoint, director-quality",
         "group": "Variant",
         "route": "wan-vace",
         "order": 0,
@@ -9492,7 +9495,7 @@
       {
         "id": "custom_quality",
         "label": "Custom Quality",
-        "hint": "30-step HIGH expert \u2014 maximum detail",
+        "hint": "30-step HIGH expert — maximum detail",
         "group": "Variant",
         "route": "wan-vace",
         "order": 1,
@@ -9501,7 +9504,7 @@
       {
         "id": "lightning",
         "label": "Lightning",
-        "hint": "4-step + Wan Lightning LoRA on the base HIGH model (~6\u00d7 faster)",
+        "hint": "4-step + Wan Lightning LoRA on the base HIGH model (~6× faster)",
         "group": "Variant",
         "route": "wan-vace",
         "order": 3,
@@ -9510,7 +9513,7 @@
       {
         "id": "default",
         "label": "Default",
-        "hint": "The family default \u2014 no extra stamps; a fresh card lands here.",
+        "hint": "The family default — no extra stamps; a fresh card lands here.",
         "group": "Recipe",
         "cells": []
       }
@@ -9527,7 +9530,7 @@
       {
         "id": "Recipe",
         "label": "Recipe",
-        "tooltip": "One-click recipes \u2014 patch-only rows that stamp picks onto the draft; Default stamps nothing.",
+        "tooltip": "One-click recipes — patch-only rows that stamp picks onto the draft; Default stamps nothing.",
         "default": "default"
       }
     ],
@@ -9554,7 +9557,7 @@
     "id": "wd14",
     "form": "form_tagger",
     "label": "WD14 Tagger Standard F32",
-    "description": "Booru keyword tagger (WaifuDiffusion v3 lineage) \u2014 comma-separated Danbooru tags for NovelAI / Pony / Illustrious recreation. Light ONNX lane, first run downloads weights.",
+    "description": "Booru keyword tagger (WaifuDiffusion v3 lineage) — comma-separated Danbooru tags for NovelAI / Pony / Illustrious recreation. Light ONNX lane, first run downloads weights.",
     "engine": "comfyui",
     "defaults": {
       "checkpoint": "wd-v1-4-moat-tagger-v2",
@@ -9583,7 +9586,7 @@
       {
         "id": "default",
         "label": "Default",
-        "hint": "The family default \u2014 no extra stamps; a fresh card lands here.",
+        "hint": "The family default — no extra stamps; a fresh card lands here.",
         "group": "Recipe",
         "cells": []
       }
@@ -9600,7 +9603,7 @@
       {
         "id": "Recipe",
         "label": "Recipe",
-        "tooltip": "One-click recipes \u2014 patch-only rows that stamp picks onto the draft; Default stamps nothing.",
+        "tooltip": "One-click recipes — patch-only rows that stamp picks onto the draft; Default stamps nothing.",
         "default": "default"
       }
     ]
@@ -9629,7 +9632,7 @@
       {
         "id": "turbo",
         "label": "Turbo",
-        "hint": "8-step distilled \u2014 fast (DEFAULT)",
+        "hint": "8-step distilled — fast (DEFAULT)",
         "group": "Variant",
         "route": "z-image",
         "order": 0,
@@ -9661,7 +9664,7 @@
       {
         "id": "default",
         "label": "Default",
-        "hint": "The family default \u2014 no extra stamps; a fresh card lands here.",
+        "hint": "The family default — no extra stamps; a fresh card lands here.",
         "group": "Recipe",
         "cells": []
       }
@@ -9678,7 +9681,7 @@
       {
         "id": "Recipe",
         "label": "Recipe",
-        "tooltip": "One-click recipes \u2014 patch-only rows that stamp picks onto the draft; Default stamps nothing.",
+        "tooltip": "One-click recipes — patch-only rows that stamp picks onto the draft; Default stamps nothing.",
         "default": "default"
       }
     ],
@@ -9725,7 +9728,7 @@
       {
         "id": "turbo",
         "label": "Turbo",
-        "hint": "8-step distilled \u2014 fast (DEFAULT)",
+        "hint": "8-step distilled — fast (DEFAULT)",
         "group": "Variant",
         "route": "z-image",
         "order": 0,
@@ -9757,7 +9760,7 @@
       {
         "id": "default",
         "label": "Default",
-        "hint": "The family default \u2014 no extra stamps; a fresh card lands here.",
+        "hint": "The family default — no extra stamps; a fresh card lands here.",
         "group": "Recipe",
         "cells": []
       }
@@ -9774,7 +9777,7 @@
       {
         "id": "Recipe",
         "label": "Recipe",
-        "tooltip": "One-click recipes \u2014 patch-only rows that stamp picks onto the draft; Default stamps nothing.",
+        "tooltip": "One-click recipes — patch-only rows that stamp picks onto the draft; Default stamps nothing.",
         "default": "default"
       }
     ],
@@ -9821,7 +9824,7 @@
       {
         "id": "turbo",
         "label": "Turbo",
-        "hint": "8-step distilled \u2014 fast (DEFAULT)",
+        "hint": "8-step distilled — fast (DEFAULT)",
         "group": "Variant",
         "route": "z-image",
         "order": 0,
@@ -9853,7 +9856,7 @@
       {
         "id": "default",
         "label": "Default",
-        "hint": "The family default \u2014 no extra stamps; a fresh card lands here.",
+        "hint": "The family default — no extra stamps; a fresh card lands here.",
         "group": "Recipe",
         "cells": []
       }
@@ -9870,7 +9873,7 @@
       {
         "id": "Recipe",
         "label": "Recipe",
-        "tooltip": "One-click recipes \u2014 patch-only rows that stamp picks onto the draft; Default stamps nothing.",
+        "tooltip": "One-click recipes — patch-only rows that stamp picks onto the draft; Default stamps nothing.",
         "default": "default"
       }
     ],
@@ -9917,7 +9920,7 @@
       {
         "id": "turbo",
         "label": "Turbo",
-        "hint": "8-step distilled \u2014 fast (DEFAULT)",
+        "hint": "8-step distilled — fast (DEFAULT)",
         "group": "Variant",
         "route": "z-image",
         "order": 0,
@@ -9949,7 +9952,7 @@
       {
         "id": "default",
         "label": "Default",
-        "hint": "The family default \u2014 no extra stamps; a fresh card lands here.",
+        "hint": "The family default — no extra stamps; a fresh card lands here.",
         "group": "Recipe",
         "cells": []
       }
@@ -9966,7 +9969,7 @@
       {
         "id": "Recipe",
         "label": "Recipe",
-        "tooltip": "One-click recipes \u2014 patch-only rows that stamp picks onto the draft; Default stamps nothing.",
+        "tooltip": "One-click recipes — patch-only rows that stamp picks onto the draft; Default stamps nothing.",
         "default": "default"
       }
     ],

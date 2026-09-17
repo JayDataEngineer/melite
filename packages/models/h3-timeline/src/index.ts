@@ -55,6 +55,7 @@ export const DECL: ModelDecl = {
     "size": "huge",
     "layout": "studio"
   },
+  "mods": ["loras"],
   "genre": "video",
   "variants": [
     {

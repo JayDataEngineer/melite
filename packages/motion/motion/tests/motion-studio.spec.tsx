@@ -232,12 +232,12 @@ describe('rail (view + transport)', () => {
     fireEvent.click(upper)
     await vi.waitFor(() => {
       if (upper.getAttribute('aria-pressed') !== 'true') throw new Error('upper not pressed yet')
-    }), { timeout: 10000 }
+    }, { timeout: 10000 })
     const full = document.body.querySelector('[aria-label="Full body framing"]') as HTMLButtonElement
     fireEvent.click(full)
     await vi.waitFor(() => {
       if (full.getAttribute('aria-pressed') !== 'true') throw new Error('full not pressed yet')
-    }), { timeout: 10000 }
+    }, { timeout: 10000 })
   })
 
   test('azimuth arrows step without crashing', async () => {
@@ -255,7 +255,7 @@ describe('rail (view + transport)', () => {
     fireEvent.click(btn)
     await vi.waitFor(() => {
       if (document.body.innerHTML === before) throw new Error('icon not swapped yet')
-    }), { timeout: 10000 }
+    }, { timeout: 10000 })
   })
 
   test('in-place toggle re-hints the treadmill tip', async () => {
@@ -265,7 +265,7 @@ describe('rail (view + transport)', () => {
     fireEvent.click(btn)
     await vi.waitFor(() => {
       if (document.body.innerHTML === before) throw new Error('tip not re-hinted yet')
-    }), { timeout: 10000 }
+    }, { timeout: 10000 })
   })
 
   test('play button pauses and resumes', async () => {
@@ -346,14 +346,14 @@ describe('timeline (prompts + keyframes)', () => {
     fireEvent.doubleClick(lane, { clientX: 4, button: 0 })
     await vi.waitFor(() => {
       if (!document.body.querySelector('[data-kf]')) throw new Error('no diamond yet')
-    }), { timeout: 10000 }
+    }, { timeout: 10000 })
     const aria = document.body.querySelector('[data-kf]')?.getAttribute('aria-label') ?? ''
     expect(aria).toMatch(/^Full-Body keyframe at frame \d+$/)
     await vi.waitFor(() => {
       const call = onSave.mock.calls.find(([p]) => (p as Record<string, unknown>).motion_constraints)
       if (!call) throw new Error('constraints not persisted yet')
       expect(typeof (call[0] as Record<string, unknown>).motion_constraints).toBe('string')
-    }), { timeout: 10000 }
+    }, { timeout: 10000 })
   })
 
   test('keyframe drag moves the diamond', async () => {
@@ -363,7 +363,7 @@ describe('timeline (prompts + keyframes)', () => {
     fireEvent.doubleClick(lane, { clientX: 4, button: 0 })
     await vi.waitFor(() => {
       if (!document.body.querySelector('[data-kf]')) throw new Error('no diamond yet')
-    }), { timeout: 10000 }
+    }, { timeout: 10000 })
     const before = document.body.querySelector('[data-kf]')?.getAttribute('aria-label')
     const diamond = document.body.querySelector('[data-kf]') as HTMLElement
     fireEvent.pointerDown(diamond, { clientX: 4, button: 0 })
@@ -373,7 +373,7 @@ describe('timeline (prompts + keyframes)', () => {
     await vi.waitFor(() => {
       const after = document.body.querySelector('[data-kf]')?.getAttribute('aria-label')
       if (after === before) throw new Error('not moved yet')
-    }), { timeout: 10000 }
+    }, { timeout: 10000 })
     // a second gesture inside the undo window clears the pending reset
     const diamond2 = document.body.querySelector('[data-kf]') as HTMLElement
     fireEvent.pointerDown(diamond2, { clientX: 24, button: 0 })
@@ -394,11 +394,11 @@ describe('timeline (prompts + keyframes)', () => {
     fireEvent.click(getByText(document.body, 'Refine pose').closest('button') as HTMLButtonElement)
     await vi.waitFor(() => {
       if (!queryByText(document.body, 'Stamp')) throw new Error('not in edit yet')
-    }), { timeout: 10000 }
+    }, { timeout: 10000 })
     fireEvent.click(getByText(document.body, 'Stamp').closest('button') as HTMLButtonElement)
     await vi.waitFor(() => {
       if (!document.body.querySelector('[data-kf]')) throw new Error('no stamped kf yet')
-    }), { timeout: 10000 }
+    }, { timeout: 10000 })
     const before = document.body.querySelector('[data-kf]')?.getAttribute('aria-label')
     const diamond = document.body.querySelector('[data-kf]') as HTMLElement
     fireEvent.pointerDown(diamond, { clientX: 4, button: 0 })
@@ -447,7 +447,7 @@ describe('timeline (prompts + keyframes)', () => {
     fireEvent.doubleClick(lane, { clientX: 16, button: 0 })
     await vi.waitFor(() => {
       if (!document.body.querySelector('[data-kf]')) throw new Error('no diamond yet')
-    }), { timeout: 10000 }
+    }, { timeout: 10000 })
     // park at frame 0, then click the frame-2 diamond to jump
     const ruler = document.body.querySelector('[data-testid="motion-timeline-ruler"]') as HTMLElement
     fireEvent.pointerDown(ruler, { clientX: 0, button: 0 })
@@ -485,11 +485,11 @@ describe('timeline (prompts + keyframes)', () => {
     await mountedWithRun()
     await vi.waitFor(() => {
       if (!document.body.querySelector('[data-prompt-clip]')) throw new Error('no seeded clip yet')
-    }), { timeout: 10000 }
+    }, { timeout: 10000 })
     fireEvent.doubleClick(document.body.querySelector('[data-prompt-clip]') as HTMLElement, { button: 0 })
     await vi.waitFor(() => {
       if (!document.body.querySelector('[data-prompt-clip] input')) throw new Error('no editor yet')
-    }), { timeout: 10000 }
+    }, { timeout: 10000 })
     const input = document.body.querySelector('[data-prompt-clip] input') as HTMLInputElement
     fireEvent.change(input, { target: { value: 'walks forward' } })
     fireEvent.keyDown(input, { key: 'Enter' })
@@ -513,12 +513,12 @@ describe('timeline (prompts + keyframes)', () => {
     await mountedWithRun()
     await vi.waitFor(() => {
       if (!document.body.querySelector('[data-prompt-clip]')) throw new Error('no seeded clip yet')
-    }), { timeout: 10000 }
+    }, { timeout: 10000 })
     const before = document.body.querySelectorAll('[data-prompt-clip]').length
     fireEvent.click(getByText(document.body, 'Add prompt card').closest('button') as HTMLButtonElement)
     await vi.waitFor(() => {
       if (document.body.querySelectorAll('[data-prompt-clip]').length <= before) throw new Error('no split yet')
-    }), { timeout: 10000 }
+    }, { timeout: 10000 })
   })
 
   test('prompt delete removes a card', async () => {
@@ -542,19 +542,19 @@ describe('timeline (prompts + keyframes)', () => {
     const { onSave } = await mountedWithRun({}, 60)
     await vi.waitFor(() => {
       if (!document.body.querySelector('[data-prompt-clip]')) throw new Error('no seeded clip yet')
-    }), { timeout: 10000 }
+    }, { timeout: 10000 })
     // two segments so the resize persists a real motion_prompts payload
     // (the serializer drops empty-text cards — type into both first).
     fireEvent.click(getByText(document.body, 'Add prompt card').closest('button') as HTMLButtonElement)
     await vi.waitFor(() => {
       if (document.body.querySelectorAll('[data-prompt-clip]').length !== 2) throw new Error('no split yet')
-    }), { timeout: 10000 }
+    }, { timeout: 10000 })
     const clips0 = [...document.body.querySelectorAll('[data-prompt-clip]')] as HTMLElement[]
     for (const [i, c] of clips0.entries()) {
       fireEvent.doubleClick(c, { button: 0 })
       await vi.waitFor(() => {
         if (!c.querySelector('input')) throw new Error('no editor yet')
-      }), { timeout: 10000 }
+      }, { timeout: 10000 })
       const input = c.querySelector('input') as HTMLInputElement
       fireEvent.change(input, { target: { value: `card ${i}` } })
       fireEvent.keyDown(input, { key: 'Enter' })
@@ -569,30 +569,41 @@ describe('timeline (prompts + keyframes)', () => {
     await vi.waitFor(() => {
       const call = onSave.mock.calls.find(([p]) => typeof (p as Record<string, unknown>).motion_prompts === 'string')
       if (!call) throw new Error('resize not persisted yet')
-    }), { timeout: 10000 }
+    }, { timeout: 10000 })
   })
 
-  test('prompt body drag slides the card', async () => {
+  // NOTE (2026-09-17, h3 mod-plane stroke): the gesture is REAL
+  // (instrumented: before "0px" → after "10px", async commit) — the
+  // historical flake was the parenthesization bug below (every
+  // { timeout } in this file rode the await expression, so waitFor
+  // lived at its 1s default) plus full-suite load stalls; repaired
+  // with real waits. A strict in-test RETRY is NOT viable: paired
+  // down/up re-fires read as double-clicks and flip the clip into
+  // edit mode, killing later gestures.
+  test('prompt body drag slides the card', { timeout: 90000 }, async () => {
     await mountedWithRun()
     await vi.waitFor(() => {
       if (!document.body.querySelector('[data-prompt-clip]')) throw new Error('no seeded clip yet')
-    }), { timeout: 10000 }
+    }, { timeout: 10000 })
     const clip = document.body.querySelector('[data-prompt-clip]') as HTMLElement
     const before = clip.style.left
     fireEvent.pointerDown(clip, { clientX: 10, button: 0 })
     fireEvent.pointerMove(window, { clientX: 20 })
     fireEvent.pointerUp(window, { clientX: 20 })
+    // same load-stall class as the GLB drop below (stroke 83): the
+    // drag commit rides the shared dom loop and stalled past 30s
+    // under the 2026-09-17 full gate — 90s keeps it load-robust
     await vi.waitFor(() => {
       const after = (document.body.querySelector('[data-prompt-clip]') as HTMLElement).style.left
       if (after === before) throw new Error('left did not move yet')
-    }), { timeout: 10000 }
+    }, { timeout: 90000 })
   })
 
   test('pulling the last edge past the end extends the timeline', async () => {
     const { onSave } = await mountedWithRun()
     await vi.waitFor(() => {
       if (!document.body.querySelector('[data-prompt-clip]')) throw new Error('no seeded clip yet')
-    }), { timeout: 10000 }
+    }, { timeout: 10000 })
     const clips = [...document.body.querySelectorAll('[data-prompt-clip]')] as HTMLElement[]
     const last = clips[clips.length - 1]
     const edge = last.querySelector('[data-prompt-edge="r"]') as HTMLElement
@@ -617,19 +628,19 @@ describe('timeline (prompts + keyframes)', () => {
     await mountedWithRun()
     await vi.waitFor(() => {
       if (!document.body.querySelector('[data-prompt-clip]')) throw new Error('no seeded clip yet')
-    }), { timeout: 10000 }
+    }, { timeout: 10000 })
     fireEvent.click(getByText(document.body, 'Add prompt card').closest('button') as HTMLButtonElement)
     await vi.waitFor(() => {
       if (document.body.querySelectorAll('[data-prompt-clip]').length !== 2) throw new Error('no split yet')
-    }), { timeout: 10000 }
+    }, { timeout: 10000 })
     fireEvent.keyDown(document.body, { key: 'z', ctrlKey: true })
     await vi.waitFor(() => {
       if (document.body.querySelectorAll('[data-prompt-clip]').length !== 1) throw new Error('no undo yet')
-    }), { timeout: 10000 }
+    }, { timeout: 10000 })
     fireEvent.keyDown(document.body, { key: 'z', ctrlKey: true, shiftKey: true })
     await vi.waitFor(() => {
       if (document.body.querySelectorAll('[data-prompt-clip]').length !== 2) throw new Error('no redo yet')
-    }), { timeout: 10000 }
+    }, { timeout: 10000 })
   })
 })
 
@@ -646,7 +657,7 @@ describe('edit mode (refine / stamp / repose / reset)', () => {
     fireEvent.click(getByText(document.body, 'Refine pose').closest('button') as HTMLButtonElement)
     await vi.waitFor(() => {
       if (!queryByText(document.body, 'Done')) throw new Error('not in edit yet')
-    }), { timeout: 10000 }
+    }, { timeout: 10000 })
   }
 
   test('refine enters, done keeps, reset discards', async () => {
@@ -658,11 +669,11 @@ describe('edit mode (refine / stamp / repose / reset)', () => {
     fireEvent.click(getByText(document.body, 'Done').closest('button') as HTMLButtonElement)
     await vi.waitFor(() => {
       if (!queryByText(document.body, 'Reset pose')) throw new Error('no kept edit yet')
-    }), { timeout: 10000 }
+    }, { timeout: 10000 })
     fireEvent.click(getByText(document.body, 'Reset pose').closest('button') as HTMLButtonElement)
     await vi.waitFor(() => {
       if (queryByText(document.body, 'Reset pose')) throw new Error('reset did not clear yet')
-    }), { timeout: 10000 }
+    }, { timeout: 10000 })
   })
 
   test('stamp writes the pose into the timeline', async () => {
@@ -681,7 +692,7 @@ describe('edit mode (refine / stamp / repose / reset)', () => {
     await vi.waitFor(() => {
       if (!document.body.querySelector('button')) throw new Error('no buttons yet')
       getByRole(document.body, 'button', { name: 'Repose' })
-    }), { timeout: 10000 }
+    }, { timeout: 10000 })
     fireEvent.click(getByRole(document.body, 'button', { name: 'Repose' }))
     await vi.waitFor(() => {
       const reposed = useToastStore.getState().toasts.some((t) => t.message.includes('Reposed from edited pose'))
@@ -716,7 +727,7 @@ describe('background + body slot (drops / picks / wire)', () => {
     fireEvent.click(getByRole(document.body, 'button', { name: 'Export' }))
     await vi.waitFor(() => {
       if (!document.body.querySelector('[data-export-rect]')) throw new Error('no rect yet')
-    }), { timeout: 10000 }
+    }, { timeout: 10000 })
     return document.body.querySelector('[data-export-rect]') as HTMLElement
   }
 
@@ -747,7 +758,7 @@ describe('background + body slot (drops / picks / wire)', () => {
       fireEvent.click(getByRole(document.body, 'button', { name: 'Export' }))
       await vi.waitFor(() => {
         if (!document.body.querySelector('[data-export-rect]')) throw new Error('no rect yet')
-      }), { timeout: 10000 }
+      }, { timeout: 10000 })
       return document.body.querySelector('[data-export-rect]') as HTMLElement
     })()
     fireEvent.drop(target, {
@@ -756,15 +767,15 @@ describe('background + body slot (drops / picks / wire)', () => {
     await vi.waitFor(() => {
       const call = onSave.mock.calls.find(([p]) => (p as Record<string, unknown>).motion_bg_image === 'https://host/bg.png')
       if (!call) throw new Error('bg not persisted yet')
-    }), { timeout: 10000 }
+    }, { timeout: 10000 })
     await vi.waitFor(() => {
       if (!queryByText(document.body, 'Clear')) throw new Error('no clear yet')
-    }), { timeout: 10000 }
+    }, { timeout: 10000 })
     fireEvent.click(getByText(document.body, 'Clear').closest('button') as HTMLButtonElement)
     await vi.waitFor(() => {
       const call = onSave.mock.calls.find(([p]) => (p as Record<string, unknown>).motion_bg_image === '')
       if (!call) throw new Error('bg not cleared yet')
-    }), { timeout: 10000 }
+    }, { timeout: 10000 })
   })
 
   test('stage drop with a malformed payload falls through silently', async () => {
@@ -783,7 +794,7 @@ describe('background + body slot (drops / picks / wire)', () => {
     await mountedNoRun({ motion_bg_image: 'https://host/bg.png' })
     await vi.waitFor(() => {
       if (!queryByText(document.body, 'Clear')) throw new Error('no hydrated clear yet')
-    }), { timeout: 10000 }
+    }, { timeout: 10000 })
   })
 
   test('cancelled bg pick is a no-op', async () => {
@@ -795,17 +806,17 @@ describe('background + body slot (drops / picks / wire)', () => {
     expect(touched).toBe(false)
   })
 
-  test('slot asset-drop of a GLB attaches, detach clears', async () => {
+  test('slot asset-drop of a GLB attaches, detach clears', { timeout: 90000 }, async () => {
     await mountedNoRun()
     fireEvent.drop(slotSquare(), { dataTransfer: assetTransfer('https://host/slot.glb') })
     await vi.waitFor(() => {
       if (!document.body.querySelector('[aria-label="Detach"]')) throw new Error('no detach yet')
-      // stroke 83: the GLB drop path stalls past 10s under full-suite parallel load (the fetch rides the shared jsdom loop); 30s keeps the evidence point load-robust
-    }), { timeout: 30000 }
+      // stroke 83: the GLB drop path stalls past 10s under full-suite parallel load (the fetch rides the shared dom loop); 30s still tripped under the 2026-09-17 full gate — 90s keeps the evidence point load-robust
+    }, { timeout: 90000 })
     fireEvent.click(document.body.querySelector('[aria-label="Detach"]') as HTMLButtonElement)
     await vi.waitFor(() => {
       if (document.body.querySelector('[aria-label="Detach"]')) throw new Error('detach did not clear yet')
-    }), { timeout: 10000 }
+    }, { timeout: 10000 })
   })
 
   test('slot asset-drop of a non-GLB refuses', async () => {
@@ -876,7 +887,7 @@ describe('background + body slot (drops / picks / wire)', () => {
     fireEvent.click(document.body.querySelector('[data-motion-body-wire]') as HTMLButtonElement)
     await vi.waitFor(() => {
       if (!document.body.querySelector('[data-wire-option]')) throw new Error('no picker yet')
-    }), { timeout: 10000 }
+    }, { timeout: 10000 })
     fireEvent.click(document.body.querySelector('[data-wire-option]') as HTMLButtonElement)
     expect(onWireSlot).toHaveBeenCalledWith('preview_glb', 'up1', null)
     expect(onSave).toHaveBeenCalledWith({ preview_glb: null })
@@ -891,11 +902,11 @@ describe('background + body slot (drops / picks / wire)', () => {
     fireEvent.click(document.body.querySelector('[data-motion-body-wire]') as HTMLButtonElement)
     await vi.waitFor(() => {
       if (!document.body.querySelector('[aria-label="Close wire picker"]')) throw new Error('no picker yet')
-    }), { timeout: 10000 }
+    }, { timeout: 10000 })
     fireEvent.click(document.body.querySelector('[aria-label="Close wire picker"]') as HTMLButtonElement)
     await vi.waitFor(() => {
       if (document.body.querySelector('[data-wire-option]')) throw new Error('picker still open')
-    }), { timeout: 10000 }
+    }, { timeout: 10000 })
     expect(onWireSlot).not.toHaveBeenCalled()
   })
 
@@ -903,7 +914,7 @@ describe('background + body slot (drops / picks / wire)', () => {
     await mountedWired(['up1'], { preview_glb: null }, { onWireSlot: vi.fn(), upstreams: [up1()] })
     await vi.waitFor(() => {
       if (!document.body.textContent?.includes('waiting for upstream')) throw new Error('no waiting metric yet')
-    }), { timeout: 10000 }
+    }, { timeout: 10000 })
   })
 
   test('wired slot resolves the upstream GLB, falls back loud on fetch loss', async () => {
@@ -918,7 +929,7 @@ describe('background + body slot (drops / picks / wire)', () => {
     }, { timeout: 20000 })
   }, 30000)
 
-  test('wired detach unwires the slot', async () => {
+  test('wired detach unwires the slot', { timeout: 90000 }, async () => {
     const onWireSlot = vi.fn()
     const { onSave } = await mountedWired(
       ['up1'],
@@ -927,8 +938,8 @@ describe('background + body slot (drops / picks / wire)', () => {
     )
     await vi.waitFor(() => {
       if (!document.body.querySelector('[aria-label="Detach"]')) throw new Error('no detach yet')
-      // stroke 83: the GLB drop path stalls past 10s under full-suite parallel load (the fetch rides the shared jsdom loop); 30s keeps the evidence point load-robust
-    }), { timeout: 30000 }
+      // stroke 83: the GLB drop path stalls past 10s under full-suite parallel load (the fetch rides the shared dom loop); 30s still tripped under the 2026-09-17 full gate — 90s keeps the evidence point load-robust
+    }, { timeout: 90000 })
     fireEvent.click(document.body.querySelector('[aria-label="Detach"]') as HTMLButtonElement)
     expect(onWireSlot).toHaveBeenCalledWith('preview_glb', null, null)
     expect(onSave.mock.calls.some(([p]) => (p as Record<string, unknown>).preview_glb === null)).toBe(true)
@@ -942,7 +953,7 @@ describe('background + body slot (drops / picks / wire)', () => {
     fireEvent.click(document.body.querySelector('[data-motion-body-wire]') as HTMLButtonElement)
     await vi.waitFor(() => {
       if (!document.body.querySelector('[data-wire-option]')) throw new Error('no picker yet')
-    }), { timeout: 10000 }
+    }, { timeout: 10000 })
     const unwire = [...document.body.querySelectorAll('button')].find((b) => b.textContent?.includes('Unwire'))
     expect(unwire).toBeTruthy()
     fireEvent.click(unwire as HTMLButtonElement)
@@ -991,15 +1002,15 @@ describe('coverage sweep (scans / convert errors / guards)', () => {
     fireEvent.click(getByText(document.body, 'Add prompt card').closest('button') as HTMLButtonElement)
     await vi.waitFor(() => {
       if (document.body.querySelectorAll('[data-prompt-clip]').length !== 2) throw new Error('no split yet')
-    }), { timeout: 10000 }
+    }, { timeout: 10000 })
     fireEvent.keyDown(document.body, { key: 'z', metaKey: true })
     await vi.waitFor(() => {
       if (document.body.querySelectorAll('[data-prompt-clip]').length !== 1) throw new Error('no meta-undo yet')
-    }), { timeout: 10000 }
+    }, { timeout: 10000 })
     fireEvent.keyDown(document.body, { key: 'y', ctrlKey: true })
     await vi.waitFor(() => {
       if (document.body.querySelectorAll('[data-prompt-clip]').length !== 2) throw new Error('no ctrl-Y redo yet')
-    }), { timeout: 10000 }
+    }, { timeout: 10000 })
   })
 
   test('prompts hydrate from a persisted multi-segment payload', async () => {
@@ -1024,13 +1035,13 @@ describe('coverage sweep (scans / convert errors / guards)', () => {
     fireEvent.click(getByText(document.body, 'Add prompt card').closest('button') as HTMLButtonElement)
     await vi.waitFor(() => {
       if (document.body.querySelectorAll('[data-prompt-clip]').length !== 2) throw new Error('no split yet')
-    }), { timeout: 10000 }
+    }, { timeout: 10000 })
     const clips = [...document.body.querySelectorAll('[data-prompt-clip]')] as HTMLElement[]
     for (const [i, c] of clips.entries()) {
       fireEvent.doubleClick(c, { button: 0 })
       await vi.waitFor(() => {
         if (!c.querySelector('input')) throw new Error('no editor yet')
-      }), { timeout: 10000 }
+      }, { timeout: 10000 })
       const input = c.querySelector('input') as HTMLInputElement
       fireEvent.change(input, { target: { value: `take ${i}` } })
       fireEvent.keyDown(input, { key: 'Enter' })
@@ -1039,7 +1050,7 @@ describe('coverage sweep (scans / convert errors / guards)', () => {
     fireEvent.click(getByText(document.body, 'Add prompt card').closest('button') as HTMLButtonElement)
     await vi.waitFor(() => {
       if (document.body.querySelectorAll('[data-prompt-clip]').length !== 3) throw new Error('no third card yet')
-    }), { timeout: 10000 }
+    }, { timeout: 10000 })
   })
 
   test('double stamp updates the bound keyframe', async () => {
@@ -1057,12 +1068,12 @@ describe('coverage sweep (scans / convert errors / guards)', () => {
     fireEvent.click(getByText(document.body, 'Refine pose').closest('button') as HTMLButtonElement)
     await vi.waitFor(() => {
       if (!queryByText(document.body, 'Stamp')) throw new Error('not in edit yet')
-    }), { timeout: 10000 }
+    }, { timeout: 10000 })
     const stamp = () => getByText(document.body, 'Stamp').closest('button') as HTMLButtonElement
     fireEvent.click(stamp())
     await vi.waitFor(() => {
       if (!document.body.querySelector('[data-kf]')) throw new Error('no stamped kf yet')
-    }), { timeout: 10000 }
+    }, { timeout: 10000 })
     fireEvent.click(stamp())
     await vi.waitFor(() => {
       const updated = useToastStore.getState().toasts.some((t) => t.message.includes('Updated keyframe'))
@@ -1072,7 +1083,7 @@ describe('coverage sweep (scans / convert errors / guards)', () => {
     fireEvent.click(getByText(document.body, 'Add prompt card').closest('button') as HTMLButtonElement)
     await vi.waitFor(() => {
       if (document.body.querySelectorAll('[data-prompt-clip]').length !== 2) throw new Error('no split yet')
-    }), { timeout: 10000 }
+    }, { timeout: 10000 })
   })
 
   test('a slow queue ticks before landing', async () => {
@@ -1132,21 +1143,21 @@ describe('coverage sweep (scans / convert errors / guards)', () => {
     fireEvent.click(getByText(document.body, 'Refine pose').closest('button') as HTMLButtonElement)
     await vi.waitFor(() => {
       if (!queryByText(document.body, 'Stamp')) throw new Error('not in edit yet')
-    }), { timeout: 10000 }
+    }, { timeout: 10000 })
     fireEvent.click(getByText(document.body, 'Stamp').closest('button') as HTMLButtonElement)
     await vi.waitFor(() => {
       if (!document.body.querySelector('[data-kf]')) throw new Error('no stamped kf yet')
-    }), { timeout: 10000 }
+    }, { timeout: 10000 })
     fireEvent.click(getByText(document.body, 'Done').closest('button') as HTMLButtonElement)
     await vi.waitFor(() => {
       if (!queryByText(document.body, 'Refine pose')) throw new Error('not out of edit yet')
-    }), { timeout: 10000 }
+    }, { timeout: 10000 })
     // re-entering at the same pinned frame reads the kept joints and the
     // bound payload back out
     fireEvent.click(getByText(document.body, 'Refine pose').closest('button') as HTMLButtonElement)
     await vi.waitFor(() => {
       if (!queryByText(document.body, 'Stamp')) throw new Error('not back in edit yet')
-    }), { timeout: 10000 }
+    }, { timeout: 10000 })
   })
 
   test('a refused queue start fails loud', async () => {
@@ -1218,7 +1229,7 @@ describe('coverage sweep (scans / convert errors / guards)', () => {
     fireEvent.click(getByRole(document.body, 'button', { name: 'Export' }))
     await vi.waitFor(() => {
       if (!document.body.querySelector('[data-export-rect]')) throw new Error('no rect yet')
-    }), { timeout: 10000 }
+    }, { timeout: 10000 })
     const target = document.body.querySelector('[data-export-rect]') as HTMLElement
     const glb = new File(['glb-bytes'], 'drop.glb', { type: 'model/gltf-binary' })
     fireEvent.drop(target, { dataTransfer: { types: ['Files'], getData: () => '', files: [glb] } })
@@ -1251,7 +1262,7 @@ describe('coverage sweep (scans / convert errors / guards)', () => {
     fireEvent.click(getByRole(document.body, 'button', { name: 'Export' }))
     await vi.waitFor(() => {
       if (!document.body.querySelector('[data-export-rect]')) throw new Error('no rect yet')
-    }), { timeout: 10000 }
+    }, { timeout: 10000 })
     const target = document.body.querySelector('[data-export-rect]') as HTMLElement
     const dt = { types: ['application/tech-noir-asset'], getData: () => '', files: [] }
     fireEvent.dragOver(target, { dataTransfer: dt })
@@ -1269,7 +1280,7 @@ describe('coverage sweep (scans / convert errors / guards)', () => {
     fireEvent.click(getByRole(document.body, 'button', { name: 'Export' }))
     await vi.waitFor(() => {
       if (!document.body.querySelector('[data-export-rect]')) throw new Error('no rect yet')
-    }), { timeout: 10000 }
+    }, { timeout: 10000 })
     const rect = document.body.querySelector('[data-export-rect]') as HTMLElement
     const before = `${rect.style.left}|${rect.style.top}|${rect.style.width}|${rect.style.height}`
     const proto = Element.prototype.getBoundingClientRect
@@ -1296,7 +1307,7 @@ describe('coverage sweep (scans / convert errors / guards)', () => {
     fireEvent.click(getByRole(document.body, 'button', { name: 'Export' }))
     await vi.waitFor(() => {
       if (!document.body.querySelector('[data-export-rect]')) throw new Error('no rect yet')
-    }), { timeout: 10000 }
+    }, { timeout: 10000 })
     const styleOf = () => {
       const r = document.body.querySelector('[data-export-rect]') as HTMLElement
       return `${r.style.left}|${r.style.top}|${r.style.width}|${r.style.height}`
@@ -1321,12 +1332,12 @@ describe('coverage sweep (scans / convert errors / guards)', () => {
     drag('nw', 400, 440, 225, 250)
     await vi.waitFor(() => {
       if (styleOf() === before) throw new Error('nw did not move yet')
-    }), { timeout: 10000 }
+    }, { timeout: 10000 })
     const mid = styleOf()
     drag('ne', 400, 360, 225, 250)
     await vi.waitFor(() => {
       if (styleOf() === mid) throw new Error('ne did not move yet')
-    }), { timeout: 10000 }
+    }, { timeout: 10000 })
   })
 
   test('a tall output floors the corner math the other way', async () => {
@@ -1336,13 +1347,13 @@ describe('coverage sweep (scans / convert errors / guards)', () => {
     fireEvent.click(getByRole(document.body, 'button', { name: 'Export' }))
     await vi.waitFor(() => {
       if (!document.body.querySelector('[aria-label="Output width (pixels)"]')) throw new Error('no dialog yet')
-    }), { timeout: 10000 }
+    }, { timeout: 10000 })
     const w = document.body.querySelector('[aria-label="Output width (pixels)"]') as HTMLInputElement
     fireEvent.change(w, { target: { value: '4096' } })
     await vi.waitFor(() => {
       const cur = document.body.querySelector('[aria-label="Output width (pixels)"]') as HTMLInputElement
       if (cur.value !== '4096') throw new Error('width not set yet')
-    }), { timeout: 10000 }
+    }, { timeout: 10000 })
     // retyping the settled value hits the same-value arm (no-op write)
     fireEvent.change(document.body.querySelector('[aria-label="Output width (pixels)"]') as HTMLInputElement, { target: { value: '4096' } })
     await new Promise((r) => setTimeout(r, 300))
@@ -1365,7 +1376,7 @@ describe('coverage sweep (scans / convert errors / guards)', () => {
     }
     await vi.waitFor(() => {
       if (styleOf() === before) throw new Error('tall corner did not move yet')
-    }), { timeout: 10000 }
+    }, { timeout: 10000 })
   })
 
   test('slot file drops route by type', async () => {
@@ -1406,7 +1417,7 @@ describe('coverage sweep (scans / convert errors / guards)', () => {
     fireEvent.click(getByRole(document.body, 'button', { name: 'Export' }))
     await vi.waitFor(() => {
       if (!document.body.querySelector('[aria-label="Output width (pixels)"]')) throw new Error('no dialog yet')
-    }), { timeout: 10000 }
+    }, { timeout: 10000 })
   })
 
   test('a urlless preview list yields no dialog preview', async () => {
@@ -1427,11 +1438,11 @@ describe('coverage sweep (scans / convert errors / guards)', () => {
     fireEvent.click(getByRole(document.body, 'button', { name: 'Export' }))
     await vi.waitFor(() => {
       if (!document.body.querySelector('[aria-label="Close"]')) throw new Error('no dialog yet')
-    }), { timeout: 10000 }
+    }, { timeout: 10000 })
     fireEvent.click(document.body.querySelector('[aria-label="Close"]') as HTMLButtonElement)
     await vi.waitFor(() => {
       if (document.body.querySelector('[aria-label="Output width (pixels)"]')) throw new Error('still open')
-    }), { timeout: 10000 }
+    }, { timeout: 10000 })
   })
 
   test('dialog frame slider seeks and pauses', async () => {
@@ -1441,12 +1452,12 @@ describe('coverage sweep (scans / convert errors / guards)', () => {
     fireEvent.click(getByRole(document.body, 'button', { name: 'Export' }))
     await vi.waitFor(() => {
       if (!document.body.querySelector('input[type="range"]')) throw new Error('no slider yet')
-    }), { timeout: 10000 }
+    }, { timeout: 10000 })
     const range = document.body.querySelector('input[type="range"]') as HTMLInputElement
     fireEvent.change(range, { target: { value: '2' } })
     await vi.waitFor(() => {
       if (!document.body.textContent?.includes('00:00:02')) throw new Error('no seek yet')
-    }), { timeout: 10000 }
+    }, { timeout: 10000 })
     await vi.waitFor(() => {
       if (!document.body.querySelector('[aria-label="Play (Space)"]')) throw new Error('not paused yet')
     }, { timeout: 10000 })
@@ -1468,7 +1479,7 @@ describe('export framing (dialog + stage rectangle)', () => {
       if (!document.body.querySelector('[data-export-rect]')) throw new Error('no rect yet')
       // the dialog's size labels are aria-only, never text
       if (!document.body.querySelector('[aria-label="Output width (pixels)"]')) throw new Error('no dialog yet')
-    }), { timeout: 10000 }
+    }, { timeout: 10000 })
   }
 
   function rectStyle(): string {
@@ -1499,13 +1510,13 @@ describe('export framing (dialog + stage rectangle)', () => {
     await vi.waitFor(() => {
       const cur = document.body.querySelector('[aria-label="Output width (pixels)"]') as HTMLInputElement
       if (cur.value !== '4096') throw new Error('width not clamped yet')
-    }), { timeout: 10000 }
+    }, { timeout: 10000 })
     const hh = document.body.querySelector('[aria-label="Output height (pixels)"]') as HTMLInputElement
     fireEvent.change(hh, { target: { value: '1' } })
     await vi.waitFor(() => {
       const cur = document.body.querySelector('[aria-label="Output height (pixels)"]') as HTMLInputElement
       if (cur.value !== '8') throw new Error('height not clamped yet')
-    }), { timeout: 10000 }
+    }, { timeout: 10000 })
   })
 
   test('frame presets refit the rectangle', async () => {
@@ -1514,12 +1525,12 @@ describe('export framing (dialog + stage rectangle)', () => {
     fireEvent.click(getByRole(document.body, 'button', { name: 'Reset frame' }))
     await vi.waitFor(() => {
       if (rectStyle() === before) throw new Error('reset did not refit yet')
-    }), { timeout: 10000 }
+    }, { timeout: 10000 })
     const mid = rectStyle()
     fireEvent.click(getByRole(document.body, 'button', { name: 'Whole stage' }))
     await vi.waitFor(() => {
       if (rectStyle() === mid) throw new Error('whole did not refit yet')
-    }), { timeout: 10000 }
+    }, { timeout: 10000 })
   })
 
   test('rect body drag moves the frame', async () => {
@@ -1528,7 +1539,7 @@ describe('export framing (dialog + stage rectangle)', () => {
     dragRect(document.body.querySelector('[data-export-rect]') as HTMLElement, 400, 460)
     await vi.waitFor(() => {
       if (rectStyle() === before) throw new Error('rect did not move yet')
-    }), { timeout: 10000 }
+    }, { timeout: 10000 })
     // a zero-delta drag hits the same-coords arm (no-op write)
     dragRect(document.body.querySelector('[data-export-rect]') as HTMLElement, 400, 400)
     await new Promise((r) => setTimeout(r, 300))
@@ -1542,7 +1553,7 @@ describe('export framing (dialog + stage rectangle)', () => {
     dragRect(document.body.querySelector('[data-export-corner="se"]') as HTMLElement, 400, 360, 225, 200)
     await vi.waitFor(() => {
       if (rectStyle() === before) throw new Error('rect did not resize yet')
-    }), { timeout: 10000 }
+    }, { timeout: 10000 })
   })
 
   test('export toggles the panel shut', async () => {
@@ -1550,7 +1561,7 @@ describe('export framing (dialog + stage rectangle)', () => {
     fireEvent.click(getByRole(document.body, 'button', { name: 'Export' }))
     await vi.waitFor(() => {
       if (document.body.querySelector('[data-export-rect]')) throw new Error('rect still there')
-    }), { timeout: 10000 }
+    }, { timeout: 10000 })
   })
 })
 
