@@ -1,16 +1,39 @@
-// Tier 3 — the anny card (the anny_t1 renderer port): composite
-// character → 8-view turnaround sheet; optional SAM hair/clothing
-// sprite ingest.
-// Decl + admission + one kit recipe call — the lane body lives in src/kit.ts.
+// Tier 3 — the anny card: author a body (11 identity sliders — or
+// attach a GLB — or load a preset) → the 8-view turnaround sheet.
+//
+// THE TRUTH PASS (stroke 89, operator order 2026-09-17): the old
+// schema documented a fiction — SAM hair/outfit sprites, a REQUIRED
+// body GLB. The real surface: photo→body is the hmr-estimate VERB
+// (the MHR→SOMA→identity_coeffs chain, SubActionMod law — its knobs
+// never join the card schema); the body is parametric end-to-end
+// (AnnyParamsToGlb bakes the GLB FROM the numbers, so the neutral
+// body is the all-defaults bake — no GLB is ever required); the 11
+// identity dims are the SERVED space's own labels/range/defaults
+// (GET /v1/poser/identity-space: dims 11, range [0,1], defaults
+// 0.5 — the DECL carries the defaults, the schema carries hint-only
+// floors per the RANGE RULE). The 254 local-change morphs stay a
+// SERVED vocabulary (the estimator/advanced surface) — the ledger
+// names the follow-up; they never hardcode into a schema.
 import type { Context } from '@deepseek-ai/cordis'
 import z from '@deepseek-ai/schemastery'
 import { annyLane, finalizeAnny } from '@melite/comfyui-card-kit'
 import type { ComfyUIService } from '@melite/comfyui-cordis/service'
 import { vocabulary } from '@melite/comfyui-card-kit/vocab'
 
+/** The served identity space's 11 dims, in its label order (the
+ *  bake validator names the same eleven — gender/age/muscle/weight/
+ *  height/proportions/cupsize/firmness/african/asian/caucasian). */
+const PHENOTYPE_DIMS = [
+  'gender', 'age', 'muscle', 'weight', 'height', 'proportions',
+  'cupsize', 'firmness', 'african', 'asian', 'caucasian',
+] as const
+
 const schema = z.object({
-  body_glb: z.string().role('path').description("Body GLB").extra('extra', { order: 0, group: "parts", columns: 1, tooltip: "The base body — empty autoloads the Model-declared neutral body (anny-base-body.glb, provisioned); or attach a rigged/static character GLB. (Photo→body estimation is the pilot arc; clothing composite moves to its own card later.)", wtype: 'file' }),
-  source_image: z.string().role('path').description("Source photo").extra('extra', { order: 0, group: "ingest", tooltip: "Character photo — SAM segments hair/outfit sprites (feeds the estimator arc).", wtype: 'file' }),
+  body_glb: z.string().role('path').description("Body GLB").extra('extra', { order: 0, group: "body", columns: 1, tooltip: "Optional — attach a rigged body GLB to render as-is. Empty bakes the body FROM the identity sliders (parametric end-to-end; the neutral body is the all-defaults bake). Photo→body estimation is the 'Estimate body from photo' verb.", wtype: 'file' }),
+  ...Object.fromEntries(PHENOTYPE_DIMS.map((dim, i) => [dim,
+    z.number().description(dim.charAt(0).toUpperCase() + dim.slice(1))
+      .extra('extra', { order: i, group: "identity", width: 1, wtype: 'slider', min: 0, max: 1, columns: 2, tooltip: `Identity dim ${i + 1}/11 — ${dim} (0..1, neutral 0.5; served by the poser's identity space).` }),
+  ])),
   resolution: z.number().description("View resolution").min(256).max(2048).step(64).default(768).extra('extra', { order: 0, group: "turnaround", width: 1, tooltip: "Pixel size of each turnaround view." }),
   framing: z.number().description("Framing").min(1).max(3).step(0.05).default(1.2).extra('extra', { order: 1, group: "turnaround", width: 1, tooltip: "Camera distance factor — larger frames the whole body looser." }),
   focal_length: z.number().description("Focal length (mm)").min(10).max(400).step(1).default(50).extra('extra', { order: 2, group: "turnaround", width: 1, tooltip: "Lens focal length — lower = wider perspective.", wtype: 'slider' }),
@@ -26,7 +49,7 @@ export const inject = ['comfyui']
 // identity ring; the card owns its label/description/genre/icon).
 export const identity = {
   label: 'Anny',
-  description: 'Assemble a character — composite body/hair/outfit GLBs, render the 8-view turnaround, segment a source photo into part sprites.',
+  description: 'Author a character body — 11 identity sliders (or attach a GLB, or load a preset), then render the 8-view turnaround sheet.',
   genre: '3d',
   icon: 'person',
 }
@@ -47,20 +70,33 @@ export function apply(ctx: Context): void {
     // discovery export — the card owns its sidebar, surface, and
     // flow-stage declarations; the discovery arms derive from here).
     sidebar: { key: '3d', order: 14 },
-    surface: { layout: 'studio' },
+    // NO surface claim (stroke 89): the studio layout died with the
+    // handroll — the emission's three declared groups render through
+    // the base form's switchable parameter submenu. The card owns
+    // its schema; the CONSTRUCTOR owns the surface.
     flowKinds: {
-      inputs: { source_image: 'image' },
+      inputs: {},
       outputs: { default: 'mesh' },
       requiresModel: false,
     },
-    requires: ['melite-poser-nodes'],
+    requires: ['melite-poser-nodes', 'melite-kimodo-nodes'],
     schema: schema as unknown as (v: unknown) => Record<string, unknown>,
     compose(p, _model, g, _runId) {
-      const body = String(p.body_glb ?? '')
-      if (!body.trim()) {
-        throw new Error("required param 'body_glb' missing or empty on the anny card (the lane assembles FROM a real body GLB — the resolved mount path, never a mannequin)")
-      }
-      annyLane(p, g)
+      // THE BODY, three arms — a GLB is NEVER required (stroke 89):
+      // 1. an attached GLB renders as-is;
+      // 2. empty → the identity sliders BAKE the body
+      //    (AnnyParamsToGlb: params_json → glb_path — parametric
+      //    end-to-end; untouched sliders = the neutral bake).
+      const body = String(p.body_glb ?? '').trim()
+      const bodyPath = body !== ''
+        ? g.node('PrimitiveString', { value: body }).out()
+        : g.node('AnnyParamsToGlb', {
+            params_json: JSON.stringify({
+              dialect: 'authored',
+              phenotype: PHENOTYPE_DIMS.map((dim) => Number(p[dim] ?? 0.5)),
+            }),
+          }).out()
+      annyLane(p, g, bodyPath)
     },
     finalize: finalizeAnny,
   }))

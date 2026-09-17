@@ -338,25 +338,24 @@ describe("the finalize strips", () => {
 
 // ── the small exported helpers ────────────────────────────────────
 describe("the exported helpers", () => {
-  it("annyLane's body_glb falls back to the empty string (the card admits it)", () => {
+  it("annyLane composites whatever body handle the card hands it (the admission stays on the card)", () => {
     const render = { resolution: 2, framing: 2, focal_length: 2, samples: 2, transparent: true };
-    // no body_glb: the ?? '' fallback rides, CompositeCharacter
-    // still builds — the admission stays on the card.
     const g = new GraphBuilder();
-    annyLane({ ...render }, g);
-    const prim = Object.values(dump(g)).find((n) => n.class_type === "PrimitiveString")!;
-    assert.equal(prim.inputs.value, "");
+    const prim = g.node("PrimitiveString", { value: "/m/b.glb" });
+    annyLane({ ...render }, g, prim.out());
+    const row = dump(g);
+    assert.ok(row["CompositeCharacter.0"], "the composite rides the card's handle");
+    assert.ok(classes(row).some((c) => c.startsWith("RayRenderGLBViews")), "the views ride");
   });
 
-  it("annyLane with and without a source image", () => {
+  it("annyLane has NO SAM arm (photo→body is the hmr-estimate verb — stroke 89)", () => {
     const render = { resolution: 2, framing: 2, focal_length: 2, samples: 2, transparent: true };
-    const g1 = new GraphBuilder();
-    annyLane({ body_glb: "/m/b.glb", source_image: "/m/s.png", ...render }, g1);
-    assert.ok(classes(dump(g1)).includes("RaySAMSegmentHairClothing"), "the source arm rides");
-
-    const g2 = new GraphBuilder();
-    annyLane({ body_glb: "/m/b.glb", ...render }, g2);
-    assert.ok(!classes(dump(g2)).includes("LoadImage"), "no source, no load");
+    const g = new GraphBuilder();
+    const prim = g.node("PrimitiveString", { value: "/m/b.glb" });
+    annyLane({ source_image: "/m/s.png", ...render } as Record<string, unknown>, g, prim.out());
+    const row = classes(dump(g));
+    assert.ok(!row.includes("RaySAMSegmentHairClothing"), "the SAM sprite node is gone from the lane");
+    assert.ok(!row.includes("LoadImage"), "no image ingest arm");
   });
 
 

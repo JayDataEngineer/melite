@@ -192,6 +192,8 @@ test('THE LAW: mod-owned fields NEVER render flat on the card form — the secti
   expect(screen.queryByLabelText('Region Mask')).toBeNull()
   expect(screen.queryByRole('button', { name: 'Region Mask source' })).toBeNull()
   // but the card's OWN fields render + the section rides under them
+  // (the prompt group seats behind its submenu tab — stroke 89)
+  fireEvent.click(screen.getByRole('tab', { name: 'Prompt' }))
   expect(screen.getByLabelText('Prompt')).toBeTruthy()
   expect(screen.getByText('Modifiers')).toBeTruthy()
   expect(screen.getByRole('button', { name: 'Add modifier' })).toBeTruthy()

@@ -12,7 +12,6 @@
     "@melite-plugin/dsh-card-view": "link:../../web/melite-card-view",
     "@melite-plugin/dsh-gallery": "link:../../web/infer-gallery",
     "@melite-plugin/melite-estate": "link:../../web/melite-estate",
-    "@melite/3d-anny": "link:../../3d/anny",
     "@melite/3d-img-to-mesh": "link:../../3d/img-to-mesh",
     "@melite/harness-tools": "link:../melite-tools",
     "@melite/image-ideogram4": "link:../../image/ideogram4",

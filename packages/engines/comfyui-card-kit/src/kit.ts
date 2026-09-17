@@ -626,12 +626,16 @@ export function finalizeAnny(graph: PromptGraph): PromptGraph {
   return stripEmptyAutofill(graph, ANNY_STRIP)
 }
 
-/** The anny_t1 block — composite character → turnaround sheet +
- *  optional SAM ingest (moved verbatim from the anny card; the
- *  body_glb admission stays on the card). */
-export function annyLane(p: Record<string, unknown>, g: GraphBuilder): void {
-  const body = String(p.body_glb ?? '')
-  const bodyPath = g.node('PrimitiveString', { value: body }).out()
+/** The anny_t1 tail — composite the body (the CARD owns the body's
+ *  three admission arms: an attached GLB path, or the identity
+ *  sliders' bake — AnnyParamsToGlb → glb_path) → the 8-view
+ *  turnaround sheet.
+ *
+ * THE SAM FICTION DIED (stroke 89, operator order 2026-09-17): the
+ * RaySAMSegmentHairClothing ingest branch is DELETED — photo→body
+ * is the hmr-estimate VERB (the MHR→SOMA→identity_coeffs chain),
+ * never a compose arm of this lane. */
+export function annyLane(p: Record<string, unknown>, g: GraphBuilder, bodyPath: OutputHandle): void {
   const glbPath = g.node('CompositeCharacter', { body_glb_path: bodyPath }).out()
   renderGLBViews(g, glbPath, {
     resolution: positive('resolution', p.resolution),
@@ -640,13 +644,6 @@ export function annyLane(p: Record<string, unknown>, g: GraphBuilder): void {
     samples: positive('samples', p.samples),
     transparent: String(p.transparent).toLowerCase() !== 'false',
   }, 'anny')
-  const src = String(p.source_image ?? '')
-  if (src) {
-    // the ingest side stands alone: LoadImage (the runtime upload
-    // walk stages the abs path) → SAM → sprites in the output dir
-    const loaded = g.node('LoadImage', { image: src })
-    g.node('RaySAMSegmentHairClothing', { image: loaded.out() })
-  }
 }
 
 // REMOVED stroke 87 (operator order): the fit lane (fitLane + finalizeFit +

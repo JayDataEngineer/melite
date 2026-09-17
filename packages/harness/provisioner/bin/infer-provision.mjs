@@ -52,9 +52,11 @@ const PROFILE_BASES = {
   // its existence row in ITS OWN package — the provisioner stopped
   // inserting twin rows 2026-09-17; a row in BOTH files killed
   // every FRESH boot of profiles mounting both patches).
+  // anny LEFT the web bases (stroke 89): its studio died — the form
+  // card rides the engine-plane SSOT only, never a browser bundle.
   inference: ['@deepseek-ai/dsh-base', '@deepseek-ai/dsh-web-app', '@melite/harness-provisioner',
     '@melite/harness-tools', '@melite-plugin/dsh-card-view', '@melite-plugin/dsh-card-deck',
-    '@melite-plugin/dsh-gallery', '@melite/3d-anny'],
+    '@melite-plugin/dsh-gallery'],
   // headless = the agent server: one-shot task runner + the tools
   // plane (harness-tools self-registers its melite-tools row; the
   // renderer disables the web-plane doors row in this mount).
@@ -75,7 +77,7 @@ const PROFILE_BASES = {
   // :33081 wire never existed here.
   'melite-test': ['@deepseek-ai/dsh-base', '@deepseek-ai/dsh-web-app', '@melite/harness-provisioner',
     '@melite/harness-tools', '@melite-plugin/dsh-card-view', '@melite-plugin/dsh-card-deck',
-    '@melite-plugin/dsh-gallery', '@melite/3d-anny'],
+    '@melite-plugin/dsh-gallery'],
 }
 
 function renderProfile(name) {
@@ -121,12 +123,14 @@ function renderProfile(name) {
   // every FRESH boot: "tool melite_discover is already
   // registered"). Direct bundles are THE mount now; nothing is
   // dropped when the provisioner joins.
-  const SUPERSEDED_BY_PROVISIONER = new Set([])
-  const merged = [...((pkg.dsh && pkg.dsh.profile && pkg.dsh.profile.bundles) || []), ...bundles]
-  const withProvisioner = merged.includes('@melite/harness-provisioner')
-  pkg.dsh = { profile: { bundles: [
-    ...new Set(withProvisioner ? merged.filter((b) => !SUPERSEDED_BY_PROVISIONER.has(b)) : merged),
-  ] } }
+  // THE BUNDLES LIST IS REGENERATED, never merged (stroke 89,
+  // 2026-09-17 — the same no-drift law as the dependencies above):
+  // the old union kept RETIRED bundles mounted forever (anny's
+  // studio row crash-booted every fresh compose with "cannot
+  // resolve profile bundle @melite/3d-anny" after the package left
+  // the bases). The bases OWN this list wholesale; a retired
+  // package leaves the profile the day it leaves PROFILE_BASES.
+  pkg.dsh = { profile: { bundles: [...new Set(bundles)] } }
   writeFileSync(join(dst, 'package.json'), JSON.stringify(pkg, null, 2) + String.fromCharCode(10))
   // user layer stays EMPTY in web mounts — the bundle patch owns every
   // row (no drift). NON-web mounts (headless/SDK) get the web-surface

@@ -191,13 +191,19 @@ test('GRID: declared columns grid the group; prompts span; width floors at one',
   expect(container.textContent).toContain('A')
   const grid = container.querySelector('[style*="grid-template-columns"]')
   expect(grid).not.toBeNull()
-  // the claims ride the grid too — wrapped in the columns, bare outside
-  expect(screen.getAllByTestId('claimed').length).toBe(4)
+  // the claims ride the grid too — wrapped in the columns
+  expect(screen.getAllByTestId('claimed').length).toBe(3)
   expect(screen.getByText('*')).not.toBeNull()
   expect(screen.getByText('first')).not.toBeNull()
   // the gridded slot row still seats its square; the prompt still spans
   expect(screen.getByRole('button', { name: 'A5 source' })).not.toBeNull()
   expect(screen.getByLabelText('A2')).not.toBeNull()
+  // THE SUBMENU LAW (stroke 89): the ungrouped contrast row seats
+  // behind its own tab — switching renders its claim BARE (the
+  // stacked-all-groups render is retired; the panel is exclusive).
+  fireEvent.click(document.querySelector('[data-form-group-tab="general"]'))
+  expect(screen.getAllByTestId('claimed').length).toBe(1)
+  expect(container.querySelector('[style*="grid-template-columns"]')).toBeNull()
 })
 
 test('GRID: no signature, no rail — the groups still seat every field', () => {
@@ -283,4 +289,57 @@ test('BBOX THREAD: CardForm seats the host bbox face down to the section (the de
   fireEvent.click(screen.getByRole('menuitem', { name: 'SAM3' }))
   fireEvent.click(screen.getByRole('button', { name: 'Draw box' }))
   expect(screen.getByTestId('seated-bbox-face')).not.toBeNull()
+})
+
+// ---------------------------------------------------------------------------
+// THE PARAMETER SUBMENU (stroke 89): >1 declared group renders a
+// switchable tab rail; ≤1 group keeps the stacked sections. The
+// constructor reads the declared `group` extras — nothing bespoke.
+// ---------------------------------------------------------------------------
+
+/** A grouped doc: parts (1 field), ingest (1), turnaround (2) — the
+ *  anny emission shape (three declared parameter groups). */
+function groupedDoc(): FormSpecDoc {
+  const refs: Record<number, Ref> = {
+    0: { type: 'object', dict: { body_glb: 1, source_photo: 2, steps: 3, frames: 4 } },
+    1: { type: 'string', meta: { description: 'Body glb', extra: { group: 'parts' } } },
+    2: { type: 'string', meta: { description: 'Source photo', extra: { group: 'ingest' } } },
+    3: { type: 'number', meta: { description: 'Steps', default: 20, extra: { group: 'turnaround' } } },
+    4: { type: 'number', meta: { description: 'Frames', default: 8, extra: { group: 'turnaround' } } },
+  }
+  return {
+    form: 'anny', model: 'none', schema: { uid: 0, refs }, inputs: [], packs: [],
+  } as unknown as FormSpecDoc
+}
+
+test('SUBMENU: >1 group renders a tab rail; only the first panel is visible', () => {
+  form({ spec: groupedDoc() })
+  const rail = document.querySelector('[data-form-submenu]')
+  if (rail === null) throw new Error('no submenu rail for a 3-group emission')
+  const tabs = Array.from(rail.querySelectorAll('[data-form-group-tab]'))
+  expect(tabs.map((t) => t.getAttribute('data-form-group-tab'))).toEqual(['parts', 'ingest', 'turnaround'])
+  // first-seen group seats active; its panel is the ONLY panel
+  expect(document.querySelectorAll('[data-form-group-panel]').length).toBe(1)
+  expect(document.querySelector('[data-form-group-panel]')?.getAttribute('data-form-group-panel')).toBe('parts')
+  expect(screen.getByLabelText('Body glb')).not.toBeNull()
+  expect(screen.queryByLabelText('Steps')).toBeNull()
+})
+
+test('SUBMENU: clicking a tab switches the visible panel', () => {
+  form({ spec: groupedDoc() })
+  const tab = document.querySelector('[data-form-group-tab="turnaround"]')
+  if (tab === null) throw new Error('no turnaround tab')
+  expect(tab.getAttribute('aria-selected')).toBe('false')
+  fireEvent.click(tab)
+  expect(document.querySelector('[data-form-group-panel]')?.getAttribute('data-form-group-panel')).toBe('turnaround')
+  expect(screen.getByLabelText('Steps')).not.toBeNull()
+  expect(screen.queryByLabelText('Body glb')).toBeNull()
+  expect(document.querySelector('[data-form-group-tab="turnaround"]')?.getAttribute('aria-selected')).toBe('true')
+})
+
+test('SUBMENU: a single group keeps the stacked sections (no rail)', () => {
+  form()
+  expect(document.querySelector('[data-form-submenu]')).toBeNull()
+  expect(screen.getByLabelText('Prompt')).not.toBeNull()
+  expect(screen.getByLabelText('Steps')).not.toBeNull()
 })

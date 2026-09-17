@@ -16,3 +16,14 @@ Card 13 of the card-folder migration (same cause as the catalog
 golden regold, same date): the pixal3d/trellis2-native studio
 claims join the folder spelling. 18 pins, tenant keys only.
 Walls 17/17 after.
+
+## 2026-09-17 — stroke 89: the anny truth pass (form card)
+
+The anny DECL changed lawfully with the studio retirement: description
+(SAM/hair/outfit fiction → the authored 11-slider truth), defaults
+(+ the 11 identity dims at the served 0.5 neutral), studio → null
+(the handrolled studio died). families-golden regolded for exactly
+the anny row (diff: description/defaults/studio); model-catalog for
+families.anny + models.anny; form-spec-referee for the anny row
+(17 fields in dict order; groups body/identity/turnaround). Walls
+green after (families-golden 4/4, models-golden A1, parity 5/5).

@@ -24,14 +24,18 @@ import { schemaEnvelope, SpecForm, type FormSpecDoc } from '../src/client/spec-f
 afterEach(cleanup)
 
 /** image-gen's serving shape: a seed knob (type seed) + ordinary
- *  number knobs (width/steps) that must NEVER carry the dice. */
+ *  number knobs (width/steps) that must NEVER carry the dice.
+ *  FLATTENED to one panel (stroke 89): these tests pin DICE
+ *  mechanics across fields — under the parameter submenu law the
+ *  groups would seat behind tabs; the submenu's own law is pinned
+ *  in card-base's form-card spec. */
 const DICE: FormSpecDoc = {
   form: 'image-gen-shape',
   schema: schemaEnvelope({
-    prompt: { type: 'string', meta: { description: 'Prompt', extra: { wtype: 'textarea', group: 'prompt' } } },
-    seed: { type: 'seed', meta: { description: 'Seed', default: -1, extra: { group: 'resolution' } } },
-    width: { type: 'number', meta: { description: 'Width', default: 1024, extra: { group: 'resolution' } } },
-    steps: { type: 'number', meta: { description: 'Steps', default: 30, extra: { group: 'sampling' } } },
+    prompt: { type: 'string', meta: { description: 'Prompt', extra: { wtype: 'textarea' } } },
+    seed: { type: 'seed', meta: { description: 'Seed', default: -1, extra: {} } },
+    width: { type: 'number', meta: { description: 'Width', default: 1024, extra: {} } },
+    steps: { type: 'number', meta: { description: 'Steps', default: 30, extra: {} } },
   }),
   model: 'krea-2',
 }

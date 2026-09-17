@@ -385,3 +385,31 @@
 .specGrid :where(input, select) {
   width: 100%;
 }
+
+/* THE PARAMETER SUBMENU (stroke 89, operator order 2026-09-17: the
+ * form card owns switchable parameter submenus — a card never
+ * handrolls a group switcher). The tab rail: layout-only module CSS
+ * over native buttons, every color an inherited --dsw-alias-* token
+ * (the package's documented pattern — no invented system). */
+.groupTabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+.groupTab {
+  all: unset;
+  cursor: pointer;
+  font: inherit;
+  color: inherit;
+  padding: 3px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--dsw-alias-border-l2, rgba(128, 128, 128, 0.35));
+}
+.groupTab:hover {
+  background: var(--dsw-alias-bg-module, rgba(128, 128, 128, 0.08));
+}
+.groupTabActive {
+  background: var(--dsw-alias-bg-module, rgba(128, 128, 128, 0.18));
+  border-color: var(--dsw-alias-border-l3, rgba(128, 128, 128, 0.55));
+}

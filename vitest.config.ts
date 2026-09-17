@@ -80,10 +80,9 @@ const DOM_SPEC_TREES = [
   `${rootPath('packages/image/ideogram4')}/tests/**/*.spec.{ts,tsx}`,
   `${rootPath('packages/image/mask-studio')}/tests/**/*.spec.{ts,tsx}`,
   `${rootPath('packages/3d/img-to-mesh')}/tests/**/*.spec.{ts,tsx}`,
-  // the anny studio + client specs (2026-09-16): the 3d studio row —
-  // same composition-root correction as the trees above (React 19,
-  // the store-pinned pair); the node lane keeps anny's *.spec.ts
-  // compose/index gates (include patterns are extension-split).
+  // anny's spec tree (stroke 89: the studio specs died with the
+  // studio — card.spec.ts + index.spec.ts remain, the node lane's
+  // compose/index gates for the form card).
   `${rootPath('packages/3d/anny')}/tests/**/*.spec.{ts,tsx}`,
   // the motion studio + client specs (2026-09-16): the motion lane row —
   // same composition-root correction as the trees above (the studio
@@ -386,7 +385,6 @@ export default defineConfig({
         // vendored (Layer C law: not ours to test):
         'packages/vendor/typert-protocol/src/index.ts',
         'packages/vendor/typert-protocol/src/remote-error.ts',
-        // the anny client barrel (no spec has ever pinned it):
                 // card compose/kit fallback branches:
                                         // cordis service-plane error arms (api failures, enhance
         // fallbacks, spec sweeps):
@@ -437,12 +435,10 @@ export default defineConfig({
         // remain here.
         // 3d closed (2026-09-12, §TEST-10): every TS logic file at
         // per-file 100 (card compose gates + the clothing-placement
-        // tool face). The STUDIOS (src/ui/**/*.tsx — anny's two,
-        // img-to-mesh's one) stay GUI-debt: DOM components, the dom
-        // project's territory, same carve-out as the web tree.
-        // 3d (stroke 77): anny's studio + client ride the gate at
-        // 100; ONE residual stays named.
-        'packages/3d/anny/src/ui/studio/component.tsx',
+        // tool face). The STUDIOS stayed GUI-debt until stroke 89
+        // (2026-09-17): anny's studio + client faces are DELETED —
+        // the card is a schema form through the base constructor;
+        // img-to-mesh's studio remains the tree's one carve-out.
         // audio closed (2026-09-12, §TEST-11): every file at per-file
         // 100x4 — the four card compose gates + the three tool faces
         // (executor batteries) + the index apply arms. No studios in

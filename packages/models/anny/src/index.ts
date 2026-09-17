@@ -14,14 +14,25 @@ export const DECL: ModelDecl = {
   "id": "anny",
   "form": "form_3d_anny",
   "label": "Anny (character assembly)",
-  "description": "Assemble a character — composite body/hair/outfit GLBs, render the 8-view turnaround, segment a source photo into part sprites.",
+  "description": "Author a character body — 11 identity sliders (or attach a GLB, or load a preset), then render the 8-view turnaround sheet. Photo→body estimation rides the hmr-estimate verb (the MHR chain).",
   "engine": "comfyui",
   "defaults": {
     "resolution": 768,
     "framing": 1.2,
     "focal_length": 50,
     "samples": 64,
-    "transparent": true
+    "transparent": true,
+    "gender": 0.5,
+    "age": 0.5,
+    "muscle": 0.5,
+    "weight": 0.5,
+    "height": 0.5,
+    "proportions": 0.5,
+    "cupsize": 0.5,
+    "firmness": 0.5,
+    "african": 0.5,
+    "asian": 0.5,
+    "caucasian": 0.5
   },
   "source": {
     "type": "",
@@ -29,23 +40,7 @@ export const DECL: ModelDecl = {
     "filename": null,
     "note": "our own pack (vendor/comfyui_extensions/melite-poser-nodes) — the ray-era poser chain, stopgap arc 2026-09-04"
   },
-  "studio": {
-    "tenant": "3d/anny",
-    "owns_params": false,
-    "writes": [
-      "body_glb",
-      "source_image",
-      "sculpt",
-      "resolution",
-      "framing",
-      "focal_length",
-      "samples",
-      "transparent"
-    ],
-    "kind": "assembly",
-    "size": "normal",
-    "layout": "studio"
-  },
+  "studio": null,
   "base_body": "anny-base-body.glb",
   "genre": "3d",
   "mods": [

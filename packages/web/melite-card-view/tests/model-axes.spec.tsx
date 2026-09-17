@@ -831,8 +831,12 @@ test('a DECLared columns group grids its fields — Width and Height share ONE r
     }),
   }
   render(createElement(SpecForm, { spec, user: {}, onSet: () => {} }))
-  const res = await screen.findByText('Resolution')
-  const grid = res.parentElement?.querySelector('div[class*="specGrid"]') as HTMLElement
+  // THE SUBMENU LAW (stroke 89): multi-group specs seat each group
+  // behind its tab — the columns group renders in ITS panel.
+  fireEvent.click(screen.getByRole('tab', { name: 'Resolution' }))
+  const panel = document.querySelector('[data-form-group-panel="resolution"]') as HTMLElement
+  expect(panel).not.toBeNull()
+  const grid = panel.querySelector('div[class*="specGrid"]') as HTMLElement
   expect(grid).not.toBeNull()
   // the DECL's grid: 3 columns (width/height/seed-shaped thirds)
   // STROKE 24 — THE OVERFLOW LAW: tracks are minmax(0,1fr) so a
@@ -849,9 +853,11 @@ test('a DECLared columns group grids its fields — Width and Height share ONE r
   expect(labels.some((t) => t.includes('Width'))).toBe(true)
   expect(labels.some((t) => t.includes('Height'))).toBe(true)
   expect((cells[0] as HTMLElement).style.gridColumn).toBe('span 1')
-  // an UNDECLARED group keeps the stacked face (no grid node)
-  const samp = screen.getByText('Sampling')
-  expect(samp.parentElement?.querySelector('div[class*="specGrid"]')).toBeNull()
+  // an UNDECLARED group keeps the stacked face (no grid node) —
+  // behind its own submenu tab (stroke 89)
+  fireEvent.click(screen.getByRole('tab', { name: 'Sampling' }))
+  const sampPanel = document.querySelector('[data-form-group-panel="sampling"]') as HTMLElement
+  expect(sampPanel.querySelector('div[class*="specGrid"]')).toBeNull()
 })
 
 

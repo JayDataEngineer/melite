@@ -1119,6 +1119,19 @@ export function CardForm({ spec, user, base, onSet, onUnset, wire, square, atoms
     f.type !== 'image_list' && !railNames.has(f.name)
   const groupFieldsAll = flatFields.filter(visible)
   const groups = groupFields(groupFieldsAll, value)
+  // THE PARAMETER SUBMENU (stroke 89, operator order 2026-09-17:
+  // "instead of making a form card, and abstracting the form card
+  // to allow for switchable submenus of parameters, you handroll" —
+  // the base form owns it now): an emission declaring MORE THAN ONE
+  // parameter group renders the groups as a switchable submenu — a
+  // tab rail, one visible panel at a time. Zero/one group keeps the
+  // stacked sections: no existing card sees a behavior change, and
+  // a card NEVER owns this UI (the constructor reads the declared
+  // `group` extras — the emission contract, nothing bespoke).
+  const submenu = groups.length > 1
+  const [openGroup, setOpenGroup] = useState<string | null | undefined>(undefined)
+  const activeGroup = submenu ? (groups.find((g) => g.group === openGroup) ?? groups[0]) : undefined
+  const shownGroups = submenu && activeGroup !== undefined ? [activeGroup] : groups
   const atomOf = (f: SpecField): FieldAtomClaim | undefined => atoms?.[f.type]
   // THE CONSTRUCTOR'S OWN PROVIDER — always built (hook law), used
   // unless the host claimed the square seam itself.
@@ -1147,7 +1160,23 @@ export function CardForm({ spec, user, base, onSet, onUnset, wire, square, atoms
           ),
         )
       : null,
-    groups.map((g) => {
+    submenu && activeGroup !== undefined
+      ? h('div', { className: css.groupTabs, role: 'tablist', 'data-form-submenu': '1' },
+          groups.map((g) => {
+            const selected = activeGroup.group === g.group
+            return h('button', {
+              key: g.group ?? '__general__',
+              type: 'button',
+              role: 'tab',
+              'aria-selected': selected ? 'true' : 'false',
+              'data-form-group-tab': g.group ?? 'general',
+              className: css.groupTab + (selected ? ' ' + css.groupTabActive : ''),
+              onClick: () => { setOpenGroup(g.group) },
+            }, titleCaseId(g.group ?? 'General'))
+          }),
+        )
+      : null,
+    shownGroups.map((g) => {
       // THE DECL GRID (stroke 22): the group's `columns` (declared on
       // its fields — first-seen wins) grids the section; each field
       // spans its declared `width`. Undeclared → the stacked face.
@@ -1216,8 +1245,10 @@ export function CardForm({ spec, user, base, onSet, onUnset, wire, square, atoms
         children.push(gridCols === undefined ? cell : h('div', { key: f.name + '-cell', style: cellStyle(f) }, cell))
       }
       flush()
-      return h('section', { key: g.group ?? '', className: css.specGroup },
-        g.group !== null ? h('h4', { className: css.specGroupTitle }, titleCaseId(g.group)) : null,
+      return h('section', { key: g.group ?? '', className: css.specGroup, 'data-form-group-panel': g.group ?? 'general' },
+        // THE SUBMENU NAMES THE PANEL: when the tab rail carries the
+        // group's title, the panel repeats nothing (the DRY law).
+        g.group !== null && !submenu ? h('h4', { className: css.specGroupTitle }, titleCaseId(g.group)) : null,
         gridCols === undefined ? children
           : h('div', { className: css.specGrid, style: { gridTemplateColumns: `repeat(${gridCols}, minmax(0, 1fr))` } }, children),
       )
