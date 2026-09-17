@@ -203,14 +203,12 @@ export function schema(v: unknown): Record<string, unknown> {
   // so the bench tile's Run composed no shots and the door refused
   // "no calls to compose" before the studio ever persisted its doc).
   // ABSENT calls compose the card's own fresh-card document: ONE
-  // window 0→90 — the t4_open physics budget, the LARGEST span a
-  // single window renders (the py canvas 168 AND the on-grid 175
-  // both died live inside SamplerCustomAdvanced, receipts
-  // 2026-09-17: a 7s film is TWO chained windows, this card's genre).
-  // The follow-up catch the same day: the press
-  // said 7s (the studio readout rides totalFrames = last end_frame)
-  // and rendered 3 — the body's hard 90 t4_open budget. The span is
-  // the film now (see the length derivation in renderH3Window). An
+  // window 0→90 — the t4_open fresh-card draft budget (py parity;
+  // display = render, 3.8s). A user authoring a LONGER single window
+  // gets it ungated — the operator's order 2026-09-17 ("don't add
+  // gates; if a user wants a long window, they should get a long
+  // window"); the span-vs-engine receipts live in the ledger as
+  // knowledge, never enforcement. An
   // EXPLICIT empty array keeps the retired compose refusal verbatim
   // (compose/card.py:100 "%s: no calls to compose"): a caller naming
   // zero shots is garbage; a caller naming none is a fresh card.
@@ -244,23 +242,6 @@ export function schema(v: unknown): Record<string, unknown> {
         if (v === undefined || v === null || typeof v !== 'number' || !Number.isInteger(v)) {
           throw new Error(`calls[${i}]: ${name} is required (int frames — text alone is not a shot)`)
         }
-      }
-      // THE WINDOW PHYSICS LAW (boundary pinned by live receipts,
-      // 2026-09-17: 90f and 124f RENDER; 141f, 158f, 168f, 175f all
-      // died inside SamplerCustomAdvanced — runs 3d983151b05e,
-      // 7ff63f809e61, a115a9b43e6a, 89d9f04f6228; the 124f success is
-      // run 500b613ee1b2). The TRUE edge is 124 — the py card's own
-      // declared production window ("produce at 1344×768×124f"): the
-      // preset was the physics all along. The first cut of this law
-      // capped at 90 (the draft budget) and would have refused the
-      // lawful 124f production window — the operator caught it. A
-      // single call spanning wider than 124 refuses at the GATE with
-      // the split named — never a cryptic engine death minutes in.
-      // Longer films chain windows; that is this card's genre.
-      if (calls.length === 1 && (c.end_frame as number) - (c.start_frame as number) > 124) {
-        throw new Error(
-          `calls[${i}]: a single window spans at most 124 frames (engine physics — the production window; receipts 2026-09-17) — ` +
-          `split the timeline into windows (this card's genre: multi-window chains)`)
       }
       if ((c.end_frame as number) <= (c.start_frame as number)) {
         throw new Error(`calls[${i}]: end_frame ${c.end_frame} <= start_frame ${c.start_frame} — a reversed or empty span is not a shot`)
@@ -296,10 +277,11 @@ export function schema(v: unknown): Record<string, unknown> {
   // the schema default 56 over it, and the fresh press rendered 56
   // (2.33s, live receipt) while the studio readout promised the
   // window's span. A SINGLE-CALL doc now serializes its span as an
-  // EXPLICIT length (grid-snapped; ≤90 by the window physics law
-  // above), so the cascade carries it verbatim — the doc's span IS
-  // the film. Multi-call chains keep null: their windows render at
-  // the family budgets / the studio presets' own f values.
+  // EXPLICIT length (grid-snapped to the card's declared 17k+5 —
+  // normalization, not a gate; spans of any width ride), so the
+  // cascade carries it verbatim — the doc's span IS the film.
+  // Multi-call chains keep null: their windows render at the family
+  // budgets / the studio presets' own f values.
   if (!explicit.has('length')) {
     const rows = Array.isArray(out.calls) ? out.calls as Array<Record<string, unknown>> : []
     if (rows.length === 1) {

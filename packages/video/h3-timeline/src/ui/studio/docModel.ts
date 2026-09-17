@@ -340,13 +340,12 @@ export interface DocKeyframe {
   source: string
 }
 
-/** The fresh-card document: ONE window 0→90 — the t4_open physics
- * budget, the widest span a single window renders (both the py canvas
- * 168 and the on-grid 175 died live inside the sampler, receipts
- * 2026-09-17; a longer film is TWO chained windows — this card's
- * genre). The canvas IS the film: the readout shows 3.8 s and 3.8 s
- * renders. Used only when params carry no valid calls (never
- * authored, or legacy malformed). */
+/** The fresh-card document: ONE window 0→90 — the t4_open draft
+ * budget (py parity). The canvas IS the film: the readout shows
+ * 3.8 s and 3.8 s renders. A user authoring a longer window gets it
+ * ungated (the operator's order 2026-09-17) — the span-vs-engine
+ * receipts live in the ledger, not in any gate. Used only when
+ * params carry no valid calls (never authored, or legacy malformed). */
 export const STARTER_CALLS: DocCall[] = [
   {
     text: "A single shot — describe the action, camera, and mood.",
