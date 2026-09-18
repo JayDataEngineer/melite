@@ -4,7 +4,7 @@
  * every logic line is verbatim from the monolith (source range noted).
  */
 import { Button } from "@deepseek-ai/dsh-client-ui-primitives"
-import { NumberControl, SectionLabel, Tip } from "./kit"
+import { SectionLabel, SpecAtom, Tip } from "@melite/card-base"
 import { cn } from "@melite/card-base/chrome"
 import { ChevronDown, X } from "@melite/card-base/icons"
 import s from "./studio.module.css"
@@ -215,24 +215,24 @@ export function CallCard({
         rippling into the neighbor). */}
     <div className={s.spanRow}>
       <span className={s.spanLabel}>Span</span>
-      <NumberControl
-        ariaLabel={`Call ${i} start frame`}
+      <SpecAtom
+        f={{ name: `call_${i}_start_frame`, label: `Call ${i} start frame`, type: "number", min: 0, step: 1 }}
         value={c.start_frame}
-        onChange={(v) => { if (v !== undefined) setCallSpan(i, "start", Math.round(v)) }}
-        min={0} step={1}
-        align="right"
-        width="w-16"
         placeholder=""
+        onEdit={(_, v) => {
+          const n = typeof v === "string" && v.trim() !== "" ? Number(v) : undefined
+          if (n !== undefined) setCallSpan(i, "start", Math.round(n))
+        }}
       />
       <span className={s.spanDash}>–</span>
-      <NumberControl
-        ariaLabel={`Call ${i} end frame`}
+      <SpecAtom
+        f={{ name: `call_${i}_end_frame`, label: `Call ${i} end frame`, type: "number", min: 0, step: 1 }}
         value={c.end_frame}
-        onChange={(v) => { if (v !== undefined) setCallSpan(i, "end", Math.round(v)) }}
-        min={0} step={1}
-        align="right"
-        width="w-16"
         placeholder=""
+        onEdit={(_, v) => {
+          const n = typeof v === "string" && v.trim() !== "" ? Number(v) : undefined
+          if (n !== undefined) setCallSpan(i, "end", Math.round(n))
+        }}
       />
       <span className={s.spanNote}>end exclusive · edit ripples the cut into the neighbor</span>
     </div>

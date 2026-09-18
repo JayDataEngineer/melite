@@ -17,7 +17,7 @@
  */
 import { useState } from "react"
 import { Input, Switch } from "@deepseek-ai/dsh-client-ui-primitives"
-import { SelectMenu } from "./kit"
+import { SpecAtom } from "@melite/card-base"
 import { cn, readAsDataURL } from "@melite/card-base/chrome"
 import { SourceRow } from "@melite/card-base/form"
 import { fetchMediaLibrary } from "@melite/card-base/media-library"
@@ -140,16 +140,16 @@ export function SeamControls({
           title="How this call joins the previous one: cut re-feeds the previous VIDEO tail as an opener clip; extend chains the previous LATENT — seamless motion, texture and audio phase carry across the seam"
         >
           <span className={s.seamLabel}>seam</span>
-          <SelectMenu
+          <SpecAtom
+            f={{
+              name: "seam_mode", label: "Call " + callIndex + " seam mode", type: "select",
+              options: [
+                { value: "cut", label: "cut — prev video opener" },
+                { value: "extend", label: "extend — latent chain" },
+              ],
+            }}
             value={transition === "cut" ? "cut" : "extend"}
-            aria-label={"Call " + callIndex + " seam mode"}
-            options={[
-              { value: "cut", label: "cut — prev video opener" },
-              { value: "extend", label: "extend — latent chain" },
-            ]}
-            onChange={(v) => onTransition?.(v === "extend" ? "extend" : "cut")}
-            className={s.wFull}
-            buttonClassName={s.mono}
+            onEdit={(_, v) => onTransition?.(v === "extend" ? "extend" : "cut")}
           />
         </div>
       )}

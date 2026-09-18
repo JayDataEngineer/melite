@@ -11,7 +11,7 @@ import assert from "node:assert/strict"
 import { act, renderHook } from "@testing-library/react"
 import { useState } from "react"
 import { useFilmSync } from "../src/ui/studio/useFilmSync.ts"
-import type { FilmPlayerHandle } from "../src/ui/studio/kit.tsx"
+import type { FilmPlayerHandle } from "@melite-plugin/timeline/ui/timeline"
 import type { DocCall, DocKeyframe } from "../src/ui/studio/docModel.ts"
 
 const CALLS: DocCall[] = [

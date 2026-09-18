@@ -480,7 +480,7 @@ export function SpecSliderAtom({ f, value, onEdit }: {
 
 /** One spec atom — typed by the declaration, edited as a raw string
  *  while typing (decimal dots survive; coercion happens once at patch). */
-export function SpecAtom({ f, value, onEdit, square, wireCandidates, placeholder }: {
+export function SpecAtom({ f, value, onEdit, square, wireCandidates, placeholder, ghost }: {
   f: SpecField
   value: unknown
   onEdit(name: string, v: unknown): void
@@ -490,6 +490,14 @@ export function SpecAtom({ f, value, onEdit, square, wireCandidates, placeholder
   /** the row's placeholder override (the seed dice's random face:
    *  the sentinel never paints, the placeholder explains the state) */
   placeholder?: string
+  /** THE SELECT'S INHERIT GHOST (2026-09-18, the operator's ruling:
+   *  "atoms get ONE semantic addition — select inherit-ghost"): when
+   *  defined, a leading <option value=''> renders with this label —
+   *  the unset mark for undefined-able selects. '' is the bind target
+   *  for undefined (never the browser's painted-first-option lie).
+   *  The call site authors the label ('inherit', or the richer
+   *  '← on' when the inherited value is known). */
+  ghost?: string
 }): ReturnType<typeof h> {
   // THE INPUT SQUARE (the old law: slot-shaped values render the ONE
   // square with the three source verbs — never a bare text Input).
@@ -511,10 +519,19 @@ export function SpecAtom({ f, value, onEdit, square, wireCandidates, placeholder
       value: String(value ?? ''),
       onChange: (e: unknown) => onEdit(f.name, (e as { target: { value: string } }).target.value),
       'aria-label': f.label,
-    }, f.options.map((o) => {
+      ...(f.tooltip !== undefined && f.tooltip !== '' ? { title: f.tooltip } : {}),
+    },
+      // THE INHERIT GHOST: undefined binds to '' — the ghost option IS
+      // the unset mark; without it the browser paints the first listed
+      // option over an unheld value (the 1:1 lie)
+      ghost !== undefined ? h('option', { value: '' }, ghost) : null,
+      f.options.map((o) => {
       // normalize: '1024' | {value:'1024', label:'1K'} → one shape.
-      // THE TITLE-CASE FACE (the operator's sweep law): raw-id
-      // labels render titled — the value rides verbatim.
+      // THE TITLE-CASE FACE (the operator's sweep law): every label
+      // renders titled — the value rides verbatim. (2026-09-18: a
+      // verbatim-authored carve-out was tried and REVERTED — the
+      // estate's own door picker (input-square) pins the blanket law;
+      // prose labels title-case like ids, pattern conformance.)
       const row = typeof o === 'string' ? { value: o, label: o } : o
       return h('option', { key: row.value, value: row.value }, titleCaseId(row.label))
     }))
@@ -598,6 +615,7 @@ export function SpecAtom({ f, value, onEdit, square, wireCandidates, placeholder
       placeholder: placeholder ?? f.placeholder ?? '',
       onChange: (e: unknown) => onEdit(f.name, (e as { target: { value: string } }).target.value),
       'aria-label': f.label,
+      ...(f.tooltip !== undefined && f.tooltip !== '' ? { title: f.tooltip } : {}),
     })
   }
   // seed, text — the raw-string Input (coerce once at patch)
@@ -606,6 +624,7 @@ export function SpecAtom({ f, value, onEdit, square, wireCandidates, placeholder
     placeholder: placeholder ?? f.placeholder ?? '',
     onChange: (e: unknown) => onEdit(f.name, (e as { target: { value: string } }).target.value),
     'aria-label': f.label,
+    ...(f.tooltip !== undefined && f.tooltip !== '' ? { title: f.tooltip } : {}),
   })
 }
 

@@ -5,7 +5,7 @@
  */
 import { useCallback, useRef, useState } from "react"
 import type { Dispatch, SetStateAction } from "react"
-import type { FilmPlayerHandle } from "./kit"
+import type { FilmPlayerHandle } from "@melite-plugin/timeline/ui/timeline"
 import { GUIDE_KINDS } from "./docModel"
 import type { DocCall, DocKeyframe } from "./docModel"
 import { hasKnobs } from "./docCalls"

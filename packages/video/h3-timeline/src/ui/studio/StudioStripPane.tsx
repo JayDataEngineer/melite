@@ -5,7 +5,7 @@
  */
 import { MotionTimelineBar } from "@melite-plugin/timeline/ui/timeline"
 import type { TimelineKeyframe, TimelinePrompt } from "@melite-plugin/timeline/ui/timeline"
-import { PaneHeader, PaneShell } from "./kit"
+import { PaneHeader, PaneShell } from "@melite/card-base"
 import { VIDEO_TIMELINE_TRACKS } from "./docModel"
 import type { DocCall, DocKeyframe, LayerA, SetLayerAKey } from "./docModel"
 

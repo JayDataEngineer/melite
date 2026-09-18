@@ -90,7 +90,7 @@ describe("recipe (clock + route) — the document's identity", () => {
     )
     const sel = screen.getByLabelText("Model route") as HTMLSelectElement
     assert.equal(sel.value, "h3-timeline-ref")
-    assert.ok(document.body.textContent!.includes("Ref2VA · identity refs"))
+    assert.ok(document.body.textContent!.includes("Ref2VA · Identity Refs"))
     cleanup()
   })
 

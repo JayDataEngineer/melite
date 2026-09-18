@@ -5,8 +5,9 @@
  */
 import type { RefObject } from "react"
 import type { CardStage } from "@melite/contracts"
-import { EmptyState, FilmPlayer, PaneHeader } from "./kit"
-import type { FilmPlayerHandle } from "./kit"
+import { EmptyState, PaneHeader } from "@melite/card-base"
+import { FilmPlayer } from "@melite-plugin/timeline/ui/timeline"
+import type { FilmPlayerHandle } from "@melite-plugin/timeline/ui/timeline"
 import { Clapperboard } from "@melite/card-base/icons"
 import s from "./studio.module.css"
 

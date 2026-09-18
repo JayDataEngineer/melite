@@ -67,7 +67,12 @@ describe("the enum face (the schema's options, in order)", () => {
     const sel = screen.getByLabelText("Call 0 knob: sampler_name") as HTMLSelectElement
     assert.equal(sel.value, "euler")
     const texts = [...sel.options].map((o) => o.text)
-    assert.ok(texts.indexOf("euler") < texts.indexOf("heun"), "declaration order kept")
+    // the sweep law's face: enum ids render titled ('Euler'/'Heun') —
+    // the SAME atom the master form's sampler rows ride, one face law
+    // estate-wide (the knob fold's verbatim rendering was the retired
+    // kit's). The ghost ('← euler') is authored by the knob and rides
+    // verbatim.
+    assert.ok(texts.indexOf("Euler") < texts.indexOf("Heun"), "declaration order kept")
     assert.equal(sel.options[0]!.text, "← euler")
     fireEvent.change(sel, { target: { value: "dpmpp_2m" } })
     assert.deepEqual(seen, [["sampler_name", "dpmpp_2m"]])

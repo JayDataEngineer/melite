@@ -17,7 +17,7 @@
  * panel — never as spec rows.
  */
 import { SpecPanel } from "@melite/card-base"
-import { ControlRow, NumberControl, SectionLabel, SelectControl } from "./kit"
+import { ControlRow, SectionLabel, SpecAtom } from "@melite/card-base"
 import s from "./studio.module.css"
 import type { LayerA, SetLayerAKey } from "./docModel"
 import type { CardStage } from "@melite/contracts"
@@ -49,42 +49,38 @@ export function RunRecipeEngine({
       <div className={s.group} data-testid="tl-recipe-chrome">
         <div className={s.groupTitle}>Recipe</div>
         <ControlRow label="Model route">
-          <SelectControl
-            ariaLabel="Model route"
-            testId="tl-route-select"
+          <SpecAtom
+            f={{
+              name: "model", label: "Model route", type: "select",
+              options: [
+                { value: "h3-timeline", label: "FL2VA · First/Last" },
+                { value: "h3-timeline-ref", label: "Ref2VA · Identity Refs" },
+              ],
+              tooltip: isRef2va ? "Ref2VA — identity refs (per-call override windows)" : "FL2VA — first/last-frame conditioning",
+            }}
             value={isRef2va ? "h3-timeline-ref" : "h3-timeline"}
-            // Dead-arm cut: emptyLabel={false} means the native select
-            // only yields listed options — v is never undefined here.
-            onChange={(v) => setLayerAKey("model", v!)}
-            title={isRef2va ? "Ref2VA — identity refs (per-call override windows)" : "FL2VA — first/last-frame conditioning"}
-            options={[
-              { value: "h3-timeline", label: "FL2VA · first/last" },
-              { value: "h3-timeline-ref", label: "Ref2VA · identity refs" },
-            ]}
-            emptyLabel={false}
-            width="w-40"
+            // Dead-arm cut (kept): no ghost — the native select only
+            // yields listed options, v is never '' here.
+            onEdit={(_, v) => setLayerAKey("model", v as string)}
           />
         </ControlRow>
         <ControlRow label="Preset">
-          <SelectControl
-            ariaLabel="Preset"
-            testId="tl-preset-select"
+          <SpecAtom
+            f={{ name: "preset", label: "Preset", type: "select", options: ["draft_02mp", "final_hd"] }}
             value={layerA.preset}
-            // Dead-arm cut: emptyLabel={false} — v is always a preset.
-            onChange={(v) => setLayerAKey("preset", v!)}
-            options={["draft_02mp", "final_hd"]}
-            emptyLabel={false}
-            width="w-32"
+            // Dead-arm cut (kept): no ghost — v is always a preset.
+            onEdit={(_, v) => setLayerAKey("preset", v as string)}
           />
         </ControlRow>
         <ControlRow label="FPS">
-          <NumberControl
-            ariaLabel="FPS"
+          <SpecAtom
+            f={{ name: "fps", label: "FPS", type: "number", min: 1, max: 60, step: 1 }}
             value={layerA.fps}
-            onChange={(v) => { if (v !== undefined && v > 0) setLayerAKey("fps", v) }}
-            min={1} max={60} step={1}
             placeholder=""
-            width="w-32"
+            onEdit={(_, v) => {
+              const n = typeof v === "string" && v.trim() !== "" ? Number(v) : undefined
+              if (n !== undefined && n > 0) setLayerAKey("fps", n)
+            }}
           />
         </ControlRow>
         <div className={s.recipeGeom} data-testid="tl-recipe-geom">
@@ -122,24 +118,20 @@ export function RunRecipeEngine({
         >
           Engine (H3)
         </SectionLabel>
-        <NumberControl
-          ariaLabel="Window width (run)"
+        <SpecAtom
+          f={{ name: "width", label: "Window width (run)", type: "number", min: 256, max: 1920, step: 32, tooltip: `blank — the ${layerA.preset} preset rides ${geom.w}×${geom.h}` }}
           value={layerA.width}
-          onChange={(v) => setLayerAKey("width", v)}
-          min={256} max={1920} step={32}
           placeholder={String(geom.w)}
-          title={`blank — the ${layerA.preset} preset rides ${geom.w}×${geom.h}`}
-          width="w-[4.5rem]"
+          onEdit={(_, v) => setLayerAKey("width",
+            typeof v === "string" && v.trim() !== "" ? Number(v) : undefined)}
         />
         <span className={s.times}>×</span>
-        <NumberControl
-          ariaLabel="Window height (run)"
+        <SpecAtom
+          f={{ name: "height", label: "Window height (run)", type: "number", min: 256, max: 1920, step: 32, tooltip: `blank — the ${layerA.preset} preset rides ${geom.w}×${geom.h}` }}
           value={layerA.height}
-          onChange={(v) => setLayerAKey("height", v)}
-          min={256} max={1920} step={32}
           placeholder={String(geom.h)}
-          title={`blank — the ${layerA.preset} preset rides ${geom.w}×${geom.h}`}
-          width="w-[4.5rem]"
+          onEdit={(_, v) => setLayerAKey("height",
+            typeof v === "string" && v.trim() !== "" ? Number(v) : undefined)}
         />
       </div>
     </>

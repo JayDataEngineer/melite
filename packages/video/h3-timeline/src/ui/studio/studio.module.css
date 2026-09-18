@@ -20,34 +20,13 @@
 
 /* ── generic helpers ────────────────────────────────────── */
 .hiddenInput { display: none; }
-.mono { font-family: var(--dsw-alias-font-mono, ui-monospace, SFMono-Regular, Menlo, Consolas, monospace); }
-.alignR { text-align: right; }
-.alignC { text-align: center; }
 .tabular { font-variant-numeric: tabular-nums; }
 .nowrap { white-space: nowrap; }
-.truncate { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-
-/* icon sizes (the h-2 w-2 … h-5 w-5 scale) */
-.sz8 { width: 8px; height: 8px; }
 .sz10 { width: 10px; height: 10px; }
 .sz12 { width: 12px; height: 12px; }
-.sz20 { width: 20px; height: 20px; }
-
 /* chevron open-rotation (the group-open:rotate-180 pattern) */
 .chev { transition: transform 0.15s ease; flex: none; }
 details[open] > summary .chev { transform: rotate(180deg); }
-
-/* control widths (the w-* scale the width props name) */
-.w12 { width: 3rem; }
-.w14 { width: 3.5rem; }
-.w16 { width: 4rem; }
-.w24 { width: 6rem; }
-.w28 { width: 7rem; }
-.w32 { width: 8rem; }
-.w36 { width: 9rem; }
-.w40 { width: 10rem; }
-.w45 { width: 4.5rem; }
-.wFull { width: 100%; }
 
 /* ── kit: native inputs / selects ─────────────────────────
  * THE UNIFORM FORM SKIN (2026-09-13): same DSW token aliases the
@@ -56,17 +35,6 @@ details[open] > summary .chev { transform: rotate(180deg); }
  * compact density (padding/font-size) stays: the rail is a dense
  * override editor; the SKIN (bg/border/color/focus) is the shared
  * vocabulary. Inherit-tri-state semantics unchanged. */
-.ctlInput, .ctlSelect {
-  border-radius: 6px;
-  border: 0.5px solid var(--dsw-alias-border-l2);
-  background: var(--dsw-alias-interactive-bg-hover);
-  padding: 2px 6px;
-  font-family: var(--dsw-alias-font-mono, ui-monospace, monospace);
-  font-size: 10px;
-  color: var(--dsw-alias-label-primary);
-  outline: none;
-  font-variant-numeric: tabular-nums;
-}
 /* THE POPUP FACE (hour-24 stroke-13 law — the white-on-white fix
  * card-base's .specSelect has carried since the operator first
  * caught it; the 2026-09-13 uniform skin copied the CLOSED face
@@ -78,36 +46,9 @@ details[open] > summary .chev { transform: rotate(180deg); }
  * rule speaks the platform's own system colors (Canvas/CanvasText
  * follow the color-scheme: light above — a light popup and dark
  * text on every theme, zero literal palette, zero fallback). */
-.ctlSelect, .selMenuBox { color-scheme: light; }
 .ctlSelect option, .selMenuBox option { background: Canvas; color: CanvasText; }
 .ctlInput::placeholder { color: var(--dsw-alias-label-tertiary); }
 .ctlInput:focus, .ctlSelect:focus { border-color: var(--dsw-alias-brand-primary); }
-.ctlSelect { font-family: inherit; }
-.ctlInputSm { padding: 2px 4px; font-size: 10px; }
-
-/* ── kit: slider ────────────────────────────────────────── */
-.sliderWrap { display: flex; align-items: center; gap: 8px; }
-.slider { accent-color: var(--dsw-alias-brand-primary); }
-.sliderReadout {
-  width: 2.5rem;
-  text-align: right;
-  font-family: var(--dsw-alias-font-mono, ui-monospace, SFMono-Regular, Menlo, Consolas, monospace);
-  font-size: 10px;
-  font-variant-numeric: tabular-nums;
-  color: var(--dsw-alias-label-secondary);
-}
-
-/* ── kit: SelectMenu (native) ───────────────────────────── */
-.selMenu { display: inline-flex; min-width: 0; }
-.selMenuBox {
-  border-radius: 6px;
-  border: 1px solid var(--dsw-alias-border-l2);
-  background: color-mix(in srgb, var(--dsw-alias-bg-base) 30%, transparent);
-  padding: 2px 6px;
-  font-size: 10px;
-  color: var(--dsw-alias-label-primary);
-  outline: none;
-}
 .selMenuBox:focus { border-color: var(--dsw-alias-brand-primary); }
 .selMenuBox:disabled { opacity: 0.5; }
 
@@ -122,13 +63,6 @@ details[open] > summary .chev { transform: rotate(180deg); }
    seams as declared: rail LEFT (own column, scrolls), center RIGHT
    (the viewport), bottom UNDER BOTH (full width, row 2).
    minmax(0,1fr) keeps each pane scrollable, never squashed. */
-.shell {
-  display: grid;
-  grid-template-columns: minmax(280px, 330px) minmax(0, 1fr);
-  grid-template-rows: minmax(0, 1fr) auto;
-  height: 100%;
-  min-height: 0;
-}
 .shell > *:first-child { grid-column: 1; grid-row: 1; }
 /* THE PREVIEW SCROLLS (the operator's hour-8: "the video preive must
  * SCROLL"): the center pane owns its overflow — the filmstrip grows
@@ -147,21 +81,6 @@ details[open] > summary .chev { transform: rotate(180deg); }
   max-height: min(42%, 380px);
   overflow-y: auto;
 }
-.shellErrors { margin-top: 8px; display: flex; flex-direction: column; gap: 4px; }
-.shellError {
-  border-radius: 6px;
-  border: 1px solid color-mix(in srgb, var(--dsw-alias-state-error-primary) 40%, transparent);
-  background: color-mix(in srgb, var(--dsw-alias-state-error-primary) 10%, transparent);
-  padding: 6px 8px;
-  font-family: var(--dsw-alias-font-mono, ui-monospace, SFMono-Regular, Menlo, Consolas, monospace);
-  font-size: 9px;
-  line-height: 1.5;
-  overflow-wrap: break-word;
-  white-space: pre-wrap;
-  color: var(--dsw-alias-state-error-primary);
-  margin: 0;
-}
-
 /* ── tenant root + rail (component.tsx) ─────────────────── */
 .studioRoot {
   /* THE ODD-MARGIN ROOT CAUSE (hour-9): default content-box sizing
@@ -268,7 +187,6 @@ details[open] > summary .chev { transform: rotate(180deg); }
 .kfHead { display: flex; align-items: baseline; gap: 6px; padding-bottom: 4px; }
 .kfTitle { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: var(--dsw-alias-label-tertiary); }
 .kfHint { font-size: 9px; color: var(--dsw-alias-label-tertiary); }
-.kfList { display: flex; flex-direction: column; gap: 4px; }
 .kfRow {
   display: flex;
   align-items: center;
@@ -299,7 +217,6 @@ details[open] > summary .chev { transform: rotate(180deg); }
 /* DSH-Input wrappers: the className lands on the DSH wrapper span,
    so each wrapper carries the layout role and styles its inner
    native input to fill it. */
-.textIn { min-width: 0; flex: 1; display: inline-flex; }
 .textIn > input, .srcIn > input, .prevNum > input, .kfIn > input {
   width: 100%;
   border-radius: 6px;
@@ -370,20 +287,6 @@ details[open] > summary .chev { transform: rotate(180deg); }
 .spanLabel { font-size: 9px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--dsw-alias-label-tertiary); }
 .spanDash { font-size: 9px; color: var(--dsw-alias-label-tertiary); }
 .spanNote { font-size: 9px; color: var(--dsw-alias-label-tertiary); }
-.framesRow { display: flex; align-items: stretch; gap: 8px; }
-.refBadgeRow { display: flex; align-items: center; gap: 6px; }
-.refBadge {
-  flex: none;
-  border-radius: 6px;
-  border: 1px solid var(--dsw-alias-border-l2);
-  background: color-mix(in srgb, var(--dsw-alias-bg-base) 30%, transparent);
-  padding: 1px 4px;
-  font-family: var(--dsw-alias-font-mono, ui-monospace, SFMono-Regular, Menlo, Consolas, monospace);
-  font-size: 9px;
-  font-variant-numeric: tabular-nums;
-}
-.refBadgeOk { color: var(--dsw-alias-brand-primary); }
-.refBadgeOver { color: var(--dsw-alias-state-warn-primary); }
 .guidesRow { display: flex; align-items: center; gap: 8px; }
 .guideWrap { position: relative; flex: none; }
 .guideDot {
@@ -422,7 +325,6 @@ details[open] > summary .chev { transform: rotate(180deg); }
    color survives as a tail override) */
 .refCountOver { color: var(--dsw-alias-state-warn-primary); }
 .callRefsBody { margin-top: 4px; display: flex; flex-direction: column; gap: 4px; }
-.callRefsFoot { font-size: 8px; color: var(--dsw-alias-label-tertiary); }
 .knobFold { margin-top: 4px; }
 .knobSummary {
   display: flex;
@@ -459,25 +361,8 @@ details[open] > summary .chev { transform: rotate(180deg); }
 
 /* ── CallCardPrompt ─────────────────────────────────────── */
 .beatsWrap { display: flex; flex-direction: column; gap: 4px; }
-.iconMini {
-  display: flex;
-  height: 16px;
-  width: 16px;
-  flex: none;
-  align-items: center;
-  justify-content: center;
-  border-radius: 6px;
-  border: none;
-  background: none;
-  font-size: 9px;
-  color: var(--dsw-alias-brand-primary);
-  cursor: pointer;
-  padding: 0;
-  transition: background-color 0.15s ease, color 0.15s ease;
-}
 .iconMini:hover { background: color-mix(in srgb, var(--dsw-alias-brand-primary) 15%, transparent); }
 .iconMini:disabled { opacity: 0.3; }
-.iconMiniMut { color: var(--dsw-alias-label-tertiary); }
 .iconMiniMut:hover { background: var(--dsw-alias-interactive-bg-hover); color: var(--dsw-alias-label-primary); }
 .beatErr { font-size: 8px; line-height: 1.25; color: var(--dsw-alias-state-error-primary); }
 .beatDel:hover { background: var(--dsw-alias-state-error-primary); color: var(--dsw-alias-label-primary); }
@@ -530,55 +415,12 @@ details[open] > summary .chev { transform: rotate(180deg); }
 .promptBoxEmpty::placeholder { color: color-mix(in srgb, var(--dsw-alias-state-warn-primary) 40%, transparent); }
 .promptBoxEmpty:focus { border-color: color-mix(in srgb, var(--dsw-alias-state-warn-primary) 70%, transparent); }
 
-/* ── CallFrameSubcard ───────────────────────────────────── */
-.sub { display: flex; min-width: 0; flex: 1; flex-direction: column; gap: 4px; }
-.subHead { display: flex; align-items: baseline; gap: 6px; }
-.subTitle { flex: none; font-size: 9px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: var(--dsw-alias-label-tertiary); }
-.subHint { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 9px; color: var(--dsw-alias-label-tertiary); }
-.subRow { display: flex; align-items: center; gap: 6px; }
-.linkBtn {
-  display: flex;
-  height: 16px;
-  width: 16px;
-  align-items: center;
-  justify-content: center;
-  border-radius: 6px;
-  border: none;
-  background: var(--dsw-alias-bg-layer-1);
-  color: var(--dsw-alias-brand-primary);
-  cursor: pointer;
-  padding: 0;
-}
 .linkBtn:hover { opacity: 0.8; }
-.srcIn { min-width: 0; flex: 1; display: inline-flex; }
 .srcIn > input { font-size: 10px; }
 .srcIn > input::placeholder { font-family: sans-serif; color: var(--dsw-alias-label-tertiary); }
 .fileErr { font-size: 8px; line-height: 1.25; color: var(--dsw-alias-state-error-primary); }
-.linkPanel { border-radius: 6px; border: 1px solid var(--dsw-alias-border-l2); background: var(--dsw-alias-bg-layer-1); padding: 4px; box-shadow: 0 1px 2px color-mix(in srgb, var(--dsw-alias-bg-base) 40%, transparent); }
-.linkHead { display: flex; align-items: center; justify-content: space-between; padding: 0 4px 2px; }
-.linkTitle { font-size: 8px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: var(--dsw-alias-label-secondary); }
-.linkClose { border: none; background: none; color: var(--dsw-alias-label-secondary); cursor: pointer; padding: 0; display: inline-flex; }
 .linkClose:hover { color: var(--dsw-alias-label-primary); }
-.linkList { max-height: 9rem; overflow-y: auto; }
-.linkRow {
-  display: flex;
-  width: 100%;
-  align-items: center;
-  gap: 6px;
-  border-radius: 6px;
-  border: none;
-  background: none;
-  padding: 2px 4px;
-  text-align: left;
-  cursor: pointer;
-  transition: background-color 0.15s ease;
-}
 .linkRow:hover { background: var(--dsw-alias-interactive-bg-hover); }
-.linkThumb { height: 24px; width: 24px; flex: none; border-radius: 6px; border: 1px solid var(--dsw-alias-border-l2); object-fit: cover; }
-.linkNameWrap { min-width: 0; flex: 1; }
-.linkName { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-family: var(--dsw-alias-font-mono, ui-monospace, SFMono-Regular, Menlo, Consolas, monospace); font-size: 9px; color: var(--dsw-alias-label-primary); }
-.linkSub { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 8px; color: var(--dsw-alias-label-tertiary); }
-.linkEmpty { display: block; padding: 4px; font-size: 8px; line-height: 1.5; color: var(--dsw-alias-label-tertiary); }
 .seamRow { display: flex; align-items: center; gap: 4px; font-size: 10px; line-height: 1.25; color: var(--dsw-alias-label-secondary); }
 .seamLabel { flex: none; text-transform: uppercase; letter-spacing: 0.06em; color: var(--dsw-alias-label-secondary); }
 .prevLabel { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; font-size: 10px; line-height: 1.25; }
@@ -600,7 +442,6 @@ details[open] > summary .chev { transform: rotate(180deg); }
 }
 .prevNum9 > input { font-size: 9px; }
 .prevNum > input:focus { border-color: var(--dsw-alias-brand-primary); }
-.prevCarryNote { width: 100%; font-size: 8px; color: color-mix(in srgb, var(--dsw-alias-brand-primary) 55%, var(--dsw-alias-label-tertiary)); }
 .prevNote { width: 100%; font-size: 8px; color: var(--dsw-alias-label-tertiary); }
 
 /* ── RefPickerRow ───────────────────────────────────────── */
@@ -611,69 +452,8 @@ details[open] > summary .chev { transform: rotate(180deg); }
  * IN the chips row — one grammar with the ref chips (never an alien
  * box). Column so the file-error line rides under the square. */
 .busAnchor { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
-.chip {
-  display: inline-flex;
-  max-width: 100%;
-  align-items: center;
-  gap: 4px;
-  border-radius: 6px;
-  border: 1px solid var(--dsw-alias-border-l2);
-  background: color-mix(in srgb, var(--dsw-alias-bg-base) 30%, transparent);
-  padding: 1px 4px;
-  font-family: var(--dsw-alias-font-mono, ui-monospace, SFMono-Regular, Menlo, Consolas, monospace);
-  font-size: 9px;
-  color: var(--dsw-alias-label-primary);
-}
-.chipX {
-  border-radius: 2px;
-  border: none;
-  background: none;
-  padding: 1px;
-  color: var(--dsw-alias-label-tertiary);
-  cursor: pointer;
-  display: inline-flex;
-}
 .chipX:hover { background: var(--dsw-alias-interactive-bg-hover); color: var(--dsw-alias-label-primary); }
-.pickRow { display: flex; align-items: center; gap: 4px; }
-.pickSel { min-width: 0; flex: 1; }
-.pickSelBoxOk {
-  min-width: 0;
-  flex: 1;
-  border-radius: 6px;
-  border: 1px solid var(--dsw-alias-border-l2);
-  background: color-mix(in srgb, var(--dsw-alias-bg-base) 30%, transparent);
-  padding: 2px 4px;
-  font-family: var(--dsw-alias-font-mono, ui-monospace, SFMono-Regular, Menlo, Consolas, monospace);
-  font-size: 9px;
-  color: var(--dsw-alias-label-primary);
-  outline: none;
-}
 .pickSelBoxOk:focus { border-color: var(--dsw-alias-brand-primary); }
-.pickSelBoxEmpty {
-  min-width: 0;
-  flex: 1;
-  border-radius: 6px;
-  border: 1px solid var(--dsw-alias-border-l1);
-  background: color-mix(in srgb, var(--dsw-alias-bg-base) 30%, transparent);
-  padding: 2px 4px;
-  font-family: var(--dsw-alias-font-mono, ui-monospace, SFMono-Regular, Menlo, Consolas, monospace);
-  font-size: 9px;
-  color: var(--dsw-alias-label-tertiary);
-  outline: none;
-}
-.uploadBtn {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  border-radius: 6px;
-  border: 1px solid var(--dsw-alias-border-l2);
-  background: color-mix(in srgb, var(--dsw-alias-bg-base) 30%, transparent);
-  padding: 2px 6px;
-  font-size: 9px;
-  color: var(--dsw-alias-label-secondary);
-  cursor: pointer;
-  transition: border-color 0.15s ease, color 0.15s ease;
-}
 .uploadBtn:hover { border-color: var(--dsw-alias-brand-primary); color: var(--dsw-alias-label-primary); }
 
 /* ── Run panels ─────────────────────────────────────────── */
@@ -696,9 +476,6 @@ details[open] > summary .chev { transform: rotate(180deg); }
 }
 .uploadAudio:hover { border-color: color-mix(in srgb, var(--dsw-alias-state-business-primary) 60%, transparent); background: color-mix(in srgb, var(--dsw-alias-state-business-primary) 20%, transparent); }
 .clipsNote { min-width: 0; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 10px; color: var(--dsw-alias-label-tertiary); }
-.refsHead { display: flex; align-items: baseline; justify-content: space-between; }
-.refsNote { font-size: 8px; color: var(--dsw-alias-label-tertiary); }
-
 /* ── StudioPreview ──────────────────────────────────────── */
 .filmBox {
   display: flex;
@@ -761,5 +538,4 @@ details[open] > summary .chev { transform: rotate(180deg); }
 .winTile:hover { border-color: color-mix(in srgb, var(--dsw-alias-brand-primary) 40%, transparent); }
 .winVid { min-height: 0; width: 100%; flex: 1; border-radius: 6px; background: color-mix(in srgb, var(--dsw-alias-bg-base) 50%, transparent); object-fit: cover; }
 .winName { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding: 0 2px; font-size: 9px; font-variant-numeric: tabular-nums; color: var(--dsw-alias-label-secondary); }
-.emptyIcon { color: var(--dsw-alias-label-tertiary); }
 .emptyGlyph { width: 20px; height: 20px; color: var(--dsw-alias-label-tertiary); }

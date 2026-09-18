@@ -116,13 +116,37 @@ test('SPEC ATOM: the square face — mirror wins, then the value; junk values sh
 test('SPEC ATOM: select normalizes string + object rows; the value rides verbatim, the face title-cases', () => {
   const onEdit = vi.fn()
   render(h(SpecAtom, {
-    f: F({ name: 'size', label: 'Size', type: 'select', options: ['1024', { value: 'hd', label: 'high-def' }] }),
+    f: F({ name: 'size', label: 'Size', type: 'select', options: ['draft_02mp', { value: 'hd', label: 'high-def' }] }),
     value: 'hd', onEdit,
   }))
-  expect(screen.getByText('1024')).not.toBeNull()
+  expect(screen.getByText('Draft 02mp')).not.toBeNull()
   expect(screen.getByText('High Def')).not.toBeNull()
-  fireEvent.change(screen.getByLabelText('Size'), { target: { value: '1024' } })
-  expect(onEdit).toHaveBeenCalledWith('size', '1024')
+  fireEvent.change(screen.getByLabelText('Size'), { target: { value: 'draft_02mp' } })
+  expect(onEdit).toHaveBeenCalledWith('size', 'draft_02mp')
+})
+
+test('SPEC ATOM: the select GHOST — the inherit option binds undefined to \'\' (never the painted-first lie)', () => {
+  // THE ONE SEMANTIC ADDITION (2026-09-18, the operator's ruling):
+  // ghost renders a leading value='' option; undefined binds to it;
+  // picking it voices '' (the call site's adapter coerces to unset).
+  const onEdit = vi.fn()
+  const { unmount } = render(h(SpecAtom, {
+    f: F({ name: 'mode', label: 'Mode', type: 'select', options: [{ value: 'on', label: 'on' }] }),
+    value: undefined, ghost: '\u2190 on', onEdit,
+  }))
+  const sel = screen.getByLabelText('Mode') as HTMLSelectElement
+  expect(sel.value).toBe('')
+  expect(screen.getByText('\u2190 on')).not.toBeNull()
+  fireEvent.change(sel, { target: { value: 'on' } })
+  expect(onEdit).toHaveBeenCalledWith('mode', 'on')
+  unmount()
+  // without the ghost, no '' option exists — the option list is the
+  // authored set alone (the required-valued selects: route/preset)
+  render(h(SpecAtom, {
+    f: F({ name: 'route', label: 'Route', type: 'select', options: ['a', 'b'] }),
+    value: 'a', onEdit,
+  }))
+  expect((screen.getByLabelText('Route') as HTMLSelectElement).options).toHaveLength(2)
 })
 
 test('SPEC ATOM: a select without options falls to the raw input (never an empty select)', () => {

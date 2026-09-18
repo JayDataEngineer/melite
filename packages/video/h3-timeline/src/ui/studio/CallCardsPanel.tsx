@@ -4,7 +4,7 @@
  * every logic line is verbatim from the monolith (source range noted).
  */
 import { Button, Input } from "@deepseek-ai/dsh-client-ui-primitives"
-import { NumberControl, Tip } from "./kit"
+import { SpecAtom, Tip } from "@melite/card-base"
 import { cn } from "@melite/card-base/chrome"
 import { ChevronLeft } from "@melite/card-base/icons"
 import s from "./studio.module.css"
@@ -190,15 +190,14 @@ export function CallCardsPanel({
                 >
                   {k.kind}
                 </span>
-                <NumberControl
+                <SpecAtom
+                  f={{ name: `kf_${i}_frame`, label: `Keyframe ${i} frame`, type: "number" }}
                   value={k.frame}
-                  ariaLabel={`Keyframe ${i} frame`}
-                  onChange={(v) => {
-                    if (v !== undefined) handleKeyframeMove(`kf-${i}`, Math.round(v))
-                  }}
-                  align="center"
-                  width="w-16"
                   placeholder=""
+                  onEdit={(_, v) => {
+                    const n = typeof v === "string" && v.trim() !== "" ? Number(v) : undefined
+                    if (n !== undefined) handleKeyframeMove(`kf-${i}`, Math.round(n))
+                  }}
                 />
                 <Input
                   list="tl-kf-sources"
