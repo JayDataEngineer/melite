@@ -790,9 +790,16 @@ export class ComfyUIService extends Service {
       merged.loras = (merged.loras as Array<Record<string, unknown>>).map((e) => {
         // strength first (the UI bag's wire shape); hand-authored
         // JSON rows may carry `weight` — honor it, never stack a
-        // declared weight at silent full strength.
-        const strength = typeof e?.strength === 'number' ? (e.strength as number)
-          : typeof e?.weight === 'number' ? (e.weight as number) : 1.0
+        // declared weight at silent full strength. An UNSTATED
+        // strength defers to the flavor row's own default_strength
+        // when the id resolves one (the GPU receipt finding,
+        // 2026-09-18: krea-2's strength-less realism recipe promised
+        // the row's 0.7 in its hint while this seed stacked 1.0 —
+        // the row's declared default is the family's truth, the
+        // same law the controlnet seed serves); filename rows and
+        // default-less flavor rows keep full strength.
+        const stated = typeof e?.strength === 'number' ? (e.strength as number)
+          : typeof e?.weight === 'number' ? (e.weight as number) : undefined
         // steps applied (2026-09-18): a distill adapter's step count
         // rides the entry when stated — the row's catalog default
         // seeds it, the sampler honors it when the caller pins
@@ -800,6 +807,7 @@ export class ComfyUIService extends Service {
         // no count to claim).
         const steps = typeof e?.steps === 'number' && Number.isFinite(e.steps) ? e.steps : undefined
         if (typeof e?.name === 'string' && (e.name as string) !== '') {
+          const strength = stated ?? 1.0
           return steps === undefined ? { name: e.name as string, strength } : { name: e.name as string, strength, steps }
         }
         const id = typeof e?.id === 'string' ? (e.id as string) : ''
@@ -808,6 +816,7 @@ export class ComfyUIService extends Service {
           throw new ComposeRefusal('unknown-lora', `card '${cardId}' names lora id '${id}' with no '${modelId}' flavor row (registered: ${cat.rows.map((r) => r.id).join(', ') || 'none'}) — pick from the served catalog, never hand-spell`)
         }
         const resolved = row.steps === undefined ? steps : (steps ?? row.steps)
+        const strength = stated ?? row.default_strength ?? 1.0
         return resolved === undefined ? { name: row.filename, strength } : { name: row.filename, strength, steps: resolved }
       })
     }

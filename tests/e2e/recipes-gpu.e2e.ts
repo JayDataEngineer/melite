@@ -165,6 +165,28 @@ describe.skipIf(!HAS_ENGINE)('the recipe law on the GPU (with live ComfyUI)', ()
     }
   }, 240_000)
 
+  it('krea-2 realism: the strength-less pill rides the flavor default 0.7 on silicon', async () => {
+    const w = await bootWorld('recipes-krea-r-')
+    try {
+      const s = await runCard(w, {
+        model: 'krea-2', prompt: 'a weathered wooden door, natural light',
+        width: 512, height: 512,
+        // THE STRENGTH-LESS IDIOM (the pre-existing realism row — one
+        // preset per fact): the bag names the adapter, the resolver
+        // applies the flavor's own default_strength
+        loras: [{ id: 'krea2_realism_lora' }],
+      }, 'krea-2 realism')
+      const hit = nodesWith(s, /krea2_realism_lora\.safetensors/)
+      assert.ok(hit.length >= 1, 'the RUN workflow carries the resolved realism file')
+      assert.ok(JSON.stringify(hit[0]![1]).includes('"strength_model":0.7'),
+        'the strength is the flavor default 0.7 (no strength on the row)')
+      assert.equal(firstBytes(s).readUInt32BE(0), 0x89504e47, 'the artifact is a real PNG')
+    } finally {
+      w.stop()
+      await w.ctx.fiber.dispose()
+    }
+  }, 240_000)
+
   it('z-image realism: the pill payload composes the adapter at its declared 0.7 and RUNS', async () => {
     const w = await bootWorld('recipes-zimage-')
     try {
