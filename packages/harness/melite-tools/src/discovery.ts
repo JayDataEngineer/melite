@@ -686,15 +686,39 @@ export async function cardToolsArm(): Promise<unknown[]> {
 
 /** The full live catalog section (models/families ride the registry
  *  emission; cards/capabilities ride the cards; the vocabulary rides
- *  the slot SSOT). */
+ *  the slot SSOT). The MCP instance rows fold into CARDS with the
+ * same live census /v1/forms rides (the picker reads this section —
+ * ONE surface; a row only here is invisible, a row only there was). */
 export function catalogSection(
   defs: Map<string, CardDefinition>,
+  mcpServers: readonly string[] = [],
 ): Record<string, unknown> {
   const live = buildCatalog(modelIds().map((id) => getModel(id))) as unknown as Record<
     string,
     unknown
   >
   const { cards, capabilities } = cardSections(defs)
+  // THE MCP INSTANCE FOLD (2026-09-18, the operator's find: "the
+  // MCP card isn't visible at all"): one cards row per SEATED
+  // server, the same row the forms table serves — the census is the
+  // caller's LIVE fold (never static), so no seats = no rows and
+  // the tree goldens stay seat-free. form-spec resolves the row
+  // through the ENGINE arm (no card, no family behind it).
+  for (const server of [...mcpServers].sort()) {
+    cards[`mcp:${server}`] = {
+      id: `mcp:${server}`,
+      label: `MCP · ${server}`,
+      description:
+        `Live MCP server seat — tool calls through the estate (one row per seated server; ` +
+        `the form rides the engine arm at form-spec?model=mcp:${server}).`,
+      genre: '3d',
+      families: [`mcp:${server}`],
+      principles: [],
+      skills: [],
+      has_inference: false,
+      has_rubric: false,
+    }
+  }
   return {
     models: live['models'],
     families: live['families'],
@@ -706,9 +730,13 @@ export function catalogSection(
 
 // ── door arms (the HTTP-facing surface doors.ts mounts) ──────────
 
-/** /v1/model-catalog — the live catalog section. */
-export async function modelCatalogArm(): Promise<Record<string, unknown>> {
-  return catalogSection(await loadCardDefs())
+/** /v1/model-catalog — the live catalog section (the seated MCP
+ * servers fold LIVE — the door passes the tools-seat census, the
+ * same read formsArm rides; empty seats fold nothing). */
+export async function modelCatalogArm(
+  mcpServers: readonly string[] = [],
+): Promise<Record<string, unknown>> {
+  return catalogSection(await loadCardDefs(), mcpServers)
 }
 
 /** /v1/forms — the forms table (card rows + the MCP INSTANCE rows:

@@ -804,6 +804,34 @@ describe('/v1 prefix discovery arms', () => {
     assert.ok(Array.isArray((kinds.body as { kinds: unknown[] }).kinds))
   })
 
+  test('the MCP instance card is VISIBLE in the catalog fold (the operator\'s find, 2026-09-18: "the MCP card isn\'t visible at all")', async () => {
+    // ONE seated server (the tools-seat census) → ONE cards row in
+    // /v1/model-catalog — the picker reads THIS section, so the row
+    // must fold here exactly as /v1/forms folds it (a row on forms
+    // alone was invisible).
+    const seated = boot({ schemas: [
+      { name: 'melite_discover' },
+      { name: 'mcp__blender__scene_add_cube', description: 'add a cube' },
+      { name: 'mcp__blender__render_frame' },
+    ] })
+    const r = await call(seated.routes, '/v1', { method: 'GET', url: 'http://localhost/v1/model-catalog' })
+    assert.equal(r.status, 200)
+    const cards = (r.body as { cards: Record<string, Record<string, unknown>> }).cards
+    assert.ok(cards['mcp:blender'] !== undefined, 'the seated MCP server lands a cards row')
+    const row = cards['mcp:blender']!
+    assert.equal(row['label'], 'MCP · blender')
+    assert.equal(row['genre'], '3d')
+    assert.deepEqual(row['families'], ['mcp:blender'])
+    // the same fold on /v1/forms (parity — one census, two doors)
+    const f = await call(seated.routes, '/v1', { method: 'GET', url: 'http://localhost/v1/forms' })
+    assert.ok(((f.body as Record<string, unknown>)['mcp:blender']) !== undefined)
+    // NO seats → NO rows (the census is the truth; the tree goldens
+    // stay seat-free)
+    const bare = await call(boot({}).routes, '/v1', { method: 'GET', url: 'http://localhost/v1/model-catalog' })
+    const bareCards = (bare.body as { cards: Record<string, unknown> }).cards
+    assert.equal(Object.keys(bareCards).filter((k) => k.startsWith('mcp:')).length, 0)
+  })
+
   test('form-spec serves a key, 400s without one, 404s unknown', async () => {
     const h = boot({})
     const ok = await call(h.routes, '/v1', { method: 'GET', url: 'http://localhost/v1/form-spec?model=tts' })

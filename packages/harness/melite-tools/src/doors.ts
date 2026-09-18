@@ -498,7 +498,7 @@ export function apply(c: CtxView, config: Config = {}): void {
             return void cardToolsArm().then(ok, (e: unknown) => fail(500, { error: `discovery door: ${e instanceof Error ? e.message : String(e)}` }))
           }
           if (method === 'GET' && path === '/v1/model-catalog') {
-            return void modelCatalogArm().then(ok, (e: unknown) => fail(500, { error: `discovery door: ${e instanceof Error ? e.message : String(e)}` }))
+            return void modelCatalogArm(seatedMcpServers(c)).then(ok, (e: unknown) => fail(500, { error: `discovery door: ${e instanceof Error ? e.message : String(e)}` }))
           }
           if (method === 'GET' && path === '/v1/forms') {
             return void formsArm(seatedMcpServers(c)).then(ok, (e: unknown) => fail(500, { error: `discovery door: ${e instanceof Error ? e.message : String(e)}` }))
