@@ -1,0 +1,423 @@
+// runs-registry-start.spec.ts — the runs seat, start envelope/inline/flow/model arms: split from runs-registry.spec.ts
+// (pure move — zero test-content change; the queue core is real,
+// the card registry rides a structural fake).
+import { describe, it, afterEach } from "vitest";
+import { spawnSync } from "node:child_process";
+import assert from "node:assert/strict";
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync, readFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { Context } from "@deepseek-ai/cordis";
+import { RemoteError } from "@deepseek-ai/dsh-typert-protocol";
+import { ComfyUIHostService } from "@melite/comfyui-cordis";
+import type { FlowResult, MergeRow, EngineJson } from "@melite/comfyui-cordis";
+import { RunsRuntimeService } from "../src/runsRegistry.ts";
+import { EnginesService } from "@melite/engine-contract";
+import { QueueCore } from "../src/queue.ts";
+import { CardArmError } from "../src/cardsRegistry.ts";
+import type { RunRecord } from "../src/runsTypes.ts";
+
+let TMP = "";
+afterEach(() => {
+  if (TMP !== "") {
+    for (const d of TMP.split(":")) rmSync(d, { recursive: true, force: true });
+    TMP = "";
+  }
+});
+const tmp = (): string => {
+  const d = mkdtempSync(join(tmpdir(), "runs-seat-"));
+  TMP = TMP === "" ? d : TMP + ":" + d;
+  return d;
+};
+const sig = (): AbortSignal => new AbortController().signal;
+const dead = (): AbortSignal => {
+  const c = new AbortController();
+  c.abort();
+  return c.signal;
+};
+
+interface Seat {
+  svc: RunsRuntimeService;
+  core: QueueCore;
+  state: string;
+  cards: Record<string, (...args: never[]) => unknown>;
+}
+
+const seat = (cardOver: Record<string, (...args: never[]) => unknown> = {}): Seat => {
+  const state = tmp();
+  const ctx = new Context();
+  const core = new QueueCore();
+  (ctx as unknown as { queue: unknown }).queue = { core, stateRoot: state };
+  (ctx as unknown as { draftsRemote: unknown }).draftsRemote = {
+    get: async (id: string): Promise<unknown> => {
+      if (id === "d1") return {};
+      if (id === "boom") throw new Error("transport down");
+      throw new RemoteError("draft/not-found", "no doc", {});
+    },
+  };
+  const cards: Record<string, (...args: never[]) => unknown> = {
+    // The validate arm now passes the seat's registry into the
+    // inline compile (the cardGate wire, 2026-09-13): the pin
+    // sweep reads objectInfo (null = the fail-open empty pin set,
+    // the door's absent-pin degrade) and card= stages read
+    // defsSync (no card stages ride this rig's flows).
+    objectInfo: (): unknown => null,
+    defsSync: (): unknown => new Map(),
+    modelFacts: (): unknown => {
+      throw new Error("no facts");
+    },
+    resolveCardFamily: (mid: unknown): unknown => mid,
+    modelMids: (): unknown => new Set<string>(),
+    overlayCardParams: async (): Promise<unknown> => {
+      throw new Error("unreached overlay");
+    },
+    composeValidateCard: async (): Promise<unknown> => null,
+    phase1Card: async (): Promise<unknown> => {
+      throw new Error("unreached phase1");
+    },
+    phase2Card: async (): Promise<unknown> => {
+      throw new Error("unreached phase2");
+    },
+    ...cardOver,
+  };
+  (ctx as unknown as { cardRegistry: unknown }).cardRegistry = cards;
+  const svc = new RunsRuntimeService(ctx as unknown as Context);
+  return { svc, core, state, cards };
+};
+
+const inlineBody = (over: Record<string, unknown> = {}): Record<string, unknown> => ({
+  draft_id: "d1",
+  test: false,
+  flow_inline: { id: "x", stages: [{ id: "s", engine: "comfyui" }] },
+  ...over,
+});
+
+const settleWait = async (s: Seat, runId: string): Promise<RunRecord> => {
+  for (let i = 0; i < 500; i++) {
+    const row = s.core.runs.get(runId) as RunRecord | undefined;
+    if (row !== undefined && row.status !== "queued" && !s.svc.pumping) return row;
+    await new Promise((r) => setTimeout(r, 10));
+  }
+  throw new Error("pump never settled " + runId);
+};
+
+/** The engine seat as a cordis-registered subclass (needComfyUI
+ *  instanceof-gates the host service — a structural fake cannot
+ *  cross; the override scripts executeFlow/stop per test). */
+class FakeEngine extends ComfyUIHostService {
+  stops: string[] = [];
+  stopFails = false;
+  onFlow: (
+    rows: MergeRow[],
+    runDir: string,
+    inputNames: Record<string, Record<string, string>>,
+    initials: Record<string, EngineJson>,
+    opts: { shouldStop?: () => boolean; report?: (updates: Record<string, EngineJson>) => void },
+  ) => Promise<FlowResult> = async () => ({ stages: {}, promptId: "p" });
+  constructor(ctx: Context) {
+    super(ctx as unknown as never, {});
+  }
+  override executeFlow(
+    rows: MergeRow[],
+    runDir: string,
+    inputNames: Record<string, Record<string, string>>,
+    initials: Record<string, EngineJson>,
+    opts: { shouldStop?: () => boolean; report?: (updates: Record<string, EngineJson>) => void } = {},
+  ): Promise<FlowResult> {
+    return this.onFlow(rows, runDir, inputNames, initials, opts);
+  }
+  override async stopForRunDir(runDir: string): Promise<void> {
+    this.stops.push(runDir);
+    if (this.stopFails) throw new Error("interrupt refused");
+  }
+}
+
+const WF = { workflow: { "1": { class_type: "UNETLoader", inputs: {} } } };
+
+const engineSeat = (s: Seat): FakeEngine => {
+  const ctx = (s.svc as unknown as { ctx: Context }).ctx;
+  const engine = new FakeEngine(ctx);
+  return engine;
+};
+
+const remote = async (fn: () => Promise<unknown>): Promise<RemoteError> => {
+  try {
+    await fn();
+  } catch (e) {
+    assert.ok(e instanceof RemoteError, "a RemoteError, got " + String(e));
+    return e as RemoteError;
+  }
+  throw new Error("never threw");
+};
+
+describe("start envelope", () => {
+  it("aborts before the walk; refusals keep the door's codes", async () => {
+    const s = seat();
+    await assert.rejects(s.svc.start(["x"], dead()));
+    assert.equal((await remote(() => s.svc.start(["x"], sig()))).code, "runs/bad-envelope");
+    assert.equal((await remote(() => s.svc.start({ test: "yes" }, sig()))).code, "runs/bad-envelope");
+    // ONE LAW with checkFlowsStartEnvelope: absent/null test means
+    // false (live lane receipt 2026-09-12 — a chat tool's test:null
+    // start doc must never refuse bad-test).
+    assert.equal((await remote(() => s.svc.start({}, sig()))).code, "runs/draft-required");
+    assert.equal((await remote(() => s.svc.start({ test: null, draft_id: "ghost" }, sig()))).code, "runs/draft-unknown");
+    assert.equal((await remote(() => s.svc.start({ test: false }, sig()))).code, "runs/draft-required");
+    assert.equal((await remote(() => s.svc.start({ test: false, draft_id: "bad id!" }, sig()))).code, "runs/draft-malformed");
+    assert.equal((await remote(() => s.svc.start({ test: false, draft_id: "ghost" }, sig()))).code, "runs/draft-unknown");
+    await assert.rejects(
+      s.svc.start({ test: false, draft_id: "boom" }, sig()),
+      /transport down/,
+    );
+    assert.equal(
+      (await remote(() => s.svc.start({ ...inlineBody(), start_from: 1 }, sig()))).code,
+      "runs/invalid-request",
+    );
+    assert.equal(
+      (await remote(() => s.svc.start({ draft_id: "d1", test: false, flow: "a", model: "b" }, sig()))).code,
+      "runs/invalid-request",
+    );
+    assert.equal(
+      (await remote(() => s.svc.start({ draft_id: "d1", test: false }, sig()))).code,
+      "runs/invalid-request",
+    );
+  });
+});
+
+describe("start inline arm", () => {
+  it("compile refusals fold; multi-stage refuses the preview scope", async () => {
+    const s = seat();
+    assert.equal(
+      (await remote(() => s.svc.start(inlineBody({ flow_inline: { id: "x" } }), sig()))).code,
+      "runs/invalid-request",
+    );
+    const two = {
+      id: "x",
+      stages: [
+        { id: "a", engine: "comfyui" },
+        { id: "b", engine: "comfyui" },
+      ],
+    };
+    const err = await remote(() => s.svc.start(inlineBody({ flow_inline: two }), sig()));
+    assert.equal(err.code, "runs/preview-scope");
+    assert.match(err.message, /single-stage/);
+  });
+
+  it("runEngine: pre-seam rows (no engine stamp) read comfyui; stamped rows read their engine", async () => {
+    const preSeam = { stages: [{ id: "s", name: "s", index: 0, status: "pending", outputs: {}, expected: {} }] } as unknown as RunRecord;
+    const stamped = { stages: [{ id: "s", name: "s", index: 0, status: "pending", engine: "mcp:blender", outputs: {}, expected: {} }] } as unknown as RunRecord;
+    const empty = { stages: [{ id: "s", name: "s", index: 0, status: "pending", engine: "", outputs: {}, expected: {} }] } as unknown as RunRecord;
+    const read = (r: RunRecord): string =>
+      (RunsRuntimeService as unknown as { runEngine(x: RunRecord): string }).runEngine(r);
+    assert.equal(read(preSeam), "comfyui");
+    assert.equal(read(stamped), "mcp:blender");
+    assert.equal(read(empty), "comfyui");
+  });
+
+  it("THE ENGINE SEAT DISPATCH (stroke 53): a mounted engines seat routes the run through its executor", async () => {
+    const s = seat();
+    // The engines seat + a fake executor registered as 'comfyui'.
+    const ctx = (s.svc as unknown as { ctx: Context }).ctx;
+    const engines = new EnginesService(ctx);
+    const seen: {
+      rows: { stageId: string; params: Record<string, EngineJson> }[];
+      runDir: string;
+      reported: Record<string, unknown>[];
+    } = { rows: [], runDir: "", reported: [] };
+    engines.register("comfyui", {
+      executor: {
+        executeStages: async (rows, runDir, _inputNames, options) => {
+          seen.rows = rows.map((r) => ({ stageId: r.stageId, params: r.params as Record<string, EngineJson> }));
+          seen.runDir = runDir;
+          options.report({ activity: "seat tap alive" });
+          return {
+            stages: [
+              { stageId: "s", outputs: { default: "img.png" }, artifacts: ["img.png"] },
+            ],
+            engineRef: "seat-prompt-1",
+          };
+        },
+      },
+    });
+    const ans = await s.svc.start(inlineBody(), sig());
+    const row = await settleWait(s, ans.run_id);
+    assert.equal(row.status, "completed");
+    // Generic rows: params UNSPLICED (the executor owns graph
+    // surgery), the stage id carried, the run dir threaded.
+    assert.equal(seen.rows.length, 1);
+    assert.equal(seen.rows[0]?.stageId, "s");
+    assert.deepEqual(seen.rows[0]?.params, {}, "params ride verbatim (unspliced — this inline stage carries none)");
+    assert.ok(seen.runDir.includes(ans.run_id));
+    // The harvest: artifacts + outputs land on the stage row, the
+    // tap's activity fold wrote through before completion cleared it.
+    const stage = row.stages[0] as Record<string, unknown>;
+    assert.equal(stage["status"], "completed");
+    assert.equal(stage["url"], "img.png");
+    assert.deepEqual(row.artifacts, ["img.png"]);
+  });
+
+  it("a valid run registers, queues at 0, and the pump settles it failed (no engine seat)", async () => {
+    const s = seat();
+    const ans = await s.svc.start(inlineBody(), sig());
+    assert.match(ans.run_id, /^run-[0-9a-f]{12}-[0-9a-f]{8}$/);
+    assert.equal(ans.status, "queued");
+    assert.equal(ans.queue_position, 0);
+    const row = await settleWait(s, ans.run_id);
+    assert.equal(row.status, "failed");
+    assert.ok(row.error.length > 0);
+    const got = await s.svc.status(ans.run_id, sig());
+    assert.equal(got["status"], "failed");
+    assert.equal(got["draft_id"], "d1");
+  });
+
+  it("concurrent starts both queue (the reentrancy guard holds the pump)", async () => {
+    const s = seat();
+    const [a, b] = await Promise.all([s.svc.start(inlineBody(), sig()), s.svc.start(inlineBody(), sig())]);
+    assert.notEqual(a.run_id, b.run_id);
+    await settleWait(s, a.run_id);
+    await settleWait(s, b.run_id);
+  });
+
+  it("a dying bench read stamps nothing (the run still registers — the snapshot is best-effort)", async () => {
+    const s = seat();
+    // the transport dies BETWEEN the envelope probe and the bench
+    // snapshot read: the probe passes, the snapshot read throws, the
+    // run registers with no bench stamp (never a refusal, never a
+    // zombie slot).
+    let calls = 0;
+    const ctx = (s.svc as unknown as { ctx: Context }).ctx;
+    (ctx as unknown as { draftsRemote: unknown }).draftsRemote = {
+      get: async (id: string): Promise<unknown> => {
+        calls += 1;
+        if (id === "d1" && calls === 1) return { stages: [{ id: "s" }], intent: "i" };
+        throw new Error("transport died mid-submit");
+      },
+    };
+    const ans = await s.svc.start(inlineBody(), sig());
+    assert.equal(ans.status, "queued");
+    const row = await settleWait(s, ans.run_id);
+    assert.equal(row.benchSnapshot, undefined);
+    assert.ok(calls >= 2, "the probe passed and the snapshot read died");
+  });
+});
+
+describe("start flow arm", () => {
+  it("unknown names and bad initials refuse before any registration", async () => {
+    const s = seat();
+    const unknown = await remote(() =>
+      s.svc.start({ draft_id: "d1", test: false, flow: "ghost" }, sig()),
+    );
+    assert.equal(unknown.code, "runs/invalid-request");
+    assert.match(unknown.message, /no flow at flows\/ghost\/flow\.py/);
+    const bad = await remote(() =>
+      s.svc.start(
+        { draft_id: "d1", test: false, flow: "character", starter_image: "/nonexistent.png" },
+        sig(),
+      ),
+    );
+    assert.match(bad.message, /starter_image/);
+    assert.equal(s.core.runs.size, 0);
+  });
+
+  it("the character shim compiles to the skip_when preview scope", async () => {
+    const s = seat();
+    const err = await remote(() =>
+      s.svc.start({ draft_id: "d1", test: false, flow: "character" }, sig()),
+    );
+    assert.equal(err.code, "runs/preview-scope");
+    assert.match(err.message, /skip_when/);
+  });
+});
+
+describe("start model arm", () => {
+  const p1 = {
+    mid: "m",
+    fam: "f",
+    card: "c",
+    skeleton: "sk",
+    decl: {},
+    params: {},
+    spell: null,
+  };
+  it("phase-1 compose failures refuse (mapped and unmapped); transports rethrow", async () => {
+    const mapped = seat({
+      phase1Card: async (): Promise<unknown> => {
+        throw new CardArmError(400, "p1 bad param", "card_compose", "params.seed", "int", "str");
+      },
+    });
+    const err = await remote(() =>
+      mapped.svc.start({ draft_id: "d1", test: false, model: "m" }, sig()),
+    );
+    assert.equal(err.code, "runs/card-compose");
+    assert.match(err.message, /p1 bad param/);
+    assert.equal((err.details as { loc?: string }).loc, "params.seed");
+    assert.equal((err.details as { expected?: string }).expected, "int");
+    assert.equal((err.details as { got?: string }).got, "str");
+    assert.equal(mapped.core.runs.size, 0);
+
+    const weird = seat({
+      phase1Card: async (): Promise<unknown> => {
+        throw new CardArmError(400, "weird", "weird-code");
+      },
+    });
+    await assert.rejects(
+      weird.svc.start({ draft_id: "d1", test: false, model: "m" }, sig()),
+      /unmapped refusal code weird-code/,
+    );
+    const loud = seat({
+      phase1Card: async (): Promise<unknown> => {
+        throw new Error("engine exploded");
+      },
+    });
+    await assert.rejects(
+      loud.svc.start({ draft_id: "d1", test: false, model: "m" }, sig()),
+      /engine exploded/,
+    );
+  });
+
+  it("phase-2 transports rethrow past the CardArmError gate", async () => {
+    const loud = seat({
+      phase1Card: async (): Promise<unknown> => p1,
+      phase2Card: async (): Promise<unknown> => {
+        throw new Error("phase2 exploded");
+      },
+    });
+    await assert.rejects(
+      loud.svc.start({ draft_id: "d1", test: false, model: "m" }, sig()),
+      /phase2 exploded/,
+    );
+  });
+
+  it("non-string flow names miss the registry (start + validate)", async () => {
+    const s = seat();
+    const err = await remote(() =>
+      s.svc.start({ draft_id: "d1", test: false, flow: 5 }, sig()),
+    );
+    assert.match(err.message, /no flow at flows\/\/flow\.py/);
+    const verr = await remote(() => s.svc.validate({ flow: 5 }, sig()));
+    assert.match(verr.message, /no flow at flows\/\/flow\.py/);
+  });
+
+  it("phase-2 compose failures refuse; success registers the card door and settles", async () => {
+    const fail = seat({
+      phase1Card: async (): Promise<unknown> => p1,
+      phase2Card: async (): Promise<unknown> => {
+        throw new CardArmError(400, "p2 bad", "card_compose");
+      },
+    });
+    assert.equal(
+      (await remote(() => fail.svc.start({ draft_id: "d1", test: false, model: "m" }, sig()))).code,
+      "runs/card-compose",
+    );
+    assert.equal(fail.core.runs.size, 0);
+
+    const ok = seat({
+      phase1Card: async (): Promise<unknown> => p1,
+      phase2Card: async (): Promise<unknown> => ({ graph: {} }),
+    });
+    const ans = await ok.svc.start({ draft_id: "d1", test: false, model: "m" }, sig());
+    assert.equal(ans.status, "queued");
+    const row = (await settleWait(ok, ans.run_id)) as RunRecord & { cardId?: string };
+    assert.equal(row.cardId, "c");
+    assert.equal(row.pipeline, "m");
+  });
+});

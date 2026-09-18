@@ -4,6 +4,7 @@
 // requires resolve against live object_info node sets BEFORE any
 // graph is emitted (never an assumed install).
 import Schema from '@deepseek-ai/schemastery'
+import { validateDeclaredMods } from './mods-schema.ts'
 import { Context, Service } from '@deepseek-ai/cordis'
 import { GraphBuilder, deriveDefaults } from '@melite/comfyui-card-kit/graph'
 import type { PromptGraph, JsonValue } from '@melite/comfyui-card-kit/graph'
@@ -491,6 +492,11 @@ export class ComfyUIService extends Service {
     if (this.cards.has(def.id)) {
       throw new ComposeRefusal('duplicate-card', `card '${def.id}' registered twice — one card, one plugin`)
     }
+    // THE DECLARED MOD-KIND SCHEMA GATE (hour 16): the card's mods
+    // rows answer to a schemastery master here — the third mod
+    // door's validation (packs and flavors already gated; the card's
+    // own declared kinds rode unvalidated until now).
+    validateDeclaredMods(def.id, def.mods);
     this.cards.set(def.id, def)
     return () => { this.cards.delete(def.id) }
   }

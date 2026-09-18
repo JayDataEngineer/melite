@@ -1,0 +1,159 @@
+import { describe, expect, test } from "vitest";
+import { onBenchChange, notifyBenchChange, notifyBenchDocWrite } from "../src/bench.ts";
+import { BenchRemoteService } from "../src/remote.ts";
+import { sig, bootCtx } from "./bench-helpers.ts";
+
+// ── THE CHANGE EVENTS + THE SUBSCRIBE STREAM (2026-09-12) ──────────
+// The push source: every bench write fires the change event at the
+// remote seam; bench/subscribe yields the doc on open and after every
+// write that touches the session (the collapse plan's stream arm —
+// the browser heartbeat consumes rev drift until the host's stream
+// face lands).
+
+describe("the bench change events (the push source)", () => {
+  test("a write notify reaches the listener with the session", () => {
+    const seen: string[] = [];
+    const off = onBenchChange((session) => { seen.push(session) });
+    notifyBenchChange("main");
+    notifyBenchChange("second");
+    off();
+    notifyBenchChange("main");
+    expect(seen).toEqual(["main", "second"]);
+  });
+
+  test("a listener's fault never breaks the write", () => {
+    const off = onBenchChange(() => { throw new Error("listener fault") });
+    expect(() => notifyBenchChange("main")).not.toThrow();
+    off();
+  });
+
+  test("notifyBenchDocWrite parses bench-shaped draft ids only", () => {
+    const seen: string[] = [];
+    const off = onBenchChange((session) => { seen.push(session) });
+    notifyBenchDocWrite("bench-main");
+    notifyBenchDocWrite("some-other-draft");
+    notifyBenchDocWrite("bench-");
+    expect(seen).toEqual(["main"]);
+    off();
+  });
+});
+
+describe("the bench/subscribe stream remote", () => {
+  type Row = { draft_id: string; session: string; rev: number; intent: unknown; stages: unknown[]; log: unknown[] };
+
+
+
+  test("yields the doc on open, after a write, and abort ends", async () => {
+    const controller = new AbortController();
+    const rows: Row[] = [
+      { draft_id: "bench-main", session: "main", rev: 3, intent: null, stages: [], log: [] },
+      { draft_id: "bench-main", session: "main", rev: 4, intent: null, stages: [{ id: "s_1" }], log: [] },
+    ];
+    // the receiver: a bare object with the get arm the generator calls
+    const fake = { get: async (): Promise<Row> => rows.shift() ?? rows[0]! };
+    const gen = BenchRemoteService.prototype.subscribe.call(
+      fake as never,
+      "main",
+      controller.signal,
+    ) as AsyncGenerator<Row>;
+    const first = await gen.next();
+    if (first.done !== false) throw new Error("no initial frame");
+    // resume the stream INTO the change wait, then land the write
+    const secondP = gen.next();
+    await new Promise((resolve) => setTimeout(resolve, 25));
+    notifyBenchChange("main");
+    const second = await secondP;
+    if (second.done !== false) throw new Error("no change frame");
+    expect([first.value.rev, second.value.rev]).toEqual([3, 4]);
+    controller.abort();
+    const third = await gen.next();
+    if (third.done !== true) throw new Error("abort must end the stream");
+  });
+
+  test("an abort that lands while suspended at a yield ends the stream on the next resume (no parked listener)", async () => {
+    const controller = new AbortController();
+    const fake = {
+      get: async (): Promise<Row> => ({ draft_id: "bench-main", session: "main", rev: 2, intent: null, stages: [], log: [] }),
+    };
+    const gen = BenchRemoteService.prototype.subscribe.call(
+      fake as never,
+      "main",
+      controller.signal,
+    ) as AsyncGenerator<Row>;
+    const first = await gen.next();
+    expect(first.done).toBe(false);
+    // the abort lands with NO listener attached (the generator sits
+    // suspended at the yield) — the executor's re-check must end it
+    controller.abort();
+    const next = await gen.next();
+    expect(next.done).toBe(true);
+  });
+
+  test("a write and a racing abort settle ONCE (the double-finish guard)", async () => {
+    const controller = new AbortController();
+    const fake = {
+      get: async (): Promise<Row> => ({ draft_id: "bench-main", session: "main", rev: 5, intent: null, stages: [], log: [] }),
+    };
+    const gen = BenchRemoteService.prototype.subscribe.call(
+      fake as never,
+      "main",
+      controller.signal,
+    ) as AsyncGenerator<Row>;
+    const first = await gen.next();
+    expect(first.done).toBe(false);
+    const parked = gen.next();
+    await new Promise((resolve) => setTimeout(resolve, 10));
+    // the write wakes the park; the abort races in behind it — one
+    // finish wins, both listeners come off, nothing double-resolves
+    notifyBenchChange("main");
+    controller.abort();
+    const second = await parked;
+    // either a final frame or a clean end — never a hang or a throw
+    expect(second.done === false || second.done === true).toBe(true);
+    const last = await gen.next();
+    expect(last.done).toBe(true);
+  });
+
+  test("a foreign session's write does not wake the stream (the mismatch arm runs, the park holds)", async () => {
+    const controller = new AbortController();
+    const fake = {
+      get: async (): Promise<Row> => ({ draft_id: "bench-main", session: "main", rev: 1, intent: null, stages: [], log: [] }),
+    };
+    const gen = BenchRemoteService.prototype.subscribe.call(
+      fake as never,
+      "main",
+      controller.signal,
+    ) as AsyncGenerator<Row>;
+    const first = await gen.next();
+    expect(first.done).toBe(false);
+    // resume INTO the park first (listener attaches), THEN probe it
+    // with a foreign write — the mismatch arm returns early and the
+    // stream stays parked (only the matching session may wake it)
+    const parked = gen.next();
+    await new Promise((resolve) => setTimeout(resolve, 10));
+    notifyBenchChange("other-session");
+    const raced = await Promise.race([
+      parked.then((r) => r.done === true ? "ended" : "FRAME"),
+      new Promise((resolve) => setTimeout(() => resolve("parked"), 25)),
+    ]);
+    expect(raced).toBe("parked");
+    controller.abort();
+    const last = await parked;
+    expect(last.done).toBe(true);
+  });
+});
+
+describe("the bench/ensure notify", () => {
+  test("the notify rides the doc's own gated session key", async () => {
+    const { ctx } = await bootCtx();
+    const heard: string[] = [];
+    const off = onBenchChange((session) => { heard.push(session) });
+    // the in-process ensure arm (the remote delegates here):
+    // ensureBench gates the session key; the notify rides it verbatim
+    const service = new BenchRemoteService(ctx);
+    const row = await service.ensure({ session: "spec-fb" }, sig) as { session: string };
+    expect(row.session).toBe("spec-fb");
+    expect(heard).toEqual(["spec-fb"]);
+    off();
+  });
+});

@@ -1,0 +1,126 @@
+// runsValidateSweeps.ts — batch-row + workflow-pin sweep validators split from
+// runsValidate.ts (pure move, zero logic changes).
+import { FlowError } from "./runsValidateShared.ts";
+import type { CardRegistryLike } from "./runsValidateShared.ts";
+import { flowFromBody } from "./runsValidateStages.ts";
+import { pyReprStr, pyStr } from "./runsValidatePyRepr.ts";
+
+// ── batch rows (python/gateway.py:2856 _validate_batch_rows) ────────
+export function batchRows(body: unknown, firstError: string, cards?: CardRegistryLike | null): Array<Record<string, unknown>> {
+  const rows: Array<Record<string, unknown>> = [
+    { scope: "flow", error: firstError, code: "flow_compile", loc: "flow" },
+  ];
+  const stages: unknown =
+    typeof body === "object" && body !== null && !Array.isArray(body)
+      ? (body as Record<string, unknown>)["stages"]
+      : undefined;
+  if (!Array.isArray(stages)) return rows;
+  for (let i = 0; i < stages.length; i++) {
+    const st: unknown = stages[i];
+    // st.get("id", "stage[%d]" % i) then str() — a present null
+    // labels "None", not the default.
+    const label: string =
+      typeof st === "object" && st !== null && !Array.isArray(st)
+        ? pyStr("id" in (st as Record<string, unknown>) ? (st as Record<string, unknown>)["id"] : "stage[" + i + "]")
+        : "stage[" + i + "]";
+    if (typeof st === "object" && st !== null && !Array.isArray(st)) {
+      const stripped: Record<string, unknown> = {};
+      for (const [k, v] of Object.entries(st as Record<string, unknown>)) {
+        if (k !== "inputs" && k !== "expected") stripped[k] = v;
+      }
+      try {
+        flowFromBody({ id: "probe", stages: [stripped] }, cards);
+      } catch (e) {
+        if (e instanceof FlowError) {
+          rows.push({ stage: label, error: e.message, code: "flow_compile" });
+        } else {
+          throw e;
+        }
+      }
+    }
+  }
+  for (const wrow of sweepWorkflows(body, cards)) rows.push(wrow);
+  return rows;
+}
+
+// ── pin sweep (python/gateway.py:2827 _workflow_sweep +
+// compose/__init__.py:198 validate_workflow) ─────────────────────
+// STROKE 4b (the stroke-2a followup — same defect class): the
+// module-level pinCache singleton (read-once, never refreshed) is
+// DEAD. The pin now reads through ctx.cardRegistry.objectInfo()
+// (the service owns the snapshot, mtime-keyed — a re-pin is never
+// stale, strictly fresher than the old read-once cache). Absent or
+// unreadable pin degrades to the empty set (every class "unknown" —
+// compose/__init__.py:190-194), exactly as before. Non-plugin
+// callers pass no cards and get the same degrade (a unit caller
+// with no registry cannot know the pin — fail-open set, never a
+// throw on this sweep leg).
+export function pinNodeClasses(cards?: CardRegistryLike | null): Set<string> {
+  if (cards === null || cards === undefined) return new Set();
+  return new Set(Object.keys(cards.objectInfo() ?? {}));
+}
+
+export function validateWorkflow(params: unknown, cards?: CardRegistryLike | null): string[] {
+  // The sweep proves params is a non-null, non-array object (its guard
+  // continues otherwise) — the entry cast is honest.
+  const wf: unknown = (params as Record<string, unknown>)["workflow"];
+  if (typeof wf !== "object" || wf === null || Array.isArray(wf)) return [];
+  const wfRec: Record<string, unknown> = wf as Record<string, unknown>;
+  const raw: unknown =
+    typeof wfRec["workflow"] === "object" && wfRec["workflow"] !== null && !Array.isArray(wfRec["workflow"])
+      ? wfRec["workflow"]
+      : wf;
+  const known: Set<string> = pinNodeClasses(cards);
+  const rows: string[] = [];
+  for (const [nodeId, node] of Object.entries(raw as Record<string, unknown>)) {
+    const cls: unknown =
+      typeof node === "object" && node !== null && !Array.isArray(node)
+        ? (node as Record<string, unknown>)["class_type"]
+        : undefined;
+    if (cls === undefined || cls === null) {
+      rows.push("workflow node " + pyReprStr(nodeId) + ": no class_type");
+    } else if (!known.has(pyStr(cls))) {
+      rows.push(
+        "workflow node " +
+          pyReprStr(nodeId) +
+          ": class_type " +
+          pyReprStr(pyStr(cls)) +
+          " is not in the pinned object_info (" +
+          known.size +
+          " pinned classes) — refresh the pin or fix the class name",
+      );
+    }
+  }
+  return rows;
+}
+
+export function sweepWorkflows(body: unknown, cards?: CardRegistryLike | null): Array<Record<string, unknown>> {
+  const stages: unknown =
+    typeof body === "object" && body !== null && !Array.isArray(body)
+      ? (body as Record<string, unknown>)["stages"]
+      : /* v8 ignore next -- both callers prove a stages-bearing object
+           (batchRows returns early otherwise; the compiled flow always
+           carries stages) (2026-09-12) */ undefined;
+  /* v8 ignore next -- same proof: stages is always an array here (2026-09-12) */
+  if (!Array.isArray(stages)) return [];
+  const rows: Array<Record<string, unknown>> = [];
+  for (let i = 0; i < stages.length; i++) {
+    const st: unknown = stages[i];
+    if (typeof st !== "object" || st === null || Array.isArray(st)) continue;
+    const rec: Record<string, unknown> = st as Record<string, unknown>;
+    const engine: unknown = rec["engine"];
+    const label: string = pyStr("id" in rec ? rec["id"] : "stage[" + i + "]");
+    if (typeof engine !== "string") continue;
+    // Only engines exporting validate_workflow are swept (comfyui
+    // today — compose/__init__.py:198; the bus try/except-continue
+    // collapses to this since the table is the bus here).
+    if (engine !== "comfyui") continue;
+    if (typeof rec["params"] !== "object" || rec["params"] === null || Array.isArray(rec["params"])) {
+      continue;
+    }
+    for (const wrow of validateWorkflow(rec["params"], cards)) {
+      rows.push({ stage: label, error: wrow, code: "workflow_pin" });
+    }
+  }
+  return rows;
+}

@@ -1,6 +1,6 @@
 // remote.spec.ts — the REMOTE layer's own laws (REBUILD-1's doors).
 //
-// The bench-domain functions are owned by bench.spec.ts; this file owns
+// The bench-domain functions are owned by the bench-*.spec.ts siblings; this file owns
 // everything remote.ts adds on top: resultOutputUrls/sameResultOutputs,
 // resolverOf/admissionOf/withResolvedStages/docIndexFields, the
 // drafts list/get/patch doors (admission voices, delivered:false DOMAIN
