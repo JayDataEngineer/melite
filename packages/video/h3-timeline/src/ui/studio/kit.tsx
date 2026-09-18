@@ -23,16 +23,17 @@
  *     no exceptions); the bespoke slot + its lucide trio died] /
  *     EmptyState / PaneHeader / PaneShell / StudioShell (the
  *     STANDALONE variant — rail renders inline, no StudioRail
- *     portal; kept local deliberately, not the card-base shell) /
- *     defineShellDeclaration (the narrow ViewportKind/BarKind seam
+   *     portal; rides @melite/card-base/shell (the operator's ruling,
+   *     2026-09-18: "DSH does not work via two separate skeletons").
  *     table — h3's own vocabulary) / FilmPlayer (native <video
  *     controls> exposing the same FilmPlayerHandle) / Tip (DSH
  *     Tooltip over a layout-invisible anchor so React-18-ref-less
  *     DSH Buttons can carry bubbles without warnings).
  *   • Shared chrome (cn, readAsDataURL, glyphs) is imported from
  *     @melite/card-base — never re-declared here.
- *   • isImageUrl / ASSET_DRAG_MIME are the studio's own rules (the
- *     kit package itself is gone from this package).
+   *   • isImageUrl / ASSET_DRAG_MIME: re-exported from the base
+   *     (layout.tsx and card-base/chrome); the kit's copies were
+   *     byte-identical duplicates, killed 2026-09-18.
  */
 import {
   useCallback,
@@ -54,6 +55,7 @@ export {
   ControlRow, SectionLabel, EmptyState, PaneHeader, PaneShell, Tip, isImageUrl,
   type ControlDensity, type PaneHeaderVariant,
 } from "@melite/card-base"
+export { ASSET_DRAG_MIME } from "@melite/card-base/chrome"
 
 /** The w-* width vocabulary the width props name (call sites keep
  *  their historical strings; the map resolves them to real classes). */
@@ -78,8 +80,6 @@ function widthClass(width: string): string | undefined {
 
 // ── helpers (verbatim from the kit's single definitions) ────────────
 
-/** The asset tray's bespoke drag MIME (URL rides the payload). */
-export const ASSET_DRAG_MIME = "application/tech-noir-asset"
 
 // ── NumberControl — native number input, inherit-aware ──────────────
 

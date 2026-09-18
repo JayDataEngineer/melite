@@ -1,124 +1,12 @@
-/* Motion studio kit — DSH-token styled native ports of the old kit
-   seams (Tip anchor, Skeleton, ViewportAnchor docks, ViewportFrame,
-   PaneHeader/PaneShell, StudioShell, SlotSquare, WirePickerModal).
-   Faint white-based hairlines (border-white/*, divide-*, border-b)
-   ride a soft-border block: the border token at reduced mix. */
+/* Motion studio kit — SlotSquare's own classes ONLY (2026-09-18:
+   every other class here served a byte-identical duplicate of a
+   component @melite/card-base already owned — Tip, Skeleton,
+   ViewportAnchor/ViewportFrame, PaneHeader/PaneShell, WirePickerModal
+   — and died with the code; those ride card.module.css and
+   viewportChrome.module.css in the base now). Faint white-based
+   hairlines (border-white/*, divide-*, border-b) ride a soft-border
+   block: the border token at reduced mix. */
 
-.tipAnchor { display: contents; }
-
-/* ── Skeleton ── */
-@keyframes kitPulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.45; }
-}
-
-.skeleton {
-  border-radius: 6px;
-  background: color-mix(in srgb, var(--dsw-alias-label-secondary, #5b6470) 22%, transparent);
-  animation: kitPulse 1.6s ease-in-out infinite;
-}
-
-/* ── ViewportAnchor docks (right-2/top-2/bottom-2 = 0.5rem) ── */
-.dockTopRight { position: absolute; right: 8px; top: 8px; }
-.dockTopLeft { position: absolute; left: 8px; top: 8px; }
-.dockBottomRight { position: absolute; bottom: 8px; right: 8px; }
-.dockBottomLeft { position: absolute; bottom: 8px; left: 8px; }
-
-.dockBottomCenter {
-  position: absolute;
-  bottom: 8px;
-  left: 50%;
-  transform: translateX(-50%);
-}
-
-.dockBottom {
-  position: absolute;
-  bottom: 10px;
-  left: 10px;
-  right: 10px;
-}
-
-.dockFill {
-  position: absolute;
-  inset: 0;
-}
-
-.dockEdgeRight {
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  right: 0;
-}
-
-.dockEdgeLeft {
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  left: 0;
-}
-
-/* ── ViewportFrame ── */
-.frame {
-  position: relative;
-  min-height: 340px;
-  flex: 1;
-  overflow: hidden;
-  border-radius: 8px;
-  border: 1px solid color-mix(in srgb, var(--dsw-alias-border, #e2e4e9) 50%, transparent);
-  background: #0e0e1a;
-}
-
-/* ── PaneHeader / PaneShell ── */
-.paneHeaderPreview {
-  display: flex;
-  flex-shrink: 0;
-  align-items: baseline;
-  gap: 6px;
-  padding-bottom: 6px;
-}
-
-.paneHeaderStrip {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  border-bottom: 1px solid color-mix(in srgb, var(--dsw-alias-border, #e2e4e9) 45%, transparent);
-  background: color-mix(in srgb, #ffffff 2%, transparent);
-  padding: 4px 10px;
-}
-
-.paneTitle {
-  font-size: 10px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.025em;
-  color: color-mix(in srgb, var(--dsw-alias-label-secondary, #5b6470) 70%, transparent);
-}
-
-.paneMeta {
-  font-size: 9px;
-  color: color-mix(in srgb, var(--dsw-alias-label-secondary, #5b6470) 50%, transparent);
-}
-
-.paneMetaNum {
-  font-size: 9px;
-  font-variant-numeric: tabular-nums;
-  color: color-mix(in srgb, var(--dsw-alias-label-secondary, #5b6470) 50%, transparent);
-}
-
-.paneHint {
-  margin-left: auto;
-  font-size: 9px;
-  color: color-mix(in srgb, var(--dsw-alias-label-secondary, #5b6470) 45%, transparent);
-}
-
-.paneShell {
-  flex-shrink: 0;
-  overflow: hidden;
-  border-radius: 6px;
-  border: 1px solid color-mix(in srgb, var(--dsw-alias-border, #e2e4e9) 65%, transparent);
-}
-
-/* ── SlotSquare ── */
 .slotCol {
   display: flex;
   flex-direction: column;
@@ -138,6 +26,7 @@
 }
 
 .slotSm { width: 36px; height: 36px; }
+
 .slotMd { width: 80px; height: 80px; }
 
 .slotHot {
@@ -156,8 +45,6 @@
   background: color-mix(in srgb, var(--dsw-alias-bg-module-platform, #f5f6f7) 40%, transparent);
 }
 
-/* Hover skin for interactive squares — the base exists so cn()
-   resolves; the look rides the :hover rule below. */
 .slotHover {}
 
 .slotHover:hover {
@@ -275,195 +162,6 @@
   color: color-mix(in srgb, var(--dsw-alias-label-secondary, #5b6470) 50%, transparent);
 }
 
-/* ── WirePickerModal ── */
-.wireScrim {
-  position: fixed;
-  inset: 0;
-  z-index: 50;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: rgb(0 0 0 / 0.5);
-}
-
-.wireCard {
-  max-height: 60vh;
-  width: 100%;
-  max-width: 28rem;
-  overflow-y: auto;
-  border-radius: 8px;
-  border: 1px solid color-mix(in srgb, var(--dsw-alias-border, #e2e4e9) 60%, transparent);
-  background: var(--dsw-alias-bg-module-platform, #f5f6f7);
-  box-shadow: 0 20px 50px -12px rgb(0 0 0 / 0.45);
-}
-
-.wireHead {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  border-bottom: 1px solid color-mix(in srgb, var(--dsw-alias-border, #e2e4e9) 45%, transparent);
-  padding: 8px 12px;
-}
-
-.wireHeadIcon {
-  width: 14px;
-  height: 14px;
-  color: color-mix(in srgb, var(--dsw-alias-accent, #3b82f6) 70%, transparent);
-}
-
-.wireHeadTitle {
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--dsw-alias-label-primary, #0f1115);
-}
-
-.wireClose {
-  margin-left: auto;
-  border-radius: 4px;
-  border: none;
-  background: transparent;
-  color: var(--dsw-alias-label-secondary, #5b6470);
-  cursor: pointer;
-  padding: 0;
-  display: inline-flex;
-}
-
-.wireClose:hover {
-  color: var(--dsw-alias-label-primary, #0f1115);
-}
-
-.wireUnwire {
-  display: flex;
-  width: 100%;
-  align-items: center;
-  gap: 8px;
-  border: none;
-  border-bottom: 1px solid color-mix(in srgb, var(--dsw-alias-border, #e2e4e9) 40%, transparent);
-  background: transparent;
-  padding: 8px 12px;
-  text-align: left;
-  font-size: 11px;
-  color: var(--dsw-alias-danger, #dc2626);
-  cursor: pointer;
-}
-
-.wireUnwire:hover {
-  background: color-mix(in srgb, var(--dsw-alias-bg-module-platform, #f5f6f7) 40%, transparent);
-}
-
-.wireList {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-}
-
-.wireList > li + li {
-  border-top: 1px solid color-mix(in srgb, var(--dsw-alias-border, #e2e4e9) 40%, transparent);
-}
-
-.wireEmpty {
-  padding: 12px;
-  font-size: 11px;
-  color: color-mix(in srgb, var(--dsw-alias-label-secondary, #5b6470) 60%, transparent);
-}
-
-.wireOption {
-  display: flex;
-  width: 100%;
-  align-items: center;
-  gap: 8px;
-  border: none;
-  background: transparent;
-  padding: 8px 12px;
-  text-align: left;
-  cursor: pointer;
-  color: var(--dsw-alias-label-primary, #0f1115);
-}
-
-.wireOption:hover {
-  background: color-mix(in srgb, var(--dsw-alias-bg-module-platform, #f5f6f7) 40%, transparent);
-}
-
-.wireOptionSelected {
-  background: color-mix(in srgb, var(--dsw-alias-accent, #3b82f6) 8%, transparent);
-}
-
-.wireIndex {
-  display: flex;
-  width: 20px;
-  height: 20px;
-  flex-shrink: 0;
-  align-items: center;
-  justify-content: center;
-  border-radius: 4px;
-  background: color-mix(in srgb, var(--dsw-alias-bg-module-platform, #f5f6f7) 65%, transparent);
-  font-size: 9px;
-  font-weight: 700;
-  font-variant-numeric: tabular-nums;
-  color: var(--dsw-alias-label-secondary, #5b6470);
-}
-
-.wireThumb {
-  width: 32px;
-  height: 32px;
-  border-radius: 4px;
-  border: 1px solid color-mix(in srgb, var(--dsw-alias-border, #e2e4e9) 60%, transparent);
-  object-fit: cover;
-}
-
-.wireThumbEmpty {
-  display: flex;
-  width: 32px;
-  height: 32px;
-  align-items: center;
-  justify-content: center;
-  border-radius: 4px;
-  border: 1px solid color-mix(in srgb, var(--dsw-alias-border, #e2e4e9) 60%, transparent);
-  background: color-mix(in srgb, var(--dsw-alias-bg-module-platform, #f5f6f7) 40%, transparent);
-  color: var(--dsw-alias-label-secondary, #5b6470);
-}
-
-.wireMeta {
-  min-width: 0;
-  flex: 1;
-}
-
-.wireTitle {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  font-size: 11px;
-  font-weight: 500;
-  color: var(--dsw-alias-label-primary, #0f1115);
-}
-
-.wireOutput {
-  margin-left: 4px;
-  font-family: ui-monospace, monospace;
-  font-size: 9px;
-  color: color-mix(in srgb, var(--dsw-alias-accent, #3b82f6) 80%, transparent);
-}
-
-.wireSub {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  font-family: ui-monospace, monospace;
-  font-size: 9px;
-  color: color-mix(in srgb, var(--dsw-alias-label-secondary, #5b6470) 60%, transparent);
-}
-
-.wireWired {
-  flex-shrink: 0;
-  border-radius: 4px;
-  background: color-mix(in srgb, var(--dsw-alias-accent, #3b82f6) 15%, transparent);
-  padding: 2px 6px;
-  font-size: 9px;
-  font-weight: 600;
-  color: var(--dsw-alias-accent, #3b82f6);
-}
-
-/* ── icon sizes ── */
 .sz12 { width: 12px; height: 12px; }
-.sz14 { width: 14px; height: 14px; }
+
 .sz20 { width: 20px; height: 20px; }

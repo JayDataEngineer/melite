@@ -28,3 +28,11 @@ export function readAsDataURL(file: Blob): Promise<string> {
     reader.readAsDataURL(file)
   })
 }
+
+/** THE ESTATE'S DRAG CONTRACT (2026-09-18, exterminated): the MIME
+ *  under which an upstream asset rides a drop payload — a JSON blob
+ *  {url, name, …} carried by the source's dataTransfer. h3's kit and
+ *  motion's kit each redeclared it; card-base, the card-view's
+ *  CardsTab and input-square already consumed it. One definition
+ *  estate-wide (the drag is a shared contract, not a studio rule). */
+export const ASSET_DRAG_MIME = "application/tech-noir-asset"

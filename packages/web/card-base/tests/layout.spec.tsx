@@ -7,7 +7,7 @@
 import { createElement as h } from 'react'
 import { render, screen, cleanup } from '@testing-library/react'
 import { afterEach, expect, test } from 'vitest'
-import { ControlRow, SectionLabel, EmptyState, PaneHeader, PaneShell, Tip } from '../src/layout.tsx'
+import { ControlRow, SectionLabel, EmptyState, PaneHeader, PaneShell, Skeleton, Tip } from '../src/layout.tsx'
 
 afterEach(cleanup)
 
@@ -56,4 +56,11 @@ test('Tip: absent tip passes the child through unchanged; present wraps the anch
   const bare = render(h(Tip, { tip: undefined }, h('button', { type: 'button' }, 'Go'))).container
   expect(bare.querySelector('button')!.textContent).toBe('Go')
   expect(bare.querySelector('span')).toBeNull()
+})
+
+test('Skeleton: the pane grammar\u2019s loading face carries the slot hook and merges classes', () => {
+  const el = render(h(Skeleton, { 'data-testid': 'sk', className: 'h-4 w-4' })).container
+  const node = el.querySelector('[data-slot="skeleton"]')!
+  expect(node.getAttribute('class')).toContain('h-4')
+  expect(node.getAttribute('class')).toContain('skeleton')
 })

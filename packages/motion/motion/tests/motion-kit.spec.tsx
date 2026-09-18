@@ -339,25 +339,22 @@ describe('WirePickerModal', () => {
     return { onPick, onUnwire, onClose }
   }
 
-  test('scrim and X close; the card itself does not', async () => {
+  test('the card itself does not close; the labelled X does', async () => {
+    // 2026-09-18: the kit's hand-rolled scrim died with the duplicate —
+    // WirePickerModal now rides @melite/card-base's copy, which rides the
+    // DSH Modal primitive. The scrim-close is the MODAL's contract (the
+    // base's own wire-picker spec pins only the labelled close); what this
+    // kit owes is that the card body stays inert and the X voices onClose.
     const { onClose } = mountModal()
     await waitForText(/Wire preview_glb from an earlier card/)
     await act(async () => {
       fireEvent.click(document.querySelector('[data-wire-modal]') as HTMLElement)
     })
-    expect(onClose).toHaveBeenCalledTimes(1)
-    await cleanup19()
-    const second = mountModal()
-    await waitForText(/Wire preview_glb from an earlier card/)
-    await act(async () => {
-      const card = document.querySelector('[data-wire-modal] > div') as HTMLElement
-      fireEvent.click(card)
-    })
-    expect(second.onClose).not.toHaveBeenCalled()
+    expect(onClose).not.toHaveBeenCalled()
     await act(async () => {
       fireEvent.click(getByRole(document.body, 'button', { name: 'Close wire picker' }))
     })
-    expect(second.onClose).toHaveBeenCalledTimes(1)
+    expect(onClose).toHaveBeenCalledTimes(1)
   })
 
   test('unwire shows only while wired', async () => {

@@ -8,7 +8,7 @@
  * estate's. Moved VERBATIM (JSX + CSS) from the h3 kit; the kit
  * re-exports as a bridge so existing import sites keep one door.
  */
-import type { ReactElement, ReactNode } from 'react'
+import type { ComponentProps, ReactElement, ReactNode } from 'react'
 import { Tooltip } from '@deepseek-ai/dsh-client-ui-primitives'
 import { cn } from './chrome.ts'
 import css from './card.module.css'
@@ -84,6 +84,16 @@ export function EmptyState({
       {hint != null ? <p className={css.emptyHint}>{hint}</p> : null}
     </div>
   )
+}
+
+// ── Skeleton — the pane grammar's loading face ───────────────────────
+
+/** Skeleton — the quiet loading block (promoted 2026-09-18 from
+ *  motion's kit, where it was the estate's only copy): a bare div
+ *  with the estate pulse. EmptyState is the pane's empty face;
+ *  Skeleton is its loading face. */
+export function Skeleton({ className, ...props }: ComponentProps<'div'>): ReactElement {
+  return <div data-slot='skeleton' className={cn(css.skeleton, className)} {...props} />
 }
 
 // ── PaneHeader + PaneShell — the shared pane chrome ─────────────────
