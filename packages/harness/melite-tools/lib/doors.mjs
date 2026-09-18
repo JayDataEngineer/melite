@@ -1,4 +1,4 @@
-import { c as formsArm, i as routeName, l as kindsDoorArm, o as cardToolsArm, p as makeEstateRequest, r as resolveHarnessRoutes, s as formSpecArm, t as harnessEnhance, u as modelCatalogArm } from "./llm-complete-XILBuli0.mjs";
+import { c as formsArm, i as routeName, l as kindsDoorArm, o as cardToolsArm, p as makeEstateRequest, r as resolveHarnessRoutes, s as formSpecArm, t as harnessEnhance, u as modelCatalogArm } from "./llm-complete-IyhwnWLe.mjs";
 import { httpCall, resolveEngineBaseUrl } from "@melite/comfyui-cordis";
 import { buildSkillIndex, disclosureRoot } from "@melite/estate-queue";
 import { agentFormDoc } from "@melite/engine-agent";
@@ -354,7 +354,7 @@ function apply(c, config = {}) {
 						return;
 					}
 					if (method === "GET" && path === "/v1/model-catalog") {
-						modelCatalogArm().then(ok, (e) => fail(500, { error: `discovery door: ${e instanceof Error ? e.message : String(e)}` }));
+						modelCatalogArm(seatedMcpServers(c)).then(ok, (e) => fail(500, { error: `discovery door: ${e instanceof Error ? e.message : String(e)}` }));
 						return;
 					}
 					if (method === "GET" && path === "/v1/forms") {

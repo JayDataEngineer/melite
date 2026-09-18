@@ -633,10 +633,23 @@ async function cardToolsArm() {
 }
 /** The full live catalog section (models/families ride the registry
 *  emission; cards/capabilities ride the cards; the vocabulary rides
-*  the slot SSOT). */
-function catalogSection(defs) {
+*  the slot SSOT). The MCP instance rows fold into CARDS with the
+* same live census /v1/forms rides (the picker reads this section —
+* ONE surface; a row only here is invisible, a row only there was). */
+function catalogSection(defs, mcpServers = []) {
 	const live = buildCatalog(modelIds().map((id) => getModel(id)));
 	const { cards, capabilities } = cardSections(defs);
+	for (const server of [...mcpServers].sort()) cards[`mcp:${server}`] = {
+		id: `mcp:${server}`,
+		label: `MCP · ${server}`,
+		description: `Live MCP server seat — tool calls through the estate (one row per seated server; the form rides the engine arm at form-spec?model=mcp:${server}).`,
+		genre: "3d",
+		families: [`mcp:${server}`],
+		principles: [],
+		skills: [],
+		has_inference: false,
+		has_rubric: false
+	};
 	return {
 		models: live["models"],
 		families: live["families"],
@@ -645,9 +658,11 @@ function catalogSection(defs) {
 		input_vocabulary: SLOT_VOCABULARY
 	};
 }
-/** /v1/model-catalog — the live catalog section. */
-async function modelCatalogArm() {
-	return catalogSection(await loadCardDefs());
+/** /v1/model-catalog — the live catalog section (the seated MCP
+* servers fold LIVE — the door passes the tools-seat census, the
+* same read formsArm rides; empty seats fold nothing). */
+async function modelCatalogArm(mcpServers = []) {
+	return catalogSection(await loadCardDefs(), mcpServers);
 }
 /** /v1/forms — the forms table (card rows + the MCP INSTANCE rows:
 *  one descriptor row per seated server, §1.5 — the engine-served
