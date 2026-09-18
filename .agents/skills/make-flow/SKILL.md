@@ -80,7 +80,7 @@ the rebuild — never invoke them):
 
 ```sh
 pnpm install
-node node_modules/vitest/vitest.mjs run tests/walls/ts/suites/form-spec-parity.spec.ts
+node node_modules/vitest/vitest.mjs run tests/walls/ts/suites/mod-interlock.spec.ts
 node node_modules/vitest/vitest.mjs run tests/walls/ts/suites/models-flows.spec.ts
 node node_modules/vitest/vitest.mjs run tests/walls/ts/suites/runs-remote.spec.ts
 # or all walls at once (plus every typecheck-owning package's tsc):

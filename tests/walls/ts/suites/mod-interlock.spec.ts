@@ -1,31 +1,28 @@
-// mod-interlock.spec.ts — THE MOD/VERB INTERLOCK WALL (the 1:1
-// cordis port, 2026-09-08: "Follow Cordis. Transfer the python
-// functionality, 1:1 into Cordis.").
+// mod-interlock.spec.ts — THE MOD/VERB INTERLOCK WALL.
 //
-// Pins (the py melite_cards interlock, dsl.py @ 034e1f97):
+// Pins (the melite_cards interlock):
 //   - REGISTRATION: mods and verbs register through the
 //     ComfyUIService (registerPack/registerFlavor/registerVerb —
-//     the pack/flavor split, the correction stroke 2026-09-08)
-//     under src/mods/ — the py Model.mods declarations as code,
-//     PORT LAW shape (never frozen JSON + walkers);
-//   - ABSORPTION PARITY: the absorbed surface matches the frozen
-//     py referee (discovery-catalog form_specs) byte-exactly on
-//     field ORDER, field SET, and group (id/zone/count) for the
-//     two hardest keys — image-edit/qwen-img-edit-2511 (3 packs)
-//     and image-gen/krea-2 (loras with rows);
+//     the pack/flavor split) under src/mods/ — the Model.mods
+//     declarations as code, PORT LAW shape (never frozen JSON +
+//     walkers);
+//   - ABSORPTION: the absorbed envelope is pinned by live
+//     literals (field order IS the contract — schemastery
+//     preserves declaration order) for the two hardest keys —
+//     image-edit/qwen-img-edit-2511 (3 packs) and
+//     image-gen/krea-2 (loras with rows);
 //   - FAMILY SCOPING: krea-2's loras never leak onto other
 //     families (the interlock's whole point);
 //   - THE LOUD LAWS ported as registration gates: duplicate verb
 //     id refuses, two-shape same-pack refuses, the verb plane law
 //     (exactly one engine arm), min>max / step<=0 / out-of-range
 //     default refuse at the gate;
-//   - VERBS: the anny card mounts all five py verbs with their
+//   - VERBS: the anny card mounts all five verbs with their
 //     flow ids; SubActionMod knobs NEVER join the card surface.
 //
 // Run: npx vitest run tests/walls/ts/suites/mod-interlock.spec.ts
 
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
 import { test } from "vitest";
 import z from "../../../../packages/engines/comfyui-cordis/src/_z.ts"; // re-export of the pinned schemastery (walls cannot import node_modules TS)
 import { loadCardDefs, theService } from "../../../../packages/engines/comfyui-cordis/src/index.ts";
@@ -39,20 +36,11 @@ const reads = { getModel, registryIds, registryModel };
 const names = (a: { fields: { dict?: Record<string, unknown> } }): string[] =>
   Object.keys(a.fields.dict ?? {});
 
-/** The golden referee (transcribed from the retired python's served
- *  answers before the discovery-catalog.json export was deleted
- *  2026-09-10 — byte parity with legacy python is NOT a goal, but
- *  these rows still match live derivation verbatim and pin it). */
-const referee = JSON.parse(
-  readFileSync(new URL("../fixtures/form-spec-referee.json", import.meta.url), "utf8"),
-) as Record<string, { fields: unknown[]; schema_groups: unknown[]; features?: { modifiers?: Array<{ kind?: string; options?: Array<{ value: string; label: string; defaults?: { strength?: number } }> }> } }>;
-const frozen = { form_specs: referee };
-
 await loadCardDefs();
 const svc = theService();
 
 test("mods registered through the service as plugins (PORT LAW: Schemastery contracts)", () => {
-  // the absorption is non-empty for all four py families
+  // the absorption is non-empty for all four families
   const edit = svc.cardModFields("image-edit");
   const editNames = new Set(edit.flatMap(names));
   for (const n of ["image1", "lanpaint_enabled", "outpaint_overlap", "mask", "mask_mode", "loras"]) {
@@ -69,10 +57,9 @@ test("mods registered through the service as plugins (PORT LAW: Schemastery cont
   assert.deepEqual(tts.flatMap(names).sort(), ["qvoice", "voice_pca_strengths"], "tts absorbs the qvoice pack");
 });
 
-// THE ENVELOPE PARITY (the parameter audit, 2026-09-14): the flat
-// field walk is gone — formSchemas serves the card's own toJSON and
-// the referee's FIELD LIST pins the envelope's dict names (order +
-// set: schemastery preserves declaration order). Group/zone facts
+// THE ENVELOPE PARITY: formSchemas serves the card's own toJSON
+// and the envelope's dict names are pinned as live literals (order
+// + set: schemastery preserves declaration order). Group/zone facts
 // derive client-side off meta.extra (card-base fieldsOf owns that
 // walk), so the node-side wall pins names + mod scoping only.
 const envelopeNames = (card: string, fam: string): string[] => {
@@ -83,31 +70,21 @@ const envelopeNames = (card: string, fam: string): string[] => {
   return Object.keys(root?.dict ?? {});
 };
 
-test("absorption parity: image-edit/qwen-img-edit-2511 byte-exact vs the golden referee", () => {
-  const ref = frozen.form_specs["qwen-img-edit-2511"];
+test("absorption: image-edit/qwen-img-edit-2511 envelope pinned (declaration order)", () => {
   const live = envelopeNames("image-edit", "qwen-img-edit-2511");
-  assert.notEqual(live.length, 0);
-  const refFields = (ref.fields as Array<{ name: string }>).map((f) => f.name);
-  // the referee's flat rows carried card fields + absorbed mod rows;
-  // the envelope carries the card's own — both must agree on the
-  // card half (the mod half rides mod_schemas, pinned below)
-  const refSet = new Set(refFields);
-  for (const n of live) {
-    assert.ok(refSet.has(n), `envelope name ${n} missing from the referee rows`);
-  }
-  assert.deepEqual(live, live.slice().sort((a, b) => refFields.indexOf(a) - refFields.indexOf(b)),
-    "declaration order preserved");
+  assert.deepEqual(live, [
+    "image2", "image3", "reference_images", "prompt", "negative_prompt",
+    "seed", "steps", "cfg", "sampler", "scheduler", "use_stock_nodes",
+    "double_reference",
+  ]);
 });
 
-test("absorption parity: image-gen/krea-2 byte-exact vs the golden referee", () => {
-  const ref = frozen.form_specs["krea-2"];
+test("absorption: image-gen/krea-2 envelope pinned (declaration order)", () => {
   const live = envelopeNames("image-gen", "krea-2");
-  assert.notEqual(live.length, 0);
-  const refFields = (ref.fields as Array<{ name: string }>).map((f) => f.name);
-  const refSet = new Set(refFields);
-  for (const n of live) {
-    assert.ok(refSet.has(n), `envelope name ${n} missing from the referee rows`);
-  }
+  assert.deepEqual(live, [
+    "prompt", "negative_prompt", "width", "height",
+    "seed", "steps", "cfg", "sampler", "scheduler",
+  ]);
 });
 
 test("family scoping: krea-2's loras never leak", () => {
@@ -128,21 +105,26 @@ test("family scoping: krea-2's loras never leak", () => {
   assert.ok("controlnet" in zim.mods, "z-image's own family sees the controlnet contract");
 });
 
-test("krea lora rows: byte-truth vs the golden referee", () => {
+test("krea lora rows: the 12 rows pinned (id/label/strength)", () => {
   const rows = svc.modRows("loras", "krea-2");
-  assert.equal(rows.length, 12);
   assert.ok(rows.every((r) => r.source_url.startsWith("https://")), "no link, no row");
-  // the frozen spec's modifier options are the capture of the py
-  // rows — value/label/defaults must agree row-for-row
-  const ref = (frozen.form_specs["krea-2"] as { features?: { modifiers?: Array<{ kind?: string; options?: Array<{ value: string; label: string; defaults?: { strength?: number } }> }> } })
-    .features?.modifiers?.find((m) => m.kind === "lora")?.options ?? [];
-  assert.equal(ref.length, 12, "frozen referee carries 12 options");
-  for (const opt of ref) {
-    const row = rows.find((r) => r.id === opt.value);
-    assert.ok(row !== undefined, `row ${opt.value} missing`);
-    assert.equal(row.label, opt.label, `label drift on ${opt.value}`);
-    assert.equal(row.default_strength, opt.defaults?.strength, `default_strength drift on ${opt.value}`);
-  }
+  assert.deepEqual(
+    rows.map((r) => ({ id: r.id, label: r.label, s: r.default_strength })),
+    [
+      { id: "krea2_realism_lora", label: "Realism", s: 0.7 },
+      { id: "krea2_turbo_lora_rank_64_bf16", label: "Turbo Rank-64 (BF16)", s: 1 },
+      { id: "krea2_darkbrush", label: "Dark Brush", s: 0.8 },
+      { id: "krea2_dotmatrix", label: "Dot Matrix", s: 0.8 },
+      { id: "krea2_kidsdrawing", label: "Kids Drawing", s: 0.8 },
+      { id: "krea2_neondrip", label: "Neon Drip", s: 0.8 },
+      { id: "krea2_rainywindow", label: "Rainy Window", s: 0.8 },
+      { id: "krea2_retroanime", label: "Retro Anime", s: 0.8 },
+      { id: "krea2_softwatercolor", label: "Soft Watercolor", s: 0.8 },
+      { id: "krea2_sunsetblur", label: "Sunset Blur", s: 0.8 },
+      { id: "krea2_vintagetarot", label: "Vintage Tarot", s: 0.8 },
+      { id: "krea2filterbypass3", label: "Filter Bypass 3", s: 0.8 },
+    ],
+  );
 });
 
 test("THE RUNTIME CATALOG LAW: qwen serves the union; family rows win", () => {
@@ -157,7 +139,7 @@ test("THE RUNTIME CATALOG LAW: qwen serves the union; family rows win", () => {
   assert.equal(own.length, 12, "family rows unchanged (they ARE the union source)");
 });
 
-test("the anny card mounts all five py verbs; knobs never join the surface", () => {
+test("the anny card mounts all five verbs; knobs never join the surface", () => {
   const verbs = svc.cardVerbs("anny");
   assert.deepEqual(verbs.map((v) => v.id).sort(),
     ["dress", "hmr-estimate", "preset-load", "preset-save", "prop"]);
