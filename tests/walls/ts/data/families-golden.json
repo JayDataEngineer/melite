@@ -2561,21 +2561,6 @@
           ]
         },
         "cells": []
-      },
-      {
-        "id": "realism_lora",
-        "label": "Realism",
-        "hint": "The photorealism adapter at its declared 0.7.",
-        "group": "Recipe",
-        "wire_defaults": {
-          "loras": [
-            {
-              "id": "krea2_realism_lora",
-              "strength": 0.7
-            }
-          ]
-        },
-        "cells": []
       }
     ],
     "variant_groups": [
@@ -2746,21 +2731,6 @@
             {
               "id": "krea2_turbo_lora_rank_64_bf16",
               "strength": 1
-            }
-          ]
-        },
-        "cells": []
-      },
-      {
-        "id": "realism_lora",
-        "label": "Realism",
-        "hint": "The photorealism adapter at its declared 0.7.",
-        "group": "Recipe",
-        "wire_defaults": {
-          "loras": [
-            {
-              "id": "krea2_realism_lora",
-              "strength": 0.7
             }
           ]
         },

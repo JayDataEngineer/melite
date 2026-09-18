@@ -66,7 +66,32 @@ export const family: Plugin = {
   enhance_prompt(s)); new families fall back to the kernel
   `GENERIC_ENHANCE_RECIPE` (gateway-core schema/promptGuide.ts).
   Do NOT invent a DECL field for recipes — the capture is the truth
-  until the gap is worked.
+  until the gap is worked. (A different "recipe": the RECIPE LAW
+  variant rows below — never conflate the two.)
+
+## 1b. RULE A — THE RECIPE LAW (2026-09-18)
+
+Every family authors its preset truth as Recipe variant rows —
+`group: "Recipe"`, patch-only `wire_defaults`, the payload 1:1 with
+the card's declared params (LORAs included: the bag rows
+`{id, strength?, steps?}` resolve against `mods/loras.ts` at
+compose):
+
+- ONE preset per fact — never the same fact on two rows (a
+  strength-less bag row rides the flavor's own `default_strength`;
+  do not add a second explicit-strength row for the same adapter).
+- The stamp-less `default` row stays (a fresh card lands there).
+- Recipe ids are DISTINCT from route variant ids — a collision
+  refuses at the spec.
+- THE SCOPING LAW: only family-OWNED functional preset facts ride
+  recipes. Style/options packs (anny verbs, qvoice rows, union
+  catalogs) stay Modifiers-menu picks — an option is not a preset;
+  image-conditioned structural packs (controlnet, ip_adapter,
+  lanpaint, mask) stay board surfaces; step marriages stay in the
+  ROUTE's `resolver_defaults` — never duplicated on two axes.
+- The GPU receipt: a family that lands new recipe rows extends
+  `tests/e2e/recipes-gpu.e2e.ts` (engine-gated) — compose the pill
+  payload, assert the resolved wiring verbatim, run it live.
 
 ## 2. The barrel row (the load order)
 
@@ -105,7 +130,11 @@ node node_modules/vitest/vitest.mjs run packages/models/<family>/tests/decl.spec
 
 A new family means NEW GOLDEN ROWS — the families-golden wall will
 fail until the golden snapshots are regenerated (that is the wall
-working; update the goldens, never the comparison).
+working; update the goldens, never the comparison). A family whose
+DECL touched the Recipe axis also re-checks the served pills on the
+live lane (`/v1/form-spec?model=<family>` — the pill defaults ARE
+the stamps; the lane needs a `tsdown` rebuild of melite-tools +
+service restart before the wire tells the truth).
 
 ## 4. Prove the family (no gateway — it died 2026-09-10)
 

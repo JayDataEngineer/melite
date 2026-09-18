@@ -133,7 +133,8 @@ export const DECL: ModelDecl = {
     // the flavor's own declared strength (mods/loras.ts). Style rows
     // stay individual Modifiers-menu picks (an option is not a
     // preset); step marriages stay in the turbo ROUTE's
-    // resolver_defaults — never duplicated on two axes.
+    // resolver_defaults — never duplicated on two axes. (turbo_distill
+    // joins the PRE-EXISTING realism row — one preset per fact.)
     {
       "id": "turbo_distill",
       "label": "Turbo Distill",
@@ -143,18 +144,11 @@ export const DECL: ModelDecl = {
         "loras": [{ "id": "krea2_turbo_lora_rank_64_bf16", "strength": 1.0 }],
       },
       "cells": [],
-    },
-    {
-      "id": "realism_lora",
-      "label": "Realism",
-      "hint": "The photorealism adapter at its declared 0.7.",
-      "group": "Recipe",
-      "wire_defaults": {
-        "loras": [{ "id": "krea2_realism_lora", "strength": 0.7 }],
-      },
-      "cells": [],
-    }
-  ],
+    }  ],
+  // (the `realism` Recipe row ABOVE already carries the photorealism
+  // preset — the strength-less idiom: the resolver applies the
+  // flavor's own default_strength 0.7; a second explicit row would
+  // be the same preset declared twice)
   "variant_groups": [
     {
       "id": "Recipe",
