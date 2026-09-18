@@ -40,3 +40,18 @@ in these bytes:
 Also: the latent upscaler model (minimax_h3_latent_upscaler_3d_bf16,
 LBH-123-AI, sha 4f57821f…) is now an IaC provision row; the MMH3
 ultimate-upscale compose arm is the follow-up stroke.
+
+## 2026-09-18 — the ghost-default regold (the parity wall's cause)
+
+Status: landed
+
+The SeedVR2 loader input in every golden pinned
+`seedvr2_ema_3b_fp8_e4m3fn.safetensors` — a file NO family in the
+estate provisions (mirrored from py card.py's default; the TS estate
+never downloaded it). sr_switch never fires the node in these
+shapes, so the ghost rode byte-frozen and invisible. The gate-parity
+wall's provisions cross-check exposed it; the default is now the
+seedvr2_ema family's OWN declared default variant
+(`model_defaults.unet` = seedvr2_ema_3b_fp16.safetensors — variant
+table row 0, "3B EMA fp16 — DEFAULT"). Same regold cause across
+t4_open / t4_chain / t4_chain_w2 / t4r. No other byte moved.

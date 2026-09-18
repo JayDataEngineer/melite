@@ -342,7 +342,7 @@
     "class_type": "SeedVR2LoadDiTModel",
     "inputs": {
       "device": "cuda:0",
-      "model": "seedvr2_ema_3b_fp8_e4m3fn.safetensors"
+      "model": "seedvr2_ema_3b_fp16.safetensors"
     }
   },
   "SeedVR2LoadVAEModel.0": {

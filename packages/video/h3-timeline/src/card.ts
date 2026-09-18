@@ -33,6 +33,7 @@ import z from '@deepseek-ai/schemastery'
 import { GraphBuilder, OutputHandle } from '@melite/comfyui-card-kit/graph'
 import type { ComfyUIService } from '@melite/comfyui-cordis/service'
 import { finalizeH3 } from '@melite/comfyui-card-kit'
+import { vocabulary } from '@melite/comfyui-card-kit/vocab'
 
 // inputs the t4 family templates OMIT whose pin defaults comfy-script
 // would auto-fill at serialization — the strip set lives in src/kit.ts
@@ -144,23 +145,51 @@ const paramSchema = z.object({
   // interpolate_multiplier / rtx_vsr_enabled) never matched these,
   // were never read, and die with the studio rework.
   denoise: z.number().description("Denoise").min(0).max(1).step(0.05).default(1.0).extra('extra', { order: null, wtype: 'number', tooltip: "How much of the latent the sampler rewrites. 1.0 = full denoise (fresh windows); lower inherits structure." }),
-  sampler_name: z.string().description("Sampler").default("euler").extra('extra', { order: null, options: ["euler", "euler_cfg_pp", "euler_ancestral", "dpmpp_2m", "dpmpp_2m_sde", "heun"], wtype: 'select', tooltip: "The KSampler solver (turbo adapters pair with euler/euler_cfg_pp)." }),
-  sched_name: z.string().description("Scheduler").default("simple").extra('extra', { order: null, options: ["simple", "beta", "linear_quadratic", "normal", "sgm_uniform", "karras", "exponential", "kl_optimal", "ddim_uniform"], wtype: 'select', tooltip: "The sigma schedule shape." }),
-  interp_model: z.string().description("Interp model").default("film_net_fp16.safetensors").extra('extra', { order: null, visible_when: "interpolate_enabled=true", options: ["film_net_fp16.safetensors", "rife47.pth"], wtype: 'select', tooltip: "FILM or RIFE frame-interpolation weights." }),
+  // CLOSED TYPES (hour 22, the parity wall's second catch): these were
+  // z.string() with a DECORATIVE extra options list — the gate accepted
+  // any string (no membership refusal), the face showed the hand-stamped
+  // six, the engine accepts the pin's 45: three truths for one key. The
+  // union of consts is the ONE truth now — the face reads the members,
+  // the gate refuses off-set values at the compose door (the kit's own
+  // law: sampler/scheduler knobs ride vocabulary()), and the declared
+  // default stays reachable (the wall proves fill === walk).
+  sampler_name: vocabulary(["euler", "euler_cfg_pp", "euler_ancestral", "dpmpp_2m", "dpmpp_2m_sde", "heun"]).description("Sampler").default("euler").extra('extra', { order: null, wtype: 'select', tooltip: "The KSampler solver (turbo adapters pair with euler/euler_cfg_pp)." }),
+  sched_name: vocabulary(["simple", "beta", "linear_quadratic", "normal", "sgm_uniform", "karras", "exponential", "kl_optimal", "ddim_uniform"]).description("Scheduler").default("simple").extra('extra', { order: null, wtype: 'select', tooltip: "The sigma schedule shape." }),
+  interp_model: vocabulary(["film_net_fp16.safetensors", "rife47.pth"]).description("Interp model").default("film_net_fp16.safetensors").extra('extra', { order: null, visible_when: "interpolate_enabled=true", wtype: 'select', tooltip: "FILM or RIFE frame-interpolation weights." }),
   interp_multiplier: z.number().description("Interp multiplier").min(2).max(4).step(1).default(2).extra('extra', { order: null, visible_when: "interpolate_enabled=true", wtype: 'number', tooltip: "Frame multiple (2 = double the frame rate)." }),
   sr_switch: z.boolean().description("Super-Res (SeedVR2)").default(false).extra('extra', { order: null, tooltip: "Upscale the final film through SeedVR2 before saving." }),
   sr_resolution: z.number().description("Super-Res target").min(720).max(2160).step(360).default(1080).extra('extra', { order: null, visible_when: "sr_switch=true", wtype: 'number', tooltip: "The SeedVR2 output height in px." }),
-  sr_model: z.string().description("Super-Res model").default("seedvr2_ema_3b_fp8_e4m3fn.safetensors").extra('extra', { order: null, wtype: 'select', options: ["seedvr2_ema_3b_fp8_e4m3fn.safetensors"] }),
-  // the R2V COMBO size mode — "match"|"max" ONLY (a number fails
-  // ComfyUI validation on the combo)
-  ref_image_size: z.string().description("Ref size").default("match").extra('extra', { order: null, options: ["match", "max"], wtype: 'select', tooltip: "How the bundle resizes ref images: match the anchor, or take the max edge." }),
+  // OPEN FILE SURFACE (the parity triage, hour 22): the SeedVR2 weights
+  // span OTHER families' provisions (seedvr2_ema provisions the fp16
+  // 3B; variants keep landing) — the card cannot close what it does not
+  // own. Open string, text face, and the default is the one file the
+  // estate actually provisions (the old default pointed at a file that
+  // existed NOWHERE in the estate — a ghost; sr_switch never fires it
+  // in the goldens, so no re-gold).
+  sr_model: z.string().description("Super-Res model").default("seedvr2_ema_3b_fp16.safetensors").extra('extra', { order: null, wtype: 'text', tooltip: "SeedVR2 weights file (models/upscale_models/)." }),
+  // the R2V COMBO size mode — the literals OR a concrete WxH dimension
+  // ("704x1280" rides in real runs; a number or a typo refuses LOUD at
+  // the gate now, not as a ComfyUI 400). The select face serves the
+  // two literals; WxH stays reachable by patch, exactly as before.
+  ref_image_size: z.union([z.const("match"), z.const("max"), z.string().pattern(/^\d+x\d+$/).description("WxH")]).description("Ref size").default("match").extra('extra', { order: null, wtype: 'select', tooltip: "How the bundle resizes ref images: match the anchor, take the max edge, or an explicit WxH." }),
   // the 1:1 upstream escape hatch: a raw LTX_lora_loader stack JSON
   // string (the mod bag `loras` is the sanctioned surface; this rides
   // for hand-authored parity cases)
   lora_stack: z.string().description("Lora stack (raw)"),
   // nullable inner: min/max validate only the number branch — null
   // (the family-literal resolution path) passes untouched.
-  shift_video: nullable(z.number().description("Video Shift").min(1).max(20).step(0.5).default(8).extra('extra', { order: null, tooltip: "Timestep shift for video attention. Higher = more coherent motion.", wtype: 'number' })),
+  // PARITY LAW (hour 22, the parity wall's first catch): the declared
+  // default must be reachable by the gate AND visible to the walk.
+  // With the default buried in the union's inner arm only, carrier({})
+  // left the key absent — the face showed 8 (the walk reads the inner
+  // arm) while the body's hand-rolled family literal (isT4r ? 8.0 : 8)
+  // actually owned the call: parity by convention, a dormant silent
+  // drop (t5 ships 10 → face says 8, call sends 10). The default rides
+  // BOTH sites of this one expression now — the OUTER union (the gate's
+  // fill) and the inner arm (the walk's read) — and the parity wall
+  // proves the two spellings equal per key, forever. The body literal
+  // stays as the explicit-null backstop only.
+  shift_video: z.union([z.number().description("Video Shift").min(1).max(20).step(0.5).default(8).extra('extra', { order: null, tooltip: "Timestep shift for video attention. Higher = more coherent motion.", wtype: 'number' }), z.const(null)]).default(8),
   shift_audio: z.number().description("Audio Shift").min(1).max(10).step(0.5).default(3).extra('extra', { order: null, tooltip: "Timestep shift for audio attention. Lower = more detailed sound.", wtype: 'number' }),
   // ── the SLA family (hour 16, item 3): compose-read knobs, now
   // EMITTED — the studio's advanced panel rides the served spec
@@ -168,12 +197,12 @@ const paramSchema = z.object({
   // compose's own ?? fallbacks, byte-for-byte; the h3_ prefix is the
   // studio's LayerA spelling (docModel), never the card's.
   sla_sparsity: z.number().description("SLA sparsity").min(0).max(0.95).step(0.05).default(0.9).extra('extra', { order: null, group: "sla", wtype: 'slider', tooltip: "Block-sparse attention density. 0.90 ≈ 1.75x speedup, no quality loss." }),
-  sla_block_size: z.string().description("SLA block size").default("32").extra('extra', { order: null, group: "sla", options: ["32", "64", "128"], wtype: 'select', tooltip: "64 = clean audio; 128 = faster, robotic." }),
+  sla_block_size: vocabulary(["32", "64", "128"]).description("SLA block size").default("32").extra('extra', { order: null, group: "sla", wtype: 'select', tooltip: "64 = clean audio; 128 = faster, robotic." }),
   sla_min_seq_len: z.number().description("SLA min seq length").min(512).step(512).default(12288).extra('extra', { order: null, group: "sla", wtype: 'number', tooltip: "Sequences shorter than this skip sparsity." }),
   sla_dense_last_steps: z.number().description("SLA dense last steps").min(0).max(10).step(1).default(1).extra('extra', { order: null, group: "sla", wtype: 'number', tooltip: "Final steps run dense for convergence." }),
   sla_dense_steps: z.string().description("SLA dense steps (explicit)").default("0").extra('extra', { order: null, group: "sla", tooltip: "e.g. 0,1 or 0-2 — explicit dense step indices." }),
-  sla_dense_backend: z.string().description("SLA dense backend").default("comfy_kitchen").extra('extra', { order: null, group: "sla", options: ["comfy_kitchen", "pytorch", "auto"], wtype: 'select' }),
-  sla_reference_protection: z.string().description("SLA ref protection").default("Heavy Enforcement").extra('extra', { order: null, group: "sla", options: ["Off", "Light", "Heavy Enforcement"], wtype: 'select', tooltip: "Protects reference frames from sparse-attention drift." }),
+  sla_dense_backend: vocabulary(["comfy_kitchen", "pytorch", "auto"]).description("SLA dense backend").default("comfy_kitchen").extra('extra', { order: null, group: "sla", wtype: 'select' }),
+  sla_reference_protection: vocabulary(["Off", "Light", "Heavy Enforcement"]).description("SLA ref protection").default("Heavy Enforcement").extra('extra', { order: null, group: "sla", wtype: 'select', tooltip: "Protects reference frames from sparse-attention drift." }),
   sla_protect_audio: z.boolean().description("SLA protect audio").default(true).extra('extra', { order: null, group: "sla" }),
   sla_stabilize_motion: z.boolean().description("SLA stabilize motion").extra('extra', { order: null, group: "sla", tooltip: "Default on except t4r openers (the family-conditional compose fallback stays the truth at run)." }),
   sla_disable_fp16_accum: z.boolean().description("SLA full-precision accum").default(true).extra('extra', { order: null, group: "sla" }),
@@ -182,7 +211,7 @@ const paramSchema = z.object({
   // change a run that never sets them). VISIBILITY rides the
   // declaration's own visible_when grammar (&-ANDed guards, |-SET
   // values) — no hand-rolled predicates anywhere.
-  sharpen_method: z.string().description("Sharpen Method").extra('extra', { order: null, visible_when: "sharpen_enabled=true", options: ["rcas", "adaptive_usm", "high_pass", "deconvolution"], wtype: 'select' }),
+  sharpen_method: vocabulary(["rcas", "adaptive_usm", "high_pass", "deconvolution"]).description("Sharpen Method").extra('extra', { order: null, visible_when: "sharpen_enabled=true", wtype: 'select' }),
   sharpen_radius: z.number().description("Sharpen Radius").min(0.5).max(5).step(0.5).extra('extra', { order: null, visible_when: "sharpen_enabled=true&sharpen_method=adaptive_usm|high_pass|deconvolution", wtype: 'number', tooltip: "adaptive_usm / high_pass / deconvolution only." }),
   sharpen_threshold: z.number().description("Sharpen Noise Gate").min(0).max(1).step(0.05).extra('extra', { order: null, visible_when: "sharpen_enabled=true&sharpen_method=adaptive_usm", wtype: 'number', tooltip: "adaptive_usm only." }),
   sharpen_iterations: z.number().description("Sharpen Iterations").min(1).max(100).step(1).extra('extra', { order: null, visible_when: "sharpen_enabled=true&sharpen_method=deconvolution", wtype: 'number', tooltip: "deconvolution only." }),
@@ -884,7 +913,7 @@ function renderH3Window(p: Record<string, unknown>, g: GraphBuilder): WindowHand
     const sr = g.node('SeedVR2VideoUpscaler', {
       image: interpSw,
       dit: g.node('SeedVR2LoadDiTModel', {
-        model: (p.sr_model ?? 'seedvr2_ema_3b_fp8_e4m3fn.safetensors') as string, device: 'cuda:0',
+        model: (p.sr_model ?? 'seedvr2_ema_3b_fp16.safetensors') as string, device: 'cuda:0',
       }).out(),
       vae: g.node('SeedVR2LoadVAEModel', {
         model: 'ema_vae_fp16.safetensors', device: 'cuda:0',

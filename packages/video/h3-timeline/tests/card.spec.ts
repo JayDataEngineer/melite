@@ -9,7 +9,7 @@
 import { describe, it, beforeAll } from "vitest";
 import assert from "node:assert/strict";
 import { dirname, join } from "node:path";
-import { readFileSync } from "node:fs";
+import { readFileSync, writeFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { loadCardDefs } from "@melite/comfyui-cordis";
 import { GraphBuilder, deriveDefaults } from "@melite/comfyui-card-kit/graph";
@@ -66,14 +66,20 @@ function replay(name: string): void {
   // before walking, exactly as the normalizer does.
   const merged: Record<string, unknown> = {
     ...carrier({ interpolate_enabled: false }),
-    // schema()'s own null-normalization for an omitted shift_video
-    // (the family literal resolves in-body; JSON-structural parity).
-    shift_video: null,
+    // (hour 22) the shift_video: null re-stamp that used to live here
+    // EMULATED the old disease — the gate left the key absent and the
+    // body's family literal owned the call. The gate fills the declared
+    // 8 now (parity wall), the body literal stays the explicit-null
+    // backstop only, and the replay walks the gate's own output.
     ...c.params,
   };
   const g = new GraphBuilder(PIN_DEFAULTS);
   def.compose(merged, model, g, c.run_id);
   const out = def.finalize!(g.toJSON());
+  if (process.env.REGEN_GOLDENS === "1") {
+    writeFileSync(join(GOLDEN_DIR, `${name}.json`), JSON.stringify(out, null, 2) + "\n");
+    return;
+  }
   assert.deepEqual(out, golden);
 }
 
@@ -475,9 +481,9 @@ describe("the renderer-vocabulary overlay arms (explicit beats default)", () => 
       noise_seed: 7, sampler_name: "euler", sched_name: "simple", denoise: 0.9,
       ctx_load_latent_path: "/m/prev.latent", ctx_load_clip_index: 2,
       motion_context_length: "51", motion_audio_context_length: 32,
-      sharpen_switch: true, sharpen_method: "rcas_fast", sharpen_strength: 0.5,
+      sharpen_switch: true, sharpen_method: "high_pass", sharpen_strength: 0.5,
       sharpen_radius: 2, sharpen_threshold: 0.1, sharpen_iterations: 5,
-      interp_switch: true, interp_multiplier: 3, interp_model: "film_net_v2.safetensors",
+      interp_switch: true, interp_multiplier: 3, interp_model: "rife47.pth",
       sr_switch: true, sr_model: "seedvr2_big.safetensors", sr_resolution: 1440,
       ctx_save_prefix: "runs/r9/h3_context/clip", ctx_save_clip_index: 4,
     }, model, g, "r9");
@@ -492,9 +498,9 @@ describe("the renderer-vocabulary overlay arms (explicit beats default)", () => 
     assert.equal(graph["RandomNoise.0"].inputs.noise_seed, 7, "noise_seed beats seed");
     assert.equal(graph["BasicScheduler.0"].inputs.denoise, 0.9);
     const sharpen = graph["ImageSharpenKJ.0"].inputs.method as Record<string, unknown>;
-    assert.equal(sharpen.method, "rcas_fast", "explicit leaves patch the grouped dict");
+    assert.equal(sharpen.method, "high_pass", "explicit leaves patch the grouped dict");
     assert.equal(sharpen.iterations, 5);
-    assert.equal(graph["FrameInterpolationModelLoader.0"].inputs.model_name, "film_net_v2.safetensors");
+    assert.equal(graph["FrameInterpolationModelLoader.0"].inputs.model_name, "rife47.pth");
     assert.equal(graph["FrameInterpolate.0"].inputs.multiplier, 3);
     assert.equal(graph["SeedVR2LoadDiTModel.0"].inputs.model, "seedvr2_big.safetensors");
     assert.equal(graph["SeedVR2VideoUpscaler.0"].inputs.resolution, 1440);
