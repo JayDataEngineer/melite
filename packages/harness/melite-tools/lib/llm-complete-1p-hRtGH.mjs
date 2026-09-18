@@ -396,7 +396,10 @@ function specModifiers(svc, card, key, decl, def) {
 			value: r.id,
 			label: r.label ?? r.id,
 			tooltip: optionTooltip(r, cat.shared),
-			defaults: r.default_strength === void 0 && r.default_weight === void 0 ? {} : { [meta.scalar_key ?? "strength"]: r.default_strength ?? r.default_weight },
+			defaults: r.default_strength === void 0 && r.default_weight === void 0 && r.steps === void 0 ? {} : Object.fromEntries(Object.entries({
+				[meta.scalar_key ?? "strength"]: r.default_strength ?? r.default_weight,
+				steps: r.steps
+			}).filter(([, v]) => v !== void 0)),
 			model: r.filename,
 			...r.preprocessor !== void 0 ? { preprocessor: r.preprocessor } : {}
 		}));

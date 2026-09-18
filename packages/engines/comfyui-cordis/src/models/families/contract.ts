@@ -58,6 +58,12 @@ export interface LoraRow {
   label: string;
   category: string;
   default_strength: number;
+  /** STEPS APPLIED (2026-09-18): the sampler step count the distill
+   * adapter is married to (dareties v4 = 4, Turbo 4-8 = 8). Optional
+   * — rows without a count serve strength only. Carried VERBATIM
+   * through the contract into the served option defaults (the
+   * discovery seed); it is a SAMPLER fact, never a loader fact. */
+  steps?: number;
   user_provided: boolean;
 }
 
@@ -67,6 +73,7 @@ export const LoraRow: z<LoraRow> = z.object({
   label: z.string().default(""),
   category: z.string().default(""),
   default_strength: z.number().min(0).max(2).default(1.0),
+  steps: z.number().min(1).max(100).step(1),
   user_provided: z.boolean().default(false),
 });
 
