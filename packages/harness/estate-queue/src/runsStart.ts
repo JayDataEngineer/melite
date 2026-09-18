@@ -14,7 +14,6 @@
 import { mkdirSync } from "node:fs";
 import { join } from "node:path";
 import type { EngineJson } from "@melite/comfyui-cordis";
-import { pyReprStr, pyReprStrList } from "@melite/comfyui-cordis";
 import { engineIdOk } from "@melite/engine-contract";
 import {
   FLOW_INLINE_TOP_VOICE,
@@ -23,12 +22,12 @@ import {
   checkFlowInlineTop,
   checkFlowStage,
 } from "./runsGates.ts";
-import { appendLedger, atomicWriteJson, newRunId, outRootFor, refusal, pyTypeName, pyRepr, sidecarDoc } from "./queue.ts";
+import { appendLedger, atomicWriteJson, newRunId, outRootFor, refusal, sidecarDoc } from "./queue.ts";
 import type { QueueRefusal } from "./queue.ts";
 import type { GraphRow } from "./queue.ts";
 import type { RunRecord, StageRow } from "./runsTypes.ts";
 
-/** The door's refusal shape (status carries the py HTTP class; the
+/** The door's refusal shape (status carries the HTTP class; the
  *  remote folds it into RemoteError details). */
 export type StartRefusal = QueueRefusal;
 
@@ -68,9 +67,9 @@ export function compileFlowInline(
     return refusal(
       400,
       "flow body carries unknown keys " +
-        pyReprStrList(top.dead) +
+        JSON.stringify(top.dead) +
         " — allowed: " +
-        pyReprStrList([...INLINE_TOP_KEYS].sort()),
+        JSON.stringify([...INLINE_TOP_KEYS].sort()),
       "invalid_request",
     );
   }
@@ -78,7 +77,7 @@ export function compileFlowInline(
     return refusal(
       400,
       "flow body needs at least id and stages — got keys " +
-        pyReprStrList(top.keys),
+        JSON.stringify(top.keys),
       "invalid_request",
     );
   }
@@ -101,11 +100,11 @@ export function compileFlowInline(
         "stage[" +
           i +
           "] " +
-          pyReprStr(String(st["id"] ?? "<no id>")) +
+          JSON.stringify(String(st["id"] ?? "<no id>")) +
           ": body carries unknown field(s) " +
-          pyReprStrList(checked.extras) +
+          JSON.stringify(checked.extras) +
           " — the schema declares " +
-          pyReprStrList([...STAGE_KEYS].sort()) +
+          JSON.stringify([...STAGE_KEYS].sort()) +
           " (extra=forbid at the door)",
         "invalid_request",
       );
@@ -114,7 +113,7 @@ export function compileFlowInline(
       const sid: string = String(checked.st["id"] ?? "");
       return refusal(
         400,
-        "stage id " + pyReprStr(sid) + " is not a legal identifier",
+        "stage id " + JSON.stringify(sid) + " is not a legal identifier",
         "invalid_request",
       );
     }
@@ -126,7 +125,7 @@ export function compileFlowInline(
     if (engine === "") {
       return refusal(
         400,
-        "stage " + pyReprStr(sid) + ": no engine named",
+        "stage " + JSON.stringify(sid) + ": no engine named",
         "invalid_request",
       );
     }
@@ -139,9 +138,9 @@ export function compileFlowInline(
         return refusal(
           400,
           "flow_inline stage " +
-            pyReprStr(sid) +
+            JSON.stringify(sid) +
             " names engine " +
-            pyReprStr(engine) +
+            JSON.stringify(engine) +
             " — engine ids are 'comfyui' or 'mcp:<server>' ([A-Za-z0-9_-]{1,32})",
           "invalid_request",
         );
@@ -150,9 +149,9 @@ export function compileFlowInline(
         return refusal(
           400,
           "flow_inline stage " +
-            pyReprStr(sid) +
+            JSON.stringify(sid) +
             " names engine " +
-            pyReprStr(engine) +
+            JSON.stringify(engine) +
             " — this gateway serves registered engines only (" +
             (knownEngines.length === 0
               ? "none registered"
@@ -167,7 +166,7 @@ export function compileFlowInline(
       return refusal(
         400,
         "flow_inline stage " +
-          pyReprStr(sid) +
+          JSON.stringify(sid) +
           ": skip_when is unported on this gateway",
         "preview_scope",
       );
@@ -177,7 +176,7 @@ export function compileFlowInline(
       return refusal(
         400,
         "flow_inline stage " +
-          pyReprStr(sid) +
+          JSON.stringify(sid) +
           ": card= stages are unported on this gateway",
         "preview_scope",
       );
@@ -233,7 +232,7 @@ export function selectSubmitDoor(
     return refusal(
       400,
       "ambiguous request: names " +
-        pyReprStrList(doors) +
+        JSON.stringify(doors) +
         " — provide exactly one of flow, flow_inline, model",
       "invalid_request",
     );
@@ -264,20 +263,20 @@ export function envelopeRefusal(
         "bad_envelope",
         "body",
         "object",
-        pyTypeName(doc),
+        Array.isArray(doc) ? "array" : typeof doc,
       );
     case "bad-test":
       return refusal(
         400,
         "test flag must be a boolean (got " +
-          pyTypeName(detail?.testFlag) +
+          (typeof detail?.testFlag) +
           " " +
-          pyRepr(detail?.testFlag) +
+          JSON.stringify(detail?.testFlag) +
           ")",
         "bad_envelope",
         "test",
         "boolean",
-        pyTypeName(detail?.testFlag),
+        (typeof detail?.testFlag),
       );
     case "missing-draft":
       return refusal(
@@ -295,7 +294,7 @@ export function envelopeRefusal(
       return refusal(
         400,
         "draft_id malformed (96 char cap, [A-Za-z0-9_-] only): " +
-          pyReprStr(detail?.draftId ?? ""),
+          JSON.stringify(detail?.draftId ?? ""),
         "draft_malformed",
         "draft_id",
         "[A-Za-z0-9_-]{1,96}",
@@ -310,7 +309,7 @@ export function unknownDraftRefusal(draftId: string): StartRefusal {
   return refusal(
     400,
     "unknown draft_id " +
-      pyReprStr(draftId) +
+      JSON.stringify(draftId) +
       " — no card doc at drafts/" +
       draftId +
       ".json; compose the card first: POST /v1/flows/drafts",

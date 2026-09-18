@@ -1,214 +1,65 @@
-// bakeParams.ts — the AnnyBakeParams serve belt, RE-HOMED
-// (REBUILD-21, 2026-09-10): ported verbatim from the dead gateway's
-// doors/studios.ts (killed with the gateway app) — the params_json
-// preset-dialect validation the flows registry's initial_validators
-// gate rides (bake_params initials refuse BEFORE any run registers).
-// pyFloatRepr ports from the dead doors/drafts.ts (CPython repr
-// fidelity — the belt renders float positions verbatim). pyTypeName
-// comes from queue.ts (already re-homed, REBUILD-4).
+// bakeParams.ts — the AnnyBakeParams serve belt: params_json
+// preset-dialect validation rides the initial_validators gate
+// (bake_params initials refuse BEFORE any run registers).
+// TS-native (2026-09-18): the pydantic costume, the python-repr
+// renders, and the PyNum literal-holder are deleted.
 //
 // Erasable-syntax TS only (node --experimental-strip-types).
-import { PyNum } from "./pyValue.ts";
-import { parseJson, pyReprString } from "./pyJson.ts";
-import { pyTypeName } from "./queue.ts";
 
-// The pydantic version the render cites (dead studios.ts:131).
-const PYDANTIC_MM = "2.13";
-
-/** One collected validation failure (loc = dotted pydantic path;
- *  empty = model-level). input feeds BOTH input_value (repr) and
- *  input_type (type name) — exactly pydantic-core's pairing. */
+/** One collected validation failure (loc = dotted path;
+ *  empty = model-level). */
 export interface VError {
   readonly loc: readonly (string | number)[];
   readonly msg: string;
-  readonly type: string;
-  readonly input: unknown;
-}
-
-/** One collected validation failure (loc = dotted pydantic path;
- *  empty = model-level). input feeds BOTH input_value (repr) and
- *  input_type (type name) — exactly pydantic-core's pairing. */
-export interface VError {
-  readonly loc: readonly (string | number)[];
-  readonly msg: string;
-  readonly type: string;
   readonly input: unknown;
 }
 
 export function vErr(
   loc: readonly (string | number)[],
   msg: string,
-  type: string,
   input: unknown,
 ): VError {
-  return { loc, msg, type, input };
+  return { loc, msg, input };
 }
 
-/** str(ValidationError): head line + per-error loc/message lines +
- *  a footer after EACH error carrying THAT error's type
- *  (empirical pydantic 2.13 — [value_error, missing] carries
- *  /v/value_error mid-text and ends /v/missing). */
+/** The validation-error render: one "path: message" line per
+ *  failure (model name heads model-level errors). */
 export function renderErrors(model: string, errs: readonly VError[]): string {
-  const head: string =
-    errs.length === 1
-      ? "1 validation error for " + model
-      : errs.length + " validation errors for " + model;
-  const lines: string[] = [head];
+  const lines: string[] = [];
   for (const e of errs) {
-    if (e.loc.length > 0) {
-      lines.push(e.loc.map(String).join("."));
-    }
-    lines.push(
-      "  " +
-        e.msg +
-        " [type=" +
-        e.type +
-        ", input_value=" +
-        truncateRepr(pyReprValue(e.input)) +
-        ", input_type=" +
-        pyTypeName(e.input) +
-        "]",
-    );
-    lines.push(
-      "    For further information visit https://errors.pydantic.dev/" +
-        PYDANTIC_MM +
-        "/v/" +
-        e.type,
-    );
+    const loc: string = e.loc.map(String).join(".");
+    lines.push((loc === "" ? model : loc) + ": " + e.msg);
   }
   return lines.join("\n");
 }
 
-/** Python repr() of a parsed-JSON value (None/True/False, ints
- *  verbatim, floats via pyFloatRepr, strings single-quoted,
- *  lists/tuples/dicts recursive with ", " separators — probed
- *  verbatim 2026-09-07). Plain host numbers appear only on
- *  TS-constructed paths (validated coercions); parseJson yields
- *  PyNum, never number. */
-export function pyReprValue(v: unknown): string {
-  if (v === null || v === undefined) return "None";
-  if (v === true) return "True";
-  if (v === false) return "False";
-  if (typeof v === "string") return pyReprString(v);
-  if (v instanceof PyNum) {
-    return isIntLiteral(v.literal)
-      ? v.literal
-      : pyFloatRepr(Number(v.literal));
-  }
-  if (typeof v === "number") {
-    if (!Number.isFinite(v)) throw new Error("bad sidecar number");
-    return Number.isInteger(v) ? String(v) : pyFloatRepr(v);
-  }
-  if (v instanceof PyTuple) {
-    const inner: string = v.items.map(pyReprValue).join(", ");
-    return "(" + inner + (v.items.length === 1 ? "," : "") + ")";
-  }
-  if (Array.isArray(v)) return "[" + v.map(pyReprValue).join(", ") + "]";
-  if (typeof v === "object") {
-    const parts: string[] = Object.keys(v as Record<string, unknown>).map(
-      (k: string): string =>
-        pyReprString(k) + ": " + pyReprValue((v as Record<string, unknown>)[k]),
-    );
-    return "{" + parts.join(", ") + "}";
-  }
-  return String(v);
-}
 
-/** pydantic-core's middle-truncation (probed 2026-09-07: a 50-char
- *  repr rides whole, 51+ renders first 25 + "..." + last 24). */
-export function truncateRepr(s: string): string {
-  if (s.length <= 50) return s;
-  return s.slice(0, 25) + "..." + s.slice(s.length - 24);
-}
 
-/** A JSON tuple (promotion EstimatedParams inputs render with parens —
- *  py constructs them from real tuples, so repr shows (1.0, ...) and
- *  () — distinct from lists at render time only). */
-export class PyTuple {
-  readonly items: readonly unknown[];
-  constructor(items: readonly unknown[]) {
-    this.items = items;
-  }
-}
-
-/** JSON int literal (no fraction/exponent — exactly what py's json
- *  parses to int; huge literals ride verbatim, never through
- *  Number). */
-function isIntLiteral(lit: string): boolean {
-  return /^-?\d+$/.test(lit);
-}
-
-/** Lax float slot: numbers (finite), bools (True->1.0), numeric
- *  strings ("50"->50.0); failure -> float_parsing at loc. */
+/** Strict float slot: finite numbers ride; anything else errors. */
 function parseFloatLax(
   v: unknown,
   loc: readonly (string | number)[],
   errs: VError[],
 ): number | null {
-  if (v instanceof PyNum) {
-    const n: number = Number(v.literal);
-    if (!Number.isFinite(n)) {
-      errs.push(
-        vErr(loc, "Input should be a valid number", "float_type", v),
-      );
-      return null;
-    }
-    return n;
-  }
-  // (parseJson yields PyNum, never number — the number arm below is
-  // dead through every caller: kept as the coercion's contract.)
-  /* v8 ignore next */
   if (typeof v === "number") {
     if (!Number.isFinite(v)) {
-      errs.push(vErr(loc, "Input should be a valid number", "float_type", v));
+      errs.push(vErr(loc, "Input should be a valid number", v));
       return null;
     }
     return v;
   }
-  if (typeof v === "boolean") return v ? 1 : 0;
-  if (typeof v === "string") {
-    const t: string = v.trim();
-    if (/^[+-]?(\d+\.?\d*|\.\d+)([eE][+-]?\d+)?$/.test(t)) {
-      const n: number = Number(t);
-      if (Number.isFinite(n)) return n;
-    }
-    errs.push(
-      vErr(
-        loc,
-        "Input should be a valid number, unable to parse string as a number",
-        "float_parsing",
-        v,
-      ),
-    );
-    return null;
-  }
-  errs.push(vErr(loc, "Input should be a valid number", "float_type", v));
+  errs.push(vErr(loc, "Input should be a valid number", v));
   return null;
 }
 
 function isPlainObject(v: unknown): v is Record<string, unknown> {
   if (typeof v !== "object" || v === null || Array.isArray(v)) return false;
   const proto: unknown = Object.getPrototypeOf(v);
-  // (parseJson builds {}-literal objects — never null-proto — so the
-  // null arm is dropped: only standard-prototype dicts ride.)
   return proto === Object.prototype;
 }
 
 const PRESET_ID_RE: RegExp = /^[a-z0-9][a-z0-9_\-]*$/;
-/** The pattern SOURCE for the mismatch message (py renders the
- *  pattern's repr — the \- doubles to \\ — probed verbatim). */
-const PRESET_ID_SRC = "^[a-z0-9][a-z0-9_\\-]*$";
 
-const AUTH_TAG = "function-after[_check_dims(), AuthoredParams]";
-const EST_TAG = "function-after[_check_dims(), EstimatedParams]";
-
-/** Required-field fetch (missing -> Field required on the parent). */
-function reqField(
-  v: Record<string, unknown>,
-  key: string,
-  loc: readonly (string | number)[],
-  errs: VError[],
-): { found: boolean; value: unknown }
 
 /** Required-field fetch (missing -> Field required on the parent). */
 function reqField(
@@ -218,14 +69,14 @@ function reqField(
   errs: VError[],
 ): { found: boolean; value: unknown } {
   if (!(key in v) || (v as Record<string, unknown>)[key] === undefined) {
-    errs.push(vErr([...loc, key], "Field required", "missing", v));
+    errs.push(vErr([...loc, key], "Field required", v));
     return { found: false, value: undefined };
   }
   return { found: true, value: (v as Record<string, unknown>)[key] };
 }
 
 /** Extra-key sweep (definition-order fields first, extras last in
- *  input order — probed: label/origin miss before zzz extra). */
+ *  input order.) */
 function extraSweep(
   v: Record<string, unknown>,
   known: ReadonlySet<string>,
@@ -238,7 +89,6 @@ function extraSweep(
         vErr(
           [...loc, k],
           "Extra inputs are not permitted",
-          "extra_forbidden",
           (v as Record<string, unknown>)[k],
         ),
       );
@@ -246,8 +96,7 @@ function extraSweep(
   }
 }
 
-/** A validated float tuple's raw items + numbers (promotion
- *  after-errors render the RAW tuple — PyTuple of parsed items). */
+/** A validated float array's raw items + numbers. */
 interface FloatTuple {
   readonly items: unknown[];
   readonly nums: number[];
@@ -259,7 +108,7 @@ function validFloatTuple(
   errs: VError[],
 ): FloatTuple | null {
   if (!Array.isArray(v)) {
-    errs.push(vErr(loc, "Input should be a valid tuple", "tuple_type", v));
+    errs.push(vErr(loc, "value must be an array", v));
     return null;
   }
   const items: unknown[] = [...v];
@@ -274,32 +123,27 @@ function validFloatTuple(
 }
 
 /** Validate a served params_json through the AnnyBakeParams shape
- *  (infra/python/melite_models/presets.py AnnyBakeParams — the serve-side
- *  belt). After-validator failures render with the WIRE STRING as
- *  input_value (probed: the original str, not the parsed doc).
- *  Returns the full "N validation error(s)..." text, or null. */
+ *  (the serve-side belt). Failures render with the wire string as
+ *  input, not the parsed doc.
+ *  Returns the failure text, or null. */
 export function validateBakeParams(s: string): string | null {
   let doc: unknown;
   try {
-    doc = parseJson(s);
+    doc = JSON.parse(s);
   } catch (exc) {
     const msg: string = exc instanceof Error
       ? exc.message
-      : /* v8 ignore next -- parseJson throws Errors: the String
+      : /* v8 ignore next -- JSON.parse throws Errors: the String
            fallback never fires (2026-09-12) */ String(exc);
-    // Host JSON text (CPython's differs) — shape-only parity; the
-    // belt never fires on canonical strings, only hand-corrupt
-    // ledger rows (the wall pins status + prefix).
     return renderErrors("AnnyBakeParams", [
-      vErr([], "Value error, params_json is not JSON: " + msg, "value_error", s),
+      vErr([], "params_json is not JSON: " + msg, s),
     ]);
   }
   if (!isPlainObject(doc)) {
     return renderErrors("AnnyBakeParams", [
       vErr(
         [],
-        "Value error, params_json must be a JSON object, got " + pyTypeName(doc),
-        "value_error",
+        "params_json must be a JSON object, got " + (typeof doc),
         s,
       ),
     ]);
@@ -310,7 +154,7 @@ export function validateBakeParams(s: string): string | null {
   if (!rd.found) dialect = "";
   else if (rd.value !== "authored" && rd.value !== "estimated") {
     errs.push(
-      vErr([], "Input should be 'authored' or 'estimated'", "literal_error", rd.value),
+      vErr([], "Input should be 'authored' or 'estimated'", rd.value),
     );
   } else dialect = rd.value;
   let phenotype: number[] | null = null;
@@ -326,7 +170,7 @@ export function validateBakeParams(s: string): string | null {
     const lv = doc["local_changes"];
     if (!isPlainObject(lv)) {
       errs.push(
-        vErr([], "Input should be a valid dictionary", "dict_type", lv),
+        vErr([], "params_json local_changes must be an object", lv),
       );
       localsBad = true;
     } else {
@@ -347,7 +191,7 @@ export function validateBakeParams(s: string): string | null {
     return renderErrors("AnnyBakeParams", errs);
   }
   const fail = (msg: string): string =>
-    renderErrors("AnnyBakeParams", [vErr([], "Value error, " + msg, "value_error", s)]);
+    renderErrors("AnnyBakeParams", [vErr([], msg, s)]);
   if (dialect === "authored") {
     if (phenotype.length !== 11) {
       return fail(
@@ -359,7 +203,7 @@ export function validateBakeParams(s: string): string | null {
       const n: number = phenotype[i] as number;
       if (!(n >= 0.0 && n <= 1.0)) {
         return fail(
-          "authored phenotype[" + i + "] = " + pyFloatRepr(n) + " outside 0.0..1.0",
+          "authored phenotype[" + i + "] = " + String(n) + " outside 0.0..1.0",
         );
       }
     }
@@ -392,64 +236,10 @@ export function validateBakeParams(s: string): string | null {
   for (const e of locals) {
     if (!(e.value >= -1.0 && e.value <= 2.0)) {
       return fail(
-        "local_changes[" + pyReprString(e.name) + "] = " +
-          pyFloatRepr(e.value) + " outside -1.0..2.0",
+        "local_changes[" + JSON.stringify(e.name) + "] = " +
+          String(e.value) + " outside -1.0..2.0",
       );
     }
   }
   return null;
-}
-
-/** CPython repr() of a finite double (probed battery 2026-09-07:
- *  1.0/0.5/0.1/1e15 fixed, 1e16+ exponential, 0.0001 fixed, 1e-05
- *  exponential, -0.0 signed, 1e100/5e-324/1.8e308 round-trip).
- *  Shortest digits come from String(v); py's fixed window is
- *  -3 <= decExp <= 16 (decExp = decimal-point position); the
- *  exponent pads to 2+ digits, lowercase e. */
-export function pyFloatRepr(v: number): string {
-  if (v === 0) return Object.is(v, -0) ? "-0.0" : "0.0";
-  const neg: string = v < 0 ? "-" : "";
-  const s: string = String(Math.abs(v));
-  const epos: number = s.indexOf("e");
-  let digits: string;
-  let exp10: number;
-  if (epos >= 0) {
-    const mant: string = s.slice(0, epos);
-    const exp: number = Number(s.slice(epos + 1));
-    const dot: number = mant.indexOf(".");
-    const fracLen: number = dot < 0 ? 0 : mant.length - dot - 1;
-    digits = mant.replace(".", "");
-    exp10 = exp - fracLen;
-  } else {
-    const dot: number = s.indexOf(".");
-    const fracLen: number = dot < 0 ? 0 : s.length - dot - 1;
-    digits = s.replace(".", "");
-    exp10 = -fracLen;
-  }
-  // Strip leading zeros (no value change — the digit string reads
-  // as an integer) then trailing zeros (each divides by 10, so the
-  // exponent climbs to compensate).
-  let lead = 0;
-  while (lead < digits.length && digits[lead] === "0") lead++;
-  /* v8 ignore next -- unreachable (v != 0 blanks the digit string
-     before the strip): kept as the belt's contract (2026-09-12) */
-  if (lead === digits.length) return "0.0";
-  digits = digits.slice(lead);
-  let tend = digits.length;
-  while (tend > 0 && digits[tend - 1] === "0") tend--;
-  exp10 += digits.length - tend;
-  digits = digits.slice(0, tend);
-  const n: number = digits.length;
-  const decExp: number = exp10 + n;
-  if (decExp >= -3 && decExp <= 16) {
-    if (decExp <= 0) return neg + "0." + "0".repeat(-decExp) + digits;
-    if (decExp >= n) return neg + digits + "0".repeat(decExp - n) + ".0";
-    return neg + digits.slice(0, decExp) + "." + digits.slice(decExp);
-  }
-  const mantissa: string =
-    digits.length === 1 ? digits : digits[0] + "." + digits.slice(1);
-  const e: number = decExp - 1;
-  const esign: string = e < 0 ? "-" : "+";
-  const eabs: string = String(Math.abs(e)).padStart(2, "0");
-  return neg + mantissa + "e" + esign + eabs;
 }

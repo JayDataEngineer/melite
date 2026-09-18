@@ -452,11 +452,15 @@ describe("stroke-83 boot reconcile (resurrect REBORN as a replay)", () => {
     s.svc.reconciled = false;
     await s.svc.bootReconcile();
     const side3 = JSON.parse(readFileSync(join(outRoot, "run-junkidentity", "_flow.json"), "utf8")) as Record<string, unknown>;
+    // TORN IDENTITY IS THE SWEEP'S, NOT THE REPLAY'S: a non-number
+    // created_at fails the durable gate — the row is never replayed;
+    // bootSweep settles it failed with the restart note, carrying
+    // the raw sidecar identity verbatim (never guessed, never coerced).
     assert.equal(side3["status"], "failed");
-    assert.deepEqual(side3["stages"], [], "non-array stages coerce to the empty face list");
-    assert.deepEqual(side3["skipped_stages"], [], "absent skipped_stages coerce to []");
-    assert.equal(side3["created_at"], 0, "non-number created_at coerces to 0");
-    assert.equal(side3["pipeline"], "flow_inline", "non-string pipeline coerces to the inline default");
+    assert.equal(side3["stages"], "s", "the torn row is swept verbatim, never replayed");
+    assert.equal(side3["created_at"], "late");
+    assert.equal(side3["pipeline"], 7);
+    assert.match(String(side3["error"]), /host restarted before the run started/);
     const side2 = JSON.parse(readFileSync(join(outRoot, "run-junkstages", "_flow.json"), "utf8")) as Record<string, unknown>;
     assert.equal(side2["status"], "failed");
     assert.equal(side2["sweep"], undefined, "not the sweep road: " + JSON.stringify(side2["sweep"]));

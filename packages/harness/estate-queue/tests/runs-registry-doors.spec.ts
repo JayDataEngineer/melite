@@ -217,7 +217,7 @@ describe("validate", () => {
       s.svc.validate({ flow: "ghost" }, sig()),
     );
     assert.equal(unknown.code, "runs/invalid-request");
-    assert.match(unknown.message, /no flow at flows\/ghost/);
+    assert.match(unknown.message, /no flow named ghost in the registry/);
     const pinned = await remote(() => s.svc.validate({ flow: "character" }, sig()));
     assert.equal(pinned.code, "runs/workflow-pin");
     const bad = await remote(() =>

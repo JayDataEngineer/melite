@@ -52,7 +52,7 @@ describe("compileFlowInline", () => {
     const keys = compileFlowInline(doc([{ ...stage(), x: 1 }], { nope: 1 })) as {
       payload: { error: string };
     };
-    assert.match(keys.payload.error, /unknown keys.*'nope'/);
+    assert.match(keys.payload.error, /unknown keys \["nope"\]/);
     const missing = compileFlowInline({ stages: [] }) as { payload: { error: string } };
     assert.match(missing.payload.error, /at least id and stages/);
     const notObj = compileFlowInline(doc(["s"])) as { payload: { error: string } };
@@ -60,7 +60,7 @@ describe("compileFlowInline", () => {
     const extra = compileFlowInline(doc([{ ...stage(), x: 1 }])) as {
       payload: { error: string };
     };
-    assert.match(extra.payload.error, /unknown field.*'x'/);
+    assert.match(extra.payload.error, /unknown field\(s\) \["x"\]/);
     const noId = compileFlowInline(doc([{ engine: "comfyui" }])) as {
       payload: { error: string };
     };
@@ -170,7 +170,7 @@ describe("selectSubmitDoor", () => {
     assert.deepEqual(selectSubmitDoor({ model: "m" }), { door: "model" });
     assert.deepEqual(selectSubmitDoor({ flow_inline: {} }), { door: "flow_inline" });
     const amb = selectSubmitDoor({ model: "m", flow: "f" }) as { payload: { error: string } };
-    assert.match(amb.payload.error, /'flow', 'model'|"flow", "model"/);
+    assert.match(amb.payload.error, /names \["flow","model"\]/);
     assert.match(
       (selectSubmitDoor({}) as { payload: { error: string } }).payload.error,
       /no flow selected/,
@@ -181,17 +181,17 @@ describe("selectSubmitDoor", () => {
 describe("envelope texts", () => {
   it("keeps the door's byte-pinned prose", () => {
     assert.equal(envelopeRefusal("not-object", ["x"]).payload["code"], "bad_envelope");
-    assert.equal(envelopeRefusal("not-object", ["x"]).payload["got"], "list");
+    assert.equal(envelopeRefusal("not-object", ["x"]).payload["got"], "array");
     const badTest = envelopeRefusal("bad-test", {}, { testFlag: "yes" });
     assert.match(badTest.payload["error"] as string, /test flag must be a boolean/);
-    assert.equal(badTest.payload["got"], "str");
+    assert.equal(badTest.payload["got"], "string");
     const missing = envelopeRefusal("missing-draft", {});
     assert.equal(missing.payload["code"], "draft_required");
     const malformed = envelopeRefusal("malformed-draft", {}, { draftId: "bad id!" });
     assert.match(malformed.payload["error"] as string, /malformed/);
     assert.equal(malformed.payload["got"], "bad id!");
     const bare = envelopeRefusal("malformed-draft", {});
-    assert.match(bare.payload["error"] as string, /''/);
+    assert.match(bare.payload["error"] as string, /: ""$/);
     const unknown = unknownDraftRefusal("ghost");
     assert.equal(unknown.payload["code"], "draft_unknown");
     assert.match(unknown.payload["error"] as string, /drafts\/ghost\.json/);

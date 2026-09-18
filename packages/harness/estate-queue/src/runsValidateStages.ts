@@ -20,28 +20,16 @@ import type {
   StageSkip,
 } from "./runsValidateShared.ts";
 import { edgeRef, inlineEdge, inlineKind, inlineSkip } from "./runsValidateInline.ts";
-import {
-  minLengthRefusal,
-  pyDictCoerce,
-  pyTypeName,
-  stageIdRefusal,
-} from "./runsValidateRefusals.ts";
-import {
-  pyReprJson,
-  pyReprStr,
-  pyReprStrList,
-  pySetOfKeys,
-  pyStr,
-} from "./runsValidatePyRepr.ts";
+import { coerceRecord, minLengthRefusal } from "./runsValidateRefusals.ts";
 
-// ── strict body (python/gateway.py:248 _strict_body, verbatim) ──────
+// ── strict body ──────
 // Key split owned by the admission gate; the FlowError prose stays here.
 export function strictBody(body: Record<string, unknown>): void {
   const offense = checkStrictBody(body);
   if (offense.bad.length > 0) {
     throw new FlowError(
       "request body carries retired runner knob(s) " +
-        pyReprStrList(offense.bad) +
+        JSON.stringify(offense.bad) +
         " — the runner never reads these (silent-drop class); " +
         "remove them",
     );
@@ -49,7 +37,7 @@ export function strictBody(body: Record<string, unknown>): void {
   if (offense.carry.length > 0) {
     throw new FlowError(
       "request body carries retired pipe-carry key(s) " +
-        pyReprStrList(offense.carry) +
+        JSON.stringify(offense.carry) +
         " — the 2026-08-10 stowaway wire: no gateway ever " +
         "stashed it (flow_doc was never emitted). The revive " +
         "rail is the draft (draft_id) + the run registry; card " +
@@ -58,8 +46,8 @@ export function strictBody(body: Record<string, unknown>): void {
   }
 }
 
-// Build one stage row from a JSON stage (flow.py:1425-1477): the
-// extras gate runs OUTSIDE the per-stage try (py line 1435 —
+// Build one stage row from a JSON stage: the
+// extras gate runs OUTSIDE the per-stage try (line 1435
 // set(st) on a non-dict stage with extras dies with AttributeError
 // on .get; sorted() on mixed extras dies with TypeError), then the
 // isinstance gate, then the per-name pulls inside the try whose
@@ -67,36 +55,28 @@ export function strictBody(body: Record<string, unknown>): void {
 // "stage[i] refuses:".
 export function buildStageRow(i: number, st: unknown): StageRow {
   const where: string = "stage[" + i + "]";
-  // sorted(set(st) - STAGE_KEYS) — the SET contains whatever st
-  // yields (list items, dict keys); non-string survivors kill
-  // sorted() exactly as py dies.
-  const rawExtras: unknown[] = [...pySetOfKeys(st)].filter(
+  // unknown keys = the stage object's own keys minus the legal set
+  const rawExtras: unknown[] = [...new Set(Object.keys(st as Record<string, unknown>))].filter(
     (k) => typeof k !== "string" || !(STAGE_KEYS_SORTED as readonly string[]).includes(k),
   );
   if (rawExtras.length > 0) {
     if (typeof st !== "object" || st === null || Array.isArray(st)) {
-      throw new TypeError("'" + pyTypeName(st) + "' object has no attribute 'get'");
-    }
-    /* v8 ignore next -- unreachable: dict extras are all strings
-       (Object.keys), and non-dict stages die at the .get TypeError
-       above — no mixed survivor reaches the sort (2026-09-12) */
-    if (rawExtras.some((k) => typeof k !== "string")) {
-      throw new TypeError("'<' not supported between instances");
+      throw new TypeError(where + " must be an object");
     }
     const rawId: unknown = (st as Record<string, unknown>)["id"] ?? "<no id>";
     throw new FlowError(
       where +
         " " +
-        pyReprJson(rawId) +
+        JSON.stringify(rawId) +
         ": body carries unknown field(s) " +
-        pyReprStrList(rawExtras as string[]) +
+        JSON.stringify(rawExtras as string[]) +
         " — the schema declares " +
-        pyReprJson([...STAGE_KEYS_SORTED]) +
+        JSON.stringify([...STAGE_KEYS_SORTED]) +
         " (extra=forbid at the door)",
     );
   }
   if (typeof st !== "object" || st === null || Array.isArray(st)) {
-    throw new FlowError(where + ": " + pyReprJson(st) + " is not an object");
+    throw new FlowError(where + ": " + JSON.stringify(st) + " is not an object");
   }
   try {
     const rec: Record<string, unknown> = st as Record<string, unknown>;
@@ -104,58 +84,58 @@ export function buildStageRow(i: number, st: unknown): StageRow {
     // dict (.items() AttributeError text by container type).
     const rawInputs: unknown = rec["inputs"] || {};
     if (typeof rawInputs !== "object" || rawInputs === null || Array.isArray(rawInputs)) {
-      throw new Error("'" + pyTypeName(rawInputs) + "' object has no attribute 'items'");
+      throw new Error(where + " inputs must be an object");
     }
     const inputs: Array<{ name: string; edge: Edge }> = Object.entries(
       rawInputs as Record<string, unknown>,
     ).map(([name, edge]) => ({
       name,
-      edge: inlineEdge(where + " input " + pyReprStr(name), edge),
+      edge: inlineEdge(where + " input " + JSON.stringify(name), edge),
     }));
     const rawOutputs: unknown = rec["outputs"] || {};
     if (typeof rawOutputs !== "object" || rawOutputs === null || Array.isArray(rawOutputs)) {
-      throw new Error("'" + pyTypeName(rawOutputs) + "' object has no attribute 'items'");
+      throw new Error(where + " outputs must be an object");
     }
     const outputs: Array<{ name: string; kind: string }> = [];
     for (const [name, kind] of Object.entries(rawOutputs as Record<string, unknown>)) {
-      outputs.push({ name, kind: inlineKind(where + " output " + pyReprStr(name), kind) });
+      outputs.push({ name, kind: inlineKind(where + " output " + JSON.stringify(name), kind) });
     }
     const rawExpected: unknown = rec["expected"] || {};
     if (typeof rawExpected !== "object" || rawExpected === null || Array.isArray(rawExpected)) {
-      throw new Error("'" + pyTypeName(rawExpected) + "' object has no attribute 'items'");
+      throw new Error(where + " expected must be an object");
     }
     const expected: Array<{ name: string; kind: string }> = [];
     for (const [name, kind] of Object.entries(rawExpected as Record<string, unknown>)) {
-      expected.push({ name, kind: inlineKind(where + " expected " + pyReprStr(name), kind) });
+      expected.push({ name, kind: inlineKind(where + " expected " + JSON.stringify(name), kind) });
     }
     const rawCardIo: unknown = rec["card_io"] || {};
     if (typeof rawCardIo !== "object" || rawCardIo === null || Array.isArray(rawCardIo)) {
-      throw new Error("'" + pyTypeName(rawCardIo) + "' object has no attribute 'items'");
+      throw new Error(where + " card_io must be an object");
     }
     const cardIo: Array<{ name: string; kind: string }> = [];
     for (const [name, kind] of Object.entries(rawCardIo as Record<string, unknown>)) {
-      cardIo.push({ name, kind: inlineKind(where + " card_io " + pyReprStr(name), kind) });
+      cardIo.push({ name, kind: inlineKind(where + " card_io " + JSON.stringify(name), kind) });
     }
     const skipWhen: StageSkip | null = inlineSkip(where, rec["skip_when"] ?? null);
-    // dict(st.get("params") or {}) — real dict() coercion semantics.
-    const params: Record<string, unknown> = pyDictCoerce(rec["params"] || {});
-    // Stage pydantic fields in DEFINITION order: id/engine
-    // min_length=1 (faked field errors), then the _id_legal
-    // after-validator (the value_error fake over the full kwargs).
-    // str(st.get("id", "")) — missing rides "", present rides str().
-    const id: string = "id" in rec ? pyStr(rec["id"]) : "";
+    // params defaults to {} — strict record, never a throw.
+    const params: Record<string, unknown> = coerceRecord(rec["params"] || {});
+    // Stage fields in DEFINITION order: id/engine
+    // id/engine refuse empty first, then the id-legal check over
+    // the full record.
+    // missing rides "", present rides String().
+    const id: string = "id" in rec ? String(rec["id"] ?? "") : "";
     if (id === "") throw new FlowError(where + " refuses: " + minLengthRefusal("Stage", "id"));
-    const engine: string = "engine" in rec ? pyStr(rec["engine"]) : "";
+    const engine: string = "engine" in rec ? String(rec["engine"] ?? "") : "";
     if (engine === "") {
       throw new FlowError(where + " refuses: " + minLengthRefusal("Stage", "engine"));
     }
-    const description: string = "description" in rec ? pyStr(rec["description"]) : "";
-    const card: string = pyStr(rec["card"] || "");
+    const description: string = "description" in rec ? String(rec["description"] ?? "") : "";
+    const card: string = String(rec["card"] || "");
     if (!FLOW_ID_RE.test(id)) {
       throw new FlowError(
         where +
           " refuses: " +
-          stageIdRefusal(id, engine, description, params, inputs, outputs, expected, card, cardIo, skipWhen),
+"stage id " + JSON.stringify(id) + " is not a legal identifier",
       );
     }
     // FromInitial(key) min_length=1 — the empty-key fake (raised by
@@ -173,19 +153,19 @@ export function buildStageRow(i: number, st: unknown): StageRow {
   }
 }
 
-// ── Flow construction validators (infra/python/flow.py, pure subset) ─────
-// _wires_resolve (flow.py:769): illegal flow id, duplicate ids
-// (own loop FIRST), then earlier-stage edges. Plain FlowErrors —
+// ── Flow construction validators (pure subset) ─────
+// _wires_resolve: illegal flow id, duplicate ids
+// (own loop FIRST), then earlier-stage edges. Plain FlowErrors
 // flow_from_body digs them out of the ValidationError wrapper, so
 // the door prints them bare.
 export function wiresResolve(flowId: string, stages: StageRow[]): void {
   if (!FLOW_ID_RE.test(flowId)) {
-    throw new FlowError("flow id " + pyReprStr(flowId) + " is not a legal identifier");
+    throw new FlowError("flow id " + JSON.stringify(flowId) + " is not a legal identifier");
   }
   const seen: Set<string> = new Set();
   for (const st of stages) {
     if (seen.has(st.id)) {
-      throw new FlowError("duplicate stage id " + pyReprStr(st.id));
+      throw new FlowError("duplicate stage id " + JSON.stringify(st.id));
     }
     seen.add(st.id);
   }
@@ -197,13 +177,13 @@ export function wiresResolve(flowId: string, stages: StageRow[]): void {
       if (!done.includes(edge.stage)) {
         throw new FlowError(
           "stage " +
-            pyReprStr(st.id) +
+            JSON.stringify(st.id) +
             " input " +
-            pyReprStr(inp.name) +
+            JSON.stringify(inp.name) +
             " wires to " +
-            pyReprStr(edgeRef(edge)) +
+            JSON.stringify(edgeRef(edge)) +
             " — not an EARLIER stage (known earlier: " +
-            (done.length > 0 ? pyReprJson([...done].sort()) : "none") +
+            (done.length > 0 ? JSON.stringify([...done].sort()) : "none") +
             ")",
         );
       }
@@ -213,7 +193,7 @@ export function wiresResolve(flowId: string, stages: StageRow[]): void {
 }
 
 // cardDefs — the live card registry for the card-stage lattice,
-// cardGate — the CARD-STAGE LATTICE body gate (infra/python/flow.py:793
+// cardGate — the CARD-STAGE LATTICE body gate (infra/python/
 // _card_params_gate -> stage_params.validate_stage_params, PORTED
 // NATIVE 2026-09-08): (1) the model gate stays byte-identical (the
 // wall pins it); (2) the schema pass rides the TS single
@@ -232,7 +212,7 @@ export function cardGate(
   const defs: Map<string, CardDefinition> = needCardRegistry(cards, "cardGate").defsSync();
   const def = defs.get(st.card);
   // requiresModel: false (pure-tool cards, boarded: []) skips the
-  // {model:} demand — the py row.requires_model parity. Unknown
+  // {model:} demand — the row.requires_model. Unknown
   // cards still hit the model gate first (order preserved: the wall
   // pins the model-gate text verbatim).
   if (def?.requiresModel !== false) {
@@ -240,11 +220,11 @@ export function cardGate(
     if (!model || !String(model).trim()) {
       throw new FlowError(
         "flow " +
-          pyReprStr(flowId) +
+          JSON.stringify(flowId) +
           " stage " +
-          pyReprStr(st.id) +
+          JSON.stringify(st.id) +
           ": card " +
-          pyReprStr(st.card) +
+          JSON.stringify(st.card) +
           " requires params.model (the model row id the card composes " +
           "against — see GET /v1/models) — the flow-stage equivalent " +
           "of the {model:} door",
@@ -254,11 +234,11 @@ export function cardGate(
   if (def === undefined) {
     throw new FlowError(
       "flow " +
-        pyReprStr(flowId) +
+        JSON.stringify(flowId) +
         " stage " +
-        pyReprStr(st.id) +
+        JSON.stringify(st.id) +
         ": card " +
-        pyReprStr(st.card) +
+        JSON.stringify(st.card) +
         " is not a registered card (the card set boots from " +
         "src/cards — see GET /v1/tools for the served surface)",
     );
@@ -269,11 +249,11 @@ export function cardGate(
     const msg = exc instanceof Error ? exc.message : String(exc);
     throw new FlowError(
       "flow " +
-        pyReprStr(flowId) +
+        JSON.stringify(flowId) +
         " stage " +
-        pyReprStr(st.id) +
+        JSON.stringify(st.id) +
         ": card " +
-        pyReprStr(st.card) +
+        JSON.stringify(st.card) +
         " schema refused body — " +
         msg,
     );
@@ -288,7 +268,7 @@ export function kindsOk(
   engineDefaults: Record<string, string | null>,
   cards?: CardRegistryLike | null,
 ): void {
-  // The lattice gate is its own pass BEFORE kinds (flow.py:793
+  // The lattice gate is its own pass BEFORE kinds (
   // docstring: "Runs BEFORE _validate_kinds").
   for (const st of stages) {
     if (st.card) cardGate(flowId, st, cards);
@@ -304,13 +284,13 @@ export function kindsOk(
     const onlyExpected: string[] = [...expectedNames].filter((k) => !inputNames.has(k)).sort();
     if (onlyInput.length > 0 || onlyExpected.length > 0) {
       const bits: string[] = [];
-      if (onlyInput.length > 0) bits.push("wired but untyped: " + pyReprJson(onlyInput));
-      if (onlyExpected.length > 0) bits.push("typed but unwired: " + pyReprJson(onlyExpected));
+      if (onlyInput.length > 0) bits.push("wired but untyped: " + JSON.stringify(onlyInput));
+      if (onlyExpected.length > 0) bits.push("typed but unwired: " + JSON.stringify(onlyExpected));
       throw new FlowError(
         "flow " +
-          pyReprStr(flowId) +
+          JSON.stringify(flowId) +
           " stage " +
-          pyReprStr(st.id) +
+          JSON.stringify(st.id) +
           ": inputs/expected mismatch (" +
           bits.join("; ") +
           ") — every input needs an expected Kind, every expected " +
@@ -329,11 +309,11 @@ export function kindsOk(
         if (def === null) {
           throw new FlowError(
             "flow " +
-              pyReprStr(flowId) +
+              JSON.stringify(flowId) +
               " stage " +
-              pyReprStr(st.id) +
+              JSON.stringify(st.id) +
               ": engine " +
-              pyReprStr(st.engine) +
+              JSON.stringify(st.engine) +
               " declares no default_output and stage declares no " +
               "outputs — add outputs={'default': <Kind>} on the stage, " +
               "or set DEFAULT_OUTPUT on the engine",
@@ -355,17 +335,17 @@ export function kindsOk(
       if (!upstream.has(inp.edge.output)) {
         throw new FlowError(
           "flow " +
-            pyReprStr(flowId) +
+            JSON.stringify(flowId) +
             " stage " +
-            pyReprStr(st.id) +
+            JSON.stringify(st.id) +
             " input " +
-            pyReprStr(inp.name) +
+            JSON.stringify(inp.name) +
             ": stage " +
-            pyReprStr(inp.edge.stage) +
+            JSON.stringify(inp.edge.stage) +
             " has no output named " +
-            pyReprStr(inp.edge.output) +
+            JSON.stringify(inp.edge.output) +
             " (declared outputs: " +
-            pyReprJson([...upstream.keys()].sort()) +
+            JSON.stringify([...upstream.keys()].sort()) +
             ")",
         );
       }
@@ -374,19 +354,19 @@ export function kindsOk(
       if (upstreamKind !== receivingKind) {
         throw new FlowError(
           "flow " +
-            pyReprStr(flowId) +
+            JSON.stringify(flowId) +
             " stage " +
-            pyReprStr(st.id) +
+            JSON.stringify(st.id) +
             " input " +
-            pyReprStr(inp.name) +
+            JSON.stringify(inp.name) +
             ": expected " +
             receivingKind +
             ", got " +
             upstreamKind +
             " from stage " +
-            pyReprStr(inp.edge.stage) +
+            JSON.stringify(inp.edge.stage) +
             " output " +
-            pyReprStr(inp.edge.output) +
+            JSON.stringify(inp.edge.output) +
             " — must be " +
             receivingKind,
         );
@@ -395,10 +375,10 @@ export function kindsOk(
   }
 }
 
-// validateEngines (flow.py:1066): every stage's engine through the
+// validateEngines: every stage's engine through the
 // bus — here the wall-pinned ENGINE_TABLE (existence + DEFAULT_OUTPUT);
 // then the FULL kind pass. Unknown-engine text mirrors
-// plugins.load_engine verbatim (infra/python/plugins.py:479).
+// plugins.load_engine verbatim.
 export function validateEngines(flow: Flow, cards?: CardRegistryLike | null): Flow {
   const engineDefaults: Record<string, string | null> = {};
   for (const st of flow.stages) {
@@ -409,14 +389,14 @@ export function validateEngines(flow: Flow, cards?: CardRegistryLike | null): Fl
     if (row === undefined) {
       throw new FlowError(
         "flow " +
-          pyReprStr(flow.id) +
+          JSON.stringify(flow.id) +
           " stage " +
-          pyReprStr(st.id) +
+          JSON.stringify(st.id) +
           ": engine " +
-          pyReprStr(st.engine) +
+          JSON.stringify(st.engine) +
           " — no engine plugin for type " +
-          pyReprStr(st.engine) +
-          " (no packages/*/engines/*/engine.py or engine.yaml declares it)",
+          JSON.stringify(st.engine) +
+          " (no engine plugin declares it)",
       );
     }
     engineDefaults[st.engine] = row.def;
@@ -425,7 +405,7 @@ export function validateEngines(flow: Flow, cards?: CardRegistryLike | null): Fl
   return flow;
 }
 
-// flowFromBody (flow.py:1388): JSON body -> validated Flow.
+// flowFromBody: JSON body -> validated Flow.
 export function flowFromBody(body: unknown, cards?: CardRegistryLike | null): Flow {
   if (typeof body !== "object" || body === null || Array.isArray(body)) {
     throw new FlowError("flow body must be a JSON object");
@@ -437,14 +417,14 @@ export function flowFromBody(body: unknown, cards?: CardRegistryLike | null): Fl
   if (dead.length > 0) {
     throw new FlowError(
       "flow body carries unknown keys " +
-        pyReprStrList(dead) +
+        JSON.stringify(dead) +
         " — allowed: " +
-        pyReprJson([...INLINE_TOP_SORTED]),
+        JSON.stringify([...INLINE_TOP_SORTED]),
     );
   }
   if (!("id" in rec) || !("stages" in rec)) {
     throw new FlowError(
-      "flow body needs at least id and stages — got keys " + pyReprStrList(Object.keys(rec)),
+      "flow body needs at least id and stages — got keys " + JSON.stringify(Object.keys(rec)),
     );
   }
   const stagesIn: unknown = rec["stages"];
@@ -455,14 +435,13 @@ export function flowFromBody(body: unknown, cards?: CardRegistryLike | null): Fl
   for (let i = 0; i < stagesIn.length; i++) {
     rows.push(buildStageRow(i, stagesIn[i]));
   }
-  const flowId: string = pyStr(rec["id"]);
-  // Flow(...) construction: wires + deferred kinds (the pydantic
-  // native id/… refusals surface here — only "" is reachable, faked).
+  const flowId: string = String(rec["id"] ?? "");
+  // Flow construction: wires + deferred kinds.
   if (flowId === "") {
     throw new FlowError(minLengthRefusal("Flow", "id"));
   }
   wiresResolve(flowId, rows);
   kindsOk(flowId, rows, {}, cards);
-  const flow: Flow = { id: flowId, description: pyStr(rec["description"] ?? ""), stages: rows };
+  const flow: Flow = { id: flowId, description: String(rec["description"] ?? ""), stages: rows };
   return validateEngines(flow, cards);
 }

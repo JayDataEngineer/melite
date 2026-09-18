@@ -6,9 +6,9 @@
 // SkillRow gate + wire shape, and the flow rows (LEVEL 4: one
 // gated row per registry declaration). The contiguous spans
 // planes.ts:151-1090 (errors/fmt/flow decls/fs/walks) and
-// 1195-1260 (FlowRow + registryBody + flowRows) port wholesale —
-// the manifest/orientation block between them (PyNum/parseJson
-// consumers, the lane-bundle machinery) is the LOAD stroke's
+// 1195-1260 (FlowRow + registryBody + flowRows) port wholesale
+// the manifest/orientation block between them (the lane-bundle
+// machinery) is the LOAD stroke's
 // meat, not the skills'. The skill.read ledger ride is preserved
 // (appendLedger → the queue core's own seam, gateway ledger
 // 2241-2250).
@@ -27,7 +27,6 @@ const DIR_ID_ALIASES: Readonly<Record<string, string>> = {
   mask_studio: "mask-studio",
 };
 import { appendLedger } from "./queue.ts";
-import { pyReprString } from "./pyJson.ts";
 import {
   expandRegistryFlow,
   getRegistryFlow,
@@ -50,26 +49,12 @@ export class LaneWireError extends Error {
 // python-compat scalars
 // ---------------------------------------------------------------------------
 
-/** printf-style %s / %r / %d over a template (py % formatting for
- *  the refusal/orientation texts). Templates are internal constants
- *  — values ride raw, exactly as py formats the template only. */
-function fmt(template: string, ...args: unknown[]): string {
-  let i = 0;
-  return template.replace(/%[srd]/g, (m: string): string => {
-    const a: unknown = args[i++];
-    // (%r serves strings at every live site — 404 ids, dir paths;
-    // no live template formats %s/%d: every %s text guards a
-    // statically-impossible refusal, so the else never fires.)
-    return m === "%r"
-      ? pyReprString(a as string)
-      : /* v8 ignore next */ String(a);
-  });
-}
 
 
 
 
-/** Path.stem (py: strip the last-dot suffix; dotfiles keep theirs). */
+
+/** Path.stem: strip the last-dot suffix; dotfiles keep theirs. */
 function stem(name: string): string {
   const i: number = name.lastIndexOf(".");
   if (i <= 0) return name;
@@ -81,7 +66,7 @@ function stem(name: string): string {
 // ---------------------------------------------------------------------------
 
 /** Disclosure root (the REPO the doors read): MELITE_REPO_ROOT else
- *  file-anchored (the uploads-door pattern, gateway.py 63).
+ *  file-anchored (the uploads-door pattern).
  *  Exported — the catalogs door anchors the same root (one root
  *  function, never duplicated). */
 export function disclosureRoot(): string {
@@ -152,10 +137,10 @@ interface FlowDecl {
 }
 
 /** Flow declarations in registry order (registryFlowNames sorted),
- *  with load failures marked (py _flow_rows 389-393 skips FlowError
+ *  with load failures marked (_flow_rows 389-393 skips FlowError
  *  silently — the registry is code, so a declaration bug throws LOUD
  *  out of expandRegistryFlow instead of marking a row). Skips the
- *  registry when flows/ is absent (py _flow_rows 387-388: not-a-dir
+ *  registry when flows/ is absent (_flow_rows 387-388: not-a-dir
  *  -> []). The headless tool rides the registry declaration
  *  verbatim (projected to the frozen row shape); hasSkillMd reads
  *  the flows/<id>/SKILL.md leaf live. skillRefs ride the registry
@@ -197,7 +182,7 @@ function flowDecls(repo: string): FlowDecl[] {
 }
 
 // ---------------------------------------------------------------------------
-// fs helpers (py stdlib move-for-move)
+// fs helpers (stdlib move-for-move)
 // ---------------------------------------------------------------------------
 
 function isDir(p: string): boolean {
@@ -271,7 +256,7 @@ function frontmatter(text: string): { name: string; description: string } {
 }
 
 // ---------------------------------------------------------------------------
-// lane-wire gates (python/lane_wire.py — pydantic v2 lax, move-for-move)
+// lane-wire gates (lax wire validation)
 // ---------------------------------------------------------------------------
 
 export interface ManifestRow {
@@ -322,7 +307,7 @@ export interface SkillRow {
 /** SkillRow constructor (lane_wire 190-226 shapes the row): the
  *  callers pre-gate — readDoc builds valid doc rows (exactly one of
  *  card/model, paired steps), flowRows pre-checks stages — so the
- *  refusal arms have no live caller and stay in py, not here. */
+ *  refusal arms have no live caller and are not built here. */
 function gateSkill(
   id: string,
   name: string,
@@ -560,12 +545,10 @@ function cardUnitDirs(engine: string, repo: string): { genre: string; cname: str
     if (cname === "node_modules" || cname.startsWith(".")) return;
     if (cname.includes("_") && DIR_ID_ALIASES[cname] === undefined) {
       throw new LaneWireError(
-        fmt(
-          "[tool_projection] card dir %r has no registry mapping " +
-            "(underscore dirs bridge via DIR_ID_ALIASES in " +
-            "doors/toolProjection.ts — add the row or rename the dir)",
-          cdir,
-        ),
+        "[tool_projection] card dir " + JSON.stringify(cdir) +
+          " has no registry mapping (underscore dirs bridge via " +
+          "DIR_ID_ALIASES in toolProjection.ts — add the row or " +
+          "rename the dir)",
       );
     }
     out.push({ genre, cname: DIR_ID_ALIASES[cname] ?? cname, cdir });
@@ -592,7 +575,7 @@ function cardUnitDirs(engine: string, repo: string): { genre: string; cname: str
   // served each card once per engine dir (3× — the picker repeats).
   // Emit under the registry's owner engine ONLY (the manifests()
   // dir-less-cards precedent below) — never once per engine. The
-  // owner is comfyui-cordis (factsPath in flowsCard.ts hardcodes it;
+  // owner is comfyui-cordis (factsPath in cardsRegistry.ts hardcodes it;
   // packages/engines/comfyui/ holds only action_cards tenants, it is
   // never itself an engine entry).
   // (split never yields [] — pop is always a string here; dir names
@@ -680,7 +663,7 @@ export function cardRows(engine: string, repo: string): CardWalk {
 }
 export interface FlowRow {
   readonly row: SkillRow;
-  readonly bodyPath: string;
+  readonly bodyPath: string | null;
   readonly bodyText: string | null;
 }
 
@@ -719,11 +702,8 @@ export function flowRows(repo: string): FlowRow[] {
       /* v8 ignore next */
       if (s.id.length < 1 || s.engine.length < 1) {
         throw new LaneWireError(
-          fmt(
-            "flow %s: lane wire refusal: id: String should have at " +
-              "least 1 character",
-            decl.id,
-          ),
+          "flow " + decl.id + ": lane wire refusal: id: String " +
+            "should have at least 1 character",
         );
       }
       steps.push({ id: s.id, type: s.engine, plugin: s.engine });
@@ -743,7 +723,7 @@ export function flowRows(repo: string): FlowRow[] {
       row: gated,
       bodyPath: decl.hasSkillMd
         ? join(repo, "flows", decl.id, "SKILL.md")
-        : join(repo, "flows", decl.id, "flow.py"),
+        : null,
       bodyText: decl.hasSkillMd ? null : registryBody(decl.id),
     });
   }
@@ -797,7 +777,7 @@ interface AgentBlock {
 export function findSkill(
   repo: string,
   sid: string,
-): { row: SkillRow; path: string; bodyText: string | null } | null {
+): { row: SkillRow; path: string | null; bodyText: string | null } | null {
   for (const fr of flowRows(repo)) {
     if (fr.row.id === sid) {
       return { row: fr.row, path: fr.bodyPath, bodyText: fr.bodyText };
@@ -815,20 +795,19 @@ export function findSkill(
   return null;
 }
 
-/** GET /v1/skills/* (lane_disclosure.skill_read 844-880 via
- *  _h_skill_read 3906-3913): flow rows first, then model+card rows;
- *  success ledgers skill.read (gateway ledger 2241-2250, compact
- *  envelope — queue.ts appendLedger). */
+/** GET /v1/skills/*: flow rows first, then model+card rows;
+ *  success ledgers skill.read (compact envelope — queue.ts
+ *  appendLedger). */
 export function hSkillRead(
   repo: string,
   stateRoot: string,
   sid: string,
 ): { status: number; payload: unknown } {
   try {
-    const found: { row: SkillRow; path: string; bodyText: string | null } | null =
+    const found: { row: SkillRow; path: string | null; bodyText: string | null } | null =
       findSkill(repo, sid);
     if (found === null) {
-      return { status: 404, payload: { error: fmt("no such skill: %r", sid) } };
+      return { status: 404, payload: { error: "no such skill: " + JSON.stringify(sid) } };
     }
     // THE SPAWN PLANE DOOR LAW: `-spawn` scoped leaves are the
     // spawned subagent's private briefs — the HTTP read door
@@ -836,11 +815,13 @@ export function hSkillRead(
     // spawn injection reads them through findSkill directly, never
     // through this door.
     if (found.row.scope.endsWith("-spawn")) {
-      return { status: 404, payload: { error: fmt("no such skill: %r", sid) } };
+      return { status: 404, payload: { error: "no such skill: " + JSON.stringify(sid) } };
     }
     let body: string;
     if (found.bodyText !== null) {
       body = found.bodyText;
+    } else if (found.path === null) {
+      return { status: 500, payload: { error: "skill row carries neither body nor path" } };
     } else {
       try {
         body = readFileSync(found.path, "utf8");
@@ -866,7 +847,7 @@ export function hSkillRead(
       found.row.scope.length < 1
     ) {
       throw new LaneWireError(
-        fmt("skill doc refusal (%s): name: Field required", sid),
+        "skill doc refusal (" + sid + "): name: Field required",
       );
     }
     appendLedger(stateRoot, "skill.read", { id: sid });

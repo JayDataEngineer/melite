@@ -20,7 +20,6 @@ import {
   spliceWorkflow,
 } from "@melite/comfyui-cordis";
 import type { EngineJson, MergeRow, MergeStageResult } from "@melite/comfyui-cordis";
-import { pyReprStr } from "@melite/comfyui-cordis";
 import type { EngineExecutor, EngineStageRow } from "@melite/engine-contract";
 import {
   expandRegistryFlow,
@@ -29,18 +28,16 @@ import {
   registryInitialsError,
 } from "./flowsData.ts";
 import { resolveRepoRoot } from "@melite/comfyui-cordis";
-import { newRunId, outRootFor, pipelineOf, pyStr, strictBodyCheck, draftIdOk, planResurrect, bootSweep, appendLedger } from "./queue.ts";
+import { newRunId, outRootFor, pipelineOf, strictBodyCheck, draftIdOk, planResurrect, bootSweep, appendLedger } from "./queue.ts";
 import { readFileSync } from "node:fs";
 import {
   CardArmError,
-  pyStrMid,
   type ModelFactsRow,
   type Phase1Card,
 } from "./cardsRegistry.ts";
 import {
   FlowError,
   findDanglingRefs,
-  pyReprJson,
   strictBody,
 } from "./runsValidate.ts";
 import { FLOW_ID_RE } from "./runsGates.ts";
@@ -55,7 +52,7 @@ import {
 } from "./runsStart.ts";
 import type { CompiledStage } from "./runsStart.ts";
 import type { StageRow } from "./runsTypes.ts";
-import { listRuns, parseIntPy } from "./runsList.ts";
+import { listRuns, parseIntOrNull } from "./runsList.ts";
 import { inlineArm } from "./runsValidate.ts";
 import type { FlowsValidateAnswer } from "./runsValidate.ts";
 import {
@@ -73,9 +70,9 @@ import type { RunRecord } from "./runsTypes.ts";
 type EngineCtx = Parameters<typeof needComfyUI>[0];
 /** The runs Remote failure codes, merged into the protocol's ONE
  *  vocabulary (cookbook §2: declaration merging, next to the
- *  throws). The py codes ride kebab-cased; the byte-pinned prose
+ *  throws). The codes ride kebab-cased; the byte-pinned prose
  *  rides the message; loc/expected/got ride the details. */
-/** Refusal detail rows (the py envelope's loc/expected/got,
+/** Refusal detail rows (the envelope's loc/expected/got,
  *  present when the door set them). */
 export interface RunsRefusalDetails {
   readonly loc?: string;
@@ -95,7 +92,7 @@ declare module "@deepseek-ai/dsh-typert-protocol" {
     "runs/invalid-request": RunsRefusalDetails;
     /** Beyond the served preview scope — names what's missing. */
     "runs/preview-scope": RunsRefusalDetails;
-    /** The inline compile refused (flow.py voice, batch rows in
+    /** The inline compile refused (flow.voice, batch rows in
      *  details.errors — the validate door's 400 payload). */
     "runs/flow-compile": RunsRefusalDetails & { readonly errors?: unknown };
     /** The comfyui workflow pin sweep refused (the validate
@@ -123,7 +120,7 @@ declare module "@deepseek-ai/cordis" {
   }
 }
 
-/** The py refusal codes this remote serves, folded to the
+/** The refusal codes this remote serves, folded to the
  *  protocol's vocabulary — a literal table, no dynamic key. */
 const RUNS_ERROR_CODES: Readonly<
   Record<string, "runs/bad-envelope" | "runs/draft-required" | "runs/draft-malformed" | "runs/draft-unknown" | "runs/invalid-request" | "runs/preview-scope" | "runs/flow-compile" | "runs/workflow-pin" | "runs/card-compose" | "runs/lane-input-missing">
@@ -335,7 +332,7 @@ export class RunsRuntimeService extends Service {
     reuse?: { runId: string },
   ): Promise<{ run_id: string; status: string; queue_position: number }> {
     signal.throwIfAborted();
-    // The pre-registration chain, py order (queue.ts's envelope
+    // The pre-registration chain, order (queue.ts's envelope
     // walk with the draft probe handed in): non-object, test-bool,
     // draft required/malformed, then the AWAITED domain probe
     // (unknown doc), then the strict body.
@@ -353,7 +350,7 @@ export class RunsRuntimeService extends Service {
     };
     // The envelope walk sits HERE (not queue.ts's sync
     // validateSubmitEnvelope) because the draft probe is an
-    // AWAITED seat hop — the py ORDER is preserved exactly.
+    // AWAITED seat hop — the ORDER is preserved exactly.
     const checked = await this.walkEnvelope(doc, draftExists);
     // THE REFUSAL FIRST (stroke 48: the bench read below needs
     // checked.draftId, which only the ok arm carries — refusing here
@@ -384,7 +381,7 @@ export class RunsRuntimeService extends Service {
       // phase-2 with the minted id, register + sidecars + ledger,
       // pump. Every compose failure refuses with the phase-N voice
       // and registers nothing.
-      const mid: string = pyStrMid(body["model"]);
+      const mid: string = String(body["model"] ?? "");
       const cards = this.ctx.cardRegistry;
       let p1: Phase1Card;
       try {
@@ -436,8 +433,8 @@ export class RunsRuntimeService extends Service {
       };
     }
     if (selected.door === "flow") {
-      // THE NAMED-FLOW SHIM (REBUILD-13; the dead door's own law,
-      // flowsRun.ts:745): the registry flow expands (from_flow links
+      // THE NAMED-FLOW SHIM (REBUILD-13; the dead door's own law):
+      // the registry flow expands (from_flow links
       // resolved live) and lands as the flow_inline doc; every gate
       // after this point — structural compile, single-stage policy,
       // registration, the merged worker — runs untouched. Multi-stage
@@ -450,7 +447,7 @@ export class RunsRuntimeService extends Service {
         // the start-door envelope norm for bad requests).
         throw new RemoteError(
           "runs/invalid-request",
-          "no flow at flows/" + name + "/flow.py",
+          "no flow named " + name + " in the registry",
           { loc: "flow" },
         );
       }
@@ -518,7 +515,7 @@ export class RunsRuntimeService extends Service {
   }
 
   /** The list arm (REBUILD-7): the restore-port envelope over the
-   *  output roots. The raw limit STRING rides from the lane (py
+   *  output roots. The raw limit STRING rides from the lane (strict
    *  int() semantics: underscores parse, junk refuses). The drafts
    *  probe rides the drafts remote. */
   async list(
@@ -530,7 +527,7 @@ export class RunsRuntimeService extends Service {
     // The door's 400 text (editor_runs int()) — the runs face's
     // invalid-request refusal. ONLY this parse folds; every other
     // failure stays loud (no absorb).
-    const parsed: number | null = parseIntPy(rawLimit);
+    const parsed: number | null = parseIntOrNull(rawLimit);
     if (parsed === null) {
       throw new RemoteError(
         "runs/invalid-request",
@@ -602,7 +599,7 @@ export class RunsRuntimeService extends Service {
         if (decl === undefined) {
           throw new RemoteError(
             "runs/invalid-request",
-            "no flow at flows/" + name + "/flow.py",
+            "no flow named " + name + " in the registry",
             { loc: "flow" },
           );
         }
@@ -659,7 +656,7 @@ export class RunsRuntimeService extends Service {
   async modelValidateArm(
     body: Record<string, unknown>,
   ): Promise<FlowsValidateAnswer> {
-    const mid: string = pyStr(body["model"]);
+    const mid: string = String(body["model"] ?? "");
     try {
       strictBody(body);
     } catch (e) {
@@ -672,7 +669,7 @@ export class RunsRuntimeService extends Service {
         payload: { error: flowErr.message, code: "invalid_request" },
       };
     }
-    // resolve_request's door count (gateway.py:279): the {model} arm
+    // resolve_request's door count: the {model} arm
     // re-checks ambiguity — a body naming two doors refuses here,
     // before the artifact sweep.
     const doors: string[] = (["flow", "flow_inline", "model"] as string[])
@@ -683,13 +680,13 @@ export class RunsRuntimeService extends Service {
         payload: {
           error:
             "ambiguous request: names " +
-            pyReprJson(doors) +
+            JSON.stringify(doors) +
             " — provide exactly one of flow, flow_inline, model",
           code: "invalid_request",
         },
       };
     }
-    // ARTIFACT-REF GATE first (gateway.py:617).
+    // ARTIFACT-REF GATE first.
     const dangling: Array<[string, string, string]> =
       findDanglingRefs(body);
     if (dangling.length > 0) {
@@ -698,7 +695,7 @@ export class RunsRuntimeService extends Service {
         status: 400,
         payload: {
           error:
-            "dangling artifact ref at " + pyReprStr(location) + ": " +
+            "dangling artifact ref at " + JSON.stringify(location) + ": " +
             ref + " (" + why + ")",
           code: "invalid_request",
         },
@@ -708,7 +705,7 @@ export class RunsRuntimeService extends Service {
       return {
         status: 400,
         payload: {
-          error: "model id " + pyReprStr(mid) + " is not a legal identifier",
+          error: "model id " + JSON.stringify(mid) + " is not a legal identifier",
           code: "invalid_request",
         },
       };
@@ -745,19 +742,19 @@ export class RunsRuntimeService extends Service {
     const famRow: ModelFactsRow | undefined = facts[fam];
     if (famRow === undefined) {
       // Non-cordis compose arm (python schema registry — unported
-      // half): verdict + code parity, native text.
+      // half): verdict + code, native text.
       return {
         status: 400,
         payload: {
           error:
-            "card_compose phase 1: model " + pyReprStr(mid) +
+            "card_compose phase 1: model " + JSON.stringify(mid) +
             " composes outside the cordis plane (python schema arm — " +
             "unported half in this stroke)",
           code: "card_compose",
         },
       };
     }
-    // THE ROUTE-LENS STAMP OVERLAY (gateway.py _route_stamp_overlay
+    // THE ROUTE-LENS STAMP OVERLAY (_route_stamp_overlay
     // 705-751): family defaults + the selected variant's
     // resolver_defaults, absent-keys-only, filtered to the card
     // field surface.
@@ -783,7 +780,7 @@ export class RunsRuntimeService extends Service {
         payload: { error: refused.message, code: refused.code },
       };
     }
-    // composed OK — py's 200 shape verbatim (ok/model/card/cost in
+    // composed OK — 200 shape verbatim (ok/model/card/cost in
     // wire order; engine medians unknown at validate time so the
     // stages list is empty).
     return {
@@ -900,7 +897,7 @@ export class RunsRuntimeService extends Service {
     // ONE ENVELOPE LAW with checkFlowsStartEnvelope (runsGates) and the
     // queue door: absent/null test means false — a chat tool's start
     // doc may carry test:null (LLM serializers emit nulls for omitted
-    // booleans) and the py-era gate (submit 1179-1270) never refused
+    // booleans) and the retired gate (submit 1179-1270) never refused
     // it. This copy had drifted to a bare read, refusing legal calls
     // (live lane receipt 2026-09-12: h3_timeline chat call refused
     // "test flag must be a boolean (got unknown null)").
