@@ -21,6 +21,23 @@ afterEach(cleanup)
 const F = (over: Partial<SpecField> = {}): SpecField =>
   ({ name: 'prompt', label: 'Prompt', type: 'text', ...over }) as SpecField
 
+test('ATOM: the number face — type=number carries the field facts; text stays text (2026-09-18, the conviction)', () => {
+  const onEdit = vi.fn()
+  const f = F({ name: 'shift_video', label: 'Shift video', type: 'number', min: 0, max: 24, step: 0.5 })
+  render(h(SpecAtom, { f, value: 8, onEdit }))
+  const input = screen.getByLabelText('Shift video') as HTMLInputElement
+  expect(input.type).toBe('number')
+  expect(input.min).toBe('0')
+  expect(input.max).toBe('24')
+  expect(input.step).toBe('0.5')
+  // the value still travels as the RAW STRING — coerce once at patch, the estate's law
+  fireEvent.change(input, { target: { value: '9.5' } })
+  expect(onEdit).toHaveBeenCalledWith('shift_video', '9.5')
+  cleanup()
+  const t = render(h(SpecAtom, { f: F({ name: 'note', label: 'Note' }), value: '', onEdit: vi.fn() }))
+  expect((t.getByLabelText('Note') as HTMLInputElement).type).toBe('text')
+})
+
 test('TRI-STATE: inherit / on / off round-trip (the unset path is native undefined)', () => {
   const onEdit = vi.fn()
   const { rerender } = render(h(TriStateAtom, { label: 'T', value: undefined, onEdit, name: 't' }))

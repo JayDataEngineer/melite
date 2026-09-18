@@ -122,6 +122,21 @@ describe("span + guides", () => {
     assert.deepEqual(calls.trans, [[1, "extend"]])
   })
 
+  it("bus order + the picker filter (images \u2192 videos \u2192 audios \u2192 seam; audio/video files not grayed out)", () => {
+    const { d } = deps()
+    render(<CallCard c={{ ...BASE }} i={1} deps={d} />)
+    // the lanes render in the BUNDLE'S OWN wire order: images, videos, audios
+    const buckets = screen.getAllByTestId("tl-call-ref-bucket")
+    assert.equal(buckets.length, 3, "three lanes on the bus")
+    const files = buckets.map((b) => b.querySelector("input[type=file]")!.getAttribute("accept"))
+    assert.deepEqual(files, ["image/png,image/jpeg,image/webp", "video/*", "audio/*"],
+      "each lane's OS picker accepts its own MIME family (the two-audio fix)")
+    // the seam rides AFTER the bus — the call's join, never a lane between lanes
+    const seam = screen.getByTestId("tl-first-frame-prev-toggle")
+    assert.ok(buckets[2].compareDocumentPosition(seam) & Node.DOCUMENT_POSITION_FOLLOWING,
+      "the audios lane precedes the seam in the DOM")
+  })
+
   it("guide inputs write; blanks wear the empty face", () => {
     const { d, calls } = deps()
     render(<CallCard c={{ ...BASE, audio: "a1" }} i={0} deps={d} />)

@@ -4,7 +4,7 @@
  * every logic line is verbatim from the monolith (source range noted).
  */
 import { Button } from "@deepseek-ai/dsh-client-ui-primitives"
-import { NumberControl, Tip } from "./kit"
+import { NumberControl, SectionLabel, Tip } from "./kit"
 import { cn } from "@melite/card-base/chrome"
 import { ChevronDown, X } from "@melite/card-base/icons"
 import s from "./studio.module.css"
@@ -49,10 +49,15 @@ export const deliveredFrames = (c: DocCall, i: number): number => {
  *  clear. The wire form is the comma string (the card's wireList
  *  law — trimmed entries, empties absent). */
 function RefsBucket({
-  label, kind, cap, value, artifacts, onChange,
+  label, kind, accept, cap, value, artifacts, onChange,
 }: {
   label: string
   kind: "image" | "video" | "audio"
+  /** THE OS PICKER FILTER (2026-09-18, the two-audio fix): the lane's
+   *  MIME family — without it the hidden file input's IMAGE-ONLY
+   *  accept grays out every audio and video in the dialog (you
+   *  literally could not add even one from file). */
+  accept?: string
   /** Bundle cap (3 videos, 3 audios — the image lane owns the 9-slot
    * image bus: slot 1 anchor + slots 2-9 refs). */
   cap: number
@@ -77,18 +82,25 @@ function RefsBucket({
   }
   return (
     <div className={s.refRow} data-testid="tl-call-ref-bucket">
-      <div className={s.refHead}>
-        <span className={s.refLabel}>{label}</span>
-        <span className={cn(s.refCount, over ? s.refCountOver : s.refCountOk)}>
-          {chips.length}/{cap}{over ? " over cap" : ""}
-        </span>
-      </div>
+      <SectionLabel
+        tail={
+          <span
+            className={over ? s.refCountOver : undefined}
+            title={over ? `${chips.length} claimed — the bus holds ${cap}` : `${chips.length} of ${cap}`}
+          >
+            {chips.length}/{cap}{over ? " over cap" : ""}
+          </span>
+        }
+      >
+        {label}
+      </SectionLabel>
       <div className={s.chips}>
         {chips.map((chip, ci) => (
           <SourceRow
             key={`${chip}-${ci}`}
             label={chip.startsWith("data:") ? `upload ${ci + 1}` : chip}
             kind={kind === "image" ? "image" : "file"}
+            accept={accept}
             value={chip.startsWith("data:") ? null : chip}
             onEdit={(v) => {
               if (v === "") setChips(chips.filter((_, x) => x !== ci))
@@ -106,6 +118,7 @@ function RefsBucket({
         <SourceRow
           label={`+ ${label.toLowerCase()}`}
           kind={kind === "image" ? "image" : "file"}
+          accept={accept}
           value={null}
           onEdit={(v) => { if (v !== "") setChips([...chips, chipOf(v)]) }}
           candidates={candidates}
@@ -235,14 +248,12 @@ export function CallCard({
         the ref chips, never in an alien box. The seam controls ride
         under the bus (the seam is the call's join, not a slot). */}
     <div className={s.callRefs} data-testid="tl-call-refs">
-      <div className={s.callRefsHead}>
-        <span className={s.callRefsTitle}>
-          Reference bundle (this call)
-        </span>
-        <span className={s.callRefsNote}>
-          the model's input bus · slot 1 anchors the start &amp; sizes the window · slots 2–9 + the video/audio lanes condition identity
-        </span>
-      </div>
+      {/* ONE conformed head (2026-09-18, the operator's typography
+          conviction: "this is not the same text or font as the
+          generic system we made" — the panel's head and lane labels
+          ride the kit's SectionLabel grammar, the same face every
+          other studio section uses. No hand-rolled spans.) */}
+      <SectionLabel>Reference bundle (this call)</SectionLabel>
       <div className={s.callRefsBody}>
         {/* THE IMAGE LANE — the 9-slot bus: anchor first, then the
             ref chips, then the add-row. One grammar, one family. */}
@@ -267,18 +278,21 @@ export function CallCard({
           }
           return (
             <div className={s.refRow} data-testid="tl-call-ref-bucket">
-              <div className={s.refHead}>
-                <span className={s.refLabel}>Images — slot 1 anchors · slots 2–9 reference</span>
-                <span
-                  className={cn(s.refCount, over ? s.refCountOver : s.refCountOk)}
-                  title={over
-                    ? `${total} image slots claimed — the bus holds 9 (1 anchor + 8 refs); the compose slices the overflow`
-                    : `${total} of 9 image slots on the bus`}
-                  data-testid="tl-call-ref-images"
-                >
-                  {total}/9{over ? " over bus" : ""}
-                </span>
-              </div>
+              <SectionLabel
+                tail={
+                  <span
+                    className={over ? s.refCountOver : undefined}
+                    title={over
+                      ? `${total} image slots claimed — the bus holds 9 (1 anchor + 8 refs); the compose slices the overflow`
+                      : `${total} of 9 image slots on the bus`}
+                    data-testid="tl-call-ref-images"
+                  >
+                    {total}/9{over ? " over bus" : ""}
+                  </span>
+                }
+              >
+                Images — slot 1 anchors · slots 2–9 reference
+              </SectionLabel>
               <div className={s.chips}>
                 <FirstFrameSlot
                   testId="tl-first-frame"
@@ -325,9 +339,33 @@ export function CallCard({
             </div>
           )
         })()}
+        {/* THE BUS ORDER (2026-09-18, the operator's conviction:
+            "it's ref img -> SEAMS for no reason -> Audio -> Videos"
+            — the lanes render in the bundle's OWN wire order (images
+            1–9, videos, audios) and the seam rides AFTER the bus:
+            the seam is the call's join, never a lane between lanes. */}
+        <RefsBucket
+          label="Ref videos"
+          kind="video"
+          accept="video/*"
+          cap={3}
+          value={c.refs?.videos}
+          artifacts={refArtifacts}
+          onChange={(v) => setCallRefs(i, "videos", v)}
+        />
+        <RefsBucket
+          label="Ref audios"
+          kind="audio"
+          accept="audio/*"
+          cap={3}
+          value={c.refs?.audios}
+          artifacts={refArtifacts}
+          onChange={(v) => setCallRefs(i, "audios", v)}
+        />
         {/* THE SEAM — the call's join (cut vs extend + the prev
-            continuation). Seam concepts ride under the bus, never
-            inside a slot. */}
+            continuation). LAST ROW under the bus, after every lane:
+            the seam is the call's join, never a lane between
+            lanes. */}
         <SeamControls
           callIndex={i}
           testId="tl-first-frame"
@@ -339,22 +377,6 @@ export function CallCard({
           prevNote={i === 0
             ? "the first call has no previous video to continue from"
             : undefined}
-        />
-        <RefsBucket
-          label="Ref videos"
-          kind="video"
-          cap={3}
-          value={c.refs?.videos}
-          artifacts={refArtifacts}
-          onChange={(v) => setCallRefs(i, "videos", v)}
-        />
-        <RefsBucket
-          label="Ref audios"
-          kind="audio"
-          cap={3}
-          value={c.refs?.audios}
-          artifacts={refArtifacts}
-          onChange={(v) => setCallRefs(i, "audios", v)}
         />
       </div>
     </div>

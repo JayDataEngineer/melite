@@ -100,6 +100,13 @@ export interface SquareWire {
    *  bespoke vocabularies (the studio's inline data:-URL cap) keep
    *  their semantics under the same three-entry grammar. */
   onFile?: (file: File) => void
+  /** THE ROW'S PICKER FILTER (2026-09-18, the two-audio conviction:
+   *  "you literally can't even add two audios" — the hidden file
+   *  input hard-coded the image triad, so the OS dialog GRAYED OUT
+   *  every audio and video on file rows). Rows whose lane is not
+   *  images pass their MIME family here ('audio/*', 'video/*');
+   *  absent → the image triad stands (image rows, unchanged). */
+  accept?: string
   /** THE SOURCE-PICK SEAM (2026-09-13, the operator's law: one
    *  system, no exceptions): the host may claim the picker modal's
    *  face — same grammar as the stage-view consult. The fallback is
@@ -275,7 +282,7 @@ export function useSquareProvider(onEdit: (name: string, v: unknown) => void, wi
   const fileInput = h('input', {
     ref: fileRef,
     type: 'file',
-    accept: 'image/png,image/jpeg,image/webp',
+    accept: wire.accept ?? 'image/png,image/jpeg,image/webp',
     'aria-hidden': true,
     tabIndex: -1,
     style: { display: 'none' },
@@ -339,6 +346,10 @@ export interface SourceRowProps {
   loadMedia?: SquareWire['loadMedia']
   /** The surface's own file law (From file + OS drops route here). */
   onFile?: (file: File) => void
+  /** THE ROW'S PICKER FILTER — the OS dialog's accept. Audio/video
+   *  lanes pass their MIME family ('audio/*', 'video/*'); absent =
+   *  the image triad (the historic default, image rows). */
+  accept?: SquareWire['accept']
   /** The seam claim (same grammar as the field wire). */
   renderSourcePick?: SquareWire['renderSourcePick']
 }
@@ -361,6 +372,7 @@ export function SourceRow(props: SourceRowProps): ReturnType<typeof h> {
     candidates: props.candidates ?? [],
     ...(props.loadMedia !== undefined ? { loadMedia: props.loadMedia } : {}),
     ...(props.onFile !== undefined ? { onFile: props.onFile } : {}),
+    ...(props.accept !== undefined ? { accept: props.accept } : {}),
     ...(props.renderSourcePick !== undefined ? { renderSourcePick: props.renderSourcePick } : {}),
   })
   // NO HOST GUARD (the slot-shape proof): field.type is image|file
@@ -567,7 +579,28 @@ export function SpecAtom({ f, value, onEdit, square, wireCandidates, placeholder
       'aria-label': f.label,
     })
   }
-  // number, seed, text — the raw-string Input (coerce once at patch)
+  // NUMBER FACE (2026-09-18, the operator's conviction: "you
+  // handrolled and avoided the parameter system we developed, as
+  // number fields are just from text" — the estate's own atom was
+  // the hand-roll, degrading EVERY number to a freeform string).
+  // Numbers render the NUMBER control: type=number carrying the
+  // field's own min/max/step facts (the declaration's law, the
+  // steppers and the bounds in the OS's own grammar). The VALUE
+  // still travels as the raw string — coerce once at patch, the
+  // estate's law, unchanged.
+  if (f.type === 'number') {
+    return h(Input, {
+      type: 'number',
+      min: f.min,
+      max: f.max,
+      step: f.step,
+      value: String(value ?? ''),
+      placeholder: placeholder ?? f.placeholder ?? '',
+      onChange: (e: unknown) => onEdit(f.name, (e as { target: { value: string } }).target.value),
+      'aria-label': f.label,
+    })
+  }
+  // seed, text — the raw-string Input (coerce once at patch)
   return h(Input, {
     value: String(value ?? ''),
     placeholder: placeholder ?? f.placeholder ?? '',

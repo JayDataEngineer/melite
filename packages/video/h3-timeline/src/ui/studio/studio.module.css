@@ -507,9 +507,10 @@ details[open] > summary .chev { transform: rotate(180deg); }
 .guideInEmpty { color: var(--dsw-alias-label-tertiary); }
 .guideInEmpty::placeholder { color: var(--dsw-alias-label-tertiary); }
 .callRefs { border-radius: 6px; border: 1px solid var(--dsw-alias-border-l1); background: var(--dsw-alias-bg-layer-1); padding: 6px; }
-.callRefsHead { display: flex; align-items: baseline; justify-content: space-between; }
-.callRefsTitle { font-size: 9px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: var(--dsw-alias-label-tertiary); }
-.callRefsNote { font-size: 8px; color: var(--dsw-alias-label-tertiary); }
+/* (the hand-rolled bundle heads died 2026-09-18 — the panel and its
+   lanes ride the kit's SectionLabel grammar now; only the OVER state
+   color survives as a tail override) */
+.refCountOver { color: var(--dsw-alias-state-warn-primary); }
 .callRefsBody { margin-top: 4px; display: flex; flex-direction: column; gap: 4px; }
 .callRefsFoot { font-size: 8px; color: var(--dsw-alias-label-tertiary); }
 .knobFold { margin-top: 4px; }
@@ -694,10 +695,7 @@ details[open] > summary .chev { transform: rotate(180deg); }
 
 /* ── RefPickerRow ───────────────────────────────────────── */
 .refRow { display: flex; flex-direction: column; gap: 2px; }
-.refHead { display: flex; align-items: baseline; justify-content: space-between; }
-.refLabel { font-size: 9px; color: var(--dsw-alias-label-secondary); }
-.refCount { font-size: 8px; font-variant-numeric: tabular-nums; }
-.refCountOk { color: var(--dsw-alias-label-tertiary); }.refCountOver { color: var(--dsw-alias-state-warn-primary); }
+/* (the bucket heads died with the SectionLabel conformance — see above) */
 .chips { display: flex; flex-wrap: wrap; gap: 4px; }
 /* THE ANCHOR SLOT (bundle split 2026-09-18): the first frame renders
  * IN the chips row — one grammar with the ref chips (never an alien
