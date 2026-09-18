@@ -741,15 +741,14 @@ export class RunsRuntimeService extends Service {
     const fam: string = svc.resolveCardFamily(mid, facts);
     const famRow: ModelFactsRow | undefined = facts[fam];
     if (famRow === undefined) {
-      // Non-cordis compose arm (python schema registry — unported
-      // half): verdict + code, native text.
+      // Non-cordis compose arm (no family row): verdict + code.
       return {
         status: 400,
         payload: {
           error:
             "card_compose phase 1: model " + JSON.stringify(mid) +
-            " composes outside the cordis plane (python schema arm — " +
-            "unported half in this stroke)",
+            " composes outside the cordis plane (no family row — " +
+            "the model resolves but the facts file declares nothing for it)",
           code: "card_compose",
         },
       };

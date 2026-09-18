@@ -1,7 +1,7 @@
 // bakeParams.ts — the AnnyBakeParams serve belt: params_json
 // preset-dialect validation rides the initial_validators gate
 // (bake_params initials refuse BEFORE any run registers).
-// TS-native (2026-09-18): the pydantic costume, the python-repr
+// TS-native: the estate voice,
 // renders, and the PyNum literal-holder are deleted.
 //
 // Erasable-syntax TS only (node --experimental-strip-types).

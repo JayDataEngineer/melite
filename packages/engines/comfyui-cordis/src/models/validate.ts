@@ -58,8 +58,7 @@ export function fieldDomains(
 }
 
 /**
- * Model defaults against the owning card's field domains — the
- * python semantics verbatim (grammar 1323-1375):
+ * Model defaults against the owning card's field domains:
  *
  * - a model whose `card` names NO known card REFUSES ("the
  *   migration amnesty is over; a dead card ref is drift, not a

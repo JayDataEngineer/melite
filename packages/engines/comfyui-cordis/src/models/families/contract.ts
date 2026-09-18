@@ -1,11 +1,6 @@
-// models/contract.ts — THE MODEL REGISTRY CONTRACT, ported from the
-// python `melite_models` grammar (git 034e1f97, `python/melite_models/
-// grammar (the family declaration law; the cards DSL twin).
-//
-// RESURRECTION (2026-09-08, operator order): the NO-ESTATE-PYTHON cuts
-// deleted the model.py authoring plane with no TS successor; this file
-// + registry.generated.ts + models.ts are that successor. Source of
-// truth: the 47 unit files + grammar at 034e1f97, imported and dumped
+// models/contract.ts — THE MODEL REGISTRY CONTRACT (the family
+// declaration law; the cards DSL twin). This file +
+// registry.generated.ts + models.ts are the declaration plane.
 // by the declarations themselves (every row validated at
 // construction — the dump carries the contract's own verdicts, not a
 // hand transcription).

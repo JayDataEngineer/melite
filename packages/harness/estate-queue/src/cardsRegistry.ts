@@ -516,9 +516,9 @@ export class CardRegistryService extends Service {
 
   /** resolve_model's existence half — the LIVE offer (the same
    *  served key set the catalog door answers: buildCatalog's served
-   *  models in scan order). It replaces the models/<genre>/<mid>/
-   *  model.py fs scan (estate-python purge deleted every model.py —
-   *  the scan resolved the empty set and every {model:} compose
+   *  models in scan order). It replaces the retired per-model
+   *  declaration scan (the declarations are table rows now — a
+   *  missing row refuses LOUD, never an empty compose
    *  refused) and the frozen-catalog re-home (2026-09-08 — the blob
    *  is deleted 2026-09-10). A build throw resolves empty (the
    *  validate door's degraded read, same as before). */
@@ -609,7 +609,7 @@ export class CardRegistryService extends Service {
       throw new CardArmError(
         400,
         "card_compose phase " + phase + ": model " + JSON.stringify(mid) +
-          " composes outside the cordis plane (python schema arm — unported half in this stroke)",
+          " composes outside the cordis plane (no family row — the model resolves but the facts file declares nothing for it)",
         "card_compose",
       );
     }
@@ -771,7 +771,7 @@ export class CardRegistryService extends Service {
       throw new CardArmError(
         400,
         "card_compose phase 1: model " + JSON.stringify(mid) +
-          " composes outside the cordis plane (python schema arm — unported half in this stroke)",
+          " composes outside the cordis plane (no family row — the model resolves but the facts file declares nothing for it)",
         "card_compose",
       );
     }

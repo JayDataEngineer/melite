@@ -3,7 +3,7 @@
  *
  * Wraps the estate's management plane — the built-in ComfyUI-Manager
  * (vendored into the managed engine's custom_nodes, riding ComfyUI's
- * own HTTP port — no external Python anywhere, 2026-09-10) plus the
+ * own HTTP port — no side processes, 2026-09-10) plus the
  * estate TS legs (model downloads, systemd, journal logs) — behind
  * ONE action-dispatch tool. The SSOT is
  * packages/harness/estate-queue/src/managePlane.ts (ACTIONS +

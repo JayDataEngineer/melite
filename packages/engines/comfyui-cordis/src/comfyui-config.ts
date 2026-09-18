@@ -23,10 +23,7 @@ export function resolveRepoRoot(): string {
   const override: string = process.env["MELITE_REPO_ROOT"] ?? "";
   if (override !== "") return override;
   const here: string = dirname(fileURLToPath(import.meta.url));
-  // src→comfyui→engines→packages→repo (4 hops) — same depth as
-  // the old packages/engines/comfyui/src/ home (STAGE 1 move); the
-  // hop count (parent.parent from python/) transcribed literally
-  // landed 3 hops at packages/; caught LIVE by the flip.
+  // src→comfyui→engines→packages→repo (4 hops).
   return resolve(here, "..", "..", "..", "..");
 }
 

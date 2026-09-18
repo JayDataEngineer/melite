@@ -1,55 +1,42 @@
-// engine/catalog.ts — the TS-native model catalog (NO-ESTATE-PYTHON
-// LAW: the 47 packages/engines/comfyui/models/*/model.py files are
-// dead; this module over the FROZEN REGISTRY (models/registry.
-// generated.ts, dumped from the 034e1f97 units) is the catalog now).
+// engine/catalog.ts — the TS-native model catalog over the frozen
+// registry (models/registry.generated.ts is the catalog now).
 //
-// Two entry points mirror the two halves of the condemned
-// infra/python/manage.py provision_model path (spec reference,
-// read-only, stays dead: git show c0aa2187~1:infra/python/manage.py):
-//   - resolveCatalogArtifact — _resolve_catalog_artifact (the rows
-//     provision_model downloads): provisions-first, else the
-//     resolve(variant, quant) matrix cell's artifact. Misses throw
-//     the legacy LookupError texts the manage door depends on
-//     (dispatch maps LookupError -> 404, so the texts ARE the wire).
-//   - checkModelPresent — _model_present (the already-on-disk gate):
-//     the runtime models tree first, then the mount bindings from
-//     the endpoint machine statement (model_base_path +
-//     extra_model_folders in data/comfyui_endpoint.json — stock
-//     folders map to themselves, never a restated folder list).
+// Two entry points, one per provision half:
+//   - resolveCatalogArtifact (the rows provision_model downloads):
+//     provisions-first, else the resolve(variant, quant) matrix
+//     cell's artifact. Misses throw CatalogMiss (dispatch maps it
+//     to 404 — the texts ARE the wire).
+//   - checkModelPresent (the already-on-disk gate): the runtime
+//     models tree first, then the mount bindings from the endpoint
+//     machine statement (model_base_path + extra_model_folders in
+//     data/comfyui_endpoint.json — stock folders map to themselves,
+//     never a restated folder list).
 //
-// FAITHFUL MIRRORS (line-cited against manage.py unless noted):
-//   - model lookup: exact id (the sorted engines/genres scan's
-//     first-match collapses to keyed lookup — one row per id).
-//     Miss -> "model 'X' not found in catalog" (manage 262 —
-//     Python %r of a str: single quotes).
+// THE CATALOG LAWS:
+//   - model lookup: exact id, one row per id. Miss refuses
+//     "model \"X\" not found in catalog".
 //   - provisions rows: name/url non-empty gate, folder strip("/"),
 //     dest = folder if it starts with "models" else
-//     "models/<folder>" (bare "models" when empty) — manage
-//     275-290. All-filtered -> "model 'X' declares no downloadable
-//     provisions" (manage 292).
+//     "models/<folder>" (bare "models" when empty). All-filtered ->
+//     "model \"X\" declares no downloadable provisions".
 //   - matrix fallback: variant defaults to the FIRST declared
-//     variant, quant to the variant's FIRST cell (grammar
-//     Model.resolve: unspecified coordinates fall to the family
-//     default — krea-2's head body IS turbo/int8). Unknown variant
-//     id resolves to no-variant (grammar _variant_: miss -> None),
-//     never a throw. Unknown quant on a found variant throws the
-//     ValueError-class ("'q' is not a valid Quant" — grammar
-//     _cell_'s Quant(quant) construction; dispatch maps it to 500,
-//     NOT a catalog-miss 404). Cell None or artifact None ->
-//     "model 'X' has no artifact at (VAR, QUANT)" with None for
-//     the empty coordinate (manage 264-273).
+//     variant, quant to the variant's FIRST cell (unspecified
+//     coordinates fall to the family default — krea-2's head body
+//     IS turbo/int8). Unknown variant id resolves to no-variant,
+//     never a throw. Unknown quant on a found variant refuses
+//     the 500-class value error ("\"q\" is not a valid Quant"),
+//     NOT a catalog-miss 404. Cell None or artifact None ->
+//     "model \"X\" has no artifact at (VAR, QUANT)" with null for
+//     the empty coordinate.
 //   - artifact row: name = source_url basename, url = source_url,
 //     relative_path = "models/<dest_sub stripped>" or "models".
 //   - presence: join(runtime, folder, name) where folder =
-//     relative_path minus the "models/" head (manage 240-244),
-//     then the mount leg (manage 245-251): head/rest split on the
-//     FIRST "/", head through extra_model_folders (identity for
-//     stock folders), joined under model_base_path. Returns the
-//     hit path, else null (manage returns None; SystemExit from
-//     an unconfigured root is also None — here: no base == null).
-//     No root-config inheritance yet (estate_config has no TS
-//     port): an endpoint without model_base_path skips the mount
-//     leg — see FOLLOWUPS in the stroke record.
+//     relative_path minus the "models/" head, then the mount leg:
+//     head/rest split on the FIRST "/", head through
+//     extra_model_folders (identity for stock folders), joined
+//     under model_base_path. Returns the hit path, else null (no
+//     configured base == null — the mount leg is skipped).
+//
 
 import { existsSync } from "node:fs";
 import { join } from "node:path";

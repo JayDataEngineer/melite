@@ -100,9 +100,9 @@ export class GraphBuilder {
   }
 
   /** Pin defaults (class → input → default value) from the live
-   *  object_info snapshot. When present, unspecified inputs
-   *  autofill exactly like comfy-script does — cards whose python
-   *  renderer strips autofill ALSO strip in TS (the strip set is
+   *  live node set. When present, unspecified inputs autofill
+   *  exactly like comfy-script does — cards whose renderer strips
+   *  autofill ALSO strip in TS (the strip set is
    *  ported per card), so both planes converge byte-equal. */
   readonly defaults: Record<string, Record<string, JsonValue>>
 

@@ -10,7 +10,7 @@
 export const GenreValues = ["", "3d", "audio", "image", "motion", "other", "text", "video"] as const;
 export type Genre = (typeof GenreValues)[number];
 
-/** Flow edge-type vocabulary (python/flow.Kind — what flows on the wire). */
+/** Flow edge-type vocabulary — what flows on the wire. */
 export const KindValues = ["audio", "image", "lora", "mesh", "num", "seg", "text", "video"] as const;
 export type Kind = (typeof KindValues)[number];
 

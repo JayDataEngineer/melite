@@ -1,7 +1,7 @@
 // Tier 2 — the melite-poser-nodes blocks (the 3D card consensus,
 // anny/fit/skin). One place per multi-node consensus: the 8-view
-// turnaround tail every poser card ends with, plus the row guards
-// the python schemas pin (positive amounts, closed vectors, the
+// turnaround tail every poser card ends with, plus the row
+// guards the schemas pin (positive amounts, closed vectors, the
 // strict transparent law). Cards call blocks, never raw node
 // chains, so the turnaround shape stays single-sourced.
 import { GraphBuilder, OutputHandle } from '../graph.ts'

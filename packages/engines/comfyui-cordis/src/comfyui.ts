@@ -69,8 +69,8 @@
 //     URLError("<urlopen …>"). The run-failure SHAPE (failed +
 //     error) agrees; the errno prose does not — the wall asserts
 //     shape there, bytes everywhere the stub controls the text.
-//   - Python str(out) for non-200 bodies uses single-quote reprs;
-//     shapes the stub serves.
+//   - non-200 bodies stringify with JSON quotes; shapes the
+//     stub serves.
 //
 // Erasable-syntax TS only (node --experimental-strip-types): no
 // enums, import type for types, .ts specifiers for relative imports.

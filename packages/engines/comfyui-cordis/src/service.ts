@@ -143,8 +143,8 @@ export interface CardDefinition {
   schemaCarrier?: Schema
   compose(params: Record<string, unknown>, model: ModelFacts, g: GraphBuilder, runId: string): void
   /** Post-serialize pass — the lane's autofill-strip calibration
-   *  (stripAutofill / stripEmptyAutofill). Cards whose python
-   *  renderer strips must port the table here. */
+   *  (stripAutofill / stripEmptyAutofill). Cards whose renderer
+   *  strips port the table here. */
   finalize?(graph: PromptGraph): PromptGraph
   /** THE IDENTITY RUNG — NATIVE (since 2026-09-10; the frozen ring
    *  DELETED 2026-09-18): EVERY card declares its identity inline

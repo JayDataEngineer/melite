@@ -46,11 +46,10 @@ export function strictBody(body: Record<string, unknown>): void {
   }
 }
 
-// Build one stage row from a JSON stage: the
-// extras gate runs OUTSIDE the per-stage try (line 1435
-// set(st) on a non-dict stage with extras dies with AttributeError
-// on .get; sorted() on mixed extras dies with TypeError), then the
-// isinstance gate, then the per-name pulls inside the try whose
+// Build one stage row from a JSON stage: the extras gate runs
+// OUTSIDE the per-stage try (a non-object stage with extras
+// refuses on the keys walk — never a silent coerce), then the
+// object gate, then the per-name pulls inside the try whose
 // FlowErrors pass through bare and every other exception wraps as
 // "stage[i] refuses:".
 export function buildStageRow(i: number, st: unknown): StageRow {
@@ -193,7 +192,7 @@ export function wiresResolve(flowId: string, stages: StageRow[]): void {
 }
 
 // cardDefs — the live card registry for the card-stage lattice,
-// cardGate — the CARD-STAGE LATTICE body gate (infra/python/
+// cardGate — the CARD-STAGE LATTICE body gate (
 // _card_params_gate -> stage_params.validate_stage_params, PORTED
 // NATIVE 2026-09-08): (1) the model gate stays byte-identical (the
 // wall pins it); (2) the schema pass rides the TS single

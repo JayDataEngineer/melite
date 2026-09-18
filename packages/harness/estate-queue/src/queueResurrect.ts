@@ -1,5 +1,5 @@
 // queueResurrect.ts — resurrection planning + strict JSON reads
-// (boot tolerance for on-disk records; python-coercion arms deleted
+// (boot tolerance for on-disk records; lenient arms deleted
 // 2026-09-18 — JSON arrays/objects ride, nothing is re-interpreted).
 //
 // Erasable-syntax TS only (node --experimental-strip-types): no

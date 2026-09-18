@@ -73,8 +73,8 @@ export function motionLane(p: Record<string, unknown>, model: ModelFacts, g: Gra
   const li = model.lane_inputs
   const loader = g.node('KimodoLoader', { model_name: li.model_path as string }).out()
 
-  // the step-doc STRIPS the text trio before wiring (python
-  // compose._step_doc) — a padded string never reaches the node.
+  // the step-doc STRIPS the text trio before wiring — a padded
+  // string never reaches the node.
   const prompts = ((p.motion_prompts ?? '') as string).trim()
   const constraints = ((p.motion_constraints ?? '') as string).trim()
   const chain: Record<string, unknown> = {}
