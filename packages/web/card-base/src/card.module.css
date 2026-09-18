@@ -413,3 +413,91 @@
   background: var(--dsw-alias-bg-module, rgba(128, 128, 128, 0.18));
   border-color: var(--dsw-alias-border-l3, rgba(128, 128, 128, 0.55));
 }
+
+/* ── THE ESTATE'S LAYOUT GRAMMAR (2026-09-18, promoted VERBATIM from
+   h3's studio.module.css — rows, section headings, empty states, pane
+   chrome. One definition; every card composes them). ──────────────── */
+.tipAnchor { display: contents; }
+
+.ctlRow, .ctlRowSm {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  color: var(--dsw-alias-label-secondary);
+}
+/* (2026-09-15, the operator's type-scale catch) ONE row size — the
+ * old 9px sm-variant was the "nothing is the same size" chaos; the
+ * knob fold's rows now read exactly like the rail's rows. */
+.ctlRow, .ctlRowSm { font-size: 10px; }
+/* ONE SKIN, ONE SIZE in the rail rows (2026-09-15): every select
+ * inside a row rides the row's size — an atom leaking its 13px face
+ * into the grid is a law break, not a look. */
+.ctlRow select, .ctlRowSm select { font-size: 10px; }
+
+.sectionLabel {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+.sectionLabelText {
+  font-size: 9px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--dsw-alias-label-tertiary);
+}
+.sectionLabelTail {
+  font-size: 9px;
+  font-variant-numeric: tabular-nums;
+  color: var(--dsw-alias-label-tertiary);
+}
+
+.emptyPane, .emptyOverlay {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  text-align: center;
+}
+.emptyPane { height: 100%; width: 100%; padding: 24px 0; }
+.emptyOverlay { position: absolute; inset: 0; padding: 24px; pointer-events: none; }
+.emptyTitle { font-size: 12px; font-weight: 500; color: var(--dsw-alias-label-secondary); margin: 0; }
+.emptyHint { font-size: 10px; line-height: 1.6; color: var(--dsw-alias-label-tertiary); max-width: 25rem; margin: 0; }
+
+.paneHeaderPreview {
+  display: flex;
+  flex: none;
+  align-items: baseline;
+  gap: 6px;
+  padding-bottom: 6px;
+}
+.paneHeaderStrip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border-bottom: 1px solid var(--dsw-alias-border-l2);
+  background: var(--dsw-alias-interactive-bg-hover);
+  padding: 4px 10px;
+}
+.paneTitle {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--dsw-alias-label-secondary);
+}
+.paneMeta { font-size: 9px; color: var(--dsw-alias-label-tertiary); }
+.paneMetaNum { font-size: 9px; font-variant-numeric: tabular-nums; color: var(--dsw-alias-label-tertiary); }
+.paneHint { margin-left: auto; font-size: 9px; color: var(--dsw-alias-label-tertiary); }
+/* DSH pane chrome: surfaces/borders/text ride the DSW alias tokens —
+ * the panes are DSH modules, not bespoke islands. */
+.paneShell {
+  flex: none;
+  overflow: hidden;
+  border-radius: 6px;
+  border: 1px solid var(--dsw-alias-border-l2);
+  background: var(--dsw-alias-bg-layer-1);
+}

@@ -25,7 +25,6 @@
 .alignC { text-align: center; }
 .tabular { font-variant-numeric: tabular-nums; }
 .nowrap { white-space: nowrap; }
-.tipAnchor { display: contents; }
 .truncate { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 /* icon sizes (the h-2 w-2 … h-5 w-5 scale) */
@@ -49,43 +48,6 @@ details[open] > summary .chev { transform: rotate(180deg); }
 .w40 { width: 10rem; }
 .w45 { width: 4.5rem; }
 .wFull { width: 100%; }
-
-/* ── kit: ControlRow / SectionLabel ─────────────────────── */
-.ctlRow, .ctlRowSm {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  color: var(--dsw-alias-label-secondary);
-}
-/* (2026-09-15, the operator's type-scale catch) ONE row size — the
- * old 9px sm-variant was the "nothing is the same size" chaos; the
- * knob fold's rows now read exactly like the rail's rows. */
-.ctlRow, .ctlRowSm { font-size: 10px; }
-/* ONE SKIN, ONE SIZE in the rail rows (2026-09-15): every select
- * inside a row rides the studio skin's size — a card-base atom
- * leaking its 13px face into the grid is a law break, not a look. */
-.ctlRow select, .ctlRowSm select { font-size: 10px; }
-.ctlGap3 { gap: 12px; }
-
-.sectionLabel {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 8px;
-}
-.sectionLabelText {
-  font-size: 9px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--dsw-alias-label-tertiary);
-}
-.sectionLabelTail {
-  font-size: 9px;
-  font-variant-numeric: tabular-nums;
-  color: var(--dsw-alias-label-tertiary);
-}
 
 /* ── kit: native inputs / selects ─────────────────────────
  * THE UNIFORM FORM SKIN (2026-09-13): same DSW token aliases the
@@ -148,58 +110,6 @@ details[open] > summary .chev { transform: rotate(180deg); }
 }
 .selMenuBox:focus { border-color: var(--dsw-alias-brand-primary); }
 .selMenuBox:disabled { opacity: 0.5; }
-
-/* ── kit: EmptyState ────────────────────────────────────── */
-.emptyPane, .emptyOverlay {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  text-align: center;
-}
-.emptyPane { height: 100%; width: 100%; padding: 24px 0; }
-.emptyOverlay { position: absolute; inset: 0; padding: 24px; pointer-events: none; }
-.emptyTitle { font-size: 12px; font-weight: 500; color: var(--dsw-alias-label-secondary); margin: 0; }
-.emptyHint { font-size: 10px; line-height: 1.6; color: var(--dsw-alias-label-tertiary); max-width: 25rem; margin: 0; }
-
-/* ── kit: PaneHeader / PaneShell ────────────────────────── */
-.paneHeaderPreview {
-  display: flex;
-  flex: none;
-  align-items: baseline;
-  gap: 6px;
-  padding-bottom: 6px;
-}
-.paneHeaderStrip {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  border-bottom: 1px solid var(--dsw-alias-border-l2);
-  background: var(--dsw-alias-interactive-bg-hover);
-  padding: 4px 10px;
-}
-.paneTitle {
-  font-size: 10px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--dsw-alias-label-secondary);
-}
-.paneMeta { font-size: 9px; color: var(--dsw-alias-label-tertiary); }
-.paneMetaNum { font-size: 9px; font-variant-numeric: tabular-nums; color: var(--dsw-alias-label-tertiary); }
-.paneHint { margin-left: auto; font-size: 9px; color: var(--dsw-alias-label-tertiary); }
-/* DSH pane chrome (hour-7): surfaces/borders/text ride the DSW
- * alias tokens with the same dark fallbacks — the panes are DSH
- * modules, not bespoke islands. Media colors (cyan badges etc.)
- * stay literal per the bar's own header law. */
-.paneShell {
-  flex: none;
-  overflow: hidden;
-  border-radius: 6px;
-  border: 1px solid var(--dsw-alias-border-l2);
-  background: var(--dsw-alias-bg-layer-1);
-}
 
 /* ── kit: StudioShell ───────────────────────────────────── */
 /* THE SEAM GRID (2026-09-13, the hour-7 layout war — the operator's

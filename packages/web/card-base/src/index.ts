@@ -17,6 +17,7 @@
  * (the card-view tab) imports from here.
  */
 export * from './spec.ts'
+export * from './layout.tsx'
 export { WirePickerModal, type WirePickerModalProps } from './wirePicker.tsx'
 export * from './mods.tsx'
 export * from './owners.ts'
