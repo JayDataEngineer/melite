@@ -98,6 +98,33 @@ describe("the video-gen compose gate", () => {
   });
 });
 
+describe("THE SCHEMA GATE (the music/sfx/tts precedent — compose validates values, not just keys)", () => {
+  it("an out-of-envelope steps refuses loud (declared 1–50), never composes", () => {
+    assert.throws(
+      () => def.compose({ prompt: "runs", reference_image: "/m/ref.png", steps: 999 }, wan, new GraphBuilder(), "r_oob"),
+      /steps/,
+    );
+  });
+
+  it("a wrong-typed steps refuses loud (declared a number)", () => {
+    assert.throws(
+      () => def.compose({ prompt: "runs", reference_image: "/m/ref.png", steps: "many" }, wan, new GraphBuilder(), "r_type"),
+      /steps/,
+    );
+  });
+
+  it("an unstated pose_strength arrives as the declared default 1 (the walk fills it)", () => {
+    const g = new GraphBuilder();
+    def.compose(
+      { prompt: "dances", reference_image: "/m/char.png", pose_video: "/m/pose.mp4" },
+      scail, g, "r_def",
+    );
+    const scailNode = Object.values(g.toJSON()).find((n) => n.class_type === "WanSCAILToVideo");
+    assert.ok(scailNode, "the scail2 lane rides");
+    assert.equal(scailNode!.inputs.pose_strength, 1, "the fresh doc composes the schema-declared default 1, not undefined");
+  });
+});
+
 describe("the unknown-family default admission (VIDEO_REQUIRED_PATHS fallback)", () => {
   it("a family with no row admits the BOTH-PATHS default", () => {
     const stranger = { ...wan, id: "stranger-video" } as typeof wan;

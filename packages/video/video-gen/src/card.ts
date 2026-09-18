@@ -91,17 +91,25 @@ export function apply(ctx: Context): void {
     preview: { timeline: true },
     schema: schema as unknown as (v: unknown) => Record<string, unknown>,
     compose(p, model: ModelFacts, g: GraphBuilder, runId: string) {
-      if (!p.prompt || !(p.prompt as string).trim()) {
+      // THE SCHEMA GATE (the music/sfx/tts admission precedent —
+      // the card's own declaration validates the last hop into the
+      // engine): schemastery walk enforces declared types + bounds
+      // (steps is 1–50, cfg 1–12, width 320–1280 — anything else
+      // refuses LOUD, never composes), fills defaults (seed -1,
+      // pose_strength 1), admits legacy keys inert. The composer's
+      // reads below are reads of the GATED doc.
+      const doc = schema(p) as unknown as Record<string, unknown>
+      if (!doc.prompt || !(doc.prompt as string).trim()) {
         throw new Error(`required param 'prompt' missing or empty on the ${model.id} video card (what MOVES)`)
       }
       for (const key of VIDEO_REQUIRED_PATHS[model.id] ?? ['reference_image', 'pose_video']) {
-        if (!String(p[key] ?? '').trim()) {
+        if (!String(doc[key] ?? '').trim()) {
           throw new Error(`required param '${key}' missing on the ${model.id} lane (it is what the family consumes — see the card's input slots)`)
         }
       }
-      const negative = (p.negative_prompt as string) || VIDEO_NEGATIVE_FALLBACK
-      if (model.id === 'scail2-animate') scail2(p, negative, model, g, runId)
-      else wanVace(p, negative, model, g, runId)
+      const negative = (doc.negative_prompt as string) || VIDEO_NEGATIVE_FALLBACK
+      if (model.id === 'scail2-animate') scail2(doc, negative, model, g, runId)
+      else wanVace(doc, negative, model, g, runId)
     },
   }))
 }

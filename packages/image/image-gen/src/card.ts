@@ -80,10 +80,18 @@ export function registerCard(ctx: Context, comfy: ComfyUIService): void {
     },
     schema: schema as unknown as (v: unknown) => Record<string, unknown>,
     compose(p, model, g, runId) {
-      if (!p.prompt || !(p.prompt as string).trim()) {
+      // THE SCHEMA GATE (the audio-trio admission precedent — the
+      // card's own declaration validates the last hop into the
+      // engine): schemastery walk enforces declared types + bounds (a
+      // width=9999 draft refuses LOUD here, never composes), fills
+      // defaults, and passes mod-plane keys (loras bags, admits)
+      // through verbatim — nothing drops. The composer's reads below
+      // are reads of the GATED doc.
+      const doc = schema(p) as Record<string, unknown>
+      if (!doc.prompt || !(doc.prompt as string).trim()) {
         throw new Error("required param 'prompt' missing or empty on the image-gen card (what the picture IS)")
       }
-      imageT2I(p, model, g, runId)
+      imageT2I(doc, model, g, runId)
     },
     finalize: finalizeImageGen,
   }))

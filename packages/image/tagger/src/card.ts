@@ -101,11 +101,18 @@ export function apply(ctx: Context): void {
     },
     schema: schema as unknown as (v: unknown) => Record<string, unknown>,
     compose(p, model, g, runId) {
-      const img = typeof p.input_image === 'string' ? p.input_image : ''
+      // THE SCHEMA GATE (the audio-trio admission precedent — the
+      // card's own declaration validates the last hop into the
+      // engine): schemastery walk enforces declared types + bounds
+      // (threshold/character_threshold are 0–1 — a threshold=5 draft
+      // refuses LOUD here, never composes), fills declared defaults.
+      // The composer's reads below are reads of the GATED doc.
+      const doc = schema(p) as Record<string, unknown>
+      const img = typeof doc.input_image === 'string' ? doc.input_image : ''
       if (!img.trim()) {
         throw new Error("required param 'input_image' missing or blank on the tagger card (the tagger inverts an image; nothing to tag is a refusal)")
       }
-      taggerLane(p, model, g, runId)
+      taggerLane(doc, model, g, runId)
     },
     finalize: finalizeTagger,
   }))

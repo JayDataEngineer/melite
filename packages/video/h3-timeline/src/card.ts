@@ -984,6 +984,31 @@ export function registerCard(ctx: Context, comfy: ComfyUIService): void {
     // normalizer — params_schema walks the declared object's .dict)
     schemaCarrier: paramSchema,
     compose(p, _model, g) {
+      // THE SCHEMA GATE (the music/sfx/tts admission precedent — the
+      // schemaCarrier equivalent: this card is WRAPPED, so the served
+      // carrier paramSchema owns the declared knob bounds; the full
+      // schema() normalizer's family-admission runs at the compose
+      // door (service def.schema) on truly-explicit keys and CANNOT
+      // re-run here — the door's cascade materializes carrier defaults
+      // (sr_switch, interp_multiplier, ...) which the t4r admission
+      // would refuse as injects): the carrier walk enforces declared
+      // types + bounds (width 448–1344, steps 4–30 — anything else
+      // refuses LOUD, never composes), fills defaults (seed 42),
+      // admits renderer/mod keys inert (calls, loras, noise_seed ride
+      // verbatim). The interpolate prefill + the length-null drop
+      // mirror schema()'s own wire laws (the served "false" string
+      // coerces; a null length is the absent-on-wire sentinel — the
+      // chain budget 56 fills, and film windows compute per-window
+      // spans anyway). The composer's reads below are reads of the
+      // GATED doc.
+      const gateInput: Record<string, unknown> = { ...(p as Record<string, unknown>) }
+      if (typeof gateInput.interpolate_enabled === 'string') {
+        gateInput.interpolate_enabled = gateInput.interpolate_enabled === 'true'
+      } else if (!('interpolate_enabled' in gateInput)) {
+        gateInput.interpolate_enabled = false
+      }
+      if (gateInput.length === null) delete gateInput.length
+      p = paramSchema(gateInput) as unknown as Record<string, unknown>
       // THE SINGLE-CALL LIFT runs FIRST (the guard below reads the
       // lifted anchor): a one-call doc's row IS the window — its
       // prompt, image (the anchor), refs (the reference bundle) and

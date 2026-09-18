@@ -70,10 +70,19 @@ export function registerCard(ctx: Context, comfy: ComfyUIService): void {
     requires: ['melite-kimodo-nodes', 'melite-poser-nodes'],
     schema: schema as unknown as (v: unknown) => Record<string, unknown>,
     compose(p, model, g) {
-      if (!p.prompt || !(p.prompt as string).trim()) {
+      // THE SCHEMA GATE (the audio-trio admission precedent — the
+      // card's own declaration validates the last hop into the
+      // engine): schemastery walk enforces declared types + bounds
+      // (a diffusion_steps=500 draft refuses LOUD here, never
+      // composes — declared 10..200; the closed cfg_type row refuses
+      // outside separated|regular|nocfg), fills defaults, passes
+      // undeclared keys through inert. The composer's reads below
+      // are reads of the GATED doc.
+      const doc = schema(p) as Record<string, unknown>
+      if (!doc.prompt || !(doc.prompt as string).trim()) {
         throw new Error("required param 'prompt' missing on the motion card — the motion lane generates FROM a text prompt")
       }
-      motionLane(p, model, g)
+      motionLane(doc, model, g)
     },
     finalize: finalizeMotion,
   }))

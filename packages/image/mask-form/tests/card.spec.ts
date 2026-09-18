@@ -72,6 +72,30 @@ describe("the mask-form card declaration (stroke 78 — the mods-abstraction law
   });
 });
 
+describe("THE SCHEMA GATE (the music/sfx/tts precedent — compose validates values, not just keys)", () => {
+  it("an out-of-envelope refine_iterations refuses loud (declared 0–8), never composes", () => {
+    assert.throws(
+      () => def.compose({ input_image: "/m/pic.png", refine_iterations: 99, sam3: [{ prompt: "person" }] }, DUMMY, new GraphBuilder(), "r_oob"),
+      /refine_iterations/,
+    );
+  });
+
+  it("a wrong-typed sam_threshold refuses loud (declared a number)", () => {
+    assert.throws(
+      () => def.compose({ input_image: "/m/pic.png", sam_threshold: "high", sam3: [{ prompt: "person" }] }, DUMMY, new GraphBuilder(), "r_type"),
+      /sam_threshold/,
+    );
+  });
+
+  it("an unstated refine_iterations arrives as the declared default 2 (the walk fills it)", () => {
+    const g = new GraphBuilder();
+    def.compose({ input_image: "/m/pic.png", sam3: [{ prompt: "person" }] }, DUMMY, g, "r_def");
+    const detect = Object.values(g.toJSON()).find((n: { class_type?: string }) => n["class_type"] === "SAM3_Detect") as { inputs?: Record<string, unknown> };
+    assert.ok(detect, "the SAM3 lane rides");
+    assert.equal(detect!["inputs"]!["refine_iterations"], 2, "the fresh doc composes the schema-declared default 2, not undefined");
+  });
+});
+
 describe("the mask-form compose gate (the bag is the recipe)", () => {
   it("a missing input_image refuses (the lane selects FROM an image)", () => {
     assert.throws(

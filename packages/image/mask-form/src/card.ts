@@ -194,12 +194,22 @@ export function apply(ctx: Context): void {
     mods: MODS,
     schema: schema as unknown as (v: unknown) => Record<string, unknown>,
     compose(p, _model, g, runId) {
-      if (typeof p.input_image !== 'string' || !p.input_image.trim()) {
+      // THE SCHEMA GATE (the music/sfx/tts admission precedent —
+      // the card's own declaration validates the last hop into the
+      // engine): schemastery walk enforces declared types + bounds
+      // (refine_iterations is 0–8, sam_threshold 0.5–1, sam_dilation
+      // 0–64 — anything else refuses LOUD, never composes), fills
+      // defaults (2 / 0.93 / 0), admits the mod-owned names inert
+      // (the sam3/sam2/draw bags + the sam3 section scalars ride the
+      // walk verbatim). The composer's reads below are reads of the
+      // GATED doc.
+      const doc = schema(p) as unknown as Record<string, unknown>
+      if (typeof doc.input_image !== 'string' || !doc.input_image.trim()) {
         throw new Error("required param 'input_image' missing on the mask-form card — the mask lane selects FROM an image")
       }
-      const sam3 = bagOf(p, 'sam3', 'mask-form')
-      const sam2 = bagOf(p, 'sam2', 'mask-form')
-      const draw = bagOf(p, 'draw', 'mask-form')
+      const sam3 = bagOf(doc, 'sam3', 'mask-form')
+      const sam2 = bagOf(doc, 'sam2', 'mask-form')
+      const draw = bagOf(doc, 'draw', 'mask-form')
       if (sam3.length === 0 && sam2.length === 0 && draw.length === 0) {
         throw new Error('no mask sources on the mask-form card — add at least one modifier (sam3, sam2, or draw)')
       }
@@ -211,15 +221,15 @@ export function apply(ctx: Context): void {
       // standalone entry is the primary (mask_combined, the union
       // anchor); every entry after it is a per-name export.
       const lane: Record<string, unknown> = {
-        input_image: p.input_image,
-        sam_threshold: p.sam_threshold,
-        sam_dilation: p.sam_dilation,
-        refine_iterations: p.refine_iterations,
+        input_image: doc.input_image,
+        sam_threshold: doc.sam_threshold,
+        sam_dilation: doc.sam_dilation,
+        refine_iterations: doc.refine_iterations,
         // RT-DETR knobs (sam3's kindFields) thread when committed
         // (absent rides the kit fallbacks); the manifest defaults ON
-        detection_threshold: p.detection_threshold,
-        max_instances: p.max_instances,
-        export_boxes: p.export_boxes !== false,
+        detection_threshold: doc.detection_threshold,
+        max_instances: doc.max_instances,
+        export_boxes: doc.export_boxes !== false,
       }
 
       // the unified standalone source stream: [kind, index] in

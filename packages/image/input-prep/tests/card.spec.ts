@@ -37,6 +37,23 @@ describe("the input-prep compose gate", () => {
     );
   });
 
+  it("THE SCHEMA GATE: a wrong-typed source refuses loud (declared a string path)", () => {
+    assert.throws(
+      () => def.compose({ source: 42 }, DUMMY, new GraphBuilder(), "r_type"),
+      /source/,
+    );
+  });
+
+  it("THE SCHEMA GATE: the admits overlay rides the gated doc inert (a crop row still crops)", () => {
+    const g = new GraphBuilder();
+    def.compose(
+      { source: "upload.png", crop: { x: 0, y: 0, width: 64, height: 64 } },
+      DUMMY, g, "run_crop",
+    );
+    const graph = g.toJSON();
+    assert.ok(Object.values(graph).some((n) => n.class_type === "ImageCrop"), "the crop row survives the gate");
+  });
+
   it("the happy lane stages the source for the chain", () => {
     const g = new GraphBuilder();
     def.compose(def.schema({ source: "upload.png" }), DUMMY, g, "run_1");

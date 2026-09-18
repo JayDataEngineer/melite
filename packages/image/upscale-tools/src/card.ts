@@ -72,7 +72,16 @@ export function apply(ctx: Context): void {
     spells: ['input_image'],
     schema: schema as unknown as (v: unknown) => Record<string, unknown>,
     compose(p, model, g, runId) {
-      if (!p.input_image || !(p.input_image as string).trim()) {
+      // THE SCHEMA GATE (the audio-trio admission precedent — the
+      // card's own declaration validates the last hop into the
+      // engine): schemastery walk enforces declared types + bounds
+      // (resolution 256–2160, max_resolution 512–4096, batch_size 1–16 —
+      // an OOB draft refuses LOUD here, never composes), fills the
+      // declared seed default (-1), and passes admits keys through
+      // verbatim. The composer's reads below are reads of the GATED
+      // doc.
+      const doc = schema(p) as Record<string, unknown>
+      if (!doc.input_image || !(doc.input_image as string).trim()) {
         throw new Error("required param 'input_image' missing or empty on the upscale-tools card (what gets upscaled)")
       }
       // THE ESTATE-FILE CONTRACT (retired compose.py:70-90 verbatim
@@ -89,8 +98,8 @@ export function apply(ctx: Context): void {
       // uploader fetches them); root-relative URLs rewrite to the
       // runs-root mount path (same estate, verified NOW).
       // Compile-time, never inference-time.
-      const ref = resolveLinkedInput(String(p.input_image).trim())
-      p.input_image = ref
+      const ref = resolveLinkedInput(String(doc.input_image).trim())
+      doc.input_image = ref
       const lower = ref.toLowerCase()
       if (!ref.startsWith('$') && !lower.startsWith('http://') && !lower.startsWith('https://')) {
         const abs = ref.startsWith('/') ? ref : resolve(ref)
@@ -98,7 +107,7 @@ export function apply(ctx: Context): void {
           throw new Error(`input_image '${ref}' is not a file on this estate (absolute mount path expected)`)
         }
       }
-      upscaleLane(p, model, g, runId)
+      upscaleLane(doc, model, g, runId)
     },
   }))
 }

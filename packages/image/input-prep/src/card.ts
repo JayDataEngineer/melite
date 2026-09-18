@@ -60,10 +60,18 @@ export function apply(ctx: Context): void {
     admits: ['crop', 'media_type', 'scale'],
     schema: schema as unknown as (v: unknown) => Record<string, unknown>,
     compose(p, _model, g, runId) {
-      if (typeof p.source !== 'string' || !p.source.trim()) {
+      // THE SCHEMA GATE (the music/sfx/tts admission precedent —
+      // the card's own declaration validates the last hop into the
+      // engine): schemastery walk enforces the declared type (source
+      // is a string — anything else refuses LOUD, never composes);
+      // the schema declares no bounds and no defaults (source is the
+      // only knob; crop/media_type/scale ride admits, inert). The
+      // composer's reads below are reads of the GATED doc.
+      const doc = schema(p) as unknown as Record<string, unknown>
+      if (typeof doc.source !== 'string' || !doc.source.trim()) {
         throw new Error("required param 'source' missing on the input-prep card (the staged source — upload, asset drop, prior-run artifact, or input-dir filename)")
       }
-      inputPrepLane(p, g, runId)
+      inputPrepLane(doc, g, runId)
     },
   }))
 }

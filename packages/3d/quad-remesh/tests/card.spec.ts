@@ -34,6 +34,27 @@ describe("the quad-remesh compose gate", () => {
     );
   });
 
+  it("THE SCHEMA GATE: an out-of-envelope target_quads refuses loud (declared 100–1000000), never composes", () => {
+    assert.throws(
+      () => def.compose({ input: "/m/scan.obj", target_quads: 50 }, DUMMY_MODEL, new GraphBuilder(), "r_oob"),
+      /target_quads|50|between|range/i,
+    );
+  });
+
+  it("THE SCHEMA GATE: a wrong-typed target_quads refuses loud", () => {
+    assert.throws(
+      () => def.compose({ input: "/m/scan.obj", target_quads: "many" }, DUMMY_MODEL, new GraphBuilder(), "r_type"),
+      /target_quads|many/i,
+    );
+  });
+
+  it("THE SCHEMA GATE: an unstated target_quads arrives as the declared default 50000 (the walk fills it)", () => {
+    const g = new GraphBuilder();
+    def.compose({ input: "/m/scan.obj" }, DUMMY_MODEL, g, "r_def");
+    assert.equal(g.toJSON()["AutoRemesher.0"].inputs.target_quads, 50000,
+      "the fresh doc composes the schema-declared default 50000, not undefined");
+  });
+
   it("the happy lane is the single-node graph (GLB in, GLB out)", () => {
     const g = new GraphBuilder();
     def.compose(

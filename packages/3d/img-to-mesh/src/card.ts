@@ -146,13 +146,21 @@ export function apply(ctx: Context): void {
     },
     schema: schema as unknown as (v: unknown) => Record<string, unknown>,
     compose(p, model, g, runId) {
+      // THE SCHEMA GATE (the audio-trio admission precedent — the
+      // card's own declaration validates the last hop into the
+      // engine): schemastery walk enforces declared types + bounds
+      // (a steps=500 draft refuses LOUD here, never composes —
+      // declared 4..60; the closed vocabularies refuse outside
+      // their rows), fills defaults, passes undeclared keys through
+      // inert. The composer's reads below are reads of the GATED doc.
+      const doc = schema(p) as Record<string, unknown>
       // The arm IS the family's renderer (runId rides the signature;
       // prefixes are family constants, not run-scoped, not knobs).
       void runId
       if (model.id === 'transfer_rig') {
         const missing: Array<string> = []
-        if (!String(p.rigged_glb || '').trim()) missing.push('rigged_glb')
-        if (!String(p.target_glb || '').trim()) missing.push('target_glb')
+        if (!String(doc.rigged_glb || '').trim()) missing.push('rigged_glb')
+        if (!String(doc.target_glb || '').trim()) missing.push('target_glb')
         if (missing.length > 0) {
           // (2026-09-15: same UI-label law as the lift refusal below —
           // the surface paints "Rigged source GLB" / "Target GLB".)
@@ -162,14 +170,14 @@ export function apply(ctx: Context): void {
           throw new Error(
             `required param(s) ${missing.map((m) => `'${m}' (${label[m]})`).join(', ')} missing on the transfer_rig lane — the rig copy needs the donor rig AND the clothed target`)
         }
-        transferRigArm(g, p)
+        transferRigArm(g, doc)
         return
       }
-      admitMeshLift(p, model)
+      admitMeshLift(doc, model)
       if (model.id === 'pixal3d') {
-        pixalArm(g, p, model)
+        pixalArm(g, doc, model)
       } else {
-        trellisArm(g, p, model)
+        trellisArm(g, doc, model)
       }
     },
   }))

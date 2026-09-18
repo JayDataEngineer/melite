@@ -46,6 +46,39 @@ describe("the upscale-tools compose gate", () => {
     );
   });
 
+  it("THE SCHEMA GATE: an out-of-envelope batch_size refuses loud (declared 1–16), never composes", () => {
+    assert.throws(
+      () => def.compose({ input_image: "$image", batch_size: 99 }, model, new GraphBuilder(), "r_oob"),
+      /batch_size|99|between|range/i,
+    );
+  });
+
+  it("THE SCHEMA GATE: a wrong-typed resolution refuses loud (declared number)", () => {
+    assert.throws(
+      () => def.compose({ input_image: "$image", resolution: "1080p" }, model, new GraphBuilder(), "r_wt"),
+      /resolution|expected number/i,
+    );
+  });
+
+  it("THE SCHEMA GATE: an unstated seed arrives as the declared default -1 (the walk fills it)", () => {
+    // seed is the card's only schema-defaulted knob (resolution /
+    // max_resolution / batch_size ride the model cascade) — read it
+    // off the same walk compose runs, then ride the raw doc through
+    // compose to prove the lane still builds from the filled doc.
+    const doc = def.schema({ input_image: "$image" }) as Record<string, unknown>;
+    assert.equal(doc.seed, -1,
+      "the fresh doc carries the schema-declared default seed -1, not undefined");
+    const g = new GraphBuilder();
+    def.compose({ input_image: "$image" }, model, g, "r_def");
+    assert.ok(g.toJSON()["SeedVR2VideoUpscaler.0"], "the filled doc composes the lane");
+  });
+
+  it("THE SCHEMA GATE: admits keys pass the walk verbatim (no stamp drop)", () => {
+    const doc = def.schema({ input_image: "$image", filename_prefix: "r/gen" }) as Record<string, unknown>;
+    assert.equal(doc.filename_prefix, "r/gen",
+      "the admitted filename_prefix survives the gate to the composer");
+  });
+
   it("a $spell rides verbatim (a wired stage input, never a file)", () => {
     const g = new GraphBuilder();
     def.compose(def.schema({ input_image: "$image" }), model, g, "run_1");

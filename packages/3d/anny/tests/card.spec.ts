@@ -47,6 +47,27 @@ describe("the anny compose gate", () => {
     assert.equal(ok.gender, 1);
   });
 
+  it("THE SCHEMA GATE: an out-of-envelope resolution refuses loud at compose (declared 256–2048), never composes", () => {
+    assert.throws(
+      () => def.compose({ resolution: 5000 }, DUMMY_MODEL, new GraphBuilder(), "r_oob"),
+      /resolution|5000|between|range/i,
+    );
+  });
+
+  it("THE SCHEMA GATE: a wrong-typed resolution refuses loud at compose", () => {
+    assert.throws(
+      () => def.compose({ resolution: "huge" }, DUMMY_MODEL, new GraphBuilder(), "r_type"),
+      /resolution|huge/i,
+    );
+  });
+
+  it("THE SCHEMA GATE: an unstated resolution arrives as the declared default 768 (the walk fills it)", () => {
+    const g = new GraphBuilder();
+    def.compose({}, DUMMY_MODEL, g, "r_def");
+    assert.equal(g.toJSON()["RayRenderGLBViews.0"].inputs.resolution, 768,
+      "the fresh doc composes the schema-declared default 768, not undefined");
+  });
+
   it("authored sliders carry into the bake vector (dim order = the served labels)", () => {
     const g = new GraphBuilder();
     def.compose(def.schema({ muscle: 0.9, height: 0.2 }), DUMMY_MODEL, g, "r1");

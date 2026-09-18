@@ -37,14 +37,40 @@ describe("the tagger compose gate", () => {
       () => def.compose(def.schema({ input_image: " " }), wd14, new GraphBuilder(), "r1"),
       /required param 'input_image' missing or blank on the tagger card/,
     );
-    // a NON-string input is the same empty voice — the raw-params
-    // overlay arm (schema()'s typed walk refuses first; the door
-    // overlays explicit params verbatim, so compose meets the typeof
-    // gate itself).
+    // a NON-string input meets the schema walk first — the gate
+    // refuses the wrong type LOUD (same refusal class, earlier voice;
+    // the door overlays explicit params verbatim, so raw composes
+    // with non-strings arrive here ungated no longer).
     assert.throws(
       () => def.compose({ input_image: 5 }, wd14, new GraphBuilder(), "r1"),
-      /required param 'input_image' missing or blank on the tagger card/,
+      /input_image|expected string/,
     );
+  });
+
+  it("THE SCHEMA GATE: an out-of-envelope threshold refuses loud (declared 0–1), never composes", () => {
+    assert.throws(
+      () => def.compose({ input_image: "/m/pic.png", threshold: 5 }, wd14, new GraphBuilder(), "r_oob"),
+      /threshold|5|between|range/i,
+    );
+  });
+
+  it("THE SCHEMA GATE: a wrong-typed threshold refuses loud (declared number)", () => {
+    assert.throws(
+      () => def.compose({ input_image: "/m/pic.png", threshold: "high" }, wd14, new GraphBuilder(), "r_wt"),
+      /threshold|expected number/i,
+    );
+  });
+
+  it("THE SCHEMA GATE: unstated thresholds arrive as the declared defaults 0.35/0.85 (the walk fills them)", () => {
+    const g = new GraphBuilder();
+    def.compose({ input_image: "/m/pic.png" }, wd14, g, "r_def");
+    const graph = g.toJSON() as Record<string, { class_type: string; inputs: Record<string, unknown> }>;
+    const tagger = Object.values(graph).find((n) => n.class_type?.startsWith("WD14"));
+    assert.ok(tagger, "the wd14 tagger rides the fresh doc");
+    assert.equal(tagger.inputs.threshold, 0.35,
+      "the fresh doc composes the schema-declared default threshold 0.35, not undefined");
+    assert.equal(tagger.inputs.character_threshold, 0.85,
+      "the fresh doc composes the schema-declared default character_threshold 0.85, not undefined");
   });
 
   it("the happy lane loads and tags (wd14)", () => {

@@ -47,6 +47,31 @@ describe("the voice-lock compose gate", () => {
     );
   });
 
+  it("THE SCHEMA GATE: an out-of-envelope temperature refuses loud (declared 0–2), never composes", () => {
+    assert.throws(
+      () => def.compose({ voice_name: "mara", style_instruction: "gruff", temperature: 99 }, voicedesign, new GraphBuilder(), "r_oob"),
+      /temperature/,
+    );
+  });
+
+  it("THE SCHEMA GATE: a wrong-typed temperature refuses loud (declared a number)", () => {
+    assert.throws(
+      () => def.compose({ voice_name: "mara", style_instruction: "gruff", temperature: "hot" }, voicedesign, new GraphBuilder(), "r_type"),
+      /temperature/,
+    );
+  });
+
+  it("THE SCHEMA GATE: an unstated temperature arrives as the declared default 0.7 (the walk fills it)", () => {
+    const g = new GraphBuilder();
+    def.compose(
+      { voice_name: "mara", style_instruction: "gruff scout, low register" },
+      voicedesign, g, "r_def",
+    );
+    const studio = g.toJSON()["AudiocoreVoiceStudio.0"];
+    assert.ok(studio, "the voice studio rides");
+    assert.equal(studio.inputs.temperature, 0.7, "the fresh doc composes the schema-declared default 0.7, not undefined");
+  });
+
   it("the happy lane exports the persona", () => {
     const g = new GraphBuilder();
     def.compose(

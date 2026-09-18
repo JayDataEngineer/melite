@@ -34,4 +34,35 @@ describe("the image-gen compose gate", () => {
       /required param 'prompt' missing or empty on the image-gen card/,
     );
   });
+
+  it("THE SCHEMA GATE: an out-of-envelope width refuses loud (declared 256–2048), never composes", () => {
+    const model = facts.models[def.boarded[0]!]!;
+    assert.throws(
+      () => def.compose({ prompt: "a cat", width: 9999 }, model, new GraphBuilder(), "r_oob"),
+      /width|9999|between|range/i,
+    );
+  });
+
+  it("THE SCHEMA GATE: a wrong-typed steps refuses loud (declared number)", () => {
+    const model = facts.models[def.boarded[0]!]!;
+    assert.throws(
+      () => def.compose({ prompt: "a cat", steps: "eight" }, model, new GraphBuilder(), "r_wt"),
+      /steps|expected number/i,
+    );
+  });
+
+  it("THE SCHEMA GATE: an unstated steps arrives as the declared default 8 (the walk fills it)", () => {
+    const model = facts.models[def.boarded[0]!]!;
+    const g = new GraphBuilder();
+    def.compose({ prompt: "a cat" }, model, g, "r_def");
+    const graph = g.toJSON() as Record<string, { inputs: Record<string, unknown> }>;
+    assert.equal(graph["KSampler.0"]?.inputs.steps, 8,
+      "the fresh doc composes the schema-declared default 8, not undefined");
+  });
+
+  it("THE SCHEMA GATE: mod-plane keys pass the walk verbatim (no lora-stamp drop)", () => {
+    const doc = def.schema({ prompt: "a cat", loras: [{ name: "x.safetensors" }] }) as Record<string, unknown>;
+    assert.deepEqual(doc.loras, [{ name: "x.safetensors" }],
+      "the gated doc carries the undeclared loras bag through to the composer");
+  });
 });

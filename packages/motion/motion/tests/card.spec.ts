@@ -47,6 +47,27 @@ describe("the motion compose gate", () => {
     );
   });
 
+  it("THE SCHEMA GATE: an out-of-envelope diffusion_steps refuses loud (declared 10–200), never composes", () => {
+    assert.throws(
+      () => def.compose({ prompt: "walks forward", diffusion_steps: 500 }, kimodo, new GraphBuilder(), "r_oob"),
+      /diffusion_steps|500|between|range/i,
+    );
+  });
+
+  it("THE SCHEMA GATE: a wrong-typed diffusion_steps refuses loud", () => {
+    assert.throws(
+      () => def.compose({ prompt: "walks forward", diffusion_steps: "many" }, kimodo, new GraphBuilder(), "r_type"),
+      /diffusion_steps|many/i,
+    );
+  });
+
+  it("THE SCHEMA GATE: unstated diffusion_steps arrives as the declared default 25 (the walk fills it)", () => {
+    const g = new GraphBuilder();
+    def.compose({ prompt: "walks forward" }, kimodo, g, "r_def");
+    assert.equal(g.toJSON()["KimodoTextToPose.0"].inputs.diffusion_steps, 25,
+      "the fresh doc composes the schema-declared default 25, not undefined");
+  });
+
   it("the happy lane: loader → text-to-pose, NO bake without preview_glb", () => {
     const g = new GraphBuilder();
     def.compose(def.schema({ prompt: "walks forward, then turns" }), kimodo, g, "r1");

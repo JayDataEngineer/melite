@@ -50,6 +50,39 @@ describe("the image-edit compose gate", () => {
     );
   });
 
+  it("THE SCHEMA GATE: an out-of-envelope steps refuses loud (declared 1–50), never composes", () => {
+    assert.throws(
+      () => def.compose({ prompt: "make it night", image1: "/m/i.png", steps: 999 }, model, new GraphBuilder(), "r_oob"),
+      /steps|999|between|range/i,
+    );
+  });
+
+  it("THE SCHEMA GATE: a wrong-typed cfg refuses loud (declared number)", () => {
+    assert.throws(
+      () => def.compose({ prompt: "make it night", image1: "/m/i.png", cfg: "low" }, model, new GraphBuilder(), "r_wt"),
+      /cfg|expected number/i,
+    );
+  });
+
+  it("THE SCHEMA GATE: unstated steps/cfg arrive as the declared defaults 4/1 (the walk fills them)", () => {
+    const g = new GraphBuilder();
+    def.compose({ prompt: "make it night", image1: "/m/i.png" }, model, g, "r_def");
+    const graph = g.toJSON() as Record<string, { inputs: Record<string, unknown> }>;
+    assert.equal(graph["KSampler.0"]?.inputs.steps, 4,
+      "the fresh doc composes the schema-declared default steps 4, not undefined");
+    assert.equal(graph["KSampler.0"]?.inputs.cfg, 1,
+      "the fresh doc composes the schema-declared default cfg 1, not undefined");
+  });
+
+  it("THE SCHEMA GATE: the mod-plane surface passes the walk verbatim (anchor + region + firing knobs reach the composer)", () => {
+    const doc = def.schema({
+      prompt: "x", image1: "/m/i.png", input_mask: "/m/region.png", lanpaint_num_steps: 20,
+    }) as Record<string, unknown>;
+    assert.equal(doc.image1, "/m/i.png", "the undeclared anchor survives the gate");
+    assert.equal(doc.input_mask, "/m/region.png", "the undeclared region survives the gate");
+    assert.equal(doc.lanpaint_num_steps, 20, "the undeclared lanpaint knob survives the gate");
+  });
+
   it("the firing refusals name the unbuildable graph (no silent plain-edit)", () => {
     const arms: Array<[Record<string, unknown>, RegExp]> = [
       [{ reference_images: ["/m/a.png"] }, /'reference_images' fires .*\(multi-image lists/],

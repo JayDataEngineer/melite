@@ -95,18 +95,27 @@ export function apply(ctx: Context): void {
     requires: ['melite-poser-nodes', 'melite-kimodo-nodes'],
     schema: schema as unknown as (v: unknown) => Record<string, unknown>,
     compose(p, _model, g, _runId) {
+      // THE SCHEMA GATE (the audio-trio admission precedent — the
+      // card's own declaration validates the last hop into the
+      // engine): schemastery walk enforces declared types + bounds
+      // (a resolution=5000 draft refuses LOUD here, never composes
+      // — declared 256..2048; identity dims cap at 1, morphs at
+      // their pin range), fills defaults, passes undeclared keys
+      // through inert. The composer's reads below are reads of the
+      // GATED doc.
+      const doc = schema(p) as Record<string, unknown>
       // THE BODY, three arms — a GLB is NEVER required (stroke 89):
       // 1. an attached GLB renders as-is;
       // 2. empty → the identity sliders BAKE the body
       //    (AnnyParamsToGlb: params_json → glb_path — parametric
       //    end-to-end; untouched sliders = the neutral bake).
-      const body = String(p.body_glb ?? '').trim()
+      const body = String(doc.body_glb ?? '').trim()
       // THE MORPHS (stroke 90): sparse local_changes — only NON-ZERO
       // entries ride the wire (absent = the engine's own 0; the pin
       // pins every default at 0, so untouched sliders never ship).
       const localChanges: Record<string, number> = {}
       for (const label of ANNY_MORPH_LABELS) {
-        const v = Number(p[label])
+        const v = Number(doc[label])
         if (Number.isFinite(v) && v !== ANNY_MORPH_DEFAULT) localChanges[label] = v
       }
       const bodyPath = body !== ''
@@ -114,11 +123,11 @@ export function apply(ctx: Context): void {
         : g.node('AnnyParamsToGlb', {
             params_json: JSON.stringify({
               dialect: 'authored',
-              phenotype: PHENOTYPE_DIMS.map((dim) => Number(p[dim] ?? 0.5)),
+              phenotype: PHENOTYPE_DIMS.map((dim) => Number(doc[dim] ?? 0.5)),
               ...(Object.keys(localChanges).length > 0 ? { local_changes: localChanges } : {}),
             }),
           }).out()
-      annyLane(p, g, bodyPath)
+      annyLane(doc, g, bodyPath)
     },
     finalize: finalizeAnny,
     // THE NATIVE FIGURE (stroke 90): before any run lands, the mesh

@@ -410,6 +410,60 @@ describe("compose admissions (the card's own gate)", () => {
   });
 });
 
+describe("THE SCHEMA GATE (the carrier walk — compose validates values, not just keys)", () => {
+  it("an out-of-envelope width refuses loud (declared 448–1344), never composes", () => {
+    assert.throws(
+      () => def.compose({ prompt: "x", width: 99999 }, model, new GraphBuilder(), "r_oob"),
+      /width/,
+    );
+  });
+
+  it("a wrong-typed steps refuses loud (declared a number)", () => {
+    assert.throws(
+      () => def.compose({ prompt: "x", steps: "many" }, model, new GraphBuilder(), "r_type"),
+      /steps/,
+    );
+  });
+
+  it("an unstated width arrives as the declared default 1344 (the walk fills it)", () => {
+    const g = new GraphBuilder(PIN_DEFAULTS);
+    def.compose({ variant: "t4_open", prompt: "waits", height: 768, steps: 12, shift_audio: 5 }, model, g, "r_def");
+    assert.equal(g.toJSON()["MiniMaxH3ReferenceToVideo.0"].inputs.width, 1344,
+      "the fresh doc composes the schema-declared default 1344, not undefined");
+  });
+
+  it("the seeded WIRE STRING coerces (the add-door law holds at the compose gate too)", () => {
+    const g = new GraphBuilder(PIN_DEFAULTS);
+    def.compose({
+      variant: "t4_open", prompt: "waits", width: 1344, height: 768,
+      steps: 12, shift_audio: 5, interpolate_enabled: "false",
+    }, model, g, "r_wire");
+    const graph = g.toJSON();
+    const ids = Object.keys(graph);
+    const interpId = ids.find((id) => /^FrameInterpolate\./.test(id))!;
+    assert.ok(interpId, "the interp lane mounts");
+    const sw = Object.values(graph).find((n) =>
+      n.class_type === "ComfySwitchNode" &&
+      Array.isArray(n.inputs.on_true) && (n.inputs.on_true as unknown[])[0] === interpId);
+    assert.ok(sw, "the interp switch mounts");
+    assert.equal(sw!.inputs.switch, false, "the wire string coerces to the runtime boolean, never a truthy string");
+  });
+
+  it("a RAW loras bag rides the gate verbatim (the mod plane is never stripped)", () => {
+    const g = new GraphBuilder(PIN_DEFAULTS);
+    def.compose({
+      variant: "t4_open", prompt: "waits", width: 1344, height: 768, steps: 12, shift_audio: 5,
+      loras: [{ name: "h3/alpha.safetensors", strength: 0.4 }],
+    }, model, g, "r_bag");
+    const graph = def.finalize!(g.toJSON()) as Record<string, { class_type: string, inputs: Record<string, unknown> }>;
+    const ltx = Object.values(graph).find((n) => n.class_type === "LTX_lora_loader")!;
+    assert.ok(ltx, "the LTX loader mounts");
+    assert.deepEqual(JSON.parse(ltx.inputs.stack_data as string), [
+      { on: true, lora: "h3/alpha.safetensors", str: 0.4, v: 1, a: 1, t: 1 },
+    ]);
+  });
+});
+
 describe("the renderer-vocabulary overlay arms (explicit beats default)", () => {
   it("every optional rides EXPLICITLY on a chain window (switch, context rail, leaves)", () => {
     const g = new GraphBuilder(PIN_DEFAULTS);

@@ -124,6 +124,31 @@ describe("the lift arms (one clear image → textured mesh)", () => {
 });
 
 
+describe("THE SCHEMA GATE (admission validates values, not just keys)", () => {
+  it("an out-of-envelope steps refuses loud (declared 4–60), never composes", () => {
+    assert.throws(
+      () => def.compose({ ...BASE, steps: 500 }, trellis, new GraphBuilder(), "r_oob"),
+      /steps|500|between|range/i,
+    );
+  });
+
+  it("a wrong-typed steps refuses loud", () => {
+    assert.throws(
+      () => def.compose({ ...BASE, steps: "many" }, trellis, new GraphBuilder(), "r_type"),
+      /steps|many/i,
+    );
+  });
+
+  it("an unstated steps arrives as the declared default 12 (the walk fills it)", () => {
+    const g = new GraphBuilder();
+    const p = { ...BASE }; delete p.steps;
+    def.compose(p, trellis, g, "r_def");
+    assert.equal(g.toJSON()["KSampler.0"].inputs.steps, 12,
+      "the fresh doc composes the schema-declared default 12, not undefined");
+  });
+});
+
+
 describe("the dual-face law: the root is the row-mount marker", () => {
   it("apply registers NOTHING node-side (the card rides the CARD face; the studio rides the client face)", async () => {
     const { Context } = await import("@deepseek-ai/cordis");

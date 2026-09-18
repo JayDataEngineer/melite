@@ -91,7 +91,15 @@ export function apply(ctx: Context): void {
     requires: ['melite-autoremesher-nodes'],
     schema: schema as unknown as (v: unknown) => Record<string, unknown>,
     compose(p, _model, g, runId) {
-      const input = String(p.input || '')
+      // THE SCHEMA GATE (the audio-trio admission precedent — the
+      // card's own declaration validates the last hop into the
+      // engine): schemastery walk enforces declared types + bounds
+      // (a target_quads=50 draft refuses LOUD here, never composes
+      // — declared 100..1000000), fills defaults, passes undeclared
+      // keys through inert. The composer's reads below are reads of
+      // the GATED doc.
+      const doc = schema(p) as Record<string, unknown>
+      const input = String(doc.input || '')
       if (!input.trim()) {
         throw new Error(
           `required param 'input' missing on the quad-remesh lane — the remesh needs the dense input mesh (OBJ/STL/PLY path or artifact-ref)`)
@@ -99,12 +107,12 @@ export function apply(ctx: Context): void {
       // The node hardcodes `--smooth-normal 0.0` on the binary argv
       // (melite-autoremesher-nodes nodes.py) — a non-zero card value
       // could never take effect, so it refuses HERE, never silently.
-      const smooth = p.smooth_normal as number
+      const smooth = doc.smooth_normal as number
       if (typeof smooth === 'number' && smooth !== 0.0) {
         throw new Error(
-          `smooth_normal = ${String(p.smooth_normal)} refuses: the AutoRemesher node hardcodes --smooth-normal 0.0 (nodes.py) — the knob rides the card surface for the editor, but no graph can carry it`)
+          `smooth_normal = ${String(doc.smooth_normal)} refuses: the AutoRemesher node hardcodes --smooth-normal 0.0 (nodes.py) — the knob rides the card surface for the editor, but no graph can carry it`)
       }
-      quadRemeshLane(p, g, runId)
+      quadRemeshLane(doc, g, runId)
     },
   }))
 }

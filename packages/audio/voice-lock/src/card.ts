@@ -48,13 +48,20 @@ export function registerCard(ctx: Context, comfy: ComfyUIService): void {
     requires: ['melite-audio-nodes'],
     schema: schema as unknown as (v: unknown) => Record<string, unknown>,
     compose(p, model, g, runId) {
-      if (!(p.voice_name as string)?.trim()) {
+      // THE SCHEMA GATE (the music/sfx/tts admission precedent —
+      // the card's own declaration validates the last hop into the
+      // engine): schemastery walk enforces declared types + bounds
+      // (temperature is 0–2, top_p 0–1, speed 0.5–2 — anything else
+      // refuses LOUD, never composes), fills defaults (temperature
+      // 0.7, top_p 0.9, speed 1); the composer reads the GATED doc.
+      const doc = schema(p) as Record<string, unknown>
+      if (!(doc.voice_name as string)?.trim()) {
         throw new Error("required param 'voice_name' missing or empty on the voice-lock card (the persona's filename stem)")
       }
-      if (!(p.style_instruction as string)?.trim()) {
+      if (!(doc.style_instruction as string)?.trim()) {
         throw new Error("required param 'style_instruction' missing or empty on the voice-lock card (the VoiceDesign prompt)")
       }
-      voicelockT1(p, model, g, runId)
+      voicelockT1(doc, model, g, runId)
     },
   }))
 }
